@@ -1,4 +1,5 @@
-import {trueTypeOf} from '@plaited/utils'
+const trueTypeOf = (obj?: unknown) =>
+  Object.prototype.toString.call(obj).slice(8, -1).toLowerCase()
 /**
  * @description
  * Tagged template function for making strings of html.
@@ -9,35 +10,35 @@ import {trueTypeOf} from '@plaited/utils'
  * @return {DocumentFragment}
  */
 
-const reduceWhitespace = str => str.replace(/(\s\s+|\n)/g, ' ')
-const primitiveValues = {
+const reduceWhitespace = (str: string) => str.replace(/(\s\s+|\n)/g, ' ')
+
+type PrimitiveValueOptions = {
+  [key: string]: boolean
+}
+const primitiveValues: PrimitiveValueOptions = {
   string: true,
   boolean: true,
   number: true,
   bigint: true,
 }
-const isPrimitive = val => primitiveValues[trueTypeOf(val)] || false
 
-export const camelCaseToDash = str => str.replace(
-  /([a-zA-Z])(?=[A-Z])/g,
-  '$1-',
-).toLowerCase()
+const isPrimitive = (val: unknown) => primitiveValues[trueTypeOf(val)] || false
 
-export const html = (strings, ...expressions) => {
+type htmlArgs = Array<number | string | boolean | undefined | null | void | bigint>
+
+export const html = (strings: TemplateStringsArray, ...expressions: htmlArgs[]) => {
   /**
    * @constant
    * @type {{raw:[...string]}}
    */
-  const {raw} = strings
+  const { raw } = strings
   const result = expressions.reduce((acc, cur, i) => {
     acc.push(reduceWhitespace(raw[i]))
-    const string = Array.isArray(cur) 
-      ? cur.filter(isPrimitive).join('') // need to propably map here
-      // : trueTypeOf(cur) === 'object'
-      // ? spreadAttrs(acc, cur)
-      : isPrimitive(cur) 
-      ? cur
-      :''
+    const string = Array.isArray(cur)
+      ? cur.filter(isPrimitive).join('')
+      : isPrimitive(cur)
+        ? cur
+        : ''
     acc.push(string)
     return acc
   }, [])
@@ -50,5 +51,5 @@ export const html = (strings, ...expressions) => {
     .replace(/(>)(\s)(\S)/g, (match, p1, p2, p3) => [p1, p3].join(''))
     .replace(/(\S)(\s)(<)/g, (match, p1, p2, p3) => [p1, p3].join(''))
   // .replace(/[\t\r\n]+/g, ' ')
-  return  tpl
+  return tpl
 }

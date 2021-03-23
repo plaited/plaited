@@ -1,7 +1,7 @@
 import {register, strand} from '../src'
 
 const strands = {
-  append: strand(
+  thingy: strand(
     {waitFor: [{eventName: 'click->button'}]},
     {request: [{eventName: 'append'}]},
   ),  

@@ -1,8 +1,8 @@
-import {assert} from '@plaited/assert'
-import {html} from '../src'
+import { assert } from '@plaited/assert'
+import { html } from '../src'
 
-describe('html()', function() {
-  it('test output', function() {
+describe('html()', function () {
+  it('test output', function () {
     const data = {
       helloWorld: 'Hello World!!!',
       people: ['Dante', 'Alisia', 'Rose'],
@@ -24,21 +24,21 @@ describe('html()', function() {
     `
     const template2 = html`
       <span>
-      ${data.helloWorld}
+        ${data.helloWorld}
       </span>
     `
     const template3 = html`
     <ul>
-    ${data.people.map(
-    person => html`<li>${person}</li>`,
-  )}
+      ${data.people.map(
+        person => html`<li>${person}</li>`,
+        )}
     </ul>
     `
     const template4 = html`
     <ul>
-      ${data.flowers.map(({name, colors}) => html`<li>
-    <h1>${name}</h1>
-      <span>     Favorite Colors</span>
+      ${data.flowers.map(({ name, colors }) => html`<li>
+        <h1>${name}</h1>
+        <span> Favorite Colors</span>
         <ul>
           ${colors.map(color => html`<li>${color}</li>`)}
         </ul>
