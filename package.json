@@ -1,12 +1,12 @@
 {
   "name": "@plaited/plaited",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "engines": {
     "node": ">= 14.2.0",
     "npm": ">= 6.14"
   },
-  "main": "src/index.js",
-  "module": "src/index.js",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
   "files": [
     "src/"
   ],
@@ -19,6 +19,7 @@
     "registry": "https://npm.pkg.github.com/"
   },
   "scripts": {
+    "prepublish": "snowpack build",
     "lint": "eslint . --quiet --fix --ext .js",
     "lint:ci": "eslint .  --ext .js",
     "lint:fix": "npm run lint -- --fix",
@@ -34,11 +35,6 @@
   },
   "types": "src/index.d.ts",
   "type": "module",
-  "dependencies": {
-    "@plaited/utils": "^1.1.1",
-    "@plaited/behavioral": "^1.2.0",
-    "@plaited/assert": "^1.1.1"
-  },
   "devDependencies": {
     "@babel/core": "^7.13.10",
     "@babel/eslint-parser": "^7.13.10",
@@ -46,6 +42,9 @@
     "@babel/plugin-proposal-private-methods": "^7.13.0",
     "@commitlint/cli": "^12.0.1",
     "@commitlint/config-conventional": "^12.0.1",
+    "@plaited/utils": "^1.1.1",
+    "@plaited/behavioral": "^1.2.0",
+    "@plaited/assert": "^1.1.1",
     "@web/dev-server-esbuild": "^0.2.11",
     "@web/test-runner": "^0.12.15",
     "cz-conventional-changelog": "^3.3.0",
@@ -56,6 +55,7 @@
     "esm": "^3.2.25",
     "format-package": "^6.1.0",
     "husky": "^5.1.3",
-    "sinon": "^9.2.4"
+    "sinon": "^9.2.4",
+    "snowpack": "^3.1.2"
   }
 }
