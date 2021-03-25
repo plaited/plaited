@@ -1,5 +1,5 @@
 import {assert} from '@plaited/assert'
-import {html} from '../html'
+import {html} from '../src'
 
 describe('html()', function () {
   it('test output', function () {
