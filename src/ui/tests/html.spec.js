@@ -1,5 +1,5 @@
-import { assert } from '@plaited/assert'
-import { html } from '../src'
+import {assert} from '@plaited/assert'
+import {html} from '../html'
 
 describe('html()', function () {
   it('test output', function () {
@@ -30,13 +30,13 @@ describe('html()', function () {
     const template3 = html`
     <ul>
       ${data.people.map(
-        person => html`<li>${person}</li>`,
-        )}
+    person => html`<li>${person}</li>`,
+  )}
     </ul>
     `
     const template4 = html`
     <ul>
-      ${data.flowers.map(({ name, colors }) => html`<li>
+      ${data.flowers.map(({name, colors}) => html`<li>
         <h1>${name}</h1>
         <span> Favorite Colors</span>
         <ul>

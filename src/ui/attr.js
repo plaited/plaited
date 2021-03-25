@@ -1,5 +1,5 @@
-import {trueTypeOf} from '@plaited/utils'
-import {svgTags} from './constants'
+import {trueTypeOf} from '../utils/trueTypeOf.js'
+import {svgTags} from './constants.js'
 
 const setStyles = (node, style) => {
   for (const rule in style) {

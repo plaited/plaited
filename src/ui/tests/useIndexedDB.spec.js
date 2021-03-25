@@ -1,5 +1,5 @@
 import {assert} from '@plaited/assert'
-import {useIndexedDB} from '../src'
+import {useIndexedDB} from '../useIndexedDB'
 
 describe('useIndexedDB', function() {
   it('exercise useIndexedDB', async function() {
