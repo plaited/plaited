@@ -1,6 +1,4 @@
-import { ValueOf } from '../utils/types'
-import { Trigger } from '../behavioral/types'
-import { baseDynamics } from '../behavioral/constants'
+import { baseDynamics, Trigger, ValueOf } from '@plaited/behavioral'
 export type ActorMessage = [string, {
   eventName: string;
   payload?: any;

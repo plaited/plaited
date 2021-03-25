@@ -1,4 +1,4 @@
-import {trueTypeOf} from '../utils/trueTypeOf.js'
+import {trueTypeOf} from '@plaited/utils'
 
 const reduceWhitespace = str => str.replace(/(\s\s+|\n)/g, ' ')
 

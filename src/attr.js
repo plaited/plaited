@@ -1,4 +1,4 @@
-import {trueTypeOf} from '../utils/trueTypeOf.js'
+import {trueTypeOf} from '@plaited/utils'
 import {svgTags} from './constants.js'
 
 const setStyles = (node, style) => {

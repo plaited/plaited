@@ -8,8 +8,7 @@
   "main": "src/index.js",
   "module": "src/index.js",
   "files": [
-    "src/",
-    "!**/tests/**"
+    "src/"
   ],
   "config": {
     "commitizen": {
@@ -24,9 +23,7 @@
     "lint:ci": "eslint .  --ext .js",
     "lint:fix": "npm run lint -- --fix",
     "prepare": "husky install",
-    "test:node": "ava",
-    "test:web": "web-test-runner \"src/ui/tests/**/*.spec.js\" --config web-dev-server.config.js --node-resolve",
-    "test": "npm run test:node & npm run test:web",
+    "test": "web-test-runner \"tests/**/*.spec.js\" --config web-dev-server.config.js --node-resolve",
     "test:ci": "npm test"
   },
   "husky": {
@@ -37,14 +34,10 @@
   },
   "types": "src/index.d.ts",
   "type": "module",
-  "ava": {
-    "extensions": [
-      "js"
-    ],
-    "files": [
-      "src/behavioral/**/*.spec.js",
-      "src/utils/**/*.spec.js"
-    ]
+  "dependencies": {
+    "@plaited/utils": "^1.1.1",
+    "@plaited/behavioral": "^1.2.0",
+    "@plaited/assert": "^1.1.1"
   },
   "devDependencies": {
     "@babel/core": "^7.13.10",
@@ -53,12 +46,8 @@
     "@babel/plugin-proposal-private-methods": "^7.13.0",
     "@commitlint/cli": "^12.0.1",
     "@commitlint/config-conventional": "^12.0.1",
-    "@pika/plugin-build-web": "^0.9.2",
-    "@plaited/assert": "^1.1.1",
     "@web/dev-server-esbuild": "^0.2.11",
     "@web/test-runner": "^0.12.15",
-    "ava": "^3.15.0",
-    "c8": "^7.6.0",
     "cz-conventional-changelog": "^3.3.0",
     "esbuild": "0.9.7",
     "eslint": "^7.21.0",

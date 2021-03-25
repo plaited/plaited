@@ -1,4 +1,4 @@
-import {trueTypeOf} from '../utils/trueTypeOf.js'
+import {trueTypeOf} from '@plaited/utils'
 import {createIDB} from './createIDB.js'
 
 /** @param {string} key @param {*} initialValue @param {string} dbName @param {string} storeName */

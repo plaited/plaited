@@ -1,6 +1,6 @@
 import {assert, wait} from '@plaited/assert'
 import {spy} from 'sinon'
-import {connect, broadcast} from '../actor'
+import {connect, broadcast} from '../src'
 
 describe('actor()', function() {
   it('connect, broadcast, close', async function() {

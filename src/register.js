@@ -1,5 +1,4 @@
-import {track} from '../behavioral/track.js'
-import {baseDynamics} from '../behavioral/constants.js'
+import {track, baseDynamics} from '@plaited/behavioral'
 import {dataIsland, dataTarget, dataTrigger} from './constants.js'
 import {constructableSupported} from './constructableSupported.js'
 import {connect} from './actor.js'
