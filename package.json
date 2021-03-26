@@ -1,6 +1,6 @@
 {
   "name": "@plaited/plaited",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "engines": {
     "node": ">= 14.2.0",
     "npm": ">= 6.14"
