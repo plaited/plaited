@@ -1,9 +1,8 @@
 import {track, baseDynamics} from '@plaited/behavioral'
 import {dataTarget, dataTrigger} from './constants.js'
 import {constructableSupported} from './constructableSupported.js'
-import {connect} from './actor.js'
 import {delegatedListener} from './delegatedListener'
-export const register = (tag, {strands = {}, actions = {}, options = {}}) => {
+export const register = (tag, {strands = {}, actions = {}, options = {}, connect = () => () => {}}) => {
   if (customElements.get(tag)) return
   class ControlTrack extends HTMLElement {
     static matchAllEvents(str) {

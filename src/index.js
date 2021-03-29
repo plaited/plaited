@@ -1,4 +1,5 @@
-export {broadcast,connect} from './actor.js'
+export {actor} from './actor.js'
+export {eventEmitter} from './eventEmitter.js'
 export {attr} from './attr.js'
 export {register} from './register.js'
 export {createIDB} from './createIDB.js'

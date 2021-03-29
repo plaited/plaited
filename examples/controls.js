@@ -1,4 +1,4 @@
-import {register, broadcast, baseDynamics} from '../src'
+import {register, baseDynamics} from '../src'
 import {
   startClock,
   stopResetTrigger,
@@ -8,7 +8,7 @@ import {
   addToTimeArray,
 } from './events'
 import {microwaveDisplay, microwaveControls} from './constants'
-
+import {broadcast} from './comms'
 const actions = () =>  ({
   ...[...Array(10).keys()].reduce((acc, cur) => {
     acc[`click->${cur}`] = () => {

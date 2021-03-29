@@ -20,6 +20,7 @@ import {
   runningMode,
   readyMode,
 } from './modes'
+import {connect} from './comms'
 import {microwaveDisplay} from './constants'
 
 const [getMode, setMode] = useStore(readyMode)
@@ -77,6 +78,7 @@ const updateDisplay = (target, arr) => {
 }
 
 const actions = target =>  ({
+
   [addToTimeArray](payload){
     console.log(addToTimeArray)
     const time = [...getTime()]
@@ -103,5 +105,5 @@ const actions = target =>  ({
   },
 
 })
-register(microwaveDisplay, {strands, actions})
+register(microwaveDisplay, {strands, actions, connect})
 
