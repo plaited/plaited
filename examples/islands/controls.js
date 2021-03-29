@@ -1,7 +1,7 @@
 import {register, baseDynamics} from '../../src'
 import {
   // comms
-  broadcast,
+  send,
   // constants
   microwaveDisplay,
   microwaveControls,
@@ -16,7 +16,7 @@ import {
 const actions = () =>  ({
   ...[...Array(10).keys()].reduce((acc, cur) => {
     acc[`click->${cur}`] = () => {
-      broadcast(microwaveDisplay, {
+      send(microwaveDisplay, {
         eventName: addToTimeArray,
         payload: cur,
         baseDynamic: baseDynamics.objectObject,
@@ -25,19 +25,19 @@ const actions = () =>  ({
     return acc
   },{}),
   [add30Trigger](){
-    broadcast(microwaveDisplay, {
+    send(microwaveDisplay, {
       eventName: add30Seconds,
       baseDynamic: baseDynamics.objectObject,
     })
   },
   [startTrigger](){
-    broadcast(microwaveDisplay, {
+    send(microwaveDisplay, {
       eventName: startClock,
       baseDynamic: baseDynamics.objectObject,
     })
   },
   [stopResetTrigger](){
-    broadcast(microwaveDisplay, {
+    send(microwaveDisplay, {
       eventName: stopResetTrigger,
       baseDynamic: baseDynamics.objectObject,
     })

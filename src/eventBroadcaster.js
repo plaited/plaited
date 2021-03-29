@@ -1,4 +1,4 @@
-export const actor = () => {
+export const eventBroadcaster = () => {
   const BROADCAST_CHANNEL = 'mediator'
   /**
  * @param {string} recipient @param {function} trigger @param {string} [bcc=mediator]
@@ -9,7 +9,7 @@ export const actor = () => {
  * @description broadcast a message to connected actors
  * @param {string} address @param {Object} message @param {string} [bcc=BROADCAST_CHANNEL]
  */
-  const broadcast = (address, message, bcc = BROADCAST_CHANNEL) => {
+  const send = (address, message, bcc = BROADCAST_CHANNEL) => {
   // eslint-disable-next-line compat/compat
     const mediator = new BroadcastChannel(bcc)
     mediator.postMessage([address, message])
@@ -33,15 +33,6 @@ export const actor = () => {
       channel.close()
     }
   }
-
-  /**
- * @description dispatch an request to a dedicated web worker actor
- * @param {string} worker
- */
-  const dispatch = worker =>
-  /** @param {{address: string, request:string|{ request: string data:*}}} request */
-    request => worker.postMessage(request)
-
-  return Object.freeze({broadcast, connect, dispatch})
+  return Object.freeze({connect, send})
 }
 

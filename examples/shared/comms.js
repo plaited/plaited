@@ -1,3 +1,3 @@
 import {eventEmitter} from '../../src'
-const {connect, broadcast} = eventEmitter()
-export {connect, broadcast}
+const {connect, send} = eventEmitter()
+export {connect, send}

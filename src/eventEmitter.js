@@ -7,11 +7,11 @@ export const eventEmitter = () => {
     return () => emitter.removeEventListener(recipient, eventHandler)
   }
 
-  const broadcast = (recipient, message) => {
+  const send = (recipient, message) => {
     const event = new CustomEvent(recipient, {
       detail: message,
     })
     emitter.dispatchEvent(event)
   }
-  return Object.freeze({connect, broadcast})
+  return Object.freeze({connect, send})
 }
