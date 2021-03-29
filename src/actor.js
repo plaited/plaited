@@ -5,7 +5,7 @@ const BROADCAST_CHANNEL = 'mediator'
  */
 
 /**
- * @description broadcast a message to connected actors
+ * @description  To be used in worker threads allows for broadcast to connected actors
  * @param {string} address @param {Object} message @param {string} [bcc=BROADCAST_CHANNEL]
  */
 export const broadcast = (address, message, bcc = BROADCAST_CHANNEL) => {
@@ -19,7 +19,7 @@ export const broadcast = (address, message, bcc = BROADCAST_CHANNEL) => {
  * @param {string} recipient @param {function} trigger @param {string} [bcc=BROADCAST_CHANNEL]
  * @return {function} closes broadcast channel
  */
-export const connect = (recipient, trigger, bcc = BROADCAST_CHANNEL) => {
+export const connect = (, trigger, bcc = BROADCAST_CHANNEL) => {
   const callback = evt => {
     const [address, message] = evt.data
     address === recipient && trigger(message)
@@ -32,3 +32,11 @@ export const connect = (recipient, trigger, bcc = BROADCAST_CHANNEL) => {
     channel.close()
   }
 }
+
+/**
+ * @description dispatch an request to a dedicated web worker actor
+ * @param {string} worker
+ */
+export const dispatch = worker =>
+/** @param {{address: string, request:string|{ request: string data:*}}} request */
+  request => worker.postMessage(request)
