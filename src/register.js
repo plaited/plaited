@@ -1,8 +1,8 @@
 import {track, baseDynamics} from '@plaited/behavioral'
-import {dataIsland, dataTarget, dataTrigger} from './constants.js'
+import {dataTarget, dataTrigger} from './constants.js'
 import {constructableSupported} from './constructableSupported.js'
 import {connect} from './actor.js'
-
+import {delegatedListener} from './delegatedListener'
 export const register = (tag, {strands = {}, actions = {}, options = {}}) => {
   if (customElements.get(tag)) return
   class ControlTrack extends HTMLElement {
@@ -10,17 +10,15 @@ export const register = (tag, {strands = {}, actions = {}, options = {}}) => {
       const regexp = /(\w+)(?:->)/g
       return [...str.matchAll(regexp)].flatMap(([, event]) => event)
     }
-    static getTriggerKey(key, evt) {
-      const el = evt.target
-      const dataTrigger = el.dataset.trigger
-      if (!dataTrigger) return
-      return dataTrigger
+    static getTriggerKey = evt => {
+      const el = evt.currentTarget
+      const type = evt.type
+      return  el.dataset.trigger
         .trim()
         .split(/\s+/)
-        .find(str => str.includes(`${key}->`))
+        .find(str => str.includes(`${type}->`))
     }
     #trigger
-    #events = new Set()
     #disconnect
     constructor() {
       super()
@@ -31,14 +29,13 @@ export const register = (tag, {strands = {}, actions = {}, options = {}}) => {
       }
     }
     connectedCallback() {
-      this.setAttribute(dataIsland, '')
       !constructableSupported && (this.style.display = 'contents')
       this.observer = this.#init()
       const {feedback, trigger, stream} = track(strands, options)
       options.debug && stream(options.debug)
       feedback(actions(id => {
         const targets = [...(this.querySelectorAll(`[${dataTarget}="${id}"]`))]
-          .filter(el => el.closest(`[${dataIsland}]`) === this)
+          .filter(el => el.closest(tag) === this)
         return targets.length > 1 ? targets : targets[0]
       }))
       this.#disconnect = connect(tag, trigger)
@@ -51,29 +48,21 @@ export const register = (tag, {strands = {}, actions = {}, options = {}}) => {
       this.#trigger({eventName: `disconnected->${tag}`, baseDynamic: baseDynamics.objectObject})
     }
     #update() {
-      if (this.#events.size > 0) {
-        this.#events.forEach(evt => {
-          this[`on${evt}`] = null
-        })
-        this.#events.clear()
-      }
-      const triggers = new Set([...(this.querySelectorAll(`[${dataTrigger}]`))]
-        .reduce((acc, el) => {
-          if (el.closest(`[${dataIsland}]`) !== this) return acc
-          return acc.concat(ControlTrack.matchAllEvents(el.dataset.trigger))
-        }, []))
-      for (const key of triggers) {
-        this.#events.add(key)
-        this[`on${key}`] = evt => {
-          const triggerKey = ControlTrack.getTriggerKey(key, evt)
-          const closest = evt.target.closest(`[${dataIsland}]`) === this
-          triggerKey && closest && this.#trigger({
+      this.querySelectorAll(`[${dataTrigger}]`).forEach(el => {
+        if (el.closest(tag) !== this) return
+        delegatedListener.set(el, evt => {
+          const triggerKey = ControlTrack.getTriggerKey(evt)
+          triggerKey && this.#trigger({
             eventName: triggerKey,
             payload: evt,
             baseDynamic: baseDynamics.objectPerson,
           })
+        })
+        const triggers = ControlTrack.matchAllEvents(el.dataset.trigger)
+        for (const event of triggers) {
+          el.addEventListener(event, delegatedListener.get(el))
         }
-      }
+      })
     }
     #init() {
       this.#update()

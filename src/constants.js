@@ -4,7 +4,6 @@ export const islandDisconnected = 'island-disconnected'
 
 
 // data attributes
-export const dataIsland = 'data-island'
 export const dataTarget = 'data-target'
 export const dataTrigger = 'data-trigger'
 
