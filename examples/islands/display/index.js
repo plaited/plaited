@@ -5,23 +5,26 @@ import {
   loop,
   waitFor,
   request,
-} from '../src'
+} from '../../../src'
 import {useStore} from '@plaited/utils'
 import {
+  // comms
+  connect,
+  // islandNames
+  microwaveDisplay,
+  //events
   add30Seconds,
   addToTimeArray,
   startClock,
   pauseClock,
   resetClock,
   stopResetTrigger,
-} from './events'
+} from '../../shared'
 import {
   pausedMode,
   runningMode,
   readyMode,
 } from './modes'
-import {connect} from './comms'
-import {microwaveDisplay} from './constants'
 
 const [getMode, setMode] = useStore(readyMode)
 const [getTime, setTime] = useStore([])

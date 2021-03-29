@@ -1,14 +1,18 @@
-import {register, baseDynamics} from '../src'
+import {register, baseDynamics} from '../../src'
 import {
+  // comms
+  broadcast,
+  // constants
+  microwaveDisplay,
+  microwaveControls,
+  // events
   startClock,
   stopResetTrigger,
   add30Seconds,
   add30Trigger,
   startTrigger,
   addToTimeArray,
-} from './events'
-import {microwaveDisplay, microwaveControls} from './constants'
-import {broadcast} from './comms'
+} from '../shared'
 const actions = () =>  ({
   ...[...Array(10).keys()].reduce((acc, cur) => {
     acc[`click->${cur}`] = () => {
