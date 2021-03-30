@@ -1,17 +1,15 @@
 export const eventEmitter = () => {
   const emitter = new EventTarget()
 
-  const connect = (recipient, trigger) => {
-    const eventHandler = e => trigger(e.detail)
-    emitter.addEventListener(recipient, eventHandler)
-    return () => emitter.removeEventListener(recipient, eventHandler)
+  const on = (event, cb) => {
+    const eventHandler = e => cb(e.detail)
+    emitter.addEventListener(event, eventHandler)
+    return () => emitter.removeEventListener(event, eventHandler)
   }
 
-  const send = (recipient, message) => {
-    const event = new CustomEvent(recipient, {
-      detail: message,
-    })
-    emitter.dispatchEvent(event)
+  const emit = (event, detail) => {
+    const evt = new CustomEvent(event, {detail})
+    emitter.dispatchEvent(evt)
   }
-  return Object.freeze({connect, send})
+  return Object.freeze({on, emit})
 }

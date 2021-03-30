@@ -1,3 +1,3 @@
-import {eventEmitter} from '../../src'
-const {connect, send} = eventEmitter()
+import {messenger} from '../../src'
+const {connect, send} = messenger()
 export {connect, send}

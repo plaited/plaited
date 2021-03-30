@@ -1,12 +1,13 @@
 import {assert, wait} from '@plaited/assert'
 import {spy} from 'sinon'
-import {connect, broadcast} from '../src'
+import {messenger} from '../src'
 
 describe('actor()', function() {
   it('connect, broadcast, close', async function() {
+    const {send, connect} = messenger()
     const callback = spy()
     const close = connect('actor1', callback)
-    broadcast('actor1', 4)
+    send('actor1', 4)
     await wait(100)
     assert({
       given: 'sending a message to actor',
@@ -17,8 +18,9 @@ describe('actor()', function() {
     close()
   })
   it('broadcast, connect, close', async function() {
+    const {send, connect} = messenger()
     const callback = spy()
-    broadcast('actor1', 4)
+    send('actor1', 4)
     const close = connect('actor1', callback)
     await wait(100)
     assert({

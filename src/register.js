@@ -9,7 +9,7 @@ export const register = (tag, {strands = {}, actions = {}, options = {}, connect
       const regexp = /(\w+)(?:->)/g
       return [...str.matchAll(regexp)].flatMap(([, event]) => event)
     }
-    static getTriggerKey = evt => {
+    static getTriggerKey (evt) {
       const el = evt.currentTarget
       const type = evt.type
       return  el.dataset.trigger
@@ -17,8 +17,8 @@ export const register = (tag, {strands = {}, actions = {}, options = {}, connect
         .split(/\s+/)
         .find(str => str.includes(`${type}->`))
     }
-    #trigger
-    #disconnect
+    trigger
+    disconnect
     constructor() {
       super()
       if (constructableSupported) {
@@ -29,7 +29,7 @@ export const register = (tag, {strands = {}, actions = {}, options = {}, connect
     }
     connectedCallback() {
       !constructableSupported && (this.style.display = 'contents')
-      this.observer = this.#init()
+      this.observer = this.init()
       const {feedback, trigger, stream} = track(strands, options)
       options.debug && stream(options.debug)
       feedback(actions(id => {
@@ -37,21 +37,21 @@ export const register = (tag, {strands = {}, actions = {}, options = {}, connect
           .filter(el => el.closest(tag) === this)
         return targets.length > 1 ? targets : targets[0]
       }))
-      this.#disconnect = connect(tag, trigger)
-      this.#trigger = trigger
-      this.#trigger({eventName: `connected->${tag}`, baseDynamic: baseDynamics.objectObject})
+      this.disconnect = connect(tag, trigger)
+      this.trigger = trigger
+      this.trigger({eventName: `connected->${tag}`, baseDynamic: baseDynamics.objectObject})
     }
     disconnectedCallback() {
       this.observer.disconnect()
-      this.#disconnect()
-      this.#trigger({eventName: `disconnected->${tag}`, baseDynamic: baseDynamics.objectObject})
+      this.disconnect()
+      this.trigger({eventName: `disconnected->${tag}`, baseDynamic: baseDynamics.objectObject})
     }
-    #update() {
+    update() {
       this.querySelectorAll(`[${dataTrigger}]`).forEach(el => {
         if (el.closest(tag) !== this) return
         delegatedListener.set(el, evt => {
           const triggerKey = ControlTrack.getTriggerKey(evt)
-          triggerKey && this.#trigger({
+          triggerKey && this.trigger({
             eventName: triggerKey,
             payload: evt,
             baseDynamic: baseDynamics.objectPerson,
@@ -63,15 +63,15 @@ export const register = (tag, {strands = {}, actions = {}, options = {}, connect
         }
       })
     }
-    #init() {
-      this.#update()
+    init() {
+      this.update()
       const mo = new MutationObserver(mutationsList => {
         for (const mutation of mutationsList) {
           if (mutation.type === 'childList') {
-            this.#update()
+            this.update()
           }
           if (mutation.type === 'attributes') {
-            mutation.attributeName === dataTrigger && this.#update()
+            mutation.attributeName === dataTrigger && this.update()
           }
         }
       })
