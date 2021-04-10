@@ -1,2 +1,2 @@
-// import './display'
+import './display'
 import './controls'

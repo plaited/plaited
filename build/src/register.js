@@ -1,7 +1,7 @@
-import {track, baseDynamics} from '@plaited/behavioral'
+import {track, baseDynamics} from '../_snowpack/pkg/@plaited/behavioral.js'
 import {dataTarget, dataTrigger} from './constants.js'
 import {constructableSupported} from './constructableSupported.js'
-import {delegatedListener} from './delegatedListener'
+import {delegatedListener} from './delegatedListener.js'
 export const register = (tag, {strands = {}, actions = {}, options = {}, connect}) => {
   if (customElements.get(tag)) return
   class ControlTrack extends HTMLElement {
