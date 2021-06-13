@@ -1,4 +1,4 @@
-import {streamEvents} from './constants'
+import {streamEvents, baseDynamics} from './constants'
 
 
 export type ValueOf<T> = T[keyof T]
@@ -58,4 +58,14 @@ export interface StateChart {
     }[];
     blockedEvents: (string | undefined)[];
   }
+}
+
+export type TriggerArgs = {
+  eventName: string;
+  payload?: any;
+  baseDynamic?: ValueOf<typeof baseDynamics>;
+}
+
+export interface TriggerFunc {
+  (args: TriggerArgs): void
 }

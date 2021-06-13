@@ -1,4 +1,4 @@
-import {track, baseDynamics} from '../behavioral'
+import {Track, baseDynamics} from '../behavioral'
 import {dataTarget, dataTrigger} from './constants.js'
 import {constructableSupported} from './constructableSupported.js'
 import {delegatedListener} from './delegatedListener'
@@ -30,7 +30,7 @@ export const register = (tag, {strands = {}, actions = {}, options = {}, connect
     connectedCallback() {
       !constructableSupported && (this.style.display = 'contents')
       this.observer = this.init()
-      const {feedback, trigger, stream} = track(strands, options)
+      const {feedback, trigger, stream} = new Track(strands, options)
       options.debug && stream(options.debug)
       feedback(actions(id => {
         const targets = [...(this.querySelectorAll(`[${dataTarget}="${id}"]`))]
