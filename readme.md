@@ -5,7 +5,7 @@
 - selectionStrategies: callback functions (randomizedStrategy, chaosStrategy, priorityStrategy) 
 - baseDynamics: constants (objectObject, objectPerson, personPerson)
 - streamEvents:  constant (trigger, select, state)
-- Track: Class used to init a behavioral program
+- track: Class used to init a behavioral program
 - strand: function used to define a set of behavioral program rule
 - loop: function used to define conditions by which a a strand rule will continue to execute
 
@@ -13,7 +13,7 @@
 
 ```ts
 import {
-  Track,
+  track,
   baseDynamics,
   loop,
   strand,
@@ -105,9 +105,9 @@ const oStrands = {
   oMoves: playerMove('O'),
 }
 
-const {trigger: xTrigger, feedback: xFeedback} = new Track(xStrands, {strategy: randomizedStrategy})
+const {trigger: xTrigger, feedback: xFeedback} = track(xStrands, {strategy: randomizedStrategy})
 
-const {trigger: oTrigger, feedback: oFeedback} = new Track(oStrands, {strategy: randomizedStrategy})
+const {trigger: oTrigger, feedback: oFeedback} = track(oStrands, {strategy: randomizedStrategy})
 const xActions = {
   X(payload: unknown){
     console.log({eventName: 'X', payload})

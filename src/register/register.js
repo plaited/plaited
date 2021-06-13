@@ -1,10 +1,10 @@
-import {Track, baseDynamics} from '../behavioral'
+import {track, baseDynamics} from '../behavioral'
 import {dataTarget, dataTrigger} from './constants.js'
 import {constructableSupported} from './constructableSupported.js'
 import {delegatedListener} from './delegatedListener'
 export const register = (tag, {strands = {}, actions = {}, options = {}, connect}) => {
   if (customElements.get(tag)) return
-  class ControlTrack extends HTMLElement {
+  class Controltrack extends HTMLElement {
     static matchAllEvents(str) {
       const regexp = /(\w+)(?:->)/g
       return [...str.matchAll(regexp)].flatMap(([, event]) => event)
@@ -30,7 +30,7 @@ export const register = (tag, {strands = {}, actions = {}, options = {}, connect
     connectedCallback() {
       !constructableSupported && (this.style.display = 'contents')
       this.observer = this.init()
-      const {feedback, trigger, stream} = new Track(strands, options)
+      const {feedback, trigger, stream} = track(strands, options)
       options.debug && stream(options.debug)
       feedback(actions(id => {
         const targets = [...(this.querySelectorAll(`[${dataTarget}="${id}"]`))]
@@ -50,14 +50,14 @@ export const register = (tag, {strands = {}, actions = {}, options = {}, connect
       this.querySelectorAll(`[${dataTrigger}]`).forEach(el => {
         if (el.closest(tag) !== this) return
         delegatedListener.set(el, evt => {
-          const triggerKey = ControlTrack.getTriggerKey(evt)
+          const triggerKey = Controltrack.getTriggerKey(evt)
           triggerKey && this.trigger({
             eventName: triggerKey,
             payload: evt,
             baseDynamic: baseDynamics.objectPerson,
           })
         })
-        const triggers = ControlTrack.matchAllEvents(el.dataset.trigger)
+        const triggers = Controltrack.matchAllEvents(el.dataset.trigger)
         for (const event of triggers) {
           el.addEventListener(event, delegatedListener.get(el))
         }
@@ -83,5 +83,5 @@ export const register = (tag, {strands = {}, actions = {}, options = {}, connect
       return mo
     }
   }
-  customElements.define(tag, ControlTrack)
+  customElements.define(tag, Controltrack)
 }
