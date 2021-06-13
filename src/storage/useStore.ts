@@ -1,12 +1,9 @@
 import {trueTypeOf} from '../utils'
-interface Callback<T> {
-  (arg: T): T
-}
 export const useStore = <T>(initialStore:T) => {
   let store = initialStore
   const get = () => store
-  const set = (newStore:T | Callback<T>) => {
-    store = trueTypeOf(newStore) === 'function' ? (newStore as Callback<T>)(store) : newStore as T
+  const set = (newStore:T | ((arg: T) => T)) => {
+    store = trueTypeOf(newStore) === 'function' ? (newStore as ((arg: T) => T))(store) : newStore as T
   }
-  return Object.freeze([get, set])
+  return Object.freeze<[() => T, (newStore: T | ((arg: T) => T)) => void]>([get, set])
 }
