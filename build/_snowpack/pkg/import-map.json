@@ -1,6 +1,0 @@
-{
-  "imports": {
-    "@plaited/behavioral": "./@plaited/behavioral.js",
-    "@plaited/utils": "./@plaited/utils.js"
-  }
-}

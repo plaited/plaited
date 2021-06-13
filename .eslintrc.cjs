@@ -1,21 +1,19 @@
 module.exports = {
   root: true,
-  parser: '@babel/eslint-parser',
-  // parserOptions: {
-  //   ecmaVersion: 11,
-  //   sourceType: 'module',
-  //   allowImportExportEverywhere: true,
-  // },
+  parserOptions: {
+    ecmaVersion: 11,
+    sourceType: 'module',
+    allowImportExportEverywhere: true,
+  },
+  parser: '@typescript-eslint/parser',
   env: {
     browser: true,
     node: true,
     es6: true,
     mocha: true,
   },
-  plugins: [
-    'mocha',
-  ],
-  extends: ['eslint:recommended', 'plugin:compat/recommended'],
+  extends: ['eslint:recommended', 'plugin:compat/recommended', 'plugin:@typescript-eslint/recommended'],
+  ignorePatterns: ['**/dist/*'],
   rules: {
     strict: 0,
     semi: ['error', 'never'],
@@ -73,7 +71,6 @@ module.exports = {
         'no-shadow': 0,
         'no-return-assign': 0,
         'no-global-assign': 0,
-        'func-names': 0,
       },
     },
   ],
