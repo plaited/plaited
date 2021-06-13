@@ -1,17 +1,4 @@
-# behavioral
-
-## Exports
-
-- selectionStrategies: callback functions (randomizedStrategy, chaosStrategy, priorityStrategy) 
-- baseDynamics: constants (objectObject, objectPerson, personPerson)
-- streamEvents:  constant (trigger, select, state)
-- track: Class used to init a behavioral program
-- strand: function used to define a set of behavioral program rule
-- loop: function used to define conditions by which a a strand rule will continue to execute
-
-## Usage: tic-tac-toe
-
-```ts
+/* eslint-disable no-console */
 import {
   track,
   baseDynamics,
@@ -22,7 +9,7 @@ import {
   block,
   randomizedStrategy,
   RulesFunc,
-} from './src/index'
+} from '../../src/behavioral'
 
 const winConditions = [
   //rows
@@ -139,5 +126,3 @@ const oActions = {
 oFeedback(oActions)
 
 xTrigger({eventName: 'start', baseDynamic: baseDynamics.objectObject})
-```
-
