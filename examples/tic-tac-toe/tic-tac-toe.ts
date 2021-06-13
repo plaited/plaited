@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import {
-  track,
+  Track,
   baseDynamics,
   loop,
   strand,
@@ -92,9 +92,9 @@ const oStrands = {
   oMoves: playerMove('O'),
 }
 
-const {trigger: xTrigger, feedback: xFeedback} = track(xStrands, {strategy: randomizedStrategy})
+const {trigger: xTrigger, feedback: xFeedback} = new Track(xStrands, {strategy: randomizedStrategy})
 
-const {trigger: oTrigger, feedback: oFeedback} = track(oStrands, {strategy: randomizedStrategy})
+const {trigger: oTrigger, feedback: oFeedback} = new Track(oStrands, {strategy: randomizedStrategy})
 const xActions = {
   X(payload: unknown){
     console.log({eventName: 'X', payload})

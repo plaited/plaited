@@ -1,9 +1,8 @@
-import {streamEvents, baseDynamics} from './constants'
+import {streamEvents} from './constants'
 import {stateChart} from './stateChart'
 import {createStream} from './createStream'
 import {priorityStrategy} from './strategies'
 import {
-  ValueOf,
   CandidateBid,
   RunningBid,
   PendingBid,
@@ -13,124 +12,124 @@ import {
   FeedbackMessage,
   RulesFunc,
   RuleParameterValue,
+  TriggerArgs,
 } from './types'
 
-const requestInParameter = ({eventName: requestEventName, payload: requestPayload}: CandidateBid) => {
-  return ({eventName: parameterEventName, callback: parameterCallback}: RuleParameterValue): boolean => (
+
+export class Track {
+  // Check if requested event is in the Paramter (waitFor, request, block)
+  static requestInParameter({eventName: requestEventName, payload: requestPayload}: CandidateBid) { 
+    return({eventName: parameterEventName, callback: parameterCallback}: RuleParameterValue): boolean => (
     parameterCallback
-      ? parameterCallback({payload: requestPayload, eventName: requestEventName})
-      : requestEventName === parameterEventName
-  )
-}
-
-export const track = (strands: Record<string, RulesFunc>,
-  {strategy = priorityStrategy, dev = false}:
-    { strategy?: Strategy; dev?: boolean; } = {},
-) => {
-  const pending = new Set<PendingBid>()
-  const running = new Set<RunningBid>()
-  let lastEvent: CandidateBid = {} as CandidateBid
-  const stream = createStream()
-
-  const nextStep = () => {
-    for (const bid of pending) {
-      const {request = [], waitFor = [], logicStrand} = bid
-      const waitList = [...request, ...waitFor]
-      if (waitList.some(requestInParameter(lastEvent)) && logicStrand) {
-        running.add(bid)
-        pending.delete(bid)
-      }
-    }
-    const {eventName, payload} = lastEvent
-    stream({
-      streamEvent: streamEvents.select,
-      eventName,
-      payload,
-    })
-    run()
+      ? parameterCallback({payload: requestPayload, eventName:requestEventName})
+      :requestEventName === parameterEventName
+    )
   }
-
-  const step = () => {
-    for (const bid of running) {
+  eventSelectionStrategy:Strategy  
+  pending = new Set<PendingBid>()
+  running = new Set<RunningBid>()
+  lastEvent:CandidateBid = {} as CandidateBid
+  stream: CreatedStream
+  dev?: boolean
+  constructor(
+    strands:  Record<string, RulesFunc>,
+    {strategy = priorityStrategy, dev = false}:
+    { strategy?: Strategy; dev?: boolean; } = {},
+  ) {
+    this.eventSelectionStrategy = strategy
+    this.stream = createStream()
+    this.dev = dev
+    this.trigger = this.trigger.bind(this)
+    this.feedback = this.feedback.bind(this)
+    this.add = this.add.bind(this)
+    this.add(strands)
+  }
+  run(): void {
+    this.running.size && this.step()
+  }
+  step(): void {
+    for( const bid of this.running){
       const {logicStrand, priority, strandName} = bid
       const {value, done} = logicStrand.next()
       !done &&
-        pending.add({
+        this.pending.add({
           strandName,
           priority,
           logicStrand,
           ...value,
         })
-      running.delete(bid)
+      this.running.delete(bid)
     }
-    const nextPending = [...pending]
-    const nextCandidates = nextPending.reduce<CandidateBid[]>(
+    const pending = [...this.pending]
+    const candidates = pending.reduce<CandidateBid[]>(
       (acc, {request, priority}) => acc.concat(
-        // Flatten bids' request arrays
-        request ? request.map(
-          event => ({priority, ...event}), // create candidates for each request with current bids priority
-        ) : [],
+          // Flatten bids' request arrays
+          request ? request.map(
+            event => ({priority, ...event}), // create candidates for each request with current bids priority
+          ) : [],
       ),
       [],
     )
-    const blocked = nextPending.flatMap<RuleParameterValue>(({block}) => block || [])
-    const filteredBids = nextCandidates.filter(
-      request => !blocked.some(requestInParameter(request)),
+    const blocked = pending.flatMap<RuleParameterValue>(({block}) => block || [])
+    const filteredBids = candidates.filter(
+      request => !blocked.some(Track.requestInParameter(request)),
     )
-    lastEvent = strategy(filteredBids)
-    dev && stream(stateChart({candidates: nextCandidates, blocked, pending: nextPending}))
-    lastEvent && nextStep()
+    this.lastEvent = this.eventSelectionStrategy(filteredBids)
+    this.dev && this.stream(stateChart({candidates, blocked, pending}))
+    this.lastEvent && this.nextStep()
   }
-
-  function run(): void {
-    running.size && step()
-  }
-
-  const feedback = (actions: Record<string, (payload?: any) => void>): CreatedStream => {
-    return stream.subscribe(({streamEvent, ...rest}: ListenerMessage) => {
-      if (streamEvent !== streamEvents.select) return
-      const {eventName, payload} = rest as FeedbackMessage
-      actions[eventName] && actions[eventName](payload)
+  nextStep(): void {
+    for( const bid of this.pending){
+      const {request = [], waitFor = [], logicStrand} = bid
+      const waitList = [...request, ...waitFor]
+      if (waitList.some(Track.requestInParameter(this.lastEvent)) && logicStrand) {
+        this.running.add(bid)
+        this.pending.delete(bid)
+      }
+    }
+    const {eventName, payload} = this.lastEvent
+    this.stream({
+      streamEvent: streamEvents.select,
+      eventName,
+      payload,
     })
+    this.run()
   }
-
-  const add = (logicStands: Record<string, RulesFunc>): void => {
-    for (const strandName in logicStands)
-      running.add({
-        strandName,
-        priority: running.size + 1,
-        logicStrand: logicStands[strandName](),
-      })
-
-  }
-
-  add(strands)
-
-  const trigger = ({
+  trigger({
     eventName, payload, baseDynamic,
-  }: {
-    eventName: string;
-    payload?: any;
-    baseDynamic?: ValueOf<typeof baseDynamics>;
-  }): void => {
+  }: TriggerArgs): void{
     const logicStrand = function* () {
       yield {
         request: [{eventName, payload}],
         waitFor: [{eventName: '', callback: () => true}],
       }
     }
-    running.add({
+    this.running.add({
       strandName: `Trigger(${eventName})`,
       priority: 0,
       logicStrand: logicStrand(),
     })
-    dev && stream({
+    this.dev && this.stream({
       streamEvent: streamEvents.trigger,
       baseDynamic,
       eventName: `Trigger(${eventName})`,
       payload,
     })
-    run()
+    this.run()
   }
-  return Object.freeze({add, feedback, trigger, stream})
+  feedback(actions: Record<string, (payload?: any) => void>): CreatedStream {
+    return this.stream.subscribe(({streamEvent, ...rest}: ListenerMessage) => {
+      if (streamEvent !== streamEvents.select) return
+      const {eventName, payload} = rest as FeedbackMessage
+      actions[eventName] && actions[eventName](payload)
+    })
+  }   
+  add(logicStands: Record<string, RulesFunc>):void{
+    for (const strandName in logicStands)
+      this.running.add({
+        strandName,
+        priority: this.running.size + 1,
+        logicStrand: logicStands[strandName](),
+      })
+  }
 }
