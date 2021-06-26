@@ -1,5 +1,5 @@
 {
-  "name": "@plaited/plaited",
+  "name": "@calletapp/plaited",
   "version": "0.1.2",
   "engines": {
     "node": ">= 14.2.0",
