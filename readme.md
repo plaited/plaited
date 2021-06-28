@@ -2,6 +2,13 @@
 
 Plaited is a JavaScript Library for creating progressive web apps
 
+This package contains modules necessary for:
+
+- implicit state management via behavioral programing
+- stimulus js inspired dom manipulation using web components
+- actor model messaging utilities
+- storage utilities
+
 ## Exports
 ### Behavioral 
 - Track: Class used to init a behavioral program
