@@ -1,11 +1,10 @@
 # plaited
 
-Plaited is a JavaScript Library for creating progressive web apps
+Plaited is a JavaScript toolkit for progressive web apps
 
 This package contains modules necessary for:
 
 - implicit state management via behavioral programing
-- stimulus js inspired dom manipulation using web components
 - actor model messaging utilities
 - storage utilities
 
