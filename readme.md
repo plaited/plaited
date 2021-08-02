@@ -4,7 +4,7 @@ Plaited is a JavaScript toolkit for progressive web apps
 
 This package contains modules necessary for:
 
-- implicit state management via behavioral programing
+- implicit state management via [behavioral programing](https://youtu.be/PW8VdWA0UcA)
 - actor model messaging utilities
 - storage utilities
 
