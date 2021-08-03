@@ -1,151 +1,16 @@
 # plaited
 
-Plaited is a JavaScript toolkit for progressive web apps
+Plaited is javascript toolkit for rapidly coding and refining web application interfaces as specifications (requirements) change and evolve. Web application interfaces are inherently reactive and complex. Business needs are not always clear at the beginning of a project. Untangling code as requirments change is a frustrating process. However what if we could begin working on new interface projects comfortable in our uncertaintity and build out solid production ready code?
 
-This package contains modules necessary for:
+Plaited leverages the behavioral programing algorithm, along with utility functions designed to assist with client side data storage and communication, to enable us to design flexible frontend code where iteratively adding new stuff doesn't require us to relearn or even fully understand a system for fear of regressions and breakage. This is acomplished by using behavioral strands. Using simple idioms we define our requirements and actions that are fired off when our behavioral tracks (programs) select an event to occur. 
 
-- implicit state management via [behavioral programing](https://youtu.be/PW8VdWA0UcA)
-- actor model messaging utilities
-- storage utilities
+## Learn about behavioral programing
+- Article:[Behavioral Programming, 2012](https://m-cacm.acm.org/magazines/2012/7/151241-behavioral-programming/fulltext)
+- Video: [Rethinking Software Systems: A friendly introduction to Behavioral Programming by Michael Bar Sinai, 2018](https://youtu.be/PW8VdWA0UcA)
 
-## Exports
-### Behavioral 
-- Track: Class used to init a behavioral program
-- selectionStrategies: callback functions (randomizedStrategy, chaosStrategy, priorityStrategy) 
-- baseDynamics: constants (objectObject, objectPerson, personPerson)
-- streamEvents:  constant (trigger, select, state)
-- strand: function used to define a set of behavioral program rule
-- loop: function used to define conditions by which a a strand rule will continue to execute
 
-**Example: tic-tac-toe**
-
-```ts
-import {
-  Track,
-  baseDynamics,
-  loop,
-  strand,
-  waitFor,
-  request,
-  block,
-  randomizedStrategy,
-  RulesFunc,
-} from '../../src/behavioral'
-
-const winConditions = [
-  //rows
-  [0, 1, 2],
-  [3, 4, 5],
-  [6, 7, 8],
-  // columns
-  [0, 3, 6],
-  [1, 4, 7],
-  [2, 5, 8],
-  // diagonals
-  [0, 4, 8],
-  [2, 4, 6],
-]
-
-const squares = [0, 1, 2, 3, 4, 5, 6, 7, 8]
-const squaresTaken = squares.reduce((acc: Record<string, RulesFunc>, square) => {
-  acc[`(${square}) taken`] = strand(
-    waitFor({callback: ({payload}) => square === payload}),
-    block({callback: ({payload}) => square === payload}),
-  )
-
-  return acc
-}, {})
-
-const playerWins = (player: string) =>
-  winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
-    acc[`${player}Wins (${win})`] = strand(
-      waitFor({
-        callback: ({eventName, payload}) =>
-          eventName === player && win.includes(payload),
-      }),
-      waitFor({
-        callback: ({eventName, payload}) =>
-          eventName === player && win.includes(payload),
-      }),
-      waitFor({
-        callback: ({eventName, payload}) =>
-          eventName === player && win.includes(payload), 
-      }),
-      request({eventName: `${player} Wins`, payload: win}),
-    )
-    return acc
-  }, {})
-
-const enforceTurns = loop(
-  strand(
-    Object.assign(waitFor({eventName: 'X'}), block({eventName: 'O'})),
-    Object.assign(waitFor({eventName: 'O'}), block({eventName: 'X'})),
-  ),
-)
-
-const playerMove = (player: string) =>
-  loop(
-    strand({
-      request: squares.map(move => ({eventName: player, payload: move})),
-    }),
-  )
-
-const stopGame = strand(
-  waitFor({eventName: 'X Wins'},{eventName: 'O Wins'}),
-  block({eventName: 'X'}, {eventName: 'O'}),
-)
-
-const strands = {
-  stopGame,
-  ...squaresTaken,
-  enforceTurns,
-  ...playerWins('X'),
-  ...playerWins('O'),
-}
-
-const xStrands = {
-  ...strands,
-  xMoves: playerMove('X'),
-}
-
-const oStrands = {
-  ...strands,
-  oMoves: playerMove('O'),
-}
-
-const {trigger: xTrigger, feedback: xFeedback} = new Track(xStrands, {strategy: randomizedStrategy})
-
-const {trigger: oTrigger, feedback: oFeedback} = new Track(oStrands, {strategy: randomizedStrategy})
-const xActions = {
-  X(payload: unknown){
-    console.log({eventName: 'X', payload})
-    oTrigger({
-      eventName: 'X',
-      payload: payload,
-      baseDynamic: baseDynamics.objectObject,
-    })
-  },
-  ['X Wins'](payload: unknown){
-    console.log({eventName: 'X Wins', payload})
-  },
-}
-xFeedback(xActions)
-
-const oActions = {
-  O(payload: unknown){
-    console.log({eventName: 'O', payload})
-    xTrigger({
-      eventName: 'O',
-      payload: payload,
-      baseDynamic: baseDynamics.objectObject,
-    })
-  },
-  ['O Wins'](payload: unknown){
-    console.log({eventName: 'O Wins', payload})
-  },
-}
-oFeedback(oActions)
-
-xTrigger({eventName: 'start', baseDynamic: baseDynamics.objectObject})
-```
+## Plaited exports
+- [Behavioral: implicit state managment](https://github.com/plaited/plaited/wiki/Behavioral)
+- Comms: actor messaging utilitiy functions that use behaviroal interface
+- Storage: storage utility functions to facilitate architecture best practices
 
