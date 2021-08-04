@@ -13,6 +13,7 @@
   ],
   "author": "Edward Irby <e.irby@pm.me>",
   "homepage": "https://github.com/plaited/plaited/blob/main/readme.md",
+  "license" : "BSD-2-Clause",
   "repository": {
     "type": "git",
     "url": "https://github.com/npm/cli.git"
@@ -28,6 +29,7 @@
     "lint:ci": "eslint .  --ext .ts",
     "lint:fix": "npm run lint -- --fix",
     "prepare": "husky install",
+    "prepublishOnly": "npm run build",
     "start": "web-dev-server --config web-dev-server.config.js --open /examples/index.html --node-resolve --watch",
     "test": "web-test-runner \"src/**/*.spec.(ts|js)\" --config web-dev-server.config.js --node-resolve",
     "test:ci": "npm test",
