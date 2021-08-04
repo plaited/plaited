@@ -13,7 +13,7 @@
   ],
   "author": "Edward Irby <e.irby@pm.me>",
   "homepage": "https://github.com/plaited/plaited/blob/main/readme.md",
-  "license" : "BSD-2-Clause",
+  "license": "BSD-2-Clause",
   "repository": {
     "type": "git",
     "url": "https://github.com/npm/cli.git"
