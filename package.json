@@ -1,6 +1,6 @@
 {
-  "name": "@plaited/plaited",
-  "version": "0.2.1",
+  "name": "plaited",
+  "version": "1.0.0",
   "engines": {
     "node": ">= 14.2.0",
     "npm": ">= 6.14"
@@ -11,13 +11,16 @@
     "dist/",
     "src/"
   ],
+  "author": "Edward Irby <e.irby@pm.me>",
+  "homepage": "https://github.com/plaited/plaited/blob/main/readme.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/npm/cli.git"
+  },
   "config": {
     "commitizen": {
       "path": "./node_modules/cz-conventional-changelog"
     }
-  },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com/"
   },
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
