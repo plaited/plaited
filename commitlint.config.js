@@ -1,9 +1,10 @@
-module.exports = {extends: ['@commitlint/config-conventional']}
-
+module.exports = {
+  extends: [ '@commitlint/config-conventional' ],
+}
 // [
 //   'build',
-//   'ci',
 //   'chore',
+//   'ci',
 //   'docs',
 //   'feat',
 //   'fix',
@@ -12,4 +13,5 @@ module.exports = {extends: ['@commitlint/config-conventional']}
 //   'revert',
 //   'style',
 //   'test'
-// ]
+// ];
+
