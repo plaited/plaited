@@ -6088,9 +6088,6 @@ __metadata:
   dependencies:
     "@commitlint/cli": 16.2.3
     "@commitlint/config-conventional": 16.2.1
-    "@esm-bundle/chai": 4.3.4-fix.0
-    "@types/mocha": 10.0.0
-    "@types/sinon": 10.0.13
     "@typescript-eslint/eslint-plugin": 5.30.0
     "@typescript-eslint/parser": 5.30.0
     "@web/dev-server": 0.1.35
@@ -6106,7 +6103,6 @@ __metadata:
     husky: 8.0.1
     pinst: 3.0.0
     prettier: 2.7.1
-    sinon: 14.0.1
   languageName: unknown
   linkType: soft
 

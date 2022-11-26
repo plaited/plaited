@@ -1,5 +1,4 @@
 {
-  "version": "1.0.2",
   "license": "BSD-2-Clause",
   "engines": {
     "node": ">= v16.15.1"
