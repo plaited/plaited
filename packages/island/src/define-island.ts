@@ -1,7 +1,15 @@
-import { Track, baseDynamics, TriggerArgs } from '@plaited/behavioral'
-import { dataTarget, dataTrigger } from './constants'
-import { delegatedListener } from './delegated-listener'
-import { DefineIsland } from './types'
+import {
+  Track,
+  baseDynamics,
+  TriggerArgs,
+  RulesFunc,
+  TriggerFunc,
+  Listener,
+  Strategy,
+} from '@plaited/behavioral'
+import { dataTarget, dataTrigger } from './constants.js'
+import { delegatedListener } from './delegated-listener.js'
+
 const matchAllEvents = (str: string) =>{
   const regexp = /(^\w+|(?:\s)\w+)(?:->)/g
   return [ ...str.matchAll(regexp) ].flatMap(([ , event ]) => event)
@@ -24,30 +32,41 @@ const filterAddedNodes = (nodes:NodeList) => {
   return elements
 }
 
-export const defineIsland: DefineIsland = (
+const createIsland = ({
   tag,
-  {
-    actions,
-    connect,
-    logger,
-    mode = 'open',
-    delegatesFocus,
-    strands = {},
-    strategy,
-  }
-) => {
-  if (customElements.get(tag)) return
-  customElements.define(tag, class extends HTMLElement {
+  actions,
+  connect,
+  logger,
+  mode = 'open',
+  delegatesFocus,
+  strands = {},
+  strategy,
+}:{
+  tag: string
+  actions: (args: {
+    $: (selector: string) => Element[],
+    root: ShadowRoot
+  }) => Record<string, (payload?: any) => void>
+  strands?: Record<string, RulesFunc>
+  connect?: (recipient: string, cb: TriggerFunc) => () => void
+  /** @defaultValue 'open' */
+  mode?: 'open' | 'closed'
+  delegatesFocus?: boolean
+  logger?: Listener
+  strategy?: Strategy;
+}): CustomElementConstructor => {
+  return class extends HTMLElement {
     #noDeclarativeShadow = false
     #trigger:  ({ eventName, payload, baseDynamic }: TriggerArgs) => void
     #id: string
     #shadowObserver: MutationObserver
     #templateObserver: MutationObserver
+    internals_: ElementInternals
     #disconnect?: () => void 
     constructor() {
       super()
-      const internals = this.attachInternals()
-      const shadow = internals.shadowRoot
+      this.internals_ = this.attachInternals()
+      const shadow = this.internals_.shadowRoot
       if(!shadow) {
         this.attachShadow({ mode, delegatesFocus })
         this.#noDeclarativeShadow = true
@@ -139,5 +158,17 @@ export const defineIsland: DefineIsland = (
       mo.observe(this, { childList: true })
       return mo
     }
-  })
+  }
+}
+
+type CreateIslandParams = Parameters<typeof createIsland>[0]
+
+export interface DefineIslandParams extends CreateIslandParams {
+  mixin?: (base: CustomElementConstructor) => CustomElementConstructor
+}
+
+export const defineIsland = ({ mixin, ...config }:DefineIslandParams) => {
+  const tag = config.tag
+  if (customElements.get(tag)) return
+  customElements.define(tag, mixin ? mixin(createIsland(config)) : createIsland(config)) 
 }

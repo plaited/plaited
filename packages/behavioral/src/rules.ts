@@ -1,4 +1,4 @@
-import { Callback, IdiomSet, RulesFunc } from './types'
+import { Callback, IdiomSet, RulesFunc } from './types.js'
 
 
 const idiom = (key:'waitFor' | 'block')  => (...idioms: {

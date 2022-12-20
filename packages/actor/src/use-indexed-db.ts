@@ -1,5 +1,5 @@
 import { trueTypeOf } from '@plaited/utils'
-import { createIDB, IDB } from './create-idb'
+import { createIDB, IDB } from './create-idb.js'
 
 type UpdateStoreArg = (arg?: unknown) => unknown
 export const useIndexedDB = async (

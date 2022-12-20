@@ -1,4 +1,4 @@
-import { getOpacityHex } from './get-opacity-hex'
+import { getOpacityHex } from './get-opacity-hex.js'
 
 export const parseToRgb = (hex: string) =>{
   if(!hex.startsWith('#'))  return

@@ -11,22 +11,15 @@
   },
   "homepage": "https://github.com/plaited/plaited/blob/main/packages/storage/README.md",
   "author": "Edward Irby <e.irby@pm.me>",
-  "main": "./dist/cjs/index.js",
-  "module": "./dist/esm/index.js",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
   "files": [
     "dist/**/*"
   ],
   "scripts": {
-    "build": "yarn build:cjs && yarn build:esm",
-    "build:cjs": "tsc --project tsconfig.json --rootDir src --outDir dist/cjs",
-    "build:esm": "tsc --project tsconfig.json --rootDir src --outDir dist/esm --module es6",
+    "build": "tsc --project tsconfig.json",
     "prepublishOnly": "yarn build"
-  },
-  "exports": {
-    ".": {
-      "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js"
-    }
   },
   "dependencies": {
     "@plaited/behavioral": "workspace:*",
@@ -34,6 +27,7 @@
   },
   "devDependencies": {
     "@esm-bundle/chai": "4.3.4-fix.0",
+    "@tsconfig/node18": "1.0.1",
     "@types/mocha": "10.0.0",
     "@types/sinon": "10.0.13",
     "sinon": "14.0.1",

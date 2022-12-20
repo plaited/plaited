@@ -7,7 +7,7 @@ services:
     build:
       context: .
       args:
-        - TAG=v1.21.0-focal
+        - TAG=${TAG}
     volumes:
       - .:/plaited:delegated
       - /plaited/.yarn

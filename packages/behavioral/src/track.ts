@@ -1,7 +1,7 @@
-import { streamEvents } from './constants'
-import { stateChart } from './state-chart'
-import { createStream } from './create-stream'
-import { priorityStrategy } from './strategies'
+import { streamEvents } from './constants.js'
+import { stateChart } from './state-chart.js'
+import { createStream } from './create-stream.js'
+import { priorityStrategy } from './strategies.js'
 import {
   CandidateBid,
   RunningBid,

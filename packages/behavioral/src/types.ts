@@ -1,4 +1,4 @@
-import { streamEvents, baseDynamics } from './constants'
+import { streamEvents, baseDynamics } from './constants.js'
 
 
 export type ValueOf<T> = T[keyof T]

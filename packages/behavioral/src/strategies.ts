@@ -1,4 +1,4 @@
-import { CandidateBid } from './types'
+import { CandidateBid } from './types.js'
 
 /** @description Randomized Priority Queue Selection Strategy */
 const shuffle = (array: unknown[]) => {

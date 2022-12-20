@@ -1,22 +1,19 @@
 {
+  "extends": "@tsconfig/node18/tsconfig.json",
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Node 16",
   "compilerOptions": {
     "allowJs": true,
     "baseUrl": ".",
     "declaration": true,
-    "preserveSymlinks": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "jsx": "react",
-    "module": "Node16",
-    "moduleResolution": "node",
-    "skipLibCheck": true,
-    "strict": true,
-    "target": "ES2020",
-    "typeRoots": [
-      "./node_modules/@types",
-      "types"
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
     ],
+    "module": "ES2022",
     "outDir": "dist",
+    "preserveSymlinks": true,
     "rootDir": "src"
   },
   "exclude": [

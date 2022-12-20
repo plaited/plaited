@@ -11,28 +11,28 @@
   },
   "homepage": "https://github.com/plaited/plaited/blob/main/packages/behavioral/README.md",
   "author": "Edward Irby <e.irby@pm.me>",
-  "main": "./dist/cjs/index.js",
-  "module": "./dist/esm/index.js",
-  "files": [
-    "dist/**/*"
-  ],
-  "scripts": {
-    "build": "yarn build:cjs && yarn build:esm",
-    "build:cjs": "tsc --project tsconfig.json --rootDir src --outDir dist/cjs  --module node16",
-    "build:esm": "tsc --project tsconfig.json --rootDir src --outDir dist/esm",
-    "prepublishOnly": "yarn build",
-    "start": "ts-node-esm --experimentalSpecifierResolution node examples/tic-tac-toe.ts",
-    "test": "web-test-runner \"src/**/*.spec.(ts|js)\" --config web-dev-server.config.mjs --node-resolve",
-    "test:watch": "yarn test --watch --verbose"
-  },
+  "type": "module",
+  "main": "./dist/index.js",
   "exports": {
     ".": {
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.js"
     }
   },
+  "module": "./dist/index.js",
+  "files": [
+    "dist/**/*"
+  ],
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "prepublishOnly": "yarn build",
+    "start": "ts-node-esm --experimentalSpecifierResolution node examples/tic-tac-toe.ts",
+    "test": "web-test-runner \"src/**/*.spec.(ts|js)\" --config web-dev-server.config.mjs --node-resolve",
+    "test:watch": "yarn test --watch --verbose"
+  },
   "devDependencies": {
     "@esm-bundle/chai": "4.3.4-fix.0",
+    "@tsconfig/node18": "1.0.1",
     "@types/mocha": "10.0.0",
     "@types/sinon": "10.0.13",
     "sinon": "14.0.1",

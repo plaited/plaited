@@ -1,5 +1,5 @@
-import { StateChart } from './types'
-import { streamEvents } from './constants'
+import { StateChart } from './types.js'
+import { streamEvents } from './constants.js'
 export const stateChart: StateChart = ({ candidates, blocked, pending }) => {
   const strands = [ ...new Set(pending
     .filter(({ strandName }) => strandName)

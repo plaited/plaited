@@ -1,4 +1,4 @@
-import { html } from './html' 
+import { html } from './html.js' 
 
 type Island = (args: {
   tag: string

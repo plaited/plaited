@@ -1,4 +1,4 @@
-import { Listener, ListenerMessage, CreatedStream } from './types'
+import { Listener, ListenerMessage, CreatedStream } from './types.js'
 export const createStream = (initial?: ListenerMessage | void): CreatedStream => {
   const listeners: Array<(value: ListenerMessage) => void> = []
   function createdStream(value: ListenerMessage) {
