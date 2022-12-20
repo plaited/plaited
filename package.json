@@ -21,7 +21,6 @@
     "postinstall": "husky install",
     "postpack": "pinst --enable",
     "prepack": "pinst --disable",
-    "start": "web-dev-server --config web-dev-server.config.mjs --open packages/island/examples/index.html --node-resolve --watch",
     "test": "web-test-runner --config web-dev-server.config.mjs --node-resolve",
     "test:all": "yarn test \"packages/**/tests/**/*.spec.(ts|js)\" "
   },
@@ -43,7 +42,6 @@
     "@playwright/test": "1.29.0",
     "@typescript-eslint/eslint-plugin": "5.47.0",
     "@typescript-eslint/parser": "5.47.0",
-    "@web/dev-server": "0.1.35",
     "@web/dev-server-esbuild": "0.3.3",
     "@web/test-runner": "0.15.0",
     "cz-conventional-changelog": "3.3.0",

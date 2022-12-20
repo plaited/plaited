@@ -21,6 +21,7 @@
     "build": "tsc --project tsconfig.json",
     "prepublishOnly": "yarn build"
   },
+  "types": "dist/island.d.ts",
   "dependencies": {
     "@plaited/behavioral": "workspace:*",
     "@plaited/utils": "workspace:*"

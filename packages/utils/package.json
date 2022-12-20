@@ -21,6 +21,7 @@
     "build": "tsc --project tsconfig.json",
     "prepublishOnly": "yarn build"
   },
+  "types": "dist/island.d.ts",
   "devDependencies": {
     "@esm-bundle/chai": "4.3.4-fix.0",
     "@tsconfig/node18": "1.0.1",

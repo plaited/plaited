@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { Actions, useStore, defineIsland } from '../../../src'
+import { Actions, useStore, defineIsland } from '@plaited/island'
 import {
   block,
   strand,
@@ -114,5 +114,5 @@ const actions: Actions = ({ $, root }) =>  ({
   },
 })
 
-defineIsland(microwaveDisplay, {  strands, actions, connect })
+defineIsland({ tag: microwaveDisplay,  strands, actions, connect })
 

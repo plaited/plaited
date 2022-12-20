@@ -1,6 +1,6 @@
 export { dataTarget } from './data-target.js'
 export { dataTrigger } from './data-trigger.js'
-export { defineIsland } from './define-island.js'
+export * from './define-island.js'
 export { html } from './html.js'
 export { island } from './island.js'
 export { useStore } from './use-store.js'

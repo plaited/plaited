@@ -1,0 +1,27 @@
+{
+  "extends": "@tsconfig/node18/tsconfig.json",
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Node 16",
+  "compilerOptions": {
+    "allowJs": true,
+    "baseUrl": ".",
+    "declaration": true,
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ES2022",
+    "outDir": "dist",
+    "preserveSymlinks": true,
+    "rootDir": "public",
+    "strictPropertyInitialization": false
+  },
+  "exclude": [
+    "**/dist",
+    "**/*.spec.*"
+  ],
+  "include": [
+    "public"
+  ]
+}

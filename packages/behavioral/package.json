@@ -13,12 +13,6 @@
   "author": "Edward Irby <e.irby@pm.me>",
   "type": "module",
   "main": "./dist/index.js",
-  "exports": {
-    ".": {
-      "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js"
-    }
-  },
   "module": "./dist/index.js",
   "files": [
     "dist/**/*"

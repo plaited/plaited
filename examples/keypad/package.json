@@ -1,0 +1,15 @@
+{
+  "name": "keypad",
+  "type": "module",
+  "scripts": {
+    "start": "web-dev-server --config web-dev-server.config.js --open public/index.html --node-resolve --watch"
+  },
+  "dependencies": {
+    "@plaited/island": "workspace:*"
+  },
+  "devDependencies": {
+    "@tsconfig/node18": "1.0.1",
+    "@web/dev-server": "0.1.35",
+    "@web/dev-server-esbuild": "0.3.3"
+  }
+}

@@ -674,7 +674,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@plaited/island@workspace:packages/island":
+"@plaited/island@workspace:*, @plaited/island@workspace:packages/island":
   version: 0.0.0-use.local
   resolution: "@plaited/island@workspace:packages/island"
   dependencies:
@@ -4778,6 +4778,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"keypad@workspace:examples/keypad":
+  version: 0.0.0-use.local
+  resolution: "keypad@workspace:examples/keypad"
+  dependencies:
+    "@plaited/island": "workspace:*"
+    "@tsconfig/node18": 1.0.1
+    "@web/dev-server": 0.1.35
+    "@web/dev-server-esbuild": 0.3.3
+  languageName: unknown
+  linkType: soft
+
 "kind-of@npm:^6.0.2, kind-of@npm:^6.0.3":
   version: 6.0.3
   resolution: "kind-of@npm:6.0.3"
@@ -6422,7 +6433,6 @@ __metadata:
     "@playwright/test": 1.29.0
     "@typescript-eslint/eslint-plugin": 5.47.0
     "@typescript-eslint/parser": 5.47.0
-    "@web/dev-server": 0.1.35
     "@web/dev-server-esbuild": 0.3.3
     "@web/test-runner": 0.15.0
     cz-conventional-changelog: 3.3.0

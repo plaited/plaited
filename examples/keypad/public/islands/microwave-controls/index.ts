@@ -1,5 +1,5 @@
 import { baseDynamics } from '@plaited/behavioral'
-import { defineIsland, Actions } from '../../../src'
+import { defineIsland, Actions } from '@plaited/island'
 import {
   // comms
   send,
@@ -45,4 +45,4 @@ const actions: Actions = () =>  ({
   },
 })
 
-defineIsland(microwaveControls, { actions })
+defineIsland({ tag: microwaveControls,  actions })

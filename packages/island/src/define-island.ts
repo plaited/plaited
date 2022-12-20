@@ -10,6 +10,11 @@ import {
 import { dataTarget, dataTrigger } from './constants.js'
 import { delegatedListener } from './delegated-listener.js'
 
+export type Actions = (args: {
+  $: (selector: string) => Element[],
+  root: ShadowRoot
+}) => Record<string, (payload?: any) => void>
+
 const matchAllEvents = (str: string) =>{
   const regexp = /(^\w+|(?:\s)\w+)(?:->)/g
   return [ ...str.matchAll(regexp) ].flatMap(([ , event ]) => event)
@@ -43,10 +48,7 @@ const createIsland = ({
   strategy,
 }:{
   tag: string
-  actions: (args: {
-    $: (selector: string) => Element[],
-    root: ShadowRoot
-  }) => Record<string, (payload?: any) => void>
+  actions: Actions
   strands?: Record<string, RulesFunc>
   connect?: (recipient: string, cb: TriggerFunc) => () => void
   /** @defaultValue 'open' */
