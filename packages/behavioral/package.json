@@ -24,6 +24,7 @@
     "test": "web-test-runner \"src/**/*.spec.(ts|js)\" --config web-dev-server.config.mjs --node-resolve",
     "test:watch": "yarn test --watch --verbose"
   },
+  "types": "dist/index.d.ts",
   "devDependencies": {
     "@esm-bundle/chai": "4.3.4-fix.0",
     "@tsconfig/node18": "1.0.1",
