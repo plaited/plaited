@@ -12,6 +12,7 @@ const reduceWhitespace = (str: string) => str.replace(/(\s\s+|\n)/g, ' ')
 const isTruthy = (val:Primitive) => trueTypeOf(val) === 'string' ||
   trueTypeOf(val) === 'number'
 
+/** @returns a minimized html template string */
 export const html = (strings: TemplateStringsArray, ...expressions: Array<Primitive | Primitive[]>) => {
   const { raw } = strings
   let result = expressions.reduce<string>((acc, subst, i) => {
@@ -30,9 +31,10 @@ export const html = (strings: TemplateStringsArray, ...expressions: Array<Primit
   result += reduceWhitespace(raw[raw.length - 1])
   const tpl = result
     .trim()
-    .replace(/\s>/g, '>')
-    .replace(/>\s</g, '><')
-    .replace(/(>)(\s)(\S)/g, (match, p1, p2, p3) => [ p1, p3 ].join(''))
-    .replace(/(\S)(\s)(<)/g, (match, p1, p2, p3) => [ p1, p3 ].join(''))
+    .replace(/(<.*?)(?:\s+)(\w)/g, (match, p1, p2) => [ p1, p2 ].join(' '))
+    .replace(/\s+>/g, '>')
+    .replace(/>\s+</g, '><')
+    .replace(/(>)(?:\s)(\S)/g, (match, p1, p2) => [ p1, p2 ].join(''))
+    .replace(/(\S)(?:\s)(<)/g, (match, p1, p2) => [ p1, p2 ].join(''))
   return tpl
 }

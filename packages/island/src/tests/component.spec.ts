@@ -1,10 +1,11 @@
+/* eslint-disable max-len */
 import { assert } from '@esm-bundle/chai'
-import { island, html } from '..'
+import { component, html } from '..'
 
 
-it('island()', () => {
+it('component()', () => {
   assert.equal(
-    island({
+    component({
       tag: 'z-el',
       template: html`<div>
         <h1>header</h1>
@@ -14,7 +15,7 @@ it('island()', () => {
     'tag and template only'
   )
   assert.equal(
-    island({
+    component({
       tag: 'z-el',
       id: 'random',
       template: html`<div>
@@ -25,7 +26,22 @@ it('island()', () => {
     'tag, template, and id'
   )
   assert.equal(
-    island({
+    component({
+      tag: 'z-el',
+      dataTarget: 'random',
+      dataTrigger: {
+        click: 'random',
+        focus: 'thing',
+      },
+      template: html`<div>
+        <h1>header</h1>
+      </div>`,
+    }),
+    '<z-el data-target="random" data-trigger="click->random focus->thing"><template shadowroot="open"><div><h1>header</h1></div></template></z-el>',
+    'data-target, data-trigger, tag, template, and id'
+  )
+  assert.equal(
+    component({
       tag: 'z-el',
       mode: 'closed',
       template: html`<div>
