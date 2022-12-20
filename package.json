@@ -21,8 +21,8 @@
     "postinstall": "husky install",
     "postpack": "pinst --enable",
     "prepack": "pinst --disable",
-    "test": "web-test-runner --config web-dev-server.config.mjs --node-resolve",
-    "test:all": "yarn test \"packages/**/tests/**/*.spec.(ts|js)\" "
+    "test": "web-test-runner --config web-dev-server.config.mjs --node-resolve \"packages/**/tests/**/*.spec.(ts|js)\"",
+    "test:only": "web-test-runner --config web-dev-server.config.mjs --node-resolve"
   },
   "lint-staged": {
     "*.(js|ts)": [
