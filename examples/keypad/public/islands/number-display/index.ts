@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { Actions, defineIsland, getPlait, BaseElement, TriggerFunc } from '@plaited/island'
+import { Actions, defineIsland, getPlait, BaseElement } from '@plaited/island'
 import {
   strand,
   loop,
