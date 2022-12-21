@@ -1,6 +1,7 @@
 import { dataTrigger, dataTarget } from './constants.js'
 import { delegatedListener } from './delegated-listener.js'
-import { TriggerFunc } from '@plaited/plait'
+import { TriggerFunc, TriggerArgs } from '@plaited/plait'
+import { noop } from '@plaited/utils'
 
 // It takes the value of a data-target attribute and return all the events happening in it. minus the method idetenfier
 // so iof the event was data-target="click->doSomething" it would return ["click"]
@@ -39,16 +40,13 @@ export type Plaited = {
 
 export type Query = (selector: string) => Element[]
 
-export abstract class BaseComponent extends HTMLElement {
+export class BaseComponent extends HTMLElement {
   #noDeclarativeShadow = false
   #shadowObserver: MutationObserver
   #templateObserver: MutationObserver
   #disconnect?: () => void 
   internals_: ElementInternals
   #trigger?: TriggerFunc
-  abstract plait($: (selector: string) => Element[],
-  context: HTMLElement
-  ):Plaited 
   constructor(
     mode?: 'open' | 'closed',
     delegatesFocus?: boolean
@@ -71,10 +69,17 @@ export abstract class BaseComponent extends HTMLElement {
     }
     this.#delegateListeners()
     this.#shadowObserver = this.#createShadowObserver()
-    if(this.plait) {
-      const {  disconnect, trigger } = this.plait(this.$, this)
-      this.#disconnect = disconnect
-      this.#trigger = trigger
+    const {  disconnect, trigger } = this.plait(this.$, this)
+    this.#disconnect = disconnect
+    this.#trigger = trigger
+  }
+  plait($: Query,
+    context: this
+  ): Plaited{
+    return {
+      disconnect: noop,
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      trigger: (args:TriggerArgs) =>{},
     }
   }
   disconnectedCallback() {

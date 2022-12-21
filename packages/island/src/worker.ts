@@ -1,4 +1,4 @@
-import { TriggerArgs, TriggerFunc } from '@plaited/behavioral'
+import { TriggerArgs, TriggerFunc } from '@plaited/plait'
 type Message = {
   recipient: string
   detail: TriggerArgs
