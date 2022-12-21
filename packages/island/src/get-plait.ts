@@ -6,6 +6,25 @@ export type GetPlait<T = HTMLElement> = (
   context: T extends HTMLElement ? T : HTMLElement
 ) => { trigger: TriggerFunc, disconnect: () => void}
 
+type Common = {
+  strands: Record<string, RulesFunc>
+  actions: Record<string, (payload?: any) => void>
+  logger?: Listener
+  strategy?: Strategy;
+}
+
+interface Connected<T = HTMLElement> extends Common {
+  connect: (recipient: string, cb: TriggerFunc) => () => void
+  context: T extends HTMLElement ? T : HTMLElement
+  id?: string
+}
+
+interface Isolated extends Common {
+  connect: never
+  context: never
+  id: never
+}
+
 export const getPlait = <T = HTMLElement>({
   strands = {},
   actions,
@@ -14,18 +33,10 @@ export const getPlait = <T = HTMLElement>({
   context,
   logger,
   strategy,
-}: {
-  strands?: Record<string, RulesFunc>
-  actions?: Record<string, (payload?: any) => void>
-  id?: string
-  connect?: (recipient: string, cb: TriggerFunc) => () => void
-  context: T extends HTMLElement ? T : HTMLElement
-  logger?: Listener
-  strategy?: Strategy;
-}): { trigger: TriggerFunc, disconnect: () => void} => {
+}: Isolated | Connected<T>): { trigger: TriggerFunc, disconnect: () => void} => {
   const { feedback, trigger, stream } = new Plait(strands, { strategy, dev: Boolean(logger) })
   logger && stream.subscribe(logger)
-  actions && feedback(actions)
+  feedback(actions)
   let disconnect = noop
   if(connect){
     const _id = id || context.tagName.toLowerCase()
