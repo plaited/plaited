@@ -19,6 +19,7 @@ export const wire = (obj: {
       continue
     }
     if(prop === 'triggers') {
+      console.log(prop)
       attributes.push(`${dataTrigger}="${Object.entries(value as unknown as Record<string, string>)
         .map<string>(([ ev, req ]) => `${ev}->${req}`)
         .join(' ')

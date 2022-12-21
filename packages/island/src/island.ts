@@ -9,6 +9,7 @@ export const island = ({
   triggers,
   id,
   mode = 'open',
+  ...rest
 }:  {
   tag: string
   template:string
@@ -17,11 +18,9 @@ export const island = ({
   id?:string,
     /** @defaultValue 'open' */
   mode?: 'open' | 'closed'
+  [key: string]: unknown
 }) => html`
-<${tag}
-  ${id && `id="${id}"`}
-  ${wire({ target, triggers })}
->
+<${tag} ${wire({ target, triggers, id, ...rest })}>
   <template shadowroot="${mode}">
     ${template}
   </template>

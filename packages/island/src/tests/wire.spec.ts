@@ -52,12 +52,4 @@ it('wire()', () => {
     '',
     'with empty params'
   )
-  assert.equal(
-    wire({
-      for: 'id',
-      class: 'id'
-    }),
-    '',
-    'not Allowed'
-  )
 })
