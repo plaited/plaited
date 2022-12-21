@@ -20,6 +20,15 @@ const plait: GetPlait<NumberDisplay> = ($, context) => {
       waitFor({ eventName: 'clear' }),
       request({ eventName: 'clearDisplay' })
     )),
+    ...[ ...Array(10).keys() ].reduce((acc, cur) => {
+      Object.assign(acc, {
+        [`onClick:${cur}`]: loop(strand(
+          waitFor({ eventName: `addNumber-${cur}` }),
+          request({ eventName: 'updateNumber', payload: cur })
+        )),
+      })
+      return acc
+    },{}),
   }
   
   const updateDisplay = (target: Element, arr: string[]) => {
@@ -27,7 +36,7 @@ const plait: GetPlait<NumberDisplay> = ($, context) => {
   }
   
   const actions = {
-    addNumber(payload: string){
+    updateNumber(payload: string){
       if(context.display.length < 5) {
         console.log(payload)
         context.setDisplay([ ...context.display, payload ])

@@ -8,7 +8,7 @@ defineIsland('number-pad', base => class extends base {
   number(evt:MouseEvent){
     const val = (evt.currentTarget as HTMLButtonElement)?.value
     send('number-display', {
-      eventName: 'addNumber',
+      eventName: `addNumber-${val}`,
       payload: val,
     })
   }
