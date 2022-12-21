@@ -38,6 +38,7 @@ const plait: GetPlait<NumberDisplay> = ($, context) => {
     clearDisplay(){
       const [ display ] = $('display')
       display.replaceChildren('00:00')
+      context.setDisplay([])
     },
   }
   return getPlait<NumberDisplay>({
