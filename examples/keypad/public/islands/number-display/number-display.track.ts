@@ -1,45 +1,9 @@
-/* eslint-disable no-console */
-import { Actions, useStore, defineIsland } from '@plaited/island'
-import {
-  block,
-  strand,
-  loop,
-  waitFor,
-  request,
-} from '@plaited/behavioral'
-import {
-  // comms
-  connect,
-  // islandNames
-  microwaveDisplay,
-  //events
-  add30Seconds,
-  addToTimeArray,
-  startClock,
-  pauseClock,
-  resetClock,
-  stopResetTrigger,
-} from '../../shared'
-import {
-  pausedMode,
-  runningMode,
-  readyMode,
-} from './modes'
+import { Track } from '@plaited/island'
 
-const [ getMode, setMode ] = useStore(readyMode)
-const [ getTime, setTime ] = useStore<string[]>([])
 const strands = {
-  onPause: loop(strand(
-    waitFor({ callback: ({ eventName }) =>  (
-      getMode() === runningMode && eventName === stopResetTrigger
-    ) }),
-    request({ eventName: pauseClock })
-  )),
-  onReset: loop(strand(
-    waitFor({ callback: ({ eventName }) =>  (
-      getMode() === pausedMode && eventName === stopResetTrigger
-    ) }),
-    request({ eventName: resetClock })
+  onClear: loop(strand(
+    waitFor({ eventName: 'clear' }),
+    request({ eventName: 'clear' })
   )),
   whileRunning: loop(strand(
     block(
@@ -94,25 +58,27 @@ const actions: Actions = ({ $, root }) =>  ({
     setTime(time)
     updateDisplay($('display')[0], getTime())
   },
-  [startClock](){
-    console.log(getTime().length )
-    console.log(startClock)
-    setMode(runningMode)
-  },
-  [pauseClock](){
-    console.log(pauseClock)
-    setMode(pausedMode)
-  },
   [resetClock](){
     console.log(resetClock)
     setMode(readyMode)
     setTime([])
     updateDisplay(root.querySelector('[data-target="display"]'), getTime())
   },
-  [add30Seconds](){
-    console.log(add30Seconds)
-  },
 })
 
-defineIsland({ tag: microwaveDisplay,  strands, actions, connect })
-
+export const track = ({
+  strands = {},
+  actions,
+  logger,
+}) => (context: ShadowRoot) => {
+  const { feedback, trigger, stream, add } = new Track(strands, { strategy, dev: Boolean(logger) })
+  logger && stream.subscribe(logger)
+  const $ = (id: string) => {
+    return [ ...(context.querySelectorAll(`[${dataTarget}="${id}"]`)) ]
+  }
+  actions && feedback(actions({ $, root: this.#root }))
+  return {
+    trigger,
+    add,
+  }
+}

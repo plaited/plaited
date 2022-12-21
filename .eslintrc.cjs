@@ -53,9 +53,6 @@ module.exports = {
       allow: [ 'warn', 'error' ],
     } ],
     'no-return-assign': [ 'error' ],
-    'class-methods-use-this': [ 'error', {
-      exceptMethods: [ 'render' ],
-    } ],
     'no-use-before-define': [ 'error' ],
     'no-unneeded-ternary': [ 'error' ],
     '@typescript-eslint/no-use-before-define': [ 'error' ],

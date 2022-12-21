@@ -1,19 +1,5 @@
-import {
-  Track,
-  baseDynamics,
-  TriggerArgs,
-  RulesFunc,
-  TriggerFunc,
-  Listener,
-  Strategy,
-} from '@plaited/behavioral'
-import { dataTarget, dataTrigger } from './constants.js'
+import { dataTrigger } from './constants.js'
 import { delegatedListener } from './delegated-listener.js'
-
-export type Actions = (args: {
-  $: (selector: string) => Element[],
-  root: ShadowRoot
-}) => Record<string, (payload?: any) => void>
 
 const matchAllEvents = (str: string) =>{
   const regexp = /(^\w+|(?:\s)\w+)(?:->)/g
@@ -23,11 +9,13 @@ const matchAllEvents = (str: string) =>{
 const getTriggerKey = (evt: Event) =>{
   const el = evt.currentTarget
   const type = evt.type
+  const pre = `${type}->`
   //@ts-ignore: will be HTMLOrSVGElement
   return  el.dataset.trigger
     .trim()
     .split(/\s+/)
-    .find((str: string) => str.includes(`${type}->`))
+    .find((str: string) => str.includes(pre))
+    .replace(pre, '')
 }
 
 const filterAddedNodes = (nodes:NodeList) => {
@@ -38,59 +26,28 @@ const filterAddedNodes = (nodes:NodeList) => {
   return elements
 }
 
-const createIsland = ({
-  tag,
-  actions,
-  connect,
-  logger,
-  mode = 'open',
-  delegatesFocus,
-  strands = {},
-  strategy,
-}:{
-  tag: string
-  actions?: Actions
-  strands?: Record<string, RulesFunc>
-  connect?: (recipient: string, cb: TriggerFunc) => () => void
-  /** @defaultValue 'open' */
-  mode?: 'open' | 'closed'
-  delegatesFocus?: boolean
-  logger?: Listener
-  strategy?: Strategy;
-}) => class extends HTMLElement {
+class BaseElement extends HTMLElement {
   #noDeclarativeShadow = false
-  #trigger:  ({ eventName, payload, baseDynamic }: TriggerArgs) => void
-  #id: string
   #shadowObserver: MutationObserver
   #templateObserver: MutationObserver
   internals_: ElementInternals
-  #disconnect?: () => void 
-  constructor() {
+  constructor(
+    mode?: 'open' | 'closed',
+    delegatesFocus?: boolean
+  ) {
     super()
     this.internals_ = this.attachInternals()
     const shadow = this.internals_.shadowRoot
     if(!shadow) {
-      this.attachShadow({ mode, delegatesFocus })
+      this.attachShadow({ mode: mode || 'open', delegatesFocus })
       this.#noDeclarativeShadow = true
     }
   }
   get #root(): ShadowRoot {
     return this.shadowRoot as ShadowRoot
   }
-  random() {return this}
   connectedCallback() {
-    const { feedback, trigger, stream } = new Track(strands, { strategy, dev: Boolean(logger) })
-    this.#trigger = trigger
-    logger && stream.subscribe(logger)
-    const $ = (id: string) => {
-      return [ ...(this.#root.querySelectorAll(`[${dataTarget}="${id}"]`)) ]
-    }
-    actions && feedback(actions({ $, root: this.#root }))
-    this.#id = this.id || tag
-    if(connect){
-      this.#disconnect = connect(this.#id, trigger)
-      this.#trigger({ eventName: `connected->${this.#id}`, baseDynamic: baseDynamics.objectObject })
-    }
+    
     if(this.#noDeclarativeShadow) {
       const template = this.querySelector<HTMLTemplateElement>('template[shadowroot]')
         template
@@ -101,10 +58,6 @@ const createIsland = ({
     this.#shadowObserver = this.#createShadowObserver()
   }
   disconnectedCallback() {
-    if (this.#disconnect) {
-      this.#disconnect()
-      this.#trigger({ eventName: `disconnected->${this.#id}`, baseDynamic: baseDynamics.objectObject })
-    }
     this.#templateObserver && this.#templateObserver.disconnect()
     this.#shadowObserver.disconnect()
   }
@@ -114,11 +67,8 @@ const createIsland = ({
       if(!delegatedListener.has(el)) {
         delegatedListener.set(el, evt => {
           const triggerKey = getTriggerKey(evt)
-          triggerKey && this.#trigger({
-            eventName: triggerKey,
-            payload: evt,
-            baseDynamic: baseDynamics.objectPerson,
-          })
+          //@ts-ignore: this method will be implemented byt the subclass
+          this[triggerKey](evt)
         })
       }
       //@ts-ignore: will be HTMLOrSVGElement
@@ -163,15 +113,7 @@ const createIsland = ({
   }
 }
 
-type CreateIslandParams = Parameters<typeof createIsland>[0]
-export type BaseIsland = ReturnType<typeof createIsland>
-
-export interface DefineIslandParams extends CreateIslandParams {
-  mixin?: (base: BaseIsland) => CustomElementConstructor
-}
-
-export const defineIsland = ({ mixin, ...config }:DefineIslandParams) => {
-  const tag = config.tag
+export const defineIsland = (tag: string, mixin: (base: typeof BaseElement) => CustomElementConstructor) => {
   if (customElements.get(tag)) return
-  customElements.define(tag, mixin ? mixin(createIsland(config)) : createIsland(config)) 
+  customElements.define(tag, mixin(BaseElement))
 }

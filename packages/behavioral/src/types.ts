@@ -1,7 +1,7 @@
 import { streamEvents, baseDynamics } from './constants.js'
 
 
-export type ValueOf<T> = T[keyof T]
+type ValueOf<T> = T[keyof T]
 
 export type FeedbackMessage = {eventName: string, payload?: any}
 export type Callback = (args: FeedbackMessage) => boolean;

@@ -1,2 +1,2 @@
-import './microwave-display'
-import './microwave-controls'
+import './number-display'
+import './number-pad'

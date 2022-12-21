@@ -1,3 +1,6 @@
+export * from '@plaited/behavioral'
+export * from '@plaited/actor'
+export * from '@plaited/utils'
 export * from './data-target.js'
 export * from './data-trigger.js'
 export * from './define-island.js'

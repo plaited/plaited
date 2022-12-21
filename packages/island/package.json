@@ -23,6 +23,7 @@
   },
   "types": "dist/index.d.ts",
   "dependencies": {
+    "@plaited/actor": "workspace:*",
     "@plaited/behavioral": "workspace:*",
     "@plaited/utils": "workspace:*"
   },
