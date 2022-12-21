@@ -53,7 +53,6 @@ defineIsland('number-display', base => class extends base implements NumberDispl
   }
   #display: string[] = []
   #disconnect?: () => void 
-  #trigger?: TriggerFunc
   connectedCallback(): void {
     super.connectedCallback()
     const {  disconnect } = plait(this.$, this)
