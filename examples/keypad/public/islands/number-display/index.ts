@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { Actions, defineIsland, getPlait, BaseIsland } from '@plaited/island'
+import { defineIsland, getPlait, BaseIsland, GetPlait } from '@plaited/island'
 import {
   strand,
   loop,
@@ -8,44 +8,45 @@ import {
 } from '@plaited/behavioral'
 import { connect } from '../comms'
 
-
-const strands = {
-  onClear: loop(strand(
-    waitFor({ eventName: 'clear' }),
-    request({ eventName: 'clearDisplay' })
-  )),
-}
-
+  
 interface NumberDisplay extends BaseIsland {
   display: string[]
   setDisplay: (val: string[]) => void
 }
 
-const updateDisplay = (target: Element, arr: string[]) => {
-  target.replaceChildren(`${arr[3] || 0}${arr[2] || 0}:${arr[1] || 0}${arr[0] || 0}`)
+const plait: GetPlait<NumberDisplay> = ($, context) => {
+  const strands = {
+    onClear: loop(strand(
+      waitFor({ eventName: 'clear' }),
+      request({ eventName: 'clearDisplay' })
+    )),
+  }
+  
+  const updateDisplay = (target: Element, arr: string[]) => {
+    target.replaceChildren(`${arr[3] || 0}${arr[2] || 0}:${arr[1] || 0}${arr[0] || 0}`)
+  }
+  
+  const actions = {
+    addNumber(payload: string){
+      if(context.display.length < 5) {
+        console.log(payload)
+        context.setDisplay([ ...context.display, payload ])
+      }
+      const [ display ] = $('display')
+      updateDisplay(display, context.display)
+    },
+    clearDisplay(){
+      const [ display ] = $('display')
+      display.replaceChildren('00:00')
+    },
+  }
+  return getPlait<NumberDisplay>({
+    context,
+    actions,
+    strands,
+    connect,
+  })
 }
-
-const actions: Actions<NumberDisplay> = ($, context) =>  ({
-  addNumber(payload: string){
-    if(context.display.length < 5) {
-      console.log(payload)
-      context.setDisplay([ ...context.display, payload ])
-    }
-    const [ display ] = $('display')
-    updateDisplay(display, context.display)
-  },
-  clearDisplay(){
-    const [ display ] = $('display')
-    display.replaceChildren('00:00')
-  },
-})
-
-
-export const plait = getPlait({
-  actions,
-  strands,
-  connect,
-})
 
 defineIsland('number-display', base => class extends base implements NumberDisplay {
   constructor() {

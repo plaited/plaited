@@ -1,34 +1,36 @@
 import { Plait, RulesFunc, TriggerFunc, Listener, Strategy } from '@plaited/behavioral'
+import { noop } from '@plaited/utils'
 
-
-export type Actions<T = HTMLElement> = (
+export type GetPlait<T = HTMLElement> = (
   $: (selector: string) => Element[],
   context: T extends HTMLElement ? T : HTMLElement
-) => Record<string, (payload?: any) => void>
+) => { trigger: TriggerFunc, disconnect: () => void}
 
 export const getPlait = <T = HTMLElement>({
   strands = {},
   actions,
   id,
   connect,
+  context,
   logger,
   strategy,
 }: {
   strands?: Record<string, RulesFunc>
-  actions?: Actions<T>
+  actions?: Record<string, (payload?: any) => void>
   id?: string
   connect?: (recipient: string, cb: TriggerFunc) => () => void
+  context: T extends HTMLElement ? T : HTMLElement
   logger?: Listener
   strategy?: Strategy;
-}) => ($:(id: string) => Element[], context:  T extends HTMLElement ? T : HTMLElement) => {
-    const { feedback, trigger, stream } = new Plait(strands, { strategy, dev: Boolean(logger) })
-    logger && stream.subscribe(logger)
-    actions && feedback(actions($, context))
-    let disconnect
-    if(connect){
-      const _id = id || context.tagName.toLowerCase()
-      disconnect = connect(id || context.tagName.toLowerCase(), trigger)
-      trigger({ eventName: `connected->${_id}` })
-    }
-    return { trigger, disconnect }
+}): { trigger: TriggerFunc, disconnect: () => void} => {
+  const { feedback, trigger, stream } = new Plait(strands, { strategy, dev: Boolean(logger) })
+  logger && stream.subscribe(logger)
+  actions && feedback(actions)
+  let disconnect = noop
+  if(connect){
+    const _id = id || context.tagName.toLowerCase()
+    disconnect = connect(id || context.tagName.toLowerCase(), trigger)
+    trigger({ eventName: `connected->${_id}` })
   }
+  return { trigger, disconnect }
+}

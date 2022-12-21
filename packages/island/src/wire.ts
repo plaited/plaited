@@ -14,12 +14,12 @@ export const wire = (obj: {
   const attributes = []
   for(const prop  in obj) {
     const value = obj[prop]
+    if(value === undefined || value === null) continue
     if(prop === 'target') {
       attributes.push(`${dataTarget}="${value}"`)
       continue
     }
     if(prop === 'triggers') {
-      console.log(prop)
       attributes.push(`${dataTrigger}="${Object.entries(value as unknown as Record<string, string>)
         .map<string>(([ ev, req ]) => `${ev}->${req}`)
         .join(' ')
