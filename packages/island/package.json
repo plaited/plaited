@@ -24,13 +24,11 @@
   },
   "types": "dist/index.d.ts",
   "dependencies": {
-    "@plaited/actor": "workspace:*",
-    "@plaited/behavioral": "workspace:*",
+    "@plaited/plait": "workspace:*",
     "@plaited/utils": "workspace:*"
   },
   "devDependencies": {
     "@esm-bundle/chai": "4.3.4-fix.0",
-    "@plaited/actor": "workspace:*",
     "@tsconfig/node18": "1.0.1",
     "@types/mocha": "10.0.1",
     "@types/sinon": "10.0.13",

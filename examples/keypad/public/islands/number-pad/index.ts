@@ -1,7 +1,7 @@
-import { defineIsland } from '@plaited/island'
+import { defineComponent } from '@plaited/island'
 import { send } from '../comms'
 
-defineIsland('number-pad', base => class extends base {
+defineComponent('number-pad', base => class extends base {
   constructor() {
     super()
   }

@@ -17,7 +17,7 @@ import {
 
 
 export class Plait {
-  // Check if requested event is in the Paramter (waitFor, request, block)
+  // Check if requested event is in the Parameter (waitFor, request, block)
   static requestInParameter({ eventName: requestEventName, payload: requestPayload }: CandidateBid) {
     return ({ eventName: parameterEventName, callback: parameterCallback }: RuleParameterValue): boolean => (
       parameterCallback

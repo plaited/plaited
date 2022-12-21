@@ -1,10 +1,5 @@
-import { Plait, RulesFunc, TriggerFunc, Listener, Strategy } from '@plaited/behavioral'
+import { Plait, RulesFunc, TriggerFunc, Listener, Strategy } from '@plaited/plait'
 import { noop } from '@plaited/utils'
-
-export type GetPlait<T = HTMLElement> = (
-  $: (selector: string) => Element[],
-  context: T extends HTMLElement ? T : HTMLElement
-) => { trigger: TriggerFunc, disconnect: () => void}
 
 type Common = {
   strands: Record<string, RulesFunc>

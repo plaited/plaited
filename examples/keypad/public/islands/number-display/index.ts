@@ -1,34 +1,32 @@
 /* eslint-disable no-console */
-import { defineIsland, usePlait, BaseIsland, Query, PlaitedReturn } from '@plaited/island'
+import { defineComponent, usePlait, BaseComponent, Query, Plaited } from '@plaited/island'
 import {
   strand,
   loop,
   waitFor,
   request,
   TriggerFunc,
-} from '@plaited/behavioral'
+} from '@plaited/plait'
 import { connect } from '../comms'
   
-interface NumberDisplay extends BaseIsland {
+interface NumberDisplay extends BaseComponent {
   display: string[]
   setDisplay: (val: string[]) => void
 }
 
 
-defineIsland('number-display', base => class extends base implements NumberDisplay {
+defineComponent('number-display', base => class extends base {
   constructor() {
     super()
   }
   #display: string[] = []
   setDisplay(val: string[]) {
-    if(val.length < 5) {
-      this.#display = val
-    }
+    this.#display = val
   }
   get display() {
     return this.#display
   }
-  plait($:Query, context: this): PlaitedReturn{
+  plait($:Query, context: this): Plaited{
     const strands = {
       onClear: loop(strand(
         waitFor({ eventName: 'clear' }),
@@ -77,7 +75,7 @@ defineIsland('number-display', base => class extends base implements NumberDispl
       connect,
     })
   }
-  test(evet: MouseEvent, trigger: TriggerFunc) {
+  test(evt: MouseEvent, trigger: TriggerFunc) {
     trigger({
       eventName: 'logMe',
     })

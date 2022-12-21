@@ -1,13 +1,17 @@
 import { dataTrigger, dataTarget } from './constants.js'
 import { delegatedListener } from './delegated-listener.js'
-import { TriggerFunc } from '@plaited/behavioral'
+import { TriggerFunc } from '@plaited/plait'
 
+// It takes the value of a data-target attribute and return all the events happening in it. minus the method idetenfier
+// so iof the event was data-target="click->doSomething" it would return ["click"]
 const matchAllEvents = (str: string) =>{
   const regexp = /(^\w+|(?:\s)\w+)(?:->)/g
   return [ ...str.matchAll(regexp) ].flatMap(([ , event ]) => event)
 }
 
-const getTriggerMethod = (evt: Event) =>{
+// returns the method name to connect our event binding to data-target="click->doSomething" it would return "doSomething"
+// not triggers are separated by spaces in the attribute data-target="click->doSomething focus->somethingElse"
+const getTriggerMethod = (evt: Event) => {
   const el = evt.currentTarget
   const type = evt.type
   const pre = `${type}->`
@@ -19,6 +23,7 @@ const getTriggerMethod = (evt: Event) =>{
     .replace(pre, '')
 }
 
+// Takes a list of nodes added when mutation observer change happened and filters our the ones with triggers
 const filterAddedNodes = (nodes:NodeList) => {
   const elements:HTMLElement[] = []
   nodes.forEach(node => {
@@ -27,23 +32,23 @@ const filterAddedNodes = (nodes:NodeList) => {
   return elements
 }
 
-export type PlaitedReturn = {
+export type Plaited = {
   trigger?: TriggerFunc,
   disconnect?: () => void
 }
 
 export type Query = (selector: string) => Element[]
 
-export abstract class BaseIsland extends HTMLElement {
+export abstract class BaseComponent extends HTMLElement {
   #noDeclarativeShadow = false
   #shadowObserver: MutationObserver
   #templateObserver: MutationObserver
   #disconnect?: () => void 
   internals_: ElementInternals
-  trigger?: TriggerFunc
+  #trigger?: TriggerFunc
   abstract plait($: (selector: string) => Element[],
   context: HTMLElement
-  ):PlaitedReturn 
+  ):Plaited 
   constructor(
     mode?: 'open' | 'closed',
     delegatesFocus?: boolean
@@ -69,7 +74,7 @@ export abstract class BaseIsland extends HTMLElement {
     if(this.plait) {
       const {  disconnect, trigger } = this.plait(this.$, this)
       this.#disconnect = disconnect
-      this.trigger = trigger
+      this.#trigger = trigger
     }
   }
   disconnectedCallback() {
@@ -83,10 +88,10 @@ export abstract class BaseIsland extends HTMLElement {
       if(!delegatedListener.has(el)) {
         delegatedListener.set(el, evt => {
           const method = getTriggerMethod(evt)
-          Boolean(this[method as keyof this]) && 
+          Boolean(this[method as keyof this]) && // need to test if I can use this.hasOwnProperty()
           typeof this[method as keyof this] === 'function' &&
           //@ts-ignore: is callable
-          this[method](evt, this.trigger)
+          this[method](evt, this.#trigger)
         })
       }
       //@ts-ignore: will be HTMLOrSVGElement
@@ -96,6 +101,7 @@ export abstract class BaseIsland extends HTMLElement {
       }
     })
   }
+  // Observes the addition of nodes to the shadow dom and changes to and child's data-trigger attribute
   #createShadowObserver() {
     const mo = new MutationObserver(mutationsList => {
       for (const mutation of mutationsList) {
@@ -134,7 +140,7 @@ export abstract class BaseIsland extends HTMLElement {
   }
 }
 
-export const defineIsland = (tag: string, mixin: (base: typeof BaseIsland) => CustomElementConstructor) => {
+export const defineComponent = (tag: string, mixin: (base: typeof BaseComponent) => CustomElementConstructor) => {
   if (customElements.get(tag)) return
-  customElements.define(tag, mixin(BaseIsland))
+  customElements.define(tag, mixin(BaseComponent))
 }

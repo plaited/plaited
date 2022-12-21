@@ -1,4 +1,4 @@
-# @plaited/behavioral
+# @plaited/plait
 
 [Implicit state management with behavioral programming](https://github.com/plaited/plaited/wiki/Behavioral)
 

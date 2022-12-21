@@ -1,11 +1,13 @@
 /* eslint-disable max-len */
 import { assert } from '@esm-bundle/chai'
-import { island, html } from '..'
+import { component, html } from '..'
 
 
-it('island()', () => {
+
+// Expected usage const MyTemplate = ({ ..args}) => component({tag, template: html`` ...rest})
+it('component()', () => {
   assert.equal(
-    island({
+    component({
       tag: 'z-el',
       template: html`<div>
         <h1>header</h1>
@@ -15,7 +17,7 @@ it('island()', () => {
     'tag and template only'
   )
   assert.equal(
-    island({
+    component({
       tag: 'z-el',
       id: 'random',
       template: html`<div>
@@ -26,7 +28,7 @@ it('island()', () => {
     'tag, template, and id'
   )
   assert.equal(
-    island({
+    component({
       tag: 'z-el',
       target: 'random',
       triggers: {
@@ -41,7 +43,7 @@ it('island()', () => {
     'data-target, data-trigger, tag, template, and id'
   )
   assert.equal(
-    island({
+    component({
       tag: 'z-el',
       mode: 'closed',
       template: html`<div>
@@ -50,5 +52,17 @@ it('island()', () => {
     }),
     '<z-el><template shadowroot="closed"><div><h1>header</h1></div></template></z-el>',
     'tag, template, and mode'
+  )
+  assert.equal(
+    component({
+      tag: 'z-el',
+      mode: 'closed',
+      template: html`<div>
+        <slot></slot>
+      </div>`,
+      slotted: '<h1>header</h1>',
+    }),
+    '<z-el><template shadowroot="closed"><div><slot></slot></div></template><h1>header</h1></z-el>',
+    'tag, template, slot, and mode'
   )
 })
