@@ -68,7 +68,7 @@ defineComponent('number-display', base => class extends base {
         console.log('hit')
       },
     }
-    return usePlait<NumberDisplay>({
+    return usePlait({
       context,
       actions,
       strands,

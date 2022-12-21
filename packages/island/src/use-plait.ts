@@ -8,9 +8,9 @@ type Common = {
   strategy?: Strategy;
 }
 
-interface Connected<T = HTMLElement> extends Common {
+interface Connected extends Common {
   connect: (recipient: string, cb: TriggerFunc) => () => void
-  context: T extends HTMLElement ? T : HTMLElement
+  context: HTMLElement
   id?: string
 }
 
@@ -20,7 +20,7 @@ interface Isolated extends Common {
   id: never
 }
 
-export const usePlait = <T = HTMLElement>({
+export const usePlait = ({
   strands = {},
   actions,
   id,
@@ -28,7 +28,7 @@ export const usePlait = <T = HTMLElement>({
   context,
   logger,
   strategy,
-}: Isolated | Connected<T>): { trigger: TriggerFunc, disconnect: () => void} => {
+}: Isolated | Connected): { trigger: TriggerFunc, disconnect: () => void} => {
   const { feedback, trigger, stream } = new Plait(strands, { strategy, dev: Boolean(logger) })
   logger && stream.subscribe(logger)
   feedback(actions)
