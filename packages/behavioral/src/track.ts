@@ -16,7 +16,7 @@ import {
 } from './types'
 
 
-export class Track {
+export class Plait {
   // Check if requested event is in the Paramter (waitFor, request, block)
   static requestInParameter({ eventName: requestEventName, payload: requestPayload }: CandidateBid) {
     return ({ eventName: parameterEventName, callback: parameterCallback }: RuleParameterValue): boolean => (
@@ -72,7 +72,7 @@ export class Track {
     )
     const blocked = pending.flatMap<RuleParameterValue>(({ block }) => block || [])
     const filteredBids = candidates.filter(
-      request => !blocked.some(Track.requestInParameter(request))
+      request => !blocked.some(Plait.requestInParameter(request))
     )
     this.#lastEvent = this.#eventSelectionStrategy(filteredBids)
     this.#dev && this.stream(stateChart({ candidates, blocked, pending }))
@@ -82,7 +82,7 @@ export class Track {
     for (const bid of this.#pending) {
       const { request = [], waitFor = [], logicStrand } = bid
       const waitList = [ ...request, ...waitFor ]
-      if (waitList.some(Track.requestInParameter(this.#lastEvent)) && logicStrand) {
+      if (waitList.some(Plait.requestInParameter(this.#lastEvent)) && logicStrand) {
         this.#running.add(bid)
         this.#pending.delete(bid)
       }

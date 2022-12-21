@@ -8,7 +8,7 @@ import {
   waitFor,
   request,
   block,
-  Track,
+  Plait,
 } from '..'
 
 import {
@@ -63,7 +63,7 @@ const actions = {
 describe('behvioral', () => {
   it('plait(): priority queue', () => {
     const streamLog: unknown[] = []
-    const { trigger, feedback, stream } = new Track(strands, { dev: true })
+    const { trigger, feedback, stream } = new Plait(strands, { dev: true })
     feedback(actions)
     stream.subscribe(msg => {
       streamLog.push(msg)
@@ -83,7 +83,7 @@ describe('behvioral', () => {
   it('plait(): randomized priority queue', () => {
     const streamLog: unknown[] = []
     actualFeedback.length = 0
-    const { trigger, feedback, stream } = new Track(strands, { strategy: randomizedStrategy, dev: true })
+    const { trigger, feedback, stream } = new Plait(strands, { strategy: randomizedStrategy, dev: true })
     feedback(actions)
     stream.subscribe(msg => {
       streamLog.push(msg)
@@ -103,7 +103,7 @@ describe('behvioral', () => {
   it('plait(): chaos selection', () => {
     const streamLog: unknown[] = []
     actualFeedback.length = 0
-    const { trigger, feedback, stream } = new Track(strands, { strategy: chaosStrategy, dev: true })
+    const { trigger, feedback, stream } = new Plait(strands, { strategy: chaosStrategy, dev: true })
     feedback(actions)
     stream.subscribe(msg => {
       streamLog.push(msg)

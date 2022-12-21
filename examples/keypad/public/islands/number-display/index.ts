@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { Actions, defineIsland, getPlait, BaseElement } from '@plaited/island'
+import { Actions, defineIsland, getPlait, BaseIsland } from '@plaited/island'
 import {
   strand,
   loop,
@@ -16,7 +16,7 @@ const strands = {
   )),
 }
 
-interface NumberDisplay extends BaseElement {
+interface NumberDisplay extends BaseIsland {
   display: string[]
   setDisplay: (val: string[]) => void
 }

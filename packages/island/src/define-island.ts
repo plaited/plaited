@@ -26,7 +26,7 @@ const filterAddedNodes = (nodes:NodeList) => {
   return elements
 }
 
-export class BaseElement extends HTMLElement {
+export class BaseIsland extends HTMLElement {
   #noDeclarativeShadow = false
   #shadowObserver: MutationObserver
   #templateObserver: MutationObserver
@@ -113,7 +113,7 @@ export class BaseElement extends HTMLElement {
   }
 }
 
-export const defineIsland = (tag: string, mixin: (base: typeof BaseElement) => CustomElementConstructor) => {
+export const defineIsland = (tag: string, mixin: (base: typeof BaseIsland) => CustomElementConstructor) => {
   if (customElements.get(tag)) return
-  customElements.define(tag, mixin(BaseElement))
+  customElements.define(tag, mixin(BaseIsland))
 }

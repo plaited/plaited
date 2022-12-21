@@ -1,4 +1,4 @@
-import { Track, RulesFunc, TriggerFunc, Listener, Strategy } from '@plaited/behavioral'
+import { Plait, RulesFunc, TriggerFunc, Listener, Strategy } from '@plaited/behavioral'
 
 
 export type Actions<T = HTMLElement> = (
@@ -21,7 +21,7 @@ export const getPlait = <T = HTMLElement>({
   logger?: Listener
   strategy?: Strategy;
 }) => ($:(id: string) => Element[], context:  T extends HTMLElement ? T : HTMLElement) => {
-    const { feedback, trigger, stream } = new Track(strands, { strategy, dev: Boolean(logger) })
+    const { feedback, trigger, stream } = new Plait(strands, { strategy, dev: Boolean(logger) })
     logger && stream.subscribe(logger)
     actions && feedback(actions($, context))
     let disconnect
