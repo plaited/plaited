@@ -1,28 +1,26 @@
 import { html } from './html.js' 
-import { dataTarget as targetAttr } from './data-target.js'
-import { dataTrigger as triggerAttr } from './data-trigger.js'
+import { wire } from './wire.js'
 
 /** @returns template string for a web component */
-export const component = ({ 
+export const island = ({ 
   tag,
   template,
-  dataTarget,
-  dataTrigger,
+  target,
+  triggers,
   id,
   mode = 'open',
 }:  {
   tag: string
   template:string
-  dataTarget?: string
-  dataTrigger?: Parameters<typeof triggerAttr>[0]
+  target?: string
+  triggers?: Record<string, string> 
   id?:string,
     /** @defaultValue 'open' */
   mode?: 'open' | 'closed'
 }) => html`
 <${tag}
   ${id && `id="${id}"`}
-  ${dataTarget && targetAttr(dataTarget)}
-  ${dataTrigger && triggerAttr(dataTrigger)}
+  ${wire({ target, triggers })}
 >
   <template shadowroot="${mode}">
     ${template}

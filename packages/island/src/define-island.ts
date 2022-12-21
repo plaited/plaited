@@ -1,4 +1,4 @@
-import { dataTrigger } from './constants.js'
+import { dataTrigger, dataTarget } from './constants.js'
 import { delegatedListener } from './delegated-listener.js'
 
 const matchAllEvents = (str: string) =>{
@@ -6,7 +6,7 @@ const matchAllEvents = (str: string) =>{
   return [ ...str.matchAll(regexp) ].flatMap(([ , event ]) => event)
 }
 
-const getTriggerKey = (evt: Event) =>{
+const getTriggerMethod = (evt: Event) =>{
   const el = evt.currentTarget
   const type = evt.type
   const pre = `${type}->`
@@ -26,7 +26,7 @@ const filterAddedNodes = (nodes:NodeList) => {
   return elements
 }
 
-class BaseElement extends HTMLElement {
+export class BaseElement extends HTMLElement {
   #noDeclarativeShadow = false
   #shadowObserver: MutationObserver
   #templateObserver: MutationObserver
@@ -42,12 +42,9 @@ class BaseElement extends HTMLElement {
       this.attachShadow({ mode: mode || 'open', delegatesFocus })
       this.#noDeclarativeShadow = true
     }
-  }
-  get #root(): ShadowRoot {
-    return this.shadowRoot as ShadowRoot
+    this.$ = this.$.bind(this)
   }
   connectedCallback() {
-    
     if(this.#noDeclarativeShadow) {
       const template = this.querySelector<HTMLTemplateElement>('template[shadowroot]')
         template
@@ -62,13 +59,13 @@ class BaseElement extends HTMLElement {
     this.#shadowObserver.disconnect()
   }
   #delegateListeners(nodes?: HTMLElement[]) {
-    const triggers = nodes || this.#root.querySelectorAll(`[${dataTrigger}]`)
+    const triggers = nodes || (this.shadowRoot as ShadowRoot).querySelectorAll(`[${dataTrigger}]`)
     triggers.forEach(el => {
       if(!delegatedListener.has(el)) {
         delegatedListener.set(el, evt => {
-          const triggerKey = getTriggerKey(evt)
+          const method = getTriggerMethod(evt)
           //@ts-ignore: this method will be implemented byt the subclass
-          this[triggerKey](evt)
+          this[method](evt)
         })
       }
       //@ts-ignore: will be HTMLOrSVGElement
@@ -97,7 +94,7 @@ class BaseElement extends HTMLElement {
     return mo
   }
   #appendTemplate(template: HTMLTemplateElement){
-    const root = this.#root
+    const root = this.shadowRoot as ShadowRoot
     !root.firstChild && root.appendChild(document.importNode((template).content, true))
   }
   #createTemplateObserver() {
@@ -110,6 +107,9 @@ class BaseElement extends HTMLElement {
     })
     mo.observe(this, { childList: true })
     return mo
+  }
+  $(id: string) {
+    return [ ...((this.shadowRoot as ShadowRoot).querySelectorAll(`[${dataTarget}="${id}"]`)) ]
   }
 }
 

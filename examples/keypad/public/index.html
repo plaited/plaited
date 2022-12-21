@@ -6,21 +6,21 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Microwave UI</title>
-  <link rel="preload" href="/islands/number-display/number-display.css" as="style" />
-  <link rel="preload" href="/islands/number-pad/number-pad.css" as="style" />
+  <link rel="preload" href="./islands/number-display/number-display.css" as="style" />
+  <link rel="preload" href="./islands/number-pad/number-pad.css" as="style" />
 </head>
 
 <body>
   <main>
     <number-display>
       <template shadowroot="open">
-        <link rel="stylesheet" href="/islands/number-display/number-display.css" />
-        <h1 data-target="display" class="display">0000</h1>
+        <link rel="stylesheet" href="./islands/number-display/number-display.css" />
+        <h1 data-target="display" class="display">00:00</h1>
       </template>
     </number-display>
     <number-pad id="number-pad">
       <template shadowroot="open">
-        <link rel="stylesheet" href="/islands/number-pad/number-pad.css" />
+        <link rel="stylesheet" href="./islands/number-pad/number-pad.css" />
         <div class="keypad">
           <div class="number-grid">
             <button class="number-button" data-trigger="click->number" value="1">1</button>
@@ -34,7 +34,7 @@
             <button class="number-button" data-trigger="click->number" value="9">9</button>
             <button class="number-button" data-trigger="click->number" value="0">0</button>
           </div>
-          <button class="clear-button" data-trigger="click->stop-reset">Clear</button>
+          <button class="clear-button" data-trigger="click->clear">Clear</button>
         </div>
       </template>
     </number-pad>
