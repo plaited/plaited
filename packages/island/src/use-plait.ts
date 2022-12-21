@@ -25,7 +25,7 @@ interface Isolated extends Common {
   id: never
 }
 
-export const getPlait = <T = HTMLElement>({
+export const usePlait = <T = HTMLElement>({
   strands = {},
   actions,
   id,

@@ -1,5 +1,6 @@
 import { dataTrigger, dataTarget } from './constants.js'
 import { delegatedListener } from './delegated-listener.js'
+import { TriggerFunc } from '@plaited/behavioral'
 
 const matchAllEvents = (str: string) =>{
   const regexp = /(^\w+|(?:\s)\w+)(?:->)/g
@@ -26,11 +27,23 @@ const filterAddedNodes = (nodes:NodeList) => {
   return elements
 }
 
-export class BaseIsland extends HTMLElement {
+export type PlaitedReturn = {
+  trigger?: TriggerFunc,
+  disconnect?: () => void
+}
+
+export type Query = (selector: string) => Element[]
+
+export abstract class BaseIsland extends HTMLElement {
   #noDeclarativeShadow = false
   #shadowObserver: MutationObserver
   #templateObserver: MutationObserver
+  #disconnect?: () => void 
   internals_: ElementInternals
+  trigger?: TriggerFunc
+  abstract plait($: (selector: string) => Element[],
+  context: HTMLElement
+  ):PlaitedReturn 
   constructor(
     mode?: 'open' | 'closed',
     delegatesFocus?: boolean
@@ -53,10 +66,16 @@ export class BaseIsland extends HTMLElement {
     }
     this.#delegateListeners()
     this.#shadowObserver = this.#createShadowObserver()
+    if(this.plait) {
+      const {  disconnect, trigger } = this.plait(this.$, this)
+      this.#disconnect = disconnect
+      this.trigger = trigger
+    }
   }
   disconnectedCallback() {
     this.#templateObserver && this.#templateObserver.disconnect()
     this.#shadowObserver.disconnect()
+    this.#disconnect && this.#disconnect()
   }
   #delegateListeners(nodes?: HTMLElement[]) {
     const triggers = nodes || (this.shadowRoot as ShadowRoot).querySelectorAll(`[${dataTrigger}]`)
@@ -64,8 +83,10 @@ export class BaseIsland extends HTMLElement {
       if(!delegatedListener.has(el)) {
         delegatedListener.set(el, evt => {
           const method = getTriggerMethod(evt)
-          //@ts-ignore: this method will be implemented byt the subclass
-          this[method](evt)
+          Boolean(this[method as keyof this]) && 
+          typeof this[method as keyof this] === 'function' &&
+          //@ts-ignore: is callable
+          this[method](evt, this.trigger)
         })
       }
       //@ts-ignore: will be HTMLOrSVGElement
