@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { defineComponent, usePlait, BaseComponent, Query, Plaited } from '@plaited/island'
+import { defineComponent, usePlait, Query, Plaited } from '@plaited/island'
 import {
   strand,
   loop,
@@ -8,11 +8,6 @@ import {
   TriggerFunc,
 } from '@plaited/plait'
 import { connect } from '../comms'
-  
-interface NumberDisplay extends BaseComponent {
-  display: string[]
-  setDisplay: (val: string[]) => void
-}
 
 
 defineComponent('number-display', base => class extends base {
