@@ -93,15 +93,19 @@ export class BaseComponent extends HTMLElement {
       if(!delegatedListener.has(el)) {
         delegatedListener.set(el, evt => {
           const method = getTriggerMethod(evt)
-          Boolean(this[method as keyof this]) && // need to test if I can use this.hasOwnProperty()
+          if(method === 'plait') {
+            console.error('plait is a reserved method')
+            return
+          }
+          method in this && // need to test if I can use this.hasOwnProperty()
           typeof this[method as keyof this] === 'function' &&
           //@ts-ignore: is callable
           this[method](evt, this.#trigger)
         })
       }
       //@ts-ignore: will be HTMLOrSVGElement
-      const triggers = matchAllEvents(el.dataset.trigger)
-      for (const event of triggers) {
+      const events = matchAllEvents(el.dataset.trigger)
+      for (const event of events) {
         el.addEventListener(event, delegatedListener.get(el))
       }
     })
