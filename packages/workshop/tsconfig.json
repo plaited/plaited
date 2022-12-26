@@ -1,0 +1,22 @@
+{
+  "extends": "@tsconfig/node18/tsconfig.json",
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Node 16",
+  "compilerOptions": {
+    "allowJs": true,
+    "baseUrl": ".",
+    "declaration": true,
+    "module": "ESNext",
+    "outDir": "dist",
+    "preserveSymlinks": true,
+    "rootDir": "src",
+    "strictPropertyInitialization": false
+  },
+  "exclude": [
+    "**/dist",
+    "**/*.spec.*"
+  ],
+  "include": [
+    "src"
+  ]
+}

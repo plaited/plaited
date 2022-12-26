@@ -1,12 +1,14 @@
 import path from 'path'
 import fs from 'fs/promises'
 import { writeReExport } from './write-re-export.js'
+import { interdependenciesTestTemplate } from './interdependency-test-template.js'
 
 export const setup = async({
   target, source, cliName, packageName,
 }:{
   target: string, source: string, cliName: string, packageName: string
 }) => {
+  await fs.writeFile(path.resolve(target, './interdependency.ava.spec.ts'), interdependenciesTestTemplate)
   await writeReExport({ target, source, packageName })
   try {
     const { default: sourcePackageJson } = await import(
