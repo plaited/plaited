@@ -1,0 +1,4 @@
+.a {
+  --border-radius: map(border-radius);
+  border-radius: var(--border-radius);
+}

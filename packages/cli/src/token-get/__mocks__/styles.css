@@ -1,0 +1,10 @@
+.a {
+  --background-color: map(action, primary, rest, background-color);
+  background-color: var(--background-color);
+}
+@media (width <= 30em) {
+  .a {
+    --border-radius: map(action, primary, rest, border-radius);
+    border-radius: var(--border-radius);
+  }
+}

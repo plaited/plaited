@@ -600,6 +600,8 @@ __metadata:
   dependencies:
     "@tsconfig/node18": 1.0.1
     ava: 5.1.0
+    fast-glob: 3.2.12
+    postcss: 8.4.20
     ts-node: 10.9.1
     typescript: 4.8.4
   languageName: unknown
@@ -3721,7 +3723,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fast-glob@npm:^3.2.11, fast-glob@npm:^3.2.9":
+"fast-glob@npm:3.2.12, fast-glob@npm:^3.2.11, fast-glob@npm:^3.2.9":
   version: 3.2.12
   resolution: "fast-glob@npm:3.2.12"
   dependencies:
@@ -5840,7 +5842,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nanoid@npm:^3.1.25":
+"nanoid@npm:^3.1.25, nanoid@npm:^3.3.4":
   version: 3.3.4
   resolution: "nanoid@npm:3.3.4"
   bin:
@@ -6526,6 +6528,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"postcss@npm:8.4.20":
+  version: 8.4.20
+  resolution: "postcss@npm:8.4.20"
+  dependencies:
+    nanoid: ^3.3.4
+    picocolors: ^1.0.0
+    source-map-js: ^1.0.2
+  checksum: 1a5609ea1c1b204f9c2974a0019ae9eef2d99bf645c2c9aac675166c4cb1005be7b5e2ba196160bc771f5d9ac896ed883f236f888c891e835e59d28fff6651aa
+  languageName: node
+  linkType: hard
+
 "prelude-ls@npm:^1.2.1":
   version: 1.2.1
   resolution: "prelude-ls@npm:1.2.1"
@@ -7183,6 +7196,13 @@ __metadata:
   version: 1.0.1
   resolution: "sort-scripts@npm:1.0.1"
   checksum: c80717fdef17e7ba7f992cab98640edeedb5804a8b4efc67ba802ba4e2c1acd874b2a46bf707a028a932171f8a2d7f111b3dd015f94ca72a6ce2f1481ced7584
+  languageName: node
+  linkType: hard
+
+"source-map-js@npm:^1.0.2":
+  version: 1.0.2
+  resolution: "source-map-js@npm:1.0.2"
+  checksum: c049a7fc4deb9a7e9b481ae3d424cc793cb4845daa690bc5a05d428bf41bf231ced49b4cf0c9e77f9d42fdb3d20d6187619fc586605f5eabe995a316da8d377c
   languageName: node
   linkType: hard
 

@@ -10,29 +10,24 @@
   },
   "homepage": "https://github.com/plaited/plaited/blob/main/packages/cli/README.md",
   "type": "module",
-  "main": "./dist/lib/index.js",
-  "exports": {
-    "./app": "./dist/app/index.js",
-    ".": "./dist/lib/index.js"
-  },
-  "module": "./dist/lib/index.js",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
   "scripts": {
     "build": "tsc --project tsconfig.json",
     "build:watch": "tsc --watch --project tsconfig.json",
     "prepublishOnly": "yarn build",
-    "test": "exit 0"
+    "test": "ava",
+    "test:watch": "yarn test --watch --verbose"
   },
   "types": "dist/lib/index.d.ts",
-  "typesVersions": {
-    "*": {
-      "app": [
-        "./dist/app/index.d.ts"
-      ]
-    }
+  "dependencies": {
+    "fast-glob": "3.2.12"
   },
   "devDependencies": {
     "@tsconfig/node18": "1.0.1",
     "ava": "5.1.0",
+    "postcss": "8.4.20",
+    "sinon": "15.0.1",
     "ts-node": "10.9.1",
     "typescript": "4.8.4"
   }

@@ -6,7 +6,7 @@
     "allowJs": true,
     "baseUrl": ".",
     "declaration": true,
-    "module": "ES2022",
+    "module": "ESNext",
     "outDir": "dist",
     "preserveSymlinks": true,
     "rootDir": "src",
