@@ -12,6 +12,48 @@ export const tokens:DesignTokenGroup = {
     2: { $value: 5, $type: 'dimension' },
     3: { $value: 7, $type: 'dimension' },
   },
+  fontSize: {
+    1: {
+      $value: 14,
+      $type: 'fontSize',
+    },
+  },
+  fontFamily: {
+    sansSerif: {
+      $value: 'Roboto',
+      $type: 'fontFamily',
+    },
+  },
+  fontWeight: {
+    1: {
+      $value: 700,
+      $type: 'fontWeight',
+    },
+  },
+  letterSpacing: {
+    1: {
+      $value: 'normal',
+      $type: 'letterSpacing',
+    },
+  },
+  lineHeight: {
+    1: {
+      $value: 1,
+      $type: 'lineHeight',
+    },
+  },
+  typography: {
+    1: {
+      $value: {
+        fontFamily: '{fontFamily.sansSerif}',
+        fontSize: '{fontSize.1}',
+        fontWeight: '{fontWeight.1}',
+        letterSpacing: '{letterSpacing.1}',
+        lineHeight: '{lineHeight.1}',
+      },
+      $type: 'typography',
+    },
+  },
   action: {
     primary: {
       rest: {
@@ -22,6 +64,10 @@ export const tokens:DesignTokenGroup = {
         'background-color': {
           $value: '{background-color.2}',
           $type: 'color',
+        },
+        typography: {
+          $value: '{typography.1}',
+          $type: 'typography',
         },
       },
     },

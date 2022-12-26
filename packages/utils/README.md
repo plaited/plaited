@@ -1,3 +1,3 @@
 # @plaited/utils 
 
-Reusable utility functions and types used to build user interfaces
+Reusable utility functions and types used to build plaited experiences

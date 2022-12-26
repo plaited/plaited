@@ -2,7 +2,6 @@
 import { assert } from '@esm-bundle/chai'
 import { wire } from '..'
 
-
 it('wire()', () => {
   assert.equal(
     wire({

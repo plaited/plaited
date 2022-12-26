@@ -1,6 +1,6 @@
 import { DesignTokenGroup } from '../types.js'
 
-const regex = /(?:map\()([^"]*?)(?:\))/g
+const regex = /(?:token\()([^"]*?)(?:\))/g
 
 type Source = {
   input: {
@@ -26,7 +26,7 @@ const resolve = ({ path, map, source }:{path: string[], map: DesignTokenGroup, s
     } else {
       console.error(
         '\x1b[36m',
-        `\ntoken-get: invalid path — map(${path.join(',')})`,
+        `\ntoken-get: invalid path — token(${path.join(',')})`,
         '\x1b[31m',
         `\n${source.input.from}:${source.end.line}:${source.end.column}\n`,
         '\x1b[0m'
@@ -39,7 +39,7 @@ const resolve = ({ path, map, source }:{path: string[], map: DesignTokenGroup, s
   } else {
     console.error(
       '\x1b[36m',
-      `\ntoken-get: incomplete path — map(${path.join(',')}) => ${JSON.stringify(toRet, null, 2)}`,
+      `\ntoken-get: incomplete path — token(${path.join(',')}) => ${JSON.stringify(toRet, null, 2)}`,
       '\x1b[31m',
       `\n${source.input.from}:${source.start.line}:${source.start.column}\n`,
       '\x1b[0m'
