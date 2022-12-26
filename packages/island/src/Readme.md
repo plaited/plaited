@@ -1,1 +1,0 @@
-Every interactive component or feature is an island. THey are isolated like a comboxbox or datepicker emitting expected dom events. Or connected directly to each other and business logic layer using the messenger utilties for communicating on the main thread and to work threads. 
