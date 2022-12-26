@@ -9,7 +9,7 @@
     "type": "git",
     "url": "https://github.com/plaited/plaited.git"
   },
-  "homepage": "https://github.com/plaited/plaited/blob/main/packages/behavioral/README.md",
+  "homepage": "https://github.com/plaited/plaited/blob/main/packages/plait/README.md",
   "author": "Edward Irby <e.irby@pm.me>",
   "type": "module",
   "main": "./dist/index.js",

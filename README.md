@@ -10,7 +10,7 @@ The framework leverages the behavioral programing algorithm, along with utility 
 
 
 ## Packages
-- @plaited/plait: [implicit state management](https://github.com/plaited/plaited/wiki/Behavioral)
+- @plaited/plait: [implicit state management](https://github.com/plaited/plaited/wiki/Plait)
 - @plaited/island: island web app architecture library
 - @plaited/utils: reusable utility functions and types used to build user interfaces
 

@@ -9,7 +9,7 @@ import {
   block,
   randomizedStrategy,
   RulesFunc,
-} from '../../packages/behavioral/dist'
+} from '@plaited/plait'
 
 const winConditions = [
   //rows
