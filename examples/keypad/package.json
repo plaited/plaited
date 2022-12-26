@@ -5,7 +5,8 @@
     "start": "web-dev-server --config web-dev-server.config.js --open public/index.html --node-resolve --watch"
   },
   "dependencies": {
-    "@plaited/island": "workspace:*"
+    "@plaited/island": "workspace:*",
+    "test": "exit 0"
   },
   "devDependencies": {
     "@tsconfig/node18": "1.0.1",

@@ -1,7 +1,7 @@
 {
   "license": "BSD-2-Clause",
   "engines": {
-    "node": ">= v16.15.1"
+    "node": ">= v18.12.1"
   },
   "workspaces": [
     "packages/**",
@@ -14,15 +14,13 @@
   },
   "scripts": {
     "build": "yarn workspaces foreach -pt run build",
-    "dc": "docker-compose run --rm plaited",
     "lint": "eslint . --ext .ts,.tsx,.js,.cjs",
     "lint:commit": "yarn lint --quiet",
     "lint:fix": "yarn lint --fix --quiet",
     "postinstall": "husky install",
     "postpack": "pinst --enable",
     "prepack": "pinst --disable",
-    "test": "web-test-runner --config web-dev-server.config.mjs --node-resolve \"packages/**/tests/**/*.spec.(ts|js)\"",
-    "test:only": "web-test-runner --config web-dev-server.config.mjs --node-resolve"
+    "test": "yarn workspaces foreach -pt run test"
   },
   "lint-staged": {
     "*.(js|ts)": [
@@ -36,25 +34,18 @@
     "> 2%"
   ],
   "devDependencies": {
-    "@axe-core/playwright": "4.5.2",
     "@commitlint/cli": "17.3.0",
     "@commitlint/config-conventional": "17.3.0",
-    "@playwright/test": "1.29.0",
     "@typescript-eslint/eslint-plugin": "5.47.0",
     "@typescript-eslint/parser": "5.47.0",
-    "@web/dev-server-esbuild": "0.3.3",
-    "@web/test-runner": "0.15.0",
     "cz-conventional-changelog": "3.3.0",
-    "esbuild": "0.16.10",
     "eslint": "8.30.0",
     "eslint-plugin-compat": "4.0.2",
     "eslint-plugin-mocha": "10.1.0",
     "format-package": "7.0.0",
     "husky": "8.0.2",
     "pinst": "3.0.0",
-    "playwright": "1.29.0",
     "plop": "3.1.1",
-    "prettier": "2.7.1",
     "typescript": "4.9.4"
   }
 }

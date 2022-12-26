@@ -1,0 +1,26 @@
+{
+  "name": "tic-tac-toe",
+  "type": "module",
+  "scripts": {
+    "start": "ts-node-esm --experimentalSpecifierResolution node tic-tac-toe.ts",
+    "test": "exit 0"
+  },
+  "ava": {
+    "extensions": {
+      "ts": "module"
+    },
+    "files": [
+      "src/**/*.spec.ts"
+    ],
+    "nodeArguments": [
+      "--loader=ts-node/esm"
+    ]
+  },
+  "dependencies": {
+    "@plaited/plait": "workspace:*"
+  },
+  "devDependencies": {
+    "@tsconfig/node18": "1.0.1",
+    "ts-node": "10.9.1"
+  }
+}

@@ -1,12 +1,12 @@
-import { assert } from '@esm-bundle/chai'
+import test from 'ava'
 import sinon from 'sinon'
-import { callAll } from '../'
+import { callAll } from '../index.js'
 
-it('callAll()', () => {
+test('callAll()', t => {
   const expected = 'string'
   const firstSpy = sinon.spy()
   const secondSpy = sinon.spy()
   callAll(firstSpy, secondSpy)(expected)
-  assert.isOk(firstSpy.calledWith(expected))
-  assert.isOk((secondSpy.calledWith(expected)))
+  t.truthy(firstSpy.calledWith(expected))
+  t.truthy((secondSpy.calledWith(expected)))
 })

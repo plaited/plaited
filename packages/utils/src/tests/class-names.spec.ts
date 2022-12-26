@@ -1,11 +1,11 @@
-import { assert } from '@esm-bundle/chai'
-import { classNames } from '../'
+import test from 'ava'
+import { classNames } from '../index.js'
 
-it('classNames()', () => {
-  assert.equal(classNames('class-1', 'class-2'), 'class-1 class-2')
+test('classNames()', t => {
+  t.is(classNames('class-1', 'class-2'), 'class-1 class-2')
 })
 
-it('classNames(): falsey', () => {
+test('classNames(): falsey', t => {
   const condtionTrue = true
   const conditionFalse = false
   const actual = classNames(
@@ -13,5 +13,5 @@ it('classNames(): falsey', () => {
     conditionFalse && 'class-2',
     condtionTrue && 'class-3'
   )
-  assert.equal(actual, 'class-1 class-3')
+  t.is(actual, 'class-1 class-3')
 })

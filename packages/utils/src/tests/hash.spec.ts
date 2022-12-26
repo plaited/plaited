@@ -1,7 +1,7 @@
-import { assert } from '@esm-bundle/chai'
-import { hashString } from '..'
+import test from 'ava'
+import { hashString } from '../index.js'
 
-it('hashString()', () => {
-  assert.equal(hashString('test'), 2090756197, 'Given a string, return a hash')
-  assert.isNull(hashString(''), 'Given a damn empty string, return null')
+test('hashString()', t => {
+  t.is(hashString('test'), 2090756197, 'Given a string, return a hash')
+  t.is(hashString(''), null, 'Given a damn empty string, return null')
 })
