@@ -1,5 +1,5 @@
 import path from 'path'
-import { eject } from '../../dist/eject.js.js'
+import { eject } from '../../dist/eject.js'
 import { fileURLToPath } from 'url'
 
 

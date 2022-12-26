@@ -1,2 +1,2 @@
-export { sum } from './sum'
+export { divide } from './divide'
 export { multiply } from './multiply'

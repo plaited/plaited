@@ -21,11 +21,15 @@
   },
   "types": "dist/lib/index.d.ts",
   "dependencies": {
-    "fast-glob": "3.2.12"
+    "fast-glob": "3.2.12",
+    "@types/inquirer": "9.0.3",
+    "inquirer": "9.1.4"
   },
   "devDependencies": {
     "@tsconfig/node18": "1.0.1",
+    "@types/sinon": "10.0.13",
     "ava": "5.1.0",
+    "concat-stream": "2.0.0",
     "postcss": "8.4.20",
     "sinon": "15.0.1",
     "ts-node": "10.9.1",

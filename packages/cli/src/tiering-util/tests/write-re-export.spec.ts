@@ -18,7 +18,7 @@ test.before(async () => {
 
 test('eject()', async t => {
   await writeReExport({ target, source, packageName: 'mock' })
-  const expected = "export * from 'mock/src/sum'"
+  const expected = "export * from 'mock/src/divide'"
   const actual = await fs.readFile(path.resolve(target, './index.ts'), { encoding: 'utf8' })
   t.is(expected, actual)
 })

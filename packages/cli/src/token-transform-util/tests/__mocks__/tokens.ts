@@ -1,5 +1,5 @@
-import { DesignTokenGroup } from '../../types.js'
-export const map:DesignTokenGroup = {
+import { DesignTokenGroup } from '../../../types.js'
+export const tokens:DesignTokenGroup = {
   'background-color': {
     purple: {
       1: { $value: '#4c00b0', $type: 'color' },

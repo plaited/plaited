@@ -1,6 +1,6 @@
 import test from 'ava'
 import { parse }  from './parse.js'
-import json  from './__mocks__/set.json'
+import json  from './__mocks__/tokens.json'
 
 
 

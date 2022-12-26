@@ -1,3 +1,7 @@
+/**
+ * Fork of https://stackoverflow.com/questions/13786160/copy-folder-recursively-in-node-js
+ */
+
 import fs from 'fs/promises'
 import path from 'path'
 import { getStat } from '../get-stat.js'

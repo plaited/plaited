@@ -1,5 +1,9 @@
+/**
+ * Fork of https://github.com/ewnd9/inquirer-test with some new key options and updated to
+ * support newer node version
+ */
 import { spawn } from 'child_process'
-//@ts-ignore: test
+//@ts-ignore: not wasting time typing this classic package
 import concat from 'concat-stream'
 
 export const run = (args:string[], combo: string[], timeout = 200) => {

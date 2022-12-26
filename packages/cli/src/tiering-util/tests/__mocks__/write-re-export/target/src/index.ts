@@ -1,1 +1,1 @@
-export * from 'mock/src/sum'
+export * from 'mock/src/divide'
