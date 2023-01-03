@@ -21,8 +21,9 @@
   },
   "types": "dist/lib/index.d.ts",
   "dependencies": {
-    "fast-glob": "3.2.12",
+    "@plaited/utils": "workspace:*",
     "@types/inquirer": "9.0.3",
+    "fast-glob": "3.2.12",
     "inquirer": "9.1.4"
   },
   "devDependencies": {

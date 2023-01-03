@@ -1,5 +1,34 @@
 import { DesignTokenGroup } from '../../types.js'
 export const tokens:DesignTokenGroup = {
+  size: {
+    1: {
+      $value: {
+        static: 2,
+        mobile: 2,
+        desktop: 2,
+        tv: 4,
+      },
+      $type: 'dimension',
+    },
+    2: {
+      $value: {
+        static: 6,
+        mobile: 8,
+        desktop: 6,
+        tv: 8,
+      },
+      $type: 'dimension',
+    },
+    3: {
+      $value: {
+        static: 12,
+        mobile: 16,
+        desktop: 12,
+        tv: 14,
+      },
+      $type: 'dimension',
+    },
+  },
   'background-color': {
     purple: {
       1: { $value: '#4c00b0', $type: 'color' },
@@ -45,11 +74,11 @@ export const tokens:DesignTokenGroup = {
   typography: {
     1: {
       $value: {
-        fontFamily: '{fontFamily.sansSerif}',
-        fontSize: '{fontSize.1}',
-        fontWeight: '{fontWeight.1}',
-        letterSpacing: '{letterSpacing.1}',
-        lineHeight: '{lineHeight.1}',
+        'font-family': '{fontFamily.sansSerif}',
+        'font-size': '{fontSize.1}',
+        'font-weight': '{fontWeight.1}',
+        'letter-spacing': '{letterSpacing.1}',
+        'line-height': '{lineHeight.1}',
       },
       $type: 'typography',
     },

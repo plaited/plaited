@@ -15,3 +15,10 @@ export { jsRaw } from './js-raw/index.js'
  * inline styles in ts/js component files
  */
 export { jsTokens } from './js-tokens/index.js'
+
+
+/**
+ * Utility helpers for resolving aliased values in tokens object
+ */
+
+export * from './resolve'

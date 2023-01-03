@@ -1,6 +1,6 @@
 import { Formatter } from '../../types.js'
 
-export const border:Formatter = ({
+export const displayFlex:Formatter = ({
   tokenPath,
   $value,
   prefix,
