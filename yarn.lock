@@ -598,10 +598,16 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@plaited/cli@workspace:packages/cli"
   dependencies:
+    "@plaited/utils": "workspace:*"
     "@tsconfig/node18": 1.0.1
+    "@types/inquirer": 9.0.3
+    "@types/sinon": 10.0.13
     ava: 5.1.0
+    concat-stream: 2.0.0
     fast-glob: 3.2.12
+    inquirer: 9.1.4
     postcss: 8.4.20
+    sinon: 15.0.1
     ts-node: 10.9.1
     typescript: 4.8.4
   languageName: unknown
@@ -646,6 +652,24 @@ __metadata:
     "@types/sinon": 10.0.13
     ava: 5.1.0
     sinon: 14.0.1
+    ts-node: 10.9.1
+    typescript: 4.8.4
+  languageName: unknown
+  linkType: soft
+
+"@plaited/workshop@workspace:packages/workshop":
+  version: 0.0.0-use.local
+  resolution: "@plaited/workshop@workspace:packages/workshop"
+  dependencies:
+    "@tsconfig/node18": 1.0.1
+    "@types/inquirer": 9.0.3
+    "@types/sinon": 10.0.13
+    ava: 5.1.0
+    concat-stream: 2.0.0
+    fast-glob: 3.2.12
+    inquirer: 9.1.4
+    postcss: 8.4.20
+    sinon: 15.0.1
     ts-node: 10.9.1
     typescript: 4.8.4
   languageName: unknown
@@ -1986,6 +2010,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"buffer-from@npm:^1.0.0":
+  version: 1.1.2
+  resolution: "buffer-from@npm:1.1.2"
+  checksum: 0448524a562b37d4d7ed9efd91685a5b77a50672c556ea254ac9a6d30e3403a517d8981f10e565db24e8339413b43c97ca2951f10e399c6125a0d8911f5679bb
+  languageName: node
+  linkType: hard
+
 "buffer@npm:^5.2.1, buffer@npm:^5.5.0":
   version: 5.7.1
   resolution: "buffer@npm:5.7.1"
@@ -2534,6 +2565,18 @@ __metadata:
   version: 0.0.1
   resolution: "concat-map@npm:0.0.1"
   checksum: 902a9f5d8967a3e2faf138d5cb784b9979bad2e6db5357c5b21c568df4ebe62bcb15108af1b2253744844eb964fc023fbd9afbbbb6ddd0bcc204c6fb5b7bf3af
+  languageName: node
+  linkType: hard
+
+"concat-stream@npm:2.0.0":
+  version: 2.0.0
+  resolution: "concat-stream@npm:2.0.0"
+  dependencies:
+    buffer-from: ^1.0.0
+    inherits: ^2.0.3
+    readable-stream: ^3.0.2
+    typedarray: ^0.0.6
+  checksum: d7f75d48f0ecd356c1545d87e22f57b488172811b1181d96021c7c4b14ab8855f5313280263dca44bb06e5222f274d047da3e290a38841ef87b59719bde967c7
   languageName: node
   linkType: hard
 
@@ -6695,7 +6738,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"readable-stream@npm:3, readable-stream@npm:^3.0.0, readable-stream@npm:^3.1.1, readable-stream@npm:^3.4.0, readable-stream@npm:^3.6.0":
+"readable-stream@npm:3, readable-stream@npm:^3.0.0, readable-stream@npm:^3.0.2, readable-stream@npm:^3.1.1, readable-stream@npm:^3.4.0, readable-stream@npm:^3.6.0":
   version: 3.6.0
   resolution: "readable-stream@npm:3.6.0"
   dependencies:
@@ -7722,6 +7765,13 @@ __metadata:
     media-typer: 0.3.0
     mime-types: ~2.1.24
   checksum: 2c8e47675d55f8b4e404bcf529abdf5036c537a04c2b20177bcf78c9e3c1da69da3942b1346e6edb09e823228c0ee656ef0e033765ec39a70d496ef601a0c657
+  languageName: node
+  linkType: hard
+
+"typedarray@npm:^0.0.6":
+  version: 0.0.6
+  resolution: "typedarray@npm:0.0.6"
+  checksum: 33b39f3d0e8463985eeaeeacc3cb2e28bc3dfaf2a5ed219628c0b629d5d7b810b0eb2165f9f607c34871d5daa92ba1dc69f49051cf7d578b4cbd26c340b9d1b1
   languageName: node
   linkType: hard
 
