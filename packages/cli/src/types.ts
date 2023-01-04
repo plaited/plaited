@@ -1,7 +1,7 @@
 export type AliasValue =  `{${string}}`
 export type PrimitiveValue = string | number | AliasValue
 export type PrimitiveArrayValue = string[] | number[] | AliasValue
-export type ColorValue = `#${string}` | AliasValue
+export type ColorValue = `#${string}`  | AliasValue
 export type ScalarDimensionValue = {
   [key:string] : number
 }

@@ -16,6 +16,7 @@ type Source = {
   }
 }
 
+
 const resolve = ({ path, map, source }:{path: string[], map: DesignTokenGroup, source: Source}) => {
   let toRet = { ...map }
   for (let i = 0, len = path.length; i < len; i++) {

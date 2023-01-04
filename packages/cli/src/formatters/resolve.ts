@@ -1,5 +1,5 @@
 import { DesignTokenGroup, DesignToken } from '../types'
-import { kebabCase } from 'lodash-es'
+import { kebabCase, toPath } from 'lodash-es'
 
 const getResolvedValue = (
   path: string[], tokens: DesignTokenGroup
@@ -43,6 +43,7 @@ export const resolve = (
 ): [DesignToken, string[]] | undefined => {
   const path: string[] = value.split('.')
   const val = getResolvedValue(path, _allTokens)
+  // Need to dynamically check that val is itself not an alias
   if(val){
     return [ val, path ]
   }
