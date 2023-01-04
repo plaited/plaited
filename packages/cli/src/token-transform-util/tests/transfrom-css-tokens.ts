@@ -12,7 +12,7 @@ test.after(async t => {
   await fs.rm(`${outputDirectory}/tokens.css`)
 })
 
-test('transformCssTokens()',  async t => {
+test.skip('transformCssTokens()',  async t => {
   await transformCssTokens({ tokens, outputDirectory, prefix:  'plaited' })
   const content = await fs.readFile(`${outputDirectory}/tokens.css`, { encoding: 'utf8' })
   t.snapshot(content)

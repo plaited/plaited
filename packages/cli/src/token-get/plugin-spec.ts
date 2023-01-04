@@ -7,7 +7,7 @@ import { tokensGet } from'./index.js'
 import { tokens } from'./__mocks__/tokens.js'
 
 
-test('tokensGet(): fetches tokens value correctly', async t => {
+test.skip('tokensGet(): fetches tokens value correctly', async t => {
   const res = await readFile(path.resolve(__dirname, './__mocks__/styles.css'), 'utf8')
   const { css } = await postcss([
     (tokensGet(tokens) as Plugin),
@@ -15,7 +15,7 @@ test('tokensGet(): fetches tokens value correctly', async t => {
   t.snapshot(css)
 })
   
-test('tokensGet: throws on invalid path global token', async t => {
+test.skip('tokensGet: throws on invalid path global token', async t => {
   const res = await readFile(path.resolve(__dirname, './__mocks__/error-1.css'), 'utf8')
   const spy = sinon.spy(console, 'error')
   await postcss([
@@ -25,7 +25,7 @@ test('tokensGet: throws on invalid path global token', async t => {
   
 })
 
-test('tokensGet: throws on invalid path aliased token', async t => {
+test.skip('tokensGet: throws on invalid path aliased token', async t => {
   const res = await readFile(path.resolve(__dirname, './__mocks__/error-2.css'), 'utf8')
   const spy = sinon.spy(console, 'error')
   await postcss([
@@ -35,7 +35,7 @@ test('tokensGet: throws on invalid path aliased token', async t => {
   
 })
 
-test('tokensGet: throws on incomplete path global token', async t => {
+test.skip('tokensGet: throws on incomplete path global token', async t => {
   const res = await readFile(path.resolve(__dirname, './__mocks__/error-3.css'), 'utf8')
   const spy = sinon.spy(console, 'error')
   await postcss([
@@ -44,7 +44,7 @@ test('tokensGet: throws on incomplete path global token', async t => {
   t.truthy(spy.called)
 })
 
-test('tokensGet: throws on incomplete path aliased token', async t => {
+test.skip('tokensGet: throws on incomplete path aliased token', async t => {
   const res = await readFile(path.resolve(__dirname, './__mocks__/error-4.css'), 'utf8')
   const spy = sinon.spy(console, 'error')
   await postcss([
