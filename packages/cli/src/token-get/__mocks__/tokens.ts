@@ -44,7 +44,7 @@ export const tokens:DesignTokenGroup = {
   fontSize: {
     1: {
       $value: 14,
-      $type: 'fontSize',
+      $type: 'dimension',
     },
   },
   fontFamily: {
@@ -62,13 +62,13 @@ export const tokens:DesignTokenGroup = {
   letterSpacing: {
     1: {
       $value: 'normal',
-      $type: 'letterSpacing',
+      $type: 'primitive',
     },
   },
   lineHeight: {
     1: {
       $value: 1,
-      $type: 'lineHeight',
+      $type: 'primitive',
     },
   },
   typography: {

@@ -7,16 +7,16 @@ import { DesignTokenGroup } from '../types.js'
 export const init = async ({
   tokensPath,
   outputDirectory,
-  prefix ='',
+  baseFontSize = 16,
 }: {
   tokensPath: string
   outputDirectory: string
-  prefix?: string
+  baseFontSize?: number
 }) => {
   const tokens = await importJson<DesignTokenGroup>(tokensPath)
-  await transformCssTokens({ tokens, outputDirectory, prefix })
-  await transformJsTokens({ tokens, outputDirectory, prefix })
-  await transformJsRaw({ tokens, outputDirectory, prefix })
+  await transformCssTokens({ tokens, outputDirectory, baseFontSize })
+  await transformJsTokens({ tokens, outputDirectory, baseFontSize })
+  await transformJsRaw({ tokens, outputDirectory, baseFontSize })
 }
 
 

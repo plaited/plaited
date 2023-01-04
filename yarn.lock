@@ -601,11 +601,13 @@ __metadata:
     "@plaited/utils": "workspace:*"
     "@tsconfig/node18": 1.0.1
     "@types/inquirer": 9.0.3
+    "@types/lodash-es": 4.17.6
     "@types/sinon": 10.0.13
     ava: 5.1.0
     concat-stream: 2.0.0
     fast-glob: 3.2.12
     inquirer: 9.1.4
+    lodash-es: 4.17.21
     postcss: 8.4.20
     sinon: 15.0.1
     ts-node: 10.9.1
@@ -1044,6 +1046,22 @@ __metadata:
     "@types/fined": "*"
     "@types/node": "*"
   checksum: 78c14057abe29872b42e244b07b9c1302028b29bef00a429da1781836186d9a4aab948347e22b34829429e0755abfedfbfd11be1d9639c3def5b9c2121b26f26
+  languageName: node
+  linkType: hard
+
+"@types/lodash-es@npm:4.17.6":
+  version: 4.17.6
+  resolution: "@types/lodash-es@npm:4.17.6"
+  dependencies:
+    "@types/lodash": "*"
+  checksum: 9bd239dd525086e278821949ce12fbdd4f100a060fed9323fc7ad5661113e1641f28a7ebab617230ed3474680d8f4de705c1928b48252bb684be6ec9eed715db
+  languageName: node
+  linkType: hard
+
+"@types/lodash@npm:*":
+  version: 4.14.191
+  resolution: "@types/lodash@npm:4.14.191"
+  checksum: ba0d5434e10690869f32d5ea49095250157cae502f10d57de0a723fd72229ce6c6a4979576f0f13e0aa9fbe3ce2457bfb9fa7d4ec3d6daba56730a51906d1491
   languageName: node
   linkType: hard
 
@@ -5328,6 +5346,13 @@ __metadata:
   dependencies:
     p-locate: ^6.0.0
   checksum: 1d88af5b512d6e6398026252e17382907126683ab09ae5d6b8918d0bc72ca2642e1ad6e2fe635c5920840e369618e5d748c08deb57ba537fdd3f78e87ca993e0
+  languageName: node
+  linkType: hard
+
+"lodash-es@npm:4.17.21":
+  version: 4.17.21
+  resolution: "lodash-es@npm:4.17.21"
+  checksum: 05cbffad6e2adbb331a4e16fbd826e7faee403a1a04873b82b42c0f22090f280839f85b95393f487c1303c8a3d2a010048bf06151a6cbe03eee4d388fb0a12d2
   languageName: node
   linkType: hard
 

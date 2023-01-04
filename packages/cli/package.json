@@ -24,10 +24,12 @@
     "@plaited/utils": "workspace:*",
     "@types/inquirer": "9.0.3",
     "fast-glob": "3.2.12",
-    "inquirer": "9.1.4"
+    "inquirer": "9.1.4",
+    "lodash-es": "4.17.21"
   },
   "devDependencies": {
     "@tsconfig/node18": "1.0.1",
+    "@types/lodash-es": "4.17.6",
     "@types/sinon": "10.0.13",
     "ava": "5.1.0",
     "concat-stream": "2.0.0",

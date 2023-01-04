@@ -1,4 +1,5 @@
 import { DesignTokenGroup, DesignToken } from '../types'
+import { kebabCase } from 'lodash-es'
 
 const getResolvedValue = (
   path: string[], tokens: DesignTokenGroup
@@ -45,4 +46,14 @@ export const resolve = (
   if(val){
     return [ val, path ]
   }
+}
+
+export const resolveCSSVar = (
+  value: string,
+  _allTokens: DesignTokenGroup
+) => {
+  const res = resolve(value, _allTokens)
+  if(!res) return ''
+  const [ , path ] = res
+  return `var(--${kebabCase(path.join(' '))})`
 }

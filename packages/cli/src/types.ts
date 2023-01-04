@@ -1,38 +1,31 @@
-type AliasValue =  `{${string}}`
+export type AliasValue =  `{${string}}`
 export type PrimitiveValue = string | number | AliasValue
+export type PrimitiveArrayValue = string[] | number[] | AliasValue
 export type ColorValue = `#${string}` | AliasValue
-export type StrokeStyleValue =  'solid' |
+export type ScalarDimensionValue = {
+  [key:string] : number
+}
+export type DimensionValue = number |
+ScalarDimensionValue |
+  AliasValue
+export type BorderValue = {
+  color: ColorValue,
+  width: Exclude<DimensionValue, ScalarDimensionValue>,
+  style: 'solid' |
   'dashed' |
   'dotted' |
   'double' |
   'groove' |
   'ridge' |
   'outset' |
-  'inset' | 
-  {
-    lineCap: 'round' |'butt' | 'square'
-    dashArray: number[]
-  } |
-  AliasValue
-export type DimensionValue = number |
-  {
-    static: number
-    [key:string] : number
-  } |
-  AliasValue
-export type BorderValue = {
-  color: ColorValue,
-  width: DimensionValue,
-  style: StrokeStyleValue
+  'inset'
 } | AliasValue
-export type CubicBezierValue = number[] | AliasValue
-export type DurationValue = `${number}ms` | AliasValue
 export type DisplayFlexValue = 'flex' | 'inline-flex' | AliasValue
-export type FlexDirectionValue = 'row' | 'row-reverse' | 'column' | 'column-reverse' | AliasValue
-export type GapValue = DimensionValue | `${number}%` | AliasValue
-export type AlignItemsValue = 'stretch' | 'center' | 'baseline' | 'start' | 'end' | AliasValue
-export type FlexWrapValue = 'wrap' | 'wrap-reverse' | AliasValue
-export type DistributeContentValue = 'start' |
+export type FlexDirectionValue = 'row' | 'row-reverse' | 'column' | 'column-reverse' | AliasValue //Uses Primitive Formatter
+export type GapValue = DimensionValue | `${number}%` | AliasValue //Uses Primitive Formatter
+export type AlignItemsValue = 'stretch' | 'center' | 'baseline' | 'start' | 'end' | AliasValue //Uses Primitive Formatter
+export type FlexWrapValue = 'wrap' | 'wrap-reverse' | AliasValue //Uses Primitive Formatter
+export type DistributeContentValue = 'start' | //Uses Primitive Formatter
   'end' |
   'center' |
   'space-between' |
@@ -57,9 +50,8 @@ interface FlexNoAlignedContent extends FlexCommon {
   'align-content': never
 }
 export type FlexValue = FlexAlignedContent | FlexNoAlignedContent | AliasValue
-export type FontFamilyValue = string | string[] | AliasValue
-export type FontSizeValue = DimensionValue
-export type FontStyleValue = 'normal' | 'italic' | 'oblique' | `oblique ${number}deg` | AliasValue
+export type FontFamilyValue = string | string[] | AliasValue //Uses Primitive Formatter
+export type FontStyleValue = 'normal' | 'italic' | 'oblique' | `oblique ${number}deg` | AliasValue  // Uses Primitive Formatter
 export type FontWeightValue = 100 |
   200 |
   300 |
@@ -73,7 +65,7 @@ export type FontWeightValue = 100 |
   'bold' |
   'lighter' |
   'bolder' |
-  AliasValue
+  AliasValue // Uses Primitive Formatter
 export type GradientValue = {
   gradientFunction: 'linear-gradient'|
     'radial-gradient' |
@@ -87,36 +79,32 @@ export type GradientValue = {
     position?: string
   }[]
 } | AliasValue
-export type GridDisplayValue = 'grid' | 'inline-grid' | AliasValue
-export type GridTemplateValue = string[]
-export type GridAutoValue = string[] | number[] | AliasValue
-export type GridAutoFlowValue =  'row' | 'column' | 'row dense' | 'column dense' | AliasValue
+export type DisplayGridValue = 'grid' | 'inline-grid' | AliasValue // Uses Primitive Formatter
+export type GridAutoFlowValue =  'row' | 'column' | 'row dense' | 'column dense' | AliasValue // Uses Primitive Formatter
 export type GridValue = {
-  display: GridDisplayValue
-  'grid-template-columns'?: GridTemplateValue | AliasValue
-  'grid-template-rows'?: GridTemplateValue | AliasValue
-  'grid-template-areas'?: GridTemplateValue | AliasValue
+  display: DisplayGridValue
+  'grid-template-columns'?: string[] | AliasValue
+  'grid-template-rows'?: string[] | AliasValue
+  'grid-template-areas'?: string[] | AliasValue
   'column-gap'?: GapValue
   'row-gap'?: GapValue
   'justify-items'?: AlignItemsValue
   'align-items'?: AlignItemsValue
   'justify-content'?: DistributeContentValue
   'align-content'?: DistributeContentValue
-  'grid-auto-columns'?: GridAutoValue
-  'grid-auto-rows'?: GridAutoValue
+  'grid-auto-columns'?: PrimitiveArrayValue
+  'grid-auto-rows'?: PrimitiveArrayValue
   'grid-auto-flow'?: GridAutoFlowValue
 } | AliasValue
-export type LetterSpacingValue = 'normal' | DimensionValue
-export type LineHeightValue = 'normal' | DimensionValue
-export type PercentageValue = `${number}:${number}` | `${number}%` | number | AliasValue
+export type PercentageValue = `${number}:${number}` | `${number}%` | number | AliasValue // Uses Primitive Formatter
 export type ShadowValue = {
   'color': ColorValue
-  'offsetX': number
-  'offsetY': number
-  'blur': number
-  'spread': number
+  'offsetX': number | AliasValue
+  'offsetY': number | AliasValue
+  'blur': number | AliasValue
+  'spread': number | AliasValue
 } | AliasValue
-export type TimingValue = `${string}s` | `${string}ms` | AliasValue
+export type TimingValue = `${string}s` | `${string}ms` | AliasValue // Uses Primitive Formatter
 export type TransitionValue = {
   duration: TimingValue
   delay:TimingValue
@@ -129,17 +117,17 @@ export type TransitionValue = {
     'step-end' |
     {
       function: 'steps' | 'cubic-bezier'
-      values: string[] | number[]
+      values: string[] | AliasValue
     }
 } | AliasValue
 export type TypographyValue = {
   'font-family': FontFamilyValue
-  'font-size': FontSizeValue
+  'font-size':  number | AliasValue
   'font-weight': FontWeightValue
-  'letter-spacing': LetterSpacingValue
-  'line-height': LineHeightValue
+  'letter-spacing':  number | AliasValue | 'normal'
+  'line-height':  number | AliasValue | 'normal'
 } | AliasValue
-export type TextTransformValue = 'none' |
+export type TextTransformValue = 'none' | // Uses Primitive Formatter
   'capitalize' |
   'uppercase' |
   'lowercase' |
@@ -150,70 +138,124 @@ export type TextTransformValue = 'none' |
 type $Extensions = string | number | boolean | Record<string, string | number  | boolean>
 
 type $Value = PrimitiveValue |
-ColorValue |
-StrokeStyleValue |
+PrimitiveArrayValue |
 BorderValue |
-CubicBezierValue |
 DimensionValue |
-DurationValue |
 FlexValue |
 FontFamilyValue |
-FontSizeValue |
-FontStyleValue |
-FontWeightValue |
 GradientValue |
 GridValue |
-LetterSpacingValue |
-LineHeightValue |
-PercentageValue |
 ShadowValue |
-TimingValue |
 TransitionValue |
-TypographyValue |
-TextTransformValue
+TypographyValue 
 
-type TokenTypes = 
-  'alignItems' |
-  'border' |
-  'color' |
-  'cubicBezier' |
-  'dimension' |
-  'displayFlex' |
-  'distributeContent' |
-  'duration' |
-  'flex' |
-  'flexDirection' |
-  'flexDisplay' |
-  'flexWrap' |
-  'fontFamily' |
-  'fontSize' |
-  'fontStyle' |
-  'fontWeight' |
-  'gap' |
-  'gradient' |
-  'grid' |
-  'gridDisplay' |
-  'gridTemplate' |
-  'gridAuto' |
-  'gridAutoFlow' |
-  'letterSpacing' |
-  'lineHeight' |
-  'percentage' |
-  'primitive' |
-  'shadow' |
-  'strokeStyle' |
-  'textTransform' |
-  'textDecoration' |
-  'transition' |
-  'typography'
+type ValueAndType = 
+  { 
+    $type: 'alignItems' 
+    $value: AlignItemsValue
+  }|
+  { 
+    $type: 'border' 
+    $value: BorderValue
+  }|
+  { 
+    $type: 'color' 
+    $value: ColorValue
+  }|
+  { 
+    $type: 'dimension' 
+    $value: DimensionValue
+  }|
+  { 
+    $type: 'displayFlex' 
+    $value: DisplayFlexValue
+  }|
+  { 
+    $type: 'distributeContent' 
+    $value: DistributeContentValue
+  }|
+  { 
+    $type: 'flex' 
+    $value: FlexValue
+  }|
+  { 
+    $type: 'flexDirection' 
+    $value: FlexDirectionValue
+  }|
+  { 
+    $type: 'displayFlex' 
+    $value: DisplayFlexValue
+  }|
+  { 
+    $type: 'flexWrap' 
+    $value: FlexWrapValue 
+  }|
+  { 
+    $type: 'fontFamily' 
+    $value: FontFamilyValue
+  }|
+  { 
+    $type: 'fontStyle' 
+    $value: FontStyleValue
+  }|
+  { 
+    $type: 'fontWeight' 
+    $value: FontWeightValue
+  }|
+  { 
+    $type: 'gap' 
+    $value: GapValue
+  }|
+  { 
+    $type: 'gradient' 
+    $value: GradientValue
+  }|
+  { 
+    $type: 'grid' 
+    $value: GridValue
+  }|
+  { 
+    $type: 'displayGrid' 
+    $value: DisplayGridValue
+  }|
+  { 
+    $type: 'gridAutoFlow' 
+    $value: GridAutoFlowValue
+  }|
+  { 
+    $type: 'percentage' 
+    $value: PercentageValue
+  }|
+  { 
+    $type: 'primitive' 
+    $value: PrimitiveValue | PrimitiveArrayValue
+  }|
+  { 
+    $type: 'shadow' 
+    $value: ShadowValue
+  }|
+  { 
+    $type: 'textTransform' 
+    $value: TextTransformValue
+  }|
+  {
+    $type: 'timing',
+    $value: TimingValue
+  } |
+  { 
+    $type: 'transition' 
+    $value: TransitionValue
+  }|
+  { 
+    $type: 'typography' 
+    $value: TypographyValue
+  }
 
 // basic design token definition pulled from the https://design-tokens.github.io/community-group/format/#design-token-0
 export type DesignToken  = {
-  $value: $Value
-  $type: TokenTypes
   $extensions?: $Extensions
   $description?: string
-}
+} & ValueAndType
 
 // general tokens object type definition
 export interface DesignTokenGroup {
@@ -241,12 +283,20 @@ export interface JSON extends ParseShared {
   [key: string]: JSON | JSON[] | string[] | string | $Value | undefined
 }
 
-export type Formatter = (args: {
+export type Formatter<T = $Value> = (args: {
   tokenPath: string[],
-  $value: $Value
-  prefix?: string
+  $value: T
   _allTokens: DesignTokenGroup
+  baseFontSize: number
 }) => string
 
-export type FormatterObject = Record<TokenTypes, Formatter>
+
+
+export type GetFormatter = (args: {
+  tokenPath: string[],
+  $value:  $Value
+  _allTokens: DesignTokenGroup
+  baseFontSize: number
+  $type: string
+}) => string
 

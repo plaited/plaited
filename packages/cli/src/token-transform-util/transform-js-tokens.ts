@@ -6,17 +6,17 @@ import { DesignTokenGroup } from '../types.js'
 export const transformJsTokens = async ({
   tokens,
   outputDirectory,
-  prefix,
+  baseFontSize,
 }: {
   tokens: DesignTokenGroup,
   outputDirectory: string,
-  prefix: string
+  baseFontSize: number
 }) => {
   const output = `${outputDirectory}/js-tokens`
   await fs.mkdir(output, { recursive: true })
   const content = formatList({
     tokens,
-    prefix,
+    baseFontSize,
     formatters: jsTokens,
   })
   await fs.writeFile(`${output}/tokens.js`,  content)
