@@ -23,7 +23,7 @@ import { shadow } from './shadow.js'
 import { transition } from './transition.js'
 import { typography } from './typography.js'
 
-export const jsRaw: GetFormatter = ({ $type, $value, ...rest }) => $type === 'border'
+export const cssTokens: GetFormatter = ({ $type, $value, ...rest }) => $type === 'border'
   ? border({ ...rest, $value: $value as BorderValue })
   : $type === 'dimension'
   ? dimension({ ...rest, $value: $value as DimensionValue })
