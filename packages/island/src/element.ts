@@ -3,7 +3,7 @@ import { wire, Wire } from './wire.js'
 
 
 
-interface Component extends Wire {
+interface Element extends Wire {
   tag: string
   template:string
   /** @defaultValue 'open' */
@@ -11,12 +11,12 @@ interface Component extends Wire {
 }
 
 /** @returns template string for a web component */
-export const component = ({ 
+export const element = ({ 
   tag,
   template,
   mode = 'open',
   ...rest
-}: Component) => html`
+}: Element) => html`
 <${tag} ${wire({ ...rest })}>
   <template shadowroot="${mode}">
     ${template}

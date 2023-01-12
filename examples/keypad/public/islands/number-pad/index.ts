@@ -1,8 +1,8 @@
-import { defineComponent, usePlait, Query, Plaited } from '@plaited/island'
+import { defineElement, usePlait, Plaited } from '@plaited/island'
 import { send } from '../comms'
 // @ts-ignore: test
 window.streamLog = []
-defineComponent('number-pad', base => class extends base {
+defineElement('number-pad', base => class extends base {
   constructor() {
     super()
   }

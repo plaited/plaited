@@ -1,16 +1,15 @@
 /* eslint-disable no-console */
-import { defineComponent, usePlait, Query, Plaited } from '@plaited/island'
+import { defineElement, usePlait, Query, Plaited } from '@plaited/island'
 import {
   strand,
   loop,
   waitFor,
   request,
-  TriggerFunc,
 } from '@plaited/plait'
 import { connect } from '../comms'
 
 
-defineComponent('number-display', base => class extends base {
+defineElement('number-display', base => class extends base {
   constructor() {
     super()
   }
@@ -21,7 +20,7 @@ defineComponent('number-display', base => class extends base {
   get display() {
     return this.#display
   }
-  plait($:Query, context: this): Plaited{
+  plait($:Query, context: this){
     const strands = {
       onClear: loop(strand(
         waitFor({ eventName: 'clear' }),

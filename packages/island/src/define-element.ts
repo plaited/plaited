@@ -40,7 +40,7 @@ export type Plaited = {
 
 export type Query = <T = Element>(id: string) => T[]
 
-export class BaseComponent extends HTMLElement {
+export class BaseElement extends HTMLElement {
   #noDeclarativeShadow = false
   #shadowObserver: MutationObserver
   #templateObserver: MutationObserver
@@ -144,7 +144,7 @@ export class BaseComponent extends HTMLElement {
   }
 }
 
-export const defineComponent = (tag: string, mixin: (base: typeof BaseComponent) => CustomElementConstructor) => {
+export const defineElement = (tag: string, mixin: (base: typeof BaseElement) => CustomElementConstructor) => {
   if (customElements.get(tag)) return
-  customElements.define(tag, mixin(BaseComponent))
+  customElements.define(tag, mixin(BaseElement))
 }
