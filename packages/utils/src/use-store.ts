@@ -1,4 +1,4 @@
-import { trueTypeOf } from '@plaited/utils'
+import { trueTypeOf } from './true-type-of'
 export const useStore = <T>(initialStore: T) => {
   let store = initialStore
   const get = () => store

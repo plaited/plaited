@@ -22,7 +22,6 @@
     "**/*.spec.*"
   ],
   "include": [
-    "src",
-    "../utils/src/use-store.ts"
+    "src"
   ]
 }

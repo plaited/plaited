@@ -1,39 +1,30 @@
 import { Plait, RulesFunc, TriggerFunc, Listener, Strategy } from '@plaited/plait'
 import { noop } from '@plaited/utils'
 
-type Common = {
-  strands: Record<string, RulesFunc>
-  actions: Record<string, (payload?: any) => void>
+type UsePlait = (args: {
+  strands?: Record<string, RulesFunc>
+  actions?: Record<string, (payload?: any) => void>
   logger?: Listener
   strategy?: Strategy;
-}
-
-interface Connected extends Common {
-  connect: (recipient: string, cb: TriggerFunc) => () => void
-  context: HTMLElement
+  connect?: (recipient: string, cb: TriggerFunc) => () => void
+  context?: HTMLElement
   id?: string
-}
+}) => { trigger: TriggerFunc, disconnect: () => void}
 
-interface Isolated extends Common {
-  connect: never
-  context: never
-  id: never
-}
-
-export const usePlait = ({
+export const usePlait: UsePlait = ({
   strands = {},
-  actions,
+  actions = {},
   id,
   connect,
   context,
   logger,
   strategy,
-}: Isolated | Connected): { trigger: TriggerFunc, disconnect: () => void} => {
+} = {})  => {
   const { feedback, trigger, stream } = new Plait(strands, { strategy, dev: Boolean(logger) })
   logger && stream.subscribe(logger)
   feedback(actions)
   let disconnect = noop
-  if(connect){
+  if(connect && context){
     const _id = id || context.tagName.toLowerCase()
     disconnect = connect(id || context.tagName.toLowerCase(), trigger)
     trigger({ eventName: `connected->${_id}` })

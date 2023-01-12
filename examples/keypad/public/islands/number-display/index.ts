@@ -70,10 +70,6 @@ defineComponent('number-display', base => class extends base {
       connect,
     })
   }
-  test(evt: MouseEvent, trigger: TriggerFunc) {
-    trigger({
-      eventName: 'logMe',
-    })
-  }
+  
 })
 

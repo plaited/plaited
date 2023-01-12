@@ -1,7 +1,7 @@
 import { dataTrigger, dataTarget } from './constants.js'
 import { delegatedListener } from './delegated-listener.js'
-import { TriggerFunc, TriggerArgs } from '@plaited/plait'
-import { noop } from '@plaited/utils'
+import { TriggerFunc, baseDynamics } from '@plaited/plait'
+import { usePlait } from './use-plait.js'
 
 // It takes the value of a data-target attribute and return all the events happening in it. minus the method idetenfier
 // so iof the event was data-target="click->doSomething" it would return ["click"]
@@ -10,9 +10,9 @@ const matchAllEvents = (str: string) =>{
   return [ ...str.matchAll(regexp) ].flatMap(([ , event ]) => event)
 }
 
-// returns the method name to connect our event binding to data-target="click->doSomething" it would return "doSomething"
-// not triggers are separated by spaces in the attribute data-target="click->doSomething focus->somethingElse"
-const getTriggerMethod = (evt: Event) => {
+// returns the request/action name to connect our event binding to data-target="click->doSomething" it would return "doSomething"
+// note triggers are separated by spaces in the attribute data-target="click->doSomething focus->somethingElse"
+const getTriggerKey = (evt: Event) =>{
   const el = evt.currentTarget
   const type = evt.type
   const pre = `${type}->`
@@ -34,19 +34,19 @@ const filterAddedNodes = (nodes:NodeList) => {
 }
 
 export type Plaited = {
-  trigger?: TriggerFunc,
-  disconnect?: () => void
+  trigger: TriggerFunc,
+  disconnect: () => void
 }
 
-export type Query = (selector: string) => Element[]
+export type Query = <T = Element>(id: string) => T[]
 
 export class BaseComponent extends HTMLElement {
   #noDeclarativeShadow = false
   #shadowObserver: MutationObserver
   #templateObserver: MutationObserver
-  #disconnect?: () => void 
+  #disconnect: () => void 
   internals_: ElementInternals
-  #trigger?: TriggerFunc
+  #trigger: TriggerFunc
   constructor(
     mode?: 'open' | 'closed',
     delegatesFocus?: boolean
@@ -72,35 +72,30 @@ export class BaseComponent extends HTMLElement {
     const {  disconnect, trigger } = this.plait(this.$, this)
     this.#disconnect = disconnect
     this.#trigger = trigger
+    this.#trigger({ eventName: `connected->${this.id || this.tagName.toLowerCase()}`, baseDynamic: baseDynamics.objectObject })
   }
   plait($: Query,
     context: this
   ): Plaited{
-    return {
-      disconnect: noop,
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      trigger: (args:TriggerArgs) =>{},
-    }
+    return usePlait({})
   }
   disconnectedCallback() {
+    this.#trigger({ eventName: `disconnected->${this.id || this.tagName.toLowerCase()}`, baseDynamic: baseDynamics.objectObject })
     this.#templateObserver && this.#templateObserver.disconnect()
     this.#shadowObserver.disconnect()
-    this.#disconnect && this.#disconnect()
+    this.#disconnect()
   }
   #delegateListeners(nodes?: HTMLElement[]) {
     const triggers = nodes || (this.shadowRoot as ShadowRoot).querySelectorAll(`[${dataTrigger}]`)
     triggers.forEach(el => {
       if(!delegatedListener.has(el)) {
         delegatedListener.set(el, evt => {
-          const method = getTriggerMethod(evt)
-          if(method === 'plait') {
-            console.error('plait is a reserved method')
-            return
-          }
-          method in this && // need to test if I can use this.hasOwnProperty()
-          typeof this[method as keyof this] === 'function' &&
-          //@ts-ignore: is callable
-          this[method](evt, this.#trigger)
+          const triggerKey = getTriggerKey(evt)
+          triggerKey && this.#trigger({
+            eventName: triggerKey,
+            payload: evt,
+            baseDynamic: baseDynamics.objectPerson,
+          })
         })
       }
       //@ts-ignore: will be HTMLOrSVGElement
@@ -144,8 +139,8 @@ export class BaseComponent extends HTMLElement {
     mo.observe(this, { childList: true })
     return mo
   }
-  $(id: string) {
-    return [ ...((this.shadowRoot as ShadowRoot).querySelectorAll(`[${dataTarget}="${id}"]`)) ]
+  $<T = Element>(id: string) {
+    return [ ...((this.shadowRoot as ShadowRoot).querySelectorAll(`[${dataTarget}="${id}"]`)) ] as T
   }
 }
 

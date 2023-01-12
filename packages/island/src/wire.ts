@@ -2,7 +2,7 @@ import  { html } from './html.js'
 import { dataTrigger, dataTarget } from './constants.js'
  
 /** @description wires attributes to templates with sensible escaping */
-export const wire = (obj: {
+export type Wire = {
   target?: string,
   triggers?: Record<string, string>
   className?: string,
@@ -10,7 +10,8 @@ export const wire = (obj: {
   for?: never
   class?: never
   [key: string]: unknown
-}) => {
+}
+export const wire = (obj: Wire) => {
   const attributes = []
   for(const prop  in obj) {
     const value = obj[prop]

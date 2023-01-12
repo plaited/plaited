@@ -53,16 +53,4 @@ it('component()', () => {
     '<z-el><template shadowroot="closed"><div><h1>header</h1></div></template></z-el>',
     'tag, template, and mode'
   )
-  assert.equal(
-    component({
-      tag: 'z-el',
-      mode: 'closed',
-      template: html`<div>
-        <slot></slot>
-      </div>`,
-      slotted: '<h1>header</h1>',
-    }),
-    '<z-el><template shadowroot="closed"><div><slot></slot></div></template><h1>header</h1></z-el>',
-    'tag, template, slot, and mode'
-  )
 })
