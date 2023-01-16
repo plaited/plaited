@@ -1,4 +1,4 @@
-# @plaited/workshop
+# [WIP] @plaited/workshop
 A simple live preview workshop for developing plaited ui components. It leverages the [Component Story Format](https://github.com/ComponentDriven/csf)
 
 ## Features

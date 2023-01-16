@@ -1,4 +1,4 @@
-# @plaited/framework
+# @plaited/plaited
 
 This monorepo is a framework for rapidly coding and refining web application interfaces as specifications (requirements) change and evolve. Web application interfaces are inherently reactive and complex. Business needs are not always clear at the beginning of a project. Untangling code as requirements change is a frustrating process. However what if we could begin working on new interface projects comfortable in our uncertainty and build out solid production ready code?
 
