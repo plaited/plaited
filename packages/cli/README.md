@@ -1,4 +1,4 @@
-# @plaited/cli
+# [WIP] @plaited/cli
 
 This package exports numerous cli utilities necessary for the management of a design system developed using @plaited/framework.
 
