@@ -2,7 +2,7 @@ import { DesignTokenGroup, DesignToken } from '../types.js'
 import { kebabCase, camelCase } from 'lodash-es'
 
 const getResolvedValue = (
-  path: string[], tokens: DesignTokenGroup
+  path: string[], tokens: DesignTokenGroup | undefined
 ): DesignToken | undefined => {
   let toRet = { ...tokens }
   for (let i = 0, len = path.length; i < len; i++) {
@@ -32,30 +32,30 @@ const getResolvedValue = (
   return
 }
 
-export const hasAlias = ($value:unknown) => {
-  if(typeof $value !== 'string') return false
+export const hasAlias = ($value: unknown) => {
+  if (typeof $value !== 'string') return false
   const regex = /^(?:\{)([^"]*?)(?:\})$/
   return regex.test($value)
 }
 
 export const resolve = (
   value: string,
-  _allTokens: DesignTokenGroup
+  _allTokens: DesignTokenGroup | undefined
 ): [DesignToken, string[]] | undefined => {
   const path: string[] = value.split('.')
   const val = getResolvedValue(path, _allTokens)
   // Need to dynamically check that val is itself not an alias
-  if(val){
+  if (val) {
     return [ val, path ]
   }
 }
 
 export const resolveCSSVar = (
   value: string,
-  _allTokens: DesignTokenGroup
+  _allTokens: DesignTokenGroup | undefined
 ) => {
   const res = resolve(value, _allTokens)
-  if(!res) return ''
+  if (!res) return ''
   const [ , path ] = res
   return `var(--${kebabCase(path.join(' '))})`
 }
@@ -65,7 +65,7 @@ export const resolveTSVar = (
   _allTokens: DesignTokenGroup
 ) => {
   const res = resolve(value, _allTokens)
-  if(!res) return ''
+  if (!res) return ''
   const [ , path ] = res
   return camelCase(path.join(' '))
 }

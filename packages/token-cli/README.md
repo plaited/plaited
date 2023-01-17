@@ -1,38 +1,6 @@
-# [WIP] @plaited/cli
+# [WIP] @plaited/tokens-cli
 
-This package exports numerous cli utilities necessary for the management of a design system developed using @plaited/framework.
-
-## copy-css-util
-This utility is for copying stylesheets to a desired directory.
-
-Here is an example usage where we are copying the the tokens stylesheet from `@plaited/tokens` to our assets directory.
-```ts
-import path from 'path'
-import { fileURLToPath } from 'url'
-import { copyCssUtil } from '@plaited/cli'
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-;(async () => {
-  const assets = path.resolve(__dirname, '../assets')
-  await copyCssUtil('@plaited/tokens', assets)
-})()
-```
-
-## tiering-utility
-This utility is for tiering or extends a plaited design system. When used with @plaited/components it provides a project setup for ones own design system. It provides three features: project setup, component ejection, and project update.
-
-### Project setup
-This feature will scaffold your design system repo for you with our recommended:
-- yarn monorepo setup
-- testing setup
-- component workshop
-- re-exports of @plaited/components
-
-### Component ejection
-This feature will lift a component from `@plaited/components` into your projects workspace where you can fork and modify it to meet your needs. Ejected components will use your configured component prefix.
-
-### Project update
-This feature will look at your re-export file and then update you to the latest version of @plaited/components and it's dependencies.
+This package exports tokens cli utilities necessary for the management of a design system developed using @plaited/framework.
 
 ## token-get
 This post css plugin allows you to safely get token values from tokens transformed into CSS custom properties using out token-transform-util. It will either return back a css custom property or a mixin for tokens types: typography, grid, and flex.
@@ -87,13 +55,13 @@ Example usage
 ```ts
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { tokenSchemaUtil } from '@plaited/cli'
+import { tokenSchemaUtil } from '@plaited/tokens-cli'
+import tokens from './tokens.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 ;(async () => {
-  const tokensFilePath = path.resolve(__dirname, '../src/tokens.json')
   const testDirectory = path.resolve(__dirname, '../tests')
-  await tokenSchemaUtil(tokensFilePath, testDirectory)
+  await tokenSchemaUtil(tokens, testDirectory)
 })()
 ```
 
@@ -102,29 +70,37 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 import test from 'ava'
 import Ajv from 'ajv';
 import { fileURLToPath } from 'url'
-
+import { importJson } from '@plaited/tokens-cli'
+import tokens from './tokens.js'
 const ajv = new Ajv()
-const schemaFilePath = path.resolve(__dirname, './tokens-schema.json')
-const tokensFilePath = path.resolve(__dirname, '../src/tokens.json')
 
 test('token schema', async t => {
-  const { default: schema } = await import(
-    schemaFilePath,
-    { assert: { type: 'json' } }
-  )
-  const { default: tokens } = await import(
-    tokensFilePath,
-    { assert: { type: 'json' } }
-  )
+  const schema = importJson(path.resolve(__dirname, './tokens-schema.json'))
   const isValid = ajv.validate(schema, tokens)
    t.is(isValid, true);
 })
 ```
 
 ## token-transform-util
-This utility will transform a json file that adheres to the token format module into css and js assets to be used in component code. Output assets will be optimized as much as possible. Treeshaken with reduced redunancy in our JS output and global and necessary aliased variables in our css output. When used in concert with out @plaited/tokens-get postcss plugin you will get the best result.
+This utility will transform a tokens object of type DesignTokensGroup that adheres to the token format module into css and ts assets to be used in component code. Output assets will be optimized as much as possible. Treeshaken with reduced redundancy in our TS output and global and necessary aliased variables in our CSS output. When used in concert with out @plaited/tokens-get postcss plugin you will get the best result.
 
-## component-scaffold-util
-This utility will scaffold a component using our recommended patterns for optimal development and testing when working with @plaited/island.
+**Transform tokens**
+```ts
+import path from 'path'
+import { fileURLToPath } from 'url'
+import { tokenSchemaUtil } from '@plaited/tokens-cli'
+import tokens from './tokens.js'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const  outPutDirectory = path.resolve(__dirname, '../dist')
+
+;(async () => {
+  await tokenTransformUtil = async ({
+    tokens,
+    outputDirectory,
+    baseFontSize: 10 // default to 20,
+  })
+})()
+```
 
 

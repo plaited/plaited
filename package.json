@@ -33,6 +33,9 @@
   "browserslist": [
     "> 2%"
   ],
+  "dependencies": {
+    "@types/node": "^18.11.18"
+  },
   "devDependencies": {
     "@commitlint/cli": "17.3.0",
     "@commitlint/config-conventional": "17.3.0",

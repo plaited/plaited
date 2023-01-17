@@ -19,5 +19,5 @@ export const transformTsTokens = async ({
     baseFontSize,
     formatters: tsTokens,
   })
-  await fs.writeFile(`${output}/tokens.ts`,  content)
+  await fs.writeFile(`${output}/tokens.ts`, content)
 }
