@@ -1,5 +1,20 @@
-import { Formatter } from '../../types.js.js'
+import { AliasValue, Formatter, TransitionValue } from '../../types.js'
+import { resolveCSSVar, hasAlias } from '../resolve.js'
+import { kebabCase } from 'lodash-es'
 
-export const transition:Formatter = ({ tokenPath, $value, prefix }) => {
-  return ''
+export const transition:Formatter<TransitionValue> = ({ tokenPath, $value, _allTokens }) => {
+  if (hasAlias($value)) return ''
+  const { duration, delay, timingFunction } = $value as Exclude<TransitionValue, AliasValue>
+  const val = [
+    hasAlias(duration)
+      ? resolveCSSVar(duration, _allTokens) 
+      : duration,
+    delay && hasAlias(delay)
+      ? resolveCSSVar(delay, _allTokens)
+      : delay,
+    timingFunction && typeof timingFunction !== 'string'
+      ? `${timingFunction.function}(${timingFunction.values.map(v => v.toString()).join(' ')})`
+      : timingFunction,
+  ]
+  return `:root { --${kebabCase(tokenPath.join(' '))}: ${val.filter(Boolean).join(' ')}); }`
 }

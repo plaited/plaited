@@ -1,10 +1,11 @@
-// @ts-nocheck
-import test from 'ava'
-import { parse }  from '../parse.js'
-import { importJson } from '../../import-json.js'
-import { Schema, JSON, DesignTokenGroup } from '../../types.js'
+//@ts-nocheck
 import { fileURLToPath } from 'url'
 import path from 'path'
+import test from 'ava'
+import { parse }  from '../parse.js'
+import { importJson } from '../import-json.js'
+import { Schema, JSON } from '../types.js'
+import { DesignTokenGroup } from '../../token-transform-util/types.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 

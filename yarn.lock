@@ -640,6 +640,7 @@ __metadata:
     inquirer: 9.1.4
     lodash-es: 4.17.21
     postcss: 8.4.20
+    postcss-discard-duplicates: 5.1.0
     sinon: 15.0.1
     ts-node: 10.9.1
     typescript: 4.8.4
@@ -6593,6 +6594,15 @@ __metadata:
     debug: ^3.2.7
     mkdirp: ^0.5.6
   checksum: 116b4aed1b9e16f6d5503823d966d9ffd41b1c2339e27f54c06cd2f3015a9d8ef53e2a53b57bc0a25af0885977b692007353aa28f9a0a98a44335cb50487240d
+  languageName: node
+  linkType: hard
+
+"postcss-discard-duplicates@npm:5.1.0":
+  version: 5.1.0
+  resolution: "postcss-discard-duplicates@npm:5.1.0"
+  peerDependencies:
+    postcss: ^8.2.15
+  checksum: 88d6964201b1f4ed6bf7a32cefe68e86258bb6e42316ca01d9b32bdb18e7887d02594f89f4a2711d01b51ea6e3fcca8c54be18a59770fe5f4521c61d3eb6ca35
   languageName: node
   linkType: hard
 

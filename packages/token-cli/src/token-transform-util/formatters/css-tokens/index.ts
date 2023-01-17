@@ -1,44 +1,43 @@
 import {
   BorderValue, 
   DimensionValue, 
-  FlexValue, 
   FontFamilyValue, 
   GradientValue, 
-  GridValue, 
-  ShadowValue, 
+  DropShadowValue, 
   TransitionValue, 
-  TypographyValue, 
   PrimitiveValue, 
   PrimitiveArrayValue,
-} from '../../types.js.js'
-import { GetFormatter } from '../../types'
+  GetFormatter,
+  GridTemplateValue,
+  GapValue,
+} from '../../types.js'
 import { border } from './border.js'
 import { dimension } from './dimension.js'
-import { flex } from './flex.js'
 import { fontFamily } from './font-family.js'
 import { gradient } from './gradient.js'
-import { grid } from './grid.js'
-import { primitive } from './primitive.js'
-import { shadow } from './shadow.js'
+import { defaultFormat } from './default-format.js'
+import { dropShadow } from './drop-shadow.js'
 import { transition } from './transition.js'
-import { typography } from './typography.js'
+import { nullFormat } from './null-format.js'
+import { gridTemplate } from './grid-template.js'
+import { gap } from './gap.js'
 
 export const cssTokens: GetFormatter = ({ $type, $value, ...rest }) => $type === 'border'
   ? border({ ...rest, $value: $value as BorderValue })
-  : $type === 'dimension'
+  : [ 'dimension', 'lineHeight', 'letterSpacing', 'fontSize' ].includes($type)
   ? dimension({ ...rest, $value: $value as DimensionValue })
-  : $type === 'flex'
-  ? flex({ ...rest, $value: $value as FlexValue })
   : $type === 'fontFamily'
   ? fontFamily({ ...rest, $value: $value as FontFamilyValue })
   : $type === 'gradient'
   ? gradient({ ...rest, $value: $value as GradientValue })
-  : $type === 'grid'
-  ? grid({ ...rest, $value: $value as GridValue })
   : $type === 'shadow'
-  ? shadow({ ...rest, $value: $value as ShadowValue })
+  ? dropShadow({ ...rest, $value: $value as DropShadowValue })
   : $type === 'transition'
   ? transition({ ...rest, $value: $value as TransitionValue })
-  : $type === 'typography'
-  ? typography({ ...rest, $value: $value as TypographyValue })
-  : primitive({ ...rest, $value: $value as PrimitiveValue | PrimitiveArrayValue })
+  : $type === 'gap'
+  ? gap({ ...rest, $value: $value as GapValue })
+  : $type === 'gridTemplate'
+  ? gridTemplate({ ...rest, $value: $value as GridTemplateValue })
+  : [ 'typography' , 'grid' , 'flex' ].includes($type)
+  ? nullFormat()
+  : defaultFormat({ ...rest, $value: $value as PrimitiveValue | PrimitiveArrayValue })

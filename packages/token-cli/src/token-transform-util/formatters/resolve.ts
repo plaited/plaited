@@ -1,5 +1,5 @@
-import { DesignTokenGroup, DesignToken } from '../types'
-import { kebabCase, toPath } from 'lodash-es'
+import { DesignTokenGroup, DesignToken } from '../types.js'
+import { kebabCase, camelCase } from 'lodash-es'
 
 const getResolvedValue = (
   path: string[], tokens: DesignTokenGroup
@@ -32,9 +32,10 @@ const getResolvedValue = (
   return
 }
 
-export const hasAlias = (str:string) => {
+export const hasAlias = ($value:unknown) => {
+  if(typeof $value !== 'string') return false
   const regex = /^(?:\{)([^"]*?)(?:\})$/
-  return regex.test(str)
+  return regex.test($value)
 }
 
 export const resolve = (
@@ -57,4 +58,14 @@ export const resolveCSSVar = (
   if(!res) return ''
   const [ , path ] = res
   return `var(--${kebabCase(path.join(' '))})`
+}
+
+export const resolveTSVar = (
+  value: string,
+  _allTokens: DesignTokenGroup
+) => {
+  const res = resolve(value, _allTokens)
+  if(!res) return ''
+  const [ , path ] = res
+  return camelCase(path.join(' '))
 }

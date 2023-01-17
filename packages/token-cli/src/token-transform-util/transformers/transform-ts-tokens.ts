@@ -1,9 +1,9 @@
 import fs from 'fs/promises'
 import { formatList } from './format-list.js'
-import { jsTokens } from '../formatters/index.js'
-import { DesignTokenGroup } from '../types.js.js'
+import { tsTokens } from '../formatters/index.js'
+import { DesignTokenGroup } from '../types.js'
 
-export const transformJsTokens = async ({
+export const transformTsTokens = async ({
   tokens,
   outputDirectory,
   baseFontSize,
@@ -12,12 +12,12 @@ export const transformJsTokens = async ({
   outputDirectory: string,
   baseFontSize: number
 }) => {
-  const output = `${outputDirectory}/js-tokens`
+  const output = `${outputDirectory}/ts-tokens`
   await fs.mkdir(output, { recursive: true })
   const content = formatList({
     tokens,
     baseFontSize,
-    formatters: jsTokens,
+    formatters: tsTokens,
   })
-  await fs.writeFile(`${output}/tokens.js`,  content)
+  await fs.writeFile(`${output}/tokens.ts`,  content)
 }

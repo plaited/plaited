@@ -1,5 +1,5 @@
 import { trueTypeOf } from '@plaited/utils'
-import { JSON, Schema } from '../types.js'
+import { JSON, Schema } from './types.js'
 // Fork of https://github.com/easy-json-schema/easy-json-schema
 
 const supportType = [ 'string', 'number', 'array', 'object', 'boolean', 'integer' ]

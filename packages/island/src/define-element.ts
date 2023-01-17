@@ -135,12 +135,8 @@ export class BaseElement extends HTMLElement {
     return mo
   }
   $<T = Element>(id: string) {
-    return [ ...((this.shadowRoot as ShadowRoot).querySelectorAll(`[${dataTarget}="${id}"]`)) ] as T
+    return [ ...((this.shadowRoot as ShadowRoot).querySelectorAll(`[${dataTarget}="${id}"]`)) ] as T[]
   }
-  // static define(tag: string, element: CustomElementConstructor) {
-  //   if (customElements.get(tag)) return
-  //   customElements.define(tag, element)
-  // }
 }
 
 export const defineElement = (tag: string, mixin: (base: typeof BaseElement) => CustomElementConstructor) => {

@@ -1,7 +1,9 @@
 import fs from 'fs/promises'
 import { formatList } from './format-list.js'
-import { cssTokens } from '../../formatters/index.js.js'
-import { DesignTokenGroup } from '../../types.js'
+import { cssTokens } from '../formatters/index.js'
+import { DesignTokenGroup } from '../types.js'
+import postcss from'postcss'
+import discardDuplicates from 'postcss-discard-duplicates' 
 
 export const transformCssTokens = async ({
   tokens,
@@ -19,5 +21,8 @@ export const transformCssTokens = async ({
     baseFontSize,
     formatters: cssTokens,
   })
-  await fs.writeFile(`${output}/tokens.css`, [ ':root{\n', content, '}' ].join(''))
+  const { css } = await postcss([
+    discardDuplicates,
+  ]).process(content, { from: undefined, to: '' })
+  await fs.writeFile(`${output}/tokens.css`, css)
 }

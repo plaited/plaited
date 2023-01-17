@@ -1,5 +1,17 @@
-import { Formatter } from '../../types.js.js'
+import { AliasValue, Formatter, GradientValue } from '../../types.js'
+import { resolveCSSVar, hasAlias } from '../resolve.js'
+import { kebabCase } from 'lodash-es'
 
-export const gradient:Formatter = ({ tokenPath, $value, prefix }) => {
-  return ''
+export const gradient:Formatter<GradientValue> = ({ tokenPath, $value, _allTokens }) => {
+  if (hasAlias($value)) return ''
+  const { gradientFunction, angleShapePosition, colorStops } = $value as Exclude<GradientValue, AliasValue>
+  const stops = colorStops.map(({ color, position }) => {
+    const _color: string | undefined = color && hasAlias(color)
+      ? resolveCSSVar(color, _allTokens)
+      : color
+    return [ _color, position ]
+      .filter(Boolean)
+      .join(' ')
+  })
+  return `:root { --${kebabCase(tokenPath.join(' '))}: ${gradientFunction}(${[ angleShapePosition, ...stops ].filter(Boolean).join(',')}); }`
 }

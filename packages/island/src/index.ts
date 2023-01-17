@@ -1,6 +1,7 @@
 export * from '@plaited/plait'
 export * from '@plaited/utils'
 export * from './define-element.js'
+export * from './css-var'
 export * from './html.js'
 export * from './element.js'
 export * from './use-plait.js'

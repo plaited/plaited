@@ -1,6 +1,6 @@
 /* eslint-disable no-return-assign */
 import { trueTypeOf }from '@plaited/utils'
-import { DesignTokenGroup, DesignToken, GetFormatter } from '../../types.js'
+import { DesignTokenGroup, DesignToken, GetFormatter } from '../types.js'
 
 export const formatList = ({
   tokens,
@@ -22,7 +22,8 @@ export const formatList = ({
   }
   if (tokens.hasOwnProperty('$value')) {
     const { $value, $type } = tokens as unknown as DesignToken
-    string += formatters({ tokenPath, $value, _allTokens, baseFontSize, $type })
+    const formattedValue = formatters({ tokenPath, $value, _allTokens, baseFontSize, $type })
+    string += formattedValue ? `${formattedValue}\n` : ''
   }
   else {
     for(const name in tokens) {
