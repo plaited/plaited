@@ -1,1 +1,0 @@
-export { divide } from './divide'
