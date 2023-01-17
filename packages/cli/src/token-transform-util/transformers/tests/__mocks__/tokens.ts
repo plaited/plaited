@@ -1,4 +1,4 @@
-import { DesignTokenGroup } from '../../../types.js'
+import { DesignTokenGroup } from '../../../../types.js'
 export const tokens:DesignTokenGroup = {
   'background-color': {
     purple: {
