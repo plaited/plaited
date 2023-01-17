@@ -1,8 +1,8 @@
 import { transformCssTokens } from './transformers/transform-css-tokens.js'
-import { transformJsRaw } from './transform-js-raw.js'
-import { transformJsTokens } from './transform-js-tokens.js'
+import { transformJsRaw } from './transformers/transform-js-raw.js'
+import { transformJsTokens } from './transformers/transform-js-tokens.js'
 import { importJson } from '../import-json.js'
-import { DesignTokenGroup } from '../types.js'
+import { DesignTokenGroup } from '../types'
 
 export const init = async ({
   tokensPath,

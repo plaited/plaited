@@ -1,6 +1,6 @@
 import fs from 'fs/promises'
 import { formatList } from './format-list.js'
-import { cssTokens } from '../../formatters/index.js'
+import { cssTokens } from '../formatters/index.js'
 import { DesignTokenGroup } from '../../types.js'
 
 export const transformCssTokens = async ({

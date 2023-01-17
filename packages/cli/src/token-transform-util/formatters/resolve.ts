@@ -1,8 +1,8 @@
-import { DesignTokenGroup, DesignToken } from '../types'
+import { DesignTokenGroup, DesignToken } from '../../types'
 import { kebabCase, toPath } from 'lodash-es'
 
 const getResolvedValue = (
-  path: string[], tokens: DesignTokenGroup
+  path: string[], tokens: DesignTokenGroup | undefined
 ): DesignToken | undefined => {
   let toRet = { ...tokens }
   for (let i = 0, len = path.length; i < len; i++) {
@@ -39,7 +39,7 @@ export const hasAlias = (str:string) => {
 
 export const resolve = (
   value: string,
-  _allTokens: DesignTokenGroup
+  _allTokens: DesignTokenGroup | undefined
 ): [DesignToken, string[]] | undefined => {
   const path: string[] = value.split('.')
   const val = getResolvedValue(path, _allTokens)
@@ -51,7 +51,7 @@ export const resolve = (
 
 export const resolveCSSVar = (
   value: string,
-  _allTokens: DesignTokenGroup
+  _allTokens: DesignTokenGroup | undefined
 ) => {
   const res = resolve(value, _allTokens)
   if(!res) return ''

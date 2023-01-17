@@ -1,4 +1,4 @@
-import { Formatter, BorderValue, AliasValue } from '../../types.js'
+import { Formatter, BorderValue, AliasValue } from '../../../types.js'
 import { hasAlias, resolveCSSVar } from '../resolve'
 import { kebabCase } from 'lodash-es'
 import { dimension } from './dimension.js'

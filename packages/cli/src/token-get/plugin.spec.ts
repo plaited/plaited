@@ -1,8 +1,8 @@
 import test from 'ava'
 import sinon from 'sinon'
 import postcss, { Plugin } from'postcss'
-import { readFile } from'fs/promises'
-import path from'path'
+import { readFile } from 'fs/promises'
+import path from 'path'
 import { tokensGet } from'./index.js'
 import { tokens } from'./__mocks__/tokens.js'
 

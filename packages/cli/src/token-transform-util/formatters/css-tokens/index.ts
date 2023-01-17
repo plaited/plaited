@@ -2,7 +2,8 @@ import {
   BorderValue, 
   DimensionValue, 
   FlexValue, 
-  FontFamilyValue, 
+  FontFamilyValue,
+  GetFormatter, 
   GradientValue, 
   GridValue, 
   ShadowValue, 
@@ -10,8 +11,7 @@ import {
   TypographyValue, 
   PrimitiveValue, 
   PrimitiveArrayValue,
-} from '../../types.js'
-import { GetFormatter } from '../../types'
+} from '../../../types.js'
 import { border } from './border.js'
 import { dimension } from './dimension.js'
 import { flex } from './flex.js'

@@ -285,18 +285,19 @@ export interface JSON extends ParseShared {
 
 export type Formatter<T = $Value> = (args: {
   tokenPath: string[],
-  $value: T
-  _allTokens: DesignTokenGroup
-  baseFontSize: number
+  $value: T,
+  _allTokens?: DesignTokenGroup,
+  baseFontSize?: number,
+  prefix?: string,
 }) => string
 
 
 
 export type GetFormatter = (args: {
   tokenPath: string[],
-  $value:  $Value
-  _allTokens: DesignTokenGroup
-  baseFontSize: number
-  $type: string
+  $value:  $Value,
+  _allTokens: DesignTokenGroup,
+  baseFontSize: number,
+  $type: string,
 }) => string
 
