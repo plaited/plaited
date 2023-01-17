@@ -13,8 +13,8 @@
     "strictPropertyInitialization": false
   },
   "exclude": [
-    "**/tests",
     "**/dist",
+    "**/tests",
     "**/*.spec.*"
   ],
   "include": [
