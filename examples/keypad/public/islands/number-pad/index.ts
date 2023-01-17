@@ -1,4 +1,4 @@
-import { defineElement, usePlait, Plaited } from '@plaited/island'
+import { defineElement, usePlait } from '@plaited/island'
 import { send } from '../comms'
 // @ts-ignore: test
 window.streamLog = []
@@ -6,7 +6,7 @@ defineElement('number-pad', base => class extends base {
   constructor() {
     super()
   }
-  plait(): Plaited{
+  plait(){
     const logger = (msg: unknown) => {
       // @ts-ignore: test
       window.streamLog.push(msg)

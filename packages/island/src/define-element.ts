@@ -1,7 +1,7 @@
 import { dataTrigger, dataTarget } from './constants.js'
 import { delegatedListener } from './delegated-listener.js'
 import { TriggerFunc, baseDynamics } from '@plaited/plait'
-import { usePlait } from './use-plait.js'
+import { usePlait, UsePlait } from './use-plait.js'
 
 // It takes the value of a data-target attribute and return all the events happening in it. minus the method idetenfier
 // so iof the event was data-target="click->doSomething" it would return ["click"]
@@ -31,11 +31,6 @@ const filterAddedNodes = (nodes:NodeList) => {
     if(node instanceof HTMLElement && node.dataset.trigger) elements.push(node)
   })
   return elements
-}
-
-export type Plaited = {
-  trigger: TriggerFunc,
-  disconnect: () => void
 }
 
 export type Query = <T = Element>(id: string) => T[]
@@ -76,7 +71,7 @@ export class BaseElement extends HTMLElement {
   }
   plait($: Query,
     context: this
-  ): Plaited{
+  ): ReturnType<UsePlait>{
     return usePlait({})
   }
   disconnectedCallback() {
@@ -142,6 +137,10 @@ export class BaseElement extends HTMLElement {
   $<T = Element>(id: string) {
     return [ ...((this.shadowRoot as ShadowRoot).querySelectorAll(`[${dataTarget}="${id}"]`)) ] as T
   }
+  // static define(tag: string, element: CustomElementConstructor) {
+  //   if (customElements.get(tag)) return
+  //   customElements.define(tag, element)
+  // }
 }
 
 export const defineElement = (tag: string, mixin: (base: typeof BaseElement) => CustomElementConstructor) => {

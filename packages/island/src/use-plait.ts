@@ -1,7 +1,7 @@
 import { Plait, RulesFunc, TriggerFunc, Listener, Strategy } from '@plaited/plait'
 import { noop } from '@plaited/utils'
 
-type UsePlait = (args: {
+export type UsePlait = (args: {
   strands?: Record<string, RulesFunc>
   actions?: Record<string, (payload?: any) => void>
   logger?: Listener

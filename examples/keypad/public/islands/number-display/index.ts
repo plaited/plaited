@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { defineElement, usePlait, Query, Plaited } from '@plaited/island'
+import { defineElement, usePlait, Query } from '@plaited/island'
 import {
   strand,
   loop,
@@ -69,6 +69,5 @@ defineElement('number-display', base => class extends base {
       connect,
     })
   }
-  
 })
 
