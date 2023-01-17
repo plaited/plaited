@@ -1,13 +1,13 @@
 /* eslint-disable max-len */
 import { assert } from '@esm-bundle/chai'
-import { component, html } from '..'
+import { element, html } from '..'
 
 
 
-// Expected usage const MyTemplate = ({ ..args}) => component({tag, template: html`` ...rest})
-it('component()', () => {
+// Expected usage const MyTemplate = ({ ..args}) => element({tag, template: html`` ...rest})
+it('element()', () => {
   assert.equal(
-    component({
+    element({
       tag: 'z-el',
       template: html`<div>
         <h1>header</h1>
@@ -17,7 +17,7 @@ it('component()', () => {
     'tag and template only'
   )
   assert.equal(
-    component({
+    element({
       tag: 'z-el',
       id: 'random',
       template: html`<div>
@@ -28,7 +28,7 @@ it('component()', () => {
     'tag, template, and id'
   )
   assert.equal(
-    component({
+    element({
       tag: 'z-el',
       target: 'random',
       triggers: {
@@ -43,7 +43,7 @@ it('component()', () => {
     'data-target, data-trigger, tag, template, and id'
   )
   assert.equal(
-    component({
+    element({
       tag: 'z-el',
       mode: 'closed',
       template: html`<div>

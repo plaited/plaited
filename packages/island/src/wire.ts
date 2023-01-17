@@ -7,8 +7,8 @@ export type Wire = {
   triggers?: Record<string, string>
   className?: string,
   htmlFor?: string,
-  for: never
-  class: never
+  for?: never
+  class?: never
   [key: string]: unknown
 }
 export const wire = (obj: Wire) => {

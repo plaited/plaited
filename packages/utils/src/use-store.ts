@@ -1,4 +1,4 @@
-import { trueTypeOf } from './true-type-of'
+import { trueTypeOf } from './true-type-of.js'
 export const useStore = <T>(initialStore: T) => {
   let store = initialStore
   const get = () => store

@@ -74,11 +74,11 @@ export const tokens:DesignTokenGroup = {
   typography: {
     1: {
       $value: {
-        'font-family': '{fontFamily.sansSerif}',
-        'font-size': '{fontSize.1}',
-        'font-weight': '{fontWeight.1}',
-        'letter-spacing': '{letterSpacing.1}',
-        'line-height': '{lineHeight.1}',
+        fontFamily: '{fontFamily.sansSerif}',
+        fontSize: '{fontSize.1}',
+        fontWeight: '{fontWeight.1}',
+        letterSpacing: '{letterSpacing.1}',
+        lineHeight: '{lineHeight.1}',
       },
       $type: 'typography',
     },
