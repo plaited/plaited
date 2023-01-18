@@ -2,60 +2,6 @@
 
 This package exports tokens cli utilities necessary for the management of a design system developed using @plaited/framework.
 
-## token-get
-
-A [PostCSS](https://postcss.org/) plugin. Safely get token values from tokens formatted for CSS custom properties. This uses the same formatting schema used by token-transform-util. The return value will be either a css custom property or a mixin for tokens types: typography, grid, and flex.
-
-### Example usage of return a CSS custom property
-
-```postcss.config.js
-{
-  plugins: [
-    // require('autoprefixer'),
-    require('@plaited/token-get')
-  ]
-}
-```
-
-**Input**
-```css
-.a {
-  --background-color: token(action, primary, rest, background-color);
-  background-color: var(--background-color);
-}
-```
-**Output**
-```css
-.a {
-  --background-color: var(--background-color-purple-2);
-  background-color: var(--background-color);
-}
-```
-
-### Example nested mixin usage
-
-**Input**
-```css
-.a {
-  &token(action, primary, rest, typography)
-}
-```
-**Output**
-```css
-.a {
-  --font-family: var(--font-family-sans-serif);
-  --font-size: var(--font-size-1);
-  --font-weight: var(--font-weight-1);
-  --letter-spacing: var(--letter-spacing-1);
-  --line-height: var(--line-height-1);
-  font-family: var(--font-family);
-  font-size: var(--font-size);
-  font-weight: var(--font-weight);
-  letter-spacing: var(--letter-spacing);
-  line-height: var(--line-height);
-}
-```
-
 ## token-schema-util
 This codegen utility will generate a JSON schema that allows for the addition of new tokens but locks the values of existing tokens. Think of it as a hybrid of the traditional JSON schema and a snapshot from testing libraries like Jest and Ava.
 
