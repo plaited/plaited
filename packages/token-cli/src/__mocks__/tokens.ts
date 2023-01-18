@@ -1,7 +1,7 @@
 import { DesignTokenGroup } from '../token-transform-util/types'
-export const tokens:DesignTokenGroup = {
+export const tokens: DesignTokenGroup = {
   size: {
-    1: {
+    x1: {
       $value: {
         static: 2,
         mobile: 2,
@@ -10,7 +10,7 @@ export const tokens:DesignTokenGroup = {
       },
       $type: 'dimension',
     },
-    2: {
+    x2: {
       $value: {
         static: 6,
         mobile: 8,
@@ -19,7 +19,7 @@ export const tokens:DesignTokenGroup = {
       },
       $type: 'dimension',
     },
-    3: {
+    x3: {
       $value: {
         static: 12,
         mobile: 16,
@@ -28,57 +28,61 @@ export const tokens:DesignTokenGroup = {
       },
       $type: 'dimension',
     },
+    s3: {
+      $value: 12,
+      $type: 'dimension',
+    },
   },
   backgroundColor: {
     purple: {
-      1: { $value: '#4c00b0', $type: 'color' },
-      2: { $value: '#7600bc', $type: 'color' },
-      3: { $value: '#8a00c2', $type: 'color' },
+      x1: { $value: '#4c00b0', $type: 'color' },
+      x2: { $value: '#7600bc', $type: 'color' },
+      x3: { $value: '#8a00c2', $type: 'color' },
     },
   },
-  'border-radius': {
-    1: { $value: 3, $type: 'dimension' },
-    2: { $value: 5, $type: 'dimension' },
-    3: { $value: 7, $type: 'dimension' },
+  borderRadius: {
+    x1: { $value: 3, $type: 'dimension' },
+    x2: { $value: 5, $type: 'dimension' },
+    x3: { $value: 7, $type: 'dimension' },
   },
   fontSize: {
-    1: {
+    x1: {
       $value: 14,
       $type: 'dimension',
     },
   },
   fontFamily: {
     sansSerif: {
-      $value: 'Roboto',
+      $value: [ 'Roboto', 'sans-serif' ],
       $type: 'fontFamily',
     },
   },
   fontWeight: {
-    1: {
+    x1: {
       $value: 700,
       $type: 'fontWeight',
     },
   },
   letterSpacing: {
-    1: {
+    x1: {
       $value: 'normal',
       $type: 'primitive',
     },
   },
   lineHeight: {
-    1: {
+    x1: {
       $value: 1,
       $type: 'primitive',
     },
   },
   typography: {
-    1: {
+    x1: {
       $value: {
         fontFamily: '{fontFamily.sansSerif}',
-        fontSize: '{fontSize.1}',
-        fontWeight: '{fontWeight.1}',
-        letterSpacing: '{letterSpacing.1}',
-        lineHeight: '{lineHeight.1}',
+        fontSize: '{fontSize.x1}',
+        fontWeight: '{fontWeight.x1}',
+        letterSpacing: '{letterSpacing.x1}',
+        lineHeight: '{lineHeight.x1}',
       },
       $type: 'typography',
     },
@@ -86,16 +90,16 @@ export const tokens:DesignTokenGroup = {
   action: {
     primary: {
       rest: {
-        'border-radius': {
-          $value: '{border-radius.1}',
+        borderRadius: {
+          $value: '{borderRadius.x1}',
           $type: 'dimension',
         },
         backgroundColor: {
-          $value: '{backgroundColor.purple.2}',
+          $value: '{backgroundColor.purple.x2}',
           $type: 'color',
         },
         typography: {
-          $value: '{typography.1}',
+          $value: '{typography.x1}',
           $type: 'typography',
         },
       },

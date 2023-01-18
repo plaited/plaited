@@ -440,7 +440,7 @@ export type DesignToken  = {
 
 // general tokens object type definition
 export interface DesignTokenGroup {
-  [key: string]: DesignTokenGroup | DesignToken | undefined
+  [key: string]: DesignTokenGroup | DesignToken
 }
 
 export type Formatter<T = $FormatterValue> = (args: {
