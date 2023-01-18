@@ -3,9 +3,19 @@
 This package exports tokens cli utilities necessary for the management of a design system developed using @plaited/framework.
 
 ## token-get
-This post css plugin allows you to safely get token values from tokens transformed into CSS custom properties using out token-transform-util. It will either return back a css custom property or a mixin for tokens types: typography, grid, and flex.
+
+A [PostCSS](https://postcss.org/) plugin. Safely get token values from tokens formatted for CSS custom properties. This uses the same formatting schema used by token-transform-util. The return value will be either a css custom property or a mixin for tokens types: typography, grid, and flex.
 
 ### Example usage of return a CSS custom property
+
+```postcss.config.js
+{
+  plugins: [
+    // require('autoprefixer'),
+    require('@plaited/token-get')
+  ]
+}
+```
 
 **Input**
 ```css
@@ -82,7 +92,7 @@ test('token schema', async t => {
 ```
 
 ## token-transform-util
-This utility will transform a tokens object of type DesignTokensGroup that adheres to the token format module into css and ts assets to be used in component code. Output assets will be optimized as much as possible. Treeshaken with reduced redundancy in our TS output and global and necessary aliased variables in our CSS output. When used in concert with out @plaited/tokens-get postcss plugin you will get the best result.
+This utility will transform a tokens object of type DesignTokensGroup that adheres to the token-schema-util format into css and ts assets to be used in component code. Output assets will be optimized as much as possible. Treeshaken with reduced redundancy in our TS output and global and necessary aliased variables in our CSS output. Best results are achieved when this utility is paired with the @plaited/tokens-get postcss plugin.
 
 **Transform tokens**
 ```ts
