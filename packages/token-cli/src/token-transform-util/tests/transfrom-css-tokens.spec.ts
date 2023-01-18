@@ -2,6 +2,7 @@ import test from 'ava'
 import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import beautify from 'beautify'
 import { transformCssTokens } from '../transformers/transform-css-tokens.js'
 import { tokens } from '../../__mocks__/tokens.js'
 
@@ -15,5 +16,5 @@ test.after(async t => {
 test('transformCssTokens()',  async t => {
   await transformCssTokens({ tokens, outputDirectory, baseFontSize:  20 })
   const content = await fs.readFile(`${outputDirectory}/tokens.css`, { encoding: 'utf8' })
-  t.snapshot(content)
+  t.snapshot(beautify(content,  { format:  'css' }))
 })
