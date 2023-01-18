@@ -3,7 +3,7 @@ import { resolveCSSVar, hasAlias } from '../resolve.js'
 import { kebabCase } from 'lodash-es'
 
 
-export const dropShadow:Formatter<DropShadowValue> = ({ tokenPath, $value, _allTokens }) => {
+export const dropShadow:Formatter<DropShadowValue> = ({ tokenPath, $value, allTokens }) => {
   if (hasAlias($value)) return ''
   const { offsetX, offsetY, blur, color } = $value as Exclude<DropShadowValue, AliasValue>
   const val = [
@@ -11,7 +11,7 @@ export const dropShadow:Formatter<DropShadowValue> = ({ tokenPath, $value, _allT
     offsetY,
     blur,
     color && hasAlias(color)
-      ? resolveCSSVar(color, _allTokens)
+      ? resolveCSSVar(color, allTokens)
       : color,
   ].filter(Boolean)
   return  `:root { --${kebabCase(tokenPath.join(' '))}:drop-shadow(${val.join(' ')}); }`

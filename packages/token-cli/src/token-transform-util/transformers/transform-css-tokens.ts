@@ -2,8 +2,7 @@ import fs from 'fs/promises'
 import { formatList } from './format-list.js'
 import { cssTokens } from '../formatters/index.js'
 import { DesignTokenGroup } from '../types.js'
-import postcss from'postcss'
-import discardDuplicates from 'postcss-discard-duplicates' 
+import { minify } from 'csso'
 
 export const transformCssTokens = async ({
   tokens,
@@ -14,15 +13,13 @@ export const transformCssTokens = async ({
   outputDirectory: string,
   baseFontSize: number
 }) => {
-  const output = `${outputDirectory}/css-tokens`
-  await fs.mkdir(output, { recursive: true })
+  await fs.mkdir(outputDirectory, { recursive: true })
   const content = formatList({
     tokens,
+    allTokens: tokens,
     baseFontSize,
     formatters: cssTokens,
   })
-  const { css } = await postcss([
-    discardDuplicates,
-  ]).process(content, { from: undefined, to: '' })
-  await fs.writeFile(`${output}/tokens.css`, css)
+  const { css } = minify(content)
+  await fs.writeFile(`${outputDirectory}/tokens.css`, css)
 }

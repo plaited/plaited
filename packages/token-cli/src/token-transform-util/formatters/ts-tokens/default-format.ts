@@ -5,10 +5,10 @@ import { kebabCase, camelCase } from 'lodash-es'
 export const defaultFormat:Formatter = ({
   tokenPath,
   $value,
-  _allTokens,
+  allTokens,
 }) => {
   const val = hasAlias($value)
-    ? resolveTSVar($value as  AliasValue, _allTokens)
-    : `var(--${kebabCase(tokenPath.join(' '))})`
+    ? resolveTSVar($value as  AliasValue, allTokens)
+    : `'var(--${kebabCase(tokenPath.join(' '))})'`
   return  `export const ${camelCase(tokenPath.join(' '))} = ${val}`
 }

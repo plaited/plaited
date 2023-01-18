@@ -1,4 +1,0 @@
-.a {
-  --background-color: map(background-color, purple, 5);
-  background-color: var(--background-color);
-}

@@ -12,12 +12,12 @@ export const transformTsTokens = async ({
   outputDirectory: string,
   baseFontSize: number
 }) => {
-  const output = `${outputDirectory}/ts-tokens`
-  await fs.mkdir(output, { recursive: true })
+  await fs.mkdir(outputDirectory, { recursive: true })
   const content = formatList({
     tokens,
+    allTokens: tokens,
     baseFontSize,
     formatters: tsTokens,
   })
-  await fs.writeFile(`${output}/tokens.ts`, content)
+  await fs.writeFile(`${outputDirectory}/tokens.ts`, content)
 }

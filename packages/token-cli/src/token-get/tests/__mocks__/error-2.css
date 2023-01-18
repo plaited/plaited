@@ -1,4 +1,0 @@
-.a {
-  --color: map(action, primary, rest, color);
-  color: var(--color);
-}

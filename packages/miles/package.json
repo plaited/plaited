@@ -1,6 +1,7 @@
 {
-  "name": "@plaited/workshop",
-  "version": "0.0.0",
+  "name": "@plaited/miles",
+  "version": "1.0.0",
+  "license": "BSD-2-Clause",
   "engines": {
     "node": ">= v18.12.1"
   },
@@ -8,25 +9,35 @@
     "type": "git",
     "url": "https://github.com/plaited/plaited.git"
   },
-  "homepage": "https://github.com/plaited/plaited/blob/main/packages/cli/README.md",
+  "homepage": "https://github.com/plaited/plaited/blob/main/packages/plait/README.md",
+  "author": "Edward Irby <e.irby@pm.me>",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
+  "files": [
+    "dist/**/*"
+  ],
   "scripts": {
     "build": "tsc --project tsconfig.json",
-    "build:watch": "tsc --watch --project tsconfig.json",
     "prepublishOnly": "yarn build",
     "test": "exit 0",
     "test:watch": "yarn test --watch --verbose"
   },
-  "types": "dist/lib/index.d.ts",
+  "ava": {
+    "extensions": {
+      "ts": "module"
+    },
+    "files": [
+      "src/**/*.spec.ts"
+    ],
+    "nodeArguments": [
+      "--loader=ts-node/esm"
+    ]
+  },
+  "types": "dist/index.d.ts",
   "devDependencies": {
     "@tsconfig/node18": "1.0.1",
-    "@types/sinon": "10.0.13",
     "ava": "5.1.0",
-    "concat-stream": "2.0.0",
-    "postcss": "8.4.20",
-    "sinon": "15.0.1",
     "ts-node": "10.9.1",
     "typescript": "4.8.4"
   }

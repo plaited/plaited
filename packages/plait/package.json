@@ -35,10 +35,6 @@
     ]
   },
   "types": "dist/index.d.ts",
-  "dependencies": {
-    "@types/inquirer": "9.0.3",
-    "inquirer": "9.1.4"
-  },
   "devDependencies": {
     "@tsconfig/node18": "1.0.1",
     "ava": "5.1.0",

@@ -5,14 +5,14 @@ import { getRem } from './get-rem.js'
 export const border:Formatter<BorderValue> = ({
   tokenPath,
   $value,
-  _allTokens,
+  allTokens,
   baseFontSize,
 }) => {
   if (hasAlias($value)) return ''
   const { color, width, style } = $value as Exclude<BorderValue, AliasValue>
-  const _color = hasAlias(color) ? resolveCSSVar(color, _allTokens) : color
+  const _color = hasAlias(color) ? resolveCSSVar(color, allTokens) : color
   const _width = typeof width === 'number'
     ? getRem(width, baseFontSize)
-    : resolveCSSVar(`${width}`, _allTokens)
+    : resolveCSSVar(`${width}`, allTokens)
   return  `:root { --${kebabCase(tokenPath.join(' '))}:${_width} ${style} ${_color}; }`
 }

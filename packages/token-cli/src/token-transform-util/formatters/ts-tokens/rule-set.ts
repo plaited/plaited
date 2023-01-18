@@ -7,14 +7,11 @@ type RuleSetValue = FlexValue| GridValue| TypographyValue
 export const ruleSet:Formatter<RuleSetValue> =({
   tokenPath,
   $value,
-  _allTokens,
+  allTokens,
 }) => {
   if(hasAlias($value)) {
-    return  `export const ${camelCase(tokenPath.join(' '))} = ${resolveTSVar($value as  AliasValue, _allTokens)}`
+    return  `export const ${camelCase(tokenPath.join(' '))} = ${resolveTSVar($value as  AliasValue, allTokens)}`
   }
-  const toRet: Record<string, string> = {}
-  for(const key in $value as $ValueObject) {
-    toRet[key] = resolveTSVar($value[key as keyof RuleSetValue], _allTokens )
-  }
-  return  `export const ${camelCase(tokenPath.join(' '))} = ${JSON.stringify(toRet, null, 2)}`
+  const toRet = Object.entries($value).map(([ key, val ]) => `  ${key}: ${resolveTSVar(val, allTokens)},`)
+  return  [ `export const ${camelCase(tokenPath.join(' '))} = {`, ...toRet, '}' ].join('\n')
 }

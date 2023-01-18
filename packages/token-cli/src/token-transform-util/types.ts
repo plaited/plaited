@@ -446,7 +446,7 @@ export interface DesignTokenGroup {
 export type Formatter<T = $FormatterValue> = (args: {
   tokenPath: string[],
   $value: T
-  _allTokens: DesignTokenGroup
+  allTokens: DesignTokenGroup
   baseFontSize: number
 }) => string
 
@@ -455,7 +455,7 @@ export type Formatter<T = $FormatterValue> = (args: {
 export type GetFormatter = (args: {
   tokenPath: string[],
   $value:  $FormatterValue
-  _allTokens: DesignTokenGroup
+  allTokens: DesignTokenGroup
   baseFontSize: number
   $type: string
 }) => string

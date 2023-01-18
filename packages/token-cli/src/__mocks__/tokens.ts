@@ -1,4 +1,4 @@
-import { DesignTokenGroup } from '../../../token-transform-util/types.js'
+import { DesignTokenGroup } from '../token-transform-util/types'
 export const tokens:DesignTokenGroup = {
   size: {
     1: {
@@ -29,7 +29,7 @@ export const tokens:DesignTokenGroup = {
       $type: 'dimension',
     },
   },
-  'background-color': {
+  backgroundColor: {
     purple: {
       1: { $value: '#4c00b0', $type: 'color' },
       2: { $value: '#7600bc', $type: 'color' },
@@ -90,8 +90,8 @@ export const tokens:DesignTokenGroup = {
           $value: '{border-radius.1}',
           $type: 'dimension',
         },
-        'background-color': {
-          $value: '{background-color.2}',
+        backgroundColor: {
+          $value: '{backgroundColor.purple.2}',
           $type: 'color',
         },
         typography: {
