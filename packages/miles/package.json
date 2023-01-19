@@ -18,7 +18,7 @@
     "dist/**/*"
   ],
   "scripts": {
-    "build": "tsc --project tsconfig.json",
+    "build": "esbuild src/index.ts --bundle --outfile=dist/index.js",
     "prepublishOnly": "yarn build",
     "test": "ava",
     "test:watch": "yarn test --watch --verbose"
@@ -44,6 +44,7 @@
     "astroturf": "1.1.0",
     "ava": "5.1.0",
     "csso": "5.0.5",
+    "esbuild": "0.17.3",
     "postcss": "8.4.21",
     "postcss-modules-local-by-default": "4.0.0",
     "postcss-modules-parser": "1.1.1",
