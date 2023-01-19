@@ -31,10 +31,12 @@ export const html = (strings: TemplateStringsArray, ...expressions: Array<Primit
   result += reduceWhitespace(raw[raw.length - 1])
   const tpl = result
     .trim()
-    .replace(/(<.*?)(?:\s+)(\w)/g, (match, p1, p2) => [ p1, p2 ].join(' '))
-    .replace(/\s+>/g, '>')
-    .replace(/>\s+</g, '><')
-    .replace(/(>)(?:\s)(\S)/g, (match, p1, p2) => [ p1, p2 ].join(''))
-    .replace(/(\S)(?:\s)(<)/g, (match, p1, p2) => [ p1, p2 ].join(''))
+    .replace(/[\s\n]+>/g, '>')
+    .replace(/(<.*?)(?:\s+)(\w)|>\s+</g, (match, p1, p2) => p1 ? [ p1, p2 ].join(' ') : '><')
+    .replace(/(>)(?:\s)(\S)|(\S)(?:\s)(<)/g, (match, p1, p2, p3, p4) => {
+      return p1 
+        ? [ p1, p2 ].join('')
+        : [ p3, p4 ].join('')
+    })
   return tpl
 }

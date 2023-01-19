@@ -1,6 +1,6 @@
+export * from './base64.js'
 export * from './call-all.js'
 export * from './can-use-dom.js'
-export * from './class-names.js'
 export * from './debounce.js'
 export * from './deep-equal.js'
 export * from './escape-unescape.js'

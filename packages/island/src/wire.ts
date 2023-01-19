@@ -1,15 +1,10 @@
 import  { html } from './html.js'
 import { dataTrigger, dataTarget } from './constants.js'
- 
+import { TemplateProps } from './template.js'
 /** @description wires attributes to templates with sensible escaping */
-export type Wire = {
+export interface Wire extends TemplateProps {
   target?: string,
   triggers?: Record<string, string>
-  className?: string,
-  htmlFor?: string,
-  for?: never
-  class?: never
-  [key: string]: unknown
 }
 export const wire = (obj: Wire) => {
   const attributes = []

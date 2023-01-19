@@ -1,10 +1,10 @@
 import fs from 'fs/promises'
 import path from 'path'
 import { parse } from './parse.js'
-import { JSON } from './types.js'
+import { DesignTokenGroup } from '../token-transform-util/types.js'
 
-export const tokenSchemaUtil = async (json: JSON, schemaFilePath: string) => {
-  const schema = parse({ json })
+export const tokenSchemaUtil = async (tokens: DesignTokenGroup, schemaFilePath: string) => {
+  const schema = parse({ tokens })
   await fs.mkdir(path.dirname(schemaFilePath), { recursive: true })
   await fs.writeFile(schemaFilePath, JSON.stringify(schema, null, 2))
 }
