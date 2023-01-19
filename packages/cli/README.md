@@ -1,6 +1,6 @@
-# [WIP] @plaited/tokens-cli
+# [WIP] @plaited/cli
 
-This package exports tokens cli utilities necessary for the management of a design system developed using @plaited/framework.
+This package exports cli utilities necessary for the management of a design systems developed using @plaited/framework.
 
 ## token-schema-util
 This codegen utility will generate a JSON schema that allows for the addition of new tokens but locks the values of existing tokens. Think of it as a hybrid of the traditional JSON schema and a snapshot from testing libraries like Jest and Ava.
