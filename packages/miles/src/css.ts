@@ -20,8 +20,6 @@ type Primitive = number |
 const isTruthy = (val:Primitive) => trueTypeOf(val) === 'string' ||
   trueTypeOf(val) === 'number'
 
-
-let instance: Processor | undefined
 export const css = (strings: TemplateStringsArray, ...values: Array<Primitive | Primitive[]>) => {
   /**
    * Same basic logic as html without minimization
@@ -47,15 +45,14 @@ export const css = (strings: TemplateStringsArray, ...values: Array<Primitive | 
    */
   let styles:Record<string, string> = {}
   let stylesheet = ''
-  instance ||
-    (instance = postcss([
-      nesting,
-      modulesLocalByDefault,
-      modulesScope({
-        generateScopedName: (name, path) => `${name}___${base64(`${hashString(style)}`).replace(/[./=]/g, '')}`,
-      }),
-      modulesParser,
-    ]))
+  const instance: Processor = (postcss([
+    nesting,
+    modulesLocalByDefault,
+    modulesScope({
+      generateScopedName: name => `${name}_${base64(`${hashString(style)}`).replace(/[./=]/g, '')}`,
+    }),
+    modulesParser,
+  ]))
  
 
   const result = instance.process(style, { from: '', to: '' })
