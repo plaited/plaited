@@ -26,11 +26,3 @@ export const element = template<Element>(({
   </template>
 </${tag}>
 `)
-/**
- * <mt-comp>
- *  <template shadowroot="open">
- *    <slot></slot>
- *  </template>
- *  <li> dynamcially generate content or whatevs<li>
- * </mt-comp>
- */
