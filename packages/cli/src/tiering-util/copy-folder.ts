@@ -4,7 +4,7 @@
 
 import fs from 'fs/promises'
 import path from 'path'
-import { getStat } from './get-stat.js'
+import { getStat } from '../shared/get-stat.js'
 
 const copyFiles = async (target: string, source:string) => {
   let targetFile = target

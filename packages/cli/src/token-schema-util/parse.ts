@@ -1,5 +1,5 @@
 // Fork of https://github.com/easy-json-schema/easy-json-schema
-import { trueTypeOf } from '@plaited/utils'
+import { trueTypeOf } from '@plaited/island'
 import { DesignTokenGroup, DesignToken } from '../token-transform-util/types.js'
 
 const supportType = [ 'string', 'number', 'array', 'object', 'boolean', 'integer' ]

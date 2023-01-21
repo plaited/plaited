@@ -1,4 +1,4 @@
-import { DesignTokenGroup } from '../token-transform-util/types'
+import { DesignTokenGroup } from '../../token-transform-util/types'
 export const tokens: DesignTokenGroup = {
   size: {
     x1: {

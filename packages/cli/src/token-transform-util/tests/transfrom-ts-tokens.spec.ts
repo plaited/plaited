@@ -3,7 +3,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { transformTsTokens } from '../transformers/transform-ts-tokens.js'
-import { tokens } from '../../__mocks__/tokens.js'
+import { tokens } from '../../shared/__mocks__/tokens.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const outputDirectory = path.resolve(__dirname, './__tmp__/')

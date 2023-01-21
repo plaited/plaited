@@ -1,5 +1,5 @@
 import { RulesFunc } from '@plaited/plait'
-import { Query } from './define-element.js'
+import { Query } from './base-element.js'
 
 export type UseHook<T = Record<string, unknown>> = (args: {
   $: Query

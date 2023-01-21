@@ -1,6 +1,6 @@
 import test from 'ava'
 import { parse , Schema }  from '../parse.js'
-import { tokens } from '../../__mocks__/tokens.js'
+import { tokens } from '../../shared/__mocks__/tokens.js'
 
 let actual: Schema
 test.before( () => {

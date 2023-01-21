@@ -1,11 +1,8 @@
-import { defineElement, usePlait } from '@plaited/island'
+import { usePlait, BaseElement } from '@plaited/island'
 import { send } from '../comms'
 // @ts-ignore: test
 window.streamLog = []
-defineElement('number-pad', base => class extends base {
-  constructor() {
-    super()
-  }
+class NumberPad extends BaseElement {
   plait(){
     const logger = (msg: unknown) => {
       // @ts-ignore: test
@@ -30,4 +27,5 @@ defineElement('number-pad', base => class extends base {
       logger,
     })
   }
-})
+}
+NumberPad.define('number-pad')

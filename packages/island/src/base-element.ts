@@ -137,9 +137,8 @@ export class BaseElement extends HTMLElement {
   $<T = Element>(id: string) {
     return [ ...((this.shadowRoot as ShadowRoot).querySelectorAll(`[${dataTarget}="${id}"]`)) ] as T[]
   }
-}
-
-export const defineElement = (tag: string, mixin: (base: typeof BaseElement) => CustomElementConstructor) => {
-  if (customElements.get(tag)) return
-  customElements.define(tag, mixin(BaseElement))
+  static define(tag: string) {
+    if (customElements.get(tag)) return
+    customElements.define(tag, this as unknown as CustomElementConstructor)
+  }
 }

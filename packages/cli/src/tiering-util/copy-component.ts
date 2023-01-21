@@ -1,6 +1,6 @@
 import path from 'path'
 import fs from 'fs/promises'
-import { getStat } from './get-stat.js'
+import { getStat } from '../shared/get-stat.js'
 import { getComponentDirs } from './get-component-dirs.js'
 import { copyFolder } from './copy-folder.js'
 

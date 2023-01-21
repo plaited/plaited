@@ -1,9 +1,9 @@
 import { html } from './html.js' 
 import { wire, Wire } from './wire.js'
-import { template } from './template.js'
+import { template, Template } from './template.js'
 
 
-export interface Element extends Wire {
+interface ElementProps extends Wire {
   tag: string
   template:string
   /** @defaultValue 'open' */
@@ -11,8 +11,9 @@ export interface Element extends Wire {
   stylesheets?: Set<string>
 }
 
+export type Element = Template<ElementProps>
 /** @returns template string for a web component */
-export const element = template<Element>(({ 
+export const element: Element = template(({ 
   tag,
   template,
   mode = 'open',

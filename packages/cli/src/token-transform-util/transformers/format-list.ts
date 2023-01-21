@@ -1,5 +1,5 @@
 /* eslint-disable no-return-assign */
-import { trueTypeOf }from '@plaited/utils'
+import { trueTypeOf }from '@plaited/island'
 import { DesignTokenGroup, DesignToken, GetFormatter } from '../types.js'
 
 export const formatList = ({

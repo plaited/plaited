@@ -1,26 +1,20 @@
 /* eslint-disable no-console */
-import { defineElement, usePlait, Query } from '@plaited/island'
-import {
+import { 
   strand,
   loop,
   waitFor,
   request,
-} from '@plaited/plait'
+  usePlait,
+  Query,
+  useStore,
+  BaseElement,
+} from '@plaited/island'
 import { connect } from '../comms'
 
 
-defineElement('number-display', base => class extends base {
-  constructor() {
-    super()
-  }
-  #display: string[] = []
-  setDisplay(val: string[]) {
-    this.#display = val
-  }
-  get display() {
-    return this.#display
-  }
+class NumberDisplay extends BaseElement {
   plait($:Query, context: this){
+    const [ getDisplay, setDisplay ] = useStore<string[]>([])
     const strands = {
       onClear: loop(strand(
         waitFor({ eventName: 'clear' }),
@@ -47,16 +41,16 @@ defineElement('number-display', base => class extends base {
     
     const actions = {
       updateNumber(payload: string){
-        if(context.display.length < 5) {
-          context.setDisplay([ ...context.display, payload ])
+        if(getDisplay.length < 5) {
+          setDisplay([ ...getDisplay(), payload ])
         }
         const [ display ] = $('display')
-        updateDisplay(display, context.display)
+        updateDisplay(display, getDisplay())
       },
       clearDisplay(){
         const [ display ] = $('display')
         display.replaceChildren('00:00')
-        context.setDisplay([])
+        setDisplay([])
       },
       logSelf(){
         console.log('hit')
@@ -69,5 +63,6 @@ defineElement('number-display', base => class extends base {
       connect,
     })
   }
-})
+}
 
+NumberDisplay.define('number-display')

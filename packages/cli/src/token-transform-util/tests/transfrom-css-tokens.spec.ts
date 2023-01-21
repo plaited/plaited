@@ -4,7 +4,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import beautify from 'beautify'
 import { transformCssTokens } from '../transformers/transform-css-tokens.js'
-import { tokens } from '../../__mocks__/tokens.js'
+import { tokens } from '../../shared/__mocks__/tokens.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const outputDirectory = path.resolve(__dirname, './__tmp__/')

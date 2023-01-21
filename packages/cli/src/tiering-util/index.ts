@@ -1,7 +1,7 @@
 import inquirer from 'inquirer'
 import path from 'path'
 import fs from 'fs/promises'
-import { getStat } from './get-stat.js'
+import { getStat } from '../shared/get-stat.js'
 import { writeReExport } from './write-re-export.js'
 import { getTargetExport  } from './get-target-export.js'
 import { eject } from './eject.js'
