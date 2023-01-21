@@ -26,6 +26,7 @@
   },
   "types": "dist/index.d.ts",
   "dependencies": {
+    "@plaited/miles": "workspace:*",
     "@plaited/plait": "workspace:*",
     "@plaited/utils": "workspace:*"
   },
