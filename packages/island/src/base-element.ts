@@ -1,4 +1,4 @@
-import { dataTrigger, dataTarget } from './constants.js'
+import { dataTrigger, dataTarget } from '@plaited/template'
 import { delegatedListener } from './delegated-listener.js'
 import { TriggerFunc, baseDynamics } from '@plaited/plait'
 import { usePlait, UsePlait } from './use-plait.js'

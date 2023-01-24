@@ -26,8 +26,9 @@
   },
   "types": "dist/index.d.ts",
   "dependencies": {
-    "@plaited/miles": "workspace:*",
+    "@plaited/css": "workspace:*",
     "@plaited/plait": "workspace:*",
+    "@plaited/template": "workspace:*",
     "@plaited/utils": "workspace:*"
   },
   "devDependencies": {
@@ -37,7 +38,6 @@
     "@types/sinon": "10.0.13",
     "@web/dev-server-esbuild": "0.3.3",
     "@web/test-runner": "0.15.0",
-    "esbuild": "0.16.10",
     "sinon": "15.0.1",
     "typescript": "4.9.4"
   }

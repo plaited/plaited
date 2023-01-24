@@ -1,12 +1,10 @@
 /* eslint-disable max-len */
-import { assert } from '@esm-bundle/chai'
-import { element, html } from '..'
-
-
+import test from 'ava'
+import { element, html } from '../index.js'
 
 // Expected usage const MyTemplate = ({ ..args}) => element({tag, template: html`` ...rest})
-it('element()', () => {
-  assert.equal(
+test('element()', t => {
+  t.is(
     element({
       tag: 'z-el',
       template: html`<div>
@@ -16,7 +14,7 @@ it('element()', () => {
     '<z-el><template shadowroot="open"><div><h1>header</h1></div></template></z-el>',
     'tag and template only'
   )
-  assert.equal(
+  t.is(
     element({
       tag: 'z-el',
       id: 'random',
@@ -27,7 +25,7 @@ it('element()', () => {
     '<z-el id="random"><template shadowroot="open"><div><h1>header</h1></div></template></z-el>',
     'tag, template, and id'
   )
-  assert.equal(
+  t.is(
     element({
       tag: 'z-el',
       target: 'random',
@@ -42,7 +40,7 @@ it('element()', () => {
     '<z-el data-target="random" data-trigger="click->random focus->thing"><template shadowroot="open"><div><h1>header</h1></div></template></z-el>',
     'data-target, data-trigger, tag, template, and id'
   )
-  assert.equal(
+  t.is(
     element({
       tag: 'z-el',
       mode: 'closed',

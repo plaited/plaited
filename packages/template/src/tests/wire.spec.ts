@@ -1,9 +1,9 @@
 /* eslint-disable max-len */
-import { assert } from '@esm-bundle/chai'
-import { wire } from '..'
+import test from 'ava'
+import { wire } from '../index.js'
 
-it('wire()', () => {
-  assert.equal(
+test('wire()', t => {
+  t.is(
     wire({
       target: 'random',
       triggers: {
@@ -18,7 +18,7 @@ it('wire()', () => {
     }),
     'data-target="random" data-trigger="click->random focus->thing" disabled value="special" aria-grabbed="true" aria-expanded="false"'
   )
-  assert.equal(
+  t.is(
     wire({
       target: 'random',
       triggers: {
@@ -29,14 +29,14 @@ it('wire()', () => {
     'data-target="random" data-trigger="click->random focus->thing"',
     'both params'
   )
-  assert.equal(
+  t.is(
     wire({
       target: 'random',
     }),
     'data-target="random"',
     'with target param only'
   )
-  assert.equal(
+  t.is(
     wire({
       triggers: {
         click: 'random',
@@ -46,7 +46,7 @@ it('wire()', () => {
     'data-trigger="click->random focus->thing"',
     'with triggers param only'
   )
-  assert.equal(
+  t.is(
     wire({}),
     '',
     'with empty params'
