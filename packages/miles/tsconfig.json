@@ -10,8 +10,7 @@
     "outDir": "dist",
     "preserveSymlinks": true,
     "rootDir": "src",
-    "strictPropertyInitialization": false,
-    "emitDeclarationOnly": true
+    "strictPropertyInitialization": false
   },
   "exclude": [
     "**/dist",
