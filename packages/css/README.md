@@ -1,6 +1,6 @@
 # @plaited/css
 
-This styling library is designed to work with plaited's approach to creating elements, templates and design tokens for your frontend. It ships four utility functions.
+This package exports utility functions necessary styling plaited interfaces.
 
 ## classNames 
 a simple utilioty to join class names condiionally.
