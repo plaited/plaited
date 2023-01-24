@@ -3,7 +3,7 @@
 This package exports utility functions necessary styling plaited interfaces.
 
 ## classNames 
-a simple utilioty to join class names condiionally.
+A simple utility to apply & join class names conditionally inline on a node.
 
 Example
 ```ts
@@ -18,7 +18,7 @@ const conditionFalse = false
 ```
 
 ## tokens
-A simple utility to rapidly & conditionally apply tokens inline on a node or using our css utility
+A simple utility to conditionally apply & join tokens inline on a node or using our css utility
 
 
 Example
@@ -56,7 +56,7 @@ const actual = tokens(
 ```
 
 ## css
-Is a custom instance of [JJS](https://cssinjs.org/jss-api?v=v10.9.2#create-an-own-jss-instance). It returns both a style sheet and the classnames. This cusrom instance makes use of the following jss plugins. [nested](https://cssinjs.org/jss-plugin-nested?v=v10.9.2), [global](https://cssinjs.org/jss-plugin-global?v=v10.9.2), and [camelCase](https://cssinjs.org/jss-plugin-camel-case?v=v10.9.2)
+Is a custom instance of [JJS](https://cssinjs.org/jss-api?v=v10.9.2#create-an-own-jss-instance). It returns both a stylesheet and classnames. This custom instance makes use of the following jss plugins. [nested](https://cssinjs.org/jss-plugin-nested?v=v10.9.2), [global](https://cssinjs.org/jss-plugin-global?v=v10.9.2), and [camelCase](https://cssinjs.org/jss-plugin-camel-case?v=v10.9.2)
 
 Example
 ```ts
@@ -77,17 +77,18 @@ css({
         button: 'button-0-1-1',
       },
       stylesheet: `.button-0-1-1 {␊
-        background-color: var(--color-blue-50);␊
-      }␊
-      .button-0-1-1:disabled {␊
-        background-color: var(--color-grey-10);␊
-      }`
+          background-color: var(--color-blue-50);␊
+        }␊
+        .button-0-1-1:disabled {␊
+          background-color: var(--color-grey-10);␊
+        }
+      `
  * }
 */
 ```
 
 ## cssVars
-Quickly get a css custom property value from the dom or reset it using this utility function.
+Quickly get a css custom property value from the DOM or reset it using this utility function.
 
 ```ts
 import { cssVars } from '@plaited/css'
