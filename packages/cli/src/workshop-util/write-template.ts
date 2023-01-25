@@ -2,7 +2,7 @@ import { toId } from './to-id'
 import { startCase } from 'lodash-es'
 import fs from 'fs/promises'
 import path from 'path'
-import { getStat } from '../../shared/get-stat.js'
+import { getStat } from '../shared/get-stat.js'
 
 const template = ({
   port,

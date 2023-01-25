@@ -2,7 +2,7 @@ import {  ServerResponse, IncomingMessage } from 'http'
 import path from 'path'
 import fs from 'fs/promises'
 import { mimeTypes } from './mime-types.js'
-import { getStat } from '../../shared/get-stat.js'
+import { getStat } from '../shared/get-stat.js'
 import { utf8 } from './utils.js'
 import zlib from 'zlib'
 

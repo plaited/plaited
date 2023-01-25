@@ -1,12 +1,5 @@
 import { html } from '@plaited/island'
-
-export const livereload = html`<script>
-const source = new EventSource('/livereload');
-const reload = () => location.reload(true);
-source.onmessage = reload;
-source.onerror = () => (source.onopen = reload);
-console.log('[plaited] listening for file changes');
-</script>`
+import { livereloadTemplate } from '../dev-server-util/index.js'
 
 export const template = (main: string, opt: {
   head?: string,
@@ -22,6 +15,6 @@ export const template = (main: string, opt: {
 <body>
   ${main}
   ${opt?.body}
-  ${livereload}
+  ${livereloadTemplate}
 </body>
 </html>`
