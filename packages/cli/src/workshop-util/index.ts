@@ -4,7 +4,7 @@ import fs from 'fs/promises'
 import { importWork } from './import-work.js'
 import { cleanup } from './cleanup.js'
 import { writeRoutes } from './write-routes.js'
-import { Element } from '@plaited/island'
+import { Element } from '@plaited/template'
 
 export const workshop = async ({
   input,

@@ -5,6 +5,7 @@ export type Handler = (
   ctx: ServerResponse,
 ) => void
 
+
 /**
  * A handler type for anytime the `MatchHandler` or `other` parameter handler
  * fails
@@ -43,7 +44,6 @@ export type ServerCallback  = (req: IncomingMessage, res: ServerResponse) => voi
 
 export type Server = (args: {
   root: string
-  assets: string
   routes:Routes
   reload?: boolean
   port?: number

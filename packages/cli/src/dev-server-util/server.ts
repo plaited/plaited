@@ -16,7 +16,6 @@ export const server: Server = async ({
   reload = true,
   credentials,
   routes,
-  assets: _assets = _root,
 }) =>{
   // Try start on specified port then fail or find a free port
   let port: number
@@ -29,14 +28,10 @@ export const server: Server = async ({
     }
     port = await usePort()
   }
+  
 
   // Configure globals
   const root = _root.startsWith('/') ? _root  : path.join(process.cwd(), _root)
-  const assets = _assets === _root
-    ? root
-    :_assets.startsWith('/') 
-    ? _assets
-    : path.join(process.cwd(), _assets)
 
   if (!fs.existsSync(_root)) {
     console.error(`[ERR] Root directory ${root} does not exist!`)
@@ -57,7 +52,7 @@ export const server: Server = async ({
     : (cb: ServerCallback) => http.createServer(cb)
 
   // Get file assets routes
-  const fileRoutes = await getFileRoutes(assets)
+  const fileRoutes = await getFileRoutes(root)
 
   if(credentials && !reload) {
     // createServer()
@@ -69,6 +64,9 @@ export const server: Server = async ({
         ...getReloadRoute(reload, reloadClients),
       })
       init(req, res)
+    }).listen(port, () => {
+      // eslint-disable-next-line no-console
+      console.log(`Server running at: ${protocol}://localhost:${port}`)
     })
   }
 

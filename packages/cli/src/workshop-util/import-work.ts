@@ -1,6 +1,6 @@
 import { toId } from './to-id'
 import { TemplateMeta } from './types'
-import { Element } from '@plaited/island'
+import { Element } from '@plaited/template'
 
 export const importWork = async (filePath: string, fixtures: { [key: `${string}-${string}`]: Element}) => {
   const { default: defaults, ...rest } = await import(filePath)

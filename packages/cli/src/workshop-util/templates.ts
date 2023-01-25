@@ -1,4 +1,4 @@
-import { html } from '@plaited/island'
+import { html } from '@plaited/template'
 import { livereloadTemplate } from '../dev-server-util/index.js'
 
 export const template = (main: string, opt: {

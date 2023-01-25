@@ -1,4 +1,4 @@
-import { html } from '@plaited/island'
+import { html } from '@plaited/template'
 
 export const livereloadTemplate = html`<script>
 const source = new EventSource('/livereload');

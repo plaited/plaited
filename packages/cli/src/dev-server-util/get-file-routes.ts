@@ -52,16 +52,16 @@ const serverAsset = async (ctx:ServerResponse, filePath:string) => {
   }
 }
 
-const getFilePaths = async (assets: string, paths: string[]) => {
+const getFilePaths = async (root: string, paths: string[]) => {
   try {
-    const files = await fs.readdir(assets)
+    const files = await fs.readdir(root)
     await Promise.all(files.map(async file => {
-      const currentAsset = path.join(assets, file)
-      const currentExist = await getStat(currentAsset)
+      const currentRoot = path.join(root, file)
+      const currentExist = await getStat(currentRoot)
       if (currentExist?.isDirectory()) {
-        return await getFilePaths(currentAsset, paths)
+        return await getFilePaths(currentRoot, paths)
       } else {
-        return paths.push(currentAsset)
+        return paths.push(currentRoot)
       }
     })) 
   }catch(err) {
@@ -69,9 +69,9 @@ const getFilePaths = async (assets: string, paths: string[]) => {
   }
 }
 
-export const getFileRoutes = async (assets: string) => {
+export const getFileRoutes = async (root: string) => {
   const paths: string[] = []
-  await getFilePaths(assets, paths)
+  await getFilePaths(root, paths)
   const routes = await Promise.all(paths.map(async filePath => {
     const root = filePath.startsWith(process.cwd()) ? filePath.split(process.cwd())[1] : filePath
     return {

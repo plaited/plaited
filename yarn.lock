@@ -465,7 +465,8 @@ __metadata:
   resolution: "@plaited/cli@workspace:packages/cli"
   dependencies:
     "@axe-core/playwright": 4.6.0
-    "@plaited/island": "workspace:*"
+    "@plaited/template": "workspace:*"
+    "@plaited/utils": "workspace:*"
     "@playwright/test": 1.29.2
     "@tsconfig/node18": 1.0.1
     "@types/beautify": 0.0.0

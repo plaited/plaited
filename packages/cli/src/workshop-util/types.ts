@@ -1,4 +1,4 @@
-import { TemplateProps, Template, Element } from '@plaited/island'
+import { TemplateProps, Template } from '@plaited/template'
 import { Page } from 'playwright'
 import { Expect } from '@playwright/test'
 
