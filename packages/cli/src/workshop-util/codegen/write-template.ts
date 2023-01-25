@@ -2,30 +2,31 @@ import { toId } from './to-id'
 import { startCase } from 'lodash-es'
 import fs from 'fs/promises'
 import path from 'path'
-import { getStat } from '../shared/get-stat'
-export const template = ({
+import { getStat } from '../../shared/get-stat.js'
+
+const template = ({
   port,
   name,
   title,
-  fixtureTag,
-  workPath,
+  fixture,
+  work,
 }: {
   port: number,
   name: string,
   title: string,
-  fixtureTag: string,
-  workPath: string
+  fixture: string,
+  work: string
 }) => {
   const id = toId(title, name)
   const importPlaywright = "import { test, expect } from '@playwright/test'"
 
   const importAxeCore = "import AxeBuilder from '@axe-core/playwright'"
 
-  const importWork = workPath ? `import { ${name} } from '${workPath}'` : ''
+  const importWork = work ? `import { ${name} } from '${work}'` : ''
 
   const AccessibilityTest = `test('Accessibility(${title}): ${startCase(name)}', async ({ page }) => {
   await page.goto('http://localhost:${port}/${id}');
-  const results = await new AxeBuilder({ page }).options({}).include('${fixtureTag}').analyze();
+  const results = await new AxeBuilder({ page }).options({}).include('${fixture}').analyze();
   expect(results.violations).toHaveLength(0);
 })`
 
@@ -34,7 +35,7 @@ export const template = ({
   expect(await page.screenshot()).toMatchSnapshot('${id}.png');
 });`
 
-  const InteractionTest = workPath ? `test('Interaction(${title}): ${startCase(name)}', async ({ page }) => {
+  const InteractionTest = work ? `test('Interaction(${title}): ${startCase(name)}', async ({ page }) => {
   await page.goto('http://localhost:${port}/${id}');
   await ${name}.play({page, expect, id: ${id}})
 });` : ''
@@ -51,24 +52,31 @@ export const template = ({
   ].filter(Boolean).join('\n')
 }
 
-const writeTemplate = async ({
+export const writeTemplate = async ({
   port,
   name,
   title,
-  fixtureTag,
-  workPath,
+  fixture,
+  work,
   output,
 }:{
   port: number,
   name: string,
   title: string,
-  fixtureTag: string,
-  workPath: string
-  output,
+  fixture: string,
+  work: string
+  output: string,
 }) => {
   const id = toId(title, name)
-  const testFile = path.resolve(output, id)
+  const testFile = path.resolve(output, `${id}/spec.ts`)
   const exist = await getStat(testFile)
   if(exist) return
-  fs.writeFile()
+  const content = template({
+    port,
+    name,
+    title,
+    fixture,
+    work,
+  })
+  return await fs.writeFile(testFile, content, { encoding: 'utf8' } )
 }
