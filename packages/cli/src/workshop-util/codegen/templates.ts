@@ -8,7 +8,7 @@ source.onerror = () => (source.onopen = reload);
 console.log('[plaited] listening for file changes');
 </script>`
 
-export const worksHelmet = (main: string, opt: {
+export const template = (main: string, opt: {
   head?: string,
   body?: string,
 } = {}) => html`<!DOCTYPE html>
