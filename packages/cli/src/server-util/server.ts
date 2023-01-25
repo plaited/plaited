@@ -11,11 +11,14 @@ import { Server, ServerCallback } from './types.js'
 
 
 export const server: Server = async ({
-  port:_port,
   root: _root = '.',
+  routes,
+  port:_port,
   reload = true,
   credentials,
-  routes,
+  otherHandler,
+  errorHandler,
+  unknownMethodHandler,
 }) =>{
   // Try start on specified port then fail or find a free port
   let port: number
@@ -58,11 +61,16 @@ export const server: Server = async ({
     // createServer()
   } else {
     createServer(async( req, res) => {
-      const init = router({
-        ...fileRoutes,
-        ...routes,
-        ...getReloadRoute(reload, reloadClients),
-      })
+      const init = router(
+        {
+          ...fileRoutes,
+          ...routes,
+          ...getReloadRoute(reload, reloadClients),
+        },
+        otherHandler,
+        errorHandler,
+        unknownMethodHandler
+      )
       init(req, res)
     }).listen(port, () => {
       // eslint-disable-next-line no-console

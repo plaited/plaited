@@ -5,12 +5,17 @@ export type Handler = (
   ctx: ServerResponse,
 ) => void
 
+export type AsyncHandler = (
+  req: IncomingMessage,
+  ctx: ServerResponse,
+) => Promise<void>
+
 
 /**
  * A handler type for anytime the `MatchHandler` or `other` parameter handler
  * fails
  */
-export type ErrorHandler<T = unknown> = (
+export type ErrorHandler = (
   req: IncomingMessage,
   ctx: ServerResponse,
   err: unknown,
@@ -19,7 +24,7 @@ export type ErrorHandler<T = unknown> = (
 /**
  * A handler type for anytime a method is received that is not defined
  */
-export type UnknownMethodHandler<T = unknown> = (
+export type UnknownMethodHandler = (
   req: IncomingMessage,
   ctx: ServerResponse,
   knownMethods: string[],
@@ -52,6 +57,9 @@ export type Server = (args: {
     key: string | Buffer
     cert: string | Buffer
   }
+  otherHandler?: Handler | AsyncHandler
+  errorHandler?: ErrorHandler
+  unknownMethodHandler?: UnknownMethodHandler
 }) =>Promise<{
   url: string
   root: string

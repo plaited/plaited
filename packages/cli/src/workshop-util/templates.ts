@@ -1,5 +1,5 @@
 import { html } from '@plaited/template'
-import { livereloadTemplate } from '../dev-server-util/index.js'
+import { livereloadTemplate } from '../server-util/index.js.js'
 
 export const template = (main: string, opt: {
   head?: string,
