@@ -1,5 +1,5 @@
 import { IncomingMessage, ServerResponse } from 'http'
-import { Routes, Handler, AsyncHandler, ErrorHandler, MatchHandler, UnknownMethodHandler } from './types.js'
+import { Routes, Handler, ErrorHandler, MatchHandler, UnknownMethodHandler } from './types.js'
 // @ts-ignore: Property 'UrlPattern' does not exist
 if (!globalThis.URLPattern) { 
   await import('urlpattern-polyfill')
@@ -87,10 +87,13 @@ const methodRegex = new RegExp(`(?<=^(?:${METHODS.join('|')}))@`)
  */
 export function router(
   routes: Routes,
-  other: Handler | AsyncHandler = defaultOtherHandler,
+  other: Handler = defaultOtherHandler,
   error: ErrorHandler = defaultErrorHandler,
   unknownMethod: UnknownMethodHandler = defaultUnknownMethodHandler
-): AsyncHandler {
+): (
+  req: IncomingMessage,
+  ctx: ServerResponse,
+) => void {
   const internalRoutes: Record<string, { pattern: URLPattern, methods: Record<string, MatchHandler> }> = {}
   for (const [ route, handler ] of Object.entries(routes)) {
     // eslint-disable-next-line prefer-const

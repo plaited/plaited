@@ -9,7 +9,6 @@ import { getFileRoutes } from './get-file-routes.js'
 import { getReloadRoute } from './get-reload-route.js'
 import { Server, ServerCallback } from './types.js'
 
-
 export const server: Server = async ({
   root: _root = '.',
   routes,
@@ -80,20 +79,25 @@ export const server: Server = async ({
 
   
   // Notify livereload reloadClients on file change
-
-  reload && await fileWatch(root, () => {
+  const sendReloadMessage = () => {
     while (reloadClients.length > 0) {
-      sendMessage(reloadClients.pop() as ServerResponse, 'message', 'reload')    
+      sendMessage(reloadClients.pop() as ServerResponse, 'message', 'reload')
     }
-  })
+  }
+  reload && await fileWatch(root, () => { sendReloadMessage() })
 
   // Close socket connections on sigint
-
   process.on('SIGINT', () => {
     while (reloadClients.length > 0) (reloadClients.pop() as ServerResponse).end()
     process.exit()
   })
 
-  const x = { url: `${protocol}://localhost:${port}` }
-  return { ...x, root, protocol, port: port, ips: networkIps }
+  return {
+    ips: networkIps,
+    port,
+    protocol,
+    root,
+    sendReload: reload ? sendReloadMessage : undefined,
+    url: `${protocol}://localhost:${port}`,
+  }
 }

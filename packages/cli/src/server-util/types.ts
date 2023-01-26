@@ -1,15 +1,16 @@
 import { IncomingMessage, ServerResponse } from 'http'
 
-export type Handler = (
-  req: IncomingMessage,
-  ctx: ServerResponse,
-) => void
-
-export type AsyncHandler = (
-  req: IncomingMessage,
-  ctx: ServerResponse,
-) => Promise<void>
-
+export type Handler =
+  ((
+    req: IncomingMessage,
+    ctx: ServerResponse,
+  ) => Promise<void>) |
+  (
+    (
+      req: IncomingMessage,
+      ctx: ServerResponse,
+    ) => void
+  )
 
 /**
  * A handler type for anytime the `MatchHandler` or `other` parameter handler
@@ -33,14 +34,22 @@ export type UnknownMethodHandler = (
 /**
  * A handler type for a router path match which gets passed the matched values
  */
-export type MatchHandler = (
-  req: IncomingMessage,
-  ctx: ServerResponse,
-  match: URLPatternComponentResult['groups'],
-) => void
+export type MatchHandler = ((
+    req: IncomingMessage,
+    ctx: ServerResponse,
+    match: URLPatternComponentResult['groups'],
+  ) => void)|
+  ((
+    req: IncomingMessage,
+    ctx: ServerResponse,
+    match: URLPatternComponentResult['groups'],
+  ) =>Promise<void >)
 
+/**
+ * A object for declaring routes that are either `Handler` or `MatchHandler` type
+ */
 export type Routes = {
-  [x: string]: Handler
+  [x: string]: Handler | MatchHandler 
 }
 
 
@@ -57,14 +66,15 @@ export type Server = (args: {
     key: string | Buffer
     cert: string | Buffer
   }
-  otherHandler?: Handler | AsyncHandler
+  otherHandler?: Handler
   errorHandler?: ErrorHandler
   unknownMethodHandler?: UnknownMethodHandler
 }) =>Promise<{
-  url: string
-  root: string
-  protocol: 'http' | 'https'
-  port?: number
   ips: string[]
+  port?: number
+  protocol: 'http' | 'https'
+  root: string
+  sendReload?: () => void
+  url: string
 }>
 
