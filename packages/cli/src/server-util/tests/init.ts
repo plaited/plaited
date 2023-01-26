@@ -11,13 +11,12 @@ const routes = {
   '/contact': (req: IncomingMessage, ctx: ServerResponse) => ssr(ctx, '<h1>Contactt</h1>'),
 }
 
-server({
+const { addRoutes } = await server({
   root: path.resolve(__dirname),
   routes,
 })
 
-setTimeout(() => Object.assign(
-  routes,
+setTimeout(() => addRoutes(
   { '/help': (req: IncomingMessage, ctx: ServerResponse) => ssr(ctx, '<h1>Help</h1>'),
   }
 ), 5000)

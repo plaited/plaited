@@ -1,20 +1,14 @@
-import fs from 'fs/promises'
+import fs from 'fs'
 import os from 'os'
 import net from 'net'
 import { ServerResponse } from 'http'
 
-export const fileWatch = async (path: string, cb: () => void) => {
-  try {
-    const watcher = await fs.watch(path, { recursive: true })
-    for await (const event of watcher) {
-      cb()
-    }
-  }catch (err) {
-    AbortController.name
-    //@ts-ignore: part of the AbortController but no type found
-    if (err.name === 'AbortError')
-      return
-    throw err
+export const fileWatch =  process.platform !== 'linux'
+? (x:string, cb: () => void) => fs.watch(x, { recursive: true }, cb)
+: (x: string, cb: () => void) => {
+  if (fs.statSync(x).isDirectory()) {
+    fs.watch(x, cb)
+    fs.readdirSync(x).forEach(xx => fileWatch(`${x}/${xx}`, cb))
   }
 }
 

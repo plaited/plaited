@@ -70,6 +70,7 @@ export type Server = (args: {
   errorHandler?: ErrorHandler
   unknownMethodHandler?: UnknownMethodHandler
 }) =>Promise<{
+  addRoutes: (routes: Routes) => void
   ips: string[]
   port?: number
   protocol: 'http' | 'https'

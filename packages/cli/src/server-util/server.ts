@@ -8,7 +8,7 @@ import { router } from './router.js'
 import { usePort, fileWatch, networkIps, sendMessage } from './utils.js'
 import { getFileRoutes } from './get-file-routes.js'
 import { getReloadRoute } from './get-reload-route.js'
-import { Server, ServerCallback } from './types.js'
+import { Routes, Server, ServerCallback } from './types.js'
 
 export const server: Server = async ({
   root: _root = '.',
@@ -85,20 +85,25 @@ export const server: Server = async ({
       sendMessage(reloadClients.pop() as ServerResponse, 'message', 'reload')
     }
   }
-  reload && await fileWatch(root, () => { sendReloadMessage() })
+  if(reload) {
+    await fileWatch(root, () => { sendReloadMessage() })
+  }
 
   // Close socket connections on sigint
   process.on('SIGINT', () => {
     while (reloadClients.length > 0) (reloadClients.pop() as ServerResponse).end()
     process.exit()
   })
-
+  const addRoutes = (additions: Routes) => {
+    Object.assign(routes, additions)
+  }
   return {
     ips: networkIps,
     port,
     protocol,
     root,
     sendReload: reload ? sendReloadMessage : undefined,
+    addRoutes,
     url: `${protocol}://localhost:${port}`,
   }
 }
