@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import http, { ServerResponse } from 'http'
 import http2 from 'http2'
 import https from 'https'
@@ -19,6 +20,7 @@ export const server: Server = async ({
   errorHandler,
   unknownMethodHandler,
 }) =>{
+  console.time('startup')
   // Try start on specified port then fail or find a free port
   let port: number
   try {
@@ -60,7 +62,7 @@ export const server: Server = async ({
     // createServer()
   } else {
     createServer(async( req, res) => {
-      const init = router(
+      router(
         {
           ...fileRoutes,
           ...routes,
@@ -69,11 +71,10 @@ export const server: Server = async ({
         otherHandler,
         errorHandler,
         unknownMethodHandler
-      )
-      init(req, res)
+      )(req, res)
     }).listen(port, () => {
-      // eslint-disable-next-line no-console
       console.log(`Server running at: ${protocol}://localhost:${port}`)
+      console.timeEnd('startup')
     })
   }
 
