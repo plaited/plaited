@@ -29,6 +29,8 @@ const packageTemplate = `{
 }`
 
 export const build = async (output: string, { assets, ...config }: WorkshopConfig) => {
+  let exist = await getStat(root)
+  exist && await fs.rm(root, { recursive: true })
   const { workFiles } = await write(config)
   try {
     await fs.writeFile(`${worksDirectoryFile}`, `export const workFiles =[
@@ -39,15 +41,16 @@ export const build = async (output: string, { assets, ...config }: WorkshopConfi
   } catch(err) {
     console.error(err)
   }
-  const exist = await getStat(output)
+  exist = await getStat(output)
   try {
     exist && await fs.rm(output, { recursive: true })
-    fs.mkdir(output, { recursive: true })
-    fs.writeFile(`${output}/package.json`, packageTemplate)
+    await fs.mkdir(output, { recursive: true })
+    await fs.writeFile(`${output}/package.json`, packageTemplate)
   } catch(err) {
     console.error(err)
   }
   await copyFolder(output, root)
+  await fs.rm(worksDirectoryFile)
 }
 
 

@@ -1,15 +1,19 @@
 import chokidar from 'chokidar'
+import fs from 'fs/promises'
+import { getStat } from 'src/shared/get-stat.js'
 import { server } from '../../server-util/index.js'
 import { WorkshopConfig } from './types.js'
-import { copyAssets, assetsDir } from './utils/index.js'
+import { copyAssets, assetsDir, root } from './utils/index.js'
 import { write } from './write/index.js'
 import { cleanupTests } from './utils/cleanup-tests.js'
 import { getRoutes } from './utils/get-routes.js'
 
 export const start = async ({ removeDeadTest = true, reload = true, assets, ...config }: WorkshopConfig) => {
+  const exist = await getStat(root)
+  exist && await fs.rm(root, { recursive: true })
   let { testFiles, specData, workFiles } = await write(config)
   let routes = await getRoutes(workFiles)
-  assets && copyAssets(assets)
+  assets && await copyAssets(assets)
   const { sendReload } = await server({
     reload,
     routes,
@@ -22,7 +26,7 @@ export const start = async ({ removeDeadTest = true, reload = true, assets, ...c
     ({ testFiles, specData, workFiles } = await write(config))
     routes = await getRoutes(workFiles)
     if(removeDeadTest) {
-      cleanupTests(testFiles.filter(Boolean), specData)
+      await cleanupTests(testFiles.filter(Boolean), specData)
     }
     sendReload && sendReload()
   })
