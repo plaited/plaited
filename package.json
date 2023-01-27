@@ -13,7 +13,7 @@
     }
   },
   "scripts": {
-    "build": "yarn workspaces foreach -ptR run build",
+    "build": "yarn workspaces foreach -pt run build",
     "lint": "eslint . --ext .ts,.tsx,.js,.cjs",
     "lint:commit": "yarn lint --quiet",
     "lint:fix": "yarn lint --fix --quiet",
