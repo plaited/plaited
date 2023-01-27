@@ -435,7 +435,7 @@ export type $Value = ValueAndType['$value']
 // basic design token definition pulled from the https://design-tokens.github.io/community-group/format/#design-token-0
 export type DesignToken  = {
   $extensions?: $Extensions
-  $description?: string
+  $description: string
 } & ValueAndType
 
 // general tokens object type definition
