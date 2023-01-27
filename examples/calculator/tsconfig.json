@@ -22,6 +22,7 @@
     "**/*.spec.*"
   ],
   "include": [
-    "public"
+    "public",
+    "src/value-display"
   ]
 }

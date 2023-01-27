@@ -28,7 +28,7 @@
       "--loader=ts-node/esm"
     ]
   },
-  "types": "dist/lib/index.d.ts",
+  "types": "dist/index.d.ts",
   "dependencies": {
     "@plaited/node-utils": "workspace:*",
     "@plaited/utils": "workspace:*",

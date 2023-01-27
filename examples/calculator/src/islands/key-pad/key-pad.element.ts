@@ -1,8 +1,8 @@
 import { usePlait, BaseElement } from '@plaited/island'
-import { send } from '../comms'
+import { send } from '../comms.js'
 // @ts-ignore: test
 window.streamLog = []
-class NumberPad extends BaseElement {
+class KeyPad extends BaseElement {
   plait(){
     const logger = (msg: unknown) => {
       // @ts-ignore: test
@@ -11,13 +11,13 @@ class NumberPad extends BaseElement {
     const actions = {
       number(evt:MouseEvent){
         const val = (evt.currentTarget as HTMLButtonElement)?.value
-        send('number-display', {
+        send('value-display', {
           eventName: `addNumber-${val}`,
           payload: val,
         })
       },
       clear() {
-        send('number-display', {
+        send('value-display', {
           eventName: 'clear',
         })
       },
@@ -28,4 +28,4 @@ class NumberPad extends BaseElement {
     })
   }
 }
-NumberPad.define('number-pad')
+KeyPad.define('key-pad')
