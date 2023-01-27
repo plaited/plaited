@@ -13,7 +13,7 @@
     }
   },
   "scripts": {
-    "build": "yarn workspaces foreach -pt run build",
+    "build": "yarn workspaces foreach -ptR run build",
     "lint": "eslint . --ext .ts,.tsx,.js,.cjs",
     "lint:commit": "yarn lint --quiet",
     "lint:fix": "yarn lint --fix --quiet",
@@ -49,6 +49,7 @@
     "husky": "8.0.2",
     "pinst": "3.0.0",
     "plop": "3.1.1",
+    "prettier": "2.8.3",
     "ts-node": "10.9.1",
     "typescript": "4.9.4"
   }

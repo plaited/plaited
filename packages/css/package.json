@@ -1,6 +1,6 @@
 {
   "name": "@plaited/css",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "license": "BSD-2-Clause",
   "engines": {
     "node": ">= v18.12.1"
@@ -9,7 +9,7 @@
     "type": "git",
     "url": "https://github.com/plaited/plaited.git"
   },
-  "homepage": "https://github.com/plaited/plaited/blob/main/packages/plait/README.md",
+  "homepage": "https://github.com/plaited/plaited/blob/main/packages/css/README.md",
   "author": "Edward Irby <e.irby@pm.me>",
   "type": "module",
   "main": "./dist/index.js",
@@ -20,8 +20,7 @@
   "scripts": {
     "build": "tsc --project tsconfig.json",
     "prepublishOnly": "yarn build",
-    "test": "ava",
-    "test:watch": "yarn test --watch --verbose"
+    "test": "ava"
   },
   "ava": {
     "extensions": {
@@ -44,6 +43,7 @@
   "devDependencies": {
     "@plaited/utils": "workspace:*",
     "@tsconfig/node18": "1.0.1",
+    "@types/node": "18.11.18",
     "ava": "5.1.0",
     "ts-node": "10.9.1",
     "typescript": "4.8.4"
