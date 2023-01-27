@@ -4,8 +4,9 @@ import http2 from 'http2'
 import https from 'https'
 import fs from 'fs'
 import path from 'path'
+import chokidar from 'chokidar'
 import { router } from './router.js'
-import { usePort, fileWatch, networkIps, sendMessage } from './utils.js'
+import { usePort, networkIps, sendMessage } from './utils.js'
 import { getFileRoutes } from './get-file-routes.js'
 import { getReloadRoute } from './get-reload-route.js'
 import { Routes, Server, ServerCallback } from './types.js'
@@ -20,7 +21,7 @@ export const server: Server = async ({
   errorHandler,
   unknownMethodHandler,
 }) =>{
-  console.time('startup')
+  console.time('startup server')
   // Try start on specified port then fail or find a free port
   let port: number
   try {
@@ -74,7 +75,7 @@ export const server: Server = async ({
       )(req, res)
     }).listen(port, () => {
       console.log(`Server running at: ${protocol}://localhost:${port}`)
-      console.timeEnd('startup')
+      console.timeEnd('startup server')
     })
   }
 
@@ -86,7 +87,7 @@ export const server: Server = async ({
     }
   }
   if(reload) {
-    await fileWatch(root, () => { sendReloadMessage() })
+    chokidar.watch(root).on('change', sendReloadMessage )
   }
 
   // Close socket connections on sigint

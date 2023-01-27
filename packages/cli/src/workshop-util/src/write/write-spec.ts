@@ -1,8 +1,8 @@
-import { toId } from './to-id'
 import { startCase } from 'lodash-es'
 import fs from 'fs/promises'
 import path from 'path'
-import { getStat } from '../shared/get-stat.js'
+import { getStat } from '../../../shared/get-stat.js'
+import { testExtension, toId } from '../utils/index.js'
 
 const template = ({
   port,
@@ -52,7 +52,7 @@ const template = ({
   ].filter(Boolean).join('\n')
 }
 
-export const writeTemplate = async ({
+export const writeSpec = async ({
   port,
   name,
   title,
@@ -68,9 +68,9 @@ export const writeTemplate = async ({
   output: string,
 }) => {
   const id = toId(title, name)
-  const testFile = path.resolve(output, `${id}/spec.ts`)
+  const testFile = path.resolve(output, `${id}${testExtension}`)
   const exist = await getStat(testFile)
-  if(exist) return
+  if(exist) return ''
   const content = template({
     port,
     name,
@@ -78,5 +78,11 @@ export const writeTemplate = async ({
     fixture,
     work,
   })
-  return await fs.writeFile(testFile, content, { encoding: 'utf8' } )
+  try {
+    await fs.mkdir(path.dirname(testFile),  { recursive: true })
+    await fs.writeFile(testFile, content, { encoding: 'utf8' } )
+  } catch(err) {
+    console.error(err)
+  }
+  return testFile
 }

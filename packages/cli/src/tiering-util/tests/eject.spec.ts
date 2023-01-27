@@ -6,7 +6,7 @@ import { run, ENTER } from './inquirer-test.js'
 import { fileURLToPath } from 'url'
 
 
-import { getStat } from '../get-stat.js'
+import { getStat } from '../../shared/get-stat.js'
 
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))

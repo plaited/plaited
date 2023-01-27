@@ -1,16 +1,6 @@
-import fs from 'fs'
 import os from 'os'
 import net from 'net'
 import { ServerResponse } from 'http'
-
-export const fileWatch =  process.platform !== 'linux'
-? (x:string, cb: () => void) => fs.watch(x, { recursive: true }, cb)
-: (x: string, cb: () => void) => {
-  if (fs.statSync(x).isDirectory()) {
-    fs.watch(x, cb)
-    fs.readdirSync(x).forEach(xx => fileWatch(`${x}/${xx}`, cb))
-  }
-}
 
 export const usePort = async (port = 0) =>
   new Promise<number>((ok, x) => {
