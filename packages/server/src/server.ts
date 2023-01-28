@@ -36,8 +36,6 @@ export const server: Server = async ({
   
 
   // Configure globals
- 
-
   if (!fs.existsSync(root)) {
     console.error(`[ERR] Root directory ${root} does not exist!`)
     process.exit()
