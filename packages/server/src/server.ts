@@ -12,7 +12,7 @@ import { getReloadRoute } from './get-reload-route.js'
 import { Routes, Server, ServerCallback } from './types.js'
 
 export const server: Server = async ({
-  root: _root = '.',
+  root,
   routes,
   port:_port,
   reload = true,
@@ -36,9 +36,9 @@ export const server: Server = async ({
   
 
   // Configure globals
-  const root = _root.startsWith('/') ? _root  : path.join(process.cwd(), _root)
+ 
 
-  if (!fs.existsSync(_root)) {
+  if (!fs.existsSync(root)) {
     console.error(`[ERR] Root directory ${root} does not exist!`)
     process.exit()
   }

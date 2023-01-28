@@ -7,22 +7,22 @@
     "baseUrl": ".",
     "declaration": true,
     "lib": [
-      "ES2022",
+      "ESNext",
       "DOM",
       "DOM.Iterable"
     ],
-    "module": "ES2022",
+    "module": "ESNext",
     "outDir": "dist",
     "preserveSymlinks": true,
-    "rootDir": "public",
+    "rootDir": "src",
     "strictPropertyInitialization": false
   },
   "exclude": [
     "**/dist",
+    "**/tests",
     "**/*.spec.*"
   ],
   "include": [
-    "public",
-    "src/value-display"
+    "src"
   ]
 }

@@ -36,7 +36,7 @@ const sendFile = ({
 }
 
 const serverAsset = async (ctx:ServerResponse, filePath:string) => {
-  const ext = path.extname(filePath)
+  const ext = path.extname(filePath).slice(1)
   const exist  = await getStat(filePath)
   if(!exist) return sendError(ctx, 404)
   try {
@@ -73,9 +73,8 @@ export const getFileRoutes = async (root: string) => {
   const paths: string[] = []
   await getFilePaths(root, paths)
   const routes = await Promise.all(paths.map(async filePath => {
-    const root = filePath.startsWith(process.cwd()) ? filePath.split(process.cwd())[1] : filePath
     return {
-      [root.startsWith('/') ? root : `/${root}`]: async (req: IncomingMessage, ctx: ServerResponse) => {
+      [filePath.replace(root, '')]: async (req: IncomingMessage, ctx: ServerResponse) => {
         return await serverAsset(ctx, filePath)
       },
     }

@@ -7,12 +7,12 @@ import {
   usePlait,
   Query,
   useStore,
-  BaseElement,
+  defineElement,
 } from '@plaited/island'
 import { connect } from '../comms.js'
 
 
-class ValueDisplay extends BaseElement {
+defineElement('value-display', base => class extends base {
   plait($:Query, context: this){
     const [ getDisplay, setDisplay ] = useStore<string[]>([])
     const strands = {
@@ -63,6 +63,4 @@ class ValueDisplay extends BaseElement {
       connect,
     })
   }
-}
-
-ValueDisplay.define('value-display')
+})

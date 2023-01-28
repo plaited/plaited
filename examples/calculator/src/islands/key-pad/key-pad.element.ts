@@ -1,8 +1,8 @@
-import { usePlait, BaseElement } from '@plaited/island'
+import { usePlait, defineElement } from '@plaited/island'
 import { send } from '../comms.js'
 // @ts-ignore: test
 window.streamLog = []
-class KeyPad extends BaseElement {
+defineElement('key-pad', base => class extends base {
   plait(){
     const logger = (msg: unknown) => {
       // @ts-ignore: test
@@ -27,5 +27,4 @@ class KeyPad extends BaseElement {
       logger,
     })
   }
-}
-KeyPad.define('key-pad')
+})

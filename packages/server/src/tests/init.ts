@@ -6,13 +6,13 @@ import { ssr } from './ssr.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const routes = {
-  '/': (req: IncomingMessage, ctx: ServerResponse) => ssr(ctx, '<h1>Home</h1>'),
-  '/about': (req: IncomingMessage, ctx: ServerResponse) => ssr(ctx, '<h1>About</h1>'),
-  '/contact': (req: IncomingMessage, ctx: ServerResponse) => ssr(ctx, '<h1>Contact</h1>'),
+  '/': (req: IncomingMessage, ctx: ServerResponse) => ssr(ctx, '<link rel="stylesheet" href="./styles.css"><h1>Home</h1>'),
+  '/about': (req: IncomingMessage, ctx: ServerResponse) => ssr(ctx, '<link rel="stylesheet" href="./styles.css"><h1>About</h1>'),
+  '/contact': (req: IncomingMessage, ctx: ServerResponse) => ssr(ctx, '<link rel="stylesheet" href="./styles.css"><h1>Contact</h1>'),
 }
 
 const { addRoutes } = await server({
-  root: path.resolve(__dirname),
+  root: path.resolve(__dirname, 'assets'),
   routes,
 })
 

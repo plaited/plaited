@@ -2,8 +2,10 @@
   "name": "calculator",
   "type": "module",
   "scripts": {
-    "build": "node scripts/build.js",
-    "start": "yarn build && ts-node-esm src/index.ts",
+    "build": "yarn build:dist & yarn build:public",
+    "build:dist": "tsc --project tsconfig.json",
+    "build:public": "esbuild src/islands/registry.ts --bundle --sourcemap --format=esm  --minify --target=es2022,chrome109 --outdir=public",
+    "start": "yarn build && node dist/index.js",
     "test": "exit 0"
   },
   "dependencies": {

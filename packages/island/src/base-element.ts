@@ -35,110 +35,113 @@ const filterAddedNodes = (nodes:NodeList) => {
 
 export type Query = <T = Element>(id: string) => T[]
 
-export class BaseElement extends HTMLElement {
-  #noDeclarativeShadow = false
-  #shadowObserver: MutationObserver
-  #templateObserver: MutationObserver
-  #disconnect: () => void 
-  internals_: ElementInternals
-  #trigger: TriggerFunc
-  constructor(
-    mode?: 'open' | 'closed',
-    delegatesFocus?: boolean
-  ) {
-    super()
-    this.internals_ = this.attachInternals()
-    const shadow = this.internals_.shadowRoot
-    if(!shadow) {
-      this.attachShadow({ mode: mode || 'open', delegatesFocus })
-      this.#noDeclarativeShadow = true
+export const defineElement = (tag: string, mixin: (base: CustomElementConstructor) => CustomElementConstructor) => {
+  if (customElements.get(tag)) return
+  customElements.define(tag, mixin(class extends HTMLElement {
+    #noDeclarativeShadow = false
+    #shadowObserver: MutationObserver
+    #templateObserver: MutationObserver
+    #disconnect: () => void 
+    internals_: ElementInternals
+    #trigger: TriggerFunc
+    constructor(
+      mode?: 'open' | 'closed',
+      delegatesFocus?: boolean
+    ) {
+      super()
+      this.internals_ = this.attachInternals()
+      const shadow = this.internals_.shadowRoot
+      if(!shadow) {
+        this.attachShadow({ mode: mode || 'open', delegatesFocus })
+        this.#noDeclarativeShadow = true
+      }
+      this.$ = this.$.bind(this)
     }
-    this.$ = this.$.bind(this)
-  }
-  connectedCallback() {
-    if(this.#noDeclarativeShadow) {
-      const template = this.querySelector<HTMLTemplateElement>('template[shadowroot]')
-        template
-          ? this.#appendTemplate(template)
-          : (this.#templateObserver = this.#createTemplateObserver())
+    connectedCallback() {
+      if(this.#noDeclarativeShadow) {
+        const template = this.querySelector<HTMLTemplateElement>('template[shadowroot]')
+          template
+            ? this.#appendTemplate(template)
+            : (this.#templateObserver = this.#createTemplateObserver())
+      }
+      this.#delegateListeners()
+      this.#shadowObserver = this.#createShadowObserver()
+      const {  disconnect, trigger } = this.plait(this.$, this)
+      this.#disconnect = disconnect
+      this.#trigger = trigger
+      this.#trigger({ eventName: `connected->${this.id || this.tagName.toLowerCase()}`, baseDynamic: baseDynamics.objectObject })
     }
-    this.#delegateListeners()
-    this.#shadowObserver = this.#createShadowObserver()
-    const {  disconnect, trigger } = this.plait(this.$, this)
-    this.#disconnect = disconnect
-    this.#trigger = trigger
-    this.#trigger({ eventName: `connected->${this.id || this.tagName.toLowerCase()}`, baseDynamic: baseDynamics.objectObject })
-  }
-  plait($: Query,
-    context: this
-  ): ReturnType<UsePlait>{
-    return usePlait({})
-  }
-  disconnectedCallback() {
-    this.#trigger({ eventName: `disconnected->${this.id || this.tagName.toLowerCase()}`, baseDynamic: baseDynamics.objectObject })
-    this.#templateObserver && this.#templateObserver.disconnect()
-    this.#shadowObserver.disconnect()
-    this.#disconnect()
-  }
-  #delegateListeners(nodes?: HTMLElement[]) {
-    const triggers = nodes || (this.shadowRoot as ShadowRoot).querySelectorAll(`[${dataTrigger}]`)
-    triggers.forEach(el => {
-      if(!delegatedListener.has(el)) {
-        delegatedListener.set(el, evt => {
-          const triggerKey = getTriggerKey(evt)
-          triggerKey && this.#trigger({
-            eventName: triggerKey,
-            payload: evt,
-            baseDynamic: baseDynamics.objectPerson,
+    plait($: Query,
+      context: this
+    ): ReturnType<UsePlait>{
+      return usePlait({})
+    }
+    disconnectedCallback() {
+      this.#trigger({ eventName: `disconnected->${this.id || this.tagName.toLowerCase()}`, baseDynamic: baseDynamics.objectObject })
+      this.#templateObserver && this.#templateObserver.disconnect()
+      this.#shadowObserver.disconnect()
+      this.#disconnect()
+    }
+    #delegateListeners(nodes?: HTMLElement[]) {
+      const triggers = nodes || (this.shadowRoot as ShadowRoot).querySelectorAll(`[${dataTrigger}]`)
+      triggers.forEach(el => {
+        if(!delegatedListener.has(el)) {
+          delegatedListener.set(el, evt => {
+            const triggerKey = getTriggerKey(evt)
+            triggerKey && this.#trigger({
+              eventName: triggerKey,
+              payload: evt,
+              baseDynamic: baseDynamics.objectPerson,
+            })
           })
-        })
-      }
-      //@ts-ignore: will be HTMLOrSVGElement
-      const events = matchAllEvents(el.dataset.trigger)
-      for (const event of events) {
-        el.addEventListener(event, delegatedListener.get(el))
-      }
-    })
-  }
-  // Observes the addition of nodes to the shadow dom and changes to and child's data-trigger attribute
-  #createShadowObserver() {
-    const mo = new MutationObserver(mutationsList => {
-      for (const mutation of mutationsList) {
-        if (mutation.addedNodes.length) {
-          this.#delegateListeners(filterAddedNodes(mutation.addedNodes))
         }
-        if (mutation.type === 'attributes') {
-          this.#delegateListeners()
+        //@ts-ignore: will be HTMLOrSVGElement
+        const events = matchAllEvents(el.dataset.trigger)
+        for (const event of events) {
+          el.addEventListener(event, delegatedListener.get(el))
         }
-      }
-    })
-    mo.observe(this, {
-      attributeFilter: [ dataTrigger ],
-      childList: true,
-      subtree: true,
-    })
-    return mo
-  }
-  #appendTemplate(template: HTMLTemplateElement){
-    const root = this.shadowRoot as ShadowRoot
-    !root.firstChild && root.appendChild(document.importNode((template).content, true))
-  }
-  #createTemplateObserver() {
-    const mo = new MutationObserver(() => {
-      const template = this.querySelector<HTMLTemplateElement>('template[shadowroot]')
-      if(template) {
-        mo.disconnect()
-        this.#appendTemplate(template as HTMLTemplateElement)
-      }
-    })
-    mo.observe(this, { childList: true })
-    return mo
-  }
-  $<T = Element>(id: string) {
-    return [ ...((this.shadowRoot as ShadowRoot).querySelectorAll(`[${dataTarget}="${id}"]`)) ] as T[]
-  }
-  static define(tag: string) {
-    if (customElements.get(tag)) return
-    customElements.define(tag, this as unknown as CustomElementConstructor)
-  }
+      })
+    }
+    // Observes the addition of nodes to the shadow dom and changes to and child's data-trigger attribute
+    #createShadowObserver() {
+      const mo = new MutationObserver(mutationsList => {
+        for (const mutation of mutationsList) {
+          if (mutation.addedNodes.length) {
+            this.#delegateListeners(filterAddedNodes(mutation.addedNodes))
+          }
+          if (mutation.type === 'attributes') {
+            this.#delegateListeners()
+          }
+        }
+      })
+      mo.observe(this, {
+        attributeFilter: [ dataTrigger ],
+        childList: true,
+        subtree: true,
+      })
+      return mo
+    }
+    #appendTemplate(template: HTMLTemplateElement){
+      const root = this.shadowRoot as ShadowRoot
+      !root.firstChild && root.appendChild(document.importNode((template).content, true))
+    }
+    #createTemplateObserver() {
+      const mo = new MutationObserver(() => {
+        const template = this.querySelector<HTMLTemplateElement>('template[shadowroot]')
+        if(template) {
+          mo.disconnect()
+          this.#appendTemplate(template as HTMLTemplateElement)
+        }
+      })
+      mo.observe(this, { childList: true })
+      return mo
+    }
+    $<T = Element>(id: string) {
+      return [ ...((this.shadowRoot as ShadowRoot).querySelectorAll(`[${dataTarget}="${id}"]`)) ] as T[]
+    }
+    static define(tag: string) {
+      if (customElements.get(tag)) return
+      customElements.define(tag, this as unknown as CustomElementConstructor)
+    }
+  }))
 }
