@@ -58,7 +58,7 @@ export const server: Server = async ({
   const fileRoutes = await getFileRoutes(root)
 
   if(credentials && !reload) {
-    // createServer()
+    // createServer() // Need to implement a stream solution when we eventually add service worker support to client lib
   } else {
     createServer(async( req, res) => {
       router(
