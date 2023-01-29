@@ -1,30 +1,30 @@
-import { assert } from '@esm-bundle/chai'
+import test from 'ava'
 import sinon from 'sinon'
-import { debounce } from '..'
+import { debounce } from '../index.js'
 
-describe('debounce()', () => {
-  let clock: sinon.SinonFakeTimers
-  beforeEach(function () {
-    clock = sinon.useFakeTimers()
-  })
 
-  afterEach(function () {
-    clock.restore()
-  })
-
-  it('debounces the fn', () => {
-    const fn = sinon.spy()
-
-    const debounced = debounce(fn, 100)
-    debounced()
-
-    assert.isOk(fn.notCalled)
-    clock.tick(50)
-
-    assert.isOk(fn.notCalled)
-    clock.tick(100)
-
-    assert.isOk(fn.called)
-    assert.equal(fn.getCalls().length, 1)
-  })
+let clock: sinon.SinonFakeTimers
+test.beforeEach(function () {
+  clock = sinon.useFakeTimers()
 })
+
+test.afterEach(function () {
+  clock.restore()
+})
+
+test('debounces the fn', t => {
+  const fn = sinon.spy()
+
+  const debounced = debounce(fn, 100)
+  debounced()
+
+  t.truthy(fn.notCalled)
+  clock.tick(50)
+
+  t.truthy(fn.notCalled)
+  clock.tick(100)
+
+  t.truthy(fn.called)
+  t.is(fn.getCalls().length, 1)
+})
+

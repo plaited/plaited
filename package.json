@@ -1,10 +1,11 @@
 {
   "license": "BSD-2-Clause",
   "engines": {
-    "node": ">= v16.15.1"
+    "node": ">= v18.12.1"
   },
   "workspaces": [
-    "packages/**"
+    "packages/**",
+    "examples/**"
   ],
   "config": {
     "commitizen": {
@@ -13,15 +14,13 @@
   },
   "scripts": {
     "build": "yarn workspaces foreach -pt run build",
-    "dc": "docker-compose run --rm plaited",
     "lint": "eslint . --ext .ts,.tsx,.js,.cjs",
     "lint:commit": "yarn lint --quiet",
     "lint:fix": "yarn lint --fix --quiet",
     "postinstall": "husky install",
     "postpack": "pinst --enable",
     "prepack": "pinst --disable",
-    "test": "web-test-runner --config web-dev-server.config.mjs --node-resolve",
-    "test:all": "yarn test \"packages/**/tests/**/*.spec.(ts|js)\" "
+    "test": "yarn workspaces foreach -pt run test"
   },
   "lint-staged": {
     "*.(js|ts)": [
@@ -34,23 +33,24 @@
   "browserslist": [
     "> 2%"
   ],
+  "dependencies": {
+    "@types/node": "^18.11.18"
+  },
   "devDependencies": {
-    "@commitlint/cli": "16.2.3",
-    "@commitlint/config-conventional": "16.2.1",
-    "@typescript-eslint/eslint-plugin": "5.30.0",
-    "@typescript-eslint/parser": "5.30.0",
-    "@web/dev-server": "0.1.35",
-    "@web/dev-server-esbuild": "0.3.3",
-    "@web/test-runner": "0.15.0",
+    "@commitlint/cli": "17.3.0",
+    "@commitlint/config-conventional": "17.3.0",
+    "@typescript-eslint/eslint-plugin": "5.47.0",
+    "@typescript-eslint/parser": "5.47.0",
     "cz-conventional-changelog": "3.3.0",
-    "esbuild": "0.15.12",
-    "eslint": "8.18.0",
+    "eslint": "8.30.0",
     "eslint-plugin-compat": "4.0.2",
     "eslint-plugin-mocha": "10.1.0",
-    "eslint-plugin-react": "7.30.1",
-    "format-package": "6.1.0",
-    "husky": "8.0.1",
+    "format-package": "7.0.0",
+    "husky": "8.0.2",
     "pinst": "3.0.0",
-    "prettier": "2.7.1"
+    "plop": "3.1.1",
+    "prettier": "2.8.3",
+    "ts-node": "10.9.1",
+    "typescript": "4.9.4"
   }
 }

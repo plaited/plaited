@@ -1,4 +1,4 @@
-# @plaited
+# @plaited/plaited
 
 This monorepo is a framework for rapidly coding and refining web application interfaces as specifications (requirements) change and evolve. Web application interfaces are inherently reactive and complex. Business needs are not always clear at the beginning of a project. Untangling code as requirements change is a frustrating process. However what if we could begin working on new interface projects comfortable in our uncertainty and build out solid production ready code?
 
@@ -10,8 +10,7 @@ The framework leverages the behavioral programing algorithm, along with utility 
 
 
 ## Packages
-- @plaited/behavioral: [implicit state management](https://github.com/plaited/plaited/wiki/Behavioral)
-- @plaited/actor: actor messaging and storage utility functions that use behavioral interface
-- @plaited/island: web component and utils for building complex user interfaces
+- @plaited/plait: [implicit state management](https://github.com/plaited/plaited/wiki/Plait)
+- @plaited/island: island web app architecture library
 - @plaited/utils: reusable utility functions and types used to build user interfaces
 

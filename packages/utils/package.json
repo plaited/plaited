@@ -1,38 +1,46 @@
 {
   "name": "@plaited/utils",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "license": "BSD-2-Clause",
   "engines": {
-    "node": ">= v16.15.1"
+    "node": ">= v18.12.1"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/plaited/plaited.git"
   },
-  "homepage": "https://github.com/plaited/plaited/blob/main/packages/storage/README.md",
+  "homepage": "https://github.com/plaited/plaited/blob/main/packages/utils/README.md",
   "author": "Edward Irby <e.irby@pm.me>",
-  "main": "./dist/cjs/index.js",
-  "module": "./dist/esm/index.js",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
   "files": [
     "dist/**/*"
   ],
   "scripts": {
-    "build": "yarn build:cjs && yarn build:esm",
-    "build:cjs": "tsc --project tsconfig.json --rootDir src --outDir dist/cjs",
-    "build:esm": "tsc --project tsconfig.json --rootDir src --outDir dist/esm --module es6",
-    "prepublishOnly": "yarn build"
+    "build": "tsc --project tsconfig.json",
+    "prepublishOnly": "yarn build",
+    "test": "ava"
   },
-  "exports": {
-    ".": {
-      "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js"
-    }
+  "ava": {
+    "extensions": {
+      "ts": "module"
+    },
+    "files": [
+      "src/**/*.spec.ts"
+    ],
+    "nodeArguments": [
+      "--loader=ts-node/esm"
+    ]
   },
+  "types": "dist/index.d.ts",
   "devDependencies": {
-    "@esm-bundle/chai": "4.3.4-fix.0",
-    "@types/mocha": "10.0.0",
+    "@tsconfig/node18": "1.0.1",
+    "@types/node": "18.11.18",
     "@types/sinon": "10.0.13",
+    "ava": "5.1.0",
     "sinon": "14.0.1",
+    "ts-node": "10.9.1",
     "typescript": "4.8.4"
   }
 }

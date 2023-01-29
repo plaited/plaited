@@ -1,39 +1,39 @@
-import { assert } from '@esm-bundle/chai'
-import { ueid, generateId, setIdCounter } from '..'
+import test from 'ava'
+import { ueid, generateId, setIdCounter } from '../index.js'
 
-describe('id', () => {
-  it('ueid: returns a string', () => {
-    const output = ueid()
-    assert.isString(typeof output)
-  })
-
-  it('ueid: should return unique ids', function () {
-    const ids = new Array(5).fill(null).map(ueid)
-    const uniqued = [ ...new Set(ids) ]
-
-    assert.lengthOf(ids, 5)
-    assert.lengthOf(uniqued, 5)
-  })
-
-  it('ueid: supports an optional prefix', function () {
-    assert.include(ueid('a-'), 'a-')
-    assert.include(ueid('b-'), 'b-')
-    assert.include(ueid('c:'), 'c:')
-    assert.include(ueid('word_'), 'word_')
-  })
-
-  it('generateId: should return string with iterated count', () => {
-    assert.equal(generateId(), '0')
-    assert.equal(generateId(), '1')
-  })
-
-  it('generateId: should return prefixed string with iterated count', () => {
-    assert.equal(generateId('pre-'), 'pre-2')
-    assert.equal(generateId('pre-'), 'pre-3')
-  })
-  it('generateId: should return reset prefixed string with iterated count', () => {
-    setIdCounter(0)
-    assert.equal(generateId('pre-'), 'pre-0')
-    assert.equal(generateId('pre-'), 'pre-1')
-  })
+test('ueid: returns a string', t => {
+  const output = ueid()
+  t.is(typeof output, 'string')
 })
+
+test('ueid: should return unique ids', t => {
+  const ids = new Array(5).fill(null).map(ueid)
+  const uniqued = [ ...new Set(ids) ]
+
+  t.is(ids.length, 5)
+  t.is(uniqued.length, 5)
+})
+
+test('ueid: supports an optional prefix', t => {
+  t.is(ueid('a-').startsWith('a-'), true)
+  t.is(ueid('b-').startsWith('b-'), true)
+  t.is(ueid('c:').startsWith('c:'), true)
+  t.is(ueid('word_').startsWith('word_'), true)
+})
+
+test('generateId: should return string with iterated count', t => {
+  t.is(generateId(), '0')
+  t.is(generateId(), '1')
+})
+
+test('generateId: should return prefixed string with iterated count', t => {
+  t.is(generateId('pre-'), 'pre-2')
+  t.is(generateId('pre-'), 'pre-3')
+})
+
+test('generateId: should return reset prefixed string with iterated count', t => {
+  setIdCounter(0)
+  t.is(generateId('pre-'), 'pre-0')
+  t.is(generateId('pre-'), 'pre-1')
+})
+

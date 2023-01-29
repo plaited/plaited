@@ -1,12 +1,10 @@
-import { assert } from '@esm-bundle/chai'
-import { keyMirror } from '../'
+import test from 'ava'
+import { keyMirror } from '../index.js'
 
-describe('keyMirror()', () => {
-  it('return a object of mirrored string values', () => {
-    assert.deepEqual(keyMirror('a', 'b', 'c'), {
-      a: 'a',
-      b: 'b',
-      c: 'c',
-    })
-  })
+test('keyMirror()', t => {
+  t.deepEqual(keyMirror('a', 'b', 'c'), {
+    a: 'a',
+    b: 'b',
+    c: 'c',
+  }, 'return a object of mirrored string values')
 })

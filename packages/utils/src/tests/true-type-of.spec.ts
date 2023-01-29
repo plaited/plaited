@@ -1,21 +1,21 @@
-import { assert } from '@esm-bundle/chai'
-import { trueTypeOf } from '..'
+import test from 'ava'
+import { trueTypeOf } from '../index.js'
 
-it('trueTypeOf()', () => {
-  assert.equal(trueTypeOf([]), 'array')
-  assert.equal(trueTypeOf({}), 'object')
-  assert.equal(trueTypeOf(''), 'string')
-  assert.equal(trueTypeOf(new Date()), 'date')
-  assert.equal(trueTypeOf(1), 'number')
+test('trueTypeOf()', t => {
+  t.is(trueTypeOf([]), 'array')
+  t.is(trueTypeOf({}), 'object')
+  t.is(trueTypeOf(''), 'string')
+  t.is(trueTypeOf(new Date()), 'date')
+  t.is(trueTypeOf(1), 'number')
   /* eslint-disable */
-  assert.equal(trueTypeOf(function () { }), 'function');
+  t.is(trueTypeOf(function () { }), 'function');
   /* eslint-enable */
-  assert.equal(trueTypeOf(/test/i), 'regexp')
-  assert.equal(trueTypeOf(RegExp('foo*')), 'regexp')
-  assert.equal(trueTypeOf(true), 'boolean')
-  assert.equal(trueTypeOf(null), 'null')
-  assert.equal(trueTypeOf(), 'undefined')
-  assert.equal(trueTypeOf(new Set()), 'set')
-  assert.equal(trueTypeOf(new Map()), 'map')
-  assert.equal(trueTypeOf(Symbol('Thing')), 'symbol')
+  t.is(trueTypeOf(/test/i), 'regexp')
+  t.is(trueTypeOf(RegExp('foo*')), 'regexp')
+  t.is(trueTypeOf(true), 'boolean')
+  t.is(trueTypeOf(null), 'null')
+  t.is(trueTypeOf(), 'undefined')
+  t.is(trueTypeOf(new Set()), 'set')
+  t.is(trueTypeOf(new Map()), 'map')
+  t.is(trueTypeOf(Symbol('Thing')), 'symbol')
 })

@@ -1,17 +1,16 @@
-import { assert } from '@esm-bundle/chai'
-import { escape, unescape } from '../'
+import test from 'ava'
+import { escape, unescape } from '../index.js'
 
-describe('escape()', () => {
-  it('correct escape', () => {
-    assert.equal(escape('&<>\'"'), '&amp;&lt;&gt;&#39;&quot;')
-  })
-  it('correct inverted escape', () => {
-    assert.equal(escape('<>\'"&'), '&lt;&gt;&#39;&quot;&amp;')
-  })
-  it('correct unescape', () => {
-    assert.equal(unescape('&amp;&lt;&gt;&#39;&quot;'), '&<>\'"')
-  })
-  it('correct inverted unescape', () => {
-    assert.equal(unescape('&lt;&gt;&#39;&quot;&amp;'), '<>\'"&')
-  })
+test('escape(): correct escape', t => {
+  t.is(escape('&<>\'"'), '&amp;&lt;&gt;&#39;&quot;')
 })
+test('escape(): correct inverted escape', t => {
+  t.is(escape('<>\'"&'), '&lt;&gt;&#39;&quot;&amp;')
+})
+test('unescape(): correct unescape', t => {
+  t.is(unescape('&amp;&lt;&gt;&#39;&quot;'), '&<>\'"')
+})
+test('unescape(): correct inverted unescape', t => {
+  t.is(unescape('&lt;&gt;&#39;&quot;&amp;'), '<>\'"&')
+})
+
