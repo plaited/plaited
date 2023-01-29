@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import http, { ServerResponse } from 'http'
-import http2 from 'http2'
+// import http2 from 'http2'
 import https from 'https'
 import fs from 'fs'
 import chokidar from 'chokidar'
@@ -32,7 +32,6 @@ export const server: Server = async ({
     }
     port = await usePort()
   }
-  
 
   // Configure globals
   if (!fs.existsSync(root)) {
@@ -47,36 +46,35 @@ export const server: Server = async ({
 
   const reloadClients:ServerResponse[]  = []
   const protocol = credentials ? 'https' : 'http'
-  const createServer = credentials && reload
+  const createServer = credentials
     ? (cb: ServerCallback) => https.createServer(credentials, cb)
-    : credentials
-    ? () => http2.createSecureServer(credentials)
+    // : credentials
+    // ? () => http2.createSecureServer(credentials)
     : (cb: ServerCallback) => http.createServer(cb)
 
   // Get file assets routes
   const fileRoutes = await getFileRoutes(root)
 
-  if(credentials && !reload) {
-    // createServer() // Need to implement a stream solution when we eventually add service worker support to client lib
-  } else {
-    createServer(async( req, res) => {
-      router(
-        {
-          ...fileRoutes,
-          ...routes,
-          ...getReloadRoute(reload, reloadClients),
-        },
-        otherHandler,
-        errorHandler,
-        unknownMethodHandler
-      )(req, res)
-    }).listen(port, () => {
-      console.log(`Server running at: ${protocol}://localhost:${port}`)
-      console.timeEnd('startup server')
-    })
-  }
+  // if(credentials && !reload) {
+  //   createServer() // Need to implement a stream solution when we eventually add service worker support to client lib
+  // } else {
+  createServer(async( req, res) => {
+    router(
+      {
+        ...fileRoutes,
+        ...routes,
+        ...getReloadRoute(reload, reloadClients),
+      },
+      otherHandler,
+      errorHandler,
+      unknownMethodHandler
+    )(req, res)
+  }).listen(port, () => {
+    console.log(`Server running at: ${protocol}://localhost:${port}`)
+    console.timeEnd('startup server')
+  })
+  // }
 
-  
   // Notify livereload reloadClients on file change
   const sendReloadMessage = () => {
     while (reloadClients.length > 0) {
@@ -95,6 +93,7 @@ export const server: Server = async ({
   const addRoutes = (additions: Routes) => {
     Object.assign(routes, additions)
   }
+
   return {
     ips: networkIps,
     port,
