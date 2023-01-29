@@ -1,14 +1,7 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Styles, create } from 'jss'
-import _nested from 'jss-plugin-nested'
-import _camel  from 'jss-plugin-camel-case'
-import _global  from 'jss-plugin-global'
-//@ts-ignore
-const { default: nested } = _nested
-//@ts-ignore
-const { default: camel } = _camel
-//@ts-ignore
-const { default: global } = _global
+import nested from 'jss-plugin-nested'
+import camel  from 'jss-plugin-camel-case'
+import global  from 'jss-plugin-global'
 
 
 const jss = create()

@@ -1,4 +1,4 @@
-// export * from '@plaited/css'
+export * from '@plaited/css'
 export * from '@plaited/plait'
 export * from '@plaited/template'
 export * from '@plaited/utils'

@@ -18,9 +18,11 @@
     "dist/**/*"
   ],
   "scripts": {
-    "build": "tsc --project tsconfig.json",
+    "build": "yarn build:types & yarn build:js",
+    "build:js": "esbuild src/index.ts --bundle --sourcemap --format=esm --target=es2022,chrome109 --outdir=dist",
+    "build:types": "tsc --project tsconfig.json --emitDeclarationOnly",
     "prepublishOnly": "yarn build",
-    "test": "ava"
+    "test": "yarn build && ava"
   },
   "ava": {
     "extensions": {
@@ -34,17 +36,16 @@
     ]
   },
   "types": "dist/index.d.ts",
-  "dependencies": {
-    "jss": "10.9.2",
-    "jss-plugin-camel-case": "10.9.2",
-    "jss-plugin-global": "10.9.2",
-    "jss-plugin-nested": "10.9.2"
-  },
   "devDependencies": {
     "@plaited/utils": "workspace:*",
     "@tsconfig/node18": "1.0.1",
     "@types/node": "18.11.18",
     "ava": "5.1.0",
+    "esbuild": "0.17.5",
+    "jss": "10.9.2",
+    "jss-plugin-camel-case": "10.9.2",
+    "jss-plugin-global": "10.9.2",
+    "jss-plugin-nested": "10.9.2",
     "ts-node": "10.9.1",
     "typescript": "4.8.4"
   }

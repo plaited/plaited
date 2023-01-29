@@ -1,5 +1,5 @@
 import test from 'ava'
-import { css } from '../index.js'
+import { css } from '../../dist/index.js'
 
 test('css()', t => {
   t.snapshot(
@@ -13,7 +13,7 @@ test('css()', t => {
     })
   )
   t.snapshot(css({
-    anchor: {
+    button: {
       color: 'var(--color)',
       '&:focus': {
         color: 'var(--color-focus)',

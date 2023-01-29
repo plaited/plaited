@@ -1,9 +1,18 @@
-import { element, html } from '@plaited/island'
+import { element, html, css } from '@plaited/island'
+
+const { styles, stylesheet } = css({
+  grid: {
+    '& > *': {
+      color: 'blue',
+    },
+  },
+})
 
 export const keyPad = element({
+  stylesheets: new Set([ stylesheet ]),
   tag: 'key-pad',
   template: html`<div class="keypad">
-    <div class="number-grid">
+    <div class="${styles.grid}">
       <button class="number-button" data-trigger="click->number" value="1">1</button>
       <button class="number-button" data-trigger="click->number" value="2">2</button>
       <button class="number-button" data-trigger="click->number" value="3">3</button>

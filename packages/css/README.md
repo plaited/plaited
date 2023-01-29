@@ -1,6 +1,6 @@
 # @plaited/css
 
-This package exports utility functions necessary styling plaited interfaces.
+This package exports utility functions necessary styling plaited interfaces. This package when minified by esbuild comes in at  25.8kb
 
 ## classNames 
 A simple utility to apply & join class names conditionally inline on a node.

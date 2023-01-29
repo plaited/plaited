@@ -1,5 +1,5 @@
 import test from 'ava'
-import { tokens } from '../index.js'
+import { tokens } from '../../dist/index.js'
 
 
 test('tokens()', t => {
