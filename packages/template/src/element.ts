@@ -20,11 +20,11 @@ export const element: Element = template(({
   stylesheets,
   ...rest
 }) => {
-  const sheets = new Set(Array.isArray(stylesheets) ? stylesheets : [ stylesheets ]) 
+  const sheets = Array.isArray(stylesheets) ? [ ...new Set(stylesheets) ] : stylesheets 
   return html`
   <${tag} ${wire({ ...rest })}>
     <template shadowroot="${mode}">
-      ${stylesheets && html`<style>${[ ...sheets ]}</style>`}
+      ${stylesheets && html`<style>${sheets}</style>`}
       ${template}
     </template>
   </${tag}>
