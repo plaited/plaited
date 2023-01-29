@@ -1,5 +1,0 @@
-export * from './plait.js'
-export * from './constants.js'
-export * from './rules.js'
-export * from './strategies.js'
-export * from './types.js'

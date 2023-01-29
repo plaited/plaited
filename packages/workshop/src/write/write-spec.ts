@@ -34,7 +34,7 @@ const template = ({
   await page.goto('http://localhost:${port}/${id}');
   expect(await page.screenshot()).toMatchSnapshot('${id}.png');
 });`
-
+// This needs to be referencing a playwright specific bundle
   const InteractionTest = work ? `test('Interaction(${title}): ${startCase(name)}', async ({ page }) => {
   await page.goto('http://localhost:${port}/${id}');
   await ${name}.play({page, expect, id: ${id}})
