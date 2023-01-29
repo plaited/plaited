@@ -1,2 +1,0 @@
-# Design System tiering utility
-
