@@ -8,7 +8,7 @@ interface ElementProps extends Wire {
   template:string
   /** @defaultValue 'open' */
   mode?: 'open' | 'closed'
-  stylesheets?: Set<string>
+  stylesheets?: string | string[]
 }
 
 export type Element = Template<ElementProps>
@@ -19,11 +19,14 @@ export const element: Element = template(({
   mode = 'open',
   stylesheets,
   ...rest
-}) => html`
-<${tag} ${wire({ ...rest })}>
-  <template shadowroot="${mode}">
-    ${stylesheets && html`<style>${[ ...stylesheets ]}</style>`}
-    ${template}
-  </template>
-</${tag}>
-`)
+}) => {
+  const sheets = new Set(Array.isArray(stylesheets) ? stylesheets : [ stylesheets ]) 
+  return html`
+  <${tag} ${wire({ ...rest })}>
+    <template shadowroot="${mode}">
+      ${stylesheets && html`<style>${[ ...sheets ]}</style>`}
+      ${template}
+    </template>
+  </${tag}>
+  `
+})

@@ -9,7 +9,7 @@ const { styles, stylesheet } = css({
 })
 
 export const keyPad = element({
-  stylesheets: new Set([ stylesheet ]),
+  stylesheets: stylesheet,
   tag: 'key-pad',
   template: html`<div class="keypad">
     <div class="${styles.grid}">
