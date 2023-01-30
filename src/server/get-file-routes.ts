@@ -3,19 +3,18 @@ import { HandlerContext } from './types.ts'
 import { compress } from '../deps.ts'
 
 const sendAsset = async (filePath:string) => {
-  const ext = filePath.substring(filePath.lastIndexOf(".") + 1)
+  const ext = filePath.substring(filePath.lastIndexOf('.') + 1)
   try {
     const headers = { 'content-type': mimeTypes(ext) }
     let file = await Deno.readFile(filePath)
     if ([ 'js', 'css', 'html', 'json', 'xml', 'svg' ].includes(ext)) {
       file = compress(file)
-      Object.assign(headers, { 'content-encoding': 'br'})
+      Object.assign(headers, { 'content-encoding': 'br' })
     }
     return new Response(file, {
-      headers
+      headers,
     })
   } catch(err) {
-    console.log(err)
     return new Response(null, {
       status: 500,
     })
@@ -25,7 +24,7 @@ const sendAsset = async (filePath:string) => {
 const getFilePaths = async (root: string, paths: string[]) => {
   try {
     const files = await Deno.readDir(root)
-    for await (const { isDirectory, isFile, name} of files) {
+    for await (const { isDirectory, isFile, name } of files) {
       const currentRoot = `${root}/${name}`
       isDirectory && await getFilePaths(currentRoot, paths)
       isFile && paths.push(currentRoot)

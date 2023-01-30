@@ -3,7 +3,7 @@
 import { router } from './router.ts'
 import { usePort, networkIps } from './utils.ts'
 import { getFileRoutes } from './get-file-routes.ts'
-import { getReloadRoute, getMessage } from './get-reload-route.ts'
+import { getReloadRoute } from './get-reload-route.ts'
 import { Routes, Server } from './types.ts'
 import { createServer } from '../deps.ts'
 export const server: Server = async ({
@@ -31,47 +31,48 @@ export const server: Server = async ({
     Deno.exit()
   }
   
-  const reloadClients:WritableStreamDefaultWriter[]  = []
+  const reloadClients:Array<(channel: string, data: string) => void>  = []
   const protocol = credentials ? 'https' : 'http'
 
-   // Get file assets routes
-   const fileRoutes = await getFileRoutes(root)
-
-   const stream = new TransformStream({
-    transform(chunk, controller) {
-      const { channel, data } = chunk;
-      controller.enqueue(getMessage(channel, data));
-    },
-  })
-  const reader = stream.readable.getReader()
-  const writer  = stream.writable.getWriter();
+  // Get file assets routes
+  const fileRoutes = await getFileRoutes(root)
 
   createServer(router(
     {
       ...fileRoutes,
       ...routes,
-      ...getReloadRoute(reload, reader),
+      ...getReloadRoute(reload, reloadClients),
     },
     otherHandler,
     errorHandler,
     unknownMethodHandler
   ), {
-    port
+    port,
   })
   
   if(reload) {
-    const watcher = Deno.watchFs(root)
-    for await (const event of watcher) {
-      if(['any', 'access'].includes(event.kind)) continue
-      writer.write({ channel: 'message', data: 'reload' });
+    const watcher = Deno.watchFs(root, { recursive: true })
+    let lastEvent = ''
+    for await (const { kind } of watcher) {
+      if([ 'any', 'access' ].includes(kind)) {
+        lastEvent = kind
+        continue
+      }
+      if (kind !== lastEvent) {
+        while (reloadClients.length > 0) {
+          const cb = reloadClients.pop()
+          cb && cb('message', 'reload' )
+        }
+        lastEvent = kind
+      }
     }
   }
 
   // Close socket connections on sigint
-  Deno.addSignalListener("SIGINT", () => {
-    console.log("interrupted!");
-    Deno.exit();
-  });
+  Deno.addSignalListener('SIGINT', () => {
+    console.log('interrupted!')
+    Deno.exit()
+  })
   const addRoutes = (additions: Routes) => {
     Object.assign(routes, additions)
   }
@@ -81,7 +82,6 @@ export const server: Server = async ({
     port,
     protocol,
     root,
-    sendReload: reload ? sendReloadMessage : undefined,
     addRoutes,
     url: `${protocol}://localhost:${port}`,
   }

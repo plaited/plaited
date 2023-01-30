@@ -22,7 +22,7 @@ export function defaultOtherHandler(_req: Request): Response {
 export function defaultErrorHandler(
   _req: Request,
   _ctx: HandlerContext,
-  err: unknown,
+  err: unknown
 ): Response {
   console.error(err)
 
@@ -37,27 +37,27 @@ export function defaultErrorHandler(
 export function defaultUnknownMethodHandler(
   _req: Request,
   _ctx: HandlerContext,
-  knownMethods: string[],
+  knownMethods: string[]
 ): Response {
   return new Response(null, {
     status: 405,
     headers: {
-      Accept: knownMethods.join(", "),
+      Accept: knownMethods.join(', '),
     },
   })
 }
 
 export const METHODS = [
-  "GET",
-  "HEAD",
-  "POST",
-  "PUT",
-  "DELETE",
-  "OPTIONS",
-  "PATCH",
+  'GET',
+  'HEAD',
+  'POST',
+  'PUT',
+  'DELETE',
+  'OPTIONS',
+  'PATCH',
 ] as const
 
-const methodRegex = new RegExp(`(?<=^(?:${METHODS.join("|")}))@`)
+const methodRegex = new RegExp(`(?<=^(?:${METHODS.join('|')}))@`)
 
 /**
  * A simple and tiny router for deno
@@ -86,19 +86,19 @@ export function router<T = unknown>(
   routes: Routes<T>,
   other: Handler<T> = defaultOtherHandler,
   error: ErrorHandler<T> = defaultErrorHandler,
-  unknownMethod: UnknownMethodHandler<T> = defaultUnknownMethodHandler,
+  unknownMethod: UnknownMethodHandler<T> = defaultUnknownMethodHandler
 ): Handler<T> {
   const internalRoutes: Record<string, { pattern: URLPattern, methods: Record<string, MatchHandler<T>> }> = {}
-  for (const [route, handler] of Object.entries(routes)) {
-    let [methodOrPath, path] = route.split(methodRegex)
+  for (const [ route, handler ] of Object.entries(routes)) {
+    let [ methodOrPath, path ] = route.split(methodRegex)
     let method = methodOrPath
     if (!path) {
       path = methodOrPath
-      method = "any"
+      method = 'any'
     }
     const r = internalRoutes[path] ?? {
       pattern: new URLPattern({ pathname: path }),
-      methods: {}
+      methods: {},
     }
     r.methods[method] = handler
     internalRoutes[path] = r
@@ -109,26 +109,26 @@ export function router<T = unknown>(
       for (const { pattern, methods } of Object.values(internalRoutes)) {
         const res = pattern.exec(req.url)
         if (res !== null) {
-          for (const [method, handler] of Object.entries(methods)) {
+          for (const [ method, handler ] of Object.entries(methods)) {
             if (req.method === method) {
               return await handler(
                 req,
                 ctx,
-                res.pathname.groups,
+                res.pathname.groups
               )
             }
           }
-          if (methods["any"]) {
-            return await methods["any"](
+          if (methods['any']) {
+            return await methods['any'](
               req,
               ctx,
-              res.pathname.groups,
+              res.pathname.groups
             )
           } else {
             return await unknownMethod(
               req,
               ctx,
-              Object.keys(methods),
+              Object.keys(methods)
             )
           }
         }

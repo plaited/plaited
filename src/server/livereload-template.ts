@@ -1,8 +1,9 @@
 import { html } from '../template.ts'
 
 export const livereloadTemplate = html`<script>
-const sse = new EventSource('/livereload');
-sse.addEventListener("message", (e) => {
-  console.log(e.data)
-});
+const source = new EventSource('/livereload');
+const reload = () => location.reload(true);
+source.onmessage = reload;
+source.onerror = () => (source.onopen = reload);
+console.log('[plaited] listening for file changes');
 </script>`

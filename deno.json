@@ -1,5 +1,16 @@
 {
   "compilerOptions": {
     "strictPropertyInitialization": false
+  },
+  "fmt": {
+    "files": {
+      "include": [
+        "src/"
+      ]
+    },
+    "options": {
+      "singleQuote": true,
+      "noSemicolons": true
+    }
   }
 }

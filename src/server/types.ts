@@ -1,6 +1,6 @@
 // Copyright 2022 denosaurs. All rights reserved. MIT license.
 
-import type { ConnInfo } from "../deps.ts";
+import type { ConnInfo } from '../deps.ts'
 
 export type HandlerContext<T = unknown> = T & ConnInfo;
 
@@ -66,7 +66,6 @@ export type Server<T = unknown>  = (args: {
   port?: number
   protocol: 'http' | 'https'
   root: string
-  sendReload?: () => void
   url: string
 }>
 
