@@ -1,3 +1,5 @@
+/** Fork of  https://crux.land/router@0.0.12 */
+
 import {
   Handler,
   HandlerContext,
@@ -90,6 +92,7 @@ export function router<T = unknown>(
 ): Handler<T> {
   const internalRoutes: Record<string, { pattern: URLPattern, methods: Record<string, MatchHandler<T>> }> = {}
   for (const [ route, handler ] of Object.entries(routes)) {
+    // eslint-disable-next-line prefer-const
     let [ methodOrPath, path ] = route.split(methodRegex)
     let method = methodOrPath
     if (!path) {
