@@ -1,6 +1,6 @@
 import { assert } from '@esm-bundle/chai'
 import { wait } from '@plaited/utils'
-import { messenger, useWebWorker, useMain } from '../index.ts'
+import { messenger, useWebWorker, useMain } from '../mod.ts'
 import sinon from 'sinon'
 
 describe('actor()', () => {

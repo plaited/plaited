@@ -1,1 +1,1 @@
-export * from './island/index.ts'
+export * from './island/mod.ts'

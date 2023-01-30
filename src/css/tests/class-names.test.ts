@@ -1,5 +1,5 @@
 import test from 'ava'
-import { classNames } from '../index.ts'
+import { classNames } from '../mod.ts'
 
 test('classNames()', t => {
   t.is(classNames('class-1', 'class-2'), 'class-1 class-2')

@@ -1,5 +1,5 @@
 import test from 'ava'
-import { parseToRgb } from '../index.ts'
+import { parseToRgb } from '../mod.ts'
 
 test('parseToRgb: improper hex', t => {
   t.is(parseToRgb('8A99A8'), undefined)

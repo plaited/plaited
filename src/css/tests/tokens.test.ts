@@ -1,5 +1,5 @@
 import test from 'ava'
-import { tokens } from '../index.ts'
+import { tokens } from '../mod.ts'
 
 
 test('tokens()', t => {

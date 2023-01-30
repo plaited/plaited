@@ -1,5 +1,5 @@
 import test from 'ava'
-import { useStore } from '../index.ts'
+import { useStore } from '../mod.ts'
 
 test('useStore()', t => {
   const [ store, setStore ] = useStore<Record<string, number> | number>({ a: 1 })

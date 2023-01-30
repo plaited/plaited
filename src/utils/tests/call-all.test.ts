@@ -1,6 +1,6 @@
 import test from 'ava'
 import sinon from 'sinon'
-import { callAll } from '../index.ts'
+import { callAll } from '../mod.ts'
 
 test('callAll()', t => {
   const expected = 'string'

@@ -1,6 +1,6 @@
 import test from 'ava'
 import { noop } from '@plaited/utils'
-import { html } from '../index.ts'
+import { html } from '../mod.ts'
 
 test('html()', t => {
   t.is(html` <div>hello</div> `, '<div>hello</div>', 'trims white space')

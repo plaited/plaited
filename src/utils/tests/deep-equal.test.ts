@@ -1,5 +1,5 @@
 import test from 'ava'
-import { deepEqual } from '../index.ts'
+import { deepEqual } from '../mod.ts'
 
 const symbolKey = Symbol('symbolKey')
 const originValue = {

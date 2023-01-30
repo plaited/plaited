@@ -1,5 +1,5 @@
 import test from 'ava'
-import { css } from '../index.ts'
+import { css } from '../mod.ts'
 
 test('css()', t => {
   t.snapshot(

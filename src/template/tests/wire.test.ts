@@ -1,6 +1,6 @@
 /* eslint-disable max-len */
 import test from 'ava'
-import { wire } from '../index.ts'
+import { wire } from '../mod.ts'
 
 test('wire()', t => {
   t.is(

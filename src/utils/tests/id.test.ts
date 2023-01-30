@@ -1,5 +1,5 @@
 import test from 'ava'
-import { ueid, generateId, setIdCounter } from '../index.ts'
+import { ueid, generateId, setIdCounter } from '../mod.ts'
 
 test('ueid: returns a string', t => {
   const output = ueid()

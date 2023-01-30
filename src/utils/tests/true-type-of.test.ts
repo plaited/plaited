@@ -1,5 +1,5 @@
 import test from 'ava'
-import { trueTypeOf } from '../index.ts'
+import { trueTypeOf } from '../mod.ts'
 
 test('trueTypeOf()', t => {
   t.is(trueTypeOf([]), 'array')

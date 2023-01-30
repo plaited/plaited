@@ -1,1 +1,1 @@
-export * from './template/index.ts'
+export * from './template/mod.ts'

@@ -1,5 +1,5 @@
 import test from 'ava'
-import { hashString } from '../index.ts'
+import { hashString } from '../mod.ts'
 
 test('hashString()', t => {
   t.is(hashString('test'), 2090756197, 'Given a string, return a hash')

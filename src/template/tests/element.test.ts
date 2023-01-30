@@ -1,6 +1,6 @@
 /* eslint-disable max-len */
 import test from 'ava'
-import { element, html } from '../index.ts'
+import { element, html } from '../mod.ts'
 
 // Expected usage const MyTemplate = ({ ..args}) => element({tag, template: html`` ...rest})
 test('element()', t => {

@@ -1,5 +1,5 @@
 import test from 'ava'
-import { escape, unescape } from '../index.ts'
+import { escape, unescape } from '../mod.ts'
 
 test('escape(): correct escape', t => {
   t.is(escape('&<>\'"'), '&amp;&lt;&gt;&#39;&quot;')

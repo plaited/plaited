@@ -1,6 +1,6 @@
 import test from 'ava'
 import sinon from 'sinon'
-import { debounce } from '../index.ts'
+import { debounce } from '../mod.ts'
 
 
 let clock: sinon.SinonFakeTimers

@@ -1,5 +1,5 @@
 import test from 'ava'
-import { keyMirror } from '../index.ts'
+import { keyMirror } from '../mod.ts'
 
 test('keyMirror()', t => {
   t.deepEqual(keyMirror('a', 'b', 'c'), {

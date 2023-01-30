@@ -9,7 +9,7 @@ import {
   request,
   block,
   Plait,
-} from '../index.ts'
+} from '../mod.ts'
 
 const actualFeedback: string[] = []
 

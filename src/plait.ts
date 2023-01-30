@@ -1,1 +1,1 @@
-export * from './plait/index.ts'
+export * from './plait/mod.ts'
