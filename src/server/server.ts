@@ -5,7 +5,7 @@ import { usePort, networkIps } from './utils.ts'
 import { getFileRoutes } from './get-file-routes.ts'
 import { getReloadRoute } from './get-reload-route.ts'
 import { Routes, Server } from './types.ts'
-import { createServer } from '../deps.ts'
+import { httpCreateServer, httpsCreateServer } from '../deps.ts'
 export const server: Server = async ({
   root,
   routes,
@@ -37,6 +37,8 @@ export const server: Server = async ({
   // Get file assets routes
   const fileRoutes = await getFileRoutes(root)
 
+  const createServer = credentials ? httpsCreateServer : httpCreateServer
+
   createServer(router(
     {
       ...fileRoutes,
@@ -47,6 +49,7 @@ export const server: Server = async ({
     errorHandler,
     unknownMethodHandler
   ), {
+    ...credentials,
     port,
   })
   

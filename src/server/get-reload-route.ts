@@ -1,4 +1,4 @@
-import { Routes, HandlerContext } from './types.ts'
+import { Routes, HandlerContext, ReloadClient } from './types.ts'
 
 
 const getMessage = (channel:string, data:string) => {
@@ -8,7 +8,7 @@ const getMessage = (channel:string, data:string) => {
 
 export const getReloadRoute = (
   reload: boolean,
-  reloadClient: Array<(channel: string, data: string) => void>
+  reloadClient: Array<ReloadClient>
 ): Record<never, never> | Routes => {
   if(!reload) return {}
   return {

@@ -54,8 +54,17 @@ export type Server<T = unknown>  = (args: {
   reload?: boolean
   port?: number
   credentials?: {
-    key: string
-    cert: string
+     /** Server private key in PEM format */
+    key?: string;
+
+    /** Cert chain in PEM format */
+    cert?: string;
+
+    /** The path to the file containing the TLS private key. */
+    keyFile?: string;
+
+    /** The path to the file containing the TLS certificate */
+    certFile?: string;
   }
   otherHandler?: Handler<T>
   errorHandler?: ErrorHandler<T>
@@ -69,3 +78,4 @@ export type Server<T = unknown>  = (args: {
   url: string
 }>
 
+export type ReloadClient = (channel: string, data: string) => void

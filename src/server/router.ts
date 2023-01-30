@@ -62,18 +62,6 @@ export const METHODS = [
 const methodRegex = new RegExp(`(?<=^(?:${METHODS.join('|')}))@`)
 
 /**
- * A simple and tiny router for deno
- *
- * ```
- * import { serve } from "https://deno.land/std/http/server.ts"
- * import { router } from "https://crux.land/router@0.0.9"
- *
- * await serve(
- *   router({
- *     "/": (_req) => new Response("Hello world!", { status: 200 }),
- *   }),
- * )
- * ```
  *
  * @param routes A record of all routes and their corresponding handler functions
  * @param other An optional parameter which contains a handler for anything that
