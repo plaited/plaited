@@ -10,7 +10,7 @@
     },
     "options": {
       "singleQuote": true,
-      "noSemicolons": true
+      "semiColons": false
     }
   }
 }

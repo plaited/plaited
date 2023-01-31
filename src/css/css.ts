@@ -1,20 +1,13 @@
-import {
-  Styles,
-  createJSS,
-  nestedJSS,
-  camelJSS,
-  globalJSS,
-} from '../deps.ts'
-
+import { camelJSS, createJSS, globalJSS, nestedJSS, Styles } from '../deps.ts'
 
 const jss = createJSS()
 jss.use(
   globalJSS(),
   nestedJSS(),
-  camelJSS()
+  camelJSS(),
 )
 
-export const css = (style:Styles) => {
+export const css = (style: Styles) => {
   const sheet = jss.createStyleSheet(style)
   const stylesheet = sheet.toString()
   return {

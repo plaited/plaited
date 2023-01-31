@@ -2,7 +2,7 @@
 import test from 'ava'
 import { wire } from '../mod.ts'
 
-test('wire()', t => {
+test('wire()', (t) => {
   t.is(
     wire({
       target: 'random',
@@ -16,7 +16,7 @@ test('wire()', t => {
       'aria-grabbed': true,
       'aria-expanded': false,
     }),
-    'data-target="random" data-trigger="click->random focus->thing" disabled value="special" aria-grabbed="true" aria-expanded="false"'
+    'data-target="random" data-trigger="click->random focus->thing" disabled value="special" aria-grabbed="true" aria-expanded="false"',
   )
   t.is(
     wire({
@@ -27,14 +27,14 @@ test('wire()', t => {
       },
     }),
     'data-target="random" data-trigger="click->random focus->thing"',
-    'both params'
+    'both params',
   )
   t.is(
     wire({
       target: 'random',
     }),
     'data-target="random"',
-    'with target param only'
+    'with target param only',
   )
   t.is(
     wire({
@@ -44,11 +44,11 @@ test('wire()', t => {
       },
     }),
     'data-trigger="click->random focus->thing"',
-    'with triggers param only'
+    'with triggers param only',
   )
   t.is(
     wire({}),
     '',
-    'with empty params'
+    'with empty params',
   )
 })

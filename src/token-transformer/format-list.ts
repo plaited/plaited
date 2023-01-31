@@ -1,6 +1,6 @@
 /* eslint-disable no-return-assign */
-import { trueTypeOf }from '../utils.ts'
-import { DesignTokenGroup, DesignToken, GetFormatter } from '../token-types.ts'
+import { trueTypeOf } from '../utils.ts'
+import { DesignToken, DesignTokenGroup, GetFormatter } from '../token-types.ts'
 
 export const formatList = ({
   tokens,
@@ -21,16 +21,21 @@ export const formatList = ({
   }
   if (tokens.hasOwnProperty('$value')) {
     const { $value, $type } = tokens as unknown as DesignToken
-    const formattedValue = formatters({ tokenPath, $value, allTokens, baseFontSize, $type })
+    const formattedValue = formatters({
+      tokenPath,
+      $value,
+      allTokens,
+      baseFontSize,
+      $type,
+    })
     string += formattedValue ? `${formattedValue}\n` : ''
-  }
-  else {
-    for(const name in tokens) {
-      if(tokens.hasOwnProperty(name)) {
+  } else {
+    for (const name in tokens) {
+      if (tokens.hasOwnProperty(name)) {
         string += formatList({
           baseFontSize,
           tokens: tokens[name] as DesignTokenGroup,
-          tokenPath: [ ...tokenPath, name ],
+          tokenPath: [...tokenPath, name],
           formatters,
           allTokens,
         })

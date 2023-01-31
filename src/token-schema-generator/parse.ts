@@ -1,8 +1,15 @@
 // Fork of https://github.com/easy-json-schema/easy-json-schema
 import { trueTypeOf } from '../utils.ts'
-import { DesignTokenGroup, DesignToken } from '../token-types.ts'
+import { DesignToken, DesignTokenGroup } from '../token-types.ts'
 
-const supportType = [ 'string', 'number', 'array', 'object', 'boolean', 'integer' ]
+const supportType = [
+  'string',
+  'number',
+  'array',
+  'object',
+  'boolean',
+  'integer',
+]
 
 export type Schema = {
   items?: Schema[] | Schema
@@ -34,12 +41,22 @@ export const parse = ({
     Object.assign(schema, json)
     if (schema.type === 'object' && json.properties) {
       delete schema.properties
-      parse({ tokens: json.properties as DesignTokenGroup, JsonSchema: schema, isValue, hasValue })
+      parse({
+        tokens: json.properties as DesignTokenGroup,
+        JsonSchema: schema,
+        isValue,
+        hasValue,
+      })
     }
     if (schema.type === 'array' && json.items) {
       delete schema.items
       schema.items = {}
-      parse({ tokens: json.items as DesignTokenGroup, JsonSchema: schema.items, isValue, hasValue })
+      parse({
+        tokens: json.items as DesignTokenGroup,
+        JsonSchema: schema.items,
+        isValue,
+        hasValue,
+      })
     }
   }
   const handleObject = (json: DesignTokenGroup, schema: Schema) => {
@@ -48,7 +65,7 @@ export const parse = ({
     }
     schema.type = 'object'
     schema.required = []
-    const props: Record<string, unknown>  = schema.properties = {}
+    const props: Record<string, unknown> = schema.properties = {}
     for (let key in json) {
       schema.required.push(key)
       const item = json[key]
@@ -59,7 +76,7 @@ export const parse = ({
         schema.required.push(key)
         curSchema = props[key] = {}
       }
-      parse({ 
+      parse({
         tokens: item as DesignTokenGroup,
         JsonSchema: curSchema,
         isValue: isValue || key === '$value',
@@ -69,19 +86,21 @@ export const parse = ({
   }
   const handleArray = (arr: Record<string, unknown>[], schema: Schema) => {
     schema.type = 'array'
-    if(arr.length) {
+    if (arr.length) {
       schema.items = []
-      arr.forEach(element => {
-        (schema.items as unknown[]).push(parse({ 
+      arr.forEach((element) => {
+        ;(schema.items as unknown[]).push(parse({
           tokens: element as unknown as DesignTokenGroup,
-          JsonSchema: { }, isValue, hasValue, 
+          JsonSchema: {},
+          isValue,
+          hasValue,
         }))
       })
     }
   }
   const handlePrimitive = (arg: unknown) => {
     JsonSchema.type = trueTypeOf(arg)
-    if(isValue) {
+    if (isValue) {
       JsonSchema.const = arg
     }
   }

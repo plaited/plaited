@@ -1,4 +1,5 @@
-export const playwrightConfig = (port: number, protocol: 'http' | 'https') => `import { defineConfig } from '@playwright/test';
+export const playwrightConfig = (port: number, protocol: 'http' | 'https') =>
+  `import { defineConfig } from '@playwright/test';
 export default defineConfig({
   webServer: {
     command: 'deno task start',

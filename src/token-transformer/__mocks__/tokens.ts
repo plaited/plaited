@@ -39,9 +39,21 @@ export const tokens: DesignTokenGroup = {
   },
   backgroundColor: {
     purple: {
-      x1: { $value: '#4c00b0', $type: 'color', $description: 'mock description' },
-      x2: { $value: '#7600bc', $type: 'color', $description: 'mock description' },
-      x3: { $value: '#8a00c2', $type: 'color', $description: 'mock description' },
+      x1: {
+        $value: '#4c00b0',
+        $type: 'color',
+        $description: 'mock description',
+      },
+      x2: {
+        $value: '#7600bc',
+        $type: 'color',
+        $description: 'mock description',
+      },
+      x3: {
+        $value: '#8a00c2',
+        $type: 'color',
+        $description: 'mock description',
+      },
     },
   },
   borderRadius: {
@@ -58,7 +70,7 @@ export const tokens: DesignTokenGroup = {
   },
   fontFamily: {
     sansSerif: {
-      $value: [ 'Roboto', 'sans-serif' ],
+      $value: ['Roboto', 'sans-serif'],
       $type: 'fontFamily',
       $description: 'mock description',
     },

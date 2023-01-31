@@ -9,12 +9,14 @@ import { tokens } from '../../__mocks__/tokens.ts'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const outputDirectory = path.resolve(__dirname, './__tmp__/')
 
-test.after(async t => {
+test.after(async (t) => {
   await Deno.remove(`${outputDirectory}/tokens.css`)
 })
 
-test('transformCssTokens()',  async t => {
-  await transformCssTokens({ tokens, outputDirectory, baseFontSize:  20 })
-  const content = await readFile(`${outputDirectory}/tokens.css`, { encoding: 'utf8' })
-  t.snapshot(beautify(content,  { format:  'css' }))
+test('transformCssTokens()', async (t) => {
+  await transformCssTokens({ tokens, outputDirectory, baseFontSize: 20 })
+  const content = await readFile(`${outputDirectory}/tokens.css`, {
+    encoding: 'utf8',
+  })
+  t.snapshot(beautify(content, { format: 'css' }))
 })

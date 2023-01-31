@@ -9,29 +9,31 @@ export type Routes = rutt.Routes
 
 export type Credentials = {
   /** Server private key in PEM format */
- key?: string;
+  key?: string
 
- /** Cert chain in PEM format */
- cert?: string;
+  /** Cert chain in PEM format */
+  cert?: string
 
- /** The path to the file containing the TLS private key. */
- keyFile?: string;
+  /** The path to the file containing the TLS private key. */
+  keyFile?: string
 
- /** The path to the file containing the TLS certificate */
- certFile?: string;
+  /** The path to the file containing the TLS certificate */
+  certFile?: string
 }
 
-export type Server  = (args: {
+export type UpdateRoutes = (cb: (oldRoutes: Routes) => Routes) => void
+
+export type Server = (args: {
   root: string
-  routes:Routes
+  routes: Routes
   dev?: boolean
   port?: number
   credentials?: Credentials
   notFoundTemplate?: string
   errorHandler?: ErrorHandler
   unknownMethodHandler?: UnknownMethodHandler
-}) =>Promise<{
-  updateRoutes: (cb: (oldRoutes: Routes) => Routes) => void
+}) => Promise<{
+  updateRoutes: UpdateRoutes
   ips: string[]
   port?: number
   protocol: 'http' | 'https'

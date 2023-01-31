@@ -5,21 +5,23 @@ type UpdateStoreArg = (arg?: unknown) => unknown
 export const useIndexedDB = async (
   key: string,
   initialValue?: unknown,
-  idb?: IDB
-): Promise<readonly [
-  () => Promise<unknown>,
-  (newValue: unknown | UpdateStoreArg) => Promise<void>
-]> => {
+  idb?: IDB,
+): Promise<
+  readonly [
+    () => Promise<unknown>,
+    (newValue: unknown | UpdateStoreArg) => Promise<void>,
+  ]
+> => {
   const db = idb || createIDB('USE_INDEXED_DB', 'STORE')
   initialValue &&
     (await (function setInitialValue() {
-      return db('readwrite', store => {
+      return db('readwrite', (store) => {
         store.put(initialValue, key)
       })
     })())
 
   const updateStore = (newValue: UpdateStoreArg) =>
-    db('readwrite', store => {
+    db('readwrite', (store) => {
       const req = store.openCursor(key)
       req.onsuccess = function getAndPutOnSuccess() {
         const cursor = this.result
@@ -33,7 +35,7 @@ export const useIndexedDB = async (
     })
 
   const overwriteStore = (newValue: unknown) =>
-    db('readwrite', store => store.put(newValue, key))
+    db('readwrite', (store) => store.put(newValue, key))
 
   const set = (newValue: unknown | UpdateStoreArg) =>
     trueTypeOf(newValue) === 'function'
@@ -42,12 +44,12 @@ export const useIndexedDB = async (
 
   const get = () => {
     let req: IDBRequest<unknown>
-    return db('readonly', store => {
+    return db('readonly', (store) => {
       req = store.get(key)
     }).then(() => req.result)
   }
   return Object.freeze<[
     () => Promise<unknown>,
-    (newValue: unknown | UpdateStoreArg) => Promise<void>
-      ]>([ get, set ])
+    (newValue: unknown | UpdateStoreArg) => Promise<void>,
+  ]>([get, set])
 }

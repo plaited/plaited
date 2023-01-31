@@ -1,6 +1,9 @@
 /* eslint-disable compat/compat */
 type CreateIDBCallback = (arg: IDBObjectStore) => void
-export type IDB = (type: IDBTransactionMode, callback: CreateIDBCallback) => Promise<void>
+export type IDB = (
+  type: IDBTransactionMode,
+  callback: CreateIDBCallback,
+) => Promise<void>
 export const createIDB = (dbName: string, storeName: string) => {
   const dbp = new Promise<IDBDatabase>((resolve, reject) => {
     const openreq = indexedDB.open(dbName)
@@ -22,6 +25,6 @@ export const createIDB = (dbName: string, storeName: string) => {
           transaction.onabort = transaction.onerror = () =>
             reject(transaction.error)
           callback(transaction.objectStore(storeName))
-        })
+        }),
     )
 }

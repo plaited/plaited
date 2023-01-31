@@ -9,7 +9,7 @@ const originValue = {
   unf: void 0,
   nul: null,
   obj: { name: 'object', id: 1 },
-  arr: [ 0, 1, 2 ],
+  arr: [0, 1, 2],
   func() {
     console.error('function')
   },
@@ -18,9 +18,12 @@ const originValue = {
   [symbolKey]: 'symbol',
 }
 
-test('deepEqual()', t => {
+test('deepEqual()', (t) => {
   t.truthy(deepEqual(originValue, { ...originValue }))
-  t.falsy(deepEqual(originValue, { ...originValue, obj: {
-    name: 'color',
-  } }))
+  t.falsy(deepEqual(originValue, {
+    ...originValue,
+    obj: {
+      name: 'color',
+    },
+  }))
 })

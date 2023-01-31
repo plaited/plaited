@@ -3,7 +3,7 @@ import { TriggerArgs, TriggerFunc } from '../plait.ts'
 export const useMain = ({
   context,
   trigger,
-}:{
+}: {
   context: Window & typeof globalThis
   trigger: TriggerFunc
 }) => {

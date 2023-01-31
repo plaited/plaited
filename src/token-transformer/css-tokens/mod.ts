@@ -1,15 +1,15 @@
 import {
-  BorderValue, 
-  DimensionValue, 
-  FontFamilyValue, 
-  GradientValue, 
-  DropShadowValue, 
-  TransitionValue, 
-  PrimitiveValue, 
-  PrimitiveArrayValue,
-  GetFormatter,
-  GridTemplateValue,
+  BorderValue,
+  DimensionValue,
+  DropShadowValue,
+  FontFamilyValue,
   GapValue,
+  GetFormatter,
+  GradientValue,
+  GridTemplateValue,
+  PrimitiveArrayValue,
+  PrimitiveValue,
+  TransitionValue,
 } from '../../token-types.ts'
 import { border } from './border.ts'
 import { dimension } from './dimension.ts'
@@ -26,22 +26,26 @@ import { gap } from './gap.ts'
  * This formatter object will return formatters that will create content for an
  * optimized css stylesheet of css custom properties to be applied to :root
  */
-export const cssTokens: GetFormatter = ({ $type, $value, ...rest }) => $type === 'border'
-  ? border({ ...rest, $value: $value as BorderValue })
-  : [ 'dimension', 'lineHeight', 'letterSpacing', 'fontSize' ].includes($type)
-  ? dimension({ ...rest, $value: $value as DimensionValue })
-  : $type === 'fontFamily'
-  ? fontFamily({ ...rest, $value: $value as FontFamilyValue })
-  : $type === 'gradient'
-  ? gradient({ ...rest, $value: $value as GradientValue })
-  : $type === 'shadow'
-  ? dropShadow({ ...rest, $value: $value as DropShadowValue })
-  : $type === 'transition'
-  ? transition({ ...rest, $value: $value as TransitionValue })
-  : $type === 'gap'
-  ? gap({ ...rest, $value: $value as GapValue })
-  : $type === 'gridTemplate'
-  ? gridTemplate({ ...rest, $value: $value as GridTemplateValue })
-  : [ 'typography' , 'grid' , 'flex' ].includes($type)
-  ? nullFormat()
-  : defaultFormat({ ...rest, $value: $value as PrimitiveValue | PrimitiveArrayValue })
+export const cssTokens: GetFormatter = ({ $type, $value, ...rest }) =>
+  $type === 'border'
+    ? border({ ...rest, $value: $value as BorderValue })
+    : ['dimension', 'lineHeight', 'letterSpacing', 'fontSize'].includes($type)
+    ? dimension({ ...rest, $value: $value as DimensionValue })
+    : $type === 'fontFamily'
+    ? fontFamily({ ...rest, $value: $value as FontFamilyValue })
+    : $type === 'gradient'
+    ? gradient({ ...rest, $value: $value as GradientValue })
+    : $type === 'shadow'
+    ? dropShadow({ ...rest, $value: $value as DropShadowValue })
+    : $type === 'transition'
+    ? transition({ ...rest, $value: $value as TransitionValue })
+    : $type === 'gap'
+    ? gap({ ...rest, $value: $value as GapValue })
+    : $type === 'gridTemplate'
+    ? gridTemplate({ ...rest, $value: $value as GridTemplateValue })
+    : ['typography', 'grid', 'flex'].includes($type)
+    ? nullFormat()
+    : defaultFormat({
+      ...rest,
+      $value: $value as PrimitiveValue | PrimitiveArrayValue,
+    })

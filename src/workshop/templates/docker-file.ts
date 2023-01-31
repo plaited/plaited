@@ -1,7 +1,12 @@
-export const dockerFile = (pat: boolean) =>`ARG TAG
+export const dockerFile = (pat: boolean) =>
+  `ARG TAG
 FROM mcr.microsoft.com/playwright:$TAG
-${pat ? `\nARG GIT_PAT
-ENV GIT_PAT=\${GIT_PAT}` : '' }
+${
+    pat
+      ? `\nARG GIT_PAT
+ENV GIT_PAT=\${GIT_PAT}`
+      : ''
+  }
 
 WORKDIR /tests
 
@@ -12,6 +17,6 @@ COPY yarn.lock .
 COPY .yarnrc.yml .
 COPY package.json .
 
-RUN ${pat ? 'export AUTH=${GIT_PAT} &&': ''} yarn auth && \
+RUN ${pat ? 'export AUTH=${GIT_PAT} &&' : ''} yarn auth && \
   yarn install --immutable
 `

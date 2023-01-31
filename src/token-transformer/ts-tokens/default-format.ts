@@ -1,14 +1,14 @@
-import { Formatter, AliasValue } from '../../token-types.ts'
-import { resolveTSVar, hasAlias } from '../resolve.ts'
-import { kebabCase, camelCase } from '../../deps.ts'
+import { AliasValue, Formatter } from '../../token-types.ts'
+import { hasAlias, resolveTSVar } from '../resolve.ts'
+import { camelCase, kebabCase } from '../../deps.ts'
 
-export const defaultFormat:Formatter = ({
+export const defaultFormat: Formatter = ({
   tokenPath,
   $value,
   allTokens,
 }) => {
   const val = hasAlias($value)
-    ? resolveTSVar($value as  AliasValue, allTokens)
+    ? resolveTSVar($value as AliasValue, allTokens)
     : `'var(--${kebabCase(tokenPath.join(' '))})'`
-  return  `export const ${camelCase(tokenPath.join(' '))} = ${val}`
+  return `export const ${camelCase(tokenPath.join(' '))} = ${val}`
 }

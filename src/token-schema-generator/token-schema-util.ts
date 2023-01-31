@@ -1,11 +1,13 @@
-import fs from 'fs/promises'
-import path from 'path'
 import { parse } from './parse.ts'
-import { DesignTokenGroup } from '../types.ts'
+import { DesignTokenGroup } from '../token-types.ts'
 
-export const tokenSchemaUtil = async (tokens: DesignTokenGroup, schemaFilePath: string) => {
+export const tokenSchemaUtil = async (
+  tokens: DesignTokenGroup,
+  schemaFilePath: string,
+) => {
   const schema = parse({ tokens })
-  await Deno.mkdir(path.dirname(schemaFilePath), { recursive: true })
-  await writeFile(schemaFilePath, JSON.stringify(schema, null, 2))
+  const encoder = new TextEncoder()
+  const data = encoder.encode(JSON.stringify(schema, null, 2))
+  await Deno.mkdir(schemaFilePath, { recursive: true })
+  await Deno.writeFile(schemaFilePath, data)
 }
-

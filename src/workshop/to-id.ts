@@ -13,10 +13,14 @@ const sanitize = (string: string) => {
 const sanitizeSafe = (string: string, part: string) => {
   const sanitized = sanitize(string)
   if (sanitized === '') {
-    throw new Error(`Invalid ${part} '${string}', must include alphanumeric characters`)
+    throw new Error(
+      `Invalid ${part} '${string}', must include alphanumeric characters`,
+    )
   }
   return sanitized
 }
 
 export const toId = (title: string, name?: string) =>
-  `${sanitizeSafe(title, 'title')}${name ? `--${sanitizeSafe(name, 'name')}` : ''}`
+  `${sanitizeSafe(title, 'title')}${
+    name ? `--${sanitizeSafe(name, 'name')}` : ''
+  }`

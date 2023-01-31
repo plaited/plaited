@@ -1,14 +1,14 @@
 import test from 'ava'
 import { trueTypeOf } from '../mod.ts'
 
-test('trueTypeOf()', t => {
+test('trueTypeOf()', (t) => {
   t.is(trueTypeOf([]), 'array')
   t.is(trueTypeOf({}), 'object')
   t.is(trueTypeOf(''), 'string')
   t.is(trueTypeOf(new Date()), 'date')
   t.is(trueTypeOf(1), 'number')
   /* eslint-disable */
-  t.is(trueTypeOf(function () { }), 'function');
+  t.is(trueTypeOf(function () {}), 'function')
   /* eslint-enable */
   t.is(trueTypeOf(/test/i), 'regexp')
   t.is(trueTypeOf(RegExp('foo*')), 'regexp')

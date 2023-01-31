@@ -2,7 +2,11 @@
  * source https://levelup.gitconnected.com/how-to-get-a-perfect-deep-equal-in-javascript-b849fe30e54f
  */
 
-export const deepEqual = (objA: unknown, objB: unknown, map = new WeakMap()) => {
+export const deepEqual = (
+  objA: unknown,
+  objB: unknown,
+  map = new WeakMap(),
+) => {
   // P1
   if (Object.is(objA, objB)) return true
 
@@ -39,7 +43,11 @@ export const deepEqual = (objA: unknown, objB: unknown, map = new WeakMap()) => 
   for (let i = 0; i < keysA.length; i++) {
     if (
       !Reflect.has(objB, keysA[i]) ||
-      !deepEqual(objA[keysA[i] as keyof typeof objA], objB[keysA[i] as keyof typeof objB], map)
+      !deepEqual(
+        objA[keysA[i] as keyof typeof objA],
+        objB[keysA[i] as keyof typeof objB],
+        map,
+      )
     ) {
       return false
     }

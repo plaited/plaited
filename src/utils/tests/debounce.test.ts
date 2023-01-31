@@ -2,7 +2,6 @@ import test from 'ava'
 import sinon from 'sinon'
 import { debounce } from '../mod.ts'
 
-
 let clock: sinon.SinonFakeTimers
 test.beforeEach(function () {
   clock = sinon.useFakeTimers()
@@ -12,7 +11,7 @@ test.afterEach(function () {
   clock.restore()
 })
 
-test('debounces the fn', t => {
+test('debounces the fn', (t) => {
   const fn = sinon.spy()
 
   const debounced = debounce(fn, 100)
@@ -27,4 +26,3 @@ test('debounces the fn', t => {
   t.truthy(fn.called)
   t.is(fn.getCalls().length, 1)
 })
-

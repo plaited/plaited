@@ -1,34 +1,78 @@
-import { TemplateProps, Template } from '../template.ts'
-import { Page, Expect } from '../deps.ts'
-import { Handler as ServerHandler } from '../server.ts'
+import { Template, TemplateProps } from '../template.ts'
+import { Expect, Page } from '../deps.ts'
+import {
+  Credentials,
+  ErrorHandler,
+  UnknownMethodHandler,
+  Handler,
+  UpdateRoutes
+} from '../server.ts'
 
-export type ComponentConfig<T extends TemplateProps= TemplateProps> = {
+// Internal Mod Exports 
+export type StoryData = {
+  args: TemplateProps
+  name: string
+  template: Template
+  fixture: `${string}-${string}`
+}
+
+export type StoriesData = [{ title: string, path:string }, StoryData[]][]
+
+export type PageFunc = (story: string) => string
+export type SSRFunc = (fixture:`${string}-${string}`, template:string) => string
+export type Ext = {
+  fixture: string | string[]
+  story: string | string[]
+}
+
+export type Write = (args: {
+  assets: string
+  colorScheme?: boolean
+  exts: Ext
+  port: number
+  project?: string
+  root: string
+  storyHandlers: StoryHandlers
+  playwright: string
+}) => Promise<Record<string, Handler>>
+
+export type Watcher = (args: Parameters<Write>[0] & {
+  root: string
+  updateRoutes: UpdateRoutes
+}) => Promise<void>
+
+// External Mod Exports
+
+export type StoryConfig<T extends TemplateProps = TemplateProps> = {
   title: string
-  template:Template<T> 
+  template: Template<T>
   fixture: `${string}-${string}`
   description: string
   insertHead?: string
   insertBody?: string
 }
 
-export type Stories<T extends TemplateProps= TemplateProps> = {
+export type Story<T extends TemplateProps = TemplateProps> = {
   args: T
-  description: string,
-  play?: (args: { page: Page, expect: Expect, id: string }) => Promise<void>
+  description: string
+  play?: (args: { page: Page; expect: Expect; id: string }) => Promise<void>
 }
 
-export type Handler = {
-  page: ServerHandler
-  include: ServerHandler
-}
+export type StoryHandlers = (stories:StoriesData)=> Record<string, Handler>
 
 export type WorkshopConfig = {
-  source: string
-  workPattern: string
-  fixturePattern: string
-  tests: string
+  assets: string
+  colorScheme?: boolean
+  credentials?: Credentials
+  dev?: boolean
+  errorHandler?: ErrorHandler
+  exts: Ext,
+  notFoundTemplate?: string
+  pat?: boolean
+  playwright: string
   port: number
-  removeDeadTest?: boolean
-  reload?: boolean
-  assets?: string
+  project?: string
+  root: string
+  storyHandlers: StoryHandlers
+  unknownMethodHandler?: UnknownMethodHandler
 }

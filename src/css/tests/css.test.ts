@@ -1,7 +1,7 @@
 import test from 'ava'
 import { css } from '../mod.ts'
 
-test('css()', t => {
+test('css()', (t) => {
   t.snapshot(
     css({
       button: {
@@ -10,7 +10,7 @@ test('css()', t => {
           backgroundColor: 'var(--background-color-disabled)',
         },
       },
-    })
+    }),
   )
   t.snapshot(css({
     button: {

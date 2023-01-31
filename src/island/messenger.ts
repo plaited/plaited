@@ -4,8 +4,15 @@ export const messenger = () => {
 
   const connect = (recipient: string, cb: TriggerFunc) => {
     const eventHandler = (event: CustomEvent<TriggerArgs>) => cb(event.detail)
-    emitter.addEventListener(recipient, eventHandler as EventListenerOrEventListenerObject)
-    return () => emitter.removeEventListener(recipient, eventHandler as EventListenerOrEventListenerObject)
+    emitter.addEventListener(
+      recipient,
+      eventHandler as EventListenerOrEventListenerObject,
+    )
+    return () =>
+      emitter.removeEventListener(
+        recipient,
+        eventHandler as EventListenerOrEventListenerObject,
+      )
   }
 
   const send = (recipient: string, detail: TriggerArgs) => {

@@ -1,14 +1,14 @@
 import { formatList } from './format-list.ts'
 import { cssTokens } from './css-tokens/mod.ts'
 import { DesignTokenGroup } from '../token-types.ts'
-import { postcss, combineDupeSelectors } from '../deps.ts'
+import { combineSelectors, postcss, PostCSSPlugin } from '../deps.ts'
 export const transformCssTokens = async ({
   tokens,
   outputDirectory,
   baseFontSize,
 }: {
-  tokens: DesignTokenGroup,
-  outputDirectory: string,
+  tokens: DesignTokenGroup
+  outputDirectory: string
   baseFontSize: number
 }) => {
   await Deno.mkdir(outputDirectory, { recursive: true })
@@ -19,7 +19,7 @@ export const transformCssTokens = async ({
     formatters: cssTokens,
   })
   const { css } = await postcss([
-    combineDupeSelectors,
+    combineSelectors as unknown as PostCSSPlugin,
   ]).process(content, { from: undefined, to: '' })
   await Deno.writeTextFile(`${outputDirectory}/tokens.css`, css)
 }

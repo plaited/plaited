@@ -1,4 +1,9 @@
-import { Formatter, GridTemplateValue, GridTemplateRowsOrColumnsValue, GridMinMaxArgs } from '../../token-types.ts'
+import {
+  Formatter,
+  GridMinMaxArgs,
+  GridTemplateRowsOrColumnsValue,
+  GridTemplateValue,
+} from '../../token-types.ts'
 import { hasAlias } from '../resolve.ts'
 import { kebabCase } from '../../deps.ts'
 import { getRem } from '../get-rem.ts'
@@ -8,15 +13,14 @@ const getFitContent = ({
   value,
   baseFontSize,
   acc = '',
-}:{
+}: {
   func: string
-  value:number | `${number}%`
+  value: number | `${number}%`
   baseFontSize: number
   acc?: string
-}) => acc + ` ${func}(${typeof value === 'string'
-  ? value
-  : getRem(value, baseFontSize)
-})`
+}) =>
+  acc +
+  ` ${func}(${typeof value === 'string' ? value : getRem(value, baseFontSize)})`
 
 const getMinMax = ({
   func,
@@ -24,36 +28,34 @@ const getMinMax = ({
   baseFontSize,
   min,
   max,
-}:{
+}: {
   func: string
   baseFontSize: number
   acc?: string
   min: GridMinMaxArgs
   max: GridMinMaxArgs
-}) => acc + ` ${func}(${
-  typeof min === 'number'
-    ? getRem(min, baseFontSize)
-    : min
-}, ${
-  typeof max === 'number'
-    ? getRem(max, baseFontSize)
-    : max
-})`
+}) =>
+  acc +
+  ` ${func}(${typeof min === 'number' ? getRem(min, baseFontSize) : min}, ${
+    typeof max === 'number' ? getRem(max, baseFontSize) : max
+  })`
 
-export const gridTemplate:Formatter<GridTemplateValue> = ({ tokenPath, $value, baseFontSize }) => {
+export const gridTemplate: Formatter<GridTemplateValue> = (
+  { tokenPath, $value, baseFontSize },
+) => {
   if (hasAlias($value)) return ''
-  if(typeof $value[0] === 'string' && /"(\w*)"/.test($value[0])) {
-    `:root { --${kebabCase(tokenPath.join(' '))}: ${$value.join(' ')}; }`
+  if (typeof $value[0] === 'string' && /"(\w*)"/.test($value[0])) {
+    ;`:root { --${kebabCase(tokenPath.join(' '))}: ${$value.join(' ')}; }`
   }
   const _value = ($value as GridTemplateRowsOrColumnsValue)
     .reduce<string>((acc, cur) => {
-      if(typeof cur === 'number') {
+      if (typeof cur === 'number') {
         return acc + ` ${getRem(cur, baseFontSize)}`
       }
-      if(typeof cur === 'string') {
+      if (typeof cur === 'string') {
         return acc + ` ${cur}`
       }
-      if(cur.function === 'fit-content') {
+      if (cur.function === 'fit-content') {
         getFitContent({
           acc,
           baseFontSize,
@@ -61,7 +63,7 @@ export const gridTemplate:Formatter<GridTemplateValue> = ({ tokenPath, $value, b
           value: cur.value,
         })
       }
-      if(cur.function === 'minmax') {
+      if (cur.function === 'minmax') {
         getMinMax({
           acc,
           baseFontSize,
@@ -70,23 +72,23 @@ export const gridTemplate:Formatter<GridTemplateValue> = ({ tokenPath, $value, b
           max: cur.range[1],
         })
       }
-      if(cur.function === 'repeat') {
+      if (cur.function === 'repeat') {
         const func = cur.function
-        const tracks: string = cur.tracks.map(val => {
-          if(typeof val === 'number') {
+        const tracks: string = cur.tracks.map((val) => {
+          if (typeof val === 'number') {
             return ` ${getRem(val, baseFontSize)}`
           }
-          if(typeof val === 'string') {
+          if (typeof val === 'string') {
             return ` ${val}`
           }
-          if(val.function === 'fit-content') {
+          if (val.function === 'fit-content') {
             return getFitContent({
               baseFontSize,
               func: val.function,
               value: val.value,
             })
           }
-          if(val.function === 'minmax') {
+          if (val.function === 'minmax') {
             return getMinMax({
               baseFontSize,
               func: val.function,

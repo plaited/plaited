@@ -1,73 +1,58 @@
-import { startCase } from '../../deps.ts'
-import { toId } from '../utils/mod.ts'
-const template = ({
+import { StoriesData} from '../types.ts'
+import { esbuild } from '../../deps.ts'
+import {
+  testFile
+} from '../templates/mod.ts'
+
+type WriteSpec = (args: {
+  port: number
+  project?: string
+  storyData:  StoriesData
+  playwright: string
+  root: string
+  colorScheme?: boolean
+}) => Promise<void>
+export const writeSpec: WriteSpec = async ({
+  colorScheme = true,
   port,
-  name,
-  title,
-  fixture,
-  storiesExportFile,
-}: {
-  port: number,
-  name: string,
-  title: string,
-  fixture: string,
-  storiesExportFile: string
+  project,
+  root,
+  storyData,
+  playwright,
 }) => {
-  const id = toId(title, name)
-  const importPlaywright = "import { test, expect } from '@playwright/test'"
-
-  const importAxeCore = "import AxeBuilder from '@axe-core/playwright'"
-
-  const importWork = `import { ${name} } from '${storiesExportFile}'`
-
-
-
-  return [
-    importPlaywright,
-    importAxeCore,
-    importWork,
-    ' ',
-    AccessibilityTest,
-    VisualComparisonTest,
-    InteractionTest,
-  ].filter(Boolean).join('\n')
-}
-
-const encoder = new TextEncoder()
-
-export const writeSpec = async ({
-  port,
-  name,
-  title,
-  fixture,
-  storiesExportFile,
-  outputDir,
-  testExtension
-}:{
-  port: number,
-  name: string,
-  title: string,
-  fixture: string,
-  storiesExportFile: string
-  outputDir: string,
-  testExtension: string
-}) => {
-  const id = toId(title, name)
-  const testFile =`${outputDir}/${id}${testExtension.startsWith('.') ? testExtension : `.${testExtension}`}`
-  const exist = Deno.statSync(testFile)
-  if(exist) return ''
-  const content = template({
-    port,
-    name,
-    title,
-    fixture,
-    storiesExportFile,
-  })
-  
+  const entryPoints = storyData.map(([{path}]) => path)
+  const outdir = `${playwright}/.stories`
   try {
-    await Deno.writeFile(testFile, encoder.encode(content))
-  } catch(err) {
-    console.error(err)
+    await esbuild.build({
+      entryPoints,
+      bundle: true,
+      target: [
+        'es2020',
+      ],
+      outdir,
+     })
+   } catch(err) {
+     console.error(err)
+     Deno.exit()
+   }
+  const titles = storyData.map(([{title}]) => title)
+  const dedupe = new Set(titles)
+  if(titles.length !== dedupe.size) {
+    const dupes = titles.filter(element => ![...dedupe].includes(element)).join(', ')
+    console.error(`Rename StoryConfigs: [ ${dupes} ]`)
+    Deno.exit()
   }
-  return testFile
+  await Promise.all(storyData.map(async ([{title, path}, data]) => {
+    const testPath = `${playwright}/specs/${title.toLowerCase()}.spec.ts`
+    const content = testFile({
+      colorScheme,
+      data,
+      port,
+      project,
+      storiesPath: `${outdir}${path.slice(root.length)}`,
+      testPath,
+      title,
+    })
+    await Deno.writeTextFile(testPath, content);
+  }))
 }

@@ -1,1 +1,1 @@
-export const getRem = (val: number, base: number) => `${val/base}rem`
+export const getRem = (val: number, base: number) => `${val / base}rem`

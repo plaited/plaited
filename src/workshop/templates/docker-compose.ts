@@ -4,11 +4,12 @@ export const dockerCompose = ({
   pat,
   port,
   project,
-}:{
-  pat:boolean
+}: {
+  pat: boolean
   port: number
   project?: string
-}) =>`services:
+}) =>
+  `services:
 tests:
   container_name: ${project ?? 'playwright'}_tests:${tag}
   entrypoint: yarn
@@ -18,7 +19,7 @@ tests:
     context: .
     args:
       - TAG=${tag}
-      ${pat? '- GIT_PAT=\${GIT_PAT}': ''}
+      ${pat ? '- GIT_PAT=\${GIT_PAT}' : ''}
   ports:
     - "${port}:${port}"
   volumes:

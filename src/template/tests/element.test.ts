@@ -3,7 +3,7 @@ import test from 'ava'
 import { element, html } from '../mod.ts'
 
 // Expected usage const MyTemplate = ({ ..args}) => element({tag, template: html`` ...rest})
-test('element()', t => {
+test('element()', (t) => {
   t.is(
     element({
       tag: 'z-el',
@@ -12,7 +12,7 @@ test('element()', t => {
       </div>`,
     }),
     '<z-el><template shadowroot="open"><div><h1>header</h1></div></template></z-el>',
-    'tag and template only'
+    'tag and template only',
   )
   t.is(
     element({
@@ -23,7 +23,7 @@ test('element()', t => {
       </div>`,
     }),
     '<z-el id="random"><template shadowroot="open"><div><h1>header</h1></div></template></z-el>',
-    'tag, template, and id'
+    'tag, template, and id',
   )
   t.is(
     element({
@@ -38,7 +38,7 @@ test('element()', t => {
       </div>`,
     }),
     '<z-el data-target="random" data-trigger="click->random focus->thing"><template shadowroot="open"><div><h1>header</h1></div></template></z-el>',
-    'data-target, data-trigger, tag, template, and id'
+    'data-target, data-trigger, tag, template, and id',
   )
   t.is(
     element({
@@ -49,6 +49,6 @@ test('element()', t => {
       </div>`,
     }),
     '<z-el><template shadowroot="closed"><div><h1>header</h1></div></template></z-el>',
-    'tag, template, and mode'
+    'tag, template, and mode',
   )
 })

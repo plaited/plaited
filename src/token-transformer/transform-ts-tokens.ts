@@ -7,8 +7,8 @@ export const transformTsTokens = async ({
   outputDirectory,
   baseFontSize,
 }: {
-  tokens: DesignTokenGroup,
-  outputDirectory: string,
+  tokens: DesignTokenGroup
+  outputDirectory: string
   baseFontSize: number
 }) => {
   await Deno.mkdir(outputDirectory, { recursive: true })

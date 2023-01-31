@@ -1,9 +1,13 @@
 import { StateChart } from './types.ts'
 import { streamEvents } from './constants.ts'
 export const stateChart: StateChart = ({ candidates, blocked, pending }) => {
-  const strands = [ ...new Set(pending
-    .filter(({ strandName }) => strandName)
-    .map(({ strandName, priority }) => ({ strandName, priority }))) ]
+  const strands = [
+    ...new Set(
+      pending
+        .filter(({ strandName }) => strandName)
+        .map(({ strandName, priority }) => ({ strandName, priority })),
+    ),
+  ]
   const Blocked = [
     ...new Set(blocked.map(({ eventName }) => eventName).filter(Boolean)),
   ]
@@ -18,7 +22,7 @@ export const stateChart: StateChart = ({ candidates, blocked, pending }) => {
           eventName,
           priority,
           payload,
-        }))
+        })),
     ),
   ]
   return {

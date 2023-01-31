@@ -1,11 +1,10 @@
-import { html } from './html.ts' 
-import { wire, Wire } from './wire.ts'
-import { template, Template } from './template.ts'
-
+import { html } from './html.ts'
+import { Wire, wire } from './wire.ts'
+import { Template, template } from './template.ts'
 
 interface ElementProps extends Wire {
   tag: string
-  template:string
+  template: string
   /** @defaultValue 'open' */
   mode?: 'open' | 'closed'
   stylesheets?: string | string[]
@@ -13,14 +12,16 @@ interface ElementProps extends Wire {
 
 export type Element = Template<ElementProps>
 /** @returns template string for a web component */
-export const element: Element = template(({ 
+export const element: Element = template(({
   tag,
   template,
   mode = 'open',
   stylesheets,
   ...rest
 }) => {
-  const sheets = Array.isArray(stylesheets) ? [ ...new Set(stylesheets) ] : stylesheets 
+  const sheets = Array.isArray(stylesheets)
+    ? [...new Set(stylesheets)]
+    : stylesheets
   return html`
   <${tag} ${wire({ ...rest })}>
     <template shadowroot="${mode}">

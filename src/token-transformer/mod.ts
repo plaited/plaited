@@ -14,5 +14,3 @@ export const tokenTransformUtil = async ({
   await transformCssTokens({ tokens, outputDirectory, baseFontSize })
   await transformTsTokens({ tokens, outputDirectory, baseFontSize })
 }
-
-

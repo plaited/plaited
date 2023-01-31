@@ -1,10 +1,9 @@
-import { streamEvents, baseDynamics } from './constants.ts'
-
+import { baseDynamics, streamEvents } from './constants.ts'
 
 type ValueOf<T> = T[keyof T]
 
-export type FeedbackMessage = {eventName: string, payload?: any}
-export type Callback = (args: FeedbackMessage) => boolean;
+export type FeedbackMessage = { eventName: string; payload?: any }
+export type Callback = (args: FeedbackMessage) => boolean
 export interface RuleParameterValue {
   eventName?: string
   callback?: Callback
@@ -27,9 +26,8 @@ export interface CreatedStream {
   subscribe: (listener: Listener) => CreatedStream
 }
 
-export type RuleGenerator =  Generator<IdiomSet, void, unknown>
+export type RuleGenerator = Generator<IdiomSet, void, unknown>
 export type RulesFunc = () => RuleGenerator
-
 
 export type RunningBid = {
   strandName: string
@@ -38,32 +36,38 @@ export type RunningBid = {
 }
 export type PendingBid = IdiomSet & RunningBid
 
-export type CandidateBid =  { 
-  priority: number;
-  eventName: string;
-  payload?: any;
-  callback?: Callback;
+export type CandidateBid = {
+  priority: number
+  eventName: string
+  payload?: any
+  callback?: Callback
 }
 
-export type Strategy = ((filteredEvents: CandidateBid[]) => CandidateBid)
+export type Strategy = (filteredEvents: CandidateBid[]) => CandidateBid
 
-// stateChart.ts 
+// stateChart.ts
 export interface StateChart {
-  (props: {candidates: CandidateBid[], blocked: RuleParameterValue[], pending: PendingBid[]}): {
-    streamEvent: 'stateSnapshot';
-    logicStrands: {strandName: string, priority: number}[];
+  (
+    props: {
+      candidates: CandidateBid[]
+      blocked: RuleParameterValue[]
+      pending: PendingBid[]
+    },
+  ): {
+    streamEvent: 'stateSnapshot'
+    logicStrands: { strandName: string; priority: number }[]
     requestedEvents: {
-        eventName: string | undefined;
-        payload: unknown;
-    }[];
-    blockedEvents: (string | undefined)[];
+      eventName: string | undefined
+      payload: unknown
+    }[]
+    blockedEvents: (string | undefined)[]
   }
 }
 
 export type TriggerArgs = {
-  eventName: string;
-  payload?: any;
-  baseDynamic?: ValueOf<typeof baseDynamics>;
+  eventName: string
+  payload?: any
+  baseDynamic?: ValueOf<typeof baseDynamics>
 }
 
 export interface TriggerFunc {

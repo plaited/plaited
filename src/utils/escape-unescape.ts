@@ -4,7 +4,7 @@ const escapeObj = {
   '&': '&amp;',
   '<': '&lt;',
   '>': '&gt;',
-  "'": '&#39;',
+  '\'': '&#39;',
   '"': '&quot;',
 }
 const unescapeObj = {
@@ -14,8 +14,8 @@ const unescapeObj = {
   '&#60;': '<',
   '&gt;': '>',
   '&#62;': '>',
-  '&apos;': "'",
-  '&#39;': "'",
+  '&apos;': '\'',
+  '&#39;': '\'',
   '&quot;': '"',
   '&#34;': '"',
 }
@@ -26,18 +26,20 @@ const { replace } = ''
  * @example
  * escape('&<>\'"') => '&amp;&lt;&gt;&#39;&quot;'
  */
-export const escape = (sub:string) => replace.call(
-  sub,
-  reEscape,
-  key => escapeObj[key as keyof typeof escapeObj]
-)
+export const escape = (sub: string) =>
+  replace.call(
+    sub,
+    reEscape,
+    (key) => escapeObj[key as keyof typeof escapeObj],
+  )
 /**
  * @desription unescapes an escaped a string
  * @example
  * unescape('&amp;&lt;&gt;&#39;&quot;') => '&<>\'"'
  */
-export const unescape = (sub: string) => replace.call(
-  sub,
-  reUnescape,
-  key => unescapeObj[key as keyof typeof unescapeObj]
-)
+export const unescape = (sub: string) =>
+  replace.call(
+    sub,
+    reUnescape,
+    (key) => unescapeObj[key as keyof typeof unescapeObj],
+  )
