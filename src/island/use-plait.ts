@@ -1,4 +1,10 @@
-import { Listener, Plait, RulesFunc, Strategy, TriggerFunc } from '../plait/mod.ts'
+import {
+  Listener,
+  Plait,
+  RulesFunc,
+  Strategy,
+  TriggerFunc,
+} from '../plait/mod.ts'
 import { noop } from '../utils/mod.ts'
 
 export type UsePlait = (args: {

@@ -3,12 +3,12 @@ import { Expect, Page } from '../deps.ts'
 import {
   Credentials,
   ErrorHandler,
-  UnknownMethodHandler,
   Handler,
-  UpdateRoutes
+  UnknownMethodHandler,
+  UpdateRoutes,
 } from '../server/mod.ts'
 
-// Internal Mod Exports 
+// Internal Mod Exports
 export type StoryData = {
   args: TemplateProps
   name: string
@@ -16,10 +16,13 @@ export type StoryData = {
   fixture: `${string}-${string}`
 }
 
-export type StoriesData = [{ title: string, path:string }, StoryData[]][]
+export type StoriesData = [{ title: string; path: string }, StoryData[]][]
 
 export type PageFunc = (story: string) => string
-export type SSRFunc = (fixture:`${string}-${string}`, template:string) => string
+export type SSRFunc = (
+  fixture: `${string}-${string}`,
+  template: string,
+) => string
 export type Ext = {
   fixture: string | string[]
   story: string | string[]
@@ -36,10 +39,12 @@ export type Write = (args: {
   playwright: string
 }) => Promise<Record<string, Handler>>
 
-export type Watcher = (args: Parameters<Write>[0] & {
-  root: string
-  updateRoutes: UpdateRoutes
-}) => Promise<void>
+export type Watcher = (
+  args: Parameters<Write>[0] & {
+    root: string
+    updateRoutes: UpdateRoutes
+  },
+) => Promise<void>
 
 // External Mod Exports
 
@@ -58,7 +63,7 @@ export type Story<T extends TemplateProps = TemplateProps> = {
   play?: (args: { page: Page; expect: Expect; id: string }) => Promise<void>
 }
 
-export type StoryHandlers = (stories:StoriesData)=> Record<string, Handler>
+export type StoryHandlers = (stories: StoriesData) => Record<string, Handler>
 
 export type WorkshopConfig = {
   assets: string
@@ -66,7 +71,7 @@ export type WorkshopConfig = {
   credentials?: Credentials
   dev?: boolean
   errorHandler?: ErrorHandler
-  exts: Ext,
+  exts: Ext
   notFoundTemplate?: string
   pat?: boolean
   playwright: string

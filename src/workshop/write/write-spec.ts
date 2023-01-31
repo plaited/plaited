@@ -1,13 +1,11 @@
-import { StoriesData} from '../types.ts'
+import { StoriesData } from '../types.ts'
 import { esbuild } from '../../deps.ts'
-import {
-  testFile
-} from '../templates/mod.ts'
+import { testFile } from '../templates/mod.ts'
 
 type WriteSpec = (args: {
   port: number
   project?: string
-  storyData:  StoriesData
+  storyData: StoriesData
   playwright: string
   root: string
   colorScheme?: boolean
@@ -20,7 +18,7 @@ export const writeSpec: WriteSpec = async ({
   storyData,
   playwright,
 }) => {
-  const entryPoints = storyData.map(([{path}]) => path)
+  const entryPoints = storyData.map(([{ path }]) => path)
   const outdir = `${playwright}/.stories`
   try {
     await esbuild.build({
@@ -30,19 +28,20 @@ export const writeSpec: WriteSpec = async ({
         'es2020',
       ],
       outdir,
-     })
-   } catch(err) {
-     console.error(err)
-     Deno.exit()
-   }
-  const titles = storyData.map(([{title}]) => title)
+    })
+  } catch (err) {
+    console.error(err)
+    Deno.exit()
+  }
+  const titles = storyData.map(([{ title }]) => title)
   const dedupe = new Set(titles)
-  if(titles.length !== dedupe.size) {
-    const dupes = titles.filter(element => ![...dedupe].includes(element)).join(', ')
+  if (titles.length !== dedupe.size) {
+    const dupes = titles.filter((element) => ![...dedupe].includes(element))
+      .join(', ')
     console.error(`Rename StoryConfigs: [ ${dupes} ]`)
     Deno.exit()
   }
-  await Promise.all(storyData.map(async ([{title, path}, data]) => {
+  await Promise.all(storyData.map(async ([{ title, path }, data]) => {
     const testPath = `${playwright}/specs/${title.toLowerCase()}.spec.ts`
     const content = testFile({
       colorScheme,
@@ -53,6 +52,6 @@ export const writeSpec: WriteSpec = async ({
       testPath,
       title,
     })
-    await Deno.writeTextFile(testPath, content);
+    await Deno.writeTextFile(testPath, content)
   }))
 }

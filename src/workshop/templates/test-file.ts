@@ -1,10 +1,10 @@
 import { StoryData } from '../types.ts'
 import { toId } from '../to-id.ts'
 import { accessibilityAssertion } from './accessibility-assertion.ts'
-import {visualComparisonAssertion} from './visual-comparison-assertion.ts'
+import { visualComparisonAssertion } from './visual-comparison-assertion.ts'
 import { interactionAssertion } from './interaction-assertion.ts'
 import { relative } from '../../deps.ts'
-type TestDescribeTemplate = (args:{
+type TestDescribeTemplate = (args: {
   colorScheme: boolean
   data: StoryData[]
   port: number
@@ -22,10 +22,10 @@ export const testFile: TestDescribeTemplate = ({
   testPath,
 }) => {
   const names: string[] = []
-  const content = data.map(({name, fixture, }) => {
+  const content = data.map(({ name, fixture }) => {
     names.push(name)
     const id = toId(title, name)
-  return `test('${name}', async ({ page }) => {
+    return `test('${name}', async ({ page }) => {
   await page.goto('./${toId(title, name)}')
   ${accessibilityAssertion(fixture)}
 
@@ -34,9 +34,9 @@ export const testFile: TestDescribeTemplate = ({
   ${interactionAssertion(name, id)}
 })
 `
-}).join('\n')
+  }).join('\n')
 
-return `import { test, expect } from '@playwright/test'
+  return `import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import {
   ${names.join('\n')}
@@ -46,10 +46,13 @@ test.describe('${title}${colorScheme ? '(light)' : ''}', () => {
   ${content}
 })
 
-${colorScheme? `test.describe('${title}${colorScheme ? '(light)' : ''}', () => {
+${
+    colorScheme
+      ? `test.describe('${title}${colorScheme ? '(light)' : ''}', () => {
   test.use({ colorScheme: 'dark' })
   ${content}
-})` : ''}
+})`
+      : ''
+  }
 `
 }
-  

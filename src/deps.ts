@@ -6,7 +6,7 @@ export {
 } from 'https://deno.land/std@0.175.0/http/mod.ts'
 export { serveDir } from 'https://deno.land/std@0.175.0/http/file_server.ts'
 export { walk } from 'https://deno.land/std@0.175.0/fs/mod.ts'
-export { extname, relative} from 'https://deno.land/std@0.175.0/path/mod.ts'
+export { extname, relative } from 'https://deno.land/std@0.175.0/path/mod.ts'
 
 // -- brotli --
 export { compress } from 'https://deno.land/x/brotli@0.1.7/mod.ts'

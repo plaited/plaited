@@ -4,7 +4,7 @@ type WritePlaywrightConfig = (args: {
   port: number
   protocol: 'http' | 'https'
 }) => void
-export const writePlaywrightConfig:WritePlaywrightConfig = ({
+export const writePlaywrightConfig: WritePlaywrightConfig = ({
   path,
   port,
   protocol,
@@ -14,6 +14,6 @@ export const writePlaywrightConfig:WritePlaywrightConfig = ({
     playwrightConfig(
       port,
       protocol,
-    )
+    ),
   )
 }

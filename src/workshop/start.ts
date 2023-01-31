@@ -9,9 +9,9 @@ import {
   writePlaywrightConfig,
   writeYarnrc,
 } from './write/mod.ts'
-import {watcher } from './watcher.ts'
-import { defaultStoryHandlers  } from './default-story-handlers.ts'
-export const start = async ({ 
+import { watcher } from './watcher.ts'
+import { defaultStoryHandlers } from './default-story-handlers.ts'
+export const start = async ({
   assets,
   colorScheme,
   credentials,
@@ -26,8 +26,7 @@ export const start = async ({
   root,
   storyHandlers = defaultStoryHandlers,
   unknownMethodHandler,
-}: WorkshopConfig,
-) => {
+}: WorkshopConfig) => {
   const dockerComposePath = `${playwright}/docker-compose.yml`
   const dockerFilePath = `${playwright}/Dockerfile`
   const gitignorePath = `${playwright}/.gitignore`
@@ -60,22 +59,28 @@ export const start = async ({
     console.error(`[ERR] Tests directory "${playwright}" is not directory!`)
     Deno.exit()
   }
-  if(!Deno.statSync(dockerComposePath)) {
-    writeDockerCompose({ pat, path: dockerComposePath, protocol, port, project })
+  if (!Deno.statSync(dockerComposePath)) {
+    writeDockerCompose({
+      pat,
+      path: dockerComposePath,
+      protocol,
+      port,
+      project,
+    })
   }
-  if(!Deno.statSync(dockerFilePath)) {
+  if (!Deno.statSync(dockerFilePath)) {
     writeDockerfile(dockerFilePath, pat)
   }
-  if(!Deno.statSync(gitignorePath)) {
+  if (!Deno.statSync(gitignorePath)) {
     writeGitignore(gitignorePath)
   }
-  if(!Deno.statSync(packagePath)) {
+  if (!Deno.statSync(packagePath)) {
     writePackage(packagePath)
   }
-  if(!Deno.statSync(playwrightConfigPath)) {
+  if (!Deno.statSync(playwrightConfigPath)) {
     writePlaywrightConfig({ path: playwrightConfigPath, port, protocol })
   }
-  if(!Deno.statSync(yarnrcPath)) {
+  if (!Deno.statSync(yarnrcPath)) {
     writeYarnrc(yarnrcPath)
   }
   const routes = await write({
@@ -88,7 +93,7 @@ export const start = async ({
     storyHandlers,
     playwright,
   })
-  const { updateRoutes} = await server({
+  const { updateRoutes } = await server({
     dev,
     routes,
     port,
@@ -98,7 +103,7 @@ export const start = async ({
     errorHandler,
     unknownMethodHandler,
   })
-  if(dev) {
+  if (dev) {
     watcher({
       assets,
       colorScheme,
@@ -107,7 +112,7 @@ export const start = async ({
       root,
       storyHandlers,
       playwright,
-      updateRoutes
+      updateRoutes,
     })
   }
 }

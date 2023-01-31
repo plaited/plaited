@@ -5,11 +5,12 @@ export const writeRegistry = async (
   assets: string,
 ) => {
   try {
-   await esbuild.build({
+    await esbuild.build({
       stdin: {
-        contents: fixtures.map((fixture: string) => `import './${fixture}'`).join(
-          '\n',
-        ),
+        contents: fixtures.map((fixture: string) => `import './${fixture}'`)
+          .join(
+            '\n',
+          ),
         resolveDir: assets,
         loader: 'ts',
       },
@@ -19,7 +20,7 @@ export const writeRegistry = async (
       ],
       outfile: `${assets}/.registry/fixtures.js`,
     })
-  } catch(err) {
+  } catch (err) {
     console.error(err)
     Deno.exit()
   }

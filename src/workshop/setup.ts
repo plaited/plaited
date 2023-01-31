@@ -7,7 +7,7 @@ import {
   writePlaywrightConfig,
   writeYarnrc,
 } from './write/mod.ts'
-export const setup = ({ 
+export const setup = ({
   assets,
   credentials,
   pat = false,
@@ -15,8 +15,7 @@ export const setup = ({
   port = 3000,
   project,
   root,
-}: WorkshopConfig,
-) => {
+}: WorkshopConfig) => {
   const dockerComposePath = `${playwright}/docker-compose.yml`
   const dockerFilePath = `${playwright}/Dockerfile`
   const gitignorePath = `${playwright}/.gitignore`
@@ -49,22 +48,28 @@ export const setup = ({
     console.error(`[ERR] Tests directory "${playwright}" is not directory!`)
     Deno.exit()
   }
-  if(!Deno.statSync(dockerComposePath)) {
-    writeDockerCompose({ pat, path: dockerComposePath, protocol, port, project })
+  if (!Deno.statSync(dockerComposePath)) {
+    writeDockerCompose({
+      pat,
+      path: dockerComposePath,
+      protocol,
+      port,
+      project,
+    })
   }
-  if(!Deno.statSync(dockerFilePath)) {
+  if (!Deno.statSync(dockerFilePath)) {
     writeDockerfile(dockerFilePath, pat)
   }
-  if(!Deno.statSync(gitignorePath)) {
+  if (!Deno.statSync(gitignorePath)) {
     writeGitignore(gitignorePath)
   }
-  if(!Deno.statSync(packagePath)) {
+  if (!Deno.statSync(packagePath)) {
     writePackage(packagePath)
   }
-  if(!Deno.statSync(playwrightConfigPath)) {
+  if (!Deno.statSync(playwrightConfigPath)) {
     writePlaywrightConfig({ path: playwrightConfigPath, port, protocol })
   }
-  if(!Deno.statSync(yarnrcPath)) {
+  if (!Deno.statSync(yarnrcPath)) {
     writeYarnrc(yarnrcPath)
   }
 }
