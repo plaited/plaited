@@ -1,4 +1,4 @@
-import { TriggerArgs, TriggerFunc } from '../plait.ts'
+import { TriggerArgs, TriggerFunc } from '../plait/mod.ts'
 
 export const useMain = ({
   context,

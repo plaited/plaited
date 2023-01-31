@@ -1,5 +1,5 @@
 // Fork of https://github.com/easy-json-schema/easy-json-schema
-import { trueTypeOf } from '../utils.ts'
+import { trueTypeOf } from '../utils/mod.ts'
 import { DesignToken, DesignTokenGroup } from '../token-types.ts'
 
 const supportType = [

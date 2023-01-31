@@ -1,6 +1,6 @@
 import { toId } from './to-id.ts'
 import { StoryHandlers, } from './types.ts'
-import {  Handler } from '../server.ts'
+import {  Handler } from '../server/mod.ts'
 import { page } from './page.ts'
 import { ssr } from './ssr.ts'
 

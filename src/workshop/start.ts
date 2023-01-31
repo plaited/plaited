@@ -1,4 +1,4 @@
-import { server } from '../server.ts'
+import { server } from '../server/mod.ts'
 import { WorkshopConfig } from './types.ts'
 import {
   write,

@@ -1,5 +1,5 @@
 import { Watcher } from './types.ts'
-import { write } from './write.ts'
+import { write } from './write/mod.ts'
 
 export const watcher: Watcher = async ({
   assets,

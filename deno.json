@@ -6,6 +6,9 @@
     "files": {
       "include": [
         "src/"
+      ],
+      "exclude": [
+        "playwright/"
       ]
     },
     "options": {

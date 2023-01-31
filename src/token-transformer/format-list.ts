@@ -1,5 +1,5 @@
 /* eslint-disable no-return-assign */
-import { trueTypeOf } from '../utils.ts'
+import { trueTypeOf } from '../utils/mod.ts'
 import { DesignToken, DesignTokenGroup, GetFormatter } from '../token-types.ts'
 
 export const formatList = ({

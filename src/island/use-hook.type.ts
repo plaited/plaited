@@ -1,4 +1,4 @@
-import { RulesFunc } from '../plait.ts'
+import { RulesFunc } from '../plait/mod.ts'
 import { Query } from './island.ts'
 
 export type UseHook<T = Record<string, unknown>> = (

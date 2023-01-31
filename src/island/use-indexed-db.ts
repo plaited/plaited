@@ -1,4 +1,4 @@
-import { trueTypeOf } from '../utils.ts'
+import { trueTypeOf } from '../utils/mod.ts'
 import { createIDB, IDB } from './create-idb.ts'
 
 type UpdateStoreArg = (arg?: unknown) => unknown

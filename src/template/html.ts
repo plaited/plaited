@@ -1,4 +1,4 @@
-import { escape, trueTypeOf } from '../utils.ts'
+import { escape, trueTypeOf } from '../utils/mod.ts'
 
 type Primitive =
   | number

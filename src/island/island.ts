@@ -1,9 +1,9 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
-import { dataTarget, dataTrigger } from '../template.ts'
+import { dataTarget, dataTrigger } from '../template/mod.ts'
 import { delegatedListener } from './delegated-listener.ts'
-import { baseDynamics, TriggerFunc } from '../plait.ts'
+import { baseDynamics, TriggerFunc } from '../plait/mod.ts'
 import { UsePlait, usePlait } from './use-plait.ts'
 
 // It takes the value of a data-target attribute and return all the events happening in it. minus the method idetenfier

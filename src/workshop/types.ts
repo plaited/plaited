@@ -1,4 +1,4 @@
-import { Template, TemplateProps } from '../template.ts'
+import { Template, TemplateProps } from '../template/mod.ts'
 import { Expect, Page } from '../deps.ts'
 import {
   Credentials,
@@ -6,7 +6,7 @@ import {
   UnknownMethodHandler,
   Handler,
   UpdateRoutes
-} from '../server.ts'
+} from '../server/mod.ts'
 
 // Internal Mod Exports 
 export type StoryData = {

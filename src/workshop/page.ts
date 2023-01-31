@@ -1,5 +1,5 @@
-import {  html } from '../template.ts'
-import { livereloadTemplate } from '../server.ts'
+import {  html } from '../template/mod.ts'
+import { livereloadTemplate } from '../server/mod.ts'
 import { PageFunc } from './types.ts'
 
 export const page: PageFunc = (story) =>

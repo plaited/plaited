@@ -1,4 +1,4 @@
-/* eslint-disable compat/compat */
+/// <reference lib="dom" />
 type CreateIDBCallback = (arg: IDBObjectStore) => void
 export type IDB = (
   type: IDBTransactionMode,

@@ -1,4 +1,4 @@
-import { html } from '../template.ts'
+import { html } from '../template/mod.ts'
 
 export const livereloadTemplate = html`<script>
 const source = new EventSource('/livereload');
