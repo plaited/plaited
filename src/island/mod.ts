@@ -1,4 +1,4 @@
-export * from './base-element.ts'
+export * from './island.ts'
 export * from './use-plait.ts'
 export * from './create-idb.ts'
 export * from './messenger.ts'

@@ -1,18 +1,18 @@
 /* eslint-disable no-console */
-// import http2 from 'http2'
-import { router } from './router.ts'
-import { usePort, networkIps } from './utils.ts'
-import { getFileRoutes } from './get-file-routes.ts'
-import { getReloadRoute } from './get-reload-route.ts'
+import { usePort, networkIps, hostnameForDisplay } from './utils.ts'
 import { Routes, Server } from './types.ts'
-import { httpCreateServer, httpsCreateServer } from '../deps.ts'
+import { watcher } from './watcher.ts'
+import { createServer } from './create-server.ts'
+import { getHandler } from './get-handler.ts'
+import { getOtherHandler } from './get-other-handler.ts'
+
 export const server: Server = async ({
   root,
   routes,
   port:_port = 3000,
-  reload = true,
+  dev = true,
   credentials,
-  otherHandler,
+  notFoundTemplate,
   errorHandler,
   unknownMethodHandler,
 }) =>{
@@ -30,54 +30,67 @@ export const server: Server = async ({
     console.error(`[ERR] Root directory "${root}" is not directory!`)
     Deno.exit()
   }
+
+  const ac = new AbortController() 
   
   const reloadClients:Array<(channel: string, data: string) => void>  = []
   const protocol = credentials ? 'https' : 'http'
 
   // Get file assets routes
-  const fileRoutes = await getFileRoutes(root)
-
-  const createServer = credentials ? httpsCreateServer : httpCreateServer
-
-  createServer(router(
-    {
-      ...fileRoutes,
-      ...routes,
-      ...getReloadRoute(reload, reloadClients),
-    },
+  const otherHandler = getOtherHandler(notFoundTemplate)
+  const handler = await getHandler({
+    routes,
+    reload: dev,
+    reloadClients,
     otherHandler,
     errorHandler,
-    unknownMethodHandler
-  ), {
-    ...credentials,
-    port,
+    unknownMethodHandler,
   })
-  
-  if(reload) {
-    const watcher = Deno.watchFs(root, { recursive: true })
-    let lastEvent = ''
-    for await (const { kind } of watcher) {
-      if([ 'any', 'access' ].includes(kind)) {
-        lastEvent = kind
-        continue
-      }
-      if (kind !== lastEvent) {
-        while (reloadClients.length > 0) {
-          const cb = reloadClients.pop()
-          cb && cb('message', 'reload' )
-        }
-        lastEvent = kind
-      }
-    }
+  createServer({
+    credentials,
+    handler,
+    onListen: ({port, hostname,}) => {
+      console.log(`Running at ${protocol}://${hostnameForDisplay(hostname)}:${port}`);
+    },
+    port,
+    root,
+    signal: ac.signal,
+  })
+
+  if(dev) {
+    watcher(reloadClients, root)
   }
 
   // Close socket connections on sigint
   Deno.addSignalListener('SIGINT', () => {
-    console.log('interrupted!')
+    console.log("Closing server...")
+    ac.abort()
     Deno.exit()
   })
-  const addRoutes = (additions: Routes) => {
-    Object.assign(routes, additions)
+
+  const updateRoutes = async (cb: (oldRoutes: Routes) => Routes) => {
+    ac.abort()
+    const newRoutes = cb(routes)
+    const newHandler = await getHandler({
+      routes: newRoutes,
+      reload:dev,
+      reloadClients,
+      otherHandler,
+      errorHandler,
+      unknownMethodHandler,
+    })
+    setTimeout(() => {
+      createServer({
+        credentials,
+        handler: newHandler,
+        onListen: ({port, hostname,}) => {
+          console.log(`Updating routes at ${protocol}://${hostnameForDisplay(hostname)}:${port}`);
+        },
+        port,
+        root,
+        signal: ac.signal,
+      })
+    }, 500)
   }
 
   return {
@@ -85,7 +98,7 @@ export const server: Server = async ({
     port,
     protocol,
     root,
-    addRoutes,
+    updateRoutes,
     url: `${protocol}://localhost:${port}`,
   }
 }

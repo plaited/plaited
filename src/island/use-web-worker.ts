@@ -18,7 +18,7 @@ export const useWebWorker = ({
   connect: (recipient: string, cb: TriggerFunc) => () => void
   send: (recipient: string, detail: TriggerArgs) => void
 }): Disconnect => {
-  const worker = new Worker(url, { type: 'module' })
+  const worker = new Worker(new URL(url, import.meta.url).href, { type: 'module' })
   const cb = (args: TriggerArgs) => {
     worker.postMessage(args)
   }
