@@ -1,4 +1,4 @@
-import test from 'ava'
+import { assertSnapshot } from '../../deps.ts'
 import {
   baseDynamics,
   block,
@@ -52,7 +52,7 @@ const actions = {
     addHot()
   },
 }
-test('plait(): priority queue', (t) => {
+Deno.test('plait(): priority queue', (t) => {
   const streamLog: unknown[] = []
   const { trigger, feedback, stream } = new Plait(strands, { dev: true })
   feedback(actions)
@@ -64,10 +64,10 @@ test('plait(): priority queue', (t) => {
     payload: ['start'],
     baseDynamic: baseDynamics.objectObject,
   })
-  t.snapshot(actualFeedback, `priority selection feedback`)
-  t.snapshot(streamLog, `priority selection feedback`)
+  assertSnapshot(t, actualFeedback, `priority selection feedback`)
+  assertSnapshot(t, streamLog, `priority selection feedback`)
 })
-test('plait(): randomized priority queue', (t) => {
+Deno.test('plait(): randomized priority queue', (t) => {
   const streamLog: unknown[] = []
   actualFeedback.length = 0
   const { trigger, feedback, stream } = new Plait(strands, {
@@ -83,10 +83,10 @@ test('plait(): randomized priority queue', (t) => {
     payload: ['start'],
     baseDynamic: baseDynamics.objectObject,
   })
-  t.snapshot(actualFeedback, `randomized priority selection feedback`)
-  t.snapshot(streamLog, `randomized priority selection log`)
+  assertSnapshot(t, actualFeedback, `randomized priority selection feedback`)
+  assertSnapshot(t, streamLog, `randomized priority selection log`)
 })
-test('plait(): chaos selection', (t) => {
+Deno.test('plait(): chaos selection', (t) => {
   const streamLog: unknown[] = []
   actualFeedback.length = 0
   const { trigger, feedback, stream } = new Plait(strands, {
@@ -102,6 +102,6 @@ test('plait(): chaos selection', (t) => {
     payload: ['start'],
     baseDynamic: baseDynamics.objectObject,
   })
-  t.snapshot(actualFeedback, `chaos selection feedback`)
-  t.snapshot(streamLog, `chaos selection log`)
+  assertSnapshot(t, actualFeedback, `chaos selection feedback`)
+  assertSnapshot(t, streamLog, `chaos selection log`)
 })

@@ -1,28 +1,32 @@
-import test from 'ava'
-import sinon from 'sinon'
+import {sinon, assert, assertEquals, describe, afterEach, beforeEach, it} from '../../deps.ts'
 import { debounce } from '../mod.ts'
 
-let clock: sinon.SinonFakeTimers
-test.beforeEach(function () {
-  clock = sinon.useFakeTimers()
+
+
+
+describe('debounce', () => {
+  let clock: sinon.SinonFakeTimers
+  beforeEach(function () {
+    clock = sinon.useFakeTimers()
+  })
+  
+  afterEach(function () {
+    clock.restore()
+  })
+  it('debounces the fn', (t) => {
+    const fn = sinon.spy()
+  
+    const debounced = debounce(fn, 100)
+    debounced()
+  
+    assert(fn.notCalled)
+    clock.tick(50)
+  
+    assert(fn.notCalled)
+    clock.tick(100)
+  
+    assert(fn.called)
+    assertEquals(fn.getCalls().length, 1)
+  })
 })
 
-test.afterEach(function () {
-  clock.restore()
-})
-
-test('debounces the fn', (t) => {
-  const fn = sinon.spy()
-
-  const debounced = debounce(fn, 100)
-  debounced()
-
-  t.truthy(fn.notCalled)
-  clock.tick(50)
-
-  t.truthy(fn.notCalled)
-  clock.tick(100)
-
-  t.truthy(fn.called)
-  t.is(fn.getCalls().length, 1)
-})

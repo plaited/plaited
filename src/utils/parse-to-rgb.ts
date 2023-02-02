@@ -1,4 +1,4 @@
-import { getOpacityHex } from './get-opacity-hex.ts'
+import { opacityHex } from './opacity-hex.ts'
 
 export const parseToRgb = (hex: string) => {
   if (!hex.startsWith('#')) return
@@ -12,7 +12,7 @@ export const parseToRgb = (hex: string) => {
     return `rgb(${sixDigits})`
   }
   if (hex.length === 9) {
-    const value = [...getOpacityHex()].find(([, last2]) =>
+    const value = [...opacityHex].find(([, last2]) =>
       last2 === hex.slice(7, 9)
     )
     return value ? `rgba(${sixDigits},${value[0]})` : undefined

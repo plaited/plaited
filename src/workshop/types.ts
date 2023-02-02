@@ -1,4 +1,4 @@
-import { Template, TemplateProps } from '../template/mod.ts'
+import { Template, TemplateProps, CustomElementTag } from '../island/mod.ts'
 import { Expect, Page } from '../deps.ts'
 import {
   Credentials,
@@ -13,14 +13,14 @@ export type StoryData = {
   args: TemplateProps
   name: string
   template: Template
-  fixture: `${string}-${string}`
+  fixture: CustomElementTag
 }
 
 export type StoriesData = [{ title: string; path: string }, StoryData[]][]
 
 export type PageFunc = (story: string) => string
 export type SSRFunc = (
-  fixture: `${string}-${string}`,
+  fixture: CustomElementTag,
   template: string,
 ) => string
 export type Ext = {
@@ -51,7 +51,7 @@ export type Watcher = (
 export type StoryConfig<T extends TemplateProps = TemplateProps> = {
   title: string
   template: Template<T>
-  fixture: `${string}-${string}`
+  fixture: CustomElementTag
   description: string
   insertHead?: string
   insertBody?: string

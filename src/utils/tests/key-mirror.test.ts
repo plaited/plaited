@@ -1,8 +1,8 @@
-import test from 'ava'
+import { assertEquals } from '../../deps.ts'
 import { keyMirror } from '../mod.ts'
 
-test('keyMirror()', (t) => {
-  t.deepEqual(keyMirror('a', 'b', 'c'), {
+Deno.test('keyMirror()', () => {
+  assertEquals(keyMirror('a', 'b', 'c'), {
     a: 'a',
     b: 'b',
     c: 'c',

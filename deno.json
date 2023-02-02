@@ -1,6 +1,11 @@
 {
   "compilerOptions": {
-    "strictPropertyInitialization": false
+    "strictPropertyInitialization": false,
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "deno.ns"
+    ]
   },
   "fmt": {
     "files": {

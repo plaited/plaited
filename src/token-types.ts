@@ -482,10 +482,10 @@ export type Formatter<T = $FormatterValue> = (args: {
   baseFontSize: number
 }) => string
 
-export type GetFormatter = (args: {
+export type GetFormatters = <T extends DesignTokenGroup = DesignTokenGroup, F extends $FormatterValue = $FormatterValue>(args: {
   tokenPath: string[]
-  $value: $FormatterValue
-  allTokens: DesignTokenGroup
+  $value: F
+  allTokens: T
   baseFontSize: number
   $type: string
 }) => string

@@ -1,12 +1,11 @@
-import test from 'ava'
-import sinon from 'sinon'
+import {sinon, assert} from '../../deps.ts'
 import { callAll } from '../mod.ts'
 
-test('callAll()', (t) => {
+Deno.test('callAll()', () => {
   const expected = 'string'
   const firstSpy = sinon.spy()
   const secondSpy = sinon.spy()
   callAll(firstSpy, secondSpy)(expected)
-  t.truthy(firstSpy.calledWith(expected))
-  t.truthy(secondSpy.calledWith(expected))
+  assert(firstSpy.calledWith(expected))
+  assert(secondSpy.calledWith(expected))
 })

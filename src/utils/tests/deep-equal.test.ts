@@ -1,4 +1,4 @@
-import test from 'ava'
+import { assert, assertFalse} from '../../deps.ts'
 import { deepEqual } from '../mod.ts'
 
 const symbolKey = Symbol('symbolKey')
@@ -18,9 +18,9 @@ const originValue = {
   [symbolKey]: 'symbol',
 }
 
-test('deepEqual()', (t) => {
-  t.truthy(deepEqual(originValue, { ...originValue }))
-  t.falsy(deepEqual(originValue, {
+Deno.test('deepEqual()', () => {
+  assert(deepEqual(originValue, { ...originValue }))
+  assertFalse(deepEqual(originValue, {
     ...originValue,
     obj: {
       name: 'color',

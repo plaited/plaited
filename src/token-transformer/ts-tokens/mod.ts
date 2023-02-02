@@ -1,6 +1,6 @@
 import {
   FlexValue,
-  GetFormatter,
+  GetFormatters,
   GridValue,
   TypographyValue,
 } from '../../token-types.ts'
@@ -12,7 +12,7 @@ import { ruleSet } from './rule-set.ts'
  * a treeshakeable mapping to css custom properties references to be used
  * inline styles in ts/js component files
  */
-export const tsTokens: GetFormatter = ({ $type, $value, ...rest }) =>
+export const tsTokens: GetFormatters = ({ $type, $value, ...rest }) =>
   ['typography', 'grid', 'flex'].includes($type)
     ? ruleSet({
       ...rest,

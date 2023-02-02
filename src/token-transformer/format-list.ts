@@ -1,6 +1,6 @@
 /* eslint-disable no-return-assign */
 import { trueTypeOf } from '../utils/mod.ts'
-import { DesignToken, DesignTokenGroup, GetFormatter } from '../token-types.ts'
+import { DesignToken, DesignTokenGroup, GetFormatters } from '../token-types.ts'
 
 export const formatList = ({
   tokens,
@@ -12,7 +12,7 @@ export const formatList = ({
   tokens: DesignTokenGroup
   allTokens: DesignTokenGroup
   tokenPath?: string[]
-  formatters: GetFormatter
+  formatters: GetFormatters
   baseFontSize: number
 }) => {
   let string = ''
