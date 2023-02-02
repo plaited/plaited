@@ -3,9 +3,17 @@ import { noop } from '../../utils/mod.ts'
 import { html } from '../mod.ts'
 
 Deno.test('html()', () => {
-  assertEquals(html` <div>hello</div> `, '<div>hello</div>', 'trims white space')
+  assertEquals(
+    html` <div>hello</div> `,
+    '<div>hello</div>',
+    'trims white space',
+  )
   assertEquals(html` <div>${false}</div> `, '<div></div>', 'filters false out')
-  assertEquals(html` <div>${undefined}</div> `, '<div></div>', 'filters undefined out')
+  assertEquals(
+    html` <div>${undefined}</div> `,
+    '<div></div>',
+    'filters undefined out',
+  )
   assertEquals(html` <div>${null}</div> `, '<div></div>', 'filters null out')
   assertEquals(html` <div>${noop()}</div> `, '<div></div>', 'filters void out')
   assertEquals(html` <div>${0}</div> `, '<div>0</div>', 'keeps 0')

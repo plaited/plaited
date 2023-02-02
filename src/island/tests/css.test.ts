@@ -2,7 +2,8 @@ import { assertSnapshot } from '../../deps.ts'
 import { css } from '../mod.ts'
 
 Deno.test('css()', async (t) => {
-  await assertSnapshot(t,
+  await assertSnapshot(
+    t,
     css({
       button: {
         backgroundColor: 'var(--background-color)',
@@ -12,13 +13,15 @@ Deno.test('css()', async (t) => {
       },
     }),
   )
-  await assertSnapshot(t,
+  await assertSnapshot(
+    t,
     css({
-    button: {
-      color: 'var(--color)',
-      '&:focus': {
-        color: 'var(--color-focus)',
+      button: {
+        color: 'var(--color)',
+        '&:focus': {
+          color: 'var(--color-focus)',
+        },
       },
-    },
-  }))
+    }),
+  )
 })

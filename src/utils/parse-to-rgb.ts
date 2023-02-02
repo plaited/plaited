@@ -12,9 +12,7 @@ export const parseToRgb = (hex: string) => {
     return `rgb(${sixDigits})`
   }
   if (hex.length === 9) {
-    const value = [...opacityHex].find(([, last2]) =>
-      last2 === hex.slice(7, 9)
-    )
+    const value = [...opacityHex].find(([, last2]) => last2 === hex.slice(7, 9))
     return value ? `rgba(${sixDigits},${value[0]})` : undefined
   }
 }

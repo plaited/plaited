@@ -1,4 +1,4 @@
-import { assert, assertFalse} from '../../deps.ts'
+import { assert, assertFalse } from '../../deps.ts'
 import { deepEqual } from '../mod.ts'
 
 const symbolKey = Symbol('symbolKey')

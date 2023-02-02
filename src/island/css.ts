@@ -1,4 +1,10 @@
-import { camelJSS, createJSS, globalJSS, nestedJSS, type Styles } from '../deps.ts'
+import {
+  camelJSS,
+  createJSS,
+  globalJSS,
+  nestedJSS,
+  type Styles,
+} from '../deps.ts'
 
 const jss = createJSS()
 jss.use(

@@ -1,6 +1,6 @@
-import { assertEquals, sinon, describe, it} from '../../deps.ts'
+import { assertEquals, describe, it, sinon } from '../../deps.ts'
 import { wait } from '../../utils/mod.ts'
-import { messenger, useWebWorker, useMain } from '../mod.ts'
+import { messenger, useMain, useWebWorker } from '../mod.ts'
 
 describe('actor()', () => {
   it('connect, broadcast, close', async () => {
@@ -12,7 +12,7 @@ describe('actor()', () => {
     assertEquals(
       callback.calledWith({ eventName: 'a', payload: 4 }),
       true,
-      'sending message to connected actor should trigger callback'
+      'sending message to connected actor should trigger callback',
     )
     close()
   })
@@ -25,7 +25,7 @@ describe('actor()', () => {
     assertEquals(
       callback.notCalled,
       true,
-      'sending a message to actor that is not connected should call not trigger callback'
+      'sending a message to actor that is not connected should call not trigger callback',
     )
     close()
   })

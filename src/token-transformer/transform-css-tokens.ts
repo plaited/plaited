@@ -1,12 +1,12 @@
 import { formatList } from './format-list.ts'
 import { DesignTokenGroup, GetFormatters } from '../token-types.ts'
-import { postcss, PostCSSPlugin} from '../deps.ts'
+import { postcss, PostCSSPlugin } from '../deps.ts'
 import combineSelectors from './combine-duplicate-selectors.js'
 export const transformCssTokens = async ({
   tokens,
   outputDirectory,
   baseFontSize,
-  formatters
+  formatters,
 }: {
   tokens: DesignTokenGroup
   outputDirectory: string

@@ -1,5 +1,5 @@
-import parser from "https://deno.land/x/postcss_selector_parser@v6.0.2/mod.js";
-const name = "postcss-combine-duplicated-selectors";
+import parser from 'https://deno.land/x/postcss_selector_parser@v6.0.2/mod.js'
+const name = 'postcss-combine-duplicated-selectors'
 
 /**
  * Ensure that attributes with different quotes match.
@@ -9,9 +9,9 @@ function normalizeAttributes(selector) {
   selector.walkAttributes((node) => {
     if (node.value) {
       // remove quotes
-      node.value = node.value.replace(/'|\\'|"|\\"/g, "");
+      node.value = node.value.replace(/'|\\'|"|\\"/g, '')
     }
-  });
+  })
 }
 
 /**
@@ -23,15 +23,15 @@ function sortGroups(selector) {
     subSelector.nodes.sort((a, b) => {
       // different types cannot be sorted
       if (a.type !== b.type) {
-        return 0;
+        return 0
       }
 
       // sort alphabetically
-      return a.value < b.value ? -1 : 1;
-    });
-  });
+      return a.value < b.value ? -1 : 1
+    })
+  })
 
-  selector.sort((a, b) => (a.nodes.join("") < b.nodes.join("") ? -1 : 1));
+  selector.sort((a, b) => (a.nodes.join('') < b.nodes.join('') ? -1 : 1))
 }
 
 /**
@@ -49,8 +49,8 @@ function removeDupProperties(selector, exact) {
           (exact &&
             selector.nodes[actIndex].value === selector.nodes[befIndex].value)
         ) {
-          selector.nodes[befIndex].remove();
-          actIndex--;
+          selector.nodes[befIndex].remove()
+          actIndex--
         }
       }
     }
@@ -58,60 +58,60 @@ function removeDupProperties(selector, exact) {
 }
 
 const uniformStyle = parser((selector) => {
-  normalizeAttributes(selector);
-  sortGroups(selector);
-});
+  normalizeAttributes(selector)
+  sortGroups(selector)
+})
 
 const defaultOptions = {
   removeDuplicatedProperties: false,
-};
+}
 
 export default function combineDuplicatedSelectors(options) {
-  options = Object.assign({}, defaultOptions, options);
+  options = Object.assign({}, defaultOptions, options)
   return {
     postcssPlugin: name,
     prepare() {
       // Create a map to store maps
-      const mapTable = new Map();
+      const mapTable = new Map()
       // root map to store root selectors
-      mapTable.set("root", new Map());
+      mapTable.set('root', new Map())
 
       return {
         Rule: (rule) => {
-          let map;
+          let map
           // Check selector parent for any at rule
-          if (rule.parent.type === "atrule") {
+          if (rule.parent.type === 'atrule') {
             // Use name and query params as the key
             const query = rule.parent.name.toLowerCase() +
-              rule.parent.params.replace(/\s+/g, "");
+              rule.parent.params.replace(/\s+/g, '')
 
             // See if this query key is already in the map table
             map = mapTable.has(query) // If it is use it
               ? mapTable.get(query) // if not set it and get it
-              : mapTable.set(query, new Map()).get(query);
+              : mapTable.set(query, new Map()).get(query)
           } else {
             // Otherwise we are dealing with a selector in the root
-            map = mapTable.get("root");
+            map = mapTable.get('root')
           }
 
           // create a uniform selector
           const selector = uniformStyle.processSync(rule.selector, {
             lossless: false,
-          });
+          })
 
           if (map.has(selector)) {
             // store original rule as destination
-            const destination = map.get(selector);
+            const destination = map.get(selector)
 
             // check if node has already been processed
-            if (destination === rule) return;
+            if (destination === rule) return
 
             // move declarations to original rule
             while (rule.nodes.length > 0) {
-              destination.append(rule.nodes[0]);
+              destination.append(rule.nodes[0])
             }
             // remove duplicated rule
-            rule.remove();
+            rule.remove()
 
             if (
               options.removeDuplicatedProperties ||
@@ -120,22 +120,22 @@ export default function combineDuplicatedSelectors(options) {
               removeDupProperties(
                 destination,
                 options.removeDuplicatedValues,
-              );
+              )
             }
           } else {
             if (
               options.removeDuplicatedProperties ||
               options.removeDuplicatedValues
             ) {
-              removeDupProperties(rule, options.removeDuplicatedValues);
+              removeDupProperties(rule, options.removeDuplicatedValues)
             }
             // add new selector to symbol table
-            map.set(selector, rule);
+            map.set(selector, rule)
           }
         },
-      };
+      }
     },
-  };
+  }
 }
 
-combineDuplicatedSelectors.postcss = true;
+combineDuplicatedSelectors.postcss = true

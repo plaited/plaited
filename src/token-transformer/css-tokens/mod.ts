@@ -26,7 +26,7 @@ import { gap } from './gap.ts'
  * This formatter object will return formatters that will create content for an
  * optimized css stylesheet of css custom properties to be applied to :root
  */
-export const cssTokens: GetFormatters = ({ $type, $value, ...rest }) =>
+export const defaultCSSFormatters: GetFormatters = ({ $type, $value, ...rest }) =>
   $type === 'border'
     ? border({ ...rest, $value: $value as BorderValue })
     : ['dimension', 'lineHeight', 'letterSpacing', 'fontSize'].includes($type)

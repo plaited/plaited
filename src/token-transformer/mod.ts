@@ -1,3 +1,3 @@
 export { transformTokens } from './transform-tokens.ts'
-import { cssTokens } from './css-tokens/mod.ts'
-import { tsTokens } from './ts-tokens/mod.ts'
+export { defaultCSSFormatters } from './css-tokens/mod.ts'
+export { defaultTSFormatters } from './ts-tokens/mod.ts'

@@ -26,13 +26,15 @@ const isSchema = (object: Schema) => {
   return false
 }
 
-export const ets = ({
+export const ets = <
+T extends DesignTokenGroup = DesignTokenGroup,
+>({
   tokens,
   JsonSchema = {},
   isValue = false,
   hasValue = false,
 }: {
-  tokens: DesignTokenGroup
+  tokens: T
   JsonSchema?: Schema
   isValue?: boolean
   hasValue?: boolean

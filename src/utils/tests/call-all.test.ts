@@ -1,4 +1,4 @@
-import {sinon, assert} from '../../deps.ts'
+import { assert, sinon } from '../../deps.ts'
 import { callAll } from '../mod.ts'
 
 Deno.test('callAll()', () => {

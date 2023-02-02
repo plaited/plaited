@@ -1,4 +1,4 @@
-import {assertEquals} from '../../deps.ts'
+import { assertEquals } from '../../deps.ts'
 import { wire } from '../mod.ts'
 
 Deno.test('wire()', () => {

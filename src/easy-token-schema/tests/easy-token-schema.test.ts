@@ -2,8 +2,7 @@ import { ets } from '../easy-token-schema.ts'
 import { tokens } from './sample-tokens.ts'
 import { assertEquals, assertSnapshot } from '../../deps.ts'
 
-
-const  actual = ets({ tokens })
+const actual = ets({ tokens })
 
 Deno.test('ets(): snapshot', (t) => {
   assertSnapshot(t, actual)

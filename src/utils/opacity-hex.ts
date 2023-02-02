@@ -1,4 +1,3 @@
-
 export const opacityHex = new Map<number, string>()
 for (let i = 1; i >= 0; i -= 0.01) {
   i = Math.round(i * 100) / 100

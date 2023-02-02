@@ -5,7 +5,7 @@ export const transformTsTokens = async ({
   tokens,
   outputDirectory,
   baseFontSize,
-  formatters
+  formatters,
 }: {
   tokens: DesignTokenGroup
   outputDirectory: string

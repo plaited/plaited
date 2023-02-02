@@ -1,4 +1,4 @@
-import { Template, TemplateProps, CustomElementTag } from '../island/mod.ts'
+import { CustomElementTag, Template, TemplateProps } from '../island/mod.ts'
 import { Expect, Page } from '../deps.ts'
 import {
   Credentials,
