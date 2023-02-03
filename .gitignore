@@ -1,44 +1,24 @@
 ### PPRIATE DO NOT DELETE ###
 .env
-.vscode/*
-!.vscode/settings.json.example
-
-### NODE ###
-
-# Logs
-*.log
-.npm-debug.log
-yarn-error.log
-.pnpm-debug.log
-
-# Locks (Disable npm & pnpm lock files since we use yarn)
-package-lock.json
-pnpm-lock.yaml
 
 # dependency packages
 **/node_modules
 
 # Test  artifacts
 **/coverage
-**/test-results
-
-# Build artifacts
-*.module.css.d.ts
-**/dist
-**/scss
-**/build
+**/test-results/
+**/playwright-report/
+**/playwright/.cache/
 
 # Yarn
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
+**/.yarn/*
+!**/.yarn/patches
+!**/.yarn/plugins
+!**/.yarn/releases
+!**/.yarn/sdks
+!**/.yarn/versions
+yarn-error.log
 
 ## Apple Junk ##
 **/.DS_Store
-/test-results/
-/playwright-report/
-/playwright/.cache/
+

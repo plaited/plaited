@@ -1,0 +1,26 @@
+{
+  "tasks": {
+    "lint": "deno lint",
+    "test": "deno test --allow-read  --allow-write --allow-env ./libs"
+  },
+  "importMap": "./.vscode/import-maps.json",
+  "compilerOptions": {
+    "strictPropertyInitialization": false,
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "deno.ns"
+    ]
+  },
+  "fmt": {
+    "files": {
+      "exclude": [
+        "playwright/"
+      ]
+    },
+    "options": {
+      "singleQuote": true,
+      "semiColons": false
+    }
+  }
+}
