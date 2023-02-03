@@ -1,6 +1,6 @@
 import { formatList } from './format-list.ts'
 import { DesignTokenGroup, GetFormatters } from '../token-types.ts'
-import { combineDuplicatedSelectors, postcss, PostCSSPlugin } from '../deps.ts'
+import { combineDuplicatedSelectors, postcss } from '../deps.ts'
 
 export const transformCssTokens = async ({
   tokens,
@@ -21,7 +21,7 @@ export const transformCssTokens = async ({
     formatters,
   })
   const { css } = await postcss([
-    combineDuplicatedSelectors as unknown as PostCSSPlugin,
+    combineDuplicatedSelectors,
   ]).process(content, { from: undefined, to: '' })
   await Deno.writeTextFile(`${outputDirectory}/tokens.css`, css)
 }

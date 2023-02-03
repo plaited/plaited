@@ -32,8 +32,8 @@ export { default as globalJSS } from 'https://esm.sh/jss-plugin-global@10.9.2'
 
 // -- PostCSS --
 export { default as postcss } from 'https://deno.land/x/postcss@8.4.16/mod.js'
-export { type Plugin as PostCSSPlugin } from 'https://deno.land/x/postcss@8.4.16/lib/postcss.d.ts'
-export { default as combineDuplicatedSelectors } from 'https://raw.githubusercontent.com/plaited/postcss-combine-duplicated-selectors-deno/v10.0.3/deno/mod.js'
+// @deno-types="https://deno.land/x/postcss_combine_duplicated_selectors@10.0.3/mod.d.ts"
+export { default as combineDuplicatedSelectors } from 'https://deno.land/x/postcss_combine_duplicated_selectors@10.0.3/mod.js'
 
 // -- lodash --
 export {
