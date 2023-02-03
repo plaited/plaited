@@ -1,4 +1,5 @@
-Let's say you want to copy a bunch of css files from a design system or tokens package. How would you do that.
+Let's say you want to copy a bunch of css files from a design system or tokens
+package. How would you do that.
 
 ```ts
 import path from 'path'
@@ -6,12 +7,12 @@ import fs from 'fs/promises'
 import fg from 'fast-glob'
 import { getStat } from '../get-stat.js'
 
-export const copyCssUtil = async (packageName:string, dir: string) => {
+export const copyCssUtil = async (packageName: string, dir: string) => {
   const output = path.resolve(process.cwd(), dir)
   await fs.mkdir(output, { recursive: true })
   const packagePath = require.resolve(packageName) // or await import.meta.resolve(packageName)
-  const stylesheets = await fg([ path.resolve(packagePath, `**/*.css`) ])
-  await Promise.all(stylesheets.map(async sheet => {
+  const stylesheets = await fg([path.resolve(packagePath, `**/*.css`)])
+  await Promise.all(stylesheets.map(async (sheet) => {
     const outputFilePath = path.resolve(output, path.basename(sheet))
     const fileExist = await getStat(outputFilePath)
     try {

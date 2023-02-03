@@ -10,14 +10,14 @@ A simple utility to apply & join class names conditionally inline on a node.
 Example
 
 ```ts
-import { classNames } from "@plaited/css";
-const conditionTrue = true;
-const conditionFalse = false;
+import { classNames } from '@plaited/css'
+const conditionTrue = true
+const conditionFalse = false
 classNames(
-  "class-1",
-  conditionFalse && "class-2",
-  conditionTrue && "class-3",
-); // => 'class-1 class-3'
+  'class-1',
+  conditionFalse && 'class-2',
+  conditionTrue && 'class-3',
+) // => 'class-1 class-3'
 ```
 
 ## tokens
@@ -28,28 +28,28 @@ our css utility
 Example
 
 ```ts
-import { tokens } from "@plaited/css";
+import { tokens } from '@plaited/css'
 
-const checked = false;
-const disabled = true;
+const checked = false
+const disabled = true
 const expected = {
-  "--width": 32,
-  "--height": 24,
-  "--backgroundColor": "grey",
-};
+  '--width': 32,
+  '--height': 24,
+  '--backgroundColor': 'grey',
+}
 const actual = tokens(
   {
     width: 32,
     height: 24,
-    backgroundColor: "black",
+    backgroundColor: 'black',
   },
   checked && {
-    backgroundColor: "blue",
+    backgroundColor: 'blue',
   },
   disabled && {
-    backgroundColor: "grey",
+    backgroundColor: 'grey',
   },
-);
+)
 /**
  * => {
     '--width': 32,
@@ -72,17 +72,17 @@ following jss plugins.
 Example
 
 ```ts
-import { css } from "@plaited/css";
-import { colorBlue50, colorGrey10 } from "@your/tokens";
+import { css } from '@plaited/css'
+import { colorBlue50, colorGrey10 } from '@your/tokens'
 
 css({
   button: {
     backgroundColor: colorBlue50,
-    "&:disabled": {
+    '&:disabled': {
       backgroundColor: colorGrey10,
     },
   },
-});
+})
 /**
  *  => {
  *    styles: {
@@ -105,15 +105,15 @@ Quickly get a css custom property value from the DOM or reset it using this
 utility function.
 
 ```ts
-import { cssVars } from "@plaited/css";
-import { colorRed1 /* colorRed1 = var(--color-red-1) */ } from "@your/tokens";
+import { cssVars } from '@plaited/css'
+import { colorRed1 /* colorRed1 = var(--color-red-1) */ } from '@your/tokens'
 
 //Get value from DOM
-cssVar(colorRed1); // => #f33e3e
+cssVar(colorRed1) // => #f33e3e
 // Set value on DOM
-cssVar(colorRed1, #e91212); // => #e91212
+cssVar(colorRed1, #e91212) // => #e91212
 // Works with --case too
-cssVar("--color-red-1"); // => #e91212
+cssVar('--color-red-1') // => #e91212
 // Reset to original value on DOM
-cssVar("--color-red-1", #f33e3e); // => #f33e3e
+cssVar('--color-red-1', #f33e3e) // => #f33e3e
 ```

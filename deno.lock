@@ -1409,6 +1409,7 @@
     "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/zipObject.js": "e069bf473251b19f39587b9bdbfce017d0cd0ec2abe835fedcd1c9ab68a0ac4f",
     "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/zipObjectDeep.js": "5ace286d0c9b25960c1e1ffd11e4d1d9eb10c847c99d2ac6ac56460367262edb",
     "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/zipWith.js": "0ff58c20b2716a05db1d0e72b94b4e3c55c6e293e6e6ed8c47abf17706fc9a5f",
-    "https://raw.githubusercontent.com/plaited/postcss-combine-duplicated-selectors-deno/main/deno/mod.js": "edd343d4e681f9fccd8f28e854a04600ee887fd6f80fbe4c4f6bf99f76ccf3a1"
+    "https://raw.githubusercontent.com/plaited/postcss-combine-duplicated-selectors-deno/main/deno/mod.js": "edd343d4e681f9fccd8f28e854a04600ee887fd6f80fbe4c4f6bf99f76ccf3a1",
+    "https://raw.githubusercontent.com/plaited/postcss-combine-duplicated-selectors-deno/v10.0.3/deno/mod.js": "99e82781eec7ae4edb37b0e6c1e10776d58f3933a47bcc02e8049cf175938c59"
   }
 }

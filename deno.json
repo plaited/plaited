@@ -2,6 +2,7 @@
   "tasks": {
     "test": "deno test --allow-read  --allow-write --allow-env"
   },
+  "importMap": "./.vscode/import-maps.json",
   "compilerOptions": {
     "strictPropertyInitialization": false,
     "lib": [
@@ -12,9 +13,6 @@
   },
   "fmt": {
     "files": {
-      "include": [
-        "src/"
-      ],
       "exclude": [
         "playwright/"
       ]

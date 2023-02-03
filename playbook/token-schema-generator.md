@@ -10,31 +10,31 @@ Example usage
 **Build your schema**
 
 ```ts
-import path from "path";
-import { fileURLToPath } from "url";
-import { tokenSchemaUtil } from "@plaited/tokens-cli";
-import tokens from "./tokens.js";
+import path from 'path'
+import { fileURLToPath } from 'url'
+import { tokenSchemaUtil } from '@plaited/tokens-cli'
+import tokens from './tokens.js'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-(async () => {
-  const testDirectory = path.resolve(__dirname, "../tests");
-  await tokenSchemaUtil(tokens, testDirectory);
-})();
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+;(async () => {
+  const testDirectory = path.resolve(__dirname, '../tests')
+  await tokenSchemaUtil(tokens, testDirectory)
+})()
 ```
 
 **Test your schema**
 
 ```ts
-import test from "ava";
-import Ajv from "ajv";
-import { fileURLToPath } from "url";
-import { importJson } from "@plaited/tokens-cli";
-import tokens from "./tokens.js";
-const ajv = new Ajv();
+import test from 'ava'
+import Ajv from 'ajv'
+import { fileURLToPath } from 'url'
+import { importJson } from '@plaited/tokens-cli'
+import tokens from './tokens.js'
+const ajv = new Ajv()
 
-test("token schema", async (t) => {
-  const schema = importJson(path.resolve(__dirname, "./tokens-schema.json"));
-  const isValid = ajv.validate(schema, tokens);
-  t.is(isValid, true);
-});
+test('token schema', async (t) => {
+  const schema = importJson(path.resolve(__dirname, './tokens-schema.json'))
+  const isValid = ajv.validate(schema, tokens)
+  t.is(isValid, true)
+})
 ```

@@ -10,18 +10,18 @@ paired with the @plaited/tokens-get postcss plugin.
 **Transform tokens**
 
 ```ts
-import path from "path";
-import { fileURLToPath } from "url";
-import { tokenSchemaUtil } from "@plaited/tokens-cli";
-import tokens from "./tokens.js";
+import path from 'path'
+import { fileURLToPath } from 'url'
+import { tokenSchemaUtil } from '@plaited/tokens-cli'
+import tokens from './tokens.js'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const outPutDirectory = path.resolve(__dirname, "../dist");
-(async () => {
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const outPutDirectory = path.resolve(__dirname, '../dist')
+;(async () => {
   await tokenTransformUtil = async({
     tokens,
     outputDirectory,
     baseFontSize: 10, // default to 20,
-  });
-})();
+  })
+})()
 ```

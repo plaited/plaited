@@ -1,1 +1,1 @@
-export * from './src/easy-token-schema/mod.ts'
+export * from './libs/easy-token-schema/mod.ts'

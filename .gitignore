@@ -1,7 +1,5 @@
 ### PPRIATE DO NOT DELETE ###
 .env
-.vscode/*
-!.vscode/settings.json.example
 
 # dependency packages
 **/node_modules
