@@ -658,6 +658,8 @@
     "https://deno.land/x/postcss@8.4.16/mod.js": "131f9d70e2327d445cecb4b51d702857e515d2f34eb957c7eefe7542452d678f",
     "https://deno.land/x/postcss_combine_duplicated_selectors@10.0.3/mod.d.ts": "a5aa51e8ad7696d74f31d35f20a2a8c6f7862d4cd826f5d75ece807d2dfac338",
     "https://deno.land/x/postcss_combine_duplicated_selectors@10.0.3/mod.js": "354c3541da47df86c9ad5c1e0984623e1aa97effb1c44b79e668cdd26bf7ed05",
+    "https://deno.land/x/postcss_combine_duplicated_selectors@10.0.5/mod.d.ts": "a5aa51e8ad7696d74f31d35f20a2a8c6f7862d4cd826f5d75ece807d2dfac338",
+    "https://deno.land/x/postcss_combine_duplicated_selectors@10.0.5/mod.js": "354c3541da47df86c9ad5c1e0984623e1aa97effb1c44b79e668cdd26bf7ed05",
     "https://deno.land/x/postcss_selector_parser@v6.0.2/deps.js": "6c6d3d1b837667cf0ea0aead79eed4545117f827fb0c7ab9c966672b1a9de894",
     "https://deno.land/x/postcss_selector_parser@v6.0.2/mod.js": "55d95965802beb813a80e8d0e853a06999a8f5f44f36c676d625c8c45d1f3c61",
     "https://deno.land/x/postcss_selector_parser@v6.0.2/src/parser.js": "f2001d8da1e4050c6795b497a9be0aa97a963d26264d6856d48d9315b7f42555",

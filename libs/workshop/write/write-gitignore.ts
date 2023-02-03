@@ -1,8 +1,9 @@
 import { gitignore } from '../templates/mod.ts'
+import { getStat } from '../../utils/mod.ts'
 
-type WriteGitignore = (path: string) => void
-export const writeGitignore: WriteGitignore = (path) => {
-  Deno.writeTextFileSync(
+export const writeGitignore = async (path: string) => {
+  const exist = await getStat(path)
+  !exist && await Deno.writeTextFileSync(
     path,
     gitignore,
   )

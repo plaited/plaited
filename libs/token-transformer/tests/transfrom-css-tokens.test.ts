@@ -1,4 +1,5 @@
 import {
+  afterEach,
   assertSnapshot,
   beautify,
   describe,
@@ -13,6 +14,9 @@ const __dirname = new URL('.', import.meta.url).pathname
 const outputDirectory = resolve(__dirname, './__tmp__/')
 
 describe('CSS tokens', () => {
+  afterEach(async () => {
+    await Deno.remove(outputDirectory, { recursive: true })
+  })
   it('transform', async (t) => {
     await transformCssTokens({
       tokens,

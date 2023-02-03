@@ -1,4 +1,5 @@
 import { dockerCompose } from '../templates/mod.ts'
+import { getStat } from '../../utils/mod.ts'
 
 type WriteDockerCompose = (args: {
   pat: boolean
@@ -6,14 +7,15 @@ type WriteDockerCompose = (args: {
   port: number
   project?: string
   protocol: 'http' | 'https'
-}) => void
-export const writeDockerCompose: WriteDockerCompose = ({
+}) => Promise<void>
+export const writeDockerCompose: WriteDockerCompose = async ({
   pat,
   path,
   port,
   project,
 }) => {
-  Deno.writeTextFileSync(
+  const exist = await getStat(path)
+  !exist && await Deno.writeTextFile(
     path,
     dockerCompose({
       pat,

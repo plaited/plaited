@@ -1,15 +1,18 @@
 import { playwrightConfig } from '../templates/mod.ts'
+import { getStat } from '../../utils/mod.ts'
+
 type WritePlaywrightConfig = (args: {
   path: string
   port: number
   protocol: 'http' | 'https'
-}) => void
-export const writePlaywrightConfig: WritePlaywrightConfig = ({
+}) => Promise<void>
+export const writePlaywrightConfig: WritePlaywrightConfig = async ({
   path,
   port,
   protocol,
 }) => {
-  Deno.writeTextFileSync(
+  const exist = await getStat(path)
+  !exist && await Deno.writeTextFile(
     path,
     playwrightConfig(
       port,

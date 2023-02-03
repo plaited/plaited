@@ -1,8 +1,9 @@
 import { yarnrc } from '../templates/mod.ts'
+import { getStat } from '../../utils/mod.ts'
 
-type WriteYarnrc = (path: string) => void
-export const writeYarnrc: WriteYarnrc = (path) => {
-  Deno.writeTextFileSync(
+export const writeYarnrc = async (path: string) => {
+  const exist = await getStat(path)
+  !exist && await Deno.writeTextFile(
     path,
     yarnrc,
   )

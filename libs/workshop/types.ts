@@ -81,3 +81,11 @@ export type WorkshopConfig = {
   storyHandlers: StoryHandlers
   unknownMethodHandler?: UnknownMethodHandler
 }
+
+export type WorkshopSetupConfig = {
+  credentials?: Credentials
+  pat?: boolean
+  playwright: string
+  port: number
+  project?: string
+}
