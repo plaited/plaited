@@ -1,4 +1,4 @@
-import { html } from '../template/mod.ts'
+import { html } from '../island/mod.ts'
 import { livereloadTemplate } from '../server/mod.ts'
 import { PageFunc } from './types.ts'
 

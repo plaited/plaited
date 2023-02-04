@@ -22,21 +22,23 @@ const files = [
 ]
 
 describe('Setup', () => {
-  // afterEach(async () => {
-  //   await Deno.remove(playwright, { recursive: true })
-  // })
-  // it('setup: required', async (t) => {
-  //   await setup({
-  //     playwright,
-  //     port: 3000,
-  //   })
-  //   for await (const { path, isFile } of walk(playwright, { maxDepth: 1 })) {
-  //     if (isFile) {
-  //       assert(files.includes(path))
-  //     }
-  //   }
-  // })
+  afterEach(async () => {
+    await Deno.remove(playwright, { recursive: true })
+  })
   it('setup: required', async (t) => {
+    await setup({
+      playwright,
+      port: 3000,
+    })
+    for await (const { path, isFile } of walk(playwright, { maxDepth: 1 })) {
+      if (isFile) {
+        assert(files.includes(path))
+        const file = await Deno.readTextFile(path)
+        assertSnapshot(t, file)
+      }
+    }
+  })
+  it('setup: optional', async (t) => {
     await setup({
       playwright,
       port: 3000,
@@ -50,6 +52,8 @@ describe('Setup', () => {
     for await (const { path, isFile } of walk(playwright, { maxDepth: 1 })) {
       if (isFile) {
         assert(files.includes(path))
+        const file = await Deno.readTextFile(path)
+        assertSnapshot(t, file)
       }
     }
   })

@@ -1,4 +1,5 @@
 import { server } from '../server/mod.ts'
+import { getStat } from '../utils/get-stat.ts'
 import { WorkshopConfig } from './types.ts'
 import { write } from './write/mod.ts'
 import { watcher } from './watcher.ts'
@@ -37,8 +38,7 @@ export const start = async ({
     console.error(`[ERR] Root directory "${assets}" is not directory!`)
     Deno.exit()
   }
-  setup({
-    assets,
+  await setup({
     credentials,
     pat,
     playwright,
