@@ -1,27 +1,14 @@
-import {
-  ErrorHandler,
-  Handler,
-  ReloadClient,
-  Routes,
-  UnknownMethodHandler,
-} from './types.ts'
+import { GetHandler } from './types.ts'
 import { getReloadRoute } from './get-reload-route.ts'
 import { rutt } from '../deps.ts'
 
-export const getHandler = ({
+export const getHandler: GetHandler = ({
   routes,
   reload,
   reloadClients,
   otherHandler,
   errorHandler,
   unknownMethodHandler,
-}: {
-  routes: Routes
-  reload: boolean
-  reloadClients: ReloadClient[]
-  otherHandler?: Handler
-  errorHandler?: ErrorHandler
-  unknownMethodHandler?: UnknownMethodHandler
 }) => {
   return rutt.router(
     {

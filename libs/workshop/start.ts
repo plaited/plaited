@@ -1,5 +1,5 @@
 import { server } from '../server/mod.ts'
-import { getStat } from '../utils/get-stat.ts'
+// import { getStat } from '../utils/get-stat.ts'
 import { WorkshopConfig } from './types.ts'
 import { write } from './write/mod.ts'
 import { watcher } from './watcher.ts'
