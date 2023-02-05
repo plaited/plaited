@@ -5,7 +5,7 @@ export type Handler<T = unknown> = rutt.Handler<T>
 export type ErrorHandler<T = unknown> = rutt.ErrorHandler<T>
 export type UnknownMethodHandler<T = unknown> = rutt.UnknownMethodHandler<T>
 export type MatchHandler<T = unknown> = rutt.MatchHandler<T>
-export type Routes<T = Record<string, never>> = rutt.Routes<T>
+export type Routes<T = unknown> = rutt.Routes<T>
 
 export type Credentials = {
   /** Server private key in PEM format */
@@ -62,7 +62,7 @@ export type CreateServer = ({
   }) => void
 }) => void
 
-export type GetHandler = (args: {
+export type GetHandler = <T = unknown>(args: {
   routes: Routes
   reload: boolean
   reloadClients: ReloadClient[]

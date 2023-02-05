@@ -1,11 +1,11 @@
-import { TriggerArgs, TriggerFunc } from '../plait/mod.ts'
+import { Trigger, TriggerArgs } from '../plait/mod.ts'
 
 export const useMain = ({
   context,
   trigger,
 }: {
   context: Window & typeof globalThis
-  trigger: TriggerFunc
+  trigger: Trigger
 }) => {
   const eventHandler = ({ data }: { data: TriggerArgs }) => {
     trigger(data)

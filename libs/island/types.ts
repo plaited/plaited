@@ -7,7 +7,7 @@ export type UseHook<T = Record<string, unknown>> = (
     $: Query
   } & T,
 ) => {
-  actions: Record<string, (payload: unknown) => void>
+  actions: Record<string, (data: unknown) => void>
   strands: Record<string, RulesFunc>
 }
 

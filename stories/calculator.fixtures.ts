@@ -1,5 +1,5 @@
 import {
-  defineISL,
+  defineIsland,
   loop,
   Query,
   request,
@@ -13,57 +13,60 @@ import { connect } from './calculator.comms.ts'
 
 // @ts-ignore: test
 window.streamLog = []
-defineISL('key-pad', (base) =>
+defineIsland('key-pad', (base) =>
   class extends base {
     plait() {
-      const logger = (msg: unknown) => {
-        // @ts-ignore: test
-        window.streamLog.push(msg)
-      }
-      const actions = {
+      const { trigger, feedback, disconnect } = usePlait({
+        logger: (msg: unknown) => {
+          // @ts-ignore: test
+          window.streamLog.push(msg)
+        },
+      })
+      feedback({
         number(evt: MouseEvent) {
           const val = (evt.currentTarget as HTMLButtonElement)?.value
           send('value-display', {
-            eventName: `addNumber-${val}`,
-            payload: val,
+            type: `addNumber-${val}`,
+            data: val,
           })
         },
         clear() {
           send('value-display', {
-            eventName: 'clear',
+            type: 'clear',
           })
         },
-      }
-      return usePlait({
-        actions,
-        logger,
       })
+      return {
+        trigger,
+        disconnect,
+      }
     }
   })
 
-defineISL('value-display', (base) =>
+defineIsland('value-display', (base) =>
   class extends base {
-    plait($: Query, context: this) {
+    plait($: Query) {
+      const { trigger, feedback, add, disconnect } = usePlait({ connect })
       const [getDisplay, setDisplay] = useStore<string[]>([])
-      const strands = {
+      add({
         onClear: loop(strand(
-          waitFor({ eventName: 'clear' }),
-          request({ eventName: 'clearDisplay' }),
+          waitFor({ type: 'clear' }),
+          request({ type: 'clearDisplay' }),
         )),
         ...[...Array(10).keys()].reduce((acc, cur) => {
           Object.assign(acc, {
             [`onClick:${cur}`]: loop(strand(
-              waitFor({ eventName: `addNumber-${cur}` }),
-              request({ eventName: 'updateNumber', payload: cur }),
+              waitFor({ type: `addNumber-${cur}` }),
+              request({ type: 'updateNumber', data: cur }),
             )),
           })
           return acc
         }, {}),
         onLog: loop(strand(
-          waitFor({ eventName: 'logMe' }),
-          request({ eventName: 'logSelf' }),
+          waitFor({ type: 'logMe' }),
+          request({ type: 'logSelf' }),
         )),
-      }
+      })
 
       const updateDisplay = (target: Element, arr: string[]) => {
         target.replaceChildren(
@@ -71,10 +74,10 @@ defineISL('value-display', (base) =>
         )
       }
 
-      const actions = {
-        updateNumber(payload: string) {
+      feedback({
+        updateNumber(data: string) {
           if (getDisplay.length < 5) {
-            setDisplay([...getDisplay(), payload])
+            setDisplay([...getDisplay(), data])
           }
           const [display] = $('display')
           updateDisplay(display, getDisplay())
@@ -87,12 +90,10 @@ defineISL('value-display', (base) =>
         logSelf() {
           console.log('hit')
         },
-      }
-      return usePlait({
-        context,
-        actions,
-        strands,
-        connect,
       })
+      return {
+        disconnect,
+        trigger,
+      }
     }
   })

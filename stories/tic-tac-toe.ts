@@ -1,15 +1,22 @@
 /* eslint-disable no-console */
 import {
-  baseDynamics,
   block,
   loop,
-  Plait,
+  plait,
   randomizedStrategy,
   request,
   RulesFunc,
   strand,
   waitFor,
 } from '$plaited'
+
+const { trigger: xTrigger, feedback: xFeedback, add: xAdd } = plait({
+  strategy: randomizedStrategy,
+})
+
+const { trigger: oTrigger, feedback: oFeedback, add: oAdd } = plait({
+  strategy: randomizedStrategy,
+})
 
 const winConditions = [
   //rows
@@ -29,8 +36,8 @@ const squares = [0, 1, 2, 3, 4, 5, 6, 7, 8]
 const squaresTaken = squares.reduce(
   (acc: Record<string, RulesFunc>, square) => {
     acc[`(${square}) taken`] = strand(
-      waitFor({ callback: ({ payload }) => square === payload }),
-      block({ callback: ({ payload }) => square === payload }),
+      waitFor<number>({ assert: ({ data }) => square === data }),
+      block<number>({ assert: ({ data }) => square === data }),
     )
 
     return acc
@@ -41,40 +48,37 @@ const squaresTaken = squares.reduce(
 const playerWins = (player: string) =>
   winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
     acc[`${player}Wins (${win})`] = strand(
-      waitFor({
-        callback: ({ eventName, payload }) =>
-          eventName === player && win.includes(payload),
+      waitFor<number>({
+        assert: ({ type, data }) => type === player && win.includes(data),
       }),
-      waitFor({
-        callback: ({ eventName, payload }) =>
-          eventName === player && win.includes(payload),
+      waitFor<number>({
+        assert: ({ type, data }) => type === player && win.includes(data),
       }),
-      waitFor({
-        callback: ({ eventName, payload }) =>
-          eventName === player && win.includes(payload),
+      waitFor<number>({
+        assert: ({ type, data }) => type === player && win.includes(data),
       }),
-      request({ eventName: `${player} Wins`, payload: win }),
+      request({ type: `${player} Wins`, data: win }),
     )
     return acc
   }, {})
 
 const enforceTurns = loop(
   strand(
-    Object.assign(waitFor({ eventName: 'X' }), block({ eventName: 'O' })),
-    Object.assign(waitFor({ eventName: 'O' }), block({ eventName: 'X' })),
+    Object.assign(waitFor({ type: 'X' }), block({ type: 'O' })),
+    Object.assign(waitFor({ type: 'O' }), block({ type: 'X' })),
   ),
 )
 
 const playerMove = (player: string) =>
   loop(
     strand({
-      request: squares.map((move) => ({ eventName: player, payload: move })),
+      request: squares.map((move) => ({ type: player, data: move })),
     }),
   )
 
 const stopGame = strand(
-  waitFor({ eventName: 'X Wins' }, { eventName: 'O Wins' }),
-  block({ eventName: 'X' }, { eventName: 'O' }),
+  waitFor({ type: 'X Wins' }, { type: 'O Wins' }),
+  block({ type: 'X' }, { type: 'O' }),
 )
 
 const strands = {
@@ -85,51 +89,40 @@ const strands = {
   ...playerWins('O'),
 }
 
-const xStrands = {
+xAdd({
   ...strands,
   xMoves: playerMove('X'),
-}
+})
 
-const oStrands = {
+oAdd({
   ...strands,
   oMoves: playerMove('O'),
-}
-
-const { trigger: xTrigger, feedback: xFeedback } = new Plait(xStrands, {
-  strategy: randomizedStrategy,
 })
 
-const { trigger: oTrigger, feedback: oFeedback } = new Plait(oStrands, {
-  strategy: randomizedStrategy,
-})
-const xActions = {
-  X(payload: unknown) {
-    console.log({ eventName: 'X', payload })
+xFeedback({
+  X(data: unknown) {
+    console.log({ type: 'X', data })
     oTrigger({
-      eventName: 'X',
-      payload: payload,
-      baseDynamic: baseDynamics.objectObject,
+      type: 'X',
+      data: data,
     })
   },
-  ['X Wins'](payload: unknown) {
-    console.log({ eventName: 'X Wins', payload })
+  ['X Wins'](data: unknown) {
+    console.log({ type: 'X Wins', data })
   },
-}
-xFeedback(xActions)
+})
 
-const oActions = {
-  O(payload: unknown) {
-    console.log({ eventName: 'O', payload })
+oFeedback({
+  O(data: number) {
+    console.log({ type: 'O', data })
     xTrigger({
-      eventName: 'O',
-      payload: payload,
-      baseDynamic: baseDynamics.objectObject,
+      type: 'O',
+      data: data,
     })
   },
-  ['O Wins'](payload: unknown) {
-    console.log({ eventName: 'O Wins', payload })
+  ['O Wins'](data: [number, number, number]) {
+    console.log({ type: 'O Wins', data })
   },
-}
-oFeedback(oActions)
+})
 
-xTrigger({ eventName: 'start', baseDynamic: baseDynamics.objectObject })
+xTrigger({ type: 'start' })

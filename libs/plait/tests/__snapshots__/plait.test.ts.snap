@@ -2,873 +2,864 @@ export const snapshot = {};
 
 snapshot[`plait(): priority queue 1`] = `
 [
-  "Add hot",
-  "Add cold",
-  "Add hot",
-  "Add cold",
-  "Add hot",
-  "Add cold",
-]
-`;
-
-snapshot[`plait(): priority queue 2`] = `
-[
   {
-    baseDynamic: "object-object",
-    eventName: "Trigger(start)",
-    payload: [
-      "start",
-    ],
-    streamEvent: "triggerEvent",
+    detail: {
+      data: "start",
+      type: "start",
+    },
+    type: "trigger-event",
   },
   {
-    blockedEvents: [
-      "cold",
-    ],
-    logicStrands: [
-      {
-        priority: 1,
-        strandName: "addHot",
-      },
-      {
-        priority: 2,
-        strandName: "addCold",
-      },
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-      {
-        priority: 0,
-        strandName: "Trigger(start)",
-      },
-    ],
-    requestedEvents: [
-      {
-        eventName: "start",
-        payload: [
-          "start",
-        ],
-        priority: 0,
-      },
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "cold",
+      ],
+      logicStrands: [
+        {
+          priority: 1,
+          strandName: "addHot",
+        },
+        {
+          priority: 2,
+          strandName: "addCold",
+        },
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+        {
+          priority: 0,
+          strandName: "start",
+        },
+      ],
+      requestedEvents: [
+        {
+          data: "start",
+          priority: 0,
+          type: "start",
+        },
+      ],
+    },
+    type: "state-snapshot",
   },
   {
-    eventName: "start",
-    payload: [
-      "start",
-    ],
-    streamEvent: "selectEvent",
+    detail: {
+      data: "start",
+      type: "start",
+    },
+    type: "selected-event",
   },
   {
-    blockedEvents: [
-      "cold",
-    ],
-    logicStrands: [
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-      {
-        priority: 1,
-        strandName: "addHot",
-      },
-      {
-        priority: 2,
-        strandName: "addCold",
-      },
-    ],
-    requestedEvents: [
-      {
-        eventName: "hot",
-        payload: undefined,
-        priority: 1,
-      },
-      {
-        eventName: "cold",
-        payload: undefined,
-        priority: 2,
-      },
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "cold",
+      ],
+      logicStrands: [
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+        {
+          priority: 1,
+          strandName: "addHot",
+        },
+        {
+          priority: 2,
+          strandName: "addCold",
+        },
+      ],
+      requestedEvents: [
+        {
+          priority: 1,
+          type: "hot",
+        },
+        {
+          priority: 2,
+          type: "cold",
+        },
+      ],
+    },
+    type: "state-snapshot",
   },
   {
-    eventName: "hot",
-    payload: undefined,
-    streamEvent: "selectEvent",
+    detail: {
+      type: "hot",
+    },
+    type: "selected-event",
   },
   {
-    blockedEvents: [
-      "hot",
-    ],
-    logicStrands: [
-      {
-        priority: 2,
-        strandName: "addCold",
-      },
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-      {
-        priority: 1,
-        strandName: "addHot",
-      },
-    ],
-    requestedEvents: [
-      {
-        eventName: "cold",
-        payload: undefined,
-        priority: 2,
-      },
-      {
-        eventName: "hot",
-        payload: undefined,
-        priority: 1,
-      },
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "hot",
+      ],
+      logicStrands: [
+        {
+          priority: 2,
+          strandName: "addCold",
+        },
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+        {
+          priority: 1,
+          strandName: "addHot",
+        },
+      ],
+      requestedEvents: [
+        {
+          priority: 2,
+          type: "cold",
+        },
+        {
+          priority: 1,
+          type: "hot",
+        },
+      ],
+    },
+    type: "state-snapshot",
   },
   {
-    eventName: "cold",
-    payload: undefined,
-    streamEvent: "selectEvent",
+    detail: {
+      type: "cold",
+    },
+    type: "selected-event",
   },
   {
-    blockedEvents: [
-      "cold",
-    ],
-    logicStrands: [
-      {
-        priority: 1,
-        strandName: "addHot",
-      },
-      {
-        priority: 2,
-        strandName: "addCold",
-      },
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-    ],
-    requestedEvents: [
-      {
-        eventName: "hot",
-        payload: undefined,
-        priority: 1,
-      },
-      {
-        eventName: "cold",
-        payload: undefined,
-        priority: 2,
-      },
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "cold",
+      ],
+      logicStrands: [
+        {
+          priority: 1,
+          strandName: "addHot",
+        },
+        {
+          priority: 2,
+          strandName: "addCold",
+        },
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+      ],
+      requestedEvents: [
+        {
+          priority: 1,
+          type: "hot",
+        },
+        {
+          priority: 2,
+          type: "cold",
+        },
+      ],
+    },
+    type: "state-snapshot",
   },
   {
-    eventName: "hot",
-    payload: undefined,
-    streamEvent: "selectEvent",
+    detail: {
+      type: "hot",
+    },
+    type: "selected-event",
   },
   {
-    blockedEvents: [
-      "hot",
-    ],
-    logicStrands: [
-      {
-        priority: 2,
-        strandName: "addCold",
-      },
-      {
-        priority: 1,
-        strandName: "addHot",
-      },
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-    ],
-    requestedEvents: [
-      {
-        eventName: "cold",
-        payload: undefined,
-        priority: 2,
-      },
-      {
-        eventName: "hot",
-        payload: undefined,
-        priority: 1,
-      },
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "hot",
+      ],
+      logicStrands: [
+        {
+          priority: 2,
+          strandName: "addCold",
+        },
+        {
+          priority: 1,
+          strandName: "addHot",
+        },
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+      ],
+      requestedEvents: [
+        {
+          priority: 2,
+          type: "cold",
+        },
+        {
+          priority: 1,
+          type: "hot",
+        },
+      ],
+    },
+    type: "state-snapshot",
   },
   {
-    eventName: "cold",
-    payload: undefined,
-    streamEvent: "selectEvent",
+    detail: {
+      type: "cold",
+    },
+    type: "selected-event",
   },
   {
-    blockedEvents: [
-      "cold",
-    ],
-    logicStrands: [
-      {
-        priority: 1,
-        strandName: "addHot",
-      },
-      {
-        priority: 2,
-        strandName: "addCold",
-      },
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-    ],
-    requestedEvents: [
-      {
-        eventName: "hot",
-        payload: undefined,
-        priority: 1,
-      },
-      {
-        eventName: "cold",
-        payload: undefined,
-        priority: 2,
-      },
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "cold",
+      ],
+      logicStrands: [
+        {
+          priority: 1,
+          strandName: "addHot",
+        },
+        {
+          priority: 2,
+          strandName: "addCold",
+        },
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+      ],
+      requestedEvents: [
+        {
+          priority: 1,
+          type: "hot",
+        },
+        {
+          priority: 2,
+          type: "cold",
+        },
+      ],
+    },
+    type: "state-snapshot",
   },
   {
-    eventName: "hot",
-    payload: undefined,
-    streamEvent: "selectEvent",
+    detail: {
+      type: "hot",
+    },
+    type: "selected-event",
   },
   {
-    blockedEvents: [
-      "hot",
-    ],
-    logicStrands: [
-      {
-        priority: 2,
-        strandName: "addCold",
-      },
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-    ],
-    requestedEvents: [
-      {
-        eventName: "cold",
-        payload: undefined,
-        priority: 2,
-      },
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "hot",
+      ],
+      logicStrands: [
+        {
+          priority: 2,
+          strandName: "addCold",
+        },
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+      ],
+      requestedEvents: [
+        {
+          priority: 2,
+          type: "cold",
+        },
+      ],
+    },
+    type: "state-snapshot",
   },
   {
-    eventName: "cold",
-    payload: undefined,
-    streamEvent: "selectEvent",
+    detail: {
+      type: "cold",
+    },
+    type: "selected-event",
   },
   {
-    blockedEvents: [
-      "cold",
-    ],
-    logicStrands: [
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-    ],
-    requestedEvents: [
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "cold",
+      ],
+      logicStrands: [
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+      ],
+      requestedEvents: [
+      ],
+    },
+    type: "state-snapshot",
   },
 ]
 `;
 
 snapshot[`plait(): randomized priority queue 1`] = `
 [
-  "Add hot",
-  "Add cold",
-  "Add hot",
-  "Add cold",
-  "Add hot",
-  "Add cold",
-]
-`;
-
-snapshot[`plait(): randomized priority queue 2`] = `
-[
   {
-    baseDynamic: "object-object",
-    eventName: "Trigger(start)",
-    payload: [
-      "start",
-    ],
-    streamEvent: "triggerEvent",
+    detail: {
+      data: "start",
+      type: "start",
+    },
+    type: "trigger-event",
   },
   {
-    blockedEvents: [
-      "cold",
-    ],
-    logicStrands: [
-      {
-        priority: 1,
-        strandName: "addHot",
-      },
-      {
-        priority: 2,
-        strandName: "addCold",
-      },
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-      {
-        priority: 0,
-        strandName: "Trigger(start)",
-      },
-    ],
-    requestedEvents: [
-      {
-        eventName: "start",
-        payload: [
-          "start",
-        ],
-        priority: 0,
-      },
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "cold",
+      ],
+      logicStrands: [
+        {
+          priority: 1,
+          strandName: "addHot",
+        },
+        {
+          priority: 2,
+          strandName: "addCold",
+        },
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+        {
+          priority: 0,
+          strandName: "start",
+        },
+      ],
+      requestedEvents: [
+        {
+          data: "start",
+          priority: 0,
+          type: "start",
+        },
+      ],
+    },
+    type: "state-snapshot",
   },
   {
-    eventName: "start",
-    payload: [
-      "start",
-    ],
-    streamEvent: "selectEvent",
+    detail: {
+      data: "start",
+      type: "start",
+    },
+    type: "selected-event",
   },
   {
-    blockedEvents: [
-      "cold",
-    ],
-    logicStrands: [
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-      {
-        priority: 1,
-        strandName: "addHot",
-      },
-      {
-        priority: 2,
-        strandName: "addCold",
-      },
-    ],
-    requestedEvents: [
-      {
-        eventName: "hot",
-        payload: undefined,
-        priority: 1,
-      },
-      {
-        eventName: "cold",
-        payload: undefined,
-        priority: 2,
-      },
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "cold",
+      ],
+      logicStrands: [
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+        {
+          priority: 1,
+          strandName: "addHot",
+        },
+        {
+          priority: 2,
+          strandName: "addCold",
+        },
+      ],
+      requestedEvents: [
+        {
+          priority: 1,
+          type: "hot",
+        },
+        {
+          priority: 2,
+          type: "cold",
+        },
+      ],
+    },
+    type: "state-snapshot",
   },
   {
-    eventName: "hot",
-    payload: undefined,
-    streamEvent: "selectEvent",
+    detail: {
+      type: "hot",
+    },
+    type: "selected-event",
   },
   {
-    blockedEvents: [
-      "hot",
-    ],
-    logicStrands: [
-      {
-        priority: 2,
-        strandName: "addCold",
-      },
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-      {
-        priority: 1,
-        strandName: "addHot",
-      },
-    ],
-    requestedEvents: [
-      {
-        eventName: "cold",
-        payload: undefined,
-        priority: 2,
-      },
-      {
-        eventName: "hot",
-        payload: undefined,
-        priority: 1,
-      },
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "hot",
+      ],
+      logicStrands: [
+        {
+          priority: 2,
+          strandName: "addCold",
+        },
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+        {
+          priority: 1,
+          strandName: "addHot",
+        },
+      ],
+      requestedEvents: [
+        {
+          priority: 2,
+          type: "cold",
+        },
+        {
+          priority: 1,
+          type: "hot",
+        },
+      ],
+    },
+    type: "state-snapshot",
   },
   {
-    eventName: "cold",
-    payload: undefined,
-    streamEvent: "selectEvent",
+    detail: {
+      type: "cold",
+    },
+    type: "selected-event",
   },
   {
-    blockedEvents: [
-      "cold",
-    ],
-    logicStrands: [
-      {
-        priority: 1,
-        strandName: "addHot",
-      },
-      {
-        priority: 2,
-        strandName: "addCold",
-      },
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-    ],
-    requestedEvents: [
-      {
-        eventName: "hot",
-        payload: undefined,
-        priority: 1,
-      },
-      {
-        eventName: "cold",
-        payload: undefined,
-        priority: 2,
-      },
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "cold",
+      ],
+      logicStrands: [
+        {
+          priority: 1,
+          strandName: "addHot",
+        },
+        {
+          priority: 2,
+          strandName: "addCold",
+        },
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+      ],
+      requestedEvents: [
+        {
+          priority: 1,
+          type: "hot",
+        },
+        {
+          priority: 2,
+          type: "cold",
+        },
+      ],
+    },
+    type: "state-snapshot",
   },
   {
-    eventName: "hot",
-    payload: undefined,
-    streamEvent: "selectEvent",
+    detail: {
+      type: "hot",
+    },
+    type: "selected-event",
   },
   {
-    blockedEvents: [
-      "hot",
-    ],
-    logicStrands: [
-      {
-        priority: 2,
-        strandName: "addCold",
-      },
-      {
-        priority: 1,
-        strandName: "addHot",
-      },
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-    ],
-    requestedEvents: [
-      {
-        eventName: "cold",
-        payload: undefined,
-        priority: 2,
-      },
-      {
-        eventName: "hot",
-        payload: undefined,
-        priority: 1,
-      },
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "hot",
+      ],
+      logicStrands: [
+        {
+          priority: 2,
+          strandName: "addCold",
+        },
+        {
+          priority: 1,
+          strandName: "addHot",
+        },
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+      ],
+      requestedEvents: [
+        {
+          priority: 2,
+          type: "cold",
+        },
+        {
+          priority: 1,
+          type: "hot",
+        },
+      ],
+    },
+    type: "state-snapshot",
   },
   {
-    eventName: "cold",
-    payload: undefined,
-    streamEvent: "selectEvent",
+    detail: {
+      type: "cold",
+    },
+    type: "selected-event",
   },
   {
-    blockedEvents: [
-      "cold",
-    ],
-    logicStrands: [
-      {
-        priority: 1,
-        strandName: "addHot",
-      },
-      {
-        priority: 2,
-        strandName: "addCold",
-      },
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-    ],
-    requestedEvents: [
-      {
-        eventName: "hot",
-        payload: undefined,
-        priority: 1,
-      },
-      {
-        eventName: "cold",
-        payload: undefined,
-        priority: 2,
-      },
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "cold",
+      ],
+      logicStrands: [
+        {
+          priority: 1,
+          strandName: "addHot",
+        },
+        {
+          priority: 2,
+          strandName: "addCold",
+        },
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+      ],
+      requestedEvents: [
+        {
+          priority: 1,
+          type: "hot",
+        },
+        {
+          priority: 2,
+          type: "cold",
+        },
+      ],
+    },
+    type: "state-snapshot",
   },
   {
-    eventName: "hot",
-    payload: undefined,
-    streamEvent: "selectEvent",
+    detail: {
+      type: "hot",
+    },
+    type: "selected-event",
   },
   {
-    blockedEvents: [
-      "hot",
-    ],
-    logicStrands: [
-      {
-        priority: 2,
-        strandName: "addCold",
-      },
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-    ],
-    requestedEvents: [
-      {
-        eventName: "cold",
-        payload: undefined,
-        priority: 2,
-      },
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "hot",
+      ],
+      logicStrands: [
+        {
+          priority: 2,
+          strandName: "addCold",
+        },
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+      ],
+      requestedEvents: [
+        {
+          priority: 2,
+          type: "cold",
+        },
+      ],
+    },
+    type: "state-snapshot",
   },
   {
-    eventName: "cold",
-    payload: undefined,
-    streamEvent: "selectEvent",
+    detail: {
+      type: "cold",
+    },
+    type: "selected-event",
   },
   {
-    blockedEvents: [
-      "cold",
-    ],
-    logicStrands: [
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-    ],
-    requestedEvents: [
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "cold",
+      ],
+      logicStrands: [
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+      ],
+      requestedEvents: [
+      ],
+    },
+    type: "state-snapshot",
   },
 ]
 `;
 
 snapshot[`plait(): chaos selection 1`] = `
 [
-  "Add hot",
-  "Add cold",
-  "Add hot",
-  "Add cold",
-  "Add hot",
-  "Add cold",
-]
-`;
-
-snapshot[`plait(): chaos selection 2`] = `
-[
   {
-    baseDynamic: "object-object",
-    eventName: "Trigger(start)",
-    payload: [
-      "start",
-    ],
-    streamEvent: "triggerEvent",
+    detail: {
+      data: "start",
+      type: "start",
+    },
+    type: "trigger-event",
   },
   {
-    blockedEvents: [
-      "cold",
-    ],
-    logicStrands: [
-      {
-        priority: 1,
-        strandName: "addHot",
-      },
-      {
-        priority: 2,
-        strandName: "addCold",
-      },
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-      {
-        priority: 0,
-        strandName: "Trigger(start)",
-      },
-    ],
-    requestedEvents: [
-      {
-        eventName: "start",
-        payload: [
-          "start",
-        ],
-        priority: 0,
-      },
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "cold",
+      ],
+      logicStrands: [
+        {
+          priority: 1,
+          strandName: "addHot",
+        },
+        {
+          priority: 2,
+          strandName: "addCold",
+        },
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+        {
+          priority: 0,
+          strandName: "start",
+        },
+      ],
+      requestedEvents: [
+        {
+          data: "start",
+          priority: 0,
+          type: "start",
+        },
+      ],
+    },
+    type: "state-snapshot",
   },
   {
-    eventName: "start",
-    payload: [
-      "start",
-    ],
-    streamEvent: "selectEvent",
+    detail: {
+      data: "start",
+      type: "start",
+    },
+    type: "selected-event",
   },
   {
-    blockedEvents: [
-      "cold",
-    ],
-    logicStrands: [
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-      {
-        priority: 1,
-        strandName: "addHot",
-      },
-      {
-        priority: 2,
-        strandName: "addCold",
-      },
-    ],
-    requestedEvents: [
-      {
-        eventName: "hot",
-        payload: undefined,
-        priority: 1,
-      },
-      {
-        eventName: "cold",
-        payload: undefined,
-        priority: 2,
-      },
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "cold",
+      ],
+      logicStrands: [
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+        {
+          priority: 1,
+          strandName: "addHot",
+        },
+        {
+          priority: 2,
+          strandName: "addCold",
+        },
+      ],
+      requestedEvents: [
+        {
+          priority: 1,
+          type: "hot",
+        },
+        {
+          priority: 2,
+          type: "cold",
+        },
+      ],
+    },
+    type: "state-snapshot",
   },
   {
-    eventName: "hot",
-    payload: undefined,
-    streamEvent: "selectEvent",
+    detail: {
+      type: "hot",
+    },
+    type: "selected-event",
   },
   {
-    blockedEvents: [
-      "hot",
-    ],
-    logicStrands: [
-      {
-        priority: 2,
-        strandName: "addCold",
-      },
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-      {
-        priority: 1,
-        strandName: "addHot",
-      },
-    ],
-    requestedEvents: [
-      {
-        eventName: "cold",
-        payload: undefined,
-        priority: 2,
-      },
-      {
-        eventName: "hot",
-        payload: undefined,
-        priority: 1,
-      },
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "hot",
+      ],
+      logicStrands: [
+        {
+          priority: 2,
+          strandName: "addCold",
+        },
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+        {
+          priority: 1,
+          strandName: "addHot",
+        },
+      ],
+      requestedEvents: [
+        {
+          priority: 2,
+          type: "cold",
+        },
+        {
+          priority: 1,
+          type: "hot",
+        },
+      ],
+    },
+    type: "state-snapshot",
   },
   {
-    eventName: "cold",
-    payload: undefined,
-    streamEvent: "selectEvent",
+    detail: {
+      type: "cold",
+    },
+    type: "selected-event",
   },
   {
-    blockedEvents: [
-      "cold",
-    ],
-    logicStrands: [
-      {
-        priority: 1,
-        strandName: "addHot",
-      },
-      {
-        priority: 2,
-        strandName: "addCold",
-      },
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-    ],
-    requestedEvents: [
-      {
-        eventName: "hot",
-        payload: undefined,
-        priority: 1,
-      },
-      {
-        eventName: "cold",
-        payload: undefined,
-        priority: 2,
-      },
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "cold",
+      ],
+      logicStrands: [
+        {
+          priority: 1,
+          strandName: "addHot",
+        },
+        {
+          priority: 2,
+          strandName: "addCold",
+        },
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+      ],
+      requestedEvents: [
+        {
+          priority: 1,
+          type: "hot",
+        },
+        {
+          priority: 2,
+          type: "cold",
+        },
+      ],
+    },
+    type: "state-snapshot",
   },
   {
-    eventName: "hot",
-    payload: undefined,
-    streamEvent: "selectEvent",
+    detail: {
+      type: "hot",
+    },
+    type: "selected-event",
   },
   {
-    blockedEvents: [
-      "hot",
-    ],
-    logicStrands: [
-      {
-        priority: 2,
-        strandName: "addCold",
-      },
-      {
-        priority: 1,
-        strandName: "addHot",
-      },
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-    ],
-    requestedEvents: [
-      {
-        eventName: "cold",
-        payload: undefined,
-        priority: 2,
-      },
-      {
-        eventName: "hot",
-        payload: undefined,
-        priority: 1,
-      },
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "hot",
+      ],
+      logicStrands: [
+        {
+          priority: 2,
+          strandName: "addCold",
+        },
+        {
+          priority: 1,
+          strandName: "addHot",
+        },
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+      ],
+      requestedEvents: [
+        {
+          priority: 2,
+          type: "cold",
+        },
+        {
+          priority: 1,
+          type: "hot",
+        },
+      ],
+    },
+    type: "state-snapshot",
   },
   {
-    eventName: "cold",
-    payload: undefined,
-    streamEvent: "selectEvent",
+    detail: {
+      type: "cold",
+    },
+    type: "selected-event",
   },
   {
-    blockedEvents: [
-      "cold",
-    ],
-    logicStrands: [
-      {
-        priority: 1,
-        strandName: "addHot",
-      },
-      {
-        priority: 2,
-        strandName: "addCold",
-      },
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-    ],
-    requestedEvents: [
-      {
-        eventName: "hot",
-        payload: undefined,
-        priority: 1,
-      },
-      {
-        eventName: "cold",
-        payload: undefined,
-        priority: 2,
-      },
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "cold",
+      ],
+      logicStrands: [
+        {
+          priority: 1,
+          strandName: "addHot",
+        },
+        {
+          priority: 2,
+          strandName: "addCold",
+        },
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+      ],
+      requestedEvents: [
+        {
+          priority: 1,
+          type: "hot",
+        },
+        {
+          priority: 2,
+          type: "cold",
+        },
+      ],
+    },
+    type: "state-snapshot",
   },
   {
-    eventName: "hot",
-    payload: undefined,
-    streamEvent: "selectEvent",
+    detail: {
+      type: "hot",
+    },
+    type: "selected-event",
   },
   {
-    blockedEvents: [
-      "hot",
-    ],
-    logicStrands: [
-      {
-        priority: 2,
-        strandName: "addCold",
-      },
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-    ],
-    requestedEvents: [
-      {
-        eventName: "cold",
-        payload: undefined,
-        priority: 2,
-      },
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "hot",
+      ],
+      logicStrands: [
+        {
+          priority: 2,
+          strandName: "addCold",
+        },
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+      ],
+      requestedEvents: [
+        {
+          priority: 2,
+          type: "cold",
+        },
+      ],
+    },
+    type: "state-snapshot",
   },
   {
-    eventName: "cold",
-    payload: undefined,
-    streamEvent: "selectEvent",
+    detail: {
+      type: "cold",
+    },
+    type: "selected-event",
   },
   {
-    blockedEvents: [
-      "cold",
-    ],
-    logicStrands: [
-      {
-        priority: 3,
-        strandName: "mixHotCold",
-      },
-    ],
-    requestedEvents: [
-    ],
-    streamEvent: "stateSnapshot",
+    detail: {
+      blockedEvents: [
+        "cold",
+      ],
+      logicStrands: [
+        {
+          priority: 3,
+          strandName: "mixHotCold",
+        },
+      ],
+      requestedEvents: [
+      ],
+    },
+    type: "state-snapshot",
   },
 ]
 `;

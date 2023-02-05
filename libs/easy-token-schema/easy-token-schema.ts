@@ -83,7 +83,7 @@ export const ets = <
         JsonSchema: curSchema,
         isValue: isValue || key === '$value',
         hasValue: hasValue ||
-          Object.prototype.hasOwnProperty.call(item as DesignToken, '$value'),
+          Object.hasOwn(item as DesignToken, '$value'),
       })
     }
   }

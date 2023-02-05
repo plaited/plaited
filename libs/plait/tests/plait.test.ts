@@ -1,10 +1,9 @@
-import { assertSnapshot } from '../../test-deps.ts'
+import { assertEquals, assertSnapshot } from '../../test-deps.ts'
 import {
-  baseDynamics,
   block,
   chaosStrategy,
   loop,
-  Plait,
+  plait,
   randomizedStrategy,
   request,
   strand,
@@ -12,34 +11,44 @@ import {
 } from '../mod.ts'
 
 const actualFeedback: string[] = []
+const expectedFeedback = [
+  'Add hot',
+  'Add cold',
+  'Add hot',
+  'Add cold',
+  'Add hot',
+  'Add cold',
+]
 
 const addHot = () => actualFeedback.push('Add hot')
 const addCold = () => actualFeedback.push('Add cold')
 const strands = {
   addHot: strand(
-    waitFor({
-      eventName: 'start',
-      callback: () => true,
+    waitFor<string>({
+      type: 'start',
+      assert({ data }) {
+        return data === 'start'
+      },
     }),
-    request({ eventName: 'hot' }),
-    request({ eventName: 'hot' }),
-    request({ eventName: 'hot' }),
+    request({ type: 'hot' }),
+    request({ type: 'hot' }),
+    request({ type: 'hot' }),
   ),
   addCold: strand(
-    waitFor({ eventName: 'start' }),
-    request({ eventName: 'cold' }),
-    request({ eventName: 'cold' }),
-    request({ eventName: 'cold' }),
+    waitFor({ type: 'start' }),
+    request({ type: 'cold' }),
+    request({ type: 'cold' }),
+    request({ type: 'cold' }),
   ),
   mixHotCold: loop(
     strand(
       Object.assign(
-        waitFor({ eventName: 'hot' }),
-        block({ eventName: 'cold' }),
+        waitFor({ type: 'hot' }),
+        block({ type: 'cold' }),
       ),
       Object.assign(
-        waitFor({ eventName: 'cold' }),
-        block({ eventName: 'hot' }),
+        waitFor({ type: 'cold' }),
+        block({ type: 'hot' }),
       ),
     ),
   ),
@@ -54,54 +63,58 @@ const actions = {
 }
 Deno.test('plait(): priority queue', (t) => {
   const streamLog: unknown[] = []
-  const { trigger, feedback, stream } = new Plait(strands, { dev: true })
+  const { trigger, feedback, stream, add } = plait({ dev: true })
+  add(strands)
   feedback(actions)
   stream.subscribe((msg) => {
     streamLog.push(msg)
   })
   trigger({
-    eventName: 'start',
-    payload: ['start'],
-    baseDynamic: baseDynamics.objectObject,
+    type: 'start',
+    data: 'start',
   })
-  assertSnapshot(t, actualFeedback, `priority selection feedback`)
+  assertEquals(actualFeedback, expectedFeedback, `priority selection feedback`)
   assertSnapshot(t, streamLog, `priority selection feedback`)
 })
 Deno.test('plait(): randomized priority queue', (t) => {
   const streamLog: unknown[] = []
   actualFeedback.length = 0
-  const { trigger, feedback, stream } = new Plait(strands, {
+  const { trigger, feedback, stream, add } = plait({
     strategy: randomizedStrategy,
     dev: true,
   })
+  add(strands)
   feedback(actions)
   stream.subscribe((msg) => {
     streamLog.push(msg)
   })
   trigger({
-    eventName: 'start',
-    payload: ['start'],
-    baseDynamic: baseDynamics.objectObject,
+    type: 'start',
+    data: 'start',
   })
-  assertSnapshot(t, actualFeedback, `randomized priority selection feedback`)
+  assertEquals(
+    actualFeedback,
+    expectedFeedback,
+    `randomized priority selection feedback`,
+  )
   assertSnapshot(t, streamLog, `randomized priority selection log`)
 })
 Deno.test('plait(): chaos selection', (t) => {
   const streamLog: unknown[] = []
   actualFeedback.length = 0
-  const { trigger, feedback, stream } = new Plait(strands, {
+  const { trigger, feedback, stream, add } = plait({
     strategy: chaosStrategy,
     dev: true,
   })
+  add(strands)
   feedback(actions)
   stream.subscribe((msg) => {
     streamLog.push(msg)
   })
   trigger({
-    eventName: 'start',
-    payload: ['start'],
-    baseDynamic: baseDynamics.objectObject,
+    type: 'start',
+    data: 'start',
   })
-  assertSnapshot(t, actualFeedback, `chaos selection feedback`)
+  assertEquals(actualFeedback, expectedFeedback, `chaos selection feedback`)
   assertSnapshot(t, streamLog, `chaos selection log`)
 })

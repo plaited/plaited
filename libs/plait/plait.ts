@@ -3,74 +3,69 @@ import { stateChart } from './state-chart.ts'
 import { createStream } from './create-stream.ts'
 import { priorityStrategy } from './strategies.ts'
 import {
+  Actions,
+  Assertion,
   CandidateBid,
-  CreatedStream,
-  FeedbackMessage,
   ListenerMessage,
   PendingBid,
-  RuleParameterValue,
   RulesFunc,
   RunningBid,
   Strategy,
-  TriggerArgs,
+  Trigger,
 } from './types.ts'
 
-export class Plait {
-  // Check if requested event is in the Parameter (waitFor, request, block)
-  static requestInParameter(
-    { eventName: requestEventName, payload: requestPayload }: CandidateBid,
-  ) {
-    return (
-      { eventName: parameterEventName, callback: parameterCallback }:
-        RuleParameterValue,
-    ): boolean => (
-      parameterCallback
-        ? parameterCallback({
-          payload: requestPayload,
-          eventName: requestEventName,
-        })
-        : requestEventName === parameterEventName
-    )
+const requestInParameter = (
+  { type: requestEventName, data: requestPayload }: CandidateBid,
+) => {
+  return (
+    {
+      type: parameterEventName,
+      assert: parameterAssertion,
+    }: {
+      type: string
+      assert?: Assertion
+    },
+  ): boolean => (
+    parameterAssertion
+      ? parameterAssertion({
+        data: requestPayload,
+        type: requestEventName,
+      })
+      : requestEventName === parameterEventName
+  )
+}
+
+export const plait = ({
+  /** event selection strategy */
+  strategy: eventSelectionStrategy = priorityStrategy,
+  /** returns a stream with log events when set to true */
+  dev = false,
+}: {
+  strategy?: Strategy
+  dev?: boolean
+}) => {
+  const pending = new Set<PendingBid>()
+  const running = new Set<RunningBid>()
+  let lastEvent: CandidateBid
+  const stream = createStream()
+  function run() {
+    running.size && step()
   }
-  #eventSelectionStrategy: Strategy
-  #pending = new Set<PendingBid>()
-  #running = new Set<RunningBid>()
-  #lastEvent: CandidateBid = {} as CandidateBid
-  stream: CreatedStream
-  #dev?: boolean
-  constructor(
-    strands: Record<string, RulesFunc>,
-    { strategy = priorityStrategy, dev = false }: {
-      strategy?: Strategy
-      dev?: boolean
-    } = {},
-  ) {
-    this.#eventSelectionStrategy = strategy
-    this.#dev = dev
-    this.stream = createStream()
-    this.trigger = this.trigger.bind(this)
-    this.feedback = this.feedback.bind(this)
-    this.add = this.add.bind(this)
-    this.add(strands)
-  }
-  #run(): void {
-    this.#running.size && this.#step()
-  }
-  #step(): void {
-    for (const bid of this.#running) {
+  function step() {
+    for (const bid of running) {
       const { logicStrand, priority, strandName } = bid
       const { value, done } = logicStrand.next()
       !done &&
-        this.#pending.add({
+        pending.add({
           strandName,
           priority,
           logicStrand,
           ...value,
         })
-      this.#running.delete(bid)
+      running.delete(bid)
     }
-    const pending = [...this.#pending]
-    const candidates = pending.reduce<CandidateBid[]>(
+    const _pending = [...pending]
+    const candidates = _pending.reduce<CandidateBid[]>(
       (acc, { request, priority }) =>
         acc.concat(
           // Flatten bids' request arrays
@@ -82,76 +77,94 @@ export class Plait {
         ),
       [],
     )
-    const blocked = pending.flatMap<RuleParameterValue>(({ block }) =>
-      block || []
-    )
+    const blocked = _pending.flatMap<
+      { type: string; assert?: Assertion }
+    >(({ block }) => block || [])
     const filteredBids = candidates.filter(
-      (request) => !blocked.some(Plait.requestInParameter(request)),
+      (request) => !blocked.some(requestInParameter(request)),
     )
-    this.#lastEvent = this.#eventSelectionStrategy(filteredBids)
-    this.#dev && this.stream(stateChart({ candidates, blocked, pending }))
-    this.#lastEvent && this.#nextStep()
+    dev && stream({
+      type: streamEvents.state,
+      detail: stateChart({ candidates, blocked, pending: _pending }),
+    })
+    lastEvent = eventSelectionStrategy(filteredBids)
+    lastEvent && nextStep()
   }
-  #nextStep(): void {
-    for (const bid of this.#pending) {
+  function nextStep() {
+    const { priority: _p, assert: _a, ...detail } = lastEvent
+    stream({
+      type: streamEvents.select,
+      detail,
+    })
+    for (const bid of pending) {
       const { request = [], waitFor = [], logicStrand } = bid
       const waitList = [...request, ...waitFor]
       if (
-        waitList.some(Plait.requestInParameter(this.#lastEvent)) && logicStrand
+        waitList.some(requestInParameter(lastEvent)) && logicStrand
       ) {
-        this.#running.add(bid)
-        this.#pending.delete(bid)
+        running.add(bid)
+        pending.delete(bid)
       }
     }
-    const { eventName, payload } = this.#lastEvent
-    this.stream({
-      streamEvent: streamEvents.select,
-      eventName,
-      payload,
-    })
-    this.#run()
+    run()
   }
-  trigger({
-    eventName,
-    payload,
-    baseDynamic,
-  }: TriggerArgs): void {
+  const trigger: Trigger = ({
+    type,
+    data,
+  }) => {
     const logicStrand = function* () {
       yield {
-        request: [{ eventName, payload }],
-        waitFor: [{ eventName: '', callback: () => true }],
+        request: [{ type, data }],
+        waitFor: [{ type: '', assert: () => true }],
       }
     }
-    this.#running.add({
-      strandName: `Trigger(${eventName})`,
+    running.add({
+      strandName: type,
       priority: 0,
       logicStrand: logicStrand(),
     })
-    this.#dev && this.stream({
-      streamEvent: streamEvents.trigger,
-      baseDynamic,
-      eventName: `Trigger(${eventName})`,
-      payload,
-    })
-    this.#run()
+    if (dev) {
+      const msg: ListenerMessage = {
+        type: streamEvents.trigger,
+        detail: {
+          type: type,
+        },
+      }
+      data && Object.assign(msg.detail, { data })
+      stream(msg)
+    }
+    run()
   }
   // deno-lint-ignore no-explicit-any
-  feedback(actions: Record<string, (payload?: any) => void>): CreatedStream {
-    return this.stream.subscribe(
-      ({ streamEvent, ...rest }: ListenerMessage) => {
-        if (streamEvent !== streamEvents.select) return
-        const { eventName, payload } = rest as FeedbackMessage
-        actions[eventName] && actions[eventName](payload)
+  const feedback = <T extends Record<string, (data: any) => void>>(
+    actions: Actions<T>,
+  ) => {
+    return stream.subscribe(
+      ({ type, detail }: ListenerMessage) => {
+        if (type !== streamEvents.select) return
+        const { type: key, data } = detail
+        type &&
+          Object.hasOwn(actions, key) &&
+          actions[key](data)
       },
     )
   }
-  add(logicStands: Record<string, RulesFunc>): void {
+  const add = (logicStands: Record<string, RulesFunc>): void => {
     for (const strandName in logicStands) {
-      this.#running.add({
+      running.add({
         strandName,
-        priority: this.#running.size + 1,
+        priority: running.size + 1,
         logicStrand: logicStands[strandName](),
       })
     }
   }
+  return Object.freeze({
+    add,
+    feedback,
+    trigger,
+    stream,
+    lastEvent() {
+      return lastEvent
+    },
+  })
 }
