@@ -58,10 +58,23 @@ export type Assertion<T = unknown> = (
   args: { type: string; data: T extends undefined ? never : T },
 ) => boolean
 
+export type ParameterIdiom<T = unknown> = {
+  type: string
+  assert?: Assertion<T>
+} | {
+  type?: string
+  assert: Assertion<T>
+}
+
+export type RequestIdiom<T extends { type: string; data: unknown }> = {
+  type: T['type']
+  data?: T['data']
+}
+
 export interface RuleSet {
-  waitFor?: { type: string; assert?: Assertion }[]
-  request?: { type: string; assert?: Assertion; data?: unknown }[]
-  block?: { type: string; assert?: Assertion }[]
+  waitFor?: ParameterIdiom[]
+  request?: { type: string; data?: unknown }[]
+  block?: ParameterIdiom[]
 }
 
 export type RuleGenerator = Generator<RuleSet, void, unknown>

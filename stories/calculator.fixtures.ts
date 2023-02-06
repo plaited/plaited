@@ -57,7 +57,10 @@ defineIsland('value-display', (base) =>
           Object.assign(acc, {
             [`onClick:${cur}`]: loop(strand(
               waitFor({ type: `addNumber-${cur}` }),
-              request({ type: 'updateNumber', data: cur }),
+              request<{ type: 'updateNumber'; data: number }>({
+                type: 'updateNumber',
+                data: cur,
+              }),
             )),
           })
           return acc

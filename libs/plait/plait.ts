@@ -4,9 +4,9 @@ import { createStream } from './create-stream.ts'
 import { priorityStrategy } from './strategies.ts'
 import {
   Actions,
-  Assertion,
   CandidateBid,
   ListenerMessage,
+  ParameterIdiom,
   PendingBid,
   RulesFunc,
   RunningBid,
@@ -21,10 +21,7 @@ const requestInParameter = (
     {
       type: parameterEventName,
       assert: parameterAssertion,
-    }: {
-      type: string
-      assert?: Assertion
-    },
+    }: ParameterIdiom,
   ): boolean => (
     parameterAssertion
       ? parameterAssertion({
@@ -77,9 +74,7 @@ export const plait = ({
         ),
       [],
     )
-    const blocked = _pending.flatMap<
-      { type: string; assert?: Assertion }
-    >(({ block }) => block || [])
+    const blocked = _pending.flatMap<ParameterIdiom>(({ block }) => block || [])
     const filteredBids = candidates.filter(
       (request) => !blocked.some(requestInParameter(request)),
     )

@@ -1,25 +1,19 @@
-import { Assertion, RuleSet, RulesFunc } from './types.ts'
+import { ParameterIdiom, RequestIdiom, RuleSet, RulesFunc } from './types.ts'
 
 const idiom = (key: 'waitFor' | 'block') =>
 <T = unknown>(
-  ...idioms: {
-    type?: string
-    assert?: Assertion<T>
-  }[]
+  ...idioms: ParameterIdiom<T>[]
 ) => {
   return {
     [key]: [...idioms],
   }
 }
+
 export const waitFor = idiom('waitFor')
 export const block = idiom('block')
 
 export const request = <T extends { type: string; data: unknown }>(
-  ...idioms: {
-    type: T['type']
-    data?: T['data']
-    assert?: Assertion
-  }[]
+  ...idioms: RequestIdiom<T>[]
 ) => {
   return {
     request: [...idioms],
