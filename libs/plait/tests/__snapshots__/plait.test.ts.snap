@@ -1,6 +1,6 @@
 export const snapshot = {};
 
-snapshot[`plait(): priority queue 1`] = `
+snapshot[`Plait > priority queue 1`] = `
 [
   {
     detail: {
@@ -288,7 +288,7 @@ snapshot[`plait(): priority queue 1`] = `
 ]
 `;
 
-snapshot[`plait(): randomized priority queue 1`] = `
+snapshot[`Plait > randomized priority queue 1`] = `
 [
   {
     detail: {
@@ -576,7 +576,7 @@ snapshot[`plait(): randomized priority queue 1`] = `
 ]
 `;
 
-snapshot[`plait(): chaos selection 1`] = `
+snapshot[`Plait > chaos selection 1`] = `
 [
   {
     detail: {
