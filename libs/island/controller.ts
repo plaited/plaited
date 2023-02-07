@@ -2,7 +2,7 @@
 import { dataTarget, dataTrigger } from './constants.ts'
 import { delegatedListener } from './delegated-listener.ts'
 import { Trigger } from '../plait/mod.ts'
-import { Query } from './types.ts'
+import { IslandElementConstructor } from './types.ts'
 
 // It takes the value of a data-target attribute and return all the events happening in it. minus the method identifier
 // so iof the event was data-target="click->doSomething" it would return ["click"]
@@ -33,56 +33,39 @@ const filterAddedNodes = (nodes: NodeList) => {
   })
   return elements
 }
-
-interface IslandElement {
-  plait?: ($: Query) => {
-    trigger: Trigger
-    disconnect: () => void
-  }
-}
-
-interface Base {
-  $<T = Element>(id: string): T[] | never[]
-}
-
-type BaseConstructor = new () => Base
-
-type IslandConstructor = new () => IslandElement
-/**
- *  Define Island function
- */
-export const defineIsland = (
-  tag: `${string}-${string}`,
-  mixin: (
-    base: CustomElementConstructor & BaseConstructor,
-  ) => CustomElementConstructor & IslandConstructor,
+// deno-lint-ignore no-explicit-any
+export const controller = <T extends IslandElementConstructor>(
+  BaseClass: T,
+  {
+    mode = 'open',
+    delegatesFocus = true,
+  }: {
+    mode?: 'open' | 'closed'
+    delegatesFocus?: boolean
+  } = {},
 ) => {
-  if (customElements.get(tag)) return
-  class ISLElement extends HTMLElement {
+  return class extends BaseClass {
     #noDeclarativeShadow = false
     #shadowObserver?: MutationObserver
     #templateObserver?: MutationObserver
     #disconnect?: () => void
     internals_: ElementInternals
     #trigger?: Trigger
-    plait?: ($: ISLElement['$']) => {
-      trigger: Trigger
-      disconnect: () => void
-    }
-    constructor(
-      mode?: 'open' | 'closed',
-      delegatesFocus?: boolean,
-    ) {
-      super()
+    // deno-lint-ignore no-explicit-any
+    constructor(...arg: any[]) {
+      super(arg)
       this.internals_ = this.attachInternals()
       const shadow = this.internals_.shadowRoot
       if (!shadow) {
-        this.attachShadow({ mode: mode || 'open', delegatesFocus })
+        this.attachShadow({ mode, delegatesFocus })
         this.#noDeclarativeShadow = true
       }
       this.$ = this.$.bind(this)
     }
     connectedCallback() {
+      if (super.connectedCallback) {
+        super.connectedCallback()
+      }
       if (this.#noDeclarativeShadow) {
         const template = this.querySelector<HTMLTemplateElement>(
           'template[shadowroot]',
@@ -103,6 +86,9 @@ export const defineIsland = (
       })
     }
     disconnectedCallback() {
+      if (super.disconnectedCallback) {
+        super.disconnectedCallback()
+      }
       this.#trigger &&
         this.#trigger({
           type: `disconnected->${this.id || this.tagName.toLowerCase()}`,
@@ -162,7 +148,7 @@ export const defineIsland = (
         )
         if (template) {
           mo.disconnect()
-          this.#appendTemplate(template as HTMLTemplateElement)
+          this.#appendTemplate(template)
         }
       })
       mo.observe(this, { childList: true })
@@ -176,9 +162,9 @@ export const defineIsland = (
         : []
       return [...selection]
     }
+    static define(tag: string) {
+      if (customElements.get(tag)) return
+      customElements.define(tag, this)
+    }
   }
-  customElements.define(
-    tag,
-    mixin(ISLElement),
-  )
 }
