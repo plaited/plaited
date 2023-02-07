@@ -8,8 +8,8 @@ export const defaultStoryHandlers: StoryHandlers = (storyData) => {
   const routeSets = storyData.map(([{ title }, stories]) => {
     const toRet: Record<string, Handler> = {}
     for (const data of stories) {
-      const { args, template, fixture, name } = data
-      const story = ssr(fixture, template(args))
+      const { args, template, island, name } = data
+      const story = ssr(island, template(args))
       const id = toId(title, name)
       Object.assign(toRet, {
         [`/${id}`]: new Response(page(story), {

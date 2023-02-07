@@ -1,3 +1,3 @@
-export const visualComparisonAssertion = (fixture: string, id: string) =>
-  `const locator = page.locator(${fixture})
-expect(locator).toMatchSnapshot('${id}.png')`
+export const visualComparisonAssertion = (island: string, id: string) =>
+  `const locator = page.locator('${island}')
+  expect(locator).toMatchSnapshot('${id}.png')`

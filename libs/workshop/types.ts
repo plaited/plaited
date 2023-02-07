@@ -13,18 +13,18 @@ export type StoryData = {
   args: TemplateProps
   name: string
   template: Template
-  fixture: CustomElementTag
+  island: CustomElementTag
 }
 
 export type StoriesData = [{ title: string; path: string }, StoryData[]][]
 
 export type PageFunc = (story: string) => string
 export type SSRFunc = (
-  fixture: CustomElementTag,
+  island: CustomElementTag,
   template: string,
 ) => string
 export type Ext = {
-  fixture: string | string[]
+  island: string | string[]
   story: string | string[]
 }
 
@@ -48,17 +48,15 @@ export type Watcher = (
 
 // External Mod Exports
 
-export type StoryConfig<T extends TemplateProps = TemplateProps> = {
+export type StoryConfig<T extends TemplateProps> = {
   title: string
   template: Template<T>
-  fixture: CustomElementTag
+  island: CustomElementTag
   description: string
-  insertHead?: string
-  insertBody?: string
 }
 
-export type Story<T extends TemplateProps = TemplateProps> = {
-  args: T
+export type Story<T extends TemplateProps> = {
+  args: T & TemplateProps
   description: string
   play?: (args: { page: Page; expect: Expect; id: string }) => Promise<void>
 }

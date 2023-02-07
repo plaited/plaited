@@ -14,20 +14,20 @@ export const write: Write = async ({
   storyHandlers,
   playwright,
 }) => {
-  const { fixture, story } = exts
+  const { island, story } = exts
 
-  /** get paths and name for each fixture */
-  const fixtures: string[] = []
+  /** get paths and name for each island */
+  const islands: string[] = []
   for await (
     const entry of walk(root, {
-      exts: Array.isArray(fixture) ? fixture : [fixture],
+      exts: Array.isArray(island) ? island : [island],
     })
   ) {
     const { path } = entry
-    fixtures.push(path)
+    islands.push(path)
   }
   /** write registry file*/
-  await writeRegistry(fixtures, assets)
+  await writeRegistry({ islands, assets, root })
 
   /** get paths and name for each set of stories */
   const stories: string[] = []

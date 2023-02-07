@@ -7,7 +7,7 @@ export type TemplateProps = {
 }
 
 export interface Template<T extends TemplateProps = TemplateProps> {
-  (this: unknown, props: T): string
+  (this: unknown, props: T & TemplateProps): string
   stylesheets: Set<string>
 }
 
@@ -25,11 +25,11 @@ const shallowCompare = (
  * We also do a basic shallow comparison on the object to cache function result.
  */
 export const template = <Props extends TemplateProps = TemplateProps>(
-  resultFn: (this: unknown, props: Props) => string,
+  resultFn: (this: unknown, props: Props & TemplateProps) => string,
 ): Template<Props> => {
   let cache: {
     lastThis: ThisParameterType<typeof resultFn>
-    lastProps: Props
+    lastProps: Props & TemplateProps
     lastResult: ReturnType<typeof resultFn>
   } | null = null
   function tpl(

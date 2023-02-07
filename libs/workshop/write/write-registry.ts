@@ -1,24 +1,29 @@
 import { esbuild } from '../../deps.ts'
 
-export const writeRegistry = async (
-  fixtures: string[],
-  assets: string,
-) => {
+export const writeRegistry = async ({
+  islands,
+  assets,
+  root,
+}: {
+  islands: string[]
+  assets: string
+  root: string
+}) => {
   try {
     await esbuild.build({
       stdin: {
-        contents: fixtures.map((fixture: string) => `import './${fixture}'`)
+        contents: islands.map((island: string) => `import '${island}'`)
           .join(
             '\n',
           ),
-        resolveDir: assets,
+        resolveDir: root,
         loader: 'ts',
       },
       format: 'esm',
       target: [
         'es2020',
       ],
-      outfile: `${assets}/.registry/fixtures.js`,
+      outfile: `${assets}/.registry/islands.js`,
     })
   } catch (err) {
     console.error(err)

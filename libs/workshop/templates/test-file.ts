@@ -22,27 +22,26 @@ export const testFile: TestDescribeTemplate = ({
   testPath,
 }) => {
   const names: string[] = []
-  const content = data.map(({ name, fixture }) => {
+  const content = data.map(({ name, island }) => {
     names.push(name)
     const id = toId(title, name)
     return `test('${name}', async ({ page }) => {
-  await page.goto('./${toId(title, name)}')
-  ${accessibilityAssertion(fixture)}
+    await page.goto('./${toId(title, name)}')
+    ${accessibilityAssertion(island)}
 
-  ${visualComparisonAssertion(fixture, id)}
+    ${visualComparisonAssertion(island, id)}
 
-  ${interactionAssertion(name, id)}
-})
+    ${interactionAssertion(name, id)}
+  })
 `
   }).join('\n')
 
   return `import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
-import {
-  ${names.join('\n')}
-} from '${relative(testPath, storiesPath)}'
+import { ${names.join('\n')}} from '${relative(testPath, storiesPath)}'
+
 test.describe('${title}${colorScheme ? '(light)' : ''}', () => {
-  test.use({ colorScheme: ${colorScheme ? 'light' : 'normal'} })
+  test.use({ colorScheme:' ${colorScheme ? 'light' : 'normal'}' })
   ${content}
 })
 
@@ -53,6 +52,5 @@ ${
   ${content}
 })`
       : ''
-  }
-`
+  }`
 }

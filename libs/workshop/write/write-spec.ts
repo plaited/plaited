@@ -1,5 +1,5 @@
 import { StoriesData } from '../types.ts'
-import { esbuild } from '../../deps.ts'
+import { dirname, esbuild } from '../../deps.ts'
 import { testFile } from '../templates/mod.ts'
 
 type WriteSpec = (args: {
@@ -24,6 +24,7 @@ export const writeSpec: WriteSpec = async ({
     await esbuild.build({
       entryPoints,
       bundle: true,
+      format: 'esm',
       target: [
         'es2020',
       ],
@@ -42,7 +43,8 @@ export const writeSpec: WriteSpec = async ({
     Deno.exit()
   }
   await Promise.all(storyData.map(async ([{ title, path }, data]) => {
-    const testPath = `${playwright}/specs/${title.toLowerCase()}.spec.ts`
+    const testPath = `${playwright}/${title.toLowerCase()}.spec.ts`
+    await Deno.mkdir(dirname(testPath), { recursive: true })
     const content = testFile({
       colorScheme,
       data,
