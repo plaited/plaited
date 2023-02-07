@@ -1,6 +1,15 @@
-import { RulesFunc, Trigger } from '../plait/mod.ts'
+import {
+  Feedback,
+  Listener,
+  RulesFunc,
+  Strategy,
+  Trigger,
+} from '../plait/mod.ts'
 
-export type Query = <T = Element>(id: string) => T[]
+/**
+ * @description returns a an array of nodes who's data-target value is the same as the target string provided.
+ */
+export type Query = <T = Element>(target: string) => T[] | never[]
 
 export type UseHook<T = Record<string, unknown>> = (
   args: {
@@ -13,7 +22,26 @@ export type UseHook<T = Record<string, unknown>> = (
 
 export type CustomElementTag = `${string}-${string}`
 
-interface IslandElement extends HTMLElement {
+export type IslandElementOptions = {
+  mode?: 'open' | 'closed'
+  delegatesFocus?: boolean
+  logger?: Listener
+  strategy?: Strategy
+  connect?: (recipient: string, trigger: Trigger) => () => void
+  id?: string
+}
+
+export interface PlaitInterface {
+  (args: {
+    $: Query
+    context: ISLElement // should we call this element or context?
+    add: (logicStands: Record<string, RulesFunc>) => void
+    feedback: Feedback
+    trigger: Trigger
+  }): void
+}
+
+export interface ISLElement extends HTMLElement {
   connectedCallback?(): void
   attributeChangedCallback?(
     name: string,
@@ -29,13 +57,14 @@ interface IslandElement extends HTMLElement {
     state: unknown,
     reason: 'autocomplete' | 'restore',
   ): void
-  plait($: Query): {
-    trigger: Trigger
-    disconnect: () => void
-  }
+  plait: PlaitInterface
 }
 
 export interface IslandElementConstructor {
   // deno-lint-ignore no-explicit-any
-  new (...args: any[]): IslandElement
+  new (...args: any[]): ISLElement
+}
+
+export interface IslandConfig extends IslandElementOptions {
+  tag: CustomElementTag
 }
