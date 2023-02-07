@@ -98,9 +98,14 @@ export type Strategy = (filteredEvents: CandidateBid[]) => CandidateBid
 
 // Feedback Types
 // deno-lint-ignore no-explicit-any
-export type Actions<T extends Record<string, (data: any) => void>> = {
+type Actions<T extends Record<string, (data: any) => void>> = {
   [K in keyof T]: (data: Parameters<T[K]>[0]) => void
 }
+
+// deno-lint-ignore no-explicit-any
+export type Feedback = <T extends Record<string, (data: any) => void>>(
+  actions: Actions<T>,
+) => Stream
 
 // deno-lint-ignore no-explicit-any
 export type ActionRequest<T extends Record<string, (data: any) => void>> = {

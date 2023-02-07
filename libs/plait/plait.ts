@@ -3,8 +3,8 @@ import { stateChart } from './state-chart.ts'
 import { createStream } from './create-stream.ts'
 import { priorityStrategy } from './strategies.ts'
 import {
-  Actions,
   CandidateBid,
+  Feedback,
   ListenerMessage,
   ParameterIdiom,
   PendingBid,
@@ -130,9 +130,9 @@ export const plait = ({
     }
     run()
   }
-  // deno-lint-ignore no-explicit-any
-  const feedback = <T extends Record<string, (data: any) => void>>(
-    actions: Actions<T>,
+
+  const feedback: Feedback = (
+    actions,
   ) => {
     return stream.subscribe(
       ({ type, detail }: ListenerMessage) => {
