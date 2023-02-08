@@ -26,7 +26,7 @@ export const bundler = ({
       metafile: true,
       ...minifyOptions,
       platform: 'neutral',
-      //@ts-ignore
+      //@ts-ignore: forcing use with newer esbuild
       plugins: [denoPlugin({ importMapURL })],
       sourcemap: dev ? 'linked' : false,
       splitting: true,
