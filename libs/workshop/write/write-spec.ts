@@ -2,7 +2,7 @@ import { StoriesData } from '../types.ts'
 import { dirname, kebabCase } from '../../deps.ts'
 import { bundler } from '../../bundler/mod.ts'
 import { testFile } from '../templates/mod.ts'
-
+import { getStat } from '../../deno-utils/mod.ts'
 type WriteSpec = (args: {
   port: number
   project?: string
@@ -39,6 +39,8 @@ export const writeSpec: WriteSpec = async ({
   await Promise.all(storiesData.map(async ([{ title, path }, data]) => {
     const tilePath = title.split('/').map((str) => kebabCase(str)).join('/')
     const testPath = `${playwright}/${tilePath}.spec.js`
+    const exist = await getStat(testPath)
+    if (exist) return
     await Deno.mkdir(dirname(testPath), { recursive: true })
     const content = testFile({
       colorScheme,
