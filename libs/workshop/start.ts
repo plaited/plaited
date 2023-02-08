@@ -1,9 +1,8 @@
 import { server } from '../server/mod.ts'
-// import { getStat } from '../utils/get-stat.ts'
 import { WorkshopConfig } from './types.ts'
-import { write } from './write/mod.ts'
+import { write } from './write.ts'
 import { watcher } from './watcher.ts'
-import { defaultStoryHandlers } from './default-story-handlers.ts'
+import { defaultPage } from './templates/mod.ts'
 import { setup } from './setup.ts'
 export const start = async ({
   assets,
@@ -18,7 +17,7 @@ export const start = async ({
   port = 3000,
   project,
   root,
-  storyHandlers = defaultStoryHandlers,
+  page = defaultPage,
   unknownMethodHandler,
 }: WorkshopConfig) => {
   if (!Deno.statSync(assets)) {
@@ -48,12 +47,13 @@ export const start = async ({
   const routes = await write({
     assets,
     colorScheme,
+    dev,
     exts,
+    page,
+    playwright,
     port,
     project,
     root,
-    storyHandlers,
-    playwright,
   })
   const { updateRoutes } = await server({
     dev,
@@ -69,11 +69,13 @@ export const start = async ({
     watcher({
       assets,
       colorScheme,
+      dev,
       exts,
-      port,
-      root,
-      storyHandlers,
+      page,
       playwright,
+      port,
+      project,
+      root,
       updateRoutes,
     })
   }

@@ -1,34 +1,71 @@
 import {
-  // afterEach,
+  afterEach,
   assert,
-  // assertSnapshot,
+  assertSnapshot,
+  beforeEach,
   describe,
   it,
   resolve,
 } from '../../test-deps.ts'
-import { write } from '../write/mod.ts'
-import { defaultStoryHandlers } from '../default-story-handlers.ts'
+import { write } from '../write.ts'
+import { getStat } from '../../deno-utils/get-stat.ts'
+import { defaultPage } from '../templates/mod.ts'
 
 const __dirname = new URL('.', import.meta.url).pathname
 const assets = resolve(__dirname, './__mocks__/assets')
 const root = resolve(__dirname, './__mocks__/root')
-const playwright = resolve(__dirname, './__tmp__/specs')
+const playwright = resolve(__dirname, './__tmp__/')
 
 describe('Write', () => {
-  it('', async () => {
-    await write({
+  beforeEach(async () => {
+    await Deno.mkdir(assets, { recursive: true })
+  })
+  afterEach(async () => {
+    const assetsExist = await getStat(assets)
+    !assetsExist && await Deno.mkdir(assets, { recursive: true })
+    // await Deno.remove(assets, { recursive: true })
+    const playwrightExist = await getStat(playwright)
+    !playwrightExist && await Deno.mkdir(playwright, { recursive: true })
+    // await Deno.remove(playwright, { recursive: true })
+  })
+  it('build', async (t) => {
+    const routes = await write({
       assets,
-      colorScheme: false,
-      exts: {
-        island: '.island.ts',
-        story: '.stories.ts',
-      },
-      port: 3000,
-      project: 'test',
-      storyHandlers: defaultStoryHandlers,
-      playwright,
       root,
+      playwright,
+      dev: false,
+      port: 3000,
+      exts: {
+        story: '.stories.ts',
+        island: '.island.ts',
+      },
+      page: defaultPage,
     })
-    assert(true)
+    assertSnapshot(t, routes)
+    const buttonSpec = await Deno.stat(
+      `${playwright}/components/button.spec.ts`,
+    )
+    const numberFieldSpec = await Deno.stat(
+      `${playwright}/components/number-field.spec.ts`,
+    )
+    assert(buttonSpec.isFile)
+    assert(buttonSpec.size > 0)
+    assert(numberFieldSpec.isFile)
+    assert(numberFieldSpec.size > 0)
+    const buttonStories = await Deno.stat(
+      `${playwright}/.stories/button.stories.js`,
+    )
+    const numberFieldStories = await Deno.stat(
+      `${playwright}/.stories/number-field.stories.js`,
+    )
+    assert(buttonStories.isFile)
+    assert(buttonStories.size > 0)
+    assert(numberFieldStories.isFile)
+    assert(numberFieldStories.size > 0)
+    const registry = await Deno.stat(
+      `${assets}/.registries/test.island.js`,
+    )
+    assert(registry.isFile)
+    assert(registry.size > 0)
   })
 })

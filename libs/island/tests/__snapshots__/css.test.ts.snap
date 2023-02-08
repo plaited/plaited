@@ -17,12 +17,12 @@ snapshot[`css() 1`] = `
 snapshot[`css() 2`] = `
 {
   styles: {
-    button: "button-0-1-2",
+    button: "button-0-2-1",
   },
-  stylesheet: ".button-0-1-2 {
+  stylesheet: ".button-0-2-1 {
   color: var(--color);
 }
-.button-0-1-2:focus {
+.button-0-2-1:focus {
   color: var(--color-focus);
 }",
 }

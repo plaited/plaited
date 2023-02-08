@@ -6,19 +6,20 @@ export const usePlait = ({
   connect,
   logger,
   strategy,
+  context,
 }: {
   logger?: Listener
   strategy?: Strategy
   connect?: (recipient: string, trigger: Trigger) => () => void
   id?: string
-} = {}) => {
+  context: HTMLElement
+}) => {
   const { feedback, trigger, stream, add } = plait({
     strategy,
     dev: Boolean(logger),
   })
   logger && stream.subscribe(logger)
   let disconnect = noop
-  const context = this as unknown as HTMLElement
   if (!context.tagName) {
     console.error('usePlait must be called from within a CustomElement Class')
   }

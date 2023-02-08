@@ -1,15 +1,16 @@
 import { Watcher } from './types.ts'
-import { write } from './write/mod.ts'
+import { write } from './write.ts'
 
 export const watcher: Watcher = async ({
   assets,
   colorScheme,
+  dev,
   exts,
+  page,
+  playwright,
   port,
   project,
   root,
-  playwright,
-  storyHandlers,
   updateRoutes,
 }) => {
   const watcher = Deno.watchFs(root, { recursive: true })
@@ -23,12 +24,13 @@ export const watcher: Watcher = async ({
       const routes = await write({
         assets,
         colorScheme,
+        dev,
         exts,
+        page,
+        playwright,
         port,
         project,
         root,
-        storyHandlers,
-        playwright,
       })
       updateRoutes(() => routes)
       lastEvent = kind

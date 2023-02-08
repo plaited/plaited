@@ -7,7 +7,7 @@ import {
   writePlaywrightConfig,
   writeYarnrc,
 } from './write/mod.ts'
-import { getStat } from '../utils/mod.ts'
+import { getStat } from '../deno-utils/mod.ts'
 
 export const setup = async ({
   credentials,

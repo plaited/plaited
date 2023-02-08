@@ -1,9 +1,11 @@
 import { StoryData } from '../types.ts'
-import { toId } from '../to-id.ts'
 import { accessibilityAssertion } from './accessibility-assertion.ts'
 import { visualComparisonAssertion } from './visual-comparison-assertion.ts'
 import { interactionAssertion } from './interaction-assertion.ts'
-import { relative } from '../../deps.ts'
+import { basename, dirname, kebabCase, relative } from '../../deps.ts'
+import { toId } from '../to-id.ts'
+import { fixture } from '../constants.ts'
+
 type TestDescribeTemplate = (args: {
   colorScheme: boolean
   data: StoryData[]
@@ -22,34 +24,38 @@ export const testFile: TestDescribeTemplate = ({
   testPath,
 }) => {
   const names: string[] = []
-  const content = data.map(({ name, island }) => {
-    names.push(name)
-    const id = toId(title, name)
-    return `test('${name}', async ({ page }) => {
-    await page.goto('./${toId(title, name)}')
+  const path = relative(dirname(testPath), storiesPath)
+  const stories = `${dirname(path)}/${basename(path)}`.replace('.ts', '.js')
+
+  const content: string[] = []
+  for (const { name, island = fixture } of data) {
+    const dashedName = kebabCase(name)
+    names.push(dashedName)
+    const id = toId(kebabCase(title), dashedName)
+    content.push(`test('${name}', async ({ page }) => {
+    await page.goto('./${id}')
     ${accessibilityAssertion(island)}
 
     ${visualComparisonAssertion(island, id)}
 
     ${interactionAssertion(name, id)}
   })
-`
-  }).join('\n')
+`)
+  }
 
   return `import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
-import { ${names.join('\n')}} from '${relative(testPath, storiesPath)}'
+import { ${names.join('\n')}} from '${stories}'
 
 test.describe('${title}${colorScheme ? '(light)' : ''}', () => {
   test.use({ colorScheme:' ${colorScheme ? 'light' : 'normal'}' })
-  ${content}
+  ${content.join('\n')}
 })
-
 ${
     colorScheme
       ? `test.describe('${title}${colorScheme ? '(light)' : ''}', () => {
   test.use({ colorScheme: 'dark' })
-  ${content}
+  ${content.join('\n')}
 })`
       : ''
   }`

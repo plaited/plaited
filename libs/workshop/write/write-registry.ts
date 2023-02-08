@@ -1,32 +1,32 @@
-import { esbuild } from '../../deps.ts'
+import { bundler } from '../../bundler/mod.ts'
+import { resolve } from '../../deps.ts'
+
+const __dirname = new URL('.', import.meta.url).pathname
+const defaultFixture = resolve(__dirname, '../fixture.ts')
 
 export const writeRegistry = async ({
   islands,
   assets,
-  root,
 }: {
   islands: string[]
   assets: string
-  root: string
 }) => {
-  try {
-    await esbuild.build({
-      stdin: {
-        contents: islands.map((island: string) => `import '${island}'`)
-          .join(
-            '\n',
-          ),
-        resolveDir: root,
-        loader: 'ts',
-      },
-      format: 'esm',
-      target: [
-        'es2020',
-      ],
-      outfile: `${assets}/.registry/islands.js`,
-    })
-  } catch (err) {
-    console.error(err)
-    Deno.exit()
+  const build = bundler({
+    dev: false,
+    entryPoints: [...islands, defaultFixture],
+  })
+  const content = await build()
+  const outdir = `${assets}/.registries`
+  await Deno.mkdir(outdir, { recursive: true })
+  const registries: string[] = []
+  if (content && Array.isArray(content)) {
+    await Promise.all(
+      content.map(async (entry) => {
+        const registry = `${outdir}${entry[0]}`
+        registries.push(registry)
+        await Deno.writeFile(registry, entry[1])
+      }),
+    )
   }
+  return registries
 }

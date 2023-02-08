@@ -1,0 +1,28 @@
+export const snapshot = {};
+
+snapshot[`Write > build 1`] = `
+{
+  "/components-button--basicbutton": Response {
+  body: ReadableStream { locked: false },
+  bodyUsed: false,
+  headers: Headers { "content-type": "text/html" },
+  ok: true,
+  redirected: false,
+  status: 200,
+  statusText: "",
+  url: ""
+},
+  "/components-button--basicbutton.include": [Function: /components-button--basicbutton.include],
+  "/components-numberfield--numberfieldbasic": Response {
+  body: ReadableStream { locked: false },
+  bodyUsed: false,
+  headers: Headers { "content-type": "text/html" },
+  ok: true,
+  redirected: false,
+  status: 200,
+  statusText: "",
+  url: ""
+},
+  "/components-numberfield--numberfieldbasic.include": [Function: /components-numberfield--numberfieldbasic.include],
+}
+`;

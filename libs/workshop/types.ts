@@ -13,13 +13,17 @@ export type StoryData = {
   args: TemplateProps
   name: string
   template: Template
-  island: CustomElementTag
+  island?: CustomElementTag
 }
 
 export type StoriesData = [{ title: string; path: string }, StoryData[]][]
 
-export type PageFunc = (story: string) => string
-export type SSRFunc = (
+export type PageFunc = (args: {
+  story: string
+  registries: string[]
+  chatui: string
+}) => string
+export type StoryWrapper = (
   island: CustomElementTag,
   template: string,
 ) => string
@@ -31,17 +35,18 @@ export type Ext = {
 export type Write = (args: {
   assets: string
   colorScheme?: boolean
+  dev: boolean
   exts: Ext
+  importMapURL?: string | undefined
+  page: PageFunc
+  playwright: string
   port: number
   project?: string
   root: string
-  storyHandlers: StoryHandlers
-  playwright: string
-}) => Promise<Record<string, Handler>>
+}) => Promise<Routes>
 
 export type Watcher = (
   args: Parameters<Write>[0] & {
-    root: string
     updateRoutes: UpdateRoutes
   },
 ) => Promise<void>
@@ -51,7 +56,7 @@ export type Watcher = (
 export type StoryConfig<T extends TemplateProps> = {
   title: string
   template: Template<T>
-  island: CustomElementTag
+  island?: CustomElementTag
   description: string
 }
 
@@ -61,7 +66,15 @@ export type Story<T extends TemplateProps> = {
   play?: (args: { page: Page; expect: Expect; id: string }) => Promise<void>
 }
 
-export type StoryHandlers = (stories: StoriesData) => Record<string, Handler>
+export type Routes = {
+  [key: string]: Handler | Routes
+}
+
+export type GetStoryHandlers = (args: {
+  storiesData: StoriesData
+  registries: string[]
+  page: PageFunc
+}) => Routes
 
 export type WorkshopConfig = {
   assets: string
@@ -76,7 +89,7 @@ export type WorkshopConfig = {
   port: number
   project?: string
   root: string
-  storyHandlers: StoryHandlers
+  page: PageFunc
   unknownMethodHandler?: UnknownMethodHandler
 }
 

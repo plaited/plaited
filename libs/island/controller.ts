@@ -49,7 +49,10 @@ export const controller = <T extends IslandElementConstructor>(
       }
       this.#delegateListeners()
       this.#shadowObserver = this.#createShadowObserver()
-      const { disconnect, trigger, add, feedback } = usePlait(rest)
+      const { disconnect, trigger, add, feedback } = usePlait({
+        context: this,
+        ...rest,
+      })
       this.plait({
         $: this.$.bind(this),
         add,
