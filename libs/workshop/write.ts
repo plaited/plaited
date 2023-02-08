@@ -14,7 +14,7 @@ export const write: Write = async ({
   playwright,
   dev,
   importMapURL,
-  page,
+  includes,
 }) => {
   const { island, story } = exts
   const islandExts = Array.isArray(island) ? island : [island]
@@ -70,9 +70,10 @@ export const write: Write = async ({
 
   /** return story handlers */
   return await getStoryHandlers({
+    dev,
     assets,
     storiesData,
     registries: [...registries],
-    page,
+    includes,
   })
 }

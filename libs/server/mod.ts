@@ -7,4 +7,4 @@ export {
   type Routes,
   type UnknownMethodHandler,
 } from './types.ts'
-export { livereloadTemplate } from './livereload-template.ts'
+export { page } from './page.ts'

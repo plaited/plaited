@@ -9,7 +9,6 @@ import {
 } from '../../test-deps.ts'
 import { write } from '../write.ts'
 import { getStat } from '../../deno-utils/get-stat.ts'
-import { defaultPage } from '../templates/mod.ts'
 
 import { ConnInfo, rutt } from '../../deps.ts'
 
@@ -48,13 +47,12 @@ describe('Write', () => {
       assets,
       root,
       playwright,
-      dev: false,
+      dev: true,
       port: 3000,
       exts: {
         story: '.stories.ts',
         island: '.island.ts',
       },
-      page: defaultPage,
     })
     for (const path in routes) {
       const route = rutt.router({

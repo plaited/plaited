@@ -1,6 +1,11 @@
-import { html } from '../../island/mod.ts'
-import { PageFunc } from '../types.ts'
-export const defaultPage: PageFunc = ({ head, body }) =>
+import { html } from '../island/mod.ts'
+import { livereloadTemplate } from './livereload-template.ts'
+
+export const page = ({ head, body, dev }: {
+  head: string
+  body: string
+  dev: boolean
+}) =>
   html`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,5 +16,6 @@ export const defaultPage: PageFunc = ({ head, body }) =>
 </head>
 <body>
   ${body}
+  ${dev && livereloadTemplate}
 </body>
 </html>`

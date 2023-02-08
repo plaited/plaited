@@ -23,30 +23,25 @@ export type Story<T extends TemplateProps = TemplateProps> = {
 
 export type StoryData = Story & {
   name: string
-  template: Template
 }
 
 export type StoriesData = [
   {
-    title: string
     path: string
-    description: string
-    island?: CustomElementTag
-  },
+  } & StoryConfig,
   StoryData[],
 ][]
 
 export type GetStoryHandlers = (args: {
   storiesData: StoriesData
   registries: string[]
-  page: PageFunc
   assets: string
+  dev: boolean
+  includes?: {
+    head?: string
+    body?: string
+  }
 }) => Routes
-
-export type PageFunc = (args: {
-  head: string
-  body: string
-}) => string
 
 export type Ext = {
   island: string | string[]
@@ -59,7 +54,10 @@ export type Write = (args: {
   dev: boolean
   exts: Ext
   importMapURL?: string | undefined
-  page: PageFunc
+  includes?: {
+    head?: string
+    body?: string
+  }
   playwright: string
   port: number
   project?: string
@@ -85,7 +83,10 @@ export type WorkshopConfig = {
   port: number
   project?: string
   root: string
-  page: PageFunc
+  includes?: {
+    head?: string
+    body?: string
+  }
   unknownMethodHandler?: UnknownMethodHandler
 }
 

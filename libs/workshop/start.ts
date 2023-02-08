@@ -2,7 +2,6 @@ import { server } from '../server/mod.ts'
 import { WorkshopConfig } from './types.ts'
 import { write } from './write.ts'
 import { watcher } from './watcher.ts'
-import { defaultPage } from './templates/mod.ts'
 import { setup } from './setup.ts'
 export const start = async ({
   assets,
@@ -17,7 +16,7 @@ export const start = async ({
   port = 3000,
   project,
   root,
-  page = defaultPage,
+  includes,
   unknownMethodHandler,
 }: WorkshopConfig) => {
   if (!Deno.statSync(assets)) {
@@ -49,7 +48,7 @@ export const start = async ({
     colorScheme,
     dev,
     exts,
-    page,
+    includes,
     playwright,
     port,
     project,
@@ -71,7 +70,7 @@ export const start = async ({
       colorScheme,
       dev,
       exts,
-      page,
+      includes,
       playwright,
       port,
       project,
