@@ -1,4 +1,3 @@
-export * from './chatui.ts'
 export * from './docker-compose.ts'
 export * from './docker-file.ts'
 export * from './gitignore.ts'

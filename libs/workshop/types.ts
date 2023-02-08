@@ -8,15 +8,40 @@ import {
   UpdateRoutes,
 } from '../server/mod.ts'
 
-// Internal Mod Exports
-export type StoryData = {
-  args: TemplateProps
-  name: string
-  template: Template
+export type StoryConfig<T extends TemplateProps = TemplateProps> = {
+  title: string
+  template: Template<T>
   island?: CustomElementTag
+  description: string
 }
 
-export type StoriesData = [{ title: string; path: string }, StoryData[]][]
+export type Story<T extends TemplateProps = TemplateProps> = {
+  args: T & TemplateProps
+  description: string
+  play?: (args: { page: Page; expect: Expect; id: string }) => Promise<void>
+}
+
+export type StoryData = Story & {
+  name: string
+  template: Template
+}
+
+export type StoriesData = [
+  {
+    title: string
+    path: string
+    description: string
+    island?: CustomElementTag
+  },
+  StoryData[],
+][]
+
+export type GetStoryHandlers = (args: {
+  storiesData: StoriesData
+  registries: string[]
+  page: PageFunc
+  assets: string
+}) => Routes
 
 export type PageFunc = (args: {
   head: string
@@ -46,28 +71,6 @@ export type Watcher = (
     updateRoutes: UpdateRoutes
   },
 ) => Promise<void>
-
-// External Mod Exports
-
-export type StoryConfig<T extends TemplateProps> = {
-  title: string
-  template: Template<T>
-  island?: CustomElementTag
-  description: string
-}
-
-export type Story<T extends TemplateProps> = {
-  args: T & TemplateProps
-  description: string
-  play?: (args: { page: Page; expect: Expect; id: string }) => Promise<void>
-}
-
-export type GetStoryHandlers = (args: {
-  storiesData: StoriesData
-  registries: string[]
-  page: PageFunc
-  assets: string
-}) => Routes
 
 export type WorkshopConfig = {
   assets: string

@@ -5,6 +5,7 @@ import { interactionAssertion } from './interaction-assertion.ts'
 import { basename, dirname, relative } from '../../deps.ts'
 import { toId } from '../to-id.ts'
 import { fixture } from '../constants.ts'
+import { CustomElementTag } from '../../island/mod.ts'
 
 type TestDescribeTemplate = (args: {
   colorScheme: boolean
@@ -14,6 +15,7 @@ type TestDescribeTemplate = (args: {
   storiesPath: string
   testPath: string
   title: string
+  island?: CustomElementTag
 }) => string
 
 export const testFile: TestDescribeTemplate = ({
@@ -22,13 +24,14 @@ export const testFile: TestDescribeTemplate = ({
   title,
   storiesPath,
   testPath,
+  island = fixture,
 }) => {
   const names: string[] = []
   const path = relative(dirname(testPath), storiesPath)
   const stories = `${dirname(path)}/${basename(path)}`.replace('.ts', '.js')
 
   const content: string[] = []
-  for (const { name, island = fixture } of data) {
+  for (const { name } of data) {
     names.push(name)
     const id = toId(title, name)
     content.push(`test('${name}', async ({ page }) => {

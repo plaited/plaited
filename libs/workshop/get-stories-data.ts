@@ -1,19 +1,21 @@
 import { StoriesData, Story, StoryConfig } from './types.ts'
-import { TemplateProps } from '../island/mod.ts'
+import { CustomElementTag, Template, TemplateProps } from '../island/mod.ts'
 
 export const getStoriesData = async (stories: string[]): Promise<StoriesData> =>
   await Promise.all(stories.map(async (path) => {
     const data = []
     let title = ''
+    let description = ''
+    let island: CustomElementTag | undefined
+    let template: Template
     try {
       const { default: config, ...rest } = await import(path)
-      const { title: _title, template, island } = config as StoryConfig<
+      ;({ title, island, description, template } = config as StoryConfig<
         TemplateProps
-      >
-      title = _title
-      if (!/^[a-zA-Z][a-zA-Z\/0-9]*$/.test(_title)) {
+      >)
+      if (!/^[a-zA-Z][a-zA-Z\/0-9]*$/.test(title)) {
         console.error(
-          `Invalid title "${_title}", must only include alphanumeric characters delineated by a "\"`,
+          `Invalid title "${title}", must only include alphanumeric characters delineated by a "\"`,
         )
       }
       for (const name in rest) {
@@ -22,17 +24,15 @@ export const getStoriesData = async (stories: string[]): Promise<StoriesData> =>
             `Invalid title "${name}", must only include alphanumeric characters delineated by a "_"`,
           )
         }
-        const { args, play } = rest[name] as Story<TemplateProps>
+        const props = rest[name] as Story<TemplateProps>
         data.push({
-          args,
+          ...props,
           name,
-          island,
           template,
-          play,
         })
       }
     } catch (err) {
       console.error(err)
     }
-    return [{ title, path }, data]
+    return [{ title, path, description, island }, data]
   }))

@@ -36,7 +36,7 @@ export const writeSpec: WriteSpec = async ({
       ),
     )
   }
-  await Promise.all(storiesData.map(async ([{ title, path }, data]) => {
+  await Promise.all(storiesData.map(async ([{ title, path, island }, data]) => {
     const tilePath = title.split('/').map((str) => kebabCase(str)).join('/')
     const testPath = `${playwright}/${tilePath}.spec.js`
     const exist = await getStat(testPath)
@@ -50,6 +50,7 @@ export const writeSpec: WriteSpec = async ({
       storiesPath: `${outdir}${path.slice(root.length)}`,
       testPath,
       title,
+      island,
     })
     await Deno.writeTextFile(testPath, content)
   }))
