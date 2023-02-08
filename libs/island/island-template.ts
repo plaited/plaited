@@ -2,7 +2,7 @@ import { html } from './html.ts'
 import { Wire, wire } from './wire.ts'
 import { template } from './template.ts'
 
-interface ElementProps extends Wire {
+interface IslandTemplateProps extends Wire {
   tag: string
   template: string
   /** @defaultValue 'open' */
@@ -10,7 +10,7 @@ interface ElementProps extends Wire {
   stylesheets?: string | string[]
 }
 
-export const element = template<ElementProps>(({
+export const IslandTemplate = template<IslandTemplateProps>(({
   tag,
   template,
   mode = 'open',

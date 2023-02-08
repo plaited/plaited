@@ -3,7 +3,7 @@ import { Handler, Routes } from '../server/mod.ts'
 import { registriesTemplate } from './templates/mod.ts'
 import { toId } from './to-id.ts'
 import { fixture } from './constants.ts'
-import { element } from '../island/mod.ts'
+import { IslandTemplate } from '../island/mod.ts'
 import { relative } from '../deps.ts'
 import { fixturePolyfill } from './templates/fixture-polyfill.ts'
 import { page } from '../server/mod.ts'
@@ -21,7 +21,7 @@ export const getStoryHandlers: GetStoryHandlers = ({
       const toRet: Record<string, Handler> = {}
       for (const data of stories) {
         const { args, name } = data
-        const story = element({
+        const story = IslandTemplate({
           tag: island,
           template: template(args),
           stylesheets: [...template.stylesheets],

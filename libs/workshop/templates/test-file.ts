@@ -37,9 +37,7 @@ export const testFile: TestDescribeTemplate = ({
     content.push(`test('${name}', async ({ page }) => {
     await page.goto('./${id}')
     ${accessibilityAssertion(island)}
-
     ${visualComparisonAssertion(island, id)}
-
     ${interactionAssertion(name, id)}
   })
 `)
