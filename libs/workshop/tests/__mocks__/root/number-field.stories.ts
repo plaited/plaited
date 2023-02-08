@@ -11,7 +11,7 @@ const NumberField = template<{ value: number }>((attrs) =>
 export default {
   title: 'Components/NumberField',
   template: NumberField,
-  island: 'test-fixture',
+  island: 'number-field',
   description: 'test button to verify this workshop works',
 } as StoryConfig<{ value: number }>
 

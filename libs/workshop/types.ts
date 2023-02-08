@@ -19,9 +19,8 @@ export type StoryData = {
 export type StoriesData = [{ title: string; path: string }, StoryData[]][]
 
 export type PageFunc = (args: {
-  story: string
-  registries: string[]
-  chatui: string
+  head: string
+  body: string
 }) => string
 
 export type Ext = {

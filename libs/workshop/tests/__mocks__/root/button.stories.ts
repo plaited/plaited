@@ -8,7 +8,6 @@ const Button = template<{ children: string }>(({ children, ...attrs }) =>
 export default {
   title: 'Components/Button',
   template: Button,
-  island: 'test-fixture',
   description: 'test button to verify this workshop works',
 } as StoryConfig<{ children: string }>
 

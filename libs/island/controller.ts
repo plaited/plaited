@@ -125,6 +125,7 @@ export const controller = <T extends IslandElementConstructor>(
       if (root) {
         !root.firstChild &&
           root.appendChild(document.importNode((template).content, true))
+        template.remove()
       }
     }
     #createTemplateObserver() {
@@ -135,7 +136,6 @@ export const controller = <T extends IslandElementConstructor>(
         if (template) {
           mo.disconnect()
           this.#appendTemplate(template)
-          template.remove()
         }
       })
       mo.observe(this, { childList: true })

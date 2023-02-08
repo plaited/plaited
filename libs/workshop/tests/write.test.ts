@@ -11,6 +11,21 @@ import { write } from '../write.ts'
 import { getStat } from '../../deno-utils/get-stat.ts'
 import { defaultPage } from '../templates/mod.ts'
 
+import { ConnInfo, rutt } from '../../deps.ts'
+
+const TEST_CONN_INFO: ConnInfo = {
+  localAddr: {
+    transport: 'tcp',
+    hostname: 'test',
+    port: 80,
+  },
+  remoteAddr: {
+    transport: 'tcp',
+    hostname: 'test',
+    port: 80,
+  },
+}
+
 const __dirname = new URL('.', import.meta.url).pathname
 const assets = resolve(__dirname, './__mocks__/assets')
 const root = resolve(__dirname, './__mocks__/root')
@@ -41,8 +56,19 @@ describe('Write', () => {
       },
       page: defaultPage,
     })
-
-    assertSnapshot(t, routes)
+    for (const path in routes) {
+      const route = rutt.router({
+        [path]: routes[path],
+      })
+      const response = await route(
+        new Request(`https://example.com${path}`),
+        TEST_CONN_INFO,
+      )
+      const data = await response.arrayBuffer()
+      const decoder = new TextDecoder()
+      const text = decoder.decode(data)
+      await assertSnapshot(t, text, path)
+    }
     const buttonSpec = await Deno.stat(
       `${playwright}/components/button.spec.js`,
     )
@@ -64,7 +90,7 @@ describe('Write', () => {
     assert(numberFieldStories.isFile)
     assert(numberFieldStories.size > 0)
     const registry = await Deno.stat(
-      `${assets}/.registries/test.island.js`,
+      `${assets}/.registries/number-field.island.js`,
     )
     assert(registry.isFile)
     assert(registry.size > 0)

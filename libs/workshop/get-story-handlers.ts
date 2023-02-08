@@ -1,17 +1,19 @@
 import { GetStoryHandlers } from './types.ts'
 import { Handler, Routes } from '../server/mod.ts'
-import { chatui } from './templates/chatui.ts'
+import { chatui, fixturePolyfill, registriesTemplate } from './templates/mod.ts'
 import { toId } from './to-id.ts'
 import { fixture } from './constants.ts'
 import { element } from '../island/mod.ts'
 import { relative } from '../deps.ts'
+import { livereloadTemplate } from '../server/mod.ts'
+
 export const getStoryHandlers: GetStoryHandlers = ({
   storiesData,
   registries,
   page,
   assets,
 }) => {
-  const fmtRegistries = registries.map((r) => relative(assets, r))
+  const fmtRegistries = registries.map((registry) => relative(assets, registry))
   const routeSets = storiesData.map(([{ title }, stories]) => {
     const toRet: Record<string, Handler> = {}
     for (const data of stories) {
@@ -23,12 +25,18 @@ export const getStoryHandlers: GetStoryHandlers = ({
       })
       const id = toId(title, name)
       Object.assign(toRet, {
-        [`/${id}`]: new Response(
-          page({ story, registries: fmtRegistries, chatui }),
-          {
-            headers: { 'Content-Type': 'text/html' },
-          },
-        ),
+        [`/${id}`]: () =>
+          new Response(
+            page({
+              head: registriesTemplate(fmtRegistries),
+              body: [story, chatui, fixturePolyfill, livereloadTemplate].join(
+                '\n',
+              ),
+            }),
+            {
+              headers: { 'Content-Type': 'text/html' },
+            },
+          ),
         [`/${id}.include`]: () =>
           new Response(story, {
             headers: { 'Content-Type': 'text/html' },
