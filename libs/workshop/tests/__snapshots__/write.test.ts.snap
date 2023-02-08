@@ -2,7 +2,7 @@ export const snapshot = {};
 
 snapshot[`Write > build 1`] = `
 {
-  "/components-button--basicbutton": Response {
+  "/components-button--basic-button": Response {
   body: ReadableStream { locked: false },
   bodyUsed: false,
   headers: Headers { "content-type": "text/html" },
@@ -12,8 +12,8 @@ snapshot[`Write > build 1`] = `
   statusText: "",
   url: ""
 },
-  "/components-button--basicbutton.include": [Function: /components-button--basicbutton.include],
-  "/components-numberfield--numberfieldbasic": Response {
+  "/components-button--basic-button.include": [Function: /components-button--basic-button.include],
+  "/components-number-field--number-field-basic": Response {
   body: ReadableStream { locked: false },
   bodyUsed: false,
   headers: Headers { "content-type": "text/html" },
@@ -23,6 +23,6 @@ snapshot[`Write > build 1`] = `
   statusText: "",
   url: ""
 },
-  "/components-numberfield--numberfieldbasic.include": [Function: /components-numberfield--numberfieldbasic.include],
+  "/components-number-field--number-field-basic.include": [Function: /components-number-field--number-field-basic.include],
 }
 `;

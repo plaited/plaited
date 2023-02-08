@@ -49,7 +49,7 @@ export const controller = <T extends IslandElementConstructor>(
       }
       this.#delegateListeners()
       this.#shadowObserver = this.#createShadowObserver()
-      const { disconnect, trigger, add, feedback } = usePlait({
+      const { disconnect, trigger, add, feedback, lastEvent } = usePlait({
         context: this,
         ...rest,
       })
@@ -59,6 +59,7 @@ export const controller = <T extends IslandElementConstructor>(
         context: this,
         feedback,
         trigger,
+        lastEvent,
       })
       this.#disconnect = disconnect
       this.#trigger = trigger
@@ -134,6 +135,7 @@ export const controller = <T extends IslandElementConstructor>(
         if (template) {
           mo.disconnect()
           this.#appendTemplate(template)
+          template.remove()
         }
       })
       mo.observe(this, { childList: true })

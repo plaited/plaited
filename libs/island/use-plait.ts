@@ -14,7 +14,7 @@ export const usePlait = ({
   id?: string
   context: HTMLElement
 }) => {
-  const { feedback, trigger, stream, add } = plait({
+  const { feedback, trigger, stream, add, lastEvent } = plait({
     strategy,
     dev: Boolean(logger),
   })
@@ -28,5 +28,5 @@ export const usePlait = ({
     disconnect = connect(id || context.tagName.toLowerCase(), trigger)
     trigger({ type: `connected->${_id}` })
   }
-  return { trigger, disconnect, add, feedback }
+  return { trigger, disconnect, add, feedback, lastEvent }
 }

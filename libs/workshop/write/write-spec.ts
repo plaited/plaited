@@ -36,25 +36,9 @@ export const writeSpec: WriteSpec = async ({
       ),
     )
   }
-  const titles = storiesData.map(([{ title }]) => title)
-  const normalizedTitles = storiesData.map(([{ title }]) => title.toLowerCase())
-  const dedupe = new Set(normalizedTitles)
-  if (normalizedTitles.length !== dedupe.size) {
-    const dupes = titles.filter((element) => ![...dedupe].includes(element))
-      .join(', ')
-    console.error(`Rename StoryConfigs: [ ${dupes} ]`)
-    Deno.exit()
-  }
-  const fmtError = titles.find((str) => !/^[a-zA-Z][a-zA-Z\/0-9]*$/.test(str))
-  if (fmtError) {
-    console.error(
-      `Rename stories title "${fmtError}", title must contain can only contain letters "a-z", "A-Z" and "\"`,
-    )
-    Deno.exit()
-  }
   await Promise.all(storiesData.map(async ([{ title, path }, data]) => {
     const tilePath = title.split('/').map((str) => kebabCase(str)).join('/')
-    const testPath = `${playwright}/${tilePath}.spec.ts`
+    const testPath = `${playwright}/${tilePath}.spec.js`
     await Deno.mkdir(dirname(testPath), { recursive: true })
     const content = testFile({
       colorScheme,

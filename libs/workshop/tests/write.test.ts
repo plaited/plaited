@@ -23,10 +23,10 @@ describe('Write', () => {
   afterEach(async () => {
     const assetsExist = await getStat(assets)
     !assetsExist && await Deno.mkdir(assets, { recursive: true })
-    // await Deno.remove(assets, { recursive: true })
+    await Deno.remove(assets, { recursive: true })
     const playwrightExist = await getStat(playwright)
     !playwrightExist && await Deno.mkdir(playwright, { recursive: true })
-    // await Deno.remove(playwright, { recursive: true })
+    await Deno.remove(playwright, { recursive: true })
   })
   it('build', async (t) => {
     const routes = await write({
@@ -41,12 +41,13 @@ describe('Write', () => {
       },
       page: defaultPage,
     })
+
     assertSnapshot(t, routes)
     const buttonSpec = await Deno.stat(
-      `${playwright}/components/button.spec.ts`,
+      `${playwright}/components/button.spec.js`,
     )
     const numberFieldSpec = await Deno.stat(
-      `${playwright}/components/number-field.spec.ts`,
+      `${playwright}/components/number-field.spec.js`,
     )
     assert(buttonSpec.isFile)
     assert(buttonSpec.size > 0)

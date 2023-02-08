@@ -13,7 +13,7 @@ export const getHandler: GetHandler = ({
   return rutt.router(
     {
       ...routes,
-      ...getReloadRoute(reload, reloadClients),
+      ...reload ? getReloadRoute(reloadClients) : {},
     },
     otherHandler,
     errorHandler,

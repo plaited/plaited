@@ -159,7 +159,7 @@ export const plait = ({
     trigger,
     stream,
     lastEvent() {
-      return lastEvent
+      return { type: lastEvent.type, data: lastEvent.data }
     },
   })
 }

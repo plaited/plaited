@@ -1,36 +1,39 @@
-import { GetStoryHandlers, Routes } from './types.ts'
-import { Handler } from '../server/mod.ts'
+import { GetStoryHandlers } from './types.ts'
+import { Handler, Routes } from '../server/mod.ts'
 import { chatui } from './templates/chatui.ts'
-import { storyWrapper } from './story-wrapper.ts'
-import { kebabCase } from '../deps.ts'
+import { toId } from './to-id.ts'
 import { fixture } from './constants.ts'
-
+import { element } from '../island/mod.ts'
+import { relative } from '../deps.ts'
 export const getStoryHandlers: GetStoryHandlers = ({
   storiesData,
   registries,
   page,
+  assets,
 }) => {
+  const fmtRegistries = registries.map((r) => relative(assets, r))
   const routeSets = storiesData.map(([{ title }, stories]) => {
-    const subRoutes: Record<string, Handler> = {}
+    const toRet: Record<string, Handler> = {}
     for (const data of stories) {
       const { args, template, island = fixture, name } = data
-      const story = storyWrapper(island, template(args))
-      const id = kebabCase(name)
-      Object.assign(subRoutes, {
-        [`/${id}`]: new Response(page({ story, registries, chatui }), {
-          headers: { 'Content-Type': 'text/html' },
-        }),
+      const story = element({
+        tag: island,
+        template: template(args),
+        stylesheets: [...template.stylesheets],
+      })
+      const id = toId(title, name)
+      Object.assign(toRet, {
+        [`/${id}`]: new Response(
+          page({ story, registries: fmtRegistries, chatui }),
+          {
+            headers: { 'Content-Type': 'text/html' },
+          },
+        ),
         [`/${id}.include`]: () =>
           new Response(story, {
             headers: { 'Content-Type': 'text/html' },
           }),
       })
-    }
-    const toRet: Routes = {}
-    const titlePath = title.toLowerCase().split('/')
-    for (let i = 0; i < titlePath.length; i++) {
-      const cur = titlePath[i]
-      toRet[cur] = i === titlePath.length - 1 ? subRoutes : {}
     }
     return toRet
   })

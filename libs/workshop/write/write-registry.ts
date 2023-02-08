@@ -1,8 +1,4 @@
 import { bundler } from '../../bundler/mod.ts'
-import { resolve } from '../../deps.ts'
-
-const __dirname = new URL('.', import.meta.url).pathname
-const defaultFixture = resolve(__dirname, '../fixture.ts')
 
 export const writeRegistry = async ({
   islands,
@@ -13,7 +9,7 @@ export const writeRegistry = async ({
 }) => {
   const build = bundler({
     dev: false,
-    entryPoints: [...islands, defaultFixture],
+    entryPoints: islands,
   })
   const content = await build()
   const outdir = `${assets}/.registries`

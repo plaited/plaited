@@ -1,7 +1,7 @@
 import { writeRegistry, writeSpec } from './write/mod.ts'
 import { Write } from './types.ts'
 import { walk } from './../deps.ts'
-import { getStories } from './get-stories.ts'
+import { getStoriesData } from './get-stories-data.ts'
 import { getStoryHandlers } from './get-story-handlers.ts'
 
 export const write: Write = async ({
@@ -39,11 +39,21 @@ export const write: Write = async ({
     storyExts.some((ext) => entry.endsWith(ext))
   )
 
+  /** write test fixture */
   /** write registry file*/
   const registries = await writeRegistry({ islands, assets })
 
   /** get paths and name for each set of stories */
-  const storiesData = await getStories(stories)
+  const storiesData = await getStoriesData(stories)
+
+  const titles = storiesData.map(([{ title }]) => title)
+  const normalizedTitles = storiesData.map(([{ title }]) => title.toLowerCase())
+  const dedupe = new Set(normalizedTitles)
+  if (normalizedTitles.length !== dedupe.size) {
+    const dupes = titles.filter((element) => ![...dedupe].includes(element))
+      .join(', ')
+    console.error(`Rename StoryConfigs: [ ${dupes} ]`)
+  }
 
   // /** write spec files */
   await writeSpec({
@@ -59,5 +69,10 @@ export const write: Write = async ({
   })
 
   /** return story handlers */
-  return await getStoryHandlers({ storiesData, registries, page })
+  return await getStoryHandlers({
+    assets,
+    storiesData,
+    registries: [...registries],
+    page,
+  })
 }

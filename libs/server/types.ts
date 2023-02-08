@@ -62,7 +62,7 @@ export type CreateServer = ({
   }) => void
 }) => void
 
-export type GetHandler = <T = unknown>(args: {
+export type GetHandler = (args: {
   routes: Routes
   reload: boolean
   reloadClients: ReloadClient[]
@@ -72,6 +72,5 @@ export type GetHandler = <T = unknown>(args: {
 }) => Handler
 
 export type GetReloadRoute = (
-  reload: boolean,
   reloadClient: Array<ReloadClient>,
-) => Record<never, never> | Routes
+) => Routes

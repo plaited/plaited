@@ -3,7 +3,7 @@ import { Expect, Page } from '../deps.ts'
 import {
   Credentials,
   ErrorHandler,
-  Handler,
+  Routes,
   UnknownMethodHandler,
   UpdateRoutes,
 } from '../server/mod.ts'
@@ -23,10 +23,7 @@ export type PageFunc = (args: {
   registries: string[]
   chatui: string
 }) => string
-export type StoryWrapper = (
-  island: CustomElementTag,
-  template: string,
-) => string
+
 export type Ext = {
   island: string | string[]
   story: string | string[]
@@ -66,14 +63,11 @@ export type Story<T extends TemplateProps> = {
   play?: (args: { page: Page; expect: Expect; id: string }) => Promise<void>
 }
 
-export type Routes = {
-  [key: string]: Handler | Routes
-}
-
 export type GetStoryHandlers = (args: {
   storiesData: StoriesData
   registries: string[]
   page: PageFunc
+  assets: string
 }) => Routes
 
 export type WorkshopConfig = {

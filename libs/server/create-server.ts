@@ -1,6 +1,7 @@
-import { compress, extname, serve, serveDir, serveTls } from '../deps.ts'
-import { CreateServer, HandlerContext } from './types.ts'
-import { mimeTypes } from './mime-types.ts'
+import { extname, serve, serveTls } from '../deps.ts'
+import { CreateServer } from './types.ts'
+import { getFileHandler } from './get-file-handler.ts'
+
 export const createServer: CreateServer = ({
   handler,
   credentials,
@@ -11,41 +12,19 @@ export const createServer: CreateServer = ({
 }) => {
   const createServer = credentials ? serveTls : serve
   createServer(async (
-    req: Request,
-    ctx: HandlerContext,
+    req,
+    ctx,
   ) => {
     const { pathname } = new URL(req.url)
     const fileExt = extname(pathname)
-    if (fileExt) {
-      const ext: string = fileExt.slice(1)
-      if (
-        ['js', 'mjs', 'css', 'html', 'htm', 'json', 'xml', 'svg'].includes(ext)
-      ) {
-        const filePath = `${root}${pathname}`
-        let exist = true
-        try {
-          await Deno.stat(filePath)
-        } catch (_) {
-          exist = false
-        }
-        if (!exist) {
-          return new Response(null, {
-            status: 404,
-          })
-        }
-        const file = await Deno.readFile(filePath)
-        return new Response(compress(file), {
-          headers: {
-            'content-type': mimeTypes(ext),
-            'content-encoding': 'br',
-          },
-        })
-      }
-      return serveDir(req, {
-        fsRoot: root,
+    return fileExt
+      ? await getFileHandler({
+        pathname,
+        fileExt,
+        root,
+        req,
       })
-    }
-    return handler(req, ctx)
+      : handler(req, ctx)
   }, {
     signal,
     port,

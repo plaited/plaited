@@ -1,7 +1,7 @@
 import { html } from '../../island/mod.ts'
 import { livereloadTemplate } from '../../server/mod.ts'
 import { PageFunc } from '../types.ts'
-
+import { fixture } from '../constants.ts'
 export const defaultPage: PageFunc = ({ story, registries, chatui }) =>
   html`<!DOCTYPE html>
 <html lang="en">
@@ -19,5 +19,15 @@ export const defaultPage: PageFunc = ({ story, registries, chatui }) =>
   ${story}
   ${chatui}
   ${livereloadTemplate}
+  <script>
+    (function attachFixtureShadow(root) {
+      const template = document.querySelector("${fixture}")
+      const mode = template.getAttribute("shadowroot")
+      const shadowRoot = template.parentNode.attachShadow({ mode })
+      shadowRoot.appendChild(template.content)
+      template.remove()
+      attachFixtureShadow(shadowRoot)
+    })(document)
+  </script>
 </body>
 </html>`

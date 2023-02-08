@@ -2,7 +2,7 @@ import { StoryData } from '../types.ts'
 import { accessibilityAssertion } from './accessibility-assertion.ts'
 import { visualComparisonAssertion } from './visual-comparison-assertion.ts'
 import { interactionAssertion } from './interaction-assertion.ts'
-import { basename, dirname, kebabCase, relative } from '../../deps.ts'
+import { basename, dirname, relative } from '../../deps.ts'
 import { toId } from '../to-id.ts'
 import { fixture } from '../constants.ts'
 
@@ -29,9 +29,8 @@ export const testFile: TestDescribeTemplate = ({
 
   const content: string[] = []
   for (const { name, island = fixture } of data) {
-    const dashedName = kebabCase(name)
-    names.push(dashedName)
-    const id = toId(kebabCase(title), dashedName)
+    names.push(name)
+    const id = toId(title, name)
     content.push(`test('${name}', async ({ page }) => {
     await page.goto('./${id}')
     ${accessibilityAssertion(island)}

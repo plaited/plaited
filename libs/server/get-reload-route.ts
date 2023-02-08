@@ -6,10 +6,8 @@ const getMessage = (channel: string, data: string) => {
 }
 
 export const getReloadRoute: GetReloadRoute = (
-  reload,
   reloadClient,
 ) => {
-  if (!reload) return {}
   return {
     ['/livereload']: () => {
       let timerId: number | undefined

@@ -38,6 +38,10 @@ export interface PlaitInterface {
     add: (logicStands: Record<string, RulesFunc>) => void
     feedback: Feedback
     trigger: Trigger
+    lastEvent: () => {
+      type: string
+      data: unknown
+    }
   }): void
 }
 
