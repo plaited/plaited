@@ -1,5 +1,5 @@
 import { gitignore } from '../templates/mod.ts'
-import { getStat } from '../../deno-utils/mod.ts'
+import { getStat } from '../get-stat.ts'
 
 export const writeGitignore = async (path: string) => {
   const exist = await getStat(path)

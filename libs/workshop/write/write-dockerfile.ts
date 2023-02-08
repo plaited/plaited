@@ -1,5 +1,5 @@
 import { dockerFile } from '../templates/mod.ts'
-import { getStat } from '../../deno-utils/mod.ts'
+import { getStat } from '../get-stat.ts'
 
 export const writeDockerfile = async (path: string, pat: boolean) => {
   const exist = await getStat(path)

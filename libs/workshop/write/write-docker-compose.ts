@@ -1,5 +1,5 @@
 import { dockerCompose } from '../templates/mod.ts'
-import { getStat } from '../../deno-utils/mod.ts'
+import { getStat } from '../get-stat.ts'
 
 type WriteDockerCompose = (args: {
   pat: boolean

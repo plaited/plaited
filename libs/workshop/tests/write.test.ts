@@ -8,7 +8,7 @@ import {
   resolve,
 } from '../../test-deps.ts'
 import { write } from '../write.ts'
-import { getStat } from '../../deno-utils/get-stat.ts'
+import { getStat } from '../get-stat.ts'
 
 import { ConnInfo, rutt } from '../../deps.ts'
 
