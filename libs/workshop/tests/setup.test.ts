@@ -9,7 +9,7 @@ import { resolve, walk } from '../../deps.ts'
 import { setup } from '../setup.ts'
 
 const __dirname = new URL('.', import.meta.url).pathname
-const playwright = resolve(__dirname, './__tmp__/')
+const playwright = resolve(__dirname, './__tmp__/setup')
 
 const files = [
   `${playwright}/docker-compose.yml`,
