@@ -1,4 +1,9 @@
 import { bundler } from '../../bundler/mod.ts'
+import { resolve } from '../../deps.ts'
+
+const __dirname = new URL('.', import.meta.url).pathname
+const chatUI = resolve(__dirname, '../islands/plaited-chat-ui.ts')
+const fixture = resolve(__dirname, '../islands/plaited-fixture.ts')
 
 export const writeRegistry = async ({
   islands,
@@ -7,17 +12,25 @@ export const writeRegistry = async ({
   islands: string[]
   assets: string
 }) => {
+  const ui = bundler({
+    dev: false,
+    entryPoints: [chatUI, fixture],
+  })
   const build = bundler({
     dev: false,
     entryPoints: islands,
   })
+  const defaultContent = await ui()
   const content = await build()
   const outdir = `${assets}/.registries`
   await Deno.mkdir(outdir, { recursive: true })
   const registries: string[] = []
-  if (content && Array.isArray(content)) {
+  if (content && Array.isArray(content) && Array.isArray(defaultContent)) {
+    const filteredIslands = [...defaultContent, ...content].filter(([entry]) =>
+      !entry.startsWith('/chunk-')
+    )
     await Promise.all(
-      content.map(async (entry) => {
+      filteredIslands.map(async (entry) => {
         const registry = `${outdir}${entry[0]}`
         registries.push(registry)
         await Deno.writeFile(registry, entry[1])

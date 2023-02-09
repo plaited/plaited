@@ -5,7 +5,6 @@ import { toId } from './to-id.ts'
 import { fixture } from './constants.ts'
 import { IslandTemplate } from '../island/mod.ts'
 import { relative } from '../deps.ts'
-import { fixturePolyfill } from './templates/fixture-polyfill.ts'
 import { page } from '../server/mod.ts'
 
 export const getStoryHandlers: GetStoryHandlers = ({
@@ -34,7 +33,7 @@ export const getStoryHandlers: GetStoryHandlers = ({
                 dev,
                 head: [registriesTemplate(fmtRegistries), includes?.head]
                   .filter(Boolean).join('\n'),
-                body: [story, includes?.body, fixturePolyfill].filter(Boolean)
+                body: [story, includes?.body].filter(Boolean)
                   .join('\n'),
               }),
               {
@@ -54,9 +53,5 @@ export const getStoryHandlers: GetStoryHandlers = ({
   for (const set of routeSets) {
     Object.assign(routes, set)
   }
-  const data = storiesData.map((
-    [{ path: _path, ...rest }, data],
-  ) => [rest, data])
-  console.log(data)
   return routes
 }

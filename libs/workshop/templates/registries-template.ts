@@ -1,6 +1,10 @@
+import { html } from '../../island/html.ts'
+
 export const registriesTemplate = (registries: string[]) =>
-  `${
+  html`<script type="module" async>
+${
     registries.map((path) => {
-      return `<script type="module" src="/${path}" async></script>`
-    }).join('\n')
-  }`
+      return html`import "/${path}";`
+    }).join(' ')
+  }
+</script>`
