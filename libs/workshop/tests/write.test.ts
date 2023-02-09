@@ -68,8 +68,7 @@ describe('Write', () => {
     const data = await response.arrayBuffer()
     const decoder = new TextDecoder()
     const text = await decoder.decode(data)
-    console.log(text)
-    await assertSnapshot(t, text, fieldBasic)
+    await assertSnapshot(t, text)
     // route = rutt.router({
     //   [`${fieldBasic}.include`]: routes[`${fieldBasic}.include`],
     // })
