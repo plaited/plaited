@@ -3,11 +3,11 @@ import { denoPlugin, esbuild, toFileUrl } from '../deps.ts'
 export const bundler = ({
   dev,
   entryPoints,
-  importMapURL,
+  importMap,
 }: {
   dev: boolean
   entryPoints: string[]
-  importMapURL?: string
+  importMap?: URL
 }) => {
   const minifyOptions: Partial<esbuild.BuildOptions> = dev
     ? { minifyIdentifiers: false, minifySyntax: true, minifyWhitespace: true }
@@ -27,12 +27,12 @@ export const bundler = ({
       ...minifyOptions,
       platform: 'neutral',
       //@ts-ignore: forcing use with newer esbuild
-      plugins: [denoPlugin({ importMapURL })],
+      plugins: [denoPlugin({ importMapURL: importMap })],
       sourcemap: dev ? 'linked' : false,
       splitting: true,
-      target: [
-        'chrome109',
-      ],
+      // target: [
+      //   'chrome109',
+      // ],
       treeShaking: true,
       write: false,
     })

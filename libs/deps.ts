@@ -21,7 +21,6 @@ export { compress } from 'https://deno.land/x/brotli@0.1.7/mod.ts'
 // -- playwright --
 export { type Page } from 'https://esm.sh/playwright@1.30.0'
 export { type Expect } from 'https://esm.sh/@playwright/test@1.30.0'
-
 // -- rutt --
 // Until nested version is tagged and released using copy in server lib
 export * as rutt from 'https://deno.land/x/rutt@0.0.14/mod.ts'
@@ -40,3 +39,6 @@ export {
   camelCase,
   kebabCase,
 } from 'https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js'
+
+// -- parsel --
+export * as parsel from 'https://esm.sh/parsel-js@1.0.3'

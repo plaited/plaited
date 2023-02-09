@@ -732,6 +732,7 @@
     "https://esm.sh/jss-plugin-global@10.9.2": "c7fa51bd81a949b3f7b7b846ff642c1d938c4cbc19be6887b64da8450d0c3119",
     "https://esm.sh/jss-plugin-nested@10.9.2": "c21c26fc81c9837269de6c27dbea5a72ac259e02e5c65b4eece2f0a16af8b8eb",
     "https://esm.sh/jss@10.9.2": "14badd7ce211a04a95d0b7e33870237b2a4500f5009d62b4f0cdb920be2449ba",
+    "https://esm.sh/parsel-js@1.0.3": "b790522221fa218ff16a2213ebaab5851d312dbfe21bf5653c060f941e477906",
     "https://esm.sh/playwright@1.30.0": "940cab0362d635ed3199ab4e5fb405194815945d7e0e0c96d2967a6af102cd29",
     "https://esm.sh/sinon@15.0.1": "bc7f8a3c95147d2c9fcd63554cec73ea9da450f72fdf60ae5c90c544b7f43c0f",
     "https://esm.sh/v106/@babel/runtime@7.20.13/deno/helpers/esm/assertThisInitialized.js": "9181f841d0668fc46b9cd2643c89b37f8e7e64605a6e99bb0cefafc6741b899e",
@@ -801,6 +802,7 @@
     "https://esm.sh/v106/node_buffer.js": "445d389cb8c9f9fad5ff869ca2c2a863d178d410795ebd5f2f39d9a029156d56",
     "https://esm.sh/v106/node_perf_hooks.js": "36f4f6b11177606eb97c9a464cd98df8c43a94ec31b9e03551c05729022a8924",
     "https://esm.sh/v106/nth-check@2.1.1/es2022/nth-check.js": "0b27d4518b4bfdcca013f96fe8e4a27666d9ea4c36ccfa539c77e06fa95b90d5",
+    "https://esm.sh/v106/parsel-js@1.0.3/deno/parsel-js.js": "248ac9719f3e50a7a10a425f3f7a881c454c2ccd627af809a1441b89257c5a7a",
     "https://esm.sh/v106/playwright-core@1.30.0/deno/lib/containers/docker.js": "4ba57adb4e2b4426c9f82933a62523c523ce48ca52c99952b2e08903e80e7397",
     "https://esm.sh/v106/playwright-core@1.30.0/deno/lib/utils.js": "1cc812514480dda651e66cc73a755148071dbdfe0eda0cdb90db95d6b38eb626",
     "https://esm.sh/v106/playwright-core@1.30.0/deno/lib/utilsBundle.js": "3b0086cc9d6371951994a9ff017116195d6a9805518147c477de033b600d05f2",
@@ -1460,10 +1462,12 @@
   },
   "npm": {
     "specifiers": {
+      "@playwright/test@1.30.0": "@playwright/test@1.30.0",
       "jss-plugin-camel-case@10.9.2": "jss-plugin-camel-case@10.9.2",
       "jss-plugin-global@10.9.2": "jss-plugin-global@10.9.2",
       "jss-plugin-nested@10.9.2": "jss-plugin-nested@10.9.2",
-      "jss@10.9.2": "jss@10.9.2"
+      "jss@10.9.2": "jss@10.9.2",
+      "playwright@1.30.0": "playwright@1.30.0"
     },
     "packages": {
       "@babel/runtime@7.20.13": {
@@ -1471,6 +1475,17 @@
         "dependencies": {
           "regenerator-runtime": "regenerator-runtime@0.13.11"
         }
+      },
+      "@playwright/test@1.30.0": {
+        "integrity": "sha512-SVxkQw1xvn/Wk/EvBnqWIq6NLo1AppwbYOjNLmyU0R1RoQ3rLEBtmjTnElcnz8VEtn11fptj1ECxK0tgURhajw==",
+        "dependencies": {
+          "@types/node": "@types/node@18.13.0",
+          "playwright-core": "playwright-core@1.30.0"
+        }
+      },
+      "@types/node@18.13.0": {
+        "integrity": "sha512-gC3TazRzGoOnoKAhUx+Q0t8S9Tzs74z7m0ipwGpSqQrleP14hKxP4/JUeEQcD3W1/aIpnWl8pHowI7WokuZpXg==",
+        "dependencies": {}
       },
       "csstype@3.1.1": {
         "integrity": "sha512-DJR/VvkAvSZW9bTouZue2sSxDwdTN92uHjqeKVm+0dAqdfNykRzQ95tay8aXMBAAPpUiq4Qcug2L7neoRh2Egw==",
@@ -1514,6 +1529,16 @@
           "csstype": "csstype@3.1.1",
           "is-in-browser": "is-in-browser@1.1.3",
           "tiny-warning": "tiny-warning@1.0.3"
+        }
+      },
+      "playwright-core@1.30.0": {
+        "integrity": "sha512-7AnRmTCf+GVYhHbLJsGUtskWTE33SwMZkybJ0v6rqR1boxq2x36U7p1vDRV7HO2IwTZgmycracLxPEJI49wu4g==",
+        "dependencies": {}
+      },
+      "playwright@1.30.0": {
+        "integrity": "sha512-ENbW5o75HYB3YhnMTKJLTErIBExrSlX2ZZ1C/FzmHjUYIfxj/UnI+DWpQr992m+OQVSg0rCExAOlRwB+x+yyIg==",
+        "dependencies": {
+          "playwright-core": "playwright-core@1.30.0"
         }
       },
       "regenerator-runtime@0.13.11": {
