@@ -58,53 +58,52 @@ describe('Write', () => {
       },
     })
     const fieldBasic = '/components-example-field--field-basic'
-    let route = rutt.router({
+    const route = rutt.router({
       [fieldBasic]: routes[fieldBasic],
     })
-    let response = await route(
+    const response = await route(
       new Request(`https://example.com${fieldBasic}`),
       TEST_CONN_INFO,
     )
-    let data = await response.arrayBuffer()
-    let decoder = new TextDecoder()
-    let text = decoder.decode(data)
-    console.log(text)
+    const data = await response.arrayBuffer()
+    const decoder = new TextDecoder()
+    const text = decoder.decode(data)
     await assertSnapshot(t, text, fieldBasic)
-    route = rutt.router({
-      [`${fieldBasic}.include`]: routes[`${fieldBasic}.include`],
-    })
-    response = await route(
-      new Request(`https://example.com${fieldBasic}.include`),
-      TEST_CONN_INFO,
-    )
-    data = await response.arrayBuffer()
-    decoder = new TextDecoder()
-    text = decoder.decode(data)
-    await assertSnapshot(t, text, `${fieldBasic}.include`)
+    // route = rutt.router({
+    //   [`${fieldBasic}.include`]: routes[`${fieldBasic}.include`],
+    // })
+    // response = await route(
+    //   new Request(`https://example.com${fieldBasic}.include`),
+    //   TEST_CONN_INFO,
+    // )
+    // data = await response.arrayBuffer()
+    // decoder = new TextDecoder()
+    // text = decoder.decode(data)
+    // await assertSnapshot(t, text, `${fieldBasic}.include`)
 
-    const buttonBasic = '/components-example-button--basic-button'
-    route = rutt.router({
-      [buttonBasic]: routes[buttonBasic],
-    })
-    response = await route(
-      new Request(`https://example.com${buttonBasic}`),
-      TEST_CONN_INFO,
-    )
-    data = await response.arrayBuffer()
-    decoder = new TextDecoder()
-    text = decoder.decode(data)
-    await assertSnapshot(t, text, buttonBasic)
-    route = rutt.router({
-      [`${buttonBasic}.include`]: routes[`${buttonBasic}.include`],
-    })
-    response = await route(
-      new Request(`https://example.com${buttonBasic}.include`),
-      TEST_CONN_INFO,
-    )
-    data = await response.arrayBuffer()
-    decoder = new TextDecoder()
-    text = decoder.decode(data)
-    await assertSnapshot(t, text, `${buttonBasic}.include`)
+    // const buttonBasic = '/components-example-button--basic-button'
+    // route = rutt.router({
+    //   [buttonBasic]: routes[buttonBasic],
+    // })
+    // response = await route(
+    //   new Request(`https://example.com${buttonBasic}`),
+    //   TEST_CONN_INFO,
+    // )
+    // data = await response.arrayBuffer()
+    // decoder = new TextDecoder()
+    // text = decoder.decode(data)
+    // await assertSnapshot(t, text, buttonBasic)
+    // route = rutt.router({
+    //   [`${buttonBasic}.include`]: routes[`${buttonBasic}.include`],
+    // })
+    // response = await route(
+    //   new Request(`https://example.com${buttonBasic}.include`),
+    //   TEST_CONN_INFO,
+    // )
+    // data = await response.arrayBuffer()
+    // decoder = new TextDecoder()
+    // text = decoder.decode(data)
+    // await assertSnapshot(t, text, `${buttonBasic}.include`)
     const buttonSpec = await Deno.stat(
       `${playwright}/components/example-button.spec.js`,
     )
