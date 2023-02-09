@@ -1,21 +1,28 @@
-import { afterEach, assert, beforeEach, describe, it } from '../../test-deps.ts'
+import {
+  afterEach,
+  assert,
+  // assertSnapshot,
+  beforeEach,
+  describe,
+  it,
+} from '../../test-deps.ts'
 import { write } from '../write.ts'
 import { getStat } from '../get-stat.ts'
 
-import { resolve, toFileUrl } from '../../deps.ts'
+import { ConnInfo, resolve, rutt, toFileUrl } from '../../deps.ts'
 
-// const TEST_CONN_INFO: ConnInfo = {
-//   localAddr: {
-//     transport: 'tcp',
-//     hostname: 'test',
-//     port: 80,
-//   },
-//   remoteAddr: {
-//     transport: 'tcp',
-//     hostname: 'test',
-//     port: 80,
-//   },
-// }
+const TEST_CONN_INFO: ConnInfo = {
+  localAddr: {
+    transport: 'tcp',
+    hostname: 'test',
+    port: 80,
+  },
+  remoteAddr: {
+    transport: 'tcp',
+    hostname: 'test',
+    port: 80,
+  },
+}
 
 const __dirname = new URL('.', import.meta.url).pathname
 const assets = resolve(__dirname, './__mocks__/assets')
@@ -38,7 +45,7 @@ describe('Write', () => {
     await Deno.remove(playwright, { recursive: true })
   })
   it('build', async () => {
-    await write({
+    const routes = await write({
       assets,
       root,
       importMap,
@@ -50,17 +57,18 @@ describe('Write', () => {
         island: '.island.ts',
       },
     })
-    // const fieldBasic = '/components-example-field--field-basic'
-    // let route = rutt.router({
-    //   [fieldBasic]: routes[fieldBasic],
-    // })
-    // let response = await route(
-    //   new Request(`https://example.com${fieldBasic}`),
-    //   TEST_CONN_INFO,
-    // )
-    // let data = await response.arrayBuffer()
-    // let decoder = new TextDecoder()
-    // let text = decoder.decode(data)
+    const fieldBasic = '/components-example-field--field-basic'
+    const route = rutt.router({
+      [fieldBasic]: routes[fieldBasic],
+    })
+    const response = await route(
+      new Request(`https://example.com${fieldBasic}`),
+      TEST_CONN_INFO,
+    )
+    const data = await response.arrayBuffer()
+    const decoder = new TextDecoder()
+    const text = decoder.decode(data)
+    console.log(text)
     // await assertSnapshot(t, text, fieldBasic)
     // route = rutt.router({
     //   [`${fieldBasic}.include`]: routes[`${fieldBasic}.include`],
