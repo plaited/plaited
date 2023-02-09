@@ -25,8 +25,8 @@ const TEST_CONN_INFO: ConnInfo = {
 }
 
 const __dirname = new URL('.', import.meta.url).pathname
-const assets = resolve(__dirname, './__mocks__/write/assets')
-const root = resolve(__dirname, './__mocks__/write/root')
+const assets = resolve(__dirname, './__mocks__/assets')
+const root = resolve(__dirname, './__mocks__/root')
 const playwright = resolve(__dirname, './__tmp__/write')
 const importMap = toFileUrl(
   resolve(__dirname, '../../../.vscode/import-map.json'),

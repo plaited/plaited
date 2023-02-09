@@ -1,8 +1,8 @@
 {
   "tasks": {
     "lint": "deno lint",
-    "test": "deno test --allow-read  --allow-write --allow-env --allow-sys --allow-net --allow-run --trace-ops ./libs",
-    "test:only": "deno test --allow-read  --allow-write --allow-env --allow-sys --allow-net --allow-run --trace-ops"
+    "test": "deno test --allow-all ./libs",
+    "test:only": "deno test --allow-all"
   },
   "importMap": "./.vscode/import-map.json",
   "compilerOptions": {
