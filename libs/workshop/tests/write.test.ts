@@ -1,7 +1,7 @@
 import {
   afterEach,
   assert,
-  // assertSnapshot,
+  assertSnapshot,
   beforeEach,
   describe,
   it,
@@ -44,7 +44,7 @@ describe('Write', () => {
     !playwrightExist && await Deno.mkdir(playwright, { recursive: true })
     await Deno.remove(playwright, { recursive: true })
   })
-  it('build', async () => {
+  it('build', async (t) => {
     const routes = await write({
       assets,
       root,
@@ -67,9 +67,9 @@ describe('Write', () => {
     )
     const data = await response.arrayBuffer()
     const decoder = new TextDecoder()
-    const text = decoder.decode(data)
+    const text = await decoder.decode(data)
     console.log(text)
-    // await assertSnapshot(t, text, fieldBasic)
+    await assertSnapshot(t, text, fieldBasic)
     // route = rutt.router({
     //   [`${fieldBasic}.include`]: routes[`${fieldBasic}.include`],
     // })
