@@ -1,10 +1,10 @@
 import { assertEquals } from '../../test-deps.ts'
-import { element, html } from '../mod.ts'
+import { html, IslandTemplate } from '../mod.ts'
 
-// Expected usage const MyTemplate = ({ ..args}) => element({tag, template: html`` ...rest})
-Deno.test('element()', () => {
+// Expected usage const MyTemplate = ({ ..args}) => IslandTemplate({tag, template: html`` ...rest})
+Deno.test('IslandTemplate()', () => {
   assertEquals(
-    element({
+    IslandTemplate({
       tag: 'z-el',
       template: html`<div>
         <h1>header</h1>
@@ -14,7 +14,7 @@ Deno.test('element()', () => {
     'tag and template only',
   )
   assertEquals(
-    element({
+    IslandTemplate({
       tag: 'z-el',
       id: 'random',
       template: html`<div>
@@ -25,7 +25,7 @@ Deno.test('element()', () => {
     'tag, template, and id',
   )
   assertEquals(
-    element({
+    IslandTemplate({
       tag: 'z-el',
       target: 'random',
       triggers: {
@@ -40,7 +40,7 @@ Deno.test('element()', () => {
     'data-target, data-trigger, tag, template, and id',
   )
   assertEquals(
-    element({
+    IslandTemplate({
       tag: 'z-el',
       mode: 'closed',
       template: html`<div>

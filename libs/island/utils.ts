@@ -1,23 +1,5 @@
-/** https://medium.com/@WebReflection/dom-handleevent-a-cross-platform-standard-since-year-2000-5bf17287fd38 */
-class DelegatedListener {
-  callback: (ev: Event) => void
-  constructor(callback: (ev: Event) => void) {
-    this.callback = callback
-  }
-  handleEvent(evt: Event) {
-    this.callback(evt)
-  }
-}
-
-const delegates = new WeakMap()
-
-export const delegatedListener = Object.freeze({
-  set: (context: Element, callback: (ev: Event) => void) => {
-    delegates.set(context, new DelegatedListener(callback))
-  },
-  get: (context: Element) => delegates.get(context),
-  has: (context: Element) => delegates.has(context),
-})
+import { Primitive } from './types.ts'
+import { escape, trueTypeOf } from '../utils/mod.ts'
 
 // It takes the value of a data-target attribute and return all the events happening in it. minus the method identifier
 // so iof the event was data-target="click->doSomething" it would return ["click"]
@@ -47,4 +29,31 @@ export const filterAddedNodes = (nodes: NodeList) => {
     if (node instanceof HTMLElement && node.dataset.trigger) elements.push(node)
   })
   return elements
+}
+
+const reduceWhitespace = (str: string) => str.replace(/(\s\s+|\n)/g, ' ')
+
+const isTruthy = (val: Primitive) =>
+  trueTypeOf(val) === 'string' ||
+  trueTypeOf(val) === 'number'
+
+export const taggedWithPrimitives = (
+  strings: TemplateStringsArray,
+  ...expressions: Array<Primitive | Primitive[]>
+) => {
+  const { raw } = strings
+  let result = expressions.reduce<string>((acc, subst, i) => {
+    acc += reduceWhitespace(raw[i])
+    let filteredSubst = Array.isArray(subst)
+      ? subst.filter(isTruthy).join('')
+      : isTruthy(subst)
+      ? subst
+      : ''
+    if (acc.endsWith('$')) {
+      filteredSubst = escape(filteredSubst as string)
+      acc = acc.slice(0, -1)
+    }
+    return acc + filteredSubst
+  }, '')
+  return result += reduceWhitespace(raw[raw.length - 1])
 }

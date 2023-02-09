@@ -72,3 +72,11 @@ export interface IslandElementConstructor {
 export interface IslandConfig extends IslandElementOptions {
   tag: CustomElementTag
 }
+
+export type Primitive =
+  | number
+  | string
+  | boolean
+  | undefined
+  | null
+  | void

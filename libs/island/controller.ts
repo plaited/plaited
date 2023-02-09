@@ -1,14 +1,10 @@
 /// <reference lib="dom.iterable" />
 import { dataTarget, dataTrigger } from './constants.ts'
-import {
-  delegatedListener,
-  filterAddedNodes,
-  getTriggerKey,
-  matchAllEvents,
-} from './utils.ts'
+import { filterAddedNodes, getTriggerKey, matchAllEvents } from './utils.ts'
 import { Trigger } from '../plait/mod.ts'
 import { usePlait } from './use-plait.ts'
 import { IslandElementConstructor, IslandElementOptions } from './types.ts'
+import { delegatedListener } from './delegated-listener.ts'
 
 export const controller = <T extends IslandElementConstructor>(
   IslandElement: T,
