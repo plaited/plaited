@@ -1,11 +1,5 @@
-import {
-  afterEach,
-  assert,
-  assertSnapshot,
-  describe,
-  it,
-} from '../../test-deps.ts'
-import { basename, resolve, walk } from '../../deps.ts'
+import { afterEach, assertSnapshot, describe, it } from '../../test-deps.ts'
+import { basename, resolve } from '../../deps.ts'
 import { setup } from '../setup.ts'
 
 const __dirname = new URL('.', import.meta.url).pathname
@@ -29,12 +23,9 @@ describe('Setup', () => {
       playwright,
       port: 3000,
     })
-    for await (const { path, isFile } of walk(playwright, { maxDepth: 1 })) {
-      if (isFile) {
-        assert(files.includes(path))
-        const file = await Deno.readTextFile(path)
-        assertSnapshot(t, file, { name: basename(path) })
-      }
+    for (const path of files) {
+      const contents = await Deno.readTextFile(path)
+      await assertSnapshot(t, contents, { name: basename(path) })
     }
   })
   it('setup: optional', async (t) => {
@@ -48,12 +39,9 @@ describe('Setup', () => {
       },
       project: 'test',
     })
-    for await (const { path, isFile } of walk(playwright, { maxDepth: 1 })) {
-      if (isFile) {
-        assert(files.includes(path))
-        const file = await Deno.readTextFile(path)
-        assertSnapshot(t, file, { name: `${basename(path)}-https` })
-      }
+    for (const path of files) {
+      const contents = await Deno.readTextFile(path)
+      await assertSnapshot(t, contents, { name: `${basename(path)}-https` })
     }
   })
 })
