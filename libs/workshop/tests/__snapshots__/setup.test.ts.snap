@@ -1,25 +1,175 @@
 export const snapshot = {};
 
-snapshot[`Setup > setup: required 1`] = `"/home/irby/Workspace/plaited/libs/workshop/tests/__tmp__/setup/docker-compose.yml"`;
+snapshot[`Setup > setup: required 1`] = `
+'services:
+  tests:
+    container_name: playwright_tests:v1.30.0-jammy
+    entrypoint: yarn
+    stdin_open: true # docker run -i
+    tty: true # docker run -t
+    build:
+      context: .
+      args:
+        - TAG=v1.30.0-jammy
+        
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/tests:delegated
+      - /tests/.yarn
+      - /tests/node_modules'
+`;
 
-snapshot[`Setup > setup: required 2`] = `"/home/irby/Workspace/plaited/libs/workshop/tests/__tmp__/setup/Dockerfile"`;
+snapshot[`Setup > setup: required 2`] = `
+"ARG TAG
+FROM mcr.microsoft.com/playwright:\$TAG
 
-snapshot[`Setup > setup: required 3`] = `"/home/irby/Workspace/plaited/libs/workshop/tests/__tmp__/setup/.gitignore"`;
 
-snapshot[`Setup > setup: required 4`] = `"/home/irby/Workspace/plaited/libs/workshop/tests/__tmp__/setup/package.json"`;
+WORKDIR /tests
 
-snapshot[`Setup > setup: required 5`] = `"/home/irby/Workspace/plaited/libs/workshop/tests/__tmp__/setup/playwright.config.ts"`;
+COPY .yarn/releases .yarn/releases
+COPY .yarn/plugins .yarn/plugins
+COPY .yarn/cache .yarn/cache
+COPY yarn.lock .
+COPY .yarnrc.yml .
+COPY package.json .
 
-snapshot[`Setup > setup: required 6`] = `"/home/irby/Workspace/plaited/libs/workshop/tests/__tmp__/setup/.yarnrc.yml"`;
+RUN  yarn auth &&   yarn install --immutable
+"
+`;
 
-snapshot[`Setup > setup: optional 1`] = `"/home/irby/Workspace/plaited/libs/workshop/tests/__tmp__/setup/docker-compose.yml"`;
+snapshot[`Setup > setup: required 3`] = `
+"# Yarn
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions"
+`;
 
-snapshot[`Setup > setup: optional 2`] = `"/home/irby/Workspace/plaited/libs/workshop/tests/__tmp__/setup/Dockerfile"`;
+snapshot[`Setup > setup: required 4`] = `
+'{
+  "scripts": {
+    "dc": "docker-compose run --rm tests",
+    "test": "npx playwright test"
+  },
+  "dependencies": {
+    "@axe-core/playwright": "^4.6.0",
+    "@playwright/test": "^1.30.0",
+    "playwright": "^1.30.0"
+  },
+  "yarn": "3.3.1",
+  "packageManager": "yarn@3.3.1"
+}
+'
+`;
 
-snapshot[`Setup > setup: optional 3`] = `"/home/irby/Workspace/plaited/libs/workshop/tests/__tmp__/setup/.gitignore"`;
+snapshot[`Setup > setup: required 5`] = `
+"import { defineConfig } from '@playwright/test';
+export default defineConfig({
+  webServer: {
+    command: 'cd ../../../../.. && deno task start',
+    url: 'http://localhost:3000/',
+    timeout: 120 * 1000,
+    reuseExistingServer: !process.env.CI,
+  },
+  use: {
+    baseURL: 'http://localhost:3000/',
+  },
+});"
+`;
 
-snapshot[`Setup > setup: optional 4`] = `"/home/irby/Workspace/plaited/libs/workshop/tests/__tmp__/setup/package.json"`;
+snapshot[`Setup > setup: required 6`] = `
+'nodeLinker: node-modules
+npmAuditRegistry: "https://registry.npmjs.org"
+'
+`;
 
-snapshot[`Setup > setup: optional 5`] = `"/home/irby/Workspace/plaited/libs/workshop/tests/__tmp__/setup/playwright.config.ts"`;
+snapshot[`Setup > setup: optional 1`] = `
+'services:
+  tests:
+    container_name: test_tests:v1.30.0-jammy
+    entrypoint: yarn
+    stdin_open: true # docker run -i
+    tty: true # docker run -t
+    build:
+      context: .
+      args:
+        - TAG=v1.30.0-jammy
+        - GIT_PAT=\${GIT_PAT}
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/tests:delegated
+      - /tests/.yarn
+      - /tests/node_modules'
+`;
 
-snapshot[`Setup > setup: optional 6`] = `"/home/irby/Workspace/plaited/libs/workshop/tests/__tmp__/setup/.yarnrc.yml"`;
+snapshot[`Setup > setup: optional 2`] = `
+"ARG TAG
+FROM mcr.microsoft.com/playwright:\$TAG
+
+ARG GIT_PAT
+ENV GIT_PAT=\${GIT_PAT}
+
+WORKDIR /tests
+
+COPY .yarn/releases .yarn/releases
+COPY .yarn/plugins .yarn/plugins
+COPY .yarn/cache .yarn/cache
+COPY yarn.lock .
+COPY .yarnrc.yml .
+COPY package.json .
+
+RUN export AUTH=\${GIT_PAT} && yarn auth &&   yarn install --immutable
+"
+`;
+
+snapshot[`Setup > setup: optional 3`] = `
+"# Yarn
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions"
+`;
+
+snapshot[`Setup > setup: optional 4`] = `
+'{
+  "scripts": {
+    "dc": "docker-compose run --rm tests",
+    "test": "npx playwright test"
+  },
+  "dependencies": {
+    "@axe-core/playwright": "^4.6.0",
+    "@playwright/test": "^1.30.0",
+    "playwright": "^1.30.0"
+  },
+  "yarn": "3.3.1",
+  "packageManager": "yarn@3.3.1"
+}
+'
+`;
+
+snapshot[`Setup > setup: optional 5`] = `
+"import { defineConfig } from '@playwright/test';
+export default defineConfig({
+  webServer: {
+    command: 'cd ../../../../.. && deno task start',
+    url: 'https://localhost:3000/',
+    timeout: 120 * 1000,
+    reuseExistingServer: !process.env.CI,
+  },
+  use: {
+    baseURL: 'https://localhost:3000/',
+  },
+});"
+`;
+
+snapshot[`Setup > setup: optional 6`] = `
+'nodeLinker: node-modules
+npmAuditRegistry: "https://registry.npmjs.org"
+'
+`;

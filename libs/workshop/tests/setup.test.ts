@@ -14,12 +14,20 @@ describe('Setup', () => {
       playwright,
       port: 3000,
     })
-    await assertSnapshot(t, `${playwright}/docker-compose.yml`)
-    await assertSnapshot(t, `${playwright}/Dockerfile`)
-    await assertSnapshot(t, `${playwright}/.gitignore`)
-    await assertSnapshot(t, `${playwright}/package.json`)
-    await assertSnapshot(t, `${playwright}/playwright.config.ts`)
-    await assertSnapshot(t, `${playwright}/.yarnrc.yml`)
+    const dockerCompose = await Deno.readTextFile(
+      `${playwright}/docker-compose.yml`,
+    )
+    await assertSnapshot(t, dockerCompose)
+    const dockerFile = await Deno.readTextFile(`${playwright}/Dockerfile`)
+    await assertSnapshot(t, dockerFile)
+    const gitignore = await Deno.readTextFile(`${playwright}/.gitignore`)
+    await assertSnapshot(t, gitignore)
+    const packageJson = await Deno.readTextFile(`${playwright}/package.json`)
+    await assertSnapshot(t, packageJson)
+    const config = await Deno.readTextFile(`${playwright}/playwright.config.ts`)
+    await assertSnapshot(t, config)
+    const yarnrc = await Deno.readTextFile(`${playwright}/.yarnrc.yml`)
+    await assertSnapshot(t, yarnrc)
   })
   it('setup: optional', async (t) => {
     await setup({
@@ -32,11 +40,19 @@ describe('Setup', () => {
       },
       project: 'test',
     })
-    await assertSnapshot(t, `${playwright}/docker-compose.yml`)
-    await assertSnapshot(t, `${playwright}/Dockerfile`)
-    await assertSnapshot(t, `${playwright}/.gitignore`)
-    await assertSnapshot(t, `${playwright}/package.json`)
-    await assertSnapshot(t, `${playwright}/playwright.config.ts`)
-    await assertSnapshot(t, `${playwright}/.yarnrc.yml`)
+    const dockerCompose = await Deno.readTextFile(
+      `${playwright}/docker-compose.yml`,
+    )
+    await assertSnapshot(t, dockerCompose)
+    const dockerFile = await Deno.readTextFile(`${playwright}/Dockerfile`)
+    await assertSnapshot(t, dockerFile)
+    const gitignore = await Deno.readTextFile(`${playwright}/.gitignore`)
+    await assertSnapshot(t, gitignore)
+    const packageJson = await Deno.readTextFile(`${playwright}/package.json`)
+    await assertSnapshot(t, packageJson)
+    const config = await Deno.readTextFile(`${playwright}/playwright.config.ts`)
+    await assertSnapshot(t, config)
+    const yarnrc = await Deno.readTextFile(`${playwright}/.yarnrc.yml`)
+    await assertSnapshot(t, yarnrc)
   })
 })
