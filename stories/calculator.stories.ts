@@ -1,24 +1,15 @@
-import { css, element, html } from '$plaited'
+import { html, IslandTemplate } from '$plaited'
 
-export const valueDisplay = element({
+export const valueDisplay = IslandTemplate({
   tag: 'value-display',
   template:
     html`<h1 data-target="display" class="display" data-trigger="click->test">00:00</h1>`,
 })
 
-const { styles, stylesheet } = css({
-  grid: {
-    '& > *': {
-      color: 'blue',
-    },
-  },
-})
-
-export const keyPad = element({
-  stylesheets: stylesheet,
+export const keyPad = IslandTemplate({
   tag: 'key-pad',
   template: html`<div class="keypad">
-    <div class="${styles.grid}">
+    <div>
       <button class="number-button" data-trigger="click->number" value="1">1</button>
       <button class="number-button" data-trigger="click->number" value="2">2</button>
       <button class="number-button" data-trigger="click->number" value="3">3</button>
