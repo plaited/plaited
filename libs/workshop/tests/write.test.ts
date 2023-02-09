@@ -5,6 +5,7 @@ import {
   beforeEach,
   describe,
   it,
+  serialize,
 } from '../../test-deps.ts'
 import { write } from '../write.ts'
 import { getStat } from '../get-stat.ts'
@@ -69,7 +70,7 @@ describe('Write', () => {
     const decoder = new TextDecoder()
     const text = await decoder.decode(data)
     console.log(text)
-    await assertSnapshot(t, text, fieldBasic)
+    await assertSnapshot(t, serialize(text), fieldBasic)
     // route = rutt.router({
     //   [`${fieldBasic}.include`]: routes[`${fieldBasic}.include`],
     // })

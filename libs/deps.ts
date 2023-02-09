@@ -3,9 +3,9 @@ export {
   type ConnInfo,
   serve,
   serveTls,
-} from 'https://deno.land/std@0.175.0/http/mod.ts'
-export { serveDir } from 'https://deno.land/std@0.175.0/http/file_server.ts'
-export { walk } from 'https://deno.land/std@0.175.0/fs/mod.ts'
+} from 'https://deno.land/std@0.177.0/http/mod.ts'
+export { serveDir } from 'https://deno.land/std@0.177.0/http/file_server.ts'
+export { walk } from 'https://deno.land/std@0.177.0/fs/mod.ts'
 export {
   basename,
   dirname,
@@ -13,7 +13,7 @@ export {
   relative,
   resolve,
   toFileUrl,
-} from 'https://deno.land/std@0.175.0/path/mod.ts'
+} from 'https://deno.land/std@0.177.0/path/mod.ts'
 
 // -- brotli --
 export { compress } from 'https://deno.land/x/brotli@0.1.7/mod.ts'
