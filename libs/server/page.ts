@@ -1,4 +1,4 @@
-import { html } from '../island/mod.ts'
+// import { html } from '../island/mod.ts'
 import { livereloadTemplate } from './livereload-template.ts'
 
 export const page = ({ head, body, dev }: {
@@ -6,7 +6,7 @@ export const page = ({ head, body, dev }: {
   body: string
   dev: boolean
 }) =>
-  html`<!DOCTYPE html>
+  `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
