@@ -1,3 +1,3 @@
-import { island } from '../../../../island/mod.ts'
+import { island } from '$plaited'
 
 island({ tag: 'example-button' }, () => {})

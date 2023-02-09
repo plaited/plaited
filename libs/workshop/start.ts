@@ -3,6 +3,7 @@ import { WorkshopConfig } from './types.ts'
 import { write } from './write.ts'
 import { watcher } from './watcher.ts'
 import { setup } from './setup.ts'
+import { dirname, resolve, toFileUrl } from '../deps.ts'
 export const start = async ({
   assets,
   colorScheme,
@@ -10,6 +11,7 @@ export const start = async ({
   dev = true,
   errorHandler,
   exts,
+  importMap,
   notFoundTemplate,
   pat = false,
   playwright,
@@ -48,6 +50,7 @@ export const start = async ({
     colorScheme,
     dev,
     exts,
+    importMap: importMap ? toFileUrl(importMap) : undefined,
     includes,
     playwright,
     port,
@@ -70,6 +73,7 @@ export const start = async ({
       colorScheme,
       dev,
       exts,
+      importMap: importMap ? toFileUrl(importMap) : undefined,
       includes,
       playwright,
       port,
@@ -79,3 +83,14 @@ export const start = async ({
     })
   }
 }
+
+const configPath = resolve(Deno.cwd(), Deno.args[0])
+const configDir = dirname(configPath)
+const { default: config } = await import(configPath)
+start({
+  ...config,
+  playwright: resolve(configDir, config.playwright),
+  importMap: resolve(configDir, config.importMap),
+  assets: resolve(configDir, config.assets),
+  root: resolve(configDir, config.root),
+})

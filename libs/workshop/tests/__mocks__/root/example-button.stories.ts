@@ -1,13 +1,13 @@
-import { html, template, wire } from '../../../../island/mod.ts'
-import { Story, StoryConfig } from '../../../types.ts'
+import { html, template, wire } from '$plaited'
+import { Story, StoryConfig } from '$workshop'
 
-const Button = template<{ children: string }>(({ children, ...attrs }) =>
+const ExampleButton = template<{ children: string }>(({ children, ...attrs }) =>
   html`<button  ${wire(attrs)}>${children}</button>`
 )
 
 export default {
-  title: 'Components/Button',
-  template: Button,
+  title: 'Components/ExampleButton',
+  template: ExampleButton,
   description: 'test button to verify this workshop works',
 } as StoryConfig<{ children: string }>
 

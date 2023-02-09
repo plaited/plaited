@@ -18,6 +18,9 @@ type TestDescribeTemplate = (args: {
   island?: CustomElementTag
 }) => string
 
+const useColorScheme = (scheme: 'light' | 'dark') =>
+  `test.use({ colorScheme: '${scheme}' })\n  `
+
 export const testFile: TestDescribeTemplate = ({
   colorScheme,
   data,
@@ -28,7 +31,7 @@ export const testFile: TestDescribeTemplate = ({
 }) => {
   const names: string[] = []
   const path = relative(dirname(testPath), storiesPath)
-  const stories = `${dirname(path)}/${basename(path)}`.replace('.ts', '.js')
+  const stories = `./${dirname(path)}/${basename(path)}`.replace('.ts', '.js')
 
   const content: string[] = []
   for (const { name } of data) {
@@ -39,24 +42,23 @@ export const testFile: TestDescribeTemplate = ({
     ${accessibilityAssertion(island)}
     ${visualComparisonAssertion(island, id)}
     ${interactionAssertion(name, id)}
-  })
-`)
+  })`)
   }
 
-  return `import { test, expect } from '@playwright/test'
+  return `/** GENERATED TEST FILE DO NOT EDIT **/
+import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import { ${names.join('\n')}} from '${stories}'
 
 test.describe('${title}${colorScheme ? '(light)' : ''}', () => {
-  test.use({ colorScheme:' ${colorScheme ? 'light' : 'normal'}' })
-  ${content.join('\n')}
+  ${colorScheme ? useColorScheme('light') : ''}${content.join('\n')}
 })
 ${
     colorScheme
-      ? `test.describe('${title}${colorScheme ? '(light)' : ''}', () => {
-  test.use({ colorScheme: 'dark' })
-  ${content.join('\n')}
-})`
-      : ''
+      ? `test.describe('${title}(dark)', () => {
+  ${colorScheme ? useColorScheme('dark') : ''}${content.join('\n')}
+})
+/** GENERATED TEST FILE DO NOT EDIT **/`
+      : '/** GENERATED TEST FILE DO NOT EDIT **/'
   }`
 }

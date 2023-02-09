@@ -8,9 +8,11 @@ const fixture = resolve(__dirname, '../islands/plaited-fixture.ts')
 export const writeRegistry = async ({
   islands,
   assets,
+  importMap,
 }: {
   islands: string[]
   assets: string
+  importMap?: URL
 }) => {
   const ui = bundler({
     dev: false,
@@ -19,10 +21,12 @@ export const writeRegistry = async ({
   const build = bundler({
     dev: false,
     entryPoints: islands,
+    importMap,
   })
   const defaultContent = await ui()
   const content = await build()
   const outdir = `${assets}/.registries`
+  await Deno.remove(outdir, { recursive: true })
   await Deno.mkdir(outdir, { recursive: true })
   const registries: string[] = []
   if (content && Array.isArray(content) && Array.isArray(defaultContent)) {

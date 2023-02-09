@@ -1,7 +1,7 @@
-import { html, template, wire } from '../../../../island/mod.ts'
-import { Story, StoryConfig } from '../../../types.ts'
+import { html, template, wire } from '$plaited'
+import { Story, StoryConfig } from '$workshop'
 
-const NumberField = template<{ value: number }>((attrs) =>
+const ExampleField = template<{ value: number }>((attrs) =>
   html`<input type='text' ${wire(attrs)}
    min="10" max="100"
   ref={ref}
@@ -9,13 +9,13 @@ const NumberField = template<{ value: number }>((attrs) =>
 )
 
 export default {
-  title: 'Components/NumberField',
-  template: NumberField,
-  island: 'number-field',
+  title: 'Components/ExampleField',
+  template: ExampleField,
+  island: 'example-field',
   description: 'test button to verify this workshop works',
 } as StoryConfig<{ value: number }>
 
-export const NumberFieldBasic: Story<{ value: number }> = {
+export const FieldBasic: Story<{ value: number }> = {
   args: {
     value: 100,
     id: 'input',

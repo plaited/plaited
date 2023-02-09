@@ -9,11 +9,11 @@ export const write: Write = async ({
   colorScheme,
   exts,
   port,
+  playwright,
   project,
   root,
-  playwright,
   dev,
-  importMapURL,
+  importMap,
   includes,
 }) => {
   const { island, story } = exts
@@ -41,7 +41,11 @@ export const write: Write = async ({
 
   /** write test fixture */
   /** write registry file*/
-  const registries = await writeRegistry({ islands, assets })
+  const registries = await writeRegistry({
+    islands,
+    assets,
+    importMap,
+  })
 
   /** get paths and name for each set of stories */
   const storiesData = await getStoriesData(stories)
@@ -64,7 +68,7 @@ export const write: Write = async ({
     root,
     colorScheme,
     dev,
-    importMapURL,
+    importMap,
     entryPoints: stories,
   })
 

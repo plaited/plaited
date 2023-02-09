@@ -1,5 +1,5 @@
 import { StoriesData } from '../types.ts'
-import { dirname, kebabCase } from '../../deps.ts'
+import { dirname, kebabCase, relative } from '../../deps.ts'
 import { bundler } from '../../bundler/mod.ts'
 import { testFile } from '../templates/mod.ts'
 
@@ -12,20 +12,20 @@ type WriteSpec = (args: {
   colorScheme?: boolean
   dev: boolean
   entryPoints: string[]
-  importMapURL?: string | undefined
+  importMap?: URL
 }) => Promise<void>
 export const writeSpec: WriteSpec = async ({
   colorScheme = true,
   dev,
   entryPoints,
-  importMapURL,
+  importMap,
   port,
   project,
   root,
   storiesData,
   playwright,
 }) => {
-  const build = bundler({ entryPoints, dev, importMapURL })
+  const build = bundler({ entryPoints, dev, importMap })
   const content = await build()
   const outdir = `${playwright}/.stories`
   await Deno.mkdir(outdir, { recursive: true })
@@ -37,6 +37,7 @@ export const writeSpec: WriteSpec = async ({
     )
   }
   await Promise.all(storiesData.map(async ([{ title, path, island }, data]) => {
+    console.log(title)
     const tilePath = title.split('/').map((str) => kebabCase(str)).join('/')
     const testPath = `${playwright}/${tilePath}.spec.js`
     await Deno.mkdir(dirname(testPath), { recursive: true })
@@ -45,11 +46,11 @@ export const writeSpec: WriteSpec = async ({
       data,
       port,
       project,
-      storiesPath: `${outdir}${path.slice(root.length)}`,
+      storiesPath: `${outdir}${path.slice(relative(Deno.cwd(), root).length)}`,
       testPath,
       title,
       island,
     })
-    await Deno.writeTextFile(testPath, content, { append: true })
+    await Deno.writeTextFile(testPath, content)
   }))
 }

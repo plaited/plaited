@@ -10,26 +10,6 @@ snapshot[`Setup > setup: required 1`] = `
 !.yarn/versions"
 `;
 
-snapshot[`Setup > setup: required 3`] = `
-'services:
-  tests:
-    container_name: playwright_tests:v1.30.0-jammy
-    entrypoint: yarn
-    stdin_open: true # docker run -i
-    tty: true # docker run -t
-    build:
-      context: .
-      args:
-        - TAG=v1.30.0-jammy
-        
-    ports:
-      - "3000:3000"
-    volumes:
-      - .:/tests:delegated
-      - /tests/.yarn
-      - /tests/node_modules'
-`;
-
 snapshot[`Setup > setup: required 2`] = `
 '{
   "scripts": {
@@ -53,11 +33,31 @@ npmAuditRegistry: "https://registry.npmjs.org"
 '
 `;
 
+snapshot[`Setup > setup: required 3`] = `
+'services:
+  tests:
+    container_name: playwright_tests:v1.30.0-jammy
+    entrypoint: yarn
+    stdin_open: true # docker run -i
+    tty: true # docker run -t
+    build:
+      context: .
+      args:
+        - TAG=v1.30.0-jammy
+        
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/tests:delegated
+      - /tests/.yarn
+      - /tests/node_modules'
+`;
+
 snapshot[`Setup > setup: required 5`] = `
 "import { defineConfig } from '@playwright/test';
 export default defineConfig({
   webServer: {
-    command: 'deno task start',
+    command: 'cd ../../../.. && deno task start',
     url: 'http://localhost:3000/',
     timeout: 120 * 1000,
     reuseExistingServer: !process.env.CI,
@@ -143,7 +143,7 @@ snapshot[`Setup > setup: optional 5`] = `
 "import { defineConfig } from '@playwright/test';
 export default defineConfig({
   webServer: {
-    command: 'deno task start',
+    command: 'cd ../../../.. && deno task start',
     url: 'https://localhost:3000/',
     timeout: 120 * 1000,
     reuseExistingServer: !process.env.CI,

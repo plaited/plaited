@@ -36,6 +36,7 @@ export const setup = async ({
     () =>
       writePlaywrightConfig({
         path: `${playwright}/playwright.config.ts`,
+        playwright,
         port,
         protocol,
       }),

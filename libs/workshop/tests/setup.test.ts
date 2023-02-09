@@ -4,9 +4,8 @@ import {
   assertSnapshot,
   describe,
   it,
-  resolve,
 } from '../../test-deps.ts'
-import { walk } from '../../deps.ts'
+import { resolve, walk } from '../../deps.ts'
 import { setup } from '../setup.ts'
 
 const __dirname = new URL('.', import.meta.url).pathname

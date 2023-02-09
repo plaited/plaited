@@ -5,12 +5,11 @@ import {
   beforeEach,
   describe,
   it,
-  resolve,
 } from '../../test-deps.ts'
 import { write } from '../write.ts'
 import { getStat } from '../get-stat.ts'
 
-import { ConnInfo, rutt } from '../../deps.ts'
+import { ConnInfo, resolve, rutt, toFileUrl } from '../../deps.ts'
 
 const TEST_CONN_INFO: ConnInfo = {
   localAddr: {
@@ -29,6 +28,9 @@ const __dirname = new URL('.', import.meta.url).pathname
 const assets = resolve(__dirname, './__mocks__/assets')
 const root = resolve(__dirname, './__mocks__/root')
 const playwright = resolve(__dirname, './__tmp__/')
+const importMap = toFileUrl(
+  resolve(__dirname, '../../../.vscode/import-map.json'),
+)
 
 describe('Write', () => {
   beforeEach(async () => {
@@ -46,6 +48,7 @@ describe('Write', () => {
     const routes = await write({
       assets,
       root,
+      importMap,
       playwright,
       dev: true,
       port: 3000,
@@ -68,27 +71,27 @@ describe('Write', () => {
       await assertSnapshot(t, text, path)
     }
     const buttonSpec = await Deno.stat(
-      `${playwright}/components/button.spec.js`,
+      `${playwright}/components/example-button.spec.js`,
     )
     const numberFieldSpec = await Deno.stat(
-      `${playwright}/components/number-field.spec.js`,
+      `${playwright}/components/example-field.spec.js`,
     )
     assert(buttonSpec.isFile)
     assert(buttonSpec.size > 0)
     assert(numberFieldSpec.isFile)
     assert(numberFieldSpec.size > 0)
     const buttonStories = await Deno.stat(
-      `${playwright}/.stories/button.stories.js`,
+      `${playwright}/.stories/example-button.stories.js`,
     )
     const numberFieldStories = await Deno.stat(
-      `${playwright}/.stories/number-field.stories.js`,
+      `${playwright}/.stories/example-field.stories.js`,
     )
     assert(buttonStories.isFile)
     assert(buttonStories.size > 0)
     assert(numberFieldStories.isFile)
     assert(numberFieldStories.size > 0)
     const registry = await Deno.stat(
-      `${assets}/.registries/number-field.island.js`,
+      `${assets}/.registries/example-field.island.js`,
     )
     assert(registry.isFile)
     assert(registry.size > 0)

@@ -53,7 +53,7 @@ export type Write = (args: {
   colorScheme?: boolean
   dev: boolean
   exts: Ext
-  importMapURL?: string | undefined
+  importMap?: URL
   includes?: {
     head?: string
     body?: string
@@ -71,6 +71,7 @@ export type Watcher = (
 ) => Promise<void>
 
 export type WorkshopConfig = {
+  importMap?: string
   assets: string
   colorScheme?: boolean
   credentials?: Credentials
