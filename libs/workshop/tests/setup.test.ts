@@ -1,24 +1,9 @@
-import {
-  afterEach,
-  assert,
-  assertSnapshot,
-  describe,
-  it,
-} from '../../test-deps.ts'
-import { resolve, walk } from '../../deps.ts'
+import { afterEach, assertSnapshot, describe, it } from '../../test-deps.ts'
+import { resolve } from '../../deps.ts'
 import { setup } from '../setup.ts'
 
 const __dirname = new URL('.', import.meta.url).pathname
 const playwright = resolve(__dirname, './__tmp__/setup')
-
-const files = [
-  `${playwright}/docker-compose.yml`,
-  `${playwright}/Dockerfile`,
-  `${playwright}/.gitignore`,
-  `${playwright}/package.json`,
-  `${playwright}/playwright.config.ts`,
-  `${playwright}/.yarnrc.yml`,
-]
 
 describe('Setup', () => {
   afterEach(async () => {
@@ -29,13 +14,12 @@ describe('Setup', () => {
       playwright,
       port: 3000,
     })
-    for await (const { path, isFile } of walk(playwright, { maxDepth: 1 })) {
-      if (isFile) {
-        assert(files.includes(path))
-        const file = await Deno.readTextFile(path)
-        assertSnapshot(t, file)
-      }
-    }
+    await assertSnapshot(t, `${playwright}/docker-compose.yml`)
+    await assertSnapshot(t, `${playwright}/Dockerfile`)
+    await assertSnapshot(t, `${playwright}/.gitignore`)
+    await assertSnapshot(t, `${playwright}/package.json`)
+    await assertSnapshot(t, `${playwright}/playwright.config.ts`)
+    await assertSnapshot(t, `${playwright}/.yarnrc.yml`)
   })
   it('setup: optional', async (t) => {
     await setup({
@@ -48,12 +32,11 @@ describe('Setup', () => {
       },
       project: 'test',
     })
-    for await (const { path, isFile } of walk(playwright, { maxDepth: 1 })) {
-      if (isFile) {
-        assert(files.includes(path))
-        const file = await Deno.readTextFile(path)
-        assertSnapshot(t, file)
-      }
-    }
+    await assertSnapshot(t, `${playwright}/docker-compose.yml`)
+    await assertSnapshot(t, `${playwright}/Dockerfile`)
+    await assertSnapshot(t, `${playwright}/.gitignore`)
+    await assertSnapshot(t, `${playwright}/package.json`)
+    await assertSnapshot(t, `${playwright}/playwright.config.ts`)
+    await assertSnapshot(t, `${playwright}/.yarnrc.yml`)
   })
 })
