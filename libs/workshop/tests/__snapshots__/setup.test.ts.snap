@@ -1,6 +1,33 @@
 export const snapshot = {};
 
 snapshot[`Setup > setup: required 1`] = `
+"# Yarn
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions"
+`;
+
+snapshot[`Setup > setup: required 2`] = `
+'{
+  "scripts": {
+    "dc": "docker-compose run --rm tests",
+    "test": "npx playwright test"
+  },
+  "dependencies": {
+    "@axe-core/playwright": "^4.6.0",
+    "@playwright/test": "^1.30.0",
+    "playwright": "^1.30.0"
+  },
+  "yarn": "3.3.1",
+  "packageManager": "yarn@3.3.1"
+}
+'
+`;
+
+snapshot[`Setup > setup: required 3`] = `
 'services:
   tests:
     container_name: playwright_tests:v1.30.0-jammy
@@ -20,7 +47,28 @@ snapshot[`Setup > setup: required 1`] = `
       - /tests/node_modules'
 `;
 
-snapshot[`Setup > setup: required 2`] = `
+snapshot[`Setup > setup: required 5`] = `
+"import { defineConfig } from '@playwright/test';
+export default defineConfig({
+  webServer: {
+    command: 'cd ../../../../.. && deno task start',
+    url: 'http://localhost:3000/',
+    timeout: 120 * 1000,
+    reuseExistingServer: !process.env.CI,
+  },
+  use: {
+    baseURL: 'http://localhost:3000/',
+  },
+});"
+`;
+
+snapshot[`Setup > setup: required 4`] = `
+'nodeLinker: node-modules
+npmAuditRegistry: "https://registry.npmjs.org"
+'
+`;
+
+snapshot[`Setup > setup: required 6`] = `
 "ARG TAG
 FROM mcr.microsoft.com/playwright:\$TAG
 
@@ -38,7 +86,7 @@ RUN  yarn auth &&   yarn install --immutable
 "
 `;
 
-snapshot[`Setup > setup: required 3`] = `
+snapshot[`Setup > setup: optional 1`] = `
 "# Yarn
 .yarn/*
 !.yarn/patches
@@ -48,7 +96,7 @@ snapshot[`Setup > setup: required 3`] = `
 !.yarn/versions"
 `;
 
-snapshot[`Setup > setup: required 4`] = `
+snapshot[`Setup > setup: optional 2`] = `
 '{
   "scripts": {
     "dc": "docker-compose run --rm tests",
@@ -65,28 +113,7 @@ snapshot[`Setup > setup: required 4`] = `
 '
 `;
 
-snapshot[`Setup > setup: required 5`] = `
-"import { defineConfig } from '@playwright/test';
-export default defineConfig({
-  webServer: {
-    command: 'cd ../../../../.. && deno task start',
-    url: 'http://localhost:3000/',
-    timeout: 120 * 1000,
-    reuseExistingServer: !process.env.CI,
-  },
-  use: {
-    baseURL: 'http://localhost:3000/',
-  },
-});"
-`;
-
-snapshot[`Setup > setup: required 6`] = `
-'nodeLinker: node-modules
-npmAuditRegistry: "https://registry.npmjs.org"
-'
-`;
-
-snapshot[`Setup > setup: optional 1`] = `
+snapshot[`Setup > setup: optional 3`] = `
 'services:
   tests:
     container_name: test_tests:v1.30.0-jammy
@@ -106,50 +133,9 @@ snapshot[`Setup > setup: optional 1`] = `
       - /tests/node_modules'
 `;
 
-snapshot[`Setup > setup: optional 2`] = `
-"ARG TAG
-FROM mcr.microsoft.com/playwright:\$TAG
-
-ARG GIT_PAT
-ENV GIT_PAT=\${GIT_PAT}
-
-WORKDIR /tests
-
-COPY .yarn/releases .yarn/releases
-COPY .yarn/plugins .yarn/plugins
-COPY .yarn/cache .yarn/cache
-COPY yarn.lock .
-COPY .yarnrc.yml .
-COPY package.json .
-
-RUN export AUTH=\${GIT_PAT} && yarn auth &&   yarn install --immutable
-"
-`;
-
-snapshot[`Setup > setup: optional 3`] = `
-"# Yarn
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions"
-`;
-
 snapshot[`Setup > setup: optional 4`] = `
-'{
-  "scripts": {
-    "dc": "docker-compose run --rm tests",
-    "test": "npx playwright test"
-  },
-  "dependencies": {
-    "@axe-core/playwright": "^4.6.0",
-    "@playwright/test": "^1.30.0",
-    "playwright": "^1.30.0"
-  },
-  "yarn": "3.3.1",
-  "packageManager": "yarn@3.3.1"
-}
+'nodeLinker: node-modules
+npmAuditRegistry: "https://registry.npmjs.org"
 '
 `;
 
@@ -169,7 +155,21 @@ export default defineConfig({
 `;
 
 snapshot[`Setup > setup: optional 6`] = `
-'nodeLinker: node-modules
-npmAuditRegistry: "https://registry.npmjs.org"
-'
+"ARG TAG
+FROM mcr.microsoft.com/playwright:\$TAG
+
+ARG GIT_PAT
+ENV GIT_PAT=\${GIT_PAT}
+
+WORKDIR /tests
+
+COPY .yarn/releases .yarn/releases
+COPY .yarn/plugins .yarn/plugins
+COPY .yarn/cache .yarn/cache
+COPY yarn.lock .
+COPY .yarnrc.yml .
+COPY package.json .
+
+RUN export AUTH=\${GIT_PAT} && yarn auth &&   yarn install --immutable
+"
 `;

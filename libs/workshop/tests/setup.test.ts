@@ -1,9 +1,24 @@
-import { afterEach, assertSnapshot, describe, it } from '../../test-deps.ts'
-import { resolve } from '../../deps.ts'
+import {
+  afterEach,
+  assert,
+  assertSnapshot,
+  describe,
+  it,
+} from '../../test-deps.ts'
+import { basename, resolve, walk } from '../../deps.ts'
 import { setup } from '../setup.ts'
 
 const __dirname = new URL('.', import.meta.url).pathname
 const playwright = resolve(__dirname, './__tmp__/setup')
+
+const files = [
+  `${playwright}/docker-compose.yml`,
+  `${playwright}/Dockerfile`,
+  `${playwright}/.gitignore`,
+  `${playwright}/package.json`,
+  `${playwright}/playwright.config.ts`,
+  `${playwright}/.yarnrc.yml`,
+]
 
 describe('Setup', () => {
   afterEach(async () => {
@@ -14,20 +29,13 @@ describe('Setup', () => {
       playwright,
       port: 3000,
     })
-    const dockerCompose = await Deno.readTextFile(
-      `${playwright}/docker-compose.yml`,
-    )
-    await assertSnapshot(t, dockerCompose)
-    const dockerFile = await Deno.readTextFile(`${playwright}/Dockerfile`)
-    await assertSnapshot(t, dockerFile)
-    const gitignore = await Deno.readTextFile(`${playwright}/.gitignore`)
-    await assertSnapshot(t, gitignore)
-    const packageJson = await Deno.readTextFile(`${playwright}/package.json`)
-    await assertSnapshot(t, packageJson)
-    const config = await Deno.readTextFile(`${playwright}/playwright.config.ts`)
-    await assertSnapshot(t, config)
-    const yarnrc = await Deno.readTextFile(`${playwright}/.yarnrc.yml`)
-    await assertSnapshot(t, yarnrc)
+    for await (const { path, isFile } of walk(playwright, { maxDepth: 1 })) {
+      if (isFile) {
+        assert(files.includes(path))
+        const file = await Deno.readTextFile(path)
+        assertSnapshot(t, file, { name: basename(path) })
+      }
+    }
   })
   it('setup: optional', async (t) => {
     await setup({
@@ -40,19 +48,12 @@ describe('Setup', () => {
       },
       project: 'test',
     })
-    const dockerCompose = await Deno.readTextFile(
-      `${playwright}/docker-compose.yml`,
-    )
-    await assertSnapshot(t, dockerCompose)
-    const dockerFile = await Deno.readTextFile(`${playwright}/Dockerfile`)
-    await assertSnapshot(t, dockerFile)
-    const gitignore = await Deno.readTextFile(`${playwright}/.gitignore`)
-    await assertSnapshot(t, gitignore)
-    const packageJson = await Deno.readTextFile(`${playwright}/package.json`)
-    await assertSnapshot(t, packageJson)
-    const config = await Deno.readTextFile(`${playwright}/playwright.config.ts`)
-    await assertSnapshot(t, config)
-    const yarnrc = await Deno.readTextFile(`${playwright}/.yarnrc.yml`)
-    await assertSnapshot(t, yarnrc)
+    for await (const { path, isFile } of walk(playwright, { maxDepth: 1 })) {
+      if (isFile) {
+        assert(files.includes(path))
+        const file = await Deno.readTextFile(path)
+        assertSnapshot(t, file, { name: `${basename(path)}-https` })
+      }
+    }
   })
 })
