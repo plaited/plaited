@@ -39,5 +39,12 @@ export const writeRegistry = async ({
       }),
     )
   }
+  const collator = new Intl.Collator('en', {
+    numeric: true,
+    sensitivity: 'base',
+  })
   return registries.filter((entry) => !entry.startsWith(`${outdir}/chunk-`))
+    .sort((a, b) => {
+      return collator.compare(a, b)
+    })
 }
