@@ -25,8 +25,8 @@ const TEST_CONN_INFO: ConnInfo = {
 }
 
 const __dirname = new URL('.', import.meta.url).pathname
-const assets = resolve(__dirname, './__mocks__/assets')
-const root = resolve(__dirname, './__mocks__/root')
+const assets = resolve(__dirname, './__mocks__/write/assets')
+const root = resolve(__dirname, './__mocks__/write/root')
 const playwright = resolve(__dirname, './__tmp__/write')
 const importMap = toFileUrl(
   resolve(__dirname, '../../../.vscode/import-map.json'),
@@ -57,19 +57,53 @@ describe('Write', () => {
         island: '.island.ts',
       },
     })
-    for (const path in routes) {
-      const route = rutt.router({
-        [path]: routes[path],
-      })
-      const response = await route(
-        new Request(`https://example.com${path}`),
-        TEST_CONN_INFO,
-      )
-      const data = await response.arrayBuffer()
-      const decoder = new TextDecoder()
-      const text = decoder.decode(data)
-      await assertSnapshot(t, text, path)
-    }
+    const fieldBasic = '/components-example-field--field-basic'
+    let route = rutt.router({
+      [fieldBasic]: routes[fieldBasic],
+    })
+    let response = await route(
+      new Request(`https://example.com${fieldBasic}`),
+      TEST_CONN_INFO,
+    )
+    let data = await response.arrayBuffer()
+    let decoder = new TextDecoder()
+    let text = decoder.decode(data)
+    await assertSnapshot(t, text, fieldBasic)
+    route = rutt.router({
+      [`${fieldBasic}.include`]: routes[`${fieldBasic}.include`],
+    })
+    response = await route(
+      new Request(`https://example.com${fieldBasic}.include`),
+      TEST_CONN_INFO,
+    )
+    data = await response.arrayBuffer()
+    decoder = new TextDecoder()
+    text = decoder.decode(data)
+    await assertSnapshot(t, text, `${fieldBasic}.include`)
+
+    const buttonBasic = '/components-example-button--basic-button'
+    route = rutt.router({
+      [buttonBasic]: routes[buttonBasic],
+    })
+    response = await route(
+      new Request(`https://example.com${buttonBasic}`),
+      TEST_CONN_INFO,
+    )
+    data = await response.arrayBuffer()
+    decoder = new TextDecoder()
+    text = decoder.decode(data)
+    await assertSnapshot(t, text, buttonBasic)
+    route = rutt.router({
+      [`${buttonBasic}.include`]: routes[`${buttonBasic}.include`],
+    })
+    response = await route(
+      new Request(`https://example.com${buttonBasic}.include`),
+      TEST_CONN_INFO,
+    )
+    data = await response.arrayBuffer()
+    decoder = new TextDecoder()
+    text = decoder.decode(data)
+    await assertSnapshot(t, text, `${buttonBasic}.include`)
     const buttonSpec = await Deno.stat(
       `${playwright}/components/example-button.spec.js`,
     )
