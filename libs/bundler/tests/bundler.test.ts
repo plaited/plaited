@@ -1,11 +1,5 @@
-import {
-  afterEach,
-  assert,
-  beforeEach,
-  describe,
-  it,
-  resolve,
-} from '../../test-deps.ts'
+import { afterEach, assert, beforeEach, describe, it } from '../../test-deps.ts'
+import { resolve } from '../../deps.ts'
 import { bundler } from '../mod.ts'
 
 const __dirname = new URL('.', import.meta.url).pathname

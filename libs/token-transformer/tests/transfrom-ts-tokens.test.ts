@@ -1,10 +1,5 @@
-import {
-  afterEach,
-  assertSnapshot,
-  describe,
-  it,
-  resolve,
-} from '../../test-deps.ts'
+import { afterEach, assertSnapshot, describe, it } from '../../test-deps.ts'
+import { resolve } from '../../deps.ts'
 import { transformTsTokens } from '../transform-ts-tokens.ts'
 import { tokens } from './sample-tokens.ts'
 import { defaultTSFormatters } from '../ts-tokens/mod.ts'

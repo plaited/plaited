@@ -37,7 +37,6 @@ export const writeSpec: WriteSpec = async ({
     )
   }
   await Promise.all(storiesData.map(async ([{ title, path, island }, data]) => {
-    console.log(title)
     const tilePath = title.split('/').map((str) => kebabCase(str)).join('/')
     const testPath = `${playwright}/${tilePath}.spec.js`
     await Deno.mkdir(dirname(testPath), { recursive: true })
