@@ -1,8 +1,8 @@
 import { html } from './html.ts'
 import { Wire, wire } from './wire.ts'
-import { Template, template } from './template.ts'
+import { template } from './template.ts'
 
-interface ElementProps extends Wire {
+interface IslandTemplateProps extends Wire {
   tag: string
   template: string
   /** @defaultValue 'open' */
@@ -10,9 +10,7 @@ interface ElementProps extends Wire {
   stylesheets?: string | string[]
 }
 
-export type Element = Template<ElementProps>
-/** @returns template string for a web component */
-export const element: Element = template(({
+export const IslandTemplate = template<IslandTemplateProps>(({
   tag,
   template,
   mode = 'open',

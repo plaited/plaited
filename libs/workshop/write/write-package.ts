@@ -1,8 +1,9 @@
 import { packageJson } from '../templates/mod.ts'
+import { getStat } from '../get-stat.ts'
 
-type WritePackage = (path: string) => void
-export const writePackage: WritePackage = (path) => {
-  Deno.writeTextFileSync(
+export const writePackage = async (path: string) => {
+  const exist = await getStat(path)
+  !exist && await Deno.writeTextFileSync(
     path,
     packageJson,
   )

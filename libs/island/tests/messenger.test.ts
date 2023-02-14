@@ -7,10 +7,10 @@ describe('actor()', () => {
     const { send, connect } = messenger()
     const callback = sinon.spy()
     const close = connect('actor1', callback)
-    send('actor1', { eventName: 'a', payload: 4 })
+    send('actor1', { type: 'a', data: 4 })
     await wait(100)
     assertEquals(
-      callback.calledWith({ eventName: 'a', payload: 4 }),
+      callback.calledWith({ type: 'a', data: 4 }),
       true,
       'sending message to connected actor should trigger callback',
     )
@@ -19,7 +19,7 @@ describe('actor()', () => {
   it('broadcast, connect, close', async () => {
     const { send, connect } = messenger()
     const callback = sinon.spy()
-    send('actor1', { eventName: 'b', payload: 4 })
+    send('actor1', { type: 'b', data: 4 })
     const close = connect('actor1', callback)
     await wait(100)
     assertEquals(

@@ -3,7 +3,7 @@
   "deno.config": "./deno.json",
   "deno.enable": true,
   "deno.lint": true,
-  "deno.importMap": "./.vscode/import-maps.json",
+  "deno.importMap": "./.vscode/import-map.json",
   "deno.unstable": true,
   "editor.defaultFormatter": "denoland.vscode-deno"
 }

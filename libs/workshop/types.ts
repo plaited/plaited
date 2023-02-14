@@ -3,69 +3,75 @@ import { Expect, Page } from '../deps.ts'
 import {
   Credentials,
   ErrorHandler,
-  Handler,
+  Routes,
   UnknownMethodHandler,
   UpdateRoutes,
 } from '../server/mod.ts'
 
-// Internal Mod Exports
-export type StoryData = {
-  args: TemplateProps
-  name: string
-  template: Template
-  fixture: CustomElementTag
+export type StoryConfig<T extends TemplateProps = TemplateProps> = {
+  title: string
+  template: Template<T>
+  island?: CustomElementTag
+  description: string
 }
 
-export type StoriesData = [{ title: string; path: string }, StoryData[]][]
+export type Story<T extends TemplateProps = TemplateProps> = {
+  args: T & TemplateProps
+  description: string
+  play?: (args: { page: Page; expect: Expect; id: string }) => Promise<void>
+}
 
-export type PageFunc = (story: string) => string
-export type SSRFunc = (
-  fixture: CustomElementTag,
-  template: string,
-) => string
+export type StoryData = Story & {
+  name: string
+}
+
+export type StoriesData = [
+  {
+    path: string
+  } & StoryConfig,
+  StoryData[],
+][]
+
+export type GetStoryHandlers = (args: {
+  storiesData: StoriesData
+  registries: string[]
+  assets: string
+  dev: boolean
+  includes?: {
+    head?: string
+    body?: string
+  }
+}) => Routes
+
 export type Ext = {
-  fixture: string | string[]
+  island: string | string[]
   story: string | string[]
 }
 
 export type Write = (args: {
   assets: string
   colorScheme?: boolean
+  dev: boolean
   exts: Ext
+  importMap?: URL
+  includes?: {
+    head?: string
+    body?: string
+  }
+  playwright: string
   port: number
   project?: string
   root: string
-  storyHandlers: StoryHandlers
-  playwright: string
-}) => Promise<Record<string, Handler>>
+}) => Promise<Routes>
 
 export type Watcher = (
   args: Parameters<Write>[0] & {
-    root: string
     updateRoutes: UpdateRoutes
   },
 ) => Promise<void>
 
-// External Mod Exports
-
-export type StoryConfig<T extends TemplateProps = TemplateProps> = {
-  title: string
-  template: Template<T>
-  fixture: CustomElementTag
-  description: string
-  insertHead?: string
-  insertBody?: string
-}
-
-export type Story<T extends TemplateProps = TemplateProps> = {
-  args: T
-  description: string
-  play?: (args: { page: Page; expect: Expect; id: string }) => Promise<void>
-}
-
-export type StoryHandlers = (stories: StoriesData) => Record<string, Handler>
-
 export type WorkshopConfig = {
+  importMap?: string
   assets: string
   colorScheme?: boolean
   credentials?: Credentials
@@ -78,6 +84,17 @@ export type WorkshopConfig = {
   port: number
   project?: string
   root: string
-  storyHandlers: StoryHandlers
+  includes?: {
+    head?: string
+    body?: string
+  }
   unknownMethodHandler?: UnknownMethodHandler
+}
+
+export type WorkshopSetupConfig = {
+  credentials?: Credentials
+  pat?: boolean
+  playwright: string
+  port: number
+  project?: string
 }

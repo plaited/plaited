@@ -1,24 +1,19 @@
-import { Callback, IdiomSet, RulesFunc } from './types.ts'
+import { ParameterIdiom, RequestIdiom, RuleSet, RulesFunc } from './types.ts'
 
 const idiom = (key: 'waitFor' | 'block') =>
-(
-  ...idioms: {
-    eventName?: string
-    callback?: Callback
-  }[]
+<T = unknown>(
+  ...idioms: ParameterIdiom<T>[]
 ) => {
   return {
     [key]: [...idioms],
   }
 }
+
 export const waitFor = idiom('waitFor')
 export const block = idiom('block')
-export const request = (
-  ...idioms: {
-    eventName: string
-    payload?: unknown
-    callback?: Callback
-  }[]
+
+export const request = <T extends { type: string; data: unknown }>(
+  ...idioms: RequestIdiom<T>[]
 ) => {
   return {
     request: [...idioms],
@@ -32,14 +27,14 @@ export const delegate = (...gens: RulesFunc[]): RulesFunc =>
     }
   }
 
-export const loop = (gen: RulesFunc, callback = () => true) =>
+export const loop = (gen: RulesFunc, assert = () => true) =>
   function* () {
-    while (callback()) {
+    while (assert()) {
       yield* gen()
     }
   }
 
-export const strand = (...idiomSets: IdiomSet[]): RulesFunc =>
+export const strand = (...idiomSets: RuleSet[]): RulesFunc =>
   function* () {
     for (const set of idiomSets) {
       yield set

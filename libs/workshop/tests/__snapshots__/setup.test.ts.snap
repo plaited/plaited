@@ -1,0 +1,175 @@
+export const snapshot = {};
+
+snapshot[`docker-compose.yml 1`] = `
+'services:
+  tests:
+    container_name: playwright_tests:v1.30.0-jammy
+    entrypoint: yarn
+    stdin_open: true # docker run -i
+    tty: true # docker run -t
+    build:
+      context: .
+      args:
+        - TAG=v1.30.0-jammy
+        
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/tests:delegated
+      - /tests/.yarn
+      - /tests/node_modules'
+`;
+
+snapshot[`Dockerfile 1`] = `
+"ARG TAG
+FROM mcr.microsoft.com/playwright:\$TAG
+
+
+WORKDIR /tests
+
+COPY .yarn/releases .yarn/releases
+COPY .yarn/plugins .yarn/plugins
+COPY .yarn/cache .yarn/cache
+COPY yarn.lock .
+COPY .yarnrc.yml .
+COPY package.json .
+
+RUN  yarn auth &&   yarn install --immutable
+"
+`;
+
+snapshot[`.gitignore 1`] = `
+"# Yarn
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions"
+`;
+
+snapshot[`package.json 1`] = `
+'{
+  "scripts": {
+    "dc": "docker-compose run --rm tests",
+    "test": "npx playwright test"
+  },
+  "dependencies": {
+    "@axe-core/playwright": "^4.6.0",
+    "@playwright/test": "^1.30.0",
+    "playwright": "^1.30.0"
+  },
+  "yarn": "3.3.1",
+  "packageManager": "yarn@3.3.1"
+}
+'
+`;
+
+snapshot[`playwright.config.ts 1`] = `
+"import { defineConfig } from '@playwright/test';
+export default defineConfig({
+  webServer: {
+    command: 'cd ../../../../.. && deno task start',
+    url: 'http://localhost:3000/',
+    timeout: 120 * 1000,
+    reuseExistingServer: !process.env.CI,
+  },
+  use: {
+    baseURL: 'http://localhost:3000/',
+  },
+});"
+`;
+
+snapshot[`.yarnrc.yml 1`] = `
+'nodeLinker: node-modules
+npmAuditRegistry: "https://registry.npmjs.org"
+'
+`;
+
+snapshot[`docker-compose.yml-https 1`] = `
+'services:
+  tests:
+    container_name: test_tests:v1.30.0-jammy
+    entrypoint: yarn
+    stdin_open: true # docker run -i
+    tty: true # docker run -t
+    build:
+      context: .
+      args:
+        - TAG=v1.30.0-jammy
+        - GIT_PAT=\${GIT_PAT}
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/tests:delegated
+      - /tests/.yarn
+      - /tests/node_modules'
+`;
+
+snapshot[`Dockerfile-https 1`] = `
+"ARG TAG
+FROM mcr.microsoft.com/playwright:\$TAG
+
+ARG GIT_PAT
+ENV GIT_PAT=\${GIT_PAT}
+
+WORKDIR /tests
+
+COPY .yarn/releases .yarn/releases
+COPY .yarn/plugins .yarn/plugins
+COPY .yarn/cache .yarn/cache
+COPY yarn.lock .
+COPY .yarnrc.yml .
+COPY package.json .
+
+RUN export AUTH=\${GIT_PAT} && yarn auth &&   yarn install --immutable
+"
+`;
+
+snapshot[`.gitignore-https 1`] = `
+"# Yarn
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions"
+`;
+
+snapshot[`package.json-https 1`] = `
+'{
+  "scripts": {
+    "dc": "docker-compose run --rm tests",
+    "test": "npx playwright test"
+  },
+  "dependencies": {
+    "@axe-core/playwright": "^4.6.0",
+    "@playwright/test": "^1.30.0",
+    "playwright": "^1.30.0"
+  },
+  "yarn": "3.3.1",
+  "packageManager": "yarn@3.3.1"
+}
+'
+`;
+
+snapshot[`playwright.config.ts-https 1`] = `
+"import { defineConfig } from '@playwright/test';
+export default defineConfig({
+  webServer: {
+    command: 'cd ../../../../.. && deno task start',
+    url: 'https://localhost:3000/',
+    timeout: 120 * 1000,
+    reuseExistingServer: !process.env.CI,
+  },
+  use: {
+    baseURL: 'https://localhost:3000/',
+  },
+});"
+`;
+
+snapshot[`.yarnrc.yml-https 1`] = `
+'nodeLinker: node-modules
+npmAuditRegistry: "https://registry.npmjs.org"
+'
+`;

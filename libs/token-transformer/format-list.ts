@@ -19,7 +19,7 @@ export const formatList = ({
   if (trueTypeOf(tokens) !== 'object') {
     return string
   }
-  if (Object.prototype.hasOwnProperty.call(tokens, '$value')) {
+  if (Object.hasOwn(tokens, '$value')) {
     const { $value, $type } = tokens as unknown as DesignToken
     const formattedValue = formatters({
       tokenPath,
@@ -31,7 +31,7 @@ export const formatList = ({
     string += formattedValue ? `${formattedValue}\n` : ''
   } else {
     for (const name in tokens) {
-      if (Object.prototype.hasOwnProperty.call(tokens, name)) {
+      if (Object.hasOwn(tokens, name)) {
         string += formatList({
           baseFontSize,
           tokens: tokens[name] as DesignTokenGroup,

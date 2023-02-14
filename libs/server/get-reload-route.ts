@@ -1,15 +1,13 @@
-import { ReloadClient, Routes } from './types.ts'
+import { GetReloadRoute } from './types.ts'
 
 const getMessage = (channel: string, data: string) => {
   const encoder = new TextEncoder()
   return encoder.encode(`event: ${channel}\nid: 0\ndata: ${data}\n\n\n`)
 }
 
-export const getReloadRoute = (
-  reload: boolean,
-  reloadClient: Array<ReloadClient>,
-): Record<never, never> | Routes => {
-  if (!reload) return {}
+export const getReloadRoute: GetReloadRoute = (
+  reloadClient,
+) => {
   return {
     ['/livereload']: () => {
       let timerId: number | undefined

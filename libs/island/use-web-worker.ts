@@ -1,4 +1,4 @@
-import { TriggerArgs, TriggerFunc } from '../plait/mod.ts'
+import { Trigger, TriggerArgs } from '../plait/mod.ts'
 
 type Message = {
   recipient: string
@@ -15,16 +15,16 @@ export const useWebWorker = ({
 }: {
   id: string
   url: string
-  connect: (recipient: string, cb: TriggerFunc) => () => void
+  connect: (recipient: string, trigger: Trigger) => () => void
   send: (recipient: string, detail: TriggerArgs) => void
 }): Disconnect => {
   const worker = new Worker(new URL(url, import.meta.url).href, {
     type: 'module',
   })
-  const cb = (args: TriggerArgs) => {
+  const trigger = (args: TriggerArgs) => {
     worker.postMessage(args)
   }
-  const disconnect = connect(id, cb)
+  const disconnect = connect(id, trigger)
   const eventHandler = ({ data }: { data: Message }) => {
     const { recipient, detail } = data
     send(recipient, detail)

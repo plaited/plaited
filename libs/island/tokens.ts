@@ -26,7 +26,7 @@ export const tokens = (
   Object.assign(toRet, ...filtered)
   for (const key in toRet) {
     toRet[`--${key}`] = toRet[key]
-    delete toRet[key]
+    delete toRet[key] // Room for performance fix
   }
   return toRet
 }

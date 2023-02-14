@@ -1,9 +1,10 @@
-import { TriggerArgs, TriggerFunc } from '../plait/mod.ts'
+import { Trigger, TriggerArgs } from '../plait/mod.ts'
 export const messenger = () => {
   const emitter = new EventTarget()
 
-  const connect = (recipient: string, cb: TriggerFunc) => {
-    const eventHandler = (event: CustomEvent<TriggerArgs>) => cb(event.detail)
+  const connect = (recipient: string, trigger: Trigger) => {
+    const eventHandler = (event: CustomEvent<TriggerArgs>) =>
+      trigger(event.detail)
     emitter.addEventListener(
       recipient,
       eventHandler as EventListenerOrEventListenerObject,

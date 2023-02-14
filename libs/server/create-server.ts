@@ -1,23 +1,13 @@
 import { compress, extname, serve, serveDir, serveTls } from '../deps.ts'
-import { Credentials, Handler, HandlerContext } from './types.ts'
+import { CreateServer, HandlerContext } from './types.ts'
 import { mimeTypes } from './mime-types.ts'
-export const createServer = ({
+export const createServer: CreateServer = ({
   handler,
   credentials,
   port,
   signal,
   onListen,
   root,
-}: {
-  credentials?: Credentials
-  handler: Handler
-  port: number
-  signal?: AbortSignal
-  root: string
-  onListen?: (params: {
-    hostname: string
-    port: number
-  }) => void
 }) => {
   const createServer = credentials ? serveTls : serve
   createServer(async (

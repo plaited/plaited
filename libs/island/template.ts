@@ -7,7 +7,7 @@ export type TemplateProps = {
 }
 
 export interface Template<T extends TemplateProps = TemplateProps> {
-  (this: unknown, props: T): string
+  (this: unknown, props: T & TemplateProps): string
   stylesheets: Set<string>
 }
 
@@ -17,7 +17,7 @@ const shallowCompare = (
 ) =>
   Object.keys(obj1).length === Object.keys(obj2).length &&
   Object.keys(obj1).every((key) =>
-    Object.prototype.hasOwnProperty.call(obj2, key) && obj1[key] === obj2[key]
+    Object.hasOwn(obj2, key) && obj1[key] === obj2[key]
   )
 /**
  * Forked from https://github.com/alexreardon/memoize-one
@@ -25,11 +25,11 @@ const shallowCompare = (
  * We also do a basic shallow comparison on the object to cache function result.
  */
 export const template = <Props extends TemplateProps = TemplateProps>(
-  resultFn: (this: unknown, props: Props) => string,
+  resultFn: (this: unknown, props: Props & TemplateProps) => string,
 ): Template<Props> => {
   let cache: {
     lastThis: ThisParameterType<typeof resultFn>
-    lastProps: Props
+    lastProps: Props & TemplateProps
     lastResult: ReturnType<typeof resultFn>
   } | null = null
   function tpl(

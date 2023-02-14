@@ -1,56 +1,54 @@
 import { StoriesData } from '../types.ts'
-import { esbuild } from '../../deps.ts'
+import { dirname, kebabCase, relative } from '../../deps.ts'
+import { bundler } from '../../bundler/mod.ts'
 import { testFile } from '../templates/mod.ts'
 
 type WriteSpec = (args: {
   port: number
   project?: string
-  storyData: StoriesData
+  storiesData: StoriesData
   playwright: string
   root: string
   colorScheme?: boolean
+  dev: boolean
+  entryPoints: string[]
+  importMap?: URL
 }) => Promise<void>
 export const writeSpec: WriteSpec = async ({
   colorScheme = true,
+  dev,
+  entryPoints,
+  importMap,
   port,
   project,
   root,
-  storyData,
+  storiesData,
   playwright,
 }) => {
-  const entryPoints = storyData.map(([{ path }]) => path)
+  const build = bundler({ entryPoints, dev, importMap })
+  const content = await build()
   const outdir = `${playwright}/.stories`
-  try {
-    await esbuild.build({
-      entryPoints,
-      bundle: true,
-      target: [
-        'es2020',
-      ],
-      outdir,
-    })
-  } catch (err) {
-    console.error(err)
-    Deno.exit()
+  await Deno.mkdir(outdir, { recursive: true })
+  if (content && Array.isArray(content)) {
+    await Promise.all(
+      content.map(async (entry) =>
+        await Deno.writeFile(`${outdir}${entry[0]}`, entry[1])
+      ),
+    )
   }
-  const titles = storyData.map(([{ title }]) => title)
-  const dedupe = new Set(titles)
-  if (titles.length !== dedupe.size) {
-    const dupes = titles.filter((element) => ![...dedupe].includes(element))
-      .join(', ')
-    console.error(`Rename StoryConfigs: [ ${dupes} ]`)
-    Deno.exit()
-  }
-  await Promise.all(storyData.map(async ([{ title, path }, data]) => {
-    const testPath = `${playwright}/specs/${title.toLowerCase()}.spec.ts`
+  await Promise.all(storiesData.map(async ([{ title, path, island }, data]) => {
+    const tilePath = title.split('/').map((str) => kebabCase(str)).join('/')
+    const testPath = `${playwright}/${tilePath}.spec.js`
+    await Deno.mkdir(dirname(testPath), { recursive: true })
     const content = testFile({
       colorScheme,
       data,
       port,
       project,
-      storiesPath: `${outdir}${path.slice(root.length)}`,
+      storiesPath: `${outdir}${path.slice(relative(Deno.cwd(), root).length)}`,
       testPath,
       title,
+      island,
     })
     await Deno.writeTextFile(testPath, content)
   }))

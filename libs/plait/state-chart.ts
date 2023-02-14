@@ -1,5 +1,4 @@
 import { StateChart } from './types.ts'
-import { streamEvents } from './constants.ts'
 export const stateChart: StateChart = ({ candidates, blocked, pending }) => {
   const strands = [
     ...new Set(
@@ -9,24 +8,27 @@ export const stateChart: StateChart = ({ candidates, blocked, pending }) => {
     ),
   ]
   const Blocked = [
-    ...new Set(blocked.map(({ eventName }) => eventName).filter(Boolean)),
+    ...new Set(blocked.map(({ type }) => type).filter(Boolean)),
   ]
   const Requests = [
     ...new Set(
       candidates
         .map(({
-          eventName,
+          type,
           priority,
-          payload,
-        }) => ({
-          eventName,
-          priority,
-          payload,
-        })),
+          data,
+        }) => {
+          const toRet: {
+            type: string
+            data?: unknown
+            priority: number
+          } = { type, priority }
+          data && Object.assign(toRet, { data })
+          return toRet
+        }),
     ),
   ]
   return {
-    streamEvent: streamEvents.state,
     logicStrands: strands,
     requestedEvents: Requests,
     blockedEvents: Blocked,

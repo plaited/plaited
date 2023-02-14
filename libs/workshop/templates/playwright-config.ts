@@ -1,8 +1,17 @@
-export const playwrightConfig = (port: number, protocol: 'http' | 'https') =>
+import { relative } from '../../deps.ts'
+export const playwrightConfig = ({
+  port,
+  protocol,
+  playwright,
+}: {
+  port: number
+  protocol: 'http' | 'https'
+  playwright: string
+}) =>
   `import { defineConfig } from '@playwright/test';
 export default defineConfig({
   webServer: {
-    command: 'deno task start',
+    command: 'cd ${relative(playwright, Deno.cwd())} && deno task start',
     url: '${protocol}://localhost:${port}/',
     timeout: 120 * 1000,
     reuseExistingServer: !process.env.CI,

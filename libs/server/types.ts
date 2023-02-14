@@ -1,11 +1,11 @@
 import { rutt } from '../deps.ts'
 
-export type HandlerContext = rutt.HandlerContext
-export type Handler = rutt.Handler
-export type ErrorHandler = rutt.ErrorHandler
-export type UnknownMethodHandler = rutt.UnknownMethodHandler
-export type MatchHandler = rutt.MatchHandler
-export type Routes = rutt.Routes
+export type HandlerContext<T = unknown> = rutt.HandlerContext<T>
+export type Handler<T = unknown> = rutt.Handler<T>
+export type ErrorHandler<T = unknown> = rutt.ErrorHandler<T>
+export type UnknownMethodHandler<T = unknown> = rutt.UnknownMethodHandler<T>
+export type MatchHandler<T = unknown> = rutt.MatchHandler<T>
+export type Routes<T = unknown> = rutt.Routes<T>
 
 export type Credentials = {
   /** Server private key in PEM format */
@@ -42,3 +42,35 @@ export type Server = (args: {
 }>
 
 export type ReloadClient = (channel: string, data: string) => void
+
+export type CreateServer = ({
+  handler,
+  credentials,
+  port,
+  signal,
+  onListen,
+  root,
+}: {
+  credentials?: Credentials
+  handler: Handler
+  port: number
+  signal?: AbortSignal
+  root: string
+  onListen?: (params: {
+    hostname: string
+    port: number
+  }) => void
+}) => void
+
+export type GetHandler = (args: {
+  routes: Routes
+  reload: boolean
+  reloadClients: ReloadClient[]
+  otherHandler?: Handler
+  errorHandler?: ErrorHandler
+  unknownMethodHandler?: UnknownMethodHandler
+}) => Handler
+
+export type GetReloadRoute = (
+  reloadClient: Array<ReloadClient>,
+) => Routes

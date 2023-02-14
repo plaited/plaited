@@ -1,9 +1,12 @@
 import { StoryData } from '../types.ts'
-import { toId } from '../to-id.ts'
 import { accessibilityAssertion } from './accessibility-assertion.ts'
 import { visualComparisonAssertion } from './visual-comparison-assertion.ts'
 import { interactionAssertion } from './interaction-assertion.ts'
-import { relative } from '../../deps.ts'
+import { basename, dirname, relative } from '../../deps.ts'
+import { toId } from '../to-id.ts'
+import { fixture } from '../constants.ts'
+import { CustomElementTag } from '../../island/mod.ts'
+
 type TestDescribeTemplate = (args: {
   colorScheme: boolean
   data: StoryData[]
@@ -12,7 +15,11 @@ type TestDescribeTemplate = (args: {
   storiesPath: string
   testPath: string
   title: string
+  island?: CustomElementTag
 }) => string
+
+const useColorScheme = (scheme: 'light' | 'dark') =>
+  `test.use({ colorScheme: '${scheme}' })\n  `
 
 export const testFile: TestDescribeTemplate = ({
   colorScheme,
@@ -20,39 +27,38 @@ export const testFile: TestDescribeTemplate = ({
   title,
   storiesPath,
   testPath,
+  island = fixture,
 }) => {
   const names: string[] = []
-  const content = data.map(({ name, fixture }) => {
+  const path = relative(dirname(testPath), storiesPath)
+  const stories = `./${dirname(path)}/${basename(path)}`.replace('.ts', '.js')
+
+  const content: string[] = []
+  for (const { name } of data) {
     names.push(name)
     const id = toId(title, name)
-    return `test('${name}', async ({ page }) => {
-  await page.goto('./${toId(title, name)}')
-  ${accessibilityAssertion(fixture)}
+    content.push(`test('${name}', async ({ page }) => {
+    await page.goto('./${id}')
+    ${accessibilityAssertion(island)}
+    ${visualComparisonAssertion(island, id)}
+    ${interactionAssertion(name, id)}
+  })`)
+  }
 
-  ${visualComparisonAssertion(fixture, id)}
-
-  ${interactionAssertion(name, id)}
-})
-`
-  }).join('\n')
-
-  return `import { test, expect } from '@playwright/test'
+  return `/** GENERATED TEST FILE DO NOT EDIT **/
+import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
-import {
-  ${names.join('\n')}
-} from '${relative(testPath, storiesPath)}'
-test.describe('${title}${colorScheme ? '(light)' : ''}', () => {
-  test.use({ colorScheme: ${colorScheme ? 'light' : 'normal'} })
-  ${content}
-})
+import { ${names.join('\n')}} from '${stories}'
 
+test.describe('${title}${colorScheme ? '(light)' : ''}', () => {
+  ${colorScheme ? useColorScheme('light') : ''}${content.join('\n')}
+})
 ${
     colorScheme
-      ? `test.describe('${title}${colorScheme ? '(light)' : ''}', () => {
-  test.use({ colorScheme: 'dark' })
-  ${content}
-})`
-      : ''
-  }
-`
+      ? `test.describe('${title}(dark)', () => {
+  ${colorScheme ? useColorScheme('dark') : ''}${content.join('\n')}
+})
+/** GENERATED TEST FILE DO NOT EDIT **/`
+      : '/** GENERATED TEST FILE DO NOT EDIT **/'
+  }`
 }
