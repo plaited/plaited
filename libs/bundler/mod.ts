@@ -30,9 +30,9 @@ export const bundler = ({
       plugins: [denoPlugin({ importMapURL: importMap })],
       sourcemap: dev ? 'linked' : false,
       splitting: true,
-      // target: [
-      //   'chrome109',
-      // ],
+      target: [
+        'chrome109',
+      ],
       treeShaking: true,
       write: false,
     })
