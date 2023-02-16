@@ -1,6 +1,5 @@
-import { server } from '../server.ts'
+import { start } from '../start.ts'
 import { ssr } from './ssr.ts'
-import { Routes } from '../types.ts'
 
 const __dirname = new URL('.', import.meta.url).pathname
 
@@ -12,15 +11,30 @@ const routes = {
     ssr('<link rel="stylesheet" href="./styles.css"><h1>Contact</h1>'),
 }
 
-const { updateRoutes } = await server({
+let { close } = await start({
+  dev: true,
   root: `${__dirname}/assets`,
   routes,
 })
 
-setTimeout(() => {
-  updateRoutes((oldRoutes: Routes) => ({
-    ...oldRoutes,
+await close()
+;({ close } = await start({
+  dev: true,
+  root: `${__dirname}/assets`,
+  routes: {
+    ...routes,
     '/help': () =>
       ssr('<link rel="stylesheet" href="./new-styles.css"><h1>Help</h1>'),
-  }))
-}, 5000)
+  },
+}))
+
+await close()
+await start({
+  dev: true,
+  root: `${__dirname}/assets`,
+  routes: {
+    ...routes,
+    '/blog': () =>
+      ssr('<link rel="stylesheet" href="./new-styles.css"><h1>Blog</h1>'),
+  },
+})

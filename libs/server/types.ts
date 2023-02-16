@@ -9,21 +9,13 @@ export type Routes<T = unknown> = rutt.Routes<T>
 
 export type Credentials = {
   /** Server private key in PEM format */
-  key?: string
+  key: string
 
   /** Cert chain in PEM format */
-  cert?: string
-
-  /** The path to the file containing the TLS private key. */
-  keyFile?: string
-
-  /** The path to the file containing the TLS certificate */
-  certFile?: string
+  cert: string
 }
 
-export type UpdateRoutes = (cb: (oldRoutes: Routes) => Routes) => void
-
-export type Server = (args: {
+export type Start = (args: {
   root: string
   routes: Routes
   dev?: boolean
@@ -33,12 +25,12 @@ export type Server = (args: {
   errorHandler?: ErrorHandler
   unknownMethodHandler?: UnknownMethodHandler
 }) => Promise<{
-  updateRoutes: UpdateRoutes
   ips: string[]
   port?: number
   protocol: 'http' | 'https'
   root: string
   url: string
+  close: () => Promise<void>
 }>
 
 export type ReloadClient = (channel: string, data: string) => void
@@ -54,10 +46,7 @@ export type CreateServer = (args: {
   signal?: AbortSignal
   root: string
   middleware?: Middleware
-  onListen?: (params: {
-    hostname: string
-    port: number
-  }) => void
+  protocol: 'http' | 'https'
 }) => void
 
 export type GetRouteHandler = (args: {
