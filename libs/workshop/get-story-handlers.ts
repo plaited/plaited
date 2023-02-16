@@ -4,7 +4,7 @@ import { registriesTemplate } from './templates/mod.ts'
 import { toId } from './to-id.ts'
 import { fixture } from './constants.ts'
 import { IslandTemplate } from '../island/mod.ts'
-import { relative } from '../deps.ts'
+import { lowerCase, relative, startCase } from '../deps.ts'
 import { page } from '../server/mod.ts'
 
 export const getStoryHandlers: GetStoryHandlers = ({
@@ -30,6 +30,7 @@ export const getStoryHandlers: GetStoryHandlers = ({
           [`/${id}`]: () =>
             new Response(
               page({
+                title: `${startCase(title)}(${lowerCase})`,
                 dev,
                 head: [registriesTemplate(fmtRegistries), includes?.head]
                   .filter(Boolean).join('\n'),

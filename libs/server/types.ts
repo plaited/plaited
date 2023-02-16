@@ -43,26 +43,24 @@ export type Server = (args: {
 
 export type ReloadClient = (channel: string, data: string) => void
 
-export type CreateServer = ({
-  handler,
-  credentials,
-  port,
-  signal,
-  onListen,
-  root,
-}: {
+export type Middleware = (
+  handler: Handler,
+) => (req: Request, ctx: HandlerContext) => Promise<Response>
+
+export type CreateServer = (args: {
   credentials?: Credentials
-  handler: Handler
+  routeHandler: Handler
   port: number
   signal?: AbortSignal
   root: string
+  middleware?: Middleware
   onListen?: (params: {
     hostname: string
     port: number
   }) => void
 }) => void
 
-export type GetHandler = (args: {
+export type GetRouteHandler = (args: {
   routes: Routes
   reload: boolean
   reloadClients: ReloadClient[]

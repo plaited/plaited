@@ -38,6 +38,8 @@ export { default as combineDuplicatedSelectors } from 'https://deno.land/x/postc
 export {
   camelCase,
   kebabCase,
+  lowerCase,
+  startCase,
 } from 'https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js'
 
 // -- parsel --

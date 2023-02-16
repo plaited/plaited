@@ -3,7 +3,7 @@ import { hostnameForDisplay, networkIps, usePort } from './utils.ts'
 import { Server, UpdateRoutes } from './types.ts'
 import { watcher } from './watcher.ts'
 import { createServer } from './create-server.ts'
-import { getHandler } from './get-handler.ts'
+import { getRouteHandler } from './get-route-handler.ts'
 import { getOtherHandler } from './get-other-handler.ts'
 
 export const server: Server = async ({
@@ -37,7 +37,7 @@ export const server: Server = async ({
 
   // Get file assets routes
   const otherHandler = getOtherHandler(notFoundTemplate)
-  const handler = await getHandler({
+  const routeHandler = await getRouteHandler({
     routes,
     reload: dev,
     reloadClients,
@@ -47,7 +47,7 @@ export const server: Server = async ({
   })
   createServer({
     credentials,
-    handler,
+    routeHandler,
     onListen: ({ port, hostname }) => {
       console.log(
         `Running at ${protocol}://${hostnameForDisplay(hostname)}:${port}`,
@@ -72,7 +72,7 @@ export const server: Server = async ({
   const updateRoutes: UpdateRoutes = async (cb) => {
     ac.abort()
     const newRoutes = cb(routes)
-    const newHandler = await getHandler({
+    const newHandler = await getRouteHandler({
       routes: newRoutes,
       reload: dev,
       reloadClients,
@@ -83,7 +83,7 @@ export const server: Server = async ({
     setTimeout(() => {
       createServer({
         credentials,
-        handler: newHandler,
+        routeHandler: newHandler,
         onListen: ({ port, hostname }) => {
           console.log(
             `Updating routes at ${protocol}://${
