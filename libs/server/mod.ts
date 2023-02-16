@@ -1,10 +1,11 @@
-export * from './server.ts'
-export { type Credentials, type UpdateRoutes } from './types.ts'
+export { start } from './start.ts'
 export {
   type ErrorHandler,
   type Handler,
+  type HandlerContext,
   type MatchHandler,
   type Routes,
   type UnknownMethodHandler,
-} from './types.ts'
+} from './deps.ts'
+export { type Credentials, type Middleware, type Start } from './types.ts'
 export { page } from './page.ts'

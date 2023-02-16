@@ -12,14 +12,12 @@ const routes = {
 }
 
 let { close } = await start({
-  dev: true,
   root: `${__dirname}/assets`,
   routes,
 })
 
 await close()
 ;({ close } = await start({
-  dev: true,
   root: `${__dirname}/assets`,
   routes: {
     ...routes,
@@ -30,7 +28,6 @@ await close()
 
 await close()
 await start({
-  dev: true,
   root: `${__dirname}/assets`,
   routes: {
     ...routes,

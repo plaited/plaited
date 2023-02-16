@@ -1,10 +1,9 @@
 /* eslint-disable no-console */
-import { networkIps, usePort } from './utils.ts'
+import { hostnameForDisplay, networkIps, usePort } from './utils.ts'
 import { Start } from './types.ts'
 import { watcher } from './watcher.ts'
 import { createServer } from './create-server.ts'
 import { getRouteHandler } from './get-route-handler.ts'
-import { getOtherHandler } from './get-other-handler.ts'
 
 import { wait } from '../utils/wait.ts'
 
@@ -12,10 +11,10 @@ export const start: Start = async ({
   root,
   routes,
   port: _port = 3000,
-  dev = true,
+  reload = true,
   credentials,
-  notFoundTemplate,
   errorHandler,
+  otherHandler,
   unknownMethodHandler,
 }) => {
   // Try start on specified port then fail or find a free port
@@ -38,11 +37,9 @@ export const start: Start = async ({
   const protocol: 'http' | 'https' = `${credentials ? 'https' : 'http'}`
   const reloadClients: Array<(channel: string, data: string) => void> = []
 
-  // Get file assets routes
-  const otherHandler = getOtherHandler(notFoundTemplate)
   const routeHandler = await getRouteHandler({
     routes,
-    reload: dev,
+    reload,
     reloadClients,
     otherHandler,
     errorHandler,
@@ -51,18 +48,23 @@ export const start: Start = async ({
   createServer({
     credentials,
     routeHandler,
+    onListen: ({ port, hostname }) => {
+      console.log(
+        `Running at ${protocol}://${hostnameForDisplay(hostname)}:${port}`,
+      )
+    },
     port,
-    protocol,
     root,
     signal: ac.signal,
   })
 
-  if (dev) {
+  if (reload) {
     watcher(reloadClients, root)
   }
 
   // Close socket connections on sigint
   Deno.addSignalListener('SIGINT', () => {
+    console.log('Closing server...')
     ac.abort()
     Deno.exit()
   })
@@ -73,7 +75,9 @@ export const start: Start = async ({
     protocol,
     root,
     close: async () => {
+      console.log('Closing server...')
       ac.abort()
+      // wait half a second to drop port
       await wait(500)
     },
     url: `${protocol}://localhost:${port}`,

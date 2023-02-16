@@ -1,11 +1,10 @@
-import { rutt } from '../deps.ts'
-
-export type HandlerContext<T = unknown> = rutt.HandlerContext<T>
-export type Handler<T = unknown> = rutt.Handler<T>
-export type ErrorHandler<T = unknown> = rutt.ErrorHandler<T>
-export type UnknownMethodHandler<T = unknown> = rutt.UnknownMethodHandler<T>
-export type MatchHandler<T = unknown> = rutt.MatchHandler<T>
-export type Routes<T = unknown> = rutt.Routes<T>
+import {
+  type ErrorHandler,
+  type Handler,
+  type HandlerContext,
+  type Routes,
+  type UnknownMethodHandler,
+} from './deps.ts'
 
 export type Credentials = {
   /** Server private key in PEM format */
@@ -16,28 +15,67 @@ export type Credentials = {
 }
 
 export type Start = (args: {
+  /** path to serve static files  */
   root: string
+  /**
+   * A record of route paths and {@link MatchHandler}s which are called when a match is
+   * found along with it's values.
+   *
+   * The route paths follow the {@link URLPattern} format with the addition of
+   * being able to prefix a route with a method name and the `@` sign. For
+   * example a route only accepting `GET` requests would look like: `GET@/`.
+   */
   routes: Routes
-  dev?: boolean
+  /** causes the browser to reload when files change  default to true*/
+  reload?: boolean
+  /** The port top listen on defaults to 3000 */
   port?: number
+  /**
+   * @param credentials credentials for TLS
+   * @param credentials.cert Cert chain in PEM format
+   * @param credentials.key Server private key in PEM format
+   */
   credentials?: Credentials
-  notFoundTemplate?: string
+  /**
+   * The default other handler for the router. By default it responds with `null`
+   * body and a status of 404.
+   */
+  otherHandler?: Handler
+  /**
+   * The default error handler for the router. By default it responds with `null`
+   * body and a status of 500 along with `console.error` logging the caught error.
+   */
   errorHandler?: ErrorHandler
+  /**
+   * The default unknown method handler for the router. By default it responds
+   * with `null` body, a status of 405 and the `Accept` header set to all
+   * {@link KnownMethod known methods}.
+   */
   unknownMethodHandler?: UnknownMethodHandler
 }) => Promise<{
+  /** network ip addresses */
   ips: string[]
+  /** current port being listened to */
   port?: number
+  /** protocol server is running under */
   protocol: 'http' | 'https'
+  /** path to serve static files  */
   root: string
+  /** url to open in browser */
   url: string
+  /** callback function to  close server*/
   close: () => Promise<void>
 }>
 
-export type ReloadClient = (channel: string, data: string) => void
-
+/**
+ * Middleware function that can be used to intercept request to
+ * for example return 401 Unauthorized on unauthenticated users
+ */
 export type Middleware = (
   handler: Handler,
 ) => (req: Request, ctx: HandlerContext) => Promise<Response>
+
+export type ReloadClient = (channel: string, data: string) => void
 
 export type CreateServer = (args: {
   credentials?: Credentials
@@ -46,7 +84,10 @@ export type CreateServer = (args: {
   signal?: AbortSignal
   root: string
   middleware?: Middleware
-  protocol: 'http' | 'https'
+  onListen?: (params: {
+    hostname: string
+    port: number
+  }) => void
 }) => void
 
 export type GetRouteHandler = (args: {

@@ -1,10 +1,3 @@
-// -- std --
-export {
-  type ConnInfo,
-  serve,
-  serveTls,
-} from 'https://deno.land/std@0.177.0/http/mod.ts'
-export { serveDir } from 'https://deno.land/std@0.177.0/http/file_server.ts'
 export { walk } from 'https://deno.land/std@0.177.0/fs/mod.ts'
 export {
   basename,
@@ -15,15 +8,9 @@ export {
   toFileUrl,
 } from 'https://deno.land/std@0.177.0/path/mod.ts'
 
-// -- brotli --
-export { compress } from 'https://deno.land/x/brotli@0.1.7/mod.ts'
-
 // -- playwright --
 export { type Page } from 'https://esm.sh/playwright@1.30.0'
 export { type Expect } from 'https://esm.sh/@playwright/test@1.30.0'
-// -- rutt --
-// Until nested version is tagged and released using copy in server lib
-export * as rutt from 'https://deno.land/x/rutt@0.0.14/mod.ts'
 
 // -- esbuild --
 export * as esbuild from 'https://deno.land/x/esbuild@v0.17.6/mod.js'
