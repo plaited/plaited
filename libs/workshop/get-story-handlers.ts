@@ -1,11 +1,10 @@
 import { GetStoryHandlers } from './types.ts'
-import { Handler, Routes } from '../server/mod.ts'
+import { Handler, page, Routes } from '../server/mod.ts'
 import { registriesTemplate } from './templates/mod.ts'
 import { toId } from './to-id.ts'
 import { fixture } from './constants.ts'
 import { IslandTemplate } from '../island/mod.ts'
 import { lowerCase, relative, startCase } from '../deps.ts'
-import { page } from '../server/mod.ts'
 
 export const getStoryHandlers: GetStoryHandlers = ({
   storiesData,

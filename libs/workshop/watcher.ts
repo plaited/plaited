@@ -1,17 +1,12 @@
 import { Watcher } from './types.ts'
-import { write } from './write.ts'
 
 export const watcher: Watcher = async ({
-  assets,
-  colorScheme,
-  dev,
-  exts,
-  importMap,
-  port,
-  project,
+  close: _close,
+  getRoutes,
+  startServer,
   root,
-  updateRoutes,
 }) => {
+  let close = _close
   const watcher = Deno.watchFs(root, { recursive: true })
   let lastEvent = ''
   for await (const { kind } of watcher) {
@@ -20,17 +15,9 @@ export const watcher: Watcher = async ({
       continue
     }
     if (kind !== lastEvent) {
-      const routes = await write({
-        assets,
-        colorScheme,
-        dev,
-        exts,
-        importMap,
-        port,
-        project,
-        root,
-      })
-      updateRoutes(() => routes)
+      await close()
+      const routes = await getRoutes()
+      close = await startServer(routes)
       lastEvent = kind
     }
   }

@@ -1,4 +1,4 @@
-import { server } from '../server/mod.ts'
+import { Routes, start as server } from '../server/mod.ts'
 import { WorkshopConfig } from './types.ts'
 import { write } from './write.ts'
 import { watcher } from './watcher.ts'
@@ -12,7 +12,6 @@ export const start = async ({
   errorHandler,
   exts,
   importMap,
-  notFoundTemplate,
   pat = false,
   playwright,
   port = 3000,
@@ -45,30 +44,8 @@ export const start = async ({
     port,
     project,
   })
-  const routes = await write({
-    assets,
-    colorScheme,
-    dev,
-    exts,
-    importMap: importMap ? toFileUrl(importMap) : undefined,
-    includes,
-    playwright,
-    port,
-    project,
-    root,
-  })
-  const { updateRoutes } = await server({
-    dev,
-    routes,
-    port,
-    root: assets,
-    credentials,
-    notFoundTemplate,
-    errorHandler,
-    unknownMethodHandler,
-  })
-  if (dev) {
-    watcher({
+  const getRoutes = async () =>
+    await write({
       assets,
       colorScheme,
       dev,
@@ -79,7 +56,27 @@ export const start = async ({
       port,
       project,
       root,
-      updateRoutes,
+    })
+  const startServer = async (routes: Routes) => {
+    const { close } = await server({
+      reload: dev,
+      routes,
+      port,
+      root: assets,
+      credentials,
+      errorHandler,
+      unknownMethodHandler,
+    })
+    return close
+  }
+  const routes = await getRoutes()
+  const close = await startServer(routes)
+  if (dev) {
+    watcher({
+      close,
+      getRoutes,
+      startServer,
+      root,
     })
   }
 }

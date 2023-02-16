@@ -1,4 +1,5 @@
-import { denoPlugin, esbuild, toFileUrl } from '../deps.ts'
+import { denoPlugin, esbuild } from './deps.ts'
+import { toFileUrl } from '../deps.ts'
 
 export const bundler = ({
   dev,

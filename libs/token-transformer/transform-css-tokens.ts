@@ -1,6 +1,6 @@
 import { formatList } from './format-list.ts'
 import { DesignTokenGroup, GetFormatters } from '../token-types.ts'
-import { combineDuplicatedSelectors, postcss } from '../deps.ts'
+import { combineDuplicatedSelectors, postcss } from './deps.ts'
 
 export const transformCssTokens = async ({
   tokens,

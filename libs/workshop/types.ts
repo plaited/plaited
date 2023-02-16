@@ -1,11 +1,10 @@
 import { CustomElementTag, Template, TemplateProps } from '../island/mod.ts'
-import { Expect, Page } from '../deps.ts'
+import { Expect, Page } from './deps.ts'
 import {
   Credentials,
   ErrorHandler,
   Routes,
   UnknownMethodHandler,
-  UpdateRoutes,
 } from '../server/mod.ts'
 
 export type StoryConfig<T extends TemplateProps = TemplateProps> = {
@@ -65,8 +64,11 @@ export type Write = (args: {
 }) => Promise<Routes>
 
 export type Watcher = (
-  args: Parameters<Write>[0] & {
-    updateRoutes: UpdateRoutes
+  args: {
+    root: string
+    close: () => Promise<void>
+    getRoutes: () => Promise<Routes<unknown>>
+    startServer: (routes: Routes) => Promise<() => Promise<void>>
   },
 ) => Promise<void>
 
