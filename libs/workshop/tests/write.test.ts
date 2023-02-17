@@ -3,13 +3,14 @@ import {
   assert,
   assertSnapshot,
   beforeEach,
+  ConnInfo,
   describe,
   it,
 } from '../../test-deps.ts'
 import { write } from '../write.ts'
 import { getStat } from '../get-stat.ts'
-
-import { ConnInfo, resolve, rutt, toFileUrl } from '../../deps.ts'
+import { router } from '../../server/deps.ts'
+import { resolve, toFileUrl } from '../../deps.ts'
 
 const TEST_CONN_INFO: ConnInfo = {
   localAddr: {
@@ -58,7 +59,7 @@ describe('Write', () => {
       },
     })
     for (const path in routes) {
-      const route = rutt.router({
+      const route = router({
         [path]: routes[path],
       })
       const response = await route(

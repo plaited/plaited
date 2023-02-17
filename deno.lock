@@ -749,6 +749,7 @@
     "https://deno.land/x/postcss_selector_parser@v6.0.2/src/util/stripComments.js": "0c5e030f6ea0531019c986dfb4e5763a4594cd5949fd14f13a892b6f5b587323",
     "https://deno.land/x/postcss_selector_parser@v6.0.2/src/util/unesc.js": "3e6f832459fa7191fa5a5e330ec72c383b5235606ab50ef9caa622b7836477d9",
     "https://deno.land/x/rutt@0.0.14/mod.ts": "5027b8e8b12acca48b396a25aee74ad7ee94a25c24cda75571d7839cbd41113c",
+    "https://deno.land/x/rutt@0.1.0/mod.ts": "4662ad4f687740ac612b779ed4c62eecebd718b56d24a07f719ec3b24464c139",
     "https://deno.land/x/source_map@0.6.2/lib/array-set.js": "7283ef86b0f3bf004fa8e013a94dfea0aec9108d492643d81ff9a70d1719c468",
     "https://deno.land/x/source_map@0.6.2/lib/base64-vlq.js": "63b317643095f62f8998d75dec66560a485a505eb3a9a3bfd5d0f53506844303",
     "https://deno.land/x/source_map@0.6.2/lib/base64.js": "58a37dc884c78cffff2173021b942a9d9b031a7f7c212b550a0c8b02915f840d",

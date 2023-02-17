@@ -1,22 +1,28 @@
-import { denoPlugin, esbuild } from './deps.ts'
+// deno-lint-ignore no-unused-vars
+import { build, BuildOptions, denoPlugin, OutputFile, stop } from './deps.ts'
 import { toFileUrl } from '../deps.ts'
-
+/**
+ * return `null` or and {@link OutputFile} or an array of {@link OutputFile}s
+ */
 export const bundler = ({
   dev,
   entryPoints,
   importMap,
 }: {
+  /** When set to true will include sourcemaps and NOT minify output */
   dev: boolean
+  /** An array of files that each serve as an input to the bundling algorithm */
   entryPoints: string[]
+  /** Specify the URL to an import map to use when resolving import specifiers. The URL must be fetchable with `fetch` */
   importMap?: URL
 }) => {
-  const minifyOptions: Partial<esbuild.BuildOptions> = dev
+  const minifyOptions: Partial<BuildOptions> = dev
     ? { minifyIdentifiers: false, minifySyntax: true, minifyWhitespace: true }
     : { minify: true }
   const cache = new Map<string, Uint8Array>()
   const bundle = async () => {
     const absWorkingDir = Deno.cwd()
-    const { outputFiles } = await esbuild.build({
+    const { outputFiles } = await build({
       absWorkingDir,
       allowOverwrite: true,
       bundle: true,
@@ -46,7 +52,7 @@ export const bundler = ({
         )
       }
     }
-    esbuild.stop()
+    stop()
   }
   return async (
     path?: string,

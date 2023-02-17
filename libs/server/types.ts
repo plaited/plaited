@@ -2,6 +2,8 @@ import {
   type ErrorHandler,
   type Handler,
   type HandlerContext,
+  // deno-lint-ignore no-unused-vars
+  type MatchHandler,
   type Routes,
   type UnknownMethodHandler,
 } from './deps.ts'

@@ -1,5 +1,5 @@
 import { html, template, wire } from '$plaited'
-import { Story, StoryConfig } from '$workshop'
+import { Story, StoryConfig } from '../../../types.ts'
 
 const ExampleButton = template<{ children: string }>(({ children, ...attrs }) =>
   html`<button  ${wire(attrs)}>${children}</button>`

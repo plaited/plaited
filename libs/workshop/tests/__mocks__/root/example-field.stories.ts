@@ -1,5 +1,5 @@
 import { html, template, wire } from '$plaited'
-import { Story, StoryConfig } from '$workshop'
+import { Story, StoryConfig } from '../../../types.ts'
 
 const ExampleField = template<{ value: number }>((attrs) =>
   html`<input type='text' ${wire(attrs)}

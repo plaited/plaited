@@ -80,8 +80,8 @@ components being designed.
 - A webapp where you define your routes in a routes object with middleware
   function and pass it to server and use whatever directory structure you like
   best
-- Setting up a tiered design system in a single repo with built in usage
-  tracking for a tiered design system
+- Setting up a tiered design system in a single repo
 - Creating design tokens and good descriptions
 - Writing good stories and descriptions
 - Example of extending token types and token formatters
+- Tired design system setup and management and metrics
