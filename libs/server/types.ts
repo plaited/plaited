@@ -90,7 +90,7 @@ export type CreateServer = (args: {
     hostname: string
     port: number
   }) => void
-}) => void
+}) => Promise<void>
 
 export type GetRouteHandler = (args: {
   routes: Routes

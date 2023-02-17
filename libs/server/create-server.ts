@@ -16,7 +16,7 @@ export const createServer: CreateServer = ({
   middleware = getMiddleware,
 }) => {
   const createServer = credentials ? serveTls : serve
-  createServer(
+  return createServer(
     middleware(async (
       req,
       ctx,

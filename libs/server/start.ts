@@ -5,8 +5,6 @@ import { watcher } from './watcher.ts'
 import { createServer } from './create-server.ts'
 import { getRouteHandler } from './get-route-handler.ts'
 
-import { wait } from '../utils/wait.ts'
-
 export const start: Start = async ({
   root,
   routes,
@@ -33,7 +31,8 @@ export const start: Start = async ({
   }
 
   // Configure globals
-  const ac = new AbortController()
+  const controller = new AbortController()
+  const { signal } = controller
   const protocol: 'http' | 'https' = `${credentials ? 'https' : 'http'}`
   const reloadClients: Array<(channel: string, data: string) => void> = []
 
@@ -45,7 +44,7 @@ export const start: Start = async ({
     errorHandler,
     unknownMethodHandler,
   })
-  createServer({
+  const server = createServer({
     credentials,
     routeHandler,
     onListen: ({ port, hostname }) => {
@@ -55,19 +54,12 @@ export const start: Start = async ({
     },
     port,
     root,
-    signal: ac.signal,
+    signal,
   })
 
   if (reload) {
     watcher(reloadClients, root)
   }
-
-  // Close socket connections on sigint
-  Deno.addSignalListener('SIGINT', () => {
-    console.log('Closing server...')
-    ac.abort()
-    Deno.exit()
-  })
 
   return {
     ips: networkIps,
@@ -76,9 +68,8 @@ export const start: Start = async ({
     root,
     close: async () => {
       console.log('Closing server...')
-      ac.abort()
-      // wait half a second to drop port
-      await wait(500)
+      controller.abort()
+      await server
     },
     url: `${protocol}://localhost:${port}`,
   }
