@@ -1,4 +1,4 @@
-import { Trigger, TriggerArgs } from '../plait/mod.ts'
+import { Trigger, TriggerArgs } from '../behavioral/mod.ts'
 
 type Message = {
   recipient: string

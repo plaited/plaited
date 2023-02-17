@@ -7,16 +7,16 @@ import {
 } from '../../test-deps.ts'
 import {
   block,
+  bProgram,
   chaosStrategy,
   loop,
-  plait,
   randomizedStrategy,
   request,
   strand,
   waitFor,
 } from '../mod.ts'
 
-describe('Plait', () => {
+describe('bProgram', () => {
   const actualFeedback: string[] = []
   const expectedFeedback = [
     'Add hot',
@@ -73,7 +73,7 @@ describe('Plait', () => {
   }
   it('priority queue', (t) => {
     const streamLog: unknown[] = []
-    const { trigger, feedback, stream, add } = plait({ dev: true })
+    const { trigger, feedback, stream, add } = bProgram({ dev: true })
     add(strands)
     feedback(actions)
     stream.subscribe((msg) => {
@@ -92,7 +92,7 @@ describe('Plait', () => {
   })
   it('randomized priority queue', (t) => {
     const streamLog: unknown[] = []
-    const { trigger, feedback, stream, add } = plait({
+    const { trigger, feedback, stream, add } = bProgram({
       strategy: randomizedStrategy,
       dev: true,
     })
@@ -114,7 +114,7 @@ describe('Plait', () => {
   })
   it('chaos selection', (t) => {
     const streamLog: unknown[] = []
-    const { trigger, feedback, stream, add } = plait({
+    const { trigger, feedback, stream, add } = bProgram({
       strategy: chaosStrategy,
       dev: true,
     })

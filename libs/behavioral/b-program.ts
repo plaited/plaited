@@ -32,7 +32,7 @@ const requestInParameter = (
   )
 }
 
-export const plait = ({
+export const bProgram = ({
   /** event selection strategy */
   strategy: eventSelectionStrategy = priorityStrategy,
   /** returns a stream with log events when set to true */

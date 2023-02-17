@@ -1,10 +1,10 @@
-import { island, loop, request, strand, useStore, waitFor } from '$plaited'
+import { define, loop, request, strand, useStore, waitFor } from '$plaited'
 import { send } from './calculator.comms.ts'
 import { connect } from './calculator.comms.ts'
 
 // @ts-ignore: test
 window.streamLog = []
-island({ tag: 'key-pad' }, ({ feedback }) => {
+define({ tag: 'key-pad' }, ({ feedback }) => {
   feedback({
     number(evt: MouseEvent) {
       const val = (evt.currentTarget as HTMLButtonElement)?.value
@@ -21,7 +21,7 @@ island({ tag: 'key-pad' }, ({ feedback }) => {
   })
 })
 
-island({ tag: 'value-display', connect }, ({ $, feedback, add }) => {
+define({ tag: 'value-display', connect }, ({ $, feedback, add }) => {
   const [getDisplay, setDisplay] = useStore<string[]>([])
   add({
     onClear: loop(strand(

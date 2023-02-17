@@ -1,8 +1,8 @@
 /// <reference lib="dom.iterable" />
 import { dataTarget, dataTrigger } from './constants.ts'
 import { filterAddedNodes, getTriggerKey, matchAllEvents } from './utils.ts'
-import { Trigger } from '../plait/mod.ts'
-import { usePlait } from './use-plait.ts'
+import { Trigger } from '../behavioral/mod.ts'
+import { useBehavioral } from './use-behavioral.ts'
 import { IslandElementConstructor, IslandElementOptions } from './types.ts'
 import { delegatedListener } from './delegated-listener.ts'
 
@@ -45,7 +45,7 @@ export const controller = <T extends IslandElementConstructor>(
       }
       this.#delegateListeners()
       this.#shadowObserver = this.#createShadowObserver()
-      const { disconnect, trigger, add, feedback, lastEvent } = usePlait({
+      const { disconnect, trigger, add, feedback, lastEvent } = useBehavioral({
         context: this,
         ...rest,
       })

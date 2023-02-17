@@ -3,7 +3,7 @@ import { Handler, page, Routes } from '../server/mod.ts'
 import { registriesTemplate } from './templates/mod.ts'
 import { toId } from './to-id.ts'
 import { fixture } from './constants.ts'
-import { IslandTemplate } from '../island/mod.ts'
+import { IslandTemplate } from '../islandly/mod.ts'
 import { lowerCase, relative, startCase } from '../deps.ts'
 
 export const getStoryHandlers: GetStoryHandlers = ({

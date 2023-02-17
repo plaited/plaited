@@ -9,7 +9,7 @@ import { controller } from './controller.ts'
 /**
  *  Island function
  */
-export const island = (
+export const define = (
   { tag, ...options }: IslandConfig,
   plait: PlaitInterface,
 ) => {

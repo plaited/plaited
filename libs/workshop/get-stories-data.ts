@@ -1,5 +1,5 @@
 import { StoriesData, Story } from './types.ts'
-import { TemplateProps } from '../island/mod.ts'
+import { TemplateProps } from '../islandly/mod.ts'
 import { relative } from '../deps.ts'
 
 export const getStoriesData = async (stories: string[]): Promise<StoriesData> =>

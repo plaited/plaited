@@ -1,3 +1,3 @@
-import { island } from '../../../../island/mod.ts'
+import { define } from '../../../../islandly/mod.ts'
 
-island({ tag: 'test-fixture' }, () => {})
+define({ tag: 'test-fixture' }, () => {})

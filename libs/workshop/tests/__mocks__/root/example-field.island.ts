@@ -1,3 +1,3 @@
-import { island } from '../../../../island/mod.ts'
+import { define } from '../../../../islandly/mod.ts'
 
-island({ tag: 'example-field' }, () => {})
+define({ tag: 'example-field' }, () => {})

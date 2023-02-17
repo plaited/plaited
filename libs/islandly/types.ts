@@ -4,7 +4,7 @@ import {
   RulesFunc,
   Strategy,
   Trigger,
-} from '../plait/mod.ts'
+} from '../behavioral/mod.ts'
 
 /**
  * @description returns a an array of nodes who's data-target value is the same as the target string provided.
@@ -23,12 +23,20 @@ export type UseHook<T = Record<string, unknown>> = (
 export type CustomElementTag = `${string}-${string}`
 
 export type IslandElementOptions = {
+  /** define wether island's custom element is open or closed. Defaults to open and can be overridden
+   * by declarative shadow dom attribute in browsers that support it so be ware
+   */
   mode?: 'open' | 'closed'
+  /** configure whether to delegate focus or not defaults to true */
   delegatesFocus?: boolean
+  /** logger function to receive messages from behavioral program react streams */
   logger?: Listener
+  /** event selection strategy callback from behavioral library */
   strategy?: Strategy
+  /** messenger connect callback */
   connect?: (recipient: string, trigger: Trigger) => () => void
-  id?: string
+  /** set to true if we wish to use id when connecting to messenger to receive messages from other islands */
+  id?: boolean
 }
 
 export interface PlaitInterface {

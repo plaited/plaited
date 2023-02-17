@@ -1,4 +1,4 @@
-import { Trigger, TriggerArgs } from '../plait/mod.ts'
+import { Trigger, TriggerArgs } from '../behavioral/mod.ts'
 export const messenger = () => {
   const emitter = new EventTarget()
 

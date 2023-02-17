@@ -1,4 +1,4 @@
-import { html } from '../../island/mod.ts'
+import { html } from '../../islandly/mod.ts'
 
 export const registriesTemplate = (registries: string[]) =>
   html`<script type="module" async>

@@ -1,4 +1,4 @@
-import { html } from '../island/mod.ts'
+import { html } from '../islandly/mod.ts'
 
 export const livereloadTemplate = html`<script type="text/javascript">
 const source = new EventSource('/livereload');

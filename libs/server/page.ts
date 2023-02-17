@@ -1,4 +1,4 @@
-import { html } from '../island/mod.ts'
+import { html } from '../islandly/mod.ts'
 import { livereloadTemplate } from './livereload-template.ts'
 
 export const page = ({ head, body, dev, title }: {

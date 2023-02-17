@@ -5,7 +5,7 @@ import { interactionAssertion } from './interaction-assertion.ts'
 import { basename, dirname, relative } from '../../deps.ts'
 import { toId } from '../to-id.ts'
 import { fixture } from '../constants.ts'
-import { CustomElementTag } from '../../island/mod.ts'
+import { CustomElementTag } from '../../islandly/mod.ts'
 
 type TestDescribeTemplate = (args: {
   colorScheme: boolean
