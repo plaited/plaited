@@ -2,7 +2,7 @@ import { bundler } from '../../bundler/mod.ts'
 import { resolve } from '../../deps.ts'
 import { getStat } from '../get-stat.ts'
 const __dirname = new URL('.', import.meta.url).pathname
-const fixture = resolve(__dirname, '../islands/plaited-fixture.ts')
+const fixture = resolve(__dirname, '../plaited-fixture.ts')
 
 export const writeRegistry = async ({
   islands,
