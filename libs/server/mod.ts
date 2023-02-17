@@ -8,4 +8,3 @@ export {
   type UnknownMethodHandler,
 } from './deps.ts'
 export { type Credentials, type Middleware, type Start } from './types.ts'
-export { page } from './page.ts'
