@@ -27,7 +27,7 @@ export const useBehavioral = ({
     const tagName = context.tagName.toLowerCase()
     const _id = context.id
     if (id && !_id) {
-      console.log(
+      console.error(
         `island ${tagName} is missing an id attribute and cannot communicate with messenger`,
       )
     }

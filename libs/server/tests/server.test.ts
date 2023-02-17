@@ -72,12 +72,7 @@ Deno.test('server: reload true', async () => {
     const reader = sse.body.getReader()
     let count = 0
     while (count < 2) {
-      const { done, value } = await reader.read()
-
-      if (done) {
-        console.log('Stream complete')
-        break
-      }
+      const { value } = await reader.read()
       count += 1
       const val = new TextDecoder().decode(value)
       messages.push(val)

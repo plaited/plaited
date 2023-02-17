@@ -1,4 +1,4 @@
-import { writeRegistry, writeSpec } from './write/mod.ts'
+import { writeSpec, writeWorkshop } from './write/mod.ts'
 import { Write } from './types.ts'
 import { walk } from './../deps.ts'
 import { getStoriesData } from './get-stories-data.ts'
@@ -16,10 +16,15 @@ export const write: Write = async ({
   importMap,
   includes,
 }) => {
-  const { island, story } = exts
+  const { island, story, workers } = exts
+  const workerExts = workers && Array.isArray(workers)
+    ? workers
+    : workers
+    ? [workers]
+    : []
   const islandExts = Array.isArray(island) ? island : [island]
   const storyExts = Array.isArray(story) ? story : [story]
-  const combinedExts = [...islandExts, ...storyExts]
+  const combinedExts = [...islandExts, ...storyExts, ...workerExts]
 
   /** get paths and name for each island */
   const entriesPoints: string[] = []
@@ -32,32 +37,22 @@ export const write: Write = async ({
     entriesPoints.push(path)
   }
 
-  const islands = entriesPoints.filter((entry) =>
-    islandExts.some((ext) => entry.endsWith(ext))
+  const entryPoints = entriesPoints.filter((entry) =>
+    [...islandExts, ...storyExts].some((ext) => entry.endsWith(ext))
   )
   const stories = entriesPoints.filter((entry) =>
     storyExts.some((ext) => entry.endsWith(ext))
   )
 
-  /** write test fixture */
-  /** write registry file*/
-  const registries = await writeRegistry({
-    islands,
+  /** write workshop file*/
+  const entries = await writeWorkshop({
+    entryPoints,
     assets,
     importMap,
   })
 
   /** get paths and name for each set of stories */
   const storiesData = await getStoriesData(stories)
-
-  const titles = storiesData.map(([{ title }]) => title)
-  const normalizedTitles = storiesData.map(([{ title }]) => title.toLowerCase())
-  const dedupe = new Set(normalizedTitles)
-  if (normalizedTitles.length !== dedupe.size) {
-    const dupes = titles.filter((element) => ![...dedupe].includes(element))
-      .join(', ')
-    console.error(`Rename StoryConfigs: [ ${dupes} ]`)
-  }
 
   // /** write spec files */
   await writeSpec({
@@ -77,7 +72,7 @@ export const write: Write = async ({
     dev,
     assets,
     storiesData,
-    registries: [...registries],
+    entries: [...entries],
     includes,
   })
 }

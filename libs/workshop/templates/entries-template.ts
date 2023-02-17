@@ -1,9 +1,9 @@
 import { html } from '../../islandly/mod.ts'
 
-export const registriesTemplate = (registries: string[]) =>
+export const entriesTemplate = (entries: string[]) =>
   html`<script type="module" async>
 ${
-    registries.map((path) => {
+    entries.map((path) => {
       return html`import "/${path}";`
     }).join(' ')
   }

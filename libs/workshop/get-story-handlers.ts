@@ -1,19 +1,20 @@
 import { GetStoryHandlers } from './types.ts'
 import { Handler, Routes } from '../server/mod.ts'
-import { registriesTemplate } from './templates/mod.ts'
+import { entriesTemplate } from './templates/mod.ts'
 import { toId } from './to-id.ts'
 import { fixture } from './constants.ts'
 import { IslandTemplate, PageTemplate } from '../islandly/mod.ts'
 import { lowerCase, relative, startCase } from '../deps.ts'
+import { NavTemplate } from './templates/nav.ts'
 
 export const getStoryHandlers: GetStoryHandlers = ({
   storiesData,
-  registries,
+  entries,
   includes,
   assets,
   dev,
 }) => {
-  const fmtRegistries = registries.map((registry) => relative(assets, registry))
+  const fmtEntries = entries.map((entry) => relative(assets, entry))
   const routeSets = storiesData.map(
     ([{ title, island = fixture, template }, stories]) => {
       const toRet: Record<string, Handler> = {}
@@ -29,11 +30,12 @@ export const getStoryHandlers: GetStoryHandlers = ({
           [`/${id}`]: () =>
             new Response(
               PageTemplate({
-                title: `${startCase(title)}(${lowerCase})`,
+                title: `${startCase(title)}(${lowerCase(name)})`,
                 dev,
-                head: [registriesTemplate(fmtRegistries), includes?.head]
+                head: [entriesTemplate(fmtEntries), includes?.head]
                   .filter(Boolean).join('\n'),
-                body: [story, includes?.body].filter(Boolean)
+                body: [NavTemplate({ storiesData }), story, includes?.body]
+                  .filter(Boolean)
                   .join('\n'),
               }),
               {

@@ -1,4 +1,4 @@
-import { assert, assertSnapshot, ConnInfo } from '../../test-deps.ts'
+import { assert, assertSnapshot, beautify, ConnInfo } from '../../test-deps.ts'
 import { write } from '../write.ts'
 import { getStat } from '../get-stat.ts'
 import { router } from '../../server/deps.ts'
@@ -52,7 +52,7 @@ Deno.test('build', async (t) => {
     const data = await response.arrayBuffer()
     const decoder = new TextDecoder()
     const text = decoder.decode(data)
-    await assertSnapshot(t, text, { name: path })
+    await assertSnapshot(t, beautify(text, { format: 'html' }), { name: path })
   }
   const buttonSpec = await Deno.stat(
     `${playwright}/components/example-button.spec.js`,
@@ -75,7 +75,7 @@ Deno.test('build', async (t) => {
   assert(numberFieldStories.isFile)
   assert(numberFieldStories.size > 0)
   const registry = await Deno.stat(
-    `${assets}/.registries/example-field.island.js`,
+    `${assets}/.workshop/example-field.island.js`,
   )
   assert(registry.isFile)
   assert(registry.size > 0)

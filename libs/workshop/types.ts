@@ -17,7 +17,7 @@ export type StoryConfig<T extends TemplateProps = TemplateProps> = {
 export type Story<T extends TemplateProps = TemplateProps> = {
   args: T & TemplateProps
   description: string
-  play?: (args: { page: Page; expect: Expect; id: string }) => Promise<void>
+  test?: (args: { page: Page; expect: Expect; id: string }) => Promise<void>
 }
 
 export type StoryData = Story & {
@@ -33,7 +33,7 @@ export type StoriesData = [
 
 export type GetStoryHandlers = (args: {
   storiesData: StoriesData
-  registries: string[]
+  entries: string[]
   assets: string
   dev: boolean
   includes?: {
@@ -43,6 +43,7 @@ export type GetStoryHandlers = (args: {
 }) => Routes
 
 export type Ext = {
+  workers?: string | string[]
   island: string | string[]
   story: string | string[]
 }
@@ -66,9 +67,8 @@ export type Write = (args: {
 export type Watcher = (
   args: {
     root: string
-    close: () => Promise<void>
-    getRoutes: () => Promise<Routes<unknown>>
-    startServer: (routes: Routes) => Promise<() => Promise<void>>
+    ref: { close: () => Promise<void> }
+    startServer: () => Promise<void>
   },
 ) => Promise<void>
 

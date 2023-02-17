@@ -1,4 +1,4 @@
 export const interactionAssertion = (name: string, id: string) =>
-  `if (${name}.play) {
-      await ${name}?.play({page, expect, id: '${id}'})
+  `if (${name}.test) {
+      await ${name}?.test({page, expect, id: '${id}'})
     }`

@@ -1,4 +1,4 @@
-import { Routes, start as server } from '../server/mod.ts'
+import { start as server } from '../server/mod.ts'
 import { WorkshopConfig } from './types.ts'
 import { write } from './write.ts'
 import { watcher } from './watcher.ts'
@@ -44,8 +44,11 @@ export const start = async ({
     port,
     project,
   })
-  const getRoutes = async () =>
-    await write({
+  const ref: { close: () => Promise<void> } = {
+    async close() {},
+  }
+  const startServer = async () => {
+    const routes = await write({
       assets,
       colorScheme,
       dev,
@@ -57,7 +60,6 @@ export const start = async ({
       project,
       root,
     })
-  const startServer = async (routes: Routes) => {
     const { close } = await server({
       reload: dev,
       routes,
@@ -67,18 +69,19 @@ export const start = async ({
       errorHandler,
       unknownMethodHandler,
     })
-    return close
+    ref['close'] = close
   }
-  const routes = await getRoutes()
-  const close = await startServer(routes)
   if (dev) {
     watcher({
-      close,
-      getRoutes,
+      ref,
       startServer,
       root,
     })
   }
+  Deno.addSignalListener('SIGINT', async () => {
+    await ref.close()
+    Deno.exit()
+  })
 }
 
 const configPath = resolve(Deno.cwd(), Deno.args[0])
