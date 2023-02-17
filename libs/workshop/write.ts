@@ -51,7 +51,7 @@ export const write: Write = async ({
     importMap,
   })
 
-  /** get paths and name for each set of stories */
+  /** get sorted data for stories */
   const storiesData = await getStoriesData(stories)
 
   // /** write spec files */
