@@ -1,6 +1,6 @@
 export const snapshot = {};
 
-snapshot[`CSS tokens > transform 1`] = `
+snapshot[`transform-css-tokens 1`] = `
 '[data-media="static"]:root {
     --size-x-1: 0.1rem;
     --size-x-2: 0.3rem;

@@ -1,4 +1,4 @@
-import { afterEach, assertSnapshot, describe, it } from '../../test-deps.ts'
+import { assertSnapshot } from '../../test-deps.ts'
 import { basename, resolve } from '../../deps.ts'
 import { setup } from '../setup.ts'
 
@@ -14,34 +14,35 @@ const files = [
   `${playwright}/.yarnrc.yml`,
 ]
 
-describe('Setup', () => {
-  afterEach(async () => {
+Deno.test('setup: required', async (t) => {
+  await setup({
+    playwright,
+    port: 3000,
+  })
+  for (const path of files) {
+    const contents = await Deno.readTextFile(path)
+    await assertSnapshot(t, contents, { name: basename(path) })
+  }
+  await t.step('teardown', async () => {
     await Deno.remove(playwright, { recursive: true })
   })
-  it('setup: required', async (t) => {
-    await setup({
-      playwright,
-      port: 3000,
-    })
-    for (const path of files) {
-      const contents = await Deno.readTextFile(path)
-      await assertSnapshot(t, contents, { name: basename(path) })
-    }
+})
+Deno.test('setup: optional', async (t) => {
+  await setup({
+    playwright,
+    port: 3000,
+    pat: true,
+    credentials: {
+      cert: '-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----\n',
+      key: '-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n',
+    },
+    project: 'test',
   })
-  it('setup: optional', async (t) => {
-    await setup({
-      playwright,
-      port: 3000,
-      pat: true,
-      credentials: {
-        cert: '-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----\n',
-        key: '-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n',
-      },
-      project: 'test',
-    })
-    for (const path of files) {
-      const contents = await Deno.readTextFile(path)
-      await assertSnapshot(t, contents, { name: `${basename(path)}-https` })
-    }
+  for (const path of files) {
+    const contents = await Deno.readTextFile(path)
+    await assertSnapshot(t, contents, { name: `${basename(path)}-https` })
+  }
+  await t.step('teardown', async () => {
+    await Deno.remove(playwright, { recursive: true })
   })
 })

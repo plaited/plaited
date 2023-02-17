@@ -9,12 +9,7 @@ export {
   assertSnapshot,
   serialize,
 } from 'https://deno.land/std@0.177.0/testing/snapshot.ts'
-export {
-  afterEach,
-  beforeEach,
-  describe,
-  it,
-} from 'https://deno.land/std@0.177.0/testing/bdd.ts'
+
 export { type ConnInfo } from 'https://deno.land/std@0.177.0/http/server.ts'
 
 // -- sinon --

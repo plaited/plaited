@@ -1,6 +1,6 @@
 export const snapshot = {};
 
-snapshot[`TS tokens > transform 1`] = `
+snapshot[`transform-ts-tokens 1`] = `
 "export const sizeX1 = 'var(--size-x-1)'
 export const sizeX2 = 'var(--size-x-2)'
 export const sizeX3 = 'var(--size-x-3)'
