@@ -14,6 +14,5 @@ export { type ConnInfo } from 'https://deno.land/std@0.177.0/http/server.ts'
 
 // -- sinon --
 export { default as sinon } from 'https://esm.sh/sinon@15.0.1'
-
 // -- beautify --
 export { default as beautify } from 'https://esm.sh/beautify@0.0.8'

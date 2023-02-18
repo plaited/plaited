@@ -14,7 +14,7 @@ export {
   kebabCase,
   lowerCase,
   startCase,
-} from 'https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js'
+} from 'https://esm.sh/lodash-es@4.17.21'
 
 // -- esbuild --
 export {
@@ -59,5 +59,5 @@ export { default as postcss } from 'https://deno.land/x/postcss@8.4.16/mod.js'
 export { default as combineDuplicatedSelectors } from 'https://deno.land/x/postcss_combine_duplicated_selectors@10.0.5/mod.js'
 
 // -- playwright --
-export { type Locator } from 'https://esm.sh/playwright@1.31.0'
-export { type Expect } from 'https://esm.sh/@playwright/test@1.31.0'
+export { type Locator } from 'npm:playwright@1.31.0'
+export { type Expect } from 'npm:@playwright/test@1.31.0'
