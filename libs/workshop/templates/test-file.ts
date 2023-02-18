@@ -4,8 +4,6 @@ import { visualComparisonAssertion } from './visual-comparison-assertion.ts'
 import { interactionAssertion } from './interaction-assertion.ts'
 import { basename, dirname, relative } from '../../deps.ts'
 import { toId } from '../to-id.ts'
-import { fixture } from '../constants.ts'
-import { CustomElementTag } from '../../islandly/mod.ts'
 
 type TestDescribeTemplate = (args: {
   colorScheme: boolean
@@ -15,7 +13,6 @@ type TestDescribeTemplate = (args: {
   storiesPath: string
   testPath: string
   title: string
-  island?: CustomElementTag
 }) => string
 
 const useColorScheme = (scheme: 'light' | 'dark') =>
@@ -27,7 +24,6 @@ export const testFile: TestDescribeTemplate = ({
   title,
   storiesPath,
   testPath,
-  island = fixture,
 }) => {
   const names: string[] = []
   const path = relative(dirname(testPath), storiesPath)
@@ -39,8 +35,8 @@ export const testFile: TestDescribeTemplate = ({
     const id = toId(title, name)
     content.push(`test('${name}', async ({ page }) => {
     await page.goto('./${id}')
-    ${accessibilityAssertion(island)}
-    ${visualComparisonAssertion(island, id)}
+    ${accessibilityAssertion()}
+    ${visualComparisonAssertion(id)}
     ${interactionAssertion(name, id)}
   })`)
   }

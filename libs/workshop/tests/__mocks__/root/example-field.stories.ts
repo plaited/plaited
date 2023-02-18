@@ -11,7 +11,6 @@ const ExampleField = template<{ value: number }>((attrs) =>
 export default {
   title: 'Components/ExampleField',
   template: ExampleField,
-  island: 'example-field',
   description: 'test button to verify this workshop works',
 } as StoryConfig<{ value: number }>
 
