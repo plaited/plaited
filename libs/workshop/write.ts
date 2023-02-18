@@ -1,6 +1,7 @@
-import { writeClient, writeSpec } from './write/mod.ts'
+import { writeClient } from './write-client.ts'
+import { writeSpec } from './write-spec.ts'
 import { Write } from './types.ts'
-import { walk } from './../deps.ts'
+import { walk } from '../deps.ts'
 import { getStoriesData } from './get-stories-data.ts'
 import { getStoryHandlers } from './get-story-handlers.ts'
 
@@ -37,13 +38,11 @@ export const write: Write = async ({
     entriesPoints.push(path)
   }
 
-  const entryPoints = entriesPoints.filter((entry) =>
-    [...islandExts, ...storyExts].some((ext) => entry.endsWith(ext))
-  )
-
   /** write client side code*/
   const entries = await writeClient({
-    entryPoints,
+    entryPoints: entriesPoints.filter((entry) =>
+      [...islandExts, ...storyExts].some((ext) => entry.endsWith(ext))
+    ),
     assets,
     importMap,
     workerExts,

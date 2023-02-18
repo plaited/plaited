@@ -1,0 +1,21 @@
+services:
+  server:
+    container_name: "plaited_workshop_server"
+    entrypoint: deno
+    stdin_open: true # docker run -i
+    tty: true # docker run -t
+  tests:
+    container_name: "plaited_workshop_tests"
+    entrypoint: yarn
+    stdin_open: true # docker run -i
+    tty: true # docker run -t
+    depends_on:
+      - server
+    build:
+      context: ./playwright
+      args:
+        - TAG=1.30.0
+    volumes:
+      - .:/tests:delegated
+      - /tests/.yarn
+      - /tests/node_modules

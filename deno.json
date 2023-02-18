@@ -13,7 +13,19 @@
       "deno.ns"
     ]
   },
+  "lint": {
+    "files": {
+      "exclude": [
+        "./playwright"
+      ]
+    }
+  },
   "fmt": {
+    "files": {
+      "exclude": [
+        "./playwright"
+      ]
+    },
     "options": {
       "singleQuote": true,
       "semiColons": false

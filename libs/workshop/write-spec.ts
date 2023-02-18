@@ -1,7 +1,7 @@
-import { StoriesData } from '../types.ts'
-import { dirname, kebabCase, relative } from '../../deps.ts'
-import { bundler } from '../../bundler/mod.ts'
-import { testFile } from '../templates/mod.ts'
+import { StoriesData } from './types.ts'
+import { dirname, kebabCase, relative } from '../deps.ts'
+import { bundler } from '../bundler/mod.ts'
+import { testFile } from './templates/mod.ts'
 
 type WriteSpec = (args: {
   port: number

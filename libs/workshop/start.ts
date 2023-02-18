@@ -2,23 +2,19 @@ import { start as server } from '../server/mod.ts'
 import { WorkshopConfig } from './types.ts'
 import { write } from './write.ts'
 import { watcher } from './watcher.ts'
-import { setup } from './setup.ts'
 import { dirname, resolve, toFileUrl } from '../deps.ts'
-export const start = async ({
+export const start = ({
   assets,
   colorScheme,
   credentials,
   dev = true,
-  errorHandler,
   exts,
   importMap,
-  pat = false,
   playwright,
   port = 3000,
   project,
-  root,
+  root = Deno.cwd(),
   includes,
-  unknownMethodHandler,
 }: WorkshopConfig) => {
   if (!Deno.statSync(assets)) {
     console.error(`[ERR] Assets directory ${assets} does not exist!`)
@@ -37,13 +33,6 @@ export const start = async ({
     console.error(`[ERR] Root directory "${assets}" is not directory!`)
     Deno.exit()
   }
-  await setup({
-    credentials,
-    pat,
-    playwright,
-    port,
-    project,
-  })
   const ref: { close: () => Promise<void> } = {
     async close() {},
   }
@@ -66,8 +55,6 @@ export const start = async ({
       port,
       root: assets,
       credentials,
-      errorHandler,
-      unknownMethodHandler,
     })
     ref['close'] = close
   }

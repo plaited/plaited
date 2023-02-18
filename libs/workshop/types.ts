@@ -1,11 +1,6 @@
 import { Template, TemplateProps } from '../islandly/mod.ts'
 import { Expect, Locator } from './deps.ts'
-import {
-  Credentials,
-  ErrorHandler,
-  Routes,
-  UnknownMethodHandler,
-} from '../server/mod.ts'
+import { Credentials, Routes } from '../server/mod.ts'
 
 export type StoryConfig<T extends TemplateProps = TemplateProps> = {
   title: string
@@ -79,19 +74,17 @@ export type WorkshopConfig = {
   colorScheme?: boolean
   credentials?: Credentials
   dev?: boolean
-  errorHandler?: ErrorHandler
   exts: Ext
   notFoundTemplate?: string
   pat?: boolean
   playwright: string
   port: number
   project?: string
-  root: string
+  root?: string
   includes?: {
     head?: string
     body?: string
   }
-  unknownMethodHandler?: UnknownMethodHandler
 }
 
 export type WorkshopSetupConfig = {

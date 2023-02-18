@@ -1,8 +1,8 @@
-import { bundler } from '../../bundler/mod.ts'
-import { resolve } from '../../deps.ts'
-import { getStat } from '../get-stat.ts'
+import { bundler } from '../bundler/mod.ts'
+import { resolve } from '../deps.ts'
+import { getStat } from './get-stat.ts'
 const __dirname = new URL('.', import.meta.url).pathname
-const ui = resolve(__dirname, '../fixture.island.ts')
+const ui = resolve(__dirname, './fixture.island.ts')
 
 export const writeClient = async ({
   entryPoints,
