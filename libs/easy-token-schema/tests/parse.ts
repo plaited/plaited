@@ -1,13 +1,13 @@
-import { ets } from '../easy-token-schema.ts'
+import { parse } from '../parse.ts'
 import { tokens } from './sample-tokens.ts'
 import { assertEquals, assertSnapshot } from '../../test-deps.ts'
 
-const actual = ets({ tokens })
+const actual = parse({ tokens })
 
-Deno.test('ets(): snapshot', (t) => {
+Deno.test('parse(): snapshot', (t) => {
   assertSnapshot(t, actual)
 })
-Deno.test('ets(): verify required props', () => {
+Deno.test('parse(): verify required props', () => {
   //@ts-ignore: it exist
   const expected = Object.keys(tokens.size.x1.$value)
   assertEquals(
@@ -15,7 +15,7 @@ Deno.test('ets(): verify required props', () => {
     expected,
   )
 })
-Deno.test('ets(): verify const props', () => {
+Deno.test('parse(): verify const props', () => {
   //@ts-ignore: it exist
   const expected = tokens.backgroundColor.purple.x1.$value
   assertEquals(
@@ -32,7 +32,7 @@ Deno.test('ets(): verify const props', () => {
     expected,
   )
 })
-Deno.test('ets(): handles arrays', () => {
+Deno.test('parse(): handles arrays', () => {
   //@ts-ignore: it exist
   const expected = tokens.fontFamily.sansSerif.$value.map((str: string) => ({
     const: str,

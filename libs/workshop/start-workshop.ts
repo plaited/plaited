@@ -1,10 +1,21 @@
-import { start as server } from '../server/mod.ts'
-import { WorkshopConfig } from './types.ts'
+import { server } from '../server/mod.ts'
+import { Ext, WorkshopConfig } from './types.ts'
 import { write } from './write.ts'
 import { watcher } from './watcher.ts'
-import { resolve, toFileUrl } from '../deps.ts'
+import { toFileUrl } from '../deps.ts'
 
-export const start = ({
+interface StartWorkshop {
+  (
+    args: WorkshopConfig & {
+      assets: string
+      exts: Ext
+      playwright: string
+      workspace: string
+    },
+  ): Promise<void>
+}
+
+export const startWorkshop: StartWorkshop = async ({
   assets,
   colorScheme,
   credentials,
@@ -16,19 +27,9 @@ export const start = ({
   project,
   workspace,
   includes,
-}: WorkshopConfig) => {
-  const root = workspace && workspace.startsWith('/')
-    ? workspace
-    : workspace
-    ? resolve(Deno.cwd(), workspace)
-    : Deno.cwd()
+}) => {
   if (!Deno.statSync(assets)) {
-    console.error(`[ERR] Assets directory ${assets} does not exist!`)
-    Deno.exit()
-  }
-  if (!Deno.statSync(assets).isDirectory) {
-    console.error(`[ERR] Assets directory "${assets}" is not directory!`)
-    Deno.exit()
+    await Deno.mkdir(assets)
   }
   const ref: { close: () => Promise<void> } = {
     async close() {},
@@ -44,7 +45,7 @@ export const start = ({
       playwright,
       port,
       project,
-      root,
+      root: workspace,
     })
     const { close } = await server({
       reload: dev,
@@ -59,7 +60,7 @@ export const start = ({
     watcher({
       ref,
       startServer,
-      root,
+      root: workspace,
     })
   }
   Deno.addSignalListener('SIGINT', async () => {

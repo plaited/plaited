@@ -1,2 +1,0 @@
-    -     <script type=\"module\" async>import \"/.registries/plaited-chat-ui.js\"; import \"/.registries/plaited-fixture.js\"; import \"/.registries/example-button.island.js\"; import \"/.registries/example-field.island.js\";</script>
-    +     <script type=\"module\" async>import \"/.registries/plaited-chat-ui.js\"; import \"/.registries/plaited-fixture.js\"; import \"/.registries/example-field.island.js\"; import \"/.registries/example-button.island.js\";</script>

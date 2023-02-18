@@ -16,7 +16,7 @@ export type Credentials = {
   cert: string
 }
 
-export type Start = (args: {
+export type Server = (args: {
   /** path to serve static files  */
   root: string
   /**

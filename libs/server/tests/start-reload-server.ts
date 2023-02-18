@@ -1,6 +1,6 @@
 import { helpRoute, homeRoute, root } from './utils.ts'
-import { start } from '../start.ts'
-await start({
+import { server } from '../server.ts'
+await server({
   root,
   port: 9000,
   routes: {

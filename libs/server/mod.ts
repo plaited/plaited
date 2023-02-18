@@ -1,4 +1,4 @@
-export { start } from './start.ts'
+export { server } from './server.ts'
 export {
   type ErrorHandler,
   type Handler,
@@ -7,4 +7,4 @@ export {
   type Routes,
   type UnknownMethodHandler,
 } from '../deps.ts'
-export { type Credentials, type Middleware, type Start } from './types.ts'
+export { type Credentials, type Middleware, type Server } from './types.ts'

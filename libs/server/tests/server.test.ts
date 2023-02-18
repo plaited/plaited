@@ -1,5 +1,5 @@
 import { assert, assertEquals } from '../../test-deps.ts'
-import { start } from '../start.ts'
+import { server } from '../server.ts'
 import {
   __dirname,
   help,
@@ -11,7 +11,7 @@ import {
 } from './utils.ts'
 import { wait } from '../../utils/wait.ts'
 Deno.test('server: reload false', async () => {
-  let { close } = await start({
+  let { close } = await server({
     root,
     routes: homeRoute,
     port: 9000,
@@ -24,7 +24,7 @@ Deno.test('server: reload false', async () => {
   await helpRes.body?.cancel()
   assertEquals(helpRes.status, 404)
   await close()
-  ;({ close } = await start({
+  ;({ close } = await server({
     reload: false,
     root,
     port: 9000,

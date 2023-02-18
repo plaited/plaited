@@ -1,4 +1,4 @@
-export { transformTokens } from './transform-tokens.ts'
+export { tokenTransformer } from './token-transformer.ts'
 export { defaultCSSFormatters } from './css-tokens/mod.ts'
 export { defaultTSFormatters } from './ts-tokens/mod.ts'
 export {

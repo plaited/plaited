@@ -69,18 +69,18 @@ export type Watcher = (
 ) => Promise<void>
 
 export type WorkshopConfig = {
-  assets: string
+  assets?: string
   colorScheme?: boolean
   credentials?: Credentials
   dev?: boolean
-  exts: Ext
+  exts?: Ext
   importMap?: string
   includes?: {
     head?: string
     body?: string
   }
-  playwright: string
-  port: number
+  playwright?: string
+  port?: number
   project?: string
   workspace?: string
 }

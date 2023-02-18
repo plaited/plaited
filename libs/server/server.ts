@@ -1,11 +1,11 @@
 /* eslint-disable no-console */
 import { hostnameForDisplay, networkIps, usePort } from './utils.ts'
-import { Start } from './types.ts'
+import { Server } from './types.ts'
 import { watcher } from './watcher.ts'
 import { createServer } from './create-server.ts'
 import { getRouteHandler } from './get-route-handler.ts'
 
-export const start: Start = async ({
+export const server: Server = async ({
   root,
   routes,
   port: _port = 3000,

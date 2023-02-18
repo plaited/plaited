@@ -3,7 +3,7 @@ import { transformTsTokens } from './transform-ts-tokens.ts'
 import { DesignTokenGroup, GetFormatters } from '../token-types.ts'
 import { defaultCSSFormatters } from './css-tokens/mod.ts'
 import { defaultTSFormatters } from './ts-tokens/mod.ts'
-export const transformTokens = async <
+export const tokenTransformer = async <
   T extends DesignTokenGroup = DesignTokenGroup,
 >({
   tokens,
