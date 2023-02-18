@@ -1,6 +1,4 @@
-// deno-lint-ignore no-unused-vars
-import { build, BuildOptions, denoPlugin, OutputFile, stop } from './deps.ts'
-import { toFileUrl } from '../deps.ts'
+import { build, BuildOptions, denoPlugin, stop, toFileUrl } from '../deps.ts'
 /**
  * return `null` or and {@link OutputFile} or an array of {@link OutputFile}s
  */

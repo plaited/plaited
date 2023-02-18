@@ -1,6 +1,6 @@
 import { GetRouteHandler } from './types.ts'
 import { getReloadRoute } from './get-reload-route.ts'
-import { router } from './deps.ts'
+import { router } from '../deps.ts'
 
 export const getRouteHandler: GetRouteHandler = ({
   routes,

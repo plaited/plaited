@@ -1,5 +1,5 @@
 import { Template, TemplateProps } from '../islandly/mod.ts'
-import { Expect, Locator } from './deps.ts'
+import { Expect, Locator } from '../deps.ts'
 import { Credentials, Routes } from '../server/mod.ts'
 
 export type StoryConfig<T extends TemplateProps = TemplateProps> = {
@@ -69,28 +69,18 @@ export type Watcher = (
 ) => Promise<void>
 
 export type WorkshopConfig = {
-  importMap?: string
   assets: string
   colorScheme?: boolean
   credentials?: Credentials
   dev?: boolean
   exts: Ext
-  notFoundTemplate?: string
-  pat?: boolean
-  playwright: string
-  port: number
-  project?: string
-  root?: string
+  importMap?: string
   includes?: {
     head?: string
     body?: string
   }
-}
-
-export type WorkshopSetupConfig = {
-  credentials?: Credentials
-  pat?: boolean
   playwright: string
   port: number
   project?: string
+  workspace?: string
 }

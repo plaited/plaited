@@ -1,5 +1,5 @@
 import { mimeTypes } from './mime-types.ts'
-import { compress, serveDir } from './deps.ts'
+import { compress, serveDir } from '../deps.ts'
 export const getFileHandler = async ({
   fileExt,
   root,

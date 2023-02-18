@@ -1,5 +1,4 @@
-import { extname } from '../deps.ts'
-import { serve, serveTls } from './deps.ts'
+import { extname, serve, serveTls } from '../deps.ts'
 import { CreateServer, Middleware } from './types.ts'
 import { getFileHandler } from './get-file-handler.ts'
 

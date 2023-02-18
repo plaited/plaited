@@ -1,7 +1,7 @@
 import { assert, assertSnapshot, beautify, ConnInfo } from '../../test-deps.ts'
 import { write } from '../write.ts'
 import { getStat } from '../get-stat.ts'
-import { router } from '../../server/deps.ts'
+import { router } from '../../deps.ts'
 import { resolve, toFileUrl } from '../../deps.ts'
 
 const TEST_CONN_INFO: ConnInfo = {

@@ -6,7 +6,7 @@ import {
   type MatchHandler,
   type Routes,
   type UnknownMethodHandler,
-} from './deps.ts'
+} from '../deps.ts'
 
 export type Credentials = {
   /** Server private key in PEM format */

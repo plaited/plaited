@@ -2,7 +2,8 @@ import { start as server } from '../server/mod.ts'
 import { WorkshopConfig } from './types.ts'
 import { write } from './write.ts'
 import { watcher } from './watcher.ts'
-import { dirname, resolve, toFileUrl } from '../deps.ts'
+import { resolve, toFileUrl } from '../deps.ts'
+
 export const start = ({
   assets,
   colorScheme,
@@ -13,24 +14,20 @@ export const start = ({
   playwright,
   port = 3000,
   project,
-  root = Deno.cwd(),
+  workspace,
   includes,
 }: WorkshopConfig) => {
+  const root = workspace && workspace.startsWith('/')
+    ? workspace
+    : workspace
+    ? resolve(Deno.cwd(), workspace)
+    : Deno.cwd()
   if (!Deno.statSync(assets)) {
     console.error(`[ERR] Assets directory ${assets} does not exist!`)
     Deno.exit()
   }
   if (!Deno.statSync(assets).isDirectory) {
     console.error(`[ERR] Assets directory "${assets}" is not directory!`)
-    Deno.exit()
-  }
-  if (!Deno.statSync(root)) {
-    console.error(`[ERR] Root directory ${root} does not exist!`)
-    Deno.exit()
-  }
-
-  if (!Deno.statSync(assets).isDirectory) {
-    console.error(`[ERR] Root directory "${assets}" is not directory!`)
     Deno.exit()
   }
   const ref: { close: () => Promise<void> } = {
@@ -70,14 +67,3 @@ export const start = ({
     Deno.exit()
   })
 }
-
-const configPath = resolve(Deno.cwd(), Deno.args[0])
-const configDir = dirname(configPath)
-const { default: config } = await import(configPath)
-start({
-  ...config,
-  playwright: resolve(configDir, config.playwright),
-  importMap: resolve(configDir, config.importMap),
-  assets: resolve(configDir, config.assets),
-  root: resolve(configDir, config.root),
-})
