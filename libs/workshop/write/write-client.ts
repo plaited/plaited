@@ -4,14 +4,16 @@ import { getStat } from '../get-stat.ts'
 const __dirname = new URL('.', import.meta.url).pathname
 const ui = resolve(__dirname, '../ui.island.ts')
 
-export const writeWorkshop = async ({
+export const writeClient = async ({
   entryPoints,
   assets,
   importMap,
+  workerExts,
 }: {
   entryPoints: string[]
   assets: string
   importMap?: URL
+  workerExts: string[]
 }) => {
   const buildUI = bundler({
     dev: false,
@@ -38,6 +40,13 @@ export const writeWorkshop = async ({
       }),
     )
   }
-  return entries.filter((entry) => !entry.startsWith(`${outdir}/chunk-`))
-    .sort(Intl.Collator().compare)
+  return entries.filter((entry) => {
+    const ext = entry.split('.').pop()
+    return !entry.startsWith(`${outdir}/chunk-`) &&
+      !workerExts.some((worker) => {
+        const workerArray = worker.split('.')
+        workerArray.pop()
+        return entry.endsWith([...workerArray, ext].join('.'))
+      })
+  }).sort(Intl.Collator().compare)
 }

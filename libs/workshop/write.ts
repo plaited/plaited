@@ -1,4 +1,4 @@
-import { writeSpec, writeWorkshop } from './write/mod.ts'
+import { writeClient, writeSpec } from './write/mod.ts'
 import { Write } from './types.ts'
 import { walk } from './../deps.ts'
 import { getStoriesData } from './get-stories-data.ts'
@@ -16,11 +16,11 @@ export const write: Write = async ({
   importMap,
   includes,
 }) => {
-  const { island, story, workers } = exts
-  const workerExts = workers && Array.isArray(workers)
-    ? workers
-    : workers
-    ? [workers]
+  const { island, story, worker } = exts
+  const workerExts = worker && Array.isArray(worker)
+    ? worker
+    : worker
+    ? [worker]
     : []
   const islandExts = Array.isArray(island) ? island : [island]
   const storyExts = Array.isArray(story) ? story : [story]
@@ -40,21 +40,23 @@ export const write: Write = async ({
   const entryPoints = entriesPoints.filter((entry) =>
     [...islandExts, ...storyExts].some((ext) => entry.endsWith(ext))
   )
+
+  /** write client side code*/
+  const entries = await writeClient({
+    entryPoints,
+    assets,
+    importMap,
+    workerExts,
+  })
+
   const stories = entriesPoints.filter((entry) =>
     storyExts.some((ext) => entry.endsWith(ext))
   )
 
-  /** write workshop file*/
-  const entries = await writeWorkshop({
-    entryPoints,
-    assets,
-    importMap,
-  })
-
-  /** get sorted data for stories */
+  /** get sorted and title/name collision free story data */
   const storiesData = await getStoriesData(stories)
 
-  // /** write spec files */
+  // /** write playwright spec files */
   await writeSpec({
     playwright,
     storiesData,
@@ -72,7 +74,7 @@ export const write: Write = async ({
     dev,
     assets,
     storiesData,
-    entries: [...entries],
+    entries,
     includes,
   })
 }

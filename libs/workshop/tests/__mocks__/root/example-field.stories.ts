@@ -21,8 +21,8 @@ export const FieldBasic: Story<{ value: number }> = {
     id: 'input',
   },
   description: 'test description of textfield story',
-  test: async ({ page, expect }) => {
-    await page.locator('#input').fill('1')
-    await expect(page.locator('#input')).toBe('1')
+  test: async ({ locator, expect }) => {
+    await locator.locator('#input').fill('1')
+    await expect(locator.locator('#input')).toBe('1')
   },
 }

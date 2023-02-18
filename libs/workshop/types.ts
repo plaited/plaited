@@ -1,5 +1,5 @@
 import { CustomElementTag, Template, TemplateProps } from '../islandly/mod.ts'
-import { Expect, Page } from './deps.ts'
+import { Expect, Locator } from './deps.ts'
 import {
   Credentials,
   ErrorHandler,
@@ -17,7 +17,9 @@ export type StoryConfig<T extends TemplateProps = TemplateProps> = {
 export type Story<T extends TemplateProps = TemplateProps> = {
   args: T & TemplateProps
   description: string
-  test?: (args: { page: Page; expect: Expect; id: string }) => Promise<void>
+  test?: (
+    args: { locator: Locator; expect: Expect; id: string },
+  ) => Promise<void>
 }
 
 export type StoryData = Story & {
@@ -43,9 +45,9 @@ export type GetStoryHandlers = (args: {
 }) => Routes
 
 export type Ext = {
-  workers?: string | string[]
-  island: string | string[]
-  story: string | string[]
+  worker?: `.${string}.ts` | `.${string}.ts`[]
+  island: `.${string}.ts` | `.${string}.ts`[]
+  story: `.${string}.ts` | `.${string}.ts`[]
 }
 
 export type Write = (args: {
