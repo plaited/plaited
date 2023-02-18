@@ -16,12 +16,12 @@ export const getStoryHandlers: GetStoryHandlers = ({
 }) => {
   const fmtEntries = entries.map((entry) => relative(assets, entry))
   const routeSets = storiesData.map(
-    ([{ title, island = fixture, template }, stories]) => {
+    ([{ title, template }, stories]) => {
       const toRet: Record<string, Handler> = {}
       for (const data of stories) {
         const { args, name } = data
         const story = IslandTemplate({
-          tag: island,
+          tag: fixture,
           template: template(args),
           stylesheets: [...template.stylesheets],
         })

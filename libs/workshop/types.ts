@@ -1,4 +1,4 @@
-import { CustomElementTag, Template, TemplateProps } from '../islandly/mod.ts'
+import { Template, TemplateProps } from '../islandly/mod.ts'
 import { Expect, Locator } from './deps.ts'
 import {
   Credentials,
@@ -10,7 +10,6 @@ import {
 export type StoryConfig<T extends TemplateProps = TemplateProps> = {
   title: string
   template: Template<T>
-  island?: CustomElementTag
   description: string
 }
 
