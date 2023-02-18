@@ -1,11 +1,10 @@
 import { GetStoryHandlers } from './types.ts'
 import { Handler, Routes } from '../server/mod.ts'
-import { entriesTemplate } from './templates/mod.ts'
+import { entriesTemplate, PageTemplate } from './templates/mod.ts'
 import { toId } from './to-id.ts'
-import { fixture, nav } from './constants.ts'
-import { IslandTemplate, PageTemplate } from '../islandly/mod.ts'
+import { fixture } from './constants.ts'
+import { IslandTemplate } from '../islandly/mod.ts'
 import { lowerCase, relative, startCase } from '../deps.ts'
-import { NavTemplate } from './templates/nav.ts'
 
 export const getStoryHandlers: GetStoryHandlers = ({
   storiesData,
@@ -25,11 +24,6 @@ export const getStoryHandlers: GetStoryHandlers = ({
           template: template(args),
           stylesheets: [...template.stylesheets],
         })
-        const navTree = IslandTemplate({
-          tag: nav,
-          template: NavTemplate({ storiesData }),
-          stylesheets: [...NavTemplate.stylesheets],
-        })
         const id = toId(title, name)
         Object.assign(toRet, {
           [`/${id}`]: () =>
@@ -39,17 +33,13 @@ export const getStoryHandlers: GetStoryHandlers = ({
                 dev,
                 head: [entriesTemplate(fmtEntries), includes?.head]
                   .filter(Boolean).join('\n'),
-                body: [navTree, story, includes?.body]
+                body: [story, includes?.body]
                   .filter(Boolean).join('\n'),
               }),
               {
                 headers: { 'Content-Type': 'text/html' },
               },
             ),
-          [`/${id}.include`]: () =>
-            new Response(story, {
-              headers: { 'Content-Type': 'text/html' },
-            }),
         })
       }
       return toRet
