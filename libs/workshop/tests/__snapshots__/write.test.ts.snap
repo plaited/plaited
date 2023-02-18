@@ -117,13 +117,13 @@ snapshot[`/components-example-field--field-basic 1`] = `
                     <nav>
             </template>
         </plaited-workshop-nav>
-        <example-field>
+        <plaited-workshop-fixture>
             <template shadowroot="open">
                 <style></style>
                 <input type='text' value="100" id="input" min="10" max="100" ref={ref}
                 />
             </template>
-        </example-field>
+        </plaited-workshop-fixture>
         <script type="text/javascript">
             const source = new EventSource('/livereload'); const reload = () =>location.reload(true); source.onmessage = reload; source.onerror = () =>(source.onopen = reload); console.log('[plaited] listening for file changes');
         </script>
@@ -133,11 +133,11 @@ snapshot[`/components-example-field--field-basic 1`] = `
 `;
 
 snapshot[`/components-example-field--field-basic.include 1`] = `
-\`<example-field>
+\`<plaited-workshop-fixture>
     <template shadowroot="open">
         <style></style>
         <input type='text' value="100" id="input" min="10" max="100" ref={ref}
         />
     </template>
-</example-field>\`
+</plaited-workshop-fixture>\`
 `;
