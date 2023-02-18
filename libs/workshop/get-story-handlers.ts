@@ -40,8 +40,7 @@ export const getStoryHandlers: GetStoryHandlers = ({
                 head: [entriesTemplate(fmtEntries), includes?.head]
                   .filter(Boolean).join('\n'),
                 body: [navTree, story, includes?.body]
-                  .filter(Boolean)
-                  .join('\n'),
+                  .filter(Boolean).join('\n'),
               }),
               {
                 headers: { 'Content-Type': 'text/html' },
