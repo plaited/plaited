@@ -9,48 +9,53 @@ snapshot[`/components-example-button--basic-button 1`] = `
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Components Example Button(basic button)</title>
         <script type="module" async>
-            import "/.workshop/example-button.island.js"; import "/.workshop/example-button.stories.js"; import "/.workshop/example-field.island.js"; import "/.workshop/example-field.stories.js"; import "/.workshop/ui.island.js";
+            import "/.workshop/example-button.island.js"; import "/.workshop/example-button.stories.js"; import "/.workshop/example-field.island.js"; import "/.workshop/example-field.stories.js"; import "/.workshop/ui.islands.js";
         </script>
     </head>
     
     <body>
-        <nav aria-label="plaited workshop">
-            <ul role="tree">
-                <li role="none">
-                    <div><span><svg xmlns="http://www.w3.org/2000/svg" width="13" height="10" viewBox="0 0 13 10"><polygon points="2 1, 12 1, 7 9"></polygon></svg></span>Components</div>
-                    <ul
-                    role="group" aria-label="title">
+        <plaited-workshop-nav>
+            <template shadowroot="open">
+                <style></style>
+                <nav aria-label="plaited workshop">
+                    <ul role="tree">
                         <li role="none">
-                            <div><span><svg xmlns="http://www.w3.org/2000/svg" width="13" height="10" viewBox="0 0 13 10"><polygon points="2 1, 12 1, 7 9"></polygon></svg></span>Example
-                                Button</div>
-                            <ul role="group" aria-label="title">
-                                <li role="none"><a href="/components-example-button--basic-button" role="treeitem" tabindex="-1"
-                                    data-trigger="click->link keyup->link">Basic Button</a>
+                            <div><span><svg xmlns="http://www.w3.org/2000/svg" width="13" height="10" viewBox="0 0 13 10"><polygon points="2 1, 12 1, 7 9"></polygon></svg></span>Components</div>
+                            <ul
+                            role="group" aria-label="title">
+                                <li role="none">
+                                    <div><span><svg xmlns="http://www.w3.org/2000/svg" width="13" height="10" viewBox="0 0 13 10"><polygon points="2 1, 12 1, 7 9"></polygon></svg></span>Example
+                                        Button</div>
+                                    <ul role="group" aria-label="title">
+                                        <li role="none"><a href="/components-example-button--basic-button" role="treeitem" tabindex="-1"
+                                            data-trigger="click->link keyup->link">Basic Button</a>
+                                        </li>
+                                    </ul>
                                 </li>
-                            </ul>
-                        </li>
-                        <li role="none">
-                            <div><span><svg xmlns="http://www.w3.org/2000/svg" width="13" height="10" viewBox="0 0 13 10"><polygon points="2 1, 12 1, 7 9"></polygon></svg></span>Example
-                                Field</div>
-                            <ul role="group" aria-label="title">
-                                <li role="none"><a href="/components-example-field--field-basic" role="treeitem" tabindex="-1"
-                                    data-trigger="click->link keyup->link">Field Basic</a>
+                                <li role="none">
+                                    <div><span><svg xmlns="http://www.w3.org/2000/svg" width="13" height="10" viewBox="0 0 13 10"><polygon points="2 1, 12 1, 7 9"></polygon></svg></span>Example
+                                        Field</div>
+                                    <ul role="group" aria-label="title">
+                                        <li role="none"><a href="/components-example-field--field-basic" role="treeitem" tabindex="-1"
+                                            data-trigger="click->link keyup->link">Field Basic</a>
+                                        </li>
+                                    </ul>
                                 </li>
-                            </ul>
-                        </li>
-            </ul>
-            </li>
-            </ul>
-            <nav>
-                <plaited-workshop-fixture>
-                    <template shadowroot="open">
-                        <style></style>
-                        <button type="submit">basic</button>
-                    </template>
-                </plaited-workshop-fixture>
-                <script type="text/javascript">
-                    const source = new EventSource('/livereload'); const reload = () =>location.reload(true); source.onmessage = reload; source.onerror = () =>(source.onopen = reload); console.log('[plaited] listening for file changes');
-                </script>
+                    </ul>
+                    </li>
+                    </ul>
+                    <nav>
+            </template>
+        </plaited-workshop-nav>
+        <plaited-workshop-fixture>
+            <template shadowroot="open">
+                <style></style>
+                <button type="submit">basic</button>
+            </template>
+        </plaited-workshop-fixture>
+        <script type="text/javascript">
+            const source = new EventSource('/livereload'); const reload = () =>location.reload(true); source.onmessage = reload; source.onerror = () =>(source.onopen = reload); console.log('[plaited] listening for file changes');
+        </script>
     </body>
 
 </html>\`
@@ -74,49 +79,54 @@ snapshot[`/components-example-field--field-basic 1`] = `
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Components Example Field(field basic)</title>
         <script type="module" async>
-            import "/.workshop/example-button.island.js"; import "/.workshop/example-button.stories.js"; import "/.workshop/example-field.island.js"; import "/.workshop/example-field.stories.js"; import "/.workshop/ui.island.js";
+            import "/.workshop/example-button.island.js"; import "/.workshop/example-button.stories.js"; import "/.workshop/example-field.island.js"; import "/.workshop/example-field.stories.js"; import "/.workshop/ui.islands.js";
         </script>
     </head>
     
     <body>
-        <nav aria-label="plaited workshop">
-            <ul role="tree">
-                <li role="none">
-                    <div><span><svg xmlns="http://www.w3.org/2000/svg" width="13" height="10" viewBox="0 0 13 10"><polygon points="2 1, 12 1, 7 9"></polygon></svg></span>Components</div>
-                    <ul
-                    role="group" aria-label="title">
+        <plaited-workshop-nav>
+            <template shadowroot="open">
+                <style></style>
+                <nav aria-label="plaited workshop">
+                    <ul role="tree">
                         <li role="none">
-                            <div><span><svg xmlns="http://www.w3.org/2000/svg" width="13" height="10" viewBox="0 0 13 10"><polygon points="2 1, 12 1, 7 9"></polygon></svg></span>Example
-                                Button</div>
-                            <ul role="group" aria-label="title">
-                                <li role="none"><a href="/components-example-button--basic-button" role="treeitem" tabindex="-1"
-                                    data-trigger="click->link keyup->link">Basic Button</a>
+                            <div><span><svg xmlns="http://www.w3.org/2000/svg" width="13" height="10" viewBox="0 0 13 10"><polygon points="2 1, 12 1, 7 9"></polygon></svg></span>Components</div>
+                            <ul
+                            role="group" aria-label="title">
+                                <li role="none">
+                                    <div><span><svg xmlns="http://www.w3.org/2000/svg" width="13" height="10" viewBox="0 0 13 10"><polygon points="2 1, 12 1, 7 9"></polygon></svg></span>Example
+                                        Button</div>
+                                    <ul role="group" aria-label="title">
+                                        <li role="none"><a href="/components-example-button--basic-button" role="treeitem" tabindex="-1"
+                                            data-trigger="click->link keyup->link">Basic Button</a>
+                                        </li>
+                                    </ul>
                                 </li>
-                            </ul>
-                        </li>
-                        <li role="none">
-                            <div><span><svg xmlns="http://www.w3.org/2000/svg" width="13" height="10" viewBox="0 0 13 10"><polygon points="2 1, 12 1, 7 9"></polygon></svg></span>Example
-                                Field</div>
-                            <ul role="group" aria-label="title">
-                                <li role="none"><a href="/components-example-field--field-basic" role="treeitem" tabindex="-1"
-                                    data-trigger="click->link keyup->link">Field Basic</a>
+                                <li role="none">
+                                    <div><span><svg xmlns="http://www.w3.org/2000/svg" width="13" height="10" viewBox="0 0 13 10"><polygon points="2 1, 12 1, 7 9"></polygon></svg></span>Example
+                                        Field</div>
+                                    <ul role="group" aria-label="title">
+                                        <li role="none"><a href="/components-example-field--field-basic" role="treeitem" tabindex="-1"
+                                            data-trigger="click->link keyup->link">Field Basic</a>
+                                        </li>
+                                    </ul>
                                 </li>
-                            </ul>
-                        </li>
-            </ul>
-            </li>
-            </ul>
-            <nav>
-                <example-field>
-                    <template shadowroot="open">
-                        <style></style>
-                        <input type='text' value="100" id="input" min="10" max="100" ref={ref}
-                        />
-                    </template>
-                </example-field>
-                <script type="text/javascript">
-                    const source = new EventSource('/livereload'); const reload = () =>location.reload(true); source.onmessage = reload; source.onerror = () =>(source.onopen = reload); console.log('[plaited] listening for file changes');
-                </script>
+                    </ul>
+                    </li>
+                    </ul>
+                    <nav>
+            </template>
+        </plaited-workshop-nav>
+        <example-field>
+            <template shadowroot="open">
+                <style></style>
+                <input type='text' value="100" id="input" min="10" max="100" ref={ref}
+                />
+            </template>
+        </example-field>
+        <script type="text/javascript">
+            const source = new EventSource('/livereload'); const reload = () =>location.reload(true); source.onmessage = reload; source.onerror = () =>(source.onopen = reload); console.log('[plaited] listening for file changes');
+        </script>
     </body>
 
 </html>\`
