@@ -492,3 +492,17 @@ export type GetFormatters = <
   baseFontSize: number
   $type: string
 }) => string
+
+export type TokenConfig = {
+  tokens: DesignTokenGroup
+  schema?: {
+    output?: string
+    name?: string
+  }
+  transform?: {
+    output?: string
+    baseFontSize?: number
+    cssFormatters?: GetFormatters
+    tsFormatters?: GetFormatters
+  }
+}

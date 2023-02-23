@@ -3,21 +3,21 @@ import { DesignTokenGroup, GetFormatters } from '../token-types.ts'
 
 export const transformTsTokens = async ({
   tokens,
-  outputDirectory,
+  output,
   baseFontSize,
   formatters,
 }: {
   tokens: DesignTokenGroup
-  outputDirectory: string
+  output: string
   baseFontSize: number
   formatters: GetFormatters
 }) => {
-  await Deno.mkdir(outputDirectory, { recursive: true })
+  await Deno.mkdir(output, { recursive: true })
   const content = formatList({
     tokens,
     allTokens: tokens,
     baseFontSize,
     formatters,
   })
-  await Deno.writeTextFile(`${outputDirectory}/tokens.ts`, content)
+  await Deno.writeTextFile(`${output}/tokens.ts`, content)
 }

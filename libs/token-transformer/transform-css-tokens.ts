@@ -4,16 +4,16 @@ import { combineDuplicatedSelectors, postcss } from '../deps.ts'
 
 export const transformCssTokens = async ({
   tokens,
-  outputDirectory,
+  output,
   baseFontSize,
   formatters,
 }: {
   tokens: DesignTokenGroup
-  outputDirectory: string
+  output: string
   baseFontSize: number
   formatters: GetFormatters
 }) => {
-  await Deno.mkdir(outputDirectory, { recursive: true })
+  await Deno.mkdir(output, { recursive: true })
   const content = formatList({
     tokens,
     allTokens: tokens,
@@ -23,5 +23,5 @@ export const transformCssTokens = async ({
   const { css } = await postcss([
     combineDuplicatedSelectors,
   ]).process(content, { from: undefined, to: '' })
-  await Deno.writeTextFile(`${outputDirectory}/tokens.css`, css)
+  await Deno.writeTextFile(`${output}/tokens.css`, css)
 }

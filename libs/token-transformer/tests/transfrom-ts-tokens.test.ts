@@ -5,16 +5,16 @@ import { tokens } from './sample-tokens.ts'
 import { defaultTSFormatters } from '../ts-tokens/mod.ts'
 
 const __dirname = new URL('.', import.meta.url).pathname
-const outputDirectory = resolve(__dirname, './__tmp__/')
+const output = resolve(__dirname, './__tmp__/')
 
 Deno.test('transform-ts-tokens', async (t) => {
   await transformTsTokens({
     tokens,
-    outputDirectory,
+    output,
     baseFontSize: 20,
     formatters: defaultTSFormatters,
   })
-  const content = await Deno.readTextFile(`${outputDirectory}/tokens.ts`)
+  const content = await Deno.readTextFile(`${output}/tokens.ts`)
   assertSnapshot(t, content)
-  await Deno.remove(outputDirectory, { recursive: true })
+  await Deno.remove(output, { recursive: true })
 })

@@ -7,26 +7,26 @@ export const tokenTransformer = async <
   T extends DesignTokenGroup = DesignTokenGroup,
 >({
   tokens,
-  outputDirectory,
+  output,
   baseFontSize = 20,
   cssFormatters = defaultCSSFormatters,
   tsFormatters = defaultTSFormatters,
 }: {
   tokens: T
-  outputDirectory: string
+  output: string
   baseFontSize?: number
   cssFormatters?: GetFormatters
   tsFormatters?: GetFormatters
 }) => {
   await transformCssTokens({
     tokens,
-    outputDirectory,
+    output,
     baseFontSize,
     formatters: cssFormatters,
   })
   await transformTsTokens({
     tokens,
-    outputDirectory,
+    output,
     baseFontSize,
     formatters: tsFormatters,
   })
