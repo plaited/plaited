@@ -54,7 +54,12 @@ export type Server = (args: {
    * {@link KnownMethod known methods}.
    */
   unknownMethodHandler?: UnknownMethodHandler
-}) => Promise<{
+  /**
+   * Middleware function that can be used to intercept request to
+   * for example return 401 Unauthorized on unauthenticated users
+   */
+  middleware?: Middleware
+}) => {
   /** network ip addresses */
   ips: string[]
   /** current port being listened to */
@@ -67,7 +72,9 @@ export type Server = (args: {
   url: string
   /** callback function to  close server*/
   close: () => Promise<void>
-}>
+  /** Add routes after the server has started */
+  addRoutes: (newRoutes: Routes) => void
+}
 
 /**
  * Middleware function that can be used to intercept request to

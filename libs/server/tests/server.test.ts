@@ -10,10 +10,11 @@ import {
   root,
 } from './utils.ts'
 import { wait } from '../../utils/wait.ts'
-Deno.test('server: reload false', async () => {
-  let { close } = await server({
+Deno.test('server: adding routes', async () => {
+  const routes = homeRoute
+  const { close, addRoutes } = await server({
     root,
-    routes: homeRoute,
+    routes,
     port: 9000,
     reload: false,
   })
@@ -23,23 +24,14 @@ Deno.test('server: reload false', async () => {
   let helpRes = await fetch('http://localhost:9000/help')
   await helpRes.body?.cancel()
   assertEquals(helpRes.status, 404)
-  await close()
-  ;({ close } = await server({
-    reload: false,
-    root,
-    port: 9000,
-    routes: {
-      ...homeRoute,
-      ...helpRoute,
-    },
-  }))
+  addRoutes(helpRoute)
   helpRes = await fetch('http://localhost:9000/help')
   const helpData = await helpRes.text()
   assert(helpData.includes(help))
   await close()
 })
 
-Deno.test('server: reload true', async () => {
+Deno.test('server: reload', async () => {
   const process = Deno.run({
     cmd: [
       'deno',

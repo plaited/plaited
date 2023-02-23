@@ -1,11 +1,15 @@
 /* eslint-disable no-console */
 import { hostnameForDisplay, networkIps, usePort } from './utils.ts'
-import { Server } from './types.ts'
+import { Middleware, Server } from './types.ts'
 import { watcher } from './watcher.ts'
-import { createServer } from './create-server.ts'
+import { getFileHandler } from './get-file-handler.ts'
 import { getRouteHandler } from './get-route-handler.ts'
+import { extname, Routes, serve, serveTls } from '../deps.ts'
 
-export const server: Server = async ({
+const getMiddleware: Middleware = (handler) => async (req, ctx) =>
+  await handler(req, ctx)
+
+export const server: Server = ({
   root,
   routes,
   port: _port = 3000,
@@ -14,6 +18,7 @@ export const server: Server = async ({
   errorHandler,
   otherHandler,
   unknownMethodHandler,
+  middleware = getMiddleware,
 }) => {
   // Try start on specified port then fail or find a free port
   const port = usePort(_port) ? _port : usePort()
@@ -36,26 +41,40 @@ export const server: Server = async ({
   const protocol: 'http' | 'https' = `${credentials ? 'https' : 'http'}`
   const reloadClients: Array<(channel: string, data: string) => void> = []
 
-  const routeHandler = await getRouteHandler({
-    routes,
-    reload,
-    reloadClients,
-    otherHandler,
-    errorHandler,
-    unknownMethodHandler,
-  })
-  const server = createServer({
-    credentials,
-    routeHandler,
-    onListen: ({ port, hostname }) => {
-      console.log(
-        `Running at ${protocol}://${hostnameForDisplay(hostname)}:${port}`,
-      )
+  const createServer = credentials ? serveTls : serve
+
+  const server = createServer(
+    middleware(async (
+      req,
+      ctx,
+    ) => {
+      const { pathname } = new URL(req.url)
+      const fileExt = extname(pathname)
+      if (fileExt) {
+        return await getFileHandler({ fileExt, root, pathname, req })
+      }
+      console.log(routes)
+      const routeHandler = await getRouteHandler({
+        routes,
+        reload,
+        reloadClients,
+        otherHandler,
+        errorHandler,
+        unknownMethodHandler,
+      })
+      return await routeHandler(req, ctx)
+    }),
+    {
+      signal,
+      port,
+      onListen: ({ port, hostname }) => {
+        console.log(
+          `Running at ${protocol}://${hostnameForDisplay(hostname)}:${port}`,
+        )
+      },
+      ...credentials,
     },
-    port,
-    root,
-    signal,
-  })
+  )
 
   if (reload) {
     watcher(reloadClients, root)
@@ -66,6 +85,9 @@ export const server: Server = async ({
     port,
     protocol,
     root,
+    addRoutes: (newRoutes: Routes) => {
+      Object.assign(routes, newRoutes)
+    },
     close: async () => {
       console.log('Closing server...')
       controller.abort()
