@@ -15,14 +15,16 @@
   "lint": {
     "files": {
       "exclude": [
-        "./tests/playwright"
+        "./tests/playwright",
+        "./tests/.workshop"
       ]
     }
   },
   "fmt": {
     "files": {
       "exclude": [
-        "./tests/playwright"
+        "./tests/playwright",
+        "./tests/.workshop"
       ]
     },
     "options": {
@@ -33,7 +35,8 @@
   "test": {
     "files": {
       "exclude": [
-        "./tests/playwright"
+        "./tests/playwright",
+        "./tests/.workshop"
       ]
     }
   }

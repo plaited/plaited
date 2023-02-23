@@ -3,6 +3,7 @@ import { Ext, WorkshopConfig } from './types.ts'
 import { write } from './write.ts'
 import { watcher } from './watcher.ts'
 import { toFileUrl } from '../deps.ts'
+import { getStat } from './get-stat.ts'
 
 interface StartWorkshop {
   (
@@ -28,13 +29,16 @@ export const startWorkshop: StartWorkshop = async ({
   workspace,
   includes,
 }) => {
-  if (!Deno.statSync(assets)) {
-    await Deno.mkdir(assets)
-  }
+  await Promise.all([assets, playwright, workspace].map(async (path) => {
+    const exist = await getStat(path)
+    if (exist) return
+    Deno.mkdir(path, { recursive: true })
+  }))
   const ref: { close: () => Promise<void> } = {
     async close() {},
   }
   const startServer = async () => {
+    console.log('hit')
     const routes = await write({
       assets,
       colorScheme,
@@ -56,6 +60,7 @@ export const startWorkshop: StartWorkshop = async ({
     })
     ref['close'] = close
   }
+  await startServer()
   if (dev) {
     watcher({
       ref,
