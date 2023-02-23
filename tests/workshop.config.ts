@@ -1,4 +1,4 @@
-import { WorkshopConfig } from './libs/workshop/types.ts'
+import { WorkshopConfig } from '$plaited'
 export default {
   assets: './.workshop',
   colorScheme: true,
@@ -8,7 +8,7 @@ export default {
     worker: '.worker.ts',
     island: '.island.ts',
   },
-  importMap: './.vscode/import-map.json',
+  importMap: '../.vscode/import-map.json',
   port: 3000,
   playwright: './playwright',
   workspace: './stories',
