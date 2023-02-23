@@ -8,6 +8,6 @@
   "editor.defaultFormatter": "denoland.vscode-deno",
   "deno.enablePaths": [
     ".",
-    "!./playwright"
+    "!./tests/playwright"
   ]
 }
