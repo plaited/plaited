@@ -1,7 +1,7 @@
 {
   "tasks": {
     "lint": "deno lint",
-    "test": "deno test --allow-all ./libs",
+    "test": "deno test --allow-all .",
     "test:only": "deno test --allow-all"
   },
   "importMap": "./.vscode/import-map.json",
