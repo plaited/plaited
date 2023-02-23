@@ -4,7 +4,6 @@
   },
   "imports": {
     "$plaited": "../mod.ts",
-    "$workshop": "../workshop.ts",
     "@playwright/test": "https://esm.sh/@playwright/test@1.30.0",
     "@axe-core/playwright": "https://esm.sh/@axe-core/playwright@4.6.0"
   }
