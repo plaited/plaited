@@ -7,7 +7,7 @@
   "deno.unstable": true,
   "editor.defaultFormatter": "denoland.vscode-deno",
   "deno.enablePaths": [
-    ".",
-    "!./tests/playwright"
+    "."
+    // "!./tests/playwright"
   ]
 }

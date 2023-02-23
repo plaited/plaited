@@ -1,4 +1,4 @@
-import { DesignTokenGroup } from '../../token-types.ts'
+import { DesignTokenGroup } from '$plaited'
 export const tokens: DesignTokenGroup = {
   size: {
     x1: {

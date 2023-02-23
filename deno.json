@@ -16,14 +16,14 @@
   "lint": {
     "files": {
       "exclude": [
-        "./playwright"
+        "./tests/playwright"
       ]
     }
   },
   "fmt": {
     "files": {
       "exclude": [
-        "./playwright"
+        "./tests/playwright"
       ]
     },
     "options": {
