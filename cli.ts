@@ -1,5 +1,6 @@
 import { dirname, resolve } from './libs/deps.ts'
 import { startWorkshop } from './libs/workshop/start-workshop.ts'
+import { WorkshopConfig } from './libs/workshop/mod.ts'
 import { tokenTransformer } from './libs/token-transformer/mod.ts'
 import { easyTokenSchema } from './libs/easy-token-schema/mod.ts'
 import { DesignTokenGroup, TokenConfig } from './libs/token-types.ts'
@@ -13,38 +14,36 @@ const getConfig = async () => {
 
 const workshop = async () => {
   const { config, configDir } = await getConfig()
-  const workspace = config.workspace && config.workspace.startsWith('/')
+  let { workspace, assets, playwright, exts, importMap } =
+    config as WorkshopConfig
+  workspace = config.workspace && config.workspace.startsWith('/')
     ? config.workspace
     : config.workspace
     ? resolve(configDir, config.workspace)
     : configDir
 
-  const assets = config.assets && config.assets.startsWith('/')
+  assets = config.assets && config.assets.startsWith('/')
     ? config.assets
     : config.assets
     ? resolve(configDir, config.assets)
     : resolve(configDir, './.workshop')
 
-  const playwright = config.playwright && config.playwright.startsWith('/')
+  playwright = config.playwright && config.playwright.startsWith('/')
     ? config.playwright
     : config.playwright
     ? resolve(configDir, config.playwright)
     : resolve(configDir, './playwright')
 
-  const exts = {
-    worker: config.worker,
-    island: config.island || '.island.ts',
-    story: config.story || '.stories.ts',
-  }
-
-  const importMap = config.importMap
-    ? resolve(configDir, config.importMap)
-    : undefined
+  importMap = importMap ? resolve(configDir, importMap) : undefined
 
   await startWorkshop({
     ...config,
     assets,
-    exts,
+    exts: {
+      ...exts,
+      island: exts?.island || '.island.ts',
+      story: exts?.story || '.stories.ts',
+    },
     importMap,
     playwright,
     workspace,

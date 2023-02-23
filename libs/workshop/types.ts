@@ -9,7 +9,7 @@ export type StoryConfig<T extends TemplateProps = TemplateProps> = {
 }
 
 export type Story<T extends TemplateProps = TemplateProps> = {
-  args: T & TemplateProps
+  args?: T & TemplateProps
   description: string
   test?: (
     args: { locator: Locator; expect: Expect; id: string },
@@ -36,6 +36,7 @@ export type GetStoryHandlers = (args: {
     head?: string
     body?: string
   }
+  project?: string
 }) => Routes
 
 export type Ext = {

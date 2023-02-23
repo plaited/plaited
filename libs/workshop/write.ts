@@ -38,22 +38,24 @@ export const write: Write = async ({
     entriesPoints.push(path)
   }
 
+  const clientModules = entriesPoints.filter((entry) =>
+    [...islandExts, ...workerExts].some((ext) => entry.endsWith(ext))
+  )
+
   /** write client side code*/
   const entries = await writeClient({
-    entryPoints: entriesPoints.filter((entry) =>
-      [...islandExts, ...storyExts].some((ext) => entry.endsWith(ext))
-    ),
+    entryPoints: clientModules,
     assets,
     importMap,
     workerExts,
   })
 
-  const stories = entriesPoints.filter((entry) =>
+  const storyModules = entriesPoints.filter((entry) =>
     storyExts.some((ext) => entry.endsWith(ext))
   )
 
   /** get sorted and title/name collision free story data */
-  const storiesData = await getStoriesData(stories)
+  const storiesData = await getStoriesData(storyModules)
 
   // /** write playwright spec files */
   await writeSpec({
@@ -65,7 +67,7 @@ export const write: Write = async ({
     colorScheme,
     dev,
     importMap,
-    entryPoints: stories,
+    entryPoints: storyModules,
   })
 
   /** return story handlers */

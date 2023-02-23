@@ -6,7 +6,7 @@ export default {
   exts: {
     story: '.stories.ts',
     worker: '.worker.ts',
-    island: '.island.ts',
+    island: '.islands.ts',
   },
   importMap: '../.vscode/import-map.json',
   port: 3000,

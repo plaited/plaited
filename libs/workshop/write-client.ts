@@ -26,7 +26,7 @@ export const writeClient = async ({
   })
   const defaultContent = await buildUI()
   const content = await build()
-  const outdir = `${assets}/.workshop`
+  const outdir = `${assets}/.modules`
   const exist = await getStat(outdir)
   exist && await Deno.remove(outdir, { recursive: true })
   await Deno.mkdir(outdir, { recursive: true })
@@ -34,6 +34,7 @@ export const writeClient = async ({
   if (content && Array.isArray(content) && Array.isArray(defaultContent)) {
     await Promise.all(
       [...defaultContent, ...content].map(async (entry) => {
+        console.log()
         const registry = `${outdir}${entry[0]}`
         entries.push(registry)
         await Deno.writeFile(registry, entry[1])

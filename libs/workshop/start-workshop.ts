@@ -38,7 +38,6 @@ export const startWorkshop: StartWorkshop = async ({
     async close() {},
   }
   const startServer = async () => {
-    console.log('hit')
     const routes = await write({
       assets,
       colorScheme,
