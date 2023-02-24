@@ -7,7 +7,7 @@ import {
 import { controller } from './controller.ts'
 
 /**
- *  Island function
+ *  Functionally define Island elements
  */
 export const define = (
   { tag, ...options }: IslandConfig,

@@ -33,9 +33,9 @@ const requestInParameter = (
 }
 
 export const bProgram = ({
-  /** event selection strategy */
+  /** event selection strategy {@link Strategy}*/
   strategy: eventSelectionStrategy = priorityStrategy,
-  /** returns a stream with log events when set to true */
+  /** When set to true returns a stream with log of state snapshots, last selected event and trigger */
   dev = false,
 }: {
   strategy?: Strategy
@@ -154,11 +154,16 @@ export const bProgram = ({
     }
   }
   return Object.freeze({
+    /** add rule function to behavioral program */
     add,
+    /** connect action function to behavioral program */
     feedback,
+    /** trigger a run and event on behavioral program */
     trigger,
+    /** reactive stream for capturing selected events, state snapshots, and trigger events */
     stream,
-    lastEvent() {
+    /** a callback function to get the value of the last selected event */
+    lastSelected() {
       return { type: lastEvent.type, data: lastEvent.data }
     },
   })

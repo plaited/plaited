@@ -1,4 +1,7 @@
 /// <reference lib="dom" />
+/** @description
+ * set and get document level css variables
+ */
 export const cssVar = (
   variable: `var(--${string})` | `--${string}`,
   value?: string | number,

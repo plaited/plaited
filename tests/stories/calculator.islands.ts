@@ -1,6 +1,14 @@
-import { define, loop, request, strand, useStore, waitFor } from '$plaited'
-import { send } from './calculator.comms.ts'
-import { connect } from './calculator.comms.ts'
+import {
+  define,
+  loop,
+  messenger,
+  request,
+  strand,
+  useStore,
+  waitFor,
+} from '$plaited'
+
+const { connect, send } = messenger()
 
 // @ts-ignore: test
 window.streamLog = []

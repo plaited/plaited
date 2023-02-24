@@ -1,8 +1,8 @@
 /* eslint-disable no-console */
 import {
   block,
+  bProgram,
   loop,
-  plait,
   randomizedStrategy,
   request,
   RulesFunc,
@@ -10,11 +10,11 @@ import {
   waitFor,
 } from '$plaited'
 
-const { trigger: xTrigger, feedback: xFeedback, add: xAdd } = plait({
+const { trigger: xTrigger, feedback: xFeedback, add: xAdd } = bProgram({
   strategy: randomizedStrategy,
 })
 
-const { trigger: oTrigger, feedback: oFeedback, add: oAdd } = plait({
+const { trigger: oTrigger, feedback: oFeedback, add: oAdd } = bProgram({
   strategy: randomizedStrategy,
 })
 

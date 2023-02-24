@@ -4,9 +4,17 @@ import { WorkshopConfig } from './libs/workshop/mod.ts'
 import { tokenTransformer } from './libs/token-transformer/mod.ts'
 import { easyTokenSchema } from './libs/easy-token-schema/mod.ts'
 import { DesignTokenGroup, TokenConfig } from './libs/token-types.ts'
+import { getStat } from './libs/workshop/get-stat.ts'
 
 const getConfig = async () => {
   const configPath = resolve(Deno.cwd(), Deno.args[1])
+  const exist = await getStat(configPath)
+  if (!exist) {
+    console.error(
+      `Config [${configPath}] not found. Path should be relative to the current working directory`,
+    )
+    Deno.exit(1)
+  }
   const configDir = dirname(configPath)
   const { default: config } = await import(configPath)
   return { config, configDir }
@@ -26,7 +34,7 @@ const workshop = async () => {
     ? config.assets
     : config.assets
     ? resolve(configDir, config.assets)
-    : resolve(configDir, './.workshop')
+    : resolve(configDir, './workshop')
 
   playwright = config.playwright && config.playwright.startsWith('/')
     ? config.playwright
@@ -54,6 +62,9 @@ const tokenTransform = async () => {
   const { config, configDir } = await getConfig()
   const { tokens, transform = {} } = config as TokenConfig
   if (!tokens) {
+    console.error(
+      'Design Tokens not found. Make sure the token group object isn\'t missing from your config',
+    )
     Deno.exit()
   }
   const output = transform?.output
@@ -70,6 +81,9 @@ const tokenSchema = async () => {
   const { config, configDir } = await getConfig()
   const { tokens, schema } = config as TokenConfig
   if (!tokens) {
+    console.error(
+      'Design Tokens not found. Make sure the token group object isn\'t missing from your config',
+    )
     Deno.exit()
   }
   const output = schema?.output

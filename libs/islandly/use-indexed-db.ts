@@ -2,9 +2,13 @@ import { trueTypeOf } from '../utils/mod.ts'
 import { createIDB, IDB } from './create-idb.ts'
 
 type UpdateStoreArg = (arg?: unknown) => unknown
+/** asynchronously get and set indexed db values */
 export const useIndexedDB = async (
+  /** key for stored value */
   key: string,
+  /** initial value can be null */
   initialValue?: unknown,
+  /** you can actually pass it an reference to another indexedDB */
   idb?: IDB,
 ): Promise<
   readonly [

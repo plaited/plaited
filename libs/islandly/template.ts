@@ -8,7 +8,6 @@ export type TemplateProps = {
 
 export interface Template<T extends TemplateProps = TemplateProps> {
   (this: unknown, props: T & TemplateProps): string
-  stylesheets: Set<string>
 }
 
 const shallowCompare = (
@@ -49,6 +48,5 @@ export const template = <Props extends TemplateProps = TemplateProps>(
     }
     return lastResult
   }
-  tpl.stylesheets = new Set<string>()
   return tpl
 }

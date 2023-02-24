@@ -3,9 +3,13 @@ import { Wire, wire } from './wire.ts'
 import { template } from './template.ts'
 
 interface IslandTemplateProps extends Wire {
-  tag: string
+  /** the element tag you want to use */
+  tag: `${string}-${string}`
+  /** the shadowDom template for the Island */
   template: string
-  /** @defaultValue 'open' */
+  /**
+   * Island element's shadowDom mode
+   * @defaultValue 'open' */
   mode?: 'open' | 'closed'
 }
 

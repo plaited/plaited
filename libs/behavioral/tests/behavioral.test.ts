@@ -42,11 +42,13 @@ const strands = {
       Object.assign(
         waitFor({ type: 'hot' }),
         block({ type: 'cold' }),
+        // block({ type: 'say_cold' }),
       ),
-      Object.assign(
-        waitFor({ type: 'cold' }),
-        block({ type: 'hot' }),
-      ),
+      {
+        ...waitFor({ type: 'cold' }),
+        ...block({ type: 'hot' }),
+        ...block({ type: 'say' }),
+      },
     ),
   ),
 }
@@ -71,6 +73,7 @@ Deno.test('bProgram: priority queue', (t) => {
     type: 'start',
     data: 'start',
   })
+  console.log({ actualFeedback })
   assertEquals(
     actualFeedback,
     expectedFeedback,

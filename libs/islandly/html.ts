@@ -1,7 +1,9 @@
 import { taggedWithPrimitives } from './utils.ts'
 import { Primitive } from './types.ts'
 
-/** @returns a minimized html template string */
+/**
+ * @description define your html with a tagged template literal
+ * @returns a minimized html template string */
 export const html = (
   strings: TemplateStringsArray,
   ...expressions: Array<Primitive | Primitive[]>

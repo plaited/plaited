@@ -59,7 +59,7 @@ export interface PlaitInterface {
     /** Function  to trigger an event in the behavioral program */
     trigger: Trigger
     /**  Returns the last event for each step of the behavioral program run */
-    lastEvent: () => {
+    lastSelected: () => {
       type: string
       data: unknown
     }

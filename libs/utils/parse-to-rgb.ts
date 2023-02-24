@@ -1,5 +1,6 @@
 import { opacityHex } from './opacity-hex.ts'
 
+/** parse a hex code to an rgb(a) value */
 export const parseToRgb = (hex: string) => {
   if (!hex.startsWith('#')) return
   const sixDigits = `${parseInt(`${hex[1]}${hex[2]}`, 16)},${

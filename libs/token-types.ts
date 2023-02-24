@@ -497,7 +497,7 @@ export type TokenConfig = {
   tokens: DesignTokenGroup
   schema?: {
     output?: string
-    name?: string
+    name?: `${string}.json`
   }
   transform?: {
     output?: string

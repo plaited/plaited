@@ -1,4 +1,9 @@
 import { Trigger, TriggerArgs } from '../behavioral/mod.ts'
+/** Enables communication between actors in a web app.
+ * Actors can be Islands, workers, or bPrograms running in the main thread
+ * @returns two function a connect function to connect an actor and send function
+ * to send a message to an actor
+ */
 export const messenger = () => {
   const emitter = new EventTarget()
 

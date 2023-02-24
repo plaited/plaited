@@ -8,22 +8,27 @@ export const useBehavioral = ({
   strategy,
   context,
 }: {
+  /** sets a behavioral program for island to dev and captures reactive stream logs */
   logger?: Listener
+  /** Set the island's behavioral program strategy */
   strategy?: Strategy
+  /** wires the messenger connect to the behavioral programs trigger */
   connect?: (recipient: string, trigger: Trigger) => () => void
+  /** optional and useful for when you're making a new primitive like a datepicker
+   *  where there can be multiple on the screen, use this instead of the tag name to connect to messenger
+   * If an id attribute is missing the island will console.error
+   */
   id?: boolean
+  /** reference to the node instance of the Island HTMLElement calling this hook */
   context: HTMLElement
 }) => {
-  const { feedback, trigger, stream, add, lastEvent } = bProgram({
+  const { feedback, trigger, stream, add, lastSelected } = bProgram({
     strategy,
     dev: Boolean(logger),
   })
   logger && stream.subscribe(logger)
   let disconnect = noop
-  if (!context.tagName) {
-    console.error('usePlait must be called from within a CustomElement Class')
-  }
-  if (connect && context) {
+  if (connect) {
     const tagName = context.tagName.toLowerCase()
     const _id = context.id
     if (id && !_id) {
@@ -36,5 +41,5 @@ export const useBehavioral = ({
       type: `connected->${id ? _id ?? `${tagName} with missing id` : tagName}`,
     })
   }
-  return { trigger, disconnect, add, feedback, lastEvent }
+  return { trigger, disconnect, add, feedback, lastSelected }
 }

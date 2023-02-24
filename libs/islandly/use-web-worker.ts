@@ -8,9 +8,13 @@ type Message = {
 type Disconnect = () => void
 
 export const useWebWorker = ({
+  /** identifier for our worker */
   id,
+  /** the server public directory relative url  */
   url,
+  /** messenger connect callback to connect your instantiate worker */
   connect,
+  /** messenger send callback so that messages received from the worker can be sent to the main thread */
   send,
 }: {
   id: string

@@ -2,7 +2,6 @@ import { html, IslandTemplate, template } from '$plaited'
 
 const valueDisplay = IslandTemplate({
   tag: 'value-display',
-  stylesheets: `h1 { color: purple; }`,
   template:
     html`<h1 data-target="display" class="display" data-trigger="click->test">00:00</h1>`,
 })
