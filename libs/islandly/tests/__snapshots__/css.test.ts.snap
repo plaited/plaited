@@ -3,11 +3,12 @@ export const snapshot = {};
 snapshot[`css() 1`] = `
 {
   classes: {
-    "_button-4": "_button-4_Njc3MTk4MjY1",
-    button: "button_Njc3MTk4MjY1",
-    button4: "button4_Njc3MTk4MjY1",
+    "_button-4": "_button-4_NzU3MDc4MjU5Ng",
+    button: "button_NzU3MDc4MjU5Ng",
+    button4: "button4_NzU3MDc4MjU5Ng",
+    link: "link_NzU3MDc4MjU5Ng",
   },
-  styles: ".button_Njc3MTk4MjY1 { background-color: rgba(255, 0, 0, 0.2); } .button4_Njc3MTk4MjY1:disabled { background-color: rgba(255, 0, 0, 0.8); } ._button-4_Njc3MTk4MjY1:disabled { background-color: rgba(00, 50, 25, 0.8); }",
+  styles: ".button_NzU3MDc4MjU5Ng { background-color: rgba(255, 0, 0, 0.2); } .button4_NzU3MDc4MjU5Ng:disabled { background-color: rgba(255, 0, 0, 0.8); } ._button-4_NzU3MDc4MjU5Ng:disabled { background-color: rgba(00, 50, 25, 0.8); } ._button-4_NzU3MDc4MjU5Ng:disabled + :not(.link_NzU3MDc4MjU5Ng){ background-color: rgba(00, 50, 25, 0.8); }",
 }
 `;
 

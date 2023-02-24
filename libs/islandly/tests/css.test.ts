@@ -14,6 +14,9 @@ Deno.test('css()', async (t) => {
     ._button-4:disabled {
       background-color: rgba(00, 50, 25, 0.8);
     }
+    ._button-4:disabled + :not(.link){
+      background-color: rgba(00, 50, 25, 0.8);
+    }
     `,
   )
   await assertSnapshot(
