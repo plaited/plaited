@@ -42,10 +42,11 @@ export const css = (
   const tokens = tokenize(result)
   const classes = new Map<string, string>()
   const addClass = (key: string) => {
-    const hash = `${key}_${suffix}`
-    if (classes.has(key)) return `.${hash}`
-    classes.set(key, hash)
-    return `.${hash}`
+    const value = `${key}_${suffix.slice(0, 6)}`
+    const toRet = `.${value}`
+    if (classes.has(key)) return toRet
+    classes.set(key, value)
+    return toRet
   }
   const styles =
     tokens?.map((token) =>

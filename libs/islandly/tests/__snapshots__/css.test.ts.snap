@@ -3,20 +3,23 @@ export const snapshot = {};
 snapshot[`css() 1`] = `
 {
   classes: {
-    "_button-4": "_button-4_NzU3MDc4MjU5Ng",
-    button: "button_NzU3MDc4MjU5Ng",
-    button4: "button4_NzU3MDc4MjU5Ng",
-    link: "link_NzU3MDc4MjU5Ng",
+    "_button-4": "_button-4_NzU3MD",
+    button: "button_NzU3MD",
+    button4: "button4_NzU3MD",
+    link: "link_NzU3MD",
   },
-  styles: ".button_NzU3MDc4MjU5Ng { background-color: rgba(255, 0, 0, 0.2); } .button4_NzU3MDc4MjU5Ng:disabled { background-color: rgba(255, 0, 0, 0.8); } ._button-4_NzU3MDc4MjU5Ng:disabled { background-color: rgba(00, 50, 25, 0.8); } ._button-4_NzU3MDc4MjU5Ng:disabled + :not(.link_NzU3MDc4MjU5Ng){ background-color: rgba(00, 50, 25, 0.8); }",
+  styles: ".button_NzU3MD { background-color: rgba(255, 0, 0, 0.2); } .button4_NzU3MD:disabled { background-color: rgba(255, 0, 0, 0.8); } ._button-4_NzU3MD:disabled { background-color: rgba(00, 50, 25, 0.8); } ._button-4_NzU3MD:disabled + :not(.link_NzU3MD){ background-color: rgba(00, 50, 25, 0.8); }",
 }
 `;
 
 snapshot[`css() 2`] = `
 {
   classes: {
-    button: "button_MzgwNjM4NzIzMA",
+    "_button-4": "_button-4_MjE0Mz",
+    button: "button_MjE0Mz",
+    button4: "button4_MjE0Mz",
+    link: "link_MjE0Mz",
   },
-  styles: ".button_MzgwNjM4NzIzMA { color: var(--color); } .button_MzgwNjM4NzIzMA:focus { color: var(--color-focus); }",
+  styles: ".button_MjE0Mz { background-color: rgba(255, 0, 0, 0.2); } .button4_MjE0Mz:disabled { background-color: rgba(255, 0, 0, 0.8); } ._button-4_MjE0Mz:disabled { background-color: va(--background-color); } ._button-4_MjE0Mz:disabled + :not(.link_MjE0Mz){ background-color: var(--background-color-disabled); }",
 }
 `;

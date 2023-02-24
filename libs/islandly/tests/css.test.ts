@@ -23,10 +23,16 @@ Deno.test('css()', async (t) => {
     t,
     css`
     .button {
-      color: var(--color);
+      background-color: rgba(255, 0, 0, 0.2);
     }
-    .button:focus {
-      color: var(--color-focus);
+    .button4:disabled {
+      background-color: rgba(255, 0, 0, 0.8);
+    }
+    ._button-4:disabled {
+      background-color: va(--background-color);
+    }
+    ._button-4:disabled + :not(.link){
+      background-color: var(--background-color-disabled);
     }
     `,
   )

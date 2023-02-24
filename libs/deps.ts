@@ -34,7 +34,3 @@ export { denoPlugin } from 'https://deno.land/x/esbuild_deno_loader@0.6.0/mod.ts
 
 // -- brotli --
 export { compress } from 'https://deno.land/x/brotli@0.1.7/mod.ts'
-
-// -- playwright --
-export { type Locator } from 'npm:playwright@1.31.0'
-export { type Expect } from 'npm:@playwright/test@1.31.0'
