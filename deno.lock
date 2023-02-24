@@ -736,6 +736,7 @@
   "npm": {
     "specifiers": {
       "@playwright/test@1.31.0": "@playwright/test@1.31.0",
+      "parsel-js@1.0.3": "parsel-js@1.0.3",
       "playwright@1.31.0": "playwright@1.31.0"
     },
     "packages": {
@@ -753,6 +754,10 @@
       },
       "fsevents@2.3.2": {
         "integrity": "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==",
+        "dependencies": {}
+      },
+      "parsel-js@1.0.3": {
+        "integrity": "sha512-wKkCyh3o3eHOnMSj/4CQBEZRD0YTUMKjmWt5bcgU+QA3vFoBcdNTFSZLC8jA/v9QoLI/6mYI6tTH3DkUZw/oNA==",
         "dependencies": {}
       },
       "playwright-core@1.31.0": {

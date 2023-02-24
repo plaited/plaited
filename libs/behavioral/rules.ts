@@ -3,7 +3,7 @@ import { RuleSet, RulesFunc } from './types.ts'
 
 /**
  * @description
- * creates a bThread from other loops, sets, and other bThreads
+ * creates a bThread from loops, sets, and/or other bThreads
  */
 export const bThread = (...gens: RulesFunc<any>[]): RulesFunc<any> =>
   function* () {
@@ -11,11 +11,10 @@ export const bThread = (...gens: RulesFunc<any>[]): RulesFunc<any> =>
       yield* gen()
     }
   }
-
 /**
  * @description
  * loops a bThread or sets infinitely or until some condition true
- * like a mode change open -> close. This function returns a bThread of its own
+ * like a mode change open -> close. This function returns a bThread
  */
 export const loop = (
   gen: RulesFunc<any>,

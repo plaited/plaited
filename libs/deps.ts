@@ -32,9 +32,6 @@ export {
 } from 'https://deno.land/x/esbuild@v0.17.6/mod.js'
 export { denoPlugin } from 'https://deno.land/x/esbuild_deno_loader@0.6.0/mod.ts'
 
-// -- parsel --
-export * as parsel from 'https://esm.sh/parsel-js@1.0.3'
-
 // -- brotli --
 export { compress } from 'https://deno.land/x/brotli@0.1.7/mod.ts'
 

@@ -169,7 +169,7 @@ export const bProgram = ({
     stream,
     /** a callback function to get the value of the last selected event */
     lastSelected() {
-      return { type: lastEvent.type, data: lastEvent.data }
+      return lastEvent.data
     },
   })
 }

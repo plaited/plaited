@@ -2,28 +2,20 @@ export const snapshot = {};
 
 snapshot[`css() 1`] = `
 {
-  styles: {
-    button: "button-0-1-1",
+  classes: {
+    "_button-4": "_button-4_Njc3MTk4MjY1",
+    button: "button_Njc3MTk4MjY1",
+    button4: "button4_Njc3MTk4MjY1",
   },
-  stylesheet: ".button-0-1-1 {
-  background-color: var(--background-color);
-}
-.button-0-1-1:disabled {
-  background-color: var(--background-color-disabled);
-}",
+  styles: ".button_Njc3MTk4MjY1 { background-color: rgba(255, 0, 0, 0.2); } .button4_Njc3MTk4MjY1:disabled { background-color: rgba(255, 0, 0, 0.8); } ._button-4_Njc3MTk4MjY1:disabled { background-color: rgba(00, 50, 25, 0.8); }",
 }
 `;
 
 snapshot[`css() 2`] = `
 {
-  styles: {
-    button: "button-0-2-1",
+  classes: {
+    button: "button_MzgwNjM4NzIzMA",
   },
-  stylesheet: ".button-0-2-1 {
-  color: var(--color);
-}
-.button-0-2-1:focus {
-  color: var(--color-focus);
-}",
+  styles: ".button_MzgwNjM4NzIzMA { color: var(--color); } .button_MzgwNjM4NzIzMA:focus { color: var(--color-focus); }",
 }
 `;

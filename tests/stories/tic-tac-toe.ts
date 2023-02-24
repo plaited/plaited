@@ -1,13 +1,11 @@
 /* eslint-disable no-console */
 import {
-  block,
   bProgram,
+  bThread,
   loop,
   randomizedStrategy,
-  request,
   RulesFunc,
-  strand,
-  waitFor,
+  sets,
 } from '$plaited'
 
 const { trigger: xTrigger, feedback: xFeedback, add: xAdd } = bProgram({
@@ -35,11 +33,14 @@ const winConditions = [
 const squares = [0, 1, 2, 3, 4, 5, 6, 7, 8]
 const squaresTaken = squares.reduce(
   (acc: Record<string, RulesFunc>, square) => {
-    acc[`(${square}) taken`] = strand(
-      waitFor<number>({ assert: ({ data }) => square === data }),
-      block<number>({ assert: ({ data }) => square === data }),
+    acc[`(${square}) taken`] = bThread(
+      sets<number>({
+        waitFor: { assert: ({ data }) => square === data },
+      }),
+      sets<number>({
+        block: { assert: ({ data }) => square === data },
+      }),
     )
-
     return acc
   },
   {},
@@ -47,38 +48,44 @@ const squaresTaken = squares.reduce(
 
 const playerWins = (player: string) =>
   winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
-    acc[`${player}Wins (${win})`] = strand(
-      waitFor<number>({
-        assert: ({ type, data }) => type === player && win.includes(data),
+    acc[`${player}Wins (${win})`] = bThread(
+      sets<number>({
+        waitFor: {
+          assert: ({ type, data }) => type === player && win.includes(data),
+        },
       }),
-      waitFor<number>({
-        assert: ({ type, data }) => type === player && win.includes(data),
+      sets<number>({
+        waitFor: {
+          assert: ({ type, data }) => type === player && win.includes(data),
+        },
       }),
-      waitFor<number>({
-        assert: ({ type, data }) => type === player && win.includes(data),
+      sets<number>({
+        waitFor: {
+          assert: ({ type, data }) => type === player && win.includes(data),
+        },
       }),
-      request({ type: `${player} Wins`, data: win }),
+      sets({ request: { type: `${player} Wins`, data: win } }),
     )
     return acc
   }, {})
 
 const enforceTurns = loop(
-  strand(
-    Object.assign(waitFor({ type: 'X' }), block({ type: 'O' })),
-    Object.assign(waitFor({ type: 'O' }), block({ type: 'X' })),
+  bThread(
+    sets({ waitFor: { type: 'X' }, block: { type: 'O' } }),
+    sets({ waitFor: { type: 'O' }, block: { type: 'X' } }),
   ),
 )
 
 const playerMove = (player: string) =>
   loop(
-    strand({
+    sets({
       request: squares.map((move) => ({ type: player, data: move })),
     }),
   )
 
-const stopGame = strand(
-  waitFor({ type: 'X Wins' }, { type: 'O Wins' }),
-  block({ type: 'X' }, { type: 'O' }),
+const stopGame = bThread(
+  sets({ waitFor: [{ type: 'X Wins' }, { type: 'O Wins' }] }),
+  sets({ block: [{ type: 'X' }, { type: 'O' }] }),
 )
 
 const strands = {

@@ -31,7 +31,7 @@ export const filterAddedNodes = (nodes: NodeList) => {
   return elements
 }
 
-const reduceWhitespace = (str: string) => str.replace(/(\s\s+|\n)/g, ' ')
+export const reduceWhitespace = (str: string) => str.replace(/(\s\s+|\n)/g, ' ')
 
 const isTruthy = (val: Primitive) =>
   trueTypeOf(val) === 'string' ||

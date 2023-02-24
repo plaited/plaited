@@ -1,27 +1,30 @@
-// import { assertSnapshot } from '../../test-deps.ts'
-// import { css } from '../mod.ts'
+import { assertSnapshot } from '../../test-deps.ts'
+import { css } from '../mod.ts'
 
-// Deno.test('css()', async (t) => {
-//   await assertSnapshot(
-//     t,
-//     css({
-//       button: {
-//         backgroundColor: 'var(--background-color)',
-//         '&:disabled': {
-//           backgroundColor: 'var(--background-color-disabled)',
-//         },
-//       },
-//     }),
-//   )
-//   await assertSnapshot(
-//     t,
-//     css({
-//       button: {
-//         color: 'var(--color)',
-//         '&:focus': {
-//           color: 'var(--color-focus)',
-//         },
-//       },
-//     }),
-//   )
-// })
+Deno.test('css()', async (t) => {
+  await assertSnapshot(
+    t,
+    css`
+    .button {
+      background-color: rgba(255, 0, 0, 0.2);
+    }
+    .button4:disabled {
+      background-color: rgba(255, 0, 0, 0.8);
+    }
+    ._button-4:disabled {
+      background-color: rgba(00, 50, 25, 0.8);
+    }
+    `,
+  )
+  await assertSnapshot(
+    t,
+    css`
+    .button {
+      color: var(--color);
+    }
+    .button:focus {
+      color: var(--color-focus);
+    }
+    `,
+  )
+})
