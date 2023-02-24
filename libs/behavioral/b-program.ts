@@ -50,13 +50,13 @@ export const bProgram = ({
   }
   function step() {
     for (const bid of running) {
-      const { logicStrand, priority, strandName } = bid
-      const { value, done } = logicStrand.next()
+      const { bThread, priority, name } = bid
+      const { value, done } = bThread.next()
       !done &&
         pending.add({
-          strandName,
+          name,
           priority,
-          logicStrand,
+          bThread,
           ...value,
         })
       running.delete(bid)
@@ -66,10 +66,12 @@ export const bProgram = ({
       (acc, { request, priority }) =>
         acc.concat(
           // Flatten bids' request arrays
-          request
+          request && Array.isArray(request)
             ? request.map(
               (event) => ({ priority, ...event }), // create candidates for each request with current bids priority
             )
+            : request
+            ? [{ priority, ...request }]
             : [],
         ),
       [],
@@ -92,10 +94,13 @@ export const bProgram = ({
       detail,
     })
     for (const bid of pending) {
-      const { request = [], waitFor = [], logicStrand } = bid
-      const waitList = [...request, ...waitFor]
+      const { request = [], waitFor = [], bThread } = bid
+      const waitList = [
+        ...(Array.isArray(request) ? request : [request]),
+        ...(Array.isArray(waitFor) ? waitFor : [waitFor]),
+      ]
       if (
-        waitList.some(requestInParameter(lastEvent)) && logicStrand
+        waitList.some(requestInParameter(lastEvent)) && bThread
       ) {
         running.add(bid)
         pending.delete(bid)
@@ -107,16 +112,16 @@ export const bProgram = ({
     type,
     data,
   }) => {
-    const logicStrand = function* () {
+    const bThread = function* () {
       yield {
         request: [{ type, data }],
         waitFor: [{ type: '', assert: () => true }],
       }
     }
     running.add({
-      strandName: type,
+      name: type,
       priority: 0,
-      logicStrand: logicStrand(),
+      bThread: bThread(),
     })
     if (dev) {
       const msg: ListenerMessage = {
@@ -145,11 +150,11 @@ export const bProgram = ({
     )
   }
   const add = (logicStands: Record<string, RulesFunc>): void => {
-    for (const strandName in logicStands) {
+    for (const name in logicStands) {
       running.add({
-        strandName,
+        name,
         priority: running.size + 1,
-        logicStrand: logicStands[strandName](),
+        bThread: logicStands[name](),
       })
     }
   }

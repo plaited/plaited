@@ -11,26 +11,26 @@ snapshot[`bProgram: priority queue 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "addHot",
+          priority: 1,
+        },
+        {
+          name: "addCold",
+          priority: 2,
+        },
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+        {
+          name: "start",
+          priority: 0,
+        },
+      ],
       blockedEvents: [
         "cold",
-      ],
-      logicStrands: [
-        {
-          priority: 1,
-          strandName: "addHot",
-        },
-        {
-          priority: 2,
-          strandName: "addCold",
-        },
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
-        {
-          priority: 0,
-          strandName: "start",
-        },
       ],
       requestedEvents: [
         {
@@ -51,22 +51,22 @@ snapshot[`bProgram: priority queue 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+        {
+          name: "addHot",
+          priority: 1,
+        },
+        {
+          name: "addCold",
+          priority: 2,
+        },
+      ],
       blockedEvents: [
         "cold",
-      ],
-      logicStrands: [
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
-        {
-          priority: 1,
-          strandName: "addHot",
-        },
-        {
-          priority: 2,
-          strandName: "addCold",
-        },
       ],
       requestedEvents: [
         {
@@ -89,22 +89,22 @@ snapshot[`bProgram: priority queue 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "addCold",
+          priority: 2,
+        },
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+        {
+          name: "addHot",
+          priority: 1,
+        },
+      ],
       blockedEvents: [
         "hot",
-      ],
-      logicStrands: [
-        {
-          priority: 2,
-          strandName: "addCold",
-        },
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
-        {
-          priority: 1,
-          strandName: "addHot",
-        },
       ],
       requestedEvents: [
         {
@@ -127,22 +127,22 @@ snapshot[`bProgram: priority queue 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "addHot",
+          priority: 1,
+        },
+        {
+          name: "addCold",
+          priority: 2,
+        },
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+      ],
       blockedEvents: [
         "cold",
-      ],
-      logicStrands: [
-        {
-          priority: 1,
-          strandName: "addHot",
-        },
-        {
-          priority: 2,
-          strandName: "addCold",
-        },
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
       ],
       requestedEvents: [
         {
@@ -165,22 +165,22 @@ snapshot[`bProgram: priority queue 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "addCold",
+          priority: 2,
+        },
+        {
+          name: "addHot",
+          priority: 1,
+        },
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+      ],
       blockedEvents: [
         "hot",
-      ],
-      logicStrands: [
-        {
-          priority: 2,
-          strandName: "addCold",
-        },
-        {
-          priority: 1,
-          strandName: "addHot",
-        },
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
       ],
       requestedEvents: [
         {
@@ -203,22 +203,22 @@ snapshot[`bProgram: priority queue 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "addHot",
+          priority: 1,
+        },
+        {
+          name: "addCold",
+          priority: 2,
+        },
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+      ],
       blockedEvents: [
         "cold",
-      ],
-      logicStrands: [
-        {
-          priority: 1,
-          strandName: "addHot",
-        },
-        {
-          priority: 2,
-          strandName: "addCold",
-        },
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
       ],
       requestedEvents: [
         {
@@ -241,18 +241,18 @@ snapshot[`bProgram: priority queue 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "addCold",
+          priority: 2,
+        },
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+      ],
       blockedEvents: [
         "hot",
-      ],
-      logicStrands: [
-        {
-          priority: 2,
-          strandName: "addCold",
-        },
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
       ],
       requestedEvents: [
         {
@@ -271,14 +271,14 @@ snapshot[`bProgram: priority queue 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+      ],
       blockedEvents: [
         "cold",
-      ],
-      logicStrands: [
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
       ],
       requestedEvents: [
       ],
@@ -299,26 +299,26 @@ snapshot[`bProgram: randomized priority queue 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "addHot",
+          priority: 1,
+        },
+        {
+          name: "addCold",
+          priority: 2,
+        },
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+        {
+          name: "start",
+          priority: 0,
+        },
+      ],
       blockedEvents: [
         "cold",
-      ],
-      logicStrands: [
-        {
-          priority: 1,
-          strandName: "addHot",
-        },
-        {
-          priority: 2,
-          strandName: "addCold",
-        },
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
-        {
-          priority: 0,
-          strandName: "start",
-        },
       ],
       requestedEvents: [
         {
@@ -339,22 +339,22 @@ snapshot[`bProgram: randomized priority queue 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+        {
+          name: "addHot",
+          priority: 1,
+        },
+        {
+          name: "addCold",
+          priority: 2,
+        },
+      ],
       blockedEvents: [
         "cold",
-      ],
-      logicStrands: [
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
-        {
-          priority: 1,
-          strandName: "addHot",
-        },
-        {
-          priority: 2,
-          strandName: "addCold",
-        },
       ],
       requestedEvents: [
         {
@@ -377,22 +377,22 @@ snapshot[`bProgram: randomized priority queue 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "addCold",
+          priority: 2,
+        },
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+        {
+          name: "addHot",
+          priority: 1,
+        },
+      ],
       blockedEvents: [
         "hot",
-      ],
-      logicStrands: [
-        {
-          priority: 2,
-          strandName: "addCold",
-        },
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
-        {
-          priority: 1,
-          strandName: "addHot",
-        },
       ],
       requestedEvents: [
         {
@@ -415,22 +415,22 @@ snapshot[`bProgram: randomized priority queue 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "addHot",
+          priority: 1,
+        },
+        {
+          name: "addCold",
+          priority: 2,
+        },
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+      ],
       blockedEvents: [
         "cold",
-      ],
-      logicStrands: [
-        {
-          priority: 1,
-          strandName: "addHot",
-        },
-        {
-          priority: 2,
-          strandName: "addCold",
-        },
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
       ],
       requestedEvents: [
         {
@@ -453,22 +453,22 @@ snapshot[`bProgram: randomized priority queue 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "addCold",
+          priority: 2,
+        },
+        {
+          name: "addHot",
+          priority: 1,
+        },
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+      ],
       blockedEvents: [
         "hot",
-      ],
-      logicStrands: [
-        {
-          priority: 2,
-          strandName: "addCold",
-        },
-        {
-          priority: 1,
-          strandName: "addHot",
-        },
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
       ],
       requestedEvents: [
         {
@@ -491,22 +491,22 @@ snapshot[`bProgram: randomized priority queue 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "addHot",
+          priority: 1,
+        },
+        {
+          name: "addCold",
+          priority: 2,
+        },
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+      ],
       blockedEvents: [
         "cold",
-      ],
-      logicStrands: [
-        {
-          priority: 1,
-          strandName: "addHot",
-        },
-        {
-          priority: 2,
-          strandName: "addCold",
-        },
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
       ],
       requestedEvents: [
         {
@@ -529,18 +529,18 @@ snapshot[`bProgram: randomized priority queue 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "addCold",
+          priority: 2,
+        },
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+      ],
       blockedEvents: [
         "hot",
-      ],
-      logicStrands: [
-        {
-          priority: 2,
-          strandName: "addCold",
-        },
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
       ],
       requestedEvents: [
         {
@@ -559,14 +559,14 @@ snapshot[`bProgram: randomized priority queue 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+      ],
       blockedEvents: [
         "cold",
-      ],
-      logicStrands: [
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
       ],
       requestedEvents: [
       ],
@@ -587,26 +587,26 @@ snapshot[`bProgram: chaos selection 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "addHot",
+          priority: 1,
+        },
+        {
+          name: "addCold",
+          priority: 2,
+        },
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+        {
+          name: "start",
+          priority: 0,
+        },
+      ],
       blockedEvents: [
         "cold",
-      ],
-      logicStrands: [
-        {
-          priority: 1,
-          strandName: "addHot",
-        },
-        {
-          priority: 2,
-          strandName: "addCold",
-        },
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
-        {
-          priority: 0,
-          strandName: "start",
-        },
       ],
       requestedEvents: [
         {
@@ -627,22 +627,22 @@ snapshot[`bProgram: chaos selection 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+        {
+          name: "addHot",
+          priority: 1,
+        },
+        {
+          name: "addCold",
+          priority: 2,
+        },
+      ],
       blockedEvents: [
         "cold",
-      ],
-      logicStrands: [
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
-        {
-          priority: 1,
-          strandName: "addHot",
-        },
-        {
-          priority: 2,
-          strandName: "addCold",
-        },
       ],
       requestedEvents: [
         {
@@ -665,22 +665,22 @@ snapshot[`bProgram: chaos selection 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "addCold",
+          priority: 2,
+        },
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+        {
+          name: "addHot",
+          priority: 1,
+        },
+      ],
       blockedEvents: [
         "hot",
-      ],
-      logicStrands: [
-        {
-          priority: 2,
-          strandName: "addCold",
-        },
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
-        {
-          priority: 1,
-          strandName: "addHot",
-        },
       ],
       requestedEvents: [
         {
@@ -703,22 +703,22 @@ snapshot[`bProgram: chaos selection 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "addHot",
+          priority: 1,
+        },
+        {
+          name: "addCold",
+          priority: 2,
+        },
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+      ],
       blockedEvents: [
         "cold",
-      ],
-      logicStrands: [
-        {
-          priority: 1,
-          strandName: "addHot",
-        },
-        {
-          priority: 2,
-          strandName: "addCold",
-        },
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
       ],
       requestedEvents: [
         {
@@ -741,22 +741,22 @@ snapshot[`bProgram: chaos selection 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "addCold",
+          priority: 2,
+        },
+        {
+          name: "addHot",
+          priority: 1,
+        },
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+      ],
       blockedEvents: [
         "hot",
-      ],
-      logicStrands: [
-        {
-          priority: 2,
-          strandName: "addCold",
-        },
-        {
-          priority: 1,
-          strandName: "addHot",
-        },
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
       ],
       requestedEvents: [
         {
@@ -779,22 +779,22 @@ snapshot[`bProgram: chaos selection 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "addHot",
+          priority: 1,
+        },
+        {
+          name: "addCold",
+          priority: 2,
+        },
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+      ],
       blockedEvents: [
         "cold",
-      ],
-      logicStrands: [
-        {
-          priority: 1,
-          strandName: "addHot",
-        },
-        {
-          priority: 2,
-          strandName: "addCold",
-        },
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
       ],
       requestedEvents: [
         {
@@ -817,18 +817,18 @@ snapshot[`bProgram: chaos selection 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "addCold",
+          priority: 2,
+        },
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+      ],
       blockedEvents: [
         "hot",
-      ],
-      logicStrands: [
-        {
-          priority: 2,
-          strandName: "addCold",
-        },
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
       ],
       requestedEvents: [
         {
@@ -847,14 +847,14 @@ snapshot[`bProgram: chaos selection 1`] = `
   },
   {
     detail: {
+      bThread: [
+        {
+          name: "mixHotCold",
+          priority: 3,
+        },
+      ],
       blockedEvents: [
         "cold",
-      ],
-      logicStrands: [
-        {
-          priority: 3,
-          strandName: "mixHotCold",
-        },
       ],
       requestedEvents: [
       ],

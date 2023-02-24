@@ -1,13 +1,11 @@
 import { assertEquals, assertSnapshot } from '../../test-deps.ts'
 import {
-  block,
   bProgram,
+  bThread,
   chaosStrategy,
   loop,
   randomizedStrategy,
-  request,
-  strand,
-  waitFor,
+  sets,
 } from '../mod.ts'
 
 const expectedFeedback = [
@@ -19,36 +17,48 @@ const expectedFeedback = [
   'Add cold',
 ]
 
-const strands = {
-  addHot: strand(
-    waitFor<string>({
-      type: 'start',
-      assert({ data }) {
-        return data === 'start'
-      },
+const threads = {
+  addHot: bThread(
+    sets<string>({
+      waitFor: [{
+        type: 'start',
+        assert({ data }) {
+          return data === 'start'
+        },
+      }],
     }),
-    request({ type: 'hot' }),
-    request({ type: 'hot' }),
-    request({ type: 'hot' }),
+    sets({
+      request: { type: 'hot' },
+    }),
+    sets({
+      request: { type: 'hot' },
+    }),
+    sets({
+      request: { type: 'hot' },
+    }),
   ),
-  addCold: strand(
-    waitFor({ type: 'start' }),
-    request({ type: 'cold' }),
-    request({ type: 'cold' }),
-    request({ type: 'cold' }),
+  addCold: bThread(
+    sets({ waitFor: { type: 'start' } }),
+    sets({
+      request: [{ type: 'cold' }],
+    }),
+    sets({
+      request: [{ type: 'cold' }],
+    }),
+    sets({
+      request: [{ type: 'cold' }],
+    }),
   ),
   mixHotCold: loop(
-    strand(
-      Object.assign(
-        waitFor({ type: 'hot' }),
-        block({ type: 'cold' }),
-        // block({ type: 'say_cold' }),
-      ),
-      {
-        ...waitFor({ type: 'cold' }),
-        ...block({ type: 'hot' }),
-        ...block({ type: 'say' }),
-      },
+    bThread(
+      sets({
+        waitFor: { type: 'hot' },
+        block: { type: 'cold' },
+      }),
+      sets({
+        waitFor: [{ type: 'cold' }],
+        block: [{ type: 'hot' }],
+      }),
     ),
   ),
 }
@@ -64,7 +74,7 @@ Deno.test('bProgram: priority queue', (t) => {
   const actualFeedback: string[] = []
   const streamLog: unknown[] = []
   const { trigger, feedback, stream, add } = bProgram({ dev: true })
-  add(strands)
+  add(threads)
   feedback(actions(actualFeedback))
   stream.subscribe((msg) => {
     streamLog.push(msg)
@@ -73,7 +83,7 @@ Deno.test('bProgram: priority queue', (t) => {
     type: 'start',
     data: 'start',
   })
-  console.log({ actualFeedback })
+  console.log(actualFeedback)
   assertEquals(
     actualFeedback,
     expectedFeedback,
@@ -88,7 +98,7 @@ Deno.test('bProgram: randomized priority queue', (t) => {
     strategy: randomizedStrategy,
     dev: true,
   })
-  add(strands)
+  add(threads)
   feedback(actions(actualFeedback))
   stream.subscribe((msg) => {
     streamLog.push(msg)
@@ -111,7 +121,7 @@ Deno.test('bProgram: chaos selection', (t) => {
     strategy: chaosStrategy,
     dev: true,
   })
-  add(strands)
+  add(threads)
   feedback(actions(actualFeedback))
   stream.subscribe((msg) => {
     streamLog.push(msg)

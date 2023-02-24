@@ -1,10 +1,10 @@
 import { StateChart } from './types.ts'
 export const stateChart: StateChart = ({ candidates, blocked, pending }) => {
-  const strands = [
+  const threads = [
     ...new Set(
       pending
-        .filter(({ strandName }) => strandName)
-        .map(({ strandName, priority }) => ({ strandName, priority })),
+        .filter(({ name }) => name)
+        .map(({ name, priority }) => ({ name, priority })),
     ),
   ]
   const Blocked = [
@@ -29,7 +29,7 @@ export const stateChart: StateChart = ({ candidates, blocked, pending }) => {
     ),
   ]
   return {
-    logicStrands: strands,
+    bThread: threads,
     requestedEvents: Requests,
     blockedEvents: Blocked,
   }

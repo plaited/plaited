@@ -1,45 +1,39 @@
-import { ParameterIdiom, RequestIdiom, RuleSet, RulesFunc } from './types.ts'
+import { RuleSet, RulesFunc } from './types.ts'
 
-const idiom = (key: 'waitFor' | 'block') =>
-<T = unknown>(
-  ...idioms: ParameterIdiom<T>[]
-) => {
-  return {
-    [key]: [...idioms],
-  }
-}
-
-/** A rule idiom for waiting on a particular event to occur */
-export const waitFor = idiom('waitFor')
-/** A rule idiom for blocking  a particular event from occurring */
-export const block = idiom('block')
-
-export const request = <T extends { type: string; data: unknown }>(
-  ...idioms: RequestIdiom<T>[]
-) => {
-  return {
-    request: [...idioms],
-  }
-}
-
-// export const delegate = (...gens: RulesFunc[]): RulesFunc =>
-//   function* () {
-//     for (const gen of gens) {
-//       yield* gen()
-//     }
-//   }
-
-/** Loop some rules infinitely or until some condition true like a mode change open -> close */
-export const loop = (gen: RulesFunc, assert = () => true) =>
+/**
+ * @description
+ * creates a bThread
+ */
+// deno-lint-ignore no-explicit-any
+export const bThread = (...gens: RulesFunc<any>[]): RulesFunc<any> =>
   function* () {
-    while (assert()) {
+    for (const gen of gens) {
       yield* gen()
     }
   }
 
-export const strand = (...idiomSets: RuleSet[]): RulesFunc =>
+/**
+ * @description
+ * loop a bThread infinitely or until some condition true like a mode change open -> close
+ */
+export const loop = (gen: RulesFunc, condition = () => true) =>
   function* () {
-    for (const set of idiomSets) {
-      yield set
+    while (condition()) {
+      yield* gen()
     }
+  }
+/**
+ * @description
+ * At synchronization points, each bThread specifies three sets of events:
+ * requested events: the bThread proposes that these be considered for triggering,
+ * and asks to be notified when any of them occurs; waitFor events: the bThread does not request these, but
+ * asks to be notified when any of them is triggered; and blocked events: the
+ * bThread currently forbids triggering
+ * any of these events.
+ */
+export const sets = <T = unknown>(
+  set: RuleSet<T>,
+): RulesFunc<T> =>
+  function* () {
+    yield set
   }

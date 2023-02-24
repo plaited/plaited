@@ -2,7 +2,7 @@ import { streamEvents } from './constants.ts'
 
 // Stream Types
 type Snapshot = {
-  logicStrands: { strandName: string; priority: number }[]
+  bThread: { name: string; priority: number }[]
   requestedEvents: {
     type: string | undefined
     data?: unknown
@@ -54,7 +54,7 @@ export type TriggerArgs<T = unknown> = {
 export type Trigger = <T = unknown>(args: TriggerArgs<T>) => void
 
 // Rule types
-export type Assertion<T = unknown> = (
+type Assertion<T = unknown> = (
   args: { type: string; data: T extends undefined ? never : T },
 ) => boolean
 
@@ -66,24 +66,24 @@ export type ParameterIdiom<T = unknown> = {
   assert: Assertion<T>
 }
 
-export type RequestIdiom<T extends { type: string; data: unknown }> = {
-  type: T['type']
-  data?: T['data']
+type RequestIdiom<T = unknown> = {
+  type: string
+  data?: T
 }
 
-export interface RuleSet {
-  waitFor?: ParameterIdiom[]
-  request?: { type: string; data?: unknown }[]
-  block?: ParameterIdiom[]
+export type RuleSet<T = unknown> = {
+  waitFor?: ParameterIdiom<T> | ParameterIdiom<T>[]
+  request?: RequestIdiom<T> | RequestIdiom<T>[]
+  block?: ParameterIdiom<T> | ParameterIdiom<T>[]
 }
 
-export type RuleGenerator = Generator<RuleSet, void, unknown>
-export type RulesFunc = () => RuleGenerator
+export type RuleGenerator<T = unknown> = IterableIterator<RuleSet<T>>
+export type RulesFunc<T = unknown> = () => RuleGenerator<T>
 
 export type RunningBid = {
-  strandName: string
+  name: string
   priority: number
-  logicStrand: RuleGenerator
+  bThread: RuleGenerator
 }
 export type PendingBid = RuleSet & RunningBid
 
