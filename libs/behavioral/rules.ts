@@ -1,10 +1,10 @@
+// deno-lint-ignore-file no-explicit-any
 import { RuleSet, RulesFunc } from './types.ts'
 
 /**
  * @description
- * creates a bThread
+ * creates a bThread from other loops, sets, and other bThreads
  */
-// deno-lint-ignore no-explicit-any
 export const bThread = (...gens: RulesFunc<any>[]): RulesFunc<any> =>
   function* () {
     for (const gen of gens) {
@@ -14,9 +14,13 @@ export const bThread = (...gens: RulesFunc<any>[]): RulesFunc<any> =>
 
 /**
  * @description
- * loop a bThread infinitely or until some condition true like a mode change open -> close
+ * loops a bThread or sets infinitely or until some condition true
+ * like a mode change open -> close. This function returns a bThread of its own
  */
-export const loop = (gen: RulesFunc, condition = () => true) =>
+export const loop = (
+  gen: RulesFunc<any>,
+  condition = () => true,
+): RulesFunc<any> =>
   function* () {
     while (condition()) {
       yield* gen()
