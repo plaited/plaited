@@ -37,15 +37,28 @@ export type IslandElementOptions = {
   connect?: (recipient: string, trigger: Trigger) => () => void
   /** set to true if we wish to use id when connecting to messenger to receive messages from other islands */
   id?: boolean
+  /** constructable stylesheets - aka a set of style selectors and rules as strings */
+  styles?: string | string[]
 }
 
 export interface PlaitInterface {
   (args: {
+    /** query for elements with the data-target attribute in the Island's shadowDom */
     $: Query
-    context: ISLElement // should we call this element or context?
+    /** The DOM node context allowing easy light & shadow dom access
+     * @example
+     * // returns the div element inside
+     * // the shadowRoot of the element instance
+     * const shadowEl = context.shadowRoot.querySelector('div')
+     */
+    context: ISLElement
+    /** Add behavioral program rules to the Island */
     add: (logicStands: Record<string, RulesFunc>) => void
+    /** Connect actions to the behavioral program's reactive feedback stream */
     feedback: Feedback
+    /** Function  to trigger an event in the behavioral program */
     trigger: Trigger
+    /**  Returns the last event for each step of the behavioral program run */
     lastEvent: () => {
       type: string
       data: unknown

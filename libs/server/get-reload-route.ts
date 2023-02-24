@@ -8,8 +8,9 @@ const getMessage = (channel: string, data: string) => {
 export const getReloadRoute: GetReloadRoute = (
   reloadClient,
 ) => {
-  return {
-    ['/livereload']: () => {
+  return [
+    '/livereload',
+    () => {
       let timerId: number | undefined
       const init = {
         status: 200,
@@ -38,5 +39,5 @@ export const getReloadRoute: GetReloadRoute = (
       })
       return new Response(body, init)
     },
-  }
+  ]
 }

@@ -3,16 +3,17 @@ import { server } from '../server.ts'
 import {
   __dirname,
   help,
-  helpRoute,
+  helpHandler,
   home,
-  homeRoute,
+  homeHandler,
   newStyles,
   root,
 } from './utils.ts'
 import { wait } from '../../utils/wait.ts'
 Deno.test('server: adding routes', async () => {
-  const routes = homeRoute
-  const { close, addRoutes } = await server({
+  const routes = new Map()
+  routes.set('/', homeHandler)
+  const { close } = await server({
     root,
     routes,
     port: 9000,
@@ -24,7 +25,7 @@ Deno.test('server: adding routes', async () => {
   let helpRes = await fetch('http://localhost:9000/help')
   await helpRes.body?.cancel()
   assertEquals(helpRes.status, 404)
-  addRoutes(helpRoute)
+  routes.set('/help', helpHandler)
   helpRes = await fetch('http://localhost:9000/help')
   const helpData = await helpRes.text()
   assert(helpData.includes(help))

@@ -4,7 +4,7 @@ import { Middleware, Server } from './types.ts'
 import { watcher } from './watcher.ts'
 import { getFileHandler } from './get-file-handler.ts'
 import { getRouteHandler } from './get-route-handler.ts'
-import { extname, Routes, serve, serveTls } from '../deps.ts'
+import { extname, serve, serveTls } from '../deps.ts'
 
 const getMiddleware: Middleware = (handler) => async (req, ctx) =>
   await handler(req, ctx)
@@ -53,7 +53,6 @@ export const server: Server = ({
       if (fileExt) {
         return await getFileHandler({ fileExt, root, pathname, req })
       }
-      console.log(routes)
       const routeHandler = await getRouteHandler({
         routes,
         reload,
@@ -85,9 +84,6 @@ export const server: Server = ({
     port,
     protocol,
     root,
-    addRoutes: (newRoutes: Routes) => {
-      Object.assign(routes, newRoutes)
-    },
     close: async () => {
       console.log('Closing server...')
       controller.abort()

@@ -1,3 +1,10 @@
+// -- std --
+export { serveDir } from 'https://deno.land/std@0.177.0/http/file_server.ts'
+export {
+  type ConnInfo,
+  serve,
+  serveTls,
+} from 'https://deno.land/std@0.177.0/http/server.ts'
 export { walk } from 'https://deno.land/std@0.177.0/fs/mod.ts'
 export {
   basename,
@@ -44,14 +51,6 @@ export {
 
 // fix type conflict by passing in unknown
 export type Routes<T = unknown> = _Routes<T>
-
-// -- std --
-export { serveDir } from 'https://deno.land/std@0.177.0/http/file_server.ts'
-export {
-  type ConnInfo,
-  serve,
-  serveTls,
-} from 'https://deno.land/std@0.177.0/http/server.ts'
 
 // -- PostCSS --
 export { default as postcss } from 'https://deno.land/x/postcss@8.4.16/mod.js'

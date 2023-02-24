@@ -10,13 +10,9 @@ export const ssr = (html: string) => {
 export const home = '<link rel="stylesheet" href="./styles.css"><h1>Home</h1>'
 export const help =
   '<link rel="stylesheet" href="./new-styles.css"><h1>Help</h1>'
-export const homeRoute = {
-  '/': () => ssr(home),
-}
+export const homeHandler = () => ssr(home)
 
-export const helpRoute = {
-  '/help': () => ssr(help),
-}
+export const helpHandler = () => ssr(help)
 
 export const newStyles = `
 body {

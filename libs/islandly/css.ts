@@ -1,4 +1,4 @@
-// import { parsel } from './deps.ts'
+// import { parsel } from '../deps.ts'
 // import { taggedWithPrimitives } from './utils.ts'
 // import { hashString } from '../utils/hash.ts'
 // type Primitive =
@@ -14,30 +14,11 @@
 //   ...expressions: Array<Primitive | Primitive[]>
 // ) => {
 //   const result = taggedWithPrimitives(strings, ...expressions)
-//   const prefix = btoa(`${hashString(result)}`).replace(/[+/=]/g, '')
-//   const parser = parsel
-//   const { type, ...rest } = parsel.TOKENS
-//   const TOKENS = {
-//     ...rest,
-//     nesting: /&/g,
-//     nest: /@nest\b/g,
-//     type,
-//   }
-//   parser.TOKENS = TOKENS
-//   const tokens = parser.tokenize(result)
-//   // const { transformed } = tokens.reduce(
-//   //   () => {},
-//   //   {
-//   //     lastRawSelector: undefined,
-//   //     lastTransformedSelector: undefined,
-//   //     lastOpenBracket: undefined,
-//   //     lastCloseBracket: undefined,
-//   //     raw: [],
-//   //     transformed: [],
-//   //   },
-//   // )
+//   const suffix = btoa(`${hashString(result)}`).replace(/[+/=]/g, '')
+//   const tokens = parsel.tokenize(result)
+//   tokens?.map()
 //   return {
-//     styles: {},
-//     stylesheet: '',
+//     classes: {},
+//     styles: '',
 //   }
 // }

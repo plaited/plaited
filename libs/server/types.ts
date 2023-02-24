@@ -6,7 +6,7 @@ import {
   type MatchHandler,
   type Routes,
   type UnknownMethodHandler,
-} from '../deps.ts'
+} from './router.ts'
 
 export type Credentials = {
   /** Server private key in PEM format */
@@ -72,8 +72,6 @@ export type Server = (args: {
   url: string
   /** callback function to  close server*/
   close: () => Promise<void>
-  /** Add routes after the server has started */
-  addRoutes: (newRoutes: Routes) => void
 }
 
 /**
@@ -108,6 +106,8 @@ export type GetRouteHandler = (args: {
   unknownMethodHandler?: UnknownMethodHandler
 }) => Handler
 
+export type RouteEntry = [`/${string}`, Handler]
+
 export type GetReloadRoute = (
   reloadClient: Array<ReloadClient>,
-) => Routes
+) => RouteEntry

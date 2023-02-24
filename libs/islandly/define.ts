@@ -21,5 +21,5 @@ export const define = (
   Object.defineProperty(IslandElement.prototype, 'plait', {
     value: plait,
   })
-  controller(IslandElement as IslandElementConstructor, options).define(tag)
+  controller(options)(IslandElement as IslandElementConstructor).define(tag)
 }
