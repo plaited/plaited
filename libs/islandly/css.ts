@@ -9,7 +9,7 @@ type ClassObject = {
 const tokenize = (
   css: string,
 ): (string | ClassObject)[] => {
-  const regex = /\.(-?[_a-zA-Z]+[_a-zA-Z0-9-]*)/gu
+  const regex = /\.(-?[_a-zA-Z]+[_a-zA-Z0-9-]*)/gm
   const matches: (string | ClassObject)[] = []
   let lastIndex = 0
   let match: RegExpExecArray | null

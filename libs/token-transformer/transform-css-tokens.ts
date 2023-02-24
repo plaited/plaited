@@ -1,6 +1,25 @@
 import { formatList } from './format-list.ts'
 import { DesignTokenGroup, GetFormatters } from '../token-types.ts'
-import { combineDuplicatedSelectors, postcss } from '../deps.ts'
+const reduceWhitespace = (str: string) => str.replace(/(\s\s+|\n)/g, ' ')
+
+const deduplicate = (css: string) => {
+  const regex = /([^\{\n]*)\{(\s*[\s\S]*?\s*)\}/gm
+  const map = new Map<string, Set<string>>()
+  let match: RegExpExecArray | null
+  while ((match = regex.exec(css)) !== null) {
+    const selector = match[1]
+    const rule = reduceWhitespace(match[2])
+    const set = map.get(selector)
+    if (set) {
+      set.add(rule)
+      continue
+    }
+    map.set(selector, new Set<string>([rule]))
+  }
+  return [...map].flatMap(([key, val]) => {
+    return [key, '{', ...val, '}']
+  }).join('')
+}
 
 export const transformCssTokens = async ({
   tokens,
@@ -20,8 +39,6 @@ export const transformCssTokens = async ({
     baseFontSize,
     formatters,
   })
-  const { css } = await postcss([
-    combineDuplicatedSelectors,
-  ]).process(content, { from: undefined, to: '' })
-  await Deno.writeTextFile(`${output}/tokens.css`, css)
+  deduplicate(content)
+  await Deno.writeTextFile(`${output}/tokens.css`, deduplicate(content))
 }

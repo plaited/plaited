@@ -1,20 +1,19 @@
-import { assert, assertEquals, sinon } from '../../test-deps.ts'
+import { assertSpyCalls, FakeTime, spy } from '../../test-deps.ts'
 import { debounce } from '../mod.ts'
 
 Deno.test('debounces()', () => {
-  const clock = sinon.useFakeTimers()
-  const fn = sinon.spy()
+  const time = new FakeTime()
+  try {
+    const fn = spy()
+    const debounced = debounce(fn, 100)
+    debounced()
 
-  const debounced = debounce(fn, 100)
-  debounced()
-
-  assert(fn.notCalled)
-  clock.tick(50)
-
-  assert(fn.notCalled)
-  clock.tick(100)
-
-  assert(fn.called)
-  assertEquals(fn.getCalls().length, 1)
-  clock.restore()
+    assertSpyCalls(fn, 0)
+    time.tick(50)
+    assertSpyCalls(fn, 0)
+    time.tick(100)
+    assertSpyCalls(fn, 1)
+  } finally {
+    time.restore()
+  }
 })
