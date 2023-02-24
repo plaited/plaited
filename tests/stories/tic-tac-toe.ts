@@ -35,10 +35,10 @@ const squaresTaken = squares.reduce(
   (acc: Record<string, RulesFunc>, square) => {
     acc[`(${square}) taken`] = bThread(
       sets<number>({
-        waitFor: { assert: ({ data }) => square === data },
+        waitFor: { assert: ({ payload }) => square === payload },
       }),
       sets<number>({
-        block: { assert: ({ data }) => square === data },
+        block: { assert: ({ payload }) => square === payload },
       }),
     )
     return acc
@@ -51,41 +51,44 @@ const playerWins = (player: string) =>
     acc[`${player}Wins (${win})`] = bThread(
       sets<number>({
         waitFor: {
-          assert: ({ type, data }) => type === player && win.includes(data),
+          assert: ({ event, payload }) =>
+            event === player && win.includes(payload),
         },
       }),
       sets<number>({
         waitFor: {
-          assert: ({ type, data }) => type === player && win.includes(data),
+          assert: ({ event, payload }) =>
+            event === player && win.includes(payload),
         },
       }),
       sets<number>({
         waitFor: {
-          assert: ({ type, data }) => type === player && win.includes(data),
+          assert: ({ event, payload }) =>
+            event === player && win.includes(payload),
         },
       }),
-      sets({ request: { type: `${player} Wins`, data: win } }),
+      sets({ request: { event: `${player} Wins`, payload: win } }),
     )
     return acc
   }, {})
 
 const enforceTurns = loop(
   bThread(
-    sets({ waitFor: { type: 'X' }, block: { type: 'O' } }),
-    sets({ waitFor: { type: 'O' }, block: { type: 'X' } }),
+    sets({ waitFor: { event: 'X' }, block: { event: 'O' } }),
+    sets({ waitFor: { event: 'O' }, block: { event: 'X' } }),
   ),
 )
 
 const playerMove = (player: string) =>
   loop(
     sets({
-      request: squares.map((move) => ({ type: player, data: move })),
+      request: squares.map((move) => ({ event: player, payload: move })),
     }),
   )
 
 const stopGame = bThread(
-  sets({ waitFor: [{ type: 'X Wins' }, { type: 'O Wins' }] }),
-  sets({ block: [{ type: 'X' }, { type: 'O' }] }),
+  sets({ waitFor: [{ event: 'X Wins' }, { event: 'O Wins' }] }),
+  sets({ block: [{ event: 'X' }, { event: 'O' }] }),
 )
 
 const strands = {
@@ -107,29 +110,29 @@ oAdd({
 })
 
 xFeedback({
-  X(data: unknown) {
-    console.log({ type: 'X', data })
+  X(payload: unknown) {
+    console.log({ event: 'X', payload })
     oTrigger({
-      type: 'X',
-      data: data,
+      event: 'X',
+      payload: payload,
     })
   },
-  ['X Wins'](data: unknown) {
-    console.log({ type: 'X Wins', data })
+  ['X Wins'](payload: unknown) {
+    console.log({ event: 'X Wins', payload })
   },
 })
 
 oFeedback({
-  O(data: number) {
-    console.log({ type: 'O', data })
+  O(payload: number) {
+    console.log({ event: 'O', payload })
     xTrigger({
-      type: 'O',
-      data: data,
+      event: 'O',
+      payload: payload,
     })
   },
-  ['O Wins'](data: [number, number, number]) {
-    console.log({ type: 'O Wins', data })
+  ['O Wins'](payload: [number, number, number]) {
+    console.log({ event: 'O Wins', payload })
   },
 })
 
-xTrigger({ type: 'start' })
+xTrigger({ event: 'start' })

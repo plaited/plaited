@@ -21,43 +21,43 @@ const threads = {
   addHot: bThread(
     sets<string>({
       waitFor: [{
-        type: 'start',
-        assert({ data }) {
-          return data === 'start'
+        event: 'start',
+        assert({ payload }) {
+          return payload === 'start'
         },
       }],
     }),
     sets({
-      request: { type: 'hot' },
+      request: { event: 'hot' },
     }),
     sets({
-      request: { type: 'hot' },
+      request: { event: 'hot' },
     }),
     sets({
-      request: { type: 'hot' },
+      request: { event: 'hot' },
     }),
   ),
   addCold: bThread(
-    sets({ waitFor: { type: 'start' } }),
+    sets({ waitFor: { event: 'start' } }),
     sets({
-      request: [{ type: 'cold' }],
+      request: [{ event: 'cold' }],
     }),
     sets({
-      request: [{ type: 'cold' }],
+      request: [{ event: 'cold' }],
     }),
     sets({
-      request: [{ type: 'cold' }],
+      request: [{ event: 'cold' }],
     }),
   ),
   mixHotCold: loop(
     bThread(
       sets({
-        waitFor: { type: 'hot' },
-        block: { type: 'cold' },
+        waitFor: { event: 'hot' },
+        block: { event: 'cold' },
       }),
       sets({
-        waitFor: [{ type: 'cold' }],
-        block: [{ type: 'hot' }],
+        waitFor: [{ event: 'cold' }],
+        block: [{ event: 'hot' }],
       }),
     ),
   ),
@@ -80,8 +80,8 @@ Deno.test('bProgram: priority queue', (t) => {
     streamLog.push(msg)
   })
   trigger({
-    type: 'start',
-    data: 'start',
+    event: 'start',
+    payload: 'start',
   })
   console.log(actualFeedback)
   assertEquals(
@@ -104,8 +104,8 @@ Deno.test('bProgram: randomized priority queue', (t) => {
     streamLog.push(msg)
   })
   trigger({
-    type: 'start',
-    data: 'start',
+    event: 'start',
+    payload: 'start',
   })
   assertEquals(
     actualFeedback,
@@ -127,8 +127,8 @@ Deno.test('bProgram: chaos selection', (t) => {
     streamLog.push(msg)
   })
   trigger({
-    type: 'start',
-    data: 'start',
+    event: 'start',
+    payload: 'start',
   })
   assertEquals(actualFeedback, expectedFeedback, `chaos selection feedback`)
   assertSnapshot(t, streamLog, `chaos selection log`)

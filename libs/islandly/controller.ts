@@ -22,7 +22,7 @@ export const controller = ({
       #noDeclarativeShadow = false
       #shadowObserver?: MutationObserver
       #templateObserver?: MutationObserver
-      #disconnect: () => void
+      #disconnect?: () => void
       internals_: ElementInternals
       #trigger: Trigger
       // deno-lint-ignore no-explicit-any
@@ -53,7 +53,7 @@ export const controller = ({
         }
         this.#delegateListeners()
         this.#shadowObserver = this.#createShadowObserver()
-        const { disconnect, trigger, add, feedback, lastSelected } =
+        const { disconnect, trigger, add, feedback, lastPayload } =
           useBehavioral(
             {
               context: this,
@@ -66,25 +66,23 @@ export const controller = ({
           context: this,
           feedback,
           trigger,
-          lastSelected,
+          lastPayload,
         })
         this.#disconnect = disconnect
         this.#trigger = trigger
-        this.#trigger({
-          type: `connected->${this.id || this.tagName.toLowerCase()}`,
-        })
       }
       disconnectedCallback() {
         if (super.disconnectedCallback) {
           super.disconnectedCallback()
         }
-
-        this.#trigger({
-          type: `disconnected->${this.id || this.tagName.toLowerCase()}`,
-        })
         this.#templateObserver && this.#templateObserver.disconnect()
         this.#shadowObserver && this.#shadowObserver.disconnect()
-        this.#disconnect()
+        if (this.#disconnect) {
+          this.#trigger({
+            event: `disconnected->${this.id || this.tagName.toLowerCase()}`,
+          })
+          this.#disconnect()
+        }
       }
       #delegateListeners(nodes?: HTMLElement[]) {
         const root = this.internals_.shadowRoot
@@ -95,8 +93,8 @@ export const controller = ({
               delegatedListener.set(el, (evt) => {
                 const triggerKey = getTriggerKey(evt)
                 triggerKey && this.#trigger({
-                  type: triggerKey,
-                  data: evt,
+                  event: triggerKey,
+                  payload: evt,
                 })
               })
             }

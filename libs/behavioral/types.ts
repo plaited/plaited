@@ -4,8 +4,8 @@ import { streamEvents } from './constants.ts'
 type Snapshot = {
   bThread: { name: string; priority: number }[]
   requestedEvents: {
-    type: string | undefined
-    data?: unknown
+    event: string | undefined
+    payload?: unknown
   }[]
   blockedEvents: (string | undefined)[]
 }
@@ -31,8 +31,8 @@ type SnapshotMessage = {
 type EventEventMessage = {
   type: typeof streamEvents.select | typeof streamEvents.trigger
   detail: {
-    type: string
-    data?: unknown
+    event: string
+    payload?: unknown
   }
 }
 
@@ -47,28 +47,28 @@ export interface Stream {
 
 // Trigger types
 export type TriggerArgs<T = unknown> = {
-  type: string
-  data?: T
+  event: string
+  payload?: T
 }
 
 export type Trigger = <T = unknown>(args: TriggerArgs<T>) => void
 
 // Rule types
 type Assertion<T = unknown> = (
-  args: { type: string; data: T extends undefined ? never : T },
+  args: { event: string; payload: T extends undefined ? never : T },
 ) => boolean
 
 export type ParameterIdiom<T = unknown> = {
-  type: string
+  event: string
   assert?: Assertion<T>
 } | {
-  type?: string
+  event?: string
   assert: Assertion<T>
 }
 
 type RequestIdiom<T = unknown> = {
-  type: string
-  data?: T
+  event: string
+  payload?: T
 }
 
 export type RuleSet<T = unknown> = {
@@ -89,8 +89,8 @@ export type PendingBid = RuleSet & RunningBid
 
 export type CandidateBid = {
   priority: number
-  type: string
-  data?: unknown
+  event: string
+  payload?: unknown
   assert?: Assertion
 }
 
@@ -98,19 +98,11 @@ export type Strategy = (filteredEvents: CandidateBid[]) => CandidateBid
 
 // Feedback Types
 // deno-lint-ignore no-explicit-any
-type Actions<T extends Record<string, (data: any) => void>> = {
-  [K in keyof T]: (data: Parameters<T[K]>[0]) => void
+type Actions<T extends Record<string, (payload: any) => void>> = {
+  [K in keyof T]: (payload: Parameters<T[K]>[0]) => void
 }
 
 // deno-lint-ignore no-explicit-any
-export type Feedback = <T extends Record<string, (data: any) => void>>(
+export type Feedback = <T extends Record<string, (payload: any) => void>>(
   actions: Actions<T>,
 ) => Stream
-
-// deno-lint-ignore no-explicit-any
-export type ActionRequest<T extends Record<string, (data: any) => void>> = {
-  [K in keyof T]: {
-    type: K
-    data: Parameters<T[K]>[0]
-  }
-}

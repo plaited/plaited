@@ -15,18 +15,18 @@ import {
 } from './types.ts'
 
 const requestInParameter = (
-  { type: requestEventName, data: requestPayload }: CandidateBid,
+  { event: requestEventName, payload: requestPayload }: CandidateBid,
 ) => {
   return (
     {
-      type: parameterEventName,
+      event: parameterEventName,
       assert: parameterAssertion,
     }: ParameterIdiom,
   ): boolean => (
     parameterAssertion
       ? parameterAssertion({
-        data: requestPayload,
-        type: requestEventName,
+        payload: requestPayload,
+        event: requestEventName,
       })
       : requestEventName === parameterEventName
   )
@@ -109,17 +109,17 @@ export const bProgram = ({
     run()
   }
   const trigger: Trigger = ({
-    type,
-    data,
+    event,
+    payload,
   }) => {
     const bThread = function* () {
       yield {
-        request: [{ type, data }],
-        waitFor: [{ type: '', assert: () => true }],
+        request: [{ event, payload }],
+        waitFor: [{ event: '', assert: () => true }],
       }
     }
     running.add({
-      name: type,
+      name: event,
       priority: 0,
       bThread: bThread(),
     })
@@ -127,10 +127,10 @@ export const bProgram = ({
       const msg: ListenerMessage = {
         type: streamEvents.trigger,
         detail: {
-          type: type,
+          event: event,
         },
       }
-      data && Object.assign(msg.detail, { data })
+      payload && Object.assign(msg.detail, { payload })
       stream(msg)
     }
     run()
@@ -142,10 +142,10 @@ export const bProgram = ({
     return stream.subscribe(
       ({ type, detail }: ListenerMessage) => {
         if (type !== streamEvents.select) return
-        const { type: key, data } = detail
+        const { event: key, payload } = detail
         type &&
           Object.hasOwn(actions, key) &&
-          actions[key](data)
+          actions[key](payload)
       },
     )
   }
@@ -158,6 +158,7 @@ export const bProgram = ({
       })
     }
   }
+  const lastPayload = <T = unknown>(): T => lastEvent.payload as T
   return Object.freeze({
     /** add rule function to behavioral program */
     add,
@@ -167,9 +168,7 @@ export const bProgram = ({
     trigger,
     /** reactive stream for capturing selected events, state snapshots, and trigger events */
     stream,
-    /** a callback function to get the value of the last selected event */
-    lastSelected() {
-      return lastEvent.data
-    },
+    /** a callback function to get the value of the last selected event's payload */
+    lastPayload,
   })
 }

@@ -1,5 +1,4 @@
 import { bProgram, Listener, Strategy, Trigger } from '../behavioral/mod.ts'
-import { noop } from '../utils/mod.ts'
 
 export const useBehavioral = ({
   id,
@@ -22,12 +21,12 @@ export const useBehavioral = ({
   /** reference to the node instance of the Island HTMLElement calling this hook */
   context: HTMLElement
 }) => {
-  const { feedback, trigger, stream, add, lastSelected } = bProgram({
+  const { feedback, trigger, stream, add, lastPayload } = bProgram({
     strategy,
     dev: Boolean(logger),
   })
   logger && stream.subscribe(logger)
-  let disconnect = noop
+  let disconnect
   if (connect) {
     const tagName = context.tagName.toLowerCase()
     const _id = context.id
@@ -38,8 +37,8 @@ export const useBehavioral = ({
     }
     disconnect = id && _id ? connect(_id, trigger) : connect(tagName, trigger)
     trigger({
-      type: `connected->${id ? _id ?? `${tagName} with missing id` : tagName}`,
+      event: `connected->${id ? _id ?? `${tagName} with missing id` : tagName}`,
     })
   }
-  return { trigger, disconnect, add, feedback, lastSelected }
+  return { trigger, disconnect, add, feedback, lastPayload }
 }

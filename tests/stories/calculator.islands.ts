@@ -9,13 +9,13 @@ define({ tag: 'key-pad' }, ({ feedback }) => {
     number(evt: MouseEvent) {
       const val = (evt.currentTarget as HTMLButtonElement)?.value
       send('value-display', {
-        type: `addNumber`,
-        data: val,
+        event: `addNumber`,
+        payload: val,
       })
     },
     clear() {
       send('value-display', {
-        type: 'clear',
+        event: 'clear',
       })
     },
   })
@@ -23,26 +23,26 @@ define({ tag: 'key-pad' }, ({ feedback }) => {
 
 define(
   { tag: 'value-display', connect },
-  ({ $, feedback, add, lastSelected }) => {
+  ({ $, feedback, add, lastPayload }) => {
     const [getDisplay, setDisplay] = useStore<string[]>([])
     add({
       onClear: loop(sets({
-        waitFor: { type: 'clear' },
-        request: { type: 'clearDisplay' },
+        waitFor: { event: 'clear' },
+        request: { event: 'clearDisplay' },
       })),
       onClick: loop(
         sets({
-          waitFor: { type: `addNumber` },
+          waitFor: { event: `addNumber` },
           request: {
-            type: 'updateNumber',
-            data: lastSelected(),
+            event: 'updateNumber',
+            payload: lastPayload(),
           },
         }),
       ),
       onLog: loop(
         sets({
-          waitFor: { type: 'logMe' },
-          request: { type: 'logSelf' },
+          waitFor: { event: 'logMe' },
+          request: { event: 'logSelf' },
         }),
       ),
     })
@@ -54,9 +54,9 @@ define(
     }
 
     feedback({
-      updateNumber(data: string) {
+      updateNumber(payload: string) {
         if (getDisplay.length < 5) {
-          setDisplay([...getDisplay(), data])
+          setDisplay([...getDisplay(), payload])
         }
         const [display] = $('display')
         updateDisplay(display, getDisplay())

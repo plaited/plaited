@@ -14,16 +14,16 @@ export const stateChart: StateChart = ({ candidates, blocked, pending }) => {
     ...new Set(
       candidates
         .map(({
-          type,
+          event,
           priority,
-          data,
+          payload,
         }) => {
           const toRet: {
-            type: string
-            data?: unknown
+            event: string
+            payload?: unknown
             priority: number
-          } = { type, priority }
-          data && Object.assign(toRet, { data })
+          } = { event, priority }
+          payload && Object.assign(toRet, { payload })
           return toRet
         }),
     ),
