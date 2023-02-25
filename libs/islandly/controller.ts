@@ -53,20 +53,18 @@ export const controller = ({
         }
         this.#delegateListeners()
         this.#shadowObserver = this.#createShadowObserver()
-        const { disconnect, trigger, add, feedback, lastPayload } =
-          useBehavioral(
-            {
-              context: this,
-              ...rest,
-            },
-          )
+        const { disconnect, trigger, add, feedback } = useBehavioral(
+          {
+            context: this,
+            ...rest,
+          },
+        )
         this.plait({
           $: this.$.bind(this),
           add,
           context: this,
           feedback,
           trigger,
-          lastPayload,
         })
         this.#disconnect = disconnect
         this.#trigger = trigger
@@ -94,7 +92,7 @@ export const controller = ({
                 const triggerKey = getTriggerKey(evt)
                 triggerKey && this.#trigger({
                   event: triggerKey,
-                  payload: evt,
+                  detail: { evt },
                 })
               })
             }

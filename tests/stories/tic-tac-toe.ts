@@ -1,19 +1,12 @@
 /* eslint-disable no-console */
-import {
-  bProgram,
-  bThread,
-  loop,
-  randomizedStrategy,
-  RulesFunc,
-  sets,
-} from '$plaited'
+import { bProgram, bThread, loop, RulesFunc, sync } from '$plaited'
 
 const { trigger: xTrigger, feedback: xFeedback, add: xAdd } = bProgram({
-  strategy: randomizedStrategy,
+  strategy: 'randomized',
 })
 
 const { trigger: oTrigger, feedback: oFeedback, add: oAdd } = bProgram({
-  strategy: randomizedStrategy,
+  strategy: 'randomized',
 })
 
 const winConditions = [
@@ -34,11 +27,11 @@ const squares = [0, 1, 2, 3, 4, 5, 6, 7, 8]
 const squaresTaken = squares.reduce(
   (acc: Record<string, RulesFunc>, square) => {
     acc[`(${square}) taken`] = bThread(
-      sets<number>({
-        waitFor: { assert: ({ payload }) => square === payload },
+      sync<{ square: number }>({
+        waitFor: { cb: ({ detail }) => square === detail?.square },
       }),
-      sets<number>({
-        block: { assert: ({ payload }) => square === payload },
+      sync<{ square: number }>({
+        block: { cb: ({ detail }) => square === detail?.square },
       }),
     )
     return acc
@@ -49,46 +42,51 @@ const squaresTaken = squares.reduce(
 const playerWins = (player: string) =>
   winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
     acc[`${player}Wins (${win})`] = bThread(
-      sets<number>({
+      sync<{ square: number }>({
         waitFor: {
-          assert: ({ event, payload }) =>
-            event === player && win.includes(payload),
+          cb: ({ event, detail }) =>
+            event === player && win.includes(detail?.square),
         },
       }),
-      sets<number>({
+      sync<{ square: number }>({
         waitFor: {
-          assert: ({ event, payload }) =>
-            event === player && win.includes(payload),
+          cb: ({ event, detail }) =>
+            event === player && win.includes(detail?.square),
         },
       }),
-      sets<number>({
+      sync<{ square: number }>({
         waitFor: {
-          assert: ({ event, payload }) =>
-            event === player && win.includes(payload),
+          cb: ({ event, detail }) =>
+            event === player && win.includes(detail?.square),
         },
       }),
-      sets({ request: { event: `${player} Wins`, payload: win } }),
+      sync<{ win: number[] }>({
+        request: { event: `${player} Wins`, detail: { win } },
+      }),
     )
     return acc
   }, {})
 
 const enforceTurns = loop(
   bThread(
-    sets({ waitFor: { event: 'X' }, block: { event: 'O' } }),
-    sets({ waitFor: { event: 'O' }, block: { event: 'X' } }),
+    sync({ waitFor: { event: 'X' }, block: { event: 'O' } }),
+    sync({ waitFor: { event: 'O' }, block: { event: 'X' } }),
   ),
 )
 
 const playerMove = (player: string) =>
   loop(
-    sets({
-      request: squares.map((move) => ({ event: player, payload: move })),
+    sync({
+      request: squares.map((move) => ({
+        event: player,
+        detail: { square: move },
+      })),
     }),
   )
 
 const stopGame = bThread(
-  sets({ waitFor: [{ event: 'X Wins' }, { event: 'O Wins' }] }),
-  sets({ block: [{ event: 'X' }, { event: 'O' }] }),
+  sync({ waitFor: [{ event: 'X Wins' }, { event: 'O Wins' }] }),
+  sync({ block: [{ event: 'X' }, { event: 'O' }] }),
 )
 
 const strands = {
@@ -110,28 +108,28 @@ oAdd({
 })
 
 xFeedback({
-  X(payload: unknown) {
-    console.log({ event: 'X', payload })
+  X(detail: { square: number }) {
+    console.log({ event: 'X', detail })
     oTrigger({
       event: 'X',
-      payload: payload,
+      detail,
     })
   },
-  ['X Wins'](payload: unknown) {
-    console.log({ event: 'X Wins', payload })
+  ['X Wins'](detail: { win: number[] }) {
+    console.log({ event: 'X Wins', detail })
   },
 })
 
 oFeedback({
-  O(payload: number) {
-    console.log({ event: 'O', payload })
+  O(detail: { square: number }) {
+    console.log({ event: 'O', detail })
     xTrigger({
       event: 'O',
-      payload: payload,
+      detail,
     })
   },
-  ['O Wins'](payload: [number, number, number]) {
-    console.log({ event: 'O Wins', payload })
+  ['O Wins'](detail: { win: number[] }) {
+    console.log({ event: 'O Wins', detail })
   },
 })
 

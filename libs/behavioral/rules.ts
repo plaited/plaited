@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { RuleSet, RulesFunc } from './types.ts'
+import { EventDetail, RuleSet, RulesFunc } from './types.ts'
 
 /**
  * @description
@@ -34,7 +34,7 @@ export const loop = (
  * bThread currently forbids triggering
  * any of these events.
  */
-export const sets = <T = unknown>(
+export const sync = <T extends EventDetail>(
   set: RuleSet<T>,
 ): RulesFunc<T> =>
   function* () {

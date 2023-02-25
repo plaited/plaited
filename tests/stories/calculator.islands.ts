@@ -1,4 +1,4 @@
-import { define, loop, messenger, sets, useStore } from '$plaited'
+import { define, loop, messenger, sync, useStore } from '$plaited'
 
 const { connect, send } = messenger()
 
@@ -7,10 +7,10 @@ window.streamLog = []
 define({ tag: 'key-pad' }, ({ feedback }) => {
   feedback({
     number(evt: MouseEvent) {
-      const val = (evt.currentTarget as HTMLButtonElement)?.value
+      const value = (evt.currentTarget as HTMLButtonElement)?.value
       send('value-display', {
         event: `addNumber`,
-        payload: val,
+        detail: { value },
       })
     },
     clear() {
@@ -23,24 +23,15 @@ define({ tag: 'key-pad' }, ({ feedback }) => {
 
 define(
   { tag: 'value-display', connect },
-  ({ $, feedback, add, lastPayload }) => {
+  ({ $, feedback, add }) => {
     const [getDisplay, setDisplay] = useStore<string[]>([])
     add({
-      onClear: loop(sets({
+      onClear: loop(sync({
         waitFor: { event: 'clear' },
         request: { event: 'clearDisplay' },
       })),
-      onClick: loop(
-        sets({
-          waitFor: { event: `addNumber` },
-          request: {
-            event: 'updateNumber',
-            payload: lastPayload(),
-          },
-        }),
-      ),
       onLog: loop(
-        sets({
+        sync({
           waitFor: { event: 'logMe' },
           request: { event: 'logSelf' },
         }),
@@ -54,7 +45,7 @@ define(
     }
 
     feedback({
-      updateNumber(payload: string) {
+      addNumber(payload: string) {
         if (getDisplay.length < 5) {
           setDisplay([...getDisplay(), payload])
         }

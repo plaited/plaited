@@ -3,287 +3,335 @@ export const snapshot = {};
 snapshot[`bProgram: priority queue 1`] = `
 [
   {
-    detail: {
-      data: "start",
-      type: "start",
+    data: {
+      detail: {
+        value: "start",
+      },
+      event: "start",
     },
-    type: "trigger-event",
+    type: "trigger",
   },
   {
-    detail: {
-      bThread: [
+    data: {
+      bThreads: [
         {
           name: "addHot",
           priority: 1,
+          waitFor: [
+            {
+              cb: [Function: cb],
+            },
+            {
+              event: "say_cold",
+            },
+          ],
         },
         {
           name: "addCold",
           priority: 2,
+          waitFor: [
+            {
+              event: "start",
+            },
+          ],
         },
         {
+          block: [
+            {
+              event: "cold",
+            },
+          ],
           name: "mixHotCold",
           priority: 3,
+          waitFor: [
+            {
+              event: "hot",
+            },
+          ],
         },
         {
           name: "start",
           priority: 0,
+          request: [
+            {
+              detail: {
+                value: "start",
+              },
+              event: "start",
+            },
+          ],
+          waitFor: [
+            {
+              cb: [Function: cb],
+              event: "",
+            },
+          ],
         },
       ],
-      blockedEvents: [
-        "cold",
-      ],
-      requestedEvents: [
-        {
-          data: "start",
-          priority: 0,
-          type: "start",
+      selectedEvent: {
+        detail: {
+          value: "start",
         },
-      ],
+        event: "start",
+        priority: 0,
+      },
     },
     type: "state-snapshot",
   },
   {
-    detail: {
-      data: "start",
-      type: "start",
-    },
-    type: "selected-event",
-  },
-  {
-    detail: {
-      bThread: [
+    data: {
+      bThreads: [
         {
+          block: [
+            {
+              event: "cold",
+            },
+          ],
           name: "mixHotCold",
           priority: 3,
+          waitFor: [
+            {
+              event: "hot",
+            },
+          ],
         },
         {
           name: "addHot",
           priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
         },
         {
           name: "addCold",
           priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
         },
       ],
-      blockedEvents: [
-        "cold",
-      ],
-      requestedEvents: [
-        {
-          priority: 1,
-          type: "hot",
-        },
-        {
-          priority: 2,
-          type: "cold",
-        },
-      ],
+      selectedEvent: {
+        event: "hot",
+        priority: 1,
+      },
     },
     type: "state-snapshot",
   },
   {
-    detail: {
-      type: "hot",
-    },
-    type: "selected-event",
-  },
-  {
-    detail: {
-      bThread: [
+    data: {
+      bThreads: [
         {
           name: "addCold",
           priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
         },
         {
+          block: [
+            {
+              event: "hot",
+            },
+          ],
           name: "mixHotCold",
           priority: 3,
+          waitFor: [
+            {
+              event: "cold",
+            },
+          ],
         },
         {
           name: "addHot",
           priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
         },
       ],
-      blockedEvents: [
-        "hot",
-      ],
-      requestedEvents: [
-        {
-          priority: 2,
-          type: "cold",
-        },
-        {
-          priority: 1,
-          type: "hot",
-        },
-      ],
+      selectedEvent: {
+        event: "cold",
+        priority: 2,
+      },
     },
     type: "state-snapshot",
   },
   {
-    detail: {
-      type: "cold",
-    },
-    type: "selected-event",
-  },
-  {
-    detail: {
-      bThread: [
+    data: {
+      bThreads: [
         {
           name: "addHot",
           priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
         },
         {
           name: "addCold",
           priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
         },
         {
+          block: [
+            {
+              event: "cold",
+            },
+          ],
           name: "mixHotCold",
           priority: 3,
+          waitFor: [
+            {
+              event: "hot",
+            },
+          ],
         },
       ],
-      blockedEvents: [
-        "cold",
-      ],
-      requestedEvents: [
-        {
-          priority: 1,
-          type: "hot",
-        },
-        {
-          priority: 2,
-          type: "cold",
-        },
-      ],
+      selectedEvent: {
+        event: "hot",
+        priority: 1,
+      },
     },
     type: "state-snapshot",
   },
   {
-    detail: {
-      type: "hot",
-    },
-    type: "selected-event",
-  },
-  {
-    detail: {
-      bThread: [
+    data: {
+      bThreads: [
         {
           name: "addCold",
           priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
         },
         {
           name: "addHot",
           priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
         },
         {
+          block: [
+            {
+              event: "hot",
+            },
+          ],
           name: "mixHotCold",
           priority: 3,
+          waitFor: [
+            {
+              event: "cold",
+            },
+          ],
         },
       ],
-      blockedEvents: [
-        "hot",
-      ],
-      requestedEvents: [
-        {
-          priority: 2,
-          type: "cold",
-        },
-        {
-          priority: 1,
-          type: "hot",
-        },
-      ],
+      selectedEvent: {
+        event: "cold",
+        priority: 2,
+      },
     },
     type: "state-snapshot",
   },
   {
-    detail: {
-      type: "cold",
-    },
-    type: "selected-event",
-  },
-  {
-    detail: {
-      bThread: [
+    data: {
+      bThreads: [
         {
           name: "addHot",
           priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
         },
         {
           name: "addCold",
           priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
         },
         {
+          block: [
+            {
+              event: "cold",
+            },
+          ],
           name: "mixHotCold",
           priority: 3,
+          waitFor: [
+            {
+              event: "hot",
+            },
+          ],
         },
       ],
-      blockedEvents: [
-        "cold",
-      ],
-      requestedEvents: [
-        {
-          priority: 1,
-          type: "hot",
-        },
-        {
-          priority: 2,
-          type: "cold",
-        },
-      ],
+      selectedEvent: {
+        event: "hot",
+        priority: 1,
+      },
     },
     type: "state-snapshot",
   },
   {
-    detail: {
-      type: "hot",
-    },
-    type: "selected-event",
-  },
-  {
-    detail: {
-      bThread: [
+    data: {
+      bThreads: [
         {
           name: "addCold",
           priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
         },
         {
+          block: [
+            {
+              event: "hot",
+            },
+          ],
           name: "mixHotCold",
           priority: 3,
+          waitFor: [
+            {
+              event: "cold",
+            },
+          ],
         },
       ],
-      blockedEvents: [
-        "hot",
-      ],
-      requestedEvents: [
-        {
-          priority: 2,
-          type: "cold",
-        },
-      ],
+      selectedEvent: {
+        event: "cold",
+        priority: 2,
+      },
     },
     type: "state-snapshot",
   },
   {
-    detail: {
-      type: "cold",
+    data: {
+      strategy: "priority",
     },
-    type: "selected-event",
-  },
-  {
-    detail: {
-      bThread: [
-        {
-          name: "mixHotCold",
-          priority: 3,
-        },
-      ],
-      blockedEvents: [
-        "cold",
-      ],
-      requestedEvents: [
-      ],
-    },
-    type: "state-snapshot",
+    type: "end",
   },
 ]
 `;
@@ -291,287 +339,335 @@ snapshot[`bProgram: priority queue 1`] = `
 snapshot[`bProgram: randomized priority queue 1`] = `
 [
   {
-    detail: {
-      data: "start",
-      type: "start",
+    data: {
+      detail: {
+        value: "start",
+      },
+      event: "start",
     },
-    type: "trigger-event",
+    type: "trigger",
   },
   {
-    detail: {
-      bThread: [
+    data: {
+      bThreads: [
         {
           name: "addHot",
           priority: 1,
+          waitFor: [
+            {
+              cb: [Function: cb],
+            },
+            {
+              event: "say_cold",
+            },
+          ],
         },
         {
           name: "addCold",
           priority: 2,
+          waitFor: [
+            {
+              event: "start",
+            },
+          ],
         },
         {
+          block: [
+            {
+              event: "cold",
+            },
+          ],
           name: "mixHotCold",
           priority: 3,
+          waitFor: [
+            {
+              event: "hot",
+            },
+          ],
         },
         {
           name: "start",
           priority: 0,
+          request: [
+            {
+              detail: {
+                value: "start",
+              },
+              event: "start",
+            },
+          ],
+          waitFor: [
+            {
+              cb: [Function: cb],
+              event: "",
+            },
+          ],
         },
       ],
-      blockedEvents: [
-        "cold",
-      ],
-      requestedEvents: [
-        {
-          data: "start",
-          priority: 0,
-          type: "start",
+      selectedEvent: {
+        detail: {
+          value: "start",
         },
-      ],
+        event: "start",
+        priority: 0,
+      },
     },
     type: "state-snapshot",
   },
   {
-    detail: {
-      data: "start",
-      type: "start",
-    },
-    type: "selected-event",
-  },
-  {
-    detail: {
-      bThread: [
+    data: {
+      bThreads: [
         {
+          block: [
+            {
+              event: "cold",
+            },
+          ],
           name: "mixHotCold",
           priority: 3,
+          waitFor: [
+            {
+              event: "hot",
+            },
+          ],
         },
         {
           name: "addHot",
           priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
         },
         {
           name: "addCold",
           priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
         },
       ],
-      blockedEvents: [
-        "cold",
-      ],
-      requestedEvents: [
-        {
-          priority: 1,
-          type: "hot",
-        },
-        {
-          priority: 2,
-          type: "cold",
-        },
-      ],
+      selectedEvent: {
+        event: "hot",
+        priority: 1,
+      },
     },
     type: "state-snapshot",
   },
   {
-    detail: {
-      type: "hot",
-    },
-    type: "selected-event",
-  },
-  {
-    detail: {
-      bThread: [
+    data: {
+      bThreads: [
         {
           name: "addCold",
           priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
         },
         {
+          block: [
+            {
+              event: "hot",
+            },
+          ],
           name: "mixHotCold",
           priority: 3,
+          waitFor: [
+            {
+              event: "cold",
+            },
+          ],
         },
         {
           name: "addHot",
           priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
         },
       ],
-      blockedEvents: [
-        "hot",
-      ],
-      requestedEvents: [
-        {
-          priority: 2,
-          type: "cold",
-        },
-        {
-          priority: 1,
-          type: "hot",
-        },
-      ],
+      selectedEvent: {
+        event: "cold",
+        priority: 2,
+      },
     },
     type: "state-snapshot",
   },
   {
-    detail: {
-      type: "cold",
-    },
-    type: "selected-event",
-  },
-  {
-    detail: {
-      bThread: [
+    data: {
+      bThreads: [
         {
           name: "addHot",
           priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
         },
         {
           name: "addCold",
           priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
         },
         {
+          block: [
+            {
+              event: "cold",
+            },
+          ],
           name: "mixHotCold",
           priority: 3,
+          waitFor: [
+            {
+              event: "hot",
+            },
+          ],
         },
       ],
-      blockedEvents: [
-        "cold",
-      ],
-      requestedEvents: [
-        {
-          priority: 1,
-          type: "hot",
-        },
-        {
-          priority: 2,
-          type: "cold",
-        },
-      ],
+      selectedEvent: {
+        event: "hot",
+        priority: 1,
+      },
     },
     type: "state-snapshot",
   },
   {
-    detail: {
-      type: "hot",
-    },
-    type: "selected-event",
-  },
-  {
-    detail: {
-      bThread: [
+    data: {
+      bThreads: [
         {
           name: "addCold",
           priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
         },
         {
           name: "addHot",
           priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
         },
         {
+          block: [
+            {
+              event: "hot",
+            },
+          ],
           name: "mixHotCold",
           priority: 3,
+          waitFor: [
+            {
+              event: "cold",
+            },
+          ],
         },
       ],
-      blockedEvents: [
-        "hot",
-      ],
-      requestedEvents: [
-        {
-          priority: 2,
-          type: "cold",
-        },
-        {
-          priority: 1,
-          type: "hot",
-        },
-      ],
+      selectedEvent: {
+        event: "cold",
+        priority: 2,
+      },
     },
     type: "state-snapshot",
   },
   {
-    detail: {
-      type: "cold",
-    },
-    type: "selected-event",
-  },
-  {
-    detail: {
-      bThread: [
+    data: {
+      bThreads: [
         {
           name: "addHot",
           priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
         },
         {
           name: "addCold",
           priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
         },
         {
+          block: [
+            {
+              event: "cold",
+            },
+          ],
           name: "mixHotCold",
           priority: 3,
+          waitFor: [
+            {
+              event: "hot",
+            },
+          ],
         },
       ],
-      blockedEvents: [
-        "cold",
-      ],
-      requestedEvents: [
-        {
-          priority: 1,
-          type: "hot",
-        },
-        {
-          priority: 2,
-          type: "cold",
-        },
-      ],
+      selectedEvent: {
+        event: "hot",
+        priority: 1,
+      },
     },
     type: "state-snapshot",
   },
   {
-    detail: {
-      type: "hot",
-    },
-    type: "selected-event",
-  },
-  {
-    detail: {
-      bThread: [
+    data: {
+      bThreads: [
         {
           name: "addCold",
           priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
         },
         {
+          block: [
+            {
+              event: "hot",
+            },
+          ],
           name: "mixHotCold",
           priority: 3,
+          waitFor: [
+            {
+              event: "cold",
+            },
+          ],
         },
       ],
-      blockedEvents: [
-        "hot",
-      ],
-      requestedEvents: [
-        {
-          priority: 2,
-          type: "cold",
-        },
-      ],
+      selectedEvent: {
+        event: "cold",
+        priority: 2,
+      },
     },
     type: "state-snapshot",
   },
   {
-    detail: {
-      type: "cold",
+    data: {
+      strategy: "randomized",
     },
-    type: "selected-event",
-  },
-  {
-    detail: {
-      bThread: [
-        {
-          name: "mixHotCold",
-          priority: 3,
-        },
-      ],
-      blockedEvents: [
-        "cold",
-      ],
-      requestedEvents: [
-      ],
-    },
-    type: "state-snapshot",
+    type: "end",
   },
 ]
 `;
@@ -579,287 +675,335 @@ snapshot[`bProgram: randomized priority queue 1`] = `
 snapshot[`bProgram: chaos selection 1`] = `
 [
   {
-    detail: {
-      data: "start",
-      type: "start",
+    data: {
+      detail: {
+        value: "start",
+      },
+      event: "start",
     },
-    type: "trigger-event",
+    type: "trigger",
   },
   {
-    detail: {
-      bThread: [
+    data: {
+      bThreads: [
         {
           name: "addHot",
           priority: 1,
+          waitFor: [
+            {
+              cb: [Function: cb],
+            },
+            {
+              event: "say_cold",
+            },
+          ],
         },
         {
           name: "addCold",
           priority: 2,
+          waitFor: [
+            {
+              event: "start",
+            },
+          ],
         },
         {
+          block: [
+            {
+              event: "cold",
+            },
+          ],
           name: "mixHotCold",
           priority: 3,
+          waitFor: [
+            {
+              event: "hot",
+            },
+          ],
         },
         {
           name: "start",
           priority: 0,
+          request: [
+            {
+              detail: {
+                value: "start",
+              },
+              event: "start",
+            },
+          ],
+          waitFor: [
+            {
+              cb: [Function: cb],
+              event: "",
+            },
+          ],
         },
       ],
-      blockedEvents: [
-        "cold",
-      ],
-      requestedEvents: [
-        {
-          data: "start",
-          priority: 0,
-          type: "start",
+      selectedEvent: {
+        detail: {
+          value: "start",
         },
-      ],
+        event: "start",
+        priority: 0,
+      },
     },
     type: "state-snapshot",
   },
   {
-    detail: {
-      data: "start",
-      type: "start",
-    },
-    type: "selected-event",
-  },
-  {
-    detail: {
-      bThread: [
+    data: {
+      bThreads: [
         {
+          block: [
+            {
+              event: "cold",
+            },
+          ],
           name: "mixHotCold",
           priority: 3,
+          waitFor: [
+            {
+              event: "hot",
+            },
+          ],
         },
         {
           name: "addHot",
           priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
         },
         {
           name: "addCold",
           priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
         },
       ],
-      blockedEvents: [
-        "cold",
-      ],
-      requestedEvents: [
-        {
-          priority: 1,
-          type: "hot",
-        },
-        {
-          priority: 2,
-          type: "cold",
-        },
-      ],
+      selectedEvent: {
+        event: "hot",
+        priority: 1,
+      },
     },
     type: "state-snapshot",
   },
   {
-    detail: {
-      type: "hot",
-    },
-    type: "selected-event",
-  },
-  {
-    detail: {
-      bThread: [
+    data: {
+      bThreads: [
         {
           name: "addCold",
           priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
         },
         {
+          block: [
+            {
+              event: "hot",
+            },
+          ],
           name: "mixHotCold",
           priority: 3,
+          waitFor: [
+            {
+              event: "cold",
+            },
+          ],
         },
         {
           name: "addHot",
           priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
         },
       ],
-      blockedEvents: [
-        "hot",
-      ],
-      requestedEvents: [
-        {
-          priority: 2,
-          type: "cold",
-        },
-        {
-          priority: 1,
-          type: "hot",
-        },
-      ],
+      selectedEvent: {
+        event: "cold",
+        priority: 2,
+      },
     },
     type: "state-snapshot",
   },
   {
-    detail: {
-      type: "cold",
-    },
-    type: "selected-event",
-  },
-  {
-    detail: {
-      bThread: [
+    data: {
+      bThreads: [
         {
           name: "addHot",
           priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
         },
         {
           name: "addCold",
           priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
         },
         {
+          block: [
+            {
+              event: "cold",
+            },
+          ],
           name: "mixHotCold",
           priority: 3,
+          waitFor: [
+            {
+              event: "hot",
+            },
+          ],
         },
       ],
-      blockedEvents: [
-        "cold",
-      ],
-      requestedEvents: [
-        {
-          priority: 1,
-          type: "hot",
-        },
-        {
-          priority: 2,
-          type: "cold",
-        },
-      ],
+      selectedEvent: {
+        event: "hot",
+        priority: 1,
+      },
     },
     type: "state-snapshot",
   },
   {
-    detail: {
-      type: "hot",
-    },
-    type: "selected-event",
-  },
-  {
-    detail: {
-      bThread: [
+    data: {
+      bThreads: [
         {
           name: "addCold",
           priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
         },
         {
           name: "addHot",
           priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
         },
         {
+          block: [
+            {
+              event: "hot",
+            },
+          ],
           name: "mixHotCold",
           priority: 3,
+          waitFor: [
+            {
+              event: "cold",
+            },
+          ],
         },
       ],
-      blockedEvents: [
-        "hot",
-      ],
-      requestedEvents: [
-        {
-          priority: 2,
-          type: "cold",
-        },
-        {
-          priority: 1,
-          type: "hot",
-        },
-      ],
+      selectedEvent: {
+        event: "cold",
+        priority: 2,
+      },
     },
     type: "state-snapshot",
   },
   {
-    detail: {
-      type: "cold",
-    },
-    type: "selected-event",
-  },
-  {
-    detail: {
-      bThread: [
+    data: {
+      bThreads: [
         {
           name: "addHot",
           priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
         },
         {
           name: "addCold",
           priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
         },
         {
+          block: [
+            {
+              event: "cold",
+            },
+          ],
           name: "mixHotCold",
           priority: 3,
+          waitFor: [
+            {
+              event: "hot",
+            },
+          ],
         },
       ],
-      blockedEvents: [
-        "cold",
-      ],
-      requestedEvents: [
-        {
-          priority: 1,
-          type: "hot",
-        },
-        {
-          priority: 2,
-          type: "cold",
-        },
-      ],
+      selectedEvent: {
+        event: "hot",
+        priority: 1,
+      },
     },
     type: "state-snapshot",
   },
   {
-    detail: {
-      type: "hot",
-    },
-    type: "selected-event",
-  },
-  {
-    detail: {
-      bThread: [
+    data: {
+      bThreads: [
         {
           name: "addCold",
           priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
         },
         {
+          block: [
+            {
+              event: "hot",
+            },
+          ],
           name: "mixHotCold",
           priority: 3,
+          waitFor: [
+            {
+              event: "cold",
+            },
+          ],
         },
       ],
-      blockedEvents: [
-        "hot",
-      ],
-      requestedEvents: [
-        {
-          priority: 2,
-          type: "cold",
-        },
-      ],
+      selectedEvent: {
+        event: "cold",
+        priority: 2,
+      },
     },
     type: "state-snapshot",
   },
   {
-    detail: {
-      type: "cold",
+    data: {
+      strategy: "chaos",
     },
-    type: "selected-event",
-  },
-  {
-    detail: {
-      bThread: [
-        {
-          name: "mixHotCold",
-          priority: 3,
-        },
-      ],
-      blockedEvents: [
-        "cold",
-      ],
-      requestedEvents: [
-      ],
-    },
-    type: "state-snapshot",
+    type: "end",
   },
 ]
 `;

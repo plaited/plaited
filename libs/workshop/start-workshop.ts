@@ -18,18 +18,16 @@ interface StartWorkshop {
 
 export const startWorkshop: StartWorkshop = async ({
   assets,
-  colorScheme,
   credentials,
   dev = true,
   exts,
   importMap,
-  playwright,
   port = 3000,
   project,
   workspace,
   includes,
 }) => {
-  await Promise.all([assets, playwright, workspace].map(async (path) => {
+  await Promise.all([assets, workspace].map(async (path) => {
     const exist = await getStat(path)
     if (exist) return
     Deno.mkdir(path, { recursive: true })
@@ -40,15 +38,12 @@ export const startWorkshop: StartWorkshop = async ({
   const startServer = async () => {
     const routes = await write({
       assets,
-      colorScheme,
       dev,
       exts,
       importMap: importMap ? toFileUrl(importMap) : undefined,
       includes,
-      playwright,
-      port,
       project,
-      root: workspace,
+      workspace,
     })
     const { close } = await server({
       reload: dev,

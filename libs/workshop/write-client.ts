@@ -15,17 +15,15 @@ export const writeClient = async ({
   importMap?: URL
   workerExts: string[]
 }) => {
-  const buildUI = bundler({
+  const defaultContent = await bundler({
     dev: false,
     entryPoints: [ui],
   })
-  const build = bundler({
+  const content = await bundler({
     dev: false,
     entryPoints,
     importMap,
   })
-  const defaultContent = await buildUI()
-  const content = await build()
   const outdir = `${assets}/.modules`
   const exist = await getStat(outdir)
   exist && await Deno.remove(outdir, { recursive: true })

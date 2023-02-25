@@ -1,11 +1,12 @@
-import { streamEvents } from './constants.ts'
-import { stateChart } from './state-chart.ts'
+import { strategies, streamEvents } from './constants.ts'
+import { stateSnapshot } from './state-snapshot.ts'
 import { createStream } from './create-stream.ts'
-import { priorityStrategy } from './strategies.ts'
+import { selectionStrategies } from './selection-strategies.ts'
 import {
   CandidateBid,
   Feedback,
   ListenerMessage,
+  LogCallback,
   ParameterIdiom,
   PendingBid,
   RulesFunc,
@@ -15,17 +16,17 @@ import {
 } from './types.ts'
 
 const requestInParameter = (
-  { event: requestEventName, payload: requestPayload }: CandidateBid,
+  { event: requestEventName, detail: requestDetail }: CandidateBid,
 ) => {
   return (
     {
       event: parameterEventName,
-      assert: parameterAssertion,
+      cb: parameterAssertion,
     }: ParameterIdiom,
   ): boolean => (
     parameterAssertion
       ? parameterAssertion({
-        payload: requestPayload,
+        detail: requestDetail,
         event: requestEventName,
       })
       : requestEventName === parameterEventName
@@ -34,20 +35,24 @@ const requestInParameter = (
 
 export const bProgram = ({
   /** event selection strategy {@link Strategy}*/
-  strategy: eventSelectionStrategy = priorityStrategy,
+  strategy = strategies.priority,
   /** When set to true returns a stream with log of state snapshots, last selected event and trigger */
   dev = false,
 }: {
-  strategy?: Strategy
+  strategy?: Strategy | keyof Omit<typeof strategies, 'custom'>
   dev?: boolean
 }) => {
+  const eventSelectionStrategy: Strategy = typeof strategy === 'string'
+    ? selectionStrategies[strategy]
+    : strategy
   const pending = new Set<PendingBid>()
   const running = new Set<RunningBid>()
-  let lastEvent: CandidateBid
   const stream = createStream()
+
   function run() {
     running.size && step()
   }
+
   function step() {
     for (const bid of running) {
       const { bThread, priority, name } = bid
@@ -61,8 +66,12 @@ export const bProgram = ({
         })
       running.delete(bid)
     }
-    const _pending = [...pending]
-    const candidates = _pending.reduce<CandidateBid[]>(
+    selectNextEvent()
+  }
+  // Select next event
+  function selectNextEvent() {
+    const bids = [...pending]
+    const candidates = bids.reduce<CandidateBid[]>(
       (acc, { request, priority }) =>
         acc.concat(
           // Flatten bids' request arrays
@@ -76,23 +85,34 @@ export const bProgram = ({
         ),
       [],
     )
-    const blocked = _pending.flatMap<ParameterIdiom>(({ block }) => block || [])
-    const filteredBids = candidates.filter(
+    const blocked = bids.flatMap<ParameterIdiom>(({ block }) => block || [])
+
+    const filteredBids: CandidateBid[] | never[] = candidates.filter(
       (request) => !blocked.some(requestInParameter(request)),
     )
-    dev && stream({
-      type: streamEvents.state,
-      detail: stateChart({ candidates, blocked, pending: _pending }),
-    })
-    lastEvent = eventSelectionStrategy(filteredBids)
-    lastEvent && nextStep()
+    const selectedEvent = eventSelectionStrategy(filteredBids)
+    if (selectedEvent) {
+      dev && stream({
+        type: streamEvents.snapshot,
+        data: stateSnapshot({ bids, selectedEvent }),
+      })
+      const { priority: _p, cb: _a, ...detail } = selectedEvent
+      stream({
+        type: streamEvents.select,
+        data: detail,
+      })
+      nextStep(selectedEvent)
+    } else {
+      stream({
+        type: streamEvents.end,
+        data: {
+          strategy: typeof strategy === 'string' ? strategy : strategies.custom,
+        },
+      })
+    }
   }
-  function nextStep() {
-    const { priority: _p, assert: _a, ...detail } = lastEvent
-    stream({
-      type: streamEvents.select,
-      detail,
-    })
+  // Queue up bids for next step of super step
+  function nextStep(selectedEvent: CandidateBid) {
     for (const bid of pending) {
       const { request = [], waitFor = [], bThread } = bid
       const waitList = [
@@ -100,7 +120,7 @@ export const bProgram = ({
         ...(Array.isArray(waitFor) ? waitFor : [waitFor]),
       ]
       if (
-        waitList.some(requestInParameter(lastEvent)) && bThread
+        waitList.some(requestInParameter(selectedEvent)) && bThread
       ) {
         running.add(bid)
         pending.delete(bid)
@@ -110,12 +130,12 @@ export const bProgram = ({
   }
   const trigger: Trigger = ({
     event,
-    payload,
+    detail,
   }) => {
     const bThread = function* () {
       yield {
-        request: [{ event, payload }],
-        waitFor: [{ event: '', assert: () => true }],
+        request: [{ event, detail }],
+        waitFor: [{ event: '', cb: () => true }],
       }
     }
     running.add({
@@ -126,11 +146,11 @@ export const bProgram = ({
     if (dev) {
       const msg: ListenerMessage = {
         type: streamEvents.trigger,
-        detail: {
+        data: {
           event: event,
         },
       }
-      payload && Object.assign(msg.detail, { payload })
+      detail && Object.assign(msg.data, { detail })
       stream(msg)
     }
     run()
@@ -139,16 +159,17 @@ export const bProgram = ({
   const feedback: Feedback = (
     actions,
   ) => {
-    return stream.subscribe(
-      ({ type, detail }: ListenerMessage) => {
+    stream.subscribe(
+      ({ type, data }: ListenerMessage) => {
         if (type !== streamEvents.select) return
-        const { event: key, payload } = detail
+        const { event: key, detail = {} } = data
         type &&
           Object.hasOwn(actions, key) &&
-          actions[key](payload)
+          actions[key](detail)
       },
     )
   }
+
   const add = (logicStands: Record<string, RulesFunc>): void => {
     for (const name in logicStands) {
       running.add({
@@ -158,7 +179,22 @@ export const bProgram = ({
       })
     }
   }
-  const lastPayload = <T = unknown>(): T => lastEvent.payload as T
+
+  const log = (callback: LogCallback) => {
+    stream.subscribe(
+      ({ type, data }: ListenerMessage) => {
+        if (type === streamEvents.trigger) {
+          callback({ type, data })
+        }
+        if (type === streamEvents.snapshot) {
+          callback({ type, data })
+        }
+        if (type === streamEvents.end) {
+          callback({ type, data })
+        }
+      },
+    )
+  }
   return Object.freeze({
     /** add rule function to behavioral program */
     add,
@@ -166,9 +202,7 @@ export const bProgram = ({
     feedback,
     /** trigger a run and event on behavioral program */
     trigger,
-    /** reactive stream for capturing selected events, state snapshots, and trigger events */
-    stream,
-    /** a callback function to get the value of the last selected event's payload */
-    lastPayload,
+    /** reactive stream for logging selected events, state snapshots, and trigger events */
+    log,
   })
 }

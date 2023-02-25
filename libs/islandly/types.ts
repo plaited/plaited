@@ -1,6 +1,6 @@
 import {
   Feedback,
-  Listener,
+  LogCallback,
   RulesFunc,
   Strategy,
   Trigger,
@@ -30,7 +30,7 @@ export type IslandElementOptions = {
   /** configure whether to delegate focus or not defaults to true */
   delegatesFocus?: boolean
   /** logger function to receive messages from behavioral program react streams */
-  logger?: Listener
+  logger?: LogCallback
   /** event selection strategy callback from behavioral library */
   strategy?: Strategy
   /** messenger connect callback */
@@ -58,8 +58,6 @@ export interface PlaitInterface {
     feedback: Feedback
     /** Function  to trigger an event in the behavioral program */
     trigger: Trigger
-    /**  Returns the last event for each step of the behavioral program run */
-    lastPayload: () => unknown
   }): void
 }
 

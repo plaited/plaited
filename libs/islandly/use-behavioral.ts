@@ -1,4 +1,4 @@
-import { bProgram, Listener, Strategy, Trigger } from '../behavioral/mod.ts'
+import { bProgram, LogCallback, Strategy, Trigger } from '../behavioral/mod.ts'
 
 export const useBehavioral = ({
   id,
@@ -8,7 +8,7 @@ export const useBehavioral = ({
   context,
 }: {
   /** sets a behavioral program for island to dev and captures reactive stream logs */
-  logger?: Listener
+  logger?: LogCallback
   /** Set the island's behavioral program strategy */
   strategy?: Strategy
   /** wires the messenger connect to the behavioral programs trigger */
@@ -21,11 +21,11 @@ export const useBehavioral = ({
   /** reference to the node instance of the Island HTMLElement calling this hook */
   context: HTMLElement
 }) => {
-  const { feedback, trigger, stream, add, lastPayload } = bProgram({
+  const { feedback, trigger, log, add } = bProgram({
     strategy,
     dev: Boolean(logger),
   })
-  logger && stream.subscribe(logger)
+  logger && log(logger)
   let disconnect
   if (connect) {
     const tagName = context.tagName.toLowerCase()
@@ -40,5 +40,5 @@ export const useBehavioral = ({
       event: `connected->${id ? _id ?? `${tagName} with missing id` : tagName}`,
     })
   }
-  return { trigger, disconnect, add, feedback, lastPayload }
+  return { trigger, disconnect, add, feedback }
 }

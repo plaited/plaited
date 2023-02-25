@@ -1,12 +1,5 @@
 import { assertEquals, assertSnapshot } from '../../test-deps.ts'
-import {
-  bProgram,
-  bThread,
-  chaosStrategy,
-  loop,
-  randomizedStrategy,
-  sets,
-} from '../mod.ts'
+import { bProgram, bThread, loop, sync } from '../mod.ts'
 
 const expectedFeedback = [
   'Add hot',
@@ -19,50 +12,49 @@ const expectedFeedback = [
 
 const threads = {
   addHot: bThread(
-    sets<string>({
+    sync<{ value: string }>({
       waitFor: [{
-        event: 'start',
-        assert({ payload }) {
-          return payload === 'start'
+        cb({ detail }) {
+          return detail?.value === 'start'
         },
-      }],
+      }, { event: 'say_cold' }],
     }),
-    sets({
+    sync({
       request: { event: 'hot' },
     }),
-    sets({
+    sync({
       request: { event: 'hot' },
     }),
-    sets({
+    sync({
       request: { event: 'hot' },
     }),
   ),
   addCold: bThread(
-    sets({ waitFor: { event: 'start' } }),
-    sets({
+    sync({ waitFor: { event: 'start' } }),
+    sync({
       request: [{ event: 'cold' }],
     }),
-    sets({
+    sync({
       request: [{ event: 'cold' }],
     }),
-    sets({
+    sync({
       request: [{ event: 'cold' }],
     }),
   ),
   mixHotCold: loop(
     bThread(
-      sets({
+      sync({
         waitFor: { event: 'hot' },
         block: { event: 'cold' },
       }),
-      sets({
+      sync({
         waitFor: [{ event: 'cold' }],
         block: [{ event: 'hot' }],
       }),
     ),
   ),
 }
-const actions = (arr: string[]) => ({
+const getActions = (arr: string[]) => ({
   cold() {
     arr.push('Add cold')
   },
@@ -72,64 +64,65 @@ const actions = (arr: string[]) => ({
 })
 Deno.test('bProgram: priority queue', (t) => {
   const actualFeedback: string[] = []
-  const streamLog: unknown[] = []
-  const { trigger, feedback, stream, add } = bProgram({ dev: true })
+  const logs: unknown[] = []
+  const { trigger, feedback, log, add } = bProgram({
+    dev: true,
+  })
   add(threads)
-  feedback(actions(actualFeedback))
-  stream.subscribe((msg) => {
-    streamLog.push(msg)
+  feedback(getActions(actualFeedback))
+  log((msg) => {
+    logs.push(msg)
   })
   trigger({
     event: 'start',
-    payload: 'start',
+    detail: { value: 'start' },
   })
-  console.log(actualFeedback)
   assertEquals(
     actualFeedback,
     expectedFeedback,
     `priority selection feedback`,
   )
-  assertSnapshot(t, streamLog, `priority selection feedback`)
+  assertSnapshot(t, logs, `priority selection feedback`)
 })
 Deno.test('bProgram: randomized priority queue', (t) => {
   const actualFeedback: string[] = []
-  const streamLog: unknown[] = []
-  const { trigger, feedback, stream, add } = bProgram({
-    strategy: randomizedStrategy,
+  const logs: unknown[] = []
+  const { trigger, feedback, log, add } = bProgram({
+    strategy: 'randomized',
     dev: true,
   })
   add(threads)
-  feedback(actions(actualFeedback))
-  stream.subscribe((msg) => {
-    streamLog.push(msg)
+  feedback(getActions(actualFeedback))
+  log((msg) => {
+    logs.push(msg)
   })
   trigger({
     event: 'start',
-    payload: 'start',
+    detail: { value: 'start' },
   })
   assertEquals(
     actualFeedback,
     expectedFeedback,
     `randomized priority selection feedback`,
   )
-  assertSnapshot(t, streamLog, `randomized priority selection log`)
+  assertSnapshot(t, logs, `randomized priority selection log`)
 })
 Deno.test('bProgram: chaos selection', (t) => {
   const actualFeedback: string[] = []
-  const streamLog: unknown[] = []
-  const { trigger, feedback, stream, add } = bProgram({
-    strategy: chaosStrategy,
+  const logs: unknown[] = []
+  const { trigger, feedback, log, add } = bProgram({
+    strategy: 'chaos',
     dev: true,
   })
   add(threads)
-  feedback(actions(actualFeedback))
-  stream.subscribe((msg) => {
-    streamLog.push(msg)
+  feedback(getActions(actualFeedback))
+  log((msg) => {
+    logs.push(msg)
   })
   trigger({
     event: 'start',
-    payload: 'start',
+    detail: { value: 'start' },
   })
   assertEquals(actualFeedback, expectedFeedback, `chaos selection feedback`)
-  assertSnapshot(t, streamLog, `chaos selection log`)
+  assertSnapshot(t, logs, `chaos selection log`)
 })

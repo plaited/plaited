@@ -1,5 +1,4 @@
 import { writeClient } from './write-client.ts'
-import { writeSpec } from './write-spec.ts'
 import { Write } from './types.ts'
 import { walk } from '../deps.ts'
 import { getStoriesData } from './get-stories-data.ts'
@@ -7,12 +6,9 @@ import { getStoryHandlers } from './get-story-handlers.ts'
 
 export const write: Write = async ({
   assets,
-  colorScheme,
   exts,
-  port,
-  playwright,
   project,
-  root,
+  workspace,
   dev,
   importMap,
   includes,
@@ -30,7 +26,7 @@ export const write: Write = async ({
   /** get paths and name for each island */
   const entriesPoints: string[] = []
   for await (
-    const entry of walk(root, {
+    const entry of walk(workspace, {
       exts: combinedExts,
     })
   ) {
@@ -57,19 +53,6 @@ export const write: Write = async ({
   /** get sorted and title/name collision free story data */
   const storiesData = await getStoriesData(storyModules)
 
-  // /** write playwright spec files */
-  await writeSpec({
-    playwright,
-    storiesData,
-    project,
-    port,
-    root,
-    colorScheme,
-    dev,
-    importMap,
-    entryPoints: storyModules,
-  })
-
   /** return story handlers */
   return await getStoryHandlers({
     dev,
@@ -77,5 +60,6 @@ export const write: Write = async ({
     storiesData,
     entries,
     includes,
+    project,
   })
 }

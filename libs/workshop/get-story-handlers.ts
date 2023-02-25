@@ -1,5 +1,5 @@
 import { GetStoryHandlers } from './types.ts'
-import { Handler, Routes } from '../server/mod.ts'
+import { Handler } from '../server/mod.ts'
 import { entriesTemplate, PageTemplate, TreeTemplate } from './templates/mod.ts'
 import { toId } from './to-id.ts'
 import { fixture } from './constants.ts'
@@ -15,56 +15,44 @@ export const getStoryHandlers: GetStoryHandlers = ({
   project,
 }) => {
   const fmtEntries = entries.map((entry) => relative(assets, entry))
-  const routeSets = storiesData.map(
-    ([{ title, template }, stories]) => {
-      const toRet: Record<string, Handler> = {}
-      for (const data of stories) {
-        const { args = {}, name } = data
-        const story = IslandTemplate({
-          tag: fixture,
-          template: template(args),
-          stylesheets: [...template.stylesheets],
-        })
-        const id = toId(title, name)
-        Object.assign(toRet, {
-          [`/${id}`]: () =>
-            new Response(
-              PageTemplate({
-                title: `${startCase(title)}(${lowerCase(name)})`,
-                dev,
-                head: [entriesTemplate(fmtEntries), includes?.head]
-                  .filter(Boolean).join('\n'),
-                body: [story, includes?.body]
-                  .filter(Boolean).join('\n'),
-              }),
-              {
-                headers: { 'Content-Type': 'text/html' },
-              },
-            ),
-        })
-      }
-      return toRet
-    },
-  )
-
-  const routes: Routes = {
-    ['/']: () =>
-      new Response(
-        PageTemplate({
-          title: `${project ?? 'plaited'} workshop`,
-          dev,
-          head: [entriesTemplate(fmtEntries), includes?.head]
-            .filter(Boolean).join('\n'),
-          body: [TreeTemplate({ storiesData, project }), includes?.body]
-            .filter(Boolean).join('\n'),
-        }),
-        {
-          headers: { 'Content-Type': 'text/html' },
-        },
-      ),
+  const routes: Map<string, Handler> = new Map()
+  for (const [{ title, template }, stories] of storiesData) {
+    for (const data of stories) {
+      const { args = {}, name } = data
+      const story = IslandTemplate({
+        tag: fixture,
+        template: template(args),
+      })
+      const id = toId(title, name)
+      routes.set(`/${id}`, () =>
+        new Response(
+          PageTemplate({
+            title: `${startCase(title)}(${lowerCase(name)})`,
+            dev,
+            head: [entriesTemplate(fmtEntries), includes?.head]
+              .filter(Boolean).join('\n'),
+            body: [story, includes?.body]
+              .filter(Boolean).join('\n'),
+          }),
+          {
+            headers: { 'Content-Type': 'text/html' },
+          },
+        ))
+    }
   }
-  for (const set of routeSets) {
-    Object.assign(routes, set)
-  }
+  routes.set('/', () =>
+    new Response(
+      PageTemplate({
+        title: `${project ?? 'plaited'} workshop`,
+        dev,
+        head: [entriesTemplate(fmtEntries), includes?.head]
+          .filter(Boolean).join('\n'),
+        body: [TreeTemplate({ storiesData, project }), includes?.body]
+          .filter(Boolean).join('\n'),
+      }),
+      {
+        headers: { 'Content-Type': 'text/html' },
+      },
+    ))
   return routes
 }

@@ -1,42 +1,69 @@
 import { streamEvents } from './constants.ts'
 
+type Singletons =
+  | null
+  | undefined
+  | boolean
+  | number
+  | string
+  | Date
+  | RegExp
+  | Blob
+  | ArrayBuffer
+  | ArrayBufferView
+  | ImageBitmap
+  | OffscreenCanvas
+  | ImageData
+  | Event
 // Stream Types
-type Snapshot = {
-  bThread: { name: string; priority: number }[]
-  requestedEvents: {
-    event: string | undefined
-    payload?: unknown
-  }[]
-  blockedEvents: (string | undefined)[]
+export type EventDetail = {
+  [key: string]:
+    | Singletons
+    | Map<EventDetail, EventDetail | Singletons>
+    | Set<EventDetail | Singletons>
+    | Record<string, EventDetail | Singletons>
+    | (EventDetail | Singletons)[]
 }
 
-export interface StateChart {
+export interface StateSnapshot {
   (
     props: {
-      candidates: CandidateBid[]
-      blocked: {
-        type?: string
-        assert?: Assertion
-      }[]
-      pending: PendingBid[]
+      bids: PendingBid[]
+      selectedEvent: CandidateBid
     },
-  ): Snapshot
-}
-
-type SnapshotMessage = {
-  type: typeof streamEvents.state
-  detail: Snapshot
-}
-
-type EventEventMessage = {
-  type: typeof streamEvents.select | typeof streamEvents.trigger
-  detail: {
-    event: string
-    payload?: unknown
+  ): {
+    selectedEvent: CandidateBid
+    bThreads: {
+      name: string
+      request?: RequestIdiom[]
+      waitFor?: ParameterIdiom[]
+      block?: ParameterIdiom[]
+      priority: number
+    }[]
   }
 }
 
-export type ListenerMessage = EventEventMessage | SnapshotMessage
+export type SnapshotMessage = {
+  type: typeof streamEvents.snapshot
+  data: ReturnType<StateSnapshot>
+}
+
+type EventMessage = {
+  type: typeof streamEvents.select | typeof streamEvents.trigger
+  data: {
+    event: string
+    detail?: unknown
+  }
+}
+
+type EndMessage = {
+  type: typeof streamEvents.end
+  data: {
+    strategy: string
+  }
+}
+
+export type ListenerMessage = EventMessage | SnapshotMessage | EndMessage
 
 export type Listener = (msg: ListenerMessage) => ListenerMessage | void
 
@@ -45,30 +72,30 @@ export interface Stream {
   subscribe: (listener: Listener) => Stream
 }
 
-// Trigger types
-export type TriggerArgs<T = unknown> = {
+export type Trigger = <T = unknown>(args: {
   event: string
-  payload?: T
-}
+  detail?: T
+}) => void
 
-export type Trigger = <T = unknown>(args: TriggerArgs<T>) => void
+export type TriggerArgs = Parameters<Trigger>[0]
 
 // Rule types
-type Assertion<T = unknown> = (
-  args: { event: string; payload: T extends undefined ? never : T },
+type Callback<T = unknown> = (
+  args: { event: string; detail?: T extends undefined ? never : T },
 ) => boolean
 
 export type ParameterIdiom<T = unknown> = {
   event: string
-  assert?: Assertion<T>
+  cb?: Callback<T>
 } | {
   event?: string
-  assert: Assertion<T>
+  cb: Callback<T>
 }
 
-type RequestIdiom<T = unknown> = {
+export type RequestIdiom<T = unknown> = {
   event: string
-  payload?: T
+  detail: T
+  cb?: Callback<T>
 }
 
 export type RuleSet<T = unknown> = {
@@ -77,32 +104,48 @@ export type RuleSet<T = unknown> = {
   block?: ParameterIdiom<T> | ParameterIdiom<T>[]
 }
 
-export type RuleGenerator<T = unknown> = IterableIterator<RuleSet<T>>
-export type RulesFunc<T = unknown> = () => RuleGenerator<T>
+export type RulesFunc<T = unknown> = () => IterableIterator<
+  RuleSet<T>
+>
 
 export type RunningBid = {
   name: string
   priority: number
-  bThread: RuleGenerator
+  bThread: IterableIterator<RuleSet<EventDetail>>
 }
 export type PendingBid = RuleSet & RunningBid
 
 export type CandidateBid = {
   priority: number
   event: string
-  payload?: unknown
-  assert?: Assertion
+  detail?: unknown
+  cb?: Callback
 }
 
-export type Strategy = (filteredEvents: CandidateBid[]) => CandidateBid
+export type Strategy = (
+  filteredEvents: CandidateBid[] | never[],
+) => CandidateBid | undefined
 
 // Feedback Types
-// deno-lint-ignore no-explicit-any
-type Actions<T extends Record<string, (payload: any) => void>> = {
-  [K in keyof T]: (payload: Parameters<T[K]>[0]) => void
+type Actions<T extends Record<string, (detail: EventDetail) => void>> = {
+  [K in keyof T]: T[K] extends (detail: infer D) => void
+    ? (detail: D extends EventDetail ? D : EventDetail) => void
+    : never
 }
 
 // deno-lint-ignore no-explicit-any
-export type Feedback = <T extends Record<string, (payload: any) => void>>(
+export type Feedback = <T extends Record<string, (detail: any) => void>>(
   actions: Actions<T>,
-) => Stream
+) => void
+
+export interface LogCallback {
+  (args: {
+    type: typeof streamEvents.trigger
+    data: {
+      event: string
+      detail?: unknown
+    }
+  }): void
+  (args: SnapshotMessage): void
+  (args: EndMessage): void
+}
