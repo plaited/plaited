@@ -1,30 +1,5 @@
 import { streamEvents } from './constants.ts'
 
-type Singletons =
-  | null
-  | undefined
-  | boolean
-  | number
-  | string
-  | Date
-  | RegExp
-  | Blob
-  | ArrayBuffer
-  | ArrayBufferView
-  | ImageBitmap
-  | OffscreenCanvas
-  | ImageData
-  | Event
-// Stream Types
-export type EventDetail = {
-  [key: string]:
-    | Singletons
-    | Map<EventDetail, EventDetail | Singletons>
-    | Set<EventDetail | Singletons>
-    | Record<string, EventDetail | Singletons>
-    | (EventDetail | Singletons)[]
-}
-
 export interface StateSnapshot {
   (
     props: {
@@ -52,7 +27,7 @@ type EventMessage = {
   type: typeof streamEvents.select | typeof streamEvents.trigger
   data: {
     event: string
-    detail?: unknown
+    detail?: Record<string, unknown>
   }
 }
 
@@ -72,7 +47,9 @@ export interface Stream {
   subscribe: (listener: Listener) => Stream
 }
 
-export type Trigger = <T = unknown>(args: {
+export type Trigger = <
+  T extends Record<string, unknown> = Record<string, unknown>,
+>(args: {
   event: string
   detail?: T
 }) => void
@@ -80,11 +57,13 @@ export type Trigger = <T = unknown>(args: {
 export type TriggerArgs = Parameters<Trigger>[0]
 
 // Rule types
-type Callback<T = unknown> = (
-  args: { event: string; detail?: T extends undefined ? never : T },
+type Callback<T extends Record<string, unknown> = Record<string, unknown>> = (
+  args: { event: string; detail: T },
 ) => boolean
 
-export type ParameterIdiom<T = unknown> = {
+export type ParameterIdiom<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> = {
   event: string
   cb?: Callback<T>
 } | {
@@ -92,33 +71,39 @@ export type ParameterIdiom<T = unknown> = {
   cb: Callback<T>
 }
 
-export type RequestIdiom<T = unknown> = {
+export type RequestIdiom<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> = {
   event: string
-  detail: T
+  detail?: T
   cb?: Callback<T>
 }
 
-export type RuleSet<T = unknown> = {
+export type RuleSet<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> = {
   waitFor?: ParameterIdiom<T> | ParameterIdiom<T>[]
   request?: RequestIdiom<T> | RequestIdiom<T>[]
   block?: ParameterIdiom<T> | ParameterIdiom<T>[]
 }
 
-export type RulesFunc<T = unknown> = () => IterableIterator<
+export type RulesFunc<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> = () => IterableIterator<
   RuleSet<T>
 >
 
 export type RunningBid = {
   name: string
   priority: number
-  bThread: IterableIterator<RuleSet<EventDetail>>
+  bThread: IterableIterator<RuleSet>
 }
 export type PendingBid = RuleSet & RunningBid
 
 export type CandidateBid = {
   priority: number
   event: string
-  detail?: unknown
+  detail?: Record<string, unknown>
   cb?: Callback
 }
 
@@ -127,9 +112,12 @@ export type Strategy = (
 ) => CandidateBid | undefined
 
 // Feedback Types
-type Actions<T extends Record<string, (detail: EventDetail) => void>> = {
-  [K in keyof T]: T[K] extends (detail: infer D) => void
-    ? (detail: D extends EventDetail ? D : EventDetail) => void
+type Actions<
+  T extends Record<string, (detail: Record<string, unknown>) => void>,
+> = {
+  [K in keyof T]: T[K] extends (detail: infer D) => void ? (
+      detail: D extends Record<string, unknown> ? D : Record<string, unknown>,
+    ) => void
     : never
 }
 

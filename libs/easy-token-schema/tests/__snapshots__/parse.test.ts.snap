@@ -1,6 +1,6 @@
 export const snapshot = {};
 
-snapshot[`ets(): snapshot 1`] = `
+snapshot[`parse(): snapshot 1`] = `
 {
   properties: {
     action: {

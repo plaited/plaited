@@ -10,11 +10,10 @@ Deno.test('bundler()', async (t) => {
     await Deno.mkdir(registryDir, { recursive: true })
   })
   await t.step('bundle', async () => {
-    const build = bundler({
+    const content = await bundler({
       dev: false,
       entryPoints: [`${root}/test.island.ts`],
     })
-    const content = await build()
     await Deno.mkdir(registryDir, { recursive: true })
     if (content && Array.isArray(content)) {
       for (const entry of content) {

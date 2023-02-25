@@ -16,7 +16,7 @@ import {
 } from './types.ts'
 
 const requestInParameter = (
-  { event: requestEventName, detail: requestDetail }: CandidateBid,
+  { event: requestEventName, detail: requestDetail = {} }: CandidateBid,
 ) => {
   return (
     {
@@ -130,7 +130,7 @@ export const bProgram = ({
   }
   const trigger: Trigger = ({
     event,
-    detail,
+    detail = {},
   }) => {
     const bThread = function* () {
       yield {

@@ -28,10 +28,10 @@ const squaresTaken = squares.reduce(
   (acc: Record<string, RulesFunc>, square) => {
     acc[`(${square}) taken`] = bThread(
       sync<{ square: number }>({
-        waitFor: { cb: ({ detail }) => square === detail?.square },
+        waitFor: { cb: ({ detail }) => square === detail.square },
       }),
       sync<{ square: number }>({
-        block: { cb: ({ detail }) => square === detail?.square },
+        block: { cb: ({ detail }) => square === detail.square },
       }),
     )
     return acc
@@ -45,19 +45,19 @@ const playerWins = (player: string) =>
       sync<{ square: number }>({
         waitFor: {
           cb: ({ event, detail }) =>
-            event === player && win.includes(detail?.square),
+            event === player && win.includes(detail.square),
         },
       }),
       sync<{ square: number }>({
         waitFor: {
           cb: ({ event, detail }) =>
-            event === player && win.includes(detail?.square),
+            event === player && win.includes(detail.square),
         },
       }),
       sync<{ square: number }>({
         waitFor: {
           cb: ({ event, detail }) =>
-            event === player && win.includes(detail?.square),
+            event === player && win.includes(detail.square),
         },
       }),
       sync<{ win: number[] }>({
