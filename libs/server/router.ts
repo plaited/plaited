@@ -55,7 +55,12 @@ export type MatchHandler<T = unknown> = (
  * example a route only accepting `GET` requests would look like: `GET@/`.
  */
 
-export type Routes<T = unknown> = Map<`/${string}`, MatchHandler<T>>
+export type Routes<T = unknown> = Map<string, MatchHandler<T>>
+
+type InternalRoutes<T = unknown> = {
+  pattern: URLPattern | RegExp
+  methods: Record<string, MatchHandler<T>>
+}[]
 
 /**
  * A known HTTP method.
@@ -140,11 +145,6 @@ export interface RouterOptions<T> {
 
 const knownMethodRegex = new RegExp(`(?<=^(?:${knownMethods.join('|')}))@`)
 
-type InternalRoutes<T = unknown> = Map<
-  string,
-  { pattern: URLPattern; methods: Record<string, MatchHandler<T>> }
->
-
 /**
  * Builds an {@link InternalRoutes} array from a {@link Routes} record.
  *
@@ -154,7 +154,10 @@ type InternalRoutes<T = unknown> = Map<
 export function buildInternalRoutes<T = unknown>(
   routes: Routes<T>,
 ): InternalRoutes<T> {
-  const toRet: InternalRoutes<T> = new Map()
+  const toRet: Map<
+    string,
+    { pattern: URLPattern; methods: Record<string, MatchHandler<T>> }
+  > = new Map()
   routes.forEach((handler, route) => {
     let [methodOrPath, path] = route.split(knownMethodRegex)
     let method = methodOrPath
@@ -162,14 +165,15 @@ export function buildInternalRoutes<T = unknown>(
       path = methodOrPath
       method = 'any'
     }
-    const r = toRet.get(path) ?? {
-      pattern: new URLPattern({ pathname: path }),
+    const fmtPath = path.startsWith('/') ? path : `/${path}`
+    const r = toRet.get(fmtPath) ?? {
+      pattern: new URLPattern({ pathname: fmtPath }),
       methods: {},
     }
     r.methods[method] = handler
-    toRet.set(path, r)
+    toRet.set(fmtPath, r)
   })
-  return toRet
+  return [...toRet.values()]
 }
 
 /**
@@ -193,27 +197,35 @@ export function buildInternalRoutes<T = unknown>(
  * @returns A deno std compatible request handler
  */
 export function router<T = unknown>(
-  routes: Routes<T>,
-  options: RouterOptions<T>,
+  routes: Routes<T> | InternalRoutes<T>,
+  options: RouterOptions<T> = {},
 ): Handler<T> {
   const {
     otherHandler = defaultOtherHandler,
     errorHandler = defaultErrorHandler,
     unknownMethodHandler = defaultUnknownMethodHandler,
   } = options
-  const internalRoutes = buildInternalRoutes(routes)
+  const internalRoutes = Array.isArray(routes)
+    ? routes
+    : buildInternalRoutes(routes)
 
   return async (req, ctx) => {
     try {
-      for (const { pattern, methods } of [...internalRoutes.values()]) {
+      for (const { pattern, methods } of internalRoutes) {
         const res = pattern.exec(req.url)
+        const groups = (pattern instanceof URLPattern
+          ? (res as URLPatternResult | null)?.pathname.groups
+          : (res as RegExpExecArray | null)?.groups) ?? {}
+        for (const key in groups) {
+          groups[key] = decodeURIComponent(groups[key])
+        }
         if (res !== null) {
           for (const [method, handler] of Object.entries(methods)) {
             if (req.method === method) {
               return await handler(
                 req,
                 ctx,
-                res.pathname.groups,
+                groups,
               )
             }
           }
@@ -221,7 +233,7 @@ export function router<T = unknown>(
             return await methods['any'](
               req,
               ctx,
-              res.pathname.groups,
+              groups,
             )
           } else {
             return await unknownMethodHandler(

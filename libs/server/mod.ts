@@ -6,5 +6,5 @@ export {
   type MatchHandler,
   type Routes,
   type UnknownMethodHandler,
-} from '../deps.ts'
+} from './router.ts'
 export { type Credentials, type Middleware, type Server } from './types.ts'
