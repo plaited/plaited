@@ -130,7 +130,7 @@ export const bProgram = ({
   }
   const trigger: Trigger = ({
     event,
-    detail = {},
+    detail,
   }) => {
     const bThread = function* () {
       yield {
@@ -170,12 +170,12 @@ export const bProgram = ({
     )
   }
 
-  const add = (logicStands: Record<string, RulesFunc>): void => {
-    for (const name in logicStands) {
+  const add = (bThreads: Record<string, RulesFunc>): void => {
+    for (const name in bThreads) {
       running.add({
         name,
         priority: running.size + 1,
-        bThread: logicStands[name](),
+        bThread: bThreads[name](),
       })
     }
   }
