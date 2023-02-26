@@ -1,18 +1,13 @@
 import { writeClient } from './write-client.ts'
 import { Write } from './types.ts'
-import { relative, walk } from '../deps.ts'
-import { getStoriesData } from './get-stories-data.ts'
-import { getStoryHandlers } from './get-story-handlers.ts'
-import { getWebSocket } from './get-web-socket.ts'
-import { storiesRoutePath, testsRoutePath } from './constants.ts'
+import { walk } from '../deps.ts'
+import { writeTestRunner } from './write-test-runner.ts'
 export const write: Write = async ({
   assets,
   exts,
-  project,
-  workspace,
   dev,
   importMap,
-  includes,
+  workspace,
 }) => {
   const { island, story, worker } = exts
   const workerExts = worker && Array.isArray(worker)
@@ -25,58 +20,31 @@ export const write: Write = async ({
   const combinedExts = [...islandExts, ...storyExts, ...workerExts]
 
   /** get paths and name for each island */
-  const entriesPoints: string[] = []
+  const entryPoints: string[] = []
   for await (
     const entry of walk(workspace, {
       exts: combinedExts,
     })
   ) {
     const { path } = entry
-    entriesPoints.push(path)
+    entryPoints.push(path)
   }
 
-  const clientModules = entriesPoints.filter((entry) =>
-    [...islandExts, ...workerExts].some((ext) => entry.endsWith(ext))
+  const storyModules = entryPoints.filter((entry) =>
+    storyExts.some((ext) => entry.endsWith(ext))
   )
-
   /** write client side code*/
-  const entries = await writeClient({
-    entryPoints: clientModules,
+  const clientEntries = await writeClient({
+    dev,
+    entryPoints,
     assets,
     importMap,
     workerExts,
   })
 
-  const storyModules = entriesPoints.filter((entry) =>
-    storyExts.some((ext) => entry.endsWith(ext))
-  )
-
-  /** get sorted and title/name collision free story data */
-  const storiesData = await getStoriesData(storyModules)
-
-  /** return story handlers */
-  const routes = await getStoryHandlers({
-    dev,
+  const runnerEntry = await writeTestRunner({
     assets,
-    storiesData,
-    entries,
-    includes,
-    project,
   })
-  routes.set(
-    storiesRoutePath,
-    () =>
-      new Response(
-        JSON.stringify(entries.map((path) => `/${relative(assets, path)}`)),
-        {
-          status: 200,
-          headers: {
-            'content-type': 'application/json',
-          },
-        },
-      ),
-  )
-  routes.set(testsRoutePath, getWebSocket)
 
-  return routes
+  return { clientEntries, runnerEntry, storyModules }
 }

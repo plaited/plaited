@@ -1,11 +1,13 @@
 import { Watcher } from './types.ts'
-
+import { wait } from '../utils/mod.ts'
 export const watcher: Watcher = async ({
-  ref,
-  startServer,
-  root,
+  writeFn,
+  getRoutes,
+  routes,
+  workspace,
+  ...rest
 }) => {
-  const watcher = Deno.watchFs(root, { recursive: true })
+  const watcher = Deno.watchFs(workspace, { recursive: true })
   let lastEvent = ''
   for await (const { kind } of watcher) {
     if (['any', 'access'].includes(kind)) {
@@ -13,8 +15,14 @@ export const watcher: Watcher = async ({
       continue
     }
     if (kind !== lastEvent) {
-      await ref.close()
-      await startServer()
+      const obj = await writeFn()
+      await wait(500)
+      routes.clear()
+      const newRoutes = await getRoutes({
+        ...obj,
+        ...rest,
+      })
+      newRoutes.forEach((val, key) => routes.set(key, val))
       lastEvent = kind
     }
   }

@@ -1,4 +1,5 @@
-import { hold, report } from 'npm:zora@5.2.0'
+import { hold, report } from 'https://unpkg.com/zora@5.2.0/dist/index.js'
+import { IslandTemplate } from '../islandly/mod.ts'
 import {
   IReporter,
   IReportParam,
@@ -7,7 +8,7 @@ import {
   SendObjParam,
 } from './utils.ts'
 import { Story, StoryConfig } from './types.ts'
-import { fixture, storiesRoutePath, testsRoutePath } from './constants.ts'
+import { fixture, storiesPath, testsID, testSocketPath } from './constants.ts'
 hold()
 
 const createSocketReporter = (): Promise<
@@ -16,7 +17,7 @@ const createSocketReporter = (): Promise<
   new Promise((resolve, reject) => {
     const hostRegex = /^https?:\/\/([^\/]+)\/.*$/i
     const host = document.URL.replace(hostRegex, '$1')
-    const socket = new WebSocket(`ws://${host}/${testsRoutePath}`)
+    const socket = new WebSocket(`ws://${host}/${testSocketPath}`)
     // Connection opened
     socket.addEventListener('open', function (_) {
       resolve(async (stream: IReportParam) => {
@@ -87,13 +88,15 @@ let data: string[] = []
 const hostRegex = /(^https?:\/\/[^\/]+)\/.*$/i
 const host = document.URL.replace(hostRegex, '$1')
 try {
-  const res = await fetch(`${host}/${storiesRoutePath}`)
+  const res = await fetch(`${host}/${storiesPath}`, {
+    method: 'GET',
+  })
   data = await res.json()
 } catch (err) {
   console.error(err)
 }
 
-const tests = document.querySelector('#tests')
+const tests = document.querySelector(`#${testsID}`)
 const render = (tpl: string) => {
   const li = document.createElement('li')
   tests?.append(li)
@@ -102,13 +105,16 @@ const render = (tpl: string) => {
 }
 
 try {
-  await Promise.all(data.map(async ([path]) => {
-    const { default: config, ...rest } = await import(`${host}/${path}`)
+  await Promise.all(data.map(async (path) => {
+    const { default: config, ...rest } = await import(`${host}${path}`)
     const { template } = config as StoryConfig
     for (const story in rest) {
       const { play, args = {} } = rest[story] as Story
+      const context = render(IslandTemplate({
+        tag: fixture,
+        template: template(args),
+      }))
       if (play) {
-        const context = render(template(args))
         await play(context)
       }
     }

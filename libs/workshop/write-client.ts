@@ -1,6 +1,7 @@
 import { bundler } from '../bundler/mod.ts'
 import { resolve } from '../deps.ts'
 import { getStat } from './get-stat.ts'
+import { writeDirectory } from './constants.ts'
 const __dirname = new URL('.', import.meta.url).pathname
 const ui = resolve(__dirname, './fixture.island.ts')
 
@@ -9,22 +10,24 @@ export const writeClient = async ({
   assets,
   importMap,
   workerExts,
+  dev,
 }: {
   entryPoints: string[]
   assets: string
   importMap?: URL
   workerExts: string[]
+  dev: boolean
 }) => {
   const defaultContent = await bundler({
-    dev: false,
+    dev,
     entryPoints: [ui],
   })
   const content = await bundler({
-    dev: false,
+    dev,
     entryPoints,
     importMap,
   })
-  const outdir = `${assets}/.modules`
+  const outdir = `${assets}/${writeDirectory}`
   const exist = await getStat(outdir)
   exist && await Deno.remove(outdir, { recursive: true })
   await Deno.mkdir(outdir, { recursive: true })
@@ -32,7 +35,6 @@ export const writeClient = async ({
   if (content && Array.isArray(content) && Array.isArray(defaultContent)) {
     await Promise.all(
       [...defaultContent, ...content].map(async (entry) => {
-        console.log()
         const registry = `${outdir}${entry[0]}`
         entries.push(registry)
         await Deno.writeFile(registry, entry[1])

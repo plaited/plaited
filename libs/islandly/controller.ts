@@ -92,7 +92,7 @@ export const controller = ({
                 const triggerKey = getTriggerKey(evt)
                 triggerKey && this.#trigger({
                   event: triggerKey,
-                  detail: { evt },
+                  detail: evt as unknown as Record<string, unknown>,
                 })
               })
             }

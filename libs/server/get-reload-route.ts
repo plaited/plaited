@@ -24,7 +24,7 @@ export const getReloadRoute: GetReloadRoute = (
         start(controller) {
           reloadClient.push(
             (channel: string, data: string) =>
-              controller.enqueue(getMessage(channel, data)),
+              controller?.enqueue(getMessage(channel, data)),
           )
           controller.enqueue(getMessage('connected', 'ready'))
           timerId = setInterval(() => {

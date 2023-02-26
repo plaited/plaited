@@ -1,4 +1,4 @@
-import { define, loop, messenger, sync, useStore } from '$plaited'
+import { bThread, define, loop, messenger, sync, useStore } from '$plaited'
 
 const { connect, send } = messenger()
 
@@ -26,16 +26,22 @@ define(
   ({ $, feedback, add }) => {
     const [getDisplay, setDisplay] = useStore<string[]>([])
     add({
-      onClear: loop(sync({
-        waitFor: { event: 'clear' },
-        request: { event: 'clearDisplay' },
-      })),
-      onLog: loop(
+      onClear: loop(bThread(
         sync({
-          waitFor: { event: 'logMe' },
+          waitFor: { event: 'clear' },
+        }),
+        sync({
+          request: { event: 'clearDisplay' },
+        }),
+      )),
+      onLog: loop(bThread(
+        sync({
+          waitFor: { event: 'test' },
+        }),
+        sync({
           request: { event: 'logSelf' },
         }),
-      ),
+      )),
     })
 
     const updateDisplay = (target: Element, arr: string[]) => {
@@ -45,9 +51,9 @@ define(
     }
 
     feedback({
-      addNumber(payload: string) {
+      addNumber({ value }: { value: string }) {
         if (getDisplay.length < 5) {
-          setDisplay([...getDisplay(), payload])
+          setDisplay([...getDisplay(), value])
         }
         const [display] = $('display')
         updateDisplay(display, getDisplay())
@@ -58,7 +64,7 @@ define(
         setDisplay([])
       },
       logSelf() {
-        console.log('hit')
+        console.log('self')
       },
     })
   },

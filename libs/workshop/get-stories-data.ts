@@ -8,8 +8,11 @@ export const getStoriesData = async (
   const storiesData: StoriesData = await Promise.all(
     stories.map(async (path) => {
       const data: StoryData[] = []
+      const txt = await Deno.readTextFile(path)
+      console.log(txt)
       const { default: config, ...rest } = await import(path)
       const title = config.title
+      console.log({ title, path })
       if (!/^[a-zA-Z][a-zA-Z\/0-9]*$/.test(title)) {
         console.error(
           `Invalid title "${title}", must only include alphanumeric characters delineated by a "\"`,

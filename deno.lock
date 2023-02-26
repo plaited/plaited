@@ -1381,7 +1381,8 @@
     "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/zip.js": "4c27073c4d77c0233fe9000da62de50991bc6806da0aa446818427664d2fc780",
     "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/zipObject.js": "e069bf473251b19f39587b9bdbfce017d0cd0ec2abe835fedcd1c9ab68a0ac4f",
     "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/zipObjectDeep.js": "5ace286d0c9b25960c1e1ffd11e4d1d9eb10c847c99d2ac6ac56460367262edb",
-    "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/zipWith.js": "0ff58c20b2716a05db1d0e72b94b4e3c55c6e293e6e6ed8c47abf17706fc9a5f"
+    "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/zipWith.js": "0ff58c20b2716a05db1d0e72b94b4e3c55c6e293e6e6ed8c47abf17706fc9a5f",
+    "https://unpkg.com/zora@5.2.0/dist/index.js": "6db52a1e72d2f4927e5e5bf9fcc24e5096404c73ea81f0d6e978a72f39cda4b1"
   },
   "npm": {
     "specifiers": {

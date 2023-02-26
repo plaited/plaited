@@ -27,13 +27,11 @@ export type StoriesData = [
 export type GetStoryHandlers = (args: {
   storiesData: StoriesData
   entries: string[]
-  assets: string
   dev: boolean
   includes?: {
     head?: string
     body?: string
   }
-  project?: string
 }) => Routes
 
 export type Ext = {
@@ -42,24 +40,50 @@ export type Ext = {
   story: `.${string}.ts` | `.${string}.ts`[]
 }
 
-export type Write = (args: {
+export type GetRoutes = (args: {
   assets: string
+  clientEntries: string[]
   dev: boolean
+  runnerEntry: string[]
   exts: Ext
-  importMap?: URL
   includes?: {
     head?: string
     body?: string
   }
   project?: string
-  workspace: string
+  storyModules: string[]
 }) => Promise<Routes>
+
+export type Write = (args: {
+  assets: string
+  dev: boolean
+  exts: Ext
+  importMap?: URL
+  workspace: string
+}) => Promise<{
+  clientEntries: string[]
+  runnerEntry: string[]
+  storyModules: string[]
+}>
 
 export type Watcher = (
   args: {
-    root: string
-    ref: { close: () => Promise<void> }
-    startServer: () => Promise<void>
+    assets: string
+    dev: boolean
+    exts: Ext
+    getRoutes: GetRoutes
+    includes?: {
+      head?: string
+      body?: string
+    }
+    project?: string
+    routes: Routes
+    workspace: string
+    writeFn: () => Promise<{
+      clientEntries: string[]
+      runnerEntry: string[]
+      storyModules: string[]
+    }>
   },
 ) => Promise<void>
 
