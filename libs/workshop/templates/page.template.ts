@@ -1,12 +1,5 @@
 import { html, template } from '../../islandly/mod.ts'
-
-export const livereloadTemplate = html`<script type="text/javascript">
-const source = new EventSource('/livereload');
-const reload = () => location.reload(true);
-source.onmessage = reload;
-source.onerror = () => (source.onopen = reload);
-console.log('[plaited] listening for file changes');
-</script>`
+import { livereloadTemplate } from '../../server/livereload-template.ts'
 
 export const PageTemplate = template<{
   head: string
@@ -19,6 +12,7 @@ export const PageTemplate = template<{
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:,">
   <title>${title}</title>
   ${head}
 </head>

@@ -10,7 +10,7 @@ export type StoryConfig<T extends TemplateProps = TemplateProps> = {
 export type Story<T extends TemplateProps = TemplateProps> = {
   args?: T & TemplateProps
   description: string
-  test?: (context: HTMLElement) => Promise<void>
+  play?: (context: ShadowRoot) => Promise<void> | void
 }
 
 export type StoryData = Story & {

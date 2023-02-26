@@ -1,9 +1,10 @@
 import { writeClient } from './write-client.ts'
 import { Write } from './types.ts'
-import { walk } from '../deps.ts'
+import { relative, walk } from '../deps.ts'
 import { getStoriesData } from './get-stories-data.ts'
 import { getStoryHandlers } from './get-story-handlers.ts'
-
+import { getWebSocket } from './get-web-socket.ts'
+import { storiesRoutePath, testsRoutePath } from './constants.ts'
 export const write: Write = async ({
   assets,
   exts,
@@ -54,7 +55,7 @@ export const write: Write = async ({
   const storiesData = await getStoriesData(storyModules)
 
   /** return story handlers */
-  return await getStoryHandlers({
+  const routes = await getStoryHandlers({
     dev,
     assets,
     storiesData,
@@ -62,4 +63,20 @@ export const write: Write = async ({
     includes,
     project,
   })
+  routes.set(
+    storiesRoutePath,
+    () =>
+      new Response(
+        JSON.stringify(entries.map((path) => `/${relative(assets, path)}`)),
+        {
+          status: 200,
+          headers: {
+            'content-type': 'application/json',
+          },
+        },
+      ),
+  )
+  routes.set(testsRoutePath, getWebSocket)
+
+  return routes
 }

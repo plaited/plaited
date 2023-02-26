@@ -740,6 +740,8 @@
     "https://esm.sh/v107/lodash-es@4.17.21/deno/lodash-es.js": "432f3b1803e38a402e26b28e110a9f6397862cb1c4c6cbf9ea3cc66aeaae6120",
     "https://esm.sh/v107/parsel-js@1.0.3/deno/parsel-js.js": "666b35c9a2357ddd6a2d5e31e7b98fbaceba5c20b984308bcb1859ea0e509a37",
     "https://esm.sh/v107/sinon@15.0.1/deno/sinon.js": "fa09288671b1956441d3503bb341d12e74332a5add3232b6cb4ab9ab8ada955c",
+    "https://esm.sh/v109/zora@5.2.0/deno/zora.js": "d70d57e5063aa3109e609adf166bb50d542b4ca99bf49320377ba395508eb6c7",
+    "https://esm.sh/zora@5.2.0": "ffbde406291ba18892b00df5e42f41a19217068785a4471d9a6f1cfb0085a82b",
     "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/_DataView.js": "0c4811491cd0c415553118f42f9b31112ed58bdb3941358a99deec9347e7a829",
     "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/_Hash.js": "7221393e8931adc88430d3badefee1568ffccf91a6efcd9dda2be498f4a09551",
     "https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/_LazyWrapper.js": "77e63978b95b1b1dd6d0d8c58eadeab22a58e00e50491b9dccdc285f7a7ab2d0",
@@ -1387,7 +1389,9 @@
       "beautify@0.0.8": "beautify@0.0.8",
       "parsel-js@1.0.3": "parsel-js@1.0.3",
       "playwright@1.31.0": "playwright@1.31.0",
-      "sinon@15.0.1": "sinon@15.0.1"
+      "sinon@15.0.1": "sinon@15.0.1",
+      "zora-reporters@1.4.0": "zora-reporters@1.4.0",
+      "zora@5.2.0": "zora@5.2.0"
     },
     "packages": {
       "@playwright/test@1.31.0": {
@@ -1430,6 +1434,10 @@
         "integrity": "sha512-nne9/IiQ/hzIhY6pdDnbBtz7DjPTKrY00P/zvPSm5pOFkl6xuGrGnXn/VtTNNfNtAfZ9/1RtehkszU9qcTii0Q==",
         "dependencies": {}
       },
+      "arg@5.0.2": {
+        "integrity": "sha512-PYjyFOLKQ9y57JvQ6QLo8dAgNqswh8M1RMJYdQduT6xbWSgK36P/Z/v+p888pM69jMMfS8Xd8F6I1kQ/I9HUGg==",
+        "dependencies": {}
+      },
       "balanced-match@1.0.2": {
         "integrity": "sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==",
         "dependencies": {}
@@ -1450,6 +1458,10 @@
       },
       "buffer-from@1.1.2": {
         "integrity": "sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ==",
+        "dependencies": {}
+      },
+      "colorette@2.0.17": {
+        "integrity": "sha512-hJo+3Bkn0NCHybn9Tu35fIeoOKGOk5OCC32y4Hz2It+qlCO2Q3DeQ1hRn/tDDMQKRYUEzqsl7jbF6dYKjlE60g==",
         "dependencies": {}
       },
       "commander@2.20.3": {
@@ -1693,6 +1705,18 @@
       },
       "yallist@2.1.2": {
         "integrity": "sha512-ncTzHV7NvsQZkYe1DW7cbDLm0YpzHmZF5r/iyP3ZnQtMiJ+pjzisCiMNI+Sj+xQF5pXhSHxSB3uDbsBTzY/c2A==",
+        "dependencies": {}
+      },
+      "zora-reporters@1.4.0": {
+        "integrity": "sha512-RZy2zb/aT8YKUztELGjFWMb39LduCEB4SHoAH4w2HBWKE53V0lU385AAK2q097P7D5cdMLGJIYXpykxUdoyyig==",
+        "dependencies": {
+          "arg": "arg@5.0.2",
+          "colorette": "colorette@2.0.17",
+          "diff": "diff@5.1.0"
+        }
+      },
+      "zora@5.2.0": {
+        "integrity": "sha512-FSZOvfJVfMWhk/poictNsDBCXq/Z+2Zu2peWs6d8OhWWb9nY++czw95D47hdw06L/kfjasLevwrbUtnXyWLAJw==",
         "dependencies": {}
       }
     }
