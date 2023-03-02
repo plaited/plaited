@@ -39,7 +39,7 @@ export const server: Server = ({
   const controller = new AbortController()
   const { signal } = controller
   const protocol: 'http' | 'https' = `${credentials ? 'https' : 'http'}`
-  const reloadClients: Array<(channel: string, data: string) => void> = []
+  const reloadClients = new Set<WebSocket>()
 
   const createServer = credentials ? serveTls : serve
 

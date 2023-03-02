@@ -82,8 +82,6 @@ export type Middleware = (
   handler: Handler,
 ) => (req: Request, ctx: HandlerContext) => Promise<Response>
 
-export type ReloadClient = (channel: string, data: string) => void
-
 export type CreateServer = (args: {
   credentials?: Credentials
   routeHandler: Handler
@@ -100,7 +98,7 @@ export type CreateServer = (args: {
 export type GetRouteHandler = (args: {
   routes: Routes
   reload: boolean
-  reloadClients: ReloadClient[]
+  reloadClients: Set<WebSocket>
   otherHandler?: Handler
   errorHandler?: ErrorHandler
   unknownMethodHandler?: UnknownMethodHandler
@@ -109,5 +107,5 @@ export type GetRouteHandler = (args: {
 export type RouteEntry = [`/${string}`, Handler]
 
 export type GetReloadRoute = (
-  reloadClient: Array<ReloadClient>,
+  reloadClient: Set<WebSocket>,
 ) => RouteEntry

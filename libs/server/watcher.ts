@@ -1,20 +1,18 @@
+import { wait } from '../utils/mod.ts'
+
 export const watcher = async (
-  reloadClients: Array<(channel: string, data: string) => void>,
+  reloadClients: Set<WebSocket>,
   root: string,
 ) => {
   const watcher = Deno.watchFs(root, { recursive: true })
-  let lastEvent = ''
   for await (const { kind } of watcher) {
-    if (['any', 'access'].includes(kind)) {
-      lastEvent = kind
-      continue
+    if (
+      kind === 'modify' &&
+      reloadClients.size
+    ) {
+      console.log('send reload')
+      reloadClients.forEach((socket) => socket.send(new Date().toString()))
     }
-    if (kind !== lastEvent) {
-      while (reloadClients.length > 0) {
-        const cb = reloadClients.pop()
-        cb && cb('message', 'reload')
-      }
-      lastEvent = kind
-    }
+    await wait(100)
   }
 }

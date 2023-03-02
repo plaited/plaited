@@ -1,43 +1,27 @@
 import { GetReloadRoute } from './types.ts'
 
-const getMessage = (channel: string, data: string) => {
-  const encoder = new TextEncoder()
-  return encoder.encode(`event: ${channel}\nid: 0\ndata: ${data}\n\n\n`)
-}
-
 export const getReloadRoute: GetReloadRoute = (
   reloadClient,
 ) => {
   return [
     '/livereload',
-    () => {
-      let timerId: number | undefined
-      const init = {
-        status: 200,
-        headers: {
-          connection: 'keep-alive',
-          'content-type': 'text/event-stream',
-          'cache-control': 'no-cache',
-        },
+    (req: Request) => {
+      const upgrade = req.headers.get('upgrade') || ''
+      if (upgrade.toLowerCase() != 'websocket') {
+        return new Response('request isn\'t trying to upgrade to websocket.')
       }
-      const body = new ReadableStream({
-        start(controller) {
-          reloadClient.push(
-            (channel: string, data: string) =>
-              controller?.enqueue(getMessage(channel, data)),
-          )
-          controller.enqueue(getMessage('connected', 'ready'))
-          timerId = setInterval(() => {
-            controller.enqueue(getMessage('ping', 'waiting'))
-          }, 60000)
-        },
-        cancel() {
-          if (typeof timerId === 'number') {
-            clearInterval(timerId)
-          }
-        },
-      })
-      return new Response(body, init)
+      const { socket, response } = Deno.upgradeWebSocket(req)
+      socket.onopen = () => {
+        console.log('client connected')
+        reloadClient.add(socket)
+      }
+      //@ts-ignore: message exists
+      socket.onerror = (e) => console.log('socket errored:', e.message)
+      socket.onclose = () => {
+        console.log('client disconnected')
+        reloadClient.delete(socket)
+      }
+      return response
     },
   ]
 }

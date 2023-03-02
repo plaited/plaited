@@ -2,7 +2,7 @@ import { Story, StoryConfig } from '$plaited'
 import { CalculatorTemplate } from './calculator.template.ts'
 
 export default {
-  title: 'examples/chhh',
+  title: 'examples',
   template: CalculatorTemplate,
   description:
     'Example of using Island Template template and workers to exercise the islandly library',
