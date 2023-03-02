@@ -10,7 +10,7 @@ export const watcher = async (
       kind === 'modify' &&
       reloadClients.size
     ) {
-      console.log('send reload')
+      console.log('reloading client')
       reloadClients.forEach((socket) => socket.send(new Date().toString()))
     }
     await wait(100)
