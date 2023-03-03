@@ -9,3 +9,4 @@ export {
 } from './router.ts'
 export { type Credentials, type Middleware, type Server } from './types.ts'
 export { livereloadTemplate } from './livereload-template.ts'
+export { getFileHandler } from './get-file-handler.ts'

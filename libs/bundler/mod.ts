@@ -2,6 +2,7 @@ import { build, BuildOptions, denoPlugin, stop, toFileUrl } from '../deps.ts'
 /**
  * return `null` or and {@link OutputFile} or an array of {@link OutputFile}s
  */
+
 export const bundler = async ({
   dev,
   entryPoints,
@@ -13,11 +14,14 @@ export const bundler = async ({
   entryPoints: string[]
   /** Specify the URL to an import map to use when resolving import specifiers. The URL must be fetchable with `fetch` */
   importMap?: URL
-}) => {
+}): Promise<[
+  [string, Uint8Array][],
+  ((path: string) => Promise<Uint8Array | null>),
+]> => {
   const minifyOptions: Partial<BuildOptions> = dev
     ? { minifyIdentifiers: false, minifySyntax: true, minifyWhitespace: true }
     : { minify: true }
-  const toRet = new Map<string, Uint8Array>()
+  const cache = new Map<string, Uint8Array>()
   const bundle = async () => {
     const absWorkingDir = Deno.cwd()
     const { outputFiles } = await build({
@@ -37,6 +41,8 @@ export const bundler = async ({
       splitting: true,
       target: [
         'chrome109',
+        'firefox109',
+        'safari16',
       ],
       treeShaking: true,
       write: false,
@@ -44,7 +50,7 @@ export const bundler = async ({
     const absDirUrlLength = toFileUrl(absWorkingDir).href.length
     if (outputFiles) {
       for (const file of outputFiles) {
-        toRet.set(
+        cache.set(
           toFileUrl(file.path).href.substring(absDirUrlLength),
           file.contents,
         )
@@ -53,5 +59,11 @@ export const bundler = async ({
     stop()
   }
   await bundle()
-  return [...toRet]
+  const getPath = async (path: string) => {
+    if (path && !cache.has(path)) {
+      await bundle()
+    }
+    return cache.get(path) ?? null
+  }
+  return [[...cache], getPath]
 }

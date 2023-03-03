@@ -13,11 +13,14 @@ const expectedFeedback = [
 const threads = {
   addHot: bThread(
     sync<{ value: string }>({
-      waitFor: [{
-        cb({ detail }) {
-          return detail?.value === 'start'
+      waitFor: [
+        {
+          cb({ detail }) {
+            return detail?.value === 'start'
+          },
         },
-      }, { event: 'say_cold' }],
+        { event: 'say_cold' },
+      ],
     }),
     sync({
       request: { event: 'hot' },

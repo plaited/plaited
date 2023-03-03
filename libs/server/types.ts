@@ -17,8 +17,8 @@ export type Credentials = {
 }
 
 export type Server = (args: {
-  /** path to serve static files  */
-  root: string
+  /** path to watch for reloading client automatically  */
+  root?: string
   /**
    * A record of route paths and {@link MatchHandler}s which are called when a match is
    * found along with it's values.
@@ -66,12 +66,12 @@ export type Server = (args: {
   port?: number
   /** protocol server is running under */
   protocol: 'http' | 'https'
-  /** path to serve static files  */
-  root: string
   /** url to open in browser */
   url: string
   /** callback function to  close server*/
   close: () => Promise<void>
+  /** reloads connected client when called */
+  reloadClient: () => void
 }
 
 /**
@@ -82,22 +82,9 @@ export type Middleware = (
   handler: Handler,
 ) => (req: Request, ctx: HandlerContext) => Promise<Response>
 
-export type CreateServer = (args: {
-  credentials?: Credentials
-  routeHandler: Handler
-  port: number
-  signal?: AbortSignal
-  root: string
-  middleware?: Middleware
-  onListen?: (params: {
-    hostname: string
-    port: number
-  }) => void
-}) => Promise<void>
-
 export type GetRouteHandler = (args: {
   routes: Routes
-  reload: boolean
+  reload?: boolean
   reloadClients: Set<WebSocket>
   otherHandler?: Handler
   errorHandler?: ErrorHandler

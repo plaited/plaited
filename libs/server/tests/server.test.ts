@@ -10,6 +10,7 @@ import {
   root,
 } from './utils.ts'
 import { wait } from '../../utils/wait.ts'
+import { getFileHandler } from '../get-file-handler.ts'
 Deno.test('server: adding routes', async () => {
   const routes = new Map()
   routes.set('/', homeHandler)
@@ -17,7 +18,13 @@ Deno.test('server: adding routes', async () => {
     root,
     routes,
     port: 9000,
-    reload: false,
+    middleware: (handler) => async (req, ctx) => {
+      const res = await getFileHandler({ assets: root, req })
+      if (res) {
+        return res
+      }
+      return await handler(req, ctx)
+    },
   })
   const homeRes = await fetch('http://localhost:9000/')
   const homeData = await homeRes.text()
@@ -44,35 +51,17 @@ Deno.test('server: reload', async () => {
     ],
   })
   await wait(500)
-  const sse = await fetch('http://localhost:9000/livereload')
-
-  const stylesRes = await fetch('http://localhost:9000/styles.css')
-  assertEquals(stylesRes.headers.get('content-type'), 'text/css')
-  stylesRes.body?.cancel()
-
-  const failRes = await fetch('http://localhost:9000/new-styles.css')
-  assertEquals(failRes.status, 404)
-  failRes.body?.cancel()
-
+  const socket = new WebSocket('ws://localhost:9000/livereload')
+  const messages: string[] = []
+  const reload = (evt: MessageEvent) => {
+    messages.push(evt.data)
+  }
+  socket.addEventListener('message', reload)
   await Deno.writeTextFile(`${root}/new-styles.css`, newStyles)
   await wait(500)
-  const successRes = await fetch('http://localhost:9000/new-styles.css')
-  assertEquals(successRes.status, 200)
-  successRes.body?.cancel()
+  socket.close()
   await Deno.remove(`${root}/new-styles.css`)
-  const messages = []
-  if (sse.ok && sse.body) {
-    const reader = sse.body.getReader()
-    let count = 0
-    while (count < 2) {
-      const { value } = await reader.read()
-      count += 1
-      const val = new TextDecoder().decode(value)
-      messages.push(val)
-    }
-    reader.cancel()
-  }
-  assert(messages[0].includes('ready'))
-  assert(messages[1].includes('reload'))
+  console.log(messages)
+  assert(messages.length)
   process.close()
 })

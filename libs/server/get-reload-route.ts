@@ -15,8 +15,7 @@ export const getReloadRoute: GetReloadRoute = (
         console.log('client connected')
         reloadClient.add(socket)
       }
-      //@ts-ignore: message exists
-      socket.onerror = (e) => console.log('socket errored:', e.message)
+      socket.onerror = (e) => console.log('socket errored:', e)
       socket.onclose = () => {
         console.log('client disconnected')
         reloadClient.delete(socket)
