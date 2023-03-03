@@ -10,3 +10,4 @@ export {
 export { type Credentials, type Middleware, type Server } from './types.ts'
 export { livereloadTemplate } from './livereload-template.ts'
 export { getFileHandler } from './get-file-handler.ts'
+export { mimeTypes } from './mime-types.ts'

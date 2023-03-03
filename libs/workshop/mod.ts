@@ -1,2 +1,2 @@
-export { getStoriesData } from './get-stories-data.ts'
-export { type Story, type StoryConfig, type WorkshopConfig } from './types.ts'
+export { startWorkshop } from './start-workshop.ts'
+export { type Story, type StorySet, type WorkshopConfig } from './types.ts'

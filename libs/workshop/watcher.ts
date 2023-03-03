@@ -1,21 +1,22 @@
-import { Watcher } from './types.ts'
-export const watcher: Watcher = async ({
-  writeFn,
-  getRoutes,
+import { Routes } from '../server/mod.ts'
+
+export const watcher = async ({
+  reloadClient,
   routes,
+  updateRoutes,
   workspace,
-  ...rest
+}: {
+  reloadClient: () => void
+  routes: Routes
+  updateRoutes: () => Promise<void>
+  workspace: string
 }) => {
   const watcher = Deno.watchFs(workspace, { recursive: true })
   for await (const { kind } of watcher) {
     if (kind === 'modify') {
-      const obj = await writeFn()
       routes.clear()
-      const newRoutes = await getRoutes({
-        ...obj,
-        ...rest,
-      })
-      newRoutes.forEach((val, key) => routes.set(key, val))
+      await updateRoutes()
+      reloadClient()
     }
   }
 }

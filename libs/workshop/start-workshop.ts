@@ -1,7 +1,6 @@
-import { server } from '../server/mod.ts'
-import { Ext, WorkshopConfig } from './types.ts'
-import { write } from './write.ts'
-import { getRoutes } from './get-routes.ts'
+import { getFileHandler, Routes, server } from '../server/mod.ts'
+import { WorkshopConfig } from './types.ts'
+import { setRoutes } from './set-routes.ts'
 import { watcher } from './watcher.ts'
 import { toFileUrl } from '../deps.ts'
 import { getStat } from './get-stat.ts'
@@ -10,8 +9,6 @@ interface StartWorkshop {
   (
     args: WorkshopConfig & {
       assets: string
-      exts: Ext
-      playwright: string
       workspace: string
     },
   ): Promise<void>
@@ -21,53 +18,45 @@ export const startWorkshop: StartWorkshop = async ({
   assets,
   credentials,
   dev = true,
-  exts,
   importMap,
   port = 3000,
-  project,
   workspace,
-  includes,
 }) => {
   await Promise.all([assets, workspace].map(async (path) => {
     const exist = await getStat(path)
     if (exist) return
     Deno.mkdir(path, { recursive: true })
   }))
-  const writeFn = () =>
-    write({
-      assets,
-      dev,
-      exts,
-      importMap: importMap ? toFileUrl(importMap) : undefined,
-      workspace,
-    })
-  const obj = await writeFn()
-  const routes = await getRoutes({
-    ...obj,
-    assets,
-    dev,
-    exts,
-    includes,
-    project,
-  })
-  const { close } = await server({
+  const routes: Routes = new Map()
+  const { close, reloadClient, url } = await server({
     reload: dev,
     routes,
     port,
     root: assets,
     credentials,
+    middleware: (handler) => async (req, ctx) => {
+      const res = await getFileHandler({ assets, req })
+      if (res) {
+        return res
+      }
+      return await handler(req, ctx)
+    },
   })
+  const updateRoutes = () =>
+    setRoutes({
+      dev,
+      host: url,
+      routes,
+      importMap: importMap ? toFileUrl(importMap) : undefined,
+      workspace,
+    })
+
   if (dev) {
     watcher({
-      assets,
-      dev,
-      exts,
-      getRoutes,
-      includes,
-      project,
+      reloadClient,
       routes,
+      updateRoutes,
       workspace,
-      writeFn,
     })
   }
   Deno.addSignalListener('SIGINT', async () => {

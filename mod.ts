@@ -5,8 +5,3 @@ export {
   type DesignTokenGroup,
   type TokenConfig,
 } from './libs/token-types.ts'
-export {
-  type Story,
-  type StoryConfig,
-  type WorkshopConfig,
-} from './libs/workshop/types.ts'

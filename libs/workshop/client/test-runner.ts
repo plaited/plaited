@@ -1,14 +1,15 @@
-import { hold, report } from 'https://unpkg.com/zora@5.2.0/dist/index.js'
-import { IslandTemplate } from '../islandly/mod.ts'
+import { hold, report, test } from 'https://deno.land/x/zora@5.2.0/mod.js'
+import { IslandTemplate } from '../../islandly/mod.ts'
 import {
   IReporter,
   IReportParam,
   MessageType,
-  passThroughReporter,
   SendObjParam,
-} from './utils.ts'
-import { Story, StoryConfig } from './types.ts'
-import { fixture, storiesPath, testsID, testSocketPath } from './constants.ts'
+  Story,
+  StorySet,
+} from '../types.ts'
+import { passThroughReporter } from './test-utils.ts'
+import { fixture, storiesPath, testsID, testSocketPath } from '../constants.ts'
 hold()
 
 const createSocketReporter = (): Promise<
@@ -107,7 +108,7 @@ const render = (tpl: string) => {
 try {
   await Promise.all(data.map(async (path) => {
     const { default: config, ...rest } = await import(`${host}${path}`)
-    const { template } = config as StoryConfig
+    const { template, title } = config as StorySet
     for (const story in rest) {
       const { play, args = {} } = rest[story] as Story
       const context = render(IslandTemplate({
@@ -115,7 +116,9 @@ try {
         template: template(args),
       }))
       if (play) {
-        await play(context)
+        test(`${title}:${story}`, async (t) => {
+          await play(context, t)
+        })
       }
     }
   }))

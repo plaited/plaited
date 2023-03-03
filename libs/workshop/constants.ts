@@ -1,8 +1,10 @@
-export const playwrightVersion = '1.30.0'
-export const yarnVersion = '3.3.1'
 export const fixture = 'plaited-workshop-fixture'
 export const storiesPath = '_stories'
 export const testSocketPath = '_tests-socket'
-export const testPath = '_tests'
 export const testsID = 'tests'
-export const writeDirectory = '.modules'
+export const exts = {
+  island: '.island.ts',
+  spec: '.spec.ts',
+  stories: '.stories.ts',
+  worker: '.worker.ts',
+} as const

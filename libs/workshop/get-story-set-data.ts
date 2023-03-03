@@ -1,20 +1,22 @@
-import { StoriesData, Story, StoryData } from './types.ts'
+import { Story, StoryData, StorySetData } from './types.ts'
 import { TemplateProps } from '../islandly/mod.ts'
 import { relative } from '../deps.ts'
 
-let i = 0
-export const getStoriesData = async (
+export const getStorySetData = async (
   stories: string[],
-): Promise<StoriesData> => {
-  const ver = i++
-  const storiesData: StoriesData = await Promise.all(
+  host: string,
+): Promise<StorySetData> => {
+  let ver = 0
+  const storiesData: StorySetData = await Promise.all(
     stories.map(async (path) => {
       const data: StoryData[] = []
-      const { default: config, ...rest } = await import(`${path}#${ver}`)
+      const { default: config, ...rest } = await import(
+        `${host}/${path}#${ver++}`
+      )
       const title = config.title
       if (!/^[a-zA-Z][a-zA-Z\/0-9]*$/.test(title)) {
         console.error(
-          `Invalid title "${title}", must only include alphanumeric characters delineated by a "\"`,
+          `Invalid title "${title}", must only include alphanumeric characters delineated by a "/\"`,
         )
       }
       for (const name in rest) {
