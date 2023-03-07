@@ -26,14 +26,11 @@ socket.addEventListener('open', async (_) => {
     try {
       await callback(assert)
       const msg = `✔ ${name}`
-      console.log(msg)
       sendMsg(msg)
       passed++
     } catch (error) {
       const msg = `✘ ${name} \n ${error.stack}`
-      console.log(msg)
       sendMsg(msg)
-      sendMsg(error)
       failed++
     }
   }
