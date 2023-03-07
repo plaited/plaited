@@ -1,12 +1,7 @@
-import { html, IslandTemplate, template } from '$plaited'
+import { html, IslandTemplate } from '$plaited'
+import { classes } from './key-pad.styles.ts'
 
-const valueDisplay = IslandTemplate({
-  tag: 'value-display',
-  template:
-    html`<h1 data-target="display" class="display" data-trigger="click->test">00:00</h1>`,
-})
-
-const keyPad = IslandTemplate({
+export const KeyPadTemplate = IslandTemplate({
   tag: 'key-pad',
   template: html`<div class="keypad">
     <div>
@@ -21,8 +16,6 @@ const keyPad = IslandTemplate({
       <button class="number-button" data-trigger="click->number" value="9">9</button>
       <button class="number-button" data-trigger="click->number" value="0">0</button>
     </div>
-    <button class="clear-button" data-trigger="click->clear">Clear</button>
+    <button class="${classes.button}" data-trigger="click->clear">Clear</button>
   </div>`,
 })
-
-export const CalculatorTemplate = template(() => html`${valueDisplay}${keyPad}`)

@@ -2,7 +2,20 @@ import { dirname, resolve } from './libs/deps.ts'
 import { tokenTransformer } from './libs/token-transformer/mod.ts'
 import { easyTokenSchema } from './libs/easy-token-schema/mod.ts'
 import { DesignTokenGroup, TokenConfig } from './libs/token-types.ts'
-import { getStat } from './libs/get-stat.ts'
+
+const getStat = async (
+  filePath: string,
+): Promise<false | Deno.FileInfo> => {
+  try {
+    const entry = await Deno.stat(filePath)
+    return entry
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) {
+      return false
+    }
+    throw error
+  }
+}
 
 const getConfig = async () => {
   const configPath = resolve(Deno.cwd(), Deno.args[1])

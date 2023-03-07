@@ -1,25 +1,5 @@
-import { bThread, define, loop, messenger, sync, useStore } from '$plaited'
-
-const { connect, send } = messenger()
-
-// @ts-ignore: test
-window.streamLog = []
-define({ tag: 'key-pad' }, ({ feedback }) => {
-  feedback({
-    number(evt: MouseEvent) {
-      const value = (evt.currentTarget as HTMLButtonElement)?.value
-      send('value-display', {
-        event: `addNumber`,
-        detail: { value },
-      })
-    },
-    clear() {
-      send('value-display', {
-        event: 'clear',
-      })
-    },
-  })
-})
+import { bThread, define, loop, sync, useStore } from '$plaited'
+import { connect } from '../comms.ts'
 
 define(
   { tag: 'value-display', connect },

@@ -34,12 +34,3 @@ export { denoPlugin } from 'https://deno.land/x/esbuild_deno_loader@0.6.0/mod.ts
 
 // -- brotli --
 export { compress } from 'https://deno.land/x/brotli@0.1.7/mod.ts'
-
-// -- zora --
-export {
-  type IAssert,
-  type IReportOptions,
-  type ITestFunction,
-} from 'https://deno.land/x/zora@5.2.0/mod.js'
-
-export { createDiffReporter } from 'npm:zora-reporters@1.4.0'

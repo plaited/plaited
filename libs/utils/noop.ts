@@ -1,1 +1,1 @@
-export const noop = <T = never>(_?: T) => {}
+export const noop = <T = never>(..._: T[]) => {}
