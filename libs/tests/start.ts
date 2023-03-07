@@ -5,9 +5,9 @@ import { html } from '$plaited'
 import { ValueDisplayTemplate } from './client/value-display/value-display.template.ts'
 import { KeyPadTemplate } from './client/key-pad/key-pad.template.ts'
 
-import { resolve, toFileUrl } from '../libs/deps.ts'
+import { resolve, toFileUrl } from '../deps.ts'
 
-const client = resolve(Deno.cwd(), 'tests/client')
+const client = resolve(Deno.cwd(), 'libs/islandly/tests/mocks/client')
 const importMap = toFileUrl(resolve(Deno.cwd(), '.vscode/import-map.json'))
 
 const entryPoints = [
