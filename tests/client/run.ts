@@ -30,8 +30,7 @@ socket.addEventListener('open', async (_) => {
       sendMsg(msg)
       passed++
     } catch (error) {
-      console.log({ error })
-      const msg = `✘ ${name}`
+      const msg = `✘ ${name} \n ${error.stack}`
       console.log(msg)
       sendMsg(msg)
       sendMsg(error)

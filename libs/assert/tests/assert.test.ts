@@ -1,4 +1,4 @@
-import { assert, match, throws, wait } from '../mod.ts'
+import { assert, AssertionError } from '../mod.ts'
 import { assertIsError } from '../../test-deps.ts'
 const sum = (...args: number[]) => {
   if (args.some((v) => Number.isNaN(v))) throw new TypeError('NaN')
@@ -38,7 +38,7 @@ Deno.test('assert: sum()', () => {
   assert({
     given: 'NaN',
     should: 'throw',
-    actual: throws(sum, 1, NaN),
+    actual: assert.throws(sum, 1, NaN),
     expected: new TypeError('NaN').toString(),
   })
 })
@@ -58,7 +58,7 @@ Deno.test('assert: handles async', async () => {
     const erred = (_: string) => {
       throw error
     }
-    const actual = await throws(erred, 'irrelevant')
+    const actual = await assert.throws(erred, 'irrelevant')
     assert({
       given: 'an async function that throws',
       should: 'await and return the value of the error',
@@ -69,7 +69,7 @@ Deno.test('assert: handles async', async () => {
 })
 
 Deno.test('wait()', async () => {
-  await wait(20)
+  await assert.wait(20)
   assert({
     given: 'a wait call',
     should: 'should pause for 20ms',
@@ -84,7 +84,7 @@ Deno.test('match()', () => {
 
   const textToSearch = '<h1>Dialog Title</h1>'
   const pattern = 'Dialog Title'
-  const contains = match(textToSearch)
+  const contains = assert.match(textToSearch)
 
   assert({
     given,
@@ -99,25 +99,117 @@ Deno.test('assert: required params', async () => {
     //@ts-ignore: testing error message
     await assert({})
   } catch (err) {
-    assertIsError(err, undefined, 'given, should, actual, expected')
+    assertIsError(err, AssertionError, 'given, should, actual, expected')
   }
   try {
     //@ts-ignore: testing error message
     await assert({ given: 'some keys', should: 'find the missing keys' })
   } catch (err) {
-    assertIsError(err, undefined, 'actual, expected')
+    assertIsError(err, AssertionError, 'actual, expected')
   }
 })
 
-// Deno.test('assert: throws line and file', async () => {
-//   try {
-//     await assert({
-//       given: 'zero',
-//       should: 'return the correct sum',
-//       actual: sum(2, 0),
-//       expected: 3,
-//     })
-//   } catch (err) {
-//     assertIsError(err, undefined, 'actual, expected')
-//   }
-// })
+Deno.test('assert: throws on failure', async () => {
+  try {
+    await assert({
+      given: 'number',
+      should: 'equal number',
+      actual: 0,
+      expected: 1,
+    })
+  } catch (err) {
+    assertIsError(
+      err,
+      AssertionError,
+      'Given number: should equal number',
+    )
+  }
+  try {
+    await assert({
+      given: 'regex',
+      should: 'equal regex',
+      actual: /test/i,
+      expected: /test/,
+    })
+  } catch (err) {
+    assertIsError(
+      err,
+      AssertionError,
+      'Given regex: should equal regex',
+    )
+  }
+  try {
+    await assert({
+      given: 'false',
+      should: 'equal false',
+      actual: null,
+      expected: false,
+    })
+  } catch (err) {
+    assertIsError(
+      err,
+      AssertionError,
+      'Given false: should equal false',
+    )
+  }
+  try {
+    await assert({
+      given: 'array',
+      should: 'equal array',
+      actual: ['nope'],
+      expected: ['array'],
+    })
+  } catch (err) {
+    assertIsError(
+      err,
+      AssertionError,
+      'Given array: should equal array',
+    )
+  }
+  try {
+    await assert({
+      given: 'set',
+      should: 'equal set',
+      actual: new Set(['nope']),
+      expected: new Set(['set']),
+    })
+  } catch (err) {
+    assertIsError(
+      err,
+      AssertionError,
+      'Given set: should equal set',
+    )
+  }
+  try {
+    await assert({
+      given: 'map',
+      should: 'equal map',
+      actual: new Map([['key', 'nope']]),
+      expected: new Map([['key', 'value']]),
+    })
+  } catch (err) {
+    assertIsError(
+      err,
+      AssertionError,
+      'Given map: should equal map',
+    )
+  }
+  try {
+    await assert({
+      given: 'object',
+      should: 'equal object',
+      actual: {
+        nope: 3,
+      },
+      expected: {
+        key: 'value',
+      },
+    })
+  } catch (err) {
+    assertIsError(
+      err,
+      AssertionError,
+      'Given object: should equal object',
+    )
+  }
+})
