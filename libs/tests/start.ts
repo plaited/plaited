@@ -2,8 +2,7 @@ import { mimeTypes, Routes, server } from '$server'
 import { bundler } from '$bundler'
 import { html } from '$plaited'
 
-import { ValueDisplayTemplate } from './client/value-display/value-display.template.ts'
-import { KeyPadTemplate } from './client/key-pad/key-pad.template.ts'
+import { CalculatorTemplate } from './client/calculator.template.ts'
 
 import { resolve, toFileUrl } from '../deps.ts'
 
@@ -11,8 +10,7 @@ const client = resolve(Deno.cwd(), 'libs/islandly/tests/mocks/client')
 const importMap = toFileUrl(resolve(Deno.cwd(), '.vscode/import-map.json'))
 
 const entryPoints = [
-  `${client}/key-pad/key-pad.island.ts`,
-  `${client}/value-display/value-display.island.ts`,
+  `${client}/calculator.island.ts`,
   `${client}/calculator.spec.ts`,
   `${client}/calculator.worker.ts`,
   `${client}/run.ts`,
@@ -47,12 +45,10 @@ routes.set('/', () =>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script type="module" src="/key-pad/key-pad.island.js"></script>
-  <script type="module" src="/value-display/value-display.island.js"></script>
+  <script type="module" src="/calculator.island.js"></script>
 </head>
 <body>
-  ${ValueDisplayTemplate}
-  ${KeyPadTemplate}
+  ${CalculatorTemplate}
   <script type="module" src="/run.js"></script>
 </body>
 </html>

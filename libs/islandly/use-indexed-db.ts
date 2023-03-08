@@ -1,19 +1,19 @@
 import { trueTypeOf } from '../utils/mod.ts'
 import { createIDB, IDB } from './create-idb.ts'
 
-type UpdateStoreArg = (arg?: unknown) => unknown
+type UpdateStoreArg<T> = (arg?: T) => T
 /** asynchronously get and set indexed db values */
-export const useIndexedDB = async (
+export const useIndexedDB = async <T = unknown>(
   /** key for stored value */
   key: string,
   /** initial value can be null */
-  initialValue?: unknown,
+  initialValue?: T,
   /** you can actually pass it an reference to another indexedDB */
   idb?: IDB,
 ): Promise<
   readonly [
-    () => Promise<unknown>,
-    (newValue: unknown | UpdateStoreArg) => Promise<void>,
+    () => Promise<T>,
+    (newValue: T | UpdateStoreArg<T>) => Promise<void>,
   ]
 > => {
   const db = idb || createIDB('USE_INDEXED_DB', 'STORE')
@@ -24,7 +24,7 @@ export const useIndexedDB = async (
       })
     })())
 
-  const updateStore = (newValue: UpdateStoreArg) =>
+  const updateStore = (newValue: UpdateStoreArg<T>) =>
     db('readwrite', (store) => {
       const req = store.openCursor(key)
       req.onsuccess = function getAndPutOnSuccess() {
@@ -38,22 +38,19 @@ export const useIndexedDB = async (
       }
     })
 
-  const overwriteStore = (newValue: unknown) =>
+  const overwriteStore = (newValue: T) =>
     db('readwrite', (store) => store.put(newValue, key))
 
-  const set = (newValue: unknown | UpdateStoreArg) =>
+  const set = (newValue: T | UpdateStoreArg<T>) =>
     trueTypeOf(newValue) === 'function'
-      ? updateStore(newValue as UpdateStoreArg)
-      : overwriteStore(newValue)
+      ? updateStore(newValue as UpdateStoreArg<T>)
+      : overwriteStore(newValue as T)
 
   const get = () => {
-    let req: IDBRequest<unknown>
+    let req: IDBRequest<T>
     return db('readonly', (store) => {
       req = store.get(key)
     }).then(() => req.result)
   }
-  return Object.freeze<[
-    () => Promise<unknown>,
-    (newValue: unknown | UpdateStoreArg) => Promise<void>,
-  ]>([get, set])
+  return Object.freeze([get, set])
 }

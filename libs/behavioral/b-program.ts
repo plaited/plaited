@@ -41,7 +41,7 @@ export const bProgram = ({
 }: {
   strategy?: Strategy | keyof Omit<typeof strategies, 'custom'>
   dev?: boolean
-}) => {
+} = {}) => {
   const eventSelectionStrategy: Strategy = typeof strategy === 'string'
     ? selectionStrategies[strategy]
     : strategy

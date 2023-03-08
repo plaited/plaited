@@ -1,6 +1,6 @@
 import { define } from '$plaited'
-import { send } from '../comms.ts'
-define({ tag: 'key-pad' }, ({ feedback }) => {
+import { send } from './comms.ts'
+define({ tag: 'calculator-interface' }, ({ feedback }) => {
   feedback({
     number(evt: MouseEvent) {
       const value = (evt.currentTarget as HTMLButtonElement)?.value
