@@ -1,13 +1,13 @@
 import { trueTypeOf } from '../utils/mod.ts'
 import { createIDB, IDB } from './create-idb.ts'
 
-type UpdateStoreArg<T> = (arg?: T) => T
+type UpdateStoreArg<T = unknown> = (arg: T) => T
 /** asynchronously get and set indexed db values */
 export const useIndexedDB = async <T = unknown>(
   /** key for stored value */
   key: string,
   /** initial value can be null */
-  initialValue?: T,
+  initialValue: T,
   /** you can actually pass it an reference to another indexedDB */
   idb?: IDB,
 ): Promise<
@@ -17,24 +17,25 @@ export const useIndexedDB = async <T = unknown>(
   ]
 > => {
   const db = idb || createIDB('USE_INDEXED_DB', 'STORE')
-  initialValue &&
-    (await (function setInitialValue() {
-      return db('readwrite', (store) => {
-        store.put(initialValue, key)
-      })
-    })())
+
+  await (function setInitialValue() {
+    return db('readwrite', (store) => {
+      store.put(initialValue, key)
+    })
+  })()
 
   const updateStore = (newValue: UpdateStoreArg<T>) =>
     db('readwrite', (store) => {
       const req = store.openCursor(key)
       req.onsuccess = function getAndPutOnSuccess() {
         const cursor = this.result
-        if (!cursor) {
-          store.put(newValue(), key)
+        if (cursor) {
+          const { value } = cursor
+          cursor.update(newValue(value))
           return
+        } else {
+          console.error(`cursor's value missing`)
         }
-        const { value } = cursor
-        cursor.update(newValue(value))
       }
     })
 

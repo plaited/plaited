@@ -6,6 +6,7 @@
     "$assert": "../assert.ts",
     "$bundler": "../bundler.ts",
     "$plaited": "../mod.ts",
-    "$server": "../server.ts"
+    "$server": "../server.ts",
+    "$utils": "../utils.ts"
   }
 }

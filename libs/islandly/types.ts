@@ -58,7 +58,7 @@ export interface PlaitInterface {
     feedback: Feedback
     /** Function  to trigger an event in the behavioral program */
     trigger: Trigger
-  }): void
+  }): void | Promise<void>
 }
 
 export interface ISLElement extends HTMLElement {

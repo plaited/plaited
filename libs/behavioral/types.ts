@@ -57,12 +57,14 @@ export type Trigger = <
 export type TriggerArgs = Parameters<Trigger>[0]
 
 // Rule types
-type Callback<T extends Record<string, unknown> = Record<string, unknown>> = (
+type Callback<
+  T extends (Record<string, unknown> | Event) = Record<string, unknown>,
+> = (
   args: { event: string; detail: T },
 ) => boolean
 
 export type ParameterIdiom<
-  T extends Record<string, unknown> = Record<string, unknown>,
+  T extends (Record<string, unknown> | Event) = Record<string, unknown>,
 > = {
   event: string
   cb?: Callback<T>
@@ -72,7 +74,7 @@ export type ParameterIdiom<
 }
 
 export type RequestIdiom<
-  T extends Record<string, unknown> = Record<string, unknown>,
+  T extends (Record<string, unknown> | Event) = Record<string, unknown>,
 > = {
   event: string
   detail?: T
@@ -80,7 +82,7 @@ export type RequestIdiom<
 }
 
 export type RuleSet<
-  T extends Record<string, unknown> = Record<string, unknown>,
+  T extends (Record<string, unknown> | Event) = Record<string, unknown>,
 > = {
   waitFor?: ParameterIdiom<T> | ParameterIdiom<T>[]
   request?: RequestIdiom<T> | RequestIdiom<T>[]
@@ -88,7 +90,7 @@ export type RuleSet<
 }
 
 export type RulesFunc<
-  T extends Record<string, unknown> = Record<string, unknown>,
+  T extends (Record<string, unknown> | Event) = Record<string, unknown>,
 > = () => IterableIterator<
   RuleSet<T>
 >

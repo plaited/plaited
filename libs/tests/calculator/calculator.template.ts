@@ -1,37 +1,41 @@
 import { html, IslandTemplate } from '$plaited'
+import { ops } from './constants.ts'
 import { classes } from './calculator.styles.ts'
 
 export const CalculatorTemplate = IslandTemplate({
-  tag: 'calculator-interface',
+  tag: 'calculator-island',
   template: html`<div class="${classes.calculator}">
-    <!-- dispplay -->
-    <h1 data-target="${classes.display}" class="${classes.display}">0</h1>
+    <!-- display -->
+    <div>
+      <h1 data-target="previous" class="${classes.previous}"></h1>
+      <h1 data-target="current" class="${classes.current}">0</h1>
+    </div>
     <!-- Row one -->
-    <button class="${classes.top}" data-trigger="click->positive-negative">+/-</button>
-    <button class="${classes.top}" data-trigger="click->square-root">√</button>
-    <button class="${classes.top}" data-trigger="click->percent">%</button>
-    <button class="${classes.side}" data-trigger="click->divide">÷</button>
+    <button class="${classes.top}" data-trigger="click->positive-negative">${ops.add}/${ops.minus}</button>
+    <button class="${classes.top}" data-trigger="click->squareRoot" value="squareRoot">${ops.squareRoot}</button>
+    <button class="${classes.top}" data-trigger="click->percent" value="percent">${ops.percent}</button>
+    <button class="${classes.side}" data-trigger="click->calculate" value="divide">${ops.divide}</button>
     <!-- Row two -->
     <button class="${classes.number}" data-trigger="click->number" value="7">7</button>
     <button class="${classes.number}" data-trigger="click->number" value="8">8</button>
     <button class="${classes.number}" data-trigger="click->number" value="9">9</button>
-    <button class="${classes.side}" data-trigger="click->multiply">×</button>
+    <button class="${classes.side}" data-trigger="click->calculate" value="multiply">${ops.multiply}</button>
     <!-- Row three -->
     <button class="${classes.number}" data-trigger="click->number" value="4">4</button>
     <button class="${classes.number}" data-trigger="click->number" value="5">5</button>
     <button class="${classes.number}" data-trigger="click->number" value="6">6</button>
-    <button class="${classes.side}" data-trigger="click->minus">–</button>
+    <button class="${classes.side}" data-trigger="click->calculate" value="minus">${ops.minus}</button>
 
     <!-- Row four -->
     <button class="${classes.number}" data-trigger="click->number" value="1">1</button>
     <button class="${classes.number}" data-trigger="click->number" value="2">2</button>
     <button class="${classes.number}" data-trigger="click->number" value="3">3</button>
-    <button class="${classes.side}" data-trigger="click->add">+</button>
+    <button class="${classes.side}" data-trigger="click->calculate" value="add">${ops.add}</button>
 
     <!-- Row five -->
     <button class="${classes.clear}" data-trigger="click->clear">C</button>
     <button class="${classes.number}" data-trigger="click->number" value="0">0</button>
     <button class="${classes.number}" data-trigger="click->period">.</button>
-    <button class="${classes.side}" data-trigger="click->equal">=</button>
+    <button class="${classes.side}" data-trigger="click->equal" value="equal">${ops.equal}</button>
   </div>`,
 })

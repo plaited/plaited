@@ -34,7 +34,7 @@ export const loop = (
  * bThread currently forbids triggering
  * any of these events.
  */
-export const sync = <T extends Record<string, unknown>>(
+export const sync = <T extends (Record<string, unknown> | Event)>(
   set: RuleSet<T>,
 ): RulesFunc<T> =>
   function* () {

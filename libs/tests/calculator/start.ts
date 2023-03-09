@@ -2,18 +2,18 @@ import { mimeTypes, Routes, server } from '$server'
 import { bundler } from '$bundler'
 import { html } from '$plaited'
 
-import { CalculatorTemplate } from './client/calculator.template.ts'
+import { CalculatorTemplate } from './calculator.template.ts'
 
-import { resolve, toFileUrl } from '../deps.ts'
+import { resolve, toFileUrl } from '../../deps.ts'
 
-const client = resolve(Deno.cwd(), 'libs/islandly/tests/mocks/client')
+const client = resolve(Deno.cwd(), 'libs/tests/calculator')
 const importMap = toFileUrl(resolve(Deno.cwd(), '.vscode/import-map.json'))
 
 const entryPoints = [
   `${client}/calculator.island.ts`,
-  `${client}/calculator.spec.ts`,
   `${client}/calculator.worker.ts`,
   `${client}/run.ts`,
+  `${client}/spec.ts`,
 ]
 
 const [entries] = await bundler({
@@ -45,7 +45,9 @@ routes.set('/', () =>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>plaited tests</title>
   <script type="module" src="/calculator.island.js"></script>
+  <link rel="icon" href="data:," />
 </head>
 <body>
   ${CalculatorTemplate}

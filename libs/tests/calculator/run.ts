@@ -10,9 +10,9 @@ const socket = new WebSocket(`ws://${host}/reporter`)
 const sendMsg = (msg: string) => {
   return socket.send(msg)
 }
-console.log(`${host}/calculator.spec.js`)
+console.log(`${host}/spec.js`)
 const tests = await import(
-  `http://${host}/calculator.spec.js`
+  `http://${host}/spec.js`
 )
 
 // /** execute tests */
