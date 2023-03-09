@@ -9,7 +9,6 @@
     "lib": [
       "dom",
       "dom.iterable",
-      "dneo.iterable",
       "deno.ns"
     ]
   },

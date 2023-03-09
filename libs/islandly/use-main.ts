@@ -4,7 +4,7 @@ import { Trigger, TriggerArgs } from '../behavioral/mod.ts'
 export const useMain = ({
   /** is self of the worker */
   context,
-  /** is a trigger callback from a bProgram */
+  /** is a trigger callback from a behavioral program */
   trigger,
 }: {
   context: Window & typeof globalThis

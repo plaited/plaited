@@ -1,5 +1,5 @@
 import { assertEquals, assertSnapshot } from '../../test-deps.ts'
-import { bProgram, bThread, loop, sync } from '../mod.ts'
+import { loop, program, sync, thread } from '../mod.ts'
 
 const expectedFeedback = [
   'Add hot',
@@ -10,8 +10,8 @@ const expectedFeedback = [
   'Add cold',
 ]
 
-const threads = {
-  addHot: bThread(
+const rules = {
+  addHot: thread(
     sync<{ value: string }>({
       waitFor: [
         {
@@ -32,7 +32,7 @@ const threads = {
       request: { event: 'hot' },
     }),
   ),
-  addCold: bThread(
+  addCold: thread(
     sync({ waitFor: { event: 'start' } }),
     sync({
       request: [{ event: 'cold' }],
@@ -44,18 +44,16 @@ const threads = {
       request: [{ event: 'cold' }],
     }),
   ),
-  mixHotCold: loop(
-    bThread(
-      sync({
-        waitFor: { event: 'hot' },
-        block: { event: 'cold' },
-      }),
-      sync({
-        waitFor: [{ event: 'cold' }],
-        block: [{ event: 'hot' }],
-      }),
-    ),
-  ),
+  mixHotCold: loop([
+    sync({
+      waitFor: { event: 'hot' },
+      block: { event: 'cold' },
+    }),
+    sync({
+      waitFor: [{ event: 'cold' }],
+      block: [{ event: 'hot' }],
+    }),
+  ]),
 }
 const getActions = (arr: string[]) => ({
   cold() {
@@ -65,13 +63,13 @@ const getActions = (arr: string[]) => ({
     arr.push('Add hot')
   },
 })
-Deno.test('bProgram: priority queue', (t) => {
+Deno.test('program: priority queue', (t) => {
   const actualFeedback: string[] = []
   const logs: unknown[] = []
-  const { trigger, feedback, log, add } = bProgram({
+  const { trigger, feedback, log, addRules } = program({
     dev: true,
   })
-  add(threads)
+  addRules(rules)
   feedback(getActions(actualFeedback))
   log((msg) => {
     logs.push(msg)
@@ -87,14 +85,14 @@ Deno.test('bProgram: priority queue', (t) => {
   )
   assertSnapshot(t, logs, `priority selection feedback`)
 })
-Deno.test('bProgram: randomized priority queue', (t) => {
+Deno.test('program: randomized priority queue', (t) => {
   const actualFeedback: string[] = []
   const logs: unknown[] = []
-  const { trigger, feedback, log, add } = bProgram({
+  const { trigger, feedback, log, addRules } = program({
     strategy: 'randomized',
     dev: true,
   })
-  add(threads)
+  addRules(rules)
   feedback(getActions(actualFeedback))
   log((msg) => {
     logs.push(msg)
@@ -110,14 +108,14 @@ Deno.test('bProgram: randomized priority queue', (t) => {
   )
   assertSnapshot(t, logs, `randomized priority selection log`)
 })
-Deno.test('bProgram: chaos selection', (t) => {
+Deno.test('program: chaos selection', (t) => {
   const actualFeedback: string[] = []
   const logs: unknown[] = []
-  const { trigger, feedback, log, add } = bProgram({
+  const { trigger, feedback, log, addRules } = program({
     strategy: 'chaos',
     dev: true,
   })
-  add(threads)
+  addRules(rules)
   feedback(getActions(actualFeedback))
   log((msg) => {
     logs.push(msg)

@@ -1,6 +1,6 @@
-import { bProgram, useMain } from '$plaited'
+import { program, useMain } from '$plaited'
 
-const { trigger, feedback } = bProgram()
+const { trigger, feedback } = program()
 
 const { send } = useMain({ context: self, trigger })
 
@@ -32,7 +32,7 @@ feedback({
     },
   ) {
     send('calculator-island', {
-      event: 'updateDisplay',
+      event: 'updateOnCalculate',
       detail: {
         value: calculator[operation](prev, (cur / 100) * prev),
         operation,

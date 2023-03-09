@@ -24,10 +24,30 @@ export const getTriggerKey = (evt: Event) => {
 
 // Takes a list of nodes added when mutation observer change happened and filters our the ones with triggers
 export const filterAddedNodes = (nodes: NodeList) => {
-  const elements: HTMLElement[] = []
+  const elements: (HTMLElement | SVGElement)[] = []
   nodes.forEach((node) => {
-    if (node instanceof HTMLElement && node.dataset.trigger) elements.push(node)
+    if (node instanceof HTMLSlotElement) return
+    if (
+      node instanceof HTMLElement ||
+      node instanceof SVGElement
+    ) {
+      node.dataset.trigger && elements.push(node)
+    }
   })
+  return elements
+}
+
+// Get slotted elements that have the data trigger atrtribute and add them to
+export const filterSlottedElements = (slot: HTMLSlotElement) => {
+  const elements: (HTMLElement | SVGElement)[] = []
+  for (const el of slot.assignedElements()) {
+    if (
+      el instanceof HTMLElement ||
+      el instanceof SVGElement
+    ) {
+      el.dataset.trigger && elements.push(el)
+    }
+  }
   return elements
 }
 

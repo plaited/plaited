@@ -8,8 +8,8 @@ export interface StateSnapshot {
     },
   ): {
     selectedEvent: CandidateBid
-    bThreads: {
-      name: string
+    ruleSets: {
+      thread: string
       request?: RequestIdiom[]
       waitFor?: ParameterIdiom[]
       block?: ParameterIdiom[]
@@ -96,9 +96,9 @@ export type RulesFunc<
 >
 
 export type RunningBid = {
-  name: string
+  thread: string
   priority: number
-  bThread: IterableIterator<RuleSet>
+  generator: IterableIterator<RuleSet>
 }
 export type PendingBid = RuleSet & RunningBid
 

@@ -1,14 +1,14 @@
 import { ParameterIdiom, RequestIdiom, StateSnapshot } from './types.ts'
 export const stateSnapshot: StateSnapshot = ({ bids, selectedEvent }) => {
-  const bThreads: {
-    name: string
+  const ruleSets: {
+    thread: string
     request?: RequestIdiom[]
     waitFor?: ParameterIdiom[]
     block?: ParameterIdiom[]
     priority: number
   }[] = []
   for (const bid of bids) {
-    const { bThread: _, waitFor, block, request, ...rest } = bid
+    const { generator: _, waitFor, block, request, ...rest } = bid
     const obj = rest
     request &&
       Object.assign(obj, {
@@ -22,10 +22,10 @@ export const stateSnapshot: StateSnapshot = ({ bids, selectedEvent }) => {
       Object.assign(obj, {
         block: [...(Array.isArray(block) ? block : [block])],
       })
-    bThreads.push(rest)
+    ruleSets.push(rest)
   }
   return Object.freeze({
     selectedEvent,
-    bThreads,
+    ruleSets,
   })
 }

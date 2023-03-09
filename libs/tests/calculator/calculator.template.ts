@@ -33,7 +33,7 @@ export const CalculatorTemplate = IslandTemplate({
     <button class="${classes.side}" data-trigger="click->calculate" value="add">${ops.add}</button>
 
     <!-- Row five -->
-    <button class="${classes.clear}" data-trigger="click->clear">C</button>
+    <button class="${classes.clear}" data-trigger="click->clear">AC</button>
     <button class="${classes.number}" data-trigger="click->number" value="0">0</button>
     <button class="${classes.number}" data-trigger="click->period">.</button>
     <button class="${classes.side}" data-trigger="click->equal" value="equal">${ops.equal}</button>

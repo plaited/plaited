@@ -3,35 +3,37 @@ import { RuleSet, RulesFunc } from './types.ts'
 
 /**
  * @description
- * creates a bThread from loops, sets, and/or other bThreads
+ * creates a behavioral thread from synchronization sets and/or other  behavioral threads
  */
-export const bThread = (...gens: RulesFunc<any>[]): RulesFunc<any> =>
+export const thread = (...rules: RulesFunc<any>[]): RulesFunc<any> =>
   function* () {
-    for (const gen of gens) {
-      yield* gen()
+    for (const rule of rules) {
+      yield* rule()
     }
   }
 /**
  * @description
- * loops a bThread or sets infinitely or until some condition true
- * like a mode change open -> close. This function returns a bThread
+ * A behavioral thread that loops infinitely or until some callback condition is false
+ * like a mode change open -> close. This function returns a threads
  */
 export const loop = (
-  gen: RulesFunc<any>,
+  rules: RulesFunc<any>[],
   condition = () => true,
 ): RulesFunc<any> =>
   function* () {
     while (condition()) {
-      yield* gen()
+      for (const rule of rules) {
+        yield* rule()
+      }
     }
   }
 /**
  * @description
- * At synchronization points, each bThread specifies three sets of events:
- * requested events: the bThread proposes that these be considered for triggering,
- * and asks to be notified when any of them occurs; waitFor events: the bThread does not request these, but
+ * At synchronization points, each behavioral thread specifies three sets of events:
+ * requested events: the threads proposes that these be considered for triggering,
+ * and asks to be notified when any of them occurs; waitFor events: the threads does not request these, but
  * asks to be notified when any of them is triggered; and blocked events: the
- * bThread currently forbids triggering
+ * threads currently forbids triggering
  * any of these events.
  */
 export const sync = <T extends (Record<string, unknown> | Event)>(

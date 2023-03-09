@@ -52,8 +52,8 @@ export interface PlaitInterface {
      * const shadowEl = context.shadowRoot.querySelector('div')
      */
     context: ISLElement
-    /** Add behavioral program rules to the Island */
-    add: (logicStands: Record<string, RulesFunc>) => void
+    /** Add behavioral program threads to the Island */
+    addRules: (threads: Record<string, RulesFunc>) => void
     /** Connect actions to the behavioral program's reactive feedback stream */
     feedback: Feedback
     /** Function  to trigger an event in the behavioral program */

@@ -33,7 +33,7 @@ const requestInParameter = (
   )
 }
 
-export const bProgram = ({
+export const program = ({
   /** event selection strategy {@link Strategy}*/
   strategy = strategies.priority,
   /** When set to true returns a stream with log of state snapshots, last selected event and trigger */
@@ -55,13 +55,13 @@ export const bProgram = ({
 
   function step() {
     for (const bid of running) {
-      const { bThread, priority, name } = bid
-      const { value, done } = bThread.next()
+      const { generator, priority, thread } = bid
+      const { value, done } = generator.next()
       !done &&
         pending.add({
-          name,
+          thread,
           priority,
-          bThread,
+          generator,
           ...value,
         })
       running.delete(bid)
@@ -114,13 +114,13 @@ export const bProgram = ({
   // Queue up bids for next step of super step
   function nextStep(selectedEvent: CandidateBid) {
     for (const bid of pending) {
-      const { request = [], waitFor = [], bThread } = bid
+      const { request = [], waitFor = [], generator } = bid
       const waitList = [
         ...(Array.isArray(request) ? request : [request]),
         ...(Array.isArray(waitFor) ? waitFor : [waitFor]),
       ]
       if (
-        waitList.some(requestInParameter(selectedEvent)) && bThread
+        waitList.some(requestInParameter(selectedEvent)) && generator
       ) {
         running.add(bid)
         pending.delete(bid)
@@ -132,16 +132,16 @@ export const bProgram = ({
     event,
     detail,
   }) => {
-    const bThread = function* () {
+    const thread = function* () {
       yield {
         request: [{ event, detail }],
         waitFor: [{ event: '', cb: () => true }],
       }
     }
     running.add({
-      name: event,
+      thread: event,
       priority: 0,
-      bThread: bThread(),
+      generator: thread(),
     })
     if (dev) {
       const msg: ListenerMessage = {
@@ -170,12 +170,12 @@ export const bProgram = ({
     )
   }
 
-  const add = (bThreads: Record<string, RulesFunc>): void => {
-    for (const name in bThreads) {
+  const addRules = (threads: Record<string, RulesFunc>): void => {
+    for (const thread in threads) {
       running.add({
-        name,
+        thread,
         priority: running.size + 1,
-        bThread: bThreads[name](),
+        generator: threads[thread](),
       })
     }
   }
@@ -196,8 +196,8 @@ export const bProgram = ({
     )
   }
   return Object.freeze({
-    /** add rule function to behavioral program */
-    add,
+    /** add thread function to behavioral program */
+    addRules,
     /** connect action function to behavioral program */
     feedback,
     /** trigger a run and event on behavioral program */

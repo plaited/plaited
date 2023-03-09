@@ -1,6 +1,6 @@
 export const snapshot = {};
 
-snapshot[`bProgram: priority queue 1`] = `
+snapshot[`program: priority queue 1`] = `
 [
   {
     data: {
@@ -13,10 +13,10 @@ snapshot[`bProgram: priority queue 1`] = `
   },
   {
     data: {
-      bThreads: [
+      ruleSets: [
         {
-          name: "addHot",
           priority: 1,
+          thread: "addHot",
           waitFor: [
             {
               cb: [Function: cb],
@@ -27,8 +27,8 @@ snapshot[`bProgram: priority queue 1`] = `
           ],
         },
         {
-          name: "addCold",
           priority: 2,
+          thread: "addCold",
           waitFor: [
             {
               event: "start",
@@ -41,8 +41,8 @@ snapshot[`bProgram: priority queue 1`] = `
               event: "cold",
             },
           ],
-          name: "mixHotCold",
           priority: 3,
+          thread: "mixHotCold",
           waitFor: [
             {
               event: "hot",
@@ -50,7 +50,6 @@ snapshot[`bProgram: priority queue 1`] = `
           ],
         },
         {
-          name: "start",
           priority: 0,
           request: [
             {
@@ -60,6 +59,7 @@ snapshot[`bProgram: priority queue 1`] = `
               event: "start",
             },
           ],
+          thread: "start",
           waitFor: [
             {
               cb: [Function: cb],
@@ -80,15 +80,15 @@ snapshot[`bProgram: priority queue 1`] = `
   },
   {
     data: {
-      bThreads: [
+      ruleSets: [
         {
           block: [
             {
               event: "cold",
             },
           ],
-          name: "mixHotCold",
           priority: 3,
+          thread: "mixHotCold",
           waitFor: [
             {
               event: "hot",
@@ -96,20 +96,106 @@ snapshot[`bProgram: priority queue 1`] = `
           ],
         },
         {
-          name: "addHot",
           priority: 1,
           request: [
             {
               event: "hot",
             },
           ],
+          thread: "addHot",
         },
         {
-          name: "addCold",
           priority: 2,
           request: [
             {
               event: "cold",
+            },
+          ],
+          thread: "addCold",
+        },
+      ],
+      selectedEvent: {
+        event: "hot",
+        priority: 1,
+      },
+    },
+    type: "state-snapshot",
+  },
+  {
+    data: {
+      ruleSets: [
+        {
+          priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
+          thread: "addCold",
+        },
+        {
+          block: [
+            {
+              event: "hot",
+            },
+          ],
+          priority: 3,
+          thread: "mixHotCold",
+          waitFor: [
+            {
+              event: "cold",
+            },
+          ],
+        },
+        {
+          priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
+          thread: "addHot",
+        },
+      ],
+      selectedEvent: {
+        event: "cold",
+        priority: 2,
+      },
+    },
+    type: "state-snapshot",
+  },
+  {
+    data: {
+      ruleSets: [
+        {
+          priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
+          thread: "addHot",
+        },
+        {
+          priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
+          thread: "addCold",
+        },
+        {
+          block: [
+            {
+              event: "cold",
+            },
+          ],
+          priority: 3,
+          thread: "mixHotCold",
+          waitFor: [
+            {
+              event: "hot",
             },
           ],
         },
@@ -123,15 +209,24 @@ snapshot[`bProgram: priority queue 1`] = `
   },
   {
     data: {
-      bThreads: [
+      ruleSets: [
         {
-          name: "addCold",
           priority: 2,
           request: [
             {
               event: "cold",
             },
           ],
+          thread: "addCold",
+        },
+        {
+          priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
+          thread: "addHot",
         },
         {
           block: [
@@ -139,20 +234,11 @@ snapshot[`bProgram: priority queue 1`] = `
               event: "hot",
             },
           ],
-          name: "mixHotCold",
           priority: 3,
+          thread: "mixHotCold",
           waitFor: [
             {
               event: "cold",
-            },
-          ],
-        },
-        {
-          name: "addHot",
-          priority: 1,
-          request: [
-            {
-              event: "hot",
             },
           ],
         },
@@ -166,24 +252,24 @@ snapshot[`bProgram: priority queue 1`] = `
   },
   {
     data: {
-      bThreads: [
+      ruleSets: [
         {
-          name: "addHot",
           priority: 1,
           request: [
             {
               event: "hot",
             },
           ],
+          thread: "addHot",
         },
         {
-          name: "addCold",
           priority: 2,
           request: [
             {
               event: "cold",
             },
           ],
+          thread: "addCold",
         },
         {
           block: [
@@ -191,8 +277,8 @@ snapshot[`bProgram: priority queue 1`] = `
               event: "cold",
             },
           ],
-          name: "mixHotCold",
           priority: 3,
+          thread: "mixHotCold",
           waitFor: [
             {
               event: "hot",
@@ -209,24 +295,15 @@ snapshot[`bProgram: priority queue 1`] = `
   },
   {
     data: {
-      bThreads: [
+      ruleSets: [
         {
-          name: "addCold",
           priority: 2,
           request: [
             {
               event: "cold",
             },
           ],
-        },
-        {
-          name: "addHot",
-          priority: 1,
-          request: [
-            {
-              event: "hot",
-            },
-          ],
+          thread: "addCold",
         },
         {
           block: [
@@ -234,85 +311,8 @@ snapshot[`bProgram: priority queue 1`] = `
               event: "hot",
             },
           ],
-          name: "mixHotCold",
           priority: 3,
-          waitFor: [
-            {
-              event: "cold",
-            },
-          ],
-        },
-      ],
-      selectedEvent: {
-        event: "cold",
-        priority: 2,
-      },
-    },
-    type: "state-snapshot",
-  },
-  {
-    data: {
-      bThreads: [
-        {
-          name: "addHot",
-          priority: 1,
-          request: [
-            {
-              event: "hot",
-            },
-          ],
-        },
-        {
-          name: "addCold",
-          priority: 2,
-          request: [
-            {
-              event: "cold",
-            },
-          ],
-        },
-        {
-          block: [
-            {
-              event: "cold",
-            },
-          ],
-          name: "mixHotCold",
-          priority: 3,
-          waitFor: [
-            {
-              event: "hot",
-            },
-          ],
-        },
-      ],
-      selectedEvent: {
-        event: "hot",
-        priority: 1,
-      },
-    },
-    type: "state-snapshot",
-  },
-  {
-    data: {
-      bThreads: [
-        {
-          name: "addCold",
-          priority: 2,
-          request: [
-            {
-              event: "cold",
-            },
-          ],
-        },
-        {
-          block: [
-            {
-              event: "hot",
-            },
-          ],
-          name: "mixHotCold",
-          priority: 3,
+          thread: "mixHotCold",
           waitFor: [
             {
               event: "cold",
@@ -336,7 +336,7 @@ snapshot[`bProgram: priority queue 1`] = `
 ]
 `;
 
-snapshot[`bProgram: randomized priority queue 1`] = `
+snapshot[`program: randomized priority queue 1`] = `
 [
   {
     data: {
@@ -349,10 +349,10 @@ snapshot[`bProgram: randomized priority queue 1`] = `
   },
   {
     data: {
-      bThreads: [
+      ruleSets: [
         {
-          name: "addHot",
           priority: 1,
+          thread: "addHot",
           waitFor: [
             {
               cb: [Function: cb],
@@ -363,8 +363,8 @@ snapshot[`bProgram: randomized priority queue 1`] = `
           ],
         },
         {
-          name: "addCold",
           priority: 2,
+          thread: "addCold",
           waitFor: [
             {
               event: "start",
@@ -377,8 +377,8 @@ snapshot[`bProgram: randomized priority queue 1`] = `
               event: "cold",
             },
           ],
-          name: "mixHotCold",
           priority: 3,
+          thread: "mixHotCold",
           waitFor: [
             {
               event: "hot",
@@ -386,7 +386,6 @@ snapshot[`bProgram: randomized priority queue 1`] = `
           ],
         },
         {
-          name: "start",
           priority: 0,
           request: [
             {
@@ -396,6 +395,7 @@ snapshot[`bProgram: randomized priority queue 1`] = `
               event: "start",
             },
           ],
+          thread: "start",
           waitFor: [
             {
               cb: [Function: cb],
@@ -416,15 +416,15 @@ snapshot[`bProgram: randomized priority queue 1`] = `
   },
   {
     data: {
-      bThreads: [
+      ruleSets: [
         {
           block: [
             {
               event: "cold",
             },
           ],
-          name: "mixHotCold",
           priority: 3,
+          thread: "mixHotCold",
           waitFor: [
             {
               event: "hot",
@@ -432,20 +432,106 @@ snapshot[`bProgram: randomized priority queue 1`] = `
           ],
         },
         {
-          name: "addHot",
           priority: 1,
           request: [
             {
               event: "hot",
             },
           ],
+          thread: "addHot",
         },
         {
-          name: "addCold",
           priority: 2,
           request: [
             {
               event: "cold",
+            },
+          ],
+          thread: "addCold",
+        },
+      ],
+      selectedEvent: {
+        event: "hot",
+        priority: 1,
+      },
+    },
+    type: "state-snapshot",
+  },
+  {
+    data: {
+      ruleSets: [
+        {
+          priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
+          thread: "addCold",
+        },
+        {
+          block: [
+            {
+              event: "hot",
+            },
+          ],
+          priority: 3,
+          thread: "mixHotCold",
+          waitFor: [
+            {
+              event: "cold",
+            },
+          ],
+        },
+        {
+          priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
+          thread: "addHot",
+        },
+      ],
+      selectedEvent: {
+        event: "cold",
+        priority: 2,
+      },
+    },
+    type: "state-snapshot",
+  },
+  {
+    data: {
+      ruleSets: [
+        {
+          priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
+          thread: "addHot",
+        },
+        {
+          priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
+          thread: "addCold",
+        },
+        {
+          block: [
+            {
+              event: "cold",
+            },
+          ],
+          priority: 3,
+          thread: "mixHotCold",
+          waitFor: [
+            {
+              event: "hot",
             },
           ],
         },
@@ -459,15 +545,24 @@ snapshot[`bProgram: randomized priority queue 1`] = `
   },
   {
     data: {
-      bThreads: [
+      ruleSets: [
         {
-          name: "addCold",
           priority: 2,
           request: [
             {
               event: "cold",
             },
           ],
+          thread: "addCold",
+        },
+        {
+          priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
+          thread: "addHot",
         },
         {
           block: [
@@ -475,20 +570,11 @@ snapshot[`bProgram: randomized priority queue 1`] = `
               event: "hot",
             },
           ],
-          name: "mixHotCold",
           priority: 3,
+          thread: "mixHotCold",
           waitFor: [
             {
               event: "cold",
-            },
-          ],
-        },
-        {
-          name: "addHot",
-          priority: 1,
-          request: [
-            {
-              event: "hot",
             },
           ],
         },
@@ -502,24 +588,24 @@ snapshot[`bProgram: randomized priority queue 1`] = `
   },
   {
     data: {
-      bThreads: [
+      ruleSets: [
         {
-          name: "addHot",
           priority: 1,
           request: [
             {
               event: "hot",
             },
           ],
+          thread: "addHot",
         },
         {
-          name: "addCold",
           priority: 2,
           request: [
             {
               event: "cold",
             },
           ],
+          thread: "addCold",
         },
         {
           block: [
@@ -527,8 +613,8 @@ snapshot[`bProgram: randomized priority queue 1`] = `
               event: "cold",
             },
           ],
-          name: "mixHotCold",
           priority: 3,
+          thread: "mixHotCold",
           waitFor: [
             {
               event: "hot",
@@ -545,24 +631,15 @@ snapshot[`bProgram: randomized priority queue 1`] = `
   },
   {
     data: {
-      bThreads: [
+      ruleSets: [
         {
-          name: "addCold",
           priority: 2,
           request: [
             {
               event: "cold",
             },
           ],
-        },
-        {
-          name: "addHot",
-          priority: 1,
-          request: [
-            {
-              event: "hot",
-            },
-          ],
+          thread: "addCold",
         },
         {
           block: [
@@ -570,85 +647,8 @@ snapshot[`bProgram: randomized priority queue 1`] = `
               event: "hot",
             },
           ],
-          name: "mixHotCold",
           priority: 3,
-          waitFor: [
-            {
-              event: "cold",
-            },
-          ],
-        },
-      ],
-      selectedEvent: {
-        event: "cold",
-        priority: 2,
-      },
-    },
-    type: "state-snapshot",
-  },
-  {
-    data: {
-      bThreads: [
-        {
-          name: "addHot",
-          priority: 1,
-          request: [
-            {
-              event: "hot",
-            },
-          ],
-        },
-        {
-          name: "addCold",
-          priority: 2,
-          request: [
-            {
-              event: "cold",
-            },
-          ],
-        },
-        {
-          block: [
-            {
-              event: "cold",
-            },
-          ],
-          name: "mixHotCold",
-          priority: 3,
-          waitFor: [
-            {
-              event: "hot",
-            },
-          ],
-        },
-      ],
-      selectedEvent: {
-        event: "hot",
-        priority: 1,
-      },
-    },
-    type: "state-snapshot",
-  },
-  {
-    data: {
-      bThreads: [
-        {
-          name: "addCold",
-          priority: 2,
-          request: [
-            {
-              event: "cold",
-            },
-          ],
-        },
-        {
-          block: [
-            {
-              event: "hot",
-            },
-          ],
-          name: "mixHotCold",
-          priority: 3,
+          thread: "mixHotCold",
           waitFor: [
             {
               event: "cold",
@@ -672,7 +672,7 @@ snapshot[`bProgram: randomized priority queue 1`] = `
 ]
 `;
 
-snapshot[`bProgram: chaos selection 1`] = `
+snapshot[`program: chaos selection 1`] = `
 [
   {
     data: {
@@ -685,10 +685,10 @@ snapshot[`bProgram: chaos selection 1`] = `
   },
   {
     data: {
-      bThreads: [
+      ruleSets: [
         {
-          name: "addHot",
           priority: 1,
+          thread: "addHot",
           waitFor: [
             {
               cb: [Function: cb],
@@ -699,8 +699,8 @@ snapshot[`bProgram: chaos selection 1`] = `
           ],
         },
         {
-          name: "addCold",
           priority: 2,
+          thread: "addCold",
           waitFor: [
             {
               event: "start",
@@ -713,8 +713,8 @@ snapshot[`bProgram: chaos selection 1`] = `
               event: "cold",
             },
           ],
-          name: "mixHotCold",
           priority: 3,
+          thread: "mixHotCold",
           waitFor: [
             {
               event: "hot",
@@ -722,7 +722,6 @@ snapshot[`bProgram: chaos selection 1`] = `
           ],
         },
         {
-          name: "start",
           priority: 0,
           request: [
             {
@@ -732,6 +731,7 @@ snapshot[`bProgram: chaos selection 1`] = `
               event: "start",
             },
           ],
+          thread: "start",
           waitFor: [
             {
               cb: [Function: cb],
@@ -752,15 +752,15 @@ snapshot[`bProgram: chaos selection 1`] = `
   },
   {
     data: {
-      bThreads: [
+      ruleSets: [
         {
           block: [
             {
               event: "cold",
             },
           ],
-          name: "mixHotCold",
           priority: 3,
+          thread: "mixHotCold",
           waitFor: [
             {
               event: "hot",
@@ -768,20 +768,106 @@ snapshot[`bProgram: chaos selection 1`] = `
           ],
         },
         {
-          name: "addHot",
           priority: 1,
           request: [
             {
               event: "hot",
             },
           ],
+          thread: "addHot",
         },
         {
-          name: "addCold",
           priority: 2,
           request: [
             {
               event: "cold",
+            },
+          ],
+          thread: "addCold",
+        },
+      ],
+      selectedEvent: {
+        event: "hot",
+        priority: 1,
+      },
+    },
+    type: "state-snapshot",
+  },
+  {
+    data: {
+      ruleSets: [
+        {
+          priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
+          thread: "addCold",
+        },
+        {
+          block: [
+            {
+              event: "hot",
+            },
+          ],
+          priority: 3,
+          thread: "mixHotCold",
+          waitFor: [
+            {
+              event: "cold",
+            },
+          ],
+        },
+        {
+          priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
+          thread: "addHot",
+        },
+      ],
+      selectedEvent: {
+        event: "cold",
+        priority: 2,
+      },
+    },
+    type: "state-snapshot",
+  },
+  {
+    data: {
+      ruleSets: [
+        {
+          priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
+          thread: "addHot",
+        },
+        {
+          priority: 2,
+          request: [
+            {
+              event: "cold",
+            },
+          ],
+          thread: "addCold",
+        },
+        {
+          block: [
+            {
+              event: "cold",
+            },
+          ],
+          priority: 3,
+          thread: "mixHotCold",
+          waitFor: [
+            {
+              event: "hot",
             },
           ],
         },
@@ -795,15 +881,24 @@ snapshot[`bProgram: chaos selection 1`] = `
   },
   {
     data: {
-      bThreads: [
+      ruleSets: [
         {
-          name: "addCold",
           priority: 2,
           request: [
             {
               event: "cold",
             },
           ],
+          thread: "addCold",
+        },
+        {
+          priority: 1,
+          request: [
+            {
+              event: "hot",
+            },
+          ],
+          thread: "addHot",
         },
         {
           block: [
@@ -811,20 +906,11 @@ snapshot[`bProgram: chaos selection 1`] = `
               event: "hot",
             },
           ],
-          name: "mixHotCold",
           priority: 3,
+          thread: "mixHotCold",
           waitFor: [
             {
               event: "cold",
-            },
-          ],
-        },
-        {
-          name: "addHot",
-          priority: 1,
-          request: [
-            {
-              event: "hot",
             },
           ],
         },
@@ -838,24 +924,24 @@ snapshot[`bProgram: chaos selection 1`] = `
   },
   {
     data: {
-      bThreads: [
+      ruleSets: [
         {
-          name: "addHot",
           priority: 1,
           request: [
             {
               event: "hot",
             },
           ],
+          thread: "addHot",
         },
         {
-          name: "addCold",
           priority: 2,
           request: [
             {
               event: "cold",
             },
           ],
+          thread: "addCold",
         },
         {
           block: [
@@ -863,8 +949,8 @@ snapshot[`bProgram: chaos selection 1`] = `
               event: "cold",
             },
           ],
-          name: "mixHotCold",
           priority: 3,
+          thread: "mixHotCold",
           waitFor: [
             {
               event: "hot",
@@ -881,24 +967,15 @@ snapshot[`bProgram: chaos selection 1`] = `
   },
   {
     data: {
-      bThreads: [
+      ruleSets: [
         {
-          name: "addCold",
           priority: 2,
           request: [
             {
               event: "cold",
             },
           ],
-        },
-        {
-          name: "addHot",
-          priority: 1,
-          request: [
-            {
-              event: "hot",
-            },
-          ],
+          thread: "addCold",
         },
         {
           block: [
@@ -906,85 +983,8 @@ snapshot[`bProgram: chaos selection 1`] = `
               event: "hot",
             },
           ],
-          name: "mixHotCold",
           priority: 3,
-          waitFor: [
-            {
-              event: "cold",
-            },
-          ],
-        },
-      ],
-      selectedEvent: {
-        event: "cold",
-        priority: 2,
-      },
-    },
-    type: "state-snapshot",
-  },
-  {
-    data: {
-      bThreads: [
-        {
-          name: "addHot",
-          priority: 1,
-          request: [
-            {
-              event: "hot",
-            },
-          ],
-        },
-        {
-          name: "addCold",
-          priority: 2,
-          request: [
-            {
-              event: "cold",
-            },
-          ],
-        },
-        {
-          block: [
-            {
-              event: "cold",
-            },
-          ],
-          name: "mixHotCold",
-          priority: 3,
-          waitFor: [
-            {
-              event: "hot",
-            },
-          ],
-        },
-      ],
-      selectedEvent: {
-        event: "hot",
-        priority: 1,
-      },
-    },
-    type: "state-snapshot",
-  },
-  {
-    data: {
-      bThreads: [
-        {
-          name: "addCold",
-          priority: 2,
-          request: [
-            {
-              event: "cold",
-            },
-          ],
-        },
-        {
-          block: [
-            {
-              event: "hot",
-            },
-          ],
-          name: "mixHotCold",
-          priority: 3,
+          thread: "mixHotCold",
           waitFor: [
             {
               event: "cold",
