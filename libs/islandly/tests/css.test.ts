@@ -28,7 +28,7 @@ Deno.test('css()', async (t) => {
     .button4:disabled {
       background-color: rgba(255, 0, 0, 0.8);
     }
-    ._button-4:disabled {
+    ._button-4:disabled  > .combinator {
       background-color: va(--background-color);
     }
     ._button-4:disabled + :not(.link){

@@ -1,6 +1,6 @@
 export const snapshot = {};
 
-snapshot[`program: priority queue 1`] = `
+snapshot[`bProgram: priority queue 1`] = `
 [
   {
     data: {
@@ -336,7 +336,7 @@ snapshot[`program: priority queue 1`] = `
 ]
 `;
 
-snapshot[`program: randomized priority queue 1`] = `
+snapshot[`bProgram: randomized priority queue 1`] = `
 [
   {
     data: {
@@ -672,7 +672,7 @@ snapshot[`program: randomized priority queue 1`] = `
 ]
 `;
 
-snapshot[`program: chaos selection 1`] = `
+snapshot[`bProgram: chaos selection 1`] = `
 [
   {
     data: {

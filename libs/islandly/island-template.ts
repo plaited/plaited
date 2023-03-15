@@ -11,19 +11,23 @@ interface IslandTemplateProps extends Wire {
    * Island element's shadowDom mode
    * @defaultValue 'open' */
   mode?: 'open' | 'closed'
+  /** Slotted content for the island */
+  slots?: string
 }
 
 export const IslandTemplate = template<IslandTemplateProps>(({
   tag,
   template,
   mode = 'open',
+  slots,
   ...rest
-}) =>
-  html`
+}) => {
+  return html`
   <${tag} ${wire({ ...rest })}>
-    <template shadowroot="${mode}">
+    <template shadowrootmode="${mode}">
       ${template}
     </template>
+    ${slots}
   </${tag}>
   `
-)
+})

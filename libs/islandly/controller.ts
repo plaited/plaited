@@ -18,7 +18,7 @@ export const controller = ({
   mode = 'open',
   delegatesFocus = true,
   styles,
-  ...rest
+  ...bProgramOptions
 }: IslandElementOptions = {}) => {
   return <T extends IslandElementConstructor>(
     IslandElement: T,
@@ -35,52 +35,43 @@ export const controller = ({
         super(arg)
         this.internals_ = this.attachInternals()
         let root = this.internals_.shadowRoot
-        if (!root) {
-          root = this.attachShadow({ mode, delegatesFocus })
-          this.#noDeclarativeShadow = true
-        }
+        !root && (root = this.attachShadow({ mode, delegatesFocus }))
+        !root.firstChild && (this.#noDeclarativeShadow = true)
         const sheets = Array.isArray(styles) ? [...new Set(styles)] : [styles]
         const sheet = new CSSStyleSheet()
         sheet.replaceSync(sheets.join(''))
         root.adoptedStyleSheets = [sheet]
       }
       connectedCallback() {
-        if (super.connectedCallback) {
-          super.connectedCallback()
-        }
+        super.connectedCallback && super.connectedCallback()
         if (this.#noDeclarativeShadow) {
           const template = this.querySelector<HTMLTemplateElement>(
-            'template[shadowroot]',
+            'template[shadowrootmode]',
           )
           template
             ? this.#appendTemplate(template)
             : (this.#templateObserver = this.#createTemplateObserver())
         }
-        this.#delegateListeners([
-          ...this.#shadowTriggers(),
-          ...this.#slottedTriggers(),
-        ])
+        this.#connectSlotTriggers()
+        this.#connectShadowTriggers()
         this.#shadowObserver = this.#createShadowObserver()
-        const { disconnect, trigger, addRules, feedback } = useBehavioral(
+        const { disconnect, trigger, ...rest } = useBehavioral(
           {
             context: this,
-            ...rest,
+            ...bProgramOptions,
           },
         )
         this.plait({
           $: this.$.bind(this),
-          addRules,
           context: this,
-          feedback,
           trigger,
+          ...rest,
         })
         this.#disconnect = disconnect
         this.#trigger = trigger
       }
       disconnectedCallback() {
-        if (super.disconnectedCallback) {
-          super.disconnectedCallback()
-        }
+        super.disconnectedCallback && super.disconnectedCallback()
         this.#templateObserver && this.#templateObserver.disconnect()
         this.#shadowObserver && this.#shadowObserver.disconnect()
         if (this.#disconnect) {
@@ -90,37 +81,25 @@ export const controller = ({
           this.#disconnect()
         }
       }
-      #slottedTriggers() {
+      #connectSlotTriggers() {
         const root = this.internals_.shadowRoot
-        const elements: (HTMLElement | SVGElement)[] = []
-        if (root) {
-          const slots: HTMLSlotElement[] = []
+        root &&
           root.querySelectorAll<HTMLSlotElement>('slot').forEach((slot) => {
             // We do not wish to observer nested slots each island/custom element is responsible for it's own slots
-            if (!slot.hasAttribute('slot')) {
-              slots.push(slot)
-            }
-          })
-          for (const slot of slots) {
-            Object.assign(elements, filterSlottedElements(slot))
+            if (slot.hasAttribute('slot')) return
             delegatedListener.set(slot, () => {
               const elements = filterSlottedElements(slot)
-              this.#delegateListeners(elements)
+              elements.length && this.#delegateListeners(elements)
             })
             slot.addEventListener('slotchange', delegatedListener.get(slot))
-          }
-        }
-        return elements
+          })
       }
-      #shadowTriggers() {
+      #connectShadowTriggers() {
         const root = this.internals_.shadowRoot
-        const elements: (HTMLElement | SVGElement)[] = []
         if (root) {
-          return root.querySelectorAll<HTMLElement | SVGElement>(
-            `[${dataTrigger}]`,
-          )
+          const els = root.querySelectorAll<HTMLElement>(`[${dataTrigger}]`)
+          els.length && this.#delegateListeners(els)
         }
-        return elements
       }
       #delegateListeners(
         nodes:
@@ -128,19 +107,19 @@ export const controller = ({
           | NodeListOf<HTMLElement | SVGElement>,
       ) {
         nodes.forEach((el) => {
-          if (!delegatedListener.has(el)) {
-            delegatedListener.set(el, (evt) => {
-              const triggerKey = getTriggerKey(evt)
-              triggerKey && this.#trigger({
-                event: triggerKey,
-                detail: evt as unknown as Record<string, unknown>,
-              })
+          !delegatedListener.has(el) && delegatedListener.set(el, (evt) => {
+            const triggerKey = getTriggerKey(evt)
+            triggerKey && this.#trigger({
+              event: triggerKey,
+              detail: evt as unknown as Record<string, unknown>,
             })
-          }
-          //@ts-ignore: will be HTMLOrSVGElement
-          const events = matchAllEvents(el.dataset.trigger)
-          for (const event of events) {
-            el.addEventListener(event, delegatedListener.get(el))
+          })
+          const triggers = el.dataset.trigger
+          if (triggers) {
+            const events = matchAllEvents(triggers)
+            for (const event of events) {
+              el.addEventListener(event, delegatedListener.get(el))
+            }
           }
         })
       }
@@ -151,12 +130,11 @@ export const controller = ({
           const mo = new MutationObserver((mutationsList) => {
             for (const mutation of mutationsList) {
               if (mutation.addedNodes.length) {
-                this.#delegateListeners(filterAddedNodes(mutation.addedNodes))
+                const els = filterAddedNodes(mutation.addedNodes)
+                els.length && this.#delegateListeners(els)
               }
               if (mutation.type === 'attributes') {
-                this.#delegateListeners(
-                  root.querySelectorAll<HTMLElement>(`[${dataTrigger}]`),
-                )
+                this.#connectShadowTriggers()
               }
             }
           })
@@ -179,7 +157,7 @@ export const controller = ({
       #createTemplateObserver() {
         const mo = new MutationObserver(() => {
           const template = this.querySelector<HTMLTemplateElement>(
-            'template[shadowroot]',
+            'template[shadowrootmode]',
           )
           if (template) {
             mo.disconnect()
@@ -189,14 +167,27 @@ export const controller = ({
         mo.observe(this, { childList: true })
         return mo
       }
-      $<T = Element>(target: string): T[] | never[] {
+      $<T extends (HTMLElement | SVGElement)>(target: string): T[] {
         const root = this.internals_.shadowRoot
-        const selection = root
-          ? root.querySelectorAll(
+        let elements: T[] = []
+        if (root) {
+          elements = [...root.querySelectorAll<T>(
             `[${dataTarget}="${target}"]`,
-          ) as unknown as T[]
-          : []
-        return [...selection]
+          )]
+          root.querySelectorAll<HTMLSlotElement>('slot').forEach((slot) => {
+            // We do not wish to observer nested slots each island/custom element is responsible for it's own slots
+            if (slot.hasAttribute('slot')) return
+            for (const el of slot.assignedElements()) {
+              if (
+                el instanceof HTMLElement ||
+                el instanceof SVGElement
+              ) {
+                el.dataset.target === target && elements.push(el as T)
+              }
+            }
+          })
+        }
+        return elements
       }
       static define(tag: string) {
         if (customElements.get(tag)) return

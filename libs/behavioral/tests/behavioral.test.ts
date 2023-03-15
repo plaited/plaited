@@ -1,5 +1,6 @@
 import { assertEquals, assertSnapshot } from '../../test-deps.ts'
-import { loop, program, sync, thread } from '../mod.ts'
+import { bProgram } from '../mod.ts'
+import { loop, sync, thread } from '../rules.ts'
 
 const expectedFeedback = [
   'Add hot',
@@ -63,17 +64,16 @@ const getActions = (arr: string[]) => ({
     arr.push('Add hot')
   },
 })
-Deno.test('program: priority queue', (t) => {
+Deno.test('bProgram: priority queue', (t) => {
   const actualFeedback: string[] = []
   const logs: unknown[] = []
-  const { trigger, feedback, log, addRules } = program({
-    dev: true,
+  const { trigger, feedback, addRules } = bProgram({
+    logger: (msg) => {
+      logs.push(msg)
+    },
   })
   addRules(rules)
   feedback(getActions(actualFeedback))
-  log((msg) => {
-    logs.push(msg)
-  })
   trigger({
     event: 'start',
     detail: { value: 'start' },
@@ -85,18 +85,17 @@ Deno.test('program: priority queue', (t) => {
   )
   assertSnapshot(t, logs, `priority selection feedback`)
 })
-Deno.test('program: randomized priority queue', (t) => {
+Deno.test('bProgram: randomized priority queue', (t) => {
   const actualFeedback: string[] = []
   const logs: unknown[] = []
-  const { trigger, feedback, log, addRules } = program({
+  const { trigger, feedback, addRules } = bProgram({
     strategy: 'randomized',
-    dev: true,
+    logger: (msg) => {
+      logs.push(msg)
+    },
   })
   addRules(rules)
   feedback(getActions(actualFeedback))
-  log((msg) => {
-    logs.push(msg)
-  })
   trigger({
     event: 'start',
     detail: { value: 'start' },
@@ -108,18 +107,17 @@ Deno.test('program: randomized priority queue', (t) => {
   )
   assertSnapshot(t, logs, `randomized priority selection log`)
 })
-Deno.test('program: chaos selection', (t) => {
+Deno.test('bProgram: chaos selection', (t) => {
   const actualFeedback: string[] = []
   const logs: unknown[] = []
-  const { trigger, feedback, log, addRules } = program({
+  const { trigger, feedback, addRules } = bProgram({
     strategy: 'chaos',
-    dev: true,
+    logger: (msg) => {
+      logs.push(msg)
+    },
   })
   addRules(rules)
   feedback(getActions(actualFeedback))
-  log((msg) => {
-    logs.push(msg)
-  })
   trigger({
     event: 'start',
     detail: { value: 'start' },

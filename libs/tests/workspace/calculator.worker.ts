@@ -1,6 +1,6 @@
-import { program, useMain } from '$plaited'
+import { bProgram, useMain } from '$plaited'
 
-const { trigger, feedback } = program()
+const { trigger, feedback } = bProgram()
 
 const { send } = useMain({ context: self, trigger })
 

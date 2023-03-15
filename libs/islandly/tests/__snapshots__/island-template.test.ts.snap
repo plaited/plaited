@@ -1,0 +1,11 @@
+export const snapshot = {};
+
+snapshot[`IslandTemplate() 1`] = `'<z-el><template shadowrootmode="open"><div><h1>header</h1></div></template></z-el>'`;
+
+snapshot[`IslandTemplate() 2`] = `'<z-el id="random"><template shadowrootmode="open"><div><h1>header</h1></div></template></z-el>'`;
+
+snapshot[`IslandTemplate() 3`] = `'<z-el data-target="random" data-trigger="click->random focus->thing"><template shadowrootmode="open"><div><h1>header</h1></div></template></z-el>'`;
+
+snapshot[`IslandTemplate() 4`] = `'<z-el><template shadowrootmode="closed"><div><h1>header</h1></div></template></z-el>'`;
+
+snapshot[`IslandTemplate() 5`] = `'<z-el><template shadowrootmode="open"><div><h1>header</h1></div></template><div>slotted</di></z-el>'`;

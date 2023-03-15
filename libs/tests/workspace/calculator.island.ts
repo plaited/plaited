@@ -1,4 +1,4 @@
-import { define, loop, sync, useStore } from '$plaited'
+import { define, useStore } from '$plaited'
 import { connect, send } from './comms.ts'
 import { ops } from './constants.ts'
 
@@ -6,7 +6,7 @@ define({
   tag: 'calculator-island',
   connect,
   logger: (msg: Record<string, unknown>) => console.log(msg),
-}, ({ $, feedback, addRules }) => {
+}, ({ $, feedback, addRules, loop, sync }) => {
   const [previous] = $<HTMLHeadElement>('previous')
   const [current] = $<HTMLHeadElement>('current')
 

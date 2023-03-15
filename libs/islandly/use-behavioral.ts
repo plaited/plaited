@@ -1,4 +1,4 @@
-import { LogCallback, program, Strategy, Trigger } from '../behavioral/mod.ts'
+import { bProgram, LogCallback, Strategy, Trigger } from '../behavioral/mod.ts'
 
 export const useBehavioral = ({
   id,
@@ -21,11 +21,10 @@ export const useBehavioral = ({
   /** reference to the node instance of the Island HTMLElement calling this hook */
   context: HTMLElement
 }) => {
-  const { feedback, trigger, log, addRules } = program({
+  const { trigger, ...rest } = bProgram({
     strategy,
-    dev: Boolean(logger),
+    logger,
   })
-  logger && log(logger)
   let disconnect
   if (connect) {
     const tagName = context.tagName.toLowerCase()
@@ -40,5 +39,5 @@ export const useBehavioral = ({
       event: `connected->${id ? _id ?? `${tagName} with missing id` : tagName}`,
     })
   }
-  return { trigger, disconnect, addRules, feedback }
+  return { trigger, disconnect, ...rest }
 }

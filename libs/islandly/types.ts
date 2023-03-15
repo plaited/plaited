@@ -1,5 +1,5 @@
 import {
-  Feedback,
+  bProgram,
   LogCallback,
   RulesFunc,
   Strategy,
@@ -9,7 +9,9 @@ import {
 /**
  * @description returns a an array of nodes who's data-target value is the same as the target string provided.
  */
-export type Query = <T = Element>(target: string) => T[] | never[]
+export type Query = <T extends (HTMLElement | SVGElement)>(
+  target: string,
+) => T[] | never[]
 
 export type UseHook<T = Record<string, unknown>> = (
   args: {
@@ -42,23 +44,19 @@ export type IslandElementOptions = {
 }
 
 export interface PlaitInterface {
-  (args: {
-    /** query for elements with the data-target attribute in the Island's shadowDom */
-    $: Query
-    /** The DOM node context allowing easy light & shadow dom access
-     * @example
-     * // returns the div element inside
-     * // the shadowRoot of the element instance
-     * const shadowEl = context.shadowRoot.querySelector('div')
-     */
-    context: ISLElement
-    /** Add behavioral program threads to the Island */
-    addRules: (threads: Record<string, RulesFunc>) => void
-    /** Connect actions to the behavioral program's reactive feedback stream */
-    feedback: Feedback
-    /** Function  to trigger an event in the behavioral program */
-    trigger: Trigger
-  }): void | Promise<void>
+  (
+    args: {
+      /** query for elements with the data-target attribute in the Island's shadowDom and slots */
+      $: Query
+      /** The DOM node context allowing easy light & shadow dom access
+       * @example
+       * // returns the div element inside
+       * // the shadowRoot of the element instance
+       * const shadowEl = context.shadowRoot.querySelector('div')
+       */
+      context: ISLElement
+    } & ReturnType<typeof bProgram>,
+  ): void | Promise<void>
 }
 
 export interface ISLElement extends HTMLElement {

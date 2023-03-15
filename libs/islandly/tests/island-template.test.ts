@@ -1,19 +1,20 @@
-import { assertEquals } from '../../test-deps.ts'
+import { assertSnapshot } from '../../test-deps.ts'
 import { html, IslandTemplate } from '../mod.ts'
 
 // Expected usage const MyTemplate = ({ ..args}) => IslandTemplate({tag, template: html`` ...rest})
-Deno.test('IslandTemplate()', () => {
-  assertEquals(
+Deno.test('IslandTemplate()', (t) => {
+  assertSnapshot(
+    t,
     IslandTemplate({
       tag: 'z-el',
       template: html`<div>
         <h1>header</h1>
       </div>`,
     }),
-    '<z-el><template shadowroot="open"><div><h1>header</h1></div></template></z-el>',
     'tag and template only',
   )
-  assertEquals(
+  assertSnapshot(
+    t,
     IslandTemplate({
       tag: 'z-el',
       id: 'random',
@@ -21,10 +22,10 @@ Deno.test('IslandTemplate()', () => {
         <h1>header</h1>
       </div>`,
     }),
-    '<z-el id="random"><template shadowroot="open"><div><h1>header</h1></div></template></z-el>',
     'tag, template, and id',
   )
-  assertEquals(
+  assertSnapshot(
+    t,
     IslandTemplate({
       tag: 'z-el',
       target: 'random',
@@ -36,10 +37,10 @@ Deno.test('IslandTemplate()', () => {
         <h1>header</h1>
       </div>`,
     }),
-    '<z-el data-target="random" data-trigger="click->random focus->thing"><template shadowroot="open"><div><h1>header</h1></div></template></z-el>',
     'data-target, data-trigger, tag, template, and id',
   )
-  assertEquals(
+  assertSnapshot(
+    t,
     IslandTemplate({
       tag: 'z-el',
       mode: 'closed',
@@ -47,7 +48,17 @@ Deno.test('IslandTemplate()', () => {
         <h1>header</h1>
       </div>`,
     }),
-    '<z-el><template shadowroot="closed"><div><h1>header</h1></div></template></z-el>',
-    'tag, template, and mode',
+    'tag, template, and mode closed',
+  )
+  assertSnapshot(
+    t,
+    IslandTemplate({
+      tag: 'z-el',
+      slots: '<div>slotted</di>',
+      template: html`<div>
+        <h1>header</h1>
+      </div>`,
+    }),
+    'tag, template, and slots',
   )
 })

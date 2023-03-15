@@ -15,11 +15,12 @@ snapshot[`css() 1`] = `
 snapshot[`css() 2`] = `
 {
   classes: {
-    "_button-4": "_button-4_MjE0Mz",
-    button: "button_MjE0Mz",
-    button4: "button4_MjE0Mz",
-    link: "link_MjE0Mz",
+    "_button-4": "_button-4_LTM5Mz",
+    button: "button_LTM5Mz",
+    button4: "button4_LTM5Mz",
+    combinator: "combinator_LTM5Mz",
+    link: "link_LTM5Mz",
   },
-  styles: ".button_MjE0Mz { background-color: rgba(255, 0, 0, 0.2); } .button4_MjE0Mz:disabled { background-color: rgba(255, 0, 0, 0.8); } ._button-4_MjE0Mz:disabled { background-color: va(--background-color); } ._button-4_MjE0Mz:disabled + :not(.link_MjE0Mz){ background-color: var(--background-color-disabled); }",
+  styles: ".button_LTM5Mz { background-color: rgba(255, 0, 0, 0.2); } .button4_LTM5Mz:disabled { background-color: rgba(255, 0, 0, 0.8); } ._button-4_LTM5Mz:disabled > .combinator_LTM5Mz { background-color: va(--background-color); } ._button-4_LTM5Mz:disabled + :not(.link_LTM5Mz){ background-color: var(--background-color-disabled); }",
 }
 `;

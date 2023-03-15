@@ -14,6 +14,7 @@ import {
   Strategy,
   Trigger,
 } from './types.ts'
+import { loop, sync, thread } from './rules.ts'
 
 const requestInParameter = (
   { event: requestEventName, detail: requestDetail = {} }: CandidateBid,
@@ -33,14 +34,14 @@ const requestInParameter = (
   )
 }
 
-export const program = ({
+export const bProgram = ({
   /** event selection strategy {@link Strategy}*/
   strategy = strategies.priority,
   /** When set to true returns a stream with log of state snapshots, last selected event and trigger */
-  dev = false,
+  logger,
 }: {
   strategy?: Strategy | keyof Omit<typeof strategies, 'custom'>
-  dev?: boolean
+  logger?: LogCallback
 } = {}) => {
   const eventSelectionStrategy: Strategy = typeof strategy === 'string'
     ? selectionStrategies[strategy]
@@ -92,7 +93,7 @@ export const program = ({
     )
     const selectedEvent = eventSelectionStrategy(filteredBids)
     if (selectedEvent) {
-      dev && stream({
+      logger && stream({
         type: streamEvents.snapshot,
         data: stateSnapshot({ bids, selectedEvent }),
       })
@@ -143,7 +144,7 @@ export const program = ({
       priority: 0,
       generator: thread(),
     })
-    if (dev) {
+    if (logger) {
       const msg: ListenerMessage = {
         type: streamEvents.trigger,
         data: {
@@ -180,21 +181,22 @@ export const program = ({
     }
   }
 
-  const log = (callback: LogCallback) => {
+  if (logger) {
     stream.subscribe(
       ({ type, data }: ListenerMessage) => {
         if (type === streamEvents.trigger) {
-          callback({ type, data })
+          logger({ type, data })
         }
         if (type === streamEvents.snapshot) {
-          callback({ type, data })
+          logger({ type, data })
         }
         if (type === streamEvents.end) {
-          callback({ type, data })
+          logger({ type, data })
         }
       },
     )
   }
+
   return Object.freeze({
     /** add thread function to behavioral program */
     addRules,
@@ -202,7 +204,23 @@ export const program = ({
     feedback,
     /** trigger a run and event on behavioral program */
     trigger,
-    /** reactive stream for logging selected events, state snapshots, and trigger events */
-    log,
+    /**
+     * A behavioral thread that loops infinitely or until some callback condition is false
+     * like a mode change open -> close. This function returns a threads
+     */
+    loop,
+    /**
+     * At synchronization points, each behavioral thread specifies three sets of events:
+     * requested events: the threads proposes that these be considered for triggering,
+     * and asks to be notified when any of them occurs; waitFor events: the threads does not request these, but
+     * asks to be notified when any of them is triggered; and blocked events: the
+     * threads currently forbids triggering
+     * any of these events.
+     */
+    sync,
+    /**
+     * creates a behavioral thread from synchronization sets and/or other  behavioral threads
+     */
+    thread,
   })
 }

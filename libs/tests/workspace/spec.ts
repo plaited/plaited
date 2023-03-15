@@ -23,6 +23,12 @@ export const shadowObserverTest = () => {
   // need to test adding svg with attribute to this.
 }
 
+export const dynamicIslandTes = () => {
+  // dynamically add island to screen
+  // does it upgrade with styles
+  // is it interactive
+}
+
 export const calculatorTest = () => {
   // should be an example of a ui and also test worker connection
 }
