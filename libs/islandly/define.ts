@@ -1,9 +1,5 @@
 /// <reference lib="dom.iterable" />
-import {
-  IslandConfig,
-  IslandElementConstructor,
-  PlaitInterface,
-} from './types.ts'
+import { IslandConfig, IslandElementConstructor, ISLElement } from './types.ts'
 import { controller } from './controller.ts'
 
 /**
@@ -11,7 +7,7 @@ import { controller } from './controller.ts'
  */
 export const define = (
   { tag, ...options }: IslandConfig,
-  plait: PlaitInterface,
+  plait: ISLElement['plait'],
 ) => {
   class IslandElement extends HTMLElement {
     constructor() {

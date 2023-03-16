@@ -43,23 +43,20 @@ export type IslandElementOptions = {
   styles?: string | string[]
 }
 
-export interface PlaitInterface {
-  (
-    args: {
-      /** query for elements with the data-target attribute in the Island's shadowDom and slots */
-      $: Query
-      /** The DOM node context allowing easy light & shadow dom access
-       * @example
-       * // returns the div element inside
-       * // the shadowRoot of the element instance
-       * const shadowEl = context.shadowRoot.querySelector('div')
-       */
-      context: ISLElement
-    } & ReturnType<typeof bProgram>,
-  ): void | Promise<void>
-}
+export type PlaitProps = {
+  /** query for elements with the data-target attribute in the Island's shadowDom and slots */
+  $: Query
+  /** The DOM node context allowing easy light & shadow dom access
+   * @example
+   * // returns the div element inside
+   * // the shadowRoot of the element instance
+   * const shadowEl = context.shadowRoot.querySelector('div')
+   */
+  context: ISLElement
+} & ReturnType<typeof bProgram>
 
 export interface ISLElement extends HTMLElement {
+  plait(props: PlaitProps): void | Promise<void>
   connectedCallback?(): void
   attributeChangedCallback?(
     name: string,
@@ -75,7 +72,6 @@ export interface ISLElement extends HTMLElement {
     state: unknown,
     reason: 'autocomplete' | 'restore',
   ): void
-  plait: PlaitInterface
 }
 
 export interface IslandElementConstructor {
