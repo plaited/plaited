@@ -5,13 +5,13 @@ import { selectionStrategies } from './selection-strategies.ts'
 import {
   CandidateBid,
   Feedback,
-  ListenerMessage,
-  LogCallback,
+  Logger,
   ParameterIdiom,
   PendingBid,
   RulesFunc,
   RunningBid,
   Strategy,
+  StreamMessage,
   Trigger,
 } from './types.ts'
 import { loop, sync, thread } from './rules.ts'
@@ -41,7 +41,7 @@ export const bProgram = ({
   logger,
 }: {
   strategy?: Strategy | keyof Omit<typeof strategies, 'custom'>
-  logger?: LogCallback
+  logger?: Logger
 } = {}) => {
   const eventSelectionStrategy: Strategy = typeof strategy === 'string'
     ? selectionStrategies[strategy]
@@ -97,11 +97,6 @@ export const bProgram = ({
         type: streamEvents.snapshot,
         data: stateSnapshot({ bids, selectedEvent }),
       })
-      const { priority: _p, cb: _a, ...detail } = selectedEvent
-      stream({
-        type: streamEvents.select,
-        data: detail,
-      })
       nextStep(selectedEvent)
     } else {
       stream({
@@ -127,6 +122,13 @@ export const bProgram = ({
         pending.delete(bid)
       }
     }
+    const { priority: _p, cb: _cb, ...detail } = selectedEvent
+    // To avoid infinite loop with calling trigger from feedback always stream select event
+    // checking if the request is in the parameter which can be a waitFor or pending request
+    stream({
+      type: streamEvents.select,
+      data: detail,
+    })
     run()
   }
   const trigger: Trigger = ({
@@ -145,7 +147,7 @@ export const bProgram = ({
       generator: thread(),
     })
     if (logger) {
-      const msg: ListenerMessage = {
+      const msg: StreamMessage = {
         type: streamEvents.trigger,
         data: {
           event: event,
@@ -161,7 +163,7 @@ export const bProgram = ({
     actions,
   ) => {
     stream.subscribe(
-      ({ type, data }: ListenerMessage) => {
+      ({ type, data }: StreamMessage) => {
         if (type !== streamEvents.select) return
         const { event: key, detail = {} } = data
         type &&
@@ -183,7 +185,7 @@ export const bProgram = ({
 
   if (logger) {
     stream.subscribe(
-      ({ type, data }: ListenerMessage) => {
+      ({ type, data }: StreamMessage) => {
         if (type === streamEvents.trigger) {
           logger({ type, data })
         }

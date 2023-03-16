@@ -31,10 +31,11 @@ feedback({
       operation: 'add' | 'minus' | 'multiply' | 'divide'
     },
   ) {
-    send('calculator-island', {
-      event: 'updateOnCalculate',
+    trigger({
+      event: 'calculate',
       detail: {
-        value: calculator[operation](prev, (cur / 100) * prev),
+        prev,
+        cur: (cur / 100) * prev,
         operation,
       },
     })

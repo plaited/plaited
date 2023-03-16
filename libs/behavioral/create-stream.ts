@@ -1,9 +1,9 @@
-import { Listener, ListenerMessage, Stream } from './types.ts'
+import { Listener, Stream, StreamMessage } from './types.ts'
 export const createStream = (
-  initial?: ListenerMessage | void,
+  initial?: StreamMessage | void,
 ): Stream => {
-  const listeners: Array<(value: ListenerMessage) => void> = []
-  function createdStream(value: ListenerMessage) {
+  const listeners: Array<(value: StreamMessage) => void> = []
+  function createdStream(value: StreamMessage) {
     for (const i in listeners) {
       listeners[i](value)
     }
@@ -11,8 +11,8 @@ export const createStream = (
   createdStream.subscribe = (listener: Listener) => {
     const newInitial = initial !== undefined ? listener(initial) : undefined
     const newStream = createStream(newInitial)
-    listeners.push((value: ListenerMessage) => {
-      value !== undefined && newStream(listener(value) as ListenerMessage)
+    listeners.push((value: StreamMessage) => {
+      value !== undefined && newStream(listener(value) as StreamMessage)
     })
 
     return newStream

@@ -23,8 +23,16 @@ export type SnapshotMessage = {
   data: ReturnType<StateSnapshot>
 }
 
-type EventMessage = {
-  type: typeof streamEvents.select | typeof streamEvents.trigger
+type SelectMessage = {
+  type: typeof streamEvents.select
+  data: {
+    event: string
+    detail?: Record<string, unknown>
+  }
+}
+
+type TriggerMessage = {
+  type: typeof streamEvents.trigger
   data: {
     event: string
     detail?: Record<string, unknown>
@@ -38,12 +46,16 @@ type EndMessage = {
   }
 }
 
-export type ListenerMessage = EventMessage | SnapshotMessage | EndMessage
+export type StreamMessage =
+  | SelectMessage
+  | TriggerMessage
+  | SnapshotMessage
+  | EndMessage
 
-export type Listener = (msg: ListenerMessage) => ListenerMessage | void
+export type Listener = (msg: StreamMessage) => StreamMessage | void
 
 export interface Stream {
-  (value: ListenerMessage): void
+  (value: StreamMessage): void
   subscribe: (listener: Listener) => Stream
 }
 
@@ -128,14 +140,13 @@ export type Feedback = <T extends Record<string, (detail: any) => void>>(
   actions: Actions<T>,
 ) => void
 
-export interface LogCallback {
-  (args: {
-    type: typeof streamEvents.trigger
-    data: {
-      event: string
-      detail?: unknown
-    }
-  }): void
+export interface Logger {
+  (args: TriggerMessage): void
   (args: SnapshotMessage): void
   (args: EndMessage): void
 }
+
+export type LogMessage =
+  | TriggerMessage
+  | SnapshotMessage
+  | EndMessage

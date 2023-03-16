@@ -1,6 +1,6 @@
 import {
   bProgram,
-  LogCallback,
+  Logger,
   RulesFunc,
   Strategy,
   Trigger,
@@ -32,7 +32,7 @@ export type IslandElementOptions = {
   /** configure whether to delegate focus or not defaults to true */
   delegatesFocus?: boolean
   /** logger function to receive messages from behavioral program react streams */
-  logger?: LogCallback
+  logger?: Logger
   /** event selection strategy callback from behavioral library */
   strategy?: Strategy
   /** messenger connect callback */
