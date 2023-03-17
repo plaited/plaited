@@ -18,7 +18,7 @@ const winConditions = [
 const squares = [0, 1, 2, 3, 4, 5, 6, 7, 8]
 
 Deno.test('detect wins', () => {
-  const { sync, addRules, thread, feedback, trigger } = bProgram()
+  const { sync, addThreads, thread, feedback, trigger } = bProgram()
   const actual: number[] = []
   const playerWins = (player: string) =>
     winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
@@ -47,7 +47,7 @@ Deno.test('detect wins', () => {
       )
       return acc
     }, {})
-  addRules({
+  addThreads({
     ...playerWins('X'),
   })
   feedback({
@@ -62,7 +62,7 @@ Deno.test('detect wins', () => {
 })
 
 Deno.test('enforceTurns', () => {
-  const { sync, addRules, thread, feedback, trigger, loop } = bProgram()
+  const { sync, addThreads, thread, feedback, trigger, loop } = bProgram()
   let actual: {
     player: 'X' | 'O'
     square: number
@@ -95,7 +95,7 @@ Deno.test('enforceTurns', () => {
       return acc
     }, {})
 
-  addRules({
+  addThreads({
     ...playerWins('O'),
     ...playerWins('X'),
     enforceTurns: loop([
@@ -126,7 +126,7 @@ Deno.test('enforceTurns', () => {
 })
 
 Deno.test('enforceTurns without blocking', () => {
-  const { sync, addRules, thread, feedback, trigger, loop } = bProgram()
+  const { sync, addThreads, thread, feedback, trigger, loop } = bProgram()
   let actual: {
     player: 'X' | 'O'
     win: number[]
@@ -159,7 +159,7 @@ Deno.test('enforceTurns without blocking', () => {
       return acc
     }, {})
 
-  addRules({
+  addThreads({
     ...playerWins('O'),
     ...playerWins('X'),
     enforceTurns: loop([
@@ -192,7 +192,7 @@ Deno.test('enforceTurns without blocking', () => {
 })
 
 Deno.test('squaresTaken', () => {
-  const { sync, addRules, thread, feedback, trigger, loop } = bProgram()
+  const { sync, addThreads, thread, feedback, trigger, loop } = bProgram()
   const actual: {
     player: 'X' | 'O'
     square: number
@@ -239,7 +239,7 @@ Deno.test('squaresTaken', () => {
     {},
   )
 
-  addRules({
+  addThreads({
     ...playerWins('O'),
     ...playerWins('X'),
     enforceTurns: loop([
@@ -266,7 +266,7 @@ Deno.test('squaresTaken', () => {
 })
 
 Deno.test('doesn\'t stop game', () => {
-  const { sync, addRules, thread, feedback, trigger, loop } = bProgram()
+  const { sync, addThreads, thread, feedback, trigger, loop } = bProgram()
   const actual: (
     | { player: 'X' | 'O'; square: number }
     | { player: 'X' | 'O'; win: number[] }
@@ -313,7 +313,7 @@ Deno.test('doesn\'t stop game', () => {
     {},
   )
 
-  addRules({
+  addThreads({
     ...playerWins('O'),
     ...playerWins('X'),
     enforceTurns: loop([
@@ -367,7 +367,7 @@ Deno.test('doesn\'t stop game', () => {
 })
 
 Deno.test('stopGame', () => {
-  const { sync, addRules, thread, feedback, trigger, loop } = bProgram()
+  const { sync, addThreads, thread, feedback, trigger, loop } = bProgram()
   const actual: (
     | { player: 'X' | 'O'; square: number }
     | { player: 'X' | 'O'; win: number[] }
@@ -414,7 +414,7 @@ Deno.test('stopGame', () => {
     {},
   )
 
-  addRules({
+  addThreads({
     ...playerWins('O'),
     ...playerWins('X'),
     enforceTurns: loop([
@@ -471,7 +471,7 @@ Deno.test('stopGame', () => {
 })
 
 Deno.test('defaultMoves', () => {
-  const { sync, addRules, thread, feedback, trigger, loop } = bProgram()
+  const { sync, addThreads, thread, feedback, trigger, loop } = bProgram()
   const actual: (
     | { player: 'X' | 'O'; square: number }
     | { player: 'X' | 'O'; win: number[] }
@@ -518,7 +518,7 @@ Deno.test('defaultMoves', () => {
     {},
   )
 
-  addRules({
+  addThreads({
     ...playerWins('O'),
     ...playerWins('X'),
     enforceTurns: loop([
@@ -580,7 +580,7 @@ Deno.test('defaultMoves', () => {
 })
 
 Deno.test('startAtCenter', () => {
-  const { sync, addRules, thread, feedback, trigger, loop } = bProgram()
+  const { sync, addThreads, thread, feedback, trigger, loop } = bProgram()
   const actual: (
     | { player: 'X' | 'O'; square: number }
     | { player: 'X' | 'O'; win: number[] }
@@ -627,7 +627,7 @@ Deno.test('startAtCenter', () => {
     {},
   )
 
-  addRules({
+  addThreads({
     ...playerWins('O'),
     ...playerWins('X'),
     enforceTurns: loop([
@@ -695,7 +695,7 @@ Deno.test('startAtCenter', () => {
 })
 
 Deno.test('stopXWin', () => {
-  const { sync, addRules, thread, feedback, trigger, loop } = bProgram()
+  const { sync, addThreads, thread, feedback, trigger, loop } = bProgram()
   const actual: (
     | { player: 'X' | 'O'; square: number }
     | { player: 'X' | 'O'; win: number[] }
@@ -765,7 +765,7 @@ Deno.test('stopXWin', () => {
     },
     {},
   )
-  addRules({
+  addThreads({
     ...playerWins('O'),
     ...playerWins('X'),
     enforceTurns: loop([

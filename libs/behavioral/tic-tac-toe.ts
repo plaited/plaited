@@ -79,7 +79,7 @@ const strands = {
   ...playerWins('O'),
 }
 
-const { trigger: xTrigger, feedback: xFeedback, addRules: xAdd } = bProgram({
+const { trigger: xTrigger, feedback: xFeedback, addThreads: xAdd } = bProgram({
   strategy: 'randomized',
 })
 
@@ -88,7 +88,7 @@ xAdd({
   oMoves: playerMove('X'),
 })
 
-const { trigger: oTrigger, feedback: oFeedback, addRules: oAdd } = bProgram({
+const { trigger: oTrigger, feedback: oFeedback, addThreads: oAdd } = bProgram({
   strategy: 'randomized',
 })
 oAdd({

@@ -8,14 +8,87 @@ define({
   tag: 'calculator-island',
   connect,
   logger: (msg: Record<string, unknown>) => console.log(msg),
-}, ({ $, feedback, addRules, loop, sync }) => {
+}, ({ $, feedback, addThreads, loop, sync }) => {
   const [previous] = $<HTMLHeadElement>('previous')
   const [current] = $<HTMLHeadElement>('current')
 
   const [getPrev, setPrev] = useStore<string>('')
   const [getCur, setCur] = useStore<string>('')
   const [getOp, setOp] = useStore<keyof typeof ops>('rest')
-  addRules({
+  addThreads({
+    onPositive: loop([
+      sync({
+        waitFor: {
+          event: 'negative',
+          cb: ({ event }) => {
+            if (event !== 'positive-negative') return false
+            return getCur().startsWith('-')
+          },
+        },
+      }),
+      sync({
+        request: {
+          event: 'positive',
+        },
+      }),
+    ]),
+    onNegative: loop([
+      sync({
+        waitFor: {
+          event: 'negative',
+          cb: ({ event }) => {
+            if (event !== 'positive-negative') return false
+            return !getCur().startsWith('-')
+          },
+        },
+      }),
+      sync({
+        request: {
+          event: 'negative',
+        },
+      }),
+    ]),
+    onPeriod: loop([
+      sync({
+        block: {
+          cb: ({ event }) => {
+            if (event !== 'period') return false
+            const cur = getCur()
+            return (cur.endsWith('.') || cur.includes('.'))
+          },
+        },
+      }),
+    ]),
+    onEqual: loop([
+      sync({
+        block: {
+          cb: ({ event }) => {
+            if (event !== 'equal') return false
+            return !(getCur() && getPrev())
+          },
+        },
+      }),
+    ]),
+    onSquareRoot: loop([
+      sync({
+        block: {
+          cb: ({ event }) => {
+            if (event !== 'squareRoot') return false
+            return !(getCur())
+          },
+        },
+      }),
+    ]),
+    onPercent: loop([
+      sync({
+        block: {
+          cb: ({ event }) => {
+            if (event !== 'percent') return false
+            return !(getCur() && getPrev())
+          },
+        },
+      }),
+    ]),
     onUpdate: loop([
       sync({
         waitFor: [
@@ -31,16 +104,14 @@ define({
       setCur('')
     },
     percent() {
-      if (getCur() && getPrev()) {
-        send('worker', {
-          event: 'percent',
-          detail: {
-            cur: parseFloat(getCur()),
-            prev: parseFloat(getPrev()),
-            operation: getOp(),
-          },
-        })
-      }
+      send('worker', {
+        event: 'percent',
+        detail: {
+          cur: parseFloat(getCur()),
+          prev: parseFloat(getPrev()),
+          operation: getOp(),
+        },
+      })
     },
     updateOnSquareRoot(detail: { value: number }) {
       const val = `${detail.value}`
@@ -48,12 +119,10 @@ define({
       current.replaceChildren(val)
     },
     squareRoot() {
-      if (getCur()) {
-        send('worker', {
-          event: 'squareRoot',
-          detail: { cur: parseFloat(getCur()) },
-        })
-      }
+      send('worker', {
+        event: 'squareRoot',
+        detail: { cur: parseFloat(getCur()) },
+      })
     },
     updateOnEqual(detail: { value: number }) {
       const val = `${detail.value}`
@@ -62,16 +131,14 @@ define({
       current.replaceChildren(val)
     },
     equal() {
-      if (getCur() && getPrev()) {
-        send('worker', {
-          event: 'equal',
-          detail: {
-            cur: parseFloat(getCur()),
-            prev: parseFloat(getPrev()),
-            operation: getOp(),
-          },
-        })
-      }
+      send('worker', {
+        event: 'equal',
+        detail: {
+          cur: parseFloat(getCur()),
+          prev: parseFloat(getPrev()),
+          operation: getOp(),
+        },
+      })
     },
     updateOnCalculate(detail: { value: number }) {
       const val = `${detail.value}`
@@ -106,18 +173,15 @@ define({
       current.replaceChildren('0')
       previous.replaceChildren('')
     },
-    ['positive-negative']() {
-      if (getCur().startsWith('-')) {
-        setCur((cur) => cur.replace('-', ''))
-        current.replaceChildren(getCur())
-        return
-      }
+    positive() {
+      setCur((cur) => cur.replace('-', ''))
+      current.replaceChildren(getCur())
+    },
+    negative() {
       setCur((cur) => `-${cur}`)
       current.replaceChildren(getCur())
     },
     period() {
-      const cur = getCur()
-      if (cur.endsWith('.') || cur.includes('.')) return
       setCur((cur) => `${cur}.`)
       current.replaceChildren(getCur())
     },

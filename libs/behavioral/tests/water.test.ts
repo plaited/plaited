@@ -3,8 +3,8 @@ import { bProgram, LogMessage } from '../mod.ts'
 
 Deno.test('Add hot water 3 times', () => {
   const actual: string[] = []
-  const { addRules, thread, sync, trigger, feedback } = bProgram()
-  addRules({
+  const { addThreads, thread, sync, trigger, feedback } = bProgram()
+  addThreads({
     addHot: thread(
       sync({ request: { event: 'hot' } }),
       sync({ request: { event: 'hot' } }),
@@ -22,8 +22,8 @@ Deno.test('Add hot water 3 times', () => {
 
 Deno.test('Add hot/cold water 3 times', () => {
   const actual: string[] = []
-  const { addRules, thread, sync, trigger, feedback } = bProgram()
-  addRules({
+  const { addThreads, thread, sync, trigger, feedback } = bProgram()
+  addThreads({
     addHot: thread(
       sync({ request: { event: 'hot' } }),
       sync({ request: { event: 'hot' } }),
@@ -56,8 +56,8 @@ Deno.test('Add hot/cold water 3 times', () => {
 
 Deno.test('interleave', () => {
   const actual: string[] = []
-  const { addRules, thread, sync, trigger, feedback, loop } = bProgram()
-  addRules({
+  const { addThreads, thread, sync, trigger, feedback, loop } = bProgram()
+  addThreads({
     addHot: thread(
       sync({ request: { event: 'hot' } }),
       sync({ request: { event: 'hot' } }),
@@ -100,10 +100,10 @@ Deno.test('interleave', () => {
 
 Deno.test('logging', (t) => {
   const logs: LogMessage[] = []
-  const { addRules, thread, sync, trigger, loop } = bProgram({
+  const { addThreads, thread, sync, trigger, loop } = bProgram({
     logger: (msg) => logs.push(msg),
   })
-  addRules({
+  addThreads({
     addHot: thread(
       sync({ request: { event: 'hot' } }),
       sync({ request: { event: 'hot' } }),

@@ -173,7 +173,7 @@ export const bProgram = ({
     )
   }
 
-  const addRules = (threads: Record<string, RulesFunc>): void => {
+  const addThreads = (threads: Record<string, RulesFunc>): void => {
     for (const thread in threads) {
       running.add({
         thread,
@@ -201,7 +201,7 @@ export const bProgram = ({
 
   return Object.freeze({
     /** add thread function to behavioral program */
-    addRules,
+    addThreads,
     /** connect action function to behavioral program */
     feedback,
     /** trigger a run and event on behavioral program */
