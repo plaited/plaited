@@ -59,6 +59,7 @@ routes.set('/', () =>
       <link rel="icon" href="data:," />
     </head>
     <body>
+      <div id="root"></div>
       <script type="module" src="/calculator.template.js"></script>
       <script type="module" src="/test-runner.js"></script>
       ${livereloadTemplate}

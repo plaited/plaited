@@ -37,11 +37,7 @@ export const controller = ({
         let root = this.internals_.shadowRoot
         !root && (root = this.attachShadow({ mode, delegatesFocus }))
         !root.firstChild && (this.#noDeclarativeShadow = true)
-        const sheets = Array.isArray(styles) ? [...new Set(styles)] : [styles]
-        console.log(sheets)
-        const sheet = new CSSStyleSheet()
-        sheet.replaceSync(sheets.join(''))
-        root.adoptedStyleSheets = [sheet]
+        this.#attachStyles(root)
       }
       connectedCallback() {
         super.connectedCallback && super.connectedCallback()
@@ -81,6 +77,13 @@ export const controller = ({
           })
           this.#disconnect()
         }
+      }
+      #attachStyles(root: ShadowRoot) {
+        if (!root) return
+        const sheets = Array.isArray(styles) ? [...new Set(styles)] : [styles]
+        const sheet = new CSSStyleSheet()
+        sheet.replaceSync(sheets.join(''))
+        root.adoptedStyleSheets = [sheet]
       }
       #connectSlotTriggers() {
         const root = this.internals_.shadowRoot

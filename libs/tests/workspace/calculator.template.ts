@@ -1,4 +1,4 @@
-import { html, IslandTemplate } from '$plaited'
+import { html, insertIsland, IslandTemplate } from '$plaited'
 import { ops } from './constants.ts'
 import { classes } from './calculator.styles.ts'
 
@@ -40,7 +40,6 @@ export const CalculatorTemplate = IslandTemplate({
   </div>`,
 })
 
-document.querySelector('body')?.insertAdjacentHTML(
-  'afterbegin',
-  CalculatorTemplate,
-)
+const body = document.querySelector('body') as HTMLBodyElement
+
+insertIsland({ el: body, island: CalculatorTemplate, position: 'afterbegin' })
