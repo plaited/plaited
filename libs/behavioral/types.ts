@@ -18,7 +18,7 @@ export interface StateSnapshot {
   }
 }
 
-export type SnapshotMessage = {
+type SnapshotMessage = {
   type: typeof streamEvents.snapshot
   data: ReturnType<StateSnapshot>
 }

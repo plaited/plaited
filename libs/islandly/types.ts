@@ -1,26 +1,4 @@
-import {
-  bProgram,
-  Logger,
-  RulesFunc,
-  Strategy,
-  Trigger,
-} from '../behavioral/mod.ts'
-
-/**
- * @description returns a an array of nodes who's data-target value is the same as the target string provided.
- */
-export type Query = <T extends (HTMLElement | SVGElement)>(
-  target: string,
-) => T[] | never[]
-
-export type UseHook<T = Record<string, unknown>> = (
-  args: {
-    $: Query
-  } & T,
-) => {
-  actions: Record<string, (data: unknown) => void>
-  strands: Record<string, RulesFunc>
-}
+import { bProgram, Logger, Strategy, Trigger } from '../behavioral/mod.ts'
 
 export type CustomElementTag = `${string}-${string}`
 
@@ -43,9 +21,11 @@ export type IslandElementOptions = {
   styles?: string | string[]
 }
 
-export type PlaitProps = {
+type PlaitProps = {
   /** query for elements with the data-target attribute in the Island's shadowDom and slots */
-  $: Query
+  $: <T extends (HTMLElement | SVGElement)>(
+    target: string,
+  ) => T[] | never[]
   /** The DOM node context allowing easy light & shadow dom access
    * @example
    * // returns the div element inside

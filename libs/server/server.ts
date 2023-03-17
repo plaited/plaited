@@ -4,6 +4,7 @@ import { Middleware, Server } from './types.ts'
 import { watcher } from './watcher.ts'
 import { getRouteHandler } from './get-route-handler.ts'
 import { serve, serveTls } from '../deps.ts'
+import { getReloadRoute } from './get-reload-route.ts'
 
 const getMiddleware: Middleware = (handler) => async (req, ctx) =>
   await handler(req, ctx)
@@ -60,6 +61,7 @@ export const server: Server = ({
   const reloadClient = () => {
     if (reloadClients.size) {
       console.log('reloading client')
+      routes.set(...getReloadRoute(reloadClients))
       reloadClients.forEach((socket) => socket.send(new Date().toString()))
     }
   }

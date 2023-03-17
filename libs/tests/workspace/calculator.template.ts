@@ -6,9 +6,9 @@ export const CalculatorTemplate = IslandTemplate({
   tag: 'calculator-island',
   template: html`<div class="${classes.calculator}">
     <!-- display -->
-    <div>
-      <h1 data-target="previous" class="${classes.previous}"></h1>
-      <h1 data-target="current" class="${classes.current}">0</h1>
+    <div class="${classes.display}">
+      <h1 data-target="previous" class="${classes.header}"></h1>
+      <h1 data-target="current" class="${classes.header}">0</h1>
     </div>
     <!-- Row one -->
     <button class="${classes.top}" data-trigger="click->positive-negative">${ops.add}/${ops.minus}</button>
@@ -39,3 +39,8 @@ export const CalculatorTemplate = IslandTemplate({
     <button class="${classes.side}" data-trigger="click->equal" value="equal">${ops.equal}</button>
   </div>`,
 })
+
+document.querySelector('body')?.insertAdjacentHTML(
+  'afterbegin',
+  CalculatorTemplate,
+)

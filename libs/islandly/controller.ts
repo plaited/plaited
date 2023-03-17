@@ -38,6 +38,7 @@ export const controller = ({
         !root && (root = this.attachShadow({ mode, delegatesFocus }))
         !root.firstChild && (this.#noDeclarativeShadow = true)
         const sheets = Array.isArray(styles) ? [...new Set(styles)] : [styles]
+        console.log(sheets)
         const sheet = new CSSStyleSheet()
         sheet.replaceSync(sheets.join(''))
         root.adoptedStyleSheets = [sheet]

@@ -2,8 +2,6 @@ import { livereloadTemplate, mimeTypes, Routes, server } from '$server'
 import { bundler } from '$bundler'
 import { html } from '$plaited'
 
-import { CalculatorTemplate } from './workspace/calculator.template.ts'
-
 import { resolve, toFileUrl, walk } from '../deps.ts'
 const __dirname = new URL('.', import.meta.url).pathname
 const workspace = resolve(__dirname, 'workspace')
@@ -41,15 +39,10 @@ const getRoutes = async () => {
         }),
     )
   }
-  return routes
-}
-
-const routes = await getRoutes()
-
-// Set root route test runner
-routes.set('/', () =>
-  new Response(
-    html`
+  // Set root route test runner
+  routes.set('/', () =>
+    new Response(
+      html`
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -61,39 +54,43 @@ routes.set('/', () =>
   <link rel="icon" href="data:," />
 </head>
 <body>
-  ${CalculatorTemplate}
+  <script type="module" src="/calculator.template.js"></script>
   <script type="module" src="/test-runner.js"></script>
   ${livereloadTemplate}
 </body>
 </html>
 `,
-    {
-      headers: { 'Content-Type': 'text/html' },
-    },
-  ))
+      {
+        headers: { 'Content-Type': 'text/html' },
+      },
+    ))
+  // create socket for getting test reports and logging results
+  routes.set('reporter', (req: Request) => {
+    const upgrade = req.headers.get('upgrade') || ''
+    if (upgrade.toLowerCase() != 'websocket') {
+      return new Response('request isn\'t trying to upgrade to websocket.')
+    }
+    const { socket, response } = Deno.upgradeWebSocket(req)
+    socket.onopen = () => {
+      console.log('client connected')
+    }
+    socket.onmessage = (e) => {
+      console.log(e.data)
+    }
+    socket.onerror = (e) => console.log('socket errored:', e)
+    socket.onclose = () => {
+      console.log('client disconnected')
+    }
+    return response
+  })
+  return routes
+}
 
-// create socket for getting test reports and logging results
-routes.set('reporter', (req: Request) => {
-  const upgrade = req.headers.get('upgrade') || ''
-  if (upgrade.toLowerCase() != 'websocket') {
-    return new Response('request isn\'t trying to upgrade to websocket.')
-  }
-  const { socket, response } = Deno.upgradeWebSocket(req)
-  socket.onopen = () => {
-    console.log('client connected')
-  }
-  socket.onmessage = (e) => {
-    console.log(e.data)
-  }
-  socket.onerror = (e) => console.log('socket errored:', e)
-  socket.onclose = () => {
-    console.log('client disconnected')
-  }
-  return response
-})
+const routes = await getRoutes()
 
 // Start server
 const { reloadClient } = await server({
+  reload: true,
   routes,
   port: 3000,
 })
@@ -102,8 +99,10 @@ const { reloadClient } = await server({
 const watcher = Deno.watchFs(workspace, { recursive: true })
 for await (const { kind } of watcher) {
   if (kind === 'modify') {
-    routes.clear()
-    await getRoutes()
+    const newRoutes = await getRoutes()
+    for (const [path, handler] of newRoutes.entries()) {
+      routes.set(path, handler)
+    }
     reloadClient()
   }
 }

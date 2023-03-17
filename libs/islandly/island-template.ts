@@ -1,10 +1,11 @@
 import { html } from './html.ts'
 import { Wire, wire } from './wire.ts'
 import { template } from './template.ts'
+import { CustomElementTag } from './types.ts'
 
 interface IslandTemplateProps extends Wire {
   /** the element tag you want to use */
-  tag: `${string}-${string}`
+  tag: CustomElementTag
   /** the shadowDom template for the Island */
   template: string
   /**

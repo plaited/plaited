@@ -1,8 +1,10 @@
 import { define, useStore } from '$plaited'
 import { connect, send } from './comms.ts'
 import { ops } from './constants.ts'
+import { styles } from './calculator.styles.ts'
 
 define({
+  styles,
   tag: 'calculator-island',
   connect,
   logger: (msg: Record<string, unknown>) => console.log(msg),
