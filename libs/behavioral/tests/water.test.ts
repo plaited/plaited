@@ -1,5 +1,5 @@
 import { assertEquals, assertSnapshot } from '../../test-deps.ts'
-import { bProgram, LogMessage } from '../mod.ts'
+import { bProgram, DevCallback } from '../mod.ts'
 
 Deno.test('Add hot water 3 times', () => {
   const actual: string[] = []
@@ -99,9 +99,9 @@ Deno.test('interleave', () => {
 })
 
 Deno.test('logging', (t) => {
-  const logs: LogMessage[] = []
+  const logs: Parameters<DevCallback>[0][] = []
   const { addThreads, thread, sync, trigger, loop } = bProgram({
-    logger: (msg) => logs.push(msg),
+    dev: (msg) => logs.push(msg),
   })
   addThreads({
     addHot: thread(

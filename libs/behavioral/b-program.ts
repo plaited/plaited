@@ -4,8 +4,8 @@ import { createStream } from './create-stream.ts'
 import { selectionStrategies } from './selection-strategies.ts'
 import {
   CandidateBid,
+  DevCallback,
   Feedback,
-  Logger,
   ParameterIdiom,
   PendingBid,
   RulesFunc,
@@ -38,10 +38,10 @@ export const bProgram = ({
   /** event selection strategy {@link Strategy}*/
   strategy = strategies.priority,
   /** When set to true returns a stream with log of state snapshots, last selected event and trigger */
-  logger,
+  dev,
 }: {
   strategy?: Strategy | keyof Omit<typeof strategies, 'custom'>
-  logger?: Logger
+  dev?: DevCallback
 } = {}) => {
   const eventSelectionStrategy: Strategy = typeof strategy === 'string'
     ? selectionStrategies[strategy]
@@ -94,7 +94,7 @@ export const bProgram = ({
     )
     const selectedEvent = eventSelectionStrategy(filteredBids)
     if (selectedEvent) {
-      logger && stream({
+      dev && stream({
         type: streamEvents.snapshot,
         data: stateSnapshot({ bids, selectedEvent }),
       })
@@ -168,11 +168,11 @@ export const bProgram = ({
     }
   }
 
-  if (logger) {
+  if (dev) {
     stream.subscribe(
       ({ type, data }: StreamMessage) => {
         if (type === streamEvents.snapshot) {
-          logger(data)
+          dev(data)
         }
       },
     )

@@ -1,4 +1,4 @@
-import { bProgram, Logger, Strategy, Trigger } from '../behavioral/mod.ts'
+import { bProgram, DevCallback, Strategy, Trigger } from '../behavioral/mod.ts'
 
 export type CustomElementTag = `${string}-${string}`
 
@@ -10,7 +10,7 @@ export type IslandElementOptions = {
   /** configure whether to delegate focus or not defaults to true */
   delegatesFocus?: boolean
   /** logger function to receive messages from behavioral program react streams */
-  logger?: Logger
+  dev?: DevCallback
   /** event selection strategy callback from behavioral library */
   strategy?: Strategy
   /** messenger connect callback */

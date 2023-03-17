@@ -1,9 +1,9 @@
-import { define, Logger, RulesFunc, useStore } from '$plaited'
+import { define, DevCallback, RulesFunc, useStore } from '$plaited'
 import { connect, send } from './comms.ts'
 import { ops } from './constants.ts'
 import { styles } from './calculator.styles.ts'
 
-const logger: Logger = (msg) => {
+const dev: DevCallback = (msg) => {
   console.table(msg)
 }
 
@@ -11,7 +11,7 @@ define({
   styles,
   tag: 'calculator-island',
   connect,
-  logger,
+  dev,
 }, ({ $, feedback, addThreads, loop, sync }) => {
   const [previous] = $<HTMLHeadElement>('previous')
   const [current] = $<HTMLHeadElement>('current')

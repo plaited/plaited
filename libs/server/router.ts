@@ -1,8 +1,6 @@
-/** Fork of rutt drops nesting
- * and uses a map instead of an object for routes */
+/** Fork of rutt drops nesting */
 
-import type { ConnInfo } from 'https://deno.land/std@0.177.0/http/server.ts'
-
+import { ConnInfo } from '../deps.ts'
 /**
  * Provides arbitrary context to {@link Handler} functions along with
  * {@link ConnInfo connection information}.

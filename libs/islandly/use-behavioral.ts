@@ -1,14 +1,14 @@
-import { bProgram, Logger, Strategy, Trigger } from '../behavioral/mod.ts'
+import { bProgram, DevCallback, Strategy, Trigger } from '../behavioral/mod.ts'
 
 export const useBehavioral = ({
   id,
   connect,
-  logger,
+  dev,
   strategy,
   context,
 }: {
   /** sets a behavioral program for island to dev and captures reactive stream logs */
-  logger?: Logger
+  dev?: DevCallback
   /** Set the island's behavioral program strategy */
   strategy?: Strategy
   /** wires the messenger connect to the behavioral programs trigger */
@@ -23,7 +23,7 @@ export const useBehavioral = ({
 }) => {
   const { trigger, ...rest } = bProgram({
     strategy,
-    logger,
+    dev,
   })
   let disconnect
   if (connect) {
