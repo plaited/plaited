@@ -1,6 +1,6 @@
 import { livereloadTemplate, mimeTypes, Routes, server } from '$server'
 import { bundler } from '$bundler'
-import { html } from '$plaited'
+import { css, html } from '$plaited'
 
 import { resolve, toFileUrl, walk } from '../deps.ts'
 const __dirname = new URL('.', import.meta.url).pathname
@@ -44,6 +44,18 @@ const getRoutes = async () => {
 
 const routes = await getRoutes()
 
+const { styles, classes } = css`
+  body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .fixture {
+    padding: 12px;
+    border: 1px solid black;
+  }
+`
+
 // Set root route test runner
 routes.set('/', () =>
   new Response(
@@ -57,10 +69,30 @@ routes.set('/', () =>
       <title>plaited tests</title>
       <script type="module" src="/calculator.island.js"></script>
       <link rel="icon" href="data:," />
+      <style>
+        ${styles}
+      </style>
     </head>
     <body>
-      <div id="root"></div>
-      <script type="module" src="/calculator.template.js"></script>
+      <details class="${classes.fixture}" id="slot-test" open>
+        <summary>Slot test</summary>
+      </details>
+      <details class="${classes.fixture}" id="island-test" open>
+        <summary>Island test</summary>
+      </details>
+      <details class="${classes.fixture}" id="no-declarative-shadow-dom-test" open>
+        <summary>No declarative shadow dom test</summary>
+      </details>
+      <details class="${classes.fixture}" id="template-observer-test" open>
+        <summary>Template observer test</summary>
+      </details>
+      <details class="${classes.fixture}" id="dynamic-island-test" open>
+        <summary>Dynamic island test</summary>
+      </details>
+      <details class="${classes.fixture}" id="calculator-test" open>
+        <summary>Calculator test</summary>
+        <script type="module" src="/calculator.template.js"></script>
+      </details>
       <script type="module" src="/test-runner.js"></script>
       ${livereloadTemplate}
     </body>

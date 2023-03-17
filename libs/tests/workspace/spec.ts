@@ -23,7 +23,7 @@ export const shadowObserverTest = () => {
   // need to test adding svg with attribute to this.
 }
 
-export const dynamicIslandTes = () => {
+export const dynamicIslandTest = () => {
   // dynamically add island to screen
   // does it upgrade with styles
   // is it interactive

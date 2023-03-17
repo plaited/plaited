@@ -56,12 +56,13 @@ export const bProgram = ({
 
   function step() {
     for (const bid of running) {
-      const { generator, priority, thread } = bid
+      const { generator, priority, thread, trigger } = bid
       const { value, done } = generator.next()
       !done &&
         pending.add({
           thread,
           priority,
+          ...(trigger && { trigger }),
           generator,
           ...value,
         })
@@ -98,13 +99,6 @@ export const bProgram = ({
         data: stateSnapshot({ bids, selectedEvent }),
       })
       nextStep(selectedEvent)
-    } else {
-      stream({
-        type: streamEvents.end,
-        data: {
-          strategy: typeof strategy === 'string' ? strategy : strategies.custom,
-        },
-      })
     }
   }
   // Queue up bids for next step of super step
@@ -144,18 +138,9 @@ export const bProgram = ({
     running.add({
       thread: event,
       priority: 0,
+      trigger: true,
       generator: thread(),
     })
-    if (logger) {
-      const msg: StreamMessage = {
-        type: streamEvents.trigger,
-        data: {
-          event: event,
-        },
-      }
-      detail && Object.assign(msg.data, { detail })
-      stream(msg)
-    }
     run()
   }
 
@@ -164,11 +149,11 @@ export const bProgram = ({
   ) => {
     stream.subscribe(
       ({ type, data }: StreamMessage) => {
-        if (type !== streamEvents.select) return
-        const { event: key, detail = {} } = data
-        type &&
+        if (type === streamEvents.select) {
+          const { event: key, detail = {} } = data
           Object.hasOwn(actions, key) &&
-          actions[key](detail)
+            actions[key](detail)
+        }
       },
     )
   }
@@ -186,14 +171,8 @@ export const bProgram = ({
   if (logger) {
     stream.subscribe(
       ({ type, data }: StreamMessage) => {
-        if (type === streamEvents.trigger) {
-          logger({ type, data })
-        }
         if (type === streamEvents.snapshot) {
-          logger({ type, data })
-        }
-        if (type === streamEvents.end) {
-          logger({ type, data })
+          logger(data)
         }
       },
     )

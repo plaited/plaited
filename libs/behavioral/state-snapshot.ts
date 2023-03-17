@@ -1,4 +1,5 @@
 import { ParameterIdiom, RequestIdiom, StateSnapshot } from './types.ts'
+
 export const stateSnapshot: StateSnapshot = ({ bids, selectedEvent }) => {
   const ruleSets: {
     thread: string
@@ -8,24 +9,35 @@ export const stateSnapshot: StateSnapshot = ({ bids, selectedEvent }) => {
     priority: number
   }[] = []
   for (const bid of bids) {
-    const { generator: _, waitFor, block, request, ...rest } = bid
-    const obj = rest
-    request &&
-      Object.assign(obj, {
-        request: [...(Array.isArray(request) ? request : [request])],
-      })
+    const { generator: _, waitFor, block, request, thread, priority, trigger } =
+      bid
+    const obj = {
+      thread,
+      priority,
+    }
+    let selected
     waitFor &&
       Object.assign(obj, {
-        waitFor: [...(Array.isArray(waitFor) ? waitFor : [waitFor])],
+        waitFor: Array.isArray(waitFor) ? waitFor : [waitFor],
       })
     block &&
       Object.assign(obj, {
-        block: [...(Array.isArray(block) ? block : [block])],
+        block: Array.isArray(block) ? block : [block],
       })
-    ruleSets.push(rest)
+    if (request) {
+      const arr = Array.isArray(request) ? request : [request]
+      arr.some(({ event }) => event === selectedEvent.event) &&
+        (selected = true)
+      Object.assign(obj, {
+        request: arr,
+      })
+    }
+
+    ruleSets.push({
+      ...obj,
+      ...(trigger && { trigger }),
+      ...(selected && { selected }),
+    })
   }
-  return Object.freeze({
-    selectedEvent,
-    ruleSets,
-  })
+  return ruleSets.sort((a, b) => a.priority - b.priority)
 }

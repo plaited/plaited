@@ -1,25 +1,83 @@
-import { define, useStore } from '$plaited'
+import { define, Logger, RulesFunc, useStore } from '$plaited'
 import { connect, send } from './comms.ts'
 import { ops } from './constants.ts'
 import { styles } from './calculator.styles.ts'
+
+const logger: Logger = (msg) => {
+  console.table(msg)
+}
 
 define({
   styles,
   tag: 'calculator-island',
   connect,
-  logger: (msg: Record<string, unknown>) => console.log(msg),
+  logger,
 }, ({ $, feedback, addThreads, loop, sync }) => {
   const [previous] = $<HTMLHeadElement>('previous')
   const [current] = $<HTMLHeadElement>('current')
-
   const [getPrev, setPrev] = useStore<string>('')
   const [getCur, setCur] = useStore<string>('')
-  const [getOp, setOp] = useStore<keyof typeof ops>('rest')
+  const [getOp, setOp] = useStore<keyof typeof ops | ''>('')
+  const onOperation = Object.keys(ops).reduce(
+    (acc: Record<string, RulesFunc>, operation) => {
+      Object.assign(acc, {
+        [`calculate-on-${operation}`]: loop([
+          sync({ waitFor: [{ event: operation }] }),
+          sync({
+            request: { event: 'calculate', detail: { operation: operation } },
+          }),
+        ]),
+        [`block-on-${operation}`]: loop([
+          sync({ waitFor: [{ event: operation }, { event: 'shiftCur' }] }),
+          sync({
+            block: [
+              {
+                cb: ({ event }) =>
+                  event !== 'toggleOperation' ? false : !getPrev(),
+              },
+              {
+                cb: ({ event }) =>
+                  event !== 'calculate' ? false : !(getCur() && getPrev()),
+              },
+            ],
+          }),
+        ]),
+        [`shift-on-${operation}`]: loop([
+          sync({
+            waitFor: {
+              cb: ({ event }) => event !== operation ? false : !!getCur(),
+            },
+          }),
+          sync({
+            request: { event: 'shiftCur', detail: { operation: operation } },
+          }),
+          sync({
+            request: {
+              event: 'toggleOperation',
+              detail: { operation: operation },
+            },
+          }),
+        ]),
+        [`toggle-on-${operation}`]: loop([
+          sync({ waitFor: { event: operation } }),
+          sync({
+            request: {
+              event: 'toggleOperation',
+              detail: { operation: operation },
+            },
+          }),
+        ]),
+      })
+
+      return acc
+    },
+    {},
+  )
   addThreads({
+    ...onOperation,
     onPositive: loop([
       sync({
         waitFor: {
-          event: 'negative',
           cb: ({ event }) => {
             if (event !== 'positive-negative') return false
             return getCur().startsWith('-')
@@ -35,7 +93,6 @@ define({
     onNegative: loop([
       sync({
         waitFor: {
-          event: 'negative',
           cb: ({ event }) => {
             if (event !== 'positive-negative') return false
             return !getCur().startsWith('-')
@@ -89,10 +146,9 @@ define({
         },
       }),
     ]),
-    onUpdate: loop([
+    afterEqualUpdate: loop([
       sync({
         waitFor: [
-          { event: 'updateOnCalculate' },
           { event: 'updateOnEqual' },
         ],
       }),
@@ -126,7 +182,9 @@ define({
     },
     updateOnEqual(detail: { value: number }) {
       const val = `${detail.value}`
-      previous.replaceChildren(`${getPrev()} ${ops[getOp()]}  ${getCur()} =`)
+      previous.replaceChildren(
+        `${getPrev()} ${ops[getOp() as keyof typeof ops]}  ${getCur()} =`,
+      )
       setPrev(val)
       current.replaceChildren(val)
     },
@@ -143,29 +201,28 @@ define({
     updateOnCalculate(detail: { value: number }) {
       const val = `${detail.value}`
       setPrev(val)
-      previous.replaceChildren(`${val} ${ops[getOp()]}`)
+      previous.replaceChildren(`${val} ${ops[getOp() as keyof typeof ops]}`)
       current.replaceChildren(val)
+      console.log({ cur: parseFloat(getCur()), prev: parseFloat(getPrev()) })
     },
-    calculate(evt: MouseEvent) {
-      const value = (evt.currentTarget as HTMLButtonElement)
-        .value as keyof typeof ops
-      if (getCur() && getPrev()) {
-        send('worker', {
-          event: 'calculate',
-          detail: {
-            cur: parseFloat(getCur()),
-            prev: parseFloat(getPrev()),
-            operation: getOp(),
-          },
-        })
-        return setOp(value)
-      }
-      if (getCur()) {
-        setPrev(getCur())
-        setCur('')
-      }
-      setOp(value)
-      previous.replaceChildren(`${getPrev()} ${ops[value]}`)
+    shiftCur() {
+      setPrev(getCur())
+      setCur('')
+    },
+    toggleOperation({ operation }: { operation: keyof typeof ops }) {
+      setOp(operation)
+      previous.replaceChildren(`${getPrev()} ${ops[operation]}`)
+    },
+    calculate({ operation }: { operation: keyof typeof ops }) {
+      send('worker', {
+        event: 'calculate',
+        detail: {
+          cur: parseFloat(getCur()),
+          prev: parseFloat(getPrev()),
+          operation: getOp(),
+        },
+      })
+      setOp(operation)
     },
     clear() {
       setCur('')

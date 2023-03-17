@@ -7,50 +7,23 @@ export interface StateSnapshot {
       selectedEvent: CandidateBid
     },
   ): {
-    selectedEvent: CandidateBid
-    ruleSets: {
-      thread: string
-      request?: RequestIdiom[]
-      waitFor?: ParameterIdiom[]
-      block?: ParameterIdiom[]
-      priority: number
-    }[]
-  }
+    thread: string
+    request?: RequestIdiom[]
+    waitFor?: ParameterIdiom[]
+    block?: ParameterIdiom[]
+    priority: number
+  }[]
 }
-
-type SnapshotMessage = {
-  type: typeof streamEvents.snapshot
-  data: ReturnType<StateSnapshot>
-}
-
-type SelectMessage = {
+export type StreamMessage = {
   type: typeof streamEvents.select
   data: {
     event: string
     detail?: Record<string, unknown>
   }
+} | {
+  type: typeof streamEvents.snapshot
+  data: ReturnType<StateSnapshot>
 }
-
-type TriggerMessage = {
-  type: typeof streamEvents.trigger
-  data: {
-    event: string
-    detail?: Record<string, unknown>
-  }
-}
-
-type EndMessage = {
-  type: typeof streamEvents.end
-  data: {
-    strategy: string
-  }
-}
-
-export type StreamMessage =
-  | SelectMessage
-  | TriggerMessage
-  | SnapshotMessage
-  | EndMessage
 
 export type Listener = (msg: StreamMessage) => StreamMessage | void
 
@@ -90,7 +63,7 @@ export type RequestIdiom<
 > = {
   event: string
   detail?: T
-  cb?: Callback<T>
+  // cb?: Callback<T>
 }
 
 export type RuleSet<
@@ -108,6 +81,7 @@ export type RulesFunc<
 >
 
 export type RunningBid = {
+  trigger?: true
   thread: string
   priority: number
   generator: IterableIterator<RuleSet>
@@ -141,12 +115,5 @@ export type Feedback = <T extends Record<string, (detail: any) => void>>(
 ) => void
 
 export interface Logger {
-  (args: TriggerMessage): void
-  (args: SnapshotMessage): void
-  (args: EndMessage): void
+  (args: ReturnType<StateSnapshot>): void
 }
-
-export type LogMessage =
-  | TriggerMessage
-  | SnapshotMessage
-  | EndMessage

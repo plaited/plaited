@@ -8,7 +8,7 @@ const calculator = {
   add(prev: number, cur: number) {
     return prev + cur
   },
-  minus(prev: number, cur: number) {
+  subtract(prev: number, cur: number) {
     return prev - cur
   },
   multiply(prev: number, cur: number) {
@@ -28,7 +28,7 @@ feedback({
     }: {
       prev: number
       cur: number
-      operation: 'add' | 'minus' | 'multiply' | 'divide'
+      operation: 'add' | 'subtract' | 'multiply' | 'divide'
     },
   ) {
     trigger({
@@ -54,7 +54,7 @@ feedback({
     }: {
       prev: number
       cur: number
-      operation: 'add' | 'minus' | 'multiply' | 'divide'
+      operation: 'add' | 'subtract' | 'multiply' | 'divide'
     },
   ) {
     send('calculator-island', {
@@ -73,7 +73,7 @@ feedback({
     }: {
       prev: number
       cur: number
-      operation: 'add' | 'minus' | 'multiply' | 'divide'
+      operation: 'add' | 'subtract' | 'multiply' | 'divide'
     },
   ) {
     send('calculator-island', {
