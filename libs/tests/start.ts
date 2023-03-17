@@ -39,55 +39,56 @@ const getRoutes = async () => {
         }),
     )
   }
-  // Set root route test runner
-  routes.set('/', () =>
-    new Response(
-      html`
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>plaited tests</title>
-  <script type="module" src="/calculator.island.js"></script>
-  <link rel="icon" href="data:," />
-</head>
-<body>
-  <script type="module" src="/calculator.template.js"></script>
-  <script type="module" src="/test-runner.js"></script>
-  ${livereloadTemplate}
-</body>
-</html>
-`,
-      {
-        headers: { 'Content-Type': 'text/html' },
-      },
-    ))
-  // create socket for getting test reports and logging results
-  routes.set('reporter', (req: Request) => {
-    const upgrade = req.headers.get('upgrade') || ''
-    if (upgrade.toLowerCase() != 'websocket') {
-      return new Response('request isn\'t trying to upgrade to websocket.')
-    }
-    const { socket, response } = Deno.upgradeWebSocket(req)
-    socket.onopen = () => {
-      console.log('client connected')
-    }
-    socket.onmessage = (e) => {
-      console.log(e.data)
-    }
-    socket.onerror = (e) => console.log('socket errored:', e)
-    socket.onclose = () => {
-      console.log('client disconnected')
-    }
-    return response
-  })
   return routes
 }
 
 const routes = await getRoutes()
 
+// Set root route test runner
+routes.set('/', () =>
+  new Response(
+    html`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>plaited tests</title>
+      <script type="module" src="/calculator.island.js"></script>
+      <link rel="icon" href="data:," />
+    </head>
+    <body>
+      <script type="module" src="/calculator.template.js"></script>
+      <script type="module" src="/test-runner.js"></script>
+      ${livereloadTemplate}
+    </body>
+    </html>
+  `,
+    {
+      headers: { 'Content-Type': 'text/html' },
+    },
+  ))
+
+// create socket for getting test reports and logging results
+routes.set('reporter', (req: Request) => {
+  const upgrade = req.headers.get('upgrade') || ''
+  if (upgrade.toLowerCase() != 'websocket') {
+    return new Response('request isn\'t trying to upgrade to websocket.')
+  }
+  const { socket, response } = Deno.upgradeWebSocket(req)
+  socket.onopen = () => {
+    console.log('client connected')
+  }
+  socket.onmessage = (e) => {
+    console.log(e.data)
+  }
+  socket.onerror = (e) => console.log('socket errored:', e)
+  socket.onclose = () => {
+    console.log('client disconnected')
+  }
+  return response
+})
 // Start server
 const { reloadClient } = await server({
   reload: true,
