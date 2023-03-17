@@ -23,6 +23,7 @@ define({
       Object.assign(acc, {
         [`calculate-on-${operation}`]: loop([
           sync({ waitFor: [{ event: operation }] }),
+          sync({ waitFor: [{ event: operation }] }),
           sync({
             request: { event: 'calculate', detail: { operation: operation } },
           }),
@@ -189,6 +190,7 @@ define({
       current.replaceChildren(val)
     },
     equal() {
+      console.log({ cur: parseFloat(getCur()), prev: parseFloat(getPrev()) })
       send('worker', {
         event: 'equal',
         detail: {
@@ -203,7 +205,6 @@ define({
       setPrev(val)
       previous.replaceChildren(`${val} ${ops[getOp() as keyof typeof ops]}`)
       current.replaceChildren(val)
-      console.log({ cur: parseFloat(getCur()), prev: parseFloat(getPrev()) })
     },
     shiftCur() {
       setPrev(getCur())
