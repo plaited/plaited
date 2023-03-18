@@ -1,11 +1,11 @@
 // -- std --
-export { serveDir } from 'https://deno.land/std@0.177.0/http/file_server.ts'
+export { serveDir } from 'https://deno.land/std@0.180.0/http/file_server.ts'
 export {
   type ConnInfo,
   serve,
   serveTls,
-} from 'https://deno.land/std@0.177.0/http/server.ts'
-export { walk } from 'https://deno.land/std@0.177.0/fs/mod.ts'
+} from 'https://deno.land/std@0.180.0/http/server.ts'
+export { walk } from 'https://deno.land/std@0.180.0/fs/mod.ts'
 export {
   basename,
   dirname,
@@ -13,7 +13,7 @@ export {
   relative,
   resolve,
   toFileUrl,
-} from 'https://deno.land/std@0.177.0/path/mod.ts'
+} from 'https://deno.land/std@0.180.0/path/mod.ts'
 
 // -- lodash --
 export {
@@ -21,7 +21,7 @@ export {
   kebabCase,
   lowerCase,
   startCase,
-} from 'https://raw.githubusercontent.com/lodash/lodash/4.17.21-es/lodash.js'
+} from 'https://esm.sh/lodash-es@4.17.21?target=es2022'
 
 // -- esbuild --
 export {
@@ -29,7 +29,7 @@ export {
   type BuildOptions,
   type OutputFile,
   stop,
-} from 'https://deno.land/x/esbuild@v0.17.6/mod.js'
+} from 'https://deno.land/x/esbuild@v0.17.12/mod.js'
 export { denoPlugin } from 'https://deno.land/x/esbuild_deno_loader@0.6.0/mod.ts'
 
 // -- brotli --
