@@ -9,7 +9,8 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get -y install ./google-chrome-stable_cur
 
 WORKDIR /plaited
 
-# Prefer not to run as root.
+RUN useradd --uid 1993 --user-group plaited \
+  && hown -R plaited:plaited /plaited
 USER plaited
 
 # Cache the dependencies as a layer (the following two steps are re-run only when deps.ts is modified).
