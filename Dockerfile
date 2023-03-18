@@ -8,10 +8,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get -y install ./google-chrome-stable_cur
 
 
 WORKDIR /plaited
-USER test
-RUN chown -R test:test /plaited
-
-# Prefer not to run as root.
 
 # Cache the dependencies as a layer (the following two steps are re-run only when deps.ts is modified).
 # Ideally cache deps.ts will download and compile _all_ external files used in main.ts.
