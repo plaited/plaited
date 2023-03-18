@@ -7,8 +7,8 @@ RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd6
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y install ./google-chrome-stable_current_amd64.deb
 
 
-USER test
 WORKDIR /plaited
+USER test
 RUN chown -R test:test /plaited
 
 # Prefer not to run as root.
