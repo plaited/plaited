@@ -8,6 +8,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get -y install ./google-chrome-stable_cur
 
 
 WORKDIR /plaited
+RUN chown -R deno:deno /plaited
 
 # Prefer not to run as root.
 USER deno
