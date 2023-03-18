@@ -93,7 +93,7 @@ Deno.test('interleave', () => {
     'cold',
     'hot',
     'cold',
-    // 'hot',
+    'hot',
     'cold',
   ])
 })
