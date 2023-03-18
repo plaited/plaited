@@ -16,5 +16,3 @@ RUN deno cache libs/deps.ts libs/test-deps.ts
 
 # These steps will be re-run upon each file change in your working directory:
 COPY . .
-
-RUN whereis google-chrome
