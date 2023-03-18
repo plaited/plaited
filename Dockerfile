@@ -9,7 +9,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get -y install ./google-chrome-stable_cur
 
 WORKDIR /plaited
 
-RUN useradd --uid 1993 --user-group plaited \
+RUN useradd --uid 1995 --user-group plaited \
   && hown -R plaited:plaited /plaited
 USER plaited
 
