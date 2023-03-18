@@ -1,8 +1,12 @@
 FROM denoland/deno:1.30.3
 
-# The port that your application listens to.
-EXPOSE 9000
-EXPOSE 3000
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \ 
+    && echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
+RUN apt-get update && \
+DEBIAN_FRONTEND=noninteractive apt-get -y install google-chrome-stable
+
 
 WORKDIR /plaited
 
@@ -17,5 +21,3 @@ RUN deno cache libs/deps.ts libs/test-deps.ts
 
 # These steps will be re-run upon each file change in your working directory:
 COPY . .
-# Compile the main app so that it doesn't need to be compiled each startup/entry.
-RUN deno task test
