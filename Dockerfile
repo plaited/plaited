@@ -7,8 +7,8 @@ RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd6
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y install ./google-chrome-stable_current_amd64.deb
 
 
-WORKDIR /plaited
-RUN chown -R deno:deno /plaited
+WORKDIR /deno-dir
+RUN chown -R deno:deno /deno-dir
 
 # Prefer not to run as root.
 USER deno
@@ -21,3 +21,6 @@ RUN deno cache libs/deps.ts libs/test-deps.ts
 
 # These steps will be re-run upon each file change in your working directory:
 COPY . .
+
+# Run tests
+CMD ["task", "test"]
