@@ -10,7 +10,7 @@ RUN useradd --uid 1995 --user-group isle
 
 WORKDIR /plaited
 
-RUN chown -R isle:isl /plaited
+RUN chown -R isle:isle /plaited
 
 USER isle
 
