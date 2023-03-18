@@ -11,7 +11,7 @@ snapshot[`logging 1`] = `
           event: "start",
         },
       ],
-      selected: true,
+      selected: "start",
       thread: "start",
       trigger: true,
       waitFor: [
@@ -62,7 +62,7 @@ snapshot[`logging 1`] = `
           event: "hot",
         },
       ],
-      selected: true,
+      selected: "hot",
       thread: "addHot",
     },
     {
@@ -106,7 +106,7 @@ snapshot[`logging 1`] = `
           event: "cold",
         },
       ],
-      selected: true,
+      selected: "cold",
       thread: "addCold",
     },
     {
@@ -132,7 +132,7 @@ snapshot[`logging 1`] = `
           event: "hot",
         },
       ],
-      selected: true,
+      selected: "hot",
       thread: "addHot",
     },
     {
@@ -176,7 +176,7 @@ snapshot[`logging 1`] = `
           event: "cold",
         },
       ],
-      selected: true,
+      selected: "cold",
       thread: "addCold",
     },
     {
@@ -202,7 +202,7 @@ snapshot[`logging 1`] = `
           event: "hot",
         },
       ],
-      selected: true,
+      selected: "hot",
       thread: "addHot",
     },
     {
@@ -237,7 +237,7 @@ snapshot[`logging 1`] = `
           event: "cold",
         },
       ],
-      selected: true,
+      selected: "cold",
       thread: "addCold",
     },
     {

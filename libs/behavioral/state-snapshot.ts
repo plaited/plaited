@@ -29,7 +29,7 @@ export const stateSnapshot: StateSnapshot = ({ bids, selectedEvent }) => {
       arr.some(({ event }) =>
         event === selectedEvent.event && priority === selectedEvent.priority
       ) &&
-        (selected = true)
+        (selected = selectedEvent.event)
       Object.assign(obj, {
         request: arr,
       })
