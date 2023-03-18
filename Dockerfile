@@ -7,11 +7,11 @@ RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd6
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y install ./google-chrome-stable_current_amd64.deb
 
 
+USER test
 WORKDIR /plaited
 RUN chown -R test:test /plaited
 
 # Prefer not to run as root.
-USER test
 
 # Cache the dependencies as a layer (the following two steps are re-run only when deps.ts is modified).
 # Ideally cache deps.ts will download and compile _all_ external files used in main.ts.
