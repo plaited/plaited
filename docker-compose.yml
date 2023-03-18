@@ -1,5 +1,5 @@
 services:
-  tests:
+  deno:
     container_name: "plaited_tests"
     entrypoint: deno
     stdin_open: true # docker run -i
