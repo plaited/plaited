@@ -1,5 +1,4 @@
 FROM denoland/deno:1.30.3
-RUN chown -R deno:deno /plaited
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -12,6 +11,7 @@ WORKDIR /plaited
 
 # Prefer not to run as root.
 USER deno
+RUN chown -R deno:deno /plaited
 
 # Cache the dependencies as a layer (the following two steps are re-run only when deps.ts is modified).
 # Ideally cache deps.ts will download and compile _all_ external files used in main.ts.
