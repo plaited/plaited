@@ -1,0 +1,13 @@
+services:
+  tests:
+    container_name: "plaited_tests"
+    entrypoint: deno
+    stdin_open: true # docker run -i
+    tty: true # docker run -t
+    build:
+      context: .
+    ports:
+      - 3000:3000
+      - 9000:9000
+    volumes:
+      - .:/plaited:delegated
