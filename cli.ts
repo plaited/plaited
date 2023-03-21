@@ -1,7 +1,10 @@
 import { dirname, resolve } from './libs/deps.ts'
-import { tokenTransformer } from './libs/token-transformer/mod.ts'
-import { easyTokenSchema } from './libs/easy-token-schema/mod.ts'
-import { DesignTokenGroup, TokenConfig } from './libs/token-types.ts'
+import {
+  DesignTokenGroup,
+  easyTokenSchema,
+  TokenConfig,
+  tokenTransformer,
+} from './design-tokens.ts'
 
 const getStat = async (
   filePath: string,

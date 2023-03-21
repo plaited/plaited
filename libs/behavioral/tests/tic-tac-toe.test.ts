@@ -694,7 +694,7 @@ Deno.test('startAtCenter', () => {
   ])
 })
 
-Deno.test('stopXWin', () => {
+Deno.test('preventCompletionOfLineWithTwoXs', () => {
   const { sync, addThreads, thread, feedback, trigger, loop } = bProgram()
   const actual: (
     | { player: 'X' | 'O'; square: number }
@@ -742,7 +742,7 @@ Deno.test('stopXWin', () => {
     {},
   )
 
-  const stopXWin = winConditions.reduce(
+  const preventCompletionOfLineWithTwoXs = winConditions.reduce(
     (acc: Record<string, RulesFunc>, win) => {
       acc[`StopXWin(${win})`] = thread(
         sync<{ square: number }>({
@@ -777,7 +777,7 @@ Deno.test('stopXWin', () => {
       sync({ waitFor: [{ event: 'XWin' }, { event: 'OWin' }] }),
       sync({ block: [{ event: 'X' }, { event: 'O' }] }),
     ),
-    ...stopXWin,
+    ...preventCompletionOfLineWithTwoXs,
     startAtCenter: thread(
       sync({
         request: {
