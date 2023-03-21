@@ -61,4 +61,26 @@ Deno.test('IslandTemplate()', (t) => {
     }),
     'tag, template, and slots',
   )
+  assertSnapshot(
+    t,
+    IslandTemplate({
+      tag: 'z-el',
+      styles: '.h1 { color: red}',
+      template: html`<div>
+        <h1>header</h1>
+      </div>`,
+    }),
+    'tag and styles string',
+  )
+  assertSnapshot(
+    t,
+    IslandTemplate({
+      tag: 'z-el',
+      styles: new Set(['.h1 { color: red}', 'div {opacity: 0.85;}']),
+      template: html`<div>
+        <h1>header</h1>
+      </div>`,
+    }),
+    'tag and styles as set ',
+  )
 })
