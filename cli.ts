@@ -4,7 +4,7 @@ import {
   easyTokenSchema,
   TokenConfig,
   tokenTransformer,
-} from './design-tokens.ts'
+} from './token-utils.ts'
 
 const getStat = async (
   filePath: string,
