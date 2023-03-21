@@ -1,5 +1,6 @@
 import { Assertion } from '$assert'
 import {
+  css,
   html,
   insertIsland,
   IslandTemplate,
@@ -10,6 +11,14 @@ import {
 import { symbols } from './constants.ts'
 
 export const islandCommsTest = async (t: Assertion) => {
+  const island = document.querySelector('calculator-island')
+  island?.shadowRoot?.delegatesFocus
+  t({
+    given: `island SSR'd with default delegateFocus`,
+    should: 'delegate focus',
+    actual: island?.shadowRoot?.delegatesFocus,
+    expected: true,
+  })
   // should be an example of a ui and also test worker connection
   let button = await t.findByAttribute('value', '9')
   button && await t.fireEvent(button, 'click')
@@ -94,28 +103,42 @@ export const islandCommsTest = async (t: Assertion) => {
   })
 }
 
+// export const dynamicIslandCommsTest = async (t: Assertion) => {}
+
 export const slotTest = async (t: Assertion) => {
   const wrapper = document.getElementById('slot-test')
+  const { styles, classes } = css`
+    .row {
+      display: flex;
+      gap: 10px;
+      padding: 12px;
+    }
+    ::slotted(button) {
+      height: 18px;
+      width: auto;
+    }
+  `
   insertIsland(
     {
       el: wrapper as HTMLElement,
       island: IslandTemplate({
+        styles,
         tag: 'slot-test',
-        template: html`
-    <slot></slot>
-    <slot name="named"></slot>
-    <template>
-      <div data-target="target">template target</div>
-    </template>
-    <nested-slot>
-      <slot slot="nested" name="nested"></slot>
-    </nested-slot>
-    `,
+        template: html`<div class="${classes.row}">
+          <slot></slot>
+          <slot name="named"></slot>
+          <template>
+            <div data-target="target">template target</div>
+          </template>
+          <nested-slot>
+            <slot slot="nested" name="nested"></slot>
+          </nested-slot>
+        </div>`,
         slots: html`
-      <button data-trigger="click->slot">Slot</button>
-      <button data-trigger="click->named" slot="named">Named</button>
-      <button data-trigger="click->nested" slot="nested">Nested</button>
-    `,
+          <button data-trigger="click->slot">Slot</button>
+          <button data-trigger="click->named" slot="named">Named</button>
+          <button data-trigger="click->nested" slot="nested">Nested</button>
+        `,
       }),
     },
   )
@@ -219,7 +242,6 @@ export const templateObserverTest = async (t: Assertion) => {
 //     },
 //   ).define()
 // }
-
 export const useIndexedDBTest = async (assert: Assertion) => {
   const [get, set] = await useIndexedDB<number>('testKey', 0)
   let actual = await get()

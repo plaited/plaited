@@ -68,16 +68,19 @@ routes.set('/', () =>
       <meta http-equiv="X-UA-Compatible" content="IE=edge">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>plaited tests</title>
-      <script type="module" src="/calculator.island.js"></script>
       <link rel="icon" href="data:," />
+      <script type="module" src="/calculator.island.js"></script>
       <style>
         ${styles}
       </style>
     </head>
     <body>
       <details class="${classes.fixture}" id="island-comms-test" open>
-        <summary>Island test</summary>
+        <summary>Island & Comms test</summary>
         ${CalculatorTemplate}
+      </details>
+      <details class="${classes.fixture}" id="dynamic-island-comms-test" open>
+        <summary>Dynamic Island & Comms test</summary>
       </details>
       <details class="${classes.fixture}" id="slot-test" open>
         <summary>Slot test</summary>
@@ -85,13 +88,10 @@ routes.set('/', () =>
       <details class="${classes.fixture}" id="template-observer-test" open>
         <summary>Template observer test</summary>
       </details>
-      <details class="${classes.fixture}" id="dynamic-island-test" open>
-        <summary>Dynamic island test</summary>
+      <details class="${classes.fixture}" id="shadow-observer-test" open>
+        <summary>Shadow observer test</summary>
       </details>
-      ${
-      Deno.env.has('TEST') &&
-      html`<script type="module" src="/test-runner.js"></script>`
-    }
+      <script type="module" src="/test-runner.js"></script>
       ${livereloadTemplate}
     </body>
     </html>

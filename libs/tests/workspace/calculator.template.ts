@@ -1,8 +1,9 @@
 import { html, IslandTemplate } from '$plaited'
 import { symbols } from './constants.ts'
-import { classes } from './calculator.styles.ts'
+import { classes, styles } from './calculator.styles.ts'
 
 export const CalculatorTemplate = IslandTemplate({
+  styles,
   tag: 'calculator-island',
   template: html`<div class="${classes.calculator}">
     <!-- display -->

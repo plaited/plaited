@@ -17,8 +17,6 @@ export type ISLElementOptions = {
   connect?: (recipient: string, trigger: Trigger) => () => void
   /** set to true if we wish to use id when connecting to messenger to receive messages from other islands */
   id?: boolean
-  /** constructable stylesheets - aka a set of style selectors and rules as strings */
-  styles?: string | string[]
   /** island's html tag */
   tag: CustomElementTag
 }

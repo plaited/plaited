@@ -1,7 +1,6 @@
 import { DevCallback, isle, PlaitProps, RulesFunc, useStore } from '$plaited'
 import { connect, send } from './comms.ts'
 import { ops } from './constants.ts'
-import { styles } from './calculator.styles.ts'
 
 const dev: DevCallback = (msg) => {
   console.table(msg)
@@ -9,7 +8,6 @@ const dev: DevCallback = (msg) => {
 
 isle(
   {
-    styles,
     tag: 'calculator-island',
     connect,
     dev,

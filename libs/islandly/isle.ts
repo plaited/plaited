@@ -17,7 +17,6 @@ import { delegatedListener } from './delegated-listener.ts'
 export const isle = ({
   mode = 'open',
   delegatesFocus = true,
-  styles,
   tag,
   ...bProgramOptions
 }: ISLElementOptions, island: ISLElementConstructor) => {
@@ -34,7 +33,6 @@ export const isle = ({
       let root = this.internals_.shadowRoot
       !root && (root = this.attachShadow({ mode, delegatesFocus }))
       !root.firstChild && (this.#noDeclarativeShadow = true)
-      this.#attachStyles(root)
     }
     connectedCallback() {
       super.connectedCallback && super.connectedCallback()
@@ -74,13 +72,6 @@ export const isle = ({
         })
         this.#disconnect()
       }
-    }
-    #attachStyles(root: ShadowRoot) {
-      if (!root) return
-      const sheets = Array.isArray(styles) ? [...new Set(styles)] : [styles]
-      const sheet = new CSSStyleSheet()
-      sheet.replaceSync(sheets.join(''))
-      root.adoptedStyleSheets = [sheet]
     }
     #connectSlotTriggers() {
       const root = this.internals_.shadowRoot

@@ -12,20 +12,34 @@ interface IslandTemplateProps extends Wire {
    * Island element's shadowDom mode
    * @defaultValue 'open' */
   mode?: 'open' | 'closed'
+  /**
+   * Sets whether Island element's shadowRoot delegates focus
+   * @defaultValue 'true' */
+  delegatesFocus?: boolean
   /** Slotted content for the island */
   slots?: string
+  /** stylesheets */
+  styles?: string | Set<string>
 }
 
 export const IslandTemplate = template<IslandTemplateProps>(({
   tag,
   template,
   mode = 'open',
+  delegatesFocus = true,
   slots,
+  styles,
   ...rest
 }) => {
+  const stylesheet = styles &&
+    html`<style>${typeof styles === 'string' ? styles : [...styles]}</style>`
   return html`
   <${tag} ${wire({ ...rest })}>
-    <template shadowrootmode="${mode}">
+    <template
+      shadowrootmode="${mode}"
+      ${delegatesFocus && 'shadowrootdelegatesfocus'}
+    >
+      ${stylesheet}
       ${template}
     </template>
     ${slots}
