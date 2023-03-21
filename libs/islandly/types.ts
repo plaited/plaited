@@ -2,7 +2,7 @@ import { bProgram, DevCallback, Strategy, Trigger } from '../behavioral/mod.ts'
 
 export type CustomElementTag = `${string}-${string}`
 
-export type IslandElementOptions = {
+export type ISLElementOptions = {
   /** define wether island's custom element is open or closed. Defaults to open and can be overridden
    * by declarative shadow dom attribute in browsers that support it so be ware
    */
@@ -56,15 +56,6 @@ export interface ISLElement extends HTMLElement {
   ): void
 }
 
-export interface IslandElementConstructor {
-  // deno-lint-ignore no-explicit-any
-  new (...args: any[]): ISLElement
+export interface ISLElementConstructor {
+  new (): ISLElement
 }
-
-export type Primitive =
-  | number
-  | string
-  | boolean
-  | undefined
-  | null
-  | void

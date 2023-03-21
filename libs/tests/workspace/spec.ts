@@ -8,7 +8,6 @@ import {
   useIndexedDB,
 } from '$plaited'
 import { symbols } from './constants.ts'
-// import { fireEvent, screen } from './deps.ts'
 
 export const islandCommsTest = async (t: Assertion) => {
   // should be an example of a ui and also test worker connection
@@ -195,31 +194,31 @@ export const templateObserverTest = async (t: Assertion) => {
     expected: html`<div>template content</div>`,
   })
 }
-export const shadowObserverTest = () => {
-  // const wrapper = document.getElementById('template-observer-test')
-  // need to test adding nodes without attributes
-  // need to test modifying attributes on node
-  // need to test adding slot element to this
-  // need to test adding svg with attribute to this.
-  isle(
-    { tag: 'shadow-test' },
-    class extends HTMLElement {
-      plait({ feedback }: PlaitProps) {
-        // const root = context.shadowRoot as ShadowRoot
-        feedback({
-          addNodes() {
-          },
-          modifyAttributes() {
-          },
-          addSlot() {
-          },
-          addSvg() {
-          },
-        })
-      }
-    },
-  ).define()
-}
+// export const shadowObserverTest = async (t: Assertion) => {
+//   const wrapper = document.getElementById('template-observer-test')
+//   // need to test adding nodes without attributes
+//   // need to test modifying attributes on node
+//   // need to test adding slot element to this
+//   // need to test adding svg with attribute to this.
+//   isle(
+//     { tag: 'shadow-test' },
+//     class extends HTMLElement {
+//       plait({ context, feedback }: PlaitProps) {
+//         const root = context.shadowRoot as ShadowRoot
+//         feedback({
+//           addNodes() {
+//           },
+//           modifyAttributes() {
+//           },
+//           addSlot() {
+//           },
+//           addSvg() {
+//           },
+//         })
+//       }
+//     },
+//   ).define()
+// }
 
 export const useIndexedDBTest = async (assert: Assertion) => {
   const [get, set] = await useIndexedDB<number>('testKey', 0)

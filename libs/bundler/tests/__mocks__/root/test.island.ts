@@ -1,3 +1,8 @@
-import { define } from '../../../../islandly/mod.ts'
+import { isle } from '../../../../islandly/mod.ts'
 
-define({ tag: 'test-fixture' }, () => {})
+isle(
+  { tag: 'test-fixture' },
+  class extends HTMLElement {
+    plait() {}
+  },
+)

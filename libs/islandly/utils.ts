@@ -1,5 +1,12 @@
-import { Primitive } from './types.ts'
 import { escape, trueTypeOf } from '../utils/mod.ts'
+
+export type Primitive =
+  | number
+  | string
+  | boolean
+  | undefined
+  | null
+  | void
 
 // It takes the value of a data-target attribute and return all the events happening in it. minus the method identifier
 // so iof the event was data-target="click->doSomething" it would return ["click"]

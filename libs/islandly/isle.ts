@@ -8,7 +8,7 @@ import {
 } from './utils.ts'
 import { Trigger } from '../behavioral/mod.ts'
 import { useBehavioral } from './use-behavioral.ts'
-import { IslandElementConstructor, IslandElementOptions } from './types.ts'
+import { ISLElementConstructor, ISLElementOptions } from './types.ts'
 import { delegatedListener } from './delegated-listener.ts'
 
 /**
@@ -20,17 +20,16 @@ export const isle = ({
   styles,
   tag,
   ...bProgramOptions
-}: IslandElementOptions, IslandElement: IslandElementConstructor) => {
-  return class extends IslandElement {
+}: ISLElementOptions, island: ISLElementConstructor) => {
+  return class extends island {
     #noDeclarativeShadow = false
     #shadowObserver?: MutationObserver
     #templateObserver?: MutationObserver
     #disconnect?: () => void
     internals_: ElementInternals
     #trigger: Trigger
-    // deno-lint-ignore no-explicit-any
-    constructor(...arg: any[]) {
-      super(arg)
+    constructor() {
+      super()
       this.internals_ = this.attachInternals()
       let root = this.internals_.shadowRoot
       !root && (root = this.attachShadow({ mode, delegatesFocus }))

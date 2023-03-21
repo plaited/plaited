@@ -9,22 +9,22 @@ export const fireEvent = (
   element: HTMLElement | SVGElement,
   eventName: string,
   options: EventArguments = {
-    bubbles: true,
-    composed: true,
-    cancelable: true,
+    bubbles: false,
+    composed: false,
+    cancelable: false,
   },
 ): Promise<void> => {
-  const createEvent = (type: string): Event => {
+  const createEvent = (): Event => {
     if (options?.detail) {
-      return new CustomEvent(type, options)
+      return new CustomEvent(eventName, options)
     } else {
-      return new Event(type, options)
+      return new Event(eventName, options)
     }
   }
 
   return new Promise((resolve) => {
     requestAnimationFrame(() => {
-      const event = createEvent(eventName)
+      const event = createEvent()
       element.dispatchEvent(event)
       resolve()
     })

@@ -4,6 +4,7 @@ import { css, html } from '$plaited'
 import { CalculatorTemplate } from './workspace/calculator.template.ts'
 
 import { resolve, toFileUrl, walk } from '../deps.ts'
+
 const __dirname = new URL('.', import.meta.url).pathname
 const workspace = resolve(__dirname, 'workspace')
 const importMap = toFileUrl(resolve(Deno.cwd(), '.vscode/import-map.json'))
@@ -56,7 +57,6 @@ const { styles, classes } = css`
     border: 1px solid black;
   }
 `
-
 // Set root route test runner
 routes.set('/', () =>
   new Response(
@@ -88,7 +88,10 @@ routes.set('/', () =>
       <details class="${classes.fixture}" id="dynamic-island-test" open>
         <summary>Dynamic island test</summary>
       </details>
-      <script type="module" src="/test-runner.js"></script>
+      ${
+      Deno.env.has('TEST') &&
+      html`<script type="module" src="/test-runner.js"></script>`
+    }
       ${livereloadTemplate}
     </body>
     </html>
@@ -116,8 +119,8 @@ routes.set('reporter', (req: Request) => {
       return
     }
     console.log(e.data)
-    if (end) {
-      e.data.includes('0 failed') && console.log('ok')
+    if (end && Deno.env.has('TEST')) {
+      e.data.includes('0 failed') ? Deno.exit(0) : Deno.exit(1)
     }
   }
   socket.onerror = (e) => console.log('socket errored:', e)
@@ -128,7 +131,7 @@ routes.set('reporter', (req: Request) => {
 })
 // Start server
 const { reloadClient } = await server({
-  reload: true,
+  reload: Deno.env.has('TEST') ? false : true,
   routes,
   port: 3000,
 })
