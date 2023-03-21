@@ -1,6 +1,9 @@
 import { deepEqual, wait } from '../utils/mod.ts'
 import { throws } from './throws.ts'
 import { match } from './match.ts'
+import { findByAttribute } from './find-by-attribute.ts'
+import { findByText } from './find-by-text.ts'
+import { fireEvent } from './fire-event.ts'
 
 export interface Assertion {
   <T extends unknown>(param: {
@@ -9,6 +12,9 @@ export interface Assertion {
     actual: T
     expected: T
   }): void
+  findByAttribute: typeof findByAttribute
+  findByText: typeof findByText
+  fireEvent: typeof fireEvent
   match: typeof match
   throws: typeof throws
   wait: typeof wait
@@ -52,3 +58,6 @@ export const assert: Assertion = (param) => {
 assert['match'] = match
 assert['throws'] = throws
 assert['wait'] = wait
+assert['findByAttribute'] = findByAttribute
+assert['findByText'] = findByText
+assert['fireEvent'] = fireEvent

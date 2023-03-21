@@ -31,6 +31,7 @@ export const filterAddedNodes = (nodes: NodeList) => {
       node instanceof HTMLElement ||
       node instanceof SVGElement
     ) {
+      if (node.hasAttribute('slot')) return
       node.dataset.trigger && elements.push(node)
     }
   })

@@ -19,9 +19,11 @@ export type IslandElementOptions = {
   id?: boolean
   /** constructable stylesheets - aka a set of style selectors and rules as strings */
   styles?: string | string[]
+  /** island's html tag */
+  tag: CustomElementTag
 }
 
-type PlaitProps = {
+export type PlaitProps = {
   /** query for elements with the data-target attribute in the Island's shadowDom and slots */
   $: <T extends (HTMLElement | SVGElement)>(
     target: string,
@@ -57,10 +59,6 @@ export interface ISLElement extends HTMLElement {
 export interface IslandElementConstructor {
   // deno-lint-ignore no-explicit-any
   new (...args: any[]): ISLElement
-}
-
-export interface IslandConfig extends IslandElementOptions {
-  tag: CustomElementTag
 }
 
 export type Primitive =

@@ -1,6 +1,7 @@
 import { livereloadTemplate, mimeTypes, Routes, server } from '$server'
 import { bundler } from '$bundler'
 import { css, html } from '$plaited'
+import { CalculatorTemplate } from './workspace/calculator.template.ts'
 
 import { resolve, toFileUrl, walk } from '../deps.ts'
 const __dirname = new URL('.', import.meta.url).pathname
@@ -74,24 +75,18 @@ routes.set('/', () =>
       </style>
     </head>
     <body>
+      <details class="${classes.fixture}" id="island-comms-test" open>
+        <summary>Island test</summary>
+        ${CalculatorTemplate}
+      </details>
       <details class="${classes.fixture}" id="slot-test" open>
         <summary>Slot test</summary>
-      </details>
-      <details class="${classes.fixture}" id="island-test" open>
-        <summary>Island test</summary>
-      </details>
-      <details class="${classes.fixture}" id="no-declarative-shadow-dom-test" open>
-        <summary>No declarative shadow dom test</summary>
       </details>
       <details class="${classes.fixture}" id="template-observer-test" open>
         <summary>Template observer test</summary>
       </details>
       <details class="${classes.fixture}" id="dynamic-island-test" open>
         <summary>Dynamic island test</summary>
-      </details>
-      <details class="${classes.fixture}" id="calculator-test" open>
-        <summary>Calculator test</summary>
-        <script type="module" src="/calculator.template.js"></script>
       </details>
       <script type="module" src="/test-runner.js"></script>
       ${livereloadTemplate}
@@ -113,8 +108,17 @@ routes.set('reporter', (req: Request) => {
   socket.onopen = () => {
     console.log('client connected')
   }
+  let end = false
   socket.onmessage = (e) => {
+    if (e.data === 'RUN_START') return
+    if (e.data === 'RUN_END') {
+      end = true
+      return
+    }
     console.log(e.data)
+    if (end) {
+      e.data.includes('0 failed') && console.log('ok')
+    }
   }
   socket.onerror = (e) => console.log('socket errored:', e)
   socket.onclose = () => {

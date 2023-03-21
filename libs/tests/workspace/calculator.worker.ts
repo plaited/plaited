@@ -31,13 +31,9 @@ feedback({
       operation: 'add' | 'subtract' | 'multiply' | 'divide'
     },
   ) {
-    trigger({
-      event: 'calculate',
-      detail: {
-        prev,
-        cur: (cur / 100) * prev,
-        operation,
-      },
+    send('calculator-island', {
+      event: 'updateOnPercent',
+      detail: { prev, cur: (cur / 100) * prev, operation },
     })
   },
   squareRoot(detail: { cur: number }) {

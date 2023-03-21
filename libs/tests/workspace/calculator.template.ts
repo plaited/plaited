@@ -1,4 +1,4 @@
-import { html, insertIsland, IslandTemplate } from '$plaited'
+import { html, IslandTemplate } from '$plaited'
 import { symbols } from './constants.ts'
 import { classes } from './calculator.styles.ts'
 
@@ -39,7 +39,3 @@ export const CalculatorTemplate = IslandTemplate({
     <button class="${classes.side}" data-trigger="click->equal" value="equal">${symbols.equal}</button>
   </div>`,
 })
-
-const body = document.querySelector('#calculator-test') as HTMLBodyElement
-
-insertIsland({ el: body, island: CalculatorTemplate })

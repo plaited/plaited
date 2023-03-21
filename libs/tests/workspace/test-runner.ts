@@ -34,6 +34,6 @@ socket.addEventListener('open', async (_) => {
       failed++
     }
   }
-  sendMsg(`${passed} passed, ${failed} failed`)
   sendMsg('RUN_END')
+  sendMsg(`${passed} passed, ${failed} failed`)
 })
