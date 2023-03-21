@@ -25,6 +25,7 @@ Deno.test('plaited browser test', async () => {
     cmd: [
       'google-chrome',
       '--headless',
+      '--no-sandbox',
       '--window-size=412,892',
       '--remote-debugging-port=9222',
       url,
