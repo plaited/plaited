@@ -38,18 +38,17 @@ use in larger projects easy and caches bundles too for faster retrieval.
 
 `https://deno.land/x/plaited/cli.ts`
 
-Cli script to be used with deno Run to generate
+Cli script to be used with deno Run to transform design tokens and generate
+design token schemas
 
-### Token Transform
+### Token Utils
 
-Transforms a design tokens object of the type DesignTokenGroup to TS and CSS.
-Allows extension of type DesignTokenGroup and supplying ones owns CSS and TS
-formatters.
+- Transforms a design tokens object of the type DesignTokenGroup to TS and CSS.
+  Allows extension of type DesignTokenGroup and supplying ones owns CSS and TS
+  formatters.
 
-### Token Schema
-
-Generates a JSON schema that allows new design token values in but fixes current
-values until another schema is generated.
+- Generates a JSON schema that allows new design token values in but fixes
+  current values until another schema is generated.
 
 ## Server module
 
