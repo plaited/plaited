@@ -7,7 +7,7 @@ services:
     build:
       context: .
       args:
-        - TAG=1.31.3
+        - TAG=v1.31.3
     ports:
       - 3000:3000
       - 9000:9000
