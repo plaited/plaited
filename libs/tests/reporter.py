@@ -13,6 +13,8 @@ capabilities["goog:loggingPrefs"] = {"browser": "ALL"}
 # Create Chrome options and enable headless mode
 chrome_options = Options()
 chrome_options.add_argument("--headless=new")
+chrome_options.add_argument('--no-sandbox')
+chrome_options.add_argument('--disable-dev-shm-usage')
 
 # Create a Chrome Service object
 chrome_service = ChromeService(executable_path="path/to/chromedriver")
