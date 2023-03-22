@@ -8,7 +8,7 @@ const host = document.URL.replace(hostRegex, '$1')
 
 /** import tests */
 const tests = await import(
-  `http://${host}/spec.js`
+  `http://${host}/plaited.spec.js`
 )
 
 /** test shouldn't take more than 5 seconds */

@@ -17,7 +17,8 @@ web applications as specifications (requirements) change and evolve.
 
 `https://deno.land/x/plaited/assert.ts`
 
-A small assertion library for running tes tin the browser and deno runtime using
+A small assertion library for running test in the browser with useful chained
+helpers
 [Eric Elliott's RITE pattern](https://medium.com/javascript-scene/what-every-unit-test-needs-f6cd34d9836d)
 
 Simple, readable, helpful unit tests.
@@ -27,19 +28,12 @@ Simple, readable, helpful unit tests.
 - Thorough
 - Explicit
 
-## Bundler module
-
-`https://deno.land/x/plaited/bundler.ts`
-
-A simple opinionated wrapper around esbuild and esbuild_deno_loader that makes
-use in larger projects easy and caches bundles too for faster retrieval.
-
 ## CLI module
 
 `https://deno.land/x/plaited/cli.ts`
 
-Cli script to be used with deno Run to transform design tokens and generate
-design token schemas
+Cli script to be used with deno to transform design tokens and generate design
+token schemas
 
 ### Token Utils
 

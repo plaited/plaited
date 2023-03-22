@@ -10,10 +10,13 @@ from selenium.webdriver.chrome.options import Options
 capabilities = DesiredCapabilities.CHROME
 capabilities["goog:loggingPrefs"] = {"browser": "ALL"}
 
-# Create Chrome options and enable headless mode
+# Create Chrome options
 chrome_options = Options()
+# This option enables Chrome's new headless mode that allows users to get the full browser functionality (even run extensions)
 chrome_options.add_argument("--headless=new")
+#This option disables the sandbox security feature, which can cause issues when running Chrome inside a Docker container.
 chrome_options.add_argument('--no-sandbox')
+# This option tells Chrome to use memory more efficiently, which can help prevent crashes when running inside a Docker container.
 chrome_options.add_argument('--disable-dev-shm-usage')
 
 # Create a Chrome Service object

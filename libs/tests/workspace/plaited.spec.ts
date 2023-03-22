@@ -1,6 +1,5 @@
 import { Assertion } from '$assert'
 import {
-  css,
   html,
   insertIsland,
   IslandTemplate,
@@ -9,6 +8,10 @@ import {
   useIndexedDB,
 } from '$plaited'
 import { symbols } from './constants.ts'
+import { connect, send } from './comms.ts'
+import { fireEvent } from '../../assert/fire-event.ts'
+
+import { classes, styles } from './test.styles.ts'
 
 export const islandCommsTest = async (t: Assertion) => {
   const island = document.querySelector('calculator-island')
@@ -103,21 +106,102 @@ export const islandCommsTest = async (t: Assertion) => {
   })
 }
 
-// export const dynamicIslandCommsTest = async (t: Assertion) => {}
+export const dynamicIslandCommsTest = async (t: Assertion) => {
+  const wrapper = document.getElementById(
+    'dynamic-island-comms-test',
+  ) as HTMLDetailsElement
+  isle(
+    {
+      tag: 'dynamic-one',
+      id: true,
+      connect,
+    },
+    class extends HTMLElement {
+      plait({ feedback, $ }: PlaitProps) {
+        feedback({
+          disable() {
+            const [button] = $<HTMLButtonElement>('button')
+            button.disabled = true
+          },
+          click() {
+            send('dynamic-two', { event: 'add', detail: { value: 'World !' } })
+          },
+        })
+      }
+    },
+  ).define()
+  isle(
+    {
+      tag: 'dynamic-two',
+      connect,
+    },
+    class extends HTMLElement {
+      plait({ $, feedback, addThreads, thread, sync }: PlaitProps) {
+        addThreads({
+          onAdd: thread(
+            sync({ waitFor: { event: 'add' } }),
+            sync({ request: { event: 'disable' } }),
+          ),
+        })
+        feedback({
+          disable() {
+            send('one', { event: 'disable' })
+          },
+          add(detail: { value: string }) {
+            const [header] = $('header')
+            header.insertAdjacentHTML('beforeend', detail.value)
+          },
+        })
+      }
+    },
+  ).define()
+  insertIsland({
+    el: wrapper,
+    island: IslandTemplate({
+      id: 'one',
+      tag: 'dynamic-one',
+      template:
+        html`<div class="${classes.row}"><button data-target="button" class="${classes.button}">Add "world!"</button></div>`,
+    }),
+  })
+  insertIsland({
+    el: wrapper,
+    island: IslandTemplate({
+      tag: 'dynamic-one',
+      template: html`<h1 data-target="header">Hello</h1>`,
+    }),
+  })
+  let button = await t.findByAttribute('data-target', 'button', wrapper)
+  const header = await t.findByAttribute('data-target', 'header', wrapper)
+  t({
+    given: 'render',
+    should: 'header should contain string',
+    actual: header?.innerHTML,
+    expected: 'Hello',
+  })
+  button && await fireEvent(button, 'string')
+  t({
+    given: 'clicking button',
+    should: 'append string to header',
+    actual: header?.innerHTML,
+    expected: 'Hello world!',
+  })
+  button = await t.findByAttribute(
+    'data-target',
+    'button',
+    wrapper,
+  )
+  t({
+    given: 'clicking button',
+    should: 'append string to header',
+    actual: (button as HTMLButtonElement)?.disabled,
+    expected: true,
+  })
+}
 
 export const slotTest = async (t: Assertion) => {
   const wrapper = document.getElementById('slot-test')
-  const { styles, classes } = css`
-    .row {
-      display: flex;
-      gap: 10px;
-      padding: 12px;
-    }
-    ::slotted(button) {
-      height: 18px;
-      width: auto;
-    }
-  `
+
   insertIsland(
     {
       el: wrapper as HTMLElement,
@@ -217,31 +301,36 @@ export const templateObserverTest = async (t: Assertion) => {
     expected: html`<div>template content</div>`,
   })
 }
-// export const shadowObserverTest = async (t: Assertion) => {
-//   const wrapper = document.getElementById('template-observer-test')
-//   // need to test adding nodes without attributes
-//   // need to test modifying attributes on node
-//   // need to test adding slot element to this
-//   // need to test adding svg with attribute to this.
-//   isle(
-//     { tag: 'shadow-test' },
-//     class extends HTMLElement {
-//       plait({ context, feedback }: PlaitProps) {
-//         const root = context.shadowRoot as ShadowRoot
-//         feedback({
-//           addNodes() {
-//           },
-//           modifyAttributes() {
-//           },
-//           addSlot() {
-//           },
-//           addSvg() {
-//           },
-//         })
-//       }
-//     },
-//   ).define()
-// }
+export const shadowObserverTest = async (t: Assertion) => {
+  const wrapper = document.getElementById(
+    'template-observer-test',
+  ) as HTMLDetailsElement
+  // need to test adding nodes without attributes
+  // need to test modifying attributes on node
+  // need to test adding slot element to this
+  // need to test adding svg with attribute to this.
+  isle(
+    { tag: 'shadow-test' },
+    class extends HTMLElement {
+      plait({ feedback }: PlaitProps) {
+        feedback({
+          addSubIsland() {
+          },
+          addNodes() {
+          },
+          modifyAttributes() {
+          },
+          addSlot() {
+          },
+          addSvg() {
+          },
+        })
+      }
+    },
+  ).define()
+  const button = await t.findByAttribute('data-target', 'start', wrapper)
+  button && await fireEvent(button, 'click')
+}
 export const useIndexedDBTest = async (assert: Assertion) => {
   const [get, set] = await useIndexedDB<number>('testKey', 0)
   let actual = await get()

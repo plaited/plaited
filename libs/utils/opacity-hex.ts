@@ -1,3 +1,4 @@
+/** generates a map where you can pass in an opacity number and get back the corresponding 2 digit hex value */
 export const opacityHex = () => {
   const map = new Map<number, string>()
   for (let i = 1; i >= 0; i -= 0.01) {

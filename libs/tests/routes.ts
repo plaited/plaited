@@ -1,5 +1,5 @@
 import { livereloadTemplate, mimeTypes, Routes } from '$server'
-import { bundler } from '$bundler'
+import { bundler } from './bundler.ts'
 import { css, html } from '$plaited'
 import { CalculatorTemplate } from './workspace/calculator.template.ts'
 
@@ -22,7 +22,7 @@ for await (
 
 // Function to generate routes for entryPoints
 export const getRoutes = async () => {
-  const [entries] = await bundler({
+  const entries = await bundler({
     dev: true,
     entryPoints,
     importMap,
