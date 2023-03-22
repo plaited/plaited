@@ -9,9 +9,9 @@ export const fireEvent = (
   element: HTMLElement | SVGElement,
   eventName: string,
   options: EventArguments = {
-    bubbles: false,
-    composed: false,
-    cancelable: false,
+    bubbles: true,
+    composed: true,
+    cancelable: true,
   },
 ): Promise<void> => {
   const createEvent = (): Event => {

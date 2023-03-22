@@ -1,8 +1,8 @@
 /// <reference lib="dom.iterable" />
 import { dataTarget, dataTrigger } from './constants.ts'
 import {
+  canUseSlot,
   filterAddedNodes,
-  filterSlottedElements,
   getTriggerKey,
   matchAllEvents,
 } from './utils.ts'
@@ -44,8 +44,7 @@ export const isle = ({
           ? this.#appendTemplate(template)
           : (this.#templateObserver = this.#createTemplateObserver())
       }
-      this.#connectSlotTriggers()
-      this.#connectShadowTriggers()
+      this.#connectTriggers()
       this.#shadowObserver = this.#createShadowObserver()
       const { disconnect, trigger, ...rest } = useBehavioral(
         {
@@ -73,29 +72,13 @@ export const isle = ({
         this.#disconnect()
       }
     }
-    #connectSlotTriggers() {
-      const root = this.internals_.shadowRoot
-      root &&
-        root.querySelectorAll<HTMLSlotElement>('slot').forEach((slot) => {
-          // We do not wish to observer nested slots
-          // each island/custom element is responsible for it's own slots
-          // We also do not wish to observe non named slots for event binding
-          if (slot.hasAttribute('slot') || !slot.hasAttribute('name')) return
-          const delegateSlottedElements = () => {
-            const elements = filterSlottedElements(slot)
-            elements.length && this.#delegateListeners(elements)
-          }
-          delegateSlottedElements()
-          delegatedListener.set(slot, delegateSlottedElements)
-          slot.addEventListener('slotchange', delegatedListener.get(slot))
-        })
-    }
-    #connectShadowTriggers() {
+    #connectTriggers() {
       const root = this.internals_.shadowRoot
       if (root) {
         const els = [
           ...root.querySelectorAll<HTMLElement>(`[${dataTrigger}]`),
-        ].filter((el) => !el.hasAttribute('slot'))
+          // No binding of nested slots events
+        ].filter((el) => el instanceof HTMLSlotElement ? canUseSlot(el) : true)
         els.length && this.#delegateListeners(els)
       }
     }
@@ -106,11 +89,15 @@ export const isle = ({
     ) {
       nodes.forEach((el) => {
         !delegatedListener.has(el) && delegatedListener.set(el, (evt) => {
-          const triggerKey = getTriggerKey(evt)
-          triggerKey && this.#trigger({
-            event: triggerKey,
-            detail: evt as unknown as Record<string, unknown>,
-          })
+          const triggerKey = getTriggerKey(evt, el)
+          triggerKey
+            // if key is present in `data-trigger` trigger event on instance's bProgram
+            ? this.#trigger({
+              event: triggerKey,
+              detail: evt as unknown as Record<string, unknown>,
+            })
+            // if key is not present in `data-trigger` remove event listener for this event
+            : el.removeEventListener(evt.type, delegatedListener.get(el))
         })
         const triggers = el.dataset.trigger
         if (triggers) {
@@ -132,7 +119,7 @@ export const isle = ({
               els.length && this.#delegateListeners(els)
             }
             if (mutation.type === 'attributes') {
-              this.#connectShadowTriggers()
+              this.#connectTriggers()
             }
           }
         })
@@ -171,19 +158,7 @@ export const isle = ({
       if (root) {
         elements = [...root.querySelectorAll<T>(
           `[${dataTarget}="${target}"]`,
-        )]
-        root.querySelectorAll<HTMLSlotElement>('slot').forEach((slot) => {
-          // We do not wish to observer nested slots each island/custom element is responsible for it's own slots
-          if (slot.hasAttribute('slot')) return
-          for (const el of slot.assignedElements()) {
-            if (
-              el instanceof HTMLElement ||
-              el instanceof SVGElement
-            ) {
-              el.dataset.target === target && elements.push(el as T)
-            }
-          }
-        })
+        )].filter((el) => el instanceof HTMLSlotElement ? canUseSlot(el) : true)
       }
       return elements
     }

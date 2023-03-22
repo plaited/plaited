@@ -17,45 +17,44 @@ export const matchAllEvents = (str: string) => {
 
 // returns the request/action name to connect our event binding to data-target="click->doSomething" it would return "doSomething"
 // note triggers are separated by spaces in the attribute data-target="click->doSomething focus->somethingElse"
-export const getTriggerKey = (evt: Event) => {
-  const el = evt.currentTarget
-  const type = evt.type
+export const getTriggerKey = (
+  { currentTarget, composedPath, type }: Event,
+  context: HTMLElement | SVGElement,
+) => {
+  const el = currentTarget === context
+    ? context
+    // check if closest slot from the element that invoked the event is the instances slot
+    : composedPath().find((slot) => slot instanceof HTMLSlotElement) === context
+    ? context
+    : ''
+
+  if (!el) return el
   const pre = `${type}->`
-  //@ts-ignore: will be HTMLOrSVGElement
-  return el.dataset.trigger
-    .trim()
-    .split(/\s+/)
-    .find((str: string) => str.includes(pre))
-    .replace(pre, '')
+  const trigger = el.dataset.trigger ?? ''
+  const key = trigger.trim().split(/\s+/).find((str: string) =>
+    str.includes(pre)
+  )
+  return key ? key.replace(pre, '') : ''
 }
+
+// We only support binding and querying named slots that are not also nested slots
+export const canUseSlot = (node: HTMLSlotElement) =>
+  !node.hasAttribute('slot') && node.hasAttribute('name')
 
 // Takes a list of nodes added when mutation observer change happened and filters our the ones with triggers
 export const filterAddedNodes = (nodes: NodeList) => {
   const elements: (HTMLElement | SVGElement)[] = []
   nodes.forEach((node) => {
-    if (node instanceof HTMLSlotElement) return
     if (
       node instanceof HTMLElement ||
       node instanceof SVGElement
     ) {
-      if (node.hasAttribute('slot')) return
+      if (node instanceof HTMLSlotElement && !canUseSlot(node)) {
+        return
+      }
       node.dataset.trigger && elements.push(node)
     }
   })
-  return elements
-}
-
-// Get slotted elements that have the data trigger atrtribute and add them to
-export const filterSlottedElements = (slot: HTMLSlotElement) => {
-  const elements: (HTMLElement | SVGElement)[] = []
-  for (const el of slot.assignedElements()) {
-    if (
-      el instanceof HTMLElement ||
-      el instanceof SVGElement
-    ) {
-      el.dataset.trigger && elements.push(el)
-    }
-  }
   return elements
 }
 

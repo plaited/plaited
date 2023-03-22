@@ -1,13 +1,13 @@
-export const insertIsland = ({ el, island, position = 'beforeend' }: {
+export const insertIsland = ({ el, template, position = 'beforeend' }: {
   /** element to insert island into, before or after */
   el: Element
   /** Island template string to be inserted */
-  island: string
+  template: string
   /** insert position defaults to "beforeend" */
   position?: InsertPosition
 }) => {
   const fragment = new DOMParser().parseFromString(
-    island,
+    template,
     'text/html',
     //@ts-ignore: new spec feature
     {

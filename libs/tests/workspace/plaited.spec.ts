@@ -10,9 +10,7 @@ import {
 import { symbols } from './constants.ts'
 import { connect, send } from './comms.ts'
 import { fireEvent } from '../../assert/fire-event.ts'
-
 import { classes, styles } from './test.styles.ts'
-
 export const islandCommsTest = async (t: Assertion) => {
   const island = document.querySelector('calculator-island')
   island?.shadowRoot?.delegatesFocus
@@ -124,7 +122,7 @@ export const dynamicIslandCommsTest = async (t: Assertion) => {
             button.disabled = true
           },
           click() {
-            send('dynamic-two', { event: 'add', detail: { value: 'World !' } })
+            send('dynamic-two', { event: 'add', detail: { value: ' World!' } })
           },
         })
       }
@@ -157,17 +155,19 @@ export const dynamicIslandCommsTest = async (t: Assertion) => {
   ).define()
   insertIsland({
     el: wrapper,
-    island: IslandTemplate({
+    template: IslandTemplate({
+      styles,
       id: 'one',
       tag: 'dynamic-one',
       template:
-        html`<div class="${classes.row}"><button data-target="button" class="${classes.button}">Add "world!"</button></div>`,
+        html`<div class="${classes.row}"><button data-target="button" class="${classes.button}" data-trigger="click->click">Add "world!"</button></div>`,
     }),
   })
   insertIsland({
     el: wrapper,
-    island: IslandTemplate({
-      tag: 'dynamic-one',
+    template: IslandTemplate({
+      styles,
+      tag: 'dynamic-two',
       template: html`<h1 data-target="header">Hello</h1>`,
     }),
   })
@@ -179,12 +179,12 @@ export const dynamicIslandCommsTest = async (t: Assertion) => {
     actual: header?.innerHTML,
     expected: 'Hello',
   })
-  button && await fireEvent(button, 'string')
+  button && await fireEvent(button, 'click')
   t({
     given: 'clicking button',
     should: 'append string to header',
     actual: header?.innerHTML,
-    expected: 'Hello world!',
+    expected: 'Hello World!',
   })
   button = await t.findByAttribute(
     'data-target',
@@ -200,28 +200,28 @@ export const dynamicIslandCommsTest = async (t: Assertion) => {
 }
 
 export const slotTest = async (t: Assertion) => {
-  const wrapper = document.getElementById('slot-test')
+  const wrapper = document.getElementById('slot-test') as HTMLElement
 
   insertIsland(
     {
       el: wrapper as HTMLElement,
-      island: IslandTemplate({
+      template: IslandTemplate({
         styles,
         tag: 'slot-test',
         template: html`<div class="${classes.row}">
-          <slot></slot>
-          <slot name="named"></slot>
+          <slot data-trigger="click->slot"></slot>
+          <slot name="named" data-trigger="click->named" ></slot>
           <template>
             <div data-target="target">template target</div>
           </template>
           <nested-slot>
-            <slot slot="nested" name="nested"></slot>
+            <slot slot="nested" name="nested" data-trigger="click->nested"></slot>
           </nested-slot>
         </div>`,
         slots: html`
-          <button data-trigger="click->slot">Slot</button>
-          <button data-trigger="click->named" slot="named">Named</button>
-          <button data-trigger="click->nested" slot="nested">Nested</button>
+          <button>Slot</button>
+          <button slot="named">Named</button>
+          <button slot="nested">Nested</button>
         `,
       }),
     },
@@ -247,89 +247,137 @@ export const slotTest = async (t: Assertion) => {
       }
     },
   ).define()
-  let button = await t.findByAttribute('data-trigger', 'click->slot')
+  let button = await t.findByText('Slot', wrapper)
   button && await t.fireEvent(button, 'click')
-  button = await t.findByAttribute('data-trigger', 'click->named')
+  button = await t.findByText('Named', wrapper)
   button && await t.fireEvent(button, 'click')
-  button = await t.findByAttribute('data-trigger', 'click->nested')
+  button = await t.findByText('Nested', wrapper)
   button && await t.fireEvent(button, 'click')
   t({
-    given: 'default slot click',
+    given: `default slot click of element in event's composed path`,
     should: 'not trigger feedback action',
     actual: slot,
     expected: 0,
   })
   t({
-    given: 'named slot click',
+    given: `named slot click of element in event's composed path`,
     should: 'trigger feedback action',
     actual: named,
     expected: 1,
   })
   t({
-    given: 'nested slot click',
+    given: `nested slot click of element in event's composed path`,
     should: 'not trigger feedback action',
     actual: nested,
     expected: 0,
   })
 }
 export const templateObserverTest = async (t: Assertion) => {
-  const wrapper = document.getElementById('template-observer-test')
-  const island = document.createElement('template-test')
-  wrapper?.insertAdjacentElement('beforeend', island)
+  const wrapper = document.getElementById(
+    'template-observer-test',
+  ) as HTMLDetailsElement
+  const el = document.createElement('template-test')
+  el.setAttribute('data-test-id', 'island')
+  wrapper?.insertAdjacentElement('beforeend', el)
   const template = document.createElement('template')
-  template.innerHTML = html`<div>template content</div>`
+  template.innerHTML = html`<h2>template content</h2>`
   template.setAttribute('shadowrootmode', 'open')
+  let island = await t.findByAttribute('data-test-id', 'island', wrapper)
   isle(
     { tag: 'template-test' },
     class extends HTMLElement {
-      plait({ context }: PlaitProps) {
-        context.append(template)
+      plait() {
+        island?.append(template)
+        t({
+          given: 'before being observed by template observer',
+          should: 'still be in light dom',
+          actual: island?.innerHTML,
+          expected:
+            html`<template shadowrootmode="open"><h2>template content</h2></template>`,
+        })
       }
     },
   ).define()
-  await t.wait(60)
+  island = await t.findByAttribute('data-test-id', 'island', wrapper)
   t({
-    given: 'appending template in connected callback',
+    given: 'after template append is observed by observer',
     should: 'no longer be in light dom',
     actual: island?.innerHTML,
     expected: '',
   })
   t({
     given: 'appending template in connected callback',
-    should: 'no longer be in light dom',
+    should: 'should now be in shadow dom',
     actual: island?.shadowRoot?.innerHTML,
-    expected: html`<div>template content</div>`,
+    expected: html`<h2>template content</h2>`,
   })
 }
 export const shadowObserverTest = async (t: Assertion) => {
   const wrapper = document.getElementById(
-    'template-observer-test',
+    'shadow-observer-test',
   ) as HTMLDetailsElement
-  // need to test adding nodes without attributes
-  // need to test modifying attributes on node
-  // need to test adding slot element to this
-  // need to test adding svg with attribute to this.
-  isle(
-    { tag: 'shadow-test' },
-    class extends HTMLElement {
-      plait({ feedback }: PlaitProps) {
-        feedback({
-          addSubIsland() {
-          },
-          addNodes() {
-          },
-          modifyAttributes() {
-          },
-          addSlot() {
-          },
-          addSvg() {
-          },
-        })
-      }
-    },
-  ).define()
-  const button = await t.findByAttribute('data-target', 'start', wrapper)
+  let button = await t.findByAttribute(
+    'data-trigger',
+    'click->start',
+    wrapper,
+  )
   button && await fireEvent(button, 'click')
+  let row = await t.findByAttribute('data-target', 'button-row', wrapper)
+  t({
+    given: 'clicking start',
+    should: 'have add button in row',
+    actual: row?.children.length,
+    expected: 2,
+  })
+  button && await fireEvent(button, 'click')
+  row = await t.findByAttribute('data-target', 'button-row', wrapper)
+  t({
+    given: 'clicking start again',
+    should: 'not add another button to row',
+    actual: row?.children.length,
+    expected: 2,
+  })
+  send('shadow-island', { event: 'addButton' })
+  button = await t.findByText('add svg', wrapper)
+  button && await fireEvent(button, 'click')
+  let zone = await t.findByAttribute('data-target', 'zone', wrapper)
+  t({
+    given: 'clicking add svg',
+    should: 'adds a svg to zone',
+    actual: zone?.children.length,
+    expected: 1,
+  })
+  button = await t.findByText('add svg', wrapper)
+  button && await fireEvent(button, 'click')
+  zone = await t.findByAttribute('data-target', 'zone', wrapper)
+  const svg = await t.findByAttribute('data-target', 'svg', wrapper)
+  t({
+    given: 'clicking add svg again',
+    should: 'not add another svg to zone',
+    actual: zone?.children.length,
+    expected: 1,
+  })
+  t({
+    given: 'start action',
+    should: 'zone child is an svg',
+    actual: svg?.tagName,
+    expected: 'svg',
+  })
+  send('shadow-island', { event: 'removeSvg' })
+  button && await fireEvent(button, 'click')
+  const h3 = await t.findByText('sub island', wrapper)
+  t({
+    given: 'removing svg',
+    should: 'should should still have children',
+    actual: zone?.children.length,
+    expected: 1,
+  })
+  t({
+    given: 'after svg removal',
+    should: 'child should be a h3',
+    actual: h3?.tagName,
+    expected: 'H3',
+  })
 }
 export const useIndexedDBTest = async (assert: Assertion) => {
   const [get, set] = await useIndexedDB<number>('testKey', 0)

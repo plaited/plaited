@@ -2,7 +2,7 @@ import { isle, PlaitProps, RulesFunc, useStore } from '$plaited'
 import { connect, send } from './comms.ts'
 import { ops } from './constants.ts'
 
-isle(
+export const CalculatorIsland = isle(
   {
     tag: 'calculator-island',
     connect,
@@ -275,4 +275,4 @@ isle(
       })
     }
   },
-).define()
+)
