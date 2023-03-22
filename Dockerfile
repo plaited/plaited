@@ -5,7 +5,7 @@ ARG TAG
 
 # Update the package list and install wget, curl, python3, and python3-pip
 RUN apt-get update && \
-    apt-get install -y wget curl python3 python3-pip
+    apt-get install -y wget curl unzip python3 python3-pip
 
 # Install Google Chrome
 RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
