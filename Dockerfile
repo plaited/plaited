@@ -35,6 +35,9 @@ RUN useradd -ms /bin/bash bot && \
 # Change the ownership of the /root/.deno directory
 RUN chown -R bot:bot /root/.deno
 
+# Change to the "bot" user
+USER bot
+
 # Set the working directory to /plaited
 WORKDIR /plaited
 
@@ -44,8 +47,6 @@ COPY libs/deps.ts libs/deps.ts
 COPY libs/test-deps.ts libs/test-deps.ts
 RUN deno cache libs/deps.ts libs/test-deps.ts
 
-# Change to the "bot" user
-USER bot
 
 # These steps will be re-run upon each file change in your working directory:
 COPY . .
