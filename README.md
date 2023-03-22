@@ -8,14 +8,14 @@ out production ready code?
 
 ## Main module
 
-`https://deno.land/x/plaited/mod.ts`
+`https://deno.land/x/plaited@0.1.0-rc/mod.ts`
 
 A set of components and patterns for rapidly coding and refining web application
 web applications as specifications (requirements) change and evolve.
 
 ## Assert module
 
-`https://deno.land/x/plaited/assert.ts`
+`https://deno.land/x/plaited@0.1.0-rc/assert.ts`
 
 A small assertion library for running test in the browser with useful chained
 helpers
@@ -30,7 +30,7 @@ Simple, readable, helpful unit tests.
 
 ## CLI module
 
-`https://deno.land/x/plaited/cli.ts`
+`https://deno.land/x/plaited@0.1.0-rc/cli.ts`
 
 Cli script to be used with deno to transform design tokens and generate design
 token schemas
@@ -46,7 +46,7 @@ token schemas
 
 ## Server module
 
-`https://deno.land/x/plaited/server.ts`
+`https://deno.land/x/plaited@0.1.0-rc/server.ts`
 
 A simple but capable file server with https, static file serving, live
 reloading, gzip and other useful features to support modern web app development
@@ -54,7 +54,7 @@ on localhost and over a local network.
 
 ## Utils module
 
-`https://deno.land/x/plaited/utils.ts`
+`https://deno.land/x/plaited@0.1.0-rc/utils.ts`
 
 Reusable platform agnostic utility functions and types used to build plaited
 experiences
