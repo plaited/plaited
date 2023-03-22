@@ -16,13 +16,10 @@ export {
 } from 'https://deno.land/std@0.180.0/path/mod.ts'
 
 // -- lodash --
-export {
-  camelCase,
-  kebabCase,
-  lowerCase,
-  startCase,
-} from 'https://esm.sh/lodash-es@4.17.21?target=es2022'
-
+export { default as camelCase } from 'https://esm.sh/lodash-es@4.17.21/camelCase?target=es2022'
+export { default as kebabCase } from 'https://esm.sh/lodash-es@4.17.21/kebabCase?target=es2022'
+export { default as lowerCase } from 'https://esm.sh/lodash-es@4.17.21/lowerCase?target=es2022'
+export { default as startCase } from 'https://esm.sh/lodash-es@4.17.21/startCase?target=es2022'
 // -- esbuild --
 export {
   build,
