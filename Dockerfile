@@ -25,15 +25,6 @@ RUN apt-get clean && \
     rm -rf /root/.cache/pip/* && \
     rm ./google-chrome-stable_current_amd64.deb
 
-# Create a new user called "bot" and set up the /plaited directory
-RUN useradd -ms /bin/bash bot && \
-    mkdir /plaited && \
-    chown bot:bot /plaited && \
-    chmod 777 /plaited
-
-# Change to the "bot" user
-USER bot
-
 # Set the working directory to /plaited
 WORKDIR /plaited
 
