@@ -5,26 +5,26 @@ ARG TAG
 
 # Update the package list and install wget, curl, python3, and python3-pip
 RUN apt-get update && \
-    apt-get install -y wget curl python3 python3-pip && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y wget curl python3 python3-pip
 
 # Install Google Chrome
 RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y install ./google-chrome-stable_current_amd64.deb && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    rm ./google-chrome-stable_current_amd64.deb
+    DEBIAN_FRONTEND=noninteractive apt-get -y install ./google-chrome-stable_current_amd64.deb
 
-# Install Selenium and clean up the cache
-RUN pip install selenium && \
-    rm -rf /root/.cache/pip/*
+# Install Selenium
+RUN pip install selenium 
 
 # Install Deno with the specified version (TAG)
 RUN curl -fsSL https://deno.land/install.sh | sh -s $TAG
 
 # Add Deno to the PATH
 ENV PATH="/root/.deno/bin:$PATH"
+
+# Cleanup
+RUN apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf /root/.cache/pip/* && \
+    rm ./google-chrome-stable_current_amd64.deb
 
 # Create a new user called "bot" and set up the /plaited directory
 RUN useradd -ms /bin/bash bot && \
