@@ -15,10 +15,9 @@ RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd6
 RUN pip install selenium 
 
 # Install Deno with the specified version (TAG)
-RUN curl -fsSL https://deno.land/install.sh | sh -s $TAG
-
-# Add Deno to the PATH
-ENV PATH="/root/.deno/bin:$PATH"
+RUN curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh -s $TAG
+RUN export DENO_INSTALL="/root/.local"
+RUN export PATH="$DENO_INSTALL/bin:$PATH"
 
 # Cleanup
 RUN apt-get clean && \
@@ -31,9 +30,6 @@ RUN useradd -ms /bin/bash bot && \
     mkdir /plaited && \
     chown bot:bot /plaited && \
     chmod 777 /plaited
-
-# Change the ownership of the /root/.deno directory
-RUN chown -R bot:bot /root/.deno
 
 # Change to the "bot" user
 USER bot
