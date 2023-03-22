@@ -18,22 +18,23 @@ RUN pip install selenium
 RUN curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh -s $TAG
 RUN export DENO_INSTALL="/root/.local"
 RUN export PATH="$DENO_INSTALL/bin:$PATH"
+RUN whereis google-chrome
 
-# Cleanup
-RUN apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    rm -rf /root/.cache/pip/* && \
-    rm ./google-chrome-stable_current_amd64.deb
+# # Cleanup
+# RUN apt-get clean && \
+#     rm -rf /var/lib/apt/lists/* && \
+#     rm -rf /root/.cache/pip/* && \
+#     rm ./google-chrome-stable_current_amd64.deb
 
-# Set the working directory to /plaited
-WORKDIR /plaited
+# # Set the working directory to /plaited
+# WORKDIR /plaited
 
-# Cache the dependencies as a layer (the following two steps are re-run only when deps.ts is modified).
-# Ideally cache deps.ts will download and compile _all_ external files used in main.ts.
-COPY libs/deps.ts libs/deps.ts
-COPY libs/test-deps.ts libs/test-deps.ts
-RUN deno cache libs/deps.ts libs/test-deps.ts
+# # Cache the dependencies as a layer (the following two steps are re-run only when deps.ts is modified).
+# # Ideally cache deps.ts will download and compile _all_ external files used in main.ts.
+# COPY libs/deps.ts libs/deps.ts
+# COPY libs/test-deps.ts libs/test-deps.ts
+# RUN deno cache libs/deps.ts libs/test-deps.ts
 
 
-# These steps will be re-run upon each file change in your working directory:
-COPY . .
+# # These steps will be re-run upon each file change in your working directory:
+# COPY . .
