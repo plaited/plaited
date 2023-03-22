@@ -1,16 +1,11 @@
-import { DevCallback, isle, PlaitProps, RulesFunc, useStore } from '$plaited'
+import { isle, PlaitProps, RulesFunc, useStore } from '$plaited'
 import { connect, send } from './comms.ts'
 import { ops } from './constants.ts'
-
-const dev: DevCallback = (msg) => {
-  console.table(msg)
-}
 
 isle(
   {
     tag: 'calculator-island',
     connect,
-    dev,
   },
   class extends HTMLElement {
     plait({ $, addThreads, feedback, loop, sync }: PlaitProps) {

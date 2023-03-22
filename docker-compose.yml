@@ -1,11 +1,13 @@
 services:
   deno:
-    container_name: "plaited_tests"
+    container_name: "plaited_tests:${TAG}"
     entrypoint: deno
     stdin_open: true # docker run -i
     tty: true # docker run -t
     build:
       context: .
+      args:
+        - TAG=${TAG}
     ports:
       - 3000:3000
       - 9000:9000

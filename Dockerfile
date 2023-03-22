@@ -1,12 +1,42 @@
-FROM denoland/deno:1.30.3
+FROM debian:stable-slim
 
-ARG DEBIAN_FRONTEND=noninteractive
+# Define the Deno version to install
+ARG TAG
 
-RUN apt-get update && apt-get install -y wget
-RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-RUN DEBIAN_FRONTEND=noninteractive apt-get -y install ./google-chrome-stable_current_amd64.deb
+# Update the package list and install wget, curl, python3, and python3-pip
+RUN apt-get update && \
+    apt-get install -y wget curl python3 python3-pip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
+# Install Google Chrome
+RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install ./google-chrome-stable_current_amd64.deb && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm ./google-chrome-stable_current_amd64.deb
+
+# Install Selenium and clean up the cache
+RUN pip install selenium && \
+    rm -rf /root/.cache/pip/*
+
+# Install Deno with the specified version (TAG)
+RUN curl -fsSL https://deno.land/install.sh | sh -s $TAG
+
+# Add Deno to the PATH
+ENV PATH="/root/.deno/bin:$PATH"
+
+# Create a new user called "bot" and set up the /plaited directory
+RUN useradd -ms /bin/bash bot && \
+    mkdir /plaited && \
+    chown bot:bot /plaited && \
+    chmod 777 /plaited
+
+# Set the working directory to /plaited
 WORKDIR /plaited
+
+# Change to the "bot" user
+USER bot
 
 # Cache the dependencies as a layer (the following two steps are re-run only when deps.ts is modified).
 # Ideally cache deps.ts will download and compile _all_ external files used in main.ts.

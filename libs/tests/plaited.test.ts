@@ -1,38 +1,20 @@
 import { assert } from '../test-deps.ts'
-import { wait } from '../utils/wait.ts'
-const __dirname = new URL('.', import.meta.url).pathname
 
 Deno.test('plaited browser test', async () => {
   const server = Deno.run({
+    cmd: ['deno', 'run', '--allow-all', 'libs/tests/start.ts'],
     env: {
       TEST: 'true',
     },
-    cmd: [
-      'deno',
-      'run',
-      '--allow-sys',
-      '--allow-read',
-      '--allow-env',
-      '--allow-net',
-      '--allow-run',
-      `${__dirname}/start.ts`,
-    ],
   })
-  await wait(500)
-  const url = 'http://localhost:3000'
 
-  const browser = Deno.run({
-    cmd: [
-      'google-chrome',
-      '--headless',
-      '--no-sandbox',
-      '--window-size=412,892',
-      '--remote-debugging-port=9222',
-      url,
-    ],
+  const reporter = Deno.run({
+    cmd: ['python3', 'libs/tests/reporter.py'],
   })
-  const status = await server.status()
-  browser.close()
+
+  const status = await reporter.status()
+
   server.close()
-  assert(status.code === 0)
+  reporter.close()
+  assert(status.success)
 })
