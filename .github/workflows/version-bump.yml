@@ -1,0 +1,34 @@
+name: version bump
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'New version tag (e.g., v1.0.0)'
+        required: true
+
+jobs:
+  bump_version:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Configure Git user
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "github-actions@users.noreply.github.com"
+
+    - name: Validate input version
+      run: |
+        version="${{ github.event.inputs.version }}"
+        if [[ ! $version =~ ^[0-9] ]]; then
+          echo "Error: Version must start with a number."
+          exit 1
+        fi
+
+    - name: Create and push new tag
+      run: |
+        git tag ${{ github.event.inputs.version }}
+        git push origin ${{ github.event.inputs.version }}
