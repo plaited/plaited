@@ -14,8 +14,12 @@ jobs:
     steps:
     
     - uses: actions/checkout@v3
-    - name: Build the stack
-      run: docker-compose up -d
+    - uses: docker/setup-buildx-action@v2
+    - uses: docker/build-push-action@v4
+      with:
+        context: .
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
     - name: Lint
       run: docker-compose run --rm deno task lint
     - name: Test
