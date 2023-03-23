@@ -1,8 +1,8 @@
 {
   "tasks": {
+    "dev": "deno run --allow-all libs/tests/start.ts",
     "lint": "deno lint",
-    "test": "deno test --allow-all ./libs",
-    "test:only": "deno test --allow-all"
+    "test": "deno test --allow-all"
   },
   "importMap": "./.vscode/import-map.json",
   "compilerOptions": {
@@ -13,10 +13,32 @@
       "deno.ns"
     ]
   },
+  "lint": {
+    "files": {
+      "exclude": [
+        "./tests/playwright",
+        "./tests/.workshop"
+      ]
+    }
+  },
   "fmt": {
+    "files": {
+      "exclude": [
+        "./tests/playwright",
+        "./tests/.workshop"
+      ]
+    },
     "options": {
       "singleQuote": true,
       "semiColons": false
+    }
+  },
+  "test": {
+    "files": {
+      "exclude": [
+        "./tests/playwright",
+        "./tests/.workshop"
+      ]
     }
   }
 }

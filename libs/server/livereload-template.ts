@@ -1,9 +1,14 @@
-import { html } from '../island/mod.ts'
+import { html } from '../islandly/mod.ts'
 
+const url = '`ws://${host}/livereload`'
 export const livereloadTemplate = html`<script type="text/javascript">
-const source = new EventSource('/livereload');
-const reload = () => location.reload(true);
-source.onmessage = reload;
-source.onerror = () => (source.onopen = reload);
+const hostRegex = /^https?:\/\/([^\/]+)\/.*$/i;
+const host = document.URL.replace(hostRegex, '$1');
+const socket = new WebSocket(${url});
+const reload = () =>{
+  location.reload();
+  console.log('...reloading');
+};
+socket.addEventListener('message', reload);
 console.log('[plaited] listening for file changes');
 </script>`

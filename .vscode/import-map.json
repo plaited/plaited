@@ -3,9 +3,9 @@
     "THIS FILE EXISTS ONLY FOR VSCODE! IT IS NOT USED AT RUNTIME": {}
   },
   "imports": {
+    "$assert": "../assert.ts",
     "$plaited": "../mod.ts",
-    "$workshop": "../workshop.ts",
-    "@playwright/test": "https://esm.sh/@playwright/test@1.30.0",
-    "@axe-core/playwright": "https://esm.sh/@axe-core/playwright@4.6.0"
+    "$server": "../server.ts",
+    "$utils": "../utils.ts"
   }
 }

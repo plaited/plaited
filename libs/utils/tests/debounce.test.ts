@@ -1,36 +1,19 @@
-import {
-  afterEach,
-  assert,
-  assertEquals,
-  beforeEach,
-  describe,
-  it,
-  sinon,
-} from '../../test-deps.ts'
+import { assertSpyCalls, FakeTime, spy } from '../../test-deps.ts'
 import { debounce } from '../mod.ts'
 
-describe('debounce', () => {
-  let clock: sinon.SinonFakeTimers
-  beforeEach(function () {
-    clock = sinon.useFakeTimers()
-  })
-
-  afterEach(function () {
-    clock.restore()
-  })
-  it('debounces the fn', () => {
-    const fn = sinon.spy()
-
+Deno.test('debounces()', () => {
+  const time = new FakeTime()
+  try {
+    const fn = spy()
     const debounced = debounce(fn, 100)
     debounced()
 
-    assert(fn.notCalled)
-    clock.tick(50)
-
-    assert(fn.notCalled)
-    clock.tick(100)
-
-    assert(fn.called)
-    assertEquals(fn.getCalls().length, 1)
-  })
+    assertSpyCalls(fn, 0)
+    time.tick(50)
+    assertSpyCalls(fn, 0)
+    time.tick(100)
+    assertSpyCalls(fn, 1)
+  } finally {
+    time.restore()
+  }
 })

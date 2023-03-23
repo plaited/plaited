@@ -1,109 +1,97 @@
 /* eslint-disable no-console */
 import { hostnameForDisplay, networkIps, usePort } from './utils.ts'
-import { Server, UpdateRoutes } from './types.ts'
+import { Middleware, Server } from './types.ts'
 import { watcher } from './watcher.ts'
-import { createServer } from './create-server.ts'
-import { getHandler } from './get-handler.ts'
-import { getOtherHandler } from './get-other-handler.ts'
+import { getRouteHandler } from './get-route-handler.ts'
+import { serve, serveTls } from '../deps.ts'
+import { getReloadRoute } from './get-reload-route.ts'
 
-export const server: Server = async ({
+const getMiddleware: Middleware = (handler) => async (req, ctx) =>
+  await handler(req, ctx)
+
+export const server: Server = ({
   root,
   routes,
   port: _port = 3000,
-  dev = true,
+  reload,
   credentials,
-  notFoundTemplate,
   errorHandler,
+  otherHandler,
   unknownMethodHandler,
+  middleware = getMiddleware,
 }) => {
   // Try start on specified port then fail or find a free port
   const port = usePort(_port) ? _port : usePort()
 
   // Configure globals
-  if (!Deno.statSync(root)) {
-    console.error(`[ERR] Root directory ${root} does not exist!`)
-    Deno.exit()
-  }
+  const controller = new AbortController()
+  const { signal } = controller
+  const protocol: 'http' | 'https' = `${credentials ? 'https' : 'http'}`
+  const url = `${protocol}://localhost:${port}`
+  const reloadClients = new Set<WebSocket>()
 
-  if (!Deno.statSync(root).isDirectory) {
-    console.error(`[ERR] Root directory "${root}" is not directory!`)
-    Deno.exit()
-  }
+  const createServer = credentials ? serveTls : serve
 
-  const ac = new AbortController()
-
-  const reloadClients: Array<(channel: string, data: string) => void> = []
-  const protocol = credentials ? 'https' : 'http'
-
-  // Get file assets routes
-  const otherHandler = getOtherHandler(notFoundTemplate)
-  const handler = await getHandler({
-    routes,
-    reload: dev,
-    reloadClients,
-    otherHandler,
-    errorHandler,
-    unknownMethodHandler,
-  })
-  createServer({
-    credentials,
-    handler,
-    onListen: ({ port, hostname }) => {
-      console.log(
-        `Running at ${protocol}://${hostnameForDisplay(hostname)}:${port}`,
-      )
-    },
-    port,
-    root,
-    signal: ac.signal,
-  })
-
-  if (dev) {
-    watcher(reloadClients, root)
-  }
-
-  // Close socket connections on sigint
-  Deno.addSignalListener('SIGINT', () => {
-    console.log('Closing server...')
-    ac.abort()
-    Deno.exit()
-  })
-
-  const updateRoutes: UpdateRoutes = async (cb) => {
-    ac.abort()
-    const newRoutes = cb(routes)
-    const newHandler = await getHandler({
-      routes: newRoutes,
-      reload: dev,
-      reloadClients,
-      otherHandler,
-      errorHandler,
-      unknownMethodHandler,
-    })
-    setTimeout(() => {
-      createServer({
-        credentials,
-        handler: newHandler,
-        onListen: ({ port, hostname }) => {
-          console.log(
-            `Updating routes at ${protocol}://${
-              hostnameForDisplay(hostname)
-            }:${port}`,
-          )
-        },
-        port,
-        root,
-        signal: ac.signal,
+  const server = createServer(
+    middleware(async (
+      req,
+      ctx,
+    ) => {
+      const routeHandler = await getRouteHandler({
+        routes,
+        reload,
+        reloadClients,
+        otherHandler,
+        errorHandler,
+        unknownMethodHandler,
       })
-    }, 500)
+      return await routeHandler(req, ctx)
+    }),
+    {
+      signal,
+      port,
+      onListen: ({ port, hostname }) => {
+        console.log(
+          `Running at ${protocol}://${hostnameForDisplay(hostname)}:${port}`,
+        )
+      },
+      ...credentials,
+    },
+  )
+  const reloadClient = () => {
+    if (reloadClients.size) {
+      console.log('reloading client')
+      routes.set(...getReloadRoute(reloadClients))
+      reloadClients.forEach((socket) => socket.send(new Date().toString()))
+    }
+  }
+
+  if (reload && root) { // Check if root path exist
+    if (!Deno.statSync(root)) {
+      console.error(`[ERR] Root directory ${root} does not exist!`)
+      Deno.exit()
+    }
+
+    // Check if root path is a directory else exit
+    if (!Deno.statSync(root).isDirectory) {
+      console.error(`[ERR] Root directory "${root}" is not directory!`)
+      Deno.exit()
+    }
+    watcher(reloadClient, root)
+  }
+
+  const close = async () => {
+    console.log('Closing server...')
+    controller.abort()
+    await server
   }
 
   return {
     ips: networkIps,
     port,
     protocol,
-    root,
-    updateRoutes,
-    url: `${protocol}://localhost:${port}`,
+    reloadClient,
+    close,
+    url,
   }
 }

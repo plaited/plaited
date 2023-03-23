@@ -1,21 +1,22 @@
 import { mimeTypes } from './mime-types.ts'
-import { compress, serveDir } from '../deps.ts'
+import { compress, extname, serveDir } from '../deps.ts'
 export const getFileHandler = async ({
-  fileExt,
-  root,
-  pathname,
+  assets,
   req,
+  exclude = ['js'],
 }: {
-  fileExt: string
-  root: string
-  pathname: string
+  assets: string
   req: Request
+  exclude?: string[]
 }) => {
+  const { pathname } = new URL(req.url)
+  const fileExt = extname(pathname)
   const ext: string = fileExt.slice(1)
+  if (!fileExt || exclude.includes(ext)) return
   if (
     ['js', 'mjs', 'css', 'html', 'htm', 'json', 'xml', 'svg'].includes(ext)
   ) {
-    const filePath = `${root}${pathname}`
+    const filePath = `${assets}${pathname}`
     let exist = true
     try {
       await Deno.stat(filePath)
@@ -36,6 +37,6 @@ export const getFileHandler = async ({
     })
   }
   return serveDir(req, {
-    fsRoot: root,
+    fsRoot: assets,
   })
 }
