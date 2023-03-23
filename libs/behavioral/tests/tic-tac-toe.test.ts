@@ -1,4 +1,4 @@
-import { assertEquals } from '../../test-deps.ts'
+import { assertEquals } from '../../dev-deps.ts'
 import { bProgram, RulesFunc } from '../mod.ts'
 
 const winConditions = [

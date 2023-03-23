@@ -1,5 +1,5 @@
 import type { ConnInfo } from '../../deps.ts'
-import { assert, assertEquals, assertIsError } from '../../test-deps.ts'
+import { assert, assertEquals, assertIsError } from '../../dev-deps.ts'
 import { router, Routes } from '../router.ts'
 
 const TEST_CONN_INFO: ConnInfo = {

@@ -1,4 +1,4 @@
-import { assertSnapshot } from '../../test-deps.ts'
+import { assertSnapshot } from '../../dev-deps.ts'
 import { css } from '../mod.ts'
 
 Deno.test('css()', async (t) => {

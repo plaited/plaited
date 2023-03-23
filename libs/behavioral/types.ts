@@ -14,7 +14,7 @@ export interface StateSnapshot {
     priority: number
   }[]
 }
-export type StreamMessage = {
+export type Message = {
   type: typeof streamEvents.select
   data: {
     event: string
@@ -25,12 +25,7 @@ export type StreamMessage = {
   data: ReturnType<StateSnapshot>
 }
 
-export type Listener = (msg: StreamMessage) => StreamMessage | void
-
-export interface Stream {
-  (value: StreamMessage): void
-  subscribe: (listener: Listener) => Stream
-}
+export type Subscriber = (msg: Message) => void
 
 export type Trigger = <
   T extends Record<string, unknown> = Record<string, unknown>,
@@ -43,13 +38,13 @@ export type TriggerArgs = Parameters<Trigger>[0]
 
 // Rule types
 type Callback<
-  T extends (Record<string, unknown> | Event) = Record<string, unknown>,
+  T extends Record<string, unknown> = Record<string, unknown>,
 > = (
   args: { event: string; detail: T },
 ) => boolean
 
 export type ParameterIdiom<
-  T extends (Record<string, unknown> | Event) = Record<string, unknown>,
+  T extends Record<string, unknown> = Record<string, unknown>,
 > = {
   event: string
   cb?: Callback<T>
@@ -59,7 +54,7 @@ export type ParameterIdiom<
 }
 
 export type RequestIdiom<
-  T extends (Record<string, unknown> | Event) = Record<string, unknown>,
+  T extends Record<string, unknown> = Record<string, unknown>,
 > = {
   event: string
   detail?: T
@@ -67,7 +62,7 @@ export type RequestIdiom<
 }
 
 export type RuleSet<
-  T extends (Record<string, unknown> | Event) = Record<string, unknown>,
+  T extends Record<string, unknown> = Record<string, unknown>,
 > = {
   waitFor?: ParameterIdiom<T> | ParameterIdiom<T>[]
   request?: RequestIdiom<T> | RequestIdiom<T>[]
@@ -75,7 +70,7 @@ export type RuleSet<
 }
 
 export type RulesFunc<
-  T extends (Record<string, unknown> | Event) = Record<string, unknown>,
+  T extends Record<string, unknown> = Record<string, unknown>,
 > = () => IterableIterator<
   RuleSet<T>
 >
@@ -104,7 +99,8 @@ type Actions<
   T extends Record<string, (detail: Record<string, unknown>) => void>,
 > = {
   [K in keyof T]: T[K] extends (detail: infer D) => void ? (
-      detail: D extends Record<string, unknown> ? D : Record<string, unknown>,
+      detail: D extends Record<string, unknown> ? D
+        : Record<string, unknown>,
     ) => void
     : never
 }

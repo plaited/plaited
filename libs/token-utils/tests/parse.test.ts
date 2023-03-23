@@ -1,6 +1,6 @@
 import { parse } from '../parse.ts'
 import { tokens } from './sample-tokens.ts'
-import { assertEquals, assertSnapshot } from '../../test-deps.ts'
+import { assertEquals, assertSnapshot } from '../../dev-deps.ts'
 
 const actual = parse({ tokens })
 

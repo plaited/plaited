@@ -20,15 +20,15 @@ export const matchAllEvents = (str: string) => {
 export const getTriggerKey = (
   { currentTarget, composedPath, type }: Event,
   context: HTMLElement | SVGElement,
-) => {
+): string => {
   const el = currentTarget === context
     ? context
     // check if closest slot from the element that invoked the event is the instances slot
     : composedPath().find((slot) => slot instanceof HTMLSlotElement) === context
     ? context
-    : ''
+    : undefined
 
-  if (!el) return el
+  if (!el) return ''
   const pre = `${type}->`
   const trigger = el.dataset.trigger ?? ''
   const key = trigger.trim().split(/\s+/).find((str: string) =>

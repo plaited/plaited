@@ -1,4 +1,4 @@
-import { assertEquals } from '../../test-deps.ts'
+import { assertEquals } from '../../dev-deps.ts'
 import { noop } from '../../utils/mod.ts'
 import { html } from '../mod.ts'
 

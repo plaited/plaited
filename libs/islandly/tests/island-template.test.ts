@@ -1,4 +1,4 @@
-import { assertSnapshot } from '../../test-deps.ts'
+import { assertSnapshot } from '../../dev-deps.ts'
 import { html, IslandTemplate } from '../mod.ts'
 
 // Expected usage const MyTemplate = ({ ..args}) => IslandTemplate({tag, template: html`` ...rest})

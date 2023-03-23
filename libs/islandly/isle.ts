@@ -88,16 +88,16 @@ export const isle = ({
         | NodeListOf<HTMLElement | SVGElement>,
     ) {
       nodes.forEach((el) => {
-        !delegatedListener.has(el) && delegatedListener.set(el, (evt) => {
-          const triggerKey = getTriggerKey(evt, el)
+        !delegatedListener.has(el) && delegatedListener.set(el, (event) => {
+          const triggerKey = getTriggerKey(event, el)
           triggerKey
-            // if key is present in `data-trigger` trigger event on instance's bProgram
-            ? this.#trigger({
+            /** if key is present in `data-trigger` trigger event on instance's bProgram */
+            ? this.#trigger<{ event: Event }>({
               event: triggerKey,
-              detail: evt as unknown as Record<string, unknown>,
+              detail: { event },
             })
-            // if key is not present in `data-trigger` remove event listener for this event
-            : el.removeEventListener(evt.type, delegatedListener.get(el))
+            /** if key is not present in `data-trigger` remove event listener for this event */
+            : el.removeEventListener(event.type, delegatedListener.get(el))
         })
         const triggers = el.dataset.trigger
         if (triggers) {

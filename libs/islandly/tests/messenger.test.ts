@@ -1,4 +1,4 @@
-import { assertSpyCall, assertSpyCalls, spy } from '../../test-deps.ts'
+import { assertSpyCall, assertSpyCalls, spy } from '../../dev-deps.ts'
 import { wait } from '../../utils/mod.ts'
 import { messenger } from '../mod.ts'
 

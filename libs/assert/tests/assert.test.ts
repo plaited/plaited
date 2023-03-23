@@ -1,5 +1,5 @@
 import { assert, AssertionError } from '../mod.ts'
-import { assertIsError } from '../../test-deps.ts'
+import { assertIsError } from '../../dev-deps.ts'
 const sum = (...args: number[]) => {
   if (args.some((v) => Number.isNaN(v))) throw new TypeError('NaN')
   return args.reduce((acc, n) => acc + n, 0)

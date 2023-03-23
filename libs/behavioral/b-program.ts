@@ -1,17 +1,17 @@
 import { strategies, streamEvents } from './constants.ts'
 import { stateSnapshot } from './state-snapshot.ts'
-import { createStream } from './create-stream.ts'
+import { publisher } from './publisher.ts'
 import { selectionStrategies } from './selection-strategies.ts'
 import {
   CandidateBid,
   DevCallback,
   Feedback,
+  Message,
   ParameterIdiom,
   PendingBid,
   RulesFunc,
   RunningBid,
   Strategy,
-  StreamMessage,
   Trigger,
 } from './types.ts'
 import { loop, sync, thread } from './rules.ts'
@@ -48,7 +48,7 @@ export const bProgram = ({
     : strategy
   const pending = new Set<PendingBid>()
   const running = new Set<RunningBid>()
-  const stream = createStream()
+  const pub = publisher()
 
   function run() {
     running.size && step()
@@ -73,20 +73,18 @@ export const bProgram = ({
   // Select next event
   function selectNextEvent() {
     const bids = [...pending]
-    const candidates = bids.reduce<CandidateBid[]>(
-      (acc, { request, priority }) =>
-        acc.concat(
-          // Flatten bids' request arrays
-          request && Array.isArray(request)
-            ? request.map(
-              (event) => ({ priority, ...event }), // create candidates for each request with current bids priority
-            )
-            : request
-            ? [{ priority, ...request }]
-            : [],
-        ),
-      [],
-    )
+    let candidates: CandidateBid[] = []
+    for (const { request, priority } of bids) {
+      if (Array.isArray(request)) {
+        candidates = candidates.concat(request.map(
+          (event) => ({ priority, ...event }), // create candidates for each request with current bids priority
+        ))
+        continue
+      }
+      if (request) {
+        candidates.push({ priority, ...request }) // create candidates for each request with current bids priority
+      }
+    }
     const blocked = bids.flatMap<ParameterIdiom>(({ block }) => block || [])
 
     const filteredBids: CandidateBid[] | never[] = candidates.filter(
@@ -94,7 +92,7 @@ export const bProgram = ({
     )
     const selectedEvent = eventSelectionStrategy(filteredBids)
     if (selectedEvent) {
-      dev && stream({
+      dev && pub({
         type: streamEvents.snapshot,
         data: stateSnapshot({ bids, selectedEvent }),
       })
@@ -119,7 +117,7 @@ export const bProgram = ({
     const { priority: _p, cb: _cb, ...detail } = selectedEvent
     // To avoid infinite loop with calling trigger from feedback always stream select event
     // checking if the request is in the parameter which can be a waitFor or pending request
-    stream({
+    pub({
       type: streamEvents.select,
       data: detail,
     })
@@ -147,8 +145,8 @@ export const bProgram = ({
   const feedback: Feedback = (
     actions,
   ) => {
-    stream.subscribe(
-      ({ type, data }: StreamMessage) => {
+    pub.subscribe(
+      ({ type, data }: Message) => {
         if (type === streamEvents.select) {
           const { event: key, detail = {} } = data
           Object.hasOwn(actions, key) &&
@@ -169,8 +167,8 @@ export const bProgram = ({
   }
 
   if (dev) {
-    stream.subscribe(
-      ({ type, data }: StreamMessage) => {
+    pub.subscribe(
+      ({ type, data }: Message) => {
         if (type === streamEvents.snapshot) {
           dev(data)
         }

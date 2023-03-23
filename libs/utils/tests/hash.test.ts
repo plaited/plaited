@@ -1,4 +1,4 @@
-import { assertEquals } from '../../test-deps.ts'
+import { assertEquals } from '../../dev-deps.ts'
 import { hashString } from '../mod.ts'
 
 Deno.test('hashString()', () => {

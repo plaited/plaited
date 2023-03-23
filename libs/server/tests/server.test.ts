@@ -1,4 +1,4 @@
-import { assert, assertEquals, assertSnapshot } from '../../test-deps.ts'
+import { assert, assertEquals, assertSnapshot } from '../../dev-deps.ts'
 import { server } from '../server.ts'
 import {
   __dirname,

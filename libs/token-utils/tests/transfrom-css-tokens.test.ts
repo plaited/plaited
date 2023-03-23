@@ -1,4 +1,4 @@
-import { assertSnapshot, beautify } from '../../test-deps.ts'
+import { assertSnapshot, beautify } from '../../dev-deps.ts'
 import { resolve } from '../../deps.ts'
 import { transformCssTokens } from '../transform-css-tokens.ts'
 import { tokens } from './sample-tokens.ts'

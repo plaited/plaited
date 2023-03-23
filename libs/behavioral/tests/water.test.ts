@@ -1,4 +1,4 @@
-import { assertEquals, assertSnapshot } from '../../test-deps.ts'
+import { assertEquals, assertSnapshot } from '../../dev-deps.ts'
 import { bProgram, DevCallback } from '../mod.ts'
 
 Deno.test('Add hot water 3 times', () => {

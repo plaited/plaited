@@ -1,4 +1,4 @@
-import { assert, assertFalse } from '../../test-deps.ts'
+import { assert, assertFalse } from '../../dev-deps.ts'
 import { deepEqual } from '../mod.ts'
 
 Deno.test('deepEqual()', () => {

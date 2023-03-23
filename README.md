@@ -17,7 +17,7 @@ web applications as specifications (requirements) change and evolve.
 
 ## Assert module
 
-`https://deno.land/x/plaited@0.1.0-rc/assert.ts`
+`https://deno.land/x/plaited@0.1.0-rc/mod.ts`
 
 A small assertion library for running test in the browser with useful chained
 helpers

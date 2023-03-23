@@ -1,4 +1,4 @@
-import { assertSpyCall, spy } from '../../test-deps.ts'
+import { assertSpyCall, spy } from '../../dev-deps.ts'
 import { callAll } from '../mod.ts'
 
 Deno.test('callAll()', () => {

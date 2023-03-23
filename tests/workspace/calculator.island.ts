@@ -267,8 +267,8 @@ export const CalculatorIsland = isle(
           setCur((cur) => `${cur}.`)
           current.replaceChildren(getCur())
         },
-        number(evt: MouseEvent) {
-          const value = (evt.currentTarget as HTMLButtonElement).value
+        number({ event }: { event: MouseEvent }) {
+          const value = (event.currentTarget as HTMLButtonElement).value
           setCur((cur) => `${cur}${value}`)
           current.replaceChildren(getCur())
         },

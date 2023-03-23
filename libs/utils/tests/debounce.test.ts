@@ -1,4 +1,4 @@
-import { assertSpyCalls, FakeTime, spy } from '../../test-deps.ts'
+import { assertSpyCalls, FakeTime, spy } from '../../dev-deps.ts'
 import { debounce } from '../mod.ts'
 
 Deno.test('debounces()', () => {

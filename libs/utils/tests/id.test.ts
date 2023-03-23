@@ -1,4 +1,4 @@
-import { assertEquals } from '../../test-deps.ts'
+import { assertEquals } from '../../dev-deps.ts'
 import { generateId, setIdCounter, ueid } from '../mod.ts'
 
 Deno.test('ueid: returns a string', () => {
