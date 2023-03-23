@@ -59,7 +59,7 @@ Deno.test('server: reload', async () => {
   socket.addEventListener('message', reload)
   await Deno.writeTextFile(`${root}/new-styles.css`, newStyles)
   await wait(500)
-  socket.close()
+  await socket.close()
   await Deno.remove(`${root}/new-styles.css`)
   console.log(messages)
   assert(messages.length)

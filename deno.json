@@ -2,7 +2,7 @@
   "tasks": {
     "dev": "deno run --allow-all libs/tests/start.ts",
     "lint": "deno lint",
-    "test": "deno test --allow-all"
+    "test": "deno test --allow-all --trace-ops"
   },
   "importMap": "./.vscode/import-map.json",
   "compilerOptions": {
