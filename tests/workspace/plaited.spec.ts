@@ -9,7 +9,6 @@ import {
 } from '$plaited'
 import { symbols } from './constants.ts'
 import { connect, send } from './comms.ts'
-import { fireEvent } from '../../assert/fire-event.ts'
 import { classes, styles } from './test.styles.ts'
 export const islandCommsTest = async (t: Assertion) => {
   const island = document.querySelector('calculator-island')
@@ -179,7 +178,7 @@ export const dynamicIslandCommsTest = async (t: Assertion) => {
     actual: header?.innerHTML,
     expected: 'Hello',
   })
-  button && await fireEvent(button, 'click')
+  button && await t.fireEvent(button, 'click')
   t({
     given: 'clicking button',
     should: 'append string to header',
@@ -321,7 +320,7 @@ export const shadowObserverTest = async (t: Assertion) => {
     'click->start',
     wrapper,
   )
-  button && await fireEvent(button, 'click')
+  button && await t.fireEvent(button, 'click')
   let row = await t.findByAttribute('data-target', 'button-row', wrapper)
   t({
     given: 'clicking start',
@@ -329,7 +328,7 @@ export const shadowObserverTest = async (t: Assertion) => {
     actual: row?.children.length,
     expected: 2,
   })
-  button && await fireEvent(button, 'click')
+  button && await t.fireEvent(button, 'click')
   row = await t.findByAttribute('data-target', 'button-row', wrapper)
   t({
     given: 'clicking start again',
@@ -339,7 +338,7 @@ export const shadowObserverTest = async (t: Assertion) => {
   })
   send('shadow-island', { event: 'addButton' })
   button = await t.findByText('add svg', wrapper)
-  button && await fireEvent(button, 'click')
+  button && await t.fireEvent(button, 'click')
   let zone = await t.findByAttribute('data-target', 'zone', wrapper)
   t({
     given: 'clicking add svg',
@@ -348,7 +347,7 @@ export const shadowObserverTest = async (t: Assertion) => {
     expected: 1,
   })
   button = await t.findByText('add svg', wrapper)
-  button && await fireEvent(button, 'click')
+  button && await t.fireEvent(button, 'click')
   zone = await t.findByAttribute('data-target', 'zone', wrapper)
   const svg = await t.findByAttribute('data-target', 'svg', wrapper)
   t({
@@ -364,7 +363,7 @@ export const shadowObserverTest = async (t: Assertion) => {
     expected: 'svg',
   })
   send('shadow-island', { event: 'removeSvg' })
-  button && await fireEvent(button, 'click')
+  button && await t.fireEvent(button, 'click')
   const h3 = await t.findByText('sub island', wrapper)
   t({
     given: 'removing svg',

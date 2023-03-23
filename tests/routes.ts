@@ -3,7 +3,7 @@ import { bundler } from './bundler.ts'
 import { css, html } from '$plaited'
 import { CalculatorTemplate } from './workspace/calculator.template.ts'
 import { ShadowTemplate } from './workspace/shadow.template.ts'
-import { resolve, toFileUrl } from '../deps.ts'
+import { resolve, toFileUrl } from '../libs/deps.ts'
 
 const __dirname = new URL('.', import.meta.url).pathname
 export const workspace = resolve(__dirname, 'workspace')
