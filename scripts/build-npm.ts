@@ -22,14 +22,12 @@ const entry = `${root}/mod.ts`
 // Bundle libs
 const unminified = await bundler({
   entryPoints: [entry],
-  format: 'esm',
   outfile: `${npm}/mod.js`,
   minify: false,
 })
 
 const minified = await bundler({
   entryPoints: [entry],
-  format: 'esm',
   outfile: `${npm}/mod.min.js`,
   minify: true,
 })

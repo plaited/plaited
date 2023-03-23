@@ -1,26 +1,3 @@
-var __accessCheck = (obj, member, msg) => {
-  if (!member.has(obj))
-    throw TypeError("Cannot " + msg);
-};
-var __privateGet = (obj, member, getter) => {
-  __accessCheck(obj, member, "read from private field");
-  return getter ? getter.call(obj) : member.get(obj);
-};
-var __privateAdd = (obj, member, value) => {
-  if (member.has(obj))
-    throw TypeError("Cannot add the same private member more than once");
-  member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
-};
-var __privateSet = (obj, member, value, setter) => {
-  __accessCheck(obj, member, "write to private field");
-  setter ? setter.call(obj, value) : member.set(obj, value);
-  return value;
-};
-var __privateMethod = (obj, member, method) => {
-  __accessCheck(obj, member, "access private method");
-  return method;
-};
-
 // libs/behavioral/constants.ts
 var streamEvents = {
   select: "select-event",
@@ -52,8 +29,8 @@ var stateSnapshot = ({ bids, selectedEvent }) => {
     if (request) {
       const arr = Array.isArray(request) ? request : [request];
       arr.some(
-        ({ event }) => event === selectedEvent.event && priority === selectedEvent.priority
-      ) && (selected = selectedEvent.event);
+        ({ type }) => type === selectedEvent.type && priority === selectedEvent.priority
+      ) && (selected = selectedEvent.type);
       Object.assign(obj, {
         request: arr
       });
@@ -124,13 +101,13 @@ var sync = (set) => function* () {
 };
 
 // libs/behavioral/b-program.ts
-var requestInParameter = ({ event: requestEventName, detail: requestDetail = {} }) => {
+var requestInParameter = ({ type: requestEventName, detail: requestDetail = {} }) => {
   return ({
-    event: parameterEventName,
+    type: parameterEventName,
     cb: parameterAssertion
   }) => parameterAssertion ? parameterAssertion({
     detail: requestDetail,
-    event: requestEventName
+    type: requestEventName
   }) : requestEventName === parameterEventName;
 };
 var bProgram = ({
@@ -183,7 +160,7 @@ var bProgram = ({
     const selectedEvent = eventSelectionStrategy(filteredBids);
     if (selectedEvent) {
       dev && pub({
-        type: streamEvents.snapshot,
+        kind: streamEvents.snapshot,
         data: stateSnapshot({ bids, selectedEvent })
       });
       nextStep(selectedEvent);
@@ -203,23 +180,23 @@ var bProgram = ({
     }
     const { priority: _p, cb: _cb, ...detail } = selectedEvent;
     pub({
-      type: streamEvents.select,
+      kind: streamEvents.select,
       data: detail
     });
     run();
   }
   const trigger = ({
-    event,
+    type,
     detail
   }) => {
     const thread2 = function* () {
       yield {
-        request: [{ event, detail }],
-        waitFor: [{ event: "", cb: () => true }]
+        request: [{ type, detail }],
+        waitFor: [{ type: "", cb: () => true }]
       };
     };
     running.add({
-      thread: event,
+      thread: type,
       priority: 0,
       trigger: true,
       generator: thread2()
@@ -228,9 +205,9 @@ var bProgram = ({
   };
   const feedback = (actions) => {
     pub.subscribe(
-      ({ type, data }) => {
-        if (type === streamEvents.select) {
-          const { event: key, detail = {} } = data;
+      ({ kind, data }) => {
+        if (kind === streamEvents.select) {
+          const { type: key, detail = {} } = data;
           Object.hasOwn(actions, key) && actions[key](detail);
         }
       }
@@ -247,8 +224,8 @@ var bProgram = ({
   };
   if (dev) {
     pub.subscribe(
-      ({ type, data }) => {
-        if (type === streamEvents.snapshot) {
+      ({ kind, data }) => {
+        if (kind === streamEvents.snapshot) {
           dev(data);
         }
       }
@@ -439,7 +416,7 @@ var useBehavioral = ({
     }
     disconnect = id && _id ? connect(_id, trigger) : connect(tagName, trigger);
     trigger({
-      event: `connected->${id ? _id ?? `${tagName} with missing id` : tagName}`
+      type: `connected->${id ? _id ?? `${tagName} with missing id` : tagName}`
     });
   }
   return { trigger, disconnect, ...rest };
@@ -447,6 +424,7 @@ var useBehavioral = ({
 
 // libs/islandly/delegated-listener.ts
 var DelegatedListener = class {
+  callback;
   constructor(callback) {
     this.callback = callback;
   }
@@ -470,36 +448,30 @@ var isle = ({
   tag,
   ...bProgramOptions
 }, island) => {
-  var _noDeclarativeShadow, _shadowObserver, _templateObserver, _disconnect, _trigger, _connectTriggers, connectTriggers_fn, _delegateListeners, delegateListeners_fn, _createShadowObserver, createShadowObserver_fn, _appendTemplate, appendTemplate_fn, _createTemplateObserver, createTemplateObserver_fn, _a;
-  return _a = class extends island {
+  return class extends island {
+    #noDeclarativeShadow = false;
+    #shadowObserver;
+    #templateObserver;
+    #disconnect;
+    internals_;
+    #trigger;
     constructor() {
       super();
-      __privateAdd(this, _connectTriggers);
-      __privateAdd(this, _delegateListeners);
-      // Observes the addition of nodes to the shadow dom and changes to and child's data-trigger attribute
-      __privateAdd(this, _createShadowObserver);
-      __privateAdd(this, _appendTemplate);
-      __privateAdd(this, _createTemplateObserver);
-      __privateAdd(this, _noDeclarativeShadow, false);
-      __privateAdd(this, _shadowObserver, void 0);
-      __privateAdd(this, _templateObserver, void 0);
-      __privateAdd(this, _disconnect, void 0);
-      __privateAdd(this, _trigger, void 0);
       this.internals_ = this.attachInternals();
       let root = this.internals_.shadowRoot;
       !root && (root = this.attachShadow({ mode, delegatesFocus }));
-      !root.firstChild && __privateSet(this, _noDeclarativeShadow, true);
+      !root.firstChild && (this.#noDeclarativeShadow = true);
     }
     connectedCallback() {
       super.connectedCallback && super.connectedCallback();
-      if (__privateGet(this, _noDeclarativeShadow)) {
+      if (this.#noDeclarativeShadow) {
         const template2 = this.querySelector(
           "template[shadowrootmode]"
         );
-        template2 ? __privateMethod(this, _appendTemplate, appendTemplate_fn).call(this, template2) : __privateSet(this, _templateObserver, __privateMethod(this, _createTemplateObserver, createTemplateObserver_fn).call(this));
+        template2 ? this.#appendTemplate(template2) : this.#templateObserver = this.#createTemplateObserver();
       }
-      __privateMethod(this, _connectTriggers, connectTriggers_fn).call(this);
-      __privateSet(this, _shadowObserver, __privateMethod(this, _createShadowObserver, createShadowObserver_fn).call(this));
+      this.#connectTriggers();
+      this.#shadowObserver = this.#createShadowObserver();
       const { disconnect, trigger, ...rest } = useBehavioral(
         {
           context: this,
@@ -512,19 +484,90 @@ var isle = ({
         trigger,
         ...rest
       });
-      __privateSet(this, _disconnect, disconnect);
-      __privateSet(this, _trigger, trigger);
+      this.#disconnect = disconnect;
+      this.#trigger = trigger;
     }
     disconnectedCallback() {
       super.disconnectedCallback && super.disconnectedCallback();
-      __privateGet(this, _templateObserver) && __privateGet(this, _templateObserver).disconnect();
-      __privateGet(this, _shadowObserver) && __privateGet(this, _shadowObserver).disconnect();
-      if (__privateGet(this, _disconnect)) {
-        __privateGet(this, _trigger).call(this, {
-          event: `disconnected->${this.id || this.tagName.toLowerCase()}`
+      this.#templateObserver && this.#templateObserver.disconnect();
+      this.#shadowObserver && this.#shadowObserver.disconnect();
+      if (this.#disconnect) {
+        this.#trigger({
+          type: `disconnected->${this.id || this.tagName.toLowerCase()}`
         });
-        __privateGet(this, _disconnect).call(this);
+        this.#disconnect();
       }
+    }
+    #connectTriggers() {
+      const root = this.internals_.shadowRoot;
+      if (root) {
+        const els = [
+          ...root.querySelectorAll(`[${dataTrigger}]`)
+          // No binding of nested slots events
+        ].filter((el) => el instanceof HTMLSlotElement ? canUseSlot(el) : true);
+        els.length && this.#delegateListeners(els);
+      }
+    }
+    #delegateListeners(nodes) {
+      nodes.forEach((el) => {
+        !delegatedListener.has(el) && delegatedListener.set(el, (event) => {
+          const triggerKey = getTriggerKey(event, el);
+          triggerKey ? this.#trigger({
+            type: triggerKey,
+            detail: event
+          }) : el.removeEventListener(event.type, delegatedListener.get(el));
+        });
+        const triggers = el.dataset.trigger;
+        if (triggers) {
+          const events = matchAllEvents(triggers);
+          for (const event of events) {
+            el.addEventListener(event, delegatedListener.get(el));
+          }
+        }
+      });
+    }
+    // Observes the addition of nodes to the shadow dom and changes to and child's data-trigger attribute
+    #createShadowObserver() {
+      const root = this.internals_.shadowRoot;
+      if (root) {
+        const mo = new MutationObserver((mutationsList) => {
+          for (const mutation of mutationsList) {
+            if (mutation.addedNodes.length) {
+              const els = filterAddedNodes(mutation.addedNodes);
+              els.length && this.#delegateListeners(els);
+            }
+            if (mutation.type === "attributes") {
+              this.#connectTriggers();
+            }
+          }
+        });
+        mo.observe(root, {
+          attributeFilter: [dataTrigger],
+          childList: true,
+          subtree: true
+        });
+        return mo;
+      }
+    }
+    #appendTemplate(template2) {
+      const root = this.internals_.shadowRoot;
+      if (root) {
+        !root.firstChild && root.appendChild(document.importNode(template2.content, true));
+        template2.remove();
+      }
+    }
+    #createTemplateObserver() {
+      const mo = new MutationObserver(() => {
+        const template2 = this.querySelector(
+          "template[shadowrootmode]"
+        );
+        if (template2) {
+          mo.disconnect();
+          this.#appendTemplate(template2);
+        }
+      });
+      mo.observe(this, { childList: true });
+      return mo;
     }
     $(target) {
       const root = this.internals_.shadowRoot;
@@ -541,72 +584,7 @@ var isle = ({
         return;
       customElements.define(tag, this);
     }
-  }, _noDeclarativeShadow = new WeakMap(), _shadowObserver = new WeakMap(), _templateObserver = new WeakMap(), _disconnect = new WeakMap(), _trigger = new WeakMap(), _connectTriggers = new WeakSet(), connectTriggers_fn = function() {
-    const root = this.internals_.shadowRoot;
-    if (root) {
-      const els = [
-        ...root.querySelectorAll(`[${dataTrigger}]`)
-        // No binding of nested slots events
-      ].filter((el) => el instanceof HTMLSlotElement ? canUseSlot(el) : true);
-      els.length && __privateMethod(this, _delegateListeners, delegateListeners_fn).call(this, els);
-    }
-  }, _delegateListeners = new WeakSet(), delegateListeners_fn = function(nodes) {
-    nodes.forEach((el) => {
-      !delegatedListener.has(el) && delegatedListener.set(el, (event) => {
-        const triggerKey = getTriggerKey(event, el);
-        triggerKey ? __privateGet(this, _trigger).call(this, {
-          event: triggerKey,
-          detail: { event }
-        }) : el.removeEventListener(event.type, delegatedListener.get(el));
-      });
-      const triggers = el.dataset.trigger;
-      if (triggers) {
-        const events = matchAllEvents(triggers);
-        for (const event of events) {
-          el.addEventListener(event, delegatedListener.get(el));
-        }
-      }
-    });
-  }, _createShadowObserver = new WeakSet(), createShadowObserver_fn = function() {
-    const root = this.internals_.shadowRoot;
-    if (root) {
-      const mo = new MutationObserver((mutationsList) => {
-        for (const mutation of mutationsList) {
-          if (mutation.addedNodes.length) {
-            const els = filterAddedNodes(mutation.addedNodes);
-            els.length && __privateMethod(this, _delegateListeners, delegateListeners_fn).call(this, els);
-          }
-          if (mutation.type === "attributes") {
-            __privateMethod(this, _connectTriggers, connectTriggers_fn).call(this);
-          }
-        }
-      });
-      mo.observe(root, {
-        attributeFilter: [dataTrigger],
-        childList: true,
-        subtree: true
-      });
-      return mo;
-    }
-  }, _appendTemplate = new WeakSet(), appendTemplate_fn = function(template2) {
-    const root = this.internals_.shadowRoot;
-    if (root) {
-      !root.firstChild && root.appendChild(document.importNode(template2.content, true));
-      template2.remove();
-    }
-  }, _createTemplateObserver = new WeakSet(), createTemplateObserver_fn = function() {
-    const mo = new MutationObserver(() => {
-      const template2 = this.querySelector(
-        "template[shadowrootmode]"
-      );
-      if (template2) {
-        mo.disconnect();
-        __privateMethod(this, _appendTemplate, appendTemplate_fn).call(this, template2);
-      }
-    });
-    mo.observe(this, { childList: true });
-    return mo;
-  }, _a;
+  };
 };
 
 // libs/islandly/html.ts
