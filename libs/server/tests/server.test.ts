@@ -63,5 +63,6 @@ Deno.test('server: reload', async () => {
   await Deno.remove(`${root}/new-styles.css`)
   console.log(messages)
   assert(messages.length)
+  process.kill('SIGTERM')
   process.close()
 })
