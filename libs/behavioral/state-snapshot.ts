@@ -26,10 +26,10 @@ export const stateSnapshot: StateSnapshot = ({ bids, selectedEvent }) => {
       })
     if (request) {
       const arr = Array.isArray(request) ? request : [request]
-      arr.some(({ event }) =>
-        event === selectedEvent.event && priority === selectedEvent.priority
+      arr.some(({ type }) =>
+        type === selectedEvent.type && priority === selectedEvent.priority
       ) &&
-        (selected = selectedEvent.event)
+        (selected = selectedEvent.type)
       Object.assign(obj, {
         request: arr,
       })

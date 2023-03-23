@@ -6,9 +6,9 @@ Deno.test('Add hot water 3 times', () => {
   const { addThreads, thread, sync, trigger, feedback } = bProgram()
   addThreads({
     addHot: thread(
-      sync({ request: { event: 'hot' } }),
-      sync({ request: { event: 'hot' } }),
-      sync({ request: { event: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
     ),
   })
   feedback({
@@ -16,7 +16,7 @@ Deno.test('Add hot water 3 times', () => {
       actual.push('hot')
     },
   })
-  trigger({ event: 'start' })
+  trigger({ type: 'start' })
   assertEquals(actual, ['hot', 'hot', 'hot'])
 })
 
@@ -25,14 +25,14 @@ Deno.test('Add hot/cold water 3 times', () => {
   const { addThreads, thread, sync, trigger, feedback } = bProgram()
   addThreads({
     addHot: thread(
-      sync({ request: { event: 'hot' } }),
-      sync({ request: { event: 'hot' } }),
-      sync({ request: { event: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
     ),
     addCold: thread(
-      sync({ request: { event: 'cold' } }),
-      sync({ request: { event: 'cold' } }),
-      sync({ request: { event: 'cold' } }),
+      sync({ request: { type: 'cold' } }),
+      sync({ request: { type: 'cold' } }),
+      sync({ request: { type: 'cold' } }),
     ),
   })
   feedback({
@@ -43,7 +43,7 @@ Deno.test('Add hot/cold water 3 times', () => {
       actual.push('cold')
     },
   })
-  trigger({ event: 'start' })
+  trigger({ type: 'start' })
   assertEquals(actual, [
     'hot',
     'hot',
@@ -59,23 +59,23 @@ Deno.test('interleave', () => {
   const { addThreads, thread, sync, trigger, feedback, loop } = bProgram()
   addThreads({
     addHot: thread(
-      sync({ request: { event: 'hot' } }),
-      sync({ request: { event: 'hot' } }),
-      sync({ request: { event: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
     ),
     addCold: thread(
-      sync({ request: { event: 'cold' } }),
-      sync({ request: { event: 'cold' } }),
-      sync({ request: { event: 'cold' } }),
+      sync({ request: { type: 'cold' } }),
+      sync({ request: { type: 'cold' } }),
+      sync({ request: { type: 'cold' } }),
     ),
     mixHotCold: loop([
       sync({
-        waitFor: { event: 'hot' },
-        block: { event: 'cold' },
+        waitFor: { type: 'hot' },
+        block: { type: 'cold' },
       }),
       sync({
-        waitFor: { event: 'cold' },
-        block: { event: 'hot' },
+        waitFor: { type: 'cold' },
+        block: { type: 'hot' },
       }),
     ]),
   })
@@ -87,7 +87,7 @@ Deno.test('interleave', () => {
       actual.push('cold')
     },
   })
-  trigger({ event: 'start' })
+  trigger({ type: 'start' })
   assertEquals(actual, [
     'hot',
     'cold',
@@ -105,26 +105,26 @@ Deno.test('logging', (t) => {
   })
   addThreads({
     addHot: thread(
-      sync({ request: { event: 'hot' } }),
-      sync({ request: { event: 'hot' } }),
-      sync({ request: { event: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
     ),
     addCold: thread(
-      sync({ request: { event: 'cold' } }),
-      sync({ request: { event: 'cold' } }),
-      sync({ request: { event: 'cold' } }),
+      sync({ request: { type: 'cold' } }),
+      sync({ request: { type: 'cold' } }),
+      sync({ request: { type: 'cold' } }),
     ),
     mixHotCold: loop([
       sync({
-        waitFor: { event: 'hot' },
-        block: { event: 'cold' },
+        waitFor: { type: 'hot' },
+        block: { type: 'cold' },
       }),
       sync({
-        waitFor: { event: 'cold' },
-        block: { event: 'hot' },
+        waitFor: { type: 'cold' },
+        block: { type: 'hot' },
       }),
     ]),
   })
-  trigger({ event: 'start' })
+  trigger({ type: 'start' })
   assertSnapshot(t, logs)
 })

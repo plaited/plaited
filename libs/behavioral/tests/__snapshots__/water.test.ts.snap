@@ -8,7 +8,7 @@ snapshot[`logging 1`] = `
       request: [
         {
           detail: undefined,
-          event: "start",
+          type: "start",
         },
       ],
       selected: "start",
@@ -17,7 +17,7 @@ snapshot[`logging 1`] = `
       waitFor: [
         {
           cb: [Function: cb],
-          event: "",
+          type: "",
         },
       ],
     },
@@ -25,7 +25,7 @@ snapshot[`logging 1`] = `
       priority: 1,
       request: [
         {
-          event: "hot",
+          type: "hot",
         },
       ],
       thread: "addHot",
@@ -34,7 +34,7 @@ snapshot[`logging 1`] = `
       priority: 2,
       request: [
         {
-          event: "cold",
+          type: "cold",
         },
       ],
       thread: "addCold",
@@ -42,14 +42,14 @@ snapshot[`logging 1`] = `
     {
       block: [
         {
-          event: "cold",
+          type: "cold",
         },
       ],
       priority: 3,
       thread: "mixHotCold",
       waitFor: [
         {
-          event: "hot",
+          type: "hot",
         },
       ],
     },
@@ -59,7 +59,7 @@ snapshot[`logging 1`] = `
       priority: 1,
       request: [
         {
-          event: "hot",
+          type: "hot",
         },
       ],
       selected: "hot",
@@ -69,7 +69,7 @@ snapshot[`logging 1`] = `
       priority: 2,
       request: [
         {
-          event: "cold",
+          type: "cold",
         },
       ],
       thread: "addCold",
@@ -77,14 +77,14 @@ snapshot[`logging 1`] = `
     {
       block: [
         {
-          event: "cold",
+          type: "cold",
         },
       ],
       priority: 3,
       thread: "mixHotCold",
       waitFor: [
         {
-          event: "hot",
+          type: "hot",
         },
       ],
     },
@@ -94,7 +94,7 @@ snapshot[`logging 1`] = `
       priority: 1,
       request: [
         {
-          event: "hot",
+          type: "hot",
         },
       ],
       thread: "addHot",
@@ -103,7 +103,7 @@ snapshot[`logging 1`] = `
       priority: 2,
       request: [
         {
-          event: "cold",
+          type: "cold",
         },
       ],
       selected: "cold",
@@ -112,14 +112,14 @@ snapshot[`logging 1`] = `
     {
       block: [
         {
-          event: "hot",
+          type: "hot",
         },
       ],
       priority: 3,
       thread: "mixHotCold",
       waitFor: [
         {
-          event: "cold",
+          type: "cold",
         },
       ],
     },
@@ -129,7 +129,7 @@ snapshot[`logging 1`] = `
       priority: 1,
       request: [
         {
-          event: "hot",
+          type: "hot",
         },
       ],
       selected: "hot",
@@ -139,7 +139,7 @@ snapshot[`logging 1`] = `
       priority: 2,
       request: [
         {
-          event: "cold",
+          type: "cold",
         },
       ],
       thread: "addCold",
@@ -147,14 +147,14 @@ snapshot[`logging 1`] = `
     {
       block: [
         {
-          event: "cold",
+          type: "cold",
         },
       ],
       priority: 3,
       thread: "mixHotCold",
       waitFor: [
         {
-          event: "hot",
+          type: "hot",
         },
       ],
     },
@@ -164,7 +164,7 @@ snapshot[`logging 1`] = `
       priority: 1,
       request: [
         {
-          event: "hot",
+          type: "hot",
         },
       ],
       thread: "addHot",
@@ -173,7 +173,7 @@ snapshot[`logging 1`] = `
       priority: 2,
       request: [
         {
-          event: "cold",
+          type: "cold",
         },
       ],
       selected: "cold",
@@ -182,14 +182,14 @@ snapshot[`logging 1`] = `
     {
       block: [
         {
-          event: "hot",
+          type: "hot",
         },
       ],
       priority: 3,
       thread: "mixHotCold",
       waitFor: [
         {
-          event: "cold",
+          type: "cold",
         },
       ],
     },
@@ -199,7 +199,7 @@ snapshot[`logging 1`] = `
       priority: 1,
       request: [
         {
-          event: "hot",
+          type: "hot",
         },
       ],
       selected: "hot",
@@ -209,7 +209,7 @@ snapshot[`logging 1`] = `
       priority: 2,
       request: [
         {
-          event: "cold",
+          type: "cold",
         },
       ],
       thread: "addCold",
@@ -217,14 +217,14 @@ snapshot[`logging 1`] = `
     {
       block: [
         {
-          event: "cold",
+          type: "cold",
         },
       ],
       priority: 3,
       thread: "mixHotCold",
       waitFor: [
         {
-          event: "hot",
+          type: "hot",
         },
       ],
     },
@@ -234,7 +234,7 @@ snapshot[`logging 1`] = `
       priority: 2,
       request: [
         {
-          event: "cold",
+          type: "cold",
         },
       ],
       selected: "cold",
@@ -243,14 +243,14 @@ snapshot[`logging 1`] = `
     {
       block: [
         {
-          event: "hot",
+          type: "hot",
         },
       ],
       priority: 3,
       thread: "mixHotCold",
       waitFor: [
         {
-          event: "cold",
+          type: "cold",
         },
       ],
     },

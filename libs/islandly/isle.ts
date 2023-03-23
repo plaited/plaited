@@ -67,7 +67,7 @@ export const isle = ({
       this.#shadowObserver && this.#shadowObserver.disconnect()
       if (this.#disconnect) {
         this.#trigger({
-          event: `disconnected->${this.id || this.tagName.toLowerCase()}`,
+          type: `disconnected->${this.id || this.tagName.toLowerCase()}`,
         })
         this.#disconnect()
       }
@@ -92,9 +92,9 @@ export const isle = ({
           const triggerKey = getTriggerKey(event, el)
           triggerKey
             /** if key is present in `data-trigger` trigger event on instance's bProgram */
-            ? this.#trigger<{ event: Event }>({
-              event: triggerKey,
-              detail: { event },
+            ? this.#trigger<Event>({
+              type: triggerKey,
+              detail: event,
             })
             /** if key is not present in `data-trigger` remove event listener for this event */
             : el.removeEventListener(event.type, delegatedListener.get(el))

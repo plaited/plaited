@@ -32,13 +32,13 @@ feedback({
     },
   ) {
     send('calculator-island', {
-      event: 'updateOnPercent',
+      type: 'updateOnPercent',
       detail: { prev, cur: (cur / 100) * prev, operation },
     })
   },
   squareRoot(detail: { cur: number }) {
     send('calculator-island', {
-      event: 'updateOnSquareRoot',
+      type: 'updateOnSquareRoot',
       detail: { value: Math.sqrt(detail.cur) },
     })
   },
@@ -54,7 +54,7 @@ feedback({
     },
   ) {
     send('calculator-island', {
-      event: 'updateOnCalculate',
+      type: 'updateOnCalculate',
       detail: {
         value: calculator[operation](prev, cur),
         operation,
@@ -73,7 +73,7 @@ feedback({
     },
   ) {
     send('calculator-island', {
-      event: 'updateOnEqual',
+      type: 'updateOnEqual',
       detail: {
         value: calculator[operation](prev, cur),
         operation,

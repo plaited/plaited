@@ -17,18 +17,18 @@ import {
 import { loop, sync, thread } from './rules.ts'
 
 const requestInParameter = (
-  { event: requestEventName, detail: requestDetail = {} }: CandidateBid,
+  { type: requestEventName, detail: requestDetail = {} }: CandidateBid,
 ) => {
   return (
     {
-      event: parameterEventName,
+      type: parameterEventName,
       cb: parameterAssertion,
     }: ParameterIdiom,
   ): boolean => (
     parameterAssertion
       ? parameterAssertion({
         detail: requestDetail,
-        event: requestEventName,
+        type: requestEventName,
       })
       : requestEventName === parameterEventName
   )
@@ -93,7 +93,7 @@ export const bProgram = ({
     const selectedEvent = eventSelectionStrategy(filteredBids)
     if (selectedEvent) {
       dev && pub({
-        type: streamEvents.snapshot,
+        kind: streamEvents.snapshot,
         data: stateSnapshot({ bids, selectedEvent }),
       })
       nextStep(selectedEvent)
@@ -118,23 +118,23 @@ export const bProgram = ({
     // To avoid infinite loop with calling trigger from feedback always stream select event
     // checking if the request is in the parameter which can be a waitFor or pending request
     pub({
-      type: streamEvents.select,
+      kind: streamEvents.select,
       data: detail,
     })
     run()
   }
   const trigger: Trigger = ({
-    event,
+    type,
     detail,
   }) => {
     const thread = function* () {
       yield {
-        request: [{ event, detail }],
-        waitFor: [{ event: '', cb: () => true }],
+        request: [{ type, detail }],
+        waitFor: [{ type: '', cb: () => true }],
       }
     }
     running.add({
-      thread: event,
+      thread: type,
       priority: 0,
       trigger: true,
       generator: thread(),
@@ -146,9 +146,9 @@ export const bProgram = ({
     actions,
   ) => {
     pub.subscribe(
-      ({ type, data }: Message) => {
-        if (type === streamEvents.select) {
-          const { event: key, detail = {} } = data
+      ({ kind, data }: Message) => {
+        if (kind === streamEvents.select) {
+          const { type: key, detail = {} } = data
           Object.hasOwn(actions, key) &&
             actions[key](detail)
         }
@@ -168,8 +168,8 @@ export const bProgram = ({
 
   if (dev) {
     pub.subscribe(
-      ({ type, data }: Message) => {
-        if (type === streamEvents.snapshot) {
+      ({ kind, data }: Message) => {
+        if (kind === streamEvents.snapshot) {
           dev(data)
         }
       },

@@ -18,26 +18,26 @@ export const CalculatorIsland = isle(
         (acc: Record<string, RulesFunc>, operation) => {
           Object.assign(acc, {
             [`calculate-on-${operation}`]: loop([
-              sync({ waitFor: [{ event: operation }] }),
-              sync({ waitFor: [{ event: operation }] }),
+              sync({ waitFor: [{ type: operation }] }),
+              sync({ waitFor: [{ type: operation }] }),
               sync({
                 request: {
-                  event: 'calculate',
+                  type: 'calculate',
                   detail: { operation: operation },
                 },
               }),
             ]),
             [`block-on-${operation}`]: loop([
-              sync({ waitFor: [{ event: operation }, { event: 'shiftCur' }] }),
+              sync({ waitFor: [{ type: operation }, { type: 'shiftCur' }] }),
               sync({
                 block: [
                   {
-                    cb: ({ event }) =>
-                      event !== 'toggleOperation' ? false : !getPrev(),
+                    cb: ({ type }) =>
+                      type !== 'toggleOperation' ? false : !getPrev(),
                   },
                   {
-                    cb: ({ event }) =>
-                      event !== 'calculate' ? false : !(getCur() && getPrev()),
+                    cb: ({ type }) =>
+                      type !== 'calculate' ? false : !(getCur() && getPrev()),
                   },
                 ],
               }),
@@ -45,27 +45,27 @@ export const CalculatorIsland = isle(
             [`shift-on-${operation}`]: loop([
               sync({
                 waitFor: {
-                  cb: ({ event }) => event !== operation ? false : !!getCur(),
+                  cb: ({ type }) => type !== operation ? false : !!getCur(),
                 },
               }),
               sync({
                 request: {
-                  event: 'shiftCur',
+                  type: 'shiftCur',
                   detail: { operation: operation },
                 },
               }),
               sync({
                 request: {
-                  event: 'toggleOperation',
+                  type: 'toggleOperation',
                   detail: { operation: operation },
                 },
               }),
             ]),
             [`toggle-on-${operation}`]: loop([
-              sync({ waitFor: { event: operation } }),
+              sync({ waitFor: { type: operation } }),
               sync({
                 request: {
-                  event: 'toggleOperation',
+                  type: 'toggleOperation',
                   detail: { operation: operation },
                 },
               }),
@@ -80,53 +80,53 @@ export const CalculatorIsland = isle(
         onAnyOperation: loop([
           sync({
             waitFor: {
-              cb: ({ event }) => {
+              cb: ({ type }) => {
                 const ops = ['add', 'subtract', 'multiply', 'divide']
-                if (!ops.includes(event)) return false
+                if (!ops.includes(type)) return false
                 return !!(getCur() && getPrev())
               },
             },
           }),
           sync({
-            request: { event: 'calculate' },
+            request: { type: 'calculate' },
           }),
         ]),
         ...onOperation,
         onPositive: loop([
           sync({
             waitFor: {
-              cb: ({ event }) => {
-                if (event !== 'positive-negative') return false
+              cb: ({ type }) => {
+                if (type !== 'positive-negative') return false
                 return getCur().startsWith('-')
               },
             },
           }),
           sync({
             request: {
-              event: 'positive',
+              type: 'positive',
             },
           }),
         ]),
         onNegative: loop([
           sync({
             waitFor: {
-              cb: ({ event }) => {
-                if (event !== 'positive-negative') return false
+              cb: ({ type }) => {
+                if (type !== 'positive-negative') return false
                 return !getCur().startsWith('-')
               },
             },
           }),
           sync({
             request: {
-              event: 'negative',
+              type: 'negative',
             },
           }),
         ]),
         onPeriod: loop([
           sync({
             block: {
-              cb: ({ event }) => {
-                if (event !== 'period') return false
+              cb: ({ type }) => {
+                if (type !== 'period') return false
                 const cur = getCur()
                 return (cur.endsWith('.') || cur.includes('.'))
               },
@@ -136,8 +136,8 @@ export const CalculatorIsland = isle(
         onEqual: loop([
           sync({
             block: {
-              cb: ({ event }) => {
-                if (event !== 'equal') return false
+              cb: ({ type }) => {
+                if (type !== 'equal') return false
                 return !(getCur() && getPrev())
               },
             },
@@ -146,8 +146,8 @@ export const CalculatorIsland = isle(
         onSquareRoot: loop([
           sync({
             block: {
-              cb: ({ event }) => {
-                if (event !== 'squareRoot') return false
+              cb: ({ type }) => {
+                if (type !== 'squareRoot') return false
                 return !(getCur())
               },
             },
@@ -156,8 +156,8 @@ export const CalculatorIsland = isle(
         onPercent: loop([
           sync({
             block: {
-              cb: ({ event }) => {
-                if (event !== 'percent') return false
+              cb: ({ type }) => {
+                if (type !== 'percent') return false
                 return !(getCur() && getPrev())
               },
             },
@@ -166,10 +166,10 @@ export const CalculatorIsland = isle(
         afterEqualUpdate: loop([
           sync({
             waitFor: [
-              { event: 'updateOnEqual' },
+              { type: 'updateOnEqual' },
             ],
           }),
-          sync({ request: { event: 'resetPrevious' } }),
+          sync({ request: { type: 'resetPrevious' } }),
         ]),
       })
       feedback({
@@ -187,7 +187,7 @@ export const CalculatorIsland = isle(
         },
         percent() {
           send('worker', {
-            event: 'percent',
+            type: 'percent',
             detail: {
               cur: parseFloat(getCur()),
               prev: parseFloat(getPrev()),
@@ -202,7 +202,7 @@ export const CalculatorIsland = isle(
         },
         squareRoot() {
           send('worker', {
-            event: 'squareRoot',
+            type: 'squareRoot',
             detail: { cur: parseFloat(getCur()) },
           })
         },
@@ -216,7 +216,7 @@ export const CalculatorIsland = isle(
         },
         equal() {
           send('worker', {
-            event: 'equal',
+            type: 'equal',
             detail: {
               cur: parseFloat(getCur()),
               prev: parseFloat(getPrev()),
@@ -240,7 +240,7 @@ export const CalculatorIsland = isle(
         },
         calculate({ operation }: { operation: keyof typeof ops }) {
           send('worker', {
-            event: 'calculate',
+            type: 'calculate',
             detail: {
               cur: parseFloat(getCur()),
               prev: parseFloat(getPrev()),
@@ -267,7 +267,7 @@ export const CalculatorIsland = isle(
           setCur((cur) => `${cur}.`)
           current.replaceChildren(getCur())
         },
-        number({ event }: { event: MouseEvent }) {
+        number(event: MouseEvent) {
           const value = (event.currentTarget as HTMLButtonElement).value
           setCur((cur) => `${cur}${value}`)
           current.replaceChildren(getCur())

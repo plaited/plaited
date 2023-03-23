@@ -121,7 +121,7 @@ export const dynamicIslandCommsTest = async (t: Assertion) => {
             button.disabled = true
           },
           click() {
-            send('dynamic-two', { event: 'add', detail: { value: ' World!' } })
+            send('dynamic-two', { type: 'add', detail: { value: ' World!' } })
           },
         })
       }
@@ -136,13 +136,13 @@ export const dynamicIslandCommsTest = async (t: Assertion) => {
       plait({ $, feedback, addThreads, thread, sync }: PlaitProps) {
         addThreads({
           onAdd: thread(
-            sync({ waitFor: { event: 'add' } }),
-            sync({ request: { event: 'disable' } }),
+            sync({ waitFor: { type: 'add' } }),
+            sync({ request: { type: 'disable' } }),
           ),
         })
         feedback({
           disable() {
-            send('one', { event: 'disable' })
+            send('one', { type: 'disable' })
           },
           add(detail: { value: string }) {
             const [header] = $('header')
@@ -336,7 +336,7 @@ export const shadowObserverTest = async (t: Assertion) => {
     actual: row?.children.length,
     expected: 2,
   })
-  send('shadow-island', { event: 'addButton' })
+  send('shadow-island', { type: 'addButton' })
   button = await t.findByText('add svg', wrapper)
   button && await t.fireEvent(button, 'click')
   let zone = await t.findByAttribute('data-target', 'zone', wrapper)
@@ -362,7 +362,7 @@ export const shadowObserverTest = async (t: Assertion) => {
     actual: svg?.tagName,
     expected: 'svg',
   })
-  send('shadow-island', { event: 'removeSvg' })
+  send('shadow-island', { type: 'removeSvg' })
   button && await t.fireEvent(button, 'click')
   const h3 = await t.findByText('sub island', wrapper)
   t({

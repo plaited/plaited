@@ -36,7 +36,7 @@ export const useBehavioral = ({
     }
     disconnect = id && _id ? connect(_id, trigger) : connect(tagName, trigger)
     trigger({
-      event: `connected->${id ? _id ?? `${tagName} with missing id` : tagName}`,
+      type: `connected->${id ? _id ?? `${tagName} with missing id` : tagName}`,
     })
   }
   return { trigger, disconnect, ...rest }

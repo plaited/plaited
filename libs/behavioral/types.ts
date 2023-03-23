@@ -15,22 +15,23 @@ export interface StateSnapshot {
   }[]
 }
 export type Message = {
-  type: typeof streamEvents.select
+  kind: typeof streamEvents.select
   data: {
-    event: string
-    detail?: Record<string, unknown>
+    type: string
+    detail?: Record<string, unknown> | Event
   }
 } | {
-  type: typeof streamEvents.snapshot
+  kind: typeof streamEvents.snapshot
   data: ReturnType<StateSnapshot>
 }
 
 export type Subscriber = (msg: Message) => void
 
 export type Trigger = <
-  T extends Record<string, unknown> = Record<string, unknown>,
+  T extends (Record<string, unknown> | Event) =
+    (Record<string, unknown> | Event),
 >(args: {
-  event: string
+  type: string
   detail?: T
 }) => void
 
@@ -38,31 +39,35 @@ export type TriggerArgs = Parameters<Trigger>[0]
 
 // Rule types
 type Callback<
-  T extends Record<string, unknown> = Record<string, unknown>,
+  T extends (Record<string, unknown> | Event) =
+    (Record<string, unknown> | Event),
 > = (
-  args: { event: string; detail: T },
+  args: { type: string; detail: T },
 ) => boolean
 
 export type ParameterIdiom<
-  T extends Record<string, unknown> = Record<string, unknown>,
+  T extends (Record<string, unknown> | Event) =
+    (Record<string, unknown> | Event),
 > = {
-  event: string
+  type: string
   cb?: Callback<T>
 } | {
-  event?: string
+  type?: string
   cb: Callback<T>
 }
 
 export type RequestIdiom<
-  T extends Record<string, unknown> = Record<string, unknown>,
+  T extends (Record<string, unknown> | Event) =
+    (Record<string, unknown> | Event),
 > = {
-  event: string
+  type: string
   detail?: T
   // cb?: Callback<T>
 }
 
 export type RuleSet<
-  T extends Record<string, unknown> = Record<string, unknown>,
+  T extends (Record<string, unknown> | Event) =
+    (Record<string, unknown> | Event),
 > = {
   waitFor?: ParameterIdiom<T> | ParameterIdiom<T>[]
   request?: RequestIdiom<T> | RequestIdiom<T>[]
@@ -70,7 +75,8 @@ export type RuleSet<
 }
 
 export type RulesFunc<
-  T extends Record<string, unknown> = Record<string, unknown>,
+  T extends (Record<string, unknown> | Event) =
+    (Record<string, unknown> | Event),
 > = () => IterableIterator<
   RuleSet<T>
 >
@@ -85,8 +91,8 @@ export type PendingBid = RuleSet & RunningBid
 
 export type CandidateBid = {
   priority: number
-  event: string
-  detail?: Record<string, unknown>
+  type: string
+  detail?: Record<string, unknown> | Event
   cb?: Callback
 }
 
@@ -96,11 +102,11 @@ export type Strategy = (
 
 // Feedback Types
 type Actions<
-  T extends Record<string, (detail: Record<string, unknown>) => void>,
+  T extends Record<string, (detail: Record<string, unknown> | Event) => void>,
 > = {
   [K in keyof T]: T[K] extends (detail: infer D) => void ? (
-      detail: D extends Record<string, unknown> ? D
-        : Record<string, unknown>,
+      detail: D extends (Record<string, unknown> | Event) ? D
+        : (Record<string, unknown> | Event),
     ) => void
     : never
 }

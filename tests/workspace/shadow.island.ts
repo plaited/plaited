@@ -11,16 +11,16 @@ export const ShadowIsland = isle(
     ) {
       addThreads({
         onRemoveSvg: thread(
-          sync({ waitFor: { event: 'removeSvg' } }),
-          sync({ request: { event: 'addSubIsland' } }),
+          sync({ waitFor: { type: 'removeSvg' } }),
+          sync({ request: { type: 'addSubIsland' } }),
         ),
         onStart: thread(
-          sync({ waitFor: { event: 'start' } }),
-          sync({ request: { event: 'addSlot' } }),
+          sync({ waitFor: { type: 'start' } }),
+          sync({ request: { type: 'addSlot' } }),
         ),
         onAddSvg: loop([
-          sync({ waitFor: { event: 'add-svg' } }),
-          sync({ request: { event: 'modifyAttributes' } }),
+          sync({ waitFor: { type: 'add-svg' } }),
+          sync({ request: { type: 'modifyAttributes' } }),
         ]),
       })
       feedback({

@@ -25,24 +25,24 @@ Deno.test('detect wins', () => {
       acc[`${player}Wins (${win})`] = thread(
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ win: number[] }>({
-          request: { event: `${player}Win`, detail: { win } },
+          request: { type: `${player}Win`, detail: { win } },
         }),
       )
       return acc
@@ -55,9 +55,9 @@ Deno.test('detect wins', () => {
       Object.assign(actual, deatil.win)
     },
   })
-  trigger({ event: 'X', detail: { square: 1 } })
-  trigger({ event: 'X', detail: { square: 4 } })
-  trigger({ event: 'X', detail: { square: 7 } })
+  trigger({ type: 'X', detail: { square: 1 } })
+  trigger({ type: 'X', detail: { square: 4 } })
+  trigger({ type: 'X', detail: { square: 7 } })
   assertEquals(actual, [1, 4, 7])
 })
 
@@ -72,24 +72,24 @@ Deno.test('enforceTurns', () => {
       acc[`${player}Wins (${win})`] = thread(
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ win: number[] }>({
-          request: { event: `${player}Win`, detail: { win } },
+          request: { type: `${player}Win`, detail: { win } },
         }),
       )
       return acc
@@ -99,8 +99,8 @@ Deno.test('enforceTurns', () => {
     ...playerWins('O'),
     ...playerWins('X'),
     enforceTurns: loop([
-      sync({ waitFor: { event: 'X' }, block: { event: 'O' } }),
-      sync({ waitFor: { event: 'O' }, block: { event: 'X' } }),
+      sync({ waitFor: { type: 'X' }, block: { type: 'O' } }),
+      sync({ waitFor: { type: 'O' }, block: { type: 'X' } }),
     ]),
   })
 
@@ -118,9 +118,9 @@ Deno.test('enforceTurns', () => {
       }
     },
   })
-  trigger({ event: 'X', detail: { square: 1 } })
-  trigger({ event: 'X', detail: { square: 4 } })
-  trigger({ event: 'X', detail: { square: 7 } })
+  trigger({ type: 'X', detail: { square: 1 } })
+  trigger({ type: 'X', detail: { square: 4 } })
+  trigger({ type: 'X', detail: { square: 7 } })
   //@ts-ignore: test
   assertEquals(actual, { player: 'X', square: 1 })
 })
@@ -136,24 +136,24 @@ Deno.test('enforceTurns without blocking', () => {
       acc[`${player}Wins (${win})`] = thread(
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ win: number[] }>({
-          request: { event: `${player}Win`, detail: { win } },
+          request: { type: `${player}Win`, detail: { win } },
         }),
       )
       return acc
@@ -163,8 +163,8 @@ Deno.test('enforceTurns without blocking', () => {
     ...playerWins('O'),
     ...playerWins('X'),
     enforceTurns: loop([
-      sync({ waitFor: { event: 'X' }, block: { event: 'O' } }),
-      sync({ waitFor: { event: 'O' }, block: { event: 'X' } }),
+      sync({ waitFor: { type: 'X' }, block: { type: 'O' } }),
+      sync({ waitFor: { type: 'O' }, block: { type: 'X' } }),
     ]),
   })
 
@@ -182,11 +182,11 @@ Deno.test('enforceTurns without blocking', () => {
       }
     },
   })
-  trigger({ event: 'X', detail: { square: 0 } })
-  trigger({ event: 'O', detail: { square: 1 } })
-  trigger({ event: 'X', detail: { square: 4 } })
-  trigger({ event: 'O', detail: { square: 2 } })
-  trigger({ event: 'X', detail: { square: 8 } })
+  trigger({ type: 'X', detail: { square: 0 } })
+  trigger({ type: 'O', detail: { square: 1 } })
+  trigger({ type: 'X', detail: { square: 4 } })
+  trigger({ type: 'O', detail: { square: 2 } })
+  trigger({ type: 'X', detail: { square: 8 } })
   //@ts-ignore: test
   assertEquals(actual, { player: 'X', win: [0, 4, 8] })
 })
@@ -202,24 +202,24 @@ Deno.test('squaresTaken', () => {
       acc[`${player}Wins (${win})`] = thread(
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ win: number[] }>({
-          request: { event: `${player}Win`, detail: { win } },
+          request: { type: `${player}Win`, detail: { win } },
         }),
       )
       return acc
@@ -243,8 +243,8 @@ Deno.test('squaresTaken', () => {
     ...playerWins('O'),
     ...playerWins('X'),
     enforceTurns: loop([
-      sync({ waitFor: { event: 'X' }, block: { event: 'O' } }),
-      sync({ waitFor: { event: 'O' }, block: { event: 'X' } }),
+      sync({ waitFor: { type: 'X' }, block: { type: 'O' } }),
+      sync({ waitFor: { type: 'O' }, block: { type: 'X' } }),
     ]),
     ...squaresTaken,
   })
@@ -256,11 +256,11 @@ Deno.test('squaresTaken', () => {
       })
     },
   })
-  trigger({ event: 'X', detail: { square: 0 } })
-  trigger({ event: 'O', detail: { square: 0 } }) // reuse
-  trigger({ event: 'X', detail: { square: 4 } })
-  trigger({ event: 'O', detail: { square: 2 } })
-  trigger({ event: 'X', detail: { square: 8 } })
+  trigger({ type: 'X', detail: { square: 0 } })
+  trigger({ type: 'O', detail: { square: 0 } }) // reuse
+  trigger({ type: 'X', detail: { square: 4 } })
+  trigger({ type: 'O', detail: { square: 2 } })
+  trigger({ type: 'X', detail: { square: 8 } })
   //@ts-ignore: test
   assertEquals(actual, [{ player: 'O', square: 2 }])
 })
@@ -276,24 +276,24 @@ Deno.test('doesn\'t stop game', () => {
       acc[`${player}Wins (${win})`] = thread(
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ win: number[] }>({
-          request: { event: `${player}Win`, detail: { win } },
+          request: { type: `${player}Win`, detail: { win } },
         }),
       )
       return acc
@@ -317,8 +317,8 @@ Deno.test('doesn\'t stop game', () => {
     ...playerWins('O'),
     ...playerWins('X'),
     enforceTurns: loop([
-      sync({ waitFor: { event: 'X' }, block: { event: 'O' } }),
-      sync({ waitFor: { event: 'O' }, block: { event: 'X' } }),
+      sync({ waitFor: { type: 'X' }, block: { type: 'O' } }),
+      sync({ waitFor: { type: 'O' }, block: { type: 'X' } }),
     ]),
     ...squaresTaken,
   })
@@ -348,12 +348,12 @@ Deno.test('doesn\'t stop game', () => {
       })
     },
   })
-  trigger({ event: 'X', detail: { square: 0 } })
-  trigger({ event: 'O', detail: { square: 1 } })
-  trigger({ event: 'X', detail: { square: 4 } })
-  trigger({ event: 'O', detail: { square: 2 } })
-  trigger({ event: 'X', detail: { square: 8 } })
-  trigger({ event: 'O', detail: { square: 7 } })
+  trigger({ type: 'X', detail: { square: 0 } })
+  trigger({ type: 'O', detail: { square: 1 } })
+  trigger({ type: 'X', detail: { square: 4 } })
+  trigger({ type: 'O', detail: { square: 2 } })
+  trigger({ type: 'X', detail: { square: 8 } })
+  trigger({ type: 'O', detail: { square: 7 } })
   //@ts-ignore: test
   assertEquals(actual, [
     { player: 'X', square: 0 },
@@ -377,24 +377,24 @@ Deno.test('stopGame', () => {
       acc[`${player}Wins (${win})`] = thread(
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ win: number[] }>({
-          request: { event: `${player}Win`, detail: { win } },
+          request: { type: `${player}Win`, detail: { win } },
         }),
       )
       return acc
@@ -418,13 +418,13 @@ Deno.test('stopGame', () => {
     ...playerWins('O'),
     ...playerWins('X'),
     enforceTurns: loop([
-      sync({ waitFor: { event: 'X' }, block: { event: 'O' } }),
-      sync({ waitFor: { event: 'O' }, block: { event: 'X' } }),
+      sync({ waitFor: { type: 'X' }, block: { type: 'O' } }),
+      sync({ waitFor: { type: 'O' }, block: { type: 'X' } }),
     ]),
     ...squaresTaken,
     stopGame: thread(
-      sync({ waitFor: [{ event: 'XWin' }, { event: 'OWin' }] }),
-      sync({ block: [{ event: 'X' }, { event: 'O' }] }),
+      sync({ waitFor: [{ type: 'XWin' }, { type: 'OWin' }] }),
+      sync({ block: [{ type: 'X' }, { type: 'O' }] }),
     ),
   })
   feedback({
@@ -453,12 +453,12 @@ Deno.test('stopGame', () => {
       })
     },
   })
-  trigger({ event: 'X', detail: { square: 0 } })
-  trigger({ event: 'O', detail: { square: 1 } })
-  trigger({ event: 'X', detail: { square: 4 } })
-  trigger({ event: 'O', detail: { square: 2 } })
-  trigger({ event: 'X', detail: { square: 8 } })
-  trigger({ event: 'O', detail: { square: 7 } })
+  trigger({ type: 'X', detail: { square: 0 } })
+  trigger({ type: 'O', detail: { square: 1 } })
+  trigger({ type: 'X', detail: { square: 4 } })
+  trigger({ type: 'O', detail: { square: 2 } })
+  trigger({ type: 'X', detail: { square: 8 } })
+  trigger({ type: 'O', detail: { square: 7 } })
   //@ts-ignore: test
   assertEquals(actual, [
     { player: 'X', square: 0 },
@@ -481,24 +481,24 @@ Deno.test('defaultMoves', () => {
       acc[`${player}Wins (${win})`] = thread(
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ win: number[] }>({
-          request: { event: `${player}Win`, detail: { win } },
+          request: { type: `${player}Win`, detail: { win } },
         }),
       )
       return acc
@@ -522,18 +522,18 @@ Deno.test('defaultMoves', () => {
     ...playerWins('O'),
     ...playerWins('X'),
     enforceTurns: loop([
-      sync({ waitFor: { event: 'X' }, block: { event: 'O' } }),
-      sync({ waitFor: { event: 'O' }, block: { event: 'X' } }),
+      sync({ waitFor: { type: 'X' }, block: { type: 'O' } }),
+      sync({ waitFor: { type: 'O' }, block: { type: 'X' } }),
     ]),
     ...squaresTaken,
     stopGame: thread(
-      sync({ waitFor: [{ event: 'XWin' }, { event: 'OWin' }] }),
-      sync({ block: [{ event: 'X' }, { event: 'O' }] }),
+      sync({ waitFor: [{ type: 'XWin' }, { type: 'OWin' }] }),
+      sync({ block: [{ type: 'X' }, { type: 'O' }] }),
     ),
     defaultMoves: loop([
       sync({
         request: squares.map((square) => ({
-          event: 'O',
+          type: 'O',
           detail: { square },
         })),
       }),
@@ -565,9 +565,9 @@ Deno.test('defaultMoves', () => {
       })
     },
   })
-  trigger({ event: 'X', detail: { square: 0 } })
-  trigger({ event: 'X', detail: { square: 4 } })
-  trigger({ event: 'X', detail: { square: 8 } })
+  trigger({ type: 'X', detail: { square: 0 } })
+  trigger({ type: 'X', detail: { square: 4 } })
+  trigger({ type: 'X', detail: { square: 8 } })
   //@ts-ignore: test
   assertEquals(actual, [
     { player: 'X', square: 0 },
@@ -590,24 +590,24 @@ Deno.test('startAtCenter', () => {
       acc[`${player}Wins (${win})`] = thread(
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ win: number[] }>({
-          request: { event: `${player}Win`, detail: { win } },
+          request: { type: `${player}Win`, detail: { win } },
         }),
       )
       return acc
@@ -631,18 +631,18 @@ Deno.test('startAtCenter', () => {
     ...playerWins('O'),
     ...playerWins('X'),
     enforceTurns: loop([
-      sync({ waitFor: { event: 'X' }, block: { event: 'O' } }),
-      sync({ waitFor: { event: 'O' }, block: { event: 'X' } }),
+      sync({ waitFor: { type: 'X' }, block: { type: 'O' } }),
+      sync({ waitFor: { type: 'O' }, block: { type: 'X' } }),
     ]),
     ...squaresTaken,
     stopGame: thread(
-      sync({ waitFor: [{ event: 'XWin' }, { event: 'OWin' }] }),
-      sync({ block: [{ event: 'X' }, { event: 'O' }] }),
+      sync({ waitFor: [{ type: 'XWin' }, { type: 'OWin' }] }),
+      sync({ block: [{ type: 'X' }, { type: 'O' }] }),
     ),
     startAtCenter: thread(
       sync({
         request: {
-          event: 'O',
+          type: 'O',
           detail: { square: 4 },
         },
       }),
@@ -650,7 +650,7 @@ Deno.test('startAtCenter', () => {
     defaultMoves: loop([
       sync({
         request: squares.map((square) => ({
-          event: 'O',
+          type: 'O',
           detail: { square },
         })),
       }),
@@ -682,9 +682,9 @@ Deno.test('startAtCenter', () => {
       })
     },
   })
-  trigger({ event: 'X', detail: { square: 0 } })
-  trigger({ event: 'X', detail: { square: 4 } })
-  trigger({ event: 'X', detail: { square: 8 } })
+  trigger({ type: 'X', detail: { square: 0 } })
+  trigger({ type: 'X', detail: { square: 4 } })
+  trigger({ type: 'X', detail: { square: 8 } })
   //@ts-ignore: test
   assertEquals(actual, [
     { player: 'X', square: 0 },
@@ -694,7 +694,7 @@ Deno.test('startAtCenter', () => {
   ])
 })
 
-Deno.test('preventCompletionOfLineWithTwoXs', () => {
+Deno.test('prtypeCompletionOfLineWithTwoXs', () => {
   const { sync, addThreads, thread, feedback, trigger, loop } = bProgram()
   const actual: (
     | { player: 'X' | 'O'; square: number }
@@ -705,24 +705,24 @@ Deno.test('preventCompletionOfLineWithTwoXs', () => {
       acc[`${player}Wins (${win})`] = thread(
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === player && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === player && win.includes(detail.square),
           },
         }),
         sync<{ win: number[] }>({
-          request: { event: `${player}Win`, detail: { win } },
+          request: { type: `${player}Win`, detail: { win } },
         }),
       )
       return acc
@@ -742,23 +742,23 @@ Deno.test('preventCompletionOfLineWithTwoXs', () => {
     {},
   )
 
-  const preventCompletionOfLineWithTwoXs = winConditions.reduce(
+  const prtypeCompletionOfLineWithTwoXs = winConditions.reduce(
     (acc: Record<string, RulesFunc>, win) => {
       acc[`StopXWin(${win})`] = thread(
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === 'X' && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === 'X' && win.includes(detail.square),
           },
         }),
         sync<{ square: number }>({
           waitFor: {
-            cb: ({ event, detail }) =>
-              event === 'X' && win.includes(detail.square),
+            cb: ({ type, detail }) =>
+              type === 'X' && win.includes(detail.square),
           },
         }),
         sync<{ square: number }>({
-          request: win.map((square) => ({ event: 'O', detail: { square } })),
+          request: win.map((square) => ({ type: 'O', detail: { square } })),
         }),
       )
       return acc
@@ -769,19 +769,19 @@ Deno.test('preventCompletionOfLineWithTwoXs', () => {
     ...playerWins('O'),
     ...playerWins('X'),
     enforceTurns: loop([
-      sync({ waitFor: { event: 'X' }, block: { event: 'O' } }),
-      sync({ waitFor: { event: 'O' }, block: { event: 'X' } }),
+      sync({ waitFor: { type: 'X' }, block: { type: 'O' } }),
+      sync({ waitFor: { type: 'O' }, block: { type: 'X' } }),
     ]),
     ...squaresTaken,
     stopGame: thread(
-      sync({ waitFor: [{ event: 'XWin' }, { event: 'OWin' }] }),
-      sync({ block: [{ event: 'X' }, { event: 'O' }] }),
+      sync({ waitFor: [{ type: 'XWin' }, { type: 'OWin' }] }),
+      sync({ block: [{ type: 'X' }, { type: 'O' }] }),
     ),
-    ...preventCompletionOfLineWithTwoXs,
+    ...prtypeCompletionOfLineWithTwoXs,
     startAtCenter: thread(
       sync({
         request: {
-          event: 'O',
+          type: 'O',
           detail: { square: 4 },
         },
       }),
@@ -789,7 +789,7 @@ Deno.test('preventCompletionOfLineWithTwoXs', () => {
     defaultMoves: loop([
       sync({
         request: squares.map((square) => ({
-          event: 'O',
+          type: 'O',
           detail: { square },
         })),
       }),
@@ -821,8 +821,8 @@ Deno.test('preventCompletionOfLineWithTwoXs', () => {
       })
     },
   })
-  trigger({ event: 'X', detail: { square: 0 } })
-  trigger({ event: 'X', detail: { square: 3 } })
+  trigger({ type: 'X', detail: { square: 0 } })
+  trigger({ type: 'X', detail: { square: 3 } })
   //@ts-ignore: test
   assertEquals(actual, [
     { player: 'X', square: 0 },
