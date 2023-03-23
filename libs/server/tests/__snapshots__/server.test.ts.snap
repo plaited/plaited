@@ -1,0 +1,9 @@
+export const snapshot = {};
+
+snapshot[`server: reload 1`] = `
+"Running at http://localhost:9000
+client connected
+reloading client
+Closing server...
+"
+`;

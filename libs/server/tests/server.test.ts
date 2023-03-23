@@ -1,4 +1,4 @@
-import { assert, assertEquals } from '../../test-deps.ts'
+import { assert, assertEquals, assertSnapshot } from '../../test-deps.ts'
 import { server } from '../server.ts'
 import {
   __dirname,
@@ -6,10 +6,9 @@ import {
   helpHandler,
   home,
   homeHandler,
-  newStyles,
   root,
 } from './utils.ts'
-import { wait } from '../../utils/wait.ts'
+
 import { getFileHandler } from '../get-file-handler.ts'
 Deno.test('server: adding routes', async () => {
   const routes = new Map()
@@ -39,7 +38,7 @@ Deno.test('server: adding routes', async () => {
   await close()
 })
 
-Deno.test('server: reload', async () => {
+Deno.test('server: reload', async (t) => {
   const process = Deno.run({
     cmd: [
       'deno',
@@ -47,22 +46,16 @@ Deno.test('server: reload', async () => {
       '--allow-sys',
       '--allow-net',
       '--allow-read',
+      '--allow-write',
       `${__dirname}/start-reload-server.ts`,
     ],
+    stdout: 'piped',
   })
-  await wait(500)
-  const socket = new WebSocket('ws://localhost:9000/livereload')
-  const messages: string[] = []
-  const reload = (evt: MessageEvent) => {
-    messages.push(evt.data)
-  }
-  socket.addEventListener('message', reload)
-  await Deno.writeTextFile(`${root}/new-styles.css`, newStyles)
-  await wait(500)
-  await socket.close()
-  await Deno.remove(`${root}/new-styles.css`)
-  console.log(messages)
-  assert(messages.length)
-  process.kill('SIGTERM')
+  const [status, stdout] = await Promise.all([
+    process.status(),
+    process.output(),
+  ])
+  assert(status)
+  assertSnapshot(t, new TextDecoder().decode(stdout))
   process.close()
 })
