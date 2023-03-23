@@ -19,4 +19,4 @@ jobs:
     - name: Lint
       run: docker-compose run --rm deno task lint
     - name: Test
-      run: docker-compose run --rm deno task test
+      run: docker-compose run --rm deno task test:ci
