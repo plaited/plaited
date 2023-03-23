@@ -17,16 +17,14 @@
   "lint": {
     "files": {
       "exclude": [
-        "./tests/playwright",
-        "./tests/.workshop"
+        "./npm"
       ]
     }
   },
   "fmt": {
     "files": {
       "exclude": [
-        "./tests/playwright",
-        "./tests/.workshop"
+        "./npm"
       ]
     },
     "options": {
@@ -37,8 +35,7 @@
   "test": {
     "files": {
       "exclude": [
-        "./tests/playwright",
-        "./tests/.workshop"
+        "./npm"
       ]
     }
   }

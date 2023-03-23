@@ -1,4 +1,4 @@
-import { assert } from '../libs/test-deps.ts'
+import { assert } from '../libs/dev-deps.ts'
 
 Deno.test('plaited browser test', async () => {
   const server = Deno.run({
