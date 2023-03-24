@@ -18,18 +18,19 @@ export const matchAllEvents = (str: string) => {
 // returns the request/action name to connect our event binding to data-target="click->doSomething" it would return "doSomething"
 // note triggers are separated by spaces in the attribute data-target="click->doSomething focus->somethingElse"
 export const getTriggerKey = (
-  { currentTarget, composedPath, type }: Event,
+  e: Event,
   context: HTMLElement | SVGElement,
 ): string => {
-  const el = currentTarget === context
+  const el = e.currentTarget === context
     ? context
     // check if closest slot from the element that invoked the event is the instances slot
-    : composedPath().find((slot) => slot instanceof HTMLSlotElement) === context
+    : e.composedPath().find((slot) => slot instanceof HTMLSlotElement) ===
+        context
     ? context
     : undefined
 
   if (!el) return ''
-  const pre = `${type}->`
+  const pre = `${e.type}->`
   const trigger = el.dataset.trigger ?? ''
   const key = trigger.trim().split(/\s+/).find((str: string) =>
     str.includes(pre)
