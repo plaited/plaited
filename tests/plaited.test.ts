@@ -2,7 +2,7 @@ import { assert } from '../libs/dev-deps.ts'
 
 Deno.test('plaited browser test', async () => {
   const server = Deno.run({
-    cmd: ['deno', 'run', '--allow-all', 'tests/start.ts'],
+    cmd: ['deno', 'run', '--allow-all', 'tests/server/start.ts'],
     env: {
       TEST: 'true',
     },

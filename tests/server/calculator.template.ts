@@ -1,5 +1,5 @@
 import { html, IslandTemplate } from '$plaited'
-import { symbols } from './constants.ts'
+import { symbols } from '../client/constants.ts'
 import { classes, styles } from './calculator.styles.ts'
 
 export const CalculatorTemplate = IslandTemplate({

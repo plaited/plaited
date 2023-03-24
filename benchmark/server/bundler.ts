@@ -1,5 +1,5 @@
-import { build, BuildOptions, denoPlugin, stop } from '../libs/dev-deps.ts'
-import { toFileUrl } from '../libs/deps.ts'
+import { build, BuildOptions, denoPlugin, stop } from '../../libs/dev-deps.ts'
+import { toFileUrl } from '../../libs/deps.ts'
 
 export const bundler = async ({
   dev,

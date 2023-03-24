@@ -17,7 +17,7 @@ interface IslandTemplateProps extends Wire {
    * @defaultValue 'true' */
   delegatesFocus?: boolean
   /** Slotted content for the island */
-  slots?: string
+  slots?: string[] | string
   /** stylesheets */
   styles?: string | Set<string>
 }

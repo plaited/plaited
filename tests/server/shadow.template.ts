@@ -1,6 +1,9 @@
 import { html, IslandTemplate } from '$plaited'
-import { classes, styles } from './shadow.styles.ts'
-import { classes as testClasses, styles as testStyles } from './test.styles.ts'
+import { classes, styles } from '../client/shadow.styles.ts'
+import {
+  classes as testClasses,
+  styles as testStyles,
+} from '../client//test.styles.ts'
 
 export const ShadowTemplate = IslandTemplate({
   styles: new Set([styles, testStyles]),

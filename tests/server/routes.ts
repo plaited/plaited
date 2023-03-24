@@ -1,20 +1,19 @@
 import { livereloadTemplate, mimeTypes, Routes } from '$server'
 import { bundler } from './bundler.ts'
 import { css, html } from '$plaited'
-import { CalculatorTemplate } from './workspace/calculator.template.ts'
-import { ShadowTemplate } from './workspace/shadow.template.ts'
-import { resolve, toFileUrl } from '../libs/deps.ts'
+import { CalculatorTemplate } from './calculator.template.ts'
+import { ShadowTemplate } from './shadow.template.ts'
+import { toFileUrl } from '../../libs/deps.ts'
 
-const __dirname = new URL('.', import.meta.url).pathname
-export const workspace = resolve(__dirname, 'workspace')
-const importMap = toFileUrl(resolve(Deno.cwd(), '.vscode/import-map.json'))
+export const client = `${Deno.cwd()}/tests/client`
+const importMap = toFileUrl(`${Deno.cwd()}/.vscode/import-map.json`)
 
-// entryPoints for ts files in workspace
+// entryPoints for ts files in client
 const entryPoints: string[] = [
-  `${workspace}/register.ts`,
-  `${workspace}/test-runner.ts`,
-  `${workspace}/calculator.worker.ts`,
-  `${workspace}/plaited.spec.ts`,
+  `${client}/register.ts`,
+  `${client}/test-runner.ts`,
+  `${client}/calculator.worker.ts`,
+  `${client}/plaited.spec.ts`,
 ]
 
 // Function to generate routes for entryPoints
