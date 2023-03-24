@@ -46,14 +46,17 @@ export const canUseSlot = (node: HTMLSlotElement) =>
 export const filterAddedNodes = (nodes: NodeList) => {
   const elements: (HTMLElement | SVGElement)[] = []
   nodes.forEach((node) => {
-    if (
-      node instanceof HTMLElement ||
-      node instanceof SVGElement
-    ) {
-      if (node instanceof HTMLSlotElement && !canUseSlot(node)) {
+    if (node.nodeType === 1) {
+      if (
+        (node as Element).tagName === 'SLOT' &&
+        !canUseSlot(node as HTMLSlotElement)
+      ) {
         return
-      }
-      node.dataset.trigger && elements.push(node)
+      } // deno-lint-ignore no-extra-semi
+      ;(
+        node as HTMLElement | SVGElement
+      ).dataset.trigger &&
+        elements.push(node as HTMLElement | SVGElement)
     }
   })
   return elements

@@ -1,4 +1,4 @@
-import { html, insertIsland, IslandTemplate, isle, PlaitProps } from '$plaited'
+import { html, IslandTemplate, isle, PlaitProps, render } from '$plaited'
 import { connect } from './comms.ts'
 import { svg } from './noun-braids-2633610.ts'
 import { classes, styles } from './shadow.styles.ts'
@@ -33,7 +33,7 @@ export const ShadowIsland = isle(
               classes['sub-island']
             }">sub island</h3>`,
           })
-          insertIsland({ el: zone, template: subTemplate })
+          render(zone, subTemplate, 'beforeend')
         },
         addButton() {
           context.insertAdjacentHTML(

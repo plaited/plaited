@@ -1,10 +1,10 @@
 import { Assertion } from '$assert'
 import {
   html,
-  insertIsland,
   IslandTemplate,
   isle,
   PlaitProps,
+  render,
   useIndexedDB,
 } from '$plaited'
 import { symbols } from './constants.ts'
@@ -152,24 +152,25 @@ export const dynamicIslandCommsTest = async (t: Assertion) => {
       }
     },
   ).define()
-  insertIsland({
-    el: wrapper,
-    template: IslandTemplate({
-      styles,
-      id: 'one',
-      tag: 'dynamic-one',
-      template:
-        html`<div class="${classes.row}"><button data-target="button" class="${classes.button}" data-trigger="click->click">Add "world!"</button></div>`,
-    }),
-  })
-  insertIsland({
-    el: wrapper,
-    template: IslandTemplate({
-      styles,
-      tag: 'dynamic-two',
-      template: html`<h1 data-target="header">Hello</h1>`,
-    }),
-  })
+
+  render(
+    wrapper,
+    html`${[
+      IslandTemplate({
+        styles,
+        id: 'one',
+        tag: 'dynamic-one',
+        template:
+          html`<div class="${classes.row}"><button data-target="button" class="${classes.button}" data-trigger="click->click">Add "world!"</button></div>`,
+      }),
+      IslandTemplate({
+        styles,
+        tag: 'dynamic-two',
+        template: html`<h1 data-target="header">Hello</h1>`,
+      }),
+    ]}`,
+    'beforeend',
+  )
   let button = await t.findByAttribute('data-target', 'button', wrapper)
   const header = await t.findByAttribute('data-target', 'header', wrapper)
   t({
@@ -201,29 +202,28 @@ export const dynamicIslandCommsTest = async (t: Assertion) => {
 export const slotTest = async (t: Assertion) => {
   const wrapper = document.getElementById('slot-test') as HTMLElement
 
-  insertIsland(
-    {
-      el: wrapper as HTMLElement,
-      template: IslandTemplate({
-        styles,
-        tag: 'slot-test',
-        template: html`<div class="${classes.row}">
-          <slot data-trigger="click->slot"></slot>
-          <slot name="named" data-trigger="click->named" ></slot>
-          <template>
-            <div data-target="target">template target</div>
-          </template>
-          <nested-slot>
-            <slot slot="nested" name="nested" data-trigger="click->nested"></slot>
-          </nested-slot>
-        </div>`,
-        slots: html`
-          <button>Slot</button>
-          <button slot="named">Named</button>
-          <button slot="nested">Nested</button>
-        `,
-      }),
-    },
+  render(
+    wrapper,
+    IslandTemplate({
+      styles,
+      tag: 'slot-test',
+      template: html`<div class="${classes.row}">
+        <slot data-trigger="click->slot"></slot>
+        <slot name="named" data-trigger="click->named" ></slot>
+        <template>
+          <div data-target="target">template target</div>
+        </template>
+        <nested-slot>
+          <slot slot="nested" name="nested" data-trigger="click->nested"></slot>
+        </nested-slot>
+      </div>`,
+      slots: html`
+        <button>Slot</button>
+        <button slot="named">Named</button>
+        <button slot="nested">Nested</button>
+      `,
+    }),
+    'beforeend',
   )
   let slot = 0
   let nested = 0
@@ -362,7 +362,7 @@ export const shadowObserverTest = async (t: Assertion) => {
     actual: svg?.tagName,
     expected: 'svg',
   })
-  send('shadow-island', { type: 'removeSvg' })
+  svg && await t.fireEvent(svg, 'click')
   button && await t.fireEvent(button, 'click')
   const h3 = await t.findByText('sub island', wrapper)
   t({

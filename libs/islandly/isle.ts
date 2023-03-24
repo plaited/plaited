@@ -78,7 +78,9 @@ export const isle = ({
         const els = [
           ...root.querySelectorAll<HTMLElement>(`[${dataTrigger}]`),
           // No binding of nested slots events
-        ].filter((el) => el instanceof HTMLSlotElement ? canUseSlot(el) : true)
+        ].filter((el) =>
+          el.tagName === 'SLOT' ? canUseSlot(el as HTMLSlotElement) : true
+        )
         els.length && this.#delegateListeners(els)
       }
     }
@@ -158,7 +160,9 @@ export const isle = ({
       if (root) {
         elements = [...root.querySelectorAll<T>(
           `[${dataTarget}="${target}"]`,
-        )].filter((el) => el instanceof HTMLSlotElement ? canUseSlot(el) : true)
+        )].filter((el) =>
+          el.tagName === 'SLOT' ? canUseSlot(el as HTMLSlotElement) : true
+        )
       }
       return elements
     }

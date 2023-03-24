@@ -94,6 +94,9 @@ routes.set('/', () =>
         <summary class="${classes.summary}">Shadow observer test</summary>
         ${ShadowTemplate}
       </details>
+      <details class="${classes.fixture}" id="template-observer-test" open>
+        <summary class="${classes.summary}">Render test</summary>
+      </details>
       <script type="module" src="/test-runner.js"></script>
       ${livereloadTemplate}
     </body>
