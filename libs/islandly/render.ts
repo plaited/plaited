@@ -107,20 +107,23 @@ export const render = (
   template: string,
   position?: 'afterbegin' | 'beforeend',
 ) => {
+  console.log({ template })
   const fragment = new DOMParser().parseFromString(
-    `${template}`,
+    `<div>${template}</div>`,
     'text/html',
     //@ts-ignore: new spec feature
     {
       includeShadowRoots: true,
     },
   )
-  const future: DiffNode[] = Array.prototype.slice.call(
-    fragment.body.childNodes,
-  )
   return position === 'afterbegin'
-    ? parent.prepend(...future)
+    ? parent.prepend(...(fragment.body.firstChild as HTMLDivElement).childNodes)
     : position === 'beforeend'
-    ? parent.append(...future)
-    : diff(parent, future)
+    ? parent.append(...(fragment.body.firstChild as HTMLDivElement).childNodes)
+    : diff(
+      parent,
+      Array.prototype.slice.call(
+        (fragment.body.firstChild as HTMLDivElement).childNodes,
+      ),
+    )
 }

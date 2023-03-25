@@ -1,8 +1,6 @@
 import { livereloadTemplate, mimeTypes, Routes } from '$server'
 import { bundler } from './bundler.ts'
 import { css, html } from '$plaited'
-import { CalculatorTemplate } from './calculator.template.ts'
-import { ShadowTemplate } from './shadow.template.ts'
 import { toFileUrl } from '../../libs/deps.ts'
 
 export const client = `${Deno.cwd()}/tests/client`
@@ -71,29 +69,11 @@ routes.set('/', () =>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>plaited tests</title>
       <link rel="icon" href="data:," />
-      <script type="module" src="/register.js"></script>
       <style>
         ${styles}
       </style>
     </head>
     <body>
-      <details class="${classes.fixture}" id="island-worker-comms-test" open>
-        <summary class="${classes.summary}">Island-Worker Comms test</summary>
-        ${CalculatorTemplate}
-      </details>
-      <details class="${classes.fixture}" id="dynamic-island-comms-test" open>
-        <summary class="${classes.summary}">Dynamic Island & Comms test</summary>
-      </details>
-      <details class="${classes.fixture}" id="slot-test" open>
-        <summary class="${classes.summary}">Slot test</summary>
-      </details>
-      <details class="${classes.fixture}" id="template-observer-test" open>
-        <summary class="${classes.summary}">Template observer test</summary>
-      </details>
-      <details class="${classes.fixture}" id="shadow-observer-test" open>
-        <summary class="${classes.summary}">Shadow observer test</summary>
-        ${ShadowTemplate}
-      </details>
       <details class="${classes.fixture}" id="template-observer-test" open>
         <summary class="${classes.summary}">Render test</summary>
       </details>

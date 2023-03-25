@@ -42,26 +42,6 @@ export const getTriggerKey = (
 export const canUseSlot = (node: HTMLSlotElement) =>
   !node.hasAttribute('slot') && node.hasAttribute('name')
 
-// Takes a list of nodes added when mutation observer change happened and filters our the ones with triggers
-export const filterAddedNodes = (nodes: NodeList) => {
-  const elements: (HTMLElement | SVGElement)[] = []
-  nodes.forEach((node) => {
-    if (node.nodeType === 1) {
-      if (
-        (node as Element).tagName === 'SLOT' &&
-        !canUseSlot(node as HTMLSlotElement)
-      ) {
-        return
-      } // deno-lint-ignore no-extra-semi
-      ;(
-        node as HTMLElement | SVGElement
-      ).dataset.trigger &&
-        elements.push(node as HTMLElement | SVGElement)
-    }
-  })
-  return elements
-}
-
 export const reduceWhitespace = (str: string) => str.replace(/(\s\s+|\n)/g, ' ')
 
 const isTruthy = (val: Primitive) =>

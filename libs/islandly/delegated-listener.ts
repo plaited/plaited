@@ -12,9 +12,9 @@ class DelegatedListener {
 const delegates = new WeakMap()
 
 export const delegatedListener = Object.freeze({
-  set: (context: Element, callback: (ev: Event) => void) => {
+  set: (context: Node, callback: (ev: Event) => void) => {
     delegates.set(context, new DelegatedListener(callback))
   },
-  get: (context: Element) => delegates.get(context),
-  has: (context: Element) => delegates.has(context),
+  get: (context: Node) => delegates.get(context),
+  has: (context: Node) => delegates.has(context),
 })
