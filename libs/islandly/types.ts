@@ -1,5 +1,42 @@
 import { bProgram, DevCallback, Strategy, Trigger } from '../behavioral/mod.ts'
 
+export type TemplateProps = {
+  className?: string
+  htmlFor?: string
+  for?: never
+  class?: never
+  [key: string]: unknown
+}
+
+export interface Template<T extends TemplateProps = TemplateProps> {
+  (this: unknown, props: T & TemplateProps): string
+  styles: Set<string>
+}
+
+export interface Wire extends TemplateProps {
+  target?: string
+  triggers?: Record<string, string>
+}
+
+export interface IsleTemplateProps extends Wire {
+  /** the element tag you want to use */
+  tag: CustomElementTag
+  /** the shadowDom template for the Island */
+  shadow: string
+  /**
+   * Island element's shadowDom mode
+   * @defaultValue 'open' */
+  mode?: 'open' | 'closed'
+  /**
+   * Sets whether Island element's shadowRoot delegates focus
+   * @defaultValue 'true' */
+  delegatesFocus?: boolean
+  /** Slotted content for the island */
+  slots?: string[] | string
+  /** stylesheets */
+  styles?: string | Set<string>
+}
+
 export type CustomElementTag = `${string}-${string}`
 
 export type ISLElementOptions = {
@@ -19,6 +56,11 @@ export type ISLElementOptions = {
   id?: boolean
   /** island's html tag */
   tag: CustomElementTag
+  /** set the islands default style these can be augmented
+   * via the style prop on the islands template  when rendering dynamically
+   * if desired
+   */
+  styles?: string | Set<string>
 }
 
 export type PlaitProps = {

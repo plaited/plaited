@@ -1,15 +1,4 @@
-export type TemplateProps = {
-  className?: string
-  htmlFor?: string
-  for?: never
-  class?: never
-  [key: string]: unknown
-}
-
-export interface Template<T extends TemplateProps = TemplateProps> {
-  (this: unknown, props: T & TemplateProps): string
-  styles: Set<string>
-}
+import { Template, TemplateProps } from './types.ts'
 
 const shallowCompare = (
   obj1: Record<string, unknown>,

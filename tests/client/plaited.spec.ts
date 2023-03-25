@@ -10,7 +10,7 @@ import {
 import { symbols } from './constants.ts'
 import { connect, send } from './comms.ts'
 import { classes, styles } from './test.styles.ts'
-
+import { CalculatorIsland } from './calculator/calculator.island.ts'
 // export const dynamicIslandCommsTest = async (t: Assertion) => {
 //   const wrapper = document.getElementById(
 //     'dynamic-island-comms-test',

@@ -1,16 +1,21 @@
+//@ts-ignore: d
+window.HTMLElement = class {}
+
 import { livereloadTemplate, mimeTypes, Routes } from '$server'
 import { bundler } from './bundler.ts'
 import { css, html } from '$plaited'
 import { toFileUrl } from '../../libs/deps.ts'
+
+import { CalculatorIsland } from '../client/calculator/calculator.island.ts'
+
+console.log(CalculatorIsland)
 
 export const client = `${Deno.cwd()}/tests/client`
 const importMap = toFileUrl(`${Deno.cwd()}/.vscode/import-map.json`)
 
 // entryPoints for ts files in client
 const entryPoints: string[] = [
-  `${client}/register.ts`,
   `${client}/test-runner.ts`,
-  `${client}/calculator.worker.ts`,
   `${client}/plaited.spec.ts`,
 ]
 
