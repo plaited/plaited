@@ -7,10 +7,13 @@ import {
   ISLElement,
   ISLElementConstructor,
   ISLElementOptions,
+  IsleTemplateProps,
   PlaitProps,
 } from './types.ts'
 import { delegatedListener } from './delegated-listener.ts'
-import { IsleTemplate } from './isle-template.ts'
+import { wire } from './wire.ts'
+import { html } from './html.ts'
+import { template } from './template.ts'
 /**
  * A typescript function for instantiating Plaited Island Elements
  */
@@ -19,7 +22,6 @@ export const isle = (
     mode = 'open',
     delegatesFocus = true,
     tag,
-    styles,
     ...bProgramOptions
   }: ISLElementOptions,
   mixin: (base: ISLElementConstructor) => ISLElementConstructor,
@@ -41,16 +43,9 @@ export const isle = (
 
           constructor() {
             super()
-            console.log(isle)
             this.internals_ = this.attachInternals()
             !this.internals_.shadowRoot &&
               this.attachShadow({ mode, delegatesFocus }) // no declarative shadowdom then connect one
-            if (this.internals_.shadowRoot && styles) {
-              const sheets = Array.isArray(styles) ? [...styles] : [styles]
-              const sheet = new CSSStyleSheet()
-              sheet.replaceSync(sheets.join(''))
-              this.internals_.shadowRoot.adoptedStyleSheets = [sheet]
-            }
           }
           plait: (props: PlaitProps) => void | Promise<void>
           connectedCallback() {
@@ -169,8 +164,6 @@ export const isle = (
           }
           #createTemplateObserver() {
             const mo = new MutationObserver(() => {
-              console.log(this.tagName)
-
               const template = this.querySelector<HTMLTemplateElement>(
                 'template[shadowrootmode]',
               )
@@ -196,6 +189,26 @@ export const isle = (
       ),
     )
   }
-  define['template'] = IsleTemplate
+  define['template'] = template<IsleTemplateProps>(({
+    styles,
+    shadow,
+    light,
+    ...rest
+  }) => {
+    const stylesheet = styles &&
+      html`<style>${typeof styles === 'string' ? styles : [...styles]}</style>`
+    return html`
+  <${tag} ${wire({ ...rest })}>
+    <template
+      shadowrootmode="${mode}"
+      ${delegatesFocus && 'shadowrootdelegatesfocus'}
+    >
+      ${stylesheet}
+      ${shadow}
+    </template>
+    ${light}
+  </${tag}>
+  `
+  })
   return define
 }

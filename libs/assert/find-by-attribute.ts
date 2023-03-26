@@ -4,33 +4,30 @@ export const findByAttribute = (
   context?: HTMLElement | SVGElement,
 ): Promise<HTMLElement | SVGElement | void> => {
   const searchInShadowDom = (node: Node): HTMLElement | SVGElement | void => {
-    if (
-      (
-        node instanceof HTMLElement ||
-        node instanceof SVGElement
-      )
-    ) {
-      const attr = node.getAttribute(attributeName)
+    if (node.nodeType === 1) {
+      const attr = (node as Element).getAttribute(attributeName)
       if (
         typeof attributeValue === 'string' &&
         attr === attributeValue
       ) {
-        return node
+        return node as HTMLElement | SVGElement
       }
       if (
         attributeValue instanceof RegExp &&
         attr &&
         attributeValue.test(attr)
       ) {
-        return node ?? undefined
+        return node as HTMLElement | SVGElement ?? undefined
       }
-      if (node.getAttribute(attributeName) === attributeValue) {
-        return node
+      if ((node as Element).getAttribute(attributeName) === attributeValue) {
+        return node as HTMLElement | SVGElement
       }
     }
 
-    if (node instanceof HTMLElement && node.shadowRoot) {
-      for (const child of node.shadowRoot.children) {
+    if (node.nodeType === 1 && (node as Element).shadowRoot) {
+      for (
+        const child of ((node as Element).shadowRoot as ShadowRoot).children
+      ) {
         const result = searchInShadowDom(child)
         if (result) {
           return result

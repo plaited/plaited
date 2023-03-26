@@ -1,9 +1,8 @@
-import { assert, Assertion, AssertionError } from '$assert'
-
-import { TestCallback } from './type.ts'
+import { assert, AssertionError } from '$assert'
+import { css, html, render } from '$plaited'
 
 /** open web socket connection */
-const hostRegex = /^https?:\/\/([^\/]+)\/.*$/i
+const hostRegex = /(^https?:\/\/[^\/]+)\/.*$/i
 const host = document.URL.replace(hostRegex, '$1')
 
 /** Fetching test pass */
@@ -17,7 +16,7 @@ try {
   console.error(err)
 }
 
-function getPage(urlString: string) {
+const getPage = (urlString: string) => {
   // Create a new URL object
   const url = new URL(urlString)
 
@@ -31,20 +30,8 @@ function getPage(urlString: string) {
   return pathParts[pathParts.length - 1]
 }
 
-/** import tests */
-const tests: { page: string; testCallback: TestCallback; name: string }[] = []
-try {
-  await Promise.all(data.map(async (path) => {
-    const testGroups = await import(`${host}${path}`)
-    const page = `${host}/${getPage(`${host}${path}`)}`
-    for (const name in testGroups) {
-      const testCallback = testGroups[name]
-      tests.push({ page, testCallback, name })
-    }
-  }))
-} catch (err) {
-  console.error(err)
-}
+/** format test paths */
+const testPaths = data.map((path) => `${host}/${getPage(`${host}${path}`)}`)
 
 /** test shouldn't take more than 5 seconds */
 const throwTimeoutError = async () => {
@@ -55,16 +42,46 @@ const throwTimeoutError = async () => {
 
 let passed = 0
 let failed = 0
+const body = document.querySelector('body')
+const { styles, classes } = css`
+.test-fixture{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
+  justify-items: stretch;
+}
+.test-frame {
+  display:block;
+  min-height: 500px;
+}
+`
+body && render(
+  body,
+  html`
+<style>${styles}</style>
+<div id="fixture" class="${classes['test-fixture']}">
 
-const fixture = document.getElementById('fixture')
-const render = (id: string): Promise<HTMLBodyElement> => {
+</div>
+`,
+  'afterbegin',
+)
+
+const run = (id: string): Promise<HTMLBodyElement> => {
   const frame = document.createElement('iframe')
   frame.src = id
-  fixture?.append(frame)
-  const context = frame?.contentDocument?.body as HTMLBodyElement
+  frame.className = classes['test-frame']
+  document.querySelector('#fixture')?.append(frame)
   /** sometimes you need to wait for the next frame */
   return new Promise((resolve) => {
-    requestAnimationFrame(() => {
+    const context = frame?.contentDocument?.body as HTMLBodyElement
+    // deno-lint-ignore no-window-prefix
+    window.addEventListener('message', (event) => {
+      const { ok, name } = event.data as {
+        ok: boolean
+        name: string
+      }
+      console.log(ok, name)
+      ok ? passed++ : failed++
       resolve(context)
     })
   })
@@ -73,20 +90,10 @@ const render = (id: string): Promise<HTMLBodyElement> => {
 /** loop over tests imports */
 console.log('RUN_START')
 
-for (const { page, testCallback } of tests) {
-  /** render iframe for isolated test group */
-  const context = await render(page)
-  try {
-    await Promise.race([testCallback(assert, context), throwTimeoutError()])
-    const msg = `✔ ${name}`
-    console.log(msg)
-    passed++
-  } catch (error) {
-    const msg = `✘ ${name} \n ${error.stack}`
-    console.log(msg)
-    failed++
-  }
-}
+await Promise.all(testPaths.map(async (path) => {
+  await Promise.race([run(path), throwTimeoutError()])
+}))
+
 console.log('RUN_END')
 console.log('ALI WUZ HERE')
 

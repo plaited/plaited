@@ -1,5 +1,13 @@
 import { bProgram, DevCallback, Strategy, Trigger } from '../behavioral/mod.ts'
 
+export type Primitive =
+  | number
+  | string
+  | boolean
+  | undefined
+  | null
+  | void
+
 export type TemplateProps = {
   className?: string
   htmlFor?: string
@@ -19,32 +27,18 @@ export interface Wire extends TemplateProps {
 }
 
 export interface IsleTemplateProps extends Wire {
-  /** the element tag you want to use */
-  tag: CustomElementTag
   /** the shadowDom template for the Island */
-  shadow: string
-  /**
-   * Island element's shadowDom mode
-   * @defaultValue 'open' */
-  mode?: 'open' | 'closed'
-  /**
-   * Sets whether Island element's shadowRoot delegates focus
-   * @defaultValue 'true' */
-  delegatesFocus?: boolean
+  shadow: Primitive | Primitive[]
   /** Slotted content for the island */
-  slots?: string[] | string
+  light?: Primitive | Primitive[]
   /** stylesheets */
   styles?: string | Set<string>
 }
 
-export type CustomElementTag = `${string}-${string}`
-
 export type ISLElementOptions = {
-  /** define wether island's custom element is open or closed. Defaults to open and can be overridden
-   * by declarative shadow dom attribute in browsers that support it so be ware
-   */
+  /** define wether island's custom element is open or closed. @defaultValue 'open'*/
   mode?: 'open' | 'closed'
-  /** configure whether to delegate focus or not defaults to true */
+  /** configure whether to delegate focus or not @defaultValue 'true' */
   delegatesFocus?: boolean
   /** logger function to receive messages from behavioral program react streams */
   dev?: DevCallback
@@ -54,13 +48,8 @@ export type ISLElementOptions = {
   connect?: (recipient: string, trigger: Trigger) => () => void
   /** set to true if we wish to use id when connecting to messenger to receive messages from other islands */
   id?: boolean
-  /** island's html tag */
-  tag: CustomElementTag
-  /** set the islands default style these can be augmented
-   * via the style prop on the islands template  when rendering dynamically
-   * if desired
-   */
-  styles?: string | Set<string>
+  /** the element tag you want to use */
+  tag: `${string}-${string}`
 }
 
 export type PlaitProps = {

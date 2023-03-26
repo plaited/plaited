@@ -1,8 +1,8 @@
 import { html } from './html.ts'
 import { dataTarget, dataTrigger } from './constants.ts'
-import { TemplateProps, Wire } from './types.ts'
-/** @description wires attributes to templates with sensible escaping */
+import { Wire } from './types.ts'
 
+/** @description wires attributes to templates with sensible escaping */
 export const wire = (obj: Wire) => {
   const attributes = []
   for (const prop in obj) {

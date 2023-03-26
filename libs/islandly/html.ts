@@ -1,5 +1,5 @@
-import { Primitive, taggedWithPrimitives } from './utils.ts'
-
+import { taggedWithPrimitives } from './utils.ts'
+import { Primitive } from './types.ts'
 /**
  * @description define your html with a tagged template literal
  * @returns a minimized html template string */

@@ -1,5 +1,6 @@
-import { Primitive, reduceWhitespace, taggedWithPrimitives } from './utils.ts'
+import { reduceWhitespace, taggedWithPrimitives } from './utils.ts'
 import { hashString } from '../utils/hash.ts'
+import { Primitive } from './types.ts'
 
 type ClassObject = {
   content: string

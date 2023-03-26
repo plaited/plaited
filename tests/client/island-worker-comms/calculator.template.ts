@@ -1,11 +1,12 @@
-import { html, IslandTemplate } from '$plaited'
-import { symbols } from '../client/constants.ts'
+import { html } from '$plaited'
+import { symbols } from '../constants.ts'
 import { classes, styles } from './calculator.styles.ts'
+import { CalculatorIsland } from './calculator.island.ts'
 
-export const CalculatorTemplate = IslandTemplate({
+export const CalculatorTemplate = CalculatorIsland.template({
   styles,
-  tag: 'calculator-island',
-  template: html`<div class="${classes.calculator}">
+  target: 'calculator',
+  shadow: html`<div class="${classes.calculator}">
     <!-- display -->
     <div class="${classes.display}">
       <h1 data-target="previous" class="${classes.header}"></h1>

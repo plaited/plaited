@@ -107,7 +107,6 @@ export const render = (
   template: string,
   position?: 'afterbegin' | 'beforeend',
 ) => {
-  console.log({ template })
   const fragment = new DOMParser().parseFromString(
     `<div>${template}</div>`,
     'text/html',
