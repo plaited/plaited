@@ -61,3 +61,5 @@ assert['wait'] = wait
 assert['findByAttribute'] = findByAttribute
 assert['findByText'] = findByText
 assert['fireEvent'] = fireEvent
+
+export const t = assert

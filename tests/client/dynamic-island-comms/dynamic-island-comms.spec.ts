@@ -1,8 +1,15 @@
-import { html, isle, messenger, PlaitProps, render } from '$plaited'
-import { classes, styles } from '../test.styles.ts'
+import { css, html, isle, messenger, PlaitProps, render } from '$plaited'
 export const { connect, send } = messenger()
 import { test } from '../test.ts'
-
+const { classes, styles } = css`.row {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+}
+::slotted(button), .button {
+  height: 18px;
+  width: auto;
+}`
 test('dynamic island comms', async (t) => {
   const wrapper = document.querySelector('#root') as HTMLDivElement
   const DynamicOne = isle(

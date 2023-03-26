@@ -1,7 +1,7 @@
 import { livereloadTemplate } from '$server'
 import { html } from '$plaited'
 
-export const PageTemplate = ({
+export const TestPageTemplate = ({
   title,
   registry,
   body,
@@ -28,7 +28,10 @@ export const PageTemplate = ({
   <div id="root">
     ${body}
   </div>
-  <script type="module" src="${tests}"></script>
+  <script type="module" type="module" async>
+    await import('${tests}');
+    await import('/runner.js');
+  </script>
   ${livereloadTemplate}
 </body>
 </html>

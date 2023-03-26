@@ -28,4 +28,13 @@ export const { styles, classes } = css`
   background: #000000${opacityHex().get(0.75)};
   color: #ffffff${opacityHex().get(0.80)}
 }
+.row {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+}
+::slotted(button), .button {
+  height: 18px;
+  width: auto;
+}
 `

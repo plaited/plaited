@@ -2,7 +2,9 @@ import { bundler } from './bundler.ts'
 import { mimeTypes, Routes } from '$server'
 import { walk } from '../../libs/dev-deps.ts'
 import { compress, startCase, toFileUrl } from '../../libs/deps.ts'
-import { PageTemplate } from './page.template.ts'
+import { HomeTemplate } from './home.template.ts'
+import { NavItemTemplate, TestShellTemplate } from '../client/test.shell.ts'
+import { TestPageTemplate } from './test.template.ts'
 
 export const setRoutes = async ({
   dev,
@@ -70,21 +72,22 @@ export const setRoutes = async ({
   }
 
   /** create test files path array */
-  const testEntries: string[] = []
+  const testEntries: { name: string; path: string }[] = []
   await Promise.all(clientEntries.map(async (entry) => {
     if (entry.endsWith('.spec.js')) {
-      /** push path onto testEntries array */
-      testEntries.push(entry)
       /**  Create a new URL object */
       const url = new URL(toFileUrl(entry))
       /** Get the pathname and split it using '/' */
       const pathParts = url.pathname.split('/')
       /** Remove the last element (the filename) */
       const testFile = pathParts.pop()
+      const name = startCase(testFile?.slice(0, -8))
       /** concat path pars */
       const dir = pathParts.join('/')
-      const registry = clientEntries.find((path) =>
-        path.startsWith(dir) && path.endsWith('registry.js')
+      /** push path onto testEntries array */
+      testEntries.push({ path: dir, name })
+      const registry = clientEntries.find((entry) =>
+        entry.startsWith(dir) && entry.endsWith('registry.js')
       )
       const { absolute } = serverEntries.find(({ relative }) =>
         relative.startsWith(dir) &&
@@ -101,8 +104,8 @@ export const setRoutes = async ({
       }
       routes.set(dir, () =>
         new Response(
-          PageTemplate({
-            title: startCase(testFile?.slice(0, -8)),
+          TestPageTemplate({
+            title: name,
             registry,
             body,
             tests: entry,
@@ -131,10 +134,11 @@ export const setRoutes = async ({
 
   routes.set('/', () =>
     new Response(
-      PageTemplate({
-        title: 'plaited tests',
-        tests: '/runner.js',
-      }),
+      HomeTemplate(
+        TestShellTemplate(
+          testEntries.map(({ path, name }) => NavItemTemplate({ name, path })),
+        ),
+      ),
       {
         headers: { 'Content-Type': 'text/html' },
       },
