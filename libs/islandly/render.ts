@@ -107,8 +107,10 @@ export const render = (
   template: string,
   position?: 'afterbegin' | 'beforeend',
 ) => {
+  const regex = /^<(thead|tbody|tfoot|tr|th|td)/i
+  const wrapper = regex.test(template) ? 'table' : 'div'
   const fragment = new DOMParser().parseFromString(
-    `<div>${template}</div>`,
+    `<${wrapper}>${template}</${wrapper}>`,
     'text/html',
     //@ts-ignore: new spec feature
     {

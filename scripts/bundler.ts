@@ -21,7 +21,11 @@ export const bundler = ({
       entryPoints,
       platform: 'neutral',
       sourcemap: false,
-      target: 'es2022',
+      target: [
+        'chrome109',
+        'firefox109',
+        'safari16',
+      ],
       metafile: true,
       minify,
       treeShaking: true,

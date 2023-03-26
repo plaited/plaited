@@ -2,6 +2,8 @@
 
 # [WIP] plaited
 
+## This package is for benchmarking only
+
 Web application interfaces are inherently reactive and complex. Business needs
 are not always clear at the beginning of a project. Untangling code as
 requirements change is a frustrating process. However what if we could begin

@@ -34,14 +34,7 @@ export const TestShellTemplate = (light: string[]) =>
     light,
   })
 
-export const NavItem = isle(
-  { tag: 'nav-item' },
-  (base) =>
-    class extends base {
-      plait(): void | Promise<void> {
-      }
-    },
-)
+export const NavItem = isle({ tag: 'nav-item' })
 
 export const NavItemTemplate = template<{ name: string; path: string }>((
   { name, path },

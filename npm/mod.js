@@ -295,11 +295,13 @@ var matchAllEvents = (str) => {
   const regexp = /(^\w+|(?:\s)\w+)(?:->)/g;
   return [...str.matchAll(regexp)].flatMap(([, event]) => event);
 };
-var getTriggerKey = ({ currentTarget, composedPath, type }, context) => {
-  const el = currentTarget === context ? context : composedPath().find((slot) => slot instanceof HTMLSlotElement) === context ? context : void 0;
+var getTriggerKey = (e, context) => {
+  const el = e.currentTarget === context ? context : e.composedPath().find(
+    (slot) => slot?.tagName === "SLOT" && slot === context
+  ) ? context : void 0;
   if (!el)
     return "";
-  const pre = `${type}->`;
+  const pre = `${e.type}->`;
   const trigger = el.dataset.trigger ?? "";
   const key = trigger.trim().split(/\s+/).find(
     (str) => str.includes(pre)
@@ -307,18 +309,6 @@ var getTriggerKey = ({ currentTarget, composedPath, type }, context) => {
   return key ? key.replace(pre, "") : "";
 };
 var canUseSlot = (node) => !node.hasAttribute("slot") && node.hasAttribute("name");
-var filterAddedNodes = (nodes) => {
-  const elements = [];
-  nodes.forEach((node) => {
-    if (node instanceof HTMLElement || node instanceof SVGElement) {
-      if (node instanceof HTMLSlotElement && !canUseSlot(node)) {
-        return;
-      }
-      node.dataset.trigger && elements.push(node);
-    }
-  });
-  return elements;
-};
 var reduceWhitespace = (str) => str.replace(/(\s\s+|\n)/g, " ");
 var isTruthy = (val) => trueTypeOf(val) === "string" || trueTypeOf(val) === "number";
 var taggedWithPrimitives = (strings, ...expressions) => {
@@ -424,7 +414,6 @@ var useBehavioral = ({
 
 // libs/islandly/delegated-listener.ts
 var DelegatedListener = class {
-  callback;
   constructor(callback) {
     this.callback = callback;
   }
@@ -440,152 +429,6 @@ var delegatedListener = Object.freeze({
   get: (context) => delegates.get(context),
   has: (context) => delegates.has(context)
 });
-
-// libs/islandly/isle.ts
-var isle = ({
-  mode = "open",
-  delegatesFocus = true,
-  tag,
-  ...bProgramOptions
-}, island) => {
-  return class extends island {
-    #noDeclarativeShadow = false;
-    #shadowObserver;
-    #templateObserver;
-    #disconnect;
-    internals_;
-    #trigger;
-    constructor() {
-      super();
-      this.internals_ = this.attachInternals();
-      let root = this.internals_.shadowRoot;
-      !root && (root = this.attachShadow({ mode, delegatesFocus }));
-      !root.firstChild && (this.#noDeclarativeShadow = true);
-    }
-    connectedCallback() {
-      super.connectedCallback && super.connectedCallback();
-      if (this.#noDeclarativeShadow) {
-        const template2 = this.querySelector(
-          "template[shadowrootmode]"
-        );
-        template2 ? this.#appendTemplate(template2) : this.#templateObserver = this.#createTemplateObserver();
-      }
-      this.#connectTriggers();
-      this.#shadowObserver = this.#createShadowObserver();
-      const { disconnect, trigger, ...rest } = useBehavioral(
-        {
-          context: this,
-          ...bProgramOptions
-        }
-      );
-      this.plait({
-        $: this.$.bind(this),
-        context: this,
-        trigger,
-        ...rest
-      });
-      this.#disconnect = disconnect;
-      this.#trigger = trigger;
-    }
-    disconnectedCallback() {
-      super.disconnectedCallback && super.disconnectedCallback();
-      this.#templateObserver && this.#templateObserver.disconnect();
-      this.#shadowObserver && this.#shadowObserver.disconnect();
-      if (this.#disconnect) {
-        this.#trigger({
-          type: `disconnected->${this.id || this.tagName.toLowerCase()}`
-        });
-        this.#disconnect();
-      }
-    }
-    #connectTriggers() {
-      const root = this.internals_.shadowRoot;
-      if (root) {
-        const els = [
-          ...root.querySelectorAll(`[${dataTrigger}]`)
-          // No binding of nested slots events
-        ].filter((el) => el instanceof HTMLSlotElement ? canUseSlot(el) : true);
-        els.length && this.#delegateListeners(els);
-      }
-    }
-    #delegateListeners(nodes) {
-      nodes.forEach((el) => {
-        !delegatedListener.has(el) && delegatedListener.set(el, (event) => {
-          const triggerKey = getTriggerKey(event, el);
-          triggerKey ? this.#trigger({
-            type: triggerKey,
-            detail: event
-          }) : el.removeEventListener(event.type, delegatedListener.get(el));
-        });
-        const triggers = el.dataset.trigger;
-        if (triggers) {
-          const events = matchAllEvents(triggers);
-          for (const event of events) {
-            el.addEventListener(event, delegatedListener.get(el));
-          }
-        }
-      });
-    }
-    // Observes the addition of nodes to the shadow dom and changes to and child's data-trigger attribute
-    #createShadowObserver() {
-      const root = this.internals_.shadowRoot;
-      if (root) {
-        const mo = new MutationObserver((mutationsList) => {
-          for (const mutation of mutationsList) {
-            if (mutation.addedNodes.length) {
-              const els = filterAddedNodes(mutation.addedNodes);
-              els.length && this.#delegateListeners(els);
-            }
-            if (mutation.type === "attributes") {
-              this.#connectTriggers();
-            }
-          }
-        });
-        mo.observe(root, {
-          attributeFilter: [dataTrigger],
-          childList: true,
-          subtree: true
-        });
-        return mo;
-      }
-    }
-    #appendTemplate(template2) {
-      const root = this.internals_.shadowRoot;
-      if (root) {
-        !root.firstChild && root.appendChild(document.importNode(template2.content, true));
-        template2.remove();
-      }
-    }
-    #createTemplateObserver() {
-      const mo = new MutationObserver(() => {
-        const template2 = this.querySelector(
-          "template[shadowrootmode]"
-        );
-        if (template2) {
-          mo.disconnect();
-          this.#appendTemplate(template2);
-        }
-      });
-      mo.observe(this, { childList: true });
-      return mo;
-    }
-    $(target) {
-      const root = this.internals_.shadowRoot;
-      let elements = [];
-      if (root) {
-        elements = [...root.querySelectorAll(
-          `[${dataTarget}="${target}"]`
-        )].filter((el) => el instanceof HTMLSlotElement ? canUseSlot(el) : true);
-      }
-      return elements;
-    }
-    static define() {
-      if (customElements.get(tag))
-        return;
-      customElements.define(tag, this);
-    }
-  };
-};
 
 // libs/islandly/html.ts
 var html = (strings, ...expressions) => {
@@ -657,30 +500,182 @@ var template = (resultFn) => {
   return tpl;
 };
 
-// libs/islandly/island-template.ts
-var IslandTemplate = template(({
-  tag,
-  template: template2,
+// libs/islandly/isle.ts
+var isle = ({
   mode = "open",
   delegatesFocus = true,
-  slots,
-  styles,
-  ...rest
+  tag,
+  ...bProgramOptions
+}, mixin = (base) => class extends base {
 }) => {
-  const stylesheet = styles && html`<style>${typeof styles === "string" ? styles : [...styles]}</style>`;
-  return html`
+  const define = () => {
+    if (customElements.get(tag)) {
+      console.error(`${tag} already defined`);
+      return;
+    }
+    customElements.define(
+      tag,
+      mixin(
+        class extends HTMLElement {
+          constructor() {
+            super();
+            this.internals_ = this.attachInternals();
+            !this.internals_.shadowRoot && this.attachShadow({ mode, delegatesFocus });
+          }
+          #shadowObserver;
+          #templateObserver;
+          #disconnect;
+          #trigger;
+          connectedCallback() {
+            if (!this.internals_.shadowRoot?.firstChild) {
+              const template2 = this.querySelector(
+                "template[shadowrootmode]"
+              );
+              template2 ? this.#appendTemplate(template2) : this.#templateObserver = this.#createTemplateObserver();
+            }
+            if (this.plait) {
+              this.internals_.shadowRoot && this.#delegateListeners(
+                // just connected/upgraded then delegate listeners nodes with data-trigger attribute
+                this.internals_.shadowRoot.querySelectorAll(
+                  `[${dataTrigger}]`
+                )
+              );
+              const { disconnect, trigger, ...rest } = useBehavioral(
+                {
+                  context: this,
+                  ...bProgramOptions
+                }
+              );
+              this.plait({
+                $: this.$.bind(this),
+                context: this,
+                trigger,
+                ...rest
+              });
+              this.#shadowObserver = this.#createShadowObserver();
+              this.#disconnect = disconnect;
+              this.#trigger = trigger;
+            }
+          }
+          disconnectedCallback() {
+            this.#templateObserver && this.#templateObserver.disconnect();
+            this.#shadowObserver && this.#shadowObserver.disconnect();
+            if (this.#disconnect) {
+              this.#trigger({
+                type: `disconnected->${this.id || this.tagName.toLowerCase()}`
+              });
+              this.#disconnect();
+            }
+          }
+          #delegateListeners(nodes) {
+            nodes.forEach((el) => {
+              if (el.nodeType === 1) {
+                if (el.tagName === "SLOT" && // Element is an instance of a slot
+                !canUseSlot(el))
+                  return;
+                !delegatedListener.has(el) && delegatedListener.set(el, (event) => {
+                  const triggerKey = getTriggerKey(
+                    event,
+                    el
+                  );
+                  triggerKey ? this.#trigger({
+                    type: triggerKey,
+                    detail: event
+                  }) : el.removeEventListener(
+                    event.type,
+                    delegatedListener.get(el)
+                  );
+                });
+                const triggers = el.dataset.trigger;
+                if (triggers) {
+                  const events = matchAllEvents(triggers);
+                  for (const event of events) {
+                    el.addEventListener(event, delegatedListener.get(el));
+                  }
+                }
+              }
+            });
+          }
+          // Observes the addition of nodes to the shadow dom and changes to and child's data-trigger attribute
+          #createShadowObserver() {
+            const mo = new MutationObserver((mutationsList) => {
+              for (const mutation of mutationsList) {
+                if (mutation.addedNodes.length) {
+                  this.#delegateListeners(mutation.addedNodes);
+                }
+                if (mutation.type === "attributes") {
+                  this.internals_.shadowRoot && this.#delegateListeners(
+                    this.internals_.shadowRoot.querySelectorAll(
+                      `[${dataTrigger}]`
+                    )
+                  );
+                }
+              }
+            });
+            this.internals_.shadowRoot && mo.observe(this.internals_.shadowRoot, {
+              attributeFilter: [dataTrigger],
+              childList: true,
+              subtree: true
+            });
+            return mo;
+          }
+          #appendTemplate(template2) {
+            if (this.internals_.shadowRoot) {
+              !this.internals_.shadowRoot.firstChild && this.internals_.shadowRoot.appendChild(
+                document.importNode(template2.content, true)
+              );
+              template2.remove();
+            }
+          }
+          #createTemplateObserver() {
+            const mo = new MutationObserver(() => {
+              const template2 = this.querySelector(
+                "template[shadowrootmode]"
+              );
+              if (template2) {
+                mo.disconnect();
+                this.#appendTemplate(template2);
+              }
+            });
+            mo.observe(this, { childList: true });
+            return mo;
+          }
+          $(target) {
+            if (this.internals_.shadowRoot) {
+              return [...this.internals_.shadowRoot.querySelectorAll(
+                `[${dataTarget}="${target}"]`
+              )].filter(
+                (el) => el.tagName === "SLOT" ? canUseSlot(el) : true
+              );
+            }
+            return [];
+          }
+        }
+      )
+    );
+  };
+  define["template"] = template(({
+    styles,
+    shadow,
+    light,
+    ...rest
+  }) => {
+    const stylesheet = styles && html`<style>${typeof styles === "string" ? styles : [...styles]}</style>`;
+    return html`
   <${tag} ${wire({ ...rest })}>
     <template
       shadowrootmode="${mode}"
       ${delegatesFocus && "shadowrootdelegatesfocus"}
     >
       ${stylesheet}
-      ${template2}
+      ${shadow}
     </template>
-    ${slots}
+    ${light}
   </${tag}>
   `;
-});
+  });
+  return define;
+};
 
 // libs/islandly/tokens.ts
 var tokens = (...objs) => {
@@ -830,36 +825,115 @@ var useWebWorker = ({
   };
 };
 
-// libs/islandly/insert-island.ts
-var insertIsland = ({ el, template: template2, position = "beforeend" }) => {
+// libs/islandly/render.ts
+var getAttributes = (node) => {
+  const attrs = node.attributes;
+  const length = attrs.length;
+  const map = /* @__PURE__ */ new Map();
+  for (let index = 0; index < length; index++) {
+    const attr = attrs[index];
+    map.set(attr.name, attr.value);
+  }
+  return map;
+};
+var diffAttributes = (currentNode, futureNode) => {
+  const futureAttributes = getAttributes(futureNode);
+  const currentAttributes = getAttributes(currentNode);
+  futureAttributes.forEach((value, key) => {
+    if (!currentAttributes.has(key))
+      return;
+    if (value === currentAttributes.get(key)) {
+      currentAttributes.delete(key);
+      return;
+    }
+    currentNode.setAttribute(key, value);
+  });
+  currentAttributes.forEach((_, key) => {
+    currentNode.removeAttribute(key);
+  });
+};
+var diff = (parent, future) => {
+  const current = Array.prototype.slice.call(parent.childNodes);
+  let count = current.length - future.length;
+  if (count > 0) {
+    for (; count > 0; count--) {
+      current[current.length - count].remove();
+    }
+  }
+  const length = future.length;
+  for (let index = 0; index < length; index++) {
+    const futureNode = future[index];
+    const currentNode = current[index];
+    if (!currentNode) {
+      parent.appendChild(futureNode.cloneNode(true));
+      continue;
+    }
+    const futureNodeType = futureNode.nodeType;
+    if (futureNodeType !== currentNode.nodeType) {
+      parent.replaceChild(
+        futureNode.cloneNode(true),
+        currentNode
+      );
+      continue;
+    }
+    if (futureNodeType === 3 || futureNodeType === 8) {
+      parent.replaceChild(
+        futureNode.cloneNode(true),
+        currentNode
+      );
+      continue;
+    }
+    diffAttributes(currentNode, futureNode);
+    const futureLength = futureNode.childNodes.length;
+    const currentLength = currentNode.childNodes.length;
+    if (currentLength > 0 && futureLength < 1) {
+      ;
+      currentNode.replaceChildren();
+      continue;
+    }
+    const futureList = Array.prototype.slice.call(
+      futureNode.childNodes
+    );
+    if (currentLength < 1 && futureLength > 0) {
+      const fragment = document.createDocumentFragment();
+      diff(fragment, futureList);
+      currentNode.appendChild(fragment);
+      continue;
+    }
+    if (futureLength > 0) {
+      diff(currentNode, futureList);
+    }
+  }
+};
+var render = (parent, template2, position) => {
+  const regex = /^<(thead|tbody|tfoot|tr|th|td)/i;
+  const wrapper = regex.test(template2) ? "table" : "div";
   const fragment = new DOMParser().parseFromString(
-    template2,
+    `<${wrapper}>${template2}</${wrapper}>`,
     "text/html",
     //@ts-ignore: new spec feature
     {
       includeShadowRoots: true
     }
   );
-  el?.insertAdjacentElement(
-    position,
-    //@ts-ignore: exist
-    fragment.body.firstChild
+  return position === "afterbegin" ? parent.prepend(...fragment.body.firstChild.childNodes) : position === "beforeend" ? parent.append(...fragment.body.firstChild.childNodes) : diff(
+    parent,
+    Array.prototype.slice.call(
+      fragment.body.firstChild.childNodes
+    )
   );
 };
 export {
-  IslandTemplate,
   bProgram,
   classNames,
   createIDB,
   css,
   cssVar,
-  dataTarget,
-  dataTrigger,
   html,
-  insertIsland,
   isle,
   loop,
   messenger,
+  render,
   sync,
   template,
   thread,
