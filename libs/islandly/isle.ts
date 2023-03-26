@@ -24,7 +24,8 @@ export const isle = (
     tag,
     ...bProgramOptions
   }: ISLElementOptions,
-  mixin: (base: ISLElementConstructor) => ISLElementConstructor,
+  mixin: (base: ISLElementConstructor) => ISLElementConstructor = (base) =>
+    class extends base {},
 ) => {
   const define = () => {
     if (customElements.get(tag)) {
@@ -40,6 +41,7 @@ export const isle = (
           #disconnect?: () => void
           internals_: ElementInternals
           #trigger: Trigger
+          plait?: (props: PlaitProps) => void | Promise<void>
 
           constructor() {
             super()
@@ -47,7 +49,6 @@ export const isle = (
             !this.internals_.shadowRoot &&
               this.attachShadow({ mode, delegatesFocus }) // no declarative shadowdom then connect one
           }
-          plait: (props: PlaitProps) => void | Promise<void>
           connectedCallback() {
             if (!this.internals_.shadowRoot?.firstChild) {
               const template = this.querySelector<HTMLTemplateElement>(
@@ -57,26 +58,28 @@ export const isle = (
                 ? this.#appendTemplate(template)
                 : (this.#templateObserver = this.#createTemplateObserver())
             }
-            this.internals_.shadowRoot && this.#delegateListeners( // just connected/upgraded then delegate listeners nodes with data-trigger attribute
-              this.internals_.shadowRoot.querySelectorAll<HTMLElement>(
-                `[${dataTrigger}]`,
-              ),
-            )
-            this.#shadowObserver = this.#createShadowObserver()
-            const { disconnect, trigger, ...rest } = useBehavioral(
-              {
+            if (this.plait) {
+              this.internals_.shadowRoot && this.#delegateListeners( // just connected/upgraded then delegate listeners nodes with data-trigger attribute
+                this.internals_.shadowRoot.querySelectorAll<HTMLElement>(
+                  `[${dataTrigger}]`,
+                ),
+              )
+              const { disconnect, trigger, ...rest } = useBehavioral(
+                {
+                  context: this,
+                  ...bProgramOptions,
+                },
+              )
+              this.plait({
+                $: this.$.bind(this),
                 context: this,
-                ...bProgramOptions,
-              },
-            )
-            this.plait({
-              $: this.$.bind(this),
-              context: this,
-              trigger,
-              ...rest,
-            })
-            this.#disconnect = disconnect
-            this.#trigger = trigger
+                trigger,
+                ...rest,
+              })
+              this.#shadowObserver = this.#createShadowObserver()
+              this.#disconnect = disconnect
+              this.#trigger = trigger
+            }
           }
           disconnectedCallback() {
             this.#templateObserver && this.#templateObserver.disconnect()

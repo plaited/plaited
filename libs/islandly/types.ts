@@ -67,7 +67,7 @@ export type PlaitProps = {
 } & ReturnType<typeof bProgram>
 
 export interface ISLElement extends HTMLElement {
-  plait(props: PlaitProps): void | Promise<void>
+  plait?(props: PlaitProps): void | Promise<void>
   connectedCallback?(): void
   attributeChangedCallback?(
     name: string,

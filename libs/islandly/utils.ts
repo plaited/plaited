@@ -17,8 +17,10 @@ export const getTriggerKey = (
   const el = e.currentTarget === context
     ? context
     // check if closest slot from the element that invoked the event is the instances slot
-    : e.composedPath().find((slot) => slot instanceof HTMLSlotElement) ===
-        context
+    : e.composedPath().find((slot) =>
+        ((slot as Element)?.tagName === 'SLOT') && slot ===
+          context
+      )
     ? context
     : undefined
 
