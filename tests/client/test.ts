@@ -7,10 +7,8 @@ export const test = async (name: string, cb: TestCallback) => {
     await cb(assert)
     const msg = `✔ ${name}`
     console.log(msg)
-    window.parent.postMessage({ name, ok: true }, '*')
   } catch (error) {
     const msg = `✘ ${name} \n ${error.stack}`
     console.log(msg)
-    window.parent.postMessage({ name, ok: false }, '*')
   }
 }

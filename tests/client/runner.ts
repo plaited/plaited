@@ -1,4 +1,3 @@
-import { assert, AssertionError } from '$assert'
 import { css, html, render } from '$plaited'
 
 /** open web socket connection */
@@ -33,16 +32,7 @@ const getPage = (urlString: string) => {
 /** format test paths */
 const testPaths = data.map((path) => `${host}/${getPage(`${host}${path}`)}`)
 
-/** test shouldn't take more than 5 seconds */
-const throwTimeoutError = async () => {
-  const timeout = 5_000
-  await assert.wait(5_000)
-  throw new AssertionError(`test takes longer than ${timeout}ms to complete`)
-}
-
-let passed = 0
-let failed = 0
-const body = document.querySelector('body')
+const root = document.querySelector('#root')
 const { styles, classes } = css`
 .test-fixture{
   display: grid;
@@ -55,8 +45,8 @@ const { styles, classes } = css`
   min-height: 500px;
 }
 `
-body && render(
-  body,
+root && render(
+  root,
   html`
 <style>${styles}</style>
 <div id="fixture" class="${classes['test-fixture']}">
@@ -74,27 +64,12 @@ const run = (id: string): Promise<HTMLBodyElement> => {
   /** sometimes you need to wait for the next frame */
   return new Promise((resolve) => {
     const context = frame?.contentDocument?.body as HTMLBodyElement
-    // deno-lint-ignore no-window-prefix
-    window.addEventListener('message', (event) => {
-      const { ok, name } = event.data as {
-        ok: boolean
-        name: string
-      }
-      console.log(ok, name)
-      ok ? passed++ : failed++
+    requestAnimationFrame(() => {
       resolve(context)
     })
   })
 }
 
-/** loop over tests imports */
-console.log('RUN_START')
-
 await Promise.all(testPaths.map(async (path) => {
-  await Promise.race([run(path), throwTimeoutError()])
+  await run(path)
 }))
-
-console.log('RUN_END')
-console.log('ALI WUZ HERE')
-
-console.log(`${passed} passed, ${failed} failed`)

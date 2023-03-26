@@ -59,7 +59,6 @@ export const ShadowIsland = isle(
             svg.remove()
           },
           ['add-svg']() {
-            console.log('add svg')
             const [zone] = $('zone')
             zone.insertAdjacentHTML(
               'beforeend',
