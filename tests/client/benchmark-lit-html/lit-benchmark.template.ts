@@ -1,13 +1,15 @@
 import { html } from '$plaited'
-import { Benchmark } from './benchmark.island.ts'
+// import { Benchmark } from './benchmark.island.ts'
 
-export const BenchmarkTemplate = Benchmark.template({
-  shadow: html`
+export const LitBenchmarkTemplate = html`
+<lit-benchmark-island>
+  <template shadowrootmode="open" shadowrootdelegatesfocus>
+    <link href="/css/currentStyle.css" rel="stylesheet" />
   <div class="container"> 
   <div class="jumbotron">
     <div class="row">
       <div class="col-md-6">
-        <h1>Plaited</h1>
+        <h1>lit templat</h1>
       </div>
       <div class="col-md-6">
         <div class="row">
@@ -40,8 +42,10 @@ export const BenchmarkTemplate = Benchmark.template({
       </div>
     </div>
   </div>
-  <table data-trigger="click->interact" class="table table-hover table-striped test-data" data-target="table">
+  <table class="table table-hover table-striped test-data">
+    <tbody data-trigger="click->interact" data-target="tbody"></tbody>
   </table>
   </div>
-  `,
-})
+  </template>
+</lit-benchmark-island>
+  `

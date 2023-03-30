@@ -1,4 +1,4 @@
-import { Routes, server } from '$server'
+import { getFileHandler, Routes, server } from '$server'
 import { toFileUrl } from '../../libs/deps.ts'
 import { setRoutes } from './set-routes.ts'
 
@@ -6,12 +6,20 @@ const client = `${Deno.cwd()}/tests/client`
 const importMap = toFileUrl(`${Deno.cwd()}/.vscode/import-map.json`)
 
 const dev = !Deno.env.has('TEST')
-
+const root = `${Deno.cwd()}/tests/assets`
 const routes: Routes = new Map()
 const { close, reloadClient } = await server({
   reload: dev,
   routes,
   port: 3000,
+  root,
+  middleware: (handler) => async (req, ctx) => {
+    const res = await getFileHandler({ assets: root, req })
+    if (res) {
+      return res
+    }
+    return await handler(req, ctx)
+  },
 })
 const getRoutes = () =>
   setRoutes({

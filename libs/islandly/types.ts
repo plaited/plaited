@@ -1,12 +1,13 @@
 import { bProgram, DevCallback, Strategy, Trigger } from '../behavioral/mod.ts'
 
 export type Primitive =
+  | void
+  | null
+  | undefined
   | number
   | string
   | boolean
-  | undefined
-  | null
-  | void
+  | bigint
 
 export type TemplateProps = {
   className?: string

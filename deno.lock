@@ -189,7 +189,16 @@
     "https://deno.land/x/ts_morph@17.0.1/common/ts_morph_common.d.ts": "ee7767b0c68b23c65bb607c94b6cb3512e8237fbcb7d1d8383a33235cde2c068",
     "https://deno.land/x/ts_morph@17.0.1/common/ts_morph_common.js": "49a79124b941ba2b35d81ac9eb90fc33c957b2640cdb97569c1941bac5a3bbdb",
     "https://deno.land/x/ts_morph@17.0.1/common/typescript.d.ts": "57e52a0882af4e835473dda27e4316cc31149866970210f9f79b940e916b7838",
-    "https://deno.land/x/ts_morph@17.0.1/common/typescript.js": "5dd669eb199ee2a539924c63a92e23d95df43dfe2fbe3a9d68c871648be1ad5e"
+    "https://deno.land/x/ts_morph@17.0.1/common/typescript.js": "5dd669eb199ee2a539924c63a92e23d95df43dfe2fbe3a9d68c871648be1ad5e",
+    "https://esm.sh/uhtml@3.1.0": "7cc926adb1733b84da1ca712ae7f9268108b7614e6c18122e244b5485f6f24d8",
+    "https://esm.sh/v113/@webreflection/mapset@1.0.1/deno/mapset.mjs": "991f770089d372572122681e172427303f10f893f4a000f0ec7d481e1461c892",
+    "https://esm.sh/v113/@webreflection/uparser@0.2.4/deno/uparser.mjs": "5511e8032e22231fe07b05b6a6de454ff0bac4223a85f8f38e4597a2de12beec",
+    "https://esm.sh/v113/@webreflection/uwire@1.2.1/deno/uwire.mjs": "9aa13679bcc4d1c7650717c4ba21d8dfc82f4696f9614d2b70d814ebb117d16a",
+    "https://esm.sh/v113/uarray@1.0.0/deno/uarray.mjs": "2a0b81e88639e327ef7cd3b5763b767c5249c9dd66d5f68f8ea9df1b294aa949",
+    "https://esm.sh/v113/udomdiff@1.1.0/deno/udomdiff.mjs": "e080feec90e48182c0eec95e2ee5689447b5e6e884d00aadaebc5d0e796aebf7",
+    "https://esm.sh/v113/uhandlers@0.7.0/deno/uhandlers.mjs": "07084270ce5ec30158d727dd54cb3950ad4b511d712227cfe7ef41b10b7bd0b9",
+    "https://esm.sh/v113/uhtml@3.1.0/deno/uhtml.mjs": "89bb625b30869c81b6f288694ffb6649a13554e51ab424f19f1962ec55e6227e",
+    "https://esm.sh/v113/uhtml@3.1.0/index.d.ts": "80c84c718c2a9a319f7cb86ce096d7a96c0294adedcfffaab5864237db0a249a"
   },
   "npm": {
     "specifiers": {

@@ -1,11 +1,9 @@
-import { html, isle, PlaitProps, render, template, useStore } from '$plaited'
-import { logger } from '../logger.ts'
-import { connect } from './comms.ts'
+import { html, isle, PlaitProps, render, useStore } from '$plaited'
 
-const TableBodyTemplate = template((
+const TableBodyTemplate = (
   { data }: { data: { id: number; label: string; selected: boolean }[] },
 ) =>
-  html`    <tbody data-target="tbody">${
+  html`${
     data.map((item: { id: number; label: string; selected: boolean }) => {
       return html`
     <tr id=${item.id} class="${item.selected && 'danger'}">
@@ -21,11 +19,10 @@ const TableBodyTemplate = template((
       <td class="col-md-6"></td>
     </tr>`
     })
-  }</tbody>`
-)
+  }`
 
-export const Benchmark = isle(
-  { tag: 'benchmark-island', dev: logger, connect },
+export const TaggedBenchmark = isle(
+  { tag: 'tagged-benchmark-island' },
   (base) =>
     class extends base {
       plait({ feedback, addThreads, loop, sync, $, trigger }: PlaitProps) {
@@ -91,20 +88,20 @@ export const Benchmark = isle(
         const random = (max: number) => {
           return Math.round(Math.random() * 1000) % max
         }
-        const buildData = (count: number) =>
-          setData((data) => {
-            let did = data.at(-1)?.id || 0
-            for (let i = 0; i < count; i++) {
-              data.push({
-                id: did++,
-                label: `${adjectives[random(adjectives.length)]} ${
-                  colours[random(colours.length)]
-                } ${nouns[random(nouns.length)]}`,
-                selected: false,
-              })
-            }
-            return [...data]
-          })
+        let did = getData().at(-1)?.id || 1
+        const buildData = (count: number) => {
+          const data = []
+          for (let i = 0; i < count; i++) {
+            data.push({
+              id: did++,
+              label: `${adjectives[random(adjectives.length)]} ${
+                colours[random(colours.length)]
+              } ${nouns[random(nouns.length)]}`,
+              selected: false,
+            })
+          }
+          return data
+        }
         addThreads({
           renderOn: loop([
             sync({
@@ -124,19 +121,18 @@ export const Benchmark = isle(
         })
         feedback({
           add() {
-            buildData(1000)
+            setData((old) => old.concat(buildData(1000)))
           },
           run() {
-            buildData(1000)
+            setData(buildData(1000))
           },
           runLots() {
-            buildData(10000)
+            setData(buildData(10000))
           },
           clear() {
             setData([])
           },
           interact(e: MouseEvent) {
-            console.log(e.composedPath())
             const td = (e.target as HTMLElement)?.closest(
               'td',
             ) as HTMLTableCellElement
@@ -153,7 +149,7 @@ export const Benchmark = isle(
             setData((data) => {
               const idx = data.findIndex((d) => d.id === id)
               data.splice(idx, 1)
-              return [...data]
+              return data
             })
           },
           select({ id }: { id: number }) {
@@ -164,9 +160,8 @@ export const Benchmark = isle(
               }
               const next = data.findIndex((d) => d.id === id)
               setSelected(next)
-              console.log(next)
               data[next].selected = true
-              return [...data]
+              return data
             })
           },
           swapRows() {
@@ -176,7 +171,7 @@ export const Benchmark = isle(
                 data[1] = data[998]
                 data[998] = tmp
               }
-              return [...data]
+              return data
             })
           },
           update() {
@@ -184,13 +179,18 @@ export const Benchmark = isle(
               for (let i = 0; i < data.length; i += 10) {
                 data[i].label += ' !!!'
               }
-              return [...data]
+              return data
             })
           },
           render() {
             const data = getData()
-            const [table] = $('table')
-            render(table, TableBodyTemplate({ data }))
+            const [tbody] = $('tbody')
+            console.log('hit')
+            render(tbody, TableBodyTemplate({ data }))
+
+            // table.innerHTML = TableBodyTemplate({ data })
+            // console.log(TableBodyTemplate({ data }))
+            // render(TableBodyTemplate({ data }), table as HTMLElement)
           },
         })
       }

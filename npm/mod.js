@@ -265,6 +265,11 @@ var classNames = (...classes) => classes.filter(Boolean).join(" ");
 // libs/utils/true-type-of.ts
 var trueTypeOf = (obj) => Object.prototype.toString.call(obj).slice(8, -1).toLowerCase();
 
+// libs/utils/can-use-dom.ts
+var canUseDOM = () => {
+  return !!(typeof window !== "undefined" && window.document && window.document.createElement);
+};
+
 // libs/utils/escape-unescape.ts
 var reEscape = /[&<>'"]/g;
 var escapeObj = {
@@ -433,13 +438,12 @@ var delegatedListener = Object.freeze({
 // libs/islandly/html.ts
 var html = (strings, ...expressions) => {
   const result = taggedWithPrimitives(strings, ...expressions);
-  const tpl = result.trim().replace(/[\s\n]+>/g, ">").replace(
+  return canUseDOM() ? result : result.trim().replace(/[\s\n]+>/g, ">").replace(
     /(<.*?)(?:\s+)(\w)|>\s+</g,
     (_, p1, p2) => p1 ? [p1, p2].join(" ") : "><"
   ).replace(/(>)(?:\s)(\S)|(\S)(?:\s)(<)/g, (_, p1, p2, p3, p4) => {
     return p1 ? [p1, p2].join("") : [p3, p4].join("");
   });
-  return tpl;
 };
 
 // libs/islandly/wire.ts
@@ -788,7 +792,7 @@ var useStore = (initialStore) => {
   let store = initialStore;
   const get = () => store;
   const set = (newStore) => {
-    store = trueTypeOf(newStore) === "function" ? newStore(store) : newStore;
+    store = trueTypeOf(newStore) === "function" ? newStore(structuredClone(store)) : newStore;
   };
   return Object.freeze([
     get,
@@ -826,102 +830,18 @@ var useWebWorker = ({
 };
 
 // libs/islandly/render.ts
-var getAttributes = (node) => {
-  const attrs = node.attributes;
-  const length = attrs.length;
-  const map = /* @__PURE__ */ new Map();
-  for (let index = 0; index < length; index++) {
-    const attr = attrs[index];
-    map.set(attr.name, attr.value);
-  }
-  return map;
-};
-var diffAttributes = (currentNode, futureNode) => {
-  const futureAttributes = getAttributes(futureNode);
-  const currentAttributes = getAttributes(currentNode);
-  futureAttributes.forEach((value, key) => {
-    if (!currentAttributes.has(key))
-      return;
-    if (value === currentAttributes.get(key)) {
-      currentAttributes.delete(key);
-      return;
-    }
-    currentNode.setAttribute(key, value);
-  });
-  currentAttributes.forEach((_, key) => {
-    currentNode.removeAttribute(key);
-  });
-};
-var diff = (parent, future) => {
-  const current = Array.prototype.slice.call(parent.childNodes);
-  let count = current.length - future.length;
-  if (count > 0) {
-    for (; count > 0; count--) {
-      current[current.length - count].remove();
-    }
-  }
-  const length = future.length;
-  for (let index = 0; index < length; index++) {
-    const futureNode = future[index];
-    const currentNode = current[index];
-    if (!currentNode) {
-      parent.appendChild(futureNode.cloneNode(true));
-      continue;
-    }
-    const futureNodeType = futureNode.nodeType;
-    if (futureNodeType !== currentNode.nodeType) {
-      parent.replaceChild(
-        futureNode.cloneNode(true),
-        currentNode
-      );
-      continue;
-    }
-    if (futureNodeType === 3 || futureNodeType === 8) {
-      parent.replaceChild(
-        futureNode.cloneNode(true),
-        currentNode
-      );
-      continue;
-    }
-    diffAttributes(currentNode, futureNode);
-    const futureLength = futureNode.childNodes.length;
-    const currentLength = currentNode.childNodes.length;
-    if (currentLength > 0 && futureLength < 1) {
-      ;
-      currentNode.replaceChildren();
-      continue;
-    }
-    const futureList = Array.prototype.slice.call(
-      futureNode.childNodes
-    );
-    if (currentLength < 1 && futureLength > 0) {
-      const fragment = document.createDocumentFragment();
-      diff(fragment, futureList);
-      currentNode.appendChild(fragment);
-      continue;
-    }
-    if (futureLength > 0) {
-      diff(currentNode, futureList);
-    }
-  }
-};
 var render = (parent, template2, position) => {
-  const regex = /^<(thead|tbody|tfoot|tr|th|td)/i;
-  const wrapper = regex.test(template2) ? "table" : "div";
-  const fragment = new DOMParser().parseFromString(
-    `<${wrapper}>${template2}</${wrapper}>`,
-    "text/html",
-    //@ts-ignore: new spec feature
-    {
-      includeShadowRoots: true
-    }
-  );
-  return position === "afterbegin" ? parent.prepend(...fragment.body.firstChild.childNodes) : position === "beforeend" ? parent.append(...fragment.body.firstChild.childNodes) : diff(
-    parent,
-    Array.prototype.slice.call(
-      fragment.body.firstChild.childNodes
-    )
-  );
+  const tpl = document.createElement("template");
+  tpl.innerHTML = template2;
+  const clone = tpl.content.cloneNode(true);
+  if (position === "afterbegin") {
+    return parent.prepend(clone);
+  }
+  if (position === "beforeend") {
+    return parent.append(clone);
+  }
+  parent.replaceChildren();
+  return parent.append(clone);
 };
 export {
   bProgram,

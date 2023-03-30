@@ -3,7 +3,7 @@ import { compress, extname, serveDir } from '../deps.ts'
 export const getFileHandler = async ({
   assets,
   req,
-  exclude = ['js'],
+  exclude = ['js', 'map'],
 }: {
   assets: string
   req: Request
