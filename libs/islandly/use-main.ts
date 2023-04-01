@@ -13,7 +13,7 @@ export const useMain = ({
   const eventHandler = ({ data }: { data: TriggerArgs }) => {
     trigger(data)
   }
-  const send = (recipient: string, detail: TriggerArgs) => {
+  const send = (recipient: string, detail: TriggerArgs) ={
     context.postMessage({
       recipient,
       detail,
