@@ -1,4 +1,4 @@
-import { test } from '../test.ts'
+import { test } from '$rite'
 import { css, html, isle, PlaitProps, render } from '$plaited'
 const { classes, styles } = css`.row {
   display: flex;

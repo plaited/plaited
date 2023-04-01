@@ -15,12 +15,13 @@ out production ready code?
 A set of components and patterns for rapidly coding and refining web application
 web applications as specifications (requirements) change and evolve.
 
-## Assert module
+## Rite module
 
-`https://deno.land/x/plaited@0.1.0-rc/mod.ts`
+`https://deno.land/x/plaited@0.1.0-rc/rite.ts`
 
-A small assertion library for running test in the browser with useful chained
-helpers
+A small test library for running test in the browser.
+
+It includes a assert utility with usefull chained helpers inth
 [Eric Elliott's RITE pattern](https://medium.com/javascript-scene/what-every-unit-test-needs-f6cd34d9836d)
 
 Simple, readable, helpful unit tests.
@@ -29,6 +30,8 @@ Simple, readable, helpful unit tests.
 - Isolated/Integrated
 - Thorough
 - Explicit
+
+It also includes a test runner exported as test. That will report pass fails.
 
 ## CLI module
 

@@ -1,8 +1,8 @@
 // deno-lint-ignore-file no-extra-semi
-type DomNode =
-  | Element
-  | Text
-  | Comment
+// type DomNode =
+//   | Element
+//   | Text
+//   | Comment
 
 // /* (c) Andrea Giammarchi - ISC */
 // // @see https://github.com/WebReflection/udomdiff
@@ -138,9 +138,9 @@ type DomNode =
 // }
 
 type DiffNode =
-//   | Element
-//   | Text
-//   | Comment
+  | Element
+  | Text
+  | Comment
 
 // const getAttributes = (node: Element) => {
 //   const attrs = node.attributes

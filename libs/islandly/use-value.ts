@@ -33,16 +33,16 @@ export class Messenger<T extends Primitive> {
   }
 }
 
-interface UseValueGetter<T extends Primitive> {
+export interface UseValueGetter<T extends Primitive = Primitive> {
   (): T
-  publisher: Messenger<T>
+  messenger: Messenger<T>
 }
 
-interface UseValueSetter<T extends Primitive> {
+interface UseValueSetter<T extends Primitive = Primitive> {
   (value: T): void
 }
 
-export const useValue = <T extends Primitive>(initialValue: T) => {
+export const useValue = <T extends Primitive = Primitive>(initialValue: T) => {
   let value = initialValue
   const _publisher = publisher<T>()
   const get = () => value
@@ -50,7 +50,7 @@ export const useValue = <T extends Primitive>(initialValue: T) => {
     value = newValue
     _publisher.subscribe(() => newValue)
   }
-  get.publisher = new Messenger<T>(_publisher)
+  get.messenger = new Messenger<T>(_publisher)
 
   return Object.freeze<[UseValueGetter<T>, UseValueSetter<T>]>([
     get,

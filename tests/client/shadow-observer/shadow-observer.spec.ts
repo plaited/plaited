@@ -1,4 +1,4 @@
-import { test } from '../test.ts'
+import { test } from '$rite'
 
 test('shadow observer test', async (t) => {
   let button = await t.findByAttribute(

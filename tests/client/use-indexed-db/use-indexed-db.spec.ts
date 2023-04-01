@@ -1,4 +1,4 @@
-import { test } from '../test.ts'
+import { test } from '$rite'
 import { useIndexedDB } from '$plaited'
 
 test('useIndexedDB', async (t) => {

@@ -1,6 +1,6 @@
 import { css, html, isle, messenger, PlaitProps, render } from '$plaited'
 export const { connect, send } = messenger()
-import { test } from '../test.ts'
+import { test } from '$rite'
 const { classes, styles } = css`.row {
   display: flex;
   gap: 10px;

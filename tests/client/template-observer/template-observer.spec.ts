@@ -1,5 +1,5 @@
 import { html, isle } from '$plaited'
-import { test } from '../test.ts'
+import { test } from '$rite'
 
 test('template observer', async (t) => {
   const wrapper = document.getElementById('root') as HTMLDetailsElement

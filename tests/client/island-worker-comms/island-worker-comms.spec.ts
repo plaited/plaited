@@ -1,5 +1,5 @@
 import { symbols } from '../constants.ts'
-import { test } from '../test.ts'
+import { test } from '$rite'
 
 test('island worker comms test', async (t) => {
   const island = await t.findByAttribute('data-target', 'calculator')

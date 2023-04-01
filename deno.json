@@ -13,7 +13,9 @@
       "dom",
       "dom.iterable",
       "deno.ns"
-    ]
+    ],
+    "jsx": "react-jsx",
+    "jsxImportSource": "plaited"
   },
   "lint": {
     "files": {

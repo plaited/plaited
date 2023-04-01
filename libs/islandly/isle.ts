@@ -1,19 +1,54 @@
 /// <reference lib="dom.iterable" />
 import { dataTarget, dataTrigger } from './constants.ts'
-import { canUseSlot, getTriggerKey, matchAllEvents } from './utils.ts'
 import { Trigger } from '../behavioral/mod.ts'
 import { useBehavioral } from './use-behavioral.ts'
 import {
   ISLElement,
   ISLElementConstructor,
   ISLElementOptions,
-  IsleTemplateProps,
   PlaitProps,
+  Primitive,
 } from './types.ts'
 import { delegatedListener } from './delegated-listener.ts'
-import { wire } from './wire.ts'
-import { html } from './html.ts'
-import { template } from './template.ts'
+import { createTemplate } from './create-template.ts'
+import { sugar, sugarForEach } from './sugar.ts'
+import { SugaredElement } from './sugar.ts'
+
+// It takes the value of a data-target attribute and return all the events happening in it. minus the method identifier
+// so iof the event was data-target="click->doSomething" it would return ["click"]
+export const matchAllEvents = (str: string) => {
+  const regexp = /(^\w+|(?:\s)\w+)(?:->)/g
+  return [...str.matchAll(regexp)].flatMap(([, event]) => event)
+}
+
+// returns the request/action name to connect our event binding to data-target="click->doSomething" it would return "doSomething"
+// note triggers are separated by spaces in the attribute data-target="click->doSomething focus->somethingElse"
+export const getTriggerKey = (
+  e: Event,
+  context: HTMLElement | SVGElement,
+): string => {
+  const el = e.currentTarget === context
+    ? context
+    // check if closest slot from the element that invoked the event is the instances slot
+    : e.composedPath().find((slot) =>
+        ((slot as Element)?.tagName === 'SLOT') && slot ===
+          context
+      )
+    ? context
+    : undefined
+
+  if (!el) return ''
+  const pre = `${e.type}->`
+  const trigger = el.dataset.trigger ?? ''
+  const key = trigger.trim().split(/\s+/).find((str: string) =>
+    str.includes(pre)
+  )
+  return key ? key.replace(pre, '') : ''
+}
+
+// We only support binding and querying named slots that are not also nested slots
+export const canUseSlot = (node: HTMLSlotElement) =>
+  !node.hasAttribute('slot') && node.hasAttribute('name')
 /**
  * A typescript function for instantiating Plaited Island Elements
  */
@@ -40,7 +75,7 @@ export const isle = (
           #templateObserver?: MutationObserver
           #disconnect?: () => void
           internals_: ElementInternals
-          #trigger: Trigger
+          trigger: Trigger
           plait?: (props: PlaitProps) => void | Promise<void>
 
           constructor() {
@@ -78,14 +113,14 @@ export const isle = (
               })
               this.#shadowObserver = this.#createShadowObserver()
               this.#disconnect = disconnect
-              this.#trigger = trigger
+              this.trigger = trigger
             }
           }
           disconnectedCallback() {
             this.#templateObserver && this.#templateObserver.disconnect()
             this.#shadowObserver && this.#shadowObserver.disconnect()
             if (this.#disconnect) {
-              this.#trigger({
+              this.trigger({
                 type: `disconnected->${this.id || this.tagName.toLowerCase()}`,
               })
               this.#disconnect()
@@ -110,7 +145,7 @@ export const isle = (
                     )
                     triggerKey
                       /** if key is present in `data-trigger` trigger event on instance's bProgram */
-                      ? this.#trigger<Event>({
+                      ? this.trigger<Event>({
                         type: triggerKey,
                         detail: event,
                       })
@@ -178,40 +213,36 @@ export const isle = (
             mo.observe(this, { childList: true })
             return mo
           }
-          $<T extends (HTMLElement | SVGElement)>(target: string): T[] {
+          $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+            target: string,
+          ): SugaredElement<T>[] {
+            const elements: SugaredElement<T>[] = []
             if (this.internals_.shadowRoot) {
-              return [...this.internals_.shadowRoot.querySelectorAll<T>(
+              this.internals_.shadowRoot.querySelectorAll<T>(
                 `[${dataTarget}="${target}"]`,
-              )].filter((el) =>
-                el.tagName === 'SLOT' ? canUseSlot(el as HTMLSlotElement) : true
-              )
+              ).forEach((el) => {
+                if (el.tagName === 'SLOT') {
+                  if (canUseSlot(el as HTMLSlotElement)) {
+                    Object.assign(el, sugar)
+                    elements.push(el as SugaredElement<T>)
+                  }
+                  return
+                }
+                Object.assign(el, sugar)
+                elements.push(el as SugaredElement<T>)
+              })
             }
-            return []
+            Object.assign(elements, sugarForEach)
+            return elements
           }
         },
       ),
     )
   }
-  define['template'] = template<IsleTemplateProps>(({
-    styles,
-    shadow,
-    light,
-    ...rest
-  }) => {
-    const stylesheet = styles &&
-      html`<style>${typeof styles === 'string' ? styles : [...styles]}</style>`
-    return html`
-  <${tag} ${wire({ ...rest })}>
-    <template
-      shadowrootmode="${mode}"
-      ${delegatesFocus && 'shadowrootdelegatesfocus'}
-    >
-      ${stylesheet}
-      ${shadow}
-    </template>
-    ${light}
-  </${tag}>
-  `
-  })
+  define['template'] = <
+    T extends Record<string, any> = Record<string, any>,
+  >(
+    props: T,
+  ) => createTemplate<T>(tag, props)
   return define
 }

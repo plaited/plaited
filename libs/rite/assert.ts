@@ -51,6 +51,13 @@ export const assert: Assertion = (param) => {
   } = args
   if (!deepEqual(actual, expected)) {
     const message = `Given ${given}: should ${should}`
+    console.error(
+      '\x1b[31m',
+      `--actual:${actual}`,
+      '/n',
+      '\x1b[32m',
+      `++expected: ${expected}`,
+    )
     throw new AssertionError(message)
   }
 }

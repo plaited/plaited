@@ -3,9 +3,10 @@
     "THIS FILE EXISTS ONLY FOR VSCODE! IT IS NOT USED AT RUNTIME": {}
   },
   "imports": {
-    "$assert": "../assert.ts",
     "$plaited": "../mod.ts",
+    "$rite": "../rite.ts",
     "$server": "../server.ts",
-    "$utils": "../utils.ts"
+    "$utils": "../utils.ts",
+    "plaited/jsx-runtime": "../jsx-runtime.ts"
   }
 }
