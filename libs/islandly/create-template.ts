@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import { canUseDOM, escape, trueTypeOf } from '../utils/mod.ts'
 import { Primitive } from './types.ts'
 import {

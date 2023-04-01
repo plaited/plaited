@@ -7,7 +7,6 @@ import {
   ISLElementConstructor,
   ISLElementOptions,
   PlaitProps,
-  Primitive,
 } from './types.ts'
 import { delegatedListener } from './delegated-listener.ts'
 import { createTemplate } from './create-template.ts'
@@ -240,6 +239,7 @@ export const isle = (
     )
   }
   define['template'] = <
+    // deno-lint-ignore no-explicit-any
     T extends Record<string, any> = Record<string, any>,
   >(
     props: T,
