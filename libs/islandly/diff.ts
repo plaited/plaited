@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-extra-semi
 // // deno-lint-ignore-file no-extra-semi
 type DomNode =
   | Element

@@ -1,4 +1,4 @@
-import { Template, TemplateProps } from './types.ts'
+import { BaseAttrs, PlaitedElement, Template } from './create-template.ts'
 
 const shallowCompare = (
   obj1: Record<string, unknown>,
@@ -13,18 +13,19 @@ const shallowCompare = (
  * In this mode we constrain arguments to a single props object that extends TemplateProps
  * We also do a basic shallow comparison on the object to cache function result.
  */
-export const template = <Props extends TemplateProps = TemplateProps>(
-  resultFn: (this: unknown, props: Props & TemplateProps) => string,
-): Template<Props> => {
+// deno-lint-ignore no-explicit-any
+export const memo = <T extends Record<string, any> = Record<string, any>>(
+  resultFn: PlaitedElement<T>,
+): PlaitedElement<T> => {
   let cache: {
     lastThis: ThisParameterType<typeof resultFn>
-    lastProps: Props & TemplateProps
+    lastProps: T & BaseAttrs
     lastResult: ReturnType<typeof resultFn>
   } | null = null
   function tpl(
     this: ThisParameterType<typeof resultFn>,
     props: Parameters<typeof resultFn>[0],
-  ): string {
+  ): Template {
     if (
       cache && cache.lastThis === this && shallowCompare(props, cache.lastProps)
     ) {
@@ -38,6 +39,6 @@ export const template = <Props extends TemplateProps = TemplateProps>(
     }
     return lastResult
   }
-  tpl.styles = new Set<string>()
+  // tpl.styles = new Set<string>()
   return tpl
 }

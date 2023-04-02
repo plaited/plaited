@@ -19,7 +19,7 @@ export type PlaitedElement<
 
 type Children = (string | Template)[] | (string | Template)
 
-type BaseAttrs = {
+export type BaseAttrs = {
   class?: never
   className?: string
   children?: Children
@@ -120,7 +120,7 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
      * throw on attempts to provide `on` attributes
      */
     if (key.startsWith('on')) {
-      throw new Error('Attributes starting with \'on\' are not allowed.')
+      throw new Error(`Event handler attributes are not allowed:  [${key}]`)
     }
     if (!primitives.has(trueTypeOf(attributes[key]))) {
       throw new Error(
@@ -231,6 +231,16 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
 
 export { createTemplate as h }
 
-export function Fragment(attrs: Attrs) {
-  return attrs.children
+export function Fragment({ children }: Attrs) {
+  children = children && Array.isArray(children)
+    ? children
+    : children
+    ? [children]
+    : []
+  return {
+    template: children.map((child) =>
+      typeof child === 'string' ? child : child.template
+    ).join(' '),
+    slot: children.some((child) => typeof child === 'object' && child.slot),
+  }
 }
