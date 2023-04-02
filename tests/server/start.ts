@@ -1,6 +1,6 @@
 import { getFileHandler, Routes, server } from '$server'
 import { toFileUrl } from '../../libs/deps.ts'
-import { setRoutes } from './set-routes.ts'
+import { setRoutes } from './set-routes.tsx'
 
 const client = `${Deno.cwd()}/tests/client`
 const importMap = toFileUrl(`${Deno.cwd()}/.vscode/import-map.json`)

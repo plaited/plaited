@@ -1,28 +1,38 @@
-import { PlaitedElement } from './create-template.ts'
+import { Template } from './create-template.ts'
+
 /**
  * Inspired by blingblingjs
  * (c) Adam Argyle - MIT
  * {@see https://github.com/argyleink/blingblingjs}
  */
+
+const cache = new WeakMap<
+  HTMLElement | SVGElement,
+  NodeListOf<ChildNode> | ChildNode[]
+>()
+
 export const sugar = {
-  render(...templates: PlaitedElement[]) {
+  render(template: Template, position?: 'afterbegin' | 'beforeend') {
     const element = this as unknown as HTMLElement | SVGElement
     const tpl = document.createElement('template')
-    tpl.content.append(
-      ...templates.map((template) => template() as HTMLElement | SVGElement),
-    )
-    const future = tpl.content.cloneNode(true)
-    element.replaceChildren(future)
-    return element
-  },
-  insert(position: 'afterbegin' | 'beforeend', ...templates: PlaitedElement[]) {
-    const element = this as unknown as HTMLElement | SVGElement
-    const tpl = document.createElement('template')
-    tpl.content.append(
-      ...templates.map((template) => template() as HTMLElement | SVGElement),
-    )
-    const future = tpl.content.cloneNode(true)
-    position === 'afterbegin' ? element.prepend(future) : element.append(future)
+    tpl.insertAdjacentHTML('afterbegin', template.template)
+    let future: NodeListOf<ChildNode> | ChildNode[] =
+      tpl.content.cloneNode(true).childNodes
+    const past = cache.get(element) || []
+    if (position === 'afterbegin') {
+      future = [...future, ...past]
+      cache.set(element, future)
+      element.replaceChildren(...future)
+      return element
+    }
+    if (position === 'beforeend') {
+      future = [...future, ...past]
+      cache.set(element, [...past, ...future])
+      element.replaceChildren(...future)
+      return element
+    }
+    cache.set(element, future)
+    element.replaceChildren(...future)
     return element
   },
   attr(attr: string, val?: string) {
@@ -42,29 +52,11 @@ export type SugaredElement<
 > = T & typeof sugar
 
 export const sugarForEach = {
-  render(...templates: PlaitedElement[]) {
+  render(template: Template, position?: 'afterbegin' | 'beforeend') {
     const elements = this as unknown as SugaredElement[]
-    const tpl = document.createElement('template')
-    tpl.content.append(
-      ...templates.map((template) => template() as HTMLElement | SVGElement),
-    )
-    const future = tpl.content.cloneNode(true)
-    elements.forEach(($el) => $el.replaceChildren(future))
+    elements.forEach(($el) => $el.render(template, position))
     return elements
   },
-  insert(position: 'afterbegin' | 'beforeend', ...templates: PlaitedElement[]) {
-    const elements = this as unknown as SugaredElement[]
-    const tpl = document.createElement('template')
-    tpl.content.append(
-      ...templates.map((template) => template() as HTMLElement | SVGElement),
-    )
-    const future = tpl.content.cloneNode(true)
-    elements.forEach(($el) =>
-      position === 'afterbegin' ? $el.prepend(future) : $el.append(future)
-    )
-    return elements
-  },
-
   attr(attrs: string | Record<string, string>, val?: string) {
     const elements = this as unknown as SugaredElement[]
     if (typeof attrs === 'string') {

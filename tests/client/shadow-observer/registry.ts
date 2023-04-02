@@ -1,2 +1,2 @@
-import { ShadowIsland } from './shadow.island.ts'
+import { ShadowIsland } from './shadow.island.tsx'
 ShadowIsland()

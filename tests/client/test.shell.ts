@@ -1,6 +1,6 @@
-import { html, isle, template } from '$plaited'
+import { isle } from '$plaited'
 import { PlaitProps } from '../../libs/islandly/types.ts'
-import { classes, styles } from './test.styles.ts'
+import { classes } from './test.styles.ts'
 export const TestShell = isle(
   { tag: 'test-shell' },
   (base) =>
@@ -22,28 +22,4 @@ export const TestShell = isle(
     },
 )
 
-export const TestShellTemplate = (light: string[]) =>
-  TestShell.template({
-    styles,
-    shadow: html`<div class="${classes.shell}">
-      <nav class="${classes.nav}">
-        <slot name="test-links" data-trigger="click->update"></slot>
-      </nav>
-      <main data-target="main" class="${classes.main}"></main>
-    </div>`,
-    light,
-  })
-
 export const NavItem = isle({ tag: 'nav-item' })
-
-export const NavItemTemplate = template<{ name: string; path: string }>((
-  { name, path },
-) =>
-  NavItem.template({
-    slot: 'test-links',
-    styles,
-    shadow: html`<li class="${classes.item}">
-  <button class="${classes['nav-button']}" value="${path}">${name}</button>
-</li>`,
-  })
-)

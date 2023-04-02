@@ -1,8 +1,8 @@
 import { assertSnapshot } from '../../dev-deps.ts'
 import { isle, ssr } from '../mod.ts'
 
-Deno.test('Island.template()', (t) => {
-  const Island = isle({ tag: 'z-el' }, (base) => class extends base {})
+const Island = isle({ tag: 'z-el' }, (base) => class extends base {})
+Deno.test('Island.template: shadow only', (t) => {
   assertSnapshot(
     t,
     ssr(
@@ -12,8 +12,9 @@ Deno.test('Island.template()', (t) => {
         </div>
       </Island.template>,
     ),
-    'shadow only',
   )
+})
+Deno.test('Island.template: shadow and id', (t) => {
   assertSnapshot(
     t,
     ssr(
@@ -23,8 +24,9 @@ Deno.test('Island.template()', (t) => {
         </div>
       </Island.template>,
     ),
-    'shadow and id',
   )
+})
+Deno.test('Island.template: data-target, data-trigger, tag, shadow, and id', (t) => {
   assertSnapshot(
     t,
     ssr(
@@ -40,19 +42,21 @@ Deno.test('Island.template()', (t) => {
         </div>
       </Island.template>,
     ),
-    'data-target, data-trigger, tag, shadow, and id',
   )
+})
+Deno.test('Island.template: shadow, and mode closed', (t) => {
   assertSnapshot(
     t,
     ssr(
-      <Island.template>
-        <div shadowRootMode='closed'>
+      <Island.template shadowRootMode='closed'>
+        <div>
           <h1>header</h1>
         </div>
       </Island.template>,
     ),
-    'shadow, and mode closed',
   )
+})
+Deno.test('Island.template: shadow, and slots', (t) => {
   assertSnapshot(
     t,
     ssr(
@@ -64,8 +68,9 @@ Deno.test('Island.template()', (t) => {
         <div slot='slot'>slotted</div>
       </Island.template>,
     ),
-    'shadow, and slots',
   )
+})
+Deno.test('Island.template: styles string', (t) => {
   assertSnapshot(
     t,
     ssr(
@@ -75,8 +80,9 @@ Deno.test('Island.template()', (t) => {
         </div>
       </Island.template>,
     ),
-    'styles string',
   )
+})
+Deno.test('Island.template: styles as set ', (t) => {
   assertSnapshot(
     t,
     ssr(
@@ -88,6 +94,5 @@ Deno.test('Island.template()', (t) => {
         </div>
       </Island.template>,
     ),
-    'styles as set ',
   )
 })

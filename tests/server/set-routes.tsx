@@ -1,10 +1,11 @@
 import { bundler } from './bundler.ts'
 import { mimeTypes, Routes } from '$server'
+import { PlaitedElement, ssr } from '$plaited'
 import { walk } from '../../libs/dev-deps.ts'
 import { compress, startCase, toFileUrl } from '../../libs/deps.ts'
-import { HomeTemplate } from './home.template.ts'
-import { NavItemTemplate, TestShellTemplate } from '../client/test.shell.ts'
-import { TestPageTemplate } from './test.template.ts'
+import { HomeTemplate } from './home.template.tsx'
+import { NavItemTemplate, TestShellTemplate } from './test-shell.template.tsx'
+import { TestPageTemplate } from './test.template.tsx'
 
 export const setRoutes = async ({
   dev,
@@ -91,25 +92,27 @@ export const setRoutes = async ({
       )
       const { absolute } = serverEntries.find(({ relative }) =>
         relative.startsWith(dir) &&
-        relative.endsWith('template.ts')
+        relative.endsWith('template.tsx')
       ) ?? {}
 
-      let body = ''
+      const body: PlaitedElement[] = []
 
       if (absolute) {
         const modules = await import(absolute)
         for (const mod in modules) {
-          body += modules[mod]
+          body.push(modules[mod])
         }
       }
       routes.set(dir, () =>
         new Response(
-          TestPageTemplate({
-            title: name,
-            registry,
-            body,
-            tests: entry,
-          }),
+          ssr(
+            <TestPageTemplate
+              title={name}
+              registry={registry}
+              body={body}
+              tests={entry}
+            />,
+          ),
           {
             headers: { 'Content-Type': 'text/html' },
           },
@@ -134,10 +137,14 @@ export const setRoutes = async ({
 
   routes.set('/', () =>
     new Response(
-      HomeTemplate(
-        TestShellTemplate(
-          testEntries.map(({ path, name }) => NavItemTemplate({ name, path })),
-        ),
+      ssr(
+        <HomeTemplate>
+          <TestShellTemplate>
+            {testEntries.map(({ path, name }) => (
+              <NavItemTemplate name={name} path={path} />
+            ))}
+          </TestShellTemplate>
+        </HomeTemplate>,
       ),
       {
         headers: { 'Content-Type': 'text/html' },
