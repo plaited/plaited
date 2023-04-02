@@ -1,5 +1,5 @@
-import { html, isle, PlaitProps, render } from '$plaited'
-import { svg } from './noun-braids-2633610.ts'
+import { isle, PlaitProps, render } from '$plaited'
+import { SVG } from './noun-braids-2633610.tsx'
 import { classes, styles } from './shadow.styles.ts'
 
 export const ShadowIsland = isle(
@@ -26,22 +26,19 @@ export const ShadowIsland = isle(
         feedback({
           addSubIsland() {
             const [zone] = $('zone')
-            const sub = isle({
+            const Sub = isle({
               tag: 'sub-island',
             }, (base) => class extends base {})
-            const subTemplate = sub.template({
-              styles,
-              shadow: html`<h3 class="${
-                classes['sub-island']
-              }">sub island</h3>`,
-            })
-            render(zone, subTemplate, 'beforeend')
+            render(
+              zone,
+              <Sub.template styles={styles}>
+                <h3 className={classes['sub-island']}>sub island</h3>
+              </Sub.template>,
+              'beforeend',
+            )
           },
           addButton() {
-            context.insertAdjacentHTML(
-              'beforeend',
-              html`<button slot="button">add svg</button>`,
-            )
+            render(context, <button slot='button'>add svg</button>, 'beforeend')
           },
           modifyAttributes() {
             const [slot] = $('add-svg-slot')
@@ -49,9 +46,14 @@ export const ShadowIsland = isle(
           },
           addSlot() {
             const [row] = $('button-row')
-            row.insertAdjacentHTML(
+            row.render(
+              <slot
+                name='button'
+                data-target='add-svg-slot'
+                data-trigger='click->add-svg'
+              >
+              </slot>,
               'beforeend',
-              html`<slot name="button"  data-target="add-svg-slot" data-trigger="click->add-svg"></slot>`,
             )
           },
           removeSvg() {
@@ -60,9 +62,9 @@ export const ShadowIsland = isle(
           },
           ['add-svg']() {
             const [zone] = $('zone')
-            zone.insertAdjacentHTML(
+            zone.render(
+              <SVG />,
               'beforeend',
-              svg,
             )
           },
         })

@@ -70,3 +70,30 @@ export const sugarForEach = {
     return elements
   },
 }
+
+export const render = (
+  element: HTMLElement | SVGElement,
+  template: Template,
+  position?: 'afterbegin' | 'beforeend',
+) => {
+  const tpl = document.createElement('template')
+  tpl.insertAdjacentHTML('afterbegin', template.template)
+  let future: NodeListOf<ChildNode> | ChildNode[] =
+    tpl.content.cloneNode(true).childNodes
+  const past = cache.get(element) || []
+  if (position === 'afterbegin') {
+    future = [...future, ...past]
+    cache.set(element, future)
+    element.replaceChildren(...future)
+    return element
+  }
+  if (position === 'beforeend') {
+    future = [...future, ...past]
+    cache.set(element, [...past, ...future])
+    element.replaceChildren(...future)
+    return element
+  }
+  cache.set(element, future)
+  element.replaceChildren(...future)
+  return element
+}

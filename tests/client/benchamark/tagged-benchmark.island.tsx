@@ -1,26 +1,26 @@
-import { html, isle, PlaitProps, render, useStore } from '$plaited'
+import { isle, PlaitedElement, PlaitProps, useStore } from '$plaited'
 
-const TableBodyTemplate = (
-  { data }: { data: { id: number; label: string; selected: boolean }[] },
-) =>
-  html`${
-    data.map((item: { id: number; label: string; selected: boolean }) => {
-      return html`
-    <tr id=${item.id} class="${item.selected && 'danger'}">
-      <td class="col-md-1">${item.id}</td>
-      <td class="col-md-4">
-        <a>${item.label}</a>
-      </td>
-      <td data-id="${item.id}" class="col-md-1" data-interaction='delete'>
-        <a>
-          <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
-        </a>
-      </td>
-      <td class="col-md-6"></td>
-    </tr>`
-    })
-  }`
-
+const TableBodyTemplate: PlaitedElement<{
+  data: { id: number; label: string; selected: boolean }[]
+}> = ({ data }) => (
+  <>
+    {data.map((item: { id: number; label: string; selected: boolean }) => (
+      <tr id={item.id} className={item.selected ? 'danger' : ''}>
+        <td className='col-md-1'>${item.id}</td>
+        <td className='col-md-4'>
+          <a>${item.label}</a>
+        </td>
+        <td data-id={item.id} className='col-md-1' data-interaction='delete'>
+          <a>
+            <span className='glyphicon glyphicon-remove' aria-hidden='true'>
+            </span>
+          </a>
+        </td>
+        <td className='col-md-6'></td>
+      </tr>
+    ))}
+  </>
+)
 export const TaggedBenchmark = isle(
   { tag: 'tagged-benchmark-island' },
   (base) =>
@@ -185,12 +185,7 @@ export const TaggedBenchmark = isle(
           render() {
             const data = getData()
             const [tbody] = $('tbody')
-            console.log('hit')
-            render(tbody, TableBodyTemplate({ data }))
-
-            // table.innerHTML = TableBodyTemplate({ data })
-            // console.log(TableBodyTemplate({ data }))
-            // render(TableBodyTemplate({ data }), table as HTMLElement)
+            tbody.render(<TableBodyTemplate data={data} />)
           },
         })
       }

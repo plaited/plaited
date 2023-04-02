@@ -1,4 +1,4 @@
-import { css, html, isle, messenger, PlaitProps, render } from '$plaited'
+import { css, isle, messenger, PlaitProps, render } from '$plaited'
 export const { connect, send } = messenger()
 import { test } from '$rite'
 const { classes, styles } = css`.row {
@@ -53,7 +53,7 @@ test('dynamic island comms', async (t) => {
             },
             add(detail: { value: string }) {
               const [header] = $('header')
-              render(header, `${detail.value}`, 'beforeend')
+              header.insertAdjacentHTML('beforeend', `${detail.value}`)
             },
           })
         }
@@ -64,18 +64,22 @@ test('dynamic island comms', async (t) => {
 
   render(
     wrapper,
-    html`${[
-      DynamicOne.template({
-        styles,
-        id: 'one',
-        shadow:
-          html`<div class="${classes.row}"><button data-target="button" class="${classes.button}" data-trigger="click->click">Add "world!"</button></div>`,
-      }),
-      DynamicTwo.template({
-        styles,
-        shadow: html`<h1 data-target="header">Hello </h1>`,
-      }),
-    ]}`,
+    <>
+      <DynamicOne.template styles={styles} id='one'>
+        <div className={classes.row}>
+          <button
+            data-target='button'
+            className={classes.button}
+            data-trigger='click->click'
+          >
+            Add "world!"
+          </button>
+        </div>
+      </DynamicOne.template>
+      <DynamicTwo.template styles={styles}>
+        <h1 data-target='header'>Hello</h1>
+      </DynamicTwo.template>
+    </>,
     'beforeend',
   )
   let button = await t.findByAttribute('data-target', 'button', wrapper)

@@ -1,4 +1,4 @@
-import { html, isle } from '$plaited'
+import { isle } from '$plaited'
 import { test } from '$rite'
 
 test('template observer', async (t) => {
@@ -7,7 +7,7 @@ test('template observer', async (t) => {
   el.setAttribute('data-test-id', 'island')
   wrapper?.insertAdjacentElement('beforeend', el)
   const template = document.createElement('template')
-  template.innerHTML = html`<h2>template content</h2>`
+  template.innerHTML = `<h2>template content</h2>`
   template.setAttribute('shadowrootmode', 'open')
   let island = await t.findByAttribute('data-test-id', 'island', wrapper)
   isle(
@@ -21,7 +21,7 @@ test('template observer', async (t) => {
             should: 'still be in light dom',
             actual: island?.innerHTML,
             expected:
-              html`<template shadowrootmode="open"><h2>template content</h2></template>`,
+              `<template shadowrootmode="open"><h2>template content</h2></template>`,
           })
         }
       },
@@ -37,6 +37,6 @@ test('template observer', async (t) => {
     given: 'appending template in connected callback',
     should: 'should now be in shadow dom',
     actual: island?.shadowRoot?.innerHTML,
-    expected: html`<h2>template content</h2>`,
+    expected: `<h2>template content</h2>`,
   })
 })

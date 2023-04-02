@@ -1,4 +1,4 @@
-import { assert, Assertion } from '$assert'
+import { assert, Assertion } from '$rite'
 
 class TestRunner {
   #testCases: (() => Promise<boolean>)[] = []
