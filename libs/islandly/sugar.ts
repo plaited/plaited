@@ -1,38 +1,24 @@
 import { Template } from './create-template.ts'
-
 /**
  * Inspired by blingblingjs
  * (c) Adam Argyle - MIT
  * {@see https://github.com/argyleink/blingblingjs}
  */
 
-const cache = new WeakMap<
-  HTMLElement | SVGElement,
-  NodeListOf<ChildNode> | ChildNode[]
->()
-
 export const sugar = {
   render(tpl: Template, position?: 'afterbegin' | 'beforeend') {
     const element = this as unknown as HTMLElement | SVGElement
     const template = document.createElement('template')
-    template.insertAdjacentHTML('afterbegin', tpl.content)
-    let future: NodeListOf<ChildNode> | ChildNode[] =
-      template.content.cloneNode(true).childNodes
-    const past = cache.get(element) || []
+    template.innerHTML = tpl.content
     if (position === 'afterbegin') {
-      future = [...future, ...past]
-      cache.set(element, future)
-      element.replaceChildren(...future)
+      element.prepend(template.content.cloneNode(true))
       return element
     }
     if (position === 'beforeend') {
-      future = [...future, ...past]
-      cache.set(element, [...past, ...future])
-      element.replaceChildren(...future)
+      element.append(template.content.cloneNode(true))
       return element
     }
-    cache.set(element, future)
-    element.replaceChildren(...future)
+    element.replaceChildren(template.content.cloneNode(true))
     return element
   },
   attr(attr: string, val?: string) {
@@ -77,23 +63,15 @@ export const render = (
   position?: 'afterbegin' | 'beforeend',
 ) => {
   const template = document.createElement('template')
-  template.insertAdjacentHTML('afterbegin', tpl.content)
-  let future: NodeListOf<ChildNode> | ChildNode[] =
-    template.content.cloneNode(true).childNodes
-  const past = cache.get(element) || []
+  template.innerHTML = tpl.content
   if (position === 'afterbegin') {
-    future = [...future, ...past]
-    cache.set(element, future)
-    element.replaceChildren(...future)
+    element.prepend(template.content.cloneNode(true))
     return element
   }
   if (position === 'beforeend') {
-    future = [...future, ...past]
-    cache.set(element, [...past, ...future])
-    element.replaceChildren(...future)
+    element.append(template.content.cloneNode(true))
     return element
   }
-  cache.set(element, future)
-  element.replaceChildren(...future)
+  element.replaceChildren(template.content.cloneNode(true))
   return element
 }

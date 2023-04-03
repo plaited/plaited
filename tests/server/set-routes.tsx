@@ -73,7 +73,7 @@ export const setRoutes = async ({
       clientEntries.push(path)
     }
   }
-
+  console.log(clientEntries)
   /** create test files path array */
   const testEntries: { name: string; path: string }[] = []
   await Promise.all(clientEntries.map(async (entry) => {
@@ -103,7 +103,8 @@ export const setRoutes = async ({
       if (absolute) {
         const modules = await import(absolute)
         for (const mod in modules) {
-          children.push(modules[mod]())
+          const Child = modules[mod]
+          children.push(<Child />)
         }
       }
       routes.set(dir, () =>

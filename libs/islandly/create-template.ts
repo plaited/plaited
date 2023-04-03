@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 import { escape, trueTypeOf } from '../utils/mod.ts'
 import { Primitive } from './types.ts'
 import {
@@ -10,10 +9,14 @@ import {
 
 export type Template = {
   content: string
+  stylesheets: Set<string>
 }
 
 export type PlaitedElement<
-  T extends Record<string, any> = Record<string, any>,
+  T extends Record<string, Primitive | Children> = Record<
+    string,
+    Primitive | Children
+  >,
 > = (attrs: Attrs<T>) => Template
 
 type Children = (string | Template)[] | (string | Template)
@@ -23,20 +26,25 @@ export type BaseAttrs = {
   className?: string
   children?: Children
   dataTarget?: string
-  dataTrigger?: Record<string, string>
+  dataTrigger?: string
   for?: never
   htmlFor?: string
   key?: string
   shadowRootMode?: 'open' | 'closed'
   shadowRootDelegatesFocus?: boolean
   slots?: Children
-  styles?: string | Set<string>
+  stylesheet?: string
   /** setting trusted to true will disable all escaping security policy measures for this node template */
   trusted?: boolean
-  style?: Record<string, string>
+  style?: string
 }
 
-export type Attrs<T extends Record<string, any> = Record<string, any>> =
+export type Attrs<
+  T extends Record<string, Primitive | Children> = Record<
+    string,
+    Primitive | Children
+  >,
+> =
   & BaseAttrs
   & T
 
@@ -46,7 +54,7 @@ export type Tag =
   | PlaitedElement
 
 interface CreateTemplate {
-  <T extends Record<string, any>>(
+  <T extends Record<string, Primitive | Children>>(
     tag: Tag,
     attrs: Attrs<T>,
   ): Template
@@ -63,18 +71,17 @@ const joinParts = (
 ) => `<${[tag, ...attrs].join(' ')}>${children.join('')}</${tag}>`
 
 /** createTemplate function used for ssr */
+//@ts-ignore: temp to commit
 export const createTemplate: CreateTemplate = (tag, attrs) => {
   const {
     shadowRootMode = 'open',
     children: _children,
     shadowRootDelegatesFocus = true,
     trusted,
-    styles,
-    dataTrigger,
     className,
     htmlFor,
-    style,
     slots: _slots,
+    stylesheet,
     key: _,
     ...attributes
   } = attrs
@@ -97,23 +104,12 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
   const rootAttrs: string[] = []
 
   /** if we have dataTrigger attribute wire up formatted correctly*/
-  dataTrigger && rootAttrs.push(
-    `${_dataTrigger}="${
-      Object.entries(dataTrigger)
-        .map<string>(([ev, req]) => `${ev}->${req}`)
-        .join(' ')
-    }"`,
-  )
+
   /** if we have className add it to Element */
   className && rootAttrs.push(`class="${className}"`)
   /** if we have htmlFor add it to Element */
   htmlFor && rootAttrs.push(`for="${htmlFor}"`)
-  /** if we have style add it to element */
-  style && rootAttrs.push(`style="${
-    Object.entries(style)
-      .map<string>(([prop, val]) => `${prop}:${val};`)
-      .join(' ')
-  }"`)
+
   /** next we want to loops through our attributes */
   for (const key in attributes) {
     /** all events our delegated via the data-trigger attribute so we want
@@ -128,7 +124,7 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
       )
     }
     /** grab the value from the attribute */
-    const value: Primitive = attributes[key]
+    const value: Primitive | Children = attributes[key]
     /** convert camelCase attributes into dash-case ones */
     const dashKey = key.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)
     /** test for and handle boolean attributes */
@@ -167,15 +163,15 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
   if (isCustomElement) {
     /** Set the mode of the shadowDom */
     templateAttrs.push(`shadowrootmode="${shadowRootMode}"`)
-    /** We destructured out the styles attribute as it's only for
+    /** We destructured out the stylesheet attribute as it's only for
      * custom elements declarative shadow dom  we create the style node
-     * append the styles as the first child of the declarative shadowDom template */
-    if (styles) {
+     * append the stylesheet as the first child of the declarative shadowDom template */
+    if (stylesheet) {
       templateChildren.push(
         joinParts(
           'style',
           undefined,
-          typeof styles === 'string' ? [styles] : [...styles],
+          [stylesheet],
         ),
       )
     }

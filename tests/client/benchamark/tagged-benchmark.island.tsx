@@ -6,9 +6,9 @@ const TableBodyTemplate: PlaitedElement<{
   <>
     {data.map((item: { id: number; label: string; selected: boolean }) => (
       <tr id={item.id} className={item.selected ? 'danger' : ''}>
-        <td className='col-md-1'>${item.id}</td>
+        <td className='col-md-1'>{item.id}</td>
         <td className='col-md-4'>
-          <a>${item.label}</a>
+          <a>{item.label}</a>
         </td>
         <td data-id={item.id} className='col-md-1' data-interaction='delete'>
           <a>

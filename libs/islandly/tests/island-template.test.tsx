@@ -88,17 +88,3 @@ Deno.test('Island.template: styles string', (t) => {
     ),
   )
 })
-Deno.test('Island.template: styles as set ', (t) => {
-  assertSnapshot(
-    t,
-    ssr(
-      <Island.template
-        styles={new Set(['.h1 { color: red}', 'div {opacity: 0.85;}'])}
-      >
-        <div>
-          <h1>header</h1>
-        </div>
-      </Island.template>,
-    ),
-  )
-})

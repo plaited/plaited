@@ -18,7 +18,7 @@
  * )} />
  */
 
-export const tokens = (
+export const useToken = (
   ...objs: Array<{ [key: string]: string | number } | undefined | false | null>
 ) => {
   const filtered = objs.filter(Boolean)
