@@ -52,4 +52,6 @@ console.log('[plaited] listening for file changes');
 
 snapshot[`createTemplate: Fragment of PlaitedElements 1`] = `"<li>0</li> <li>1</li> <li>2</li> <li>3</li> <li>4</li> <li>5</li> <li>6</li> <li>7</li> <li>8</li> <li>9</li>"`;
 
-snapshot[`createTemplate: Fragment of slotted PlaitedElements 1`] = `'<c-el><template shadowrootmode="open" shadowrootdelegatesfocus="true"><slot name="slot"></slot></template> <li slot="slot">0</li> <li slot="slot">1</li> <li slot="slot">2</li> <li slot="slot">3</li> <li slot="slot">4</li> <li slot="slot">5</li> <li slot="slot">6</li> <li slot="slot">7</li> <li slot="slot">8</li> <li slot="slot">9</li></c-el>'`;
+snapshot[`createTemplate: with slotted PlaitedElements 1`] = `'<c-el><template shadowrootmode="open" shadowrootdelegatesfocus="true"><slot name="slot"></slot></template> <li slot="slot">0</li> <li slot="slot">1</li> <li slot="slot">2</li> <li slot="slot">3</li> <li slot="slot">4</li> <li slot="slot">5</li> <li slot="slot">6</li> <li slot="slot">7</li> <li slot="slot">8</li> <li slot="slot">9</li></c-el>'`;
+
+snapshot[`createTemplate: Fragment PlaitedElements 1`] = `"<li>0</li> <li>1</li> <li>2</li> <li>3</li> <li>4</li> <li>5</li> <li>6</li> <li>7</li> <li>8</li> <li>9</li>"`;

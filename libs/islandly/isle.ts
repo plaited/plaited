@@ -10,8 +10,7 @@ import {
 } from './types.ts'
 import { delegatedListener } from './delegated-listener.ts'
 import { createTemplate } from './create-template.ts'
-import { sugar, sugarForEach } from './sugar.ts'
-import { SugaredElement } from './sugar.ts'
+import { sugar, SugaredElement, sugarForEach } from './sugar.ts'
 
 // It takes the value of a data-target attribute and return all the events happening in it. minus the method identifier
 // so iof the event was data-target="click->doSomething" it would return ["click"]

@@ -9,8 +9,7 @@ import {
 } from './constants.ts'
 
 export type Template = {
-  template: string
-  slot: boolean
+  content: string
 }
 
 export type PlaitedElement<
@@ -30,7 +29,7 @@ export type BaseAttrs = {
   key?: string
   shadowRootMode?: 'open' | 'closed'
   shadowRootDelegatesFocus?: boolean
-  slot?: string
+  slots?: Children
   styles?: string | Set<string>
   /** setting trusted to true will disable all escaping security policy measures for this node template */
   trusted?: boolean
@@ -75,6 +74,7 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
     className,
     htmlFor,
     style,
+    slots: _slots,
     key: _,
     ...attributes
   } = attrs
@@ -149,10 +149,12 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
   /** Our tag is a void tag so we can return it once we apply attributes */
   if (typeof root === 'string' && voidTags.has(root)) {
     return {
-      slot: !!attributes.slot,
-      template: `<${[root, ...rootAttrs].join(' ')}/>`,
+      content: `<${[root, ...rootAttrs].join(' ')}/>`,
     }
   }
+
+  /** create a array to hold root children  */
+  const rootChildren: string[] = []
 
   /** Test if the the tag is a string and if it's a custom element */
   const isCustomElement = customElementRegex.test(root)
@@ -183,11 +185,26 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
     templateAttrs.push(
       `shadowrootdelegatesfocus="${shadowRootDelegatesFocus}"`,
     )
-    /** now that we've configured our declarative shadowDom
-     * we append it to our root element.
-     */
+    /** now that we've configured our declarative shadowDom we need to add slots elements to the rootChildren array **/
+
+    const slots = _slots && Array.isArray(_slots)
+      ? _slots
+      : _slots
+      ? [_slots]
+      : []
+    const length = slots.length
+    for (let i = 0; i < length; i++) {
+      const child = slots[i]
+      /** P1 string child*/
+      if (typeof child === 'string') {
+        rootChildren.push(trusted ? child : escape(child))
+        continue
+      }
+      /** P2 child is a Template object */
+      rootChildren.push(child.content)
+    }
   }
-  const rootChildren: string[] = []
+
   /** time to append the children to our template if we have em*/
   const length = children.length
   for (let i = 0; i < length; i++) {
@@ -205,18 +222,13 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
       rootChildren.push(trusted ? child : escape(child))
       continue
     }
-    /** P3 ServerElement and and the child is slotted */
-    if (isCustomElement && child.slot) {
-      rootChildren.push(child.template)
-      continue
-    }
-    /** P4 ServerElement and custom element */
+    /** P3 custom element and template object*/
     if (isCustomElement) {
-      templateChildren.push(child.template)
+      templateChildren.push(child.content)
       continue
     }
-    /**  P5 default use root tag*/
-    rootChildren.push(child.template)
+    /**  P4 default use root tag*/
+    rootChildren.push(child.content)
   }
   isCustomElement && rootChildren.unshift(joinParts(
     'template',
@@ -224,8 +236,7 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
     templateChildren,
   ))
   return {
-    slot: !!attributes.slot,
-    template: joinParts(root, rootAttrs, rootChildren),
+    content: joinParts(root, rootAttrs, rootChildren),
   }
 }
 
@@ -237,10 +248,10 @@ export function Fragment({ children }: Attrs) {
     : children
     ? [children]
     : []
+
   return {
-    template: children.map((child) =>
-      typeof child === 'string' ? child : child.template
+    content: children.map((child) =>
+      typeof child === 'string' ? child : child.content
     ).join(' '),
-    slot: children.some((child) => typeof child === 'object' && child.slot),
   }
 }

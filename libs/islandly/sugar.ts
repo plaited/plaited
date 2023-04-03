@@ -12,12 +12,12 @@ const cache = new WeakMap<
 >()
 
 export const sugar = {
-  render(template: Template, position?: 'afterbegin' | 'beforeend') {
+  render(tpl: Template, position?: 'afterbegin' | 'beforeend') {
     const element = this as unknown as HTMLElement | SVGElement
-    const tpl = document.createElement('template')
-    tpl.insertAdjacentHTML('afterbegin', template.template)
+    const template = document.createElement('template')
+    template.insertAdjacentHTML('afterbegin', tpl.content)
     let future: NodeListOf<ChildNode> | ChildNode[] =
-      tpl.content.cloneNode(true).childNodes
+      template.content.cloneNode(true).childNodes
     const past = cache.get(element) || []
     if (position === 'afterbegin') {
       future = [...future, ...past]
@@ -73,13 +73,13 @@ export const sugarForEach = {
 
 export const render = (
   element: HTMLElement | SVGElement,
-  template: Template,
+  tpl: Template,
   position?: 'afterbegin' | 'beforeend',
 ) => {
-  const tpl = document.createElement('template')
-  tpl.insertAdjacentHTML('afterbegin', template.template)
+  const template = document.createElement('template')
+  template.insertAdjacentHTML('afterbegin', tpl.content)
   let future: NodeListOf<ChildNode> | ChildNode[] =
-    tpl.content.cloneNode(true).childNodes
+    template.content.cloneNode(true).childNodes
   const past = cache.get(element) || []
   if (position === 'afterbegin') {
     future = [...future, ...past]

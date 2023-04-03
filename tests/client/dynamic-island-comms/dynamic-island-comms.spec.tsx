@@ -6,7 +6,7 @@ const { classes, styles } = css`.row {
   gap: 10px;
   padding: 12px;
 }
-::slotted(button), .button {
+.button {
   height: 18px;
   width: auto;
 }`

@@ -1,6 +1,6 @@
 const url = '`ws://${host}/livereload`'
 export const livereloadTemplate = `<script type="text/javascript">
-const hostRegex = /^https?:\/\/([^\/]+)\/.*$/i;
+const hostRegex = /^https?:\\/\\/([^\\/]+)\\/.*$/i;
 const host = document.URL.replace(hostRegex, '$1');
 const socket = new WebSocket(${url});
 const reload = () =>{

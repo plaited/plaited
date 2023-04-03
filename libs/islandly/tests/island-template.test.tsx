@@ -1,5 +1,5 @@
 import { assertSnapshot } from '../../dev-deps.ts'
-import { isle, ssr } from '../mod.ts'
+import { isle, PlaitedElement, ssr } from '../mod.ts'
 
 const Island = isle({ tag: 'z-el' }, (base) => class extends base {})
 Deno.test('Island.template: shadow only', (t) => {
@@ -57,16 +57,20 @@ Deno.test('Island.template: shadow, and mode closed', (t) => {
   )
 })
 Deno.test('Island.template: shadow, and slots', (t) => {
+  const IslandTemplate: PlaitedElement = ({ children }) => (
+    <Island.template slots={children}>
+      <div>
+        <h1>header</h1>
+        <slot name='slot'></slot>
+      </div>
+    </Island.template>
+  )
   assertSnapshot(
     t,
     ssr(
-      <Island.template>
-        <div>
-          <h1>header</h1>
-          <slot name='slot'></slot>
-        </div>
+      <IslandTemplate>
         <div slot='slot'>slotted</div>
-      </Island.template>,
+      </IslandTemplate>,
     ),
   )
 })

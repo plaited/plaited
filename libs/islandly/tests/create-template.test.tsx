@@ -1,5 +1,5 @@
 import { assertSnapshot, assertThrows } from '../../dev-deps.ts'
-import { ssr } from '../mod.ts'
+import { PlaitedElement, ssr } from '../mod.ts'
 
 Deno.test('createTemplate: self closing - html', (t) => {
   assertSnapshot(
@@ -113,17 +113,28 @@ Deno.test('createTemplate: Fragment of PlaitedElements', (t) =>
     ),
   ))
 
-Deno.test('createTemplate: Fragment of slotted PlaitedElements', (t) =>
+Deno.test('createTemplate: with slotted PlaitedElements', (t) => {
+  const Cel: PlaitedElement = ({ children }) => (
+    <c-el slots={children}>
+      <slot name='slot'></slot>
+    </c-el>
+  )
   assertSnapshot(
     t,
     ssr(
-      <c-el>
-        <slot name='slot'></slot>
-        <>
-          {Array.from(Array(10).keys()).map((n) => (
-            <li slot='slot'>{`${n}`}</li>
-          ))}
-        </>
-      </c-el>,
+      <Cel>
+        {Array.from(Array(10).keys()).map((n) => <li slot='slot'>{`${n}`}</li>)}
+      </Cel>,
+    ),
+  )
+})
+
+Deno.test('createTemplate: Fragment PlaitedElements', (t) =>
+  assertSnapshot(
+    t,
+    ssr(
+      <>
+        {Array.from(Array(10).keys()).map((n) => <li>{`${n}`}</li>)}
+      </>,
     ),
   ))

@@ -8,12 +8,12 @@ export const HomeTemplate: PlaitedElement = ({ children }) => (
       <meta name='viewport' content='width=device-width, initial-scale=1.0' />
       <title>Plaited tests</title>
       <link rel='icon' href='data:,' />
-      <script type='module' src='/registry.js'></script>
+      <script type='module' src='/registry.js' trusted></script>
     </head>
     <body style={{ margin: '0' }} trusted>
       {children}
-      <script type='module' src='/runner.js'></script>
-      ${livereloadTemplate}
+      <script type='module' src='/runner.js' trusted></script>
+      {livereloadTemplate}
     </body>
   </html>
 )

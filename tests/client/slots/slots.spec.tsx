@@ -1,15 +1,15 @@
 import { test } from '$rite'
-import { css, isle, PlaitProps, render } from '$plaited'
+import { css, isle, PlaitedElement, PlaitProps, render } from '$plaited'
 const { classes, styles } = css`.row {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   padding: 12px;
 }
 ::slotted(button), .button {
   height: 18px;
   width: auto;
 }`
-
+let slot = 0
 let nested = 0
 let named = 0
 const SlotTest = isle(
@@ -18,6 +18,9 @@ const SlotTest = isle(
     class extends base {
       plait({ feedback }: PlaitProps) {
         feedback({
+          slot() {
+            slot++
+          },
           named() {
             named++
           },
@@ -30,10 +33,8 @@ const SlotTest = isle(
 )
 SlotTest()
 const root = document.getElementById('root') as HTMLDivElement
-
-render(
-  root,
-  <SlotTest.template styles={styles}>
+const SlotTestTemplate: PlaitedElement = ({ children }) => (
+  <SlotTest.template styles={styles} slots={children}>
     <div className={classes.row}>
       <slot data-trigger='click->slot'></slot>
       <slot name='named' data-trigger='click->named'></slot>
@@ -44,11 +45,28 @@ render(
         <slot slot='nested' name='nested' data-trigger='click->nested'></slot>
       </nested-slot>
     </div>
+  </SlotTest.template>
+)
+render(
+  root,
+  <SlotTestTemplate>
+    <button>Slot</button>
     <button slot='named'>Named</button>
     <button slot='nested'>Nested</button>
-  </SlotTest.template>,
+  </SlotTestTemplate>,
   'beforeend',
 )
+
+test('slot: default', async (t) => {
+  const button = await t.findByText('Slot')
+  button && await t.fireEvent(button, 'click')
+  t({
+    given: `default slot click of element in event's composed path`,
+    should: 'not trigger feedback action',
+    actual: slot,
+    expected: 0,
+  })
+})
 
 test('slot: named', async (t) => {
   const button = await t.findByText('Named')
