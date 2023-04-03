@@ -1,5 +1,7 @@
 import { assertSnapshot } from '../../dev-deps.ts'
-import { isle, PlaitedElement, ssr } from '../mod.ts'
+import { isle, PlaitedElement, Template } from '../mod.ts'
+
+const ssr = (tpl: Template) => tpl.content
 
 const Island = isle({ tag: 'z-el' }, (base) => class extends base {})
 Deno.test('Island.template: shadow only', (t) => {

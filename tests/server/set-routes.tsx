@@ -22,8 +22,10 @@ export const setRoutes = async ({
   const entryPoints = new Set<string>()
   const exts = [
     '.spec.ts',
+    '.spec.tsx',
     'registry.ts',
     '.template.ts',
+    '.template.tsx',
     'runner.ts',
     '.worker.ts',
   ]
@@ -39,7 +41,7 @@ export const setRoutes = async ({
   /** split off ssr templates  */
   const serverEntries: { relative: string; absolute: string }[] = []
   entryPoints.forEach((val) => {
-    if (val.endsWith('.template.ts')) {
+    if (val.endsWith('.template.tsx')) {
       serverEntries.push({ relative: val.replace(client, ''), absolute: val })
       entryPoints.delete(val)
     }
@@ -67,7 +69,7 @@ export const setRoutes = async ({
           },
         }),
     )
-    if (exts.some((ext) => path.endsWith(ext.replace('.ts', '.js')))) {
+    if (exts.some((ext) => path.endsWith(ext.replace(/\.tsx?$/, '.js')))) {
       clientEntries.push(path)
     }
   }
@@ -90,17 +92,18 @@ export const setRoutes = async ({
       const registry = clientEntries.find((entry) =>
         entry.startsWith(dir) && entry.endsWith('registry.js')
       )
+
       const { absolute } = serverEntries.find(({ relative }) =>
         relative.startsWith(dir) &&
         relative.endsWith('template.tsx')
       ) ?? {}
 
-      const body: PlaitedElement[] = []
+      const children: ReturnType<PlaitedElement>[] = []
 
       if (absolute) {
         const modules = await import(absolute)
         for (const mod in modules) {
-          body.push(modules[mod])
+          children.push(modules[mod]())
         }
       }
       routes.set(dir, () =>
@@ -109,7 +112,7 @@ export const setRoutes = async ({
             <TestPageTemplate
               title={name}
               registry={registry}
-              body={body}
+              children={children}
               tests={entry}
             />,
           ),

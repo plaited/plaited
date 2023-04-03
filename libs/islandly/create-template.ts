@@ -60,7 +60,7 @@ const joinParts = (
   tag: string,
   attrs: string[] = [],
   children: string[],
-) => `<${[tag, ...attrs].join(' ')}>${children.join(' ')}</${tag}>`
+) => `<${[tag, ...attrs].join(' ')}>${children.join('')}</${tag}>`
 
 /** createTemplate function used for ssr */
 export const createTemplate: CreateTemplate = (tag, attrs) => {

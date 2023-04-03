@@ -41,6 +41,8 @@ export const bundler = async ({
       ],
       treeShaking: true,
       write: false,
+      jsx: 'automatic',
+      jsxImportSource: '$plaited',
     })
     const absDirUrlLength = toFileUrl(absWorkingDir).href.length
     if (outputFiles) {

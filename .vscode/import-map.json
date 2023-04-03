@@ -7,6 +7,6 @@
     "$rite": "../rite.ts",
     "$server": "../server.ts",
     "$utils": "../utils.ts",
-    "plaited/jsx-runtime": "../jsx-runtime.ts"
+    "$plaited/jsx-runtime": "../jsx-runtime.ts"
   }
 }

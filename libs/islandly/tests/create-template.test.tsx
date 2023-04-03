@@ -1,6 +1,7 @@
 import { assertSnapshot, assertThrows } from '../../dev-deps.ts'
-import { PlaitedElement, ssr } from '../mod.ts'
+import { PlaitedElement, Template } from '../mod.ts'
 
+const ssr = (tpl: Template) => tpl.content
 Deno.test('createTemplate: self closing - html', (t) => {
   assertSnapshot(
     t,
