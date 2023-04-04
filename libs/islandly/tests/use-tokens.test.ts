@@ -1,5 +1,5 @@
 import { assertEquals } from '../../dev-deps.ts'
-import { tokens } from '../mod.ts'
+import { useTokens } from '../mod.ts'
 
 Deno.test('tokens()', () => {
   const expected = {
@@ -7,14 +7,20 @@ Deno.test('tokens()', () => {
     '--height': 24,
     '--backgroundColor': 'black',
   }
-  const actual = tokens(
+  const [get, set] = useTokens(
     {
       width: 32,
       height: 24,
       backgroundColor: 'black',
     },
   )
-  assertEquals(actual, expected)
+  assertEquals(get(), expected)
+  set({
+    width: 32,
+    height: 45,
+    backgroundColor: 'black',
+  })
+  assertEquals(get(), { ...expected, '--height': 45 })
 })
 
 Deno.test('tokens() conditional test', () => {
@@ -25,7 +31,7 @@ Deno.test('tokens() conditional test', () => {
     '--height': 24,
     '--backgroundColor': 'grey',
   }
-  const actual = tokens(
+  const [get] = useTokens(
     {
       width: 32,
       height: 24,
@@ -38,5 +44,5 @@ Deno.test('tokens() conditional test', () => {
       backgroundColor: 'grey',
     },
   )
-  assertEquals(actual, expected)
+  assertEquals(get(), expected)
 })
