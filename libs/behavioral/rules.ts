@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { RuleSet, RulesFunc } from './types.ts'
+import { Detail, RuleSet, RulesFunc } from './types.ts'
 
 /**
  * @description
@@ -36,7 +36,7 @@ export const loop = (
  * threads currently forbids triggering
  * any of these events.
  */
-export const sync = <T extends (Record<string, unknown> | Event)>(
+export const sync = <T extends Detail>(
   set: RuleSet<T>,
 ): RulesFunc<T> =>
   function* () {

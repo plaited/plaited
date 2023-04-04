@@ -30,6 +30,27 @@ Deno.test('createTemplate: falsey - NaN', (t) =>
 Deno.test('createTemplate: conditional', (t) =>
   assertSnapshot(t, ssr(<div>{true && 'hello'}</div>)))
 
+Deno.test('createTemplate: style attribute', (t) =>
+  assertSnapshot(
+    t,
+    ssr(<div style={{ backgroundColor: 'blue', margin: `12px` }}>styles</div>),
+  ))
+
+Deno.test('createTemplate: data-trigger attribute', (t) =>
+  assertSnapshot(
+    t,
+    ssr(
+      <div
+        data-trigger={{
+          click: 'random',
+          focus: 'thing',
+        }}
+      >
+        triggers
+      </div>,
+    ),
+  ))
+
 Deno.test('createTemplate: array of PlaitedElements', (t) =>
   assertSnapshot(
     t,
@@ -124,7 +145,7 @@ Deno.test('createTemplate: with slotted PlaitedElements', (t) => {
     t,
     ssr(
       <Cel>
-        {Array.from(Array(10).keys()).map((n) => <li slot='slot'>{`${n}`}</li>)}
+        {Array.from(Array(10).keys()).map((n) => <li slot='slot'>slot-{n}</li>)}
       </Cel>,
     ),
   )
@@ -135,7 +156,7 @@ Deno.test('createTemplate: Fragment PlaitedElements', (t) =>
     t,
     ssr(
       <>
-        {Array.from(Array(10).keys()).map((n) => <li>{`${n}`}</li>)}
+        {Array.from(Array(10).keys()).map((n) => <li>item-{n}</li>)}
       </>,
     ),
   ))

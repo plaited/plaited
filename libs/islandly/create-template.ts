@@ -1,11 +1,7 @@
-import { escape, trueTypeOf } from '../utils/mod.ts'
+// deno-lint-ignore-file no-explicit-any
+import { escape } from '../utils/mod.ts'
 import { Primitive } from './types.ts'
-import {
-  booleanAttrs,
-  dataTrigger as _dataTrigger,
-  primitives,
-  voidTags,
-} from './constants.ts'
+import { booleanAttrs, dataTrigger, primitives, voidTags } from './constants.ts'
 
 export type Template = {
   content: string
@@ -13,36 +9,34 @@ export type Template = {
 }
 
 export type PlaitedElement<
-  T extends Record<string, Primitive | Children> = Record<
+  T extends Record<string, any> = Record<
     string,
-    Primitive | Children
+    any
   >,
 > = (attrs: Attrs<T>) => Template
 
 type Children = (string | Template)[] | (string | Template)
 
 export type BaseAttrs = {
-  class?: never
-  className?: string
+  class?: string
   children?: Children
-  dataTarget?: string
-  dataTrigger?: string
-  for?: never
-  htmlFor?: string
+  'data-target'?: string
+  'data-trigger'?: Record<string, string>
+  for?: string
   key?: string
-  shadowRootMode?: 'open' | 'closed'
-  shadowRootDelegatesFocus?: boolean
+  shadowrootmode?: 'open' | 'closed'
+  shadowrootdelegatesfocus?: boolean
   slots?: Children
   stylesheet?: string
-  /** setting trusted to true will disable all escaping security policy measures for this node template */
+  /** setting trusted to true will disable all escaping security policy measures for this element template */
   trusted?: boolean
-  style?: string
+  style?: Record<string, string>
 }
 
 export type Attrs<
-  T extends Record<string, Primitive | Children> = Record<
+  T extends Record<string, any> = Record<
     string,
-    Primitive | Children
+    any
   >,
 > =
   & BaseAttrs
@@ -54,7 +48,7 @@ export type Tag =
   | PlaitedElement
 
 interface CreateTemplate {
-  <T extends Record<string, Primitive | Children>>(
+  <T extends Record<string, any>>(
     tag: Tag,
     attrs: Attrs<T>,
   ): Template
@@ -71,23 +65,23 @@ const joinParts = (
 ) => `<${[tag, ...attrs].join(' ')}>${children.join('')}</${tag}>`
 
 /** createTemplate function used for ssr */
-//@ts-ignore: temp to commit
 export const createTemplate: CreateTemplate = (tag, attrs) => {
   const {
-    shadowRootMode = 'open',
+    shadowrootmode = 'open',
     children: _children,
-    shadowRootDelegatesFocus = true,
+    shadowrootdelegatesfocus = true,
     trusted,
-    className,
-    htmlFor,
     slots: _slots,
     stylesheet,
+    style,
     key: _,
+    'data-trigger': trigger,
     ...attributes
   } = attrs
   if (typeof tag === 'function') {
     return tag(attrs)
   }
+  const stylesheets = new Set<string>()
   const children = _children && Array.isArray(_children)
     ? _children
     : _children
@@ -100,51 +94,60 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
 
   /** Now to determine what our root element is */
   const root = tag.toLowerCase()
-
+  /** create a list to hold  our root attributes*/
   const rootAttrs: string[] = []
-
   /** if we have dataTrigger attribute wire up formatted correctly*/
-
-  /** if we have className add it to Element */
-  className && rootAttrs.push(`class="${className}"`)
-  /** if we have htmlFor add it to Element */
-  htmlFor && rootAttrs.push(`for="${htmlFor}"`)
-
+  if (trigger) {
+    const value = Object.entries(trigger).map<string>(([ev, req]) =>
+      `${ev}->${req}`
+    )
+      .join(' ')
+    rootAttrs.push(`${dataTrigger}="${value}"`)
+  }
+  /** if we have style add it to element */
+  if (style) {
+    const value = Object.entries(style)
+      /** convert camelCase style prop into dash-case ones */
+      .map<string>(([prop, val]) =>
+        `${prop.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}:${val};`
+      )
+      .join(' ')
+    rootAttrs.push(`style="${escape(value)}"`)
+  }
   /** next we want to loops through our attributes */
   for (const key in attributes) {
-    /** all events our delegated via the data-trigger attribute so we want
+    /** P1 all events are delegated via the data-trigger attribute so we want
      * throw on attempts to provide `on` attributes
      */
     if (key.startsWith('on')) {
       throw new Error(`Event handler attributes are not allowed:  [${key}]`)
     }
-    if (!primitives.has(trueTypeOf(attributes[key]))) {
+    /** Grab the value from the attribute */
+    const value: Primitive | Children = attributes[key]
+
+    /** P2 typeof attribute is NOT {@type Primitive} then skip and do nothing */
+    if (!primitives.has(typeof value)) {
       throw new Error(
         `Attributes not declared in BaseAttrs must be of type Primitive: ${key} is not primitive`,
       )
     }
-    /** grab the value from the attribute */
-    const value: Primitive | Children = attributes[key]
-    /** convert camelCase attributes into dash-case ones */
-    const dashKey = key.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)
     /** test for and handle boolean attributes */
-    if (booleanAttrs.has(dashKey)) {
-      rootAttrs.push(`${dashKey}`)
+    if (booleanAttrs.has(key)) {
+      rootAttrs.push(`${key}`)
       continue
     }
     /** set the value so long as it's not nullish in we use the formatted value  */
     const formattedValue = value ?? ''
     /** handle the rest of the attributes */
     rootAttrs.push(
-      `${dashKey}="${
-        trusted ? `${formattedValue}` : escape(`${formattedValue}`)
-      }"`,
+      `${key}="${trusted ? `${formattedValue}` : escape(`${formattedValue}`)}"`,
     )
   }
 
   /** Our tag is a void tag so we can return it once we apply attributes */
   if (typeof root === 'string' && voidTags.has(root)) {
     return {
+      stylesheets,
       content: `<${[root, ...rootAttrs].join(' ')}/>`,
     }
   }
@@ -162,7 +165,7 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
   const templateChildren: string[] = []
   if (isCustomElement) {
     /** Set the mode of the shadowDom */
-    templateAttrs.push(`shadowrootmode="${shadowRootMode}"`)
+    templateAttrs.push(`shadowrootmode="${shadowrootmode}"`)
     /** We destructured out the stylesheet attribute as it's only for
      * custom elements declarative shadow dom  we create the style node
      * append the stylesheet as the first child of the declarative shadowDom template */
@@ -179,59 +182,71 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
      * custom elements
      */
     templateAttrs.push(
-      `shadowrootdelegatesfocus="${shadowRootDelegatesFocus}"`,
+      `shadowrootdelegatesfocus="${shadowrootdelegatesfocus}"`,
     )
-    /** now that we've configured our declarative shadowDom we need to add slots elements to the rootChildren array **/
-
-    const slots = _slots && Array.isArray(_slots)
-      ? _slots
-      : _slots
-      ? [_slots]
-      : []
+    /** Now that we've configured our declarative shadowDom we need to add slots elements to the rootChildren array **/
+    const slots = !_slots ? [] : Array.isArray(_slots) ? _slots : [_slots]
     const length = slots.length
     for (let i = 0; i < length; i++) {
       const child = slots[i]
-      /** P1 string child*/
-      if (typeof child === 'string') {
-        rootChildren.push(trusted ? child : escape(child))
+      /** P1 child IS {@type Template} */
+      if (typeof child === 'object' && 'content' in child) {
+        rootChildren.push(child.content)
         continue
       }
-      /** P2 child is a Template object */
-      rootChildren.push(child.content)
+      /** P2 typeof child is NOT {@type Primitive} then skip and do nothing */
+      if (!primitives.has(typeof child)) continue
+      /** P3 child IS {@type Template} */
+      const formattedChild = child ?? ''
+      rootChildren.push(
+        trusted ? `${formattedChild}` : escape(`${formattedChild}`),
+      )
     }
   }
-
   /** time to append the children to our template if we have em*/
   const length = children.length
   for (let i = 0; i < length; i++) {
     const child = children[i]
-    /** P1 Child is and string and custom element */
+    /** P1 element is a customElement and child IS {@type Template}*/
     if (
       isCustomElement &&
-      typeof child === 'string'
+      typeof child === 'object' &&
+      'content' in child
     ) {
-      templateChildren.push(trusted ? child : escape(child))
-      continue
-    }
-    /** P2 string not custom element */
-    if (typeof child === 'string') {
-      rootChildren.push(trusted ? child : escape(child))
-      continue
-    }
-    /** P3 custom element and template object*/
-    if (isCustomElement) {
       templateChildren.push(child.content)
       continue
     }
-    /**  P4 default use root tag*/
-    rootChildren.push(child.content)
+    /** P2 child IS {@type Template}*/
+    if (
+      typeof child === 'object' &&
+      'content' in child
+    ) {
+      rootChildren.push(child.content)
+      continue
+    }
+    /** P3 typeof child is NOT {@type Primitive} then skip and do nothing */
+    if (!primitives.has(typeof child)) continue
+    const formattedChild = child ?? ''
+    /** P4 element is a customElement and child IS {@type Primitive} */
+    if (isCustomElement) {
+      templateChildren.push(
+        trusted ? `${formattedChild}` : escape(`${formattedChild}`),
+      )
+      continue
+    }
+    /** P5 child IS {@type Primitive} */
+    rootChildren.push(
+      trusted ? `${formattedChild}` : escape(`${formattedChild}`),
+    )
   }
+  /** append declarative shadow dom to beginning of rootChildren array*/
   isCustomElement && rootChildren.unshift(joinParts(
     'template',
     templateAttrs,
     templateChildren,
   ))
   return {
+    stylesheets,
     content: joinParts(root, rootAttrs, rootChildren),
   }
 }
@@ -248,6 +263,6 @@ export function Fragment({ children }: Attrs) {
   return {
     content: children.map((child) =>
       typeof child === 'string' ? child : child.content
-    ).join(' '),
+    ).join(''),
   }
 }

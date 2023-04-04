@@ -28,29 +28,11 @@ Deno.test('Island.template: shadow and id', (t) => {
     ),
   )
 })
-Deno.test('Island.template: data-target, data-trigger, tag, shadow, and id', (t) => {
-  assertSnapshot(
-    t,
-    ssr(
-      <Island.template>
-        <div
-          target='random'
-          dataTrigger={{
-            click: 'random',
-            focus: 'thing',
-          }}
-        >
-          <h1>header</h1>
-        </div>
-      </Island.template>,
-    ),
-  )
-})
 Deno.test('Island.template: shadow, and mode closed', (t) => {
   assertSnapshot(
     t,
     ssr(
-      <Island.template shadowRootMode='closed'>
+      <Island.template shadowrootmode='closed'>
         <div>
           <h1>header</h1>
         </div>

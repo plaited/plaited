@@ -81,6 +81,7 @@ export const isle = (
             this.internals_ = this.attachInternals()
             !this.internals_.shadowRoot &&
               this.attachShadow({ mode, delegatesFocus }) // no declarative shadowdom then connect one
+            Object.assign(this, sugar)
           }
           connectedCallback() {
             if (!this.internals_.shadowRoot?.firstChild) {

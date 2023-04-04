@@ -14,11 +14,14 @@ export interface StateSnapshot {
     priority: number
   }[]
 }
+
+export type Detail = unknown | (() => unknown) | Event
+
 export type Message = {
   kind: typeof streamEvents.select
   data: {
     type: string
-    detail?: Record<string, unknown> | Event
+    detail?: Detail
   }
 } | {
   kind: typeof streamEvents.snapshot
@@ -28,8 +31,7 @@ export type Message = {
 export type Subscriber = (msg: Message) => void
 
 export type Trigger = <
-  T extends (Record<string, unknown> | Event) =
-    (Record<string, unknown> | Event),
+  T extends (Detail) = (Detail),
 >(args: {
   type: string
   detail?: T
@@ -39,15 +41,13 @@ export type TriggerArgs = Parameters<Trigger>[0]
 
 // Rule types
 type Callback<
-  T extends (Record<string, unknown> | Event) =
-    (Record<string, unknown> | Event),
+  T extends (Detail) = (Detail),
 > = (
   args: { type: string; detail: T },
 ) => boolean
 
 export type ParameterIdiom<
-  T extends (Record<string, unknown> | Event) =
-    (Record<string, unknown> | Event),
+  T extends (Detail) = (Detail),
 > = {
   type: string
   cb?: Callback<T>
@@ -57,8 +57,7 @@ export type ParameterIdiom<
 }
 
 export type RequestIdiom<
-  T extends (Record<string, unknown> | Event) =
-    (Record<string, unknown> | Event),
+  T extends (Detail) = (Detail),
 > = {
   type: string
   detail?: T
@@ -66,8 +65,7 @@ export type RequestIdiom<
 }
 
 export type RuleSet<
-  T extends (Record<string, unknown> | Event) =
-    (Record<string, unknown> | Event),
+  T extends (Detail) = (Detail),
 > = {
   waitFor?: ParameterIdiom<T> | ParameterIdiom<T>[]
   request?: RequestIdiom<T> | RequestIdiom<T>[]
@@ -75,8 +73,7 @@ export type RuleSet<
 }
 
 export type RulesFunc<
-  T extends (Record<string, unknown> | Event) =
-    (Record<string, unknown> | Event),
+  T extends (Detail) = (Detail),
 > = () => IterableIterator<
   RuleSet<T>
 >
@@ -92,7 +89,7 @@ export type PendingBid = RuleSet & RunningBid
 export type CandidateBid = {
   priority: number
   type: string
-  detail?: Record<string, unknown> | Event
+  detail?: Detail
   cb?: Callback
 }
 
@@ -102,11 +99,11 @@ export type Strategy = (
 
 // Feedback Types
 type Actions<
-  T extends Record<string, (detail: Record<string, unknown> | Event) => void>,
+  T extends Record<string, (detail: Detail) => void>,
 > = {
   [K in keyof T]: T[K] extends (detail: infer D) => void ? (
-      detail: D extends (Record<string, unknown> | Event) ? D
-        : (Record<string, unknown> | Event),
+      detail: D extends Detail ? D
+        : (Detail),
     ) => void
     : never
 }

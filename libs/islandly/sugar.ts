@@ -5,21 +5,28 @@ import { Template } from './create-template.ts'
  * {@see https://github.com/argyleink/blingblingjs}
  */
 
+type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
 export const sugar = {
-  render(tpl: Template, position?: 'afterbegin' | 'beforeend') {
+  render(
+    tpl: Template,
+    position?: Position,
+  ) {
     const element = this as unknown as HTMLElement | SVGElement
     const template = document.createElement('template')
     template.innerHTML = tpl.content
-    if (position === 'afterbegin') {
-      element.prepend(template.content.cloneNode(true))
-      return element
-    }
-    if (position === 'beforeend') {
-      element.append(template.content.cloneNode(true))
+    if (position) {
+      element.insertAdjacentElement(position, template)
+      template.replaceWith(template.content.cloneNode(true))
       return element
     }
     element.replaceChildren(template.content.cloneNode(true))
     return element
+  },
+  replace(tpl: Template) {
+    const element = this as unknown as HTMLElement | SVGElement
+    const template = document.createElement('template')
+    template.innerHTML = tpl.content
+    element.replaceWith(template.content.cloneNode(true))
   },
   attr(attr: string, val?: string) {
     const element = this as unknown as HTMLElement | SVGElement
@@ -38,9 +45,14 @@ export type SugaredElement<
 > = T & typeof sugar
 
 export const sugarForEach = {
-  render(template: Template, position?: 'afterbegin' | 'beforeend') {
+  render(template: Template, position?: Position) {
     const elements = this as unknown as SugaredElement[]
     elements.forEach(($el) => $el.render(template, position))
+    return elements
+  },
+  replace(template: Template) {
+    const elements = this as unknown as SugaredElement[]
+    elements.forEach(($el) => $el.replace(template))
     return elements
   },
   attr(attrs: string | Record<string, string>, val?: string) {
@@ -60,16 +72,13 @@ export const sugarForEach = {
 export const render = (
   element: HTMLElement | SVGElement,
   tpl: Template,
-  position?: 'afterbegin' | 'beforeend',
+  position?: Position,
 ) => {
   const template = document.createElement('template')
   template.innerHTML = tpl.content
-  if (position === 'afterbegin') {
-    element.prepend(template.content.cloneNode(true))
-    return element
-  }
-  if (position === 'beforeend') {
-    element.append(template.content.cloneNode(true))
+  if (position) {
+    element.insertAdjacentElement(position, template)
+    template.replaceWith(template.content.cloneNode(true))
     return element
   }
   element.replaceChildren(template.content.cloneNode(true))
