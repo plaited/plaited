@@ -200,7 +200,6 @@ export const TaggedBenchmark = isle(
             setData((data) => {
               for (let i = 0; i < data.length; i += 10) {
                 data[i].label += ' !!!'
-                console.log(data[i])
                 $(`${data[i].id}`)[0].replace(
                   <TableRow {...data[i]} />,
                 )
