@@ -147,15 +147,17 @@ export const TaggedBenchmark = isle(
             setData([])
           },
           interact(e: MouseEvent) {
-            const td = (e.target as HTMLElement)?.closest(
+            const td = (e.target as HTMLElement)?.closest<HTMLTableCellElement>(
               'td',
-            ) as HTMLTableCellElement
-            const interaction = td.dataset.interaction
-            const id = parseInt((td.parentNode as Element).id)
-            if (interaction === 'delete') {
-              trigger({ type: 'delete', detail: { id } })
-            } else {
-              trigger({ type: 'select', detail: { id } })
+            )
+            if (td) {
+              const interaction = td.dataset.interaction
+              const id = parseInt((td.parentNode as Element).id)
+              if (interaction === 'delete') {
+                trigger({ type: 'delete', detail: { id } })
+              } else {
+                trigger({ type: 'select', detail: { id } })
+              }
             }
           },
           delete({ id }: { id: number }) {
