@@ -151,8 +151,7 @@ export const TaggedBenchmark = isle(
               'td',
             ) as HTMLTableCellElement
             const interaction = td.dataset.interaction
-            //@ts-ignore:
-            const id = parseInt(td.parentNode.id)
+            const id = parseInt((td.parentNode as Element).id)
             if (interaction === 'delete') {
               trigger({ type: 'delete', detail: { id } })
             } else {
