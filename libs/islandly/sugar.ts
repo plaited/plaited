@@ -26,7 +26,8 @@ export const sugar = {
     const element = this as unknown as HTMLElement | SVGElement
     const template = document.createElement('template')
     template.innerHTML = tpl.content
-    element.replaceWith(template.content.cloneNode(true))
+    console.log({ element, clone: template.content.cloneNode(true).childNodes })
+    element.replaceWith(...template.content.cloneNode(true).childNodes)
   },
   attr(attr: string, val?: string) {
     const element = this as unknown as HTMLElement | SVGElement

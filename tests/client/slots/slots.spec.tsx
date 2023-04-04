@@ -35,7 +35,7 @@ SlotTest()
 const root = document.getElementById('root') as HTMLDivElement
 const SlotTestTemplate: PlaitedElement = ({ children }) => (
   <SlotTest.template styles={styles} slots={children}>
-    <div className={classes.row}>
+    <div class={classes.row}>
       <slot data-trigger='click->slot'></slot>
       <slot name='named' data-trigger='click->named'></slot>
       <template>

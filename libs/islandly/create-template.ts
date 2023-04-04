@@ -20,7 +20,7 @@ type Children = (string | Template)[] | (string | Template)
 export type BaseAttrs = {
   class?: string
   children?: Children
-  'data-target'?: string
+  'data-target'?: string | number
   'data-trigger'?: Record<string, string>
   for?: string
   key?: string

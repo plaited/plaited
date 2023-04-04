@@ -73,7 +73,6 @@ export const setRoutes = async ({
       clientEntries.push(path)
     }
   }
-  console.log(clientEntries)
   /** create test files path array */
   const testEntries: { name: string; path: string }[] = []
   await Promise.all(clientEntries.map(async (entry) => {

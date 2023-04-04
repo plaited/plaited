@@ -5,7 +5,7 @@ export const SVG = () => (
     height='125'
     version='1.1'
     viewBox='0 0 700 700'
-    className={classes.svg}
+    class={classes.svg}
     data-trigger='click->removeSvg'
     data-target='svg'
   >

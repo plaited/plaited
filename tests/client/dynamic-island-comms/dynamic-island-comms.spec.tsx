@@ -66,10 +66,10 @@ test('dynamic island comms', async (t) => {
     wrapper,
     <>
       <DynamicOne.template styles={styles} id='one'>
-        <div className={classes.row}>
+        <div class={classes.row}>
           <button
             data-target='button'
-            className={classes.button}
+            class={classes.button}
             data-trigger='click->click'
           >
             Add "world!"

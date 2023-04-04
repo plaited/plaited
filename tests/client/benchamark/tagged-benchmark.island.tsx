@@ -1,26 +1,37 @@
 import { isle, PlaitedElement, PlaitProps, useStore } from '$plaited'
+import { SugaredElement } from '../../../libs/islandly/sugar.ts'
 
-const TableBodyTemplate: PlaitedElement<{
-  data: { id: number; label: string; selected: boolean }[]
-}> = ({ data }) => (
-  <>
-    {data.map((item: { id: number; label: string; selected: boolean }) => (
-      <tr id={item.id} className={item.selected ? 'danger' : ''}>
-        <td className='col-md-1'>{item.id}</td>
-        <td className='col-md-4'>
-          <a>{item.label}</a>
-        </td>
-        <td data-id={item.id} className='col-md-1' data-interaction='delete'>
-          <a>
-            <span className='glyphicon glyphicon-remove' aria-hidden='true'>
-            </span>
-          </a>
-        </td>
-        <td className='col-md-6'></td>
-      </tr>
-    ))}
-  </>
-)
+const TableRow: PlaitedElement<
+  { id: number; label: string; selected: boolean }
+> = (item) => {
+  return (
+    <tr
+      id={item.id}
+      class={item.selected ? 'danger' : ''}
+      data-target={item.id}
+    >
+      <td class='col-md-1'>{item.id}</td>
+      <td class='col-md-4'>
+        <a>{item.label}</a>
+      </td>
+      <td data-id={item.id} class='col-md-1' data-interaction='delete'>
+        <a>
+          <span class='glyphicon glyphicon-remove' aria-hidden='true'>
+          </span>
+        </a>
+      </td>
+      <td class='col-md-6'></td>
+    </tr>
+  )
+}
+
+// const TableBodyTemplate: PlaitedElement<{
+//   data: { id: number; label: string; selected: boolean }[]
+// }> = ({ data }) => (
+//   <>
+//     {)}
+//   </>
+// )
 export const TaggedBenchmark = isle(
   { tag: 'tagged-benchmark-island' },
   (base) =>
@@ -106,22 +117,25 @@ export const TaggedBenchmark = isle(
           renderOn: loop([
             sync({
               waitFor: [
-                { type: 'add' },
                 { type: 'run' },
                 { type: 'runLots' },
                 { type: 'clear' },
-                { type: 'select' },
-                { type: 'delete' },
-                { type: 'swapRows' },
-                { type: 'update' },
               ],
             }),
             sync({ request: { type: 'render' } }),
           ]),
         })
+        const [tbody] = $('tbody')
         feedback({
           add() {
-            setData((old) => old.concat(buildData(1000)))
+            setData((old) => {
+              const data = buildData(1000)
+              tbody.render(
+                <>{data.map((item) => <TableRow {...item} />)}</>,
+                'beforeend',
+              )
+              return old.concat(data)
+            })
           },
           run() {
             setData(buildData(1000))
@@ -149,6 +163,7 @@ export const TaggedBenchmark = isle(
             setData((data) => {
               const idx = data.findIndex((d) => d.id === id)
               data.splice(idx, 1)
+              $(`${idx}`)[0].remove()
               return data
             })
           },
@@ -157,9 +172,12 @@ export const TaggedBenchmark = isle(
               const cur = getSelected()
               if (cur > -1) {
                 data[cur].selected = false
+                /** for keyed I'll probably want to use replace for this */
+                $(`${data[cur].id}`)[0].attr('class', '')
               }
               const next = data.findIndex((d) => d.id === id)
               setSelected(next)
+              $(`${data[next].id}`)[0].attr('class', 'danger')
               data[next].selected = true
               return data
             })
@@ -167,6 +185,10 @@ export const TaggedBenchmark = isle(
           swapRows() {
             setData((data) => {
               if (data.length > 998) {
+                const el1 = $(`2`)[0]
+                const el2 = $(`999`)[0]
+                el1.replace(<TableRow {...data[998]} />)
+                el2.replace(<TableRow {...data[1]} />)
                 const tmp = data[1]
                 data[1] = data[998]
                 data[998] = tmp
@@ -178,14 +200,17 @@ export const TaggedBenchmark = isle(
             setData((data) => {
               for (let i = 0; i < data.length; i += 10) {
                 data[i].label += ' !!!'
+                console.log(data[i])
+                $(`${data[i].id}`)[0].replace(
+                  <TableRow {...data[i]} />,
+                )
               }
               return data
             })
           },
           render() {
             const data = getData()
-            const [tbody] = $('tbody')
-            tbody.render(<TableBodyTemplate data={data} />)
+            tbody.render(<>{data.map((item) => <TableRow {...item} />)}</>)
           },
         })
       }

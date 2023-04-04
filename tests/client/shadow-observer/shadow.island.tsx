@@ -32,7 +32,7 @@ export const ShadowIsland = isle(
             render(
               zone,
               <Sub.template styles={styles}>
-                <h3 className={classes['sub-island']}>sub island</h3>
+                <h3 class={classes['sub-island']}>sub island</h3>
               </Sub.template>,
               'beforeend',
             )
