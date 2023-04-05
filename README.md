@@ -63,3 +63,12 @@ on localhost and over a local network.
 
 Reusable platform agnostic utility functions and types used to build plaited
 experiences
+
+# Development
+
+## Requirements
+
+- Deno installed
+- Node installed
+  - Husky installed globally for conventional commits
+  -
