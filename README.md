@@ -70,5 +70,5 @@ experiences
 
 - Deno installed
 - Node installed
-  - Husky installed globally for conventional commits
-  -
+  - `husky` and `@commitlint/config-conventional` installed globally for
+    conventional commits
