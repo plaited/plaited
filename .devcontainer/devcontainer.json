@@ -36,6 +36,10 @@
     },
     "ghcr.io/devcontainers-contrib/features/deno-asdf:2": {
       "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "nodeGypDependencies": true,
+      "version": "18"
     }
   }
   // Features to add to the dev container. More info: https://containers.dev/features.
