@@ -3,13 +3,13 @@ import { assert, walk } from '../libs/dev-deps.ts'
 import { bundler } from './bundler.ts'
 
 const root = Deno.cwd()
-const npm = `${root}/npm`
+const outdir = `${root}/npm`
 
-await Deno.mkdir(npm, { recursive: true })
+await Deno.mkdir(outdir, { recursive: true })
 
 // Cleanup old generated files
 for await (
-  const entry of walk(npm, {
+  const entry of walk(outdir, {
     exts: ['.js'],
   })
 ) {
@@ -17,19 +17,20 @@ for await (
   await Deno.remove(entry.path)
 }
 
-const entry = `${root}/mod.ts`
+const entryPoints = [`${root}/mod.ts`, `${root}/jsx-runtime.ts`]
 
 // Bundle libs
 const unminified = await bundler({
-  entryPoints: [entry],
-  outfile: `${npm}/mod.js`,
+  entryPoints,
+  outdir,
   minify: false,
 })
 
 const minified = await bundler({
-  entryPoints: [entry],
-  outfile: `${npm}/mod.min.js`,
+  entryPoints,
+  outdir,
   minify: true,
+  entryNames: '[dir]/[name].min',
 })
 
 const config = {
@@ -56,5 +57,5 @@ await Deno.writeTextFile('npm/package.json', JSON.stringify(config, null, 2))
 
 console.log(
   `unminified size: ${unminified.outputs['npm/mod.js'].bytes / 1024} KiB
-  minified size: ${minified.outputs['npm/mod.min.js'].bytes / 1024} KiB`,
+minified size: ${minified.outputs['npm/mod.min.js'].bytes / 1024} KiB`,
 )

@@ -2,13 +2,15 @@ import { build, stop } from '../libs/dev-deps.ts'
 
 export const bundler = ({
   entryPoints,
-  outfile,
+  outdir,
   minify,
+  entryNames,
 }: {
   /** An array of files that each serve as an input to the bundling algorithm */
   entryPoints: string[]
-  outfile: string
+  outdir: string
   minify: boolean
+  entryNames?: string
 }) => {
   const bundle = async () => {
     const absWorkingDir = Deno.cwd()
@@ -17,7 +19,7 @@ export const bundler = ({
       allowOverwrite: true,
       bundle: true,
       format: 'esm',
-      outfile,
+      outdir,
       entryPoints,
       platform: 'neutral',
       sourcemap: false,
@@ -29,6 +31,7 @@ export const bundler = ({
       metafile: true,
       minify,
       treeShaking: true,
+      entryNames,
     })
     stop()
     return metafile

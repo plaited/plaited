@@ -265,11 +265,6 @@ var classNames = (...classes) => classes.filter(Boolean).join(" ");
 // libs/utils/true-type-of.ts
 var trueTypeOf = (obj) => Object.prototype.toString.call(obj).slice(8, -1).toLowerCase();
 
-// libs/utils/can-use-dom.ts
-var canUseDOM = () => {
-  return !!(typeof window !== "undefined" && window.document && window.document.createElement);
-};
-
 // libs/utils/escape-unescape.ts
 var reEscape = /[&<>'"]/g;
 var escapeObj = {
@@ -280,7 +275,7 @@ var escapeObj = {
   '"': "&quot;"
 };
 var { replace } = "";
-var escape = (sub) => replace.call(
+var escape2 = (sub) => replace.call(
   sub,
   reEscape,
   (key) => escapeObj[key]
@@ -295,25 +290,218 @@ var hashString = (str) => {
   return hash === 5381 ? null : hash;
 };
 
-// libs/islandly/utils.ts
-var matchAllEvents = (str) => {
-  const regexp = /(^\w+|(?:\s)\w+)(?:->)/g;
-  return [...str.matchAll(regexp)].flatMap(([, event]) => event);
+// libs/islandly/constants.ts
+var dataTarget = "data-target";
+var dataTrigger = "data-trigger";
+var voidTags = /* @__PURE__ */ new Set([
+  "area",
+  "base",
+  "basefont",
+  "bgsound",
+  "br",
+  "col",
+  "command",
+  "embed",
+  "frame",
+  "hr",
+  "img",
+  "isindex",
+  "input",
+  "keygen",
+  "link",
+  "menuitem",
+  "meta",
+  "nextid",
+  "param",
+  "source",
+  "track",
+  "wbr",
+  "circle",
+  "ellipse",
+  "line",
+  "path",
+  "polygon",
+  "polyline",
+  "rect",
+  "stop",
+  "use"
+]);
+var booleanAttrs = /* @__PURE__ */ new Set([
+  "allowfullscreen",
+  "async",
+  "autofocus",
+  "autoplay",
+  "checked",
+  "controls",
+  "default",
+  "defer",
+  "disabled",
+  "formnovalidate",
+  "inert",
+  "ismap",
+  "itemscope",
+  "loop",
+  "multiple",
+  "muted",
+  "nomodule",
+  "novalidate",
+  "open",
+  "playsinline",
+  "readonly",
+  "required",
+  "reversed",
+  "selected"
+]);
+var primitives = /* @__PURE__ */ new Set([
+  "null",
+  "undefined",
+  "number",
+  "string",
+  "boolean",
+  "bigint"
+]);
+
+// libs/islandly/create-template.ts
+var customElementRegex = /^[a-z]+\-[a-z]+(?:\-[a-z]+)*$/;
+var joinParts = (tag, attrs = [], children) => `<${[tag, ...attrs].join(" ")}>${children.join("")}</${tag}>`;
+var createTemplate = (tag, attrs) => {
+  const {
+    shadowrootmode = "open",
+    children: _children,
+    shadowrootdelegatesfocus = true,
+    trusted,
+    slots: _slots,
+    stylesheet,
+    style,
+    key: _,
+    "data-trigger": trigger,
+    ...attributes
+  } = attrs;
+  if (typeof tag === "function") {
+    return tag(attrs);
+  }
+  const stylesheets = /* @__PURE__ */ new Set();
+  const children = _children && Array.isArray(_children) ? _children : _children ? [_children] : [];
+  if (tag === "script" && !trusted) {
+    throw new Error("Script tag not allowed unless 'trusted' property set");
+  }
+  const root = tag.toLowerCase();
+  const rootAttrs = [];
+  if (trigger) {
+    const value = Object.entries(trigger).map(
+      ([ev, req]) => `${ev}->${req}`
+    ).join(" ");
+    rootAttrs.push(`${dataTrigger}="${value}"`);
+  }
+  if (style) {
+    const value = Object.entries(style).map(
+      ([prop, val]) => `${prop.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}:${val};`
+    ).join(" ");
+    rootAttrs.push(`style="${escape2(value)}"`);
+  }
+  for (const key in attributes) {
+    if (key.startsWith("on")) {
+      throw new Error(`Event handler attributes are not allowed:  [${key}]`);
+    }
+    const value = attributes[key];
+    if (!primitives.has(typeof value)) {
+      throw new Error(
+        `Attributes not declared in BaseAttrs must be of type Primitive: ${key} is not primitive`
+      );
+    }
+    if (booleanAttrs.has(key)) {
+      rootAttrs.push(`${key}`);
+      continue;
+    }
+    const formattedValue = value ?? "";
+    rootAttrs.push(
+      `${key}="${trusted ? `${formattedValue}` : escape2(`${formattedValue}`)}"`
+    );
+  }
+  if (typeof root === "string" && voidTags.has(root)) {
+    return {
+      stylesheets,
+      content: `<${[root, ...rootAttrs].join(" ")}/>`
+    };
+  }
+  const rootChildren = [];
+  const isCustomElement = customElementRegex.test(root);
+  const templateAttrs = [];
+  const templateChildren = [];
+  if (isCustomElement) {
+    templateAttrs.push(`shadowrootmode="${shadowrootmode}"`);
+    if (stylesheet) {
+      templateChildren.push(
+        joinParts(
+          "style",
+          void 0,
+          [stylesheet]
+        )
+      );
+    }
+    templateAttrs.push(
+      `shadowrootdelegatesfocus="${shadowrootdelegatesfocus}"`
+    );
+    const slots = !_slots ? [] : Array.isArray(_slots) ? _slots : [_slots];
+    const length2 = slots.length;
+    for (let i = 0; i < length2; i++) {
+      const child = slots[i];
+      if (typeof child === "object" && "content" in child) {
+        rootChildren.push(child.content);
+        continue;
+      }
+      if (!primitives.has(typeof child))
+        continue;
+      const formattedChild = child ?? "";
+      rootChildren.push(
+        trusted ? `${formattedChild}` : escape2(`${formattedChild}`)
+      );
+    }
+  }
+  const length = children.length;
+  for (let i = 0; i < length; i++) {
+    const child = children[i];
+    if (isCustomElement && typeof child === "object" && "content" in child) {
+      templateChildren.push(child.content);
+      continue;
+    }
+    if (typeof child === "object" && "content" in child) {
+      rootChildren.push(child.content);
+      continue;
+    }
+    if (!primitives.has(typeof child))
+      continue;
+    const formattedChild = child ?? "";
+    if (isCustomElement) {
+      templateChildren.push(
+        trusted ? `${formattedChild}` : escape2(`${formattedChild}`)
+      );
+      continue;
+    }
+    rootChildren.push(
+      trusted ? `${formattedChild}` : escape2(`${formattedChild}`)
+    );
+  }
+  isCustomElement && rootChildren.unshift(joinParts(
+    "template",
+    templateAttrs,
+    templateChildren
+  ));
+  return {
+    stylesheets,
+    content: joinParts(root, rootAttrs, rootChildren)
+  };
 };
-var getTriggerKey = (e, context) => {
-  const el = e.currentTarget === context ? context : e.composedPath().find(
-    (slot) => slot?.tagName === "SLOT" && slot === context
-  ) ? context : void 0;
-  if (!el)
-    return "";
-  const pre = `${e.type}->`;
-  const trigger = el.dataset.trigger ?? "";
-  const key = trigger.trim().split(/\s+/).find(
-    (str) => str.includes(pre)
-  );
-  return key ? key.replace(pre, "") : "";
-};
-var canUseSlot = (node) => !node.hasAttribute("slot") && node.hasAttribute("name");
+function Fragment({ children }) {
+  children = children && Array.isArray(children) ? children : children ? [children] : [];
+  return {
+    content: children.map(
+      (child) => typeof child === "string" ? child : child.content
+    ).join("")
+  };
+}
+
+// libs/islandly/css.ts
 var reduceWhitespace = (str) => str.replace(/(\s\s+|\n)/g, " ");
 var isTruthy = (val) => trueTypeOf(val) === "string" || trueTypeOf(val) === "number";
 var taggedWithPrimitives = (strings, ...expressions) => {
@@ -329,8 +517,6 @@ var taggedWithPrimitives = (strings, ...expressions) => {
   }, "");
   return result += reduceWhitespace(raw[raw.length - 1]);
 };
-
-// libs/islandly/css.ts
 var tokenize = (css2) => {
   const regex = /\.(-?[_a-zA-Z]+[_a-zA-Z0-9-]*)/gm;
   const matches = [];
@@ -351,7 +537,7 @@ var tokenize = (css2) => {
 var css = (strings, ...expressions) => {
   const result = taggedWithPrimitives(strings, ...expressions);
   const suffix = btoa(`${hashString(result)}`).replace(/[+/=]/g, "");
-  const tokens2 = tokenize(result);
+  const tokens = tokenize(result);
   const classes = /* @__PURE__ */ new Map();
   const addClass = (key) => {
     const value = `${key}_${suffix.slice(0, 6)}`;
@@ -361,7 +547,7 @@ var css = (strings, ...expressions) => {
     classes.set(key, value);
     return toRet;
   };
-  const styles = tokens2?.map(
+  const styles = tokens?.map(
     (token) => typeof token === "string" ? reduceWhitespace(token) : addClass(token.content)
   ).join("") || "";
   return {
@@ -370,23 +556,25 @@ var css = (strings, ...expressions) => {
   };
 };
 
-// libs/islandly/css-var.ts
-var cssVar = (variable, value, rem = true) => {
-  const name = variable.startsWith("var(") ? variable.substring(4, variable.length - 5) : variable;
-  let val;
-  if (typeof value === "number" && rem) {
-    const baseFontSize = parseInt(
-      getComputedStyle(document.documentElement).fontSize
-    );
-    val = `${value / baseFontSize}rem`;
-  }
-  value && document.documentElement.style.setProperty(name, val || value.toString());
-  return getComputedStyle(document.documentElement).getPropertyValue(name);
+// libs/islandly/create-idb.ts
+var createIDB = (dbName, storeName) => {
+  const dbp = new Promise((resolve, reject) => {
+    const openreq = indexedDB.open(dbName);
+    openreq.onerror = () => reject(openreq.error);
+    openreq.onsuccess = () => resolve(openreq.result);
+    openreq.onupgradeneeded = () => {
+      !openreq.result.objectStoreNames.contains(storeName) && openreq.result.createObjectStore(storeName);
+    };
+  });
+  return (type, callback) => dbp.then(
+    (db) => new Promise((resolve, reject) => {
+      const transaction = db.transaction(storeName, type);
+      transaction.oncomplete = () => resolve();
+      transaction.onabort = transaction.onerror = () => reject(transaction.error);
+      callback(transaction.objectStore(storeName));
+    })
+  );
 };
-
-// libs/islandly/constants.ts
-var dataTarget = "data-target";
-var dataTrigger = "data-trigger";
 
 // libs/islandly/use-behavioral.ts
 var useBehavioral = ({
@@ -435,76 +623,89 @@ var delegatedListener = Object.freeze({
   has: (context) => delegates.has(context)
 });
 
-// libs/islandly/html.ts
-var html = (strings, ...expressions) => {
-  const result = taggedWithPrimitives(strings, ...expressions);
-  return canUseDOM() ? result : result.trim().replace(/[\s\n]+>/g, ">").replace(
-    /(<.*?)(?:\s+)(\w)|>\s+</g,
-    (_, p1, p2) => p1 ? [p1, p2].join(" ") : "><"
-  ).replace(/(>)(?:\s)(\S)|(\S)(?:\s)(<)/g, (_, p1, p2, p3, p4) => {
-    return p1 ? [p1, p2].join("") : [p3, p4].join("");
-  });
-};
-
-// libs/islandly/wire.ts
-var wire = (obj) => {
-  const attributes = [];
-  for (const prop in obj) {
-    const value = obj[prop];
-    if (value === void 0 || value === null)
-      continue;
-    if (prop === "target") {
-      attributes.push(`${dataTarget}="${value}"`);
-      continue;
+// libs/islandly/sugar.ts
+var sugar = {
+  render(tpl, position) {
+    const element = this;
+    const template = document.createElement("template");
+    template.innerHTML = tpl.content;
+    if (position) {
+      element.insertAdjacentElement(position, template);
+      template.replaceWith(template.content.cloneNode(true));
+      return element;
     }
-    if (prop === "triggers") {
-      attributes.push(
-        `${dataTrigger}="${Object.entries(value).map(([ev, req]) => `${ev}->${req}`).join(" ")}"`
+    element.replaceChildren(template.content.cloneNode(true));
+    return element;
+  },
+  replace(tpl) {
+    const element = this;
+    const template = document.createElement("template");
+    template.innerHTML = tpl.content;
+    console.log({ element, clone: template.content.cloneNode(true).childNodes });
+    element.replaceWith(...template.content.cloneNode(true).childNodes);
+  },
+  attr(attr, val) {
+    const element = this;
+    if (val === void 0)
+      return element.getAttribute(attr);
+    val == null ? element.removeAttribute(attr) : element.setAttribute(attr, val);
+    return element;
+  }
+};
+var sugarForEach = {
+  render(template, position) {
+    const elements = this;
+    elements.forEach(($el) => $el.render(template, position));
+    return elements;
+  },
+  replace(template) {
+    const elements = this;
+    elements.forEach(($el) => $el.replace(template));
+    return elements;
+  },
+  attr(attrs, val) {
+    const elements = this;
+    if (typeof attrs === "string") {
+      elements.forEach(($el) => $el.attr(attrs, val));
+    } else {
+      elements.forEach(
+        ($el) => Object.entries(attrs).forEach(([key, val2]) => $el.attr(key, val2))
       );
-      continue;
     }
-    if (prop === "className") {
-      attributes.push(`class="${value}"`);
-      continue;
-    }
-    if (prop === "htmlFor") {
-      attributes.push(`for="${value}"`);
-      continue;
-    }
-    if (!prop.startsWith("aria") && !value)
-      continue;
-    if (!prop.startsWith("aria") && typeof value === "boolean") {
-      attributes.push(html`$${prop}`);
-      continue;
-    }
-    attributes.push(html`${prop}="$${value?.toString()}"`);
+    return elements;
   }
-  return attributes.join(" ");
 };
-
-// libs/islandly/template.ts
-var shallowCompare = (obj1, obj2) => Object.keys(obj1).length === Object.keys(obj2).length && Object.keys(obj1).every(
-  (key) => Object.hasOwn(obj2, key) && obj1[key] === obj2[key]
-);
-var template = (resultFn) => {
-  let cache = null;
-  function tpl(props) {
-    if (cache && cache.lastThis === this && shallowCompare(props, cache.lastProps)) {
-      return cache.lastResult;
-    }
-    const lastResult = resultFn.call(this, props);
-    cache = {
-      lastResult,
-      lastProps: props,
-      lastThis: this
-    };
-    return lastResult;
+var render = (element, tpl, position) => {
+  const template = document.createElement("template");
+  template.innerHTML = tpl.content;
+  if (position) {
+    element.insertAdjacentElement(position, template);
+    template.replaceWith(template.content.cloneNode(true));
+    return element;
   }
-  tpl.styles = /* @__PURE__ */ new Set();
-  return tpl;
+  element.replaceChildren(template.content.cloneNode(true));
+  return element;
 };
 
 // libs/islandly/isle.ts
+var matchAllEvents = (str) => {
+  const regexp = /(^\w+|(?:\s)\w+)(?:->)/g;
+  return [...str.matchAll(regexp)].flatMap(([, event]) => event);
+};
+var getTriggerKey = (e, context) => {
+  const el = e.currentTarget === context ? context : e.composedPath().find(
+    (slot) => slot?.tagName === "SLOT" && slot === context
+  ) ? context : void 0;
+  if (!el)
+    return "";
+  const pre = `${e.type}->`;
+  const trigger = el.dataset.trigger ?? "";
+  const key = trigger.trim().split(/\s+/).find(
+    (str) => str.includes(pre)
+  );
+  return key ? key.replace(pre, "") : "";
+};
+var canUseSlot = (node) => !node.hasAttribute("slot") && node.hasAttribute("name");
 var isle = ({
   mode = "open",
   delegatesFocus = true,
@@ -525,17 +726,17 @@ var isle = ({
             super();
             this.internals_ = this.attachInternals();
             !this.internals_.shadowRoot && this.attachShadow({ mode, delegatesFocus });
+            Object.assign(this, sugar);
           }
           #shadowObserver;
           #templateObserver;
           #disconnect;
-          #trigger;
           connectedCallback() {
             if (!this.internals_.shadowRoot?.firstChild) {
-              const template2 = this.querySelector(
+              const template = this.querySelector(
                 "template[shadowrootmode]"
               );
-              template2 ? this.#appendTemplate(template2) : this.#templateObserver = this.#createTemplateObserver();
+              template ? this.#appendTemplate(template) : this.#templateObserver = this.#createTemplateObserver();
             }
             if (this.plait) {
               this.internals_.shadowRoot && this.#delegateListeners(
@@ -558,14 +759,14 @@ var isle = ({
               });
               this.#shadowObserver = this.#createShadowObserver();
               this.#disconnect = disconnect;
-              this.#trigger = trigger;
+              this.trigger = trigger;
             }
           }
           disconnectedCallback() {
             this.#templateObserver && this.#templateObserver.disconnect();
             this.#shadowObserver && this.#shadowObserver.disconnect();
             if (this.#disconnect) {
-              this.#trigger({
+              this.trigger({
                 type: `disconnected->${this.id || this.tagName.toLowerCase()}`
               });
               this.#disconnect();
@@ -582,7 +783,7 @@ var isle = ({
                     event,
                     el
                   );
-                  triggerKey ? this.#trigger({
+                  triggerKey ? this.trigger({
                     type: triggerKey,
                     detail: event
                   }) : el.removeEventListener(
@@ -623,94 +824,74 @@ var isle = ({
             });
             return mo;
           }
-          #appendTemplate(template2) {
+          #appendTemplate(template) {
             if (this.internals_.shadowRoot) {
               !this.internals_.shadowRoot.firstChild && this.internals_.shadowRoot.appendChild(
-                document.importNode(template2.content, true)
+                document.importNode(template.content, true)
               );
-              template2.remove();
+              template.remove();
             }
           }
           #createTemplateObserver() {
             const mo = new MutationObserver(() => {
-              const template2 = this.querySelector(
+              const template = this.querySelector(
                 "template[shadowrootmode]"
               );
-              if (template2) {
+              if (template) {
                 mo.disconnect();
-                this.#appendTemplate(template2);
+                this.#appendTemplate(template);
               }
             });
             mo.observe(this, { childList: true });
             return mo;
           }
           $(target) {
+            const elements = [];
             if (this.internals_.shadowRoot) {
-              return [...this.internals_.shadowRoot.querySelectorAll(
+              this.internals_.shadowRoot.querySelectorAll(
                 `[${dataTarget}="${target}"]`
-              )].filter(
-                (el) => el.tagName === "SLOT" ? canUseSlot(el) : true
-              );
+              ).forEach((el) => {
+                if (el.tagName === "SLOT") {
+                  if (canUseSlot(el)) {
+                    Object.assign(el, sugar);
+                    elements.push(el);
+                  }
+                  return;
+                }
+                Object.assign(el, sugar);
+                elements.push(el);
+              });
             }
-            return [];
+            Object.assign(elements, sugarForEach);
+            return elements;
           }
         }
       )
     );
   };
-  define["template"] = template(({
-    styles,
-    shadow,
-    light,
-    ...rest
-  }) => {
-    const stylesheet = styles && html`<style>${typeof styles === "string" ? styles : [...styles]}</style>`;
-    return html`
-  <${tag} ${wire({ ...rest })}>
-    <template
-      shadowrootmode="${mode}"
-      ${delegatesFocus && "shadowrootdelegatesfocus"}
-    >
-      ${stylesheet}
-      ${shadow}
-    </template>
-    ${light}
-  </${tag}>
-  `;
-  });
+  define["template"] = (props) => createTemplate(tag, props);
   return define;
 };
 
-// libs/islandly/tokens.ts
-var tokens = (...objs) => {
-  const filtered = objs.filter(Boolean);
-  const toRet = {};
-  Object.assign(toRet, ...filtered);
-  for (const key in toRet) {
-    toRet[`--${key}`] = toRet[key];
-    delete toRet[key];
-  }
-  return toRet;
-};
-
-// libs/islandly/create-idb.ts
-var createIDB = (dbName, storeName) => {
-  const dbp = new Promise((resolve, reject) => {
-    const openreq = indexedDB.open(dbName);
-    openreq.onerror = () => reject(openreq.error);
-    openreq.onsuccess = () => resolve(openreq.result);
-    openreq.onupgradeneeded = () => {
-      !openreq.result.objectStoreNames.contains(storeName) && openreq.result.createObjectStore(storeName);
+// libs/islandly/memo.ts
+var shallowCompare = (obj1, obj2) => Object.keys(obj1).length === Object.keys(obj2).length && Object.keys(obj1).every(
+  (key) => Object.hasOwn(obj2, key) && obj1[key] === obj2[key]
+);
+var memo = (resultFn) => {
+  let cache = null;
+  function tpl(props) {
+    if (cache && cache.lastThis === this && shallowCompare(props, cache.lastProps)) {
+      return cache.lastResult;
+    }
+    const lastResult = resultFn.call(this, props);
+    cache = {
+      lastResult,
+      lastProps: props,
+      lastThis: this
     };
-  });
-  return (type, callback) => dbp.then(
-    (db) => new Promise((resolve, reject) => {
-      const transaction = db.transaction(storeName, type);
-      transaction.oncomplete = () => resolve();
-      transaction.onabort = transaction.onerror = () => reject(transaction.error);
-      callback(transaction.objectStore(storeName));
-    })
-  );
+    return lastResult;
+  }
+  return tpl;
 };
 
 // libs/islandly/messenger.ts
@@ -732,6 +913,31 @@ var messenger = () => {
     emitter.dispatchEvent(event);
   };
   return Object.freeze({ connect, send });
+};
+
+// libs/islandly/ssr.ts
+var ssr = (...templates) => {
+  return "<!DOCTYPE html> " + templates.map((tpl) => tpl.content).join("");
+};
+
+// libs/islandly/use-css-var.ts
+var useCSSVar = (variable) => {
+  const name = variable.startsWith("var(") ? variable.substring(4, variable.length - 5) : variable;
+  const get = () => getComputedStyle(document.documentElement).getPropertyValue(name);
+  const set = (value, rem = true) => {
+    let val;
+    if (typeof value === "number" && rem) {
+      const baseFontSize = parseInt(
+        getComputedStyle(document.documentElement).fontSize
+      );
+      val = `${value / baseFontSize}rem`;
+    }
+    document.documentElement.style.setProperty(name, val || value.toString());
+  };
+  return Object.freeze([
+    get,
+    set
+  ]);
 };
 
 // libs/islandly/use-indexed-db.ts
@@ -800,6 +1006,27 @@ var useStore = (initialStore) => {
   ]);
 };
 
+// libs/islandly/use-tokens.ts
+var useTokens = (...obj) => {
+  let tokenSet = {};
+  const set = (...tokenSets) => {
+    const nextSet = {};
+    const filtered = tokenSets.filter(Boolean);
+    Object.assign(nextSet, ...filtered);
+    for (const key in nextSet) {
+      nextSet[`--${key}`] = nextSet[key];
+      delete nextSet[key];
+    }
+    tokenSet = nextSet;
+  };
+  set(...obj);
+  const get = () => tokenSet;
+  return Object.freeze([
+    get,
+    set
+  ]);
+};
+
 // libs/islandly/use-web-worker.ts
 var useWebWorker = ({
   /** identifier for our worker */
@@ -828,39 +1055,30 @@ var useWebWorker = ({
     worker.removeEventListener("message", eventHandler);
   };
 };
-
-// libs/islandly/render.ts
-var render = (parent, template2, position) => {
-  const tpl = document.createElement("template");
-  tpl.innerHTML = template2;
-  const clone = tpl.content.cloneNode(true);
-  if (position === "afterbegin") {
-    return parent.prepend(clone);
-  }
-  if (position === "beforeend") {
-    return parent.append(clone);
-  }
-  parent.replaceChildren();
-  return parent.append(clone);
-};
 export {
+  Fragment,
   bProgram,
+  canUseSlot,
   classNames,
   createIDB,
+  createTemplate,
   css,
-  cssVar,
-  html,
+  getTriggerKey,
+  createTemplate as h,
   isle,
   loop,
+  matchAllEvents,
+  memo,
   messenger,
+  reduceWhitespace,
   render,
+  ssr,
   sync,
-  template,
   thread,
-  tokens,
+  useCSSVar,
   useIndexedDB,
   useMain,
   useStore,
-  useWebWorker,
-  wire
+  useTokens,
+  useWebWorker
 };

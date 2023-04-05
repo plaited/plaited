@@ -1,6 +1,5 @@
 {
   "recommendations": [
-    "denoland.vscode-deno",
-    "pushqrdx.inline-html"
+    "denoland.vscode-deno"
   ]
 }
