@@ -13,15 +13,16 @@ export const sugar = {
   ) {
     const element = this as unknown as HTMLElement | SVGElement
     const template = document.createElement('template')
-    template.innerHTML = Array.isArray(data)
-      ? data.map((d) => tpl(d).content).join('')
-      : tpl(data).content
+    Array.isArray(data)
+      ? template.content.append(...data.map((d) => tpl(d).content))
+      : template.content.append(tpl(data).content)
+
     if (position) {
       element.insertAdjacentElement(position, template)
-      template.replaceWith(template.content.cloneNode(true))
+      template.replaceWith(template.content)
       return element
     }
-    element.replaceChildren(template.content.cloneNode(true))
+    element.replaceChildren(template.content)
     return element
   },
   replace(
@@ -30,10 +31,10 @@ export const sugar = {
   ) {
     const element = this as unknown as HTMLElement | SVGElement
     const template = document.createElement('template')
-    template.innerHTML = Array.isArray(data)
-      ? data.map((d) => tpl(d).content).join('')
-      : tpl(data).content
-    element.replaceWith(template.content.cloneNode(true))
+    Array.isArray(data)
+      ? template.content.append(...data.map((d) => tpl(d).content))
+      : template.content.append(tpl(data).content)
+    element.replaceWith(template.content)
   },
   attr(attr: string, val?: string) {
     const element = this as unknown as HTMLElement | SVGElement
@@ -82,4 +83,5 @@ export const sugarForEach = {
 
 export const useSugar = (element: HTMLElement | SVGElement) => {
   Object.assign(element, sugar)
+  return element
 }
