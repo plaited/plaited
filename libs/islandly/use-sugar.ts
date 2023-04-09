@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import { PlaitedElement } from './create-template.ts'
 /**
  * Inspired by blingblingjs
@@ -6,9 +7,9 @@ import { PlaitedElement } from './create-template.ts'
  */
 type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
 export const sugar = {
-  render(
-    data: Record<string, any> | Record<string, any>[],
-    tpl: PlaitedElement,
+  render<T extends Record<string, any>>(
+    data: T | T[],
+    tpl: PlaitedElement<T>,
     position?: Position,
   ) {
     const element = this as unknown as HTMLElement | SVGElement
@@ -25,9 +26,9 @@ export const sugar = {
     element.replaceChildren(template.content)
     return element
   },
-  replace(
-    data: Record<string, any> | Record<string, any>[],
-    tpl: PlaitedElement,
+  replace<T extends Record<string, any>>(
+    data: T | T[],
+    tpl: PlaitedElement<T>,
   ) {
     const element = this as unknown as HTMLElement | SVGElement
     const template = document.createElement('template')
@@ -53,16 +54,19 @@ export type SugaredElement<
 > = T & typeof sugar
 
 export const sugarForEach = {
-  render(
-    data: Record<string, any>[],
-    template: PlaitedElement,
+  render<T extends Record<string, any>>(
+    data: T[],
+    template: PlaitedElement<T>,
     position?: Position,
   ) {
     const elements = this as unknown as SugaredElement[]
     elements.forEach(($el, i) => $el.render(data[i], template, position))
     return elements
   },
-  replace(data: Record<string, any>[], template: PlaitedElement) {
+  replace<T extends Record<string, any>>(
+    data: T[],
+    template: PlaitedElement<T>,
+  ) {
     const elements = this as unknown as SugaredElement[]
     elements.forEach(($el, i) => $el.replace(data[i], template))
     return elements

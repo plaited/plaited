@@ -120,8 +120,7 @@ export const BenchmarkIsland = isle(
           add() {
             setData((old) => {
               const data = buildData(1000)
-              console.log(data)
-              tbody.render(data, TableRow, 'beforeend')
+              tbody?.render<RowAttrs>(data, TableRow, 'beforeend')
               return old.concat(data)
             })
           },
@@ -152,7 +151,7 @@ export const BenchmarkIsland = isle(
             setData((data) => {
               const idx = data.findIndex((d) => d.id === id)
               data.splice(idx, 1)
-              $(`${id}`).remove()
+              $(`${id}`)?.remove()
               return data
             })
           },
@@ -161,26 +160,26 @@ export const BenchmarkIsland = isle(
               const cur = getSelected()
               if (cur > -1) {
                 data[cur].selected = false
-                $(`${data[cur].id}`).attr('class', '')
+                $(`${data[cur].id}`)?.attr('class', '')
               }
               const next = data.findIndex((d) => d.id === id)
               setSelected(next)
               data[next].selected = true
-              $(`${data[next].id}`).attr('class', 'danger')
+              $(`${data[next].id}`)?.attr('class', 'danger')
               return data
             })
           },
           swapRows() {
             setData((data) => {
               if (data.length > 998) {
-                tbody.insertBefore(
-                  $(`${data[1].id}`),
-                  $(`${data[999].id}`),
-                )
-                tbody.insertBefore(
-                  $(`${data[998].id}`),
-                  $(`${data[2].id}`),
-                )
+                let node = $(`${data[1].id}`), before = $(`${data[999].id}`)
+                if (node && before) {
+                  tbody?.insertBefore(node, before)
+                }
+                node = $(`${data[998].id}`), before = $(`${data[2].id}`)
+                if (node && before) {
+                  tbody?.insertBefore(node, before)
+                }
                 const tmp = data[1]
                 data[1] = data[998]
                 data[998] = tmp
@@ -192,14 +191,14 @@ export const BenchmarkIsland = isle(
             setData((data) => {
               for (let i = 0; i < data.length; i += 10) {
                 data[i].label += ' !!!'
-                $(`label-${data[i].id}`).innerText = data[i].label
+                const label = $<HTMLElement>(`label-${data[i].id}`)
+                label && (label.innerText = data[i].label)
               }
               return data
             })
           },
           render() {
-            const data = getData()
-            tbody.render(data, TableRow)
+            tbody?.render<RowAttrs>(getData(), TableRow)
           },
         })
       }

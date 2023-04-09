@@ -239,7 +239,7 @@ export const isle = (
           /** we're bringing the bling back!!! */
           $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
             target: string,
-          ): SugaredElement<T> | Record<string | number | symbol, never>
+          ): SugaredElement<T> | undefined
           $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
             target: string,
             all: true,
@@ -249,7 +249,7 @@ export const isle = (
             all = false,
           ):
             | SugaredElement<T>
-            | Record<string | number | symbol, never>
+            | undefined
             | SugaredElement<T>[] {
             const selector = `[${dataTarget}="${target}"]`
             if (all) {
@@ -266,14 +266,13 @@ export const isle = (
               return Object.assign(elements, sugarForEach)
             }
             const element = this.#root.querySelector<T>(selector)
-            if (!element) return {}
+            if (!element) return
             if (
               element.tagName !== 'SLOT' ||
               canUseSlot(element as HTMLSlotElement)
             ) {
               return Object.assign(element, sugar)
             }
-            return {}
           }
         },
       ),
