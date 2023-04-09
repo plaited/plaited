@@ -8,10 +8,11 @@ var escapeObj = {
   '"': "&quot;"
 };
 var { replace } = "";
+var cape = (key) => escapeObj[key];
 var escape = (sub) => replace.call(
   sub,
   reEscape,
-  (key) => escapeObj[key]
+  cape
 );
 
 // libs/islandly/constants.ts

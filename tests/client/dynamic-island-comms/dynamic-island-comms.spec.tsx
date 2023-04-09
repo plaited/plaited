@@ -1,4 +1,4 @@
-import { css, isle, messenger, PlaitProps, render } from '$plaited'
+import { css, isle, messenger, PlaitProps } from '$plaited'
 export const { connect, send } = messenger()
 import { test } from '$rite'
 const { classes, styles } = css`.row {
@@ -62,26 +62,26 @@ test('dynamic island comms', async (t) => {
   DynamicOne()
   DynamicTwo()
 
-  render(
-    wrapper,
-    <>
-      <DynamicOne.template styles={styles} id='one'>
-        <div class={classes.row}>
-          <button
-            data-target='button'
-            class={classes.button}
-            data-trigger='click->click'
-          >
-            Add "world!"
-          </button>
-        </div>
-      </DynamicOne.template>
-      <DynamicTwo.template styles={styles}>
-        <h1 data-target='header'>Hello</h1>
-      </DynamicTwo.template>
-    </>,
-    'beforeend',
-  )
+  // render(
+  //   wrapper,
+  //   <>
+  //     <DynamicOne.template styles={styles} id='one'>
+  //       <div class={classes.row}>
+  //         <button
+  //           data-target='button'
+  //           class={classes.button}
+  //           data-trigger='click->click'
+  //         >
+  //           Add "world!"
+  //         </button>
+  //       </div>
+  //     </DynamicOne.template>
+  //     <DynamicTwo.template styles={styles}>
+  //       <h1 data-target='header'>Hello</h1>
+  //     </DynamicTwo.template>
+  //   </>,
+  //   'beforeend',
+  // )
   let button = await t.findByAttribute('data-target', 'button', wrapper)
   const header = await t.findByAttribute('data-target', 'header', wrapper)
   t({

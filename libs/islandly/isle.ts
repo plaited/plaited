@@ -47,6 +47,21 @@ export const getTriggerKey = (
 // We only support binding and querying named slots that are not also nested slots
 export const canUseSlot = (node: HTMLSlotElement) =>
   !node.hasAttribute('slot') && node.hasAttribute('name')
+
+const traverseNodes = (node: Node, arr: Node[]) => {
+  if (node.nodeType === 1) {
+    if ((node as Element).hasAttribute('data-trigger')) {
+      arr.push(node)
+    }
+    if (node.hasChildNodes()) {
+      const childNodes = node.childNodes
+      const length = childNodes.length
+      for (let i = 0; i < length; i++) {
+        traverseNodes(childNodes[i], arr)
+      }
+    }
+  }
+}
 /**
  * A typescript function for instantiating Plaited Island Elements
  */
@@ -75,13 +90,22 @@ export const isle = (
           internals_: ElementInternals
           trigger: Trigger
           plait?: (props: PlaitProps) => void | Promise<void>
-
+          #root: ShadowRoot
           constructor() {
             super()
             this.internals_ = this.attachInternals()
-            !this.internals_.shadowRoot &&
-              this.attachShadow({ mode, delegatesFocus }) // no declarative shadowdom then connect one
-            Object.assign(this, sugar)
+            if (this.internals_.shadowRoot) {
+              this.#root = this.internals_.shadowRoot
+            } else {
+              /** no declarative shadow dom then create a shadowRoot */
+              this.#root = this.attachShadow({ mode, delegatesFocus })
+            }
+            /** Warn ourselves not to overwrite the trigger method */
+            if (this.trigger !== this.constructor.prototype.trigger) {
+              throw new Error(
+                'trigger cannot be overridden in a subclass.',
+              )
+            }
           }
           connectedCallback() {
             if (!this.internals_.shadowRoot?.firstChild) {
@@ -93,8 +117,8 @@ export const isle = (
                 : (this.#templateObserver = this.#createTemplateObserver())
             }
             if (this.plait) {
-              this.internals_.shadowRoot && this.#delegateListeners( // just connected/upgraded then delegate listeners nodes with data-trigger attribute
-                this.internals_.shadowRoot.querySelectorAll<HTMLElement>(
+              this.#delegateListeners( // just connected/upgraded then delegate listeners nodes with data-trigger attribute
+                this.#root.querySelectorAll<HTMLElement>(
                   `[${dataTrigger}]`,
                 ),
               )
@@ -127,13 +151,13 @@ export const isle = (
           }
           #delegateListeners(
             nodes:
-              | (HTMLElement | SVGElement)[]
+              | Node[]
               | NodeList,
           ) {
             nodes.forEach((el) => {
-              if (el.nodeType === 1) { // Node is of type Element
+              if (el.nodeType === 1) { // Node is of type Element which in the browser mean HTMLElement | SVGElement
                 if (
-                  (el as HTMLElement).tagName === 'SLOT' && // Element is an instance of a slot
+                  (el as Element).tagName === 'SLOT' && // Element is an instance of a slot
                   !canUseSlot(el as HTMLSlotElement)
                 ) return // Element is not a slot we can use return callback
                 !delegatedListener.has(el) &&
@@ -170,34 +194,34 @@ export const isle = (
           #createShadowObserver() {
             const mo = new MutationObserver((mutationsList) => {
               for (const mutation of mutationsList) {
-                if (mutation.addedNodes.length) {
-                  this.#delegateListeners(mutation.addedNodes)
-                }
                 if (mutation.type === 'attributes') {
-                  this.internals_.shadowRoot && this.#delegateListeners(
-                    this.internals_.shadowRoot.querySelectorAll<HTMLElement>(
-                      `[${dataTrigger}]`,
-                    ),
-                  )
+                  const el = mutation.target
+                  if (el.nodeType === 1) {
+                    this.#delegateListeners([el])
+                  }
+                } else if (mutation.addedNodes.length) {
+                  const list: Node[] = []
+                  const length = mutation.addedNodes.length
+                  for (let i = 0; i < length; i++) {
+                    traverseNodes(mutation.addedNodes[i], list)
+                  }
+                  this.#delegateListeners(list)
                 }
               }
             })
-            this.internals_.shadowRoot &&
-              mo.observe(this.internals_.shadowRoot, {
-                attributeFilter: [dataTrigger],
-                childList: true,
-                subtree: true,
-              })
+            mo.observe(this.#root, {
+              attributeFilter: [dataTrigger],
+              childList: true,
+              subtree: true,
+            })
             return mo
           }
           #appendTemplate(template: HTMLTemplateElement) {
-            if (this.internals_.shadowRoot) {
-              !this.internals_.shadowRoot.firstChild &&
-                this.internals_.shadowRoot.appendChild(
-                  document.importNode((template).content, true),
-                )
-              template.remove()
-            }
+            !this.#root.firstChild &&
+              this.#root.appendChild(
+                document.importNode(template.content, true),
+              )
+            template.remove()
           }
           #createTemplateObserver() {
             const mo = new MutationObserver(() => {
@@ -212,27 +236,40 @@ export const isle = (
             mo.observe(this, { childList: true })
             return mo
           }
+          /** we're bringing the bling back!!! */
           $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
             target: string,
-          ): SugaredElement<T>[] {
-            const elements: SugaredElement<T>[] = []
-            if (this.internals_.shadowRoot) {
-              this.internals_.shadowRoot.querySelectorAll<T>(
-                `[${dataTarget}="${target}"]`,
-              ).forEach((el) => {
-                if (el.tagName === 'SLOT') {
-                  if (canUseSlot(el as HTMLSlotElement)) {
-                    Object.assign(el, sugar)
-                    elements.push(el as SugaredElement<T>)
+          ): SugaredElement<T> | undefined
+          $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+            target: string,
+            all: true,
+          ): SugaredElement<T>[]
+          $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+            target: string,
+            all = false,
+          ): SugaredElement<T> | undefined | SugaredElement<T>[] {
+            const selector = `[${dataTarget}="${target}"]`
+            if (all) {
+              const elements: SugaredElement<T>[] = []
+              this.#root.querySelectorAll<T>(selector)
+                .forEach((element) => {
+                  if (
+                    element.tagName !== 'SLOT' ||
+                    canUseSlot(element as HTMLSlotElement)
+                  ) {
+                    elements.push(Object.assign(element, sugar))
                   }
-                  return
-                }
-                Object.assign(el, sugar)
-                elements.push(el as SugaredElement<T>)
-              })
+                })
+              return Object.assign(elements, sugarForEach)
             }
-            Object.assign(elements, sugarForEach)
-            return elements
+            const element = this.#root.querySelector<T>(selector)
+            if (!element) return
+            if (
+              element.tagName !== 'SLOT' ||
+              canUseSlot(element as HTMLSlotElement)
+            ) {
+              return Object.assign(element, sugar)
+            }
           }
         },
       ),

@@ -27,9 +27,13 @@ export type ISLElementOptions = {
 
 export type PlaitProps = {
   /** query for elements with the data-target attribute in the Island's shadowDom and slots */
-  $: <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+  $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
     target: string,
-  ) => SugaredElement<T>[]
+  ): SugaredElement<T> | undefined
+  $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+    target: string,
+    all: true,
+  ): SugaredElement<T>[]
   /** The DOM node context allowing easy light & shadow dom access
    * @example
    * // returns the div element inside

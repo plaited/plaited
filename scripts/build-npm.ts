@@ -49,6 +49,7 @@ const config = {
   },
   'exports': {
     '.': './mod.js',
+    './jsx-runtime': './jsx-runtime.js',
   },
 }
 

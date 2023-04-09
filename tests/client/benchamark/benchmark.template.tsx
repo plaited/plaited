@@ -1,5 +1,5 @@
 export const BenchmarkTemplate = () => (
-  <tagged-benchmark-island>
+  <benchmark-island>
     <link href='/css/currentStyle.css' rel='stylesheet' />
     <div class='container'>
       <div class='jumbotron'>
@@ -81,5 +81,5 @@ export const BenchmarkTemplate = () => (
         <tbody data-trigger={{ click: 'interact' }} data-target='tbody'></tbody>
       </table>
     </div>
-  </tagged-benchmark-island>
+  </benchmark-island>
 )

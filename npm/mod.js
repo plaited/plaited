@@ -275,10 +275,11 @@ var escapeObj = {
   '"': "&quot;"
 };
 var { replace } = "";
+var cape = (key) => escapeObj[key];
 var escape2 = (sub) => replace.call(
   sub,
   reEscape,
-  (key) => escapeObj[key]
+  cape
 );
 
 // libs/utils/hash.ts
@@ -625,25 +626,6 @@ var delegatedListener = Object.freeze({
 
 // libs/islandly/sugar.ts
 var sugar = {
-  render(tpl, position) {
-    const element = this;
-    const template = document.createElement("template");
-    template.innerHTML = tpl.content;
-    if (position) {
-      element.insertAdjacentElement(position, template);
-      template.replaceWith(template.content.cloneNode(true));
-      return element;
-    }
-    element.replaceChildren(template.content.cloneNode(true));
-    return element;
-  },
-  replace(tpl) {
-    const element = this;
-    const template = document.createElement("template");
-    template.innerHTML = tpl.content;
-    console.log({ element, clone: template.content.cloneNode(true).childNodes });
-    element.replaceWith(...template.content.cloneNode(true).childNodes);
-  },
   attr(attr, val) {
     const element = this;
     if (val === void 0)
@@ -653,16 +635,6 @@ var sugar = {
   }
 };
 var sugarForEach = {
-  render(template, position) {
-    const elements = this;
-    elements.forEach(($el) => $el.render(template, position));
-    return elements;
-  },
-  replace(template) {
-    const elements = this;
-    elements.forEach(($el) => $el.replace(template));
-    return elements;
-  },
   attr(attrs, val) {
     const elements = this;
     if (typeof attrs === "string") {
@@ -674,17 +646,6 @@ var sugarForEach = {
     }
     return elements;
   }
-};
-var render = (element, tpl, position) => {
-  const template = document.createElement("template");
-  template.innerHTML = tpl.content;
-  if (position) {
-    element.insertAdjacentElement(position, template);
-    template.replaceWith(template.content.cloneNode(true));
-    return element;
-  }
-  element.replaceChildren(template.content.cloneNode(true));
-  return element;
 };
 
 // libs/islandly/isle.ts
@@ -706,6 +667,20 @@ var getTriggerKey = (e, context) => {
   return key ? key.replace(pre, "") : "";
 };
 var canUseSlot = (node) => !node.hasAttribute("slot") && node.hasAttribute("name");
+var traverseNodes = (node, arr) => {
+  if (node.nodeType === 1) {
+    if (node.hasAttribute("data-trigger")) {
+      arr.push(node);
+    }
+    if (node.hasChildNodes()) {
+      const childNodes = node.childNodes;
+      const length = childNodes.length;
+      for (let i = 0; i < length; i++) {
+        traverseNodes(childNodes[i], arr);
+      }
+    }
+  }
+};
 var isle = ({
   mode = "open",
   delegatesFocus = true,
@@ -725,12 +700,21 @@ var isle = ({
           constructor() {
             super();
             this.internals_ = this.attachInternals();
-            !this.internals_.shadowRoot && this.attachShadow({ mode, delegatesFocus });
-            Object.assign(this, sugar);
+            if (this.internals_.shadowRoot) {
+              this.#root = this.internals_.shadowRoot;
+            } else {
+              this.#root = this.attachShadow({ mode, delegatesFocus });
+            }
+            if (this.trigger !== this.constructor.prototype.trigger) {
+              throw new Error(
+                "trigger cannot be overridden in a subclass."
+              );
+            }
           }
           #shadowObserver;
           #templateObserver;
           #disconnect;
+          #root;
           connectedCallback() {
             if (!this.internals_.shadowRoot?.firstChild) {
               const template = this.querySelector(
@@ -739,9 +723,9 @@ var isle = ({
               template ? this.#appendTemplate(template) : this.#templateObserver = this.#createTemplateObserver();
             }
             if (this.plait) {
-              this.internals_.shadowRoot && this.#delegateListeners(
+              this.#delegateListeners(
                 // just connected/upgraded then delegate listeners nodes with data-trigger attribute
-                this.internals_.shadowRoot.querySelectorAll(
+                this.#root.querySelectorAll(
                   `[${dataTrigger}]`
                 )
               );
@@ -805,19 +789,22 @@ var isle = ({
           #createShadowObserver() {
             const mo = new MutationObserver((mutationsList) => {
               for (const mutation of mutationsList) {
-                if (mutation.addedNodes.length) {
-                  this.#delegateListeners(mutation.addedNodes);
-                }
                 if (mutation.type === "attributes") {
-                  this.internals_.shadowRoot && this.#delegateListeners(
-                    this.internals_.shadowRoot.querySelectorAll(
-                      `[${dataTrigger}]`
-                    )
-                  );
+                  const el = mutation.target;
+                  if (el.nodeType === 1) {
+                    this.#delegateListeners([el]);
+                  }
+                } else if (mutation.addedNodes.length) {
+                  const list = [];
+                  const length = mutation.addedNodes.length;
+                  for (let i = 0; i < length; i++) {
+                    traverseNodes(mutation.addedNodes[i], list);
+                  }
+                  this.#delegateListeners(list);
                 }
               }
             });
-            this.internals_.shadowRoot && mo.observe(this.internals_.shadowRoot, {
+            mo.observe(this.#root, {
               attributeFilter: [dataTrigger],
               childList: true,
               subtree: true
@@ -825,12 +812,10 @@ var isle = ({
             return mo;
           }
           #appendTemplate(template) {
-            if (this.internals_.shadowRoot) {
-              !this.internals_.shadowRoot.firstChild && this.internals_.shadowRoot.appendChild(
-                document.importNode(template.content, true)
-              );
-              template.remove();
-            }
+            !this.#root.firstChild && this.#root.appendChild(
+              document.importNode(template.content, true)
+            );
+            template.remove();
           }
           #createTemplateObserver() {
             const mo = new MutationObserver(() => {
@@ -845,25 +830,23 @@ var isle = ({
             mo.observe(this, { childList: true });
             return mo;
           }
-          $(target) {
-            const elements = [];
-            if (this.internals_.shadowRoot) {
-              this.internals_.shadowRoot.querySelectorAll(
-                `[${dataTarget}="${target}"]`
-              ).forEach((el) => {
-                if (el.tagName === "SLOT") {
-                  if (canUseSlot(el)) {
-                    Object.assign(el, sugar);
-                    elements.push(el);
-                  }
-                  return;
+          $(target, all = false) {
+            const selector = `[${dataTarget}="${target}"]`;
+            if (all) {
+              const elements = [];
+              this.#root.querySelectorAll(selector).forEach((element2) => {
+                if (element2.tagName !== "SLOT" || canUseSlot(element2)) {
+                  elements.push(Object.assign(element2, sugar));
                 }
-                Object.assign(el, sugar);
-                elements.push(el);
               });
+              return Object.assign(elements, sugarForEach);
             }
-            Object.assign(elements, sugarForEach);
-            return elements;
+            const element = this.#root.querySelector(selector);
+            if (!element)
+              return;
+            if (element.tagName !== "SLOT" || canUseSlot(element)) {
+              return Object.assign(element, sugar);
+            }
           }
         }
       )
@@ -993,6 +976,109 @@ var useMain = ({
   return Object.freeze({ send, disconnect });
 };
 
+// libs/islandly/diff.ts
+var diff = (parentNode, template) => {
+  const a = Array.prototype.slice.call(parentNode.childNodes);
+  const b = Array.prototype.slice.call(
+    template.content.cloneNode(true).childNodes
+  );
+  const bLength = b.length;
+  let aEnd = a.length;
+  let bEnd = bLength;
+  let aStart = 0;
+  let bStart = 0;
+  let map = null;
+  while (aStart < aEnd || bStart < bEnd) {
+    if (aEnd === aStart) {
+      const node = bEnd < bLength ? bStart ? b[bStart - 1].nextSibling : b[bEnd - bStart] : null;
+      while (bStart < bEnd) {
+        ;
+        parentNode.insertBefore(b[bStart++], node);
+      }
+    } else if (bEnd === bStart) {
+      while (aStart < aEnd) {
+        if (!map || !map.has(a[aStart])) {
+          a[aStart].remove();
+        }
+        aStart++;
+      }
+    } else if (a[aStart] === b[bStart]) {
+      aStart++;
+      bStart++;
+    } else if (a[aEnd - 1] === b[bEnd - 1]) {
+      aEnd--;
+      bEnd--;
+    } else if (a[aStart] === b[bEnd - 1] && b[bStart] === a[aEnd - 1]) {
+      const node = a[--aEnd].nextSibling(parentNode).insertBefore(
+        b[bStart++],
+        a[aStart++].nextSibling
+      );
+      parentNode.insertBefore(b[--bEnd], node);
+      a[aEnd] = b[bEnd];
+    } else {
+      if (!map) {
+        map = /* @__PURE__ */ new Map();
+        let i = bStart;
+        while (i < bEnd) {
+          map.set(b[i], i++);
+        }
+      }
+      if (map.has(a[aStart])) {
+        const index = map.get(a[aStart]);
+        if (bStart < index && index < bEnd) {
+          let i = aStart;
+          let sequence = 1;
+          while (++i < aEnd && i < bEnd && map.get(a[i]) === index + sequence) {
+            sequence++;
+          }
+          if (sequence > index - bStart) {
+            const node = a[aStart];
+            while (bStart < index) {
+              ;
+              parentNode.insertBefore(b[bStart++], node);
+            }
+          } else {
+            ;
+            parentNode.replaceChild(
+              b[bStart++],
+              a[aStart++]
+            );
+          }
+        } else {
+          aStart++;
+        }
+      } else {
+        a[aStart++].remove();
+      }
+    }
+  }
+  return b;
+};
+
+// libs/islandly/use-render.ts
+var useRender = (parent, element) => {
+  let cache;
+  const template = document.createElement("template");
+  return Object.freeze([
+    (data) => {
+      template.innerHTML = Array.isArray(data) ? data.map((obj) => element(obj).content).join("") : element(data).content;
+      parent.replaceChildren(template.content.cloneNode(true));
+      cache = data;
+    },
+    (callback) => {
+      if (cache) {
+        cache = callback(cache);
+        template.innerHTML = Array.isArray(cache) ? cache.map((obj) => element(obj).content).join("") : element(cache).content;
+        diff(parent, template);
+      } else {
+        throw new Error(
+          `called update before render on [${parent.getAttribute("data-target")}]`
+        );
+      }
+    }
+  ]);
+};
+
 // libs/islandly/use-store.ts
 var useStore = (initialStore) => {
   let store = initialStore;
@@ -1071,13 +1157,13 @@ export {
   memo,
   messenger,
   reduceWhitespace,
-  render,
   ssr,
   sync,
   thread,
   useCSSVar,
   useIndexedDB,
   useMain,
+  useRender,
   useStore,
   useTokens,
   useWebWorker

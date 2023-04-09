@@ -1,14 +1,16 @@
 // deno-lint-ignore-file no-extra-semi
-// // deno-lint-ignore-file no-extra-semi
-type DomNode =
-  | Element
-  | Text
-  | Comment
 
 /* (c) Andrea Giammarchi - ISC */
 // @see https://github.com/WebReflection/udomdiff
-export const diff = (a: DomNode[], b: DomNode[], before: Node) => {
-  const { parentNode } = before
+
+export const diff = (
+  parentNode: HTMLElement | SVGElement,
+  template: HTMLTemplateElement,
+) => {
+  const a = Array.prototype.slice.call(parentNode.childNodes)
+  const b = Array.prototype.slice.call(
+    template.content.cloneNode(true).childNodes,
+  )
   const bLength = b.length
   let aEnd = a.length
   let bEnd = bLength
@@ -24,7 +26,7 @@ export const diff = (a: DomNode[], b: DomNode[], before: Node) => {
       // must be retrieved, otherwise it's gonna be the first item.
       const node = bEnd < bLength
         ? (bStart ? b[bStart - 1].nextSibling : b[bEnd - bStart])
-        : before
+        : null
       while (bStart < bEnd) {
         ;(parentNode as Node).insertBefore(b[bStart++], node)
       }
@@ -59,6 +61,7 @@ export const diff = (a: DomNode[], b: DomNode[], before: Node) => {
       // [1, 2, 3, 4, 5]
       // [1, 2, 3, 5, 6, 4]
       //@ts-ignore: it exist
+      console.log('shrinkwrap')
       const node: Node = a[--aEnd].nextSibling(parentNode as Node).insertBefore(
         b[bStart++],
         a[aStart++].nextSibling,
@@ -112,6 +115,7 @@ export const diff = (a: DomNode[], b: DomNode[], before: Node) => {
           if (sequence > (index - bStart)) {
             const node = a[aStart]
             while (bStart < index) {
+              console.log('swap')
               ;(parentNode as Node).insertBefore(b[bStart++], node)
             }
           } // if the effort wasn't good enough, fallback to a replace,

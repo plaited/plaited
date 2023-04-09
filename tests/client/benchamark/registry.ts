@@ -1,2 +1,2 @@
-import { TaggedBenchmark } from './tagged-benchmark.island.tsx'
-TaggedBenchmark()
+import { BenchmarkIsland } from './benchmark.island.tsx'
+BenchmarkIsland()

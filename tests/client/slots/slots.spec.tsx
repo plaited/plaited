@@ -1,5 +1,5 @@
 import { test } from '$rite'
-import { css, isle, PlaitedElement, PlaitProps, render } from '$plaited'
+import { css, isle, PlaitedElement, PlaitProps } from '$plaited'
 const { classes, styles } = css`.row {
   display: flex;
   gap: 12px;
@@ -47,15 +47,15 @@ const SlotTestTemplate: PlaitedElement = ({ children }) => (
     </div>
   </SlotTest.template>
 )
-render(
-  root,
-  <SlotTestTemplate>
-    <button>Slot</button>
-    <button slot='named'>Named</button>
-    <button slot='nested'>Nested</button>
-  </SlotTestTemplate>,
-  'beforeend',
-)
+// render(
+//   root,
+//   <SlotTestTemplate>
+//     <button>Slot</button>
+//     <button slot='named'>Named</button>
+//     <button slot='nested'>Nested</button>
+//   </SlotTestTemplate>,
+//   'beforeend',
+// )
 
 test('slot: default', async (t) => {
   const button = await t.findByText('Slot')

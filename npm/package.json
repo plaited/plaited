@@ -1,6 +1,6 @@
 {
   "name": "plaited",
-  "version": "0.1.5-rc",
+  "version": "0.1.9-rc",
   "description": "Rapidly code and refine web applications as requirements change and evolve.",
   "license": "ISC",
   "type": "module",
@@ -12,6 +12,7 @@
     "url": "https://github.com/plaited/plaited/issues"
   },
   "exports": {
-    ".": "./mod.js"
+    ".": "./mod.js",
+    "./jsx-runtime": "./jsx-runtime.js"
   }
 }

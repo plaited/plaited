@@ -8,14 +8,14 @@ export type Template = {
   stylesheets: Set<string>
 }
 
+type Children = (string | Template)[] | (string | Template)
+
 export type PlaitedElement<
   T extends Record<string, any> = Record<
     string,
     any
   >,
 > = (attrs: Attrs<T>) => Template
-
-type Children = (string | Template)[] | (string | Template)
 
 export type BaseAttrs = {
   class?: string

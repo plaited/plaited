@@ -1,18 +1,23 @@
-import { isle, PlaitedElement, PlaitProps, useStore } from '$plaited'
-import { SugaredElement } from '../../../libs/islandly/sugar.ts'
+import {
+  isle,
+  PlaitedElement,
+  PlaitProps,
+  Render,
+  Update,
+  useRender,
+  useStore,
+} from '$plaited'
 
-const TableRow: PlaitedElement<
-  { id: number; label: string; selected: boolean }
-> = (item) => {
+type RowAttrs = { id: number; label: string; selected: boolean }
+const TableRow: PlaitedElement<RowAttrs> = (item) => {
   return (
     <tr
       id={item.id}
       class={item.selected ? 'danger' : ''}
-      data-target={item.id}
     >
       <td class='col-md-1'>{item.id}</td>
       <td class='col-md-4'>
-        <a>{item.label}</a>
+        <a data-target={`label-${item.id}`}>{item.label}</a>
       </td>
       <td data-id={item.id} class='col-md-1' data-interaction='delete'>
         <a>
@@ -24,16 +29,8 @@ const TableRow: PlaitedElement<
     </tr>
   )
 }
-
-// const TableBodyTemplate: PlaitedElement<{
-//   data: { id: number; label: string; selected: boolean }[]
-// }> = ({ data }) => (
-//   <>
-//     {)}
-//   </>
-// )
-export const TaggedBenchmark = isle(
-  { tag: 'tagged-benchmark-island' },
+export const BenchmarkIsland = isle(
+  { tag: 'benchmark-island' },
   (base) =>
     class extends base {
       plait({ feedback, addThreads, loop, sync, $, trigger }: PlaitProps) {
@@ -92,14 +89,12 @@ export const TaggedBenchmark = isle(
           'mouse',
           'keyboard',
         ]
-        const [getData, setData] = useStore<
-          { id: number; label: string; selected: boolean }[]
-        >([])
+
         const [getSelected, setSelected] = useStore(-1)
         const random = (max: number) => {
           return Math.round(Math.random() * 1000) % max
         }
-        let did = getData().at(-1)?.id || 1
+        let did = 1
         const buildData = (count: number) => {
           const data = []
           for (let i = 0; i < count; i++) {
@@ -113,38 +108,30 @@ export const TaggedBenchmark = isle(
           }
           return data
         }
-        addThreads({
-          renderOn: loop([
-            sync({
-              waitFor: [
-                { type: 'run' },
-                { type: 'runLots' },
-                { type: 'clear' },
-              ],
-            }),
-            sync({ request: { type: 'render' } }),
-          ]),
-        })
-        const [tbody] = $('tbody')
+        const tbody = $('tbody')
+        let render: Render<RowAttrs[]>,
+          update: Update<RowAttrs[]>
+        tbody &&
+          ([render, update] = useRender<RowAttrs[]>(
+            tbody,
+            TableRow,
+          ))
         feedback({
           add() {
-            setData((old) => {
+            update((old) => {
               const data = buildData(1000)
-              tbody.render(
-                <>{data.map((item) => <TableRow {...item} />)}</>,
-                'beforeend',
-              )
-              return old.concat(data)
+              const next = old.concat(data)
+              return next
             })
           },
           run() {
-            setData(buildData(1000))
+            render(buildData(1000))
           },
           runLots() {
-            setData(buildData(10000))
+            render(buildData(10000))
           },
           clear() {
-            setData([])
+            render([])
           },
           interact(e: MouseEvent) {
             const td = (e.target as HTMLElement)?.closest<HTMLTableCellElement>(
@@ -161,35 +148,27 @@ export const TaggedBenchmark = isle(
             }
           },
           delete({ id }: { id: number }) {
-            setData((data) => {
+            update((data) => {
               const idx = data.findIndex((d) => d.id === id)
               data.splice(idx, 1)
-              $(`${idx}`)[0].remove()
               return data
             })
           },
           select({ id }: { id: number }) {
-            setData((data) => {
+            update((data) => {
               const cur = getSelected()
               if (cur > -1) {
                 data[cur].selected = false
-                /** for keyed I'll probably want to use replace for this */
-                $(`${data[cur].id}`)[0].attr('class', '')
               }
               const next = data.findIndex((d) => d.id === id)
               setSelected(next)
-              $(`${data[next].id}`)[0].attr('class', 'danger')
               data[next].selected = true
               return data
             })
           },
           swapRows() {
-            setData((data) => {
+            update((data) => {
               if (data.length > 998) {
-                const el1 = $(`2`)[0]
-                const el2 = $(`999`)[0]
-                el1.replace(<TableRow {...data[998]} />)
-                el2.replace(<TableRow {...data[1]} />)
                 const tmp = data[1]
                 data[1] = data[998]
                 data[998] = tmp
@@ -198,19 +177,12 @@ export const TaggedBenchmark = isle(
             })
           },
           update() {
-            setData((data) => {
+            update((data) => {
               for (let i = 0; i < data.length; i += 10) {
                 data[i].label += ' !!!'
-                $(`${data[i].id}`)[0].replace(
-                  <TableRow {...data[i]} />,
-                )
               }
               return data
             })
-          },
-          render() {
-            const data = getData()
-            tbody.render(<>{data.map((item) => <TableRow {...item} />)}</>)
           },
         })
       }

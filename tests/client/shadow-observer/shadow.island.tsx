@@ -1,4 +1,4 @@
-import { isle, PlaitProps, render } from '$plaited'
+import { isle, PlaitProps } from '$plaited'
 import { SVG } from './noun-braids-2633610.tsx'
 import { classes, styles } from './shadow.styles.ts'
 
@@ -29,7 +29,7 @@ export const ShadowIsland = isle(
             const Sub = isle({
               tag: 'sub-island',
             }, (base) => class extends base {})
-            render(
+            context.render(
               zone,
               <Sub.template styles={styles}>
                 <h3 class={classes['sub-island']}>sub island</h3>
@@ -38,7 +38,11 @@ export const ShadowIsland = isle(
             )
           },
           addButton() {
-            render(context, <button slot='button'>add svg</button>, 'beforeend')
+            context.render(
+              context,
+              <button slot='button'>add svg</button>,
+              'beforeend',
+            )
           },
           modifyAttributes() {
             const [slot] = $('add-svg-slot')
