@@ -1,6 +1,6 @@
 {
   "name": "plaited",
-  "version": "0.1.9-rc",
+  "version": "0.1.13-rc",
   "description": "Rapidly code and refine web applications as requirements change and evolve.",
   "license": "ISC",
   "type": "module",

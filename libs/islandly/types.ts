@@ -1,5 +1,5 @@
 import { bProgram, DevCallback, Strategy, Trigger } from '../behavioral/mod.ts'
-import { SugaredElement } from './sugar.ts'
+import { SugaredElement } from './use-sugar.ts'
 export type Primitive =
   | null
   | undefined

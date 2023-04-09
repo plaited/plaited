@@ -624,8 +624,26 @@ var delegatedListener = Object.freeze({
   has: (context) => delegates.has(context)
 });
 
-// libs/islandly/sugar.ts
+// libs/islandly/use-sugar.ts
 var sugar = {
+  render(data, tpl, position) {
+    const element = this;
+    const template = document.createElement("template");
+    template.innerHTML = Array.isArray(data) ? data.map((d) => tpl(d).content).join("") : tpl(data).content;
+    if (position) {
+      element.insertAdjacentElement(position, template);
+      template.replaceWith(template.content.cloneNode(true));
+      return element;
+    }
+    element.replaceChildren(template.content.cloneNode(true));
+    return element;
+  },
+  replace(data, tpl) {
+    const element = this;
+    const template = document.createElement("template");
+    template.innerHTML = Array.isArray(data) ? data.map((d) => tpl(d).content).join("") : tpl(data).content;
+    element.replaceWith(template.content.cloneNode(true));
+  },
   attr(attr, val) {
     const element = this;
     if (val === void 0)
@@ -635,6 +653,16 @@ var sugar = {
   }
 };
 var sugarForEach = {
+  render(data, template, position) {
+    const elements = this;
+    elements.forEach(($el, i) => $el.render(data[i], template, position));
+    return elements;
+  },
+  replace(data, template) {
+    const elements = this;
+    elements.forEach(($el, i) => $el.replace(data[i], template));
+    return elements;
+  },
   attr(attrs, val) {
     const elements = this;
     if (typeof attrs === "string") {
@@ -646,6 +674,9 @@ var sugarForEach = {
     }
     return elements;
   }
+};
+var useSugar = (element) => {
+  Object.assign(element, sugar);
 };
 
 // libs/islandly/isle.ts
@@ -843,10 +874,11 @@ var isle = ({
             }
             const element = this.#root.querySelector(selector);
             if (!element)
-              return;
+              return {};
             if (element.tagName !== "SLOT" || canUseSlot(element)) {
               return Object.assign(element, sugar);
             }
+            return {};
           }
         }
       )
@@ -976,109 +1008,6 @@ var useMain = ({
   return Object.freeze({ send, disconnect });
 };
 
-// libs/islandly/diff.ts
-var diff = (parentNode, template) => {
-  const a = Array.prototype.slice.call(parentNode.childNodes);
-  const b = Array.prototype.slice.call(
-    template.content.cloneNode(true).childNodes
-  );
-  const bLength = b.length;
-  let aEnd = a.length;
-  let bEnd = bLength;
-  let aStart = 0;
-  let bStart = 0;
-  let map = null;
-  while (aStart < aEnd || bStart < bEnd) {
-    if (aEnd === aStart) {
-      const node = bEnd < bLength ? bStart ? b[bStart - 1].nextSibling : b[bEnd - bStart] : null;
-      while (bStart < bEnd) {
-        ;
-        parentNode.insertBefore(b[bStart++], node);
-      }
-    } else if (bEnd === bStart) {
-      while (aStart < aEnd) {
-        if (!map || !map.has(a[aStart])) {
-          a[aStart].remove();
-        }
-        aStart++;
-      }
-    } else if (a[aStart] === b[bStart]) {
-      aStart++;
-      bStart++;
-    } else if (a[aEnd - 1] === b[bEnd - 1]) {
-      aEnd--;
-      bEnd--;
-    } else if (a[aStart] === b[bEnd - 1] && b[bStart] === a[aEnd - 1]) {
-      const node = a[--aEnd].nextSibling(parentNode).insertBefore(
-        b[bStart++],
-        a[aStart++].nextSibling
-      );
-      parentNode.insertBefore(b[--bEnd], node);
-      a[aEnd] = b[bEnd];
-    } else {
-      if (!map) {
-        map = /* @__PURE__ */ new Map();
-        let i = bStart;
-        while (i < bEnd) {
-          map.set(b[i], i++);
-        }
-      }
-      if (map.has(a[aStart])) {
-        const index = map.get(a[aStart]);
-        if (bStart < index && index < bEnd) {
-          let i = aStart;
-          let sequence = 1;
-          while (++i < aEnd && i < bEnd && map.get(a[i]) === index + sequence) {
-            sequence++;
-          }
-          if (sequence > index - bStart) {
-            const node = a[aStart];
-            while (bStart < index) {
-              ;
-              parentNode.insertBefore(b[bStart++], node);
-            }
-          } else {
-            ;
-            parentNode.replaceChild(
-              b[bStart++],
-              a[aStart++]
-            );
-          }
-        } else {
-          aStart++;
-        }
-      } else {
-        a[aStart++].remove();
-      }
-    }
-  }
-  return b;
-};
-
-// libs/islandly/use-render.ts
-var useRender = (parent, element) => {
-  let cache;
-  const template = document.createElement("template");
-  return Object.freeze([
-    (data) => {
-      template.innerHTML = Array.isArray(data) ? data.map((obj) => element(obj).content).join("") : element(data).content;
-      parent.replaceChildren(template.content.cloneNode(true));
-      cache = data;
-    },
-    (callback) => {
-      if (cache) {
-        cache = callback(cache);
-        template.innerHTML = Array.isArray(cache) ? cache.map((obj) => element(obj).content).join("") : element(cache).content;
-        diff(parent, template);
-      } else {
-        throw new Error(
-          `called update before render on [${parent.getAttribute("data-target")}]`
-        );
-      }
-    }
-  ]);
-};
-
 // libs/islandly/use-store.ts
 var useStore = (initialStore) => {
   let store = initialStore;
@@ -1158,13 +1087,15 @@ export {
   messenger,
   reduceWhitespace,
   ssr,
+  sugar,
+  sugarForEach,
   sync,
   thread,
   useCSSVar,
   useIndexedDB,
   useMain,
-  useRender,
   useStore,
+  useSugar,
   useTokens,
   useWebWorker
 };

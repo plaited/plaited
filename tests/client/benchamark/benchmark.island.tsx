@@ -1,12 +1,4 @@
-import {
-  isle,
-  PlaitedElement,
-  PlaitProps,
-  Render,
-  Update,
-  useRender,
-  useStore,
-} from '$plaited'
+import { isle, PlaitedElement, PlaitProps, useStore } from '$plaited'
 
 type RowAttrs = { id: number; label: string; selected: boolean }
 const TableRow: PlaitedElement<RowAttrs> = (item) => {
@@ -14,6 +6,7 @@ const TableRow: PlaitedElement<RowAttrs> = (item) => {
     <tr
       id={item.id}
       class={item.selected ? 'danger' : ''}
+      data-target={item.id}
     >
       <td class='col-md-1'>{item.id}</td>
       <td class='col-md-4'>
@@ -89,12 +82,14 @@ export const BenchmarkIsland = isle(
           'mouse',
           'keyboard',
         ]
-
+        const [getData, setData] = useStore<
+          { id: number; label: string; selected: boolean }[]
+        >([])
         const [getSelected, setSelected] = useStore(-1)
         const random = (max: number) => {
           return Math.round(Math.random() * 1000) % max
         }
-        let did = 1
+        let did = getData().at(-1)?.id || 1
         const buildData = (count: number) => {
           const data = []
           for (let i = 0; i < count; i++) {
@@ -108,30 +103,36 @@ export const BenchmarkIsland = isle(
           }
           return data
         }
+        addThreads({
+          renderOn: loop([
+            sync({
+              waitFor: [
+                { type: 'run' },
+                { type: 'runLots' },
+                { type: 'clear' },
+              ],
+            }),
+            sync({ request: { type: 'render' } }),
+          ]),
+        })
         const tbody = $('tbody')
-        let render: Render<RowAttrs[]>,
-          update: Update<RowAttrs[]>
-        tbody &&
-          ([render, update] = useRender<RowAttrs[]>(
-            tbody,
-            TableRow,
-          ))
         feedback({
           add() {
-            update((old) => {
+            setData((old) => {
               const data = buildData(1000)
-              const next = old.concat(data)
-              return next
+              console.log(data)
+              tbody.render(data, TableRow, 'beforeend')
+              return old.concat(data)
             })
           },
           run() {
-            render(buildData(1000))
+            setData(buildData(1000))
           },
           runLots() {
-            render(buildData(10000))
+            setData(buildData(10000))
           },
           clear() {
-            render([])
+            setData([])
           },
           interact(e: MouseEvent) {
             const td = (e.target as HTMLElement)?.closest<HTMLTableCellElement>(
@@ -148,27 +149,38 @@ export const BenchmarkIsland = isle(
             }
           },
           delete({ id }: { id: number }) {
-            update((data) => {
+            setData((data) => {
               const idx = data.findIndex((d) => d.id === id)
               data.splice(idx, 1)
+              $(`${id}`).remove()
               return data
             })
           },
           select({ id }: { id: number }) {
-            update((data) => {
+            setData((data) => {
               const cur = getSelected()
               if (cur > -1) {
                 data[cur].selected = false
+                $(`${data[cur].id}`).attr('class', '')
               }
               const next = data.findIndex((d) => d.id === id)
               setSelected(next)
               data[next].selected = true
+              $(`${data[next].id}`).attr('class', 'danger')
               return data
             })
           },
           swapRows() {
-            update((data) => {
+            setData((data) => {
               if (data.length > 998) {
+                tbody.insertBefore(
+                  $(`${data[1].id}`),
+                  $(`${data[999].id}`),
+                )
+                tbody.insertBefore(
+                  $(`${data[998].id}`),
+                  $(`${data[2].id}`),
+                )
                 const tmp = data[1]
                 data[1] = data[998]
                 data[998] = tmp
@@ -177,12 +189,17 @@ export const BenchmarkIsland = isle(
             })
           },
           update() {
-            update((data) => {
+            setData((data) => {
               for (let i = 0; i < data.length; i += 10) {
                 data[i].label += ' !!!'
+                $(`label-${data[i].id}`).innerText = data[i].label
               }
               return data
             })
+          },
+          render() {
+            const data = getData()
+            tbody.render(data, TableRow)
           },
         })
       }

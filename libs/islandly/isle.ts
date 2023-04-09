@@ -10,7 +10,7 @@ import {
 } from './types.ts'
 import { delegatedListener } from './delegated-listener.ts'
 import { createTemplate } from './create-template.ts'
-import { sugar, SugaredElement, sugarForEach } from './sugar.ts'
+import { sugar, SugaredElement, sugarForEach } from './use-sugar.ts'
 
 // It takes the value of a data-target attribute and return all the events happening in it. minus the method identifier
 // so iof the event was data-target="click->doSomething" it would return ["click"]
@@ -239,7 +239,7 @@ export const isle = (
           /** we're bringing the bling back!!! */
           $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
             target: string,
-          ): SugaredElement<T> | undefined
+          ): SugaredElement<T> | Record<string | number | symbol, never>
           $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
             target: string,
             all: true,
@@ -247,7 +247,10 @@ export const isle = (
           $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
             target: string,
             all = false,
-          ): SugaredElement<T> | undefined | SugaredElement<T>[] {
+          ):
+            | SugaredElement<T>
+            | Record<string | number | symbol, never>
+            | SugaredElement<T>[] {
             const selector = `[${dataTarget}="${target}"]`
             if (all) {
               const elements: SugaredElement<T>[] = []
@@ -263,13 +266,14 @@ export const isle = (
               return Object.assign(elements, sugarForEach)
             }
             const element = this.#root.querySelector<T>(selector)
-            if (!element) return
+            if (!element) return {}
             if (
               element.tagName !== 'SLOT' ||
               canUseSlot(element as HTMLSlotElement)
             ) {
               return Object.assign(element, sugar)
             }
+            return {}
           }
         },
       ),
