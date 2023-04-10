@@ -22,7 +22,7 @@ const TableRow: PlaitedElement<RowAttrs> = (item) => {
     </tr>
   )
 }
-export const BenchmarkIsland = isle(
+export const Benchmark = isle(
   { tag: 'benchmark-island' },
   (base) =>
     class extends base {
@@ -120,7 +120,10 @@ export const BenchmarkIsland = isle(
           add() {
             setData((old) => {
               const data = buildData(1000)
-              tbody?.render<RowAttrs>(data, TableRow, 'beforeend')
+              tbody?.render(
+                <>{data.map((d) => <TableRow {...d} />)}</>,
+                'beforeend',
+              )
               return old.concat(data)
             })
           },
@@ -198,7 +201,9 @@ export const BenchmarkIsland = isle(
             })
           },
           render() {
-            tbody?.render<RowAttrs>(getData(), TableRow)
+            tbody?.render(
+              <>{getData().map((data) => <TableRow {...data} />)}</>,
+            )
           },
         })
       }

@@ -1,5 +1,17 @@
-import { symbols } from '../constants.ts'
 import { test } from '$rite'
+import { useWebWorker } from '$plaited'
+import { symbols } from '../constants.ts'
+import { connect, send } from './comms.ts'
+import { CalculatorIsland } from './calculator.island.ts'
+
+useWebWorker({
+  id: 'worker',
+  url: '/island-worker-comms/calculator.worker.js',
+  connect,
+  send,
+})
+
+CalculatorIsland()
 
 test('island worker comms test', async (t) => {
   const island = await t.findByAttribute('data-target', 'calculator')

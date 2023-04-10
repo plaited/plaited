@@ -9,8 +9,8 @@ export const CalculatorIsland = isle(
   (base) =>
     class extends base {
       plait({ $, addThreads, feedback, loop, sync }: PlaitProps) {
-        const [previous] = $<HTMLHeadElement>('previous')
-        const [current] = $<HTMLHeadElement>('current')
+        const previous = $<HTMLHeadElement>('previous')
+        const current = $<HTMLHeadElement>('current')
         const [getPrev, setPrev] = useStore<string>('')
         const [getCur, setCur] = useStore<string>('')
         const [getOp, setOp] = useStore<keyof typeof ops | ''>('')
@@ -183,7 +183,7 @@ export const CalculatorIsland = isle(
             const prev = `${detail.prev}`
             setCur(cur)
             setPrev(prev)
-            current.replaceChildren(cur)
+            current?.replaceChildren(cur)
           },
           percent() {
             send('worker', {
@@ -198,7 +198,7 @@ export const CalculatorIsland = isle(
           updateOnSquareRoot(detail: { value: number }) {
             const val = `${detail.value}`
             setCur(val)
-            current.replaceChildren(val)
+            current?.replaceChildren(val)
           },
           squareRoot() {
             send('worker', {
@@ -208,11 +208,11 @@ export const CalculatorIsland = isle(
           },
           updateOnEqual(detail: { value: number }) {
             const val = `${detail.value}`
-            previous.replaceChildren(
+            previous?.replaceChildren(
               `${getPrev()} ${ops[getOp() as keyof typeof ops]}  ${getCur()} =`,
             )
             setCur(val)
-            current.replaceChildren(val)
+            current?.replaceChildren(val)
           },
           equal() {
             send('worker', {
@@ -227,10 +227,10 @@ export const CalculatorIsland = isle(
           updateOnCalculate(detail: { value: number }) {
             const val = `${detail.value}`
             setPrev(val)
-            previous.replaceChildren(
+            previous?.replaceChildren(
               `${val} ${ops[getOp() as keyof typeof ops]}`,
             )
-            current.replaceChildren(val)
+            current?.replaceChildren(val)
           },
           shiftCur() {
             setPrev(getCur())
@@ -238,7 +238,7 @@ export const CalculatorIsland = isle(
           },
           toggleOperation({ operation }: { operation: keyof typeof ops }) {
             setOp(operation)
-            previous.replaceChildren(`${getPrev()} ${ops[operation]}`)
+            previous?.replaceChildren(`${getPrev()} ${ops[operation]}`)
           },
           calculate({ operation }: { operation: keyof typeof ops }) {
             send('worker', {
@@ -254,25 +254,25 @@ export const CalculatorIsland = isle(
           clear() {
             setCur('')
             setPrev('')
-            current.replaceChildren('0')
-            previous.replaceChildren('')
+            current?.replaceChildren('0')
+            previous?.replaceChildren('')
           },
           positive() {
             setCur((cur) => cur.replace('-', ''))
-            current.replaceChildren(getCur())
+            current?.replaceChildren(getCur())
           },
           negative() {
             setCur((cur) => `-${cur}`)
-            current.replaceChildren(getCur())
+            current?.replaceChildren(getCur())
           },
           period() {
             setCur((cur) => `${cur}.`)
-            current.replaceChildren(getCur())
+            current?.replaceChildren(getCur())
           },
           number(event: MouseEvent) {
             const value = (event.currentTarget as HTMLButtonElement).value
             setCur((cur) => `${cur}${value}`)
-            current.replaceChildren(getCur())
+            current?.replaceChildren(getCur())
           },
         })
       }

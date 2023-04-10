@@ -8,7 +8,7 @@ const importMap = toFileUrl(`${Deno.cwd()}/.vscode/import-map.json`)
 const dev = !Deno.env.has('TEST')
 const root = `${Deno.cwd()}/tests/assets`
 const routes: Routes = new Map()
-const { close, reloadClient } = await server({
+const { close, reloadClient, url } = await server({
   reload: dev,
   routes,
   port: 3000,
@@ -29,7 +29,18 @@ const getRoutes = () =>
     client,
   })
 
+const log = async () => {
+  const res = await fetch(`${url}/tests`, { method: 'GET' })
+  const data = await res.json()
+  const tests = data.map(({ name, path }: { name: string; path: string }) =>
+    `${name}: ${url}${path}`
+  )
+  console.log(tests)
+}
+
 await getRoutes()
+
+await log()
 
 // Watch for changes and reload on client on change
 if (dev) {
@@ -41,6 +52,7 @@ if (dev) {
         routes.set(path, handler)
       }
       reloadClient()
+      await log()
     }
   }
 }

@@ -3,11 +3,9 @@ import { PlaitedElement } from '$plaited'
 
 export const TestPageTemplate: PlaitedElement<{
   title: string
-  registry?: string
   tests: string
 }> = ({
   title,
-  registry,
   children,
   tests,
 }) => {
@@ -19,7 +17,6 @@ export const TestPageTemplate: PlaitedElement<{
         <meta name='viewport' content='width=device-width, initial-scale=1.0' />
         <title>{title}</title>
         <link rel='icon' href='data:,' />
-        {registry && <script type='module' src={registry} trusted></script>}
       </head>
       <body trusted>
         <h1>

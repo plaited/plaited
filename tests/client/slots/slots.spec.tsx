@@ -1,6 +1,6 @@
 import { test } from '$rite'
-import { css, isle, PlaitedElement, PlaitProps } from '$plaited'
-const { classes, styles } = css`.row {
+import { css, isle, PlaitedElement, PlaitProps, useSugar } from '$plaited'
+const [classes, stylesheet] = css`.row {
   display: flex;
   gap: 12px;
   padding: 12px;
@@ -34,28 +34,28 @@ const SlotTest = isle(
 SlotTest()
 const root = document.getElementById('root') as HTMLDivElement
 const SlotTestTemplate: PlaitedElement = ({ children }) => (
-  <SlotTest.template styles={styles} slots={children}>
+  <SlotTest.template {...stylesheet} slots={children}>
     <div class={classes.row}>
-      <slot data-trigger='click->slot'></slot>
-      <slot name='named' data-trigger='click->named'></slot>
+      <slot data-trigger={{ click: 'slot' }}></slot>
+      <slot name='named' data-trigger={{ click: 'named' }}></slot>
       <template>
         <div data-target='target'>template target</div>
       </template>
       <nested-slot>
-        <slot slot='nested' name='nested' data-trigger='click->nested'></slot>
+        <slot slot='nested' name='nested' data-trigger={{ click: 'nested' }}>
+        </slot>
       </nested-slot>
     </div>
   </SlotTest.template>
 )
-// render(
-//   root,
-//   <SlotTestTemplate>
-//     <button>Slot</button>
-//     <button slot='named'>Named</button>
-//     <button slot='nested'>Nested</button>
-//   </SlotTestTemplate>,
-//   'beforeend',
-// )
+useSugar(root).render(
+  <SlotTestTemplate>
+    <button>Slot</button>
+    <button slot='named'>Named</button>
+    <button slot='nested'>Nested</button>
+  </SlotTestTemplate>,
+  'beforeend',
+)
 
 test('slot: default', async (t) => {
   const button = await t.findByText('Slot')

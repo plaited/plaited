@@ -1,6 +1,6 @@
 import { css } from '$plaited'
 
-export const { classes, styles } = css`
+export const [classes, stylesheet] = css`
   :host {
     --button-size: 50px;
   }

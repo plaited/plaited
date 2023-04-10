@@ -1,4 +1,4 @@
-import { classes } from './shadow.styles.ts'
+import { classes } from './shadow.island.tsx'
 export const SVG = () => (
   <svg
     width='125'
@@ -6,7 +6,7 @@ export const SVG = () => (
     version='1.1'
     viewBox='0 0 700 700'
     class={classes.svg}
-    data-trigger='click->removeSvg'
+    data-trigger={{ click: 'removeSvg' }}
     data-target='svg'
   >
     <defs>

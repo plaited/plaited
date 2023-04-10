@@ -33,7 +33,7 @@ export type BaseAttrs = {
   style?: Record<string, string>
 }
 
-type Attrs<
+export type Attrs<
   T extends Record<string, any> = Record<
     string,
     any
@@ -164,18 +164,6 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
   if (isCustomElement) {
     /** Set the mode of the shadowDom */
     templateAttrs.push(`shadowrootmode="${shadowrootmode}"`)
-    /** We destructured out the stylesheet attribute as it's only for
-     * custom elements declarative shadow dom  we create the style node
-     * append the stylesheet as the first child of the declarative shadowDom template */
-    if (stylesheets.size) {
-      templateChildren.push(
-        joinParts(
-          'style',
-          undefined,
-          [...stylesheets],
-        ),
-      )
-    }
     /** We generally want to delegate focus to the first focusable element in
      * custom elements
      */
@@ -226,17 +214,29 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
     )
   }
   if (isCustomElement) {
+    /** We destructured out the stylesheet attribute as it's only for
+     * custom elements declarative shadow dom  we create the style node
+     * append the stylesheet as the first child of the declarative shadowDom template */
+    if (stylesheets.size) {
+      templateChildren.unshift(
+        joinParts(
+          'style',
+          undefined,
+          [...stylesheets],
+        ),
+      )
+    }
     /** append declarative shadow dom to beginning of rootChildren
-     * array and clear stylesheet set so shadowdom children styles are not not passed along
+     * array and clear stylesheet set so shadow dom children styles are not not passed along
      */
-    stylesheets.clear()
     rootChildren.unshift(joinParts(
       'template',
       templateAttrs,
       templateChildren,
     ))
+    stylesheets.clear()
 
-    /** We need to append our slots outside the template can carry stylesheets forward **/
+    /** We need to append our slots outside the template and carry stylesheets forward **/
     const slots = !_slots ? [] : Array.isArray(_slots) ? _slots : [_slots]
     const length = slots.length
     for (let i = 0; i < length; i++) {
@@ -272,10 +272,22 @@ export function Fragment({ children }: Attrs) {
     : children
     ? [children]
     : []
-
+  let content = ''
+  const stylesheets = new Set<string>()
+  const length = children.length
+  for (let i = 0; i < length; i++) {
+    const child = children[i]
+    if (typeof child === 'string') {
+      content += child
+      continue
+    }
+    content += child.content
+    for (const sheet of child.stylesheets) {
+      stylesheets.add(sheet)
+    }
+  }
   return {
-    content: children.map((child) =>
-      typeof child === 'string' ? child : child.content
-    ).join(''),
+    content,
+    stylesheets,
   }
 }

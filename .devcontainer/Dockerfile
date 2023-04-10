@@ -9,7 +9,7 @@ RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd6
     DEBIAN_FRONTEND=noninteractive apt-get -y install ./google-chrome-stable_current_amd64.deb
 
 # Install Selenium
-RUN pip install selenium 
+RUN pip install selenium requests
 RUN export CHROME_PATH="/usr/bin/google-chrome"
 
 # Cleanup

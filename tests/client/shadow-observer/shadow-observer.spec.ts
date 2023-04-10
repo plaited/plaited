@@ -1,4 +1,7 @@
 import { test } from '$rite'
+import { ShadowIsland } from './shadow.island.tsx'
+
+ShadowIsland()
 
 test('shadow observer test', async (t) => {
   let button = await t.findByAttribute(

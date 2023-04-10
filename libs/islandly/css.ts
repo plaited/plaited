@@ -62,7 +62,7 @@ const tokenize = (
 export const css = (
   strings: TemplateStringsArray,
   ...expressions: Array<Primitive | Primitive[]>
-) => {
+): readonly [Record<string, string>, { stylesheet: string }] => {
   const result = taggedWithPrimitives(strings, ...expressions)
   const suffix = btoa(`${hashString(result)}`).replace(/[+/=]/g, '')
   const tokens = tokenize(result)
@@ -80,9 +80,7 @@ export const css = (
         ? reduceWhitespace(token)
         : addClass(token.content)
     ).join('') || ''
-
-  return {
-    classes: Object.fromEntries(classes),
-    styles: reduceWhitespace(styles).trim(),
-  }
+  return Object.freeze([Object.fromEntries(classes), {
+    stylesheet: reduceWhitespace(styles).trim(),
+  }])
 }

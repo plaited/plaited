@@ -9,7 +9,9 @@ const shallowCompare = (
     Object.hasOwn(obj2, key) && obj1[key] === obj2[key]
   )
 /**
- * Forked from https://github.com/alexreardon/memoize-one
+ * Forked from  memoize-one
+ * (c) Alexander Reardon - MIT
+ * {@see https://github.com/alexreardon/memoize-one}
  * In this mode we constrain arguments to a single props object that extends TemplateProps
  * We also do a basic shallow comparison on the object to cache function result.
  */
@@ -39,6 +41,5 @@ export const memo = <T extends Record<string, any> = Record<string, any>>(
     }
     return lastResult
   }
-  // tpl.styles = new Set<string>()
   return tpl
 }

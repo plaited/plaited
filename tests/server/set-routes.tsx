@@ -3,8 +3,6 @@ import { mimeTypes, Routes } from '$server'
 import { PlaitedElement, ssr } from '$plaited'
 import { walk } from '../../libs/dev-deps.ts'
 import { compress, startCase, toFileUrl } from '../../libs/deps.ts'
-import { HomeTemplate } from './home.template.tsx'
-import { NavItemTemplate, TestShellTemplate } from './test-shell.template.tsx'
 import { TestPageTemplate } from './test.template.tsx'
 
 export const setRoutes = async ({
@@ -137,22 +135,6 @@ export const setRoutes = async ({
         },
       ),
   )
-
-  routes.set('/', () =>
-    new Response(
-      ssr(
-        <HomeTemplate>
-          <TestShellTemplate>
-            {testEntries.map(({ path, name }) => (
-              <NavItemTemplate name={name} path={path} />
-            ))}
-          </TestShellTemplate>
-        </HomeTemplate>,
-      ),
-      {
-        headers: { 'Content-Type': 'text/html' },
-      },
-    ))
 
   return routes
 }

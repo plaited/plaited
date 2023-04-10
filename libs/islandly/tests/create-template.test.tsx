@@ -1,7 +1,12 @@
 import { assertSnapshot, assertThrows } from '../../dev-deps.ts'
-import { PlaitedElement, Template } from '../mod.ts'
+import { css, PlaitedElement, ssr, Template } from '../mod.ts'
 
-const ssr = (tpl: Template) => tpl.content
+// const ssr = (tpl: Template) => {
+//   const style = tpl.stylesheets.size
+//     ? `<style>${[...tpl.stylesheets].join('')}</style>`
+//     : ''
+//   return style + tpl.content
+// }
 Deno.test('createTemplate: self closing - html', (t) => {
   assertSnapshot(
     t,
@@ -158,5 +163,114 @@ Deno.test('createTemplate: Fragment PlaitedElements', (t) =>
       <>
         {Array.from(Array(10).keys()).map((n) => <li>item-{n}</li>)}
       </>,
+    ),
+  ))
+
+const span = css`
+.nested-label {
+  font-weight: bold;
+}
+`
+
+const NestedCustomElement: PlaitedElement = ({ children, stylesheet }) => (
+  <nested-component slots={children} stylesheet={stylesheet}>
+    <span class={span[0]['nested-label']} {...span[1]}>
+      inside nested template
+    </span>
+    <slot name='nested'></slot>
+  </nested-component>
+)
+
+Deno.test('createTemplate: custom element with child hoisting it\'s styles', (t) =>
+  assertSnapshot(
+    t,
+    ssr(
+      <NestedCustomElement />,
+    ),
+  ))
+
+const nested = css`
+  host: {
+    display: flex;
+    flex-direction: column;
+  }
+  `
+Deno.test('createTemplate: custom element with child and host styles', (t) =>
+  assertSnapshot(
+    t,
+    ssr(
+      <NestedCustomElement {...nested[1]} />,
+    ),
+  ))
+
+const slotted = css`
+.slotted-paragraph {
+  color: rebeccapurple;
+}
+`
+
+Deno.test('createTemplate: custom element with styled slotted component', (t) =>
+  assertSnapshot(
+    t,
+    ssr(
+      <NestedCustomElement>
+        <p
+          slot='nested'
+          class={slotted[0]['slotted-paragraph']}
+          {...slotted[1]}
+        >
+          slotted paragraph
+        </p>
+      </NestedCustomElement>,
+    ),
+  ))
+const TopCustomElement: PlaitedElement = ({ children, stylesheet }) => (
+  <top-component stylesheet={stylesheet} slots={children}>
+    <NestedCustomElement>
+      <p
+        slot='nested'
+        class={slotted[0]['slotted-paragraph']}
+        {...slotted[1]}
+      >
+        slotted paragraph
+      </p>
+    </NestedCustomElement>
+  </top-component>
+)
+Deno.test('createTemplate: custom element with styles nested in custom element', (t) =>
+  assertSnapshot(
+    t,
+    ssr(
+      <TopCustomElement />,
+    ),
+  ))
+
+const top = css`
+:host {
+  display: block;
+}
+`
+Deno.test('createTemplate: custom element with styles nested in custom element with styles', (t) =>
+  assertSnapshot(
+    t,
+    ssr(
+      <TopCustomElement {...top[1]} />,
+    ),
+  ))
+
+const testEl = css`
+  .image {
+    width: 100%;
+    aspect-ratio: 16 /9 ;
+  }
+`
+
+Deno.test('createTemplate: custom element with nested custom element and styled slotted element', (t) =>
+  assertSnapshot(
+    t,
+    ssr(
+      <TopCustomElement {...top[1]}>
+        <img class={testEl[0].image} {...testEl[1]} />
+      </TopCustomElement>,
     ),
   ))

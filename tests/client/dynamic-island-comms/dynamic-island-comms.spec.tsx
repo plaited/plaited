@@ -1,7 +1,7 @@
-import { css, isle, messenger, PlaitProps } from '$plaited'
+import { css, isle, messenger, PlaitProps, useSugar } from '$plaited'
 export const { connect, send } = messenger()
 import { test } from '$rite'
-const { classes, styles } = css`.row {
+const [classes, stylesheet] = css`.row {
   display: flex;
   gap: 10px;
   padding: 12px;
@@ -23,8 +23,8 @@ test('dynamic island comms', async (t) => {
         plait({ feedback, $ }: PlaitProps) {
           feedback({
             disable() {
-              const [button] = $<HTMLButtonElement>('button')
-              button.disabled = true
+              const button = $<HTMLButtonElement>('button')
+              button && (button.disabled = true)
             },
             click() {
               send('dynamic-two', { type: 'add', detail: { value: ' World!' } })
@@ -52,8 +52,8 @@ test('dynamic island comms', async (t) => {
               send('one', { type: 'disable' })
             },
             add(detail: { value: string }) {
-              const [header] = $('header')
-              header.insertAdjacentHTML('beforeend', `${detail.value}`)
+              const header = $('header')
+              header?.insertAdjacentHTML('beforeend', `${detail.value}`)
             },
           })
         }
@@ -62,26 +62,25 @@ test('dynamic island comms', async (t) => {
   DynamicOne()
   DynamicTwo()
 
-  // render(
-  //   wrapper,
-  //   <>
-  //     <DynamicOne.template styles={styles} id='one'>
-  //       <div class={classes.row}>
-  //         <button
-  //           data-target='button'
-  //           class={classes.button}
-  //           data-trigger='click->click'
-  //         >
-  //           Add "world!"
-  //         </button>
-  //       </div>
-  //     </DynamicOne.template>
-  //     <DynamicTwo.template styles={styles}>
-  //       <h1 data-target='header'>Hello</h1>
-  //     </DynamicTwo.template>
-  //   </>,
-  //   'beforeend',
-  // )
+  useSugar(wrapper).render(
+    <>
+      <DynamicOne.template {...stylesheet} id='one'>
+        <div class={classes.row}>
+          <button
+            data-target='button'
+            class={classes.button}
+            data-trigger={{ click: 'click' }}
+          >
+            Add "world!"
+          </button>
+        </div>
+      </DynamicOne.template>
+      <DynamicTwo.template {...stylesheet}>
+        <h1 data-target='header'>Hello</h1>
+      </DynamicTwo.template>
+    </>,
+    'beforeend',
+  )
   let button = await t.findByAttribute('data-target', 'button', wrapper)
   const header = await t.findByAttribute('data-target', 'header', wrapper)
   t({
