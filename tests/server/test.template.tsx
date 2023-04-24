@@ -9,6 +9,7 @@ export const TestPageTemplate: PlaitedElement<{
   children,
   tests,
 }) => {
+  const reload = !Deno.env.has('TEST') ? livereloadTemplate : ''
   return (
     <html lang='en'>
       <head>
@@ -28,7 +29,7 @@ export const TestPageTemplate: PlaitedElement<{
         <script type='module' async trusted>
           await import('{tests}'); await import('/runner.js');
         </script>
-        {livereloadTemplate}
+        {reload}
       </body>
     </html>
   )

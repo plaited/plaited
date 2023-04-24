@@ -1,5 +1,3 @@
-import { streamEvents } from './constants.ts'
-
 export interface StateSnapshot {
   (
     props: {
@@ -17,28 +15,23 @@ export interface StateSnapshot {
 
 export type Detail = unknown | (() => unknown) | Event
 
-export type Message = {
-  kind: typeof streamEvents.select
-  data: {
-    type: string
-    detail?: Detail
-  }
-} | {
-  kind: typeof streamEvents.snapshot
-  data: ReturnType<StateSnapshot>
-}
+export type SnapshotMessage = ReturnType<StateSnapshot>
 
-export type Subscriber = (msg: Message) => void
+export type SelectedMessage = {
+  type: string
+  detail?: Detail
+}
 
 export type Trigger = <
   T extends (Detail) = (Detail),
->(args: {
+>(args: TriggerArgs<T>) => void
+
+export type TriggerArgs<
+  T extends (Detail) = (Detail),
+> = {
   type: string
   detail?: T
-}) => void
-
-export type TriggerArgs = Parameters<Trigger>[0]
-
+}
 // Rule types
 type Callback<
   T extends (Detail) = (Detail),

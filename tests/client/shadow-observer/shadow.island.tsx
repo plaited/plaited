@@ -66,9 +66,13 @@ export const ShadowIsland = isle(
         feedback({
           addSubIsland() {
             const zone = $('zone')
+            /** create a dynamic island */
             const Sub = isle({
               tag: 'sub-island',
-            }, (base) => class extends base {})
+            })
+            /** define the new dynamic island */
+            Sub()
+            /** render dynamic island to zone */
             zone?.render(
               <Sub.template {...stylesheet}>
                 <h3 class={classes['sub-island']}>sub island</h3>

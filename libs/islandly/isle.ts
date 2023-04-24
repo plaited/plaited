@@ -242,16 +242,19 @@ export const isle = (
           ): SugaredElement<T> | undefined
           $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
             target: string,
-            all: true,
+            opts?: {
+              all: boolean
+              mod: '=' | '~=' | '|=' | '^=' | '$=' | '*='
+            },
           ): SugaredElement<T>[]
           $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
             target: string,
-            all = false,
+            { all = false, mod = '=' } = {},
           ):
             | SugaredElement<T>
             | undefined
             | SugaredElement<T>[] {
-            const selector = `[${dataTarget}="${target}"]`
+            const selector = `[${dataTarget}${mod}"${target}"]`
             if (all) {
               const elements: SugaredElement<T>[] = []
               this.#root.querySelectorAll<T>(selector)

@@ -1,6 +1,6 @@
 {
   "tasks": {
-    "dev": "deno run --allow-all tests/server/start.ts",
+    "dev": "TEST=true deno run --allow-all tests/server/start.ts",
     "lint": "deno lint",
     "npm": " deno run -A scripts/build-npm.ts",
     "test": "deno test --allow-all",

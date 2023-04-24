@@ -1,8 +1,3 @@
-// libs/utils/can-use-dom.ts
-var canUseDOM = () => {
-  return !!(typeof window !== "undefined" && window.document && window.document.createElement);
-};
-
 // libs/utils/escape-unescape.ts
 var reEscape = /[&<>'"]/g;
 var escapeObj = {
@@ -93,7 +88,7 @@ var primitives = /* @__PURE__ */ new Set([
 // libs/islandly/create-template.ts
 var customElementRegex = /^[a-z]+\-[a-z]+(?:\-[a-z]+)*$/;
 var joinParts = (tag, attrs = [], children) => `<${[tag, ...attrs].join(" ")}>${children.join("")}</${tag}>`;
-var createServer = (tag, attrs) => {
+var createTemplate = (tag, attrs) => {
   const {
     shadowrootmode = "open",
     children: _children,
@@ -160,33 +155,9 @@ var createServer = (tag, attrs) => {
   const templateChildren = [];
   if (isCustomElement) {
     templateAttrs.push(`shadowrootmode="${shadowrootmode}"`);
-    if (stylesheets.size) {
-      templateChildren.push(
-        joinParts(
-          "style",
-          void 0,
-          [...stylesheets]
-        )
-      );
-    }
     templateAttrs.push(
       `shadowrootdelegatesfocus="${shadowrootdelegatesfocus}"`
     );
-    const slots = !_slots ? [] : Array.isArray(_slots) ? _slots : [_slots];
-    const length2 = slots.length;
-    for (let i = 0; i < length2; i++) {
-      const child = slots[i];
-      if (typeof child === "object" && "content" in child) {
-        rootChildren.push(child.content);
-        continue;
-      }
-      if (!primitives.has(typeof child))
-        continue;
-      const formattedChild = child ?? "";
-      rootChildren.push(
-        trusted ? `${formattedChild}` : escape(`${formattedChild}`)
-      );
-    }
   }
   const length = children.length;
   for (let i = 0; i < length; i++) {
@@ -219,156 +190,64 @@ var createServer = (tag, attrs) => {
     );
   }
   if (isCustomElement) {
-    stylesheets.clear();
+    if (stylesheets.size) {
+      templateChildren.unshift(
+        joinParts(
+          "style",
+          void 0,
+          [...stylesheets]
+        )
+      );
+    }
     rootChildren.unshift(joinParts(
       "template",
       templateAttrs,
       templateChildren
     ));
+    stylesheets.clear();
+    const slots = !_slots ? [] : Array.isArray(_slots) ? _slots : [_slots];
+    const length2 = slots.length;
+    for (let i = 0; i < length2; i++) {
+      const child = slots[i];
+      if (typeof child === "object" && "content" in child) {
+        rootChildren.push(child.content);
+        for (const sheet of child.stylesheets) {
+          stylesheets.add(sheet);
+        }
+        continue;
+      }
+      if (!primitives.has(typeof child))
+        continue;
+      const formattedChild = child ?? "";
+      rootChildren.push(
+        trusted ? `${formattedChild}` : escape(`${formattedChild}`)
+      );
+    }
   }
   return {
     stylesheets,
     content: joinParts(root, rootAttrs, rootChildren)
   };
 };
-var createClient = (tag, attrs) => {
-  const {
-    shadowrootmode = "open",
-    children: _children,
-    shadowrootdelegatesfocus = true,
-    trusted,
-    slots: _slots,
-    stylesheet,
-    style,
-    key: _,
-    "data-trigger": trigger,
-    ...attributes
-  } = attrs;
-  if (typeof tag === "function") {
-    return tag(attrs);
-  }
+function Fragment({ children }) {
+  children = children && Array.isArray(children) ? children : children ? [children] : [];
+  let content = "";
   const stylesheets = /* @__PURE__ */ new Set();
-  stylesheet && stylesheets.add(stylesheet);
-  const children = _children && Array.isArray(_children) ? _children : _children ? [_children] : [];
-  if (tag === "script" && !trusted) {
-    throw new Error("Script tag not allowed unless 'trusted' property set");
-  }
-  const root = document.createElement(tag);
-  if (trigger) {
-    const value = Object.entries(trigger).map(
-      ([ev, req]) => `${ev}->${req}`
-    ).join(" ");
-    root.setAttribute(dataTrigger, value);
-  }
-  if (style) {
-    const value = Object.entries(style).map(
-      ([prop, val]) => `${prop.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}:${val};`
-    ).join(" ");
-    root.setAttribute("style", escape(value));
-  }
-  for (const key in attributes) {
-    if (key.startsWith("on")) {
-      throw new Error(`Event handler attributes are not allowed:  [${key}]`);
-    }
-    const value = attributes[key];
-    if (!primitives.has(typeof value)) {
-      throw new Error(
-        `Attributes not declared in BaseAttrs must be of type Primitive: ${key} is not primitive`
-      );
-    }
-    if (booleanAttrs.has(key)) {
-      root.setAttribute(key, "");
-      continue;
-    }
-    const formattedValue = value ?? "";
-    root.setAttribute(
-      key,
-      trusted ? `${formattedValue}` : escape(`${formattedValue}`)
-    );
-  }
-  if (voidTags.has(tag)) {
-    return {
-      stylesheets,
-      content: root
-    };
-  }
-  const isCustomElement = customElementRegex.test(tag);
-  const template = document.createElement("template");
-  if (isCustomElement) {
-    root.appendChild(template);
-    template.setAttribute("shadowrootmode", shadowrootmode);
-    template.setAttribute(
-      "shadowrootdelegatesfocus",
-      `${shadowrootdelegatesfocus}`
-    );
-    const slots = !_slots ? [] : Array.isArray(_slots) ? _slots : [_slots];
-    const length2 = slots.length;
-    for (let i = 0; i < length2; i++) {
-      const child = slots[i];
-      if (typeof child === "object" && "content" in child) {
-        root.appendChild(child.content);
-        continue;
-      }
-      if (!primitives.has(typeof child))
-        continue;
-      const formattedChild = child ?? "";
-      root.append(
-        trusted ? `${formattedChild}` : escape(`${formattedChild}`)
-      );
-    }
-  }
   const length = children.length;
   for (let i = 0; i < length; i++) {
     const child = children[i];
-    if (isCustomElement && typeof child === "object" && "content" in child) {
-      template.appendChild(child.content);
-      for (const sheet of child.stylesheets) {
-        stylesheets.add(sheet);
-      }
+    if (typeof child === "string") {
+      content += child;
       continue;
     }
-    if (typeof child === "object" && "content" in child) {
-      root.appendChild(child.content);
-      for (const sheet of child.stylesheets) {
-        stylesheets.add(sheet);
-      }
-      continue;
+    content += child.content;
+    for (const sheet of child.stylesheets) {
+      stylesheets.add(sheet);
     }
-    if (!primitives.has(typeof child))
-      continue;
-    const formattedChild = child ?? "";
-    if (isCustomElement) {
-      template.append(
-        trusted ? `${formattedChild}` : escape(`${formattedChild}`)
-      );
-      continue;
-    }
-    root.append(
-      trusted ? `${formattedChild}` : escape(`${formattedChild}`)
-    );
-  }
-  if (isCustomElement) {
-    if (stylesheets.size) {
-      const s = document.createElement("style");
-      s.innerHTML = [...stylesheets].join("");
-      template.appendChild(s);
-    }
-    stylesheets.clear();
   }
   return {
-    stylesheets,
-    content: root
-  };
-};
-function createTemplate(tag, attrs) {
-  return canUseDOM() ? createClient(tag, attrs) : createServer(tag, attrs);
-}
-function Fragment({ children }) {
-  children = children && Array.isArray(children) ? children : children ? [children] : [];
-  return {
-    content: children.map(
-      (child) => typeof child === "string" ? child : child.content
-    ).join("")
+    content,
+    stylesheets
   };
 }
 export {

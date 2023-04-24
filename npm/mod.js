@@ -1,8 +1,4 @@
 // libs/behavioral/constants.ts
-var streamEvents = {
-  select: "select-event",
-  snapshot: "state-snapshot"
-};
 var strategies = {
   randomized: "randomized",
   priority: "priority",
@@ -44,20 +40,48 @@ var stateSnapshot = ({ bids, selectedEvent }) => {
   return ruleSets.sort((a, b) => a.priority - b.priority);
 };
 
-// libs/behavioral/publisher.ts
+// libs/utils/true-type-of.ts
+var trueTypeOf = (obj) => Object.prototype.toString.call(obj).slice(8, -1).toLowerCase();
+
+// libs/utils/escape-unescape.ts
+var reEscape = /[&<>'"]/g;
+var escapeObj = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  "'": "&#39;",
+  '"': "&quot;"
+};
+var { replace } = "";
+var cape = (key) => escapeObj[key];
+var escape2 = (sub) => replace.call(
+  sub,
+  reEscape,
+  cape
+);
+
+// libs/utils/publisher.ts
 var publisher = () => {
-  const listeners = [];
-  function publication(value) {
-    for (const i in listeners) {
-      listeners[i](value);
+  const listeners = /* @__PURE__ */ new Set();
+  function createPublisher(value) {
+    for (const cb of listeners) {
+      cb(value);
     }
   }
-  publication.subscribe = (listener) => {
-    listeners.push((value) => {
-      value !== void 0 && listener(value);
-    });
+  createPublisher.subscribe = (listener) => {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
   };
-  return publication;
+  return createPublisher;
+};
+
+// libs/utils/hash.ts
+var hashString = (str) => {
+  const hash = [...str].reduce(
+    (acc, cur) => (acc << 5) + acc + cur.charCodeAt(0),
+    5381
+  );
+  return hash === 5381 ? null : hash;
 };
 
 // libs/behavioral/selection-strategies.ts
@@ -119,7 +143,8 @@ var bProgram = ({
   const eventSelectionStrategy = typeof strategy === "string" ? selectionStrategies[strategy] : strategy;
   const pending = /* @__PURE__ */ new Set();
   const running = /* @__PURE__ */ new Set();
-  const pub = publisher();
+  const actionPublisher = publisher();
+  const snapshotPublisher = dev && publisher();
   function run() {
     running.size && step();
   }
@@ -159,10 +184,7 @@ var bProgram = ({
     );
     const selectedEvent = eventSelectionStrategy(filteredBids);
     if (selectedEvent) {
-      dev && pub({
-        kind: streamEvents.snapshot,
-        data: stateSnapshot({ bids, selectedEvent })
-      });
+      dev && snapshotPublisher && snapshotPublisher(stateSnapshot({ bids, selectedEvent }));
       nextStep(selectedEvent);
     }
   }
@@ -179,10 +201,7 @@ var bProgram = ({
       }
     }
     const { priority: _p, cb: _cb, ...detail } = selectedEvent;
-    pub({
-      kind: streamEvents.select,
-      data: detail
-    });
+    actionPublisher(detail);
     run();
   }
   const trigger = ({
@@ -204,12 +223,10 @@ var bProgram = ({
     run();
   };
   const feedback = (actions) => {
-    pub.subscribe(
-      ({ kind, data }) => {
-        if (kind === streamEvents.select) {
-          const { type: key, detail = {} } = data;
-          Object.hasOwn(actions, key) && actions[key](detail);
-        }
+    actionPublisher.subscribe(
+      (data) => {
+        const { type, detail = {} } = data;
+        Object.hasOwn(actions, type) && actions[type](detail);
       }
     );
   };
@@ -222,13 +239,9 @@ var bProgram = ({
       });
     }
   };
-  if (dev) {
-    pub.subscribe(
-      ({ kind, data }) => {
-        if (kind === streamEvents.snapshot) {
-          dev(data);
-        }
-      }
+  if (dev && snapshotPublisher) {
+    snapshotPublisher.subscribe(
+      (data) => dev(data)
     );
   }
   return Object.freeze({
@@ -261,40 +274,6 @@ var bProgram = ({
 
 // libs/islandly/class-names.ts
 var classNames = (...classes) => classes.filter(Boolean).join(" ");
-
-// libs/utils/true-type-of.ts
-var trueTypeOf = (obj) => Object.prototype.toString.call(obj).slice(8, -1).toLowerCase();
-
-// libs/utils/can-use-dom.ts
-var canUseDOM = () => {
-  return !!(typeof window !== "undefined" && window.document && window.document.createElement);
-};
-
-// libs/utils/escape-unescape.ts
-var reEscape = /[&<>'"]/g;
-var escapeObj = {
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
-  "'": "&#39;",
-  '"': "&quot;"
-};
-var { replace } = "";
-var cape = (key) => escapeObj[key];
-var escape2 = (sub) => replace.call(
-  sub,
-  reEscape,
-  cape
-);
-
-// libs/utils/hash.ts
-var hashString = (str) => {
-  const hash = [...str].reduce(
-    (acc, cur) => (acc << 5) + acc + cur.charCodeAt(0),
-    5381
-  );
-  return hash === 5381 ? null : hash;
-};
 
 // libs/islandly/constants.ts
 var dataTarget = "data-target";
@@ -370,7 +349,7 @@ var primitives = /* @__PURE__ */ new Set([
 // libs/islandly/create-template.ts
 var customElementRegex = /^[a-z]+\-[a-z]+(?:\-[a-z]+)*$/;
 var joinParts = (tag, attrs = [], children) => `<${[tag, ...attrs].join(" ")}>${children.join("")}</${tag}>`;
-var createServer = (tag, attrs) => {
+var createTemplate = (tag, attrs) => {
   const {
     shadowrootmode = "open",
     children: _children,
@@ -437,33 +416,9 @@ var createServer = (tag, attrs) => {
   const templateChildren = [];
   if (isCustomElement) {
     templateAttrs.push(`shadowrootmode="${shadowrootmode}"`);
-    if (stylesheets.size) {
-      templateChildren.push(
-        joinParts(
-          "style",
-          void 0,
-          [...stylesheets]
-        )
-      );
-    }
     templateAttrs.push(
       `shadowrootdelegatesfocus="${shadowrootdelegatesfocus}"`
     );
-    const slots = !_slots ? [] : Array.isArray(_slots) ? _slots : [_slots];
-    const length2 = slots.length;
-    for (let i = 0; i < length2; i++) {
-      const child = slots[i];
-      if (typeof child === "object" && "content" in child) {
-        rootChildren.push(child.content);
-        continue;
-      }
-      if (!primitives.has(typeof child))
-        continue;
-      const formattedChild = child ?? "";
-      rootChildren.push(
-        trusted ? `${formattedChild}` : escape2(`${formattedChild}`)
-      );
-    }
   }
   const length = children.length;
   for (let i = 0; i < length; i++) {
@@ -496,156 +451,64 @@ var createServer = (tag, attrs) => {
     );
   }
   if (isCustomElement) {
-    stylesheets.clear();
+    if (stylesheets.size) {
+      templateChildren.unshift(
+        joinParts(
+          "style",
+          void 0,
+          [...stylesheets]
+        )
+      );
+    }
     rootChildren.unshift(joinParts(
       "template",
       templateAttrs,
       templateChildren
     ));
+    stylesheets.clear();
+    const slots = !_slots ? [] : Array.isArray(_slots) ? _slots : [_slots];
+    const length2 = slots.length;
+    for (let i = 0; i < length2; i++) {
+      const child = slots[i];
+      if (typeof child === "object" && "content" in child) {
+        rootChildren.push(child.content);
+        for (const sheet of child.stylesheets) {
+          stylesheets.add(sheet);
+        }
+        continue;
+      }
+      if (!primitives.has(typeof child))
+        continue;
+      const formattedChild = child ?? "";
+      rootChildren.push(
+        trusted ? `${formattedChild}` : escape2(`${formattedChild}`)
+      );
+    }
   }
   return {
     stylesheets,
     content: joinParts(root, rootAttrs, rootChildren)
   };
 };
-var createClient = (tag, attrs) => {
-  const {
-    shadowrootmode = "open",
-    children: _children,
-    shadowrootdelegatesfocus = true,
-    trusted,
-    slots: _slots,
-    stylesheet,
-    style,
-    key: _,
-    "data-trigger": trigger,
-    ...attributes
-  } = attrs;
-  if (typeof tag === "function") {
-    return tag(attrs);
-  }
+function Fragment({ children }) {
+  children = children && Array.isArray(children) ? children : children ? [children] : [];
+  let content = "";
   const stylesheets = /* @__PURE__ */ new Set();
-  stylesheet && stylesheets.add(stylesheet);
-  const children = _children && Array.isArray(_children) ? _children : _children ? [_children] : [];
-  if (tag === "script" && !trusted) {
-    throw new Error("Script tag not allowed unless 'trusted' property set");
-  }
-  const root = document.createElement(tag);
-  if (trigger) {
-    const value = Object.entries(trigger).map(
-      ([ev, req]) => `${ev}->${req}`
-    ).join(" ");
-    root.setAttribute(dataTrigger, value);
-  }
-  if (style) {
-    const value = Object.entries(style).map(
-      ([prop, val]) => `${prop.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}:${val};`
-    ).join(" ");
-    root.setAttribute("style", escape2(value));
-  }
-  for (const key in attributes) {
-    if (key.startsWith("on")) {
-      throw new Error(`Event handler attributes are not allowed:  [${key}]`);
-    }
-    const value = attributes[key];
-    if (!primitives.has(typeof value)) {
-      throw new Error(
-        `Attributes not declared in BaseAttrs must be of type Primitive: ${key} is not primitive`
-      );
-    }
-    if (booleanAttrs.has(key)) {
-      root.setAttribute(key, "");
-      continue;
-    }
-    const formattedValue = value ?? "";
-    root.setAttribute(
-      key,
-      trusted ? `${formattedValue}` : escape2(`${formattedValue}`)
-    );
-  }
-  if (voidTags.has(tag)) {
-    return {
-      stylesheets,
-      content: root
-    };
-  }
-  const isCustomElement = customElementRegex.test(tag);
-  const template = document.createElement("template");
-  if (isCustomElement) {
-    root.appendChild(template);
-    template.setAttribute("shadowrootmode", shadowrootmode);
-    template.setAttribute(
-      "shadowrootdelegatesfocus",
-      `${shadowrootdelegatesfocus}`
-    );
-    const slots = !_slots ? [] : Array.isArray(_slots) ? _slots : [_slots];
-    const length2 = slots.length;
-    for (let i = 0; i < length2; i++) {
-      const child = slots[i];
-      if (typeof child === "object" && "content" in child) {
-        root.appendChild(child.content);
-        continue;
-      }
-      if (!primitives.has(typeof child))
-        continue;
-      const formattedChild = child ?? "";
-      root.append(
-        trusted ? `${formattedChild}` : escape2(`${formattedChild}`)
-      );
-    }
-  }
   const length = children.length;
   for (let i = 0; i < length; i++) {
     const child = children[i];
-    if (isCustomElement && typeof child === "object" && "content" in child) {
-      template.appendChild(child.content);
-      for (const sheet of child.stylesheets) {
-        stylesheets.add(sheet);
-      }
+    if (typeof child === "string") {
+      content += child;
       continue;
     }
-    if (typeof child === "object" && "content" in child) {
-      root.appendChild(child.content);
-      for (const sheet of child.stylesheets) {
-        stylesheets.add(sheet);
-      }
-      continue;
+    content += child.content;
+    for (const sheet of child.stylesheets) {
+      stylesheets.add(sheet);
     }
-    if (!primitives.has(typeof child))
-      continue;
-    const formattedChild = child ?? "";
-    if (isCustomElement) {
-      template.append(
-        trusted ? `${formattedChild}` : escape2(`${formattedChild}`)
-      );
-      continue;
-    }
-    root.append(
-      trusted ? `${formattedChild}` : escape2(`${formattedChild}`)
-    );
-  }
-  if (isCustomElement) {
-    if (stylesheets.size) {
-      const s = document.createElement("style");
-      s.innerHTML = [...stylesheets].join("");
-      template.appendChild(s);
-    }
-    stylesheets.clear();
   }
   return {
-    stylesheets,
-    content: root
-  };
-};
-function createTemplate(tag, attrs) {
-  return canUseDOM() ? createClient(tag, attrs) : createServer(tag, attrs);
-}
-function Fragment({ children }) {
-  children = children && Array.isArray(children) ? children : children ? [children] : [];
-  return {
-    content: children.map(
-      (child) => typeof child === "string" ? child : child.content
-    ).join("")
+    content,
+    stylesheets
   };
 }
 
@@ -698,30 +561,9 @@ var css = (strings, ...expressions) => {
   const styles = tokens?.map(
     (token) => typeof token === "string" ? reduceWhitespace(token) : addClass(token.content)
   ).join("") || "";
-  return {
-    classes: Object.fromEntries(classes),
-    styles: reduceWhitespace(styles).trim()
-  };
-};
-
-// libs/islandly/create-idb.ts
-var createIDB = (dbName, storeName) => {
-  const dbp = new Promise((resolve, reject) => {
-    const openreq = indexedDB.open(dbName);
-    openreq.onerror = () => reject(openreq.error);
-    openreq.onsuccess = () => resolve(openreq.result);
-    openreq.onupgradeneeded = () => {
-      !openreq.result.objectStoreNames.contains(storeName) && openreq.result.createObjectStore(storeName);
-    };
-  });
-  return (type, callback) => dbp.then(
-    (db) => new Promise((resolve, reject) => {
-      const transaction = db.transaction(storeName, type);
-      transaction.oncomplete = () => resolve();
-      transaction.onabort = transaction.onerror = () => reject(transaction.error);
-      callback(transaction.objectStore(storeName));
-    })
-  );
+  return Object.freeze([Object.fromEntries(classes), {
+    stylesheet: reduceWhitespace(styles).trim()
+  }]);
 };
 
 // libs/islandly/use-behavioral.ts
@@ -773,10 +615,10 @@ var delegatedListener = Object.freeze({
 
 // libs/islandly/use-sugar.ts
 var sugar = {
-  render(data, tpl, position) {
+  render({ stylesheets, content }, position) {
     const element = this;
     const template = document.createElement("template");
-    Array.isArray(data) ? template.content.append(...data.map((d) => tpl(d).content)) : template.content.append(tpl(data).content);
+    template.innerHTML = [...stylesheets].join("") + content;
     if (position) {
       element.insertAdjacentElement(position, template);
       template.replaceWith(template.content);
@@ -785,10 +627,10 @@ var sugar = {
     element.replaceChildren(template.content);
     return element;
   },
-  replace(data, tpl) {
+  replace({ stylesheets, content }) {
     const element = this;
     const template = document.createElement("template");
-    Array.isArray(data) ? template.content.append(...data.map((d) => tpl(d).content)) : template.content.append(tpl(data).content);
+    template.innerHTML = [...stylesheets].join("") + content;
     element.replaceWith(template.content);
   },
   attr(attr, val) {
@@ -800,14 +642,14 @@ var sugar = {
   }
 };
 var sugarForEach = {
-  render(data, template, position) {
+  render(template, position) {
     const elements = this;
-    elements.forEach(($el, i) => $el.render(data[i], template, position));
+    elements.forEach(($el, i) => $el.render(template[i], position));
     return elements;
   },
-  replace(data, template) {
+  replace(template) {
     const elements = this;
-    elements.forEach(($el, i) => $el.replace(data[i], template));
+    elements.forEach(($el, i) => $el.replace(template[i]));
     return elements;
   },
   attr(attrs, val) {
@@ -823,8 +665,7 @@ var sugarForEach = {
   }
 };
 var useSugar = (element) => {
-  Object.assign(element, sugar);
-  return element;
+  return Object.assign(element, sugar);
 };
 
 // libs/islandly/isle.ts
@@ -1009,8 +850,8 @@ var isle = ({
             mo.observe(this, { childList: true });
             return mo;
           }
-          $(target, all = false) {
-            const selector = `[${dataTarget}="${target}"]`;
+          $(target, { all = false, mod = "=" } = {}) {
+            const selector = `[${dataTarget}${mod}"${target}"]`;
             if (all) {
               const elements = [];
               this.#root.querySelectorAll(selector).forEach((element2) => {
@@ -1022,11 +863,10 @@ var isle = ({
             }
             const element = this.#root.querySelector(selector);
             if (!element)
-              return {};
+              return;
             if (element.tagName !== "SLOT" || canUseSlot(element)) {
               return Object.assign(element, sugar);
             }
-            return {};
           }
         }
       )
@@ -1057,30 +897,29 @@ var memo = (resultFn) => {
   return tpl;
 };
 
-// libs/islandly/messenger.ts
-var messenger = () => {
-  const emitter = new EventTarget();
-  const connect = (recipient, trigger) => {
-    const eventHandler = (event) => trigger(event.detail);
-    emitter.addEventListener(
-      recipient,
-      eventHandler
-    );
-    return () => emitter.removeEventListener(
-      recipient,
-      eventHandler
-    );
-  };
-  const send = (recipient, detail) => {
-    const event = new CustomEvent(recipient, { detail });
-    emitter.dispatchEvent(event);
-  };
-  return Object.freeze({ connect, send });
-};
-
 // libs/islandly/ssr.ts
 var ssr = (...templates) => {
-  return "<!DOCTYPE html> " + templates.map((tpl) => tpl.content).join("");
+  let content = "";
+  const stylesheets = /* @__PURE__ */ new Set();
+  const length = templates.length;
+  for (let i = 0; i < length; i++) {
+    const child = templates[i];
+    if (typeof child === "string") {
+      content += child;
+      continue;
+    }
+    content += child.content;
+    for (const sheet of child.stylesheets) {
+      stylesheets.add(sheet);
+    }
+  }
+  const style = stylesheets.size ? `<style>${[...stylesheets].join("")}</style>` : "";
+  const headIndex = content.indexOf("</head>");
+  const bodyRegex = /<body\b[^>]*>/i;
+  const bodyMatch = bodyRegex.exec(content);
+  const bodyIndex = bodyMatch ? bodyMatch.index + bodyMatch[0].length : 0;
+  const index = headIndex !== -1 ? headIndex : bodyIndex;
+  return content.slice(0, index) + style + content.slice(index);
 };
 
 // libs/islandly/use-css-var.ts
@@ -1103,9 +942,32 @@ var useCSSVar = (variable) => {
   ]);
 };
 
+// libs/islandly/create-idb.ts
+var createIDB = (dbName, storeName) => {
+  const dbp = new Promise((resolve, reject) => {
+    const openreq = indexedDB.open(dbName);
+    openreq.onerror = () => reject(openreq.error);
+    openreq.onsuccess = () => resolve(openreq.result);
+    openreq.onupgradeneeded = () => {
+      !openreq.result.objectStoreNames.contains(storeName) && openreq.result.createObjectStore(storeName);
+    };
+  });
+  return (type, callback) => dbp.then(
+    (db) => new Promise((resolve, reject) => {
+      const transaction = db.transaction(storeName, type);
+      transaction.oncomplete = () => resolve();
+      transaction.onabort = transaction.onerror = () => reject(transaction.error);
+      callback(transaction.objectStore(storeName));
+    })
+  );
+};
+
 // libs/islandly/use-indexed-db.ts
-var useIndexedDB = async (key, initialValue, idb) => {
-  const db = idb || createIDB("USE_INDEXED_DB", "STORE");
+var useIndexedDB = async (key, initialValue, option) => {
+  const databaseName = option?.databaseName ?? "USE_INDEXED_DB";
+  const storeName = option?.storeName ?? "STORE";
+  const db = createIDB(databaseName, storeName);
+  const channel = new BroadcastChannel(`${databaseName}_${storeName}_${key}`);
   await function setInitialValue() {
     return db("readwrite", (store) => {
       store.put(initialValue, key);
@@ -1125,23 +987,30 @@ var useIndexedDB = async (key, initialValue, idb) => {
     };
   });
   const overwriteStore = (newValue) => db("readwrite", (store) => store.put(newValue, key));
-  const set = (newValue) => trueTypeOf(newValue) === "function" ? updateStore(newValue) : overwriteStore(newValue);
+  const set = async (newValue) => {
+    await trueTypeOf(newValue) === "function" ? updateStore(newValue) : overwriteStore(newValue);
+    const next = await get();
+    channel.postMessage(next);
+  };
   const get = () => {
     let req;
     return db("readonly", (store) => {
       req = store.get(key);
     }).then(() => req.result);
   };
+  get.subscribe = (cb) => {
+    const channel2 = new BroadcastChannel(`${databaseName}_${storeName}_${key}`);
+    const handler = (event) => {
+      cb(event.data);
+    };
+    channel2.addEventListener("message", handler);
+    return () => channel2.removeEventListener("message", handler);
+  };
   return Object.freeze([get, set]);
 };
 
 // libs/islandly/use-main.ts
-var useMain = ({
-  /** is self of the worker */
-  context,
-  /** is a trigger callback from a behavioral program */
-  trigger
-}) => {
+var useMain = (context, trigger) => {
   const eventHandler = ({ data }) => {
     trigger(data);
   };
@@ -1153,15 +1022,63 @@ var useMain = ({
   };
   context.addEventListener("message", eventHandler, false);
   const disconnect = () => context.removeEventListener("message", eventHandler);
-  return Object.freeze({ send, disconnect });
+  return Object.freeze([send, disconnect]);
+};
+
+// libs/islandly/use-messenger.ts
+var useMessenger = () => {
+  const emitter = new EventTarget();
+  const connect = (recipient, trigger) => {
+    const eventHandler = (event) => trigger(event.detail);
+    emitter.addEventListener(
+      recipient,
+      eventHandler
+    );
+    return () => emitter.removeEventListener(
+      recipient,
+      eventHandler
+    );
+  };
+  connect.worker = (recipient, url) => {
+    const worker = new Worker(new URL(url, import.meta.url).href, {
+      type: "module"
+    });
+    const trigger = (args) => {
+      worker.postMessage(args);
+    };
+    const disconnect = connect(recipient, trigger);
+    const eventHandler = ({ data }) => {
+      const { recipient: recipient2, detail } = data;
+      send(recipient2, detail);
+    };
+    worker.addEventListener("message", eventHandler, false);
+    return () => {
+      disconnect();
+      worker.removeEventListener("message", eventHandler);
+    };
+  };
+  const send = (recipient, detail) => {
+    const event = new CustomEvent(recipient, { detail });
+    emitter.dispatchEvent(event);
+  };
+  return Object.freeze([
+    connect,
+    send
+  ]);
 };
 
 // libs/islandly/use-store.ts
 var useStore = (initialStore) => {
   let store = initialStore;
+  let pub;
   const get = () => store;
+  get.subscribe = (cb) => {
+    pub = pub ?? publisher();
+    return pub.subscribe(cb);
+  };
   const set = (newStore) => {
     store = trueTypeOf(newStore) === "function" ? newStore(structuredClone(store)) : newStore;
+    pub && pub(store);
   };
   return Object.freeze([
     get,
@@ -1189,43 +1106,11 @@ var useTokens = (...obj) => {
     set
   ]);
 };
-
-// libs/islandly/use-web-worker.ts
-var useWebWorker = ({
-  /** identifier for our worker */
-  id,
-  /** the server public directory relative url  */
-  url,
-  /** messenger connect callback to connect your instantiate worker */
-  connect,
-  /** messenger send callback so that messages received from the worker can be sent to the main thread */
-  send
-}) => {
-  const worker = new Worker(new URL(url, import.meta.url).href, {
-    type: "module"
-  });
-  const trigger = (args) => {
-    worker.postMessage(args);
-  };
-  const disconnect = connect(id, trigger);
-  const eventHandler = ({ data }) => {
-    const { recipient, detail } = data;
-    send(recipient, detail);
-  };
-  worker.addEventListener("message", eventHandler, false);
-  return () => {
-    disconnect();
-    worker.removeEventListener("message", eventHandler);
-  };
-};
 export {
   Fragment,
   bProgram,
   canUseSlot,
   classNames,
-  createClient,
-  createIDB,
-  createServer,
   createTemplate,
   css,
   getTriggerKey,
@@ -1234,7 +1119,6 @@ export {
   loop,
   matchAllEvents,
   memo,
-  messenger,
   reduceWhitespace,
   ssr,
   sugar,
@@ -1244,8 +1128,8 @@ export {
   useCSSVar,
   useIndexedDB,
   useMain,
+  useMessenger,
   useStore,
   useSugar,
-  useTokens,
-  useWebWorker
+  useTokens
 };

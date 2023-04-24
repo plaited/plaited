@@ -2,7 +2,8 @@ import { test } from '$rite'
 import { useIndexedDB } from '$plaited'
 
 test('useIndexedDB', async (t) => {
-  const [get, set] = await useIndexedDB<number>('testKey', 0)
+  // debugger
+  const [get, set] = await useIndexedDB<number>('basic', 0)
   let actual = await get()
   t({
     given: 'get',
@@ -26,12 +27,38 @@ test('useIndexedDB', async (t) => {
     actual,
     expected: 5,
   })
-  const [get2] = await useIndexedDB('testKey', 1)
-  actual = await get2()
+})
+
+test('useIndexedDB: with subscription', async (t) => {
+  const [get, set] = await useIndexedDB('subscription', 1)
+  let actual = await get()
   t({
     given: 'another useIndexedDB with same key but different initial value',
     should: 'return new initial value',
     actual,
     expected: 1,
+  })
+  let i = 0
+  const spy = (arg: number) => {
+    i++
+    actual = arg
+  }
+  const disconnect = get.subscribe(spy)
+  await set(3)
+  await t.wait(60)
+  t({
+    given: 'subscription to store',
+    should: 'trigger callback with last value',
+    actual,
+    expected: 3,
+  })
+  disconnect()
+  await set(5)
+  await t.wait(60)
+  t({
+    given: 'disconnecting subscription',
+    should: 'callback should not be triggered',
+    actual,
+    expected: 3,
   })
 })

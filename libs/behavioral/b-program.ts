@@ -1,16 +1,17 @@
-import { strategies, streamEvents } from './constants.ts'
+import { strategies } from './constants.ts'
 import { stateSnapshot } from './state-snapshot.ts'
-import { publisher } from './publisher.ts'
+import { publisher } from '../utils/mod.ts'
 import { selectionStrategies } from './selection-strategies.ts'
 import {
   CandidateBid,
   DevCallback,
   Feedback,
-  Message,
   ParameterIdiom,
   PendingBid,
   RulesFunc,
   RunningBid,
+  SelectedMessage,
+  SnapshotMessage,
   Strategy,
   Trigger,
 } from './types.ts'
@@ -48,8 +49,8 @@ export const bProgram = ({
     : strategy
   const pending = new Set<PendingBid>()
   const running = new Set<RunningBid>()
-  const pub = publisher()
-
+  const actionPublisher = publisher<SelectedMessage>()
+  const snapshotPublisher = dev && publisher<SnapshotMessage>()
   function run() {
     running.size && step()
   }
@@ -92,10 +93,8 @@ export const bProgram = ({
     )
     const selectedEvent = eventSelectionStrategy(filteredBids)
     if (selectedEvent) {
-      dev && pub({
-        kind: streamEvents.snapshot,
-        data: stateSnapshot({ bids, selectedEvent }),
-      })
+      dev && snapshotPublisher &&
+        snapshotPublisher(stateSnapshot({ bids, selectedEvent }))
       nextStep(selectedEvent)
     }
   }
@@ -117,10 +116,7 @@ export const bProgram = ({
     const { priority: _p, cb: _cb, ...detail } = selectedEvent
     // To avoid infinite loop with calling trigger from feedback always stream select event
     // checking if the request is in the parameter which can be a waitFor or pending request
-    pub({
-      kind: streamEvents.select,
-      data: detail,
-    })
+    actionPublisher(detail)
     run()
   }
   const trigger: Trigger = ({
@@ -145,13 +141,11 @@ export const bProgram = ({
   const feedback: Feedback = (
     actions,
   ) => {
-    pub.subscribe(
-      ({ kind, data }: Message) => {
-        if (kind === streamEvents.select) {
-          const { type: key, detail = {} } = data
-          Object.hasOwn(actions, key) &&
-            actions[key](detail)
-        }
+    actionPublisher.subscribe(
+      (data: SelectedMessage) => {
+        const { type, detail = {} } = data
+        Object.hasOwn(actions, type) &&
+          actions[type](detail)
       },
     )
   }
@@ -166,13 +160,9 @@ export const bProgram = ({
     }
   }
 
-  if (dev) {
-    pub.subscribe(
-      ({ kind, data }: Message) => {
-        if (kind === streamEvents.snapshot) {
-          dev(data)
-        }
-      },
+  if (dev && snapshotPublisher) {
+    snapshotPublisher.subscribe(
+      (data: SnapshotMessage) => dev(data),
     )
   }
 

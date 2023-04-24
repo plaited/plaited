@@ -1,4 +1,10 @@
-import { bProgram, DevCallback, Strategy, Trigger } from '../behavioral/mod.ts'
+import {
+  bProgram,
+  DevCallback,
+  Strategy,
+  Trigger,
+  TriggerArgs,
+} from '../behavioral/mod.ts'
 import { SugaredElement } from './use-sugar.ts'
 export type Primitive =
   | null
@@ -7,6 +13,8 @@ export type Primitive =
   | string
   | boolean
   | bigint
+
+export type Disconnect = () => void
 
 export type ISLElementOptions = {
   /** define wether island's custom element is open or closed. @defaultValue 'open'*/
@@ -32,7 +40,8 @@ export type PlaitProps = {
   ): SugaredElement<T> | undefined
   $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
     target: string,
-    all: true,
+    /** This options enables querySelectorAll and modified the attribute selector for data-target{@default {all: false, mod: "=" } } {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}*/
+    opts?: { all: boolean; mod: '=' | '~=' | '|=' | '^=' | '$=' | '*=' },
   ): SugaredElement<T>[]
   /** The DOM node context allowing easy light & shadow dom access
    * @example
@@ -65,3 +74,6 @@ export interface ISLElement extends HTMLElement {
 export interface ISLElementConstructor {
   new (): ISLElement
 }
+
+export type SendMessage = (recipient: string, detail: TriggerArgs) => void
+export type BroadcastMessage = (recipient: TriggerArgs) => void

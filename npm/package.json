@@ -1,9 +1,10 @@
 {
   "name": "plaited",
-  "version": "0.1.14-rc",
+  "version": "0.1.17-rc",
   "description": "Rapidly code and refine web applications as requirements change and evolve.",
   "license": "ISC",
   "type": "module",
+  "types": "types/mod.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/plaited/plaited.git"

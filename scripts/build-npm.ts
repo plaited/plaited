@@ -4,6 +4,30 @@ import { bundler } from './bundler.ts'
 
 const root = Deno.cwd()
 const outdir = `${root}/npm`
+const types = `${outdir}/types`
+await Deno.remove(types, { recursive: true })
+
+await Deno.mkdir(types, { recursive: true })
+
+await Deno.run({
+  cmd: [
+    'npx',
+    'tsc',
+    '--declaration',
+    '--emitDeclarationOnly',
+    '--allowJs',
+    '--allowImportingTsExtensions',
+    '--target',
+    'es2022',
+    '--module',
+    'es2022',
+    '--lib',
+    'dom,es2022',
+    `${root}/mod.ts`,
+    '--outDir',
+    types,
+  ],
+}).status()
 
 await Deno.mkdir(outdir, { recursive: true })
 

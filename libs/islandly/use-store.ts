@@ -1,4 +1,11 @@
-import { trueTypeOf } from '../utils/mod.ts'
+import { publisher, trueTypeOf } from '../utils/mod.ts'
+import { Disconnect } from './types.ts'
+
+type Get<T> = {
+  (): T
+  subscribe(cb: (arg: T) => void): Disconnect
+}
+type Set<T> = (newStore: T | ((arg: T) => T)) => void
 
 /**
  * @description
@@ -17,15 +24,22 @@ import { trueTypeOf } from '../utils/mod.ts'
  *  store() // => 3
  */
 
-export const useStore = <T>(initialStore: T) => {
+export const useStore = <T>(initialStore: T): readonly [Get<T>, Set<T>] => {
   let store = initialStore
+  let pub: ReturnType<typeof publisher<T>>
   const get = () => store
+  get.subscribe = (cb: (arg: T) => void) => {
+    pub = pub ?? publisher<T>()
+    return pub.subscribe(cb)
+  }
   const set = (newStore: T | ((arg: T) => T)) => {
     store = trueTypeOf(newStore) === 'function'
       ? (newStore as ((arg: T) => T))(structuredClone(store))
       : newStore as T
+    pub && pub(store)
   }
-  return Object.freeze<[() => T, (newStore: T | ((arg: T) => T)) => void]>([
+
+  return Object.freeze([
     get,
     set,
   ])
