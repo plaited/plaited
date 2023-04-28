@@ -1,1 +1,1 @@
-export * from './libs/token-utils/mod.ts'
+export * from './deno/token-utils/mod.ts'

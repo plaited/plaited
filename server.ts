@@ -1,1 +1,1 @@
-export * from './libs/server/mod.ts'
+export * from './deno/server/mod.ts'

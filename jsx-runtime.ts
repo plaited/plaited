@@ -1,1 +1,1 @@
-export * from './libs/jsx-runtime/mod.ts'
+export * from './node/islandly/dist/jsx-runtime.js'

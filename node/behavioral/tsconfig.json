@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "baseUrl": ".",
+    "declaration": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "jsx": "react",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "ES2022",
+    "typeRoots": [
+      "./node_modules/@types",
+      "types"
+    ],
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "exclude": [
+    "**/dist",
+    "**/tests/"
+  ],
+  "include": [
+    "src"
+  ]
+}

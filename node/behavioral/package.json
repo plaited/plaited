@@ -1,0 +1,28 @@
+{
+  "name": "@plaited/behavioral",
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">= v18.15.0"
+  },
+  "main": "./dist/index.js",
+  "files": [
+    "./dist/**"
+  ],
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "dependencies": {
+    "@plaited/utils": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "5.0.4"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "build:watch": "tsc --watch --project tsconfig.json",
+    "prepublishOnly": "yarn build",
+    "test": "node --test ./src",
+    "test:watch": "node --test --watch ./src"
+  }
+}
