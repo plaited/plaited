@@ -1,0 +1,29 @@
+{
+  "name": "@plaited/islandly",
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">= v18.15.0"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "./dist/**"
+  ],
+  "exports": {
+    ".": "./dist/index.js",
+    "./jsx-runtime": "./dist/jsx-runtime.js"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "build:watch": "tsc --watch --project tsconfig.build.json",
+    "prepublishOnly": "yarn build",
+    "test": "npx web-test-runner \"src/**/*.spec.(ts|tsx)\" --config web-test-runner.config.js --node-resolve --watch",
+    "test:watch": "bun test --watch --verbose"
+  },
+  "dependencies": {
+    "@plaited/behavioral": "workspace:*",
+    "@plaited/jsx": "workspace:*",
+    "@plaited/utils": "workspace:*"
+  }
+}

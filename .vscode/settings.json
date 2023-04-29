@@ -1,14 +1,7 @@
 {
-  "deno.codeLens.test": true,
-  "deno.config": "./deno.json",
-  "deno.enable": true,
-  "deno.lint": true,
-  "deno.importMap": "./.vscode/import-map.json",
-  "deno.unstable": true,
-  "files.exclude": {
-    "**/.git": false
-  },
-  "deno.enablePaths": [
-    "./deno"
-  ]
+  "editor.tabSize": 2,
+  "eslint.format.enable": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  }
 }

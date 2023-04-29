@@ -1,19 +1,13 @@
-FROM mcr.microsoft.com/devcontainers/base:bullseye
-
-# Update the package list and install wget, curl, python3, and python3-pip
-RUN apt-get update && \
-    apt-get install -y python3 python3-pip
+FROM mcr.microsoft.com/devcontainers/javascript-node:0-20
+RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
+    && apt-get -y install git wget
 
 # Install Google Chrome
+# Chrome dependency Instalation
 RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install ./google-chrome-stable_current_amd64.deb
 
-# Install Selenium
-RUN pip install selenium requests
-RUN export CHROME_PATH="/usr/bin/google-chrome"
+RUN rm google-chrome-stable_current_amd64.deb
+# Check chrome version
+RUN echo "Chrome: " && google-chrome --version
 
-# Cleanup
-RUN apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    rm -rf /root/.cache/pip/* && \
-    rm ./google-chrome-stable_current_amd64.deb

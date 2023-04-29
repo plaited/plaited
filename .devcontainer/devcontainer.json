@@ -27,10 +27,8 @@
       "userUid": "automatic",
       "userGid": "automatic"
     }
-  },
-  "forwardPorts": [
-    6006,
-    1234,
-    9009
-  ]
+  }
+  // "forwardPorts": [
+
+  // ]
 }

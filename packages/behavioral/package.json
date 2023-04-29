@@ -1,0 +1,30 @@
+{
+  "name": "@plaited/behavioral",
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">= v18.15.0"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "./dist/**"
+  ],
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "dependencies": {
+    "@plaited/utils": "workspace:*"
+  },
+  "devDependencies": {
+    "@swc-node/jest": "1.6.5",
+    "jest": "29.5.0"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "build:watch": "tsc --watch --project tsconfig.json",
+    "prepublishOnly": "yarn build",
+    "test": "bun test src/**/*",
+    "test:watch": "bun test --watch test src/**/*"
+  }
+}
