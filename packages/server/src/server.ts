@@ -1,13 +1,13 @@
 /* eslint-disable no-console */
-import { hostnameForDisplay, networkIps, usePort } from "./utils.js";
-import { Middleware, Server } from "./types.js";
-import { watcher } from "./watcher.js";
-import { getRouteHandler } from "./get-route-handler.js";
-import { serve, serveTls } from "../deps.js";
-import { getReloadRoute } from "./get-reload-route.js";
+import { hostnameForDisplay, networkIps, usePort } from './utils.js'
+import { Middleware, Server } from './types.js'
+import { watcher } from './watcher.js'
+import { getRouteHandler } from './get-route-handler.js'
+import { serve, serveTls } from '../deps.js'
+import { getReloadRoute } from './get-reload-route.js'
 
-const getMiddleware: Middleware = (handler) => async (req, ctx) =>
-  await handler(req, ctx);
+const getMiddleware: Middleware = handler => async (req, ctx) =>
+  await handler(req, ctx)
 
 export const server: Server = ({
   root,
@@ -21,21 +21,21 @@ export const server: Server = ({
   middleware = getMiddleware,
 }) => {
   // Try start on specified port then fail or find a free port
-  const port = usePort(_port) ? _port : usePort();
+  const port = usePort(_port) ? _port : usePort()
 
   // Configure globals
-  const controller = new AbortController();
-  const { signal } = controller;
-  const protocol: "http" | "https" = `${credentials ? "https" : "http"}`;
-  const url = `${protocol}://localhost:${port}`;
-  const reloadClients = new Set<WebSocket>();
+  const controller = new AbortController()
+  const { signal } = controller
+  const protocol: 'http' | 'https' = `${credentials ? 'https' : 'http'}`
+  const url = `${protocol}://localhost:${port}`
+  const reloadClients = new Set<WebSocket>()
 
-  const createServer = credentials ? serveTls : serve;
+  const createServer = credentials ? serveTls : serve
 
   const server = createServer(
     middleware(async (
       req,
-      ctx,
+      ctx
     ) => {
       const routeHandler = await getRouteHandler({
         routes,
@@ -44,47 +44,47 @@ export const server: Server = ({
         otherHandler,
         errorHandler,
         unknownMethodHandler,
-      });
-      return await routeHandler(req, ctx);
+      })
+      return await routeHandler(req, ctx)
     }),
     {
       signal,
       port,
       onListen: ({ port, hostname }) => {
         console.log(
-          `Running at ${protocol}://${hostnameForDisplay(hostname)}:${port}`,
-        );
+          `Running at ${protocol}://${hostnameForDisplay(hostname)}:${port}`
+        )
       },
       ...credentials,
-    },
-  );
+    }
+  )
   const reloadClient = () => {
     if (reloadClients.size) {
-      console.log("reloading client");
-      routes.set(...getReloadRoute(reloadClients));
-      reloadClients.forEach((socket) => socket.send(new Date().toString()));
+      console.log('reloading client')
+      routes.set(...getReloadRoute(reloadClients))
+      reloadClients.forEach(socket => socket.send(new Date().toString()))
     }
-  };
+  }
 
   if (reload && root) { // Check if root path exist
     if (!Deno.statSync(root)) {
-      console.error(`[ERR] Root directory ${root} does not exist!`);
-      Deno.exit();
+      console.error(`[ERR] Root directory ${root} does not exist!`)
+      Deno.exit()
     }
 
     // Check if root path is a directory else exit
     if (!Deno.statSync(root).isDirectory) {
-      console.error(`[ERR] Root directory "${root}" is not directory!`);
-      Deno.exit();
+      console.error(`[ERR] Root directory "${root}" is not directory!`)
+      Deno.exit()
     }
-    watcher(reloadClient, root);
+    watcher(reloadClient, root)
   }
 
   const close = async () => {
-    console.log("Closing server...");
-    controller.abort();
-    await server;
-  };
+    console.log('Closing server...')
+    controller.abort()
+    await server
+  }
 
   return {
     ips: networkIps,
@@ -93,5 +93,5 @@ export const server: Server = ({
     reloadClient,
     close,
     url,
-  };
-};
+  }
+}

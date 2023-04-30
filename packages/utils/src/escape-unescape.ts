@@ -3,31 +3,31 @@
  * {@see https://github.com/WebReflection/html-escaper}
  */
 
-const reEscape = /[&<>'"]/g;
-const reUnescape = /&(?:amp|#38|lt|#60|gt|#62|apos|#39|quot|#34);/g;
+const reEscape = /[&<>'"]/g
+const reUnescape = /&(?:amp|#38|lt|#60|gt|#62|apos|#39|quot|#34);/g
 const escapeObj = {
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
-  "'": "&#39;",
-  '"': "&quot;",
-};
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  "'": '&#39;',
+  '"': '&quot;',
+}
 const unescapeObj = {
-  "&amp;": "&",
-  "&#38;": "&",
-  "&lt;": "<",
-  "&#60;": "<",
-  "&gt;": ">",
-  "&#62;": ">",
-  "&apos;": "'",
-  "&#39;": "'",
-  "&quot;": '"',
-  "&#34;": '"',
-};
+  '&amp;': '&',
+  '&#38;': '&',
+  '&lt;': '<',
+  '&#60;': '<',
+  '&gt;': '>',
+  '&#62;': '>',
+  '&apos;': "'",
+  '&#39;': "'",
+  '&quot;': '"',
+  '&#34;': '"',
+}
 
-const { replace } = "";
-const cape = (key: string) => escapeObj[key as keyof typeof escapeObj];
-const ucape = (key: string) => unescapeObj[key as keyof typeof unescapeObj];
+const { replace } = ''
+const cape = (key: string) => escapeObj[key as keyof typeof escapeObj]
+const ucape = (key: string) => unescapeObj[key as keyof typeof unescapeObj]
 
 /**
  * @desription escapes a string
@@ -38,8 +38,8 @@ export const escape = (sub: string) =>
   replace.call(
     sub,
     reEscape,
-    cape,
-  );
+    cape
+  )
 
 /**
  * @desription unescapes an escaped a string
@@ -50,5 +50,5 @@ export const unescape = (sub: string) =>
   replace.call(
     sub,
     reUnescape,
-    ucape,
-  );
+    ucape
+  )

@@ -1,0 +1,1 @@
+export declare const findByAttribute: <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(attributeName: string, attributeValue: string | RegExp, context?: HTMLElement | SVGElement) => Promise<T>;

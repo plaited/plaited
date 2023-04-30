@@ -1,6 +1,6 @@
-import { css } from "../index.js";
+import { css } from '../index.js'
 
-test("css()", () => {
+test('css()', () => {
   expect(
     css`
     .button {
@@ -15,8 +15,8 @@ test("css()", () => {
     ._button-4:disabled + :not(.link){
       background-color: rgba(00, 50, 25, 0.8);
     }
-    `,
-  ).toMatchSnapshot();
+    `
+  ).toMatchSnapshot()
   expect(
     css`
     .button {
@@ -31,6 +31,6 @@ test("css()", () => {
     ._button-4:disabled + :not(.link){
       background-color: var(--background-color-disabled);
     }
-    `,
-  ).toMatchSnapshot();
-});
+    `
+  ).toMatchSnapshot()
+})

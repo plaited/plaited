@@ -1,26 +1,25 @@
-import { GetReloadRoute } from "./types.js";
+/* eslint-disable no-console */
+import { GetReloadRoute } from './types.js'
 
-export const getReloadRoute: GetReloadRoute = (
-  reloadClient,
-) => {
+export const getReloadRoute: GetReloadRoute = reloadClient => {
   return [
-    "/livereload",
+    '/livereload',
     (req: Request) => {
-      const upgrade = req.headers.get("upgrade") || "";
-      if (upgrade.toLowerCase() != "websocket") {
-        return new Response("request isn't trying to upgrade to websocket.");
+      const upgrade = req.headers.get('upgrade') || ''
+      if (upgrade.toLowerCase() != 'websocket') {
+        return new Response("request isn't trying to upgrade to websocket.")
       }
-      const { socket, response } = Deno.upgradeWebSocket(req);
+      const { socket, response } = Deno.upgradeWebSocket(req)
       socket.onopen = () => {
-        console.log("client connected");
-        reloadClient.add(socket);
-      };
-      socket.onerror = (e) => console.log("socket errored:", e);
+        console.log('client connected')
+        reloadClient.add(socket)
+      }
+      socket.onerror = e => console.log('socket errored:', e)
       socket.onclose = () => {
-        console.log("client disconnected");
-        reloadClient.delete(socket);
-      };
-      return response;
+        console.log('client disconnected')
+        reloadClient.delete(socket)
+      }
+      return response
     },
-  ];
-};
+  ]
+}

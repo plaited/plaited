@@ -1,16 +1,16 @@
-import { wait } from "../utils/mod.ts";
+import { wait } from '../utils/mod.ts'
 
 export const watcher = async (
   cb: () => void,
-  root: string,
+  root: string
 ) => {
-  const watcher = Deno.watchFs(root, { recursive: true });
+  const watcher = Deno.watchFs(root, { recursive: true })
   for await (const { kind } of watcher) {
     if (
-      kind === "modify"
+      kind === 'modify'
     ) {
-      cb();
+      cb()
     }
-    await wait(100);
+    await wait(100)
   }
-};
+}

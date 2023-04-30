@@ -75,6 +75,7 @@ module.exports = {
       exceptMethods: [ 'plait' ],
     } ],
     'no-unneeded-ternary': [ 'error' ],
+    '@typescript-eslint/no-unused-vars': [ 'warn', { argsIgnorePattern: '^_' } ],
     '@typescript-eslint/no-use-before-define': [ 'warn' ],
     '@typescript-eslint/ban-ts-comment': [ 2, {
       'ts-ignore': 'allow-with-description',

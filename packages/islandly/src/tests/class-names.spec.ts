@@ -1,19 +1,24 @@
-import { assert } from "@esm-bundle/chai";
-import { classNames } from "../index.js";
+import { test } from '@plaited/rite'
+import { classNames } from '../index.js'
 
-describe("myFunction", () => {
-  test("classNames()", () => {
-    assert.equal(classNames("class-1", "class-2"), "class-1 class-2");
-  });
+test('classNames', t => {
+  t({
+    given: 'two class names',
+    should: 'joing them',
+    expected:  'class-1 class-2',
+    actual: classNames('class-1', 'class-2'),
+  })
+  const condtionTrue = true
+  const conditionFalse = false
+  t({
+    given: 'truthy and falsy class names',
+    should: 'join only truthy',
+    expected:  'class-1 class-3',
+    actual: classNames(
+      'class-1',
+      conditionFalse && 'class-2',
+      condtionTrue && 'class-3'
+    ),
+  })
+})
 
-  test("classNames(): falsey", () => {
-    const condtionTrue = true;
-    const conditionFalse = false;
-    const actual = classNames(
-      "class-1",
-      conditionFalse && "class-2",
-      condtionTrue && "class-3",
-    );
-    assert.equal(actual, "class-1 class-3");
-  });
-});

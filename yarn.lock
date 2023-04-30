@@ -1431,12 +1431,22 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@plaited/design-system-tools@workspace:packages/design-system-tools":
+  version: 0.0.0-use.local
+  resolution: "@plaited/design-system-tools@workspace:packages/design-system-tools"
+  dependencies:
+    "@swc-node/jest": 1.6.5
+    jest: 29.5.0
+  languageName: unknown
+  linkType: soft
+
 "@plaited/islandly@workspace:packages/islandly":
   version: 0.0.0-use.local
   resolution: "@plaited/islandly@workspace:packages/islandly"
   dependencies:
     "@plaited/behavioral": "workspace:*"
     "@plaited/jsx": "workspace:*"
+    "@plaited/rite": "workspace:*"
     "@plaited/utils": "workspace:*"
   languageName: unknown
   linkType: soft
@@ -1449,20 +1459,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@plaited/rite@workspace:*, @plaited/rite@workspace:packages/rite":
+  version: 0.0.0-use.local
+  resolution: "@plaited/rite@workspace:packages/rite"
+  dependencies:
+    "@plaited/utils": "workspace:*"
+    "@web/test-runner-core": 0.11.1
+  languageName: unknown
+  linkType: soft
+
 "@plaited/server@workspace:packages/server":
   version: 0.0.0-use.local
   resolution: "@plaited/server@workspace:packages/server"
   dependencies:
     "@plaited/utils": "workspace:*"
-    "@swc-node/jest": 1.6.5
-    jest: 29.5.0
-  languageName: unknown
-  linkType: soft
-
-"@plaited/token-utils@workspace:packages/token-utils":
-  version: 0.0.0-use.local
-  resolution: "@plaited/token-utils@workspace:packages/token-utils"
-  dependencies:
     "@swc-node/jest": 1.6.5
     jest: 29.5.0
   languageName: unknown
@@ -2339,7 +2349,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@web/test-runner-core@npm:^0.11.0, @web/test-runner-core@npm:^0.11.1":
+"@web/test-runner-core@npm:0.11.1, @web/test-runner-core@npm:^0.11.0, @web/test-runner-core@npm:^0.11.1":
   version: 0.11.1
   resolution: "@web/test-runner-core@npm:0.11.1"
   dependencies:
@@ -7394,6 +7404,7 @@ __metadata:
     "@typescript-eslint/parser": 5.59.1
     "@web/dev-server-esbuild": 0.4.1
     "@web/test-runner": 0.16.1
+    "@web/test-runner-core": 0.11.1
     bun-types: 0.5.8
     cz-conventional-changelog: 3.3.0
     eslint: 8.39.0

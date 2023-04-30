@@ -6,7 +6,7 @@ import {
   type MatchHandler,
   type Routes,
   type UnknownMethodHandler,
-} from "./router.js";
+} from './router.js'
 
 export type Credentials = {
   /** Server private key in PEM format */
@@ -65,7 +65,7 @@ export type Server = (args: {
   /** current port being listened to */
   port?: number;
   /** protocol server is running under */
-  protocol: "http" | "https";
+  protocol: 'http' | 'https';
   /** url to open in browser */
   url: string;
   /** callback function to  close server*/

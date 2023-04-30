@@ -1,7 +1,7 @@
 /** Fork of rutt
  */
 
-import { ConnInfo } from "../deps.js";
+import { ConnInfo } from '../deps.js'
 /**
  * Provides arbitrary context to {@link Handler} functions along with
  * {@link ConnInfo connection information}.
@@ -70,23 +70,23 @@ export type KnownMethod = typeof knownMethods[number];
  * All known HTTP methods.
  */
 export const knownMethods = [
-  "GET",
-  "HEAD",
-  "POST",
-  "PUT",
-  "DELETE",
-  "OPTIONS",
-  "PATCH",
-] as const;
+  'GET',
+  'HEAD',
+  'POST',
+  'PUT',
+  'DELETE',
+  'OPTIONS',
+  'PATCH',
+] as const
 
 /**
  * The default other handler for the router. By default it responds with `null`
  * body and a status of 404.
  */
-export const defaultOtherHandler: Handler = (_req) =>
+export const defaultOtherHandler: Handler = _req =>
   new Response(null, {
     status: 404,
-  });
+  })
 
 /**
  * The default error handler for the router. By default it responds with `null`
@@ -95,14 +95,14 @@ export const defaultOtherHandler: Handler = (_req) =>
 export const defaultErrorHandler: ErrorHandler = (
   _req,
   _ctx,
-  err,
+  err
 ) => {
-  console.error(err);
+  console.error(err)
 
   return new Response(null, {
     status: 500,
-  });
-};
+  })
+}
 
 /**
  * The default unknown method handler for the router. By default it responds
@@ -112,14 +112,14 @@ export const defaultErrorHandler: ErrorHandler = (
 export const defaultUnknownMethodHandler: UnknownMethodHandler = (
   _req,
   _ctx,
-  knownMethods,
+  knownMethods
 ) =>
   new Response(null, {
     status: 405,
     headers: {
-      Accept: knownMethods.join(", "),
+      Accept: knownMethods.join(', '),
     },
-  });
+  })
 
 /**
  * Additional options for the {@link router} function.
@@ -142,7 +142,7 @@ export interface RouterOptions<T> {
   unknownMethodHandler?: UnknownMethodHandler<T>;
 }
 
-const knownMethodRegex = new RegExp(`(?<=^(?:${knownMethods.join("|")}))@`);
+const knownMethodRegex = new RegExp(`(?<=^(?:${knownMethods.join('|')}))@`)
 
 /**
  * Builds an {@link InternalRoutes} array from a {@link Routes} record.
@@ -151,28 +151,28 @@ const knownMethodRegex = new RegExp(`(?<=^(?:${knownMethods.join("|")}))@`);
  * @returns The built {@link InternalRoutes}
  */
 export function buildInternalRoutes<T = unknown>(
-  routes: Routes<T>,
+  routes: Routes<T>
 ): InternalRoutes<T> {
   const toRet: Map<
     string,
     { pattern: URLPattern; methods: Record<string, MatchHandler<T>> }
-  > = new Map();
+  > = new Map()
   routes.forEach((handler, route) => {
-    let [methodOrPath, path] = route.split(knownMethodRegex);
-    let method = methodOrPath;
+    let [ methodOrPath, path ] = route.split(knownMethodRegex)
+    let method = methodOrPath
     if (!path) {
-      path = methodOrPath;
-      method = "any";
+      path = methodOrPath
+      method = 'any'
     }
-    const fmtPath = path.startsWith("/") ? path : `/${path}`;
+    const fmtPath = path.startsWith('/') ? path : `/${path}`
     const r = toRet.get(fmtPath) ?? {
       pattern: new URLPattern({ pathname: fmtPath }),
       methods: {},
-    };
-    r.methods[method] = handler;
-    toRet.set(fmtPath, r);
-  });
-  return [...toRet.values()];
+    }
+    r.methods[method] = handler
+    toRet.set(fmtPath, r)
+  })
+  return [ ...toRet.values() ]
 }
 
 /**
@@ -197,56 +197,56 @@ export function buildInternalRoutes<T = unknown>(
  */
 export function router<T = unknown>(
   routes: Routes<T> | InternalRoutes<T>,
-  options: RouterOptions<T> = {},
+  options: RouterOptions<T> = {}
 ): Handler<T> {
   const {
     otherHandler = defaultOtherHandler,
     errorHandler = defaultErrorHandler,
     unknownMethodHandler = defaultUnknownMethodHandler,
-  } = options;
+  } = options
   const internalRoutes = Array.isArray(routes)
     ? routes
-    : buildInternalRoutes(routes);
+    : buildInternalRoutes(routes)
 
   return async (req, ctx) => {
     try {
       for (const { pattern, methods } of internalRoutes) {
-        const res = pattern.exec(req.url);
+        const res = pattern.exec(req.url)
         const groups = (pattern instanceof URLPattern
           ? (res as URLPatternResult | null)?.pathname.groups
-          : (res as RegExpExecArray | null)?.groups) ?? {};
+          : (res as RegExpExecArray | null)?.groups) ?? {}
         for (const key in groups) {
-          groups[key] = decodeURIComponent(groups[key]);
+          groups[key] = decodeURIComponent(groups[key])
         }
         if (res !== null) {
-          for (const [method, handler] of Object.entries(methods)) {
+          for (const [ method, handler ] of Object.entries(methods)) {
             if (req.method === method) {
               return await handler(
                 req,
                 ctx,
-                groups,
-              );
+                groups
+              )
             }
           }
-          if (methods["any"]) {
-            return await methods["any"](
+          if (methods['any']) {
+            return await methods['any'](
               req,
               ctx,
-              groups,
-            );
+              groups
+            )
           } else {
             return await unknownMethodHandler(
               req,
               ctx,
-              Object.keys(methods),
-            );
+              Object.keys(methods)
+            )
           }
         }
       }
 
-      return await otherHandler!(req, ctx);
+      return await otherHandler!(req, ctx)
     } catch (err) {
-      return errorHandler!(req, ctx, err);
+      return errorHandler!(req, ctx, err)
     }
-  };
+  }
 }

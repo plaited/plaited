@@ -4,14 +4,14 @@ import {
   Strategy,
   Trigger,
   TriggerArgs,
-} from "@plaited/behavioral";
-import { SugaredElement } from "./use-sugar.js";
+} from '@plaited/behavioral'
+import { SugaredElement } from './use-sugar.js'
 
 export type Disconnect = () => void;
 
 export type ISLElementOptions = {
   /** define wether island's custom element is open or closed. @defaultValue 'open'*/
-  mode?: "open" | "closed";
+  mode?: 'open' | 'closed';
   /** configure whether to delegate focus or not @defaultValue 'true' */
   delegatesFocus?: boolean;
   /** logger function to receive messages from behavioral program react streams */
@@ -40,7 +40,7 @@ export interface ISLElement extends HTMLElement {
   formResetCallback?(): void;
   formStateRestoreCallback?(
     state: unknown,
-    reason: "autocomplete" | "restore",
+    reason: 'autocomplete' | 'restore',
   ): void;
 }
 export type PlaitProps = {
@@ -51,7 +51,7 @@ export type PlaitProps = {
   $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
     target: string,
     /** This options enables querySelectorAll and modified the attribute selector for data-target{@default {all: false, mod: "=" } } {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}*/
-    opts?: { all: boolean; mod: "=" | "~=" | "|=" | "^=" | "$=" | "*=" },
+    opts?: { all: boolean; mod: '=' | '~=' | '|=' | '^=' | '$=' | '*=' },
   ): SugaredElement<T>[];
   /** The DOM node context allowing easy light & shadow dom access
    * @example

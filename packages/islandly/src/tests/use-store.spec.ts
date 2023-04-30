@@ -1,30 +1,57 @@
-import { expect, test } from "bun:test";
-import sinon from "sinon";
-import { useStore } from "../index.js";
+import { test } from '@plaited/rite'
+import sinon from 'sinon'
+import { useStore } from '../index.js'
 
-Deno.test("useStore()", () => {
-  const [store, setStore] = useStore<Record<string, number> | number>({ a: 1 });
-  setStore((prev) => {
-    if (typeof prev !== "number") prev.b = 2;
-    return prev;
-  });
-  assertEquals(store(), { a: 1, b: 2 });
-  setStore(3);
-  assertEquals(store(), 3);
-});
+test('useStore()', t => {
+  const [ store, setStore ] = useStore<Record<string, number> | number>({ a: 1 })
+  setStore(prev => {
+    if (typeof prev !== 'number') prev.b = 2
+    return prev
+  })
+  t({
+    given: 'updating store with callback',
+    should: 'return new value when getter invoked',
+    actual: store(),
+    expected:{ a: 1, b: 2 },
+  })
+  setStore(3)
+  t({
+    given: 'updating store with value',
+    should: 'return new value when getter invoked',
+    actual: store(),
+    expected:3,
+  })
+})
 
-Deno.test("useStore(): with subscription", () => {
-  const [store, setStore] = useStore<number>(2);
-  const callback = spy();
-  const disconnect = store.subscribe(callback);
-  setStore((prev) => prev + 1);
-  assertEquals(store(), 3);
-  assertSpyCall(callback, 0, { args: [3] });
-  disconnect();
-  setStore(4);
-  assertEquals(store(), 4);
-  assertSpyCalls(
-    callback,
-    1,
-  );
-});
+test('useStore(): with subscription', t => {
+  const [ store, setStore ] = useStore<number>(2)
+  const callback = sinon.spy()
+  const disconnect = store.subscribe(callback)
+  setStore(prev => prev + 1)
+  t({
+    given: 'updating store with callback',
+    should: 'return new value when getter invoked',
+    actual: store(),
+    expected:3,
+  })
+  t({
+    given: 'subscription to update',
+    should: 'return new value when getter invoked',
+    actual: callback.args,
+    expected:[ [ 3 ] ],
+  })
+  setStore(4)
+  t({
+    given: 'setting store value',
+    should: 'return new value when getter invoked',
+    actual: store(),
+    expected:4,
+  })
+  t({
+    given: 'setting store value',
+    should: 'return new value when getter invoked',
+    actual: callback.callCount,
+    expected:2,
+  })
+  disconnect()
+})

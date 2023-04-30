@@ -15,11 +15,11 @@ export type Children = (string | Template)[] | (string | Template);
 
 export type BaseAttrs = {
   class?: string;
-  "data-target"?: string | number;
-  "data-trigger"?: Record<string, string>;
+  'data-target'?: string | number;
+  'data-trigger'?: Record<string, string>;
   for?: string;
   key?: string;
-  shadowrootmode?: "open" | "closed";
+  shadowrootmode?: 'open' | 'closed';
   shadowrootdelegatesfocus?: boolean;
   stylesheet?: string;
   /** setting trusted to true will disable all escaping security policy measures for this element template */

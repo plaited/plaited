@@ -3,15 +3,15 @@ export type Publisher<T> = () => {
   subscribe(listener: (msg: T) => void): () => boolean;
 };
 export const publisher = <T>() => {
-  const listeners = new Set<(value: T) => void>();
+  const listeners = new Set<(value: T) => void>()
   function createPublisher(value: T) {
     for (const cb of listeners) {
-      cb(value);
+      cb(value)
     }
   }
   createPublisher.subscribe = (listener: (msg: T) => void) => {
-    listeners.add(listener);
-    return () => listeners.delete(listener);
-  };
-  return createPublisher;
-};
+    listeners.add(listener)
+    return () => listeners.delete(listener)
+  }
+  return createPublisher
+}

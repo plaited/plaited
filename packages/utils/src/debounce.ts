@@ -1,13 +1,13 @@
 export const debounce = <F extends (...args: Parameters<F>) => ReturnType<F>>(
   func: F,
-  waitFor: number,
+  waitFor: number
 ) => {
-  let timeout: ReturnType<typeof setTimeout> | undefined;
+  let timeout: ReturnType<typeof setTimeout> | undefined
 
   const debounced = (...args: Parameters<F>) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), waitFor);
-  };
+    clearTimeout(timeout)
+    timeout = setTimeout(() => func(...args), waitFor)
+  }
 
-  return debounced;
-};
+  return debounced
+}

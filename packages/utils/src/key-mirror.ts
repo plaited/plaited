@@ -6,8 +6,8 @@ export type KeyMirror<Keys extends string[]> = {
 export const keyMirror = <Keys extends string[]>(...inputs: Keys) => {
   const mirrored = inputs.reduce(
     (acc, key) => ({ ...acc, [key]: key }),
-    {} as KeyMirror<Keys>,
-  );
+    {} as KeyMirror<Keys>
+  )
 
-  return Object.freeze(mirrored);
-};
+  return Object.freeze(mirrored)
+}
