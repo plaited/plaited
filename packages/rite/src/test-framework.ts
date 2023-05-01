@@ -27,7 +27,7 @@ type TestFrameworkConfig = {
   })
 
   const timeout = (testFrameworkConfig as TestFrameworkConfig['config'])?.timeout
-  timeout && window.__rite_test_runner.updateTimeout(timeout)
+  timeout && window.__rite_test_runner?.updateTimeout(timeout)
 
   const { pathname } = new URL(testFile, 'http://dummy.base')
 

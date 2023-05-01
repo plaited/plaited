@@ -10,7 +10,7 @@ import { getConfig, sessionStarted, sessionFinished, sessionFailed, } from '@web
         failedImports.push({ file: testFile, error: { message: error.message, stack: error.stack } });
     });
     const timeout = testFrameworkConfig?.timeout;
-    timeout && window.__rite_test_runner.updateTimeout(timeout);
+    timeout && window.__rite_test_runner?.updateTimeout(timeout);
     const { pathname } = new URL(testFile, 'http://dummy.base');
     try {
         // run the actual tests, this is what you need to implement
