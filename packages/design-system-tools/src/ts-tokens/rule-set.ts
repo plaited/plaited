@@ -6,9 +6,8 @@ import {
   TypographyValue,
 } from '../types.js'
 import { hasAlias, resolveTSVar } from '../resolve.js'
-import { camelCase } from '../../deps.js'
+import { camelCase } from 'lodash-es'
 
-type $ValueObject = Exclude<FlexValue, AliasValue>;
 type RuleSetValue = FlexValue | GridValue | TypographyValue;
 export const ruleSet: Formatter<RuleSetValue> = ({
   tokenPath,

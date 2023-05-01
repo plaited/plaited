@@ -101,7 +101,7 @@ type Actions<
     : never;
 };
 
-// deno-lint-ignore no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Feedback = <T extends Record<string, (detail: any) => void>>(
   actions: Actions<T>,
 ) => void;

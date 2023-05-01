@@ -3,7 +3,7 @@ import { DesignTokenGroup, GetFormatters } from './types.js'
 const reduceWhitespace = (str: string) => str.replace(/(\s\s+|\n)/g, ' ')
 
 const deduplicate = (css: string) => {
-  const regex = /([^\{\n]*)\{(\s*[\s\S]*?\s*)\}/gm
+  const regex = /([^{\n]*)\{(\s*[\s\S]*?\s*)\}/gm
   const map = new Map<string, Set<string>>()
   let match: RegExpExecArray | null
   while ((match = regex.exec(css)) !== null) {

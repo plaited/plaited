@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Detail, RuleSet, RulesFunc } from './types.js'
 
 /**

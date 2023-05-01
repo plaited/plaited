@@ -281,7 +281,7 @@ export const isle = (
     )
   }
   define['template'] = <
-    // deno-lint-ignore no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     T extends Record<string, any> = Record<string, any>,
   >(
       props: T

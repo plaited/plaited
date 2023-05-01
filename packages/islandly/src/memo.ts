@@ -15,7 +15,8 @@ const shallowCompare = (
  * In this mode we constrain arguments to a single props object that extends TemplateProps
  * We also do a basic shallow comparison on the object to cache function result.
  */
-// deno-lint-ignore no-explicit-any
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const memo = <T extends Record<string, any> = Record<string, any>>(
   resultFn: PlaitedElement<T>
 ): PlaitedElement<T> => {

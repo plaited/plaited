@@ -75,7 +75,7 @@ module.exports = {
       exceptMethods: [ 'plait' ],
     } ],
     'no-unneeded-ternary': [ 'error' ],
-    '@typescript-eslint/no-unused-vars': [ 'warn', { argsIgnorePattern: '^_' } ],
+    '@typescript-eslint/no-unused-vars': [ 'warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' } ],
     '@typescript-eslint/no-use-before-define': [ 'warn' ],
     '@typescript-eslint/ban-ts-comment': [ 2, {
       'ts-ignore': 'allow-with-description',
@@ -122,6 +122,24 @@ module.exports = {
         '@typescript-eslint/no-var-requires': 0,
         'no-undef': 0,
         'func-names': 0,
+      },
+    },
+    {
+      
+      files: [
+        'packages/rite/*/**',
+      ],
+      rules: {
+        'no-console': 0,
+      },
+    },
+    {
+      files: [
+        'packages/server/*/**',
+      ],
+      rules: {
+        'compat/compat': 0,
+        'no-console': 0,
       },
     },
   ],
