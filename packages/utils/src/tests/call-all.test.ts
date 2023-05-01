@@ -1,4 +1,5 @@
 import sinon from 'sinon'
+import { test, expect } from 'bun:test'
 import { callAll } from '../index.js'
 
 test('callAll()', () => {
@@ -6,6 +7,6 @@ test('callAll()', () => {
   const firstSpy = sinon.spy()
   const secondSpy = sinon.spy()
   callAll(firstSpy, secondSpy)(expected)
-  expect(firstSpy.calledWith(expected)).toBeTruthy()
-  expect(secondSpy.calledWith(expected)).toBeTruthy()
+  expect(firstSpy.calledWith(expected)).toBe(true)
+  expect(secondSpy.calledWith(expected)).toBe(true)
 })

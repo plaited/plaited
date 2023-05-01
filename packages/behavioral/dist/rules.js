@@ -2,25 +2,23 @@
  * @description
  * creates a behavioral thread from synchronization sets and/or other  behavioral threads
  */
-export const thread = (...rules) =>
-  function* () {
+export const thread = (...rules) => function* () {
     for (const rule of rules) {
-      yield* rule();
+        yield* rule();
     }
-  };
+};
 /**
  * @description
  * A behavioral thread that loops infinitely or until some callback condition is false
  * like a mode change open -> close. This function returns a threads
  */
-export const loop = (rules, condition = () => true) =>
-  function* () {
+export const loop = (rules, condition = () => true) => function* () {
     while (condition()) {
-      for (const rule of rules) {
-        yield* rule();
-      }
+        for (const rule of rules) {
+            yield* rule();
+        }
     }
-  };
+};
 /**
  * @description
  * At synchronization points, each behavioral thread specifies three sets of events:
@@ -30,7 +28,6 @@ export const loop = (rules, condition = () => true) =>
  * threads currently forbids triggering
  * any of these events.
  */
-export const sync = (set) =>
-  function* () {
+export const sync = (set) => function* () {
     yield set;
-  };
+};

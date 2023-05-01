@@ -1,3 +1,4 @@
+import { test, expect } from 'bun:test'
 import { bProgram, RulesFunc } from '../index.js'
 
 const winConditions = [

@@ -7,7 +7,7 @@ const shallowCompare = (obj1, obj2) => Object.keys(obj1).length === Object.keys(
  * In this mode we constrain arguments to a single props object that extends TemplateProps
  * We also do a basic shallow comparison on the object to cache function result.
  */
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const memo = (resultFn) => {
     let cache = null;
     function tpl(props) {

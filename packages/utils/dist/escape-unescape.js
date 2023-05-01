@@ -5,25 +5,25 @@
 const reEscape = /[&<>'"]/g;
 const reUnescape = /&(?:amp|#38|lt|#60|gt|#62|apos|#39|quot|#34);/g;
 const escapeObj = {
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
-  "'": "&#39;",
-  '"': "&quot;",
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#39;',
+    '"': '&quot;',
 };
 const unescapeObj = {
-  "&amp;": "&",
-  "&#38;": "&",
-  "&lt;": "<",
-  "&#60;": "<",
-  "&gt;": ">",
-  "&#62;": ">",
-  "&apos;": "'",
-  "&#39;": "'",
-  "&quot;": '"',
-  "&#34;": '"',
+    '&amp;': '&',
+    '&#38;': '&',
+    '&lt;': '<',
+    '&#60;': '<',
+    '&gt;': '>',
+    '&#62;': '>',
+    '&apos;': "'",
+    '&#39;': "'",
+    '&quot;': '"',
+    '&#34;': '"',
 };
-const { replace } = "";
+const { replace } = '';
 const cape = (key) => escapeObj[key];
 const ucape = (key) => unescapeObj[key];
 /**

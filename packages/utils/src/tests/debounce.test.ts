@@ -1,4 +1,5 @@
 import sinon from 'sinon'
+import { test, expect } from 'bun:test'
 import { debounce } from '../index.js'
 
 describe('debounce()', () => {
@@ -17,13 +18,13 @@ describe('debounce()', () => {
     const debounced = debounce(fn, 100)
     debounced()
 
-    expect(fn.notCalled).toBeTruthy()
+    expect(fn.notCalled).toBe(true)
     clock.tick(50)
 
-    expect(fn.notCalled).toBeTruthy()
+    expect(fn.notCalled).toBe(true)
     clock.tick(100)
 
-    expect(fn.called).toBeTruthy()
+    expect(fn.called).toBe(true)
     expect(fn.getCalls().length).toBe(1)
   })
 })

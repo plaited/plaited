@@ -1,3 +1,4 @@
+import { test, expect } from 'bun:test'
 import { hashString } from '../index.js'
 
 test('hashString(): Given a string, return a hash', () => {

@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { deepEqual, wait } from '@plaited/utils';
 import { throws } from './throws.js';
 import { match } from './match.js';

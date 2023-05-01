@@ -1,3 +1,4 @@
+import { test, expect } from 'bun:test'
 import { keyMirror } from '../index.js'
 
 test('keyMirror(): return an object of mirrored keys as values', () => {

@@ -2,16 +2,10 @@
   "name": "plaited",
   "version": "0.0.0",
   "license": "ISC",
-  "type": "module",
   "engines": {
     "node": ">= v18.15.0"
   },
-  "files": [
-    "./node/behavioral/dist/",
-    "./node/islandly/dist/",
-    "./node/rite/dist/",
-    "./node/utils/dist/"
-  ],
+  "type": "module",
   "exports": {
     ".": "./node/islandly/dist/index.js",
     "./behavioral": "./node/behavioral/dist/index.js",
@@ -19,9 +13,26 @@
     "./utils": "./node/utils/dist/index.js",
     "./jsx-runtime": "./dist/jsx-runtime.js"
   },
+  "files": [
+    "./node/behavioral/dist/",
+    "./node/islandly/dist/",
+    "./node/rite/dist/",
+    "./node/utils/dist/"
+  ],
   "workspaces": [
     "packages/*"
   ],
+  "scripts": {
+    "build": "yarn workspaces foreach -pt run build",
+    "dev": "node scripts/dev.cjs",
+    "lint": "eslint . --ext .ts,.tsx,.js,.cjs",
+    "lint:fix": "yarn lint --fix --quiet",
+    "postinstall": "husky install",
+    "postpack": "pinst --enable",
+    "prepack": "pinst --disable",
+    "prepare": "husky install",
+    "test": "yarn workspaces foreach run test"
+  },
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [
       "yarn lint:fix"
@@ -33,17 +44,18 @@
   "browserslist": [
     "> 2%"
   ],
+  "packageManager": "yarn@3.5.0",
   "devDependencies": {
     "@commitlint/cli": "17.6.1",
     "@commitlint/config-conventional": "17.6.1",
     "@esm-bundle/chai": "4.3.4-fix.0",
-    "@types/jest": "29.5.1",
     "@types/sinon": "10.0.14",
     "@typescript-eslint/eslint-plugin": "5.59.1",
     "@typescript-eslint/parser": "5.59.1",
     "@web/dev-server-esbuild": "0.4.1",
     "@web/test-runner": "0.16.1",
     "@web/test-runner-core": "0.11.1",
+    "beautify": "0.0.8",
     "bun-types": "0.5.8",
     "cz-conventional-changelog": "3.3.0",
     "eslint": "8.39.0",
@@ -55,17 +67,5 @@
     "pinst": "3.0.0",
     "sinon": "15.0.4",
     "typescript": "5.0.4"
-  },
-  "scripts": {
-    "build": "yarn workspaces foreach -ptR --from '{@plaited/behavioral,@plaited/utils,@plaited/islandly}' run build",
-    "dev": "node scripts/dev.cjs",
-    "lint": "eslint . --ext .ts,.tsx,.js,.cjs",
-    "lint:fix": "yarn lint --fix --quiet",
-    "postinstall": "husky install",
-    "postpack": "pinst --enable",
-    "prepack": "pinst --disable",
-    "prepare": "husky install",
-    "test": "yarn workspaces foreach -ptR --from '{@plaited/behavioral,@plaited/utils,@plaited/islandly}' run test"
-  },
-  "packageManager": "yarn@3.5.0"
+  }
 }

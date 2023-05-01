@@ -1,5 +1,8 @@
-import { assert, AssertionError } from '../mod.js'
-import { assertIsError } from '../../dev-deps.ts'
+/* eslint-disable max-len */
+import { test, expect } from 'bun:test'
+import sinon from 'sinon'
+import { assert } from '../assert.js'
+
 const sum = (...args: number[]) => {
   if (args.some(v => Number.isNaN(v))) throw new TypeError('NaN')
   return args.reduce((acc, n) => acc + n, 0)
@@ -12,39 +15,39 @@ const resolveAfter = () =>
     }, 50)
   })
 
-Deno.test('assert: sum()', () => {
+test('assert: sum()', () => {
   const should = 'return the correct sum'
 
-  assert({
+  expect(() =>assert({
     given: 'no arguments',
     should: 'return 0',
     actual: sum(),
     expected: 0,
-  })
+  })).not.toThrow()
 
-  assert({
+  expect(() =>assert({
     given: 'zero',
     should,
     actual: sum(2, 0),
     expected: 2,
-  })
+  })).not.toThrow()
 
-  assert({
+  expect(() =>assert({
     given: 'negative numbers',
     should,
     actual: sum(1, -4),
     expected: -3,
-  })
-  assert({
+  })).not.toThrow()
+  expect(() =>assert({
     given: 'NaN',
     should: 'throw',
     actual: assert.throws(sum, 1, NaN),
     expected: new TypeError('NaN').toString(),
-  })
+  })).not.toThrow()
 })
 
-Deno.test('assert: handles async', async () => {
-  {
+test('assert: handles async', async () => {
+  expect(async () => {
     const actual = await resolveAfter()
     assert({
       given: 'promise',
@@ -52,8 +55,8 @@ Deno.test('assert: handles async', async () => {
       actual,
       expected: 'resolved',
     })
-  }
-  {
+  }).not.toThrow()
+  expect(async () => {
     const error = new Error('ooops')
     const erred = (_: string) => {
       throw error
@@ -65,20 +68,20 @@ Deno.test('assert: handles async', async () => {
       actual,
       expected: error.toString(),
     })
-  }
+  }).not.toThrow()
 })
 
-Deno.test('wait()', async () => {
+test('wait()', async () => {
   await assert.wait(20)
-  assert({
+  expect(() => assert({
     given: 'a wait call',
     should: 'should pause for 20ms',
     actual: true,
     expected: true,
-  })
+  })).not.toThrow()
 })
 
-Deno.test('match()', () => {
+test('match()', () => {
   const given = 'some text to search and a pattern to match'
   const should = 'return the matched text'
 
@@ -86,130 +89,88 @@ Deno.test('match()', () => {
   const pattern = 'Dialog Title'
   const contains = assert.match(textToSearch)
 
-  assert({
+  expect(() =>assert({
     given,
     should,
     actual: contains(pattern),
     expected: pattern,
-  })
+  })).not.toThrow()
 })
 
-Deno.test('assert: required params', async () => {
+test('assert: required params', async () => {
+  //@ts-ignore: testing error message
+  const noParams =  async () => await assert({})
+  let spy = sinon.spy(noParams)
   try {
-    //@ts-ignore: testing error message
-    await assert({})
+    await spy()
   } catch (err) {
-    assertIsError(err, AssertionError, 'given, should, actual, expected')
+    expect(err.message).toBe("The following parameters are required by 'assert': (\n  given, should, actual, expected\n)")
   }
+  expect(spy.calledOnce).toBe(true)
+  //@ts-ignore: testing error message
+  const partialParam =  async () => await assert({ given: 'some keys', should: 'find the missing keys' })
+  spy = sinon.spy(partialParam)
   try {
-    //@ts-ignore: testing error message
-    await assert({ given: 'some keys', should: 'find the missing keys' })
+    await spy()
   } catch (err) {
-    assertIsError(err, AssertionError, 'actual, expected')
+    expect(err.message).toBe("The following parameters are required by 'assert': (\n  actual, expected\n)")
   }
+  expect(spy.calledOnce).toBe(true)
 })
 
-Deno.test('assert: throws on failure', async () => {
-  try {
-    await assert({
-      given: 'number',
-      should: 'equal number',
-      actual: 0,
-      expected: 1,
-    })
-  } catch (err) {
-    assertIsError(
-      err,
-      AssertionError,
-      'Given number: should equal number'
-    )
-  }
-  try {
-    await assert({
-      given: 'regex',
-      should: 'equal regex',
-      actual: /test/i,
-      expected: /test/,
-    })
-  } catch (err) {
-    assertIsError(
-      err,
-      AssertionError,
-      'Given regex: should equal regex'
-    )
-  }
-  try {
-    await assert({
-      given: 'false',
-      should: 'equal false',
-      actual: null,
-      expected: false,
-    })
-  } catch (err) {
-    assertIsError(
-      err,
-      AssertionError,
-      'Given false: should equal false'
-    )
-  }
-  try {
-    await assert({
-      given: 'array',
-      should: 'equal array',
-      actual: [ 'nope' ],
-      expected: [ 'array' ],
-    })
-  } catch (err) {
-    assertIsError(
-      err,
-      AssertionError,
-      'Given array: should equal array'
-    )
-  }
-  try {
-    await assert({
-      given: 'set',
-      should: 'equal set',
-      actual: new Set([ 'nope' ]),
-      expected: new Set([ 'set' ]),
-    })
-  } catch (err) {
-    assertIsError(
-      err,
-      AssertionError,
-      'Given set: should equal set'
-    )
-  }
-  try {
-    await assert({
-      given: 'map',
-      should: 'equal map',
-      actual: new Map([ [ 'key', 'nope' ] ]),
-      expected: new Map([ [ 'key', 'value' ] ]),
-    })
-  } catch (err) {
-    assertIsError(
-      err,
-      AssertionError,
-      'Given map: should equal map'
-    )
-  }
-  try {
-    await assert({
-      given: 'object',
-      should: 'equal object',
-      actual: {
-        nope: 3,
-      },
-      expected: {
-        key: 'value',
-      },
-    })
-  } catch (err) {
-    assertIsError(
-      err,
-      AssertionError,
-      'Given object: should equal object'
-    )
-  }
+test('assert: throws on failure', () => {
+  expect(() => assert({
+    given: 'number',
+    should: 'equal number',
+    actual: 0,
+    expected: 1,
+  })).toThrow('{"message":"Given number: should equal number","actual":0,"expected":1}')
+
+
+  expect(()=> assert({
+    given: 'regex',
+    should: 'equal regex',
+    actual: /test/i,
+    expected: /test/,
+  })).toThrow('{"message":"Given regex: should equal regex","actual":{},"expected":{}}')
+ 
+  expect(() => assert({
+    given: 'false',
+    should: 'equal false',
+    actual: null,
+    expected: false,
+  })).toThrow('{"message":"Given false: should equal false","actual":null,"expected":false}')
+   
+  expect(() => assert({
+    given: 'array',
+    should: 'equal array',
+    actual: [ 'nope' ],
+    expected: [ 'array' ],
+  })).toThrow('{"message":"Given array: should equal array","actual":["nope"],"expected":["array"]}')
+
+  expect(() => assert({
+    given: 'set',
+    should: 'equal set',
+    actual: new Set([ 'nope' ]),
+    expected: new Set([ 'set' ]),
+  })).toThrow('{"message":"Given set: should equal set","actual":{},"expected":{}}')
+
+  expect(() => assert({
+    given: 'map',
+    should: 'equal map',
+    actual: new Map([ [ 'key', 'nope' ] ]),
+    expected: new Map([ [ 'key', 'value' ] ]),
+  })).toThrow('{"message":"Given map: should equal map","actual":{},"expected":{}}')
+
+
+  expect(() => assert({
+    given: 'object',
+    should: 'equal object',
+    actual: {
+      nope: 3,
+    },
+    expected: {
+      key: 'value',
+    },
+  })).toThrow('{"message":"Given object: should equal object","actual":{"nope":3},"expected":{"key":"value"}}')
 })

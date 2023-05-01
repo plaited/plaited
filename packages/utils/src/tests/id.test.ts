@@ -1,3 +1,4 @@
+import { test, expect } from 'bun:test'
 import { generateId, setIdCounter, ueid } from '../index.js'
 
 test('ueid: returns a string', () => {

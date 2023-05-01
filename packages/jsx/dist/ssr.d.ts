@@ -1,2 +1,2 @@
-import { Template } from "./types.js";
+import { Template } from './types.js';
 export declare const ssr: (...templates: Template[]) => string;

@@ -1,3 +1,4 @@
+import { test, expect } from 'bun:test'
 import { escape, unescape } from '../index.js'
 
 test('escape(): correct escape', () => {

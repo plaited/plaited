@@ -1,3 +1,4 @@
+import { test, expect } from 'bun:test'
 import { css } from '../index.js'
 
 test('css()', () => {

@@ -1,3 +1,4 @@
+import { test, expect } from 'bun:test'
 import { bProgram, DevCallback } from '../index.js'
 
 test('Add hot water 3 times', () => {

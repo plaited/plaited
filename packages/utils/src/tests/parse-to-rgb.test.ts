@@ -1,3 +1,4 @@
+import { test, expect } from 'bun:test'
 import { parseToRgb } from '../index.js'
 
 test('parseToRgb: improper hex', () => {
