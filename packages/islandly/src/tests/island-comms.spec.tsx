@@ -1,5 +1,6 @@
-import { css, isle, PlaitProps, useMessenger, useSugar } from '../index.js'
+import { css } from '@plaited/jsx'
 import { test } from '@plaited/rite'
+import { isle, PlaitProps, useMessenger, useSugar } from '../index.js'
 
 test('dynamic island comms', async t => {
   const [ connect, send ] = useMessenger()

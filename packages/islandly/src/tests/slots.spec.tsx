@@ -1,5 +1,6 @@
 import { test } from '@plaited/rite'
-import { css, isle, PlaitedElement, PlaitProps, useSugar } from '../index.js'
+import { css, PlaitedElement } from '@plaited/jsx'
+import { isle, PlaitProps, useSugar } from '../index.js'
 import sinon from 'sinon'
 const [ classes, stylesheet ] = css`.row {
   display: flex;

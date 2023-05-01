@@ -1,4 +1,5 @@
-import { isle, PlaitedElement, ssr } from '../index.js'
+import { PlaitedElement, ssr } from '@plaited/jsx'
+import { isle } from '../index.js'
 import { test } from '@plaited/rite'
 
 const Island = isle({ tag: 'z-el' }, base => class extends base {})

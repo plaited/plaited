@@ -1,4 +1,5 @@
-import { css, isle, PlaitProps, useSugar } from '../../index.js'
+import { css } from '@plaited/jsx'
+import { isle, PlaitProps, useSugar } from '../../index.js'
 import { opacityHex } from '@plaited/utils'
 import { SVG } from './noun-braids-2633610.js'
 

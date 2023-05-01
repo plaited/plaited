@@ -1,5 +1,5 @@
-import { test } from '@plaited/rite'
 import { useSugar } from '../../index.js'
+import { test } from '@plaited/rite'
 import { ShadowIsland, ShadowTemplate } from './shadow.island.js'
 
 
