@@ -1,4 +1,8 @@
-// Fork of https://github.com/easy-json-schema/easy-json-schema
+/**
+ * Fork of easy-json-schema
+ * (c) suxiaoxin - MIT
+ * {@see https://github.com/easy-json-schema/easy-json-schema}
+ */
 import { trueTypeOf } from '@plaited/utils'
 import { DesignToken, DesignTokenGroup } from '@plaited/token-types'
 
