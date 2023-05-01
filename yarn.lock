@@ -644,7 +644,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@plaited/islandly@workspace:packages/islandly":
+"@plaited/islandly@workspace:*, @plaited/islandly@workspace:packages/islandly":
   version: 0.0.0-use.local
   resolution: "@plaited/islandly@workspace:packages/islandly"
   dependencies:
@@ -5841,32 +5841,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"plaited@workspace:.":
+"plaited@workspace:packages/plaited":
   version: 0.0.0-use.local
-  resolution: "plaited@workspace:."
+  resolution: "plaited@workspace:packages/plaited"
   dependencies:
-    "@commitlint/cli": 17.6.1
-    "@commitlint/config-conventional": 17.6.1
-    "@esm-bundle/chai": 4.3.4-fix.0
-    "@types/sinon": 10.0.14
-    "@typescript-eslint/eslint-plugin": 5.59.1
-    "@typescript-eslint/parser": 5.59.1
-    "@web/dev-server-esbuild": 0.4.1
-    "@web/test-runner": 0.16.1
-    "@web/test-runner-core": 0.11.1
-    beautify: 0.0.8
-    bun-types: 0.5.8
-    cz-conventional-changelog: 3.3.0
-    eslint: 8.39.0
-    eslint-plugin-compat: 4.1.4
-    eslint-plugin-react: 7.32.2
-    eslint-plugin-storybook: 0.6.11
-    format-package: 7.0.0
-    husky: 8.0.3
-    pinst: 3.0.0
-    prettier: 2.8.8
-    sinon: 15.0.4
-    typescript: 5.0.4
+    "@plaited/behavioral": "workspace:*"
+    "@plaited/islandly": "workspace:*"
+    "@plaited/jsx": "workspace:*"
+    "@plaited/utils": "workspace:*"
   languageName: unknown
   linkType: soft
 
@@ -6300,6 +6282,35 @@ __metadata:
   checksum: f3294d712147c0975c59ff81b3010dc08d07743cdad72fbe12879044b3e467139b3c2aeec85768656c4f7ec6a7b3d19354a78fc2050044bf8e90a499e145e31e
   languageName: node
   linkType: hard
+
+"root-workspace-0b6124@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "root-workspace-0b6124@workspace:."
+  dependencies:
+    "@commitlint/cli": 17.6.1
+    "@commitlint/config-conventional": 17.6.1
+    "@esm-bundle/chai": 4.3.4-fix.0
+    "@types/sinon": 10.0.14
+    "@typescript-eslint/eslint-plugin": 5.59.1
+    "@typescript-eslint/parser": 5.59.1
+    "@web/dev-server-esbuild": 0.4.1
+    "@web/test-runner": 0.16.1
+    "@web/test-runner-core": 0.11.1
+    beautify: 0.0.8
+    bun-types: 0.5.8
+    cz-conventional-changelog: 3.3.0
+    eslint: 8.39.0
+    eslint-plugin-compat: 4.1.4
+    eslint-plugin-react: 7.32.2
+    eslint-plugin-storybook: 0.6.11
+    format-package: 7.0.0
+    husky: 8.0.3
+    pinst: 3.0.0
+    prettier: 2.8.8
+    sinon: 15.0.4
+    typescript: 5.0.4
+  languageName: unknown
+  linkType: soft
 
 "run-async@npm:^2.4.0":
   version: 2.4.1

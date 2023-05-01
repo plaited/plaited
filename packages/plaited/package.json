@@ -1,0 +1,31 @@
+{
+  "name": "plaited",
+  "version": "0.0.0",
+  "license": "ISC",
+  "engines": {
+    "node": ">= v18.15.0"
+  },
+  "type": "module",
+  "main": ".index.js",
+  "exports": {
+    ".": "./index.js",
+    "./utils": "./dist/utils.js",
+    "./jsx-runtime": "./jsx-runtime.js"
+  },
+  "files": [
+    "./dist/**"
+  ],
+  "scripts": {
+    "build": "exit 0",
+    "build:watch": "exit 0",
+    "test": "exit 0",
+    "test:watch": "exit 0"
+  },
+  "types": ".index.d.ts",
+  "dependencies": {
+    "@plaited/behavioral": "workspace:*",
+    "@plaited/islandly": "workspace:*",
+    "@plaited/jsx": "workspace:*",
+    "@plaited/utils": "workspace:*"
+  }
+}
