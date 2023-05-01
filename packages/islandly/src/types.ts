@@ -26,6 +26,7 @@ export type ISLElementOptions = {
   tag: `${string}-${string}`;
 };
 export interface ISLElement extends HTMLElement {
+  internals_: ElementInternals
   plait?(props: PlaitProps): void | Promise<void>;
   connectedCallback?(): void;
   attributeChangedCallback?(

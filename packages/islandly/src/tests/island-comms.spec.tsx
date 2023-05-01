@@ -1,7 +1,9 @@
 import { css, isle, PlaitProps, useMessenger, useSugar } from '../index.js'
 import { test } from '@plaited/rite'
-export const [ connect, send ] = useMessenger()
-const [ classes, stylesheet ] = css`.row {
+
+test('dynamic island comms', async t => {
+  const [ connect, send ] = useMessenger()
+  const [ classes, stylesheet ] = css`.row {
   display: flex;
   gap: 10px;
   padding: 12px;
@@ -10,8 +12,7 @@ const [ classes, stylesheet ] = css`.row {
   height: 18px;
   width: auto;
 }`
-test('dynamic island comms', async t => {
-  const wrapper = document.querySelector('#root') as HTMLDivElement
+  const wrapper = document.querySelector('body')
   const DynamicOne = isle(
     {
       tag: 'dynamic-one',

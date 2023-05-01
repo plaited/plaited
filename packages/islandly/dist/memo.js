@@ -1,8 +1,5 @@
-const shallowCompare = (obj1, obj2) =>
-  Object.keys(obj1).length === Object.keys(obj2).length &&
-  Object.keys(obj1).every((key) =>
-    Object.hasOwn(obj2, key) && obj1[key] === obj2[key]
-  );
+const shallowCompare = (obj1, obj2) => Object.keys(obj1).length === Object.keys(obj2).length &&
+    Object.keys(obj1).every(key => Object.hasOwn(obj2, key) && obj1[key] === obj2[key]);
 /**
  * Forked from  memoize-one
  * (c) Alexander Reardon - MIT
@@ -12,20 +9,18 @@ const shallowCompare = (obj1, obj2) =>
  */
 // deno-lint-ignore no-explicit-any
 export const memo = (resultFn) => {
-  let cache = null;
-  function tpl(props) {
-    if (
-      cache && cache.lastThis === this && shallowCompare(props, cache.lastProps)
-    ) {
-      return cache.lastResult;
+    let cache = null;
+    function tpl(props) {
+        if (cache && cache.lastThis === this && shallowCompare(props, cache.lastProps)) {
+            return cache.lastResult;
+        }
+        const lastResult = resultFn.call(this, props);
+        cache = {
+            lastResult,
+            lastProps: props,
+            lastThis: this,
+        };
+        return lastResult;
     }
-    const lastResult = resultFn.call(this, props);
-    cache = {
-      lastResult,
-      lastProps: props,
-      lastThis: this,
-    };
-    return lastResult;
-  }
-  return tpl;
+    return tpl;
 };

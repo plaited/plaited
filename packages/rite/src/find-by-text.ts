@@ -1,7 +1,7 @@
 export const findByText = <T extends HTMLElement = HTMLElement>(
   searchText: string | RegExp,
   context?: HTMLElement
-): Promise<HTMLElement | undefined> => {
+): Promise<T | undefined> => {
   const searchInShadowDom = (node: Node): T | undefined => {
     if (node.nodeType === Node.TEXT_NODE) {
       const content = node.textContent?.trim()

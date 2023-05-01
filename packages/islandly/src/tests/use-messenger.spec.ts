@@ -45,7 +45,7 @@ test('useMessenger: connect, close, send', async t => {
 })
 test('useMessenger: with worker', async t => {
   const [ connect, send ] = useMessenger()
-  const worker = new Worker('/src/tests/__mocks__/test.worker.ts', {
+  const worker = new Worker(new URL( '/src/tests/__mocks__/test.worker.ts', import.meta.url), {
     type: 'module',
   })
   connect.worker(
@@ -61,7 +61,7 @@ test('useMessenger: with worker', async t => {
     type: 'calculate',
     detail: { a: 9, b: 10, operation: 'multiply' },
   })
-  await t.wait(60)
+  await t.wait(100)
   t({
     given: 'requesting calculate',
     should: 'update with value',

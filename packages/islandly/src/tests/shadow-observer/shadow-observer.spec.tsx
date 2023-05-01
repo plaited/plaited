@@ -2,11 +2,12 @@ import { test } from '@plaited/rite'
 import { useSugar } from '../../index.js'
 import { ShadowIsland, ShadowTemplate } from './shadow.island.js'
 
-ShadowIsland()
 
+
+ShadowIsland()
 test('shadow observer test', async t => {
   const body = useSugar(document.querySelector('body'))
-  body.render(<ShadowTemplate />, 'beforebegin')
+  body.render(<ShadowTemplate />, 'afterbegin')
 
   let button = await t.findByAttribute(
     'data-trigger',
@@ -35,7 +36,7 @@ test('shadow observer test', async t => {
     'click->addButton'
   )
   button && await t.fireEvent(button, 'click')
-  button = await t.findByText('add svg')
+  button = await t.findByText<HTMLButtonElement>('add svg')
   t({
     given: 'request to append `add svg` button',
     should: 'new button should be in dom',

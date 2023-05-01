@@ -1,4 +1,4 @@
-import { bProgram, useMain } from '@plaited/islandly'
+import { bProgram, useMain } from '../../index.js'
 
 const { trigger, feedback } = bProgram()
 

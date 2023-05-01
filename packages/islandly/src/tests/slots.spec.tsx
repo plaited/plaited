@@ -1,5 +1,6 @@
 import { test } from '@plaited/rite'
 import { css, isle, PlaitedElement, PlaitProps, useSugar } from '../index.js'
+import sinon from 'sinon'
 const [ classes, stylesheet ] = css`.row {
   display: flex;
   gap: 12px;
@@ -9,9 +10,9 @@ const [ classes, stylesheet ] = css`.row {
   height: 18px;
   width: auto;
 }`
-let slot = 0
-let nested = 0
-let named = 0
+const slot = sinon.spy()
+const nested = sinon.spy()
+const named = sinon.spy()
 const SlotTest = isle(
   { tag: 'slot-test' },
   base =>
@@ -19,20 +20,20 @@ const SlotTest = isle(
       plait({ feedback }: PlaitProps) {
         feedback({
           slot() {
-            slot++
+            slot('slot')
           },
           named() {
-            named++
+            named('named')
           },
           nested() {
-            nested++
+            nested('nested')
           },
         })
       }
     }
 )
 SlotTest()
-const root = document.getElementById('root') as HTMLDivElement
+const root = document.querySelector('body')
 const SlotTestTemplate: PlaitedElement = ({ children }) => (
   <SlotTest.template {...stylesheet}
     slots={children}
@@ -70,8 +71,8 @@ test('slot: default', async t => {
   t({
     given: `default slot click of element in event's composed path`,
     should: 'not trigger feedback action',
-    actual: slot,
-    expected: 0,
+    actual: slot.called,
+    expected: false,
   })
 })
 
@@ -81,8 +82,8 @@ test('slot: named', async t => {
   t({
     given: `named slot click of element in event's composed path`,
     should: 'trigger feedback action',
-    actual: named,
-    expected: 1,
+    actual: named.calledWith('named'),
+    expected: true,
   })
 })
 
@@ -92,7 +93,7 @@ test('slot: nested', async t => {
   t({
     given: `nested slot click of element in event's composed path`,
     should: 'not trigger feedback action',
-    actual: nested,
-    expected: 0,
+    actual: nested.called,
+    expected: false,
   })
 })

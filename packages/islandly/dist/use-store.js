@@ -1,4 +1,4 @@
-import { publisher, trueTypeOf } from "@plaited/utils";
+import { publisher, trueTypeOf } from '@plaited/utils';
 /**
  * @description
  * a simple utility function for safely getting and setting values you need to persist during run.
@@ -16,22 +16,22 @@ import { publisher, trueTypeOf } from "@plaited/utils";
  *  store() // => 3
  */
 export const useStore = (initialStore) => {
-  let store = initialStore;
-  let pub;
-  const get = () => store;
-  get.subscribe = (cb) => {
-    pub = pub ?? publisher();
-    return pub.subscribe(cb);
-  };
-  const set = (newStore) => {
-    store = trueTypeOf(newStore) === "function"
-      ? newStore(structuredClone(store))
-      : newStore;
-    pub && pub(store);
-    return store;
-  };
-  return Object.freeze([
-    get,
-    set,
-  ]);
+    let store = initialStore;
+    let pub;
+    const get = () => store;
+    get.subscribe = (cb) => {
+        pub = pub ?? publisher();
+        return pub.subscribe(cb);
+    };
+    const set = (newStore) => {
+        store = trueTypeOf(newStore) === 'function'
+            ? newStore(structuredClone(store))
+            : newStore;
+        pub && pub(store);
+        return store;
+    };
+    return Object.freeze([
+        get,
+        set,
+    ]);
 };

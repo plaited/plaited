@@ -87,7 +87,8 @@ export const isle = (
           #disconnect?: () => void
           internals_: ElementInternals
           trigger!: Trigger
-          plait?: (props: PlaitProps) => void | Promise<void>
+          //@ts-ignore: implemented by subclass
+          abstract plait?: (props: PlaitProps) => void | Promise<void>
           #root: ShadowRoot
           constructor() {
             super()

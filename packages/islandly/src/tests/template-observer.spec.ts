@@ -2,7 +2,7 @@ import { isle } from '../index.js'
 import { test } from '@plaited/rite'
 
 test('template observer', async t => {
-  const wrapper = document.getElementById('root') as HTMLDetailsElement
+  const wrapper = document.querySelector('body')
   const el = document.createElement('template-test')
   el.setAttribute('data-test-id', 'island')
   wrapper?.insertAdjacentElement('beforeend', el)
