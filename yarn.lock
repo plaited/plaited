@@ -636,17 +636,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@plaited/behavioral@workspace:*, @plaited/behavioral@workspace:packages/behavioral":
+"@plaited/behavioral@workspace:*, @plaited/behavioral@workspace:libs/behavioral":
   version: 0.0.0-use.local
-  resolution: "@plaited/behavioral@workspace:packages/behavioral"
+  resolution: "@plaited/behavioral@workspace:libs/behavioral"
   dependencies:
     "@plaited/utils": "workspace:*"
   languageName: unknown
   linkType: soft
 
-"@plaited/islandly@workspace:*, @plaited/islandly@workspace:packages/islandly":
+"@plaited/islandly@workspace:*, @plaited/islandly@workspace:libs/islandly":
   version: 0.0.0-use.local
-  resolution: "@plaited/islandly@workspace:packages/islandly"
+  resolution: "@plaited/islandly@workspace:libs/islandly"
   dependencies:
     "@plaited/behavioral": "workspace:*"
     "@plaited/jsx": "workspace:*"
@@ -655,49 +655,49 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@plaited/jsx@workspace:*, @plaited/jsx@workspace:packages/jsx":
+"@plaited/jsx@workspace:*, @plaited/jsx@workspace:libs/jsx":
   version: 0.0.0-use.local
-  resolution: "@plaited/jsx@workspace:packages/jsx"
+  resolution: "@plaited/jsx@workspace:libs/jsx"
   dependencies:
     "@plaited/utils": "workspace:*"
   languageName: unknown
   linkType: soft
 
-"@plaited/rite@workspace:*, @plaited/rite@workspace:packages/rite":
+"@plaited/rite@workspace:*, @plaited/rite@workspace:libs/rite":
   version: 0.0.0-use.local
-  resolution: "@plaited/rite@workspace:packages/rite"
+  resolution: "@plaited/rite@workspace:libs/rite"
   dependencies:
     "@plaited/utils": "workspace:*"
     "@web/test-runner-core": 0.11.1
   languageName: unknown
   linkType: soft
 
-"@plaited/token-schema@workspace:packages/token-schema":
+"@plaited/token-schema@workspace:libs/token-schema":
   version: 0.0.0-use.local
-  resolution: "@plaited/token-schema@workspace:packages/token-schema"
+  resolution: "@plaited/token-schema@workspace:libs/token-schema"
   dependencies:
     "@plaited/token-types": "workspace:*"
   languageName: unknown
   linkType: soft
 
-"@plaited/token-transformer@workspace:packages/token-transformer":
+"@plaited/token-transformer@workspace:libs/token-transformer":
   version: 0.0.0-use.local
-  resolution: "@plaited/token-transformer@workspace:packages/token-transformer"
+  resolution: "@plaited/token-transformer@workspace:libs/token-transformer"
   dependencies:
     "@plaited/token-types": "workspace:*"
     lodash-es: 4.17.21
   languageName: unknown
   linkType: soft
 
-"@plaited/token-types@workspace:*, @plaited/token-types@workspace:packages/token-types":
+"@plaited/token-types@workspace:*, @plaited/token-types@workspace:libs/token-types":
   version: 0.0.0-use.local
-  resolution: "@plaited/token-types@workspace:packages/token-types"
+  resolution: "@plaited/token-types@workspace:libs/token-types"
   languageName: unknown
   linkType: soft
 
-"@plaited/utils@workspace:*, @plaited/utils@workspace:packages/utils":
+"@plaited/utils@workspace:*, @plaited/utils@workspace:libs/utils":
   version: 0.0.0-use.local
-  resolution: "@plaited/utils@workspace:packages/utils"
+  resolution: "@plaited/utils@workspace:libs/utils"
   languageName: unknown
   linkType: soft
 
@@ -5841,9 +5841,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"plaited@workspace:packages/plaited":
+"plaited@workspace:libs/plaited":
   version: 0.0.0-use.local
-  resolution: "plaited@workspace:packages/plaited"
+  resolution: "plaited@workspace:libs/plaited"
   dependencies:
     "@plaited/behavioral": "workspace:*"
     "@plaited/islandly": "workspace:*"

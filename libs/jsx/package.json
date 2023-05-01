@@ -1,20 +1,15 @@
 {
-  "name": "@plaited/behavioral",
+  "name": "@plaited/jsx",
   "version": "0.0.0",
-  "type": "module",
+  "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
   },
+  "type": "module",
   "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "files": [
-    "./dist/**"
-  ],
   "exports": {
-    ".": "./dist/index.js"
-  },
-  "dependencies": {
-    "@plaited/utils": "workspace:*"
+    ".": "./dist/index.js",
+    "./jsx-runtime": "./dist/jsx-runtime.js"
   },
   "scripts": {
     "build": "tsc --project tsconfig.json",
@@ -22,5 +17,9 @@
     "prepublishOnly": "yarn build",
     "test": "bun test src/**/*",
     "test:watch": "bun test --watch test src/**/*"
+  },
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@plaited/utils": "workspace:*"
   }
 }

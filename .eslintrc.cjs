@@ -127,7 +127,7 @@ module.exports = {
     {
       
       files: [
-        'packages/rite/*/**',
+        'libs/rite/*/**',
       ],
       rules: {
         'no-console': 0,
@@ -135,7 +135,7 @@ module.exports = {
     },
     {
       files: [
-        'packages/server/*/**',
+        'libs/server/*/**',
       ],
       rules: {
         'compat/compat': 0,

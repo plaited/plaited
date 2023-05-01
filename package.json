@@ -19,7 +19,7 @@
     "./node/utils/dist/"
   ],
   "workspaces": [
-    "packages/*"
+    "libs/*"
   ],
   "scripts": {
     "build": "yarn workspaces foreach -pt run build",
