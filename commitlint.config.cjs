@@ -3,11 +3,12 @@ module.exports = {
   rules: {
     'scope-enum': [ 2, 'always', [
       'behavioral',
-      'design-system-tools',
       'islandly',
       'jsx',
       'rite',
-      'server',
+      'token-schema',
+      'token-transformer',
+      'token-types',
       'utils',
     ] ],
   },
