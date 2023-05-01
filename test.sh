@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Run yarn
-yarn
+yarn install --immutable
 
 # Run yarn build
 yarn build
