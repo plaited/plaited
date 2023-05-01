@@ -4,6 +4,9 @@
 # dependency packages
 **/node_modules
 
+# Build  artifacts
+# **/dist
+
 # Test  artifacts
 **/coverage
 **/test-results/
@@ -21,8 +24,4 @@ yarn-error.log
 
 ## Apple Junk ##
 **/.DS_Store
-
-## public ##
-**/.workshop
-
 
