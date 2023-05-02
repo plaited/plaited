@@ -13,7 +13,8 @@ export const sugar = {
   ) {
     const element = this as unknown as HTMLElement | SVGElement
     const template = document.createElement('template')
-    template.innerHTML = [ ...stylesheets ].join('') + content
+    const styles = stylesheets.size ? `<style>${[ ...stylesheets ].join('')}</style>` : ''
+    template.innerHTML = styles + content
     if (position) {
       element.insertAdjacentElement(position, template)
       template.replaceWith(template.content)
@@ -25,7 +26,8 @@ export const sugar = {
   replace({ stylesheets, content }: Template) {
     const element = this as unknown as HTMLElement | SVGElement
     const template = document.createElement('template')
-    template.innerHTML = [ ...stylesheets ].join('') + content
+    const styles = stylesheets.size ? `<style>${[ ...stylesheets ].join('')}</style>` : ''
+    template.innerHTML = styles + content
     element.replaceWith(template.content)
   },
   attr(attr: string, val?: string) {

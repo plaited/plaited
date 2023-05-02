@@ -6,10 +6,11 @@
     "node": ">= v18.15.0"
   },
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./index.js",
   "exports": {
-    ".": "./dist/index.js",
-    "./jsx-runtime": "./dist/jsx-runtime.js"
+    ".": "./index.js",
+    "./jsx-runtime": "./jsx-runtime.js",
+    "./jsx-dev-runtime": "./jsx-dev-runtime.js"
   },
   "scripts": {
     "build": "tsc --project tsconfig.json",
@@ -18,7 +19,7 @@
     "test": "bun test src/**/*",
     "test:watch": "bun test --watch test src/**/*"
   },
-  "types": "./dist/index.d.ts",
+  "types": "./index.d.ts",
   "dependencies": {
     "@plaited/utils": "workspace:*"
   }

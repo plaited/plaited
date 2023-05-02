@@ -2,7 +2,7 @@ import { Publisher, publisher, trueTypeOf } from '@plaited/utils'
 import { Disconnect } from './types.js'
 
 type Get<T> = {
-  (): T;
+  (): T;  
   subscribe(cb: (arg: T) => void): Disconnect;
 };
 type Set<T> = (newStore: T | ((arg: T) => T)) => T;

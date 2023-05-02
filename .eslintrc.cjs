@@ -124,23 +124,5 @@ module.exports = {
         'func-names': 0,
       },
     },
-    {
-      
-      files: [
-        'libs/rite/*/**',
-      ],
-      rules: {
-        'no-console': 0,
-      },
-    },
-    {
-      files: [
-        'libs/server/*/**',
-      ],
-      rules: {
-        'compat/compat': 0,
-        'no-console': 0,
-      },
-    },
   ],
 }

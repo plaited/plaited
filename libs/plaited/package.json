@@ -9,19 +9,15 @@
   "main": ".index.js",
   "exports": {
     ".": "./index.js",
-    "./utils": "./dist/utils.js",
-    "./jsx-runtime": "./jsx-runtime.js"
+    "./utils": "./utils.js"
   },
-  "files": [
-    "./dist/**"
-  ],
   "scripts": {
     "build": "exit 0",
     "build:watch": "exit 0",
     "test": "exit 0",
     "test:watch": "exit 0"
   },
-  "types": ".index.d.ts",
+  "types": "./index.d.ts",
   "dependencies": {
     "@plaited/behavioral": "workspace:*",
     "@plaited/islandly": "workspace:*",

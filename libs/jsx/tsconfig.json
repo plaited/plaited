@@ -4,11 +4,13 @@
     "module": "ES2022",
     "declaration": true,
     "moduleResolution": "nodenext",
-    "outDir": "dist",
+    "outDir": ".",
     "rootDir": "src"
   },
+  "include": [
+    "**/src/"
+  ],
   "exclude": [
-    "**/dist",
     "**/tests/"
   ]
 }

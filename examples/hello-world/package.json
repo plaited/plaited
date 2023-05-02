@@ -1,31 +1,27 @@
 {
-  "name": "@plaited/islandly",
-  "version": "0.0.0",
+  "name": "@examples/hello-world",
   "engines": {
     "node": ">= v18.15.0"
   },
   "type": "module",
-  "main": "./dist/index.js",
-  "exports": {
-    ".": "./dist/index.js"
-  },
-  "files": [
-    "./dist/**"
-  ],
   "scripts": {
-    "build": "tsc --project tsconfig.build.json",
-    "build:watch": "tsc --watch --project tsconfig.build.json",
+    "build": "exit 0",
+    "build:watch": "exit 0",
     "prepublishOnly": "yarn build",
+    "start": "parcel",
     "test": "bun web-test-runner \"src/**/*.spec.(ts|tsx)\" --config web-test-runner.config.js --node-resolve",
     "test:watch": "bun web-test-runner \"src/**/*.spec.(ts|tsx)\" --config web-test-runner.config.js --node-resolve --watch"
   },
+  "browserslist": [
+    "> 2%"
+  ],
+  "source": "src/index.html",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/behavioral": "workspace:*",
-    "@plaited/jsx": "workspace:*",
-    "@plaited/utils": "workspace:*"
+    "plaited": "workspace:*"
   },
   "devDependencies": {
-    "@plaited/rite": "workspace:*"
+    "@plaited/rite": "workspace:*",
+    "parcel": "2.8.3"
   }
 }
