@@ -5,5 +5,6 @@ module.exports = {
   rules: {
     ...config.rules,
     'max-len': 0,
+    '@typescript-eslint/no-explicit-any': 0,
   },
 }

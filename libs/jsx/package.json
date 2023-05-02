@@ -13,7 +13,7 @@
     "./jsx-dev-runtime": "./jsx-dev-runtime.js"
   },
   "scripts": {
-    "build": "tsc --project tsconfig.json",
+    "build": "tsc --project tsconfig.json && eslint --fix .",
     "build:watch": "tsc --watch --project tsconfig.json",
     "prepublishOnly": "yarn build",
     "test": "bun test src/**/*",
