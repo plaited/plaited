@@ -10,10 +10,7 @@ RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd6
 RUN rm google-chrome-stable_current_amd64.deb
 
 # Install Bun
-RUN curl -fsSL https://bun.sh/install | bash
-
-ENV BUN_INSTALL="$HOME/.bun"
-ENV PATH="$BUN_INSTALL/bin:$PATH"
+RUN npm install -g bun 
 
 # Check chrome version
 RUN echo "Chrome: " && google-chrome --version
