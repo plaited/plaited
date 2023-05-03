@@ -1,5 +1,6 @@
 {
   "name": "@examples/hello-world",
+  "private": true,
   "engines": {
     "node": ">= v18.15.0"
   },
