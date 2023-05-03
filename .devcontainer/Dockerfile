@@ -18,3 +18,4 @@ RUN export CHROME_PATH="/usr/bin/google-chrome"
 # Check chrome version
 RUN echo "Chrome: " && google-chrome --version
 
+RUN npx install playwright

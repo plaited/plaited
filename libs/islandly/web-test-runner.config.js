@@ -1,4 +1,5 @@
 import { esbuildPlugin } from '@web/dev-server-esbuild'
+import { playwrightLauncher } from '@web/test-runner-playwright'
 import { getFramework } from '@plaited/rite/framework'
 import { fileURLToPath } from 'url'
 
@@ -10,4 +11,7 @@ export default {
   }) ],
   port: 8080,
   testFramework: getFramework(3_000),
+  browsers: [
+    playwrightLauncher({ product: 'chromium' }),
+  ],
 }

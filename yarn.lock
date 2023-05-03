@@ -1529,6 +1529,22 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@playwright/test@npm:1.33.0":
+  version: 1.33.0
+  resolution: "@playwright/test@npm:1.33.0"
+  dependencies:
+    "@types/node": "*"
+    fsevents: 2.3.2
+    playwright-core: 1.33.0
+  dependenciesMeta:
+    fsevents:
+      optional: true
+  bin:
+    playwright: cli.js
+  checksum: cec3215fc92c1cb9f5bfba357ea1cbe97b54979ab82f9d34a2287b1687cda5e0966b8ea7290dcd35416e18668e56d5781b6b8c4cec64baf12f3ae8dde0f68f5e
+  languageName: node
+  linkType: hard
+
 "@puppeteer/browsers@npm:0.5.0":
   version: 0.5.0
   resolution: "@puppeteer/browsers@npm:0.5.0"
@@ -2327,6 +2343,17 @@ __metadata:
     "@types/mocha": ^10.0.1
     "@web/test-runner-core": ^0.11.1
   checksum: 05e8f39dd8b9db928978e5c1c200f7d3685caeb3b7c50f872485759eaebf351130abd9fd24b3790c1aad3afdcbf67ba8a56f73c84b4e89dbc49c2ad043686065
+  languageName: node
+  linkType: hard
+
+"@web/test-runner-playwright@npm:0.10.0":
+  version: 0.10.0
+  resolution: "@web/test-runner-playwright@npm:0.10.0"
+  dependencies:
+    "@web/test-runner-core": ^0.11.0
+    "@web/test-runner-coverage-v8": ^0.6.0
+    playwright: ^1.22.2
+  checksum: 06902cb74e3b2d82b1725352384bae2267e3bf42b8e03981ba2fcb229a1a59c55811612ca85a5e312af488e6fa8fdd2408fa71d277a10eb651ef7895856e479b
   languageName: node
   linkType: hard
 
@@ -4571,7 +4598,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fsevents@npm:~2.3.2":
+"fsevents@npm:2.3.2, fsevents@npm:~2.3.2":
   version: 2.3.2
   resolution: "fsevents@npm:2.3.2"
   dependencies:
@@ -4581,7 +4608,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fsevents@patch:fsevents@~2.3.2#~builtin<compat/fsevents>":
+"fsevents@patch:fsevents@2.3.2#~builtin<compat/fsevents>, fsevents@patch:fsevents@~2.3.2#~builtin<compat/fsevents>":
   version: 2.3.2
   resolution: "fsevents@patch:fsevents@npm%3A2.3.2#~builtin<compat/fsevents>::version=2.3.2&hash=df0bf1"
   dependencies:
@@ -7181,6 +7208,26 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"playwright-core@npm:1.33.0":
+  version: 1.33.0
+  resolution: "playwright-core@npm:1.33.0"
+  bin:
+    playwright: cli.js
+  checksum: 5fb7bda06a8b73b56b85b5a0b8f711211dde57a375d9379289e22239b2de879c6d93c8fdc9ba44b932bf100914ab1ca1a55697ad88440fdd0a39101fc020b77f
+  languageName: node
+  linkType: hard
+
+"playwright@npm:1.33.0, playwright@npm:^1.22.2":
+  version: 1.33.0
+  resolution: "playwright@npm:1.33.0"
+  dependencies:
+    playwright-core: 1.33.0
+  bin:
+    playwright: cli.js
+  checksum: fb3934c56ed749cf412ea35b82052f013872d7f7b7747ab7042580af473dfc1b038956a31c132ee8c0098f74150c75e2073e9c737fd4c1ed54700a23fffc079f
+  languageName: node
+  linkType: hard
+
 "portfinder@npm:^1.0.32":
   version: 1.0.32
   resolution: "portfinder@npm:1.0.32"
@@ -7684,12 +7731,14 @@ __metadata:
     "@commitlint/cli": 17.6.1
     "@commitlint/config-conventional": 17.6.1
     "@esm-bundle/chai": 4.3.4-fix.0
+    "@playwright/test": 1.33.0
     "@types/sinon": 10.0.14
     "@typescript-eslint/eslint-plugin": 5.59.1
     "@typescript-eslint/parser": 5.59.1
     "@web/dev-server-esbuild": 0.4.1
     "@web/test-runner": 0.16.1
     "@web/test-runner-core": 0.11.1
+    "@web/test-runner-playwright": 0.10.0
     beautify: 0.0.8
     bun-types: 0.5.8
     cz-conventional-changelog: 3.3.0
@@ -7700,6 +7749,7 @@ __metadata:
     format-package: 7.0.0
     husky: 8.0.3
     pinst: 3.0.0
+    playwright: 1.33.0
     prettier: 2.8.8
     sinon: 15.0.4
     typescript: 5.0.4
