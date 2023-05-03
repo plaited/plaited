@@ -1,0 +1,33 @@
+{
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ue.alphabetical-sorter",
+        "michelemelluso.code-beautifier",
+        "streetsidesoftware.code-spell-checker",
+        "naumovs.color-highlight",
+        "dbaeumer.vscode-eslint",
+        "ms-azuretools.vscode-docker",
+        "waderyan.gitblame",
+        "github.vscode-github-actions",
+        "ms-vsliveshare.vsliveshare",
+        "ms-playwright.playwright"
+      ]
+    }
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "configureZshAsDefaultShell": true,
+      "installOhMyZsh": true,
+      "upgradePackages": true,
+      "userUid": "automatic",
+      "userGid": "automatic"
+    }
+  }
+  // "forwardPorts": [
+  // ]
+}

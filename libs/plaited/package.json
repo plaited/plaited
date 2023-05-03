@@ -1,0 +1,28 @@
+{
+  "name": "plaited",
+  "version": "1.0.1-rc",
+  "license": "ISC",
+  "engines": {
+    "node": ">= v18.15.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plaited/plaited.git"
+  },
+  "bugs": {
+    "url": "https://github.com/plaited/plaited/issues"
+  },
+  "type": "module",
+  "main": ".index.js",
+  "exports": {
+    ".": "./index.js",
+    "./utils": "./utils.js"
+  },
+  "types": "./index.d.ts",
+  "dependencies": {
+    "@plaited/behavioral": "1.0.1-rc",
+    "@plaited/islandly": "1.0.1-rc",
+    "@plaited/jsx": "1.0.1-rc",
+    "@plaited/utils": "1.0.1-rc"
+  }
+}
