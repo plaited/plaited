@@ -11,12 +11,6 @@
     ".": "./index.js",
     "./utils": "./utils.js"
   },
-  "scripts": {
-    "build": "exit 0",
-    "build:watch": "exit 0",
-    "test": "exit 0",
-    "test:watch": "exit 0"
-  },
   "types": "./index.d.ts",
   "dependencies": {
     "@plaited/behavioral": "workspace:*",

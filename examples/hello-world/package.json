@@ -5,12 +5,7 @@
   },
   "type": "module",
   "scripts": {
-    "build": "exit 0",
-    "build:watch": "exit 0",
-    "prepublishOnly": "yarn build",
-    "start": "parcel",
-    "test": "bun web-test-runner \"src/**/*.spec.(ts|tsx)\" --config web-test-runner.config.js --node-resolve",
-    "test:watch": "bun web-test-runner \"src/**/*.spec.(ts|tsx)\" --config web-test-runner.config.js --node-resolve --watch"
+    "start": "parcel"
   },
   "browserslist": [
     "> 2%"

@@ -1,13 +1,10 @@
 #!/bin/bash
 
-# Yarn installl
-yarn install --immutable
-
 # Bun Install
 bun install
 
 # Run yarn build
-yarn build
+npm run build --workspaces --if-present
 
 # Run test
-yarn test
+npm run test --workspaces --if-present

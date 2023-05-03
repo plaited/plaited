@@ -19,6 +19,10 @@
     "./node/utils/dist/"
   ],
   "workspaces": [
+    "libs/utils",
+    "libs/jsx",
+    "libs/behavioral",
+    "libs/token-types",
     "libs/*",
     "examples/*"
   ],
@@ -30,8 +34,7 @@
     "postinstall": "husky install",
     "postpack": "pinst --enable",
     "prepack": "pinst --disable",
-    "prepare": "husky install",
-    "test": "yarn workspaces foreach run test"
+    "prepare": "husky install"
   },
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [
