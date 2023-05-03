@@ -10,7 +10,7 @@ RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd6
 RUN rm google-chrome-stable_current_amd64.deb
 
 # Install Bun
-RUN npm install -g bun 
+RUN npm install -g bun typescript
 
 # Add chrome to path
 RUN export CHROME_PATH="/usr/bin/google-chrome"
