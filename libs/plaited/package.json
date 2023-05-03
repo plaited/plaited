@@ -1,7 +1,6 @@
 {
   "name": "plaited",
   "version": "1.0.1-rc",
-  "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
   },
@@ -13,16 +12,28 @@
     "url": "https://github.com/plaited/plaited/issues"
   },
   "type": "module",
-  "main": ".index.js",
+  "main": "./dist/index.js",
   "exports": {
-    ".": "./index.js",
-    "./utils": "./utils.js"
+    ".": "./dist/index.js",
+    "./utils": "./dist/utils.js"
   },
-  "types": "./index.d.ts",
+  "files": [
+    "./dist/**"
+  ],
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "build:watch": "tsc --watch --project tsconfig.build.json",
+    "prepublishOnly": "bun build",
+    "test": "bun web-test-runner \"src/**/*.spec.(ts|tsx)\" --config web-test-runner.config.js --node-resolve",
+    "test:watch": "bun web-test-runner \"src/**/*.spec.(ts|tsx)\" --config web-test-runner.config.js --node-resolve --watch"
+  },
+  "types": "./dist/index.d.ts",
   "dependencies": {
     "@plaited/behavioral": "1.0.1-rc",
-    "@plaited/islandly": "1.0.1-rc",
     "@plaited/jsx": "1.0.1-rc",
     "@plaited/utils": "1.0.1-rc"
+  },
+  "devDependencies": {
+    "@plaited/rite": "1.0.1-rc"
   }
 }
