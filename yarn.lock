@@ -1505,6 +1505,7 @@ __metadata:
   resolution: "@plaited/token-schema@workspace:libs/token-schema"
   dependencies:
     "@plaited/token-types": "workspace:*"
+    "@plaited/utils": "workspace:*"
   languageName: unknown
   linkType: soft
 
