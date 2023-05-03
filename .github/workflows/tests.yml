@@ -14,15 +14,7 @@ jobs:
     steps:
     
     - uses: actions/checkout@v3
-    - name: Install dependencies
+    - name: Test
       uses: devcontainers/ci@v0.3
       with:
-        runCmd: yarn install --immutable
-    - name: Build libs
-      uses: devcontainers/ci@v0.3
-      with:
-        runCmd: yarn build
-    - name: Test libs
-      uses: devcontainers/ci@v0.3
-      with:
-        runCmd: yarn test
+        runCmd: zsh test.sh
