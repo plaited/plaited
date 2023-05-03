@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Bun Install
+# Install and link dependencies
 bun install
 
-# Run yarn build
+# Run build
 npm run build --workspaces --if-present
 
 # Playwright download browsers

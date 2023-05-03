@@ -30,7 +30,7 @@
     "build": "yarn workspaces foreach -pt run build",
     "dev": "node scripts/dev.cjs",
     "lint": "eslint . --ext .ts,.tsx,.js,.cjs",
-    "lint:fix": "yarn lint --fix --quiet",
+    "lint:fix": "bun lint --fix --quiet",
     "postinstall": "husky install",
     "postpack": "pinst --enable",
     "prepack": "pinst --disable",
@@ -38,7 +38,7 @@
   },
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [
-      "yarn lint:fix"
+      "bun lint:fix"
     ],
     "package.json": [
       "format-package -w"

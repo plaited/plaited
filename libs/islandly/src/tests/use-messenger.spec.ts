@@ -61,7 +61,7 @@ test('useMessenger: with worker', async t => {
     type: 'calculate',
     detail: { a: 9, b: 10, operation: 'multiply' },
   })
-  await t.wait(100)
+  await t.wait(200)
   t({
     given: 'requesting calculate',
     should: 'update with value',
