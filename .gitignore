@@ -1,6 +1,19 @@
 ### PPRIATE DO NOT DELETE ###
 .env
 
+### NODE ###
+
+# Locks
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Logs
+*.log
+.npm-debug.log
+yarn-error.log
+.pnpm-debug.log
+
 # dependency packages
 **/node_modules
 
@@ -14,15 +27,9 @@
 **/playwright-report/
 **/playwright/.cache/
 
-# Yarn
-**/.yarn/*
-!**/.yarn/patches
-!**/.yarn/plugins
-!**/.yarn/releases
-!**/.yarn/sdks
-!**/.yarn/versions
-yarn-error.log
 
 ## Apple Junk ##
 **/.DS_Store
+
+### NODE ###
 
