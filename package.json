@@ -5,19 +5,6 @@
     "node": ">= v18.15.0"
   },
   "type": "module",
-  "exports": {
-    ".": "./node/islandly/dist/index.js",
-    "./behavioral": "./node/behavioral/dist/index.js",
-    "./rite": "./node/rite/dist/index.js",
-    "./utils": "./node/utils/dist/index.js",
-    "./jsx-runtime": "./dist/jsx-runtime.js"
-  },
-  "files": [
-    "./node/behavioral/dist/",
-    "./node/islandly/dist/",
-    "./node/rite/dist/",
-    "./node/utils/dist/"
-  ],
   "workspaces": [
     "libs/utils",
     "libs/jsx",
@@ -47,7 +34,6 @@
   "browserslist": [
     "> 2%"
   ],
-  "packageManager": "yarn@3.5.0",
   "devDependencies": {
     "@commitlint/cli": "17.6.1",
     "@commitlint/config-conventional": "17.6.1",
