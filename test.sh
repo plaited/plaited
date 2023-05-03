@@ -1,7 +1,10 @@
 #!/bin/bash
 
-# Run yarn
+# Yarn installl
 yarn install --immutable
+
+# Bun Install
+bun install
 
 # Run yarn build
 yarn build
