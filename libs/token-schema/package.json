@@ -1,6 +1,6 @@
 {
   "name": "@plaited/token-schema",
-  "version": "1.0.0-rc",
+  "version": "1.0.1-rc",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
@@ -29,7 +29,7 @@
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/token-types": "workspace:*",
-    "@plaited/utils": "workspace:*"
+    "@plaited/token-types": "1.0.1-rc",
+    "@plaited/utils": "1.0.1-rc"
   }
 }

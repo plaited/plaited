@@ -1,6 +1,6 @@
 {
   "name": "@plaited/islandly",
-  "version": "1.0.0-rc",
+  "version": "1.0.1-rc",
   "engines": {
     "node": ">= v18.15.0"
   },
@@ -28,11 +28,11 @@
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/behavioral": "workspace:*",
-    "@plaited/jsx": "workspace:*",
-    "@plaited/utils": "workspace:*"
+    "@plaited/behavioral": "1.0.1-rc",
+    "@plaited/jsx": "1.0.1-rc",
+    "@plaited/utils": "1.0.1-rc"
   },
   "devDependencies": {
-    "@plaited/rite": "workspace:*"
+    "@plaited/rite": "1.0.1-rc"
   }
 }

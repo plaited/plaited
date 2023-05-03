@@ -1,6 +1,6 @@
 {
   "name": "plaited",
-  "version": "1.0.0-rc",
+  "version": "1.0.1-rc",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
@@ -20,9 +20,9 @@
   },
   "types": "./index.d.ts",
   "dependencies": {
-    "@plaited/behavioral": "workspace:*",
-    "@plaited/islandly": "workspace:*",
-    "@plaited/jsx": "workspace:*",
-    "@plaited/utils": "workspace:*"
+    "@plaited/behavioral": "1.0.1-rc",
+    "@plaited/islandly": "1.0.1-rc",
+    "@plaited/jsx": "1.0.1-rc",
+    "@plaited/utils": "1.0.1-rc"
   }
 }

@@ -1,7 +1,7 @@
 {
+  "name": "plaited",
   "version": "1.0.0-rc",
   "license": "ISC",
-  "private": true,
   "engines": {
     "node": ">= v18.15.0"
   },
