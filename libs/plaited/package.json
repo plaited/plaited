@@ -5,6 +5,13 @@
   "engines": {
     "node": ">= v18.15.0"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plaited/plaited.git"
+  },
+  "bugs": {
+    "url": "https://github.com/plaited/plaited/issues"
+  },
   "type": "module",
   "main": ".index.js",
   "exports": {
