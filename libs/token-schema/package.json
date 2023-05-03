@@ -1,6 +1,6 @@
 {
   "name": "@plaited/token-schema",
-  "version": "0.0.0",
+  "version": "1.0.0-rc",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"

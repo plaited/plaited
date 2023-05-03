@@ -1,6 +1,6 @@
 {
   "name": "@plaited/rite",
-  "version": "0.0.0",
+  "version": "1.0.0-rc",
   "engines": {
     "node": ">= v18.15.0"
   },
