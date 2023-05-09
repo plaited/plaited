@@ -11,13 +11,13 @@
   ],
   "scripts": {
     "build": "bun lerna run build",
-    "dev": "node scripts/dev.cjs",
     "lint": "eslint . --ext .ts,.tsx,.js,.cjs",
     "lint:fix": "bun lint --fix --quiet",
     "postinstall": "husky install",
     "postpack": "pinst --enable",
     "prepack": "pinst --disable",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "test": "bun lerna run test"
   },
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [

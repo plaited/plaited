@@ -4,10 +4,7 @@
 bun install
 
 # Run build
-bun run build
-
-# Playwright download browsers
-npx playwright install  
+bun run build 
 
 # Run test
 bun run test
