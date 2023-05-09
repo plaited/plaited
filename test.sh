@@ -4,10 +4,10 @@
 bun install
 
 # Run build
-npm run build --workspaces --if-present
+bun run build
 
 # Playwright download browsers
 npx playwright install  
 
 # Run test
-npm run test --workspaces --if-present
+bun run test

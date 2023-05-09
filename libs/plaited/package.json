@@ -24,6 +24,7 @@
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
     "build:watch": "tsc --watch --project tsconfig.build.json",
+    "prepublishOnly": "bun build",
     "test": "bun web-test-runner \"src/**/*.spec.(ts|tsx)\" --config web-test-runner.config.js --node-resolve",
     "test:watch": "bun web-test-runner \"src/**/*.spec.(ts|tsx)\" --config web-test-runner.config.js --node-resolve --watch"
   },
