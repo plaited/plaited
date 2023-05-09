@@ -52,9 +52,12 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_PAT }}
 
 
-      - name: Publish
-        run:  npx lerna publish ${{ github.event.inputs.version }} --no-private --exact --conventional-commits  --create-release github --yes
+      - name: Version
+        run:  npx lerna version ${{ github.event.inputs.version }} --no-private --exact --conventional-commits  --create-release github
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+
+      - name: Version
+        run:  npx lerna publish from-package
+        env:
           NPM_TOKEN: ${{ secrets.NPM_PAT }}
