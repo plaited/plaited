@@ -44,7 +44,7 @@ jobs:
         run:  bun install
 
       - name: Publish
-        run:  bun lerna publish ${{ github.event.inputs.version }} --no-git-reset --no-private --exact --conventional-commits --yes
+        run:  npx lerna publish ${{ github.event.inputs.version }} --no-git-reset --no-private --exact --conventional-commits --yes
 
       - name: Commitg manifest update
         run: |
