@@ -7,7 +7,7 @@ on:
         description: 'New version tag (e.g., 1.0.0)'
         required: true
 jobs:
-  check:
+  publish_libs:
     
     runs-on: ubuntu-22.04
     
