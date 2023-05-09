@@ -42,3 +42,9 @@ jobs:
         uses: devcontainers/ci@v0.3
         with:
           runCmd: bun lerna publish ${{ github.event.inputs.version }} --otp ${{ github.event.inputs.otp }} --no-git-reset --no-private --exact
+
+      - name: Create and push new tag
+        run: |
+          git add .
+          git commit -m "ci:  update gitHead on manifests for ${{ github.event.inputs.version }}"
+          git push origin ${{ github.event.inputs.version }}

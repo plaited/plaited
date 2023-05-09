@@ -28,6 +28,7 @@
     "test": "bun test src/**/*",
     "test:watch": "bun test --watch test src/**/*"
   },
+  "gitHead": "4f265b9bb275d855e796e5486335079387a629a9",
   "types": "./dist/index.d.ts",
   "dependencies": {
     "@plaited/token-types": "1.0.10-rc",

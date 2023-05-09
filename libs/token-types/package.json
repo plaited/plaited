@@ -26,5 +26,6 @@
     "build:watch": "tsc --watch --project tsconfig.json",
     "prepublishOnly": "bun build"
   },
+  "gitHead": "4f265b9bb275d855e796e5486335079387a629a9",
   "types": "./dist/index.d.ts"
 }
