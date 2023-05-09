@@ -58,6 +58,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_PAT }}
 
       - name: Publish
-        run:  npx lerna publish from-package
+        run:  npx lerna publish from-package --yes
         env:
           NPM_TOKEN: ${{ secrets.NPM_PAT }}
