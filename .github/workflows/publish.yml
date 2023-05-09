@@ -53,7 +53,9 @@ jobs:
 
 
       - name: Version
-        run:  npx lerna version ${{ github.event.inputs.version }} --no-private --exact --conventional-commits --yes
+        run:  npx lerna version ${{ github.event.inputs.version }} --no-private --exact --conventional-commits --create-release github --yes
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
 
       - name: Publish
         run:  npx lerna publish from-package --yes
