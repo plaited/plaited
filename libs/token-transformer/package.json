@@ -1,6 +1,6 @@
 {
   "name": "@plaited/token-transformer",
-  "version": "1.0.3-rc",
+  "version": "1.0.4-rc",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
@@ -30,7 +30,7 @@
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/token-types": "1.0.3-rc",
+    "@plaited/token-types": "^1.0.4-rc",
     "lodash-es": "4.17.21"
   }
 }
