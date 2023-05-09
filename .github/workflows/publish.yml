@@ -26,11 +26,9 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "github-actions@users.noreply.github.com"
-          
-      - name: Setup .npmrc
-        run: |
-            echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_PAT }}" > .npmrc
-            echo "@plaited:registry=https://registry.npmjs.org/" >> .npmrc
+          git remote set-url origin https://$GITHUB_ACTOR:$GH_PAT@github.com/plaited/plaited
+        env:
+            GH_PAT: ${{ secrets.GH_PAT }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -42,9 +40,23 @@ jobs:
 
       - name: Install dependencies
         run:  bun install
+  
+      - name: Setup .npmrc
+        run: |
+          echo "plaited:registry=http://registry.npmjs.org/" > .npmrc
+          echo "registry=http://registry.npmjs.org/" >> .npmrc
+          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> .npmrc
+          npm whoami
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_PAT }}
+
 
       - name: Publish
         run:  npx lerna publish ${{ github.event.inputs.version }} --no-git-reset --no-private --exact --conventional-commits --yes
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          NPM_TOKEN: ${{ secrets.NPM_PAT }}
 
       - name: Commitg manifest update
         run: |
