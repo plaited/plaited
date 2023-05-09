@@ -46,7 +46,7 @@ jobs:
       - name: Publish
         uses: devcontainers/ci@v0.3
         with:
-          runCmd: bun lerna publish ${{ github.event.inputs.version }} --no-git-reset --no-private --exact --conventional-commits
+          runCmd: bun lerna publish ${{ github.event.inputs.version }} --no-git-reset --no-private --exact --conventional-commits --yes
 
       - name: Commitg manifest update
         uses: devcontainers/ci@v0.3
