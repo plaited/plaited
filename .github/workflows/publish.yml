@@ -24,45 +24,32 @@ jobs:
         with:
           token: ${{ secrets.GH_PAT }}
 
-      - name: Configure git user
-        run: |
-          git config user.name "@plaited"
-          git config user.email "ci@plaited.dev"
-          git remote set-url origin https://$GITHUB_ACTOR:$GH_PAT@github.com/plaited/plaited
-        env:
-            GH_PAT: ${{ secrets.GH_PAT }}
-
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
 
-      - name: Install bun
-        run:  npm install -g bun npm@latest
-
-      - name: Install dependencies
-        run:  bun install
-
-      - name: Build packages
-        run:  bun run build
-  
-      - name: Setup .npmrc
+      - name: Setup
         run: |
+          npm install -g bun npm@latest
+          bun install
+          bun run build
+
+      - name: Version
+        run:  |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor}}@users.noreply.github.com"
+          npx lerna version ${{ github.event.inputs.version }} --no-private --exact --conventional-commits --create-release github --message "Publish [skip ci]" --yes
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+
+      - name: Publish
+        run:  |
           echo "@plaited:registry=https://registry.npmjs.org/" > .npmrc
           echo "registry=https://registry.npmjs.org/" >> .npmrc
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> .npmrc
           npm whoami
           npm config set registry https://registry.npmjs.org/
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_PAT }}
-
-
-      - name: Version
-        run:  npx lerna version ${{ github.event.inputs.version }} --no-private --exact --conventional-commits --create-release github --yes
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
-
-      - name: Publish
-        run:  npx lerna publish from-package --yes
+          npx lerna publish from-package --yes
         env:
           NPM_TOKEN: ${{ secrets.NPM_PAT }}
