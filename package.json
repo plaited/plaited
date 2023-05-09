@@ -1,6 +1,6 @@
 {
-  "name": "plaited",
   "license": "ISC",
+  "private": "true",
   "engines": {
     "node": ">= v18.15.0"
   },
