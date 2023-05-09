@@ -26,7 +26,7 @@ jobs:
 
       - name: Configure git user
         run: |
-          git config user.name "@plaited"
+          git config user.name "plaited"
           git config user.email "ci@plaited.dev"
           git remote set-url origin https://$GITHUB_ACTOR:$GH_PAT@github.com/plaited/plaited
         env:
