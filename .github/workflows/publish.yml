@@ -43,7 +43,6 @@ jobs:
   
       - name: Setup .npmrc
         run: |
-          npm logout
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_PAT }}" > .npmrc
           echo "@plaited:registry=https://registry.npmjs.org/" >> .npmrc
           echo "_publishConfig.registry=//registry.npmjs.org/" >> .npmrc
