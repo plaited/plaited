@@ -43,13 +43,12 @@ jobs:
   
       - name: Setup .npmrc
         run: |
-          echo "plaited:registry=http://registry.npmjs.org/" > .npmrc
-          echo "registry=http://registry.npmjs.org/" >> .npmrc
-          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> .npmrc
+          npm logout
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_PAT }}" > .npmrc
+          echo "@plaited:registry=https://registry.npmjs.org/" >> .npmrc
+          echo "_publishConfig.registry=//registry.npmjs.org/" >> .npmrc
+          echo "_publishConfig.=:_authToken=${{ secrets.NPM_PAT }}" >> .npmrc
           npm whoami
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_PAT }}
-
 
       - name: Publish
         run:  npx lerna publish ${{ github.event.inputs.version }} --no-git-reset --no-private --exact --conventional-commits --yes
