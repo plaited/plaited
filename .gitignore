@@ -3,6 +3,8 @@
 
 ### NODE ###
 
+.npmrc
+
 # Locks
 package-lock.json
 pnpm-lock.yaml
