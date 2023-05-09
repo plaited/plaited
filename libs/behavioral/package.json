@@ -1,6 +1,6 @@
 {
   "name": "@plaited/behavioral",
-  "version": "1.0.11-rc",
+  "version": "1.0.12-rc",
   "engines": {
     "node": ">= v18.15.0"
   },
@@ -30,6 +30,6 @@
   "gitHead": "4f265b9bb275d855e796e5486335079387a629a9",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/utils": "1.0.11-rc"
+    "@plaited/utils": "1.0.12-rc"
   }
 }
