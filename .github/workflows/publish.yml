@@ -7,49 +7,63 @@ on:
         description: 'New version tag (e.g., 1.0.0)'
         required: true
 jobs:
-  publish_libs:
-    
+  validate_version:
     runs-on: ubuntu-22.04
     
     steps:
+    - name: Validate input version
+      run: |
+        version="${{ github.event.inputs.version }}"
+        if [[ ! $version =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-([a-zA-Z0-9_-]+))?$ ]]; then
+          echo "Error: Version must have the format 'x.y.z' or 'x.y.z-<string>', where x, y, and z are numbers."
+          exit 1
+        fi
+
+  check: 
+    runs-on: ubuntu-22.04
     
-      - name: Validate input version
-        run: |
-          version="${{ github.event.inputs.version }}"
-          if [[ ! $version =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-([a-zA-Z0-9_-]+))?$ ]]; then
-            echo "Error: Version must have the format 'x.y.z' or 'x.y.z-<string>', where x, y, and z are numbers."
-            exit 1
-          fi
-      
+    steps:  
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Test
+      uses: devcontainers/ci@v0.3
+      with:
+        runCmd: zsh test.sh
+  
+  publish:
+    runs-on: ubuntu-22.04
+    
+    steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Configure Git user
+      - name: Configure git user
         run: |
           git config user.name "GitHub Actions"
           git config user.email "github-actions@users.noreply.github.com"
           
-      - name: Test
-        uses: devcontainers/ci@v0.3
-        with:
-          runCmd: zsh test.sh
-          
-      - name: Set up .npmrc
-        uses: devcontainers/ci@v0.3
-        with:
-          runCmd: |
+      - name: Setup .npmrc
+        run: |
             echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_PAT }}" > .npmrc
             echo "@plaited:registry=https://registry.npmjs.org/" >> .npmrc
 
-      - name: Publish
-        uses: devcontainers/ci@v0.3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
-          runCmd: bun lerna publish ${{ github.event.inputs.version }} --no-git-reset --no-private --exact --conventional-commits --yes
+          node-version: 18 
+
+      - name: Install bun
+        run:  npm install -g bun
+
+      - name: Install dependencies
+        run:  bun install
+
+      - name: Publish
+        run:  bun lerna publish ${{ github.event.inputs.version }} --no-git-reset --no-private --exact --conventional-commits --yes
 
       - name: Commitg manifest update
-        uses: devcontainers/ci@v0.3
-        with:
-          runCmd: |
+        run: |
             git add .
             git commit -m "ci:  update gitHead on manifests for ${{ github.event.inputs.version }}"
             git push origin ${{ github.event.inputs.version }}
