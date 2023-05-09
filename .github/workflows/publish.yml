@@ -24,14 +24,6 @@ jobs:
         with:
           token: ${{ secrets.GH_PAT }}
 
-      - name: Configure git user
-        run: |
-          git config user.name "plaited"
-          git config user.email "ci@plaited.dev"
-          git remote set-url origin https://$GITHUB_ACTOR:$GH_PAT@github.com/plaited/plaited
-        env:
-            GH_PAT: ${{ secrets.GH_PAT }}
-
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -56,9 +48,11 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.NPM_PAT }}
 
-
       - name: Version
-        run:  npx lerna version ${{ github.event.inputs.version }} --no-private --exact --conventional-commits --create-release github --yes
+        run:  |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor}}@users.noreply.github.com"
+          npx lerna version ${{ github.event.inputs.version }} --no-private --exact --conventional-commits --create-release github --message "Publish [skip ci]" --yes
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
 
