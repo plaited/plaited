@@ -1,28 +1,22 @@
 {
-  "name": "plaited",
-  "version": "1.0.0-rc",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
   },
   "type": "module",
   "workspaces": [
-    "libs/utils",
-    "libs/jsx",
-    "libs/behavioral",
-    "libs/token-types",
     "libs/*",
     "examples/*"
   ],
   "scripts": {
-    "build": "yarn workspaces foreach -pt run build",
-    "dev": "node scripts/dev.cjs",
+    "build": "bun lerna run build",
     "lint": "eslint . --ext .ts,.tsx,.js,.cjs",
     "lint:fix": "bun lint --fix --quiet",
     "postinstall": "husky install",
     "postpack": "pinst --enable",
     "prepack": "pinst --disable",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "test": "bun lerna run test"
   },
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [
@@ -56,6 +50,7 @@
     "eslint-plugin-storybook": "0.6.11",
     "format-package": "7.0.0",
     "husky": "8.0.3",
+    "lerna": "^6.6.2",
     "pinst": "3.0.0",
     "playwright": "1.33.0",
     "prettier": "2.8.8",

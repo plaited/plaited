@@ -1,0 +1,57 @@
+name: publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'New version tag (e.g., 1.0.0)'
+        required: true
+jobs:
+  publish_libs:
+    
+    runs-on: ubuntu-22.04
+    
+    steps:
+    
+      - name: Validate input version
+        run: |
+          version="${{ github.event.inputs.version }}"
+          if [[ ! $version =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-([a-zA-Z0-9_-]+))?$ ]]; then
+            echo "Error: Version must have the format 'x.y.z' or 'x.y.z-<string>', where x, y, and z are numbers."
+            exit 1
+          fi
+      
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Configure git user
+        uses: devcontainers/ci@v0.3
+        with:
+          runCmd: |
+            git config user.name "GitHub Actions"
+            git config user.email "github-actions@users.noreply.github.com"
+      
+      - name: Set up .npmrc
+        uses: devcontainers/ci@v0.3
+        with:
+          runCmd: |
+            echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_PAT }}" > .npmrc
+            echo "@plaited:registry=https://registry.npmjs.org/" >> .npmrc
+      
+      - name: Test
+        uses: devcontainers/ci@v0.3
+        with:
+          runCmd: zsh test.sh
+
+      - name: Publish
+        uses: devcontainers/ci@v0.3
+        with:
+          runCmd: bun lerna publish ${{ github.event.inputs.version }} --no-git-reset --no-private --exact --conventional-commits --yes
+
+      - name: Commitg manifest update
+        uses: devcontainers/ci@v0.3
+        with:
+          runCmd: |
+            git add .
+            git commit -m "ci:  update gitHead on manifests for ${{ github.event.inputs.version }}"
+            git push origin ${{ github.event.inputs.version }}

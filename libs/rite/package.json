@@ -1,6 +1,6 @@
 {
   "name": "@plaited/rite",
-  "version": "1.0.1-rc",
+  "version": "1.0.10-rc",
   "engines": {
     "node": ">= v18.15.0"
   },
@@ -11,6 +11,7 @@
   "bugs": {
     "url": "https://github.com/plaited/plaited/issues"
   },
+  "homepage": "https://github.com/plaited/plaited/tree/main/libs/rite#readme",
   "type": "module",
   "main": "./dist/index.js",
   "exports": {
@@ -28,9 +29,10 @@
     "test": "bun test src/**/*",
     "test:watch": "bun test --watch test src/**/*"
   },
+  "gitHead": "4f265b9bb275d855e796e5486335079387a629a9",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/utils": "1.0.1-rc",
+    "@plaited/utils": "1.0.10-rc",
     "@web/test-runner-core": "0.11.1"
   }
 }

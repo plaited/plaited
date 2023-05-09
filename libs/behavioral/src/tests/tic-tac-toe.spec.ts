@@ -694,7 +694,7 @@ test('startAtCenter', () => {
   ])
 })
 
-test('prtypeCompletionOfLineWithTwoXs', () => {
+test('prevent completion of line with two Xs', () => {
   const { sync, addThreads, thread, feedback, trigger, loop } = bProgram()
   const actual: (
     | { player: 'X' | 'O'; square: number }

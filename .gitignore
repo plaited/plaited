@@ -3,6 +3,8 @@
 
 ### NODE ###
 
+.npmrc
+
 # Locks
 package-lock.json
 pnpm-lock.yaml
@@ -10,9 +12,6 @@ yarn.lock
 
 # Logs
 *.log
-.npm-debug.log
-yarn-error.log
-.pnpm-debug.log
 
 # dependency packages
 **/node_modules

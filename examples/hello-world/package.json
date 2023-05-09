@@ -14,10 +14,10 @@
   "source": "src/index.html",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "plaited": "1.0.1-rc"
+    "plaited": "1.0.3-rc"
   },
   "devDependencies": {
-    "@plaited/rite": "1.0.1-rc",
+    "@plaited/rite": "1.0.3-rc",
     "parcel": "2.8.3"
   }
 }
