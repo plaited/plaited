@@ -1,6 +1,6 @@
 {
   "name": "@plaited/jsx",
-  "version": "1.0.9-rc",
+  "version": "1.0.10-rc",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
@@ -34,6 +34,6 @@
   },
   "types": "./index.d.ts",
   "dependencies": {
-    "@plaited/utils": "1.0.9-rc"
+    "@plaited/utils": "1.0.10-rc"
   }
 }

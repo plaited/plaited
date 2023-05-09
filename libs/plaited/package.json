@@ -1,6 +1,6 @@
 {
   "name": "plaited",
-  "version": "1.0.9-rc",
+  "version": "1.0.10-rc",
   "engines": {
     "node": ">= v18.15.0"
   },
@@ -30,11 +30,11 @@
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/behavioral": "1.0.9-rc",
-    "@plaited/jsx": "1.0.9-rc",
-    "@plaited/utils": "1.0.9-rc"
+    "@plaited/behavioral": "1.0.10-rc",
+    "@plaited/jsx": "1.0.10-rc",
+    "@plaited/utils": "1.0.10-rc"
   },
   "devDependencies": {
-    "@plaited/rite": "1.0.9-rc"
+    "@plaited/rite": "1.0.10-rc"
   }
 }
