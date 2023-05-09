@@ -11,6 +11,7 @@
   "bugs": {
     "url": "https://github.com/plaited/plaited/issues"
   },
+  "homepage": "https://github.com/plaited/plaited/tree/main/libs/behavioral#readme",
   "type": "module",
   "main": "./dist/index.js",
   "exports": {

@@ -4,11 +4,11 @@ import { classNames } from '../index.js'
 test('classNames', t => {
   t({
     given: 'two class names',
-    should: 'joing them',
+    should: 'join them',
     expected:  'class-1 class-2',
     actual: classNames('class-1', 'class-2'),
   })
-  const condtionTrue = true
+  const conditionTrue = true
   const conditionFalse = false
   t({
     given: 'truthy and falsy class names',
@@ -17,7 +17,7 @@ test('classNames', t => {
     actual: classNames(
       'class-1',
       conditionFalse && 'class-2',
-      condtionTrue && 'class-3'
+      conditionTrue && 'class-3'
     ),
   })
 })
