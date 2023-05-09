@@ -1,6 +1,6 @@
 {
   "name": "@plaited/behavioral",
-  "version": "1.0.20-rc",
+  "version": "1.0.21-rc",
   "engines": {
     "node": ">= v18.15.0"
   },
@@ -29,6 +29,6 @@
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/utils": "1.0.20-rc"
+    "@plaited/utils": "1.0.21-rc"
   }
 }

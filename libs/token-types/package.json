@@ -1,6 +1,6 @@
 {
   "name": "@plaited/token-types",
-  "version": "1.0.20-rc",
+  "version": "1.0.21-rc",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
