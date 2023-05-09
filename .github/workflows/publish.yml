@@ -24,24 +24,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Configure git user
+      - name: Configure Git user
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          
+      - name: Test
         uses: devcontainers/ci@v0.3
         with:
-          runCmd: |
-            git config user.name "GitHub Actions"
-            git config user.email "github-actions@users.noreply.github.com"
-      
+          runCmd: zsh test.sh
+          
       - name: Set up .npmrc
         uses: devcontainers/ci@v0.3
         with:
           runCmd: |
             echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_PAT }}" > .npmrc
             echo "@plaited:registry=https://registry.npmjs.org/" >> .npmrc
-      
-      - name: Test
-        uses: devcontainers/ci@v0.3
-        with:
-          runCmd: zsh test.sh
 
       - name: Publish
         uses: devcontainers/ci@v0.3
