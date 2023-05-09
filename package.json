@@ -1,16 +1,11 @@
 {
   "name": "plaited",
-  "version": "1.0.0-rc",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
   },
   "type": "module",
   "workspaces": [
-    "libs/utils",
-    "libs/jsx",
-    "libs/behavioral",
-    "libs/token-types",
     "libs/*",
     "examples/*"
   ],
@@ -56,6 +51,7 @@
     "eslint-plugin-storybook": "0.6.11",
     "format-package": "7.0.0",
     "husky": "8.0.3",
+    "lerna": "^6.6.2",
     "pinst": "3.0.0",
     "playwright": "1.33.0",
     "prettier": "2.8.8",
