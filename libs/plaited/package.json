@@ -1,6 +1,6 @@
 {
   "name": "plaited",
-  "version": "1.0.10-rc",
+  "version": "1.0.21-rc",
   "engines": {
     "node": ">= v18.15.0"
   },
@@ -24,18 +24,16 @@
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
     "build:watch": "tsc --watch --project tsconfig.build.json",
-    "prepublishOnly": "bun build",
     "test": "bun web-test-runner \"src/**/*.spec.(ts|tsx)\" --config web-test-runner.config.js --node-resolve",
     "test:watch": "bun web-test-runner \"src/**/*.spec.(ts|tsx)\" --config web-test-runner.config.js --node-resolve --watch"
   },
-  "gitHead": "4f265b9bb275d855e796e5486335079387a629a9",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/behavioral": "1.0.10-rc",
-    "@plaited/jsx": "1.0.10-rc",
-    "@plaited/utils": "1.0.10-rc"
+    "@plaited/behavioral": "1.0.21-rc",
+    "@plaited/jsx": "1.0.21-rc",
+    "@plaited/utils": "1.0.21-rc"
   },
   "devDependencies": {
-    "@plaited/rite": "1.0.10-rc"
+    "@plaited/rite": "1.0.21-rc"
   }
 }
