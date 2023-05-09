@@ -1,6 +1,6 @@
 {
   "name": "@plaited/behavioral",
-  "version": "1.0.0",
+  "version": "1.0.22-rc",
   "engines": {
     "node": ">= v18.15.0"
   },
