@@ -28,7 +28,6 @@
     "test": "bun web-test-runner \"src/**/*.spec.(ts|tsx)\" --config web-test-runner.config.js --node-resolve",
     "test:watch": "bun web-test-runner \"src/**/*.spec.(ts|tsx)\" --config web-test-runner.config.js --node-resolve --watch"
   },
-  "gitHead": "4f265b9bb275d855e796e5486335079387a629a9",
   "types": "./dist/index.d.ts",
   "dependencies": {
     "@plaited/behavioral": "1.0.17-rc",
