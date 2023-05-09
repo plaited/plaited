@@ -10,7 +10,7 @@
     "examples/*"
   ],
   "scripts": {
-    "build": "yarn workspaces foreach -pt run build",
+    "build": "bun lerna run build",
     "dev": "node scripts/dev.cjs",
     "lint": "eslint . --ext .ts,.tsx,.js,.cjs",
     "lint:fix": "bun lint --fix --quiet",
