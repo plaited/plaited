@@ -90,34 +90,6 @@ test("classNames", (t) => {
 });
 ```
 
-`t` our assertion function has the following type
-
-```ts
-export interface Assertion {
-  <T>(param: {
-    given: string;
-    should: string;
-    actual: T;
-    expected: T;
-  }): void;
-  findByAttribute: typeof findByAttribute;
-  findByText: typeof findByText;
-  fireEvent: typeof fireEvent;
-  match: typeof match;
-  throws: typeof throws;
-  wait: typeof wait;
-}
-```
-
-As we can see it includes some useful helpers for testing in the browser:
-
-- [findByAttribute](#t.findbyattribute)
-- [findByText](#t.findbytext)
-- [fireEvent](#t.fireevent)
-- [match](#t.match)
-- [throws](#t.throws)
-- [wait](#t.wait)
-
 To skip a test we can do the following
 
 ```ts
@@ -148,18 +120,53 @@ test.skip("classNames", (t) => {
 });
 ```
 
+`t` our assertion function has the following type
+
+```ts
+export interface Assertion {
+  <T>(param: {
+    given: string;
+    should: string;
+    actual: T;
+    expected: T;
+  }): void;
+  findByAttribute: typeof findByAttribute;
+  findByText: typeof findByText;
+  fireEvent: typeof fireEvent;
+  match: typeof match;
+  throws: typeof throws;
+  wait: typeof wait;
+}
+```
+
+As we can see `t` includes some useful helpers for testing in the browser:
+
+- [findByAttribute](#t.findbyattribute)
+- [findByText](#t.findbytext)
+- [fireEvent](#t.fireevent)
+- [match](#t.match)
+- [throws](#t.throws)
+- [wait](#t.wait)
+
 ### t.findByAttribute
 
 #### How it works
 
-Wether an element is in the body's light DOM or deeply nested in another
-elements shadow DOM we can find it using the helper `t.findByAttribute`. This
-helper will search the light dom and then penetrate shadow DOMs to find the
-first element with the target attribute and value or return undefined.
+Wether an element is in the light DOM or deeply nested in another elements
+shadow DOM we can find it using the helper `t.findByAttribute`. This helper
+takes three arguments:
+
+- `type attribute = string`
+- `type value = string`
+- `type context = HTML` _Optional defaults to the `document`_
+
+It will search the light dom of the `context`, then penetrate any shadow DOMs
+nested in the `context` to find the first element with the target `attribute`
+and `value` or return undefined.
 
 #### Example Scenario
 
-Let's say we've rendered an element to the screen with
+Let's say we've rendered an element to the screen with:
 
 - attribute: `data-test-id`
 - value: `island`
@@ -171,8 +178,8 @@ We can test to make sure it rendered correctly like so:
 import { test } from "@plaited/rite";
 
 test("Island rendered correctly", async (t) => {
-  const wrapper = document.querySelector("body");
-  const island = await t.findByAttribute("data-test-id", "island", wrapper);
+  const body = document.querySelector("body");
+  const island = await t.findByAttribute("data-test-id", "island", body);
   t({
     given: "Rendering the island component",
     should: "be present with the correct content",
@@ -186,10 +193,16 @@ test("Island rendered correctly", async (t) => {
 
 #### How it works
 
-Wether an element is in the body's light DOM or deeply nested in another
-elements shadow DOM we can find it using the helper `t.findByText`. This helper
-will search the light dom and then penetrate shadow DOMs to find the first
-element with the`node.textContent` or return undefined.
+Wether an element is in the light DOM or deeply nested in another elements
+shadow DOM we can find it using the helper `t.findByText`. This helper takes two
+arguments:
+
+- `type searchText = string | RegExp`
+- `type context = HTMLElement` _Optional defaults to the `document`_
+
+It will search the light dom of the `context`, then penetrate any shadow DOMs
+nested in the `context` to find the first element with the `Node.textContent` of
+our `searchText` or return undefined.
 
 #### Example Scenario
 
@@ -201,11 +214,12 @@ Let's say we've rendered a button to the screen:
 import { test } from "@plaited/rite";
 
 test("add svg button", async (t) => {
-  const button = await t.findByText<HTMLButtonElement>("add svg");
+  const body = document.querySelector("body");
+  const button = await t.findByText<HTMLButtonElement>("add svg", body);
   t({
     given: "button rendered",
     should: "should be in dom",
-    actual: button?.tag,
+    actual: button?.tagName,
     expected: "BUTTON",
   });
   t({
