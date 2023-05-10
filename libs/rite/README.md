@@ -47,7 +47,9 @@ Update our package.json scripts like so
 ```
 
 If we want to change the default test timeout time from 5 seconds we can do so
-like this **web-test-runner.config.js**
+like this
+
+**web-test-runner.config.js**
 
 ```js
 import { getFramework } from "@plaited/rite/framework";
@@ -88,7 +90,7 @@ test("classNames", (t) => {
 });
 ```
 
-**t** our assert function has the following type
+`t` our assertion function has the following type
 
 ```ts
 export interface Assertion {
@@ -109,12 +111,12 @@ export interface Assertion {
 
 As we can see it includes some useful helpers for testing in the browser:
 
-- [findByAttribute](#findbyattribute)
-- [findByText](#findbytext)
-- [fireEvent](#fireevent)
-- [match](#match)
-- [throws](#throws)
-- [wait](#wait)
+- [findByAttribute](#t.findbyattribute)
+- [findByText](#t.findbytext)
+- [fireEvent](#t.fireevent)
+- [match](#t.match)
+- [throws](#t.throws)
+- [wait](#t.wait)
 
 To skip a test we can do the following
 
@@ -146,7 +148,7 @@ test.skip("classNames", (t) => {
 });
 ```
 
-### findByAttribute
+### t.findByAttribute
 
 #### How it works
 
@@ -180,7 +182,7 @@ test("Island rendered correctly", async (t) => {
 });
 ```
 
-### findByText
+### t.findByText
 
 #### How it works
 
@@ -215,12 +217,12 @@ test("add svg button", async (t) => {
 });
 ```
 
-### fireEvent
+### t.fireEvent
 
 #### How it works
 
 When `t.fireEvent` is passed an `Element` and an event `type` it will trigger
-that event type the `Element`. We can subsequently assert some change.
+that event type on the `Element`. We can then subsequently assert some change.
 
 Further we can also pass it an optional third argument object with the following
 type signature
@@ -237,7 +239,8 @@ type EventArguments = {
 #### Example Scenario
 
 We've rendered a `button` to the screen and have reference to it. When we click
-it we expect our `header` element content to change to: `Hello World!`
+the button, we expect our `header` element's `textContent` to change to
+`Hello World!`
 
 ```ts
 import { test } from "@plaited/rite";
@@ -255,19 +258,19 @@ test("shadow observer test", async (t) => {
 }
 ```
 
-### match
+### t.match
 
 #### How it works
 
-When `t.match` is passed a string of text it return a search callback function.
+When `t.match` is passed a string of text it returns a search callback function.
 We can then pass that callback a string of text to search for in the original
 string or a regex pattern. It will return the matched text, if found, or an
 empty string.
 
 #### Example Scenario
 
-We've stringified a dom node, `header`. We want to find out if it contains the
-text `Dialog Title`.
+We want to make sure our alert dialog `header` is rendering with the correct
+`className` and `innerText`
 
 ```ts
 import { test } from "@plaited/rite";
@@ -275,53 +278,62 @@ import { test } from "@plaited/rite";
 test("match()", (t) => {
    ...
 
-  const pattern = "Dialog Title";
-  const contains = t.match(header);
+  const expected = "<h1 class="alert">Houston we have a problem!!!</h1>";
+  const contains = t.match(header.outerHTML);
 
   t({
     given: "some text to search and a pattern to match",
     should: "return the matched text",
-    actual: contains(pattern),
-    expected: pattern,
+    actual: contains(expected),
+    expected,
   });
 });
 ```
 
-### throws
+### t.throws
 
 #### How it works
 
 `t.throws` takes a function which can be synchronous or asynchronous along with
-any arguments that are to be passed to the function. It then catches the thrown
-error when the function is called with those arguments and returns
-`error.toString()`
+any arguments that are to be passed to the function. If an error is thrown when
+the function is called with those arguments `t.throws` returns
+`error.toString()`. If an error is not thrown `t.throws` returns `undefined`.
 
 #### Example Scenario
 
 We've got an function `reverence` that will throw when passed the string
-`irreverent`. We need to make sure it works right.
+`irreverent` for it's first argument but will not if passed `true` for it's
+second argument. We need to make sure it works right.
 
 ```ts
 import { test } from "@plaited/rite";
 
 test("yep it throws", async (t) => {
   const error = new Error("unacceptable");
-  const reverence = (_: string) => {
-    if('irreverent) {
+  const reverence = (attitude: string, pass = false) => {
+    if (!pass && attitude === "irreverent") {
       throw error;
     }
   };
-  const actual = await t.throws(erred, "irrelevant");
+  let actual = await t.throws(reverence, "irreverent");
   t({
-    given: "an async function that throws",
-    should: "await and return the value of the error",
+    given: "reverent receives irreverent attitude",
+    should: "throw an error",
     actual,
     expected: error.toString(),
+  });
+
+  actual = await t.throws(reverence, "irreverent", true);
+  t({
+    given: "reverent receives irreverent attitude but has a pass",
+    should: "not throw error",
+    actual,
+    expected: undefined,
   });
 });
 ```
 
-### wait
+### t.wait
 
 #### How it works
 
