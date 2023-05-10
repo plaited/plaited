@@ -71,6 +71,24 @@ test('assert: handles async', async () => {
   }).not.toThrow()
 })
 
+test('assert: throw returns undefined when not thrown', async () => {
+  expect(async () => {
+    const error = new Error('unacceptable')
+    const reverence = (attitude: string, pass = false) => {
+      if(!pass && attitude === 'irreverent') {
+        throw error
+      }
+    }
+    const actual = await assert.throws(reverence, 'irreverent', true)
+    assert({
+      given: 'reverent receives irreverent attitude but has a pass',
+      should: 'not throw error',
+      actual,
+      expected: undefined,
+    })
+  }).not.toThrow()
+})
+
 test('wait()', async () => {
   await assert.wait(20)
   expect(() => assert({
