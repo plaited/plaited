@@ -41,8 +41,8 @@ Update our package.json scripts like so
 
 ```json
 "scripts": {
-  "test": "bun web-test-runner \"src/**/*.spec.(ts|tsx)\" --config web-test-runner.config.js",
-  "test:watch": "bun web-test-runner \"src/**/*.spec.(ts|tsx)\" --config web-test-runner.config.js --watch"
+  "test": "web-test-runner \"src/**/*.spec.(ts|tsx)\" --config web-test-runner.config.js",
+  "test:watch": "web-test-runner \"src/**/*.spec.(ts|tsx)\" --config web-test-runner.config.js --watch"
 },
 ```
 
