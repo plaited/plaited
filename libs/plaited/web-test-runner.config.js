@@ -4,6 +4,7 @@ import { getFramework } from '@plaited/rite/framework'
 import { fileURLToPath } from 'url'
 
 export default {
+  nodeResolve: true,
   plugins: [ esbuildPlugin({
     ts: true,
     tsx: true,
