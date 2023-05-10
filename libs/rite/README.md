@@ -160,9 +160,9 @@ takes three arguments:
 - `type value = string`
 - `type context = HTML` _Optional defaults to the `document`_
 
-It will search the light dom of the `context`, then penetrate any shadow DOMs
-nested in the `context` to find the first element with the target `attribute`
-and `value` or return undefined.
+It will search the light dom of the `context`, then penetrate all nested shadow
+DOMs in the `context` until it finds the first element with the target
+`attribute` and `value` or return undefined.
 
 #### Example Scenario
 
@@ -200,9 +200,9 @@ arguments:
 - `type searchText = string | RegExp`
 - `type context = HTMLElement` _Optional defaults to the `document`_
 
-It will search the light dom of the `context`, then penetrate any shadow DOMs
-nested in the `context` to find the first element with the `Node.textContent` of
-our `searchText` or return undefined.
+It will search the light dom of the `context`, then penetrate all nested shadow
+DOMs in the `context` until it finds the first element with the
+`Node.textContent` of our `searchText` or return undefined.
 
 #### Example Scenario
 
