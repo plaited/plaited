@@ -1,6 +1,6 @@
 {
   "name": "@plaited/rite",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "engines": {
     "node": ">= v18.15.0"
   },
@@ -30,7 +30,7 @@
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/utils": "3.0.0",
+    "@plaited/utils": "3.0.1",
     "@web/test-runner-core": "0.11.1"
   }
 }
