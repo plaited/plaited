@@ -71,8 +71,11 @@ behavioral threads we create which control the event log. We can even create
 snapshots of the state at every synchronization point of a bProgram run, to see
 how our application state changes as events flow through our bProgram.
 
-Take this logging function we can pass to our bProgram. It will add a snapshot
-for each run of our program.
+Consider the following scenario where we want to create an app that controls hot
+and cold water taps, whose output flows are mixed.
+
+Take this logging callback we can pass to our bProgram options dev parameter. It
+will log a snapshot for each run of our program.
 
 ```ts
 import { expect, test } from "bun:test";
@@ -81,7 +84,7 @@ import { bProgram, DevCallback } from "@plaited/behavioral";
 test("logging", () => {
   const logs: Parameters<DevCallback>[0][] = [];
   const { addThreads, thread, sync, trigger, loop } = bProgram({
-    dev: (msg) => logs.push(msg),
+    dev: (msg) => logs.push(msg), // Logging callback
   });
   addThreads({
     addHot: thread(
@@ -110,8 +113,8 @@ test("logging", () => {
 });
 ```
 
-Which looks like this given us insight into the behavior and state of
-application over temporally.
+The snapshot from the resulting test gives us insight into the behavior and
+state of application temporally.
 
 ```js
 const logs = [
