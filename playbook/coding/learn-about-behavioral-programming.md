@@ -41,8 +41,7 @@ To learn more watch
 ### tldr;
 
 - Since each thread can not only specify which event to wait for, which event to
-  request and which event to block the s**tate of the program becomes
-  implicit**.
+  request and which event to block the state of the program becomes implicit.
 - Any thread can block execution of other threads thus allowing us to
   effectively modifying program behavior by simply adding new threads that
   append to event log.
@@ -65,6 +64,314 @@ code. We can add new threads that modify the behavior of other threads. Each
 thread lives on its own and is unaware of other threads, but they’re all
 interwoven at runtime, allowing them to interact with each-other in a very
 [novel way](#what-is-behavioral-programming1).
+
+What's truly novel about this approach to application development is that we are
+no longer managing state explicitly. It is an implicit byproduct of the
+behavioral threads we create which control the event log. We can even create
+snapshots of the state at every synchronization point of a bProgram run, to see
+how our application state changes as events flow through our bProgram.
+
+Take this logging function we can pass to our bProgram. It will add a snapshot
+for each run of our program.
+
+```ts
+import { expect, test } from "bun:test";
+import { bProgram, DevCallback } from "@plaited/behavioral";
+
+test("logging", () => {
+  const logs: Parameters<DevCallback>[0][] = [];
+  const { addThreads, thread, sync, trigger, loop } = bProgram({
+    dev: (msg) => logs.push(msg),
+  });
+  addThreads({
+    addHot: thread(
+      sync({ request: { type: "hot" } }),
+      sync({ request: { type: "hot" } }),
+      sync({ request: { type: "hot" } }),
+    ),
+    addCold: thread(
+      sync({ request: { type: "cold" } }),
+      sync({ request: { type: "cold" } }),
+      sync({ request: { type: "cold" } }),
+    ),
+    mixHotCold: loop([
+      sync({
+        waitFor: { type: "hot" },
+        block: { type: "cold" },
+      }),
+      sync({
+        waitFor: { type: "cold" },
+        block: { type: "hot" },
+      }),
+    ]),
+  });
+  trigger({ type: "start" });
+  expect(logs).toMatchSnapshot();
+});
+```
+
+Which looks like this given us insight into the behavior and state of
+application over temporally.
+
+```js
+const logs = [
+  [
+    {
+      "priority": 0,
+      "request": [
+        {
+          "detail": undefined,
+          "type": "start",
+        },
+      ],
+      "selected": "start",
+      "thread": "start",
+      "trigger": true,
+      "waitFor": [
+        {
+          "cb": [Function],
+          "type": "",
+        },
+      ],
+    },
+    {
+      "priority": 1,
+      "request": [
+        {
+          "type": "hot",
+        },
+      ],
+      "thread": "addHot",
+    },
+    {
+      "priority": 2,
+      "request": [
+        {
+          "type": "cold",
+        },
+      ],
+      "thread": "addCold",
+    },
+    {
+      "block": [
+        {
+          "type": "cold",
+        },
+      ],
+      "priority": 3,
+      "thread": "mixHotCold",
+      "waitFor": [
+        {
+          "type": "hot",
+        },
+      ],
+    },
+  ],
+  [
+    {
+      "priority": 1,
+      "request": [
+        {
+          "type": "hot",
+        },
+      ],
+      "selected": "hot",
+      "thread": "addHot",
+    },
+    {
+      "priority": 2,
+      "request": [
+        {
+          "type": "cold",
+        },
+      ],
+      "thread": "addCold",
+    },
+    {
+      "block": [
+        {
+          "type": "cold",
+        },
+      ],
+      "priority": 3,
+      "thread": "mixHotCold",
+      "waitFor": [
+        {
+          "type": "hot",
+        },
+      ],
+    },
+  ],
+  [
+    {
+      "priority": 1,
+      "request": [
+        {
+          "type": "hot",
+        },
+      ],
+      "thread": "addHot",
+    },
+    {
+      "priority": 2,
+      "request": [
+        {
+          "type": "cold",
+        },
+      ],
+      "selected": "cold",
+      "thread": "addCold",
+    },
+    {
+      "block": [
+        {
+          "type": "hot",
+        },
+      ],
+      "priority": 3,
+      "thread": "mixHotCold",
+      "waitFor": [
+        {
+          "type": "cold",
+        },
+      ],
+    },
+  ],
+  [
+    {
+      "priority": 1,
+      "request": [
+        {
+          "type": "hot",
+        },
+      ],
+      "selected": "hot",
+      "thread": "addHot",
+    },
+    {
+      "priority": 2,
+      "request": [
+        {
+          "type": "cold",
+        },
+      ],
+      "thread": "addCold",
+    },
+    {
+      "block": [
+        {
+          "type": "cold",
+        },
+      ],
+      "priority": 3,
+      "thread": "mixHotCold",
+      "waitFor": [
+        {
+          "type": "hot",
+        },
+      ],
+    },
+  ],
+  [
+    {
+      "priority": 1,
+      "request": [
+        {
+          "type": "hot",
+        },
+      ],
+      "thread": "addHot",
+    },
+    {
+      "priority": 2,
+      "request": [
+        {
+          "type": "cold",
+        },
+      ],
+      "selected": "cold",
+      "thread": "addCold",
+    },
+    {
+      "block": [
+        {
+          "type": "hot",
+        },
+      ],
+      "priority": 3,
+      "thread": "mixHotCold",
+      "waitFor": [
+        {
+          "type": "cold",
+        },
+      ],
+    },
+  ],
+  [
+    {
+      "priority": 1,
+      "request": [
+        {
+          "type": "hot",
+        },
+      ],
+      "selected": "hot",
+      "thread": "addHot",
+    },
+    {
+      "priority": 2,
+      "request": [
+        {
+          "type": "cold",
+        },
+      ],
+      "thread": "addCold",
+    },
+    {
+      "block": [
+        {
+          "type": "cold",
+        },
+      ],
+      "priority": 3,
+      "thread": "mixHotCold",
+      "waitFor": [
+        {
+          "type": "hot",
+        },
+      ],
+    },
+  ],
+  [
+    {
+      "priority": 2,
+      "request": [
+        {
+          "type": "cold",
+        },
+      ],
+      "selected": "cold",
+      "thread": "addCold",
+    },
+    {
+      "block": [
+        {
+          "type": "hot",
+        },
+      ],
+      "priority": 3,
+      "thread": "mixHotCold",
+      "waitFor": [
+        {
+          "type": "cold",
+        },
+      ],
+    },
+  ],
+];
+```
+
+### Microinteractions and behavioral programming go together, like peanut butter and jelly
 
 ---
 

@@ -9,8 +9,8 @@ Here we tackle: **"No Process Mo' Problems"**
 
 ---
 
-- [Proposal template](proposal-template.md): When proposing a new feature use
-  this template in our discussions
+- When proposing new feature use our [proposal template](proposal-template.md)
+  in plaited's [discussions](https://github.com/plaited/plaited/discussions)
 
 ## Coding
 
@@ -22,7 +22,8 @@ Here we answer three questions:
 
 ---
 
-- [learn about behavioral programming](coding/learn-about-behavioral-programming.md)
+- [Learn](coding/learn-about-behavioral-programming.md) about behavioral
+  programming and why we use it for interface development in plaited
 
 ## Testing
 
