@@ -30,7 +30,7 @@ the threads that requested or waited for that event. The rest of the threads
 remain blocked, until an event they requested or waited for is selected.
 
 Behavioral Programming was introduced by Harel, Marron and Weiss in 2012 in a
-[paper](assets/behavioral-programming.pdf) published at the Communications of
+[paper](../assets/behavioral-programming.pdf) published at the Communications of
 the ACM.
 
 To learn more watch
