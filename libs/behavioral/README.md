@@ -5,9 +5,9 @@ programs in JavaScript.
 
 ## Requirements
 
-- Node >= v18 or Bun >= 0.5.9 or a modern evergreen browser
+- Node >= v18 or Bun >= 0.5.9 or any modern evergreen browser
 
-## Install
+## Installing
 
 `npm install --save @plaited/behavioral`
 
