@@ -5,7 +5,10 @@ programs in JavaScript.
 
 ## Requirements
 
-- Node >= v18 or Bun >= 0.5.9 or any modern evergreen browser
+JavaScript Runtime
+  Option 1: [Node](https://nodejs.org/en) >= v18
+  Option 2: [Bun](https://bun.sh/) >= 0.5.9 
+  Option 3+: any modern evergreen browser
 
 ## Installing
 
