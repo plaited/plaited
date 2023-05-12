@@ -54,7 +54,6 @@ export type RequestIdiom<
 > = {
   type: string;
   detail?: T;
-  // cb?: Callback<T>
 };
 
 export type RuleSet<

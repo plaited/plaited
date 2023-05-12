@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { bProgram, RulesFunc } from '../index.js'
+import { bProgram, loop, RulesFunc, sync, thread  } from '../index.js'
 
 const winConditions = [
   //rows
@@ -17,36 +17,37 @@ const winConditions = [
 
 const squares = [ 0, 1, 2, 3, 4, 5, 6, 7, 8 ]
 
+const playerWins = (player: 'X' | 'O') =>
+  winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
+    acc[`${player}Wins (${win})`] = thread(
+      sync<{ square: number }>({
+        waitFor: {
+          cb: ({ type, detail }) =>
+            type === player && win.includes(detail.square),
+        },
+      }),
+      sync<{ square: number }>({
+        waitFor: {
+          cb: ({ type, detail }) =>
+            type === player && win.includes(detail.square),
+        },
+      }),
+      sync<{ square: number }>({
+        waitFor: {
+          cb: ({ type, detail }) =>
+            type === player && win.includes(detail.square),
+        },
+      }),
+      sync<{ win: number[] }>({
+        request: { type: `${player}Win`, detail: { win } },
+      })
+    )
+    return acc
+  }, {})
+
 test('detect wins', () => {
-  const { sync, addThreads, thread, feedback, trigger } = bProgram()
+  const  { addThreads, feedback, trigger } = bProgram()
   const actual: number[] = []
-  const playerWins = (player: string) =>
-    winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
-      acc[`${player}Wins (${win})`] = thread(
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ win: number[] }>({
-          request: { type: `${player}Win`, detail: { win } },
-        })
-      )
-      return acc
-    }, {})
   addThreads({
     ...playerWins('X'),
   })
@@ -61,47 +62,21 @@ test('detect wins', () => {
   expect(actual).toEqual([ 1, 4, 7 ])
 })
 
+const enforceTurns = loop([
+  sync({ waitFor: { type: 'X' }, block: { type: 'O' } }),
+  sync({ waitFor: { type: 'O' }, block: { type: 'X' } }),
+])
+
 test('enforceTurns', () => {
-  const { sync, addThreads, thread, feedback, trigger, loop } = bProgram()
+  const { addThreads, feedback, trigger } = bProgram()
   let actual: {
     player: 'X' | 'O';
     square: number;
   }
-  const playerWins = (player: string) =>
-    winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
-      acc[`${player}Wins (${win})`] = thread(
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ win: number[] }>({
-          request: { type: `${player}Win`, detail: { win } },
-        })
-      )
-      return acc
-    }, {})
-
   addThreads({
     ...playerWins('O'),
     ...playerWins('X'),
-    enforceTurns: loop([
-      sync({ waitFor: { type: 'X' }, block: { type: 'O' } }),
-      sync({ waitFor: { type: 'O' }, block: { type: 'X' } }),
-    ]),
+    enforceTurns,
   })
 
   feedback({
@@ -121,51 +96,20 @@ test('enforceTurns', () => {
   trigger({ type: 'X', detail: { square: 1 } })
   trigger({ type: 'X', detail: { square: 4 } })
   trigger({ type: 'X', detail: { square: 7 } })
-  //@ts-ignore: test
   expect(actual).toEqual({ player: 'X', square: 1 })
 })
 
 test('enforceTurns without blocking', () => {
-  const { sync, addThreads, thread, feedback, trigger, loop } = bProgram()
+  const { addThreads, feedback, trigger } = bProgram()
   let actual: {
     player: 'X' | 'O';
     win: number[];
   }
-  const playerWins = (player: string) =>
-    winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
-      acc[`${player}Wins (${win})`] = thread(
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ win: number[] }>({
-          request: { type: `${player}Win`, detail: { win } },
-        })
-      )
-      return acc
-    }, {})
 
   addThreads({
     ...playerWins('O'),
     ...playerWins('X'),
-    enforceTurns: loop([
-      sync({ waitFor: { type: 'X' }, block: { type: 'O' } }),
-      sync({ waitFor: { type: 'O' }, block: { type: 'X' } }),
-    ]),
+    enforceTurns,
   })
 
   feedback({
@@ -191,53 +135,27 @@ test('enforceTurns without blocking', () => {
   expect(actual).toEqual({ player: 'X', win: [ 0, 4, 8 ] })
 })
 
+const squaresTaken = squares.reduce(
+  (acc: Record<string, RulesFunc>, square) => {
+    acc[`(${square}) taken`] = thread(
+      sync<{ square: number }>({
+        waitFor: { cb: ({ detail }) => square === detail.square },
+      }),
+      sync<{ square: number }>({
+        block: { cb: ({ detail }) => square === detail.square },
+      })
+    )
+    return acc
+  },
+  {}
+)
 test('squaresTaken', () => {
-  const { sync, addThreads, thread, feedback, trigger, loop } = bProgram()
+  const { addThreads, feedback, trigger } = bProgram()
   const actual: {
     player: 'X' | 'O';
     square: number;
   }[] = []
-  const playerWins = (player: string) =>
-    winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
-      acc[`${player}Wins (${win})`] = thread(
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ win: number[] }>({
-          request: { type: `${player}Win`, detail: { win } },
-        })
-      )
-      return acc
-    }, {})
-  const squaresTaken = squares.reduce(
-    (acc: Record<string, RulesFunc>, square) => {
-      acc[`(${square}) taken`] = thread(
-        sync<{ square: number }>({
-          waitFor: { cb: ({ detail }) => square === detail.square },
-        }),
-        sync<{ square: number }>({
-          block: { cb: ({ detail }) => square === detail.square },
-        })
-      )
-      return acc
-    },
-    {}
-  )
+
 
   addThreads({
     ...playerWins('O'),
@@ -266,60 +184,16 @@ test('squaresTaken', () => {
 })
 
 test("doesn't stop game", () => {
-  const { sync, addThreads, thread, feedback, trigger, loop } = bProgram()
+  const { addThreads, feedback, trigger } = bProgram()
   const actual: (
     | { player: 'X' | 'O'; square: number }
     | { player: 'X' | 'O'; win: number[] }
   )[] = []
-  const playerWins = (player: string) =>
-    winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
-      acc[`${player}Wins (${win})`] = thread(
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ win: number[] }>({
-          request: { type: `${player}Win`, detail: { win } },
-        })
-      )
-      return acc
-    }, {})
-  const squaresTaken = squares.reduce(
-    (acc: Record<string, RulesFunc>, square) => {
-      acc[`(${square}) taken`] = thread(
-        sync<{ square: number }>({
-          waitFor: { cb: ({ detail }) => square === detail.square },
-        }),
-        sync<{ square: number }>({
-          block: { cb: ({ detail }) => square === detail.square },
-        })
-      )
-      return acc
-    },
-    {}
-  )
 
   addThreads({
     ...playerWins('O'),
     ...playerWins('X'),
-    enforceTurns: loop([
-      sync({ waitFor: { type: 'X' }, block: { type: 'O' } }),
-      sync({ waitFor: { type: 'O' }, block: { type: 'X' } }),
-    ]),
+    enforceTurns,
     ...squaresTaken,
   })
   feedback({
@@ -366,66 +240,26 @@ test("doesn't stop game", () => {
   ])
 })
 
+
+const stopGame= thread(
+  sync({ waitFor: [ { type: 'XWin' }, { type: 'OWin' } ] }),
+  sync({ block: [ { type: 'X' }, { type: 'O' } ] })
+)
+
 test('stopGame', () => {
-  const { sync, addThreads, thread, feedback, trigger, loop } = bProgram()
+  const { addThreads, feedback, trigger } = bProgram()
   const actual: (
     | { player: 'X' | 'O'; square: number }
     | { player: 'X' | 'O'; win: number[] }
   )[] = []
-  const playerWins = (player: string) =>
-    winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
-      acc[`${player}Wins (${win})`] = thread(
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ win: number[] }>({
-          request: { type: `${player}Win`, detail: { win } },
-        })
-      )
-      return acc
-    }, {})
-  const squaresTaken = squares.reduce(
-    (acc: Record<string, RulesFunc>, square) => {
-      acc[`(${square}) taken`] = thread(
-        sync<{ square: number }>({
-          waitFor: { cb: ({ detail }) => square === detail.square },
-        }),
-        sync<{ square: number }>({
-          block: { cb: ({ detail }) => square === detail.square },
-        })
-      )
-      return acc
-    },
-    {}
-  )
+
 
   addThreads({
     ...playerWins('O'),
     ...playerWins('X'),
-    enforceTurns: loop([
-      sync({ waitFor: { type: 'X' }, block: { type: 'O' } }),
-      sync({ waitFor: { type: 'O' }, block: { type: 'X' } }),
-    ]),
+    enforceTurns,
     ...squaresTaken,
-    stopGame: thread(
-      sync({ waitFor: [ { type: 'XWin' }, { type: 'OWin' } ] }),
-      sync({ block: [ { type: 'X' }, { type: 'O' } ] })
-    ),
+    stopGame,
   })
   feedback({
     X({ square }: { square: number }) {
@@ -470,74 +304,29 @@ test('stopGame', () => {
   ])
 })
 
+const defaultMoves = loop([
+  sync({
+    request: squares.map(square => ({
+      type: 'O',
+      detail: { square },
+    })),
+  }),
+])
+
 test('defaultMoves', () => {
-  const { sync, addThreads, thread, feedback, trigger, loop } = bProgram()
+  const { addThreads, feedback, trigger } = bProgram()
   const actual: (
     | { player: 'X' | 'O'; square: number }
     | { player: 'X' | 'O'; win: number[] }
   )[] = []
-  const playerWins = (player: string) =>
-    winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
-      acc[`${player}Wins (${win})`] = thread(
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ win: number[] }>({
-          request: { type: `${player}Win`, detail: { win } },
-        })
-      )
-      return acc
-    }, {})
-  const squaresTaken = squares.reduce(
-    (acc: Record<string, RulesFunc>, square) => {
-      acc[`(${square}) taken`] = thread(
-        sync<{ square: number }>({
-          waitFor: { cb: ({ detail }) => square === detail.square },
-        }),
-        sync<{ square: number }>({
-          block: { cb: ({ detail }) => square === detail.square },
-        })
-      )
-      return acc
-    },
-    {}
-  )
 
   addThreads({
     ...playerWins('O'),
     ...playerWins('X'),
-    enforceTurns: loop([
-      sync({ waitFor: { type: 'X' }, block: { type: 'O' } }),
-      sync({ waitFor: { type: 'O' }, block: { type: 'X' } }),
-    ]),
+    enforceTurns,
     ...squaresTaken,
-    stopGame: thread(
-      sync({ waitFor: [ { type: 'XWin' }, { type: 'OWin' } ] }),
-      sync({ block: [ { type: 'X' }, { type: 'O' } ] })
-    ),
-    defaultMoves: loop([
-      sync({
-        request: squares.map(square => ({
-          type: 'O',
-          detail: { square },
-        })),
-      }),
-    ]),
+    stopGame,
+    defaultMoves,
   })
   feedback({
     X({ square }: { square: number }) {
@@ -579,82 +368,30 @@ test('defaultMoves', () => {
   ])
 })
 
+const startAtCenter = thread(
+  sync({
+    request: {
+      type: 'O',
+      detail: { square: 4 },
+    },
+  })
+)
+
 test('startAtCenter', () => {
-  const { sync, addThreads, thread, feedback, trigger, loop } = bProgram()
+  const { addThreads, feedback, trigger } = bProgram()
   const actual: (
     | { player: 'X' | 'O'; square: number }
     | { player: 'X' | 'O'; win: number[] }
   )[] = []
-  const playerWins = (player: string) =>
-    winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
-      acc[`${player}Wins (${win})`] = thread(
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ win: number[] }>({
-          request: { type: `${player}Win`, detail: { win } },
-        })
-      )
-      return acc
-    }, {})
-  const squaresTaken = squares.reduce(
-    (acc: Record<string, RulesFunc>, square) => {
-      acc[`(${square}) taken`] = thread(
-        sync<{ square: number }>({
-          waitFor: { cb: ({ detail }) => square === detail.square },
-        }),
-        sync<{ square: number }>({
-          block: { cb: ({ detail }) => square === detail.square },
-        })
-      )
-      return acc
-    },
-    {}
-  )
 
   addThreads({
     ...playerWins('O'),
     ...playerWins('X'),
-    enforceTurns: loop([
-      sync({ waitFor: { type: 'X' }, block: { type: 'O' } }),
-      sync({ waitFor: { type: 'O' }, block: { type: 'X' } }),
-    ]),
+    enforceTurns,
     ...squaresTaken,
-    stopGame: thread(
-      sync({ waitFor: [ { type: 'XWin' }, { type: 'OWin' } ] }),
-      sync({ block: [ { type: 'X' }, { type: 'O' } ] })
-    ),
-    startAtCenter: thread(
-      sync({
-        request: {
-          type: 'O',
-          detail: { square: 4 },
-        },
-      })
-    ),
-    defaultMoves: loop([
-      sync({
-        request: squares.map(square => ({
-          type: 'O',
-          detail: { square },
-        })),
-      }),
-    ]),
+    stopGame,
+    startAtCenter,
+    defaultMoves,
   })
   feedback({
     X({ square }: { square: number }) {
@@ -694,98 +431,46 @@ test('startAtCenter', () => {
   ])
 })
 
+const preventCompletionOfLineWithTwoXs = winConditions.reduce(
+  (acc: Record<string, RulesFunc>, win) => {
+    acc[`StopXWin(${win})`] = thread(
+      sync<{ square: number }>({
+        waitFor: {
+          cb: ({ type, detail }) =>
+            type === 'X' && win.includes(detail.square),
+        },
+      }),
+      sync<{ square: number }>({
+        waitFor: {
+          cb: ({ type, detail }) =>
+            type === 'X' && win.includes(detail.square),
+        },
+      }),
+      sync<{ square: number }>({
+        request: win.map(square => ({ type: 'O', detail: { square } })),
+      })
+    )
+    return acc
+  },
+  {}
+)
+
 test('prevent completion of line with two Xs', () => {
-  const { sync, addThreads, thread, feedback, trigger, loop } = bProgram()
+  const { addThreads, feedback, trigger } = bProgram()
   const actual: (
     | { player: 'X' | 'O'; square: number }
     | { player: 'X' | 'O'; win: number[] }
   )[] = []
-  const playerWins = (player: string) =>
-    winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
-      acc[`${player}Wins (${win})`] = thread(
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === player && win.includes(detail.square),
-          },
-        }),
-        sync<{ win: number[] }>({
-          request: { type: `${player}Win`, detail: { win } },
-        })
-      )
-      return acc
-    }, {})
-  const squaresTaken = squares.reduce(
-    (acc: Record<string, RulesFunc>, square) => {
-      acc[`(${square}) taken`] = thread(
-        sync<{ square: number }>({
-          waitFor: { cb: ({ detail }) => square === detail.square },
-        }),
-        sync<{ square: number }>({
-          block: { cb: ({ detail }) => square === detail.square },
-        })
-      )
-      return acc
-    },
-    {}
-  )
 
-  const prtypeCompletionOfLineWithTwoXs = winConditions.reduce(
-    (acc: Record<string, RulesFunc>, win) => {
-      acc[`StopXWin(${win})`] = thread(
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === 'X' && win.includes(detail.square),
-          },
-        }),
-        sync<{ square: number }>({
-          waitFor: {
-            cb: ({ type, detail }) =>
-              type === 'X' && win.includes(detail.square),
-          },
-        }),
-        sync<{ square: number }>({
-          request: win.map(square => ({ type: 'O', detail: { square } })),
-        })
-      )
-      return acc
-    },
-    {}
-  )
+
   addThreads({
     ...playerWins('O'),
     ...playerWins('X'),
-    enforceTurns: loop([
-      sync({ waitFor: { type: 'X' }, block: { type: 'O' } }),
-      sync({ waitFor: { type: 'O' }, block: { type: 'X' } }),
-    ]),
+    enforceTurns,
     ...squaresTaken,
-    stopGame: thread(
-      sync({ waitFor: [ { type: 'XWin' }, { type: 'OWin' } ] }),
-      sync({ block: [ { type: 'X' }, { type: 'O' } ] })
-    ),
-    ...prtypeCompletionOfLineWithTwoXs,
-    startAtCenter: thread(
-      sync({
-        request: {
-          type: 'O',
-          detail: { square: 4 },
-        },
-      })
-    ),
+    stopGame,
+    ...preventCompletionOfLineWithTwoXs,
+    startAtCenter,
     defaultMoves: loop([
       sync({
         request: squares.map(square => ({
