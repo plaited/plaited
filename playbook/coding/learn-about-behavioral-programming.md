@@ -47,14 +47,14 @@ To learn more watch
   append to event log.
 - This idiomatic approach to programming aligns perfectly with microinteractions
 
-### Intuitions[^2]
+### Intuitions
 
-1. UI is a function of data
-2. Data is derived from an event log
+1. UI is a function of data[^2]
+2. Data is derived from an event log[^2]
 3. Deciding when and what to append to the event log is the most complex part of
-   development
+   development[^2]
 4. Finding more natural ways for deciding when and what to append to the event
-   log is the direction we should be moving towards
+   log is the direction we should be moving towards[^2]
 
 With Behavioral Programming we control the event log using behavioral threads.
 The key idea of behavioral programming is that we can create new threads that
@@ -71,11 +71,10 @@ behavioral threads we create which control the event log. We can even create
 snapshots of the state at every synchronization point of a bProgram run, to see
 how our application state changes as events flow through our bProgram.
 
-Consider the following scenario where we want to create an app that controls hot
-and cold water taps, whose output flows are mixed.
+#### Scenario
 
-Take this logging callback we can pass to our bProgram options dev parameter. It
-will log a snapshot for each run of our program.
+We want to create an app that controls hot and cold water taps, whose output
+flows are mixed.
 
 ```ts
 import { expect, test } from "bun:test";
@@ -83,9 +82,53 @@ import { bProgram, DevCallback } from "@plaited/behavioral";
 
 test("logging", () => {
   const logs: Parameters<DevCallback>[0][] = [];
-  const { addThreads, thread, sync, trigger, loop } = bProgram({
+  /**
+   * Initiate out bProgram and destructure behavioral
+   * programming utility functions
+   */
+  const {
+    /** adds behavioral threads to behavioral program  **/
+    addThreads,
+    /**
+     * creates a behavioral thread from synchronization sets and/or other
+     * behavioral threads
+     */
+    thread,
+    /**
+     * A behavioral thread that loops infinitely or until some
+     * callback returns false.This function returns a threads
+     */
+    loop,
+    /**
+     * At synchronization points, each behavioral thread
+     * specifies three sets of events:
+     * 1. requested events: the thread proposes that these be
+     * considered for triggering
+     * 2. waitFor events: the thread asks to be notified when
+     * any of them is triggered
+     * 3. blocked events: the threads currently forbids
+     * triggering any of these events
+     */
+    sync,
+    /** trigger the run of the behavioral program by requesting
+     * the event passed as an argument
+     */
+    trigger,
+    /** connect an action callback to the behavioral program that is
+     * called when request event type of the same name as our
+     * callback is selected by our behavioral program's
+     * central event arbiter
+     */
+    feedback,
+  } = bProgram({
+    /**
+     * Example of logging callback we can pass to our bProgram
+     * options dev field.
+     */
     dev: (msg) => logs.push(msg), // Logging callback
   });
+
+  /** Add our rules for bProgram execution */
   addThreads({
     addHot: thread(
       sync({ request: { type: "hot" } }),
@@ -108,7 +151,26 @@ test("logging", () => {
       }),
     ]),
   });
+
+  const actual: string[] = [];
+  /** Add action callback to our feedback function */
+  feedback({
+    hot() {
+      actual.push("hot");
+    },
+    cold() {
+      actual.push("cold");
+    },
+  });
   trigger({ type: "start" });
+  expect(actual).toEqual([
+    "hot",
+    "cold",
+    "hot",
+    "cold",
+    "hot",
+    "cold",
+  ]);
   expect(logs).toMatchSnapshot();
 });
 ```
