@@ -26,7 +26,7 @@ JavaScript Runtime
   - [Sync argument](#sync-argument)
 
 ## What is behavioral programming?
-
+<!-- This is a clear for people with industry knowledge but is there a way to present this in more common language? -->
 > Behavioral Programming, or bProgram for short, is based on scenarios.
 > Behavioral programs are composed of threads of behavior. These threads run in
 > parallel to coordinate a sequence of events via a synchronized protocol.
