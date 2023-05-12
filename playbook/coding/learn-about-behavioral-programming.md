@@ -7,7 +7,7 @@ programs are composed of threads of behavior. These threads run in parallel to
 coordinate a sequence of events via a synchronized protocol. During a bProgram's
 execution, when a thread wants to synchronize with its peers, it submits a
 statement to the central event arbiter using the sync statement. This statement
-is returned when we invoke a bProgram. > A **sync** statement declares which
+is returned when we invoke a bProgram. A **sync** statement declares which
 events the **thread** requests, which events it waits for (but does not
 request), and which events it would like to block (that is, prevent from being
 selected). Request, block and waitFor events can be described by passing a
@@ -302,7 +302,11 @@ const logs = [
       ],
     },
   ],
-  ... // see full logs at https://github.com/plaited/plaited/blob/main/libs/behavioral/src/tests/__snapshots__/water.spec.ts.snap
+  ...
+  /**
+   * full logs @
+   * https://github.com/plaited/plaited/blob/main/libs/behavioral/src/tests/__snapshots__/water.spec.ts.snap
+   */ 
 ];
 ```
 
