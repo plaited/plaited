@@ -1,13 +1,11 @@
-# Learn about behavioral programming
-
-## What is behavioral programming?[^1]
+# What is behavioral programming?[^1]
 
 Behavioral Programming, or bProgram for short, is based on scenarios. Behavioral
 programs are composed of threads of behavior. These threads run in parallel to
 coordinate a sequence of events via a synchronized protocol. During a bProgram's
 execution, when a thread wants to synchronize with its peers, it submits a
 statement to the central event arbiter using the sync statement. This statement
-is returned when we invoke a bProgram. > A **sync** statement declares which
+is returned when we invoke a bProgram. A **sync** statement declares which
 events the **thread** requests, which events it waits for (but does not
 request), and which events it would like to block (that is, prevent from being
 selected). Request, block and waitFor events can be described by passing a
@@ -36,9 +34,9 @@ the ACM.
 To learn more watch
 [Rethinking Software Systems: A friendly introduction to Behavioral Programming by Michael Bar Sinai, 2018](https://youtu.be/PW8VdWA0UcA)
 
-## Why behavioral programming
+# Why behavioral programming
 
-### tldr;
+## tldr;
 
 - Since each thread can not only specify which event to wait for, which event to
   request and which event to block the state of the program becomes implicit.
@@ -47,14 +45,16 @@ To learn more watch
   append to event log.
 - This idiomatic approach to programming aligns perfectly with microinteractions
 
-### Intuitions
+## Intuitions
 
-1. UI is a function of data[^2]
-2. Data is derived from an event log[^2]
-3. Deciding when and what to append to the event log is the most complex part of
-   development[^2]
-4. Finding more natural ways for deciding when and what to append to the event
-   log is the direction we should be moving towards[^2]
+> 1. UI is a function of data
+> 2. Data is derived from an event log
+> 3. Deciding when and what to append to the event log is the most complex part
+   > of development
+> 4. Finding more natural ways for deciding when and what to append to the event
+   > log is the direction we should be moving towards
+
+[^2]
 
 With Behavioral Programming we control the event log using behavioral threads.
 The key idea of behavioral programming is that we can create new threads that
@@ -71,7 +71,7 @@ behavioral threads we create which control the event log. We can even create
 snapshots of the state at every synchronization point of a bProgram run, to see
 how our application state changes as events flow through our bProgram.
 
-#### Scenario
+### Scenario
 
 We want to create an app that controls hot and cold water taps, whose output
 flows are mixed.
@@ -176,7 +176,7 @@ test("logging", () => {
 ```
 
 The snapshot from the resulting test gives us insight into the behavior and
-state of application temporally.
+state of the app temporally.
 
 ```js
 const logs = [
@@ -302,141 +302,15 @@ const logs = [
       ],
     },
   ],
-  [
-    {
-      "priority": 1,
-      "request": [
-        {
-          "type": "hot",
-        },
-      ],
-      "selected": "hot",
-      "thread": "addHot",
-    },
-    {
-      "priority": 2,
-      "request": [
-        {
-          "type": "cold",
-        },
-      ],
-      "thread": "addCold",
-    },
-    {
-      "block": [
-        {
-          "type": "cold",
-        },
-      ],
-      "priority": 3,
-      "thread": "mixHotCold",
-      "waitFor": [
-        {
-          "type": "hot",
-        },
-      ],
-    },
-  ],
-  [
-    {
-      "priority": 1,
-      "request": [
-        {
-          "type": "hot",
-        },
-      ],
-      "thread": "addHot",
-    },
-    {
-      "priority": 2,
-      "request": [
-        {
-          "type": "cold",
-        },
-      ],
-      "selected": "cold",
-      "thread": "addCold",
-    },
-    {
-      "block": [
-        {
-          "type": "hot",
-        },
-      ],
-      "priority": 3,
-      "thread": "mixHotCold",
-      "waitFor": [
-        {
-          "type": "cold",
-        },
-      ],
-    },
-  ],
-  [
-    {
-      "priority": 1,
-      "request": [
-        {
-          "type": "hot",
-        },
-      ],
-      "selected": "hot",
-      "thread": "addHot",
-    },
-    {
-      "priority": 2,
-      "request": [
-        {
-          "type": "cold",
-        },
-      ],
-      "thread": "addCold",
-    },
-    {
-      "block": [
-        {
-          "type": "cold",
-        },
-      ],
-      "priority": 3,
-      "thread": "mixHotCold",
-      "waitFor": [
-        {
-          "type": "hot",
-        },
-      ],
-    },
-  ],
-  [
-    {
-      "priority": 2,
-      "request": [
-        {
-          "type": "cold",
-        },
-      ],
-      "selected": "cold",
-      "thread": "addCold",
-    },
-    {
-      "block": [
-        {
-          "type": "hot",
-        },
-      ],
-      "priority": 3,
-      "thread": "mixHotCold",
-      "waitFor": [
-        {
-          "type": "cold",
-        },
-      ],
-    },
-  ],
+  ...
+  /**
+   * full logs @
+   * https://github.com/plaited/plaited/blob/main/libs/behavioral/src/tests/__snapshots__/water.spec.ts.snap
+   */ 
 ];
 ```
 
-### Microinteractions and behavioral programming go together, like peanut butter and jelly
+## Microinteractions and behavioral programming go together, like peanut butter and jelly
 
 Modern web application are often the result of
 [component driven user interface practices](). If a web app interface component
@@ -463,29 +337,32 @@ Coincidentally this model align with behavioral programming well and
 [@plaited/behavioral](https://www.npmjs.com/package/@plaited/behavioral) has
 been designed specifically to work within this pattern.
 
-#### 1. Trigger function
+### 1. Trigger function
 
 Our trigger function triggers an event on component.
 
-#### 2. Thread function
+### 2. Thread function
 
 Our thread function serves as mechanism for writing rules on how and if we
 respond to an event on our component.
 
-#### 3. Feedback function
+### 3. Feedback function
 
 Our feedback function is used to respond to requested events allowed by our
 behavioral threads, the rules, and let component users know what's happening
 with our interactive component.
 
-#### 4. Loop function
+### 4. Loop function
 
 The loop function is ideal for web interfaces where trigger feedback pairs can
 be triggered often infinitely such as checking and unchecking a checkbox for
 example.
 
-```ts type Loop = (rules: RulesFunc<any>[], condition?: () =>
-boolean) => RulesFunc<any>
+```ts
+type Loop = (
+  rules: RulesFunc<any>[],
+  condition?: () => boolean,
+) => RulesFunc<any>;
 ```
 
 As we can see in the type above the loop function takes an optional second

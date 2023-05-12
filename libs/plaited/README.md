@@ -20,7 +20,7 @@ application web interfaces as specifications (requirements) change and evolve.
 
 `npm install --save plaited`
 
-`import { bProgram } from 'https://esm.sh/plaited@3.0.1'`
+`import { bProgram } from 'https://esm.sh/plaited'`
 
 ## Library goals
 
