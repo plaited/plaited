@@ -1,6 +1,4 @@
-# Learn about behavioral programming
-
-## What is behavioral programming?[^1]
+# What is behavioral programming?[^1]
 
 Behavioral Programming, or bProgram for short, is based on scenarios. Behavioral
 programs are composed of threads of behavior. These threads run in parallel to
@@ -36,9 +34,9 @@ the ACM.
 To learn more watch
 [Rethinking Software Systems: A friendly introduction to Behavioral Programming by Michael Bar Sinai, 2018](https://youtu.be/PW8VdWA0UcA)
 
-## Why behavioral programming
+# Why behavioral programming
 
-### tldr;
+## tldr;
 
 - Since each thread can not only specify which event to wait for, which event to
   request and which event to block the state of the program becomes implicit.
@@ -47,7 +45,7 @@ To learn more watch
   append to event log.
 - This idiomatic approach to programming aligns perfectly with microinteractions
 
-### Intuitions
+## Intuitions
 
 > 1. UI is a function of data
 > 2. Data is derived from an event log
@@ -73,7 +71,7 @@ behavioral threads we create which control the event log. We can even create
 snapshots of the state at every synchronization point of a bProgram run, to see
 how our application state changes as events flow through our bProgram.
 
-#### Scenario
+### Scenario
 
 We want to create an app that controls hot and cold water taps, whose output
 flows are mixed.
@@ -312,7 +310,7 @@ const logs = [
 ];
 ```
 
-### Microinteractions and behavioral programming go together, like peanut butter and jelly
+## Microinteractions and behavioral programming go together, like peanut butter and jelly
 
 Modern web application are often the result of
 [component driven user interface practices](). If a web app interface component
@@ -339,22 +337,22 @@ Coincidentally this model align with behavioral programming well and
 [@plaited/behavioral](https://www.npmjs.com/package/@plaited/behavioral) has
 been designed specifically to work within this pattern.
 
-#### 1. Trigger function
+### 1. Trigger function
 
 Our trigger function triggers an event on component.
 
-#### 2. Thread function
+### 2. Thread function
 
 Our thread function serves as mechanism for writing rules on how and if we
 respond to an event on our component.
 
-#### 3. Feedback function
+### 3. Feedback function
 
 Our feedback function is used to respond to requested events allowed by our
 behavioral threads, the rules, and let component users know what's happening
 with our interactive component.
 
-#### 4. Loop function
+### 4. Loop function
 
 The loop function is ideal for web interfaces where trigger feedback pairs can
 be triggered often infinitely such as checking and unchecking a checkbox for
