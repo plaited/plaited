@@ -49,12 +49,14 @@ To learn more watch
 
 ### Intuitions
 
-1. UI is a function of data[^2]
-2. Data is derived from an event log[^2]
-3. Deciding when and what to append to the event log is the most complex part of
-   development[^2]
-4. Finding more natural ways for deciding when and what to append to the event
-   log is the direction we should be moving towards[^2]
+> 1. UI is a function of data
+> 2. Data is derived from an event log
+> 3. Deciding when and what to append to the event log is the most complex part
+   > of development
+> 4. Finding more natural ways for deciding when and what to append to the event
+   > log is the direction we should be moving towards
+
+[^2]
 
 With Behavioral Programming we control the event log using behavioral threads.
 The key idea of behavioral programming is that we can create new threads that
@@ -176,7 +178,7 @@ test("logging", () => {
 ```
 
 The snapshot from the resulting test gives us insight into the behavior and
-state of application temporally.
+state of the app temporally.
 
 ```js
 const logs = [
@@ -358,8 +360,11 @@ The loop function is ideal for web interfaces where trigger feedback pairs can
 be triggered often infinitely such as checking and unchecking a checkbox for
 example.
 
-```ts type Loop = (rules: RulesFunc<any>[], condition?: () =>
-boolean) => RulesFunc<any>
+```ts
+type Loop = (
+  rules: RulesFunc<any>[],
+  condition?: () => boolean,
+) => RulesFunc<any>;
 ```
 
 As we can see in the type above the loop function takes an optional second
