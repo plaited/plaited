@@ -3,10 +3,29 @@
 Plaited is set of components and patterns for rapidly coding and refining web
 application web interfaces as specifications (requirements) change and evolve.
 
-Plaited is designed to enable:
+## Requirements
 
-- Creating reusable interface components, Plaited Elements, who's logic is
-  loosely coupled to their presentation.
+### JavaScript runtime options
+
+1. [Node](https://nodejs.org/en) >= v18
+2. [Bun](https://bun.sh/) >= 0.5.9
+3. Any modern evergreen browser
+
+### Recommended test tooling
+
+- [@web/test-runner](https://www.npmjs.com/package/@web/test-runner) >= 0.16.1
+- [@plaited/rite](https://www.npmjs.com/package/@plaited/rite) >= 3.0.1
+
+## Installing
+
+`npm install --save plaited`
+
+`import { bProgram } from 'https://esm.sh/plaited@3.0.1'`
+
+## Library goals
+
+- Enable creating reusable interface components, Plaited Elements, who's logic
+  is loosely coupled to their presentation.
 - Island architecture via web component and the declarative shadow dom.
 - Event binding and dom selection via data attributes like stimulus js and
   catalyst js
@@ -22,3 +41,8 @@ Plaited is designed to enable:
   Elements
 - Easily sharing and reusing styles across Plaited Elements (shadow dom and
   light dom)
+
+## Example Usage
+
+In each of the scenarios below we'll demonstrate usage of plaited, via our
+tests. Think of them as guided TDD!.

@@ -83,7 +83,7 @@ import { bProgram, DevCallback } from "@plaited/behavioral";
 test("logging", () => {
   const logs: Parameters<DevCallback>[0][] = [];
   /**
-   * Initiate out bProgram and destructure behavioral
+   * Initiate our bProgram and destructure behavioral
    * programming utility functions
    */
   const {

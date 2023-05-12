@@ -69,7 +69,7 @@ To learn more:
 
 ## Example Usage
 
-In each of the scenarios below we'll demonstrated using bProgram using our
+In each of the scenarios below we'll demonstrate usage of bProgram, via our
 tests. Think of them as guided TDD!.
 
 ### Scenario: water flow control
