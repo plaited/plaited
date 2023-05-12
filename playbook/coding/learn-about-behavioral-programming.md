@@ -380,13 +380,13 @@ Modern web application are often the result of
 [component driven user interface practices](). If a web app interface component
 is even remotely interactive it has one or more [microinteractions]().
 
-![Dan Saffer’s model of microinteraction. The model consists of four parts: trigger, rules, feedback, and loops & modes.](../assets/microinteraction_diagram.png)
-
 Dan Saffer’s model of microinteractions is a design concept that focuses on the
 small, often overlooked details in product design that significantly influence
 user experience. These minute interactions, such as the sound a device makes
 when turned on or the animation of a loading icon, are fundamental to creating a
 seamless, intuitive user experience.
+
+![Diagram of Dan Saffer’s model of microinteraction](../assets/microinteraction_diagram.png)
 
 The model consists of four parts: trigger, rules, feedback, and loops & modes.
 The trigger initiates the microinteraction, rules determine how it functions,
