@@ -1,17 +1,17 @@
 {
-  "name": "@examples/hello-world",
+  "name": "@examples/calculator",
   "private": true,
   "engines": {
     "node": ">= v18.15.0"
   },
   "type": "module",
   "scripts": {
-    "start": "bun web-dev-server"
+    "start": "bun web-dev-server --config web-dev-server.config.js"
   },
   "browserslist": [
     "> 2%"
   ],
-  "source": "examples/hello-world/src/",
+  "source": "src/index.html",
   "types": "./dist/index.d.ts",
   "dependencies": {
     "plaited": "workspace:*"

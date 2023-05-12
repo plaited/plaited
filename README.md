@@ -38,7 +38,7 @@ development libraries.
 
 1. Clone repository and ensure you have bun >= 0.5.9
 2. Run `npx playwright install`
-3. Run `bash test.sh`
+3. Run `bash setup.sh`
 
 ### devcontainer
 
@@ -49,4 +49,4 @@ development libraries.
 5. search for **Dev Containers:Clone Repository in Container Volume**
 6. Enter this repo name **plaited/token-utils**
 7. Wait for it to download and set everything up
-8. Open a VSCode terminal tab and run `zsh test.sh`
+8. Open a VSCode terminal tab and run `zsh setup.sh`

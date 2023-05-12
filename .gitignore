@@ -18,7 +18,6 @@ yarn.lock
 
 # Build  artifacts
 **/dist
-**/.parcel-cache/
 
 # Test  artifacts
 **/coverage
