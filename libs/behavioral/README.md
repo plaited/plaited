@@ -15,7 +15,7 @@ programs in JavaScript.
 
 `npm install --save @plaited/behavioral`
 
-`import { bProgram } from 'https://esm.sh/@plaited/behavioral@3.0.1'`
+`import { bProgram } from 'https://esm.sh/@plaited/behavioral'`
 
 - Example usage:
   - [Water flow control](#scenario-water-flow-control)
