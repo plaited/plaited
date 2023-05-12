@@ -4,6 +4,7 @@ import { getFramework } from '@plaited/rite/framework'
 import { fileURLToPath } from 'url'
 
 export default {
+  files: 'src/**/*.spec.(ts|tsx)',
   nodeResolve: true,
   plugins: [ esbuildPlugin({
     ts: true,
