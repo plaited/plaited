@@ -376,6 +376,62 @@ const logs = [
 
 ### Microinteractions and behavioral programming go together, like peanut butter and jelly
 
+Modern web application are often the result of
+[component driven user interface practices](). If a web app interface component
+is even remotely interactive it has one or more [microinteractions]().
+
+![Dan Saffer’s model of microinteraction. The model consists of four parts: trigger, rules, feedback, and loops & modes.](../assets/microinteraction_diagram.png)
+
+Dan Saffer’s model of microinteractions is a design concept that focuses on the
+small, often overlooked details in product design that significantly influence
+user experience. These minute interactions, such as the sound a device makes
+when turned on or the animation of a loading icon, are fundamental to creating a
+seamless, intuitive user experience.
+
+The model consists of four parts: trigger, rules, feedback, and loops & modes.
+The trigger initiates the microinteraction, rules determine how it functions,
+feedback that lets the user know what's happening, and loops & modes that govern
+its larger behavior.
+
+Saffer’s model emphasizes that well-designed microinteractions are engaging,
+informative, and human-centered, often defining the overall feel and function of
+a product.
+
+Coincidentally this model align with behavioral programming well and
+[@plaited/behavioral](https://www.npmjs.com/package/@plaited/behavioral) has
+been designed specifically to work within this pattern.
+
+#### 1. Trigger function
+
+Our trigger function triggers an event on component.
+
+#### 2. Thread function
+
+Our thread function serves as mechanism for writing rules on how and if we
+respond to an event on our component.
+
+#### 3. Feedback function
+
+Our feedback function is used to respond to requested events allowed by our
+behavioral threads, the rules, and let component users know what's happening
+with our interactive component.
+
+#### 4. Loop function
+
+The loop function is ideal for web interfaces where trigger feedback pairs can
+be triggered often infinitely such as checking and unchecking a checkbox for
+example.
+
+```ts type Loop = (rules: RulesFunc<any>[], condition?: () =>
+boolean) => RulesFunc<any>
+```
+
+As we can see in the type above the loop function takes an optional second
+argument, a callback function that returns true or false. By passing a callback
+function that gets the current mode of our component (i.e. checked or unchecked)
+in enables us to control which rules we're applying at a larger level each time
+our behavioral program is run.
+
 ---
 
 [^1]: [What is Behavioral Programming?](https://bpjs.readthedocs.io/en/latest/BPjsTutorial/index.html)
