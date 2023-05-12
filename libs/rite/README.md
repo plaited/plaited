@@ -15,8 +15,14 @@ RITEWay forces us to answer them.
 
 ## Requirements
 
-- @web/test-runner >= 0.16.1
-- Node >= v18 or Bun >= 0.5.9
+### Test runner
+
+- [@web/test-runner](https://www.npmjs.com/package/@web/test-runner) >= 0.16.1
+
+### JavaScript runtime options
+
+1. [Node](https://nodejs.org/en) >= v18
+2. [Bun](https://bun.sh/) >= 0.5.9
 
 ## Installing
 

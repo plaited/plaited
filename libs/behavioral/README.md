@@ -5,16 +5,17 @@ programs in JavaScript.
 
 ## Requirements
 
-JavaScript Runtime
-  Option 1: [Node](https://nodejs.org/en) >= v18
-  Option 2: [Bun](https://bun.sh/) >= 0.5.9 
-  Option 3+: any modern evergreen browser
+### JavaScript runtime options
+
+1. [Node](https://nodejs.org/en) >= v18
+2. [Bun](https://bun.sh/) >= 0.5.9
+3. Any modern evergreen browser
 
 ## Installing
 
 `npm install --save @plaited/behavioral`
 
----
+`import { bProgram } from 'https://esm.sh/@plaited/behavioral@3.0.1'`
 
 - Example usage:
   - [Water flow control](#scenario-water-flow-control)
