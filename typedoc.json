@@ -2,6 +2,10 @@
   "entryPoints": [
     "libs/*"
   ],
+  "exclude": [
+    "README.md"
+  ],
+  "githubPages": false,
   "out": "./playbook/libraries",
   "name": "Plaited Typedocs",
   "entryPointStrategy": "packages",

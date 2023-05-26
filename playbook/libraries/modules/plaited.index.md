@@ -134,7 +134,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:71](https://github.com/plaited/plaited/blob/2af7f53/libs/plaited/src/types.ts#L71)
+[libs/plaited/src/types.ts:71](https://github.com/plaited/plaited/blob/8821045/libs/plaited/src/types.ts#L71)
 
 ___
 
@@ -191,7 +191,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:10](https://github.com/plaited/plaited/blob/2af7f53/libs/plaited/src/types.ts#L10)
+[libs/plaited/src/types.ts:10](https://github.com/plaited/plaited/blob/8821045/libs/plaited/src/types.ts#L10)
 
 ___
 
@@ -243,7 +243,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:12](https://github.com/plaited/plaited/blob/2af7f53/libs/plaited/src/types.ts#L12)
+[libs/plaited/src/types.ts:12](https://github.com/plaited/plaited/blob/8821045/libs/plaited/src/types.ts#L12)
 
 ___
 
@@ -279,7 +279,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:47](https://github.com/plaited/plaited/blob/2af7f53/libs/plaited/src/types.ts#L47)
+[libs/plaited/src/types.ts:47](https://github.com/plaited/plaited/blob/8821045/libs/plaited/src/types.ts#L47)
 
 ___
 
@@ -451,7 +451,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:70](https://github.com/plaited/plaited/blob/2af7f53/libs/plaited/src/types.ts#L70)
+[libs/plaited/src/types.ts:70](https://github.com/plaited/plaited/blob/8821045/libs/plaited/src/types.ts#L70)
 
 ___
 
@@ -501,7 +501,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/use-sugar.ts:45](https://github.com/plaited/plaited/blob/2af7f53/libs/plaited/src/use-sugar.ts#L45)
+[libs/plaited/src/use-sugar.ts:45](https://github.com/plaited/plaited/blob/8821045/libs/plaited/src/use-sugar.ts#L45)
 
 ___
 
@@ -613,7 +613,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/use-sugar.ts:9](https://github.com/plaited/plaited/blob/2af7f53/libs/plaited/src/use-sugar.ts#L9)
+[libs/plaited/src/use-sugar.ts:9](https://github.com/plaited/plaited/blob/8821045/libs/plaited/src/use-sugar.ts#L9)
 
 ___
 
@@ -631,7 +631,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/use-sugar.ts:49](https://github.com/plaited/plaited/blob/2af7f53/libs/plaited/src/use-sugar.ts#L49)
+[libs/plaited/src/use-sugar.ts:49](https://github.com/plaited/plaited/blob/8821045/libs/plaited/src/use-sugar.ts#L49)
 
 ## Functions
 
@@ -698,7 +698,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/isle.ts:46](https://github.com/plaited/plaited/blob/2af7f53/libs/plaited/src/isle.ts#L46)
+[libs/plaited/src/isle.ts:46](https://github.com/plaited/plaited/blob/8821045/libs/plaited/src/isle.ts#L46)
 
 ___
 
@@ -720,7 +720,7 @@ takes an array of conditional css class name strings and returns them concatenat
 
 #### Defined in
 
-[libs/plaited/src/class-names.ts:3](https://github.com/plaited/plaited/blob/2af7f53/libs/plaited/src/class-names.ts#L3)
+[libs/plaited/src/class-names.ts:3](https://github.com/plaited/plaited/blob/8821045/libs/plaited/src/class-names.ts#L3)
 
 ___
 
@@ -793,7 +793,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/isle.ts:22](https://github.com/plaited/plaited/blob/2af7f53/libs/plaited/src/isle.ts#L22)
+[libs/plaited/src/isle.ts:22](https://github.com/plaited/plaited/blob/8821045/libs/plaited/src/isle.ts#L22)
 
 ___
 
@@ -826,7 +826,7 @@ A typescript function for instantiating Plaited Island Elements
 
 #### Defined in
 
-[libs/plaited/src/isle.ts:66](https://github.com/plaited/plaited/blob/2af7f53/libs/plaited/src/isle.ts#L66)
+[libs/plaited/src/isle.ts:66](https://github.com/plaited/plaited/blob/8821045/libs/plaited/src/isle.ts#L66)
 
 ___
 
@@ -872,7 +872,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/isle.ts:15](https://github.com/plaited/plaited/blob/2af7f53/libs/plaited/src/isle.ts#L15)
+[libs/plaited/src/isle.ts:15](https://github.com/plaited/plaited/blob/8821045/libs/plaited/src/isle.ts#L15)
 
 ___
 
@@ -904,7 +904,7 @@ We also do a basic shallow comparison on the object to cache function result.
 
 #### Defined in
 
-[libs/plaited/src/memo.ts:20](https://github.com/plaited/plaited/blob/2af7f53/libs/plaited/src/memo.ts#L20)
+[libs/plaited/src/memo.ts:20](https://github.com/plaited/plaited/blob/8821045/libs/plaited/src/memo.ts#L20)
 
 ___
 
@@ -1015,7 +1015,7 @@ asynchronously get and set indexed db values
 
 #### Defined in
 
-[libs/plaited/src/use-indexed-db.ts:13](https://github.com/plaited/plaited/blob/2af7f53/libs/plaited/src/use-indexed-db.ts#L13)
+[libs/plaited/src/use-indexed-db.ts:13](https://github.com/plaited/plaited/blob/8821045/libs/plaited/src/use-indexed-db.ts#L13)
 
 ___
 
@@ -1038,7 +1038,7 @@ readonly [`Send`, [`Disconnect`](plaited.index.md#disconnect)]
 
 #### Defined in
 
-[libs/plaited/src/use-main.ts:6](https://github.com/plaited/plaited/blob/2af7f53/libs/plaited/src/use-main.ts#L6)
+[libs/plaited/src/use-main.ts:6](https://github.com/plaited/plaited/blob/8821045/libs/plaited/src/use-main.ts#L6)
 
 ___
 
@@ -1063,7 +1063,7 @@ readonly {}
 
 #### Defined in
 
-[libs/plaited/src/use-messenger.ts:24](https://github.com/plaited/plaited/blob/2af7f53/libs/plaited/src/use-messenger.ts#L24)
+[libs/plaited/src/use-messenger.ts:24](https://github.com/plaited/plaited/blob/8821045/libs/plaited/src/use-messenger.ts#L24)
 
 ___
 
@@ -1108,7 +1108,7 @@ readonly [`Get`<`T`\>, `Set`<`T`\>]
 
 #### Defined in
 
-[libs/plaited/src/use-store.ts:27](https://github.com/plaited/plaited/blob/2af7f53/libs/plaited/src/use-store.ts#L27)
+[libs/plaited/src/use-store.ts:27](https://github.com/plaited/plaited/blob/8821045/libs/plaited/src/use-store.ts#L27)
 
 ___
 
@@ -1128,4 +1128,4 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/use-sugar.ts:79](https://github.com/plaited/plaited/blob/2af7f53/libs/plaited/src/use-sugar.ts#L79)
+[libs/plaited/src/use-sugar.ts:79](https://github.com/plaited/plaited/blob/8821045/libs/plaited/src/use-sugar.ts#L79)
