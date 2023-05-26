@@ -2,6 +2,7 @@
   "entryPoints": [
     "libs/*"
   ],
+  "out": "./playbook/libraries",
   "name": "Plaited Typedocs",
   "entryPointStrategy": "packages",
   "includeVersion": true

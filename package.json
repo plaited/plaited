@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "build": "bun lerna run build",
+    "docs": "typedoc --plugin typedoc-plugin-markdown",
     "lint": "eslint . --ext .ts,.tsx,.js,.cjs",
     "lint:fix": "bun lint --fix --quiet",
     "postinstall": "husky install",
