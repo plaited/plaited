@@ -16,7 +16,6 @@
   "main": "./dist/index.js",
   "exports": {
     ".": "./dist/index.js",
-    "./runner": "./dist/runner.js",
     "./framework": "./dist/framework.js"
   },
   "files": [

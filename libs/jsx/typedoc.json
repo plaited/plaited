@@ -1,0 +1,10 @@
+{
+  "extends": [
+    "../../typedoc.base.json"
+  ],
+  "entryPoints": [
+    "src/index.ts",
+    "src/jsx-runtime.ts",
+    "src/jsx-dev-runtime.ts"
+  ]
+}

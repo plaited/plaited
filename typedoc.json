@@ -1,0 +1,10 @@
+{
+  "entryPoints": [
+    "libs/*"
+  ],
+  "name": "Plaited Typedocs",
+  "entryPointStrategy": "packages",
+  "includeVersion": true
+  // Potentially useful for debugging
+  // "logLevel": "Verbose"
+}
