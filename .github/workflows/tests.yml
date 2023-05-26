@@ -17,4 +17,8 @@ jobs:
     - name: Test
       uses: devcontainers/ci@v0.3
       with:
-        runCmd: zsh setup.sh
+        runCmd: |
+          bun install
+          bun playwright install
+          bun run build
+          bun run test
