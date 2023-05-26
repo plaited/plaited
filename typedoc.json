@@ -1,0 +1,15 @@
+{
+  "entryPoints": [
+    "libs/*"
+  ],
+  "exclude": [
+    "README.md"
+  ],
+  "githubPages": false,
+  "out": "./playbook/libraries",
+  "name": "Plaited Typedocs",
+  "entryPointStrategy": "packages",
+  "includeVersion": true
+  // Potentially useful for debugging
+  // "logLevel": "Verbose"
+}

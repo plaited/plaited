@@ -40,3 +40,12 @@ Here we answer the question: **"How do we get plaited working in X?"**
 ---
 
 - ...
+
+## Libraries
+
+Here is where we answer the question: **"Where are the docs for module X in plaited"**
+
+- [plaited](libraries/modules/plaited.md)
+- [@plaited/behavioral](libraries/modules/plaited_behavioral.md)
+- [@plaited/jsx](playbook/libraries/modules/plaited_jsx.md)
+- [@plaited/rite](playbook/libraries/modules/plaited_rite.md)
