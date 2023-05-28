@@ -1,18 +1,18 @@
 {
   "name": "@plaited/token-transformer",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/plaited/token-utils.git"
+    "url": "git+https://github.com/plaited/plaited.git"
   },
   "bugs": {
-    "url": "https://github.com/plaited/token-utils/issues"
+    "url": "https://github.com/plaited/plaited/issues"
   },
-  "homepage": "https://github.com/plaited/token-utils/tree/main/libs/token-transformer#readme",
+  "homepage": "https://github.com/plaited/plaited/tree/main/libs/token-transformer#readme",
   "type": "module",
   "main": "./dist/index.js",
   "exports": {
