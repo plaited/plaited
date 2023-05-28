@@ -1,0 +1,2477 @@
+export const snapshot = {};
+
+snapshot[`parse(): snapshot 1`] = `
+{
+  properties: {
+    action: {
+      properties: {
+        primary: {
+          properties: {
+            rest: {
+              properties: {
+                backgroundColor: {
+                  properties: {
+                    "\$description": {
+                      type: "string",
+                    },
+                    "\$type": {
+                      type: "string",
+                    },
+                    "\$value": {
+                      const: "{backgroundColor.purple.x2}",
+                      type: "string",
+                    },
+                  },
+                  required: [
+                    "\$value",
+                    "\$type",
+                    "\$description",
+                  ],
+                  type: "object",
+                },
+                borderRadius: {
+                  properties: {
+                    "\$description": {
+                      type: "string",
+                    },
+                    "\$type": {
+                      type: "string",
+                    },
+                    "\$value": {
+                      const: "{borderRadius.x1}",
+                      type: "string",
+                    },
+                  },
+                  required: [
+                    "\$value",
+                    "\$type",
+                    "\$description",
+                  ],
+                  type: "object",
+                },
+                typography: {
+                  properties: {
+                    "\$description": {
+                      type: "string",
+                    },
+                    "\$type": {
+                      type: "string",
+                    },
+                    "\$value": {
+                      const: "{typography.x1}",
+                      type: "string",
+                    },
+                  },
+                  required: [
+                    "\$value",
+                    "\$type",
+                    "\$description",
+                  ],
+                  type: "object",
+                },
+              },
+              required: [
+                "borderRadius",
+                "backgroundColor",
+                "typography",
+              ],
+              type: "object",
+            },
+          },
+          required: [
+            "rest",
+          ],
+          type: "object",
+        },
+      },
+      required: [
+        "primary",
+      ],
+      type: "object",
+    },
+    backgroundColor: {
+      properties: {
+        purple: {
+          properties: {
+            x1: {
+              properties: {
+                "\$description": {
+                  type: "string",
+                },
+                "\$type": {
+                  type: "string",
+                },
+                "\$value": {
+                  const: "#4c00b0",
+                  type: "string",
+                },
+              },
+              required: [
+                "\$value",
+                "\$type",
+                "\$description",
+              ],
+              type: "object",
+            },
+            x2: {
+              properties: {
+                "\$description": {
+                  type: "string",
+                },
+                "\$type": {
+                  type: "string",
+                },
+                "\$value": {
+                  const: "#7600bc",
+                  type: "string",
+                },
+              },
+              required: [
+                "\$value",
+                "\$type",
+                "\$description",
+              ],
+              type: "object",
+            },
+            x3: {
+              properties: {
+                "\$description": {
+                  type: "string",
+                },
+                "\$type": {
+                  type: "string",
+                },
+                "\$value": {
+                  const: "#8a00c2",
+                  type: "string",
+                },
+              },
+              required: [
+                "\$value",
+                "\$type",
+                "\$description",
+              ],
+              type: "object",
+            },
+          },
+          required: [
+            "x1",
+            "x2",
+            "x3",
+          ],
+          type: "object",
+        },
+      },
+      required: [
+        "purple",
+      ],
+      type: "object",
+    },
+    borderRadius: {
+      properties: {
+        x1: {
+          properties: {
+            "\$description": {
+              type: "string",
+            },
+            "\$type": {
+              type: "string",
+            },
+            "\$value": {
+              const: 3,
+              type: "number",
+            },
+          },
+          required: [
+            "\$value",
+            "\$type",
+            "\$description",
+          ],
+          type: "object",
+        },
+        x2: {
+          properties: {
+            "\$description": {
+              type: "string",
+            },
+            "\$type": {
+              type: "string",
+            },
+            "\$value": {
+              const: 5,
+              type: "number",
+            },
+          },
+          required: [
+            "\$value",
+            "\$type",
+            "\$description",
+          ],
+          type: "object",
+        },
+        x3: {
+          properties: {
+            "\$description": {
+              type: "string",
+            },
+            "\$type": {
+              type: "string",
+            },
+            "\$value": {
+              const: 7,
+              type: "number",
+            },
+          },
+          required: [
+            "\$value",
+            "\$type",
+            "\$description",
+          ],
+          type: "object",
+        },
+      },
+      required: [
+        "x1",
+        "x2",
+        "x3",
+      ],
+      type: "object",
+    },
+    fontFamily: {
+      properties: {
+        sansSerif: {
+          properties: {
+            "\$description": {
+              type: "string",
+            },
+            "\$type": {
+              type: "string",
+            },
+            "\$value": {
+              items: [
+                {
+                  const: "Roboto",
+                  type: "string",
+                },
+                {
+                  const: "sans-serif",
+                  type: "string",
+                },
+              ],
+              type: "array",
+            },
+          },
+          required: [
+            "\$value",
+            "\$type",
+            "\$description",
+          ],
+          type: "object",
+        },
+      },
+      required: [
+        "sansSerif",
+      ],
+      type: "object",
+    },
+    fontSize: {
+      properties: {
+        x1: {
+          properties: {
+            "\$description": {
+              type: "string",
+            },
+            "\$type": {
+              type: "string",
+            },
+            "\$value": {
+              const: 14,
+              type: "number",
+            },
+          },
+          required: [
+            "\$value",
+            "\$type",
+            "\$description",
+          ],
+          type: "object",
+        },
+      },
+      required: [
+        "x1",
+      ],
+      type: "object",
+    },
+    fontWeight: {
+      properties: {
+        x1: {
+          properties: {
+            "\$description": {
+              type: "string",
+            },
+            "\$type": {
+              type: "string",
+            },
+            "\$value": {
+              const: 700,
+              type: "number",
+            },
+          },
+          required: [
+            "\$value",
+            "\$type",
+            "\$description",
+          ],
+          type: "object",
+        },
+      },
+      required: [
+        "x1",
+      ],
+      type: "object",
+    },
+    letterSpacing: {
+      properties: {
+        x1: {
+          properties: {
+            "\$description": {
+              type: "string",
+            },
+            "\$type": {
+              type: "string",
+            },
+            "\$value": {
+              const: "normal",
+              type: "string",
+            },
+          },
+          required: [
+            "\$value",
+            "\$type",
+            "\$description",
+          ],
+          type: "object",
+        },
+      },
+      required: [
+        "x1",
+      ],
+      type: "object",
+    },
+    lineHeight: {
+      properties: {
+        x1: {
+          properties: {
+            "\$description": {
+              type: "string",
+            },
+            "\$type": {
+              type: "string",
+            },
+            "\$value": {
+              const: 1,
+              type: "number",
+            },
+          },
+          required: [
+            "\$value",
+            "\$type",
+            "\$description",
+          ],
+          type: "object",
+        },
+      },
+      required: [
+        "x1",
+      ],
+      type: "object",
+    },
+    size: {
+      properties: {
+        s3: {
+          properties: {
+            "\$description": {
+              type: "string",
+            },
+            "\$type": {
+              type: "string",
+            },
+            "\$value": {
+              const: 12,
+              type: "number",
+            },
+          },
+          required: [
+            "\$value",
+            "\$type",
+            "\$description",
+          ],
+          type: "object",
+        },
+        x1: {
+          properties: {
+            "\$description": {
+              type: "string",
+            },
+            "\$type": {
+              type: "string",
+            },
+            "\$value": {
+              properties: {
+                desktop: {
+                  const: 2,
+                  type: "number",
+                },
+                mobile: {
+                  const: 2,
+                  type: "number",
+                },
+                static: {
+                  const: 2,
+                  type: "number",
+                },
+                tv: {
+                  const: 4,
+                  type: "number",
+                },
+              },
+              required: [
+                "static",
+                "mobile",
+                "desktop",
+                "tv",
+              ],
+              type: "object",
+            },
+          },
+          required: [
+            "\$value",
+            "\$type",
+            "\$description",
+          ],
+          type: "object",
+        },
+        x2: {
+          properties: {
+            "\$description": {
+              type: "string",
+            },
+            "\$type": {
+              type: "string",
+            },
+            "\$value": {
+              properties: {
+                desktop: {
+                  const: 6,
+                  type: "number",
+                },
+                mobile: {
+                  const: 8,
+                  type: "number",
+                },
+                static: {
+                  const: 6,
+                  type: "number",
+                },
+                tv: {
+                  const: 8,
+                  type: "number",
+                },
+              },
+              required: [
+                "static",
+                "mobile",
+                "desktop",
+                "tv",
+              ],
+              type: "object",
+            },
+          },
+          required: [
+            "\$value",
+            "\$type",
+            "\$description",
+          ],
+          type: "object",
+        },
+        x3: {
+          properties: {
+            "\$description": {
+              type: "string",
+            },
+            "\$type": {
+              type: "string",
+            },
+            "\$value": {
+              properties: {
+                desktop: {
+                  const: 12,
+                  type: "number",
+                },
+                mobile: {
+                  const: 16,
+                  type: "number",
+                },
+                static: {
+                  const: 12,
+                  type: "number",
+                },
+                tv: {
+                  const: 14,
+                  type: "number",
+                },
+              },
+              required: [
+                "static",
+                "mobile",
+                "desktop",
+                "tv",
+              ],
+              type: "object",
+            },
+          },
+          required: [
+            "\$value",
+            "\$type",
+            "\$description",
+          ],
+          type: "object",
+        },
+      },
+      required: [
+        "x1",
+        "x2",
+        "x3",
+        "s3",
+      ],
+      type: "object",
+    },
+    typography: {
+      properties: {
+        x1: {
+          properties: {
+            "\$description": {
+              type: "string",
+            },
+            "\$type": {
+              type: "string",
+            },
+            "\$value": {
+              properties: {
+                fontFamily: {
+                  const: "{fontFamily.sansSerif}",
+                  type: "string",
+                },
+                fontSize: {
+                  const: "{fontSize.x1}",
+                  type: "string",
+                },
+                fontWeight: {
+                  const: "{fontWeight.x1}",
+                  type: "string",
+                },
+                letterSpacing: {
+                  const: "{letterSpacing.x1}",
+                  type: "string",
+                },
+                lineHeight: {
+                  const: "{lineHeight.x1}",
+                  type: "string",
+                },
+              },
+              required: [
+                "fontFamily",
+                "fontSize",
+                "fontWeight",
+                "letterSpacing",
+                "lineHeight",
+              ],
+              type: "object",
+            },
+          },
+          required: [
+            "\$value",
+            "\$type",
+            "\$description",
+          ],
+          type: "object",
+        },
+      },
+      required: [
+        "x1",
+      ],
+      type: "object",
+    },
+  },
+  required: [
+    "size",
+    "backgroundColor",
+    "borderRadius",
+    "fontSize",
+    "fontFamily",
+    "fontWeight",
+    "letterSpacing",
+    "lineHeight",
+    "typography",
+    "action",
+  ],
+  type: "object",
+}
+`;
+
+exports[`parse(): snapshot 1`] = `
+{
+  "properties": {
+    "action": {
+      "properties": {
+        "primary": {
+          "properties": {
+            "rest": {
+              "properties": {
+                "backgroundColor": {
+                  "properties": {
+                    "$description": {
+                      "type": "string",
+                    },
+                    "$type": {
+                      "type": "string",
+                    },
+                    "$value": {
+                      "const": "{backgroundColor.purple.x2}",
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "$value",
+                    "$type",
+                    "$description",
+                  ],
+                  "type": "object",
+                },
+                "borderRadius": {
+                  "properties": {
+                    "$description": {
+                      "type": "string",
+                    },
+                    "$type": {
+                      "type": "string",
+                    },
+                    "$value": {
+                      "const": "{borderRadius.x1}",
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "$value",
+                    "$type",
+                    "$description",
+                  ],
+                  "type": "object",
+                },
+                "typography": {
+                  "properties": {
+                    "$description": {
+                      "type": "string",
+                    },
+                    "$type": {
+                      "type": "string",
+                    },
+                    "$value": {
+                      "const": "{typography.x1}",
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "$value",
+                    "$type",
+                    "$description",
+                  ],
+                  "type": "object",
+                },
+              },
+              "required": [
+                "borderRadius",
+                "backgroundColor",
+                "typography",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "rest",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "primary",
+      ],
+      "type": "object",
+    },
+    "backgroundColor": {
+      "properties": {
+        "purple": {
+          "properties": {
+            "x1": {
+              "properties": {
+                "$description": {
+                  "type": "string",
+                },
+                "$type": {
+                  "type": "string",
+                },
+                "$value": {
+                  "const": "#4c00b0",
+                  "type": "string",
+                },
+              },
+              "required": [
+                "$value",
+                "$type",
+                "$description",
+              ],
+              "type": "object",
+            },
+            "x2": {
+              "properties": {
+                "$description": {
+                  "type": "string",
+                },
+                "$type": {
+                  "type": "string",
+                },
+                "$value": {
+                  "const": "#7600bc",
+                  "type": "string",
+                },
+              },
+              "required": [
+                "$value",
+                "$type",
+                "$description",
+              ],
+              "type": "object",
+            },
+            "x3": {
+              "properties": {
+                "$description": {
+                  "type": "string",
+                },
+                "$type": {
+                  "type": "string",
+                },
+                "$value": {
+                  "const": "#8a00c2",
+                  "type": "string",
+                },
+              },
+              "required": [
+                "$value",
+                "$type",
+                "$description",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "x1",
+            "x2",
+            "x3",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "purple",
+      ],
+      "type": "object",
+    },
+    "borderRadius": {
+      "properties": {
+        "x1": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": 3,
+              "type": "number",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+        "x2": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": 5,
+              "type": "number",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+        "x3": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": 7,
+              "type": "number",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "x1",
+        "x2",
+        "x3",
+      ],
+      "type": "object",
+    },
+    "fontFamily": {
+      "properties": {
+        "sansSerif": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "items": [
+                {
+                  "const": "Roboto",
+                  "type": "string",
+                },
+                {
+                  "const": "sans-serif",
+                  "type": "string",
+                },
+              ],
+              "type": "array",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "sansSerif",
+      ],
+      "type": "object",
+    },
+    "fontSize": {
+      "properties": {
+        "x1": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": 14,
+              "type": "number",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "x1",
+      ],
+      "type": "object",
+    },
+    "fontWeight": {
+      "properties": {
+        "x1": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": 700,
+              "type": "number",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "x1",
+      ],
+      "type": "object",
+    },
+    "letterSpacing": {
+      "properties": {
+        "x1": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": "normal",
+              "type": "string",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "x1",
+      ],
+      "type": "object",
+    },
+    "lineHeight": {
+      "properties": {
+        "x1": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": 1,
+              "type": "number",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "x1",
+      ],
+      "type": "object",
+    },
+    "size": {
+      "properties": {
+        "s3": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": 12,
+              "type": "number",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+        "x1": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "properties": {
+                "desktop": {
+                  "const": 2,
+                  "type": "number",
+                },
+                "mobile": {
+                  "const": 2,
+                  "type": "number",
+                },
+                "static": {
+                  "const": 2,
+                  "type": "number",
+                },
+                "tv": {
+                  "const": 4,
+                  "type": "number",
+                },
+              },
+              "required": [
+                "static",
+                "mobile",
+                "desktop",
+                "tv",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+        "x2": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "properties": {
+                "desktop": {
+                  "const": 6,
+                  "type": "number",
+                },
+                "mobile": {
+                  "const": 8,
+                  "type": "number",
+                },
+                "static": {
+                  "const": 6,
+                  "type": "number",
+                },
+                "tv": {
+                  "const": 8,
+                  "type": "number",
+                },
+              },
+              "required": [
+                "static",
+                "mobile",
+                "desktop",
+                "tv",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+        "x3": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "properties": {
+                "desktop": {
+                  "const": 12,
+                  "type": "number",
+                },
+                "mobile": {
+                  "const": 16,
+                  "type": "number",
+                },
+                "static": {
+                  "const": 12,
+                  "type": "number",
+                },
+                "tv": {
+                  "const": 14,
+                  "type": "number",
+                },
+              },
+              "required": [
+                "static",
+                "mobile",
+                "desktop",
+                "tv",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "x1",
+        "x2",
+        "x3",
+        "s3",
+      ],
+      "type": "object",
+    },
+    "typography": {
+      "properties": {
+        "x1": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "properties": {
+                "fontFamily": {
+                  "const": "{fontFamily.sansSerif}",
+                  "type": "string",
+                },
+                "fontSize": {
+                  "const": "{fontSize.x1}",
+                  "type": "string",
+                },
+                "fontWeight": {
+                  "const": "{fontWeight.x1}",
+                  "type": "string",
+                },
+                "letterSpacing": {
+                  "const": "{letterSpacing.x1}",
+                  "type": "string",
+                },
+                "lineHeight": {
+                  "const": "{lineHeight.x1}",
+                  "type": "string",
+                },
+              },
+              "required": [
+                "fontFamily",
+                "fontSize",
+                "fontWeight",
+                "letterSpacing",
+                "lineHeight",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "x1",
+      ],
+      "type": "object",
+    },
+  },
+  "required": [
+    "size",
+    "backgroundColor",
+    "borderRadius",
+    "fontSize",
+    "fontFamily",
+    "fontWeight",
+    "letterSpacing",
+    "lineHeight",
+    "typography",
+    "action",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`parse(): snapshot 1`] = `
+{
+  "properties": {
+    "action": {
+      "properties": {
+        "primary": {
+          "properties": {
+            "rest": {
+              "properties": {
+                "backgroundColor": {
+                  "properties": {
+                    "$description": {
+                      "type": "string",
+                    },
+                    "$type": {
+                      "type": "string",
+                    },
+                    "$value": {
+                      "const": "{backgroundColor.purple.x2}",
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "$value",
+                    "$type",
+                    "$description",
+                  ],
+                  "type": "object",
+                },
+                "borderRadius": {
+                  "properties": {
+                    "$description": {
+                      "type": "string",
+                    },
+                    "$type": {
+                      "type": "string",
+                    },
+                    "$value": {
+                      "const": "{borderRadius.x1}",
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "$value",
+                    "$type",
+                    "$description",
+                  ],
+                  "type": "object",
+                },
+                "typography": {
+                  "properties": {
+                    "$description": {
+                      "type": "string",
+                    },
+                    "$type": {
+                      "type": "string",
+                    },
+                    "$value": {
+                      "const": "{typography.x1}",
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "$value",
+                    "$type",
+                    "$description",
+                  ],
+                  "type": "object",
+                },
+              },
+              "required": [
+                "borderRadius",
+                "backgroundColor",
+                "typography",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "rest",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "primary",
+      ],
+      "type": "object",
+    },
+    "backgroundColor": {
+      "properties": {
+        "purple": {
+          "properties": {
+            "x1": {
+              "properties": {
+                "$description": {
+                  "type": "string",
+                },
+                "$type": {
+                  "type": "string",
+                },
+                "$value": {
+                  "const": "#4c00b0",
+                  "type": "string",
+                },
+              },
+              "required": [
+                "$value",
+                "$type",
+                "$description",
+              ],
+              "type": "object",
+            },
+            "x2": {
+              "properties": {
+                "$description": {
+                  "type": "string",
+                },
+                "$type": {
+                  "type": "string",
+                },
+                "$value": {
+                  "const": "#7600bc",
+                  "type": "string",
+                },
+              },
+              "required": [
+                "$value",
+                "$type",
+                "$description",
+              ],
+              "type": "object",
+            },
+            "x3": {
+              "properties": {
+                "$description": {
+                  "type": "string",
+                },
+                "$type": {
+                  "type": "string",
+                },
+                "$value": {
+                  "const": "#8a00c2",
+                  "type": "string",
+                },
+              },
+              "required": [
+                "$value",
+                "$type",
+                "$description",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "x1",
+            "x2",
+            "x3",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "purple",
+      ],
+      "type": "object",
+    },
+    "borderRadius": {
+      "properties": {
+        "x1": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": 3,
+              "type": "number",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+        "x2": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": 5,
+              "type": "number",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+        "x3": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": 7,
+              "type": "number",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "x1",
+        "x2",
+        "x3",
+      ],
+      "type": "object",
+    },
+    "fontFamily": {
+      "properties": {
+        "sansSerif": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "items": [
+                {
+                  "const": "Roboto",
+                  "type": "string",
+                },
+                {
+                  "const": "sans-serif",
+                  "type": "string",
+                },
+              ],
+              "type": "array",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "sansSerif",
+      ],
+      "type": "object",
+    },
+    "fontSize": {
+      "properties": {
+        "x1": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": 14,
+              "type": "number",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "x1",
+      ],
+      "type": "object",
+    },
+    "fontWeight": {
+      "properties": {
+        "x1": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": 700,
+              "type": "number",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "x1",
+      ],
+      "type": "object",
+    },
+    "letterSpacing": {
+      "properties": {
+        "x1": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": "normal",
+              "type": "string",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "x1",
+      ],
+      "type": "object",
+    },
+    "lineHeight": {
+      "properties": {
+        "x1": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": 1,
+              "type": "number",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "x1",
+      ],
+      "type": "object",
+    },
+    "size": {
+      "properties": {
+        "s3": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": 12,
+              "type": "number",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+        "x1": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "properties": {
+                "desktop": {
+                  "const": 2,
+                  "type": "number",
+                },
+                "mobile": {
+                  "const": 2,
+                  "type": "number",
+                },
+                "static": {
+                  "const": 2,
+                  "type": "number",
+                },
+                "tv": {
+                  "const": 4,
+                  "type": "number",
+                },
+              },
+              "required": [
+                "static",
+                "mobile",
+                "desktop",
+                "tv",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+        "x2": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "properties": {
+                "desktop": {
+                  "const": 6,
+                  "type": "number",
+                },
+                "mobile": {
+                  "const": 8,
+                  "type": "number",
+                },
+                "static": {
+                  "const": 6,
+                  "type": "number",
+                },
+                "tv": {
+                  "const": 8,
+                  "type": "number",
+                },
+              },
+              "required": [
+                "static",
+                "mobile",
+                "desktop",
+                "tv",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+        "x3": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "properties": {
+                "desktop": {
+                  "const": 12,
+                  "type": "number",
+                },
+                "mobile": {
+                  "const": 16,
+                  "type": "number",
+                },
+                "static": {
+                  "const": 12,
+                  "type": "number",
+                },
+                "tv": {
+                  "const": 14,
+                  "type": "number",
+                },
+              },
+              "required": [
+                "static",
+                "mobile",
+                "desktop",
+                "tv",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "x1",
+        "x2",
+        "x3",
+        "s3",
+      ],
+      "type": "object",
+    },
+    "typography": {
+      "properties": {
+        "x1": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "properties": {
+                "fontFamily": {
+                  "const": "{fontFamily.sansSerif}",
+                  "type": "string",
+                },
+                "fontSize": {
+                  "const": "{fontSize.x1}",
+                  "type": "string",
+                },
+                "fontWeight": {
+                  "const": "{fontWeight.x1}",
+                  "type": "string",
+                },
+                "letterSpacing": {
+                  "const": "{letterSpacing.x1}",
+                  "type": "string",
+                },
+                "lineHeight": {
+                  "const": "{lineHeight.x1}",
+                  "type": "string",
+                },
+              },
+              "required": [
+                "fontFamily",
+                "fontSize",
+                "fontWeight",
+                "letterSpacing",
+                "lineHeight",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "x1",
+      ],
+      "type": "object",
+    },
+  },
+  "required": [
+    "size",
+    "backgroundColor",
+    "borderRadius",
+    "fontSize",
+    "fontFamily",
+    "fontWeight",
+    "letterSpacing",
+    "lineHeight",
+    "typography",
+    "action",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`parse(): snapshot 1`] = `
+{
+  "properties": {
+    "action": {
+      "properties": {
+        "primary": {
+          "properties": {
+            "rest": {
+              "properties": {
+                "backgroundColor": {
+                  "properties": {
+                    "$description": {
+                      "type": "string",
+                    },
+                    "$type": {
+                      "type": "string",
+                    },
+                    "$value": {
+                      "const": "{backgroundColor.purple.x2}",
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "$value",
+                    "$type",
+                    "$description",
+                  ],
+                  "type": "object",
+                },
+                "borderRadius": {
+                  "properties": {
+                    "$description": {
+                      "type": "string",
+                    },
+                    "$type": {
+                      "type": "string",
+                    },
+                    "$value": {
+                      "const": "{borderRadius.x1}",
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "$value",
+                    "$type",
+                    "$description",
+                  ],
+                  "type": "object",
+                },
+                "typography": {
+                  "properties": {
+                    "$description": {
+                      "type": "string",
+                    },
+                    "$type": {
+                      "type": "string",
+                    },
+                    "$value": {
+                      "const": "{typography.x1}",
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "$value",
+                    "$type",
+                    "$description",
+                  ],
+                  "type": "object",
+                },
+              },
+              "required": [
+                "borderRadius",
+                "backgroundColor",
+                "typography",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "rest",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "primary",
+      ],
+      "type": "object",
+    },
+    "backgroundColor": {
+      "properties": {
+        "purple": {
+          "properties": {
+            "x1": {
+              "properties": {
+                "$description": {
+                  "type": "string",
+                },
+                "$type": {
+                  "type": "string",
+                },
+                "$value": {
+                  "const": "#4c00b0",
+                  "type": "string",
+                },
+              },
+              "required": [
+                "$value",
+                "$type",
+                "$description",
+              ],
+              "type": "object",
+            },
+            "x2": {
+              "properties": {
+                "$description": {
+                  "type": "string",
+                },
+                "$type": {
+                  "type": "string",
+                },
+                "$value": {
+                  "const": "#7600bc",
+                  "type": "string",
+                },
+              },
+              "required": [
+                "$value",
+                "$type",
+                "$description",
+              ],
+              "type": "object",
+            },
+            "x3": {
+              "properties": {
+                "$description": {
+                  "type": "string",
+                },
+                "$type": {
+                  "type": "string",
+                },
+                "$value": {
+                  "const": "#8a00c2",
+                  "type": "string",
+                },
+              },
+              "required": [
+                "$value",
+                "$type",
+                "$description",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "x1",
+            "x2",
+            "x3",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "purple",
+      ],
+      "type": "object",
+    },
+    "borderRadius": {
+      "properties": {
+        "x1": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": 3,
+              "type": "number",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+        "x2": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": 5,
+              "type": "number",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+        "x3": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": 7,
+              "type": "number",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "x1",
+        "x2",
+        "x3",
+      ],
+      "type": "object",
+    },
+    "fontFamily": {
+      "properties": {
+        "sansSerif": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "items": [
+                {
+                  "const": "Roboto",
+                  "type": "string",
+                },
+                {
+                  "const": "sans-serif",
+                  "type": "string",
+                },
+              ],
+              "type": "array",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "sansSerif",
+      ],
+      "type": "object",
+    },
+    "fontSize": {
+      "properties": {
+        "x1": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": 14,
+              "type": "number",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "x1",
+      ],
+      "type": "object",
+    },
+    "fontWeight": {
+      "properties": {
+        "x1": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": 700,
+              "type": "number",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "x1",
+      ],
+      "type": "object",
+    },
+    "letterSpacing": {
+      "properties": {
+        "x1": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": "normal",
+              "type": "string",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "x1",
+      ],
+      "type": "object",
+    },
+    "lineHeight": {
+      "properties": {
+        "x1": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": 1,
+              "type": "number",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "x1",
+      ],
+      "type": "object",
+    },
+    "size": {
+      "properties": {
+        "s3": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "const": 12,
+              "type": "number",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+        "x1": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "properties": {
+                "desktop": {
+                  "const": 2,
+                  "type": "number",
+                },
+                "mobile": {
+                  "const": 2,
+                  "type": "number",
+                },
+                "static": {
+                  "const": 2,
+                  "type": "number",
+                },
+                "tv": {
+                  "const": 4,
+                  "type": "number",
+                },
+              },
+              "required": [
+                "static",
+                "mobile",
+                "desktop",
+                "tv",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+        "x2": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "properties": {
+                "desktop": {
+                  "const": 6,
+                  "type": "number",
+                },
+                "mobile": {
+                  "const": 8,
+                  "type": "number",
+                },
+                "static": {
+                  "const": 6,
+                  "type": "number",
+                },
+                "tv": {
+                  "const": 8,
+                  "type": "number",
+                },
+              },
+              "required": [
+                "static",
+                "mobile",
+                "desktop",
+                "tv",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+        "x3": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "properties": {
+                "desktop": {
+                  "const": 12,
+                  "type": "number",
+                },
+                "mobile": {
+                  "const": 16,
+                  "type": "number",
+                },
+                "static": {
+                  "const": 12,
+                  "type": "number",
+                },
+                "tv": {
+                  "const": 14,
+                  "type": "number",
+                },
+              },
+              "required": [
+                "static",
+                "mobile",
+                "desktop",
+                "tv",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "x1",
+        "x2",
+        "x3",
+        "s3",
+      ],
+      "type": "object",
+    },
+    "typography": {
+      "properties": {
+        "x1": {
+          "properties": {
+            "$description": {
+              "type": "string",
+            },
+            "$type": {
+              "type": "string",
+            },
+            "$value": {
+              "properties": {
+                "fontFamily": {
+                  "const": "{fontFamily.sansSerif}",
+                  "type": "string",
+                },
+                "fontSize": {
+                  "const": "{fontSize.x1}",
+                  "type": "string",
+                },
+                "fontWeight": {
+                  "const": "{fontWeight.x1}",
+                  "type": "string",
+                },
+                "letterSpacing": {
+                  "const": "{letterSpacing.x1}",
+                  "type": "string",
+                },
+                "lineHeight": {
+                  "const": "{lineHeight.x1}",
+                  "type": "string",
+                },
+              },
+              "required": [
+                "fontFamily",
+                "fontSize",
+                "fontWeight",
+                "letterSpacing",
+                "lineHeight",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "$value",
+            "$type",
+            "$description",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "x1",
+      ],
+      "type": "object",
+    },
+  },
+  "required": [
+    "size",
+    "backgroundColor",
+    "borderRadius",
+    "fontSize",
+    "fontFamily",
+    "fontWeight",
+    "letterSpacing",
+    "lineHeight",
+    "typography",
+    "action",
+  ],
+  "type": "object",
+}
+`;
