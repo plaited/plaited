@@ -4,7 +4,7 @@
 bun install
 
 # Install playwright dependencies
-bun playwright install
+npx playwright install
 
 # Run build
 bun run build 
