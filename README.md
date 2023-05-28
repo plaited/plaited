@@ -16,6 +16,9 @@ development libraries.
   - data attribute constants for templating utility
   - server side rendering utility for templating utility
   - jsx runtime for templating utility
+- [@plaited/rite](libs/rite/README.md):
+  [RITEway](https://www.npmjs.com/package/riteway) style testing framework for
+  [@web/test-runner](https://www.npmjs.com/package/@web/test-runner)
 
 ## Dev Requirements
 
