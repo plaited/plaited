@@ -19,6 +19,6 @@ jobs:
       with:
         runCmd: |
           bun install
-          bun playwright install
+          npx playwright install
           bun run build
           bun run test
