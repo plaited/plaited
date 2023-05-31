@@ -1,6 +1,6 @@
 import { AliasValue, BorderValue, Formatter } from '@plaited/token-types'
 import { hasAlias, resolveCSSVar } from '../resolve.js'
-import { kebabCase } from 'lodash-es'
+import { kebabCase } from '../cases.js'
 import { getRem } from '../get-rem.js'
 export const border: Formatter<BorderValue> = ({
   tokenPath,

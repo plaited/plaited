@@ -1,4 +1,4 @@
-FROM  mcr.microsoft.com/playwright:v1.33.0-jammy
+FROM  mcr.microsoft.com/playwright:v1.34.3-jammy
 
 RUN npm install -g bun
 

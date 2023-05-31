@@ -1,5 +1,5 @@
 import { AliasValue, Formatter } from '@plaited/token-types'
-import { camelCase, kebabCase } from 'lodash-es'
+import { camelCase, kebabCase } from '../cases.js'
 import { hasAlias, resolveTSVar } from '../resolve.js'
 
 export const defaultFormat: Formatter = ({

@@ -1,6 +1,6 @@
 import { Formatter, PrimitiveArrayValue, PrimitiveValue } from '@plaited/token-types'
 import { hasAlias } from '../resolve.js'
-import { kebabCase } from 'lodash-es'
+import { kebabCase } from '../cases.js'
 
 export const defaultFormat: Formatter<PrimitiveValue | PrimitiveArrayValue> = (
   { tokenPath, $value }

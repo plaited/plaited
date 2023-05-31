@@ -1,6 +1,6 @@
 import { DimensionValue, Formatter, ScalarDimensionValue } from '@plaited/token-types'
 import { hasAlias } from '../resolve.js'
-import { kebabCase } from 'lodash-es'
+import { kebabCase } from '../cases.js'
 import { getRem } from '../get-rem.js'
 
 export const dimension: Formatter<DimensionValue> = (

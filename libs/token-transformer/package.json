@@ -29,7 +29,6 @@
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/token-types": "3.0.1",
-    "lodash-es": "4.17.21"
+    "@plaited/token-types": "3.0.2"
   }
 }

@@ -1,6 +1,6 @@
 import { AliasValue, DropShadowValue, Formatter } from '@plaited/token-types'
 import { hasAlias, resolveCSSVar } from '../resolve.js'
-import { kebabCase } from 'lodash-es'
+import { kebabCase } from '../cases.js'
 
 export const dropShadow: Formatter<DropShadowValue> = (
   { tokenPath, $value, allTokens }

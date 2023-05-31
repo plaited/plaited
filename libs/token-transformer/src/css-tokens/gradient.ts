@@ -1,6 +1,6 @@
 import { AliasValue, Formatter, GradientValue } from '@plaited/token-types'
 import { hasAlias, resolveCSSVar } from '../resolve.js'
-import { kebabCase } from 'lodash-es'
+import { kebabCase } from '../cases.js'
 
 export const gradient: Formatter<GradientValue> = (
   { tokenPath, $value, allTokens }

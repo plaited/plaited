@@ -1,6 +1,6 @@
 import { DimensionValue, Formatter, GapValue } from '@plaited/token-types'
 import { hasAlias } from '../resolve.js'
-import { kebabCase } from 'lodash-es'
+import { kebabCase } from '../cases.js'
 import { dimension } from './dimension.js'
 
 export const gap: Formatter<GapValue> = (

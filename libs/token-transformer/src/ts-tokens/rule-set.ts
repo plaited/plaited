@@ -5,7 +5,7 @@ import {
   GridValue,
   TypographyValue,
 } from '@plaited/token-types'
-import { camelCase } from 'lodash-es'
+import { camelCase } from '../cases.js'
 import { hasAlias, resolveTSVar } from '../resolve.js'
 
 type RuleSetValue = FlexValue | GridValue | TypographyValue;

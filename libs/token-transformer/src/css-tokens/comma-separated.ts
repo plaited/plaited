@@ -1,6 +1,6 @@
 import { FontFamilyValue, Formatter } from '@plaited/token-types'
 import { hasAlias } from '../resolve.js'
-import { kebabCase } from 'lodash-es'
+import { kebabCase } from '../cases.js'
 
 export const commaSeparated: Formatter<FontFamilyValue> = (
   { tokenPath, $value }

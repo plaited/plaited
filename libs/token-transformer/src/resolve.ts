@@ -3,7 +3,7 @@
  */
 
 import { DesignToken, DesignTokenGroup } from '@plaited/token-types'
-import { camelCase, kebabCase } from 'lodash-es'
+import { camelCase, kebabCase } from './cases.js'
 
 const getResolvedValue = (
   path: string[],
