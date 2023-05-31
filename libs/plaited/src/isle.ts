@@ -86,7 +86,7 @@ export const isle = (
           #templateObserver?: MutationObserver
           #disconnect?: () => void
           internals_: ElementInternals
-          trigger!: Trigger
+          #trigger: Trigger
           //@ts-ignore: implemented by subclass
           abstract plait?: (props: PlaitProps) => void | Promise<void>
           #root: ShadowRoot
@@ -100,7 +100,7 @@ export const isle = (
               this.#root = this.attachShadow({ mode, delegatesFocus })
             }
             /** Warn ourselves not to overwrite the trigger method */
-            if (this.trigger !== this.constructor.prototype.trigger) {
+            if (this.#trigger !== this.constructor.prototype.trigger) {
               throw new Error(
                 'trigger cannot be overridden in a subclass.'
               )
@@ -135,14 +135,14 @@ export const isle = (
               })
               this.#shadowObserver = this.#createShadowObserver()
               this.#disconnect = disconnect
-              this.trigger = trigger
+              this.#trigger = trigger
             }
           }
           disconnectedCallback() {
             this.#templateObserver && this.#templateObserver.disconnect()
             this.#shadowObserver && this.#shadowObserver.disconnect()
             if (this.#disconnect) {
-              this.trigger({
+              this.#trigger({
                 type: `disconnected->${this.id || this.tagName.toLowerCase()}`,
               })
               this.#disconnect()
@@ -167,7 +167,7 @@ export const isle = (
                     )
                     triggerKey
                       /** if key is present in `data-trigger` trigger event on instance's bProgram */
-                      ? this.trigger<Event>({
+                      ? this.#trigger<Event>({
                         type: triggerKey,
                         detail: event,
                       })
