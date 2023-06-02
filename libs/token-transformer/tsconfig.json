@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "declaration": true,
+    "moduleResolution": "nodenext",
+    "allowSyntheticDefaultImports": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "types": [
+      "bun-types"
+    ]
+  },
+  "exclude": [
+    "**/dist",
+    "**/tests/"
+  ]
+}
