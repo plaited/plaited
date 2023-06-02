@@ -1,5 +1,5 @@
 ﻿---
-author: Rachel Aliana
+author: Rachel Jaffe
 date: Feb 3, 2020
 source: https://rachelaliana.medium.com/living-digital-networks-the-new-field-of-emergent-network-design-ed7a65b31d6e
 

@@ -1,5 +1,5 @@
 ﻿---
-author:  Rachel Aliana
+author:  Rachel Jaffe
 date: Jul 25, 2019
 source: https://uxdesign.cc/guided-agile-and-the-changing-role-of-the-information-architect-1f639f848d6d
 

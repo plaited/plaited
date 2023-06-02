@@ -1,5 +1,5 @@
 ﻿---
-author: Rachel Aliana
+author: Rachel Jaffe
 date: Jul 18, 2019
 source: https://uxdesign.cc/development-of-a-new-language-for-information-architecture-8cd39d952834
 

@@ -1,5 +1,5 @@
 ﻿---
-author: Rachel Aliana
+author: Rachel Jaffe
 date: Jun 11, 2019
 source: https://rachelaliana.medium.com/a-pattern-language-base-dynamics-6334d1f1b60d
 

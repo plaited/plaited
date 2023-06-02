@@ -1,5 +1,5 @@
 ﻿---
-author:  Rachel Aliana
+author:  Rachel Jaffe
 date: Sep 11, 2019
 source: https://rachelaliana.medium.com/pattern-bedroom-eaf93eb1bb2d
 

@@ -1,5 +1,5 @@
 ﻿---
-author: Rachel Aliana
+author: Rachel Jaffe
 date: Jun 21, 2019
 source: https://rachelaliana.medium.com/platform-structures-a278333b4d27
 

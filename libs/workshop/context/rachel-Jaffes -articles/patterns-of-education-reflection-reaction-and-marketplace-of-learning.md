@@ -1,5 +1,5 @@
 ﻿---
-author:  Rachel Aliana
+author:  Rachel Jaffe
 date: Sep 20, 2019
 source: https://rachelaliana.medium.com/patterns-of-education-reflection-reaction-and-marketplace-of-learning-42fbfd591202
 

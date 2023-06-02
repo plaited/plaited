@@ -1,5 +1,5 @@
 ﻿---
-author: Rachel Aliana
+author: Rachel Jaffe
 date: Mar 10, 2019
 source: https://medium.com/swlh/towards-a-larger-view-of-information-architecture-2a7bd6ebafb7
 

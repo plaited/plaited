@@ -1,5 +1,5 @@
 ﻿---
-author:  Rachel Aliana
+author:  Rachel Jaffe
 date: Sep 30, 2019
 source: https://medium.com/mytake/patterns-for-the-online-world-4604a714dfd1
 

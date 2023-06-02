@@ -1,5 +1,5 @@
 ﻿---
-author:  Rachel Aliana
+author:  Rachel Jaffe
 date: Oct 3, 2019
 source: https://rachelaliana.medium.com/patterns-of-play-connected-play-playground-carnival-fd898c7d870a
 

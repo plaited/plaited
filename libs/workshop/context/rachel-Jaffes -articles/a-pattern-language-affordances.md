@@ -1,5 +1,5 @@
 ﻿---
-author:  Rachel Aliana
+author:  Rachel Jaffe
 date: Jun 14, 2019
 source: https://rachelaliana.medium.com/affordances-a588f5c641e8
 

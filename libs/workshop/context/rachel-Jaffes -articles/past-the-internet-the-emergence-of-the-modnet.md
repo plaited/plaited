@@ -1,5 +1,5 @@
 ﻿---
-author: Rachel Aliana
+author: Rachel Jaffe
 date: Feb 3, 2020
 source: https://rachelaliana.medium.com/past-the-internet-the-emergence-of-the-modnet-6ad49b7e2ee8
 

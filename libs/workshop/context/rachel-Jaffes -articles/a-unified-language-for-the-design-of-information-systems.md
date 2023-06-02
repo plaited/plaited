@@ -1,5 +1,5 @@
 ﻿---
-author: Rachel Aliana
+author: Rachel Jaffe
 date: Jun 11, 2019
 source: https://uxdesign.cc/a-unified-language-for-the-design-of-information-systems-8c3dc48b5839
 

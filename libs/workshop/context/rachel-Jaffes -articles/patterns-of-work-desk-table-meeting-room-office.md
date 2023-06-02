@@ -1,5 +1,5 @@
 ﻿---
-author:  Rachel Aliana
+author:  Rachel Jaffe
 date: Sep 11, 2019
 source: https://rachelaliana.medium.com/patterns-of-work-desk-table-meeting-room-office-6aa0e8fd851a
 

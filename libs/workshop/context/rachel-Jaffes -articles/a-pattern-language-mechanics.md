@@ -1,5 +1,5 @@
 ﻿---
-author:  Rachel Aliana
+author:  Rachel Jaffe
 date: Jun 14, 2019
 source: https://rachelaliana.medium.com/incentivizers-53323e344938
 

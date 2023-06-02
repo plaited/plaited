@@ -1,5 +1,5 @@
 ﻿---
-author: Rachel Aliana
+author: Rachel Jaffe
 date: Jul 11, 2019
 source: https://rachelaliana.medium.com/current-frameworks-of-information-architecture-acf6e608f9e7
 

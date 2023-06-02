@@ -1,5 +1,5 @@
 ﻿---
-author: Rachel Aliana
+author: Rachel Jaffe
 date: Jun 17, 2019
 source: https://rachelaliana.medium.com/loops-c04cc04f5b1c
 

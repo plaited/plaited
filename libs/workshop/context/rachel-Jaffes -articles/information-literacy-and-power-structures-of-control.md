@@ -1,5 +1,5 @@
 ﻿---
-author:  Rachel Aliana
+author:  Rachel Jaffe
 date: Aug 8, 2019
 source: https://uxdesign.cc/information-literacy-and-power-structures-of-control-d17048497f12
 

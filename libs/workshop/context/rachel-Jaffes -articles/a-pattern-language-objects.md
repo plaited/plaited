@@ -1,5 +1,5 @@
 ﻿---
-author: Rachel Aliana
+author: Rachel Jaffe
 date: Jun 10, 2019
 source: https://rachelaliana.medium.com/a-pattern-language-objects-5c5aa865f2ec
 

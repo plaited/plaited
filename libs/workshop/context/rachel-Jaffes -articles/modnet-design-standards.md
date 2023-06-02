@@ -1,5 +1,5 @@
 ﻿---
-author: Rachel Aliana
+author: Rachel Jaffe
 date: Feb 3, 2020
 source: https://rachelaliana.medium.com/modnet-design-standards-15e53176de41
 
