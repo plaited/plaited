@@ -29,6 +29,8 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
     style,
     key: _,
     'data-trigger': trigger,
+    className,
+    htmlFor,
     ...attributes
   } = attrs
   if (typeof tag === 'function') {
@@ -50,6 +52,10 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
   const root = tag.toLowerCase()
   /** create a list to hold  our root attributes*/
   const rootAttrs: string[] = []
+
+  /** handle JS reserved words commonly used in html class & for*/
+  htmlFor &&  rootAttrs.push(`for="${htmlFor}"`)
+  className &&  rootAttrs.push(`class="${className}"`)
   /** if we have dataTrigger attribute wire up formatted correctly*/
   if (trigger) {
     const value = Object.entries(trigger).map<string>(([ ev, req ]) =>

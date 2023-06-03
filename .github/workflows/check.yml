@@ -1,0 +1,33 @@
+name: Typedocs
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  check:
+    
+    runs-on: ubuntu-22.04
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GH_PAT }}
+      - name: Test
+        uses: devcontainers/ci@v0.3
+        with:
+          runCmd: |
+            bun install
+            bun run build
+            bun run test
+            bun run docs
+      - name: Git Config
+        run:  |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor}}@users.noreply.github.com"
+          - name: Git Config
+      - run:  |
+            git add 
+            git config user.email "${{ github.actor}}@users.noreply.github.com"

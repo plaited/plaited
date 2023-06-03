@@ -7,7 +7,7 @@ await fs.rm(`${cwd}/playbook/libraries`, { recursive: true })
 
 await (()  =>{
   return new Promise((resolve, reject) => {
-    const child = cp.spawn('bun', [ 'typedoc',  '--plugin', 'typedoc-plugin-markdown' ])
+    const child = cp.spawn('bunx', [ 'typedoc',  '--plugin', 'typedoc-plugin-markdown' ])
 
     child.on('close', code => {
       if (code === 0) {

@@ -145,21 +145,21 @@ exports[`createTemplate: Fragment PlaitedElements 1`] = `
 
 exports[`createTemplate: custom element with child hoisting its styles 1`] = `
 {
-  "content": "<nested-component><template shadowrootmode="open" shadowrootdelegatesfocus="true"><style>.nested-label_LTU0Mz { font-weight: bold; }</style><span className="nested-label_LTU0Mz">inside nested template</span><slot name="nested"></slot></template></nested-component>",
+  "content": "<nested-component><template shadowrootmode="open" shadowrootdelegatesfocus="true"><style>.nested-label_LTU0Mz { font-weight: bold; }</style><span class="nested-label_LTU0Mz">inside nested template</span><slot name="nested"></slot></template></nested-component>",
   "stylesheets":   Set {},
 }
 `;
 
 exports[`createTemplate: custom element with child and host styles 1`] = `
 {
-  "content": "<nested-component><template shadowrootmode="open" shadowrootdelegatesfocus="true"><style>host: { display: flex; flex-direction: column; }.nested-label_LTU0Mz { font-weight: bold; }</style><span className="nested-label_LTU0Mz">inside nested template</span><slot name="nested"></slot></template></nested-component>",
+  "content": "<nested-component><template shadowrootmode="open" shadowrootdelegatesfocus="true"><style>host: { display: flex; flex-direction: column; }.nested-label_LTU0Mz { font-weight: bold; }</style><span class="nested-label_LTU0Mz">inside nested template</span><slot name="nested"></slot></template></nested-component>",
   "stylesheets":   Set {},
 }
 `;
 
 exports[`createTemplate: custom element with styled slotted component 1`] = `
 {
-  "content": "<nested-component><template shadowrootmode="open" shadowrootdelegatesfocus="true"><style>.nested-label_LTU0Mz { font-weight: bold; }</style><span className="nested-label_LTU0Mz">inside nested template</span><slot name="nested"></slot></template><p slot="nested" className="slotted-paragraph_LTc5ND">slotted paragraph</p></nested-component>",
+  "content": "<nested-component><template shadowrootmode="open" shadowrootdelegatesfocus="true"><style>.nested-label_LTU0Mz { font-weight: bold; }</style><span class="nested-label_LTU0Mz">inside nested template</span><slot name="nested"></slot></template><p class="slotted-paragraph_LTc5ND" slot="nested">slotted paragraph</p></nested-component>",
   "stylesheets":   
 Set {
     ".slotted-paragraph_LTc5ND { color: rebeccapurple; }",
@@ -170,21 +170,21 @@ Set {
 
 exports[`createTemplate: custom element with styles nested in custom element 1`] = `
 {
-  "content": "<top-component><template shadowrootmode="open" shadowrootdelegatesfocus="true"><style>.slotted-paragraph_LTc5ND { color: rebeccapurple; }</style><nested-component><template shadowrootmode="open" shadowrootdelegatesfocus="true"><style>.nested-label_LTU0Mz { font-weight: bold; }</style><span className="nested-label_LTU0Mz">inside nested template</span><slot name="nested"></slot></template><p slot="nested" className="slotted-paragraph_LTc5ND">slotted paragraph</p></nested-component></template></top-component>",
+  "content": "<top-component><template shadowrootmode="open" shadowrootdelegatesfocus="true"><style>.slotted-paragraph_LTc5ND { color: rebeccapurple; }</style><nested-component><template shadowrootmode="open" shadowrootdelegatesfocus="true"><style>.nested-label_LTU0Mz { font-weight: bold; }</style><span class="nested-label_LTU0Mz">inside nested template</span><slot name="nested"></slot></template><p class="slotted-paragraph_LTc5ND" slot="nested">slotted paragraph</p></nested-component></template></top-component>",
   "stylesheets":   Set {},
 }
 `;
 
 exports[`createTemplate: custom element with styles nested in custom element with styles 1`] = `
 {
-  "content": "<top-component><template shadowrootmode="open" shadowrootdelegatesfocus="true"><style>:host { display: block; }.slotted-paragraph_LTc5ND { color: rebeccapurple; }</style><nested-component><template shadowrootmode="open" shadowrootdelegatesfocus="true"><style>.nested-label_LTU0Mz { font-weight: bold; }</style><span className="nested-label_LTU0Mz">inside nested template</span><slot name="nested"></slot></template><p slot="nested" className="slotted-paragraph_LTc5ND">slotted paragraph</p></nested-component></template></top-component>",
+  "content": "<top-component><template shadowrootmode="open" shadowrootdelegatesfocus="true"><style>:host { display: block; }.slotted-paragraph_LTc5ND { color: rebeccapurple; }</style><nested-component><template shadowrootmode="open" shadowrootdelegatesfocus="true"><style>.nested-label_LTU0Mz { font-weight: bold; }</style><span class="nested-label_LTU0Mz">inside nested template</span><slot name="nested"></slot></template><p class="slotted-paragraph_LTc5ND" slot="nested">slotted paragraph</p></nested-component></template></top-component>",
   "stylesheets":   Set {},
 }
 `;
 
 exports[`createTemplate: custom element with nested custom element and styled slotted element 1`] = `
 {
-  "content": "<top-component><template shadowrootmode="open" shadowrootdelegatesfocus="true"><style>:host { display: block; }.slotted-paragraph_LTc5ND { color: rebeccapurple; }</style><nested-component><template shadowrootmode="open" shadowrootdelegatesfocus="true"><style>.nested-label_LTU0Mz { font-weight: bold; }</style><span className="nested-label_LTU0Mz">inside nested template</span><slot name="nested"></slot></template><p slot="nested" className="slotted-paragraph_LTc5ND">slotted paragraph</p></nested-component></template><img className="image_Mjc4MD"/></top-component>",
+  "content": "<top-component><template shadowrootmode="open" shadowrootdelegatesfocus="true"><style>:host { display: block; }.slotted-paragraph_LTc5ND { color: rebeccapurple; }</style><nested-component><template shadowrootmode="open" shadowrootdelegatesfocus="true"><style>.nested-label_LTU0Mz { font-weight: bold; }</style><span class="nested-label_LTU0Mz">inside nested template</span><slot name="nested"></slot></template><p class="slotted-paragraph_LTc5ND" slot="nested">slotted paragraph</p></nested-component></template><img class="image_Mjc4MD"/></top-component>",
   "stylesheets":   
 Set {
     ".image_Mjc4MD { width: 100%; aspect-ratio: 16 / 9; }",

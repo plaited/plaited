@@ -15,10 +15,12 @@ export type Template = {
 export type Children = (string | Template)[] | (string | Template);
 
 export type BaseAttrs = {
-  class?: string;
+  class?: never;
+  for?: never;
   'data-target'?: string | number;
   'data-trigger'?: Record<string, string>;
-  for?: string;
+  htmlFor?: string,
+  className?: string,
   key?: string;
   shadowrootmode?: 'open' | 'closed';
   shadowrootdelegatesfocus?: boolean;

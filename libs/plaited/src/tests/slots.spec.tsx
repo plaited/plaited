@@ -39,7 +39,7 @@ const SlotTestTemplate: PlaitedElement = ({ children }) => (
   <SlotTest.template {...stylesheet}
     slots={children}
   >
-    <div class={classes.row}>
+    <div className={classes.row}>
       <slot data-trigger={{ click: 'slot' }}></slot>
       <slot name='named'
         data-trigger={{ click: 'named' }}

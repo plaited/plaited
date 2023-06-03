@@ -298,7 +298,7 @@ import { test } from "@plaited/rite";
 test("match()", (t) => {
    ...
 
-  const expected = "<h1 class="alert">Houston we have a problem!!!</h1>";
+  const expected = "<h1 className="alert">Houston we have a problem!!!</h1>";
   const contains = t.match(header.outerHTML);
 
   t({
