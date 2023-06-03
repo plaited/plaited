@@ -3,12 +3,13 @@ module.exports = {
   rules: {
     'scope-enum': [ 2, 'always', [
       'behavioral',
+      'examples',
       'jsx',
       'plaited',
+      'playbook',
       'rite',
       'utils',
-      'playbook',
-      'examples',
+      'workshop',
     ] ],
   },
 }

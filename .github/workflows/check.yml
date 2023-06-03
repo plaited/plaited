@@ -28,7 +28,8 @@ jobs:
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor}}@users.noreply.github.com"
           - name: Git Config
-      - run:  |
+      - name: Push new typedocs
+        run:  |
             git add playbook/libraries
             git commit -m "docs(playbook): update typedocs"
             git push origin origin main
