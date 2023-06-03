@@ -43,7 +43,7 @@ optimized css stylesheet of css custom properties to be applied to :root
 
 #### Defined in
 
-node_modules/@plaited/token-types/dist/index.d.ts:319
+token-types/dist/index.d.ts:319
 
 ___
 
@@ -79,7 +79,7 @@ inline styles in ts/js component files
 
 #### Defined in
 
-node_modules/@plaited/token-types/dist/index.d.ts:319
+token-types/dist/index.d.ts:319
 
 ___
 
@@ -110,4 +110,4 @@ ___
 
 #### Defined in
 
-[src/token-transformer.ts:6](https://github.com/plaited/plaited/blob/4594bbc/libs/token-transformer/src/token-transformer.ts#L6)
+[token-transformer/src/token-transformer.ts:6](https://github.com/plaited/plaited/blob/20ae0c7/libs/token-transformer/src/token-transformer.ts#L6)
