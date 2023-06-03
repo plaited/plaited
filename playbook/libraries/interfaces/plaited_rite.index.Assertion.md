@@ -32,7 +32,7 @@
 
 #### Defined in
 
-[libs/rite/src/assert.ts:9](https://github.com/plaited/plaited/blob/c0c0cf6/libs/rite/src/assert.ts#L9)
+[libs/rite/src/assert.ts:9](https://github.com/plaited/plaited/blob/3cf5d0b/libs/rite/src/assert.ts#L9)
 
 ## Table of contents
 
@@ -75,7 +75,7 @@
 
 #### Defined in
 
-[libs/rite/src/assert.ts:15](https://github.com/plaited/plaited/blob/c0c0cf6/libs/rite/src/assert.ts#L15)
+[libs/rite/src/assert.ts:15](https://github.com/plaited/plaited/blob/3cf5d0b/libs/rite/src/assert.ts#L15)
 
 ___
 
@@ -106,7 +106,7 @@ ___
 
 #### Defined in
 
-[libs/rite/src/assert.ts:16](https://github.com/plaited/plaited/blob/c0c0cf6/libs/rite/src/assert.ts#L16)
+[libs/rite/src/assert.ts:16](https://github.com/plaited/plaited/blob/3cf5d0b/libs/rite/src/assert.ts#L16)
 
 ___
 
@@ -138,7 +138,7 @@ ___
 
 #### Defined in
 
-[libs/rite/src/assert.ts:17](https://github.com/plaited/plaited/blob/c0c0cf6/libs/rite/src/assert.ts#L17)
+[libs/rite/src/assert.ts:17](https://github.com/plaited/plaited/blob/3cf5d0b/libs/rite/src/assert.ts#L17)
 
 ___
 
@@ -174,7 +174,7 @@ ___
 
 #### Defined in
 
-[libs/rite/src/assert.ts:18](https://github.com/plaited/plaited/blob/c0c0cf6/libs/rite/src/assert.ts#L18)
+[libs/rite/src/assert.ts:18](https://github.com/plaited/plaited/blob/3cf5d0b/libs/rite/src/assert.ts#L18)
 
 ___
 
@@ -184,7 +184,7 @@ ___
 
 #### Defined in
 
-[libs/rite/src/assert.ts:19](https://github.com/plaited/plaited/blob/c0c0cf6/libs/rite/src/assert.ts#L19)
+[libs/rite/src/assert.ts:19](https://github.com/plaited/plaited/blob/3cf5d0b/libs/rite/src/assert.ts#L19)
 
 ___
 
@@ -210,4 +210,4 @@ an async function that will wait the given time passed to it in ms
 
 #### Defined in
 
-[libs/rite/src/assert.ts:20](https://github.com/plaited/plaited/blob/c0c0cf6/libs/rite/src/assert.ts#L20)
+[libs/rite/src/assert.ts:20](https://github.com/plaited/plaited/blob/3cf5d0b/libs/rite/src/assert.ts#L20)

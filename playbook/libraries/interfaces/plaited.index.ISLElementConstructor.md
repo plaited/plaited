@@ -18,4 +18,4 @@
 
 #### Defined in
 
-[libs/plaited/src/types.ts:67](https://github.com/plaited/plaited/blob/c0c0cf6/libs/plaited/src/types.ts#L67)
+[libs/plaited/src/types.ts:67](https://github.com/plaited/plaited/blob/3cf5d0b/libs/plaited/src/types.ts#L67)
