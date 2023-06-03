@@ -1,0 +1,9 @@
+{
+  "name": "@plaited/on-braid",
+  "version": "0.0.0",
+  "private": "true",
+  "type": "module",
+  "dependencies": {
+    "plaited": "3.0.2"
+  }
+}
