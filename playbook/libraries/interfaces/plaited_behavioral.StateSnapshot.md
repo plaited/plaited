@@ -1,4 +1,4 @@
-[Plaited Typedocs](../README.md) / [Exports](../modules.md) / [@plaited/behavioral](../modules/plaited_behavioral.md) / StateSnapshot
+[Plaited Typedocs](../README.md) / [Modules](../modules.md) / [@plaited/behavioral](../modules/plaited_behavioral.md) / StateSnapshot
 
 # Interface: StateSnapshot
 
@@ -24,4 +24,4 @@
 
 #### Defined in
 
-[types.ts:2](https://github.com/plaited/plaited/blob/46fad8b/libs/behavioral/src/types.ts#L2)
+[types.ts:2](https://github.com/plaited/plaited/blob/4594bbc/libs/behavioral/src/types.ts#L2)

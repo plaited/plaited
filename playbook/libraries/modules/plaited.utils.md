@@ -1,4 +1,4 @@
-[Plaited Typedocs](../README.md) / [Exports](../modules.md) / [plaited](plaited.md) / utils
+[Plaited Typedocs](../README.md) / [Modules](../modules.md) / [plaited](plaited.md) / utils
 
 # Module: utils
 

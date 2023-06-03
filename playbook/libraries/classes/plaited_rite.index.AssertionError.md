@@ -1,4 +1,4 @@
-[Plaited Typedocs](../README.md) / [Exports](../modules.md) / [@plaited/rite](../modules/plaited_rite.md) / [index](../modules/plaited_rite.index.md) / AssertionError
+[Plaited Typedocs](../README.md) / [Modules](../modules.md) / [@plaited/rite](../modules/plaited_rite.md) / [index](../modules/plaited_rite.index.md) / AssertionError
 
 # Class: AssertionError
 
@@ -47,7 +47,7 @@ Error.constructor
 
 #### Defined in
 
-[libs/rite/src/assert.ts:25](https://github.com/plaited/plaited/blob/46fad8b/libs/rite/src/assert.ts#L25)
+[libs/rite/src/assert.ts:25](https://github.com/plaited/plaited/blob/4594bbc/libs/rite/src/assert.ts#L25)
 
 ## Properties
 
@@ -89,7 +89,7 @@ Error.name
 
 #### Defined in
 
-[libs/rite/src/assert.ts:24](https://github.com/plaited/plaited/blob/46fad8b/libs/rite/src/assert.ts#L24)
+[libs/rite/src/assert.ts:24](https://github.com/plaited/plaited/blob/4594bbc/libs/rite/src/assert.ts#L24)
 
 ___
 

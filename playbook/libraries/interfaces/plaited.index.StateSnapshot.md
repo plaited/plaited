@@ -1,4 +1,4 @@
-[Plaited Typedocs](../README.md) / [Exports](../modules.md) / [plaited](../modules/plaited.md) / [index](../modules/plaited.index.md) / StateSnapshot
+[Plaited Typedocs](../README.md) / [Modules](../modules.md) / [plaited](../modules/plaited.md) / [index](../modules/plaited.index.md) / StateSnapshot
 
 # Interface: StateSnapshot
 

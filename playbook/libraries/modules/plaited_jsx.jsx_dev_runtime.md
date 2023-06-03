@@ -1,4 +1,4 @@
-[Plaited Typedocs](../README.md) / [Exports](../modules.md) / [@plaited/jsx](plaited_jsx.md) / jsx-dev-runtime
+[Plaited Typedocs](../README.md) / [Modules](../modules.md) / [@plaited/jsx](plaited_jsx.md) / jsx-dev-runtime
 
 # Module: jsx-dev-runtime
 

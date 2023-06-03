@@ -1,4 +1,4 @@
-[Plaited Typedocs](../README.md) / [Exports](../modules.md) / [plaited](../modules/plaited.md) / [index](../modules/plaited.index.md) / CreateTemplate
+[Plaited Typedocs](../README.md) / [Modules](../modules.md) / [plaited](../modules/plaited.md) / [index](../modules/plaited.index.md) / CreateTemplate
 
 # Interface: CreateTemplate
 

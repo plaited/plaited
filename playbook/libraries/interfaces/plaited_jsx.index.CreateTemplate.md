@@ -1,4 +1,4 @@
-[Plaited Typedocs](../README.md) / [Exports](../modules.md) / [@plaited/jsx](../modules/plaited_jsx.md) / [index](../modules/plaited_jsx.index.md) / CreateTemplate
+[Plaited Typedocs](../README.md) / [Modules](../modules.md) / [@plaited/jsx](../modules/plaited_jsx.md) / [index](../modules/plaited_jsx.index.md) / CreateTemplate
 
 # Interface: CreateTemplate
 
@@ -29,4 +29,4 @@
 
 #### Defined in
 
-[types.ts:53](https://github.com/plaited/plaited/blob/46fad8b/libs/jsx/src/types.ts#L53)
+[types.ts:53](https://github.com/plaited/plaited/blob/4594bbc/libs/jsx/src/types.ts#L53)

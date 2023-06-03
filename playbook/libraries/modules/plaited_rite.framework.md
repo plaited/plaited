@@ -1,4 +1,4 @@
-[Plaited Typedocs](../README.md) / [Exports](../modules.md) / [@plaited/rite](plaited_rite.md) / framework
+[Plaited Typedocs](../README.md) / [Modules](../modules.md) / [@plaited/rite](plaited_rite.md) / framework
 
 # Module: framework
 
@@ -32,4 +32,4 @@
 
 #### Defined in
 
-[libs/rite/src/framework.ts:4](https://github.com/plaited/plaited/blob/46fad8b/libs/rite/src/framework.ts#L4)
+[libs/rite/src/framework.ts:4](https://github.com/plaited/plaited/blob/4594bbc/libs/rite/src/framework.ts#L4)

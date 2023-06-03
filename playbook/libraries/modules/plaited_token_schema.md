@@ -1,4 +1,4 @@
-[Plaited Typedocs](../README.md) / [Exports](../modules.md) / @plaited/token-schema
+[Plaited Typedocs](../README.md) / [Modules](../modules.md) / @plaited/token-schema
 
 # Module: @plaited/token-schema
 
@@ -35,4 +35,4 @@
 
 #### Defined in
 
-[token-schema.ts:5](https://github.com/plaited/plaited/blob/46fad8b/libs/token-schema/src/token-schema.ts#L5)
+[token-schema.ts:5](https://github.com/plaited/plaited/blob/4594bbc/libs/token-schema/src/token-schema.ts#L5)

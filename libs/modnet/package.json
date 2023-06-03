@@ -1,0 +1,10 @@
+{
+  "name": "@plaited/modnet",
+  "version": "0.0.0",
+  "license": "ISC",
+  "private": "true",
+  "type": "module",
+  "dependencies": {
+    "plaited": "3.0.2"
+  }
+}

@@ -1,4 +1,4 @@
-[Plaited Typedocs](../README.md) / [Exports](../modules.md) / [@plaited/rite](plaited_rite.md) / [index](plaited_rite.index.md) / test
+[Plaited Typedocs](../README.md) / [Modules](../modules.md) / [@plaited/rite](plaited_rite.md) / [index](plaited_rite.index.md) / test
 
 # Namespace: test
 
@@ -29,4 +29,4 @@
 
 #### Defined in
 
-[libs/rite/src/test.ts:113](https://github.com/plaited/plaited/blob/46fad8b/libs/rite/src/test.ts#L113)
+[libs/rite/src/test.ts:113](https://github.com/plaited/plaited/blob/4594bbc/libs/rite/src/test.ts#L113)
