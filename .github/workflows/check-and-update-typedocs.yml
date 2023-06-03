@@ -30,7 +30,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
-      - name: Setup
+      - name: Build Docs
         run: |
           npm install -g bun npm@latest
           bun install
