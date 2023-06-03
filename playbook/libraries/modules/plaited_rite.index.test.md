@@ -29,4 +29,4 @@
 
 #### Defined in
 
-[libs/rite/src/test.ts:113](https://github.com/plaited/plaited/blob/c1fda74/libs/rite/src/test.ts#L113)
+[libs/rite/src/test.ts:113](https://github.com/plaited/plaited/blob/83e908b/libs/rite/src/test.ts#L113)
