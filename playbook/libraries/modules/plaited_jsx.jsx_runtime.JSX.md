@@ -1,4 +1,4 @@
-[Plaited Typedocs](../README.md) / [Exports](../modules.md) / [@plaited/jsx](plaited_jsx.md) / [jsx-runtime](plaited_jsx.jsx_runtime.md) / JSX
+[Plaited Typedocs](../README.md) / [Modules](../modules.md) / [@plaited/jsx](plaited_jsx.md) / [jsx-runtime](plaited_jsx.jsx_runtime.md) / JSX
 
 # Namespace: JSX
 
@@ -22,4 +22,4 @@
 
 #### Defined in
 
-[jsx-runtime.ts:13](https://github.com/plaited/plaited/blob/46fad8b/libs/jsx/src/jsx-runtime.ts#L13)
+[jsx-runtime.ts:13](https://github.com/plaited/plaited/blob/4594bbc/libs/jsx/src/jsx-runtime.ts#L13)

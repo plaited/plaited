@@ -1,34 +1,34 @@
-[Plaited Typedocs](../README.md) / [Modules](../modules.md) / [plaited](plaited.md) / utils
+[Plaited Typedocs](../README.md) / [Modules](../modules.md) / @plaited/utils
 
-# Module: utils
+# Module: @plaited/utils
 
 ## Table of contents
 
 ### Type Aliases
 
-- [KeyMirror](plaited.utils.md#keymirror)
-- [Publisher](plaited.utils.md#publisher)
-- [ValueOf](plaited.utils.md#valueof)
+- [KeyMirror](plaited_utils.md#keymirror)
+- [Publisher](plaited_utils.md#publisher)
+- [ValueOf](plaited_utils.md#valueof)
 
 ### Functions
 
-- [callAll](plaited.utils.md#callall)
-- [canUseDOM](plaited.utils.md#canusedom)
-- [debounce](plaited.utils.md#debounce)
-- [deepEqual](plaited.utils.md#deepequal)
-- [escape](plaited.utils.md#escape)
-- [generateId](plaited.utils.md#generateid)
-- [hashString](plaited.utils.md#hashstring)
-- [keyMirror](plaited.utils.md#keymirror-1)
-- [noop](plaited.utils.md#noop)
-- [opacityHex](plaited.utils.md#opacityhex)
-- [parseToRgb](plaited.utils.md#parsetorgb)
-- [publisher](plaited.utils.md#publisher-1)
-- [setIdCounter](plaited.utils.md#setidcounter)
-- [trueTypeOf](plaited.utils.md#truetypeof)
-- [ueid](plaited.utils.md#ueid)
-- [unescape](plaited.utils.md#unescape)
-- [wait](plaited.utils.md#wait)
+- [callAll](plaited_utils.md#callall)
+- [canUseDOM](plaited_utils.md#canusedom)
+- [debounce](plaited_utils.md#debounce)
+- [deepEqual](plaited_utils.md#deepequal)
+- [escape](plaited_utils.md#escape)
+- [generateId](plaited_utils.md#generateid)
+- [hashString](plaited_utils.md#hashstring)
+- [keyMirror](plaited_utils.md#keymirror-1)
+- [noop](plaited_utils.md#noop)
+- [opacityHex](plaited_utils.md#opacityhex)
+- [parseToRgb](plaited_utils.md#parsetorgb)
+- [publisher](plaited_utils.md#publisher-1)
+- [setIdCounter](plaited_utils.md#setidcounter)
+- [trueTypeOf](plaited_utils.md#truetypeof)
+- [ueid](plaited_utils.md#ueid)
+- [unescape](plaited_utils.md#unescape)
+- [wait](plaited_utils.md#wait)
 
 ## Type Aliases
 
@@ -44,7 +44,7 @@
 
 #### Defined in
 
-node_modules/@plaited/utils/dist/key-mirror.d.ts:1
+[key-mirror.ts:1](https://github.com/plaited/plaited/blob/4594bbc/libs/utils/src/key-mirror.ts#L1)
 
 ___
 
@@ -84,7 +84,7 @@ ___
 
 #### Defined in
 
-node_modules/@plaited/utils/dist/publisher.d.ts:1
+[publisher.ts:1](https://github.com/plaited/plaited/blob/4594bbc/libs/utils/src/publisher.ts#L1)
 
 ___
 
@@ -100,7 +100,7 @@ ___
 
 #### Defined in
 
-node_modules/@plaited/utils/dist/value-of.type.d.ts:1
+[value-of.type.ts:1](https://github.com/plaited/plaited/blob/4594bbc/libs/utils/src/value-of.type.ts#L1)
 
 ## Functions
 
@@ -140,7 +140,7 @@ Call all function passed in with the same arguments when invoked
 
 #### Defined in
 
-node_modules/@plaited/utils/dist/call-all.d.ts:2
+[call-all.ts:5](https://github.com/plaited/plaited/blob/4594bbc/libs/utils/src/call-all.ts#L5)
 
 ___
 
@@ -154,7 +154,7 @@ ___
 
 #### Defined in
 
-node_modules/@plaited/utils/dist/can-use-dom.d.ts:1
+[can-use-dom.ts:1](https://github.com/plaited/plaited/blob/4594bbc/libs/utils/src/can-use-dom.ts#L1)
 
 ___
 
@@ -193,7 +193,7 @@ ___
 
 #### Defined in
 
-node_modules/@plaited/utils/dist/debounce.d.ts:1
+[debounce.ts:1](https://github.com/plaited/plaited/blob/4594bbc/libs/utils/src/debounce.ts#L1)
 
 ___
 
@@ -207,7 +207,7 @@ ___
 | :------ | :------ |
 | `objA` | `unknown` |
 | `objB` | `unknown` |
-| `map?` | `WeakMap`<`object`, `any`\> |
+| `map` | `WeakMap`<`object`, `any`\> |
 
 #### Returns
 
@@ -215,7 +215,7 @@ ___
 
 #### Defined in
 
-node_modules/@plaited/utils/dist/deep-equal.d.ts:1
+[deep-equal.ts:1](https://github.com/plaited/plaited/blob/4594bbc/libs/utils/src/deep-equal.ts#L1)
 
 ___
 
@@ -245,7 +245,7 @@ escape('&<>\'"') => '&amp;&lt;&gt;&#39;&quot;'
 
 #### Defined in
 
-node_modules/@plaited/utils/dist/escape-unescape.d.ts:10
+[escape-unescape.ts:37](https://github.com/plaited/plaited/blob/4594bbc/libs/utils/src/escape-unescape.ts#L37)
 
 ___
 
@@ -257,9 +257,9 @@ For when you need id but are cool with just bumping a global counter
 
 #### Parameters
 
-| Name | Type |
-| :------ | :------ |
-| `prefix?` | `string` |
+| Name | Type | Default value |
+| :------ | :------ | :------ |
+| `prefix` | `string` | `''` |
 
 #### Returns
 
@@ -267,7 +267,7 @@ For when you need id but are cool with just bumping a global counter
 
 #### Defined in
 
-node_modules/@plaited/utils/dist/id.d.ts:6
+[id.ts:13](https://github.com/plaited/plaited/blob/4594bbc/libs/utils/src/id.ts#L13)
 
 ___
 
@@ -291,13 +291,13 @@ djb2 hashing function
 
 #### Defined in
 
-node_modules/@plaited/utils/dist/hash.d.ts:4
+[hash.ts:4](https://github.com/plaited/plaited/blob/4594bbc/libs/utils/src/hash.ts#L4)
 
 ___
 
 ### keyMirror
 
-▸ **keyMirror**<`Keys`\>(`...inputs`): `Readonly`<[`KeyMirror`](plaited.utils.md#keymirror)<`Keys`\>\>
+▸ **keyMirror**<`Keys`\>(`...inputs`): `Readonly`<[`KeyMirror`](plaited_utils.md#keymirror)<`Keys`\>\>
 
 create an object who's keys and values are the same by simply passing in the keys as arguments
 
@@ -315,11 +315,11 @@ create an object who's keys and values are the same by simply passing in the key
 
 #### Returns
 
-`Readonly`<[`KeyMirror`](plaited.utils.md#keymirror)<`Keys`\>\>
+`Readonly`<[`KeyMirror`](plaited_utils.md#keymirror)<`Keys`\>\>
 
 #### Defined in
 
-node_modules/@plaited/utils/dist/key-mirror.d.ts:5
+[key-mirror.ts:6](https://github.com/plaited/plaited/blob/4594bbc/libs/utils/src/key-mirror.ts#L6)
 
 ___
 
@@ -347,7 +347,7 @@ no-op function good for when you need defaults and stubs
 
 #### Defined in
 
-node_modules/@plaited/utils/dist/noop.d.ts:2
+[noop.ts:3](https://github.com/plaited/plaited/blob/4594bbc/libs/utils/src/noop.ts#L3)
 
 ___
 
@@ -363,7 +363,7 @@ generates a map where you can pass in an opacity number and get back the corresp
 
 #### Defined in
 
-node_modules/@plaited/utils/dist/opacity-hex.d.ts:2
+[opacity-hex.ts:2](https://github.com/plaited/plaited/blob/4594bbc/libs/utils/src/opacity-hex.ts#L2)
 
 ___
 
@@ -385,7 +385,7 @@ parse a hex code to an rgb(a) value
 
 #### Defined in
 
-node_modules/@plaited/utils/dist/parse-to-rgb.d.ts:2
+[parse-to-rgb.ts:4](https://github.com/plaited/plaited/blob/4594bbc/libs/utils/src/parse-to-rgb.ts#L4)
 
 ___
 
@@ -421,7 +421,7 @@ ___
 
 #### Defined in
 
-node_modules/@plaited/utils/dist/publisher.d.ts:5
+[publisher.ts:5](https://github.com/plaited/plaited/blob/4594bbc/libs/utils/src/publisher.ts#L5)
 
 ___
 
@@ -443,7 +443,7 @@ reset or set the global idCounter
 
 #### Defined in
 
-node_modules/@plaited/utils/dist/id.d.ts:8
+[id.ts:18](https://github.com/plaited/plaited/blob/4594bbc/libs/utils/src/id.ts#L18)
 
 ___
 
@@ -465,7 +465,7 @@ get the true type of an object returned back to you as a string
 
 #### Defined in
 
-node_modules/@plaited/utils/dist/true-type-of.d.ts:2
+[true-type-of.ts:2](https://github.com/plaited/plaited/blob/4594bbc/libs/utils/src/true-type-of.ts#L2)
 
 ___
 
@@ -479,9 +479,9 @@ a function for returning an unique enough id when you need it
 
 #### Parameters
 
-| Name | Type |
-| :------ | :------ |
-| `prefix?` | `string` |
+| Name | Type | Default value |
+| :------ | :------ | :------ |
+| `prefix` | `string` | `''` |
 
 #### Returns
 
@@ -489,7 +489,7 @@ a function for returning an unique enough id when you need it
 
 #### Defined in
 
-node_modules/@plaited/utils/dist/id.d.ts:4
+[id.ts:4](https://github.com/plaited/plaited/blob/4594bbc/libs/utils/src/id.ts#L4)
 
 ___
 
@@ -519,7 +519,7 @@ unescape('&amp;&lt;&gt;&#39;&quot;') => '&<>\'"'
 
 #### Defined in
 
-node_modules/@plaited/utils/dist/escape-unescape.d.ts:16
+[escape-unescape.ts:49](https://github.com/plaited/plaited/blob/4594bbc/libs/utils/src/escape-unescape.ts#L49)
 
 ___
 
@@ -541,4 +541,4 @@ an async function that will wait the given time passed to it in ms
 
 #### Defined in
 
-node_modules/@plaited/utils/dist/wait.d.ts:2
+[wait.ts:2](https://github.com/plaited/plaited/blob/4594bbc/libs/utils/src/wait.ts#L2)

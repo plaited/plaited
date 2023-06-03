@@ -1,4 +1,4 @@
-[Plaited Typedocs](../README.md) / [Exports](../modules.md) / @plaited/token-transformer
+[Plaited Typedocs](../README.md) / [Modules](../modules.md) / @plaited/token-transformer
 
 # Module: @plaited/token-transformer
 
@@ -110,4 +110,4 @@ ___
 
 #### Defined in
 
-[src/token-transformer.ts:6](https://github.com/plaited/plaited/blob/46fad8b/libs/token-transformer/src/token-transformer.ts#L6)
+[src/token-transformer.ts:6](https://github.com/plaited/plaited/blob/4594bbc/libs/token-transformer/src/token-transformer.ts#L6)

@@ -1,6 +1,7 @@
 {
   "name": "@plaited/behavioral",
   "version": "3.0.2",
+  "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
   },

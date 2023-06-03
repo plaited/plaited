@@ -1,4 +1,4 @@
-[Plaited Typedocs](../README.md) / [Exports](../modules.md) / [@plaited/rite](plaited_rite.md) / index
+[Plaited Typedocs](../README.md) / [Modules](../modules.md) / [@plaited/rite](plaited_rite.md) / index
 
 # Module: index
 
@@ -51,7 +51,7 @@
 
 #### Defined in
 
-[libs/rite/src/assert.ts:9](https://github.com/plaited/plaited/blob/46fad8b/libs/rite/src/assert.ts#L9)
+[libs/rite/src/assert.ts:9](https://github.com/plaited/plaited/blob/4594bbc/libs/rite/src/assert.ts#L9)
 
 ___
 
@@ -81,7 +81,7 @@ ___
 
 #### Defined in
 
-[libs/rite/src/assert.ts:9](https://github.com/plaited/plaited/blob/46fad8b/libs/rite/src/assert.ts#L9)
+[libs/rite/src/assert.ts:9](https://github.com/plaited/plaited/blob/4594bbc/libs/rite/src/assert.ts#L9)
 
 ___
 
@@ -102,4 +102,4 @@ ___
 
 #### Defined in
 
-[libs/rite/src/test.ts:11](https://github.com/plaited/plaited/blob/46fad8b/libs/rite/src/test.ts#L11)
+[libs/rite/src/test.ts:11](https://github.com/plaited/plaited/blob/4594bbc/libs/rite/src/test.ts#L11)

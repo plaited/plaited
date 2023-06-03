@@ -1,4 +1,4 @@
-[Plaited Typedocs](../README.md) / [Exports](../modules.md) / @plaited/behavioral
+[Plaited Typedocs](../README.md) / [Modules](../modules.md) / @plaited/behavioral
 
 # Module: @plaited/behavioral
 
@@ -50,7 +50,7 @@
 
 #### Defined in
 
-[types.ts:81](https://github.com/plaited/plaited/blob/46fad8b/libs/behavioral/src/types.ts#L81)
+[types.ts:81](https://github.com/plaited/plaited/blob/4594bbc/libs/behavioral/src/types.ts#L81)
 
 ___
 
@@ -60,7 +60,7 @@ ___
 
 #### Defined in
 
-[types.ts:16](https://github.com/plaited/plaited/blob/46fad8b/libs/behavioral/src/types.ts#L16)
+[types.ts:16](https://github.com/plaited/plaited/blob/4594bbc/libs/behavioral/src/types.ts#L16)
 
 ___
 
@@ -90,7 +90,7 @@ ___
 
 #### Defined in
 
-[types.ts:104](https://github.com/plaited/plaited/blob/46fad8b/libs/behavioral/src/types.ts#L104)
+[types.ts:104](https://github.com/plaited/plaited/blob/4594bbc/libs/behavioral/src/types.ts#L104)
 
 ___
 
@@ -106,7 +106,7 @@ ___
 
 #### Defined in
 
-[types.ts:42](https://github.com/plaited/plaited/blob/46fad8b/libs/behavioral/src/types.ts#L42)
+[types.ts:42](https://github.com/plaited/plaited/blob/4594bbc/libs/behavioral/src/types.ts#L42)
 
 ___
 
@@ -116,7 +116,7 @@ ___
 
 #### Defined in
 
-[types.ts:79](https://github.com/plaited/plaited/blob/46fad8b/libs/behavioral/src/types.ts#L79)
+[types.ts:79](https://github.com/plaited/plaited/blob/4594bbc/libs/behavioral/src/types.ts#L79)
 
 ___
 
@@ -139,7 +139,7 @@ ___
 
 #### Defined in
 
-[types.ts:52](https://github.com/plaited/plaited/blob/46fad8b/libs/behavioral/src/types.ts#L52)
+[types.ts:52](https://github.com/plaited/plaited/blob/4594bbc/libs/behavioral/src/types.ts#L52)
 
 ___
 
@@ -163,7 +163,7 @@ ___
 
 #### Defined in
 
-[types.ts:59](https://github.com/plaited/plaited/blob/46fad8b/libs/behavioral/src/types.ts#L59)
+[types.ts:59](https://github.com/plaited/plaited/blob/4594bbc/libs/behavioral/src/types.ts#L59)
 
 ___
 
@@ -187,7 +187,7 @@ ___
 
 #### Defined in
 
-[types.ts:67](https://github.com/plaited/plaited/blob/46fad8b/libs/behavioral/src/types.ts#L67)
+[types.ts:67](https://github.com/plaited/plaited/blob/4594bbc/libs/behavioral/src/types.ts#L67)
 
 ___
 
@@ -206,7 +206,7 @@ ___
 
 #### Defined in
 
-[types.ts:73](https://github.com/plaited/plaited/blob/46fad8b/libs/behavioral/src/types.ts#L73)
+[types.ts:73](https://github.com/plaited/plaited/blob/4594bbc/libs/behavioral/src/types.ts#L73)
 
 ___
 
@@ -223,7 +223,7 @@ ___
 
 #### Defined in
 
-[types.ts:20](https://github.com/plaited/plaited/blob/46fad8b/libs/behavioral/src/types.ts#L20)
+[types.ts:20](https://github.com/plaited/plaited/blob/4594bbc/libs/behavioral/src/types.ts#L20)
 
 ___
 
@@ -233,7 +233,7 @@ ___
 
 #### Defined in
 
-[types.ts:18](https://github.com/plaited/plaited/blob/46fad8b/libs/behavioral/src/types.ts#L18)
+[types.ts:18](https://github.com/plaited/plaited/blob/4594bbc/libs/behavioral/src/types.ts#L18)
 
 ___
 
@@ -257,7 +257,7 @@ ___
 
 #### Defined in
 
-[types.ts:88](https://github.com/plaited/plaited/blob/46fad8b/libs/behavioral/src/types.ts#L88)
+[types.ts:88](https://github.com/plaited/plaited/blob/4594bbc/libs/behavioral/src/types.ts#L88)
 
 ___
 
@@ -287,7 +287,7 @@ ___
 
 #### Defined in
 
-[types.ts:25](https://github.com/plaited/plaited/blob/46fad8b/libs/behavioral/src/types.ts#L25)
+[types.ts:25](https://github.com/plaited/plaited/blob/4594bbc/libs/behavioral/src/types.ts#L25)
 
 ___
 
@@ -310,7 +310,7 @@ ___
 
 #### Defined in
 
-[types.ts:29](https://github.com/plaited/plaited/blob/46fad8b/libs/behavioral/src/types.ts#L29)
+[types.ts:29](https://github.com/plaited/plaited/blob/4594bbc/libs/behavioral/src/types.ts#L29)
 
 ## Functions
 
@@ -332,7 +332,7 @@ ___
 
 #### Defined in
 
-[b-program.ts:39](https://github.com/plaited/plaited/blob/46fad8b/libs/behavioral/src/b-program.ts#L39)
+[b-program.ts:39](https://github.com/plaited/plaited/blob/4594bbc/libs/behavioral/src/b-program.ts#L39)
 
 ___
 
@@ -358,7 +358,7 @@ like a mode change open -> close. This function returns a threads
 
 #### Defined in
 
-[rules.ts:19](https://github.com/plaited/plaited/blob/46fad8b/libs/behavioral/src/rules.ts#L19)
+[rules.ts:19](https://github.com/plaited/plaited/blob/4594bbc/libs/behavioral/src/rules.ts#L19)
 
 ___
 
@@ -393,7 +393,7 @@ any of these events.
 
 #### Defined in
 
-[rules.ts:39](https://github.com/plaited/plaited/blob/46fad8b/libs/behavioral/src/rules.ts#L39)
+[rules.ts:39](https://github.com/plaited/plaited/blob/4594bbc/libs/behavioral/src/rules.ts#L39)
 
 ___
 
@@ -417,4 +417,4 @@ creates a behavioral thread from synchronization sets and/or other  behavioral t
 
 #### Defined in
 
-[rules.ts:8](https://github.com/plaited/plaited/blob/46fad8b/libs/behavioral/src/rules.ts#L8)
+[rules.ts:8](https://github.com/plaited/plaited/blob/4594bbc/libs/behavioral/src/rules.ts#L8)

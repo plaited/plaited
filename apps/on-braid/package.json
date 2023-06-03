@@ -1,6 +1,7 @@
 {
   "name": "@plaited/on-braid",
   "version": "0.0.0",
+  "license": "ISC",
   "private": "true",
   "type": "module",
   "dependencies": {

@@ -1,3 +1,3 @@
-[Plaited Typedocs](../README.md) / [Exports](../modules.md) / @plaited/workshop
+[Plaited Typedocs](../README.md) / [Modules](../modules.md) / @plaited/workshop
 
 # Module: @plaited/workshop

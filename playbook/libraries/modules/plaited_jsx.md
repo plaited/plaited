@@ -1,4 +1,4 @@
-[Plaited Typedocs](../README.md) / [Exports](../modules.md) / @plaited/jsx
+[Plaited Typedocs](../README.md) / [Modules](../modules.md) / @plaited/jsx
 
 # Module: @plaited/jsx
 

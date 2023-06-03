@@ -1,4 +1,4 @@
-[Plaited Typedocs](../README.md) / [Exports](../modules.md) / [@plaited/token-types](../modules/plaited_token_types.md) / DesignTokenGroup
+[Plaited Typedocs](../README.md) / [Modules](../modules.md) / [@plaited/token-types](../modules/plaited_token_types.md) / DesignTokenGroup
 
 # Interface: DesignTokenGroup
 

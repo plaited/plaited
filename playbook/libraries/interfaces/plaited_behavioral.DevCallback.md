@@ -1,4 +1,4 @@
-[Plaited Typedocs](../README.md) / [Exports](../modules.md) / [@plaited/behavioral](../modules/plaited_behavioral.md) / DevCallback
+[Plaited Typedocs](../README.md) / [Modules](../modules.md) / [@plaited/behavioral](../modules/plaited_behavioral.md) / DevCallback
 
 # Interface: DevCallback
 
@@ -22,4 +22,4 @@
 
 #### Defined in
 
-[types.ts:109](https://github.com/plaited/plaited/blob/46fad8b/libs/behavioral/src/types.ts#L109)
+[types.ts:109](https://github.com/plaited/plaited/blob/4594bbc/libs/behavioral/src/types.ts#L109)

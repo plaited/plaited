@@ -1,4 +1,4 @@
-[Plaited Typedocs](../README.md) / [Exports](../modules.md) / @plaited/token-types
+[Plaited Typedocs](../README.md) / [Modules](../modules.md) / @plaited/token-types
 
 # Module: @plaited/token-types
 
@@ -57,7 +57,7 @@
 
 #### Defined in
 
-[index.ts:334](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L334)
+[index.ts:334](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L334)
 
 ___
 
@@ -67,7 +67,7 @@ ___
 
 #### Defined in
 
-[index.ts:465](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L465)
+[index.ts:465](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L465)
 
 ___
 
@@ -79,7 +79,7 @@ Alias value type relies on the fontFamily the defaultFormat formatter for ts tok
 
 #### Defined in
 
-[index.ts:4](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L4)
+[index.ts:4](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L4)
 
 ___
 
@@ -91,7 +91,7 @@ AlignItems value type relies on the fontFamily the defaultFormat formatter for t
 
 #### Defined in
 
-[index.ts:98](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L98)
+[index.ts:98](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L98)
 
 ___
 
@@ -104,7 +104,7 @@ and the defaultFormat formatter for ts tokens
 
 #### Defined in
 
-[index.ts:37](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L37)
+[index.ts:37](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L37)
 
 ___
 
@@ -116,7 +116,7 @@ Color value type relies on the fontFamily the defaultFormat formatter for ts tok
 
 #### Defined in
 
-[index.ts:19](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L19)
+[index.ts:19](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L19)
 
 ___
 
@@ -126,7 +126,7 @@ ___
 
 #### Defined in
 
-[index.ts:468](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L468)
+[index.ts:468](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L468)
 
 ___
 
@@ -139,7 +139,7 @@ and the defaultFormat formatter for ts tokens
 
 #### Defined in
 
-[index.ts:28](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L28)
+[index.ts:28](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L28)
 
 ___
 
@@ -151,7 +151,7 @@ Display value type relies on the fontFamily the defaultFormat formatter for ts t
 
 #### Defined in
 
-[index.ts:108](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L108)
+[index.ts:108](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L108)
 
 ___
 
@@ -163,7 +163,7 @@ DistributeContent value type relies on the fontFamily the defaultFormat formatte
 
 #### Defined in
 
-[index.ts:117](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L117)
+[index.ts:117](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L117)
 
 ___
 
@@ -176,7 +176,7 @@ and the defaultFormat formatter for ts tokens
 
 #### Defined in
 
-[index.ts:55](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L55)
+[index.ts:55](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L55)
 
 ___
 
@@ -188,7 +188,7 @@ FlexDirection value type relies on the fontFamily the defaultFormat formatter fo
 
 #### Defined in
 
-[index.ts:129](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L129)
+[index.ts:129](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L129)
 
 ___
 
@@ -202,7 +202,7 @@ Uses the nullFormat formatter for CSS and the ruleSet formatter for TS.
 
 #### Defined in
 
-[index.ts:144](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L144)
+[index.ts:144](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L144)
 
 ___
 
@@ -214,7 +214,7 @@ FlexWrap value type relies on the fontFamily the defaultFormat formatter for ts 
 
 #### Defined in
 
-[index.ts:138](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L138)
+[index.ts:138](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L138)
 
 ___
 
@@ -227,7 +227,7 @@ and the defaultFormat formatter for ts tokens
 
 #### Defined in
 
-[index.ts:259](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L259)
+[index.ts:259](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L259)
 
 ___
 
@@ -240,7 +240,7 @@ and the defaultFormat formatter for ts tokens
 
 #### Defined in
 
-[index.ts:264](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L264)
+[index.ts:264](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L264)
 
 ___
 
@@ -252,7 +252,7 @@ FontStyle value type relies on the fontFamily the defaultFormat formatter for ts
 
 #### Defined in
 
-[index.ts:268](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L268)
+[index.ts:268](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L268)
 
 ___
 
@@ -264,7 +264,7 @@ FontWeight value type relies on the fontFamily the defaultFormat formatter for t
 
 #### Defined in
 
-[index.ts:277](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L277)
+[index.ts:277](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L277)
 
 ___
 
@@ -298,7 +298,7 @@ ___
 
 #### Defined in
 
-[index.ts:478](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L478)
+[index.ts:478](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L478)
 
 ___
 
@@ -311,7 +311,7 @@ and the defaultFormat formatter for ts tokens
 
 #### Defined in
 
-[index.ts:158](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L158)
+[index.ts:158](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L158)
 
 ___
 
@@ -347,7 +347,7 @@ ___
 
 #### Defined in
 
-[index.ts:485](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L485)
+[index.ts:485](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L485)
 
 ___
 
@@ -360,7 +360,7 @@ and the defaultFormat formatter for ts tokens
 
 #### Defined in
 
-[index.ts:66](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L66)
+[index.ts:66](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L66)
 
 ___
 
@@ -372,7 +372,7 @@ GridAutoFlow value type relies on the fontFamily the defaultFormat formatter for
 
 #### Defined in
 
-[index.ts:162](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L162)
+[index.ts:162](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L162)
 
 ___
 
@@ -382,7 +382,7 @@ ___
 
 #### Defined in
 
-[index.ts:169](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L169)
+[index.ts:169](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L169)
 
 ___
 
@@ -392,7 +392,7 @@ ___
 
 #### Defined in
 
-[index.ts:188](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L188)
+[index.ts:188](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L188)
 
 ___
 
@@ -406,7 +406,7 @@ It is used to store grid-template-areas | grid-template-columns | grid-template-
 
 #### Defined in
 
-[index.ts:198](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L198)
+[index.ts:198](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L198)
 
 ___
 
@@ -420,7 +420,7 @@ Uses the nullFormat formatter for CSS and the ruleSet formatter for TS.
 
 #### Defined in
 
-[index.ts:207](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L207)
+[index.ts:207](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L207)
 
 ___
 
@@ -433,7 +433,7 @@ and the defaultFormat formatter for ts tokens
 
 #### Defined in
 
-[index.ts:296](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L296)
+[index.ts:296](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L296)
 
 ___
 
@@ -446,7 +446,7 @@ and the defaultFormat formatter for ts tokens
 
 #### Defined in
 
-[index.ts:301](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L301)
+[index.ts:301](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L301)
 
 ___
 
@@ -458,7 +458,7 @@ PercentageRatio value type relies on the fontFamily the defaultFormat formatter 
 
 #### Defined in
 
-[index.ts:84](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L84)
+[index.ts:84](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L84)
 
 ___
 
@@ -470,7 +470,7 @@ PrimitiveArray value type relies on the fontFamily the defaultFormat formatter f
 
 #### Defined in
 
-[index.ts:14](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L14)
+[index.ts:14](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L14)
 
 ___
 
@@ -482,7 +482,7 @@ Primitive value type relies on the fontFamily the defaultFormat formatter for ts
 
 #### Defined in
 
-[index.ts:9](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L9)
+[index.ts:9](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L9)
 
 ___
 
@@ -496,7 +496,7 @@ ___
 
 #### Defined in
 
-[index.ts:21](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L21)
+[index.ts:21](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L21)
 
 ___
 
@@ -508,7 +508,7 @@ FontWeight value type relies on the fontFamily the defaultFormat formatter for t
 
 #### Defined in
 
-[index.ts:305](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L305)
+[index.ts:305](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L305)
 
 ___
 
@@ -520,7 +520,7 @@ FontStyle value type relies on the fontFamily the defaultFormat formatter for ts
 
 #### Defined in
 
-[index.ts:229](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L229)
+[index.ts:229](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L229)
 
 ___
 
@@ -544,7 +544,7 @@ ___
 
 #### Defined in
 
-[index.ts:496](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L496)
+[index.ts:496](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L496)
 
 ___
 
@@ -557,7 +557,7 @@ and the defaultFormat formatter for ts tokens
 
 #### Defined in
 
-[index.ts:234](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L234)
+[index.ts:234](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L234)
 
 ___
 
@@ -571,4 +571,4 @@ Uses the nullFormat formatter for CSS and the ruleSet formatter for TS.
 
 #### Defined in
 
-[index.ts:318](https://github.com/plaited/plaited/blob/46fad8b/libs/token-types/src/index.ts#L318)
+[index.ts:318](https://github.com/plaited/plaited/blob/4594bbc/libs/token-types/src/index.ts#L318)
