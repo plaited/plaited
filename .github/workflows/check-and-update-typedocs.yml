@@ -40,13 +40,9 @@ jobs:
         run:  |
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor}}@users.noreply.github.com"
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
       - name: Push new typedocs
         run:  |
             git add playbook/libraries
             git commit -m "docs(playbook): update typedocs"
             git push origin HEAD
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
      
