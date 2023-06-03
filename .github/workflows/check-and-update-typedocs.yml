@@ -43,6 +43,6 @@ jobs:
       - name: Push new typedocs
         run:  |
             git add playbook/libraries
-            git commit -m "docs(playbook): update typedocs"
+            git commit -m "typedocs [skip ci]"
             git push origin HEAD
      
