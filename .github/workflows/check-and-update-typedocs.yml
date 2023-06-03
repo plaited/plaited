@@ -1,4 +1,4 @@
-name: Check & Update typedocs
+name: build/tests
 
 on:
   push:
