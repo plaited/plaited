@@ -41,7 +41,7 @@ const [ classes, stylesheet ] = css`
   width: auto;
 }`
 
-<button class={classes.button} {...stylesheet}>Click Me!</button>;
+<button className={classes.button} {...stylesheet}>Click Me!</button>;
 ```
 
 This may seem different from other libraries and it is. It combines css module

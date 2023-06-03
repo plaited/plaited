@@ -76,7 +76,7 @@ export const ShadowIsland = isle(
             /** render dynamic island to zone */
             zone?.render(
               <Sub.template {...stylesheet}>
-                <h3 class={classes['sub-island']}>sub island</h3>
+                <h3 className={classes['sub-island']}>sub island</h3>
               </Sub.template>,
               'beforeend'
             )
@@ -121,23 +121,23 @@ export const ShadowIsland = isle(
 
 export const ShadowTemplate = () => (
   <ShadowIsland.template {...stylesheet}>
-    <div class={classes.mount}
+    <div className={classes.mount}
       data-target='wrapper'
     >
-      <div class={classes.zone}
+      <div className={classes.zone}
         data-target='zone'
       >
       </div>
-      <div class={classes.row}
+      <div className={classes.row}
         data-target='button-row'
       >
         <button data-trigger={{ click: 'start' }}
-          class={classes.button}
+          className={classes.button}
         >
           start
         </button>
         <button data-trigger={{ click: 'addButton' }}
-          class={classes.button}
+          className={classes.button}
         >
           addButton
         </button>

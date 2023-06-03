@@ -10,14 +10,14 @@
   ],
   "scripts": {
     "build": "bun lerna run build",
-    "docs": "bun scripts/docs.js",
     "lint": "eslint . --ext .ts,.tsx,.js,.cjs",
     "lint:fix": "bun lint --fix --quiet",
     "postinstall": "husky install",
     "postpack": "pinst --enable",
     "prepack": "pinst --disable",
     "prepare": "husky install",
-    "test": "npm run test --workspaces --if-present"
+    "test": "npm run test --workspaces --if-present",
+    "typedocs": "bun scripts/docs.js"
   },
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [
