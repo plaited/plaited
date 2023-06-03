@@ -1,6 +1,6 @@
 {
   "name": "@plaited/token-transformer",
-  "version": "3.0.2",
+  "version": "3.1.0",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
@@ -29,6 +29,6 @@
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/token-types": "3.0.2"
+    "@plaited/token-types": "3.1.0"
   }
 }
