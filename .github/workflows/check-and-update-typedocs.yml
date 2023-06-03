@@ -1,4 +1,4 @@
-name: Check and update typedocs
+name: Check & Update typedocs
 
 on:
   push:
@@ -11,10 +11,7 @@ jobs:
     runs-on: ubuntu-22.04
     
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GH_PAT }}
+      - uses: actions/checkout@v3
       - name: Test
         uses: devcontainers/ci@v0.3
         with:
@@ -23,14 +20,28 @@ jobs:
             bun run build
             bun run test
             bun run docs
+
+  update-typedocs:  
+    runs-on: ubuntu-22.04
+    needs: [check]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GH_PAT }}
       - name: Git Config
         run:  |
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor}}@users.noreply.github.com"
           - name: Git Config
+      - name: Setup
+        run: |
+          npm install -g bun npm@latest
+          bun install
+          bun run build
+          bun run typedocs
       - name: Push new typedocs
         run:  |
             git add playbook/libraries
             git commit -m "docs(playbook): update typedocs"
             git push origin origin main
-

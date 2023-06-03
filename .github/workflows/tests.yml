@@ -4,7 +4,7 @@ on:
   pull_request:
 
 jobs:
-  check:
+  test-pr:
     
     runs-on: ubuntu-22.04
     
