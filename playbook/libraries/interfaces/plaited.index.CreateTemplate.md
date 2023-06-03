@@ -29,4 +29,4 @@
 
 #### Defined in
 
-libs/jsx/dist/types.d.ts:25
+libs/jsx/dist/types.d.ts:27
