@@ -7,9 +7,7 @@ on:
 
 jobs:
   check:
-    
     runs-on: ubuntu-22.04
-    
     steps:
       - uses: actions/checkout@v3
       - name: Test
@@ -20,8 +18,7 @@ jobs:
             bun run build
             bun run test
             bun run docs
-
-  update-typedocs:  
+  update-typedocs:
     runs-on: ubuntu-22.04
     needs: [check]
     steps:
@@ -29,19 +26,27 @@ jobs:
         uses: actions/checkout@v3
         with:
           token: ${{ secrets.GH_PAT }}
-      - name: Git Config
-        run:  |
-          git config user.name "${{ github.actor }}"
-          git config user.email "${{ github.actor}}@users.noreply.github.com"
-          - name: Git Config
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
       - name: Setup
         run: |
           npm install -g bun npm@latest
           bun install
           bun run build
           bun run typedocs
+      - name: Git config
+        run:  |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor}}@users.noreply.github.com"
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
       - name: Push new typedocs
         run:  |
             git add playbook/libraries
             git commit -m "docs(playbook): update typedocs"
-            git push origin origin main
+            git push origin HEAD
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+     
