@@ -47,7 +47,7 @@ Error.constructor
 
 #### Defined in
 
-[libs/rite/src/assert.ts:25](https://github.com/plaited/plaited/blob/83e908b/libs/rite/src/assert.ts#L25)
+[libs/rite/src/assert.ts:25](https://github.com/plaited/plaited/blob/c0c0cf6/libs/rite/src/assert.ts#L25)
 
 ## Properties
 
@@ -89,7 +89,7 @@ Error.name
 
 #### Defined in
 
-[libs/rite/src/assert.ts:24](https://github.com/plaited/plaited/blob/83e908b/libs/rite/src/assert.ts#L24)
+[libs/rite/src/assert.ts:24](https://github.com/plaited/plaited/blob/c0c0cf6/libs/rite/src/assert.ts#L24)
 
 ___
 

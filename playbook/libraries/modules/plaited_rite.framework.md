@@ -32,4 +32,4 @@
 
 #### Defined in
 
-[libs/rite/src/framework.ts:4](https://github.com/plaited/plaited/blob/83e908b/libs/rite/src/framework.ts#L4)
+[libs/rite/src/framework.ts:4](https://github.com/plaited/plaited/blob/c0c0cf6/libs/rite/src/framework.ts#L4)
