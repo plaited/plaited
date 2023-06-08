@@ -282,3 +282,9 @@ test('createTemplate: properly hoist and deduplicates multiple stylesheets on a 
     stylesheet: [ sheet1[1].stylesheet, sheet2[1].stylesheet, sheet3[1].stylesheet ],
   })).toMatchSnapshot()
 })
+
+test('createTemplate: trims whitespace', () => {
+  expect(h('div', {
+    children: '   trims white-space    ',
+  })).toMatchSnapshot()
+})

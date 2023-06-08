@@ -170,13 +170,13 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
     /** P4 element is a customElement and child IS {@type Primitive} */
     if (isCustomElement) {
       templateChildren.push(
-        trusted ? `${formattedChild}` : escape(`${formattedChild}`)
+        trusted ? `${formattedChild}`.trim() : escape(`${formattedChild}`).trim()
       )
       continue
     }
     /** P5 child IS {@type Primitive} */
     rootChildren.push(
-      trusted ? `${formattedChild}` : escape(`${formattedChild}`)
+      trusted ? `${formattedChild}`.trim() : escape(`${formattedChild}`).trim()
     )
   }
   if (isCustomElement) {

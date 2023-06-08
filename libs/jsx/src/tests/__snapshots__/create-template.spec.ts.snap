@@ -204,3 +204,10 @@ Set {
 ,
 }
 `;
+
+exports[`createTemplate: trims whitespace 1`] = `
+{
+  "content": "<div>trims white-space</div>",
+  "stylesheets":   Set {},
+}
+`;
