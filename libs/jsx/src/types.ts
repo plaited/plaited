@@ -24,7 +24,7 @@ export type BaseAttrs = {
   key?: string;
   shadowrootmode?: 'open' | 'closed';
   shadowrootdelegatesfocus?: boolean;
-  stylesheet?: string;
+  stylesheet?: string | string[];
   /** setting trusted to true will disable all escaping security policy measures for this element template */
   trusted?: boolean;
   slots?: Children;

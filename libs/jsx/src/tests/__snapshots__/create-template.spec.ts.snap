@@ -192,3 +192,15 @@ Set {
 ,
 }
 `;
+
+exports[`createTemplate: properly hoist and deduplicates multiple stylesheets on a single node 1`] = `
+{
+  "content": "<div></div>",
+  "stylesheets":   
+Set {
+    ".a_NTA5Nj { width: 100%; }",
+    ".a_LTIzMT { color: blue; }",
+  }
+,
+}
+`;

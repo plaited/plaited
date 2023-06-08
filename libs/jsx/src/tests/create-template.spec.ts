@@ -153,6 +153,8 @@ test('createTemplate: Fragment PlaitedElements', () => {
   ).toMatchSnapshot()
 })
 
+
+
 const span = css`
   .nested-label {
     font-weight: bold;
@@ -255,4 +257,28 @@ test('createTemplate: custom element with nested custom element and styled slott
       children: h('img', { className: testEl[0].image, ...testEl[1] }),
     }
   )).toMatchSnapshot()
+})
+
+
+const sheet1 = css`
+  .a {
+    width: 100%;
+  }
+`
+const sheet2 = css`
+  .a {
+    width: 100%;
+  }
+`
+
+const sheet3 = css`
+.a {
+  color: blue;
+}
+`
+
+test('createTemplate: properly hoist and deduplicates multiple stylesheets on a single node', () => {
+  expect(h('div', {
+    stylesheet: [ sheet1[1].stylesheet, sheet2[1].stylesheet, sheet3[1].stylesheet ],
+  })).toMatchSnapshot()
 })

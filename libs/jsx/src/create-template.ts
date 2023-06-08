@@ -37,7 +37,11 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
     return tag(attrs)
   }
   const stylesheets = new Set<string>()
-  stylesheet && stylesheets.add(stylesheet)
+  if(stylesheet) {
+    Array.isArray(stylesheet)
+      ? stylesheet.forEach(s => stylesheets.add(s))
+      : stylesheets.add(stylesheet)
+  } 
   const children = _children && Array.isArray(_children)
     ? _children
     : _children
