@@ -16,9 +16,9 @@ jobs:
         with:
           runCmd: |
             bun install
+            bunx playwright install
             bun run build
             bun run test
-            bun run docs
   update-typedocs:
     runs-on: ubuntu-22.04
     needs: [check]
