@@ -17,7 +17,7 @@ export type Children = (string | Template)[] | (string | Template);
 export type BaseAttrs = {
   class?: never;
   for?: never;
-  'data-target'?: string | number;
+  'data-target'?: string;
   'data-trigger'?: Record<string, string>;
   htmlFor?: string,
   className?: string,
