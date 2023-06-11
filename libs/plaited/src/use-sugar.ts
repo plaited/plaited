@@ -1,20 +1,54 @@
 import { Template } from '@plaited/jsx'
+
 /**
  * Inspired by blingblingjs
  * (c) Adam Argyle - MIT
  * {@see https://github.com/argyleink/blingblingjs}
  */
+
+const cache = new WeakMap<ShadowRoot, HTMLStyleElement>()
+
+const updateShadowRootStyles = (root: ShadowRoot, stylesheets: Set<string> ) => {
+  const style = cache.get(root) || root.querySelector('style')
+  if(!style) {
+    const style = document.createElement('style')
+    style.append([ ...stylesheets ].join(''))
+    root.prepend(style)
+    cache.set(root, style)
+    return
+  }
+  if(!cache.has(root)) cache.set(root, style)
+  const content = style.textContent
+  let newStyles = ''
+  for(const sheet of stylesheets) {
+    if(content.includes(sheet)) continue
+    newStyles += sheet
+  }
+  style.append(newStyles)
+}
+
+const prepareTemplate = (element:HTMLElement | SVGElement, { stylesheets, content }: Template) => {
+  const template = document.createElement('template')
+  const root = element.getRootNode()
+  let styles = ''
+  if(root instanceof ShadowRoot && stylesheets.size ) {
+    updateShadowRootStyles(root, stylesheets)
+  } else if(stylesheets.size) {
+    styles =  `<style>${[ ...stylesheets ].join('')}</style>`
+  }
+  template.innerHTML = styles + content
+  return template
+}
+
 type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend';
 
 export const sugar = {
   render(
-    { stylesheets, content }: Template,
+    tpl: Template,
     position?: Position
   ) {
     const element = this as unknown as HTMLElement | SVGElement
-    const template = document.createElement('template')
-    const styles = stylesheets.size ? `<style>${[ ...stylesheets ].join('')}</style>` : ''
-    template.innerHTML = styles + content
+    const template = prepareTemplate(element, tpl)
     if (position) {
       element.insertAdjacentElement(position, template)
       template.replaceWith(template.content)
@@ -23,11 +57,9 @@ export const sugar = {
     element.replaceChildren(template.content)
     return element
   },
-  replace({ stylesheets, content }: Template) {
+  replace(tpl: Template) {
     const element = this as unknown as HTMLElement | SVGElement
-    const template = document.createElement('template')
-    const styles = stylesheets.size ? `<style>${[ ...stylesheets ].join('')}</style>` : ''
-    template.innerHTML = styles + content
+    const template = prepareTemplate(element, tpl)
     element.replaceWith(template.content)
   },
   attr(attr: string, val?: string) {
