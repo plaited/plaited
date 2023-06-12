@@ -17,14 +17,14 @@ export type Children = (string | Template)[] | (string | Template);
 export type BaseAttrs = {
   class?: never;
   for?: never;
-  'data-target'?: string | number;
+  'data-target'?: string;
   'data-trigger'?: Record<string, string>;
   htmlFor?: string,
   className?: string,
   key?: string;
   shadowrootmode?: 'open' | 'closed';
   shadowrootdelegatesfocus?: boolean;
-  stylesheet?: string;
+  stylesheet?: string | string[];
   /** setting trusted to true will disable all escaping security policy measures for this element template */
   trusted?: boolean;
   slots?: Children;

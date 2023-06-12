@@ -37,7 +37,11 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
     return tag(attrs)
   }
   const stylesheets = new Set<string>()
-  stylesheet && stylesheets.add(stylesheet)
+  if(stylesheet) {
+    Array.isArray(stylesheet)
+      ? stylesheet.forEach(s => stylesheets.add(s))
+      : stylesheets.add(stylesheet)
+  } 
   const children = _children && Array.isArray(_children)
     ? _children
     : _children
@@ -166,13 +170,13 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
     /** P4 element is a customElement and child IS {@type Primitive} */
     if (isCustomElement) {
       templateChildren.push(
-        trusted ? `${formattedChild}` : escape(`${formattedChild}`)
+        trusted ? `${formattedChild}`.trim() : escape(`${formattedChild}`).trim()
       )
       continue
     }
     /** P5 child IS {@type Primitive} */
     rootChildren.push(
-      trusted ? `${formattedChild}` : escape(`${formattedChild}`)
+      trusted ? `${formattedChild}`.trim() : escape(`${formattedChild}`).trim()
     )
   }
   if (isCustomElement) {
