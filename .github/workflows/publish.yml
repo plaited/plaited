@@ -7,7 +7,7 @@ on:
         description: 'New version tag (e.g., 1.0.0)'
         required: true
 jobs:
-  publish-packages:
+  publish:
     runs-on: ubuntu-22.04
     
     steps:
@@ -39,9 +39,8 @@ jobs:
         run:  |
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor}}@users.noreply.github.com"
-          npx lerna version ${{ github.event.inputs.version }} --no-private --exact --conventional-commits --create-release github --message "Publish [skip ci]" --yes
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          npm version ${{ github.event.inputs.version }}
+          git push origin main
 
       - name: Publish
         run:  |
@@ -50,6 +49,6 @@ jobs:
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> .npmrc
           npm whoami
           npm config set registry https://registry.npmjs.org/
-          npx lerna publish from-package --yes
+          npm publish
         env:
           NPM_TOKEN: ${{ secrets.NPM_PAT }}
