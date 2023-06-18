@@ -110,4 +110,4 @@ ___
 
 #### Defined in
 
-[token-transformer/src/token-transformer.ts:6](https://github.com/plaited/plaited/blob/7bbcbfa/libs/token-transformer/src/token-transformer.ts#L6)
+[token-transformer/src/token-transformer.ts:6](https://github.com/plaited/plaited/blob/a4b9a21/libs/token-transformer/src/token-transformer.ts#L6)

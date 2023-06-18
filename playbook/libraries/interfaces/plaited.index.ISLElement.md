@@ -72,6 +72,7 @@
 - [ariaValueNow](plaited.index.ISLElement.md#ariavaluenow)
 - [ariaValueText](plaited.index.ISLElement.md#ariavaluetext)
 - [assignedSlot](plaited.index.ISLElement.md#assignedslot)
+- [attributeStyleMap](plaited.index.ISLElement.md#attributestylemap)
 - [attributes](plaited.index.ISLElement.md#attributes)
 - [autocapitalize](plaited.index.ISLElement.md#autocapitalize)
 - [autofocus](plaited.index.ISLElement.md#autofocus)
@@ -255,6 +256,7 @@
 - [cloneNode](plaited.index.ISLElement.md#clonenode)
 - [closest](plaited.index.ISLElement.md#closest)
 - [compareDocumentPosition](plaited.index.ISLElement.md#comparedocumentposition)
+- [computedStyleMap](plaited.index.ISLElement.md#computedstylemap)
 - [connectedCallback](plaited.index.ISLElement.md#connectedcallback)
 - [contains](plaited.index.ISLElement.md#contains)
 - [disconnectedCallback](plaited.index.ISLElement.md#disconnectedcallback)
@@ -332,7 +334,7 @@ HTMLElement.ATTRIBUTE\_NODE
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10298
+node_modules/typescript/lib/lib.dom.d.ts:16147
 
 ___
 
@@ -348,7 +350,7 @@ HTMLElement.CDATA\_SECTION\_NODE
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10302
+node_modules/typescript/lib/lib.dom.d.ts:16151
 
 ___
 
@@ -364,7 +366,7 @@ HTMLElement.COMMENT\_NODE
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10308
+node_modules/typescript/lib/lib.dom.d.ts:16157
 
 ___
 
@@ -380,7 +382,7 @@ HTMLElement.DOCUMENT\_FRAGMENT\_NODE
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10314
+node_modules/typescript/lib/lib.dom.d.ts:16163
 
 ___
 
@@ -396,7 +398,7 @@ HTMLElement.DOCUMENT\_NODE
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10310
+node_modules/typescript/lib/lib.dom.d.ts:16159
 
 ___
 
@@ -412,7 +414,7 @@ HTMLElement.DOCUMENT\_POSITION\_CONTAINED\_BY
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10325
+node_modules/typescript/lib/lib.dom.d.ts:16174
 
 ___
 
@@ -428,7 +430,7 @@ HTMLElement.DOCUMENT\_POSITION\_CONTAINS
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10323
+node_modules/typescript/lib/lib.dom.d.ts:16172
 
 ___
 
@@ -444,7 +446,7 @@ HTMLElement.DOCUMENT\_POSITION\_DISCONNECTED
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10317
+node_modules/typescript/lib/lib.dom.d.ts:16166
 
 ___
 
@@ -460,7 +462,7 @@ HTMLElement.DOCUMENT\_POSITION\_FOLLOWING
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10321
+node_modules/typescript/lib/lib.dom.d.ts:16170
 
 ___
 
@@ -474,7 +476,7 @@ HTMLElement.DOCUMENT\_POSITION\_IMPLEMENTATION\_SPECIFIC
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10326
+node_modules/typescript/lib/lib.dom.d.ts:16175
 
 ___
 
@@ -490,7 +492,7 @@ HTMLElement.DOCUMENT\_POSITION\_PRECEDING
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10319
+node_modules/typescript/lib/lib.dom.d.ts:16168
 
 ___
 
@@ -506,7 +508,7 @@ HTMLElement.DOCUMENT\_TYPE\_NODE
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10312
+node_modules/typescript/lib/lib.dom.d.ts:16161
 
 ___
 
@@ -522,7 +524,7 @@ HTMLElement.ELEMENT\_NODE
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10297
+node_modules/typescript/lib/lib.dom.d.ts:16146
 
 ___
 
@@ -536,7 +538,7 @@ HTMLElement.ENTITY\_NODE
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10304
+node_modules/typescript/lib/lib.dom.d.ts:16153
 
 ___
 
@@ -550,7 +552,7 @@ HTMLElement.ENTITY\_REFERENCE\_NODE
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10303
+node_modules/typescript/lib/lib.dom.d.ts:16152
 
 ___
 
@@ -564,7 +566,7 @@ HTMLElement.NOTATION\_NODE
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10315
+node_modules/typescript/lib/lib.dom.d.ts:16164
 
 ___
 
@@ -580,7 +582,7 @@ HTMLElement.PROCESSING\_INSTRUCTION\_NODE
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10306
+node_modules/typescript/lib/lib.dom.d.ts:16155
 
 ___
 
@@ -596,7 +598,7 @@ HTMLElement.TEXT\_NODE
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10300
+node_modules/typescript/lib/lib.dom.d.ts:16149
 
 ___
 
@@ -604,13 +606,15 @@ ___
 
 • **accessKey**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/accessKey)
+
 #### Inherited from
 
 HTMLElement.accessKey
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6555
+node_modules/typescript/lib/lib.dom.d.ts:10007
 
 ___
 
@@ -618,13 +622,15 @@ ___
 
 • `Readonly` **accessKeyLabel**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/accessKeyLabel)
+
 #### Inherited from
 
 HTMLElement.accessKeyLabel
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6556
+node_modules/typescript/lib/lib.dom.d.ts:10009
 
 ___
 
@@ -632,13 +638,15 @@ ___
 
 • **ariaAtomic**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaAtomic)
+
 #### Inherited from
 
 HTMLElement.ariaAtomic
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2020
+node_modules/typescript/lib/lib.dom.d.ts:2176
 
 ___
 
@@ -646,13 +654,15 @@ ___
 
 • **ariaAutoComplete**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaAutoComplete)
+
 #### Inherited from
 
 HTMLElement.ariaAutoComplete
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2021
+node_modules/typescript/lib/lib.dom.d.ts:2178
 
 ___
 
@@ -660,13 +670,15 @@ ___
 
 • **ariaBusy**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaBusy)
+
 #### Inherited from
 
 HTMLElement.ariaBusy
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2022
+node_modules/typescript/lib/lib.dom.d.ts:2180
 
 ___
 
@@ -674,13 +686,15 @@ ___
 
 • **ariaChecked**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaChecked)
+
 #### Inherited from
 
 HTMLElement.ariaChecked
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2023
+node_modules/typescript/lib/lib.dom.d.ts:2182
 
 ___
 
@@ -688,13 +702,15 @@ ___
 
 • **ariaColCount**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaColCount)
+
 #### Inherited from
 
 HTMLElement.ariaColCount
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2024
+node_modules/typescript/lib/lib.dom.d.ts:2184
 
 ___
 
@@ -702,13 +718,15 @@ ___
 
 • **ariaColIndex**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaColIndex)
+
 #### Inherited from
 
 HTMLElement.ariaColIndex
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2025
+node_modules/typescript/lib/lib.dom.d.ts:2186
 
 ___
 
@@ -716,13 +734,15 @@ ___
 
 • **ariaColSpan**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaColSpan)
+
 #### Inherited from
 
 HTMLElement.ariaColSpan
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2026
+node_modules/typescript/lib/lib.dom.d.ts:2188
 
 ___
 
@@ -730,13 +750,15 @@ ___
 
 • **ariaCurrent**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaCurrent)
+
 #### Inherited from
 
 HTMLElement.ariaCurrent
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2027
+node_modules/typescript/lib/lib.dom.d.ts:2190
 
 ___
 
@@ -744,13 +766,15 @@ ___
 
 • **ariaDisabled**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaDisabled)
+
 #### Inherited from
 
 HTMLElement.ariaDisabled
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2028
+node_modules/typescript/lib/lib.dom.d.ts:2192
 
 ___
 
@@ -758,13 +782,15 @@ ___
 
 • **ariaExpanded**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaExpanded)
+
 #### Inherited from
 
 HTMLElement.ariaExpanded
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2029
+node_modules/typescript/lib/lib.dom.d.ts:2194
 
 ___
 
@@ -772,13 +798,15 @@ ___
 
 • **ariaHasPopup**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaHasPopup)
+
 #### Inherited from
 
 HTMLElement.ariaHasPopup
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2030
+node_modules/typescript/lib/lib.dom.d.ts:2196
 
 ___
 
@@ -786,13 +814,15 @@ ___
 
 • **ariaHidden**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaHidden)
+
 #### Inherited from
 
 HTMLElement.ariaHidden
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2031
+node_modules/typescript/lib/lib.dom.d.ts:2198
 
 ___
 
@@ -806,7 +836,7 @@ HTMLElement.ariaInvalid
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2032
+node_modules/typescript/lib/lib.dom.d.ts:2199
 
 ___
 
@@ -814,13 +844,15 @@ ___
 
 • **ariaKeyShortcuts**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaKeyShortcuts)
+
 #### Inherited from
 
 HTMLElement.ariaKeyShortcuts
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2033
+node_modules/typescript/lib/lib.dom.d.ts:2201
 
 ___
 
@@ -828,13 +860,15 @@ ___
 
 • **ariaLabel**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaLabel)
+
 #### Inherited from
 
 HTMLElement.ariaLabel
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2034
+node_modules/typescript/lib/lib.dom.d.ts:2203
 
 ___
 
@@ -842,13 +876,15 @@ ___
 
 • **ariaLevel**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaLevel)
+
 #### Inherited from
 
 HTMLElement.ariaLevel
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2035
+node_modules/typescript/lib/lib.dom.d.ts:2205
 
 ___
 
@@ -856,13 +892,15 @@ ___
 
 • **ariaLive**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaLive)
+
 #### Inherited from
 
 HTMLElement.ariaLive
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2036
+node_modules/typescript/lib/lib.dom.d.ts:2207
 
 ___
 
@@ -870,13 +908,15 @@ ___
 
 • **ariaModal**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaModal)
+
 #### Inherited from
 
 HTMLElement.ariaModal
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2037
+node_modules/typescript/lib/lib.dom.d.ts:2209
 
 ___
 
@@ -884,13 +924,15 @@ ___
 
 • **ariaMultiLine**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaMultiLine)
+
 #### Inherited from
 
 HTMLElement.ariaMultiLine
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2038
+node_modules/typescript/lib/lib.dom.d.ts:2211
 
 ___
 
@@ -898,13 +940,15 @@ ___
 
 • **ariaMultiSelectable**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaMultiSelectable)
+
 #### Inherited from
 
 HTMLElement.ariaMultiSelectable
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2039
+node_modules/typescript/lib/lib.dom.d.ts:2213
 
 ___
 
@@ -912,13 +956,15 @@ ___
 
 • **ariaOrientation**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaOrientation)
+
 #### Inherited from
 
 HTMLElement.ariaOrientation
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2040
+node_modules/typescript/lib/lib.dom.d.ts:2215
 
 ___
 
@@ -926,13 +972,15 @@ ___
 
 • **ariaPlaceholder**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaPlaceholder)
+
 #### Inherited from
 
 HTMLElement.ariaPlaceholder
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2041
+node_modules/typescript/lib/lib.dom.d.ts:2217
 
 ___
 
@@ -940,13 +988,15 @@ ___
 
 • **ariaPosInSet**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaPosInSet)
+
 #### Inherited from
 
 HTMLElement.ariaPosInSet
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2042
+node_modules/typescript/lib/lib.dom.d.ts:2219
 
 ___
 
@@ -954,13 +1004,15 @@ ___
 
 • **ariaPressed**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaPressed)
+
 #### Inherited from
 
 HTMLElement.ariaPressed
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2043
+node_modules/typescript/lib/lib.dom.d.ts:2221
 
 ___
 
@@ -968,13 +1020,15 @@ ___
 
 • **ariaReadOnly**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaReadOnly)
+
 #### Inherited from
 
 HTMLElement.ariaReadOnly
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2044
+node_modules/typescript/lib/lib.dom.d.ts:2223
 
 ___
 
@@ -982,13 +1036,15 @@ ___
 
 • **ariaRequired**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaRequired)
+
 #### Inherited from
 
 HTMLElement.ariaRequired
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2045
+node_modules/typescript/lib/lib.dom.d.ts:2225
 
 ___
 
@@ -996,13 +1052,15 @@ ___
 
 • **ariaRoleDescription**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaRoleDescription)
+
 #### Inherited from
 
 HTMLElement.ariaRoleDescription
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2046
+node_modules/typescript/lib/lib.dom.d.ts:2227
 
 ___
 
@@ -1010,13 +1068,15 @@ ___
 
 • **ariaRowCount**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaRowCount)
+
 #### Inherited from
 
 HTMLElement.ariaRowCount
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2047
+node_modules/typescript/lib/lib.dom.d.ts:2229
 
 ___
 
@@ -1024,13 +1084,15 @@ ___
 
 • **ariaRowIndex**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaRowIndex)
+
 #### Inherited from
 
 HTMLElement.ariaRowIndex
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2048
+node_modules/typescript/lib/lib.dom.d.ts:2231
 
 ___
 
@@ -1038,13 +1100,15 @@ ___
 
 • **ariaRowSpan**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaRowSpan)
+
 #### Inherited from
 
 HTMLElement.ariaRowSpan
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2049
+node_modules/typescript/lib/lib.dom.d.ts:2233
 
 ___
 
@@ -1052,13 +1116,15 @@ ___
 
 • **ariaSelected**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaSelected)
+
 #### Inherited from
 
 HTMLElement.ariaSelected
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2050
+node_modules/typescript/lib/lib.dom.d.ts:2235
 
 ___
 
@@ -1066,13 +1132,15 @@ ___
 
 • **ariaSetSize**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaSetSize)
+
 #### Inherited from
 
 HTMLElement.ariaSetSize
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2051
+node_modules/typescript/lib/lib.dom.d.ts:2237
 
 ___
 
@@ -1080,13 +1148,15 @@ ___
 
 • **ariaSort**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaSort)
+
 #### Inherited from
 
 HTMLElement.ariaSort
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2052
+node_modules/typescript/lib/lib.dom.d.ts:2239
 
 ___
 
@@ -1094,13 +1164,15 @@ ___
 
 • **ariaValueMax**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaValueMax)
+
 #### Inherited from
 
 HTMLElement.ariaValueMax
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2053
+node_modules/typescript/lib/lib.dom.d.ts:2241
 
 ___
 
@@ -1108,13 +1180,15 @@ ___
 
 • **ariaValueMin**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaValueMin)
+
 #### Inherited from
 
 HTMLElement.ariaValueMin
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2054
+node_modules/typescript/lib/lib.dom.d.ts:2243
 
 ___
 
@@ -1122,13 +1196,15 @@ ___
 
 • **ariaValueNow**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaValueNow)
+
 #### Inherited from
 
 HTMLElement.ariaValueNow
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2055
+node_modules/typescript/lib/lib.dom.d.ts:2245
 
 ___
 
@@ -1136,13 +1212,15 @@ ___
 
 • **ariaValueText**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/ariaValueText)
+
 #### Inherited from
 
 HTMLElement.ariaValueText
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2056
+node_modules/typescript/lib/lib.dom.d.ts:2247
 
 ___
 
@@ -1150,13 +1228,29 @@ ___
 
 • `Readonly` **assignedSlot**: `HTMLSlotElement`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/assignedSlot)
+
 #### Inherited from
 
 HTMLElement.assignedSlot
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:13933
+node_modules/typescript/lib/lib.dom.d.ts:21230
+
+___
+
+### attributeStyleMap
+
+• `Readonly` **attributeStyleMap**: `StylePropertyMap`
+
+#### Inherited from
+
+HTMLElement.attributeStyleMap
+
+#### Defined in
+
+node_modules/typescript/lib/lib.dom.d.ts:7812
 
 ___
 
@@ -1164,13 +1258,15 @@ ___
 
 • `Readonly` **attributes**: `NamedNodeMap`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/attributes)
+
 #### Inherited from
 
 HTMLElement.attributes
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5041
+node_modules/typescript/lib/lib.dom.d.ts:7557
 
 ___
 
@@ -1184,7 +1280,7 @@ HTMLElement.autocapitalize
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6557
+node_modules/typescript/lib/lib.dom.d.ts:10010
 
 ___
 
@@ -1198,7 +1294,7 @@ HTMLElement.autofocus
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:7764
+node_modules/typescript/lib/lib.dom.d.ts:11991
 
 ___
 
@@ -1208,13 +1304,15 @@ ___
 
 Returns node's node document's document base URL.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/baseURI)
+
 #### Inherited from
 
 HTMLElement.baseURI
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10249
+node_modules/typescript/lib/lib.dom.d.ts:16016
 
 ___
 
@@ -1222,13 +1320,15 @@ ___
 
 • `Readonly` **childElementCount**: `number`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Document/childElementCount)
+
 #### Inherited from
 
 HTMLElement.childElementCount
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10685
+node_modules/typescript/lib/lib.dom.d.ts:16703
 
 ___
 
@@ -1238,13 +1338,15 @@ ___
 
 Returns the children.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/childNodes)
+
 #### Inherited from
 
 HTMLElement.childNodes
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10251
+node_modules/typescript/lib/lib.dom.d.ts:16022
 
 ___
 
@@ -1254,13 +1356,15 @@ ___
 
 Returns the child elements.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Document/children)
+
 #### Inherited from
 
 HTMLElement.children
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10687
+node_modules/typescript/lib/lib.dom.d.ts:16709
 
 ___
 
@@ -1270,13 +1374,15 @@ ___
 
 Allows for manipulation of element's class content attribute as a set of whitespace-separated tokens through a DOMTokenList object.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/classList)
+
 #### Inherited from
 
 HTMLElement.classList
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5043
+node_modules/typescript/lib/lib.dom.d.ts:7563
 
 ___
 
@@ -1286,13 +1392,15 @@ ___
 
 Returns the value of element's class content attribute. Can be set to change it.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/className)
+
 #### Inherited from
 
 HTMLElement.className
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5045
+node_modules/typescript/lib/lib.dom.d.ts:7569
 
 ___
 
@@ -1300,13 +1408,15 @@ ___
 
 • `Readonly` **clientHeight**: `number`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/clientHeight)
+
 #### Inherited from
 
 HTMLElement.clientHeight
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5046
+node_modules/typescript/lib/lib.dom.d.ts:7571
 
 ___
 
@@ -1314,13 +1424,15 @@ ___
 
 • `Readonly` **clientLeft**: `number`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/clientLeft)
+
 #### Inherited from
 
 HTMLElement.clientLeft
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5047
+node_modules/typescript/lib/lib.dom.d.ts:7573
 
 ___
 
@@ -1328,13 +1440,15 @@ ___
 
 • `Readonly` **clientTop**: `number`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/clientTop)
+
 #### Inherited from
 
 HTMLElement.clientTop
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5048
+node_modules/typescript/lib/lib.dom.d.ts:7575
 
 ___
 
@@ -1342,13 +1456,15 @@ ___
 
 • `Readonly` **clientWidth**: `number`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/clientWidth)
+
 #### Inherited from
 
 HTMLElement.clientWidth
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5049
+node_modules/typescript/lib/lib.dom.d.ts:7577
 
 ___
 
@@ -1356,13 +1472,15 @@ ___
 
 • **contentEditable**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/contentEditable)
+
 #### Inherited from
 
 HTMLElement.contentEditable
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5166
+node_modules/typescript/lib/lib.dom.d.ts:7819
 
 ___
 
@@ -1370,13 +1488,15 @@ ___
 
 • `Readonly` **dataset**: `DOMStringMap`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/dataset)
+
 #### Inherited from
 
 HTMLElement.dataset
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:7765
+node_modules/typescript/lib/lib.dom.d.ts:11993
 
 ___
 
@@ -1384,13 +1504,15 @@ ___
 
 • **dir**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/dir)
+
 #### Inherited from
 
 HTMLElement.dir
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6558
+node_modules/typescript/lib/lib.dom.d.ts:10012
 
 ___
 
@@ -1398,13 +1520,15 @@ ___
 
 • **draggable**: `boolean`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/draggable)
+
 #### Inherited from
 
 HTMLElement.draggable
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6559
+node_modules/typescript/lib/lib.dom.d.ts:10014
 
 ___
 
@@ -1412,13 +1536,15 @@ ___
 
 • **enterKeyHint**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/enterKeyHint)
+
 #### Inherited from
 
 HTMLElement.enterKeyHint
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5167
+node_modules/typescript/lib/lib.dom.d.ts:7821
 
 ___
 
@@ -1428,13 +1554,15 @@ ___
 
 Returns the first child.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/firstChild)
+
 #### Inherited from
 
 HTMLElement.firstChild
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10253
+node_modules/typescript/lib/lib.dom.d.ts:16028
 
 ___
 
@@ -1444,13 +1572,15 @@ ___
 
 Returns the first child that is an element, and null otherwise.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Document/firstElementChild)
+
 #### Inherited from
 
 HTMLElement.firstElementChild
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10689
+node_modules/typescript/lib/lib.dom.d.ts:16715
 
 ___
 
@@ -1458,13 +1588,15 @@ ___
 
 • **hidden**: `boolean`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/hidden)
+
 #### Inherited from
 
 HTMLElement.hidden
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6560
+node_modules/typescript/lib/lib.dom.d.ts:10016
 
 ___
 
@@ -1474,13 +1606,15 @@ ___
 
 Returns the value of element's id content attribute. Can be set to change it.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/id)
+
 #### Inherited from
 
 HTMLElement.id
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5051
+node_modules/typescript/lib/lib.dom.d.ts:7583
 
 ___
 
@@ -1488,13 +1622,15 @@ ___
 
 • **inert**: `boolean`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/inert)
+
 #### Inherited from
 
 HTMLElement.inert
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6561
+node_modules/typescript/lib/lib.dom.d.ts:10018
 
 ___
 
@@ -1502,13 +1638,15 @@ ___
 
 • **innerHTML**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/innerHTML)
+
 #### Inherited from
 
 HTMLElement.innerHTML
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:9130
+node_modules/typescript/lib/lib.dom.d.ts:14223
 
 ___
 
@@ -1516,13 +1654,15 @@ ___
 
 • **innerText**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/innerText)
+
 #### Inherited from
 
 HTMLElement.innerText
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6562
+node_modules/typescript/lib/lib.dom.d.ts:10020
 
 ___
 
@@ -1530,13 +1670,15 @@ ___
 
 • **inputMode**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/inputMode)
+
 #### Inherited from
 
 HTMLElement.inputMode
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5168
+node_modules/typescript/lib/lib.dom.d.ts:7823
 
 ___
 
@@ -1546,7 +1688,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:29](https://github.com/plaited/plaited/blob/7bbcbfa/libs/plaited/src/types.ts#L29)
+[libs/plaited/src/types.ts:29](https://github.com/plaited/plaited/blob/a4b9a21/libs/plaited/src/types.ts#L29)
 
 ___
 
@@ -1556,13 +1698,15 @@ ___
 
 Returns true if node is connected and false otherwise.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/isConnected)
+
 #### Inherited from
 
 HTMLElement.isConnected
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10255
+node_modules/typescript/lib/lib.dom.d.ts:16034
 
 ___
 
@@ -1570,13 +1714,15 @@ ___
 
 • `Readonly` **isContentEditable**: `boolean`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/isContentEditable)
+
 #### Inherited from
 
 HTMLElement.isContentEditable
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5169
+node_modules/typescript/lib/lib.dom.d.ts:7825
 
 ___
 
@@ -1584,13 +1730,15 @@ ___
 
 • **lang**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/lang)
+
 #### Inherited from
 
 HTMLElement.lang
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6563
+node_modules/typescript/lib/lib.dom.d.ts:10022
 
 ___
 
@@ -1600,13 +1748,15 @@ ___
 
 Returns the last child.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/lastChild)
+
 #### Inherited from
 
 HTMLElement.lastChild
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10257
+node_modules/typescript/lib/lib.dom.d.ts:16040
 
 ___
 
@@ -1616,13 +1766,15 @@ ___
 
 Returns the last child that is an element, and null otherwise.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Document/lastElementChild)
+
 #### Inherited from
 
 HTMLElement.lastElementChild
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10691
+node_modules/typescript/lib/lib.dom.d.ts:16721
 
 ___
 
@@ -1632,13 +1784,15 @@ ___
 
 Returns the local name.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/localName)
+
 #### Inherited from
 
 HTMLElement.localName
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5053
+node_modules/typescript/lib/lib.dom.d.ts:7589
 
 ___
 
@@ -1648,13 +1802,15 @@ ___
 
 Returns the namespace.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/namespaceURI)
+
 #### Inherited from
 
 HTMLElement.namespaceURI
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5055
+node_modules/typescript/lib/lib.dom.d.ts:7595
 
 ___
 
@@ -1664,13 +1820,15 @@ ___
 
 Returns the first following sibling that is an element, and null otherwise.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/CharacterData/nextElementSibling)
+
 #### Inherited from
 
 HTMLElement.nextElementSibling
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10416
+node_modules/typescript/lib/lib.dom.d.ts:16296
 
 ___
 
@@ -1680,13 +1838,15 @@ ___
 
 Returns the next sibling.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nextSibling)
+
 #### Inherited from
 
 HTMLElement.nextSibling
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10259
+node_modules/typescript/lib/lib.dom.d.ts:16046
 
 ___
 
@@ -1696,13 +1856,15 @@ ___
 
 Returns a string appropriate for the type of node.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nodeName)
+
 #### Inherited from
 
 HTMLElement.nodeName
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10261
+node_modules/typescript/lib/lib.dom.d.ts:16052
 
 ___
 
@@ -1712,13 +1874,15 @@ ___
 
 Returns the type of node.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nodeType)
+
 #### Inherited from
 
 HTMLElement.nodeType
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10263
+node_modules/typescript/lib/lib.dom.d.ts:16058
 
 ___
 
@@ -1726,13 +1890,15 @@ ___
 
 • **nodeValue**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nodeValue)
+
 #### Inherited from
 
 HTMLElement.nodeValue
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10264
+node_modules/typescript/lib/lib.dom.d.ts:16060
 
 ___
 
@@ -1740,13 +1906,15 @@ ___
 
 • `Optional` **nonce**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/nonce)
+
 #### Inherited from
 
 HTMLElement.nonce
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:7766
+node_modules/typescript/lib/lib.dom.d.ts:11995
 
 ___
 
@@ -1754,13 +1922,15 @@ ___
 
 • `Readonly` **offsetHeight**: `number`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/offsetHeight)
+
 #### Inherited from
 
 HTMLElement.offsetHeight
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6564
+node_modules/typescript/lib/lib.dom.d.ts:10024
 
 ___
 
@@ -1768,13 +1938,15 @@ ___
 
 • `Readonly` **offsetLeft**: `number`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/offsetLeft)
+
 #### Inherited from
 
 HTMLElement.offsetLeft
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6565
+node_modules/typescript/lib/lib.dom.d.ts:10026
 
 ___
 
@@ -1782,13 +1954,15 @@ ___
 
 • `Readonly` **offsetParent**: `Element`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/offsetParent)
+
 #### Inherited from
 
 HTMLElement.offsetParent
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6566
+node_modules/typescript/lib/lib.dom.d.ts:10028
 
 ___
 
@@ -1796,13 +1970,15 @@ ___
 
 • `Readonly` **offsetTop**: `number`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/offsetTop)
+
 #### Inherited from
 
 HTMLElement.offsetTop
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6567
+node_modules/typescript/lib/lib.dom.d.ts:10030
 
 ___
 
@@ -1810,13 +1986,15 @@ ___
 
 • `Readonly` **offsetWidth**: `number`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/offsetWidth)
+
 #### Inherited from
 
 HTMLElement.offsetWidth
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6568
+node_modules/typescript/lib/lib.dom.d.ts:10032
 
 ___
 
@@ -1835,7 +2013,7 @@ Fires when the user aborts the download.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `UIEvent` | The event. |
+| `ev` | `UIEvent` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/abort_event) |
 
 ##### Returns
 
@@ -1847,7 +2025,7 @@ HTMLElement.onabort
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5856
+node_modules/typescript/lib/lib.dom.d.ts:8904
 
 ___
 
@@ -1858,6 +2036,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/animationcancel_event)
 
 ##### Parameters
 
@@ -1876,7 +2056,7 @@ HTMLElement.onanimationcancel
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5857
+node_modules/typescript/lib/lib.dom.d.ts:8906
 
 ___
 
@@ -1887,6 +2067,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/animationend_event)
 
 ##### Parameters
 
@@ -1905,7 +2087,7 @@ HTMLElement.onanimationend
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5858
+node_modules/typescript/lib/lib.dom.d.ts:8908
 
 ___
 
@@ -1916,6 +2098,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/animationiteration_event)
 
 ##### Parameters
 
@@ -1934,7 +2118,7 @@ HTMLElement.onanimationiteration
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5859
+node_modules/typescript/lib/lib.dom.d.ts:8910
 
 ___
 
@@ -1945,6 +2129,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/animationstart_event)
 
 ##### Parameters
 
@@ -1963,7 +2149,7 @@ HTMLElement.onanimationstart
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5860
+node_modules/typescript/lib/lib.dom.d.ts:8912
 
 ___
 
@@ -1974,6 +2160,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/auxclick_event)
 
 ##### Parameters
 
@@ -1992,7 +2180,7 @@ HTMLElement.onauxclick
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5861
+node_modules/typescript/lib/lib.dom.d.ts:8914
 
 ___
 
@@ -2003,6 +2191,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/beforeinput_event)
 
 ##### Parameters
 
@@ -2021,7 +2211,7 @@ HTMLElement.onbeforeinput
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5862
+node_modules/typescript/lib/lib.dom.d.ts:8916
 
 ___
 
@@ -2040,7 +2230,7 @@ Fires when the object loses the input focus.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `FocusEvent` | The focus event. |
+| `ev` | `FocusEvent` | The focus event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/blur_event) |
 
 ##### Returns
 
@@ -2052,7 +2242,7 @@ HTMLElement.onblur
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5867
+node_modules/typescript/lib/lib.dom.d.ts:8923
 
 ___
 
@@ -2063,6 +2253,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement/cancel_event)
 
 ##### Parameters
 
@@ -2081,7 +2273,7 @@ HTMLElement.oncancel
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5868
+node_modules/typescript/lib/lib.dom.d.ts:8925
 
 ___
 
@@ -2100,7 +2292,7 @@ Occurs when playback is possible, but would require further buffering.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `Event` | The event. |
+| `ev` | `Event` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/canplay_event) |
 
 ##### Returns
 
@@ -2112,7 +2304,7 @@ HTMLElement.oncanplay
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5873
+node_modules/typescript/lib/lib.dom.d.ts:8932
 
 ___
 
@@ -2123,6 +2315,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/canplaythrough_event)
 
 ##### Parameters
 
@@ -2141,7 +2335,7 @@ HTMLElement.oncanplaythrough
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5874
+node_modules/typescript/lib/lib.dom.d.ts:8934
 
 ___
 
@@ -2160,7 +2354,7 @@ Fires when the contents of the object or selection have changed.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `Event` | The event. |
+| `ev` | `Event` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/change_event) |
 
 ##### Returns
 
@@ -2172,7 +2366,7 @@ HTMLElement.onchange
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5879
+node_modules/typescript/lib/lib.dom.d.ts:8941
 
 ___
 
@@ -2191,7 +2385,7 @@ Fires when the user clicks the left mouse button on the object
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `MouseEvent` | The mouse event. |
+| `ev` | `MouseEvent` | The mouse event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/click_event) |
 
 ##### Returns
 
@@ -2203,7 +2397,7 @@ HTMLElement.onclick
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5884
+node_modules/typescript/lib/lib.dom.d.ts:8948
 
 ___
 
@@ -2214,6 +2408,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement/close_event)
 
 ##### Parameters
 
@@ -2232,7 +2428,7 @@ HTMLElement.onclose
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5885
+node_modules/typescript/lib/lib.dom.d.ts:8950
 
 ___
 
@@ -2251,7 +2447,7 @@ Fires when the user clicks the right mouse button in the client area, opening th
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `MouseEvent` | The mouse event. |
+| `ev` | `MouseEvent` | The mouse event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/contextmenu_event) |
 
 ##### Returns
 
@@ -2263,7 +2459,7 @@ HTMLElement.oncontextmenu
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5890
+node_modules/typescript/lib/lib.dom.d.ts:8957
 
 ___
 
@@ -2274,6 +2470,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/copy_event)
 
 ##### Parameters
 
@@ -2292,7 +2490,7 @@ HTMLElement.oncopy
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5891
+node_modules/typescript/lib/lib.dom.d.ts:8959
 
 ___
 
@@ -2303,6 +2501,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLTrackElement/cuechange_event)
 
 ##### Parameters
 
@@ -2321,7 +2521,7 @@ HTMLElement.oncuechange
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5892
+node_modules/typescript/lib/lib.dom.d.ts:8961
 
 ___
 
@@ -2332,6 +2532,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/cut_event)
 
 ##### Parameters
 
@@ -2350,7 +2552,7 @@ HTMLElement.oncut
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5893
+node_modules/typescript/lib/lib.dom.d.ts:8963
 
 ___
 
@@ -2369,7 +2571,7 @@ Fires when the user double-clicks the object.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `MouseEvent` | The mouse event. |
+| `ev` | `MouseEvent` | The mouse event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/dblclick_event) |
 
 ##### Returns
 
@@ -2381,7 +2583,7 @@ HTMLElement.ondblclick
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5898
+node_modules/typescript/lib/lib.dom.d.ts:8970
 
 ___
 
@@ -2400,7 +2602,7 @@ Fires on the source object continuously during a drag operation.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `DragEvent` | The event. |
+| `ev` | `DragEvent` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/drag_event) |
 
 ##### Returns
 
@@ -2412,7 +2614,7 @@ HTMLElement.ondrag
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5903
+node_modules/typescript/lib/lib.dom.d.ts:8977
 
 ___
 
@@ -2431,7 +2633,7 @@ Fires on the source object when the user releases the mouse at the close of a dr
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `DragEvent` | The event. |
+| `ev` | `DragEvent` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/dragend_event) |
 
 ##### Returns
 
@@ -2443,7 +2645,7 @@ HTMLElement.ondragend
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5908
+node_modules/typescript/lib/lib.dom.d.ts:8984
 
 ___
 
@@ -2462,7 +2664,7 @@ Fires on the target element when the user drags the object to a valid drop targe
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `DragEvent` | The drag event. |
+| `ev` | `DragEvent` | The drag event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/dragenter_event) |
 
 ##### Returns
 
@@ -2474,7 +2676,7 @@ HTMLElement.ondragenter
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5913
+node_modules/typescript/lib/lib.dom.d.ts:8991
 
 ___
 
@@ -2493,7 +2695,7 @@ Fires on the target object when the user moves the mouse out of a valid drop tar
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `DragEvent` | The drag event. |
+| `ev` | `DragEvent` | The drag event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/dragleave_event) |
 
 ##### Returns
 
@@ -2505,7 +2707,7 @@ HTMLElement.ondragleave
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5918
+node_modules/typescript/lib/lib.dom.d.ts:8998
 
 ___
 
@@ -2524,7 +2726,7 @@ Fires on the target element continuously while the user drags the object over a 
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `DragEvent` | The event. |
+| `ev` | `DragEvent` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/dragover_event) |
 
 ##### Returns
 
@@ -2536,7 +2738,7 @@ HTMLElement.ondragover
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5923
+node_modules/typescript/lib/lib.dom.d.ts:9005
 
 ___
 
@@ -2555,7 +2757,7 @@ Fires on the source object when the user starts to drag a text selection or sele
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `DragEvent` | The event. |
+| `ev` | `DragEvent` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/dragstart_event) |
 
 ##### Returns
 
@@ -2567,7 +2769,7 @@ HTMLElement.ondragstart
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5928
+node_modules/typescript/lib/lib.dom.d.ts:9012
 
 ___
 
@@ -2578,6 +2780,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/drop_event)
 
 ##### Parameters
 
@@ -2596,7 +2800,7 @@ HTMLElement.ondrop
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5929
+node_modules/typescript/lib/lib.dom.d.ts:9014
 
 ___
 
@@ -2615,7 +2819,7 @@ Occurs when the duration attribute is updated.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `Event` | The event. |
+| `ev` | `Event` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/durationchange_event) |
 
 ##### Returns
 
@@ -2627,7 +2831,7 @@ HTMLElement.ondurationchange
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5934
+node_modules/typescript/lib/lib.dom.d.ts:9021
 
 ___
 
@@ -2646,7 +2850,7 @@ Occurs when the media element is reset to its initial state.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `Event` | The event. |
+| `ev` | `Event` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/emptied_event) |
 
 ##### Returns
 
@@ -2658,7 +2862,7 @@ HTMLElement.onemptied
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5939
+node_modules/typescript/lib/lib.dom.d.ts:9028
 
 ___
 
@@ -2677,7 +2881,7 @@ Occurs when the end of playback is reached.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `Event` | The event |
+| `ev` | `Event` | The event [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/ended_event) |
 
 ##### Returns
 
@@ -2689,7 +2893,7 @@ HTMLElement.onended
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5944
+node_modules/typescript/lib/lib.dom.d.ts:9035
 
 ___
 
@@ -2703,13 +2907,15 @@ Fires when an error occurs during object loading.
 
 The event.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/error_event)
+
 #### Inherited from
 
 HTMLElement.onerror
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5949
+node_modules/typescript/lib/lib.dom.d.ts:9042
 
 ___
 
@@ -2728,7 +2934,7 @@ Fires when the object receives focus.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `FocusEvent` | The event. |
+| `ev` | `FocusEvent` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/focus_event) |
 
 ##### Returns
 
@@ -2740,7 +2946,7 @@ HTMLElement.onfocus
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5954
+node_modules/typescript/lib/lib.dom.d.ts:9049
 
 ___
 
@@ -2751,6 +2957,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLFormElement/formdata_event)
 
 ##### Parameters
 
@@ -2769,7 +2977,7 @@ HTMLElement.onformdata
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5955
+node_modules/typescript/lib/lib.dom.d.ts:9051
 
 ___
 
@@ -2780,6 +2988,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/fullscreenchange_event)
 
 ##### Parameters
 
@@ -2798,7 +3008,7 @@ HTMLElement.onfullscreenchange
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5056
+node_modules/typescript/lib/lib.dom.d.ts:7597
 
 ___
 
@@ -2809,6 +3019,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/fullscreenerror_event)
 
 ##### Parameters
 
@@ -2827,7 +3039,7 @@ HTMLElement.onfullscreenerror
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5057
+node_modules/typescript/lib/lib.dom.d.ts:7599
 
 ___
 
@@ -2838,6 +3050,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/gotpointercapture_event)
 
 ##### Parameters
 
@@ -2856,7 +3070,7 @@ HTMLElement.ongotpointercapture
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5956
+node_modules/typescript/lib/lib.dom.d.ts:9053
 
 ___
 
@@ -2867,6 +3081,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/input_event)
 
 ##### Parameters
 
@@ -2885,7 +3101,7 @@ HTMLElement.oninput
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5957
+node_modules/typescript/lib/lib.dom.d.ts:9055
 
 ___
 
@@ -2896,6 +3112,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/invalid_event)
 
 ##### Parameters
 
@@ -2914,7 +3132,7 @@ HTMLElement.oninvalid
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5958
+node_modules/typescript/lib/lib.dom.d.ts:9057
 
 ___
 
@@ -2933,7 +3151,7 @@ Fires when the user presses a key.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `KeyboardEvent` | The keyboard event |
+| `ev` | `KeyboardEvent` | The keyboard event [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/keydown_event) |
 
 ##### Returns
 
@@ -2945,7 +3163,7 @@ HTMLElement.onkeydown
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5963
+node_modules/typescript/lib/lib.dom.d.ts:9064
 
 ___
 
@@ -2960,6 +3178,8 @@ ___
 Fires when the user presses an alphanumeric key.
 
 **`Deprecated`**
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/keypress_event)
 
 ##### Parameters
 
@@ -2978,7 +3198,7 @@ HTMLElement.onkeypress
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5969
+node_modules/typescript/lib/lib.dom.d.ts:9072
 
 ___
 
@@ -2997,7 +3217,7 @@ Fires when the user releases a key.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `KeyboardEvent` | The keyboard event |
+| `ev` | `KeyboardEvent` | The keyboard event [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/keyup_event) |
 
 ##### Returns
 
@@ -3009,7 +3229,7 @@ HTMLElement.onkeyup
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5974
+node_modules/typescript/lib/lib.dom.d.ts:9079
 
 ___
 
@@ -3028,7 +3248,7 @@ Fires immediately after the browser loads the object.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `Event` | The event. |
+| `ev` | `Event` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/SVGElement/load_event) |
 
 ##### Returns
 
@@ -3040,7 +3260,7 @@ HTMLElement.onload
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5979
+node_modules/typescript/lib/lib.dom.d.ts:9086
 
 ___
 
@@ -3059,7 +3279,7 @@ Occurs when media data is loaded at the current playback position.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `Event` | The event. |
+| `ev` | `Event` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/loadeddata_event) |
 
 ##### Returns
 
@@ -3071,7 +3291,7 @@ HTMLElement.onloadeddata
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5984
+node_modules/typescript/lib/lib.dom.d.ts:9093
 
 ___
 
@@ -3090,7 +3310,7 @@ Occurs when the duration and dimensions of the media have been determined.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `Event` | The event. |
+| `ev` | `Event` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/loadedmetadata_event) |
 
 ##### Returns
 
@@ -3102,7 +3322,7 @@ HTMLElement.onloadedmetadata
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5989
+node_modules/typescript/lib/lib.dom.d.ts:9100
 
 ___
 
@@ -3121,7 +3341,7 @@ Occurs when Internet Explorer begins looking for media data.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `Event` | The event. |
+| `ev` | `Event` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/loadstart_event) |
 
 ##### Returns
 
@@ -3133,7 +3353,7 @@ HTMLElement.onloadstart
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5994
+node_modules/typescript/lib/lib.dom.d.ts:9107
 
 ___
 
@@ -3144,6 +3364,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Document/lostpointercapture_event)
 
 ##### Parameters
 
@@ -3162,7 +3384,7 @@ HTMLElement.onlostpointercapture
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5995
+node_modules/typescript/lib/lib.dom.d.ts:9109
 
 ___
 
@@ -3181,7 +3403,7 @@ Fires when the user clicks the object with either mouse button.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `MouseEvent` | The mouse event. |
+| `ev` | `MouseEvent` | The mouse event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/mousedown_event) |
 
 ##### Returns
 
@@ -3193,7 +3415,7 @@ HTMLElement.onmousedown
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6000
+node_modules/typescript/lib/lib.dom.d.ts:9116
 
 ___
 
@@ -3204,6 +3426,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/mouseenter_event)
 
 ##### Parameters
 
@@ -3222,7 +3446,7 @@ HTMLElement.onmouseenter
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6001
+node_modules/typescript/lib/lib.dom.d.ts:9118
 
 ___
 
@@ -3233,6 +3457,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/mouseleave_event)
 
 ##### Parameters
 
@@ -3251,7 +3477,7 @@ HTMLElement.onmouseleave
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6002
+node_modules/typescript/lib/lib.dom.d.ts:9120
 
 ___
 
@@ -3270,7 +3496,7 @@ Fires when the user moves the mouse over the object.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `MouseEvent` | The mouse event. |
+| `ev` | `MouseEvent` | The mouse event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/mousemove_event) |
 
 ##### Returns
 
@@ -3282,7 +3508,7 @@ HTMLElement.onmousemove
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6007
+node_modules/typescript/lib/lib.dom.d.ts:9127
 
 ___
 
@@ -3301,7 +3527,7 @@ Fires when the user moves the mouse pointer outside the boundaries of the object
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `MouseEvent` | The mouse event. |
+| `ev` | `MouseEvent` | The mouse event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/mouseout_event) |
 
 ##### Returns
 
@@ -3313,7 +3539,7 @@ HTMLElement.onmouseout
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6012
+node_modules/typescript/lib/lib.dom.d.ts:9134
 
 ___
 
@@ -3332,7 +3558,7 @@ Fires when the user moves the mouse pointer into the object.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `MouseEvent` | The mouse event. |
+| `ev` | `MouseEvent` | The mouse event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/mouseover_event) |
 
 ##### Returns
 
@@ -3344,7 +3570,7 @@ HTMLElement.onmouseover
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6017
+node_modules/typescript/lib/lib.dom.d.ts:9141
 
 ___
 
@@ -3363,7 +3589,7 @@ Fires when the user releases a mouse button while the mouse is over the object.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `MouseEvent` | The mouse event. |
+| `ev` | `MouseEvent` | The mouse event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/mouseup_event) |
 
 ##### Returns
 
@@ -3375,7 +3601,7 @@ HTMLElement.onmouseup
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6022
+node_modules/typescript/lib/lib.dom.d.ts:9148
 
 ___
 
@@ -3386,6 +3612,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/paste_event)
 
 ##### Parameters
 
@@ -3404,7 +3632,7 @@ HTMLElement.onpaste
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6023
+node_modules/typescript/lib/lib.dom.d.ts:9150
 
 ___
 
@@ -3423,7 +3651,7 @@ Occurs when playback is paused.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `Event` | The event. |
+| `ev` | `Event` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/pause_event) |
 
 ##### Returns
 
@@ -3435,7 +3663,7 @@ HTMLElement.onpause
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6028
+node_modules/typescript/lib/lib.dom.d.ts:9157
 
 ___
 
@@ -3454,7 +3682,7 @@ Occurs when the play method is requested.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `Event` | The event. |
+| `ev` | `Event` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/play_event) |
 
 ##### Returns
 
@@ -3466,7 +3694,7 @@ HTMLElement.onplay
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6033
+node_modules/typescript/lib/lib.dom.d.ts:9164
 
 ___
 
@@ -3485,7 +3713,7 @@ Occurs when the audio or video has started playing.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `Event` | The event. |
+| `ev` | `Event` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/playing_event) |
 
 ##### Returns
 
@@ -3497,7 +3725,7 @@ HTMLElement.onplaying
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6038
+node_modules/typescript/lib/lib.dom.d.ts:9171
 
 ___
 
@@ -3508,6 +3736,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/pointercancel_event)
 
 ##### Parameters
 
@@ -3526,7 +3756,7 @@ HTMLElement.onpointercancel
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6039
+node_modules/typescript/lib/lib.dom.d.ts:9173
 
 ___
 
@@ -3537,6 +3767,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/pointerdown_event)
 
 ##### Parameters
 
@@ -3555,7 +3787,7 @@ HTMLElement.onpointerdown
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6040
+node_modules/typescript/lib/lib.dom.d.ts:9175
 
 ___
 
@@ -3566,6 +3798,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/pointerenter_event)
 
 ##### Parameters
 
@@ -3584,7 +3818,7 @@ HTMLElement.onpointerenter
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6041
+node_modules/typescript/lib/lib.dom.d.ts:9177
 
 ___
 
@@ -3595,6 +3829,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/pointerleave_event)
 
 ##### Parameters
 
@@ -3613,7 +3849,7 @@ HTMLElement.onpointerleave
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6042
+node_modules/typescript/lib/lib.dom.d.ts:9179
 
 ___
 
@@ -3624,6 +3860,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/pointermove_event)
 
 ##### Parameters
 
@@ -3642,7 +3880,7 @@ HTMLElement.onpointermove
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6043
+node_modules/typescript/lib/lib.dom.d.ts:9181
 
 ___
 
@@ -3653,6 +3891,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/pointerout_event)
 
 ##### Parameters
 
@@ -3671,7 +3911,7 @@ HTMLElement.onpointerout
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6044
+node_modules/typescript/lib/lib.dom.d.ts:9183
 
 ___
 
@@ -3682,6 +3922,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/pointerover_event)
 
 ##### Parameters
 
@@ -3700,7 +3942,7 @@ HTMLElement.onpointerover
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6045
+node_modules/typescript/lib/lib.dom.d.ts:9185
 
 ___
 
@@ -3711,6 +3953,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/pointerup_event)
 
 ##### Parameters
 
@@ -3729,7 +3973,7 @@ HTMLElement.onpointerup
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6046
+node_modules/typescript/lib/lib.dom.d.ts:9187
 
 ___
 
@@ -3748,7 +3992,7 @@ Occurs to indicate progress while downloading media data.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `ProgressEvent`<`EventTarget`\> | The event. |
+| `ev` | `ProgressEvent`<`EventTarget`\> | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/progress_event) |
 
 ##### Returns
 
@@ -3760,7 +4004,7 @@ HTMLElement.onprogress
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6051
+node_modules/typescript/lib/lib.dom.d.ts:9194
 
 ___
 
@@ -3779,7 +4023,7 @@ Occurs when the playback rate is increased or decreased.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `Event` | The event. |
+| `ev` | `Event` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/ratechange_event) |
 
 ##### Returns
 
@@ -3791,7 +4035,7 @@ HTMLElement.onratechange
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6056
+node_modules/typescript/lib/lib.dom.d.ts:9201
 
 ___
 
@@ -3810,7 +4054,7 @@ Fires when the user resets a form.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `Event` | The event. |
+| `ev` | `Event` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLFormElement/reset_event) |
 
 ##### Returns
 
@@ -3822,7 +4066,7 @@ HTMLElement.onreset
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6061
+node_modules/typescript/lib/lib.dom.d.ts:9208
 
 ___
 
@@ -3833,6 +4077,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/resize_event)
 
 ##### Parameters
 
@@ -3851,7 +4097,7 @@ HTMLElement.onresize
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6062
+node_modules/typescript/lib/lib.dom.d.ts:9210
 
 ___
 
@@ -3870,7 +4116,7 @@ Fires when the user repositions the scroll box in the scroll bar on the object.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `Event` | The event. |
+| `ev` | `Event` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/Document/scroll_event) |
 
 ##### Returns
 
@@ -3882,7 +4128,7 @@ HTMLElement.onscroll
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6067
+node_modules/typescript/lib/lib.dom.d.ts:9217
 
 ___
 
@@ -3893,6 +4139,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Document/securitypolicyviolation_event)
 
 ##### Parameters
 
@@ -3911,7 +4159,7 @@ HTMLElement.onsecuritypolicyviolation
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6068
+node_modules/typescript/lib/lib.dom.d.ts:9219
 
 ___
 
@@ -3930,7 +4178,7 @@ Occurs when the seek operation ends.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `Event` | The event. |
+| `ev` | `Event` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/seeked_event) |
 
 ##### Returns
 
@@ -3942,7 +4190,7 @@ HTMLElement.onseeked
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6073
+node_modules/typescript/lib/lib.dom.d.ts:9226
 
 ___
 
@@ -3961,7 +4209,7 @@ Occurs when the current playback position is moved.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `Event` | The event. |
+| `ev` | `Event` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/seeking_event) |
 
 ##### Returns
 
@@ -3973,7 +4221,7 @@ HTMLElement.onseeking
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6078
+node_modules/typescript/lib/lib.dom.d.ts:9233
 
 ___
 
@@ -3992,7 +4240,7 @@ Fires when the current selection changes.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `Event` | The event. |
+| `ev` | `Event` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/select_event) |
 
 ##### Returns
 
@@ -4004,7 +4252,7 @@ HTMLElement.onselect
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6083
+node_modules/typescript/lib/lib.dom.d.ts:9240
 
 ___
 
@@ -4015,6 +4263,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Document/selectionchange_event)
 
 ##### Parameters
 
@@ -4033,7 +4283,7 @@ HTMLElement.onselectionchange
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6084
+node_modules/typescript/lib/lib.dom.d.ts:9242
 
 ___
 
@@ -4044,6 +4294,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/selectstart_event)
 
 ##### Parameters
 
@@ -4062,7 +4314,7 @@ HTMLElement.onselectstart
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6085
+node_modules/typescript/lib/lib.dom.d.ts:9244
 
 ___
 
@@ -4073,6 +4325,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLSlotElement/slotchange_event)
 
 ##### Parameters
 
@@ -4091,7 +4345,7 @@ HTMLElement.onslotchange
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6086
+node_modules/typescript/lib/lib.dom.d.ts:9246
 
 ___
 
@@ -4110,7 +4364,7 @@ Occurs when the download has stopped.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `Event` | The event. |
+| `ev` | `Event` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/stalled_event) |
 
 ##### Returns
 
@@ -4122,7 +4376,7 @@ HTMLElement.onstalled
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6091
+node_modules/typescript/lib/lib.dom.d.ts:9253
 
 ___
 
@@ -4133,6 +4387,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLFormElement/submit_event)
 
 ##### Parameters
 
@@ -4151,7 +4407,7 @@ HTMLElement.onsubmit
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6092
+node_modules/typescript/lib/lib.dom.d.ts:9255
 
 ___
 
@@ -4170,7 +4426,7 @@ Occurs if the load operation has been intentionally halted.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `Event` | The event. |
+| `ev` | `Event` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/suspend_event) |
 
 ##### Returns
 
@@ -4182,7 +4438,7 @@ HTMLElement.onsuspend
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6097
+node_modules/typescript/lib/lib.dom.d.ts:9262
 
 ___
 
@@ -4201,7 +4457,7 @@ Occurs to indicate the current playback position.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `Event` | The event. |
+| `ev` | `Event` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/timeupdate_event) |
 
 ##### Returns
 
@@ -4213,7 +4469,7 @@ HTMLElement.ontimeupdate
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6102
+node_modules/typescript/lib/lib.dom.d.ts:9269
 
 ___
 
@@ -4224,6 +4480,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLDetailsElement/toggle_event)
 
 ##### Parameters
 
@@ -4242,7 +4500,7 @@ HTMLElement.ontoggle
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6103
+node_modules/typescript/lib/lib.dom.d.ts:9271
 
 ___
 
@@ -4253,6 +4511,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/touchcancel_event)
 
 ##### Parameters
 
@@ -4271,7 +4531,7 @@ HTMLElement.ontouchcancel
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6104
+node_modules/typescript/lib/lib.dom.d.ts:9273
 
 ___
 
@@ -4282,6 +4542,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/touchend_event)
 
 ##### Parameters
 
@@ -4300,7 +4562,7 @@ HTMLElement.ontouchend
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6105
+node_modules/typescript/lib/lib.dom.d.ts:9275
 
 ___
 
@@ -4311,6 +4573,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/touchmove_event)
 
 ##### Parameters
 
@@ -4329,7 +4593,7 @@ HTMLElement.ontouchmove
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6106
+node_modules/typescript/lib/lib.dom.d.ts:9277
 
 ___
 
@@ -4340,6 +4604,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/touchstart_event)
 
 ##### Parameters
 
@@ -4358,7 +4624,7 @@ HTMLElement.ontouchstart
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6107
+node_modules/typescript/lib/lib.dom.d.ts:9279
 
 ___
 
@@ -4369,6 +4635,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/transitioncancel_event)
 
 ##### Parameters
 
@@ -4387,7 +4655,7 @@ HTMLElement.ontransitioncancel
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6108
+node_modules/typescript/lib/lib.dom.d.ts:9281
 
 ___
 
@@ -4398,6 +4666,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/transitionend_event)
 
 ##### Parameters
 
@@ -4416,7 +4686,7 @@ HTMLElement.ontransitionend
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6109
+node_modules/typescript/lib/lib.dom.d.ts:9283
 
 ___
 
@@ -4427,6 +4697,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/transitionrun_event)
 
 ##### Parameters
 
@@ -4445,7 +4717,7 @@ HTMLElement.ontransitionrun
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6110
+node_modules/typescript/lib/lib.dom.d.ts:9285
 
 ___
 
@@ -4456,6 +4728,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/transitionstart_event)
 
 ##### Parameters
 
@@ -4474,7 +4748,7 @@ HTMLElement.ontransitionstart
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6111
+node_modules/typescript/lib/lib.dom.d.ts:9287
 
 ___
 
@@ -4493,7 +4767,7 @@ Occurs when the volume is changed, or playback is muted or unmuted.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `Event` | The event. |
+| `ev` | `Event` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/volumechange_event) |
 
 ##### Returns
 
@@ -4505,7 +4779,7 @@ HTMLElement.onvolumechange
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6116
+node_modules/typescript/lib/lib.dom.d.ts:9294
 
 ___
 
@@ -4524,7 +4798,7 @@ Occurs when playback stops because the next frame of a video resource is not ava
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `this` | `GlobalEventHandlers` | - |
-| `ev` | `Event` | The event. |
+| `ev` | `Event` | The event. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/waiting_event) |
 
 ##### Returns
 
@@ -4536,7 +4810,7 @@ HTMLElement.onwaiting
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6121
+node_modules/typescript/lib/lib.dom.d.ts:9301
 
 ___
 
@@ -4551,6 +4825,8 @@ ___
 **`Deprecated`**
 
 This is a legacy alias of `onanimationend`.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/animationend_event)
 
 ##### Parameters
 
@@ -4569,7 +4845,7 @@ HTMLElement.onwebkitanimationend
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6123
+node_modules/typescript/lib/lib.dom.d.ts:9307
 
 ___
 
@@ -4584,6 +4860,8 @@ ___
 **`Deprecated`**
 
 This is a legacy alias of `onanimationiteration`.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/animationiteration_event)
 
 ##### Parameters
 
@@ -4602,7 +4880,7 @@ HTMLElement.onwebkitanimationiteration
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6125
+node_modules/typescript/lib/lib.dom.d.ts:9313
 
 ___
 
@@ -4617,6 +4895,8 @@ ___
 **`Deprecated`**
 
 This is a legacy alias of `onanimationstart`.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/animationstart_event)
 
 ##### Parameters
 
@@ -4635,7 +4915,7 @@ HTMLElement.onwebkitanimationstart
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6127
+node_modules/typescript/lib/lib.dom.d.ts:9319
 
 ___
 
@@ -4650,6 +4930,8 @@ ___
 **`Deprecated`**
 
 This is a legacy alias of `ontransitionend`.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/transitionend_event)
 
 ##### Parameters
 
@@ -4668,7 +4950,7 @@ HTMLElement.onwebkittransitionend
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6129
+node_modules/typescript/lib/lib.dom.d.ts:9325
 
 ___
 
@@ -4679,6 +4961,8 @@ ___
 #### Type declaration
 
 ▸ (`this`, `ev`): `any`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/wheel_event)
 
 ##### Parameters
 
@@ -4697,7 +4981,7 @@ HTMLElement.onwheel
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6130
+node_modules/typescript/lib/lib.dom.d.ts:9327
 
 ___
 
@@ -4705,13 +4989,15 @@ ___
 
 • **outerHTML**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/outerHTML)
+
 #### Inherited from
 
 HTMLElement.outerHTML
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5058
+node_modules/typescript/lib/lib.dom.d.ts:7601
 
 ___
 
@@ -4719,13 +5005,15 @@ ___
 
 • **outerText**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/outerText)
+
 #### Inherited from
 
 HTMLElement.outerText
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6569
+node_modules/typescript/lib/lib.dom.d.ts:10034
 
 ___
 
@@ -4739,7 +5027,7 @@ HTMLElement.ownerDocument
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5059
+node_modules/typescript/lib/lib.dom.d.ts:7602
 
 ___
 
@@ -4749,13 +5037,15 @@ ___
 
 Returns the parent element.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/parentElement)
+
 #### Inherited from
 
 HTMLElement.parentElement
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10268
+node_modules/typescript/lib/lib.dom.d.ts:16072
 
 ___
 
@@ -4765,13 +5055,15 @@ ___
 
 Returns the parent.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/parentNode)
+
 #### Inherited from
 
 HTMLElement.parentNode
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10270
+node_modules/typescript/lib/lib.dom.d.ts:16078
 
 ___
 
@@ -4779,13 +5071,15 @@ ___
 
 • `Readonly` **part**: `DOMTokenList`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/part)
+
 #### Inherited from
 
 HTMLElement.part
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5060
+node_modules/typescript/lib/lib.dom.d.ts:7604
 
 ___
 
@@ -4795,13 +5089,15 @@ ___
 
 Returns the namespace prefix.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/prefix)
+
 #### Inherited from
 
 HTMLElement.prefix
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5062
+node_modules/typescript/lib/lib.dom.d.ts:7610
 
 ___
 
@@ -4811,13 +5107,15 @@ ___
 
 Returns the first preceding sibling that is an element, and null otherwise.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/CharacterData/previousElementSibling)
+
 #### Inherited from
 
 HTMLElement.previousElementSibling
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10418
+node_modules/typescript/lib/lib.dom.d.ts:16302
 
 ___
 
@@ -4827,13 +5125,15 @@ ___
 
 Returns the previous sibling.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/previousSibling)
+
 #### Inherited from
 
 HTMLElement.previousSibling
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10272
+node_modules/typescript/lib/lib.dom.d.ts:16084
 
 ___
 
@@ -4847,7 +5147,7 @@ HTMLElement.role
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2057
+node_modules/typescript/lib/lib.dom.d.ts:2248
 
 ___
 
@@ -4855,13 +5155,15 @@ ___
 
 • `Readonly` **scrollHeight**: `number`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/scrollHeight)
+
 #### Inherited from
 
 HTMLElement.scrollHeight
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5063
+node_modules/typescript/lib/lib.dom.d.ts:7612
 
 ___
 
@@ -4869,13 +5171,15 @@ ___
 
 • **scrollLeft**: `number`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/scrollLeft)
+
 #### Inherited from
 
 HTMLElement.scrollLeft
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5064
+node_modules/typescript/lib/lib.dom.d.ts:7614
 
 ___
 
@@ -4883,13 +5187,15 @@ ___
 
 • **scrollTop**: `number`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/scrollTop)
+
 #### Inherited from
 
 HTMLElement.scrollTop
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5065
+node_modules/typescript/lib/lib.dom.d.ts:7616
 
 ___
 
@@ -4897,13 +5203,15 @@ ___
 
 • `Readonly` **scrollWidth**: `number`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/scrollWidth)
+
 #### Inherited from
 
 HTMLElement.scrollWidth
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5066
+node_modules/typescript/lib/lib.dom.d.ts:7618
 
 ___
 
@@ -4913,13 +5221,15 @@ ___
 
 Returns element's shadow root, if any, and if shadow root's mode is "open", and null otherwise.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/shadowRoot)
+
 #### Inherited from
 
 HTMLElement.shadowRoot
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5068
+node_modules/typescript/lib/lib.dom.d.ts:7624
 
 ___
 
@@ -4929,13 +5239,15 @@ ___
 
 Returns the value of element's slot content attribute. Can be set to change it.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/slot)
+
 #### Inherited from
 
 HTMLElement.slot
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5070
+node_modules/typescript/lib/lib.dom.d.ts:7630
 
 ___
 
@@ -4943,13 +5255,15 @@ ___
 
 • **spellcheck**: `boolean`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/spellcheck)
+
 #### Inherited from
 
 HTMLElement.spellcheck
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6570
+node_modules/typescript/lib/lib.dom.d.ts:10036
 
 ___
 
@@ -4957,13 +5271,15 @@ ___
 
 • `Readonly` **style**: `CSSStyleDeclaration`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/style)
+
 #### Inherited from
 
 HTMLElement.style
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5162
+node_modules/typescript/lib/lib.dom.d.ts:7814
 
 ___
 
@@ -4971,13 +5287,15 @@ ___
 
 • **tabIndex**: `number`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/tabIndex)
+
 #### Inherited from
 
 HTMLElement.tabIndex
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:7767
+node_modules/typescript/lib/lib.dom.d.ts:11997
 
 ___
 
@@ -4987,13 +5305,15 @@ ___
 
 Returns the HTML-uppercased qualified name.
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/tagName)
+
 #### Inherited from
 
 HTMLElement.tagName
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5072
+node_modules/typescript/lib/lib.dom.d.ts:7636
 
 ___
 
@@ -5001,13 +5321,15 @@ ___
 
 • **textContent**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/textContent)
+
 #### Inherited from
 
 HTMLElement.textContent
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10273
+node_modules/typescript/lib/lib.dom.d.ts:16086
 
 ___
 
@@ -5015,13 +5337,15 @@ ___
 
 • **title**: `string`
 
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/title)
+
 #### Inherited from
 
 HTMLElement.title
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6571
+node_modules/typescript/lib/lib.dom.d.ts:10038
 
 ___
 
@@ -5035,7 +5359,7 @@ HTMLElement.translate
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6572
+node_modules/typescript/lib/lib.dom.d.ts:10039
 
 ## Methods
 
@@ -5067,7 +5391,7 @@ HTMLElement.addEventListener
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6575
+node_modules/typescript/lib/lib.dom.d.ts:10044
 
 ▸ **addEventListener**(`type`, `listener`, `options?`): `void`
 
@@ -5089,7 +5413,7 @@ HTMLElement.addEventListener
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6576
+node_modules/typescript/lib/lib.dom.d.ts:10045
 
 ___
 
@@ -5103,7 +5427,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:38](https://github.com/plaited/plaited/blob/7bbcbfa/libs/plaited/src/types.ts#L38)
+[libs/plaited/src/types.ts:38](https://github.com/plaited/plaited/blob/a4b9a21/libs/plaited/src/types.ts#L38)
 
 ___
 
@@ -5114,6 +5438,8 @@ ___
 Inserts nodes just after node, while replacing strings in nodes with equivalent Text nodes.
 
 Throws a "HierarchyRequestError" DOMException if the constraints of the node tree are violated.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/CharacterData/after)
 
 #### Parameters
 
@@ -5131,13 +5457,15 @@ HTMLElement.after
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:3747
+node_modules/typescript/lib/lib.dom.d.ts:5555
 
 ___
 
 ### animate
 
 ▸ **animate**(`keyframes`, `options?`): `Animation`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/animate)
 
 #### Parameters
 
@@ -5156,7 +5484,7 @@ HTMLElement.animate
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2146
+node_modules/typescript/lib/lib.dom.d.ts:2398
 
 ___
 
@@ -5167,6 +5495,8 @@ ___
 Inserts nodes after the last child of node, while replacing strings in nodes with equivalent Text nodes.
 
 Throws a "HierarchyRequestError" DOMException if the constraints of the node tree are violated.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Document/append)
 
 #### Parameters
 
@@ -5184,13 +5514,15 @@ HTMLElement.append
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10697
+node_modules/typescript/lib/lib.dom.d.ts:16729
 
 ___
 
 ### appendChild
 
 ▸ **appendChild**<`T`\>(`node`): `T`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/appendChild)
 
 #### Type parameters
 
@@ -5214,13 +5546,15 @@ HTMLElement.appendChild
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10274
+node_modules/typescript/lib/lib.dom.d.ts:16088
 
 ___
 
 ### attachInternals
 
 ▸ **attachInternals**(): `ElementInternals`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/attachInternals)
 
 #### Returns
 
@@ -5232,7 +5566,7 @@ HTMLElement.attachInternals
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6573
+node_modules/typescript/lib/lib.dom.d.ts:10041
 
 ___
 
@@ -5241,6 +5575,8 @@ ___
 ▸ **attachShadow**(`init`): `ShadowRoot`
 
 Creates a shadow root for element and returns it.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/attachShadow)
 
 #### Parameters
 
@@ -5258,7 +5594,7 @@ HTMLElement.attachShadow
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5074
+node_modules/typescript/lib/lib.dom.d.ts:7642
 
 ___
 
@@ -5280,7 +5616,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:32](https://github.com/plaited/plaited/blob/7bbcbfa/libs/plaited/src/types.ts#L32)
+[libs/plaited/src/types.ts:32](https://github.com/plaited/plaited/blob/a4b9a21/libs/plaited/src/types.ts#L32)
 
 ___
 
@@ -5291,6 +5627,8 @@ ___
 Inserts nodes just before node, while replacing strings in nodes with equivalent Text nodes.
 
 Throws a "HierarchyRequestError" DOMException if the constraints of the node tree are violated.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/CharacterData/before)
 
 #### Parameters
 
@@ -5308,13 +5646,15 @@ HTMLElement.before
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:3753
+node_modules/typescript/lib/lib.dom.d.ts:5563
 
 ___
 
 ### blur
 
 ▸ **blur**(): `void`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/blur)
 
 #### Returns
 
@@ -5326,7 +5666,7 @@ HTMLElement.blur
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:7768
+node_modules/typescript/lib/lib.dom.d.ts:11999
 
 ___
 
@@ -5350,13 +5690,15 @@ HTMLElement.checkVisibility
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5075
+node_modules/typescript/lib/lib.dom.d.ts:7643
 
 ___
 
 ### click
 
 ▸ **click**(): `void`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/click)
 
 #### Returns
 
@@ -5368,7 +5710,7 @@ HTMLElement.click
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6574
+node_modules/typescript/lib/lib.dom.d.ts:10043
 
 ___
 
@@ -5377,6 +5719,8 @@ ___
 ▸ **cloneNode**(`deep?`): `Node`
 
 Returns a copy of node. If deep is true, the copy also includes the node's descendants.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/cloneNode)
 
 #### Parameters
 
@@ -5394,7 +5738,7 @@ HTMLElement.cloneNode
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10276
+node_modules/typescript/lib/lib.dom.d.ts:16094
 
 ___
 
@@ -5403,6 +5747,8 @@ ___
 ▸ **closest**<`K`\>(`selector`): `HTMLElementTagNameMap`[`K`]
 
 Returns the first (starting at element) inclusive ancestor that matches selectors, and null otherwise.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/closest)
 
 #### Type parameters
 
@@ -5426,7 +5772,7 @@ HTMLElement.closest
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5077
+node_modules/typescript/lib/lib.dom.d.ts:7649
 
 ▸ **closest**<`K`\>(`selector`): `SVGElementTagNameMap`[`K`]
 
@@ -5452,7 +5798,7 @@ HTMLElement.closest
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5078
+node_modules/typescript/lib/lib.dom.d.ts:7650
 
 ▸ **closest**<`K`\>(`selector`): `MathMLElementTagNameMap`[`K`]
 
@@ -5478,7 +5824,7 @@ HTMLElement.closest
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5079
+node_modules/typescript/lib/lib.dom.d.ts:7651
 
 ▸ **closest**<`E`\>(`selectors`): `E`
 
@@ -5504,7 +5850,7 @@ HTMLElement.closest
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5080
+node_modules/typescript/lib/lib.dom.d.ts:7652
 
 ___
 
@@ -5513,6 +5859,8 @@ ___
 ▸ **compareDocumentPosition**(`other`): `number`
 
 Returns a bitmask indicating the position of other relative to node.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/compareDocumentPosition)
 
 #### Parameters
 
@@ -5530,7 +5878,27 @@ HTMLElement.compareDocumentPosition
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10278
+node_modules/typescript/lib/lib.dom.d.ts:16100
+
+___
+
+### computedStyleMap
+
+▸ **computedStyleMap**(): `StylePropertyMapReadOnly`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/computedStyleMap)
+
+#### Returns
+
+`StylePropertyMapReadOnly`
+
+#### Inherited from
+
+HTMLElement.computedStyleMap
+
+#### Defined in
+
+node_modules/typescript/lib/lib.dom.d.ts:7654
 
 ___
 
@@ -5544,7 +5912,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:31](https://github.com/plaited/plaited/blob/7bbcbfa/libs/plaited/src/types.ts#L31)
+[libs/plaited/src/types.ts:31](https://github.com/plaited/plaited/blob/a4b9a21/libs/plaited/src/types.ts#L31)
 
 ___
 
@@ -5553,6 +5921,8 @@ ___
 ▸ **contains**(`other`): `boolean`
 
 Returns true if other is an inclusive descendant of node, and false otherwise.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/contains)
 
 #### Parameters
 
@@ -5570,7 +5940,7 @@ HTMLElement.contains
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10280
+node_modules/typescript/lib/lib.dom.d.ts:16106
 
 ___
 
@@ -5584,7 +5954,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:37](https://github.com/plaited/plaited/blob/7bbcbfa/libs/plaited/src/types.ts#L37)
+[libs/plaited/src/types.ts:37](https://github.com/plaited/plaited/blob/a4b9a21/libs/plaited/src/types.ts#L37)
 
 ___
 
@@ -5593,6 +5963,8 @@ ___
 ▸ **dispatchEvent**(`event`): `boolean`
 
 Dispatches a synthetic event event to target and returns true if either event's cancelable attribute value is false or its preventDefault() method was not invoked, and false otherwise.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/EventTarget/dispatchEvent)
 
 #### Parameters
 
@@ -5610,13 +5982,15 @@ HTMLElement.dispatchEvent
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5344
+node_modules/typescript/lib/lib.dom.d.ts:8174
 
 ___
 
 ### focus
 
 ▸ **focus**(`options?`): `void`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/focus)
 
 #### Parameters
 
@@ -5634,7 +6008,7 @@ HTMLElement.focus
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:7769
+node_modules/typescript/lib/lib.dom.d.ts:12001
 
 ___
 
@@ -5654,7 +6028,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:39](https://github.com/plaited/plaited/blob/7bbcbfa/libs/plaited/src/types.ts#L39)
+[libs/plaited/src/types.ts:39](https://github.com/plaited/plaited/blob/a4b9a21/libs/plaited/src/types.ts#L39)
 
 ___
 
@@ -5674,7 +6048,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:40](https://github.com/plaited/plaited/blob/7bbcbfa/libs/plaited/src/types.ts#L40)
+[libs/plaited/src/types.ts:40](https://github.com/plaited/plaited/blob/a4b9a21/libs/plaited/src/types.ts#L40)
 
 ___
 
@@ -5688,7 +6062,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:41](https://github.com/plaited/plaited/blob/7bbcbfa/libs/plaited/src/types.ts#L41)
+[libs/plaited/src/types.ts:41](https://github.com/plaited/plaited/blob/a4b9a21/libs/plaited/src/types.ts#L41)
 
 ___
 
@@ -5709,13 +6083,15 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:42](https://github.com/plaited/plaited/blob/7bbcbfa/libs/plaited/src/types.ts#L42)
+[libs/plaited/src/types.ts:42](https://github.com/plaited/plaited/blob/a4b9a21/libs/plaited/src/types.ts#L42)
 
 ___
 
 ### getAnimations
 
 ▸ **getAnimations**(`options?`): `Animation`[]
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/getAnimations)
 
 #### Parameters
 
@@ -5733,7 +6109,7 @@ HTMLElement.getAnimations
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:2147
+node_modules/typescript/lib/lib.dom.d.ts:2400
 
 ___
 
@@ -5742,6 +6118,8 @@ ___
 ▸ **getAttribute**(`qualifiedName`): `string`
 
 Returns element's first attribute whose qualified name is qualifiedName, and null if there is no such attribute otherwise.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/getAttribute)
 
 #### Parameters
 
@@ -5759,7 +6137,7 @@ HTMLElement.getAttribute
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5082
+node_modules/typescript/lib/lib.dom.d.ts:7660
 
 ___
 
@@ -5768,6 +6146,8 @@ ___
 ▸ **getAttributeNS**(`namespace`, `localName`): `string`
 
 Returns element's attribute whose namespace is namespace and local name is localName, and null if there is no such attribute otherwise.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/getAttributeNS)
 
 #### Parameters
 
@@ -5786,7 +6166,7 @@ HTMLElement.getAttributeNS
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5084
+node_modules/typescript/lib/lib.dom.d.ts:7666
 
 ___
 
@@ -5795,6 +6175,8 @@ ___
 ▸ **getAttributeNames**(): `string`[]
 
 Returns the qualified names of all element's attributes. Can contain duplicates.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/getAttributeNames)
 
 #### Returns
 
@@ -5806,13 +6188,15 @@ HTMLElement.getAttributeNames
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5086
+node_modules/typescript/lib/lib.dom.d.ts:7672
 
 ___
 
 ### getAttributeNode
 
 ▸ **getAttributeNode**(`qualifiedName`): `Attr`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/getAttributeNode)
 
 #### Parameters
 
@@ -5830,13 +6214,15 @@ HTMLElement.getAttributeNode
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5087
+node_modules/typescript/lib/lib.dom.d.ts:7674
 
 ___
 
 ### getAttributeNodeNS
 
 ▸ **getAttributeNodeNS**(`namespace`, `localName`): `Attr`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/getAttributeNodeNS)
 
 #### Parameters
 
@@ -5855,13 +6241,15 @@ HTMLElement.getAttributeNodeNS
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5088
+node_modules/typescript/lib/lib.dom.d.ts:7676
 
 ___
 
 ### getBoundingClientRect
 
 ▸ **getBoundingClientRect**(): `DOMRect`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/getBoundingClientRect)
 
 #### Returns
 
@@ -5873,13 +6261,15 @@ HTMLElement.getBoundingClientRect
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5089
+node_modules/typescript/lib/lib.dom.d.ts:7678
 
 ___
 
 ### getClientRects
 
 ▸ **getClientRects**(): `DOMRectList`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/getClientRects)
 
 #### Returns
 
@@ -5891,7 +6281,7 @@ HTMLElement.getClientRects
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5090
+node_modules/typescript/lib/lib.dom.d.ts:7680
 
 ___
 
@@ -5900,6 +6290,8 @@ ___
 ▸ **getElementsByClassName**(`classNames`): `HTMLCollectionOf`<`Element`\>
 
 Returns a HTMLCollection of the elements in the object on which the method was invoked (a document or an element) that have all the classes given by classNames. The classNames argument is interpreted as a space-separated list of classes.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/getElementsByClassName)
 
 #### Parameters
 
@@ -5917,13 +6309,15 @@ HTMLElement.getElementsByClassName
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5092
+node_modules/typescript/lib/lib.dom.d.ts:7686
 
 ___
 
 ### getElementsByTagName
 
 ▸ **getElementsByTagName**<`K`\>(`qualifiedName`): `HTMLCollectionOf`<`HTMLElementTagNameMap`[`K`]\>
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/getElementsByTagName)
 
 #### Type parameters
 
@@ -5947,7 +6341,7 @@ HTMLElement.getElementsByTagName
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5093
+node_modules/typescript/lib/lib.dom.d.ts:7688
 
 ▸ **getElementsByTagName**<`K`\>(`qualifiedName`): `HTMLCollectionOf`<`SVGElementTagNameMap`[`K`]\>
 
@@ -5973,7 +6367,7 @@ HTMLElement.getElementsByTagName
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5094
+node_modules/typescript/lib/lib.dom.d.ts:7689
 
 ▸ **getElementsByTagName**<`K`\>(`qualifiedName`): `HTMLCollectionOf`<`MathMLElementTagNameMap`[`K`]\>
 
@@ -5999,7 +6393,7 @@ HTMLElement.getElementsByTagName
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5095
+node_modules/typescript/lib/lib.dom.d.ts:7690
 
 ▸ **getElementsByTagName**<`K`\>(`qualifiedName`): `HTMLCollectionOf`<`HTMLElementDeprecatedTagNameMap`[`K`]\>
 
@@ -6027,7 +6421,7 @@ HTMLElement.getElementsByTagName
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5097
+node_modules/typescript/lib/lib.dom.d.ts:7692
 
 ▸ **getElementsByTagName**(`qualifiedName`): `HTMLCollectionOf`<`Element`\>
 
@@ -6047,13 +6441,15 @@ HTMLElement.getElementsByTagName
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5098
+node_modules/typescript/lib/lib.dom.d.ts:7693
 
 ___
 
 ### getElementsByTagNameNS
 
 ▸ **getElementsByTagNameNS**(`namespaceURI`, `localName`): `HTMLCollectionOf`<`HTMLElement`\>
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/getElementsByTagNameNS)
 
 #### Parameters
 
@@ -6072,7 +6468,7 @@ HTMLElement.getElementsByTagNameNS
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5099
+node_modules/typescript/lib/lib.dom.d.ts:7695
 
 ▸ **getElementsByTagNameNS**(`namespaceURI`, `localName`): `HTMLCollectionOf`<`SVGElement`\>
 
@@ -6093,7 +6489,7 @@ HTMLElement.getElementsByTagNameNS
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5100
+node_modules/typescript/lib/lib.dom.d.ts:7696
 
 ▸ **getElementsByTagNameNS**(`namespaceURI`, `localName`): `HTMLCollectionOf`<`MathMLElement`\>
 
@@ -6114,7 +6510,7 @@ HTMLElement.getElementsByTagNameNS
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5101
+node_modules/typescript/lib/lib.dom.d.ts:7697
 
 ▸ **getElementsByTagNameNS**(`namespace`, `localName`): `HTMLCollectionOf`<`Element`\>
 
@@ -6135,7 +6531,7 @@ HTMLElement.getElementsByTagNameNS
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5102
+node_modules/typescript/lib/lib.dom.d.ts:7698
 
 ___
 
@@ -6144,6 +6540,8 @@ ___
 ▸ **getRootNode**(`options?`): `Node`
 
 Returns node's root.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/getRootNode)
 
 #### Parameters
 
@@ -6161,7 +6559,7 @@ HTMLElement.getRootNode
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10282
+node_modules/typescript/lib/lib.dom.d.ts:16112
 
 ___
 
@@ -6170,6 +6568,8 @@ ___
 ▸ **hasAttribute**(`qualifiedName`): `boolean`
 
 Returns true if element has an attribute whose qualified name is qualifiedName, and false otherwise.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/hasAttribute)
 
 #### Parameters
 
@@ -6187,7 +6587,7 @@ HTMLElement.hasAttribute
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5104
+node_modules/typescript/lib/lib.dom.d.ts:7704
 
 ___
 
@@ -6196,6 +6596,8 @@ ___
 ▸ **hasAttributeNS**(`namespace`, `localName`): `boolean`
 
 Returns true if element has an attribute whose namespace is namespace and local name is localName.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/hasAttributeNS)
 
 #### Parameters
 
@@ -6214,7 +6616,7 @@ HTMLElement.hasAttributeNS
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5106
+node_modules/typescript/lib/lib.dom.d.ts:7710
 
 ___
 
@@ -6223,6 +6625,8 @@ ___
 ▸ **hasAttributes**(): `boolean`
 
 Returns true if element has attributes, and false otherwise.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/hasAttributes)
 
 #### Returns
 
@@ -6234,7 +6638,7 @@ HTMLElement.hasAttributes
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5108
+node_modules/typescript/lib/lib.dom.d.ts:7716
 
 ___
 
@@ -6243,6 +6647,8 @@ ___
 ▸ **hasChildNodes**(): `boolean`
 
 Returns whether node has children.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/hasChildNodes)
 
 #### Returns
 
@@ -6254,13 +6660,15 @@ HTMLElement.hasChildNodes
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10284
+node_modules/typescript/lib/lib.dom.d.ts:16118
 
 ___
 
 ### hasPointerCapture
 
 ▸ **hasPointerCapture**(`pointerId`): `boolean`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/hasPointerCapture)
 
 #### Parameters
 
@@ -6278,13 +6686,15 @@ HTMLElement.hasPointerCapture
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5109
+node_modules/typescript/lib/lib.dom.d.ts:7718
 
 ___
 
 ### insertAdjacentElement
 
 ▸ **insertAdjacentElement**(`where`, `element`): `Element`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/insertAdjacentElement)
 
 #### Parameters
 
@@ -6303,13 +6713,15 @@ HTMLElement.insertAdjacentElement
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5110
+node_modules/typescript/lib/lib.dom.d.ts:7720
 
 ___
 
 ### insertAdjacentHTML
 
 ▸ **insertAdjacentHTML**(`position`, `text`): `void`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/insertAdjacentHTML)
 
 #### Parameters
 
@@ -6328,13 +6740,15 @@ HTMLElement.insertAdjacentHTML
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5111
+node_modules/typescript/lib/lib.dom.d.ts:7722
 
 ___
 
 ### insertAdjacentText
 
 ▸ **insertAdjacentText**(`where`, `data`): `void`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/insertAdjacentText)
 
 #### Parameters
 
@@ -6353,13 +6767,15 @@ HTMLElement.insertAdjacentText
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5112
+node_modules/typescript/lib/lib.dom.d.ts:7724
 
 ___
 
 ### insertBefore
 
 ▸ **insertBefore**<`T`\>(`node`, `child`): `T`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/insertBefore)
 
 #### Type parameters
 
@@ -6384,13 +6800,15 @@ HTMLElement.insertBefore
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10285
+node_modules/typescript/lib/lib.dom.d.ts:16120
 
 ___
 
 ### isDefaultNamespace
 
 ▸ **isDefaultNamespace**(`namespace`): `boolean`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/isDefaultNamespace)
 
 #### Parameters
 
@@ -6408,7 +6826,7 @@ HTMLElement.isDefaultNamespace
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10286
+node_modules/typescript/lib/lib.dom.d.ts:16122
 
 ___
 
@@ -6417,6 +6835,8 @@ ___
 ▸ **isEqualNode**(`otherNode`): `boolean`
 
 Returns whether node and otherNode have the same properties.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/isEqualNode)
 
 #### Parameters
 
@@ -6434,13 +6854,15 @@ HTMLElement.isEqualNode
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10288
+node_modules/typescript/lib/lib.dom.d.ts:16128
 
 ___
 
 ### isSameNode
 
 ▸ **isSameNode**(`otherNode`): `boolean`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/isSameNode)
 
 #### Parameters
 
@@ -6458,13 +6880,15 @@ HTMLElement.isSameNode
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10289
+node_modules/typescript/lib/lib.dom.d.ts:16130
 
 ___
 
 ### lookupNamespaceURI
 
 ▸ **lookupNamespaceURI**(`prefix`): `string`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/lookupNamespaceURI)
 
 #### Parameters
 
@@ -6482,13 +6906,15 @@ HTMLElement.lookupNamespaceURI
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10290
+node_modules/typescript/lib/lib.dom.d.ts:16132
 
 ___
 
 ### lookupPrefix
 
 ▸ **lookupPrefix**(`namespace`): `string`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/lookupPrefix)
 
 #### Parameters
 
@@ -6506,7 +6932,7 @@ HTMLElement.lookupPrefix
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10291
+node_modules/typescript/lib/lib.dom.d.ts:16134
 
 ___
 
@@ -6515,6 +6941,8 @@ ___
 ▸ **matches**(`selectors`): `boolean`
 
 Returns true if matching selectors against element's root yields element, and false otherwise.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/matches)
 
 #### Parameters
 
@@ -6532,7 +6960,7 @@ HTMLElement.matches
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5114
+node_modules/typescript/lib/lib.dom.d.ts:7730
 
 ___
 
@@ -6541,6 +6969,8 @@ ___
 ▸ **normalize**(): `void`
 
 Removes empty exclusive Text nodes and concatenates the data of remaining contiguous exclusive Text nodes into the first of their nodes.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/normalize)
 
 #### Returns
 
@@ -6552,7 +6982,7 @@ HTMLElement.normalize
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10293
+node_modules/typescript/lib/lib.dom.d.ts:16140
 
 ___
 
@@ -6572,7 +7002,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:30](https://github.com/plaited/plaited/blob/7bbcbfa/libs/plaited/src/types.ts#L30)
+[libs/plaited/src/types.ts:30](https://github.com/plaited/plaited/blob/a4b9a21/libs/plaited/src/types.ts#L30)
 
 ___
 
@@ -6583,6 +7013,8 @@ ___
 Inserts nodes before the first child of node, while replacing strings in nodes with equivalent Text nodes.
 
 Throws a "HierarchyRequestError" DOMException if the constraints of the node tree are violated.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Document/prepend)
 
 #### Parameters
 
@@ -6600,7 +7032,7 @@ HTMLElement.prepend
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10703
+node_modules/typescript/lib/lib.dom.d.ts:16737
 
 ___
 
@@ -6609,6 +7041,8 @@ ___
 ▸ **querySelector**<`K`\>(`selectors`): `HTMLElementTagNameMap`[`K`]
 
 Returns the first element that is a descendant of node that matches selectors.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Document/querySelector)
 
 #### Type parameters
 
@@ -6632,7 +7066,7 @@ HTMLElement.querySelector
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10705
+node_modules/typescript/lib/lib.dom.d.ts:16743
 
 ▸ **querySelector**<`K`\>(`selectors`): `SVGElementTagNameMap`[`K`]
 
@@ -6658,7 +7092,7 @@ HTMLElement.querySelector
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10706
+node_modules/typescript/lib/lib.dom.d.ts:16744
 
 ▸ **querySelector**<`K`\>(`selectors`): `MathMLElementTagNameMap`[`K`]
 
@@ -6684,7 +7118,7 @@ HTMLElement.querySelector
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10707
+node_modules/typescript/lib/lib.dom.d.ts:16745
 
 ▸ **querySelector**<`K`\>(`selectors`): `HTMLElementDeprecatedTagNameMap`[`K`]
 
@@ -6712,7 +7146,7 @@ HTMLElement.querySelector
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10709
+node_modules/typescript/lib/lib.dom.d.ts:16747
 
 ▸ **querySelector**<`E`\>(`selectors`): `E`
 
@@ -6738,7 +7172,7 @@ HTMLElement.querySelector
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10710
+node_modules/typescript/lib/lib.dom.d.ts:16748
 
 ___
 
@@ -6747,6 +7181,8 @@ ___
 ▸ **querySelectorAll**<`K`\>(`selectors`): `NodeListOf`<`HTMLElementTagNameMap`[`K`]\>
 
 Returns all element descendants of node that match selectors.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Document/querySelectorAll)
 
 #### Type parameters
 
@@ -6770,7 +7206,7 @@ HTMLElement.querySelectorAll
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10712
+node_modules/typescript/lib/lib.dom.d.ts:16754
 
 ▸ **querySelectorAll**<`K`\>(`selectors`): `NodeListOf`<`SVGElementTagNameMap`[`K`]\>
 
@@ -6796,7 +7232,7 @@ HTMLElement.querySelectorAll
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10713
+node_modules/typescript/lib/lib.dom.d.ts:16755
 
 ▸ **querySelectorAll**<`K`\>(`selectors`): `NodeListOf`<`MathMLElementTagNameMap`[`K`]\>
 
@@ -6822,7 +7258,7 @@ HTMLElement.querySelectorAll
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10714
+node_modules/typescript/lib/lib.dom.d.ts:16756
 
 ▸ **querySelectorAll**<`K`\>(`selectors`): `NodeListOf`<`HTMLElementDeprecatedTagNameMap`[`K`]\>
 
@@ -6850,7 +7286,7 @@ HTMLElement.querySelectorAll
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10716
+node_modules/typescript/lib/lib.dom.d.ts:16758
 
 ▸ **querySelectorAll**<`E`\>(`selectors`): `NodeListOf`<`E`\>
 
@@ -6876,13 +7312,15 @@ HTMLElement.querySelectorAll
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10717
+node_modules/typescript/lib/lib.dom.d.ts:16759
 
 ___
 
 ### releasePointerCapture
 
 ▸ **releasePointerCapture**(`pointerId`): `void`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/releasePointerCapture)
 
 #### Parameters
 
@@ -6900,7 +7338,7 @@ HTMLElement.releasePointerCapture
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5115
+node_modules/typescript/lib/lib.dom.d.ts:7732
 
 ___
 
@@ -6909,6 +7347,8 @@ ___
 ▸ **remove**(): `void`
 
 Removes node.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/CharacterData/remove)
 
 #### Returns
 
@@ -6920,7 +7360,7 @@ HTMLElement.remove
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:3755
+node_modules/typescript/lib/lib.dom.d.ts:5569
 
 ___
 
@@ -6929,6 +7369,8 @@ ___
 ▸ **removeAttribute**(`qualifiedName`): `void`
 
 Removes element's first attribute whose qualified name is qualifiedName.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/removeAttribute)
 
 #### Parameters
 
@@ -6946,7 +7388,7 @@ HTMLElement.removeAttribute
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5117
+node_modules/typescript/lib/lib.dom.d.ts:7738
 
 ___
 
@@ -6955,6 +7397,8 @@ ___
 ▸ **removeAttributeNS**(`namespace`, `localName`): `void`
 
 Removes element's attribute whose namespace is namespace and local name is localName.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/removeAttributeNS)
 
 #### Parameters
 
@@ -6973,13 +7417,15 @@ HTMLElement.removeAttributeNS
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5119
+node_modules/typescript/lib/lib.dom.d.ts:7744
 
 ___
 
 ### removeAttributeNode
 
 ▸ **removeAttributeNode**(`attr`): `Attr`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/removeAttributeNode)
 
 #### Parameters
 
@@ -6997,13 +7443,15 @@ HTMLElement.removeAttributeNode
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5120
+node_modules/typescript/lib/lib.dom.d.ts:7746
 
 ___
 
 ### removeChild
 
 ▸ **removeChild**<`T`\>(`child`): `T`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/removeChild)
 
 #### Type parameters
 
@@ -7027,7 +7475,7 @@ HTMLElement.removeChild
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10294
+node_modules/typescript/lib/lib.dom.d.ts:16142
 
 ___
 
@@ -7059,7 +7507,7 @@ HTMLElement.removeEventListener
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6577
+node_modules/typescript/lib/lib.dom.d.ts:10046
 
 ▸ **removeEventListener**(`type`, `listener`, `options?`): `void`
 
@@ -7081,13 +7529,15 @@ HTMLElement.removeEventListener
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:6578
+node_modules/typescript/lib/lib.dom.d.ts:10047
 
 ___
 
 ### replaceChild
 
 ▸ **replaceChild**<`T`\>(`node`, `child`): `T`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/replaceChild)
 
 #### Type parameters
 
@@ -7112,7 +7562,7 @@ HTMLElement.replaceChild
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10295
+node_modules/typescript/lib/lib.dom.d.ts:16144
 
 ___
 
@@ -7123,6 +7573,8 @@ ___
 Replace all children of node with nodes, while replacing strings in nodes with equivalent Text nodes.
 
 Throws a "HierarchyRequestError" DOMException if the constraints of the node tree are violated.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Document/replaceChildren)
 
 #### Parameters
 
@@ -7140,7 +7592,7 @@ HTMLElement.replaceChildren
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:10723
+node_modules/typescript/lib/lib.dom.d.ts:16767
 
 ___
 
@@ -7151,6 +7603,8 @@ ___
 Replaces node with nodes, while replacing strings in nodes with equivalent Text nodes.
 
 Throws a "HierarchyRequestError" DOMException if the constraints of the node tree are violated.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/CharacterData/replaceWith)
 
 #### Parameters
 
@@ -7168,7 +7622,7 @@ HTMLElement.replaceWith
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:3761
+node_modules/typescript/lib/lib.dom.d.ts:5577
 
 ___
 
@@ -7179,6 +7633,8 @@ ___
 Displays element fullscreen and resolves promise when done.
 
 When supplied, options's navigationUI member indicates whether showing navigation UI while in fullscreen is preferred or not. If set to "show", navigation simplicity is preferred over screen space, and if set to "hide", more screen space is preferred. User agents are always free to honor user preference over the application's. The default value "auto" indicates no application preference.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/requestFullscreen)
 
 #### Parameters
 
@@ -7196,13 +7652,15 @@ HTMLElement.requestFullscreen
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5126
+node_modules/typescript/lib/lib.dom.d.ts:7754
 
 ___
 
 ### requestPointerLock
 
 ▸ **requestPointerLock**(): `void`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/requestPointerLock)
 
 #### Returns
 
@@ -7214,13 +7672,15 @@ HTMLElement.requestPointerLock
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5127
+node_modules/typescript/lib/lib.dom.d.ts:7756
 
 ___
 
 ### scroll
 
 ▸ **scroll**(`options?`): `void`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/scroll)
 
 #### Parameters
 
@@ -7238,7 +7698,7 @@ HTMLElement.scroll
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5128
+node_modules/typescript/lib/lib.dom.d.ts:7758
 
 ▸ **scroll**(`x`, `y`): `void`
 
@@ -7259,13 +7719,15 @@ HTMLElement.scroll
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5129
+node_modules/typescript/lib/lib.dom.d.ts:7759
 
 ___
 
 ### scrollBy
 
 ▸ **scrollBy**(`options?`): `void`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/scrollBy)
 
 #### Parameters
 
@@ -7283,7 +7745,7 @@ HTMLElement.scrollBy
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5130
+node_modules/typescript/lib/lib.dom.d.ts:7761
 
 ▸ **scrollBy**(`x`, `y`): `void`
 
@@ -7304,13 +7766,15 @@ HTMLElement.scrollBy
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5131
+node_modules/typescript/lib/lib.dom.d.ts:7762
 
 ___
 
 ### scrollIntoView
 
 ▸ **scrollIntoView**(`arg?`): `void`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/scrollIntoView)
 
 #### Parameters
 
@@ -7328,13 +7792,15 @@ HTMLElement.scrollIntoView
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5132
+node_modules/typescript/lib/lib.dom.d.ts:7764
 
 ___
 
 ### scrollTo
 
 ▸ **scrollTo**(`options?`): `void`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/scrollTo)
 
 #### Parameters
 
@@ -7352,7 +7818,7 @@ HTMLElement.scrollTo
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5133
+node_modules/typescript/lib/lib.dom.d.ts:7766
 
 ▸ **scrollTo**(`x`, `y`): `void`
 
@@ -7373,7 +7839,7 @@ HTMLElement.scrollTo
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5134
+node_modules/typescript/lib/lib.dom.d.ts:7767
 
 ___
 
@@ -7382,6 +7848,8 @@ ___
 ▸ **setAttribute**(`qualifiedName`, `value`): `void`
 
 Sets the value of element's first attribute whose qualified name is qualifiedName to value.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/setAttribute)
 
 #### Parameters
 
@@ -7400,7 +7868,7 @@ HTMLElement.setAttribute
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5136
+node_modules/typescript/lib/lib.dom.d.ts:7773
 
 ___
 
@@ -7409,6 +7877,8 @@ ___
 ▸ **setAttributeNS**(`namespace`, `qualifiedName`, `value`): `void`
 
 Sets the value of element's attribute whose namespace is namespace and local name is localName to value.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/setAttributeNS)
 
 #### Parameters
 
@@ -7428,13 +7898,15 @@ HTMLElement.setAttributeNS
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5138
+node_modules/typescript/lib/lib.dom.d.ts:7779
 
 ___
 
 ### setAttributeNode
 
 ▸ **setAttributeNode**(`attr`): `Attr`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/setAttributeNode)
 
 #### Parameters
 
@@ -7452,13 +7924,15 @@ HTMLElement.setAttributeNode
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5139
+node_modules/typescript/lib/lib.dom.d.ts:7781
 
 ___
 
 ### setAttributeNodeNS
 
 ▸ **setAttributeNodeNS**(`attr`): `Attr`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/setAttributeNodeNS)
 
 #### Parameters
 
@@ -7476,13 +7950,15 @@ HTMLElement.setAttributeNodeNS
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5140
+node_modules/typescript/lib/lib.dom.d.ts:7783
 
 ___
 
 ### setPointerCapture
 
 ▸ **setPointerCapture**(`pointerId`): `void`
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/setPointerCapture)
 
 #### Parameters
 
@@ -7500,7 +7976,7 @@ HTMLElement.setPointerCapture
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5141
+node_modules/typescript/lib/lib.dom.d.ts:7785
 
 ___
 
@@ -7511,6 +7987,8 @@ ___
 If force is not given, "toggles" qualifiedName, removing it if it is present and adding it if it is not present. If force is true, adds qualifiedName. If force is false, removes qualifiedName.
 
 Returns true if qualifiedName is now present, and false otherwise.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/toggleAttribute)
 
 #### Parameters
 
@@ -7529,7 +8007,7 @@ HTMLElement.toggleAttribute
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5147
+node_modules/typescript/lib/lib.dom.d.ts:7793
 
 ___
 
@@ -7540,6 +8018,8 @@ ___
 **`Deprecated`**
 
 This is a legacy alias of `matches`.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/matches)
 
 #### Parameters
 
@@ -7557,4 +8037,4 @@ HTMLElement.webkitMatchesSelector
 
 #### Defined in
 
-node_modules/typescript/lib/lib.dom.d.ts:5149
+node_modules/typescript/lib/lib.dom.d.ts:7799

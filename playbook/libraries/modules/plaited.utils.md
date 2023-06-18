@@ -44,7 +44,7 @@
 
 #### Defined in
 
-libs/plaited/node_modules/@plaited/utils/dist/key-mirror.d.ts:1
+libs/utils/dist/key-mirror.d.ts:1
 
 ___
 
@@ -84,7 +84,7 @@ ___
 
 #### Defined in
 
-libs/plaited/node_modules/@plaited/utils/dist/publisher.d.ts:1
+libs/utils/dist/publisher.d.ts:1
 
 ___
 
@@ -100,7 +100,7 @@ ___
 
 #### Defined in
 
-libs/plaited/node_modules/@plaited/utils/dist/value-of.type.d.ts:1
+libs/utils/dist/value-of.type.d.ts:1
 
 ## Functions
 
@@ -140,7 +140,7 @@ Call all function passed in with the same arguments when invoked
 
 #### Defined in
 
-libs/plaited/node_modules/@plaited/utils/dist/call-all.d.ts:2
+libs/utils/dist/call-all.d.ts:2
 
 ___
 
@@ -154,7 +154,7 @@ ___
 
 #### Defined in
 
-libs/plaited/node_modules/@plaited/utils/dist/can-use-dom.d.ts:1
+libs/utils/dist/can-use-dom.d.ts:1
 
 ___
 
@@ -193,7 +193,7 @@ ___
 
 #### Defined in
 
-libs/plaited/node_modules/@plaited/utils/dist/debounce.d.ts:1
+libs/utils/dist/debounce.d.ts:1
 
 ___
 
@@ -215,7 +215,7 @@ ___
 
 #### Defined in
 
-libs/plaited/node_modules/@plaited/utils/dist/deep-equal.d.ts:1
+libs/utils/dist/deep-equal.d.ts:1
 
 ___
 
@@ -245,7 +245,7 @@ escape('&<>\'"') => '&amp;&lt;&gt;&#39;&quot;'
 
 #### Defined in
 
-libs/plaited/node_modules/@plaited/utils/dist/escape-unescape.d.ts:10
+libs/utils/dist/escape-unescape.d.ts:10
 
 ___
 
@@ -267,7 +267,7 @@ For when you need id but are cool with just bumping a global counter
 
 #### Defined in
 
-libs/plaited/node_modules/@plaited/utils/dist/id.d.ts:6
+libs/utils/dist/id.d.ts:6
 
 ___
 
@@ -291,7 +291,7 @@ djb2 hashing function
 
 #### Defined in
 
-libs/plaited/node_modules/@plaited/utils/dist/hash.d.ts:4
+libs/utils/dist/hash.d.ts:4
 
 ___
 
@@ -319,7 +319,7 @@ create an object who's keys and values are the same by simply passing in the key
 
 #### Defined in
 
-libs/plaited/node_modules/@plaited/utils/dist/key-mirror.d.ts:5
+libs/utils/dist/key-mirror.d.ts:5
 
 ___
 
@@ -347,7 +347,7 @@ no-op function good for when you need defaults and stubs
 
 #### Defined in
 
-libs/plaited/node_modules/@plaited/utils/dist/noop.d.ts:2
+libs/utils/dist/noop.d.ts:2
 
 ___
 
@@ -363,7 +363,7 @@ generates a map where you can pass in an opacity number and get back the corresp
 
 #### Defined in
 
-libs/plaited/node_modules/@plaited/utils/dist/opacity-hex.d.ts:2
+libs/utils/dist/opacity-hex.d.ts:2
 
 ___
 
@@ -385,7 +385,7 @@ parse a hex code to an rgb(a) value
 
 #### Defined in
 
-libs/plaited/node_modules/@plaited/utils/dist/parse-to-rgb.d.ts:2
+libs/utils/dist/parse-to-rgb.d.ts:2
 
 ___
 
@@ -421,7 +421,7 @@ ___
 
 #### Defined in
 
-libs/plaited/node_modules/@plaited/utils/dist/publisher.d.ts:5
+libs/utils/dist/publisher.d.ts:5
 
 ___
 
@@ -443,7 +443,7 @@ reset or set the global idCounter
 
 #### Defined in
 
-libs/plaited/node_modules/@plaited/utils/dist/id.d.ts:8
+libs/utils/dist/id.d.ts:8
 
 ___
 
@@ -465,7 +465,7 @@ get the true type of an object returned back to you as a string
 
 #### Defined in
 
-libs/plaited/node_modules/@plaited/utils/dist/true-type-of.d.ts:2
+libs/utils/dist/true-type-of.d.ts:2
 
 ___
 
@@ -489,7 +489,7 @@ a function for returning an unique enough id when you need it
 
 #### Defined in
 
-libs/plaited/node_modules/@plaited/utils/dist/id.d.ts:4
+libs/utils/dist/id.d.ts:4
 
 ___
 
@@ -519,7 +519,7 @@ unescape('&amp;&lt;&gt;&#39;&quot;') => '&<>\'"'
 
 #### Defined in
 
-libs/plaited/node_modules/@plaited/utils/dist/escape-unescape.d.ts:16
+libs/utils/dist/escape-unescape.d.ts:16
 
 ___
 
@@ -541,4 +541,4 @@ an async function that will wait the given time passed to it in ms
 
 #### Defined in
 
-libs/plaited/node_modules/@plaited/utils/dist/wait.d.ts:2
+libs/utils/dist/wait.d.ts:2
