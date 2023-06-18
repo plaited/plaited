@@ -35,4 +35,4 @@
 
 #### Defined in
 
-[token-schema.ts:5](https://github.com/plaited/plaited/blob/675a959/libs/token-schema/src/token-schema.ts#L5)
+[token-schema.ts:5](https://github.com/plaited/plaited/blob/7bbcbfa/libs/token-schema/src/token-schema.ts#L5)
