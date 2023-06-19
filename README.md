@@ -22,31 +22,31 @@ development libraries.
 
 ## Dev Requirements
 
-### local
+### local requirements
 
 - Bun >= 0.5.9
 - Node 18.15.0
 
-### devcontainer
+### devcontainer requirements
 
 - vscode
 - Docker
 
 ## Dev Setup
 
-### local
+### local setup
 
 1. Clone repository and ensure you have bun >= 0.5.9
 2. Run `npx playwright install`
 3. Run `bash setup.sh`
 
-### devcontainer
+### devcontainer setup
 
 1. Install docker on local machine
 2. Ensure docker desktop daemon/app is running
 3. Open new window for VSCode
 4. `ctrl/cmd + shift + p`
 5. search for **Dev Containers:Clone Repository in Container Volume**
-6. Enter this repo name **plaited/token-utils**
+6. Enter this repo name **plaited/plaited**
 7. Wait for it to download and set everything up
 8. Open a VSCode terminal tab and run `zsh setup.sh`
