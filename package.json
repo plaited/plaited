@@ -6,8 +6,7 @@
   "type": "module",
   "workspaces": [
     "libs/*",
-    "examples/*",
-    "apps/*"
+    "examples/*"
   ],
   "scripts": {
     "build": "bun lerna run build",

@@ -1,7 +1,6 @@
 {
   "entryPoints": [
-    "libs/*",
-    "apps/*"
+    "libs/*"
   ],
   "exclude": [
     "README.md"

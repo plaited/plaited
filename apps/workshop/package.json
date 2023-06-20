@@ -1,9 +1,0 @@
-{
-  "name": "@plaited/workshop",
-  "license": "ISC",
-  "private": "true",
-  "type": "module",
-  "dependencies": {
-    "plaited": "3.0.2"
-  }
-}
