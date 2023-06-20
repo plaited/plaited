@@ -33,8 +33,11 @@
     "@plaited/token-transformer": "3.1.0",
     "@plaited/token-types": "3.1.0",
     "@playwright/test": "1.35.1",
+    "chokidar": "3.5.3",
+    "esbuild": "0.18.5",
+    "express": "4.18.2",
+    "fast-glob": "3.2.12",
     "plaited": "3.0.2",
-    "playwright": "1.35.1",
-    "chokidar": "3.5.3"
+    "playwright": "1.35.1"
   }
 }

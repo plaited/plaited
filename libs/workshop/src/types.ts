@@ -15,8 +15,18 @@ export type Story<T extends Attrs = Attrs>  = {
 }
 
 export type Config = {
+  /** Design system token group object*/
   tokens?: DesignTokenGroup
+  /** Static file assets to serve */
   assets?: string
-  output?: string
+  /** Where to output tests and token schema */
+  tests?: string
+  /** Whether to output design token json schema */
+  schema?: boolean
+  /** Port to run dev server on */
   port?: number
+  /** Where to output transformed tokens */
+  output?: string
+  /** glob pattern of where component stories are */
+  stories: string
 }

@@ -3,6 +3,7 @@
     "target": "ES2022",
     "module": "ES2022",
     "declaration": true,
+    "allowSyntheticDefaultImports": true,
     "moduleResolution": "nodenext",
     "outDir": "dist",
     "rootDir": "src"
