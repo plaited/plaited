@@ -14,6 +14,10 @@ export type Story<T extends Attrs = Attrs>  = {
   play: Parameters<typeof test>[1]
 }
 
+export type StoryList  = ({ name: string } & Story)[]
+
+export type StoryMap = [{ path: string } & Meta, StoryList][]
+
 export type Config = {
   /** Design system token group object*/
   tokens?: DesignTokenGroup
@@ -29,4 +33,9 @@ export type Config = {
   output?: string
   /** glob pattern of where component stories are */
   stories: string
+  /** live reload on */
+  reload?: boolean
 }
+
+export type Bundles = Map<string, Uint8Array>
+export type SetRoutes = (bundles: Bundles) => Promise<undefined>

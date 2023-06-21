@@ -1,5 +1,6 @@
 export * from './call-all.js'
 export * from './can-use-dom.js'
+export * from './cases.js'
 export * from './debounce.js'
 export * from './deep-equal.js'
 export * from './escape-unescape.js'

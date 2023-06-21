@@ -1,6 +1,6 @@
 import { AliasValue, Formatter, TransitionValue } from '@plaited/token-types'
 import { hasAlias, resolveCSSVar } from '../resolve.js'
-import { kebabCase } from '../cases.js'
+import { kebabCase } from '@plaited/utils'
 
 export const transition: Formatter<TransitionValue> = (
   { tokenPath, $value, allTokens }

@@ -1,7 +1,8 @@
 import { mkdir } from 'node:fs/promises'
+import fg from 'fast-glob'
 import { Config } from './types.js'
-import express, { Request, Response } from 'express'
-
+import { bundler } from './bundler.js'
+import { Server } from './server.js'
 export const workshop = async ({
   assets,
   tests = '.playwright',
@@ -9,6 +10,7 @@ export const workshop = async ({
   tokens,
   output = '.transformed',
   stories,
+  reload = true,
 }: Config) => {
   const testDir = `${process.cwd()}/${tests}`
   await mkdir(testDir, { recursive: true })
@@ -17,5 +19,13 @@ export const workshop = async ({
     transformedDir = `${process.cwd()}/${output}`
     await mkdir(transformedDir, { recursive: true })
   }
-  const app = express()
+  const routes = new Server(assets, reload)
+  const entryPoints = await fg(`${process.cwd()}/${stories}`)
+  const bundles = await bundler(entryPoints, reload)
+  for(const bundle of bundles) {
+    // routes.set(bundle[0], (_, res) => {
+    //   res.end(bundle[1])
+    // })
+  }
+
 }

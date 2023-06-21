@@ -17,6 +17,7 @@
     "prepack": "pinst --disable",
     "prepare": "husky install",
     "test": "npm run test --workspaces --if-present",
+    "test:watch": "npm run test:watch --workspaces --if-present",
     "typedocs": "bun scripts/docs.js"
   },
   "lint-staged": {
