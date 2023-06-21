@@ -5,7 +5,7 @@ import {
   primitives,
   voidTags,
 } from './constants.js'
-import { Attrs, Children, CreateTemplate, Primitive } from './types.js'
+import { Attrs, Children, CreateTemplate, Primitive, Child } from './types.js'
 
 /** custom element tagName regex */
 const customElementRegex = /^[a-z]+-[a-z]+(?:-[a-z]+)*$/
@@ -42,11 +42,9 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
       ? stylesheet.forEach(s => stylesheets.add(s))
       : stylesheets.add(stylesheet)
   } 
-  const children = _children && Array.isArray(_children)
+  const children = Array.isArray(_children)
     ? _children
-    : _children
-    ? [ _children ]
-    : []
+    :  [ _children ].filter(Boolean)
   /** If the tag is script we must explicitly pass trusted */
   if (tag === 'script' && !trusted) {
     throw new Error("Script tag not allowed unless 'trusted' property set")
@@ -232,12 +230,10 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
 
 export { createTemplate as h }
 
-export function Fragment({ children }: Attrs) {
-  children = children && Array.isArray(children)
-    ? children
-    : children
-    ? [ children ]
-    : []
+export function Fragment({ children: _children }: Attrs) {
+  const children = Array.isArray(_children)
+    ? _children
+    :  [ _children ].filter(Boolean)
   let content = ''
   const stylesheets = new Set<string>()
   const length = children.length

@@ -5,6 +5,8 @@
     "declaration": true,
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "nodenext",
+    "jsx": "react-jsx",
+    "jsxImportSource": "@plaited/jsx",
     "outDir": "dist",
     "rootDir": "src",
     "types": [

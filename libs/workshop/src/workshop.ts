@@ -21,11 +21,11 @@ export const workshop = async ({
   }
   const routes = new Server(assets, reload)
   const entryPoints = await fg(`${process.cwd()}/${stories}`)
-  const bundles = await bundler(entryPoints, reload)
-  for(const bundle of bundles) {
-    // routes.set(bundle[0], (_, res) => {
-    //   res.end(bundle[1])
-    // })
-  }
+  // const bundles = await bundler(entryPoints, reload)
+  // for(const bundle of bundles) {
+  //   // routes.set(bundle[0], (_, res) => {
+  //   //   res.end(bundle[1])
+  //   // })
+  // }
 
 }

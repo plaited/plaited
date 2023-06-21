@@ -11,12 +11,16 @@ export type Meta<T extends Attrs = Attrs> = {
 export type Story<T extends Attrs = Attrs>  = {
   attrs: T
   description: string
-  play: Parameters<typeof test>[1]
+  play?: Parameters<typeof test>[1]
 }
 
-export type StoryList  = ({ name: string } & Story)[]
+export type StoryData =   Story & Pick<Meta, 'title' | 'template'>  & {
+  name: string,
+  storyPath: string
+  testPath: string
+}
 
-export type StoryMap = [{ path: string } & Meta, StoryList][]
+export type StoryMap = Map<string, StoryData>
 
 export type Config = {
   /** Design system token group object*/

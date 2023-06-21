@@ -32,6 +32,7 @@
     "@plaited/token-schema": "3.1.0",
     "@plaited/token-transformer": "3.1.0",
     "@plaited/token-types": "3.1.0",
+    "@plaited/utils": "3.1.0",
     "@playwright/test": "1.35.1",
     "chokidar": "3.5.3",
     "esbuild": "0.18.5",
