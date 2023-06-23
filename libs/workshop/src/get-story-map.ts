@@ -6,22 +6,28 @@ import { toId } from './to-id.js'
 
 export const getStoryMap = async (
   entryPoints: string[],
-  root: string
+  srcDir: string
 ) => {
-  const absWorkingDir = path.resolve(process.cwd(), root)
   const storyMap: StoryMap = new Map()
   const titles = new Set<string>()
   for(const entry of entryPoints) {
-    const { default: meta, ...rest } = await import(entry)
+    const { default: meta, ...stories } = await import(entry)
     // P1 handle bad meta export
     if(
-      trueTypeOf(meta) !== 'object' &&
-      !('title' in meta) &&
-      !('description' in meta) &&
-      !('template' in meta)
+      trueTypeOf(meta) !== 'object' 
     ) {
       console.error(
         `Export: [ default ] in ${entry} \n Default export is not a story meta config`
+      )
+      continue
+    }
+    if(
+      !Object.hasOwn(meta, 'title') ||
+      !Object.hasOwn(meta, 'description') ||
+      !Object.hasOwn(meta,'template')
+    ) {
+      console.error(
+        `Export: [ default ] in ${entry} \n Default export is missing key values pairs`
       )
       continue
     }
@@ -42,7 +48,7 @@ export const getStoryMap = async (
       continue
     }
     titles.add(normalizedTitle)
-    for (const name in rest) {
+    for (const name in stories) {
       // P4 handle incorrectly formatted names
       if (!/^[a-zA-Z][a-zA-Z_0-9]*$/.test(name)) {
         console.error(
@@ -51,14 +57,21 @@ export const getStoryMap = async (
         continue
       }
       // P5 handle non story exports
-      const props = rest[name] as Story
+      const story = stories[name] as Story
       if(
-        trueTypeOf(props) !== 'object' &&
-        !('attrs' in props) &&
-        !('description' in props)
+        trueTypeOf(story) !== 'object'
       ) {
         console.error(
-          `Export: [ ${name} ] in ${entry} \n Export [ ${name} ] is not a story`
+          `Exported Story: [ ${name} ] in ${entry} \n Export [ ${name} ] is not a story`
+        )
+        continue
+      }
+      if(
+        !('attrs' in story) ||
+        !('description' in story)
+      ) {
+        console.error(
+          `Exported Story: [ ${name} ] in ${entry} \n Export [ ${name} ] is missing key values pairs`
         )
         continue
       }
@@ -71,11 +84,12 @@ export const getStoryMap = async (
         continue
       }
       storyMap.set(id, {
-        ...props,
+        ...story,
+        play: Boolean(story.play),
         name,
-        storyPath: path.relative(absWorkingDir, entry).replace(/\.tsx?$/, '.js'),
+        clientPath: `/${path.relative(srcDir, entry).replace(/\.tsx?$/, '.js')}`,
         template: meta.template as PlaitedElement,
-        testPath: entry,
+        srcPath: entry,
         title: meta.title as string,
       })
     }

@@ -1,0 +1,46 @@
+// Bun Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`getStoryMap: valid 1`] = `
+Map {
+  "example-stories--a-story" => {
+    "attrs": {},
+    "clientPath": "/example.stories.js",
+    "description": "mock description",
+    "name": "aStory",
+    "play": false,
+    "srcPath": "/home/edward/Workspace/plaited/libs/workshop/src/tests/__mocks__/get-story-valid/example.stories.tsx",
+    "template": [Function],
+    "title": "Example/Stories",
+  },
+  "example-stories--b-story" => {
+    "attrs": {},
+    "clientPath": "/example.stories.js",
+    "description": "mock description",
+    "name": "bStory",
+    "play": false,
+    "srcPath": "/home/edward/Workspace/plaited/libs/workshop/src/tests/__mocks__/get-story-valid/example.stories.tsx",
+    "template": [Function],
+    "title": "Example/Stories",
+  },
+  "example-nested-stories--a-story" => {
+    "attrs": {},
+    "clientPath": "/nested/example.stories.js",
+    "description": "nested mock description",
+    "name": "aStory",
+    "play": false,
+    "srcPath": "/home/edward/Workspace/plaited/libs/workshop/src/tests/__mocks__/get-story-valid/nested/example.stories.tsx",
+    "template": [Function],
+    "title": "Example/NestedStories",
+  },
+  "example-nested-stories--b-story" => {
+    "attrs": {},
+    "clientPath": "/nested/example.stories.js",
+    "description": "nested mock description",
+    "name": "bStory",
+    "play": false,
+    "srcPath": "/home/edward/Workspace/plaited/libs/workshop/src/tests/__mocks__/get-story-valid/nested/example.stories.tsx",
+    "template": [Function],
+    "title": "Example/NestedStories",
+  },
+}
+`;

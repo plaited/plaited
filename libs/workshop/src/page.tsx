@@ -6,23 +6,22 @@ source.onmessage = reload;
 source.onerror = () => (source.onopen = reload);
 console.log('[workshop] listening for file changes');`
 
-const metaTemplate = (path: string) => `import meta from '${path}';
+const metaTemplate = (storyPath: string) => `import meta from '${storyPath}';
 meta?.define();`
 
 export const Page: PlaitedElement<{
   id: string,
-  story: string,
+  clientPath: string,
   reload: boolean
-  tokens: string
 }> = ({ 
   children,
   id,
   reload,
-  story,
-  tokens,
+  clientPath,
+  stylesheet,
 }) => (
   <html>
-    <head>
+    <head stylesheet={stylesheet}>
       <title>{id}</title>
       <link rel='icon'
         href='data:,'
@@ -30,9 +29,8 @@ export const Page: PlaitedElement<{
       <script type='module'
         trusted
       >
-        {metaTemplate(story)}
+        {metaTemplate(clientPath)}
       </script>
-      <style>{tokens}</style>
     </head>
     <body>
       {children}

@@ -1,35 +1,34 @@
-import { test, expect } from 'bun:test'
+import { test, expect  } from 'bun:test'
 import path from 'node:path'
+import fg from 'fast-glob'
 import { bundler } from '../bundler.js'
-import { Bundles } from '../types.js'
-console.log(path.dirname(`${process.cwd()}/**/*.stories.ts`))
+
+const srcDir = `${process.cwd()}/src/tests/__mocks__/bundler`
 
 test('bundler: dev false', async ()=> {
   const actual: string[] = []
-  await bundler({
-    root: `${process.cwd()}/src/tests/__mocks__`,
-    dev: false,
-    ext: '.stories.ts',
-    setRoutes: async (bundles: Bundles) => {
-      for(const bundle of bundles) {
-        actual.push(bundle[0])
-      }
-    }, 
+  const entryPoints = await fg(path.resolve(srcDir, '**/*.stories.ts'))
+  const bundles = await bundler({
+    srcDir,
+    entryPoints,
+    reload: false,
   })
+  for(const bundle of bundles) {
+    actual.push(bundle[0])
+  }
   expect(actual).toEqual([ 'example.stories.js',  'nested/example.stories.js' ])
 })
 
 test('bundler: dev true', async ()=> {
   const actual: string[] = []
-  await bundler({
-    root: `${process.cwd()}/src/tests/__mocks__`,
-    ext: '.stories.ts',
-    dev: true,
-    setRoutes: async (bundles: Bundles) => {
-      for(const bundle of bundles) {
-        actual.push(bundle[0])
-      }
-    }, 
+  const entryPoints = await fg(path.resolve(srcDir, '**/*.stories.ts'))
+  const bundles = await bundler({
+    srcDir,
+    entryPoints,
+    reload: true,
   })
+  for(const bundle of bundles) {
+    actual.push(bundle[0])
+  }
   expect(actual).toEqual([ 'example.stories.js',  'nested/example.stories.js' ])
 })
