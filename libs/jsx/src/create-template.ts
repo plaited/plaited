@@ -4,6 +4,7 @@ import {
   dataTrigger,
   primitives,
   voidTags,
+  validPrimitiveChildren,
 } from './constants.js'
 import { Attrs, Children, CreateTemplate, Primitive, Child } from './types.js'
 
@@ -164,7 +165,7 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
     }
     /** P3 typeof child is NOT {@type Primitive} then skip and do nothing */
     if (!primitives.has(typeof child)) continue
-    const formattedChild = child ?? ''
+    const formattedChild = validPrimitiveChildren.has(typeof child) ? child :  ''
     /** P4 element is a customElement and child IS {@type Primitive} */
     if (isCustomElement) {
       templateChildren.push(
@@ -216,7 +217,7 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
       /** P2 typeof child is NOT {@type Primitive} then skip and do nothing */
       if (!primitives.has(typeof child)) continue
       /** P3 child IS {@type Template} */
-      const formattedChild = child ?? ''
+      const formattedChild = validPrimitiveChildren.has(typeof child) ? child : ''
       rootChildren.push(
         trusted ? `${formattedChild}` : escape(`${formattedChild}`)
       )
