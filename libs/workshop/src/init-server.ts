@@ -3,15 +3,15 @@ import path from 'node:path'
 import chokidar from 'chokidar'
 import http from 'node:http'
 import https from 'node:https'
-import { GetServer, HandlerCallback } from './types.js'
-
+import { InitServer, HandlerCallback } from './types.js'
+import { LIVE_RELOAD } from './utils.js'
 // Utility function for sending SSE data to client
 const sendMessage = (res:Response, channel: string, data: string) => {
   res.write(`event: ${channel}\nid: 0\ndata: ${data}\n`)
   res.write('\n\n')
 }
 
-export const getServer: GetServer = async ({
+export const initServer: InitServer = async ({
   assets,
   reload,
   srcDir,
@@ -40,8 +40,9 @@ export const getServer: GetServer = async ({
 
   const reloadClients = new Set<Response>()
   if (reload && srcDir) {
+    console.log({ reload, srcDir })
     // Set livereload route
-    handlers.set('/livereload', (_: Request, res: Response) => {
+    handlers.set(LIVE_RELOAD, (_: Request, res: Response) => {
       res.set({
         'Cache-Control': 'no-cache',
         'Content-Type': 'text/event-stream',
@@ -65,13 +66,13 @@ export const getServer: GetServer = async ({
     chokidar.watch(srcDir).on('all', async () => {
       // Rebuild test and pages
       console.log('Rebuilding tests and pages...')
-      await rebuild(handlers)
+      // await rebuild(handlers)
 
-      // Notify livereload reloadClients on file change
-      console.log('Reloading clients...')
-      for(const client of reloadClients) {
-        sendMessage(client, 'message', 'reload')
-      }
+      // // Notify livereload reloadClients on file change
+      // console.log('Reloading clients...')
+      // for(const client of reloadClients) {
+      //   sendMessage(client, 'message', 'reload')
+      // }
     }).on('error', error => console.error(`Watcher error: ${error}`))
 
   }
@@ -87,8 +88,8 @@ export const getServer: GetServer = async ({
         console.log(`Server running... http://localhost:${port}`)
       })
   }
-  // On SIGINT cleanup
-  process.on('SIGINT', () => {
+
+  const stop = () => {
     for(const client of reloadClients) {
       client.end()
     }
@@ -97,7 +98,11 @@ export const getServer: GetServer = async ({
       console.log('Server closed.')
       process.exit()
     })
+  }
+  // On SIGINT cleanup
+  process.on('SIGINT', () => {
+    stop()
   })
 
-  return  start
+  return { start, stop }
 }

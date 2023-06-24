@@ -8,6 +8,7 @@ import { getStoryMap } from './get-story-map.js'
 import { writePlaywrightTests } from './write-playwright-test.js'
 import { BuildArgs, HandlerCallback } from './types.js'
 import { Page } from './page.js'
+import { removeLeadingSlash, LIVE_RELOAD } from './utils.js'
 
 
 export const build = ({ 
@@ -28,13 +29,13 @@ export const build = ({
     entryPoints,
     reload,
   })
+
   // Create routes for bundled js
   for(const bundle of bundles) {
     const route = `/${bundle[0]}`
-    handlers.has(route) && handlers.delete(route)
     handlers.set(route, (_: Request, res: Response) => {
       res.setHeader('Content-Type', 'application/javascript')
-      res.setHeader('Content-Disposition', `attachment; filename=${path.basename(bundle[0])}`)
+      res.setHeader('Content-Disposition', `attachment; filename=${path.basename(route)}`)
       res.send(Buffer.from(bundle[1]))
     })
   }
@@ -59,6 +60,14 @@ export const build = ({
         clientPath={clientPath}
       ><Template {...attrs} /></Page>))
     })
+  }
+
+  // Cleanup dead routes
+  for(const key of handlers.keys()) {
+    if(key === LIVE_RELOAD) continue
+    const formattedKey = removeLeadingSlash(key)
+    if(bundles.has(formattedKey) || storyMap.has(formattedKey)) continue
+    handlers.delete(key)
   }
 
   // Build playwright test

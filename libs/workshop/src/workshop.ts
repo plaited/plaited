@@ -1,10 +1,10 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { defaultBaseFontSize } from '@plaited/token-transformer'
-import { getServer } from './get-server.js'
+import { initServer } from './init-server.js'
 import { Config } from './types.js'
 import { build } from './build.js'
-import { findOpenPort } from './find-open-port.js'
+import { findOpenPort } from './utils.js'
 
 export const workshop = async ({
   assets,
@@ -15,16 +15,16 @@ export const workshop = async ({
   testDir: _testDir = '.playwright',
   tokens,
   baseFontSize = defaultBaseFontSize,
+  sslCert,
 }: Config) => {
   // Setup src and test dir if they don't exist
   const srcDir = path.resolve(process.cwd(), _srcDir)
   const testDir = path.resolve(process.cwd(), _testDir)
   await fs.mkdir(srcDir, { recursive: true })
   await fs.mkdir(testDir, { recursive: true })
-  const protocol = 'http'
-
+  // Make sure default port or port passed in is available
   const port = await findOpenPort(_port)
-
+  // Prime the build function to be used on reloads
   const rebuild = build({
     exts,
     reload,
@@ -32,19 +32,18 @@ export const workshop = async ({
     testDir,
     tokens,
     baseFontSize, 
-    protocol,
+    protocol: sslCert ? 'https' : 'http',
     port,
   })
-
-  const start = await getServer({
+  // Initialize server
+  const server = await initServer({
     assets,
     reload,
     srcDir,
     rebuild,
     port,
-    protocol,
+    sslCert,
   })
 
-  // Start server
-  start()
+  return server
 }

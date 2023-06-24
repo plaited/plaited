@@ -12,6 +12,7 @@ const template = (
     play,
     protocol,
     port,
+    options,
   }: {
     id: string,
     name: string,
@@ -20,6 +21,10 @@ const template = (
     play: boolean
     protocol: 'http' | 'https'
     port: number
+    options: {
+      a11y: boolean,
+      snapshot: boolean
+    }
   }
 ) => {
 
@@ -30,7 +35,7 @@ const template = (
   const importAxeCore =  "import AxeBuilder from '@axe-core/playwright'"
 
   const beforeEach = `test.beforeEach(async ({ page }) => {
-  await page.goto('${protocol}://localhost:${port}//${id}')
+  await page.goto('${protocol}://localhost:${port}/${id}')
 });`
 
   const accessibilityTest = `test('Accessibility check ${title}: ${name} story', async ({ page }) => {
@@ -43,7 +48,9 @@ const template = (
   expect(await page.screenshot()).toMatchSnapshot('${id}.png');
 });`
 
-  const interactionTest = `test('Interaction ${title}: ${name} story', ${name}.play);`
+  const interactionTest = `test('Interaction ${title}: ${name} story', async (testArgs, testInfo) => {
+    ${name}.play && await ${name}.play(expect, testArgs, testInfo)
+});`
 
   return [
     importPlaywright,
@@ -51,8 +58,8 @@ const template = (
     play && importStory,
     ' ',
     beforeEach,
-    accessibilityTest,
-    visualComparisonTest,
+    options?.a11y && accessibilityTest,
+    options?.snapshot && visualComparisonTest,
     play && interactionTest,
   ].filter(Boolean).join('\n')
 }
@@ -88,21 +95,29 @@ export const writePlaywrightTests = async (
   )
   // Write test files
   await Promise.all(
-    [ ...storyMap ].map(async ([ id, { name, title, srcPath, play } ]) => {
+    [ ...storyMap ].map(async ([ id, { name, title, srcPath, clientPath, play, options = {} } ]) => {
       const filePath = path.resolve(
         testDir,
         path.dirname(path.relative(srcDir, srcPath)),
         `${id}.spec.ts`  
       ) 
-      // Write path
+      
+      const dir = path.dirname(filePath)
+      await fs.mkdir(dir, { recursive: true })
+
       await fs.writeFile(filePath, template({
         id,
         name,
-        path: path.relative(filePath, srcPath),
+        path: path.relative(testDir, srcPath).replace(/\.tsx?$/, '.js'),
         title,
         play,
         protocol,
         port,
+        options: {
+          a11y: true,
+          snapshot: true,
+          ...options,
+        },
       }))
     })
   )

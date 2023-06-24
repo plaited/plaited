@@ -1,5 +1,12 @@
 import { Attrs, PlaitedElement, isle } from 'plaited'
-import {  test } from '@playwright/test'
+import type {  
+  TestInfo,
+  Expect,
+  PlaywrightTestArgs ,
+  PlaywrightTestOptions ,
+  PlaywrightWorkerArgs ,
+  PlaywrightWorkerOptions,
+} from '@playwright/test'
 import { DesignTokenGroup } from '@plaited/token-types'
 import { Request, Response, NextFunction } from 'express'
 import type { KeyObject } from 'node:tls'
@@ -11,13 +18,23 @@ export type Meta<T extends Attrs = Attrs> = {
   define?: ReturnType<typeof isle>
 }
 
+type Play = (
+  expect: Expect,
+  options: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions,
+  testInfo: TestInfo
+) => Promise<void>
+
 export type Story<T extends Attrs = Attrs>  = {
   attrs: T
   description: string
-  play?: Parameters<typeof test>[1]
+  play?: Play 
+  options?: {
+    a11y?: boolean // Defaults to true
+    snapshot?: boolean // Defaults to true
+  }
 }
 
-export type StoryData =   Pick<Story, 'attrs' | 'description'> & Pick<Meta, 'title' | 'template'>  & {
+export type StoryData =   Omit<Story, 'play'> & Pick<Meta, 'title' | 'template'>  & {
   name: string,
   clientPath: string
   srcPath: string
@@ -54,20 +71,19 @@ export type Config = {
 
 export type Bundles = Map<string, Uint8Array>
 
+export type HandlerCallback = (req: Request, res: Response, next: NextFunction) => void;
 
-interface GetServerParam extends Pick<Config, 'assets' | 'reload' | 'srcDir' | 'port' | 'sslCert'> {
+interface InitServerParam extends Pick<Config, 'assets' | 'reload' | 'srcDir' | 'port' | 'sslCert'> {
   rebuild: (arg: Map<string, HandlerCallback>) => Promise<void>
-  protocol: 'http' | 'https'
 }
 
-export type GetServer = (params: GetServerParam)=> Promise<() => Promise<void>>
+export type InitServer = (params: InitServerParam)=> Promise<{
+  start: () => Promise<void>
+  stop: () => void
+}>
 
 
 export interface BuildArgs extends Omit<Config, 'assets' | 'port'> {
   protocol: 'http' | 'https'
   port: number
 }
-
-export type HandlerCallback = (req: Request, res: Response, next: NextFunction) => void;
-
-

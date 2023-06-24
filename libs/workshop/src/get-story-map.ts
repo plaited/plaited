@@ -2,7 +2,7 @@ import path from 'node:path'
 import { trueTypeOf, kebabCase } from '@plaited/utils'
 import { PlaitedElement } from 'plaited'
 import { Story, StoryMap } from './types.js'
-import { toId } from './to-id.js'
+import { toId } from './utils.js'
 
 export const getStoryMap = async (
   entryPoints: string[],

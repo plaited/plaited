@@ -1,13 +1,13 @@
 import { PlaitedElement } from 'plaited'
-
-const liveReloadTemplate =   `const source = new EventSource('/livereload');
+import { LIVE_RELOAD } from './utils.js'
+const liveReloadTemplate =   `const source = new EventSource('${LIVE_RELOAD}');
 const reload = () => location.reload(true);
 source.onmessage = reload;
 source.onerror = () => (source.onopen = reload);
 console.log('[workshop] listening for file changes');`
 
 const metaTemplate = (storyPath: string) => `import meta from '${storyPath}';
-meta?.define();`
+meta.define && meta.define();`
 
 export const Page: PlaitedElement<{
   id: string,

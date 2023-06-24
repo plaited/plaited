@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { toId } from '../to-id.js'
+import { toId } from '../utils.js'
 
 test('toId', () => {
   const actual = toId('Example/Element', 'basic')

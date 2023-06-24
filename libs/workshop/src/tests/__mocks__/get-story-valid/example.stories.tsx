@@ -1,7 +1,9 @@
 import { Meta, Story } from '../../../types.js'
 import { PlaitedElement } from 'plaited'
 
-const template: PlaitedElement = () => <div></div>
+const template: PlaitedElement = ({ children }) => (
+  <div data-test='target'>{children ?? 'Render something'}</div>
+)
 
 const meta: Meta = {
   title: 'Example/Stories',
@@ -12,12 +14,18 @@ const meta: Meta = {
 export default meta
 
 
-export const aStory: Story = {
-  description: 'mock description',
-  attrs: {},
+export const playStory: Story = {
+  description: 'replaces placeholder text',
+  attrs: {
+    children: 'Example story',
+  },
+  async play (expect, { page }){
+    const el = await page.locator('[data-test]="target"')
+    expect(el.textContent()).toBe('Example play story')
+  },
 }
 
-export const bStory: Story = {
-  description: 'mock description',
+export const regularStory: Story = {
+  description: 'renders with placeholder',
   attrs: {},
 }
