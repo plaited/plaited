@@ -1,7 +1,9 @@
 import { Attrs, PlaitedElement, isle } from 'plaited'
 import {  test } from '@playwright/test'
 import { DesignTokenGroup } from '@plaited/token-types'
-import { Request, Response, Express } from 'express'
+import { Request, Response, NextFunction } from 'express'
+import type { KeyObject } from 'node:tls'
+
 export type Meta<T extends Attrs = Attrs> = {
   title: string,
   description: string
@@ -24,6 +26,11 @@ export type StoryData =   Pick<Story, 'attrs' | 'description'> & Pick<Meta, 'tit
 
 export type StoryMap = Map<string, StoryData>
 
+type SSLCert = {
+  key:  string | Buffer | (string | Buffer | KeyObject)[],
+  cert: string | Buffer | (string | Buffer)[],
+}
+
 export type Config = {
   /** Static file assets to serve */
   assets?: string
@@ -41,30 +48,26 @@ export type Config = {
   tokens?: DesignTokenGroup,
   /** set base font size defaults to 20px */
   baseFontSize?: number
+  /** optional SSLCert */
+  sslCert?: SSLCert
 }
 
 export type Bundles = Map<string, Uint8Array>
-export type SetRoutes = (bundles: Bundles) => Promise<undefined>
 
 
-export interface CustomResponse {
-  sseSetup: () => void
-  sseSend: () => void
+interface GetServerParam extends Pick<Config, 'assets' | 'reload' | 'srcDir' | 'port' | 'sslCert'> {
+  rebuild: (arg: Map<string, HandlerCallback>) => Promise<void>
+  protocol: 'http' | 'https'
 }
 
+export type GetServer = (params: GetServerParam)=> Promise<() => Promise<void>>
 
-export type AddRoute = (path: string, callback: (req: Request, res: Response | CustomResponse) => void) => void
 
-export type GetServerReturn = {
-  start: () => void
+export interface BuildArgs extends Omit<Config, 'assets' | 'port'> {
+  protocol: 'http' | 'https'
   port: number
-  // remove: (path: string) => void;
-  // has: (path: string) => boolean;
-  // onReload: (rebuild: () => Promise<undefined>) => void;
 }
 
-interface GetServerParam extends Pick<Config, 'assets' | 'reload' | 'srcDir' | 'port'> {
-  rebuild: (arg: AddRoute) => Promise<void>
-}
+export type HandlerCallback = (req: Request, res: Response, next: NextFunction) => void;
 
-export type GetServer = (params: GetServerParam)=> Promise<GetServerReturn>
+

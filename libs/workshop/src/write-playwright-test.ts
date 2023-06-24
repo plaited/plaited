@@ -10,12 +10,16 @@ const template = (
     title,
     path,
     play,
+    protocol,
+    port,
   }: {
     id: string,
     name: string,
     title: string,
     path: string
     play: boolean
+    protocol: 'http' | 'https'
+    port: number
   }
 ) => {
 
@@ -26,7 +30,7 @@ const template = (
   const importAxeCore =  "import AxeBuilder from '@axe-core/playwright'"
 
   const beforeEach = `test.beforeEach(async ({ page }) => {
-  await page.goto('/${id}')
+  await page.goto('${protocol}://localhost:${port}//${id}')
 });`
 
   const accessibilityTest = `test('Accessibility check ${title}: ${name} story', async ({ page }) => {
@@ -53,15 +57,19 @@ const template = (
   ].filter(Boolean).join('\n')
 }
 
-export const buildPlaywrightTests = async (
+export const writePlaywrightTests = async (
   {
     storyMap,
     testDir,
     srcDir,
+    protocol,
+    port,
   }:{
     storyMap: StoryMap, 
     testDir: string
     srcDir: string
+    protocol: 'http' | 'https'
+    port: number
   }
 ) => {
   await fs.mkdir(testDir, { recursive: true })
@@ -93,6 +101,8 @@ export const buildPlaywrightTests = async (
         path: path.relative(filePath, srcPath),
         title,
         play,
+        protocol,
+        port,
       }))
     })
   )
