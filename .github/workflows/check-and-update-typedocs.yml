@@ -15,10 +15,10 @@ jobs:
         uses: devcontainers/ci@v0.3
         with:
           runCmd: |
-            npm ci
+            yarn install
             npx playwright install
-            npm run build
-            npm run test
+            yarn run build
+            yarn run test
   update-typedocs:
     runs-on: ubuntu-22.04
     needs: [check]
