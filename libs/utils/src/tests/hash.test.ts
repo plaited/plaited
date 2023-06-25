@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from'@jest/globals'
 import { hashString } from '../index.js'
 
 test('hashString(): Given a string, return a hash', () => {

@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from'@jest/globals'
 import { workshop } from '../workshop.js'
 
 test('workshop', async () => {

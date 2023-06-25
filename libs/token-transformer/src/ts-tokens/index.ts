@@ -1,9 +1,9 @@
 import {
   FlexValue,
-  GetFormatters,
   GridValue,
   TypographyValue,
 } from '@plaited/token-types'
+import { GetFormatters } from '../types.js'
 import { defaultFormat } from './default-format.js'
 import { ruleSet } from './rule-set.js'
 

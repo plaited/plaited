@@ -31,9 +31,8 @@ jobs:
 
       - name: Setup
         run: |
-          npm install -g bun npm@latest
-          bun install
-          bun run build
+          yarn install
+          yarn run build
 
       - name: Version
         run:  |

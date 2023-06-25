@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from'@jest/globals'
 import { camelCase, kebabCase } from '../cases.js'
 
 test('camelCase should convert hyphenated string to camel case', () => {

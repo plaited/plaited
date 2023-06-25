@@ -1,4 +1,4 @@
-import { test, expect  } from 'bun:test'
+import { test, expect  } from'@jest/globals'
 import path from 'node:path'
 import fg from 'fast-glob'
 import { bundler } from '../bundler.js'

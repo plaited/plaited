@@ -7,9 +7,6 @@
     "allowSyntheticDefaultImports": true,
     "outDir": "dist",
     "rootDir": "src",
-    "types": [
-      "bun-types"
-    ]
   },
   "exclude": [
     "**/dist",

@@ -1,4 +1,5 @@
-import { FontFamilyValue, Formatter } from '@plaited/token-types'
+import { FontFamilyValue } from '@plaited/token-types'
+import { Formatter } from '../types.js'
 import { hasAlias } from '../resolve.js'
 import { kebabCase } from '@plaited/utils'
 

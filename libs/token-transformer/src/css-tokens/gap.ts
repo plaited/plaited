@@ -1,4 +1,5 @@
-import { DimensionValue, Formatter, GapValue } from '@plaited/token-types'
+import { DimensionValue, GapValue } from '@plaited/token-types'
+import { Formatter } from '../types.js'
 import { hasAlias } from '../resolve.js'
 import { kebabCase } from '@plaited/utils'
 import { dimension } from './dimension.js'

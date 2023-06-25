@@ -1,5 +1,5 @@
 import sinon from 'sinon'
-import { test, expect, beforeEach, afterEach } from 'bun:test'
+import { test, expect, beforeEach, afterEach } from'@jest/globals'
 import { debounce } from '../index.js'
 let clock: sinon.SinonFakeTimers
 

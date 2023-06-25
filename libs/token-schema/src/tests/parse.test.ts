@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from'@jest/globals'
 import { parse } from '../parse.js'
 import { tokens } from './sample-tokens.js'
 

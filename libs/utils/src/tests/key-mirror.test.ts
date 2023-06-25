@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from'@jest/globals'
 import { keyMirror } from '../index.js'
 
 test('keyMirror(): return an object of mirrored keys as values', () => {

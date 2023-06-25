@@ -1,4 +1,4 @@
-import { test, expect, beforeEach, afterEach  } from 'bun:test'
+import { test, expect, beforeEach, afterEach  } from'@jest/globals'
 import path from 'node:path'
 import fg from 'fast-glob'
 import sinon from 'sinon'

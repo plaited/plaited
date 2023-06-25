@@ -1,4 +1,5 @@
-import { Formatter, PrimitiveArrayValue, PrimitiveValue } from '@plaited/token-types'
+import { PrimitiveArrayValue, PrimitiveValue } from '@plaited/token-types'
+import { Formatter } from '../types.js'
 import { hasAlias } from '../resolve.js'
 import { kebabCase } from '@plaited/utils'
 

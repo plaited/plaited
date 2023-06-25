@@ -1,4 +1,5 @@
-import { DimensionValue, Formatter, ScalarDimensionValue } from '@plaited/token-types'
+import { DimensionValue,  ScalarDimensionValue } from '@plaited/token-types'
+import { Formatter } from '../types.js'
 import { hasAlias } from '../resolve.js'
 import { kebabCase } from '@plaited/utils'
 import { getRem } from '../get-rem.js'

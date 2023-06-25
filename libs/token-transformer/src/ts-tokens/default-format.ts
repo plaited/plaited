@@ -1,4 +1,5 @@
-import { AliasValue, Formatter } from '@plaited/token-types'
+import { AliasValue } from '@plaited/token-types'
+import { Formatter } from '../types.js'
 import { camelCase, kebabCase } from '@plaited/utils'
 import { hasAlias, resolveTSVar } from '../resolve.js'
 

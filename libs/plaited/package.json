@@ -24,9 +24,9 @@
   ],
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
-    "build:watch": "tsc --watch --project tsconfig.build.json",
-    "test": "bun web-test-runner",
-    "test:watch": "bun web-test-runner --watch"
+    "build:watch": "yarn build --watch",
+    "test": "web-test-runner",
+    "test:watch": "yarn test --watch"
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
@@ -35,6 +35,13 @@
     "@plaited/utils": "3.1.0"
   },
   "devDependencies": {
-    "@plaited/rite": "3.1.1"
+    "@plaited/rite": "3.1.1",
+    "@playwright/test": "1.35.1",
+    "@web/dev-server": "0.2.3",
+    "@web/dev-server-esbuild": "0.4.1",
+    "@web/test-runner": "0.16.1",
+    "@web/test-runner-core": "0.11.2",
+    "@web/test-runner-playwright": "0.10.1",
+    "playwright": "1.35.1"
   }
 }

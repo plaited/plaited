@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from'@jest/globals'
 import { deepEqual } from '../index.js'
 
 test('deepEqual()', () => {

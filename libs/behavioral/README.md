@@ -8,8 +8,7 @@ programs in JavaScript.
 ### JavaScript runtime options
 
 1. [Node](https://nodejs.org/en) >= v18
-2. [Bun](https://bun.sh/) >= 0.5.9
-3. Any modern evergreen browser
+2. Any modern evergreen browser
 
 ## Installing
 

@@ -9,9 +9,6 @@
     "jsxImportSource": "@plaited/jsx",
     "outDir": "dist",
     "rootDir": "src",
-    "types": [
-      "bun-types"
-    ]
   },
   "exclude": [
     "**/dist"

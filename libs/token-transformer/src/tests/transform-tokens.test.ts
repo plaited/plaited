@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from'@jest/globals'
 import beautify from 'beautify'
 import { transformTsTokens } from '../transform-ts-tokens.js'
 import { transformCssTokens } from '../transform-css-tokens.js'

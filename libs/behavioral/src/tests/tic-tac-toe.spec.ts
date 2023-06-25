@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from'@jest/globals'
 import { bProgram, loop, RulesFunc, sync, thread  } from '../index.js'
 
 const winConditions = [

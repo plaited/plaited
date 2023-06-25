@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from'@jest/globals'
 import { generateId, setIdCounter, ueid } from '../index.js'
 
 test('ueid: returns a string', () => {

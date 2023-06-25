@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from'@jest/globals'
 import { bProgram, DevCallback } from '../index.js'
 
 test('Add hot water 3 times', () => {

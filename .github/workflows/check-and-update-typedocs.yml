@@ -15,10 +15,10 @@ jobs:
         uses: devcontainers/ci@v0.3
         with:
           runCmd: |
-            bun install
-            bunx playwright install
-            bun run build
-            bun run test
+            npm ci
+            npx playwright install
+            npm run build
+            npm run test
   update-typedocs:
     runs-on: ubuntu-22.04
     needs: [check]
@@ -37,10 +37,9 @@ jobs:
           node-version: 18
       - name: Build Docs
         run: |
-          npm install -g bun npm@latest
-          bun install
-          bun run build
-          bun run typedocs
+          yarn install
+          yarn run build
+          yarn run typedocs
       - name: Push new typedocs
         run:  |
             git add playbook/libraries

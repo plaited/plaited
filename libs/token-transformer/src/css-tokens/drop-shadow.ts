@@ -1,4 +1,5 @@
-import { AliasValue, DropShadowValue, Formatter } from '@plaited/token-types'
+import { AliasValue, DropShadowValue } from '@plaited/token-types'
+import { Formatter } from '../types.js'
 import { hasAlias, resolveCSSVar } from '../resolve.js'
 import { kebabCase } from '@plaited/utils'
 
