@@ -6,7 +6,7 @@
   },
   "type": "module",
   "scripts": {
-    "start": "bun web-dev-server"
+    "start": "web-dev-server"
   },
   "browserslist": [
     "> 2%"

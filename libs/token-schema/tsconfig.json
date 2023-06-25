@@ -4,6 +4,7 @@
     "module": "ES2022",
     "declaration": true,
     "moduleResolution": "nodenext",
+    "allowSyntheticDefaultImports": true,
     "outDir": "dist",
     "rootDir": "src",
   },

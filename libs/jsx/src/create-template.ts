@@ -6,7 +6,7 @@ import {
   voidTags,
   validPrimitiveChildren,
 } from './constants.js'
-import { Attrs, Children, CreateTemplate, Primitive, Child } from './types.js'
+import { Attrs, Children, CreateTemplate, Primitive } from './types.js'
 
 /** custom element tagName regex */
 const customElementRegex = /^[a-z]+-[a-z]+(?:-[a-z]+)*$/

@@ -1,4 +1,4 @@
-import fs from 'fs/promises'
+import fs from 'node:fs/promises'
 import { DesignTokenGroup } from '@plaited/token-types'
 import { parse } from './parse.js'
 

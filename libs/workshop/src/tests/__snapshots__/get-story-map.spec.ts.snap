@@ -1,4 +1,4 @@
-// Bun Snapshot v1, https://goo.gl/fbAQLP
+// Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`getStoryMap: valid 1`] = `
 Map {
@@ -28,7 +28,7 @@ Map {
     "attrs": {
       "children": {
         "content": "<input type="text" value="default value"/>",
-        "stylesheets":         Set {},
+        "stylesheets": Set {},
       },
     },
     "clientPath": "/nested/example.stories.js",
