@@ -108,7 +108,7 @@ export const writePlaywrightTests = async (
       await fs.writeFile(filePath, template({
         id,
         name,
-        path: path.relative(testDir, srcPath).replace(/\.tsx?$/, '.js'),
+        path: path.relative(path.dirname(filePath), srcPath).replace(/\.tsx?$/, '.js'),
         title,
         play,
         protocol,

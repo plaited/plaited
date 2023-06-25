@@ -45,7 +45,7 @@
     "eslint-plugin-react": "7.32.2",
     "format-package": "7.0.0",
     "husky": "8.0.3",
-    "lerna": "^7.0.2",
+    "lerna": "7.0.2",
     "pinst": "3.0.0",
     "prettier": "2.8.8",
     "sinon": "15.1.2",
