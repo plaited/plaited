@@ -12,7 +12,9 @@ export type Template = {
   stylesheets: Set<string>;
 };
 
-export type Children = (string | Template)[] | (string | Template);
+export type Child = string | Template
+
+export type Children = Child[] | Child;
 
 export type BaseAttrs = {
   class?: never;
@@ -21,6 +23,7 @@ export type BaseAttrs = {
   'data-trigger'?: Record<string, string>;
   htmlFor?: string,
   className?: string,
+  children?: Children
   key?: string;
   shadowrootmode?: 'open' | 'closed';
   shadowrootdelegatesfocus?: boolean;

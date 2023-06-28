@@ -1,24 +1,15 @@
-import { mkdir } from 'node:fs/promises'
+import { TransformerParams } from './types.js'
 import { formatList } from './format-list.js'
-import { DesignTokenGroup, GetFormatters } from '@plaited/token-types'
+import { defaultTSFormatters } from './ts-tokens/index.js'
+import { defaultBaseFontSize } from './constants.js'
 
-export const transformTsTokens = async ({
+export const transformTsTokens = ({
   tokens,
-  output,
+  baseFontSize = defaultBaseFontSize,
+  formatters = defaultTSFormatters,
+}: TransformerParams) =>  formatList({
+  tokens,
+  allTokens: tokens,
   baseFontSize,
   formatters,
-}: {
-  tokens: DesignTokenGroup;
-  output: string;
-  baseFontSize: number;
-  formatters: GetFormatters;
-}) => {
-  await mkdir(output, { recursive: true })
-  const content = formatList({
-    tokens,
-    allTokens: tokens,
-    baseFontSize,
-    formatters,
-  })
-  await Bun.write(`${output}/tokens.ts`, content)
-}
+})

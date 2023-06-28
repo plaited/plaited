@@ -6,7 +6,7 @@
   },
   "type": "module",
   "scripts": {
-    "start": "bun web-dev-server --config web-dev-server.config.js"
+    "start": "web-dev-server --config web-dev-server.config.js"
   },
   "browserslist": [
     "> 2%"

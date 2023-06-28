@@ -72,3 +72,9 @@ export const primitives = new Set([
   'boolean',
   'bigint',
 ])
+
+export const validPrimitiveChildren = new Set([
+  'number',
+  'string',
+  'bigint',
+])

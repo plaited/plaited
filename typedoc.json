@@ -1,13 +1,12 @@
 {
   "entryPoints": [
-    "libs/*",
-    "apps/*"
+    "libs/*"
   ],
   "exclude": [
     "README.md"
   ],
   "githubPages": false,
-  "out": "./playbook/libraries",
+  "out": "./playbook/api",
   "name": "Plaited Typedocs",
   "entryPointStrategy": "packages",
   "includeVersion": true

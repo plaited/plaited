@@ -1,11 +1,11 @@
 import {
-  Formatter,
   GridMinMaxArgs,
   GridTemplateRowsOrColumnsValue,
   GridTemplateValue,
 } from '@plaited/token-types'
+import { Formatter } from '../types.js'
 import { hasAlias } from '../resolve.js'
-import { kebabCase } from '../cases.js'
+import { kebabCase } from '@plaited/utils'
 import { getRem } from '../get-rem.js'
 
 const getFitContent = ({

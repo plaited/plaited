@@ -22,9 +22,13 @@ development libraries.
 
 ## Dev Requirements
 
+<<<<<<< HEAD
+### local
+=======
 ### local requirements
 
 - Bun >= 0.5.9
+>>>>>>> 6b79979ca9eafff6533e818e59ac429b3c592bfe
 - Node 18.15.0
 
 ### devcontainer requirements
@@ -36,7 +40,7 @@ development libraries.
 
 ### local setup
 
-1. Clone repository and ensure you have bun >= 0.5.9
+1. Clone repository and ensure you have Node >= 18.15.0
 2. Run `npx playwright install`
 3. Run `bash setup.sh`
 

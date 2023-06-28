@@ -4,6 +4,7 @@ import {
   dataTrigger,
   primitives,
   voidTags,
+  validPrimitiveChildren,
 } from './constants.js'
 import { Attrs, Children, CreateTemplate, Primitive } from './types.js'
 
@@ -42,11 +43,9 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
       ? stylesheet.forEach(s => stylesheets.add(s))
       : stylesheets.add(stylesheet)
   } 
-  const children = _children && Array.isArray(_children)
+  const children = Array.isArray(_children)
     ? _children
-    : _children
-    ? [ _children ]
-    : []
+    :  [ _children ].filter(Boolean)
   /** If the tag is script we must explicitly pass trusted */
   if (tag === 'script' && !trusted) {
     throw new Error("Script tag not allowed unless 'trusted' property set")
@@ -166,7 +165,7 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
     }
     /** P3 typeof child is NOT {@type Primitive} then skip and do nothing */
     if (!primitives.has(typeof child)) continue
-    const formattedChild = child ?? ''
+    const formattedChild = validPrimitiveChildren.has(typeof child) ? child :  ''
     /** P4 element is a customElement and child IS {@type Primitive} */
     if (isCustomElement) {
       templateChildren.push(
@@ -218,7 +217,7 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
       /** P2 typeof child is NOT {@type Primitive} then skip and do nothing */
       if (!primitives.has(typeof child)) continue
       /** P3 child IS {@type Template} */
-      const formattedChild = child ?? ''
+      const formattedChild = validPrimitiveChildren.has(typeof child) ? child : ''
       rootChildren.push(
         trusted ? `${formattedChild}` : escape(`${formattedChild}`)
       )
@@ -232,12 +231,10 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
 
 export { createTemplate as h }
 
-export function Fragment({ children }: Attrs) {
-  children = children && Array.isArray(children)
-    ? children
-    : children
-    ? [ children ]
-    : []
+export function Fragment({ children: _children }: Attrs) {
+  const children = Array.isArray(_children)
+    ? _children
+    :  [ _children ].filter(Boolean)
   let content = ''
   const stylesheets = new Set<string>()
   const length = children.length

@@ -4,13 +4,13 @@ import {
   DropShadowValue,
   FontFamilyValue,
   GapValue,
-  GetFormatters,
   GradientValue,
   GridTemplateValue,
   PrimitiveArrayValue,
   PrimitiveValue,
   TransitionValue,
 } from '@plaited/token-types'
+import { GetFormatters } from '../types.js'
 import { border } from './border.js'
 import { dimension } from './dimension.js'
 import { fontFamily } from './font-family.js'

@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect } from'@jest/globals'
 import { bProgram } from '../index.js'
 
 test('firing trigger and adding threads in actions', () => {

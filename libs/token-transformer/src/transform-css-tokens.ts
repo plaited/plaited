@@ -1,6 +1,7 @@
-import { mkdir } from 'node:fs/promises'
-import { DesignTokenGroup, GetFormatters } from '@plaited/token-types'
+import { TransformerParams } from './types.js'
+import { defaultCSSFormatters } from './css-tokens/index.js'
 import { formatList } from './format-list.js'
+import { defaultBaseFontSize } from './constants.js'
 const reduceWhitespace = (str: string) => str.replace(/(\s\s+|\n)/g, ' ')
 
 const deduplicate = (css: string) => {
@@ -22,24 +23,16 @@ const deduplicate = (css: string) => {
   }).join('')
 }
 
-export const transformCssTokens = async ({
+export const transformCssTokens = ({
   tokens,
-  output,
-  baseFontSize,
-  formatters,
-}: {
-  tokens: DesignTokenGroup;
-  output: string;
-  baseFontSize: number;
-  formatters: GetFormatters;
-}) => {
-  await mkdir(output, { recursive: true })
+  baseFontSize = defaultBaseFontSize,
+  formatters = defaultCSSFormatters,
+}: TransformerParams) => {
   const content = formatList({
     tokens,
     allTokens: tokens,
     baseFontSize,
     formatters,
   })
-  deduplicate(content)
-  await Bun.write(`${output}/tokens.css`, deduplicate(content))
+  return deduplicate(content)
 }

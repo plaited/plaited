@@ -1,11 +1,11 @@
 import {
   AliasValue,
   FlexValue,
-  Formatter,
   GridValue,
   TypographyValue,
 } from '@plaited/token-types'
-import { camelCase } from '../cases.js'
+import { Formatter } from '../types.js'
+import { camelCase } from '@plaited/utils'
 import { hasAlias, resolveTSVar } from '../resolve.js'
 
 type RuleSetValue = FlexValue | GridValue | TypographyValue;

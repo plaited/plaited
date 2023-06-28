@@ -77,7 +77,7 @@ We want to create an app that controls hot and cold water taps, whose output
 flows are mixed.
 
 ```ts
-import { expect, test } from "bun:test";
+import { expect, test } from "@jest/globals";
 import { bProgram, DevCallback } from "@plaited/behavioral";
 
 test("logging", () => {

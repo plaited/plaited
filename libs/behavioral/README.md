@@ -8,8 +8,7 @@ programs in JavaScript.
 ### JavaScript runtime options
 
 1. [Node](https://nodejs.org/en) >= v18
-2. [Bun](https://bun.sh/) >= 0.5.9
-3. Any modern evergreen browser
+2. Any modern evergreen browser
 
 ## Installing
 
@@ -80,7 +79,7 @@ flows are mixed.
 ### 1. Lets make our app add hot water 3 times:
 
 ```ts
-import { expect, test } from "bun:test";
+import { expect, test } from "@jest/globals";
 import { bProgram, DevCallback } from "@plaited/behavioral";
 
 test("Add hot water 3 times", () => {
@@ -262,7 +261,7 @@ manner. First we'll import our testing utils. Then we'll import `bProgram`,
 `loop`, `thread`, and `sync` form `@plaited/behavioral`.
 
 ```ts
-import { expect, test } from "bun:test";
+import { expect, test } from "@jest/globals";
 import { bProgram, loop, RulesFunc, sync, thread } from "@plaited/behavioral";
 
 const winConditions = [

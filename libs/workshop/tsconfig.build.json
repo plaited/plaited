@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2022",
+    "module": "ES2022",
+    "declaration": true,
+    "moduleResolution": "nodenext",
+    "jsx": "react-jsx",
+    "jsxImportSource": "@plaited/jsx",
+    "lib": [
+      "dom",
+      "es2022"
+    ],
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "exclude": [
+    "**/dist",
+    "**/tests/"
+  ]
+}

@@ -1,4 +1,4 @@
-import { mkdir } from 'node:fs/promises'
+import fs from 'node:fs/promises'
 import { DesignTokenGroup } from '@plaited/token-types'
 import { parse } from './parse.js'
 
@@ -15,8 +15,8 @@ export const tokenSchema = async <
   }
 ) => {
   const schema = parse<T>({ tokens })
-  await mkdir(output, { recursive: true })
-  await Bun.write(
+  await fs.mkdir(output, { recursive: true })
+  await fs.writeFile(
     `${output}/${name}`,
     JSON.stringify(schema, null, 2)
   )

@@ -474,35 +474,3 @@ export type DesignToken = {
 export interface DesignTokenGroup {
   [key: string]: DesignTokenGroup | DesignToken;
 }
-
-export type Formatter<T = $FormatterValue> = (args: {
-  tokenPath: string[];
-  $value: T;
-  allTokens: DesignTokenGroup;
-  baseFontSize: number;
-}) => string;
-
-export type GetFormatters = <
-  T extends DesignTokenGroup = DesignTokenGroup,
-  F extends $FormatterValue = $FormatterValue,
->(args: {
-  tokenPath: string[];
-  $value: F;
-  allTokens: T;
-  baseFontSize: number;
-  $type: string;
-}) => string;
-
-export type TokenConfig = {
-  tokens: DesignTokenGroup;
-  schema?: {
-    output?: string;
-    name?: `${string}.json`;
-  };
-  transform?: {
-    output?: string;
-    baseFontSize?: number;
-    cssFormatters?: GetFormatters;
-    tsFormatters?: GetFormatters;
-  };
-};
