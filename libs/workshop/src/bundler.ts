@@ -28,7 +28,7 @@ export const bundler = async ({
     ...minifyOptions,
     platform: 'neutral',
     sourcemap: reload ? 'inline' : false,
-    splitting: true,
+    splitting: false,
     target: [
       'chrome109',
       'firefox109',
@@ -40,7 +40,7 @@ export const bundler = async ({
   if (outputFiles) {
     for (const file of outputFiles) {
       map.set(
-        path.relative(srcDir, file.path),
+        `/${path.relative(srcDir, file.path)}`,
         file.contents
       )
     }

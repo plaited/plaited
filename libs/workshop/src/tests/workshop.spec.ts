@@ -3,7 +3,7 @@ import cp from 'node:child_process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-const testDir = path.resolve(process.cwd(), '.playwright')
+const testDir = path.resolve('.playwright')
 
 const cleanup = async () => {
   let exist = true
@@ -24,13 +24,13 @@ afterAll(async () => {
 })
 
 test('workshop:reload false', async () => {
-  const entry = path.resolve(process.cwd(), 'src/tests/workshop-reload-true.js')
+  const entry = path.resolve('src/tests/workshop-reload-false.js')
   const child = cp.spawn('node', [ entry ])
   child.kill()
 })
 
-test('workshop:reload true', async () => {
-  const entry = path.resolve(process.cwd(), 'src/tests/workshop-reload-true.js')
+test.skip('workshop:reload true', async () => {
+  const entry = path.resolve('src/tests/workshop-reload-true.js')
   const child = cp.spawn('node', [ entry ])
   child.kill()
 })

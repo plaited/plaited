@@ -20,6 +20,7 @@ export const initServer: InitServer = async ({
   sslCert,
 }) => {
   const app = express()
+  const watch = reload && srcDir
   // Handler map where the key is the path and a callback is the Handler
   const handlers = new Map<string, HandlerCallback>()
   // Pass in a callback to handle story routes and JS bundle
@@ -33,14 +34,13 @@ export const initServer: InitServer = async ({
   })
 
   // If we have static files serve them
-  assets && app.use(express.static(path.join(process.cwd(), assets)))
+  assets && app.use(express.static(path.resolve(assets)))
 
   // Build test and pages
   await rebuild(handlers)
 
   const reloadClients = new Set<Response>()
-  if (reload && srcDir) {
-    console.log({ reload, srcDir })
+  if (watch) {
     // Set livereload route
     handlers.set(LIVE_RELOAD, (_: Request, res: Response) => {
       res.set({
@@ -66,13 +66,13 @@ export const initServer: InitServer = async ({
     chokidar.watch(srcDir).on('all', async () => {
       // Rebuild test and pages
       console.log('Rebuilding tests and pages...')
-      // await rebuild(handlers)
+      await rebuild(handlers)
 
-      // // Notify livereload reloadClients on file change
-      // console.log('Reloading clients...')
-      // for(const client of reloadClients) {
-      //   sendMessage(client, 'message', 'reload')
-      // }
+      // Notify livereload reloadClients on file change
+      console.log('Reloading clients...')
+      for(const client of reloadClients) {
+        sendMessage(client, 'message', 'reload')
+      }
     }).on('error', error => console.error(`Watcher error: ${error}`))
 
   }

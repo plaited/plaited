@@ -2,16 +2,16 @@ import path from 'node:path'
 import { trueTypeOf, kebabCase } from '@plaited/utils'
 import { PlaitedElement } from 'plaited'
 import { Story, StoryMap } from './types.js'
-import { toId } from './utils.js'
+import { remap, toId } from './utils.js'
 
 export const getStoryMap = async (
   entryPoints: string[],
-  srcDir: string
+  tmpDir: string
 ) => {
   const storyMap: StoryMap = new Map()
   const titles = new Set<string>()
   for(const entry of entryPoints) {
-    const { default: meta, ...stories } = await import(entry)
+    const { default: meta, ...stories } = await import(path.join(tmpDir, remap(entry)))
     // P1 handle bad meta export
     if(
       trueTypeOf(meta) !== 'object' 
@@ -87,7 +87,7 @@ export const getStoryMap = async (
         ...story,
         play: Boolean(story.play),
         name,
-        clientPath: `/${path.relative(srcDir, entry).replace(/\.tsx?$/, '.js')}`,
+        clientPath: remap(entry),
         template: meta.template as PlaitedElement,
         srcPath: entry,
         title: meta.title as string,

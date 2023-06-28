@@ -1,4 +1,4 @@
-import { workshop } from '../workshop.js'
+import { workshop } from '../../dist/workshop.js'
 
 const server = await workshop({
   exts: '.stories.tsx',
@@ -7,4 +7,4 @@ const server = await workshop({
   reload: false,
 })
 
-server.start()
+

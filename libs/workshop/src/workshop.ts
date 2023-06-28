@@ -18,8 +18,8 @@ export const workshop = async ({
   sslCert,
 }: Config) => {
   // Setup src and test dir if they don't exist
-  const srcDir = path.resolve(process.cwd(), _srcDir)
-  const testDir = path.resolve(process.cwd(), _testDir)
+  const srcDir = path.resolve( _srcDir)
+  const testDir = path.resolve( _testDir)
   await fs.mkdir(srcDir, { recursive: true })
   await fs.mkdir(testDir, { recursive: true })
   // Make sure default port or port passed in is available

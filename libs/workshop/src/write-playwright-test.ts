@@ -2,7 +2,7 @@ import fg from 'fast-glob'
 import path from 'path'
 import fs from 'node:fs/promises'
 import { StoryMap } from './types.js'
-
+import { remap } from './utils.js'
 const template = (
   {
     id,
@@ -81,7 +81,7 @@ export const writePlaywrightTests = async (
 ) => {
   await fs.mkdir(testDir, { recursive: true })
   // Glob old tests
-  const oldTests = await fg(path.resolve(testDir, '**/*.spec.ts'))
+  const oldTests = await fg(path.join(testDir, '**/*.spec.ts'))
   // Cleanup test no longer needed
   oldTests.length && await Promise.all(
     oldTests.map(async filePath => {
@@ -95,10 +95,10 @@ export const writePlaywrightTests = async (
   )
   // Write test files
   await Promise.all(
-    [ ...storyMap ].map(async ([ id, { name, title, srcPath, clientPath, play, options = {} } ]) => {
-      const filePath = path.resolve(
+    [ ...storyMap ].map(async ([ id, { name, title, srcPath, play, options = {} } ]) => {
+      const filePath = path.join(
         testDir,
-        path.dirname(path.relative(srcDir, srcPath)),
+        path.dirname(srcPath),
         `${id}.spec.ts`  
       ) 
       
@@ -108,7 +108,7 @@ export const writePlaywrightTests = async (
       await fs.writeFile(filePath, template({
         id,
         name,
-        path: path.relative(path.dirname(filePath), srcPath).replace(/\.tsx?$/, '.js'),
+        path: path.relative(path.dirname(filePath), path.join(srcDir, remap(srcPath))),
         title,
         play,
         protocol,

@@ -1,5 +1,6 @@
 import fg from 'fast-glob'
 import path from 'node:path'
+import fs from 'node:fs/promises'
 import { Request, Response } from 'express'
 import { ssr, css } from 'plaited'
 import { transformCssTokens } from '@plaited/token-transformer'
@@ -8,7 +9,7 @@ import { getStoryMap } from './get-story-map.js'
 import { writePlaywrightTests } from './write-playwright-test.js'
 import { BuildArgs, HandlerCallback } from './types.js'
 import { Page } from './page.js'
-import { removeLeadingSlash, LIVE_RELOAD } from './utils.js'
+import { removeLeadingSlash, LIVE_RELOAD, createTmpDir } from './utils.js'
 
 
 export const build = ({ 
@@ -23,7 +24,7 @@ export const build = ({
 }: BuildArgs) => async (
   handlers: Map<string, HandlerCallback>
 ) => {
-  const entryPoints = await fg(path.resolve(srcDir, `**/*${exts.startsWith('.') ? exts : '.' + exts}`))
+  const entryPoints = await fg(path.join(srcDir, `**/*${exts.startsWith('.') ? exts : '.' + exts}`))
   const bundles = await bundler({
     srcDir,
     entryPoints,
@@ -39,8 +40,15 @@ export const build = ({
       res.send(Buffer.from(bundle[1]))
     })
   }
+  
+  // create temp directory to write bundles to get story map
+  const [ formattedEntries, tempDirectory ] = await createTmpDir({ entryPoints, bundles, srcDir })
+  
   // Get story map
-  const storyMap = await getStoryMap(entryPoints, srcDir)
+  const storyMap = await getStoryMap(formattedEntries, tempDirectory)
+  
+  // Clean up tmp directory
+  await fs.rm(tempDirectory, { recursive:true })
 
   // Apply default styles
   const [ _, stylesheet ] = css`
