@@ -27,7 +27,7 @@ Map {
   "example-nested-stories--play-story" => {
     "attrs": {
       "children": {
-        "content": "<input type="text" value="default value"/>",
+        "content": "<input type="text" data-testid="target" value="default value"/>",
         "stylesheets": Set {},
       },
     },

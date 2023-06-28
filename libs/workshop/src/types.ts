@@ -1,11 +1,7 @@
 import { Attrs, PlaitedElement, isle } from 'plaited'
 import type {  
-  TestInfo,
   Expect,
-  PlaywrightTestArgs ,
-  PlaywrightTestOptions ,
-  PlaywrightWorkerArgs ,
-  PlaywrightWorkerOptions,
+  Page,
 } from '@playwright/test'
 import { DesignTokenGroup } from '@plaited/token-types'
 import { Request, Response, NextFunction } from 'express'
@@ -19,9 +15,8 @@ export type Meta<T extends Attrs = Attrs> = {
 }
 
 type Play = (
+  page: Page,
   expect: Expect,
-  options: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions,
-  testInfo: TestInfo
 ) => Promise<void>
 
 export type Story<T extends Attrs = Attrs>  = {

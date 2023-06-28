@@ -39,8 +39,7 @@ const template = (
 });`
 
   const accessibilityTest = `test('Accessibility check ${title}: ${name} story', async ({ page }) => {
-  //@ts-ignore: {@link  https://github.com/dequelabs/axe-core-npm/issues/601}
-  const results = await new AxeBuilder.default({ page }).options({}).include('#root').analyze();
+  const results = await new AxeBuilder({ page }).options({}).include('#root').analyze();
   expect(results.violations).toHaveLength(0);
 })`
 
@@ -48,8 +47,8 @@ const template = (
   expect(await page.screenshot()).toMatchSnapshot('${id}.png');
 });`
 
-  const interactionTest = `test('Interaction ${title}: ${name} story', async (testArgs, testInfo) => {
-    ${name}.play && await ${name}.play(expect, testArgs, testInfo)
+  const interactionTest = `test('Interaction ${title}: ${name} story', async ({ page }) => {
+    ${name}.play && await ${name}.play(page, expect)
 });`
 
   return [
@@ -99,7 +98,7 @@ export const writePlaywrightTests = async (
       const filePath = path.join(
         testDir,
         path.dirname(srcPath),
-        `${id}.spec.ts`  
+        `${id}.spec.ts`
       ) 
       
       const dir = path.dirname(filePath)

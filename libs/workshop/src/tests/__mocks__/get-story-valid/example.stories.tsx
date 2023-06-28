@@ -2,7 +2,7 @@ import { Meta, Story } from '../../../types.js'
 import { PlaitedElement } from 'plaited'
 
 const template: PlaitedElement = ({ children }) => (
-  <div data-test='target'>{children ?? 'Render something'}</div>
+  <div data-testid='target'>{children ?? 'Render something'}</div>
 )
 
 const meta: Meta = {
@@ -19,9 +19,10 @@ export const playStory: Story = {
   attrs: {
     children: 'Example story',
   },
-  async play (expect, { page }){
-    const el = await page.locator('[data-test]="target"')
-    expect(el.textContent()).toBe('Example play story')
+  async play (page, expect){
+    const el = await page.getByTestId('target')
+    const actual = await el.textContent()
+    expect(actual).toBe('Example story')
   },
 }
 

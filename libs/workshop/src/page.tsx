@@ -33,7 +33,9 @@ export const Page: PlaitedElement<{
       </script>
     </head>
     <body>
-      {children}
+      <div id='root'>
+        {children}
+      </div>
       {reload && <script trusted>{liveReloadTemplate}</script>}
     </body>
   </html>

@@ -33,7 +33,7 @@ export const build = ({
 
   // Create routes for bundled js
   for(const bundle of bundles) {
-    const route = `/${bundle[0]}`
+    const route = bundle[0]
     handlers.set(route, (_: Request, res: Response) => {
       res.setHeader('Content-Type', 'application/javascript')
       res.setHeader('Content-Disposition', `attachment; filename=${path.basename(route)}`)
@@ -55,6 +55,14 @@ export const build = ({
   html {
     font-size: ${baseFontSize}px;
   }
+  body {
+    width: 100%;
+    height: 100vh
+  }
+  #root{
+    width: 100%;
+    height: 100%;
+  }
   ${transformCssTokens({ tokens, baseFontSize })}
   `
 
@@ -73,8 +81,7 @@ export const build = ({
   // Cleanup dead routes
   for(const key of handlers.keys()) {
     if(key === LIVE_RELOAD) continue
-    const formattedKey = removeLeadingSlash(key)
-    if(bundles.has(formattedKey) || storyMap.has(formattedKey)) continue
+    if(bundles.has(key) || storyMap.has(removeLeadingSlash(key))) continue
     handlers.delete(key)
   }
 

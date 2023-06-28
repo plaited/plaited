@@ -7,4 +7,4 @@ const server = await workshop({
   reload: true,
 })
 
-server.start()
+// server.start()
