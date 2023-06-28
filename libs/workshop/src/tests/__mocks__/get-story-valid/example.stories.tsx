@@ -30,3 +30,4 @@ export const regularStory: Story = {
   description: 'renders with placeholder',
   attrs: {},
 }
+

@@ -20,7 +20,7 @@ export const initServer: InitServer = async ({
   sslCert,
 }) => {
   const app = express()
-  const watch = reload && srcDir
+  const watcher = reload && srcDir &&  chokidar.watch(srcDir)
   // Handler map where the key is the path and a callback is the Handler
   const handlers = new Map<string, HandlerCallback>()
   // Pass in a callback to handle story routes and JS bundle
@@ -40,7 +40,7 @@ export const initServer: InitServer = async ({
   await rebuild(handlers)
 
   const reloadClients = new Set<Response>()
-  if (watch) {
+  if (watcher) {
     // Set livereload route
     handlers.set(LIVE_RELOAD, (_: Request, res: Response) => {
       res.set({
@@ -62,19 +62,6 @@ export const initServer: InitServer = async ({
         reloadClients.delete(res)
       })
     })
-    // Watch the source directory for changes
-    chokidar.watch(srcDir).on('all', async () => {
-      // Rebuild test and pages
-      console.log('Rebuilding tests and pages...')
-      await rebuild(handlers)
-
-      // Notify livereload reloadClients on file change
-      console.log('Reloading clients...')
-      for(const client of reloadClients) {
-        sendMessage(client, 'message', 'reload')
-      }
-    }).on('error', error => console.error(`Watcher error: ${error}`))
-
   }
 
   let server: http.Server | https.Server
@@ -87,16 +74,28 @@ export const initServer: InitServer = async ({
       : await http.createServer(app).listen(port, () => {
         console.log(`Server running... http://localhost:${port}`)
       })
+    watcher &&  watcher.on('change', async () => {
+      console.log(srcDir)
+      // Rebuild test and pages
+      console.log('Rebuilding tests and pages...')
+      await rebuild(handlers)
+
+      // Notify livereload reloadClients on file change
+      console.log('Reloading clients...')
+      for(const client of reloadClients) {
+        sendMessage(client, 'message', 'reload')
+      }
+    }).on('error', error => console.error(`Watcher error: ${error}`))
   }
 
-  const stop = () => {
+  const stop = async () => {
     for(const client of reloadClients) {
       client.end()
     }
     reloadClients.clear()
+    watcher && await watcher.close()
     server.close(() => {
       console.log('Server closed.')
-      process.exit()
     })
   }
   // On SIGINT cleanup

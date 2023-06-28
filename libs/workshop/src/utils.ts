@@ -3,28 +3,40 @@ import net from 'node:net'
 import path from 'node:path'
 import fs from 'node:fs/promises'
 import os from 'node:os'
-// Utility for finding an open port for dev server
-export const MAX_ATTEMPTS = 1000
-export const findOpenPort = async (port: number) => {
-  for(let attempts = 0; attempts < MAX_ATTEMPTS; attempts++) {
-    try {
-      return new Promise<number>((resolve, reject) => {
-        const server = net.createServer()
-        server.unref()
-        server.on('error', reject)
-        server.listen(port, () => {
-          const address = server.address()
-          if (address && typeof address === 'object') {
-            server.close(() => resolve(address.port))
-          }
-        })
+
+/**
+ * 
+ * @description When pass a port number it will find an open port
+ * @returns number
+ */
+export const findOpenPort = async (startPort: number): Promise<number> =>{
+  let port = startPort
+  const portIsOpen = async port => {
+    return new Promise(resolve => {
+      const server = net.createServer()
+
+      server.once('error', (err: { code: string}) => {
+        if (err.code === 'EADDRINUSE') {
+          resolve(false)
+        }
       })
-    } catch (error) {
-      console.log({ error })
-      port += 1
-    }
+
+      server.once('listening', () => {
+        server.close()
+        resolve(true)
+      })
+
+      server.listen(port)
+    })
   }
-  throw new Error(`Could not find an open port after ${MAX_ATTEMPTS} attempts`)
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const isOpen = await portIsOpen(port)
+    if (isOpen) {
+      return port
+    }
+    port++
+  }
 }
 
 
