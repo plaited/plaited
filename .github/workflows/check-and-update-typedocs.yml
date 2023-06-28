@@ -42,7 +42,7 @@ jobs:
           yarn run typedocs
       - name: Push new typedocs
         run:  |
-            git add playbook/libraries
+            git add playbook/api
             git commit -m "typedocs [skip ci]"
             git push origin HEAD
      
