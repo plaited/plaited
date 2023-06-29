@@ -18,19 +18,17 @@ development libraries.
   - data attribute constants for templating utility
   - server side rendering utility for templating utility
   - jsx runtime for templating utility
-- [@plaited/rite](libs/rite/README.md):
-  [RITEway](https://www.npmjs.com/package/riteway) style testing framework for
-  [@web/test-runner](https://www.npmjs.com/package/@web/test-runner)
+- [@plaited/token-transformer](libs/token-transformer/README.md): transform token into outputs suitable for CSS and Typescript usage
+- [@plaited/token-schema](libs/token-schema/README.md): create a JSON schema from design tokens that locks in values and allows addition of news values
+- [@plaited/token-types](libs/token-types/README.md): types for plaited design tokens based on [design token format](https://design-tokens.github.io/community-group/format/)
+- [@plaited/utils](libs/utils/README.md): platform agnostic utility functions
+- [@plaited/workshop](libs/workshop/README.md): ssr development server for plaited component stories
+  - livereload on src directory changes
+  - codegen playwright test file for each story: visual regression, accessibility test, and interaction test (via play callback on stories).
 
 ## Dev Requirements
 
-<<<<<<< HEAD
 ### local
-=======
-### local requirements
-
-- Bun >= 0.5.9
->>>>>>> 6b79979ca9eafff6533e818e59ac429b3c592bfe
 - Node 18.15.0
 
 ### devcontainer requirements

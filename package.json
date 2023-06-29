@@ -47,6 +47,7 @@
     "format-package": "7.0.0",
     "husky": "8.0.3",
     "lerna": "7.1.0",
+    "lint-staged": "13.2.3",
     "pinst": "3.0.0",
     "prettier": "2.8.8",
     "sinon": "15.2.0",
