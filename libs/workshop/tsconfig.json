@@ -6,7 +6,7 @@
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "nodenext",
     "jsx": "react-jsx",
-    "jsxImportSource": "@plaited/jsx",
+    "jsxImportSource": "plaited",
     "outDir": "dist",
     "rootDir": "src",
   },
