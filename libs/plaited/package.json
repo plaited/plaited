@@ -17,10 +17,14 @@
   "main": "./dist/index.js",
   "exports": {
     ".": "./dist/index.js",
+    "./jsx-runtime": "./dist/jsx-runtime.js",
+    "./jsx-dev-runtime": "./dist/jsx-dev-runtime.js",
     "./utils": "./dist/utils.js"
   },
   "files": [
-    "./dist/**"
+    "./dist/**",
+    "./jsx-runtime.js",
+    "./jsx-dev-runtime.js"
   ],
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
