@@ -9,9 +9,17 @@ development libraries.
 
 ## Libraries
 
+### External usage
+
+**The following libraries are recommended for usage outside of the Plaited organization.**
+
 - [plaited](libs/plaited/README.md): primary plaited library package
 - [@plaited/behavioral](libs/behavioral/README.md): implicit state management
   library using the behavioral programming algorithm
+### Internal usage
+
+**The following libraries are not recommended for usage outside the Plaited organization. They are dependencies for our Plaited libs and apps. These libraries and are open sourced as reference implementation. Take as a dependency at your own risk.**
+
 - [@plaited/jsx](libs/jsx/README.md):
   - templating utility and types
   - css-in-js utility to enable templating utility's style hoisting pattern

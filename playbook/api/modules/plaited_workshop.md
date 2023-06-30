@@ -26,4 +26,4 @@
 
 #### Defined in
 
-[workshop.ts:9](https://github.com/plaited/plaited/blob/ff0cf9f/libs/workshop/src/workshop.ts#L9)
+[workshop.ts:9](https://github.com/plaited/plaited/blob/4b11810/libs/workshop/src/workshop.ts#L9)
