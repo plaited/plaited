@@ -18,7 +18,7 @@ development libraries.
   library using the behavioral programming algorithm
 ### Internal usage
 
-**The following libraries are not recommended for usage outside the Plaited organization. They are dependencies for our Plaited libs and apps. These libraries and are open sourced as reference implementation. Take as a dependency at your own risk.**
+**The following libraries are not recommended for usage outside the Plaited organization. They are dependencies for our Plaited libs and apps. These libraries are open sourced as reference implementation. Take as a dependency at your own risk.**
 
 - [@plaited/jsx](libs/jsx/README.md):
   - templating utility and types
