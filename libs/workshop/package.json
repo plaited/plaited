@@ -1,6 +1,6 @@
 {
   "name": "@plaited/workshop",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
@@ -29,15 +29,15 @@
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/token-schema": "3.1.0",
-    "@plaited/token-transformer": "3.1.0",
-    "@plaited/token-types": "3.1.0",
-    "@plaited/utils": "3.1.0",
+    "@plaited/token-schema": "3.2.0",
+    "@plaited/token-transformer": "3.2.0",
+    "@plaited/token-types": "3.2.0",
+    "@plaited/utils": "3.2.0",
     "chokidar": "3.5.3",
     "esbuild": "0.18.11",
     "express": "4.18.2",
     "fast-glob": "3.3.0",
-    "plaited": "3.1.0"
+    "plaited": "3.2.0"
   },
   "peerDependencies": {
     "@axe-core/playwright": "4.7.3",

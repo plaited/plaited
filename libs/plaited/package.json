@@ -1,6 +1,6 @@
 {
   "name": "plaited",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
@@ -34,9 +34,9 @@
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/behavioral": "3.1.0",
-    "@plaited/jsx": "3.1.0",
-    "@plaited/utils": "3.1.0"
+    "@plaited/behavioral": "3.2.0",
+    "@plaited/jsx": "3.2.0",
+    "@plaited/utils": "3.2.0"
   },
   "devDependencies": {
     "@plaited/rite": "3.1.1",
