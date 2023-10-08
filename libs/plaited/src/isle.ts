@@ -12,7 +12,7 @@ import {
 } from './types.js'
 import { delegatedListener } from './delegated-listener.js'
 import { sugar, SugaredElement, sugarForEach } from './use-sugar.js'
-import { elementRegister } from './use-register.js'
+import { elementRegister } from './register.js'
 import { dataSlot } from './constants.js'
 
 const compileElementData = (data:ElementData | ElementData[]): Children => {

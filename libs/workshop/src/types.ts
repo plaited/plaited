@@ -72,13 +72,16 @@ interface InitServerParam extends Pick<Config, 'assets' | 'reload' | 'srcDir' | 
   rebuild: (arg: Map<string, HandlerCallback>) => Promise<void>
 }
 
+export type Info = Map<string, { srcPath: string, testPath: string, url: string}>
+
 export type InitServer = (params: InitServerParam)=> Promise<{
   start: () => Promise<void>
   stop: () => void
+  info: Info
 }>
-
 
 export interface BuildArgs extends Omit<Config, 'assets' | 'port'> {
   protocol: 'http' | 'https'
   port: number
+  info: Info
 }

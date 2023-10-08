@@ -63,7 +63,7 @@ test('workshop: reload false', async () => {
     const testFile = await fs.readFile(entry, { encoding: 'utf8' })
     expect(testFile).toMatchSnapshot()
   }
-  
+  expect(server.info).toMatchSnapshot()
 })
 
 test('workshop: reload true', async () => {

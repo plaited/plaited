@@ -2,7 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { defaultBaseFontSize } from '@plaited/token-transformer'
 import { initServer } from './init-server.js'
-import { Config } from './types.js'
+import { Config, Info } from './types.js'
 import { build } from './build.js'
 import { findOpenPort } from './utils.js'
 
@@ -24,6 +24,10 @@ export const workshop = async ({
   await fs.mkdir(testDir, { recursive: true })
   // Make sure default port or port passed in is available
   const port = await findOpenPort(_port)
+
+  // Make info map
+  const info: Info = new Map()
+
   // Prime the build function to be used on reloads
   const rebuild = build({
     exts,
@@ -34,6 +38,7 @@ export const workshop = async ({
     baseFontSize, 
     protocol: sslCert ? 'https' : 'http',
     port,
+    info,
   })
   // Initialize server
   const server = await initServer({
@@ -45,5 +50,5 @@ export const workshop = async ({
     sslCert,
   })
 
-  return server
+  return { ...server, info }
 }
