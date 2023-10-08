@@ -20,6 +20,7 @@ export const build = ({
   baseFontSize,
   protocol,
   port,
+  info,
 }: BuildArgs) => async (
   handlers: Map<string, HandlerCallback>
 ) => {
@@ -92,5 +93,20 @@ export const build = ({
 
     // Build playwright test
     await writePlaywrightTests({ storyMap, testDir, srcDir, port, protocol })
+    
+    // Update info Map on build
+    info.clear()
+    for(const [ id, { srcPath, name, title } ] of storyMap) {
+      info.set(id, {
+        title,
+        name,
+        url: `${protocol}://localhost:${port}/${id}`,
+        srcPath: path.join(srcDir, srcPath),
+        testPath: path.join(
+          testDir,
+          path.dirname(srcPath),
+          `${id}.spec.ts`
+        ) })
+    }
   }
 }

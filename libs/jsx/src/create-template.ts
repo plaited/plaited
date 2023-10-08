@@ -6,7 +6,7 @@ import {
   voidTags,
   validPrimitiveChildren,
 } from './constants.js'
-import { Attrs, Children, CreateTemplate, Primitive } from './types.js'
+import { Attrs, CreateTemplate } from './types.js'
 
 /** custom element tagName regex */
 const customElementRegex = /^[a-z]+-[a-z]+(?:-[a-z]+)*$/
@@ -86,7 +86,7 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
       throw new Error(`Event handler attributes are not allowed:  [${key}]`)
     }
     /** Grab the value from the attribute */
-    const value: Primitive | Children = attributes[key]
+    const value = attributes[key]
 
     /** P2 typeof attribute is NOT {@type Primitive} then skip and do nothing */
     if (!primitives.has(typeof value)) {

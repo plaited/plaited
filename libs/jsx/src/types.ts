@@ -16,6 +16,10 @@ export type Child = string | Template
 
 export type Children = Child[] | Child;
 
+export interface AdditionalAttrs {
+    [key: string]: Primitive | Children | Record<string, string>;
+}
+
 export type BaseAttrs = {
   class?: never;
   for?: never;
@@ -34,11 +38,10 @@ export type BaseAttrs = {
   style?: Record<string, string>;
 };
 
+
+
 export type Attrs<
-  T extends Record<string, any> = Record<
-    string,
-    any
-  >,
+  T extends AdditionalAttrs = AdditionalAttrs,
 > =
   & BaseAttrs
   & T;
@@ -48,12 +51,12 @@ export type PlaitedElement<
     string,
     any
   >,
-> = (attrs: Attrs<T>) => Template;
+> = (attrs: T & BaseAttrs) => Template;
 
 type Tag = string | `${string}-${string}` | PlaitedElement;
 
 export interface CreateTemplate {
-  <T extends Record<string, any>>(
+  <T extends AdditionalAttrs>(
     tag: Tag,
     attrs: Attrs<T>,
   ): Template;
