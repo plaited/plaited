@@ -75,23 +75,31 @@ test('Renders Example/NestedStories: regularStory story', async ({ page }) => {
 exports[`workshop: reload false 5`] = `
 Map {
   "example-stories--play-story" => {
+    "name": "playStory",
     "srcPath": "/home/edward/Workspace/plaited/libs/workshop/src/tests/__mocks__/get-story-valid/example.stories.tsx",
     "testPath": "/home/edward/Workspace/plaited/libs/workshop/.playwright/example-stories--play-story.spec.ts",
+    "title": "Example/Stories",
     "url": "http://localhost:3000/example-stories--play-story",
   },
   "example-stories--regular-story" => {
+    "name": "regularStory",
     "srcPath": "/home/edward/Workspace/plaited/libs/workshop/src/tests/__mocks__/get-story-valid/example.stories.tsx",
     "testPath": "/home/edward/Workspace/plaited/libs/workshop/.playwright/example-stories--regular-story.spec.ts",
+    "title": "Example/Stories",
     "url": "http://localhost:3000/example-stories--regular-story",
   },
   "example-nested-stories--play-story" => {
+    "name": "playStory",
     "srcPath": "/home/edward/Workspace/plaited/libs/workshop/src/tests/__mocks__/get-story-valid/nested/example.stories.tsx",
     "testPath": "/home/edward/Workspace/plaited/libs/workshop/.playwright/nested/example-nested-stories--play-story.spec.ts",
+    "title": "Example/NestedStories",
     "url": "http://localhost:3000/example-nested-stories--play-story",
   },
   "example-nested-stories--regular-story" => {
+    "name": "regularStory",
     "srcPath": "/home/edward/Workspace/plaited/libs/workshop/src/tests/__mocks__/get-story-valid/nested/example.stories.tsx",
     "testPath": "/home/edward/Workspace/plaited/libs/workshop/.playwright/nested/example-nested-stories--regular-story.spec.ts",
+    "title": "Example/NestedStories",
     "url": "http://localhost:3000/example-nested-stories--regular-story",
   },
 }
