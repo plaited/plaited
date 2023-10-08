@@ -2,12 +2,15 @@
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
     "target": "ES2022",
-    "module": "ES2022",
+    "module": "NodeNext",
     "declaration": true,
     "jsx": "react-jsx",
     "jsxImportSource": "@plaited/jsx",
     "moduleResolution": "nodenext",
-    "lib": ["dom", "es2022"],
+    "lib": [
+      "dom",
+      "es2022"
+    ],
     "outDir": "dist",
     "rootDir": "src",
   },

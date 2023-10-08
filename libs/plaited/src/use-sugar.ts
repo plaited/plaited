@@ -1,5 +1,5 @@
 import { Template } from '@plaited/jsx'
-
+import { Position } from './types.js'
 /**
  * Inspired by blingblingjs
  * (c) Adam Argyle - MIT
@@ -40,7 +40,6 @@ const prepareTemplate = (element:HTMLElement | SVGElement, { stylesheets, conten
   return template
 }
 
-type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend';
 
 export const sugar = {
   render(

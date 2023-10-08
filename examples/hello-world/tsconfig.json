@@ -2,7 +2,7 @@
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
     "target": "ES2022",
-    "module": "ES2022",
+    "module": "NodeNext",
     "jsx": "react-jsx",
     "jsxImportSource": "plaited",
     "moduleResolution": "nodenext",
