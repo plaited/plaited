@@ -152,15 +152,6 @@ ___
 
 Converts a string to camel case.
 
-**`Remarks`**
-
-This function will handle strings in various formats:
-- Hyphen-separated (kebab-case)
-- Underscore-separated (snake_case)
-- Slash-separated
-- Space-separated (start case)
-- Any combination of the above, with any number of consecutive separators
-
 #### Parameters
 
 | Name | Type | Description |
@@ -172,6 +163,15 @@ This function will handle strings in various formats:
 `string`
 
 The input string converted to camel case
+
+**`Remarks`**
+
+This function will handle strings in various formats:
+- Hyphen-separated (kebab-case)
+- Underscore-separated (snake_case)
+- Slash-separated
+- Space-separated (start case)
+- Any combination of the above, with any number of consecutive separators
 
 #### Defined in
 
@@ -258,16 +258,6 @@ ___
 
 ▸ **escape**(`sub`): `any`
 
-**`Desription`**
-
-escapes a string
-
-**`Example`**
-
-```ts
-escape('&<>\'"') => '&amp;&lt;&gt;&#39;&quot;'
-```
-
 #### Parameters
 
 | Name | Type |
@@ -277,6 +267,16 @@ escape('&<>\'"') => '&amp;&lt;&gt;&#39;&quot;'
 #### Returns
 
 `any`
+
+**`Desription`**
+
+escapes a string
+
+**`Example`**
+
+```ts
+escape('&<>\'"') => '&amp;&lt;&gt;&#39;&quot;'
+```
 
 #### Defined in
 
@@ -310,10 +310,6 @@ ___
 
 ▸ **hashString**(`str`): `number`
 
-**`Summary`**
-
-djb2 hashing function
-
 #### Parameters
 
 | Name | Type |
@@ -323,6 +319,10 @@ djb2 hashing function
 #### Returns
 
 `number`
+
+**`Summary`**
+
+djb2 hashing function
 
 #### Defined in
 
@@ -336,15 +336,6 @@ ___
 
 Converts a string to kebab case.
 
-**`Remarks`**
-
-This function will handle strings in various formats:
-- CamelCase
-- Underscore-separated (snake_case)
-- Backslash-separated
-- Space-separated (start case)
-- Any combination of the above, with any number of consecutive separators
-
 #### Parameters
 
 | Name | Type | Description |
@@ -356,6 +347,15 @@ This function will handle strings in various formats:
 `string`
 
 The input string converted to kebab case
+
+**`Remarks`**
+
+This function will handle strings in various formats:
+- CamelCase
+- Underscore-separated (snake_case)
+- Backslash-separated
+- Space-separated (start case)
+- Any combination of the above, with any number of consecutive separators
 
 #### Defined in
 
@@ -541,10 +541,6 @@ ___
 
 ▸ **ueid**(`prefix?`): `string`
 
-**`Description`**
-
-a function for returning an unique enough id when you need it
-
 #### Parameters
 
 | Name | Type |
@@ -554,6 +550,10 @@ a function for returning an unique enough id when you need it
 #### Returns
 
 `string`
+
+**`Description`**
+
+a function for returning an unique enough id when you need it
 
 #### Defined in
 
@@ -565,16 +565,6 @@ ___
 
 ▸ **unescape**(`sub`): `any`
 
-**`Desription`**
-
-unescapes an escaped a string
-
-**`Example`**
-
-```ts
-unescape('&amp;&lt;&gt;&#39;&quot;') => '&<>\'"'
-```
-
 #### Parameters
 
 | Name | Type |
@@ -584,6 +574,16 @@ unescape('&amp;&lt;&gt;&#39;&quot;') => '&<>\'"'
 #### Returns
 
 `any`
+
+**`Desription`**
+
+unescapes an escaped a string
+
+**`Example`**
+
+```ts
+unescape('&amp;&lt;&gt;&#39;&quot;') => '&<>\'"'
+```
 
 #### Defined in
 

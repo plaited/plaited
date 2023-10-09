@@ -50,7 +50,7 @@
 
 #### Defined in
 
-[types.ts:81](https://github.com/plaited/plaited/blob/118dc2c/libs/behavioral/src/types.ts#L81)
+[types.ts:81](https://github.com/plaited/plaited/blob/87caed6/libs/behavioral/src/types.ts#L81)
 
 ___
 
@@ -60,7 +60,7 @@ ___
 
 #### Defined in
 
-[types.ts:16](https://github.com/plaited/plaited/blob/118dc2c/libs/behavioral/src/types.ts#L16)
+[types.ts:16](https://github.com/plaited/plaited/blob/87caed6/libs/behavioral/src/types.ts#L16)
 
 ___
 
@@ -90,7 +90,7 @@ ___
 
 #### Defined in
 
-[types.ts:104](https://github.com/plaited/plaited/blob/118dc2c/libs/behavioral/src/types.ts#L104)
+[types.ts:104](https://github.com/plaited/plaited/blob/87caed6/libs/behavioral/src/types.ts#L104)
 
 ___
 
@@ -106,7 +106,7 @@ ___
 
 #### Defined in
 
-[types.ts:42](https://github.com/plaited/plaited/blob/118dc2c/libs/behavioral/src/types.ts#L42)
+[types.ts:42](https://github.com/plaited/plaited/blob/87caed6/libs/behavioral/src/types.ts#L42)
 
 ___
 
@@ -116,7 +116,7 @@ ___
 
 #### Defined in
 
-[types.ts:79](https://github.com/plaited/plaited/blob/118dc2c/libs/behavioral/src/types.ts#L79)
+[types.ts:79](https://github.com/plaited/plaited/blob/87caed6/libs/behavioral/src/types.ts#L79)
 
 ___
 
@@ -139,7 +139,7 @@ ___
 
 #### Defined in
 
-[types.ts:52](https://github.com/plaited/plaited/blob/118dc2c/libs/behavioral/src/types.ts#L52)
+[types.ts:52](https://github.com/plaited/plaited/blob/87caed6/libs/behavioral/src/types.ts#L52)
 
 ___
 
@@ -163,7 +163,7 @@ ___
 
 #### Defined in
 
-[types.ts:59](https://github.com/plaited/plaited/blob/118dc2c/libs/behavioral/src/types.ts#L59)
+[types.ts:59](https://github.com/plaited/plaited/blob/87caed6/libs/behavioral/src/types.ts#L59)
 
 ___
 
@@ -187,7 +187,7 @@ ___
 
 #### Defined in
 
-[types.ts:67](https://github.com/plaited/plaited/blob/118dc2c/libs/behavioral/src/types.ts#L67)
+[types.ts:67](https://github.com/plaited/plaited/blob/87caed6/libs/behavioral/src/types.ts#L67)
 
 ___
 
@@ -206,7 +206,7 @@ ___
 
 #### Defined in
 
-[types.ts:73](https://github.com/plaited/plaited/blob/118dc2c/libs/behavioral/src/types.ts#L73)
+[types.ts:73](https://github.com/plaited/plaited/blob/87caed6/libs/behavioral/src/types.ts#L73)
 
 ___
 
@@ -223,7 +223,7 @@ ___
 
 #### Defined in
 
-[types.ts:20](https://github.com/plaited/plaited/blob/118dc2c/libs/behavioral/src/types.ts#L20)
+[types.ts:20](https://github.com/plaited/plaited/blob/87caed6/libs/behavioral/src/types.ts#L20)
 
 ___
 
@@ -233,7 +233,7 @@ ___
 
 #### Defined in
 
-[types.ts:18](https://github.com/plaited/plaited/blob/118dc2c/libs/behavioral/src/types.ts#L18)
+[types.ts:18](https://github.com/plaited/plaited/blob/87caed6/libs/behavioral/src/types.ts#L18)
 
 ___
 
@@ -257,7 +257,7 @@ ___
 
 #### Defined in
 
-[types.ts:88](https://github.com/plaited/plaited/blob/118dc2c/libs/behavioral/src/types.ts#L88)
+[types.ts:88](https://github.com/plaited/plaited/blob/87caed6/libs/behavioral/src/types.ts#L88)
 
 ___
 
@@ -287,7 +287,7 @@ ___
 
 #### Defined in
 
-[types.ts:25](https://github.com/plaited/plaited/blob/118dc2c/libs/behavioral/src/types.ts#L25)
+[types.ts:25](https://github.com/plaited/plaited/blob/87caed6/libs/behavioral/src/types.ts#L25)
 
 ___
 
@@ -310,7 +310,7 @@ ___
 
 #### Defined in
 
-[types.ts:29](https://github.com/plaited/plaited/blob/118dc2c/libs/behavioral/src/types.ts#L29)
+[types.ts:29](https://github.com/plaited/plaited/blob/87caed6/libs/behavioral/src/types.ts#L29)
 
 ## Functions
 
@@ -332,18 +332,13 @@ ___
 
 #### Defined in
 
-[b-program.ts:39](https://github.com/plaited/plaited/blob/118dc2c/libs/behavioral/src/b-program.ts#L39)
+[b-program.ts:39](https://github.com/plaited/plaited/blob/87caed6/libs/behavioral/src/b-program.ts#L39)
 
 ___
 
 ### loop
 
 ▸ **loop**(`rules`, `condition?`): [`RulesFunc`](plaited_behavioral.md#rulesfunc)<`any`\>
-
-**`Description`**
-
-A behavioral thread that loops infinitely or until some callback condition is false
-like a mode change open -> close. This function returns a threads
 
 #### Parameters
 
@@ -356,24 +351,20 @@ like a mode change open -> close. This function returns a threads
 
 [`RulesFunc`](plaited_behavioral.md#rulesfunc)<`any`\>
 
+**`Description`**
+
+A behavioral thread that loops infinitely or until some callback condition is false
+like a mode change open -> close. This function returns a threads
+
 #### Defined in
 
-[rules.ts:19](https://github.com/plaited/plaited/blob/118dc2c/libs/behavioral/src/rules.ts#L19)
+[rules.ts:19](https://github.com/plaited/plaited/blob/87caed6/libs/behavioral/src/rules.ts#L19)
 
 ___
 
 ### sync
 
 ▸ **sync**<`T`\>(`set`): [`RulesFunc`](plaited_behavioral.md#rulesfunc)<`T`\>
-
-**`Description`**
-
-At synchronization points, each behavioral thread specifies three sets of events:
-requested events: the threads proposes that these be considered for triggering,
-and asks to be notified when any of them occurs; waitFor events: the threads does not request these, but
-asks to be notified when any of them is triggered; and blocked events: the
-threads currently forbids triggering
-any of these events.
 
 #### Type parameters
 
@@ -391,19 +382,24 @@ any of these events.
 
 [`RulesFunc`](plaited_behavioral.md#rulesfunc)<`T`\>
 
+**`Description`**
+
+At synchronization points, each behavioral thread specifies three sets of events:
+requested events: the threads proposes that these be considered for triggering,
+and asks to be notified when any of them occurs; waitFor events: the threads does not request these, but
+asks to be notified when any of them is triggered; and blocked events: the
+threads currently forbids triggering
+any of these events.
+
 #### Defined in
 
-[rules.ts:39](https://github.com/plaited/plaited/blob/118dc2c/libs/behavioral/src/rules.ts#L39)
+[rules.ts:39](https://github.com/plaited/plaited/blob/87caed6/libs/behavioral/src/rules.ts#L39)
 
 ___
 
 ### thread
 
 ▸ **thread**(`...rules`): [`RulesFunc`](plaited_behavioral.md#rulesfunc)<`any`\>
-
-**`Description`**
-
-creates a behavioral thread from synchronization sets and/or other  behavioral threads
 
 #### Parameters
 
@@ -415,6 +411,10 @@ creates a behavioral thread from synchronization sets and/or other  behavioral t
 
 [`RulesFunc`](plaited_behavioral.md#rulesfunc)<`any`\>
 
+**`Description`**
+
+creates a behavioral thread from synchronization sets and/or other  behavioral threads
+
 #### Defined in
 
-[rules.ts:8](https://github.com/plaited/plaited/blob/118dc2c/libs/behavioral/src/rules.ts#L8)
+[rules.ts:8](https://github.com/plaited/plaited/blob/87caed6/libs/behavioral/src/rules.ts#L8)
