@@ -6,6 +6,7 @@ import {
   TriggerArgs,
 } from '@plaited/behavioral'
 import { SugaredElement } from './use-sugar.js'
+import { Attrs } from '@plaited/jsx'
 
 export type Disconnect = () => void;
 
@@ -69,3 +70,20 @@ export interface ISLElementConstructor {
 
 export type SendMessage = (recipient: string, detail: TriggerArgs) => void;
 export type BroadcastMessage = (recipient: TriggerArgs) => void;
+
+
+export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend';
+
+
+export type ElementData = {
+  $el: string,
+  $attrs:  Attrs
+  $children?: ElementData[]
+  $slots?: ElementData[]
+}
+
+export type DataSlotPayload = {
+  $position: Position
+  $target: string
+  $data: ElementData | ElementData[]
+}

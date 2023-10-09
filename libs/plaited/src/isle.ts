@@ -1,4 +1,5 @@
-import { createTemplate, dataTarget, dataTrigger } from '@plaited/jsx'
+import { Children, createTemplate, dataTarget, dataTrigger, Fragment } from '@plaited/jsx'
+import { trueTypeOf } from '@plaited/utils'
 import { Trigger } from '@plaited/behavioral'
 import { useBehavioral } from './use-behavioral.js'
 import {
@@ -6,9 +7,25 @@ import {
   ISLElementConstructor,
   ISLElementOptions,
   PlaitProps,
+  DataSlotPayload,
+  ElementData,
 } from './types.js'
 import { delegatedListener } from './delegated-listener.js'
 import { sugar, SugaredElement, sugarForEach } from './use-sugar.js'
+import { elementRegister } from './register.js'
+import { dataSlot } from './constants.js'
+
+const compileElementData = (data:ElementData | ElementData[]): Children => {
+  const elementData = Array.isArray(data) ? data : [ data ]
+  return elementData.map(({ $el, $children, $slots, $attrs }) => createTemplate(
+    elementRegister.get($el) || $el, 
+    {
+      ...$attrs,
+      children: $children ? compileElementData($children) : undefined,
+      slots: $slots ? compileElementData($slots) : undefined,
+    }
+  ))
+}
 
 // It takes the value of a data-target attribute and return all the events happening in it. minus the method identifier
 // so iof the event was data-target="click->doSomething" it would return ["click"]
@@ -42,13 +59,14 @@ export const getTriggerKey = (
   return key ? key.replace(pre, '') : ''
 }
 
-// We only support binding and querying named slots that are not also nested slots
+
+// We only support binding named slots that are not also nested slots
 export const canUseSlot = (node: HTMLSlotElement) =>
   !node.hasAttribute('slot') && node.hasAttribute('name')
 
 const traverseNodes = (node: Node, arr: Node[]) => {
   if (node.nodeType === 1) {
-    if ((node as Element).hasAttribute('data-trigger')) {
+    if ((node as Element).hasAttribute('data-trigger') || node instanceof HTMLSlotElement) {
       arr.push(node)
     }
     if (node.hasChildNodes()) {
@@ -136,7 +154,42 @@ export const isle = (
               this.#shadowObserver = this.#createShadowObserver()
               this.#disconnect = disconnect
               this.#trigger = trigger
+              const slots = this.shadowRoot?.querySelectorAll<HTMLSlotElement>(`slot[${dataSlot}][name]`)
+              slots && slots.forEach(slot => {
+                this.#delegateDataSlotChange(slot)
+              })
             }
+          }
+          #delegateDataSlotChange(slot: HTMLSlotElement) {
+            if(!delegatedListener.has(slot)) { 
+              delegatedListener.set(slot, _ => {
+                slot.assignedElements().forEach(el => {
+                  // TODO: add logic here to support **type="application/ld+json"** we're going to use this for importing elements
+                  if(el instanceof HTMLScriptElement &&  el.type === 'application/json') {
+                    let obj: DataSlotPayload | undefined
+                    try {
+                      const parsed = JSON.parse(el.textContent ?? '{}')
+                      const { $target, $position, $data } = parsed
+                      if(trueTypeOf($target) === 'string') throw new Error(`Invalid $target value [${trueTypeOf($target)}]`)
+                      if(
+                        $position &&
+                        ![ 'beforebegin', 'afterbegin', 'beforeend', 'afterend' ].includes($position)
+                      ) throw new Error(`Invalid $position value [${$position}]`)
+                      if(
+                        trueTypeOf($data) !== 'object'
+                      ) throw new Error(`Invalid $data value [${$data}]`)
+                      obj = parsed
+                    } catch(err) {
+                      console.error(err)
+                    }
+                    obj && this.$(obj.$target)?.render(
+                      Fragment({ children: compileElementData(obj.$data) }), obj.$position
+                    )
+                  }
+                })
+              })
+            }
+            this.addEventListener('slotchange', delegatedListener.get(slot)) 
           }
           disconnectedCallback() {
             this.#templateObserver && this.#templateObserver.disconnect()
@@ -148,17 +201,15 @@ export const isle = (
               this.#disconnect()
             }
           }
-          #delegateListeners(
-            nodes:
-              | Node[]
-              | NodeList
-          ) {
+          #delegateListeners(nodes:Node[] |NodeList) {
             nodes.forEach(el => {
               if (el.nodeType === 1) { // Node is of type Element which in the browser mean HTMLElement | SVGElement
                 if (
-                  (el as Element).tagName === 'SLOT' && // Element is an instance of a slot
-                  !canUseSlot(el as HTMLSlotElement)
-                ) return // Element is not a slot we can use return callback
+                  (el as Element).tagName === 'SLOT' // Element is an instance of a slot
+                ){
+                  if(!canUseSlot(el as HTMLSlotElement)) return
+                  if(el.hasAttribute(dataSlot)) return this.#delegateDataSlotChange(el)
+                }
                 !delegatedListener.has(el) &&
                   delegatedListener.set(el, event => { // Delegated listener does not have element then delegate it's callback
                     const triggerKey = getTriggerKey(
@@ -276,7 +327,7 @@ export const isle = (
               return Object.assign(element, sugar)
             }
           }
-        }
+        }   
       )
     )
   }
