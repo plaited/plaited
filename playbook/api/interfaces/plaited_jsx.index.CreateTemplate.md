@@ -14,7 +14,7 @@
 
 | Name | Type |
 | :------ | :------ |
-| `T` | extends `Record`<`string`, `any`\> |
+| `T` | extends [`AdditionalAttrs`](plaited_jsx.index.AdditionalAttrs.md) |
 
 #### Parameters
 
@@ -29,4 +29,4 @@
 
 #### Defined in
 
-[types.ts:56](https://github.com/plaited/plaited/blob/118dc2c/libs/jsx/src/types.ts#L56)
+[types.ts:59](https://github.com/plaited/plaited/blob/87caed6/libs/jsx/src/types.ts#L59)

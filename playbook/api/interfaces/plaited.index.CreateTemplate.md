@@ -14,7 +14,7 @@
 
 | Name | Type |
 | :------ | :------ |
-| `T` | extends `Record`<`string`, `any`\> |
+| `T` | extends [`AdditionalAttrs`](plaited.index.AdditionalAttrs.md) |
 
 #### Parameters
 
@@ -29,4 +29,4 @@
 
 #### Defined in
 
-libs/jsx/dist/types.d.ts:29
+libs/jsx/dist/types.d.ts:32
