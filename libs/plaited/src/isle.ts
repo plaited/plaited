@@ -13,18 +13,21 @@ import {
 import { delegatedListener } from './delegated-listener.js'
 import { sugar, SugaredElement, sugarForEach } from './use-sugar.js'
 import { elementRegister } from './register.js'
-import { dataSlot } from './constants.js'
 
 const compileElementData = (data:ElementData | ElementData[]): Children => {
   const elementData = Array.isArray(data) ? data : [ data ]
-  return elementData.map(({ $el, $children, $slots, $attrs }) => createTemplate(
-    elementRegister.get($el) || $el, 
-    {
-      ...$attrs,
-      children: $children ? compileElementData($children) : undefined,
-      slots: $slots ? compileElementData($slots) : undefined,
-    }
-  ))
+  console.log(elementData)
+  return elementData.map(({ $el, $children, $slots, $attrs = {} }) => {
+    console.log({ $el })
+    return createTemplate(
+      elementRegister.get($el) || $el, 
+      {
+        ...$attrs,
+        children: $children ? compileElementData($children) : undefined,
+        slots: $slots ? compileElementData($slots) : undefined,
+      }
+    )
+  })
 }
 
 // It takes the value of a data-target attribute and return all the events happening in it. minus the method identifier
@@ -59,10 +62,6 @@ export const getTriggerKey = (
   return key ? key.replace(pre, '') : ''
 }
 
-
-// We only support binding named slots that are not also nested slots
-export const canUseSlot = (node: HTMLSlotElement) =>
-  !node.hasAttribute('slot') && node.hasAttribute('name')
 
 const traverseNodes = (node: Node, arr: Node[]) => {
   if (node.nodeType === 1) {
@@ -154,14 +153,14 @@ export const isle = (
               this.#shadowObserver = this.#createShadowObserver()
               this.#disconnect = disconnect
               this.#trigger = trigger
-              const slots = this.shadowRoot?.querySelectorAll<HTMLSlotElement>(`slot[${dataSlot}][name]`)
+              const slots = this.shadowRoot?.querySelectorAll<HTMLSlotElement>(`slot[name]`)
               slots && slots.forEach(slot => {
                 this.#delegateDataSlotChange(slot)
               })
             }
           }
           #delegateDataSlotChange(slot: HTMLSlotElement) {
-            if(!delegatedListener.has(slot)) { 
+            if(!delegatedListener.has(slot)) {
               delegatedListener.set(slot, _ => {
                 slot.assignedElements().forEach(el => {
                   // TODO: add logic here to support **type="application/ld+json"** we're going to use this for importing elements
@@ -170,7 +169,7 @@ export const isle = (
                     try {
                       const parsed = JSON.parse(el.textContent ?? '{}')
                       const { $target, $position, $data } = parsed
-                      if(trueTypeOf($target) === 'string') throw new Error(`Invalid $target value [${trueTypeOf($target)}]`)
+                      if(trueTypeOf($target) !== 'string') throw new Error(`Invalid $target value [${$target}}]`)
                       if(
                         $position &&
                         ![ 'beforebegin', 'afterbegin', 'beforeend', 'afterend' ].includes($position)
@@ -189,7 +188,7 @@ export const isle = (
                 })
               })
             }
-            this.addEventListener('slotchange', delegatedListener.get(slot)) 
+            slot.addEventListener('slotchange', delegatedListener.get(slot)) 
           }
           disconnectedCallback() {
             this.#templateObserver && this.#templateObserver.disconnect()
@@ -204,11 +203,9 @@ export const isle = (
           #delegateListeners(nodes:Node[] |NodeList) {
             nodes.forEach(el => {
               if (el.nodeType === 1) { // Node is of type Element which in the browser mean HTMLElement | SVGElement
-                if (
-                  (el as Element).tagName === 'SLOT' // Element is an instance of a slot
-                ){
-                  if(!canUseSlot(el as HTMLSlotElement)) return
-                  if(el.hasAttribute(dataSlot)) return this.#delegateDataSlotChange(el)
+                if ((el as Element).tagName === 'SLOT' ) { // Element is an instance of a slot so we don't bind event listeners for triggers
+                  el.hasAttribute('name') && this.#delegateDataSlotChange(el)
+                  return
                 }
                 !delegatedListener.has(el) &&
                   delegatedListener.set(el, event => { // Delegated listener does not have element then delegate it's callback
@@ -308,24 +305,12 @@ export const isle = (
             if (all) {
               const elements: SugaredElement<T>[] = []
               this.#root.querySelectorAll<T>(selector)
-                .forEach(element => {
-                  if (
-                    element.tagName !== 'SLOT' ||
-                    canUseSlot(element as HTMLSlotElement)
-                  ) {
-                    elements.push(Object.assign(element, sugar))
-                  }
-                })
+                .forEach(element => elements.push(Object.assign(element, sugar)))
               return Object.assign(elements, sugarForEach)
             }
             const element = this.#root.querySelector<T>(selector)
             if (!element) return
-            if (
-              element.tagName !== 'SLOT' ||
-              canUseSlot(element as HTMLSlotElement)
-            ) {
-              return Object.assign(element, sugar)
-            }
+            return Object.assign(element, sugar)
           }
         }   
       )

@@ -77,7 +77,7 @@ export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend';
 
 export type ElementData = {
   $el: string,
-  $attrs:  Attrs
+  $attrs?:  Attrs
   $children?: ElementData[]
   $slots?: ElementData[]
 }

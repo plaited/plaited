@@ -84,7 +84,7 @@ test('slot: named', async t => {
     given: `named slot click of element in event's composed path`,
     should: 'trigger feedback action',
     actual: named.calledWith('named'),
-    expected: true,
+    expected: false,
   })
 })
 

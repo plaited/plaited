@@ -2,7 +2,7 @@ import { PlaitedElement, ssr } from '@plaited/jsx'
 import { isle } from '../index.js'
 import { test } from '@plaited/rite'
 
-const Island = isle({ tag: 'z-el' }, base => class extends base {})
+const Island = isle({ tag: 'z-el' })
 
 
 test('Island.template: shadow only', t => {
@@ -47,7 +47,28 @@ test('Island.template: shadow, and mode closed', t => {
     expected:`<z-el><template shadowrootmode="closed" shadowrootdelegatesfocus="true"><div><h1>header</h1></div></template></z-el>`,
   })
 })
-test('Island.template: shadow, and slots', t => {
+test('Island.template: shadow, and named slots', t => {
+  const IslandTemplate: PlaitedElement = ({ children }) => (
+    <Island.template slots={children}>
+      <div>
+        <h1>header</h1>
+        <slot name='slot'></slot>
+      </div>
+    </Island.template>
+  )
+  t({
+    given: 'passing children to a PlaitedElement that assigns them to slot',
+    should: 'render children outside of the template tag',
+    actual:ssr(
+      <IslandTemplate>
+        <div slot='slot'>slotted</div>
+      </IslandTemplate>
+    ),
+    expected:`<z-el><template shadowrootmode="open" shadowrootdelegatesfocus="true"><div><h1>header</h1><slot name="slot"></slot></div></template><div slot="slot">slotted</div></z-el>`,
+  })
+})
+
+test('Island.template: shadow, and unamed slots', t => {
   const IslandTemplate: PlaitedElement = ({ children }) => (
     <Island.template slots={children}>
       <div>
