@@ -16,7 +16,7 @@ import {
   getTriggerKey,
   matchAllEvents,
   traverseNodes,
-  dataSlot,
+  dataSlotSelector,
 } from './isle-utils.js'
 
 /**
@@ -95,7 +95,7 @@ export const isle = (
               this.#shadowObserver = this.#createShadowObserver()
               this.#disconnect = disconnect
               this.#trigger = trigger
-              const slots = this.shadowRoot?.querySelectorAll<HTMLSlotElement>(dataSlot)
+              const slots = this.shadowRoot?.querySelectorAll<HTMLSlotElement>(dataSlotSelector)
               slots && slots.forEach(slot => {
                 slot.assignedElements().forEach(el => el instanceof HTMLScriptElement &&  this.#renderSlotData(el))
                 this.#delegateDataSlotChange(slot)
@@ -111,7 +111,7 @@ export const isle = (
               })
               this.#disconnect()
             }
-            const slots = this.shadowRoot?.querySelectorAll<HTMLSlotElement>(dataSlot)
+            const slots = this.shadowRoot?.querySelectorAll<HTMLSlotElement>(dataSlotSelector)
             slots && slots.forEach(slot => {
               slot.assignedElements().length && slot.removeEventListener('slotchange', delegatedListener.get(slot))
             })
@@ -160,7 +160,7 @@ export const isle = (
               if (el.nodeType === 1) { // Node is of type Element which in the browser mean HTMLElement | SVGElement
                 if ((el as Element).tagName === 'SLOT'){ // Element is an instance of a slot
                   if(el.hasAttribute('slot')) return // This is a nested slot we ignore it
-                  if(!el.hasAttribute('name')) return this.#delegateDataSlotChange(el) // This is an unamed slot we use it for data or presentation not event handling
+                  if(!el.hasAttribute(dataTrigger)) return this.#delegateDataSlotChange(el) // This is an unamed slot we use it for data or presentation not event handling
                 }
                 !delegatedListener.has(el) &&
                   delegatedListener.set(el, event => { // Delegated listener does not have element then delegate it's callback

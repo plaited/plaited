@@ -1,4 +1,4 @@
-import { createTemplate, Attrs, Template } from '@plaited/jsx'
+import { createTemplate, Attrs, Template, dataTrigger } from '@plaited/jsx'
 import { ElementData } from './types.js'
 import { getElement } from './register.js'
 
@@ -51,7 +51,6 @@ export const getTriggerKey = (
   return key ? key.replace(pre, '') : ''
 }
 
-
 export const traverseNodes = (node: Node, arr: Node[]) => {
   if (node.nodeType === 1) {
     if ((node as Element).hasAttribute('data-trigger') || node instanceof HTMLSlotElement) {
@@ -67,4 +66,4 @@ export const traverseNodes = (node: Node, arr: Node[]) => {
   }
 }
 
-export const dataSlot = 'slot:not([name]):not([slot])'
+export const dataSlotSelector = `slot:not([${dataTrigger}]):not([slot])`

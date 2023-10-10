@@ -74,19 +74,19 @@ export type BroadcastMessage = (recipient: TriggerArgs) => void;
 
 export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend';
 
-type SDUIChildren = string | string[] | ElementData | ElementData[]
+type DataSlotChildren = string | string[] | ElementData | ElementData[]
 
 interface AdditionalAttrs {
-  [key: string]: Primitive | SDUIChildren | Record<string, string>;
+  [key: string]: Primitive | DataSlotChildren | Record<string, string>;
 }
 
-interface SDUIAttrs extends Omit<BaseAttrs, 'children' | 'slots'> {
-  children?: SDUIChildren
-  slots?: SDUIChildren
+interface DataSlotAttrs extends Omit<BaseAttrs, 'children' | 'slots'> {
+  children?: DataSlotChildren
+  slots?: DataSlotChildren
 }
 export type ElementData = {
   $tag: string,
-  $attrs?:  SDUIAttrs & AdditionalAttrs
+  $attrs?:  DataSlotAttrs & AdditionalAttrs
 }
 
 export type DataSlotPayload = {
