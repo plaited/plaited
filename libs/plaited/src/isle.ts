@@ -1,4 +1,4 @@
-import { Children, createTemplate, dataTarget, dataTrigger, Fragment } from '@plaited/jsx'
+import { createTemplate, dataTarget, dataTrigger, Fragment } from '@plaited/jsx'
 import { trueTypeOf } from '@plaited/utils'
 import { Trigger } from '@plaited/behavioral'
 import { useBehavioral } from './use-behavioral.js'
@@ -8,75 +8,11 @@ import {
   ISLElementOptions,
   PlaitProps,
   DataSlotPayload,
-  ElementData,
 } from './types.js'
 import { delegatedListener } from './delegated-listener.js'
 import { sugar, SugaredElement, sugarForEach } from './use-sugar.js'
-import { elementRegister } from './register.js'
+import { compileElementData, getTriggerKey, matchAllEvents, traverseNodes } from './isle-utils.js'
 
-const compileElementData = (data:ElementData | ElementData[]): Children => {
-  const elementData = Array.isArray(data) ? data : [ data ]
-  console.log(elementData)
-  return elementData.map(({ $el, $children, $slots, $attrs = {} }) => {
-    console.log({ $el })
-    return createTemplate(
-      elementRegister.get($el) || $el, 
-      {
-        ...$attrs,
-        children: $children ? compileElementData($children) : undefined,
-        slots: $slots ? compileElementData($slots) : undefined,
-      }
-    )
-  })
-}
-
-// It takes the value of a data-target attribute and return all the events happening in it. minus the method identifier
-// so iof the event was data-target="click->doSomething" it would return ["click"]
-export const matchAllEvents = (str: string) => {
-  const regexp = /(^\w+|(?:\s)\w+)(?:->)/g
-  return [ ...str.matchAll(regexp) ].flatMap(([ , event ]) => event)
-}
-
-// returns the request/action name to connect our event binding to data-target="click->doSomething" it would return "doSomething"
-// note triggers are separated by spaces in the attribute data-target="click->doSomething focus->somethingElse"
-export const getTriggerKey = (
-  e: Event,
-  context: HTMLElement | SVGElement
-): string => {
-  const el = e.currentTarget === context
-    ? context
-    // check if closest slot from the element that invoked the event is the instances slot
-    : e.composedPath().find(slot =>
-      ((slot as Element)?.tagName === 'SLOT') && slot ===
-          context
-    )
-    ? context
-    : undefined
-
-  if (!el) return ''
-  const pre = `${e.type}->`
-  const trigger = el.dataset.trigger ?? ''
-  const key = trigger.trim().split(/\s+/).find((str: string) =>
-    str.includes(pre)
-  )
-  return key ? key.replace(pre, '') : ''
-}
-
-
-const traverseNodes = (node: Node, arr: Node[]) => {
-  if (node.nodeType === 1) {
-    if ((node as Element).hasAttribute('data-trigger') || node instanceof HTMLSlotElement) {
-      arr.push(node)
-    }
-    if (node.hasChildNodes()) {
-      const childNodes = node.childNodes
-      const length = childNodes.length
-      for (let i = 0; i < length; i++) {
-        traverseNodes(childNodes[i], arr)
-      }
-    }
-  }
-}
 /**
  * A typescript function for instantiating Plaited Island Elements
  */
@@ -155,40 +91,10 @@ export const isle = (
               this.#trigger = trigger
               const slots = this.shadowRoot?.querySelectorAll<HTMLSlotElement>(`slot[name]`)
               slots && slots.forEach(slot => {
+                slot.assignedElements().forEach(el => el instanceof HTMLScriptElement &&  this.#renderSlotData(el))
                 this.#delegateDataSlotChange(slot)
               })
             }
-          }
-          #delegateDataSlotChange(slot: HTMLSlotElement) {
-            if(!delegatedListener.has(slot)) {
-              delegatedListener.set(slot, _ => {
-                slot.assignedElements().forEach(el => {
-                  // TODO: add logic here to support **type="application/ld+json"** we're going to use this for importing elements
-                  if(el instanceof HTMLScriptElement &&  el.type === 'application/json') {
-                    let obj: DataSlotPayload | undefined
-                    try {
-                      const parsed = JSON.parse(el.textContent ?? '{}')
-                      const { $target, $position, $data } = parsed
-                      if(trueTypeOf($target) !== 'string') throw new Error(`Invalid $target value [${$target}}]`)
-                      if(
-                        $position &&
-                        ![ 'beforebegin', 'afterbegin', 'beforeend', 'afterend' ].includes($position)
-                      ) throw new Error(`Invalid $position value [${$position}]`)
-                      if(
-                        trueTypeOf($data) !== 'object'
-                      ) throw new Error(`Invalid $data value [${$data}]`)
-                      obj = parsed
-                    } catch(err) {
-                      console.error(err)
-                    }
-                    obj && this.$(obj.$target)?.render(
-                      Fragment({ children: compileElementData(obj.$data) }), obj.$position
-                    )
-                  }
-                })
-              })
-            }
-            slot.addEventListener('slotchange', delegatedListener.get(slot)) 
           }
           disconnectedCallback() {
             this.#templateObserver && this.#templateObserver.disconnect()
@@ -199,6 +105,49 @@ export const isle = (
               })
               this.#disconnect()
             }
+            const slots = this.shadowRoot?.querySelectorAll<HTMLSlotElement>(`slot[name]`)
+            slots && slots.forEach(slot => {
+              slot.assignedElements().length && slot.removeEventListener('slotchange', delegatedListener.get(slot))
+            })
+          }
+          #renderSlotData(el: HTMLScriptElement) {
+            // TODO: add logic here to support **type="application/ld+json"** we're going to use this for importing elements
+            if(el.type === 'application/json') {
+              let obj: DataSlotPayload | undefined
+              try {
+                const parsed = JSON.parse(el.textContent ?? '{}')
+                const { $target, $position, $data } = parsed
+                if(trueTypeOf($target) !== 'string') throw new Error(`Invalid $target value [${$target}}]`)
+                if(
+                  $position &&
+                    ![ 'beforebegin', 'afterbegin', 'beforeend', 'afterend' ].includes($position)
+                ) throw new Error(`Invalid $position value [${$position}]`)
+                if(
+                  trueTypeOf($data) !== 'object'
+                ) throw new Error(`Invalid $data value [${$data}]`)
+                obj = parsed
+              } catch(err) {
+                console.error(err)
+              }
+              if(obj) {
+                const { $data } = obj
+                this.$(obj.$target)?.render(
+                  Fragment({
+                    children: Array.isArray($data)
+                        ? $data.map(data => compileElementData(data))
+                        : compileElementData($data),
+                  }), obj.$position
+                )
+              }
+            }
+          }
+          #delegateDataSlotChange(slot: HTMLSlotElement) {
+            if(!delegatedListener.has(slot)) {
+              delegatedListener.set(slot, _ => {
+                slot.assignedElements().forEach(el => el instanceof HTMLScriptElement &&  this.#renderSlotData(el))
+              })
+            }
+            slot.addEventListener('slotchange', delegatedListener.get(slot)) 
           }
           #delegateListeners(nodes:Node[] |NodeList) {
             nodes.forEach(el => {

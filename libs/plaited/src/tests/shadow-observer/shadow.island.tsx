@@ -3,7 +3,7 @@ import { isle, PlaitProps, useSugar, PlaitedElement, register } from '../../inde
 import { opacityHex } from '@plaited/utils'
 import { SVG } from './noun-braids-2633610.js'
 
-const AddSVG:PlaitedElement = register('add-svg', ({ children }) => (
+const AddSVG:PlaitedElement = register('AddSVG', ({ children }) => (
   <button slot='button'
     data-target='add-svg'
     data-trigger={{ click: 'add-svg' }}
@@ -98,8 +98,10 @@ export const ShadowIsland = isle(
                 $target:'add-svg-slot',
                 $position: 'beforebegin',
                 $data: {
-                  $el: 'add-svg',
-                  $children: 'add svg',
+                  $tag: 'AddSVG',
+                  $attrs: {
+                    children: 'add svg',
+                  },
                 },
               })}
             </script>)
