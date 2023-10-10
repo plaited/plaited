@@ -160,7 +160,7 @@ export const isle = (
               if (el.nodeType === 1) { // Node is of type Element which in the browser mean HTMLElement | SVGElement
                 if ((el as Element).tagName === 'SLOT'){ // Element is an instance of a slot
                   if(el.hasAttribute('slot')) return // This is a nested slot we ignore it
-                  if(!el.hasAttribute(dataTrigger)) return this.#delegateDataSlotChange(el) // This is an unamed slot we use it for data or presentation not event handling
+                  if(!el.hasAttribute(dataTrigger)) return this.#delegateDataSlotChange(el) // This slot is not nested or a trigger slot so we can use it as a data slot
                 }
                 !delegatedListener.has(el) &&
                   delegatedListener.set(el, event => { // Delegated listener does not have element then delegate it's callback
