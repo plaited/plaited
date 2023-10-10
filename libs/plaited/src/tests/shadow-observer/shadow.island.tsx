@@ -54,9 +54,8 @@ export const ShadowIsland = isle(
   base =>
     class extends base {
       plait(
-        { feedback, addThreads, sync, thread, context, $, loop }: PlaitProps
+        { feedback, addThreads, sync, thread, host, $, loop }: PlaitProps
       ) {
-        const lightDom = useSugar(this)
         addThreads({
           onRemoveSvg: thread(
             sync({ waitFor: { type: 'removeSvg' } }),
@@ -89,8 +88,8 @@ export const ShadowIsland = isle(
             )
           },
           addButton() {
+            const lightDom = useSugar(host)
             lightDom.render(<script
-              slot='button'
               type='application/json'
               trusted
             >
@@ -113,12 +112,7 @@ export const ShadowIsland = isle(
           addSlot() {
             const row = $('button-row')
             row?.render(
-              <slot
-                name='button'
-                data-target='add-svg-slot'
-                
-              >
-              </slot>,
+              <slot data-target='add-svg-slot'></slot>,
               'beforeend'
             )
           },

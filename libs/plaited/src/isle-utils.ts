@@ -66,3 +66,5 @@ export const traverseNodes = (node: Node, arr: Node[]) => {
     }
   }
 }
+
+export const dataSlot = 'slot:not([name]):not([slot])'

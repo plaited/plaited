@@ -67,6 +67,26 @@ test('Island.template: shadow, and slots', t => {
     expected:`<z-el><template shadowrootmode="open" shadowrootdelegatesfocus="true"><div><h1>header</h1><slot name="slot"></slot></div></template><div slot="slot">slotted</div></z-el>`,
   })
 })
+test('Island.template: shadow, and unamed slots', t => {
+  const IslandTemplate: PlaitedElement = ({ children }) => (
+    <Island.template slots={children}>
+      <div>
+        <h1>header</h1>
+        <slot></slot>
+      </div>
+    </Island.template>
+  )
+  t({
+    given: 'passing children to a PlaitedElement that assigns them to slot',
+    should: 'render children outside of the template tag',
+    actual:ssr(
+      <IslandTemplate>
+        <div>slotted</div>
+      </IslandTemplate>
+    ),
+    expected:`<z-el><template shadowrootmode="open" shadowrootdelegatesfocus="true"><div><h1>header</h1><slot></slot></div></template><div>slotted</div></z-el>`,
+  })
+})
 test('Island.template: stylesheet string', t => {
   t({
     given: 'passing stylesheet to custom element tag',

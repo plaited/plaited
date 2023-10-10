@@ -59,9 +59,9 @@ export type PlaitProps = {
    * @example
    * // returns the div element inside
    * // the shadowRoot of the element instance
-   * const shadowEl = context.shadowRoot.querySelector('div')
+   * const shadowEl = host.shadowRoot.querySelector('div')
    */
-  context: ISLElement;
+  host: ISLElement;
 } & ReturnType<typeof bProgram>;
 
 export interface ISLElementConstructor {

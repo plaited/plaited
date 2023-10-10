@@ -1,5 +1,5 @@
 import { test } from '@plaited/rite'
-import { css, PlaitedElement } from '@plaited/jsx'
+import { Children, css, PlaitedElement } from '@plaited/jsx'
 import { isle, PlaitProps, useSugar } from '../index.js'
 import sinon from 'sinon'
 const [ classes, stylesheet ] = css`.row {
@@ -34,8 +34,9 @@ const SlotTest = isle(
     }
 )
 SlotTest()
+isle({ tag:'nested-slot' })()
 const root = document.querySelector('body')
-const SlotTestTemplate: PlaitedElement = ({ children }) => (
+const SlotTestTemplate: PlaitedElement<{ nested: Children}> = ({ children, nested }) => (
   <SlotTest.template {...stylesheet}
     slots={children}
   >
@@ -47,7 +48,7 @@ const SlotTestTemplate: PlaitedElement = ({ children }) => (
       <template>
         <div data-target='target'>template target</div>
       </template>
-      <nested-slot>
+      <nested-slot slots={nested}>
         <slot slot='nested'
           name='nested'
           data-trigger={{ click: 'nested' }}
@@ -58,10 +59,14 @@ const SlotTestTemplate: PlaitedElement = ({ children }) => (
   </SlotTest.template>
 )
 useSugar(root).render(
-  <SlotTestTemplate>
-    <button>Slot</button>
-    <button slot='named'>Named</button>
-    <button slot='nested'>Nested</button>
+  <SlotTestTemplate nested={<button slot='nested'
+    className={classes.button}
+  >Nested</button>}
+  >
+    <button className={classes.button}>Slot</button>
+    <button slot='named'
+      className={classes.button}
+    >Named</button>
   </SlotTestTemplate>,
   'beforeend'
 )
@@ -84,7 +89,7 @@ test('slot: named', async t => {
     given: `named slot click of element in event's composed path`,
     should: 'trigger feedback action',
     actual: named.calledWith('named'),
-    expected: false,
+    expected: true,
   })
 })
 
