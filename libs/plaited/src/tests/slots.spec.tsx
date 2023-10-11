@@ -1,5 +1,5 @@
 import { test } from '@plaited/rite'
-import { css, PlaitedElement } from '@plaited/jsx'
+import {  css, PlaitedElement } from '@plaited/jsx'
 import { isle, PlaitProps, useSugar } from '../index.js'
 import sinon from 'sinon'
 const [ classes, stylesheet ] = css`.row {
@@ -34,6 +34,7 @@ const SlotTest = isle(
     }
 )
 SlotTest()
+isle({ tag:'nested-slot' })()
 const root = document.querySelector('body')
 const SlotTestTemplate: PlaitedElement = ({ children }) => (
   <SlotTest.template {...stylesheet}
@@ -47,21 +48,26 @@ const SlotTestTemplate: PlaitedElement = ({ children }) => (
       <template>
         <div data-target='target'>template target</div>
       </template>
-      <nested-slot>
-        <slot slot='nested'
-          name='nested'
-          data-trigger={{ click: 'nested' }}
-        >
-        </slot>
+      <nested-slot slots={<slot slot='nested'
+        name='nested'
+        data-trigger={{ click: 'nested' }}
+      >
+      </slot>}
+      >
+        <slot name='nested'></slot>
       </nested-slot>
     </div>
   </SlotTest.template>
 )
 useSugar(root).render(
   <SlotTestTemplate>
-    <button>Slot</button>
-    <button slot='named'>Named</button>
-    <button slot='nested'>Nested</button>
+    <button className={classes.button}>Slot</button>
+    <button slot='named'
+      className={classes.button}
+    >Named</button>
+    <button slot='nested'
+      className={classes.button}
+    >Nested</button>
   </SlotTestTemplate>,
   'beforeend'
 )
@@ -71,9 +77,9 @@ test('slot: default', async t => {
   button && await t.fireEvent(button, 'click')
   t({
     given: `default slot click of element in event's composed path`,
-    should: 'not trigger feedback action',
+    should: 'trigger feedback action',
     actual: slot.called,
-    expected: false,
+    expected: true,
   })
 })
 
@@ -84,7 +90,7 @@ test('slot: named', async t => {
     given: `named slot click of element in event's composed path`,
     should: 'trigger feedback action',
     actual: named.calledWith('named'),
-    expected: false,
+    expected: true,
   })
 })
 

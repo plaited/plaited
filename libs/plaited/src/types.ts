@@ -59,9 +59,9 @@ export type PlaitProps = {
    * @example
    * // returns the div element inside
    * // the shadowRoot of the element instance
-   * const shadowEl = context.shadowRoot.querySelector('div')
+   * const shadowEl = host.shadowRoot.querySelector('div')
    */
-  context: ISLElement;
+  host: ISLElement;
 } & ReturnType<typeof bProgram>;
 
 export interface ISLElementConstructor {
@@ -74,19 +74,19 @@ export type BroadcastMessage = (recipient: TriggerArgs) => void;
 
 export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend';
 
-type SDUIChildren = string | string[] | ElementData | ElementData[]
+type DataSlotChildren = string | string[] | ElementData | ElementData[]
 
 interface AdditionalAttrs {
-  [key: string]: Primitive | SDUIChildren | Record<string, string>;
+  [key: string]: Primitive | DataSlotChildren | Record<string, string>;
 }
 
-interface SDUIAttrs extends Omit<BaseAttrs, 'children' | 'slots'> {
-  children?: SDUIChildren
-  slots?: SDUIChildren
+interface DataSlotAttrs extends Omit<BaseAttrs, 'children' | 'slots'> {
+  children?: DataSlotChildren
+  slots?: DataSlotChildren
 }
 export type ElementData = {
   $tag: string,
-  $attrs?:  SDUIAttrs & AdditionalAttrs
+  $attrs?:  DataSlotAttrs & AdditionalAttrs
 }
 
 export type DataSlotPayload = {

@@ -11,7 +11,13 @@ import {
 } from './types.js'
 import { delegatedListener } from './delegated-listener.js'
 import { sugar, SugaredElement, sugarForEach } from './use-sugar.js'
-import { compileElementData, getTriggerKey, matchAllEvents, traverseNodes } from './isle-utils.js'
+import {
+  compileElementData,
+  getTriggerKey,
+  matchAllEvents,
+  traverseNodes,
+  dataSlotSelector,
+} from './isle-utils.js'
 
 /**
  * A typescript function for instantiating Plaited Island Elements
@@ -82,14 +88,14 @@ export const isle = (
               )
               this.plait({
                 $: this.$.bind(this),
-                context: this,
+                host: this,
                 trigger,
                 ...rest,
               })
               this.#shadowObserver = this.#createShadowObserver()
               this.#disconnect = disconnect
               this.#trigger = trigger
-              const slots = this.shadowRoot?.querySelectorAll<HTMLSlotElement>(`slot[name]`)
+              const slots = this.shadowRoot?.querySelectorAll<HTMLSlotElement>(dataSlotSelector)
               slots && slots.forEach(slot => {
                 slot.assignedElements().forEach(el => el instanceof HTMLScriptElement &&  this.#renderSlotData(el))
                 this.#delegateDataSlotChange(slot)
@@ -105,7 +111,7 @@ export const isle = (
               })
               this.#disconnect()
             }
-            const slots = this.shadowRoot?.querySelectorAll<HTMLSlotElement>(`slot[name]`)
+            const slots = this.shadowRoot?.querySelectorAll<HTMLSlotElement>(dataSlotSelector)
             slots && slots.forEach(slot => {
               slot.assignedElements().length && slot.removeEventListener('slotchange', delegatedListener.get(slot))
             })
@@ -152,9 +158,9 @@ export const isle = (
           #delegateListeners(nodes:Node[] |NodeList) {
             nodes.forEach(el => {
               if (el.nodeType === 1) { // Node is of type Element which in the browser mean HTMLElement | SVGElement
-                if ((el as Element).tagName === 'SLOT' ) { // Element is an instance of a slot so we don't bind event listeners for triggers
-                  el.hasAttribute('name') && this.#delegateDataSlotChange(el)
-                  return
+                if ((el as Element).tagName === 'SLOT'){ // Element is an instance of a slot
+                  if(el.hasAttribute('slot')) return // This is a nested slot we ignore it
+                  if(!el.hasAttribute(dataTrigger)) return this.#delegateDataSlotChange(el) // This slot is not nested or a trigger slot so we can use it as a data slot
                 }
                 !delegatedListener.has(el) &&
                   delegatedListener.set(el, event => { // Delegated listener does not have element then delegate it's callback
@@ -259,7 +265,7 @@ export const isle = (
             }
             const element = this.#root.querySelector<T>(selector)
             if (!element) return
-            return Object.assign(element, sugar)
+            return Object.assign(element, sugar)        
           }
         }   
       )
