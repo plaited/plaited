@@ -29,4 +29,4 @@
 
 #### Defined in
 
-[types.ts:59](https://github.com/plaited/plaited/blob/87caed6/libs/jsx/src/types.ts#L59)
+[types.ts:59](https://github.com/plaited/plaited/blob/f787d39/libs/jsx/src/types.ts#L59)
