@@ -6,7 +6,7 @@ import {
   TriggerArgs,
 } from '@plaited/behavioral'
 import { SugaredElement } from './use-sugar.js'
-import { Attrs } from '@plaited/jsx'
+import { Primitive, BaseAttrs } from '@plaited/jsx'
 
 export type Disconnect = () => void;
 
@@ -74,12 +74,19 @@ export type BroadcastMessage = (recipient: TriggerArgs) => void;
 
 export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend';
 
+type SDUIChildren = string | string[] | ElementData | ElementData[]
 
+interface AdditionalAttrs {
+  [key: string]: Primitive | SDUIChildren | Record<string, string>;
+}
+
+interface SDUIAttrs extends Omit<BaseAttrs, 'children' | 'slots'> {
+  children?: SDUIChildren
+  slots?: SDUIChildren
+}
 export type ElementData = {
-  $el: string,
-  $attrs:  Attrs
-  $children?: ElementData[]
-  $slots?: ElementData[]
+  $tag: string,
+  $attrs?:  SDUIAttrs & AdditionalAttrs
 }
 
 export type DataSlotPayload = {

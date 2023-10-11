@@ -37,6 +37,7 @@ test('shadow observer test', async t => {
   )
   button && await t.fireEvent(button, 'click')
   button = await t.findByText<HTMLButtonElement>('add svg')
+
   t({
     given: 'request to append `add svg` button',
     should: 'new button should be in dom',

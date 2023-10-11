@@ -1,7 +1,14 @@
 import { css } from '@plaited/jsx'
-import { isle, PlaitProps, useSugar } from '../../index.js'
+import { isle, PlaitProps, useSugar, PlaitedElement, register } from '../../index.js'
 import { opacityHex } from '@plaited/utils'
 import { SVG } from './noun-braids-2633610.js'
+
+const AddSVG:PlaitedElement = register('AddSVG', ({ children }) => (
+  <button slot='button'
+    data-target='add-svg'
+    data-trigger={{ click: 'add-svg' }}
+  >{children}</button>
+))
 
 export const [ classes, stylesheet ] = css`
 .zone {
@@ -49,6 +56,7 @@ export const ShadowIsland = isle(
       plait(
         { feedback, addThreads, sync, thread, context, $, loop }: PlaitProps
       ) {
+        const lightDom = useSugar(this)
         addThreads({
           onRemoveSvg: thread(
             sync({ waitFor: { type: 'removeSvg' } }),
@@ -63,7 +71,6 @@ export const ShadowIsland = isle(
             sync({ request: { type: 'modifyAttributes' } }),
           ]),
         })
-        const slotTarget = useSugar(context)
         feedback({
           addSubIsland() {
             const zone = $('zone')
@@ -82,14 +89,26 @@ export const ShadowIsland = isle(
             )
           },
           addButton() {
-            slotTarget.render(
-              <button slot='button'>add svg</button>,
-              'beforeend'
-            )
+            lightDom.render(<script
+              slot='button'
+              type='application/json'
+              trusted
+            >
+              {JSON.stringify({
+                $target:'add-svg-slot',
+                $position: 'beforebegin',
+                $data: {
+                  $tag: 'AddSVG',
+                  $attrs: {
+                    children: 'add svg',
+                  },
+                },
+              })}
+            </script>)
           },
           modifyAttributes() {
-            const slot = $('add-svg-slot')
-            slot?.removeAttribute('data-trigger')
+            const btn = $('add-svg')
+            btn?.removeAttribute('data-trigger')
           },
           addSlot() {
             const row = $('button-row')
@@ -97,7 +116,7 @@ export const ShadowIsland = isle(
               <slot
                 name='button'
                 data-target='add-svg-slot'
-                data-trigger={{ click: 'add-svg' }}
+                
               >
               </slot>,
               'beforeend'
