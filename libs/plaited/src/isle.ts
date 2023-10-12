@@ -32,13 +32,14 @@ export const isle = (
   mixin: (base: ISLElementConstructor) => ISLElementConstructor = base =>
     class extends base {}
 ) => {
+  const _tag = tag.toLowerCase()
   const define = () => {
-    if (customElements.get(tag)) {
-      console.error(`${tag} already defined`)
+    if (customElements.get(_tag)) {
+      console.error(`${_tag} already defined`)
       return
     }
     customElements.define(
-      tag,
+      _tag,
       mixin(
         class extends HTMLElement implements ISLElement {
           #shadowObserver?: MutationObserver
@@ -271,11 +272,12 @@ export const isle = (
       )
     )
   }
-  define['template'] = <
+  define.tag = _tag
+  define.template = <
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     T extends Record<string, any> = Record<string, any>,
   >(
       props: T
-    ) => createTemplate<T>(tag, props)
+    ) => createTemplate<T>(_tag, props)
   return define
 }
