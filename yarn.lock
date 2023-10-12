@@ -1815,18 +1815,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@playwright/test@npm:1.38.1":
-  version: 1.38.1
-  resolution: "@playwright/test@npm:1.38.1"
-  dependencies:
-    playwright: 1.38.1
-  bin:
-    playwright: cli.js
-  checksum: c5ec0b23261fe1ef163b6234f69263bc10e7e5a3fb676c7773ffc70b87459a7ab225f57c03b9de649475771638a04c2e00d9b2739304a4dcf5d3edf20a7a4a82
-  languageName: node
-  linkType: hard
-
-"@playwright/test@npm:^1.38.1":
+"@playwright/test@npm:1.39.0":
   version: 1.39.0
   resolution: "@playwright/test@npm:1.39.0"
   dependencies:
@@ -10088,24 +10077,13 @@ __metadata:
     "@plaited/jsx": 3.2.0
     "@plaited/rite": 3.1.1
     "@plaited/utils": 3.2.0
-    "@playwright/test": 1.38.1
     "@web/dev-server": 0.3.2
     "@web/dev-server-esbuild": 0.4.1
     "@web/test-runner": 0.17.1
     "@web/test-runner-core": 0.11.4
     "@web/test-runner-playwright": 0.10.1
-    playwright: 1.38.1
   languageName: unknown
   linkType: soft
-
-"playwright-core@npm:1.38.1":
-  version: 1.38.1
-  resolution: "playwright-core@npm:1.38.1"
-  bin:
-    playwright-core: cli.js
-  checksum: 66e83fe040f309b13ad94ba39dea40ac207bfcbbc22de13141af88dbdedd64e1c4e3ce1d0cb070d4efd8050d7e579953ec3681dd8a0acf2c1cc738d9c50e545e
-  languageName: node
-  linkType: hard
 
 "playwright-core@npm:1.39.0":
   version: 1.39.0
@@ -10113,21 +10091,6 @@ __metadata:
   bin:
     playwright-core: cli.js
   checksum: 556e78dee4f9890facf2af8249972e0d6e01a5ae98737b0f6b0166c660a95ffee4cb79350335b1ef96430a0ef01d3669daae9099fa46c8d403d11c623988238b
-  languageName: node
-  linkType: hard
-
-"playwright@npm:1.38.1":
-  version: 1.38.1
-  resolution: "playwright@npm:1.38.1"
-  dependencies:
-    fsevents: 2.3.2
-    playwright-core: 1.38.1
-  dependenciesMeta:
-    fsevents:
-      optional: true
-  bin:
-    playwright: cli.js
-  checksum: 4e01d4ee52d9ccf75a80d8492829106802590721d56bff7c5957ff1f21eb3c328ee5bc3c1784a59c4b515df1b98d08ef92e4a35a807f454cd00dc481d30fadc2
   languageName: node
   linkType: hard
 
@@ -10755,7 +10718,7 @@ __metadata:
   dependencies:
     "@commitlint/cli": 17.7.2
     "@commitlint/config-conventional": 17.7.0
-    "@playwright/test": ^1.38.1
+    "@playwright/test": 1.39.0
     "@types/sinon": 10.0.19
     "@typescript-eslint/eslint-plugin": 6.7.4
     "@typescript-eslint/parser": 6.7.4
@@ -10769,6 +10732,7 @@ __metadata:
     lerna: 7.3.0
     lint-staged: 14.0.1
     pinst: 3.0.0
+    playwright: 1.39.0
     prettier: 3.0.3
     sinon: 16.1.0
     typedoc: 0.25.2
