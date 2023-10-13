@@ -40,4 +40,4 @@ application web interfaces as specifications (requirements) change and evolve.
 - Easily sharing and reusing styles across Plaited Elements (shadow dom and
   light dom)
 
-## [Docs](../../playbook/api/modules/plaited.md)
+## [Typedocs](../../playbook/api/modules/plaited.md)
