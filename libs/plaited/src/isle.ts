@@ -83,15 +83,15 @@ export const isle = (
                   ...bProgramOptions,
                 }
               )
+              this.#disconnect = disconnect
+              this.#trigger = trigger
+              this.#shadowObserver = this.#createShadowObserver()
               void this.plait({
                 $: this.$.bind(this),
                 host: this,
                 trigger,
                 ...rest,
               })
-              this.#shadowObserver = this.#createShadowObserver()
-              this.#disconnect = disconnect
-              this.#trigger = trigger
             }
           }
           disconnectedCallback() {
