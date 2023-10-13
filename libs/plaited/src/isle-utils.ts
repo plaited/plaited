@@ -1,5 +1,3 @@
-import { dataTrigger } from '@plaited/jsx'
-
 // It takes the value of a data-target attribute and return all the events happening in it. minus the method identifier
 // so iof the event was data-target="click->doSomething" it would return ["click"]
 export const matchAllEvents = (str: string) => {
