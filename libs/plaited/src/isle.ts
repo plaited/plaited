@@ -83,7 +83,7 @@ export const isle = (
                   ...bProgramOptions,
                 }
               )
-              this.plait({
+              void this.plait({
                 $: this.$.bind(this),
                 host: this,
                 trigger,
