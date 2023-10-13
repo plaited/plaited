@@ -1,14 +1,7 @@
 import { css } from '@plaited/jsx'
-import { isle, PlaitProps, useSugar, PlaitedElement, register } from '../../index.js'
+import { isle, PlaitProps, useSugar } from '../../index.js'
 import { opacityHex } from '@plaited/utils'
 import { SVG } from './noun-braids-2633610.js'
-
-const AddSVG:PlaitedElement = register('AddSVG', ({ children }) => (
-  <button slot='button'
-    data-target='add-svg'
-    data-trigger={{ click: 'add-svg' }}
-  >{children}</button>
-))
 
 export const [ classes, stylesheet ] = css`
 .zone {
@@ -70,6 +63,7 @@ export const ShadowIsland = isle(
             sync({ request: { type: 'modifyAttributes' } }),
           ]),
         })
+        const slotTarget = useSugar(host)
         feedback({
           addSubIsland() {
             const zone = $('zone')
@@ -88,31 +82,24 @@ export const ShadowIsland = isle(
             )
           },
           addButton() {
-            const lightDom = useSugar(host)
-            lightDom.render(<script
-              type='application/json'
-              trusted
-            >
-              {JSON.stringify({
-                $target:'add-svg-slot',
-                $position: 'beforebegin',
-                $data: {
-                  $tag: 'AddSVG',
-                  $attrs: {
-                    children: 'add svg',
-                  },
-                },
-              })}
-            </script>)
+            slotTarget.render(
+              <button slot='button'>add svg</button>,
+              'beforeend'
+            )
           },
           modifyAttributes() {
-            const btn = $('add-svg')
-            btn?.removeAttribute('data-trigger')
+            const slot = $('add-svg-slot')
+            slot?.removeAttribute('data-trigger')
           },
           addSlot() {
             const row = $('button-row')
             row?.render(
-              <slot data-target='add-svg-slot'></slot>,
+              <slot
+                name='button'
+                data-target='add-svg-slot'
+                data-trigger={{ click: 'add-svg' }}
+              >
+              </slot>,
               'beforeend'
             )
           },
