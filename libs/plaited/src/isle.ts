@@ -1,5 +1,4 @@
-import { createTemplate, dataTarget, dataTrigger, Fragment } from '@plaited/jsx'
-import { trueTypeOf } from '@plaited/utils'
+import { createTemplate, dataTarget, dataTrigger } from '@plaited/jsx'
 import { Trigger } from '@plaited/behavioral'
 import { useBehavioral } from './use-behavioral.js'
 import {
@@ -7,16 +6,13 @@ import {
   ISLElementConstructor,
   ISLElementOptions,
   PlaitProps,
-  DataSlotPayload,
 } from './types.js'
 import { delegatedListener } from './delegated-listener.js'
 import { sugar, SugaredElement, sugarForEach } from './use-sugar.js'
 import {
-  compileElementData,
   getTriggerKey,
   matchAllEvents,
   traverseNodes,
-  dataSlotSelector,
 } from './isle-utils.js'
 
 /**
@@ -96,11 +92,6 @@ export const isle = (
               this.#shadowObserver = this.#createShadowObserver()
               this.#disconnect = disconnect
               this.#trigger = trigger
-              const slots = this.shadowRoot?.querySelectorAll<HTMLSlotElement>(dataSlotSelector)
-              slots && slots.forEach(slot => {
-                slot.assignedElements().forEach(el => el instanceof HTMLScriptElement &&  this.#renderSlotData(el))
-                this.#delegateDataSlotChange(slot)
-              })
             }
           }
           disconnectedCallback() {
@@ -112,57 +103,11 @@ export const isle = (
               })
               this.#disconnect()
             }
-            const slots = this.shadowRoot?.querySelectorAll<HTMLSlotElement>(dataSlotSelector)
-            slots && slots.forEach(slot => {
-              slot.assignedElements().length && slot.removeEventListener('slotchange', delegatedListener.get(slot))
-            })
-          }
-          #renderSlotData(el: HTMLScriptElement) {
-            // TODO: add logic here to support **type="application/ld+json"** we're going to use this for importing elements
-            if(el.type === 'application/json') {
-              let obj: DataSlotPayload | undefined
-              try {
-                const parsed = JSON.parse(el.textContent ?? '{}')
-                const { $target, $position, $data } = parsed
-                if(trueTypeOf($target) !== 'string') throw new Error(`Invalid $target value [${$target}}]`)
-                if(
-                  $position &&
-                    ![ 'beforebegin', 'afterbegin', 'beforeend', 'afterend' ].includes($position)
-                ) throw new Error(`Invalid $position value [${$position}]`)
-                if(
-                  trueTypeOf($data) !== 'object'
-                ) throw new Error(`Invalid $data value [${$data}]`)
-                obj = parsed
-              } catch(err) {
-                console.error(err)
-              }
-              if(obj) {
-                const { $data } = obj
-                this.$(obj.$target)?.render(
-                  Fragment({
-                    children: Array.isArray($data)
-                        ? $data.map(data => compileElementData(data))
-                        : compileElementData($data),
-                  }), obj.$position
-                )
-              }
-            }
-          }
-          #delegateDataSlotChange(slot: HTMLSlotElement) {
-            if(!delegatedListener.has(slot)) {
-              delegatedListener.set(slot, _ => {
-                slot.assignedElements().forEach(el => el instanceof HTMLScriptElement &&  this.#renderSlotData(el))
-              })
-            }
-            slot.addEventListener('slotchange', delegatedListener.get(slot)) 
           }
           #delegateListeners(nodes:Node[] |NodeList) {
             nodes.forEach(el => {
               if (el.nodeType === 1) { // Node is of type Element which in the browser mean HTMLElement | SVGElement
-                if ((el as Element).tagName === 'SLOT'){ // Element is an instance of a slot
-                  if(el.hasAttribute('slot')) return // This is a nested slot we ignore it
-                  if(!el.hasAttribute(dataTrigger)) return this.#delegateDataSlotChange(el) // This slot is not nested or a trigger slot so we can use it as a data slot
-                }
+                if ((el as Element).tagName === 'SLOT' && el.hasAttribute('slot'))  return // This is a nested slot we ignore it
                 !delegatedListener.has(el) &&
                   delegatedListener.set(el, event => { // Delegated listener does not have element then delegate it's callback
                     const triggerKey = getTriggerKey(

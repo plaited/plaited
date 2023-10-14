@@ -1,7 +1,6 @@
 export * from './class-names.js'
 export * from './isle.js'
 export * from './memo.js'
-export * from './register.js'
 export * from './stylesheets.js'
 export * from './types.js'
 export * from './use-indexed-db.js'

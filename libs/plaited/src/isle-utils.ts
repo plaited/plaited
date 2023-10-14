@@ -1,23 +1,4 @@
-import { createTemplate, Attrs, Template, dataTrigger } from '@plaited/jsx'
-import { ElementData } from './types.js'
-import { getElement } from './register.js'
-
-export const compileElementData = ({ $tag, $attrs: { children, slots, ...rest } = {} }:ElementData): Template => {
-  const tag = getElement($tag)
-  const _children =  Array.isArray(children)
-    ? children
-    :  [ children ].filter(Boolean)
-  const _slots =  Array.isArray(slots)
-    ? slots
-    :  [ slots ].filter(Boolean)
-  return createTemplate(
-    tag, {
-      ...(rest as Attrs),
-      children: _children.map(child =>typeof child === 'string' ? child : compileElementData(child) ),
-      slots: _slots.map(child => typeof child === 'string' ? child : compileElementData(child) ), 
-    }
-  )
-}
+import { dataTrigger } from '@plaited/jsx'
 
 // It takes the value of a data-target attribute and return all the events happening in it. minus the method identifier
 // so iof the event was data-target="click->doSomething" it would return ["click"]
@@ -65,5 +46,3 @@ export const traverseNodes = (node: Node, arr: Node[]) => {
     }
   }
 }
-
-export const dataSlotSelector = `slot:not([${dataTrigger}]):not([slot])`
