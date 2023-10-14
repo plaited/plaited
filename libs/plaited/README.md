@@ -19,7 +19,6 @@ application web interfaces as specifications (requirements) change and evolve.
 
 `npm install --save plaited`
 
-`import { bProgram } from 'https://esm.sh/plaited'`
 
 ## Library goals
 
@@ -41,7 +40,4 @@ application web interfaces as specifications (requirements) change and evolve.
 - Easily sharing and reusing styles across Plaited Elements (shadow dom and
   light dom)
 
-## Example Usage
-
-In each of the scenarios below we'll demonstrate usage of plaited, via our
-tests. Think of them as guided TDD!.
+## [Typedocs](../../playbook/api/modules/plaited.md)
