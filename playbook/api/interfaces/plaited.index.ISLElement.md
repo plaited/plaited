@@ -1693,7 +1693,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:29](https://github.com/plaited/plaited/blob/e0bdce7/libs/plaited/src/types.ts#L29)
+[libs/plaited/src/types.ts:29](https://github.com/plaited/plaited/blob/ebbfa6e/libs/plaited/src/types.ts#L29)
 
 ___
 
@@ -5479,7 +5479,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:38](https://github.com/plaited/plaited/blob/e0bdce7/libs/plaited/src/types.ts#L38)
+[libs/plaited/src/types.ts:38](https://github.com/plaited/plaited/blob/ebbfa6e/libs/plaited/src/types.ts#L38)
 
 ___
 
@@ -5668,7 +5668,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:32](https://github.com/plaited/plaited/blob/e0bdce7/libs/plaited/src/types.ts#L32)
+[libs/plaited/src/types.ts:32](https://github.com/plaited/plaited/blob/ebbfa6e/libs/plaited/src/types.ts#L32)
 
 ___
 
@@ -5964,7 +5964,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:31](https://github.com/plaited/plaited/blob/e0bdce7/libs/plaited/src/types.ts#L31)
+[libs/plaited/src/types.ts:31](https://github.com/plaited/plaited/blob/ebbfa6e/libs/plaited/src/types.ts#L31)
 
 ___
 
@@ -6006,7 +6006,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:37](https://github.com/plaited/plaited/blob/e0bdce7/libs/plaited/src/types.ts#L37)
+[libs/plaited/src/types.ts:37](https://github.com/plaited/plaited/blob/ebbfa6e/libs/plaited/src/types.ts#L37)
 
 ___
 
@@ -6080,7 +6080,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:39](https://github.com/plaited/plaited/blob/e0bdce7/libs/plaited/src/types.ts#L39)
+[libs/plaited/src/types.ts:39](https://github.com/plaited/plaited/blob/ebbfa6e/libs/plaited/src/types.ts#L39)
 
 ___
 
@@ -6100,7 +6100,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:40](https://github.com/plaited/plaited/blob/e0bdce7/libs/plaited/src/types.ts#L40)
+[libs/plaited/src/types.ts:40](https://github.com/plaited/plaited/blob/ebbfa6e/libs/plaited/src/types.ts#L40)
 
 ___
 
@@ -6114,7 +6114,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:41](https://github.com/plaited/plaited/blob/e0bdce7/libs/plaited/src/types.ts#L41)
+[libs/plaited/src/types.ts:41](https://github.com/plaited/plaited/blob/ebbfa6e/libs/plaited/src/types.ts#L41)
 
 ___
 
@@ -6135,7 +6135,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:42](https://github.com/plaited/plaited/blob/e0bdce7/libs/plaited/src/types.ts#L42)
+[libs/plaited/src/types.ts:42](https://github.com/plaited/plaited/blob/ebbfa6e/libs/plaited/src/types.ts#L42)
 
 ___
 
@@ -7074,7 +7074,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:30](https://github.com/plaited/plaited/blob/e0bdce7/libs/plaited/src/types.ts#L30)
+[libs/plaited/src/types.ts:30](https://github.com/plaited/plaited/blob/ebbfa6e/libs/plaited/src/types.ts#L30)
 
 ___
 
