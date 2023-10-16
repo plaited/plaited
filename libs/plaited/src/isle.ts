@@ -192,11 +192,15 @@ export const isle = (
           /** we're bringing the bling back!!! */
           $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
             target: string,
+            opts?: {
+              all: false;
+              mod: '=' | '~=' | '|=' | '^=' | '$=' | '*=';
+            }
           ): SugaredElement<T> | undefined;
           $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
             target: string,
             opts?: {
-              all: boolean;
+              all: true;
               mod: '=' | '~=' | '|=' | '^=' | '$=' | '*=';
             },
           ): SugaredElement<T>[];
