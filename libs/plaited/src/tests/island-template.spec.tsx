@@ -5,56 +5,56 @@ import { test } from '@plaited/rite'
 const Island = isle({ tag: 'z-el' }, base => class extends base {})
 
 
-test('Island.template: shadow only', t => {
+test('Island.tag: shadow only', t => {
   t({
     given: 'basic child content',
     should: 'render content into template tag with shadowrootmode=open and shadowrootdelegatesfocus=true',
     actual:ssr(
-      <Island.template>
+      <Island.tag>
         <div>
           <h1>header</h1>
         </div>
-      </Island.template>
+      </Island.tag>
     ),
     expected:`<z-el><template shadowrootmode="open" shadowrootdelegatesfocus="true"><div><h1>header</h1></div></template></z-el>`,
   })
 })
-test('Island.template: shadow and id', t => {
+test('Island.tag: shadow and id', t => {
   t({
     given: 'a random idea',
     should: 'should apply id to root tag z-el',
     actual:ssr(
-      <Island.template id='random'>
+      <Island.tag id='random'>
         <div>
           <h1>header</h1>
         </div>
-      </Island.template>
+      </Island.tag>
     ),
     expected:`<z-el id="random"><template shadowrootmode="open" shadowrootdelegatesfocus="true"><div><h1>header</h1></div></template></z-el>`,
   })
 })
-test('Island.template: shadow, and mode closed', t => {
+test('Island.tag: shadow, and mode closed', t => {
   t({
     given: 'setting shadowrootmode=closed',
     should: 'show shadowrootmode=closed in generated string',
     actual:ssr(
-      <Island.template shadowrootmode='closed'>
+      <Island.tag shadowrootmode='closed'>
         <div>
           <h1>header</h1>
         </div>
-      </Island.template>
+      </Island.tag>
     ),
     expected:`<z-el><template shadowrootmode="closed" shadowrootdelegatesfocus="true"><div><h1>header</h1></div></template></z-el>`,
   })
 })
-test('Island.template: shadow, and slots', t => {
+test('Island.tag: shadow, and slots', t => {
   const IslandTemplate: PlaitedElement = ({ children }) => (
-    <Island.template slots={children}>
+    <Island.tag slots={children}>
       <div>
         <h1>header</h1>
         <slot name='slot'></slot>
       </div>
-    </Island.template>
+    </Island.tag>
   )
   t({
     given: 'passing children to a PlaitedElement that assigns them to slot',
@@ -67,14 +67,14 @@ test('Island.template: shadow, and slots', t => {
     expected:`<z-el><template shadowrootmode="open" shadowrootdelegatesfocus="true"><div><h1>header</h1><slot name="slot"></slot></div></template><div slot="slot">slotted</div></z-el>`,
   })
 })
-test('Island.template: shadow, and unamed slots', t => {
+test('Island.tag: shadow, and unamed slots', t => {
   const IslandTemplate: PlaitedElement = ({ children }) => (
-    <Island.template slots={children}>
+    <Island.tag slots={children}>
       <div>
         <h1>header</h1>
         <slot></slot>
       </div>
-    </Island.template>
+    </Island.tag>
   )
   t({
     given: 'passing children to a PlaitedElement that assigns them to slot',
@@ -87,16 +87,16 @@ test('Island.template: shadow, and unamed slots', t => {
     expected:`<z-el><template shadowrootmode="open" shadowrootdelegatesfocus="true"><div><h1>header</h1><slot></slot></div></template><div>slotted</div></z-el>`,
   })
 })
-test('Island.template: stylesheet string', t => {
+test('Island.tag: stylesheet string', t => {
   t({
     given: 'passing stylesheet to custom element tag',
     should: 'render stylesheet inside the template tag of custom element',
     actual:ssr(
-      <Island.template stylesheet='.h1 { color: red}'>
+      <Island.tag stylesheet='.h1 { color: red}'>
         <div>
           <h1>header</h1>
         </div>
-      </Island.template>
+      </Island.tag>
     ),
     expected:`<z-el><template shadowrootmode="open" shadowrootdelegatesfocus="true"><style>.h1 { color: red}</style><div><h1>header</h1></div></template></z-el>`,
   })

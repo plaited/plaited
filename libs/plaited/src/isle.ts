@@ -218,11 +218,5 @@ export const isle = (
     )
   }
   define.tag = _tag
-  define.template = <
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    T extends Record<string, any> = Record<string, any>,
-  >(
-      props: T
-    ) => createTemplate<T>(_tag, props)
   return define
 }
