@@ -6,6 +6,9 @@ import {
   TriggerArgs,
 } from '@plaited/behavioral'
 import { SugaredElement } from './use-sugar.js'
+import { Template } from '@plaited/jsx'
+
+export type Plait = (props: PlaitProps) => void | Promise<void>
 
 export type Disconnect = () => void;
 
@@ -28,6 +31,7 @@ export type ISLElementOptions = {
 export interface ISLElement extends HTMLElement {
   internals_: ElementInternals
   plait?(props: PlaitProps): void | Promise<void>;
+  template?: Template;
   connectedCallback?(): void;
   attributeChangedCallback?(
     name: string,

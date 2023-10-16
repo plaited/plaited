@@ -1,4 +1,4 @@
-import { createTemplate, dataTarget, dataTrigger } from '@plaited/jsx'
+import { Template, dataTarget, dataTrigger } from '@plaited/jsx'
 import { Trigger } from '@plaited/behavioral'
 import { useBehavioral } from './use-behavioral.js'
 import {
@@ -43,8 +43,8 @@ export const isle = (
           #disconnect?: () => void
           internals_: ElementInternals
           #trigger: Trigger
-          //@ts-ignore: implemented by subclass
-          abstract plait?: (props: PlaitProps) => void | Promise<void>
+          plait?(props: PlaitProps): void | Promise<void>
+          template?: Template
           #root: ShadowRoot
           constructor() {
             super()
@@ -54,6 +54,11 @@ export const isle = (
             } else {
               /** no declarative shadow dom then create a shadowRoot */
               this.#root = this.attachShadow({ mode, delegatesFocus })
+            }
+            if(this?.template) {
+              const { stylesheets, content } = this.template
+              const styles = stylesheets.size ? `<style>${[ ...stylesheets ].join('')}</style>` : ''
+              this.#root.innerHTML = styles + content
             }
             /** Warn ourselves not to overwrite the trigger method */
             if (this.#trigger !== this.constructor.prototype.trigger) {
