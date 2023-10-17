@@ -44,7 +44,7 @@ export const isle = (
           internals_: ElementInternals
           #trigger: Trigger
           plait?(props: PlaitProps): void | Promise<void>
-          template?: Template
+          static template?: Template
           #root: ShadowRoot
           constructor() {
             super()
@@ -55,8 +55,9 @@ export const isle = (
               /** no declarative shadow dom then create a shadowRoot */
               this.#root = this.attachShadow({ mode, delegatesFocus })
             }
-            if(this?.template) {
-              const { stylesheets, content } = this.template
+            const template = (this.constructor as ISLElementConstructor).template
+            if(template) {
+              const { stylesheets, content } = template
               const styles = stylesheets.size ? `<style>${[ ...stylesheets ].join('')}</style>` : ''
               this.#root.innerHTML = styles + content
             }

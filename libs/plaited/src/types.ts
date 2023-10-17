@@ -31,7 +31,6 @@ export type ISLElementOptions = {
 export interface ISLElement extends HTMLElement {
   internals_: ElementInternals
   plait?(props: PlaitProps): void | Promise<void>;
-  template?: Template;
   connectedCallback?(): void;
   attributeChangedCallback?(
     name: string,
@@ -68,6 +67,7 @@ export type PlaitProps = {
 } & ReturnType<typeof bProgram>;
 
 export interface ISLElementConstructor {
+  template?: Template;
   new (): ISLElement;
 }
 
