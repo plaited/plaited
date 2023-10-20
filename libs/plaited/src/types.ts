@@ -6,6 +6,9 @@ import {
   TriggerArgs,
 } from '@plaited/behavioral'
 import { SugaredElement } from './use-sugar.js'
+import { Template } from '@plaited/jsx'
+
+export type Plait = (props: PlaitProps) => void | Promise<void>
 
 export type Disconnect = () => void;
 
@@ -64,6 +67,7 @@ export type PlaitProps = {
 } & ReturnType<typeof bProgram>;
 
 export interface ISLElementConstructor {
+  template?: Template;
   new (): ISLElement;
 }
 

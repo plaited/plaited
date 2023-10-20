@@ -1,4 +1,4 @@
-import { createTemplate, dataTarget, dataTrigger } from '@plaited/jsx'
+import { Template, dataTarget, dataTrigger } from '@plaited/jsx'
 import { Trigger } from '@plaited/behavioral'
 import { useBehavioral } from './use-behavioral.js'
 import {
@@ -43,8 +43,8 @@ export const isle = (
           #disconnect?: () => void
           internals_: ElementInternals
           #trigger: Trigger
-          //@ts-ignore: implemented by subclass
-          abstract plait?: (props: PlaitProps) => void | Promise<void>
+          plait?(props: PlaitProps): void | Promise<void>
+          static template?: Template
           #root: ShadowRoot
           constructor() {
             super()
@@ -54,6 +54,12 @@ export const isle = (
             } else {
               /** no declarative shadow dom then create a shadowRoot */
               this.#root = this.attachShadow({ mode, delegatesFocus })
+            }
+            const template = (this.constructor as ISLElementConstructor).template
+            if(template) {
+              const { stylesheets, content } = template
+              const styles = stylesheets.size ? `<style>${[ ...stylesheets ].join('')}</style>` : ''
+              this.#root.innerHTML = styles + content
             }
             /** Warn ourselves not to overwrite the trigger method */
             if (this.#trigger !== this.constructor.prototype.trigger) {
@@ -187,11 +193,15 @@ export const isle = (
           /** we're bringing the bling back!!! */
           $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
             target: string,
+            opts?: {
+              all: false;
+              mod: '=' | '~=' | '|=' | '^=' | '$=' | '*=';
+            }
           ): SugaredElement<T> | undefined;
           $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
             target: string,
             opts?: {
-              all: boolean;
+              all: true;
               mod: '=' | '~=' | '|=' | '^=' | '$=' | '*=';
             },
           ): SugaredElement<T>[];
@@ -218,11 +228,5 @@ export const isle = (
     )
   }
   define.tag = _tag
-  define.template = <
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    T extends Record<string, any> = Record<string, any>,
-  >(
-      props: T
-    ) => createTemplate<T>(_tag, props)
   return define
 }

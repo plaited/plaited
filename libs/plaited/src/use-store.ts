@@ -24,7 +24,7 @@ type Set<T> = (newStore: T | ((arg: T) => T)) => T;
  *  store() // => 3
  */
 
-export const useStore = <T>(initialStore: T): readonly [Get<T>, Set<T>] => {
+export const useStore = <T>(initialStore?: T): readonly [Get<T>, Set<T>] => {
   let store = initialStore
   let pub: ReturnType<Publisher<T>>
   const get = () => store

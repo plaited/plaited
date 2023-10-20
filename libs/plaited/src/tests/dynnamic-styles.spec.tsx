@@ -49,9 +49,9 @@ test('dynamic styles', async t => {
   })
   Base()
   const Template: PlaitedElement = props => (
-    <Base.template { ...props}>
+    <Base.tag { ...props}>
       <div data-target='target'></div>
-    </Base.template>
+    </Base.tag>
   )
   useSugar(fixture).render(
     <div><Template id='one'></Template></div>,

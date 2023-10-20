@@ -75,9 +75,9 @@ export const ShadowIsland = isle(
             Sub()
             /** render dynamic island to zone */
             zone?.render(
-              <Sub.template {...stylesheet}>
+              <Sub.tag {...stylesheet}>
                 <h3 className={classes['sub-island']}>sub island</h3>
-              </Sub.template>,
+              </Sub.tag>,
               'beforeend'
             )
           },
@@ -120,7 +120,7 @@ export const ShadowIsland = isle(
 )
 
 export const ShadowTemplate = () => (
-  <ShadowIsland.template {...stylesheet}>
+  <ShadowIsland.tag {...stylesheet}>
     <div className={classes.mount}
       data-target='wrapper'
     >
@@ -143,5 +143,5 @@ export const ShadowTemplate = () => (
         </button>
       </div>
     </div>
-  </ShadowIsland.template>
+  </ShadowIsland.tag>
 )

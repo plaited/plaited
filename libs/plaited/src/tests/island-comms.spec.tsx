@@ -69,7 +69,7 @@ test('dynamic island comms', async t => {
 
   useSugar(wrapper).render(
     <>
-      <DynamicOne.template {...stylesheet}
+      <DynamicOne.tag {...stylesheet}
         id='one'
       >
         <div className={classes.row}>
@@ -81,10 +81,10 @@ test('dynamic island comms', async t => {
             Add "world!"
           </button>
         </div>
-      </DynamicOne.template>
-      <DynamicTwo.template {...stylesheet}>
+      </DynamicOne.tag>
+      <DynamicTwo.tag {...stylesheet}>
         <h1 data-target='header'>Hello</h1>
-      </DynamicTwo.template>
+      </DynamicTwo.tag>
     </>,
     'beforeend'
   )

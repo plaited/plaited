@@ -37,7 +37,7 @@ SlotTest()
 isle({ tag:'nested-slot' })()
 const root = document.querySelector('body')
 const SlotTestTemplate: PlaitedElement = ({ children }) => (
-  <SlotTest.template {...stylesheet}
+  <SlotTest.tag {...stylesheet}
     slots={children}
   >
     <div className={classes.row}>
@@ -57,7 +57,7 @@ const SlotTestTemplate: PlaitedElement = ({ children }) => (
         <slot name='nested'></slot>
       </nested-slot>
     </div>
-  </SlotTest.template>
+  </SlotTest.tag>
 )
 useSugar(root).render(
   <SlotTestTemplate>
