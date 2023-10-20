@@ -27,6 +27,7 @@
 - [ISLElementOptions](plaited.index.md#islelementoptions)
 - [ParameterIdiom](plaited.index.md#parameteridiom)
 - [PendingBid](plaited.index.md#pendingbid)
+- [Plait](plaited.index.md#plait)
 - [PlaitProps](plaited.index.md#plaitprops)
 - [PlaitedElement](plaited.index.md#plaitedelement)
 - [Position](plaited.index.md#position)
@@ -138,7 +139,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:71](https://github.com/plaited/plaited/blob/495e314/libs/plaited/src/types.ts#L71)
+[libs/plaited/src/types.ts:75](https://github.com/plaited/plaited/blob/5b1c95d/libs/plaited/src/types.ts#L75)
 
 ___
 
@@ -205,7 +206,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:10](https://github.com/plaited/plaited/blob/495e314/libs/plaited/src/types.ts#L10)
+[libs/plaited/src/types.ts:13](https://github.com/plaited/plaited/blob/5b1c95d/libs/plaited/src/types.ts#L13)
 
 ___
 
@@ -257,7 +258,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:12](https://github.com/plaited/plaited/blob/495e314/libs/plaited/src/types.ts#L12)
+[libs/plaited/src/types.ts:15](https://github.com/plaited/plaited/blob/5b1c95d/libs/plaited/src/types.ts#L15)
 
 ___
 
@@ -287,13 +288,37 @@ libs/behavioral/dist/types.d.ts:51
 
 ___
 
+### Plait
+
+Ƭ **Plait**: (`props`: [`PlaitProps`](plaited.index.md#plaitprops)) => `void` \| `Promise`<`void`\>
+
+#### Type declaration
+
+▸ (`props`): `void` \| `Promise`<`void`\>
+
+##### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `props` | [`PlaitProps`](plaited.index.md#plaitprops) |
+
+##### Returns
+
+`void` \| `Promise`<`void`\>
+
+#### Defined in
+
+[libs/plaited/src/types.ts:11](https://github.com/plaited/plaited/blob/5b1c95d/libs/plaited/src/types.ts#L11)
+
+___
+
 ### PlaitProps
 
 Ƭ **PlaitProps**: { `host`: [`ISLElement`](../interfaces/plaited.index.ISLElement.md) ; `$`: <T\>(`target`: `string`) => [`SugaredElement`](plaited.index.md#sugaredelement)<`T`\><T\>(`target`: `string`, `opts?`: { `all`: `boolean` ; `mod`: ``"="`` \| ``"~="`` \| ``"|="`` \| ``"^="`` \| ``"$="`` \| ``"*="``  }) => [`SugaredElement`](plaited.index.md#sugaredelement)<`T`\>[]  } & `ReturnType`<typeof [`bProgram`](plaited.index.md#bprogram)\>
 
 #### Defined in
 
-[libs/plaited/src/types.ts:47](https://github.com/plaited/plaited/blob/495e314/libs/plaited/src/types.ts#L47)
+[libs/plaited/src/types.ts:50](https://github.com/plaited/plaited/blob/5b1c95d/libs/plaited/src/types.ts#L50)
 
 ___
 
@@ -333,7 +358,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:74](https://github.com/plaited/plaited/blob/495e314/libs/plaited/src/types.ts#L74)
+[libs/plaited/src/types.ts:78](https://github.com/plaited/plaited/blob/5b1c95d/libs/plaited/src/types.ts#L78)
 
 ___
 
@@ -475,7 +500,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:70](https://github.com/plaited/plaited/blob/495e314/libs/plaited/src/types.ts#L70)
+[libs/plaited/src/types.ts:74](https://github.com/plaited/plaited/blob/5b1c95d/libs/plaited/src/types.ts#L74)
 
 ___
 
@@ -525,7 +550,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/use-sugar.ts:76](https://github.com/plaited/plaited/blob/495e314/libs/plaited/src/use-sugar.ts#L76)
+[libs/plaited/src/use-sugar.ts:76](https://github.com/plaited/plaited/blob/5b1c95d/libs/plaited/src/use-sugar.ts#L76)
 
 ___
 
@@ -637,7 +662,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/use-sugar.ts:44](https://github.com/plaited/plaited/blob/495e314/libs/plaited/src/use-sugar.ts#L44)
+[libs/plaited/src/use-sugar.ts:44](https://github.com/plaited/plaited/blob/5b1c95d/libs/plaited/src/use-sugar.ts#L44)
 
 ___
 
@@ -655,7 +680,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/use-sugar.ts:80](https://github.com/plaited/plaited/blob/495e314/libs/plaited/src/use-sugar.ts#L80)
+[libs/plaited/src/use-sugar.ts:80](https://github.com/plaited/plaited/blob/5b1c95d/libs/plaited/src/use-sugar.ts#L80)
 
 ## Functions
 
@@ -724,7 +749,7 @@ takes an array of conditional css class name strings and returns them concatenat
 
 #### Defined in
 
-[libs/plaited/src/class-names.ts:3](https://github.com/plaited/plaited/blob/495e314/libs/plaited/src/class-names.ts#L3)
+[libs/plaited/src/class-names.ts:3](https://github.com/plaited/plaited/blob/5b1c95d/libs/plaited/src/class-names.ts#L3)
 
 ___
 
@@ -806,11 +831,10 @@ A typescript function for instantiating Plaited Island Elements
 | Name | Type |
 | :------ | :------ |
 | `tag` | `string` |
-| `template` | <T\>(`props`: `T`) => [`Template`](plaited.index.md#template) |
 
 #### Defined in
 
-[libs/plaited/src/isle.ts:21](https://github.com/plaited/plaited/blob/495e314/libs/plaited/src/isle.ts#L21)
+[libs/plaited/src/isle.ts:21](https://github.com/plaited/plaited/blob/5b1c95d/libs/plaited/src/isle.ts#L21)
 
 ___
 
@@ -868,7 +892,7 @@ We also do a basic shallow comparison on the object to cache function result.
 
 #### Defined in
 
-[libs/plaited/src/memo.ts:27](https://github.com/plaited/plaited/blob/495e314/libs/plaited/src/memo.ts#L27)
+[libs/plaited/src/memo.ts:27](https://github.com/plaited/plaited/blob/5b1c95d/libs/plaited/src/memo.ts#L27)
 
 ___
 
@@ -915,7 +939,7 @@ object with each individual sheet in an array
 
 #### Defined in
 
-[libs/plaited/src/stylesheets.ts:4](https://github.com/plaited/plaited/blob/495e314/libs/plaited/src/stylesheets.ts#L4)
+[libs/plaited/src/stylesheets.ts:4](https://github.com/plaited/plaited/blob/5b1c95d/libs/plaited/src/stylesheets.ts#L4)
 
 ___
 
@@ -1006,7 +1030,7 @@ asynchronously get and set indexed db values
 
 #### Defined in
 
-[libs/plaited/src/use-indexed-db.ts:13](https://github.com/plaited/plaited/blob/495e314/libs/plaited/src/use-indexed-db.ts#L13)
+[libs/plaited/src/use-indexed-db.ts:13](https://github.com/plaited/plaited/blob/5b1c95d/libs/plaited/src/use-indexed-db.ts#L13)
 
 ___
 
@@ -1029,7 +1053,7 @@ readonly [`Send`, [`Disconnect`](plaited.index.md#disconnect)]
 
 #### Defined in
 
-[libs/plaited/src/use-main.ts:6](https://github.com/plaited/plaited/blob/495e314/libs/plaited/src/use-main.ts#L6)
+[libs/plaited/src/use-main.ts:6](https://github.com/plaited/plaited/blob/5b1c95d/libs/plaited/src/use-main.ts#L6)
 
 ___
 
@@ -1054,13 +1078,13 @@ readonly {}
 
 #### Defined in
 
-[libs/plaited/src/use-messenger.ts:24](https://github.com/plaited/plaited/blob/495e314/libs/plaited/src/use-messenger.ts#L24)
+[libs/plaited/src/use-messenger.ts:24](https://github.com/plaited/plaited/blob/5b1c95d/libs/plaited/src/use-messenger.ts#L24)
 
 ___
 
 ### useStore
 
-▸ **useStore**<`T`\>(`initialStore`): readonly [`Get`<`T`\>, `Set`<`T`\>]
+▸ **useStore**<`T`\>(`initialStore?`): readonly [`Get`<`T`\>, `Set`<`T`\>]
 
 #### Type parameters
 
@@ -1072,7 +1096,7 @@ ___
 
 | Name | Type |
 | :------ | :------ |
-| `initialStore` | `T` |
+| `initialStore?` | `T` |
 
 #### Returns
 
@@ -1099,7 +1123,7 @@ const [store, setStore] = useStore<Record<string, number> | number>({ a: 1 })
 
 #### Defined in
 
-[libs/plaited/src/use-store.ts:27](https://github.com/plaited/plaited/blob/495e314/libs/plaited/src/use-store.ts#L27)
+[libs/plaited/src/use-store.ts:27](https://github.com/plaited/plaited/blob/5b1c95d/libs/plaited/src/use-store.ts#L27)
 
 ___
 
@@ -1119,4 +1143,4 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/use-sugar.ts:110](https://github.com/plaited/plaited/blob/495e314/libs/plaited/src/use-sugar.ts#L110)
+[libs/plaited/src/use-sugar.ts:110](https://github.com/plaited/plaited/blob/5b1c95d/libs/plaited/src/use-sugar.ts#L110)

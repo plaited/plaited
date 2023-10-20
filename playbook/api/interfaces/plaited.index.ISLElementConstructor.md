@@ -10,6 +10,10 @@
 
 - [constructor](plaited.index.ISLElementConstructor.md#constructor)
 
+### Properties
+
+- [template](plaited.index.ISLElementConstructor.md#template)
+
 ## Constructors
 
 ### constructor
@@ -18,4 +22,14 @@
 
 #### Defined in
 
-[libs/plaited/src/types.ts:67](https://github.com/plaited/plaited/blob/495e314/libs/plaited/src/types.ts#L67)
+[libs/plaited/src/types.ts:71](https://github.com/plaited/plaited/blob/5b1c95d/libs/plaited/src/types.ts#L71)
+
+## Properties
+
+### template
+
+• `Optional` **template**: [`Template`](../modules/plaited.index.md#template)
+
+#### Defined in
+
+[libs/plaited/src/types.ts:70](https://github.com/plaited/plaited/blob/5b1c95d/libs/plaited/src/types.ts#L70)
