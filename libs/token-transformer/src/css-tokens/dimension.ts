@@ -5,33 +5,30 @@ import { kebabCase } from '@plaited/utils'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'
 import { getRule, getRem } from '../utils.js'
 
-export const dimension: Formatter<DimensionLikeTokens> = (token, { 
+export const dimension: Formatter<DimensionLikeTokens> = (token, {
+  allTokens,
   tokenPath,
   baseFontSize,
-  containerQueries,
-  colorSchemes,
-  mediaQueries,
-  allTokens,
+  ...contexts
 }) => {
+  const prop = kebabCase(tokenPath.join(' '))
   if(isStaticToken<DimensionLikeTokens, DimensionLikeValues>(token)) {
     const { $value } = token
     if (hasAlias($value)) return ''
-    const prop = kebabCase(tokenPath.join(' '))
     return getRule({ prop, value: getRem($value, baseFontSize) })
   }
   const toRet: string[] = []
   if(isContextualToken<DimensionLikeTokens, DimensionLikeValues>(token)) {
     const { $value, $context } = token   
     for(const id in $value) {
-      const contextPath = [ ...tokenPath, id ]
-      const prop = kebabCase(contextPath.join(' '))
       const contextValue = $value[id]
       if (hasAlias(contextValue)) {
         toRet.push(getRule({ prop, value: resolveCSSVar(contextValue, allTokens) }))
         continue
       }
-      if(isValidContext({ context: { type: $context, id }, colorSchemes, mediaQueries, containerQueries })) {
-        toRet.push(getRule({ prop, value: getRem(contextValue, baseFontSize) }))
+      const context = { type: $context, id }
+      if(isValidContext({ context, ...contexts })) {
+        toRet.push(getRule({ prop, value: getRem(contextValue, baseFontSize), context, ...contexts }))
       }
     }
   }

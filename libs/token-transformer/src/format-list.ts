@@ -36,6 +36,9 @@ export const formatList:FormatList = ({
           tokenPath: [ ...tokenPath, name ],
           formatters,
           allTokens,
+          mediaQueries,
+          colorSchemes,
+          containerQueries,
         })
       }
     }

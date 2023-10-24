@@ -12,35 +12,34 @@ const gapCallback = (baseFontSize: number) =>
       : getRem($value, baseFontSize)
 
 export const gap: Formatter<GapToken> = (token, {
+  allTokens,
   tokenPath,
   baseFontSize,
-  allTokens,
-  colorSchemes,
-  mediaQueries,
-  containerQueries,
+  ...contexts
 }) => {
   const cb = gapCallback(baseFontSize)
+  const prop = kebabCase(tokenPath.join(' '))
   if(isStaticToken<GapToken, GapValue>(token)) {
     const { $value } = token
     if (hasAlias($value)) return ''
-    const prop = kebabCase(tokenPath.join(' '))
     return getRule({ prop, value: cb($value) })
   }
   const toRet: string[] = []
   if(isContextualToken<GapToken, GapValue>(token)) {
     const { $value, $context } = token   
     for(const id in $value) {
-      const contextPath = [ ...tokenPath, id ]
-      const prop = kebabCase(contextPath.join(' '))
       const contextValue = $value[id]
       if (hasAlias(contextValue)) {
         toRet.push(getRule({ prop, value: resolveCSSVar(contextValue, allTokens) }))
         continue
       }
-      if(isValidContext({ context: { type: $context, id }, colorSchemes, mediaQueries, containerQueries })) {
+      const context = { type: $context, id }
+      if(isValidContext({ context, ...contexts })) {
         toRet.push(getRule({
           prop,
           value: cb(contextValue), 
+          context,
+          ...contexts,
         }))
       }
     }

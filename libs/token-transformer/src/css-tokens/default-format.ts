@@ -12,29 +12,32 @@ import { getRule } from '../utils.js'
 export const defaultFormat:Formatter<PrimitiveLikeTokens> =(token, {
   allTokens,
   tokenPath,
-  colorSchemes,
-  containerQueries,
-  mediaQueries,
+  baseFontSize: _,
+  ...contexts
 }) => {
+  const prop = kebabCase(tokenPath.join(' '))
   if(isStaticToken<PrimitiveLikeTokens, PrimitiveLikeValues>(token)) {
     const { $value } = token
     if (hasAlias($value)) return ''
-    const prop = kebabCase(tokenPath.join(' '))
     return getRule({ prop, value: Array.isArray($value) ? $value.join(' ') : $value })
   }
   const toRet: string[] = []
   if(isContextualToken<PrimitiveLikeTokens, PrimitiveLikeValues>(token)) {
     const { $value, $context } = token   
     for(const id in $value) {
-      const contextPath = [ ...tokenPath, id ]
-      const prop = kebabCase(contextPath.join(' '))
       const contextValue = $value[id]
       if (hasAlias(contextValue)) {
         toRet.push(getRule({ prop, value: resolveCSSVar(contextValue, allTokens) }))
         continue
       }
-      if(isValidContext({ context: { type: $context, id }, colorSchemes, mediaQueries, containerQueries })) {
-        toRet.push(getRule({ prop, value: Array.isArray(contextValue) ? contextValue.join(' ') : contextValue }))
+      const context = { type: $context, id }
+      if(isValidContext({ context, ...contexts })) {
+        toRet.push(getRule({
+          prop,
+          value: Array.isArray(contextValue) ? contextValue.join(' ') : contextValue,
+          context,
+          ...contexts,
+        }))
       }
     }
   }

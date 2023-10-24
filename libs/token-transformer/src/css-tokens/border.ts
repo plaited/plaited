@@ -21,9 +21,7 @@ export const border: Formatter<BorderToken> = (token, {
   tokenPath,
   allTokens,
   baseFontSize,
-  mediaQueries,
-  colorSchemes,
-  containerQueries,
+  ...contexts
 }) => {
   const cb = borderCallback(allTokens, baseFontSize)
   if(isStaticToken<BorderToken, BorderValue>(token)) {
@@ -36,15 +34,15 @@ export const border: Formatter<BorderToken> = (token, {
   if(isContextualToken<BorderToken, BorderValue>(token)) {
     const { $value, $context } = token   
     for(const id in $value) {
-      const contextPath = [ ...tokenPath, id ]
-      const prop = kebabCase(contextPath.join(' '))
+      const prop = kebabCase(tokenPath.join(' '))
       const contextValue = $value[id]
       if (hasAlias(contextValue)) {
         toRet.push(getRule({ prop, value: resolveCSSVar(contextValue, allTokens) }))
         continue
       }
-      if(isValidContext({ context: { type: $context, id }, colorSchemes, mediaQueries, containerQueries })) {
-        toRet.push(getRule({ prop, value: cb(contextValue) }))
+      const context = { type: $context, id }
+      if(isValidContext({ context, ...contexts })) {
+        toRet.push(getRule({ prop, value: cb(contextValue), context, ...contexts }))
       }
     }
   }

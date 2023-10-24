@@ -1,4 +1,4 @@
-import { DesignTokenGroup, DesignToken, ContextValue, $Context } from '@plaited/token-types'
+import { DesignTokenGroup, DesignToken } from '@plaited/token-types'
 
 export type Queries = {
   [key: string]: string;

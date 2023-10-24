@@ -16,29 +16,27 @@ const fontFamilyCallback = ($value: Exclude<FontFamilyValue, AliasValue>) => Arr
 export const fontFamily: Formatter<FontFamilyToken> = (token, {
   allTokens,
   tokenPath,
-  colorSchemes,
-  containerQueries,
-  mediaQueries,
+  baseFontSize: _,
+  ...contexts
 }) => {
+  const prop = kebabCase(tokenPath.join(' '))
   if(isStaticToken<FontFamilyToken, FontFamilyValue>(token)) {
     const { $value } = token
     if (hasAlias($value)) return ''
-    const prop = kebabCase(tokenPath.join(' '))
     return getRule({ prop, value: fontFamilyCallback($value) })
   }
   const toRet: string[] = []
   if(isContextualToken<FontFamilyToken, FontFamilyValue>(token)) {
     const { $value, $context } = token   
     for(const id in $value) {
-      const contextPath = [ ...tokenPath, id ]
-      const prop = kebabCase(contextPath.join(' '))
       const contextValue = $value[id]
       if (hasAlias(contextValue)) {
         toRet.push(getRule({ prop, value: resolveCSSVar(contextValue, allTokens) }))
         continue
       }
-      if(isValidContext({ context: { type: $context, id }, colorSchemes, mediaQueries, containerQueries })) {
-        toRet.push(getRule({ prop, value: fontFamilyCallback(contextValue) }))
+      const context = { type: $context, id }
+      if(isValidContext({ context, ...contexts })) {
+        toRet.push(getRule({ prop, value: fontFamilyCallback(contextValue), context, ...contexts }))
       }
     }
   }
