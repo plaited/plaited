@@ -5,7 +5,7 @@ import { defaultBaseFontSize } from './constants.js'
 const reduceWhitespace = (str: string) => str.replace(/(\s\s+|\n)/g, ' ')
 
 const deduplicate = (css: string) => {
-  const regex = /([^{\n]*)\{(\s*[\s\S]*?\s*)\}/gm
+  const regex = /((?:.*:host|:host\([^)]*\))[^{\n]*)\{(\s*[\s\S]*?\s*)\}/gm
   const map = new Map<string, Set<string>>()
   let match: RegExpExecArray | null
   while ((match = regex.exec(css)) !== null) {
@@ -19,7 +19,7 @@ const deduplicate = (css: string) => {
     map.set(selector, new Set<string>([ rule ]))
   }
   return [ ...map ].flatMap(([ key, val ]) => {
-    return [ key, '{', ...val, '}' ]
+    return [ key, '{', ...val, key.startsWith('@') ? '}}' : '}' ]
   }).join('')
 }
 
@@ -27,12 +27,18 @@ export const transformCssTokens = ({
   tokens,
   baseFontSize = defaultBaseFontSize,
   formatters = defaultCSSFormatters,
+  mediaQueries,
+  colorSchemes,
+  containerQueries,
 }: TransformerParams) => {
   const content = formatList({
     tokens,
     allTokens: tokens,
     baseFontSize,
     formatters,
+    mediaQueries,
+    colorSchemes,
+    containerQueries,
   })
   return deduplicate(content)
 }

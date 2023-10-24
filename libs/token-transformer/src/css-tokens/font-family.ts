@@ -1,21 +1,44 @@
-import { FontFamilyValue } from '@plaited/token-types'
+import { FontFamilyValue, FontFamilyToken, AliasValue } from '@plaited/token-types'
 import { Formatter } from '../types.js'
-import { hasAlias } from '../resolve.js'
+import { hasAlias, resolveCSSVar } from '../resolve.js'
 import { kebabCase } from '@plaited/utils'
+import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'
+import { getRule } from '../utils.js'
 
-export const fontFamily: Formatter<FontFamilyValue> = (
-  { tokenPath, $value }
-) => {
-  if (hasAlias($value)) return ''
-  if (Array.isArray($value)) {
-    const val = $value
-      .map(font => /\s/g.test(font) ? `"${font}"` : font)
-      .join(',')
-    return (
-      `:root { --${kebabCase(tokenPath.join(' '))}: ${val}; }`
-    )
+const fontFamilyCallback = ($value: Exclude<FontFamilyValue, AliasValue>) => Array.isArray($value) 
+  ? $value
+    .map(font => /\s/g.test(font) ? `"${font}"` : font)
+    .join(',')
+  : /\s/g.test($value)
+  ? `"${$value}"`
+  : $value
+
+export const fontFamily: Formatter<FontFamilyToken> = (token, {
+  allTokens,
+  tokenPath,
+  baseFontSize: _,
+  ...contexts
+}) => {
+  const prop = kebabCase(tokenPath.join(' '))
+  if(isStaticToken<FontFamilyToken, FontFamilyValue>(token)) {
+    const { $value } = token
+    if (hasAlias($value)) return ''
+    return getRule({ prop, value: fontFamilyCallback($value) })
   }
-  return `:root { --${kebabCase(tokenPath.join(' '))}: ${
-    /\s/g.test($value) ? `"${$value}"` : $value
-  }; }`
+  const toRet: string[] = []
+  if(isContextualToken<FontFamilyToken, FontFamilyValue>(token)) {
+    const { $value, $context } = token   
+    for(const id in $value) {
+      const contextValue = $value[id]
+      if (hasAlias(contextValue)) {
+        toRet.push(getRule({ prop, value: resolveCSSVar(contextValue, allTokens) }))
+        continue
+      }
+      const context = { type: $context, id }
+      if(isValidContext({ context, ...contexts })) {
+        toRet.push(getRule({ prop, value: fontFamilyCallback(contextValue), context, ...contexts }))
+      }
+    }
+  }
+  return toRet.join('\n')
 }

@@ -59,7 +59,9 @@ export const isle = (
             if(template) {
               const { stylesheets, content } = template
               const styles = stylesheets.size ? `<style>${[ ...stylesheets ].join('')}</style>` : ''
-              this.#root.innerHTML = styles + content
+              const tpl = document.createElement('template')
+              tpl.innerHTML = styles + content
+              this.#root.appendChild(tpl.content.cloneNode(true))
             }
             /** Warn ourselves not to overwrite the trigger method */
             if (this.#trigger !== this.constructor.prototype.trigger) {

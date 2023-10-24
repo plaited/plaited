@@ -1,35 +1,42 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`transform-css-tokens 1`] = `
-"[data-media="static"]:root {
-    --size-x1: 0.1rem;
-    --size-x2: 0.3rem;
-    --size-x3: 0.6rem;
+"@media screen and (min-width: 1920px) {
+    :host {
+        --size-x1: 0.2rem;
+        --size-x2: 0.4rem;
+        --size-x3: 0.7rem;
+    }
 }
 
-[data-media="mobile"]:root {
-    --size-x1: 0.1rem;
-    --size-x2: 0.4rem;
-    --size-x3: 0.8rem;
-}
-
-[data-media="desktop"]:root {
-    --size-x1: 0.1rem;
-    --size-x2: 0.3rem;
-    --size-x3: 0.6rem;
-}
-
-[data-media="tv"]:root {
+:host([data-media-query="tv"]) {
     --size-x1: 0.2rem;
     --size-x2: 0.4rem;
     --size-x3: 0.7rem;
 }
 
-:root {
+@media screen and (max-width: 767px) {
+    :host {
+        --size-x1: 0.1rem;
+        --size-x2: 0.4rem;
+        --size-x3: 0.8rem;
+    }
+}
+
+:host([data-media-query="mobile"]) {
+    --size-x1: 0.1rem;
+    --size-x2: 0.4rem;
+    --size-x3: 0.8rem;
+}
+
+:host {
+    --size-x1: 0.1rem;
+    --size-x2: 0.3rem;
+    --size-x3: 0.6rem;
     --size-s3: 0.6rem;
-    --background-color-purple-x1: #4c00b0;
-    --background-color-purple-x2: #7600bc;
-    --background-color-purple-x3: #8a00c2;
+    --background-color-purple-x1: oklch(39% 0.22184604903824146 289.1379241925685 / none);
+    --background-color-purple-x2: oklch(45.38% 0.236 304.59 / none);
+    --background-color-purple-x3: oklch(48.67% 0.245 310.63 / none);
     --border-radius-x1: 0.15rem;
     --border-radius-x2: 0.25rem;
     --border-radius-x3: 0.35rem;
@@ -38,6 +45,20 @@ exports[`transform-css-tokens 1`] = `
     --font-weight-x1: 700;
     --letter-spacing-x1: normal;
     --line-height-x1: 1;
+}
+
+@media screen and (min-width: 1024px) {
+    :host {
+        --size-x1: 0.1rem;
+        --size-x2: 0.3rem;
+        --size-x3: 0.6rem;
+    }
+}
+
+:host([data-media-query="desktop"]) {
+    --size-x1: 0.1rem;
+    --size-x2: 0.3rem;
+    --size-x3: 0.6rem;
 }"
 `;
 

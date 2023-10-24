@@ -7,9 +7,15 @@ export const transformTsTokens = ({
   tokens,
   baseFontSize = defaultBaseFontSize,
   formatters = defaultTSFormatters,
+  mediaQueries,
+  colorSchemes,
+  containerQueries,
 }: TransformerParams) =>  formatList({
   tokens,
   allTokens: tokens,
   baseFontSize,
   formatters,
+  mediaQueries,
+  colorSchemes,
+  containerQueries,
 })

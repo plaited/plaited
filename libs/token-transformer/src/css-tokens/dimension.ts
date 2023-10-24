@@ -1,29 +1,36 @@
-import { DimensionValue,  ScalarDimensionValue } from '@plaited/token-types'
+import { DimensionLikeTokens, DimensionLikeValues } from '@plaited/token-types'
 import { Formatter } from '../types.js'
-import { hasAlias } from '../resolve.js'
+import { hasAlias, resolveCSSVar } from '../resolve.js'
 import { kebabCase } from '@plaited/utils'
-import { getRem } from '../get-rem.js'
+import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'
+import { getRule, getRem } from '../utils.js'
 
-export const dimension: Formatter<DimensionValue> = (
-  { tokenPath, $value, baseFontSize }
-) => {
-  if (hasAlias($value)) return ''
-  if (typeof $value === 'number') {
-    return (
-      `:root { --${kebabCase(tokenPath.join(' '))}:${
-        getRem($value, baseFontSize)
-      }; }`
-    )
+export const dimension: Formatter<DimensionLikeTokens> = (token, {
+  allTokens,
+  tokenPath,
+  baseFontSize,
+  ...contexts
+}) => {
+  const prop = kebabCase(tokenPath.join(' '))
+  if(isStaticToken<DimensionLikeTokens, DimensionLikeValues>(token)) {
+    const { $value } = token
+    if (hasAlias($value)) return ''
+    return getRule({ prop, value: getRem($value, baseFontSize) })
   }
-  const toRet = []
-  for (const media in $value as ScalarDimensionValue) {
-    const val = ($value as ScalarDimensionValue)[media]
-    if (hasAlias(val)) continue
-    toRet.push(
-      `[data-media="${media}"]:root { --${kebabCase(tokenPath.join(' '))}:${
-        getRem(val, baseFontSize)
-      }; }`
-    )
+  const toRet: string[] = []
+  if(isContextualToken<DimensionLikeTokens, DimensionLikeValues>(token)) {
+    const { $value, $context } = token   
+    for(const id in $value) {
+      const contextValue = $value[id]
+      if (hasAlias(contextValue)) {
+        toRet.push(getRule({ prop, value: resolveCSSVar(contextValue, allTokens) }))
+        continue
+      }
+      const context = { type: $context, id }
+      if(isValidContext({ context, ...contexts })) {
+        toRet.push(getRule({ prop, value: getRem(contextValue, baseFontSize), context, ...contexts }))
+      }
+    }
   }
   return toRet.join('\n')
 }
