@@ -1,34 +1,28 @@
 /**
- * Alias value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+ * Alias value type points to another token value
  */
 export type AliasValue = `{${string}}`;
 
 /**
- * Primitive value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+ * Primitive value type relies on the defaultFormat formatter for ts tokens and css tokens
  */
-export type PrimitiveValue = string | number | AliasValue;
+export type PrimitiveValue = string | number | (string | number)[] | AliasValue;
 
 /**
- * PrimitiveArray value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+ * Color value type relies on the color formatter for css tokens and defaultFormat formatter for ts tokens
  */
-export type PrimitiveArrayValue = (string | number)[] | AliasValue;
+export type ColorValue = {
+  l?: number | `${number}%`;
+  c?: number | `${number}%`;
+  h?: number | `${number}deg` | `${number}grad` | `${number}rad` | `${number}turn`;
+  a?: number;
+} | AliasValue;
 
-/**
- * Color value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
- */
-export type ColorValue = `#${string}` | AliasValue;
-
-export type ScalarDimensionValue = {
-  [key: string]: number;
-};
 /**
  * Dimension value type relies on the dimension formatter for css tokens
  * and the defaultFormat formatter for ts tokens
  */
-export type DimensionValue =
-  | number
-  | ScalarDimensionValue
-  | AliasValue;
+export type DimensionValue = number | AliasValue;
 
 /**
  * Border value type relies on the border formatter for css tokens
@@ -79,7 +73,7 @@ export type GradientValue = {
 } | AliasValue;
 
 /**
- * PercentageRatio value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+ * PercentageRatio value type relies on the defaultFormat formatter for ts tokens and css tokens
  */
 export type PercentageRatioValue =
   | `${number}:${number}`
@@ -93,7 +87,7 @@ export type PercentageRatioValue =
  * Layout value types
  */
 /**
- * AlignItems value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+ * AlignItems value type relies on the defaultFormat formatter for ts tokens and css tokens
  */
 export type AlignItemsValue =
   | 'stretch'
@@ -103,7 +97,7 @@ export type AlignItemsValue =
   | 'end'
   | AliasValue;
 /**
- * Display value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+ * Display value type relies on the defaultFormat formatter for ts tokens and css tokens
  */
 export type DisplayValue =
   | 'flex'
@@ -112,7 +106,7 @@ export type DisplayValue =
   | 'inline-grid'
   | AliasValue;
 /**
- * DistributeContent value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+ * DistributeContent value type relies on the defaultFormat formatter for ts tokens and css tokens
  */
 export type DistributeContentValue =
   | 'start'
@@ -124,7 +118,7 @@ export type DistributeContentValue =
   | 'space-evenly'
   | AliasValue;
 /**
- * FlexDirection value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+ * FlexDirection value type relies on the defaultFormat formatter for ts tokens and css tokens
  */
 export type FlexDirectionValue =
   | 'row'
@@ -133,7 +127,7 @@ export type FlexDirectionValue =
   | 'column-reverse'
   | AliasValue;
 /**
- * FlexWrap value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+ * FlexWrap value type relies on the defaultFormat formatter for ts tokens and css tokens
  */
 export type FlexWrapValue = 'wrap' | 'wrap-reverse' | AliasValue;
 /**
@@ -155,9 +149,9 @@ export type FlexValue = {
  * Gap value type relies on the gap formatter for css tokens
  * and the defaultFormat formatter for ts tokens
  */
-export type GapValue = DimensionValue | `${number}%` | AliasValue;
+export type GapValue = DimensionValue | `${number}%`
 /**
- * GridAutoFlow value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+ * GridAutoFlow value type relies on the defaultFormat formatter for ts tokens and css tokens
  */
 export type GridAutoFlowValue =
   | 'row'
@@ -173,8 +167,8 @@ export type GridMinMaxArgs =
   | 'auto'
   | 'min-content'
   | 'max-content';
-type GridTemplateAreasValue = `"${string}"`[];
-type GridTemplateAxisValue =
+export type GridTemplateAreasValue = `"${string}"`[];
+export type GridTemplateAxisValue =
   | GridMinMaxArgs
   | {
     function: 'minmax';
@@ -224,7 +218,7 @@ export type GridValue = {
  * Transition value types
  */
 /**
- * FontStyle value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+ * FontStyle value type relies on the defaultFormat formatter for ts tokens and css tokens
  */
 export type TimingValue = `${number}s` | `${number}ms` | AliasValue;
 /**
@@ -253,7 +247,7 @@ export type TransitionValue = {
  */
 
 /**
- * FontFamily value type relies on the fontFamily formatter for css tokens
+ * FontFamily value type relies on formatter for css tokens
  * and the defaultFormat formatter for ts tokens
  */
 export type FontFamilyValue = string | string[] | AliasValue;
@@ -263,7 +257,7 @@ export type FontFamilyValue = string | string[] | AliasValue;
  */
 export type FontSizeValue = DimensionValue;
 /**
- * FontStyle value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+ * FontStyle value type relies on the defaultFormat formatter for ts tokens and css tokens
  */
 export type FontStyleValue =
   | 'normal'
@@ -272,7 +266,7 @@ export type FontStyleValue =
   | `oblique ${number}deg`
   | AliasValue;
 /**
- * FontWeight value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+ * FontWeight value type relies on the defaultFormat formatter for ts tokens and css tokens
  */
 export type FontWeightValue =
   | 100
@@ -300,7 +294,7 @@ export type LetterSpacingValue = DimensionValue;
  */
 export type LineHeightValue = DimensionValue;
 /**
- * FontWeight value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+ * FontWeight value type relies on the defaultFormat formatter for ts tokens and css tokens
  */
 export type TextTransformValue =
   | 'none'
@@ -325,152 +319,197 @@ export type TypographyValue = {
   textTransform?: AliasValue;
 } | AliasValue;
 
-type $Extensions =
-  | string
-  | number
-  | boolean
-  | Record<string, string | number | boolean>;
+export type ContextValue<V> = {
+  [key: string]: V;
+}
 
-export type $FormatterValue =
+export type DesignValue =
   | PrimitiveValue
-  | PrimitiveArrayValue
-  | BorderValue
+  | ColorValue
   | DimensionValue
-  | GradientValue
+  | BorderValue
   | DropShadowValue
-  | GapValue
+  | GradientValue
+  | PercentageRatioValue
+  | AlignItemsValue
+  | DisplayValue
+  | DistributeContentValue
+  | FlexDirectionValue
+  | FlexWrapValue
   | FlexValue
+  | GapValue
+  | GridAutoFlowValue
   | GridTemplateValue
   | GridValue
+  | TimingValue
   | TransitionValue
   | FontFamilyValue
+  | FontSizeValue
+  | FontStyleValue
+  | FontWeightValue
+  | LetterSpacingValue
+  | LineHeightValue
+  | TextTransformValue
   | TypographyValue;
 
-type ValueAndType =
-  | {
-    $type: 'primitive';
-    $value: PrimitiveValue | PrimitiveArrayValue;
-  }
-  | {
-    $type: 'color';
-    $value: ColorValue;
-  }
-  | {
-    $type: 'dimension';
-    $value: DimensionValue;
-  }
-  | {
-    $type: 'border';
-    $value: BorderValue;
-  }
-  | {
-    $type: 'dropShadow';
-    $value: DropShadowValue;
-  }
-  | {
-    $type: 'gradient';
-    $value: GradientValue;
-  }
-  | {
-    $type: 'percentageRatio';
-    $value: PercentageRatioValue;
-  }
-  | /**
-   * Layout { $value, $type }
-   */ {
-    $type: 'alignItems';
-    $value: AlignItemsValue;
-  }
-  | {
-    $type: 'display';
-    $value: DisplayValue;
-  }
-  | {
-    $type: 'distributeContent';
-    $value: DistributeContentValue;
-  }
-  | {
-    $type: 'flexDirection';
-    $value: FlexDirectionValue;
-  }
-  | {
-    $type: 'flexWrap';
-    $value: FlexWrapValue;
-  }
-  | {
-    $type: 'flex';
-    $value: FlexValue;
-  }
-  | {
-    $type: 'gap';
-    $value: GapValue;
-  }
-  | {
-    $type: 'gridAutoFlow';
-    $value: GridAutoFlowValue;
-  }
-  | {
-    $type: 'gridTemplate';
-    $value: GridTemplateValue;
-  }
-  | {
-    $type: 'grid';
-    $value: GridValue;
-  }
-  | /**
-   * Transition { $value, $type }
-   */ {
-    $type: 'timing';
-    $value: TimingValue;
-  }
-  | {
-    $type: 'transition';
-    $value: TransitionValue;
-  }
-  | /**
-   * Typography { $value, $type }
-   */ {
-    $type: 'fontFamily';
-    $value: FontFamilyValue;
-  }
-  | {
-    $type: 'fontSize';
-    $value: FontSizeValue;
-  }
-  | {
-    $type: 'fontStyle';
-    $value: FontStyleValue;
-  }
-  | {
-    $type: 'fontWeight';
-    $value: FontWeightValue;
-  }
-  | {
-    $type: 'letterSpacing';
-    $value: LetterSpacingValue;
-  }
-  | {
-    $type: 'lineHeight';
-    $value: LineHeightValue;
-  }
-  | {
-    $type: 'textTransform';
-    $value: TextTransformValue;
-  }
-  | {
-    $type: 'typography';
-    $value: TypographyValue;
-  };
+export type $Context = 'media-query' | 'color-scheme' | 'container-query'
 
-export type $Value = ValueAndType['$value'];
-
-// basic design token definition pulled from the https://design-tokens.github.io/community-group/format/#design-token-0
-export type DesignToken = {
-  $extensions?: $Extensions;
+export type StaticToken<T extends string, V extends DesignValue> = {
   $description: string;
-} & ValueAndType;
+  $context?: never;
+  $type: T;
+  $value: V;
+};
+
+export type ContextualToken<T extends string, V extends DesignValue> = {
+  $description: string;
+  $context: $Context;
+  $type: T;
+  $value: ContextValue<V>;
+};
+
+export type BaseToken<T extends string, V extends DesignValue> = StaticToken<T, V> | ContextualToken<T, V>;
+
+
+export type PrimitiveToken = BaseToken<'primitive', PrimitiveValue>;
+
+export type ColorToken = BaseToken<'color', ColorValue>;
+
+export type DimensionToken = BaseToken<'dimension', DimensionValue>;
+
+export type BorderToken = BaseToken<'border', BorderValue>;
+
+export type DropShadowToken = BaseToken<'dropShadow', DropShadowValue>;
+
+export type GradientToken = BaseToken<'gradient', GradientValue>;
+
+export type PercentageRatioToken = BaseToken<'percentageRatio', PercentageRatioValue>;
+
+export type AlignItemsToken = BaseToken<'alignItems', AlignItemsValue>;
+
+export type DisplayToken = BaseToken<'display', DisplayValue>;
+
+export type DistributeContentToken = BaseToken<'distributeContent', DistributeContentValue>;
+
+export type FlexDirectionToken = BaseToken<'flexDirection', FlexDirectionValue>;
+
+export type FlexWrapToken = BaseToken<'flexWrap', FlexWrapValue>;
+
+export type FlexToken = {
+  $description: string;
+  $context?: never;
+  $type: 'flex';
+  $value: FlexValue;
+};
+
+export type GapToken = BaseToken<'gap', GapValue>;
+
+export type GridAutoFlowToken = BaseToken<'gridAutoFlow', GridAutoFlowValue>;
+
+export type GridTemplateToken = BaseToken<'gridTemplate', GridTemplateValue>;
+
+export type GridToken = {
+  $description: string;
+  $context?: never;
+  $type: 'grid';
+  $value: GridValue;
+};
+
+export type TimingToken = BaseToken<'timing', TimingValue>;
+
+export type TransitionToken = BaseToken<'transition', TransitionValue>;
+
+export type FontFamilyToken = BaseToken<'fontFamily', FontFamilyValue>;
+
+export type FontSizeToken = BaseToken<'fontSize', FontSizeValue>;
+
+export type FontStyleToken = BaseToken<'fontStyle', FontStyleValue>;
+
+export type FontWeightToken = BaseToken<'fontWeight', FontWeightValue>;
+
+export type LetterSpacingToken = BaseToken<'letterSpacing', LetterSpacingValue>;
+
+export type LineHeightToken = BaseToken<'lineHeight', LineHeightValue>;
+
+export type TextTransformToken = BaseToken<'textTransform', TextTransformValue>;
+
+export type TypographyToken = {
+  $description: string;
+  $context?: never;
+  $type: 'typography';
+  $value: TypographyValue;
+};
+
+export type DesignToken =
+  | PrimitiveToken
+  | ColorToken
+  | DimensionToken
+  | BorderToken
+  | DropShadowToken
+  | GradientToken
+  | PercentageRatioToken
+  | AlignItemsToken
+  | DisplayToken
+  | DistributeContentToken
+  | FlexDirectionToken
+  | FlexWrapToken
+  | FlexToken
+  | GapToken
+  | GridAutoFlowToken
+  | GridTemplateToken
+  | GridToken
+  | TimingToken
+  | TransitionToken
+  | FontFamilyToken
+  | FontSizeToken
+  | FontStyleToken
+  | FontWeightToken
+  | LetterSpacingToken
+  | LineHeightToken
+  | TextTransformToken
+  | TypographyToken;
 
 // general tokens object type definition
 export interface DesignTokenGroup {
   [key: string]: DesignTokenGroup | DesignToken;
 }
+
+export type DimensionLikeTokens = 
+  | DimensionToken
+  | LineHeightToken
+  | LetterSpacingToken
+  | FontSizeToken
+
+export type DimensionLikeValues =
+  | DimensionValue
+  | LineHeightValue
+  | LetterSpacingValue
+  | FontSizeValue
+
+export type PrimitiveLikeTokens = 
+  | PrimitiveToken
+  | PercentageRatioToken
+  | AlignItemsToken
+  | DisplayToken
+  | DistributeContentToken
+  | FlexDirectionToken
+  | FlexWrapToken
+  | GridAutoFlowToken
+  | TimingToken
+  | FontStyleToken
+  | FontWeightToken
+  | TextTransformToken
+
+export type PrimitiveLikeValues =
+  | PrimitiveValue
+  | PercentageRatioValue
+  | AlignItemsValue
+  | DisplayValue
+  | DistributeContentValue
+  | FlexDirectionValue
+  | FlexWrapValue
+  | GridAutoFlowValue
+  | TimingValue
+  | FontStyleValue
+  | FontWeightValue
+  | TextTransformValue
