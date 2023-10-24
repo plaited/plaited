@@ -23,13 +23,13 @@
 
 #### Defined in
 
-[constants.ts:1](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-transformer/src/constants.ts#L1)
+[constants.ts:1](https://github.com/plaited/plaited/blob/3238787/libs/token-transformer/src/constants.ts#L1)
 
 ## Functions
 
 ### defaultCSSFormatters
 
-▸ **defaultCSSFormatters**<`T`, `F`\>(`args`): `string`
+▸ **defaultCSSFormatters**<`T`, `F`\>(`token`, `details`): `string`
 
 This formatter object will return formatters that will create content for an
 optimized css stylesheet of css custom properties to be applied to :root
@@ -39,18 +39,20 @@ optimized css stylesheet of css custom properties to be applied to :root
 | Name | Type |
 | :------ | :------ |
 | `T` | extends `DesignTokenGroup` = `DesignTokenGroup` |
-| `F` | extends `$FormatterValue` = `$FormatterValue` |
+| `F` | extends `DesignToken` = `DesignToken` |
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `args` | `Object` |
-| `args.$type` | `string` |
-| `args.$value` | `F` |
-| `args.allTokens` | `T` |
-| `args.baseFontSize` | `number` |
-| `args.tokenPath` | `string`[] |
+| `token` | `F` |
+| `details` | `Object` |
+| `details.allTokens` | `T` |
+| `details.baseFontSize` | `number` |
+| `details.colorSchemes?` | `ColorSchemes` |
+| `details.containerQueries?` | `Queries` |
+| `details.mediaQueries?` | `Queries` |
+| `details.tokenPath` | `string`[] |
 
 #### Returns
 
@@ -58,13 +60,13 @@ optimized css stylesheet of css custom properties to be applied to :root
 
 #### Defined in
 
-[types.ts:11](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-transformer/src/types.ts#L11)
+[types.ts:42](https://github.com/plaited/plaited/blob/3238787/libs/token-transformer/src/types.ts#L42)
 
 ___
 
 ### defaultTSFormatters
 
-▸ **defaultTSFormatters**<`T`, `F`\>(`args`): `string`
+▸ **defaultTSFormatters**<`T`, `F`\>(`token`, `details`): `string`
 
 This formatter object will return formatters that will create content for
 a treeshakeable mapping to css custom properties references to be used
@@ -75,18 +77,20 @@ inline styles in ts/js component files
 | Name | Type |
 | :------ | :------ |
 | `T` | extends `DesignTokenGroup` = `DesignTokenGroup` |
-| `F` | extends `$FormatterValue` = `$FormatterValue` |
+| `F` | extends `DesignToken` = `DesignToken` |
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `args` | `Object` |
-| `args.$type` | `string` |
-| `args.$value` | `F` |
-| `args.allTokens` | `T` |
-| `args.baseFontSize` | `number` |
-| `args.tokenPath` | `string`[] |
+| `token` | `F` |
+| `details` | `Object` |
+| `details.allTokens` | `T` |
+| `details.baseFontSize` | `number` |
+| `details.colorSchemes?` | `ColorSchemes` |
+| `details.containerQueries?` | `Queries` |
+| `details.mediaQueries?` | `Queries` |
+| `details.tokenPath` | `string`[] |
 
 #### Returns
 
@@ -94,7 +98,7 @@ inline styles in ts/js component files
 
 #### Defined in
 
-[types.ts:11](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-transformer/src/types.ts#L11)
+[types.ts:42](https://github.com/plaited/plaited/blob/3238787/libs/token-transformer/src/types.ts#L42)
 
 ___
 
@@ -114,7 +118,7 @@ ___
 
 #### Defined in
 
-[transform-css-tokens.ts:26](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-transformer/src/transform-css-tokens.ts#L26)
+[transform-css-tokens.ts:26](https://github.com/plaited/plaited/blob/3238787/libs/token-transformer/src/transform-css-tokens.ts#L26)
 
 ___
 
@@ -134,4 +138,4 @@ ___
 
 #### Defined in
 
-[transform-ts-tokens.ts:6](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-transformer/src/transform-ts-tokens.ts#L6)
+[transform-ts-tokens.ts:6](https://github.com/plaited/plaited/blob/3238787/libs/token-transformer/src/transform-ts-tokens.ts#L6)

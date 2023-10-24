@@ -10,61 +10,86 @@
 
 ### Type Aliases
 
-- [$FormatterValue](plaited_token_types.md#$formattervalue)
-- [$Value](plaited_token_types.md#$value)
+- [$Context](plaited_token_types.md#$context)
 - [AliasValue](plaited_token_types.md#aliasvalue)
+- [AlignItemsToken](plaited_token_types.md#alignitemstoken)
 - [AlignItemsValue](plaited_token_types.md#alignitemsvalue)
+- [BaseToken](plaited_token_types.md#basetoken)
+- [BorderToken](plaited_token_types.md#bordertoken)
 - [BorderValue](plaited_token_types.md#bordervalue)
+- [ColorToken](plaited_token_types.md#colortoken)
 - [ColorValue](plaited_token_types.md#colorvalue)
+- [ContextValue](plaited_token_types.md#contextvalue)
+- [ContextualToken](plaited_token_types.md#contextualtoken)
 - [DesignToken](plaited_token_types.md#designtoken)
+- [DesignValue](plaited_token_types.md#designvalue)
+- [DimensionLikeTokens](plaited_token_types.md#dimensionliketokens)
+- [DimensionLikeValues](plaited_token_types.md#dimensionlikevalues)
+- [DimensionToken](plaited_token_types.md#dimensiontoken)
 - [DimensionValue](plaited_token_types.md#dimensionvalue)
+- [DisplayToken](plaited_token_types.md#displaytoken)
 - [DisplayValue](plaited_token_types.md#displayvalue)
+- [DistributeContentToken](plaited_token_types.md#distributecontenttoken)
 - [DistributeContentValue](plaited_token_types.md#distributecontentvalue)
+- [DropShadowToken](plaited_token_types.md#dropshadowtoken)
 - [DropShadowValue](plaited_token_types.md#dropshadowvalue)
+- [FlexDirectionToken](plaited_token_types.md#flexdirectiontoken)
 - [FlexDirectionValue](plaited_token_types.md#flexdirectionvalue)
+- [FlexToken](plaited_token_types.md#flextoken)
 - [FlexValue](plaited_token_types.md#flexvalue)
+- [FlexWrapToken](plaited_token_types.md#flexwraptoken)
 - [FlexWrapValue](plaited_token_types.md#flexwrapvalue)
+- [FontFamilyToken](plaited_token_types.md#fontfamilytoken)
 - [FontFamilyValue](plaited_token_types.md#fontfamilyvalue)
+- [FontSizeToken](plaited_token_types.md#fontsizetoken)
 - [FontSizeValue](plaited_token_types.md#fontsizevalue)
+- [FontStyleToken](plaited_token_types.md#fontstyletoken)
 - [FontStyleValue](plaited_token_types.md#fontstylevalue)
+- [FontWeightToken](plaited_token_types.md#fontweighttoken)
 - [FontWeightValue](plaited_token_types.md#fontweightvalue)
+- [GapToken](plaited_token_types.md#gaptoken)
 - [GapValue](plaited_token_types.md#gapvalue)
+- [GradientToken](plaited_token_types.md#gradienttoken)
 - [GradientValue](plaited_token_types.md#gradientvalue)
+- [GridAutoFlowToken](plaited_token_types.md#gridautoflowtoken)
 - [GridAutoFlowValue](plaited_token_types.md#gridautoflowvalue)
 - [GridMinMaxArgs](plaited_token_types.md#gridminmaxargs)
+- [GridTemplateAreasValue](plaited_token_types.md#gridtemplateareasvalue)
+- [GridTemplateAxisValue](plaited_token_types.md#gridtemplateaxisvalue)
 - [GridTemplateRowsOrColumnsValue](plaited_token_types.md#gridtemplaterowsorcolumnsvalue)
+- [GridTemplateToken](plaited_token_types.md#gridtemplatetoken)
 - [GridTemplateValue](plaited_token_types.md#gridtemplatevalue)
+- [GridToken](plaited_token_types.md#gridtoken)
 - [GridValue](plaited_token_types.md#gridvalue)
+- [LetterSpacingToken](plaited_token_types.md#letterspacingtoken)
 - [LetterSpacingValue](plaited_token_types.md#letterspacingvalue)
+- [LineHeightToken](plaited_token_types.md#lineheighttoken)
 - [LineHeightValue](plaited_token_types.md#lineheightvalue)
+- [PercentageRatioToken](plaited_token_types.md#percentageratiotoken)
 - [PercentageRatioValue](plaited_token_types.md#percentageratiovalue)
-- [PrimitiveArrayValue](plaited_token_types.md#primitivearrayvalue)
+- [PrimitiveLikeTokens](plaited_token_types.md#primitiveliketokens)
+- [PrimitiveLikeValues](plaited_token_types.md#primitivelikevalues)
+- [PrimitiveToken](plaited_token_types.md#primitivetoken)
 - [PrimitiveValue](plaited_token_types.md#primitivevalue)
-- [ScalarDimensionValue](plaited_token_types.md#scalardimensionvalue)
+- [StaticToken](plaited_token_types.md#statictoken)
+- [TextTransformToken](plaited_token_types.md#texttransformtoken)
 - [TextTransformValue](plaited_token_types.md#texttransformvalue)
+- [TimingToken](plaited_token_types.md#timingtoken)
 - [TimingValue](plaited_token_types.md#timingvalue)
+- [TransitionToken](plaited_token_types.md#transitiontoken)
 - [TransitionValue](plaited_token_types.md#transitionvalue)
+- [TypographyToken](plaited_token_types.md#typographytoken)
 - [TypographyValue](plaited_token_types.md#typographyvalue)
 
 ## Type Aliases
 
-### $FormatterValue
+### $Context
 
-Ƭ **$FormatterValue**: [`PrimitiveValue`](plaited_token_types.md#primitivevalue) \| [`PrimitiveArrayValue`](plaited_token_types.md#primitivearrayvalue) \| [`BorderValue`](plaited_token_types.md#bordervalue) \| [`DimensionValue`](plaited_token_types.md#dimensionvalue) \| [`GradientValue`](plaited_token_types.md#gradientvalue) \| [`DropShadowValue`](plaited_token_types.md#dropshadowvalue) \| [`GapValue`](plaited_token_types.md#gapvalue) \| [`FlexValue`](plaited_token_types.md#flexvalue) \| [`GridTemplateValue`](plaited_token_types.md#gridtemplatevalue) \| [`GridValue`](plaited_token_types.md#gridvalue) \| [`TransitionValue`](plaited_token_types.md#transitionvalue) \| [`FontFamilyValue`](plaited_token_types.md#fontfamilyvalue) \| [`TypographyValue`](plaited_token_types.md#typographyvalue)
-
-#### Defined in
-
-[index.ts:334](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L334)
-
-___
-
-### $Value
-
-Ƭ **$Value**: `ValueAndType`[``"$value"``]
+Ƭ **$Context**: ``"media-query"`` \| ``"color-scheme"`` \| ``"container-query"``
 
 #### Defined in
 
-[index.ts:465](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L465)
+[index.ts:355](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L355)
 
 ___
 
@@ -72,11 +97,21 @@ ___
 
 Ƭ **AliasValue**: \`{${string}}\`
 
-Alias value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+Alias value type points to another token value
 
 #### Defined in
 
-[index.ts:4](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L4)
+[index.ts:4](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L4)
+
+___
+
+### AlignItemsToken
+
+Ƭ **AlignItemsToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"alignItems"``, [`AlignItemsValue`](plaited_token_types.md#alignitemsvalue)\>
+
+#### Defined in
+
+[index.ts:388](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L388)
 
 ___
 
@@ -84,11 +119,38 @@ ___
 
 Ƭ **AlignItemsValue**: ``"stretch"`` \| ``"center"`` \| ``"baseline"`` \| ``"start"`` \| ``"end"`` \| [`AliasValue`](plaited_token_types.md#aliasvalue)
 
-AlignItems value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+AlignItems value type relies on the defaultFormat formatter for ts tokens and css tokens
 
 #### Defined in
 
-[index.ts:98](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L98)
+[index.ts:92](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L92)
+
+___
+
+### BaseToken
+
+Ƭ **BaseToken**<`T`, `V`\>: [`StaticToken`](plaited_token_types.md#statictoken)<`T`, `V`\> \| [`ContextualToken`](plaited_token_types.md#contextualtoken)<`T`, `V`\>
+
+#### Type parameters
+
+| Name | Type |
+| :------ | :------ |
+| `T` | extends `string` |
+| `V` | extends [`DesignValue`](plaited_token_types.md#designvalue) |
+
+#### Defined in
+
+[index.ts:371](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L371)
+
+___
+
+### BorderToken
+
+Ƭ **BorderToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"border"``, [`BorderValue`](plaited_token_types.md#bordervalue)\>
+
+#### Defined in
+
+[index.ts:380](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L380)
 
 ___
 
@@ -101,42 +163,148 @@ and the defaultFormat formatter for ts tokens
 
 #### Defined in
 
-[index.ts:37](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L37)
+[index.ts:31](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L31)
+
+___
+
+### ColorToken
+
+Ƭ **ColorToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"color"``, [`ColorValue`](plaited_token_types.md#colorvalue)\>
+
+#### Defined in
+
+[index.ts:376](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L376)
 
 ___
 
 ### ColorValue
 
-Ƭ **ColorValue**: \`#${string}\` \| [`AliasValue`](plaited_token_types.md#aliasvalue)
+Ƭ **ColorValue**: { `a?`: `number` ; `c?`: `number` \| \`${number}%\` ; `h?`: `number` \| \`${number}deg\` \| \`${number}grad\` \| \`${number}rad\` \| \`${number}turn\` ; `l?`: `number` \| \`${number}%\`  } \| [`AliasValue`](plaited_token_types.md#aliasvalue)
 
-Color value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+Color value type relies on the color formatter for css tokens and defaultFormat formatter for ts tokens
 
 #### Defined in
 
-[index.ts:19](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L19)
+[index.ts:14](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L14)
+
+___
+
+### ContextValue
+
+Ƭ **ContextValue**<`V`\>: `Object`
+
+#### Type parameters
+
+| Name |
+| :------ |
+| `V` |
+
+#### Index signature
+
+▪ [key: `string`]: `V`
+
+#### Defined in
+
+[index.ts:322](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L322)
+
+___
+
+### ContextualToken
+
+Ƭ **ContextualToken**<`T`, `V`\>: `Object`
+
+#### Type parameters
+
+| Name | Type |
+| :------ | :------ |
+| `T` | extends `string` |
+| `V` | extends [`DesignValue`](plaited_token_types.md#designvalue) |
+
+#### Type declaration
+
+| Name | Type |
+| :------ | :------ |
+| `$context` | [`$Context`](plaited_token_types.md#$context) |
+| `$description` | `string` |
+| `$type` | `T` |
+| `$value` | [`ContextValue`](plaited_token_types.md#contextvalue)<`V`\> |
+
+#### Defined in
+
+[index.ts:364](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L364)
 
 ___
 
 ### DesignToken
 
-Ƭ **DesignToken**: { `$description`: `string` ; `$extensions?`: `$Extensions`  } & `ValueAndType`
+Ƭ **DesignToken**: [`PrimitiveToken`](plaited_token_types.md#primitivetoken) \| [`ColorToken`](plaited_token_types.md#colortoken) \| [`DimensionToken`](plaited_token_types.md#dimensiontoken) \| [`BorderToken`](plaited_token_types.md#bordertoken) \| [`DropShadowToken`](plaited_token_types.md#dropshadowtoken) \| [`GradientToken`](plaited_token_types.md#gradienttoken) \| [`PercentageRatioToken`](plaited_token_types.md#percentageratiotoken) \| [`AlignItemsToken`](plaited_token_types.md#alignitemstoken) \| [`DisplayToken`](plaited_token_types.md#displaytoken) \| [`DistributeContentToken`](plaited_token_types.md#distributecontenttoken) \| [`FlexDirectionToken`](plaited_token_types.md#flexdirectiontoken) \| [`FlexWrapToken`](plaited_token_types.md#flexwraptoken) \| [`FlexToken`](plaited_token_types.md#flextoken) \| [`GapToken`](plaited_token_types.md#gaptoken) \| [`GridAutoFlowToken`](plaited_token_types.md#gridautoflowtoken) \| [`GridTemplateToken`](plaited_token_types.md#gridtemplatetoken) \| [`GridToken`](plaited_token_types.md#gridtoken) \| [`TimingToken`](plaited_token_types.md#timingtoken) \| [`TransitionToken`](plaited_token_types.md#transitiontoken) \| [`FontFamilyToken`](plaited_token_types.md#fontfamilytoken) \| [`FontSizeToken`](plaited_token_types.md#fontsizetoken) \| [`FontStyleToken`](plaited_token_types.md#fontstyletoken) \| [`FontWeightToken`](plaited_token_types.md#fontweighttoken) \| [`LetterSpacingToken`](plaited_token_types.md#letterspacingtoken) \| [`LineHeightToken`](plaited_token_types.md#lineheighttoken) \| [`TextTransformToken`](plaited_token_types.md#texttransformtoken) \| [`TypographyToken`](plaited_token_types.md#typographytoken)
 
 #### Defined in
 
-[index.ts:468](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L468)
+[index.ts:443](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L443)
+
+___
+
+### DesignValue
+
+Ƭ **DesignValue**: [`PrimitiveValue`](plaited_token_types.md#primitivevalue) \| [`ColorValue`](plaited_token_types.md#colorvalue) \| [`DimensionValue`](plaited_token_types.md#dimensionvalue) \| [`BorderValue`](plaited_token_types.md#bordervalue) \| [`DropShadowValue`](plaited_token_types.md#dropshadowvalue) \| [`GradientValue`](plaited_token_types.md#gradientvalue) \| [`PercentageRatioValue`](plaited_token_types.md#percentageratiovalue) \| [`AlignItemsValue`](plaited_token_types.md#alignitemsvalue) \| [`DisplayValue`](plaited_token_types.md#displayvalue) \| [`DistributeContentValue`](plaited_token_types.md#distributecontentvalue) \| [`FlexDirectionValue`](plaited_token_types.md#flexdirectionvalue) \| [`FlexWrapValue`](plaited_token_types.md#flexwrapvalue) \| [`FlexValue`](plaited_token_types.md#flexvalue) \| [`GapValue`](plaited_token_types.md#gapvalue) \| [`GridAutoFlowValue`](plaited_token_types.md#gridautoflowvalue) \| [`GridTemplateValue`](plaited_token_types.md#gridtemplatevalue) \| [`GridValue`](plaited_token_types.md#gridvalue) \| [`TimingValue`](plaited_token_types.md#timingvalue) \| [`TransitionValue`](plaited_token_types.md#transitionvalue) \| [`FontFamilyValue`](plaited_token_types.md#fontfamilyvalue) \| [`FontSizeValue`](plaited_token_types.md#fontsizevalue) \| [`FontStyleValue`](plaited_token_types.md#fontstylevalue) \| [`FontWeightValue`](plaited_token_types.md#fontweightvalue) \| [`LetterSpacingValue`](plaited_token_types.md#letterspacingvalue) \| [`LineHeightValue`](plaited_token_types.md#lineheightvalue) \| [`TextTransformValue`](plaited_token_types.md#texttransformvalue) \| [`TypographyValue`](plaited_token_types.md#typographyvalue)
+
+#### Defined in
+
+[index.ts:326](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L326)
+
+___
+
+### DimensionLikeTokens
+
+Ƭ **DimensionLikeTokens**: [`DimensionToken`](plaited_token_types.md#dimensiontoken) \| [`LineHeightToken`](plaited_token_types.md#lineheighttoken) \| [`LetterSpacingToken`](plaited_token_types.md#letterspacingtoken) \| [`FontSizeToken`](plaited_token_types.md#fontsizetoken)
+
+#### Defined in
+
+[index.ts:477](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L477)
+
+___
+
+### DimensionLikeValues
+
+Ƭ **DimensionLikeValues**: [`DimensionValue`](plaited_token_types.md#dimensionvalue) \| [`LineHeightValue`](plaited_token_types.md#lineheightvalue) \| [`LetterSpacingValue`](plaited_token_types.md#letterspacingvalue) \| [`FontSizeValue`](plaited_token_types.md#fontsizevalue)
+
+#### Defined in
+
+[index.ts:483](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L483)
+
+___
+
+### DimensionToken
+
+Ƭ **DimensionToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"dimension"``, [`DimensionValue`](plaited_token_types.md#dimensionvalue)\>
+
+#### Defined in
+
+[index.ts:378](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L378)
 
 ___
 
 ### DimensionValue
 
-Ƭ **DimensionValue**: `number` \| [`ScalarDimensionValue`](plaited_token_types.md#scalardimensionvalue) \| [`AliasValue`](plaited_token_types.md#aliasvalue)
+Ƭ **DimensionValue**: `number` \| [`AliasValue`](plaited_token_types.md#aliasvalue)
 
 Dimension value type relies on the dimension formatter for css tokens
 and the defaultFormat formatter for ts tokens
 
 #### Defined in
 
-[index.ts:28](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L28)
+[index.ts:25](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L25)
+
+___
+
+### DisplayToken
+
+Ƭ **DisplayToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"display"``, [`DisplayValue`](plaited_token_types.md#displayvalue)\>
+
+#### Defined in
+
+[index.ts:390](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L390)
 
 ___
 
@@ -144,11 +312,21 @@ ___
 
 Ƭ **DisplayValue**: ``"flex"`` \| ``"inline-flex"`` \| ``"grid"`` \| ``"inline-grid"`` \| [`AliasValue`](plaited_token_types.md#aliasvalue)
 
-Display value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+Display value type relies on the defaultFormat formatter for ts tokens and css tokens
 
 #### Defined in
 
-[index.ts:108](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L108)
+[index.ts:102](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L102)
+
+___
+
+### DistributeContentToken
+
+Ƭ **DistributeContentToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"distributeContent"``, [`DistributeContentValue`](plaited_token_types.md#distributecontentvalue)\>
+
+#### Defined in
+
+[index.ts:392](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L392)
 
 ___
 
@@ -156,11 +334,21 @@ ___
 
 Ƭ **DistributeContentValue**: ``"start"`` \| ``"end"`` \| ``"center"`` \| ``"space-between"`` \| ``"space-around"`` \| ``"stretch"`` \| ``"space-evenly"`` \| [`AliasValue`](plaited_token_types.md#aliasvalue)
 
-DistributeContent value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+DistributeContent value type relies on the defaultFormat formatter for ts tokens and css tokens
 
 #### Defined in
 
-[index.ts:117](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L117)
+[index.ts:111](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L111)
+
+___
+
+### DropShadowToken
+
+Ƭ **DropShadowToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"dropShadow"``, [`DropShadowValue`](plaited_token_types.md#dropshadowvalue)\>
+
+#### Defined in
+
+[index.ts:382](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L382)
 
 ___
 
@@ -173,7 +361,17 @@ and the defaultFormat formatter for ts tokens
 
 #### Defined in
 
-[index.ts:55](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L55)
+[index.ts:49](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L49)
+
+___
+
+### FlexDirectionToken
+
+Ƭ **FlexDirectionToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"flexDirection"``, [`FlexDirectionValue`](plaited_token_types.md#flexdirectionvalue)\>
+
+#### Defined in
+
+[index.ts:394](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L394)
 
 ___
 
@@ -181,11 +379,30 @@ ___
 
 Ƭ **FlexDirectionValue**: ``"row"`` \| ``"row-reverse"`` \| ``"column"`` \| ``"column-reverse"`` \| [`AliasValue`](plaited_token_types.md#aliasvalue)
 
-FlexDirection value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+FlexDirection value type relies on the defaultFormat formatter for ts tokens and css tokens
 
 #### Defined in
 
-[index.ts:129](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L129)
+[index.ts:123](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L123)
+
+___
+
+### FlexToken
+
+Ƭ **FlexToken**: `Object`
+
+#### Type declaration
+
+| Name | Type |
+| :------ | :------ |
+| `$context?` | `never` |
+| `$description` | `string` |
+| `$type` | ``"flex"`` |
+| `$value` | [`FlexValue`](plaited_token_types.md#flexvalue) |
+
+#### Defined in
+
+[index.ts:398](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L398)
 
 ___
 
@@ -199,7 +416,17 @@ Uses the nullFormat formatter for CSS and the ruleSet formatter for TS.
 
 #### Defined in
 
-[index.ts:144](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L144)
+[index.ts:138](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L138)
+
+___
+
+### FlexWrapToken
+
+Ƭ **FlexWrapToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"flexWrap"``, [`FlexWrapValue`](plaited_token_types.md#flexwrapvalue)\>
+
+#### Defined in
+
+[index.ts:396](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L396)
 
 ___
 
@@ -207,11 +434,21 @@ ___
 
 Ƭ **FlexWrapValue**: ``"wrap"`` \| ``"wrap-reverse"`` \| [`AliasValue`](plaited_token_types.md#aliasvalue)
 
-FlexWrap value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+FlexWrap value type relies on the defaultFormat formatter for ts tokens and css tokens
 
 #### Defined in
 
-[index.ts:138](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L138)
+[index.ts:132](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L132)
+
+___
+
+### FontFamilyToken
+
+Ƭ **FontFamilyToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"fontFamily"``, [`FontFamilyValue`](plaited_token_types.md#fontfamilyvalue)\>
+
+#### Defined in
+
+[index.ts:422](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L422)
 
 ___
 
@@ -219,12 +456,22 @@ ___
 
 Ƭ **FontFamilyValue**: `string` \| `string`[] \| [`AliasValue`](plaited_token_types.md#aliasvalue)
 
-FontFamily value type relies on the fontFamily formatter for css tokens
+FontFamily value type relies on formatter for css tokens
 and the defaultFormat formatter for ts tokens
 
 #### Defined in
 
-[index.ts:259](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L259)
+[index.ts:253](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L253)
+
+___
+
+### FontSizeToken
+
+Ƭ **FontSizeToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"fontSize"``, [`FontSizeValue`](plaited_token_types.md#fontsizevalue)\>
+
+#### Defined in
+
+[index.ts:424](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L424)
 
 ___
 
@@ -237,7 +484,17 @@ and the defaultFormat formatter for ts tokens
 
 #### Defined in
 
-[index.ts:264](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L264)
+[index.ts:258](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L258)
+
+___
+
+### FontStyleToken
+
+Ƭ **FontStyleToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"fontStyle"``, [`FontStyleValue`](plaited_token_types.md#fontstylevalue)\>
+
+#### Defined in
+
+[index.ts:426](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L426)
 
 ___
 
@@ -245,11 +502,21 @@ ___
 
 Ƭ **FontStyleValue**: ``"normal"`` \| ``"italic"`` \| ``"oblique"`` \| \`oblique ${number}deg\` \| [`AliasValue`](plaited_token_types.md#aliasvalue)
 
-FontStyle value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+FontStyle value type relies on the defaultFormat formatter for ts tokens and css tokens
 
 #### Defined in
 
-[index.ts:268](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L268)
+[index.ts:262](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L262)
+
+___
+
+### FontWeightToken
+
+Ƭ **FontWeightToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"fontWeight"``, [`FontWeightValue`](plaited_token_types.md#fontweightvalue)\>
+
+#### Defined in
+
+[index.ts:428](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L428)
 
 ___
 
@@ -257,24 +524,44 @@ ___
 
 Ƭ **FontWeightValue**: ``100`` \| ``200`` \| ``300`` \| ``400`` \| ``500`` \| ``600`` \| ``700`` \| ``800`` \| ``900`` \| ``"normal"`` \| ``"bold"`` \| ``"lighter"`` \| ``"bolder"`` \| [`AliasValue`](plaited_token_types.md#aliasvalue)
 
-FontWeight value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+FontWeight value type relies on the defaultFormat formatter for ts tokens and css tokens
 
 #### Defined in
 
-[index.ts:277](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L277)
+[index.ts:271](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L271)
+
+___
+
+### GapToken
+
+Ƭ **GapToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"gap"``, [`GapValue`](plaited_token_types.md#gapvalue)\>
+
+#### Defined in
+
+[index.ts:405](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L405)
 
 ___
 
 ### GapValue
 
-Ƭ **GapValue**: [`DimensionValue`](plaited_token_types.md#dimensionvalue) \| \`${number}%\` \| [`AliasValue`](plaited_token_types.md#aliasvalue)
+Ƭ **GapValue**: [`DimensionValue`](plaited_token_types.md#dimensionvalue) \| \`${number}%\`
 
 Gap value type relies on the gap formatter for css tokens
 and the defaultFormat formatter for ts tokens
 
 #### Defined in
 
-[index.ts:158](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L158)
+[index.ts:152](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L152)
+
+___
+
+### GradientToken
+
+Ƭ **GradientToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"gradient"``, [`GradientValue`](plaited_token_types.md#gradientvalue)\>
+
+#### Defined in
+
+[index.ts:384](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L384)
 
 ___
 
@@ -287,7 +574,17 @@ and the defaultFormat formatter for ts tokens
 
 #### Defined in
 
-[index.ts:66](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L66)
+[index.ts:60](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L60)
+
+___
+
+### GridAutoFlowToken
+
+Ƭ **GridAutoFlowToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"gridAutoFlow"``, [`GridAutoFlowValue`](plaited_token_types.md#gridautoflowvalue)\>
+
+#### Defined in
+
+[index.ts:407](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L407)
 
 ___
 
@@ -295,11 +592,11 @@ ___
 
 Ƭ **GridAutoFlowValue**: ``"row"`` \| ``"column"`` \| ``"row dense"`` \| ``"column dense"`` \| [`AliasValue`](plaited_token_types.md#aliasvalue)
 
-GridAutoFlow value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+GridAutoFlow value type relies on the defaultFormat formatter for ts tokens and css tokens
 
 #### Defined in
 
-[index.ts:162](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L162)
+[index.ts:156](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L156)
 
 ___
 
@@ -309,23 +606,53 @@ ___
 
 #### Defined in
 
-[index.ts:169](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L169)
+[index.ts:163](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L163)
+
+___
+
+### GridTemplateAreasValue
+
+Ƭ **GridTemplateAreasValue**: \`"${string}"\`[]
+
+#### Defined in
+
+[index.ts:170](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L170)
+
+___
+
+### GridTemplateAxisValue
+
+Ƭ **GridTemplateAxisValue**: [`GridMinMaxArgs`](plaited_token_types.md#gridminmaxargs) \| { `function`: ``"minmax"`` ; `range`: [[`GridMinMaxArgs`](plaited_token_types.md#gridminmaxargs), [`GridMinMaxArgs`](plaited_token_types.md#gridminmaxargs)]  } \| { `function`: ``"fit-content"`` ; `value`: \`${number}%\` \| `number`  }
+
+#### Defined in
+
+[index.ts:171](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L171)
 
 ___
 
 ### GridTemplateRowsOrColumnsValue
 
-Ƭ **GridTemplateRowsOrColumnsValue**: (`GridTemplateAxisValue` \| { `count`: `number` \| ``"auto-fill"`` \| ``"auto-fit"`` ; `function`: ``"repeat"`` ; `tracks`: `GridTemplateAxisValue`[]  })[]
+Ƭ **GridTemplateRowsOrColumnsValue**: ([`GridTemplateAxisValue`](plaited_token_types.md#gridtemplateaxisvalue) \| { `count`: `number` \| ``"auto-fill"`` \| ``"auto-fit"`` ; `function`: ``"repeat"`` ; `tracks`: [`GridTemplateAxisValue`](plaited_token_types.md#gridtemplateaxisvalue)[]  })[]
 
 #### Defined in
 
-[index.ts:188](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L188)
+[index.ts:182](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L182)
+
+___
+
+### GridTemplateToken
+
+Ƭ **GridTemplateToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"gridTemplate"``, [`GridTemplateValue`](plaited_token_types.md#gridtemplatevalue)\>
+
+#### Defined in
+
+[index.ts:409](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L409)
 
 ___
 
 ### GridTemplateValue
 
-Ƭ **GridTemplateValue**: `GridTemplateAreasValue` \| [`GridTemplateRowsOrColumnsValue`](plaited_token_types.md#gridtemplaterowsorcolumnsvalue)
+Ƭ **GridTemplateValue**: [`GridTemplateAreasValue`](plaited_token_types.md#gridtemplateareasvalue) \| [`GridTemplateRowsOrColumnsValue`](plaited_token_types.md#gridtemplaterowsorcolumnsvalue)
 
 GridTemplate value type relies on the gridTemplate formatter for css tokens
 and the defaultFormat formatter for ts tokens
@@ -333,7 +660,26 @@ It is used to store grid-template-areas | grid-template-columns | grid-template-
 
 #### Defined in
 
-[index.ts:198](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L198)
+[index.ts:192](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L192)
+
+___
+
+### GridToken
+
+Ƭ **GridToken**: `Object`
+
+#### Type declaration
+
+| Name | Type |
+| :------ | :------ |
+| `$context?` | `never` |
+| `$description` | `string` |
+| `$type` | ``"grid"`` |
+| `$value` | [`GridValue`](plaited_token_types.md#gridvalue) |
+
+#### Defined in
+
+[index.ts:411](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L411)
 
 ___
 
@@ -347,7 +693,17 @@ Uses the nullFormat formatter for CSS and the ruleSet formatter for TS.
 
 #### Defined in
 
-[index.ts:207](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L207)
+[index.ts:201](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L201)
+
+___
+
+### LetterSpacingToken
+
+Ƭ **LetterSpacingToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"letterSpacing"``, [`LetterSpacingValue`](plaited_token_types.md#letterspacingvalue)\>
+
+#### Defined in
+
+[index.ts:430](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L430)
 
 ___
 
@@ -360,7 +716,17 @@ and the defaultFormat formatter for ts tokens
 
 #### Defined in
 
-[index.ts:296](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L296)
+[index.ts:290](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L290)
+
+___
+
+### LineHeightToken
+
+Ƭ **LineHeightToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"lineHeight"``, [`LineHeightValue`](plaited_token_types.md#lineheightvalue)\>
+
+#### Defined in
+
+[index.ts:432](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L432)
 
 ___
 
@@ -373,7 +739,17 @@ and the defaultFormat formatter for ts tokens
 
 #### Defined in
 
-[index.ts:301](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L301)
+[index.ts:295](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L295)
+
+___
+
+### PercentageRatioToken
+
+Ƭ **PercentageRatioToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"percentageRatio"``, [`PercentageRatioValue`](plaited_token_types.md#percentageratiovalue)\>
+
+#### Defined in
+
+[index.ts:386](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L386)
 
 ___
 
@@ -381,49 +757,89 @@ ___
 
 Ƭ **PercentageRatioValue**: \`${number}:${number}\` \| \`${number}%\` \| ``1`` \| ``0`` \| \`0.${number}\` \| [`AliasValue`](plaited_token_types.md#aliasvalue)
 
-PercentageRatio value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+PercentageRatio value type relies on the defaultFormat formatter for ts tokens and css tokens
 
 #### Defined in
 
-[index.ts:84](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L84)
+[index.ts:78](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L78)
 
 ___
 
-### PrimitiveArrayValue
+### PrimitiveLikeTokens
 
-Ƭ **PrimitiveArrayValue**: (`string` \| `number`)[] \| [`AliasValue`](plaited_token_types.md#aliasvalue)
-
-PrimitiveArray value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+Ƭ **PrimitiveLikeTokens**: [`PrimitiveToken`](plaited_token_types.md#primitivetoken) \| [`PercentageRatioToken`](plaited_token_types.md#percentageratiotoken) \| [`AlignItemsToken`](plaited_token_types.md#alignitemstoken) \| [`DisplayToken`](plaited_token_types.md#displaytoken) \| [`DistributeContentToken`](plaited_token_types.md#distributecontenttoken) \| [`FlexDirectionToken`](plaited_token_types.md#flexdirectiontoken) \| [`FlexWrapToken`](plaited_token_types.md#flexwraptoken) \| [`GridAutoFlowToken`](plaited_token_types.md#gridautoflowtoken) \| [`TimingToken`](plaited_token_types.md#timingtoken) \| [`FontStyleToken`](plaited_token_types.md#fontstyletoken) \| [`FontWeightToken`](plaited_token_types.md#fontweighttoken) \| [`TextTransformToken`](plaited_token_types.md#texttransformtoken)
 
 #### Defined in
 
-[index.ts:14](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L14)
+[index.ts:489](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L489)
+
+___
+
+### PrimitiveLikeValues
+
+Ƭ **PrimitiveLikeValues**: [`PrimitiveValue`](plaited_token_types.md#primitivevalue) \| [`PercentageRatioValue`](plaited_token_types.md#percentageratiovalue) \| [`AlignItemsValue`](plaited_token_types.md#alignitemsvalue) \| [`DisplayValue`](plaited_token_types.md#displayvalue) \| [`DistributeContentValue`](plaited_token_types.md#distributecontentvalue) \| [`FlexDirectionValue`](plaited_token_types.md#flexdirectionvalue) \| [`FlexWrapValue`](plaited_token_types.md#flexwrapvalue) \| [`GridAutoFlowValue`](plaited_token_types.md#gridautoflowvalue) \| [`TimingValue`](plaited_token_types.md#timingvalue) \| [`FontStyleValue`](plaited_token_types.md#fontstylevalue) \| [`FontWeightValue`](plaited_token_types.md#fontweightvalue) \| [`TextTransformValue`](plaited_token_types.md#texttransformvalue)
+
+#### Defined in
+
+[index.ts:503](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L503)
+
+___
+
+### PrimitiveToken
+
+Ƭ **PrimitiveToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"primitive"``, [`PrimitiveValue`](plaited_token_types.md#primitivevalue)\>
+
+#### Defined in
+
+[index.ts:374](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L374)
 
 ___
 
 ### PrimitiveValue
 
-Ƭ **PrimitiveValue**: `string` \| `number` \| [`AliasValue`](plaited_token_types.md#aliasvalue)
+Ƭ **PrimitiveValue**: `string` \| `number` \| (`string` \| `number`)[] \| [`AliasValue`](plaited_token_types.md#aliasvalue)
 
-Primitive value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+Primitive value type relies on the defaultFormat formatter for ts tokens and css tokens
 
 #### Defined in
 
-[index.ts:9](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L9)
+[index.ts:9](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L9)
 
 ___
 
-### ScalarDimensionValue
+### StaticToken
 
-Ƭ **ScalarDimensionValue**: `Object`
+Ƭ **StaticToken**<`T`, `V`\>: `Object`
 
-#### Index signature
+#### Type parameters
 
-▪ [key: `string`]: `number`
+| Name | Type |
+| :------ | :------ |
+| `T` | extends `string` |
+| `V` | extends [`DesignValue`](plaited_token_types.md#designvalue) |
+
+#### Type declaration
+
+| Name | Type |
+| :------ | :------ |
+| `$context?` | `never` |
+| `$description` | `string` |
+| `$type` | `T` |
+| `$value` | `V` |
 
 #### Defined in
 
-[index.ts:21](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L21)
+[index.ts:357](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L357)
+
+___
+
+### TextTransformToken
+
+Ƭ **TextTransformToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"textTransform"``, [`TextTransformValue`](plaited_token_types.md#texttransformvalue)\>
+
+#### Defined in
+
+[index.ts:434](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L434)
 
 ___
 
@@ -431,11 +847,21 @@ ___
 
 Ƭ **TextTransformValue**: ``"none"`` \| ``"capitalize"`` \| ``"uppercase"`` \| ``"lowercase"`` \| ``"full-width"`` \| ``"full-size-kana"`` \| [`AliasValue`](plaited_token_types.md#aliasvalue)
 
-FontWeight value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+FontWeight value type relies on the defaultFormat formatter for ts tokens and css tokens
 
 #### Defined in
 
-[index.ts:305](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L305)
+[index.ts:299](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L299)
+
+___
+
+### TimingToken
+
+Ƭ **TimingToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"timing"``, [`TimingValue`](plaited_token_types.md#timingvalue)\>
+
+#### Defined in
+
+[index.ts:418](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L418)
 
 ___
 
@@ -443,11 +869,21 @@ ___
 
 Ƭ **TimingValue**: \`${number}s\` \| \`${number}ms\` \| [`AliasValue`](plaited_token_types.md#aliasvalue)
 
-FontStyle value type relies on the fontFamily the defaultFormat formatter for ts tokens and css tokens
+FontStyle value type relies on the defaultFormat formatter for ts tokens and css tokens
 
 #### Defined in
 
-[index.ts:229](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L229)
+[index.ts:223](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L223)
+
+___
+
+### TransitionToken
+
+Ƭ **TransitionToken**: [`BaseToken`](plaited_token_types.md#basetoken)<``"transition"``, [`TransitionValue`](plaited_token_types.md#transitionvalue)\>
+
+#### Defined in
+
+[index.ts:420](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L420)
 
 ___
 
@@ -460,7 +896,26 @@ and the defaultFormat formatter for ts tokens
 
 #### Defined in
 
-[index.ts:234](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L234)
+[index.ts:228](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L228)
+
+___
+
+### TypographyToken
+
+Ƭ **TypographyToken**: `Object`
+
+#### Type declaration
+
+| Name | Type |
+| :------ | :------ |
+| `$context?` | `never` |
+| `$description` | `string` |
+| `$type` | ``"typography"`` |
+| `$value` | [`TypographyValue`](plaited_token_types.md#typographyvalue) |
+
+#### Defined in
+
+[index.ts:436](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L436)
 
 ___
 
@@ -474,4 +929,4 @@ Uses the nullFormat formatter for CSS and the ruleSet formatter for TS.
 
 #### Defined in
 
-[index.ts:318](https://github.com/plaited/plaited/blob/5b1c95d/libs/token-types/src/index.ts#L318)
+[index.ts:312](https://github.com/plaited/plaited/blob/3238787/libs/token-types/src/index.ts#L312)
