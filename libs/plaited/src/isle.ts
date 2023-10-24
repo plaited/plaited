@@ -8,7 +8,7 @@ import {
   PlaitProps,
 } from './types.js'
 import { delegatedListener } from './delegated-listener.js'
-import { sugar, SugaredElement, sugarForEach } from './use-sugar.js'
+import { assignSugar, SugaredElement, assignSugarForEach, prepareTemplate } from './use-sugar.js'
 import {
   getTriggerKey,
   matchAllEvents,
@@ -57,10 +57,7 @@ export const isle = (
             }
             const template = (this.constructor as ISLElementConstructor).template
             if(template) {
-              const { stylesheets, content } = template
-              const styles = stylesheets.size ? `<style>${[ ...stylesheets ].join('')}</style>` : ''
-              const tpl = document.createElement('template')
-              tpl.innerHTML = styles + content
+              const tpl = prepareTemplate(this.#root, template)
               this.#root.appendChild(tpl.content.cloneNode(true))
             }
             /** Warn ourselves not to overwrite the trigger method */
@@ -81,9 +78,9 @@ export const isle = (
             }
             if (this.plait) {
               this.#delegateListeners( // just connected/upgraded then delegate listeners nodes with data-trigger attribute
-                this.#root.querySelectorAll<HTMLElement>(
+                Array.from(this.#root.querySelectorAll<HTMLElement>(
                   `[${dataTrigger}]`
-                )
+                ))
               )
               const { disconnect, trigger, ...rest } = useBehavioral(
                 {
@@ -112,38 +109,36 @@ export const isle = (
               this.#disconnect()
             }
           }
-          #delegateListeners(nodes:Node[] |NodeList) {
-            nodes.forEach(el => {
-              if (el.nodeType === 1) { // Node is of type Element which in the browser mean HTMLElement | SVGElement
-                if ((el as Element).tagName === 'SLOT' && el.hasAttribute('slot'))  return // This is a nested slot we ignore it
-                !delegatedListener.has(el) &&
-                  delegatedListener.set(el, event => { // Delegated listener does not have element then delegate it's callback
-                    const triggerKey = getTriggerKey(
-                      event,
-                      el as HTMLElement | SVGElement
-                    )
-                    triggerKey
-                      /** if key is present in `data-trigger` trigger event on instance's bProgram */
-                      ? this.#trigger<Event>({
-                        type: triggerKey,
-                        detail: event,
-                      })
-                      /** if key is not present in `data-trigger` remove event listener for this event on Element */
-                      : el.removeEventListener(
-                        event.type,
-                        delegatedListener.get(el)
-                      )
-                  })
-                const triggers = (el as HTMLElement | SVGElement).dataset
-                  .trigger /** get element triggers if it has them */
-                if (triggers) {
-                  const events = matchAllEvents(triggers) /** get event type */
-                  for (const event of events) {
-                    /** loop through and set event listeners on delegated object */
-                    el.addEventListener(event, delegatedListener.get(el))
-                  }
+          #delegateListeners(nodes:Node[]) {
+            for (const el of nodes) {
+              if (el.nodeType !== 1) continue // Skip non-element nodes
+              const element = el as HTMLElement | SVGElement
+              if (element.tagName === 'SLOT' && element.hasAttribute('slot')) continue 
+              !delegatedListener.has(el) && this.#createDelegatedListener(element)
+              const triggers = element.dataset.trigger
+              if (triggers) {
+                const events = matchAllEvents(triggers) /** get event type */
+                for (const event of events) {
+                  /** loop through and set event listeners on delegated object */
+                  el.addEventListener(event, delegatedListener.get(el))
                 }
               }
+            }
+          }
+          #createDelegatedListener(el: HTMLElement | SVGElement) {
+            delegatedListener.set(el, event => { // Delegated listener does not have element then delegate it's callback
+              const triggerKey = getTriggerKey(event, el)
+              triggerKey
+                /** if key is present in `data-trigger` trigger event on instance's bProgram */
+                ? this.#trigger<Event>({
+                  type: triggerKey,
+                  detail: event,
+                })
+                /** if key is not present in `data-trigger` remove event listener for this event on Element */
+                : el.removeEventListener(
+                  event.type,
+                  delegatedListener.get(el)
+                )
             })
           }
           // Observes the addition of nodes to the shadow dom and changes to and child's data-trigger attribute
@@ -216,14 +211,11 @@ export const isle = (
             | SugaredElement<T>[] {
             const selector = `[${dataTarget}${mod}"${target}"]`
             if (all) {
-              const elements: SugaredElement<T>[] = []
-              this.#root.querySelectorAll<T>(selector)
-                .forEach(element => elements.push(Object.assign(element, sugar)))
-              return Object.assign(elements, sugarForEach)
+              return assignSugarForEach(this.#root.querySelectorAll<T>(selector))
             }
             const element = this.#root.querySelector<T>(selector)
             if (!element) return
-            return Object.assign(element, sugar)        
+            return assignSugar<T>(element)        
           }
         }   
       )

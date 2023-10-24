@@ -18,6 +18,8 @@ const joinParts = (
   children: string[]
 ) => `<${[ tag, ...attrs ].join(' ')}>${children.join('')}</${tag}>`
 
+const ensureArray = <T>(obj?: T | T[]) => Array.isArray(obj) ? obj : obj ? [ obj ] : []
+
 /** createTemplate function used for ssr */
 export const createTemplate: CreateTemplate = (tag, attrs) => {
   const {
@@ -38,14 +40,8 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
     return tag(attrs)
   }
   const stylesheets = new Set<string>()
-  if(stylesheet) {
-    Array.isArray(stylesheet)
-      ? stylesheet.forEach(s => stylesheets.add(s))
-      : stylesheets.add(stylesheet)
-  } 
-  const children = Array.isArray(_children)
-    ? _children
-    :  [ _children ].filter(Boolean)
+  stylesheet && ensureArray(stylesheet).forEach(s => !stylesheets.has(s) &&  stylesheets.add(s)) 
+  const children = ensureArray(_children)
   /** If the tag is script we must explicitly pass trusted */
   if (tag === 'script' && !trusted) {
     throw new Error("Script tag not allowed unless 'trusted' property set")
@@ -148,7 +144,7 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
     ) {
       templateChildren.push(child.content)
       for (const sheet of child.stylesheets) {
-        stylesheets.add(sheet)
+        !stylesheets.has(sheet) && stylesheets.add(sheet)
       }
       continue
     }
@@ -159,7 +155,7 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
     ) {
       rootChildren.push(child.content)
       for (const sheet of child.stylesheets) {
-        stylesheets.add(sheet)
+        !stylesheets.has(sheet) && stylesheets.add(sheet)
       }
       continue
     }
@@ -210,7 +206,7 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
       if (typeof child === 'object' && 'content' in child) {
         rootChildren.push(child.content)
         for (const sheet of child.stylesheets) {
-          stylesheets.add(sheet)
+          !stylesheets.has(sheet) && stylesheets.add(sheet)
         }
         continue
       }
@@ -232,9 +228,7 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
 export { createTemplate as h }
 
 export function Fragment({ children: _children }: Attrs) {
-  const children = Array.isArray(_children)
-    ? _children
-    :  [ _children ].filter(Boolean)
+  const children = ensureArray(_children)
   let content = ''
   const stylesheets = new Set<string>()
   const length = children.length
@@ -246,7 +240,7 @@ export function Fragment({ children: _children }: Attrs) {
     }
     content += child.content
     for (const sheet of child.stylesheets) {
-      stylesheets.add(sheet)
+      !stylesheets.has(sheet) && stylesheets.add(sheet)
     }
   }
   return {

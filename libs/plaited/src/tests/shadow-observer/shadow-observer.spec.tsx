@@ -1,13 +1,14 @@
-import { useSugar } from '../../index.js'
 import { test } from '@plaited/rite'
-import { ShadowIsland, ShadowTemplate } from './shadow.island.js'
+import { ShadowIsland } from './shadow.island.js'
 
 
 
-ShadowIsland()
+
 test('shadow observer test', async t => {
-  const body = useSugar(document.querySelector('body'))
-  body.render(<ShadowTemplate />, 'afterbegin')
+  ShadowIsland()
+  const body = document.querySelector('body')
+  body.insertAdjacentElement('beforeend', document.createElement(ShadowIsland.tag))
+  console.log('ShadowIsland', ShadowIsland.tag)
 
   let button = await t.findByAttribute(
     'data-trigger',
