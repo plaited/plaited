@@ -1,32 +1,30 @@
 /* eslint-disable no-return-assign */
 import { trueTypeOf } from '@plaited/utils'
 import { DesignToken, DesignTokenGroup } from '@plaited/token-types'
-import { GetFormatters } from './types.js' 
-export const formatList = ({
+import { FormatList } from './types.js' 
+export const formatList:FormatList = ({
   tokens,
   tokenPath = [],
   formatters,
   allTokens,
   baseFontSize,
-}: {
-  tokens: DesignTokenGroup;
-  allTokens: DesignTokenGroup;
-  tokenPath?: string[];
-  formatters: GetFormatters;
-  baseFontSize: number;
+  mediaQueries,
+  colorSchemes,
+  containerQueries,
 }) => {
   let string = ''
   if (trueTypeOf(tokens) !== 'object') {
     return string
   }
   if (Object.hasOwn(tokens, '$value')) {
-    const { $value, $type } = tokens as unknown as DesignToken
-    const formattedValue = formatters({
+    const token = tokens as unknown as DesignToken
+    const formattedValue = formatters(token, {
       tokenPath,
-      $value,
       allTokens,
       baseFontSize,
-      $type,
+      mediaQueries,
+      colorSchemes,
+      containerQueries,
     })
     string += formattedValue ? `${formattedValue}\n` : ''
   } else {

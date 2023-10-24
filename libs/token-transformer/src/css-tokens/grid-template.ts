@@ -1,12 +1,14 @@
 import {
   GridMinMaxArgs,
-  GridTemplateRowsOrColumnsValue,
   GridTemplateValue,
+  GridTemplateToken,
+  GridTemplateAreasValue,
 } from '@plaited/token-types'
 import { Formatter } from '../types.js'
-import { hasAlias } from '../resolve.js'
+import { hasAlias, resolveCSSVar } from '../resolve.js'
 import { kebabCase } from '@plaited/utils'
-import { getRem } from '../get-rem.js'
+import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'
+import { getRule, getRem } from '../utils.js'
 
 const getFitContent = ({
   func,
@@ -42,68 +44,100 @@ const getMinMax = ({
     typeof max === 'number' ? getRem(max, baseFontSize) : max
   })`
 
-export const gridTemplate: Formatter<GridTemplateValue> = (
-  { tokenPath, $value, baseFontSize }
-) => {
-  if (hasAlias($value)) return ''
-  if (typeof $value[0] === 'string' && /"(\w*)"/.test($value[0])) {
-    return `:root { --${kebabCase(tokenPath.join(' '))}: ${
-      $value.join(' ')
-    }; }`
+const isTemplateAreaValues = (
+  $value: GridTemplateValue
+): $value is GridTemplateAreasValue => typeof $value[0] === 'string' && /"(\w*)"/.test($value[0])  
+
+const gridTemplateCallback = (baseFontSize: number) => ($value: GridTemplateValue) => {
+  if (isTemplateAreaValues($value)) {
+    return $value.join(' ')
   }
-  const _value = ($value as GridTemplateRowsOrColumnsValue)
-    .reduce<string>((acc, cur) => {
-      if (typeof cur === 'number') {
-        return acc + ` ${getRem(cur, baseFontSize)}`
+  return $value.reduce<string>((acc, cur) => {
+    if (typeof cur === 'number') {
+      return acc + ` ${getRem(cur, baseFontSize)}`
+    }
+    if (typeof cur === 'string') {
+      return acc + ` ${cur}`
+    }
+    if (cur.function === 'fit-content') {
+      getFitContent({
+        acc,
+        baseFontSize,
+        func: cur.function,
+        value: cur.value,
+      })
+    }
+    if (cur.function === 'minmax') {
+      getMinMax({
+        acc,
+        baseFontSize,
+        func: cur.function,
+        min: cur.range[0],
+        max: cur.range[1],
+      })
+    }
+    if (cur.function === 'repeat') {
+      const func = cur.function
+      const tracks: string = cur.tracks.map(val => {
+        if (typeof val === 'number') {
+          return ` ${getRem(val, baseFontSize)}`
+        }
+        if (typeof val === 'string') {
+          return ` ${val}`
+        }
+        if (val.function === 'fit-content') {
+          return getFitContent({
+            baseFontSize,
+            func: val.function,
+            value: val.value,
+          })
+        }
+        if (val.function === 'minmax') {
+          return getMinMax({
+            baseFontSize,
+            func: val.function,
+            min: val.range[0],
+            max: val.range[1],
+          })
+        }
+      }).join(' ')
+      return acc + ` ${func}(${tracks.trim()})`
+    }
+    return acc
+  }, '')
+  
+}
+
+export const gridTemplate: Formatter<GridTemplateToken> = (token,{
+  tokenPath,
+  baseFontSize,
+  mediaQueries,
+  containerQueries,
+  colorSchemes,
+  allTokens,
+}) => {
+  const cb = gridTemplateCallback(baseFontSize)
+  if(isStaticToken<GridTemplateToken, GridTemplateValue>(token)) {
+    const { $value } = token
+    if (hasAlias($value)) return ''
+    const prop = kebabCase(tokenPath.join(' '))
+    return getRule({ prop, value: cb($value) })
+  }
+  const toRet: string[] = []
+  if(isContextualToken<GridTemplateToken, GridTemplateValue>(token)) {
+    const { $value, $context } = token   
+    for(const id in $value) {
+      const contextPath = [ ...tokenPath, id ]
+      const prop = kebabCase(contextPath.join(' '))
+      const contextValue = $value[id]
+      if (hasAlias(contextValue)) {
+        toRet.push(getRule({ prop, value: resolveCSSVar(contextValue, allTokens) }))
+        continue
       }
-      if (typeof cur === 'string') {
-        return acc + ` ${cur}`
+      if(isValidContext({ context: { type: $context, id }, colorSchemes, mediaQueries, containerQueries })) {
+        toRet.push(getRule({ prop, value: cb(contextValue) }))
       }
-      if (cur.function === 'fit-content') {
-        getFitContent({
-          acc,
-          baseFontSize,
-          func: cur.function,
-          value: cur.value,
-        })
-      }
-      if (cur.function === 'minmax') {
-        getMinMax({
-          acc,
-          baseFontSize,
-          func: cur.function,
-          min: cur.range[0],
-          max: cur.range[1],
-        })
-      }
-      if (cur.function === 'repeat') {
-        const func = cur.function
-        const tracks: string = cur.tracks.map(val => {
-          if (typeof val === 'number') {
-            return ` ${getRem(val, baseFontSize)}`
-          }
-          if (typeof val === 'string') {
-            return ` ${val}`
-          }
-          if (val.function === 'fit-content') {
-            return getFitContent({
-              baseFontSize,
-              func: val.function,
-              value: val.value,
-            })
-          }
-          if (val.function === 'minmax') {
-            return getMinMax({
-              baseFontSize,
-              func: val.function,
-              min: val.range[0],
-              max: val.range[1],
-            })
-          }
-        }).join(' ')
-        return acc + ` ${func}(${tracks.trim()})`
-      }
-      return acc
-    }, '')
-  return `:root { --${kebabCase(tokenPath.join(' '))}: ${_value}; }`
+    }
+  }
+  return toRet.join('\n')
 }

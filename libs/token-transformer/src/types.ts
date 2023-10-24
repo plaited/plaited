@@ -1,22 +1,54 @@
-import { $FormatterValue, DesignTokenGroup } from '@plaited/token-types'
+import { DesignTokenGroup, DesignToken, ContextValue, $Context } from '@plaited/token-types'
 
-export type Formatter<T = $FormatterValue> = (args: {
+export type Queries = {
+  [key: string]: string;
+}
+
+export type ColorSchemes = {
+  light?: 'light';
+  dark?: 'dark';
+}
+
+export type FormatList =(args:{
+  tokens: DesignTokenGroup;
+  allTokens: DesignTokenGroup;
+  tokenPath?: string[];
+  formatters: GetFormatters;
+  baseFontSize: number;
+  mediaQueries?: Queries;
+  containerQueries?: Queries;
+  colorSchemes?: ColorSchemes;
+}) => string
+
+export type FormatToken<T> = (args:{
+  $value: T
   tokenPath: string[];
-  $value: T;
   allTokens: DesignTokenGroup;
   baseFontSize: number;
+  mediaQueries?: Queries;
+  containerQueries?: Queries;
+  colorSchemes?: ColorSchemes;
 }) => string;
 
+export type Formatter<T extends DesignToken = DesignToken> = (token: T,  details: {
+  tokenPath: string[];
+  allTokens: DesignTokenGroup;
+  baseFontSize: number;
+  mediaQueries?: Queries;
+  containerQueries?: Queries;
+  colorSchemes?: ColorSchemes;
+}) => string;
 
 export type GetFormatters = <
   T extends DesignTokenGroup = DesignTokenGroup,
-  F extends $FormatterValue = $FormatterValue,
->(args: {
+  F extends DesignToken = DesignToken,
+>(token: F, details: {
   tokenPath: string[];
-  $value: F;
   allTokens: T;
   baseFontSize: number;
-  $type: string;
+  mediaQueries?: Queries;
+  containerQueries?: Queries;
+  colorSchemes?: ColorSchemes;
 }) => string;
 
 export type TransformerParams = {
@@ -26,4 +58,10 @@ export type TransformerParams = {
   baseFontSize?: number;
   /** extend token formatters by passing in custom formatter */
   formatters?: GetFormatters;
+  /** named media queries */
+  mediaQueries?: Queries;
+  /** container queries */
+  containerQueries?: Queries;
+  /** color schemes */
+  colorSchemes?: ColorSchemes;
 }

@@ -19,7 +19,7 @@ const deduplicate = (css: string) => {
     map.set(selector, new Set<string>([ rule ]))
   }
   return [ ...map ].flatMap(([ key, val ]) => {
-    return [ key, '{', ...val, '}' ]
+    return [ key, '{', ...val, key.startsWith('@') ? '}}' : '}' ]
   }).join('')
 }
 
@@ -27,12 +27,18 @@ export const transformCssTokens = ({
   tokens,
   baseFontSize = defaultBaseFontSize,
   formatters = defaultCSSFormatters,
+  mediaQueries,
+  colorSchemes,
+  containerQueries,
 }: TransformerParams) => {
   const content = formatList({
     tokens,
     allTokens: tokens,
     baseFontSize,
     formatters,
+    mediaQueries,
+    colorSchemes,
+    containerQueries,
   })
   return deduplicate(content)
 }

@@ -2,7 +2,7 @@
  * Utility helpers for resolving aliased values in tokens object
  */
 
-import { DesignToken, DesignTokenGroup } from '@plaited/token-types'
+import { DesignToken, DesignTokenGroup, AliasValue } from '@plaited/token-types'
 import { camelCase, kebabCase } from '@plaited/utils'
 
 const getResolvedValue = (
@@ -36,7 +36,7 @@ const getResolvedValue = (
   return
 }
 
-export const hasAlias = ($value: unknown) => {
+export const hasAlias = ($value: unknown): $value is AliasValue => {
   if (typeof $value !== 'string') return false
   const regex = /^(?:\{)([^"]*?)(?:\})$/
   return regex.test($value)

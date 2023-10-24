@@ -1,26 +1,29 @@
-import { DimensionLikeTokens, DimensionLikeValues } from '@plaited/token-types'
+import {
+  ColorToken,
+  ColorValue,
+} from '@plaited/token-types'
 import { Formatter } from '../types.js'
 import { hasAlias, resolveCSSVar } from '../resolve.js'
 import { kebabCase } from '@plaited/utils'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'
-import { getRule, getRem } from '../utils.js'
+import { getRule, getColor } from '../utils.js'
 
-export const dimension: Formatter<DimensionLikeTokens> = (token, { 
-  tokenPath,
-  baseFontSize,
-  containerQueries,
-  colorSchemes,
-  mediaQueries,
+
+export const color:Formatter<ColorToken> =(token, {
   allTokens,
+  tokenPath,
+  colorSchemes,
+  containerQueries,
+  mediaQueries,
 }) => {
-  if(isStaticToken<DimensionLikeTokens, DimensionLikeValues>(token)) {
+  if(isStaticToken<ColorToken, ColorValue>(token)) {
     const { $value } = token
     if (hasAlias($value)) return ''
     const prop = kebabCase(tokenPath.join(' '))
-    return getRule({ prop, value: getRem($value, baseFontSize) })
+    return getRule({ prop, value: getColor($value)  })
   }
   const toRet: string[] = []
-  if(isContextualToken<DimensionLikeTokens, DimensionLikeValues>(token)) {
+  if(isContextualToken<ColorToken, ColorValue>(token)) {
     const { $value, $context } = token   
     for(const id in $value) {
       const contextPath = [ ...tokenPath, id ]
@@ -31,7 +34,7 @@ export const dimension: Formatter<DimensionLikeTokens> = (token, {
         continue
       }
       if(isValidContext({ context: { type: $context, id }, colorSchemes, mediaQueries, containerQueries })) {
-        toRet.push(getRule({ prop, value: getRem(contextValue, baseFontSize) }))
+        toRet.push(getRule({ prop, value: getColor(contextValue) }))
       }
     }
   }
