@@ -1,4 +1,4 @@
-import { PlaitedElement, Template, dataTrigger, Attrs } from '@plaited/jsx'
+import { FT, Template, dataTrigger, Attrs } from '@plaited/jsx'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const shallowCompare = <T extends Record<string, any> = Record<string,any>>(
@@ -25,8 +25,8 @@ const shallowCompare = <T extends Record<string, any> = Record<string,any>>(
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const memo = <T extends Record<string, any> = Record<string, any>>(
-  resultFn: PlaitedElement<T>
-): PlaitedElement<T> => {
+  resultFn: FT<T>
+): FT<T> => {
   let cache: {
     lastThis: ThisParameterType<typeof resultFn>;
     lastProps:Attrs<T>;

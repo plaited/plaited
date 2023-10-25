@@ -70,15 +70,6 @@ const updateAttributes = (element: HTMLElement | SVGElement, attr: string, val: 
   }
 }
 
-const insertAdjacentElement = (
-  position: Position,
-  template: HTMLTemplateElement,
-  element: HTMLElement | SVGElement
-) => {
-  element.insertAdjacentElement(position, template)
-  template.replaceWith(template.content)
-}
-
 const sugar = {
   render(
     tpl: Template,
@@ -89,8 +80,8 @@ const sugar = {
     const template = prepareTemplate(element.getRootNode() as ShadowRoot, tpl)
     if (position) {
       raf ? requestAnimationFrame(() => {
-        insertAdjacentElement(position, template, element)
-      }) : insertAdjacentElement(position, template, element)
+        element.insertAdjacentElement(position, template).replaceWith(template.content)
+      }) : element.insertAdjacentElement(position, template).replaceWith(template.content)
       return element
     }
     raf ? requestAnimationFrame(() => {

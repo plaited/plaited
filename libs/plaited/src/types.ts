@@ -5,14 +5,14 @@ import {
   Trigger,
   TriggerArgs,
 } from '@plaited/behavioral'
-import { SugaredElement } from './use-sugar.js'
+import { SugaredElement } from './sugar.js'
 import { Template } from '@plaited/jsx'
 
 export type Plait = (props: PlaitProps) => void | Promise<void>
 
 export type Disconnect = () => void;
 
-export type ISLElementOptions = {
+export type PlaitedElementOptions = {
   /** define wether island's custom element is open or closed. @defaultValue 'open'*/
   mode?: 'open' | 'closed';
   /** configure whether to delegate focus or not @defaultValue 'true' */
@@ -28,7 +28,7 @@ export type ISLElementOptions = {
   /** the element tag you want to use */
   tag: `${string}-${string}`;
 };
-export interface ISLElement extends HTMLElement {
+export interface PlaitedElement extends HTMLElement {
   internals_: ElementInternals
   plait?(props: PlaitProps): void | Promise<void>;
   connectedCallback?(): void;
@@ -63,12 +63,13 @@ export type PlaitProps = {
    * // the shadowRoot of the element instance
    * const shadowEl = host.shadowRoot.querySelector('div')
    */
-  host: ISLElement;
+  host: PlaitedElement;
 } & ReturnType<typeof bProgram>;
 
-export interface ISLElementConstructor {
+export interface PlaitedElementConstructor {
   template?: Template;
-  new (): ISLElement;
+  observedTriggers?: Record<string, string>
+  new (): PlaitedElement;
 }
 
 export type SendMessage = (recipient: string, detail: TriggerArgs) => void;

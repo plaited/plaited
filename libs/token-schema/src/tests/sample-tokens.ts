@@ -3,32 +3,32 @@ export const tokens: DesignTokenGroup = {
   size: {
     x1: {
       $value: {
-        static: 2,
+        tv: 4,
         mobile: 2,
         desktop: 2,
-        tv: 4,
       },
       $type: 'dimension',
       $description: 'mock description',
+      $context: 'media-query',
     },
     x2: {
       $value: {
-        static: 6,
-        mobile: 8,
         desktop: 6,
+        mobile: 8,
         tv: 8,
       },
       $type: 'dimension',
+      $context: 'media-query',
       $description: 'mock description',
     },
     x3: {
       $value: {
-        static: 12,
-        mobile: 16,
         desktop: 12,
         tv: 14,
+        mobile: 16,
       },
       $type: 'dimension',
+      $context: 'media-query',
       $description: 'mock description',
     },
     s3: {
@@ -40,17 +40,29 @@ export const tokens: DesignTokenGroup = {
   backgroundColor: {
     purple: {
       x1: {
-        $value: '#4c00b0',
+        $value: {
+          l: '39%',
+          c: 0.22184604903824146,
+          h: 289.1379241925685,
+        },
         $type: 'color',
         $description: 'mock description',
       },
       x2: {
-        $value: '#7600bc',
+        $value: {
+          l: '45.38%',
+          c: 0.236,
+          h: 304.59,
+        },
         $type: 'color',
         $description: 'mock description',
       },
       x3: {
-        $value: '#8a00c2',
+        $value: {
+          l: '48.67%',
+          c: 0.245,
+          h: 310.63,
+        },
         $type: 'color',
         $description: 'mock description',
       },

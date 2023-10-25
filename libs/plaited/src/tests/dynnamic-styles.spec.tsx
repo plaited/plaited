@@ -1,5 +1,5 @@
 import { test } from '@plaited/rite'
-import { isle, PlaitProps, css } from '../index.js'
+import { createComponent, PlaitProps, css } from '../index.js'
 
 test('dynamic styles', async t => {
   const body = document.querySelector('body')
@@ -16,7 +16,7 @@ test('dynamic styles', async t => {
      color: green;
    }
  `
-  const fixture = isle({ tag:'base-element' }, base => class extends base {
+  const fixture = createComponent({ tag:'base-element' }, base => class extends base {
     static template = <div data-target='target'></div>
     plait({ $ }: PlaitProps){
       const target = $<HTMLDivElement>('target')

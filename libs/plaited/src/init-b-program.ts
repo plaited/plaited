@@ -1,11 +1,11 @@
 import { bProgram, DevCallback, Strategy, Trigger } from '@plaited/behavioral'
 
-export const useBehavioral = ({
+export const initBProgram = ({
   id,
   connect,
   dev,
   strategy,
-  context,
+  host,
 }: {
   /** sets a behavioral program for island to dev and captures reactive stream logs */
   dev?: DevCallback;
@@ -19,7 +19,7 @@ export const useBehavioral = ({
    */
   id?: boolean;
   /** reference to the node instance of the Island HTMLElement calling this hook */
-  context: HTMLElement;
+  host: HTMLElement;
 }) => {
   const { trigger, ...rest } = bProgram({
     strategy,
@@ -27,8 +27,8 @@ export const useBehavioral = ({
   })
   let disconnect
   if (connect) {
-    const tagName = context.tagName.toLowerCase()
-    const _id = context.id
+    const tagName = host.tagName.toLowerCase()
+    const _id = host.id
     if (id && !_id) {
       console.error(
         `island ${tagName} is missing an id attribute and cannot communicate with messenger`

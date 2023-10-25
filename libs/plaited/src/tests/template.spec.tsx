@@ -1,5 +1,5 @@
 import { test } from '@plaited/rite'
-import { isle, css } from '../index.js'
+import { createComponent, css } from '../index.js'
 
 const [ cls, stylesheet ] = css`
 .inner {
@@ -9,7 +9,7 @@ const [ cls, stylesheet ] = css`
 
 test('template', async t => {
   const content = 'client side rendered'
-  const Template = isle(
+  const Template = createComponent(
     { tag:'template-element' },
     base => class extends base {
       static template = <div

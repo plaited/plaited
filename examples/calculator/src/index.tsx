@@ -1,5 +1,5 @@
-import {  useSugar } from 'plaited'
-import { Calculator, CalculatorTemplate } from './calculator.js'
-const root = useSugar(document.querySelector('#root'))
+import { Calculator } from './calculator.js'
 Calculator()
-root.render(<CalculatorTemplate />)
+const calc = document.createElement(Calculator.tag)
+const body = document.querySelector('body')
+body.appendChild(calc)

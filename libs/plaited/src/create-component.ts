@@ -1,34 +1,94 @@
+/**
+ * A function for instantiating PlaitedElements
+ * @param {PlaitedElementOptions} options - Options for the PlaitedElement
+ * @param {function} mixin - A function that takes a base PlaitedElementConstructor and returns a new constructor with additional functionality
+ * @returns {void}
+ * @alias cc
+ */
 import { Template, dataTarget, dataTrigger } from '@plaited/jsx'
 import { Trigger } from '@plaited/behavioral'
-import { useBehavioral } from './use-behavioral.js'
+import { initBProgram } from './init-b-program.js'
 import {
-  ISLElement,
-  ISLElementConstructor,
-  ISLElementOptions,
+  PlaitedElement,
+  PlaitedElementConstructor,
+  PlaitedElementOptions,
   PlaitProps,
 } from './types.js'
 import { delegatedListener } from './delegated-listener.js'
-import { assignSugar, SugaredElement, assignSugarForEach, prepareTemplate } from './use-sugar.js'
-import {
-  getTriggerKey,
-  matchAllEvents,
-  traverseNodes,
-} from './isle-utils.js'
+import { assignSugar, SugaredElement, assignSugarForEach, prepareTemplate } from './sugar.js'
 
+const regexp = /\b[\w-]+\b(?=->[\w-]+)/g
+// It takes the value of a data-target attribute and return all the events happening in it. minus the method identifier
+// so iof the event was data-target="click->doSomething" it would return ["click"]
+const matchAllEvents = (str: string) => {
+  return  Array.from(str.matchAll(regexp), match => match[0])
+}
+// returns the request/action name to connect our event binding to data-target="click->doSomething" it would return "doSomething"
+// note triggers are separated by spaces in the attribute data-target="click->doSomething focus->somethingElse"
+const getTriggerType = (
+  e: Event,
+  context: HTMLElement | SVGElement
+): string => {
+  const el = e.currentTarget === context
+    ? context
+    // check if closest slot from the element that invoked the event is the instances slot
+    : e.composedPath().find(slot =>
+      ((slot as Element)?.tagName === 'SLOT') && slot ===
+          context
+    )
+    ? context
+    : undefined
+
+  if (!el) return ''
+  const pre = `${e.type}->`
+  const trigger = el.dataset.trigger ?? ''
+  const key = trigger.trim().split(/\s+/).find((str: string) =>
+    str.includes(pre)
+  )
+  return key ? key.replace(pre, '') : ''
+}
+// Quickly traverse nodes observed in mutation selecting only those with data-trigger attribute
+const traverseNodes = (node: Node, arr: Node[]) => {
+  if (node.nodeType === 1) {
+    if ((node as Element).hasAttribute(dataTrigger) || node instanceof HTMLSlotElement) {
+      arr.push(node)
+    }
+    if (node.hasChildNodes()) {
+      const childNodes = node.childNodes
+      const length = childNodes.length
+      for (let i = 0; i < length; i++) {
+        traverseNodes(childNodes[i], arr)
+      }
+    }
+  }
+}
+const observedTriggersCache = new WeakMap<PlaitedElement, [string, string][]>()
+// Check if instance's constructor has any observedTriggers
+const getObservedTriggerEntries = (host: PlaitedElement) => {
+  if(observedTriggersCache.has(host)) return observedTriggersCache.get(host)
+  const observedTriggers = (host.constructor as PlaitedElementConstructor)?.observedTriggers
+  if(!observedTriggers) return
+  const entries = Object.entries(observedTriggers)
+  if(entries.length) {
+    observedTriggersCache.set(host, entries)
+    return entries
+  }
+}
 /**
- * A typescript function for instantiating Plaited Island Elements
+ * A typescript function for instantiating PlaitedElements
  */
-export const isle = (
+export const createComponent = (
   {
     mode = 'open',
     delegatesFocus = true,
     tag,
     ...bProgramOptions
-  }: ISLElementOptions,
-  mixin: (base: ISLElementConstructor) => ISLElementConstructor = base =>
+  }: PlaitedElementOptions,
+  mixin: (base: PlaitedElementConstructor) => PlaitedElementConstructor = base =>
     class extends base {}
 ) => {
   const _tag = tag.toLowerCase()
+  //  Adds a definition for Plaited Element to the custom element registry
   const define = () => {
     if (customElements.get(_tag)) {
       console.error(`${_tag} already defined`)
@@ -37,7 +97,7 @@ export const isle = (
     customElements.define(
       _tag,
       mixin(
-        class extends HTMLElement implements ISLElement {
+        class extends HTMLElement implements PlaitedElement {
           #shadowObserver?: MutationObserver
           #templateObserver?: MutationObserver
           #disconnect?: () => void
@@ -45,6 +105,7 @@ export const isle = (
           #trigger: Trigger
           plait?(props: PlaitProps): void | Promise<void>
           static template?: Template
+          static observedTriggers?: Record<string, string>
           #root: ShadowRoot
           constructor() {
             super()
@@ -55,7 +116,7 @@ export const isle = (
               /** no declarative shadow dom then create a shadowRoot */
               this.#root = this.attachShadow({ mode, delegatesFocus })
             }
-            const template = (this.constructor as ISLElementConstructor).template
+            const template = (this.constructor as PlaitedElementConstructor).template
             if(template) {
               const tpl = prepareTemplate(this.#root, template)
               this.#root.appendChild(tpl.content.cloneNode(true))
@@ -77,19 +138,20 @@ export const isle = (
                 : (this.#templateObserver = this.#createTemplateObserver())
             }
             if (this.plait) {
+              const { disconnect, trigger, ...rest } = initBProgram(
+                {
+                  host: this,
+                  ...bProgramOptions,
+                }
+              )
+              this.#trigger = trigger // listeners need trigger to be available on instance
+              this.#delegateObservedTriggers() //just connected/upgraded then delegate observed triggers
               this.#delegateListeners( // just connected/upgraded then delegate listeners nodes with data-trigger attribute
                 Array.from(this.#root.querySelectorAll<HTMLElement>(
                   `[${dataTrigger}]`
                 ))
               )
-              const { disconnect, trigger, ...rest } = useBehavioral(
-                {
-                  context: this,
-                  ...bProgramOptions,
-                }
-              )
               this.#disconnect = disconnect
-              this.#trigger = trigger
               this.#shadowObserver = this.#createShadowObserver()
               void this.plait({
                 $: this.$.bind(this),
@@ -107,6 +169,23 @@ export const isle = (
                 type: `disconnected->${this.id || this.tagName.toLowerCase()}`,
               })
               this.#disconnect()
+            }
+          }
+          #delegateObservedTriggers() {
+            const observedEntries = getObservedTriggerEntries(this)
+            if(observedEntries) {
+              !delegatedListener.has(this) && this.#createDelegatedListener(this)
+              for (const [ event ] of observedEntries) {
+                this.addEventListener(event, delegatedListener.get(this))
+              }
+            }
+          }
+          #getObservedTriggerType(el: HTMLElement | SVGElement, event:Event) {
+            if(el !== this) return
+            const entries = getObservedTriggerEntries(this)
+            if(entries) {
+              const entry = entries.find(([ key ]) => key === event.type)
+              if(entry) return entry[1]
             }
           }
           #delegateListeners(nodes:Node[]) {
@@ -127,11 +206,11 @@ export const isle = (
           }
           #createDelegatedListener(el: HTMLElement | SVGElement) {
             delegatedListener.set(el, event => { // Delegated listener does not have element then delegate it's callback
-              const triggerKey = getTriggerKey(event, el)
-              triggerKey
+              const triggerType = getTriggerType(event, el) || this.#getObservedTriggerType(el, event)
+              triggerType
                 /** if key is present in `data-trigger` trigger event on instance's bProgram */
                 ? this.#trigger<Event>({
-                  type: triggerKey,
+                  type: triggerType,
                   detail: event,
                 })
                 /** if key is not present in `data-trigger` remove event listener for this event on Element */
@@ -224,3 +303,10 @@ export const isle = (
   define.tag = _tag
   return define
 }
+
+/**
+ * This function is an alias for {@link createComponent}.
+ * @function
+ * @see {@link createComponent}
+ */
+export const cc = createComponent

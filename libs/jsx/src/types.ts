@@ -38,22 +38,27 @@ export type BaseAttrs = {
   style?: Record<string, string>;
 };
 
-
-
 export type Attrs<
   T extends AdditionalAttrs = AdditionalAttrs,
 > =
   & BaseAttrs
   & T;
 
-export type PlaitedElement<
+export type FunctionTemplate< 
   T extends Record<string, any> = Record<
     string,
     any
   >,
 > = (attrs: T & BaseAttrs) => Template;
 
-type Tag = string | `${string}-${string}` | PlaitedElement;
+export type FT< //Alias for FunctionTemplate
+T extends Record<string, any> = Record<
+  string,
+  any
+>,
+> = FunctionTemplate<T>
+
+type Tag = string | `${string}-${string}` | FT;
 
 export interface CreateTemplate {
   <T extends AdditionalAttrs>(
