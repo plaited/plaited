@@ -102,8 +102,26 @@ exports[`parse(): snapshot 1`] = `
                   "type": "string",
                 },
                 "$value": {
-                  "const": "#4c00b0",
-                  "type": "string",
+                  "properties": {
+                    "c": {
+                      "const": 0.22184604903824146,
+                      "type": "number",
+                    },
+                    "h": {
+                      "const": 289.1379241925685,
+                      "type": "number",
+                    },
+                    "l": {
+                      "const": "39%",
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "l",
+                    "c",
+                    "h",
+                  ],
+                  "type": "object",
                 },
               },
               "required": [
@@ -122,8 +140,26 @@ exports[`parse(): snapshot 1`] = `
                   "type": "string",
                 },
                 "$value": {
-                  "const": "#7600bc",
-                  "type": "string",
+                  "properties": {
+                    "c": {
+                      "const": 0.236,
+                      "type": "number",
+                    },
+                    "h": {
+                      "const": 304.59,
+                      "type": "number",
+                    },
+                    "l": {
+                      "const": "45.38%",
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "l",
+                    "c",
+                    "h",
+                  ],
+                  "type": "object",
                 },
               },
               "required": [
@@ -142,8 +178,26 @@ exports[`parse(): snapshot 1`] = `
                   "type": "string",
                 },
                 "$value": {
-                  "const": "#8a00c2",
-                  "type": "string",
+                  "properties": {
+                    "c": {
+                      "const": 0.245,
+                      "type": "number",
+                    },
+                    "h": {
+                      "const": 310.63,
+                      "type": "number",
+                    },
+                    "l": {
+                      "const": "48.67%",
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "l",
+                    "c",
+                    "h",
+                  ],
+                  "type": "object",
                 },
               },
               "required": [
@@ -410,6 +464,9 @@ exports[`parse(): snapshot 1`] = `
         },
         "x1": {
           "properties": {
+            "$context": {
+              "type": "string",
+            },
             "$description": {
               "type": "string",
             },
@@ -423,10 +480,6 @@ exports[`parse(): snapshot 1`] = `
                   "type": "number",
                 },
                 "mobile": {
-                  "const": 2,
-                  "type": "number",
-                },
-                "static": {
                   "const": 2,
                   "type": "number",
                 },
@@ -436,10 +489,9 @@ exports[`parse(): snapshot 1`] = `
                 },
               },
               "required": [
-                "static",
+                "tv",
                 "mobile",
                 "desktop",
-                "tv",
               ],
               "type": "object",
             },
@@ -448,11 +500,15 @@ exports[`parse(): snapshot 1`] = `
             "$value",
             "$type",
             "$description",
+            "$context",
           ],
           "type": "object",
         },
         "x2": {
           "properties": {
+            "$context": {
+              "type": "string",
+            },
             "$description": {
               "type": "string",
             },
@@ -469,19 +525,14 @@ exports[`parse(): snapshot 1`] = `
                   "const": 8,
                   "type": "number",
                 },
-                "static": {
-                  "const": 6,
-                  "type": "number",
-                },
                 "tv": {
                   "const": 8,
                   "type": "number",
                 },
               },
               "required": [
-                "static",
-                "mobile",
                 "desktop",
+                "mobile",
                 "tv",
               ],
               "type": "object",
@@ -490,12 +541,16 @@ exports[`parse(): snapshot 1`] = `
           "required": [
             "$value",
             "$type",
+            "$context",
             "$description",
           ],
           "type": "object",
         },
         "x3": {
           "properties": {
+            "$context": {
+              "type": "string",
+            },
             "$description": {
               "type": "string",
             },
@@ -512,20 +567,15 @@ exports[`parse(): snapshot 1`] = `
                   "const": 16,
                   "type": "number",
                 },
-                "static": {
-                  "const": 12,
-                  "type": "number",
-                },
                 "tv": {
                   "const": 14,
                   "type": "number",
                 },
               },
               "required": [
-                "static",
-                "mobile",
                 "desktop",
                 "tv",
+                "mobile",
               ],
               "type": "object",
             },
@@ -533,6 +583,7 @@ exports[`parse(): snapshot 1`] = `
           "required": [
             "$value",
             "$type",
+            "$context",
             "$description",
           ],
           "type": "object",

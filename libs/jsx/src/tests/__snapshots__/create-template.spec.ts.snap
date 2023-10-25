@@ -1,22 +1,8 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`createTemplate: Fragment PlaitedElements 1`] = `
-{
-  "content": "<li>item-0</li><li>item-1</li><li>item-2</li><li>item-3</li><li>item-4</li><li>item-5</li><li>item-6</li><li>item-7</li><li>item-8</li><li>item-9</li>",
-  "stylesheets": Set {},
-}
-`;
-
 exports[`createTemplate: Fragment of templates 1`] = `
 {
   "content": "<li>item-0</li><li>item-1</li><li>item-2</li><li>item-3</li><li>item-4</li><li>item-5</li><li>item-6</li><li>item-7</li><li>item-8</li><li>item-9</li>",
-  "stylesheets": Set {},
-}
-`;
-
-exports[`createTemplate: array of PlaitedElements 1`] = `
-{
-  "content": "<div><li>0</li><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li><li>6</li><li>7</li><li>8</li><li>9</li></div>",
   "stylesheets": Set {},
 }
 `;
@@ -205,13 +191,6 @@ exports[`createTemplate: style attribute 1`] = `
 exports[`createTemplate: trims whitespace 1`] = `
 {
   "content": "<div>trims white-space</div>",
-  "stylesheets": Set {},
-}
-`;
-
-exports[`createTemplate: with slotted PlaitedElements 1`] = `
-{
-  "content": "<c-el><template shadowrootmode="open" shadowrootdelegatesfocus="true"><slot name="slot"></slot></template><li slot="slot">slot-0</li><li slot="slot">slot-1</li><li slot="slot">slot-2</li><li slot="slot">slot-3</li><li slot="slot">slot-4</li><li slot="slot">slot-5</li><li slot="slot">slot-6</li><li slot="slot">slot-7</li><li slot="slot">slot-8</li><li slot="slot">slot-9</li></c-el>",
   "stylesheets": Set {},
 }
 `;
