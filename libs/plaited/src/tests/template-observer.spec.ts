@@ -1,4 +1,4 @@
-import { isle } from '../index.js'
+import { createComponent } from '../index.js'
 import { test } from '@plaited/rite'
 
 test('template observer', async t => {
@@ -10,7 +10,7 @@ test('template observer', async t => {
   template.innerHTML = `<h2>template content</h2>`
   template.setAttribute('shadowrootmode', 'open')
   let island = await t.findByAttribute('data-test-id', 'island', wrapper)
-  isle(
+  createComponent(
     { tag: 'template-test' },
     base =>
       class extends base {

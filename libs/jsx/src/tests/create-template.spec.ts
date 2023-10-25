@@ -3,7 +3,7 @@ import {
   createTemplate as h,
   css,
   Fragment,
-  PlaitedElement,
+  FT,
 } from '../index.js'
 
 test('createTemplate: self closing - html', () => {
@@ -61,7 +61,7 @@ test('createTemplate: data-trigger attribute', () =>
     })
   ).toMatchSnapshot())
 
-test('createTemplate: array of PlaitedElements', () =>
+test('createTemplate: array of templates', () =>
   expect(
     h('div', {
       children: Array.from(Array(10).keys()).map(n =>
@@ -129,8 +129,8 @@ console.log('[plaited] listening for file changes');
     .toMatchSnapshot()
 })
 
-test('createTemplate: with slotted PlaitedElements', () => {
-  const Cel: PlaitedElement = ({ children }) => (
+test('createTemplate: with slotted templates', () => {
+  const Cel: FT = ({ children }) => (
     h('c-el', { slots: children, children: h('slot', { name: 'slot' }) })
   )
 
@@ -143,7 +143,7 @@ test('createTemplate: with slotted PlaitedElements', () => {
   ).toMatchSnapshot()
 })
 
-test('createTemplate: Fragment PlaitedElements', () => {
+test('createTemplate: Fragment of templates', () => {
   expect(
     h(Fragment, {
       children: Array.from(Array(10).keys()).map(n =>
@@ -161,7 +161,7 @@ const span = css`
   }
 `
 
-const NestedCustomElement: PlaitedElement = ({ children, stylesheet }) =>
+const NestedCustomElement: FT = ({ children, stylesheet }) =>
   h('nested-component', {
     slots: children,
     stylesheet,
@@ -211,7 +211,7 @@ test('createTemplate: custom element with styled slotted component', () => {
   ).toMatchSnapshot()
 })
 
-const TopCustomElement: PlaitedElement = ({ children, stylesheet }) =>
+const TopCustomElement: FT = ({ children, stylesheet }) =>
   h('top-component', {
     stylesheet,
     slots: children,

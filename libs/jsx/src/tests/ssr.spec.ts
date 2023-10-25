@@ -3,7 +3,7 @@ import {
   createTemplate as h,
   css,
   Fragment,
-  PlaitedElement,
+  FT,
   ssr,
 } from '../index.js'
 
@@ -33,7 +33,7 @@ const span = css`
   }
 `
 
-const NestedCustomElement: PlaitedElement = ({ children, stylesheet }) =>
+const NestedCustomElement: FT = ({ children, stylesheet }) =>
   h('nested-component', {
     slots: children,
     stylesheet,
@@ -53,7 +53,7 @@ const slotted = css`
   }
 `
 
-const TopCustomElement: PlaitedElement = ({ children, stylesheet }) =>
+const TopCustomElement: FT = ({ children, stylesheet }) =>
   h('top-component', {
     stylesheet,
     slots: children,

@@ -1,5 +1,5 @@
 import { css } from '@plaited/jsx'
-import { isle, PlaitProps } from '../../index.js'
+import { createComponent, PlaitProps } from '../../index.js'
 import { opacityHex } from '@plaited/utils'
 import { SVG } from './noun-braids-2633610.js'
 
@@ -42,7 +42,7 @@ export const [ classes, stylesheet ] = css`
 }
 `
 
-export const ShadowIsland = isle(
+export const ShadowIsland = createComponent(
   { tag: 'shadow-island' },
   base =>
     class extends base {

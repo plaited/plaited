@@ -1,6 +1,6 @@
 import { css } from '@plaited/jsx'
 import { test } from '@plaited/rite'
-import { isle, PlaitProps, useMessenger } from '../index.js'
+import { createComponent, PlaitProps, useMessenger } from '../index.js'
 
 test('dynamic island comms', async t => {
   const [ connect, send ] = useMessenger()
@@ -14,7 +14,7 @@ test('dynamic island comms', async t => {
   width: auto;
 }`
   const wrapper = document.querySelector('body')
-  const elOne = isle(
+  const elOne = createComponent(
     {
       tag: 'dynamic-one',
       id: true,
@@ -49,7 +49,7 @@ test('dynamic island comms', async t => {
         }
       }
   )
-  const elTwo = isle(
+  const elTwo = createComponent(
     {
       tag: 'dynamic-two',
       connect,

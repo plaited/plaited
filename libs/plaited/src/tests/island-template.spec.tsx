@@ -1,8 +1,8 @@
-import { PlaitedElement, ssr } from '@plaited/jsx'
-import { isle } from '../index.js'
+import { FT, ssr } from '@plaited/jsx'
+import { createComponent } from '../index.js'
 import { test } from '@plaited/rite'
 
-const Island = isle({ tag: 'z-el' }, base => class extends base {})
+const Island = createComponent({ tag: 'z-el' }, base => class extends base {})
 
 
 test('Island.tag: shadow only', t => {
@@ -48,7 +48,7 @@ test('Island.tag: shadow, and mode closed', t => {
   })
 })
 test('Island.tag: shadow, and slots', t => {
-  const IslandTemplate: PlaitedElement = ({ children }) => (
+  const IslandTemplate: FT = ({ children }) => (
     <Island.tag slots={children}>
       <div>
         <h1>header</h1>
@@ -57,7 +57,7 @@ test('Island.tag: shadow, and slots', t => {
     </Island.tag>
   )
   t({
-    given: 'passing children to a PlaitedElement that assigns them to slot',
+    given: 'passing children to a template that assigns them to slot',
     should: 'render children outside of the template tag',
     actual:ssr(
       <IslandTemplate>
@@ -68,7 +68,7 @@ test('Island.tag: shadow, and slots', t => {
   })
 })
 test('Island.tag: shadow, and unamed slots', t => {
-  const IslandTemplate: PlaitedElement = ({ children }) => (
+  const IslandTemplate: FT = ({ children }) => (
     <Island.tag slots={children}>
       <div>
         <h1>header</h1>
@@ -77,7 +77,7 @@ test('Island.tag: shadow, and unamed slots', t => {
     </Island.tag>
   )
   t({
-    given: 'passing children to a PlaitedElement that assigns them to slot',
+    given: 'passing children to a template that assigns them to slot',
     should: 'render children outside of the template tag',
     actual:ssr(
       <IslandTemplate>
