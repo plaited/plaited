@@ -1,8 +1,8 @@
+const regexp = /\b[\w-]+\b(?=->[\w-]+)/g
 // It takes the value of a data-target attribute and return all the events happening in it. minus the method identifier
 // so iof the event was data-target="click->doSomething" it would return ["click"]
 export const matchAllEvents = (str: string) => {
-  const regexp = /(^\w+|(?:\s)\w+)(?:->)/g
-  return [ ...str.matchAll(regexp) ].flatMap(([ , event ]) => event)
+  return  Array.from(str.matchAll(regexp), match => match[0])
 }
 
 // returns the request/action name to connect our event binding to data-target="click->doSomething" it would return "doSomething"

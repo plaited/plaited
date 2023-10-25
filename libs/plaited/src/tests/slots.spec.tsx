@@ -1,6 +1,6 @@
 import { test } from '@plaited/rite'
-import {  css, PlaitedElement } from '@plaited/jsx'
-import { isle, PlaitProps, useSugar } from '../index.js'
+import {  css } from '@plaited/jsx'
+import { isle, PlaitProps } from '../index.js'
 import sinon from 'sinon'
 const [ classes, stylesheet ] = css`.row {
   display: flex;
@@ -14,10 +14,29 @@ const [ classes, stylesheet ] = css`.row {
 const slot = sinon.spy()
 const nested = sinon.spy()
 const named = sinon.spy()
-const SlotTest = isle(
+const fixture = isle(
   { tag: 'slot-test' },
   base =>
     class extends base {
+      static template =  <div className={classes.row}
+        {...stylesheet}
+      >
+        <slot data-trigger={{ click: 'slot' }}></slot>
+        <slot name='named'
+          data-trigger={{ click: 'named' }}
+        ></slot>
+        <template>
+          <div data-target='target'>template target</div>
+        </template>
+        <nested-slot slots={<slot slot='nested'
+          name='nested'
+          data-trigger={{ click: 'nested' }}
+        >
+        </slot>}
+        >
+          <slot name='nested'></slot>
+        </nested-slot>
+      </div>
       plait({ feedback }: PlaitProps) {
         feedback({
           slot() {
@@ -33,43 +52,22 @@ const SlotTest = isle(
       }
     }
 )
-SlotTest()
+//define our fixture
+fixture()
+// We need to define our nest-slot component
 isle({ tag:'nested-slot' })()
 const root = document.querySelector('body')
-const SlotTestTemplate: PlaitedElement = ({ children }) => (
-  <SlotTest.tag {...stylesheet}
-    slots={children}
-  >
-    <div className={classes.row}>
-      <slot data-trigger={{ click: 'slot' }}></slot>
-      <slot name='named'
-        data-trigger={{ click: 'named' }}
-      ></slot>
-      <template>
-        <div data-target='target'>template target</div>
-      </template>
-      <nested-slot slots={<slot slot='nested'
-        name='nested'
-        data-trigger={{ click: 'nested' }}
-      >
-      </slot>}
-      >
-        <slot name='nested'></slot>
-      </nested-slot>
-    </div>
-  </SlotTest.tag>
-)
-useSugar(root).render(
-  <SlotTestTemplate>
-    <button className={classes.button}>Slot</button>
+
+root.insertAdjacentHTML('beforeend',
+  `<${fixture.tag}>
+    <button class="${classes.button}">Slot</button>
     <button slot='named'
-      className={classes.button}
+      class="${classes.button}"
     >Named</button>
     <button slot='nested'
-      className={classes.button}
+      class="${classes.button}"
     >Nested</button>
-  </SlotTestTemplate>,
-  'beforeend'
+  </${fixture.tag}>` 
 )
 
 test('slot: default', async t => {

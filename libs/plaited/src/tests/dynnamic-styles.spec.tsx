@@ -1,10 +1,8 @@
 import { test } from '@plaited/rite'
-import { isle, PlaitProps, useSugar, css, PlaitedElement } from '../index.js'
+import { isle, PlaitProps, css } from '../index.js'
 
 test('dynamic styles', async t => {
   const body = document.querySelector('body')
-  const fixture  = document.createElement('div')
-  body.append(fixture)
   const [ cls, stylesheet ] = css`
     .noRepeat {
       color: blue;
@@ -18,7 +16,8 @@ test('dynamic styles', async t => {
      color: green;
    }
  `
-  const Base = isle({ tag:'base-element' }, base => class extends base {
+  const fixture = isle({ tag:'base-element' }, base => class extends base {
+    static template = <div data-target='target'></div>
     plait({ $ }: PlaitProps){
       const target = $<HTMLDivElement>('target')
       target.render(
@@ -47,41 +46,16 @@ test('dynamic styles', async t => {
       )
     }
   })
-  Base()
-  const Template: PlaitedElement = props => (
-    <Base.tag { ...props}>
-      <div data-target='target'></div>
-    </Base.tag>
-  )
-  useSugar(fixture).render(
-    <div><Template id='one'></Template></div>,
-    'beforeend'
-  )
-  useSugar(fixture).render(
-    <div  {...stylesheet}
-      className={cls.repeat}
-    >style tag appends more than once</div>,
-    'beforeend'
-  )
-  useSugar(fixture).render(
-    <div  {...stylesheet}
-      className={cls.repeat}
-    >style tag appends more than once</div>,
-    'beforeend'
-  )
-  const shadowOne = await t.findByAttribute('id', 'one', fixture)
-  const shadowStyles = shadowOne.shadowRoot.querySelectorAll('style').length
-  const lightStyles = fixture.querySelectorAll('style').length
+  fixture()
+  body.append(document.createElement(fixture.tag))
+
+  const target = await t.findByAttribute('data-target', 'target')
+  const root  = target.getRootNode() as ShadowRoot
+  const shadowStyles = root.querySelectorAll('style').length
   t({
     given: 'dynamic render repeat in shadow DOM',
     should: 'only append styles once',
     actual: shadowStyles,
     expected: 1,
-  })
-  t({
-    given: 'dynamic render repeat in light DOM',
-    should: 'only append styles twice',
-    actual: lightStyles,
-    expected: 2,
   })
 })

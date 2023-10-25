@@ -1,5 +1,5 @@
 import { css } from '@plaited/jsx'
-import { isle, PlaitProps, useSugar } from '../../index.js'
+import { isle, PlaitProps } from '../../index.js'
 import { opacityHex } from '@plaited/utils'
 import { SVG } from './noun-braids-2633610.js'
 
@@ -46,6 +46,29 @@ export const ShadowIsland = isle(
   { tag: 'shadow-island' },
   base =>
     class extends base {
+      static template = <div className={classes.mount}
+        {...stylesheet}
+        data-target='wrapper'
+      >
+        <div className={classes.zone}
+          data-target='zone'
+        >
+        </div>
+        <div className={classes.row}
+          data-target='button-row'
+        >
+          <button data-trigger={{ click: 'start' }}
+            className={classes.button}
+          >
+          start
+          </button>
+          <button data-trigger={{ click: 'addButton' }}
+            className={classes.button}
+          >
+          addButton
+          </button>
+        </div>
+      </div>
       plait(
         { feedback, addThreads, sync, thread, host, $, loop }: PlaitProps
       ) {
@@ -63,29 +86,19 @@ export const ShadowIsland = isle(
             sync({ request: { type: 'modifyAttributes' } }),
           ]),
         })
-        const slotTarget = useSugar(host)
         feedback({
           addSubIsland() {
             const zone = $('zone')
-            /** create a dynamic island */
-            const Sub = isle({
-              tag: 'sub-island',
-            })
-            /** define the new dynamic island */
-            Sub()
             /** render dynamic island to zone */
             zone?.render(
-              <Sub.tag {...stylesheet}>
+              <sub-island {...stylesheet}>
                 <h3 className={classes['sub-island']}>sub island</h3>
-              </Sub.tag>,
+              </sub-island>,
               'beforeend'
             )
           },
           addButton() {
-            slotTarget.render(
-              <button slot='button'>add svg</button>,
-              'beforeend'
-            )
+            host.insertAdjacentHTML('beforeend',  `<button slot='button'>add svg</button>`)
           },
           modifyAttributes() {
             const slot = $('add-svg-slot')
@@ -117,31 +130,4 @@ export const ShadowIsland = isle(
         })
       }
     }
-)
-
-export const ShadowTemplate = () => (
-  <ShadowIsland.tag {...stylesheet}>
-    <div className={classes.mount}
-      data-target='wrapper'
-    >
-      <div className={classes.zone}
-        data-target='zone'
-      >
-      </div>
-      <div className={classes.row}
-        data-target='button-row'
-      >
-        <button data-trigger={{ click: 'start' }}
-          className={classes.button}
-        >
-          start
-        </button>
-        <button data-trigger={{ click: 'addButton' }}
-          className={classes.button}
-        >
-          addButton
-        </button>
-      </div>
-    </div>
-  </ShadowIsland.tag>
 )
