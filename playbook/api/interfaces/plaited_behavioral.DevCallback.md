@@ -22,4 +22,4 @@
 
 #### Defined in
 
-[types.ts:109](https://github.com/plaited/plaited/blob/06d3d55/libs/behavioral/src/types.ts#L109)
+[types.ts:109](https://github.com/plaited/plaited/blob/e4e1a31/libs/behavioral/src/types.ts#L109)

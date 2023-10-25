@@ -9,8 +9,8 @@
 - [AdditionalAttrs](../interfaces/plaited.index.AdditionalAttrs.md)
 - [CreateTemplate](../interfaces/plaited.index.CreateTemplate.md)
 - [DevCallback](../interfaces/plaited.index.DevCallback.md)
-- [ISLElement](../interfaces/plaited.index.ISLElement.md)
-- [ISLElementConstructor](../interfaces/plaited.index.ISLElementConstructor.md)
+- [PlaitedElement](../interfaces/plaited.index.PlaitedElement.md)
+- [PlaitedElementConstructor](../interfaces/plaited.index.PlaitedElementConstructor.md)
 - [StateSnapshot](../interfaces/plaited.index.StateSnapshot.md)
 
 ### Type Aliases
@@ -23,13 +23,14 @@
 - [Children](plaited.index.md#children)
 - [Detail](plaited.index.md#detail)
 - [Disconnect](plaited.index.md#disconnect)
+- [FT](plaited.index.md#ft)
 - [Feedback](plaited.index.md#feedback)
-- [ISLElementOptions](plaited.index.md#islelementoptions)
+- [FunctionTemplate](plaited.index.md#functiontemplate)
 - [ParameterIdiom](plaited.index.md#parameteridiom)
 - [PendingBid](plaited.index.md#pendingbid)
 - [Plait](plaited.index.md#plait)
 - [PlaitProps](plaited.index.md#plaitprops)
-- [PlaitedElement](plaited.index.md#plaitedelement)
+- [PlaitedElementOptions](plaited.index.md#plaitedelementoptions)
 - [Position](plaited.index.md#position)
 - [Primitive](plaited.index.md#primitive)
 - [RequestIdiom](plaited.index.md#requestidiom)
@@ -40,7 +41,6 @@
 - [SendMessage](plaited.index.md#sendmessage)
 - [SnapshotMessage](plaited.index.md#snapshotmessage)
 - [Strategy](plaited.index.md#strategy)
-- [SugaredElement](plaited.index.md#sugaredelement)
 - [Template](plaited.index.md#template)
 - [Trigger](plaited.index.md#trigger)
 - [TriggerArgs](plaited.index.md#triggerargs)
@@ -54,16 +54,14 @@
 ### Functions
 
 - [Fragment](plaited.index.md#fragment)
-- [assignSugar](plaited.index.md#assignsugar)
-- [assignSugarForEach](plaited.index.md#assignsugarforeach)
 - [bProgram](plaited.index.md#bprogram)
+- [cc](plaited.index.md#cc)
 - [classNames](plaited.index.md#classnames)
+- [createComponent](plaited.index.md#createcomponent)
 - [createTemplate](plaited.index.md#createtemplate)
 - [css](plaited.index.md#css)
-- [isle](plaited.index.md#isle)
 - [loop](plaited.index.md#loop)
 - [memo](plaited.index.md#memo)
-- [prepareTemplate](plaited.index.md#preparetemplate)
 - [ssr](plaited.index.md#ssr)
 - [stylesheets](plaited.index.md#stylesheets)
 - [sync](plaited.index.md#sync)
@@ -140,7 +138,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:75](https://github.com/plaited/plaited/blob/06d3d55/libs/plaited/src/types.ts#L75)
+[libs/plaited/src/types.ts:76](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/types.ts#L76)
 
 ___
 
@@ -207,7 +205,23 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:13](https://github.com/plaited/plaited/blob/06d3d55/libs/plaited/src/types.ts#L13)
+[libs/plaited/src/types.ts:13](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/types.ts#L13)
+
+___
+
+### FT
+
+Ƭ **FT**<`T`\>: [`FunctionTemplate`](plaited.index.md#functiontemplate)<`T`\>
+
+#### Type parameters
+
+| Name | Type |
+| :------ | :------ |
+| `T` | extends `Record`<`string`, `any`\> = `Record`<`string`, `any`\> |
+
+#### Defined in
+
+libs/jsx/dist/types.d.ts:30
 
 ___
 
@@ -241,25 +255,33 @@ libs/behavioral/dist/types.d.ts:62
 
 ___
 
-### ISLElementOptions
+### FunctionTemplate
 
-Ƭ **ISLElementOptions**: `Object`
+Ƭ **FunctionTemplate**<`T`\>: (`attrs`: `T` & [`BaseAttrs`](plaited.index.md#baseattrs)) => [`Template`](plaited.index.md#template)
+
+#### Type parameters
+
+| Name | Type |
+| :------ | :------ |
+| `T` | extends `Record`<`string`, `any`\> = `Record`<`string`, `any`\> |
 
 #### Type declaration
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `connect?` | (`recipient`: `string`, `trigger`: [`Trigger`](plaited.index.md#trigger)) => () => `void` | messenger connect callback |
-| `delegatesFocus?` | `boolean` | configure whether to delegate focus or not **`Default Value`** ```ts 'true' ``` |
-| `dev?` | [`DevCallback`](../interfaces/plaited.index.DevCallback.md) | logger function to receive messages from behavioral program react streams |
-| `id?` | `boolean` | set to true if we wish to use id when connecting to messenger to receive messages from other islands |
-| `mode?` | ``"open"`` \| ``"closed"`` | define wether island's custom element is open or closed. **`Default Value`** ```ts 'open' ``` |
-| `strategy?` | [`Strategy`](plaited.index.md#strategy) | event selection strategy callback from behavioral library |
-| `tag` | \`${string}-${string}\` | the element tag you want to use |
+▸ (`attrs`): [`Template`](plaited.index.md#template)
+
+##### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `attrs` | `T` & [`BaseAttrs`](plaited.index.md#baseattrs) |
+
+##### Returns
+
+[`Template`](plaited.index.md#template)
 
 #### Defined in
 
-[libs/plaited/src/types.ts:15](https://github.com/plaited/plaited/blob/06d3d55/libs/plaited/src/types.ts#L15)
+libs/jsx/dist/types.d.ts:29
 
 ___
 
@@ -309,47 +331,39 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:11](https://github.com/plaited/plaited/blob/06d3d55/libs/plaited/src/types.ts#L11)
+[libs/plaited/src/types.ts:11](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/types.ts#L11)
 
 ___
 
 ### PlaitProps
 
-Ƭ **PlaitProps**: { `host`: [`ISLElement`](../interfaces/plaited.index.ISLElement.md) ; `$`: <T\>(`target`: `string`) => [`SugaredElement`](plaited.index.md#sugaredelement)<`T`\><T\>(`target`: `string`, `opts?`: { `all`: `boolean` ; `mod`: ``"="`` \| ``"~="`` \| ``"|="`` \| ``"^="`` \| ``"$="`` \| ``"*="``  }) => [`SugaredElement`](plaited.index.md#sugaredelement)<`T`\>[]  } & `ReturnType`<typeof [`bProgram`](plaited.index.md#bprogram)\>
+Ƭ **PlaitProps**: { `host`: [`PlaitedElement`](../interfaces/plaited.index.PlaitedElement.md) ; `$`: <T\>(`target`: `string`) => `SugaredElement`<`T`\><T\>(`target`: `string`, `opts?`: { `all`: `boolean` ; `mod`: ``"="`` \| ``"~="`` \| ``"|="`` \| ``"^="`` \| ``"$="`` \| ``"*="``  }) => `SugaredElement`<`T`\>[]  } & `ReturnType`<typeof [`bProgram`](plaited.index.md#bprogram)\>
 
 #### Defined in
 
-[libs/plaited/src/types.ts:50](https://github.com/plaited/plaited/blob/06d3d55/libs/plaited/src/types.ts#L50)
+[libs/plaited/src/types.ts:50](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/types.ts#L50)
 
 ___
 
-### PlaitedElement
+### PlaitedElementOptions
 
-Ƭ **PlaitedElement**<`T`\>: (`attrs`: `T` & [`BaseAttrs`](plaited.index.md#baseattrs)) => [`Template`](plaited.index.md#template)
-
-#### Type parameters
-
-| Name | Type |
-| :------ | :------ |
-| `T` | extends `Record`<`string`, `any`\> = `Record`<`string`, `any`\> |
+Ƭ **PlaitedElementOptions**: `Object`
 
 #### Type declaration
 
-▸ (`attrs`): [`Template`](plaited.index.md#template)
-
-##### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `attrs` | `T` & [`BaseAttrs`](plaited.index.md#baseattrs) |
-
-##### Returns
-
-[`Template`](plaited.index.md#template)
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `connect?` | (`recipient`: `string`, `trigger`: [`Trigger`](plaited.index.md#trigger)) => () => `void` | messenger connect callback |
+| `delegatesFocus?` | `boolean` | configure whether to delegate focus or not **`Default Value`** ```ts 'true' ``` |
+| `dev?` | [`DevCallback`](../interfaces/plaited.index.DevCallback.md) | logger function to receive messages from behavioral program react streams |
+| `id?` | `boolean` | set to true if we wish to use id when connecting to messenger to receive messages from other islands |
+| `mode?` | ``"open"`` \| ``"closed"`` | define wether island's custom element is open or closed. **`Default Value`** ```ts 'open' ``` |
+| `strategy?` | [`Strategy`](plaited.index.md#strategy) | event selection strategy callback from behavioral library |
+| `tag` | \`${string}-${string}\` | the element tag you want to use |
 
 #### Defined in
 
-libs/jsx/dist/types.d.ts:29
+[libs/plaited/src/types.ts:15](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/types.ts#L15)
 
 ___
 
@@ -359,7 +373,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:78](https://github.com/plaited/plaited/blob/06d3d55/libs/plaited/src/types.ts#L78)
+[libs/plaited/src/types.ts:79](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/types.ts#L79)
 
 ___
 
@@ -501,7 +515,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:74](https://github.com/plaited/plaited/blob/06d3d55/libs/plaited/src/types.ts#L74)
+[libs/plaited/src/types.ts:75](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/types.ts#L75)
 
 ___
 
@@ -536,22 +550,6 @@ ___
 #### Defined in
 
 libs/behavioral/dist/types.d.ts:58
-
-___
-
-### SugaredElement
-
-Ƭ **SugaredElement**<`T`\>: `T` & typeof `sugar`
-
-#### Type parameters
-
-| Name | Type |
-| :------ | :------ |
-| `T` | extends `HTMLElement` \| `SVGElement` = `HTMLElement` \| `SVGElement` |
-
-#### Defined in
-
-[libs/plaited/src/use-sugar.ts:119](https://github.com/plaited/plaited/blob/06d3d55/libs/plaited/src/use-sugar.ts#L119)
 
 ___
 
@@ -686,58 +684,6 @@ libs/jsx/dist/create-template.d.ts:5
 
 ___
 
-### assignSugar
-
-▸ **assignSugar**<`T`\>(`element`): [`SugaredElement`](plaited.index.md#sugaredelement)<`T`\>
-
-#### Type parameters
-
-| Name | Type |
-| :------ | :------ |
-| `T` | extends `HTMLElement` \| `SVGElement` = `HTMLElement` \| `SVGElement` |
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `element` | `T` |
-
-#### Returns
-
-[`SugaredElement`](plaited.index.md#sugaredelement)<`T`\>
-
-#### Defined in
-
-[libs/plaited/src/use-sugar.ts:189](https://github.com/plaited/plaited/blob/06d3d55/libs/plaited/src/use-sugar.ts#L189)
-
-___
-
-### assignSugarForEach
-
-▸ **assignSugarForEach**<`T`\>(`nodes`): [`SugaredElement`](plaited.index.md#sugaredelement)<`T`\>[] & `SugarForEach`
-
-#### Type parameters
-
-| Name | Type |
-| :------ | :------ |
-| `T` | extends `HTMLElement` \| `SVGElement` = `HTMLElement` \| `SVGElement` |
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `nodes` | `NodeListOf`<`T`\> |
-
-#### Returns
-
-[`SugaredElement`](plaited.index.md#sugaredelement)<`T`\>[] & `SugarForEach`
-
-#### Defined in
-
-[libs/plaited/src/use-sugar.ts:198](https://github.com/plaited/plaited/blob/06d3d55/libs/plaited/src/use-sugar.ts#L198)
-
-___
-
 ### bProgram
 
 ▸ **bProgram**(`«destructured»?`): `Readonly`<{ `addThreads`: (`threads`: `Record`<`string`, [`RulesFunc`](plaited.index.md#rulesfunc)\>) => `void` ; `feedback`: [`Feedback`](plaited.index.md#feedback) ; `loop`: (`rules`: [`RulesFunc`](plaited.index.md#rulesfunc)<`any`\>[], `condition?`: () => `boolean`) => [`RulesFunc`](plaited.index.md#rulesfunc)<`any`\> ; `sync`: <T\>(`set`: [`RuleSet`](plaited.index.md#ruleset)<`T`\>) => [`RulesFunc`](plaited.index.md#rulesfunc)<`T`\> ; `thread`: (...`rules`: [`RulesFunc`](plaited.index.md#rulesfunc)<`any`\>[]) => [`RulesFunc`](plaited.index.md#rulesfunc)<`any`\> ; `trigger`: [`Trigger`](plaited.index.md#trigger)  }\>
@@ -760,6 +706,45 @@ libs/behavioral/dist/b-program.d.ts:3
 
 ___
 
+### cc
+
+▸ **cc**(`«destructured»`, `mixin?`): () => `void`
+
+This function is an alias for [createComponent](plaited.index.md#createcomponent).
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `«destructured»` | [`PlaitedElementOptions`](plaited.index.md#plaitedelementoptions) |
+| `mixin` | (`base`: [`PlaitedElementConstructor`](../interfaces/plaited.index.PlaitedElementConstructor.md)) => [`PlaitedElementConstructor`](../interfaces/plaited.index.PlaitedElementConstructor.md) |
+
+#### Returns
+
+`fn`
+
+▸ (): `void`
+
+##### Returns
+
+`void`
+
+| Name | Type |
+| :------ | :------ |
+| `tag` | `string` |
+
+**`Function`**
+
+**`See`**
+
+[createComponent](plaited.index.md#createcomponent)
+
+#### Defined in
+
+[libs/plaited/src/create-component.ts:80](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/create-component.ts#L80)
+
+___
+
 ### classNames
 
 ▸ **classNames**(`...classes`): `string`
@@ -778,7 +763,40 @@ takes an array of conditional css class name strings and returns them concatenat
 
 #### Defined in
 
-[libs/plaited/src/class-names.ts:3](https://github.com/plaited/plaited/blob/06d3d55/libs/plaited/src/class-names.ts#L3)
+[libs/plaited/src/class-names.ts:3](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/class-names.ts#L3)
+
+___
+
+### createComponent
+
+▸ **createComponent**(`«destructured»`, `mixin?`): () => `void`
+
+A typescript function for instantiating PlaitedElements
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `«destructured»` | [`PlaitedElementOptions`](plaited.index.md#plaitedelementoptions) |
+| `mixin` | (`base`: [`PlaitedElementConstructor`](../interfaces/plaited.index.PlaitedElementConstructor.md)) => [`PlaitedElementConstructor`](../interfaces/plaited.index.PlaitedElementConstructor.md) |
+
+#### Returns
+
+`fn`
+
+▸ (): `void`
+
+##### Returns
+
+`void`
+
+| Name | Type |
+| :------ | :------ |
+| `tag` | `string` |
+
+#### Defined in
+
+[libs/plaited/src/create-component.ts:80](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/create-component.ts#L80)
 
 ___
 
@@ -807,7 +825,7 @@ createTemplate function used for ssr
 
 #### Defined in
 
-libs/jsx/dist/types.d.ts:32
+libs/jsx/dist/types.d.ts:34
 
 ___
 
@@ -831,39 +849,6 @@ readonly [`Record`<`string`, `string`\>, { `stylesheet`: `string`  }]
 #### Defined in
 
 libs/jsx/dist/css.d.ts:4
-
-___
-
-### isle
-
-▸ **isle**(`«destructured»`, `mixin?`): () => `void`
-
-A typescript function for instantiating Plaited Island Elements
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `«destructured»` | [`ISLElementOptions`](plaited.index.md#islelementoptions) |
-| `mixin` | (`base`: [`ISLElementConstructor`](../interfaces/plaited.index.ISLElementConstructor.md)) => [`ISLElementConstructor`](../interfaces/plaited.index.ISLElementConstructor.md) |
-
-#### Returns
-
-`fn`
-
-▸ (): `void`
-
-##### Returns
-
-`void`
-
-| Name | Type |
-| :------ | :------ |
-| `tag` | `string` |
-
-#### Defined in
-
-[libs/plaited/src/isle.ts:21](https://github.com/plaited/plaited/blob/06d3d55/libs/plaited/src/isle.ts#L21)
 
 ___
 
@@ -895,7 +880,7 @@ ___
 
 ### memo
 
-▸ **memo**<`T`\>(`resultFn`): [`PlaitedElement`](plaited.index.md#plaitedelement)<`T`\>
+▸ **memo**<`T`\>(`resultFn`): [`FT`](plaited.index.md#ft)<`T`\>
 
 Forked from  memoize-one
 (c) Alexander Reardon - MIT
@@ -913,36 +898,15 @@ We also do a basic shallow comparison on the object to cache function result.
 
 | Name | Type |
 | :------ | :------ |
-| `resultFn` | [`PlaitedElement`](plaited.index.md#plaitedelement)<`T`\> |
+| `resultFn` | [`FT`](plaited.index.md#ft)<`T`\> |
 
 #### Returns
 
-[`PlaitedElement`](plaited.index.md#plaitedelement)<`T`\>
+[`FT`](plaited.index.md#ft)<`T`\>
 
 #### Defined in
 
-[libs/plaited/src/memo.ts:27](https://github.com/plaited/plaited/blob/06d3d55/libs/plaited/src/memo.ts#L27)
-
-___
-
-### prepareTemplate
-
-▸ **prepareTemplate**(`root`, `«destructured»`): `HTMLTemplateElement`
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `root` | `ShadowRoot` |
-| `«destructured»` | [`Template`](plaited.index.md#template) |
-
-#### Returns
-
-`HTMLTemplateElement`
-
-#### Defined in
-
-[libs/plaited/src/use-sugar.ts:40](https://github.com/plaited/plaited/blob/06d3d55/libs/plaited/src/use-sugar.ts#L40)
+[libs/plaited/src/memo.ts:27](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/memo.ts#L27)
 
 ___
 
@@ -989,7 +953,7 @@ object with each individual sheet in an array
 
 #### Defined in
 
-[libs/plaited/src/stylesheets.ts:4](https://github.com/plaited/plaited/blob/06d3d55/libs/plaited/src/stylesheets.ts#L4)
+[libs/plaited/src/stylesheets.ts:4](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/stylesheets.ts#L4)
 
 ___
 
@@ -1080,7 +1044,7 @@ asynchronously get and set indexed db values
 
 #### Defined in
 
-[libs/plaited/src/use-indexed-db.ts:13](https://github.com/plaited/plaited/blob/06d3d55/libs/plaited/src/use-indexed-db.ts#L13)
+[libs/plaited/src/use-indexed-db.ts:13](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/use-indexed-db.ts#L13)
 
 ___
 
@@ -1103,7 +1067,7 @@ readonly [`Send`, [`Disconnect`](plaited.index.md#disconnect)]
 
 #### Defined in
 
-[libs/plaited/src/use-main.ts:6](https://github.com/plaited/plaited/blob/06d3d55/libs/plaited/src/use-main.ts#L6)
+[libs/plaited/src/use-main.ts:6](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/use-main.ts#L6)
 
 ___
 
@@ -1128,7 +1092,7 @@ readonly {}
 
 #### Defined in
 
-[libs/plaited/src/use-messenger.ts:24](https://github.com/plaited/plaited/blob/06d3d55/libs/plaited/src/use-messenger.ts#L24)
+[libs/plaited/src/use-messenger.ts:24](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/use-messenger.ts#L24)
 
 ___
 
@@ -1173,4 +1137,4 @@ const [store, setStore] = useStore<Record<string, number> | number>({ a: 1 })
 
 #### Defined in
 
-[libs/plaited/src/use-store.ts:27](https://github.com/plaited/plaited/blob/06d3d55/libs/plaited/src/use-store.ts#L27)
+[libs/plaited/src/use-store.ts:27](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/use-store.ts#L27)
