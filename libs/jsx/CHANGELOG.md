@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# 4.0.0 (2023-10-25)
+
+**Note:** Version bump only for package @plaited/jsx
+
 ## 3.3.1 (2023-10-25)
 
 **Note:** Version bump only for package @plaited/jsx
