@@ -7,7 +7,7 @@
  */
 import { Template, dataTarget, dataTrigger } from '@plaited/jsx'
 import { Trigger } from '@plaited/behavioral'
-import { useBehavioral } from './use-behavioral.js'
+import { initBProgram } from './init-b-program.js'
 import {
   PlaitedElement,
   PlaitedElementConstructor,
@@ -64,13 +64,13 @@ const traverseNodes = (node: Node, arr: Node[]) => {
 }
 const observedTriggersCache = new WeakMap<PlaitedElement, [string, string][]>()
 // Check if instance's constructor has any observedTriggers
-const getObservedTriggerEntries = (context: PlaitedElement) => {
-  if(observedTriggersCache.has(context)) return observedTriggersCache.get(context)
-  const observedTriggers = (context.constructor as PlaitedElementConstructor)?.observedTriggers
+const getObservedTriggerEntries = (host: PlaitedElement) => {
+  if(observedTriggersCache.has(host)) return observedTriggersCache.get(host)
+  const observedTriggers = (host.constructor as PlaitedElementConstructor)?.observedTriggers
   if(!observedTriggers) return
   const entries = Object.entries(observedTriggers)
   if(entries.length) {
-    observedTriggersCache.set(context, entries)
+    observedTriggersCache.set(host, entries)
     return entries
   }
 }
@@ -138,9 +138,9 @@ export const createComponent = (
                 : (this.#templateObserver = this.#createTemplateObserver())
             }
             if (this.plait) {
-              const { disconnect, trigger, ...rest } = useBehavioral(
+              const { disconnect, trigger, ...rest } = initBProgram(
                 {
-                  context: this,
+                  host: this,
                   ...bProgramOptions,
                 }
               )
