@@ -55,7 +55,7 @@ const fixture = createComponent(
 //define our fixture
 fixture()
 // We need to define our nest-slot component
-createElement({ tag:'nested-slot' })()
+createComponent({ tag:'nested-slot' })()
 const root = document.querySelector('body')
 
 root.insertAdjacentHTML('beforeend',
