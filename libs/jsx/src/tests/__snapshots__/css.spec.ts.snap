@@ -28,3 +28,16 @@ exports[`css() 2`] = `
   },
 ]
 `;
+
+exports[`css() 3`] = `
+[
+  {
+    "nested": "nested_MzQzND",
+    "nested2": "nested2_MzQzND",
+    "top": "top_MzQzND",
+  },
+  {
+    "stylesheet": ".top_MzQzND { color: red; & .nested_MzQzND { color: blue; &.nested2_MzQzND { color: green; } } }",
+  },
+]
+`;

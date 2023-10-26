@@ -2,7 +2,7 @@ import { TransformerParams } from './types.js'
 import { defaultCSSFormatters } from './css-tokens/index.js'
 import { formatList } from './format-list.js'
 import { defaultBaseFontSize } from './constants.js'
-const reduceWhitespace = (str: string) => str.replace(/(\s\s+|\n)/g, ' ')
+import { reduceWhitespace } from '@plaited/utils'
 
 const deduplicate = (css: string) => {
   const regex = /((?:.*:host|:host\([^)]*\))[^{\n]*)\{(\s*[\s\S]*?\s*)\}/gm
