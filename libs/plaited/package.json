@@ -28,8 +28,7 @@
     "./jsx-dev-runtime.js"
   ],
   "scripts": {
-    "build": "tsc --project tsconfig.json",
-    "build:watch": "yarn build --watch"
+    "build": "tsc --project tsconfig.json"
   },
   "types": "./dist/index.d.ts",
   "dependencies": {

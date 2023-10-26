@@ -40,8 +40,8 @@
   },
   "devDependencies": {
     "@plaited/comms": "4.0.0",
-    "@plaited/utils": "4.0.0",
     "@plaited/rite": "3.1.1",
+    "@plaited/utils": "4.0.0",
     "@web/dev-server": "0.3.2",
     "@web/dev-server-esbuild": "0.4.1",
     "@web/test-runner": "0.17.1",
