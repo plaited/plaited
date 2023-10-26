@@ -47,7 +47,7 @@
 
 #### Defined in
 
-[types.ts:41](https://github.com/plaited/plaited/blob/e4e1a31/libs/jsx/src/types.ts#L41)
+[types.ts:41](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/types.ts#L41)
 
 ___
 
@@ -76,7 +76,7 @@ ___
 
 #### Defined in
 
-[types.ts:23](https://github.com/plaited/plaited/blob/e4e1a31/libs/jsx/src/types.ts#L23)
+[types.ts:23](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/types.ts#L23)
 
 ___
 
@@ -86,7 +86,7 @@ ___
 
 #### Defined in
 
-[types.ts:15](https://github.com/plaited/plaited/blob/e4e1a31/libs/jsx/src/types.ts#L15)
+[types.ts:15](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/types.ts#L15)
 
 ___
 
@@ -96,7 +96,7 @@ ___
 
 #### Defined in
 
-[types.ts:17](https://github.com/plaited/plaited/blob/e4e1a31/libs/jsx/src/types.ts#L17)
+[types.ts:17](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/types.ts#L17)
 
 ___
 
@@ -112,7 +112,7 @@ ___
 
 #### Defined in
 
-[types.ts:54](https://github.com/plaited/plaited/blob/e4e1a31/libs/jsx/src/types.ts#L54)
+[types.ts:54](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/types.ts#L54)
 
 ___
 
@@ -142,7 +142,7 @@ ___
 
 #### Defined in
 
-[types.ts:47](https://github.com/plaited/plaited/blob/e4e1a31/libs/jsx/src/types.ts#L47)
+[types.ts:47](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/types.ts#L47)
 
 ___
 
@@ -152,7 +152,7 @@ ___
 
 #### Defined in
 
-[types.ts:2](https://github.com/plaited/plaited/blob/e4e1a31/libs/jsx/src/types.ts#L2)
+[types.ts:2](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/types.ts#L2)
 
 ___
 
@@ -169,7 +169,7 @@ ___
 
 #### Defined in
 
-[types.ts:10](https://github.com/plaited/plaited/blob/e4e1a31/libs/jsx/src/types.ts#L10)
+[types.ts:10](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/types.ts#L10)
 
 ## Variables
 
@@ -181,7 +181,7 @@ boolean attributes
 
 #### Defined in
 
-[constants.ts:40](https://github.com/plaited/plaited/blob/e4e1a31/libs/jsx/src/constants.ts#L40)
+[constants.ts:40](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/constants.ts#L40)
 
 ___
 
@@ -193,7 +193,7 @@ attribute used to manipulate a dom element
 
 #### Defined in
 
-[constants.ts:2](https://github.com/plaited/plaited/blob/e4e1a31/libs/jsx/src/constants.ts#L2)
+[constants.ts:2](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/constants.ts#L2)
 
 ___
 
@@ -205,7 +205,7 @@ attribute used to wire a dom element to the islands event listener
 
 #### Defined in
 
-[constants.ts:4](https://github.com/plaited/plaited/blob/e4e1a31/libs/jsx/src/constants.ts#L4)
+[constants.ts:4](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/constants.ts#L4)
 
 ## Functions
 
@@ -230,7 +230,7 @@ attribute used to wire a dom element to the islands event listener
 
 #### Defined in
 
-[create-template.ts:230](https://github.com/plaited/plaited/blob/e4e1a31/libs/jsx/src/create-template.ts#L230)
+[create-template.ts:230](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/create-template.ts#L230)
 
 ___
 
@@ -259,7 +259,7 @@ createTemplate function used for ssr
 
 #### Defined in
 
-[types.ts:64](https://github.com/plaited/plaited/blob/e4e1a31/libs/jsx/src/types.ts#L64)
+[types.ts:64](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/types.ts#L64)
 
 ___
 
@@ -282,7 +282,7 @@ readonly [`Record`<`string`, `string`\>, { `stylesheet`: `string`  }]
 
 #### Defined in
 
-[css.ts:63](https://github.com/plaited/plaited/blob/e4e1a31/libs/jsx/src/css.ts#L63)
+[css.ts:63](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/css.ts#L63)
 
 ___
 
@@ -302,4 +302,4 @@ ___
 
 #### Defined in
 
-[ssr.ts:3](https://github.com/plaited/plaited/blob/e4e1a31/libs/jsx/src/ssr.ts#L3)
+[ssr.ts:3](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/ssr.ts#L3)

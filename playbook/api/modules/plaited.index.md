@@ -138,7 +138,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:76](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/types.ts#L76)
+[libs/plaited/src/types.ts:76](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/types.ts#L76)
 
 ___
 
@@ -205,7 +205,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:13](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/types.ts#L13)
+[libs/plaited/src/types.ts:13](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/types.ts#L13)
 
 ___
 
@@ -331,7 +331,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:11](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/types.ts#L11)
+[libs/plaited/src/types.ts:11](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/types.ts#L11)
 
 ___
 
@@ -341,7 +341,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:50](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/types.ts#L50)
+[libs/plaited/src/types.ts:50](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/types.ts#L50)
 
 ___
 
@@ -363,7 +363,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:15](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/types.ts#L15)
+[libs/plaited/src/types.ts:15](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/types.ts#L15)
 
 ___
 
@@ -373,7 +373,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:79](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/types.ts#L79)
+[libs/plaited/src/types.ts:79](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/types.ts#L79)
 
 ___
 
@@ -515,7 +515,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:75](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/types.ts#L75)
+[libs/plaited/src/types.ts:75](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/types.ts#L75)
 
 ___
 
@@ -741,7 +741,7 @@ This function is an alias for [createComponent](plaited.index.md#createcomponent
 
 #### Defined in
 
-[libs/plaited/src/create-component.ts:80](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/create-component.ts#L80)
+[libs/plaited/src/create-component.ts:80](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/create-component.ts#L80)
 
 ___
 
@@ -763,7 +763,7 @@ takes an array of conditional css class name strings and returns them concatenat
 
 #### Defined in
 
-[libs/plaited/src/class-names.ts:3](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/class-names.ts#L3)
+[libs/plaited/src/class-names.ts:3](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/class-names.ts#L3)
 
 ___
 
@@ -796,7 +796,7 @@ A typescript function for instantiating PlaitedElements
 
 #### Defined in
 
-[libs/plaited/src/create-component.ts:80](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/create-component.ts#L80)
+[libs/plaited/src/create-component.ts:80](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/create-component.ts#L80)
 
 ___
 
@@ -906,7 +906,7 @@ We also do a basic shallow comparison on the object to cache function result.
 
 #### Defined in
 
-[libs/plaited/src/memo.ts:27](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/memo.ts#L27)
+[libs/plaited/src/memo.ts:27](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/memo.ts#L27)
 
 ___
 
@@ -953,7 +953,7 @@ object with each individual sheet in an array
 
 #### Defined in
 
-[libs/plaited/src/stylesheets.ts:4](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/stylesheets.ts#L4)
+[libs/plaited/src/stylesheets.ts:4](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/stylesheets.ts#L4)
 
 ___
 
@@ -1044,7 +1044,7 @@ asynchronously get and set indexed db values
 
 #### Defined in
 
-[libs/plaited/src/use-indexed-db.ts:13](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/use-indexed-db.ts#L13)
+[libs/plaited/src/use-indexed-db.ts:13](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/use-indexed-db.ts#L13)
 
 ___
 
@@ -1067,7 +1067,7 @@ readonly [`Send`, [`Disconnect`](plaited.index.md#disconnect)]
 
 #### Defined in
 
-[libs/plaited/src/use-main.ts:6](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/use-main.ts#L6)
+[libs/plaited/src/use-main.ts:6](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/use-main.ts#L6)
 
 ___
 
@@ -1092,7 +1092,7 @@ readonly {}
 
 #### Defined in
 
-[libs/plaited/src/use-messenger.ts:24](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/use-messenger.ts#L24)
+[libs/plaited/src/use-messenger.ts:24](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/use-messenger.ts#L24)
 
 ___
 
@@ -1137,4 +1137,4 @@ const [store, setStore] = useStore<Record<string, number> | number>({ a: 1 })
 
 #### Defined in
 
-[libs/plaited/src/use-store.ts:27](https://github.com/plaited/plaited/blob/e4e1a31/libs/plaited/src/use-store.ts#L27)
+[libs/plaited/src/use-store.ts:27](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/use-store.ts#L27)
