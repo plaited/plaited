@@ -1,5 +1,6 @@
 import { test } from '@plaited/rite'
-import { createComponent, css } from '../index.js'
+import { css } from '@plaited/jsx'
+import { createComponent } from '../index.js'
 
 const [ cls, stylesheet ] = css`
 .inner {

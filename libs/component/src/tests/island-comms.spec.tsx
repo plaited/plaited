@@ -1,6 +1,7 @@
 import { css } from '@plaited/jsx'
 import { test } from '@plaited/rite'
-import { createComponent, PlaitProps, useMessenger } from '../index.js'
+import { useMessenger } from '@plaited/comms'
+import { createComponent, PlaitProps } from '../index.js'
 
 test('dynamic island comms', async t => {
   const [ connect, send ] = useMessenger()

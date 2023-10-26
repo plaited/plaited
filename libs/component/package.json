@@ -1,5 +1,5 @@
 {
-  "name": "plaited",
+  "name": "@plaited/component",
   "version": "4.0.0",
   "license": "ISC",
   "engines": {
@@ -12,7 +12,7 @@
   "bugs": {
     "url": "https://github.com/plaited/plaited/issues"
   },
-  "homepage": "https://github.com/plaited/plaited/tree/main/libs/plaited#readme",
+  "homepage": "https://github.com/plaited/plaited/tree/main/libs/component#readme",
   "type": "module",
   "main": "./dist/index.js",
   "exports": {
@@ -28,15 +28,24 @@
     "./jsx-dev-runtime.js"
   ],
   "scripts": {
-    "build": "tsc --project tsconfig.json",
-    "build:watch": "yarn build --watch"
+    "build": "tsc --project tsconfig.build.json",
+    "build:watch": "yarn build --watch",
+    "test": "web-test-runner",
+    "test:watch": "yarn test --watch"
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
     "@plaited/behavioral": "4.0.0",
+    "@plaited/jsx": "4.0.0"
+  },
+  "devDependencies": {
     "@plaited/comms": "4.0.0",
-    "@plaited/component": "4.0.0",
-    "@plaited/jsx": "4.0.0",
-    "@plaited/utils": "4.0.0"
+    "@plaited/utils": "4.0.0",
+    "@plaited/rite": "3.1.1",
+    "@web/dev-server": "0.3.2",
+    "@web/dev-server-esbuild": "0.4.1",
+    "@web/test-runner": "0.17.1",
+    "@web/test-runner-core": "0.11.4",
+    "@web/test-runner-playwright": "0.10.1"
   }
 }
