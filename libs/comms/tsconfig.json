@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2022",
+    "module": "NodeNext",
+    "declaration": true,
+    "moduleResolution": "nodenext",
+    "lib": [
+      "dom",
+      "es2022"
+    ],
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "exclude": [
+    "**/dist",
+    "**/tests/"
+  ]
+}
