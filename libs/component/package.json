@@ -42,10 +42,10 @@
     "@plaited/comms": "4.0.0",
     "@plaited/rite": "3.1.1",
     "@plaited/utils": "4.0.0",
-    "@web/dev-server": "0.3.2",
-    "@web/dev-server-esbuild": "0.4.1",
-    "@web/test-runner": "0.17.1",
-    "@web/test-runner-core": "0.11.4",
-    "@web/test-runner-playwright": "0.10.1"
+    "@web/dev-server": "0.3.6",
+    "@web/dev-server-esbuild": "0.4.3",
+    "@web/test-runner": "0.17.2",
+    "@web/test-runner-core": "0.11.6",
+    "@web/test-runner-playwright": "0.10.2"
   }
 }
