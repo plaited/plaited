@@ -9,7 +9,7 @@ export const tokens: DesignTokenGroup = {
       },
       $type: 'dimension',
       $description: 'mock description',
-      $context: 'media-query',
+      $extensions: { 'plaited-context': 'media-query' },
     },
     x2: {
       $value: {
@@ -18,7 +18,7 @@ export const tokens: DesignTokenGroup = {
         tv: 8,
       },
       $type: 'dimension',
-      $context: 'media-query',
+      $extensions: { 'plaited-context': 'media-query' },
       $description: 'mock description',
     },
     x3: {
@@ -28,7 +28,7 @@ export const tokens: DesignTokenGroup = {
         mobile: 16,
       },
       $type: 'dimension',
-      $context: 'media-query',
+      $extensions: { 'plaited-context': 'media-query' },
       $description: 'mock description',
     },
     s3: {

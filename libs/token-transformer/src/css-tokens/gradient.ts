@@ -36,7 +36,7 @@ export const gradient: Formatter<GradientToken> = (token,{
   }
   const toRet: string[] = []
   if(isContextualToken<GradientToken, GradientValue>(token)) {
-    const { $value, $context } = token   
+    const { $value, $extensions: { 'plaited-context': $context } } = token   
     for(const id in $value) {
       const contextValue = $value[id]
       if (hasAlias(contextValue)) {

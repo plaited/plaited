@@ -32,7 +32,7 @@ export const border: Formatter<BorderToken> = (token, {
   }
   const toRet: string[] = []
   if(isContextualToken<BorderToken, BorderValue>(token)) {
-    const { $value, $context } = token   
+    const { $value, $extensions: { 'plaited-context': $context } } = token   
     for(const id in $value) {
       const prop = kebabCase(tokenPath.join(' '))
       const contextValue = $value[id]

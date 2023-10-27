@@ -19,7 +19,7 @@ export const dimension: Formatter<DimensionLikeTokens> = (token, {
   }
   const toRet: string[] = []
   if(isContextualToken<DimensionLikeTokens, DimensionLikeValues>(token)) {
-    const { $value, $context } = token   
+    const { $value, $extensions: { 'plaited-context': $context } } = token   
     for(const id in $value) {
       const contextValue = $value[id]
       if (hasAlias(contextValue)) {
