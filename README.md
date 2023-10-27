@@ -18,7 +18,7 @@ development libraries.
 
 **The following libraries are not recommended for usage outside the Plaited organization. They are dependencies for our Plaited libs and apps. These libraries are open sourced as reference implementation. Take as a dependency at your own risk.**
 
-- [@plaited/utils](libs/utils/README.md): browser communication utility functions based on the @plaited/behavioral interface
+- [@plaited/comms](libs/comms/README.md): browser communication utility functions based on the @plaited/behavioral interface
 - [@plaited/jsx](libs/jsx/README.md):
   - templating utility and types
   - css-in-js utility to enable templating utility's style hoisting pattern
