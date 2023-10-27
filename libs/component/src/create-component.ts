@@ -13,6 +13,7 @@ import {
   PlaitedElementConstructor,
   PlaitedElementOptions,
   PlaitProps,
+  SelectorMod,
 } from './types.js'
 import { delegatedListener } from './delegated-listener.js'
 import { assignSugar, SugaredElement, assignSugarForEach, createTemplateElement } from './sugar.js'
@@ -272,15 +273,15 @@ export const createComponent = (
           $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
             target: string,
             opts?: {
-              all: false;
-              mod: '=' | '~=' | '|=' | '^=' | '$=' | '*=';
+              all?: false;
+              mod?: SelectorMod;
             }
           ): SugaredElement<T> | undefined;
           $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
             target: string,
             opts?: {
               all: true;
-              mod: '=' | '~=' | '|=' | '^=' | '$=' | '*=';
+              mod?: SelectorMod;
             },
           ): SugaredElement<T>[];
           $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
