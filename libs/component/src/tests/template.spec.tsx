@@ -1,15 +1,15 @@
 import { test } from '@plaited/rite'
-import { css, ssr } from '@plaited/jsx'
+import { css, ssr, FT } from '@plaited/jsx'
 import { createComponent } from '../index.js'
 import { createTemplateElement } from '../sugar.js'
 
-const [ cls, stylesheet ] = css`
-.inner {
-  color: blue
-}
-`
+
 
 test('template', async t => {
+  const [ cls, stylesheet ] = css`
+  .inner {
+    color: blue
+  }`
   const content = 'client side rendered'
   const Template = createComponent(
     { tag:'template-element' },
@@ -45,46 +45,62 @@ test('template', async t => {
 })
 
 test('template existing declarative shadowdom', async t => {
-  const content = 'client side rendered but already had a declarative shadow dom'
-  const Template = createComponent(
-    { tag:'template-with-declarative-shadow-dom' },
+  const [ cls, stylesheet ] = css`
+  .hydrated {
+    color: red
+  }`
+  const Template:FT = ({ stylesheet, children }) => <div
+    data-test='inner'
+    className={cls.hydrated}
+    stylesheet={stylesheet}
+  >
+    {children}
+  </div>
+  const Fixture = createComponent(
+    { tag:'with-declarative-shadow-dom' },
     base => class extends base {
-      static template = <div
-        data-test='with-declarative-shadow-dom'
-        className={cls.inner}
-        {...stylesheet}
-      >
-        {content}
-      </div>
+      static template = <Template {...stylesheet}>after hydration</Template>
     }
   )
-  const template = createTemplateElement(ssr(<Template.tag>
-    <div
-      data-test='content'
-      className={cls.inner}
-      {...stylesheet}
-    >
-      {content}
-    </div>
-  </Template.tag>))
+  const template = createTemplateElement(ssr(
+    <Fixture.tag data-test='host'>
+      <Template>before hydration</Template>
+    </Fixture.tag>
+  ))
   const frag = document.importNode(template.content, true)
   const body = document.querySelector('body')
   body.append(frag)
-  Template()
-  const inner = await t.findByAttribute('data-test', 'with-declarative-shadow-dom')
-  const style = await t.findByText(stylesheet.stylesheet)
-  const textContent = inner.textContent
+  const host = await t.findByAttribute<HTMLElement>('data-test', 'host')
+  let inner = await t.findByAttribute('data-test', 'inner', host)
+  let style = host.shadowRoot.querySelector('style')
+  let textContent = inner.textContent
+  t({
+    given: 'before registering',
+    should: 'not have style tag',
+    actual: null,
+    expected: null,
+  })
   t({
     given: 'setting template entity',
     should: 'append div',
     actual: textContent,
-    expected: content,
+    expected: 'before hydration',
   })
+  Fixture()
+  inner = await t.findByAttribute('data-test', 'inner', host)
+  style = await t.findByText(stylesheet.stylesheet, host)
   t({
     given: 'setting template entity',
     should: 'have style tag',
     actual: style.tagName,
     expected: 'STYLE',
+  })
+  textContent = inner.textContent
+  t({
+    given: 'setting template entity',
+    should: 'append div',
+    actual: textContent,
+    expected: 'after hydration',
   })
 })
 
