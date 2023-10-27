@@ -84,4 +84,14 @@ export type BroadcastMessage = (recipient: TriggerArgs) => void;
 
 export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend';
 
+export type PlaitedComponent = {
+  (): void;
+  tag: `${string}-${string}`;
+}
 
+export type CreateComponent =  ({
+  mode,
+  delegatesFocus,
+  tag,
+  ...bProgramOptions
+}: PlaitedElementOptions, mixin?: (base: PlaitedElementConstructor) => PlaitedElementConstructor) => PlaitedComponent

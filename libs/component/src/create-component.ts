@@ -11,7 +11,7 @@ import { initBProgram } from './init-b-program.js'
 import {
   PlaitedElement,
   PlaitedElementConstructor,
-  PlaitedElementOptions,
+  CreateComponent,
   PlaitProps,
   SelectorMod,
 } from './types.js'
@@ -78,17 +78,17 @@ const getObservedTriggerEntries = (host: PlaitedElement) => {
 /**
  * A typescript function for instantiating PlaitedElements
  */
-export const createComponent = (
+export const createComponent:CreateComponent = (
   {
     mode = 'open',
     delegatesFocus = true,
     tag,
     ...bProgramOptions
-  }: PlaitedElementOptions,
-  mixin: (base: PlaitedElementConstructor) => PlaitedElementConstructor = base =>
+  },
+  mixin = base =>
     class extends base {}
 ) => {
-  const _tag = tag.toLowerCase()
+  const _tag = tag.toLowerCase() as `${string}-${string}`
   //  Adds a definition for Plaited Element to the custom element registry
   const define = () => {
     if (customElements.get(_tag)) {
