@@ -107,6 +107,7 @@ export const createComponent = (
           static template?: Template
           static observedTriggers?: Record<string, string>
           #root: ShadowRoot
+          #template = (this.constructor as PlaitedElementConstructor).template
           constructor() {
             super()
             this.internals_ = this.attachInternals()
@@ -116,9 +117,8 @@ export const createComponent = (
               /** no declarative shadow dom then create a shadowRoot */
               this.#root = this.attachShadow({ mode, delegatesFocus })
             }
-            const template = (this.constructor as PlaitedElementConstructor).template
-            if(template) {
-              const { content, stylesheets } = template
+            if(this.#template) {
+              const { content, stylesheets } = this.#template
               const adoptedStyleSheets: CSSStyleSheet[]  = []
               for(const style of stylesheets) {
                 const sheet = new CSSStyleSheet()
@@ -131,10 +131,7 @@ export const createComponent = (
             }
           }
           connectedCallback() {
-            if (
-              (this.constructor as PlaitedElementConstructor).template ||
-              !this.internals_.shadowRoot?.firstChild
-            ) {
+            if (!this.#template || !this.internals_.shadowRoot?.firstChild) {
               const template = this.querySelector<HTMLTemplateElement>(
                 'template[shadowrootmode]'
               )
