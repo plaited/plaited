@@ -5,7 +5,7 @@
  * @returns {void}
  * @alias cc
  */
-import { Template, dataTarget, dataTrigger, ssr } from '@plaited/jsx'
+import { Template, dataTarget, dataTrigger } from '@plaited/jsx'
 import { Trigger } from '@plaited/behavioral'
 import { initBProgram } from './init-b-program.js'
 import {
@@ -118,7 +118,11 @@ export const createComponent = (
             }
             const template = (this.constructor as PlaitedElementConstructor).template
             if(template) {
-              const tpl = createTemplateElement(ssr(template))
+              const { content, stylesheets } = template
+              const style = stylesheets.size
+                ? `<style>${[ ...stylesheets ].join('')}</style>`
+                : ''
+              const tpl = createTemplateElement(style + content)
               this.#root.replaceChildren(tpl.content.cloneNode(true))
             }
           }
