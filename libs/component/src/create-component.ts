@@ -5,7 +5,7 @@
  * @returns {void}
  * @alias cc
  */
-import { Template, dataTarget, dataTrigger } from '@plaited/jsx'
+import { Template, dataTarget, dataTrigger, ssr } from '@plaited/jsx'
 import { Trigger } from '@plaited/behavioral'
 import { initBProgram } from './init-b-program.js'
 import {
@@ -15,7 +15,7 @@ import {
   PlaitProps,
 } from './types.js'
 import { delegatedListener } from './delegated-listener.js'
-import { assignSugar, SugaredElement, assignSugarForEach, prepareTemplate } from './sugar.js'
+import { assignSugar, SugaredElement, assignSugarForEach, createTemplateElement } from './sugar.js'
 
 const regexp = /\b[\w-]+\b(?=->[\w-]+)/g
 // It takes the value of a data-target attribute and return all the events happening in it. minus the method identifier
@@ -118,14 +118,8 @@ export const createComponent = (
             }
             const template = (this.constructor as PlaitedElementConstructor).template
             if(template) {
-              const tpl = prepareTemplate(this.#root, template)
-              this.#root.appendChild(tpl.content.cloneNode(true))
-            }
-            /** Warn ourselves not to overwrite the trigger method */
-            if (this.#trigger !== this.constructor.prototype.trigger) {
-              throw new Error(
-                'trigger cannot be overridden in a subclass.'
-              )
+              const tpl = createTemplateElement(ssr(template))
+              this.#root.replaceChildren(tpl.content.cloneNode(true))
             }
           }
           connectedCallback() {

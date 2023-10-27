@@ -37,14 +37,18 @@ if (typeof window !== 'undefined' && window.DOMParser) {
   parser = new DOMParser()
 }
 
-export const prepareTemplate = (root:ShadowRoot, { stylesheets, content }: Template): HTMLTemplateElement => {
-  if(stylesheets.size) {
-    updateShadowRootStyles(root, stylesheets)
-  }
+export const createTemplateElement = (content: string) => {
   const fragment = parser.parseFromString(`<template>${content}</template>`, 'text/html', {
     includeShadowRoots: true,
   })
   return fragment.head.firstChild as HTMLTemplateElement
+}
+
+const prepareTemplate = (root:ShadowRoot, { stylesheets, content }: Template): HTMLTemplateElement => {
+  if(stylesheets.size) {
+    updateShadowRootStyles(root, stylesheets)
+  }
+  return createTemplateElement(content)
 }
 
 const updateAttributes = (element: HTMLElement | SVGElement, attr: string, val: string | null | number | boolean) => {
