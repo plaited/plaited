@@ -131,7 +131,10 @@ export const createComponent = (
             }
           }
           connectedCallback() {
-            if (!this.internals_.shadowRoot?.firstChild) {
+            if (
+              (this.constructor as PlaitedElementConstructor).template ||
+              !this.internals_.shadowRoot?.firstChild
+            ) {
               const template = this.querySelector<HTMLTemplateElement>(
                 'template[shadowrootmode]'
               )
