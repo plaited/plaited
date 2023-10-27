@@ -45,12 +45,12 @@ test('template', async t => {
 })
 
 test('template existing declarative shadowdom', async t => {
-  const content = 'client side rendered'
+  const content = 'client side rendered but already had a declarative shadow dom'
   const Template = createComponent(
     { tag:'template-with-declarative-shadow-dom' },
     base => class extends base {
       static template = <div
-        data-test='content'
+        data-test='with-declarative-shadow-dom'
         className={cls.inner}
         {...stylesheet}
       >
@@ -71,7 +71,7 @@ test('template existing declarative shadowdom', async t => {
   const body = document.querySelector('body')
   body.append(frag)
   Template()
-  const inner = await t.findByAttribute('data-test', 'content')
+  const inner = await t.findByAttribute('data-test', 'with-declarative-shadow-dom')
   const style = await t.findByText(stylesheet.stylesheet)
   const textContent = inner.textContent
   t({
