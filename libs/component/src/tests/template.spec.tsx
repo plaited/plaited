@@ -72,13 +72,13 @@ test('template existing declarative shadowdom', async t => {
   body.append(frag)
   const host = await t.findByAttribute<HTMLElement>('data-test', 'host')
   let inner = await t.findByAttribute('data-test', 'inner', host)
-  let style = host.shadowRoot.querySelector('style')
+  let style = await t.findByText(stylesheet.stylesheet, host)
   let textContent = inner.textContent
   t({
     given: 'before registering',
     should: 'not have style tag',
-    actual: null,
-    expected: null,
+    actual: style,
+    expected: undefined,
   })
   t({
     given: 'setting template entity',
