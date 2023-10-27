@@ -119,10 +119,10 @@ export const createComponent = (
             const template = (this.constructor as PlaitedElementConstructor).template
             if(template) {
               const { content, stylesheets } = template
-              const style = stylesheets.size
-                ? `<style>${[ ...stylesheets ].join('')}</style>`
-                : ''
-              const tpl = createTemplateElement(style + content)
+              const frag = stylesheets.size
+                ? `<style>${[ ...stylesheets ].join('')}</style>${content}`
+                : content
+              const tpl = createTemplateElement(frag)
               this.#root.replaceChildren(tpl.content.cloneNode(true))
             }
           }
