@@ -1,5 +1,8 @@
 import { Template, booleanAttrs  } from '@plaited/jsx'
-import { PlaitedElementConstructor, Position } from './types.js'
+import { PlaitedElementConstructor } from './types.js'
+
+
+type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend';
 /**
  * Inspired by blingblingjs
  * (c) Adam Argyle - MIT

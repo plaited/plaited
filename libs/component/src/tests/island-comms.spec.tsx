@@ -1,7 +1,7 @@
 import { css } from '@plaited/jsx'
 import { test } from '@plaited/rite'
 import { useMessenger } from '@plaited/comms'
-import { createComponent, PlaitProps } from '../index.js'
+import { component, PlaitProps } from '../index.js'
 
 test('dynamic island comms', async t => {
   const [ connect, send ] = useMessenger()
@@ -15,77 +15,68 @@ test('dynamic island comms', async t => {
   width: auto;
 }`
   const wrapper = document.querySelector('body')
-  const elOne = createComponent(
-    {
-      tag: 'dynamic-one',
-      id: true,
-      connect,
-    },
-    base =>
-      class extends base {
-        static template = <div className={classes.row}
-          {...stylesheet}
-        >
-          <button
-            data-target='button'
-            className={classes.button}
-            data-trigger={{ click: 'click' }}
-          >
+  class ElOne extends component({
+    connect,
+    tag: 'dynamic-one',
+    template: <div className={classes.row}
+      {...stylesheet}
+    >
+      <button
+        data-target='button'
+        className={classes.button}
+        data-trigger={{ click: 'click' }}
+      >
           Add "world!"
-          </button>
-        </div>
-        plait({ feedback, $ }: PlaitProps) {
-          feedback({
-            disable() {
-              const button = $<HTMLButtonElement>('button')
-              button && (button.disabled = true)
-            },
-            click() {
-              send('dynamic-two', {
-                type: 'add',
-                detail: { value: ' World!' },
-              })
-            },
+      </button>
+    </div>, 
+  }) {
+    plait({ feedback, $ }: PlaitProps) {
+      feedback({
+        disable() {
+          const button = $<HTMLButtonElement>('button')
+          button && (button.disabled = true)
+        },
+        click() {
+          send('dynamic-two', {
+            type: 'add',
+            detail: { value: ' World!' },
           })
-        }
-      }
-  )
-  const elTwo = createComponent(
-    {
-      tag: 'dynamic-two',
-      connect,
-    },
-    base =>
-      class extends base {
-        static template = <h1 data-target='header'
-          {...stylesheet}
-        >Hello</h1>
-        plait({ $, feedback, addThreads, thread, sync }: PlaitProps) {
-          addThreads({
-            onAdd: thread(
-              sync({ waitFor: { type: 'add' } }),
-              sync({ request: { type: 'disable' } })
-            ),
-          })
-          feedback({
-            disable() {
-              send('one', { type: 'disable' })
-            },
-            add(detail: { value: string }) {
-              const header = $('header')
-              header?.insertAdjacentHTML('beforeend', `${detail.value}`)
-            },
-          })
-        }
-      }
-  )
+        },
+      })
+    }
+  }
+  class ElTwo extends component({
+    connect,
+    tag: 'dynamic-two',
+    template: <h1 data-target='header'
+      {...stylesheet}
+    >Hello</h1>,
+  }) {
+    plait({ $, feedback, addThreads, thread, sync }: PlaitProps) {
+      addThreads({
+        onAdd: thread(
+          sync({ waitFor: { type: 'add' } }),
+          sync({ request: { type: 'disable' } })
+        ),
+      })
+      feedback({
+        disable() {
+          send('one', { type: 'disable' })
+        },
+        add(detail: { value: string }) {
+          const header = $('header')
+          header?.insertAdjacentHTML('beforeend', `${detail.value}`)
+        },
+      })
+    }
+  }
   // Define elements
-  elOne()
-  elTwo()
+  customElements.define(ElOne.tag, ElOne)
+  customElements.define(ElTwo.tag, ElTwo)
   // Create elements and append to dom
-  const one = document.createElement(elOne.tag)
+  const one = document.createElement(ElOne.tag)
   one.id = 'one'
-  const two = document.createElement(elTwo.tag)
+  const two = document.createElement(ElTwo.tag)
   wrapper.insertAdjacentElement('beforeend', one)
   wrapper.insertAdjacentElement('beforeend', two)
 
