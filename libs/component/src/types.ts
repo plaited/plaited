@@ -86,7 +86,7 @@ export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend';
 
 export type PlaitedComponent = {
   (): void;
-  tag: `${string}-${string}`;
+  tag: string;
 }
 
 export type CreateComponent =  ({

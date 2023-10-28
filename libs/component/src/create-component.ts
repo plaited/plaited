@@ -88,7 +88,7 @@ export const createComponent:CreateComponent = (
   mixin = base =>
     class extends base {}
 ) => {
-  const _tag = tag.toLowerCase() as `${string}-${string}`
+  const _tag = tag.toLowerCase()
   //  Adds a definition for Plaited Element to the custom element registry
   const define = () => {
     if (customElements.get(_tag)) {
