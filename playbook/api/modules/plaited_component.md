@@ -45,7 +45,7 @@
 
 #### Defined in
 
-[libs/component/src/types.ts:74](https://github.com/plaited/plaited/blob/65db093/libs/component/src/types.ts#L74)
+[libs/component/src/types.ts:74](https://github.com/plaited/plaited/blob/ff359c1/libs/component/src/types.ts#L74)
 
 ___
 
@@ -69,7 +69,7 @@ ___
 
 #### Defined in
 
-[libs/component/src/types.ts:11](https://github.com/plaited/plaited/blob/65db093/libs/component/src/types.ts#L11)
+[libs/component/src/types.ts:11](https://github.com/plaited/plaited/blob/ff359c1/libs/component/src/types.ts#L11)
 
 ___
 
@@ -79,7 +79,7 @@ ___
 
 #### Defined in
 
-[libs/component/src/types.ts:48](https://github.com/plaited/plaited/blob/65db093/libs/component/src/types.ts#L48)
+[libs/component/src/types.ts:48](https://github.com/plaited/plaited/blob/ff359c1/libs/component/src/types.ts#L48)
 
 ___
 
@@ -101,7 +101,7 @@ ___
 
 #### Defined in
 
-[libs/component/src/types.ts:13](https://github.com/plaited/plaited/blob/65db093/libs/component/src/types.ts#L13)
+[libs/component/src/types.ts:13](https://github.com/plaited/plaited/blob/ff359c1/libs/component/src/types.ts#L13)
 
 ___
 
@@ -111,7 +111,7 @@ ___
 
 #### Defined in
 
-[libs/component/src/types.ts:77](https://github.com/plaited/plaited/blob/65db093/libs/component/src/types.ts#L77)
+[libs/component/src/types.ts:77](https://github.com/plaited/plaited/blob/ff359c1/libs/component/src/types.ts#L77)
 
 ___
 
@@ -136,7 +136,7 @@ ___
 
 #### Defined in
 
-[libs/component/src/types.ts:73](https://github.com/plaited/plaited/blob/65db093/libs/component/src/types.ts#L73)
+[libs/component/src/types.ts:73](https://github.com/plaited/plaited/blob/ff359c1/libs/component/src/types.ts#L73)
 
 ## Functions
 
@@ -175,7 +175,7 @@ This function is an alias for [createComponent](plaited_component.md#createcompo
 
 #### Defined in
 
-[libs/component/src/create-component.ts:80](https://github.com/plaited/plaited/blob/65db093/libs/component/src/create-component.ts#L80)
+[libs/component/src/create-component.ts:80](https://github.com/plaited/plaited/blob/ff359c1/libs/component/src/create-component.ts#L80)
 
 ___
 
@@ -208,4 +208,4 @@ A typescript function for instantiating PlaitedElements
 
 #### Defined in
 
-[libs/component/src/create-component.ts:80](https://github.com/plaited/plaited/blob/65db093/libs/component/src/create-component.ts#L80)
+[libs/component/src/create-component.ts:80](https://github.com/plaited/plaited/blob/ff359c1/libs/component/src/create-component.ts#L80)

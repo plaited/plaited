@@ -23,7 +23,7 @@
 
 #### Defined in
 
-[constants.ts:1](https://github.com/plaited/plaited/blob/65db093/libs/token-transformer/src/constants.ts#L1)
+[constants.ts:1](https://github.com/plaited/plaited/blob/ff359c1/libs/token-transformer/src/constants.ts#L1)
 
 ## Functions
 
@@ -60,7 +60,7 @@ optimized css stylesheet of css custom properties to be applied to :root
 
 #### Defined in
 
-[types.ts:42](https://github.com/plaited/plaited/blob/65db093/libs/token-transformer/src/types.ts#L42)
+[types.ts:42](https://github.com/plaited/plaited/blob/ff359c1/libs/token-transformer/src/types.ts#L42)
 
 ___
 
@@ -98,7 +98,7 @@ inline styles in ts/js component files
 
 #### Defined in
 
-[types.ts:42](https://github.com/plaited/plaited/blob/65db093/libs/token-transformer/src/types.ts#L42)
+[types.ts:42](https://github.com/plaited/plaited/blob/ff359c1/libs/token-transformer/src/types.ts#L42)
 
 ___
 
@@ -118,7 +118,7 @@ ___
 
 #### Defined in
 
-[transform-css-tokens.ts:26](https://github.com/plaited/plaited/blob/65db093/libs/token-transformer/src/transform-css-tokens.ts#L26)
+[transform-css-tokens.ts:26](https://github.com/plaited/plaited/blob/ff359c1/libs/token-transformer/src/transform-css-tokens.ts#L26)
 
 ___
 
@@ -138,4 +138,4 @@ ___
 
 #### Defined in
 
-[transform-ts-tokens.ts:6](https://github.com/plaited/plaited/blob/65db093/libs/token-transformer/src/transform-ts-tokens.ts#L6)
+[transform-ts-tokens.ts:6](https://github.com/plaited/plaited/blob/ff359c1/libs/token-transformer/src/transform-ts-tokens.ts#L6)
