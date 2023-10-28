@@ -16,6 +16,7 @@
 - [PlaitProps](plaited_component.md#plaitprops)
 - [PlaitedElementOptions](plaited_component.md#plaitedelementoptions)
 - [Position](plaited_component.md#position)
+- [SelectorMod](plaited_component.md#selectormod)
 - [SendMessage](plaited_component.md#sendmessage)
 
 ### Functions
@@ -45,7 +46,7 @@
 
 #### Defined in
 
-[libs/component/src/types.ts:74](https://github.com/plaited/plaited/blob/5183ee2/libs/component/src/types.ts#L74)
+[libs/component/src/types.ts:82](https://github.com/plaited/plaited/blob/997575f/libs/component/src/types.ts#L82)
 
 ___
 
@@ -69,17 +70,17 @@ ___
 
 #### Defined in
 
-[libs/component/src/types.ts:11](https://github.com/plaited/plaited/blob/5183ee2/libs/component/src/types.ts#L11)
+[libs/component/src/types.ts:11](https://github.com/plaited/plaited/blob/997575f/libs/component/src/types.ts#L11)
 
 ___
 
 ### PlaitProps
 
-Ƭ **PlaitProps**: { `host`: [`PlaitedElement`](../interfaces/plaited_component.PlaitedElement.md) ; `$`: <T\>(`target`: `string`) => `SugaredElement`<`T`\><T\>(`target`: `string`, `opts?`: { `all`: `boolean` ; `mod`: ``"="`` \| ``"~="`` \| ``"|="`` \| ``"^="`` \| ``"$="`` \| ``"*="``  }) => `SugaredElement`<`T`\>[]  } & `ReturnType`<typeof [`bProgram`](plaited.index.md#bprogram)\>
+Ƭ **PlaitProps**: { `host`: [`PlaitedElement`](../interfaces/plaited_component.PlaitedElement.md) ; `$`: <T\>(`target`: `string`, `opts?`: { `all?`: ``false`` ; `mod?`: [`SelectorMod`](plaited_component.md#selectormod)  }) => `SugaredElement`<`T`\><T\>(`target`: `string`, `opts?`: { `all`: ``true`` ; `mod?`: [`SelectorMod`](plaited_component.md#selectormod)  }) => `SugaredElement`<`T`\>[]  } & `ReturnType`<typeof [`bProgram`](plaited.index.md#bprogram)\>
 
 #### Defined in
 
-[libs/component/src/types.ts:48](https://github.com/plaited/plaited/blob/5183ee2/libs/component/src/types.ts#L48)
+[libs/component/src/types.ts:49](https://github.com/plaited/plaited/blob/997575f/libs/component/src/types.ts#L49)
 
 ___
 
@@ -101,7 +102,7 @@ ___
 
 #### Defined in
 
-[libs/component/src/types.ts:13](https://github.com/plaited/plaited/blob/5183ee2/libs/component/src/types.ts#L13)
+[libs/component/src/types.ts:13](https://github.com/plaited/plaited/blob/997575f/libs/component/src/types.ts#L13)
 
 ___
 
@@ -111,7 +112,17 @@ ___
 
 #### Defined in
 
-[libs/component/src/types.ts:77](https://github.com/plaited/plaited/blob/5183ee2/libs/component/src/types.ts#L77)
+[libs/component/src/types.ts:85](https://github.com/plaited/plaited/blob/997575f/libs/component/src/types.ts#L85)
+
+___
+
+### SelectorMod
+
+Ƭ **SelectorMod**: ``"="`` \| ``"~="`` \| ``"|="`` \| ``"^="`` \| ``"$="`` \| ``"*="``
+
+#### Defined in
+
+[libs/component/src/types.ts:48](https://github.com/plaited/plaited/blob/997575f/libs/component/src/types.ts#L48)
 
 ___
 
@@ -136,7 +147,7 @@ ___
 
 #### Defined in
 
-[libs/component/src/types.ts:73](https://github.com/plaited/plaited/blob/5183ee2/libs/component/src/types.ts#L73)
+[libs/component/src/types.ts:81](https://github.com/plaited/plaited/blob/997575f/libs/component/src/types.ts#L81)
 
 ## Functions
 
@@ -175,7 +186,7 @@ This function is an alias for [createComponent](plaited_component.md#createcompo
 
 #### Defined in
 
-[libs/component/src/create-component.ts:80](https://github.com/plaited/plaited/blob/5183ee2/libs/component/src/create-component.ts#L80)
+[libs/component/src/create-component.ts:81](https://github.com/plaited/plaited/blob/997575f/libs/component/src/create-component.ts#L81)
 
 ___
 
@@ -208,4 +219,4 @@ A typescript function for instantiating PlaitedElements
 
 #### Defined in
 
-[libs/component/src/create-component.ts:80](https://github.com/plaited/plaited/blob/5183ee2/libs/component/src/create-component.ts#L80)
+[libs/component/src/create-component.ts:81](https://github.com/plaited/plaited/blob/997575f/libs/component/src/create-component.ts#L81)

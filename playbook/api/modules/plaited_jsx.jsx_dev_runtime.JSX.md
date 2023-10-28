@@ -22,4 +22,4 @@
 
 #### Defined in
 
-[jsx-dev-runtime.ts:13](https://github.com/plaited/plaited/blob/5183ee2/libs/jsx/src/jsx-dev-runtime.ts#L13)
+[jsx-dev-runtime.ts:13](https://github.com/plaited/plaited/blob/997575f/libs/jsx/src/jsx-dev-runtime.ts#L13)

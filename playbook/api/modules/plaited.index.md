@@ -41,6 +41,7 @@
 - [RulesFunc](plaited.index.md#rulesfunc)
 - [RunningBid](plaited.index.md#runningbid)
 - [SelectedMessage](plaited.index.md#selectedmessage)
+- [SelectorMod](plaited.index.md#selectormod)
 - [SendMessage](plaited.index.md#sendmessage)
 - [SnapshotMessage](plaited.index.md#snapshotmessage)
 - [Strategy](plaited.index.md#strategy)
@@ -147,7 +148,7 @@ ___
 
 #### Defined in
 
-libs/component/dist/types.d.ts:56
+libs/component/dist/types.d.ts:60
 
 ___
 
@@ -328,11 +329,11 @@ ___
 
 ### PlaitProps
 
-Ƭ **PlaitProps**: { `host`: [`PlaitedElement`](../interfaces/plaited.index.PlaitedElement.md) ; `$`: <T\>(`target`: `string`) => `SugaredElement`<`T`\><T\>(`target`: `string`, `opts?`: { `all`: `boolean` ; `mod`: ``"="`` \| ``"~="`` \| ``"|="`` \| ``"^="`` \| ``"$="`` \| ``"*="``  }) => `SugaredElement`<`T`\>[]  } & `ReturnType`<typeof [`bProgram`](plaited.index.md#bprogram)\>
+Ƭ **PlaitProps**: { `host`: [`PlaitedElement`](../interfaces/plaited.index.PlaitedElement.md) ; `$`: <T\>(`target`: `string`, `opts?`: { `all?`: ``false`` ; `mod?`: [`SelectorMod`](plaited.index.md#selectormod)  }) => `SugaredElement`<`T`\><T\>(`target`: `string`, `opts?`: { `all`: ``true`` ; `mod?`: [`SelectorMod`](plaited.index.md#selectormod)  }) => `SugaredElement`<`T`\>[]  } & `ReturnType`<typeof [`bProgram`](plaited.index.md#bprogram)\>
 
 #### Defined in
 
-libs/component/dist/types.d.ts:33
+libs/component/dist/types.d.ts:34
 
 ___
 
@@ -364,7 +365,7 @@ ___
 
 #### Defined in
 
-libs/component/dist/types.d.ts:57
+libs/component/dist/types.d.ts:61
 
 ___
 
@@ -485,6 +486,16 @@ libs/behavioral/dist/types.d.ts:15
 
 ___
 
+### SelectorMod
+
+Ƭ **SelectorMod**: ``"="`` \| ``"~="`` \| ``"|="`` \| ``"^="`` \| ``"$="`` \| ``"*="``
+
+#### Defined in
+
+libs/component/dist/types.d.ts:33
+
+___
+
 ### SendMessage
 
 Ƭ **SendMessage**: (`recipient`: `string`, `detail`: [`TriggerArgs`](plaited.index.md#triggerargs)) => `void`
@@ -506,7 +517,7 @@ ___
 
 #### Defined in
 
-libs/component/dist/types.d.ts:55
+libs/component/dist/types.d.ts:59
 
 ___
 

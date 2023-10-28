@@ -40,7 +40,7 @@ asynchronously get and set indexed db values
 
 #### Defined in
 
-[use-indexed-db.ts:12](https://github.com/plaited/plaited/blob/5183ee2/libs/comms/src/use-indexed-db.ts#L12)
+[use-indexed-db.ts:12](https://github.com/plaited/plaited/blob/997575f/libs/comms/src/use-indexed-db.ts#L12)
 
 ___
 
@@ -63,7 +63,7 @@ readonly [`Send`, () => `void`]
 
 #### Defined in
 
-[use-main.ts:5](https://github.com/plaited/plaited/blob/5183ee2/libs/comms/src/use-main.ts#L5)
+[use-main.ts:5](https://github.com/plaited/plaited/blob/997575f/libs/comms/src/use-main.ts#L5)
 
 ___
 
@@ -88,4 +88,4 @@ readonly {}
 
 #### Defined in
 
-[use-messenger.ts:23](https://github.com/plaited/plaited/blob/5183ee2/libs/comms/src/use-messenger.ts#L23)
+[use-messenger.ts:23](https://github.com/plaited/plaited/blob/997575f/libs/comms/src/use-messenger.ts#L23)

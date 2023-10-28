@@ -23,7 +23,7 @@
 
 #### Defined in
 
-libs/component/dist/types.d.ts:53
+libs/component/dist/types.d.ts:57
 
 ## Properties
 
@@ -33,7 +33,7 @@ libs/component/dist/types.d.ts:53
 
 #### Defined in
 
-libs/component/dist/types.d.ts:52
+libs/component/dist/types.d.ts:56
 
 ___
 
@@ -43,4 +43,4 @@ ___
 
 #### Defined in
 
-libs/component/dist/types.d.ts:51
+libs/component/dist/types.d.ts:55
