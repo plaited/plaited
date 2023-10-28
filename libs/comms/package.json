@@ -1,6 +1,6 @@
 {
   "name": "@plaited/comms",
-  "version": "4.0.1",
+  "version": "4.1.0",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
@@ -34,11 +34,11 @@
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/behavioral": "4.0.1",
-    "@plaited/utils": "4.0.1"
+    "@plaited/behavioral": "4.1.0",
+    "@plaited/utils": "4.1.0"
   },
   "devDependencies": {
-    "@plaited/rite": "4.0.1",
+    "@plaited/rite": "4.1.0",
     "@web/dev-server": "0.3.6",
     "@web/dev-server-esbuild": "0.4.3",
     "@web/test-runner": "0.17.2",

@@ -1,6 +1,6 @@
 {
   "name": "@plaited/token-schema",
-  "version": "4.0.1",
+  "version": "4.1.0",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
@@ -29,8 +29,8 @@
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/token-types": "4.0.1",
-    "@plaited/utils": "4.0.1"
+    "@plaited/token-types": "4.1.0",
+    "@plaited/utils": "4.1.0"
   },
   "devDependencies": {
     "@jest/globals": "29.7.0",
