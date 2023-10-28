@@ -37,7 +37,7 @@ jobs:
           node-version: 18
       - name: Build Docs
         run: |
-          yarn install
+          yarn install --no-immutable
           yarn run build
           yarn run typedocs
       - name: Push new typedocs
