@@ -23,7 +23,7 @@
 
 #### Defined in
 
-[libs/component/src/types.ts:78](https://github.com/plaited/plaited/blob/997575f/libs/component/src/types.ts#L78)
+[libs/component/src/types.ts:78](https://github.com/plaited/plaited/blob/d256361/libs/component/src/types.ts#L78)
 
 ## Properties
 
@@ -33,7 +33,7 @@
 
 #### Defined in
 
-[libs/component/src/types.ts:77](https://github.com/plaited/plaited/blob/997575f/libs/component/src/types.ts#L77)
+[libs/component/src/types.ts:77](https://github.com/plaited/plaited/blob/d256361/libs/component/src/types.ts#L77)
 
 ___
 
@@ -43,4 +43,4 @@ ___
 
 #### Defined in
 
-[libs/component/src/types.ts:76](https://github.com/plaited/plaited/blob/997575f/libs/component/src/types.ts#L76)
+[libs/component/src/types.ts:76](https://github.com/plaited/plaited/blob/d256361/libs/component/src/types.ts#L76)

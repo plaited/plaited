@@ -25,6 +25,7 @@
 - [CandidateBid](plaited.index.md#candidatebid)
 - [Child](plaited.index.md#child)
 - [Children](plaited.index.md#children)
+- [CreateComponent](plaited.index.md#createcomponent)
 - [Detail](plaited.index.md#detail)
 - [FT](plaited.index.md#ft)
 - [Feedback](plaited.index.md#feedback)
@@ -33,6 +34,7 @@
 - [PendingBid](plaited.index.md#pendingbid)
 - [Plait](plaited.index.md#plait)
 - [PlaitProps](plaited.index.md#plaitprops)
+- [PlaitedComponent](plaited.index.md#plaitedcomponent)
 - [PlaitedElementOptions](plaited.index.md#plaitedelementoptions)
 - [Position](plaited.index.md#position)
 - [Primitive](plaited.index.md#primitive)
@@ -64,7 +66,7 @@
 - [bProgram](plaited.index.md#bprogram)
 - [cc](plaited.index.md#cc)
 - [classNames](plaited.index.md#classnames)
-- [createComponent](plaited.index.md#createcomponent)
+- [createComponent](plaited.index.md#createcomponent-1)
 - [createTemplate](plaited.index.md#createtemplate)
 - [css](plaited.index.md#css)
 - [loop](plaited.index.md#loop)
@@ -188,6 +190,31 @@ ___
 #### Defined in
 
 libs/jsx/dist/types.d.ts:7
+
+___
+
+### CreateComponent
+
+Ƭ **CreateComponent**: (`{ mode, delegatesFocus, tag, ...bProgramOptions }`: [`PlaitedElementOptions`](plaited.index.md#plaitedelementoptions), `mixin?`: (`base`: [`PlaitedElementConstructor`](../interfaces/plaited.index.PlaitedElementConstructor.md)) => [`PlaitedElementConstructor`](../interfaces/plaited.index.PlaitedElementConstructor.md)) => [`PlaitedComponent`](plaited.index.md#plaitedcomponent)
+
+#### Type declaration
+
+▸ (`{ mode, delegatesFocus, tag, ...bProgramOptions }`, `mixin?`): [`PlaitedComponent`](plaited.index.md#plaitedcomponent)
+
+##### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `{ mode, delegatesFocus, tag, ...bProgramOptions }` | [`PlaitedElementOptions`](plaited.index.md#plaitedelementoptions) |
+| `mixin?` | (`base`: [`PlaitedElementConstructor`](../interfaces/plaited.index.PlaitedElementConstructor.md)) => [`PlaitedElementConstructor`](../interfaces/plaited.index.PlaitedElementConstructor.md) |
+
+##### Returns
+
+[`PlaitedComponent`](plaited.index.md#plaitedcomponent)
+
+#### Defined in
+
+libs/component/dist/types.d.ts:66
 
 ___
 
@@ -334,6 +361,30 @@ ___
 #### Defined in
 
 libs/component/dist/types.d.ts:34
+
+___
+
+### PlaitedComponent
+
+Ƭ **PlaitedComponent**: `Object`
+
+#### Call signature
+
+▸ (): `void`
+
+##### Returns
+
+`void`
+
+#### Type declaration
+
+| Name | Type |
+| :------ | :------ |
+| `tag` | `string` |
+
+#### Defined in
+
+libs/component/dist/types.d.ts:62
 
 ___
 
@@ -742,9 +793,9 @@ ___
 
 ### cc
 
-▸ **cc**(`«destructured»`, `mixin?`): () => `void`
+▸ **cc**(`«destructured»`, `mixin?`): [`PlaitedComponent`](plaited.index.md#plaitedcomponent)
 
-This function is an alias for [createComponent](plaited.index.md#createcomponent).
+This function is an alias for [createComponent](plaited.index.md#createcomponent-1).
 
 #### Parameters
 
@@ -755,27 +806,17 @@ This function is an alias for [createComponent](plaited.index.md#createcomponent
 
 #### Returns
 
-`fn`
-
-▸ (): `void`
-
-##### Returns
-
-`void`
-
-| Name | Type |
-| :------ | :------ |
-| `tag` | `string` |
+[`PlaitedComponent`](plaited.index.md#plaitedcomponent)
 
 **`Function`**
 
 **`See`**
 
-[createComponent](plaited.index.md#createcomponent)
+[createComponent](plaited.index.md#createcomponent-1)
 
 #### Defined in
 
-libs/component/dist/create-component.d.ts:14
+libs/component/dist/types.d.ts:66
 
 ___
 
@@ -803,7 +844,7 @@ ___
 
 ### createComponent
 
-▸ **createComponent**(`«destructured»`, `mixin?`): () => `void`
+▸ **createComponent**(`«destructured»`, `mixin?`): [`PlaitedComponent`](plaited.index.md#plaitedcomponent)
 
 A typescript function for instantiating PlaitedElements
 
@@ -816,21 +857,11 @@ A typescript function for instantiating PlaitedElements
 
 #### Returns
 
-`fn`
-
-▸ (): `void`
-
-##### Returns
-
-`void`
-
-| Name | Type |
-| :------ | :------ |
-| `tag` | `string` |
+[`PlaitedComponent`](plaited.index.md#plaitedcomponent)
 
 #### Defined in
 
-libs/component/dist/create-component.d.ts:5
+libs/component/dist/types.d.ts:66
 
 ___
 
