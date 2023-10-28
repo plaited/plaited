@@ -3,6 +3,8 @@ module.exports = {
   rules: {
     'scope-enum': [ 2, 'always', [
       'behavioral',
+      'comms',
+      'component',
       'examples',
       'jsx',
       'plaited',
@@ -11,7 +13,6 @@ module.exports = {
       'token-transformer',
       'token-types',
       'utils',
-      'workshop',
     ] ],
   },
 }

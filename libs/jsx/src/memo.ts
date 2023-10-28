@@ -1,4 +1,6 @@
-import { FT, Template, dataTrigger, Attrs } from '@plaited/jsx'
+import { FT, Template, Attrs } from './types.js'
+import { dataTrigger } from './constants.js'
+
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const shallowCompare = <T extends Record<string, any> = Record<string,any>>(

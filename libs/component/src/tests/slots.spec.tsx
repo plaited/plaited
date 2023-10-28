@@ -25,9 +25,6 @@ const fixture = createComponent(
         <slot name='named'
           data-trigger={{ click: 'named' }}
         ></slot>
-        <template>
-          <div data-target='target'>template target</div>
-        </template>
         <nested-slot slots={<slot slot='nested'
           name='nested'
           data-trigger={{ click: 'nested' }}

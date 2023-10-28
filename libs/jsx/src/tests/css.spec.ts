@@ -34,4 +34,16 @@ test('css()', () => {
     }
     `
   ).toMatchSnapshot()
+
+  expect(css`
+    .top {
+      color: red;
+      & .nested { 
+        color: blue;
+        &.nested2 {
+          color: green;
+        }
+      }
+    }
+  `).toMatchSnapshot()
 })

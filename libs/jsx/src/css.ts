@@ -1,12 +1,10 @@
-import { hashString, trueTypeOf } from '@plaited/utils'
+import { hashString, trueTypeOf, reduceWhitespace } from '@plaited/utils'
 import { Primitive } from './types.js'
 
 type ClassObject = {
   content: string;
 };
 
-export const reduceWhitespace = (str: string) =>
-  str.replace(/(\s\s+|\n)/g, ' ')
 
 const isTruthy = (val: Primitive) =>
   trueTypeOf(val) === 'string' ||

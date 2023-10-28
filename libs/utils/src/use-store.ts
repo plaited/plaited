@@ -1,9 +1,9 @@
-import { Publisher, publisher, trueTypeOf } from '@plaited/utils'
-import { Disconnect } from './types.js'
+import { Publisher, publisher } from './publisher.js'
+import { trueTypeOf } from './true-type-of.js'
 
 type Get<T> = {
   (): T;  
-  subscribe(cb: (arg: T) => void): Disconnect;
+  subscribe(cb: (arg: T) => void): () => void;
 };
 type Set<T> = (newStore: T | ((arg: T) => T)) => T;
 

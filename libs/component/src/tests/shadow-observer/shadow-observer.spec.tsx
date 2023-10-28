@@ -8,7 +8,6 @@ test('shadow observer test', async t => {
   ShadowIsland()
   const body = document.querySelector('body')
   body.insertAdjacentElement('beforeend', document.createElement(ShadowIsland.tag))
-  console.log('ShadowIsland', ShadowIsland.tag)
 
   let button = await t.findByAttribute(
     'data-trigger',

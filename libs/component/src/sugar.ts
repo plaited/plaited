@@ -1,30 +1,33 @@
 import { Template, booleanAttrs  } from '@plaited/jsx'
-import { Position } from './types.js'
+import { PlaitedElementConstructor, Position } from './types.js'
 /**
  * Inspired by blingblingjs
  * (c) Adam Argyle - MIT
  * {@see https://github.com/argyleink/blingblingjs}
  */
 
-const cache = new WeakMap<ShadowRoot, HTMLStyleElement>()
+const cache = new WeakMap<ShadowRoot, Set<string>>()
 
-const updateShadowRootStyles = (root: ShadowRoot, stylesheets: Set<string> ) => {
-  const style = cache.get(root) || root.querySelector('style')
-  if(!style) {
-    const style = document.createElement('style')
-    style.append([ ...stylesheets ].join(''))
-    root.prepend(style)
-    cache.set(root, style)
-    return
+const updateShadowRootStyles = async (root: ShadowRoot, stylesheets: Set<string> ) => {
+  // P1 first time dynamically setting stylesheets on instance add it to cache
+  if(!cache.has(root)) cache.set(root, new Set<string>()) 
+  // P2 get default styles if they exist on instance
+  const template = (root.host.constructor as PlaitedElementConstructor).template
+  const defaultStyles: undefined | Set<string> = template?.stylesheets
+  const instanceStyles = cache.get(root)
+  const newStyleSheets: CSSStyleSheet[] = []
+  try {
+    await Promise.all([ ...stylesheets ].map(async styles => {
+      if(defaultStyles?.has(styles) || instanceStyles.has(styles)) return
+      const sheet = new CSSStyleSheet()
+      instanceStyles.add(styles)
+      const nextSheet = await sheet.replace(styles)
+      newStyleSheets.push(nextSheet)
+    }))
+  } catch (error) {
+    console.error(error)
   }
-  if(!cache.has(root)) cache.set(root, style)
-  const content = style.textContent
-  const newStyles: string[] = []
-  for(const sheet of stylesheets) {
-    if(content.includes(sheet)) continue
-    newStyles.push(sheet)
-  }
-  style.append(newStyles.join(''))
+  root.adoptedStyleSheets = [ ...root.adoptedStyleSheets, ...newStyleSheets ]
 }
 
 let parser: {
@@ -37,14 +40,16 @@ if (typeof window !== 'undefined' && window.DOMParser) {
   parser = new DOMParser()
 }
 
-export const prepareTemplate = (root:ShadowRoot, { stylesheets, content }: Template): HTMLTemplateElement => {
-  if(stylesheets.size) {
-    updateShadowRootStyles(root, stylesheets)
-  }
+export const createTemplateElement = (content: string) => {
   const fragment = parser.parseFromString(`<template>${content}</template>`, 'text/html', {
     includeShadowRoots: true,
   })
   return fragment.head.firstChild as HTMLTemplateElement
+}
+
+const prepareTemplate = (root:ShadowRoot, { stylesheets, content }: Template): HTMLTemplateElement => {
+  if(stylesheets.size) void updateShadowRootStyles(root, stylesheets)
+  return createTemplateElement(content)
 }
 
 const updateAttributes = (element: HTMLElement | SVGElement, attr: string, val: string | null | number | boolean) => {

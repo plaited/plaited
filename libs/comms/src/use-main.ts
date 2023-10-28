@@ -1,5 +1,4 @@
 import { Trigger, TriggerArgs } from '@plaited/behavioral'
-import { Disconnect } from './types.js'
 
 type Send = (recipient: string, detail: TriggerArgs) => void;
 /** is a hook to allow us to send and receive messages from the main thread in a worker */
@@ -19,5 +18,5 @@ export const useMain = (
   }
   context.addEventListener('message', eventHandler, false)
   const disconnect = () => context.removeEventListener('message', eventHandler)
-  return Object.freeze<[Send, Disconnect]>([ send, disconnect ])
+  return Object.freeze<[Send, () => void]>([ send, disconnect ])
 }

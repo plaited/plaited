@@ -1,11 +1,10 @@
 import { trueTypeOf } from '@plaited/utils'
 import { createIDB } from './create-idb.js'
-import { Disconnect } from './types.js'
 
 type UpdateStoreArg<T = unknown> = (arg: T) => T;
 interface Get<T> {
   (): Promise<T>;
-  subscribe: (cb: (arg: T) => void) => Disconnect;
+  subscribe: (cb: (arg: T) => void) => () => void;
 }
 type Set<T> = (newValue: T | UpdateStoreArg<T>) => Promise<T>;
 

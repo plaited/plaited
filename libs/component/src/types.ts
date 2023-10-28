@@ -10,8 +10,6 @@ import { Template } from '@plaited/jsx'
 
 export type Plait = (props: PlaitProps) => void | Promise<void>
 
-export type Disconnect = () => void;
-
 export type PlaitedElementOptions = {
   /** define wether island's custom element is open or closed. @defaultValue 'open'*/
   mode?: 'open' | 'closed';

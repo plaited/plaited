@@ -15,7 +15,7 @@ import {
   PlaitProps,
 } from './types.js'
 import { delegatedListener } from './delegated-listener.js'
-import { assignSugar, SugaredElement, assignSugarForEach, prepareTemplate } from './sugar.js'
+import { assignSugar, SugaredElement, assignSugarForEach, createTemplateElement } from './sugar.js'
 
 const regexp = /\b[\w-]+\b(?=->[\w-]+)/g
 // It takes the value of a data-target attribute and return all the events happening in it. minus the method identifier
@@ -107,6 +107,7 @@ export const createComponent = (
           static template?: Template
           static observedTriggers?: Record<string, string>
           #root: ShadowRoot
+          #template = (this.constructor as PlaitedElementConstructor).template
           constructor() {
             super()
             this.internals_ = this.attachInternals()
@@ -116,20 +117,21 @@ export const createComponent = (
               /** no declarative shadow dom then create a shadowRoot */
               this.#root = this.attachShadow({ mode, delegatesFocus })
             }
-            const template = (this.constructor as PlaitedElementConstructor).template
-            if(template) {
-              const tpl = prepareTemplate(this.#root, template)
-              this.#root.appendChild(tpl.content.cloneNode(true))
-            }
-            /** Warn ourselves not to overwrite the trigger method */
-            if (this.#trigger !== this.constructor.prototype.trigger) {
-              throw new Error(
-                'trigger cannot be overridden in a subclass.'
-              )
+            if(this.#template) {
+              const { content, stylesheets } = this.#template
+              const adoptedStyleSheets: CSSStyleSheet[]  = []
+              for(const style of stylesheets) {
+                const sheet = new CSSStyleSheet()
+                sheet.replaceSync(style)
+                adoptedStyleSheets.push(sheet)
+              }
+              this.#root.adoptedStyleSheets = adoptedStyleSheets
+              const tpl = createTemplateElement(content)
+              this.#root.replaceChildren(tpl.content.cloneNode(true))
             }
           }
           connectedCallback() {
-            if (!this.internals_.shadowRoot?.firstChild) {
+            if (!this.#template || !this.internals_.shadowRoot?.firstChild) {
               const template = this.querySelector<HTMLTemplateElement>(
                 'template[shadowrootmode]'
               )

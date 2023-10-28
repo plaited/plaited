@@ -1,9 +1,8 @@
 import { Trigger, TriggerArgs } from '@plaited/behavioral'
-import { Disconnect } from './types.js'
 
 interface Connect {
-  (recipient: string, trigger: Trigger): Disconnect;
-  worker: (id: string, worker: Worker) => Disconnect;
+  (recipient: string, trigger: Trigger): () => void;
+  worker: (id: string, worker: Worker) => () => void;
 }
 type Send = (recipient: string, detail: TriggerArgs) => void;
 type Message = {
