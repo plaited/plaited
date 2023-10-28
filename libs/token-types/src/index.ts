@@ -356,14 +356,20 @@ export type $Context = 'media-query' | 'color-scheme' | 'container-query'
 
 export type StaticToken<T extends string, V extends DesignValue> = {
   $description: string;
-  $context?: never;
+  $extensions?: {
+    ['plaited-context']?: never;
+    [key: string]: unknown;
+  };
   $type: T;
   $value: V;
 };
 
 export type ContextualToken<T extends string, V extends DesignValue> = {
   $description: string;
-  $context: $Context;
+  $extensions?: {
+    ['plaited-context']: $Context;
+    [key: string]: unknown;
+  };
   $type: T;
   $value: ContextValue<V>;
 };
@@ -397,7 +403,10 @@ export type FlexWrapToken = BaseToken<'flexWrap', FlexWrapValue>;
 
 export type FlexToken = {
   $description: string;
-  $context?: never;
+  $extensions?: {
+    ['plaited-context']?: never;
+    [key: string]: unknown;
+  };
   $type: 'flex';
   $value: FlexValue;
 };
@@ -410,7 +419,10 @@ export type GridTemplateToken = BaseToken<'gridTemplate', GridTemplateValue>;
 
 export type GridToken = {
   $description: string;
-  $context?: never;
+  $extensions?: {
+    ['plaited-context']?: never;
+    [key: string]: unknown;
+  };
   $type: 'grid';
   $value: GridValue;
 };
@@ -435,7 +447,10 @@ export type TextTransformToken = BaseToken<'textTransform', TextTransformValue>;
 
 export type TypographyToken = {
   $description: string;
-  $context?: never;
+  $extensions?: {
+    ['plaited-context']?: never;
+    [key: string]: unknown;
+  };
   $type: 'typography';
   $value: TypographyValue;
 };

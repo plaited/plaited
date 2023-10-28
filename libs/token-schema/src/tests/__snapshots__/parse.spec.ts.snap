@@ -464,11 +464,19 @@ exports[`parse(): snapshot 1`] = `
         },
         "x1": {
           "properties": {
-            "$context": {
-              "type": "string",
-            },
             "$description": {
               "type": "string",
+            },
+            "$extensions": {
+              "properties": {
+                "plaited-context": {
+                  "type": "string",
+                },
+              },
+              "required": [
+                "plaited-context",
+              ],
+              "type": "object",
             },
             "$type": {
               "type": "string",
@@ -500,17 +508,25 @@ exports[`parse(): snapshot 1`] = `
             "$value",
             "$type",
             "$description",
-            "$context",
+            "$extensions",
           ],
           "type": "object",
         },
         "x2": {
           "properties": {
-            "$context": {
-              "type": "string",
-            },
             "$description": {
               "type": "string",
+            },
+            "$extensions": {
+              "properties": {
+                "plaited-context": {
+                  "type": "string",
+                },
+              },
+              "required": [
+                "plaited-context",
+              ],
+              "type": "object",
             },
             "$type": {
               "type": "string",
@@ -541,18 +557,26 @@ exports[`parse(): snapshot 1`] = `
           "required": [
             "$value",
             "$type",
-            "$context",
+            "$extensions",
             "$description",
           ],
           "type": "object",
         },
         "x3": {
           "properties": {
-            "$context": {
-              "type": "string",
-            },
             "$description": {
               "type": "string",
+            },
+            "$extensions": {
+              "properties": {
+                "plaited-context": {
+                  "type": "string",
+                },
+              },
+              "required": [
+                "plaited-context",
+              ],
+              "type": "object",
             },
             "$type": {
               "type": "string",
@@ -583,7 +607,7 @@ exports[`parse(): snapshot 1`] = `
           "required": [
             "$value",
             "$type",
-            "$context",
+            "$extensions",
             "$description",
           ],
           "type": "object",

@@ -45,15 +45,23 @@ export interface PlaitedElement extends HTMLElement {
     reason: 'autocomplete' | 'restore',
   ): void;
 }
+export type SelectorMod = '=' | '~=' | '|=' | '^=' | '$=' | '*='
 export type PlaitProps = {
   /** query for elements with the data-target attribute in the Island's shadowDom and slots */
   $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
     target: string,
+    opts?: {
+      all?: false;
+      mod?: SelectorMod;
+    }
   ): SugaredElement<T> | undefined;
   $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
     target: string,
     /** This options enables querySelectorAll and modified the attribute selector for data-target{@default {all: false, mod: "=" } } {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}*/
-    opts?: { all: boolean; mod: '=' | '~=' | '|=' | '^=' | '$=' | '*=' },
+    opts?: {
+      all: true;
+      mod?: SelectorMod;
+    },
   ): SugaredElement<T>[];
   /** The DOM node context allowing easy light & shadow dom access
    * @example

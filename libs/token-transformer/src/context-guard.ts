@@ -35,12 +35,16 @@ export const isValidContext = ({
 export const isContextualToken =  <U extends DesignToken, V extends DesignValue>(
   token: BaseToken<U['$type'], V>
 ): token is ContextualToken<U['$type'], V> => {
-  return token.$context !== undefined
+  if(!token?.$extensions) return false
+  const { 'plaited-context': $context } = token.$extensions
+  return  $context !== undefined
 }
 
 
 export const isStaticToken =  <U extends DesignToken, V extends DesignValue>(
   token: BaseToken<U['$type'], V>
 ): token is StaticToken<U['$type'], V> => {
-  return token.$context === undefined
+  if(!token?.$extensions) return true
+  const { 'plaited-context': $context } = token.$extensions
+  return $context === undefined
 }

@@ -10,7 +10,7 @@ const hasValidContext = (token : DesignToken, contexts: {
   colorSchemes?: ColorSchemes;
 } = {}) => {
   if(isContextualToken<DesignToken, DesignValue>(token)) {
-    const { $value, $context } = token
+    const { $value, $extensions: { 'plaited-context': $context } } = token
     return Object.keys($value).some(id => {
       const context = { type: $context, id }
       return isValidContext({ context, ...contexts })
