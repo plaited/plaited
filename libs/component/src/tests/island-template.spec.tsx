@@ -1,18 +1,11 @@
 import { FT, ssr } from '@plaited/jsx'
-import { component, PlaitProps } from '../index.js'
+import { component } from '../index.js'
 import { test } from '@plaited/rite'
 
+//@ts-ignore test only
 class Island extends component({
   tag: 'z-el',
-  
-  template: <div>
-    <h1>header</h1>
-    <slot></slot>
-  </div> }) {
-  plait({ $, feedback, addThreads, thread, sync }: PlaitProps) {
-    
-  }
-}
+}) {}
 
 
 

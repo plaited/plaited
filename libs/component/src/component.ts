@@ -152,14 +152,6 @@ export const component = ( {
         this.#disconnect()
       }
     }
-    #register(id: string, connect){
-      const disconnect = connect(id, this.#trigger)
-      this.#disconnect = disconnect
-      this.#trigger({
-        type: `connected->${id}`,
-      })
-      return disconnect
-    }
     #delegateObservedTriggers() {
       if(observedTriggers) {
         const entries = Object.entries(observedTriggers)
