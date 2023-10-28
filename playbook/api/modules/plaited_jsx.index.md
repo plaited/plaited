@@ -4,6 +4,10 @@
 
 ## Table of contents
 
+### References
+
+- [h](plaited_jsx.index.md#h)
+
 ### Interfaces
 
 - [AdditionalAttrs](../interfaces/plaited_jsx.index.AdditionalAttrs.md)
@@ -25,13 +29,25 @@
 - [booleanAttrs](plaited_jsx.index.md#booleanattrs)
 - [dataTarget](plaited_jsx.index.md#datatarget)
 - [dataTrigger](plaited_jsx.index.md#datatrigger)
+- [primitives](plaited_jsx.index.md#primitives)
+- [validPrimitiveChildren](plaited_jsx.index.md#validprimitivechildren)
+- [voidTags](plaited_jsx.index.md#voidtags)
 
 ### Functions
 
 - [Fragment](plaited_jsx.index.md#fragment)
+- [classNames](plaited_jsx.index.md#classnames)
 - [createTemplate](plaited_jsx.index.md#createtemplate)
 - [css](plaited_jsx.index.md#css)
+- [memo](plaited_jsx.index.md#memo)
 - [ssr](plaited_jsx.index.md#ssr)
+- [stylesheets](plaited_jsx.index.md#stylesheets)
+
+## References
+
+### h
+
+Renames and re-exports [createTemplate](plaited_jsx.index.md#createtemplate)
 
 ## Type Aliases
 
@@ -47,7 +63,7 @@
 
 #### Defined in
 
-[types.ts:41](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/types.ts#L41)
+[types.ts:41](https://github.com/plaited/plaited/blob/65db093/libs/jsx/src/types.ts#L41)
 
 ___
 
@@ -76,7 +92,7 @@ ___
 
 #### Defined in
 
-[types.ts:23](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/types.ts#L23)
+[types.ts:23](https://github.com/plaited/plaited/blob/65db093/libs/jsx/src/types.ts#L23)
 
 ___
 
@@ -86,7 +102,7 @@ ___
 
 #### Defined in
 
-[types.ts:15](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/types.ts#L15)
+[types.ts:15](https://github.com/plaited/plaited/blob/65db093/libs/jsx/src/types.ts#L15)
 
 ___
 
@@ -96,7 +112,7 @@ ___
 
 #### Defined in
 
-[types.ts:17](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/types.ts#L17)
+[types.ts:17](https://github.com/plaited/plaited/blob/65db093/libs/jsx/src/types.ts#L17)
 
 ___
 
@@ -112,7 +128,7 @@ ___
 
 #### Defined in
 
-[types.ts:54](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/types.ts#L54)
+[types.ts:54](https://github.com/plaited/plaited/blob/65db093/libs/jsx/src/types.ts#L54)
 
 ___
 
@@ -142,7 +158,7 @@ ___
 
 #### Defined in
 
-[types.ts:47](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/types.ts#L47)
+[types.ts:47](https://github.com/plaited/plaited/blob/65db093/libs/jsx/src/types.ts#L47)
 
 ___
 
@@ -152,7 +168,7 @@ ___
 
 #### Defined in
 
-[types.ts:2](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/types.ts#L2)
+[types.ts:2](https://github.com/plaited/plaited/blob/65db093/libs/jsx/src/types.ts#L2)
 
 ___
 
@@ -169,7 +185,7 @@ ___
 
 #### Defined in
 
-[types.ts:10](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/types.ts#L10)
+[types.ts:10](https://github.com/plaited/plaited/blob/65db093/libs/jsx/src/types.ts#L10)
 
 ## Variables
 
@@ -181,7 +197,7 @@ boolean attributes
 
 #### Defined in
 
-[constants.ts:40](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/constants.ts#L40)
+[constants.ts:40](https://github.com/plaited/plaited/blob/65db093/libs/jsx/src/constants.ts#L40)
 
 ___
 
@@ -193,7 +209,7 @@ attribute used to manipulate a dom element
 
 #### Defined in
 
-[constants.ts:2](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/constants.ts#L2)
+[constants.ts:2](https://github.com/plaited/plaited/blob/65db093/libs/jsx/src/constants.ts#L2)
 
 ___
 
@@ -205,7 +221,39 @@ attribute used to wire a dom element to the islands event listener
 
 #### Defined in
 
-[constants.ts:4](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/constants.ts#L4)
+[constants.ts:4](https://github.com/plaited/plaited/blob/65db093/libs/jsx/src/constants.ts#L4)
+
+___
+
+### primitives
+
+• `Const` **primitives**: `Set`<`string`\>
+
+#### Defined in
+
+[constants.ts:67](https://github.com/plaited/plaited/blob/65db093/libs/jsx/src/constants.ts#L67)
+
+___
+
+### validPrimitiveChildren
+
+• `Const` **validPrimitiveChildren**: `Set`<`string`\>
+
+#### Defined in
+
+[constants.ts:76](https://github.com/plaited/plaited/blob/65db093/libs/jsx/src/constants.ts#L76)
+
+___
+
+### voidTags
+
+• `Const` **voidTags**: `Set`<`string`\>
+
+void attributes
+
+#### Defined in
+
+[constants.ts:6](https://github.com/plaited/plaited/blob/65db093/libs/jsx/src/constants.ts#L6)
 
 ## Functions
 
@@ -230,7 +278,29 @@ attribute used to wire a dom element to the islands event listener
 
 #### Defined in
 
-[create-template.ts:230](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/create-template.ts#L230)
+[create-template.ts:230](https://github.com/plaited/plaited/blob/65db093/libs/jsx/src/create-template.ts#L230)
+
+___
+
+### classNames
+
+▸ **classNames**(`...classes`): `string`
+
+takes an array of conditional css class name strings and returns them concatenated
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `...classes` | `ClassNameProps` |
+
+#### Returns
+
+`string`
+
+#### Defined in
+
+[class-names.ts:3](https://github.com/plaited/plaited/blob/65db093/libs/jsx/src/class-names.ts#L3)
 
 ___
 
@@ -259,7 +329,7 @@ createTemplate function used for ssr
 
 #### Defined in
 
-[types.ts:64](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/types.ts#L64)
+[types.ts:64](https://github.com/plaited/plaited/blob/65db093/libs/jsx/src/types.ts#L64)
 
 ___
 
@@ -282,7 +352,39 @@ readonly [`Record`<`string`, `string`\>, { `stylesheet`: `string`  }]
 
 #### Defined in
 
-[css.ts:63](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/css.ts#L63)
+[css.ts:61](https://github.com/plaited/plaited/blob/65db093/libs/jsx/src/css.ts#L61)
+
+___
+
+### memo
+
+▸ **memo**<`T`\>(`resultFn`): [`FT`](plaited_jsx.index.md#ft)<`T`\>
+
+Forked from  memoize-one
+(c) Alexander Reardon - MIT
+{@see https://github.com/alexreardon/memoize-one}
+In this mode we constrain arguments to a single props object that extends TemplateProps
+We also do a basic shallow comparison on the object to cache function result.
+
+#### Type parameters
+
+| Name | Type |
+| :------ | :------ |
+| `T` | extends `Record`<`string`, `any`\> = `Record`<`string`, `any`\> |
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `resultFn` | [`FT`](plaited_jsx.index.md#ft)<`T`\> |
+
+#### Returns
+
+[`FT`](plaited_jsx.index.md#ft)<`T`\>
+
+#### Defined in
+
+[memo.ts:29](https://github.com/plaited/plaited/blob/65db093/libs/jsx/src/memo.ts#L29)
 
 ___
 
@@ -302,4 +404,31 @@ ___
 
 #### Defined in
 
-[ssr.ts:3](https://github.com/plaited/plaited/blob/e4dae1e/libs/jsx/src/ssr.ts#L3)
+[ssr.ts:3](https://github.com/plaited/plaited/blob/65db093/libs/jsx/src/ssr.ts#L3)
+
+___
+
+### stylesheets
+
+▸ **stylesheets**(`...sheets`): `Object`
+
+takes an array of conditional stylesheet objects and returns a stylesheet 
+object with each individual sheet in an array
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `...sheets` | `StylesheetsProps` |
+
+#### Returns
+
+`Object`
+
+| Name | Type |
+| :------ | :------ |
+| `stylesheet` | `any`[] |
+
+#### Defined in
+
+[stylesheets.ts:4](https://github.com/plaited/plaited/blob/65db093/libs/jsx/src/stylesheets.ts#L4)

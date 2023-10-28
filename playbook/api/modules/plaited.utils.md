@@ -4,6 +4,10 @@
 
 ## Table of contents
 
+### References
+
+- [useStore](plaited.utils.md#usestore)
+
 ### Type Aliases
 
 - [KeyMirror](plaited.utils.md#keymirror)
@@ -26,11 +30,18 @@
 - [opacityHex](plaited.utils.md#opacityhex)
 - [parseToRgb](plaited.utils.md#parsetorgb)
 - [publisher](plaited.utils.md#publisher-1)
+- [reduceWhitespace](plaited.utils.md#reducewhitespace)
 - [setIdCounter](plaited.utils.md#setidcounter)
 - [trueTypeOf](plaited.utils.md#truetypeof)
 - [ueid](plaited.utils.md#ueid)
 - [unescape](plaited.utils.md#unescape)
 - [wait](plaited.utils.md#wait)
+
+## References
+
+### useStore
+
+Re-exports [useStore](plaited.index.md#usestore)
 
 ## Type Aliases
 
@@ -490,6 +501,28 @@ ___
 #### Defined in
 
 libs/utils/dist/publisher.d.ts:5
+
+___
+
+### reduceWhitespace
+
+▸ **reduceWhitespace**(`str`): `string`
+
+function reduces whitespace in a string down to single spaces
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `str` | `string` |
+
+#### Returns
+
+`string`
+
+#### Defined in
+
+libs/utils/dist/reduce-whitespace.d.ts:2
 
 ___
 

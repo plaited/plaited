@@ -4,6 +4,10 @@
 
 ## Table of contents
 
+### References
+
+- [h](plaited.index.md#h)
+
 ### Interfaces
 
 - [AdditionalAttrs](../interfaces/plaited.index.AdditionalAttrs.md)
@@ -22,7 +26,6 @@
 - [Child](plaited.index.md#child)
 - [Children](plaited.index.md#children)
 - [Detail](plaited.index.md#detail)
-- [Disconnect](plaited.index.md#disconnect)
 - [FT](plaited.index.md#ft)
 - [Feedback](plaited.index.md#feedback)
 - [FunctionTemplate](plaited.index.md#functiontemplate)
@@ -50,6 +53,9 @@
 - [booleanAttrs](plaited.index.md#booleanattrs)
 - [dataTarget](plaited.index.md#datatarget)
 - [dataTrigger](plaited.index.md#datatrigger)
+- [primitives](plaited.index.md#primitives)
+- [validPrimitiveChildren](plaited.index.md#validprimitivechildren)
+- [voidTags](plaited.index.md#voidtags)
 
 ### Functions
 
@@ -66,10 +72,13 @@
 - [stylesheets](plaited.index.md#stylesheets)
 - [sync](plaited.index.md#sync)
 - [thread](plaited.index.md#thread)
-- [useIndexedDB](plaited.index.md#useindexeddb)
-- [useMain](plaited.index.md#usemain)
-- [useMessenger](plaited.index.md#usemessenger)
 - [useStore](plaited.index.md#usestore)
+
+## References
+
+### h
+
+Renames and re-exports [createTemplate](plaited.index.md#createtemplate)
 
 ## Type Aliases
 
@@ -138,7 +147,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:76](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/types.ts#L76)
+libs/component/dist/types.d.ts:56
 
 ___
 
@@ -188,24 +197,6 @@ ___
 #### Defined in
 
 libs/behavioral/dist/types.d.ts:13
-
-___
-
-### Disconnect
-
-Ƭ **Disconnect**: () => `void`
-
-#### Type declaration
-
-▸ (): `void`
-
-##### Returns
-
-`void`
-
-#### Defined in
-
-[libs/plaited/src/types.ts:13](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/types.ts#L13)
 
 ___
 
@@ -331,7 +322,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:11](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/types.ts#L11)
+libs/component/dist/types.d.ts:4
 
 ___
 
@@ -341,7 +332,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:50](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/types.ts#L50)
+libs/component/dist/types.d.ts:33
 
 ___
 
@@ -363,7 +354,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:15](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/types.ts#L15)
+libs/component/dist/types.d.ts:5
 
 ___
 
@@ -373,7 +364,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:79](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/types.ts#L79)
+libs/component/dist/types.d.ts:57
 
 ___
 
@@ -515,7 +506,7 @@ ___
 
 #### Defined in
 
-[libs/plaited/src/types.ts:75](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/types.ts#L75)
+libs/component/dist/types.d.ts:55
 
 ___
 
@@ -657,6 +648,38 @@ attribute used to wire a dom element to the islands event listener
 
 libs/jsx/dist/constants.d.ts:4
 
+___
+
+### primitives
+
+• `Const` **primitives**: `Set`<`string`\>
+
+#### Defined in
+
+libs/jsx/dist/constants.d.ts:9
+
+___
+
+### validPrimitiveChildren
+
+• `Const` **validPrimitiveChildren**: `Set`<`string`\>
+
+#### Defined in
+
+libs/jsx/dist/constants.d.ts:10
+
+___
+
+### voidTags
+
+• `Const` **voidTags**: `Set`<`string`\>
+
+void attributes
+
+#### Defined in
+
+libs/jsx/dist/constants.d.ts:6
+
 ## Functions
 
 ### Fragment
@@ -717,7 +740,7 @@ This function is an alias for [createComponent](plaited.index.md#createcomponent
 | Name | Type |
 | :------ | :------ |
 | `«destructured»` | [`PlaitedElementOptions`](plaited.index.md#plaitedelementoptions) |
-| `mixin` | (`base`: [`PlaitedElementConstructor`](../interfaces/plaited.index.PlaitedElementConstructor.md)) => [`PlaitedElementConstructor`](../interfaces/plaited.index.PlaitedElementConstructor.md) |
+| `mixin?` | (`base`: [`PlaitedElementConstructor`](../interfaces/plaited.index.PlaitedElementConstructor.md)) => [`PlaitedElementConstructor`](../interfaces/plaited.index.PlaitedElementConstructor.md) |
 
 #### Returns
 
@@ -741,7 +764,7 @@ This function is an alias for [createComponent](plaited.index.md#createcomponent
 
 #### Defined in
 
-[libs/plaited/src/create-component.ts:80](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/create-component.ts#L80)
+libs/component/dist/create-component.d.ts:14
 
 ___
 
@@ -763,7 +786,7 @@ takes an array of conditional css class name strings and returns them concatenat
 
 #### Defined in
 
-[libs/plaited/src/class-names.ts:3](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/class-names.ts#L3)
+libs/jsx/dist/class-names.d.ts:3
 
 ___
 
@@ -778,7 +801,7 @@ A typescript function for instantiating PlaitedElements
 | Name | Type |
 | :------ | :------ |
 | `«destructured»` | [`PlaitedElementOptions`](plaited.index.md#plaitedelementoptions) |
-| `mixin` | (`base`: [`PlaitedElementConstructor`](../interfaces/plaited.index.PlaitedElementConstructor.md)) => [`PlaitedElementConstructor`](../interfaces/plaited.index.PlaitedElementConstructor.md) |
+| `mixin?` | (`base`: [`PlaitedElementConstructor`](../interfaces/plaited.index.PlaitedElementConstructor.md)) => [`PlaitedElementConstructor`](../interfaces/plaited.index.PlaitedElementConstructor.md) |
 
 #### Returns
 
@@ -796,7 +819,7 @@ A typescript function for instantiating PlaitedElements
 
 #### Defined in
 
-[libs/plaited/src/create-component.ts:80](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/create-component.ts#L80)
+libs/component/dist/create-component.d.ts:5
 
 ___
 
@@ -848,7 +871,7 @@ readonly [`Record`<`string`, `string`\>, { `stylesheet`: `string`  }]
 
 #### Defined in
 
-libs/jsx/dist/css.d.ts:4
+libs/jsx/dist/css.d.ts:3
 
 ___
 
@@ -906,7 +929,7 @@ We also do a basic shallow comparison on the object to cache function result.
 
 #### Defined in
 
-[libs/plaited/src/memo.ts:27](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/memo.ts#L27)
+libs/jsx/dist/memo.d.ts:9
 
 ___
 
@@ -934,7 +957,7 @@ ___
 
 ▸ **stylesheets**(`...sheets`): `Object`
 
-takes an array of conditional stylesheet objects and returns a stylesheet 
+takes an array of conditional stylesheet objects and returns a stylesheet
 object with each individual sheet in an array
 
 #### Parameters
@@ -953,7 +976,7 @@ object with each individual sheet in an array
 
 #### Defined in
 
-[libs/plaited/src/stylesheets.ts:4](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/stylesheets.ts#L4)
+libs/jsx/dist/stylesheets.d.ts:6
 
 ___
 
@@ -1016,86 +1039,6 @@ libs/behavioral/dist/rules.d.ts:6
 
 ___
 
-### useIndexedDB
-
-▸ **useIndexedDB**<`T`\>(`key`, `initialValue?`, `option?`): `Promise`<readonly [`Get`<`T`\>, `Set`<`T`\>]\>
-
-asynchronously get and set indexed db values
-
-#### Type parameters
-
-| Name | Type |
-| :------ | :------ |
-| `T` | `unknown` |
-
-#### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `key` | `string` | key for stored value |
-| `initialValue?` | `T` | initial value can be null |
-| `option?` | `Object` | you can actually pass it an reference to another indexedDB |
-| `option.databaseName` | `string` | - |
-| `option.storeName` | `string` | - |
-
-#### Returns
-
-`Promise`<readonly [`Get`<`T`\>, `Set`<`T`\>]\>
-
-#### Defined in
-
-[libs/plaited/src/use-indexed-db.ts:13](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/use-indexed-db.ts#L13)
-
-___
-
-### useMain
-
-▸ **useMain**(`context`, `trigger`): readonly [`Send`, [`Disconnect`](plaited.index.md#disconnect)]
-
-is a hook to allow us to send and receive messages from the main thread in a worker
-
-#### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `context` | `Window` & typeof `globalThis` | is self of the worker |
-| `trigger` | [`Trigger`](plaited.index.md#trigger) | - |
-
-#### Returns
-
-readonly [`Send`, [`Disconnect`](plaited.index.md#disconnect)]
-
-#### Defined in
-
-[libs/plaited/src/use-main.ts:6](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/use-main.ts#L6)
-
-___
-
-### useMessenger
-
-▸ **useMessenger**(): readonly [`Connect`, `Send`]
-
-Enables communication between agents in a web app.
-Agents can be Islands, workers, or behavioral program running in the main thread.
-This allows for execution of the one-way message exchange pattern (aka
-fire and forget).
-
-#### Returns
-
-readonly [`Connect`, `Send`]
-
-readonly {}
-  connect: (recipient: string, trigger: [Trigger](plaited.index.md#trigger)) => [Disconnect](plaited.index.md#disconnect),
-  send: (recipient: string, detail: [TriggerArgs](plaited.index.md#triggerargs)) => void
-  worker: (id: string, url: string) =>  [Disconnect](plaited.index.md#disconnect)
-}
-
-#### Defined in
-
-[libs/plaited/src/use-messenger.ts:24](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/use-messenger.ts#L24)
-
-___
-
 ### useStore
 
 ▸ **useStore**<`T`\>(`initialStore?`): readonly [`Get`<`T`\>, `Set`<`T`\>]
@@ -1137,4 +1080,4 @@ const [store, setStore] = useStore<Record<string, number> | number>({ a: 1 })
 
 #### Defined in
 
-[libs/plaited/src/use-store.ts:27](https://github.com/plaited/plaited/blob/e4dae1e/libs/plaited/src/use-store.ts#L27)
+libs/utils/dist/use-store.d.ts:22

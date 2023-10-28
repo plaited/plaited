@@ -26,10 +26,12 @@
 - [opacityHex](plaited_utils.md#opacityhex)
 - [parseToRgb](plaited_utils.md#parsetorgb)
 - [publisher](plaited_utils.md#publisher-1)
+- [reduceWhitespace](plaited_utils.md#reducewhitespace)
 - [setIdCounter](plaited_utils.md#setidcounter)
 - [trueTypeOf](plaited_utils.md#truetypeof)
 - [ueid](plaited_utils.md#ueid)
 - [unescape](plaited_utils.md#unescape)
+- [useStore](plaited_utils.md#usestore)
 - [wait](plaited_utils.md#wait)
 
 ## Type Aliases
@@ -46,7 +48,7 @@
 
 #### Defined in
 
-[key-mirror.ts:1](https://github.com/plaited/plaited/blob/e4dae1e/libs/utils/src/key-mirror.ts#L1)
+[key-mirror.ts:1](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/key-mirror.ts#L1)
 
 ___
 
@@ -86,7 +88,7 @@ ___
 
 #### Defined in
 
-[publisher.ts:1](https://github.com/plaited/plaited/blob/e4dae1e/libs/utils/src/publisher.ts#L1)
+[publisher.ts:1](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/publisher.ts#L1)
 
 ___
 
@@ -102,7 +104,7 @@ ___
 
 #### Defined in
 
-[value-of.type.ts:1](https://github.com/plaited/plaited/blob/e4dae1e/libs/utils/src/value-of.type.ts#L1)
+[value-of.type.ts:1](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/value-of.type.ts#L1)
 
 ## Functions
 
@@ -142,7 +144,7 @@ Call all function passed in with the same arguments when invoked
 
 #### Defined in
 
-[call-all.ts:5](https://github.com/plaited/plaited/blob/e4dae1e/libs/utils/src/call-all.ts#L5)
+[call-all.ts:5](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/call-all.ts#L5)
 
 ___
 
@@ -175,7 +177,7 @@ This function will handle strings in various formats:
 
 #### Defined in
 
-[cases.ts:15](https://github.com/plaited/plaited/blob/e4dae1e/libs/utils/src/cases.ts#L15)
+[cases.ts:15](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/cases.ts#L15)
 
 ___
 
@@ -189,7 +191,7 @@ ___
 
 #### Defined in
 
-[can-use-dom.ts:1](https://github.com/plaited/plaited/blob/e4dae1e/libs/utils/src/can-use-dom.ts#L1)
+[can-use-dom.ts:1](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/can-use-dom.ts#L1)
 
 ___
 
@@ -228,7 +230,7 @@ ___
 
 #### Defined in
 
-[debounce.ts:1](https://github.com/plaited/plaited/blob/e4dae1e/libs/utils/src/debounce.ts#L1)
+[debounce.ts:1](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/debounce.ts#L1)
 
 ___
 
@@ -250,7 +252,7 @@ ___
 
 #### Defined in
 
-[deep-equal.ts:1](https://github.com/plaited/plaited/blob/e4dae1e/libs/utils/src/deep-equal.ts#L1)
+[deep-equal.ts:1](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/deep-equal.ts#L1)
 
 ___
 
@@ -280,7 +282,7 @@ escape('&<>\'"') => '&amp;&lt;&gt;&#39;&quot;'
 
 #### Defined in
 
-[escape-unescape.ts:37](https://github.com/plaited/plaited/blob/e4dae1e/libs/utils/src/escape-unescape.ts#L37)
+[escape-unescape.ts:37](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/escape-unescape.ts#L37)
 
 ___
 
@@ -302,7 +304,7 @@ For when you need id but are cool with just bumping a global counter
 
 #### Defined in
 
-[id.ts:13](https://github.com/plaited/plaited/blob/e4dae1e/libs/utils/src/id.ts#L13)
+[id.ts:13](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/id.ts#L13)
 
 ___
 
@@ -326,7 +328,7 @@ djb2 hashing function
 
 #### Defined in
 
-[hash.ts:4](https://github.com/plaited/plaited/blob/e4dae1e/libs/utils/src/hash.ts#L4)
+[hash.ts:4](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/hash.ts#L4)
 
 ___
 
@@ -359,7 +361,7 @@ This function will handle strings in various formats:
 
 #### Defined in
 
-[cases.ts:37](https://github.com/plaited/plaited/blob/e4dae1e/libs/utils/src/cases.ts#L37)
+[cases.ts:37](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/cases.ts#L37)
 
 ___
 
@@ -387,7 +389,7 @@ create an object who's keys and values are the same by simply passing in the key
 
 #### Defined in
 
-[key-mirror.ts:6](https://github.com/plaited/plaited/blob/e4dae1e/libs/utils/src/key-mirror.ts#L6)
+[key-mirror.ts:6](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/key-mirror.ts#L6)
 
 ___
 
@@ -415,7 +417,7 @@ no-op function good for when you need defaults and stubs
 
 #### Defined in
 
-[noop.ts:3](https://github.com/plaited/plaited/blob/e4dae1e/libs/utils/src/noop.ts#L3)
+[noop.ts:3](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/noop.ts#L3)
 
 ___
 
@@ -431,7 +433,7 @@ generates a map where you can pass in an opacity number and get back the corresp
 
 #### Defined in
 
-[opacity-hex.ts:2](https://github.com/plaited/plaited/blob/e4dae1e/libs/utils/src/opacity-hex.ts#L2)
+[opacity-hex.ts:2](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/opacity-hex.ts#L2)
 
 ___
 
@@ -453,7 +455,7 @@ parse a hex code to an rgb(a) value
 
 #### Defined in
 
-[parse-to-rgb.ts:4](https://github.com/plaited/plaited/blob/e4dae1e/libs/utils/src/parse-to-rgb.ts#L4)
+[parse-to-rgb.ts:4](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/parse-to-rgb.ts#L4)
 
 ___
 
@@ -489,7 +491,29 @@ ___
 
 #### Defined in
 
-[publisher.ts:5](https://github.com/plaited/plaited/blob/e4dae1e/libs/utils/src/publisher.ts#L5)
+[publisher.ts:5](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/publisher.ts#L5)
+
+___
+
+### reduceWhitespace
+
+▸ **reduceWhitespace**(`str`): `string`
+
+function reduces whitespace in a string down to single spaces
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `str` | `string` |
+
+#### Returns
+
+`string`
+
+#### Defined in
+
+[reduce-whitespace.ts:2](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/reduce-whitespace.ts#L2)
 
 ___
 
@@ -511,7 +535,7 @@ reset or set the global idCounter
 
 #### Defined in
 
-[id.ts:18](https://github.com/plaited/plaited/blob/e4dae1e/libs/utils/src/id.ts#L18)
+[id.ts:18](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/id.ts#L18)
 
 ___
 
@@ -533,7 +557,7 @@ get the true type of an object returned back to you as a string
 
 #### Defined in
 
-[true-type-of.ts:2](https://github.com/plaited/plaited/blob/e4dae1e/libs/utils/src/true-type-of.ts#L2)
+[true-type-of.ts:2](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/true-type-of.ts#L2)
 
 ___
 
@@ -557,7 +581,7 @@ a function for returning an unique enough id when you need it
 
 #### Defined in
 
-[id.ts:4](https://github.com/plaited/plaited/blob/e4dae1e/libs/utils/src/id.ts#L4)
+[id.ts:4](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/id.ts#L4)
 
 ___
 
@@ -587,7 +611,52 @@ unescape('&amp;&lt;&gt;&#39;&quot;') => '&<>\'"'
 
 #### Defined in
 
-[escape-unescape.ts:49](https://github.com/plaited/plaited/blob/e4dae1e/libs/utils/src/escape-unescape.ts#L49)
+[escape-unescape.ts:49](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/escape-unescape.ts#L49)
+
+___
+
+### useStore
+
+▸ **useStore**<`T`\>(`initialStore?`): readonly [`Get`<`T`\>, `Set`<`T`\>]
+
+#### Type parameters
+
+| Name |
+| :------ |
+| `T` |
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `initialStore?` | `T` |
+
+#### Returns
+
+readonly [`Get`<`T`\>, `Set`<`T`\>]
+
+**`Description`**
+
+a simple utility function for safely getting and setting values you need to persist during run.
+When using the callback feature userStore passes a structured clone of the currently stored value
+as a parameter.
+
+**`Example`**
+
+```ts
+const [store, setStore] = useStore<Record<string, number> | number>({ a: 1 })
+ setStore((prev) => {
+   if (typeof prev !== 'number') prev.b = 2
+   return prev
+ })
+ store() //=> { a: 1, b: 2 }
+ setStore(3)
+ store() // => 3
+```
+
+#### Defined in
+
+[use-store.ts:27](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/use-store.ts#L27)
 
 ___
 
@@ -609,4 +678,4 @@ an async function that will wait the given time passed to it in ms
 
 #### Defined in
 
-[wait.ts:2](https://github.com/plaited/plaited/blob/e4dae1e/libs/utils/src/wait.ts#L2)
+[wait.ts:2](https://github.com/plaited/plaited/blob/65db093/libs/utils/src/wait.ts#L2)
