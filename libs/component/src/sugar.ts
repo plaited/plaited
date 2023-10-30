@@ -80,36 +80,27 @@ const updateAttributes = (element: HTMLElement | SVGElement, attr: string, val: 
 const sugar = {
   render(
     tpl: Template,
-    position?: Position,
-    raf: boolean = true
+    position?: Position
   ) {
     const element = this as unknown as HTMLElement | SVGElement
     const template = prepareTemplate(element.getRootNode() as ShadowRoot, tpl)
     if (position) {
-      raf ? requestAnimationFrame(() => {
-        element.insertAdjacentElement(position, template).replaceWith(template.content)
-      }) : element.insertAdjacentElement(position, template).replaceWith(template.content)
+      element.insertAdjacentElement(position, template).replaceWith(template.content)
       return element
     }
-    raf ? requestAnimationFrame(() => {
-      element.replaceChildren(template.content)
-    }) : element.replaceChildren(template.content)
+    element.replaceChildren(template.content)
     return element
   },
-  replace(tpl: Template, raf: boolean = true) {
+  replace(tpl: Template) {
     const element = this as unknown as HTMLElement | SVGElement
     const template = prepareTemplate(element.getRootNode() as ShadowRoot, tpl)
-    raf ? requestAnimationFrame(() => {
-      element.replaceWith(template.content)
-    }) : element.replaceWith(template.content)
+    element.replaceWith(template.content)
   },
-  attr(attr: string, val?: string | null | number | boolean, raf: boolean = true) {
+  attr(attr: string, val?: string | null | number | boolean) {
     const element = this as unknown as HTMLElement | SVGElement
     // Return the attribute value if val is not provided
     if (val === undefined) return element.getAttribute(attr)
-    raf
-      ? requestAnimationFrame(() => updateAttributes(element, attr, val))
-      : updateAttributes(element, attr, val)
+    updateAttributes(element, attr, val)
     return element
   },
 } as const
@@ -141,18 +132,14 @@ const sugarForEach: SugarForEach = {
     position?: Position
   ) {
     const elements = this as unknown as SugaredElement[]
-    requestAnimationFrame(() => {
-      elements.forEach(($el, i) => $el.render(template[i], position, false))
-    })
+    elements.forEach(($el, i) => $el.render(template[i], position))
     return elements
   },
   replace(
     template: Template[]
   ) {
     const elements = this as unknown as SugaredElement[]
-    requestAnimationFrame(() => {
-      elements.forEach(($el, i) => $el.replace(template[i], false))
-    })
+    elements.forEach(($el, i) => $el.replace(template[i]))
     return elements
   },
   // This method only allows for batch updates of element attributes no reads
@@ -161,16 +148,14 @@ const sugarForEach: SugarForEach = {
     val?: string | null | number | boolean
   ) {
     const elements = this as unknown as SugaredElement[]
-    requestAnimationFrame(() => {
-      elements.forEach($el => {
-        if (typeof attrs === 'string') {
-          $el.attr(attrs, val, false)
-        } else {
-          Object.entries(attrs).forEach(([ key, val ]) => {
-            $el.attr(key, val, false)
-          })
-        }
-      })
+    elements.forEach($el => {
+      if (typeof attrs === 'string') {
+        $el.attr(attrs, val)
+      } else {
+        Object.entries(attrs).forEach(([ key, val ]) => {
+          $el.attr(key, val)
+        })
+      }
     })
     return elements
   },
