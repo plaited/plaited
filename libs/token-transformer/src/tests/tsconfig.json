@@ -4,11 +4,9 @@
     "module": "NodeNext",
     "declaration": true,
     "moduleResolution": "nodenext",
-    "outDir": "dist",
-    "rootDir": "src",
+    "allowSyntheticDefaultImports": true,
+    "types": [
+      "bun-types"
+    ]
   },
-  "exclude": [
-    "**/dist",
-    "**/tests/"
-  ]
 }

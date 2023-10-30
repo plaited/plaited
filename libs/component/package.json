@@ -28,7 +28,7 @@
     "./jsx-dev-runtime.js"
   ],
   "scripts": {
-    "build": "tsc --project tsconfig.build.json",
+    "build": "tsc --project tsconfig.json",
     "build:watch": "bun run build --watch",
     "test": "web-test-runner",
     "test:watch": "web-test-runner --watch"

@@ -28,7 +28,8 @@
     "./jsx-dev-runtime.js"
   ],
   "scripts": {
-    "build": "tsc --project tsconfig.json"
+    "build": "tsc --project tsconfig.json",
+    "typedoc": "typedoc --tsconfig tsconfig.json --out ../../playbook/api --plugin typedoc-plugin-markdown"
   },
   "types": "./dist/index.d.ts",
   "dependencies": {

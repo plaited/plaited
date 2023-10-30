@@ -5,15 +5,8 @@
     "module": "NodeNext",
     "declaration": true,
     "moduleResolution": "nodenext",
-    "lib": [
-      "dom",
-      "es2022"
+    "types": [
+      "bun-types"
     ],
-    "outDir": "dist",
-    "rootDir": "src"
   },
-  "exclude": [
-    "**/dist",
-    "**/tests/"
-  ]
 }

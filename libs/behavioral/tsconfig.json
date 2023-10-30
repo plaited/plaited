@@ -6,11 +6,9 @@
     "moduleResolution": "nodenext",
     "outDir": "dist",
     "rootDir": "src",
-    "types": [
-      "bun-types"
-    ]
   },
   "exclude": [
-    "**/dist"
+    "**/dist",
+    "**/tests/"
   ]
 }

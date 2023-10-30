@@ -23,7 +23,7 @@
     "./dist/**"
   ],
   "scripts": {
-    "build": "tsc --project tsconfig.build.json",
+    "build": "tsc --project tsconfig.json",
     "test": "bun run test:assert && bun run test:helpers",
     "test:assert": "bun test src/**/*.test.ts",
     "test:helpers": "bunx web-test-runner"
