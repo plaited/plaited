@@ -5,6 +5,9 @@ export default {
       '@swc/jest',
       {
         jsc: {
+          parser: {
+            jsx: true,
+          },
           transform: {
             react: {
               importSource: '@plaited/jsx',
@@ -19,4 +22,3 @@ export default {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
 }
- 

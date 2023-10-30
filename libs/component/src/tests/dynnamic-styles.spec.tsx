@@ -1,6 +1,6 @@
 import { test } from '@plaited/rite'
 import { css, stylesheets } from '@plaited/jsx'
-import { createComponent, PlaitProps } from '../index.js'
+import { Component, PlaitProps } from '../index.js'
 
 test('dynamic styles', async t => {
   const body = document.querySelector('body')
@@ -12,8 +12,10 @@ test('dynamic styles', async t => {
       color: red;
     }
   `
-  const fixture = createComponent({ tag:'dynamic-only' }, base => class extends base {
-    static template = <div data-target='target'></div>
+  class Fixture extends Component({
+    tag:'dynamic-only',
+    template: <div data-target='target'></div>,
+  }){
     plait({ $ }: PlaitProps){
       const target = $<HTMLDivElement>('target')
       target.render(
@@ -29,9 +31,9 @@ test('dynamic styles', async t => {
         'beforeend'
       )
     }
-  })
-  fixture()
-  body.append(document.createElement(fixture.tag))
+  }
+  customElements.define(Fixture.tag, Fixture)
+  body.append(document.createElement(Fixture.tag))
 
   const target = await t.findByAttribute('data-target', 'target')
   const root  = target.getRootNode() as ShadowRoot
@@ -55,11 +57,13 @@ test('with default and dynamic styles', async t => {
       color: red;
     }
   `
-  const fixture = createComponent({ tag:'with-default-styles' }, base => class extends base {
-    static template = <div data-target='target-2'
+  class Fixture extends Component({
+    tag:'with-default-styles',
+    template: <div data-target='target-2'
       className={cls.root}
       { ...stylesheet }
-    ></div>
+    ></div>,
+  }) {
     plait({ $ }: PlaitProps){
       const target = $<HTMLDivElement>('target-2')
       target.render(
@@ -69,9 +73,9 @@ test('with default and dynamic styles', async t => {
         'beforeend'
       )
     }
-  })
-  fixture()
-  body.append(document.createElement(fixture.tag))
+  }
+  customElements.define(Fixture.tag, Fixture)
+  body.append(document.createElement(Fixture.tag))
   const target = await t.findByAttribute('data-target', 'target-2')
   const root  = target.getRootNode() as ShadowRoot
   t({

@@ -29,9 +29,9 @@
   ],
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
-    "build:watch": "yarn build --watch",
+    "build:watch": "bun run build --watch",
     "test": "web-test-runner",
-    "test:watch": "yarn test --watch"
+    "test:watch": "web-test-runner --watch"
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
@@ -39,7 +39,6 @@
     "@plaited/jsx": "4.1.0"
   },
   "devDependencies": {
-    "@plaited/comms": "4.1.0",
     "@plaited/rite": "4.1.0",
     "@plaited/utils": "4.1.0",
     "@web/dev-server": "0.3.6",

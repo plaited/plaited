@@ -1,5 +1,5 @@
 import { css } from '@plaited/jsx'
-import { createComponent, PlaitProps } from '../../index.js'
+import { Component, PlaitProps } from '../../index.js'
 import { opacityHex } from '@plaited/utils'
 import { SVG } from './noun-braids-2633610.js'
 
@@ -42,92 +42,91 @@ export const [ classes, stylesheet ] = css`
 }
 `
 
-export const ShadowIsland = createComponent(
-  { tag: 'shadow-island' },
-  base =>
-    class extends base {
-      static template = <div className={classes.mount}
-        {...stylesheet}
-        data-target='wrapper'
+export class ShadowIsland extends Component({
+  tag: 'shadow-island',
+  template: <div className={classes.mount}
+    {...stylesheet}
+    data-target='wrapper'
+  >
+    <div className={classes.zone}
+      data-target='zone'
+    >
+    </div>
+    <div className={classes.row}
+      data-target='button-row'
+    >
+      <button data-trigger={{ click: 'start' }}
+        className={classes.button}
       >
-        <div className={classes.zone}
-          data-target='zone'
-        >
-        </div>
-        <div className={classes.row}
-          data-target='button-row'
-        >
-          <button data-trigger={{ click: 'start' }}
-            className={classes.button}
+    start
+      </button>
+      <button data-trigger={{ click: 'addButton' }}
+        className={classes.button}
+      >
+    addButton
+      </button>
+    </div>
+  </div>,
+}){
+     
+  plait(
+    { feedback, addThreads, sync, thread, host, $, loop }: PlaitProps
+  ) {
+    addThreads({
+      onRemoveSvg: thread(
+        sync({ waitFor: { type: 'removeSvg' } }),
+        sync({ request: { type: 'addSubIsland' } })
+      ),
+      onStart: thread(
+        sync({ waitFor: { type: 'start' } }),
+        sync({ request: { type: 'addSlot' } })
+      ),
+      onAddSvg: loop([
+        sync({ waitFor: { type: 'add-svg' } }),
+        sync({ request: { type: 'modifyAttributes' } }),
+      ]),
+    })
+    feedback({
+      addSubIsland() {
+        const zone = $('zone')
+        /** render dynamic island to zone */
+        zone?.render(
+          <sub-island {...stylesheet}>
+            <h3 className={classes['sub-island']}>sub island</h3>
+          </sub-island>,
+          'beforeend'
+        )
+      },
+      addButton() {
+        host.insertAdjacentHTML('beforeend',  `<button slot='button'>add svg</button>`)
+      },
+      modifyAttributes() {
+        const slot = $('add-svg-slot')
+        slot?.removeAttribute('data-trigger')
+      },
+      addSlot() {
+        const row = $('button-row')
+        row?.render(
+          <slot
+            name='button'
+            data-target='add-svg-slot'
+            data-trigger={{ click: 'add-svg' }}
           >
-          start
-          </button>
-          <button data-trigger={{ click: 'addButton' }}
-            className={classes.button}
-          >
-          addButton
-          </button>
-        </div>
-      </div>
-      plait(
-        { feedback, addThreads, sync, thread, host, $, loop }: PlaitProps
-      ) {
-        addThreads({
-          onRemoveSvg: thread(
-            sync({ waitFor: { type: 'removeSvg' } }),
-            sync({ request: { type: 'addSubIsland' } })
-          ),
-          onStart: thread(
-            sync({ waitFor: { type: 'start' } }),
-            sync({ request: { type: 'addSlot' } })
-          ),
-          onAddSvg: loop([
-            sync({ waitFor: { type: 'add-svg' } }),
-            sync({ request: { type: 'modifyAttributes' } }),
-          ]),
-        })
-        feedback({
-          addSubIsland() {
-            const zone = $('zone')
-            /** render dynamic island to zone */
-            zone?.render(
-              <sub-island {...stylesheet}>
-                <h3 className={classes['sub-island']}>sub island</h3>
-              </sub-island>,
-              'beforeend'
-            )
-          },
-          addButton() {
-            host.insertAdjacentHTML('beforeend',  `<button slot='button'>add svg</button>`)
-          },
-          modifyAttributes() {
-            const slot = $('add-svg-slot')
-            slot?.removeAttribute('data-trigger')
-          },
-          addSlot() {
-            const row = $('button-row')
-            row?.render(
-              <slot
-                name='button'
-                data-target='add-svg-slot'
-                data-trigger={{ click: 'add-svg' }}
-              >
-              </slot>,
-              'beforeend'
-            )
-          },
-          removeSvg() {
-            const svg = $('svg')
-            svg?.remove()
-          },
-          ['add-svg']() {
-            const zone = $('zone')
-            zone?.render(
-              <SVG />,
-              'beforeend'
-            )
-          },
-        })
-      }
-    }
-)
+          </slot>,
+          'beforeend'
+        )
+      },
+      removeSvg() {
+        const svg = $('svg')
+        svg?.remove()
+      },
+      ['add-svg']() {
+        const zone = $('zone')
+        zone?.render(
+          <SVG />,
+          'beforeend'
+        )
+      },
+    })
+  }
+}

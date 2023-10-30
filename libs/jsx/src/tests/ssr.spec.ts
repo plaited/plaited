@@ -1,12 +1,12 @@
-import { test, expect } from'@jest/globals'
+import { test, expect } from 'bun:test'
 import {
   createTemplate as h,
   css,
   Fragment,
   FT,
-  ssr,
 } from '../index.js'
 
+import { ssr } from '../ssr.js'
 test('ssr: renders createTemplate', () =>
   expect(
     ssr(

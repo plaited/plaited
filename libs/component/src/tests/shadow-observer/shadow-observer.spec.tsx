@@ -5,7 +5,7 @@ import { ShadowIsland } from './shadow.island.js'
 
 
 test('shadow observer test', async t => {
-  ShadowIsland()
+  customElements.define(ShadowIsland.tag, ShadowIsland)
   const body = document.querySelector('body')
   body.insertAdjacentElement('beforeend', document.createElement(ShadowIsland.tag))
 

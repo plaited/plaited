@@ -108,3 +108,5 @@ export type Feedback = <T extends Record<string, (detail: any) => void>>(
 export interface DevCallback {
   (args: ReturnType<StateSnapshot>): void;
 }
+
+export type Log =  ReturnType<StateSnapshot>

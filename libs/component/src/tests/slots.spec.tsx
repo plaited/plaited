@@ -1,6 +1,6 @@
 import { test } from '@plaited/rite'
 import {  css } from '@plaited/jsx'
-import { createComponent, PlaitProps } from '../index.js'
+import { Component, PlaitProps } from '../index.js'
 import sinon from 'sinon'
 const [ classes, stylesheet ] = css`.row {
   display: flex;
@@ -14,49 +14,49 @@ const [ classes, stylesheet ] = css`.row {
 const slot = sinon.spy()
 const nested = sinon.spy()
 const named = sinon.spy()
-const fixture = createComponent(
-  { tag: 'slot-test' },
-  base =>
-    class extends base {
-      static template =  <div className={classes.row}
-        {...stylesheet}
-      >
-        <slot data-trigger={{ click: 'slot' }}></slot>
-        <slot name='named'
-          data-trigger={{ click: 'named' }}
-        ></slot>
-        <nested-slot slots={<slot slot='nested'
-          name='nested'
-          data-trigger={{ click: 'nested' }}
-        >
-        </slot>}
-        >
-          <slot name='nested'></slot>
-        </nested-slot>
-      </div>
-      plait({ feedback }: PlaitProps) {
-        feedback({
-          slot() {
-            slot('slot')
-          },
-          named() {
-            named('named')
-          },
-          nested() {
-            nested('nested')
-          },
-        })
-      }
-    }
-)
+
+class Fixture  extends Component({
+  tag: 'slot-test',
+  template:  <div className={classes.row}
+    {...stylesheet}
+  >
+    <slot data-trigger={{ click: 'slot' }}></slot>
+    <slot name='named'
+      data-trigger={{ click: 'named' }}
+    ></slot>
+    <nested-slot slots={<slot slot='nested'
+      name='nested'
+      data-trigger={{ click: 'nested' }}
+    >
+    </slot>}
+    >
+      <slot name='nested'></slot>
+    </nested-slot>
+  </div>,
+}){
+  plait({ feedback }: PlaitProps) {
+    feedback({
+      slot() {
+        slot('slot')
+      },
+      named() {
+        named('named')
+      },
+      nested() {
+        nested('nested')
+      },
+    })
+  }
+}
+
 //define our fixture
-fixture()
-// We need to define our nest-slot component
+customElements.define(Fixture.tag, Fixture)
+// We need to define our nest-slot Component
 
 const root = document.querySelector('body')
 
 root.insertAdjacentHTML('beforeend',
-  `<${fixture.tag}>
+  `<${Fixture.tag}>
     <button class="${classes.button}">Slot</button>
     <button slot='named'
       class="${classes.button}"
@@ -64,7 +64,7 @@ root.insertAdjacentHTML('beforeend',
     <button slot='nested'
       class="${classes.button}"
     >Nested</button>
-  </${fixture.tag}>` 
+  </${Fixture.tag}>` 
 )
 
 test('slot: default', async t => {

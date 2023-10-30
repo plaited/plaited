@@ -1,15 +1,5 @@
 import { Trigger, TriggerArgs } from '@plaited/behavioral'
-
-interface Connect {
-  (recipient: string, trigger: Trigger): () => void;
-  worker: (id: string, worker: Worker) => () => void;
-}
-type Send = (recipient: string, detail: TriggerArgs) => void;
-type Message = {
-  recipient: string;
-  detail: TriggerArgs;
-};
-
+import { Connect, Send, Message } from './types.js'
 /** Enables communication between agents in a web app.
  * Agents can be Islands, workers, or behavioral program running in the main thread.
  * This allows for execution of the one-way message exchange pattern (aka
@@ -20,25 +10,38 @@ type Message = {
  *   worker: (id: string, url: string) =>  {@link Disconnect}
  * }
  */
-export const useMessenger = () => {
+export const useMessenger = (id?: string) => {
+  const recipients = new Set<string>()
   const emitter = new EventTarget()
   /** connect island to messenger */
-  const connect = (recipient: string, trigger: Trigger) => {
+  const connect: Connect = (recipient: string, trigger: Trigger) => {
+    if(recipients.has(recipient)) {
+      console.error(`A recipient with address [${recipient}] has already connected to this messenger ${id ? `[${id}]` : ''}`)
+      return 
+    }
+    recipients.add(recipient)
     const eventHandler = (event: CustomEvent<TriggerArgs>) =>
       trigger(event.detail)
     emitter.addEventListener(
       recipient,
       eventHandler as EventListenerOrEventListenerObject
     )
-    return () =>
+    return () => {
+      recipients.delete(recipient)
       emitter.removeEventListener(
         recipient,
         eventHandler as EventListenerOrEventListenerObject
       )
+    }
+    
   }
 
   /** send request to another island or worker */
   const send = (recipient: string, detail: TriggerArgs) => {
+    if(!recipients.has(recipient)) {
+      console.error(`No recipient with address [${recipient}] is connected to this messenger ${id ? `[${id}]` : ''}`)
+      return 
+    }
     const event = new CustomEvent(recipient, { detail })
     emitter.dispatchEvent(event)
   }
@@ -53,21 +56,26 @@ export const useMessenger = () => {
       worker.postMessage(args)
     }
     const disconnect = connect(recipient, trigger)
-    const eventHandler = ({ data }: { data: Message }) => {
-      const { recipient, detail } = data
-      send(recipient, detail)
-    }
-    worker.addEventListener('message', eventHandler, false)
-    return () => {
-      disconnect()
-      worker.removeEventListener('message', eventHandler)
+    if(disconnect) {
+      const eventHandler = ({ data }: { data: Message }) => {
+        const { recipient, detail } = data
+        send(recipient, detail)
+      }
+      worker.addEventListener('message', eventHandler, false)
+      return () => {
+        disconnect()
+        worker.removeEventListener('message', eventHandler)
+      }
     }
   }
 
-  return Object.freeze<
-    [Connect, Send]
-  >([
-    connect,
-    send,
-  ])
+  return Object.freeze<{
+    connect: Connect;
+    send: Send;
+    has: (recipient: string) => boolean;
+      }>({
+        connect,
+        send,
+        has: (recipient: string) => recipients.has(recipient),
+      })
 }

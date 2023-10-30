@@ -1,6 +1,6 @@
 import { test } from '@plaited/rite'
-import { css, ssr, FT } from '@plaited/jsx'
-import { createComponent } from '../index.js'
+import { css, FT } from '@plaited/jsx'
+import { Component } from '../index.js'
 import { createTemplateElement } from '../sugar.js'
 
 
@@ -11,21 +11,19 @@ test('template', async t => {
     color: blue
   }`
   const content = 'client side rendered'
-  const Template = createComponent(
-    { tag:'template-element' },
-    base => class extends base {
-      static template = <div
-        data-test='content'
-        className={cls.inner}
-        {...stylesheet}
-      >
-        {content}
-      </div>
-    }
-  )
-  Template()
+  class Fixture extends Component({
+    tag:'template-element',
+    template: <div
+      data-test='content'
+      className={cls.inner}
+      {...stylesheet}
+    >
+      {content}
+    </div>,
+  }){}
+  customElements.define(Fixture.tag, Fixture)
   const body = document.querySelector('body')
-  const host = document.createElement(Template.tag)
+  const host = document.createElement(Fixture.tag)
   body.append(host)
   const inner = await t.findByAttribute('data-test', 'content')
   const textContent = inner.textContent
@@ -55,19 +53,17 @@ test('template existing declarative shadowdom', async t => {
   >
     {children}
   </div>
-  const Fixture = createComponent(
-    { tag:'with-declarative-shadow-dom' },
-    base => class extends base {
-      static template = <Template>after hydration</Template>
-    }
-  )
-  const template = createTemplateElement(ssr(
-    <Fixture.tag data-test='host'
+  class Fixture extends Component({
+    tag:'with-declarative-shadow-dom',
+    template: <Template>after hydration</Template>,
+  }){}
+  const template = createTemplateElement(
+    (<Fixture.tag data-test='host'
       {...stylesheet}
     >
       <Template>before hydration</Template>
-    </Fixture.tag>
-  ))
+    </Fixture.tag>).content
+  )
   const frag = document.importNode(template.content, true)
   const body = document.querySelector('body')
   body.append(frag)
@@ -87,7 +83,7 @@ test('template existing declarative shadowdom', async t => {
     actual: textContent,
     expected: 'before hydration',
   })
-  Fixture()
+  customElements.define(Fixture.tag, Fixture)
   inner = await t.findByAttribute('data-test', 'inner', host)
   style = await t.findByText(stylesheet.stylesheet, host)
   t({

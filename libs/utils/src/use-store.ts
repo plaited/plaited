@@ -11,7 +11,8 @@ type Set<T> = (newStore: T | ((arg: T) => T)) => T;
  * @description
  * a simple utility function for safely getting and setting values you need to persist during run.
  * When using the callback feature userStore passes a structured clone of the currently stored value
- * as a parameter.
+ * as a parameter. If you pass a function as nestStore, it will be treated as an updater function. It must be pure, should take the pending state as its only argument,
+ * and should return the next store.  
  *
  * @example
  *  const [store, setStore] = useStore<Record<string, number> | number>({ a: 1 })

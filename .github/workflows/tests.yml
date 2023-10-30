@@ -11,11 +11,12 @@ jobs:
     steps:
     
     - uses: actions/checkout@v3
+    - uses: oven-sh/setup-bun@v1
     - name: Test
       uses: devcontainers/ci@v0.3
       with:
         runCmd: |
-          yarn install
-          npx playwright install
-          yarn run build
-          yarn run test
+          bun install
+          bunx playwright install
+          bun run build
+          bun run test

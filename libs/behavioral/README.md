@@ -79,7 +79,7 @@ flows are mixed.
 ### 1. Lets make our app add hot water 3 times:
 
 ```ts
-import { expect, test } from "@jest/globals";
+import { expect, test } from "bun:test";
 import { bProgram, DevCallback } from "@plaited/behavioral";
 
 test("Add hot water 3 times", () => {
@@ -261,7 +261,7 @@ manner. First we'll import our testing utils. Then we'll import `bProgram`,
 `loop`, `thread`, and `sync` form `@plaited/behavioral`.
 
 ```ts
-import { expect, test } from "@jest/globals";
+import { expect, test } from "bun:test";
 import { bProgram, loop, RulesFunc, sync, thread } from "@plaited/behavioral";
 
 const winConditions = [
