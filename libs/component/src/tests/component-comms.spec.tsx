@@ -1,10 +1,9 @@
-import { css } from '@plaited/jsx'
+import { css, dataAddress } from '@plaited/jsx'
 import { test } from '@plaited/rite'
-import { useMessenger } from '@plaited/comms'
-import { component, PlaitProps } from '../index.js'
+import { Component, PlaitProps, useMessenger } from '../index.js'
 
 test('dynamic island comms', async t => {
-  const [ connect, send ] = useMessenger()
+  const { connect, send } = useMessenger()
   const [ classes, stylesheet ] = css`.row {
   display: flex;
   gap: 10px;
@@ -15,7 +14,7 @@ test('dynamic island comms', async t => {
   width: auto;
 }`
   const wrapper = document.querySelector('body')
-  class ElOne extends component({
+  class ElOne extends Component({
     connect,
     tag: 'dynamic-one',
     template: <div className={classes.row}
@@ -37,7 +36,7 @@ test('dynamic island comms', async t => {
           button && (button.disabled = true)
         },
         click() {
-          send('dynamic-two', {
+          send('two', {
             type: 'add',
             detail: { value: ' World!' },
           })
@@ -45,9 +44,10 @@ test('dynamic island comms', async t => {
       })
     }
   }
-  class ElTwo extends component({
-    connect,
+  class ElTwo extends Component({
     tag: 'dynamic-two',
+    connect,
+    dev: true,
     template: <h1 data-target='header'
       {...stylesheet}
     >Hello</h1>,
@@ -70,15 +70,17 @@ test('dynamic island comms', async t => {
       })
     }
   }
+  // Create elements and append to dom
+  const one = document.createElement(ElOne.tag)
+  const two = document.createElement(ElTwo.tag)
+  one.setAttribute(dataAddress, 'one')
+  two.setAttribute(dataAddress, 'two')
+  wrapper.insertAdjacentElement('beforeend', one)
+  wrapper.insertAdjacentElement('beforeend', two)
+
   // Define elements
   customElements.define(ElOne.tag, ElOne)
   customElements.define(ElTwo.tag, ElTwo)
-  // Create elements and append to dom
-  const one = document.createElement(ElOne.tag)
-  one.id = 'one'
-  const two = document.createElement(ElTwo.tag)
-  wrapper.insertAdjacentElement('beforeend', one)
-  wrapper.insertAdjacentElement('beforeend', two)
 
   let button = await t.findByAttribute('data-target', 'button', wrapper)
   const header = await t.findByAttribute('data-target', 'header', wrapper)

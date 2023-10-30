@@ -1,6 +1,6 @@
 import { Template, booleanAttrs  } from '@plaited/jsx'
 import { PlaitedElementConstructor } from './types.js'
-
+import { canUseDOM } from '@plaited/utils'
 
 type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend';
 /**
@@ -15,8 +15,7 @@ const updateShadowRootStyles = async (root: ShadowRoot, stylesheets: Set<string>
   // P1 first time dynamically setting stylesheets on instance add it to cache
   if(!cache.has(root)) cache.set(root, new Set<string>()) 
   // P2 get default styles if they exist on instance
-  const template = (root.host.constructor as PlaitedElementConstructor).template
-  const defaultStyles: undefined | Set<string> = template?.stylesheets
+  const defaultStyles: undefined | Set<string> = (root.host.constructor as PlaitedElementConstructor).stylesheets
   const instanceStyles = cache.get(root)
   const newStyleSheets: CSSStyleSheet[] = []
   try {
@@ -39,7 +38,7 @@ let parser: {
   }): Document;
 }
 
-if (typeof window !== 'undefined' && window.DOMParser) {
+if (canUseDOM()) {
   parser = new DOMParser()
 }
 

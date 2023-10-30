@@ -2,10 +2,22 @@ import {
   bProgram,
   DevCallback,
   Strategy,
-  Trigger,
+  Trigger, 
+  TriggerArgs,
 } from '@plaited/behavioral'
 import { SugaredElement } from './sugar.js'
-import { Template } from '@plaited/jsx'
+import { Template, AdditionalAttrs, FunctionTemplate } from '@plaited/jsx'
+
+export interface Connect {
+  (recipient: string, trigger: Trigger): undefined | (() => void);
+  worker: (id: string, worker: Worker) => undefined | (() => void);
+}
+export type Send = (recipient: string, detail: TriggerArgs) => void;
+export type Message = {
+  recipient: string;
+  detail: TriggerArgs;
+};
+
 
 export type SelectorMod = '=' | '~=' | '|=' | '^=' | '$=' | '*='
 
@@ -48,9 +60,6 @@ export interface PlaitedElement extends HTMLElement {
   ): void;
 }
 
-/** messenger connect callback */
-export type Connect = (recipient: string, trigger: Trigger) => () => void;
-
 export type PlaitProps = {
   /** query for elements with the data-target attribute in the Island's shadowDom and slots */
   $: $;
@@ -64,41 +73,29 @@ export type PlaitProps = {
 } & ReturnType<typeof bProgram>;
 
 export interface PlaitedElementConstructor {
-  template: Template;
+  stylesheets: Set<string>;
   tag: string;
+  template: FunctionTemplate<
+  AdditionalAttrs & { slots: never}
+  > 
   new (): PlaitedElement;
 }
 
 export type ComponentArgs = {
-  id?: never
-  connect?: never
+  /** PlaitedComponent tag name */
+  tag: `${string}-${string}`;
+  /** Optional Plaited Component shadow dom template*/
+  template: Template;
+  /** Messenger connect callback from useMessenger */
+  connect?: Connect
   /** define wether island's custom element is open or closed. @defaultValue 'open'*/
   mode?: 'open' | 'closed';
   /** configure whether to delegate focus or not @defaultValue 'true' */
   delegatesFocus?: boolean;
   /** logger function to receive messages from behavioral program react streams */
-  dev?: DevCallback;
+  dev?: true | DevCallback;
   /** event selection strategy callback from behavioral library */
   strategy?: Strategy;
   /** the element tag you want to use */
-  tag: `${string}-${string}`;
-  template: Template;
-  observedTriggers?: Record<string, string>
-}
-
-export type ConnectedComponentArgs = {
-  id?: boolean
-  connect: Connect
-  /** define wether island's custom element is open or closed. @defaultValue 'open'*/
-  mode?: 'open' | 'closed';
-  /** configure whether to delegate focus or not @defaultValue 'true' */
-  delegatesFocus?: boolean;
-  /** logger function to receive messages from behavioral program react streams */
-  dev?: DevCallback;
-  /** event selection strategy callback from behavioral library */
-  strategy?: Strategy;
-  /** the element tag you want to use */
-  tag: `${string}-${string}`;
-  template: Template;
   observedTriggers?: Record<string, string>
 }

@@ -1,5 +1,11 @@
 import { Template } from './types.js'
 
+if (typeof global.HTMLElement === 'undefined') {
+  // @ts-ignore node env
+  global.HTMLElement = class HTMLElement {
+  }
+}
+
 export const ssr = (...templates: Template[]) => {
   let content = ''
   const stylesheets = new Set<string>()

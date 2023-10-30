@@ -1,3 +1,4 @@
+import { dataAddress, dataTarget, dataTrigger } from './constants.js'
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export type Primitive =
   | null
@@ -23,8 +24,9 @@ export interface AdditionalAttrs {
 export type BaseAttrs = {
   class?: never;
   for?: never;
-  'data-target'?: string;
-  'data-trigger'?: Record<string, string>;
+  [dataAddress]?: string;
+  [dataTarget]?: string;
+  [dataTrigger]?: Record<string, string>;
   htmlFor?: string,
   className?: string,
   children?: Children

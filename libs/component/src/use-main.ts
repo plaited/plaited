@@ -1,6 +1,5 @@
 import { Trigger, TriggerArgs } from '@plaited/behavioral'
-
-type Send = (recipient: string, detail: TriggerArgs) => void;
+import { Send } from './types.js'
 /** is a hook to allow us to send and receive messages from the main thread in a worker */
 export const useMain = (
   /** is self of the worker */

@@ -1714,27 +1714,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@plaited/comms@4.1.0, @plaited/comms@workspace:libs/comms":
-  version: 0.0.0-use.local
-  resolution: "@plaited/comms@workspace:libs/comms"
-  dependencies:
-    "@plaited/behavioral": 4.1.0
-    "@plaited/rite": 4.1.0
-    "@plaited/utils": 4.1.0
-    "@web/dev-server": 0.3.6
-    "@web/dev-server-esbuild": 0.4.3
-    "@web/test-runner": 0.17.2
-    "@web/test-runner-core": 0.11.6
-    "@web/test-runner-playwright": 0.10.2
-  languageName: unknown
-  linkType: soft
-
 "@plaited/component@4.1.0, @plaited/component@workspace:libs/component":
   version: 0.0.0-use.local
   resolution: "@plaited/component@workspace:libs/component"
   dependencies:
     "@plaited/behavioral": 4.1.0
-    "@plaited/comms": 4.1.0
     "@plaited/jsx": 4.1.0
     "@plaited/rite": 4.1.0
     "@plaited/utils": 4.1.0
@@ -10097,7 +10081,6 @@ __metadata:
   resolution: "plaited@workspace:libs/plaited"
   dependencies:
     "@plaited/behavioral": 4.1.0
-    "@plaited/comms": 4.1.0
     "@plaited/component": 4.1.0
     "@plaited/jsx": 4.1.0
     "@plaited/utils": 4.1.0
@@ -11183,6 +11166,18 @@ __metadata:
   checksum: 19d79aec211f09b99ec3099b5b2ae2f6e9cdefe50bc91ac4c69144b6d3928a640bb6ae5b3def70c2e85a2c3d9f5ec2719921e3a59d3ca3ef4b2fd1a4656a0df3
   languageName: node
   linkType: hard
+
+"ssr@workspace:examples/ssr":
+  version: 0.0.0-use.local
+  resolution: "ssr@workspace:examples/ssr"
+  dependencies:
+    "@jest/globals": 29.7.0
+    "@swc/core": 1.3.95
+    "@swc/jest": 0.2.29
+    jest: 29.7.0
+    plaited: "workspace:*"
+  languageName: unknown
+  linkType: soft
 
 "ssri@npm:^10.0.0, ssri@npm:^10.0.1":
   version: 10.0.5

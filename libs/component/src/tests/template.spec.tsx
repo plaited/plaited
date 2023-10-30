@@ -1,6 +1,6 @@
 import { test } from '@plaited/rite'
-import { css, ssr, FT } from '@plaited/jsx'
-import { component } from '../index.js'
+import { css, FT } from '@plaited/jsx'
+import { Component } from '../index.js'
 import { createTemplateElement } from '../sugar.js'
 
 
@@ -11,7 +11,7 @@ test('template', async t => {
     color: blue
   }`
   const content = 'client side rendered'
-  class Fixture extends component({
+  class Fixture extends Component({
     tag:'template-element',
     template: <div
       data-test='content'
@@ -53,17 +53,17 @@ test('template existing declarative shadowdom', async t => {
   >
     {children}
   </div>
-  class Fixture extends component({
+  class Fixture extends Component({
     tag:'with-declarative-shadow-dom',
     template: <Template>after hydration</Template>,
   }){}
-  const template = createTemplateElement(ssr(
-    <Fixture.tag data-test='host'
+  const template = createTemplateElement(
+    (<Fixture.tag data-test='host'
       {...stylesheet}
     >
       <Template>before hydration</Template>
-    </Fixture.tag>
-  ))
+    </Fixture.tag>).content
+  )
   const frag = document.importNode(template.content, true)
   const body = document.querySelector('body')
   body.append(frag)

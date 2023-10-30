@@ -1,6 +1,6 @@
 import { test } from '@plaited/rite'
 import {  css } from '@plaited/jsx'
-import { component, PlaitProps } from '../index.js'
+import { Component, PlaitProps } from '../index.js'
 import sinon from 'sinon'
 const [ classes, stylesheet ] = css`.row {
   display: flex;
@@ -15,7 +15,7 @@ const slot = sinon.spy()
 const nested = sinon.spy()
 const named = sinon.spy()
 
-class Fixture  extends component({
+class Fixture  extends Component({
   tag: 'slot-test',
   template:  <div className={classes.row}
     {...stylesheet}
@@ -51,7 +51,7 @@ class Fixture  extends component({
 
 //define our fixture
 customElements.define(Fixture.tag, Fixture)
-// We need to define our nest-slot component
+// We need to define our nest-slot Component
 
 const root = document.querySelector('body')
 

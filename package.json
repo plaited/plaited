@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "build": "lerna run build",
+    "build:watch": "lerna run build:watch",
     "lint": "eslint . --ext .ts,.tsx,.js,.cjs",
     "lint:fix": "yarn lint --fix --quiet",
     "postinstall": "husky install",

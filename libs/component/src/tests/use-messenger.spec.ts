@@ -3,7 +3,7 @@ import sinon from 'sinon'
 import { useMessenger } from '../index.js'
 
 test('useMessenger: connect, send, close', async t => {
-  const [ connect, send ] = useMessenger()
+  const { connect, send, has } = useMessenger()
   const spy = sinon.spy()
   const close = connect('actor1', spy)
   send('actor1', { type: 'a', detail: { value: 4 } })
@@ -15,12 +15,24 @@ test('useMessenger: connect, send, close', async t => {
     expected: true,
   })
   close()
+  t({
+    given: 'close',
+    should: 'has should return false',
+    actual: has('actor1'),
+    expected: false,
+  })
 })
 test('useMessenger: send, connect, close', async t => {
-  const [ connect, send ] = useMessenger()
+  const { connect, send, has } = useMessenger()
   const spy = sinon.spy()
   send('actor1', { type: 'b', detail: { value: 4 } })
   const close = connect('actor1', spy)
+  t({
+    given: 'connect',
+    should: 'have actor1',
+    actual: has('actor1'),
+    expected: true,
+  })
   await t.wait(100)
   t({
     given: 'message send before connect',
@@ -31,7 +43,7 @@ test('useMessenger: send, connect, close', async t => {
   close()
 })
 test('useMessenger: connect, close, send', async t => {
-  const [ connect, send ] = useMessenger()
+  const { connect, send } = useMessenger()
   const spy = sinon.spy()
   connect('actor1', spy)()
   await t.wait(100)
@@ -44,7 +56,7 @@ test('useMessenger: connect, close, send', async t => {
   })
 })
 test('useMessenger: with worker', async t => {
-  const [ connect, send ] = useMessenger()
+  const { connect, send, has } = useMessenger()
   const worker = new Worker(new URL( '/src/tests/__mocks__/test.worker.ts', import.meta.url), {
     type: 'module',
   })
@@ -60,6 +72,13 @@ test('useMessenger: with worker', async t => {
   send('calculator', {
     type: 'calculate',
     detail: { a: 9, b: 10, operation: 'multiply' },
+  })
+
+  t({
+    given: 'connect',
+    should: 'have worker',
+    actual: has('calculator'),
+    expected: true,
   })
   await t.wait(200)
   t({

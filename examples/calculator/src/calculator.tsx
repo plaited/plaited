@@ -1,5 +1,4 @@
-import { component, PlaitProps, RulesFunc, useStore, css } from 'plaited'
-import { useMessenger } from 'plaited/comms'
+import { Component, PlaitProps, RulesFunc, useStore, css, useMessenger } from 'plaited'
 
 export const symbols = {
   add: '+',
@@ -171,7 +170,7 @@ const template = <div className={classes.calculator}
   >{symbols.equal}</button>
 </div>
 
-export class Calculator extends component({
+export class Calculator extends Component({
   tag: 'calculator-island',
   connect,
   template,

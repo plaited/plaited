@@ -1,6 +1,6 @@
 import { test } from '@plaited/rite'
 import { css, stylesheets } from '@plaited/jsx'
-import { component, PlaitProps } from '../index.js'
+import { Component, PlaitProps } from '../index.js'
 
 test('dynamic styles', async t => {
   const body = document.querySelector('body')
@@ -12,7 +12,7 @@ test('dynamic styles', async t => {
       color: red;
     }
   `
-  class Fixture extends component({
+  class Fixture extends Component({
     tag:'dynamic-only',
     template: <div data-target='target'></div>,
   }){
@@ -57,7 +57,7 @@ test('with default and dynamic styles', async t => {
       color: red;
     }
   `
-  class Fixture extends component({
+  class Fixture extends Component({
     tag:'with-default-styles',
     template: <div data-target='target-2'
       className={cls.root}

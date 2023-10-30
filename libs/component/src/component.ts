@@ -5,18 +5,25 @@
  * @returns {void}
  * @alias cc
  */
-import { dataTarget, dataTrigger, Template } from '@plaited/jsx'
-import { Trigger } from '@plaited/behavioral'
+import {
+  dataTarget,
+  dataTrigger,
+  dataAddress,
+  createTemplate,
+  FunctionTemplate,
+  AdditionalAttrs,
+} from '@plaited/jsx'
+import { Trigger, bProgram, Log } from '@plaited/behavioral'
 import {
   ComponentArgs,
-  ConnectedComponentArgs,
   PlaitedElement,
   PlaitProps,
   SelectorMod,
+  Connect,
 } from './types.js'
 import { delegatedListener } from './delegated-listener.js'
 import { assignSugar, SugaredElement, assignSugarForEach, createTemplateElement } from './sugar.js'
-import { initBProgram } from './init-b-program.js'
+
 const regexp = /\b[\w-]+\b(?=->[\w-]+)/g
 // It takes the value of a data-target attribute and return all the events happening in it. minus the method identifier
 // so iof the event was data-target="click->doSomething" it would return ["click"]
@@ -63,7 +70,10 @@ const traverseNodes = (node: Node, arr: Node[]) => {
   }
 }
 
-export const component = ( {
+// eslint-disable-next-line no-console
+const log = (log:Log) => console.table(log)
+
+export const Component = ({
   mode = 'open',
   delegatesFocus = true,
   tag,
@@ -71,21 +81,37 @@ export const component = ( {
   observedTriggers,
   dev,
   strategy,
-  id,
   connect,
-}: ComponentArgs | ConnectedComponentArgs) => {
-  // eslint-disable-next-line func-names
+}: ComponentArgs) => {
+  if(!tag) {
+    throw new Error(`Component is missing a [tag]`)
+  }
+  const _tag = tag.toLowerCase()
   return class PlaitedComponent extends HTMLElement implements PlaitedElement{
-    static tag: string = tag
-    static template: Template = template
+    static tag = _tag
+    static stylesheets = template.stylesheets
+    static template:FunctionTemplate<
+    AdditionalAttrs & { slots: never}
+    > = ({
+        slot: _,
+        children,
+        ...attrs
+      }) => createTemplate(
+        tag,
+        {
+          ...attrs,
+          children: template,
+          slots:children,
+          shadowrootmode: mode,
+          shadowrootdelegatesfocus: delegatesFocus,
+        }
+      )
     #shadowObserver?: MutationObserver
-    #templateObserver?: MutationObserver
-    #disconnect?: () => void
+    #disconnectMessenger?: ReturnType<Connect>
     internals_: ElementInternals
     #trigger: Trigger
     plait?(props: PlaitProps): void | Promise<void>
     #root: ShadowRoot
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     constructor() {
       super()
       this.internals_ = this.attachInternals()
@@ -95,36 +121,23 @@ export const component = ( {
         /** no declarative shadow dom then create a shadowRoot */
         this.#root = this.attachShadow({ mode, delegatesFocus })
       }
-      if(template) {
-        const { content, stylesheets } = template
-        const adoptedStyleSheets: CSSStyleSheet[]  = []
-        for(const style of stylesheets) {
-          const sheet = new CSSStyleSheet()
-          sheet.replaceSync(style)
-          adoptedStyleSheets.push(sheet)
-        }
-        this.#root.adoptedStyleSheets = adoptedStyleSheets
-        const tpl = createTemplateElement(content)
-        this.#root.replaceChildren(tpl.content.cloneNode(true))
+      if(!template) {
+        throw new Error(`Component [${tag}] is missing a [template]`)
       }
+      const { content, stylesheets } = template
+      const adoptedStyleSheets: CSSStyleSheet[]  = []
+      for(const style of stylesheets) {
+        const sheet = new CSSStyleSheet()
+        sheet.replaceSync(style)
+        adoptedStyleSheets.push(sheet)
+      }
+      this.#root.adoptedStyleSheets = adoptedStyleSheets
+      const tpl = createTemplateElement(content)
+      this.#root.replaceChildren(tpl.content.cloneNode(true))
     }
     connectedCallback() {
-      if (!template || !this.internals_.shadowRoot?.firstChild) {
-        const template = this.querySelector<HTMLTemplateElement>(
-          'template[shadowrootmode]'
-        )
-          template
-            ? this.#appendTemplate(template)
-            : (this.#templateObserver = this.#createTemplateObserver())
-      }
       if (this.plait) {
-        const { trigger, ...rest } = initBProgram({
-          connect,
-          id: id ?? true,
-          strategy,
-          dev,
-          host: this,
-        })
+        const { trigger, ...rest } = this.#bProgram()
         this.#trigger = trigger // listeners need trigger to be available on instance
         this.#delegateObservedTriggers() //just connected/upgraded then delegate observed triggers
         this.#delegateListeners( // just connected/upgraded then delegate listeners nodes with data-trigger attribute
@@ -132,7 +145,6 @@ export const component = ( {
             `[${dataTrigger}]`
           ))
         )
-         
         this.#shadowObserver = this.#createShadowObserver()
         void this.plait({
           $: this.$.bind(this),
@@ -143,14 +155,32 @@ export const component = ( {
       }
     }
     disconnectedCallback() {
-      this.#templateObserver && this.#templateObserver.disconnect()
       this.#shadowObserver && this.#shadowObserver.disconnect()
-      if (this.#disconnect) {
-        this.#trigger({
-          type: `disconnected->${this.id || this.tagName.toLowerCase()}`,
-        })
-        this.#disconnect()
+      this.#disconnectMessenger && this.#disconnectMessenger()
+      this.#trigger({
+        type: `disconnected->${this.dataset.address ?? this.tagName.toLowerCase()}`,
+      })
+    }
+    #bProgram() {
+      const { trigger, ...rest } = bProgram({
+        strategy,
+        dev: dev ===true ? log : dev,
+      })
+      let disconnect: ReturnType<Connect>
+      if (connect) {
+        const recipient = this.dataset.address
+        if (!recipient) {
+          console.error(
+            `Component ${this.tagName.toLowerCase()} is missing an attribute [${dataAddress}]`
+          )
+        }
+        disconnect = connect(recipient, trigger)
       }
+      trigger({
+        type: `connected->${this.dataset.address ?? this.tagName.toLowerCase()}`,
+      })
+      this.#disconnectMessenger = disconnect
+      return { trigger, ...rest }
     }
     #delegateObservedTriggers() {
       if(observedTriggers) {
@@ -225,26 +255,6 @@ export const component = ( {
         childList: true,
         subtree: true,
       })
-      return mo
-    }
-    #appendTemplate(template: HTMLTemplateElement) {
-      !this.#root.firstChild &&
-          this.#root.appendChild(
-            document.importNode(template.content, true)
-          )
-      template.remove()
-    }
-    #createTemplateObserver() {
-      const mo = new MutationObserver(() => {
-        const template = this.querySelector<HTMLTemplateElement>(
-          'template[shadowrootmode]'
-        )
-        if (template) {
-          mo.disconnect()
-          this.#appendTemplate(template)
-        }
-      })
-      mo.observe(this, { childList: true })
       return mo
     }
     /** we're bringing the bling back!!! */
