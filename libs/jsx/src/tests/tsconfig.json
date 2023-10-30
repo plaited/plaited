@@ -4,14 +4,8 @@
     "module": "NodeNext",
     "declaration": true,
     "moduleResolution": "nodenext",
-    "outDir": "dist",
-    "rootDir": "src",
-  },
-  "include": [
-    "**/src/"
-  ],
-  "exclude": [
-    "**/tests/",
-    "**/dist"
-  ]
+    "types": [
+      "bun-types"
+    ]
+  }
 }
