@@ -5,9 +5,9 @@ import { Connect, Send, Message } from './types.js'
  * This allows for execution of the one-way message exchange pattern (aka
  * fire and forget).
  * @returns readonly {}
- *   connect: (recipient: string, trigger: {@link Trigger}) => {@link Disconnect},
+ *   connect: (recipient: string, trigger: {@link Trigger}) => ()=> void),
  *   send: (recipient: string, detail: {@link TriggerArgs}) => void
- *   worker: (id: string, url: string) =>  {@link Disconnect}
+ *   worker: (id: string, url: string) =>  ()=> void)
  * }
  */
 export const useMessenger = (id?: string) => {
