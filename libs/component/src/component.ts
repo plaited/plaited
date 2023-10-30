@@ -133,7 +133,7 @@ export const Component = ({
       }
       this.#root.adoptedStyleSheets = adoptedStyleSheets
       const tpl = createTemplateElement(content)
-      this.#root.replaceChildren(tpl.content.cloneNode(true))
+      this.#root.replaceChildren(tpl.content)
     }
     connectedCallback() {
       if (this.plait) {
