@@ -3,6 +3,7 @@ import { findByAttribute } from '../find-by-attribute.js'
 import { findByText } from '../find-by-text.js'
 import { fireEvent } from '../fire-event.js'
 
+
 test('findByAttribute: light dom', async t => {
   // Create two element to be used to validate helper
   const firstEl = document.createElement('div')
@@ -22,7 +23,7 @@ test('findByAttribute: light dom', async t => {
   t({
     given: 'search for element with attribute',
     should: 'find child element',
-    actual: second.textContent,
+    actual: second?.textContent,
     expected,
   })
   // Cleanup
@@ -54,7 +55,7 @@ test('findByAttribute: shadow dom', async t => {
   t({
     given: 'search without passing context',
     should: 'find child element',
-    actual: target.textContent,
+    actual: target?.textContent,
     expected,
   })
   // Search with passing context
@@ -62,7 +63,7 @@ test('findByAttribute: shadow dom', async t => {
   t({
     given: 'a search with host context',
     should: 'find child element',
-    actual: target.textContent,
+    actual: target?.textContent,
     expected,
   })
   context.remove()
@@ -98,7 +99,7 @@ test('findByAttribute: nested shadow dom', async t => {
   t({
     given: 'search for child without context',
     should: 'find child element',
-    actual: el.textContent,
+    actual: el?.textContent,
     expected,
   })
   el = await findByAttribute('data-test', 'nested-shadow-element')
@@ -106,7 +107,7 @@ test('findByAttribute: nested shadow dom', async t => {
   t({
     given: 'search for child with context',
     should: 'find child element',
-    actual: el.textContent,
+    actual: el?.textContent,
     expected,
   })
 
@@ -147,7 +148,7 @@ test('findByAttribute: first element that satisfies query', async t => {
   t({
     given: 'search for child without context',
     should: 'find child element',
-    actual: el.getRootNode(),
+    actual: el?.getRootNode(),
     expected: outerShadowRoot,
   })
   context.remove()
@@ -290,7 +291,7 @@ test('findByText: first element that satisfies query', async t => {
   t({
     given: 'search for child without context',
     should: 'find child element',
-    actual: el.getRootNode(),
+    actual: el?.getRootNode(),
     expected: outerShadowRoot,
   })
   context.remove()
@@ -317,7 +318,7 @@ test('fireEvent', async t => {
   t({
     given: 'search for element with attribute',
     should: 'find child element',
-    actual: el.textContent,
+    actual: el?.textContent,
     expected: textContent,
   })
   // Cleanup

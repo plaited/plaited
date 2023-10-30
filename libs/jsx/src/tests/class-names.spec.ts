@@ -1,4 +1,4 @@
-import { test, expect } from'@jest/globals'
+import { test, expect } from 'bun:test'
 import { classNames } from '../index.js'
 
 test('classNames', () => {

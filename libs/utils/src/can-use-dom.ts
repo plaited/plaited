@@ -1,3 +1,4 @@
+/// <reference lib="dom" />
 export const canUseDOM = () => {
   return !!(
     typeof window !== 'undefined' &&

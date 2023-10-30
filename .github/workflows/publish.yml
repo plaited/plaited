@@ -31,14 +31,14 @@ jobs:
 
       - name: Setup
         run: |
-          yarn install
-          yarn run build
+          bun install
+          bun run build
 
       - name: Version
         run:  |
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor}}@users.noreply.github.com"
-          npx lerna version ${{ github.event.inputs.version }} --no-private --exact --conventional-commits --create-release github --message "ci: publish [skip ci]" --yes
+          bunx lerna version ${{ github.event.inputs.version }} --no-private --exact --conventional-commits --create-release github --message "ci: publish [skip ci]" --yes
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
   
@@ -49,6 +49,6 @@ jobs:
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> .npmrc
           npm whoami
           npm config set registry https://registry.npmjs.org/
-          npx lerna publish from-package --yes
+          bunx lerna publish from-package --yes
         env:
           NPM_TOKEN: ${{ secrets.NPM_PAT }}

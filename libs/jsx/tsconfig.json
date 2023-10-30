@@ -5,12 +5,15 @@
     "declaration": true,
     "moduleResolution": "nodenext",
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "types": [
+      "bun-types"
+    ]
   },
   "include": [
     "**/src/"
   ],
   "exclude": [
-    "**/tests/"
+    "**/dist"
   ]
 }

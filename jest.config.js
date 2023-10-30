@@ -6,7 +6,6 @@ export default {
       {
         jsc: {
           parser: {
-
             jsx: true,
           },
           transform: {
@@ -23,4 +22,3 @@ export default {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
 }
- 

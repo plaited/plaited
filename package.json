@@ -10,20 +10,18 @@
   ],
   "scripts": {
     "build": "lerna run build",
-    "build:watch": "lerna run build:watch",
     "lint": "eslint . --ext .ts,.tsx,.js,.cjs",
-    "lint:fix": "yarn lint --fix --quiet",
+    "lint:fix": "bun run lint --fix --quiet",
     "postinstall": "husky install",
     "postpack": "pinst --enable",
     "prepack": "pinst --disable",
     "prepare": "husky install",
-    "test": "npm run test --workspaces --if-present",
-    "test:watch": "npm run test:watch --workspaces --if-present",
+    "test": "lerna run test",
     "typedocs": "typedoc --plugin typedoc-plugin-markdown"
   },
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [
-      "yarn lint:fix"
+      "bun lint:fix"
     ],
     "package.json": [
       "format-package -w"
@@ -32,7 +30,6 @@
   "browserslist": [
     "> 2%"
   ],
-  "packageManager": "yarn@3.6.0",
   "devDependencies": {
     "@commitlint/cli": "18.2.0",
     "@commitlint/config-conventional": "18.1.0",
@@ -41,6 +38,7 @@
     "@typescript-eslint/eslint-plugin": "6.9.0",
     "@typescript-eslint/parser": "6.9.0",
     "beautify": "0.0.8",
+    "bun-types": "1.0.7",
     "cz-conventional-changelog": "3.3.0",
     "eslint": "8.52.0",
     "eslint-plugin-compat": "4.2.0",

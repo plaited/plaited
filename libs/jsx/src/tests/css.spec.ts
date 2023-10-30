@@ -1,4 +1,4 @@
-import { test, expect } from'@jest/globals'
+import { test, expect } from'bun:test'
 import { css } from '../index.js'
 
 test('css()', () => {

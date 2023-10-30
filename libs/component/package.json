@@ -29,9 +29,9 @@
   ],
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
-    "build:watch": "yarn build --watch",
+    "build:watch": "bun run build --watch",
     "test": "web-test-runner",
-    "test:watch": "yarn test --watch"
+    "test:watch": "web-test-runner --watch"
   },
   "types": "./dist/index.d.ts",
   "dependencies": {

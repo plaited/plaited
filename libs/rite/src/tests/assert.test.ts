@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-import { test, expect } from '@jest/globals'
+import { test, expect } from 'bun:test'
 import sinon from 'sinon'
 import { assert } from '../assert.js'
 

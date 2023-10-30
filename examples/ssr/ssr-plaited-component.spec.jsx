@@ -1,6 +1,6 @@
 import { Component, css } from 'plaited'
 import { ssr } from 'plaited/ssr'
-import { test, expect } from'@jest/globals'
+import { test, expect } from 'bun:test'
 import beautify from 'beautify'
 
 const [ cls, stylesheet ] = css`

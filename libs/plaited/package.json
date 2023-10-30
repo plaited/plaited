@@ -32,6 +32,7 @@
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
+    "@types/node": "20.8.9",
     "@plaited/behavioral": "4.1.0",
     "@plaited/component": "4.1.0",
     "@plaited/jsx": "4.1.0",

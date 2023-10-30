@@ -3,15 +3,12 @@
     "target": "ES2022",
     "module": "NodeNext",
     "declaration": true,
-    "moduleResolution": "nodenext",
-    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "NodeNext",
     "outDir": "dist",
     "rootDir": "src",
-    "types": [
-      "bun-types"
-    ]
   },
   "exclude": [
-    "**/dist"
+    "**/dist",
+    "**/tests/"
   ]
 }
