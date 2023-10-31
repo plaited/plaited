@@ -19,30 +19,30 @@ jobs:
             bunx playwright install
             bun run build
             bun run test
-  update-typedocs:
-    runs-on: ubuntu-22.04
-    needs: [check]
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GH_PAT }}
-      - uses: oven-sh/setup-bun@v1
-      - name: Git config
-        run: |
-          git config user.name "${{ github.actor }}"
-          git config user.email "${{ github.actor}}@users.noreply.github.com"
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-      - name: Build Docs
-        run: |
-          bun install
-          bun run build
-          bun run typedocs
-      - name: Push new typedocs
-        run: |
-          git add playbook/api bun.lockb
-          git commit -m "docs(playbook): typedocs [skip ci]"
-          git push origin HEAD
+  # update-typedocs:
+  #   runs-on: ubuntu-22.04
+  #   needs: [check]
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v3
+  #       with:
+  #         token: ${{ secrets.GH_PAT }}
+  #     - uses: oven-sh/setup-bun@v1
+  #     - name: Git config
+  #       run: |
+  #         git config user.name "${{ github.actor }}"
+  #         git config user.email "${{ github.actor}}@users.noreply.github.com"
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: 18
+  #     - name: Build Docs
+  #       run: |
+  #         bun install
+  #         bun run build
+  #         bun run typedocs
+  #     - name: Push new typedocs
+  #       run: |
+  #         git add playbook/api bun.lockb
+  #         git commit -m "docs(playbook): typedocs [skip ci]"
+  #         git push origin HEAD

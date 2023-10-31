@@ -53,6 +53,8 @@
     "playwright": "1.39.0",
     "prettier": "3.0.3",
     "sinon": "17.0.0",
-    "typescript": "5.2.2"
+    "typescript": "5.2.2",
+    "typedoc": "0.25.3",
+    "typedoc-plugin-markdown": "next"
   }
 }

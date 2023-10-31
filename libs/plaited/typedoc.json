@@ -1,0 +1,4 @@
+{
+  "extends": ["../../typedoc.base.json"],
+  "entryPoints": ["src/index.ts", "src/token.ts", "src/utils.ts", "src/ssr.ts"]
+}

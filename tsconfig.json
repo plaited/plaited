@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "declaration": true,
+    "moduleResolution": "NodeNext",
+  },
+  "exclude": [
+    "**/dist",
+    "**/tests/",
+    "**/node_modules/",
+    "**/examples/"
+  ],
+  "typedocOptions": {
+    "plugin": [
+      "typedoc-plugin-markdown"
+    ],
+    "entryPoints": [
+      "libs/*"
+    ],
+    "exclude": [
+      "**/README.md"
+    ],
+    "githubPages": false,
+    "out": "./playbook/api",
+    "name": "Plaited Typedocs",
+    "entryPointStrategy": "packages",
+    "includeVersion": true
+    // Potentially useful for debugging
+    // "logLevel": "Verbose"
+  }
+}
