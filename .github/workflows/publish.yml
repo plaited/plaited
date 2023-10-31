@@ -24,10 +24,7 @@ jobs:
         with:
           token: ${{ secrets.GH_PAT }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
+      - uses: oven-sh/setup-bun@v1
 
       - name: Setup
         run: |
