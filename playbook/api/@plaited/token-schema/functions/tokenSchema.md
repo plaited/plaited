@@ -8,12 +8,12 @@
 
 > **tokenSchema**\<`T`\>(`tokens`): `Schema`
 
-Parses a [DesignTokenGroup](../../../plaited/token/interfaces/DesignTokenGroup.md) group into a JSON schema where the tokens values
+Parses a [DesignTokenGroup](../../../plaited/token/type-aliases/DesignTokenGroup.md) group into a JSON schema where the tokens values
 locked in as const.
 
 ## Type parameters
 
-▪ **T** extends [`DesignTokenGroup`](../../../plaited/token/interfaces/DesignTokenGroup.md) = [`DesignTokenGroup`](../../../plaited/token/interfaces/DesignTokenGroup.md)
+▪ **T** extends [`DesignTokenGroup`](../../../plaited/token/type-aliases/DesignTokenGroup.md) = [`DesignTokenGroup`](../../../plaited/token/type-aliases/DesignTokenGroup.md)
 
 ## Parameters
 
@@ -29,7 +29,7 @@ The populated JSON schema.
 
 ## Source
 
-[token-schema.ts:10](https://github.com/plaited/plaited/blob/b0dd907/libs/token-schema/src/token-schema.ts#L10)
+[token-schema.ts:10](https://github.com/plaited/plaited/blob/0d4801d/libs/token-schema/src/token-schema.ts#L10)
 
 ***
 

@@ -8,6 +8,8 @@
 
 > **thread**(...`rules`): [`RulesFunc`](../type-aliases/RulesFunc.md)\<`any`\>
 
+creates a behavioral thread from synchronization sets and/or other  behavioral threads
+
 ## Parameters
 
 ▪ ...**rules**: [`RulesFunc`](../type-aliases/RulesFunc.md)\<`any`\>[]
@@ -16,13 +18,9 @@
 
 [`RulesFunc`](../type-aliases/RulesFunc.md)\<`any`\>
 
-## Description
-
-creates a behavioral thread from synchronization sets and/or other  behavioral threads
-
 ## Source
 
-libs/behavioral/dist/rules.d.ts:6
+libs/behavioral/dist/rules.d.ts:5
 
 ***
 

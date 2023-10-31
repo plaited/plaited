@@ -6,15 +6,21 @@
 
 # Function: Component()
 
-> **Component**(`__namedParameters`): () => `object`
+> **Component**(`args`): () => `object`
+
+Creates a PlaitedComponent
 
 ## Parameters
 
-▪ **\_\_namedParameters**: [`ComponentArgs`](../type-aliases/ComponentArgs.md)
+▪ **args**: [`ComponentArgs`](../type-aliases/ComponentArgs.md)
+
+Arguments for the PlaitedComponent
 
 ## Returns
 
 `object`
+
+A PlaitedComponent
 
 > > **new Component**(): `object`
 >
@@ -3184,7 +3190,7 @@
 >
 > ### Source
 >
-> libs/component/dist/component.d.ts:13
+> libs/component/dist/component.d.ts:24
 >
 
 > ### stylesheets
@@ -3202,7 +3208,7 @@
 
 ## Source
 
-libs/component/dist/component.d.ts:12
+libs/component/dist/component.d.ts:23
 
 ***
 

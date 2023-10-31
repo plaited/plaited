@@ -4,11 +4,17 @@
 
 [Plaited Typedocs](../../../modules.md) / [plaited](../../modules.md) / [token](../README.md) / DesignTokenGroup
 
-# Interface: DesignTokenGroup
+# Type alias: DesignTokenGroup
 
-## Indexable
+> **DesignTokenGroup**: `object`
 
- \[`key`: `string`\]: [`DesignTokenGroup`](DesignTokenGroup.md) \| [`DesignToken`](../type-aliases/DesignToken.md)
+## Index signature
+
+ \[`key`: `string`\]: [`DesignTokenGroup`](DesignTokenGroup.md) \| [`DesignToken`](DesignToken.md)
+
+## Source
+
+libs/token-types/dist/index.d.ts:289
 
 ***
 

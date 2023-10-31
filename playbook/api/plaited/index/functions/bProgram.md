@@ -6,23 +6,33 @@
 
 # Function: bProgram()
 
-> **bProgram**(`__namedParameters`?): `Readonly`\<`object`\>
+> **bProgram**(`options`?): `Readonly`\<`object`\>
+
+Creates a behavioral program that manages the execution of behavioral threads.
 
 ## Parameters
 
-▪ **\_\_namedParameters?**: `object`
+▪ **options?**: `object`
 
-▪ **\_\_namedParameters.dev?**: [`DevCallback`](../interfaces/DevCallback.md)
+An object containing optional parameters for the program.
 
-▪ **\_\_namedParameters.strategy?**: `"priority"` \| `"randomized"` \| `"chaos"` \| [`Strategy`](../type-aliases/Strategy.md)
+▪ **options.dev?**: [`DevCallback`](../interfaces/DevCallback.md)
+
+A callback function that receives a stream of state snapshots, last selected event, and trigger.
+
+▪ **options.strategy?**: `"priority"` \| `"randomized"` \| `"chaos"` \| [`Strategy`](../type-aliases/Strategy.md)
+
+The event selection strategy to use. Defaults to `strategies.priority`.
 
 ## Returns
 
 `Readonly`\<`object`\>
 
+An object containing methods for managing the program and executing behavioral threads.
+
 ## Source
 
-libs/behavioral/dist/b-program.d.ts:3
+libs/behavioral/dist/b-program.d.ts:10
 
 ***
 

@@ -6,19 +6,27 @@
 
 # Function: transformCssTokens()
 
-> **transformCssTokens**(`__namedParameters`): `string`
+> **transformCssTokens**(`params`): `string`
+
+Transforms design tokens into CSS rules with deduplicated selectors on :host.
+These rules are to be used with design token custom element and applied to
+it's shadow root's constructable stylesheet.
 
 ## Parameters
 
-▪ **\_\_namedParameters**: `TransformerParams`
+▪ **params**: `TransformerParams`
+
+The parameters for the transformation.
 
 ## Returns
 
 `string`
 
+The transformed CSS rules with deduplicated selectors.
+
 ## Source
 
-libs/token-transformer/dist/transform-css-tokens.d.ts:2
+libs/token-transformer/dist/transform-css-tokens.d.ts:9
 
 ***
 

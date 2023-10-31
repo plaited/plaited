@@ -8,6 +8,8 @@
 
 > **ueid**(`prefix`?): `string`
 
+a function for returning an unique enough id when you need it
+
 ## Parameters
 
 ▪ **prefix?**: `string`
@@ -15,10 +17,6 @@
 ## Returns
 
 `string`
-
-## Description
-
-a function for returning an unique enough id when you need it
 
 ## Source
 

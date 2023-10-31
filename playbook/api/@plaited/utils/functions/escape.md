@@ -26,7 +26,7 @@ escape('&<>\'"') => '&amp;&lt;&gt;&#39;&quot;'
 
 ## Source
 
-[escape-unescape.ts:37](https://github.com/plaited/plaited/blob/b0dd907/libs/utils/src/escape-unescape.ts#L37)
+[escape-unescape.ts:37](https://github.com/plaited/plaited/blob/0d4801d/libs/utils/src/escape-unescape.ts#L37)
 
 ***
 

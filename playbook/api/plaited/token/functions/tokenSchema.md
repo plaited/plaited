@@ -6,35 +6,30 @@
 
 # Function: tokenSchema()
 
-> **tokenSchema**\<`T`\>(`__namedParameters`): `Promise`\<`void`\>
+> **tokenSchema**\<`T`\>(`tokens`): `Schema`
+
+Parses a [DesignTokenGroup](../type-aliases/DesignTokenGroup.md) group into a JSON schema where the tokens values
+locked in as const.
 
 ## Type parameters
 
-▪ **T** extends [`DesignTokenGroup`](../interfaces/DesignTokenGroup.md) = [`DesignTokenGroup`](../interfaces/DesignTokenGroup.md)
+▪ **T** extends [`DesignTokenGroup`](../type-aliases/DesignTokenGroup.md) = [`DesignTokenGroup`](../type-aliases/DesignTokenGroup.md)
 
 ## Parameters
 
-▪ **\_\_namedParameters**: `object`
+▪ **tokens**: `T`
 
-▪ **\_\_namedParameters.name?**: \`${string}.json\`
-
-is the file name you want to use default to token-schema.json
-
-▪ **\_\_namedParameters.output**: `string`
-
-directory you want to write json schema too
-
-▪ **\_\_namedParameters.tokens**: `T`
-
-A object type [DesignTokenGroup](../interfaces/DesignTokenGroup.md)
+The design token group to parse.
 
 ## Returns
 
-`Promise`\<`void`\>
+`Schema`
+
+The populated JSON schema.
 
 ## Source
 
-libs/token-schema/dist/token-schema.d.ts:2
+libs/token-schema/dist/token-schema.d.ts:8
 
 ***
 

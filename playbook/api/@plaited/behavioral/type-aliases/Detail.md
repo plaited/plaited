@@ -10,7 +10,7 @@
 
 ## Source
 
-[types.ts:11](https://github.com/plaited/plaited/blob/b0dd907/libs/behavioral/src/types.ts#L11)
+[types.ts:11](https://github.com/plaited/plaited/blob/0d4801d/libs/behavioral/src/types.ts#L11)
 
 ***
 

@@ -12,7 +12,7 @@ attribute used to manipulate a dom element
 
 ## Source
 
-[constants.ts:2](https://github.com/plaited/plaited/blob/b0dd907/libs/jsx/src/constants.ts#L2)
+[constants.ts:2](https://github.com/plaited/plaited/blob/0d4801d/libs/jsx/src/constants.ts#L2)
 
 ***
 

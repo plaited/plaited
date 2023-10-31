@@ -8,9 +8,11 @@
 
 > **`const`** **defaultBaseFontSize**: `20` = `20`
 
+base font size used for REM conversion
+
 ## Source
 
-libs/token-transformer/dist/constants.d.ts:1
+libs/token-transformer/dist/constants.d.ts:2
 
 ***
 

@@ -24,7 +24,7 @@ no-op function good for when you need defaults and stubs
 
 ## Source
 
-[noop.ts:3](https://github.com/plaited/plaited/blob/b0dd907/libs/utils/src/noop.ts#L3)
+[noop.ts:3](https://github.com/plaited/plaited/blob/0d4801d/libs/utils/src/noop.ts#L3)
 
 ***
 

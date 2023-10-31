@@ -8,6 +8,8 @@
 
 > **escape**(`sub`): `any`
 
+escapes a string
+
 ## Parameters
 
 ▪ **sub**: `string`
@@ -15,10 +17,6 @@
 ## Returns
 
 `any`
-
-## Desription
-
-escapes a string
 
 ## Example
 

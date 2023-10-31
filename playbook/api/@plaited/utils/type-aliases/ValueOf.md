@@ -16,7 +16,7 @@
 
 ## Source
 
-[value-of.type.ts:1](https://github.com/plaited/plaited/blob/b0dd907/libs/utils/src/value-of.type.ts#L1)
+[value-of.type.ts:1](https://github.com/plaited/plaited/blob/0d4801d/libs/utils/src/value-of.type.ts#L1)
 
 ***
 

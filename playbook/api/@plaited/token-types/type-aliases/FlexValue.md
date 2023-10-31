@@ -14,7 +14,7 @@ Uses the nullFormat formatter for CSS and the ruleSet formatter for TS.
 
 ## Source
 
-[index.ts:116](https://github.com/plaited/plaited/blob/b0dd907/libs/token-types/src/index.ts#L116)
+[index.ts:116](https://github.com/plaited/plaited/blob/0d4801d/libs/token-types/src/index.ts#L116)
 
 ***
 

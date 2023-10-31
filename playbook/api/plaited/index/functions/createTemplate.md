@@ -26,7 +26,7 @@ createTemplate function used for ssr
 
 ## Source
 
-libs/jsx/dist/types.d.ts:36
+libs/jsx/dist/types.d.ts:35
 
 ***
 

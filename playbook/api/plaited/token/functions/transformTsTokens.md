@@ -6,19 +6,26 @@
 
 # Function: transformTsTokens()
 
-> **transformTsTokens**(`__namedParameters`): `string`
+> **transformTsTokens**(`params`): `string`
+
+Transforms design tokens into a mapping to css custom properties references to be used
+inline styles in ts/js component files.
 
 ## Parameters
 
-▪ **\_\_namedParameters**: `TransformerParams`
+▪ **params**: `TransformerParams`
+
+The parameters for the transformation.
 
 ## Returns
 
 `string`
 
+The transformed js variables.
+
 ## Source
 
-libs/token-transformer/dist/transform-ts-tokens.d.ts:2
+libs/token-transformer/dist/transform-ts-tokens.d.ts:8
 
 ***
 

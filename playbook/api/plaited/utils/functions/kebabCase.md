@@ -31,9 +31,15 @@ This function will handle strings in various formats:
 - Space-separated (start case)
 - Any combination of the above, with any number of consecutive separators
 
+## Example
+
+```ts
+kebabCase('hello///world') => 'hello-world'
+```
+
 ## Source
 
-libs/utils/dist/cases.d.ts:30
+libs/utils/dist/cases.d.ts:32
 
 ***
 

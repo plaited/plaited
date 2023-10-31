@@ -31,7 +31,7 @@
 
 ## Source
 
-[libs/rite/src/framework.ts:4](https://github.com/plaited/plaited/blob/b0dd907/libs/rite/src/framework.ts#L4)
+[libs/rite/src/framework.ts:4](https://github.com/plaited/plaited/blob/0d4801d/libs/rite/src/framework.ts#L4)
 
 ***
 

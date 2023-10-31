@@ -8,10 +8,6 @@
 
 ## Index
 
-### Interfaces
-
-- [DesignTokenGroup](interfaces/DesignTokenGroup.md)
-
 ### Type Aliases
 
 - [$Context](type-aliases/$Context.md)
@@ -26,6 +22,7 @@
 - [ContextValue](type-aliases/ContextValue.md)
 - [ContextualToken](type-aliases/ContextualToken.md)
 - [DesignToken](type-aliases/DesignToken.md)
+- [DesignTokenGroup](type-aliases/DesignTokenGroup.md)
 - [DesignValue](type-aliases/DesignValue.md)
 - [DimensionLikeTokens](type-aliases/DimensionLikeTokens.md)
 - [DimensionLikeValues](type-aliases/DimensionLikeValues.md)

@@ -20,7 +20,7 @@ function reduces whitespace in a string down to single spaces
 
 ## Source
 
-[reduce-whitespace.ts:2](https://github.com/plaited/plaited/blob/b0dd907/libs/utils/src/reduce-whitespace.ts#L2)
+[reduce-whitespace.ts:2](https://github.com/plaited/plaited/blob/0d4801d/libs/utils/src/reduce-whitespace.ts#L2)
 
 ***
 

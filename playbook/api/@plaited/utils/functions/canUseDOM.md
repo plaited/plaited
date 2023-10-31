@@ -18,7 +18,7 @@ Check if the DOM is available
 
 ## Source
 
-[can-use-dom.ts:6](https://github.com/plaited/plaited/blob/b0dd907/libs/utils/src/can-use-dom.ts#L6)
+[can-use-dom.ts:6](https://github.com/plaited/plaited/blob/0d4801d/libs/utils/src/can-use-dom.ts#L6)
 
 ***
 

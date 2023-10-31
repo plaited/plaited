@@ -36,12 +36,12 @@
 >
 > ### Source
 >
-> [libs/component/src/types.ts:6](https://github.com/plaited/plaited/blob/b0dd907/libs/component/src/types.ts#L6)
+> [libs/component/src/types.ts:6](https://github.com/plaited/plaited/blob/0d4801d/libs/component/src/types.ts#L6)
 >
 
 ## Source
 
-[libs/component/src/types.ts:6](https://github.com/plaited/plaited/blob/b0dd907/libs/component/src/types.ts#L6)
+[libs/component/src/types.ts:6](https://github.com/plaited/plaited/blob/0d4801d/libs/component/src/types.ts#L6)
 
 ## Properties
 
@@ -67,12 +67,12 @@
 >
 > ##### Source
 >
-> [libs/component/src/types.ts:7](https://github.com/plaited/plaited/blob/b0dd907/libs/component/src/types.ts#L7)
+> [libs/component/src/types.ts:7](https://github.com/plaited/plaited/blob/0d4801d/libs/component/src/types.ts#L7)
 >
 
 #### Source
 
-[libs/component/src/types.ts:7](https://github.com/plaited/plaited/blob/b0dd907/libs/component/src/types.ts#L7)
+[libs/component/src/types.ts:7](https://github.com/plaited/plaited/blob/0d4801d/libs/component/src/types.ts#L7)
 
 ***
 

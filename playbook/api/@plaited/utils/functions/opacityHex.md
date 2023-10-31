@@ -16,7 +16,7 @@ generates a map where you can pass in an opacity number and get back the corresp
 
 ## Source
 
-[opacity-hex.ts:2](https://github.com/plaited/plaited/blob/b0dd907/libs/utils/src/opacity-hex.ts#L2)
+[opacity-hex.ts:2](https://github.com/plaited/plaited/blob/0d4801d/libs/utils/src/opacity-hex.ts#L2)
 
 ***
 

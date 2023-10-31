@@ -16,7 +16,6 @@
 ## Type Aliases
 
 - [KeyMirror](type-aliases/KeyMirror.md)
-- [Publisher](type-aliases/Publisher.md)
 - [ValueOf](type-aliases/ValueOf.md)
 
 ## Functions

@@ -14,7 +14,7 @@ inline styles in ts/js component files
 
 ## Type parameters
 
-▪ **T** extends [`DesignTokenGroup`](../../../plaited/token/interfaces/DesignTokenGroup.md) = [`DesignTokenGroup`](../../../plaited/token/interfaces/DesignTokenGroup.md)
+▪ **T** extends [`DesignTokenGroup`](../../../plaited/token/type-aliases/DesignTokenGroup.md) = [`DesignTokenGroup`](../../../plaited/token/type-aliases/DesignTokenGroup.md)
 
 ▪ **F** extends [`DesignToken`](../../../plaited/token/type-aliases/DesignToken.md) = [`DesignToken`](../../../plaited/token/type-aliases/DesignToken.md)
 
@@ -42,7 +42,7 @@ inline styles in ts/js component files
 
 ## Source
 
-[types.ts:45](https://github.com/plaited/plaited/blob/b0dd907/libs/token-transformer/src/types.ts#L45)
+[types.ts:45](https://github.com/plaited/plaited/blob/0d4801d/libs/token-transformer/src/types.ts#L45)
 
 ***
 

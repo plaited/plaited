@@ -22,9 +22,9 @@ fire and forget).
 `Readonly`\<`object`\>
 
 readonly {}
-  connect: (recipient: string, trigger: [Trigger](../type-aliases/Trigger.md)) => Disconnect,
+  connect: (recipient: string, trigger: [Trigger](../type-aliases/Trigger.md)) => ()=> void),
   send: (recipient: string, detail: [TriggerArgs](../type-aliases/TriggerArgs.md)) => void
-  worker: (id: string, url: string) =>  Disconnect
+  worker: (id: string, url: string) =>  ()=> void)
 }
 
 ## Source

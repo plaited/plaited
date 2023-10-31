@@ -20,7 +20,7 @@ creates a behavioral thread from synchronization sets and/or other  behavioral t
 
 ## Source
 
-[rules.ts:7](https://github.com/plaited/plaited/blob/b0dd907/libs/behavioral/src/rules.ts#L7)
+[rules.ts:7](https://github.com/plaited/plaited/blob/0d4801d/libs/behavioral/src/rules.ts#L7)
 
 ***
 

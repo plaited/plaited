@@ -22,7 +22,7 @@ readonly [`Record`\<`string`, `string`\>, `object`]
 
 ## Source
 
-[css.ts:49](https://github.com/plaited/plaited/blob/b0dd907/libs/jsx/src/css.ts#L49)
+[css.ts:49](https://github.com/plaited/plaited/blob/0d4801d/libs/jsx/src/css.ts#L49)
 
 ***
 

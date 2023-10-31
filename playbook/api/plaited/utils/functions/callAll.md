@@ -8,7 +8,8 @@
 
 > **callAll**\<`F`\>(...`fns`): (...`args`) => `void`
 
-Call all function passed in with the same arguments when invoked
+Calls all the given functions with the same arguments and returns nothing.
+If a function is not actually a function, it is skipped.
 
 ## Type parameters
 
@@ -18,9 +19,13 @@ Call all function passed in with the same arguments when invoked
 
 ▪ ...**fns**: `F`[]
 
+The functions to call.
+
 ## Returns
 
 `function`
+
+Nothing.
 
 > > (...`args`): `void`
 >
@@ -34,12 +39,12 @@ Call all function passed in with the same arguments when invoked
 >
 > ### Source
 >
-> libs/utils/dist/call-all.d.ts:2
+> libs/utils/dist/call-all.d.ts:8
 >
 
 ## Source
 
-libs/utils/dist/call-all.d.ts:2
+libs/utils/dist/call-all.d.ts:8
 
 ***
 

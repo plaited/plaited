@@ -8,7 +8,7 @@
 
 > **useMain**(`context`, `trigger`): readonly [[`Send`](../type-aliases/Send.md), () => `void`]
 
-is a hook to allow us to send and receive messages from the main thread in a worker
+Is a utility function to allow us to send and receive messages from the main thread in a worker
 
 ## Parameters
 

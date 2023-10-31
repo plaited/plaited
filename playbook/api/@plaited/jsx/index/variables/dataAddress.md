@@ -12,7 +12,7 @@ attribute used to wire a dom element to a useMessenger exchange
 
 ## Source
 
-[constants.ts:6](https://github.com/plaited/plaited/blob/b0dd907/libs/jsx/src/constants.ts#L6)
+[constants.ts:6](https://github.com/plaited/plaited/blob/0d4801d/libs/jsx/src/constants.ts#L6)
 
 ***
 

@@ -20,7 +20,7 @@ get the true type of an object returned back to you as a string
 
 ## Source
 
-[true-type-of.ts:2](https://github.com/plaited/plaited/blob/b0dd907/libs/utils/src/true-type-of.ts#L2)
+[true-type-of.ts:2](https://github.com/plaited/plaited/blob/0d4801d/libs/utils/src/true-type-of.ts#L2)
 
 ***
 

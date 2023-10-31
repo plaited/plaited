@@ -9,11 +9,11 @@
 > **defaultCSSFormatters**\<`T`, `F`\>(`token`, `details`): `string`
 
 This formatter object will return formatters that will create content for an
-optimized css stylesheet of css custom properties to be applied to :root
+optimized css stylesheet of css custom properties to be applied to
 
 ## Type parameters
 
-▪ **T** extends [`DesignTokenGroup`](../interfaces/DesignTokenGroup.md) = [`DesignTokenGroup`](../interfaces/DesignTokenGroup.md)
+▪ **T** extends [`DesignTokenGroup`](../type-aliases/DesignTokenGroup.md) = [`DesignTokenGroup`](../type-aliases/DesignTokenGroup.md)
 
 ▪ **F** extends [`DesignToken`](../type-aliases/DesignToken.md) = [`DesignToken`](../type-aliases/DesignToken.md)
 

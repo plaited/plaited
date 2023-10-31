@@ -30,7 +30,7 @@
 
 ## Source
 
-[libs/rite/src/assert.ts:9](https://github.com/plaited/plaited/blob/b0dd907/libs/rite/src/assert.ts#L9)
+[libs/rite/src/assert.ts:9](https://github.com/plaited/plaited/blob/0d4801d/libs/rite/src/assert.ts#L9)
 
 ***
 

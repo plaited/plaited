@@ -22,9 +22,10 @@ readonly [`Get`\<`T`\>, `Set`\<`T`\>]
 
 ## Description
 
-a simple utility function for safely getting and setting values you need to persist during run.
+A simple utility function for safely getting and setting values you need to persist during run.
 When using the callback feature userStore passes a structured clone of the currently stored value
-as a parameter. If you pass a function as nestStore, it will be treated as an updater function. It must be pure, should take the pending state as its only argument,
+as a parameter. If you pass a function as nestStore, it will be treated as an updater function.
+It must be pure, should take the previous store value as its only argument,
 and should return the next store.
 
 ## Example
@@ -42,7 +43,7 @@ const [store, setStore] = useStore<Record<string, number> | number>({ a: 1 })
 
 ## Source
 
-libs/utils/dist/use-store.d.ts:23
+libs/utils/dist/use-store.d.ts:25
 
 ***
 

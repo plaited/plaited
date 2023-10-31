@@ -8,6 +8,9 @@
 
 > **loop**(`rules`, `condition`?): [`RulesFunc`](../type-aliases/RulesFunc.md)\<`any`\>
 
+A behavioral thread that loops infinitely or until some callback condition is false
+like a mode change open -> close. This function returns a threads
+
 ## Parameters
 
 ▪ **rules**: [`RulesFunc`](../type-aliases/RulesFunc.md)\<`any`\>[]
@@ -18,14 +21,9 @@
 
 [`RulesFunc`](../type-aliases/RulesFunc.md)\<`any`\>
 
-## Description
-
-A behavioral thread that loops infinitely or until some callback condition is false
-like a mode change open -> close. This function returns a threads
-
 ## Source
 
-libs/behavioral/dist/rules.d.ts:12
+libs/behavioral/dist/rules.d.ts:10
 
 ***
 

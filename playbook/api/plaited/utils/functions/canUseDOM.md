@@ -8,13 +8,17 @@
 
 > **canUseDOM**(): `boolean`
 
+Check if the DOM is available
+
 ## Returns
 
 `boolean`
 
+- Returns true if the DOM is available, false otherwise.
+
 ## Source
 
-libs/utils/dist/can-use-dom.d.ts:2
+libs/utils/dist/can-use-dom.d.ts:6
 
 ***
 

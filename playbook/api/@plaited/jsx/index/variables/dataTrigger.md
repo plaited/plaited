@@ -12,7 +12,7 @@ attribute used to wire a dom element to the component event listener
 
 ## Source
 
-[constants.ts:4](https://github.com/plaited/plaited/blob/b0dd907/libs/jsx/src/constants.ts#L4)
+[constants.ts:4](https://github.com/plaited/plaited/blob/0d4801d/libs/jsx/src/constants.ts#L4)
 
 ***
 

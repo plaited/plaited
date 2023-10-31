@@ -14,7 +14,7 @@ inline styles in ts/js component files
 
 ## Type parameters
 
-▪ **T** extends [`DesignTokenGroup`](../interfaces/DesignTokenGroup.md) = [`DesignTokenGroup`](../interfaces/DesignTokenGroup.md)
+▪ **T** extends [`DesignTokenGroup`](../type-aliases/DesignTokenGroup.md) = [`DesignTokenGroup`](../type-aliases/DesignTokenGroup.md)
 
 ▪ **F** extends [`DesignToken`](../type-aliases/DesignToken.md) = [`DesignToken`](../type-aliases/DesignToken.md)
 

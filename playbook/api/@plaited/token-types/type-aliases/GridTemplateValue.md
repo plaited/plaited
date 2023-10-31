@@ -14,7 +14,7 @@ It is used to store grid-template-areas | grid-template-columns | grid-template-
 
 ## Source
 
-[index.ts:164](https://github.com/plaited/plaited/blob/b0dd907/libs/token-types/src/index.ts#L164)
+[index.ts:164](https://github.com/plaited/plaited/blob/0d4801d/libs/token-types/src/index.ts#L164)
 
 ***
 
