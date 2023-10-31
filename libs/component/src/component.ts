@@ -132,6 +132,10 @@ export const Component = ({
           Array.from(this.#root.querySelectorAll<HTMLElement>(`[${dataTrigger}]`)),
         )
         this.#shadowObserver = this.#createShadowObserver()
+        dev &&
+          trigger({
+            type: `connected->${this.dataset.address ?? this.tagName.toLowerCase()}`,
+          })
         void this.plait({
           $: this.$.bind(this),
           host: this,
@@ -143,9 +147,10 @@ export const Component = ({
     disconnectedCallback() {
       this.#shadowObserver && this.#shadowObserver.disconnect()
       this.#disconnectMessenger && this.#disconnectMessenger()
-      this.#trigger({
-        type: `disconnected->${this.dataset.address ?? this.tagName.toLowerCase()}`,
-      })
+      dev &&
+        this.#trigger({
+          type: `disconnected->${this.dataset.address ?? this.tagName.toLowerCase()}`,
+        })
     }
     #bProgram() {
       const { trigger, ...rest } = bProgram({
@@ -160,9 +165,6 @@ export const Component = ({
         }
         disconnect = connect(recipient, trigger)
       }
-      trigger({
-        type: `connected->${this.dataset.address ?? this.tagName.toLowerCase()}`,
-      })
       this.#disconnectMessenger = disconnect
       return { trigger, ...rest }
     }
