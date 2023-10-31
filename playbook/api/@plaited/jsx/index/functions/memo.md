@@ -28,7 +28,7 @@ We also do a basic shallow comparison on the object to cache function result.
 
 ## Source
 
-[memo.ts:25](https://github.com/plaited/plaited/blob/d85458a/libs/jsx/src/memo.ts#L25)
+[memo.ts:25](https://github.com/plaited/plaited/blob/b0dd907/libs/jsx/src/memo.ts#L25)
 
 ***
 

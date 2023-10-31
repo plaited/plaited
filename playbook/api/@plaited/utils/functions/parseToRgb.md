@@ -20,7 +20,7 @@ parse a hex code to an rgb(a) value
 
 ## Source
 
-[parse-to-rgb.ts:4](https://github.com/plaited/plaited/blob/d85458a/libs/utils/src/parse-to-rgb.ts#L4)
+[parse-to-rgb.ts:4](https://github.com/plaited/plaited/blob/b0dd907/libs/utils/src/parse-to-rgb.ts#L4)
 
 ***
 

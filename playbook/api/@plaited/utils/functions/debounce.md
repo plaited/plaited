@@ -42,7 +42,7 @@ A debounced version of the provided function.
 >
 > ### Source
 >
-> [debounce.ts:13](https://github.com/plaited/plaited/blob/d85458a/libs/utils/src/debounce.ts#L13)
+> [debounce.ts:13](https://github.com/plaited/plaited/blob/b0dd907/libs/utils/src/debounce.ts#L13)
 >
 
 ## Example
@@ -54,7 +54,7 @@ debounced() // => 'hi' (after 100ms)
 
 ## Source
 
-[debounce.ts:10](https://github.com/plaited/plaited/blob/d85458a/libs/utils/src/debounce.ts#L10)
+[debounce.ts:10](https://github.com/plaited/plaited/blob/b0dd907/libs/utils/src/debounce.ts#L10)
 
 ***
 

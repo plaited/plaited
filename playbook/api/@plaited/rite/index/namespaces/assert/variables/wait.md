@@ -20,7 +20,7 @@ an async function that will wait the given time passed to it in ms
 
 ## Source
 
-[libs/rite/src/assert.ts:44](https://github.com/plaited/plaited/blob/d85458a/libs/rite/src/assert.ts#L44)
+[libs/rite/src/assert.ts:44](https://github.com/plaited/plaited/blob/b0dd907/libs/rite/src/assert.ts#L44)
 
 ***
 

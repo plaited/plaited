@@ -18,7 +18,7 @@
 
 ## Source
 
-[ssr.ts:8](https://github.com/plaited/plaited/blob/d85458a/libs/jsx/src/ssr.ts#L8)
+[ssr.ts:8](https://github.com/plaited/plaited/blob/b0dd907/libs/jsx/src/ssr.ts#L8)
 
 ***
 

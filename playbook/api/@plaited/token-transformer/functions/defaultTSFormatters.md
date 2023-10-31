@@ -42,7 +42,7 @@ inline styles in ts/js component files
 
 ## Source
 
-[types.ts:45](https://github.com/plaited/plaited/blob/d85458a/libs/token-transformer/src/types.ts#L45)
+[types.ts:45](https://github.com/plaited/plaited/blob/b0dd907/libs/token-transformer/src/types.ts#L45)
 
 ***
 

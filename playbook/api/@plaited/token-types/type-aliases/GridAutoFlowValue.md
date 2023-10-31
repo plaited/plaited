@@ -12,7 +12,7 @@ GridAutoFlow value type relies on the defaultFormat formatter for ts tokens and 
 
 ## Source
 
-[index.ts:136](https://github.com/plaited/plaited/blob/d85458a/libs/token-types/src/index.ts#L136)
+[index.ts:136](https://github.com/plaited/plaited/blob/b0dd907/libs/token-types/src/index.ts#L136)
 
 ***
 

@@ -22,7 +22,7 @@ djb2 hashing function
 
 ## Source
 
-[hash.ts:4](https://github.com/plaited/plaited/blob/d85458a/libs/utils/src/hash.ts#L4)
+[hash.ts:4](https://github.com/plaited/plaited/blob/b0dd907/libs/utils/src/hash.ts#L4)
 
 ***
 

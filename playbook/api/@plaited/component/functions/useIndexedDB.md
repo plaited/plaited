@@ -38,7 +38,7 @@ you can actually pass it an reference to another indexedDB
 
 ## Source
 
-[libs/component/src/use-indexed-db.ts:12](https://github.com/plaited/plaited/blob/d85458a/libs/component/src/use-indexed-db.ts#L12)
+[libs/component/src/use-indexed-db.ts:12](https://github.com/plaited/plaited/blob/b0dd907/libs/component/src/use-indexed-db.ts#L12)
 
 ***
 

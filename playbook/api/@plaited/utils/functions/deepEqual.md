@@ -38,7 +38,7 @@ deepEqual(['array'], ['array']) => true
 
 ## Source
 
-[deep-equal.ts:9](https://github.com/plaited/plaited/blob/d85458a/libs/utils/src/deep-equal.ts#L9)
+[deep-equal.ts:9](https://github.com/plaited/plaited/blob/b0dd907/libs/utils/src/deep-equal.ts#L9)
 
 ***
 

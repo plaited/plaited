@@ -12,7 +12,7 @@ boolean attributes
 
 ## Source
 
-[constants.ts:42](https://github.com/plaited/plaited/blob/d85458a/libs/jsx/src/constants.ts#L42)
+[constants.ts:42](https://github.com/plaited/plaited/blob/b0dd907/libs/jsx/src/constants.ts#L42)
 
 ***
 

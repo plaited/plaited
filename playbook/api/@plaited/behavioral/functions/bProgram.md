@@ -32,7 +32,7 @@ An object containing methods for managing the program and executing behavioral t
 
 ## Source
 
-[b-program.ts:38](https://github.com/plaited/plaited/blob/d85458a/libs/behavioral/src/b-program.ts#L38)
+[b-program.ts:38](https://github.com/plaited/plaited/blob/b0dd907/libs/behavioral/src/b-program.ts#L38)
 
 ***
 

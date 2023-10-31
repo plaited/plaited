@@ -12,7 +12,7 @@ PercentageRatio value type relies on the defaultFormat formatter for ts tokens a
 
 ## Source
 
-[index.ts:78](https://github.com/plaited/plaited/blob/d85458a/libs/token-types/src/index.ts#L78)
+[index.ts:78](https://github.com/plaited/plaited/blob/b0dd907/libs/token-types/src/index.ts#L78)
 
 ***
 

@@ -12,7 +12,7 @@ void attributes
 
 ## Source
 
-[constants.ts:8](https://github.com/plaited/plaited/blob/d85458a/libs/jsx/src/constants.ts#L8)
+[constants.ts:8](https://github.com/plaited/plaited/blob/b0dd907/libs/jsx/src/constants.ts#L8)
 
 ***
 

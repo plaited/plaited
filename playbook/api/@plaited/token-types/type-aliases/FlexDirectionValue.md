@@ -12,7 +12,7 @@ FlexDirection value type relies on the defaultFormat formatter for ts tokens and
 
 ## Source
 
-[index.ts:106](https://github.com/plaited/plaited/blob/d85458a/libs/token-types/src/index.ts#L106)
+[index.ts:106](https://github.com/plaited/plaited/blob/b0dd907/libs/token-types/src/index.ts#L106)
 
 ***
 

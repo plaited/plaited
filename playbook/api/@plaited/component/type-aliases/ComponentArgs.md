@@ -72,7 +72,7 @@ Optional Plaited Component shadow dom template
 
 ## Source
 
-[libs/component/src/types.ts:68](https://github.com/plaited/plaited/blob/d85458a/libs/component/src/types.ts#L68)
+[libs/component/src/types.ts:68](https://github.com/plaited/plaited/blob/b0dd907/libs/component/src/types.ts#L68)
 
 ***
 

@@ -27,7 +27,7 @@
 
 ## Source
 
-[create-template.ts:189](https://github.com/plaited/plaited/blob/d85458a/libs/jsx/src/create-template.ts#L189)
+[create-template.ts:189](https://github.com/plaited/plaited/blob/b0dd907/libs/jsx/src/create-template.ts#L189)
 
 ***
 

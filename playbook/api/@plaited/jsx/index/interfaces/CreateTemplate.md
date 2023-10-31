@@ -24,7 +24,7 @@
 
 ## Source
 
-[types.ts:49](https://github.com/plaited/plaited/blob/d85458a/libs/jsx/src/types.ts#L49)
+[types.ts:49](https://github.com/plaited/plaited/blob/b0dd907/libs/jsx/src/types.ts#L49)
 
 ***
 

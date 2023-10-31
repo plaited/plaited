@@ -44,7 +44,7 @@
 
 ## Source
 
-[libs/rite/src/assert.ts:9](https://github.com/plaited/plaited/blob/d85458a/libs/rite/src/assert.ts#L9)
+[libs/rite/src/assert.ts:9](https://github.com/plaited/plaited/blob/b0dd907/libs/rite/src/assert.ts#L9)
 
 ## Properties
 
@@ -81,7 +81,7 @@ A promise that resolves to the first element that matches the given attribute na
 
 #### Source
 
-[libs/rite/src/assert.ts:10](https://github.com/plaited/plaited/blob/d85458a/libs/rite/src/assert.ts#L10)
+[libs/rite/src/assert.ts:10](https://github.com/plaited/plaited/blob/b0dd907/libs/rite/src/assert.ts#L10)
 
 ***
 
@@ -113,7 +113,7 @@ A promise that resolves with the first matching HTML element, or undefined if no
 
 #### Source
 
-[libs/rite/src/assert.ts:11](https://github.com/plaited/plaited/blob/d85458a/libs/rite/src/assert.ts#L11)
+[libs/rite/src/assert.ts:11](https://github.com/plaited/plaited/blob/b0dd907/libs/rite/src/assert.ts#L11)
 
 ***
 
@@ -149,7 +149,7 @@ A promise that resolves when the event has been fired.
 
 #### Source
 
-[libs/rite/src/assert.ts:12](https://github.com/plaited/plaited/blob/d85458a/libs/rite/src/assert.ts#L12)
+[libs/rite/src/assert.ts:12](https://github.com/plaited/plaited/blob/b0dd907/libs/rite/src/assert.ts#L12)
 
 ***
 
@@ -177,12 +177,12 @@ A promise that resolves when the event has been fired.
 >
 > ##### Source
 >
-> [libs/rite/src/match.ts:3](https://github.com/plaited/plaited/blob/d85458a/libs/rite/src/match.ts#L3)
+> [libs/rite/src/match.ts:3](https://github.com/plaited/plaited/blob/b0dd907/libs/rite/src/match.ts#L3)
 >
 
 #### Source
 
-[libs/rite/src/assert.ts:13](https://github.com/plaited/plaited/blob/d85458a/libs/rite/src/assert.ts#L13)
+[libs/rite/src/assert.ts:13](https://github.com/plaited/plaited/blob/b0dd907/libs/rite/src/assert.ts#L13)
 
 ***
 
@@ -192,7 +192,7 @@ A promise that resolves when the event has been fired.
 
 #### Source
 
-[libs/rite/src/assert.ts:14](https://github.com/plaited/plaited/blob/d85458a/libs/rite/src/assert.ts#L14)
+[libs/rite/src/assert.ts:14](https://github.com/plaited/plaited/blob/b0dd907/libs/rite/src/assert.ts#L14)
 
 ***
 
@@ -212,7 +212,7 @@ an async function that will wait the given time passed to it in ms
 
 #### Source
 
-[libs/rite/src/assert.ts:15](https://github.com/plaited/plaited/blob/d85458a/libs/rite/src/assert.ts#L15)
+[libs/rite/src/assert.ts:15](https://github.com/plaited/plaited/blob/b0dd907/libs/rite/src/assert.ts#L15)
 
 ***
 

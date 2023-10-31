@@ -24,7 +24,7 @@ create an object who's keys and values are the same by simply passing in the key
 
 ## Source
 
-[key-mirror.ts:6](https://github.com/plaited/plaited/blob/d85458a/libs/utils/src/key-mirror.ts#L6)
+[key-mirror.ts:6](https://github.com/plaited/plaited/blob/b0dd907/libs/utils/src/key-mirror.ts#L6)
 
 ***
 

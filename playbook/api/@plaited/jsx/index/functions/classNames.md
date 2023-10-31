@@ -20,7 +20,7 @@ takes an array of conditional css class name strings and returns them concatenat
 
 ## Source
 
-[class-names.ts:3](https://github.com/plaited/plaited/blob/d85458a/libs/jsx/src/class-names.ts#L3)
+[class-names.ts:3](https://github.com/plaited/plaited/blob/b0dd907/libs/jsx/src/class-names.ts#L3)
 
 ***
 

@@ -20,7 +20,7 @@ For when you need id but are cool with just bumping a global counter
 
 ## Source
 
-[id.ts:12](https://github.com/plaited/plaited/blob/d85458a/libs/utils/src/id.ts#L12)
+[id.ts:12](https://github.com/plaited/plaited/blob/b0dd907/libs/utils/src/id.ts#L12)
 
 ***
 

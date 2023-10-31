@@ -39,7 +39,7 @@ camelCase('hello---world') => 'helloWorld'
 
 ## Source
 
-[cases.ts:16](https://github.com/plaited/plaited/blob/d85458a/libs/utils/src/cases.ts#L16)
+[cases.ts:16](https://github.com/plaited/plaited/blob/b0dd907/libs/utils/src/cases.ts#L16)
 
 ***
 
