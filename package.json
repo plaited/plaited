@@ -16,8 +16,7 @@
     "postpack": "pinst --enable",
     "prepack": "pinst --disable",
     "prepare": "husky install",
-    "test": "lerna run test",
-    "typedocs": "lerna run typedocs --scope=plaited"
+    "test": "lerna run test"
   },
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [
@@ -51,8 +50,6 @@
     "playwright": "1.39.0",
     "prettier": "3.0.3",
     "sinon": "17.0.0",
-    "typedoc": "0.25.0",
-    "typedoc-plugin-markdown": "3.16.0",
     "typescript": "5.2.2"
   }
 }
