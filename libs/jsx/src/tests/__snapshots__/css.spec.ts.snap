@@ -3,13 +3,13 @@
 exports[`css() 1`] = `
 [
   {
-    "_button-4": "_button-4_NzU3MD",
-    "button": "button_NzU3MD",
-    "button4": "button4_NzU3MD",
-    "link": "link_NzU3MD",
+    "_button-4": "_button-4_LTEzMD",
+    "button": "button_LTEzMD",
+    "button4": "button4_LTEzMD",
+    "link": "link_LTEzMD",
   },
   {
-    "stylesheet": ".button_NzU3MD { background-color: rgba(255, 0, 0, 0.2); } .button4_NzU3MD:disabled { background-color: rgba(255, 0, 0, 0.8); } ._button-4_NzU3MD:disabled { background-color: rgba(00, 50, 25, 0.8); } ._button-4_NzU3MD:disabled + :not(.link_NzU3MD){ background-color: rgba(00, 50, 25, 0.8); }",
+    "stylesheet": ".button_LTEzMD { background-color: rgba(255, 0, 0, 0.2); } .button4_LTEzMD:disabled { background-color: rgba(255, 0, 0, 0.8); } ._button-4_LTEzMD:disabled { background-color: rgba(00, 50, 25, 0.8); } ._button-4_LTEzMD:disabled + :not(.link_LTEzMD) { background-color: rgba(00, 50, 25, 0.8); }",
   },
 ]
 `;
@@ -17,14 +17,14 @@ exports[`css() 1`] = `
 exports[`css() 2`] = `
 [
   {
-    "_button-4": "_button-4_LTM5Mz",
-    "button": "button_LTM5Mz",
-    "button4": "button4_LTM5Mz",
-    "combinator": "combinator_LTM5Mz",
-    "link": "link_LTM5Mz",
+    "_button-4": "_button-4_LTI3Nj",
+    "button": "button_LTI3Nj",
+    "button4": "button4_LTI3Nj",
+    "combinator": "combinator_LTI3Nj",
+    "link": "link_LTI3Nj",
   },
   {
-    "stylesheet": ".button_LTM5Mz { background-color: rgba(255, 0, 0, 0.2); } .button4_LTM5Mz:disabled { background-color: rgba(255, 0, 0, 0.8); } ._button-4_LTM5Mz:disabled > .combinator_LTM5Mz { background-color: va(--background-color); } ._button-4_LTM5Mz:disabled + :not(.link_LTM5Mz){ background-color: var(--background-color-disabled); }",
+    "stylesheet": ".button_LTI3Nj { background-color: rgba(255, 0, 0, 0.2); } .button4_LTI3Nj:disabled { background-color: rgba(255, 0, 0, 0.8); } ._button-4_LTI3Nj:disabled > .combinator_LTI3Nj { background-color: va(--background-color); } ._button-4_LTI3Nj:disabled + :not(.link_LTI3Nj) { background-color: var(--background-color-disabled); }",
   },
 ]
 `;
