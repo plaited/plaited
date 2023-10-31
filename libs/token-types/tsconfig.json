@@ -5,9 +5,7 @@
     "declaration": true,
     "moduleResolution": "nodenext",
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": "src"
   },
-  "exclude": [
-    "**/dist"
-  ]
+  "exclude": ["**/dist"]
 }

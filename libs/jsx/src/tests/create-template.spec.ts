@@ -1,10 +1,5 @@
-import { test, expect } from'bun:test'
-import {
-  createTemplate as h,
-  css,
-  Fragment,
-  FT,
-} from '../index.js'
+import { test, expect } from 'bun:test'
+import { createTemplate as h, css, Fragment, FT } from '../index.js'
 
 test('createTemplate: self closing - html', () => {
   expect(h('input', { type: 'text' })).toMatchSnapshot()
@@ -47,7 +42,7 @@ test('createTemplate: style attribute', () =>
     h('div', {
       style: { backgroundColor: 'blue', margin: '12px' },
       children: 'styles',
-    })
+    }),
   ).toMatchSnapshot())
 
 test('createTemplate: data-trigger attribute', () =>
@@ -58,16 +53,14 @@ test('createTemplate: data-trigger attribute', () =>
         focus: 'thing',
       },
       children: 'triggers',
-    })
+    }),
   ).toMatchSnapshot())
 
 test('createTemplate: array of templates', () =>
   expect(
     h('div', {
-      children: Array.from(Array(10).keys()).map(n =>
-        h('li', { children: `${n}` })
-      ),
-    })
+      children: Array.from(Array(10).keys()).map((n) => h('li', { children: `${n}` })),
+    }),
   ).toMatchSnapshot())
 
 test('createTemplate: should throw with attribute starting with on', () => {
@@ -91,9 +84,7 @@ test('createTemplate: should throw on script tag', () => {
 })
 
 test('createTemplate: should not throw on script tag with trusted attribute', () => {
-  expect(
-    h('script', { type: 'module', src: 'main.js', trusted: true })
-  ).toMatchSnapshot()
+  expect(h('script', { type: 'module', src: 'main.js', trusted: true })).toMatchSnapshot()
 })
 
 test('createTemplate: escapes children', () => {
@@ -125,35 +116,26 @@ socket.addEventListener('message', reload);
 console.log('[plaited] listening for file changes');
 </script>`
 
-  expect(h('div', { trusted: true, children: scriptContent }))
-    .toMatchSnapshot()
+  expect(h('div', { trusted: true, children: scriptContent })).toMatchSnapshot()
 })
 
 test('createTemplate: with slotted templates', () => {
-  const Cel: FT = ({ children }) => (
-    h('c-el', { slots: children, children: h('slot', { name: 'slot' }) })
-  )
+  const Cel: FT = ({ children }) => h('c-el', { slots: children, children: h('slot', { name: 'slot' }) })
 
   expect(
     h(Cel, {
-      children: Array.from(Array(10).keys()).map(n =>
-        h('li', { slot: 'slot', children: `slot-${n}` })
-      ),
-    })
+      children: Array.from(Array(10).keys()).map((n) => h('li', { slot: 'slot', children: `slot-${n}` })),
+    }),
   ).toMatchSnapshot()
 })
 
 test('createTemplate: Fragment of templates', () => {
   expect(
     h(Fragment, {
-      children: Array.from(Array(10).keys()).map(n =>
-        h('li', { children: `item-${n}` })
-      ),
-    })
+      children: Array.from(Array(10).keys()).map((n) => h('li', { children: `item-${n}` })),
+    }),
   ).toMatchSnapshot()
 })
-
-
 
 const span = css`
   .nested-label {
@@ -207,7 +189,7 @@ test('createTemplate: custom element with styled slotted component', () => {
           children: 'slotted paragraph',
         }),
       ],
-    })
+    }),
   ).toMatchSnapshot()
 })
 
@@ -216,15 +198,12 @@ const TopCustomElement: FT = ({ children, stylesheet }) =>
     stylesheet,
     slots: children,
     children: h(NestedCustomElement, {
-      children: h(
-        'p',
-        {
-          slot: 'nested',
-          className: slotted[0]['slotted-paragraph'],
-          ...slotted[1],
-          children: 'slotted paragraph',
-        }
-      ),
+      children: h('p', {
+        slot: 'nested',
+        className: slotted[0]['slotted-paragraph'],
+        ...slotted[1],
+        children: 'slotted paragraph',
+      }),
     }),
   })
 
@@ -250,15 +229,13 @@ const testEl = css`
 `
 
 test('createTemplate: custom element with nested custom element and styled slotted element', () => {
-  expect(h(
-    TopCustomElement,
-    {
+  expect(
+    h(TopCustomElement, {
       ...top[1],
       children: h('img', { className: testEl[0].image, ...testEl[1] }),
-    }
-  )).toMatchSnapshot()
+    }),
+  ).toMatchSnapshot()
 })
-
 
 const sheet1 = css`
   .a {
@@ -272,19 +249,23 @@ const sheet2 = css`
 `
 
 const sheet3 = css`
-.a {
-  color: blue;
-}
+  .a {
+    color: blue;
+  }
 `
 
 test('createTemplate: properly hoist and deduplicates multiple stylesheets on a single node', () => {
-  expect(h('div', {
-    stylesheet: [ sheet1[1].stylesheet, sheet2[1].stylesheet, sheet3[1].stylesheet ],
-  })).toMatchSnapshot()
+  expect(
+    h('div', {
+      stylesheet: [sheet1[1].stylesheet, sheet2[1].stylesheet, sheet3[1].stylesheet],
+    }),
+  ).toMatchSnapshot()
 })
 
 test('createTemplate: trims whitespace', () => {
-  expect(h('div', {
-    children: '   trims white-space    ',
-  })).toMatchSnapshot()
+  expect(
+    h('div', {
+      children: '   trims white-space    ',
+    }),
+  ).toMatchSnapshot()
 })

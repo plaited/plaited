@@ -5,16 +5,14 @@ test('firing trigger and adding threads in actions', () => {
   const actual: string[] = []
   const { addThreads, thread, sync, trigger, feedback, loop } = bProgram()
   addThreads({
-    addHotOnce: thread(
-      sync({ request: { type: 'hot_1' } })
-    ),
+    addHotOnce: thread(sync({ request: { type: 'hot_1' } })),
     mixHotCold: loop([
       sync({
         waitFor: { cb: ({ type }) => type.startsWith('hot') },
         block: { cb: ({ type }) => type.startsWith('cold') },
       }),
       sync({
-        waitFor: { cb: ({ type }) => type.startsWith('cold')  },
+        waitFor: { cb: ({ type }) => type.startsWith('cold') },
         block: { cb: ({ type }) => type.startsWith('hot') },
       }),
     ]),
@@ -24,14 +22,8 @@ test('firing trigger and adding threads in actions', () => {
       actual.push('hot')
       trigger({ type: 'cold' })
       addThreads({
-        addMoreHot: thread(
-          sync({ request: { type: 'hot' } }),
-          sync({ request: { type: 'hot' } })
-        ),
-        addMoreCold: thread(
-          sync({ request: { type: 'cold' } }),
-          sync({ request: { type: 'cold' } })
-        ),
+        addMoreHot: thread(sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } })),
+        addMoreCold: thread(sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } })),
       })
     },
     cold() {
@@ -42,12 +34,5 @@ test('firing trigger and adding threads in actions', () => {
     },
   })
   trigger({ type: 'start' })
-  expect(actual).toEqual([
-    'hot',
-    'cold',
-    'hot',
-    'cold',
-    'hot',
-    'cold',
-  ])
+  expect(actual).toEqual(['hot', 'cold', 'hot', 'cold', 'hot', 'cold'])
 })

@@ -9,7 +9,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-22.04
-    
+
     steps:
       - name: Validate input version
         run: |
@@ -35,15 +35,15 @@ jobs:
           bun run build
 
       - name: Version
-        run:  |
+        run: |
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor}}@users.noreply.github.com"
           bunx lerna version ${{ github.event.inputs.version }} --no-private --exact --conventional-commits --create-release github --message "ci: publish [skip ci]" --yes
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
-  
+
       - name: Publish
-        run:  |
+        run: |
           echo "@plaited:registry=https://registry.npmjs.org/" > .npmrc
           echo "registry=https://registry.npmjs.org/" >> .npmrc
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> .npmrc

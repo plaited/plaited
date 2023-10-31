@@ -7,14 +7,7 @@
     "outDir": "dist",
     "rootDir": "src",
     "allowSyntheticDefaultImports": true,
-    "lib": [
-      "dom",
-      "es2022",
-      "DOM.Iterable"
-    ]
+    "lib": ["dom", "es2022", "DOM.Iterable"]
   },
-  "exclude": [
-    "**/dist",
-    "**/tests/"
-  ]
+  "exclude": ["**/dist", "**/tests/"]
 }

@@ -34,21 +34,11 @@ const ucape = (key: string) => unescapeObj[key as keyof typeof unescapeObj]
  * @example
  * escape('&<>\'"') => '&amp;&lt;&gt;&#39;&quot;'
  */
-export const escape = (sub: string) =>
-  replace.call(
-    sub,
-    reEscape,
-    cape
-  )
+export const escape = (sub: string) => replace.call(sub, reEscape, cape)
 
 /**
  * @desription unescapes an escaped a string
  * @example
  * unescape('&amp;&lt;&gt;&#39;&quot;') => '&<>\'"'
  */
-export const unescape = (sub: string) =>
-  replace.call(
-    sub,
-    reUnescape,
-    ucape
-  )
+export const unescape = (sub: string) => replace.call(sub, reUnescape, ucape)

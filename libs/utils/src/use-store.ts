@@ -2,17 +2,17 @@ import { Publisher, publisher } from './publisher.js'
 import { trueTypeOf } from './true-type-of.js'
 
 type Get<T> = {
-  (): T;  
-  subscribe(cb: (arg: T) => void): () => void;
-};
-type Set<T> = (newStore: T | ((arg: T) => T)) => T;
+  (): T
+  subscribe(cb: (arg: T) => void): () => void
+}
+type Set<T> = (newStore: T | ((arg: T) => T)) => T
 
 /**
  * @description
  * a simple utility function for safely getting and setting values you need to persist during run.
  * When using the callback feature userStore passes a structured clone of the currently stored value
  * as a parameter. If you pass a function as nestStore, it will be treated as an updater function. It must be pure, should take the pending state as its only argument,
- * and should return the next store.  
+ * and should return the next store.
  *
  * @example
  *  const [store, setStore] = useStore<Record<string, number> | number>({ a: 1 })
@@ -34,15 +34,10 @@ export const useStore = <T>(initialStore?: T): readonly [Get<T>, Set<T>] => {
     return pub.subscribe(cb)
   }
   const set = (newStore: T | ((arg: T) => T)) => {
-    store = trueTypeOf(newStore) === 'function'
-      ? (newStore as ((arg: T) => T))(structuredClone(store))
-      : newStore as T
+    store = trueTypeOf(newStore) === 'function' ? (newStore as (arg: T) => T)(structuredClone(store)) : (newStore as T)
     pub && pub(store)
     return store
   }
 
-  return Object.freeze([
-    get,
-    set,
-  ])
+  return Object.freeze([get, set])
 }

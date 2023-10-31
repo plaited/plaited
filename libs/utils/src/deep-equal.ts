@@ -1,8 +1,4 @@
-export const deepEqual = (
-  objA: unknown,
-  objB: unknown,
-  map = new WeakMap()
-) => {
+export const deepEqual = (objA: unknown, objB: unknown, map = new WeakMap()) => {
   //  First-level filtering
   if (Object.is(objA, objB)) return true
 
@@ -15,12 +11,7 @@ export const deepEqual = (
   }
 
   //  Make sure both are objects and return false if either is not.
-  if (
-    typeof objA !== 'object' ||
-    objA === null ||
-    typeof objB !== 'object' ||
-    objB === null
-  ) {
+  if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) {
     return false
   }
 
@@ -28,20 +19,15 @@ export const deepEqual = (
   if (map.get(objA) === objB) return true
   map.set(objA, objB)
 
-  if (
-    Array.isArray(objA) && Array.isArray(objB)
-  ) {
+  if (Array.isArray(objA) && Array.isArray(objB)) {
     if (objA.length !== objB.length) return false
-    for (let i = objA.length; i-- !== 0;) {
+    for (let i = objA.length; i-- !== 0; ) {
       if (!deepEqual(objA[i], objB[i])) return false
     }
     return true
   }
 
-  if (
-    objA instanceof Map &&
-    objB instanceof Map
-  ) {
+  if (objA instanceof Map && objB instanceof Map) {
     if (objA.size !== objB.size) return false
     for (const i of objA.entries()) {
       if (!objB.has(i[0])) return false
@@ -52,14 +38,11 @@ export const deepEqual = (
     return true
   }
 
-  if (
-    objA instanceof Set &&
-    objB instanceof Set
-  ) {
+  if (objA instanceof Set && objB instanceof Set) {
     if (objA.size !== objB.size) return false
-    const arrA = [ ...objA.values() ]
-    const arrB = [ ...objB.values() ]
-    for (let i = arrA.length; i-- !== 0;) {
+    const arrA = [...objA.values()]
+    const arrB = [...objB.values()]
+    for (let i = arrA.length; i-- !== 0; ) {
       if (!deepEqual(arrA[i], arrB[i])) return false
     }
     return true
@@ -91,11 +74,7 @@ export const deepEqual = (
   for (let i = 0; i < keysA.length; i++) {
     if (
       !Reflect.has(objB, keysA[i]) ||
-      !deepEqual(
-        objA[keysA[i] as keyof typeof objA],
-        objB[keysA[i] as keyof typeof objB],
-        map
-      )
+      !deepEqual(objA[keysA[i] as keyof typeof objA], objB[keysA[i] as keyof typeof objB], map)
     ) {
       return false
     }

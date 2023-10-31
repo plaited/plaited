@@ -16,10 +16,7 @@ export const thread = (...rules: RulesFunc<any>[]): RulesFunc<any> =>
  * A behavioral thread that loops infinitely or until some callback condition is false
  * like a mode change open -> close. This function returns a threads
  */
-export const loop = (
-  rules: RulesFunc<any>[],
-  condition = () => true
-): RulesFunc<any> =>
+export const loop = (rules: RulesFunc<any>[], condition = () => true): RulesFunc<any> =>
   function* () {
     while (condition()) {
       for (const rule of rules) {
@@ -36,9 +33,7 @@ export const loop = (
  * threads currently forbids triggering
  * any of these events.
  */
-export const sync = <T extends Detail>(
-  set: RuleSet<T>
-): RulesFunc<T> =>
-    function* () {
-      yield set
-    }
+export const sync = <T extends Detail>(set: RuleSet<T>): RulesFunc<T> =>
+  function* () {
+    yield set
+  }

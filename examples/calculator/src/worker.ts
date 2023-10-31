@@ -2,7 +2,7 @@ import { bProgram, useMain } from 'plaited'
 
 const { trigger, feedback } = bProgram()
 
-const [ send ] = useMain(self, trigger)
+const [send] = useMain(self, trigger)
 
 const calculator = {
   add(prev: number, cur: number) {
@@ -20,17 +20,15 @@ const calculator = {
 }
 
 feedback({
-  percent(
-    {
-      prev,
-      cur,
-      operation,
-    }: {
-      prev: number
-      cur: number
-      operation: 'add' | 'subtract' | 'multiply' | 'divide'
-    }
-  ) {
+  percent({
+    prev,
+    cur,
+    operation,
+  }: {
+    prev: number
+    cur: number
+    operation: 'add' | 'subtract' | 'multiply' | 'divide'
+  }) {
     send('calculator-island', {
       type: 'updateOnPercent',
       detail: { prev, cur: (cur / 100) * prev, operation },
@@ -42,17 +40,15 @@ feedback({
       detail: { value: Math.sqrt(detail.cur) },
     })
   },
-  calculate(
-    {
-      prev,
-      cur,
-      operation,
-    }: {
-      prev: number
-      cur: number
-      operation: 'add' | 'subtract' | 'multiply' | 'divide'
-    }
-  ) {
+  calculate({
+    prev,
+    cur,
+    operation,
+  }: {
+    prev: number
+    cur: number
+    operation: 'add' | 'subtract' | 'multiply' | 'divide'
+  }) {
     send('calculator-island', {
       type: 'updateOnCalculate',
       detail: {
@@ -61,17 +57,15 @@ feedback({
       },
     })
   },
-  equal(
-    {
-      prev,
-      cur,
-      operation,
-    }: {
-      prev: number
-      cur: number
-      operation: 'add' | 'subtract' | 'multiply' | 'divide'
-    }
-  ) {
+  equal({
+    prev,
+    cur,
+    operation,
+  }: {
+    prev: number
+    cur: number
+    operation: 'add' | 'subtract' | 'multiply' | 'divide'
+  }) {
     send('calculator-island', {
       type: 'updateOnEqual',
       detail: {

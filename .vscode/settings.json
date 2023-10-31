@@ -4,10 +4,8 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": true
   },
-  "cSpell.words": [
-    "microapps"
-  ],
+  "cSpell.words": ["microapps"],
   "markdownlint.config": {
-    "MD041": false,
+    "MD041": false
   }
 }

@@ -5,14 +5,14 @@ type EventArguments = {
   detail?: Record<string, unknown>
 }
 
-export const fireEvent = <T extends (HTMLElement | SVGElement) = (HTMLElement | SVGElement)>(
+export const fireEvent = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
   element: T,
   eventName: string,
   options: EventArguments = {
     bubbles: true,
     composed: true,
     cancelable: true,
-  }
+  },
 ): Promise<void> => {
   const createEvent = (): Event => {
     if (options?.detail) {
@@ -22,7 +22,7 @@ export const fireEvent = <T extends (HTMLElement | SVGElement) = (HTMLElement | 
     }
   }
 
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     requestAnimationFrame(() => {
       const event = createEvent()
       element.dispatchEvent(event)

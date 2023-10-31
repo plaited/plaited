@@ -3,7 +3,7 @@ import { useMain } from '../../index.js'
 
 const { trigger, feedback } = bProgram()
 
-const [ send ] = useMain(self, trigger)
+const [send] = useMain(self, trigger)
 
 const calculator = {
   add(a: number, b: number) {
@@ -21,17 +21,7 @@ const calculator = {
 }
 
 feedback({
-  calculate(
-    {
-      a,
-      b,
-      operation,
-    }: {
-      a: number;
-      b: number;
-      operation: 'add' | 'subtract' | 'multiply' | 'divide';
-    }
-  ) {
+  calculate({ a, b, operation }: { a: number; b: number; operation: 'add' | 'subtract' | 'multiply' | 'divide' }) {
     send('main', {
       type: 'update',
       detail: calculator[operation](a, b),

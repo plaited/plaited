@@ -1,23 +1,16 @@
-export const findByAttribute = <T extends (HTMLElement | SVGElement) = (HTMLElement | SVGElement)>(
+export const findByAttribute = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
   attributeName: string,
   attributeValue: string | RegExp,
-  context?: HTMLElement | SVGElement
+  context?: HTMLElement | SVGElement,
 ): Promise<T | undefined> => {
   const searchInShadowDom = (node: Node): T | undefined => {
     if (node.nodeType === 1) {
       const attr = (node as Element).getAttribute(attributeName)
-      if (
-        typeof attributeValue === 'string' &&
-        attr === attributeValue
-      ) {
+      if (typeof attributeValue === 'string' && attr === attributeValue) {
         return node as T
       }
-      if (
-        attributeValue instanceof RegExp &&
-        attr &&
-        attributeValue.test(attr)
-      ) {
-        return node as T ?? undefined
+      if (attributeValue instanceof RegExp && attr && attributeValue.test(attr)) {
+        return (node as T) ?? undefined
       }
       if ((node as Element).getAttribute(attributeName) === attributeValue) {
         return node as T
@@ -25,9 +18,7 @@ export const findByAttribute = <T extends (HTMLElement | SVGElement) = (HTMLElem
     }
 
     if (node.nodeType === 1 && (node as Element).shadowRoot) {
-      for (
-        const child of ((node as Element).shadowRoot as ShadowRoot).children
-      ) {
+      for (const child of ((node as Element).shadowRoot as ShadowRoot).children) {
         const result = searchInShadowDom(child)
         if (result) {
           return result
@@ -43,7 +34,7 @@ export const findByAttribute = <T extends (HTMLElement | SVGElement) = (HTMLElem
     }
   }
 
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     requestAnimationFrame(() => {
       const rootNode = context ?? document
       const foundNode = searchInShadowDom(rootNode)

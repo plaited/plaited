@@ -1,4 +1,4 @@
-import { test, expect } from'bun:test'
+import { test, expect } from 'bun:test'
 import { bProgram, DevCallback } from '../index.js'
 
 test('Add hot water 3 times', () => {
@@ -8,7 +8,7 @@ test('Add hot water 3 times', () => {
     addHot: thread(
       sync({ request: { type: 'hot' } }),
       sync({ request: { type: 'hot' } }),
-      sync({ request: { type: 'hot' } })
+      sync({ request: { type: 'hot' } }),
     ),
   })
   feedback({
@@ -17,7 +17,7 @@ test('Add hot water 3 times', () => {
     },
   })
   trigger({ type: 'start' })
-  expect(actual).toEqual([ 'hot', 'hot', 'hot' ])
+  expect(actual).toEqual(['hot', 'hot', 'hot'])
 })
 
 test('Add hot/cold water 3 times', () => {
@@ -27,12 +27,12 @@ test('Add hot/cold water 3 times', () => {
     addHot: thread(
       sync({ request: { type: 'hot' } }),
       sync({ request: { type: 'hot' } }),
-      sync({ request: { type: 'hot' } })
+      sync({ request: { type: 'hot' } }),
     ),
     addCold: thread(
       sync({ request: { type: 'cold' } }),
       sync({ request: { type: 'cold' } }),
-      sync({ request: { type: 'cold' } })
+      sync({ request: { type: 'cold' } }),
     ),
   })
   feedback({
@@ -44,14 +44,7 @@ test('Add hot/cold water 3 times', () => {
     },
   })
   trigger({ type: 'start' })
-  expect(actual).toEqual([
-    'hot',
-    'hot',
-    'hot',
-    'cold',
-    'cold',
-    'cold',
-  ])
+  expect(actual).toEqual(['hot', 'hot', 'hot', 'cold', 'cold', 'cold'])
 })
 
 test('interleave', () => {
@@ -61,12 +54,12 @@ test('interleave', () => {
     addHot: thread(
       sync({ request: { type: 'hot' } }),
       sync({ request: { type: 'hot' } }),
-      sync({ request: { type: 'hot' } })
+      sync({ request: { type: 'hot' } }),
     ),
     addCold: thread(
       sync({ request: { type: 'cold' } }),
       sync({ request: { type: 'cold' } }),
-      sync({ request: { type: 'cold' } })
+      sync({ request: { type: 'cold' } }),
     ),
     mixHotCold: loop([
       sync({
@@ -88,31 +81,24 @@ test('interleave', () => {
     },
   })
   trigger({ type: 'start' })
-  expect(actual).toEqual([
-    'hot',
-    'cold',
-    'hot',
-    'cold',
-    'hot',
-    'cold',
-  ])
+  expect(actual).toEqual(['hot', 'cold', 'hot', 'cold', 'hot', 'cold'])
 })
 
 test('logging', () => {
   const logs: Parameters<DevCallback>[0][] = []
   const { addThreads, thread, sync, trigger, loop } = bProgram({
-    dev: msg => logs.push(msg),
+    dev: (msg) => logs.push(msg),
   })
   addThreads({
     addHot: thread(
       sync({ request: { type: 'hot' } }),
       sync({ request: { type: 'hot' } }),
-      sync({ request: { type: 'hot' } })
+      sync({ request: { type: 'hot' } }),
     ),
     addCold: thread(
       sync({ request: { type: 'cold' } }),
       sync({ request: { type: 'cold' } }),
-      sync({ request: { type: 'cold' } })
+      sync({ request: { type: 'cold' } }),
     ),
     mixHotCold: loop([
       sync({

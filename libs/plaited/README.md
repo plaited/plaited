@@ -7,7 +7,6 @@ application web interfaces as specifications (requirements) change and evolve.
 
 `npm install --save plaited`
 
-
 ## Library goals
 
 - Easily create cross framework and reusable interface components, PlaitedElements.

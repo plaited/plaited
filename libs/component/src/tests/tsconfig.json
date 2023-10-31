@@ -7,9 +7,6 @@
     "jsx": "react-jsx",
     "jsxImportSource": "@plaited/jsx",
     "moduleResolution": "nodenext",
-    "lib": [
-      "dom",
-      "es2022"
-    ],
-  },
+    "lib": ["dom", "es2022"]
+  }
 }

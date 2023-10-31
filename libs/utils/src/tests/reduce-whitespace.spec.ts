@@ -4,7 +4,9 @@ import { reduceWhitespace } from '../index.js'
 test('reduceWhitespace()', () => {
   expect(reduceWhitespace(`hello     world`)).toBe('hello world')
   expect(reduceWhitespace(`  hello     world  `)).toBe(' hello world ')
-  expect(reduceWhitespace(`hello    
+  expect(
+    reduceWhitespace(`hello    
   
-  world`)).toBe('hello world')
+  world`),
+  ).toBe('hello world')
 })

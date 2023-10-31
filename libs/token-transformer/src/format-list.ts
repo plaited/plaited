@@ -1,8 +1,8 @@
 /* eslint-disable no-return-assign */
 import { trueTypeOf } from '@plaited/utils'
 import { DesignToken, DesignTokenGroup } from '@plaited/token-types'
-import { FormatList } from './types.js' 
-export const formatList:FormatList = ({
+import { FormatList } from './types.js'
+export const formatList: FormatList = ({
   tokens,
   tokenPath = [],
   formatters,
@@ -33,7 +33,7 @@ export const formatList:FormatList = ({
         string += formatList({
           baseFontSize,
           tokens: tokens[name] as DesignTokenGroup,
-          tokenPath: [ ...tokenPath, name ],
+          tokenPath: [...tokenPath, name],
           formatters,
           allTokens,
           mediaQueries,

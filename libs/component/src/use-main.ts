@@ -4,7 +4,7 @@ import { Send } from './types.js'
 export const useMain = (
   /** is self of the worker */
   context: Window & typeof globalThis,
-  trigger: Trigger
+  trigger: Trigger,
 ) => {
   const eventHandler = ({ data }: { data: TriggerArgs }) => {
     trigger(data)
@@ -17,5 +17,5 @@ export const useMain = (
   }
   context.addEventListener('message', eventHandler, false)
   const disconnect = () => context.removeEventListener('message', eventHandler)
-  return Object.freeze<[Send, () => void]>([ send, disconnect ])
+  return Object.freeze<[Send, () => void]>([send, disconnect])
 }

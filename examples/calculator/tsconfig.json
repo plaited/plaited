@@ -6,14 +6,9 @@
     "jsx": "react-jsx",
     "jsxImportSource": "plaited",
     "moduleResolution": "nodenext",
-    "lib": [
-      "dom",
-      "es2022"
-    ],
+    "lib": ["dom", "es2022"],
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": "src"
   },
-  "exclude": [
-    "**/dist",
-  ]
+  "exclude": ["**/dist"]
 }

@@ -1,39 +1,49 @@
 import { test } from '@plaited/rite'
-import {  css } from '@plaited/jsx'
+import { css } from '@plaited/jsx'
 import { Component, PlaitProps } from '../index.js'
 import sinon from 'sinon'
-const [ classes, stylesheet ] = css`.row {
-  display: flex;
-  gap: 12px;
-  padding: 12px;
-}
-::slotted(button), .button {
-  height: 18px;
-  width: auto;
-}`
+const [classes, stylesheet] = css`
+  .row {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+  }
+  ::slotted(button),
+  .button {
+    height: 18px;
+    width: auto;
+  }
+`
 const slot = sinon.spy()
 const nested = sinon.spy()
 const named = sinon.spy()
 
-class Fixture  extends Component({
+class Fixture extends Component({
   tag: 'slot-test',
-  template:  <div className={classes.row}
-    {...stylesheet}
-  >
-    <slot data-trigger={{ click: 'slot' }}></slot>
-    <slot name='named'
-      data-trigger={{ click: 'named' }}
-    ></slot>
-    <nested-slot slots={<slot slot='nested'
-      name='nested'
-      data-trigger={{ click: 'nested' }}
+  template: (
+    <div
+      className={classes.row}
+      {...stylesheet}
     >
-    </slot>}
-    >
-      <slot name='nested'></slot>
-    </nested-slot>
-  </div>,
-}){
+      <slot data-trigger={{ click: 'slot' }}></slot>
+      <slot
+        name='named'
+        data-trigger={{ click: 'named' }}
+      ></slot>
+      <nested-slot
+        slots={
+          <slot
+            slot='nested'
+            name='nested'
+            data-trigger={{ click: 'nested' }}
+          ></slot>
+        }
+      >
+        <slot name='nested'></slot>
+      </nested-slot>
+    </div>
+  ),
+}) {
   plait({ feedback }: PlaitProps) {
     feedback({
       slot() {
@@ -55,7 +65,8 @@ customElements.define(Fixture.tag, Fixture)
 
 const root = document.querySelector('body')
 
-root.insertAdjacentHTML('beforeend',
+root.insertAdjacentHTML(
+  'beforeend',
   `<${Fixture.tag}>
     <button class="${classes.button}">Slot</button>
     <button slot='named'
@@ -64,12 +75,12 @@ root.insertAdjacentHTML('beforeend',
     <button slot='nested'
       class="${classes.button}"
     >Nested</button>
-  </${Fixture.tag}>` 
+  </${Fixture.tag}>`,
 )
 
-test('slot: default', async t => {
+test('slot: default', async (t) => {
   const button = await t.findByText('Slot')
-  button && await t.fireEvent(button, 'click')
+  button && (await t.fireEvent(button, 'click'))
   t({
     given: `default slot click of element in event's composed path`,
     should: 'trigger feedback action',
@@ -78,9 +89,9 @@ test('slot: default', async t => {
   })
 })
 
-test('slot: named', async t => {
+test('slot: named', async (t) => {
   const button = await t.findByText('Named')
-  button && await t.fireEvent(button, 'click')
+  button && (await t.fireEvent(button, 'click'))
   t({
     given: `named slot click of element in event's composed path`,
     should: 'trigger feedback action',
@@ -89,9 +100,9 @@ test('slot: named', async t => {
   })
 })
 
-test('slot: nested', async t => {
+test('slot: nested', async (t) => {
   const button = await t.findByText('Nested')
-  button && await t.fireEvent(button, 'click')
+  button && (await t.fireEvent(button, 'click'))
   t({
     given: `nested slot click of element in event's composed path`,
     should: 'not trigger feedback action',

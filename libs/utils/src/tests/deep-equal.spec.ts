@@ -1,4 +1,4 @@
-import { test, expect } from'bun:test'
+import { test, expect } from 'bun:test'
 import { deepEqual } from '../index.js'
 
 test('deepEqual()', () => {
@@ -22,17 +22,14 @@ test('deepEqual()', () => {
   expect(deepEqual(false, undefined)).toBe(false)
 
   /** Arrays */
-  expect(deepEqual([ 'array' ], [ 'array' ])).toBe(true)
-  expect(deepEqual([ 'array' ], [ 'nope' ])).toBe(false)
+  expect(deepEqual(['array'], ['array'])).toBe(true)
+  expect(deepEqual(['array'], ['nope'])).toBe(false)
 
   /** Maps, sets and objects */
-  expect(deepEqual(new Set([ 'set' ]), new Set([ 'set' ]))).toBe(true)
-  expect(deepEqual(new Set([ 'set' ]), new Set([ 'nope' ]))).toBe(false)
-  expect(deepEqual(new Map([ [ 'key', 'value' ] ]), new Map([ [ 'key', 'value' ] ])))
-    .toBe(true)
-  expect(
-    deepEqual(new Map([ [ 'key', 'value' ] ]), new Map([ [ 'key', 'nope' ] ]))
-  ).toBe(false)
+  expect(deepEqual(new Set(['set']), new Set(['set']))).toBe(true)
+  expect(deepEqual(new Set(['set']), new Set(['nope']))).toBe(false)
+  expect(deepEqual(new Map([['key', 'value']]), new Map([['key', 'value']]))).toBe(true)
+  expect(deepEqual(new Map([['key', 'value']]), new Map([['key', 'nope']]))).toBe(false)
 
   const func = () => {
     console.error('function')
@@ -46,7 +43,7 @@ test('deepEqual()', () => {
     unf: void 0,
     nul: null,
     obj: { name: 'object', id: 1 },
-    arr: [ 0, 1, 2 ],
+    arr: [0, 1, 2],
     func,
     date: new Date(0),
     reg: new RegExp('/regexp/ig'),
@@ -60,17 +57,19 @@ test('deepEqual()', () => {
     unf: void 0,
     nul: null,
     obj: { name: 'object', id: 1 },
-    arr: [ 0, 1, 2 ],
+    arr: [0, 1, 2],
     func,
     date: new Date(0),
     reg: new RegExp('/regexp/ig'),
     [symbolKey]: 'symbol',
   }
   expect(deepEqual(original, clone)).toBe(true)
-  expect(deepEqual(original, {
-    ...clone,
-    obj: {
-      name: 'color',
-    },
-  })).toBe(false)
+  expect(
+    deepEqual(original, {
+      ...clone,
+      obj: {
+        name: 'color',
+      },
+    }),
+  ).toBe(false)
 })

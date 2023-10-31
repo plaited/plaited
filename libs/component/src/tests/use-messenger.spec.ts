@@ -2,7 +2,7 @@ import { test } from '@plaited/rite'
 import sinon from 'sinon'
 import { useMessenger } from '../index.js'
 
-test('useMessenger: connect, send, close', async t => {
+test('useMessenger: connect, send, close', async (t) => {
   const { connect, send, has } = useMessenger()
   const spy = sinon.spy()
   const close = connect('actor1', spy)
@@ -22,7 +22,7 @@ test('useMessenger: connect, send, close', async t => {
     expected: false,
   })
 })
-test('useMessenger: send, connect, close', async t => {
+test('useMessenger: send, connect, close', async (t) => {
   const { connect, send, has } = useMessenger()
   const spy = sinon.spy()
   send('actor1', { type: 'b', detail: { value: 4 } })
@@ -42,7 +42,7 @@ test('useMessenger: send, connect, close', async t => {
   })
   close()
 })
-test('useMessenger: connect, close, send', async t => {
+test('useMessenger: connect, close, send', async (t) => {
   const { connect, send } = useMessenger()
   const spy = sinon.spy()
   connect('actor1', spy)()
@@ -55,15 +55,12 @@ test('useMessenger: connect, close, send', async t => {
     expected: false,
   })
 })
-test('useMessenger: with worker', async t => {
+test('useMessenger: with worker', async (t) => {
   const { connect, send, has } = useMessenger()
-  const worker = new Worker(new URL( '/src/tests/__mocks__/test.worker.ts', import.meta.url), {
+  const worker = new Worker(new URL('/src/tests/__mocks__/test.worker.ts', import.meta.url), {
     type: 'module',
   })
-  connect.worker(
-    'calculator',
-    worker
-  )
+  connect.worker('calculator', worker)
 
   const spy = sinon.spy()
 

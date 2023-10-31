@@ -3,24 +3,25 @@ import { css, FT } from '@plaited/jsx'
 import { Component } from '../index.js'
 import { createTemplateElement } from '../sugar.js'
 
-
-
-test('template', async t => {
-  const [ cls, stylesheet ] = css`
-  .inner {
-    color: blue
-  }`
+test('template', async (t) => {
+  const [cls, stylesheet] = css`
+    .inner {
+      color: blue;
+    }
+  `
   const content = 'client side rendered'
   class Fixture extends Component({
-    tag:'template-element',
-    template: <div
-      data-test='content'
-      className={cls.inner}
-      {...stylesheet}
-    >
-      {content}
-    </div>,
-  }){}
+    tag: 'template-element',
+    template: (
+      <div
+        data-test='content'
+        className={cls.inner}
+        {...stylesheet}
+      >
+        {content}
+      </div>
+    ),
+  }) {}
   customElements.define(Fixture.tag, Fixture)
   const body = document.querySelector('body')
   const host = document.createElement(Fixture.tag)
@@ -41,28 +42,34 @@ test('template', async t => {
   })
 })
 
-test('template existing declarative shadowdom', async t => {
-  const [ cls, stylesheet ] = css`
-  .inner {
-    color: red
-  }`
-  const Template:FT = ({ stylesheet, children }) => <div
-    data-test='inner'
-    className={cls.inner}
-    stylesheet={stylesheet}
-  >
-    {children}
-  </div>
-  class Fixture extends Component({
-    tag:'with-declarative-shadow-dom',
-    template: <Template>after hydration</Template>,
-  }){}
-  const template = createTemplateElement(
-    (<Fixture.tag data-test='host'
-      {...stylesheet}
+test('template existing declarative shadowdom', async (t) => {
+  const [cls, stylesheet] = css`
+    .inner {
+      color: red;
+    }
+  `
+  const Template: FT = ({ stylesheet, children }) => (
+    <div
+      data-test='inner'
+      className={cls.inner}
+      stylesheet={stylesheet}
     >
-      <Template>before hydration</Template>
-    </Fixture.tag>).content
+      {children}
+    </div>
+  )
+  class Fixture extends Component({
+    tag: 'with-declarative-shadow-dom',
+    template: <Template>after hydration</Template>,
+  }) {}
+  const template = createTemplateElement(
+    (
+      <Fixture.tag
+        data-test='host'
+        {...stylesheet}
+      >
+        <Template>before hydration</Template>
+      </Fixture.tag>
+    ).content,
   )
   const frag = document.importNode(template.content, true)
   const body = document.querySelector('body')
@@ -106,5 +113,3 @@ test('template existing declarative shadowdom', async t => {
     expected: 'after hydration',
   })
 })
-
-

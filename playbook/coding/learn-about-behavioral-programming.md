@@ -12,13 +12,11 @@ selected). Request, block and waitFor events can be described by passing a
 RuleSet object to the sync statement as parameter.
 
 ```ts
-export type RuleSet<
-  T extends (Detail) = (Detail),
-> = {
-  waitFor?: ParameterIdiom<T> | ParameterIdiom<T>[];
-  request?: RequestIdiom<T> | RequestIdiom<T>[];
-  block?: ParameterIdiom<T> | ParameterIdiom<T>[];
-};
+export type RuleSet<T extends Detail = Detail> = {
+  waitFor?: ParameterIdiom<T> | ParameterIdiom<T>[]
+  request?: RequestIdiom<T> | RequestIdiom<T>[]
+  block?: ParameterIdiom<T> | ParameterIdiom<T>[]
+}
 ```
 
 After calling sync, the thread is blocked, waiting for the rest of the threads
@@ -50,9 +48,9 @@ To learn more watch
 > 1. UI is a function of data
 > 2. Data is derived from an event log
 > 3. Deciding when and what to append to the event log is the most complex part
-   > of development
+>    of development
 > 4. Finding more natural ways for deciding when and what to append to the event
-   > log is the direction we should be moving towards
+>    log is the direction we should be moving towards
 
 [^2]
 
@@ -77,11 +75,11 @@ We want to create an app that controls hot and cold water taps, whose output
 flows are mixed.
 
 ```ts
-import { expect, test } from "@jest/globals";
-import { bProgram, DevCallback } from "@plaited/behavioral";
+import { expect, test } from '@jest/globals'
+import { bProgram, DevCallback } from '@plaited/behavioral'
 
-test("logging", () => {
-  const logs: Parameters<DevCallback>[0][] = [];
+test('logging', () => {
+  const logs: Parameters<DevCallback>[0][] = []
   /**
    * Initiate our bProgram and destructure behavioral
    * programming utility functions
@@ -126,53 +124,46 @@ test("logging", () => {
      * options dev field.
      */
     dev: (msg) => logs.push(msg), // Logging callback
-  });
+  })
 
   /** Add our rules for bProgram execution */
   addThreads({
     addHot: thread(
-      sync({ request: { type: "hot" } }),
-      sync({ request: { type: "hot" } }),
-      sync({ request: { type: "hot" } }),
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
     ),
     addCold: thread(
-      sync({ request: { type: "cold" } }),
-      sync({ request: { type: "cold" } }),
-      sync({ request: { type: "cold" } }),
+      sync({ request: { type: 'cold' } }),
+      sync({ request: { type: 'cold' } }),
+      sync({ request: { type: 'cold' } }),
     ),
     mixHotCold: loop([
       sync({
-        waitFor: { type: "hot" },
-        block: { type: "cold" },
+        waitFor: { type: 'hot' },
+        block: { type: 'cold' },
       }),
       sync({
-        waitFor: { type: "cold" },
-        block: { type: "hot" },
+        waitFor: { type: 'cold' },
+        block: { type: 'hot' },
       }),
     ]),
-  });
+  })
 
-  const actual: string[] = [];
+  const actual: string[] = []
   /** Add action callback to our feedback function */
   feedback({
     hot() {
-      actual.push("hot");
+      actual.push('hot')
     },
     cold() {
-      actual.push("cold");
+      actual.push('cold')
     },
-  });
-  trigger({ type: "start" });
-  expect(actual).toEqual([
-    "hot",
-    "cold",
-    "hot",
-    "cold",
-    "hot",
-    "cold",
-  ]);
-  expect(logs).toMatchSnapshot();
-});
+  })
+  trigger({ type: 'start' })
+  expect(actual).toEqual(['hot', 'cold', 'hot', 'cold', 'hot', 'cold'])
+  expect(logs).toMatchSnapshot()
+})
 ```
 
 The snapshot from the resulting test gives us insight into the behavior and
@@ -306,7 +297,7 @@ const logs = [
   /**
    * full logs @
    * https://github.com/plaited/plaited/blob/main/libs/behavioral/src/tests/__snapshots__/water.spec.ts.snap
-   */ 
+   */
 ];
 ```
 
@@ -359,10 +350,7 @@ be triggered often infinitely such as checking and unchecking a checkbox for
 example.
 
 ```ts
-type Loop = (
-  rules: RulesFunc<any>[],
-  condition?: () => boolean,
-) => RulesFunc<any>;
+type Loop = (rules: RulesFunc<any>[], condition?: () => boolean) => RulesFunc<any>
 ```
 
 As we can see in the type above the loop function takes an optional second
@@ -374,5 +362,4 @@ our behavioral program is run.
 ---
 
 [^1]: [What is Behavioral Programming?](https://bpjs.readthedocs.io/en/latest/BPjsTutorial/index.html)
-
 [^2]: [On User Interface Development: appending to the event log](https://medium.com/@lmatteis/on-user-interface-development-appending-to-the-event-log-8d8ca966795d)

@@ -5,13 +5,8 @@
     "declaration": true,
     "moduleResolution": "nodenext",
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": "src"
   },
-  "include": [
-    "**/src/"
-  ],
-  "exclude": [
-    "**/tests/",
-    "**/dist"
-  ]
+  "include": ["**/src/"],
+  "exclude": ["**/tests/", "**/dist"]
 }

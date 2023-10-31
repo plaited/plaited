@@ -16,11 +16,13 @@ const deduplicate = (css: string) => {
       set.add(rule)
       continue
     }
-    map.set(selector, new Set<string>([ rule ]))
+    map.set(selector, new Set<string>([rule]))
   }
-  return [ ...map ].flatMap(([ key, val ]) => {
-    return [ key, '{', ...val, key.startsWith('@') ? '}}' : '}' ]
-  }).join('')
+  return [...map]
+    .flatMap(([key, val]) => {
+      return [key, '{', ...val, key.startsWith('@') ? '}}' : '}']
+    })
+    .join('')
 }
 
 export const transformCssTokens = ({

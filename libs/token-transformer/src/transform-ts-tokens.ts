@@ -10,12 +10,13 @@ export const transformTsTokens = ({
   mediaQueries,
   colorSchemes,
   containerQueries,
-}: TransformerParams) =>  formatList({
-  tokens,
-  allTokens: tokens,
-  baseFontSize,
-  formatters,
-  mediaQueries,
-  colorSchemes,
-  containerQueries,
-})
+}: TransformerParams) =>
+  formatList({
+    tokens,
+    allTokens: tokens,
+    baseFontSize,
+    formatters,
+    mediaQueries,
+    colorSchemes,
+    containerQueries,
+  })

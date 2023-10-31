@@ -1,9 +1,6 @@
 /// <reference lib="dom" />
-type CreateIDBCallback = (arg: IDBObjectStore) => void;
-export type IDB = (
-  type: IDBTransactionMode,
-  callback: CreateIDBCallback,
-) => Promise<void>;
+type CreateIDBCallback = (arg: IDBObjectStore) => void
+export type IDB = (type: IDBTransactionMode, callback: CreateIDBCallback) => Promise<void>
 export const createIDB = (dbName: string, storeName: string) => {
   const dbp = new Promise<IDBDatabase>((resolve, reject) => {
     const openreq = indexedDB.open(dbName)
@@ -11,8 +8,7 @@ export const createIDB = (dbName: string, storeName: string) => {
     openreq.onsuccess = () => resolve(openreq.result)
     // First time setup: create an empty object store
     openreq.onupgradeneeded = () => {
-      !openreq.result.objectStoreNames.contains(storeName) &&
-        openreq.result.createObjectStore(storeName)
+      !openreq.result.objectStoreNames.contains(storeName) && openreq.result.createObjectStore(storeName)
     }
   })
   return (type: IDBTransactionMode, callback: CreateIDBCallback) =>
@@ -22,9 +18,8 @@ export const createIDB = (dbName: string, storeName: string) => {
           const transaction = db.transaction(storeName, type)
           transaction.oncomplete = () => resolve()
           // eslint-disable-next-line no-multi-assign
-          transaction.onabort = transaction.onerror = () =>
-            reject(transaction.error)
+          transaction.onabort = transaction.onerror = () => reject(transaction.error)
           callback(transaction.objectStore(storeName))
-        })
+        }),
     )
 }

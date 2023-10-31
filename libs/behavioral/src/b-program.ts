@@ -18,22 +18,14 @@ import {
 } from './types.js'
 import { loop, sync, thread } from './rules.js'
 
-const requestInParameter = (
-  { type: requestEventName, detail: requestDetail = {} }: CandidateBid
-) => {
-  return (
-    {
-      type: parameterEventName,
-      cb: parameterAssertion,
-    }: ParameterIdiom
-  ): boolean => (
+const requestInParameter = ({ type: requestEventName, detail: requestDetail = {} }: CandidateBid) => {
+  return ({ type: parameterEventName, cb: parameterAssertion }: ParameterIdiom): boolean =>
     parameterAssertion
       ? parameterAssertion({
-        detail: requestDetail,
-        type: requestEventName,
-      })
+          detail: requestDetail,
+          type: requestEventName,
+        })
       : requestEventName === parameterEventName
-  )
 }
 
 export const bProgram = ({
@@ -42,12 +34,10 @@ export const bProgram = ({
   /** When set to true returns a stream with log of state snapshots, last selected event and trigger */
   dev,
 }: {
-  strategy?: Strategy | keyof Omit<typeof strategies, 'custom'>;
-  dev?: DevCallback;
+  strategy?: Strategy | keyof Omit<typeof strategies, 'custom'>
+  dev?: DevCallback
 } = {}) => {
-  const eventSelectionStrategy: Strategy = typeof strategy === 'string'
-    ? selectionStrategies[strategy]
-    : strategy
+  const eventSelectionStrategy: Strategy = typeof strategy === 'string' ? selectionStrategies[strategy] : strategy
   const pending = new Set<PendingBid>()
   const running = new Set<RunningBid>()
   const actionPublisher = publisher<SelectedMessage>()
@@ -74,13 +64,15 @@ export const bProgram = ({
   }
   // Select next event
   function selectNextEvent() {
-    const bids = [ ...pending ]
+    const bids = [...pending]
     let candidates: CandidateBid[] = []
     for (const { request, priority } of bids) {
       if (Array.isArray(request)) {
-        candidates = candidates.concat(request.map(
-          event => ({ priority, ...event }) // create candidates for each request with current bids priority
-        ))
+        candidates = candidates.concat(
+          request.map(
+            (event) => ({ priority, ...event }), // create candidates for each request with current bids priority
+          ),
+        )
         continue
       }
       if (request) {
@@ -90,12 +82,11 @@ export const bProgram = ({
     const blocked = bids.flatMap<ParameterIdiom>(({ block }) => block || [])
 
     const filteredBids: CandidateBid[] | never[] = candidates.filter(
-      request => !blocked.some(requestInParameter(request))
+      (request) => !blocked.some(requestInParameter(request)),
     )
     const selectedEvent = eventSelectionStrategy(filteredBids)
     if (selectedEvent) {
-      dev && snapshotPublisher &&
-        snapshotPublisher(stateSnapshot({ bids, selectedEvent }))
+      dev && snapshotPublisher && snapshotPublisher(stateSnapshot({ bids, selectedEvent }))
       nextStep(selectedEvent)
     }
   }
@@ -104,12 +95,10 @@ export const bProgram = ({
     for (const bid of pending) {
       const { request = [], waitFor = [], generator } = bid
       const waitList = [
-        ...(Array.isArray(request) ? request : [ request ]),
-        ...(Array.isArray(waitFor) ? waitFor : [ waitFor ]),
+        ...(Array.isArray(request) ? request : [request]),
+        ...(Array.isArray(waitFor) ? waitFor : [waitFor]),
       ]
-      if (
-        waitList.some(requestInParameter(selectedEvent)) && generator
-      ) {
+      if (waitList.some(requestInParameter(selectedEvent)) && generator) {
         running.add(bid)
         pending.delete(bid)
       }
@@ -120,14 +109,11 @@ export const bProgram = ({
     actionPublisher(detail)
     run()
   }
-  const trigger: Trigger = ({
-    type,
-    detail,
-  }) => {
+  const trigger: Trigger = ({ type, detail }) => {
     const thread = function* () {
       yield {
-        request: [ { type, detail } ],
-        waitFor: [ { type: '', cb: () => true } ],
+        request: [{ type, detail }],
+        waitFor: [{ type: '', cb: () => true }],
       }
     }
     running.add({
@@ -139,14 +125,11 @@ export const bProgram = ({
     run()
   }
 
-  const feedback: Feedback = actions => {
-    actionPublisher.subscribe(
-      (data: SelectedMessage) => {
-        const { type, detail = {} } = data
-        Object.hasOwn(actions, type) &&
-          actions[type](detail)
-      }
-    )
+  const feedback: Feedback = (actions) => {
+    actionPublisher.subscribe((data: SelectedMessage) => {
+      const { type, detail = {} } = data
+      Object.hasOwn(actions, type) && actions[type](detail)
+    })
   }
 
   const addThreads = (threads: Record<string, RulesFunc>): void => {
@@ -160,9 +143,7 @@ export const bProgram = ({
   }
 
   if (dev && snapshotPublisher) {
-    snapshotPublisher.subscribe(
-      (data: SnapshotMessage) => dev(data)
-    )
+    snapshotPublisher.subscribe((data: SnapshotMessage) => dev(data))
   }
 
   return Object.freeze({

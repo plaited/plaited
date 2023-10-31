@@ -1,70 +1,50 @@
 import { dataAddress, dataTarget, dataTrigger } from './constants.js'
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export type Primitive =
-  | null
-  | undefined
-  | number
-  | string
-  | boolean
-  | bigint;
+export type Primitive = null | undefined | number | string | boolean | bigint
 
 export type Template = {
-  content: string;
-  stylesheets: Set<string>;
-};
+  content: string
+  stylesheets: Set<string>
+}
 
 export type Child = string | Template
 
-export type Children = Child[] | Child;
+export type Children = Child[] | Child
 
 export interface AdditionalAttrs {
-    [key: string]: Primitive | Children | Record<string, string>;
+  [key: string]: Primitive | Children | Record<string, string>
 }
 
 export type BaseAttrs = {
-  class?: never;
-  for?: never;
-  [dataAddress]?: string;
-  [dataTarget]?: string;
-  [dataTrigger]?: Record<string, string>;
-  htmlFor?: string,
-  className?: string,
+  class?: never
+  for?: never
+  [dataAddress]?: string
+  [dataTarget]?: string
+  [dataTrigger]?: Record<string, string>
+  htmlFor?: string
+  className?: string
   children?: Children
-  key?: string;
-  shadowrootmode?: 'open' | 'closed';
-  shadowrootdelegatesfocus?: boolean;
-  stylesheet?: string | string[];
+  key?: string
+  shadowrootmode?: 'open' | 'closed'
+  shadowrootdelegatesfocus?: boolean
+  stylesheet?: string | string[]
   /** setting trusted to true will disable all escaping security policy measures for this element template */
-  trusted?: boolean;
-  slots?: Children;
-  style?: Record<string, string>;
-};
+  trusted?: boolean
+  slots?: Children
+  style?: Record<string, string>
+}
 
-export type Attrs<
-  T extends AdditionalAttrs = AdditionalAttrs,
-> =
-  & BaseAttrs
-  & T;
+export type Attrs<T extends AdditionalAttrs = AdditionalAttrs> = BaseAttrs & T
 
-export type FunctionTemplate< 
-  T extends Record<string, any> = Record<
-    string,
-    any
-  >,
-> = (attrs: T & BaseAttrs) => Template;
+export type FunctionTemplate<T extends Record<string, any> = Record<string, any>> = (attrs: T & BaseAttrs) => Template
 
-export type FT< //Alias for FunctionTemplate
-T extends Record<string, any> = Record<
-  string,
-  any
->,
+export type FT<
+  //Alias for FunctionTemplate
+  T extends Record<string, any> = Record<string, any>,
 > = FunctionTemplate<T>
 
-type Tag = string | `${string}-${string}` | FT;
+type Tag = string | `${string}-${string}` | FT
 
 export interface CreateTemplate {
-  <T extends AdditionalAttrs>(
-    tag: Tag,
-    attrs: Attrs<T>,
-  ): Template;
+  <T extends AdditionalAttrs>(tag: Tag, attrs: Attrs<T>): Template
 }

@@ -5,7 +5,7 @@
  * This function will handle strings in various formats:
  * - Hyphen-separated (kebab-case)
  * - Underscore-separated (snake_case)
- * - Slash-separated 
+ * - Slash-separated
  * - Space-separated (start case)
  * - Any combination of the above, with any number of consecutive separators
  *
@@ -13,11 +13,13 @@
  * @returns The input string converted to camel case
  */
 export const camelCase = (str: string) => {
-  return str.replace(/[\s_/-]+(.)?/g, (_, group1) => {
-    return group1 ? group1.toUpperCase() : ''
-  }).replace(/^(.)/, (_, group1) => {
-    return group1 ? group1.toLowerCase() : ''
-  })
+  return str
+    .replace(/[\s_/-]+(.)?/g, (_, group1) => {
+      return group1 ? group1.toUpperCase() : ''
+    })
+    .replace(/^(.)/, (_, group1) => {
+      return group1 ? group1.toLowerCase() : ''
+    })
 }
 
 /**
@@ -36,6 +38,8 @@ export const camelCase = (str: string) => {
  */
 export const kebabCase = (str: string) => {
   return str
-    .replace(/([a-z0-9]|(?=[A-Z]))([A-Z])|[\s_/]+/g,'$1-$2')
-    .replace(/-+/g, '-').replace(/^-/, '').toLowerCase()
+    .replace(/([a-z0-9]|(?=[A-Z]))([A-Z])|[\s_/]+/g, '$1-$2')
+    .replace(/-+/g, '-')
+    .replace(/^-/, '')
+    .toLowerCase()
 }

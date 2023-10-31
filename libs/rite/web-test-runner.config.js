@@ -6,14 +6,14 @@ import { fileURLToPath } from 'url'
 export default {
   files: 'src/**/*.spec.(ts|tsx)',
   nodeResolve: true,
-  plugins: [ esbuildPlugin({
-    ts: true,
-    tsx: true,
-    tsconfig: fileURLToPath(new URL('./tsconfig.json', import.meta.url)),
-  }) ],
+  plugins: [
+    esbuildPlugin({
+      ts: true,
+      tsx: true,
+      tsconfig: fileURLToPath(new URL('./tsconfig.json', import.meta.url)),
+    }),
+  ],
   port: 9002,
   testFramework: getFramework(3_000),
-  browsers: [
-    playwrightLauncher({ product: 'chromium' }),
-  ],
+  browsers: [playwrightLauncher({ product: 'chromium' })],
 }

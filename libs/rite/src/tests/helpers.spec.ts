@@ -3,8 +3,7 @@ import { findByAttribute } from '../find-by-attribute.js'
 import { findByText } from '../find-by-text.js'
 import { fireEvent } from '../fire-event.js'
 
-
-test('findByAttribute: light dom', async t => {
+test('findByAttribute: light dom', async (t) => {
   // Create two element to be used to validate helper
   const firstEl = document.createElement('div')
   const secondEl = document.createElement('div')
@@ -31,7 +30,7 @@ test('findByAttribute: light dom', async t => {
   secondEl.remove()
 })
 
-test('findByAttribute: shadow dom', async t => {
+test('findByAttribute: shadow dom', async (t) => {
   // Create context and host for shadow root
   const context = document.createElement('div')
 
@@ -69,7 +68,7 @@ test('findByAttribute: shadow dom', async t => {
   context.remove()
 })
 
-test('findByAttribute: nested shadow dom', async t => {
+test('findByAttribute: nested shadow dom', async (t) => {
   // Create context
   const context = document.createElement('div')
 
@@ -114,11 +113,11 @@ test('findByAttribute: nested shadow dom', async t => {
   context.remove()
 })
 
-test('findByAttribute: first element that satisfies query', async t => {
+test('findByAttribute: first element that satisfies query', async (t) => {
   const textContent = 'Hello from the inner shadow DOM!'
   // Create context
   const context = document.createElement('div')
-  
+
   // Attach a Shadow DOM to  context
   const outerShadowRoot = context.attachShadow({ mode: 'open' })
   // Create the inner host
@@ -133,7 +132,7 @@ test('findByAttribute: first element that satisfies query', async t => {
 
   // Add some content to the innerHost shadowRoot
   const innerContent = document.createElement('span')
- 
+
   innerContent.textContent = textContent
   innerContent.setAttribute('data-test', 'shadow-child')
   innerShadowRoot.appendChild(innerContent)
@@ -154,7 +153,7 @@ test('findByAttribute: first element that satisfies query', async t => {
   context.remove()
 })
 
-test('findByText: light dom', async t => {
+test('findByText: light dom', async (t) => {
   // Create two element to be used to validate helper
   const firstEl = document.createElement('div')
   const secondEl = document.createElement('div')
@@ -178,7 +177,7 @@ test('findByText: light dom', async t => {
   secondEl.remove()
 })
 
-test('findByText: shadow dom', async t => {
+test('findByText: shadow dom', async (t) => {
   // Create context and host for shadow root
   const context = document.createElement('div')
 
@@ -202,7 +201,7 @@ test('findByText: shadow dom', async t => {
     given: 'search without passing context',
     should: 'find child element',
     actual: target,
-    expected:el,
+    expected: el,
   })
   // Search with passing context
   target = await findByText(textContent, context)
@@ -215,7 +214,7 @@ test('findByText: shadow dom', async t => {
   context.remove()
 })
 
-test('findByText: nested shadow dom', async t => {
+test('findByText: nested shadow dom', async (t) => {
   // Create context
   const context = document.createElement('div')
 
@@ -259,11 +258,11 @@ test('findByText: nested shadow dom', async t => {
   context.remove()
 })
 
-test('findByText: first element that satisfies query', async t => {
+test('findByText: first element that satisfies query', async (t) => {
   const textContent = 'Hello from the inner shadow DOM!'
   // Create context
   const context = document.createElement('div')
-  
+
   // Attach a Shadow DOM to  context
   const outerShadowRoot = context.attachShadow({ mode: 'open' })
   // Create the inner host
@@ -277,7 +276,7 @@ test('findByText: first element that satisfies query', async t => {
 
   // Add some content to the innerHost shadowRoot
   const innerContent = document.createElement('span')
- 
+
   innerContent.textContent = textContent
   innerShadowRoot.appendChild(innerContent)
 
@@ -297,22 +296,21 @@ test('findByText: first element that satisfies query', async t => {
   context.remove()
 })
 
-test('fireEvent', async t => {
+test('fireEvent', async (t) => {
   // Create two element to be used to validate helper
   const target = document.createElement('div')
   const button = document.createElement('button')
   // text content to append
   const textContent = 'I am the div'
-  
+
   // Set attributes on target
   target.setAttribute('data-test', 'target')
   // Attach event listener to button
-  button.addEventListener('click', () => target.textContent = textContent)
-  
+  button.addEventListener('click', () => (target.textContent = textContent))
+
   //Append elements to body
   document.body.append(button, target)
 
-  
   await fireEvent(button, 'click')
   const el = await findByAttribute('data-test', 'target')
   t({

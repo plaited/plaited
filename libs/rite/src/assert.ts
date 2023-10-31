@@ -6,12 +6,7 @@ import { findByText } from './find-by-text.js'
 import { fireEvent } from './fire-event.js'
 
 export interface Assertion {
-  <T>(param: {
-    given: string
-    should: string
-    actual: T
-    expected: T
-  }): void
+  <T>(param: { given: string; should: string; actual: T; expected: T }): void
   findByAttribute: typeof findByAttribute
   findByText: typeof findByText
   fireEvent: typeof fireEvent
@@ -27,28 +22,17 @@ export class AssertionError extends Error {
   }
 }
 
-const requiredKeys = [ 'given', 'should', 'actual', 'expected' ]
+const requiredKeys = ['given', 'should', 'actual', 'expected']
 
-export const assert: Assertion = param => {
-  const args = param ?? {} as unknown as Parameters<Assertion>[0]
-  const missing = requiredKeys.filter(
-    k => !Object.keys(args).includes(k)
-  )
+export const assert: Assertion = (param) => {
+  const args = param ?? ({} as unknown as Parameters<Assertion>[0])
+  const missing = requiredKeys.filter((k) => !Object.keys(args).includes(k))
   if (missing.length) {
-    const msg = [
-      `The following parameters are required by 'assert': (`,
-      `  ${missing.join(', ')}`,
-      ')',
-    ].join('\n')
+    const msg = [`The following parameters are required by 'assert': (`, `  ${missing.join(', ')}`, ')'].join('\n')
     throw new Error(msg)
   }
 
-  const {
-    given = undefined,
-    should = '',
-    actual = undefined,
-    expected = undefined,
-  } = args
+  const { given = undefined, should = '', actual = undefined, expected = undefined } = args
   if (!deepEqual(actual, expected)) {
     const message = `Given ${given}: should ${should}`
     throw new AssertionError(JSON.stringify({ message, actual, expected }))
