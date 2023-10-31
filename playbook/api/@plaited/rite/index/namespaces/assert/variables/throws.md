@@ -10,7 +10,7 @@
 
 ## Source
 
-[libs/rite/src/assert.ts:43](https://github.com/plaited/plaited/blob/0d4801d/libs/rite/src/assert.ts#L43)
+[libs/rite/src/assert.ts:43](https://github.com/plaited/plaited/blob/95d1a1b/libs/rite/src/assert.ts#L43)
 
 ***
 

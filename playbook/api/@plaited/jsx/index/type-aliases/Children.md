@@ -10,7 +10,7 @@
 
 ## Source
 
-[types.ts:12](https://github.com/plaited/plaited/blob/0d4801d/libs/jsx/src/types.ts#L12)
+[types.ts:12](https://github.com/plaited/plaited/blob/95d1a1b/libs/jsx/src/types.ts#L12)
 
 ***
 

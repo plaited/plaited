@@ -36,7 +36,7 @@ A promise that resolves when the event has been fired.
 
 ## Source
 
-[libs/rite/src/assert.ts:47](https://github.com/plaited/plaited/blob/0d4801d/libs/rite/src/assert.ts#L47)
+[libs/rite/src/assert.ts:47](https://github.com/plaited/plaited/blob/95d1a1b/libs/rite/src/assert.ts#L47)
 
 ***
 

@@ -39,12 +39,12 @@ Nothing.
 >
 > ### Source
 >
-> [call-all.ts:11](https://github.com/plaited/plaited/blob/0d4801d/libs/utils/src/call-all.ts#L11)
+> [call-all.ts:11](https://github.com/plaited/plaited/blob/95d1a1b/libs/utils/src/call-all.ts#L11)
 >
 
 ## Source
 
-[call-all.ts:10](https://github.com/plaited/plaited/blob/0d4801d/libs/utils/src/call-all.ts#L10)
+[call-all.ts:10](https://github.com/plaited/plaited/blob/95d1a1b/libs/utils/src/call-all.ts#L10)
 
 ***
 

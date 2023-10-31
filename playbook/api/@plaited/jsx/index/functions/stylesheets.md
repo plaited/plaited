@@ -26,7 +26,7 @@ object with each individual sheet in an array
 
 ## Source
 
-[stylesheets.ts:4](https://github.com/plaited/plaited/blob/0d4801d/libs/jsx/src/stylesheets.ts#L4)
+[stylesheets.ts:4](https://github.com/plaited/plaited/blob/95d1a1b/libs/jsx/src/stylesheets.ts#L4)
 
 ***
 

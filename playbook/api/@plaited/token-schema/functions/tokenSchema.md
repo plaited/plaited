@@ -29,7 +29,7 @@ The populated JSON schema.
 
 ## Source
 
-[token-schema.ts:10](https://github.com/plaited/plaited/blob/0d4801d/libs/token-schema/src/token-schema.ts#L10)
+[token-schema.ts:10](https://github.com/plaited/plaited/blob/95d1a1b/libs/token-schema/src/token-schema.ts#L10)
 
 ***
 

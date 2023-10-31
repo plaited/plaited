@@ -12,7 +12,7 @@ Color value type relies on the color formatter for css tokens and defaultFormat 
 
 ## Source
 
-[index.ts:14](https://github.com/plaited/plaited/blob/0d4801d/libs/token-types/src/index.ts#L14)
+[index.ts:14](https://github.com/plaited/plaited/blob/95d1a1b/libs/token-types/src/index.ts#L14)
 
 ***
 

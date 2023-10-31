@@ -12,7 +12,7 @@ FontStyle value type relies on the defaultFormat formatter for ts tokens and css
 
 ## Source
 
-[index.ts:236](https://github.com/plaited/plaited/blob/0d4801d/libs/token-types/src/index.ts#L236)
+[index.ts:236](https://github.com/plaited/plaited/blob/95d1a1b/libs/token-types/src/index.ts#L236)
 
 ***
 

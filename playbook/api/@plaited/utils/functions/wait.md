@@ -20,7 +20,7 @@ an async function that will wait the given time passed to it in ms
 
 ## Source
 
-[wait.ts:2](https://github.com/plaited/plaited/blob/0d4801d/libs/utils/src/wait.ts#L2)
+[wait.ts:2](https://github.com/plaited/plaited/blob/95d1a1b/libs/utils/src/wait.ts#L2)
 
 ***
 

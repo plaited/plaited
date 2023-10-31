@@ -29,7 +29,7 @@ any of these events.
 
 ## Source
 
-[rules.ts:33](https://github.com/plaited/plaited/blob/0d4801d/libs/behavioral/src/rules.ts#L33)
+[rules.ts:33](https://github.com/plaited/plaited/blob/95d1a1b/libs/behavioral/src/rules.ts#L33)
 
 ***
 

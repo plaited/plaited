@@ -13,7 +13,7 @@ and the defaultFormat formatter for ts tokens
 
 ## Source
 
-[index.ts:27](https://github.com/plaited/plaited/blob/0d4801d/libs/token-types/src/index.ts#L27)
+[index.ts:27](https://github.com/plaited/plaited/blob/95d1a1b/libs/token-types/src/index.ts#L27)
 
 ***
 

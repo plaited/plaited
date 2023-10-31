@@ -41,7 +41,7 @@ optimized css stylesheet of css custom properties to be applied to
 
 ## Source
 
-[types.ts:45](https://github.com/plaited/plaited/blob/0d4801d/libs/token-transformer/src/types.ts#L45)
+[types.ts:45](https://github.com/plaited/plaited/blob/95d1a1b/libs/token-transformer/src/types.ts#L45)
 
 ***
 

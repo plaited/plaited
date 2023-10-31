@@ -16,7 +16,7 @@
 
 ## Source
 
-[types.ts:41](https://github.com/plaited/plaited/blob/0d4801d/libs/jsx/src/types.ts#L41)
+[types.ts:41](https://github.com/plaited/plaited/blob/95d1a1b/libs/jsx/src/types.ts#L41)
 
 ***
 

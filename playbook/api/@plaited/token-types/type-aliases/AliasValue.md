@@ -12,7 +12,7 @@ Alias value type points to another token value
 
 ## Source
 
-[index.ts:4](https://github.com/plaited/plaited/blob/0d4801d/libs/token-types/src/index.ts#L4)
+[index.ts:4](https://github.com/plaited/plaited/blob/95d1a1b/libs/token-types/src/index.ts#L4)
 
 ***
 

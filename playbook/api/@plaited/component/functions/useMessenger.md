@@ -29,7 +29,7 @@ readonly {}
 
 ## Source
 
-[libs/component/src/use-messenger.ts:13](https://github.com/plaited/plaited/blob/0d4801d/libs/component/src/use-messenger.ts#L13)
+[libs/component/src/use-messenger.ts:13](https://github.com/plaited/plaited/blob/95d1a1b/libs/component/src/use-messenger.ts#L13)
 
 ***
 

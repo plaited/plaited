@@ -32,7 +32,7 @@ const shadowEl = host.shadowRoot.querySelector('div')
 
 ## Source
 
-[libs/component/src/types.ts:49](https://github.com/plaited/plaited/blob/0d4801d/libs/component/src/types.ts#L49)
+[libs/component/src/types.ts:49](https://github.com/plaited/plaited/blob/95d1a1b/libs/component/src/types.ts#L49)
 
 ***
 
