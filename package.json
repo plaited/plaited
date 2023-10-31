@@ -17,7 +17,7 @@
     "prepack": "pinst --disable",
     "prepare": "husky install",
     "test": "lerna run test",
-    "typedocs": "typedoc --plugin"
+    "typedocs": "lerna run typedocs --scope=plaited"
   },
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [
