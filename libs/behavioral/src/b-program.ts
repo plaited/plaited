@@ -28,6 +28,13 @@ const requestInParameter = ({ type: requestEventName, detail: requestDetail = {}
       : requestEventName === parameterEventName
 }
 
+/**
+ * Creates a behavioral program that manages the execution of behavioral threads.
+ * @param options An object containing optional parameters for the program.
+ * @param options.strategy The event selection strategy to use. Defaults to `strategies.priority`.
+ * @param options.dev A callback function that receives a stream of state snapshots, last selected event, and trigger.
+ * @returns An object containing methods for managing the program and executing behavioral threads.
+ */
 export const bProgram = ({
   /** event selection strategy {@link Strategy}*/
   strategy = strategies.priority,

@@ -1,3 +1,9 @@
+/**
+ * Finds an HTML element that contains the specified text content.
+ * @param searchText - The text or regular expression to search for.
+ * @param context - The HTML element to search within. If not provided, the entire document body will be searched.
+ * @returns A promise that resolves with the first matching HTML element, or undefined if no match is found.
+ */
 export const findByText = <T extends HTMLElement = HTMLElement>(
   searchText: string | RegExp,
   context?: HTMLElement,

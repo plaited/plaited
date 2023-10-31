@@ -3,6 +3,9 @@
  * @param func - The function to debounce.
  * @param waitFor - The number of milliseconds to wait before executing the debounced function.
  * @returns A debounced version of the provided function.
+ * @example
+ * const debounced = debounce(console.log('hi'), 100)
+ * debounced() // => 'hi' (after 100ms)
  */
 export const debounce = <F extends (...args: Parameters<F>) => ReturnType<F>>(func: F, waitFor: number) => {
   let timeout: ReturnType<typeof setTimeout> | undefined

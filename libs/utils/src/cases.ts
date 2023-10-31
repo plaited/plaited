@@ -11,6 +11,7 @@
  *
  * @param str - The input string to convert
  * @returns The input string converted to camel case
+ * @example camelCase('hello---world') => 'helloWorld'
  */
 export const camelCase = (str: string) => {
   return str
@@ -35,6 +36,7 @@ export const camelCase = (str: string) => {
  *
  * @param str - The input string to convert
  * @returns The input string converted to kebab case
+ * @example kebabCase('hello///world') => 'hello-world'
  */
 export const kebabCase = (str: string) => {
   return str

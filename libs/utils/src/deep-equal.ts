@@ -1,3 +1,11 @@
+/**
+ * Determines if two objects are deeply equal.
+ * @param objA - The first object to compare.
+ * @param objB - The second object to compare.
+ * @param map - A WeakMap used to solve the circular reference problem.
+ * @returns A boolean indicating whether the two objects are deeply equal.
+ * @example deepEqual(['array'], ['array']) => true
+ */
 export const deepEqual = (objA: unknown, objB: unknown, map = new WeakMap()) => {
   //  First-level filtering
   if (Object.is(objA, objB)) return true

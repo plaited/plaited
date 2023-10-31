@@ -1,3 +1,12 @@
+/**
+ * Finds the first element that matches the given attribute name and value within the given context.
+ * Searches within shadow DOM if present.
+ *
+ * @param attributeName - The name of the attribute to search for.
+ * @param attributeValue - The value of the attribute to search for. Can be a string or a regular expression.
+ * @param context - The context within which to search for the element. Defaults to the entire document.
+ * @returns A promise that resolves to the first element that matches the given attribute name and value, or undefined if no such element is found.
+ */
 export const findByAttribute = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
   attributeName: string,
   attributeValue: string | RegExp,

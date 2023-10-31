@@ -1,6 +1,6 @@
 import { Trigger, TriggerArgs } from '@plaited/behavioral'
 import { Send } from './types.js'
-/** is a hook to allow us to send and receive messages from the main thread in a worker */
+/** Is a utility function to allow us to send and receive messages from the main thread in a worker */
 export const useMain = (
   /** is self of the worker */
   context: Window & typeof globalThis,

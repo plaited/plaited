@@ -54,8 +54,20 @@ const traverseNodes = (node: Node, arr: Node[]) => {
 }
 
 // eslint-disable-next-line no-console
+/** default dev callback function */
 const log = (log: Log) => console.table(log)
 
+/**
+ * Creates a PlaitedComponent
+ * @param {ComponentArgs} args - Arguments for the PlaitedComponent
+ * @param {string} args.tag - The tag name of the component
+ * @param {FunctionTemplate} args.template - The template function for the component
+ * @param {Record<string, string>} args.observedTriggers - A map of event types to trigger names
+ * @param {boolean | DevCallback} args.dev - A callback function that receives a stream of state snapshots, last selected event, and trigger.
+ * @param {Strategy} args.strategy - The event selection strategy to use. Defaults to `strategies.priority`.
+ * @param {Connect} args.connect - A function that returns a function for sending messages to another component.
+ * @returns {PlaitedComponent} A PlaitedComponent
+ */
 export const Component = ({
   mode = 'open',
   delegatesFocus = true,
