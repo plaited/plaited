@@ -5,10 +5,7 @@
     "declaration": true,
     "moduleResolution": "NodeNext",
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": "src"
   },
-  "exclude": [
-    "**/dist",
-    "**/tests/"
-  ]
+  "exclude": ["**/dist", "**/tests/"]
 }

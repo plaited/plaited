@@ -5,15 +5,9 @@
     "module": "NodeNext",
     "declaration": true,
     "moduleResolution": "nodenext",
-    "lib": [
-      "dom",
-      "es2022"
-    ],
+    "lib": ["dom", "es2022"],
     "outDir": "dist",
     "rootDir": "src"
   },
-  "exclude": [
-    "**/dist",
-    "**/tests/"
-  ]
+  "exclude": ["**/dist", "**/tests/"]
 }

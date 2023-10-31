@@ -1,9 +1,4 @@
-import {
-  getConfig,
-  sessionStarted,
-  sessionFinished,
-  sessionFailed,
-} from '@web/test-runner-core/browser/session.js'
+import { getConfig, sessionStarted, sessionFinished, sessionFailed } from '@web/test-runner-core/browser/session.js'
 
 type TestFrameworkConfig = {
   path: string
@@ -11,8 +6,7 @@ type TestFrameworkConfig = {
     timeout?: number
   }
 }
-
-(async () => {
+;(async () => {
   // notify the test runner that we're alive
   sessionStarted()
 
@@ -22,7 +16,7 @@ type TestFrameworkConfig = {
   const failedImports = []
 
   // load the test file as an es module
-  await import(new URL(testFile, document.baseURI).href).catch(error => {
+  await import(new URL(testFile, document.baseURI).href).catch((error) => {
     failedImports.push({ file: testFile, error: { message: error.message, stack: error.stack } })
   })
 

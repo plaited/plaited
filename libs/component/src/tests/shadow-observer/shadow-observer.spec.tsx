@@ -1,19 +1,13 @@
 import { test } from '@plaited/rite'
 import { ShadowIsland } from './shadow.island.js'
 
-
-
-
-test('shadow observer test', async t => {
+test('shadow observer test', async (t) => {
   customElements.define(ShadowIsland.tag, ShadowIsland)
   const body = document.querySelector('body')
   body.insertAdjacentElement('beforeend', document.createElement(ShadowIsland.tag))
 
-  let button = await t.findByAttribute(
-    'data-trigger',
-    'click->start'
-  )
-  button && await t.fireEvent(button, 'click')
+  let button = await t.findByAttribute('data-trigger', 'click->start')
+  button && (await t.fireEvent(button, 'click'))
   let row = await t.findByAttribute('data-target', 'button-row')
   t({
     given: 'clicking start',
@@ -22,7 +16,7 @@ test('shadow observer test', async t => {
     expected: 3,
   })
 
-  button && await t.fireEvent(button, 'click')
+  button && (await t.fireEvent(button, 'click'))
   row = await t.findByAttribute('data-target', 'button-row')
   t({
     given: 'clicking start again',
@@ -31,11 +25,8 @@ test('shadow observer test', async t => {
     expected: 3,
   })
 
-  button = await t.findByAttribute(
-    'data-trigger',
-    'click->addButton'
-  )
-  button && await t.fireEvent(button, 'click')
+  button = await t.findByAttribute('data-trigger', 'click->addButton')
+  button && (await t.fireEvent(button, 'click'))
   button = await t.findByText<HTMLButtonElement>('add svg')
 
   t({
@@ -45,7 +36,7 @@ test('shadow observer test', async t => {
     expected: 'add svg',
   })
 
-  button && await t.fireEvent(button, 'click')
+  button && (await t.fireEvent(button, 'click'))
   let zone = await t.findByAttribute('data-target', 'zone')
   t({
     given: 'clicking add svg',
@@ -62,7 +53,7 @@ test('shadow observer test', async t => {
   })
 
   button = await t.findByText('add svg')
-  button && await t.fireEvent(button, 'click')
+  button && (await t.fireEvent(button, 'click'))
   zone = await t.findByAttribute('data-target', 'zone')
   t({
     given: 'clicking add svg again',
@@ -71,8 +62,8 @@ test('shadow observer test', async t => {
     expected: 1,
   })
 
-  svg && await t.fireEvent(svg, 'click')
-  button && await t.fireEvent(button, 'click')
+  svg && (await t.fireEvent(svg, 'click'))
+  button && (await t.fireEvent(button, 'click'))
   const h3 = await t.findByText('sub island')
   t({
     given: 'removeSvg event triggered',

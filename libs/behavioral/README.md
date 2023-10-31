@@ -79,11 +79,11 @@ flows are mixed.
 ### 1. Lets make our app add hot water 3 times:
 
 ```ts
-import { expect, test } from "bun:test";
-import { bProgram, DevCallback } from "@plaited/behavioral";
+import { expect, test } from 'bun:test'
+import { bProgram, DevCallback } from '@plaited/behavioral'
 
-test("Add hot water 3 times", () => {
-  const actual: string[] = [];
+test('Add hot water 3 times', () => {
+  const actual: string[] = []
   const {
     /** adds behavioral threads to behavioral program  **/
     addThreads,
@@ -112,22 +112,22 @@ test("Add hot water 3 times", () => {
      * central event arbiter
      */
     feedback,
-  } = bProgram();
+  } = bProgram()
   addThreads({
     addHot: thread(
-      sync({ request: { type: "hot" } }),
-      sync({ request: { type: "hot" } }),
-      sync({ request: { type: "hot" } }),
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
     ),
-  });
+  })
   feedback({
     hot() {
-      actual.push("hot");
+      actual.push('hot')
     },
-  });
-  trigger({ type: "start" });
-  expect(actual).toEqual(["hot", "hot", "hot"]);
-});
+  })
+  trigger({ type: 'start' })
+  expect(actual).toEqual(['hot', 'hot', 'hot'])
+})
 ```
 
 Alright that looks good!
@@ -142,39 +142,32 @@ function.
 ### 2. Now let's also add cold water 3 times:
 
 ```ts
-test("Add hot/cold water 3 times", () => {
-  const actual: string[] = [];
-  const { addThreads, thread, sync, trigger, feedback } = bProgram();
+test('Add hot/cold water 3 times', () => {
+  const actual: string[] = []
+  const { addThreads, thread, sync, trigger, feedback } = bProgram()
   addThreads({
     addHot: thread(
-      sync({ request: { type: "hot" } }),
-      sync({ request: { type: "hot" } }),
-      sync({ request: { type: "hot" } }),
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
     ),
     addCold: thread(
-      sync({ request: { type: "cold" } }),
-      sync({ request: { type: "cold" } }),
-      sync({ request: { type: "cold" } }),
+      sync({ request: { type: 'cold' } }),
+      sync({ request: { type: 'cold' } }),
+      sync({ request: { type: 'cold' } }),
     ),
-  });
+  })
   feedback({
     hot() {
-      actual.push("hot");
+      actual.push('hot')
     },
     cold() {
-      actual.push("cold");
+      actual.push('cold')
     },
-  });
-  trigger({ type: "start" });
-  expect(actual).toEqual([
-    "hot",
-    "hot",
-    "hot",
-    "cold",
-    "cold",
-    "cold",
-  ]);
-});
+  })
+  trigger({ type: 'start' })
+  expect(actual).toEqual(['hot', 'hot', 'hot', 'cold', 'cold', 'cold'])
+})
 ```
 
 Hmmm... it's not mixing the two.We gotta fix that
@@ -186,8 +179,8 @@ to do so by looping back and forth between blocking one event while we wait for
 the other event at each synchronization step of our bProgram run.
 
 ```ts
-test("interleave", () => {
-  const actual: string[] = [];
+test('interleave', () => {
+  const actual: string[] = []
   const {
     addThreads,
     thread,
@@ -198,47 +191,40 @@ test("interleave", () => {
      * A behavioral thread that loops infinitely or until some callback returns false.This function returns a threads
      */
     loop,
-  } = bProgram();
+  } = bProgram()
   addThreads({
     addHot: thread(
-      sync({ request: { type: "hot" } }),
-      sync({ request: { type: "hot" } }),
-      sync({ request: { type: "hot" } }),
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
     ),
     addCold: thread(
-      sync({ request: { type: "cold" } }),
-      sync({ request: { type: "cold" } }),
-      sync({ request: { type: "cold" } }),
+      sync({ request: { type: 'cold' } }),
+      sync({ request: { type: 'cold' } }),
+      sync({ request: { type: 'cold' } }),
     ),
     mixHotCold: loop([
       sync({
-        waitFor: { type: "hot" },
-        block: { type: "cold" },
+        waitFor: { type: 'hot' },
+        block: { type: 'cold' },
       }),
       sync({
-        waitFor: { type: "cold" },
-        block: { type: "hot" },
+        waitFor: { type: 'cold' },
+        block: { type: 'hot' },
       }),
     ]),
-  });
+  })
   feedback({
     hot() {
-      actual.push("hot");
+      actual.push('hot')
     },
     cold() {
-      actual.push("cold");
+      actual.push('cold')
     },
-  });
-  trigger({ type: "start" });
-  expect(actual).toEqual([
-    "hot",
-    "cold",
-    "hot",
-    "cold",
-    "hot",
-    "cold",
-  ]);
-});
+  })
+  trigger({ type: 'start' })
+  expect(actual).toEqual(['hot', 'cold', 'hot', 'cold', 'hot', 'cold'])
+})
 ```
 
 **Note** how we use the loop function above. We'll be using loop a lot in our
@@ -261,8 +247,8 @@ manner. First we'll import our testing utils. Then we'll import `bProgram`,
 `loop`, `thread`, and `sync` form `@plaited/behavioral`.
 
 ```ts
-import { expect, test } from "bun:test";
-import { bProgram, loop, RulesFunc, sync, thread } from "@plaited/behavioral";
+import { expect, test } from 'bun:test'
+import { bProgram, loop, RulesFunc, sync, thread } from '@plaited/behavioral'
 
 const winConditions = [
   //rows
@@ -276,9 +262,9 @@ const winConditions = [
   // diagonals
   [0, 4, 8],
   [2, 4, 6],
-];
+]
 
-const squares = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+const squares = [0, 1, 2, 3, 4, 5, 6, 7, 8]
 ```
 
 #### 2. Let's write some code that allows our bProgram to detect wins
@@ -289,50 +275,47 @@ reduce to iterate over the `winConditions`, thus creating threads to detect when
 a player has won.
 
 ```ts
-const playerWins = (player: "X" | "O") =>
+const playerWins = (player: 'X' | 'O') =>
   winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
     acc[`${player}Wins (${win})`] = thread(
       sync<{ square: number }>({
         waitFor: {
-          cb: ({ type, detail }) =>
-            type === player && win.includes(detail.square),
+          cb: ({ type, detail }) => type === player && win.includes(detail.square),
         },
       }),
       sync<{ square: number }>({
         waitFor: {
-          cb: ({ type, detail }) =>
-            type === player && win.includes(detail.square),
+          cb: ({ type, detail }) => type === player && win.includes(detail.square),
         },
       }),
       sync<{ square: number }>({
         waitFor: {
-          cb: ({ type, detail }) =>
-            type === player && win.includes(detail.square),
+          cb: ({ type, detail }) => type === player && win.includes(detail.square),
         },
       }),
       sync<{ win: number[] }>({
         request: { type: `${player}Win`, detail: { win } },
       }),
-    );
-    return acc;
-  }, {});
+    )
+    return acc
+  }, {})
 
-test("detect wins", () => {
-  const { addThreads, feedback, trigger } = bProgram();
-  const actual: number[] = [];
+test('detect wins', () => {
+  const { addThreads, feedback, trigger } = bProgram()
+  const actual: number[] = []
   addThreads({
-    ...playerWins("X"),
-  });
+    ...playerWins('X'),
+  })
   feedback({
     XWin(deatil: { win: [number, number, number] }) {
-      Object.assign(actual, deatil.win);
+      Object.assign(actual, deatil.win)
     },
-  });
-  trigger({ type: "X", detail: { square: 1 } });
-  trigger({ type: "X", detail: { square: 4 } });
-  trigger({ type: "X", detail: { square: 7 } });
-  expect(actual).toEqual([1, 4, 7]);
-});
+  })
+  trigger({ type: 'X', detail: { square: 1 } })
+  trigger({ type: 'X', detail: { square: 4 } })
+  trigger({ type: 'X', detail: { square: 7 } })
+  expect(actual).toEqual([1, 4, 7])
+})
 ```
 
 It works and we're off to a good start!
@@ -344,41 +327,41 @@ interleave moves.
 
 ```ts
 const enforceTurns = loop([
-  sync({ waitFor: { type: "X" }, block: { type: "O" } }),
-  sync({ waitFor: { type: "O" }, block: { type: "X" } }),
-]);
+  sync({ waitFor: { type: 'X' }, block: { type: 'O' } }),
+  sync({ waitFor: { type: 'O' }, block: { type: 'X' } }),
+])
 
-test("enforceTurns", () => {
-  const { addThreads, feedback, trigger } = bProgram();
+test('enforceTurns', () => {
+  const { addThreads, feedback, trigger } = bProgram()
   let actual: {
-    player: "X" | "O";
-    square: number;
-  };
+    player: 'X' | 'O'
+    square: number
+  }
   addThreads({
-    ...playerWins("O"),
-    ...playerWins("X"),
+    ...playerWins('O'),
+    ...playerWins('X'),
     enforceTurns,
-  });
+  })
 
   feedback({
     X({ square }: { square: number }) {
       actual = {
-        player: "X",
+        player: 'X',
         square,
-      };
+      }
     },
     O({ square }: { square: number }) {
       actual = {
-        player: "X",
+        player: 'X',
         square,
-      };
+      }
     },
-  });
-  trigger({ type: "X", detail: { square: 1 } });
-  trigger({ type: "X", detail: { square: 4 } });
-  trigger({ type: "X", detail: { square: 7 } });
-  expect(actual).toEqual({ player: "X", square: 1 });
-});
+  })
+  trigger({ type: 'X', detail: { square: 1 } })
+  trigger({ type: 'X', detail: { square: 4 } })
+  trigger({ type: 'X', detail: { square: 7 } })
+  expect(actual).toEqual({ player: 'X', square: 1 })
+})
 ```
 
 Alright!!! Alright!!!
@@ -389,51 +372,48 @@ Using the same reduce approach we took with the `playerWins` function we iterate
 over the squares to create our `squaresTaken` threads.
 
 ```ts
-const squaresTaken = squares.reduce(
-  (acc: Record<string, RulesFunc>, square) => {
-    acc[`(${square}) taken`] = thread(
-      sync<{ square: number }>({
-        waitFor: { cb: ({ detail }) => square === detail.square },
-      }),
-      sync<{ square: number }>({
-        block: { cb: ({ detail }) => square === detail.square },
-      }),
-    );
-    return acc;
-  },
-  {},
-);
-test("squaresTaken", () => {
-  const { addThreads, feedback, trigger } = bProgram();
+const squaresTaken = squares.reduce((acc: Record<string, RulesFunc>, square) => {
+  acc[`(${square}) taken`] = thread(
+    sync<{ square: number }>({
+      waitFor: { cb: ({ detail }) => square === detail.square },
+    }),
+    sync<{ square: number }>({
+      block: { cb: ({ detail }) => square === detail.square },
+    }),
+  )
+  return acc
+}, {})
+test('squaresTaken', () => {
+  const { addThreads, feedback, trigger } = bProgram()
   const actual: {
-    player: "X" | "O";
-    square: number;
-  }[] = [];
+    player: 'X' | 'O'
+    square: number
+  }[] = []
 
   addThreads({
-    ...playerWins("O"),
-    ...playerWins("X"),
+    ...playerWins('O'),
+    ...playerWins('X'),
     enforceTurns: loop([
-      sync({ waitFor: { type: "X" }, block: { type: "O" } }),
-      sync({ waitFor: { type: "O" }, block: { type: "X" } }),
+      sync({ waitFor: { type: 'X' }, block: { type: 'O' } }),
+      sync({ waitFor: { type: 'O' }, block: { type: 'X' } }),
     ]),
     ...squaresTaken,
-  });
+  })
   feedback({
     O({ square }: { square: number }) {
       actual.push({
-        player: "O",
+        player: 'O',
         square,
-      });
+      })
     },
-  });
-  trigger({ type: "X", detail: { square: 0 } });
-  trigger({ type: "O", detail: { square: 0 } }); // Here O try's to take an already used square
-  trigger({ type: "X", detail: { square: 4 } });
-  trigger({ type: "O", detail: { square: 2 } });
-  trigger({ type: "X", detail: { square: 8 } });
-  expect(actual).toEqual([{ player: "O", square: 2 }]);
-});
+  })
+  trigger({ type: 'X', detail: { square: 0 } })
+  trigger({ type: 'O', detail: { square: 0 } }) // Here O try's to take an already used square
+  trigger({ type: 'X', detail: { square: 4 } })
+  trigger({ type: 'O', detail: { square: 2 } })
+  trigger({ type: 'X', detail: { square: 8 } })
+  expect(actual).toEqual([{ player: 'O', square: 2 }])
+})
 ```
 
 #### 5. Let's write some code to stop the game when a player wins
@@ -443,65 +423,62 @@ We'll create a simple thread that will wait for one the win events, `XWin` |
 
 ```ts
 const stopGame = thread(
-  sync({ waitFor: [{ type: "XWin" }, { type: "OWin" }] }),
-  sync({ block: [{ type: "X" }, { type: "O" }] }),
-);
+  sync({ waitFor: [{ type: 'XWin' }, { type: 'OWin' }] }),
+  sync({ block: [{ type: 'X' }, { type: 'O' }] }),
+)
 
-test("stopGame", () => {
-  const { addThreads, feedback, trigger } = bProgram();
-  const actual: (
-    | { player: "X" | "O"; square: number }
-    | { player: "X" | "O"; win: number[] }
-  )[] = [];
+test('stopGame', () => {
+  const { addThreads, feedback, trigger } = bProgram()
+  const actual: ({ player: 'X' | 'O'; square: number } | { player: 'X' | 'O'; win: number[] })[] = []
 
   addThreads({
-    ...playerWins("O"),
-    ...playerWins("X"),
+    ...playerWins('O'),
+    ...playerWins('X'),
     enforceTurns,
     ...squaresTaken,
     stopGame,
-  });
+  })
   feedback({
     X({ square }: { square: number }) {
       actual.push({
-        player: "X",
+        player: 'X',
         square,
-      });
+      })
     },
     O({ square }: { square: number }) {
       actual.push({
-        player: "O",
+        player: 'O',
         square,
-      });
+      })
     },
     XWin({ win }: { win: [number, number, number] }) {
       actual.push({
-        player: "X",
+        player: 'X',
         win,
-      });
+      })
     },
     OWin({ win }: { win: [number, number, number] }) {
       actual.push({
-        player: "O",
+        player: 'O',
         win,
-      });
+      })
     },
-  });
-  trigger({ type: "X", detail: { square: 0 } });
-  trigger({ type: "O", detail: { square: 1 } });
-  trigger({ type: "X", detail: { square: 4 } });
-  trigger({ type: "O", detail: { square: 2 } });
-  trigger({ type: "X", detail: { square: 8 } });
-  trigger({ type: "O", detail: { square: 7 } });
+  })
+  trigger({ type: 'X', detail: { square: 0 } })
+  trigger({ type: 'O', detail: { square: 1 } })
+  trigger({ type: 'X', detail: { square: 4 } })
+  trigger({ type: 'O', detail: { square: 2 } })
+  trigger({ type: 'X', detail: { square: 8 } })
+  trigger({ type: 'O', detail: { square: 7 } })
   expect(actual).toEqual([
-    { player: "X", square: 0 },
-    { player: "O", square: 1 },
-    { player: "X", square: 4 },
-    { player: "O", square: 2 },
-    { player: "X", square: 8 },
-    { player: "X", win: [0, 4, 8] },
-  ]);
-});
+    { player: 'X', square: 0 },
+    { player: 'O', square: 1 },
+    { player: 'X', square: 4 },
+    { player: 'O', square: 2 },
+    { player: 'X', square: 8 },
+    { player: 'X', win: [0, 4, 8] },
+  ])
+})
 ```
 
 Easy!!!
@@ -521,65 +498,62 @@ unless that square has already been taken and the move blocked by our
 const defaultMoves = loop([
   sync({
     request: squares.map((square) => ({
-      type: "O",
+      type: 'O',
       detail: { square },
     })),
   }),
-]);
+])
 
-test("defaultMoves", () => {
-  const { addThreads, feedback, trigger } = bProgram();
-  const actual: (
-    | { player: "X" | "O"; square: number }
-    | { player: "X" | "O"; win: number[] }
-  )[] = [];
+test('defaultMoves', () => {
+  const { addThreads, feedback, trigger } = bProgram()
+  const actual: ({ player: 'X' | 'O'; square: number } | { player: 'X' | 'O'; win: number[] })[] = []
 
   addThreads({
-    ...playerWins("O"),
-    ...playerWins("X"),
+    ...playerWins('O'),
+    ...playerWins('X'),
     enforceTurns,
     ...squaresTaken,
     stopGame,
     defaultMoves,
-  });
+  })
   feedback({
     X({ square }: { square: number }) {
       actual.push({
-        player: "X",
+        player: 'X',
         square,
-      });
+      })
     },
     O({ square }: { square: number }) {
       actual.push({
-        player: "O",
+        player: 'O',
         square,
-      });
+      })
     },
     XWin({ win }: { win: [number, number, number] }) {
       actual.push({
-        player: "X",
+        player: 'X',
         win,
-      });
+      })
     },
     OWin({ win }: { win: [number, number, number] }) {
       actual.push({
-        player: "O",
+        player: 'O',
         win,
-      });
+      })
     },
-  });
-  trigger({ type: "X", detail: { square: 0 } });
-  trigger({ type: "X", detail: { square: 4 } });
-  trigger({ type: "X", detail: { square: 8 } });
+  })
+  trigger({ type: 'X', detail: { square: 0 } })
+  trigger({ type: 'X', detail: { square: 4 } })
+  trigger({ type: 'X', detail: { square: 8 } })
   expect(actual).toEqual([
-    { player: "X", square: 0 },
-    { player: "O", square: 1 },
-    { player: "X", square: 4 },
-    { player: "O", square: 2 },
-    { player: "X", square: 8 },
-    { player: "X", win: [0, 4, 8] },
-  ]);
-});
+    { player: 'X', square: 0 },
+    { player: 'O', square: 1 },
+    { player: 'X', square: 4 },
+    { player: 'O', square: 2 },
+    { player: 'X', square: 8 },
+    { player: 'X', win: [0, 4, 8] },
+  ])
+})
 ```
 
 Nice!!!
@@ -595,64 +569,61 @@ selects a requested event.
 const startAtCenter = thread(
   sync({
     request: {
-      type: "O",
+      type: 'O',
       detail: { square: 4 },
     },
   }),
-);
+)
 
-test("startAtCenter", () => {
-  const { addThreads, feedback, trigger } = bProgram();
-  const actual: (
-    | { player: "X" | "O"; square: number }
-    | { player: "X" | "O"; win: number[] }
-  )[] = [];
+test('startAtCenter', () => {
+  const { addThreads, feedback, trigger } = bProgram()
+  const actual: ({ player: 'X' | 'O'; square: number } | { player: 'X' | 'O'; win: number[] })[] = []
 
   addThreads({
-    ...playerWins("O"),
-    ...playerWins("X"),
+    ...playerWins('O'),
+    ...playerWins('X'),
     enforceTurns,
     ...squaresTaken,
     stopGame,
     startAtCenter,
     defaultMoves,
-  });
+  })
   feedback({
     X({ square }: { square: number }) {
       actual.push({
-        player: "X",
+        player: 'X',
         square,
-      });
+      })
     },
     O({ square }: { square: number }) {
       actual.push({
-        player: "O",
+        player: 'O',
         square,
-      });
+      })
     },
     XWin({ win }: { win: [number, number, number] }) {
       actual.push({
-        player: "X",
+        player: 'X',
         win,
-      });
+      })
     },
     OWin({ win }: { win: [number, number, number] }) {
       actual.push({
-        player: "O",
+        player: 'O',
         win,
-      });
+      })
     },
-  });
-  trigger({ type: "X", detail: { square: 0 } });
-  trigger({ type: "X", detail: { square: 4 } });
-  trigger({ type: "X", detail: { square: 8 } });
+  })
+  trigger({ type: 'X', detail: { square: 0 } })
+  trigger({ type: 'X', detail: { square: 4 } })
+  trigger({ type: 'X', detail: { square: 8 } })
   expect(actual).toEqual([
-    { player: "X", square: 0 },
-    { player: "O", square: 4 },
-    { player: "X", square: 8 },
-    { player: "O", square: 1 },
-  ]);
-});
+    { player: 'X', square: 0 },
+    { player: 'O', square: 4 },
+    { player: 'X', square: 8 },
+    { player: 'O', square: 1 },
+  ])
+})
 ```
 
 #### 8. Let's add our last requirement for our bProgram
@@ -664,38 +635,32 @@ thus giving these threads an even greater priority when the central arbiter of
 our bProgram selects a requested event.
 
 ```ts
-const preventCompletionOfLineWithTwoXs = winConditions.reduce(
-  (acc: Record<string, RulesFunc>, win) => {
-    acc[`StopXWin(${win})`] = thread(
-      sync<{ square: number }>({
-        waitFor: {
-          cb: ({ type, detail }) => type === "X" && win.includes(detail.square),
-        },
-      }),
-      sync<{ square: number }>({
-        waitFor: {
-          cb: ({ type, detail }) => type === "X" && win.includes(detail.square),
-        },
-      }),
-      sync<{ square: number }>({
-        request: win.map((square) => ({ type: "O", detail: { square } })),
-      }),
-    );
-    return acc;
-  },
-  {},
-);
+const preventCompletionOfLineWithTwoXs = winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
+  acc[`StopXWin(${win})`] = thread(
+    sync<{ square: number }>({
+      waitFor: {
+        cb: ({ type, detail }) => type === 'X' && win.includes(detail.square),
+      },
+    }),
+    sync<{ square: number }>({
+      waitFor: {
+        cb: ({ type, detail }) => type === 'X' && win.includes(detail.square),
+      },
+    }),
+    sync<{ square: number }>({
+      request: win.map((square) => ({ type: 'O', detail: { square } })),
+    }),
+  )
+  return acc
+}, {})
 
-test("prevent completion of line with two Xs", () => {
-  const { addThreads, feedback, trigger } = bProgram();
-  const actual: (
-    | { player: "X" | "O"; square: number }
-    | { player: "X" | "O"; win: number[] }
-  )[] = [];
+test('prevent completion of line with two Xs', () => {
+  const { addThreads, feedback, trigger } = bProgram()
+  const actual: ({ player: 'X' | 'O'; square: number } | { player: 'X' | 'O'; win: number[] })[] = []
 
   addThreads({
-    ...playerWins("O"),
-    ...playerWins("X"),
+    ...playerWins('O'),
+    ...playerWins('X'),
     enforceTurns,
     ...squaresTaken,
     stopGame,
@@ -704,47 +669,47 @@ test("prevent completion of line with two Xs", () => {
     defaultMoves: loop([
       sync({
         request: squares.map((square) => ({
-          type: "O",
+          type: 'O',
           detail: { square },
         })),
       }),
     ]),
-  });
+  })
   feedback({
     X({ square }: { square: number }) {
       actual.push({
-        player: "X",
+        player: 'X',
         square,
-      });
+      })
     },
     O({ square }: { square: number }) {
       actual.push({
-        player: "O",
+        player: 'O',
         square,
-      });
+      })
     },
     XWin({ win }: { win: [number, number, number] }) {
       actual.push({
-        player: "X",
+        player: 'X',
         win,
-      });
+      })
     },
     OWin({ win }: { win: [number, number, number] }) {
       actual.push({
-        player: "O",
+        player: 'O',
         win,
-      });
+      })
     },
-  });
-  trigger({ type: "X", detail: { square: 0 } });
-  trigger({ type: "X", detail: { square: 3 } });
+  })
+  trigger({ type: 'X', detail: { square: 0 } })
+  trigger({ type: 'X', detail: { square: 3 } })
   expect(actual).toEqual([
-    { player: "X", square: 0 },
-    { player: "O", square: 4 },
-    { player: "X", square: 3 },
-    { player: "O", square: 6 },
-  ]);
-});
+    { player: 'X', square: 0 },
+    { player: 'O', square: 4 },
+    { player: 'X', square: 3 },
+    { player: 'O', square: 6 },
+  ])
+})
 ```
 
 There we have it, a working implementation of the logic for a tic-tac-toe app.
@@ -761,7 +726,7 @@ waitFor and block to respectively notify their thread about an event that
 concerns it or allow their thread to block an event.
 
 ```ts
-export type Detail = unknown | (() => unknown) | Event;
+export type Detail = unknown | (() => unknown) | Event
 ```
 
 ### Request event and trigger argument
@@ -770,12 +735,10 @@ This is type of the object used by the **sync** function as value to be passed
 to the **request** key and the argument for our **trigger** function.
 
 ```ts
-export type RequestIdiom<
-  T extends (Detail) = (Detail),
-> = {
-  type: string;
-  detail?: T;
-};
+export type RequestIdiom<T extends Detail = Detail> = {
+  type: string
+  detail?: T
+}
 ```
 
 ### WaitFor and block events
@@ -784,15 +747,15 @@ This is type of object used by the **sync** function as the value to be passed
 to the **waitFor** and **block** keys
 
 ```ts
-export type ParameterIdiom<
-  T extends (Detail) = (Detail),
-> = {
-  type: string;
-  cb?: Callback<T>;
-} | {
-  type?: string;
-  cb: Callback<T>;
-};
+export type ParameterIdiom<T extends Detail = Detail> =
+  | {
+      type: string
+      cb?: Callback<T>
+    }
+  | {
+      type?: string
+      cb: Callback<T>
+    }
 ```
 
 ### Sync argument
@@ -801,11 +764,9 @@ When creating a sync statement using our sync function we pass it an object of
 the following type.
 
 ```ts
-export type RuleSet<
-  T extends (Detail) = (Detail),
-> = {
-  waitFor?: ParameterIdiom<T> | ParameterIdiom<T>[];
-  request?: RequestIdiom<T> | RequestIdiom<T>[];
-  block?: ParameterIdiom<T> | ParameterIdiom<T>[];
-};
+export type RuleSet<T extends Detail = Detail> = {
+  waitFor?: ParameterIdiom<T> | ParameterIdiom<T>[]
+  request?: RequestIdiom<T> | RequestIdiom<T>[]
+  block?: ParameterIdiom<T> | ParameterIdiom<T>[]
+}
 ```

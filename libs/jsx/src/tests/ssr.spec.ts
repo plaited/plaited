@@ -1,10 +1,5 @@
 import { test, expect } from 'bun:test'
-import {
-  createTemplate as h,
-  css,
-  Fragment,
-  FT,
-} from '../index.js'
+import { createTemplate as h, css, Fragment, FT } from '../index.js'
 
 import { ssr } from '../ssr.js'
 test('ssr: renders createTemplate', () =>
@@ -13,17 +8,17 @@ test('ssr: renders createTemplate', () =>
       h('div', {
         style: { backgroundColor: 'blue', margin: '12px' },
         children: 'styles',
-      })
-    )
+      }),
+    ),
   ).toMatchSnapshot())
 
 test('ssr: renders Fragment', () => {
   expect(
-    ssr(h(Fragment, {
-      children: Array.from(Array(10).keys()).map(n =>
-        h('li', { children: `item-${n}` })
-      ),
-    }))
+    ssr(
+      h(Fragment, {
+        children: Array.from(Array(10).keys()).map((n) => h('li', { children: `item-${n}` })),
+      }),
+    ),
   ).toMatchSnapshot()
 })
 
@@ -58,15 +53,12 @@ const TopCustomElement: FT = ({ children, stylesheet }) =>
     stylesheet,
     slots: children,
     children: h(NestedCustomElement, {
-      children: h(
-        'p',
-        {
-          slot: 'nested',
-          className: slotted[0]['slotted-paragraph'],
-          ...slotted[1],
-          children: 'slotted paragraph',
-        }
-      ),
+      children: h('p', {
+        slot: 'nested',
+        className: slotted[0]['slotted-paragraph'],
+        ...slotted[1],
+        children: 'slotted paragraph',
+      }),
     }),
   })
 
@@ -89,37 +81,38 @@ test('ssr: renders styles before markup when no body or head tag', () => {
       h(TopCustomElement, {
         ...top[1],
         children: h('img', { className: testEl[0].image, ...testEl[1] }),
-      })
-    )
+      }),
+    ),
   ).toMatchSnapshot()
 })
 
 test('ssr: renders styles in body when present', () => {
-  expect(ssr(
-    h('body', {
-      children: h(TopCustomElement, {
-        ...top[1],
-        children: h('img', { className: testEl[0].image, ...testEl[1] }),
+  expect(
+    ssr(
+      h('body', {
+        children: h(TopCustomElement, {
+          ...top[1],
+          children: h('img', { className: testEl[0].image, ...testEl[1] }),
+        }),
       }),
-    })
-  )).toMatchSnapshot()
+    ),
+  ).toMatchSnapshot()
 })
 
 test('ssr: renders styles in head when present', () => {
-  expect(ssr(
-    h('html', {
-      children: [
-        h('head', {}),
-        h('body', {
-          children: h(
-            TopCustomElement,
-            {
+  expect(
+    ssr(
+      h('html', {
+        children: [
+          h('head', {}),
+          h('body', {
+            children: h(TopCustomElement, {
               ...top[1],
               children: h('img', { className: testEl[0].image, ...testEl[1] }),
-            }
-          ),
-        }),
-      ],
-    })
-  )).toMatchSnapshot()
+            }),
+          }),
+        ],
+      }),
+    ),
+  ).toMatchSnapshot()
 })

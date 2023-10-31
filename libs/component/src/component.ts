@@ -5,22 +5,9 @@
  * @returns {void}
  * @alias cc
  */
-import {
-  dataTarget,
-  dataTrigger,
-  dataAddress,
-  createTemplate,
-  FunctionTemplate,
-  AdditionalAttrs,
-} from '@plaited/jsx'
+import { dataTarget, dataTrigger, dataAddress, createTemplate, FunctionTemplate, AdditionalAttrs } from '@plaited/jsx'
 import { Trigger, bProgram, Log } from '@plaited/behavioral'
-import {
-  ComponentArgs,
-  PlaitedElement,
-  PlaitProps,
-  SelectorMod,
-  Connect,
-} from './types.js'
+import { ComponentArgs, PlaitedElement, PlaitProps, SelectorMod, Connect } from './types.js'
 import { delegatedListener } from './delegated-listener.js'
 import { assignSugar, SugaredElement, assignSugarForEach, createTemplateElement } from './sugar.js'
 
@@ -28,30 +15,26 @@ const regexp = /\b[\w-]+\b(?=->[\w-]+)/g
 // It takes the value of a data-target attribute and return all the events happening in it. minus the method identifier
 // so iof the event was data-target="click->doSomething" it would return ["click"]
 const matchAllEvents = (str: string) => {
-  return  Array.from(str.matchAll(regexp), match => match[0])
+  return Array.from(str.matchAll(regexp), (match) => match[0])
 }
 // returns the request/action name to connect our event binding to data-target="click->doSomething" it would return "doSomething"
 // note triggers are separated by spaces in the attribute data-target="click->doSomething focus->somethingElse"
-const getTriggerType = (
-  e: Event,
-  context: HTMLElement | SVGElement
-): string => {
-  const el = e.currentTarget === context
-    ? context
-    // check if closest slot from the element that invoked the event is the instances slot
-    : e.composedPath().find(slot =>
-      ((slot as Element)?.tagName === 'SLOT') && slot ===
-          context
-    )
-    ? context
-    : undefined
+const getTriggerType = (e: Event, context: HTMLElement | SVGElement): string => {
+  const el =
+    e.currentTarget === context
+      ? context
+      : // check if closest slot from the element that invoked the event is the instances slot
+      e.composedPath().find((slot) => (slot as Element)?.tagName === 'SLOT' && slot === context)
+      ? context
+      : undefined
 
   if (!el) return ''
   const pre = `${e.type}->`
   const trigger = el.dataset.trigger ?? ''
-  const key = trigger.trim().split(/\s+/).find((str: string) =>
-    str.includes(pre)
-  )
+  const key = trigger
+    .trim()
+    .split(/\s+/)
+    .find((str: string) => str.includes(pre))
   return key ? key.replace(pre, '') : ''
 }
 // Quickly traverse nodes observed in mutation selecting only those with data-trigger attribute
@@ -71,8 +54,20 @@ const traverseNodes = (node: Node, arr: Node[]) => {
 }
 
 // eslint-disable-next-line no-console
-const log = (log:Log) => console.table(log)
+/** default dev callback function */
+const log = (log: Log) => console.table(log)
 
+/**
+ * Creates a PlaitedComponent
+ * @param {ComponentArgs} args - Arguments for the PlaitedComponent
+ * @param {string} args.tag - The tag name of the component
+ * @param {FunctionTemplate} args.template - The template function for the component
+ * @param {Record<string, string>} args.observedTriggers - A map of event types to trigger names
+ * @param {boolean | DevCallback} args.dev - A callback function that receives a stream of state snapshots, last selected event, and trigger.
+ * @param {Strategy} args.strategy - The event selection strategy to use. Defaults to `strategies.priority`.
+ * @param {Connect} args.connect - A function that returns a function for sending messages to another component.
+ * @returns {PlaitedComponent} A PlaitedComponent
+ */
 export const Component = ({
   mode = 'open',
   delegatesFocus = true,
@@ -83,29 +78,21 @@ export const Component = ({
   strategy,
   connect,
 }: ComponentArgs) => {
-  if(!tag) {
+  if (!tag) {
     throw new Error(`Component is missing a [tag]`)
   }
   const _tag = tag.toLowerCase()
-  return class PlaitedComponent extends HTMLElement implements PlaitedElement{
+  return class PlaitedComponent extends HTMLElement implements PlaitedElement {
     static tag = _tag
     static stylesheets = template.stylesheets
-    static template:FunctionTemplate<
-    AdditionalAttrs & { slots: never}
-    > = ({
-        slot: _,
-        children,
-        ...attrs
-      }) => createTemplate(
-        tag,
-        {
-          ...attrs,
-          children: template,
-          slots:children,
-          shadowrootmode: mode,
-          shadowrootdelegatesfocus: delegatesFocus,
-        }
-      )
+    static template: FunctionTemplate<AdditionalAttrs & { slots: never }> = ({ slot: _, children, ...attrs }) =>
+      createTemplate(tag, {
+        ...attrs,
+        children: template,
+        slots: children,
+        shadowrootmode: mode,
+        shadowrootdelegatesfocus: delegatesFocus,
+      })
     #shadowObserver?: MutationObserver
     #disconnectMessenger?: ReturnType<Connect>
     internals_: ElementInternals
@@ -121,31 +108,34 @@ export const Component = ({
         /** no declarative shadow dom then create a shadowRoot */
         this.#root = this.attachShadow({ mode, delegatesFocus })
       }
-      if(!template) {
+      if (!template) {
         throw new Error(`Component [${tag}] is missing a [template]`)
       }
       const { content, stylesheets } = template
-      const adoptedStyleSheets: CSSStyleSheet[]  = []
-      for(const style of stylesheets) {
+      const adoptedStyleSheets: CSSStyleSheet[] = []
+      for (const style of stylesheets) {
         const sheet = new CSSStyleSheet()
         sheet.replaceSync(style)
         adoptedStyleSheets.push(sheet)
       }
       this.#root.adoptedStyleSheets = adoptedStyleSheets
       const tpl = createTemplateElement(content)
-      this.#root.replaceChildren(tpl.content.cloneNode(true))
+      this.#root.replaceChildren(tpl.content)
     }
     connectedCallback() {
       if (this.plait) {
         const { trigger, ...rest } = this.#bProgram()
         this.#trigger = trigger // listeners need trigger to be available on instance
         this.#delegateObservedTriggers() //just connected/upgraded then delegate observed triggers
-        this.#delegateListeners( // just connected/upgraded then delegate listeners nodes with data-trigger attribute
-          Array.from(this.#root.querySelectorAll<HTMLElement>(
-            `[${dataTrigger}]`
-          ))
+        this.#delegateListeners(
+          // just connected/upgraded then delegate listeners nodes with data-trigger attribute
+          Array.from(this.#root.querySelectorAll<HTMLElement>(`[${dataTrigger}]`)),
         )
         this.#shadowObserver = this.#createShadowObserver()
+        dev &&
+          trigger({
+            type: `connected->${this.dataset.address ?? this.tagName.toLowerCase()}`,
+          })
         void this.plait({
           $: this.$.bind(this),
           host: this,
@@ -157,53 +147,49 @@ export const Component = ({
     disconnectedCallback() {
       this.#shadowObserver && this.#shadowObserver.disconnect()
       this.#disconnectMessenger && this.#disconnectMessenger()
-      this.#trigger({
-        type: `disconnected->${this.dataset.address ?? this.tagName.toLowerCase()}`,
-      })
+      dev &&
+        this.#trigger({
+          type: `disconnected->${this.dataset.address ?? this.tagName.toLowerCase()}`,
+        })
     }
     #bProgram() {
       const { trigger, ...rest } = bProgram({
         strategy,
-        dev: dev ===true ? log : dev,
+        dev: dev === true ? log : dev,
       })
       let disconnect: ReturnType<Connect>
       if (connect) {
         const recipient = this.dataset.address
         if (!recipient) {
-          console.error(
-            `Component ${this.tagName.toLowerCase()} is missing an attribute [${dataAddress}]`
-          )
+          console.error(`Component ${this.tagName.toLowerCase()} is missing an attribute [${dataAddress}]`)
         }
         disconnect = connect(recipient, trigger)
       }
-      trigger({
-        type: `connected->${this.dataset.address ?? this.tagName.toLowerCase()}`,
-      })
       this.#disconnectMessenger = disconnect
       return { trigger, ...rest }
     }
     #delegateObservedTriggers() {
-      if(observedTriggers) {
+      if (observedTriggers) {
         const entries = Object.entries(observedTriggers)
         !delegatedListener.has(this) && this.#createDelegatedListener(this)
-        for (const [ event ] of entries) {
+        for (const [event] of entries) {
           this.addEventListener(event, delegatedListener.get(this))
         }
       }
     }
-    #getObservedTriggerType(el: HTMLElement | SVGElement, event:Event) {
-      if(el !== this ) return
-      if(observedTriggers) {
+    #getObservedTriggerType(el: HTMLElement | SVGElement, event: Event) {
+      if (el !== this) return
+      if (observedTriggers) {
         const entries = Object.entries(observedTriggers)
-        const entry = entries.find(([ key ]) => key === event.type)
-        if(entry) return entry[1]
+        const entry = entries.find(([key]) => key === event.type)
+        if (entry) return entry[1]
       }
     }
-    #delegateListeners(nodes:Node[]) {
+    #delegateListeners(nodes: Node[]) {
       for (const el of nodes) {
         if (el.nodeType !== 1) continue // Skip non-element nodes
         const element = el as HTMLElement | SVGElement
-        if (element.tagName === 'SLOT' && element.hasAttribute('slot')) continue 
+        if (element.tagName === 'SLOT' && element.hasAttribute('slot')) continue
         !delegatedListener.has(el) && this.#createDelegatedListener(element)
         const triggers = element.dataset.trigger
         if (triggers) {
@@ -216,29 +202,27 @@ export const Component = ({
       }
     }
     #createDelegatedListener(el: HTMLElement | SVGElement) {
-      delegatedListener.set(el, event => { // Delegated listener does not have element then delegate it's callback
+      delegatedListener.set(el, (event) => {
+        // Delegated listener does not have element then delegate it's callback
         const triggerType = getTriggerType(event, el) || this.#getObservedTriggerType(el, event)
-          triggerType
-            /** if key is present in `data-trigger` trigger event on instance's bProgram */
-            ? this.#trigger<Event>({
+        triggerType
+          ? /** if key is present in `data-trigger` trigger event on instance's bProgram */
+            this.#trigger<Event>({
               type: triggerType,
               detail: event,
             })
-            /** if key is not present in `data-trigger` remove event listener for this event on Element */
-            : el.removeEventListener(
-              event.type,
-              delegatedListener.get(el)
-            )
+          : /** if key is not present in `data-trigger` remove event listener for this event on Element */
+            el.removeEventListener(event.type, delegatedListener.get(el))
       })
     }
     // Observes the addition of nodes to the shadow dom and changes to and child's data-trigger attribute
     #createShadowObserver() {
-      const mo = new MutationObserver(mutationsList => {
+      const mo = new MutationObserver((mutationsList) => {
         for (const mutation of mutationsList) {
           if (mutation.type === 'attributes') {
             const el = mutation.target
             if (el.nodeType === 1) {
-              this.#delegateListeners([ el ])
+              this.#delegateListeners([el])
             }
           } else if (mutation.addedNodes.length) {
             const list: Node[] = []
@@ -251,7 +235,7 @@ export const Component = ({
         }
       })
       mo.observe(this.#root, {
-        attributeFilter: [ dataTrigger ],
+        attributeFilter: [dataTrigger],
         childList: true,
         subtree: true,
       })
@@ -259,34 +243,30 @@ export const Component = ({
     }
     /** we're bringing the bling back!!! */
     $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
-        target: string,
-        opts?: {
-          all?: false;
-          mod?: SelectorMod;
-        }
-      ): SugaredElement<T> | undefined;
-    $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
-        target: string,
-        opts?: {
-          all: true;
-          mod?: SelectorMod;
-        },
-      ): SugaredElement<T>[];
+      target: string,
+      opts?: {
+        all?: false
+        mod?: SelectorMod
+      },
+    ): SugaredElement<T> | undefined
     $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
       target: string,
-      { all = false, mod = '=' } = {}
-    ):
-        | SugaredElement<T>
-        | undefined
-        | SugaredElement<T>[] {
+      opts?: {
+        all: true
+        mod?: SelectorMod
+      },
+    ): SugaredElement<T>[]
+    $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+      target: string,
+      { all = false, mod = '=' } = {},
+    ): SugaredElement<T> | undefined | SugaredElement<T>[] {
       const selector = `[${dataTarget}${mod}"${target}"]`
       if (all) {
         return assignSugarForEach(this.#root.querySelectorAll<T>(selector))
       }
       const element = this.#root.querySelector<T>(selector)
       if (!element) return
-      return assignSugar<T>(element)        
+      return assignSugar<T>(element)
     }
   }
 }
-

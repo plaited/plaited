@@ -6,22 +6,15 @@
 import { trueTypeOf } from '@plaited/utils'
 import { DesignToken, DesignTokenGroup } from '@plaited/token-types'
 
-const supportType = [
-  'string',
-  'number',
-  'array',
-  'object',
-  'boolean',
-  'integer',
-]
+const supportType = ['string', 'number', 'array', 'object', 'boolean', 'integer']
 
 export type Schema = {
-  items?: Schema[] | Schema;
-  required?: string[];
-  properties?: Record<string, Schema>;
-  const?: unknown;
-  [key: string]: Record<string, Schema> | unknown;
-};
+  items?: Schema[] | Schema
+  required?: string[]
+  properties?: Record<string, Schema>
+  const?: unknown
+  [key: string]: Record<string, Schema> | unknown
+}
 
 const isSchema = (object: Schema) => {
   if (supportType.indexOf(object.type as string) !== -1) {
@@ -30,18 +23,16 @@ const isSchema = (object: Schema) => {
   return false
 }
 
-export const parse = <
-  T extends DesignTokenGroup = DesignTokenGroup,
->({
-    tokens,
-    JsonSchema = {},
-    isValue = false,
-    hasValue = false,
-  }: {
-  tokens: T;
-  JsonSchema?: Schema;
-  isValue?: boolean;
-  hasValue?: boolean;
+export const parse = <T extends DesignTokenGroup = DesignTokenGroup>({
+  tokens,
+  JsonSchema = {},
+  isValue = false,
+  hasValue = false,
+}: {
+  tokens: T
+  JsonSchema?: Schema
+  isValue?: boolean
+  hasValue?: boolean
 }) => {
   const handleSchema = (json: Schema, schema: Schema) => {
     Object.assign(schema, json)
@@ -71,11 +62,11 @@ export const parse = <
     }
     schema.type = 'object'
     schema.required = []
-    const props: Record<string, unknown> = schema.properties = {}
+    const props: Record<string, unknown> = (schema.properties = {})
     for (let key in json) {
       schema.required.push(key)
       const item = json[key]
-      let curSchema = props[key] = {}
+      let curSchema = (props[key] = {})
       if (key[0] === '*') {
         delete props[key]
         key = key.substr(1)
@@ -86,8 +77,7 @@ export const parse = <
         tokens: item as DesignTokenGroup,
         JsonSchema: curSchema,
         isValue: isValue || key === '$value',
-        hasValue: hasValue ||
-          Object.hasOwn(item as DesignToken, '$value'),
+        hasValue: hasValue || Object.hasOwn(item as DesignToken, '$value'),
       })
     }
   }
@@ -95,14 +85,16 @@ export const parse = <
     schema.type = 'array'
     if (arr.length) {
       schema.items = []
-      arr.forEach(element => {
+      arr.forEach((element) => {
         const items = schema.items as unknown[]
-        items.push(parse({
-          tokens: element as unknown as DesignTokenGroup,
-          JsonSchema: {},
-          isValue,
-          hasValue,
-        }))
+        items.push(
+          parse({
+            tokens: element as unknown as DesignTokenGroup,
+            JsonSchema: {},
+            isValue,
+            hasValue,
+          }),
+        )
       })
     }
   }

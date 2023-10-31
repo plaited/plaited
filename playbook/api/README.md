@@ -1,4 +1,6 @@
-Plaited Typedocs / [Exports](modules.md)
+**Plaited Typedocs** ( Readme \| [API](modules.md) )
+
+***
 
 [![build/tests](https://github.com/plaited/plaited/actions/workflows/check-and-update-typedocs.yml/badge.svg?branch=main)](https://github.com/plaited/plaited/actions/workflows/check-and-update-typedocs.yml)
 
@@ -17,6 +19,7 @@ development libraries.
 - [@plaited/behavioral](libs/behavioral/README.md): implicit state management
   library using the behavioral programming algorithm
 - [@plaited/rite](libs/rite/README.md): [modern web](https://modern-web.dev) unit test framework based on RITEway.
+
 ### Internal usage
 
 **The following libraries are not recommended for usage outside the Plaited organization. They are dependencies for our Plaited libs and apps. These libraries are open sourced as reference implementation. Take as a dependency at your own risk.**
@@ -29,7 +32,7 @@ development libraries.
   - server side rendering utility for templating utility
   - jsx runtime for templating utility
   - classNames utility function for conditionally joining css class names
-  - stylesheets  utility function for conditionally joining css-on-js utility function generated stylesheet objects
+  - stylesheets utility function for conditionally joining css-on-js utility function generated stylesheet objects
 - [@plaited/token-transformer](libs/token-transformer/README.md): transform token into outputs suitable for CSS and Typescript usage
 - [@plaited/token-schema](libs/token-schema/README.md): create a JSON schema from design tokens that locks in values and allows addition of news values
 - [@plaited/token-types](libs/token-types/README.md): types for plaited design tokens based on [design token format](https://design-tokens.github.io/community-group/format/)
@@ -38,6 +41,7 @@ development libraries.
 ## Dev Requirements
 
 ### local
+
 - Node 18.15.0
 
 ### devcontainer requirements
@@ -63,3 +67,7 @@ development libraries.
 6. Enter this repo name **plaited/plaited**
 7. Wait for it to download and set everything up
 8. Open a VSCode terminal tab and run `zsh setup.sh`
+
+***
+
+Generated using [typedoc-plugin-markdown](https://www.npmjs.com/package/typedoc-plugin-markdown) and [TypeDoc](https://typedoc.org/)

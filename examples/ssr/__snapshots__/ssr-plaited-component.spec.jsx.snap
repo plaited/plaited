@@ -1,25 +1,25 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Bun Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`Fixture.template: shadow only 1`] = `
 "<test-element>
     <template shadowrootmode="open" shadowrootdelegatesfocus="true">
         <style>
-            .header_MTUxMz: { color: pink }
+            .header_MjcwMz: { color: pink; }
         </style>
-        <div class="header_MTUxMz">server side rendered shadow dom
+        <div class="header_MjcwMz">server side rendered shadow dom
             <slot></slot>
         </div>
     </template>
 </test-element>"
 `;
 
-exports[`Fixture.template: shadow, and delgatefocus false: should still be shadowrootdelegatesfocus="true" 1`] = `
-"<test-element>
+exports[`Fixture.template: slot and id 1`] = `
+"<test-element id="random">
     <template shadowrootmode="open" shadowrootdelegatesfocus="true">
         <style>
-            .header_MTUxMz: { color: pink }
+            .header_MjcwMz: { color: pink; }
         </style>
-        <div class="header_MTUxMz">server side rendered shadow dom
+        <div class="header_MjcwMz">server side rendered shadow dom
             <slot></slot>
         </div>
     </template>
@@ -33,9 +33,9 @@ exports[`Fixture.template: shadow, and mode closed: should still be shadowrootmo
 "<test-element>
     <template shadowrootmode="open" shadowrootdelegatesfocus="true">
         <style>
-            .header_MTUxMz: { color: pink }
+            .header_MjcwMz: { color: pink; }
         </style>
-        <div class="header_MTUxMz">server side rendered shadow dom
+        <div class="header_MjcwMz">server side rendered shadow dom
             <slot></slot>
         </div>
     </template>
@@ -45,13 +45,13 @@ exports[`Fixture.template: shadow, and mode closed: should still be shadowrootmo
 </test-element>"
 `;
 
-exports[`Fixture.template: slot and id 1`] = `
-"<test-element id="random">
+exports[`Fixture.template: shadow, and delgatefocus false: should still be shadowrootdelegatesfocus="true" 1`] = `
+"<test-element>
     <template shadowrootmode="open" shadowrootdelegatesfocus="true">
         <style>
-            .header_MTUxMz: { color: pink }
+            .header_MjcwMz: { color: pink; }
         </style>
-        <div class="header_MTUxMz">server side rendered shadow dom
+        <div class="header_MjcwMz">server side rendered shadow dom
             <slot></slot>
         </div>
     </template>

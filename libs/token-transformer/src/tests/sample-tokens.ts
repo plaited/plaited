@@ -82,7 +82,7 @@ export const tokens: DesignTokenGroup = {
   },
   fontFamily: {
     sansSerif: {
-      $value: [ 'Roboto', 'sans-serif' ],
+      $value: ['Roboto', 'sans-serif'],
       $type: 'fontFamily',
       $description: 'mock description',
     },

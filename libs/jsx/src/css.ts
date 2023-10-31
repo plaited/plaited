@@ -2,38 +2,26 @@ import { hashString, trueTypeOf, reduceWhitespace } from '@plaited/utils'
 import { Primitive } from './types.js'
 
 type ClassObject = {
-  content: string;
-};
+  content: string
+}
 
+const isTruthy = (val: Primitive) => trueTypeOf(val) === 'string' || trueTypeOf(val) === 'number'
 
-const isTruthy = (val: Primitive) =>
-  trueTypeOf(val) === 'string' ||
-  trueTypeOf(val) === 'number'
-
-const taggedWithPrimitives = (
-  strings: TemplateStringsArray,
-  ...expressions: Array<Primitive | Primitive[]>
-) => {
+const taggedWithPrimitives = (strings: TemplateStringsArray, ...expressions: Array<Primitive | Primitive[]>) => {
   const { raw } = strings
   let result = expressions.reduce<string>((acc, subst, i) => {
     acc += reduceWhitespace(raw[i])
-    let filteredSubst = Array.isArray(subst)
-      ? subst.filter(isTruthy).join('')
-      : isTruthy(subst)
-      ? subst
-      : ''
+    let filteredSubst = Array.isArray(subst) ? subst.filter(isTruthy).join('') : isTruthy(subst) ? subst : ''
     if (acc.endsWith('$')) {
       filteredSubst = escape(filteredSubst as string)
       acc = acc.slice(0, -1)
     }
     return acc + filteredSubst
   }, '')
-  return result += reduceWhitespace(raw[raw.length - 1])
+  return (result += reduceWhitespace(raw[raw.length - 1]))
 }
 
-const tokenize = (
-  css: string
-): (string | ClassObject)[] => {
+const tokenize = (css: string): (string | ClassObject)[] => {
   const regex = /\.(-?[_a-zA-Z]+[_a-zA-Z0-9-]*)/gm
   const matches: (string | ClassObject)[] = []
   let lastIndex = 0
@@ -74,12 +62,12 @@ export const css = (
     return toRet
   }
   const styles =
-    tokens?.map(token =>
-      typeof token === 'string'
-        ? reduceWhitespace(token)
-        : addClass(token.content)
-    ).join('') || ''
-  return Object.freeze([ Object.fromEntries(classes), {
-    stylesheet: reduceWhitespace(styles).trim(),
-  } ])
+    tokens?.map((token) => (typeof token === 'string' ? reduceWhitespace(token) : addClass(token.content))).join('') ||
+    ''
+  return Object.freeze([
+    Object.fromEntries(classes),
+    {
+      stylesheet: reduceWhitespace(styles).trim(),
+    },
+  ])
 }

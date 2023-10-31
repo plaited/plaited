@@ -1,4 +1,4 @@
-import { test, expect } from'bun:test'
+import { test, expect } from 'bun:test'
 import { generateId, setIdCounter, ueid } from '../index.js'
 
 test('ueid: returns a string', () => {
@@ -8,7 +8,7 @@ test('ueid: returns a string', () => {
 
 test('ueid: should return unique ids', () => {
   const ids = new Array(5).fill(null).map(ueid)
-  const uniqued = [ ...new Set(ids) ]
+  const uniqued = [...new Set(ids)]
 
   expect(ids.length).toBe(5)
   expect(uniqued.length).toBe(5)

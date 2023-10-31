@@ -19,9 +19,9 @@ RITEWay forces us to answer them.
 
 - [@web/test-runner](https://www.npmjs.com/package/@web/test-runner) >= 0.16.1
 
-### JavaScript runtime 
-- [Node](https://nodejs.org/en) >= v18
+### JavaScript runtime
 
+- [Node](https://nodejs.org/en) >= v18
 
 ## Installing
 
@@ -34,12 +34,12 @@ test config like so
 **web-test-runner.config.js**
 
 ```js
-import { getFramework } from "@plaited/rite/framework";
+import { getFramework } from '@plaited/rite/framework'
 
 export default {
   nodeResolve: true,
   testFramework: getFramework(),
-};
+}
 ```
 
 Update our package.json scripts like so
@@ -57,90 +57,75 @@ like this
 **web-test-runner.config.js**
 
 ```js
-import { getFramework } from "@plaited/rite/framework";
+import { getFramework } from '@plaited/rite/framework'
 
 export default {
   nodeResolve: true,
   testFramework: getFramework(3_000),
-};
+}
 ```
 
 ## Example Usage
 
 ```ts
-import { test } from "@plaited/rite";
+import { test } from '@plaited/rite'
 
-const classNames = (...classes: Array<string | undefined | false | null>) =>
-  classes.filter(Boolean).join(" ");
+const classNames = (...classes: Array<string | undefined | false | null>) => classes.filter(Boolean).join(' ')
 
-test("classNames", (t) => {
+test('classNames', (t) => {
   t({
-    given: "two class names",
-    should: "join them",
-    expected: "class-1 class-2",
-    actual: classNames("class-1", "class-2"),
-  });
-  const conditionTrue = true;
-  const conditionFalse = false;
+    given: 'two class names',
+    should: 'join them',
+    expected: 'class-1 class-2',
+    actual: classNames('class-1', 'class-2'),
+  })
+  const conditionTrue = true
+  const conditionFalse = false
   t({
-    given: "truthy and falsy class names",
-    should: "join only truthy",
-    expected: "class-1 class-3",
-    actual: classNames(
-      "class-1",
-      conditionFalse && "class-2",
-      conditionTrue && "class-3",
-    ),
-  });
-});
+    given: 'truthy and falsy class names',
+    should: 'join only truthy',
+    expected: 'class-1 class-3',
+    actual: classNames('class-1', conditionFalse && 'class-2', conditionTrue && 'class-3'),
+  })
+})
 ```
 
 To skip a test we can do the following
 
 ```ts
-import { test } from "@plaited/rite";
+import { test } from '@plaited/rite'
 
-const classNames = (...classes: Array<string | undefined | false | null>) =>
-  classes.filter(Boolean).join(" ");
+const classNames = (...classes: Array<string | undefined | false | null>) => classes.filter(Boolean).join(' ')
 
-test.skip("classNames", (t) => {
+test.skip('classNames', (t) => {
   t({
-    given: "two class names",
-    should: "join them",
-    expected: "class-1 class-2",
-    actual: classNames("class-1", "class-2"),
-  });
-  const conditionTrue = true;
-  const conditionFalse = false;
+    given: 'two class names',
+    should: 'join them',
+    expected: 'class-1 class-2',
+    actual: classNames('class-1', 'class-2'),
+  })
+  const conditionTrue = true
+  const conditionFalse = false
   t({
-    given: "truthy and falsy class names",
-    should: "join only truthy",
-    expected: "class-1 class-3",
-    actual: classNames(
-      "class-1",
-      conditionFalse && "class-2",
-      conditionTrue && "class-3",
-    ),
-  });
-});
+    given: 'truthy and falsy class names',
+    should: 'join only truthy',
+    expected: 'class-1 class-3',
+    actual: classNames('class-1', conditionFalse && 'class-2', conditionTrue && 'class-3'),
+  })
+})
 ```
 
 `t` our assertion function has the following type
 
 ```ts
 export interface Assertion {
-  <T>(param: {
-    given: string;
-    should: string;
-    actual: T;
-    expected: T;
-  }): void;
-  findByAttribute: typeof findByAttribute;
-  findByText: typeof findByText;
-  fireEvent: typeof fireEvent;
-  match: typeof match;
-  throws: typeof throws;
-  wait: typeof wait;
+  <T>(param: { given: string; should: string; actual: T; expected: T }): void
+  findByAttribute: typeof findByAttribute
+  findByText: typeof findByText
+  fireEvent: typeof fireEvent
+  match: typeof match
+  throws: typeof throws
+  wait: typeof wait
 }
 ```
 
@@ -180,18 +165,18 @@ Let's say we've rendered an element to the screen with:
 We can test to make sure it rendered correctly like so:
 
 ```ts
-import { test } from "@plaited/rite";
+import { test } from '@plaited/rite'
 
-test("Island rendered correctly", async (t) => {
-  const body = document.querySelector("body");
-  const island = await t.findByAttribute("data-test-id", "island", body);
+test('Island rendered correctly', async (t) => {
+  const body = document.querySelector('body')
+  const island = await t.findByAttribute('data-test-id', 'island', body)
   t({
-    given: "Rendering the island component",
-    should: "be present with the correct content",
+    given: 'Rendering the island component',
+    should: 'be present with the correct content',
     actual: island?.innerText,
-    expected: "Pick your hammock",
-  });
-});
+    expected: 'Pick your hammock',
+  })
+})
 ```
 
 ### t.findByText
@@ -216,24 +201,24 @@ Let's say we've rendered a button to the screen:
 - innerText: `add svg`
 
 ```ts
-import { test } from "@plaited/rite";
+import { test } from '@plaited/rite'
 
-test("add svg button", async (t) => {
-  const body = document.querySelector("body");
-  const button = await t.findByText<HTMLButtonElement>("add svg", body);
+test('add svg button', async (t) => {
+  const body = document.querySelector('body')
+  const button = await t.findByText<HTMLButtonElement>('add svg', body)
   t({
-    given: "button rendered",
-    should: "should be in dom",
+    given: 'button rendered',
+    should: 'should be in dom',
     actual: button?.tagName,
-    expected: "BUTTON",
-  });
+    expected: 'BUTTON',
+  })
   t({
-    given: "button rendered",
-    should: "should have correct content",
+    given: 'button rendered',
+    should: 'should have correct content',
     actual: button?.innerText,
-    expected: "add svg",
-  });
-});
+    expected: 'add svg',
+  })
+})
 ```
 
 ### t.fireEvent
@@ -248,11 +233,11 @@ type signature
 
 ```ts
 type EventArguments = {
-  bubbles?: boolean; // default true
-  composed?: boolean; // default true
-  cancelable?: boolean; // default true
-  detail?: Record<string, unknown>; // default undefined
-};
+  bubbles?: boolean // default true
+  composed?: boolean // default true
+  cancelable?: boolean // default true
+  detail?: Record<string, unknown> // default undefined
+}
 ```
 
 #### Example Scenario
@@ -325,31 +310,31 @@ We've got an function `reverence` that will throw when passed the string
 second argument. We need to make sure it works right.
 
 ```ts
-import { test } from "@plaited/rite";
+import { test } from '@plaited/rite'
 
-test("yep it throws", async (t) => {
-  const error = new Error("unacceptable");
+test('yep it throws', async (t) => {
+  const error = new Error('unacceptable')
   const reverence = (attitude: string, pass = false) => {
-    if (!pass && attitude === "irreverent") {
-      throw error;
+    if (!pass && attitude === 'irreverent') {
+      throw error
     }
-  };
-  let actual = await t.throws(reverence, "irreverent");
+  }
+  let actual = await t.throws(reverence, 'irreverent')
   t({
-    given: "reverent receives irreverent attitude",
-    should: "throw an error",
+    given: 'reverent receives irreverent attitude',
+    should: 'throw an error',
     actual,
     expected: error.toString(),
-  });
+  })
 
-  actual = await t.throws(reverence, "irreverent", true);
+  actual = await t.throws(reverence, 'irreverent', true)
   t({
-    given: "reverent receives irreverent attitude but has a pass",
-    should: "not throw error",
+    given: 'reverent receives irreverent attitude but has a pass',
+    should: 'not throw error',
     actual,
     expected: undefined,
-  });
-});
+  })
+})
 ```
 
 ### t.wait
@@ -367,22 +352,22 @@ let's wait 60ms. We're also going to use **sinon** to create a spy callback to
 assert on message values.
 
 ```ts
-import { test } from "@plaited/rite";
-import sinon from "sinon";
-import { useMessenger } from "plaited";
+import { test } from '@plaited/rite'
+import sinon from 'sinon'
+import { useMessenger } from 'plaited'
 
-test("useMessenger: connect, send, close", async (t) => {
-  const [connect, send] = useMessenger();
-  const spy = sinon.spy();
-  const close = connect("actor1", spy);
-  send("actor1", { type: "a", detail: { value: 4 } });
-  await t.wait(60);
+test('useMessenger: connect, send, close', async (t) => {
+  const [connect, send] = useMessenger()
+  const spy = sinon.spy()
+  const close = connect('actor1', spy)
+  send('actor1', { type: 'a', detail: { value: 4 } })
+  await t.wait(60)
   t({
-    given: "message send",
-    should: "connected spy should receive message",
-    actual: spy.calledWith({ type: "a", detail: { value: 4 } }),
+    given: 'message send',
+    should: 'connected spy should receive message',
+    actual: spy.calledWith({ type: 'a', detail: { value: 4 } }),
     expected: true,
-  });
-  close();
-});
+  })
+  close()
+})
 ```

@@ -2,8 +2,8 @@ import { test } from '@plaited/rite'
 import { useIndexedDB } from '../index.js'
 import sinon from 'sinon'
 
-test('useIndexedDB', async t => {
-  const [ get, set ] = await useIndexedDB<number>('basic', 0)
+test('useIndexedDB', async (t) => {
+  const [get, set] = await useIndexedDB<number>('basic', 0)
   let actual = await get()
   t({
     given: 'get',
@@ -19,7 +19,7 @@ test('useIndexedDB', async t => {
     actual,
     expected: 4,
   })
-  await set(x => x + 1)
+  await set((x) => x + 1)
   actual = await get()
   t({
     given: 'callback with previous value',
@@ -44,8 +44,8 @@ test('useIndexedDB', async t => {
   })
 })
 
-test('useIndexedDB: with subscription', async t => {
-  const [ get, set ] = await useIndexedDB('subscription', 1)
+test('useIndexedDB: with subscription', async (t) => {
+  const [get, set] = await useIndexedDB('subscription', 1)
   const actual = await get()
   t({
     given: 'another useIndexedDB with same key but different initial value',
@@ -61,7 +61,7 @@ test('useIndexedDB: with subscription', async t => {
     given: 'subscription to store',
     should: 'trigger callback with last value',
     actual: spy.args,
-    expected: [ [ 3 ] ],
+    expected: [[3]],
   })
   disconnect()
   await set(5)

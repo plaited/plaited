@@ -1,5 +1,5 @@
 import sinon from 'sinon'
-import { test, expect } from'bun:test'
+import { test, expect } from 'bun:test'
 import { callAll } from '../index.js'
 
 test('callAll()', () => {

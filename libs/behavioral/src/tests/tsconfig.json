@@ -4,8 +4,6 @@
     "module": "NodeNext",
     "declaration": true,
     "moduleResolution": "nodenext",
-    "types": [
-      "bun-types"
-    ]
-  },
+    "types": ["bun-types"]
+  }
 }

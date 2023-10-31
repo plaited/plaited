@@ -1,21 +1,17 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
-import {
-  TestResultError,
-  TestResult,
-  BrowserSessionResult,
-} from '@web/test-runner-core/browser/session.js'
+import { TestResultError, TestResult, BrowserSessionResult } from '@web/test-runner-core/browser/session.js'
 import { assert, Assertion, AssertionError } from './assert.js'
 
-type TestCallback  = (t: Assertion) => Promise<void> | void
+type TestCallback = (t: Assertion) => Promise<void> | void
 
-interface Test  {
-  (name: string, cb: TestCallback):  void
-  skip: (name: string, cb: TestCallback) =>  void
+interface Test {
+  (name: string, cb: TestCallback): void
+  skip: (name: string, cb: TestCallback) => void
 }
 
-type TestCase = (() => Promise<boolean> | boolean)
+type TestCase = () => Promise<boolean> | boolean
 
 class TestRunner {
   #completedTests = 0
@@ -24,10 +20,10 @@ class TestRunner {
   #cases: TestCase[] = []
   #timeout = 5_000
   #tests: TestResult[] = []
-  updateTimeout (time: number) {
+  updateTimeout(time: number) {
     this.#timeout = time
   }
-  get timeout () {
+  get timeout() {
     return this.#timeout
   }
   addCase(test: TestCase) {
@@ -36,7 +32,7 @@ class TestRunner {
   addResult(result: TestResult) {
     this.#tests.push(result)
   }
-  addError (obj: TestResultError) {
+  addError(obj: TestResultError) {
     this.#errors.push(obj)
   }
   async run(name: string) {
@@ -51,7 +47,7 @@ class TestRunner {
         console.error(error)
       }
     }
-   
+
     if (this.#completedTests === this.#cases.length) {
       const results: BrowserSessionResult = {
         passed: !this.#failedTests,
@@ -83,8 +79,7 @@ const throwTimeoutError = async () => {
   throw new Error(`test takes longer than ${timeout}ms to complete`)
 }
 
-
-export const test:Test = (name, callback) => {
+export const test: Test = (name, callback) => {
   window.__rite_test_runner.addCase(async () => {
     const startTime = performance.now()
     const result: TestResult = {
@@ -93,7 +88,7 @@ export const test:Test = (name, callback) => {
       skipped: false,
     }
     try {
-      await Promise.race([ callback(assert), throwTimeoutError() ])
+      await Promise.race([callback(assert), throwTimeoutError()])
       const msg = `✓ ${name}`
       // eslint-disable-next-line no-console
       console.log(msg)
@@ -102,7 +97,7 @@ export const test:Test = (name, callback) => {
       // eslint-disable-next-line no-console
       console.log(msg)
       result.passed = false
-      if(error instanceof AssertionError) {
+      if (error instanceof AssertionError) {
         const obj: Pick<TestResultError, 'actual' | 'expected' | 'message'> = JSON.parse(error.message)
         result.error = { name, stack: `${error.stack}`, ...obj }
         window.__rite_test_runner.addError({ name, ...obj })
@@ -126,4 +121,3 @@ test.skip = (name: string, _: TestCallback) => {
     return true
   })
 }
-

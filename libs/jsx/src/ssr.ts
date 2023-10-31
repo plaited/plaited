@@ -2,8 +2,7 @@ import { Template } from './types.js'
 
 if (typeof global.HTMLElement === 'undefined') {
   // @ts-ignore node env
-  global.HTMLElement = class HTMLElement {
-  }
+  global.HTMLElement = class HTMLElement {}
 }
 
 export const ssr = (...templates: Template[]) => {
@@ -21,9 +20,7 @@ export const ssr = (...templates: Template[]) => {
       stylesheets.add(sheet)
     }
   }
-  const style = stylesheets.size
-    ? `<style>${[ ...stylesheets ].join('')}</style>`
-    : ''
+  const style = stylesheets.size ? `<style>${[...stylesheets].join('')}</style>` : ''
 
   const headIndex = content.indexOf('</head>')
   const bodyRegex = /<body\b[^>]*>/i

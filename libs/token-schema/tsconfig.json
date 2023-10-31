@@ -6,10 +6,7 @@
     "moduleResolution": "nodenext",
     "allowSyntheticDefaultImports": true,
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": "src"
   },
-  "exclude": [
-    "**/dist",
-    "**/tests/"
-  ]
+  "exclude": ["**/dist", "**/tests/"]
 }

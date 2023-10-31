@@ -6,45 +6,35 @@ export const isValidContext = ({
   mediaQueries = {},
   containerQueries = {},
   colorSchemes = {},
-}:{
-  context: {type: $Context, id: string}
-  mediaQueries?: Queries;
-  containerQueries?: Queries;
-  colorSchemes?: ColorSchemes;
+}: {
+  context: { type: $Context; id: string }
+  mediaQueries?: Queries
+  containerQueries?: Queries
+  colorSchemes?: ColorSchemes
 }) => {
   const { type, id } = context
-  const obj = type === 'color-scheme'
-  ? colorSchemes 
-  : type === 'media-query'
-  ? mediaQueries 
-  : containerQueries
-  if(!Object.hasOwn(obj, id)) {
-    const context = type === 'color-scheme'
-    ? `colorSchemes` 
-    : type === 'media-query'
-    ? `mediaQueries` 
-    : `containerQueries`
+  const obj = type === 'color-scheme' ? colorSchemes : type === 'media-query' ? mediaQueries : containerQueries
+  if (!Object.hasOwn(obj, id)) {
+    const context =
+      type === 'color-scheme' ? `colorSchemes` : type === 'media-query' ? `mediaQueries` : `containerQueries`
     console.error(`${id} not found in ${context}`)
     return false
   }
   return true
 }
 
-
-
-export const isContextualToken =  <U extends DesignToken, V extends DesignValue>(
-  token: BaseToken<U['$type'], V>
+export const isContextualToken = <U extends DesignToken, V extends DesignValue>(
+  token: BaseToken<U['$type'], V>,
 ): token is ContextualToken<U['$type'], V> => {
-  if(!token?.$extensions) return false
+  if (!token?.$extensions) return false
   const { 'plaited-context': $context } = token.$extensions
-  return  $context !== undefined
+  return $context !== undefined
 }
 
-
-export const isStaticToken =  <U extends DesignToken, V extends DesignValue>(
-  token: BaseToken<U['$type'], V>
+export const isStaticToken = <U extends DesignToken, V extends DesignValue>(
+  token: BaseToken<U['$type'], V>,
 ): token is StaticToken<U['$type'], V> => {
-  if(!token?.$extensions) return true
+  if (!token?.$extensions) return true
   const { 'plaited-context': $context } = token.$extensions
   return $context === undefined
 }
