@@ -23,6 +23,7 @@
   },
   "files": [
     "./dist/**",
+    "./ssr.js",
     "./jsx-runtime.js",
     "./jsx-dev-runtime.js"
   ],

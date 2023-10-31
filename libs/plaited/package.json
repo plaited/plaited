@@ -20,6 +20,7 @@
     "./jsx-runtime": "./dist/jsx-runtime.js",
     "./jsx-dev-runtime": "./dist/jsx-dev-runtime.js",
     "./ssr": "./dist/ssr.js",
+    "./token": "./dist/token.js",
     "./utils": "./dist/utils.js"
   },
   "files": [
@@ -29,7 +30,7 @@
   ],
   "scripts": {
     "build": "tsc --project tsconfig.json",
-    "typedoc": "typedoc --tsconfig tsconfig.json --out ../../playbook/api --plugin typedoc-plugin-markdown"
+    "typedocs": "typedoc --plugin typedoc-plugin-markdown"
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
@@ -37,6 +38,9 @@
     "@plaited/behavioral": "4.1.0",
     "@plaited/component": "4.1.0",
     "@plaited/jsx": "4.1.0",
-    "@plaited/utils": "4.1.0"
+    "@plaited/utils": "4.1.0",
+    "@plaited/token-schema": "4.1.0",
+    "@plaited/token-transformer": "4.1.0",
+    "@plaited/token-types": "4.1.0"
   }
 }

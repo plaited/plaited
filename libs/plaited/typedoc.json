@@ -1,9 +1,15 @@
 {
-  "extends": [
-    "../../typedoc.base.json"
-  ],
   "entryPoints": [
     "src/index.ts",
     "src/utils.ts"
-  ]
+  ],
+  "exclude": [
+    "README.md"
+  ],
+  "githubPages": false,
+  "out": "../../playbook/api",
+  "name": "Plaited Typedocs",
+  "includeVersion": true,
+  // Potentially useful for debugging
+  "logLevel": "Verbose"
 }
