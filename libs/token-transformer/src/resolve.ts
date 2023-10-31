@@ -17,7 +17,7 @@ const getResolvedValue = (path: string[], tokens: DesignTokenGroup | undefined):
     !exist && console.error('\x1b[36m', `\ninvalid path — token(${path.join('.')})`, '\x1b[31m', '\x1b[0m')
   }
   //@ts-ignore: dynamic type checking
-  if (toRet?.hasOwn('$value')) return toRet
+  if (Object.hasOwn(toRet, '$value')) return toRet
   console.error('\x1b[36m', `\nincomplete path — token(${path.join('.')})`, '\x1b[0m')
   return
 }
