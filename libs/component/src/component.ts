@@ -21,10 +21,9 @@ const matchAllEvents = (str: string) => {
 // note triggers are separated by spaces in the attribute data-target="click->doSomething focus->somethingElse"
 const getTriggerType = (e: Event, context: HTMLElement | SVGElement): string => {
   const el =
-    e.currentTarget === context
+    context.tagName !== 'SLOT' && e.currentTarget === context
       ? context
-      : // check if closest slot from the element that invoked the event is the instances slot
-      e.composedPath().find((slot) => (slot as Element)?.tagName === 'SLOT' && slot === context)
+      : e.composedPath().find((el) => el instanceof ShadowRoot) === context.getRootNode()
       ? context
       : undefined
 
@@ -85,7 +84,7 @@ export const Component = ({
   return class PlaitedComponent extends HTMLElement implements PlaitedElement {
     static tag = _tag
     static stylesheets = template.stylesheets
-    static template: FunctionTemplate<AdditionalAttrs & { slots: never }> = ({ slot: _, children, ...attrs }) =>
+    static template: FunctionTemplate<AdditionalAttrs & { slots?: never }> = ({ slot: _, children, ...attrs }) =>
       createTemplate(tag, {
         ...attrs,
         children: template,

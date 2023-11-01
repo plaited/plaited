@@ -14,9 +14,23 @@ const [classes, stylesheet] = css`
     width: auto;
   }
 `
-const slot = sinon.spy()
-const nested = sinon.spy()
-const named = sinon.spy()
+const defaultSlot = sinon.spy()
+const passThroughSlot = sinon.spy()
+const namedSlot = sinon.spy()
+const nestedSlot = sinon.spy()
+
+class Nested extends Component({
+  tag: 'nested-slot',
+  template: <slot data-trigger={{ click: 'nested' }}></slot>,
+}) {
+  plait(props: PlaitProps): void | Promise<void> {
+    props.feedback({
+      nested() {
+        nestedSlot('nested-slot')
+      },
+    })
+  }
+}
 
 class Fixture extends Component({
   tag: 'slot-test',
@@ -30,30 +44,25 @@ class Fixture extends Component({
         name='named'
         data-trigger={{ click: 'named' }}
       ></slot>
-      <nested-slot
-        slots={
-          <slot
-            slot='nested'
-            name='nested'
-            data-trigger={{ click: 'nested' }}
-          ></slot>
-        }
-      >
-        <slot name='nested'></slot>
-      </nested-slot>
+      <Nested.template>
+        <slot
+          name='nested'
+          data-trigger={{ click: 'nested' }}
+        ></slot>
+      </Nested.template>
     </div>
   ),
 }) {
   plait({ feedback }: PlaitProps) {
     feedback({
       slot() {
-        slot('slot')
+        defaultSlot('default-slot')
       },
       named() {
-        named('named')
+        namedSlot('named-slot')
       },
       nested() {
-        nested('nested')
+        passThroughSlot('pass-through-slot')
       },
     })
   }
@@ -62,7 +71,7 @@ class Fixture extends Component({
 //define our fixture
 customElements.define(Fixture.tag, Fixture)
 // We need to define our nest-slot Component
-
+customElements.define(Nested.tag, Nested)
 const root = document.querySelector('body')
 
 root.insertAdjacentHTML(
@@ -84,7 +93,7 @@ test('slot: default', async (t) => {
   t({
     given: `default slot click of element in event's composed path`,
     should: 'trigger feedback action',
-    actual: slot.called,
+    actual: defaultSlot.calledWith('default-slot'),
     expected: true,
   })
 })
@@ -95,8 +104,19 @@ test('slot: named', async (t) => {
   t({
     given: `named slot click of element in event's composed path`,
     should: 'trigger feedback action',
-    actual: named.calledWith('named'),
+    actual: namedSlot.calledWith('named-slot'),
     expected: true,
+  })
+})
+
+test('slot: passThrough', async (t) => {
+  const button = await t.findByText('Nested')
+  button && (await t.fireEvent(button, 'click'))
+  t({
+    given: `nested slot click of element in event's composed path`,
+    should: 'not trigger feedback action',
+    actual: passThroughSlot.calledWith('pass-through-slot'),
+    expected: false,
   })
 })
 
@@ -106,7 +126,7 @@ test('slot: nested', async (t) => {
   t({
     given: `nested slot click of element in event's composed path`,
     should: 'not trigger feedback action',
-    actual: nested.called,
-    expected: false,
+    actual: nestedSlot.calledWith('nested-slot'),
+    expected: true,
   })
 })
