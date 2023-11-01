@@ -43,7 +43,7 @@ const [store, setStore] = useStore<Record<string, number> | number>({ a: 1 })
 
 ## Source
 
-[use-store.ts:29](https://github.com/plaited/plaited/blob/95d1a1b/libs/utils/src/use-store.ts#L29)
+[use-store.ts:29](https://github.com/plaited/plaited/blob/317e868/libs/utils/src/use-store.ts#L29)
 
 ***
 

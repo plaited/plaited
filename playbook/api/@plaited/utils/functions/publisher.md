@@ -35,7 +35,7 @@ A new publisher object.
 >
 > ### Source
 >
-> [publisher.ts:11](https://github.com/plaited/plaited/blob/95d1a1b/libs/utils/src/publisher.ts#L11)
+> [publisher.ts:11](https://github.com/plaited/plaited/blob/317e868/libs/utils/src/publisher.ts#L11)
 >
 
 > ### subscribe()
@@ -62,13 +62,13 @@ A new publisher object.
 > >
 > > ##### Source
 > >
-> > [publisher.ts:24](https://github.com/plaited/plaited/blob/95d1a1b/libs/utils/src/publisher.ts#L24)
+> > [publisher.ts:24](https://github.com/plaited/plaited/blob/317e868/libs/utils/src/publisher.ts#L24)
 > >
 >
 
 ## Source
 
-[publisher.ts:8](https://github.com/plaited/plaited/blob/95d1a1b/libs/utils/src/publisher.ts#L8)
+[publisher.ts:8](https://github.com/plaited/plaited/blob/317e868/libs/utils/src/publisher.ts#L8)
 
 ***
 

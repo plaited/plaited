@@ -24,7 +24,7 @@ readonly [[`Send`](../type-aliases/Send.md), () => `void`]
 
 ## Source
 
-[libs/component/src/use-main.ts:4](https://github.com/plaited/plaited/blob/95d1a1b/libs/component/src/use-main.ts#L4)
+[libs/component/src/use-main.ts:4](https://github.com/plaited/plaited/blob/317e868/libs/component/src/use-main.ts#L4)
 
 ***
 

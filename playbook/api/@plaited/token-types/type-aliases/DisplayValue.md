@@ -12,7 +12,7 @@ Display value type relies on the defaultFormat formatter for ts tokens and css t
 
 ## Source
 
-[index.ts:90](https://github.com/plaited/plaited/blob/95d1a1b/libs/token-types/src/index.ts#L90)
+[index.ts:90](https://github.com/plaited/plaited/blob/317e868/libs/token-types/src/index.ts#L90)
 
 ***
 

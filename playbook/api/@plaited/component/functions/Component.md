@@ -24,7 +24,7 @@ A PlaitedComponent
 
 ## Source
 
-[libs/component/src/component.ts:71](https://github.com/plaited/plaited/blob/95d1a1b/libs/component/src/component.ts#L71)
+[libs/component/src/component.ts:70](https://github.com/plaited/plaited/blob/317e868/libs/component/src/component.ts#L70)
 
 ***
 

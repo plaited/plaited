@@ -20,7 +20,7 @@
 
 ## Source
 
-[libs/rite/src/test.ts:113](https://github.com/plaited/plaited/blob/95d1a1b/libs/rite/src/test.ts#L113)
+[libs/rite/src/test.ts:113](https://github.com/plaited/plaited/blob/317e868/libs/rite/src/test.ts#L113)
 
 ***
 
