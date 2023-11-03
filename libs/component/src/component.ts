@@ -7,7 +7,7 @@
  */
 import { dataTarget, dataTrigger, dataAddress, createTemplate, FunctionTemplate, AdditionalAttrs } from '@plaited/jsx'
 import { Trigger, bProgram, Log } from '@plaited/behavioral'
-import { ComponentArgs, PlaitedElement, PlaitProps, SelectorMod, Connect } from './types.js'
+import { PlaitedElement, PlaitProps, SelectorMod, Connect, ComponentFunction } from './types.js'
 import { delegatedListener } from './delegated-listener.js'
 import { assignSugar, SugaredElement, assignSugarForEach, createTemplateElement } from './sugar.js'
 
@@ -58,7 +58,7 @@ const log = (log: Log) => console.table(log)
 
 /**
  * Creates a PlaitedComponent
- * @param {ComponentArgs} args - Arguments for the PlaitedComponent
+ * @param {object} args - Arguments for the PlaitedComponent
  * @param {string} args.tag - The tag name of the component
  * @param {FunctionTemplate} args.template - The template function for the component
  * @param {Record<string, string>} args.observedTriggers - A map of event types to trigger names
@@ -67,7 +67,7 @@ const log = (log: Log) => console.table(log)
  * @param {Connect} args.connect - A function that returns a function for sending messages to another component.
  * @returns {PlaitedComponent} A PlaitedComponent
  */
-export const Component = ({
+export const Component: ComponentFunction = ({
   mode = 'open',
   delegatesFocus = true,
   tag,
@@ -76,7 +76,7 @@ export const Component = ({
   dev,
   strategy,
   connect,
-}: ComponentArgs) => {
+}) => {
   if (!tag) {
     throw new Error(`Component is missing a [tag]`)
   }

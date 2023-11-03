@@ -58,14 +58,18 @@ export type PlaitProps = {
   host: PlaitedElement
 } & ReturnType<typeof bProgram>
 
-export interface PlaitedElementConstructor {
+export interface PlaitedComponentConstructor<
+  T extends AdditionalAttrs & { slots?: never } = AdditionalAttrs & { slots?: never },
+> {
   stylesheets: Set<string>
   tag: string
-  template: FunctionTemplate<AdditionalAttrs & { slots: never }>
+  template: FunctionTemplate<T>
   new (): PlaitedElement
 }
 
-export type ComponentArgs = {
+export type ComponentFunction = <
+  T extends AdditionalAttrs & { slots?: never } = AdditionalAttrs & { slots?: never },
+>(args: {
   /** PlaitedComponent tag name */
   tag: `${string}-${string}`
   /** Optional Plaited Component shadow dom template*/
@@ -82,4 +86,4 @@ export type ComponentArgs = {
   strategy?: Strategy
   /** the element tag you want to use */
   observedTriggers?: Record<string, string>
-}
+}) => PlaitedComponentConstructor<T>
