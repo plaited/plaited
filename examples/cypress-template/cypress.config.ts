@@ -10,6 +10,11 @@ export default defineConfig({
       framework: '@plaited/cypress-ct' as any,
     },
     indexHtmlFile: './component-index.html',
+    setupNodeEvents(on, config) {
+      return {
+        browsers: config.browsers.filter((b) => b.family === 'chromium' && b.name !== 'electron'),
+      }
+    },
   },
   experimentalWebKitSupport: true,
 })
