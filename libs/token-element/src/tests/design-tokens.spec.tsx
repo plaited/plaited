@@ -13,5 +13,15 @@ test('getTokenElement', () => {
   const DesignTokens = getTokenElement(stylesheet)
   const Template = DesignTokens.template
 
-  expect(beautify(ssr(<Template />), { format: 'html' })).toMatchSnapshot()
+  expect(beautify(ssr(<Template />), { format: 'html' })).toMatchSnapshot('no children')
+  expect(
+    beautify(
+      ssr(
+        <Template>
+          <div>hello world!</div>
+        </Template>,
+      ),
+      { format: 'html' },
+    ),
+  ).toMatchSnapshot('with children')
 })
