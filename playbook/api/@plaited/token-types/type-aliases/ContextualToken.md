@@ -43,7 +43,7 @@
 
 ## Source
 
-[index.ts:338](https://github.com/plaited/plaited/blob/317e868/libs/token-types/src/index.ts#L338)
+[index.ts:338](https://github.com/plaited/plaited/blob/b151218/libs/token-types/src/index.ts#L338)
 
 ***
 

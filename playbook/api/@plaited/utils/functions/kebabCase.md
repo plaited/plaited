@@ -39,7 +39,7 @@ kebabCase('hello///world') => 'hello-world'
 
 ## Source
 
-[cases.ts:41](https://github.com/plaited/plaited/blob/317e868/libs/utils/src/cases.ts#L41)
+[cases.ts:41](https://github.com/plaited/plaited/blob/b151218/libs/utils/src/cases.ts#L41)
 
 ***
 

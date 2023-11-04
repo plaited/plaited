@@ -74,7 +74,7 @@ setting trusted to true will disable all escaping security policy measures for t
 
 ## Source
 
-[types.ts:18](https://github.com/plaited/plaited/blob/317e868/libs/jsx/src/types.ts#L18)
+[types.ts:18](https://github.com/plaited/plaited/blob/b151218/libs/jsx/src/types.ts#L18)
 
 ***
 

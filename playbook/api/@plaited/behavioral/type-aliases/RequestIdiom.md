@@ -26,7 +26,7 @@
 
 ## Source
 
-[types.ts:39](https://github.com/plaited/plaited/blob/317e868/libs/behavioral/src/types.ts#L39)
+[types.ts:39](https://github.com/plaited/plaited/blob/b151218/libs/behavioral/src/types.ts#L39)
 
 ***
 

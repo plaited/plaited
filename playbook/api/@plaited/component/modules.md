@@ -10,12 +10,12 @@
 
 - [$](interfaces/$.md)
 - [Connect](interfaces/Connect.md)
+- [PlaitedComponentConstructor](interfaces/PlaitedComponentConstructor.md)
 - [PlaitedElement](interfaces/PlaitedElement.md)
-- [PlaitedElementConstructor](interfaces/PlaitedElementConstructor.md)
 
 ## Type Aliases
 
-- [ComponentArgs](type-aliases/ComponentArgs.md)
+- [ComponentFunction](type-aliases/ComponentFunction.md)
 - [Message](type-aliases/Message.md)
 - [PlaitProps](type-aliases/PlaitProps.md)
 - [SelectorMod](type-aliases/SelectorMod.md)
@@ -24,6 +24,7 @@
 ## Functions
 
 - [Component](functions/Component.md)
+- [createTemplateElement](functions/createTemplateElement.md)
 - [useIndexedDB](functions/useIndexedDB.md)
 - [useMain](functions/useMain.md)
 - [useMessenger](functions/useMessenger.md)

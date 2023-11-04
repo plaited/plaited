@@ -20,7 +20,7 @@
 
 ## Source
 
-[index.ts:293](https://github.com/plaited/plaited/blob/317e868/libs/token-types/src/index.ts#L293)
+[index.ts:293](https://github.com/plaited/plaited/blob/b151218/libs/token-types/src/index.ts#L293)
 
 ***
 

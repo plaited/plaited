@@ -28,12 +28,12 @@
 >
 > ### Source
 >
-> [libs/rite/src/match.ts:3](https://github.com/plaited/plaited/blob/317e868/libs/rite/src/match.ts#L3)
+> [libs/rite/src/match.ts:3](https://github.com/plaited/plaited/blob/b151218/libs/rite/src/match.ts#L3)
 >
 
 ## Source
 
-[libs/rite/src/assert.ts:42](https://github.com/plaited/plaited/blob/317e868/libs/rite/src/assert.ts#L42)
+[libs/rite/src/assert.ts:42](https://github.com/plaited/plaited/blob/b151218/libs/rite/src/assert.ts#L42)
 
 ***
 

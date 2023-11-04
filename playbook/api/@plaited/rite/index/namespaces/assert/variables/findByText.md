@@ -32,7 +32,7 @@ A promise that resolves with the first matching HTML element, or undefined if no
 
 ## Source
 
-[libs/rite/src/assert.ts:46](https://github.com/plaited/plaited/blob/317e868/libs/rite/src/assert.ts#L46)
+[libs/rite/src/assert.ts:46](https://github.com/plaited/plaited/blob/b151218/libs/rite/src/assert.ts#L46)
 
 ***
 

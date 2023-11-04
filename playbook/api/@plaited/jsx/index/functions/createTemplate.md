@@ -26,7 +26,7 @@ createTemplate function used for ssr
 
 ## Source
 
-[types.ts:49](https://github.com/plaited/plaited/blob/317e868/libs/jsx/src/types.ts#L49)
+[types.ts:49](https://github.com/plaited/plaited/blob/b151218/libs/jsx/src/types.ts#L49)
 
 ***
 

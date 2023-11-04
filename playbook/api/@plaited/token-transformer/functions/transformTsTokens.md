@@ -25,7 +25,7 @@ The transformed js variables.
 
 ## Source
 
-[transform-ts-tokens.ts:12](https://github.com/plaited/plaited/blob/317e868/libs/token-transformer/src/transform-ts-tokens.ts#L12)
+[transform-ts-tokens.ts:12](https://github.com/plaited/plaited/blob/b151218/libs/token-transformer/src/transform-ts-tokens.ts#L12)
 
 ***
 

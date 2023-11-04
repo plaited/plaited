@@ -37,7 +37,7 @@ A promise that resolves to the first element that matches the given attribute na
 
 ## Source
 
-[libs/rite/src/assert.ts:45](https://github.com/plaited/plaited/blob/317e868/libs/rite/src/assert.ts#L45)
+[libs/rite/src/assert.ts:45](https://github.com/plaited/plaited/blob/b151218/libs/rite/src/assert.ts#L45)
 
 ***
 

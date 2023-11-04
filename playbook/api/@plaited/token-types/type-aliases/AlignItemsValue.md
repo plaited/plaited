@@ -12,7 +12,7 @@ AlignItems value type relies on the defaultFormat formatter for ts tokens and cs
 
 ## Source
 
-[index.ts:86](https://github.com/plaited/plaited/blob/317e868/libs/token-types/src/index.ts#L86)
+[index.ts:86](https://github.com/plaited/plaited/blob/b151218/libs/token-types/src/index.ts#L86)
 
 ***
 

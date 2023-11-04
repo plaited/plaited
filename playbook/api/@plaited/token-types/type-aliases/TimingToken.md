@@ -10,7 +10,7 @@
 
 ## Source
 
-[index.ts:400](https://github.com/plaited/plaited/blob/317e868/libs/token-types/src/index.ts#L400)
+[index.ts:400](https://github.com/plaited/plaited/blob/b151218/libs/token-types/src/index.ts#L400)
 
 ***
 

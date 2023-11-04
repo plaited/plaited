@@ -23,7 +23,7 @@ like a mode change open -> close. This function returns a threads
 
 ## Source
 
-[rules.ts:17](https://github.com/plaited/plaited/blob/317e868/libs/behavioral/src/rules.ts#L17)
+[rules.ts:17](https://github.com/plaited/plaited/blob/b151218/libs/behavioral/src/rules.ts#L17)
 
 ***
 

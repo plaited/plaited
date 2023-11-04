@@ -22,8 +22,8 @@
 - [Connect](interfaces/Connect.md)
 - [CreateTemplate](interfaces/CreateTemplate.md)
 - [DevCallback](interfaces/DevCallback.md)
+- [PlaitedComponentConstructor](interfaces/PlaitedComponentConstructor.md)
 - [PlaitedElement](interfaces/PlaitedElement.md)
-- [PlaitedElementConstructor](interfaces/PlaitedElementConstructor.md)
 - [StateSnapshot](interfaces/StateSnapshot.md)
 
 ## Type Aliases
@@ -33,7 +33,7 @@
 - [CandidateBid](type-aliases/CandidateBid.md)
 - [Child](type-aliases/Child.md)
 - [Children](type-aliases/Children.md)
-- [ComponentArgs](type-aliases/ComponentArgs.md)
+- [ComponentFunction](type-aliases/ComponentFunction.md)
 - [Detail](type-aliases/Detail.md)
 - [FT](type-aliases/FT.md)
 - [Feedback](type-aliases/Feedback.md)
@@ -74,6 +74,7 @@
 - [bProgram](functions/bProgram.md)
 - [classNames](functions/classNames.md)
 - [createTemplate](functions/createTemplate.md)
+- [createTemplateElement](functions/createTemplateElement.md)
 - [css](functions/css.md)
 - [loop](functions/loop.md)
 - [memo](functions/memo.md)

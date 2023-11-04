@@ -20,7 +20,7 @@
 
 ## Source
 
-[libs/component/src/types.ts:10](https://github.com/plaited/plaited/blob/317e868/libs/component/src/types.ts#L10)
+[libs/component/src/types.ts:10](https://github.com/plaited/plaited/blob/b151218/libs/component/src/types.ts#L10)
 
 ***
 

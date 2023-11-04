@@ -20,7 +20,7 @@
 
 ## Source
 
-[types.ts:15](https://github.com/plaited/plaited/blob/317e868/libs/behavioral/src/types.ts#L15)
+[types.ts:15](https://github.com/plaited/plaited/blob/b151218/libs/behavioral/src/types.ts#L15)
 
 ***
 

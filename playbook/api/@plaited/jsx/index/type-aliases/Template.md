@@ -20,7 +20,7 @@
 
 ## Source
 
-[types.ts:5](https://github.com/plaited/plaited/blob/317e868/libs/jsx/src/types.ts#L5)
+[types.ts:5](https://github.com/plaited/plaited/blob/b151218/libs/jsx/src/types.ts#L5)
 
 ***
 
