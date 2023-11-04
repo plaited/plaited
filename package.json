@@ -6,7 +6,7 @@
   "type": "module",
   "workspaces": [
     "libs/*",
-    "examples/*"
+    "tests/*"
   ],
   "scripts": {
     "build": "lerna run build",
@@ -51,7 +51,7 @@
     "lerna": "7.4.2",
     "lint-staged": "15.0.2",
     "pinst": "3.0.0",
-    "playwright": "1.39.0",
+    "playwright": "^1.39.0",
     "prettier": "3.0.3",
     "sinon": "17.0.1",
     "typescript": "5.2.2",
