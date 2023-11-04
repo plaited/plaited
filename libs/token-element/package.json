@@ -1,0 +1,38 @@
+{
+  "name": "@plaited/token-element",
+  "version": "5.0.1",
+  "license": "ISC",
+  "engines": {
+    "node": ">= v18.15.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plaited/plaited.git"
+  },
+  "bugs": {
+    "url": "https://github.com/plaited/plaited/issues"
+  },
+  "homepage": "https://github.com/plaited/plaited/tree/main/libs/token-element#readme",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "./dist/**"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "build:watch": "bun run build --watch",
+    "test": "bun test src/**/*.spec.tsx",
+    "test:watch": "bun test --watch"
+  },
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@plaited/component": "5.0.1",
+    "@plaited/jsx": "5.0.1"
+  }
+}
