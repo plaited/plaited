@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "declaration": true,
+    "moduleResolution": "nodenext",
+    "outDir": "dist",
+    "rootDir": "src",
+    "types": ["cypress"]
+  },
+  "exclude": ["**/dist", "**/tests/"]
+}

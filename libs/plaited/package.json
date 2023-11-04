@@ -40,6 +40,6 @@
     "@plaited/token-transformer": "5.0.1",
     "@plaited/token-types": "5.0.1",
     "@plaited/utils": "5.0.1",
-    "@types/node": "20.8.9"
+    "@types/node": "20.8.10"
   }
 }
