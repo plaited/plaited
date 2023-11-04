@@ -1,5 +1,5 @@
 {
-  "name": "ssr",
+  "name": "@tests/ssr-and-jsconfig",
   "private": true,
   "engines": {
     "node": ">= v18.15.0"
@@ -10,8 +10,5 @@
   },
   "dependencies": {
     "plaited": "workspace:*"
-  },
-  "devDependencies": {
-    "bun-types": "1.0.8"
   }
 }

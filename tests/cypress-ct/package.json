@@ -1,5 +1,5 @@
 {
-  "name": "cypress-template",
+  "name": "@tests/cypress-ct",
   "private": true,
   "engines": {
     "node": ">= v18.15.0"
