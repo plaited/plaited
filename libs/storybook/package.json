@@ -1,0 +1,62 @@
+{
+  "name": "@plaited/storybook",
+  "version": "5.0.1",
+  "description": "Storybook plaited components renderer",
+  "keywords": [
+    "plaited",
+    "storybook",
+    "web-components"
+  ],
+  "license": "ISC",
+  "engines": {
+    "node": ">= v18.15.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plaited/plaited.git"
+  },
+  "bugs": {
+    "url": "https://github.com/plaited/plaited/issues"
+  },
+  "homepage": "https://github.com/plaited/plaited/tree/main/libs/storybook-renderer#readme",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./preview": "./dist/config.js",
+    "./package.json": "./package.json"
+  },
+  "types": "dist/index.d.ts",
+  "files": [
+    "./dist/**",
+    "./package.json",
+    "./preview.js"
+  ],
+  "scripts": {
+    "build": "tsc --skipLibCheck",
+    "build:watch": "bun run build --watch"
+  },
+  "dependencies": {
+    "@storybook/core-client": "7.5.2",
+    "@storybook/global": "5.0.0",
+    "@storybook/preview-api": "7.5.2",
+    "@storybook/types": "7.5.2",
+    "ts-dedent": "2.0.0"
+  },
+  "devDependencies": {
+    "@plaited/component": "5.0.1"
+  },
+  "peerDependencies": {
+    "@plaited/component": "5.0.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bundler": {
+    "entries": [
+      "./src/index.ts",
+      "./src/config.ts"
+    ],
+    "platform": "browser"
+  }
+}

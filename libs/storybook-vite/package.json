@@ -1,0 +1,50 @@
+{
+  "name": "@plaited/storybook-vite",
+  "version": "5.0.1",
+  "description": "Storybook for Plaited and Vite: Develop Web Components in isolation with Hot Reloading.",
+  "keywords": [
+    "storybook"
+  ],
+  "license": "ISC",
+  "engines": {
+    "node": ">= v18.15.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plaited/plaited.git"
+  },
+  "bugs": {
+    "url": "https://github.com/plaited/plaited/issues"
+  },
+  "homepage": "https://github.com/plaited/plaited/tree/main/libs/storybook-framework#readme",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./preset": "./dist/preset.js"
+  },
+  "types": "dist/index.d.ts",
+  "files": [
+    "./dist/**"
+  ],
+  "scripts": {
+    "build": "tsc --skipLibCheck",
+    "build:watch": "bun run build --watch"
+  },
+  "dependencies": {
+    "@storybook/builder-vite": "7.5.2",
+    "@storybook/core-server": "7.5.2",
+    "@storybook/node-logger": "7.5.2",
+    "@plaited/storybook": "5.0.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bundler": {
+    "entries": [
+      "./src/index.ts",
+      "./src/preset.ts"
+    ],
+    "platform": "node"
+  }
+}
