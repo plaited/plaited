@@ -56,6 +56,17 @@ test('createTemplate: data-trigger attribute', () =>
     }),
   ).toMatchSnapshot())
 
+test('createTemplate: camelCase attributes', () => {
+  expect(
+    h('div', {
+      dataTrigger: { click: 'click' },
+      dataAddress: 'address',
+      dataMode: 'mode',
+      xPrefix: 'x',
+    }),
+  ).toMatchSnapshot()
+})
+
 test('createTemplate: array of templates', () =>
   expect(
     h('div', {

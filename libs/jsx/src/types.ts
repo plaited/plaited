@@ -21,6 +21,9 @@ export type BaseAttrs = {
   [dataAddress]?: string
   [dataTarget]?: string
   [dataTrigger]?: Record<string, string>
+  dataAddress?: string
+  dataTarget?: string
+  dataTrigger?: Record<string, string>
   htmlFor?: string
   className?: string
   children?: Children
