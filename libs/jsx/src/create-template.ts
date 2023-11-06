@@ -1,5 +1,11 @@
-import { escape } from '@plaited/utils'
-import { booleanAttrs, dataTrigger, primitives, voidTags, validPrimitiveChildren } from './constants.js'
+import { escape, kebabCase } from '@plaited/utils'
+import {
+  booleanAttrs,
+  dataTrigger as dataTriggerKey,
+  primitives,
+  voidTags,
+  validPrimitiveChildren,
+} from './constants.js'
 import { Attrs, CreateTemplate } from './types.js'
 
 /** custom element tagName regex */
@@ -23,6 +29,7 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
     style,
     key: _,
     'data-trigger': trigger,
+    dataTrigger = trigger,
     className,
     htmlFor,
     ...attributes
@@ -47,11 +54,11 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
   htmlFor && rootAttrs.push(`for="${htmlFor}"`)
   className && rootAttrs.push(`class="${className}"`)
   /** if we have dataTrigger attribute wire up formatted correctly*/
-  if (trigger) {
-    const value = Object.entries(trigger)
+  if (dataTrigger) {
+    const value = Object.entries(dataTrigger)
       .map<string>(([ev, req]) => `${ev}->${req}`)
       .join(' ')
-    rootAttrs.push(`${dataTrigger}="${value}"`)
+    rootAttrs.push(`${dataTriggerKey}="${value}"`)
   }
   /** if we have style add it to element */
   if (style) {
@@ -84,7 +91,7 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
     /** set the value so long as it's not nullish in we use the formatted value  */
     const formattedValue = value ?? ''
     /** handle the rest of the attributes */
-    rootAttrs.push(`${key}="${trusted ? `${formattedValue}` : escape(`${formattedValue}`)}"`)
+    rootAttrs.push(`${kebabCase(key)}="${trusted ? `${formattedValue}` : escape(`${formattedValue}`)}"`)
   }
 
   /** Our tag is a void tag so we can return it once we apply attributes */
