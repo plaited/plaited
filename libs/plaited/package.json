@@ -1,6 +1,6 @@
 {
   "name": "plaited",
-  "version": "5.0.1",
+  "version": "5.0.2",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
@@ -32,9 +32,9 @@
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/behavioral": "5.0.1",
-    "@plaited/component": "5.0.1",
-    "@plaited/jsx": "5.0.1",
-    "@plaited/utils": "5.0.1"
+    "@plaited/behavioral": "5.0.2",
+    "@plaited/component": "5.0.2",
+    "@plaited/jsx": "5.0.2",
+    "@plaited/utils": "5.0.2"
   }
 }
