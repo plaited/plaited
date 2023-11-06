@@ -1,6 +1,6 @@
 
 import { FunctionTemplate, } from '@plaited/jsx';
-import { PlaitedComponentConstructor, createTemplateElement, delegatedListener } from '@plaited/component';
+import { PlaitedComponentConstructor, createTemplateElement } from '@plaited/component';
 import { dedent } from 'ts-dedent';
 import type { RenderContext, ArgsStoryFn, PartialStoryFn, Args } from '@storybook/types';
 
@@ -10,7 +10,7 @@ const isPlaitedComponent = (
   component: PlaitedComponentConstructor | FunctionTemplate
 ): component is PlaitedComponentConstructor => 'template' in component
 
-export const render: ArgsStoryFn<PlaitedRender> = ({ children, ...args}, context) => {
+export const render: ArgsStoryFn<PlaitedRender> = (args, context) => {
   const { id, component } = context;
   if (!component) {
     throw new Error(
@@ -28,17 +28,18 @@ export const render: ArgsStoryFn<PlaitedRender> = ({ children, ...args}, context
     }
   }
   const { content, stylesheets } = Component(attrs)
-  const template = createTemplateElement()
-  return <Component {...attrs}  />;
+  const style = stylesheets.size ? `<style>${[...stylesheets].join('')}</style>` : ''
+  const frag = createTemplateElement(style + content).content
+  for(const event in events) {
+    frag.firstChild[event.toLowerCase()] = events[event]
+  }
+  return frag
 };
 
 
 const plaitedRender = (story: StoryFnPlaitedReturnType | null, canvasElement: Element) => {
   if(!story) return canvasElement.replaceChildren()
-  const { content, stylesheets } = story
-  const style = stylesheets.size ? `<style>${[...stylesheets].join('')}</style>` : ''
-  const element = createTemplateElement(style + content).content
-  canvasElement.replaceChildren(element)
+  canvasElement.replaceChildren(story)
 }
 
 const StoryHarness = ({
@@ -52,7 +53,7 @@ const StoryHarness = ({
   storyFn: PartialStoryFn<PlaitedRender, Args>;
 }) => {
   const content = storyFn()
-  if (!content.content || !content.stylesheets) {
+  if (!(content instanceof DocumentFragment)) {
     showError({
       title: `Expecting a PlaitedComponent or FunctionalTemplate element from the story: "${name}" of "${title}".`,
       description: dedent`

@@ -1,10 +1,10 @@
 import type { WebRenderer } from '@storybook/types';
 import type { PlaitedComponentConstructor } from '@plaited/component';
-import type { FunctionTemplate, Template } from '@plaited/jsx';
+import type { FunctionTemplate } from '@plaited/jsx';
 
 export type { RenderContext } from '@storybook/types';
 
-export type StoryFnPlaitedReturnType = Node;
+export type StoryFnPlaitedReturnType = DocumentFragment;
 
 export interface ShowErrorArgs {
   title: string;

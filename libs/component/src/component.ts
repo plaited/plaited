@@ -122,6 +122,7 @@ export const Component: ComponentFunction = ({
       this.#root.replaceChildren(tpl.content)
     }
     connectedCallback() {
+      this.#createDelegatedListener(this)
       if (this.plait) {
         const { trigger, ...rest } = this.#bProgram()
         this.#trigger = trigger // listeners need trigger to be available on instance
@@ -170,7 +171,6 @@ export const Component: ComponentFunction = ({
     #delegateObservedTriggers() {
       if (observedTriggers) {
         const entries = Object.entries(observedTriggers)
-        !delegatedListener.has(this) && this.#createDelegatedListener(this)
         for (const [event] of entries) {
           this.addEventListener(event, delegatedListener.get(this))
         }
@@ -204,6 +204,7 @@ export const Component: ComponentFunction = ({
       delegatedListener.set(el, (event) => {
         // Delegated listener does not have element then delegate it's callback
         const triggerType = getTriggerType(event, el) || this.#getObservedTriggerType(el, event)
+        console.log({ triggerType }, 'hit')
         triggerType
           ? /** if key is present in `data-trigger` trigger event on instance's bProgram */
             this.#trigger<Event>({

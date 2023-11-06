@@ -1,15 +1,13 @@
 import type { Preview } from "@plaited/storybook";
+import { createFragment } from "@plaited/storybook";
 
 const preview: Preview = {
   decorators: [
     (Story, ...args) => {
-      console.log(args)
-      console.log('hit decorator')
-      return (
-      <div style={{ margin: '3em' }}>
-        <Story />
-      </div>
-    )},
+      const frag = createFragment(<div style={{ margin: '3em' }}></div>)
+      frag.firstElementChild.append(Story())
+      return frag
+    },
   ],
   parameters: {
     actions: { argTypesRegex: "^on[A-Z].*" },
