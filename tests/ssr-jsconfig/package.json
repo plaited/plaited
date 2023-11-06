@@ -1,0 +1,14 @@
+{
+  "name": "@tests/ssr-and-jsconfig",
+  "private": true,
+  "engines": {
+    "node": ">= v18.15.0"
+  },
+  "type": "module",
+  "scripts": {
+    "test": "bun test ssr-plaited-component.spec.jsx"
+  },
+  "dependencies": {
+    "plaited": "workspace:*"
+  }
+}

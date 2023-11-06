@@ -30,8 +30,5 @@
   "types": "./dist/index.d.ts",
   "dependencies": {
     "@plaited/utils": "5.0.1"
-  },
-  "devDependencies": {
-    "bun-types": "1.0.7"
   }
 }

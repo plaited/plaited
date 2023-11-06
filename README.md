@@ -1,4 +1,4 @@
-[![build/tests](https://github.com/plaited/plaited/actions/workflows/check-and-update-typedocs.yml/badge.svg?branch=main)](https://github.com/plaited/plaited/actions/workflows/check-and-update-typedocs.yml)
+[![build/tests](https://github.com/plaited/plaited/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/plaited/plaited/actions/workflows/test.yml)
 
 # plaited
 
