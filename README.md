@@ -14,7 +14,6 @@ development libraries.
 - [plaited](libs/plaited/README.md): plaited library package
 - [@plaited/behavioral](libs/behavioral/README.md): implicit state management
   library using the behavioral programming algorithm
-- [@plaited/rite](libs/rite/README.md): [modern web](https://modern-web.dev) unit test framework based on RITEway.
 
 ### Internal usage
 
@@ -29,9 +28,6 @@ development libraries.
   - jsx runtime for templating utility
   - classNames utility function for conditionally joining css class names
   - stylesheets utility function for conditionally joining css-on-js utility function generated stylesheet objects
-- [@plaited/token-transformer](libs/token-transformer/README.md): transform token into outputs suitable for CSS and Typescript usage
-- [@plaited/token-schema](libs/token-schema/README.md): create a JSON schema from design tokens that locks in values and allows addition of news values
-- [@plaited/token-types](libs/token-types/README.md): types for plaited design tokens based on [design token format](https://design-tokens.github.io/community-group/format/)
 - [@plaited/utils](libs/utils/README.md): platform agnostic utility functions
 
 ## Dev Requirements
