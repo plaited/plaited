@@ -20,7 +20,6 @@
     "./jsx-runtime": "./dist/jsx-runtime.js",
     "./jsx-dev-runtime": "./dist/jsx-dev-runtime.js",
     "./ssr": "./dist/ssr.js",
-    "./token": "./dist/token.js",
     "./utils": "./dist/utils.js"
   },
   "files": [
@@ -36,10 +35,6 @@
     "@plaited/behavioral": "5.0.1",
     "@plaited/component": "5.0.1",
     "@plaited/jsx": "5.0.1",
-    "@plaited/token-schema": "5.0.1",
-    "@plaited/token-transformer": "5.0.1",
-    "@plaited/token-types": "5.0.1",
-    "@plaited/utils": "5.0.1",
-    "@types/node": "20.8.10"
+    "@plaited/utils": "5.0.1"
   }
 }
