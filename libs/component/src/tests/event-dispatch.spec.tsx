@@ -2,7 +2,7 @@ import { css } from '@plaited/jsx'
 import { test } from '@plaited/rite'
 import { Component, PlaitProps } from '../index.js'
 
-test('dynamic island comms', async (t) => {
+test('eventTriggers', async (t) => {
   const [classes, stylesheet] = css`
     .row {
       display: flex;
@@ -22,7 +22,7 @@ test('dynamic island comms', async (t) => {
     dev: true,
     template: (
       <h1
-        data-target='header'
+        dataTarget='header'
         {...stylesheet}
       >
         Hello
@@ -52,34 +52,29 @@ test('dynamic island comms', async (t) => {
         className={classes.row}
         {...stylesheet}
       >
-        <slot
-          data-target='slot'
-          data-trigger={{ disable: 'disable' }}
-        ></slot>
         <button
-          data-target='button'
+          dataTarget='button'
           className={classes.button}
-          data-trigger={{ click: 'click' }}
+          dataTrigger={{ click: 'click' }}
         >
-          Add "world!"
+          Add
         </button>
+        <bottom-component
+          dataTarget='header'
+          data-trigger={{ disable: 'disable' }}
+        ></bottom-component>
       </div>
     ),
   }) {
     plait({ feedback, $ }: PlaitProps) {
       feedback({
+        click() {
+          const header = $('header')
+          header.dispatchEvent(new CustomEvent('add', { detail: ' World!' }))
+        },
         disable() {
           const button = $<HTMLButtonElement>('button')
           button && (button.disabled = true)
-        },
-        click() {
-          const slot = $<HTMLSlotElement>('slot')
-          for (const el of slot.assignedElements()) {
-            if (el instanceof Bottom) {
-              el.dispatchEvent(new CustomEvent('add', { detail: ' World!' }))
-              break
-            }
-          }
         },
       })
     }
@@ -87,9 +82,7 @@ test('dynamic island comms', async (t) => {
 
   // Create elements and append to dom
   const top = document.createElement(Top.tag)
-  const bottom = document.createElement(Bottom.tag)
   wrapper.insertAdjacentElement('beforeend', top)
-  top.insertAdjacentElement('beforeend', bottom)
 
   // // Define elements
   customElements.define(Top.tag, Top)
@@ -100,14 +93,14 @@ test('dynamic island comms', async (t) => {
   t({
     given: 'render',
     should: 'header should contain string',
-    actual: header?.innerHTML,
+    actual: header?.shadowRoot?.textContent,
     expected: 'Hello',
   })
   button && (await t.fireEvent(button, 'click'))
   t({
     given: 'clicking button',
     should: 'append string to header',
-    actual: header?.innerHTML,
+    actual: header?.shadowRoot?.textContent,
     expected: 'Hello World!',
   })
   button = await t.findByAttribute('data-target', 'button', wrapper)
