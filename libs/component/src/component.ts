@@ -169,8 +169,8 @@ export const Component: ComponentFunction = ({
     }
     #delegateObservedTriggers() {
       if (observedTriggers) {
+        this.#createDelegatedListener(this)
         const entries = Object.entries(observedTriggers)
-        !delegatedListener.has(this) && this.#createDelegatedListener(this)
         for (const [event] of entries) {
           this.addEventListener(event, delegatedListener.get(this))
         }
