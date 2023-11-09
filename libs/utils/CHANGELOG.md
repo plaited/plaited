@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 5.0.4 (2023-11-09)
+
+
+### Bug Fixes
+
+* **component:** always delegate events on interactive component host ([#107](https://github.com/plaited/plaited/issues/107)) ([a71baa6](https://github.com/plaited/plaited/commit/a71baa6c5628cd182fe836321c30afec7879e738))
+
+
+
+
+
 ## 5.0.3 (2023-11-06)
 
 
