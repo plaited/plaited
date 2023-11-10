@@ -1,5 +1,4 @@
-import { publisher } from './publisher.js'
-import { trueTypeOf } from './true-type-of.js'
+import { trueTypeOf, publisher } from '@plaited/utils'
 
 type Get<T> = {
   (): T
