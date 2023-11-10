@@ -9,7 +9,8 @@
     "jsxImportSource": "@plaited/jsx",
     "lib": ["dom", "es2022"],
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "strict": true,
   },
   "exclude": ["**/dist", "**/tests/"]
 }

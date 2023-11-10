@@ -21,9 +21,9 @@ const updateShadowRootStyles = async (root: ShadowRoot, stylesheets: Set<string>
   try {
     await Promise.all(
       [...stylesheets].map(async (styles) => {
-        if (defaultStyles?.has(styles) || instanceStyles.has(styles)) return
+        if (defaultStyles?.has(styles) || instanceStyles?.has(styles)) return
         const sheet = new CSSStyleSheet()
-        instanceStyles.add(styles)
+        instanceStyles?.add(styles)
         const nextSheet = await sheet.replace(styles)
         newStyleSheets.push(nextSheet)
       }),
@@ -82,7 +82,7 @@ const sugar = {
     const element = this as unknown as HTMLElement | SVGElement
     const template = prepareTemplate(element.getRootNode() as ShadowRoot, tpl)
     if (position) {
-      element.insertAdjacentElement(position, template).replaceWith(template.content)
+      element.insertAdjacentElement(position, template)?.replaceWith(template.content)
       return element
     }
     element.replaceChildren(template.content)

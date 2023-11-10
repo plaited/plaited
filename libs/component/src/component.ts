@@ -104,7 +104,7 @@ export const Component: ComponentFunction = ({
     #shadowObserver?: MutationObserver
     #disconnectMessenger?: ReturnType<Connect>
     internals_: ElementInternals
-    #trigger: Trigger
+    #trigger?: Trigger
     plait?(props: PlaitProps): void | Promise<void>
     #root: ShadowRoot
     #delegates = new WeakMap()
@@ -156,7 +156,7 @@ export const Component: ComponentFunction = ({
     disconnectedCallback() {
       this.#shadowObserver && this.#shadowObserver.disconnect()
       this.#disconnectMessenger && this.#disconnectMessenger()
-      dev &&
+      if (dev && this.#trigger)
         this.#trigger({
           type: `disconnected->${this.dataset.address ?? this.tagName.toLowerCase()}`,
         })
@@ -171,8 +171,9 @@ export const Component: ComponentFunction = ({
         const recipient = this.dataset.address
         if (!recipient) {
           console.error(`Component ${this.tagName.toLowerCase()} is missing an attribute [${dataAddress}]`)
+        } else {
+          disconnect = connect(recipient, trigger)
         }
-        disconnect = connect(recipient, trigger)
       }
       this.#disconnectMessenger = disconnect
       return { trigger, ...rest }
@@ -216,14 +217,16 @@ export const Component: ComponentFunction = ({
         new DelegatedListener((event) => {
           // Delegated listener does not have element then delegate it's callback
           const triggerType = getTriggerType(event, el) || this.#getObservedTriggerType(el, event)
-          triggerType
-            ? /** if key is present in `data-trigger` trigger event on instance's bProgram */
-              this.#trigger<Event>({
-                type: triggerType,
-                detail: event,
-              })
-            : /** if key is not present in `data-trigger` remove event listener for this event on Element */
-              el.removeEventListener(event.type, this.#delegates.get(el))
+          if (triggerType && this.#trigger) {
+            /** if key is present in `data-trigger` trigger event on instance's bProgram */
+            this.#trigger<Event>({
+              type: triggerType,
+              detail: event,
+            })
+          } else {
+            /** if key is not present in `data-trigger` remove event listener for this event on Element */
+            el.removeEventListener(event.type, this.#delegates.get(el))
+          }
         }),
       )
     }

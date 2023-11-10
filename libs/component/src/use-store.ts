@@ -1,11 +1,4 @@
 import { trueTypeOf, publisher } from '@plaited/utils'
-
-type Get<T> = {
-  (): T
-  subscribe: ReturnType<typeof publisher<T>>['subscribe']
-}
-type Set<T> = (newStore: T | ((arg: T) => T)) => T
-
 /**
  * @description
  * A simple utility function for safely getting and setting values you need to persist during run.
@@ -25,7 +18,15 @@ type Set<T> = (newStore: T | ((arg: T) => T)) => T
  *  store() // => 3
  */
 
-export const useStore = <T>(initialStore?: T): readonly [Get<T>, Set<T>] => {
+export const useStore = <T>(
+  initialStore?: T,
+): readonly [
+  {
+    (): T | undefined
+    subscribe(cb: (arg: T) => void): () => boolean
+  },
+  (newStore: T | ((arg: T) => T)) => T,
+] => {
   let store = initialStore
   let pub: ReturnType<typeof publisher<T>>
   /** Get the store value */
@@ -47,7 +48,8 @@ export const useStore = <T>(initialStore?: T): readonly [Get<T>, Set<T>] => {
    * @returns The updated value of the store.
    */
   const set = (newStore: T | ((arg: T) => T)) => {
-    store = trueTypeOf(newStore) === 'function' ? (newStore as (arg: T) => T)(structuredClone(store)) : (newStore as T)
+    store =
+      trueTypeOf(newStore) === 'function' ? (newStore as (arg: T) => T)(structuredClone(store as T)) : (newStore as T)
     pub && pub(store)
     return store
   }
