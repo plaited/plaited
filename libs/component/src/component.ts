@@ -8,7 +8,6 @@
 import { dataTarget, dataTrigger, dataAddress, createTemplate, FunctionTemplate, AdditionalAttrs } from '@plaited/jsx'
 import { Trigger, bProgram, Log } from '@plaited/behavioral'
 import { PlaitedElement, PlaitProps, SelectorMod, Connect, ComponentFunction } from './types.js'
-import { delegatedListener } from './delegated-listener.js'
 import { assignSugar, SugaredElement, assignSugarForEach, createTemplateElement } from './sugar.js'
 
 const regexp = /\b[\w-]+\b(?=->[\w-]+)/g
@@ -49,6 +48,16 @@ const traverseNodes = (node: Node, arr: Node[]) => {
         traverseNodes(childNodes[i], arr)
       }
     }
+  }
+}
+
+class DelegatedListener {
+  callback: (ev: Event) => void
+  constructor(callback: (ev: Event) => void) {
+    this.callback = callback
+  }
+  handleEvent(evt: Event) {
+    this.callback(evt)
   }
 }
 
@@ -98,6 +107,7 @@ export const Component: ComponentFunction = ({
     #trigger: Trigger
     plait?(props: PlaitProps): void | Promise<void>
     #root: ShadowRoot
+    #delegates = new WeakMap()
     constructor() {
       super()
       this.internals_ = this.attachInternals()
@@ -172,7 +182,7 @@ export const Component: ComponentFunction = ({
         this.#createDelegatedListener(this)
         const entries = Object.entries(observedTriggers)
         for (const [event] of entries) {
-          this.addEventListener(event, delegatedListener.get(this))
+          this.addEventListener(event, this.#delegates.get(this))
         }
       }
     }
@@ -189,30 +199,33 @@ export const Component: ComponentFunction = ({
         if (el.nodeType !== 1) continue // Skip non-element nodes
         const element = el as HTMLElement | SVGElement
         if (element.tagName === 'SLOT' && element.hasAttribute('slot')) continue
-        !delegatedListener.has(el) && this.#createDelegatedListener(element)
+        !this.#delegates.has(el) && this.#createDelegatedListener(element)
         const triggers = element.dataset.trigger
         if (triggers) {
           const events = matchAllEvents(triggers) /** get event type */
           for (const event of events) {
             /** loop through and set event listeners on delegated object */
-            el.addEventListener(event, delegatedListener.get(el))
+            el.addEventListener(event, this.#delegates.get(el))
           }
         }
       }
     }
     #createDelegatedListener(el: HTMLElement | SVGElement) {
-      delegatedListener.set(el, (event) => {
-        // Delegated listener does not have element then delegate it's callback
-        const triggerType = getTriggerType(event, el) || this.#getObservedTriggerType(el, event)
-        triggerType
-          ? /** if key is present in `data-trigger` trigger event on instance's bProgram */
-            this.#trigger<Event>({
-              type: triggerType,
-              detail: event,
-            })
-          : /** if key is not present in `data-trigger` remove event listener for this event on Element */
-            el.removeEventListener(event.type, delegatedListener.get(el))
-      })
+      this.#delegates.set(
+        el,
+        new DelegatedListener((event) => {
+          // Delegated listener does not have element then delegate it's callback
+          const triggerType = getTriggerType(event, el) || this.#getObservedTriggerType(el, event)
+          triggerType
+            ? /** if key is present in `data-trigger` trigger event on instance's bProgram */
+              this.#trigger<Event>({
+                type: triggerType,
+                detail: event,
+              })
+            : /** if key is not present in `data-trigger` remove event listener for this event on Element */
+              el.removeEventListener(event.type, this.#delegates.get(el))
+        }),
+      )
     }
     // Observes the addition of nodes to the shadow dom and changes to and child's data-trigger attribute
     #createShadowObserver() {

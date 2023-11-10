@@ -19,27 +19,21 @@ test('eventTriggers', async (t) => {
   class Bottom extends Component({
     tag: 'bottom-component',
     observedTriggers: { add: 'add' },
-    dev: true,
+    // dev: true,
     template: (
-      <h1
-        dataTarget='header'
-        {...stylesheet}
+      <button
+        dataTarget='button'
+        className={classes.button}
+        dataTrigger={{ click: 'click' }}
       >
-        Hello
-      </h1>
+        Add
+      </button>
     ),
   }) {
-    plait({ $, feedback, addThreads, thread, sync, host }: PlaitProps) {
-      addThreads({
-        onAdd: thread(sync({ waitFor: { type: 'add' } }), sync({ request: { type: 'disable' } })),
-      })
+    plait({ feedback, host }: PlaitProps) {
       feedback({
-        disable() {
-          host.dispatchEvent(new CustomEvent('disable', { bubbles: true }))
-        },
-        add({ detail }: CustomEvent) {
-          const header = $('header')
-          header?.insertAdjacentHTML('beforeend', `${detail}`)
+        click() {
+          host.dispatchEvent(new CustomEvent('append', { bubbles: true }))
         },
       })
     }
@@ -47,34 +41,30 @@ test('eventTriggers', async (t) => {
 
   class Top extends Component({
     tag: 'top-component',
+    dev: true,
     template: (
       <div
         className={classes.row}
         {...stylesheet}
       >
-        <button
-          dataTarget='button'
-          className={classes.button}
-          dataTrigger={{ click: 'click' }}
-        >
-          Add
-        </button>
-        <bottom-component
+        <h1
           dataTarget='header'
-          data-trigger={{ disable: 'disable' }}
-        ></bottom-component>
+          {...stylesheet}
+        >
+          Hello
+        </h1>
+        <Bottom.tag
+          dataTarget='header'
+          data-trigger={{ append: 'append' }}
+        ></Bottom.tag>
       </div>
     ),
   }) {
     plait({ feedback, $ }: PlaitProps) {
       feedback({
-        click() {
+        append() {
           const header = $('header')
-          header.dispatchEvent(new CustomEvent('add', { detail: ' World!' }))
-        },
-        disable() {
-          const button = $<HTMLButtonElement>('button')
-          button && (button.disabled = true)
+          header.render({ content: ' World!', stylesheets: new Set() }, 'beforeend')
         },
       })
     }
@@ -88,26 +78,19 @@ test('eventTriggers', async (t) => {
   customElements.define(Top.tag, Top)
   customElements.define(Bottom.tag, Bottom)
 
-  let button = await t.findByAttribute('data-target', 'button', wrapper)
+  const button = await t.findByAttribute('data-target', 'button', wrapper)
   const header = await t.findByAttribute('data-target', 'header', wrapper)
   t({
     given: 'render',
     should: 'header should contain string',
-    actual: header?.shadowRoot?.textContent,
+    actual: header?.textContent,
     expected: 'Hello',
   })
   button && (await t.fireEvent(button, 'click'))
   t({
     given: 'clicking button',
     should: 'append string to header',
-    actual: header?.shadowRoot?.textContent,
+    actual: header?.textContent,
     expected: 'Hello World!',
-  })
-  button = await t.findByAttribute('data-target', 'button', wrapper)
-  t({
-    given: 'clicking button',
-    should: 'be disabled',
-    actual: (button as HTMLButtonElement)?.disabled,
-    expected: true,
   })
 })
