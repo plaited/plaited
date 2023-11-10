@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 5.0.5 (2023-11-10)
+
+
+### Bug Fixes
+
+* **component:** delegate listener one weak map per component ([#109](https://github.com/plaited/plaited/issues/109)) ([79a021f](https://github.com/plaited/plaited/commit/79a021fe7669d4ee5318c0ea8c0d104e805cb07e))
+
+
+
+
+
 ## 5.0.4 (2023-11-09)
 
 
