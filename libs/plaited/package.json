@@ -19,8 +19,7 @@
     ".": "./dist/index.js",
     "./jsx-runtime": "./dist/jsx-runtime.js",
     "./jsx-dev-runtime": "./dist/jsx-dev-runtime.js",
-    "./ssr": "./dist/ssr.js",
-    "./utils": "./dist/utils.js"
+    "./ssr": "./dist/ssr.js"
   },
   "files": [
     "./dist/**",
@@ -34,7 +33,6 @@
   "dependencies": {
     "@plaited/behavioral": "5.0.5",
     "@plaited/component": "5.0.5",
-    "@plaited/jsx": "5.0.5",
-    "@plaited/utils": "5.0.5"
+    "@plaited/jsx": "5.0.5"
   }
 }
