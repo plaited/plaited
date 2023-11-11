@@ -1,6 +1,6 @@
 {
   "name": "@plaited/jsx",
-  "version": "5.0.5",
+  "version": "5.0.6",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
