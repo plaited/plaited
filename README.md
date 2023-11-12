@@ -27,6 +27,7 @@ development libraries.
   - jsx runtime for templating utility
   - classNames utility function for conditionally joining css class names
   - stylesheets utility function for conditionally joining css-on-js utility function generated stylesheet objects
+- [@plaited/utils](libs/utils/README.md): runtime agnostic utility functions
 
 ## Dev Requirements
 
