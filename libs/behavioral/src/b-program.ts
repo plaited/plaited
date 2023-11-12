@@ -15,6 +15,7 @@ import {
   SnapshotMessage,
   Strategy,
   Trigger,
+  Log,
 } from './types.js'
 import { loop, sync, thread } from './rules.js'
 
@@ -28,6 +29,9 @@ const requestInParameter = ({ type: requestEventName, detail: requestDetail = {}
       : requestEventName === parameterEventName
 }
 
+/** default dev callback function */
+const log = (log: Log) => console.table(log)
+
 /**
  * Creates a behavioral program that manages the execution of behavioral threads.
  * @param options An object containing optional parameters for the program.
@@ -39,11 +43,12 @@ export const bProgram = ({
   /** event selection strategy {@link Strategy}*/
   strategy = strategies.priority,
   /** When set to true returns a stream with log of state snapshots, last selected event and trigger */
-  dev,
+  dev: _dev,
 }: {
   strategy?: Strategy | keyof Omit<typeof strategies, 'custom'>
-  dev?: DevCallback
+  dev?: DevCallback | true
 } = {}) => {
+  const dev = _dev === true ? log : _dev
   const eventSelectionStrategy: Strategy = typeof strategy === 'string' ? selectionStrategies[strategy] : strategy
   const pending = new Set<PendingBid>()
   const running = new Set<RunningBid>()
@@ -135,7 +140,9 @@ export const bProgram = ({
   const feedback: Feedback = (actions) => {
     actionPublisher.subscribe((data: SelectedMessage) => {
       const { type, detail = {} } = data
-      Object.hasOwn(actions, type) && actions[type](detail)
+      if (Object.hasOwn(actions, type)) {
+        void actions[type](detail)
+      }
     })
   }
 
