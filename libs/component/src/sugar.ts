@@ -1,5 +1,6 @@
-import { Template, booleanAttrs } from '@plaited/jsx'
-import { PlaitedComponentConstructor } from './types.js'
+import type { Template } from '@plaited/jsx'
+import type { PlaitedComponentConstructor } from './types.js'
+import { booleanAttrs } from '@plaited/jsx/utils'
 import { canUseDOM } from '@plaited/utils'
 
 type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
@@ -61,7 +62,7 @@ const prepareTemplate = (root: ShadowRoot, { stylesheets, content }: Template): 
 }
 
 const updateAttributes = (element: HTMLElement | SVGElement, attr: string, val: string | null | number | boolean) => {
-  if (val == null && element.hasAttribute(attr)) {
+  if (val === null && element.hasAttribute(attr)) {
     // Remove the attribute if val is null or undefined, and it currently exists
     element.removeAttribute(attr)
   } else if (booleanAttrs.has(attr) && !element.hasAttribute(attr)) {

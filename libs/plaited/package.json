@@ -27,7 +27,8 @@
     "./jsx-dev-runtime.js"
   ],
   "scripts": {
-    "build": "tsc --project tsconfig.json"
+    "build": "tsc --project tsconfig.json",
+    "test": "bun test src/**/*.spec.ts"
   },
   "types": "./dist/index.d.ts",
   "dependencies": {

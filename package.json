@@ -33,7 +33,7 @@
   ],
   "devDependencies": {
     "@plaited/eslint-prettier-config": "1.0.2",
-    "@commitlint/cli": "18.4.0",
+    "@commitlint/cli": "18.4.1",
     "@commitlint/config-conventional": "18.4.0",
     "@commitlint/config-lerna-scopes": "18.4.0",
     "@playwright/test": "1.39.0",
@@ -45,7 +45,7 @@
     "format-package": "7.0.0",
     "husky": "8.0.3",
     "lerna": "7.4.2",
-    "lint-staged": "15.0.2",
+    "lint-staged": "15.1.0",
     "playwright": "^1.39.0",
     "prettier": "3.0.3",
     "sinon": "17.0.1",

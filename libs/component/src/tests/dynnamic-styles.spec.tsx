@@ -1,5 +1,6 @@
 import { test } from '@plaited/rite'
-import { css, stylesheets } from '@plaited/jsx'
+import { css } from '@plaited/jsx'
+import { stylesheets } from '@plaited/jsx/utils'
 import { Component, PlaitProps } from '../index.js'
 
 test('dynamic styles', async (t) => {

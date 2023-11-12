@@ -67,7 +67,7 @@ export type CandidateBid = {
 export type Strategy = (filteredEvents: CandidateBid[] | never[]) => CandidateBid | undefined
 
 // Feedback Types
-type Actions<T extends Record<string, (detail: Detail) => void>> = {
+type Actions<T extends Record<string, (detail: Detail) => void | Promise<void>>> = {
   [K in keyof T]: T[K] extends (detail: infer D) => void ? (detail: D extends Detail ? D : Detail) => void : never
 }
 

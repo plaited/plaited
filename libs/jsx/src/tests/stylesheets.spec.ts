@@ -1,5 +1,6 @@
 import { test, expect } from 'bun:test'
-import { stylesheets, css } from '../index.js'
+import { css } from '../index.js'
+import { stylesheets } from '../utils.js'
 
 const sheet1 = css`
   .a {

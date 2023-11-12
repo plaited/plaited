@@ -2,7 +2,7 @@ import { css } from '@plaited/jsx'
 import { test } from '@plaited/rite'
 import { Component, PlaitProps } from '../index.js'
 
-test('dynamic island comms', async (t) => {
+test('observed triggers', async (t) => {
   const [classes, stylesheet] = css`
     .row {
       display: flex;
@@ -18,7 +18,6 @@ test('dynamic island comms', async (t) => {
 
   class Bottom extends Component({
     tag: 'bottom-component',
-    observedTriggers: { add: 'add' },
     dev: true,
     template: (
       <h1
@@ -29,15 +28,16 @@ test('dynamic island comms', async (t) => {
       </h1>
     ),
   }) {
-    plait({ $, feedback, addThreads, thread, sync, host }: PlaitProps) {
+    static observedTriggers = new Set(['add'])
+    plait({ $, feedback, addThreads, thread, sync, emit }: PlaitProps) {
       addThreads({
         onAdd: thread(sync({ waitFor: { type: 'add' } }), sync({ request: { type: 'disable' } })),
       })
       feedback({
         disable() {
-          host.dispatchEvent(new CustomEvent('disable', { bubbles: true }))
+          emit({ type: 'disable', bubbles: true })
         },
-        add({ detail }: CustomEvent) {
+        add(detail: string) {
           const header = $('header')
           header?.insertAdjacentHTML('beforeend', `${detail}`)
         },
@@ -76,7 +76,7 @@ test('dynamic island comms', async (t) => {
           const slot = $<HTMLSlotElement>('slot')
           for (const el of slot.assignedElements()) {
             if (el instanceof Bottom) {
-              el.dispatchEvent(new CustomEvent('add', { detail: ' World!' }))
+              el.trigger({ type: 'add', detail: ' World!' })
               break
             }
           }

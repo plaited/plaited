@@ -5,9 +5,10 @@
  * @returns {void}
  * @alias cc
  */
-import { dataTarget, dataTrigger, dataAddress, createTemplate, FunctionTemplate, AdditionalAttrs } from '@plaited/jsx'
-import { Trigger, bProgram, Log } from '@plaited/behavioral'
-import { PlaitedElement, PlaitProps, SelectorMod, Connect, ComponentFunction } from './types.js'
+import { createTemplate, FunctionTemplate, AdditionalAttrs } from '@plaited/jsx'
+import { dataTarget, dataTrigger, dataAddress } from '@plaited/jsx/utils'
+import { Trigger, bProgram, TriggerArgs } from '@plaited/behavioral'
+import { PlaitedElement, PlaitProps, Connect, ComponentFunction, PlaitedComponentConstructor, Emit } from './types.js'
 import { assignSugar, SugaredElement, assignSugarForEach, createTemplateElement } from './sugar.js'
 
 const regexp = /\b[\w-]+\b(?=->[\w-]+)/g
@@ -61,10 +62,6 @@ class DelegatedListener {
   }
 }
 
-// eslint-disable-next-line no-console
-/** default dev callback function */
-const log = (log: Log) => console.table(log)
-
 /**
  * Creates a PlaitedComponent
  * @param {object} args - Arguments for the PlaitedComponent
@@ -81,7 +78,6 @@ export const Component: ComponentFunction = ({
   delegatesFocus = true,
   tag,
   template,
-  observedTriggers,
   dev,
   strategy,
   connect,
@@ -135,7 +131,6 @@ export const Component: ComponentFunction = ({
       if (this.plait) {
         const { trigger, ...rest } = this.#bProgram()
         this.#trigger = trigger // listeners need trigger to be available on instance
-        this.#delegateObservedTriggers() //just connected/upgraded then delegate observed triggers
         this.#delegateListeners(
           // just connected/upgraded then delegate listeners nodes with data-trigger attribute
           Array.from(this.#root.querySelectorAll<HTMLElement>(`[${dataTrigger}]`)),
@@ -148,6 +143,7 @@ export const Component: ComponentFunction = ({
         void this.plait({
           $: this.$.bind(this),
           host: this,
+          emit: this.emit.bind(this),
           trigger,
           ...rest,
         })
@@ -161,10 +157,20 @@ export const Component: ComponentFunction = ({
           type: `disconnected->${this.dataset.address ?? this.tagName.toLowerCase()}`,
         })
     }
+    emit({ type, detail, bubbles = false, cancelable = true, composed = true }: Parameters<Emit>[0]) {
+      if (!type) return
+      const event = new CustomEvent(type, {
+        bubbles,
+        cancelable,
+        composed,
+        detail,
+      })
+      this.dispatchEvent(event)
+    }
     #bProgram() {
       const { trigger, ...rest } = bProgram({
         strategy,
-        dev: dev === true ? log : dev,
+        dev,
       })
       let disconnect: ReturnType<Connect>
       if (connect) {
@@ -177,23 +183,6 @@ export const Component: ComponentFunction = ({
       }
       this.#disconnectMessenger = disconnect
       return { trigger, ...rest }
-    }
-    #delegateObservedTriggers() {
-      if (observedTriggers) {
-        this.#createDelegatedListener(this)
-        const entries = Object.entries(observedTriggers)
-        for (const [event] of entries) {
-          this.addEventListener(event, this.#delegates.get(this))
-        }
-      }
-    }
-    #getObservedTriggerType(el: HTMLElement | SVGElement, event: Event) {
-      if (el !== this) return
-      if (observedTriggers) {
-        const entries = Object.entries(observedTriggers)
-        const entry = entries.find(([key]) => key === event.type)
-        if (entry) return entry[1]
-      }
     }
     #delegateListeners(nodes: Node[]) {
       for (const el of nodes) {
@@ -216,17 +205,15 @@ export const Component: ComponentFunction = ({
         el,
         new DelegatedListener((event) => {
           // Delegated listener does not have element then delegate it's callback
-          const triggerType = getTriggerType(event, el) || this.#getObservedTriggerType(el, event)
-          if (triggerType && this.#trigger) {
-            /** if key is present in `data-trigger` trigger event on instance's bProgram */
-            this.#trigger<Event>({
-              type: triggerType,
-              detail: event,
-            })
-          } else {
-            /** if key is not present in `data-trigger` remove event listener for this event on Element */
-            el.removeEventListener(event.type, this.#delegates.get(el))
-          }
+          const triggerType = getTriggerType(event, el)
+          triggerType
+            ? /** if key is present in `data-trigger` trigger event on instance's bProgram */
+              this.#trigger<Event>?.({
+                type: triggerType,
+                detail: event,
+              })
+            : /** if key is not present in `data-trigger` remove event listener for this event on Element */
+              el.removeEventListener(event.type, this.#delegates.get(el))
         }),
       )
     }
@@ -256,21 +243,11 @@ export const Component: ComponentFunction = ({
       })
       return mo
     }
+    trigger({ type, detail }: TriggerArgs) {
+      ;(this.constructor as PlaitedComponentConstructor).observedTriggers?.has(type) &&
+        this.#trigger?.({ type, detail })
+    }
     /** we're bringing the bling back!!! */
-    $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
-      target: string,
-      opts?: {
-        all?: false
-        mod?: SelectorMod
-      },
-    ): SugaredElement<T> | undefined
-    $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
-      target: string,
-      opts?: {
-        all: true
-        mod?: SelectorMod
-      },
-    ): SugaredElement<T>[]
     $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
       target: string,
       { all = false, mod = '=' } = {},

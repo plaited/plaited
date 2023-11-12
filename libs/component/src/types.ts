@@ -32,10 +32,20 @@ export interface $ {
   ): SugaredElement<T>[]
 }
 
+export type Emit = (
+  args: TriggerArgs & {
+    bubbles?: boolean
+    cancelable?: boolean
+    composed?: boolean
+  },
+) => void
+
 export interface PlaitedElement extends HTMLElement {
   internals_: ElementInternals
   plait?(props: PlaitProps): void | Promise<void>
+  trigger: Trigger
   $: $
+  emit: Emit
   connectedCallback?(): void
   attributeChangedCallback?(name: string, oldValue: string | null, newValue: string | null): void
   disconnectedCallback?(): void
@@ -56,6 +66,7 @@ export type PlaitProps = {
    * const shadowEl = host.shadowRoot.querySelector('div')
    */
   host: PlaitedElement
+  emit: Emit
 } & ReturnType<typeof bProgram>
 
 export interface PlaitedComponentConstructor<
@@ -64,6 +75,8 @@ export interface PlaitedComponentConstructor<
   stylesheets: Set<string>
   tag: string
   template: FunctionTemplate<T>
+  /** the element tag you want to use */
+  observedTriggers?: Set<string>
   new (): PlaitedElement
 }
 
@@ -84,6 +97,4 @@ export type ComponentFunction = <
   dev?: true | DevCallback
   /** event selection strategy callback from behavioral library */
   strategy?: Strategy
-  /** the element tag you want to use */
-  observedTriggers?: Record<string, string>
 }) => PlaitedComponentConstructor<T>
