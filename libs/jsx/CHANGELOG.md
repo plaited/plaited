@@ -3,17 +3,6 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
-## 5.0.8 (2023-11-12)
-
-
-### Bug Fixes
-
-* **plaited:** missing exports field key ([6b2cf9e](https://github.com/plaited/plaited/commit/6b2cf9e6311290cc3782e7f4c5820e1176dbf64f))
-
-
-
-
-
 ## 5.0.7 (2023-11-12)
 
 **Note:** Version bump only for package @plaited/jsx

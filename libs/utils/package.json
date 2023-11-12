@@ -1,5 +1,5 @@
 {
-  "name": "@plaited/jsx",
+  "name": "@plaited/utils",
   "version": "5.0.7",
   "license": "ISC",
   "engines": {
@@ -12,29 +12,27 @@
   "bugs": {
     "url": "https://github.com/plaited/plaited/issues"
   },
-  "homepage": "https://github.com/plaited/plaited/tree/main/libs/jsx#readme",
+  "homepage": "https://github.com/plaited/plaited/tree/main/libs/plaited#readme",
+  "keywords": [
+    "plaited",
+    "utils"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "exports": {
-    ".": "./dist/index.js",
-    "./ssr": "./dist/ssr.js",
-    "./utils": "./dist/utils.js",
-    "./jsx-runtime": "./dist/jsx-runtime.js",
-    "./jsx-dev-runtime": "./dist/jsx-dev-runtime.js"
+    ".": "./dist/index.js"
   },
   "files": [
-    "./dist/**",
-    "./jsx-runtime.js",
-    "./jsx-dev-runtime.js"
+    "./dist/**"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc --project tsconfig.json",
     "build-watch": "bun run build --watch",
     "test": "bun test src/**/*.spec.ts",
-    "test-watch": "bun run test --watch"
+    "test-watch": "bun test --watch"
   },
-  "types": "./index.d.ts",
-  "dependencies": {
-    "@plaited/utils": "5.0.7"
-  }
+  "types": "./dist/index.d.ts"
 }
