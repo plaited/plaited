@@ -1,5 +1,5 @@
 {
-  "name": "@plaited/behavioral",
+  "name": "@plaited/utils",
   "version": "5.0.8",
   "license": "ISC",
   "engines": {
@@ -12,7 +12,11 @@
   "bugs": {
     "url": "https://github.com/plaited/plaited/issues"
   },
-  "homepage": "https://github.com/plaited/plaited/tree/main/libs/behavioral#readme",
+  "homepage": "https://github.com/plaited/plaited/tree/main/libs/utils#readme",
+  "keywords": [
+    "plaited",
+    "utils"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "exports": {
@@ -21,14 +25,14 @@
   "files": [
     "./dist/**"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc --project tsconfig.json",
     "build-watch": "bun run build --watch",
     "test": "bun test src/**/*.spec.ts",
     "test-watch": "bun test --watch"
   },
-  "types": "./dist/index.d.ts",
-  "dependencies": {
-    "@plaited/utils": "5.0.8"
-  }
+  "types": "./dist/index.d.ts"
 }
