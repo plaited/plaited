@@ -23,9 +23,9 @@
   ],
   "scripts": {
     "build": "tsc --project tsconfig.json",
-    "build:watch": "bun run build --watch",
+    "build-watch": "bun run build --watch",
     "test": "bun test src/**/*.spec.ts",
-    "test:watch": "bun test --watch"
+    "test-watch": "bun test --watch"
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
