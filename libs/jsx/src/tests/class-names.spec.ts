@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { classNames } from '../index.js'
+import { classNames } from '../utils.js'
 
 test('classNames', () => {
   expect(classNames('class-1', 'class-2')).toBe('class-1 class-2')
