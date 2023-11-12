@@ -13,5 +13,6 @@ test('main export footprint < 6kb', async () => {
     const compressed = Bun.gzipSync(Buffer.from(str))
     const size = compressed.byteLength / 1024
     expect(size).toBeLessThan(6)
+    expect(`Plaited size: ${size}kb`).toMatchSnapshot()
   }
 })
