@@ -13,8 +13,6 @@
     "lint": "eslint . --ext .ts,.tsx,.js,.cjs",
     "lint:fix": "bun run lint --fix --quiet",
     "postinstall": "husky install",
-    "postpack": "pinst --enable",
-    "prepack": "pinst --disable",
     "prepare": "husky install",
     "prettier": "prettier . --write",
     "test": "lerna run test"
