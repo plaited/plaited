@@ -18,8 +18,6 @@ test('eventTriggers', async (t) => {
 
   class Bottom extends Component({
     tag: 'bottom-component',
-    observedTriggers: { add: 'add' },
-    // dev: true,
     template: (
       <button
         dataTarget='button'
@@ -30,10 +28,11 @@ test('eventTriggers', async (t) => {
       </button>
     ),
   }) {
-    plait({ feedback, host }: PlaitProps) {
+    static observedTriggers = new Set(['add'])
+    plait({ feedback, emit }: PlaitProps) {
       feedback({
         click() {
-          host.dispatchEvent(new CustomEvent('append', { bubbles: true }))
+          emit({ type: 'append' })
         },
       })
     }

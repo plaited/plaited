@@ -1,5 +1,5 @@
-import { Trigger, TriggerArgs } from '@plaited/behavioral'
-import { Connect, Send, Message } from './types.js'
+import type { Trigger, TriggerArgs } from '@plaited/behavioral'
+import type { Connect, Send, Message } from './types.js'
 /** Enables communication between agents in a web app.
  * Agents can be Islands, workers, or behavioral program running in the main thread.
  * This allows for execution of the one-way message exchange pattern (aka

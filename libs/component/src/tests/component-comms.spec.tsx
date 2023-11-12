@@ -1,4 +1,5 @@
-import { css, dataAddress } from '@plaited/jsx'
+import { css } from '@plaited/jsx'
+import { dataAddress } from '@plaited/jsx/utils'
 import { test } from '@plaited/rite'
 import { Component, PlaitProps, useMessenger } from '../index.js'
 
