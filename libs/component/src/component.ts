@@ -8,14 +8,7 @@
 import { createTemplate, FunctionTemplate, AdditionalAttrs } from '@plaited/jsx'
 import { dataTarget, dataTrigger, dataAddress } from '@plaited/jsx/utils'
 import { Trigger, bProgram, TriggerArgs } from '@plaited/behavioral'
-import {
-  PlaitedElement,
-  PlaitProps,
-  SelectorMod,
-  Connect,
-  ComponentFunction,
-  PlaitedComponentConstructor,
-} from './types.js'
+import { PlaitedElement, PlaitProps, Connect, ComponentFunction, PlaitedComponentConstructor, Emit } from './types.js'
 import { assignSugar, SugaredElement, assignSugarForEach, createTemplateElement } from './sugar.js'
 
 const regexp = /\b[\w-]+\b(?=->[\w-]+)/g
@@ -164,17 +157,7 @@ export const Component: ComponentFunction = ({
           type: `disconnected->${this.dataset.address ?? this.tagName.toLowerCase()}`,
         })
     }
-    emit({
-      type,
-      detail,
-      bubbles = false,
-      cancelable = true,
-      composed = true,
-    }: TriggerArgs & {
-      bubbles?: boolean
-      cancelable?: boolean
-      composed?: boolean
-    }) {
+    emit({ type, detail, bubbles = false, cancelable = true, composed = true }: Parameters<Emit>[0]) {
       if (!type) return
       const event = new CustomEvent(type, {
         bubbles,
@@ -261,26 +244,10 @@ export const Component: ComponentFunction = ({
       return mo
     }
     trigger({ type, detail }: TriggerArgs) {
-      const observedTriggers = (this.constructor as PlaitedComponentConstructor).observedTriggers
-      if (observedTriggers?.has(type)) {
+      ;(this.constructor as PlaitedComponentConstructor).observedTriggers?.has(type) &&
         this.#trigger?.({ type, detail })
-      }
     }
     /** we're bringing the bling back!!! */
-    $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
-      target: string,
-      opts?: {
-        all?: false
-        mod?: SelectorMod
-      },
-    ): SugaredElement<T> | undefined
-    $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
-      target: string,
-      opts?: {
-        all: true
-        mod?: SelectorMod
-      },
-    ): SugaredElement<T>[]
     $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
       target: string,
       { all = false, mod = '=' } = {},

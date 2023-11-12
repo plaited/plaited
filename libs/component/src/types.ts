@@ -32,7 +32,7 @@ export interface $ {
   ): SugaredElement<T>[]
 }
 
-type Emit = (
+export type Emit = (
   args: TriggerArgs & {
     bubbles?: boolean
     cancelable?: boolean
