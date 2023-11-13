@@ -9,7 +9,7 @@ interface Get<T> {
 type Set<T> = (newValue: T | UpdateStoreArg<T>) => Promise<T>
 
 /** asynchronously get and set indexed db values */
-export const useIndexedDB = async <T = unknown>(
+export const indexedDB = async <T = unknown>(
   /** key for stored value */
   key: string,
   /** initial value can be null */

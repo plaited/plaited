@@ -1,12 +1,12 @@
 import { test } from '@plaited/rite'
 import sinon from 'sinon'
-import { useMessenger } from '../index.js'
+import { messenger } from '../index.js'
 
-test('useMessenger: connect, send, close', async (t) => {
-  const { connect, send, has } = useMessenger()
+test('messenger: connect, send, close', async (t) => {
+  const msg = messenger()
   const spy = sinon.spy()
-  const close = connect('actor1', spy)
-  send('actor1', { type: 'a', detail: { value: 4 } })
+  const close = msg.connect('actor1', spy)
+  msg('actor1', { type: 'a', detail: { value: 4 } })
   await t.wait(60)
   t({
     given: 'message send',
@@ -18,19 +18,19 @@ test('useMessenger: connect, send, close', async (t) => {
   t({
     given: 'close',
     should: 'has should return false',
-    actual: has('actor1'),
+    actual: msg.has('actor1'),
     expected: false,
   })
 })
-test('useMessenger: send, connect, close', async (t) => {
-  const { connect, send, has } = useMessenger()
+test('messenger: send, connect, close', async (t) => {
+  const msg = messenger()
   const spy = sinon.spy()
-  send('actor1', { type: 'b', detail: { value: 4 } })
-  const close = connect('actor1', spy)
+  msg('actor1', { type: 'b', detail: { value: 4 } })
+  const close = msg.connect('actor1', spy)
   t({
     given: 'connect',
     should: 'have actor1',
-    actual: has('actor1'),
+    actual: msg.has('actor1'),
     expected: true,
   })
   await t.wait(100)
@@ -42,12 +42,12 @@ test('useMessenger: send, connect, close', async (t) => {
   })
   close()
 })
-test('useMessenger: connect, close, send', async (t) => {
-  const { connect, send } = useMessenger()
+test('messenger: connect, close, send', async (t) => {
+  const msg = messenger()
   const spy = sinon.spy()
-  connect('actor1', spy)()
+  msg.connect('actor1', spy)()
   await t.wait(100)
-  send('actor1', { type: 'b', detail: { value: 4 } })
+  msg('actor1', { type: 'b', detail: { value: 4 } })
   t({
     given: 'message send after close',
     should: 'spy should not receive message',
@@ -55,18 +55,18 @@ test('useMessenger: connect, close, send', async (t) => {
     expected: false,
   })
 })
-test('useMessenger: with worker', async (t) => {
-  const { connect, send, has } = useMessenger()
+test('messenger: with worker', async (t) => {
+  const msg = messenger()
   const worker = new Worker(new URL('/src/tests/__mocks__/test.worker.ts', import.meta.url), {
     type: 'module',
   })
-  connect.worker('calculator', worker)
+  msg.connect('calculator', worker)
 
   const spy = sinon.spy()
 
-  connect('main', spy)
+  msg.connect('main', spy)
 
-  send('calculator', {
+  msg('calculator', {
     type: 'calculate',
     detail: { a: 9, b: 10, operation: 'multiply' },
   })
@@ -74,7 +74,7 @@ test('useMessenger: with worker', async (t) => {
   t({
     given: 'connect',
     should: 'have worker',
-    actual: has('calculator'),
+    actual: msg.has('calculator'),
     expected: true,
   })
   await t.wait(200)

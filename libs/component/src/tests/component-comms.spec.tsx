@@ -1,10 +1,10 @@
 import { css } from '@plaited/jsx'
 import { dataAddress } from '@plaited/jsx/utils'
 import { test } from '@plaited/rite'
-import { Component, PlaitProps, useMessenger } from '../index.js'
+import { Component, PlaitProps, messenger } from '../index.js'
 
 test('dynamic island comms', async (t) => {
-  const { connect, send } = useMessenger()
+  const msg = messenger()
   const [classes, stylesheet] = css`
     .row {
       display: flex;
@@ -18,7 +18,6 @@ test('dynamic island comms', async (t) => {
   `
   const wrapper = document.querySelector('body')
   class ElOne extends Component({
-    connect,
     tag: 'dynamic-one',
     template: (
       <div
@@ -35,14 +34,16 @@ test('dynamic island comms', async (t) => {
       </div>
     ),
   }) {
-    plait({ feedback, $ }: PlaitProps) {
+    static observedTriggers = new Set(['disable'])
+    plait({ feedback, $, connect }: PlaitProps) {
+      connect(msg)
       feedback({
         disable() {
           const button = $<HTMLButtonElement>('button')
           button && (button.disabled = true)
         },
         click() {
-          send('two', {
+          msg('two', {
             type: 'add',
             detail: { value: ' World!' },
           })
@@ -52,7 +53,6 @@ test('dynamic island comms', async (t) => {
   }
   class ElTwo extends Component({
     tag: 'dynamic-two',
-    connect,
     dev: true,
     template: (
       <h1
@@ -63,13 +63,15 @@ test('dynamic island comms', async (t) => {
       </h1>
     ),
   }) {
-    plait({ $, feedback, addThreads, thread, sync }: PlaitProps) {
+    static observedTriggers = new Set(['add'])
+    plait({ $, feedback, addThreads, thread, sync, connect }: PlaitProps) {
+      connect(msg)
       addThreads({
         onAdd: thread(sync({ waitFor: { type: 'add' } }), sync({ request: { type: 'disable' } })),
       })
       feedback({
         disable() {
-          send('one', { type: 'disable' })
+          msg('one', { type: 'disable' })
         },
         add(detail: { value: string }) {
           const header = $('header')

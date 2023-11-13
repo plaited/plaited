@@ -1,2 +1,2 @@
-export * from './use-indexed-db.js'
-export * from './use-main.js'
+export * from './indexed-db.js'
+export * from './link-main.js'

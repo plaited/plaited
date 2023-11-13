@@ -1,9 +1,9 @@
 import { bProgram } from '@plaited/behavioral'
-import { useMain } from '../../utils.js'
+import { linkMain } from '../../utils.js'
 
 const { trigger, feedback } = bProgram()
 
-const [send] = useMain(self, trigger)
+const { send } = linkMain(self, trigger)
 
 const calculator = {
   add(a: number, b: number) {
