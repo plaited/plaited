@@ -3,7 +3,8 @@ import { dataAddress, dataTarget, dataTrigger } from './constants.js'
 export type Primitive = null | undefined | number | string | boolean | bigint
 
 export type Template = {
-  content: string
+  node: SVGElement | HTMLElement | DocumentFragment
+  string: string
   stylesheets: Set<string>
 }
 
@@ -48,6 +49,9 @@ export type FT<
 
 type Tag = string | `${string}-${string}` | FT
 
+
 export interface CreateTemplate {
   <T extends AdditionalAttrs>(tag: Tag, attrs: Attrs<T>): Template
 }
+
+

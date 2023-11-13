@@ -36,5 +36,8 @@
   "types": "./index.d.ts",
   "dependencies": {
     "@plaited/utils": "5.2.0"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "12.10.3"
   }
 }

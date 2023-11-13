@@ -69,3 +69,6 @@ export const booleanAttrs = new Set([
 export const primitives = new Set(['null', 'undefined', 'number', 'string', 'boolean', 'bigint'])
 
 export const validPrimitiveChildren = new Set(['number', 'string', 'bigint'])
+
+/** custom element tagName regex */
+export const customElementRegex = /^[a-z]+-[a-z]+(?:-[a-z]+)*$/

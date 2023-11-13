@@ -24,7 +24,7 @@ const shallowCompare = (obj1: Attrs = {}, obj2: Attrs = {}) => {
  */
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const memo = (resultFn: CreateTemplate): CreateTemplate => {
+export const memo = (resultFn: CreateTemplate): CreateTemplate=> {
   let cache: {
     lastThis: ThisParameterType<typeof resultFn>
     lastTag: Parameters<typeof resultFn>[0]
