@@ -1,6 +1,6 @@
 {
   "name": "@plaited/utils",
-  "version": "5.1.2",
+  "version": "5.2.0",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
