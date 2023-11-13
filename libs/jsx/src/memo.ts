@@ -1,17 +1,19 @@
-import { FT, Template, Attrs } from './types.js'
 import { dataTrigger } from './constants.js'
-
+import { CreateTemplate, Template, Attrs } from './types.js'
+import { deepEqual } from '@plaited/utils'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const shallowCompare = <T extends Record<string, any> = Record<string, any>>(obj1: Attrs<T>, obj2: Attrs<T>) => {
-  const { style: style1 = {}, [dataTrigger]: trigger1 = {}, ...rest1 } = obj1
-  const { style: style2 = {}, [dataTrigger]: trigger2 = {}, ...rest2 } = obj2
-  const sameStyles = shallowCompare(style1, style2)
-  const sameTriggers = shallowCompare(trigger1, trigger2)
-  if (!sameStyles || !sameTriggers) return false
-  return (
-    Object.keys(rest1).length === Object.keys(rest2).length &&
-    Object.keys(rest1).every((key) => Object.hasOwn(rest2, key) && rest1[key] === rest2[key])
-  )
+const shallowCompare = (obj1: Attrs = {}, obj2: Attrs = {}) => {
+  const keys = Object.keys(obj1)
+  const length = keys.length
+  if (length !== Object.keys(obj2).length) return false
+  const objAttrs = new Set<string>(['style', 'children', dataTrigger, 'dataTrigger'])
+  for (let i = 0; i < length; i++) {
+    const key = keys[i]
+    if (!Object.hasOwn(obj2, key)) return false
+    if (objAttrs.has(key)) return deepEqual(obj1[key], obj2[key])
+    if (obj1[key] !== obj2[key]) return false
+  }
+  return true
 }
 /**
  * Forked from  memoize-one
@@ -22,20 +24,26 @@ const shallowCompare = <T extends Record<string, any> = Record<string, any>>(obj
  */
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const memo = <T extends Record<string, any> = Record<string, any>>(resultFn: FT<T>): FT<T> => {
+export const memo = (resultFn: CreateTemplate): CreateTemplate => {
   let cache: {
     lastThis: ThisParameterType<typeof resultFn>
-    lastProps: Attrs<T>
+    lastTag: Parameters<typeof resultFn>[0]
+    lastAttrs: Parameters<typeof resultFn>[1]
     lastResult: ReturnType<typeof resultFn>
   } | null = null
-  function tpl(this: ThisParameterType<typeof resultFn>, props: Parameters<typeof resultFn>[0]): Template {
-    if (cache && cache.lastThis === this && shallowCompare(props, cache.lastProps)) {
+  function tpl(
+    this: ThisParameterType<typeof resultFn>,
+    tag: Parameters<typeof resultFn>[0],
+    attrs: Parameters<typeof resultFn>[1],
+  ): Template {
+    if (cache && cache.lastThis === this && cache.lastTag === tag && shallowCompare(attrs, cache.lastAttrs)) {
       return cache.lastResult
     }
-    const lastResult = resultFn.call(this, props)
+    const lastResult = resultFn.call(this, tag, attrs)
     cache = {
       lastResult,
-      lastProps: props,
+      lastTag: tag,
+      lastAttrs: attrs,
       lastThis: this,
     }
     return lastResult

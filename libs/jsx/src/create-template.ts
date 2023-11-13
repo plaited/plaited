@@ -7,7 +7,7 @@ import {
   validPrimitiveChildren,
 } from './constants.js'
 import { Attrs, CreateTemplate } from './types.js'
-
+import { memo } from './memo.js'
 /** custom element tagName regex */
 const customElementRegex = /^[a-z]+-[a-z]+(?:-[a-z]+)*$/
 
@@ -18,7 +18,7 @@ const joinParts = (tag: string, attrs: string[] = [], children: string[]) =>
 const ensureArray = <T>(obj?: T | T[]) => (Array.isArray(obj) ? obj : obj ? [obj] : [])
 
 /** createTemplate function used for ssr */
-export const createTemplate: CreateTemplate = (tag, attrs) => {
+export const createTemplate: CreateTemplate = memo((tag, attrs) => {
   const {
     shadowrootmode = 'open',
     children: _children,
@@ -189,7 +189,7 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
     stylesheets,
     content: joinParts(root, rootAttrs, rootChildren),
   }
-}
+})
 
 export { createTemplate as h }
 
