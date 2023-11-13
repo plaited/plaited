@@ -8,8 +8,17 @@
 import { createTemplate, FunctionTemplate, AdditionalAttrs } from '@plaited/jsx'
 import { dataTarget, dataTrigger, dataAddress } from '@plaited/jsx/utils'
 import { Trigger, bProgram, TriggerArgs } from '@plaited/behavioral'
-import { PlaitedElement, PlaitProps, Connect, ComponentFunction, PlaitedComponentConstructor, Emit } from './types.js'
+import {
+  PlaitedElement,
+  PlaitProps,
+  ComponentFunction,
+  PlaitedComponentConstructor,
+  Emit,
+  Messenger,
+  Publisher,
+} from './types.js'
 import { assignSugar, SugaredElement, assignSugarForEach, createTemplateElement } from './sugar.js'
+import { trueTypeOf } from '@plaited/utils'
 
 const regexp = /\b[\w-]+\b(?=->[\w-]+)/g
 // It takes the value of a data-target attribute and return all the events happening in it. minus the method identifier
@@ -62,15 +71,21 @@ class DelegatedListener {
   }
 }
 
+const delegates = new WeakMap()
+
+const isPublisher = (obj: Publisher | Messenger): obj is Publisher => {
+  return Object.hasOwn(obj, 'subscribe')
+}
+const isMessenger = (obj: Publisher | Messenger): obj is Messenger => {
+  return Object.hasOwn(obj, 'connect')
+}
 /**
  * Creates a PlaitedComponent
  * @param {object} args - Arguments for the PlaitedComponent
  * @param {string} args.tag - The tag name of the component
  * @param {FunctionTemplate} args.template - The template function for the component
- * @param {Record<string, string>} args.observedTriggers - A map of event types to trigger names
  * @param {boolean | DevCallback} args.dev - A callback function that receives a stream of state snapshots, last selected event, and trigger.
  * @param {Strategy} args.strategy - The event selection strategy to use. Defaults to `strategies.priority`.
- * @param {Connect} args.connect - A function that returns a function for sending messages to another component.
  * @returns {PlaitedComponent} A PlaitedComponent
  */
 export const Component: ComponentFunction = ({
@@ -80,7 +95,6 @@ export const Component: ComponentFunction = ({
   template,
   dev,
   strategy,
-  connect,
 }) => {
   if (!tag) {
     throw new Error(`Component is missing a [tag]`)
@@ -98,12 +112,11 @@ export const Component: ComponentFunction = ({
         shadowrootdelegatesfocus: delegatesFocus,
       })
     #shadowObserver?: MutationObserver
-    #disconnectMessenger?: ReturnType<Connect>
     internals_: ElementInternals
     #trigger?: Trigger
     plait?(props: PlaitProps): void | Promise<void>
     #root: ShadowRoot
-    #delegates = new WeakMap()
+    #observedTriggers = (this.constructor as PlaitedComponentConstructor).observedTriggers
     constructor() {
       super()
       this.internals_ = this.attachInternals()
@@ -129,7 +142,10 @@ export const Component: ComponentFunction = ({
     }
     connectedCallback() {
       if (this.plait) {
-        const { trigger, ...rest } = this.#bProgram()
+        const { trigger, ...rest } = bProgram({
+          strategy,
+          dev,
+        })
         this.#trigger = trigger // listeners need trigger to be available on instance
         this.#delegateListeners(
           // just connected/upgraded then delegate listeners nodes with data-trigger attribute
@@ -143,7 +159,8 @@ export const Component: ComponentFunction = ({
         void this.plait({
           $: this.$.bind(this),
           host: this,
-          emit: this.emit.bind(this),
+          emit: this.#emit.bind(this),
+          connect: this.#connect.bind(this),
           trigger,
           ...rest,
         })
@@ -151,13 +168,41 @@ export const Component: ComponentFunction = ({
     }
     disconnectedCallback() {
       this.#shadowObserver && this.#shadowObserver.disconnect()
-      this.#disconnectMessenger && this.#disconnectMessenger()
       if (dev && this.#trigger)
         this.#trigger({
           type: `disconnected->${this.dataset.address ?? this.tagName.toLowerCase()}`,
         })
+      this.#subscriptions.forEach((unsubscribe) => unsubscribe())
     }
-    emit({ type, detail, bubbles = false, cancelable = true, composed = true }: Parameters<Emit>[0]) {
+    #subscriptions = new Set<() => void>()
+    /** connect to a Messenger */
+    #connect(comm: Messenger | Publisher) {
+      if (trueTypeOf(comm) !== 'function') return
+      const trigger = (args: TriggerArgs) => {
+        if (trueTypeOf(args) !== 'object' || !Object.hasOwn(args, 'type')) return
+        const { type, detail } = args
+        if (this.#observedTriggers?.has(type)) {
+          this.#trigger?.({ type, detail })
+        }
+      }
+      if (isMessenger(comm)) {
+        const recipient = this.dataset.address
+        if (!recipient) {
+          console.error(`Component ${this.tagName.toLowerCase()} is missing an attribute [${dataAddress}]`)
+          return
+        }
+        const disconnect = comm.connect(recipient, trigger)
+        disconnect && this.#subscriptions.add(disconnect)
+        return disconnect
+      }
+      if (isPublisher(comm)) {
+        const disconnect = comm.subscribe(trigger)
+        disconnect && this.#subscriptions.add(disconnect)
+        return disconnect
+      }
+    }
+    /** emit a custom event */
+    #emit({ type, detail, bubbles = false, cancelable = true, composed = true }: Parameters<Emit>[0]) {
       if (!type) return
       const event = new CustomEvent(type, {
         bubbles,
@@ -167,53 +212,36 @@ export const Component: ComponentFunction = ({
       })
       this.dispatchEvent(event)
     }
-    #bProgram() {
-      const { trigger, ...rest } = bProgram({
-        strategy,
-        dev,
-      })
-      let disconnect: ReturnType<Connect>
-      if (connect) {
-        const recipient = this.dataset.address
-        if (!recipient) {
-          console.error(`Component ${this.tagName.toLowerCase()} is missing an attribute [${dataAddress}]`)
-        } else {
-          disconnect = connect(recipient, trigger)
-        }
-      }
-      this.#disconnectMessenger = disconnect
-      return { trigger, ...rest }
-    }
     #delegateListeners(nodes: Node[]) {
       for (const el of nodes) {
         if (el.nodeType !== 1) continue // Skip non-element nodes
         const element = el as HTMLElement | SVGElement
         if (element.tagName === 'SLOT' && element.hasAttribute('slot')) continue
-        !this.#delegates.has(el) && this.#createDelegatedListener(element)
+        !delegates.has(el) && this.#createDelegatedListener(element)
         const triggers = element.dataset.trigger
         if (triggers) {
           const events = matchAllEvents(triggers) /** get event type */
           for (const event of events) {
             /** loop through and set event listeners on delegated object */
-            el.addEventListener(event, this.#delegates.get(el))
+            el.addEventListener(event, delegates.get(el))
           }
         }
       }
     }
     #createDelegatedListener(el: HTMLElement | SVGElement) {
-      this.#delegates.set(
+      delegates.set(
         el,
         new DelegatedListener((event) => {
           // Delegated listener does not have element then delegate it's callback
           const triggerType = getTriggerType(event, el)
           triggerType
             ? /** if key is present in `data-trigger` trigger event on instance's bProgram */
-              this.#trigger<Event>?.({
+              this.#trigger?.({
                 type: triggerType,
                 detail: event,
               })
             : /** if key is not present in `data-trigger` remove event listener for this event on Element */
-              el.removeEventListener(event.type, this.#delegates.get(el))
+              el.removeEventListener(event.type, delegates.get(el))
         }),
       )
     }
@@ -244,8 +272,7 @@ export const Component: ComponentFunction = ({
       return mo
     }
     trigger({ type, detail }: TriggerArgs) {
-      ;(this.constructor as PlaitedComponentConstructor).observedTriggers?.has(type) &&
-        this.#trigger?.({ type, detail })
+      this.#observedTriggers?.has(type) && this.#trigger?.({ type, detail })
     }
     /** we're bringing the bling back!!! */
     $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(

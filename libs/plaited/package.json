@@ -35,7 +35,6 @@
   "dependencies": {
     "@plaited/behavioral": "5.1.2",
     "@plaited/component": "5.1.2",
-    "@plaited/jsx": "5.1.2",
-    "@plaited/utils": "5.1.2"
+    "@plaited/jsx": "5.1.2"
   }
 }

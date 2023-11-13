@@ -1,9 +1,9 @@
 import { test } from '@plaited/rite'
-import { useIndexedDB } from '../utils.js'
+import { indexedDB } from '../utils.js'
 import sinon from 'sinon'
 
-test('useIndexedDB', async (t) => {
-  const [get, set] = await useIndexedDB<number>('basic', 0)
+test('indexedDB', async (t) => {
+  const [get, set] = await indexedDB<number>('basic', 0)
   let actual = await get()
   t({
     given: 'get',
@@ -44,11 +44,11 @@ test('useIndexedDB', async (t) => {
   })
 })
 
-test('useIndexedDB: with subscription', async (t) => {
-  const [get, set] = await useIndexedDB('subscription', 1)
+test('indexedDB: with subscription', async (t) => {
+  const [get, set] = await indexedDB('subscription', 1)
   const actual = await get()
   t({
-    given: 'another useIndexedDB with same key but different initial value',
+    given: 'another indexedDB with same key but different initial value',
     should: 'return new initial value',
     actual,
     expected: 1,

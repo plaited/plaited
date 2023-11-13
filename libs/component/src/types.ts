@@ -2,11 +2,13 @@ import { bProgram, DevCallback, Strategy, Trigger, TriggerArgs } from '@plaited/
 import { SugaredElement } from './sugar.js'
 import { Template, AdditionalAttrs, FunctionTemplate } from '@plaited/jsx'
 
-export interface Connect {
-  (recipient: string, trigger: Trigger): undefined | (() => void)
-  worker: (id: string, worker: Worker) => undefined | (() => void)
-}
 export type Send = (recipient: string, detail: TriggerArgs) => void
+
+export interface Messenger extends Send {
+  connect: (recipient: string, trigger: Trigger | Worker) => undefined | (() => void)
+  has: (recipient: string) => boolean
+}
+
 export type Message = {
   recipient: string
   detail: TriggerArgs
@@ -39,21 +41,9 @@ export type Emit = (
     composed?: boolean
   },
 ) => void
-
-export interface PlaitedElement extends HTMLElement {
-  internals_: ElementInternals
-  plait?(props: PlaitProps): void | Promise<void>
-  trigger: Trigger
-  $: $
-  emit: Emit
-  connectedCallback?(): void
-  attributeChangedCallback?(name: string, oldValue: string | null, newValue: string | null): void
-  disconnectedCallback?(): void
-  adoptedCallback?(): void
-  formAssociatedCallback?(form: HTMLFormElement): void
-  formDisabledCallback?(disabled: boolean): void
-  formResetCallback?(): void
-  formStateRestoreCallback?(state: unknown, reason: 'autocomplete' | 'restore'): void
+export type Publisher<T extends TriggerArgs = TriggerArgs> = {
+  (value: T): void
+  subscribe(listener: (msg: T) => void): () => boolean
 }
 
 export type PlaitProps = {
@@ -67,7 +57,23 @@ export type PlaitProps = {
    */
   host: PlaitedElement
   emit: Emit
+  connect: (comm: Publisher | Messenger) => (() => void) | undefined
 } & ReturnType<typeof bProgram>
+
+export interface PlaitedElement extends HTMLElement {
+  internals_: ElementInternals
+  plait?(props: PlaitProps): void | Promise<void>
+  trigger: Trigger
+  $: $
+  connectedCallback?(): void
+  attributeChangedCallback?(name: string, oldValue: string | null, newValue: string | null): void
+  disconnectedCallback?(): void
+  adoptedCallback?(): void
+  formAssociatedCallback?(form: HTMLFormElement): void
+  formDisabledCallback?(disabled: boolean): void
+  formResetCallback?(): void
+  formStateRestoreCallback?(state: unknown, reason: 'autocomplete' | 'restore'): void
+}
 
 export interface PlaitedComponentConstructor<
   T extends AdditionalAttrs & { slots?: never } = AdditionalAttrs & { slots?: never },
@@ -87,8 +93,6 @@ export type ComponentFunction = <
   tag: `${string}-${string}`
   /** Optional Plaited Component shadow dom template*/
   template: Template
-  /** Messenger connect callback from useMessenger */
-  connect?: Connect
   /** define wether island's custom element is open or closed. @defaultValue 'open'*/
   mode?: 'open' | 'closed'
   /** configure whether to delegate focus or not @defaultValue 'true' */
