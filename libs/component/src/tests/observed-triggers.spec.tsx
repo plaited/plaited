@@ -27,8 +27,8 @@ test('observed triggers', async (t) => {
         Hello
       </h1>
     ),
+    observedTriggers: ['add'],
   }) {
-    static observedTriggers = new Set(['add'])
     plait({ $, feedback, addThreads, thread, sync, emit }: PlaitProps) {
       addThreads({
         onAdd: thread(sync({ waitFor: { type: 'add' } }), sync({ request: { type: 'disable' } })),

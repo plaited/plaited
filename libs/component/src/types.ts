@@ -57,7 +57,7 @@ export type PlaitProps = {
    */
   host: PlaitedElement
   emit: Emit
-  connect: (comm: Publisher | Messenger) => (() => void) | undefined
+  connect: (comm: Publisher | Messenger) => () => void
 } & ReturnType<typeof bProgram>
 
 export interface PlaitedElement extends HTMLElement {
@@ -81,8 +81,6 @@ export interface PlaitedComponentConstructor<
   stylesheets: Set<string>
   tag: string
   template: FunctionTemplate<T>
-  /** the element tag you want to use */
-  observedTriggers?: Set<string>
   new (): PlaitedElement
 }
 
@@ -101,4 +99,6 @@ export type ComponentFunction = <
   dev?: true | DevCallback
   /** event selection strategy callback from behavioral library */
   strategy?: Strategy
+  /** Triggers that can be fired from outside component by invoking trigger method directly, via messenger, or via publisher */
+  observedTriggers?: Array<string>
 }) => PlaitedComponentConstructor<T>

@@ -27,8 +27,8 @@ test('eventTriggers', async (t) => {
         Add
       </button>
     ),
+    observedTriggers: ['add'],
   }) {
-    static observedTriggers = new Set(['add'])
     plait({ feedback, emit }: PlaitProps) {
       feedback({
         click() {

@@ -8,17 +8,9 @@
 import { createTemplate, FunctionTemplate, AdditionalAttrs } from '@plaited/jsx'
 import { dataTarget, dataTrigger, dataAddress } from '@plaited/jsx/utils'
 import { Trigger, bProgram, TriggerArgs } from '@plaited/behavioral'
-import {
-  PlaitedElement,
-  PlaitProps,
-  ComponentFunction,
-  PlaitedComponentConstructor,
-  Emit,
-  Messenger,
-  Publisher,
-} from './types.js'
+import { PlaitedElement, PlaitProps, ComponentFunction, Emit, Messenger, Publisher } from './types.js'
 import { assignSugar, SugaredElement, assignSugarForEach, createTemplateElement } from './sugar.js'
-import { trueTypeOf } from '@plaited/utils'
+import { noop, trueTypeOf } from '@plaited/utils'
 
 const regexp = /\b[\w-]+\b(?=->[\w-]+)/g
 // It takes the value of a data-target attribute and return all the events happening in it. minus the method identifier
@@ -45,10 +37,11 @@ const getTriggerType = (e: Event, context: HTMLElement | SVGElement): string => 
     .find((str: string) => str.includes(pre))
   return key ? key.replace(pre, '') : ''
 }
+const isElement = (node: Node): node is HTMLElement | SVGElement => node.nodeType === 1
 // Quickly traverse nodes observed in mutation selecting only those with data-trigger attribute
 const traverseNodes = (node: Node, arr: Node[]) => {
-  if (node.nodeType === 1) {
-    if ((node as Element).hasAttribute(dataTrigger) || node instanceof HTMLSlotElement) {
+  if (isElement(node)) {
+    if (node.hasAttribute(dataTrigger)) {
       arr.push(node)
     }
     if (node.hasChildNodes()) {
@@ -60,7 +53,7 @@ const traverseNodes = (node: Node, arr: Node[]) => {
     }
   }
 }
-
+// Our delegated listener class implements handleEvent
 class DelegatedListener {
   callback: (ev: Event) => void
   constructor(callback: (ev: Event) => void) {
@@ -70,14 +63,11 @@ class DelegatedListener {
     this.callback(evt)
   }
 }
-
+// Weakly hold reference to our delegated elements and their callbacks
 const delegates = new WeakMap()
 
 const isPublisher = (obj: Publisher | Messenger): obj is Publisher => {
   return Object.hasOwn(obj, 'subscribe')
-}
-const isMessenger = (obj: Publisher | Messenger): obj is Messenger => {
-  return Object.hasOwn(obj, 'connect')
 }
 /**
  * Creates a PlaitedComponent
@@ -95,6 +85,7 @@ export const Component: ComponentFunction = ({
   template,
   dev,
   strategy,
+  observedTriggers = [],
 }) => {
   if (!tag) {
     throw new Error(`Component is missing a [tag]`)
@@ -116,7 +107,7 @@ export const Component: ComponentFunction = ({
     #trigger?: Trigger
     plait?(props: PlaitProps): void | Promise<void>
     #root: ShadowRoot
-    #observedTriggers = (this.constructor as PlaitedComponentConstructor).observedTriggers
+    #observedTriggers = new Set(observedTriggers)
     constructor() {
       super()
       this.internals_ = this.attachInternals()
@@ -139,6 +130,7 @@ export const Component: ComponentFunction = ({
       this.#root.adoptedStyleSheets = adoptedStyleSheets
       const tpl = createTemplateElement(content)
       this.#root.replaceChildren(tpl.content)
+      this.trigger = this.trigger.bind(this)
     }
     connectedCallback() {
       if (this.plait) {
@@ -173,35 +165,30 @@ export const Component: ComponentFunction = ({
           type: `disconnected->${this.dataset.address ?? this.tagName.toLowerCase()}`,
         })
       this.#subscriptions.forEach((unsubscribe) => unsubscribe())
+      this.#subscriptions.clear()
     }
     #subscriptions = new Set<() => void>()
-    /** connect to a Messenger */
-    #connect(comm: Messenger | Publisher) {
-      if (trueTypeOf(comm) !== 'function') return
-      const trigger = (args: TriggerArgs) => {
-        if (trueTypeOf(args) !== 'object' || !Object.hasOwn(args, 'type')) return
-        const { type, detail } = args
-        if (this.#observedTriggers?.has(type)) {
-          this.#trigger?.({ type, detail })
-        }
-      }
-      if (isMessenger(comm)) {
-        const recipient = this.dataset.address
-        if (!recipient) {
-          console.error(`Component ${this.tagName.toLowerCase()} is missing an attribute [${dataAddress}]`)
-          return
-        }
-        const disconnect = comm.connect(recipient, trigger)
-        disconnect && this.#subscriptions.add(disconnect)
-        return disconnect
-      }
-      if (isPublisher(comm)) {
-        const disconnect = comm.subscribe(trigger)
-        disconnect && this.#subscriptions.add(disconnect)
-        return disconnect
+    /** Manually disconnect subscription to messenger or publisher */
+    #disconnect(cb: (() => void) | undefined) {
+      const callback = cb ?? noop
+      this.#subscriptions.add(callback)
+      return () => {
+        callback()
+        this.#subscriptions.delete(callback)
       }
     }
-    /** emit a custom event */
+    /** connect trigger to a Messenger or Publisher */
+    #connect(comm: Messenger | Publisher) {
+      if (trueTypeOf(comm) !== 'function') return noop // if comm is not a function return noop
+      if (isPublisher(comm)) return this.#disconnect(comm.subscribe(this.trigger))
+      const recipient = this.dataset.address
+      if (!recipient) {
+        console.error(`Component ${this.tagName.toLowerCase()} is missing an attribute [${dataAddress}]`)
+        return noop // if we're missing an address on our component return noop and console.error msg
+      }
+      return this.#disconnect(comm.connect(recipient, this.trigger))
+    }
+    /** emit a custom event cancelable and composed are true by default */
     #emit({ type, detail, bubbles = false, cancelable = true, composed = true }: Parameters<Emit>[0]) {
       if (!type) return
       const event = new CustomEvent(type, {
@@ -212,27 +199,29 @@ export const Component: ComponentFunction = ({
       })
       this.dispatchEvent(event)
     }
+    /** delegate event listeners  for elements in list */
     #delegateListeners(nodes: Node[]) {
       for (const el of nodes) {
-        if (el.nodeType !== 1) continue // Skip non-element nodes
-        const element = el as HTMLElement | SVGElement
-        if (element.tagName === 'SLOT' && element.hasAttribute('slot')) continue
-        !delegates.has(el) && this.#createDelegatedListener(element)
-        const triggers = element.dataset.trigger
+        if (!isElement(el)) continue // Skip non-element nodes
+        const element = el
+        if (element.tagName === 'SLOT' && element.hasAttribute('slot')) continue // skip nested slots
+        !delegates.has(el) && this.#createDelegatedListener(element) // bind a callback for element if we haven't already
+        const triggers = element.dataset.trigger // get element triggers
         if (triggers) {
-          const events = matchAllEvents(triggers) /** get event type */
+          const events = matchAllEvents(triggers) // get event types from triggers
           for (const event of events) {
-            /** loop through and set event listeners on delegated object */
+            /** loop through and set event listeners on delegated element */
             el.addEventListener(event, delegates.get(el))
           }
         }
       }
     }
+    /**  If delegated listener does not have element then delegate it's callback with auto cleanup*/
     #createDelegatedListener(el: HTMLElement | SVGElement) {
       delegates.set(
         el,
         new DelegatedListener((event) => {
-          // Delegated listener does not have element then delegate it's callback
+          //
           const triggerType = getTriggerType(event, el)
           triggerType
             ? /** if key is present in `data-trigger` trigger event on instance's bProgram */
@@ -245,7 +234,7 @@ export const Component: ComponentFunction = ({
         }),
       )
     }
-    // Observes the addition of nodes to the shadow dom and changes to and child's data-trigger attribute
+    /**  Observes the addition of nodes to the shadow dom and changes to and child's data-trigger attribute */
     #createShadowObserver() {
       const mo = new MutationObserver((mutationsList) => {
         for (const mutation of mutationsList) {
@@ -271,8 +260,14 @@ export const Component: ComponentFunction = ({
       })
       return mo
     }
-    trigger({ type, detail }: TriggerArgs) {
-      this.#observedTriggers?.has(type) && this.#trigger?.({ type, detail })
+    /** Public trigger method allows triggers of only observedTriggers from outside component */
+    trigger(args: TriggerArgs) {
+      const name = this.dataset.address ?? this.tagName.toLowerCase()
+      if (trueTypeOf(args) !== 'object') return console.error(`Invalid TriggerArg passed to Component [${name}]`)
+      const { type, detail } = args
+      if (!Object.hasOwn(args, 'type')) return console.error(`TriggerArg missing [type]`)
+      if (this.#observedTriggers.has(type)) return this.#trigger?.({ type, detail })
+      return console.warn(`Component [${name}] is not observing trigger [${type}]`)
     }
     /** we're bringing the bling back!!! */
     $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
