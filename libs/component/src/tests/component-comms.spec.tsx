@@ -1,7 +1,8 @@
 import { css } from '@plaited/jsx'
 import { dataAddress } from '@plaited/jsx/utils'
 import { test } from '@plaited/rite'
-import { Component, PlaitProps, messenger } from '../index.js'
+import { Component, PlaitProps } from '../index.js'
+import { messenger } from '../utils.js'
 
 test('dynamic island comms', async (t) => {
   const msg = messenger()
