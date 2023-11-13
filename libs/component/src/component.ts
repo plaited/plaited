@@ -41,9 +41,7 @@ const isElement = (node: Node): node is HTMLElement | SVGElement => node.nodeTyp
 // Quickly traverse nodes observed in mutation selecting only those with data-trigger attribute
 const traverseNodes = (node: Node, arr: Node[]) => {
   if (isElement(node)) {
-    if (node.hasAttribute(dataTrigger)) {
-      arr.push(node)
-    }
+    node.hasAttribute(dataTrigger) && arr.push(node)
     if (node.hasChildNodes()) {
       const childNodes = node.childNodes
       const length = childNodes.length
@@ -111,15 +109,8 @@ export const Component: ComponentFunction = ({
     constructor() {
       super()
       this.internals_ = this.attachInternals()
-      if (this.internals_.shadowRoot) {
-        this.#root = this.internals_.shadowRoot
-      } else {
-        /** no declarative shadow dom then create a shadowRoot */
-        this.#root = this.attachShadow({ mode, delegatesFocus })
-      }
-      if (!template) {
-        throw new Error(`Component [${tag}] is missing a [template]`)
-      }
+      this.#root = this.internals_.shadowRoot ?? this.attachShadow({ mode, delegatesFocus })
+      if (!template) throw new Error(`Component [${tag}] is missing a [template]`)
       const { content, stylesheets } = template
       const adoptedStyleSheets: CSSStyleSheet[] = []
       for (const style of stylesheets) {
@@ -240,9 +231,7 @@ export const Component: ComponentFunction = ({
         for (const mutation of mutationsList) {
           if (mutation.type === 'attributes') {
             const el = mutation.target
-            if (el.nodeType === 1) {
-              this.#delegateListeners([el])
-            }
+            isElement(el) && this.#delegateListeners([el])
           } else if (mutation.addedNodes.length) {
             const list: Node[] = []
             const length = mutation.addedNodes.length
