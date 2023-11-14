@@ -70,16 +70,18 @@ test('PlaitedComponent Function Template SSR With hydration Simulation', async (
   `
   class Fixture extends Component({
     tag: 'with-declarative-shadow-dom',
-    template: <div
-    data-test='inner'
-    className={cls.inner}
-    {...stylesheet}
-  >
-    <slot data-test='slot'>before hydration</slot>
-  </div>,
+    template: (
+      <div
+        data-test='inner'
+        className={cls.inner}
+        {...stylesheet}
+      >
+        <slot data-test='slot'>before hydration</slot>
+      </div>
+    ),
   }) {}
   const frag = (
-    <Fixture.template 
+    <Fixture.template
       data-test='host'
       {...stylesheet}
     />

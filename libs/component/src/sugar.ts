@@ -53,21 +53,21 @@ const updateAttributes = (element: HTMLElement | SVGElement, attr: string, val: 
 }
 
 const sugar = {
-  render({ stylesheets, node }: Template, position?: Position) {
+  render({ stylesheets, content }: Template, position?: Position) {
     const element = this as unknown as HTMLElement | SVGElement
     if (stylesheets.size) void updateShadowRootStyles(element.getRootNode() as ShadowRoot, stylesheets)
     if (position) {
       const template = document.createElement('template')
-      element.insertAdjacentElement(position, template)?.replaceWith(node)
+      element.insertAdjacentElement(position, template)?.replaceWith(content)
       return element
     }
-    element.replaceChildren(node)
+    element.replaceChildren(content)
     return element
   },
-  replace({ stylesheets, node }: Template) {
+  replace({ stylesheets, content }: Template) {
     const element = this as unknown as HTMLElement | SVGElement
     if (stylesheets.size) void updateShadowRootStyles(element.getRootNode() as ShadowRoot, stylesheets)
-    element.replaceWith(node)
+    element.replaceWith(content)
   },
   attr(attr: string, val?: string | null | number | boolean) {
     const element = this as unknown as HTMLElement | SVGElement
