@@ -64,9 +64,9 @@ test('eventTriggers', async (t) => {
         append() {
           const header = $('header')
           const string = ' World!'
-          const node =  document.createDocumentFragment()
+          const node = document.createDocumentFragment()
           node.append(string)
-          header.render({ node, stylesheets: new Set(), string}, 'beforeend')
+          header.render({ node, stylesheets: new Set(), string }, 'beforeend')
         },
       })
     }

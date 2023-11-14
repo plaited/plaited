@@ -64,7 +64,7 @@ const sugar = {
     element.replaceChildren(node)
     return element
   },
-  replace({stylesheets, node}: Template) {
+  replace({ stylesheets, node }: Template) {
     const element = this as unknown as HTMLElement | SVGElement
     if (stylesheets.size) void updateShadowRootStyles(element.getRootNode() as ShadowRoot, stylesheets)
     element.replaceWith(node)

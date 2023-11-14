@@ -92,17 +92,18 @@ export const Component: ComponentFunction = ({
   return class PlaitedComponent extends HTMLElement implements PlaitedElement {
     static tag = _tag
     static stylesheets = template.stylesheets
-    static template: FunctionTemplate<AdditionalAttrs> = ({ children = [], ...attrs }) => createTemplate(tag, {
-      ...attrs,
-      children: [
-        createTemplate('template',{
-          shadowrootmode: mode,
-          shadowrootdelegatesfocus: delegatesFocus,
-          children: template,
-        }),
-        ...Array.isArray(children) ?  children : [children],
-      ],
-    })
+    static template: FunctionTemplate<AdditionalAttrs> = ({ children = [], ...attrs }) =>
+      createTemplate(tag, {
+        ...attrs,
+        children: [
+          createTemplate('template', {
+            shadowrootmode: mode,
+            shadowrootdelegatesfocus: delegatesFocus,
+            children: template,
+          }),
+          ...(Array.isArray(children) ? children : [children]),
+        ],
+      })
     #shadowObserver?: MutationObserver
     internals_: ElementInternals
     #trigger?: Trigger
