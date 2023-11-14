@@ -13,7 +13,7 @@ const isTemplateObject = (obj: Record<string, unknown>): obj is Template => {
 }
 const isTemplateElement = (el: Element): el is HTMLTemplateElement => el.tagName === 'TEMPLATE'
 /** createTemplate function used for ssr */
-export const createTemplate: CreateTemplate = memo((_tag, attrs) => {
+export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const {
     children: _children,
     trusted,
@@ -143,7 +143,7 @@ export const createTemplate: CreateTemplate = memo((_tag, attrs) => {
     content: isDeclarativeShadowDOM ? content.content : content,
     string: templateStringArray.join(''),
   }
-})
+}
 
 export { createTemplate as h }
 
