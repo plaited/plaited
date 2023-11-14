@@ -3,9 +3,9 @@ import { dataAddress, dataTarget, dataTrigger } from './constants.js'
 export type Primitive = null | undefined | number | string | boolean | bigint
 
 export type Template = {
-  node: SVGElement | HTMLElement | DocumentFragment
-  string: string
+  content: SVGElement | HTMLElement | DocumentFragment 
   stylesheets: Set<string>
+  string: string
 }
 
 export type Child = string | Template
@@ -29,12 +29,11 @@ export type BaseAttrs = {
   className?: string
   children?: Children
   key?: string
-  shadowrootmode?: 'open' | 'closed'
-  shadowrootdelegatesfocus?: boolean
+  shadowrootmode?: 'open' | 'closed' // TODO need to figure out conditional type maybe???
+  shadowrootdelegatesfocus?: boolean // TODO need to figure out conditional type maybe???
   stylesheet?: string | string[]
   /** setting trusted to true will disable all escaping security policy measures for this element template */
   trusted?: boolean
-  slots?: Children
   style?: Record<string, string>
 }
 

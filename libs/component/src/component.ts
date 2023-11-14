@@ -92,14 +92,17 @@ export const Component: ComponentFunction = ({
   return class PlaitedComponent extends HTMLElement implements PlaitedElement {
     static tag = _tag
     static stylesheets = template.stylesheets
-    static template: FunctionTemplate<AdditionalAttrs & { slots?: never }> = ({ slot: _, children, ...attrs }) =>
-      createTemplate(tag, {
-        ...attrs,
-        children: template,
-        slots: children,
-        shadowrootmode: mode,
-        shadowrootdelegatesfocus: delegatesFocus,
-      })
+    static template: FunctionTemplate<AdditionalAttrs> = ({ children = [], ...attrs }) => createTemplate(tag, {
+      ...attrs,
+      children: [
+        createTemplate('template',{
+          shadowrootmode: mode,
+          shadowrootdelegatesfocus: delegatesFocus,
+          children: template,
+        }),
+        ...Array.isArray(children) ?  children : [children],
+      ],
+    })
     #shadowObserver?: MutationObserver
     internals_: ElementInternals
     #trigger?: Trigger
@@ -109,10 +112,10 @@ export const Component: ComponentFunction = ({
     constructor() {
       super()
       this.internals_ = this.attachInternals()
-      const root = this.internals_.shadowRoot ?? this.shadowRoot
+      const root = this.internals_.shadowRoot
       this.#root = root ?? this.attachShadow({ mode, delegatesFocus })
       if (!template) throw new Error(`Component [${tag}] is missing a [template]`)
-      const { node, stylesheets } = template
+      const { content, stylesheets } = template
       const adoptedStyleSheets: CSSStyleSheet[] = []
       for (const style of stylesheets) {
         const sheet = new CSSStyleSheet()
@@ -120,7 +123,7 @@ export const Component: ComponentFunction = ({
         adoptedStyleSheets.push(sheet)
       }
       this.#root.adoptedStyleSheets = adoptedStyleSheets
-      this.#root.replaceChildren(node)
+      this.#root.replaceChildren(content)
       this.trigger = this.trigger.bind(this)
     }
     connectedCallback() {
