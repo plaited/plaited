@@ -1,11 +1,221 @@
 // Bun Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`ssr: renders createTemplate 1`] = `"<div style="background-color: blue; margin: 12px;">styles</div>"`;
+exports[`ssr: self closing - html 1`] = `"<input type="text">"`;
 
-exports[`ssr: renders Fragment 1`] = `"<li>item-0</li><li>item-1</li><li>item-2</li><li>item-3</li><li>item-4</li><li>item-5</li><li>item-6</li><li>item-7</li><li>item-8</li><li>item-9</li>"`;
+exports[`ssr: self closing - svg 1`] = `"<polygon points="0,100 50,25 50,75 100,0"></polygon>"`;
 
-exports[`ssr: renders styles before markup when no body or head tag 1`] = `"<style>.nested-label_LTU0Mz { font-weight: bold; }.slotted-paragraph_LTc5ND { color: rebeccapurple; }.image_Mjc4MD { width: 100%; aspect-ratio: 16 / 9; }</style><top-component><img class="image_Mjc4MD"><template shadowrootmode="open" shadowrootdelegatesfocus="true" /><style>:host { display: block; }</style><nested-component><p class="slotted-paragraph_LTc5ND" slot="nested">slotted paragraph</p><template shadowrootmode="open" shadowrootdelegatesfocus="true" /><span class="nested-label_LTU0Mz">inside nested template</span><slot name="nested"></slot></template></nested-component></template></top-component>"`;
+exports[`ssr: falsey - undefined 1`] = `"<div></div>"`;
 
-exports[`ssr: renders styles in body when present 1`] = `"<body><style>.nested-label_LTU0Mz { font-weight: bold; }.slotted-paragraph_LTc5ND { color: rebeccapurple; }.image_Mjc4MD { width: 100%; aspect-ratio: 16 / 9; }</style><top-component><img class="image_Mjc4MD"></top-component></body>"`;
+exports[`ssr: falsey - null 1`] = `"<div></div>"`;
 
-exports[`ssr: renders styles in head when present 1`] = `"<html><head><style>.nested-label_LTU0Mz { font-weight: bold; }.slotted-paragraph_LTc5ND { color: rebeccapurple; }.image_Mjc4MD { width: 100%; aspect-ratio: 16 / 9; }</style></head><body><top-component><img class="image_Mjc4MD"></top-component></body></html>"`;
+exports[`ssr: falsey - false 1`] = `"<div></div>"`;
+
+exports[`ssr: falsey - "" 1`] = `"<div></div>"`;
+
+exports[`ssr: falsey - 0 1`] = `"<div></div>"`;
+
+exports[`ssr: falsey - NaN 1`] = `"<div></div>"`;
+
+exports[`ssr: conditional 1`] = `"<div>hello</div>"`;
+
+exports[`ssr: style attribute 1`] = `"<div style="background-color: blue; margin: 12px;">styles</div>"`;
+
+exports[`ssr: data-trigger attribute 1`] = `"<div data-trigger="click->random focus->thing">triggers</div>"`;
+
+exports[`ssr: camelCase attributes 1`] = `
+"<div data-trigger="click->click" data-address="address" data-mode="mode"
+x-prefix="x"></div>"
+`;
+
+exports[`ssr: array of templates 1`] = `
+"<div>
+    <li>0</li>
+    <li>1</li>
+    <li>2</li>
+    <li>3</li>
+    <li>4</li>
+    <li>5</li>
+    <li>6</li>
+    <li>7</li>
+    <li>8</li>
+    <li>9</li>
+</div>"
+`;
+
+exports[`ssr: should not throw on script tag with trusted attribute 1`] = `"<script type="module" src="main.js"></script>"`;
+
+exports[`ssr: escapes children 1`] = `
+"<div>
+    <script type="text/javascript">
+        const hostRegex = /^https?://([^/]+)/.*$/i;
+        const host = document.URL.replace(hostRegex, '$1');
+        const socket = new WebSocket(/);
+        const reload = () =>{
+          location.reload();
+          console.log('...reloading');
+        };
+        socket.addEventListener('message', reload);
+        console.log('[plaited] listening for file changes');
+    </script>
+</div>"
+`;
+
+exports[`ssr: does not escape children when trusted 1`] = `
+"<div>
+    <script type="text/javascript">
+        const hostRegex = /^https?://([^/]+)/.*$/i;
+        const host = document.URL.replace(hostRegex, '$1');
+        const socket = new WebSocket(/);
+        const reload = () =>{
+          location.reload();
+          console.log('...reloading');
+        };
+        socket.addEventListener('message', reload);
+        console.log('[plaited] listening for file changes');
+    </script>
+</div>"
+`;
+
+exports[`ssr: with slotted templates 1`] = `
+"<c-el>
+    <li slot="slot">slot-0</li>
+    <li slot="slot">slot-1</li>
+    <li slot="slot">slot-2</li>
+    <li slot="slot">slot-3</li>
+    <li slot="slot">slot-4</li>
+    <li slot="slot">slot-5</li>
+    <li slot="slot">slot-6</li>
+    <li slot="slot">slot-7</li>
+    <li slot="slot">slot-8</li>
+    <li slot="slot">slot-9</li>
+    <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+        <slot name="slot"></slot>
+    </template>
+</c-el>"
+`;
+
+exports[`ssr: Fragment of templates 1`] = `
+"<li>item-0</li>
+<li>item-1</li>
+<li>item-2</li>
+<li>item-3</li>
+<li>item-4</li>
+<li>item-5</li>
+<li>item-6</li>
+<li>item-7</li>
+<li>item-8</li>
+<li>item-9</li>"
+`;
+
+exports[`ssr: custom element with child hoisting its styles 1`] = `
+"<nested-component>
+    <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+        <style>
+            .nested-label_LTU0Mz { font-weight: bold; }
+        </style><span class="nested-label_LTU0Mz">inside nested template</span>
+        <slot
+        name="nested"></slot>
+    </template>
+</nested-component>"
+`;
+
+exports[`ssr: custom element with child and host styles 1`] = `
+"<nested-component>
+    <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+        <style>
+            host: { display: flex; flex-direction: column; }.nested-label_LTU0Mz { font-weight: bold; }
+        </style><span class="nested-label_LTU0Mz">inside nested template</span>
+        <slot
+        name="nested"></slot>
+    </template>
+</nested-component>"
+`;
+
+exports[`ssr: custom element with styled slotted component 1`] = `
+"<style>
+    .slotted-paragraph_LTc5ND { color: rebeccapurple; }
+</style>
+<nested-component>
+    <p class="slotted-paragraph_LTc5ND" slot="nested">slotted paragraph</p>
+    <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+        <style>
+            .nested-label_LTU0Mz { font-weight: bold; }
+        </style><span class="nested-label_LTU0Mz">inside nested template</span>
+        <slot
+        name="nested"></slot>
+    </template>
+</nested-component>"
+`;
+
+exports[`ssr: custom element with styles nested in custom element 1`] = `
+"<top-component>
+    <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+        <style>
+            .slotted-paragraph_LTc5ND { color: rebeccapurple; }
+        </style>
+        <nested-component>
+            <p class="slotted-paragraph_LTc5ND" slot="nested">slotted paragraph</p>
+            <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+                <style>
+                    .nested-label_LTU0Mz { font-weight: bold; }
+                </style><span class="nested-label_LTU0Mz">inside nested template</span>
+                <slot
+                name="nested"></slot>
+            </template>
+        </nested-component>
+    </template>
+</top-component>"
+`;
+
+exports[`ssr: custom element with styles nested in custom element with styles 1`] = `
+"<top-component>
+    <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+        <style>
+            :host { display: block; }.slotted-paragraph_LTc5ND { color: rebeccapurple; }
+        </style>
+        <nested-component>
+            <p class="slotted-paragraph_LTc5ND" slot="nested">slotted paragraph</p>
+            <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+                <style>
+                    .nested-label_LTU0Mz { font-weight: bold; }
+                </style><span class="nested-label_LTU0Mz">inside nested template</span>
+                <slot
+                name="nested"></slot>
+            </template>
+        </nested-component>
+    </template>
+</top-component>"
+`;
+
+exports[`ssr: custom element with nested custom element and styled slotted element 1`] = `
+"<style>
+    .image_Mjc4MD { width: 100%; aspect-ratio: 16 / 9; }
+</style>
+<top-component>
+    <img class="image_Mjc4MD">
+    <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+        <style>
+            :host { display: block; }.slotted-paragraph_LTc5ND { color: rebeccapurple; }
+        </style>
+        <nested-component>
+            <p class="slotted-paragraph_LTc5ND" slot="nested">slotted paragraph</p>
+            <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+                <style>
+                    .nested-label_LTU0Mz { font-weight: bold; }
+                </style><span class="nested-label_LTU0Mz">inside nested template</span>
+                <slot
+                name="nested"></slot>
+            </template>
+        </nested-component>
+    </template>
+</top-component>"
+`;
+
+exports[`ssr: properly hoist and deduplicates multiple stylesheets on a single node 1`] = `
+"<style>
+    .a_NTA5Nj { width: 100%; }.a_LTIzMT { color: blue; }
+</style>
+<div></div>"
+`;
+
+exports[`ssr: trims whitespace 1`] = `"<div>trims white-space</div>"`;

@@ -1,7 +1,6 @@
 import { test } from '@plaited/rite'
 import { css, FT } from '@plaited/jsx'
 import { Component } from '../index.js'
-import { createTemplateElement } from '../sugar.js'
 
 test('template', async (t) => {
   const [cls, stylesheet] = css`
@@ -61,7 +60,7 @@ test('template existing declarative shadowdom', async (t) => {
     tag: 'with-declarative-shadow-dom',
     template: <Template>after hydration</Template>,
   }) {}
-  const template = createTemplateElement(
+  const frag = 
     (
       <Fixture.tag
         data-test='host'
@@ -69,9 +68,7 @@ test('template existing declarative shadowdom', async (t) => {
       >
         <Template>before hydration</Template>
       </Fixture.tag>
-    ).content,
-  )
-  const frag = document.importNode(template.content, true)
+    ).node
   const body = document.querySelector('body')
   body.append(frag)
   const host = await t.findByAttribute<HTMLElement>('data-test', 'host')

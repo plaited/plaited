@@ -10,7 +10,8 @@ import { Attrs, CreateTemplate } from './types.js'
 import { memo } from './memo.js'
 
 const removeClosingTag = (str: string, closingTag:string) => str.slice(0, -closingTag.length);
-
+const joinParts = (tag: string, attrs: string[] = [], children: string[]) =>
+  `<${[tag, ...attrs].join(' ')}>${children.join('')}</${tag}>`
 const ensureArray = <T>(obj?: T | T[]) => (Array.isArray(obj) ? obj : obj ? [obj] : [])
 /** createTemplate function used for ssr */
 export const createTemplate: CreateTemplate = memo((_tag, attrs) => {
@@ -100,28 +101,21 @@ export const createTemplate: CreateTemplate = memo((_tag, attrs) => {
   /** Test if the the tag is a string and if it's a custom element */
   const isCustomElement = customElementRegex.test(tag)
 
-  const templateArr: string[] = ['<template ']
+  const templateChildren: string[] = []
+  const templateAttrs: string[] = []
+  let noShadow = false
   if (isCustomElement) {
-    
-    /** Create opening tag of declarative shadowDom */
-    templateArr.push(
-      `shadowrootmode="${shadowrootmode}" `,
-      `shadowrootdelegatesfocus="${shadowrootdelegatesfocus}" `,
-      '/>'
-    )
-    /** We destructured out the stylesheet attribute as it's only for
-     * custom elements declarative shadow dom  we create the style node
-     * append the stylesheet as the first child of the declarative shadowDom template */
-    if (stylesheets.size) {
-      const sheets = [...stylesheets]
-      templateArr.push(`<style>${sheets.join('')}</style>`)
-      const style = document.createElement('style')
-      style.append(sheets.join(''))
-      node?.shadowRoot?.prepend(style)
-    }
-    stylesheets.clear()
+    /** Set the mode of the shadowDom */
+    templateAttrs.push(`shadowrootmode="${shadowrootmode}"`)
+    /** We generally want to delegate focus to the first focusable element in
+      * custom elements
+      */
+    templateAttrs.push(`shadowrootdelegatesfocus="${shadowrootdelegatesfocus}"`)
     /** Set the mode and delegatesFocus of the shadowDom */
-    node.attachShadow({ mode: shadowrootmode, delegatesFocus: shadowrootdelegatesfocus })
+    if(!node.shadowRoot){
+      node.attachShadow({ mode: shadowrootmode, delegatesFocus: shadowrootdelegatesfocus })
+      noShadow = true
+    }
   }
   /** time to append the children to our template if we have em*/
   const length = children.length
@@ -129,8 +123,8 @@ export const createTemplate: CreateTemplate = memo((_tag, attrs) => {
     const child = children[i]
     /** P1 element is a customElement and child IS {@type Template}*/
     if (isCustomElement && typeof child === 'object' && 'node' in child) {
-      templateArr.push(child.string)
-      node?.shadowRoot?.append(child.node)
+      templateChildren.push(child.string)
+      noShadow && node?.shadowRoot?.append(child.node)
       for (const sheet of child.stylesheets) {
         !stylesheets.has(sheet) && stylesheets.add(sheet)
       }
@@ -150,16 +144,25 @@ export const createTemplate: CreateTemplate = memo((_tag, attrs) => {
     /** P4 element is a customElement and child IS {@type Primitive} */
     if (isCustomElement) {
       const str = trusted ? `${formattedChild}`.trim() : escape(`${formattedChild}`).trim()
-      templateArr.push(str)
-      node?.shadowRoot?.append(str)
+      templateChildren.push(str)
+      noShadow && node?.shadowRoot?.append(str)
       continue
     }
     /** P5 child IS {@type Primitive} */
     node.append(trusted ? `${formattedChild}`.trim() : escape(`${formattedChild}`).trim())
   }
   if (isCustomElement) {
-    /** close the template tag */
-    templateArr.push('</template>')
+     /** We destructured out the stylesheet attribute as it's only for
+     * custom elements declarative shadow dom  we create the style node
+     * append the stylesheet as the first child of the declarative shadowDom template */
+     if (stylesheets.size) {
+      const sheets = [...stylesheets]
+      templateChildren.unshift(joinParts('style', undefined, sheets))
+      const style = document.createElement('style')
+      style.append(sheets.join(''))
+      noShadow && node?.shadowRoot?.prepend(style)
+    }
+    stylesheets.clear()
     /** We need to append our slots outside the template and carry stylesheets forward **/
     const slots = !_slots ? [] : Array.isArray(_slots) ? _slots : [_slots]
     const length = slots.length
@@ -181,12 +184,7 @@ export const createTemplate: CreateTemplate = memo((_tag, attrs) => {
     }
   }
   const closingTag = `</${tag}>`
-  const string = isCustomElement ? [removeClosingTag(node.outerHTML, closingTag), ...templateArr, closingTag].join(''): node.outerHTML
-  console.log({
-    stylesheets,
-    node,
-    string
-  })
+  const string = isCustomElement ? [removeClosingTag(node.outerHTML, closingTag), joinParts('template', templateAttrs, templateChildren), closingTag].join(''): node.outerHTML
   return {
     stylesheets,
     node,
@@ -201,6 +199,7 @@ export const  Fragment = ({ children: _children }: Attrs) =>{
   const stylesheets = new Set<string>()
   const length = children.length
   const template = document.createElement('template')
+  const string = []
   for (let i = 0; i < length; i++) {
     const child = children[i]
     if (typeof child === 'string') {
@@ -211,10 +210,11 @@ export const  Fragment = ({ children: _children }: Attrs) =>{
     for (const sheet of child.stylesheets) {
       !stylesheets.has(sheet) && stylesheets.add(sheet)
     }
+    string.push(child.string)
   }
   return {
     node: template.content,
-    string: template.innerHTML,
+    string: string.join(''),
     stylesheets,
   }
 }

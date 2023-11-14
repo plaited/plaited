@@ -35,32 +35,6 @@ const updateShadowRootStyles = async (root: ShadowRoot, stylesheets: Set<string>
   root.adoptedStyleSheets = [...root.adoptedStyleSheets, ...newStyleSheets]
 }
 
-let parser: {
-  parseFromString(
-    string: string,
-    type: DOMParserSupportedType,
-    options: {
-      includeShadowRoots: boolean
-    },
-  ): Document
-}
-
-if (canUseDOM()) {
-  parser = new DOMParser()
-}
-
-export const createTemplateElement = (content: string) => {
-  const fragment = parser.parseFromString(`<template>${content}</template>`, 'text/html', {
-    includeShadowRoots: true,
-  })
-  return fragment.head.firstChild as HTMLTemplateElement
-}
-
-const prepareTemplate = (root: ShadowRoot, { stylesheets, content }: Template): HTMLTemplateElement => {
-  if (stylesheets.size) void updateShadowRootStyles(root, stylesheets)
-  return createTemplateElement(content)
-}
-
 const updateAttributes = (element: HTMLElement | SVGElement, attr: string, val: string | null | number | boolean) => {
   if (val === null && element.hasAttribute(attr)) {
     // Remove the attribute if val is null or undefined, and it currently exists
@@ -79,20 +53,21 @@ const updateAttributes = (element: HTMLElement | SVGElement, attr: string, val: 
 }
 
 const sugar = {
-  render(tpl: Template, position?: Position) {
+  render({ stylesheets, node }: Template, position?: Position) {
     const element = this as unknown as HTMLElement | SVGElement
-    const template = prepareTemplate(element.getRootNode() as ShadowRoot, tpl)
+    if (stylesheets.size) void updateShadowRootStyles(element.getRootNode() as ShadowRoot, stylesheets)
     if (position) {
-      element.insertAdjacentElement(position, template)?.replaceWith(template.content)
+      const template = document.createElement('template')
+      element.insertAdjacentElement(position, template)?.replaceWith(node)
       return element
     }
-    element.replaceChildren(template.content)
+    element.replaceChildren(node)
     return element
   },
-  replace(tpl: Template) {
+  replace({stylesheets, node}: Template) {
     const element = this as unknown as HTMLElement | SVGElement
-    const template = prepareTemplate(element.getRootNode() as ShadowRoot, tpl)
-    element.replaceWith(template.content)
+    if (stylesheets.size) void updateShadowRootStyles(element.getRootNode() as ShadowRoot, stylesheets)
+    element.replaceWith(node)
   },
   attr(attr: string, val?: string | null | number | boolean) {
     const element = this as unknown as HTMLElement | SVGElement
