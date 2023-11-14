@@ -1,34 +1,36 @@
 // Bun Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`createTemplate: self closing - html 1`] = `"<input type="text">"`;
+exports[`createTemplate: Self closing - html 1`] = `"<input type="text">"`;
 
-exports[`createTemplate: self closing - svg 1`] = `"<polygon points="0,100 50,25 50,75 100,0"></polygon>"`;
+exports[`createTemplate: Self closing - svg 1`] = `"<polygon points="0,100 50,25 50,75 100,0"></polygon>"`;
 
-exports[`createTemplate: falsey - undefined 1`] = `"<div></div>"`;
+exports[`createTemplate: Falsey - undefined 1`] = `"<div></div>"`;
 
-exports[`createTemplate: falsey - null 1`] = `"<div></div>"`;
+exports[`createTemplate: Falsey - null 1`] = `"<div></div>"`;
 
-exports[`createTemplate: falsey - false 1`] = `"<div></div>"`;
+exports[`createTemplate: Falsey - false 1`] = `"<div></div>"`;
 
-exports[`createTemplate: falsey - "" 1`] = `"<div></div>"`;
+exports[`createTemplate: Falsey - "" 1`] = `"<div></div>"`;
 
-exports[`createTemplate: falsey - 0 1`] = `"<div></div>"`;
+exports[`createTemplate: Falsey - 0 1`] = `"<div></div>"`;
 
-exports[`createTemplate: falsey - NaN 1`] = `"<div></div>"`;
+exports[`createTemplate: Falsey - NaN 1`] = `"<div></div>"`;
 
-exports[`createTemplate: conditional 1`] = `"<div>hello</div>"`;
+exports[`createTemplate: Bad template - NaN 1`] = `"<div></div>"`;
 
-exports[`createTemplate: style attribute 1`] = `"<div style="background-color: blue; margin: 12px;">styles</div>"`;
+exports[`createTemplate: Conditional 1`] = `"<div>hello</div>"`;
+
+exports[`createTemplate: Style attribute 1`] = `"background-color: blue; margin: 12px; --cssVar: red;"`;
 
 exports[`createTemplate: data-trigger attribute 1`] = `"<div data-trigger="click->random focus->thing">triggers</div>"`;
 
-exports[`createTemplate: camelCase attributes 1`] = `
+exports[`createTemplate: kebab-case attributes 1`] = `
 "<div data-trigger="click->click" data-address="address" data-mode="mode"
 x-prefix="x"></div>"
 `;
 
-exports[`createTemplate: array of templates 1`] = `
-"<div>
+exports[`createTemplate: Array of templates 1`] = `
+"<ul>
     <li>0</li>
     <li>1</li>
     <li>2</li>
@@ -39,91 +41,118 @@ exports[`createTemplate: array of templates 1`] = `
     <li>7</li>
     <li>8</li>
     <li>9</li>
-</div>"
+</ul>"
 `;
 
-exports[`createTemplate: should not throw on script tag with trusted attribute 1`] = `"<script type="module" src="main.js"></script>"`;
+exports[`createTemplate: Should not throw on script tag with trusted attribute 1`] = `"<script type="module" src="main.js"></script>"`;
 
-exports[`createTemplate: escapes children 1`] = `
-"<div>
-    <script type="text/javascript">
-        const hostRegex = /^https?://([^/]+)/.*$/i;
-        const host = document.URL.replace(hostRegex, '$1');
-        const socket = new WebSocket(/);
-        const reload = () =>{
-          location.reload();
-          console.log('...reloading');
-        };
-        socket.addEventListener('message', reload);
-        console.log('[plaited] listening for file changes');
-    </script>
-</div>"
+exports[`createTemplate: Escapes children 1`] = `null`;
+
+exports[`createTemplate: Does not escape children when trusted 1`] = `
+"<script type="text/javascript">
+const hostRegex = /^https?://([^/]+)/.*$/i;
+const host = document.URL.replace(hostRegex, '$1');
+const socket = new WebSocket(/);
+const reload = () =>{
+  location.reload();
+  console.log('...reloading');
+};
+socket.addEventListener('message', reload);
+console.log('[plaited] listening for file changes');
+</script>"
 `;
 
-exports[`createTemplate: does not escape children when trusted 1`] = `
-"<div>
-    <script type="text/javascript">
-        const hostRegex = /^https?://([^/]+)/.*$/i;
-        const host = document.URL.replace(hostRegex, '$1');
-        const socket = new WebSocket(/);
-        const reload = () =>{
-          location.reload();
-          console.log('...reloading');
-        };
-        socket.addEventListener('message', reload);
-        console.log('[plaited] listening for file changes');
-    </script>
-</div>"
+exports[`createTemplate: Non declarative shadow DOM template 1`] = `
+"<ul>
+    <template><span>I am a span!!!</span>
+    </template>
+    <li>item-0</li>
+    <li>item-1</li>
+    <li>item-2</li>
+    <li>item-3</li>
+    <li>item-4</li>
+    <li>item-5</li>
+    <li>item-6</li>
+    <li>item-7</li>
+    <li>item-8</li>
+    <li>item-9</li>
+</ul>"
 `;
 
-exports[`createTemplate: with slotted templates 1`] = `
-"<c-el>
-    <li slot="slot">slot-0</li>
-    <li slot="slot">slot-1</li>
-    <li slot="slot">slot-2</li>
-    <li slot="slot">slot-3</li>
-    <li slot="slot">slot-4</li>
-    <li slot="slot">slot-5</li>
-    <li slot="slot">slot-6</li>
-    <li slot="slot">slot-7</li>
-    <li slot="slot">slot-8</li>
-    <li slot="slot">slot-9</li>
-</c-el>"
+exports[`createTemplate: Fragment 1`] = `
+"<li>In 5</li>
+<li>In 4</li>
+<li>In 3</li>
+<li>In 2</li>
+<li>In 1</li>
+<li>Blast Off!!!</li>"
 `;
 
-exports[`createTemplate: Fragment of templates 1`] = `
-"<li>item-0</li>
-<li>item-1</li>
-<li>item-2</li>
-<li>item-3</li>
-<li>item-4</li>
-<li>item-5</li>
-<li>item-6</li>
-<li>item-7</li>
-<li>item-8</li>
-<li>item-9</li>"
+exports[`createTemplate: CustomElement hoisting its styles 1`] = `
+{
+  "content": "<nested-component></nested-component>",
+  "stylesheets":   Set {},
+}
 `;
 
-exports[`createTemplate: custom element with child hoisting its styles 1`] = `"<nested-component></nested-component>"`;
+exports[`createTemplate: CustomElement with declarative shadow dom & host styles 1`] = `
+{
+  "content": "<nested-component></nested-component>",
+  "stylesheets":   
+Set {
+    "host: { display: flex; flex-direction: column; }",
+  }
+,
+}
+`;
 
-exports[`createTemplate: custom element with child and host styles 1`] = `"<nested-component></nested-component>"`;
-
-exports[`createTemplate: custom element with styled slotted component 1`] = `
+exports[`createTemplate: CustomElement with styled slotted component 1`] = `
+{
+  "content": 
 "<nested-component>
     <p class="slotted-paragraph_LTc5ND" slot="nested">slotted paragraph</p>
 </nested-component>"
+,
+  "stylesheets":   
+Set {
+    ".slotted-paragraph_LTc5ND { color: rebeccapurple; }",
+  }
+,
+}
 `;
 
-exports[`createTemplate: custom element with styles nested in custom element 1`] = `"<top-component></top-component>"`;
+exports[`createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom 1`] = `
+{
+  "content": "<top-component></top-component>",
+  "stylesheets":   Set {},
+}
+`;
 
-exports[`createTemplate: custom element with styles nested in custom element with styles 1`] = `"<top-component></top-component>"`;
+exports[`createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles 1`] = `
+{
+  "content": "<top-component></top-component>",
+  "stylesheets":   
+Set {
+    ":host { display: block; }",
+  }
+,
+}
+`;
 
-exports[`createTemplate: custom element with nested custom element and styled slotted element 1`] = `
+exports[`createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles and child 1`] = `
+{
+  "content": 
 "<top-component>
     <img class="image_Mjc4MD">
 </top-component>"
+,
+  "stylesheets":   
+Set {
+    ":host { display: block; }",
+    ".image_Mjc4MD { width: 100%; aspect-ratio: 16 / 9; }",
+  }
+,
+}
 `;
 
-exports[`createTemplate: properly hoist and deduplicates multiple stylesheets on a single node 1`] = `"<div></div>"`;
-
-exports[`createTemplate: trims whitespace 1`] = `"<div>trims white-space</div>"`;
+exports[`createTemplate: Trims whitespace 1`] = `"<div>trims white-space</div>"`;

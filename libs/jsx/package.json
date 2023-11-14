@@ -38,6 +38,6 @@
     "@plaited/utils": "5.2.0"
   },
   "devDependencies": {
-    "linkedom": "0.16.4"
+    "@happy-dom/global-registrator": "12.10.3"
   }
 }

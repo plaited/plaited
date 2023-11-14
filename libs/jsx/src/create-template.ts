@@ -1,30 +1,16 @@
 import { escape, kebabCase } from '@plaited/utils'
-import {
-  booleanAttrs,
-  primitives,
-  voidTags,
-  validPrimitiveChildren,
-  dataTrigger as dataTriggerKey,
-  templateKeys
-} from './constants.js'
+import { booleanAttrs, primitives, voidTags, validPrimitiveChildren, templateKeys } from './constants.js'
 import { Attrs, CreateTemplate, Template } from './types.js'
 import { memo } from './memo.js'
 
-/** create server element string representation */
-const joinParts = (tag: string, attrs: string[] = [], children: string[]) =>
-  `<${[tag, ...attrs].join(' ')}>${children.join('')}</${tag}>`
-
 const ensureArray = <T>(obj?: T | T[]) => (Array.isArray(obj) ? obj : obj ? [obj] : [])
-
 const length = templateKeys.length
-
-const isTemplateObject = (obj: Record<string, unknown>): obj is Template =>{
-  for(let i = 0; i < length; i++) {
-    if(!Object.hasOwn(obj, templateKeys[i])) return false
+const isTemplateObject = (obj: Record<string, unknown>): obj is Template => {
+  for (let i = 0; i < length; i++) {
+    if (!Object.hasOwn(obj, templateKeys[i])) return false
   }
   return true
 }
-
 const isTemplateElement = (el: Element): el is HTMLTemplateElement => el.tagName === 'TEMPLATE'
 /** createTemplate function used for ssr */
 export const createTemplate: CreateTemplate = memo((_tag, attrs) => {
@@ -52,34 +38,25 @@ export const createTemplate: CreateTemplate = memo((_tag, attrs) => {
     throw new Error("Script tag not allowed unless 'trusted' property set")
   }
 
-  /** Create our element and array to hold attributes */
+  /** Now to determine what our root element is */
   const content = document.createElement(tag)
-  const attributesArray: string[] = []
 
   /** handle JS reserved words commonly used in html class & for*/
-  if(htmlFor) {
-    content.setAttribute('for', htmlFor)
-    attributesArray.push(`for="${htmlFor}"`)
-  }
-  if(className) {
-    attributesArray.push(`class="${className}"`)
-    content.className = className
-  }
+  htmlFor && content.setAttribute('for', htmlFor)
+  className && (content.className = className)
   /** if we have dataTrigger attribute wire up formatted correctly*/
   if (dataTrigger) {
     const value = Object.entries(dataTrigger)
       .map<string>(([ev, req]) => `${ev}->${req}`)
       .join(' ')
-    attributesArray.push(`${dataTriggerKey}="${value}"`)
     content.dataset.trigger = value
   }
   /** if we have style add it to element */
   if (style) {
-    const value = escape(Object.entries(style)
-      /** convert camelCase style prop into dash-case ones */
-      .map<string>(([prop, val]) => `${prop.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}:${val};`)
-      .join(' '))
-    attributesArray.push(`style="${value}"`)
+    const value = Object.entries(style)
+      /** convert camelCase style prop into dash-case ones so long as not cssVar */
+      .map<string>(([prop, val]) => `${prop.startsWith('--') ? prop : kebabCase(prop)}:${val};`)
+      .join(' ')
     content.style.cssText = value
   }
   /** next we want to loops through our attributes */
@@ -99,17 +76,13 @@ export const createTemplate: CreateTemplate = memo((_tag, attrs) => {
     }
     /** test for and handle boolean attributes */
     if (booleanAttrs.has(key)) {
-      attributesArray.push(key)
       content.toggleAttribute(key, true)
       continue
     }
     /** set the value so long as it's not nullish in we use the formatted value  */
     const formattedValue = value ?? ''
     /** handle the rest of the attributes */
-    const kebabKey = kebabCase(key)
-    const safeValue = trusted ? `${formattedValue}` : escape(`${formattedValue}`)
-    attributesArray.push(`${kebabKey}="${safeValue}"`)
-    content.setAttribute(kebabKey, safeValue)
+    content.setAttribute(kebabCase(key), trusted ? `${formattedValue}` : escape(`${formattedValue}`))
   }
 
   /** Our tag is a void tag so we can return it once we apply attributes */
@@ -117,23 +90,25 @@ export const createTemplate: CreateTemplate = memo((_tag, attrs) => {
     return {
       stylesheets,
       content,
-      string: `<${[tag, ...attributesArray].join(' ')}/>`
+      string: content.outerHTML,
     }
   }
-  const childrenArray: string[] = []
+
   /** Test if the the tag is a template and if it's a declarative shadow dom template */
   const template = isTemplateElement(content)
   const isDeclarativeShadowDOM = template && content.hasAttribute('shadowrootmode')
+  const prefix = `${content.outerHTML.split(`></${tag}>`)[0]}>`
+  const suffix = `</${tag}>`
+  const templateStringArray: string[] = []
   /** time to append the children to our template if we have em*/
   const length = children.length
   const element = template ? content.content : content
   for (let i = 0; i < length; i++) {
     const child = children[i]
     /** P1 child IS {@type Template}*/
-
     if (typeof child === 'object' && isTemplateObject(child)) {
       element.append(child.content)
-      childrenArray.push(child.string)
+      templateStringArray.push(child.string)
       for (const sheet of child.stylesheets) {
         !stylesheets.has(sheet) && stylesheets.add(sheet)
       }
@@ -144,31 +119,35 @@ export const createTemplate: CreateTemplate = memo((_tag, attrs) => {
     const formattedChild = validPrimitiveChildren.has(typeof child) ? child : ''
     /** P3 child IS {@type Primitive} */
     const str = trusted ? `${formattedChild}`.trim() : escape(`${formattedChild}`).trim()
-    childrenArray.push(str)
+    templateStringArray.push(str)
     element.append(str)
   }
   if (isDeclarativeShadowDOM) {
-     /** We destructured out the stylesheet attribute as it's only for
-     * custom elements declarative shadow dom  we create the style node
-     * append the stylesheet as the first child of the declarative shadowDom template */
-     if (stylesheets.size) {
-      childrenArray.unshift(joinParts('style', undefined, [...stylesheets]))
+    /** We continue to hoist our stylesheet until we run
+     * into a declarative shadow dom then we push the
+     * stylesheet as the first child of the declarative
+     * shadowDom template array  and clear the stylesheets set
+     */
+    if (stylesheets.size) {
+      templateStringArray.unshift(`<style>${Array.from(stylesheets).join('')}</style>`)
+      stylesheets.clear()
     }
-    stylesheets.clear()
   }
+  /** Add closing tag to template string */
+  templateStringArray.push(suffix)
+  templateStringArray.unshift(prefix)
   /** If it is a declarative shadow DOM we want to rip out the content and simply append an empty fragment */
   isDeclarativeShadowDOM && content.content.replaceChildren()
   return {
     stylesheets,
     content: isDeclarativeShadowDOM ? content.content : content,
-    string: joinParts(tag, attributesArray, childrenArray),
+    string: templateStringArray.join(''),
   }
 })
 
 export { createTemplate as h }
 
-
-export const  Fragment = ({ children: _children }: Attrs) =>{
+export const Fragment = ({ children: _children }: Attrs) => {
   const children = ensureArray(_children)
   const stylesheets = new Set<string>()
   const length = children.length
@@ -177,15 +156,14 @@ export const  Fragment = ({ children: _children }: Attrs) =>{
   for (let i = 0; i < length; i++) {
     const child = children[i]
     if (typeof child === 'string') {
-      string.push(child)
       template.content.append(child)
       continue
     }
-    string.push(child.string)
     template.content.append(child.content)
     for (const sheet of child.stylesheets) {
       !stylesheets.has(sheet) && stylesheets.add(sheet)
     }
+    string.push(child.string)
   }
   return {
     content: template.content,

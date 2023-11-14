@@ -1,8 +1,8 @@
 // Bun Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`ssr: Self closing - html 1`] = `"<input type="text" />"`;
+exports[`ssr: Self closing - html 1`] = `"<input type="text">"`;
 
-exports[`ssr: Self closing - svg 1`] = `"<polygon points="0,100 50,25 50,75 100,0" />"`;
+exports[`ssr: Self closing - svg 1`] = `"<polygon points="0,100 50,25 50,75 100,0"></polygon>"`;
 
 exports[`ssr: Falsey - undefined 1`] = `"<div></div>"`;
 
@@ -20,17 +20,17 @@ exports[`ssr: Bad template - NaN 1`] = `"<div></div>"`;
 
 exports[`ssr: Conditional 1`] = `"<div>hello</div>"`;
 
-exports[`ssr: Style attribute 1`] = `"<div style="background-color:blue; margin:12px; --css-var:red;">styles</div>"`;
+exports[`ssr: Style attribute 1`] = `"<div style="background-color: blue; margin: 12px; --cssVar: red;">styles</div>"`;
 
 exports[`ssr: data-trigger attribute 1`] = `"<div data-trigger="click->random focus->thing">triggers</div>"`;
 
-exports[`ssr: camelCase attributes 1`] = `
+exports[`ssr: kebab-case attributes 1`] = `
 "<div data-trigger="click->click" data-address="address" data-mode="mode"
 x-prefix="x"></div>"
 `;
 
 exports[`ssr: Array of templates 1`] = `
-"<div>
+"<ul>
     <li>0</li>
     <li>1</li>
     <li>2</li>
@@ -41,7 +41,7 @@ exports[`ssr: Array of templates 1`] = `
     <li>7</li>
     <li>8</li>
     <li>9</li>
-</div>"
+</ul>"
 `;
 
 exports[`ssr: Should not throw on script tag with trusted attribute 1`] = `"<script type="module" src="main.js"></script>"`;
@@ -71,33 +71,29 @@ exports[`ssr: Does not escape children when trusted 1`] = `
 `;
 
 exports[`ssr: Non declarative shadow DOM template 1`] = `
-"<c-el>
+"<ul>
     <template><span>I am a span!!!</span>
     </template>
-    <li slot="slot">slot-0</li>
-    <li slot="slot">slot-1</li>
-    <li slot="slot">slot-2</li>
-    <li slot="slot">slot-3</li>
-    <li slot="slot">slot-4</li>
-    <li slot="slot">slot-5</li>
-    <li slot="slot">slot-6</li>
-    <li slot="slot">slot-7</li>
-    <li slot="slot">slot-8</li>
-    <li slot="slot">slot-9</li>
-</c-el>"
+    <li>item-0</li>
+    <li>item-1</li>
+    <li>item-2</li>
+    <li>item-3</li>
+    <li>item-4</li>
+    <li>item-5</li>
+    <li>item-6</li>
+    <li>item-7</li>
+    <li>item-8</li>
+    <li>item-9</li>
+</ul>"
 `;
 
-exports[`ssr: Fragment of templates 1`] = `
-"<li>item-0</li>
-<li>item-1</li>
-<li>item-2</li>
-<li>item-3</li>
-<li>item-4</li>
-<li>item-5</li>
-<li>item-6</li>
-<li>item-7</li>
-<li>item-8</li>
-<li>item-9</li>"
+exports[`ssr: Fragment 1`] = `
+"<li>In 5</li>
+<li>In 4</li>
+<li>In 3</li>
+<li>In 2</li>
+<li>In 1</li>
+<li>Blast Off!!!</li>"
 `;
 
 exports[`ssr: Declarative shadow dom hoisting its styles 1`] = `
@@ -206,7 +202,7 @@ exports[`ssr: Declarative shadow dom with another declarative shadow dom plus ho
             <p class="slotted-paragraph_LTc5ND" slot="nested">slotted paragraph</p>
         </nested-component>
     </template>
-    <img class="image_Mjc4MD" />
+    <img class="image_Mjc4MD">
 </top-component>"
 `;
 
