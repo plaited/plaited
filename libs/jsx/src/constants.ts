@@ -70,4 +70,3 @@ export const primitives = new Set(['null', 'undefined', 'number', 'string', 'boo
 
 export const validPrimitiveChildren = new Set(['number', 'string', 'bigint'])
 
-export const templateKeys = ['content', 'stylesheets', 'string']

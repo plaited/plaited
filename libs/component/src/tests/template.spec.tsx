@@ -1,8 +1,9 @@
 import { test } from '@plaited/rite'
 import { css, FT } from '@plaited/jsx'
-import { Component } from '../index.js'
-import { canUseDOM } from '@plaited/utils'
-test('PlaitedComponent Function Template CSR', async (t) => {
+import { Component, PlaitProps } from '../index.js'
+import { createTemplateElement } from '../sugar.js'
+
+test('template', async (t) => {
   const [cls, stylesheet] = css`
     .inner {
       color: blue;
@@ -41,28 +42,7 @@ test('PlaitedComponent Function Template CSR', async (t) => {
   })
 })
 
-let parser: {
-  parseFromString(
-    string: string,
-    type: DOMParserSupportedType,
-    options: {
-      includeShadowRoots: boolean
-    },
-  ): Document
-}
-
-if (canUseDOM()) {
-  parser = new DOMParser()
-}
-
-export const createTemplateElement = (content: string) => {
-  const fragment = parser.parseFromString(`<template>${content}</template>`, 'text/html', {
-    includeShadowRoots: true,
-  })
-  return fragment.head.firstChild as HTMLTemplateElement
-}
-
-test('PlaitedComponent Function Template SSR With hydration Simulation', async (t) => {
+test('template existing declarative shadowdom', async (t) => {
   const [cls, stylesheet] = css`
     .inner {
       color: red;
@@ -70,28 +50,32 @@ test('PlaitedComponent Function Template SSR With hydration Simulation', async (
   `
   class Fixture extends Component({
     tag: 'with-declarative-shadow-dom',
-    template: (
-      <div
-        data-test='inner'
-        className={cls.inner}
-        {...stylesheet}
-      >
-        <slot data-test='slot'>before hydration</slot>
-      </div>
-    ),
-  }) {}
-  const frag = (
-    <Fixture.template
-      data-test='host'
-      {...stylesheet}
-    />
-  ).string
+    template: <div
+    data-target='inner'
+    className={cls.inner}
+    {...stylesheet}
+  >
+    before hydration
+  </div>,
+  }) {
+    plait({$}: PlaitProps): void | Promise<void> {
+      $('inner')?.render({ content: 'after hydration', stylesheets: new Set() })
+    }
+  }
+  const template = createTemplateElement(
+    (
+      <Fixture.template
+        data-target='host'
+      />
+    ).content,
+  )
+  const frag = document.importNode(template.content, true)
   const body = document.querySelector('body')
-  body.append(createTemplateElement(frag).content)
-  const host = await t.findByAttribute<HTMLElement>('data-test', 'host')
-  const inner = await t.findByAttribute('data-test', 'inner', host)
+  body.append(frag)
+  const host = await t.findByAttribute<HTMLElement>('data-target', 'host')
+  let inner = await t.findByAttribute('data-target', 'inner', host)
   let style = await t.findByText(stylesheet.stylesheet, host)
-  const textContent = inner.textContent
+  let textContent = inner.textContent
   t({
     given: 'before registering custom element',
     should: 'have style tag',
@@ -105,7 +89,7 @@ test('PlaitedComponent Function Template SSR With hydration Simulation', async (
     expected: 'before hydration',
   })
   customElements.define(Fixture.tag, Fixture)
-  host.append('after hydration')
+  inner = await t.findByAttribute('data-target', 'inner', host)
   style = await t.findByText(stylesheet.stylesheet, host)
   t({
     given: 'after registering custom element',
@@ -118,5 +102,12 @@ test('PlaitedComponent Function Template SSR With hydration Simulation', async (
     should: 'have a constructable stylesheet',
     actual: host.shadowRoot.adoptedStyleSheets.length,
     expected: 1,
+  })
+  textContent = inner.textContent
+  t({
+    given: 'after registering custom element',
+    should: 'have post hydration text content',
+    actual: textContent,
+    expected: 'after hydration',
   })
 })

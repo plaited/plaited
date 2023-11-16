@@ -1,7 +1,6 @@
 import type { Template } from '@plaited/jsx'
 import type { PlaitedComponentConstructor } from './types.js'
 import { booleanAttrs } from '@plaited/jsx/utils'
-import { canUseDOM } from '@plaited/utils'
 
 type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
 /**
@@ -53,21 +52,24 @@ const updateAttributes = (element: HTMLElement | SVGElement, attr: string, val: 
 }
 
 const sugar = {
-  render({ stylesheets, content }: Template, position?: Position) {
+  render({ content, stylesheets }: Template, position?: Position) {
     const element = this as unknown as HTMLElement | SVGElement
-    if (stylesheets.size) void updateShadowRootStyles(element.getRootNode() as ShadowRoot, stylesheets)
+    void updateShadowRootStyles(element.getRootNode() as ShadowRoot, stylesheets)
     if (position) {
-      const template = document.createElement('template')
-      element.insertAdjacentElement(position, template)?.replaceWith(content)
+      element.insertAdjacentHTML(position, content)
       return element
     }
-    element.replaceChildren(content)
+    const template = document.createElement('template')
+    template.innerHTML = content
+    element.replaceChildren(template.content)
     return element
   },
-  replace({ stylesheets, content }: Template) {
+  replace({ content, stylesheets}: Template) {
     const element = this as unknown as HTMLElement | SVGElement
-    if (stylesheets.size) void updateShadowRootStyles(element.getRootNode() as ShadowRoot, stylesheets)
-    element.replaceWith(content)
+    void updateShadowRootStyles(element.getRootNode() as ShadowRoot, stylesheets)
+    const template = document.createElement('template')
+    template.innerHTML = content
+    element.replaceWith(template.content)
   },
   attr(attr: string, val?: string | null | number | boolean) {
     const element = this as unknown as HTMLElement | SVGElement

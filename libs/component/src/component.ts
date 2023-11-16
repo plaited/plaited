@@ -9,7 +9,7 @@ import { createTemplate, FunctionTemplate, AdditionalAttrs } from '@plaited/jsx'
 import { dataTarget, dataTrigger, dataAddress } from '@plaited/jsx/utils'
 import { Trigger, bProgram, TriggerArgs } from '@plaited/behavioral'
 import { PlaitedElement, PlaitProps, ComponentFunction, Emit, Messenger, Publisher } from './types.js'
-import { assignSugar, SugaredElement, assignSugarForEach } from './sugar.js'
+import { assignSugar, SugaredElement, assignSugarForEach  } from './sugar.js'
 import { noop, trueTypeOf } from '@plaited/utils'
 
 const regexp = /\b[\w-]+\b(?=->[\w-]+)/g
@@ -112,19 +112,24 @@ export const Component: ComponentFunction = ({
     #observedTriggers = new Set(observedTriggers)
     constructor() {
       super()
-      this.internals_ = this.attachInternals()
-      const root = this.internals_.shadowRoot
-      this.#root = root ?? this.attachShadow({ mode, delegatesFocus })
       if (!template) throw new Error(`Component [${tag}] is missing a [template]`)
-      const { content, stylesheets } = template
-      const adoptedStyleSheets: CSSStyleSheet[] = []
-      for (const style of stylesheets) {
-        const sheet = new CSSStyleSheet()
-        sheet.replaceSync(style)
-        adoptedStyleSheets.push(sheet)
+      this.internals_ = this.attachInternals()
+      if (this.internals_.shadowRoot) {
+        this.#root = this.internals_.shadowRoot
+      } else {
+        this.#root = this.attachShadow({ mode, delegatesFocus })
+        const { content, stylesheets } = template
+        this.#root.innerHTML = content
+        if(stylesheets.size) {
+          const adoptedStyleSheets: CSSStyleSheet[] = []
+          for (const style of stylesheets) {
+            const sheet = new CSSStyleSheet()
+            sheet.replaceSync(style)
+            adoptedStyleSheets.push(sheet)
+          }
+          this.#root.adoptedStyleSheets = adoptedStyleSheets
+        }
       }
-      this.#root.adoptedStyleSheets = adoptedStyleSheets
-      this.#root.replaceChildren(content)
       this.trigger = this.trigger.bind(this)
     }
     connectedCallback() {

@@ -63,10 +63,7 @@ test('eventTriggers', async (t) => {
       feedback({
         append() {
           const header = $('header')
-          const string = ' World!'
-          const content = document.createDocumentFragment()
-          content.append(string)
-          header.render({ content, stylesheets: new Set(), string }, 'beforeend')
+          header.render({ content: ' World!', stylesheets: new Set() }, 'beforeend')
         },
       })
     }

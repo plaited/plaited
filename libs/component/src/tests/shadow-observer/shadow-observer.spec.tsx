@@ -49,7 +49,7 @@ test('shadow observer test', async (t) => {
     given: 'add-svg event',
     should: 'zone child is an svg',
     actual: svg?.tagName,
-    expected: 'SVG',
+    expected: 'svg',
   })
 
   button = await t.findByText('add svg')

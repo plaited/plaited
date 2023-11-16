@@ -43,11 +43,6 @@ export const [classes, stylesheet] = css`
   }
 `
 
-const SubComponent = class extends Component({
-  tag: 'sub-island',
-  template: <h3 className={classes['sub-island']}>sub island</h3>,
-}) {}
-
 export class ShadowIsland extends Component({
   tag: 'shadow-island',
   template: (
@@ -90,7 +85,12 @@ export class ShadowIsland extends Component({
       addSubIsland() {
         const zone = $('zone')
         /** render dynamic island to zone */
-        zone?.render(<SubComponent.template {...stylesheet} />, 'beforeend')
+        zone?.render(
+          <sub-island {...stylesheet}>
+            <h3 className={classes['sub-island']}>sub island</h3>
+          </sub-island>,
+          'beforeend',
+        )
       },
       addButton() {
         host.insertAdjacentHTML('beforeend', `<button slot='button'>add svg</button>`)
@@ -121,5 +121,3 @@ export class ShadowIsland extends Component({
     })
   }
 }
-
-customElements.define(SubComponent.tag, SubComponent)
