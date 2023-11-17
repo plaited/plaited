@@ -6,7 +6,7 @@
  * @alias cc
  */
 import { createTemplate, FunctionTemplate } from '@plaited/jsx'
-import { dataTarget, dataTrigger, dataAddress } from '@plaited/jsx/utils'
+import { dataTrigger, dataAddress } from '@plaited/jsx/utils'
 import { Trigger, bProgram, TriggerArgs } from '@plaited/behavioral'
 import type {
   PlaitedElement,
@@ -15,30 +15,13 @@ import type {
   Emit,
   Messenger,
   Publisher,
-  SugaredElement,
+  TriggerElement,
+  QuerySelector
 } from './types.js'
-import { assignSugar } from './sugar.js'
+import { $ } from './sugar.js'
 import { noop, trueTypeOf } from '@plaited/utils'
 
-type TriggerElement = (HTMLElement | SVGElement) & {
-  dataset: {
-    trigger: string
-  }
-}
 const isElement = (node: Node): node is TriggerElement => node.nodeType === 1
-// Quickly traverse nodes observed in mutation selecting only those with data-trigger attribute
-const traverseNodes = (node: Node, arr: TriggerElement[]) => {
-  if (isElement(node)) {
-    node.hasAttribute(dataTrigger) && arr.push(node)
-    if (node.hasChildNodes()) {
-      const childNodes = node.childNodes
-      const length = childNodes.length
-      for (let i = 0; i < length; i++) {
-        traverseNodes(childNodes[i], arr)
-      }
-    }
-  }
-}
 
 const getTriggerMap = (el: TriggerElement) =>
   new Map(el.dataset.trigger.split(' ').map((pair) => pair.split(':')) as [string, string][])
@@ -110,6 +93,7 @@ export const Component: ComponentFunction = ({
     #observedTriggers = new Set(observedTriggers)
     internals_: ElementInternals
     #root: ShadowRoot
+    $: QuerySelector
     constructor() {
       super()
       if (!template) throw new Error(`Component [${tag}] is missing a [template]`)
@@ -131,6 +115,7 @@ export const Component: ComponentFunction = ({
         }
       }
       this.trigger = this.trigger.bind(this)
+      this.$ = $(this.#root)
     }
     plait?(props: PlaitProps): void | Promise<void>
     #trigger?: Trigger
@@ -149,7 +134,7 @@ export const Component: ComponentFunction = ({
             type: `connected->${this.dataset.address ?? this.tagName.toLowerCase()}`,
           })
         void this.plait({
-          $: this.$.bind(this),
+          $: this.$,
           host: this,
           emit: this.#emit.bind(this),
           connect: this.#connect.bind(this),
@@ -238,12 +223,14 @@ export const Component: ComponentFunction = ({
               mutation.attributeName === dataTrigger && this.#delegateListeners([el])
             }
           } else if (mutation.addedNodes.length) {
-            const list: TriggerElement[] = []
             const length = mutation.addedNodes.length
             for (let i = 0; i < length; i++) {
-              traverseNodes(mutation.addedNodes[i], list)
+              const node = mutation.addedNodes[i]
+              if(isElement(node)) {
+                node.hasAttribute(dataTrigger) && this.#delegateListeners([node])
+                this.#delegateListeners(Array.from(node.querySelectorAll(`[${dataTrigger}]`)))
+              }
             }
-            this.#delegateListeners(list)
           }
         }
       })
@@ -262,12 +249,6 @@ export const Component: ComponentFunction = ({
       if (!Object.hasOwn(args, 'type')) return console.error(`TriggerArg missing [type]`)
       if (this.#observedTriggers.has(type)) return this.#trigger?.({ type, detail })
       return console.warn(`Component [${name}] is not observing trigger [${type}]`)
-    }
-    /** we're bringing the bling back!!! */
-    $<T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(target: string, match = '='): SugaredElement<T>[] {
-      return assignSugar<T>(
-        Array.from(this.#root.querySelectorAll<HTMLElement | SVGElement>(`[${dataTarget}${match}"${target}"]`)),
-      )
     }
   }
 }

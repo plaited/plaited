@@ -17,7 +17,7 @@ export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
 
 export type SelectorMatch = '=' | '~=' | '|=' | '^=' | '$=' | '*='
 
-export interface $ {
+export interface QuerySelector {
   <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
     target: string,
     /** This options enables querySelectorAll and modified the attribute selector for data-target{@default {all: false, mod: "=" } } {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}*/
@@ -26,12 +26,12 @@ export interface $ {
 }
 
 export type Sugar = {
-  render(this: HTMLElement | SVGElement, ...content: (TemplateObject | HTMLElement | SVGElement | DocumentFragment | string)[]): void
-  insert(this: HTMLElement | SVGElement, position: Position, ...content: (TemplateObject | HTMLElement | SVGElement | DocumentFragment | string)[]): void
-  replace(this: HTMLElement | SVGElement, ...content: (TemplateObject | HTMLElement | SVGElement | DocumentFragment | string)[]): void
+  render(this: HTMLElement | SVGElement, ...content: (TemplateObject | Node | string)[]): void
+  insert(this: HTMLElement | SVGElement, position: Position, ...content: (TemplateObject | Node | string)[]): void
+  replace(this: HTMLElement | SVGElement, ...content: (TemplateObject | Node | string)[]): void
   attr(this: HTMLElement | SVGElement, attr: Record<string, string | null | number | boolean>, val?: never): void
   attr(this: HTMLElement | SVGElement, attr: string, val?: string | null | number | boolean): string | null | void
-  clone<T>(this: HTMLElement | SVGElement, cb: (($:$, data: T) => void)): (data:T) => HTMLElement | SVGElement | DocumentFragment
+  clone<T>(this: HTMLElement | SVGElement, cb: (($:QuerySelector, data: T) => void)): (data:T) => HTMLElement | SVGElement | DocumentFragment
 }
 
 
@@ -52,7 +52,7 @@ export type Publisher<T extends TriggerArgs = TriggerArgs> = {
 
 export type PlaitProps = {
   /** query for elements with the data-target attribute in the Island's shadowDom and slots */
-  $: $
+  $: QuerySelector
   /** The DOM node context allowing easy light & shadow dom access
    * @example
    * // returns the div element inside
@@ -68,7 +68,7 @@ export interface PlaitedElement extends HTMLElement {
   internals_: ElementInternals
   plait?(props: PlaitProps): void | Promise<void>
   trigger: Trigger
-  $: $
+  $: QuerySelector
   connectedCallback?(): void
   attributeChangedCallback?(name: string, oldValue: string | null, newValue: string | null): void
   disconnectedCallback?(): void
@@ -102,3 +102,9 @@ export type ComponentFunction = (args: {
   /** Triggers that can be fired from outside component by invoking trigger method directly, via messenger, or via publisher */
   observedTriggers?: Array<string>
 }) => PlaitedComponentConstructor
+
+export type TriggerElement = (HTMLElement | SVGElement) & {
+  dataset: {
+    trigger: string
+  }
+}

@@ -59,12 +59,6 @@ const handleTemplateObject = (el: HTMLElement | SVGElement, fragment: TemplateOb
   return template.content
 }
 
-const $ = (context:DocumentFragment | HTMLElement | SVGElement | SugaredElement) => <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(target:string, match: SelectorMatch = '=') =>{
-  return assignSugar<T>(
-    Array.from(context.querySelectorAll<HTMLElement | SVGElement>(`[${dataTarget}${match}"${target}"]`)),
-  )
-}
-
 const sugar: Sugar = {
   render(...fragments) {
     const frag =fragments.map(fragment => isTypeOf<TemplateObject>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment)
@@ -95,8 +89,8 @@ const sugar: Sugar = {
     }
   },
   clone(callback) {
-    const clone = this instanceof HTMLTemplateElement ? this.content.cloneNode(true) as DocumentFragment : this.cloneNode(true) as HTMLElement | SVGElement 
     return (data) => {
+          const clone = this instanceof HTMLTemplateElement ? this.content.cloneNode(true) as DocumentFragment : this.cloneNode(true) as HTMLElement | SVGElement 
       callback($(clone), data)
       return clone
     }
@@ -109,7 +103,7 @@ const hasSugar = (element: HTMLElement | SVGElement): element is SugaredElement 
   return assignedElements.has(element)
 }
 
-export const assignSugar = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+const assignSugar = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
   elements: (HTMLElement | SVGElement)[],
 ) => {
   const length = elements.length
@@ -120,4 +114,10 @@ export const assignSugar = <T extends HTMLElement | SVGElement = HTMLElement | S
     assignedElements.add(sugarEl)
   }
   return elements as SugaredElement<T>[]
+}
+
+export const $ = (context:DocumentFragment | HTMLElement | SVGElement | SugaredElement) => <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(target:string, match: SelectorMatch = '=') =>{
+  return assignSugar<T>(
+    Array.from(context.querySelectorAll<HTMLElement | SVGElement>(`[${dataTarget}${match}"${target}"]`)),
+  )
 }
