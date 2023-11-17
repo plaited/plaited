@@ -1,9 +1,14 @@
 import { escape, kebabCase } from '@plaited/utils'
-import { booleanAttrs, primitives, voidTags, validPrimitiveChildren, dataTrigger as dataTriggerKey } from './constants.js'
+import {
+  booleanAttrs,
+  primitives,
+  voidTags,
+  validPrimitiveChildren,
+  dataTrigger as dataTriggerKey,
+} from './constants.js'
 import { Attrs, CreateTemplate } from './types.js'
-
 /** create server element string representation */
-const ensureArray = <T>(obj: T | T[] = []) => (!Array.isArray(obj) ?  [obj] : obj)
+const ensureArray = <T>(obj: T | T[] = []) => (!Array.isArray(obj) ? [obj] : obj)
 
 /** createTemplate function used for ssr */
 export const createTemplate: CreateTemplate = (_tag, attrs) => {
@@ -13,8 +18,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     stylesheet,
     style,
     key: _,
-    'data-trigger': trigger,
-    dataTrigger = trigger,
+    'data-trigger': dataTrigger,
     className,
     htmlFor,
     ...attributes
@@ -34,14 +38,14 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   /** Now to create an array to store our node attributes */
   let start = `<${tag} `
   /** handle JS reserved words commonly used in html class & for*/
-  if(htmlFor) start += `for="${htmlFor}" `
-  if(className) start += `class="${className}" `
+  if (htmlFor) start += `for="${htmlFor}" `
+  if (className) start += `class="${className}" `
   /** if we have dataTrigger attribute wire up formatted correctly*/
   if (dataTrigger) {
     const value = Object.entries(dataTrigger)
-      .map<string>(([ev, req]) => `${ev}->${req}`)
+      .map<string>(([ev, req]) => `${ev}:${req}`)
       .join(' ')
-      start += `${dataTriggerKey}="${value}" `
+    start += `${dataTriggerKey}="${value}" `
   }
   /** if we have style add it to element */
   if (style) {
@@ -49,45 +53,45 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       /** convert camelCase style prop into dash-case ones so long as not cssVar */
       .map<string>(([prop, val]) => `${prop.startsWith('--') ? prop : kebabCase(prop)}:${val};`)
       .join(' ')
-      start+= `style="${escape(value)}" `
+    start += `style="${escape(value)}" `
   }
   /** next we want to loops through our attributes */
   for (const key in attributes) {
     /** P1 all events are delegated via the data-trigger attribute so we want
-     * throw on attempts to provide `on` attributes
+     * skip on attempts to provide `on` attributes
      */
     if (key.startsWith('on')) {
-      throw new Error(`Event handler attributes are not allowed:  [${key}]`)
+      console.error(`Event handler attributes are not allowed:  [${key}]`)
+      continue
     }
     /** test for and handle boolean attributes */
     if (booleanAttrs.has(key)) {
-      start+= `${key} `
+      start += `${key} `
       continue
     }
     /** Grab the value from the attribute */
     const value = attributes[key]
     /** P2 typeof attribute is NOT {@type Primitive} then skip and do nothing */
     if (!primitives.has(typeof value)) {
-      throw new Error(`Attributes not declared in BaseAttrs must be of type Primitive: ${key} is not primitive`)
+      console.error(`Attributes not declared in BaseAttrs must be of type Primitive: ${key} is not primitive`)
+      continue
     }
     /** set the value so long as it's not nullish in we use the formatted value  */
     const formattedValue = value ?? ''
     /** handle the rest of the attributes */
-    start+= `${kebabCase(key)}="${trusted
-      ? `${formattedValue}" `
-      : escape(`${formattedValue}`)}" `
+    start += `${key}="${trusted ? `${formattedValue}" ` : escape(`${formattedValue}`)}" `
   }
 
   /** Our tag is a void tag so we can return it once we apply attributes */
   if (voidTags.has(tag)) {
-    start+= '/>'
+    start += '/>'
     return {
       content: start,
       string: start,
       stylesheets,
     }
   }
-  start+= '>'
+  start += '>'
   let end = ''
   /** Test if the the tag is a template and if it's a declarative shadow dom template */
   const isDeclarativeShadowDOM = tag === 'template' && Object.hasOwn(attrs, 'shadowrootmode')
@@ -97,18 +101,15 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     const child = children[i]
     /** P1 child IS {@type Template}*/
     if (typeof child === 'object' && 'content' in child && 'stylesheets' in child) {
-      end+= child.content
-      for (const sheet of child.stylesheets) {
-        !stylesheets.has(sheet) && stylesheets.add(sheet)
-      }
+      end += child.content
+      for (const sheet of child.stylesheets) stylesheets.add(sheet)
       continue
     }
-    /** P2 typeof child is NOT {@type Primitive} then skip and do nothing */
-    if (!primitives.has(typeof child)) continue
-    const formattedChild = validPrimitiveChildren.has(typeof child) ? child : ''
+    /** P2 typeof child is NOT a valid primitive child then skip and do nothing */
+    if (!validPrimitiveChildren.has(typeof child)) continue
     /** P3 child IS {@type Primitive} */
-    const str = trusted ? `${formattedChild}`.trim() : escape(`${formattedChild}`).trim()
-    end+= str
+    const str = trusted ? `${child}`.trim() : escape(`${child}`).trim()
+    end += str
   }
   if (isDeclarativeShadowDOM) {
     /** We continue to hoist our stylesheet until we run
@@ -117,11 +118,11 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
      * shadowDom template array  and clear the stylesheets set
      */
     if (stylesheets.size) {
-      start+= `<style>${Array.from(stylesheets).join('')}</style>`
+      start += `<style>${Array.from(stylesheets).join('')}</style>`
       stylesheets.clear()
     }
   }
-  end+= `</${tag}>`
+  end += `</${tag}>`
   const content = start + end
   return {
     content: isDeclarativeShadowDOM ? '' : content,
@@ -148,13 +149,11 @@ export const Fragment = ({ children: _children }: Attrs) => {
     }
     content += child.content
     string += child.string
-    for (const sheet of child.stylesheets) {
-      !stylesheets.has(sheet) && stylesheets.add(sheet)
-    }
+    for (const sheet of child.stylesheets) stylesheets.add(sheet)
   }
   return {
     content,
     stylesheets,
-    string
+    string,
   }
 }

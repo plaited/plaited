@@ -12,16 +12,9 @@ export type Child = string | Template
 
 export type Children = Child[] | Child
 
-export interface AdditionalAttrs {
-  [key: string]: Primitive | Children | Record<string, string>
-}
-
 export type BaseAttrs = {
   class?: never
   for?: never
-  dataAddress?: string
-  dataTarget?: string
-  dataTrigger?: Record<string, string>
   [dataAddress]?: string
   [dataTarget]?: string
   [dataTrigger]?: Record<string, string>
@@ -37,7 +30,7 @@ export type BaseAttrs = {
   style?: Record<string, string>
 }
 
-export type Attrs<T extends AdditionalAttrs = AdditionalAttrs> = BaseAttrs & T
+export type Attrs<T extends Record<string, any> = Record<string, any>> = BaseAttrs & T
 
 export type FunctionTemplate<T extends Record<string, any> = Record<string, any>> = (attrs: T & BaseAttrs) => Template
 
@@ -49,5 +42,5 @@ export type FT<
 export type Tag = string | `${string}-${string}` | FT
 
 export interface CreateTemplate {
-  <T extends AdditionalAttrs>(tag: Tag, attrs: Attrs<T>): Template
+  <T extends Record<string, any>>(tag: Tag, attrs: Attrs<T>): Template
 }

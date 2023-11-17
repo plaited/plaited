@@ -1,22 +1,22 @@
-import type { Template } from '@plaited/jsx'
-import type { PlaitedComponentConstructor } from './types.js'
+import type { PlaitedComponentConstructor, SugaredElement, Sugar } from './types.js'
+import { Template } from '@plaited/jsx'
 import { booleanAttrs } from '@plaited/jsx/utils'
+import { isTypeOf } from '@plaited/utils'
 
-type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
 /**
  * Inspired by blingblingjs
  * (c) Adam Argyle - MIT
  * {@see https://github.com/argyleink/blingblingjs}
  */
 
-const cache = new WeakMap<ShadowRoot, Set<string>>()
+const cssCache = new WeakMap<ShadowRoot, Set<string>>()
 
 const updateShadowRootStyles = async (root: ShadowRoot, stylesheets: Set<string>) => {
-  // P1 first time dynamically setting stylesheets on instance add it to cache
-  if (!cache.has(root)) cache.set(root, new Set<string>())
+  // P1 first time dynamically setting stylesheets on instance add it to cssCache
+  if (!cssCache.has(root)) cssCache.set(root, new Set<string>())
   // P2 get default styles if they exist on instance
   const defaultStyles: undefined | Set<string> = (root.host.constructor as PlaitedComponentConstructor).stylesheets
-  const instanceStyles = cache.get(root)
+  const instanceStyles = cssCache.get(root)
   const newStyleSheets: CSSStyleSheet[] = []
   try {
     await Promise.all(
@@ -51,92 +51,50 @@ const updateAttributes = (element: HTMLElement | SVGElement, attr: string, val: 
   }
 }
 
-const sugar = {
-  render({ content, stylesheets }: Template, position?: Position) {
-    const element = this as unknown as HTMLElement | SVGElement
-    void updateShadowRootStyles(element.getRootNode() as ShadowRoot, stylesheets)
-    if (position) {
-      element.insertAdjacentHTML(position, content)
-      return element
+const sugar: Sugar = {
+  render({ content, stylesheets }) {
+    stylesheets.size && void updateShadowRootStyles(this.getRootNode() as ShadowRoot, stylesheets)
+    const template = document.createElement('template')
+    template.innerHTML = content
+    this.replaceChildren(template.content)
+  },
+  insert(position, { content, stylesheets }) {
+    stylesheets.size && void updateShadowRootStyles(this.getRootNode() as ShadowRoot, stylesheets)
+    this.insertAdjacentHTML(position, content)
+  },
+  replace({ content, stylesheets }) {
+    stylesheets.size && void updateShadowRootStyles(this.getRootNode() as ShadowRoot, stylesheets)
+    const template = document.createElement('template')
+    template.innerHTML = content
+    this.replaceWith(template.content)
+  },
+  attr(attr, val) {
+    if (isTypeOf<string>(attr, 'string')) {
+      // Return the attribute value if val is not provided
+      if (val === undefined) return this.getAttribute(attr)
+      return updateAttributes(this, attr, val)
     }
-    const template = document.createElement('template')
-    template.innerHTML = content
-    element.replaceChildren(template.content)
-    return element
-  },
-  replace({ content, stylesheets}: Template) {
-    const element = this as unknown as HTMLElement | SVGElement
-    void updateShadowRootStyles(element.getRootNode() as ShadowRoot, stylesheets)
-    const template = document.createElement('template')
-    template.innerHTML = content
-    element.replaceWith(template.content)
-  },
-  attr(attr: string, val?: string | null | number | boolean) {
-    const element = this as unknown as HTMLElement | SVGElement
-    // Return the attribute value if val is not provided
-    if (val === undefined) return element.getAttribute(attr)
-    updateAttributes(element, attr, val)
-    return element
-  },
-} as const
-
-export type SugaredElement<T extends HTMLElement | SVGElement = HTMLElement | SVGElement> = T & typeof sugar
-
-type SugarForEach = {
-  render(template: Template[], position?: Position): SugaredElement<HTMLElement | SVGElement>[]
-  replace(template: Template[]): SugaredElement<HTMLElement | SVGElement>[]
-  attr(attrs: Record<string, string | null | number | boolean>, val?: never): SugaredElement<HTMLElement | SVGElement>[]
-  attr(attrs: string, val: string | null | number | boolean): SugaredElement<HTMLElement | SVGElement>[]
-}
-
-const sugarForEach: SugarForEach = {
-  render(template: Template[], position?: Position) {
-    const elements = this as unknown as SugaredElement[]
-    elements.forEach(($el, i) => $el.render(template[i], position))
-    return elements
-  },
-  replace(template: Template[]) {
-    const elements = this as unknown as SugaredElement[]
-    elements.forEach(($el, i) => $el.replace(template[i]))
-    return elements
-  },
-  // This method only allows for batch updates of element attributes no reads
-  attr(attrs: string | Record<string, string | null | number | boolean>, val?: string | null | number | boolean) {
-    const elements = this as unknown as SugaredElement[]
-    elements.forEach(($el) => {
-      if (typeof attrs === 'string') {
-        $el.attr(attrs, val)
-      } else {
-        Object.entries(attrs).forEach(([key, val]) => {
-          $el.attr(key, val)
-        })
-      }
-    })
-    return elements
+    for (const key in attr) {
+      updateAttributes(this, key, attr[key])
+    }
   },
 }
 
 const assignedElements = new WeakSet<HTMLElement | SVGElement>()
 
-const hasSugar = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
-  element: T,
-): element is SugaredElement<T> => {
+const hasSugar = (element: HTMLElement | SVGElement): element is SugaredElement => {
   return assignedElements.has(element)
 }
 
 export const assignSugar = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
-  element: T,
-): SugaredElement<T> => {
-  if (hasSugar(element)) return element
-  const sugarEl = Object.assign(element, sugar)
-  assignedElements.add(sugarEl)
-  return sugarEl
-}
-
-export const assignSugarForEach = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
-  nodes: NodeListOf<T>,
+  elements: (HTMLElement | SVGElement)[],
 ) => {
-  const elements: SugaredElement<T>[] = []
-  nodes.forEach((element) => elements.push(assignSugar<T>(element)))
-  return Object.assign(elements, sugarForEach)
+  const length = elements.length
+  for (let i = 0; i < length; i++) {
+    const el = elements[i]
+    if (hasSugar(el)) continue
+    const sugarEl = Object.assign(el, sugar)
+    assignedElements.add(sugarEl)
+  }
+  return elements as SugaredElement<T>[]
 }

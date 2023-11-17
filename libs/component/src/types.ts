@@ -1,6 +1,5 @@
 import { bProgram, DevCallback, Strategy, Trigger, TriggerArgs } from '@plaited/behavioral'
-import { SugaredElement } from './sugar.js'
-import { Template, AdditionalAttrs, FunctionTemplate } from '@plaited/jsx'
+import { Template, FunctionTemplate } from '@plaited/jsx'
 
 export type Send = (recipient: string, detail: TriggerArgs) => void
 
@@ -14,25 +13,27 @@ export type Message = {
   detail: TriggerArgs
 }
 
-export type SelectorMod = '=' | '~=' | '|=' | '^=' | '$=' | '*='
+export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
+
+export type SelectorMatch = '=' | '~=' | '|=' | '^=' | '$=' | '*='
 
 export interface $ {
   <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
     target: string,
-    opts?: {
-      all?: false
-      mod?: SelectorMod
-    },
-  ): SugaredElement<T> | undefined
-  <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
-    target: string,
     /** This options enables querySelectorAll and modified the attribute selector for data-target{@default {all: false, mod: "=" } } {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}*/
-    opts?: {
-      all: true
-      mod?: SelectorMod
-    },
+    match?: SelectorMatch,
   ): SugaredElement<T>[]
 }
+
+export type Sugar = {
+  render(this: HTMLElement | SVGElement, template: Template): void
+  insert(this: HTMLElement | SVGElement, position: Position, template: Template): void
+  replace(this: HTMLElement | SVGElement, template: Template): void
+  attr(this: HTMLElement | SVGElement, attr: Record<string, string | null | number | boolean>, val?: never): void
+  attr(this: HTMLElement | SVGElement, attr: string, val?: string | null | number | boolean): string | null | void
+}
+
+export type SugaredElement<T extends HTMLElement | SVGElement = HTMLElement | SVGElement> = T & Sugar
 
 export type Emit = (
   args: TriggerArgs & {
@@ -41,6 +42,7 @@ export type Emit = (
     composed?: boolean
   },
 ) => void
+
 export type Publisher<T extends TriggerArgs = TriggerArgs> = {
   (value: T): void
   subscribe(listener: (msg: T) => void): () => boolean
@@ -75,18 +77,14 @@ export interface PlaitedElement extends HTMLElement {
   formStateRestoreCallback?(state: unknown, reason: 'autocomplete' | 'restore'): void
 }
 
-export interface PlaitedComponentConstructor<
-  T extends AdditionalAttrs & { slots?: never } = AdditionalAttrs & { slots?: never },
-> {
+export interface PlaitedComponentConstructor {
   stylesheets: Set<string>
   tag: string
-  template: FunctionTemplate<T>
+  template: FunctionTemplate
   new (): PlaitedElement
 }
 
-export type ComponentFunction = <
-  T extends AdditionalAttrs & { slots?: never } = AdditionalAttrs & { slots?: never },
->(args: {
+export type ComponentFunction = (args: {
   /** PlaitedComponent tag name */
   tag: `${string}-${string}`
   /** Optional Plaited Component shadow dom template*/
@@ -101,4 +99,4 @@ export type ComponentFunction = <
   strategy?: Strategy
   /** Triggers that can be fired from outside component by invoking trigger method directly, via messenger, or via publisher */
   observedTriggers?: Array<string>
-}) => PlaitedComponentConstructor<T>
+}) => PlaitedComponentConstructor
