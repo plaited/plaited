@@ -1,6 +1,6 @@
-import type { PlaitedComponentConstructor, SugaredElement, Sugar } from './types.js'
-import type { Template } from '@plaited/jsx'
-import { booleanAttrs } from '@plaited/jsx/utils'
+import type { PlaitedComponentConstructor, SugaredElement, Sugar, SelectorMatch } from './types.js'
+import type { TemplateObject } from '@plaited/jsx'
+import { booleanAttrs, dataTarget } from '@plaited/jsx/utils'
 import { isTypeOf } from '@plaited/utils'
 
 /**
@@ -51,7 +51,7 @@ const updateAttributes = (element: HTMLElement | SVGElement, attr: string, val: 
   }
 }
 
-const handleTemplateObject = (el: HTMLElement | SVGElement, fragment: Template) => {
+const handleTemplateObject = (el: HTMLElement | SVGElement, fragment: TemplateObject) => {
   const { content, stylesheets } = fragment
   stylesheets.size && void updateShadowRootStyles(el.getRootNode() as ShadowRoot, stylesheets)
   const template = document.createElement('template')
@@ -59,13 +59,19 @@ const handleTemplateObject = (el: HTMLElement | SVGElement, fragment: Template) 
   return template.content
 }
 
+const $ = (context:DocumentFragment | HTMLElement | SVGElement | SugaredElement) => <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(target:string, match: SelectorMatch = '=') =>{
+  return assignSugar<T>(
+    Array.from(context.querySelectorAll<HTMLElement | SVGElement>(`[${dataTarget}${match}"${target}"]`)),
+  )
+}
+
 const sugar: Sugar = {
   render(...fragments) {
-    const frag =fragments.map(fragment => isTypeOf<Template>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment)
+    const frag =fragments.map(fragment => isTypeOf<TemplateObject>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment)
     this.replaceChildren(...frag)
   },
   insert(position, ...fragments) {
-    const frag =fragments.map(fragment => isTypeOf<Template>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment)
+    const frag =fragments.map(fragment => isTypeOf<TemplateObject>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment)
     position === 'beforebegin'
       ? this.before(...frag)
       : position === 'afterbegin'
@@ -75,7 +81,7 @@ const sugar: Sugar = {
       : this.after(...frag)
   },
   replace(...fragments) {
-    const frag =fragments.map(fragment => isTypeOf<Template>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment)
+    const frag =fragments.map(fragment => isTypeOf<TemplateObject>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment)
     this.replaceWith(...frag)
   },
   attr(attr, val) {
@@ -88,6 +94,13 @@ const sugar: Sugar = {
       updateAttributes(this, key, attr[key])
     }
   },
+  clone(callback) {
+    const clone = this instanceof HTMLTemplateElement ? this.content.cloneNode(true) as DocumentFragment : this.cloneNode(true) as HTMLElement | SVGElement 
+    return (data) => {
+      callback($(clone), data)
+      return clone
+    }
+  }
 }
 
 const assignedElements = new WeakSet<HTMLElement | SVGElement>()

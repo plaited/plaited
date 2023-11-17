@@ -1,5 +1,5 @@
 import { bProgram, DevCallback, Strategy, Trigger, TriggerArgs } from '@plaited/behavioral'
-import { Template, FunctionTemplate } from '@plaited/jsx'
+import { TemplateObject, FunctionTemplate } from '@plaited/jsx'
 
 export type Send = (recipient: string, detail: TriggerArgs) => void
 
@@ -26,12 +26,14 @@ export interface $ {
 }
 
 export type Sugar = {
-  render(this: HTMLElement | SVGElement, ...template: (Template | DocumentFragment)[]): void
-  insert(this: HTMLElement | SVGElement, position: Position, ...template: (Template | DocumentFragment)[]): void
-  replace(this: HTMLElement | SVGElement, ...template: (Template | DocumentFragment)[]): void
+  render(this: HTMLElement | SVGElement, ...content: (TemplateObject | HTMLElement | SVGElement | DocumentFragment | string)[]): void
+  insert(this: HTMLElement | SVGElement, position: Position, ...content: (TemplateObject | HTMLElement | SVGElement | DocumentFragment | string)[]): void
+  replace(this: HTMLElement | SVGElement, ...content: (TemplateObject | HTMLElement | SVGElement | DocumentFragment | string)[]): void
   attr(this: HTMLElement | SVGElement, attr: Record<string, string | null | number | boolean>, val?: never): void
   attr(this: HTMLElement | SVGElement, attr: string, val?: string | null | number | boolean): string | null | void
+  clone<T>(this: HTMLElement | SVGElement, cb: (($:$, data: T) => void)): (data:T) => HTMLElement | SVGElement | DocumentFragment
 }
+
 
 export type SugaredElement<T extends HTMLElement | SVGElement = HTMLElement | SVGElement> = T & Sugar
 
@@ -88,7 +90,7 @@ export type ComponentFunction = (args: {
   /** PlaitedComponent tag name */
   tag: `${string}-${string}`
   /** Optional Plaited Component shadow dom template*/
-  template: Template
+  template: TemplateObject
   /** define wether island's custom element is open or closed. @defaultValue 'open'*/
   mode?: 'open' | 'closed'
   /** configure whether to delegate focus or not @defaultValue 'true' */

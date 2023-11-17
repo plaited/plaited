@@ -2,13 +2,13 @@ import { dataAddress, dataTarget, dataTrigger } from './constants.js'
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export type Primitive = null | undefined | number | string | boolean | bigint
 
-export type Template = {
+export type TemplateObject = {
   content: string
   string: string
   stylesheets: Set<string>
 }
 
-export type Child = string | Template
+export type Child = string | TemplateObject
 
 export type Children = Child[] | Child
 
@@ -32,7 +32,7 @@ export type BaseAttrs = {
 
 export type Attrs<T extends Record<string, any> = Record<string, any>> = BaseAttrs & T
 
-export type FunctionTemplate<T extends Record<string, any> = Record<string, any>> = (attrs: T & BaseAttrs) => Template
+export type FunctionTemplate<T extends Record<string, any> = Record<string, any>> = (attrs: T & BaseAttrs) => TemplateObject
 
 export type FT<
   //Alias for FunctionTemplate
@@ -42,5 +42,5 @@ export type FT<
 export type Tag = string | `${string}-${string}` | FT
 
 export interface CreateTemplate {
-  <T extends Record<string, any>>(tag: Tag, attrs: Attrs<T>): Template
+  <T extends Record<string, any>>(tag: Tag, attrs: Attrs<T>): TemplateObject
 }

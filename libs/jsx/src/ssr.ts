@@ -1,6 +1,6 @@
-import { Template } from './types.js'
+import { TemplateObject } from './types.js'
 
-export const ssr = (...templates: Template[]) => {
+export const ssr = (...templates: TemplateObject[]) => {
   let str = ''
   const stylesheets = new Set<string>()
   const length = templates.length
