@@ -1,4 +1,5 @@
 import type { PlaitedComponentConstructor, SugaredElement, Sugar } from './types.js'
+import type { Template } from '@plaited/jsx'
 import { booleanAttrs } from '@plaited/jsx/utils'
 import { isTypeOf } from '@plaited/utils'
 
@@ -50,30 +51,32 @@ const updateAttributes = (element: HTMLElement | SVGElement, attr: string, val: 
   }
 }
 
+const handleTemplateObject = (el: HTMLElement | SVGElement, fragment: Template) => {
+  const { content, stylesheets } = fragment
+  stylesheets.size && void updateShadowRootStyles(el.getRootNode() as ShadowRoot, stylesheets)
+  const template = document.createElement('template')
+  template.innerHTML = content
+  return template.content
+}
+
 const sugar: Sugar = {
-  render({ content, stylesheets }) {
-    stylesheets.size && void updateShadowRootStyles(this.getRootNode() as ShadowRoot, stylesheets)
-    const template = document.createElement('template')
-    template.innerHTML = content
-    this.replaceChildren(template.content)
+  render(...fragments) {
+    const frag =fragments.map(fragment => isTypeOf<Template>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment)
+    this.replaceChildren(...frag)
   },
-  insert(position, { content, stylesheets }) {
-    stylesheets.size && void updateShadowRootStyles(this.getRootNode() as ShadowRoot, stylesheets)
-    const template = document.createElement('template')
-    template.innerHTML = content
+  insert(position, ...fragments) {
+    const frag =fragments.map(fragment => isTypeOf<Template>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment)
     position === 'beforebegin'
-      ? this.before(template.content)
+      ? this.before(...frag)
       : position === 'afterbegin'
-      ? this.prepend(template.content)
+      ? this.prepend(...frag)
       : position === 'beforeend'
-      ? this.append(template.content)
-      : this.after(template.content)
+      ? this.append(...frag)
+      : this.after(...frag)
   },
-  replace({ content, stylesheets }) {
-    stylesheets.size && void updateShadowRootStyles(this.getRootNode() as ShadowRoot, stylesheets)
-    const template = document.createElement('template')
-    template.innerHTML = content
-    this.replaceWith(template.content)
+  replace(...fragments) {
+    const frag =fragments.map(fragment => isTypeOf<Template>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment)
+    this.replaceWith(...frag)
   },
   attr(attr, val) {
     if (isTypeOf<string>(attr, 'string')) {

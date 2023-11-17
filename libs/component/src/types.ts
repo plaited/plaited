@@ -26,9 +26,9 @@ export interface $ {
 }
 
 export type Sugar = {
-  render(this: HTMLElement | SVGElement, template: Template): void
-  insert(this: HTMLElement | SVGElement, position: Position, template: Template): void
-  replace(this: HTMLElement | SVGElement, template: Template): void
+  render(this: HTMLElement | SVGElement, ...template: (Template | DocumentFragment)[]): void
+  insert(this: HTMLElement | SVGElement, position: Position, ...template: (Template | DocumentFragment)[]): void
+  replace(this: HTMLElement | SVGElement, ...template: (Template | DocumentFragment)[]): void
   attr(this: HTMLElement | SVGElement, attr: Record<string, string | null | number | boolean>, val?: never): void
   attr(this: HTMLElement | SVGElement, attr: string, val?: string | null | number | boolean): string | null | void
 }
