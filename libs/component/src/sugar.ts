@@ -59,7 +59,15 @@ const sugar: Sugar = {
   },
   insert(position, { content, stylesheets }) {
     stylesheets.size && void updateShadowRootStyles(this.getRootNode() as ShadowRoot, stylesheets)
-    this.insertAdjacentHTML(position, content)
+    const template = document.createElement('template')
+    template.innerHTML = content
+    position === 'beforebegin'
+      ? this.before(template.content)
+      : position === 'afterbegin'
+      ? this.prepend(template.content)
+      : position === 'beforeend'
+      ? this.append(template.content)
+      : this.after(template.content)
   },
   replace({ content, stylesheets }) {
     stylesheets.size && void updateShadowRootStyles(this.getRootNode() as ShadowRoot, stylesheets)
