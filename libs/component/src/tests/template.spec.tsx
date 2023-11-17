@@ -50,25 +50,21 @@ test('template existing declarative shadowdom', async (t) => {
   `
   class Fixture extends Component({
     tag: 'with-declarative-shadow-dom',
-    template: <div
-    data-target='inner'
-    className={cls.inner}
-    {...stylesheet}
-  >
-    before hydration
-  </div>,
+    template: (
+      <div
+        data-target='inner'
+        className={cls.inner}
+        {...stylesheet}
+      >
+        before hydration
+      </div>
+    ),
   }) {
-    plait({$}: PlaitProps): void | Promise<void> {
+    plait({ $ }: PlaitProps): void | Promise<void> {
       $('inner')?.render({ content: 'after hydration', stylesheets: new Set() })
     }
   }
-  const template = createTemplateElement(
-    (
-      <Fixture.template
-        data-target='host'
-      />
-    ).content,
-  )
+  const template = createTemplateElement((<Fixture.template data-target='host' />).content)
   const frag = document.importNode(template.content, true)
   const body = document.querySelector('body')
   body.append(frag)
