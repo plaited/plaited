@@ -1,5 +1,4 @@
 import type { PlaitedComponentConstructor, SugaredElement, Sugar } from './types.js'
-import { Template } from '@plaited/jsx'
 import { booleanAttrs } from '@plaited/jsx/utils'
 import { isTypeOf } from '@plaited/utils'
 
