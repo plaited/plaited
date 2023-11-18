@@ -130,7 +130,7 @@ export const Component: ComponentFunction = ({
         this.#shadowObserver = this.#createShadowObserver() // create a shadow observer to watch for modification & addition of nodes with data-trigger attribute
         dev &&
           trigger({
-            type: `connected->${this.dataset.address ?? this.tagName.toLowerCase()}`,
+            type: `connected(${this.dataset.address ?? this.tagName.toLowerCase()})`,
           })
         void this.plait({
           $: this.$,
@@ -147,7 +147,7 @@ export const Component: ComponentFunction = ({
       this.#shadowObserver && this.#shadowObserver.disconnect()
       if (dev && this.#trigger)
         this.#trigger({
-          type: `disconnected->${this.dataset.address ?? this.tagName.toLowerCase()}`,
+          type: `disconnected(${this.dataset.address ?? this.tagName.toLowerCase()})`,
         })
       this.#subscriptions.forEach((unsubscribe) => unsubscribe())
       this.#subscriptions.clear()
@@ -191,10 +191,7 @@ export const Component: ComponentFunction = ({
           const triggerType = el.dataset.trigger && getTriggerType(event, el)
           triggerType
             ? /** if key is present in `data-trigger` trigger event on instance's bProgram */
-              this.#trigger?.({
-                type: triggerType,
-                detail: event,
-              })
+              this.#trigger?.({ type: triggerType, detail: event })
             : /** if key is not present in `data-trigger` remove event listener for this event on Element */
               el.removeEventListener(event.type, delegates.get(el))
         }),

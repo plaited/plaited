@@ -35,14 +35,15 @@ const updateShadowRootStyles = async (root: ShadowRoot, stylesheets: Set<string>
 }
 
 const updateAttributes = (element: HTMLElement | SVGElement, attr: string, val: string | null | number | boolean) => {
-  val === null && element.hasAttribute(attr)
-    ? // Remove the attribute if val is null or undefined, and it currently exists
-      element.removeAttribute(attr)
-    : booleanAttrs.has(attr)
-      ? // Set the attribute if it is a boolean attribute and it does not exist
-        element.toggleAttribute(attr, true)
-      : // Set the attribute if the new value is different from the current value
-        element.setAttribute(attr, `${val}`)
+  // Remove the attribute if val is null or undefined, and it currently exists
+  if (val === null && element.hasAttribute(attr)) return element.removeAttribute(attr)
+  // Set the attribute if it is a boolean attribute and it does not exist
+  if (booleanAttrs.has(attr)) {
+    !element.hasAttribute(attr) && element.toggleAttribute(attr, true)
+    return
+  }
+  // Set the attribute if the new value is different from the current value
+  element.setAttribute(attr, `${val}`)
 }
 
 const handleTemplateObject = (el: HTMLElement | SVGElement, fragment: TemplateObject) => {
