@@ -9,5 +9,5 @@
     "strict": true
   },
   "include": ["**/src/"],
-  "exclude": ["**/tests/", "**/dist", "./happydom.ts"]
+  "exclude": ["**/tests/", "**/dist"]
 }

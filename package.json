@@ -5,8 +5,7 @@
   },
   "type": "module",
   "workspaces": [
-    "libs/*",
-    "tests/*"
+    "libs/*"
   ],
   "scripts": {
     "build": "lerna run build",
