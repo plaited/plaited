@@ -92,7 +92,7 @@ test('template existing declarative shadowdom', async (t) => {
       inner.attr('class', `${cls2.span} ${cls.inner}`)
     }
   }
-  const template = createTemplateElement((<Fixture.template data-target='host' />).server)
+  const template = createTemplateElement((<Fixture.template data-target='host' />).server.join(''))
   const frag = document.importNode(template.content, true)
   const body = document.querySelector('body')
   body.append(frag)

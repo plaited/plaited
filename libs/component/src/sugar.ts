@@ -49,7 +49,7 @@ const handleTemplateObject = (el: HTMLElement | SVGElement, fragment: TemplateOb
   const { client, stylesheets } = fragment
   stylesheets.size && void updateShadowRootStyles(el.getRootNode() as ShadowRoot, stylesheets)
   const template = document.createElement('template')
-  template.innerHTML = client
+  template.innerHTML = client.join('')
   return template.content
 }
 

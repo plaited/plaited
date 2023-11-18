@@ -17,7 +17,6 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     trusted,
     stylesheet,
     style,
-    key: _,
     'data-trigger': dataTrigger,
     className,
     htmlFor,
@@ -36,16 +35,16 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   }
 
   /** Now to create an array to store our node attributes */
-  let start = `<${tag} `
+  const start = [`<${tag} `]
   /** handle JS reserved words commonly used in html class & for*/
-  if (htmlFor) start += `for="${htmlFor}" `
-  if (className) start += `class="${className}" `
+  if (htmlFor) start.push(`for="${htmlFor}" `)
+  if (className) start.push(`class="${className}" `)
   /** if we have dataTrigger attribute wire up formatted correctly*/
   if (dataTrigger) {
     const value = Object.entries(dataTrigger)
       .map<string>(([ev, req]) => `${ev}:${req}`)
       .join(' ')
-    start += `${dataTriggerKey}="${value}" `
+    start.push(`${dataTriggerKey}="${value}" `)
   }
   /** if we have style add it to element */
   if (style) {
@@ -53,7 +52,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       /** convert camelCase style prop into dash-case ones so long as not cssVar */
       .map<string>(([prop, val]) => `${prop.startsWith('--') ? prop : kebabCase(prop)}:${val};`)
       .join(' ')
-    start += `style="${escape(value)}" `
+    start.push(`style="${escape(value)}" `)
   }
   /** next we want to loops through our attributes */
   for (const key in attributes) {
@@ -65,7 +64,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     }
     /** test for and handle boolean attributes */
     if (booleanAttrs.has(key)) {
-      start += `${key} `
+      start.push(`${key} `)
       continue
     }
     /** Grab the value from the attribute */
@@ -77,25 +76,25 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     /** set the value so long as it's not nullish in we use the formatted value  */
     const formattedValue = value ?? ''
     /** handle the rest of the attributes */
-    start += `${key}="${trusted ? `${formattedValue}" ` : escape(`${formattedValue}`)}" `
+    start.push(`${key}="${trusted ? `${formattedValue}" ` : escape(`${formattedValue}`)}" `)
   }
 
   /** Our tag is a void tag so we can return it once we apply attributes */
   if (voidTags.has(tag)) {
-    start += '/>'
+    start.push('/>')
     return {
       client: start,
       server: start,
       stylesheets,
     }
   }
-  start += '>'
-  let clientEnd = ''
+  start.push('>')
+  const clientEnd: string[] = []
   /** Test if the the tag is a template and if it's a declarative shadow dom template */
   const isDeclarativeShadowDOM = tag === 'template' && Object.hasOwn(attrs, 'shadowrootmode')
   /** time to append the children to our template if we have em*/
   const length = children.length
-  let serverEnd = ''
+  const serverEnd: string[] = []
   for (let i = 0; i < length; i++) {
     const child = children[i]
     /** P1 child IS {@type Template}*/
@@ -105,8 +104,8 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       'stylesheets' in child &&
       'server' in child
     ) {
-      clientEnd += child.client
-      serverEnd += child.server
+      clientEnd.push(...child.client)
+      serverEnd.push(...child.server)
       for (const sheet of child.stylesheets) stylesheets.add(sheet)
       continue
     }
@@ -114,8 +113,8 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     if (!validPrimitiveChildren.has(typeof child)) continue
     /** P3 child IS {@type Primitive} */
     const str = trusted ? `${child}`.trim() : escape(`${child}`).trim()
-    clientEnd += str
-    serverEnd += str
+    clientEnd.push(str)
+    serverEnd.push(str)
   }
   if (isDeclarativeShadowDOM) {
     /** We continue to hoist our stylesheet until we run
@@ -124,15 +123,15 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
      * shadowDom template array  and clear the stylesheets set
      */
     if (stylesheets.size) {
-      start += `<style>${Array.from(stylesheets).join('')}</style>`
+      start.push(`<style>${Array.from(stylesheets).join('')}</style>`)
       stylesheets.clear()
     }
   }
-  clientEnd += `</${tag}>`
-  serverEnd += `</${tag}>`
+  clientEnd.push(`</${tag}>`)
+  serverEnd.push(`</${tag}>`)
   return {
-    client: isDeclarativeShadowDOM ? '' : start + clientEnd,
-    server: start + serverEnd,
+    client: isDeclarativeShadowDOM ? [] : [...start, ...clientEnd],
+    server: [...start, ...serverEnd],
     stylesheets,
   }
 }
@@ -141,20 +140,20 @@ export { createTemplate as h }
 
 export const Fragment = ({ children: _children }: Attrs) => {
   const children = ensureArray(_children)
-  let client = ''
-  let server = ''
+  const client: string[] = []
+  const server: string[] = []
   const stylesheets = new Set<string>()
   const length = children.length
   for (let i = 0; i < length; i++) {
     const child = children[i]
     if (typeof child === 'string') {
       const safeChild = escape(child)
-      client += safeChild
-      server += safeChild
+      client.push(safeChild)
+      server.push(safeChild)
       continue
     }
-    client += child.client
-    server += child.server
+    client.push(...child.client)
+    server.push(...child.server)
     for (const sheet of child.stylesheets) stylesheets.add(sheet)
   }
   return {

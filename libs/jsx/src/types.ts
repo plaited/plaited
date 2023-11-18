@@ -3,8 +3,8 @@ import { dataAddress, dataTarget, dataTrigger } from './constants.js'
 export type Primitive = null | undefined | number | string | boolean | bigint
 
 export type TemplateObject = {
-  client: string
-  server: string
+  client: string[]
+  server: string[]
   stylesheets: Set<string>
 }
 

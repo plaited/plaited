@@ -2,7 +2,7 @@ import { test, expect } from 'bun:test'
 import { createTemplate as h, css, Fragment, FT, TemplateObject } from '../index.js'
 import beautify from 'beautify'
 
-const render = (tpl: TemplateObject) => beautify(tpl.client, { format: 'html' })
+const render = (tpl: TemplateObject) => beautify(tpl.client.join(''), { format: 'html' })
 
 test('createTemplate: Self closing - html', () => {
   expect(render(h('input', { type: 'text' }))).toMatchSnapshot()

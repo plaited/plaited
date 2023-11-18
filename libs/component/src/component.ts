@@ -102,7 +102,7 @@ export const Component: ComponentFunction = ({
       } else {
         this.#root = this.attachShadow({ mode, delegatesFocus })
         const { client, stylesheets } = template
-        this.#root.innerHTML = client
+        this.#root.innerHTML = client.join('')
         if (stylesheets.size) {
           const adoptedStyleSheets: CSSStyleSheet[] = []
           for (const style of stylesheets) {

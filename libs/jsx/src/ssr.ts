@@ -6,22 +6,22 @@ if (typeof global.HTMLElement === 'undefined') {
 }
 
 export const ssr = (...templates: TemplateObject[]) => {
-  let str = ''
+  const arr = []
   const stylesheets = new Set<string>()
   const length = templates.length
   for (let i = 0; i < length; i++) {
     const child = templates[i]
     if (typeof child === 'string') {
-      str += child
+      arr.push(child)
       continue
     }
-    str += child.server
+    arr.push(...child.server)
     for (const sheet of child.stylesheets) {
       stylesheets.add(sheet)
     }
   }
   const style = stylesheets.size ? `<style>${[...stylesheets].join('')}</style>` : ''
-
+  const str = arr.join('')
   const headIndex = str.indexOf('</head>')
   const bodyRegex = /<body\b[^>]*>/i
   const bodyMatch = bodyRegex.exec(str)
