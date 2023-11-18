@@ -38,16 +38,13 @@ const updateAttributes = (element: HTMLElement | SVGElement, attr: string, val: 
   if (val === null && element.hasAttribute(attr)) {
     // Remove the attribute if val is null or undefined, and it currently exists
     element.removeAttribute(attr)
-  } else if (booleanAttrs.has(attr) && !element.hasAttribute(attr)) {
+  } else if (booleanAttrs.has(attr)) {
     // Set the attribute if it is a boolean attribute and it does not exist
-    element.toggleAttribute(attr, true)
+    !element.hasAttribute(attr) && element.toggleAttribute(attr, true)
   } else {
     // Set the attribute if the new value is different from the current value
-    const currentVal = element.getAttribute(attr)
     const nextVal = `${val}`
-    if (currentVal !== nextVal) {
-      element.setAttribute(attr, nextVal)
-    }
+    element.getAttribute(attr) !== nextVal && element.setAttribute(attr, nextVal)
   }
 }
 
@@ -73,10 +70,10 @@ const sugar: Sugar = {
     position === 'beforebegin'
       ? this.before(...frag)
       : position === 'afterbegin'
-      ? this.prepend(...frag)
-      : position === 'beforeend'
-      ? this.append(...frag)
-      : this.after(...frag)
+        ? this.prepend(...frag)
+        : position === 'beforeend'
+          ? this.append(...frag)
+          : this.after(...frag)
   },
   replace(...fragments) {
     const frag = fragments.map((fragment) =>
