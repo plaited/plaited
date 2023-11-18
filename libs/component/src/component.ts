@@ -32,8 +32,8 @@ const getTriggerType = (event: Event, context: TriggerElement) => {
     context.tagName !== 'SLOT' && event.currentTarget === context
       ? context
       : event.composedPath().find((el) => el instanceof ShadowRoot) === context.getRootNode()
-      ? context
-      : undefined
+        ? context
+        : undefined
   if (!el) return
   return getTriggerMap(el).get(event.type)
 }
@@ -50,9 +50,8 @@ class DelegatedListener {
 // Weakly hold reference to our delegated elements and their callbacks
 const delegates = new WeakMap()
 
-const isPublisher = (obj: Publisher | Messenger): obj is Publisher => {
-  return Object.hasOwn(obj, 'subscribe')
-}
+const isPublisher = (obj: Publisher | Messenger): obj is Publisher => 'subscribe' in obj
+
 /**
  * Creates a PlaitedComponent
  * @param {object} args - Arguments for the PlaitedComponent
@@ -245,7 +244,7 @@ export const Component: ComponentFunction = ({
       const name = this.dataset.address ?? this.tagName.toLowerCase()
       if (trueTypeOf(args) !== 'object') return console.error(`Invalid TriggerArg passed to Component [${name}]`)
       const { type, detail } = args
-      if (!Object.hasOwn(args, 'type')) return console.error(`TriggerArg missing [type]`)
+      if (!('type' in args)) return console.error(`TriggerArg missing [type]`)
       if (this.#observedTriggers.has(type)) return this.#trigger?.({ type, detail })
       return console.warn(`Component [${name}] is not observing trigger [${type}]`)
     }

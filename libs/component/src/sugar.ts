@@ -35,17 +35,14 @@ const updateShadowRootStyles = async (root: ShadowRoot, stylesheets: Set<string>
 }
 
 const updateAttributes = (element: HTMLElement | SVGElement, attr: string, val: string | null | number | boolean) => {
-  if (val === null && element.hasAttribute(attr)) {
-    // Remove the attribute if val is null or undefined, and it currently exists
-    element.removeAttribute(attr)
-  } else if (booleanAttrs.has(attr)) {
-    // Set the attribute if it is a boolean attribute and it does not exist
-    !element.hasAttribute(attr) && element.toggleAttribute(attr, true)
-  } else {
-    // Set the attribute if the new value is different from the current value
-    const nextVal = `${val}`
-    element.getAttribute(attr) !== nextVal && element.setAttribute(attr, nextVal)
-  }
+  val === null && element.hasAttribute(attr)
+    ? // Remove the attribute if val is null or undefined, and it currently exists
+      element.removeAttribute(attr)
+    : booleanAttrs.has(attr)
+      ? // Set the attribute if it is a boolean attribute and it does not exist
+        element.toggleAttribute(attr, true)
+      : // Set the attribute if the new value is different from the current value
+        element.setAttribute(attr, `${val}`)
 }
 
 const handleTemplateObject = (el: HTMLElement | SVGElement, fragment: TemplateObject) => {
@@ -58,10 +55,11 @@ const handleTemplateObject = (el: HTMLElement | SVGElement, fragment: TemplateOb
 
 const sugar: Sugar = {
   render(...fragments) {
-    const frag = fragments.map((fragment) =>
-      isTypeOf<TemplateObject>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment,
+    this.replaceChildren(
+      ...fragments.map((fragment) =>
+        isTypeOf<TemplateObject>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment,
+      ),
     )
-    this.replaceChildren(...frag)
   },
   insert(position, ...fragments) {
     const frag = fragments.map((fragment) =>
@@ -76,10 +74,11 @@ const sugar: Sugar = {
           : this.after(...frag)
   },
   replace(...fragments) {
-    const frag = fragments.map((fragment) =>
-      isTypeOf<TemplateObject>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment,
+    this.replaceWith(
+      ...fragments.map((fragment) =>
+        isTypeOf<TemplateObject>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment,
+      ),
     )
-    this.replaceWith(...frag)
   },
   attr(attr, val) {
     if (isTypeOf<string>(attr, 'string')) {
@@ -105,9 +104,7 @@ const sugar: Sugar = {
 
 const assignedElements = new WeakSet<HTMLElement | SVGElement>()
 
-const hasSugar = (element: HTMLElement | SVGElement): element is SugaredElement => {
-  return assignedElements.has(element)
-}
+const hasSugar = (element: HTMLElement | SVGElement): element is SugaredElement => assignedElements.has(element)
 
 const assignSugar = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
   elements: (HTMLElement | SVGElement)[],
@@ -124,8 +121,5 @@ const assignSugar = <T extends HTMLElement | SVGElement = HTMLElement | SVGEleme
 
 export const $ =
   (context: DocumentFragment | HTMLElement | SVGElement | SugaredElement) =>
-  <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(target: string, match: SelectorMatch = '=') => {
-    return assignSugar<T>(
-      Array.from(context.querySelectorAll<HTMLElement | SVGElement>(`[${dataTarget}${match}"${target}"]`)),
-    )
-  }
+  <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(target: string, match: SelectorMatch = '=') =>
+    assignSugar<T>(Array.from(context.querySelectorAll<HTMLElement | SVGElement>(`[${dataTarget}${match}"${target}"]`)))
