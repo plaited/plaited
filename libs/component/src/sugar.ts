@@ -66,13 +66,10 @@ const sugar: Sugar = {
     const frag = fragments.map((fragment) =>
       isTypeOf<TemplateObject>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment,
     )
-    position === 'beforebegin'
-      ? this.before(...frag)
-      : position === 'afterbegin'
-        ? this.prepend(...frag)
-        : position === 'beforeend'
-          ? this.append(...frag)
-          : this.after(...frag)
+    position === 'beforebegin' ? this.before(...frag)
+    : position === 'afterbegin' ? this.prepend(...frag)
+    : position === 'beforeend' ? this.append(...frag)
+    : this.after(...frag)
   },
   replace(...fragments) {
     this.replaceWith(
@@ -94,9 +91,9 @@ const sugar: Sugar = {
   clone(callback) {
     return (data) => {
       const clone =
-        this instanceof HTMLTemplateElement
-          ? (this.content.cloneNode(true) as DocumentFragment)
-          : (this.cloneNode(true) as HTMLElement | SVGElement)
+        this instanceof HTMLTemplateElement ?
+          (this.content.cloneNode(true) as DocumentFragment)
+        : (this.cloneNode(true) as HTMLElement | SVGElement)
       callback($(clone), data)
       return clone
     }

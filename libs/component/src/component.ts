@@ -29,11 +29,9 @@ const getTriggerMap = (el: TriggerElement) =>
 /** get trigger for elements respective event from triggerTypeMap */
 const getTriggerType = (event: Event, context: TriggerElement) => {
   const el =
-    context.tagName !== 'SLOT' && event.currentTarget === context
-      ? context
-      : event.composedPath().find((el) => el instanceof ShadowRoot) === context.getRootNode()
-        ? context
-        : undefined
+    context.tagName !== 'SLOT' && event.currentTarget === context ? context
+    : event.composedPath().find((el) => el instanceof ShadowRoot) === context.getRootNode() ? context
+    : undefined
   if (!el) return
   return getTriggerMap(el).get(event.type)
 }
@@ -189,11 +187,11 @@ export const Component: ComponentFunction = ({
         el,
         new DelegatedListener((event) => {
           const triggerType = el.dataset.trigger && getTriggerType(event, el)
-          triggerType
-            ? /** if key is present in `data-trigger` trigger event on instance's bProgram */
-              this.#trigger?.({ type: triggerType, detail: event })
-            : /** if key is not present in `data-trigger` remove event listener for this event on Element */
-              el.removeEventListener(event.type, delegates.get(el))
+          triggerType ?
+            /** if key is present in `data-trigger` trigger event on instance's bProgram */
+            this.#trigger?.({ type: triggerType, detail: event })
+          : /** if key is not present in `data-trigger` remove event listener for this event on Element */
+            el.removeEventListener(event.type, delegates.get(el))
         }),
       )
     }

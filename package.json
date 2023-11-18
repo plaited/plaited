@@ -14,7 +14,7 @@
     "lint:fix": "bun run lint --fix --quiet",
     "postinstall": "husky install",
     "prepare": "husky install",
-    "prettier": "prettier . --write",
+    "prettier": "prettier --experimental-ternaries . --write",
     "test": "lerna run test"
   },
   "lint-staged": {

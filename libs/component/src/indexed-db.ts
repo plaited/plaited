@@ -49,9 +49,9 @@ export const indexedDB = async <T = unknown>(
   }
 
   const set = async (newValue: T | UpdateStoreArg<T>) => {
-    ;(await trueTypeOf(newValue)) === 'function'
-      ? updateStore(newValue as UpdateStoreArg<T>)
-      : overwriteStore(newValue as T)
+    ;(await trueTypeOf(newValue)) === 'function' ?
+      updateStore(newValue as UpdateStoreArg<T>)
+    : overwriteStore(newValue as T)
     const next = await get()
     channel.postMessage(next)
     return next

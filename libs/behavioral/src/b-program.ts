@@ -21,12 +21,12 @@ import { loop, sync, thread } from './rules.js'
 
 const requestInParameter = ({ type: requestEventName, detail: requestDetail = {} }: CandidateBid) => {
   return ({ type: parameterEventName, cb: parameterAssertion }: ParameterIdiom): boolean =>
-    parameterAssertion
-      ? parameterAssertion({
-          detail: requestDetail,
-          type: requestEventName,
-        })
-      : requestEventName === parameterEventName
+    parameterAssertion ?
+      parameterAssertion({
+        detail: requestDetail,
+        type: requestEventName,
+      })
+    : requestEventName === parameterEventName
 }
 
 /** default dev callback function */
