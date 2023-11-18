@@ -3,8 +3,8 @@ import { dataAddress, dataTarget, dataTrigger } from './constants.js'
 export type Primitive = null | undefined | number | string | boolean | bigint
 
 export type TemplateObject = {
-  content: string
-  string: string
+  client: string
+  server: string
   stylesheets: Set<string>
 }
 
@@ -32,7 +32,9 @@ export type BaseAttrs = {
 
 export type Attrs<T extends Record<string, any> = Record<string, any>> = BaseAttrs & T
 
-export type FunctionTemplate<T extends Record<string, any> = Record<string, any>> = (attrs: T & BaseAttrs) => TemplateObject
+export type FunctionTemplate<T extends Record<string, any> = Record<string, any>> = (
+  attrs: T & BaseAttrs,
+) => TemplateObject
 
 export type FT<
   //Alias for FunctionTemplate

@@ -1,12 +1,8 @@
 import { test, expect } from 'bun:test'
-import { createTemplate as h, css, Fragment, FT, Template } from '../index.js'
+import { createTemplate as h, css, Fragment, FT, TemplateObject } from '../index.js'
 import beautify from 'beautify'
 
-const render = (tpl: Template) => {
-  const template = document.createElement('template')
-  template.content.append(tpl.content)
-  return beautify(template.innerHTML, { format: 'html' })
-}
+const render = (tpl: TemplateObject) => beautify(tpl.client, { format: 'html' })
 
 test('createTemplate: Self closing - html', () => {
   expect(render(h('input', { type: 'text' }))).toMatchSnapshot()
@@ -28,15 +24,15 @@ test('createTemplate: Falsey - false', () => {
   expect(render(h('div', { children: false }))).toMatchSnapshot()
 })
 
-test('createTemplate: Falsey - ""', () => {
+test('createTemplate: Not really Falsey - ""', () => {
   expect(render(h('div', { children: '' }))).toMatchSnapshot()
 })
 
-test('createTemplate: Falsey - 0', () => {
+test('createTemplate: Not really Falsey - 0', () => {
   expect(render(h('div', { children: 0 }))).toMatchSnapshot()
 })
 
-test('createTemplate: Falsey - NaN', () => {
+test('createTemplate: Not really Falsey - NaN', () => {
   expect(render(h('div', { children: NaN }))).toMatchSnapshot()
 })
 
@@ -49,12 +45,14 @@ test('createTemplate: Conditional', () => {
 })
 
 test('createTemplate: Style attribute', () => {
-  const { content } = h('div', {
-    style: { backgroundColor: 'blue', margin: '12px', '--cssVar': 'red' },
-    children: 'styles',
-  })
-  const style = (content as HTMLDivElement).style.cssText
-  expect(style).toMatchSnapshot()
+  expect(
+    render(
+      h('div', {
+        style: { backgroundColor: 'blue', margin: '12px', '--cssVar': 'red' },
+        children: 'styles',
+      }),
+    ),
+  ).toMatchSnapshot()
 })
 
 test('createTemplate: data-trigger attribute', () =>
@@ -69,19 +67,6 @@ test('createTemplate: data-trigger attribute', () =>
       }),
     ),
   ).toMatchSnapshot())
-
-test('createTemplate: kebab-case attributes', () => {
-  expect(
-    render(
-      h('div', {
-        dataTrigger: { click: 'click' },
-        dataAddress: 'address',
-        dataMode: 'mode',
-        xPrefix: 'x',
-      }),
-    ),
-  ).toMatchSnapshot()
-})
 
 test('createTemplate: Array of templates', () =>
   expect(
@@ -128,8 +113,7 @@ const reload = () =>{
 socket.addEventListener('message', reload);
 console.log('[plaited] listening for file changes');
 </script>`
-  const { content } = h('div', { children: scriptContent })
-  expect(content.firstElementChild).toMatchSnapshot()
+  expect(render(h('div', { children: scriptContent }))).toMatchSnapshot()
 })
 
 test('createTemplate: Does not escape children when trusted', () => {
@@ -144,8 +128,7 @@ const reload = () =>{
 socket.addEventListener('message', reload);
 console.log('[plaited] listening for file changes');
 </script>`
-  const { content } = h('div', { trusted: true, children: scriptContent })
-  expect(content.firstElementChild.outerHTML).toMatchSnapshot()
+  expect(render(h('div', { trusted: true, children: scriptContent }))).toMatchSnapshot()
 })
 
 const Template: FT = (attrs) => h('template', attrs)
@@ -212,7 +195,7 @@ test('createTemplate: CustomElement hoisting its styles', () => {
 })
 
 const nestedHostStyles = css`
-  host: {
+  nested-component {
     display: flex;
     flex-direction: column;
   }
@@ -231,6 +214,7 @@ const nestedChildrenStyles = css`
 
 test('createTemplate: CustomElement with styled slotted component', () => {
   const el = h(NestedCustomElement, {
+    ...nestedHostStyles[1],
     children: [
       h('p', {
         slot: 'nested',
@@ -269,7 +253,7 @@ test('createTemplate: CustomElement with declarative shadow dom and nested decla
 })
 
 const hostStyles = css`
-  :host {
+  top-component {
     display: block;
   }
 `

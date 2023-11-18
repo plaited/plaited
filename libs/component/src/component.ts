@@ -16,7 +16,7 @@ import type {
   Messenger,
   Publisher,
   TriggerElement,
-  QuerySelector
+  QuerySelector,
 } from './types.js'
 import { $ } from './sugar.js'
 import { noop, trueTypeOf } from '@plaited/utils'
@@ -102,8 +102,8 @@ export const Component: ComponentFunction = ({
         this.#root = this.internals_.shadowRoot
       } else {
         this.#root = this.attachShadow({ mode, delegatesFocus })
-        const { content, stylesheets } = template
-        this.#root.innerHTML = content
+        const { client, stylesheets } = template
+        this.#root.innerHTML = client
         if (stylesheets.size) {
           const adoptedStyleSheets: CSSStyleSheet[] = []
           for (const style of stylesheets) {
@@ -189,8 +189,7 @@ export const Component: ComponentFunction = ({
       delegates.set(
         el,
         new DelegatedListener((event) => {
-          //
-          const triggerType = getTriggerType(event, el)
+          const triggerType = el.dataset.trigger && getTriggerType(event, el)
           triggerType
             ? /** if key is present in `data-trigger` trigger event on instance's bProgram */
               this.#trigger?.({
@@ -220,13 +219,13 @@ export const Component: ComponentFunction = ({
           if (mutation.type === 'attributes') {
             const el = mutation.target
             if (isElement(el)) {
-              mutation.attributeName === dataTrigger && this.#delegateListeners([el])
+              mutation.attributeName === dataTrigger && el.dataset.trigger && this.#delegateListeners([el])
             }
           } else if (mutation.addedNodes.length) {
             const length = mutation.addedNodes.length
             for (let i = 0; i < length; i++) {
               const node = mutation.addedNodes[i]
-              if(isElement(node)) {
+              if (isElement(node)) {
                 node.hasAttribute(dataTrigger) && this.#delegateListeners([node])
                 this.#delegateListeners(Array.from(node.querySelectorAll(`[${dataTrigger}]`)))
               }

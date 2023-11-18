@@ -40,7 +40,7 @@ test('dynamic island comms', async (t) => {
       const disconnect = connect(msg)
       feedback({
         disable() {
-          const button = $<HTMLButtonElement>('button')
+          const [button] = $<HTMLButtonElement>('button')
           button && (button.disabled = true)
           disconnect()
         },
@@ -76,8 +76,8 @@ test('dynamic island comms', async (t) => {
           msg('one', { type: 'disable' })
         },
         add(detail: { value: string }) {
-          const header = $('header')
-          header?.insertAdjacentHTML('beforeend', `${detail.value}`)
+          const [header] = $('header')
+          header.insert('beforeend', `${detail.value}`)
         },
       })
     }

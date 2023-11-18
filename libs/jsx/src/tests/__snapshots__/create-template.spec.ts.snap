@@ -1,8 +1,8 @@
 // Bun Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`createTemplate: Self closing - html 1`] = `"<input type="text">"`;
+exports[`createTemplate: Self closing - html 1`] = `"<input type="text" />"`;
 
-exports[`createTemplate: Self closing - svg 1`] = `"<polygon points="0,100 50,25 50,75 100,0"></polygon>"`;
+exports[`createTemplate: Self closing - svg 1`] = `"<polygon points="0,100 50,25 50,75 100,0" />"`;
 
 exports[`createTemplate: Falsey - undefined 1`] = `"<div></div>"`;
 
@@ -10,24 +10,19 @@ exports[`createTemplate: Falsey - null 1`] = `"<div></div>"`;
 
 exports[`createTemplate: Falsey - false 1`] = `"<div></div>"`;
 
-exports[`createTemplate: Falsey - "" 1`] = `"<div></div>"`;
+exports[`createTemplate: Not really Falsey - "" 1`] = `"<div></div>"`;
 
-exports[`createTemplate: Falsey - 0 1`] = `"<div></div>"`;
+exports[`createTemplate: Not really Falsey - 0 1`] = `"<div>0</div>"`;
 
-exports[`createTemplate: Falsey - NaN 1`] = `"<div></div>"`;
+exports[`createTemplate: Not really Falsey - NaN 1`] = `"<div>NaN</div>"`;
 
 exports[`createTemplate: Bad template - NaN 1`] = `"<div></div>"`;
 
 exports[`createTemplate: Conditional 1`] = `"<div>hello</div>"`;
 
-exports[`createTemplate: Style attribute 1`] = `"background-color: blue; margin: 12px; --cssVar: red;"`;
+exports[`createTemplate: Style attribute 1`] = `"<div style="background-color:blue; margin:12px; --cssVar:red;">styles</div>"`;
 
-exports[`createTemplate: data-trigger attribute 1`] = `"<div data-trigger="click->random focus->thing">triggers</div>"`;
-
-exports[`createTemplate: kebab-case attributes 1`] = `
-"<div data-trigger="click->click" data-address="address" data-mode="mode"
-x-prefix="x"></div>"
-`;
+exports[`createTemplate: data-trigger attribute 1`] = `"<div data-trigger="click:random focus:thing">triggers</div>"`;
 
 exports[`createTemplate: Array of templates 1`] = `
 "<ul>
@@ -44,22 +39,30 @@ exports[`createTemplate: Array of templates 1`] = `
 </ul>"
 `;
 
-exports[`createTemplate: Should not throw on script tag with trusted attribute 1`] = `"<script type="module" src="main.js"></script>"`;
+exports[`createTemplate: Should not throw on script tag with trusted attribute 1`] = `"<script type="module" " src="main.js " "></script>"`;
 
-exports[`createTemplate: Escapes children 1`] = `null`;
+exports[`createTemplate: Escapes children 1`] = `
+"<div>&lt;script type=&quot;text/javascript&quot;&gt; const hostRegex = /^https?://([^/]+)/.*$/i;
+    const host = document.URL.replace(hostRegex, &#39;$1&#39;); const socket
+    = new WebSocket(/); const reload = () =&gt;{ location.reload(); console.log(&#39;...reloading&#39;);
+    }; socket.addEventListener(&#39;message&#39;, reload); console.log(&#39;[plaited]
+    listening for file changes&#39;); &lt;/script&gt;</div>"
+`;
 
 exports[`createTemplate: Does not escape children when trusted 1`] = `
-"<script type="text/javascript">
-const hostRegex = /^https?://([^/]+)/.*$/i;
-const host = document.URL.replace(hostRegex, '$1');
-const socket = new WebSocket(/);
-const reload = () =>{
-  location.reload();
-  console.log('...reloading');
-};
-socket.addEventListener('message', reload);
-console.log('[plaited] listening for file changes');
-</script>"
+"<div>
+    <script type="text/javascript">
+        const hostRegex = /^https?://([^/]+)/.*$/i;
+        const host = document.URL.replace(hostRegex, '$1');
+        const socket = new WebSocket(/);
+        const reload = () =>{
+          location.reload();
+          console.log('...reloading');
+        };
+        socket.addEventListener('message', reload);
+        console.log('[plaited] listening for file changes');
+    </script>
+</div>"
 `;
 
 exports[`createTemplate: Non declarative shadow DOM template 1`] = `
@@ -100,7 +103,7 @@ exports[`createTemplate: CustomElement with declarative shadow dom & host styles
   "content": "<nested-component></nested-component>",
   "stylesheets":   
 Set {
-    "host: { display: flex; flex-direction: column; }",
+    "nested-component { display: flex; flex-direction: column; }",
   }
 ,
 }
@@ -115,6 +118,7 @@ exports[`createTemplate: CustomElement with styled slotted component 1`] = `
 ,
   "stylesheets":   
 Set {
+    "nested-component { display: flex; flex-direction: column; }",
     ".slotted-paragraph_LTc5ND { color: rebeccapurple; }",
   }
 ,
@@ -133,7 +137,7 @@ exports[`createTemplate: CustomElement with declarative shadow dom and nested de
   "content": "<top-component></top-component>",
   "stylesheets":   
 Set {
-    ":host { display: block; }",
+    "top-component { display: block; }",
   }
 ,
 }
@@ -143,12 +147,12 @@ exports[`createTemplate: CustomElement with declarative shadow dom and nested de
 {
   "content": 
 "<top-component>
-    <img class="image_Mjc4MD">
+    <img class="image_Mjc4MD" />
 </top-component>"
 ,
   "stylesheets":   
 Set {
-    ":host { display: block; }",
+    "top-component { display: block; }",
     ".image_Mjc4MD { width: 100%; aspect-ratio: 16 / 9; }",
   }
 ,

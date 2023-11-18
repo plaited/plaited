@@ -10,7 +10,7 @@
     "lib": ["dom", "es2022"],
     "outDir": "dist",
     "rootDir": "src",
-    "strict": true,
+    "strict": true
   },
   "exclude": ["**/dist", "**/tests/"]
 }

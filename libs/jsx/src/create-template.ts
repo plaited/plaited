@@ -1,4 +1,4 @@
-import { escape, kebabCase } from '@plaited/utils'
+import { escape, kebabCase, isTypeOf } from '@plaited/utils'
 import {
   booleanAttrs,
   primitives,
@@ -61,8 +61,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
      * skip on attempts to provide `on` attributes
      */
     if (key.startsWith('on')) {
-      console.error(`Event handler attributes are not allowed:  [${key}]`)
-      continue
+      throw new Error(`Event handler attributes are not allowed:  [${key}]`)
     }
     /** test for and handle boolean attributes */
     if (booleanAttrs.has(key)) {
@@ -73,8 +72,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     const value = attributes[key]
     /** P2 typeof attribute is NOT {@type Primitive} then skip and do nothing */
     if (!primitives.has(typeof value)) {
-      console.error(`Attributes not declared in BaseAttrs must be of type Primitive: ${key} is not primitive`)
-      continue
+      throw new Error(`Attributes not declared in BaseAttrs must be of type Primitive: ${key} is not primitive`)
     }
     /** set the value so long as it's not nullish in we use the formatted value  */
     const formattedValue = value ?? ''
@@ -86,22 +84,29 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   if (voidTags.has(tag)) {
     start += '/>'
     return {
-      content: start,
-      string: start,
+      client: start,
+      server: start,
       stylesheets,
     }
   }
   start += '>'
-  let end = ''
+  let clientEnd = ''
   /** Test if the the tag is a template and if it's a declarative shadow dom template */
   const isDeclarativeShadowDOM = tag === 'template' && Object.hasOwn(attrs, 'shadowrootmode')
   /** time to append the children to our template if we have em*/
   const length = children.length
+  let serverEnd = ''
   for (let i = 0; i < length; i++) {
     const child = children[i]
     /** P1 child IS {@type Template}*/
-    if (typeof child === 'object' && 'content' in child && 'stylesheets' in child) {
-      end += child.content
+    if (
+      isTypeOf<Record<string, unknown>>(child, 'object') &&
+      'client' in child &&
+      'stylesheets' in child &&
+      'server' in child
+    ) {
+      clientEnd += child.client
+      serverEnd += child.server
       for (const sheet of child.stylesheets) stylesheets.add(sheet)
       continue
     }
@@ -109,7 +114,8 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     if (!validPrimitiveChildren.has(typeof child)) continue
     /** P3 child IS {@type Primitive} */
     const str = trusted ? `${child}`.trim() : escape(`${child}`).trim()
-    end += str
+    clientEnd += str
+    serverEnd += str
   }
   if (isDeclarativeShadowDOM) {
     /** We continue to hoist our stylesheet until we run
@@ -122,11 +128,11 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       stylesheets.clear()
     }
   }
-  end += `</${tag}>`
-  const content = start + end
+  clientEnd += `</${tag}>`
+  serverEnd += `</${tag}>`
   return {
-    content: isDeclarativeShadowDOM ? '' : content,
-    string: content,
+    client: isDeclarativeShadowDOM ? '' : start + clientEnd,
+    server: start + serverEnd,
     stylesheets,
   }
 }
@@ -135,25 +141,25 @@ export { createTemplate as h }
 
 export const Fragment = ({ children: _children }: Attrs) => {
   const children = ensureArray(_children)
-  let content = ''
-  let string = ''
+  let client = ''
+  let server = ''
   const stylesheets = new Set<string>()
   const length = children.length
   for (let i = 0; i < length; i++) {
     const child = children[i]
     if (typeof child === 'string') {
       const safeChild = escape(child)
-      content += safeChild
-      string += safeChild
+      client += safeChild
+      server += safeChild
       continue
     }
-    content += child.content
-    string += child.string
+    client += child.client
+    server += child.server
     for (const sheet of child.stylesheets) stylesheets.add(sheet)
   }
   return {
-    content,
+    client,
     stylesheets,
-    string,
+    server,
   }
 }

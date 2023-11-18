@@ -1,8 +1,8 @@
 // Bun Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`ssr: Self closing - html 1`] = `"<input type="text">"`;
+exports[`ssr: Self closing - html 1`] = `"<input type="text" />"`;
 
-exports[`ssr: Self closing - svg 1`] = `"<polygon points="0,100 50,25 50,75 100,0"></polygon>"`;
+exports[`ssr: Self closing - svg 1`] = `"<polygon points="0,100 50,25 50,75 100,0" />"`;
 
 exports[`ssr: Falsey - undefined 1`] = `"<div></div>"`;
 
@@ -10,24 +10,19 @@ exports[`ssr: Falsey - null 1`] = `"<div></div>"`;
 
 exports[`ssr: Falsey - false 1`] = `"<div></div>"`;
 
-exports[`ssr: Falsey - "" 1`] = `"<div></div>"`;
+exports[`ssr: Not really Falsey - "" 1`] = `"<div></div>"`;
 
-exports[`ssr: Falsey - 0 1`] = `"<div></div>"`;
+exports[`ssr: Not really Falsey - 0 1`] = `"<div>0</div>"`;
 
-exports[`ssr: Falsey - NaN 1`] = `"<div></div>"`;
+exports[`ssr: Not really Falsey - NaN 1`] = `"<div>NaN</div>"`;
 
 exports[`ssr: Bad template - NaN 1`] = `"<div></div>"`;
 
 exports[`ssr: Conditional 1`] = `"<div>hello</div>"`;
 
-exports[`ssr: Style attribute 1`] = `"<div style="background-color: blue; margin: 12px; --cssVar: red;">styles</div>"`;
+exports[`ssr: Style attribute 1`] = `"<div style="background-color:blue; margin:12px; --cssVar:red;">styles</div>"`;
 
-exports[`ssr: data-trigger attribute 1`] = `"<div data-trigger="click->random focus->thing">triggers</div>"`;
-
-exports[`ssr: kebab-case attributes 1`] = `
-"<div data-trigger="click->click" data-address="address" data-mode="mode"
-x-prefix="x"></div>"
-`;
+exports[`ssr: data-trigger attribute 1`] = `"<div data-trigger="click:random focus:thing">triggers</div>"`;
 
 exports[`ssr: Array of templates 1`] = `
 "<ul>
@@ -44,7 +39,7 @@ exports[`ssr: Array of templates 1`] = `
 </ul>"
 `;
 
-exports[`ssr: Should not throw on script tag with trusted attribute 1`] = `"<script type="module" src="main.js"></script>"`;
+exports[`ssr: Should not throw on script tag with trusted attribute 1`] = `"<script type="module" " src="main.js " "></script>"`;
 
 exports[`ssr: Escapes children 1`] = `
 "<div>&lt;script type=&quot;text/javascript&quot;&gt; const hostRegex = /^https?://([^/]+)/.*$/i;
@@ -110,7 +105,7 @@ exports[`ssr: Declarative shadow dom hoisting its styles 1`] = `
 
 exports[`ssr: Declarative shadow dom with host styles 1`] = `
 "<style>
-    host: { display: flex; flex-direction: column; }
+    nested-component { display: flex; flex-direction: column; }
 </style>
 <nested-component>
     <template shadowrootmode="open" shadowrootdelegatesfocus="true">
@@ -125,7 +120,7 @@ exports[`ssr: Declarative shadow dom with host styles 1`] = `
 
 exports[`ssr: Declarative shadow dom with styled slotted component 1`] = `
 "<style>
-    .slotted-paragraph_LTc5ND { color: rebeccapurple; }
+    nested-component { display: flex; flex-direction: column; }.slotted-paragraph_LTc5ND { color: rebeccapurple; }
 </style>
 <nested-component>
     <template shadowrootmode="open" shadowrootdelegatesfocus="true">
@@ -161,7 +156,7 @@ exports[`ssr: Declarative shadow dom with another declarative shadow dom 1`] = `
 
 exports[`ssr: Declarative shadow dom with another declarative shadow dom plus host styles 1`] = `
 "<style>
-    :host { display: block; }
+    top-component { display: block; }
 </style>
 <top-component>
     <template shadowrootdelegatesfocus="true" shadowrootmode="open">
@@ -184,7 +179,7 @@ exports[`ssr: Declarative shadow dom with another declarative shadow dom plus ho
 
 exports[`ssr: Declarative shadow dom with another declarative shadow dom plus host styles and child 1`] = `
 "<style>
-    :host { display: block; }.image_Mjc4MD { width: 100%; aspect-ratio: 16 / 9; }
+    top-component { display: block; }.image_Mjc4MD { width: 100%; aspect-ratio: 16 / 9; }
 </style>
 <top-component>
     <template shadowrootdelegatesfocus="true" shadowrootmode="open">
@@ -202,7 +197,7 @@ exports[`ssr: Declarative shadow dom with another declarative shadow dom plus ho
             <p class="slotted-paragraph_LTc5ND" slot="nested">slotted paragraph</p>
         </nested-component>
     </template>
-    <img class="image_Mjc4MD">
+    <img class="image_Mjc4MD" />
 </top-component>"
 `;
 

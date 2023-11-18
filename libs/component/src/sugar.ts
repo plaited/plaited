@@ -13,15 +13,15 @@ const cssCache = new WeakMap<ShadowRoot, Set<string>>()
 
 const updateShadowRootStyles = async (root: ShadowRoot, stylesheets: Set<string>) => {
   // P1 first time dynamically setting stylesheets on instance add it to cssCache
-  if (!cssCache.has(root)) cssCache.set(root, new Set<string>())
-  // P2 get default styles if they exist on instance
-  const defaultStyles: undefined | Set<string> = (root.host.constructor as PlaitedComponentConstructor).stylesheets
+  if (!cssCache.has(root)) {
+    cssCache.set(root, new Set<string>([...(root.host.constructor as PlaitedComponentConstructor).stylesheets]))
+  }
   const instanceStyles = cssCache.get(root)
   const newStyleSheets: CSSStyleSheet[] = []
   try {
     await Promise.all(
       [...stylesheets].map(async (styles) => {
-        if (defaultStyles?.has(styles) || instanceStyles?.has(styles)) return
+        if (instanceStyles?.has(styles)) return
         const sheet = new CSSStyleSheet()
         instanceStyles?.add(styles)
         const nextSheet = await sheet.replace(styles)
@@ -31,7 +31,7 @@ const updateShadowRootStyles = async (root: ShadowRoot, stylesheets: Set<string>
   } catch (error) {
     console.error(error)
   }
-  root.adoptedStyleSheets = [...root.adoptedStyleSheets, ...newStyleSheets]
+  if (newStyleSheets.length) root.adoptedStyleSheets = [...root.adoptedStyleSheets, ...newStyleSheets]
 }
 
 const updateAttributes = (element: HTMLElement | SVGElement, attr: string, val: string | null | number | boolean) => {
@@ -52,20 +52,24 @@ const updateAttributes = (element: HTMLElement | SVGElement, attr: string, val: 
 }
 
 const handleTemplateObject = (el: HTMLElement | SVGElement, fragment: TemplateObject) => {
-  const { content, stylesheets } = fragment
+  const { client, stylesheets } = fragment
   stylesheets.size && void updateShadowRootStyles(el.getRootNode() as ShadowRoot, stylesheets)
   const template = document.createElement('template')
-  template.innerHTML = content
+  template.innerHTML = client
   return template.content
 }
 
 const sugar: Sugar = {
   render(...fragments) {
-    const frag =fragments.map(fragment => isTypeOf<TemplateObject>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment)
+    const frag = fragments.map((fragment) =>
+      isTypeOf<TemplateObject>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment,
+    )
     this.replaceChildren(...frag)
   },
   insert(position, ...fragments) {
-    const frag =fragments.map(fragment => isTypeOf<TemplateObject>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment)
+    const frag = fragments.map((fragment) =>
+      isTypeOf<TemplateObject>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment,
+    )
     position === 'beforebegin'
       ? this.before(...frag)
       : position === 'afterbegin'
@@ -75,7 +79,9 @@ const sugar: Sugar = {
       : this.after(...frag)
   },
   replace(...fragments) {
-    const frag =fragments.map(fragment => isTypeOf<TemplateObject>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment)
+    const frag = fragments.map((fragment) =>
+      isTypeOf<TemplateObject>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment,
+    )
     this.replaceWith(...frag)
   },
   attr(attr, val) {
@@ -90,11 +96,14 @@ const sugar: Sugar = {
   },
   clone(callback) {
     return (data) => {
-          const clone = this instanceof HTMLTemplateElement ? this.content.cloneNode(true) as DocumentFragment : this.cloneNode(true) as HTMLElement | SVGElement 
+      const clone =
+        this instanceof HTMLTemplateElement
+          ? (this.content.cloneNode(true) as DocumentFragment)
+          : (this.cloneNode(true) as HTMLElement | SVGElement)
       callback($(clone), data)
       return clone
     }
-  }
+  },
 }
 
 const assignedElements = new WeakSet<HTMLElement | SVGElement>()
@@ -116,8 +125,10 @@ const assignSugar = <T extends HTMLElement | SVGElement = HTMLElement | SVGEleme
   return elements as SugaredElement<T>[]
 }
 
-export const $ = (context:DocumentFragment | HTMLElement | SVGElement | SugaredElement) => <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(target:string, match: SelectorMatch = '=') =>{
-  return assignSugar<T>(
-    Array.from(context.querySelectorAll<HTMLElement | SVGElement>(`[${dataTarget}${match}"${target}"]`)),
-  )
-}
+export const $ =
+  (context: DocumentFragment | HTMLElement | SVGElement | SugaredElement) =>
+  <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(target: string, match: SelectorMatch = '=') => {
+    return assignSugar<T>(
+      Array.from(context.querySelectorAll<HTMLElement | SVGElement>(`[${dataTarget}${match}"${target}"]`)),
+    )
+  }

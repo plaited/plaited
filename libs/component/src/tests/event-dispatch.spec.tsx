@@ -20,9 +20,9 @@ test('eventTriggers', async (t) => {
     tag: 'bottom-component',
     template: (
       <button
-        dataTarget='button'
+        data-target='button'
         className={classes.button}
-        dataTrigger={{ click: 'click' }}
+        data-trigger={{ click: 'click' }}
       >
         Add
       </button>
@@ -47,7 +47,7 @@ test('eventTriggers', async (t) => {
         {...stylesheet}
       >
         <h1
-          dataTarget='header'
+          data-target='header'
           {...stylesheet}
         >
           Hello
@@ -62,8 +62,8 @@ test('eventTriggers', async (t) => {
     plait({ feedback, $ }: PlaitProps) {
       feedback({
         append() {
-          const header = $('header')
-          header.render({ content: ' World!', stylesheets: new Set() }, 'beforeend')
+          const [header] = $('header')
+          header.insert('beforeend', ' World!')
         },
       })
     }

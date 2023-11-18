@@ -6,7 +6,7 @@ test('shadow observer test', async (t) => {
   const body = document.querySelector('body')
   body.insertAdjacentElement('beforeend', document.createElement(ShadowIsland.tag))
 
-  let button = await t.findByAttribute('data-trigger', 'click->start')
+  let button = await t.findByAttribute('data-trigger', 'click:start')
   button && (await t.fireEvent(button, 'click'))
   let row = await t.findByAttribute('data-target', 'button-row')
   t({
@@ -25,7 +25,7 @@ test('shadow observer test', async (t) => {
     expected: 3,
   })
 
-  button = await t.findByAttribute('data-trigger', 'click->addButton')
+  button = await t.findByAttribute('data-trigger', 'click:addButton')
   button && (await t.fireEvent(button, 'click'))
   button = await t.findByText<HTMLButtonElement>('add svg')
 

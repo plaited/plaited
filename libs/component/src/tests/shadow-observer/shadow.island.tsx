@@ -83,40 +83,40 @@ export class ShadowIsland extends Component({
     })
     feedback({
       addSubIsland() {
-        const zone = $('zone')
+        const [zone] = $('zone')
         /** render dynamic island to zone */
-        zone?.render(
+        zone?.insert(
+          'beforeend',
           <sub-island {...stylesheet}>
             <h3 className={classes['sub-island']}>sub island</h3>
           </sub-island>,
-          'beforeend',
         )
       },
       addButton() {
         host.insertAdjacentHTML('beforeend', `<button slot='button'>add svg</button>`)
       },
       modifyAttributes() {
-        const slot = $('add-svg-slot')
-        slot?.removeAttribute('data-trigger')
+        const [slot] = $('add-svg-slot')
+        slot?.attr('data-trigger', null)
       },
       addSlot() {
-        const row = $('button-row')
-        row?.render(
+        const [row] = $('button-row')
+        row?.insert(
+          'beforeend',
           <slot
             name='button'
             data-target='add-svg-slot'
             data-trigger={{ click: 'add-svg' }}
           ></slot>,
-          'beforeend',
         )
       },
       removeSvg() {
-        const svg = $('svg')
+        const [svg] = $('svg')
         svg?.remove()
       },
       ['add-svg']() {
-        const zone = $('zone')
-        zone?.render(<SVG />, 'beforeend')
+        const [zone] = $('zone')
+        zone?.insert('beforeend', <SVG />)
       },
     })
   }

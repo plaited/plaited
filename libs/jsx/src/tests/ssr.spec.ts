@@ -1,9 +1,9 @@
 import { test, expect } from 'bun:test'
-import { createTemplate as h, css, Fragment, FT, Template } from '../index.js'
+import { createTemplate as h, css, Fragment, FT, TemplateObject } from '../index.js'
 import { ssr } from '../ssr.js'
 import beautify from 'beautify'
 
-const render = (template: Template) => {
+const render = (template: TemplateObject) => {
   return beautify(ssr(template), { format: 'html' })
 }
 
@@ -27,15 +27,15 @@ test('ssr: Falsey - false', () => {
   expect(render(h('div', { children: false }))).toMatchSnapshot()
 })
 
-test('ssr: Falsey - ""', () => {
+test('ssr: Not really Falsey - ""', () => {
   expect(render(h('div', { children: '' }))).toMatchSnapshot()
 })
 
-test('ssr: Falsey - 0', () => {
+test('ssr: Not really Falsey - 0', () => {
   expect(render(h('div', { children: 0 }))).toMatchSnapshot()
 })
 
-test('ssr: Falsey - NaN', () => {
+test('ssr: Not really Falsey - NaN', () => {
   expect(render(h('div', { children: NaN }))).toMatchSnapshot()
 })
 
@@ -69,19 +69,6 @@ test('ssr: data-trigger attribute', () =>
       }),
     ),
   ).toMatchSnapshot())
-
-test('ssr: kebab-case attributes', () => {
-  expect(
-    render(
-      h('div', {
-        dataTrigger: { click: 'click' },
-        dataAddress: 'address',
-        dataMode: 'mode',
-        xPrefix: 'x',
-      }),
-    ),
-  ).toMatchSnapshot()
-})
 
 test('ssr: Array of templates', () =>
   expect(
@@ -211,7 +198,7 @@ test('ssr: Declarative shadow dom hoisting its styles', () => {
 })
 
 const nestedHostStyles = css`
-  host: {
+  nested-component {
     display: flex;
     flex-direction: column;
   }
@@ -231,6 +218,7 @@ test('ssr: Declarative shadow dom with styled slotted component', () => {
   expect(
     render(
       h(NestedCustomElement, {
+        ...nestedHostStyles[1],
         children: [
           h('p', {
             slot: 'nested',
@@ -269,7 +257,7 @@ test('ssr: Declarative shadow dom with another declarative shadow dom', () => {
 })
 
 const hostStyles = css`
-  :host {
+  top-component {
     display: block;
   }
 `

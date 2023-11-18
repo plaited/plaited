@@ -1,5 +1,10 @@
 import { TemplateObject } from './types.js'
 
+if (typeof global.HTMLElement === 'undefined') {
+  // @ts-ignore node env
+  global.HTMLElement = class HTMLElement {}
+}
+
 export const ssr = (...templates: TemplateObject[]) => {
   let str = ''
   const stylesheets = new Set<string>()
@@ -10,7 +15,7 @@ export const ssr = (...templates: TemplateObject[]) => {
       str += child
       continue
     }
-    str += child.string
+    str += child.server
     for (const sheet of child.stylesheets) {
       stylesheets.add(sheet)
     }

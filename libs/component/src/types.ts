@@ -31,9 +31,11 @@ export type Sugar = {
   replace(this: HTMLElement | SVGElement, ...content: (TemplateObject | Node | string)[]): void
   attr(this: HTMLElement | SVGElement, attr: Record<string, string | null | number | boolean>, val?: never): void
   attr(this: HTMLElement | SVGElement, attr: string, val?: string | null | number | boolean): string | null | void
-  clone<T>(this: HTMLElement | SVGElement, cb: (($:QuerySelector, data: T) => void)): (data:T) => HTMLElement | SVGElement | DocumentFragment
+  clone<T>(
+    this: HTMLElement | SVGElement,
+    cb: ($: QuerySelector, data: T) => void,
+  ): (data: T) => HTMLElement | SVGElement | DocumentFragment
 }
-
 
 export type SugaredElement<T extends HTMLElement | SVGElement = HTMLElement | SVGElement> = T & Sugar
 
