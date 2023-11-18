@@ -30,7 +30,7 @@ exports[`Fixture.template: slot and id 1`] = `
 `;
 
 exports[`Fixture.template: shadow, and mode closed: should still be shadowrootmode="open" 1`] = `
-"<test-element>
+"<test-element shadowrootmode="closed">
     <template shadowrootmode="open" shadowrootdelegatesfocus="true">
         <style>
             .header_MjcwMz: { color: pink; }
@@ -46,7 +46,7 @@ exports[`Fixture.template: shadow, and mode closed: should still be shadowrootmo
 `;
 
 exports[`Fixture.template: shadow, and delgatefocus false: should still be shadowrootdelegatesfocus="true" 1`] = `
-"<test-element>
+"<test-element shadowrootdelegatesfocus="false">
     <template shadowrootmode="open" shadowrootdelegatesfocus="true">
         <style>
             .header_MjcwMz: { color: pink; }
