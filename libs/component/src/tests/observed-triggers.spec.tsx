@@ -38,8 +38,8 @@ test('observed triggers', async (t) => {
           emit({ type: 'disable', bubbles: true })
         },
         add(detail: string) {
-          const header = $('header')
-          header?.insertAdjacentHTML('beforeend', `${detail}`)
+          const [header] = $('header')
+          header.insert('beforeend', `${detail}`)
         },
       })
     }
@@ -69,11 +69,11 @@ test('observed triggers', async (t) => {
     plait({ feedback, $ }: PlaitProps) {
       feedback({
         disable() {
-          const button = $<HTMLButtonElement>('button')
+          const [button] = $<HTMLButtonElement>('button')
           button && (button.disabled = true)
         },
         click() {
-          const slot = $<HTMLSlotElement>('slot')
+          const [slot] = $<HTMLSlotElement>('slot')
           for (const el of slot.assignedElements()) {
             if (el instanceof Bottom) {
               el.trigger({ type: 'add', detail: ' World!' })

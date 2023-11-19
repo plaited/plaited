@@ -1,42 +1,31 @@
-import { escape, kebabCase } from '@plaited/utils'
+import { escape, kebabCase, isTypeOf } from '@plaited/utils'
 import {
   booleanAttrs,
-  dataTrigger as dataTriggerKey,
   primitives,
   voidTags,
   validPrimitiveChildren,
+  dataTrigger as dataTriggerKey,
 } from './constants.js'
 import { Attrs, CreateTemplate } from './types.js'
-
-/** custom element tagName regex */
-const customElementRegex = /^[a-z]+-[a-z]+(?:-[a-z]+)*$/
-
 /** create server element string representation */
-const joinParts = (tag: string, attrs: string[] = [], children: string[]) =>
-  `<${[tag, ...attrs].join(' ')}>${children.join('')}</${tag}>`
-
-const ensureArray = <T>(obj?: T | T[]) => (Array.isArray(obj) ? obj : obj ? [obj] : [])
+const ensureArray = <T>(obj: T | T[] = []) => (!Array.isArray(obj) ? [obj] : obj)
 
 /** createTemplate function used for ssr */
-export const createTemplate: CreateTemplate = (tag, attrs) => {
+export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const {
-    shadowrootmode = 'open',
     children: _children,
-    shadowrootdelegatesfocus = true,
     trusted,
-    slots: _slots,
     stylesheet,
     style,
-    key: _,
-    'data-trigger': trigger,
-    dataTrigger = trigger,
+    'data-trigger': dataTrigger,
     className,
     htmlFor,
     ...attributes
   } = attrs
-  if (typeof tag === 'function') {
-    return tag(attrs)
+  if (typeof _tag === 'function') {
+    return _tag(attrs)
   }
+  const tag = _tag.toLowerCase().trim()
   const stylesheets = new Set<string>()
   stylesheet && ensureArray(stylesheet).forEach((s) => !stylesheets.has(s) && stylesheets.add(s))
   const children = ensureArray(_children)
@@ -45,172 +34,131 @@ export const createTemplate: CreateTemplate = (tag, attrs) => {
     throw new Error("Script tag not allowed unless 'trusted' property set")
   }
 
-  /** Now to determine what our root element is */
-  const root = tag.toLowerCase()
-  /** create a list to hold  our root attributes*/
-  const rootAttrs: string[] = []
-
+  /** Now to create an array to store our node attributes */
+  const start = [`<${tag} `]
   /** handle JS reserved words commonly used in html class & for*/
-  htmlFor && rootAttrs.push(`for="${htmlFor}"`)
-  className && rootAttrs.push(`class="${className}"`)
+  if (htmlFor) start.push(`for="${htmlFor}" `)
+  if (className) start.push(`class="${className}" `)
   /** if we have dataTrigger attribute wire up formatted correctly*/
   if (dataTrigger) {
     const value = Object.entries(dataTrigger)
-      .map<string>(([ev, req]) => `${ev}->${req}`)
+      .map<string>(([ev, req]) => `${ev}:${req}`)
       .join(' ')
-    rootAttrs.push(`${dataTriggerKey}="${value}"`)
+    start.push(`${dataTriggerKey}="${value}" `)
   }
   /** if we have style add it to element */
   if (style) {
     const value = Object.entries(style)
-      /** convert camelCase style prop into dash-case ones */
-      .map<string>(([prop, val]) => `${prop.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}:${val};`)
+      /** convert camelCase style prop into dash-case ones so long as not cssVar */
+      .map<string>(([prop, val]) => `${prop.startsWith('--') ? prop : kebabCase(prop)}:${val};`)
       .join(' ')
-    rootAttrs.push(`style="${escape(value)}"`)
+    start.push(`style="${escape(value)}" `)
   }
   /** next we want to loops through our attributes */
   for (const key in attributes) {
     /** P1 all events are delegated via the data-trigger attribute so we want
-     * throw on attempts to provide `on` attributes
+     * skip on attempts to provide `on` attributes
      */
     if (key.startsWith('on')) {
       throw new Error(`Event handler attributes are not allowed:  [${key}]`)
     }
+    /** test for and handle boolean attributes */
+    if (booleanAttrs.has(key)) {
+      start.push(`${key} `)
+      continue
+    }
     /** Grab the value from the attribute */
     const value = attributes[key]
-
     /** P2 typeof attribute is NOT {@type Primitive} then skip and do nothing */
     if (!primitives.has(typeof value)) {
       throw new Error(`Attributes not declared in BaseAttrs must be of type Primitive: ${key} is not primitive`)
     }
-    /** test for and handle boolean attributes */
-    if (booleanAttrs.has(key)) {
-      rootAttrs.push(`${key}`)
-      continue
-    }
     /** set the value so long as it's not nullish in we use the formatted value  */
     const formattedValue = value ?? ''
     /** handle the rest of the attributes */
-    rootAttrs.push(`${kebabCase(key)}="${trusted ? `${formattedValue}` : escape(`${formattedValue}`)}"`)
+    start.push(`${key}="${trusted ? `${formattedValue}" ` : escape(`${formattedValue}`)}" `)
   }
 
   /** Our tag is a void tag so we can return it once we apply attributes */
-  if (voidTags.has(root)) {
+  if (voidTags.has(tag)) {
+    start.push('/>')
     return {
+      client: start,
+      server: start,
       stylesheets,
-      content: `<${[root, ...rootAttrs].join(' ')}/>`,
     }
   }
-
-  /** create a array to hold root children  */
-  const rootChildren: string[] = []
-
-  /** Test if the the tag is a string and if it's a custom element */
-  const isCustomElement = customElementRegex.test(root)
-
-  /** If our template is for a custom element we're going to create a
-   * declarative shadow dom
-   */
-  const templateAttrs: string[] = []
-  const templateChildren: string[] = []
-  if (isCustomElement) {
-    /** Set the mode of the shadowDom */
-    templateAttrs.push(`shadowrootmode="${shadowrootmode}"`)
-    /** We generally want to delegate focus to the first focusable element in
-     * custom elements
-     */
-    templateAttrs.push(`shadowrootdelegatesfocus="${shadowrootdelegatesfocus}"`)
-  }
+  start.push('>')
+  const clientEnd: string[] = []
+  /** Test if the the tag is a template and if it's a declarative shadow dom template */
+  const isDeclarativeShadowDOM = tag === 'template' && Object.hasOwn(attrs, 'shadowrootmode')
   /** time to append the children to our template if we have em*/
   const length = children.length
+  const serverEnd: string[] = []
   for (let i = 0; i < length; i++) {
     const child = children[i]
-    /** P1 element is a customElement and child IS {@type Template}*/
-    if (isCustomElement && typeof child === 'object' && 'content' in child) {
-      templateChildren.push(child.content)
-      for (const sheet of child.stylesheets) {
-        !stylesheets.has(sheet) && stylesheets.add(sheet)
-      }
+    /** P1 child IS {@type Template}*/
+    if (
+      isTypeOf<Record<string, unknown>>(child, 'object') &&
+      'client' in child &&
+      'stylesheets' in child &&
+      'server' in child
+    ) {
+      clientEnd.push(...child.client)
+      serverEnd.push(...child.server)
+      for (const sheet of child.stylesheets) stylesheets.add(sheet)
       continue
     }
-    /** P2 child IS {@type Template}*/
-    if (typeof child === 'object' && 'content' in child) {
-      rootChildren.push(child.content)
-      for (const sheet of child.stylesheets) {
-        !stylesheets.has(sheet) && stylesheets.add(sheet)
-      }
-      continue
-    }
-    /** P3 typeof child is NOT {@type Primitive} then skip and do nothing */
-    if (!primitives.has(typeof child)) continue
-    const formattedChild = validPrimitiveChildren.has(typeof child) ? child : ''
-    /** P4 element is a customElement and child IS {@type Primitive} */
-    if (isCustomElement) {
-      templateChildren.push(trusted ? `${formattedChild}`.trim() : escape(`${formattedChild}`).trim())
-      continue
-    }
-    /** P5 child IS {@type Primitive} */
-    rootChildren.push(trusted ? `${formattedChild}`.trim() : escape(`${formattedChild}`).trim())
+    /** P2 typeof child is NOT a valid primitive child then skip and do nothing */
+    if (!validPrimitiveChildren.has(typeof child)) continue
+    /** P3 child IS {@type Primitive} */
+    const str = trusted ? `${child}`.trim() : escape(`${child}`).trim()
+    clientEnd.push(str)
+    serverEnd.push(str)
   }
-  if (isCustomElement) {
-    /** We destructured out the stylesheet attribute as it's only for
-     * custom elements declarative shadow dom  we create the style node
-     * append the stylesheet as the first child of the declarative shadowDom template */
-    if (stylesheets.size) {
-      templateChildren.unshift(joinParts('style', undefined, [...stylesheets]))
-    }
-    /** append declarative shadow dom to beginning of rootChildren
-     * array and clear stylesheet set so shadow dom children styles are not not passed along
+  if (isDeclarativeShadowDOM) {
+    /** We continue to hoist our stylesheet until we run
+     * into a declarative shadow dom then we push the
+     * stylesheet as the first child of the declarative
+     * shadowDom template array  and clear the stylesheets set
      */
-    rootChildren.unshift(joinParts('template', templateAttrs, templateChildren))
-    stylesheets.clear()
-
-    /** We need to append our slots outside the template and carry stylesheets forward **/
-    const slots = !_slots ? [] : Array.isArray(_slots) ? _slots : [_slots]
-    const length = slots.length
-    for (let i = 0; i < length; i++) {
-      const child = slots[i]
-      /** P1 child IS {@type Template} */
-      if (typeof child === 'object' && 'content' in child) {
-        rootChildren.push(child.content)
-        for (const sheet of child.stylesheets) {
-          !stylesheets.has(sheet) && stylesheets.add(sheet)
-        }
-        continue
-      }
-      /** P2 typeof child is NOT {@type Primitive} then skip and do nothing */
-      if (!primitives.has(typeof child)) continue
-      /** P3 child IS {@type Template} */
-      const formattedChild = validPrimitiveChildren.has(typeof child) ? child : ''
-      rootChildren.push(trusted ? `${formattedChild}` : escape(`${formattedChild}`))
+    if (stylesheets.size) {
+      start.push(`<style>${Array.from(stylesheets).join('')}</style>`)
+      stylesheets.clear()
     }
   }
+  clientEnd.push(`</${tag}>`)
+  serverEnd.push(`</${tag}>`)
   return {
+    client: isDeclarativeShadowDOM ? [] : [...start, ...clientEnd],
+    server: [...start, ...serverEnd],
     stylesheets,
-    content: joinParts(root, rootAttrs, rootChildren),
   }
 }
 
 export { createTemplate as h }
 
-export function Fragment({ children: _children }: Attrs) {
+export const Fragment = ({ children: _children }: Attrs) => {
   const children = ensureArray(_children)
-  let content = ''
+  const client: string[] = []
+  const server: string[] = []
   const stylesheets = new Set<string>()
   const length = children.length
   for (let i = 0; i < length; i++) {
     const child = children[i]
     if (typeof child === 'string') {
-      content += child
+      const safeChild = escape(child)
+      client.push(safeChild)
+      server.push(safeChild)
       continue
     }
-    content += child.content
-    for (const sheet of child.stylesheets) {
-      !stylesheets.has(sheet) && stylesheets.add(sheet)
-    }
+    client.push(...child.client)
+    server.push(...child.server)
+    for (const sheet of child.stylesheets) stylesheets.add(sheet)
   }
   return {
-    content,
+    client,
     stylesheets,
+    server,
   }
 }

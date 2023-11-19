@@ -11,7 +11,10 @@ const taggedWithPrimitives = (strings: TemplateStringsArray, ...expressions: Arr
   const { raw } = strings
   let result = expressions.reduce<string>((acc, subst, i) => {
     acc += reduceWhitespace(raw[i])
-    let filteredSubst = Array.isArray(subst) ? subst.filter(isTruthy).join('') : isTruthy(subst) ? subst : ''
+    let filteredSubst =
+      Array.isArray(subst) ? subst.filter(isTruthy).join('')
+      : isTruthy(subst) ? subst
+      : ''
     if (acc.endsWith('$')) {
       filteredSubst = escape(filteredSubst as string)
       acc = acc.slice(0, -1)

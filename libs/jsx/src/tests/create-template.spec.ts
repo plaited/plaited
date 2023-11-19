@@ -1,80 +1,83 @@
 import { test, expect } from 'bun:test'
-import { createTemplate as h, css, Fragment, FT } from '../index.js'
+import { createTemplate as h, css, Fragment, FT, TemplateObject } from '../index.js'
+import beautify from 'beautify'
 
-test('createTemplate: self closing - html', () => {
-  expect(h('input', { type: 'text' })).toMatchSnapshot()
+const render = (tpl: TemplateObject) => beautify(tpl.client.join(''), { format: 'html' })
+
+test('createTemplate: Self closing - html', () => {
+  expect(render(h('input', { type: 'text' }))).toMatchSnapshot()
 })
 
-test('createTemplate: self closing - svg', () => {
-  expect(h('polygon', { points: '0,100 50,25 50,75 100,0' })).toMatchSnapshot()
+test('createTemplate: Self closing - svg', () => {
+  expect(render(h('polygon', { points: '0,100 50,25 50,75 100,0' }))).toMatchSnapshot()
 })
 
-test('createTemplate: falsey - undefined', () => {
-  expect(h('div', { children: undefined })).toMatchSnapshot()
+test('createTemplate: Falsey - undefined', () => {
+  expect(render(h('div', { children: undefined }))).toMatchSnapshot()
 })
 
-test('createTemplate: falsey - null', () => {
-  expect(h('div', { children: null })).toMatchSnapshot()
+test('createTemplate: Falsey - null', () => {
+  expect(render(h('div', { children: null }))).toMatchSnapshot()
 })
 
-test('createTemplate: falsey - false', () => {
-  expect(h('div', { children: false })).toMatchSnapshot()
+test('createTemplate: Falsey - false', () => {
+  expect(render(h('div', { children: false }))).toMatchSnapshot()
 })
 
-test('createTemplate: falsey - ""', () => {
-  expect(h('div', { children: '' })).toMatchSnapshot()
+test('createTemplate: Not really Falsey - ""', () => {
+  expect(render(h('div', { children: '' }))).toMatchSnapshot()
 })
 
-test('createTemplate: falsey - 0', () => {
-  expect(h('div', { children: 0 })).toMatchSnapshot()
+test('createTemplate: Not really Falsey - 0', () => {
+  expect(render(h('div', { children: 0 }))).toMatchSnapshot()
 })
 
-test('createTemplate: falsey - NaN', () => {
-  expect(h('div', { children: NaN })).toMatchSnapshot()
+test('createTemplate: Not really Falsey - NaN', () => {
+  expect(render(h('div', { children: NaN }))).toMatchSnapshot()
 })
 
-test('createTemplate: conditional', () => {
-  expect(h('div', { children: true && 'hello' })).toMatchSnapshot()
+test('createTemplate: Bad template - NaN', () => {
+  expect(render(h('div', { children: { string: 'string' } }))).toMatchSnapshot()
 })
 
-test('createTemplate: style attribute', () =>
+test('createTemplate: Conditional', () => {
+  expect(render(h('div', { children: true && 'hello' }))).toMatchSnapshot()
+})
+
+test('createTemplate: Style attribute', () => {
   expect(
-    h('div', {
-      style: { backgroundColor: 'blue', margin: '12px' },
-      children: 'styles',
-    }),
-  ).toMatchSnapshot())
-
-test('createTemplate: data-trigger attribute', () =>
-  expect(
-    h('div', {
-      'data-trigger': {
-        click: 'random',
-        focus: 'thing',
-      },
-      children: 'triggers',
-    }),
-  ).toMatchSnapshot())
-
-test('createTemplate: camelCase attributes', () => {
-  expect(
-    h('div', {
-      dataTrigger: { click: 'click' },
-      dataAddress: 'address',
-      dataMode: 'mode',
-      xPrefix: 'x',
-    }),
+    render(
+      h('div', {
+        style: { backgroundColor: 'blue', margin: '12px', '--cssVar': 'red' },
+        children: 'styles',
+      }),
+    ),
   ).toMatchSnapshot()
 })
 
-test('createTemplate: array of templates', () =>
+test('createTemplate: data-trigger attribute', () =>
   expect(
-    h('div', {
-      children: Array.from(Array(10).keys()).map((n) => h('li', { children: `${n}` })),
-    }),
+    render(
+      h('div', {
+        'data-trigger': {
+          click: 'random',
+          focus: 'thing',
+        },
+        children: 'triggers',
+      }),
+    ),
   ).toMatchSnapshot())
 
-test('createTemplate: should throw with attribute starting with on', () => {
+test('createTemplate: Array of templates', () =>
+  expect(
+    render(
+      h('ul', {
+        children: Array.from(Array(10).keys()).map((n) => h('li', { children: `${n}` })),
+      }),
+    ),
+  ).toMatchSnapshot())
+
+test('createTemplate: Should throw with attribute starting with on', () => {
   expect(() => {
     h('div', {
       children: h('template', {
@@ -94,11 +97,11 @@ test('createTemplate: should throw on script tag', () => {
   }).toThrow()
 })
 
-test('createTemplate: should not throw on script tag with trusted attribute', () => {
-  expect(h('script', { type: 'module', src: 'main.js', trusted: true })).toMatchSnapshot()
+test('createTemplate: Should not throw on script tag with trusted attribute', () => {
+  expect(render(h('script', { type: 'module', src: 'main.js', trusted: true }))).toMatchSnapshot()
 })
 
-test('createTemplate: escapes children', () => {
+test('createTemplate: Escapes children', () => {
   const scriptContent = `<script type="text/javascript">
 const hostRegex = /^https?://([^/]+)/.*$/i;
 const host = document.URL.replace(hostRegex, '$1');
@@ -110,11 +113,10 @@ const reload = () =>{
 socket.addEventListener('message', reload);
 console.log('[plaited] listening for file changes');
 </script>`
-
-  expect(h('div', { children: scriptContent })).toMatchSnapshot()
+  expect(render(h('div', { children: scriptContent }))).toMatchSnapshot()
 })
 
-test('createTemplate: does not escape children when trusted', () => {
+test('createTemplate: Does not escape children when trusted', () => {
   const scriptContent = `<script type="text/javascript">
 const hostRegex = /^https?://([^/]+)/.*$/i;
 const host = document.URL.replace(hostRegex, '$1');
@@ -126,29 +128,42 @@ const reload = () =>{
 socket.addEventListener('message', reload);
 console.log('[plaited] listening for file changes');
 </script>`
-
-  expect(h('div', { trusted: true, children: scriptContent })).toMatchSnapshot()
+  expect(render(h('div', { trusted: true, children: scriptContent }))).toMatchSnapshot()
 })
 
-test('createTemplate: with slotted templates', () => {
-  const Cel: FT = ({ children }) => h('c-el', { slots: children, children: h('slot', { name: 'slot' }) })
+const Template: FT = (attrs) => h('template', attrs)
+
+test('createTemplate: Non declarative shadow DOM template', () => {
+  const List: FT = ({ children }) =>
+    h('ul', {
+      children: [
+        Template({ children: h('span', { children: 'I am a span!!!' }) }),
+        ...(Array.isArray(children) ? children : [children]),
+      ],
+    })
 
   expect(
-    h(Cel, {
-      children: Array.from(Array(10).keys()).map((n) => h('li', { slot: 'slot', children: `slot-${n}` })),
-    }),
+    render(
+      h(List, {
+        children: Array.from(Array(10).keys()).map((n) => h('li', { children: `item-${n}` })),
+      }),
+    ),
   ).toMatchSnapshot()
 })
 
-test('createTemplate: Fragment of templates', () => {
+test('createTemplate: Fragment', () => {
   expect(
-    h(Fragment, {
-      children: Array.from(Array(10).keys()).map((n) => h('li', { children: `item-${n}` })),
-    }),
+    render(
+      h(Fragment, {
+        children: Array.from(Array(6).keys())
+          .reverse()
+          .map((n) => h('li', { children: n > 0 ? `In ${n}` : 'Blast Off!!!' })),
+      }),
+    ),
   ).toMatchSnapshot()
 })
 
-const span = css`
+const nestedDeclarativeStyles = css`
   .nested-label {
     font-weight: bold;
   }
@@ -156,96 +171,111 @@ const span = css`
 
 const NestedCustomElement: FT = ({ children, stylesheet }) =>
   h('nested-component', {
-    slots: children,
     stylesheet,
     children: [
-      h('span', {
-        className: span[0]['nested-label'],
-        ...span[1],
-        children: 'inside nested template',
+      Template({
+        shadowrootmode: 'open',
+        shadowrootdelegatesfocus: true,
+        children: [
+          h('span', {
+            className: nestedDeclarativeStyles[0]['nested-label'],
+            ...nestedDeclarativeStyles[1],
+            children: 'inside nested template',
+          }),
+          h('slot', { name: 'nested' }),
+        ],
       }),
-      h('slot', { name: 'nested' }),
+      ...(Array.isArray(children) ? children : [children]),
     ],
   })
 
-test('createTemplate: custom element with child hoisting its styles', () => {
-  expect(h(NestedCustomElement, {})).toMatchSnapshot()
+test('createTemplate: CustomElement hoisting its styles', () => {
+  const el = h(NestedCustomElement, {})
+  expect({ content: render(el), stylesheets: el.stylesheets }).toMatchSnapshot()
 })
 
-const nested = css`
-  host: {
+const nestedHostStyles = css`
+  nested-component {
     display: flex;
     flex-direction: column;
   }
 `
 
-test('createTemplate: custom element with child and host styles', () => {
-  expect(h(NestedCustomElement, { ...nested[1] })).toMatchSnapshot()
+test('createTemplate: CustomElement with declarative shadow dom & host styles', () => {
+  const el = h(NestedCustomElement, { ...nestedHostStyles[1] })
+  expect({ content: render(el), stylesheets: el.stylesheets }).toMatchSnapshot()
 })
 
-const slotted = css`
+const nestedChildrenStyles = css`
   .slotted-paragraph {
     color: rebeccapurple;
   }
 `
 
-test('createTemplate: custom element with styled slotted component', () => {
-  expect(
-    h(NestedCustomElement, {
-      children: [
-        h('p', {
-          slot: 'nested',
-          className: slotted[0]['slotted-paragraph'],
-          ...slotted[1],
-          children: 'slotted paragraph',
-        }),
-      ],
-    }),
-  ).toMatchSnapshot()
+test('createTemplate: CustomElement with styled slotted component', () => {
+  const el = h(NestedCustomElement, {
+    ...nestedHostStyles[1],
+    children: [
+      h('p', {
+        slot: 'nested',
+        className: nestedChildrenStyles[0]['slotted-paragraph'],
+        ...nestedChildrenStyles[1],
+        children: 'slotted paragraph',
+      }),
+    ],
+  })
+  expect({ content: render(el), stylesheets: el.stylesheets }).toMatchSnapshot()
 })
 
 const TopCustomElement: FT = ({ children, stylesheet }) =>
   h('top-component', {
     stylesheet,
-    slots: children,
-    children: h(NestedCustomElement, {
-      children: h('p', {
-        slot: 'nested',
-        className: slotted[0]['slotted-paragraph'],
-        ...slotted[1],
-        children: 'slotted paragraph',
+    children: [
+      Template({
+        shadowrootdelegatesfocus: true,
+        shadowrootmode: 'open',
+        children: h(NestedCustomElement, {
+          children: h('p', {
+            slot: 'nested',
+            className: nestedChildrenStyles[0]['slotted-paragraph'],
+            ...nestedChildrenStyles[1],
+            children: 'slotted paragraph',
+          }),
+        }),
       }),
-    }),
+      ...(Array.isArray(children) ? children : [children]),
+    ],
   })
 
-test('createTemplate: custom element with styles nested in custom element', () => {
-  expect(h(TopCustomElement, {})).toMatchSnapshot()
+test('createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom', () => {
+  const el = h(TopCustomElement, {})
+  expect({ content: render(el), stylesheets: el.stylesheets }).toMatchSnapshot()
 })
 
-const top = css`
-  :host {
+const hostStyles = css`
+  top-component {
     display: block;
   }
 `
 
-test('createTemplate: custom element with styles nested in custom element with styles', () => {
-  expect(h(TopCustomElement, { ...top[1] })).toMatchSnapshot()
+test('createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles', () => {
+  const el = h(TopCustomElement, { ...hostStyles[1] })
+  expect({ content: render(el), stylesheets: el.stylesheets }).toMatchSnapshot()
 })
 
-const testEl = css`
+const imageStyles = css`
   .image {
     width: 100%;
     aspect-ratio: 16 / 9;
   }
 `
 
-test('createTemplate: custom element with nested custom element and styled slotted element', () => {
-  expect(
-    h(TopCustomElement, {
-      ...top[1],
-      children: h('img', { className: testEl[0].image, ...testEl[1] }),
-    }),
-  ).toMatchSnapshot()
+test('createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles and child', () => {
+  const el = h(TopCustomElement, {
+    ...hostStyles[1],
+    children: h('img', { className: imageStyles[0].image, ...imageStyles[1] }),
+  })
+  expect({ content: render(el), stylesheets: el.stylesheets }).toMatchSnapshot()
 })
 
 const sheet1 = css`
@@ -265,18 +295,20 @@ const sheet3 = css`
   }
 `
 
-test('createTemplate: properly hoist and deduplicates multiple stylesheets on a single node', () => {
+test('ssr: Properly hoist and deduplicates multiple stylesheets on a single node', () => {
   expect(
     h('div', {
       stylesheet: [sheet1[1].stylesheet, sheet2[1].stylesheet, sheet3[1].stylesheet],
-    }),
-  ).toMatchSnapshot()
+    }).stylesheets.size,
+  ).toBe(2)
 })
 
-test('createTemplate: trims whitespace', () => {
+test('createTemplate: Trims whitespace', () => {
   expect(
-    h('div', {
-      children: '   trims white-space    ',
-    }),
+    render(
+      h('div', {
+        children: '   trims white-space    ',
+      }),
+    ),
   ).toMatchSnapshot()
 })

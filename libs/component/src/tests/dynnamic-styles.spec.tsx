@@ -18,7 +18,7 @@ test('dynamic styles', async (t) => {
     template: <div data-target='target'></div>,
   }) {
     plait({ $ }: PlaitProps) {
-      const target = $<HTMLDivElement>('target')
+      const [target] = $<HTMLDivElement>('target')
       target.render(
         <div
           {...stylesheet}
@@ -75,7 +75,7 @@ test('with default and dynamic styles', async (t) => {
     ),
   }) {
     plait({ $ }: PlaitProps) {
-      const target = $<HTMLDivElement>('target-2')
+      const [target] = $<HTMLDivElement>('target-2')
       target.render(
         <div
           {...stylesheets(stylesheet, stylesheet2)}
