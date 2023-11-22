@@ -18,5 +18,5 @@ jobs:
           runCmd: |
             bun install
             bunx playwright install
-            bun run build
-            bun run test
+            bunx lerna run build
+            bunx lerna run test --since=origin/main
