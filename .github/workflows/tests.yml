@@ -12,11 +12,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
       - name: Test
         uses: devcontainers/ci@v0.3
         with:
           runCmd: |
+            git fetch origin main
             bun install
             bunx playwright install
-            bun run build
-            bun run test
+            bunx lerna run build
+            bunx lerna run test --since=origin/main

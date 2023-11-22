@@ -1,0 +1,92 @@
+// Bun Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`transform-ts-tokens 1`] = `
+"export const sizeX1 = 'var(--size-x1)'
+export const sizeX2 = 'var(--size-x2)'
+export const sizeX3 = 'var(--size-x3)'
+export const sizeS3 = 'var(--size-s3)'
+export const backgroundColorPurpleX1 = 'var(--background-color-purple-x1)'
+export const backgroundColorPurpleX2 = 'var(--background-color-purple-x2)'
+export const backgroundColorPurpleX3 = 'var(--background-color-purple-x3)'
+export const borderRadiusX1 = 'var(--border-radius-x1)'
+export const borderRadiusX2 = 'var(--border-radius-x2)'
+export const borderRadiusX3 = 'var(--border-radius-x3)'
+export const fontSizeX1 = 'var(--font-size-x1)'
+export const fontFamilySansSerif = 'var(--font-family-sans-serif)'
+export const fontWeightX1 = 'var(--font-weight-x1)'
+export const letterSpacingX1 = 'var(--letter-spacing-x1)'
+export const lineHeightX1 = 'var(--line-height-x1)'
+export const typographyX1 = {
+  fontFamily: fontFamilySansSerif,
+  fontSize: fontSizeX1,
+  fontWeight: fontWeightX1,
+  letterSpacing: letterSpacingX1,
+  lineHeight: lineHeightX1,
+}
+export const actionPrimaryRestBorderRadius = borderRadiusX1
+export const actionPrimaryRestBackgroundColor = backgroundColorPurpleX2
+export const actionPrimaryRestTypography = typographyX1
+"
+`;
+
+exports[`transform-css-tokens 1`] = `
+"@media screen and (min-width: 1920px) {
+    :host {
+        --size-x1: 0.2rem;
+        --size-x2: 0.4rem;
+        --size-x3: 0.7rem;
+    }
+}
+
+:host([data-media-query="tv"]) {
+    --size-x1: 0.2rem;
+    --size-x2: 0.4rem;
+    --size-x3: 0.7rem;
+}
+
+@media screen and (max-width: 767px) {
+    :host {
+        --size-x1: 0.1rem;
+        --size-x2: 0.4rem;
+        --size-x3: 0.8rem;
+    }
+}
+
+:host([data-media-query="mobile"]) {
+    --size-x1: 0.1rem;
+    --size-x2: 0.4rem;
+    --size-x3: 0.8rem;
+}
+
+:host {
+    --size-x1: 0.1rem;
+    --size-x2: 0.3rem;
+    --size-x3: 0.6rem;
+    --size-s3: 0.6rem;
+    --background-color-purple-x1: oklch(39% 0.22184604903824146 289.1379241925685 / none);
+    --background-color-purple-x2: oklch(45.38% 0.236 304.59 / none);
+    --background-color-purple-x3: oklch(48.67% 0.245 310.63 / none);
+    --border-radius-x1: 0.15rem;
+    --border-radius-x2: 0.25rem;
+    --border-radius-x3: 0.35rem;
+    --font-size-x1: 0.7rem;
+    --font-family-sans-serif: Roboto,sans-serif;
+    --font-weight-x1: 700;
+    --letter-spacing-x1: normal;
+    --line-height-x1: 1;
+}
+
+@media screen and (min-width: 1024px) {
+    :host {
+        --size-x1: 0.1rem;
+        --size-x2: 0.3rem;
+        --size-x3: 0.6rem;
+    }
+}
+
+:host([data-media-query="desktop"]) {
+    --size-x1: 0.1rem;
+    --size-x2: 0.3rem;
+    --size-x3: 0.6rem;
+}"
+`;
