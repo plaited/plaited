@@ -107,7 +107,13 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   for (let i = 0; i < length; i++) {
     const child = children[i]
     /** P1 child IS {@type Template}*/
-    if (isTypeOf<Record<string, unknown>>(child, 'object')) {
+    if (
+      isTypeOf<Record<string, unknown>>(child, 'object') &&
+      'client' in child &&
+      'stylesheets' in child &&
+      'server' in child &&
+      'registry' in child
+    ) {
       clientEnd.push(...child.client)
       serverEnd.push(...child.server)
       for (const sheet of child.stylesheets) stylesheets.add(sheet)
