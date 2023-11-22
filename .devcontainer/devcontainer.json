@@ -28,5 +28,6 @@
       "userGid": "automatic"
     },
     "ghcr.io/devcontainers/features/git:1": {}
-  }
+  },
+  "postCreateCommand": "sudo git config --system --add safe.directory ${containerWorkspaceFolder}"
 }
