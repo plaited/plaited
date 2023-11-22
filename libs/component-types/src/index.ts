@@ -1,5 +1,51 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { bProgram, DevCallback, Strategy, Trigger, TriggerArgs } from '@plaited/behavioral'
-import { TemplateObject, FunctionTemplate } from '@plaited/jsx'
+
+export type TemplateObject = {
+  client: string[]
+  server: string[]
+  stylesheets: Set<string>
+  registry: Set<PlaitedComponentConstructor>
+}
+
+export type Child = string | TemplateObject
+
+export type Children = Child[] | Child
+
+export type BaseAttrs = {
+  class?: never
+  for?: never
+  ['data-address']?: string
+  ['data-target']?: string
+  ['data-trigger']?: Record<string, string>
+  htmlFor?: string
+  className?: string
+  children?: Children
+  key?: string
+  shadowrootmode?: 'open' | 'closed' // TODO need to figure out conditional type maybe???
+  shadowrootdelegatesfocus?: boolean // TODO need to figure out conditional type maybe???
+  stylesheet?: string | string[]
+  /** setting trusted to true will disable all escaping security policy measures for this element template */
+  trusted?: boolean
+  style?: Record<string, string>
+}
+
+export type Attrs<T extends Record<string, any> = Record<string, any>> = BaseAttrs & T
+
+export type FunctionTemplate<T extends Record<string, any> = Record<string, any>> = (
+  attrs: T & BaseAttrs,
+) => TemplateObject
+
+export type FT<
+  //Alias for FunctionTemplate
+  T extends Record<string, any> = Record<string, any>,
+> = FunctionTemplate<T>
+
+export type Tag = string | `${string}-${string}` | FT | PlaitedComponentConstructor
+
+export interface CreateTemplate {
+  <T extends Record<string, any>>(tag: Tag, attrs: Attrs<T>): TemplateObject
+}
 
 export type Send = (recipient: string, detail: TriggerArgs) => void
 
@@ -85,6 +131,7 @@ export interface PlaitedComponentConstructor {
   stylesheets: Set<string>
   tag: string
   template: FunctionTemplate
+  registry: Set<PlaitedComponentConstructor>
   new (): PlaitedElement
 }
 

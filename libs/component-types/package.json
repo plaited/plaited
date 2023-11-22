@@ -1,0 +1,34 @@
+{
+  "name": "@plaited/component-types",
+  "version": "5.3.0",
+  "license": "ISC",
+  "engines": {
+    "node": ">= v18.15.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plaited/plaited.git"
+  },
+  "bugs": {
+    "url": "https://github.com/plaited/plaited/issues"
+  },
+  "homepage": "https://github.com/plaited/plaited/tree/main/libs/component-types#readme",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "./dist/**"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json"
+  },
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@plaited/behavioral": "5.3.0"
+  }
+}

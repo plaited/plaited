@@ -6,10 +6,12 @@ import {
   validPrimitiveChildren,
   dataTrigger as dataTriggerKey,
 } from './constants.js'
-import { Attrs, CreateTemplate } from './types.js'
+import { Attrs, CreateTemplate, FunctionTemplate, PlaitedComponentConstructor } from '@plaited/component-types'
 /** create server element string representation */
 const ensureArray = <T>(obj: T | T[] = []) => (!Array.isArray(obj) ? [obj] : obj)
 
+const isPlaitedComponent = (obj: PlaitedComponentConstructor | FunctionTemplate): obj is PlaitedComponentConstructor =>
+  'template' in obj
 /** createTemplate function used for ssr */
 export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const {
@@ -22,7 +24,13 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     htmlFor,
     ...attributes
   } = attrs
+  const registry = new Set<PlaitedComponentConstructor>()
   if (typeof _tag === 'function') {
+    if (isPlaitedComponent(_tag)) {
+      const tpl = _tag.template(attrs)
+      tpl.registry.add(_tag)
+      return tpl
+    }
     return _tag(attrs)
   }
   const tag = _tag.toLowerCase().trim()
@@ -86,6 +94,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       client: start,
       server: start,
       stylesheets,
+      registry,
     }
   }
   start.push('>')
@@ -98,15 +107,11 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   for (let i = 0; i < length; i++) {
     const child = children[i]
     /** P1 child IS {@type Template}*/
-    if (
-      isTypeOf<Record<string, unknown>>(child, 'object') &&
-      'client' in child &&
-      'stylesheets' in child &&
-      'server' in child
-    ) {
+    if (isTypeOf<Record<string, unknown>>(child, 'object')) {
       clientEnd.push(...child.client)
       serverEnd.push(...child.server)
       for (const sheet of child.stylesheets) stylesheets.add(sheet)
+      for (const component of child.registry) registry.add(component)
       continue
     }
     /** P2 typeof child is NOT a valid primitive child then skip and do nothing */
@@ -133,6 +138,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     client: isDeclarativeShadowDOM ? [] : [...start, ...clientEnd],
     server: [...start, ...serverEnd],
     stylesheets,
+    registry,
   }
 }
 
@@ -143,6 +149,7 @@ export const Fragment = ({ children: _children }: Attrs) => {
   const client: string[] = []
   const server: string[] = []
   const stylesheets = new Set<string>()
+  const registry = new Set<PlaitedComponentConstructor>()
   const length = children.length
   for (let i = 0; i < length; i++) {
     const child = children[i]
@@ -155,10 +162,12 @@ export const Fragment = ({ children: _children }: Attrs) => {
     client.push(...child.client)
     server.push(...child.server)
     for (const sheet of child.stylesheets) stylesheets.add(sheet)
+    for (const component of child.registry) registry.add(component)
   }
   return {
     client,
     stylesheets,
     server,
+    registry,
   }
 }

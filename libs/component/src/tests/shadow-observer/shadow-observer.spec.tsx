@@ -1,8 +1,9 @@
 import { test } from '@plaited/rite'
+import { define } from '../../index.js'
 import { ShadowIsland } from './shadow.island.js'
 
 test('shadow observer test', async (t) => {
-  customElements.define(ShadowIsland.tag, ShadowIsland)
+  define(ShadowIsland)
   const body = document.querySelector('body')
   body.insertAdjacentElement('beforeend', document.createElement(ShadowIsland.tag))
 

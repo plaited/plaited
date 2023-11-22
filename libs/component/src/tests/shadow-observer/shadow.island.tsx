@@ -1,5 +1,6 @@
 import { css } from '@plaited/jsx'
-import { Component, PlaitProps } from '../../index.js'
+import { PlaitProps } from '@plaited/component-types'
+import { Component } from '../../index.js'
 import { opacityHex } from '@plaited/utils'
 import { SVG } from './noun-braids-2633610.js'
 

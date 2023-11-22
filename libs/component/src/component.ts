@@ -5,7 +5,7 @@
  * @returns {void}
  * @alias cc
  */
-import { createTemplate, FunctionTemplate } from '@plaited/jsx'
+import { createTemplate } from '@plaited/jsx'
 import { dataTrigger, dataAddress } from '@plaited/jsx/utils'
 import { Trigger, bProgram, TriggerArgs } from '@plaited/behavioral'
 import type {
@@ -17,7 +17,8 @@ import type {
   Publisher,
   TriggerElement,
   QuerySelector,
-} from './types.js'
+  FunctionTemplate,
+} from '@plaited/component-types'
 import { $ } from './sugar.js'
 import { noop, trueTypeOf } from '@plaited/utils'
 
@@ -75,6 +76,7 @@ export const Component: ComponentFunction = ({
   return class PlaitedComponent extends HTMLElement implements PlaitedElement {
     static tag = _tag
     static stylesheets = template.stylesheets
+    static registry = template.registry
     static template: FunctionTemplate = ({ children = [], ...attrs }) =>
       createTemplate(tag, {
         ...attrs,

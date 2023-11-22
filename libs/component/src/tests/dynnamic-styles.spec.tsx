@@ -1,7 +1,8 @@
 import { test } from '@plaited/rite'
 import { css } from '@plaited/jsx'
 import { stylesheets } from '@plaited/jsx/utils'
-import { Component, PlaitProps } from '../index.js'
+import { PlaitProps } from '@plaited/component-types'
+import { Component, define } from '../index.js'
 
 test('dynamic styles', async (t) => {
   const body = document.querySelector('body')
@@ -39,7 +40,7 @@ test('dynamic styles', async (t) => {
       )
     }
   }
-  customElements.define(Fixture.tag, Fixture)
+  define(Fixture)
   body.append(document.createElement(Fixture.tag))
 
   const target = await t.findByAttribute('data-target', 'target')
@@ -87,7 +88,7 @@ test('with default and dynamic styles', async (t) => {
       )
     }
   }
-  customElements.define(Fixture.tag, Fixture)
+  define(Fixture)
   body.append(document.createElement(Fixture.tag))
   const target = await t.findByAttribute('data-target', 'target-2')
   const root = target.getRootNode() as ShadowRoot

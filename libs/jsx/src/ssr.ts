@@ -1,4 +1,4 @@
-import { TemplateObject } from './types.js'
+import { TemplateObject } from '@plaited/component-types'
 
 if (typeof global.HTMLElement === 'undefined') {
   // @ts-ignore node env
