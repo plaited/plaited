@@ -17,7 +17,7 @@
     "prepare": "husky install",
     "prettier": "prettier --experimental-ternaries . --write",
     "storybook": "storybook dev -p 6006 --ci",
-    "test": "lerna run test --stream",
+    "test": "lerna run test --stream --since=origin/main",
     "test-storybook": "start-server-and-test 'bun run storybook' http://localhost:6006 'bun playwright test'"
   },
   "lint-staged": {
