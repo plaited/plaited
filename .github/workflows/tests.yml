@@ -18,7 +18,7 @@ jobs:
         uses: devcontainers/ci@v0.3
         with:
           runCmd: |
-            git remote add origin git@github.com:plaited/plaited.git
+            git fetch origin main
             bun install
             bunx playwright install
             bunx lerna run build
