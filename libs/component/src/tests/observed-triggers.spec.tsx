@@ -1,6 +1,7 @@
 import { css } from '@plaited/jsx'
 import { test } from '@plaited/rite'
-import { Component, PlaitProps } from '../index.js'
+import { PlaitProps } from '@plaited/component-types'
+import { Component } from '../index.js'
 
 test('observed triggers', async (t) => {
   const [classes, stylesheet] = css`

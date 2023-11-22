@@ -1,5 +1,10 @@
-import type { PlaitedComponentConstructor, SugaredElement, Sugar, SelectorMatch } from './types.js'
-import type { TemplateObject } from '@plaited/jsx'
+import type {
+  PlaitedComponentConstructor,
+  SugaredElement,
+  Sugar,
+  SelectorMatch,
+  TemplateObject,
+} from '@plaited/component-types'
 import { booleanAttrs, dataTarget } from '@plaited/jsx/utils'
 import { isTypeOf } from '@plaited/utils'
 

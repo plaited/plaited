@@ -1,6 +1,7 @@
 import { test } from '@plaited/rite'
 import { css } from '@plaited/jsx'
-import { Component, PlaitProps } from '../index.js'
+import { PlaitProps } from '@plaited/component-types'
+import { Component } from '../index.js'
 import sinon from 'sinon'
 const [classes, stylesheet] = css`
   .row {
@@ -44,12 +45,12 @@ class Fixture extends Component({
         name='named'
         data-trigger={{ click: 'named' }}
       ></slot>
-      <Nested.template>
+      <Nested>
         <slot
           name='nested'
           data-trigger={{ click: 'nested' }}
         ></slot>
-      </Nested.template>
+      </Nested>
     </div>
   ),
 }) {

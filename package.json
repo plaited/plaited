@@ -30,11 +30,11 @@
   ],
   "devDependencies": {
     "@plaited/eslint-prettier-config": "1.0.2",
-    "@commitlint/cli": "18.4.2",
-    "@commitlint/config-conventional": "18.4.2",
-    "@commitlint/config-lerna-scopes": "18.4.0",
+    "@commitlint/cli": "18.4.3",
+    "@commitlint/config-conventional": "18.4.3",
+    "@commitlint/config-lerna-scopes": "18.4.3",
     "@playwright/test": "1.40.0",
-    "@types/sinon": "17.0.1",
+    "@types/sinon": "17.0.2",
     "beautify": "0.0.8",
     "bun-types": "1.0.13",
     "cz-conventional-changelog": "3.3.0",
@@ -44,8 +44,7 @@
     "lerna": "7.4.2",
     "lint-staged": "15.1.0",
     "playwright": "^1.40.0",
-    "prettier": "3.1.0",
     "sinon": "17.0.1",
-    "typescript": "5.2.2"
+    "typescript": "5.3.2"
   }
 }

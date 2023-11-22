@@ -1,5 +1,6 @@
 import { hashString, trueTypeOf, reduceWhitespace } from '@plaited/utils'
-import { Primitive } from './types.js'
+
+type Primitive = null | undefined | number | string | boolean | bigint
 
 type ClassObject = {
   content: string

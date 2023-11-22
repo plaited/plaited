@@ -1,6 +1,7 @@
 import { css } from '@plaited/jsx'
 import { test } from '@plaited/rite'
-import { Component, PlaitProps } from '../index.js'
+import { PlaitProps } from '@plaited/component-types'
+import { Component, define } from '../index.js'
 
 test('eventTriggers', async (t) => {
   const [classes, stylesheet] = css`
@@ -52,10 +53,10 @@ test('eventTriggers', async (t) => {
         >
           Hello
         </h1>
-        <Bottom.tag
+        <Bottom
           dataTarget='header'
           data-trigger={{ append: 'append' }}
-        ></Bottom.tag>
+        ></Bottom>
       </div>
     ),
   }) {
@@ -74,8 +75,7 @@ test('eventTriggers', async (t) => {
   wrapper.insertAdjacentElement('beforeend', top)
 
   // // Define elements
-  customElements.define(Top.tag, Top)
-  customElements.define(Bottom.tag, Bottom)
+  define(Top)
 
   const button = await t.findByAttribute('data-target', 'button', wrapper)
   const header = await t.findByAttribute('data-target', 'header', wrapper)

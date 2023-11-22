@@ -1,7 +1,8 @@
 import { css } from '@plaited/jsx'
 import { dataAddress } from '@plaited/jsx/utils'
 import { test } from '@plaited/rite'
-import { Component, PlaitProps } from '../index.js'
+import { PlaitProps } from '@plaited/component-types'
+import { Component, define } from '../index.js'
 import { messenger } from '../utils.js'
 
 test('dynamic island comms', async (t) => {
@@ -91,8 +92,8 @@ test('dynamic island comms', async (t) => {
   wrapper.insertAdjacentElement('beforeend', two)
 
   // Define elements
-  customElements.define(ElOne.tag, ElOne)
-  customElements.define(ElTwo.tag, ElTwo)
+  define(ElOne)
+  define(ElTwo)
 
   let button = await t.findByAttribute('data-target', 'button', wrapper)
   const header = await t.findByAttribute('data-target', 'header', wrapper)
