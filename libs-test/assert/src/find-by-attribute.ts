@@ -10,7 +10,7 @@
 export const findByAttribute = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
   attributeName: string,
   attributeValue: string | RegExp,
-  context?: HTMLElement | SVGElement,
+  context?: HTMLElement | SVGElement
 ): Promise<T | undefined> => {
   const searchInShadowDom = (node: Node): T | undefined => {
     if (node.nodeType === 1) {

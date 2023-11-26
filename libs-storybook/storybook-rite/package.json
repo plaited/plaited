@@ -8,12 +8,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/plaited/storybook-framework.git"
+    "url": "git+https://github.com/plaited/plaited.git"
   },
   "bugs": {
-    "url": "https://github.com/plaited/storybook-framework/issues"
+    "url": "https://github.com/plaited/plaited/issues"
   },
-  "homepage": "https://github.com/plaited/storybook-framework/tree/main/libs/storybook-rite#readme",
+  "homepage": "https://github.com/plaited/plaited/tree/main/libs-storybook/storybook-rite#readme",
   "keywords": [
     "storybook",
     "plaited",

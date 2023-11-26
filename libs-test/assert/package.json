@@ -7,12 +7,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/plaited/rite.git"
+    "url": "git+https://github.com/plaited/plaited.git"
   },
   "bugs": {
-    "url": "https://github.com/plaited/rite/issues"
+    "url": "https://github.com/plaited/plaited/issues"
   },
-  "homepage": "https://github.com/plaited/rite/tree/main/libs/assert#readme",
+  "homepage": "https://github.com/plaited/plaited/tree/main/libs-test/assert#readme",
   "keywords": [
     "web",
     "test",
@@ -38,10 +38,5 @@
   "types": "./dist/index.d.ts",
   "dependencies": {
     "@plaited/utils": "5.3.0"
-  },
-  "devDependencies": {
-    "@types/sinon": "17.0.1",
-    "bun-types": "1.0.11",
-    "sinon": "17.0.1"
   }
 }
