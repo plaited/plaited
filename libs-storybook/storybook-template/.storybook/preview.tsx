@@ -5,7 +5,7 @@ const preview: Preview = {
   decorators: [
     (Story, ...args) => {
       const frag = createFragment(<div style={{ margin: '3em' }}></div>)
-      frag.firstElementChild.append(Story())
+      frag.firstElementChild?.append(Story())
       return frag
     },
   ],

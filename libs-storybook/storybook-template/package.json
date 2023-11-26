@@ -1,0 +1,25 @@
+{
+  "name": "@plaited/storybook-template",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "storybook": "storybook dev -p 6006 --ci",
+    "test": "test-storybook"
+  },
+  "dependencies": {
+    "plaited": "5.3.0"
+  },
+  "devDependencies": {
+    "@plaited/storybook-vite": "5.3.0",
+    "@plaited/storybook-rite": "5.3.0",
+    "@plaited/storybook": "5.3.0",
+    "@storybook/test-runner": "0.15.2",
+    "@storybook/addon-essentials": "7.5.3",
+    "@storybook/addon-interactions": "7.5.3",
+    "@storybook/addon-links": "7.5.3",
+    "@storybook/blocks": "7.5.3",
+    "@storybook/html-vite": "7.5.3",
+    "@storybook/testing-library": "0.2.2",
+    "storybook": "7.5.3"
+  }
+}
