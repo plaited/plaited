@@ -25,7 +25,8 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc --project tsconfig.json"
+    "build": "tsc --project tsconfig.json",
+    "build-watch": "bun run build --watch"
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
