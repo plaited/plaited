@@ -22,7 +22,7 @@ export const fireEvent = <T extends HTMLElement | SVGElement = HTMLElement | SVG
     bubbles: true,
     composed: true,
     cancelable: true,
-  },
+  }
 ): Promise<void> => {
   const createEvent = (): Event => {
     if (options?.detail) {

@@ -13,7 +13,7 @@
   "bugs": {
     "url": "https://github.com/plaited/plaited/issues"
   },
-  "homepage": "https://github.com/plaited/plaited/tree/main/libs/storybook-vite#readme",
+  "homepage": "https://github.com/plaited/plaited/tree/main/libs-storybook/storybook-vite#readme",
   "keywords": [
     "plaited",
     "storybook",

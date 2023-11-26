@@ -12,7 +12,7 @@
   "bugs": {
     "url": "https://github.com/plaited/plaited/issues"
   },
-  "homepage": "https://github.com/plaited/plaited/tree/main/libs/token-types#readme",
+  "homepage": "https://github.com/plaited/plaited/tree/main/libs-token/token-types#readme",
   "type": "module",
   "main": "./dist/index.js",
   "exports": {
