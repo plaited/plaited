@@ -2,32 +2,12 @@
 
 # plaited
 
-This mono repo serves as the workspace for working on our plaited web interface
-development libraries.
+This mono repo serves as the workspace for working on our plaited web interface development libraries and tooling. It is divided into 3 workspaces.
 
-## Libraries
+1. [libs](libs/README.md): Rendering library
+2. [libs-storybook](libs-storybook/README.md): Storybook development libraries and tooling
+3. [libs-token](libs-token/token-element/README.md): Design token format libraries and tooling
 
-### External usage
-
-- [plaited](libs/plaited/README.md): plaited library package
-
-
-### Internal usage
-
-**The following libraries are not recommended for usage outside the Plaited organization. They are dependencies for our Plaited libs and apps. These libraries are open sourced as reference implementation. Take as a dependency at your own risk.**
-
-- [@plaited/behavioral](libs/behavioral/README.md): implicit state management
-  library using the behavioral programming algorithm
-- [@plaited/component](libs/component/README.md): createComponent ui rending utility
-- [@plaited/jsx](libs/jsx/README.md):
-  - templating utility and types
-  - css-in-js utility to enable templating utility's style hoisting pattern
-  - data attribute constants for templating utility
-  - server side rendering utility for templating utility
-  - jsx runtime for templating utility
-  - classNames utility function for conditionally joining css class names
-  - stylesheets utility function for conditionally joining css-on-js utility function generated stylesheet objects
-- [@plaited/utils](libs/utils/README.md): runtime agnostic utility functions
 
 ## Dev Requirements
 
