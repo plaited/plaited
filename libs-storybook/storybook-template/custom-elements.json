@@ -1,0 +1,340 @@
+{
+  "schemaVersion": "1.0.0",
+  "readme": "",
+  "modules": [
+    {
+      "kind": "javascript-module",
+      "path": "stories/button.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta<typeof Button>"
+          },
+          "default": "{\n  title: 'Example/Button',\n  component: Button,\n  tags: ['autodocs'],\n  argTypes: {\n    backgroundColor: { control: 'color' },\n    onClick: { action: 'onClick' },\n  },\n}"
+        },
+        {
+          "kind": "variable",
+          "name": "Primary",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{\n  args: {\n    dataTarget: 'button',\n    primary: true,\n    label: 'Primary Button',\n  },\n}"
+        },
+        {
+          "kind": "variable",
+          "name": "Secondary",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{\n  args: {\n    dataTarget: 'button',\n    label: 'Secondary Button',\n  },\n}"
+        },
+        {
+          "kind": "variable",
+          "name": "Large",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{\n  args: {\n    dataTarget: 'button',\n    size: 'large',\n    label: 'Large Button',\n  },\n}"
+        },
+        {
+          "kind": "variable",
+          "name": "Small",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{\n  args: {\n    dataTarget: 'button',\n    size: 'small',\n    label: 'Small Button',\n  },\n}"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "stories/button.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Primary",
+          "declaration": {
+            "name": "Primary",
+            "module": "stories/button.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Secondary",
+          "declaration": {
+            "name": "Secondary",
+            "module": "stories/button.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Large",
+          "declaration": {
+            "name": "Large",
+            "module": "stories/button.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Small",
+          "declaration": {
+            "name": "Small",
+            "module": "stories/button.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "stories/button.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "Button",
+          "parameters": [
+            {
+              "name": "{ label, size = 'medium', backgroundColor, primary = false, value, ...rest }"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "Button",
+          "declaration": {
+            "name": "Button",
+            "module": "stories/button.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "stories/header.stories.tsx",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta<typeof Header>"
+          },
+          "default": "{\n  title: 'Example/Header',\n  component: Header,\n  // This component will have an automatically generated Autodocs entry: https://storybook.js.org/docs/preact/writing-docs/autodocs\n  tags: ['autodocs'],\n  parameters: {\n    // More on how to position stories at: https://storybook.js.org/docs/preact/configure/story-layout\n    layout: 'fullscreen',\n    actions: {\n      handles: [`onLogin`, `onLogout`, `onCreateAccount`],\n    },\n  },\n  argTypes: {\n    onLogin: { action: 'onLogin' },\n    onLogout: { action: 'onLogout' },\n    onCreateAccount: { action: 'onCreateAccount' },\n  },\n  decorators: [withActions],\n}"
+        },
+        {
+          "kind": "variable",
+          "name": "LoggedIn",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{\n  render({ user }: { user: { name: string } }) {\n    const frag = createFragment(<Header.template user={user?.name} />)\n    return frag\n  },\n  args: {\n    user: {\n      name: 'Jane Doe',\n    },\n  },\n}"
+        },
+        {
+          "kind": "variable",
+          "name": "LoggedOut",
+          "type": {
+            "text": "object"
+          },
+          "default": "{}"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "stories/header.stories.tsx"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "LoggedIn",
+          "declaration": {
+            "name": "LoggedIn",
+            "module": "stories/header.stories.tsx"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "LoggedOut",
+          "declaration": {
+            "name": "LoggedOut",
+            "module": "stories/header.stories.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "stories/header.tsx",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "Header",
+          "members": [
+            {
+              "kind": "method",
+              "name": "plait",
+              "return": {
+                "type": {
+                  "text": "void | Promise<void>"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "{ feedback, host }",
+                  "type": {
+                    "text": "PlaitProps"
+                  }
+                }
+              ]
+            }
+          ],
+          "attributes": [
+            {
+              "name": "user"
+            }
+          ],
+          "mixins": [
+            {
+              "name": "Component",
+              "package": "plaited"
+            }
+          ],
+          "superclass": {
+            "module": "stories/header.tsx"
+          }
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "Header",
+          "declaration": {
+            "name": "Header",
+            "module": "stories/header.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "stories/page.stories.tsx",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta<typeof Page>"
+          },
+          "default": "{\n  title: 'Example/Page',\n  component: Page,\n  parameters: {\n    // More on how to position stories at: https://storybook.js.org/docs/preact/configure/story-layout\n    layout: 'fullscreen',\n  },\n}"
+        },
+        {
+          "kind": "variable",
+          "name": "LoggedOut",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{}"
+        },
+        {
+          "kind": "variable",
+          "name": "LoggedIn",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{\n  play: async ({ canvasElement }) => {\n    const loginButton = await findByAttribute('value', 'onLogin', canvasElement)\n    await fireEvent(loginButton, 'click')\n    const logoutButton = await findByAttribute('value', 'onLogout', canvasElement)\n    assert({\n      given: 'the user is logged in',\n      should: 'render the logout button',\n      actual: logoutButton.textContent,\n      expected: 'Log out',\n    })\n  },\n}"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "stories/page.stories.tsx"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "LoggedOut",
+          "declaration": {
+            "name": "LoggedOut",
+            "module": "stories/page.stories.tsx"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "LoggedIn",
+          "declaration": {
+            "name": "LoggedIn",
+            "module": "stories/page.stories.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "stories/page.tsx",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "Page",
+          "members": [
+            {
+              "kind": "method",
+              "name": "plait",
+              "return": {
+                "type": {
+                  "text": "void | Promise<void>"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "{ $, feedback }",
+                  "type": {
+                    "text": "PlaitProps"
+                  }
+                }
+              ]
+            }
+          ],
+          "mixins": [
+            {
+              "name": "Component",
+              "package": "plaited"
+            }
+          ],
+          "superclass": {
+            "module": "stories/page.tsx"
+          }
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "Page",
+          "declaration": {
+            "name": "Page",
+            "module": "stories/page.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "stories/registry.ts",
+      "declarations": [],
+      "exports": []
+    }
+  ]
+}

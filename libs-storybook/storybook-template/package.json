@@ -5,12 +5,14 @@
   "scripts": {
     "storybook": "storybook dev -p 6006 --ci",
     "test": "start-server-and-test 'bun run storybook' http://localhost:6006 'bun run test-storybook'",
-    "test-storybook": "test-storybook"
+    "test-storybook": "test-storybook",
+    "analyze": "cem analyze"
   },
   "dependencies": {
     "plaited": "5.3.0"
   },
   "devDependencies": {
+    "@custom-elements-manifest/analyzer": "0.9.0",
     "@plaited/storybook-vite": "5.3.0",
     "@plaited/storybook-rite": "5.3.0",
     "@plaited/storybook": "5.3.0",
