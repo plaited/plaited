@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "storybook": "storybook dev -p 6006 --ci",
-    "test": "test-storybook"
+    "test": "start-server-and-test 'bun run storybook' http://localhost:6006 'bun run test-storybook'",
+    "test-storybook": "test-storybook"
   },
   "dependencies": {
     "plaited": "5.3.0"
@@ -20,6 +21,8 @@
     "@storybook/blocks": "7.5.3",
     "@storybook/html-vite": "7.5.3",
     "@storybook/testing-library": "0.2.2",
-    "storybook": "7.5.3"
+    "start-server-and-test": "2.0.3",
+    "storybook": "7.5.3",
+    "vite": "5.0.2"
   }
 }
