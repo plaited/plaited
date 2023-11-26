@@ -26,7 +26,7 @@ test('assert: sum()', () => {
       should: 'return 0',
       actual: sum(),
       expected: 0,
-    })
+    }),
   ).not.toThrow()
 
   expect(() =>
@@ -35,7 +35,7 @@ test('assert: sum()', () => {
       should,
       actual: sum(2, 0),
       expected: 2,
-    })
+    }),
   ).not.toThrow()
 
   expect(() =>
@@ -44,7 +44,7 @@ test('assert: sum()', () => {
       should,
       actual: sum(1, -4),
       expected: -3,
-    })
+    }),
   ).not.toThrow()
   expect(() =>
     assert({
@@ -52,7 +52,7 @@ test('assert: sum()', () => {
       should: 'throw',
       actual: throws(sum, 1, NaN),
       expected: new TypeError('NaN').toString(),
-    })
+    }),
   ).not.toThrow()
 })
 
@@ -107,7 +107,7 @@ test('wait()', async () => {
       should: 'should pause for 20ms',
       actual: true,
       expected: true,
-    })
+    }),
   ).not.toThrow()
 })
 
@@ -125,7 +125,7 @@ test('match()', () => {
       should,
       actual: contains(pattern),
       expected: pattern,
-    })
+    }),
   ).not.toThrow()
 })
 
@@ -137,7 +137,7 @@ test('assert: required params', async () => {
     await spy()
   } catch (err) {
     expect(err.message).toBe(
-      "The following parameters are required by 'assert': (\n  given, should, actual, expected\n)"
+      "The following parameters are required by 'assert': (\n  given, should, actual, expected\n)",
     )
   }
   expect(spy.calledOnce).toBe(true)
@@ -159,7 +159,7 @@ test('assert: throws on failure', () => {
       should: 'equal number',
       actual: 0,
       expected: 1,
-    })
+    }),
   ).toThrow('{"message":"Given number: should equal number","actual":0,"expected":1}')
 
   expect(() =>
@@ -168,7 +168,7 @@ test('assert: throws on failure', () => {
       should: 'equal regex',
       actual: /test/i,
       expected: /test/,
-    })
+    }),
   ).toThrow('{"message":"Given regex: should equal regex","actual":{},"expected":{}}')
 
   expect(() =>
@@ -177,7 +177,7 @@ test('assert: throws on failure', () => {
       should: 'equal false',
       actual: null,
       expected: false,
-    })
+    }),
   ).toThrow('{"message":"Given false: should equal false","actual":null,"expected":false}')
 
   expect(() =>
@@ -186,7 +186,7 @@ test('assert: throws on failure', () => {
       should: 'equal array',
       actual: ['nope'],
       expected: ['array'],
-    })
+    }),
   ).toThrow('{"message":"Given array: should equal array","actual":["nope"],"expected":["array"]}')
 
   expect(() =>
@@ -195,7 +195,7 @@ test('assert: throws on failure', () => {
       should: 'equal set',
       actual: new Set(['nope']),
       expected: new Set(['set']),
-    })
+    }),
   ).toThrow('{"message":"Given set: should equal set","actual":{},"expected":{}}')
 
   expect(() =>
@@ -204,7 +204,7 @@ test('assert: throws on failure', () => {
       should: 'equal map',
       actual: new Map([['key', 'nope']]),
       expected: new Map([['key', 'value']]),
-    })
+    }),
   ).toThrow('{"message":"Given map: should equal map","actual":{},"expected":{}}')
 
   expect(() =>
@@ -217,6 +217,6 @@ test('assert: throws on failure', () => {
       expected: {
         key: 'value',
       },
-    })
+    }),
   ).toThrow('{"message":"Given object: should equal object","actual":{"nope":3},"expected":{"key":"value"}}')
 })

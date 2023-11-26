@@ -94,34 +94,34 @@ export class Header extends Component({
   attributeChangedCallback(name: string, oldValue: string, newValue: string): void {
     if (name === 'user') {
       const [bar] = this.$('button-bar')
-      newValue
-        ? bar.render(
-            <>
-              <span className={cls['welcome']}>
-                Welcome, <b>{newValue}</b>!
-              </span>
-              <Button
-                size='small'
-                value='onLogout'
-                label='Log out'
-              />
-            </>
-          )
-        : bar.render(
-            <>
-              <Button
-                size='small'
-                value='onLogin'
-                label='Log in'
-              />
-              <Button
-                primary
-                size='small'
-                value='onCreateAccount'
-                label='Sign up'
-              />
-            </>
-          )
+      newValue ?
+        bar.render(
+          <>
+            <span className={cls['welcome']}>
+              Welcome, <b>{newValue}</b>!
+            </span>
+            <Button
+              size='small'
+              value='onLogout'
+              label='Log out'
+            />
+          </>,
+        )
+      : bar.render(
+          <>
+            <Button
+              size='small'
+              value='onLogin'
+              label='Log in'
+            />
+            <Button
+              primary
+              size='small'
+              value='onCreateAccount'
+              label='Sign up'
+            />
+          </>,
+        )
     }
   }
   plait({ feedback, host }: PlaitProps): void | Promise<void> {

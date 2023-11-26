@@ -1,5 +1,6 @@
 import { test, expect } from 'bun:test'
-import { createTemplate as h, css, Fragment, FT, TemplateObject } from '../index.js'
+import { FT,  TemplateObject} from '@plaited/component-types'
+import { createTemplate as h, css, Fragment } from '../index.js'
 import beautify from 'beautify'
 
 const render = (tpl: TemplateObject) => beautify(tpl.client.join(''), { format: 'html' })
@@ -9,9 +10,9 @@ test('createTemplate: Self closing - html', () => {
 })
 
 test('createTemplate: Self closing - svg', () => {
-  expect(render(h('polygon', { points: '0,100 50,25 50,75 100,0' }))).toMatchSnapshot()
+  expect(render(h('polyline', { points: '0,100 50,25 50,75 100,0' }))).toMatchSnapshot()
 })
-
+SVGPolygonElement.prototype.points
 test('createTemplate: Falsey - undefined', () => {
   expect(render(h('div', { children: undefined }))).toMatchSnapshot()
 })

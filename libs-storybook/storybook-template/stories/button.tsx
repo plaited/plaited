@@ -47,7 +47,7 @@ export const Button: FT<{
     className={classNames(
       cls['storybook-button'],
       cls[`storybook-button--${size}`],
-      cls[primary ? 'storybook-button--primary' : 'storybook-button--secondary']
+      cls[primary ? 'storybook-button--primary' : 'storybook-button--secondary'],
     )}
     {...stylesheet}
     value={value}
