@@ -6,7 +6,8 @@ This mono repo serves as the workspace for working on our plaited web interface 
 
 1. [libs](libs/README.md): Rendering library
 2. [libs-storybook](libs-storybook/README.md): Storybook development libraries and tooling
-3. [libs-token](libs-token/token-element/README.md): Design token format libraries and tooling
+3. [libs-token](libs-token/README.md): Design token format libraries and tooling
+4. [libs-test](libs-test/README.md):Test libraries and tooling
 
 
 ## Dev Requirements
