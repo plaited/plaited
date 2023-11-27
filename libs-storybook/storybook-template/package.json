@@ -5,8 +5,7 @@
   "scripts": {
     "storybook": "storybook dev -p 6006 --ci",
     "test": "start-server-and-test 'bun run storybook' http://localhost:6006 'bun run test-storybook'",
-    "test-storybook": "test-storybook",
-    "analyze": "cem analyze"
+    "test-storybook": "test-storybook"
   },
   "dependencies": {
     "plaited": "5.3.0"
