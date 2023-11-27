@@ -319,28 +319,53 @@ type SVGAttributes<T extends SVGElement> = Partial<{
   [P in Keys<AllSVGAttributes> & Keys<T>]: AllSVGAttributes[P]
 }>
 
+export type VoidTags =
+  | 'area'
+  | 'base'
+  | 'br'
+  | 'col'
+  | 'embed'
+  | 'hr'
+  | 'img'
+  | 'input'
+  | 'link'
+  | 'menuitem'
+  | 'meta'
+  | 'source'
+  | 'track'
+  | 'wbr'
+  | 'circle'
+  | 'ellipse'
+  | 'line'
+  | 'path'
+  | 'polygon'
+  | 'polyline'
+  | 'rect'
+  | 'stop'
+  | 'use'
+
 export type ElementTags = {
   a: HTMLAttributes<HTMLAnchorElement>
   abbr: HTMLAttributes<HTMLElement>
   address: HTMLAttributes<HTMLElement>
-  area: HTMLAttributes<HTMLAreaElement>
+  area: HTMLAttributes<HTMLAreaElement> & { children?: never }
   article: HTMLAttributes<HTMLElement>
   aside: HTMLAttributes<HTMLElement>
   audio: HTMLAttributes<HTMLAudioElement>
   b: HTMLAttributes<HTMLElement>
-  base: HTMLAttributes<HTMLBaseElement>
+  base: HTMLAttributes<HTMLBaseElement> & { children?: never }
   bdi: HTMLAttributes<HTMLElement>
   bdo: HTMLAttributes<HTMLElement>
   big: HTMLAttributes<HTMLElement>
   blockquote: HTMLAttributes<HTMLQuoteElement>
   body: HTMLAttributes<HTMLBodyElement>
-  br: HTMLAttributes<HTMLBRElement>
+  br: HTMLAttributes<HTMLBRElement> & { children?: never }
   button: HTMLAttributes<HTMLButtonElement>
   canvas: HTMLAttributes<HTMLCanvasElement>
   caption: HTMLAttributes<HTMLTableCaptionElement>
   cite: HTMLAttributes<HTMLElement>
   code: HTMLAttributes<HTMLElement>
-  col: HTMLAttributes<HTMLTableColElement>
+  col: HTMLAttributes<HTMLTableColElement> & { children?: never }
   colgroup: HTMLAttributes<HTMLTableColElement>
   data: HTMLAttributes<HTMLDataElement>
   datalist: HTMLAttributes<HTMLDataListElement>
@@ -353,7 +378,7 @@ export type ElementTags = {
   dl: HTMLAttributes<HTMLDListElement>
   dt: HTMLAttributes<HTMLElement>
   em: HTMLAttributes<HTMLElement>
-  embed: HTMLAttributes<HTMLEmbedElement>
+  embed: HTMLAttributes<HTMLEmbedElement> & { children?: never }
   fieldset: HTMLAttributes<HTMLFieldSetElement>
   figcaption: HTMLAttributes<HTMLElement>
   figure: HTMLAttributes<HTMLElement>
@@ -368,26 +393,25 @@ export type ElementTags = {
   head: HTMLAttributes<HTMLHeadElement>
   header: HTMLAttributes<HTMLElement>
   hgroup: HTMLAttributes<HTMLElement>
-  hr: HTMLAttributes<HTMLHRElement>
+  hr: HTMLAttributes<HTMLHRElement> & { children?: never }
   html: HTMLAttributes<HTMLHtmlElement>
   i: HTMLAttributes<HTMLElement>
   iframe: HTMLAttributes<HTMLIFrameElement>
-  img: HTMLAttributes<HTMLImageElement>
-  input: HTMLAttributes<HTMLInputElement>
+  img: HTMLAttributes<HTMLImageElement> & { children?: never }
+  input: HTMLAttributes<HTMLInputElement> & { children?: never }
   ins: HTMLAttributes<HTMLModElement>
   kbd: HTMLAttributes<HTMLElement>
   keygen: HTMLAttributes<HTMLUnknownElement>
   label: Omit<HTMLAttributes<HTMLLabelElement>, 'for'> & { for?: never; htmlFor?: string }
   legend: HTMLAttributes<HTMLLegendElement>
   li: HTMLAttributes<HTMLLIElement>
-  link: HTMLAttributes<HTMLLinkElement>
+  link: HTMLAttributes<HTMLLinkElement> & { children?: never }
   main: HTMLAttributes<HTMLElement>
   map: HTMLAttributes<HTMLMapElement>
   mark: HTMLAttributes<HTMLElement>
-  marquee: HTMLAttributes<HTMLMarqueeElement>
   menu: HTMLAttributes<HTMLMenuElement>
-  menuitem: HTMLAttributes<HTMLUnknownElement>
-  meta: HTMLAttributes<HTMLMetaElement>
+  menuitem: HTMLAttributes<HTMLUnknownElement> & { children?: never }
+  meta: HTMLAttributes<HTMLMetaElement> & { children?: never }
   meter: HTMLAttributes<HTMLMeterElement>
   nav: HTMLAttributes<HTMLElement>
   noscript: HTMLAttributes<HTMLElement>
@@ -397,7 +421,6 @@ export type ElementTags = {
   option: HTMLAttributes<HTMLOptionElement>
   output: Omit<HTMLAttributes<HTMLOutputElement>, 'for'> & { for?: never; htmlFor?: string }
   p: HTMLAttributes<HTMLParagraphElement>
-  param: HTMLAttributes<HTMLParamElement>
   picture: HTMLAttributes<HTMLPictureElement>
   pre: HTMLAttributes<HTMLPreElement>
   progress: HTMLAttributes<HTMLProgressElement>
@@ -413,7 +436,7 @@ export type ElementTags = {
   select: HTMLAttributes<HTMLSelectElement>
   slot: HTMLAttributes<HTMLSlotElement>
   small: HTMLAttributes<HTMLElement>
-  source: HTMLAttributes<HTMLSourceElement>
+  source: HTMLAttributes<HTMLSourceElement> & { children?: never }
   span: HTMLAttributes<HTMLSpanElement>
   strong: HTMLAttributes<HTMLElement>
   style: HTMLAttributes<HTMLStyleElement>
@@ -434,23 +457,23 @@ export type ElementTags = {
   time: HTMLAttributes<HTMLTimeElement>
   title: HTMLAttributes<HTMLTitleElement>
   tr: HTMLAttributes<HTMLTableRowElement>
-  track: HTMLAttributes<HTMLTrackElement>
+  track: HTMLAttributes<HTMLTrackElement> & { children?: never }
   u: HTMLAttributes<HTMLElement>
   ul: HTMLAttributes<HTMLUListElement>
   var: HTMLAttributes<HTMLElement>
   video: HTMLAttributes<HTMLVideoElement>
-  wbr: HTMLAttributes<HTMLElement>
+  wbr: HTMLAttributes<HTMLElement> & { children?: never }
 
   //SVG
   svg: SVGAttributes<SVGSVGElement> & HTMLAttributes<HTMLElement>
   animate: SVGAttributes<SVGAnimateElement> & HTMLAttributes<HTMLElement>
-  circle: SVGAttributes<SVGCircleElement> & HTMLAttributes<HTMLElement>
+  circle: SVGAttributes<SVGCircleElement> & HTMLAttributes<HTMLElement> & { children?: never }
   animateMotion: SVGAttributes<SVGAnimateMotionElement> & HTMLAttributes<HTMLElement>
   animateTransform: SVGAttributes<SVGAnimateTransformElement> & HTMLAttributes<HTMLElement>
   clipPath: SVGAttributes<SVGClipPathElement> & HTMLAttributes<HTMLElement>
   defs: SVGAttributes<SVGDefsElement> & HTMLAttributes<HTMLElement>
   desc: SVGAttributes<SVGDescElement> & HTMLAttributes<HTMLElement>
-  ellipse: SVGAttributes<SVGEllipseElement> & HTMLAttributes<HTMLElement>
+  ellipse: SVGAttributes<SVGEllipseElement> & HTMLAttributes<HTMLElement> & { children?: never }
   feBlend: SVGAttributes<SVGFEBlendElement> & HTMLAttributes<HTMLElement>
   feColorMatrix: SVGAttributes<SVGFEColorMatrixElement> & HTMLAttributes<HTMLElement>
   feComponentTransfer: SVGAttributes<SVGFEComponentTransferElement> & HTMLAttributes<HTMLElement>
@@ -480,61 +503,28 @@ export type ElementTags = {
   foreignObject: SVGAttributes<SVGForeignObjectElement> & HTMLAttributes<HTMLElement>
   g: SVGAttributes<SVGGElement> & HTMLAttributes<HTMLElement>
   image: SVGAttributes<SVGImageElement> & HTMLAttributes<HTMLElement>
-  line: SVGAttributes<SVGLineElement> & HTMLAttributes<HTMLElement>
+  line: SVGAttributes<SVGLineElement> & HTMLAttributes<HTMLElement> & { children?: never }
   linearGradient: SVGAttributes<SVGLinearGradientElement> & HTMLAttributes<HTMLElement>
   marker: SVGAttributes<SVGMarkerElement> & HTMLAttributes<HTMLElement>
   mask: SVGAttributes<SVGMaskElement> & HTMLAttributes<HTMLElement>
   metadata: SVGAttributes<SVGMetadataElement> & HTMLAttributes<HTMLElement>
   mpath: SVGAttributes<SVGMPathElement> & HTMLAttributes<HTMLElement>
-  path: SVGAttributes<SVGPathElement> & HTMLAttributes<HTMLElement>
+  path: SVGAttributes<SVGPathElement> & HTMLAttributes<HTMLElement> & { children?: never }
   pattern: SVGAttributes<SVGPatternElement> & HTMLAttributes<HTMLElement>
-  polygon: SVGAttributes<SVGPolygonElement> & HTMLAttributes<HTMLElement>
-  polyline: SVGAttributes<SVGPolylineElement>
+  polygon: SVGAttributes<SVGPolygonElement> & HTMLAttributes<HTMLElement> & { children?: never }
+  polyline: SVGAttributes<SVGPolylineElement> & { children?: never }
   radialGradient: SVGAttributes<SVGRadialGradientElement> & HTMLAttributes<HTMLElement>
-  rect: SVGAttributes<SVGRectElement> & HTMLAttributes<HTMLElement>
+  rect: SVGAttributes<SVGRectElement> & HTMLAttributes<HTMLElement> & { children?: never }
   set: SVGAttributes<SVGSetElement> & HTMLAttributes<HTMLElement>
-  stop: SVGAttributes<SVGStopElement> & HTMLAttributes<HTMLElement>
+  stop: SVGAttributes<SVGStopElement> & HTMLAttributes<HTMLElement> & { children?: never }
   switch: SVGAttributes<SVGSwitchElement> & HTMLAttributes<HTMLElement>
   symbol: SVGAttributes<SVGSymbolElement> & HTMLAttributes<HTMLElement>
   text: SVGAttributes<SVGTextElement> & HTMLAttributes<HTMLElement>
   textPath: SVGAttributes<SVGTextPathElement> & HTMLAttributes<HTMLElement>
   tspan: SVGAttributes<SVGTSpanElement> & HTMLAttributes<HTMLElement>
-  use: SVGAttributes<SVGUseElement> & HTMLAttributes<HTMLElement>
+  use: SVGAttributes<SVGUseElement> & HTMLAttributes<HTMLElement> & { children?: never }
   view: SVGAttributes<SVGViewElement> & HTMLAttributes<HTMLElement>
 }
-
-export type VoidTags =
-  | 'area'
-  | 'base'
-  | 'basefont'
-  | 'bgsound'
-  | 'br'
-  | 'col'
-  | 'command'
-  | 'embed'
-  | 'frame'
-  | 'hr'
-  | 'img'
-  | 'isindex'
-  | 'input'
-  | 'keygen'
-  | 'link'
-  | 'menuitem'
-  | 'meta'
-  | 'nextid'
-  | 'param'
-  | 'source'
-  | 'track'
-  | 'wbr'
-  | 'circle'
-  | 'ellipse'
-  | 'line'
-  | 'path'
-  | 'polygon'
-  | 'polyline'
-  | 'rect'
-  | 'stop'
-  | 'use'
 
 export type Attrs<T extends Record<string, any> = Record<string, any>> = BaseAttrs & T
 
@@ -554,12 +544,10 @@ type InferAttrs<T extends Tag> =
   : T extends `${string}-${string}` ? HTMLAttributes<HTMLHtmlElement>
   : Attrs
 
-type ExcludeChildrenForVoidTags<T extends Tag, Attrs> = T extends VoidTags ? Omit<Attrs, 'children'> : Attrs
-
 export type Tag = string | `${string}-${string}` | FT | PlaitedComponentConstructor
 
 export interface CreateTemplate {
-  <T extends Tag>(tag: T, attrs: ExcludeChildrenForVoidTags<T, InferAttrs<T>>): TemplateObject
+  <T extends Tag>(tag: T, attrs: InferAttrs<T>): TemplateObject
 }
 
 export type Send = (recipient: string, detail: TriggerArgs) => void
