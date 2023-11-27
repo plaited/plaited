@@ -11,7 +11,6 @@
     "plaited": "5.3.0"
   },
   "devDependencies": {
-    "@custom-elements-manifest/analyzer": "0.9.0",
     "@plaited/storybook-vite": "5.3.0",
     "@plaited/storybook-rite": "5.3.0",
     "@plaited/storybook": "5.3.0",
