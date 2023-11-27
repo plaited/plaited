@@ -1350,8 +1350,8 @@ export interface QuerySelector {
 }
 
 /** Clone feature for handling list situations where structure is consistent but the data rendered is what is different. This is a performance feature */
-export type CloneFragment<T = unknown> = [DocumentFragment, T[], ($: QuerySelector, data: T) => void]
-export type ForEachClone = <T = unknown>(data: T[], cb: CloneFragment<T>['2']) => CloneFragment<T>
+/** Clone feature for handling list situations where structure is consistent but the data rendered is what is different. This is a performance feature */
+export type CloneFragment = () => DocumentFragment[]
 
 export type Sugar = {
   render(this: HTMLElement | SVGElement, ...template: TemplateObject[]): void
@@ -1359,6 +1359,7 @@ export type Sugar = {
   replace(this: HTMLElement | SVGElement, ...template: TemplateObject[]): void
   attr(this: HTMLElement | SVGElement, attr: Record<string, string | null | number | boolean>, val?: never): void
   attr(this: HTMLElement | SVGElement, attr: string, val?: string | null | number | boolean): string | null | void
+  clone<T>(this: HTMLElement | SVGElement, data: T[], cb: ($: QuerySelector, data: T) => void): CloneFragment
 }
 
 export type SugaredElement<T extends HTMLElement | SVGElement = HTMLElement | SVGElement> = T & Sugar
@@ -1387,7 +1388,6 @@ export type PlaitProps = {
    */
   host: PlaitedElement
   emit: Emit
-  clone: (template: TemplateObject) => ForEachClone
   connect: (comm: Publisher | Messenger) => () => void
 } & ReturnType<typeof bProgram>
 
