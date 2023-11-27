@@ -3,10 +3,17 @@ import { kebabCase } from '@plaited/utils'
 
 export const createFragment = (template: TemplateObject) => {
   const { client, stylesheets } = template
-  console.log(client)
-  const style = stylesheets.size ? `<style>${[...stylesheets].join('')}</style>` : ''
+  if (stylesheets.size) {
+    const adoptedStyleSheets: CSSStyleSheet[] = []
+    for (const style of stylesheets) {
+      const sheet = new CSSStyleSheet()
+      sheet.replaceSync(style)
+      adoptedStyleSheets.push(sheet)
+    }
+    document.adoptedStyleSheets = adoptedStyleSheets
+  }
   const tpl = document.createElement('template')
-  tpl.innerHTML = client.join('') + style
+  tpl.innerHTML = client.join('')
   return tpl.content
 }
 
