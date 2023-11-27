@@ -1,8 +1,7 @@
 [![Build/Tests](https://github.com/plaited/plaited/actions/workflows/tests.yml/badge.svg)](https://github.com/plaited/plaited/actions/workflows/tests.yml)
 
-# plaited
-
-This mono repo serves as the workspace for working on our plaited web interface development libraries and tooling. It is divided into 3 workspaces.
+# Plaited
+Plaited is design system first framework for rapidly designing and developing interfaces as requirements change and evolve. This mono repo serves as the workspace for working on our development libraries and tooling. It is divided into 4 workspaces.
 
 1. [libs](libs/README.md): Rendering libraries, state managment and utilities
 2. [libs-storybook](libs-storybook/README.md): Storybook development libraries and tooling
