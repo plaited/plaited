@@ -17,9 +17,7 @@
     "postinstall": "husky install",
     "prepare": "husky install",
     "prettier": "prettier --experimental-ternaries . --write",
-    "storybook": "storybook dev -p 6006 --ci",
-    "test": "lerna run test --stream",
-    "test-storybook": "start-server-and-test 'bun run storybook' http://localhost:6006 'bun playwright test'"
+    "test": "lerna run test --stream"
   },
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [
@@ -39,26 +37,17 @@
     "@commitlint/config-conventional": "18.4.3",
     "@commitlint/config-lerna-scopes": "18.4.3",
     "@playwright/test": "1.40.0",
-    "@storybook/addon-essentials": "7.5.3",
-    "@storybook/addon-interactions": "7.5.3",
-    "@storybook/addon-links": "7.5.3",
-    "@storybook/blocks": "7.5.3",
-    "@storybook/html-vite": "7.5.3",
-    "@storybook/testing-library": "0.2.2",
     "@types/sinon": "17.0.2",
     "beautify": "0.0.8",
-    "bun-types": "1.0.13",
+    "bun-types": "1.0.14",
     "cz-conventional-changelog": "3.3.0",
     "eslint": "8.54.0",
     "format-package": "7.0.0",
     "husky": "8.0.3",
-    "lerna": "7.4.2",
+    "lerna": "8.0.0",
     "lint-staged": "15.1.0",
     "playwright": "^1.40.0",
     "sinon": "17.0.1",
-    "start-server-and-test": "2.0.2",
-    "storybook": "7.5.3",
-    "typescript": "5.3.2",
-    "vite": "4.5.0"
+    "typescript": "5.3.2"
   }
 }

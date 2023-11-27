@@ -1,4 +1,4 @@
-import { css, FT } from 'plaited'
+import { FT, css } from 'plaited'
 import { classNames } from 'plaited/utils'
 
 const [cls, stylesheet] = css`
@@ -47,11 +47,11 @@ export const Button: FT<{
     className={classNames(
       cls['storybook-button'],
       cls[`storybook-button--${size}`],
-      cls[primary ? 'storybook-button--primary' : 'storybook-button--secondary'],
+      cls[primary ? 'storybook-button--primary' : 'storybook-button--secondary']
     )}
     {...stylesheet}
     value={value}
-    style={{ backgroundColor }}
+    style={backgroundColor ? { backgroundColor } : undefined}
   >
     {label}
   </button>

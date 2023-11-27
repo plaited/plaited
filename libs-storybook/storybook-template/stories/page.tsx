@@ -1,4 +1,4 @@
-import { Component, PlaitProps, css, useStore } from 'plaited'
+import { Component, PlaitProps, PlaitedElement, css } from 'plaited'
 import { Header } from './header.js'
 
 const [cls, stylesheet] = css`
@@ -77,9 +77,9 @@ export class Page extends Component({
   tag: 'page-el',
   template: (
     <article {...stylesheet}>
-      <Header.tag
-        dataTarget='header'
-        dataTrigger={{
+      <Header
+        data-target='header'
+        data-trigger={{
           onLogin: 'onLogin',
           onLogout: 'onLogout',
           onCreateAccount: 'onCreateAccount',
@@ -157,20 +157,16 @@ export class Page extends Component({
   ),
 }) {
   plait({ $, feedback }: PlaitProps): void | Promise<void> {
-    const header = $('header')
-    const [user, setUser] = useStore<{ name: string }>()
-    user.subscribe((user) => {
-      header.attr('user', user?.name)
-    })
+    const [header] = $<PlaitedElement>('header')
     feedback({
       onLogin() {
-        setUser({ name: 'Jane Doe' })
+        header.attr('user', 'Jane Doe')
       },
       onLogout() {
-        setUser({ name: null })
+        header.attr('user', null)
       },
       onCreateAccount() {
-        setUser({ name: 'Jane Doe' })
+        header.attr('user', 'Jane Doe')
       },
     })
   }

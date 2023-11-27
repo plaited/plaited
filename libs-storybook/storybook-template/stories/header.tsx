@@ -39,7 +39,7 @@ const [cls, stylesheet] = css`
 export class Header extends Component({
   tag: 'header-el',
   // dev: true,
-  observedTriggers: { user: 'user' },
+  observedTriggers: ['user'],
   template: (
     <header {...stylesheet}>
       <div className={cls['storybook-header']}>
@@ -71,8 +71,8 @@ export class Header extends Component({
           <h1>Acme</h1>
         </div>
         <div
-          dataTarget='button-bar'
-          dataTrigger={{ click: 'click' }}
+          data-target='button-bar'
+          data-trigger={{ click: 'click' }}
         >
           <Button
             size='small'
@@ -93,35 +93,35 @@ export class Header extends Component({
   static observedAttributes = ['user']
   attributeChangedCallback(name: string, oldValue: string, newValue: string): void {
     if (name === 'user') {
-      const bar = this.$('button-bar')
-      newValue ?
-        bar.render(
-          <>
-            <span className={cls['welcome']}>
-              Welcome, <b>{newValue}</b>!
-            </span>
-            <Button
-              size='small'
-              value='onLogout'
-              label='Log out'
-            />
-          </>,
-        )
-      : bar.render(
-          <>
-            <Button
-              size='small'
-              value='onLogin'
-              label='Log in'
-            />
-            <Button
-              primary
-              size='small'
-              value='onCreateAccount'
-              label='Sign up'
-            />
-          </>,
-        )
+      const [bar] = this.$('button-bar')
+      newValue
+        ? bar.render(
+            <>
+              <span className={cls['welcome']}>
+                Welcome, <b>{newValue}</b>!
+              </span>
+              <Button
+                size='small'
+                value='onLogout'
+                label='Log out'
+              />
+            </>
+          )
+        : bar.render(
+            <>
+              <Button
+                size='small'
+                value='onLogin'
+                label='Log in'
+              />
+              <Button
+                primary
+                size='small'
+                value='onCreateAccount'
+                label='Sign up'
+              />
+            </>
+          )
     }
   }
   plait({ feedback, host }: PlaitProps): void | Promise<void> {
