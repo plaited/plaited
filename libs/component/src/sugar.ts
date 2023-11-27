@@ -69,7 +69,7 @@ const mount = (
   for (let i = 0; i < length; i++) {
     const fragment = templates[i]
     if (isTypeOf<TemplateObject>(fragment, 'object')) content.push(handleTemplateObject(shadowRoot, fragment))
-    // if (isTypeOf<CloneFragment>(fragment, 'array')) content.push(...handleClone(shadowRoot, fragment))
+    if (isTypeOf<CloneFragment>(fragment, 'function')) content.push(...fragment())
   }
   position === 'beforebegin' ? el.before(...content)
   : position === 'afterbegin' ? el.prepend(...content)
