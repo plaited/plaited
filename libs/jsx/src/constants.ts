@@ -1,4 +1,4 @@
-import { VoidTags } from '@plaited/component-types'
+import { VoidTags, BooleanAttributes } from '@plaited/component-types'
 /** attribute used to manipulate a dom element */
 export const dataTarget = 'data-target'
 /** attribute used to wire a dom element to the component event listener */
@@ -32,7 +32,7 @@ export const voidTags = new Set<VoidTags>([
   'use',
 ])
 /** boolean attributes */
-export const booleanAttrs = new Set([
+export const booleanAttrs = new Set<BooleanAttributes>([
   'allowfullscreen',
   'async',
   'autofocus',
@@ -57,6 +57,12 @@ export const booleanAttrs = new Set([
   'required',
   'reversed',
   'selected',
+  // Electron attributes
+  'nodeintegration',
+  'nodeintegrationinsubframes',
+  'plugins',
+  'disablewebsecurity',
+  'allowpopups',
 ])
 
 export const primitives = new Set(['null', 'undefined', 'number', 'string', 'boolean', 'bigint'])

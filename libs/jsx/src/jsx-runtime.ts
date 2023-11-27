@@ -1,8 +1,8 @@
 import { createTemplate, Fragment } from './create-template.js'
-import { ElementTags } from '@plaited/component-types'
+import { ElementAttributeList } from '@plaited/component-types'
 export { createTemplate as h, createTemplate as jsx, createTemplate as jsxDEV, createTemplate as jsxs, Fragment }
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export declare namespace JSX {
-  interface IntrinsicElements extends ElementTags {}
+  interface IntrinsicElements extends ElementAttributeList {}
 }

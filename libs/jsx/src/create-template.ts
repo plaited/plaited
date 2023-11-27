@@ -8,6 +8,7 @@ import {
 } from './constants.js'
 import {
   Attrs,
+  BooleanAttributes,
   CreateTemplate,
   FunctionTemplate,
   PlaitedComponentConstructor,
@@ -77,7 +78,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       throw new Error(`Event handler attributes are not allowed:  [${key}]`)
     }
     /** test for and handle boolean attributes */
-    if (booleanAttrs.has(key)) {
+    if (booleanAttrs.has(key as BooleanAttributes)) {
       start.push(`${key} `)
       continue
     }

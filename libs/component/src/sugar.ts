@@ -8,6 +8,7 @@ import type {
   QuerySelector,
   CloneFragment,
   ForEachClone,
+  BooleanAttributes,
 } from '@plaited/component-types'
 import { booleanAttrs, dataTarget } from '@plaited/jsx/utils'
 import { isTypeOf } from '@plaited/utils'
@@ -47,7 +48,7 @@ const updateAttributes = (element: HTMLElement | SVGElement, attr: string, val: 
   // Remove the attribute if val is null or undefined, and it currently exists
   if (val === null && element.hasAttribute(attr)) return element.removeAttribute(attr)
   // Set the attribute if it is a boolean attribute and it does not exist
-  if (booleanAttrs.has(attr)) {
+  if (booleanAttrs.has(attr as BooleanAttributes)) {
     !element.hasAttribute(attr) && element.toggleAttribute(attr, true)
     return
   }

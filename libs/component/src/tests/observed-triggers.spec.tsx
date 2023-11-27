@@ -40,7 +40,7 @@ test('observed triggers', async (t) => {
         },
         add(detail: string) {
           const [header] = $('header')
-          header.insert('beforeend', `${detail}`)
+          header.insert('beforeend', <>{detail}</>)
         },
       })
     }

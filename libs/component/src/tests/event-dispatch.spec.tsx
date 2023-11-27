@@ -64,7 +64,7 @@ test('eventTriggers', async (t) => {
       feedback({
         append() {
           const [header] = $('header')
-          header.insert('beforeend', ' World!')
+          header.insert('beforeend', <> World!</>)
         },
       })
     }

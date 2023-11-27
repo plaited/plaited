@@ -78,7 +78,7 @@ test('dynamic island comms', async (t) => {
         },
         add(detail: { value: string }) {
           const [header] = $('header')
-          header.insert('beforeend', `${detail.value}`)
+          header.insert('beforeend', <>{detail.value}</>)
         },
       })
     }
