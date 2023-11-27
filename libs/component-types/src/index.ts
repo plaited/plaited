@@ -1359,7 +1359,7 @@ export type Sugar = {
   replace(this: HTMLElement | SVGElement, ...template: TemplateObject[]): void
   attr(this: HTMLElement | SVGElement, attr: Record<string, string | null | number | boolean>, val?: never): void
   attr(this: HTMLElement | SVGElement, attr: string, val?: string | null | number | boolean): string | null | void
-  clone<T>(this: HTMLElement | SVGElement, data: T[], cb: ($: QuerySelector, data: T) => void): CloneFragment
+  clone<T>(this: HTMLElement | SVGElement, cb: ($: QuerySelector, data: T) => void): (T) => CloneFragment
 }
 
 export type SugaredElement<T extends HTMLElement | SVGElement = HTMLElement | SVGElement> = T & Sugar
@@ -1412,24 +1412,6 @@ export interface PlaitedComponentConstructor {
   template: FunctionTemplate
   registry: Set<PlaitedComponentConstructor>
   new (): PlaitedElement
-}
-
-HTMLAnchorElement.prototype.href
-export type ComponentTypes = {
-  observedTriggers: {
-    [key: string]: Detail
-  }
-  observedAttributes: {
-    [key: string]: Detail
-  }
-  emit: {
-    [key: string]: {
-      deatil?: Detail
-      bubbles?: boolean
-      cancelable?: boolean
-      composed?: boolean
-    }
-  }
 }
 
 export type ComponentFunction = (args: {

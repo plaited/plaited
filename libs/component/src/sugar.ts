@@ -99,17 +99,19 @@ const sugar = (shadowRoot: ShadowRoot): Sugar => ({
       updateAttributes(this, key, attr[key])
     }
   },
-  clone(data, callback) {
+  clone(callback) {
     const content = this instanceof HTMLTemplateElement ? this.content : this
-    return () => {
-      const frags: DocumentFragment[] = []
+    return (data) => {
       const length = data.length
-      for (let i = 0; i < length; i++) {
-        const clone = content.cloneNode(true) as DocumentFragment
-        callback($(shadowRoot, clone), data[i])
-        frags.push(clone)
+      return () => {
+        const frags: DocumentFragment[] = []
+        for (let i = 0; i < length; i++) {
+          const clone = content.cloneNode(true) as DocumentFragment
+          callback($(shadowRoot, clone), data[i])
+          frags.push(clone)
+        }
+        return frags
       }
-      return frags
     }
   },
 })
