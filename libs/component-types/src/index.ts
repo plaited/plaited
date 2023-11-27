@@ -559,7 +559,7 @@ type ExcludeChildrenForVoidTags<T extends Tag, Attrs> = T extends VoidTags ? Omi
 export type Tag = string | `${string}-${string}` | FT | PlaitedComponentConstructor
 
 export interface CreateTemplate {
-  <T extends Tag>(tag: T, attrs:  ExcludeChildrenForVoidTags<T, InferAttrs<T>>): TemplateObject
+  <T extends Tag>(tag: T, attrs: ExcludeChildrenForVoidTags<T, InferAttrs<T>>): TemplateObject
 }
 
 export type Send = (recipient: string, detail: TriggerArgs) => void
@@ -586,16 +586,16 @@ export interface QuerySelector {
   ): SugaredElement<T>[]
 }
 
+/** Clone feature for handling list situations where structure is consistent but the data rendered is what is different. This is a performance feature */
+export type CloneFragment<T = unknown> = [DocumentFragment, T[], ($: QuerySelector, data: T) => void]
+export type ForEachClone = <T = unknown>(data: T[], cb: CloneFragment<T>['2']) => CloneFragment<T>
+
 export type Sugar = {
-  render(this: HTMLElement | SVGElement, ...content: (TemplateObject | Node | string)[]): void
-  insert(this: HTMLElement | SVGElement, position: Position, ...content: (TemplateObject | Node | string)[]): void
-  replace(this: HTMLElement | SVGElement, ...content: (TemplateObject | Node | string)[]): void
+  render(this: HTMLElement | SVGElement, ...template: TemplateObject[]): void
+  insert(this: HTMLElement | SVGElement, position: Position, ...template: TemplateObject[]): void
+  replace(this: HTMLElement | SVGElement, ...template: TemplateObject[]): void
   attr(this: HTMLElement | SVGElement, attr: Record<string, string | null | number | boolean>, val?: never): void
   attr(this: HTMLElement | SVGElement, attr: string, val?: string | null | number | boolean): string | null | void
-  clone<T>(
-    this: HTMLElement | SVGElement,
-    cb: ($: QuerySelector, data: T) => void,
-  ): (data: T) => HTMLElement | SVGElement | DocumentFragment
 }
 
 export type SugaredElement<T extends HTMLElement | SVGElement = HTMLElement | SVGElement> = T & Sugar
@@ -624,6 +624,7 @@ export type PlaitProps = {
    */
   host: PlaitedElement
   emit: Emit
+  clone: (template: TemplateObject) => ForEachClone
   connect: (comm: Publisher | Messenger) => () => void
 } & ReturnType<typeof bProgram>
 

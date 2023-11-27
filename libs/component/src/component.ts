@@ -19,7 +19,7 @@ import type {
   QuerySelector,
   FunctionTemplate,
 } from '@plaited/component-types'
-import { $ } from './sugar.js'
+import { $, clone } from './sugar.js'
 import { noop, trueTypeOf } from '@plaited/utils'
 
 const isElement = (node: Node): node is TriggerElement => node.nodeType === 1
@@ -137,6 +137,7 @@ export const Component: ComponentFunction = ({
           host: this,
           emit: this.#emit.bind(this),
           connect: this.#connect.bind(this),
+          clone: clone(this.#root),
           trigger,
           ...rest,
         })

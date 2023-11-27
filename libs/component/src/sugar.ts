@@ -4,6 +4,10 @@ import type {
   Sugar,
   SelectorMatch,
   TemplateObject,
+  Position,
+  QuerySelector,
+  CloneFragment,
+  ForEachClone,
 } from '@plaited/component-types'
 import { booleanAttrs, dataTarget } from '@plaited/jsx/utils'
 import { isTypeOf } from '@plaited/utils'
@@ -51,37 +55,61 @@ const updateAttributes = (element: HTMLElement | SVGElement, attr: string, val: 
   element.setAttribute(attr, `${val}`)
 }
 
-const handleTemplateObject = (el: HTMLElement | SVGElement, fragment: TemplateObject) => {
+const handleTemplateObject = (shadowRoot: ShadowRoot, fragment: TemplateObject) => {
   const { client, stylesheets } = fragment
-  stylesheets.size && void updateShadowRootStyles(el.getRootNode() as ShadowRoot, stylesheets)
+  stylesheets.size && void updateShadowRootStyles(shadowRoot, stylesheets)
   const template = document.createElement('template')
   template.innerHTML = client.join('')
   return template.content
 }
 
-const sugar: Sugar = {
-  render(...fragments) {
-    this.replaceChildren(
-      ...fragments.map((fragment) =>
-        isTypeOf<TemplateObject>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment,
-      ),
-    )
+const handleClone = (shadowRoot: ShadowRoot, fragment: CloneFragment) => {
+  const [content, data, cb] = fragment
+  const frags: DocumentFragment[] = []
+  const length = data.length
+  for (let i = 0; i < length; i++) {
+    const clone = content.cloneNode(true) as DocumentFragment
+    cb($(shadowRoot, clone), data[i])
+    frags.push(clone)
+  }
+  return frags
+}
+
+const mount = (
+  shadowRoot: ShadowRoot,
+  el: HTMLElement | SVGElement,
+  ...templates: ['replace' | Position | TemplateObject | CloneFragment, ...(TemplateObject | CloneFragment)[]]
+) => {
+  const content: DocumentFragment[] = []
+  const [position] = templates
+  const length = templates.length
+  for (let i = 0; i < length; i++) {
+    const fragment = templates[i]
+    if (isTypeOf<TemplateObject>(fragment, 'object')) content.push(handleTemplateObject(shadowRoot, fragment))
+    if (isTypeOf<CloneFragment>(fragment, 'array')) content.push(...handleClone(shadowRoot, fragment))
+  }
+  position === 'beforebegin' ? el.before(...content)
+  : position === 'afterbegin' ? el.prepend(...content)
+  : position === 'beforeend' ? el.append(...content)
+  : position === 'afterend' ? el.after(...content)
+  : position === 'replace' ? el.replaceWith(...content)
+  : el.replaceChildren(...content)
+}
+
+export const clone =
+  (shadowRoot: ShadowRoot) =>
+  (template: TemplateObject): ForEachClone =>
+  (data, cb) => [handleTemplateObject(shadowRoot, template), data, cb]
+
+const sugar = (shadowRoot: ShadowRoot): Sugar => ({
+  render(first, ...templates) {
+    mount(shadowRoot, this, first, ...templates)
   },
-  insert(position, ...fragments) {
-    const frag = fragments.map((fragment) =>
-      isTypeOf<TemplateObject>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment,
-    )
-    position === 'beforebegin' ? this.before(...frag)
-    : position === 'afterbegin' ? this.prepend(...frag)
-    : position === 'beforeend' ? this.append(...frag)
-    : this.after(...frag)
+  insert(...templates) {
+    mount(shadowRoot, this, ...templates)
   },
-  replace(...fragments) {
-    this.replaceWith(
-      ...fragments.map((fragment) =>
-        isTypeOf<TemplateObject>(fragment, 'object') ? handleTemplateObject(this, fragment) : fragment,
-      ),
-    )
+  replace(...templates) {
+    mount(shadowRoot, this, 'replace', ...templates)
   },
   attr(attr, val) {
     if (isTypeOf<string>(attr, 'string')) {
@@ -93,36 +121,33 @@ const sugar: Sugar = {
       updateAttributes(this, key, attr[key])
     }
   },
-  clone(callback) {
-    return (data) => {
-      const clone =
-        this instanceof HTMLTemplateElement ?
-          (this.content.cloneNode(true) as DocumentFragment)
-        : (this.cloneNode(true) as HTMLElement | SVGElement)
-      callback($(clone), data)
-      return clone
-    }
-  },
-}
+})
 
 const assignedElements = new WeakSet<HTMLElement | SVGElement>()
 
 const hasSugar = (element: HTMLElement | SVGElement): element is SugaredElement => assignedElements.has(element)
 
 const assignSugar = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+  shadowRoot: ShadowRoot,
   elements: (HTMLElement | SVGElement)[],
 ) => {
   const length = elements.length
   for (let i = 0; i < length; i++) {
     const el = elements[i]
     if (hasSugar(el)) continue
-    const sugarEl = Object.assign(el, sugar)
+    const sugarEl = Object.assign(el, sugar(shadowRoot))
     assignedElements.add(sugarEl)
   }
   return elements as SugaredElement<T>[]
 }
 
 export const $ =
-  (context: DocumentFragment | HTMLElement | SVGElement | SugaredElement) =>
+  (
+    shadowRoot: ShadowRoot,
+    context: DocumentFragment | HTMLElement | SVGElement | SugaredElement = shadowRoot,
+  ): QuerySelector =>
   <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(target: string, match: SelectorMatch = '=') =>
-    assignSugar<T>(Array.from(context.querySelectorAll<HTMLElement | SVGElement>(`[${dataTarget}${match}"${target}"]`)))
+    assignSugar<T>(
+      shadowRoot,
+      Array.from(context.querySelectorAll<HTMLElement | SVGElement>(`[${dataTarget}${match}"${target}"]`)),
+    )
