@@ -1350,16 +1350,17 @@ export interface QuerySelector {
 }
 
 /** Clone feature for handling list situations where structure is consistent but the data rendered is what is different. This is a performance feature */
-/** Clone feature for handling list situations where structure is consistent but the data rendered is what is different. This is a performance feature */
-export type CloneFragment = () => DocumentFragment[]
+export type Clone = <T>(
+  template: TemplateObject,
+  callback: ($: QuerySelector, data: T) => void,
+) => (data: T) => DocumentFragment
 
 export type Sugar = {
-  render(this: HTMLElement | SVGElement, ...template: TemplateObject[]): void
-  insert(this: HTMLElement | SVGElement, position: Position, ...template: TemplateObject[]): void
-  replace(this: HTMLElement | SVGElement, ...template: TemplateObject[]): void
+  render(this: HTMLElement | SVGElement, ...template: (TemplateObject | DocumentFragment)[]): void
+  insert(this: HTMLElement | SVGElement, position: Position, ...template: (TemplateObject | DocumentFragment)[]): void
+  replace(this: HTMLElement | SVGElement, ...template: (TemplateObject | DocumentFragment)[]): void
   attr(this: HTMLElement | SVGElement, attr: Record<string, string | null | number | boolean>, val?: never): void
   attr(this: HTMLElement | SVGElement, attr: string, val?: string | null | number | boolean): string | null | void
-  clone<T>(this: HTMLElement | SVGElement, cb: ($: QuerySelector, data: T) => void): (T) => CloneFragment
 }
 
 export type SugaredElement<T extends HTMLElement | SVGElement = HTMLElement | SVGElement> = T & Sugar
@@ -1388,6 +1389,7 @@ export type PlaitProps = {
    */
   host: PlaitedElement
   emit: Emit
+  clone: Clone
   connect: (comm: Publisher | Messenger) => () => void
 } & ReturnType<typeof bProgram>
 

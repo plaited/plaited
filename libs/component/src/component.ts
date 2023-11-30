@@ -19,7 +19,7 @@ import type {
   QuerySelector,
   FunctionTemplate,
 } from '@plaited/component-types'
-import { $, cssCache } from './sugar.js'
+import { $, cssCache, clone } from './sugar.js'
 import { noop, trueTypeOf } from '@plaited/utils'
 
 const isElement = (node: Node): node is TriggerElement => node.nodeType === 1
@@ -137,6 +137,7 @@ export const Component: ComponentFunction = ({
           $: this.$,
           host: this,
           emit: this.#emit.bind(this),
+          clone: clone(this.#root),
           connect: this.#connect.bind(this),
           trigger,
           ...rest,
@@ -150,8 +151,12 @@ export const Component: ComponentFunction = ({
         this.#trigger({
           type: `disconnected(${this.dataset.address ?? this.tagName.toLowerCase()})`,
         })
-      this.#subscriptions.forEach((unsubscribe) => unsubscribe())
-      this.#subscriptions.clear()
+      if (this.#subscriptions.size) {
+        this.#subscriptions.forEach((unsubscribe) => {
+          unsubscribe()
+        })
+        this.#subscriptions.clear()
+      }
     }
     /** Manually disconnect subscription to messenger or publisher */
     #disconnect(cb: (() => void) | undefined) {
