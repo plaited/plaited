@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { bProgram, Detail, DevCallback, Strategy, Trigger, TriggerArgs } from '@plaited/behavioral'
+import { bProgram, DevCallback, Strategy, Trigger, TriggerArgs } from '@plaited/behavioral'
 import * as CSS from 'csstype'
 
 type Booleanish = boolean | 'true' | 'false'
@@ -455,12 +455,12 @@ type DetailedAreaHTMLAttributes = DetailedHTMLAttributes & {
 }
 
 type DetailedBaseHTMLAttributes = DetailedHTMLAttributes & {
-  href?: string | undefined
-  target?: string | undefined
+  href?: string
+  target?: string
 }
 
 type DetailedBlockquoteHTMLAttributes = DetailedHTMLAttributes & {
-  cite?: string | undefined
+  cite?: string
 }
 
 type DetailedButtonHTMLAttributes = DetailedHTMLAttributes & {
@@ -563,8 +563,8 @@ type DetailedImgHTMLAttributes = DetailedHTMLAttributes & {
 }
 
 type DetailedInsHTMLAttributes = DetailedHTMLAttributes & {
-  cite?: string | undefined
-  datetime?: string | undefined
+  cite?: string
+  datetime?: string
 }
 
 type HTMLInputTypeAttribute =
@@ -712,8 +712,8 @@ type DetailedOlHTMLAttributes = DetailedHTMLAttributes & {
 }
 
 type DetailedOptgroupHTMLAttributes = DetailedHTMLAttributes & {
-  disabled?: boolean | undefined
-  label?: string | undefined
+  disabled?: boolean
+  label?: string
 }
 
 type DetailedOptionHTMLAttributes = DetailedHTMLAttributes & {

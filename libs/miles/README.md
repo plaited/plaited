@@ -1,0 +1,6 @@
+# @plaited/miles
+
+CSS-in-JS library for working with non Plaited, light DOM only, UI frameworks. This library is standalone and also leveraged of our pro offering. It' allows you to write css in template literals that are automatically scoped like with CSS modules and attached to the Documents `adoptedStyleSheets` via [constructable stylesheets](https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleSheet/CSSStyleSheet). It prevents duplicate application
+
+
+This package 
