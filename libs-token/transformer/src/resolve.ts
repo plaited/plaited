@@ -2,7 +2,7 @@
  * Utility helpers for resolving aliased values in tokens object
  */
 
-import { DesignToken, DesignTokenGroup, AliasValue } from '@plaited/token-types'
+import { DesignToken, DesignTokenGroup, AliasValue } from '../../types/dist/index.js'
 import { camelCase, kebabCase } from '@plaited/utils'
 
 const getResolvedValue = (path: string[], tokens: DesignTokenGroup | undefined): DesignToken | undefined => {

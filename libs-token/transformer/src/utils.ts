@@ -1,5 +1,5 @@
 import { Queries, ColorSchemes } from './types.js'
-import { ColorValue, AliasValue, $Context } from '@plaited/token-types'
+import { ColorValue, AliasValue, $Context } from '../../types/dist/index.js'
 
 export const getRem = (val: number, base: number) => `${val / base}rem`
 

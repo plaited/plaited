@@ -1,4 +1,4 @@
-import type { StorybookConfig } from '@plaited/storybook-vite'
+import type { StorybookConfig } from '../../vite/dist/index.js'
 
 const config: StorybookConfig = {
   stories: ['../stories/**/*.mdx', '../stories/**/*.stories.@(js|jsx|mjs|ts|tsx)'],

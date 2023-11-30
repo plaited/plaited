@@ -1,4 +1,4 @@
-import { $Context, DesignToken, StaticToken, ContextualToken, BaseToken, DesignValue } from '@plaited/token-types'
+import { $Context, DesignToken, StaticToken, ContextualToken, BaseToken, DesignValue } from '../../types/dist/index.js'
 import { Queries, ColorSchemes } from './types.js'
 
 export const isValidContext = ({

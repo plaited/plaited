@@ -1,23 +1,22 @@
-import { GapValue, GapToken, AliasValue } from '@plaited/token-types'
+import { DimensionLikeTokens, DimensionLikeValues } from '../../../types/dist/index.js'
 import { Formatter } from '../types.js'
 import { hasAlias, resolveCSSVar } from '../resolve.js'
 import { kebabCase } from '@plaited/utils'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'
 import { getRule, getRem } from '../utils.js'
 
-const gapCallback = (baseFontSize: number) => ($value: Exclude<GapValue, AliasValue>) =>
-  typeof $value === 'string' ? $value : getRem($value, baseFontSize)
-
-export const gap: Formatter<GapToken> = (token, { allTokens, tokenPath, baseFontSize, ...contexts }) => {
-  const cb = gapCallback(baseFontSize)
+export const dimension: Formatter<DimensionLikeTokens> = (
+  token,
+  { allTokens, tokenPath, baseFontSize, ...contexts },
+) => {
   const prop = kebabCase(tokenPath.join(' '))
-  if (isStaticToken<GapToken, GapValue>(token)) {
+  if (isStaticToken<DimensionLikeTokens, DimensionLikeValues>(token)) {
     const { $value } = token
     if (hasAlias($value)) return ''
-    return getRule({ prop, value: cb($value) })
+    return getRule({ prop, value: getRem($value, baseFontSize) })
   }
   const toRet: string[] = []
-  if (isContextualToken<GapToken, GapValue>(token)) {
+  if (isContextualToken<DimensionLikeTokens, DimensionLikeValues>(token)) {
     const {
       $value,
       $extensions: { 'plaited-context': $context },
@@ -30,14 +29,7 @@ export const gap: Formatter<GapToken> = (token, { allTokens, tokenPath, baseFont
       }
       const context = { type: $context, id }
       if (isValidContext({ context, ...contexts })) {
-        toRet.push(
-          getRule({
-            prop,
-            value: cb(contextValue),
-            context,
-            ...contexts,
-          }),
-        )
+        toRet.push(getRule({ prop, value: getRem(contextValue, baseFontSize), context, ...contexts }))
       }
     }
   }

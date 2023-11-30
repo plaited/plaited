@@ -2,7 +2,7 @@ import { Formatter, Queries, ColorSchemes } from '../types.js'
 import { camelCase, kebabCase } from '@plaited/utils'
 import { hasAlias, resolveTSVar } from '../resolve.js'
 import { isContextualToken, isValidContext } from '../context-guard.js'
-import { DesignToken, DesignValue } from '@plaited/token-types'
+import { DesignToken, DesignValue } from '../../../types/dist/index.js'
 
 const hasValidContext = (
   token: DesignToken,

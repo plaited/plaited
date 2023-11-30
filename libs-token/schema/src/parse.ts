@@ -4,7 +4,7 @@
  * {@see https://github.com/easy-json-schema/easy-json-schema}
  */
 import { trueTypeOf } from '@plaited/utils'
-import { DesignToken, DesignTokenGroup } from '@plaited/token-types'
+import { DesignToken, DesignTokenGroup } from '../../types/dist/index.js'
 
 const supportType = ['string', 'number', 'array', 'object', 'boolean', 'integer']
 

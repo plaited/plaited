@@ -18,7 +18,7 @@ import type {
   TriggerElement,
   QuerySelector,
   FunctionTemplate,
-} from '@plaited/component-types'
+} from '../../types/dist/index.js'
 import { $, cssCache, clone } from './sugar.js'
 import { noop, trueTypeOf } from '@plaited/utils'
 

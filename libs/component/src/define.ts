@@ -1,4 +1,4 @@
-import { PlaitedComponentConstructor } from '@plaited/component-types'
+import { PlaitedComponentConstructor } from '../../types/dist/index.js'
 
 export const define = (comp: PlaitedComponentConstructor) => {
   const { registry, tag } = comp

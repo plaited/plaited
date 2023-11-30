@@ -13,7 +13,7 @@ import {
   FunctionTemplate,
   PlaitedComponentConstructor,
   VoidTags,
-} from '@plaited/component-types'
+} from '../../types/dist/index.js'
 /** create server element string representation */
 const ensureArray = <T>(obj: T | T[] = []) => (!Array.isArray(obj) ? [obj] : obj)
 

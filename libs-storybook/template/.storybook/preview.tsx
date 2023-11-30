@@ -1,5 +1,5 @@
 import type { Preview } from '@plaited/storybook'
-import { createFragment } from '@plaited/storybook-utils'
+import { createFragment } from '../../utils/dist/index.js'
 
 const preview: Preview = {
   decorators: [

@@ -1,5 +1,5 @@
 import { createTemplate, Fragment } from './create-template.js'
-import { ElementAttributeList } from '@plaited/component-types'
+import { ElementAttributeList } from '../../types/dist/index.js'
 export { createTemplate as h, createTemplate as jsx, createTemplate as jsxDEV, createTemplate as jsxs, Fragment }
 
 // eslint-disable-next-line @typescript-eslint/no-namespace

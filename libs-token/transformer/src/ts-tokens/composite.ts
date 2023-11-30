@@ -1,4 +1,4 @@
-import { AliasValue, FlexToken, GridToken, TypographyToken } from '@plaited/token-types'
+import { AliasValue, FlexToken, GridToken, TypographyToken } from '../../../types/dist/index.js'
 import { Formatter } from '../types.js'
 import { camelCase } from '@plaited/utils'
 import { hasAlias, resolveTSVar } from '../resolve.js'

@@ -1,4 +1,4 @@
-import { createFragment } from '@plaited/storybook-utils'
+import { createFragment } from '../../utils/dist/index.js'
 import { StoryObj, Meta } from '@plaited/storybook'
 import { withActions } from '@storybook/addon-actions/decorator'
 import { Header } from './header.js'

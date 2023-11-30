@@ -1,22 +1,22 @@
-import { DimensionLikeTokens, DimensionLikeValues } from '@plaited/token-types'
+import { PrimitiveLikeTokens, PrimitiveLikeValues } from '../../../types/dist/index.js'
 import { Formatter } from '../types.js'
 import { hasAlias, resolveCSSVar } from '../resolve.js'
 import { kebabCase } from '@plaited/utils'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'
-import { getRule, getRem } from '../utils.js'
+import { getRule } from '../utils.js'
 
-export const dimension: Formatter<DimensionLikeTokens> = (
+export const defaultFormat: Formatter<PrimitiveLikeTokens> = (
   token,
-  { allTokens, tokenPath, baseFontSize, ...contexts },
+  { allTokens, tokenPath, baseFontSize: _, ...contexts },
 ) => {
   const prop = kebabCase(tokenPath.join(' '))
-  if (isStaticToken<DimensionLikeTokens, DimensionLikeValues>(token)) {
+  if (isStaticToken<PrimitiveLikeTokens, PrimitiveLikeValues>(token)) {
     const { $value } = token
     if (hasAlias($value)) return ''
-    return getRule({ prop, value: getRem($value, baseFontSize) })
+    return getRule({ prop, value: Array.isArray($value) ? $value.join(' ') : $value })
   }
   const toRet: string[] = []
-  if (isContextualToken<DimensionLikeTokens, DimensionLikeValues>(token)) {
+  if (isContextualToken<PrimitiveLikeTokens, PrimitiveLikeValues>(token)) {
     const {
       $value,
       $extensions: { 'plaited-context': $context },
@@ -29,7 +29,14 @@ export const dimension: Formatter<DimensionLikeTokens> = (
       }
       const context = { type: $context, id }
       if (isValidContext({ context, ...contexts })) {
-        toRet.push(getRule({ prop, value: getRem(contextValue, baseFontSize), context, ...contexts }))
+        toRet.push(
+          getRule({
+            prop,
+            value: Array.isArray(contextValue) ? contextValue.join(' ') : contextValue,
+            context,
+            ...contexts,
+          }),
+        )
       }
     }
   }

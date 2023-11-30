@@ -1,4 +1,4 @@
-import { TransitionValue, TransitionToken, AliasValue, DesignTokenGroup } from '@plaited/token-types'
+import { TransitionValue, TransitionToken, AliasValue, DesignTokenGroup } from '../../../types/dist/index.js'
 import { Formatter } from '../types.js'
 import { hasAlias, resolveCSSVar } from '../resolve.js'
 import { kebabCase } from '@plaited/utils'

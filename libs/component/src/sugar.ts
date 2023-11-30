@@ -7,7 +7,7 @@ import type {
   QuerySelector,
   BooleanAttributes,
   Clone,
-} from '@plaited/component-types'
+} from '../../types/dist/index.js'
 import { booleanAttrs, dataTarget } from '@plaited/jsx/utils'
 import { isTypeOf } from '@plaited/utils'
 

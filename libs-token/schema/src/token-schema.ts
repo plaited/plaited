@@ -1,4 +1,4 @@
-import { DesignTokenGroup } from '@plaited/token-types'
+import { DesignTokenGroup } from '../../types/dist/index.js'
 import { parse } from './parse.js'
 
 /**

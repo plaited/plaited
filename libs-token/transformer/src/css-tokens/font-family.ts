@@ -1,19 +1,27 @@
-import { ColorToken, ColorValue } from '@plaited/token-types'
+import { FontFamilyValue, FontFamilyToken, AliasValue } from '../../../types/dist/index.js'
 import { Formatter } from '../types.js'
 import { hasAlias, resolveCSSVar } from '../resolve.js'
 import { kebabCase } from '@plaited/utils'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'
-import { getRule, getColor } from '../utils.js'
+import { getRule } from '../utils.js'
 
-export const color: Formatter<ColorToken> = (token, { allTokens, tokenPath, baseFontSize: _, ...contexts }) => {
+const fontFamilyCallback = ($value: Exclude<FontFamilyValue, AliasValue>) =>
+  Array.isArray($value) ? $value.map((font) => (/\s/g.test(font) ? `"${font}"` : font)).join(',')
+  : /\s/g.test($value) ? `"${$value}"`
+  : $value
+
+export const fontFamily: Formatter<FontFamilyToken> = (
+  token,
+  { allTokens, tokenPath, baseFontSize: _, ...contexts },
+) => {
   const prop = kebabCase(tokenPath.join(' '))
-  if (isStaticToken<ColorToken, ColorValue>(token)) {
+  if (isStaticToken<FontFamilyToken, FontFamilyValue>(token)) {
     const { $value } = token
     if (hasAlias($value)) return ''
-    return getRule({ prop, value: getColor($value) })
+    return getRule({ prop, value: fontFamilyCallback($value) })
   }
   const toRet: string[] = []
-  if (isContextualToken<ColorToken, ColorValue>(token)) {
+  if (isContextualToken<FontFamilyToken, FontFamilyValue>(token)) {
     const {
       $value,
       $extensions: { 'plaited-context': $context },
@@ -26,7 +34,7 @@ export const color: Formatter<ColorToken> = (token, { allTokens, tokenPath, base
       }
       const context = { type: $context, id }
       if (isValidContext({ context, ...contexts })) {
-        toRet.push(getRule({ prop, value: getColor(contextValue), context, ...contexts }))
+        toRet.push(getRule({ prop, value: fontFamilyCallback(contextValue), context, ...contexts }))
       }
     }
   }

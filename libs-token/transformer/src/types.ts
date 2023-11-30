@@ -1,4 +1,4 @@
-import { DesignTokenGroup, DesignToken } from '@plaited/token-types'
+import { DesignTokenGroup, DesignToken } from '../../types/dist/index.js'
 
 export type Queries = {
   [key: string]: string

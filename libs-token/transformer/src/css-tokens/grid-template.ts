@@ -1,4 +1,9 @@
-import { GridMinMaxArgs, GridTemplateValue, GridTemplateToken, GridTemplateAreasValue } from '@plaited/token-types'
+import {
+  GridMinMaxArgs,
+  GridTemplateValue,
+  GridTemplateToken,
+  GridTemplateAreasValue,
+} from '../../../types/dist/index.js'
 import { Formatter } from '../types.js'
 import { hasAlias, resolveCSSVar } from '../resolve.js'
 import { kebabCase } from '@plaited/utils'
