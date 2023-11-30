@@ -12,6 +12,7 @@ import {
   CreateTemplate,
   FunctionTemplate,
   PlaitedComponentConstructor,
+  TemplateObject,
   VoidTags,
 } from '@plaited/component-types'
 /** create server element string representation */
@@ -19,6 +20,13 @@ const ensureArray = <T>(obj: T | T[] = []) => (!Array.isArray(obj) ? [obj] : obj
 
 const isPlaitedComponent = (obj: PlaitedComponentConstructor | FunctionTemplate): obj is PlaitedComponentConstructor =>
   'template' in obj
+
+export const isTemplateObject = (child: unknown): child is TemplateObject =>
+  isTypeOf<Record<string, unknown>>(child, 'object') &&
+  'client' in child &&
+  'stylesheets' in child &&
+  'server' in child &&
+  'registry' in child
 /** createTemplate function used for ssr */
 export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const {
@@ -114,13 +122,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   for (let i = 0; i < length; i++) {
     const child = children[i]
     /** P1 child IS {@type Template}*/
-    if (
-      isTypeOf<Record<string, unknown>>(child, 'object') &&
-      'client' in child &&
-      'stylesheets' in child &&
-      'server' in child &&
-      'registry' in child
-    ) {
+    if (isTemplateObject(child)) {
       clientEnd.push(...child.client)
       serverEnd.push(...child.server)
       for (const sheet of child.stylesheets) stylesheets.add(sheet)
@@ -130,7 +132,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     /** P2 typeof child is NOT a valid primitive child then skip and do nothing */
     if (!validPrimitiveChildren.has(typeof child)) continue
     /** P3 child IS {@type Primitive} */
-    const str = trusted ? `${child}`.trim() : escape(`${child}`).trim()
+    const str = trusted ? `${child}` : escape(`${child}`)
     clientEnd.push(str)
     serverEnd.push(str)
   }
@@ -166,16 +168,16 @@ export const Fragment = ({ children: _children }: Attrs) => {
   const length = children.length
   for (let i = 0; i < length; i++) {
     const child = children[i]
-    if (typeof child === 'string') {
-      const safeChild = escape(child)
-      client.push(safeChild)
-      server.push(safeChild)
-      continue
+    if (isTemplateObject(child)) {
+      client.push(...child.client)
+      server.push(...child.server)
+      for (const sheet of child.stylesheets) stylesheets.add(sheet)
+      for (const component of child.registry) registry.add(component)
     }
-    client.push(...child.client)
-    server.push(...child.server)
-    for (const sheet of child.stylesheets) stylesheets.add(sheet)
-    for (const component of child.registry) registry.add(component)
+    if (!validPrimitiveChildren.has(typeof child)) continue
+    const safeChild = escape(`${child}`)
+    client.push(safeChild)
+    server.push(safeChild)
   }
   return {
     client,
