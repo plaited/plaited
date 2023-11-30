@@ -6,7 +6,7 @@
  */
 export const findByText = <T extends HTMLElement = HTMLElement>(
   searchText: string | RegExp,
-  context?: HTMLElement
+  context?: HTMLElement,
 ): Promise<T | undefined> => {
   const searchInShadowDom = (node: Node): T | undefined => {
     if (node.nodeType === Node.TEXT_NODE) {

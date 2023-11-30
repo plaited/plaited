@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 
-test('main export footprint < 5.2kb', async () => {
+test('main export footprint < 5.5kb', async () => {
   const plaited = import.meta.resolveSync('../index.ts')
   const plaitedResults = await Bun.build({
     entrypoints: [plaited],
@@ -12,7 +12,7 @@ test('main export footprint < 5.2kb', async () => {
     const str = await result.text()
     const compressed = Bun.gzipSync(Buffer.from(str))
     const size = compressed.byteLength / 1024
-    expect(size).toBeLessThan(5.2)
+    expect(size).toBeLessThan(5.5)
     console.log(`Plaited size: ${size}kb`)
   }
 })

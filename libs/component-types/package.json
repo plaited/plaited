@@ -25,10 +25,12 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc --project tsconfig.json"
+    "build": "tsc --project tsconfig.json",
+    "build-watch": "bun run build --watch"
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/behavioral": "5.3.0"
+    "@plaited/behavioral": "5.3.0",
+    "csstype": "3.1.2"
   }
 }

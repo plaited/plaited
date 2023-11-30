@@ -19,7 +19,7 @@ import type {
   QuerySelector,
   FunctionTemplate,
 } from '@plaited/component-types'
-import { $ } from './sugar.js'
+import { $, cssCache } from './sugar.js'
 import { noop, trueTypeOf } from '@plaited/utils'
 
 const isElement = (node: Node): node is TriggerElement => node.nodeType === 1
@@ -113,6 +113,7 @@ export const Component: ComponentFunction = ({
           this.#root.adoptedStyleSheets = adoptedStyleSheets
         }
       }
+      cssCache.set(this.#root, new Set<string>([...template.stylesheets]))
       this.trigger = this.trigger.bind(this)
       this.$ = $(this.#root)
     }

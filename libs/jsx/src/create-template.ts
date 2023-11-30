@@ -6,7 +6,14 @@ import {
   validPrimitiveChildren,
   dataTrigger as dataTriggerKey,
 } from './constants.js'
-import { Attrs, CreateTemplate, FunctionTemplate, PlaitedComponentConstructor } from '@plaited/component-types'
+import {
+  Attrs,
+  BooleanAttributes,
+  CreateTemplate,
+  FunctionTemplate,
+  PlaitedComponentConstructor,
+  VoidTags,
+} from '@plaited/component-types'
 /** create server element string representation */
 const ensureArray = <T>(obj: T | T[] = []) => (!Array.isArray(obj) ? [obj] : obj)
 
@@ -71,7 +78,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       throw new Error(`Event handler attributes are not allowed:  [${key}]`)
     }
     /** test for and handle boolean attributes */
-    if (booleanAttrs.has(key)) {
+    if (booleanAttrs.has(key as BooleanAttributes)) {
       start.push(`${key} `)
       continue
     }
@@ -88,7 +95,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   }
 
   /** Our tag is a void tag so we can return it once we apply attributes */
-  if (voidTags.has(tag)) {
+  if (voidTags.has(tag as VoidTags)) {
     start.push('/>')
     return {
       client: start,

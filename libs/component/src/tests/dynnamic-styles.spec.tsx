@@ -20,23 +20,23 @@ test('dynamic styles', async (t) => {
   }) {
     plait({ $ }: PlaitProps) {
       const [target] = $<HTMLDivElement>('target')
-      target.render(
+      target.insert(
+        'beforeend',
         <div
           {...stylesheet}
           className={cls.noRepeat}
         >
           construable stylesheet applied once
         </div>,
-        'beforeend',
       )
-      target.render(
+      target.insert(
+        'beforeend',
         <div
           {...stylesheet}
           className={cls.repeat}
         >
           not applied
         </div>,
-        'beforeend',
       )
     }
   }
@@ -77,14 +77,14 @@ test('with default and dynamic styles', async (t) => {
   }) {
     plait({ $ }: PlaitProps) {
       const [target] = $<HTMLDivElement>('target-2')
-      target.render(
+      target.insert(
+        'beforeend',
         <div
           {...stylesheets(stylesheet, stylesheet2)}
           className={cls2.override}
         >
           construable stylesheet applied only for second sheet
         </div>,
-        'beforeend',
       )
     }
   }

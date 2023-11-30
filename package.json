@@ -16,7 +16,7 @@
     "lint:fix": "bun run lint --fix --quiet",
     "postinstall": "husky install",
     "prepare": "husky install",
-    "prettier": "prettier --experimental-ternaries . --write",
+    "prettier": "prettier . --write",
     "test": "lerna run test --stream"
   },
   "lint-staged": {
@@ -32,7 +32,7 @@
     "> 2%"
   ],
   "devDependencies": {
-    "@plaited/eslint-prettier-config": "1.0.2",
+    "@plaited/eslint-prettier-config": "1.0.3",
     "@commitlint/cli": "18.4.3",
     "@commitlint/config-conventional": "18.4.3",
     "@commitlint/config-lerna-scopes": "18.4.3",
@@ -46,7 +46,8 @@
     "husky": "8.0.3",
     "lerna": "8.0.0",
     "lint-staged": "15.1.0",
-    "playwright": "^1.40.0",
+    "playwright": "1.40.0",
+    "prettier": "3.1.0",
     "sinon": "17.0.1",
     "typescript": "5.3.2"
   }
