@@ -12,7 +12,6 @@ import {
   CreateTemplate,
   FunctionTemplate,
   PlaitedComponentConstructor,
-  TemplateObject,
   VoidTags,
 } from '@plaited/component-types'
 /** create server element string representation */
@@ -21,12 +20,6 @@ const ensureArray = <T>(obj: T | T[] = []) => (!Array.isArray(obj) ? [obj] : obj
 const isPlaitedComponent = (obj: PlaitedComponentConstructor | FunctionTemplate): obj is PlaitedComponentConstructor =>
   'template' in obj
 
-export const isTemplateObject = (child: unknown): child is TemplateObject =>
-  isTypeOf<Record<string, unknown>>(child, 'object') &&
-  'client' in child &&
-  'stylesheets' in child &&
-  'server' in child &&
-  'registry' in child
 /** createTemplate function used for ssr */
 export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const {
@@ -110,6 +103,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       server: start,
       stylesheets,
       registry,
+      $: '🦄',
     }
   }
   start.push('>')
@@ -122,7 +116,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   for (let i = 0; i < length; i++) {
     const child = children[i]
     /** P1 child IS {@type Template}*/
-    if (isTemplateObject(child)) {
+    if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === '🦄') {
       clientEnd.push(...child.client)
       serverEnd.push(...child.server)
       for (const sheet of child.stylesheets) stylesheets.add(sheet)
@@ -154,6 +148,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     server: [...start, ...serverEnd],
     stylesheets,
     registry,
+    $: '🦄',
   }
 }
 
@@ -168,7 +163,7 @@ export const Fragment = ({ children: _children }: Attrs) => {
   const length = children.length
   for (let i = 0; i < length; i++) {
     const child = children[i]
-    if (isTemplateObject(child)) {
+    if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === '🦄') {
       client.push(...child.client)
       server.push(...child.server)
       for (const sheet of child.stylesheets) stylesheets.add(sheet)
@@ -184,5 +179,6 @@ export const Fragment = ({ children: _children }: Attrs) => {
     stylesheets,
     server,
     registry,
+    $: '🦄',
   }
 }

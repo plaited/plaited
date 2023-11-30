@@ -10,6 +10,7 @@ export type TemplateObject = {
   server: string[]
   stylesheets: Set<string>
   registry: Set<PlaitedComponentConstructor>
+  $: '🦄'
 }
 
 export type Child = string | TemplateObject

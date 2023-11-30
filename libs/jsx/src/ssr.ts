@@ -1,7 +1,6 @@
 import { TemplateObject } from '@plaited/component-types'
-import { escape } from '@plaited/utils'
+import { escape, isTypeOf } from '@plaited/utils'
 import { validPrimitiveChildren } from './constants.js'
-import { isTemplateObject } from './create-template.js'
 if (typeof global.HTMLElement === 'undefined') {
   // @ts-ignore node env
   global.HTMLElement = class HTMLElement {}
@@ -13,7 +12,7 @@ export const ssr = (...templates: TemplateObject[]) => {
   const length = templates.length
   for (let i = 0; i < length; i++) {
     const child = templates[i]
-    if (isTemplateObject(child)) {
+    if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === '🦄') {
       arr.push(...child.server)
       for (const sheet of child.stylesheets) {
         stylesheets.add(sheet)
