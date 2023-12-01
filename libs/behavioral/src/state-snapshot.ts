@@ -1,42 +1,28 @@
-// import { ParameterIdiom, RequestIdiom, StateSnapshot } from './types.js'
+import { ensureArray } from '@plaited/utils'
+import { Parameter, BPEvent, StateSnapshot } from './types.js'
+import { isInParameter, isPendingRequest } from './utils.js'
+export const stateSnapshot: StateSnapshot = ({ bids, selectedEvent }) => {
+  const ruleSets: {
+    thread: string
+    request?: BPEvent[]
+    waitFor?: Parameter[]
+    block?: Parameter[]
+    priority: number
+  }[] = []
+  for (const bid of bids) {
+    const { generator: _, waitFor, block, request, thread, priority, trigger } = bid
+    const obj = {
+      thread,
+      priority,
+    }
+    // !trigger && waitFor && Object.assign(obj, { waitFor: ensureArray(waitFor).some(isInParameter(selectedEvent)) })
+    // block && Object.assign(obj, {block: ensureArray(block).some(isInParameter(selectedEvent))})
+    request && Object.assign(obj, {request: ensureArray(request).some(isPendingRequest(selectedEvent))})
 
-// export const stateSnapshot: StateSnapshot = ({ bids, selectedEvent }) => {
-//   const ruleSets: {
-//     thread: string
-//     request?: RequestIdiom[]
-//     waitFor?: ParameterIdiom[]
-//     block?: ParameterIdiom[]
-//     priority: number
-//   }[] = []
-//   for (const bid of bids) {
-//     const { generator: _, waitFor, block, request, thread, priority, trigger } = bid
-//     const obj = {
-//       thread,
-//       priority,
-//     }
-//     let selected
-//     waitFor &&
-//       Object.assign(obj, {
-//         waitFor: Array.isArray(waitFor) ? waitFor : [waitFor],
-//       })
-//     block &&
-//       Object.assign(obj, {
-//         block: Array.isArray(block) ? block : [block],
-//       })
-//     if (request) {
-//       const arr = Array.isArray(request) ? request : [request]
-//       arr.some(({ type }) => type === selectedEvent.type && priority === selectedEvent.priority) &&
-//         (selected = selectedEvent.type)
-//       Object.assign(obj, {
-//         request: arr,
-//       })
-//     }
-
-//     ruleSets.push({
-//       ...obj,
-//       ...(trigger && { trigger }),
-//       ...(selected && { selected }),
-//     })
-//   }
-//   return ruleSets.sort((a, b) => a.priority - b.priority)
-// }
+    ruleSets.push({
+      ...obj,
+      ...(thread === selectedEvent.thread  && { selected: selectedEvent.type }),
+    })
+  }
+  return ruleSets.sort((a, b) => a.priority - b.priority)
+}

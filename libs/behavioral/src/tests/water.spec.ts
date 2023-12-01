@@ -112,5 +112,5 @@ test('logging', () => {
     ]),
   })
   trigger({ type: 'start' })
-  // expect(logs).toMatchSnapshot()
+  expect(logs).toMatchSnapshot()
 })

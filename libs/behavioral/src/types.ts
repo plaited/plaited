@@ -20,7 +20,7 @@ export type Trigger = <T = unknown>(args: BPEvent<T>) => void
 
 export type RuleSet<T = unknown> = {
   waitFor?:  Parameter<T> | Parameter<T>[]
-  request?: BPEvent<T> | BPEventTemplate<T> | (BPEvent<T> | BPEventTemplate<T>)[]
+  request?: BPEvent<T> | BPEventTemplate<T>
   block?:  Parameter<T> | Parameter<T>[]
 }
 

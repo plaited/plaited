@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
-// import { stateSnapshot } from './state-snapshot.js'
+import { stateSnapshot } from './state-snapshot.js'
 import { ensureArray, isTypeOf } from '@plaited/utils'
 import { priorityStrategy } from './selection-strategies.js'
 import { publisher } from './publisher.js'
@@ -70,15 +70,7 @@ export const bProgram = ({
     for (const bid of pending) {
       const { request, priority, block, thread } = bid
       block && blocked.push(...ensureArray(block))
-      if (request) {
-        Array.isArray(request) ?
-          candidates.push(
-            ...request.map(
-              (event) => ({ priority, thread,  ...(isTypeOf<BPEventTemplate>(event, 'function') ? {template: event, ...event()} : event) }), // create candidates for each request with current bids priority
-            ),
-          )
-        : candidates.push({ priority, thread, ...(isTypeOf<BPEventTemplate>(request, 'function') ? {template: request, ...request()} : request) })
-      }
+      request && candidates.push({ priority, thread, ...(isTypeOf<BPEventTemplate>(request, 'function') ? {template: request, ...request()} : request) })
     }
     const filteredBids: CandidateBid[] = []
     const length = candidates.length
@@ -91,7 +83,7 @@ export const bProgram = ({
     }
     const selectedEvent = strategy(filteredBids)
     if (selectedEvent) {
-      // snapshotPublisher && snapshotPublisher(stateSnapshot({ bids: [...pending], selectedEvent }))
+      snapshotPublisher && snapshotPublisher(stateSnapshot({ bids: [...pending], selectedEvent }))
       nextStep(selectedEvent)
     }
   }
@@ -115,15 +107,15 @@ export const bProgram = ({
     run()
   }
   
-  const trigger: Trigger = ({ type, detail }) => {
+  const trigger: Trigger = request => {
     const thread = function* () {
       yield {
-        request: [{ type, detail }],
+        request,
         waitFor: [triggerWaitFor],
       }
     }
     running.add({
-      thread: type,
+      thread: request.type,
       priority: 0,
       trigger: true,
       generator: thread(),
