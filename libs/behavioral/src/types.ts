@@ -71,6 +71,11 @@ type Actions<T extends Record<string, (detail: Detail) => void | Promise<void>>>
   [K in keyof T]: T[K] extends (detail: infer D) => void ? (detail: D extends Detail ? D : Detail) => void : never
 }
 
+export type Publisher<T extends TriggerArgs = TriggerArgs> = {
+  (value: T): void
+  subscribe(listener: (msg: T) => void): () => boolean
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Feedback = <T extends Record<string, (detail: any) => void>>(actions: Actions<T>) => void
 

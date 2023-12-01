@@ -17,7 +17,8 @@
   "main": "./dist/index.js",
   "exports": {
     ".": "./dist/index.js",
-    "./selection-strategies": "./dist/selection-strategies/index.js"
+    "./selection-strategies": "./dist/selection-strategies.js",
+    "./public-publisher": "./dist/public-publisher.js"
   },
   "files": [
     "./dist/**"

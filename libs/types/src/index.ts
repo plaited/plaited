@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { bProgram, DevCallback, Strategy, Trigger, TriggerArgs } from '@plaited/behavioral'
+import { bProgram, DevCallback, Strategy, Trigger, TriggerArgs, Publisher } from '@plaited/behavioral'
 import * as CSS from 'csstype'
 
 type Booleanish = boolean | 'true' | 'false'
@@ -1373,11 +1373,6 @@ export type Emit = (
     composed?: boolean
   },
 ) => void
-
-export type Publisher<T extends TriggerArgs = TriggerArgs> = {
-  (value: T): void
-  subscribe(listener: (msg: T) => void): () => boolean
-}
 
 export type PlaitProps = {
   /** query for elements with the data-target attribute in the Island's shadowDom and slots */

@@ -8,10 +8,10 @@
     "test-storybook": "test-storybook"
   },
   "devDependencies": {
-    "plaited": "5.3.0",
-    "@plaited/storybook-vite": "5.3.0",
-    "@plaited/storybook-rite": "5.3.0",
-    "@plaited/storybook": "5.3.0",
+    "plaited": "workspace:*",
+    "@plaited/storybook-vite": "workspace:*",
+    "@plaited/storybook-rite": "workspace:*",
+    "@plaited/storybook": "workspace:*",
     "@storybook/test-runner": "0.16.0",
     "@storybook/addon-essentials": "7.6.3",
     "@storybook/addon-interactions": "7.6.3",

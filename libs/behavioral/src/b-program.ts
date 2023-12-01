@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 import { stateSnapshot } from './state-snapshot.js'
-import { publisher, ensureArray } from '@plaited/utils'
+import { ensureArray } from '@plaited/utils'
 import { priorityStrategy } from './selection-strategies.js'
+import { publisher } from './publisher.js'
 import {
   CandidateBid,
   DevCallback,

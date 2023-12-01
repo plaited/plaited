@@ -7,14 +7,13 @@
  */
 import { createTemplate } from '@plaited/jsx'
 import { dataTrigger, dataAddress } from '@plaited/jsx/utils'
-import { Trigger, bProgram, TriggerArgs } from '@plaited/behavioral'
+import { Trigger, bProgram, TriggerArgs, Publisher } from '@plaited/behavioral'
 import type {
   PlaitedElement,
   PlaitProps,
   ComponentFunction,
   Emit,
   Messenger,
-  Publisher,
   TriggerElement,
   QuerySelector,
   FunctionTemplate,
