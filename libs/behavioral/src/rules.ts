@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Detail, RuleSet, RulesFunc } from './types.js'
+import { RuleSet, RulesFunc } from './types.js'
 
 /**
  * creates a behavioral thread from synchronization sets and/or other  behavioral threads
@@ -32,7 +32,7 @@ export const loop = (rules: RulesFunc<any>[], condition = () => true): RulesFunc
  * threads currently forbids triggering
  * any of these events.
  */
-export const sync = <T extends Detail>(set: RuleSet<T>): RulesFunc<T> =>
+export const sync = <T = unknown>(set: RuleSet<T>): RulesFunc<T> =>
   function* () {
     yield set
   }
