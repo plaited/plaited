@@ -7,7 +7,7 @@ import {
   CandidateBid,
   DevCallback,
   Feedback,
-  ParameterSet,
+  Parameter,
   PendingBid,
   RulesFunc,
   RunningBid,
@@ -65,7 +65,7 @@ export const bProgram = ({
   }
   // Select next event
   function selectNextEvent() {
-    const blocked: ParameterSet[] = []
+    const blocked: Parameter[] = []
     const candidates: CandidateBid[] = []
     for (const bid of pending) {
       const { request, priority, block, thread } = bid
@@ -84,7 +84,7 @@ export const bProgram = ({
     const length = candidates.length
     for (let i = 0; i < length; i++) {
       const candidate = candidates[i]
-       // Checking is selectedEvent is in block ParameterSet
+       // Checking is selectedEvent is in block Parameter
       if (!blocked.some(isInParameter(candidate))) {
         filteredBids.push(candidate)
       }
@@ -102,7 +102,7 @@ export const bProgram = ({
       if (
         // Checking is pending event is selectedEvent
         ensureArray(bid.request).some(isPendingRequest(selectedEvent)) ||
-        // Checking is selectedEvent is in waitFor ParameterSet
+        // Checking is selectedEvent is in waitFor Parameter
         ensureArray(bid.waitFor).some(isInParameter(selectedEvent))
       ) {
         running.add(bid)

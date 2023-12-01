@@ -2,13 +2,14 @@ export type BPEvent<T = unknown> = {
   type: string
   detail?: T
 }
+export type Parameter<T = unknown> =  string |  Callback<T>
 
 export interface StateSnapshot {
   (props: { bids: PendingBid[]; selectedEvent: CandidateBid }): {
     thread: string
-    request?: RequestIdiom[]
-    waitFor?: ParameterSet[]
-    block?: ParameterSet[]
+    request?: BPEvent[]
+    waitFor?: Parameter[]
+    block?: Parameter[]
     priority: number
   }[]
 }
@@ -19,17 +20,11 @@ export type Trigger = <T = unknown>(args: BPEvent<T>) => void
 // Rule types
 type Callback<T = unknown> = (args: { type: string; detail: T }) => boolean
 
-export type ParameterSet<T = unknown> =  string |  Callback<T>
-
-export type RequestIdiom<T = unknown> = {
-  type: string
-  detail?: T
-}
 
 export type RuleSet<T = unknown> = {
-  waitFor?: ParameterSet<T> | ParameterSet<T>[]
-  request?: RequestIdiom<T> | RequestIdiom<T>[]
-  block?: ParameterSet<T> | ParameterSet<T>[]
+  waitFor?:  Parameter<T> | Parameter<T>[]
+  request?: BPEvent<T> | BPEvent<T>[]
+  block?:  Parameter<T> | Parameter<T>[]
 }
 
 export type RulesFunc<T = unknown> = () => IterableIterator<RuleSet<T>>

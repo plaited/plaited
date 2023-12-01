@@ -1,9 +1,9 @@
-import { ParameterSet, Log, BPEvent, CandidateBid } from "./types.js"
+import { Parameter, Log, BPEvent, CandidateBid } from "./types.js"
 export const triggerWaitFor = () => true
 export const isPendingRequest = (bid: CandidateBid) => (event:BPEvent) => bid.type === event.type
 
 export const isInParameter = ({ type, detail }: CandidateBid) => {
-  return (param: ParameterSet): boolean => typeof param !== 'string'
+  return (param: Parameter): boolean => typeof param !== 'string'
     ? param({
         detail,
         type,
