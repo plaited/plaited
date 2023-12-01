@@ -16,7 +16,8 @@
   "type": "module",
   "main": "./dist/index.js",
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/index.js",
+    "./selection-strategies": "./dist/selection-strategies/index.js"
   },
   "files": [
     "./dist/**"

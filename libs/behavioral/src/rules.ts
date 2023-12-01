@@ -6,8 +6,9 @@ import { Detail, RuleSet, RulesFunc } from './types.js'
  */
 export const thread = (...rules: RulesFunc<any>[]): RulesFunc<any> =>
   function* () {
-    for (const rule of rules) {
-      yield* rule()
+    const length = rules.length
+    for (let i = 0; i < length; i++) {
+      yield* rules[i]()
     }
   }
 /**
@@ -17,8 +18,9 @@ export const thread = (...rules: RulesFunc<any>[]): RulesFunc<any> =>
 export const loop = (rules: RulesFunc<any>[], condition = () => true): RulesFunc<any> =>
   function* () {
     while (condition()) {
-      for (const rule of rules) {
-        yield* rule()
+      const length = rules.length
+      for (let i = 0; i < length; i++) {
+        yield* rules[i]()
       }
     }
   }
