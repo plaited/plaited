@@ -107,6 +107,7 @@ export const bProgram = ({
   function nextStep(selectedEvent: CandidateBid) {
     for (const bid of pending) {
       if (!bid.generator) continue
+      // checking if the request is in the parameter which can be a waitFor or pending request AKA our waitList
       if (
         ensureArray(bid.request).some(requestInParameter(selectedEvent)) ||
         ensureArray(bid.waitFor).some(requestInParameter(selectedEvent))
@@ -115,8 +116,8 @@ export const bProgram = ({
         pending.delete(bid)
       }
     }
-    // To avoid infinite loop with calling trigger from feedback always stream select event
-    // checking if the request is in the parameter which can be a waitFor or pending request
+    // To avoid infinite loop with calling trigger from feedback always publish select event
+    // after checking if request(s) is waitList and before our next run
     actionPublisher({ type: selectedEvent.type, detail: selectedEvent.detail })
     run()
   }
