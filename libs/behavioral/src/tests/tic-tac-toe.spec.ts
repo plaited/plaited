@@ -21,19 +21,16 @@ const playerWins = (player: 'X' | 'O') =>
   winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
     acc[`${player}Wins (${win})`] = thread(
       sync<{ square: number }>({
-        waitFor: {
-          cb: ({ type, detail }) => type === player && win.includes(detail.square),
-        },
+        waitFor: ({ type, detail }) => type === player && win.includes(detail.square),
+      
       }),
       sync<{ square: number }>({
-        waitFor: {
-          cb: ({ type, detail }) => type === player && win.includes(detail.square),
-        },
+        waitFor: ({ type, detail }) => type === player && win.includes(detail.square),
+      
       }),
       sync<{ square: number }>({
-        waitFor: {
-          cb: ({ type, detail }) => type === player && win.includes(detail.square),
-        },
+        waitFor: ({ type, detail }) => type === player && win.includes(detail.square),
+      
       }),
       sync<{ win: number[] }>({
         request: { type: `${player}Win`, detail: { win } },
@@ -60,8 +57,8 @@ test('detect wins', () => {
 })
 
 const enforceTurns = loop([
-  sync({ waitFor: { type: 'X' }, block: { type: 'O' } }),
-  sync({ waitFor: { type: 'O' }, block: { type: 'X' } }),
+  sync({ waitFor:  'X' , block:  'O'  }),
+  sync({ waitFor:  'O' , block:  'X'  }),
 ])
 
 test('enforceTurns', () => {
@@ -135,10 +132,10 @@ test('enforceTurns without blocking', () => {
 const squaresTaken = squares.reduce((acc: Record<string, RulesFunc>, square) => {
   acc[`(${square}) taken`] = thread(
     sync<{ square: number }>({
-      waitFor: { cb: ({ detail }) => square === detail.square },
+      waitFor:  ({ detail }) => square === detail.square ,
     }),
     sync<{ square: number }>({
-      block: { cb: ({ detail }) => square === detail.square },
+      block:  ({ detail }) => square === detail.square ,
     }),
   )
   return acc
@@ -154,8 +151,8 @@ test('squaresTaken', () => {
     ...playerWins('O'),
     ...playerWins('X'),
     enforceTurns: loop([
-      sync({ waitFor: { type: 'X' }, block: { type: 'O' } }),
-      sync({ waitFor: { type: 'O' }, block: { type: 'X' } }),
+      sync({ waitFor:  'X', block:  'O' }),
+      sync({ waitFor:  'O', block:  'X' }),
     ]),
     ...squaresTaken,
   })
@@ -231,8 +228,8 @@ test("doesn't stop game", () => {
 })
 
 const stopGame = thread(
-  sync({ waitFor: [{ type: 'XWin' }, { type: 'OWin' }] }),
-  sync({ block: [{ type: 'X' }, { type: 'O' }] }),
+  sync({ waitFor: [ 'XWin',  'OWin'] }),
+  sync({ block: [ 'X',  'O'] }),
 )
 
 test('stopGame', () => {
@@ -413,14 +410,12 @@ test('startAtCenter', () => {
 const preventCompletionOfLineWithTwoXs = winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
   acc[`StopXWin(${win})`] = thread(
     sync<{ square: number }>({
-      waitFor: {
-        cb: ({ type, detail }) => type === 'X' && win.includes(detail.square),
-      },
+      waitFor:  ({ type, detail }) => type === 'X' && win.includes(detail.square),
+      
     }),
     sync<{ square: number }>({
-      waitFor: {
-        cb: ({ type, detail }) => type === 'X' && win.includes(detail.square),
-      },
+      waitFor:  ({ type, detail }) => type === 'X' && win.includes(detail.square),
+      
     }),
     sync<{ square: number }>({
       request: win.map((square) => ({ type: 'O', detail: { square } })),

@@ -19,15 +19,7 @@ export type Trigger = <T = unknown>(args: BPEvent<T>) => void
 // Rule types
 type Callback<T = unknown> = (args: { type: string; detail: T }) => boolean
 
-export type ParameterSet<T = unknown> =
-  | {
-      type: string
-      cb?: Callback<T>
-    }
-  | {
-      type?: string
-      cb: Callback<T>
-    }
+export type ParameterSet<T = unknown> =  string |  Callback<T>
 
 export type RequestIdiom<T = unknown> = {
   type: string

@@ -8,12 +8,12 @@ test('firing trigger and adding threads in actions', () => {
     addHotOnce: thread(sync({ request: { type: 'hot_1' } })),
     mixHotCold: loop([
       sync({
-        waitFor: { cb: ({ type }) => type.startsWith('hot') },
-        block: { cb: ({ type }) => type.startsWith('cold') },
+        waitFor: ({ type }) => type.startsWith('hot'),
+        block: ({ type }) => type.startsWith('cold'),
       }),
       sync({
-        waitFor: { cb: ({ type }) => type.startsWith('cold') },
-        block: { cb: ({ type }) => type.startsWith('hot') },
+        waitFor: ({ type }) => type.startsWith('cold'),
+        block: ({ type }) => type.startsWith('hot'),
       }),
     ]),
   })

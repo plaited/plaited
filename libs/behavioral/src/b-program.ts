@@ -18,21 +18,9 @@ import {
   Log,
 } from './types.js'
 import { loop, sync, thread } from './rules.js'
+import { triggerWaitFor, log, isInParameter, isPendingRequest } from './utils.js'
 
-const isPendingRequest = (bid: CandidateBid) => (event:BPEvent) => bid.type === event.type
 
-const isInParameter = ({ type: requestEventName, detail: requestDetail = {} }: CandidateBid) => {
-  return ({ type: parameterEventName, cb: parameterAssertion }: ParameterSet): boolean =>
-    parameterAssertion ?
-      parameterAssertion({
-        detail: requestDetail,
-        type: requestEventName,
-      })
-    : requestEventName === parameterEventName
-}
-
-/** default dev callback function */
-const log = (log: Log) => console.table(log)
 
 /**
  * Creates a behavioral program that manages the execution of behavioral threads.
@@ -126,11 +114,12 @@ export const bProgram = ({
     actionPublisher({ type: selectedEvent.type, detail: selectedEvent.detail })
     run()
   }
+  
   const trigger: Trigger = ({ type, detail }) => {
     const thread = function* () {
       yield {
         request: [{ type, detail }],
-        waitFor: [{ type: '', cb: () => true }],
+        waitFor: [triggerWaitFor],
       }
     }
     running.add({

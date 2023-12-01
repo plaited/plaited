@@ -63,12 +63,12 @@ test('interleave', () => {
     ),
     mixHotCold: loop([
       sync({
-        waitFor: { type: 'hot' },
-        block: { type: 'cold' },
+        waitFor:  'hot' ,
+        block:  'cold' ,
       }),
       sync({
-        waitFor: { type: 'cold' },
-        block: { type: 'hot' },
+        waitFor:  'cold' ,
+        block:  'hot' ,
       }),
     ]),
   })
@@ -102,12 +102,12 @@ test('logging', () => {
     ),
     mixHotCold: loop([
       sync({
-        waitFor: { type: 'hot' },
-        block: { type: 'cold' },
+        waitFor:  'hot',
+        block:  'cold',
       }),
       sync({
-        waitFor: { type: 'cold' },
-        block: { type: 'hot' },
+        waitFor:  'cold',
+        block:  'hot',
       }),
     ]),
   })
