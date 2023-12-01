@@ -1,9 +1,14 @@
+export type BPEvent<T extends Detail = Detail> = {
+  type: string
+  detail?: T
+}
+
 export interface StateSnapshot {
   (props: { bids: PendingBid[]; selectedEvent: CandidateBid }): {
     thread: string
     request?: RequestIdiom[]
-    waitFor?: ParameterIdiom[]
-    block?: ParameterIdiom[]
+    waitFor?: ParameterSet[]
+    block?: ParameterSet[]
     priority: number
   }[]
 }
@@ -12,21 +17,12 @@ export type Detail = unknown | (() => unknown) | Event
 
 export type SnapshotMessage = ReturnType<StateSnapshot>
 
-export type SelectedMessage = {
-  type: string
-  detail?: Detail
-}
+export type Trigger = <T extends Detail = Detail>(args: BPEvent<T>) => void
 
-export type Trigger = <T extends Detail = Detail>(args: TriggerArgs<T>) => void
-
-export type TriggerArgs<T extends Detail = Detail> = {
-  type: string
-  detail?: T
-}
 // Rule types
 type Callback<T extends Detail = Detail> = (args: { type: string; detail: T }) => boolean
 
-export type ParameterIdiom<T extends Detail = Detail> =
+export type ParameterSet<T extends Detail = Detail> =
   | {
       type: string
       cb?: Callback<T>
@@ -42,9 +38,9 @@ export type RequestIdiom<T extends Detail = Detail> = {
 }
 
 export type RuleSet<T extends Detail = Detail> = {
-  waitFor?: ParameterIdiom<T> | ParameterIdiom<T>[]
+  waitFor?: ParameterSet<T> | ParameterSet<T>[]
   request?: RequestIdiom<T> | RequestIdiom<T>[]
-  block?: ParameterIdiom<T> | ParameterIdiom<T>[]
+  block?: ParameterSet<T> | ParameterSet<T>[]
 }
 
 export type RulesFunc<T extends Detail = Detail> = () => IterableIterator<RuleSet<T>>
@@ -61,7 +57,7 @@ export type CandidateBid = {
   priority: number
   type: string
   detail?: Detail
-  cb?: Callback
+  thread: string
 }
 
 export type Strategy = (filteredEvents: CandidateBid[] | never[]) => CandidateBid | undefined
@@ -71,7 +67,7 @@ type Actions<T extends Record<string, (detail: Detail) => void | Promise<void>>>
   [K in keyof T]: T[K] extends (detail: infer D) => void ? (detail: D extends Detail ? D : Detail) => void : never
 }
 
-export type Publisher<T extends TriggerArgs = TriggerArgs> = {
+export type Publisher<T extends BPEvent = BPEvent> = {
   (value: T): void
   subscribe(listener: (msg: T) => void): () => boolean
 }

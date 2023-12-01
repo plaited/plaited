@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import { stateSnapshot } from './state-snapshot.js'
+// import { stateSnapshot } from './state-snapshot.js'
 import { ensureArray } from '@plaited/utils'
 import { priorityStrategy } from './selection-strategies.js'
 import { publisher } from './publisher.js'
@@ -7,11 +7,11 @@ import {
   CandidateBid,
   DevCallback,
   Feedback,
-  ParameterIdiom,
+  ParameterSet,
   PendingBid,
   RulesFunc,
   RunningBid,
-  SelectedMessage,
+  BPEvent,
   SnapshotMessage,
   Strategy,
   Trigger,
@@ -19,8 +19,10 @@ import {
 } from './types.js'
 import { loop, sync, thread } from './rules.js'
 
+const isPendingRequest = (bid: CandidateBid) => (event:BPEvent) => bid.type === event.type
+
 const requestInParameter = ({ type: requestEventName, detail: requestDetail = {} }: CandidateBid) => {
-  return ({ type: parameterEventName, cb: parameterAssertion }: ParameterIdiom): boolean =>
+  return ({ type: parameterEventName, cb: parameterAssertion }: ParameterSet): boolean =>
     parameterAssertion ?
       parameterAssertion({
         detail: requestDetail,
@@ -51,7 +53,7 @@ export const bProgram = ({
   const dev = _dev === true ? log : _dev
   const pending = new Set<PendingBid>()
   const running = new Set<RunningBid>()
-  const actionPublisher = publisher<SelectedMessage>()
+  const actionPublisher = publisher<BPEvent>()
   const snapshotPublisher = dev && publisher<SnapshotMessage>()
   function run() {
     running.size && step()
@@ -75,19 +77,19 @@ export const bProgram = ({
   }
   // Select next event
   function selectNextEvent() {
-    const blocked: ParameterIdiom[] = []
+    const blocked: ParameterSet[] = []
     const candidates: CandidateBid[] = []
     for (const bid of pending) {
-      const { request, priority, block } = bid
+      const { request, priority, block, thread } = bid
       block && blocked.push(...ensureArray(block))
       if (request) {
         Array.isArray(request) ?
           candidates.push(
             ...request.map(
-              (event) => ({ priority, ...event }), // create candidates for each request with current bids priority
+              (event) => ({ priority, thread,  ...event }), // create candidates for each request with current bids priority
             ),
           )
-        : candidates.push({ priority, ...request })
+        : candidates.push({ priority, thread, ...request })
       }
     }
     const filteredBids: CandidateBid[] = []
@@ -100,7 +102,7 @@ export const bProgram = ({
     }
     const selectedEvent = strategy(filteredBids)
     if (selectedEvent) {
-      snapshotPublisher && snapshotPublisher(stateSnapshot({ bids: [...pending], selectedEvent }))
+      // snapshotPublisher && snapshotPublisher(stateSnapshot({ bids: [...pending], selectedEvent }))
       nextStep(selectedEvent)
     }
   }
@@ -110,7 +112,8 @@ export const bProgram = ({
       if (!bid.generator) continue
       // checking if the request is in the parameter which can be a waitFor or pending request AKA our waitList
       if (
-        ensureArray(bid.request).some(requestInParameter(selectedEvent)) ||
+        // Checking is pending event is selectedEvent
+        ensureArray(bid.request).some(isPendingRequest(selectedEvent)) ||
         ensureArray(bid.waitFor).some(requestInParameter(selectedEvent))
       ) {
         running.add(bid)
@@ -139,7 +142,7 @@ export const bProgram = ({
   }
 
   const feedback: Feedback = (actions) => {
-    actionPublisher.subscribe((data: SelectedMessage) => {
+    actionPublisher.subscribe((data: BPEvent) => {
       const { type, detail = {} } = data
       if (Object.hasOwn(actions, type)) {
         void actions[type](detail)
