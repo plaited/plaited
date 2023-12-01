@@ -1,5 +1,6 @@
 import { TemplateObject } from '@plaited/component-types'
-
+import { escape, isTypeOf } from '@plaited/utils'
+import { validPrimitiveChildren } from './constants.js'
 if (typeof global.HTMLElement === 'undefined') {
   // @ts-ignore node env
   global.HTMLElement = class HTMLElement {}
@@ -11,14 +12,16 @@ export const ssr = (...templates: TemplateObject[]) => {
   const length = templates.length
   for (let i = 0; i < length; i++) {
     const child = templates[i]
-    if (typeof child === 'string') {
-      arr.push(child)
+    if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === '🦄') {
+      arr.push(...child.server)
+      for (const sheet of child.stylesheets) {
+        stylesheets.add(sheet)
+      }
       continue
     }
-    arr.push(...child.server)
-    for (const sheet of child.stylesheets) {
-      stylesheets.add(sheet)
-    }
+    if (!validPrimitiveChildren.has(typeof child)) continue
+    const safeChild = escape(`${child}`)
+    arr.push(safeChild)
   }
   const style = stylesheets.size ? `<style>${[...stylesheets].join('')}</style>` : ''
   const str = arr.join('')
