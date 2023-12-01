@@ -14,14 +14,14 @@
     "@plaited/storybook-vite": "5.3.0",
     "@plaited/storybook-rite": "5.3.0",
     "@plaited/storybook": "5.3.0",
-    "@storybook/test-runner": "0.15.2",
-    "@storybook/addon-essentials": "7.5.3",
-    "@storybook/addon-interactions": "7.5.3",
-    "@storybook/addon-links": "7.5.3",
-    "@storybook/blocks": "7.5.3",
-    "@storybook/html-vite": "7.5.3",
+    "@storybook/test-runner": "0.16.0",
+    "@storybook/addon-essentials": "7.6.3",
+    "@storybook/addon-interactions": "7.6.3",
+    "@storybook/addon-links": "7.6.3",
+    "@storybook/blocks": "7.6.3",
+    "@storybook/html-vite": "7.6.3",
     "start-server-and-test": "2.0.3",
-    "storybook": "7.5.3",
-    "vite": "5.0.2"
+    "storybook": "7.6.3",
+    "vite": "5.0.4"
   }
 }
