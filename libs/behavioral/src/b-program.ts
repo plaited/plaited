@@ -84,7 +84,7 @@ export const bProgram = ({
     const length = candidates.length
     for (let i = 0; i < length; i++) {
       const candidate = candidates[i]
-       // Checking is selectedEvent is in block Parameter
+       // Checking if candidate is in block Parameter
       if (!blocked.some(isInParameter(candidate))) {
         filteredBids.push(candidate)
       }
@@ -100,9 +100,9 @@ export const bProgram = ({
     for (const bid of pending) {
       if (!bid.generator) continue
       if (
-        // Checking is pending event is selectedEvent
+        // Checking if pending event is selectedEvent
         ensureArray(bid.request).some(isPendingRequest(selectedEvent)) ||
-        // Checking is selectedEvent is in waitFor Parameter
+        // Checking if selectedEvent is in waitFor Parameter
         ensureArray(bid.waitFor).some(isInParameter(selectedEvent))
       ) {
         running.add(bid)
