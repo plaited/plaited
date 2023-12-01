@@ -1,4 +1,5 @@
 export type BPEvent<T = unknown> = {type: string, detail?: T}
+
 export type BPEventTemplate<T = unknown> = () => BPEvent<T>
 
 export type Parameter<T = unknown> =  string |  ((args: { type: string; detail: T }) => boolean)
@@ -12,6 +13,7 @@ export interface StateSnapshot {
     priority: number
   }[]
 }
+
 export type SnapshotMessage = ReturnType<StateSnapshot>
 
 export type Trigger = <T = unknown>(args: BPEvent<T>) => void
