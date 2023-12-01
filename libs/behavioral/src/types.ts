@@ -1,8 +1,7 @@
-export type BPEvent<T = unknown> = {
-  type: string
-  detail?: T
-}
-export type Parameter<T = unknown> =  string |  Callback<T>
+export type BPEvent<T = unknown> = {type: string, detail?: T}
+export type BPEventTemplate<T = unknown> = () => BPEvent<T>
+
+export type Parameter<T = unknown> =  string |  ((args: { type: string; detail: T }) => boolean)
 
 export interface StateSnapshot {
   (props: { bids: PendingBid[]; selectedEvent: CandidateBid }): {
@@ -17,13 +16,9 @@ export type SnapshotMessage = ReturnType<StateSnapshot>
 
 export type Trigger = <T = unknown>(args: BPEvent<T>) => void
 
-// Rule types
-type Callback<T = unknown> = (args: { type: string; detail: T }) => boolean
-
-
 export type RuleSet<T = unknown> = {
   waitFor?:  Parameter<T> | Parameter<T>[]
-  request?: BPEvent<T> | BPEvent<T>[]
+  request?: BPEvent<T> | BPEventTemplate<T> | (BPEvent<T> | BPEventTemplate<T>)[]
   block?:  Parameter<T> | Parameter<T>[]
 }
 
@@ -38,10 +33,11 @@ export type RunningBid = {
 export type PendingBid = RuleSet & RunningBid
 
 export type CandidateBid = {
+  thread: string
   priority: number
   type: string
   detail?: unknown
-  thread: string
+  template?: BPEventTemplate
 }
 
 export type Strategy = (filteredEvents: CandidateBid[] | never[]) => CandidateBid | undefined

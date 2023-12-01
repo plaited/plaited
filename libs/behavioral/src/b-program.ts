@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 // import { stateSnapshot } from './state-snapshot.js'
-import { ensureArray } from '@plaited/utils'
+import { ensureArray, isTypeOf } from '@plaited/utils'
 import { priorityStrategy } from './selection-strategies.js'
 import { publisher } from './publisher.js'
 import {
@@ -16,6 +16,7 @@ import {
   Strategy,
   Trigger,
   Log,
+  BPEventTemplate,
 } from './types.js'
 import { loop, sync, thread } from './rules.js'
 import { triggerWaitFor, log, isInParameter, isPendingRequest } from './utils.js'
@@ -74,10 +75,10 @@ export const bProgram = ({
         Array.isArray(request) ?
           candidates.push(
             ...request.map(
-              (event) => ({ priority, thread,  ...event }), // create candidates for each request with current bids priority
+              (event) => ({ priority, thread,  ...(isTypeOf<BPEventTemplate>(event, 'function') ? {template: event, ...event()} : event) }), // create candidates for each request with current bids priority
             ),
           )
-        : candidates.push({ priority, thread, ...request })
+        : candidates.push({ priority, thread, ...(isTypeOf<BPEventTemplate>(request, 'function') ? {template: request, ...request()} : request) })
       }
     }
     const filteredBids: CandidateBid[] = []
