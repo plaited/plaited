@@ -21,7 +21,7 @@ import { loop, sync, thread } from './rules.js'
 
 const isPendingRequest = (bid: CandidateBid) => (event:BPEvent) => bid.type === event.type
 
-const requestInParameter = ({ type: requestEventName, detail: requestDetail = {} }: CandidateBid) => {
+const isInParameter = ({ type: requestEventName, detail: requestDetail = {} }: CandidateBid) => {
   return ({ type: parameterEventName, cb: parameterAssertion }: ParameterSet): boolean =>
     parameterAssertion ?
       parameterAssertion({
@@ -96,7 +96,8 @@ export const bProgram = ({
     const length = candidates.length
     for (let i = 0; i < length; i++) {
       const candidate = candidates[i]
-      if (!blocked.some(requestInParameter(candidate))) {
+       // Checking is selectedEvent is in block ParameterSet
+      if (!blocked.some(isInParameter(candidate))) {
         filteredBids.push(candidate)
       }
     }
@@ -110,11 +111,11 @@ export const bProgram = ({
   function nextStep(selectedEvent: CandidateBid) {
     for (const bid of pending) {
       if (!bid.generator) continue
-      // checking if the request is in the parameter which can be a waitFor or pending request AKA our waitList
       if (
         // Checking is pending event is selectedEvent
         ensureArray(bid.request).some(isPendingRequest(selectedEvent)) ||
-        ensureArray(bid.waitFor).some(requestInParameter(selectedEvent))
+        // Checking is selectedEvent is in waitFor ParameterSet
+        ensureArray(bid.waitFor).some(isInParameter(selectedEvent))
       ) {
         running.add(bid)
         pending.delete(bid)
