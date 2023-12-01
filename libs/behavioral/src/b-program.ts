@@ -15,7 +15,6 @@ import {
   SnapshotMessage,
   Strategy,
   Trigger,
-  Log,
   BPEventTemplate,
 } from './types.js'
 import { loop, sync, thread } from './rules.js'
