@@ -44,18 +44,13 @@ export type CandidateBid = {
 
 export type Strategy = (filteredEvents: CandidateBid[] | never[]) => CandidateBid | undefined
 
-
-type Actions = {
+export type Feedback = (actions: {
   [key:string]: (detail: unknown) => void | Promise<void>
-}
-
-export type Feedback = (actions: Actions) => void
+}) => void
 
 export interface DevCallback {
   (args: ReturnType<StateSnapshot>): void
 }
-
-export type Log = ReturnType<StateSnapshot>
 
 export type Publisher<T extends BPEvent = BPEvent> = {
   (value: T): void
