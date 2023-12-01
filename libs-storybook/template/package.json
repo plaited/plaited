@@ -7,10 +7,8 @@
     "test": "start-server-and-test 'bun run storybook' http://localhost:6006 'bun run test-storybook'",
     "test-storybook": "test-storybook"
   },
-  "dependencies": {
-    "plaited": "5.3.0"
-  },
   "devDependencies": {
+    "plaited": "5.3.0",
     "@plaited/storybook-vite": "5.3.0",
     "@plaited/storybook-rite": "5.3.0",
     "@plaited/storybook": "5.3.0",

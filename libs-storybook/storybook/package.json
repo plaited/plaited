@@ -45,9 +45,7 @@
     "@storybook/global": "5.0.0",
     "@storybook/preview-api": "7.6.3",
     "@storybook/types": "7.6.3",
-    "@plaited/storybook-utils": "5.3.0"
-  },
-  "devDependencies": {
+    "@plaited/storybook-utils": "5.3.0",
     "@plaited/component-types": "5.3.0"
   }
 }
