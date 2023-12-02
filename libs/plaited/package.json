@@ -27,6 +27,9 @@
     "./jsx-runtime.js",
     "./jsx-dev-runtime.js"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc --project tsconfig.json",
     "test": "bun test src/**/*.spec.ts"

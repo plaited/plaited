@@ -1,20 +1,11 @@
 import type { TemplateObject } from '@plaited/component-types'
 import { kebabCase } from '@plaited/utils'
-
+import { adoptStylesheets } from '@plaited/miles/adopt-stylesheets'
 export const cssCache = new WeakMap<Document, Set<string>>()
 export const createFragment = (template: TemplateObject) => {
   const { client, stylesheets } = template
   if (stylesheets.size) {
-    const instanceStyles =
-      cssCache.get(document) ?? (cssCache.set(document, new Set<string>()).get(document) as Set<string>)
-    const newStyleSheets: CSSStyleSheet[] = []
-    for (const style of stylesheets) {
-      if (instanceStyles?.has(style)) continue
-      const sheet = new CSSStyleSheet()
-      sheet.replaceSync(style)
-      newStyleSheets.push(sheet)
-    }
-    document.adoptedStyleSheets = [...document.adoptedStyleSheets, ...newStyleSheets]
+    adoptStylesheets(...stylesheets)
   }
   const tpl = document.createElement('template')
   tpl.innerHTML = client.join('')

@@ -1,4 +1,4 @@
-import { escape, kebabCase, isTypeOf } from '@plaited/utils'
+import { escape, kebabCase, isTypeOf, ensureArray } from '@plaited/utils'
 import {
   booleanAttrs,
   primitives,
@@ -14,8 +14,6 @@ import {
   PlaitedComponentConstructor,
   VoidTags,
 } from '@plaited/component-types'
-/** create server element string representation */
-const ensureArray = <T>(obj: T | T[] = []) => (!Array.isArray(obj) ? [obj] : obj)
 
 const isPlaitedComponent = (obj: PlaitedComponentConstructor | FunctionTemplate): obj is PlaitedComponentConstructor =>
   'template' in obj

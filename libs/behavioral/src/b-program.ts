@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import { strategies } from './constants.js'
 import { stateSnapshot } from './state-snapshot.js'
-import { publisher } from '@plaited/utils'
-import { selectionStrategies } from './selection-strategies.js'
+import { publisher, ensureArray } from '@plaited/utils'
+import { priorityStrategy } from './selection-strategies.js'
 import {
   CandidateBid,
   DevCallback,
@@ -41,15 +40,14 @@ const log = (log: Log) => console.table(log)
  */
 export const bProgram = ({
   /** event selection strategy {@link Strategy}*/
-  strategy = strategies.priority,
+  strategy = priorityStrategy,
   /** When set to true returns a stream with log of state snapshots, last selected event and trigger */
   dev: _dev,
 }: {
-  strategy?: Strategy | keyof Omit<typeof strategies, 'custom'>
+  strategy?: Strategy
   dev?: DevCallback | true
 } = {}) => {
   const dev = _dev === true ? log : _dev
-  const eventSelectionStrategy: Strategy = typeof strategy === 'string' ? selectionStrategies[strategy] : strategy
   const pending = new Set<PendingBid>()
   const running = new Set<RunningBid>()
   const actionPublisher = publisher<SelectedMessage>()
@@ -76,49 +74,51 @@ export const bProgram = ({
   }
   // Select next event
   function selectNextEvent() {
-    const bids = [...pending]
-    let candidates: CandidateBid[] = []
-    for (const { request, priority } of bids) {
-      if (Array.isArray(request)) {
-        candidates = candidates.concat(
-          request.map(
-            (event) => ({ priority, ...event }), // create candidates for each request with current bids priority
-          ),
-        )
-        continue
-      }
+    const blocked: ParameterIdiom[] = []
+    const candidates: CandidateBid[] = []
+    for (const bid of pending) {
+      const { request, priority, block } = bid
+      block && blocked.push(...ensureArray(block))
       if (request) {
-        candidates.push({ priority, ...request }) // create candidates for each request with current bids priority
+        Array.isArray(request) ?
+          candidates.push(
+            ...request.map(
+              (event) => ({ priority, ...event }), // create candidates for each request with current bids priority
+            ),
+          )
+        : candidates.push({ priority, ...request })
       }
     }
-    const blocked = bids.flatMap<ParameterIdiom>(({ block }) => block || [])
-
-    const filteredBids: CandidateBid[] | never[] = candidates.filter(
-      (request) => !blocked.some(requestInParameter(request)),
-    )
-    const selectedEvent = eventSelectionStrategy(filteredBids)
+    const filteredBids: CandidateBid[] = []
+    const length = candidates.length
+    for (let i = 0; i < length; i++) {
+      const candidate = candidates[i]
+      if (!blocked.some(requestInParameter(candidate))) {
+        filteredBids.push(candidate)
+      }
+    }
+    const selectedEvent = strategy(filteredBids)
     if (selectedEvent) {
-      dev && snapshotPublisher && snapshotPublisher(stateSnapshot({ bids, selectedEvent }))
+      snapshotPublisher && snapshotPublisher(stateSnapshot({ bids: [...pending], selectedEvent }))
       nextStep(selectedEvent)
     }
   }
   // Queue up bids for next step of super step
   function nextStep(selectedEvent: CandidateBid) {
     for (const bid of pending) {
-      const { request = [], waitFor = [], generator } = bid
-      const waitList = [
-        ...(Array.isArray(request) ? request : [request]),
-        ...(Array.isArray(waitFor) ? waitFor : [waitFor]),
-      ]
-      if (waitList.some(requestInParameter(selectedEvent)) && generator) {
+      if (!bid.generator) continue
+      // checking if the request is in the parameter which can be a waitFor or pending request AKA our waitList
+      if (
+        ensureArray(bid.request).some(requestInParameter(selectedEvent)) ||
+        ensureArray(bid.waitFor).some(requestInParameter(selectedEvent))
+      ) {
         running.add(bid)
         pending.delete(bid)
       }
     }
-    const { priority: _p, cb: _cb, ...detail } = selectedEvent
-    // To avoid infinite loop with calling trigger from feedback always stream select event
-    // checking if the request is in the parameter which can be a waitFor or pending request
-    actionPublisher(detail)
+    // To avoid infinite loop with calling trigger from feedback always publish select event
+    // after checking if request(s) is waitList and before our next run
+    actionPublisher({ type: selectedEvent.type, detail: selectedEvent.detail })
     run()
   }
   const trigger: Trigger = ({ type, detail }) => {
@@ -156,9 +156,7 @@ export const bProgram = ({
     }
   }
 
-  if (dev && snapshotPublisher) {
-    snapshotPublisher.subscribe((data: SnapshotMessage) => dev(data))
-  }
+  snapshotPublisher && snapshotPublisher.subscribe((data: SnapshotMessage) => dev(data))
 
   return Object.freeze({
     /** add thread function to behavioral program */

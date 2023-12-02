@@ -1,6 +1,6 @@
 import { hashString, trueTypeOf, reduceWhitespace } from '@plaited/utils'
 
-type Primitive = null | undefined | number | string | boolean | bigint
+export type Primitive = null | undefined | number | string | boolean | bigint
 
 type ClassObject = {
   content: string

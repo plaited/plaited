@@ -1,6 +1,7 @@
 {
-  "name": "@plaited/jsx",
+  "name": "@plaited/miles",
   "version": "5.3.0",
+  "description": "light-dom css-in-js library",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
@@ -12,33 +13,26 @@
   "bugs": {
     "url": "https://github.com/plaited/plaited/issues"
   },
-  "homepage": "https://github.com/plaited/plaited/tree/main/libs/jsx#readme",
+  "homepage": "https://github.com/plaited/plaited/tree/main/libs/miles#readme",
   "type": "module",
   "main": "./dist/index.js",
   "exports": {
     ".": "./dist/index.js",
-    "./ssr": "./dist/ssr.js",
-    "./utils": "./dist/utils.js",
-    "./jsx-runtime": "./dist/jsx-runtime.js",
-    "./jsx-dev-runtime": "./dist/jsx-dev-runtime.js"
+    "./adopt-stylesheets": "./dist/adopt-stylesheets.js"
   },
   "files": [
-    "./dist/**",
-    "./jsx-runtime.js",
-    "./jsx-dev-runtime.js"
+    "./dist/**"
   ],
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
     "build": "tsc --project tsconfig.json",
-    "build-watch": "bun run build --watch",
-    "test": "bun test src/**/*.spec.ts",
-    "test-watch": "bun run test --watch"
+    "test": "bun test src/**/*.spec.ts"
   },
-  "types": "./index.d.ts",
+  "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/component-types": "5.3.0",
+    "@plaited/jsx": "5.3.0",
     "@plaited/utils": "5.3.0"
   }
 }

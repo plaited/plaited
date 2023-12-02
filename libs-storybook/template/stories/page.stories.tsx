@@ -1,6 +1,5 @@
 import { StoryObj, Meta } from '@plaited/storybook'
 import { assert, findByAttribute, fireEvent } from '@plaited/storybook-rite'
-
 import { Page } from './page.js'
 
 const meta: Meta<typeof Page> = {
@@ -20,7 +19,7 @@ type Story = StoryObj<typeof Page>
 
 export const LoggedOut: Story = {}
 
-export const LoggedIn: Story = {
+export const LoggingIn: Story = {
   play: async ({ canvasElement }) => {
     const loginButton = await findByAttribute('value', 'onLogin', canvasElement)
     await fireEvent(loginButton, 'click')

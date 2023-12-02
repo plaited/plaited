@@ -1,3 +1,4 @@
+import { findByAttribute, match, assert } from '@plaited/storybook-rite'
 import { Button } from './button.js'
 import { Meta, StoryObj } from '@plaited/storybook'
 
@@ -40,6 +41,17 @@ export const Large: Story = {
 }
 
 export const Small: Story = {
+  play: async ({ canvasElement }) => {
+    const button = await findByAttribute<HTMLButtonElement>('type', 'button', canvasElement)
+    const expected = 'Small Button'
+    const contains = match(button.innerHTML)
+    assert({
+      given: 'label arg passed to story',
+      should: 'render with label content',
+      actual: contains(expected),
+      expected,
+    })
+  },
   args: {
     dataTarget: 'button',
     size: 'small',

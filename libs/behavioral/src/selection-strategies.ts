@@ -1,5 +1,4 @@
 import { Strategy } from './types.js'
-import { strategies } from './constants.js'
 /** @description Randomized Priority Queue Selection Strategy */
 export const randomizedStrategy: Strategy = (filteredEvents) => {
   for (let i = filteredEvents.length - 1; i > 0; i--) {
@@ -16,9 +15,3 @@ export const chaosStrategy: Strategy = (filteredEvents) =>
 /** @description Priority Queue Selection Strategy */
 export const priorityStrategy: Strategy = (filteredEvents) =>
   filteredEvents.sort(({ priority: priorityA }, { priority: priorityB }) => priorityA - priorityB)[0]
-
-export const selectionStrategies = {
-  [strategies.priority]: priorityStrategy,
-  [strategies.chaos]: chaosStrategy,
-  [strategies.randomized]: randomizedStrategy,
-}
