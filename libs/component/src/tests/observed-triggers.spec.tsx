@@ -32,7 +32,7 @@ test('observed triggers', async (t) => {
   }) {
     plait({ $, feedback, addThreads, thread, sync, emit }: PlaitProps) {
       addThreads({
-        onAdd: thread(sync({ waitFor: { type: 'add' } }), sync({ request: { type: 'disable' } })),
+        onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),
       })
       feedback({
         disable() {

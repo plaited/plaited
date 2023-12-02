@@ -1,4 +1,4 @@
-import { Trigger, TriggerArgs } from '@plaited/behavioral'
+import { Trigger, BPEvent } from '@plaited/behavioral'
 import { Send } from '@plaited/component-types'
 /** Is a utility function to allow us to send and receive messages from the main thread in a worker */
 export const linkMain = (
@@ -6,10 +6,10 @@ export const linkMain = (
   context: Window & typeof globalThis,
   trigger: Trigger,
 ) => {
-  const eventHandler = ({ data }: { data: TriggerArgs }) => {
+  const eventHandler = ({ data }: { data: BPEvent }) => {
     trigger(data)
   }
-  const send = (recipient: string, detail: TriggerArgs) => {
+  const send = (recipient: string, detail: BPEvent) => {
     context.postMessage({
       recipient,
       detail,

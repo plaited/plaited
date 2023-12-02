@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 import { selectionSnapshot } from './selection-snapshot.js'
 import { ensureArray, isTypeOf } from '@plaited/utils'
-import { priorityStrategy } from './selection-strategies.js'
+import { priorityStrategy } from './public-utils.js'
 import { publisher } from './publisher.js'
 import {
   CandidateBid,
@@ -19,8 +19,6 @@ import {
 } from './types.js'
 import { loop, sync, thread } from './rules.js'
 import { triggerWaitFor, log, isListeningFor, isPendingRequest } from './utils.js'
-
-
 
 /**
  * Creates a behavioral program that manages the execution of behavioral threads.
@@ -70,32 +68,37 @@ export const bProgram = ({
     for (const bid of pending) {
       const { request, priority, block, thread } = bid
       block && blocked.push(...ensureArray(block))
-      request && candidates.push({ priority, thread, ...(isTypeOf<BPEventTemplate>(request, 'function') ? {template: request, ...request()} : request) })
+      request &&
+        candidates.push({
+          priority,
+          thread,
+          ...(isTypeOf<BPEventTemplate>(request, 'function') ? { template: request, ...request() } : request),
+        })
     }
     const filteredBids: CandidateBid[] = []
     const length = candidates.length
     for (let i = 0; i < length; i++) {
       const candidate = candidates[i]
-       // Are we blocking the the candidate event
+      // Are we blocking the the candidate event
       if (!blocked.some(isListeningFor(candidate))) {
         filteredBids.push(candidate)
       }
     }
     const selectedEvent = strategy(filteredBids)
     if (selectedEvent) {
-      snapshotPublisher && snapshotPublisher(selectionSnapshot({candidates, selectedEvent, pending }))
+      snapshotPublisher && snapshotPublisher(selectionSnapshot({ candidates, selectedEvent, pending }))
       nextStep(selectedEvent)
     }
   }
   // Queue up bids for next step of super step
   function nextStep(selectedEvent: CandidateBid) {
     for (const bid of pending) {
-      const {waitFor, request, generator} = bid
+      const { waitFor, request, generator } = bid
       if (!generator) continue
-        
+
       if (
         // Is a pending a event the selectedEvent
-        request && isPendingRequest(selectedEvent, request) ||
+        (request && isPendingRequest(selectedEvent, request)) ||
         // Are we waiting for selectedEvent
         ensureArray(waitFor).some(isListeningFor(selectedEvent))
       ) {
@@ -108,8 +111,8 @@ export const bProgram = ({
     actionPublisher({ type: selectedEvent.type, detail: selectedEvent.detail })
     run()
   }
-  
-  const trigger: Trigger = request => {
+
+  const trigger: Trigger = (request) => {
     const thread = function* () {
       yield {
         request,
@@ -144,7 +147,7 @@ export const bProgram = ({
     }
   }
 
-  snapshotPublisher && snapshotPublisher.subscribe(data => dev(data))
+  snapshotPublisher && snapshotPublisher.subscribe((data) => dev(data))
 
   return Object.freeze({
     /** add thread function to behavioral program */

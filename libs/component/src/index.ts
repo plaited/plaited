@@ -1,2 +1,2 @@
 export * from './component.js'
-export * from './define.js'
+export { define } from './define.js'

@@ -7,7 +7,7 @@
  */
 import { createTemplate } from '@plaited/jsx'
 import { dataTrigger, dataAddress } from '@plaited/jsx/utils'
-import { Trigger, bProgram, TriggerArgs, Publisher } from '@plaited/behavioral'
+import { Trigger, bProgram, BPEvent, Publisher } from '@plaited/behavioral'
 import type {
   PlaitedElement,
   PlaitProps,
@@ -242,7 +242,7 @@ export const Component: ComponentFunction = ({
       return mo
     }
     /** Public trigger method allows triggers of only observedTriggers from outside component */
-    trigger(args: TriggerArgs) {
+    trigger(args: BPEvent) {
       const name = this.dataset.address ?? this.tagName.toLowerCase()
       if (trueTypeOf(args) !== 'object') return console.error(`Invalid TriggerArg passed to Component [${name}]`)
       const { type, detail } = args
