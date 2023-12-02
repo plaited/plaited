@@ -52,7 +52,7 @@ const updateAttributes = (element: HTMLElement | SVGElement, attr: string, val: 
 
 const handleTemplateObject = (shadowRoot: ShadowRoot, fragment: TemplateObject) => {
   const { client, stylesheets, registry } = fragment
-  defineRegistry(registry, true)
+  registry.size && defineRegistry(registry, true)
   stylesheets.size && void updateShadowRootStyles(shadowRoot, stylesheets)
   const template = document.createElement('template')
   template.innerHTML = client.join('')
