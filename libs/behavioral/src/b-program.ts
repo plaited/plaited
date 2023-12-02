@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import { stateSnapshot } from './state-snapshot.js'
+import { selectionSnapshot } from './selection-snapshot.js'
 import { ensureArray, isTypeOf } from '@plaited/utils'
 import { priorityStrategy } from './selection-strategies.js'
 import { publisher } from './publisher.js'
@@ -7,18 +7,18 @@ import {
   CandidateBid,
   DevCallback,
   Feedback,
-  Parameter,
+  BPListener,
   PendingBid,
   RulesFunc,
   RunningBid,
   BPEvent,
-  SnapshotMessage,
+  SelectionSnapshot,
   Strategy,
   Trigger,
   BPEventTemplate,
 } from './types.js'
 import { loop, sync, thread } from './rules.js'
-import { triggerWaitFor, log, isInParameter, isPendingRequest } from './utils.js'
+import { triggerWaitFor, log, isListeningFor, isPendingRequest } from './utils.js'
 
 
 
@@ -42,7 +42,7 @@ export const bProgram = ({
   const pending = new Set<PendingBid>()
   const running = new Set<RunningBid>()
   const actionPublisher = publisher<BPEvent>()
-  const snapshotPublisher = dev && publisher<SnapshotMessage>()
+  const snapshotPublisher = dev && publisher<ReturnType<SelectionSnapshot>>()
   function run() {
     running.size && step()
   }
@@ -65,7 +65,7 @@ export const bProgram = ({
   }
   // Select next event
   function selectNextEvent() {
-    const blocked: Parameter[] = []
+    const blocked: BPListener[] = []
     const candidates: CandidateBid[] = []
     for (const bid of pending) {
       const { request, priority, block, thread } = bid
@@ -76,26 +76,28 @@ export const bProgram = ({
     const length = candidates.length
     for (let i = 0; i < length; i++) {
       const candidate = candidates[i]
-       // Checking if candidate is in block Parameter
-      if (!blocked.some(isInParameter(candidate))) {
+       // Are we blocking the the candidate event
+      if (!blocked.some(isListeningFor(candidate))) {
         filteredBids.push(candidate)
       }
     }
     const selectedEvent = strategy(filteredBids)
     if (selectedEvent) {
-      snapshotPublisher && snapshotPublisher(stateSnapshot({ bids: [...pending], selectedEvent }))
+      snapshotPublisher && snapshotPublisher(selectionSnapshot({candidates, selectedEvent, pending }))
       nextStep(selectedEvent)
     }
   }
   // Queue up bids for next step of super step
   function nextStep(selectedEvent: CandidateBid) {
     for (const bid of pending) {
-      if (!bid.generator) continue
+      const {waitFor, request, generator} = bid
+      if (!generator) continue
+        
       if (
-        // Checking if pending event is selectedEvent
-        ensureArray(bid.request).some(isPendingRequest(selectedEvent)) ||
-        // Checking if selectedEvent is in waitFor Parameter
-        ensureArray(bid.waitFor).some(isInParameter(selectedEvent))
+        // Is a pending a event the selectedEvent
+        request && isPendingRequest(selectedEvent, request) ||
+        // Are we waiting for selectedEvent
+        ensureArray(waitFor).some(isListeningFor(selectedEvent))
       ) {
         running.add(bid)
         pending.delete(bid)
@@ -142,7 +144,7 @@ export const bProgram = ({
     }
   }
 
-  snapshotPublisher && snapshotPublisher.subscribe((data: SnapshotMessage) => dev(data))
+  snapshotPublisher && snapshotPublisher.subscribe(data => dev(data))
 
   return Object.freeze({
     /** add thread function to behavioral program */

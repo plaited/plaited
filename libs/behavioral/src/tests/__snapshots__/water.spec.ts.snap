@@ -3,123 +3,178 @@
 exports[`logging 1`] = `
 [
   [
-    {
-      "priority": 0,
-      "request": true,
-      "selected": "start",
-      "thread": "start",
-    },
-    {
-      "priority": 1,
-      "request": false,
-      "thread": "addHot",
-    },
-    {
-      "priority": 2,
-      "request": false,
-      "thread": "addCold",
-    },
-    {
-      "priority": 3,
-      "thread": "mixHotCold",
-    },
+    [
+      {
+        "priority": 1,
+        "selected": false,
+        "thread": "addHot",
+        "type": "hot",
+      },
+      {
+        "blockedBy": "mixHotCold",
+        "priority": 2,
+        "selected": false,
+        "thread": "addCold",
+        "type": "cold",
+      },
+      {
+        "priority": 0,
+        "selected": true,
+        "thread": "start",
+        "type": "start",
+      },
+    ],
+    [
+      "thread",
+      "selected",
+      "type",
+      "detail",
+      "priority",
+      "blockedBy",
+    ],
   ],
   [
-    {
-      "priority": 1,
-      "request": true,
-      "selected": "hot",
-      "thread": "addHot",
-    },
-    {
-      "priority": 2,
-      "request": false,
-      "thread": "addCold",
-    },
-    {
-      "priority": 3,
-      "thread": "mixHotCold",
-    },
+    [
+      {
+        "priority": 1,
+        "selected": true,
+        "thread": "addHot",
+        "type": "hot",
+      },
+      {
+        "blockedBy": "mixHotCold",
+        "priority": 2,
+        "selected": false,
+        "thread": "addCold",
+        "type": "cold",
+      },
+    ],
+    [
+      "thread",
+      "selected",
+      "type",
+      "detail",
+      "priority",
+      "blockedBy",
+    ],
   ],
   [
-    {
-      "priority": 1,
-      "request": false,
-      "thread": "addHot",
-    },
-    {
-      "priority": 2,
-      "request": true,
-      "selected": "cold",
-      "thread": "addCold",
-    },
-    {
-      "priority": 3,
-      "thread": "mixHotCold",
-    },
+    [
+      {
+        "priority": 2,
+        "selected": true,
+        "thread": "addCold",
+        "type": "cold",
+      },
+      {
+        "blockedBy": "mixHotCold",
+        "priority": 1,
+        "selected": false,
+        "thread": "addHot",
+        "type": "hot",
+      },
+    ],
+    [
+      "thread",
+      "selected",
+      "type",
+      "detail",
+      "priority",
+      "blockedBy",
+    ],
   ],
   [
-    {
-      "priority": 1,
-      "request": true,
-      "selected": "hot",
-      "thread": "addHot",
-    },
-    {
-      "priority": 2,
-      "request": false,
-      "thread": "addCold",
-    },
-    {
-      "priority": 3,
-      "thread": "mixHotCold",
-    },
+    [
+      {
+        "priority": 1,
+        "selected": true,
+        "thread": "addHot",
+        "type": "hot",
+      },
+      {
+        "blockedBy": "mixHotCold",
+        "priority": 2,
+        "selected": false,
+        "thread": "addCold",
+        "type": "cold",
+      },
+    ],
+    [
+      "thread",
+      "selected",
+      "type",
+      "detail",
+      "priority",
+      "blockedBy",
+    ],
   ],
   [
-    {
-      "priority": 1,
-      "request": false,
-      "thread": "addHot",
-    },
-    {
-      "priority": 2,
-      "request": true,
-      "selected": "cold",
-      "thread": "addCold",
-    },
-    {
-      "priority": 3,
-      "thread": "mixHotCold",
-    },
+    [
+      {
+        "priority": 2,
+        "selected": true,
+        "thread": "addCold",
+        "type": "cold",
+      },
+      {
+        "blockedBy": "mixHotCold",
+        "priority": 1,
+        "selected": false,
+        "thread": "addHot",
+        "type": "hot",
+      },
+    ],
+    [
+      "thread",
+      "selected",
+      "type",
+      "detail",
+      "priority",
+      "blockedBy",
+    ],
   ],
   [
-    {
-      "priority": 1,
-      "request": true,
-      "selected": "hot",
-      "thread": "addHot",
-    },
-    {
-      "priority": 2,
-      "request": false,
-      "thread": "addCold",
-    },
-    {
-      "priority": 3,
-      "thread": "mixHotCold",
-    },
+    [
+      {
+        "priority": 1,
+        "selected": true,
+        "thread": "addHot",
+        "type": "hot",
+      },
+      {
+        "blockedBy": "mixHotCold",
+        "priority": 2,
+        "selected": false,
+        "thread": "addCold",
+        "type": "cold",
+      },
+    ],
+    [
+      "thread",
+      "selected",
+      "type",
+      "detail",
+      "priority",
+      "blockedBy",
+    ],
   ],
   [
-    {
-      "priority": 2,
-      "request": true,
-      "selected": "cold",
-      "thread": "addCold",
-    },
-    {
-      "priority": 3,
-      "thread": "mixHotCold",
-    },
+    [
+      {
+        "priority": 2,
+        "selected": true,
+        "thread": "addCold",
+        "type": "cold",
+      },
+    ],
+    [
+      "thread",
+      "selected",
+      "type",
+      "detail",
+      "priority",
+      "blockedBy",
+    ],
   ],
 ]
 `;

@@ -2,26 +2,27 @@ export type BPEvent<T = unknown> = {type: string, detail?: T}
 
 export type BPEventTemplate<T = unknown> = () => BPEvent<T>
 
-export type Parameter<T = unknown> =  string |  ((args: { type: string; detail: T }) => boolean)
+export type BPListener<T = unknown> =  string |  ((args: { type: string; detail: T }) => boolean)
 
-export interface StateSnapshot {
-  (props: { bids: PendingBid[]; selectedEvent: CandidateBid }): {
+export interface SelectionSnapshot {
+  (args: { pending: Set<PendingBid>, selectedEvent: CandidateBid, candidates: CandidateBid[]}): [{
     thread: string
-    request?: BPEvent[]
-    waitFor?: Parameter[]
-    block?: Parameter[]
+    selected: boolean
+    type: string
+    detail?: unknown
     priority: number
-  }[]
+    blockedBy?: string
+  }[], ["thread", "selected", "type", "detail", "priority", "blockedBy"]]
 }
 
-export type SnapshotMessage = ReturnType<StateSnapshot>
+export type LogMessage = ReturnType<SelectionSnapshot>
 
 export type Trigger = <T = unknown>(args: BPEvent<T>) => void
 
 export type RuleSet<T = unknown> = {
-  waitFor?:  Parameter<T> | Parameter<T>[]
+  waitFor?:  BPListener<T> | BPListener<T>[]
   request?: BPEvent<T> | BPEventTemplate<T>
-  block?:  Parameter<T> | Parameter<T>[]
+  block?:  BPListener<T> | BPListener<T>[]
 }
 
 export type RulesFunc<T = unknown> = () => IterableIterator<RuleSet<T>>
@@ -49,7 +50,7 @@ export type Feedback = (actions: {
 }) => void
 
 export interface DevCallback {
-  (args: ReturnType<StateSnapshot>): void
+  (args: ReturnType<SelectionSnapshot>): void
 }
 
 export type Publisher<T extends BPEvent = BPEvent> = {

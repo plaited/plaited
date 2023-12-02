@@ -1,18 +1,18 @@
 import { isTypeOf } from "@plaited/utils"
-import { Parameter, StateSnapshot, BPEvent, CandidateBid, BPEventTemplate } from "./types.js"
+import { BPListener, SelectionSnapshot, BPEvent, CandidateBid, BPEventTemplate } from "./types.js"
 export const triggerWaitFor = () => true
-export const isPendingRequest = (bid: CandidateBid) => (event:BPEvent | BPEventTemplate) => isTypeOf<BPEventTemplate>(event, 'function') 
-  ? event === bid?.template
-  : event.type== bid.type
+export const isPendingRequest = (selectedEvent: CandidateBid, event:BPEvent | BPEventTemplate) => isTypeOf<BPEventTemplate>(event, 'function') 
+  ? event === selectedEvent?.template
+  : event.type== selectedEvent.type
 
-export const isInParameter = ({ type, detail }: CandidateBid) => {
-  return (param: Parameter): boolean => typeof param !== 'string'
-    ? param({
+export const isListeningFor = ({ type, detail }: CandidateBid) => {
+  return (listener: BPListener): boolean => typeof listener !== 'string'
+    ? listener({
         detail,
         type,
       })
-    : param === type
+    : listener === type
 }
 
 /** default dev callback function */
-export const log = (log: ReturnType<StateSnapshot>) => console.table(log)
+export const log = (log: ReturnType<SelectionSnapshot>) => console.table(log)
