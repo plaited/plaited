@@ -1,6 +1,6 @@
 {
   "name": "@plaited/miles",
-  "version": "5.3.0",
+  "version": "5.4.0",
   "description": "light-dom css-in-js library",
   "license": "ISC",
   "engines": {
@@ -32,7 +32,7 @@
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/jsx": "5.3.0",
-    "@plaited/utils": "5.3.0"
+    "@plaited/jsx": "5.4.0",
+    "@plaited/utils": "5.4.0"
   }
 }
