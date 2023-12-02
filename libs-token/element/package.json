@@ -1,6 +1,6 @@
 {
   "name": "@plaited/token-element",
-  "version": "5.4.0",
+  "version": "5.4.1",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
@@ -32,7 +32,7 @@
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/component": "5.4.0",
-    "@plaited/jsx": "5.4.0"
+    "@plaited/component": "5.4.1",
+    "@plaited/jsx": "5.4.1"
   }
 }

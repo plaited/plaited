@@ -1,6 +1,6 @@
 {
   "name": "@plaited/storybook-vite",
-  "version": "5.4.0",
+  "version": "5.4.1",
   "description": "Storybook for Plaited and Vite: Develop Web Components in isolation with Hot Reloading.",
   "license": "ISC",
   "engines": {
@@ -39,7 +39,7 @@
   },
   "types": "dist/index.d.ts",
   "dependencies": {
-    "@plaited/storybook": "5.4.0",
+    "@plaited/storybook": "5.4.1",
     "@storybook/builder-vite": "7.6.3",
     "@storybook/core-server": "7.6.3",
     "@storybook/node-logger": "7.6.3"
