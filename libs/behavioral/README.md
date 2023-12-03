@@ -25,45 +25,6 @@ programs in JavaScript.
   - [WaitFor and block events](#waitfor-and-block-events)
   - [Sync argument](#sync-argument)
 
-## What is behavioral programming?
-
-> Behavioral Programming, or bProgram for short, is based on scenarios.
-> Behavioral programs are composed of threads of behavior. These threads run in
-> parallel to coordinate a sequence of events via a synchronized protocol.
-> During a bProgram's execution, when a thread wants to synchronize with its
-> peers, it submits a statement to the central event arbiter using the sync
-> statement. This statement is returned when we invoke a bProgram. A **sync**
-> statement declares which events the **thread** requests, which events it waits
-> for (but does not request), and which events it would like to block (that is,
-> prevent from being selected). Request, block and waitFor events can be
-> described by passing a RuleSet object to the sync statement as parameter.
-
-```ts
-export type RuleSet<
-  T extends (Detail) = (Detail), = {
-  waitFor?: ParameterIdiom< | ParameterIdiom<[];
-  request?: RequestIdiom< | RequestIdiom<[];
-  block?: ParameterIdiom< | ParameterIdiom<[];
-};
-```
-
-> After calling sync, the thread is blocked, waiting for the rest of the threads
-> to synchronize as well. When all threads have submitted their statements, the
-> arbiter selects an event that was requested but not blocked. It then wakes up
-> the threads that requested or waited for that event. The rest of the threads
-> remain blocked, until an event they requested or waited for is selected.
-
-> Behavioral Programming was introduced by Harel, Marron and Weiss in 2012 in a
-> [paper](assets/behavioral-programming.pdf) published at the Communications of
-> the ACM.
-
-[What is Behavioral Programming?](https://bpjs.readthedocs.io/en/latest/BPjsTutorial/index.html)
-
-To learn more:
-
-1. Watch:
-   [Rethinking Software Systems: A friendly introduction to Behavioral Programming by Michael Bar Sinai, 2018](https://youtu.be/PW8VdWA0UcA)
-2. Read:
    [Learn about behavioral programming](https://github.com/plaited/plaited/tree/main/playbook/coding/learn-about-behavioral-programming.md)
 
 ## Example Usage
@@ -113,7 +74,7 @@ test('Add hot water 3 times', () => {
      */
     feedback,
   } = bProgram()
-  addThreads({
+ addThreads({
     addHot: thread(
       sync({ request: { type: 'hot' } }),
       sync({ request: { type: 'hot' } }),
@@ -205,12 +166,12 @@ test('interleave', () => {
     ),
     mixHotCold: loop([
       sync({
-        waitFor: { type: 'hot' },
-        block: { type: 'cold' },
+        waitFor:  'hot' ,
+        block:  'cold' ,
       }),
       sync({
-        waitFor: { type: 'cold' },
-        block: { type: 'hot' },
+        waitFor:  'cold' ,
+        block:  'hot' ,
       }),
     ]),
   })
@@ -279,19 +240,16 @@ const playerWins = (player: 'X' | 'O') =>
   winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
     acc[`${player}Wins (${win})`] = thread(
       sync<{ square: number }>({
-        waitFor: {
-          cb: ({ type, detail }) => type === player && win.includes(detail.square),
-        },
+        waitFor: ({ type, detail }) => type === player && win.includes(detail.square),
+      
       }),
       sync<{ square: number }>({
-        waitFor: {
-          cb: ({ type, detail }) => type === player && win.includes(detail.square),
-        },
+        waitFor: ({ type, detail }) => type === player && win.includes(detail.square),
+      
       }),
       sync<{ square: number }>({
-        waitFor: {
-          cb: ({ type, detail }) => type === player && win.includes(detail.square),
-        },
+        waitFor: ({ type, detail }) => type === player && win.includes(detail.square),
+      
       }),
       sync<{ win: number[] }>({
         request: { type: `${player}Win`, detail: { win } },
@@ -327,8 +285,8 @@ interleave moves.
 
 ```ts
 const enforceTurns = loop([
-  sync({ waitFor: { type: 'X' }, block: { type: 'O' } }),
-  sync({ waitFor: { type: 'O' }, block: { type: 'X' } }),
+  sync({ waitFor:  'X' , block:  'O'  }),
+  sync({ waitFor:  'O' , block:  'X'  }),
 ])
 
 test('enforceTurns', () => {
@@ -375,10 +333,10 @@ over the squares to create our `squaresTaken` threads.
 const squaresTaken = squares.reduce((acc: Record<string, RulesFunc>, square) => {
   acc[`(${square}) taken`] = thread(
     sync<{ square: number }>({
-      waitFor: { cb: ({ detail }) => square === detail.square },
+      waitFor:  ({ detail }) => square === detail.square ,
     }),
     sync<{ square: number }>({
-      block: { cb: ({ detail }) => square === detail.square },
+      block:  ({ detail }) => square === detail.square ,
     }),
   )
   return acc
@@ -394,8 +352,8 @@ test('squaresTaken', () => {
     ...playerWins('O'),
     ...playerWins('X'),
     enforceTurns: loop([
-      sync({ waitFor: { type: 'X' }, block: { type: 'O' } }),
-      sync({ waitFor: { type: 'O' }, block: { type: 'X' } }),
+      sync({ waitFor:  'X', block:  'O' }),
+      sync({ waitFor:  'O', block:  'X' }),
     ]),
     ...squaresTaken,
   })
@@ -408,12 +366,11 @@ test('squaresTaken', () => {
     },
   })
   trigger({ type: 'X', detail: { square: 0 } })
-  trigger({ type: 'O', detail: { square: 0 } }) // Here O try's to take an already used square
+  trigger({ type: 'O', detail: { square: 0 } })
   trigger({ type: 'X', detail: { square: 4 } })
   trigger({ type: 'O', detail: { square: 2 } })
   trigger({ type: 'X', detail: { square: 8 } })
   expect(actual).toEqual([{ player: 'O', square: 2 }])
-})
 ```
 
 #### 5. Let's write some code to stop the game when a player wins
@@ -423,8 +380,8 @@ We'll create a simple thread that will wait for one the win events, `XWin` |
 
 ```ts
 const stopGame = thread(
-  sync({ waitFor: [{ type: 'XWin' }, { type: 'OWin' }] }),
-  sync({ block: [{ type: 'X' }, { type: 'O' }] }),
+  sync({ waitFor: [ 'XWin',  'OWin'] }),
+  sync({ block: [ 'X',  'O'] }),
 )
 
 test('stopGame', () => {
@@ -495,14 +452,17 @@ unless that square has already been taken and the move blocked by our
 `squaresTaken` threads.
 
 ```ts
-const defaultMoves = loop([
-  sync({
-    request: squares.map((square) => ({
-      type: 'O',
-      detail: { square },
-    })),
-  }),
-])
+const defaultMoves = squares.reduce((threads, square) => {
+  threads[`defaultMoves(${square})`] = loop([
+    sync({
+      request:{
+        type: 'O',
+        detail: { square },
+      }
+    })
+  ])
+  return threads
+}, {})
 
 test('defaultMoves', () => {
   const { addThreads, feedback, trigger } = bProgram()
@@ -514,7 +474,7 @@ test('defaultMoves', () => {
     enforceTurns,
     ...squaresTaken,
     stopGame,
-    defaultMoves,
+    ...defaultMoves,
   })
   feedback({
     X({ square }: { square: number }) {
@@ -586,7 +546,7 @@ test('startAtCenter', () => {
     ...squaresTaken,
     stopGame,
     startAtCenter,
-    defaultMoves,
+    ...defaultMoves,
   })
   feedback({
     X({ square }: { square: number }) {
@@ -635,29 +595,26 @@ thus giving these threads an even greater priority when the central arbiter of
 our bProgram selects a requested event.
 
 ```ts
-const preventCompletionOfLineWithTwoXs = winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
-  acc[`StopXWin(${win})`] = thread(
-    sync<{ square: number }>({
-      waitFor: {
-        cb: ({ type, detail }) => type === 'X' && win.includes(detail.square),
-      },
-    }),
-    sync<{ square: number }>({
-      waitFor: {
-        cb: ({ type, detail }) => type === 'X' && win.includes(detail.square),
-      },
-    }),
-    sync<{ square: number }>({
-      request: win.map((square) => ({ type: 'O', detail: { square } })),
-    }),
-  )
-  return acc
-}, {})
-
 test('prevent completion of line with two Xs', () => {
+  const board = new Set(squares)
   const { addThreads, feedback, trigger } = bProgram()
   const actual: ({ player: 'X' | 'O'; square: number } | { player: 'X' | 'O'; win: number[] })[] = []
-
+  const preventCompletionOfLineWithTwoXs = winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
+    acc[`StopXWin(${win})`] = thread(
+      sync<{ square: number }>({
+        waitFor:  ({ type, detail }) => type === 'X' && win.includes(detail.square),
+        
+      }),
+      sync<{ square: number }>({
+        waitFor:  ({ type, detail }) => type === 'X' && win.includes(detail.square),
+        
+      }),
+      sync<{ square: number }>({
+        request: () => ({ type: 'O', detail: { square: win.find(num => board.has(num)) } }),
+      }),
+    )
+    return acc
+  }, {})
   addThreads({
     ...playerWins('O'),
     ...playerWins('X'),
@@ -666,14 +623,7 @@ test('prevent completion of line with two Xs', () => {
     stopGame,
     ...preventCompletionOfLineWithTwoXs,
     startAtCenter,
-    defaultMoves: loop([
-      sync({
-        request: squares.map((square) => ({
-          type: 'O',
-          detail: { square },
-        })),
-      }),
-    ]),
+    ...defaultMoves,
   })
   feedback({
     X({ square }: { square: number }) {
@@ -681,12 +631,14 @@ test('prevent completion of line with two Xs', () => {
         player: 'X',
         square,
       })
+      board.delete(square)
     },
     O({ square }: { square: number }) {
       actual.push({
         player: 'O',
         square,
       })
+      board.delete(square)
     },
     XWin({ win }: { win: [number, number, number] }) {
       actual.push({
@@ -703,6 +655,7 @@ test('prevent completion of line with two Xs', () => {
   })
   trigger({ type: 'X', detail: { square: 0 } })
   trigger({ type: 'X', detail: { square: 3 } })
+  //@ts-ignore: test
   expect(actual).toEqual([
     { player: 'X', square: 0 },
     { player: 'O', square: 4 },
@@ -719,15 +672,11 @@ Maybe we should create a user interface next???
 
 ### Event Detail
 
-Our request events can optionally contain a detail. This detail object is data
+Our request events can optionally contain a detail of the type `unknown`. This detail object is data
 passed along when the request event is selected. It is also used by our central
-arbiter when evaluating waitFor and request event callbacks `cb`. This allows
-waitFor and block to respectively notify their thread about an event that
-concerns it or allow their thread to block an event.
+arbiter when evaluating wether a requested or triggered event is being Listened to. This allows
+waitFor events and block and block events respectively.
 
-```ts
-export type Detail = unknown | (() => unknown) | Event
-```
 
 ### Request event and trigger argument
 
@@ -735,10 +684,12 @@ This is type of the object used by the **sync** function as value to be passed
 to the **request** key and the argument for our **trigger** function.
 
 ```ts
-export type RequestIdiom<T extends Detail = Detail> = {
-  type: string
-  detail?: T
-}
+export type BPEvent<T = unknown> = {type: string, detail?: T}
+```
+
+Request further can accept another type of event
+```ts
+export type BPEventTemplate<T = unknown> = () => BPEvent<T>
 ```
 
 ### WaitFor and block events
@@ -747,15 +698,7 @@ This is type of object used by the **sync** function as the value to be passed
 to the **waitFor** and **block** keys
 
 ```ts
-export type ParameterIdiom<T extends Detail = Detail> =
-  | {
-      type: string
-      cb?: Callback<T>
-    }
-  | {
-      type?: string
-      cb: Callback<T>
-    }
+export type BPListener<T = unknown> =  string |  ((args: { type: string; detail: T }) => boolean)
 ```
 
 ### Sync argument
@@ -765,8 +708,8 @@ the following type.
 
 ```ts
 export type RuleSet<T extends Detail = Detail> = {
-  waitFor?: ParameterIdiom<T> | ParameterIdiom<T>[]
-  request?: RequestIdiom<T> | RequestIdiom<T>[]
-  block?: ParameterIdiom<T> | ParameterIdiom<T>[]
+  waitFor?: BPListener<T> | BPListener<T>[]
+  request?: BPEvent<T> | BPEventTemplate<T>
+  block?: BPListener<T> | BPListener<T>[]
 }
 ```

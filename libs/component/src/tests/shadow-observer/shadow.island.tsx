@@ -44,8 +44,14 @@ export const [classes, stylesheet] = css`
   }
 `
 
+class SubIsland extends Component({
+  tag: 'sub-island',
+  template: <h3 className={classes['sub-island']}>sub island</h3>,
+}) {}
+
 export class ShadowIsland extends Component({
   tag: 'shadow-island',
+  dev: true,
   template: (
     <div
       className={classes.mount}
@@ -78,20 +84,15 @@ export class ShadowIsland extends Component({
 }) {
   plait({ feedback, addThreads, sync, thread, host, $, loop }: PlaitProps) {
     addThreads({
-      onRemoveSvg: thread(sync({ waitFor: { type: 'removeSvg' } }), sync({ request: { type: 'addSubIsland' } })),
-      onStart: thread(sync({ waitFor: { type: 'start' } }), sync({ request: { type: 'addSlot' } })),
-      onAddSvg: loop([sync({ waitFor: { type: 'add-svg' } }), sync({ request: { type: 'modifyAttributes' } })]),
+      onRemoveSvg: thread(sync({ waitFor: 'removeSvg' }), sync({ request: { type: 'addSubIsland' } })),
+      onStart: thread(sync({ waitFor: 'start' }), sync({ request: { type: 'addSlot' } })),
+      onAddSvg: loop([sync({ waitFor: 'add-svg' }), sync({ request: { type: 'modifyAttributes' } })]),
     })
     feedback({
       addSubIsland() {
         const [zone] = $('zone')
         /** render dynamic island to zone */
-        zone?.insert(
-          'beforeend',
-          <sub-island {...stylesheet}>
-            <h3 className={classes['sub-island']}>sub island</h3>
-          </sub-island>,
-        )
+        zone?.insert('beforeend', <SubIsland {...stylesheet} />)
       },
       addButton() {
         host.insertAdjacentHTML('beforeend', `<button slot='button'>add svg</button>`)

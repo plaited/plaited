@@ -1,53 +1,31 @@
-export interface StateSnapshot {
-  (props: { bids: PendingBid[]; selectedEvent: CandidateBid }): {
+export type BPEvent<T = unknown> = { type: string; detail?: T }
+
+export type BPEventTemplate<T = unknown> = () => BPEvent<T>
+
+export type BPListener<T = unknown> = string | ((args: { type: string; detail: T }) => boolean)
+
+export interface SelectionSnapshot {
+  (args: { pending: Set<PendingBid>; selectedEvent: CandidateBid; candidates: CandidateBid[] }): {
     thread: string
-    request?: RequestIdiom[]
-    waitFor?: ParameterIdiom[]
-    block?: ParameterIdiom[]
+    selected: boolean
+    type: string
+    detail?: unknown
     priority: number
+    blockedBy?: string
   }[]
 }
 
-export type Detail = unknown | (() => unknown) | Event
+export type LogMessage = ReturnType<SelectionSnapshot>
 
-export type SnapshotMessage = ReturnType<StateSnapshot>
+export type Trigger = <T = unknown>(args: BPEvent<T>) => void
 
-export type SelectedMessage = {
-  type: string
-  detail?: Detail
+export type RuleSet<T = unknown> = {
+  waitFor?: BPListener<T> | BPListener<T>[]
+  request?: BPEvent<T> | BPEventTemplate<T>
+  block?: BPListener<T> | BPListener<T>[]
 }
 
-export type Trigger = <T extends Detail = Detail>(args: TriggerArgs<T>) => void
-
-export type TriggerArgs<T extends Detail = Detail> = {
-  type: string
-  detail?: T
-}
-// Rule types
-type Callback<T extends Detail = Detail> = (args: { type: string; detail: T }) => boolean
-
-export type ParameterIdiom<T extends Detail = Detail> =
-  | {
-      type: string
-      cb?: Callback<T>
-    }
-  | {
-      type?: string
-      cb: Callback<T>
-    }
-
-export type RequestIdiom<T extends Detail = Detail> = {
-  type: string
-  detail?: T
-}
-
-export type RuleSet<T extends Detail = Detail> = {
-  waitFor?: ParameterIdiom<T> | ParameterIdiom<T>[]
-  request?: RequestIdiom<T> | RequestIdiom<T>[]
-  block?: ParameterIdiom<T> | ParameterIdiom<T>[]
-}
-
-export type RulesFunc<T extends Detail = Detail> = () => IterableIterator<RuleSet<T>>
+export type RulesFunc<T = unknown> = () => IterableIterator<RuleSet<T>>
 
 export type RunningBid = {
   trigger?: true
@@ -58,24 +36,22 @@ export type RunningBid = {
 export type PendingBid = RuleSet & RunningBid
 
 export type CandidateBid = {
+  thread: string
   priority: number
   type: string
-  detail?: Detail
-  cb?: Callback
+  detail?: unknown
+  template?: BPEventTemplate
 }
 
 export type Strategy = (filteredEvents: CandidateBid[] | never[]) => CandidateBid | undefined
 
-// Feedback Types
-type Actions<T extends Record<string, (detail: Detail) => void | Promise<void>>> = {
-  [K in keyof T]: T[K] extends (detail: infer D) => void ? (detail: D extends Detail ? D : Detail) => void : never
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Feedback = <T extends Record<string, (detail: any) => void>>(actions: Actions<T>) => void
+export type Feedback = (actions: { [key: string]: (detail: unknown) => void | Promise<void> }) => void
 
 export interface DevCallback {
-  (args: ReturnType<StateSnapshot>): void
+  (args: ReturnType<SelectionSnapshot>): void
 }
 
-export type Log = ReturnType<StateSnapshot>
+export type Publisher<T extends BPEvent = BPEvent> = {
+  (value: T): void
+  subscribe(listener: (msg: T) => void): () => boolean
+}

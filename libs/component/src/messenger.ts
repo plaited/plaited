@@ -1,4 +1,4 @@
-import type { Trigger, TriggerArgs } from '@plaited/behavioral'
+import type { Trigger, BPEvent } from '@plaited/behavioral'
 import type { Message, Messenger } from '@plaited/component-types'
 /** Enables communication between agents in a web app.
  * Agents can be Islands, workers, or behavioral program running in the main thread.
@@ -12,7 +12,7 @@ export const messenger = (id?: string): Messenger => {
   const recipients = new Set<string>()
   const emitter = new EventTarget()
   /** createMessenger request to another island or worker */
-  const createMessenger = (recipient: string, detail: TriggerArgs) => {
+  const createMessenger = (recipient: string, detail: BPEvent) => {
     if (!recipients.has(recipient)) {
       console.error(`No recipient with address [${recipient}] is connected to this messenger ${id ? `[${id}]` : ''}`)
       return
@@ -25,7 +25,7 @@ export const messenger = (id?: string): Messenger => {
     /** the url of our worker relative to the public directory*/
     worker: Worker,
   ) => {
-    const triggerWorker = (args: TriggerArgs) => {
+    const triggerWorker = (args: BPEvent) => {
       worker.postMessage(args)
     }
     const eventHandler = ({ data }: { data: Message }) => {
@@ -55,7 +55,7 @@ export const messenger = (id?: string): Messenger => {
     if (hasWorker) {
       ;({ triggerWorker, disconnectWorker } = worker(trigger))
     }
-    const eventHandler = (event: CustomEvent<TriggerArgs>) =>
+    const eventHandler = (event: CustomEvent<BPEvent>) =>
       hasWorker ? triggerWorker(event.detail) : trigger(event.detail)
     emitter.addEventListener(recipient, eventHandler as EventListenerOrEventListenerObject)
     return () => {

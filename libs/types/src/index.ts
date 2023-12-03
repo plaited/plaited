@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { bProgram, DevCallback, Strategy, Trigger, TriggerArgs } from '@plaited/behavioral'
+import { bProgram, DevCallback, Strategy, Trigger, BPEvent, Publisher } from '@plaited/behavioral'
 import * as CSS from 'csstype'
 
 type Booleanish = boolean | 'true' | 'false'
@@ -1326,7 +1326,7 @@ export interface CreateTemplate {
   <T extends Tag>(tag: T, attrs: ExcludeChildrenForVoidTags<T, InferAttrs<T>>): TemplateObject
 }
 
-export type Send = (recipient: string, detail: TriggerArgs) => void
+export type Send = (recipient: string, detail: BPEvent) => void
 
 export interface Messenger extends Send {
   connect: (recipient: string, trigger: Trigger | Worker) => undefined | (() => void)
@@ -1335,7 +1335,7 @@ export interface Messenger extends Send {
 
 export type Message = {
   recipient: string
-  detail: TriggerArgs
+  detail: BPEvent
 }
 
 export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
@@ -1367,17 +1367,12 @@ export type Sugar = {
 export type SugaredElement<T extends HTMLElement | SVGElement = HTMLElement | SVGElement> = T & Sugar
 
 export type Emit = (
-  args: TriggerArgs & {
+  args: BPEvent & {
     bubbles?: boolean
     cancelable?: boolean
     composed?: boolean
   },
 ) => void
-
-export type Publisher<T extends TriggerArgs = TriggerArgs> = {
-  (value: T): void
-  subscribe(listener: (msg: T) => void): () => boolean
-}
 
 export type PlaitProps = {
   /** query for elements with the data-target attribute in the Island's shadowDom and slots */

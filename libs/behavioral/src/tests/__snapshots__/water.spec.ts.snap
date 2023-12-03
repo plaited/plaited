@@ -1,258 +1,131 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Bun Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`logging 1`] = `
 [
   [
     {
+      "blockedBy": undefined,
+      "detail": undefined,
       "priority": 0,
-      "request": [
-        {
-          "detail": undefined,
-          "type": "start",
-        },
-      ],
-      "selected": "start",
+      "selected": true,
       "thread": "start",
-      "trigger": true,
-      "waitFor": [
-        {
-          "cb": [Function],
-          "type": "",
-        },
-      ],
+      "type": "start",
     },
     {
+      "blockedBy": undefined,
+      "detail": undefined,
       "priority": 1,
-      "request": [
-        {
-          "type": "hot",
-        },
-      ],
+      "selected": false,
       "thread": "addHot",
+      "type": "hot",
     },
     {
+      "blockedBy": "mixHotCold",
+      "detail": undefined,
       "priority": 2,
-      "request": [
-        {
-          "type": "cold",
-        },
-      ],
+      "selected": false,
       "thread": "addCold",
-    },
-    {
-      "block": [
-        {
-          "type": "cold",
-        },
-      ],
-      "priority": 3,
-      "thread": "mixHotCold",
-      "waitFor": [
-        {
-          "type": "hot",
-        },
-      ],
+      "type": "cold",
     },
   ],
   [
     {
+      "blockedBy": undefined,
+      "detail": undefined,
       "priority": 1,
-      "request": [
-        {
-          "type": "hot",
-        },
-      ],
-      "selected": "hot",
+      "selected": true,
       "thread": "addHot",
+      "type": "hot",
     },
     {
+      "blockedBy": "mixHotCold",
+      "detail": undefined,
       "priority": 2,
-      "request": [
-        {
-          "type": "cold",
-        },
-      ],
+      "selected": false,
       "thread": "addCold",
-    },
-    {
-      "block": [
-        {
-          "type": "cold",
-        },
-      ],
-      "priority": 3,
-      "thread": "mixHotCold",
-      "waitFor": [
-        {
-          "type": "hot",
-        },
-      ],
+      "type": "cold",
     },
   ],
   [
     {
+      "blockedBy": "mixHotCold",
+      "detail": undefined,
       "priority": 1,
-      "request": [
-        {
-          "type": "hot",
-        },
-      ],
+      "selected": false,
       "thread": "addHot",
+      "type": "hot",
     },
     {
+      "blockedBy": undefined,
+      "detail": undefined,
       "priority": 2,
-      "request": [
-        {
-          "type": "cold",
-        },
-      ],
-      "selected": "cold",
+      "selected": true,
       "thread": "addCold",
-    },
-    {
-      "block": [
-        {
-          "type": "hot",
-        },
-      ],
-      "priority": 3,
-      "thread": "mixHotCold",
-      "waitFor": [
-        {
-          "type": "cold",
-        },
-      ],
+      "type": "cold",
     },
   ],
   [
     {
+      "blockedBy": undefined,
+      "detail": undefined,
       "priority": 1,
-      "request": [
-        {
-          "type": "hot",
-        },
-      ],
-      "selected": "hot",
+      "selected": true,
       "thread": "addHot",
+      "type": "hot",
     },
     {
+      "blockedBy": "mixHotCold",
+      "detail": undefined,
       "priority": 2,
-      "request": [
-        {
-          "type": "cold",
-        },
-      ],
+      "selected": false,
       "thread": "addCold",
-    },
-    {
-      "block": [
-        {
-          "type": "cold",
-        },
-      ],
-      "priority": 3,
-      "thread": "mixHotCold",
-      "waitFor": [
-        {
-          "type": "hot",
-        },
-      ],
+      "type": "cold",
     },
   ],
   [
     {
+      "blockedBy": "mixHotCold",
+      "detail": undefined,
       "priority": 1,
-      "request": [
-        {
-          "type": "hot",
-        },
-      ],
+      "selected": false,
       "thread": "addHot",
+      "type": "hot",
     },
     {
+      "blockedBy": undefined,
+      "detail": undefined,
       "priority": 2,
-      "request": [
-        {
-          "type": "cold",
-        },
-      ],
-      "selected": "cold",
+      "selected": true,
       "thread": "addCold",
-    },
-    {
-      "block": [
-        {
-          "type": "hot",
-        },
-      ],
-      "priority": 3,
-      "thread": "mixHotCold",
-      "waitFor": [
-        {
-          "type": "cold",
-        },
-      ],
+      "type": "cold",
     },
   ],
   [
     {
+      "blockedBy": undefined,
+      "detail": undefined,
       "priority": 1,
-      "request": [
-        {
-          "type": "hot",
-        },
-      ],
-      "selected": "hot",
+      "selected": true,
       "thread": "addHot",
+      "type": "hot",
     },
     {
+      "blockedBy": "mixHotCold",
+      "detail": undefined,
       "priority": 2,
-      "request": [
-        {
-          "type": "cold",
-        },
-      ],
+      "selected": false,
       "thread": "addCold",
-    },
-    {
-      "block": [
-        {
-          "type": "cold",
-        },
-      ],
-      "priority": 3,
-      "thread": "mixHotCold",
-      "waitFor": [
-        {
-          "type": "hot",
-        },
-      ],
+      "type": "cold",
     },
   ],
   [
     {
+      "blockedBy": undefined,
+      "detail": undefined,
       "priority": 2,
-      "request": [
-        {
-          "type": "cold",
-        },
-      ],
-      "selected": "cold",
+      "selected": true,
       "thread": "addCold",
-    },
-    {
-      "block": [
-        {
-          "type": "hot",
-        },
-      ],
-      "priority": 3,
-      "thread": "mixHotCold",
-      "waitFor": [
-        {
-          "type": "cold",
-        },
-      ],
+      "type": "cold",
     },
   ],
 ]
