@@ -17,8 +17,7 @@
   "type": "module",
   "main": "./dist/index.js",
   "exports": {
-    ".": "./dist/index.js",
-    "./adopt-stylesheets": "./dist/adopt-stylesheets.js"
+    ".": "./dist/index.js"
   },
   "files": [
     "./dist/**"
@@ -28,7 +27,15 @@
   },
   "scripts": {
     "build": "tsc --project tsconfig.json",
-    "test": "bun test src/**/*.spec.ts"
+    "build-watch": "bun run build --watch",
+    "test": "bun test src/**/*.spec.ts",
+    "test-watch": "bun run test --watch"
   },
-  "types": "./dist/index.d.ts"
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "typescript": "5.3.2"
+  },
+  "devDependencies": {
+    "plaited": "5.5.0"
+  }
 }
