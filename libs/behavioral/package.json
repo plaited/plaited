@@ -1,6 +1,6 @@
 {
   "name": "@plaited/behavioral",
-  "version": "5.4.1",
+  "version": "5.5.0",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
@@ -33,6 +33,6 @@
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/utils": "5.4.1"
+    "@plaited/utils": "5.5.0"
   }
 }

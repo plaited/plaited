@@ -1,6 +1,6 @@
 {
   "name": "@plaited/storybook-rite",
-  "version": "5.4.1",
+  "version": "5.5.0",
   "description": "Instrumented version of @plaited/rite for Storybook Interactions",
   "license": "ISC",
   "engines": {
@@ -41,7 +41,7 @@
   },
   "types": "dist/index.d.ts",
   "dependencies": {
-    "@plaited/assert": "5.4.1",
+    "@plaited/assert": "5.5.0",
     "@storybook/instrumenter": "7.6.3"
   },
   "peerDependencies": {
