@@ -125,8 +125,8 @@ export class Header extends Component({
   }
   plait({ feedback, host }: PlaitProps): void | Promise<void> {
     feedback({
-      click(e: Event) {
-        const value = (e.target as HTMLButtonElement)?.value
+      click(e: MouseEvent & { target: HTMLButtonElement }) {
+        const value = e.target.value
         host.dispatchEvent(new CustomEvent(value, { bubbles: true }))
       },
     })
