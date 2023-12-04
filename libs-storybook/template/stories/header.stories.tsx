@@ -1,6 +1,5 @@
 import { createFragment } from '@plaited/storybook-utils'
 import { StoryObj, Meta } from '@plaited/storybook'
-import { withActions } from '@storybook/addon-actions/decorator'
 import { assert, throws, findByText, findByAttribute } from '@plaited/storybook-rite'
 import { Header } from './header.js'
 
@@ -21,7 +20,6 @@ const meta: Meta<typeof Header> = {
     onLogout: { action: 'onLogout' },
     onCreateAccount: { action: 'onCreateAccount' },
   },
-  decorators: [withActions],
 }
 
 export default meta
@@ -69,7 +67,6 @@ export const LoggedOut: Story = {
 export const RegistryIsDefiningElements: Story = {
   play: async () => {
     const msg = await throws((tag, el) => customElements.define(el, tag), Header, Header.tag)
-    console.log(msg)
     assert({
       given: 'reverent receives irreverent attitude',
       should: 'throw an error',

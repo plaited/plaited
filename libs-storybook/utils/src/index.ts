@@ -1,7 +1,8 @@
-import type { TemplateObject } from '@plaited/component-types'
+import type { TemplateObject, Attrs, FunctionTemplate, PlaitedComponentConstructor } from '@plaited/component-types'
 import { kebabCase } from '@plaited/utils'
 import { adoptStylesheets } from '@plaited/miles/adopt-stylesheets'
-export const cssCache = new WeakMap<Document, Set<string>>()
+
+// Create document fragment from template object
 export const createFragment = (template: TemplateObject) => {
   const { client, stylesheets } = template
   if (stylesheets.size) {
@@ -15,9 +16,44 @@ export const createFragment = (template: TemplateObject) => {
 // Create story id from story set tile and story export name
 export const toId = (title: string, name: string) => `${kebabCase(title)}--${kebabCase(name)}`
 
+// Validate story title
 export const isValidTitle = (title: string) => {
   const regex = /^[A-Za-z/]+$/
   const isValid = regex.test(title)
   if (!isValid) console.error(`Invalid Meta title [${title}]`)
   return isValid
 }
+const isEvent = (arg: string): arg is `on${string}` => arg.startsWith('on')
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const filterAttrs = (args: Record<string, any>) => {
+  const attrs: Attrs = {}
+  const events: { [key: `on${string}`]: unknown } = {}
+  for (const arg in args) {
+    if (isEvent(arg)) {
+      events[arg] = args[arg]
+    } else {
+      attrs[arg] = args[arg]
+    }
+  }
+  return { attrs, events }
+}
+
+// Create JSX string from component name and attributes
+export const createJSXString = (tagName: string, attrs: Attrs) => {
+  const propsString = Object.entries(attrs)
+    .map(([key, value]) => {
+      if (typeof value === 'string') {
+        return `${key}="${value}"`
+      }
+      return `${key}={${JSON.stringify(value)}}`
+    })
+    .join(' ')
+
+  return `<${tagName} ${propsString} />`
+}
+
+// Check if component is a Plaited component or FunctionTemplate
+export const isPlaitedComponent = (
+  component: PlaitedComponentConstructor | FunctionTemplate,
+): component is PlaitedComponentConstructor => 'template' in component

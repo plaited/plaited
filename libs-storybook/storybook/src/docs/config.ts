@@ -1,8 +1,11 @@
-import {jsxDecorator} from './jsx-decorator.js';
+import { jsxDecorator } from './jsx-decorator.js'
 export const parameters = {
   docs: {
     story: { inline: true },
+    source: {
+      language: 'jsx',
+    },
   },
 }
 
-export const decorators = [jsxDecorator];
+export const decorators = [jsxDecorator]

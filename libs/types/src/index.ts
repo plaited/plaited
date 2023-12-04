@@ -414,7 +414,7 @@ type HTMLAttributes = AriaAttributes &
   }
 
 // Combine both filters
-type DetailedHTMLAttributes = HTMLAttributes & Record<string, any>
+type DetailedHTMLAttributes = HTMLAttributes & Record<string, any> & { [key: `on${string}`]: never }
 
 type HTMLAttributeReferrerPolicy =
   | ''
