@@ -4,4 +4,4 @@ export { renderToCanvas, render } from './render.js'
 
 export const parameters = { renderer: 'plaited', ...docsParams }
 
-export {decorators} 
+export { decorators }

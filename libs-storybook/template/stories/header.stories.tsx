@@ -26,7 +26,7 @@ export default meta
 type Story = StoryObj<typeof Header>
 
 export const LoggedIn: Story = {
-  render({ user }) {
+  render({ user }, extra) {
     const frag = createFragment(<Header.template user={user?.name} />)
     return frag
   },

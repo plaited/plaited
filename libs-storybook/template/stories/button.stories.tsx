@@ -1,7 +1,7 @@
 import { findByAttribute, match, assert } from '@plaited/storybook-rite'
 import { Button } from './button.js'
 import { Meta, StoryObj } from '@plaited/storybook'
-
+import { createFragment } from '@plaited/storybook-utils'
 // More on how to set up stories at: https://storybook.js.org/docs/preact/writing-stories/introduction
 const meta: Meta<typeof Button> = {
   title: 'Example/Button',
@@ -23,6 +23,13 @@ export const Primary: Story = {
     primary: true,
     label: 'Primary Button',
   },
+  decorators: [
+    (Story, ...args) => {
+      const frag = createFragment(<div style={{ margin: '3em' }}></div>)
+      frag.firstElementChild?.append(Story())
+      return frag
+    },
+  ]
 }
 
 export const Secondary: Story = {

@@ -1,19 +1,19 @@
 import type { PartialStoryFn, StoryContext } from '@storybook/types'
 import { addons, useEffect } from '@storybook/preview-api'
 import { SNIPPET_RENDERED, SourceType } from '@storybook/docs-tools'
-import { createJSXString, filterAttrs } from '@plaited/storybook-utils'
+import { createJSXString } from '@plaited/storybook-utils'
 import type { PlaitedRender } from '../types.js'
 
 function skipSourceRender(context: StoryContext<PlaitedRender>) {
-  // We don't have a component name
+  // We don't have a component name so skip render source
   if (!context.component?.name) return true
-  // We are using the render function feature
-  if (context.originalStoryFn.length === 1) return true
+  // We are using the render function feature so skip render source
+  if (context.moduleExport?.render) return true
   const sourceParams = context?.parameters.docs?.source
   const isArgsStory = context?.parameters.__isArgsStory
   if (sourceParams?.type === SourceType.DYNAMIC) return false
-  // never render if the user is forcing the block to render code, or
-  // if the user provides code, or if it's not an args story.
+
+  // if we're providing code or it's not an args story we don't want to render source
   return !isArgsStory || sourceParams?.code || sourceParams?.type === SourceType.CODE
 }
 
