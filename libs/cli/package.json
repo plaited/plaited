@@ -1,7 +1,7 @@
 {
-  "name": "@plaited/custom-elements-manifest",
+  "name": "@plaited/cli",
   "version": "5.4.1",
-  "description": "plugin for @custom-elements-manifest/analyzer that adds support to Plaited",
+  "description": "Plaited cli for automated tasks",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
