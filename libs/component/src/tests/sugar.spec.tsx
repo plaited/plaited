@@ -100,8 +100,10 @@ class Fixture extends Component({
     </div>
   ),
   tag: 'table-fixture',
-  observedTriggers: ['insert', 'render', 'replace', 'remove', 'removeAttributes', 'getAttribute', 'multiSetAttributes'],
 }) {
+  static get observedTriggers() {
+    return ['insert', 'render', 'replace', 'remove', 'removeAttributes', 'getAttribute', 'multiSetAttributes']
+  }
   plait({ $, clone, feedback }: PlaitProps): void | Promise<void> {
     const cb = clone(row, forEachRow)
     feedback({

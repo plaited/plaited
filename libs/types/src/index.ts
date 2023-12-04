@@ -1409,6 +1409,8 @@ export interface PlaitedComponentConstructor {
   tag: string
   template: FunctionTemplate
   registry: Set<PlaitedComponentConstructor>
+  /** Triggers that can be fired from outside component by invoking trigger method directly, via messenger, or via publisher */
+  observedTriggers?: string[]
   new (): PlaitedElement
 }
 
@@ -1425,8 +1427,6 @@ export type ComponentFunction = (args: {
   dev?: true | DevCallback
   /** event selection strategy callback from behavioral library */
   strategy?: Strategy
-  /** Triggers that can be fired from outside component by invoking trigger method directly, via messenger, or via publisher */
-  observedTriggers?: Array<string>
 }) => PlaitedComponentConstructor
 
 export type TriggerElement = (HTMLElement | SVGElement) & {

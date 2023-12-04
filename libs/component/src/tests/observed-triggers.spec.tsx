@@ -28,8 +28,10 @@ test('observed triggers', async (t) => {
         Hello
       </h1>
     ),
-    observedTriggers: ['add'],
   }) {
+    static get observedTriggers() {
+      return ['add']
+    }
     plait({ $, feedback, addThreads, thread, sync, emit }: PlaitProps) {
       addThreads({
         onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),
