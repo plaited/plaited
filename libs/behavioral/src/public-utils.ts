@@ -17,7 +17,7 @@ export const priorityStrategy: Strategy = (filteredEvents) =>
  * @description  Creates a new BPEvent publisher.
  * A publisher object is a function that can be called with a value of type BPEvent,
  * which will notify all subscribed listeners with that value.
- * It also has a `subscribe` method that allows listeners to subscribe to the publisher.
+ * Listeners use the `subscribe` method connect to the publisher.
  * @returns A new publisher object.
  **/
 export const publisher = <T extends BPEvent = BPEvent>(): Publisher<T> => _publisher<T>()
