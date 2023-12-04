@@ -19,7 +19,7 @@ function skipSourceRender(context: StoryContext<PlaitedRender>) {
   return !isArgsStory || sourceParams?.code || sourceParams?.type === SourceType.CODE;
 }
 
-export function sourceDecorator(
+export function jsxDecorator(
   storyFn: PartialStoryFn<PlaitedRender>,
   context: StoryContext<PlaitedRender>
 ): PlaitedRender['storyResult'] {
