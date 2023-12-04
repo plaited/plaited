@@ -1,0 +1,34 @@
+{
+  "name": "@plaited/custom-elements-manifest",
+  "version": "5.4.1",
+  "description": "plugin for @custom-elements-manifest/analyzer that adds support to Plaited",
+  "license": "ISC",
+  "engines": {
+    "node": ">= v18.15.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plaited/plaited.git"
+  },
+  "bugs": {
+    "url": "https://github.com/plaited/plaited/issues"
+  },
+  "homepage": "https://github.com/plaited/plaited/tree/main/libs/custom-elements-manifest#readme",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./adopt-stylesheets": "./dist/adopt-stylesheets.js"
+  },
+  "files": [
+    "./dist/**"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "test": "bun test src/**/*.spec.ts"
+  },
+  "types": "./dist/index.d.ts"
+}
