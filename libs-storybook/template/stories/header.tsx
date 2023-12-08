@@ -38,8 +38,6 @@ const [cls, stylesheet] = css`
 
 export class Header extends Component({
   tag: 'header-el',
-  // dev: true,
-  observedTriggers: ['user'],
   template: (
     <header {...stylesheet}>
       <div className={cls['storybook-header']}>
@@ -91,6 +89,7 @@ export class Header extends Component({
   ),
 }) {
   static observedAttributes = ['user']
+  static observedTriggers = ['user']
   attributeChangedCallback(name: string, oldValue: string, newValue: string): void {
     if (name === 'user') {
       const [bar] = this.$('button-bar')
@@ -126,8 +125,8 @@ export class Header extends Component({
   }
   plait({ feedback, host }: PlaitProps): void | Promise<void> {
     feedback({
-      click(e: Event) {
-        const value = (e.target as HTMLButtonElement)?.value
+      click(e: MouseEvent & { target: HTMLButtonElement }) {
+        const value = e.target.value
         host.dispatchEvent(new CustomEvent(value, { bubbles: true }))
       },
     })

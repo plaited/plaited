@@ -9,6 +9,7 @@ import { createTemplate } from '@plaited/jsx'
 import { dataTrigger, dataAddress } from '@plaited/jsx/utils'
 import { Trigger, bProgram, BPEvent, Publisher } from '@plaited/behavioral'
 import type {
+  PlaitedComponentConstructor,
   PlaitedElement,
   PlaitProps,
   ComponentFunction,
@@ -66,7 +67,6 @@ export const Component: ComponentFunction = ({
   template,
   dev,
   strategy,
-  observedTriggers = [],
 }) => {
   if (!tag) {
     throw new Error(`Component is missing a [tag]`)
@@ -88,7 +88,8 @@ export const Component: ComponentFunction = ({
           ...(Array.isArray(children) ? children : [children]),
         ],
       })
-    #observedTriggers = new Set(observedTriggers)
+    static observedTriggers?: string[]
+    #observedTriggers = new Set((this.constructor as PlaitedComponentConstructor)?.observedTriggers ?? [])
     internals_: ElementInternals
     #root: ShadowRoot
     $: QuerySelector

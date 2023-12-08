@@ -1,15 +1,8 @@
-import type { Attrs, FunctionTemplate, PlaitedComponentConstructor } from '@plaited/component-types'
 import type { RenderContext, ArgsStoryFn, PartialStoryFn, Args } from '@storybook/types'
 
 import type { StoryFnPlaitedReturnType, PlaitedRender } from './types.js'
 
-import { createFragment } from '@plaited/storybook-utils'
-
-const isEvent = (arg: string): arg is `on${string}` => arg.startsWith('on')
-
-const isPlaitedComponent = (
-  component: PlaitedComponentConstructor | FunctionTemplate,
-): component is PlaitedComponentConstructor => 'template' in component
+import { createFragment, filterAttrs, isPlaitedComponent } from '@plaited/storybook-utils'
 
 export const render: ArgsStoryFn<PlaitedRender> = (args, context) => {
   const { id, component } = context
@@ -17,15 +10,7 @@ export const render: ArgsStoryFn<PlaitedRender> = (args, context) => {
     throw new Error(`Unable to render story ${id} as the component annotation is missing from the default export`)
   }
   const Component = isPlaitedComponent(component) ? component.template : component
-  const attrs: Attrs = {}
-  const events: { [key: `on${string}`]: unknown } = {}
-  for (const arg in args) {
-    if (isEvent(arg)) {
-      events[arg] = args[arg]
-    } else {
-      attrs[arg] = args[arg]
-    }
-  }
+  const { attrs, events } = filterAttrs(args)
   const frag = createFragment(Component(attrs))
   const element = frag.firstElementChild
   if (!element) return frag

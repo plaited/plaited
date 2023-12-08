@@ -45,7 +45,10 @@ export type CandidateBid = {
 
 export type Strategy = (filteredEvents: CandidateBid[] | never[]) => CandidateBid | undefined
 
-export type Feedback = (actions: { [key: string]: (detail: unknown) => void | Promise<void> }) => void
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Actions<T = any> = { [key: string]: (detail: T) => void | Promise<void> }
+
+export type Feedback = (actions: Actions) => void
 
 export interface DevCallback {
   (args: ReturnType<SelectionSnapshot>): void

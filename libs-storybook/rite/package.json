@@ -42,7 +42,7 @@
   "types": "dist/index.d.ts",
   "dependencies": {
     "@plaited/assert": "5.5.0",
-    "@storybook/instrumenter": "7.6.3"
+    "@storybook/instrumenter": "7.6.4"
   },
   "peerDependencies": {
     "@storybook/test-runner": ">=0.15.2"

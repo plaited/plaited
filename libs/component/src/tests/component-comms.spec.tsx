@@ -35,8 +35,10 @@ test('dynamic island comms', async (t) => {
         </button>
       </div>
     ),
-    observedTriggers: ['disable'],
   }) {
+    static get observedTriggers() {
+      return ['disable']
+    }
     plait({ feedback, $, connect }: PlaitProps) {
       const disconnect = connect(msg)
       feedback({
@@ -65,8 +67,10 @@ test('dynamic island comms', async (t) => {
         Hello
       </h1>
     ),
-    observedTriggers: ['add'],
   }) {
+    static get observedTriggers() {
+      return ['add']
+    }
     plait({ $, feedback, addThreads, thread, sync, connect }: PlaitProps) {
       connect(msg)
       addThreads({
