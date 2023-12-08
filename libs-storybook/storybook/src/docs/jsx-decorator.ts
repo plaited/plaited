@@ -27,7 +27,7 @@ export function jsxDecorator(
   let source: string
   useEffect(() => {
     const { id, unmappedArgs } = context
-    if (source) addons.getChannel().emit(SNIPPET_RENDERED, { id, source, args: unmappedArgs })
+    if (source) addons.getChannel().emit(SNIPPET_RENDERED, { id, source, args: unmappedArgs }) // Once the source is rendered, send it to the docs panel
   })
   if (!skipSourceRender(context) && name && args) {
     source = createJSXString(name, args)
