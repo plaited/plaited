@@ -1,0 +1,37 @@
+{
+  "name": "@plaited/ce-manifest",
+  "version": "5.5.0",
+  "description": "light-dom css-in-js library",
+  "license": "ISC",
+  "engines": {
+    "node": ">= v18.15.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plaited/plaited.git"
+  },
+  "bugs": {
+    "url": "https://github.com/plaited/plaited/issues"
+  },
+  "homepage": "https://github.com/plaited/plaited/tree/main/libs-cross-framework/ce-manifest#readme",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "./dist/**"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "test": "bun test src/**/*.spec.ts"
+  },
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@plaited/jsx": "5.5.0",
+    "@plaited/utils": "5.5.0"
+  }
+}

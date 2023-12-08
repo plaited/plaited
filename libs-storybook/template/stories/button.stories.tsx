@@ -29,7 +29,7 @@ export const Primary: Story = {
       frag.firstElementChild?.append(Story())
       return frag
     },
-  ]
+  ],
 }
 
 export const Secondary: Story = {
