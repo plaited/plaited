@@ -1,4 +1,4 @@
-import { escape, kebabCase, isTypeOf, ensureArray } from '@plaited/utils'
+import { escape, kebabCase, isTypeOf, ensureArray } from '../../../libs-cross-framework/utils/dist/index.js'
 import {
   booleanAttrs,
   primitives,

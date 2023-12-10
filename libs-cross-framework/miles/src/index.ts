@@ -1,5 +1,5 @@
 import { css as originalCss, Primitive } from '@plaited/jsx'
-import { canUseDOM } from '@plaited/utils'
+import { canUseDOM } from '../../utils/dist/index.js'
 import { adoptStylesheets } from './adopt-stylesheets.js'
 
 const ready = canUseDOM()

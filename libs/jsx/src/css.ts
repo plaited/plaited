@@ -1,4 +1,4 @@
-import { hashString, trueTypeOf, reduceWhitespace } from '@plaited/utils'
+import { hashString, trueTypeOf, reduceWhitespace } from '../../../libs-cross-framework/utils/dist/index.js'
 
 export type Primitive = null | undefined | number | string | boolean | bigint
 
