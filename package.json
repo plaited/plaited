@@ -9,7 +9,8 @@
     "libs-cross-framework/*",
     "libs-storybook/*",
     "libs-test/*",
-    "libs-token/*"
+    "libs-token/*",
+    "playbook"
   ],
   "scripts": {
     "build": "lerna run build --stream",
