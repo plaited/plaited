@@ -1,11 +1,9 @@
 {
-  "name": "@plaited/storybook-template",
+  "name": "@plaited/playbook",
   "private": true,
   "type": "module",
   "scripts": {
-    "storybook": "storybook dev -p 6006 --ci",
-    "test": "start-server-and-test 'bun run storybook' http://localhost:6006 'bun run test-storybook'",
-    "test-storybook": "test-storybook"
+    "storybook": "storybook dev -p 6006 --ci"
   },
   "devDependencies": {
     "plaited": "5.5.0",
