@@ -1,4 +1,4 @@
-import { trueTypeOf } from '@plaited/utils'
+import { trueTypeOf } from '../../../libs-cross-framework/utils/dist/index.js'
 import { createIDB } from './create-idb.js'
 
 type UpdateStoreArg<T = unknown> = (arg: T) => T

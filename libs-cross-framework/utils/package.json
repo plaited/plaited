@@ -12,7 +12,7 @@
   "bugs": {
     "url": "https://github.com/plaited/plaited/issues"
   },
-  "homepage": "https://github.com/plaited/plaited/tree/main/libs/utils#readme",
+  "homepage": "https://github.com/plaited/plaited/tree/main/libs-cross-framework/utils#readme",
   "keywords": [
     "plaited",
     "utils"

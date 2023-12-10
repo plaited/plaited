@@ -9,7 +9,7 @@ import type {
   Clone,
 } from '@plaited/component-types'
 import { booleanAttrs, dataTarget } from '@plaited/jsx/utils'
-import { isTypeOf } from '@plaited/utils'
+import { isTypeOf } from '../../../libs-cross-framework/utils/dist/index.js'
 import { defineRegistry } from './define.js'
 /**
  * Inspired by blingblingjs
