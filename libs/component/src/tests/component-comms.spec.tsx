@@ -7,28 +7,13 @@ import { messenger } from '../utils.js'
 
 test('dynamic island comms', async (t) => {
   const msg = messenger()
-  const [classes, stylesheet] = css`
-    .row {
-      display: flex;
-      gap: 10px;
-      padding: 12px;
-    }
-    .button {
-      height: 18px;
-      width: auto;
-    }
-  `
   const wrapper = document.querySelector('body')
   class ElOne extends Component({
     tag: 'dynamic-one',
     template: (
-      <div
-        className={classes.row}
-        {...stylesheet}
-      >
+      <div>
         <button
           data-target='button'
-          className={classes.button}
           data-trigger={{ click: 'click' }}
         >
           Add "world!"
@@ -44,7 +29,7 @@ test('dynamic island comms', async (t) => {
       feedback({
         disable() {
           const [button] = $<HTMLButtonElement>('button')
-          button && (button.disabled = true)
+          button && button.attr('disabled', true)
           disconnect()
         },
         click() {
@@ -59,14 +44,7 @@ test('dynamic island comms', async (t) => {
   class ElTwo extends Component({
     tag: 'dynamic-two',
     dev: true,
-    template: (
-      <h1
-        data-target='header'
-        {...stylesheet}
-      >
-        Hello
-      </h1>
-    ),
+    template: <h1 data-target='header'>Hello</h1>,
   }) {
     static get observedTriggers() {
       return ['add']

@@ -5,15 +5,17 @@ import { ssr } from '@plaited/jsx/ssr'
 import beautify from 'beautify'
 
 test('getTokenElement', () => {
-  const [_, stylesheet] = css`
+  const { $stylesheet } = css`
     :host {
       --blue: blue;
     }
   `
-  const DesignTokens = getTokenElement(stylesheet)
-  const Template = DesignTokens.template
+  let DesignTokens = getTokenElement($stylesheet)
+  let Template = DesignTokens.template
 
-  expect(beautify(ssr(<Template />), { format: 'html' })).toMatchSnapshot('no children')
+  expect(beautify(ssr(<Template />), { format: 'html' })).toMatchSnapshot()
+  DesignTokens = getTokenElement($stylesheet, 'plaited-tokens')
+  Template = DesignTokens.template
   expect(
     beautify(
       ssr(
@@ -23,5 +25,5 @@ test('getTokenElement', () => {
       ),
       { format: 'html' },
     ),
-  ).toMatchSnapshot('with children')
+  ).toMatchSnapshot()
 })

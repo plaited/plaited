@@ -1,7 +1,7 @@
 import { Component, PlaitProps, PlaitedElement, css } from 'plaited'
 import { Header } from './header.js'
 
-const [cls, stylesheet] = css`
+const { $stylesheet, ...cls } = css`
   .storybook-page {
     font-family: 'Nunito Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-size: 14px;
@@ -76,7 +76,7 @@ const [cls, stylesheet] = css`
 export class Page extends Component({
   tag: 'page-el',
   template: (
-    <article {...stylesheet}>
+    <article stylesheet={$stylesheet}>
       <Header
         data-target='header'
         data-trigger={{

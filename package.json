@@ -6,6 +6,7 @@
   "type": "module",
   "workspaces": [
     "libs/*",
+    "libs-cross-framework/*",
     "libs-storybook/*",
     "libs-test/*",
     "libs-token/*"

@@ -7,7 +7,7 @@ export const css = (
   strings: TemplateStringsArray,
   ...expressions: Array<Primitive | Primitive[]>
 ): Record<string, string> => {
-  const [c, s] = originalCss(strings, ...expressions)
-  if (ready) adoptStylesheets(s.stylesheet)
-  return c
+  const { $stylesheet, ...cls } = originalCss(strings, ...expressions)
+  if (ready) adoptStylesheets($stylesheet)
+  return cls
 }

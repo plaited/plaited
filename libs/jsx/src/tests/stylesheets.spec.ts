@@ -2,30 +2,32 @@ import { test, expect } from 'bun:test'
 import { css } from '../index.js'
 import { stylesheets } from '../utils.js'
 
-const sheet1 = css`
+const { $stylesheet: sheet1 } = css`
   .a {
     width: 100%;
   }
 `
-const sheet2 = css`
+const { $stylesheet: sheet2 } = css`
   .a {
     height: 100%;
   }
 `
 
-const sheet3 = css`
+const { $stylesheet: sheet3 } = css`
   .a {
     color: blue;
   }
 `
 
+const { $stylesheet: sheet4 } = css`
+  .a {
+    color: red;
+  }
+`
+
 test('stylesheets', () => {
-  expect(stylesheets(sheet1[1], sheet3[1])).toEqual({
-    stylesheet: ['.a_NTA5Nj { width: 100%; }', '.a_LTIzMT { color: blue; }'],
-  })
-  const conditionTrue = true
-  const conditionFalse = false
-  expect(stylesheets(sheet1[1], conditionFalse && sheet2[1], conditionTrue && sheet3[1])).toEqual({
-    stylesheet: ['.a_NTA5Nj { width: 100%; }', '.a_LTIzMT { color: blue; }'],
-  })
+  expect(stylesheets(sheet1, sheet3)).toEqual(['.a_NTA5Nj { width: 100%; }', '.a_LTIzMT { color: blue; }'])
+  expect(stylesheets(undefined && sheet1, false && sheet2, null && sheet3, sheet4)).toEqual([
+    '.a_MjMzNz { color: red; }',
+  ])
 })

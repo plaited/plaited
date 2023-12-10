@@ -1,33 +1,14 @@
-import { css } from '@plaited/jsx'
 import { test } from '@plaited/rite'
 import { PlaitProps } from '@plaited/component-types'
 import { Component } from '../index.js'
 
 test('observed triggers', async (t) => {
-  const [classes, stylesheet] = css`
-    .row {
-      display: flex;
-      gap: 10px;
-      padding: 12px;
-    }
-    .button {
-      height: 18px;
-      width: auto;
-    }
-  `
   const wrapper = document.querySelector('body')
 
   class Bottom extends Component({
     tag: 'bottom-component',
     dev: true,
-    template: (
-      <h1
-        data-target='header'
-        {...stylesheet}
-      >
-        Hello
-      </h1>
-    ),
+    template: <h1 data-target='header'>Hello</h1>,
   }) {
     static get observedTriggers() {
       return ['add']
@@ -51,17 +32,13 @@ test('observed triggers', async (t) => {
   class Top extends Component({
     tag: 'top-component',
     template: (
-      <div
-        className={classes.row}
-        {...stylesheet}
-      >
+      <div>
         <slot
           data-target='slot'
           data-trigger={{ disable: 'disable' }}
         ></slot>
         <button
           data-target='button'
-          className={classes.button}
           data-trigger={{ click: 'click' }}
         >
           Add "world!"

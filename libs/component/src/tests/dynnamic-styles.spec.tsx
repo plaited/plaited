@@ -6,7 +6,7 @@ import { Component, define } from '../index.js'
 
 test('dynamic styles', async (t) => {
   const body = document.querySelector('body')
-  const [cls, stylesheet] = css`
+  const { $stylesheet, ...cls } = css`
     .noRepeat {
       color: blue;
     }
@@ -23,7 +23,7 @@ test('dynamic styles', async (t) => {
       target.insert(
         'beforeend',
         <div
-          {...stylesheet}
+          stylesheet={$stylesheet}
           className={cls.noRepeat}
         >
           construable stylesheet applied once
@@ -32,7 +32,7 @@ test('dynamic styles', async (t) => {
       target.insert(
         'beforeend',
         <div
-          {...stylesheet}
+          stylesheet={$stylesheet}
           className={cls.repeat}
         >
           not applied
@@ -55,12 +55,12 @@ test('dynamic styles', async (t) => {
 
 test('with default and dynamic styles', async (t) => {
   const body = document.querySelector('body')
-  const [cls, stylesheet] = css`
+  const { $stylesheet, ...cls } = css`
     .root {
       color: blue;
     }
   `
-  const [cls2, stylesheet2] = css`
+  const { $stylesheet: stylesheet2, ...cls2 } = css`
     .override {
       color: red;
     }
@@ -71,7 +71,7 @@ test('with default and dynamic styles', async (t) => {
       <div
         data-target='target-2'
         className={cls.root}
-        {...stylesheet}
+        stylesheet={$stylesheet}
       ></div>
     ),
   }) {
@@ -80,7 +80,7 @@ test('with default and dynamic styles', async (t) => {
       target.insert(
         'beforeend',
         <div
-          {...stylesheets(stylesheet, stylesheet2)}
+          stylesheet={stylesheets($stylesheet, stylesheet2)}
           className={cls2.override}
         >
           construable stylesheet applied only for second sheet

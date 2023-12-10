@@ -26,7 +26,7 @@ export const createTemplateElement = (content: string) => {
 }
 
 test('template', async (t) => {
-  const [cls, stylesheet] = css`
+  const { $stylesheet, ...cls } = css`
     .inner {
       color: blue;
     }
@@ -38,7 +38,7 @@ test('template', async (t) => {
       <div
         data-test='content'
         className={cls.inner}
-        {...stylesheet}
+        stylesheet={$stylesheet}
       >
         {content}
       </div>
@@ -65,7 +65,7 @@ test('template', async (t) => {
 })
 
 test('template existing declarative shadowdom', async (t) => {
-  const [cls, stylesheet] = css`
+  const { $stylesheet, ...cls } = css`
     .inner {
       color: red;
     }
@@ -76,20 +76,20 @@ test('template existing declarative shadowdom', async (t) => {
       <div
         data-target='inner'
         className={cls.inner}
-        {...stylesheet}
+        stylesheet={$stylesheet}
       >
         before hydration
       </div>
     ),
   }) {
     plait({ $ }: PlaitProps): void | Promise<void> {
-      const [cls2, stylesheet] = css`
+      const { $stylesheet, ...cls2 } = css`
         .span {
           color: green;
         }
       `
       const [inner] = $('inner')
-      inner.render(<span {...stylesheet}>after hydration</span>)
+      inner.render(<span stylesheet={$stylesheet}>after hydration</span>)
       inner.attr('class', `${cls2.span} ${cls.inner}`)
     }
   }
@@ -99,13 +99,13 @@ test('template existing declarative shadowdom', async (t) => {
   body.append(frag)
   const host = await t.findByAttribute<HTMLElement>('data-target', 'host')
   let inner = await t.findByAttribute('data-target', 'inner', host)
-  const style = await t.findByText(stylesheet.stylesheet, host)
+  const style = await t.findByText($stylesheet, host)
   let textContent = inner.textContent
   t({
     given: 'before registering custom element',
     should: 'have style tag',
     actual: style.textContent,
-    expected: stylesheet.stylesheet,
+    expected: $stylesheet,
   })
   t({
     given: 'before registering custom element',

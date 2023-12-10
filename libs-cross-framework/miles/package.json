@@ -13,7 +13,7 @@
   "bugs": {
     "url": "https://github.com/plaited/plaited/issues"
   },
-  "homepage": "https://github.com/plaited/plaited/tree/main/libs/miles#readme",
+  "homepage": "https://github.com/plaited/plaited/tree/main/libs-cross-framework/miles#readme",
   "type": "module",
   "main": "./dist/index.js",
   "exports": {

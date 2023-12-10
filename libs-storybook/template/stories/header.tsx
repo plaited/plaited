@@ -1,7 +1,7 @@
 import { Component, PlaitProps, css } from 'plaited'
 import { Button } from './button.js'
 
-const [cls, stylesheet] = css`
+const { $stylesheet, ...cls } = css`
   .storybook-header {
     font-family: 'Nunito Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
@@ -39,7 +39,7 @@ const [cls, stylesheet] = css`
 export class Header extends Component({
   tag: 'header-el',
   template: (
-    <header {...stylesheet}>
+    <header stylesheet={$stylesheet}>
       <div className={cls['storybook-header']}>
         <div>
           <svg

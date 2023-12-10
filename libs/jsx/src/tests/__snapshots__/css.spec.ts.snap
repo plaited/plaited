@@ -1,43 +1,31 @@
 // Bun Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`css() 1`] = `
-[
-  {
-    "_button-4": "_button-4_LTEzMD",
-    "button": "button_LTEzMD",
-    "button4": "button4_LTEzMD",
-    "link": "link_LTEzMD",
-  },
-  {
-    "stylesheet": ".button_LTEzMD { background-color: rgba(255, 0, 0, 0.2); } .button4_LTEzMD:disabled { background-color: rgba(255, 0, 0, 0.8); } ._button-4_LTEzMD:disabled { background-color: rgba(00, 50, 25, 0.8); } ._button-4_LTEzMD:disabled + :not(.link_LTEzMD) { background-color: rgba(00, 50, 25, 0.8); }",
-  },
-]
+{
+  "$stylesheet": ".button_LTEzMD { background-color: rgba(255, 0, 0, 0.2); } .button4_LTEzMD:disabled { background-color: rgba(255, 0, 0, 0.8); } ._button-4_LTEzMD:disabled { background-color: rgba(00, 50, 25, 0.8); } ._button-4_LTEzMD:disabled + :not(.link_LTEzMD) { background-color: rgba(00, 50, 25, 0.8); }",
+  "_button-4": "_button-4_LTEzMD",
+  "button": "button_LTEzMD",
+  "button4": "button4_LTEzMD",
+  "link": "link_LTEzMD",
+}
 `;
 
 exports[`css() 2`] = `
-[
-  {
-    "_button-4": "_button-4_LTI3Nj",
-    "button": "button_LTI3Nj",
-    "button4": "button4_LTI3Nj",
-    "combinator": "combinator_LTI3Nj",
-    "link": "link_LTI3Nj",
-  },
-  {
-    "stylesheet": ".button_LTI3Nj { background-color: rgba(255, 0, 0, 0.2); } .button4_LTI3Nj:disabled { background-color: rgba(255, 0, 0, 0.8); } ._button-4_LTI3Nj:disabled > .combinator_LTI3Nj { background-color: va(--background-color); } ._button-4_LTI3Nj:disabled + :not(.link_LTI3Nj) { background-color: var(--background-color-disabled); }",
-  },
-]
+{
+  "$stylesheet": ".button_LTI3Nj { background-color: rgba(255, 0, 0, 0.2); } .button4_LTI3Nj:disabled { background-color: rgba(255, 0, 0, 0.8); } ._button-4_LTI3Nj:disabled > .combinator_LTI3Nj { background-color: va(--background-color); } ._button-4_LTI3Nj:disabled + :not(.link_LTI3Nj) { background-color: var(--background-color-disabled); }",
+  "_button-4": "_button-4_LTI3Nj",
+  "button": "button_LTI3Nj",
+  "button4": "button4_LTI3Nj",
+  "combinator": "combinator_LTI3Nj",
+  "link": "link_LTI3Nj",
+}
 `;
 
 exports[`css() 3`] = `
-[
-  {
-    "nested": "nested_MzQzND",
-    "nested2": "nested2_MzQzND",
-    "top": "top_MzQzND",
-  },
-  {
-    "stylesheet": ".top_MzQzND { color: red; & .nested_MzQzND { color: blue; &.nested2_MzQzND { color: green; } } }",
-  },
-]
+{
+  "$stylesheet": ".top_MzQzND { color: red; & .nested_MzQzND { color: blue; &.nested2_MzQzND { color: green; } } }",
+  "nested": "nested_MzQzND",
+  "nested2": "nested2_MzQzND",
+  "top": "top_MzQzND",
+}
 `;
