@@ -1,6 +1,6 @@
 {
   "name": "@plaited/rite",
-  "version": "5.5.0",
+  "version": "5.6.0",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
@@ -39,7 +39,7 @@
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/assert": "5.5.0",
+    "@plaited/assert": "5.6.0",
     "@web/test-runner-core": "0.13.0"
   },
   "devDependencies": {
