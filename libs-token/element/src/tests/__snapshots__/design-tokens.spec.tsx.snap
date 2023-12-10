@@ -1,6 +1,6 @@
 // Bun Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`getTokenElement: no children 1`] = `
+exports[`getTokenElement 1`] = `
 "<design-tokens>
     <template shadowrootmode="open" shadowrootdelegatesfocus="true">
         <style>
@@ -11,8 +11,8 @@ exports[`getTokenElement: no children 1`] = `
 </design-tokens>"
 `;
 
-exports[`getTokenElement: with children 1`] = `
-"<design-tokens>
+exports[`getTokenElement 2`] = `
+"<plaited-tokens>
     <template shadowrootmode="open" shadowrootdelegatesfocus="true">
         <style>
             :host { display: contents; }:host { --blue: blue; }
@@ -20,5 +20,5 @@ exports[`getTokenElement: with children 1`] = `
         <slot></slot>
     </template>
     <div>hello world!</div>
-</design-tokens>"
+</plaited-tokens>"
 `;

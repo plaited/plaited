@@ -1,20 +1,8 @@
 import { test } from '@plaited/rite'
-import { css } from '@plaited/jsx'
 import { PlaitProps } from '@plaited/component-types'
 import { Component } from '../index.js'
 import sinon from 'sinon'
-const [classes, stylesheet] = css`
-  .row {
-    display: flex;
-    gap: 12px;
-    padding: 12px;
-  }
-  ::slotted(button),
-  .button {
-    height: 18px;
-    width: auto;
-  }
-`
+
 const defaultSlot = sinon.spy()
 const passThroughSlot = sinon.spy()
 const namedSlot = sinon.spy()
@@ -36,10 +24,7 @@ class Nested extends Component({
 class Fixture extends Component({
   tag: 'slot-test',
   template: (
-    <div
-      className={classes.row}
-      {...stylesheet}
-    >
+    <div>
       <slot data-trigger={{ click: 'slot' }}></slot>
       <slot
         name='named'
@@ -78,13 +63,9 @@ const root = document.querySelector('body')
 root.insertAdjacentHTML(
   'beforeend',
   `<${Fixture.tag}>
-    <button class="${classes.button}">Slot</button>
-    <button slot='named'
-      class="${classes.button}"
-    >Named</button>
-    <button slot='nested'
-      class="${classes.button}"
-    >Nested</button>
+    <button>Slot</button>
+    <button slot='named'>Named</button>
+    <button slot='nested'>Nested</button>
   </${Fixture.tag}>`,
 )
 

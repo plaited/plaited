@@ -53,7 +53,10 @@ const tokenize = (css: string): (string | ClassObject)[] => {
 export const css = (
   strings: TemplateStringsArray,
   ...expressions: Array<Primitive | Primitive[]>
-): readonly [Record<string, string>, { stylesheet: string }] => {
+): {
+  $stylesheet: string
+  [key: string]: string
+} => {
   const result = taggedWithPrimitives(strings, ...expressions)
   const suffix = btoa(`${hashString(result)}`).replace(/[+/=]/g, '')
   const tokens = tokenize(result)
@@ -68,10 +71,8 @@ export const css = (
   const styles =
     tokens?.map((token) => (typeof token === 'string' ? reduceWhitespace(token) : addClass(token.content))).join('') ||
     ''
-  return Object.freeze([
-    Object.fromEntries(classes),
-    {
-      stylesheet: reduceWhitespace(styles).trim(),
-    },
-  ])
+  return Object.freeze({
+    ...Object.fromEntries(classes),
+    $stylesheet: reduceWhitespace(styles).trim(),
+  })
 }

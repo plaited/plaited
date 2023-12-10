@@ -1,7 +1,7 @@
 import { FT, css } from 'plaited'
 import { classNames } from 'plaited/utils'
 
-const [cls, stylesheet] = css`
+const { $stylesheet, ...cls } = css`
   .storybook-button {
     font-family: 'Nunito Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-weight: 700;
@@ -49,7 +49,7 @@ export const Button: FT<{
       cls[`storybook-button--${size}`],
       cls[primary ? 'storybook-button--primary' : 'storybook-button--secondary'],
     )}
-    {...stylesheet}
+    stylesheet={$stylesheet}
     value={value}
     style={backgroundColor ? { backgroundColor } : undefined}
   >

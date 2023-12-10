@@ -156,10 +156,10 @@ test('ssr: Non declarative shadow DOM template', () => {
   ).toMatchSnapshot()
 })
 
-test('ssr: Fragment', () => {
+test('Fragment', () => {
   expect(
     render(
-      h(Fragment, {
+      Fragment({
         children: Array.from(Array(6).keys())
           .reverse()
           .map((n) => h('li', { children: n > 0 ? `In ${n}` : 'Blast Off!!!' })),
@@ -183,8 +183,8 @@ const NestedCustomElement: FT = ({ children, stylesheet }) =>
         shadowrootdelegatesfocus: true,
         children: [
           h('span', {
-            className: nestedDeclarativeStyles[0]['nested-label'],
-            ...nestedDeclarativeStyles[1],
+            className: nestedDeclarativeStyles['nested-label'],
+            stylesheet: nestedDeclarativeStyles.$stylesheet,
             children: 'inside nested template',
           }),
           h('slot', { name: 'nested' }),
@@ -206,7 +206,7 @@ const nestedHostStyles = css`
 `
 
 test('ssr: Declarative shadow dom with host styles', () => {
-  expect(render(h(NestedCustomElement, { ...nestedHostStyles[1] }))).toMatchSnapshot()
+  expect(render(h(NestedCustomElement, { stylesheet: nestedHostStyles.$stylesheet }))).toMatchSnapshot()
 })
 
 const nestedChildrenStyles = css`
@@ -219,12 +219,12 @@ test('ssr: Declarative shadow dom with styled slotted component', () => {
   expect(
     render(
       h(NestedCustomElement, {
-        ...nestedHostStyles[1],
+        stylesheet: nestedHostStyles.$stylesheet,
         children: [
           h('p', {
             slot: 'nested',
-            className: nestedChildrenStyles[0]['slotted-paragraph'],
-            ...nestedChildrenStyles[1],
+            className: nestedChildrenStyles['slotted-paragraph'],
+            stylesheet: nestedChildrenStyles.$stylesheet,
             children: 'slotted paragraph',
           }),
         ],
@@ -243,8 +243,8 @@ const TopCustomElement: FT = ({ children, stylesheet }) =>
         children: h(NestedCustomElement, {
           children: h('p', {
             slot: 'nested',
-            className: nestedChildrenStyles[0]['slotted-paragraph'],
-            ...nestedChildrenStyles[1],
+            className: nestedChildrenStyles['slotted-paragraph'],
+            stylesheet: nestedChildrenStyles.$stylesheet,
             children: 'slotted paragraph',
           }),
         }),
@@ -264,7 +264,7 @@ const hostStyles = css`
 `
 
 test('ssr: Declarative shadow dom with another declarative shadow dom plus host styles', () => {
-  expect(render(h(TopCustomElement, { ...hostStyles[1] }))).toMatchSnapshot()
+  expect(render(h(TopCustomElement, { stylesheet: hostStyles.$stylesheet }))).toMatchSnapshot()
 })
 
 const imageStyles = css`
@@ -278,8 +278,8 @@ test('ssr: Declarative shadow dom with another declarative shadow dom plus host 
   expect(
     render(
       h(TopCustomElement, {
-        ...hostStyles[1],
-        children: h('img', { className: imageStyles[0].image, ...imageStyles[1] }),
+        stylesheet: hostStyles.$stylesheet,
+        children: h('img', { className: imageStyles.image, stylesheet: imageStyles.$stylesheet }),
       }),
     ),
   ).toMatchSnapshot()
@@ -306,7 +306,7 @@ test('ssr: Properly hoist and deduplicates multiple stylesheets on a single node
   expect(
     render(
       h('div', {
-        stylesheet: [sheet1[1].stylesheet, sheet2[1].stylesheet, sheet3[1].stylesheet],
+        stylesheet: [sheet1.$stylesheet, sheet2.$stylesheet, sheet3.$stylesheet],
       }),
     ),
   ).toMatchSnapshot()

@@ -12,6 +12,7 @@ import {
   CreateTemplate,
   FunctionTemplate,
   PlaitedComponentConstructor,
+  TemplateObject,
   VoidTags,
 } from '@plaited/component-types'
 
@@ -152,7 +153,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
 
 export { createTemplate as h }
 
-export const Fragment = ({ children: _children }: Attrs) => {
+export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
   const children = ensureArray(_children)
   const client: string[] = []
   const server: string[] = []

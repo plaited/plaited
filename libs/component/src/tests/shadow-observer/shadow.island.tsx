@@ -4,7 +4,7 @@ import { Component } from '../../index.js'
 import { opacityHex } from '@plaited/utils'
 import { SVG } from './noun-braids-2633610.js'
 
-export const [classes, stylesheet] = css`
+export const { $stylesheet, ...classes } = css`
   .zone {
     border: 1px black dashed;
     margin: 24px;
@@ -55,7 +55,7 @@ export class ShadowIsland extends Component({
   template: (
     <div
       className={classes.mount}
-      {...stylesheet}
+      stylesheet={$stylesheet}
       data-target='wrapper'
     >
       <div
@@ -92,7 +92,7 @@ export class ShadowIsland extends Component({
       addSubIsland() {
         const [zone] = $('zone')
         /** render dynamic island to zone */
-        zone?.insert('beforeend', <SubIsland {...stylesheet} />)
+        zone?.insert('beforeend', <SubIsland stylesheet={$stylesheet} />)
       },
       addButton() {
         host.insertAdjacentHTML('beforeend', `<button slot='button'>add svg</button>`)

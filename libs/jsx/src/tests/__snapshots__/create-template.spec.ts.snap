@@ -82,7 +82,7 @@ exports[`createTemplate: Non declarative shadow DOM template 1`] = `
 </ul>"
 `;
 
-exports[`createTemplate: Fragment 1`] = `
+exports[`Fragment 1`] = `
 "<li>In 5</li>
 <li>In 4</li>
 <li>In 3</li>
