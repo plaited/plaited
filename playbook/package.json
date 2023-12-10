@@ -6,10 +6,10 @@
     "storybook": "storybook dev -p 6006 --ci"
   },
   "devDependencies": {
-    "plaited": "5.5.0",
-    "@plaited/storybook-vite": "5.5.0",
-    "@plaited/storybook-rite": "5.5.0",
-    "@plaited/storybook": "5.5.0",
+    "plaited": "workspace:*",
+    "@plaited/storybook-vite": "workspace:*",
+    "@plaited/storybook-rite": "workspace:*",
+    "@plaited/storybook": "workspace:*",
     "@storybook/test-runner": "0.16.0",
     "@storybook/addon-essentials": "7.6.4",
     "@storybook/addon-interactions": "7.6.4",
