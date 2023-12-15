@@ -1,6 +1,6 @@
 import type { TemplateObject, Attrs, FunctionTemplate, PlaitedComponentConstructor } from '@plaited/component-types'
 import { kebabCase } from '@plaited/utils'
-import { adoptStylesheets } from '@plaited/miles/adopt-stylesheets'
+import { adoptStylesheets } from '@plaited/miles/utils'
 
 // Create document fragment from template object
 export const createFragment = (template: TemplateObject) => {
