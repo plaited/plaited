@@ -1,6 +1,6 @@
 {
   "name": "@plaited/component-types",
-  "version": "5.6.0",
+  "version": "5.6.1",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
@@ -30,7 +30,7 @@
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/behavioral": "5.6.0",
+    "@plaited/behavioral": "5.6.1",
     "csstype": "3.1.3"
   }
 }
