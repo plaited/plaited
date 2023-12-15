@@ -1,4 +1,8 @@
-export const cssCache = new WeakMap<Document, Set<string>>()
+import { css } from '@plaited/jsx'
+import { canUseDOM } from '@plaited/utils'
+
+const ready = canUseDOM()
+const cssCache = new WeakMap<Document, Set<string>>()
 
 export const adoptStylesheets = (...stylesheets: string[]) => {
   const instanceStyles =
@@ -13,4 +17,10 @@ export const adoptStylesheets = (...stylesheets: string[]) => {
   }
   // eslint-disable-next-line compat/compat
   document.adoptedStyleSheets = [...document.adoptedStyleSheets, ...newStyleSheets]
+}
+
+export const applyStylesheet = (obj: ReturnType<typeof css>) => {
+  const { $stylesheet, ...cls } = obj
+  ready && adoptStylesheets($stylesheet)
+  return cls
 }

@@ -1,5 +1,5 @@
 import { TemplateObject } from '@plaited/component-types'
-import { escape, isTypeOf } from '../../../libs-cross-framework/utils/dist/index.js'
+import { escape, isTypeOf } from '@plaited/utils'
 import { validPrimitiveChildren } from './constants.js'
 if (typeof global.HTMLElement === 'undefined') {
   // @ts-ignore node env

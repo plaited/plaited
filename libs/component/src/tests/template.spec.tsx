@@ -2,7 +2,7 @@ import { test } from '@plaited/rite'
 import { css } from '@plaited/jsx'
 import { PlaitProps } from '@plaited/component-types'
 import { Component } from '../index.js'
-import { canUseDOM } from '../../../../libs-cross-framework/utils/dist/index.js'
+import { canUseDOM } from '@plaited/utils'
 
 let parser: {
   parseFromString(

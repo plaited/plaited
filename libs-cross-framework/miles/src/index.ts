@@ -1,13 +1,9 @@
+import { applyStylesheet } from './utils.js'
 import { css as originalCss, Primitive } from '@plaited/jsx'
-import { canUseDOM } from '../../utils/dist/index.js'
-import { adoptStylesheets } from './adopt-stylesheets.js'
 
-const ready = canUseDOM()
 export const css = (
   strings: TemplateStringsArray,
   ...expressions: Array<Primitive | Primitive[]>
-): Record<string, string> => {
-  const { $stylesheet, ...cls } = originalCss(strings, ...expressions)
-  if (ready) adoptStylesheets($stylesheet)
-  return cls
-}
+): Record<string, string> => applyStylesheet(originalCss(strings, ...expressions))
+
+export { classNames, stylesheets } from '@plaited/jsx/utils'

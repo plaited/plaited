@@ -1,7 +1,7 @@
 import { css } from '@plaited/jsx'
 import { PlaitProps } from '@plaited/component-types'
 import { Component } from '../../index.js'
-import { opacityHex } from '../../../../../libs-cross-framework/utils/dist/index.js'
+import { opacityHex } from '@plaited/utils'
 import { SVG } from './noun-braids-2633610.js'
 
 export const { $stylesheet, ...classes } = css`

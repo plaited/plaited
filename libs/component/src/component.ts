@@ -20,7 +20,7 @@ import type {
   FunctionTemplate,
 } from '@plaited/component-types'
 import { $, cssCache, clone } from './sugar.js'
-import { noop, trueTypeOf } from '../../../libs-cross-framework/utils/dist/index.js'
+import { noop, trueTypeOf } from '@plaited/utils'
 
 const isElement = (node: Node): node is TriggerElement => node.nodeType === 1
 
