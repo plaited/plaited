@@ -1,12 +1,13 @@
 import { test } from '@plaited/rite'
 import { PlaitProps } from '@plaited/component-types'
-import { Component, define } from '../index.js'
+import { Component } from '../index.js'
 
 test('eventTriggers', async (t) => {
   const wrapper = document.querySelector('body')
 
-  class Bottom extends Component({
+  const Bottom = Component({
     tag: 'bottom-component',
+    dev: true,
     template: (
       <button
         data-target='button'
@@ -15,48 +16,41 @@ test('eventTriggers', async (t) => {
         Add
       </button>
     ),
-  }) {
-    static get observedTriggers() {
-      return ['add']
-    }
+    triggers: ['add'],
     plait({ feedback, emit }: PlaitProps) {
       feedback({
         click() {
           emit({ type: 'append' })
         },
       })
-    }
-  }
+    },
+  })
 
-  class Top extends Component({
+  const Top = Component({
     tag: 'top-component',
     dev: true,
     template: (
       <div>
         <h1 data-target='header'>Hello</h1>
-        <Bottom
-          dataTarget='header'
-          data-trigger={{ append: 'append' }}
-        ></Bottom>
+        <Bottom data-trigger={{ append: 'append' }}></Bottom>
       </div>
     ),
-  }) {
-    plait({ feedback, $ }: PlaitProps) {
+    plait({ feedback, $ }) {
       feedback({
         append() {
           const [header] = $('header')
           header.insert('beforeend', <> World!</>)
         },
       })
-    }
-  }
+    },
+  })
 
   // Create elements and append to dom
   const top = document.createElement(Top.tag)
   wrapper.insertAdjacentElement('beforeend', top)
 
   // // Define elements
-  define(Top)
+  Top.define()
 
   const button = await t.findByAttribute('data-target', 'button', wrapper)
   const header = await t.findByAttribute('data-target', 'header', wrapper)

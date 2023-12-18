@@ -1,26 +1,21 @@
-/**
- * A function for instantiating PlaitedElements
- * @param {PlaitedElementOptions} options - Options for the PlaitedElement
- * @param {function} mixin - A function that takes a base PlaitedElementConstructor and returns a new constructor with additional functionality
- * @returns {void}
- * @alias cc
- */
 import { createTemplate } from '@plaited/jsx'
 import { dataTrigger, dataAddress } from '@plaited/jsx/utils'
-import { Trigger, bProgram, BPEvent, Publisher } from '@plaited/behavioral'
+import { Trigger, bProgram, BPEvent, Publisher, DevCallback, Strategy } from '@plaited/behavioral'
 import type {
   PlaitedComponentConstructor,
   PlaitedElement,
   PlaitProps,
-  ComponentFunction,
+  PlaitedTemplate,
   Emit,
   Messenger,
   TriggerElement,
   QuerySelector,
-  FunctionTemplate,
+  TemplateObject,
+  Attrs,
 } from '@plaited/component-types'
 import { $, cssCache, clone } from './sugar.js'
 import { noop, trueTypeOf } from '@plaited/utils'
+import { defineRegistry } from './define-registry.js'
 
 const isElement = (node: Node): node is TriggerElement => node.nodeType === 1
 
@@ -54,42 +49,64 @@ const isPublisher = (obj: Publisher | Messenger): obj is Publisher => 'subscribe
 /**
  * Creates a PlaitedComponent
  * @param {object} args - Arguments for the PlaitedComponent
- * @param {string} args.tag - The tag name of the component
- * @param {FunctionTemplate} args.template - The template function for the component
- * @param {boolean | DevCallback} args.dev - A callback function that receives a stream of state snapshots, last selected event, and trigger.
- * @param {Strategy} args.strategy - The event selection strategy to use. Defaults to `strategies.priority`.
- * @returns {PlaitedComponent} A PlaitedComponent
+ * @param {string} args.tag - PlaitedComponent tag name
+ * @param {string[]} args.attributes - observed Attributes that will trigger the native `attributeChangedCallback` method when modified
+ * @param {string[]} args.triggers - observed triggers that can be fired from outside component by invoking `trigger` method directly, via messenger, or via publisher
+ * @param {string} args.mode - define wether island's custom element is open or closed. @defaultValue 'open'  @values 'open' | 'closed'
+ * @param {boolean} args.delegatesFocus - configure whether to delegate focus or not @defaultValue 'true'
+ * @param {boolean|function} args.dev - logger function to receive messages from behavioral program react streams @defaultValue 'true'
+ * @param {function} args.strategy - event selection strategy callback from behavioral library
+ * @returns {FunctionTemplate} A FunctionTemplate of the PlaitedComponent
  */
-export const Component: ComponentFunction = ({
-  mode = 'open',
-  delegatesFocus = true,
+
+export const Component = <T extends Attrs = Attrs>({
   tag,
   template,
+  triggers,
+  attributes,
+  mode = 'open',
+  delegatesFocus = true,
   dev,
   strategy,
-}) => {
+  connectedCallback,
+  disconnectedCallback,
+  plait,
+  ...rest
+}: {
+  /** PlaitedComponent tag name */
+  tag: `${string}-${string}`
+  /** Component template */
+  template: TemplateObject
+  /** observed Attributes that will trigger the native `attributeChangedCallback` method when modified*/
+  attributes?: string[]
+  /** observed triggers that can be fired from outside component by invoking `trigger` method directly, via messenger, or via publisher */
+  triggers?: string[]
+  /** define wether island's custom element is open or closed. @defaultValue 'open'*/
+  mode?: 'open' | 'closed'
+  /** configure whether to delegate focus or not @defaultValue 'true' */
+  delegatesFocus?: boolean
+  /** logger function to receive messages from behavioral program react streams */
+  dev?: true | DevCallback
+  /** event selection strategy callback from behavioral library */
+  strategy?: Strategy
+  plait?(this: PlaitedElement, props: PlaitProps): void | Promise<void>
+  connectedCallback?(this: PlaitedElement): void
+  attributeChangedCallback?(this: PlaitedElement, name: string, oldValue: string | null, newValue: string | null): void
+  disconnectedCallback?(this: PlaitedElement): void
+  adoptedCallback?(this: PlaitedElement): void
+  formAssociatedCallback?(this: PlaitedElement, form: HTMLFormElement): void
+  formDisabledCallback?(this: PlaitedElement, disabled: boolean): void
+  formResetCallback?(this: PlaitedElement): void
+  formStateRestoreCallback?(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
+}): PlaitedTemplate<T> => {
   if (!tag) {
     throw new Error(`Component is missing a [tag]`)
   }
-  const _tag = tag.toLowerCase()
-  return class PlaitedComponent extends HTMLElement implements PlaitedElement {
+  const _tag = tag.toLowerCase() as `${string}-${string}`
+  class PlaitedComponent extends HTMLElement implements PlaitedElement {
     static tag = _tag
-    static stylesheets = template.stylesheets
-    static registry = template.registry
-    static template: FunctionTemplate = ({ children = [], ...attrs }) =>
-      createTemplate(tag, {
-        ...attrs,
-        children: [
-          createTemplate('template', {
-            shadowrootmode: mode,
-            shadowrootdelegatesfocus: delegatesFocus,
-            children: template,
-          }),
-          ...(Array.isArray(children) ? children : [children]),
-        ],
-      })
-    static observedTriggers?: string[]
-    #observedTriggers = new Set((this.constructor as PlaitedComponentConstructor)?.observedTriggers ?? [])
+    static observedAttributes = attributes
+    #observedTriggers = new Set(triggers ?? [])
     internals_: ElementInternals
     #root: ShadowRoot
     $: QuerySelector
@@ -114,14 +131,17 @@ export const Component: ComponentFunction = ({
         }
       }
       cssCache.set(this.#root, new Set<string>([...template.stylesheets]))
+      /** Warn ourselves not to overwrite the trigger method */
+      if (this.trigger !== this.constructor.prototype.trigger) {
+        throw new Error('trigger method cannot be overridden in a subclass.')
+      }
       this.trigger = this.trigger.bind(this)
       this.$ = $(this.#root)
     }
-    plait?(props: PlaitProps): void | Promise<void>
     #trigger?: Trigger
     #shadowObserver?: MutationObserver
     connectedCallback() {
-      if (this.plait) {
+      if (plait) {
         const { trigger, ...rest } = bProgram({ strategy, dev })
         this.#trigger = trigger // listeners need trigger to be available on instance
         this.#delegateListeners(
@@ -133,7 +153,7 @@ export const Component: ComponentFunction = ({
           trigger({
             type: `connected(${this.dataset.address ?? this.tagName.toLowerCase()})`,
           })
-        void this.plait({
+        void plait.bind(this)({
           $: this.$,
           host: this,
           emit: this.#emit.bind(this),
@@ -143,6 +163,7 @@ export const Component: ComponentFunction = ({
           ...rest,
         })
       }
+      connectedCallback && connectedCallback.bind(this)()
     }
     #subscriptions = new Set<() => void>() // holds unsubscribe callbacks
     disconnectedCallback() {
@@ -157,6 +178,7 @@ export const Component: ComponentFunction = ({
         })
         this.#subscriptions.clear()
       }
+      disconnectedCallback && disconnectedCallback.bind(this)()
     }
     /** Manually disconnect subscription to messenger or publisher */
     #disconnect(cb: (() => void) | undefined) {
@@ -252,4 +274,24 @@ export const Component: ComponentFunction = ({
       return console.warn(`Component [${name}] is not observing trigger [${type}]`)
     }
   }
+  Object.assign(PlaitedComponent.prototype, rest)
+  const registry = new Set<PlaitedComponentConstructor>([...template.registry, PlaitedComponent])
+  const ft: PlaitedTemplate<T> = ({ children = [], ...attrs }) =>
+    createTemplate(tag, {
+      ...attrs,
+      children: [
+        createTemplate('template', {
+          shadowrootmode: mode,
+          shadowrootdelegatesfocus: delegatesFocus,
+          children: {
+            ...template,
+            registry,
+          },
+        }),
+        ...(Array.isArray(children) ? children : [children]),
+      ],
+    })
+  ft.define = (silent = true) => defineRegistry(new Set<PlaitedComponentConstructor>(registry), silent)
+  ft.tag = _tag
+  return ft
 }

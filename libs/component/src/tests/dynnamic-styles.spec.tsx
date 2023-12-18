@@ -1,8 +1,7 @@
 import { test } from '@plaited/rite'
 import { css } from '@plaited/jsx'
 import { stylesheets } from '@plaited/jsx/utils'
-import { PlaitProps } from '@plaited/component-types'
-import { Component, define } from '../index.js'
+import { Component } from '../index.js'
 
 test('dynamic styles', async (t) => {
   const body = document.querySelector('body')
@@ -14,11 +13,10 @@ test('dynamic styles', async (t) => {
       color: red;
     }
   `
-  class Fixture extends Component({
+  const Fixture = Component({
     tag: 'dynamic-only',
     template: <div data-target='target'></div>,
-  }) {
-    plait({ $ }: PlaitProps) {
+    plait({ $ }) {
       const [target] = $<HTMLDivElement>('target')
       target.insert(
         'beforeend',
@@ -38,9 +36,9 @@ test('dynamic styles', async (t) => {
           not applied
         </div>,
       )
-    }
-  }
-  define(Fixture)
+    },
+  })
+  Fixture.define()
   body.append(document.createElement(Fixture.tag))
 
   const target = await t.findByAttribute('data-target', 'target')
@@ -65,7 +63,7 @@ test('with default and dynamic styles', async (t) => {
       color: red;
     }
   `
-  class Fixture extends Component({
+  const Fixture = Component({
     tag: 'with-default-styles',
     template: (
       <div
@@ -74,8 +72,7 @@ test('with default and dynamic styles', async (t) => {
         stylesheet={$stylesheet}
       ></div>
     ),
-  }) {
-    plait({ $ }: PlaitProps) {
+    plait({ $ }) {
       const [target] = $<HTMLDivElement>('target-2')
       target.insert(
         'beforeend',
@@ -86,9 +83,9 @@ test('with default and dynamic styles', async (t) => {
           construable stylesheet applied only for second sheet
         </div>,
       )
-    }
-  }
-  define(Fixture)
+    },
+  })
+  Fixture.define()
   body.append(document.createElement(Fixture.tag))
   const target = await t.findByAttribute('data-target', 'target-2')
   const root = target.getRootNode() as ShadowRoot

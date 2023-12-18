@@ -11,17 +11,15 @@ test('getTokenElement', () => {
     }
   `
   let DesignTokens = getTokenElement($stylesheet)
-  let Template = DesignTokens.template
 
-  expect(beautify(ssr(<Template />), { format: 'html' })).toMatchSnapshot()
+  expect(beautify(ssr(<DesignTokens />), { format: 'html' })).toMatchSnapshot()
   DesignTokens = getTokenElement($stylesheet, 'plaited-tokens')
-  Template = DesignTokens.template
   expect(
     beautify(
       ssr(
-        <Template>
+        <DesignTokens>
           <div>hello world!</div>
-        </Template>,
+        </DesignTokens>,
       ),
       { format: 'html' },
     ),

@@ -1,5 +1,5 @@
 import type { WebRenderer } from '@storybook/types'
-import type { FunctionTemplate, PlaitedComponentConstructor } from '@plaited/component-types'
+import type { FunctionTemplate, PlaitedTemplate } from '@plaited/component-types'
 
 export type { RenderContext } from '@storybook/types'
 
@@ -11,11 +11,8 @@ export interface ShowErrorArgs {
 }
 
 export interface PlaitedRender extends WebRenderer {
-  component: FunctionTemplate | PlaitedComponentConstructor
+  component: FunctionTemplate | PlaitedTemplate
   storyResult: StoryFnPlaitedReturnType
 }
 
-export type ExtractTemplateParameter<T> =
-  T extends PlaitedComponentConstructor ? Parameters<T['template']>[0]
-  : T extends FunctionTemplate ? Parameters<T>[0]
-  : never
+export type ExtractTemplateParameter<T> = T extends FunctionTemplate ? Parameters<T>[0] : never

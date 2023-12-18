@@ -10,7 +10,7 @@ import type {
   Args,
 } from '@storybook/types'
 import type { PlaitedRender, ExtractTemplateParameter } from './types.js'
-import type { PlaitedComponentConstructor, FunctionTemplate } from '@plaited/component-types'
+import type { FunctionTemplate, PlaitedTemplate } from '@plaited/component-types'
 
 export type { Args, ArgTypes, Parameters, StrictArgs } from '@storybook/types'
 export type { PlaitedRender }
@@ -20,30 +20,24 @@ export type { PlaitedRender }
  *
  * @see [Default export](https://storybook.js.org/docs/formats/component-story-format/#default-export)
  */
-export type Meta<T extends PlaitedComponentConstructor | FunctionTemplate = FunctionTemplate> = ComponentAnnotations<
-  PlaitedRender,
-  ExtractTemplateParameter<T> & Args
->
+export type Meta<T extends FunctionTemplate | PlaitedTemplate = FunctionTemplate | PlaitedTemplate> =
+  ComponentAnnotations<PlaitedRender, ExtractTemplateParameter<T> & Args>
 
 /**
  * Story function that represents a CSFv2 component example.
  *
  * @see [Named Story exports](https://storybook.js.org/docs/formats/component-story-format/#named-story-exports)
  */
-export type StoryFn<T extends PlaitedComponentConstructor | FunctionTemplate = FunctionTemplate> = AnnotatedStoryFn<
-  PlaitedRender,
-  ExtractTemplateParameter<T> & Args
->
+export type StoryFn<T extends FunctionTemplate | PlaitedTemplate = FunctionTemplate | PlaitedTemplate> =
+  AnnotatedStoryFn<PlaitedRender, ExtractTemplateParameter<T> & Args>
 
 /**
  * Story function that represents a CSFv3 component example.
  *
  * @see [Named Story exports](https://storybook.js.org/docs/formats/component-story-format/#named-story-exports)
  */
-export type StoryObj<T extends PlaitedComponentConstructor | FunctionTemplate = FunctionTemplate> = StoryAnnotations<
-  PlaitedRender,
-  ExtractTemplateParameter<T> & Args
->
+export type StoryObj<T extends FunctionTemplate | PlaitedTemplate = FunctionTemplate | PlaitedTemplate> =
+  StoryAnnotations<PlaitedRender, ExtractTemplateParameter<T> & Args>
 
 export type Decorator<TArgs = StrictArgs> = DecoratorFunction<PlaitedRender, TArgs>
 export type Loader<TArgs = StrictArgs> = LoaderFunction<PlaitedRender, TArgs>

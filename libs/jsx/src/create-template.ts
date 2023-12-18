@@ -10,14 +10,10 @@ import {
   Attrs,
   BooleanAttributes,
   CreateTemplate,
-  FunctionTemplate,
   PlaitedComponentConstructor,
   TemplateObject,
   VoidTags,
 } from '@plaited/component-types'
-
-const isPlaitedComponent = (obj: PlaitedComponentConstructor | FunctionTemplate): obj is PlaitedComponentConstructor =>
-  'template' in obj
 
 /** createTemplate function used for ssr */
 export const createTemplate: CreateTemplate = (_tag, attrs) => {
@@ -33,11 +29,6 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   } = attrs
   const registry = new Set<PlaitedComponentConstructor>()
   if (typeof _tag === 'function') {
-    if (isPlaitedComponent(_tag)) {
-      const tpl = _tag.template(attrs)
-      tpl.registry.add(_tag)
-      return tpl
-    }
     return _tag(attrs)
   }
   const tag = _tag.toLowerCase().trim()
