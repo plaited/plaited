@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { bProgram, Trigger, BPEvent, Publisher } from '@plaited/behavioral'
+import { bProgram, Trigger, BPEvent, Publisher, DevCallback, Strategy } from '@plaited/behavioral'
 import * as CSS from 'csstype'
 
 type Booleanish = boolean | 'true' | 'false'
@@ -1411,6 +1411,34 @@ export type PlaitedTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
   define: (silent?: boolean) => void
   tag: `${string}-${string}`
 }
+
+export type PlaitedComponent = <T extends Attrs = Attrs>(args: {
+  /** PlaitedComponent tag name */
+  tag: `${string}-${string}`
+  /** Component template */
+  template: TemplateObject
+  /** observed Attributes that will trigger the native `attributeChangedCallback` method when modified*/
+  observedAttributes?: string[]
+  /** observed triggers that can be fired from outside component by invoking `trigger` method directly, via messenger, or via publisher */
+  observedTriggers?: string[]
+  /** define wether island's custom element is open or closed. @defaultValue 'open'*/
+  mode?: 'open' | 'closed'
+  /** configure whether to delegate focus or not @defaultValue 'true' */
+  delegatesFocus?: boolean
+  /** logger function to receive messages from behavioral program react streams */
+  dev?: true | DevCallback
+  /** event selection strategy callback from behavioral library */
+  strategy?: Strategy
+  plait?(this: PlaitedElement, props: PlaitProps): void | Promise<void>
+  connectedCallback?(this: PlaitedElement): void
+  attributeChangedCallback?(this: PlaitedElement, name: string, oldValue: string | null, newValue: string | null): void
+  disconnectedCallback?(this: PlaitedElement): void
+  adoptedCallback?(this: PlaitedElement): void
+  formAssociatedCallback?(this: PlaitedElement, form: HTMLFormElement): void
+  formDisabledCallback?(this: PlaitedElement, disabled: boolean): void
+  formResetCallback?(this: PlaitedElement): void
+  formStateRestoreCallback?(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
+}) => PlaitedTemplate<T>
 
 export type TriggerElement = (HTMLElement | SVGElement) & {
   dataset: {

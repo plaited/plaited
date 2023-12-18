@@ -1,17 +1,15 @@
 import { createTemplate } from '@plaited/jsx'
 import { dataTrigger, dataAddress } from '@plaited/jsx/utils'
-import { Trigger, bProgram, BPEvent, Publisher, DevCallback, Strategy } from '@plaited/behavioral'
+import { Trigger, bProgram, BPEvent, Publisher } from '@plaited/behavioral'
 import type {
   PlaitedComponentConstructor,
   PlaitedElement,
-  PlaitProps,
-  PlaitedTemplate,
+  PlaitedComponent,
   Emit,
   Messenger,
   TriggerElement,
   QuerySelector,
-  TemplateObject,
-  Attrs,
+  PlaitedTemplate,
 } from '@plaited/component-types'
 import { $, cssCache, clone } from './sugar.js'
 import { noop, trueTypeOf } from '@plaited/utils'
@@ -59,7 +57,7 @@ const isPublisher = (obj: Publisher | Messenger): obj is Publisher => 'subscribe
  * @returns {FunctionTemplate} A FunctionTemplate of the PlaitedComponent
  */
 
-export const Component = <T extends Attrs = Attrs>({
+export const Component: PlaitedComponent = ({
   tag,
   template,
   observedTriggers,
@@ -72,33 +70,7 @@ export const Component = <T extends Attrs = Attrs>({
   disconnectedCallback,
   plait,
   ...rest
-}: {
-  /** PlaitedComponent tag name */
-  tag: `${string}-${string}`
-  /** Component template */
-  template: TemplateObject
-  /** observed Attributes that will trigger the native `attributeChangedCallback` method when modified*/
-  observedAttributes?: string[]
-  /** observed triggers that can be fired from outside component by invoking `trigger` method directly, via messenger, or via publisher */
-  observedTriggers?: string[]
-  /** define wether island's custom element is open or closed. @defaultValue 'open'*/
-  mode?: 'open' | 'closed'
-  /** configure whether to delegate focus or not @defaultValue 'true' */
-  delegatesFocus?: boolean
-  /** logger function to receive messages from behavioral program react streams */
-  dev?: true | DevCallback
-  /** event selection strategy callback from behavioral library */
-  strategy?: Strategy
-  plait?(this: PlaitedElement, props: PlaitProps): void | Promise<void>
-  connectedCallback?(this: PlaitedElement): void
-  attributeChangedCallback?(this: PlaitedElement, name: string, oldValue: string | null, newValue: string | null): void
-  disconnectedCallback?(this: PlaitedElement): void
-  adoptedCallback?(this: PlaitedElement): void
-  formAssociatedCallback?(this: PlaitedElement, form: HTMLFormElement): void
-  formDisabledCallback?(this: PlaitedElement, disabled: boolean): void
-  formResetCallback?(this: PlaitedElement): void
-  formStateRestoreCallback?(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
-}): PlaitedTemplate<T> => {
+}) => {
   if (!tag) {
     throw new Error(`Component is missing a [tag]`)
   }
@@ -276,7 +248,7 @@ export const Component = <T extends Attrs = Attrs>({
   }
   Object.assign(PlaitedComponent.prototype, rest)
   const registry = new Set<PlaitedComponentConstructor>([...template.registry, PlaitedComponent])
-  const ft: PlaitedTemplate<T> = ({ children = [], ...attrs }) =>
+  const ft: PlaitedTemplate = ({ children = [], ...attrs }) =>
     createTemplate(tag, {
       ...attrs,
       children: [
