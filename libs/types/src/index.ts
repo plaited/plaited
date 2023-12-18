@@ -1404,14 +1404,8 @@ export interface PlaitedElement extends HTMLElement {
 
 export interface PlaitedComponentConstructor {
   tag: string
-  /** Triggers that can be fired from outside component by invoking trigger method directly, via messenger, or via publisher */
-  observedTriggers?: string[]
   new (): PlaitedElement
 }
-
-type BPEvents = { [key: string]: unknown }
-
-type ObjectKeys<T> = Extract<keyof T, string>
 
 export type PlaitedTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
   define: (silent?: boolean) => void

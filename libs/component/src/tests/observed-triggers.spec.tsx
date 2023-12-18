@@ -1,7 +1,5 @@
 import { test } from '@plaited/rite'
 import { Component, isPlaited } from '../index.js'
-import { trueTypeOf } from '@plaited/utils'
-import { PlaitedElement } from '@plaited/component-types'
 test('observed triggers', async (t) => {
   const wrapper = document.querySelector('body')
 
@@ -9,7 +7,7 @@ test('observed triggers', async (t) => {
     tag: 'bottom-component',
     dev: true,
     template: <h1 data-target='header'>Hello</h1>,
-    triggers: ['add'],
+    observedTriggers: ['add'],
     plait({ $, feedback, addThreads, thread, sync, emit }) {
       addThreads({
         onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),

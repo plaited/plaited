@@ -8,7 +8,7 @@ test('dynamic island comms', async (t) => {
   const wrapper = document.querySelector('body')
   const ElOne = Component({
     tag: 'dynamic-one',
-    triggers: ['disable'],
+    observedTriggers: ['disable'],
     template: (
       <div>
         <button
@@ -39,7 +39,7 @@ test('dynamic island comms', async (t) => {
   const ElTwo = Component({
     tag: 'dynamic-two',
     dev: true,
-    triggers: ['add'],
+    observedTriggers: ['add'],
     template: <h1 data-target='header'>Hello</h1>,
     plait({ $, feedback, addThreads, thread, sync, connect }) {
       connect(msg)

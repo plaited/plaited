@@ -87,8 +87,8 @@ export const Header = Component({
       </div>
     </header>
   ),
-  attributes: ['user'],
-  triggers: ['user'],
+  observedAttributes: ['user'],
+  observedTriggers: ['user'],
   attributeChangedCallback(name: string, _, newValue: string) {
     if (name === 'user') {
       const [bar] = this.$('button-bar')

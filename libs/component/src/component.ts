@@ -62,8 +62,8 @@ const isPublisher = (obj: Publisher | Messenger): obj is Publisher => 'subscribe
 export const Component = <T extends Attrs = Attrs>({
   tag,
   template,
-  triggers,
-  attributes,
+  observedTriggers,
+  observedAttributes,
   mode = 'open',
   delegatesFocus = true,
   dev,
@@ -78,9 +78,9 @@ export const Component = <T extends Attrs = Attrs>({
   /** Component template */
   template: TemplateObject
   /** observed Attributes that will trigger the native `attributeChangedCallback` method when modified*/
-  attributes?: string[]
+  observedAttributes?: string[]
   /** observed triggers that can be fired from outside component by invoking `trigger` method directly, via messenger, or via publisher */
-  triggers?: string[]
+  observedTriggers?: string[]
   /** define wether island's custom element is open or closed. @defaultValue 'open'*/
   mode?: 'open' | 'closed'
   /** configure whether to delegate focus or not @defaultValue 'true' */
@@ -105,8 +105,8 @@ export const Component = <T extends Attrs = Attrs>({
   const _tag = tag.toLowerCase() as `${string}-${string}`
   class PlaitedComponent extends HTMLElement implements PlaitedElement {
     static tag = _tag
-    static observedAttributes = attributes
-    #observedTriggers = new Set(triggers ?? [])
+    static observedAttributes = observedAttributes
+    #observedTriggers = new Set(observedTriggers ?? [])
     internals_: ElementInternals
     #root: ShadowRoot
     $: QuerySelector
