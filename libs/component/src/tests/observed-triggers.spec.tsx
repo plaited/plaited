@@ -1,19 +1,14 @@
 import { test } from '@plaited/rite'
-import { PlaitProps } from '@plaited/component-types'
-import { Component } from '../index.js'
-
+import { Component, isPlaited } from '../index.js'
 test('observed triggers', async (t) => {
   const wrapper = document.querySelector('body')
 
-  class Bottom extends Component({
+  const Bottom = Component({
     tag: 'bottom-component',
     dev: true,
     template: <h1 data-target='header'>Hello</h1>,
-  }) {
-    static get observedTriggers() {
-      return ['add']
-    }
-    plait({ $, feedback, addThreads, thread, sync, emit }: PlaitProps) {
+    observedTriggers: ['add'],
+    plait({ $, feedback, addThreads, thread, sync, emit }) {
       addThreads({
         onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),
       })
@@ -26,10 +21,10 @@ test('observed triggers', async (t) => {
           header.insert('beforeend', <>{detail}</>)
         },
       })
-    }
-  }
+    },
+  })
 
-  class Top extends Component({
+  const Top = Component({
     tag: 'top-component',
     template: (
       <div>
@@ -45,8 +40,7 @@ test('observed triggers', async (t) => {
         </button>
       </div>
     ),
-  }) {
-    plait({ feedback, $ }: PlaitProps) {
+    plait({ feedback, $ }) {
       feedback({
         disable() {
           const [button] = $<HTMLButtonElement>('button')
@@ -55,15 +49,15 @@ test('observed triggers', async (t) => {
         click() {
           const [slot] = $<HTMLSlotElement>('slot')
           for (const el of slot.assignedElements()) {
-            if (el instanceof Bottom) {
+            if (isPlaited(el)) {
               el.trigger({ type: 'add', detail: ' World!' })
               break
             }
           }
         },
       })
-    }
-  }
+    },
+  })
 
   // Create elements and append to dom
   const top = document.createElement(Top.tag)
@@ -72,8 +66,8 @@ test('observed triggers', async (t) => {
   top.insertAdjacentElement('beforeend', bottom)
 
   // // Define elements
-  customElements.define(Top.tag, Top)
-  customElements.define(Bottom.tag, Bottom)
+  Top.define()
+  Bottom.define()
 
   let button = await t.findByAttribute('data-target', 'button', wrapper)
   const header = await t.findByAttribute('data-target', 'header', wrapper)

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { bProgram, DevCallback, Strategy, Trigger, BPEvent, Publisher } from '@plaited/behavioral'
+import { bProgram, Trigger, BPEvent, Publisher, DevCallback, Strategy } from '@plaited/behavioral'
 import * as CSS from 'csstype'
 
 type Booleanish = boolean | 'true' | 'false'
@@ -414,7 +414,7 @@ type HTMLAttributes = AriaAttributes &
   }
 
 // Combine both filters
-type DetailedHTMLAttributes = HTMLAttributes & Record<string, any> & { [key: `on${string}`]: never }
+type DetailedHTMLAttributes = HTMLAttributes & Record<string, any>
 
 type HTMLAttributeReferrerPolicy =
   | ''
@@ -1283,7 +1283,7 @@ export type FT<
   T extends Attrs = Attrs,
 > = FunctionTemplate<T>
 
-export type Tag = string | `${string}-${string}` | FT | PlaitedComponentConstructor
+export type Tag = string | `${string}-${string}` | FT
 
 export type VoidTags =
   | 'area'
@@ -1318,7 +1318,6 @@ type ExcludeChildrenForVoidTags<T extends Tag, ElementAtrributes> = T extends Vo
 type InferAttrs<T extends Tag> =
   T extends keyof ElementAttributeList ? ElementAttributeList[T]
   : T extends FT ? Parameters<T>[0]
-  : T extends PlaitedComponentConstructor ? Parameters<T['template']>[0]
   : T extends `${string}-${string}` ? DetailedHTMLAttributes
   : Attrs
 
@@ -1391,34 +1390,37 @@ export type PlaitProps = {
 
 export interface PlaitedElement extends HTMLElement {
   internals_: ElementInternals
-  plait?(props: PlaitProps): void | Promise<void>
   trigger: Trigger
   $: QuerySelector
-  connectedCallback?(): void
+  connectedCallback?(this: PlaitedElement): void
   attributeChangedCallback?(name: string, oldValue: string | null, newValue: string | null): void
-  disconnectedCallback?(): void
-  adoptedCallback?(): void
-  formAssociatedCallback?(form: HTMLFormElement): void
-  formDisabledCallback?(disabled: boolean): void
-  formResetCallback?(): void
-  formStateRestoreCallback?(state: unknown, reason: 'autocomplete' | 'restore'): void
+  disconnectedCallback?(this: PlaitedElement): void
+  adoptedCallback?(this: PlaitedElement): void
+  formAssociatedCallback?(this: PlaitedElement, form: HTMLFormElement): void
+  formDisabledCallback?(this: PlaitedElement, disabled: boolean): void
+  formResetCallback?(this: PlaitedElement): void
+  formStateRestoreCallback?(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
 }
 
 export interface PlaitedComponentConstructor {
-  stylesheets: Set<string>
   tag: string
-  template: FunctionTemplate
-  registry: Set<PlaitedComponentConstructor>
-  /** Triggers that can be fired from outside component by invoking trigger method directly, via messenger, or via publisher */
-  observedTriggers?: string[]
   new (): PlaitedElement
 }
 
-export type ComponentFunction = (args: {
+export type PlaitedTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
+  define: (silent?: boolean) => void
+  tag: `${string}-${string}`
+}
+
+export type PlaitedComponent = <T extends Attrs = Attrs>(args: {
   /** PlaitedComponent tag name */
   tag: `${string}-${string}`
-  /** Optional Plaited Component shadow dom template*/
+  /** Component template */
   template: TemplateObject
+  /** observed Attributes that will trigger the native `attributeChangedCallback` method when modified*/
+  observedAttributes?: string[]
+  /** observed triggers that can be fired from outside component by invoking `trigger` method directly, via messenger, or via publisher */
+  observedTriggers?: string[]
   /** define wether island's custom element is open or closed. @defaultValue 'open'*/
   mode?: 'open' | 'closed'
   /** configure whether to delegate focus or not @defaultValue 'true' */
@@ -1427,7 +1429,16 @@ export type ComponentFunction = (args: {
   dev?: true | DevCallback
   /** event selection strategy callback from behavioral library */
   strategy?: Strategy
-}) => PlaitedComponentConstructor
+  plait?(this: PlaitedElement, props: PlaitProps): void | Promise<void>
+  connectedCallback?(this: PlaitedElement): void
+  attributeChangedCallback?(this: PlaitedElement, name: string, oldValue: string | null, newValue: string | null): void
+  disconnectedCallback?(this: PlaitedElement): void
+  adoptedCallback?(this: PlaitedElement): void
+  formAssociatedCallback?(this: PlaitedElement, form: HTMLFormElement): void
+  formDisabledCallback?(this: PlaitedElement, disabled: boolean): void
+  formResetCallback?(this: PlaitedElement): void
+  formStateRestoreCallback?(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
+}) => PlaitedTemplate<T>
 
 export type TriggerElement = (HTMLElement | SVGElement) & {
   dataset: {

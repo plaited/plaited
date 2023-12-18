@@ -8,8 +8,8 @@ const { $stylesheet } = css`
   }
 `
 export const getTokenElement = (stylesheet: string, tag: `${string}-${string}` = 'design-tokens') => {
-  return class DesignTokensElement extends Component({
+  return Component({
     tag,
     template: <slot stylesheet={stylesheets($stylesheet, stylesheet)}></slot>,
-  }) {}
+  })
 }

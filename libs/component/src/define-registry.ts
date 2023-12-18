@@ -10,13 +10,3 @@ export const defineRegistry = (registry: Set<PlaitedComponentConstructor>, silen
     customElements.define(elTag, el)
   }
 }
-
-export const define = (comp: PlaitedComponentConstructor, silent = false) => {
-  const { registry, tag } = comp
-  defineRegistry(registry, silent)
-  if (customElements.get(tag)) {
-    !silent && console.error(`${tag} already defined`)
-    return
-  }
-  customElements.define(tag, comp)
-}

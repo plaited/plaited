@@ -1,5 +1,4 @@
 import { test } from '@plaited/rite'
-import { PlaitProps } from '@plaited/component-types'
 import { Component } from '../index.js'
 import sinon from 'sinon'
 
@@ -8,20 +7,19 @@ const passThroughSlot = sinon.spy()
 const namedSlot = sinon.spy()
 const nestedSlot = sinon.spy()
 
-class Nested extends Component({
+const Nested = Component({
   tag: 'nested-slot',
   template: <slot data-trigger={{ click: 'nested' }}></slot>,
-}) {
-  plait(props: PlaitProps): void | Promise<void> {
+  plait(props): void | Promise<void> {
     props.feedback({
       nested() {
         nestedSlot('nested-slot')
       },
     })
-  }
-}
+  },
+})
 
-class Fixture extends Component({
+const Fixture = Component({
   tag: 'slot-test',
   template: (
     <div>
@@ -38,8 +36,7 @@ class Fixture extends Component({
       </Nested>
     </div>
   ),
-}) {
-  plait({ feedback }: PlaitProps) {
+  plait({ feedback }) {
     feedback({
       slot() {
         defaultSlot('default-slot')
@@ -51,13 +48,13 @@ class Fixture extends Component({
         passThroughSlot('pass-through-slot')
       },
     })
-  }
-}
+  },
+})
 
 //define our fixture
-customElements.define(Fixture.tag, Fixture)
+Fixture.define()
 // We need to define our nest-slot Component
-customElements.define(Nested.tag, Nested)
+Nested.define()
 const root = document.querySelector('body')
 
 root.insertAdjacentHTML(

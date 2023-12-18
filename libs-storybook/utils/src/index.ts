@@ -1,4 +1,4 @@
-import type { TemplateObject, Attrs, FunctionTemplate, PlaitedComponentConstructor } from '@plaited/component-types'
+import type { TemplateObject, Attrs } from '@plaited/component-types'
 import { kebabCase } from '@plaited/utils'
 import { adoptStylesheets } from '@plaited/miles/utils'
 
@@ -52,8 +52,3 @@ export const createJSXString = (tagName: string, attrs: Attrs) => {
 
   return `<${tagName} ${propsString} />`
 }
-
-// Check if component is a Plaited component or FunctionTemplate
-export const isPlaitedComponent = (
-  component: PlaitedComponentConstructor | FunctionTemplate,
-): component is PlaitedComponentConstructor => 'template' in component

@@ -1,5 +1,4 @@
 import { css } from '@plaited/jsx'
-import { PlaitProps } from '@plaited/component-types'
 import { Component } from '../../index.js'
 import { opacityHex } from '@plaited/utils'
 import { SVG } from './noun-braids-2633610.js'
@@ -44,12 +43,12 @@ export const { $stylesheet, ...classes } = css`
   }
 `
 
-class SubIsland extends Component({
+const SubIsland = Component({
   tag: 'sub-island',
   template: <h3 className={classes['sub-island']}>sub island</h3>,
-}) {}
+})
 
-export class ShadowIsland extends Component({
+export const ShadowIsland = Component({
   tag: 'shadow-island',
   dev: true,
   template: (
@@ -81,8 +80,7 @@ export class ShadowIsland extends Component({
       </div>
     </div>
   ),
-}) {
-  plait({ feedback, addThreads, sync, thread, host, $, loop }: PlaitProps) {
+  plait({ feedback, addThreads, sync, thread, host, $, loop }) {
     addThreads({
       onRemoveSvg: thread(sync({ waitFor: 'removeSvg' }), sync({ request: { type: 'addSubIsland' } })),
       onStart: thread(sync({ waitFor: 'start' }), sync({ request: { type: 'addSlot' } })),
@@ -121,5 +119,5 @@ export class ShadowIsland extends Component({
         zone?.insert('beforeend', <SVG />)
       },
     })
-  }
-}
+  },
+})

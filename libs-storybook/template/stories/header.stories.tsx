@@ -1,6 +1,6 @@
 import { createFragment } from '@plaited/storybook-utils'
 import { StoryObj, Meta } from '@plaited/storybook'
-import { assert, throws, findByText, findByAttribute } from '@plaited/storybook-rite'
+import { assert, findByText, findByAttribute } from '@plaited/storybook-rite'
 import { Header } from './header.js'
 
 const meta: Meta<typeof Header> = {
@@ -27,7 +27,7 @@ type Story = StoryObj<typeof Header>
 
 export const LoggedIn: Story = {
   render({ user }, extra) {
-    const frag = createFragment(<Header.template user={user?.name} />)
+    const frag = createFragment(<Header user={user?.name} />)
     return frag
   },
   play: async ({ canvasElement }) => {
@@ -60,18 +60,6 @@ export const LoggedOut: Story = {
       should: 'Button bar should have two children',
       actual: bar.childElementCount,
       expected: 2,
-    })
-  },
-}
-
-export const RegistryIsDefiningElements: Story = {
-  play: async () => {
-    const msg = await throws((tag, el) => customElements.define(el, tag), Header, Header.tag)
-    assert({
-      given: 'reverent receives irreverent attitude',
-      should: 'throw an error',
-      actual: msg?.includes(`Failed to execute 'define' on 'CustomElementRegistry'`),
-      expected: true,
     })
   },
 }

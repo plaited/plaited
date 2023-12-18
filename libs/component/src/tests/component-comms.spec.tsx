@@ -1,15 +1,14 @@
-import { css } from '@plaited/jsx'
 import { dataAddress } from '@plaited/jsx/utils'
 import { test } from '@plaited/rite'
-import { PlaitProps } from '@plaited/component-types'
-import { Component, define } from '../index.js'
+import { Component } from '../index.js'
 import { messenger } from '../utils.js'
 
 test('dynamic island comms', async (t) => {
   const msg = messenger()
   const wrapper = document.querySelector('body')
-  class ElOne extends Component({
+  const ElOne = Component({
     tag: 'dynamic-one',
+    observedTriggers: ['disable'],
     template: (
       <div>
         <button
@@ -20,11 +19,7 @@ test('dynamic island comms', async (t) => {
         </button>
       </div>
     ),
-  }) {
-    static get observedTriggers() {
-      return ['disable']
-    }
-    plait({ feedback, $, connect }: PlaitProps) {
+    plait({ feedback, $, connect }) {
       const disconnect = connect(msg)
       feedback({
         disable() {
@@ -39,17 +34,14 @@ test('dynamic island comms', async (t) => {
           })
         },
       })
-    }
-  }
-  class ElTwo extends Component({
+    },
+  })
+  const ElTwo = Component({
     tag: 'dynamic-two',
     dev: true,
+    observedTriggers: ['add'],
     template: <h1 data-target='header'>Hello</h1>,
-  }) {
-    static get observedTriggers() {
-      return ['add']
-    }
-    plait({ $, feedback, addThreads, thread, sync, connect }: PlaitProps) {
+    plait({ $, feedback, addThreads, thread, sync, connect }) {
       connect(msg)
       addThreads({
         onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),
@@ -63,8 +55,8 @@ test('dynamic island comms', async (t) => {
           header.insert('beforeend', <>{detail.value}</>)
         },
       })
-    }
-  }
+    },
+  })
   // Create elements and append to dom
   const one = document.createElement(ElOne.tag)
   const two = document.createElement(ElTwo.tag)
@@ -74,8 +66,8 @@ test('dynamic island comms', async (t) => {
   wrapper.insertAdjacentElement('beforeend', two)
 
   // Define elements
-  define(ElOne)
-  define(ElTwo)
+  ElOne.define()
+  ElTwo.define()
 
   let button = await t.findByAttribute('data-target', 'button', wrapper)
   const header = await t.findByAttribute('data-target', 'header', wrapper)

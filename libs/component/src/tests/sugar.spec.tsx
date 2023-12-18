@@ -1,6 +1,6 @@
 import { test } from '@plaited/rite'
-import { PlaitProps, QuerySelector, Position, PlaitedElement } from '@plaited/component-types'
-import { Component, define } from '../index.js'
+import { QuerySelector, Position, PlaitedElement } from '@plaited/component-types'
+import { Component } from '../index.js'
 
 let did = 1
 const adjectives = [
@@ -93,18 +93,15 @@ const forEachRow = ($: QuerySelector, data: DataItem) => {
   $('label')[0].render(<>{data.label}</>)
 }
 
-class Fixture extends Component({
+const Fixture = Component({
   template: (
     <div data-target='root'>
       <table data-target='table'></table>
     </div>
   ),
   tag: 'table-fixture',
-}) {
-  static get observedTriggers() {
-    return ['insert', 'render', 'replace', 'remove', 'removeAttributes', 'getAttribute', 'multiSetAttributes']
-  }
-  plait({ $, clone, feedback }: PlaitProps): void | Promise<void> {
+  observedTriggers: ['insert', 'render', 'replace', 'remove', 'removeAttributes', 'getAttribute', 'multiSetAttributes'],
+  plait({ $, clone, feedback }) {
     const cb = clone(row, forEachRow)
     feedback({
       replace() {
@@ -138,10 +135,10 @@ class Fixture extends Component({
         )
       },
     })
-  }
-}
+  },
+})
 
-define(Fixture)
+Fixture.define()
 
 test('beforebegin', async (t) => {
   const fixture = document.createElement(Fixture.tag) as PlaitedElement

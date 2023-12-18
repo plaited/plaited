@@ -1,2 +1,2 @@
 export * from './component.js'
-export { define } from './define.js'
+export * from './is-plaited.js'

@@ -1,4 +1,4 @@
-import { Component, PlaitProps, css } from 'plaited'
+import { Component, css } from 'plaited'
 import { Button } from './button.js'
 
 const { $stylesheet, ...cls } = css`
@@ -36,7 +36,7 @@ const { $stylesheet, ...cls } = css`
   }
 `
 
-export class Header extends Component({
+export const Header = Component({
   tag: 'header-el',
   template: (
     <header stylesheet={$stylesheet}>
@@ -87,10 +87,9 @@ export class Header extends Component({
       </div>
     </header>
   ),
-}) {
-  static observedAttributes = ['user']
-  static observedTriggers = ['user']
-  attributeChangedCallback(name: string, oldValue: string, newValue: string): void {
+  observedAttributes: ['user'],
+  observedTriggers: ['user'],
+  attributeChangedCallback(name: string, _, newValue: string) {
     if (name === 'user') {
       const [bar] = this.$('button-bar')
       newValue ?
@@ -122,13 +121,13 @@ export class Header extends Component({
           </>,
         )
     }
-  }
-  plait({ feedback, host }: PlaitProps): void | Promise<void> {
+  },
+  plait({ feedback, host }) {
     feedback({
       click(e: MouseEvent & { target: HTMLButtonElement }) {
         const value = e.target.value
         host.dispatchEvent(new CustomEvent(value, { bubbles: true }))
       },
     })
-  }
-}
+  },
+})

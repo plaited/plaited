@@ -1,6 +1,5 @@
 import { test } from '@plaited/rite'
 import { css } from '@plaited/jsx'
-import { PlaitProps } from '@plaited/component-types'
 import { Component } from '../index.js'
 import { canUseDOM } from '@plaited/utils'
 
@@ -32,7 +31,7 @@ test('template', async (t) => {
     }
   `
   const content = 'client side rendered'
-  class Fixture extends Component({
+  const Fixture = Component({
     tag: 'template-element',
     template: (
       <div
@@ -43,8 +42,8 @@ test('template', async (t) => {
         {content}
       </div>
     ),
-  }) {}
-  customElements.define(Fixture.tag, Fixture)
+  })
+  Fixture.define()
   const body = document.querySelector('body')
   const host = document.createElement(Fixture.tag)
   body.append(host)
@@ -70,7 +69,7 @@ test('template existing declarative shadowdom', async (t) => {
       color: red;
     }
   `
-  class Fixture extends Component({
+  const Fixture = Component({
     tag: 'with-declarative-shadow-dom',
     template: (
       <div
@@ -81,8 +80,7 @@ test('template existing declarative shadowdom', async (t) => {
         before hydration
       </div>
     ),
-  }) {
-    plait({ $ }: PlaitProps): void | Promise<void> {
+    plait({ $ }) {
       const { $stylesheet, ...cls2 } = css`
         .span {
           color: green;
@@ -91,9 +89,9 @@ test('template existing declarative shadowdom', async (t) => {
       const [inner] = $('inner')
       inner.render(<span stylesheet={$stylesheet}>after hydration</span>)
       inner.attr('class', `${cls2.span} ${cls.inner}`)
-    }
-  }
-  const template = createTemplateElement((<Fixture.template data-target='host' />).server.join(''))
+    },
+  })
+  const template = createTemplateElement((<Fixture data-target='host' />).server.join(''))
   const frag = document.importNode(template.content, true)
   const body = document.querySelector('body')
   body.append(frag)
@@ -121,7 +119,7 @@ test('template existing declarative shadowdom', async (t) => {
     actual: color,
     expected: 'rgb(255, 0, 0)',
   })
-  customElements.define(Fixture.tag, Fixture)
+  Fixture.define()
   inner = await t.findByAttribute('data-target', 'inner', host)
   textContent = inner.textContent
   computedStyle = window.getComputedStyle(inner)

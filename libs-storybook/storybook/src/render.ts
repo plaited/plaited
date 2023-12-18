@@ -2,16 +2,15 @@ import type { RenderContext, ArgsStoryFn, PartialStoryFn, Args } from '@storyboo
 
 import type { StoryFnPlaitedReturnType, PlaitedRender } from './types.js'
 
-import { createFragment, filterAttrs, isPlaitedComponent } from '@plaited/storybook-utils'
+import { createFragment, filterAttrs } from '@plaited/storybook-utils'
 
 export const render: ArgsStoryFn<PlaitedRender> = (args, context) => {
   const { id, component } = context
   if (!component) {
     throw new Error(`Unable to render story ${id} as the component annotation is missing from the default export`)
   }
-  const Component = isPlaitedComponent(component) ? component.template : component
   const { attrs, events } = filterAttrs(args)
-  const frag = createFragment(Component(attrs))
+  const frag = createFragment(component(attrs))
   const element = frag.firstElementChild
   if (!element) return frag
   for (const event in events) {
