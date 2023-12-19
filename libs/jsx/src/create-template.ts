@@ -10,7 +10,7 @@ import {
   Attrs,
   BooleanAttributes,
   CreateTemplate,
-  PlaitedComponentConstructor,
+  PlaitedElementConstructor,
   TemplateObject,
   VoidTags,
 } from '@plaited/component-types'
@@ -27,7 +27,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     htmlFor,
     ...attributes
   } = attrs
-  const registry = new Set<PlaitedComponentConstructor>()
+  const registry = new Set<PlaitedElementConstructor>()
   if (typeof _tag === 'function') {
     return _tag(attrs)
   }
@@ -149,7 +149,7 @@ export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
   const client: string[] = []
   const server: string[] = []
   const stylesheets = new Set<string>()
-  const registry = new Set<PlaitedComponentConstructor>()
+  const registry = new Set<PlaitedElementConstructor>()
   const length = children.length
   for (let i = 0; i < length; i++) {
     const child = children[i]

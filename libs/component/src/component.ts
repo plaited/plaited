@@ -2,7 +2,7 @@ import { createTemplate } from '@plaited/jsx'
 import { dataTrigger, dataAddress } from '@plaited/jsx/utils'
 import { Trigger, bProgram, BPEvent, Publisher } from '@plaited/behavioral'
 import type {
-  PlaitedComponentConstructor,
+  PlaitedElementConstructor,
   PlaitedElement,
   PlaitedComponent,
   Emit,
@@ -75,7 +75,7 @@ export const Component: PlaitedComponent = ({
     throw new Error(`Component is missing a [tag]`)
   }
   const _tag = tag.toLowerCase() as `${string}-${string}`
-  class PlaitedComponent extends HTMLElement implements PlaitedElement {
+  class Element extends HTMLElement implements PlaitedElement {
     static tag = _tag
     static observedAttributes = observedAttributes
     #observedTriggers = new Set(observedTriggers ?? [])
@@ -246,8 +246,8 @@ export const Component: PlaitedComponent = ({
       return console.warn(`Component [${name}] is not observing trigger [${type}]`)
     }
   }
-  Object.assign(PlaitedComponent.prototype, rest)
-  const registry = new Set<PlaitedComponentConstructor>([...template.registry, PlaitedComponent])
+  Object.assign(Element.prototype, rest)
+  const registry = new Set<PlaitedElementConstructor>([...template.registry, Element])
   const ft: PlaitedTemplate = ({ children = [], ...attrs }) =>
     createTemplate(tag, {
       ...attrs,
@@ -263,7 +263,8 @@ export const Component: PlaitedComponent = ({
         ...(Array.isArray(children) ? children : [children]),
       ],
     })
-  ft.define = (silent = true) => defineRegistry(new Set<PlaitedComponentConstructor>(registry), silent)
+  ft.define = (silent = true) => defineRegistry(new Set<PlaitedElementConstructor>(registry), silent)
   ft.tag = _tag
+  ft.element = Element
   return ft
 }

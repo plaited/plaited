@@ -9,7 +9,7 @@ export type TemplateObject = {
   client: string[]
   server: string[]
   stylesheets: Set<string>
-  registry: Set<PlaitedComponentConstructor>
+  registry: Set<PlaitedElementConstructor>
   $: '🦄'
 }
 
@@ -1402,7 +1402,7 @@ export interface PlaitedElement extends HTMLElement {
   formStateRestoreCallback?(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
 }
 
-export interface PlaitedComponentConstructor {
+export interface PlaitedElementConstructor {
   tag: string
   new (): PlaitedElement
 }
@@ -1410,6 +1410,7 @@ export interface PlaitedComponentConstructor {
 export type PlaitedTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
   define: (silent?: boolean) => void
   tag: `${string}-${string}`
+  element: PlaitedElementConstructor
 }
 
 export type PlaitedComponent = <T extends Attrs = Attrs>(args: {
