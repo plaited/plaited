@@ -1410,7 +1410,6 @@ export interface PlaitedElementConstructor {
 export type PlaitedTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
   define: (silent?: boolean) => void
   tag: `${string}-${string}`
-  element: PlaitedElementConstructor
 }
 
 export type PlaitedComponent = <T extends Attrs = Attrs>(args: {
