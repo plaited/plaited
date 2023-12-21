@@ -19,7 +19,7 @@ export type Children = Child[] | Child
 
 export type BooleanAttributes =
   | 'bp-hypermedia'
-// HTMLAttributes
+  // HTMLAttributes
   | 'allowfullscreen'
   | 'async'
   | 'autofocus'
@@ -1344,32 +1344,23 @@ export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
 export type SelectorMatch = '=' | '~=' | '|=' | '^=' | '$=' | '*='
 
 export interface QuerySelector {
-  <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+  <T extends Element = Element>(
     target: string,
     /** This options enables querySelectorAll and modified the attribute selector for bp-target{@default {all: false, mod: "=" } } {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}*/
     match?: SelectorMatch,
   ): SugaredElement<T>[]
 }
 
-/** Clone feature for handling list situations where structure is consistent but the data rendered is what is different. This is a performance feature */
-export type Clone = <T>(
-  template: TemplateObject,
-  callback: ($: QuerySelector, data: T) => void,
-) => (data: T) => DocumentFragment
-
 export type Sugar = {
-  render(this: HTMLElement | SVGElement, ...template: (TemplateObject | DocumentFragment | string)[]): void
-  insert(
-    this: HTMLElement | SVGElement,
-    position: Position,
-    ...template: (TemplateObject | DocumentFragment | string)[]
-  ): void
-  replace(this: HTMLElement | SVGElement, ...template: (TemplateObject | DocumentFragment | string)[]): void
-  attr(this: HTMLElement | SVGElement, attr: Record<string, string | null | number | boolean>, val?: never): void
-  attr(this: HTMLElement | SVGElement, attr: string, val?: string | null | number | boolean): string | null | void
+  render(this: Element, ...template: (TemplateObject | DocumentFragment | Element | string)[]): void
+  insert(this: Element, position: Position, ...template: (TemplateObject | DocumentFragment | Element | string)[]): void
+  replace(this: Element, ...template: (TemplateObject | DocumentFragment | Element | string)[]): void
+  attr(this: Element, attr: Record<string, string | null | number | boolean>, val?: never): void
+  attr(this: Element, attr: string, val?: string | null | number | boolean): string | null | void
+  clone<T>(this: Element, cb: ($: QuerySelector, data: T) => void): (data: T) => Element | DocumentFragment
 }
 
-export type SugaredElement<T extends HTMLElement | SVGElement = HTMLElement | SVGElement> = T & Sugar
+export type SugaredElement<T extends Element = Element> = T & Sugar
 
 export type Emit = (
   args: BPEvent & {
@@ -1390,7 +1381,6 @@ export type BPProps = {
    */
   host: PlaitedElement
   emit: Emit
-  clone: Clone
   connect: (comm: Publisher | Messenger) => () => void
 } & ReturnType<typeof bProgram>
 

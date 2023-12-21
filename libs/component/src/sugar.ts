@@ -3,10 +3,8 @@ import type {
   Sugar,
   SelectorMatch,
   TemplateObject,
-  Position,
   QuerySelector,
   BooleanAttributes,
-  Clone,
 } from '@plaited/component-types'
 import { booleanAttrs, bpTarget } from '@plaited/jsx/utils'
 import { isTypeOf } from '@plaited/utils'
@@ -38,7 +36,7 @@ const updateShadowRootStyles = async (root: ShadowRoot, stylesheets: Set<string>
   if (newStyleSheets.length) root.adoptedStyleSheets = [...root.adoptedStyleSheets, ...newStyleSheets]
 }
 
-const updateAttributes = (element: HTMLElement | SVGElement, attr: string, val: string | null | number | boolean) => {
+const updateAttributes = (element: Element, attr: string, val: string | null | number | boolean) => {
   // Remove the attribute if val is null or undefined, and it currently exists
   if (val === null && element.hasAttribute(attr)) return element.removeAttribute(attr)
   // Set the attribute if it is a boolean attribute and it does not exist
@@ -59,8 +57,8 @@ const handleTemplateObject = (shadowRoot: ShadowRoot, fragment: TemplateObject) 
   return template.content
 }
 
-const mapTemplates = (shadowRoot: ShadowRoot, templates: (TemplateObject | DocumentFragment | string)[]) => {
-  const content: (DocumentFragment | string)[] = []
+const mapTemplates = (shadowRoot: ShadowRoot, templates: (TemplateObject | DocumentFragment | Element | string)[]) => {
+  const content: (DocumentFragment | string | Element)[] = []
   const length = templates.length
   for (let i = 0; i < length; i++) {
     const fragment = templates[i]
@@ -97,28 +95,21 @@ const getSugar = (shadowRoot: ShadowRoot): Sugar => ({
       updateAttributes(this, key, attr[key])
     }
   },
-})
-
-export const clone =
-  (shadowRoot: ShadowRoot): Clone =>
-  (template, callback) => {
-    const content = handleTemplateObject(shadowRoot, template)
+  clone(callback) {
     return (data) => {
-      const clone = content.cloneNode(true) as DocumentFragment
+      const clone: Element | DocumentFragment =
+        this instanceof HTMLTemplateElement ?
+          (this.content.cloneNode(true) as DocumentFragment)
+        : (this.cloneNode(true) as Element)
       callback($(shadowRoot, clone), data)
       return clone
     }
-  }
+  },
+})
 
-const assignedElements = new WeakSet<HTMLElement | SVGElement>()
-
-const hasSugar = (element: HTMLElement | SVGElement): element is SugaredElement => assignedElements.has(element)
-
-const assignSugar = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
-  shadowRoot: ShadowRoot,
-  elements: (HTMLElement | SVGElement)[],
-) => {
-  const sugar = getSugar(shadowRoot)
+const assignedElements = new WeakSet<Element>()
+const hasSugar = (element: Element): element is SugaredElement => assignedElements.has(element)
+const assignSugar = <T extends Element = Element>(sugar: Sugar, elements: Element[]) => {
   const length = elements.length
   for (let i = 0; i < length; i++) {
     const el = elements[i]
@@ -129,10 +120,13 @@ const assignSugar = <T extends HTMLElement | SVGElement = HTMLElement | SVGEleme
   return elements as SugaredElement<T>[]
 }
 
-export const $ =
-  (shadowRoot: ShadowRoot, context: DocumentFragment | ShadowRoot = shadowRoot): QuerySelector =>
-  <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(target: string, match: SelectorMatch = '=') =>
-    assignSugar<T>(
-      shadowRoot,
-      Array.from(context.querySelectorAll<HTMLElement | SVGElement>(`[${bpTarget}${match}"${target}"]`)),
-    )
+const sugarRoots = new WeakMap<ShadowRoot, Sugar>()
+export const $ = (
+  shadowRoot: ShadowRoot,
+  context: DocumentFragment | ShadowRoot | Element = shadowRoot,
+): QuerySelector => {
+  const sugar =
+    sugarRoots.get(shadowRoot) ?? (sugarRoots.set(shadowRoot, getSugar(shadowRoot)).get(shadowRoot) as Sugar)
+  return <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
+    assignSugar<T>(sugar, Array.from(context.querySelectorAll<Element>(`[${bpTarget}${match}"${target}"]`)))
+}

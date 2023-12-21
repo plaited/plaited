@@ -65,28 +65,6 @@ const buildData = (count: number): Data => {
   return data
 }
 
-const row = (
-  <tr bp-target='row'>
-    <td
-      className='col-md-1'
-      bp-target='id'
-    ></td>
-    <td className='col-md-4'>
-      <a bp-target='label'></a>
-    </td>
-    <td className='col-md-1'>
-      <a>
-        <span
-          className='glyphicon glyphicon-remove'
-          aria-hidden='true'
-          bp-target='delete'
-        ></span>
-      </a>
-    </td>
-    <td className='col-md-6'></td>
-  </tr>
-)
-
 const forEachRow = ($: QuerySelector, data: DataItem) => {
   $('row')[0].attr('bp-target', `${data.id}`)
   $('id')[0].render(<>{data.id}</>)
@@ -95,14 +73,37 @@ const forEachRow = ($: QuerySelector, data: DataItem) => {
 
 const Fixture = Component({
   template: (
-    <div bp-target='root'>
-      <table bp-target='table'></table>
-    </div>
+    <>
+      <div bp-target='root'>
+        <table bp-target='table'></table>
+      </div>
+      <template bp-target='template'>
+        <tr bp-target='row'>
+          <td
+            className='col-md-1'
+            bp-target='id'
+          ></td>
+          <td className='col-md-4'>
+            <a bp-target='label'></a>
+          </td>
+          <td className='col-md-1'>
+            <a>
+              <span
+                className='glyphicon glyphicon-remove'
+                aria-hidden='true'
+                bp-target='delete'
+              ></span>
+            </a>
+          </td>
+          <td className='col-md-6'></td>
+        </tr>
+      </template>
+    </>
   ),
   tag: 'table-fixture',
   observedTriggers: ['insert', 'render', 'replace', 'remove', 'removeAttributes', 'getAttribute', 'multiSetAttributes'],
-  bp({ $, clone, feedback }) {
-    const cb = clone(row, forEachRow)
+  bp({ $, feedback }) {
+    const cb = $('template')[0].clone<DataItem>(forEachRow)
     feedback({
       replace() {
         $('table')[0].replace(<span>I'm jsut a span</span>)

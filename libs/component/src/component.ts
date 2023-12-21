@@ -10,17 +10,17 @@ import type {
   QuerySelector,
   PlaitedTemplate,
 } from '@plaited/component-types'
-import { $, cssCache, clone } from './sugar.js'
+import { $, cssCache } from './sugar.js'
 import { noop, trueTypeOf } from '@plaited/utils'
 import { defineRegistry } from './define-registry.js'
 
-const isElement = (node: Node): node is HTMLElement | SVGElement => node.nodeType === 1
+const isElement = (node: Node): node is Element => node.nodeType === 1
 
-const getTriggerMap = (el: HTMLElement | SVGElement) =>
+const getTriggerMap = (el: Element) =>
   new Map((el.getAttribute(bpTrigger) as string).split(' ').map((pair) => pair.split(':')) as [string, string][])
 
 /** get trigger for elements respective event from triggerTypeMap */
-const getTriggerType = (event: Event, context: HTMLElement | SVGElement) => {
+const getTriggerType = (event: Event, context: Element) => {
   const el =
     context.tagName !== 'SLOT' && event.currentTarget === context ? context
     : event.composedPath().find((el) => el instanceof ShadowRoot) === context.getRootNode() ? context
@@ -74,7 +74,7 @@ export const Component: PlaitedComponent = ({
     throw new Error(`Component is missing a [tag]`)
   }
   const _tag = tag.toLowerCase() as `${string}-${string}`
-  class Element extends HTMLElement implements PlaitedElement {
+  class Base extends HTMLElement implements PlaitedElement {
     static tag = _tag
     static observedAttributes = observedAttributes
     #observedTriggers = new Set(observedTriggers ?? [])
@@ -128,7 +128,6 @@ export const Component: PlaitedComponent = ({
           $: this.$,
           host: this,
           emit: this.#emit.bind(this),
-          clone: clone(this.#root),
           connect: this.#connect.bind(this),
           trigger,
           ...rest,
@@ -183,7 +182,7 @@ export const Component: PlaitedComponent = ({
       this.dispatchEvent(event)
     }
     /** If delegated listener does not have element then delegate it's callback with auto cleanup*/
-    #createDelegatedListener(el: HTMLElement | SVGElement) {
+    #createDelegatedListener(el: Element) {
       delegates.set(
         el,
         new DelegatedListener((event) => {
@@ -197,7 +196,7 @@ export const Component: PlaitedComponent = ({
       )
     }
     /** delegate event listeners  for elements in list */
-    #delegateListeners(elements: (HTMLElement | SVGElement)[]) {
+    #delegateListeners(elements: Element[]) {
       for (const el of elements) {
         if (el.tagName === 'SLOT' && el.hasAttribute('slot')) continue // skip nested slots
         !delegates.has(el) && this.#createDelegatedListener(el) // bind a callback for element if we haven't already
@@ -245,8 +244,8 @@ export const Component: PlaitedComponent = ({
       return console.warn(`Component [${name}] is not observing trigger [${type}]`)
     }
   }
-  Object.assign(Element.prototype, rest)
-  const registry = new Set<PlaitedElementConstructor>([...template.registry, Element])
+  Object.assign(Base.prototype, rest)
+  const registry = new Set<PlaitedElementConstructor>([...template.registry, Base])
   const ft: PlaitedTemplate = ({ children = [], ...attrs }) =>
     createTemplate(tag, {
       ...attrs,
