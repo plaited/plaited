@@ -1356,9 +1356,13 @@ export type Clone = <T>(
 ) => (data: T) => DocumentFragment
 
 export type Sugar = {
-  render(this: HTMLElement | SVGElement, ...template: (TemplateObject | DocumentFragment)[]): void
-  insert(this: HTMLElement | SVGElement, position: Position, ...template: (TemplateObject | DocumentFragment)[]): void
-  replace(this: HTMLElement | SVGElement, ...template: (TemplateObject | DocumentFragment)[]): void
+  render(this: HTMLElement | SVGElement, ...template: (TemplateObject | DocumentFragment | string)[]): void
+  insert(
+    this: HTMLElement | SVGElement,
+    position: Position,
+    ...template: (TemplateObject | DocumentFragment | string)[]
+  ): void
+  replace(this: HTMLElement | SVGElement, ...template: (TemplateObject | DocumentFragment | string)[]): void
   attr(this: HTMLElement | SVGElement, attr: Record<string, string | null | number | boolean>, val?: never): void
   attr(this: HTMLElement | SVGElement, attr: string, val?: string | null | number | boolean): string | null | void
 }

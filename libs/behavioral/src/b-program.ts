@@ -65,8 +65,7 @@ export const bProgram = ({
   function selectNextEvent() {
     const blocked: BPListener[] = []
     const candidates: CandidateBid[] = []
-    for (const bid of pending) {
-      const { request, priority, block, thread } = bid
+    for (const { request, priority, block, thread } of pending) {
       block && blocked.push(...ensureArray(block))
       request &&
         candidates.push({
