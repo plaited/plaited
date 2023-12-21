@@ -69,8 +69,8 @@ export const Header = Component({
           <h1>Acme</h1>
         </div>
         <div
-          data-target='button-bar'
-          data-trigger={{ click: 'click' }}
+          bp-target='button-bar'
+          bp-trigger={{ click: 'click' }}
         >
           <Button
             size='small'

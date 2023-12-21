@@ -6,9 +6,9 @@ test('shadow observer test', async (t) => {
   const body = document.querySelector('body')
   body.insertAdjacentElement('beforeend', document.createElement(ShadowIsland.tag))
 
-  let button = await t.findByAttribute('data-trigger', 'click:start')
+  let button = await t.findByAttribute('bp-trigger', 'click:start')
   button && (await t.fireEvent(button, 'click'))
-  let row = await t.findByAttribute('data-target', 'button-row')
+  let row = await t.findByAttribute('bp-target', 'button-row')
   t({
     given: 'clicking start',
     should: 'have add button in row',
@@ -17,7 +17,7 @@ test('shadow observer test', async (t) => {
   })
 
   button && (await t.fireEvent(button, 'click'))
-  row = await t.findByAttribute('data-target', 'button-row')
+  row = await t.findByAttribute('bp-target', 'button-row')
   t({
     given: 'clicking start again',
     should: 'not add another button to row',
@@ -25,7 +25,7 @@ test('shadow observer test', async (t) => {
     expected: 3,
   })
 
-  button = await t.findByAttribute('data-trigger', 'click:addButton')
+  button = await t.findByAttribute('bp-trigger', 'click:addButton')
   button && (await t.fireEvent(button, 'click'))
   button = await t.findByText<HTMLButtonElement>('add svg')
 
@@ -37,14 +37,14 @@ test('shadow observer test', async (t) => {
   })
 
   button && (await t.fireEvent(button, 'click'))
-  let zone = await t.findByAttribute('data-target', 'zone')
+  let zone = await t.findByAttribute('bp-target', 'zone')
   t({
     given: 'clicking add svg',
     should: 'adds a svg to zone',
     actual: zone?.children.length,
     expected: 1,
   })
-  const svg = await t.findByAttribute('data-target', 'svg')
+  const svg = await t.findByAttribute('bp-target', 'svg')
   t({
     given: 'add-svg event',
     should: 'zone child is an svg',
@@ -54,7 +54,7 @@ test('shadow observer test', async (t) => {
 
   button = await t.findByText('add svg')
   button && (await t.fireEvent(button, 'click'))
-  zone = await t.findByAttribute('data-target', 'zone')
+  zone = await t.findByAttribute('bp-target', 'zone')
   t({
     given: 'clicking add svg again',
     should: 'not add another svg to zone',

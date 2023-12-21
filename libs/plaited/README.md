@@ -17,8 +17,8 @@ Rapidly code web interfaces as requirements change and evolve.
 
 - Easily create cross framework and reusable interface components, PlaitedComponent.
 - Enables native hydration and island architecture via web components and the declarative shadow dom.
-- Auto Event binding via data attribute [data-trigger]
-- Easy, safe, isolated(shadow dom) DOM selection, DOM rendering, and attribute CRUD via `$` helper and data attribute [data-target]
+- Auto Event binding via data attribute [bp-trigger]
+- Easy, safe, isolated(shadow dom) DOM selection, DOM rendering, and attribute CRUD via `$` helper and data attribute [bp-target]
 - Implicit state management via behavioral programming
 - Island communication via messenger pattern
 - Component SubComponent communication via [eventDispatch()](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/dispatchEvent)

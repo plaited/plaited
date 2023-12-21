@@ -10,8 +10,8 @@ test('eventTriggers', async (t) => {
     dev: true,
     template: (
       <button
-        data-target='button'
-        data-trigger={{ click: 'click' }}
+        bp-target='button'
+        bp-trigger={{ click: 'click' }}
       >
         Add
       </button>
@@ -31,8 +31,8 @@ test('eventTriggers', async (t) => {
     dev: true,
     template: (
       <div>
-        <h1 data-target='header'>Hello</h1>
-        <Bottom data-trigger={{ append: 'append' }}></Bottom>
+        <h1 bp-target='header'>Hello</h1>
+        <Bottom bp-trigger={{ append: 'append' }}></Bottom>
       </div>
     ),
     bp({ feedback, $ }) {
@@ -52,8 +52,8 @@ test('eventTriggers', async (t) => {
   // // Define elements
   Top.define()
 
-  const button = await t.findByAttribute('data-target', 'button', wrapper)
-  const header = await t.findByAttribute('data-target', 'header', wrapper)
+  const button = await t.findByAttribute('bp-target', 'button', wrapper)
+  const header = await t.findByAttribute('bp-target', 'header', wrapper)
   t({
     given: 'render',
     should: 'header should contain string',

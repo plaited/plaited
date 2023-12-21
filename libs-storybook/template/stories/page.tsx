@@ -76,8 +76,8 @@ const { $stylesheet, ...cls } = css`
 const template = (
   <article stylesheet={$stylesheet}>
     <Header
-      data-target='header'
-      data-trigger={{
+      bp-target='header'
+      bp-trigger={{
         onLogin: 'onLogin',
         onLogout: 'onLogout',
         onCreateAccount: 'onCreateAccount',

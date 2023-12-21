@@ -1,11 +1,5 @@
 import { escape, kebabCase, isTypeOf, ensureArray } from '@plaited/utils'
-import {
-  booleanAttrs,
-  primitives,
-  voidTags,
-  validPrimitiveChildren,
-  dataTrigger as dataTriggerKey,
-} from './constants.js'
+import { booleanAttrs, primitives, voidTags, validPrimitiveChildren, bpTrigger as bpTriggerKey } from './constants.js'
 import {
   Attrs,
   BooleanAttributes,
@@ -22,7 +16,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     trusted,
     stylesheet,
     style,
-    'data-trigger': dataTrigger,
+    'bp-trigger': bpTrigger,
     className,
     htmlFor,
     ...attributes
@@ -45,12 +39,12 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   /** handle JS reserved words commonly used in html class & for*/
   if (htmlFor) start.push(`for="${htmlFor}" `)
   if (className) start.push(`class="${className}" `)
-  /** if we have dataTrigger attribute wire up formatted correctly*/
-  if (dataTrigger) {
-    const value = Object.entries(dataTrigger)
+  /** if we have bpTrigger attribute wire up formatted correctly*/
+  if (bpTrigger) {
+    const value = Object.entries(bpTrigger)
       .map<string>(([ev, req]) => `${ev}:${req}`)
       .join(' ')
-    start.push(`${dataTriggerKey}="${value}" `)
+    start.push(`${bpTriggerKey}="${value}" `)
   }
   /** if we have style add it to element */
   if (style) {
@@ -62,7 +56,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   }
   /** next we want to loops through our attributes */
   for (const key in attributes) {
-    /** P1 all events are delegated via the data-trigger attribute so we want
+    /** P1 all events are delegated via the bp-trigger attribute so we want
      * skip on attempts to provide `on` attributes
      */
     if (key.startsWith('on')) {

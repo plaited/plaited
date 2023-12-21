@@ -15,7 +15,7 @@ test('dynamic styles', async (t) => {
   `
   const Fixture = Component({
     tag: 'dynamic-only',
-    template: <div data-target='target'></div>,
+    template: <div bp-target='target'></div>,
     bp({ $ }) {
       const [target] = $<HTMLDivElement>('target')
       target.insert(
@@ -41,7 +41,7 @@ test('dynamic styles', async (t) => {
   Fixture.define()
   body.append(document.createElement(Fixture.tag))
 
-  const target = await t.findByAttribute('data-target', 'target')
+  const target = await t.findByAttribute('bp-target', 'target')
   const root = target.getRootNode() as ShadowRoot
   t({
     given: 'dynamic render of the same stylesheet twice',
@@ -67,7 +67,7 @@ test('with default and dynamic styles', async (t) => {
     tag: 'with-default-styles',
     template: (
       <div
-        data-target='target-2'
+        bp-target='target-2'
         className={cls.root}
         stylesheet={$stylesheet}
       ></div>
@@ -87,7 +87,7 @@ test('with default and dynamic styles', async (t) => {
   })
   Fixture.define()
   body.append(document.createElement(Fixture.tag))
-  const target = await t.findByAttribute('data-target', 'target-2')
+  const target = await t.findByAttribute('bp-target', 'target-2')
   const root = target.getRootNode() as ShadowRoot
   t({
     given: 'dynamic render with default styles from template',

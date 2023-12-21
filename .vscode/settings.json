@@ -5,7 +5,9 @@
     "source.fixAll.eslint": "explicit"
   },
   "cSpell.words": [
-    "microapps"
+    "microapps",
+    "shadowrootdelegatesfocus",
+    "shadowrootmode"
   ],
   "markdownlint.config": {
     "MD041": false

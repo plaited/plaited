@@ -54,7 +54,7 @@ export const LoggedIn: Story = {
 
 export const LoggedOut: Story = {
   play: async ({ canvasElement }) => {
-    const bar = await findByAttribute('data-target', 'button-bar', canvasElement)
+    const bar = await findByAttribute('bp-target', 'button-bar', canvasElement)
     assert({
       given: 'Logged out mode',
       should: 'Button bar should have two children',

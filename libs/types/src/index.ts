@@ -59,9 +59,9 @@ export type CSSProperties = CSS.Properties<string | number> & {
 export type PlaitedAttributes = {
   class?: never
   className?: string
-  ['data-address']?: string
-  ['data-target']?: string
-  ['data-trigger']?: Record<string, string>
+  ['bp-address']?: string
+  ['bp-target']?: string
+  ['bp-trigger']?: Record<string, string>
   children?: Children
   stylesheet?: string | string[]
   /** setting trusted to true will disable all escaping security policy measures for this element template */
@@ -1344,7 +1344,7 @@ export type SelectorMatch = '=' | '~=' | '|=' | '^=' | '$=' | '*='
 export interface QuerySelector {
   <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
     target: string,
-    /** This options enables querySelectorAll and modified the attribute selector for data-target{@default {all: false, mod: "=" } } {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}*/
+    /** This options enables querySelectorAll and modified the attribute selector for bp-target{@default {all: false, mod: "=" } } {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}*/
     match?: SelectorMatch,
   ): SugaredElement<T>[]
 }
@@ -1374,7 +1374,7 @@ export type Emit = (
 ) => void
 
 export type BPProps = {
-  /** query for elements with the data-target attribute in the Island's shadowDom and slots */
+  /** query for elements with the bp-target attribute in the Island's shadowDom and slots */
   $: QuerySelector
   /** The DOM node context allowing easy light & shadow dom access
    * @example
@@ -1439,9 +1439,3 @@ export type PlaitedComponent = <T extends Attrs = Attrs>(args: {
   formResetCallback?(this: PlaitedElement): void
   formStateRestoreCallback?(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
 }) => PlaitedTemplate<T>
-
-export type TriggerElement = (HTMLElement | SVGElement) & {
-  dataset: {
-    trigger: string
-  }
-}

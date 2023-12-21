@@ -55,24 +55,24 @@ export const ShadowIsland = Component({
     <div
       className={classes.mount}
       stylesheet={$stylesheet}
-      data-target='wrapper'
+      bp-target='wrapper'
     >
       <div
         className={classes.zone}
-        data-target='zone'
+        bp-target='zone'
       ></div>
       <div
         className={classes.row}
-        data-target='button-row'
+        bp-target='button-row'
       >
         <button
-          data-trigger={{ click: 'start' }}
+          bp-trigger={{ click: 'start' }}
           className={classes.button}
         >
           start
         </button>
         <button
-          data-trigger={{ click: 'addButton' }}
+          bp-trigger={{ click: 'addButton' }}
           className={classes.button}
         >
           addButton
@@ -97,7 +97,7 @@ export const ShadowIsland = Component({
       },
       modifyAttributes() {
         const [slot] = $('add-svg-slot')
-        slot?.attr('data-trigger', null)
+        slot?.attr('bp-trigger', null)
       },
       addSlot() {
         const [row] = $('button-row')
@@ -105,8 +105,8 @@ export const ShadowIsland = Component({
           'beforeend',
           <slot
             name='button'
-            data-target='add-svg-slot'
-            data-trigger={{ click: 'add-svg' }}
+            bp-target='add-svg-slot'
+            bp-trigger={{ click: 'add-svg' }}
           ></slot>,
         )
       },
