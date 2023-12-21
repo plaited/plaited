@@ -122,7 +122,7 @@ export const Header = Component({
         )
     }
   },
-  plait({ feedback, host }) {
+  bp({ feedback, host }) {
     feedback({
       click(e: MouseEvent & { target: HTMLButtonElement }) {
         const value = e.target.value

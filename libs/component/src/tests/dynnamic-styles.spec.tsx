@@ -16,7 +16,7 @@ test('dynamic styles', async (t) => {
   const Fixture = Component({
     tag: 'dynamic-only',
     template: <div data-target='target'></div>,
-    plait({ $ }) {
+    bp({ $ }) {
       const [target] = $<HTMLDivElement>('target')
       target.insert(
         'beforeend',
@@ -72,7 +72,7 @@ test('with default and dynamic styles', async (t) => {
         stylesheet={$stylesheet}
       ></div>
     ),
-    plait({ $ }) {
+    bp({ $ }) {
       const [target] = $<HTMLDivElement>('target-2')
       target.insert(
         'beforeend',

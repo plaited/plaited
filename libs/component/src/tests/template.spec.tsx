@@ -80,7 +80,7 @@ test('template existing declarative shadowdom', async (t) => {
         before hydration
       </div>
     ),
-    plait({ $ }) {
+    bp({ $ }) {
       const { $stylesheet, ...cls2 } = css`
         .span {
           color: green;

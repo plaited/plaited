@@ -80,7 +80,7 @@ export const ShadowIsland = Component({
       </div>
     </div>
   ),
-  plait({ feedback, addThreads, sync, thread, host, $, loop }) {
+  bp({ feedback, addThreads, sync, thread, host, $, loop }) {
     addThreads({
       onRemoveSvg: thread(sync({ waitFor: 'removeSvg' }), sync({ request: { type: 'addSubIsland' } })),
       onStart: thread(sync({ waitFor: 'start' }), sync({ request: { type: 'addSlot' } })),

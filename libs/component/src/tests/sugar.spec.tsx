@@ -101,7 +101,7 @@ const Fixture = Component({
   ),
   tag: 'table-fixture',
   observedTriggers: ['insert', 'render', 'replace', 'remove', 'removeAttributes', 'getAttribute', 'multiSetAttributes'],
-  plait({ $, clone, feedback }) {
+  bp({ $, clone, feedback }) {
     const cb = clone(row, forEachRow)
     feedback({
       replace() {

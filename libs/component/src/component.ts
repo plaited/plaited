@@ -68,7 +68,7 @@ export const Component: PlaitedComponent = ({
   strategy,
   connectedCallback,
   disconnectedCallback,
-  plait,
+  bp,
   ...rest
 }) => {
   if (!tag) {
@@ -113,7 +113,7 @@ export const Component: PlaitedComponent = ({
     #trigger?: Trigger
     #shadowObserver?: MutationObserver
     connectedCallback() {
-      if (plait) {
+      if (bp) {
         const { trigger, ...rest } = bProgram({ strategy, dev })
         this.#trigger = trigger // listeners need trigger to be available on instance
         this.#delegateListeners(
@@ -125,7 +125,7 @@ export const Component: PlaitedComponent = ({
           trigger({
             type: `connected(${this.dataset.address ?? this.tagName.toLowerCase()})`,
           })
-        void plait.bind(this)({
+        void bp.bind(this)({
           $: this.$,
           host: this,
           emit: this.#emit.bind(this),

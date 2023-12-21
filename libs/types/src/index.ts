@@ -1373,7 +1373,7 @@ export type Emit = (
   },
 ) => void
 
-export type PlaitProps = {
+export type BPProps = {
   /** query for elements with the data-target attribute in the Island's shadowDom and slots */
   $: QuerySelector
   /** The DOM node context allowing easy light & shadow dom access
@@ -1429,7 +1429,7 @@ export type PlaitedComponent = <T extends Attrs = Attrs>(args: {
   dev?: true | DevCallback
   /** event selection strategy callback from behavioral library */
   strategy?: Strategy
-  plait?(this: PlaitedElement, props: PlaitProps): void | Promise<void>
+  bp?(this: PlaitedElement, props: BPProps): void | Promise<void>
   connectedCallback?(this: PlaitedElement): void
   attributeChangedCallback?(this: PlaitedElement, name: string, oldValue: string | null, newValue: string | null): void
   disconnectedCallback?(this: PlaitedElement): void

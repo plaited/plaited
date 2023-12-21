@@ -17,7 +17,7 @@ test('eventTriggers', async (t) => {
       </button>
     ),
     observedTriggers: ['add'],
-    plait({ feedback, emit }: PlaitProps) {
+    bp({ feedback, emit }: PlaitProps) {
       feedback({
         click() {
           emit({ type: 'append' })
@@ -35,7 +35,7 @@ test('eventTriggers', async (t) => {
         <Bottom data-trigger={{ append: 'append' }}></Bottom>
       </div>
     ),
-    plait({ feedback, $ }) {
+    bp({ feedback, $ }) {
       feedback({
         append() {
           const [header] = $('header')

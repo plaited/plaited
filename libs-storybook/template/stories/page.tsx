@@ -157,7 +157,7 @@ const template = (
 export const Page = Component({
   tag: 'page-el',
   template,
-  plait({ $, feedback }) {
+  bp({ $, feedback }) {
     const [header] = $<PlaitedElement>('header')
     feedback({
       onLogin() {

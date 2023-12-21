@@ -8,7 +8,7 @@ test('observed triggers', async (t) => {
     dev: true,
     template: <h1 data-target='header'>Hello</h1>,
     observedTriggers: ['add'],
-    plait({ $, feedback, addThreads, thread, sync, emit }) {
+    bp({ $, feedback, addThreads, thread, sync, emit }) {
       addThreads({
         onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),
       })
@@ -40,7 +40,7 @@ test('observed triggers', async (t) => {
         </button>
       </div>
     ),
-    plait({ feedback, $ }) {
+    bp({ feedback, $ }) {
       feedback({
         disable() {
           const [button] = $<HTMLButtonElement>('button')

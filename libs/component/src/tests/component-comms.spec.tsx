@@ -19,7 +19,7 @@ test('dynamic island comms', async (t) => {
         </button>
       </div>
     ),
-    plait({ feedback, $, connect }) {
+    bp({ feedback, $, connect }) {
       const disconnect = connect(msg)
       feedback({
         disable() {
@@ -41,7 +41,7 @@ test('dynamic island comms', async (t) => {
     dev: true,
     observedTriggers: ['add'],
     template: <h1 data-target='header'>Hello</h1>,
-    plait({ $, feedback, addThreads, thread, sync, connect }) {
+    bp({ $, feedback, addThreads, thread, sync, connect }) {
       connect(msg)
       addThreads({
         onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),
