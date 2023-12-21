@@ -73,14 +73,14 @@ test('template existing declarative shadowdom', async (t) => {
     tag: 'with-declarative-shadow-dom',
     template: (
       <div
-        data-target='inner'
+        bp-target='inner'
         className={cls.inner}
         stylesheet={$stylesheet}
       >
         before hydration
       </div>
     ),
-    plait({ $ }) {
+    bp({ $ }) {
       const { $stylesheet, ...cls2 } = css`
         .span {
           color: green;
@@ -91,12 +91,12 @@ test('template existing declarative shadowdom', async (t) => {
       inner.attr('class', `${cls2.span} ${cls.inner}`)
     },
   })
-  const template = createTemplateElement((<Fixture data-target='host' />).server.join(''))
+  const template = createTemplateElement((<Fixture bp-target='host' />).server.join(''))
   const frag = document.importNode(template.content, true)
   const body = document.querySelector('body')
   body.append(frag)
-  const host = await t.findByAttribute<HTMLElement>('data-target', 'host')
-  let inner = await t.findByAttribute('data-target', 'inner', host)
+  const host = await t.findByAttribute<HTMLElement>('bp-target', 'host')
+  let inner = await t.findByAttribute('bp-target', 'inner', host)
   const style = await t.findByText($stylesheet, host)
   let textContent = inner.textContent
   t({
@@ -120,7 +120,7 @@ test('template existing declarative shadowdom', async (t) => {
     expected: 'rgb(255, 0, 0)',
   })
   Fixture.define()
-  inner = await t.findByAttribute('data-target', 'inner', host)
+  inner = await t.findByAttribute('bp-target', 'inner', host)
   textContent = inner.textContent
   computedStyle = window.getComputedStyle(inner)
   color = computedStyle.color

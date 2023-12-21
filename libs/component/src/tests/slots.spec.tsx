@@ -9,8 +9,8 @@ const nestedSlot = sinon.spy()
 
 const Nested = Component({
   tag: 'nested-slot',
-  template: <slot data-trigger={{ click: 'nested' }}></slot>,
-  plait(props): void | Promise<void> {
+  template: <slot bp-trigger={{ click: 'nested' }}></slot>,
+  bp(props): void | Promise<void> {
     props.feedback({
       nested() {
         nestedSlot('nested-slot')
@@ -23,20 +23,20 @@ const Fixture = Component({
   tag: 'slot-test',
   template: (
     <div>
-      <slot data-trigger={{ click: 'slot' }}></slot>
+      <slot bp-trigger={{ click: 'slot' }}></slot>
       <slot
         name='named'
-        data-trigger={{ click: 'named' }}
+        bp-trigger={{ click: 'named' }}
       ></slot>
       <Nested>
         <slot
           name='nested'
-          data-trigger={{ click: 'nested' }}
+          bp-trigger={{ click: 'nested' }}
         ></slot>
       </Nested>
     </div>
   ),
-  plait({ feedback }) {
+  bp({ feedback }) {
     feedback({
       slot() {
         defaultSlot('default-slot')

@@ -66,20 +66,20 @@ const buildData = (count: number): Data => {
 }
 
 const row = (
-  <tr data-target='row'>
+  <tr bp-target='row'>
     <td
       className='col-md-1'
-      data-target='id'
+      bp-target='id'
     ></td>
     <td className='col-md-4'>
-      <a data-target='label'></a>
+      <a bp-target='label'></a>
     </td>
     <td className='col-md-1'>
       <a>
         <span
           className='glyphicon glyphicon-remove'
           aria-hidden='true'
-          data-target='delete'
+          bp-target='delete'
         ></span>
       </a>
     </td>
@@ -88,20 +88,20 @@ const row = (
 )
 
 const forEachRow = ($: QuerySelector, data: DataItem) => {
-  $('row')[0].attr('data-target', `${data.id}`)
+  $('row')[0].attr('bp-target', `${data.id}`)
   $('id')[0].render(<>{data.id}</>)
   $('label')[0].render(<>{data.label}</>)
 }
 
 const Fixture = Component({
   template: (
-    <div data-target='root'>
-      <table data-target='table'></table>
+    <div bp-target='root'>
+      <table bp-target='table'></table>
     </div>
   ),
   tag: 'table-fixture',
   observedTriggers: ['insert', 'render', 'replace', 'remove', 'removeAttributes', 'getAttribute', 'multiSetAttributes'],
-  plait({ $, clone, feedback }) {
+  bp({ $, clone, feedback }) {
     const cb = clone(row, forEachRow)
     feedback({
       replace() {
@@ -117,18 +117,18 @@ const Fixture = Component({
         $('table')[0].replaceChildren()
       },
       getAttribute() {
-        const attr = $('root')[0].attr('data-target')
+        const attr = $('root')[0].attr('bp-target')
         $('root')[0].render(<>{attr}</>)
       },
       removeAttributes() {
         const labels = $('label')
-        labels.forEach((label) => label.attr('data-target', null))
+        labels.forEach((label) => label.attr('bp-target', null))
       },
       multiSetAttributes() {
         const dels = $('delete')
         dels.forEach((del) =>
           del.attr({
-            'data-target': 'cancel',
+            'bp-target': 'cancel',
             'aria-hidden': 'false',
             class: null,
           }),
@@ -144,7 +144,7 @@ test('beforebegin', async (t) => {
   const fixture = document.createElement(Fixture.tag) as PlaitedElement
   const body = document.querySelector('body')
   body.append(fixture)
-  let root = await t.findByAttribute<HTMLDivElement>('data-target', 'root')
+  let root = await t.findByAttribute<HTMLDivElement>('bp-target', 'root')
   t({
     given: 'before calling trigger',
     should: 'root child count shoudl be 100',
@@ -152,14 +152,14 @@ test('beforebegin', async (t) => {
     expected: 1,
   })
   fixture.trigger({ type: 'insert', detail: 'beforebegin' })
-  root = await t.findByAttribute<HTMLDivElement>('data-target', 'root')
+  root = await t.findByAttribute<HTMLDivElement>('bp-target', 'root')
   t({
     given: 'after calling trigger',
     should: 'root child count should be 101',
     actual: root.childElementCount,
     expected: 101,
   })
-  const table = await t.findByAttribute<HTMLTableElement>('data-target', 'table')
+  const table = await t.findByAttribute<HTMLTableElement>('bp-target', 'table')
   t({
     given: 'after calling trigger',
     should: 'root last child should be the table',
@@ -172,7 +172,7 @@ test('afterbegin', async (t) => {
   const fixture = document.createElement(Fixture.tag) as PlaitedElement
   const body = document.querySelector('body')
   body.append(fixture)
-  const table = await t.findByAttribute<HTMLTableElement>('data-target', 'table')
+  const table = await t.findByAttribute<HTMLTableElement>('bp-target', 'table')
   t({
     given: 'before calling trigger',
     should: 'table children should be empty',
@@ -207,7 +207,7 @@ test('beforeend', async (t) => {
   const fixture = document.createElement(Fixture.tag) as PlaitedElement
   const body = document.querySelector('body')
   body.append(fixture)
-  const table = await t.findByAttribute<HTMLTableElement>('data-target', 'table')
+  const table = await t.findByAttribute<HTMLTableElement>('bp-target', 'table')
   t({
     given: 'before calling trigger',
     should: 'table children should be empty',
@@ -242,7 +242,7 @@ test('afterend', async (t) => {
   const fixture = document.createElement(Fixture.tag) as PlaitedElement
   const body = document.querySelector('body')
   body.append(fixture)
-  let root = await t.findByAttribute<HTMLDivElement>('data-target', 'root')
+  let root = await t.findByAttribute<HTMLDivElement>('bp-target', 'root')
   t({
     given: 'before calling trigger',
     should: 'root child count should be 1',
@@ -250,14 +250,14 @@ test('afterend', async (t) => {
     expected: 1,
   })
   fixture.trigger({ type: 'insert', detail: 'afterend' })
-  root = await t.findByAttribute<HTMLDivElement>('data-target', 'root')
+  root = await t.findByAttribute<HTMLDivElement>('bp-target', 'root')
   t({
     given: 'after calling trigger',
     should: 'root child count should be 101',
     actual: root.childElementCount,
     expected: 101,
   })
-  const table = await t.findByAttribute<HTMLTableElement>('data-target', 'table')
+  const table = await t.findByAttribute<HTMLTableElement>('bp-target', 'table')
   t({
     given: 'after calling trigger',
     should: 'root first childe should be the table',
@@ -270,7 +270,7 @@ test('render', async (t) => {
   const fixture = document.createElement(Fixture.tag) as PlaitedElement
   const body = document.querySelector('body')
   body.append(fixture)
-  const table = await t.findByAttribute<HTMLTableElement>('data-target', 'table')
+  const table = await t.findByAttribute<HTMLTableElement>('bp-target', 'table')
   t({
     given: 'before calling trigger',
     should: 'table children should be empty',
@@ -290,7 +290,7 @@ test('replace', async (t) => {
   const fixture = document.createElement(Fixture.tag) as PlaitedElement
   const body = document.querySelector('body')
   body.append(fixture)
-  const root = await t.findByAttribute<HTMLDivElement>('data-target', 'root')
+  const root = await t.findByAttribute<HTMLDivElement>('bp-target', 'root')
   t({
     given: 'before calling trigger',
     should: 'root first child should be a table',
@@ -310,7 +310,7 @@ test('getAttribute', async (t) => {
   const fixture = document.createElement(Fixture.tag) as PlaitedElement
   const body = document.querySelector('body')
   body.append(fixture)
-  const root = await t.findByAttribute<HTMLDivElement>('data-target', 'root')
+  const root = await t.findByAttribute<HTMLDivElement>('bp-target', 'root')
   t({
     given: 'before calling trigger',
     should: 'root firstChild should be a table',
@@ -331,7 +331,7 @@ test('removeAttributes', async (t) => {
   const body = document.querySelector('body')
   body.append(fixture)
   fixture.trigger({ type: 'render' })
-  let label = await t.findByAttribute<HTMLDivElement>('data-target', 'label')
+  let label = await t.findByAttribute<HTMLDivElement>('bp-target', 'label')
   t({
     given: 'before calling removeAttributes trigger',
     should: 'first found label should be an anchorElement',
@@ -339,10 +339,10 @@ test('removeAttributes', async (t) => {
     expected: true,
   })
   fixture.trigger({ type: 'removeAttributes' })
-  label = await t.findByAttribute<HTMLDivElement>('data-target', 'label')
+  label = await t.findByAttribute<HTMLDivElement>('bp-target', 'label')
   t({
     given: 'after calling removeAttributes trigger',
-    should: 'should not be able to find an element with data-target label',
+    should: 'should not be able to find an element with bp-target label',
     actual: label,
     expected: undefined,
   })
@@ -354,11 +354,11 @@ test('multiSetAttributes', async (t) => {
   const body = document.querySelector('body')
   body.append(fixture)
   fixture.trigger({ type: 'render' })
-  let el = await t.findByAttribute<HTMLDivElement>('data-target', 'delete')
-  const can = await t.findByAttribute<HTMLSpanElement>('data-target', 'cancel')
+  let el = await t.findByAttribute<HTMLDivElement>('bp-target', 'delete')
+  const can = await t.findByAttribute<HTMLSpanElement>('bp-target', 'cancel')
   t({
     given: 'before calling multiSetAttributes trigger',
-    should: 'first found data-target delete element should be an span',
+    should: 'first found bp-target delete element should be an span',
     actual: el instanceof HTMLSpanElement,
     expected: true,
   })
@@ -376,22 +376,22 @@ test('multiSetAttributes', async (t) => {
   })
   t({
     given: 'before calling multiSetAttributes trigger',
-    should: 'should not be able to find an element with data-target cancel',
+    should: 'should not be able to find an element with bp-target cancel',
     actual: can,
     expected: undefined,
   })
   fixture.trigger({ type: 'multiSetAttributes' })
-  el = await t.findByAttribute<HTMLDivElement>('data-target', 'delete')
+  el = await t.findByAttribute<HTMLDivElement>('bp-target', 'delete')
   t({
     given: 'after calling removeAttributes trigger',
-    should: 'should not be able to find an element with data-target delete',
+    should: 'should not be able to find an element with bp-target delete',
     actual: el,
     expected: undefined,
   })
-  el = await t.findByAttribute<HTMLDivElement>('data-target', 'cancel')
+  el = await t.findByAttribute<HTMLDivElement>('bp-target', 'cancel')
   t({
     given: 'after calling removeAttributes trigger',
-    should: 'should find an element with data-target cancel',
+    should: 'should find an element with bp-target cancel',
     actual: el instanceof HTMLSpanElement,
     expected: true,
   })

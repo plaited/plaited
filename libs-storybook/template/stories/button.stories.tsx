@@ -19,7 +19,7 @@ type Story = StoryObj<typeof Button>
 // More on writing stories with args: https://storybook.js.org/docs/preact/writing-stories/args
 export const Primary: Story = {
   args: {
-    'data-target': 'button',
+    'bp-target': 'button',
     primary: true,
     label: 'Primary Button',
   },
@@ -34,14 +34,14 @@ export const Primary: Story = {
 
 export const Secondary: Story = {
   args: {
-    'data-target': 'button',
+    'bp-target': 'button',
     label: 'Secondary Button',
   },
 }
 
 export const Large: Story = {
   args: {
-    'data-target': 'button',
+    'bp-target': 'button',
     size: 'large',
     label: 'Large Button',
   },
@@ -60,7 +60,7 @@ export const Small: Story = {
     })
   },
   args: {
-    'data-target': 'button',
+    'bp-target': 'button',
     size: 'small',
     label: 'Small Button',
   },

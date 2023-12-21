@@ -8,7 +8,7 @@ import type {
   BooleanAttributes,
   Clone,
 } from '@plaited/component-types'
-import { booleanAttrs, dataTarget } from '@plaited/jsx/utils'
+import { booleanAttrs, bpTarget } from '@plaited/jsx/utils'
 import { isTypeOf } from '@plaited/utils'
 import { defineRegistry } from './define-registry.js'
 /**
@@ -137,5 +137,5 @@ export const $ =
   <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(target: string, match: SelectorMatch = '=') =>
     assignSugar<T>(
       shadowRoot,
-      Array.from(context.querySelectorAll<HTMLElement | SVGElement>(`[${dataTarget}${match}"${target}"]`)),
+      Array.from(context.querySelectorAll<HTMLElement | SVGElement>(`[${bpTarget}${match}"${target}"]`)),
     )

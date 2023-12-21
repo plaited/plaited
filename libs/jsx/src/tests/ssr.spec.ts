@@ -58,11 +58,11 @@ test('ssr: Style attribute', () =>
     ),
   ).toMatchSnapshot())
 
-test('ssr: data-trigger attribute', () =>
+test('ssr: bp-trigger attribute', () =>
   expect(
     render(
       h('div', {
-        'data-trigger': {
+        'bp-trigger': {
           click: 'random',
           focus: 'thing',
         },

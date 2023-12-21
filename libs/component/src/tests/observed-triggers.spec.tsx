@@ -6,9 +6,9 @@ test('observed triggers', async (t) => {
   const Bottom = Component({
     tag: 'bottom-component',
     dev: true,
-    template: <h1 data-target='header'>Hello</h1>,
+    template: <h1 bp-target='header'>Hello</h1>,
     observedTriggers: ['add'],
-    plait({ $, feedback, addThreads, thread, sync, emit }) {
+    bp({ $, feedback, addThreads, thread, sync, emit }) {
       addThreads({
         onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),
       })
@@ -29,18 +29,18 @@ test('observed triggers', async (t) => {
     template: (
       <div>
         <slot
-          data-target='slot'
-          data-trigger={{ disable: 'disable' }}
+          bp-target='slot'
+          bp-trigger={{ disable: 'disable' }}
         ></slot>
         <button
-          data-target='button'
-          data-trigger={{ click: 'click' }}
+          bp-target='button'
+          bp-trigger={{ click: 'click' }}
         >
           Add "world!"
         </button>
       </div>
     ),
-    plait({ feedback, $ }) {
+    bp({ feedback, $ }) {
       feedback({
         disable() {
           const [button] = $<HTMLButtonElement>('button')
@@ -69,8 +69,8 @@ test('observed triggers', async (t) => {
   Top.define()
   Bottom.define()
 
-  let button = await t.findByAttribute('data-target', 'button', wrapper)
-  const header = await t.findByAttribute('data-target', 'header', wrapper)
+  let button = await t.findByAttribute('bp-target', 'button', wrapper)
+  const header = await t.findByAttribute('bp-target', 'header', wrapper)
   t({
     given: 'render',
     should: 'header should contain string',
@@ -84,7 +84,7 @@ test('observed triggers', async (t) => {
     actual: header?.innerHTML,
     expected: 'Hello World!',
   })
-  button = await t.findByAttribute('data-target', 'button', wrapper)
+  button = await t.findByAttribute('bp-target', 'button', wrapper)
   t({
     given: 'clicking button',
     should: 'be disabled',

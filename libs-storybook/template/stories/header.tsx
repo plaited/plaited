@@ -69,8 +69,8 @@ export const Header = Component({
           <h1>Acme</h1>
         </div>
         <div
-          data-target='button-bar'
-          data-trigger={{ click: 'click' }}
+          bp-target='button-bar'
+          bp-trigger={{ click: 'click' }}
         >
           <Button
             size='small'
@@ -122,7 +122,7 @@ export const Header = Component({
         )
     }
   },
-  plait({ feedback, host }) {
+  bp({ feedback, host }) {
     feedback({
       click(e: MouseEvent & { target: HTMLButtonElement }) {
         const value = e.target.value

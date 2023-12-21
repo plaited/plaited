@@ -1,4 +1,4 @@
-import { dataAddress } from '@plaited/jsx/utils'
+import { bpAddress } from '@plaited/jsx/utils'
 import { test } from '@plaited/rite'
 import { Component } from '../index.js'
 import { messenger } from '../utils.js'
@@ -12,14 +12,14 @@ test('dynamic island comms', async (t) => {
     template: (
       <div>
         <button
-          data-target='button'
-          data-trigger={{ click: 'click' }}
+          bp-target='button'
+          bp-trigger={{ click: 'click' }}
         >
           Add "world!"
         </button>
       </div>
     ),
-    plait({ feedback, $, connect }) {
+    bp({ feedback, $, connect }) {
       const disconnect = connect(msg)
       feedback({
         disable() {
@@ -40,8 +40,8 @@ test('dynamic island comms', async (t) => {
     tag: 'dynamic-two',
     dev: true,
     observedTriggers: ['add'],
-    template: <h1 data-target='header'>Hello</h1>,
-    plait({ $, feedback, addThreads, thread, sync, connect }) {
+    template: <h1 bp-target='header'>Hello</h1>,
+    bp({ $, feedback, addThreads, thread, sync, connect }) {
       connect(msg)
       addThreads({
         onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),
@@ -60,8 +60,8 @@ test('dynamic island comms', async (t) => {
   // Create elements and append to dom
   const one = document.createElement(ElOne.tag)
   const two = document.createElement(ElTwo.tag)
-  one.setAttribute(dataAddress, 'one')
-  two.setAttribute(dataAddress, 'two')
+  one.setAttribute(bpAddress, 'one')
+  two.setAttribute(bpAddress, 'two')
   wrapper.insertAdjacentElement('beforeend', one)
   wrapper.insertAdjacentElement('beforeend', two)
 
@@ -69,8 +69,8 @@ test('dynamic island comms', async (t) => {
   ElOne.define()
   ElTwo.define()
 
-  let button = await t.findByAttribute('data-target', 'button', wrapper)
-  const header = await t.findByAttribute('data-target', 'header', wrapper)
+  let button = await t.findByAttribute('bp-target', 'button', wrapper)
+  const header = await t.findByAttribute('bp-target', 'header', wrapper)
   t({
     given: 'render',
     should: 'header should contain string',
@@ -84,7 +84,7 @@ test('dynamic island comms', async (t) => {
     actual: header?.innerHTML,
     expected: 'Hello World!',
   })
-  button = await t.findByAttribute('data-target', 'button', wrapper)
+  button = await t.findByAttribute('bp-target', 'button', wrapper)
   t({
     given: 'clicking button',
     should: 'be disabled',
