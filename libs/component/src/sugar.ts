@@ -59,36 +59,33 @@ const handleTemplateObject = (shadowRoot: ShadowRoot, fragment: TemplateObject) 
   return template.content
 }
 
-const mount = (
-  shadowRoot: ShadowRoot,
-  el: HTMLElement | SVGElement,
-  ...templates: ['replace' | Position | TemplateObject | DocumentFragment, ...(TemplateObject | DocumentFragment)[]]
-) => {
-  const content: DocumentFragment[] = []
-  const [position] = templates
+const mapTemplates = (shadowRoot: ShadowRoot, templates: (TemplateObject | DocumentFragment | string)[]) => {
+  const content: (DocumentFragment | string)[] = []
   const length = templates.length
   for (let i = 0; i < length; i++) {
     const fragment = templates[i]
-    if (isTypeOf<TemplateObject>(fragment, 'object')) content.push(handleTemplateObject(shadowRoot, fragment))
-    if (fragment instanceof DocumentFragment) content.push(fragment)
+    if (isTypeOf<TemplateObject>(fragment, 'object')) {
+      content.push(handleTemplateObject(shadowRoot, fragment))
+    } else {
+      content.push(fragment)
+    }
   }
-  position === 'beforebegin' ? el.before(...content)
-  : position === 'afterbegin' ? el.prepend(...content)
-  : position === 'beforeend' ? el.append(...content)
-  : position === 'afterend' ? el.after(...content)
-  : position === 'replace' ? el.replaceWith(...content)
-  : el.replaceChildren(...content)
+  return content
 }
 
 const getSugar = (shadowRoot: ShadowRoot): Sugar => ({
-  render(first, ...templates) {
-    mount(shadowRoot, this, first, ...templates)
+  render(...templates) {
+    this.replaceChildren(...mapTemplates(shadowRoot, templates))
   },
-  insert(...templates) {
-    mount(shadowRoot, this, ...templates)
+  insert(position, ...templates) {
+    const content = mapTemplates(shadowRoot, templates)
+    position === 'beforebegin' ? this.before(...content)
+    : position === 'afterbegin' ? this.prepend(...content)
+    : position === 'beforeend' ? this.append(...content)
+    : this.after(...content)
   },
   replace(...templates) {
-    mount(shadowRoot, this, 'replace', ...templates)
+    this.replaceWith(...mapTemplates(shadowRoot, templates))
   },
   attr(attr, val) {
     if (isTypeOf<string>(attr, 'string')) {
