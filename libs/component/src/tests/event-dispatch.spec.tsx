@@ -1,5 +1,4 @@
 import { test } from '@plaited/rite'
-import { PlaitProps } from '@plaited/component-types'
 import { Component } from '../index.js'
 
 test('eventTriggers', async (t) => {
