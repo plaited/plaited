@@ -37,6 +37,9 @@ export const voidTags = new Set<VoidTags>([
 ])
 /** boolean attributes */
 export const booleanAttrs = new Set<BooleanAttributes>([
+  // Plaited Attributes
+  bpHypermedia,
+  // HTML attributes
   'allowfullscreen',
   'async',
   'autofocus',

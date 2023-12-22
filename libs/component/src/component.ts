@@ -1,5 +1,5 @@
 import { createTemplate } from '@plaited/jsx'
-import { bpTrigger, bpAddress } from '@plaited/jsx/utils'
+import { bpTrigger, bpAddress, bpHypermedia } from '@plaited/jsx/utils'
 import { Trigger, bProgram, BPEvent, Publisher } from '@plaited/behavioral'
 import type {
   PlaitedElementConstructor,
@@ -11,7 +11,7 @@ import type {
   PlaitedTemplate,
 } from '@plaited/component-types'
 import { $, cssCache } from './sugar.js'
-import { noop, trueTypeOf } from '@plaited/utils'
+import { noop, isTypeOf, trueTypeOf } from '@plaited/utils'
 import { defineRegistry } from './define-registry.js'
 
 const isElement = (node: Node): node is Element => node.nodeType === 1
@@ -38,8 +38,6 @@ class DelegatedListener {
     this.callback(evt)
   }
 }
-// Weakly hold reference to our delegated elements and their callbacks
-const delegates = new WeakMap()
 
 const isPublisher = (obj: Publisher | Messenger): obj is Publisher => 'subscribe' in obj
 
@@ -60,13 +58,14 @@ export const Component: PlaitedComponent = ({
   tag,
   template,
   observedTriggers,
-  observedAttributes,
+  observedAttributes = [],
   mode = 'open',
   delegatesFocus = true,
   dev,
   strategy,
   connectedCallback,
   disconnectedCallback,
+  attributeChangedCallback,
   bp,
   ...rest
 }) => {
@@ -76,10 +75,11 @@ export const Component: PlaitedComponent = ({
   const _tag = tag.toLowerCase() as `${string}-${string}`
   class Base extends HTMLElement implements PlaitedElement {
     static tag = _tag
-    static observedAttributes = observedAttributes
+    static observedAttributes = [bpHypermedia, ...observedAttributes]
     #observedTriggers = new Set(observedTriggers ?? [])
     internals_: ElementInternals
     #root: ShadowRoot
+    #delegates = new WeakMap() // Weakly hold reference to our delegated elements and their callbacks
     $: QuerySelector
     constructor() {
       super()
@@ -135,6 +135,45 @@ export const Component: PlaitedComponent = ({
       }
       connectedCallback && connectedCallback.bind(this)()
     }
+    attributeChangedCallback(name: string, oldValue: string, newValue: string) {
+      if (name === bpHypermedia) {
+        if (isTypeOf(newValue, 'string')) {
+          this.#intercept()
+          this.#root.addEventListener('submit', this.#delegates.get(this.#root))
+          this.#root.addEventListener('click', this.#delegates.get(this.#root))
+        }
+        if (isTypeOf(newValue, 'null') && this.#delegates.has(this.#root)) {
+          this.#root.removeEventListener('submit', this.#delegates.get(this.#root))
+          this.#root.removeEventListener('click', this.#delegates.get(this.#root))
+        }
+      }
+      attributeChangedCallback && attributeChangedCallback.bind(this)(name, oldValue, newValue)
+    }
+    #intercept() {
+      !this.#delegates.has(this) &&
+        this.#delegates.set(
+          this.#root,
+          new DelegatedListener((event: Event) => {
+            if (event.type === 'submit') {
+              event.preventDefault()
+              return
+            }
+            if (event.type === 'click') {
+              const path = event.composedPath()
+              for (const element of path) {
+                if (element instanceof HTMLAnchorElement && element.href) {
+                  const linkDomain = new URL(element.href).hostname
+                  const currentDomain = window.location.hostname
+                  if (linkDomain === currentDomain) {
+                    event.preventDefault()
+                  }
+                  break
+                }
+              }
+            }
+          }),
+        )
+    }
     #subscriptions = new Set<() => void>() // holds unsubscribe callbacks
     disconnectedCallback() {
       this.#shadowObserver && this.#shadowObserver.disconnect()
@@ -183,7 +222,7 @@ export const Component: PlaitedComponent = ({
     }
     /** If delegated listener does not have element then delegate it's callback with auto cleanup*/
     #createDelegatedListener(el: Element) {
-      delegates.set(
+      this.#delegates.set(
         el,
         new DelegatedListener((event) => {
           const triggerType = el.getAttribute(bpTrigger) && getTriggerType(event, el)
@@ -191,7 +230,7 @@ export const Component: PlaitedComponent = ({
             /** if key is present in `bp-trigger` trigger event on instance's bProgram */
             this.#trigger?.({ type: triggerType, detail: event })
           : /** if key is not present in `bp-trigger` remove event listener for this event on Element */
-            el.removeEventListener(event.type, delegates.get(el))
+            el.removeEventListener(event.type, this.#delegates.get(el))
         }),
       )
     }
@@ -199,10 +238,10 @@ export const Component: PlaitedComponent = ({
     #delegateListeners(elements: Element[]) {
       for (const el of elements) {
         if (el.tagName === 'SLOT' && el.hasAttribute('slot')) continue // skip nested slots
-        !delegates.has(el) && this.#createDelegatedListener(el) // bind a callback for element if we haven't already
+        !this.#delegates.has(el) && this.#createDelegatedListener(el) // bind a callback for element if we haven't already
         for (const [event] of getTriggerMap(el)) {
           // add event listeners for each event type
-          el.addEventListener(event, delegates.get(el))
+          el.addEventListener(event, this.#delegates.get(el))
         }
       }
     }
