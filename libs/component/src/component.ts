@@ -10,7 +10,7 @@ import type {
   QuerySelector,
   PlaitedTemplate,
 } from '@plaited/component-types'
-import { $, cssCache } from './sugar.js'
+import { $, cssCache, clone } from './sugar.js'
 import { noop, isTypeOf, trueTypeOf } from '@plaited/utils'
 import { defineRegistry } from './define-registry.js'
 
@@ -126,9 +126,10 @@ export const Component: PlaitedComponent = ({
           })
         void bp.bind(this)({
           $: this.$,
+          clone: clone(this.#root),
+          connect: this.#connect.bind(this),
           host: this,
           emit: this.#emit.bind(this),
-          connect: this.#connect.bind(this),
           trigger,
           ...rest,
         })

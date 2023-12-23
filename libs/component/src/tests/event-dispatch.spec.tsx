@@ -16,7 +16,7 @@ test('eventTriggers', async (t) => {
       </button>
     ),
     observedTriggers: ['add'],
-    bp({ feedback, emit }: PlaitProps) {
+    bp({ feedback, emit }) {
       feedback({
         click() {
           emit({ type: 'append' })

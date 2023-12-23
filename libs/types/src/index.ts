@@ -19,7 +19,7 @@ export type Children = Child[] | Child
 
 export type BooleanAttributes =
   | 'bp-hypermedia'
-  // HTMLAttributes
+// HTML Attributes
   | 'allowfullscreen'
   | 'async'
   | 'autofocus'
@@ -1357,7 +1357,6 @@ export type Sugar = {
   replace(this: Element, ...template: (TemplateObject | DocumentFragment | Element | string)[]): void
   attr(this: Element, attr: Record<string, string | null | number | boolean>, val?: never): void
   attr(this: Element, attr: string, val?: string | null | number | boolean): string | null | void
-  clone<T>(this: Element, cb: ($: QuerySelector, data: T) => void): (data: T) => Element | DocumentFragment
 }
 
 export type SugaredElement<T extends Element = Element> = T & Sugar
@@ -1370,6 +1369,12 @@ export type Emit = (
   },
 ) => void
 
+/** Clone feature for handling list situations where structure is consistent but the data rendered is what is different. This is a performance feature */
+export type Clone = <T>(
+  template: TemplateObject,
+  callback: ($: QuerySelector, data: T) => void,
+) => (data: T) => DocumentFragment
+
 export type BPProps = {
   /** query for elements with the bp-target attribute in the Island's shadowDom and slots */
   $: QuerySelector
@@ -1381,6 +1386,7 @@ export type BPProps = {
    */
   host: PlaitedElement
   emit: Emit
+  clone: Clone
   connect: (comm: Publisher | Messenger) => () => void
 } & ReturnType<typeof bProgram>
 

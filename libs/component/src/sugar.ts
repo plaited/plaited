@@ -5,6 +5,7 @@ import type {
   TemplateObject,
   QuerySelector,
   BooleanAttributes,
+  Clone,
 } from '@plaited/component-types'
 import { booleanAttrs, bpTarget } from '@plaited/jsx/utils'
 import { isTypeOf } from '@plaited/utils'
@@ -94,17 +95,7 @@ const getSugar = (shadowRoot: ShadowRoot): Sugar => ({
     for (const key in attr) {
       updateAttributes(this, key, attr[key])
     }
-  },
-  clone(callback) {
-    return (data) => {
-      const clone: Element | DocumentFragment =
-        this instanceof HTMLTemplateElement ?
-          (this.content.cloneNode(true) as DocumentFragment)
-        : (this.cloneNode(true) as Element)
-      callback($(shadowRoot, clone), data)
-      return clone
-    }
-  },
+  }
 })
 
 const assignedElements = new WeakSet<Element>()
@@ -130,3 +121,14 @@ export const $ = (
   return <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
     assignSugar<T>(sugar, Array.from(context.querySelectorAll<Element>(`[${bpTarget}${match}"${target}"]`)))
 }
+
+export const clone =
+  (shadowRoot: ShadowRoot): Clone =>
+  (template, callback) => {
+    const content = handleTemplateObject(shadowRoot, template)
+    return (data) => {
+      const clone = content.cloneNode(true) as DocumentFragment
+      callback($(shadowRoot, clone), data)
+      return clone
+    }
+  }
