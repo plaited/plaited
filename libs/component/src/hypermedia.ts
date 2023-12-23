@@ -1,4 +1,5 @@
 import { wait } from '@plaited/utils'
+import { delegatedListener } from './delegated-listener.js'
 type FetchHTMLOptions = RequestInit & { retry: number; retryDelay: number }
 
 /**
@@ -35,4 +36,35 @@ export const fetchHTML = async (
     }
     retry--
   }
+}
+
+export const intercept = () => {
+  const body = document.querySelector('body')
+  body && delegatedListener.set(body, async (event: Event) => {
+    if (event.type === 'submit') {
+      event.preventDefault()    
+    }
+    if (event.type === 'click') {
+      const path = event.composedPath()
+      for (const element of path) {
+        if (element instanceof HTMLAnchorElement && element.href) {
+          const href = element.href
+          const linkDomain = new URL(href).hostname
+          const currentDomain = window.location.hostname
+          if (linkDomain === currentDomain) {
+            event.preventDefault()
+            const htmlContent = await fetchHTML(href);
+            if (htmlContent) {
+              history.pushState({}, '', href)
+              // Handle the fetched HTML content as needed
+              // For example, you can update a specific element with the content
+              // For demonstration purposes, we're logging the content
+              console.log(htmlContent);
+            }
+          }
+          break
+        }
+      }
+    }
+  })
 }
