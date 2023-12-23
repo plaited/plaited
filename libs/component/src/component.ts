@@ -13,7 +13,7 @@ import type {
 import { $, cssCache, clone } from './sugar.js'
 import { noop, trueTypeOf } from '@plaited/utils'
 import { defineRegistry } from './define-registry.js'
-import { delegatedListener } from './delegated-listener.js'
+import { DelegatedListener, delegates } from './delegated-listener.js'
 
 const isElement = (node: Node): node is Element => node.nodeType === 1
 
@@ -171,24 +171,28 @@ export const Component: PlaitedComponent = ({
       })
       this.dispatchEvent(event)
     }
+    /** If delegated listener does not have element then delegate it's callback with auto cleanup*/
+    #createDelegatedListener(el: Element) {
+      delegates.set(
+        el,
+        new DelegatedListener((event) => {
+          const triggerType = el.getAttribute(bpTrigger) && getTriggerType(event, el)
+          triggerType ?
+            /** if key is present in `bp-trigger` trigger event on instance's bProgram */
+            this.#trigger?.({ type: triggerType, detail: event })
+          : /** if key is not present in `bp-trigger` remove event listener for this event on Element */
+            el.removeEventListener(event.type, delegates.get(el))
+        }),
+      )
+    }
     /** delegate event listeners  for elements in list */
     #delegateListeners(elements: Element[]) {
       for (const el of elements) {
         if (el.tagName === 'SLOT' && el.hasAttribute('slot')) continue // skip nested slots
-        !delegatedListener.has(el) && delegatedListener.set(
-          el,
-          (event) => {
-            const triggerType = el.getAttribute(bpTrigger) && getTriggerType(event, el)
-            triggerType ?
-              /** if key is present in `bp-trigger` trigger event on instance's bProgram */
-              this.#trigger?.({ type: triggerType, detail: event })
-            : /** if key is not present in `bp-trigger` remove event listener for this event on Element */
-              el.removeEventListener(event.type, delegatedListener.get(el))
-          },
-        ) // bind a callback for element if we haven't already
+        !delegates.has(el) && this.#createDelegatedListener(el) // bind a callback for element if we haven't already
         for (const [event] of getTriggerMap(el)) {
           // add event listeners for each event type
-          el.addEventListener(event, delegatedListener.get(el))
+          el.addEventListener(event, delegates.get(el))
         }
       }
     }
