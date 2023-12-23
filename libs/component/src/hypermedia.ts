@@ -1,5 +1,5 @@
 import { wait } from '@plaited/utils'
-import { delegatedListener } from './delegated-listener.js'
+import { DelegatedListener, delegates } from './delegated-listener.js'
 type FetchHTMLOptions = RequestInit & { retry: number; retryDelay: number }
 
 /**
@@ -40,7 +40,7 @@ export const fetchHTML = async (
 
 export const intercept = () => {
   const body = document.querySelector('body')
-  body && delegatedListener.set(body, async (event: Event) => {
+  body && delegates.set(body, new DelegatedListener(async (event: Event) => {
     if (event.type === 'submit') {
       event.preventDefault()    
     }
@@ -66,5 +66,5 @@ export const intercept = () => {
         }
       }
     }
-  })
+  }))
 }
