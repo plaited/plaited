@@ -9,4 +9,4 @@ export class DelegatedListener {
   }
 }
 
-export const delegates = new WeakMap()
+export const delegates = new WeakMap<EventTarget>()
