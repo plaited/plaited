@@ -42,7 +42,7 @@ const pop = ({ state }: PopStateEvent) => {
   }
 }
 
-export const init = () => {
+export const hypermedia = () => {
   const html = document.querySelector('html')
   if (html) {
     history.replaceState(new XMLSerializer().serializeToString(html), '', document.location.href)

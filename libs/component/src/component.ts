@@ -32,8 +32,6 @@ const getTriggerType = (event: Event, context: Element) => {
   return getTriggerMap(el).get(event.type)
 }
 
-const isPublisher = (obj: Publisher | Messenger): obj is Publisher => 'subscribe' in obj
-
 /**
  * Creates a PlaitedComponent
  * @param {object} args - Arguments for the PlaitedComponent
