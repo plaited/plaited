@@ -1325,8 +1325,9 @@ export interface CreateTemplate {
   <T extends Tag>(tag: T, attrs: ExcludeChildrenForVoidTags<T, InferAttrs<T>>): TemplateObject
 }
 
-export type Messenger = {
-  (recipient: string, detail: BPEvent): void
+export type Send = (recipient: string, detail: BPEvent) => void
+
+export type Messenger = Send & {
   connect(recipient: string, trigger: Trigger | Worker): (() => void) | undefined
   has(recipient: string): boolean
   type: 'messenger'

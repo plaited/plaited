@@ -65,7 +65,6 @@ const buildData = (count: number): Data => {
   return data
 }
 
-
 const row = (
   <tr bp-target='row'>
     <td

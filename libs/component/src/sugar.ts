@@ -95,7 +95,7 @@ const getSugar = (shadowRoot: ShadowRoot): Sugar => ({
     for (const key in attr) {
       updateAttributes(this, key, attr[key])
     }
-  }
+  },
 })
 
 const assignedElements = new WeakSet<Element>()

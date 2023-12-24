@@ -127,28 +127,28 @@ export const Component: PlaitedComponent = ({
       }
       connectedCallback && connectedCallback.bind(this)()
     }
-    #subscriptions = new Set<() => void>() // holds unsubscribe callbacks
+    #connections = new Set<() => void>() // holds unsubscribe callbacks
     disconnectedCallback() {
       this.#shadowObserver && this.#shadowObserver.disconnect()
       if (dev && this.#trigger)
         this.#trigger({
           type: `disconnected(${this.getAttribute(bpAddress) ?? this.tagName.toLowerCase()})`,
         })
-      if (this.#subscriptions.size) {
-        this.#subscriptions.forEach((unsubscribe) => {
+      if (this.#connections.size) {
+        this.#connections.forEach((unsubscribe) => {
           unsubscribe()
         })
-        this.#subscriptions.clear()
+        this.#connections.clear()
       }
       disconnectedCallback && disconnectedCallback.bind(this)()
     }
-    /** Manually disconnect subscription to messenger or publisher */
+    /** Manually disconnect connection to Messenger, Publisher, Web Socket, or Server Sent Events */
     #disconnect(cb: (() => void) | undefined) {
       const callback = cb ?? noop
-      this.#subscriptions.add(callback)
+      this.#connections.add(callback)
       return () => {
         callback()
-        this.#subscriptions.delete(callback)
+        this.#connections.delete(callback)
       }
     }
     /** connect trigger to a Messenger or Publisher */
