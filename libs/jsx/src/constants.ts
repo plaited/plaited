@@ -5,6 +5,10 @@ export const bpTarget = 'bp-target'
 export const bpTrigger = 'bp-trigger'
 /** attribute used to wire a dom element to a useMessenger exchange */
 export const bpAddress = 'bp-address'
+/** attribute used to determine if a component is stopping propagation of
+ * of form submission and link navigation events
+ */
+export const bpHypermedia = 'bp-hypermedia'
 /** void attributes */
 export const voidTags = new Set<VoidTags>([
   'area',
@@ -33,6 +37,9 @@ export const voidTags = new Set<VoidTags>([
 ])
 /** boolean attributes */
 export const booleanAttrs = new Set<BooleanAttributes>([
+  // Plaited Attributes
+  bpHypermedia,
+  // HTML attributes
   'allowfullscreen',
   'async',
   'autofocus',

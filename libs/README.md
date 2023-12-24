@@ -8,7 +8,6 @@ This lib set serves as a workspace for working on our rendering library Plaited
 
 - [plaited](plaited/README.md): plaited library package
 
-
 ### Internal usage
 
 **The following libraries are not recommended for usage outside the Plaited organization. They are dependencies for our Plaited libs and apps. These libraries are open sourced as reference implementation. Take as a dependency at your own risk.**

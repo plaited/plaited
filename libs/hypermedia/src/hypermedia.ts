@@ -1,37 +1,15 @@
 /** Utility function for enabling hypermedia patterns */
-import { DelegatedListener, delegates } from '@plaited/component/utils'
+import { DelegatedListener, delegates, navigateEventType } from '@plaited/component/utils'
 import { fetchHTML, createDoc } from './fetch-html.js'
 import { displayContent } from './display-content.js'
 import { isTypeOf } from '@plaited/utils'
 
-const intercept = async (event: Event) => {
-  if (event.type === 'submit') {
-    event.preventDefault()
-  }
-  if (event.type === 'click') {
-    const path = event.composedPath()
-    for (const element of path) {
-      if (element instanceof HTMLAnchorElement && element.href) {
-        const href = element.href
-        let local = false
-        try {
-          new URL(href)
-          break
-        } catch (_) {
-          local = true
-        }
-        if (local) {
-          event.preventDefault()
-          const url = new URL(href, window.location.origin)
-          const htmlContent = await fetchHTML(url.href, { partial: false })
-          if (htmlContent) {
-            history.pushState(new XMLSerializer().serializeToString(htmlContent), '', href)
-            displayContent(htmlContent)
-          }
-        }
-        break
-      }
-    }
+const navigate = async (event: CustomEvent<URL>) => {
+  const { detail: url } = event
+  const htmlContent = await fetchHTML(url.href, { partial: false })
+  if (htmlContent) {
+    history.pushState(new XMLSerializer().serializeToString(htmlContent), '', url.href)
+    displayContent(htmlContent)
   }
 }
 
@@ -48,15 +26,11 @@ export const hypermedia = () => {
     history.replaceState(new XMLSerializer().serializeToString(html), '', document.location.href)
     !delegates.has(window) && delegates.set(window, new DelegatedListener(pop))
     window.addEventListener('popstate', delegates.get(window))
-    !delegates.has(html) && delegates.set(html, new DelegatedListener(intercept))
-    html.addEventListener('click', delegates.get(html))
-    html.addEventListener('submit', delegates.get(html))
+    !delegates.has(html) && delegates.set(html, new DelegatedListener(navigate))
+    html.addEventListener(navigateEventType, delegates.get(html))
     return () => {
       window.removeEventListener('popstate', delegates.get(window))
-      if (html) {
-        html.removeEventListener('click', delegates.get(html))
-        html.removeEventListener('submit', delegates.get(html))
-      }
+      html.removeEventListener(navigateEventType, delegates.get(html))
     }
   }
 }

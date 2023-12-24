@@ -18,6 +18,8 @@ export type Child = string | TemplateObject
 export type Children = Child[] | Child
 
 export type BooleanAttributes =
+  | 'bp-hypermedia'
+  // HTML attributes
   | 'allowfullscreen'
   | 'async'
   | 'autofocus'

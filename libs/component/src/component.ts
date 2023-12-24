@@ -1,5 +1,5 @@
 import { createTemplate } from '@plaited/jsx'
-import { bpTrigger, bpAddress } from '@plaited/jsx/utils'
+import { bpTrigger, bpAddress, bpHypermedia } from '@plaited/jsx/utils'
 import { Trigger, bProgram, BPEvent, Publisher } from '@plaited/behavioral'
 import type {
   PlaitedElementConstructor,
@@ -16,6 +16,7 @@ import { $, cssCache, clone } from './sugar.js'
 import { noop, trueTypeOf } from '@plaited/utils'
 import { defineRegistry } from './define-registry.js'
 import { DelegatedListener, delegates } from './delegated-listener.js'
+import { navigateEventType } from './constants.js'
 
 const isElement = (node: Node): node is Element => node.nodeType === 1
 
@@ -56,6 +57,7 @@ export const Component: PlaitedComponent = ({
   strategy,
   connectedCallback,
   disconnectedCallback,
+  attributeChangedCallback,
   bp,
   ...rest
 }) => {
@@ -65,7 +67,7 @@ export const Component: PlaitedComponent = ({
   const _tag = tag.toLowerCase() as `${string}-${string}`
   class Base extends HTMLElement implements PlaitedElement {
     static tag = _tag
-    static observedAttributes = observedAttributes
+    static observedAttributes = [bpHypermedia, ...observedAttributes]
     #observedTriggers = new Set(observedTriggers ?? [])
     internals_: ElementInternals
     #root: ShadowRoot
@@ -124,6 +126,52 @@ export const Component: PlaitedComponent = ({
         })
       }
       connectedCallback && connectedCallback.bind(this)()
+    }
+    attributeChangedCallback(name: string, oldValue: string, newValue: string) {
+      if (name === bpHypermedia) {
+        if (trueTypeOf(newValue) === 'string') {
+          !delegates.has(this.#root) &&
+            delegates.set(
+              this.#root,
+              new DelegatedListener((event) => {
+                if (event.type === 'submit') {
+                  event.preventDefault()
+                }
+                if (event.type === 'click') {
+                  const path = event.composedPath()
+                  for (const element of path) {
+                    if (element instanceof HTMLAnchorElement && element.href) {
+                      const href = element.href
+                      let local = false
+                      try {
+                        new URL(href)
+                        break
+                      } catch (_) {
+                        local = true
+                      }
+                      if (local) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        this.#emit({
+                          type: navigateEventType,
+                          detail: new URL(href, window.location.href),
+                          bubbles: true,
+                          composed: true,
+                        })
+                      }
+                    }
+                  }
+                }
+              }),
+            )
+          this.#root.addEventListener('click', delegates.get(this.#root))
+          this.#root.addEventListener('submit', delegates.get(this.#root))
+        } else {
+          this.#root.removeEventListener('click', delegates.get(this.#root))
+          this.#root.removeEventListener('submit', delegates.get(this.#root))
+        }
+      }
+      attributeChangedCallback && attributeChangedCallback.bind(this)(name, oldValue, newValue)
     }
     #connections = new Set<() => void>() // holds unsubscribe callbacks
     disconnectedCallback() {
