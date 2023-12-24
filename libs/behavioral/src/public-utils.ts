@@ -20,4 +20,8 @@ export const priorityStrategy: Strategy = (filteredEvents) =>
  * Listeners use the `subscribe` method connect to the publisher.
  * @returns A new publisher object.
  **/
-export const publisher = <T extends BPEvent = BPEvent>(): Publisher<T> => _publisher<T>()
+export const publisher = <T extends BPEvent = BPEvent>(): Publisher<T> => {
+  const pub = _publisher<T>() as Publisher<T>
+  pub.type = 'publisher'
+  return pub
+}

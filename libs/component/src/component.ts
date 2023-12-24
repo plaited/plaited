@@ -7,6 +7,8 @@ import type {
   PlaitedComponent,
   Emit,
   Messenger,
+  WS,
+  SSE,
   QuerySelector,
   PlaitedTemplate,
 } from '@plaited/component-types'
@@ -150,15 +152,19 @@ export const Component: PlaitedComponent = ({
       }
     }
     /** connect trigger to a Messenger or Publisher */
-    #connect(comm: Messenger | Publisher) {
-      if (trueTypeOf(comm) !== 'function') return noop // if comm is not a function return noop
-      if (isPublisher(comm)) return this.#disconnect(comm.subscribe(this.trigger))
-      const recipient = this.getAttribute(bpAddress)
-      if (!recipient) {
-        console.error(`Component ${this.tagName.toLowerCase()} is missing an attribute [${bpAddress}]`)
-        return noop // if we're missing an address on our component return noop and console.error msg
+    #connect(comm: Messenger | Publisher | SSE | WS) {
+      if (comm?.type === 'publisher') return this.#disconnect(comm.subscribe(this.trigger))
+      if (comm?.type === 'sse' && this.#trigger) this.#disconnect(comm(this.#trigger))
+      if (comm?.type === 'ws' && this.#trigger) this.#disconnect(comm.connect(this.#trigger))
+      if (comm?.type === 'messenger') {
+        const recipient = this.getAttribute(bpAddress)
+        if (!recipient) {
+          console.error(`Component ${this.tagName.toLowerCase()} is missing an attribute [${bpAddress}]`)
+          return noop // if we're missing an address on our component return noop and console.error msg
+        }
+        return this.#disconnect(comm.connect(recipient, this.trigger))
       }
-      return this.#disconnect(comm.connect(recipient, this.trigger))
+      return noop
     }
     /** emit a custom event cancelable and composed are true by default */
     #emit({ type, detail, bubbles = false, cancelable = true, composed = true }: Parameters<Emit>[0]) {

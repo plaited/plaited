@@ -57,4 +57,5 @@ export interface DevCallback {
 export type Publisher<T extends BPEvent = BPEvent> = {
   (value: T): void
   subscribe(listener: (msg: T) => void): () => boolean
+  type: 'publisher'
 }

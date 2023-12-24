@@ -1325,11 +1325,22 @@ export interface CreateTemplate {
   <T extends Tag>(tag: T, attrs: ExcludeChildrenForVoidTags<T, InferAttrs<T>>): TemplateObject
 }
 
-export type Send = (recipient: string, detail: BPEvent) => void
+export type Messenger = {
+  (recipient: string, detail: BPEvent): void
+  connect(recipient: string, trigger: Trigger | Worker): (() => void) | undefined
+  has(recipient: string): boolean
+  type: 'messenger'
+}
 
-export interface Messenger extends Send {
-  connect: (recipient: string, trigger: Trigger | Worker) => undefined | (() => void)
-  has: (recipient: string) => boolean
+export type SSE = {
+  (trigger: Trigger): () => void
+  type: 'sse'
+}
+
+export type WS = {
+  (message: BPEvent): void
+  connect: (trigger: Trigger) => () => void
+  type: 'ws'
 }
 
 export type Message = {
@@ -1385,7 +1396,7 @@ export type BPProps = {
   host: PlaitedElement
   emit: Emit
   clone: Clone
-  connect: (comm: Publisher | Messenger) => () => void
+  connect: (comm: Publisher | Messenger | SSE | WS) => () => void
 } & ReturnType<typeof bProgram>
 
 export interface PlaitedElement extends HTMLElement {

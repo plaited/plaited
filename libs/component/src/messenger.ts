@@ -65,5 +65,6 @@ export const messenger = (id?: string): Messenger => {
     }
   }
   createMessenger.has = (recipient: string) => recipients.has(recipient)
+  createMessenger.type = 'messenger' as const
   return createMessenger
 }
