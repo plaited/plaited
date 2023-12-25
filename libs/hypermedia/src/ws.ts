@@ -4,7 +4,7 @@ import { DelegatedListener, delegates } from '@plaited/component/utils'
 import { Trigger, BPEvent } from '@plaited/behavioral'
 import { WS } from '@plaited/component-types'
 import { isMessageEvent } from './utils.js'
-
+import { createTemplate } from './fetch-html.js'
 const isCloseEvent = (event: CloseEvent | Event): event is CloseEvent => event.type === 'close'
 
 export const ws = (url: string): WS => {
@@ -20,8 +20,7 @@ export const ws = (url: string): WS => {
         try {
           const message: BPEvent = JSON.parse(event.data)
           if ('type' in message && isTypeOf<string>(message.detail, 'string')) {
-            const template = document.createElement('template')
-            template.innerHTML = message.detail as string
+            const template = createTemplate(message.detail)
             trigger({ type: message.type, detail: template.content })
           }
         } catch (error) {

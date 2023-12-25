@@ -4,7 +4,7 @@ import { DelegatedListener, delegates } from '@plaited/component/utils'
 import { Trigger, BPEvent } from '@plaited/behavioral'
 import { SSE } from '@plaited/component-types'
 import { isMessageEvent } from './utils.js'
-
+import { createTemplate } from './fetch-html.js'
 export const sse = (url: string): SSE => {
   let eventSource: EventSource | undefined = new EventSource(url, { withCredentials: true })
   const connect = (trigger: Trigger) => {
@@ -13,8 +13,7 @@ export const sse = (url: string): SSE => {
         try {
           const message: BPEvent<string> = JSON.parse(event.data)
           if ('type' in message && isTypeOf<string>(message.detail, 'string')) {
-            const template = document.createElement('template')
-            template.innerHTML = message.detail
+            const template = createTemplate(message.detail)
             trigger({ type: message.type, detail: template.content })
           }
         } catch (error) {

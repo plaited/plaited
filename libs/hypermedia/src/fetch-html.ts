@@ -18,7 +18,7 @@ if (typeof window !== 'undefined' && window.DOMParser) {
 
 export const createDoc = (page: string) => parser.parseFromString(page, 'text/html', { includeShadowRoots: true })
 
-const createTemplate = (content: string) => {
+export const createTemplate = (content: string) => {
   const fragment = parser.parseFromString(`<template>${content}</template>`, 'text/html', {
     includeShadowRoots: true,
   })
