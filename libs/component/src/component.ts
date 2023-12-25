@@ -1,5 +1,5 @@
 import { createTemplate } from '@plaited/jsx'
-import { bpTrigger, bpAddress, bpHypermedia } from '@plaited/jsx/utils'
+import { bpTrigger, bpAddress } from '@plaited/jsx/utils'
 import { Trigger, bProgram, BPEvent, Publisher } from '@plaited/behavioral'
 import type {
   PlaitedElementConstructor,
@@ -16,7 +16,8 @@ import { $, cssCache, clone } from './sugar.js'
 import { noop, trueTypeOf } from '@plaited/utils'
 import { defineRegistry } from './define-registry.js'
 import { DelegatedListener, delegates } from './delegated-listener.js'
-import { navigateEventType } from './constants.js'
+import { Plaited_Context, navigateEventType } from './constants.js'
+import { hasPlaitedContext } from './type-checks.js'
 
 const isElement = (node: Node): node is Element => node.nodeType === 1
 
@@ -50,14 +51,13 @@ export const Component: PlaitedComponent = ({
   tag,
   template,
   observedTriggers,
-  observedAttributes = [],
+  observedAttributes,
   mode = 'open',
   delegatesFocus = true,
   dev,
   strategy,
   connectedCallback,
   disconnectedCallback,
-  attributeChangedCallback,
   bp,
   ...rest
 }) => {
@@ -67,7 +67,7 @@ export const Component: PlaitedComponent = ({
   const _tag = tag.toLowerCase() as `${string}-${string}`
   class Base extends HTMLElement implements PlaitedElement {
     static tag = _tag
-    static observedAttributes = [bpHypermedia, ...observedAttributes]
+    static observedAttributes = observedAttributes
     #observedTriggers = new Set(observedTriggers ?? [])
     internals_: ElementInternals
     #root: ShadowRoot
@@ -115,6 +115,8 @@ export const Component: PlaitedComponent = ({
           trigger({
             type: `connected(${this.getAttribute(bpAddress) ?? this.tagName.toLowerCase()})`,
           })
+        const isHypermedia = this.#hypermedia()
+        isHypermedia && this.#cleanupCallbacks.add(isHypermedia)
         void bp.bind(this)({
           $: this.$,
           host: this,
@@ -127,74 +129,28 @@ export const Component: PlaitedComponent = ({
       }
       connectedCallback && connectedCallback.bind(this)()
     }
-    attributeChangedCallback(name: string, oldValue: string, newValue: string) {
-      if (name === bpHypermedia) {
-        if (trueTypeOf(newValue) === 'string') {
-          !delegates.has(this.#root) &&
-            delegates.set(
-              this.#root,
-              new DelegatedListener((event) => {
-                if (event.type === 'submit') {
-                  event.preventDefault()
-                }
-                if (event.type === 'click') {
-                  const path = event.composedPath()
-                  for (const element of path) {
-                    if (element instanceof HTMLAnchorElement && element.href) {
-                      const href = element.href
-                      let local = false
-                      try {
-                        new URL(href)
-                        break
-                      } catch (_) {
-                        local = true
-                      }
-                      if (local) {
-                        event.preventDefault()
-                        event.stopPropagation()
-                        this.#emit({
-                          type: navigateEventType,
-                          detail: new URL(href, window.location.href),
-                          bubbles: true,
-                          composed: true,
-                        })
-                      }
-                    }
-                  }
-                }
-              }),
-            )
-          this.#root.addEventListener('click', delegates.get(this.#root))
-          this.#root.addEventListener('submit', delegates.get(this.#root))
-        } else {
-          this.#root.removeEventListener('click', delegates.get(this.#root))
-          this.#root.removeEventListener('submit', delegates.get(this.#root))
-        }
-      }
-      attributeChangedCallback && attributeChangedCallback.bind(this)(name, oldValue, newValue)
-    }
-    #connections = new Set<() => void>() // holds unsubscribe callbacks
+    #cleanupCallbacks = new Set<() => void>() // holds unsubscribe callbacks
     disconnectedCallback() {
       this.#shadowObserver && this.#shadowObserver.disconnect()
       if (dev && this.#trigger)
         this.#trigger({
           type: `disconnected(${this.getAttribute(bpAddress) ?? this.tagName.toLowerCase()})`,
         })
-      if (this.#connections.size) {
-        this.#connections.forEach((unsubscribe) => {
+      if (this.#cleanupCallbacks.size) {
+        this.#cleanupCallbacks.forEach((unsubscribe) => {
           unsubscribe()
         })
-        this.#connections.clear()
+        this.#cleanupCallbacks.clear()
       }
       disconnectedCallback && disconnectedCallback.bind(this)()
     }
     /** Manually disconnect connection to Messenger, Publisher, Web Socket, or Server Sent Events */
     #disconnect(cb: (() => void) | undefined) {
       const callback = cb ?? noop
-      this.#connections.add(callback)
+      this.#cleanupCallbacks.add(callback)
       return () => {
         callback()
-        this.#connections.delete(callback)
+        this.#cleanupCallbacks.delete(callback)
       }
     }
     /** connect trigger to a Messenger or Publisher */
@@ -275,6 +231,50 @@ export const Component: PlaitedComponent = ({
         subtree: true,
       })
       return mo
+    }
+    /** use hypermedia if event interception and navigate custom event hypermedia env */
+    #hypermedia() {
+      if (hasPlaitedContext(window) && window[Plaited_Context].hypermedia) {
+        delegates.set(
+          this.#root,
+          new DelegatedListener((event) => {
+            if (event.type === 'submit') {
+              event.preventDefault()
+            }
+            if (event.type === 'click') {
+              const path = event.composedPath()
+              for (const element of path) {
+                if (element instanceof HTMLAnchorElement && element.href) {
+                  const href = element.href
+                  let local = false
+                  try {
+                    new URL(href)
+                    break
+                  } catch (_) {
+                    local = true
+                  }
+                  if (local) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    this.#emit({
+                      type: navigateEventType,
+                      detail: new URL(href, window.location.href),
+                      bubbles: true,
+                      composed: true,
+                    })
+                  }
+                }
+              }
+            }
+          }),
+        )
+        this.#root.addEventListener('click', delegates.get(this.#root))
+        this.#root.addEventListener('submit', delegates.get(this.#root))
+        return () => {
+          this.#root.removeEventListener('click', delegates.get(this.#root))
+          this.#root.removeEventListener('submit', delegates.get(this.#root))
+        }
+      }
     }
     /** Public trigger method allows triggers of only observedTriggers from outside component */
     trigger(args: BPEvent) {

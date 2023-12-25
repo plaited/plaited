@@ -80,7 +80,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   }
 
   /** Our tag is a void tag so we can return it once we apply attributes */
-  if (voidTags.has(tag as VoidTags)) {
+  if (voidTags.has(tag as keyof VoidTags)) {
     start.push('/>')
     return {
       client: start,

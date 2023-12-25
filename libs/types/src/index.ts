@@ -18,8 +18,6 @@ export type Child = string | TemplateObject
 export type Children = Child[] | Child
 
 export type BooleanAttributes =
-  | 'bp-hypermedia'
-  // HTML attributes
   | 'allowfullscreen'
   | 'async'
   | 'autofocus'
@@ -61,10 +59,10 @@ export type CSSProperties = CSS.Properties<string | number> & {
 export type PlaitedAttributes = {
   class?: never
   className?: string
+  children?: Children
   ['bp-address']?: string
   ['bp-target']?: string
   ['bp-trigger']?: Record<string, string>
-  children?: Children
   stylesheet?: string | string[]
   /** setting trusted to true will disable all escaping security policy measures for this element template */
   trusted?: boolean
@@ -454,15 +452,21 @@ type DetailedAreaHTMLAttributes = DetailedHTMLAttributes & {
   referrerpolicy?: HTMLAttributeReferrerPolicy
   shape?: string
   target?: string
+  children?: never
 }
 
 type DetailedBaseHTMLAttributes = DetailedHTMLAttributes & {
   href?: string
   target?: string
+  children?: never
 }
 
 type DetailedBlockquoteHTMLAttributes = DetailedHTMLAttributes & {
   cite?: string
+}
+
+type DetailedBrHTMLAttributes = DetailedHTMLAttributes & {
+  children?: never
 }
 
 type DetailedButtonHTMLAttributes = DetailedHTMLAttributes & {
@@ -486,6 +490,7 @@ type DetailedCanvasHTMLAttributes = DetailedHTMLAttributes & {
 type DetailedColHTMLAttributes = DetailedHTMLAttributes & {
   span?: number
   width?: number | string
+  children?: never
 }
 
 type DetailedColgroupHTMLAttributes = DetailedHTMLAttributes & {
@@ -514,6 +519,7 @@ type DetailedEmbedHTMLAttributes = DetailedHTMLAttributes & {
   src?: string
   type?: string
   width?: number | string
+  children?: never
 }
 
 type DetailedFieldsetHTMLAttributes = DetailedHTMLAttributes & {
@@ -531,6 +537,10 @@ type DetailedFormHTMLAttributes = DetailedHTMLAttributes & {
   name?: string
   novalidate?: boolean
   target?: string
+}
+
+type DetailedHrHTMLAttributes = DetailedHTMLAttributes & {
+  children?: never
 }
 
 type DetailedHtmlHTMLAttributes = DetailedHTMLAttributes & {
@@ -562,6 +572,7 @@ type DetailedImgHTMLAttributes = DetailedHTMLAttributes & {
   srcset?: string
   usemap?: string
   width?: number | string
+  children?: never
 }
 
 type DetailedInsHTMLAttributes = DetailedHTMLAttributes & {
@@ -625,6 +636,7 @@ type DetailedInputHTMLAttributes = DetailedHTMLAttributes & {
   type?: HTMLInputTypeAttribute
   value?: string | number
   width?: number | string
+  children?: never
 }
 
 type DetailedLabelHTMLAttributes = DetailedHTMLAttributes & {
@@ -651,10 +663,14 @@ type DetailedLinkHTMLAttributes = DetailedHTMLAttributes & {
   sizes?: string
   type?: string
   charSet?: string
+  children?: never
 }
 
 type DetailedMapHTMLAttributes = DetailedHTMLAttributes & {
   name?: string
+}
+type DetailedMenuitemHTMLAttributes = DetailedHTMLAttributes & {
+  children?: never
 }
 
 type DetailedMenuHTMLAttributes = DetailedHTMLAttributes & {
@@ -680,6 +696,7 @@ type DetailedMetaHTMLAttributes = DetailedHTMLAttributes & {
   name?: string
   media?: string
   content?: string
+  children?: never
 }
 
 type DetailedMeterHTMLAttributes = DetailedHTMLAttributes & {
@@ -771,6 +788,7 @@ type DetailedSourceHTMLAttributes = DetailedHTMLAttributes & {
   srcset?: string
   type?: string
   width?: number | string
+  children?: never
 }
 
 type DetailedStyleHTMLAttributes = DetailedHTMLAttributes & {
@@ -844,6 +862,7 @@ type DetailedTrackHTMLAttributes = DetailedHTMLAttributes & {
   label?: string
   src?: string
   srclang?: string
+  children?: never
 }
 
 type DetailedVideoHTMLAttributes = DetailedMediaHTMLAttributes & {
@@ -853,6 +872,10 @@ type DetailedVideoHTMLAttributes = DetailedMediaHTMLAttributes & {
   width?: string
   disablepictureinpicture?: boolean
   disableremoteplayback?: boolean
+}
+
+type DetailedWbrAttributes = DetailedHTMLAttributes & {
+  children?: never
 }
 
 type DetailedSVGAttributes = DetailedHTMLAttributes & {
@@ -1081,7 +1104,33 @@ type DetailedSVGAttributes = DetailedHTMLAttributes & {
   yChannelSelector?: 'R' | 'G' | 'B' | 'A' | string
   z?: number | string
 }
-
+type DetailedSVGCircleAttributes = DetailedSVGAttributes & {
+  children?: never
+}
+type DetailedSVGEllipseAttributes = DetailedSVGAttributes & {
+  children?: never
+}
+type DetailedSVGLineAttributes = DetailedSVGAttributes & {
+  children?: never
+}
+type DetailedSVGPathAttributes = DetailedSVGAttributes & {
+  children?: never
+}
+type DetailedSVGPolygonAttributes = DetailedSVGAttributes & {
+  children?: never
+}
+type DetailedSVGPolylineAttributes = DetailedSVGAttributes & {
+  children?: never
+}
+type DetailedSVGRectAttributes = DetailedSVGAttributes & {
+  children?: never
+}
+type DetailedSVGStopAttributes = DetailedSVGAttributes & {
+  children?: never
+}
+type DetailedSVGUseAttributes = DetailedSVGAttributes & {
+  children?: never
+}
 type DetailedWebViewHTMLAttributes = DetailedHTMLAttributes & {
   src?: string
   nodeintegration?: boolean
@@ -1113,7 +1162,7 @@ export type ElementAttributeList = {
   big: DetailedHTMLAttributes
   blockquote: DetailedBlockquoteHTMLAttributes
   body: DetailedHTMLAttributes
-  br: DetailedHTMLAttributes
+  br: DetailedBrHTMLAttributes
   button: DetailedButtonHTMLAttributes
   canvas: DetailedCanvasHTMLAttributes
   caption: DetailedHTMLAttributes
@@ -1147,7 +1196,7 @@ export type ElementAttributeList = {
   head: DetailedHTMLAttributes
   header: DetailedHTMLAttributes
   hgroup: DetailedHTMLAttributes
-  hr: DetailedHTMLAttributes
+  hr: DetailedHrHTMLAttributes
   html: DetailedHtmlHTMLAttributes
   i: DetailedHTMLAttributes
   iframe: DetailedIframeHTMLAttributes
@@ -1163,7 +1212,7 @@ export type ElementAttributeList = {
   map: DetailedMapHTMLAttributes
   mark: DetailedHTMLAttributes
   menu: DetailedMenuHTMLAttributes
-  menuitem: DetailedHTMLAttributes
+  menuitem: DetailedMenuitemHTMLAttributes
   meta: DetailedMetaHTMLAttributes
   meter: DetailedMeterHTMLAttributes
   nav: DetailedHTMLAttributes
@@ -1212,18 +1261,18 @@ export type ElementAttributeList = {
   ul: DetailedHTMLAttributes
   var: DetailedHTMLAttributes
   video: DetailedVideoHTMLAttributes
-  wbr: DetailedHTMLAttributes
+  wbr: DetailedWbrAttributes
   webview: DetailedWebViewHTMLAttributes
   //SVG
   svg: DetailedSVGAttributes
   animate: DetailedSVGAttributes
-  circle: DetailedSVGAttributes
+  circle: DetailedSVGCircleAttributes
   animateMotion: DetailedSVGAttributes
   animateTransform: DetailedSVGAttributes
   clipPath: DetailedSVGAttributes
   defs: DetailedSVGAttributes
   desc: DetailedSVGAttributes
-  ellipse: DetailedSVGAttributes
+  ellipse: DetailedSVGEllipseAttributes
   feBlend: DetailedSVGAttributes
   feColorMatrix: DetailedSVGAttributes
   feComponentTransfer: DetailedSVGAttributes
@@ -1253,26 +1302,26 @@ export type ElementAttributeList = {
   foreignObject: DetailedSVGAttributes
   g: DetailedSVGAttributes
   image: DetailedSVGAttributes
-  line: DetailedSVGAttributes
+  line: DetailedSVGLineAttributes
   linearGradient: DetailedSVGAttributes
   marker: DetailedSVGAttributes
   mask: DetailedSVGAttributes
   metadata: DetailedSVGAttributes
   mpath: DetailedSVGAttributes
-  path: DetailedSVGAttributes
+  path: DetailedSVGPathAttributes
   pattern: DetailedSVGAttributes
-  polygon: DetailedSVGAttributes
-  polyline: DetailedSVGAttributes
+  polygon: DetailedSVGPolygonAttributes
+  polyline: DetailedSVGPolylineAttributes
   radialGradient: DetailedSVGAttributes
-  rect: DetailedSVGAttributes
+  rect: DetailedSVGRectAttributes
   set: DetailedSVGAttributes
-  stop: DetailedSVGAttributes
+  stop: DetailedSVGStopAttributes
   switch: DetailedSVGAttributes
   symbol: DetailedSVGAttributes
   text: DetailedSVGAttributes
   textPath: DetailedSVGAttributes
   tspan: DetailedSVGAttributes
-  use: DetailedSVGAttributes
+  use: DetailedSVGUseAttributes
   view: DetailedSVGAttributes
 }
 
@@ -1287,35 +1336,39 @@ export type FT<
 
 export type Tag = string | `${string}-${string}` | FT
 
-export type VoidTags =
-  | 'area'
-  | 'base'
-  | 'br'
-  | 'col'
-  | 'embed'
-  | 'hr'
-  | 'img'
-  | 'input'
-  | 'link'
-  | 'menuitem'
-  | 'meta'
-  | 'source'
-  | 'track'
-  | 'wbr'
-  | 'circle'
-  | 'ellipse'
-  | 'line'
-  | 'path'
-  | 'polygon'
-  | 'polyline'
-  | 'rect'
-  | 'stop'
-  | 'use'
-
-// excluide children for void elements
-type ExcludeChildrenForVoidTags<T extends Tag, ElementAtrributes> = T extends VoidTags ?
-  ElementAtrributes & { children?: never }
-: ElementAtrributes
+export type VoidTags = {
+  area: { children?: never }
+  base: { children?: never }
+  br: { children?: never }
+  col: { children?: never }
+  embed: { children?: never }
+  hr: { children?: never }
+  img: { children?: never }
+  input: { children?: never }
+  link: { children?: never }
+  menuitem: { children?: never }
+  meta: { children?: never }
+  source: { children?: never }
+  track: { children?: never }
+  wbr: { children?: never }
+  circle: { children?: never }
+  ellipse: { children?: never }
+  line: { children?: never }
+  path: { children?: never }
+  polygon: { children?: never }
+  polyline: { children?: never }
+  rect: { children?: never }
+  stop: { children?: never }
+  use: { children?: never }
+}
+/** Check is ElementAttributeList is a SubType of VoidTags
+ * So that our inference isn't horrible this is a hacky way to check
+ * if a type is a subtype of another type without messeing up Named
+ * inference element types
+ */
+type IsSubtype<T, U> = T extends U ? true : false
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type Check = IsSubtype<ElementAttributeList, VoidTags> // true
 
 type InferAttrs<T extends Tag> =
   T extends keyof ElementAttributeList ? ElementAttributeList[T]
@@ -1324,7 +1377,11 @@ type InferAttrs<T extends Tag> =
   : Attrs
 
 export interface CreateTemplate {
-  <T extends Tag>(tag: T, attrs: ExcludeChildrenForVoidTags<T, InferAttrs<T>>): TemplateObject
+  <T extends Tag>(tag: T, attrs: InferAttrs<T>): TemplateObject
+}
+
+export type TagsType = {
+  [K in keyof ElementAttributeList]: (attrs: ElementAttributeList[K]) => TemplateObject
 }
 
 export type Send = (recipient: string, detail: BPEvent) => void

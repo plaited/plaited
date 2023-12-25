@@ -1,5 +1,6 @@
 import { test } from '@plaited/rite'
-import { Component, isPlaited } from '../index.js'
+import { Component } from '../index.js'
+import { isPlaited } from '../utils.js'
 test('observed triggers', async (t) => {
   const wrapper = document.querySelector('body')
 
