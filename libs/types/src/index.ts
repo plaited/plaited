@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { bProgram, Trigger, BPEvent, Publisher, DevCallback, Strategy } from '@plaited/behavioral'
+import { bProgram, Trigger, BPEvent, Publisher, Logger, DefaultLogCallbackParams } from '@plaited/behavioral'
 import * as CSS from 'csstype'
 
 type Booleanish = boolean | 'true' | 'false'
@@ -1444,7 +1444,37 @@ export type Clone = <T>(
   callback: ($: QuerySelector, data: T) => void,
 ) => (data: T) => DocumentFragment
 
-export type BPProps = {
+export type BPEventSourceHandler = ({
+  root,
+  host,
+  privateTrigger,
+  publicTrigger,
+}: {
+  root: ShadowRoot
+  host: HTMLElement
+  privateTrigger: Trigger
+  publicTrigger: Trigger
+}) => {
+  connect: (comm: Messenger | Publisher | SSE | WS) => () => void
+  disconnect: () => void
+}
+
+export type BProps = {
+  /** query for elements with the bp-target attribute in the Island's shadowDom and slots */
+  $: QuerySelector
+  /** The DOM node context allowing easy light & shadow dom access
+   * @example
+   * // returns the div element inside
+   * // the shadowRoot of the element instance
+   * const shadowEl = host.shadowRoot.querySelector('div')
+   */
+  host: PlaitedElement
+  emit: Emit
+  clone: Clone
+  connect?: never
+} & ReturnType<typeof bProgram>
+
+export type BPropsWithEventSource = {
   /** query for elements with the bp-target attribute in the Island's shadowDom and slots */
   $: QuerySelector
   /** The DOM node context allowing easy light & shadow dom access
@@ -1483,7 +1513,12 @@ export type PlaitedTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
   tag: `${string}-${string}`
 }
 
-export type PlaitedComponent = <T extends Attrs = Attrs>(args: {
+type BPFunction<T extends BPEventSourceHandler | undefined> = (
+  this: PlaitedElement,
+  props: T extends BPEventSourceHandler ? BPropsWithEventSource : BProps,
+) => void | Promise<void>
+
+export type PlaitedComponent = <T extends Attrs = Attrs, L = DefaultLogCallbackParams>(args: {
   /** PlaitedComponent tag name */
   tag: `${string}-${string}`
   /** Component template */
@@ -1496,11 +1531,10 @@ export type PlaitedComponent = <T extends Attrs = Attrs>(args: {
   mode?: 'open' | 'closed'
   /** configure whether to delegate focus or not @defaultValue 'true' */
   delegatesFocus?: boolean
-  /** logger function to receive messages from behavioral program react streams */
-  dev?: true | DevCallback
-  /** event selection strategy callback from behavioral library */
-  strategy?: Strategy
-  bp?(this: PlaitedElement, props: BPProps): void | Promise<void>
+  /** pass an behavioral program event source handler */
+  eventSourceHandler?: BPEventSourceHandler
+  logger?: Logger<L>
+  bp?: BPFunction<(typeof args)['eventSourceHandler']>
   connectedCallback?(this: PlaitedElement): void
   attributeChangedCallback?(this: PlaitedElement, name: string, oldValue: string | null, newValue: string | null): void
   disconnectedCallback?(this: PlaitedElement): void

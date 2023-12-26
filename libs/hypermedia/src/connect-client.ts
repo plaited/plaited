@@ -20,7 +20,7 @@ const pop = ({ state }: PopStateEvent) => {
   }
 }
 
-export const hypermedia = () => {
+export const connectClient = () => {
   const html = document.querySelector('html')
   if (html) {
     history.replaceState(new XMLSerializer().serializeToString(html), '', document.location.href)

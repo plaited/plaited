@@ -1,7 +1,8 @@
-import { SelectionSnapshot } from './types.js'
+import { DefaultLogger } from './types.js'
 
-import { isListeningFor, isPendingRequest } from './utils.js'
-export const selectionSnapshot: SelectionSnapshot = ({ candidates, selectedEvent, pending }) => {
+import { isListeningFor, isPendingRequest } from './private-utils.js'
+
+export const defaultLogger: DefaultLogger = ({ candidates, selectedEvent, pending }) => {
   const blockingThreads = [...pending].flatMap(({ block, thread }) =>
     block && Array.isArray(block) ? block.map((listener) => ({ block: listener, thread }))
     : block ? [{ block, thread }]
@@ -28,3 +29,5 @@ export const selectionSnapshot: SelectionSnapshot = ({ candidates, selectedEvent
   }
   return ruleSets.sort((a, b) => a.priority - b.priority)
 }
+
+defaultLogger.callback = (log) => console.table(log)

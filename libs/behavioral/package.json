@@ -17,7 +17,7 @@
   "main": "./dist/index.js",
   "exports": {
     ".": "./dist/index.js",
-    "./public-utils": "./dist/public-utils.js"
+    "./utils": "./dist/utils.js"
   },
   "files": [
     "./dist/**"

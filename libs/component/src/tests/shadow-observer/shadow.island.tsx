@@ -50,7 +50,6 @@ const SubIsland = Component({
 
 export const ShadowIsland = Component({
   tag: 'shadow-island',
-  dev: true,
   template: (
     <div
       className={classes.mount}

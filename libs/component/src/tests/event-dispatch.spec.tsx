@@ -6,7 +6,6 @@ test('eventTriggers', async (t) => {
 
   const Bottom = Component({
     tag: 'bottom-component',
-    dev: true,
     template: (
       <button
         bp-target='button'
@@ -27,7 +26,6 @@ test('eventTriggers', async (t) => {
 
   const Top = Component({
     tag: 'top-component',
-    dev: true,
     template: (
       <div>
         <h1 bp-target='header'>Hello</h1>

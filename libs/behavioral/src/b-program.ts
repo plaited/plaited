@@ -1,46 +1,34 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import { selectionSnapshot } from './selection-snapshot.js'
 import { ensureArray, isTypeOf } from '@plaited/utils'
-import { priorityStrategy } from './public-utils.js'
 import { publisher } from './publisher.js'
 import {
   CandidateBid,
-  DevCallback,
+  Logger,
   Feedback,
   BPListener,
   PendingBid,
   RulesFunc,
   RunningBid,
   BPEvent,
-  SelectionSnapshot,
-  Strategy,
   Trigger,
   BPEventTemplate,
 } from './types.js'
 import { loop, sync, thread } from './rules.js'
-import { triggerWaitFor, log, isListeningFor, isPendingRequest } from './utils.js'
-
+import { triggerWaitFor, isListeningFor, isPendingRequest } from './private-utils.js'
 /**
  * Creates a behavioral program that manages the execution of behavioral threads.
- * @param options An object containing optional parameters for the program.
- * @param options.strategy The event selection strategy to use. Defaults to `strategies.priority`.
- * @param options.dev A callback function that receives a stream of state snapshots, last selected event, and trigger.
+ * @param log A callback function or true to use default event log callback. It receives a stream of event selection snapshots.
  * @returns An object containing methods for managing the program and executing behavioral threads.
  */
-export const bProgram = ({
-  /** event selection strategy {@link Strategy}*/
-  strategy = priorityStrategy,
+
+export const bProgram = <T>(
   /** When set to true returns a stream with log of state snapshots, last selected event and trigger */
-  dev: _dev,
-}: {
-  strategy?: Strategy
-  dev?: DevCallback | true
-} = {}) => {
-  const dev = _dev === true ? log : _dev
+  logger?: Logger<T>,
+) => {
   const pending = new Set<PendingBid>()
   const running = new Set<RunningBid>()
   const actionPublisher = publisher<BPEvent>()
-  const snapshotPublisher = dev && publisher<ReturnType<SelectionSnapshot>>()
+  const snapshotPublisher = logger && publisher<T>()
   function run() {
     running.size && step()
   }
@@ -83,9 +71,12 @@ export const bProgram = ({
         filteredBids.push(candidate)
       }
     }
-    const selectedEvent = strategy(filteredBids)
+    /** @description Priority Queue BPEvent Selection Strategy */
+    const selectedEvent = filteredBids.sort(
+      ({ priority: priorityA }, { priority: priorityB }) => priorityA - priorityB,
+    )[0]
     if (selectedEvent) {
-      snapshotPublisher && snapshotPublisher(selectionSnapshot({ candidates, selectedEvent, pending }))
+      snapshotPublisher && snapshotPublisher(logger({ candidates, selectedEvent, pending }))
       nextStep(selectedEvent)
     }
   }
@@ -146,7 +137,7 @@ export const bProgram = ({
     }
   }
 
-  snapshotPublisher && snapshotPublisher.subscribe((data) => dev(data))
+  if (snapshotPublisher) snapshotPublisher.subscribe((data) => logger.callback(data))
 
   return Object.freeze({
     /** add thread function to behavioral program */

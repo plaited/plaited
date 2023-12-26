@@ -4,18 +4,32 @@ export type BPEventTemplate<T = unknown> = () => BPEvent<T>
 
 export type BPListener<T = unknown> = string | ((args: { type: string; detail: T }) => boolean)
 
-export interface SelectionSnapshot {
-  (args: { pending: Set<PendingBid>; selectedEvent: CandidateBid; candidates: CandidateBid[] }): {
-    thread: string
-    selected: boolean
-    type: string
-    detail?: unknown
-    priority: number
-    blockedBy?: string
-  }[]
+export interface LogCallback<T> {
+  (args: T): void
 }
 
-export type LogMessage = ReturnType<SelectionSnapshot>
+export type DefaultLogCallbackParams = {
+  thread: string
+  selected: boolean
+  type: string
+  detail?: unknown
+  priority: number
+  blockedBy?: string
+}[]
+
+export interface DefaultLogger {
+  (args: {
+    pending: Set<PendingBid>
+    selectedEvent: CandidateBid
+    candidates: CandidateBid[]
+  }): DefaultLogCallbackParams
+  callback: LogCallback<DefaultLogCallbackParams>
+}
+
+export type Logger<T> = {
+  (args: { pending: Set<PendingBid>; selectedEvent: CandidateBid; candidates: CandidateBid[] }): T
+  callback: LogCallback<T>
+}
 
 export type Trigger = <T = unknown>(args: BPEvent<T>) => void
 
@@ -43,16 +57,10 @@ export type CandidateBid = {
   template?: BPEventTemplate
 }
 
-export type Strategy = (filteredEvents: CandidateBid[] | never[]) => CandidateBid | undefined
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Actions<T = any> = { [key: string]: (detail: T) => void | Promise<void> }
 
 export type Feedback = (actions: Actions) => void
-
-export interface DevCallback {
-  (args: ReturnType<SelectionSnapshot>): void
-}
 
 export type Publisher<T extends BPEvent = BPEvent> = {
   (value: T): void

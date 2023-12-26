@@ -1,23 +1,19 @@
 import { createTemplate } from '@plaited/jsx'
-import { bpTrigger, bpAddress } from '@plaited/jsx/utils'
-import { Trigger, bProgram, BPEvent, Publisher } from '@plaited/behavioral'
+import { bpTrigger } from '@plaited/jsx/utils'
+import { Trigger, bProgram, BPEvent } from '@plaited/behavioral'
 import type {
   PlaitedElementConstructor,
   PlaitedElement,
   PlaitedComponent,
-  Emit,
-  Messenger,
-  WS,
-  SSE,
   QuerySelector,
   PlaitedTemplate,
+  BPEventSourceHandler,
 } from '@plaited/component-types'
 import { $, cssCache, clone } from './sugar.js'
-import { noop, trueTypeOf } from '@plaited/utils'
+import { trueTypeOf } from '@plaited/utils'
 import { defineRegistry } from './define-registry.js'
 import { DelegatedListener, delegates } from './delegated-listener.js'
-import { Plaited_Context, navigateEventType } from './constants.js'
-import { hasPlaitedContext } from './type-checks.js'
+import { emit } from './emit.js'
 
 const isElement = (node: Node): node is Element => node.nodeType === 1
 
@@ -54,11 +50,11 @@ export const Component: PlaitedComponent = ({
   observedAttributes,
   mode = 'open',
   delegatesFocus = true,
-  dev,
-  strategy,
+  eventSourceHandler,
   connectedCallback,
   disconnectedCallback,
   bp,
+  logger,
   ...rest
 }) => {
   if (!tag) {
@@ -102,83 +98,44 @@ export const Component: PlaitedComponent = ({
     }
     #trigger?: Trigger
     #shadowObserver?: MutationObserver
+    #disconnectEventSources?: () => void
     connectedCallback() {
       if (bp) {
-        const { trigger, ...rest } = bProgram({ strategy, dev })
+        const { trigger, ...rest } = bProgram(logger)
+        const args = {
+          $: this.$,
+          host: this,
+          emit: emit(this),
+          clone: clone(this.#root),
+          trigger,
+          ...rest,
+        }
+        if (eventSourceHandler) {
+          const { connect, disconnect } = eventSourceHandler({
+            root: this.#root,
+            host: this,
+            publicTrigger: this.trigger,
+            privateTrigger: trigger,
+          })
+          Object.assign(args, { connect })
+          this.#disconnectEventSources = disconnect
+        }
         this.#trigger = trigger // listeners need trigger to be available on instance
         this.#delegateListeners(
           // just connected/upgraded then delegate listeners nodes with bp-trigger attribute
           Array.from(this.#root.querySelectorAll<Element>(`[${bpTrigger}]`)),
         )
         this.#shadowObserver = this.#createShadowObserver() // create a shadow observer to watch for modification & addition of nodes with bp-trigger attribute
-        dev &&
-          trigger({
-            type: `connected(${this.getAttribute(bpAddress) ?? this.tagName.toLowerCase()})`,
-          })
-        const isHypermedia = this.#hypermedia()
-        isHypermedia && this.#cleanupCallbacks.add(isHypermedia)
-        void bp.bind(this)({
-          $: this.$,
-          host: this,
-          emit: this.#emit.bind(this),
-          clone: clone(this.#root),
-          connect: this.#connect.bind(this),
-          trigger,
-          ...rest,
-        })
+        void bp.bind(this)(args)
       }
       connectedCallback && connectedCallback.bind(this)()
     }
-    #cleanupCallbacks = new Set<() => void>() // holds unsubscribe callbacks
     disconnectedCallback() {
-      this.#shadowObserver && this.#shadowObserver.disconnect()
-      if (dev && this.#trigger)
-        this.#trigger({
-          type: `disconnected(${this.getAttribute(bpAddress) ?? this.tagName.toLowerCase()})`,
-        })
-      if (this.#cleanupCallbacks.size) {
-        this.#cleanupCallbacks.forEach((unsubscribe) => {
-          unsubscribe()
-        })
-        this.#cleanupCallbacks.clear()
-      }
+      this.#shadowObserver?.disconnect()
+      this.#disconnectEventSources?.()
       disconnectedCallback && disconnectedCallback.bind(this)()
     }
-    /** Manually disconnect connection to Messenger, Publisher, Web Socket, or Server Sent Events */
-    #disconnect(cb: (() => void) | undefined) {
-      const callback = cb ?? noop
-      this.#cleanupCallbacks.add(callback)
-      return () => {
-        callback()
-        this.#cleanupCallbacks.delete(callback)
-      }
-    }
-    /** connect trigger to a Messenger or Publisher */
-    #connect(comm: Messenger | Publisher | SSE | WS) {
-      if (comm?.type === 'publisher') return this.#disconnect(comm.subscribe(this.trigger))
-      if (comm?.type === 'sse' && this.#trigger) this.#disconnect(comm(this.#trigger))
-      if (comm?.type === 'ws' && this.#trigger) this.#disconnect(comm.connect(this.#trigger))
-      if (comm?.type === 'messenger') {
-        const recipient = this.getAttribute(bpAddress)
-        if (!recipient) {
-          console.error(`Component ${this.tagName.toLowerCase()} is missing an attribute [${bpAddress}]`)
-          return noop // if we're missing an address on our component return noop and console.error msg
-        }
-        return this.#disconnect(comm.connect(recipient, this.trigger))
-      }
-      return noop
-    }
-    /** emit a custom event cancelable and composed are true by default */
-    #emit({ type, detail, bubbles = false, cancelable = true, composed = true }: Parameters<Emit>[0]) {
-      if (!type) return
-      const event = new CustomEvent(type, {
-        bubbles,
-        cancelable,
-        composed,
-        detail,
-      })
-      this.dispatchEvent(event)
-    }
+
     /** If delegated listener does not have element then delegate it's callback with auto cleanup*/
     #createDelegatedListener(el: Element) {
       delegates.set(
@@ -231,50 +188,6 @@ export const Component: PlaitedComponent = ({
         subtree: true,
       })
       return mo
-    }
-    /** use hypermedia if event interception and navigate custom event hypermedia env */
-    #hypermedia() {
-      if (hasPlaitedContext(window) && window[Plaited_Context].hypermedia) {
-        delegates.set(
-          this.#root,
-          new DelegatedListener((event) => {
-            if (event.type === 'submit') {
-              event.preventDefault()
-            }
-            if (event.type === 'click') {
-              const path = event.composedPath()
-              for (const element of path) {
-                if (element instanceof HTMLAnchorElement && element.href) {
-                  const href = element.href
-                  let local = false
-                  try {
-                    new URL(href)
-                    break
-                  } catch (_) {
-                    local = true
-                  }
-                  if (local) {
-                    event.preventDefault()
-                    event.stopPropagation()
-                    this.#emit({
-                      type: navigateEventType,
-                      detail: new URL(href, window.location.href),
-                      bubbles: true,
-                      composed: true,
-                    })
-                  }
-                }
-              }
-            }
-          }),
-        )
-        this.#root.addEventListener('click', delegates.get(this.#root))
-        this.#root.addEventListener('submit', delegates.get(this.#root))
-        return () => {
-          this.#root.removeEventListener('click', delegates.get(this.#root))
-          this.#root.removeEventListener('submit', delegates.get(this.#root))
-        }
-      }
     }
     /** Public trigger method allows triggers of only observedTriggers from outside component */
     trigger(args: BPEvent) {

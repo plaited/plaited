@@ -43,6 +43,7 @@
     "@plaited/utils": "5.6.2"
   },
   "devDependencies": {
+    "@plaited/hypermedia": "5.6.2",
     "@plaited/rite": "5.6.2",
     "@web/dev-server": "0.4.1",
     "@web/dev-server-esbuild": "1.0.1",
