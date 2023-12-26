@@ -5,6 +5,8 @@
     "module": "NodeNext",
     "declaration": true,
     "moduleResolution": "nodenext",
+    "jsx": "react-jsx",
+    "jsxImportSource": "@plaited/jsx",
     "lib": ["dom", "es2022"],
     "outDir": "dist",
     "rootDir": "src",

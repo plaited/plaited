@@ -31,13 +31,15 @@ const getTriggerType = (event: Event, context: Element) => {
  * Creates a PlaitedComponent
  * @param {object} args - Arguments for the PlaitedComponent
  * @param {string} args.tag - PlaitedComponent tag name
- * @param {string[]} args.attributes - observed Attributes that will trigger the native `attributeChangedCallback` method when modified
- * @param {string[]} args.triggers - observed triggers that can be fired from outside component by invoking `trigger` method directly, via messenger, or via publisher
+ * @param {string[]} args.observedAttributes - observed Attributes that will trigger the native `attributeChangedCallback` method when modified
+ * @param {string[]} args.observedTriggers - observed triggers that can be fired from outside component by invoking `trigger` method directly, via messenger, or via publisher
  * @param {string} args.mode - define wether island's custom element is open or closed. @defaultValue 'open'  @values 'open' | 'closed'
  * @param {boolean} args.delegatesFocus - configure whether to delegate focus or not @defaultValue 'true'
- * @param {boolean|function} args.dev - logger function to receive messages from behavioral program react streams @defaultValue 'true'
+ * @param {function} args.eventSourceHandler - callback to handle event sources like messenger, publisher, web socket, or server sent events
  * @param {function} args.strategy - event selection strategy callback from behavioral library
- * @returns {FunctionTemplate} A FunctionTemplate of the PlaitedComponent
+ * @param {boolean|function} args.logger - logger function to receive messages from behavioral program selectedEvent publisher
+ * @param {function} args.bp - behavioral program callback
+ * @returns {PlaitedTemplate} A PlaitedTemplate of the PlaitedComponent
  */
 
 export const Component: PlaitedComponent = ({
@@ -48,10 +50,10 @@ export const Component: PlaitedComponent = ({
   mode = 'open',
   delegatesFocus = true,
   eventSourceHandler,
-  connectedCallback,
-  disconnectedCallback,
   bp,
   logger,
+  connectedCallback,
+  disconnectedCallback,
   ...rest
 }) => {
   if (!tag) {
