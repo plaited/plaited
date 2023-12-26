@@ -9,7 +9,7 @@ import type {
 } from '@plaited/component-types'
 import { booleanAttrs, bpTarget } from '@plaited/jsx/utils'
 import { isTypeOf } from '@plaited/utils'
-import { defineRegistry } from './define-registry.js'
+import { defineRegistry } from './utils.js'
 /**
  * Inspired by blingblingjs
  * (c) Adam Argyle - MIT

@@ -1,7 +1,7 @@
 import { bpAddress } from '@plaited/jsx/utils'
 import { test } from '@plaited/rite'
-import { Component } from '../index.js'
-import { messenger } from '../utils.js'
+import { Component } from '../component.js'
+import { messenger } from '../messenger.js'
 import { eventSourceHandler } from '@plaited/hypermedia'
 
 test('dynamic island comms', async (t) => {

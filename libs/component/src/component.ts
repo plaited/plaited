@@ -7,13 +7,10 @@ import type {
   PlaitedComponent,
   QuerySelector,
   PlaitedTemplate,
-  BPEventSourceHandler,
 } from '@plaited/component-types'
 import { $, cssCache, clone } from './sugar.js'
 import { trueTypeOf } from '@plaited/utils'
-import { defineRegistry } from './define-registry.js'
-import { DelegatedListener, delegates } from './delegated-listener.js'
-import { emit } from './emit.js'
+import { emit, DelegatedListener, delegates, defineRegistry } from './utils.js'
 
 const isElement = (node: Node): node is Element => node.nodeType === 1
 

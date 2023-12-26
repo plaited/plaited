@@ -6,7 +6,6 @@ test('observed triggers', async (t) => {
 
   const Bottom = Component({
     tag: 'bottom-component',
-    dev: true,
     template: <h1 bp-target='header'>Hello</h1>,
     observedTriggers: ['add'],
     bp({ $, feedback, addThreads, thread, sync, emit }) {
@@ -70,26 +69,26 @@ test('observed triggers', async (t) => {
   Top.define()
   Bottom.define()
 
-  // let button = await t.findByAttribute('bp-target', 'button', wrapper)
-  // const header = await t.findByAttribute('bp-target', 'header', wrapper)
-  // t({
-  //   given: 'render',
-  //   should: 'header should contain string',
-  //   actual: header?.innerHTML,
-  //   expected: 'Hello',
-  // })
-  // button && (await t.fireEvent(button, 'click'))
-  // t({
-  //   given: 'clicking button',
-  //   should: 'append string to header',
-  //   actual: header?.innerHTML,
-  //   expected: 'Hello World!',
-  // })
-  // button = await t.findByAttribute('bp-target', 'button', wrapper)
-  // t({
-  //   given: 'clicking button',
-  //   should: 'be disabled',
-  //   actual: (button as HTMLButtonElement)?.disabled,
-  //   expected: true,
-  // })
+  let button = await t.findByAttribute('bp-target', 'button', wrapper)
+  const header = await t.findByAttribute('bp-target', 'header', wrapper)
+  t({
+    given: 'render',
+    should: 'header should contain string',
+    actual: header?.innerHTML,
+    expected: 'Hello',
+  })
+  button && (await t.fireEvent(button, 'click'))
+  t({
+    given: 'clicking button',
+    should: 'append string to header',
+    actual: header?.innerHTML,
+    expected: 'Hello World!',
+  })
+  button = await t.findByAttribute('bp-target', 'button', wrapper)
+  t({
+    given: 'clicking button',
+    should: 'be disabled',
+    actual: (button as HTMLButtonElement)?.disabled,
+    expected: true,
+  })
 })
