@@ -6,8 +6,8 @@ test('async feedback callbacks', async () => {
   const actual: string[] = []
   const { addThreads, trigger, feedback } = bProgram()
   addThreads({
-    onInit: thread(sync({ request: { type: 'init' } })),
-    afterInit: thread(sync({ request: { type: 'afterInit' } })),
+    onInit: sync({ request: { type: 'init' } }),
+    afterInit: sync({ request: { type: 'afterInit' } }),
   })
   feedback({
     async init() {

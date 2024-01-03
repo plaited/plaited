@@ -5,7 +5,7 @@ test('firing trigger and adding threads in actions', () => {
   const actual: string[] = []
   const { addThreads, trigger, feedback } = bProgram()
   addThreads({
-    addHotOnce: thread(sync({ request: { type: 'hot_1' } })),
+    addHotOnce: sync({ request: { type: 'hot_1' } }),
     mixHotCold: loop(
       sync({
         waitFor: ({ type }) => type.startsWith('hot'),

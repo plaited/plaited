@@ -338,14 +338,12 @@ test('defaultMoves', () => {
   ])
 })
 
-const startAtCenter = thread(
-  sync({
-    request: {
-      type: 'O',
-      detail: { square: 4 },
-    },
-  }),
-)
+const startAtCenter = sync({
+  request: {
+    type: 'O',
+    detail: { square: 4 },
+  },
+})
 
 test('startAtCenter', () => {
   const { addThreads, feedback, trigger } = bProgram()
