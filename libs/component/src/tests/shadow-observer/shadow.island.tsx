@@ -83,7 +83,7 @@ export const ShadowIsland = Component({
     addThreads({
       onRemoveSvg: thread(sync({ waitFor: 'removeSvg' }), sync({ request: { type: 'addSubIsland' } })),
       onStart: thread(sync({ waitFor: 'start' }), sync({ request: { type: 'addSlot' } })),
-      onAddSvg: loop([sync({ waitFor: 'add-svg' }), sync({ request: { type: 'modifyAttributes' } })]),
+      onAddSvg: loop(sync({ waitFor: 'add-svg' }), sync({ request: { type: 'modifyAttributes' } })),
     })
     feedback({
       addSubIsland() {

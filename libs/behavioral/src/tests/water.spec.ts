@@ -63,7 +63,7 @@ test('interleave', () => {
       sync({ request: { type: 'cold' } }),
       sync({ request: { type: 'cold' } }),
     ),
-    mixHotCold: loop([
+    mixHotCold: loop(
       sync({
         waitFor: 'hot',
         block: 'cold',
@@ -72,7 +72,7 @@ test('interleave', () => {
         waitFor: 'cold',
         block: 'hot',
       }),
-    ]),
+    ),
   })
   feedback({
     hot() {
@@ -101,7 +101,7 @@ test('logging', () => {
       sync({ request: { type: 'cold' } }),
       sync({ request: { type: 'cold' } }),
     ),
-    mixHotCold: loop([
+    mixHotCold: loop(
       sync({
         waitFor: 'hot',
         block: 'cold',
@@ -110,7 +110,7 @@ test('logging', () => {
         waitFor: 'cold',
         block: 'hot',
       }),
-    ]),
+    ),
   })
   trigger({ type: 'start' })
   expect(logs).toMatchSnapshot()

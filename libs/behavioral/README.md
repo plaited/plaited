@@ -165,7 +165,7 @@ test('interleave', () => {
       sync({ request: { type: 'cold' } }),
       sync({ request: { type: 'cold' } }),
     ),
-    mixHotCold: loop([
+    mixHotCold: loop(
       sync({
         waitFor: 'hot',
         block: 'cold',
@@ -174,7 +174,7 @@ test('interleave', () => {
         waitFor: 'cold',
         block: 'hot',
       }),
-    ]),
+    ),
   })
   feedback({
     hot() {
@@ -263,8 +263,8 @@ test('detect wins', () => {
     ...playerWins('X'),
   })
   feedback({
-    XWin(deatil: { win: [number, number, number] }) {
-      Object.assign(actual, deatil.win)
+    XWin(detail: { win: [number, number, number] }) {
+      Object.assign(actual, detail.win)
     },
   })
   trigger({ type: 'X', detail: { square: 1 } })
@@ -282,7 +282,7 @@ We'll next create a new thread, `enforceTurns`, that uses our loop function to
 interleave moves.
 
 ```ts
-const enforceTurns = loop([sync({ waitFor: 'X', block: 'O' }), sync({ waitFor: 'O', block: 'X' })])
+const enforceTurns = loop(sync({ waitFor: 'X', block: 'O' }), sync({ waitFor: 'O', block: 'X' }))
 
 test('enforceTurns', () => {
   const { addThreads, feedback, trigger } = bProgram()
@@ -346,10 +346,10 @@ test('squaresTaken', () => {
   addThreads({
     ...playerWins('O'),
     ...playerWins('X'),
-    enforceTurns: loop([
+    enforceTurns: loop(
       sync({ waitFor:  'X', block:  'O' }),
       sync({ waitFor:  'O', block:  'X' }),
-    ]),
+    ),
     ...squaresTaken,
   })
   feedback({
@@ -445,14 +445,14 @@ unless that square has already been taken and the move blocked by our
 
 ```ts
 const defaultMoves = squares.reduce((threads, square) => {
-  threads[`defaultMoves(${square})`] = loop([
+  threads[`defaultMoves(${square})`] = loop(
     sync({
       request: {
         type: 'O',
         detail: { square },
       },
     }),
-  ])
+  )
   return threads
 }, {})
 

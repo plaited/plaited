@@ -53,7 +53,7 @@ test('detect wins', () => {
   expect(actual).toEqual([1, 4, 7])
 })
 
-const enforceTurns = loop([sync({ waitFor: 'X', block: 'O' }), sync({ waitFor: 'O', block: 'X' })])
+const enforceTurns = loop(sync({ waitFor: 'X', block: 'O' }), sync({ waitFor: 'O', block: 'X' }))
 
 test('enforceTurns', () => {
   const { addThreads, feedback, trigger } = bProgram()
@@ -144,7 +144,7 @@ test('squaresTaken', () => {
   addThreads({
     ...playerWins('O'),
     ...playerWins('X'),
-    enforceTurns: loop([sync({ waitFor: 'X', block: 'O' }), sync({ waitFor: 'O', block: 'X' })]),
+    enforceTurns: loop(sync({ waitFor: 'X', block: 'O' }), sync({ waitFor: 'O', block: 'X' })),
     ...squaresTaken,
   })
   feedback({
@@ -218,7 +218,7 @@ test("doesn't stop game", () => {
   ])
 })
 
-const stopGame = thread(sync({ waitFor: ['XWin', 'OWin'] }), sync({ block: ['X', 'O'] }))
+const stopGame = thread(sync({ waitFor: ['XWin', 'OWin'] }), loop(sync({ block: ['X', 'O'] })))
 
 test('stopGame', () => {
   const { addThreads, feedback, trigger } = bProgram()
@@ -275,14 +275,14 @@ test('stopGame', () => {
 })
 
 const defaultMoves = squares.reduce((threads, square) => {
-  threads[`defaultMoves(${square})`] = loop([
+  threads[`defaultMoves(${square})`] = loop(
     sync({
       request: {
         type: 'O',
         detail: { square },
       },
     }),
-  ])
+  )
   return threads
 }, {})
 

@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { isTypeOf } from '@plaited/utils'
 import { RuleSet, RulesFunc } from './types.js'
 
 /**
@@ -15,8 +16,12 @@ export const thread = (...rules: RulesFunc<any>[]): RulesFunc<any> =>
  * A behavioral thread that loops infinitely or until some callback condition is false
  * like a mode change open -> close. This function returns a threads
  */
-export const loop = (rules: RulesFunc<any>[], condition = () => true): RulesFunc<any> =>
-  function* () {
+export const loop = (ruleOrCallback: RulesFunc<any> | (() => boolean), ...rules: RulesFunc<any>[]): RulesFunc<any> => {
+  let condition = () => true
+  isTypeOf<RulesFunc<any>>(ruleOrCallback, 'generatorfunction') ?
+    rules.unshift(ruleOrCallback)
+  : (condition = ruleOrCallback)
+  return function* () {
     while (condition()) {
       const length = rules.length
       for (let i = 0; i < length; i++) {
@@ -24,6 +29,8 @@ export const loop = (rules: RulesFunc<any>[], condition = () => true): RulesFunc
       }
     }
   }
+}
+
 /**
  * At synchronization points, each behavioral thread specifies three sets of events:
  * requested events: the threads proposes that these be considered for triggering,
