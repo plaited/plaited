@@ -1,9 +1,9 @@
 import { test, expect } from 'bun:test'
-import { bProgram } from '../index.js'
+import { bProgram, thread, sync, loop } from '../index.js'
 
 test('firing trigger and adding threads in actions', () => {
   const actual: string[] = []
-  const { addThreads, thread, sync, trigger, feedback, loop } = bProgram()
+  const { addThreads, trigger, feedback } = bProgram()
   addThreads({
     addHotOnce: thread(sync({ request: { type: 'hot_1' } })),
     mixHotCold: loop(

@@ -31,8 +31,6 @@ export type Logger<T> = {
   callback: LogCallback<T>
 }
 
-export type Trigger = <T = unknown>(args: BPEvent<T>) => void
-
 export type RuleSet<T = unknown> = {
   waitFor?: BPListener<T> | BPListener<T>[]
   request?: BPEvent<T> | BPEventTemplate<T>
@@ -61,6 +59,21 @@ export type CandidateBid = {
 export type Actions<T = any> = { [key: string]: (detail: T) => void | Promise<void> }
 
 export type Feedback = (actions: Actions) => void
+export type AddThreads = (threads: Record<string, RulesFunc>) => void
+export type Trigger = <T = unknown>(args: BPEvent<T>) => void
+
+export type Sync = <T = unknown>(set: RuleSet<T>) => RulesFunc<T>
+export type Thread = (...rules: RulesFunc[]) => RulesFunc
+export type Loop = (ruleOrCallback: RulesFunc | (() => boolean), ...rules: RulesFunc[]) => RulesFunc
+
+export type BProgram = <T>(logger?: Logger<T> | undefined) => Readonly<{
+  addThreads: AddThreads
+  feedback: Feedback
+  trigger: Trigger
+  thread: Thread
+  loop: Loop
+  sync: Sync
+}>
 
 export type Publisher<T extends BPEvent = BPEvent> = {
   (value: T): void

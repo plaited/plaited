@@ -7,24 +7,23 @@ import {
   Feedback,
   BPListener,
   PendingBid,
-  RulesFunc,
   RunningBid,
   BPEvent,
   Trigger,
   BPEventTemplate,
+  AddThreads,
+  BProgram,
 } from './types.js'
-import { loop, sync, thread } from './rules.js'
 import { triggerWaitFor, isListeningFor, isPendingRequest } from './private-utils.js'
+import { thread, sync, loop } from './rules.js'
 /**
  * Creates a behavioral program that manages the execution of behavioral threads.
- * @param log A callback function or true to use default event log callback. It receives a stream of event selection snapshots.
- * @returns An object containing methods for managing the program and executing behavioral threads.
+ *
+ * @template T The type of the logger's output.
+ * @param {Logger<T>} logger - An optional logger function or true to use default event log callback. It receives a stream of event selection snapshots.
+ * @returns {Object} An object containing methods for managing the program and executing behavioral threads.
  */
-
-export const bProgram = <T>(
-  /** When set to true returns a stream with log of state snapshots, last selected event and trigger */
-  logger?: Logger<T>,
-) => {
+export const bProgram: BProgram = <T>(logger?: Logger<T>) => {
   const pending = new Set<PendingBid>()
   const running = new Set<RunningBid>()
   const actionPublisher = publisher<BPEvent>()
@@ -127,7 +126,7 @@ export const bProgram = <T>(
     })
   }
 
-  const addThreads = (threads: Record<string, RulesFunc>): void => {
+  const addThreads: AddThreads = (threads) => {
     for (const thread in threads) {
       running.add({
         thread,
@@ -146,23 +145,8 @@ export const bProgram = <T>(
     feedback,
     /** trigger a run and event on behavioral program */
     trigger,
-    /**
-     * A behavioral thread that loops infinitely or until some callback condition is false
-     * like a mode change open -> close. This function returns a threads
-     */
-    loop,
-    /**
-     * At synchronization points, each behavioral thread specifies three sets of events:
-     * requested events: the threads proposes that these be considered for triggering,
-     * and asks to be notified when any of them occurs; waitFor events: the threads does not request these, but
-     * asks to be notified when any of them is triggered; and blocked events: the
-     * threads currently forbids triggering
-     * any of these events.
-     */
-    sync,
-    /**
-     * creates a behavioral thread from synchronization sets and/or other  behavioral threads
-     */
     thread,
+    sync,
+    loop,
   })
 }

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { bProgram, Trigger, BPEvent, Publisher, Logger, DefaultLogCallbackParams } from '@plaited/behavioral'
+import { BProgram, Trigger, BPEvent, Publisher, Logger, DefaultLogCallbackParams } from '@plaited/behavioral'
 import * as CSS from 'csstype'
 
 type Booleanish = boolean | 'true' | 'false'
@@ -1472,7 +1472,7 @@ export type BProps = {
   emit: Emit
   clone: Clone
   connect?: never
-} & ReturnType<typeof bProgram>
+} & ReturnType<BProgram>
 
 export type BPropsWithEventSource = {
   /** query for elements with the bp-target attribute in the Island's shadowDom and slots */
@@ -1487,7 +1487,7 @@ export type BPropsWithEventSource = {
   emit: Emit
   clone: Clone
   connect: (comm: Publisher | Messenger | SSE | WS) => () => void
-} & ReturnType<typeof bProgram>
+} & ReturnType<BProgram>
 
 export interface PlaitedElement extends HTMLElement {
   internals_: ElementInternals

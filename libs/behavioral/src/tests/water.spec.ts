@@ -1,11 +1,11 @@
 import { test, expect } from 'bun:test'
-import { bProgram } from '../index.js'
+import { bProgram, loop, thread, sync } from '../index.js'
 import { defaultLogger } from '../utils.js'
 import { DefaultLogCallbackParams } from '../types.js'
 
 test('Add hot water 3 times', () => {
   const actual: string[] = []
-  const { addThreads, thread, sync, trigger, feedback } = bProgram()
+  const { addThreads, trigger, feedback } = bProgram()
   addThreads({
     addHot: thread(
       sync({ request: { type: 'hot' } }),
@@ -24,7 +24,7 @@ test('Add hot water 3 times', () => {
 
 test('Add hot/cold water 3 times', () => {
   const actual: string[] = []
-  const { addThreads, thread, sync, trigger, feedback } = bProgram()
+  const { addThreads, trigger, feedback } = bProgram()
   addThreads({
     addHot: thread(
       sync({ request: { type: 'hot' } }),
@@ -51,7 +51,7 @@ test('Add hot/cold water 3 times', () => {
 
 test('interleave', () => {
   const actual: string[] = []
-  const { addThreads, thread, sync, trigger, feedback, loop } = bProgram()
+  const { addThreads, trigger, feedback } = bProgram()
   addThreads({
     addHot: thread(
       sync({ request: { type: 'hot' } }),
@@ -89,7 +89,7 @@ test('interleave', () => {
 test('logging', () => {
   const logs: DefaultLogCallbackParams[] = []
   defaultLogger.callback = (log) => logs.push(log)
-  const { addThreads, thread, sync, trigger, loop } = bProgram(defaultLogger)
+  const { addThreads, trigger } = bProgram(defaultLogger)
   addThreads({
     addHot: thread(
       sync({ request: { type: 'hot' } }),
