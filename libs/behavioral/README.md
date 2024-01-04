@@ -210,7 +210,7 @@ manner. First we'll import our testing utils. Then we'll import `bProgram`,
 
 ```ts
 import { expect, test } from 'bun:test'
-import { bProgram, loop, RulesFunc, sync, thread } from '@plaited/behavioral'
+import { bProgram, loop, RulesFunction, sync, thread } from '@plaited/behavioral'
 
 const winConditions = [
   //rows
@@ -238,7 +238,7 @@ a player has won.
 
 ```ts
 const playerWins = (player: 'X' | 'O') =>
-  winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
+  winConditions.reduce((acc: Record<string, RulesFunction>, win) => {
     acc[`${player}Wins (${win})`] = thread(
       sync<{ square: number }>({
         waitFor: ({ type, detail }) => type === player && win.includes(detail.square),
@@ -325,7 +325,7 @@ Using the same reduce approach we took with the `playerWins` function we iterate
 over the squares to create our `squaresTaken` threads.
 
 ```ts
-const squaresTaken = squares.reduce((acc: Record<string, RulesFunc>, square) => {
+const squaresTaken = squares.reduce((acc: Record<string, RulesFunction>, square) => {
   acc[`(${square}) taken`] = thread(
     sync<{ square: number }>({
       waitFor:  ({ detail }) => square === detail.square ,
@@ -591,7 +591,7 @@ test('prevent completion of line with two Xs', () => {
   const board = new Set(squares)
   const { addThreads, feedback, trigger } = bProgram()
   const actual: ({ player: 'X' | 'O'; square: number } | { player: 'X' | 'O'; win: number[] })[] = []
-  const preventCompletionOfLineWithTwoXs = winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
+  const preventCompletionOfLineWithTwoXs = winConditions.reduce((acc: Record<string, RulesFunction>, win) => {
     acc[`StopXWin(${win})`] = thread(
       sync<{ square: number }>({
         waitFor: ({ type, detail }) => type === 'X' && win.includes(detail.square),

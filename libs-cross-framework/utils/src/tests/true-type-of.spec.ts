@@ -11,6 +11,7 @@ test('trueTypeOf()', () => {
   expect(trueTypeOf(1)).toBe('number')
   expect(trueTypeOf(function () {})).toBe('function')
   expect(trueTypeOf(async function () {})).toBe('asyncfunction')
+  expect(trueTypeOf(function* () {})).toBe('generatorfunction')
   expect(trueTypeOf(/test/i)).toBe('regexp')
   expect(trueTypeOf(RegExp('foo*'))).toBe('regexp')
   expect(trueTypeOf(true)).toBe('boolean')

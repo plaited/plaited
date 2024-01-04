@@ -37,7 +37,7 @@ export type RuleSet<T = unknown> = {
   block?: BPListener<T> | BPListener<T>[]
 }
 
-export type RulesFunc<T = unknown> = () => IterableIterator<RuleSet<T>>
+export type RulesFunction<T = unknown> = () => IterableIterator<RuleSet<T>>
 
 export type RunningBid = {
   trigger?: true
@@ -59,12 +59,12 @@ export type CandidateBid = {
 export type Actions<T = any> = { [key: string]: (detail: T) => void | Promise<void> }
 
 export type Feedback = (actions: Actions) => void
-export type AddThreads = (threads: Record<string, RulesFunc>) => void
+export type AddThreads = (threads: Record<string, RulesFunction>) => void
 export type Trigger = <T = unknown>(args: BPEvent<T>) => void
 
-export type Sync = <T = unknown>(set: RuleSet<T>) => RulesFunc<T>
-export type Thread = (...rules: RulesFunc[]) => RulesFunc
-export type Loop = (ruleOrCallback: RulesFunc | (() => boolean), ...rules: RulesFunc[]) => RulesFunc
+export type Sync = <T = unknown>(set: RuleSet<T>) => RulesFunction<T>
+export type Thread = (...rules: RulesFunction[]) => RulesFunction
+export type Loop = (ruleOrCallback: RulesFunction | (() => boolean), ...rules: RulesFunction[]) => RulesFunction
 
 export type BProgram = <T>(logger?: Logger<T> | undefined) => Readonly<{
   addThreads: AddThreads
