@@ -3,18 +3,19 @@
 
 # Shall we play a game?
 
-The game is tic-tac-toe. While it may seem counter intuitive for a UI library we won't be starting with the UI. In fact maybe we should leave it as an [afterthought](https://michel.codes/blogs/ui-as-an-afterthought) for the time being. 
+The game is tic-tac-toe. While it may seem counter intuitive for a UI library we won't be starting with the UI. In fact maybe we should leave it as an [afterthought](https://michel.codes/blogs/ui-as-an-afterthought) for the time being.
 
-Let's create program to orchestrate our game. For this we'll be using the behavioral programming
-algorithm via a function that serves as the reactive foundation for everything Plaited, `bProgram`.
-Calling this function allows us to instantiate a behavioral program for our game. Behavioral Programming.
+## Setup
+
+We first want to create a `bProgram` to orchestrate our game.
 
 ```ts
 import { bProgram, loop, RulesFunc, sync, thread } from 'plaited'
-const { addThreads, feedback, trigger } = bProgram()
 ```
 
-Let's start with a the board and we'll use an array to represent all of the `squares`.
+We've now imported `bProgram`, `loop`, `sync`, `thread` and a typescript definition for our `RulesFunc`.
+
+Next we need to create some data structures. We'll need a object to represent the game `squares`.
 
 ```ts
 const squares = [
@@ -24,7 +25,7 @@ const squares = [
 ]
 ```
 
-Next up let's create an array to hold our win conditions for our game
+We then want to define our winning conditions for players.
 
 ```ts
 const winConditions = [
@@ -42,401 +43,431 @@ const winConditions = [
 ]
 ```
 
-Now we will create our player's win detection threads using a function. The function `playerWins` takes the player `X` or `O` and returns our threads by using reduce to iterate over the `winConditions`, thus creating threads to detect when a player has won.
+Finally we want to create a few variable that represents our board and a type representing our square to be used by our `RuleSet` and `trigger`.
 
 ```ts
-const playerWins = (player: 'X' | 'O') =>
-  winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
-    acc[`${player}Wins (${win})`] = thread(
-      sync<{ square: number }>({
-        waitFor: ({ type, detail }) => type === player && win.includes(detail.square),
-      }),
-      sync<{ square: number }>({
-        waitFor: ({ type, detail }) => type === player && win.includes(detail.square),
-      }),
-      sync<{ square: number }>({
-        waitFor: ({ type, detail }) => type === player && win.includes(detail.square),
-      }),
-      sync<{ win: number[] }>({
-        request: { type: `${player}Win`, detail: { win } },
-      }),
-    )
-    return acc
-  }, {})
+let board: Set<number>
+type Square = { square: number }
 ```
 
-However, in this scenario, `X` is playing all by itself and not waiting for `O`. Let's teach our program how to take turns.
+## Requirements
+
+We'll use TDD to validate our program as we iteratively add requirements
+
+### Taking a square
+
+We create a new `board` by initiating a new Set using the squares array. Then we init a new `bProgram` and destructure our `feedback` and `trigger` methods. We pass our `feedback` an actions object that consist of two actions `X` and `O` that when called will delete the corresponding square from the board.
+
+To test that this works we call trigger with the `BPEvent` `{ type: 'X', detail: { square: 1 } }` and assert that the `board` no longer has `1` in it. We do the same for an `O`.
+
+```ts
+test('taking a square', () => {
+  // We create a new bProgram
+  const { feedback, trigger } = bProgram()
+  // We create a new board for the game
+  board = new Set(squares)
+  feedback({
+    // When BPEvent X happens we delete the square provided in the event's detail
+    X({ square }: Square) {
+      board.delete(square)
+    },
+    // When BPEvent X happens we delete the square provided in the event's detail
+    O({ square }: Square) {
+      board.delete(square)
+    },
+  })
+  // X takes square 1
+  trigger({ type: 'X', detail: { square: 1 } })
+  // We check to make sure it's no longer available on the board
+  expect(board.has(1)).toBe(false)
+  // O takes square 0
+  trigger({ type: 'O', detail: { square: 0 } })
+  // We check to make sure it's no longer available on the board
+  expect(board.has(0)).toBe(false)
+})
+```
+
+### Enforcing turns
 
 We'll add a new thread, `enforceTurns`, which loops between two sync statements `onlyXCanGo` and `onlyOCanGo`. Only one of these statements can be enforced at any one time. This enforces the rule of the game that they take turns until someone wins.
 
 ```ts
-const onlyXCanGo = sync({ waitFor: 'X', block: 'O' })
-const onlyOCanGo = sync({ waitFor: 'O', block: 'X' })
+const onlyXCanGo = sync<Square>({ waitFor: 'X', block: 'O' })
+const onlyOCanGo = sync<Square>({ waitFor: 'O', block: 'X' })
 
 const enforceTurns = loop([onlyXCanGo, onlyOCanGo])
 
-test('enforceTurns', () => {
-  const { addThreads, feedback, trigger } = bProgram()
-  let actual: {
-    player: 'X' | 'O'
-    square: number
-  }
+test('take turns', () => {
+  // We create a new bProgram
+  const { feedback, trigger, addThreads } = bProgram()
+  // We create a new board for the game
+  board = new Set(squares)
   addThreads({
-    ...playerWins('O'),
-    ...playerWins('X'),
     enforceTurns,
   })
-
   feedback({
-    X({ square }: { square: number }) {
-      actual = {
-        player: 'X',
-        square,
-      }
+    // When BPEvent X happens we delete the square provided in the event's detail
+    X({ square }: Square) {
+      board.delete(square)
     },
-    O({ square }: { square: number }) {
-      actual = {
-        player: 'X',
-        square,
-      }
+    // When BPEvent X happens we delete the square provided in the event's detail
+    O({ square }: Square) {
+      board.delete(square)
     },
   })
+  // X takes square 1
   trigger({ type: 'X', detail: { square: 1 } })
-  trigger({ type: 'X', detail: { square: 4 } })
-  trigger({ type: 'X', detail: { square: 7 } })
-  expect(actual).toEqual({ player: 'X', square: 1 })
+  // We check to make sure it's no longer available on the board
+  expect(board.has(1)).toBe(false)
+  // O takes square 0
+  trigger({ type: 'O', detail: { square: 0 } })
+  // We check to make sure it's no longer available on the board
+  expect(board.has(0)).toBe(false)
+  // O tries to take another turn out of order
+  trigger({ type: 'O', detail: { square: 2} })
+  // We check to make sure 2 is still in the board
+  expect(board.has(2)).toBe(true)
 })
 ```
 
-So in the test above test `X` takes it's first turn but after playing square `1` it can't make any more moves until `O` takes a turn. Therefore, no matter how many times `X` triggers another move. The game will only recognize it's actual move as square `1`.
+In the test above `X` takes it's first turn but after playing square `1` it can't make any more moves until `O` takes a turn. O attempts to take an extra turn but no matter how many times `O` triggers another move. The game will only recognize it's actual move as square `0`.
 
-But right now there is nothing stopping `O` from also playing a move on `1`. Let's create a new function to add threads preventing players from making moves on squares that are already taken.
+But right now there is nothing stopping `X` from also playing a move on `0` in the next round. Let's add a new threads preventing players from making moves on squares that are already taken.
 
-Using the same approach we took with `playerWins`, we'll iterate over the `squares` to create threads for all `squaresTaken`.
+### Squares taken
+
+Each square may only be taken by players once. After that, all other moves on that square are blocked. We loop over our squares an create a thread with two synchronization points. 
 
 ```ts
-const squaresTaken = squares.reduce((acc: Record<string, RulesFunc>, square) => {
-  acc[`(${square}) taken`] = thread(
-    sync<{ square: number }>({
-      waitFor:  ({ detail }) => square === detail.square ,
+const squaresTaken: Record<string, RulesFunction> = {}
+for (const square of squares) {
+  squaresTaken[`(${square}) taken`] = thread(
+    sync<Square>({
+      waitFor: ({ detail }) => square === detail.square,
     }),
-    sync<{ square: number }>({
-      block:  ({ detail }) => square === detail.square ,
+    sync<Square>({
+      block: ({ detail }) => square === detail.square,
     }),
   )
-  return acc
-}, {})
+}
 
-test('squaresTaken', () => {
-  const { addThreads, feedback, trigger } = bProgram()
-  const actual: {
-    player: 'X' | 'O'
-    square: number
-  }[] = []
-
+test('squares taken', () => {
+  // We create a new bProgram
+  const { feedback, trigger, addThreads } = bProgram()
+  // We create a new board for the game
+  board = new Set(squares)
   addThreads({
-    ...playerWins('O'),
-    ...playerWins('X'),
-    enforceTurns: loop([
-      sync({ waitFor:  'X', block:  'O' }),
-      sync({ waitFor:  'O', block:  'X' }),
-    ]),
-    ...squaresTaken,
-  })
-  feedback({
-    O({ square }: { square: number }) {
-      actual.push({
-        player: 'O',
-        square,
-      })
-    },
-  })
-  trigger({ type: 'X', detail: { square: 0 } })
-  trigger({ type: 'O', detail: { square: 0 } })
-  expect(actual).toEqual([])
-})
-```
-
-Now each square may only be called by players once. After that, all other moves on that square are blocked.
-
-`X` and `O` will now take turns and no more than one player will be able to make a move on any one square. But once a player wins, the game needs to end. Wait for one of the win events with `XWin` or `OWin`, then block any future moves by either player.
-
-```ts
-const stopGame = thread(sync({ waitFor: ['XWin', 'OWin'] }), sync({ block: ['X', 'O'] }))
-
-test('stopGame', () => {
-  const { addThreads, feedback, trigger } = bProgram()
-  const board = new Set([...squares]);
-  let actual: ({ player: 'X' | 'O'; win: number[] })
-  
-  addThreads({
-    ...playerWins('O'),
-    ...playerWins('X'),
     enforceTurns,
     ...squaresTaken,
-    stopGame,
   })
   feedback({
-    X({ square }: { square: number }) {
-      board.delete(square);
+    // When BPEvent X happens we delete the square provided in the event's detail
+    X({ square }: Square) {
+      board.delete(square)
     },
-    O({ square }: { square: number }) {
-      board.delete(square);
-    },
-    XWin({ win }: { win: [number, number, number] }) {
-      actual = {
-        player: 'X',
-        win,
-      }
-    },
-    OWin({ win }: { win: [number, number, number] }) {
-      actual = {
-        player: 'O',
-        win,
-      }
+    // When BPEvent X happens we delete the square provided in the event's detail
+    O({ square }: Square) {
+      board.delete(square)
     },
   })
-  trigger({ type: 'X', detail: { square: 0 } })
-  trigger({ type: 'O', detail: { square: 1 } })
-  trigger({ type: 'X', detail: { square: 4 } })
+  // X takes square 1
+  trigger({ type: 'X', detail: { square: 1 } })
+  // We check to make sure it's no longer available on the board
+  expect(board.has(1)).toBe(false)
+  // O takes square 0
+  trigger({ type: 'O', detail: { square: 0 } })
+  // We check to make sure it's no longer available on the board
+  expect(board.has(0)).toBe(false)
+  // X tries to take square 1 again
+  trigger({ type: 'X', detail: { square: 1 } })
+  // O takes tries to take square 2
   trigger({ type: 'O', detail: { square: 2 } })
-  trigger({ type: 'X', detail: { square: 8 } })
-  trigger({ type: 'O', detail: { square: 7 } })
-  expect(actual).toEqual({ player: 'X', win: [0, 4, 8] })
-  expect(board.has(7)).toBe(true);
+  // O can't because it's X's turn still as their move was not valid
+  expect(board.has(2)).toBe(true)
+  trigger({ type: 'X', detail: { square: 2 } })
+  expect(board.has(2)).toBe(false)
 })
 ```
 
-So far every player move has to be manually triggered. We'll add a set of `defaultMoves`. For every square we define a default move event for `O`. This enables the app to take on the role of `O`. Making this a one player game.
+`X` and `O` will now take turns and no more than one player will be able to make a move on any one square. But how do we detect when a player wins?
 
-**Note** This is when the order of events in a bProgram really starts to matter. The first square will have a greater priority than the last square. The only exception being if that square has already been taken by a player and future moves blocked by our `squaresTaken` threads.
+### Detect winner
+
+We need to create our players' win detection threads. The function `detectWins` takes the player `X` or `O` and returns the respective threads by using reduce to iterate over the `winConditions`, thus allowing our `bProgram` to detect when a player has won.
 
 ```ts
-const defaultMoves = squares.reduce((threads, square) => {
-  threads[`defaultMoves(${square})`] = loop([
-    sync({
+type Winner = { player: 'X' | 'O'; squares: number[] }
+const detectWins = (player: 'X' | 'O') =>
+  winConditions.reduce((acc: Record<string, RulesFunction>, squares) => {
+    acc[`${player}Wins (${squares})`] = thread(
+      sync<{ square: number }>({
+        waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
+      }),
+      sync<{ square: number }>({
+        waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
+      }),
+      sync<{ square: number }>({
+        waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
+      }),
+      sync<Winner>({
+        request: { type: 'win', detail: { squares, player } },
+      }),
+    )
+    return acc
+  }, {})
+
+test('detect winner', () => {
+  // We create a new bProgram
+  const { feedback, trigger, addThreads } = bProgram()
+  // We create a new board for the game
+  board = new Set(squares)
+  addThreads({
+    enforceTurns,
+    ...squaresTaken,
+    ...detectWins('X'),
+    ...detectWins('O'),
+  })
+  let winner: Winner
+  feedback({
+    // When BPEvent `X` happens we delete the square provided in the event's detail
+    X({ square }: { square: number }) {
+      board.delete(square)
+    },
+    // When BPEvent `O` happens we delete the square provided in the event's detail
+    O({ square }: { square: number }) {
+      board.delete(square)
+    },
+    // When BPEvent `win` happens we set the winner
+    win(detail: Winner) {
+      winner = detail
+    },
+  })
+  trigger({ type: 'X', detail: { square: 0 } })
+  trigger({ type: 'O', detail: { square: 3 } })
+  trigger({ type: 'X', detail: { square: 1 } })
+  trigger({ type: 'O', detail: { square: 4 } })
+  trigger({ type: 'X', detail: { square: 2 } })
+  expect(winner).toEqual({ player: 'X', squares: [0, 1, 2] })
+})
+```
+
+We've used our `detectWins` function to generate an object of win detection threads for each player. We then pass those to our `addThreads` method as a spread. Enabling us to satisfy this new requirement. Now that we can detect when a player has won a game we need our program to stop after a winner has been detected.
+
+### Stop game
+
+We want to stop the game when it has been won. We create a new `thread` for this requirement that contains two synchronization points. The first waits for the `win` `BPEvent`. The second then blocks further `X` or `O` events. Because the second synchronization point does not contain a `waitFor` or `request` parameter this `thread` remains at this last synchronization point blocking all future attempts at taking another square.
+
+```ts
+const stopGame = thread(sync({ waitFor: 'win' }), sync({ block: ['X', 'O'] }))
+
+test('stop game', () => {
+  // We create a new bProgram
+  const { feedback, trigger, addThreads } = bProgram()
+  // We create a new board for the game
+  board = new Set(squares)
+  addThreads({
+    enforceTurns,
+    ...squaresTaken,
+    ...detectWins('X'),
+    ...detectWins('O'),
+    stopGame,
+  })
+  let winner: Winner
+  feedback({
+    // When BPEvent `X` happens we delete the square provided in the event's detail
+    X({ square }: { square: number }) {
+      board.delete(square)
+    },
+    // When BPEvent `O` happens we delete the square provided in the event's detail
+    O({ square }: { square: number }) {
+      board.delete(square)
+    },
+    // When BPEvent `win` happens we set the winner
+    win(detail: Winner) {
+      winner = detail
+    },
+  })
+  trigger({ type: 'X', detail: { square: 0 } })
+  trigger({ type: 'O', detail: { square: 3 } })
+  trigger({ type: 'X', detail: { square: 1 } })
+  trigger({ type: 'O', detail: { square: 4 } })
+  trigger({ type: 'X', detail: { square: 2 } })
+  expect(winner).toEqual({ player: 'X', squares: [0, 1, 2] })
+  // O tries to take square 5 after a winner has been declared
+  trigger({ type: 'O', detail: { square: 5 } })
+  expect(board.has(5)).toBe(true)
+})
+```
+
+Unfortunately we don't have anyone to play with so we need our game to provide us with a second player. It's time to teach our program how to make some moves.
+
+### Default Moves
+
+For every square we want to create a thread for our `bProgram` to be able to request an `O` `BPEvent`, thus enabling our app to take on the role of `O`. This will be our first time using the `request` parameter in a `RuleSet`.
+
+With that in mind there are a couple of things to note. The **order** in which we add our threads matters. threads added before other have a greater priority. This means that if two threads request a`BPEvent` at the same synchronization point then the one with the higher priority will be select.
+
+```ts
+const defaultMoves: Record<string, RulesFunction> = {}
+for (const square of squares) {
+  defaultMoves[`defaultMoves(${square})`] = loop(
+    sync<Square>({
       request: {
         type: 'O',
         detail: { square },
       },
     }),
-  ])
-  return threads
-}, {})
+  )
+}
 
 test('defaultMoves', () => {
-  const { addThreads, feedback, trigger } = bProgram()
-  const actual: ({ player: 'X' | 'O'; square: number } | { player: 'X' | 'O'; win: number[] })[] = []
-
+  // We create a new bProgram
+  const { feedback, trigger, addThreads } = bProgram()
+  // We create a new board for the game
+  board = new Set(squares)
   addThreads({
-    ...playerWins('O'),
-    ...playerWins('X'),
     enforceTurns,
     ...squaresTaken,
+    ...detectWins('X'),
+    ...detectWins('O'),
     stopGame,
     ...defaultMoves,
   })
+  let winner: Winner
   feedback({
+    // When BPEvent `X` happens we delete the square provided in the event's detail
     X({ square }: { square: number }) {
-      actual.push({
-        player: 'X',
-        square,
-      })
+      board.delete(square)
     },
+    // When BPEvent `O` happens we delete the square provided in the event's detail
     O({ square }: { square: number }) {
-      actual.push({
-        player: 'O',
-        square,
-      })
+      board.delete(square)
     },
-    XWin({ win }: { win: [number, number, number] }) {
-      actual.push({
-        player: 'X',
-        win,
-      })
-    },
-    OWin({ win }: { win: [number, number, number] }) {
-      actual.push({
-        player: 'O',
-        win,
-      })
+    // When BPEvent `win` happens we set the winner
+    win(detail: Winner) {
+      winner = detail
     },
   })
   trigger({ type: 'X', detail: { square: 0 } })
-  trigger({ type: 'X', detail: { square: 4 } })
-  trigger({ type: 'X', detail: { square: 8 } })
-  expect(actual).toEqual([
-    { player: 'X', square: 0 },
-    { player: 'O', square: 1 },
-    { player: 'X', square: 4 },
-    { player: 'O', square: 2 },
-    { player: 'X', square: 8 },
-    { player: 'X', win: [0, 4, 8] },
-  ])
+  expect(board.has(1)).toBe(false)
 })
 ```
 
-But a computer player that always plays from `0` to `8` is boring. Let's make it more strategic in it's play. Add a `startAtCenter` function. Make sure `startAtCenter` is above `defaultMoves` in the `addThreads` method. This will give `startAtCenter` a higher priority when an event is requested.
+Notice that the first square will have a greater priority than the last square based on the order they appear in the squares array we are looping over to create our `defaultMoves` threads. The only exception being if that square has already been taken by a player and future moves blocked by our `squaresTaken` threads. Our test verifies our selected default move for `O` took `square` 1.
+
+But a computer player that always plays from `0` to `8` is boring. How about we add some smarts?
+
+### Start at center
+
+Let's make it more strategic in it's play. We create a `startAtCenter` thread and add to addThreads method before `defaultMoves`. This will give `startAtCenter` a higher priority when an event is requested.
 
 ```ts
-const startAtCenter = thread(
-  sync({
-    request: {
-      type: 'O',
-      detail: { square: 4 },
-    },
-  }),
-)
+const startAtCenter = sync({
+  request: {
+    type: 'O',
+    detail: { square: 4 },
+  },
+})
 
-test('startAtCenter', () => {
-  const { addThreads, feedback, trigger } = bProgram()
-  const actual: ({ player: 'X' | 'O'; square: number } | { player: 'X' | 'O'; win: number[] })[] = []
-
+test('start at center', () => {
+  // We create a new bProgram
+  const { feedback, trigger, addThreads } = bProgram()
+  // We create a new board for the game
+  board = new Set(squares)
   addThreads({
-    ...playerWins('O'),
-    ...playerWins('X'),
     enforceTurns,
     ...squaresTaken,
+    ...detectWins('X'),
+    ...detectWins('O'),
     stopGame,
     startAtCenter,
     ...defaultMoves,
   })
+  let winner: Winner
   feedback({
+    // When BPEvent `X` happens we delete the square provided in the event's detail
     X({ square }: { square: number }) {
-      actual.push({
-        player: 'X',
-        square,
-      })
+      board.delete(square)
     },
+    // When BPEvent `O` happens we delete the square provided in the event's detail
     O({ square }: { square: number }) {
-      actual.push({
-        player: 'O',
-        square,
-      })
+      board.delete(square)
+    },
+    // When BPEvent `win` happens we set the winner
+    win(detail: Winner) {
+      winner = detail
     },
   })
   trigger({ type: 'X', detail: { square: 0 } })
-  trigger({ type: 'X', detail: { square: 4 } })
-  trigger({ type: 'X', detail: { square: 8 } })
-  expect(actual).toEqual([
-    { player: 'X', square: 0 },
-    { player: 'O', square: 4 },
-    { player: 'X', square: 8 },
-    { player: 'O', square: 1 },
-  ])
+  expect(board.has(4)).toBe(false)
 })
 ```
+We make a basic move taking the top left corner. Then our program takes the center `square` 4. If app was really a good player, it would also try to stop it's opponent from winning.
 
-If `O` was really a good player, it would also try to stop it's opponent from winning. Add `preventXFromCompletingALine` so that the program will try to prevent the completion of a line with two squares already taken. This must come before `startAtCenter` so the program will always check if `X` has already taken two squares in a line.
+### Prevent completion of line with two Xs
+
+We need to prevent the completion of a line of three squares. We thus create a function called `preventXFromCompletingALine` that returns the threads necessary to do so. Our app will now try to prevent the completion of a line with two squares already taken. We pass in this spread of threads before before `startAtCenter` so our app will always check if `X` has already taken two squares in a line before making a move.
 
 ```ts
-test('prevent completion of line with two Xs', () => {
-  const board = new Set(squares)
-  const { addThreads, feedback, trigger } = bProgram()
-  const actual: ({ player: 'X' | 'O'; square: number } | { player: 'X' | 'O'; win: number[] })[] = []
-
-  const preventXFromCompletingALine = winConditions.reduce((acc: Record<string, RulesFunc>, win) => {
-    acc[`StopXWin(${win})`] = thread(
-      sync<{ square: number }>({
+const preventCompletionOfLineWithTwoXs = (board: Set<number>) => {
+  const threads: Record<string, RulesFunction> = {}
+  for (const win of winConditions) {
+    threads[`StopXWin(${win})`] = thread(
+      sync<Square>({
         waitFor: ({ type, detail }) => type === 'X' && win.includes(detail.square),
       }),
-      sync<{ square: number }>({
+      sync<Square>({
         waitFor: ({ type, detail }) => type === 'X' && win.includes(detail.square),
       }),
-      sync<{ square: number }>({
+      sync<Square>({
         request: () => ({ type: 'O', detail: { square: win.find((num) => board.has(num)) } }),
       }),
     )
-    return acc
-  }, {})
+  }
+  return threads
+}
+
+test('prevent completion of line with two Xs', () => {
+  // We create a new bProgram
+  const { feedback, trigger, addThreads } = bProgram()
+  // We create a new board for the game
+  board = new Set(squares)
   addThreads({
-    ...playerWins('O'),
-    ...playerWins('X'),
     enforceTurns,
     ...squaresTaken,
+    ...detectWins('X'),
+    ...detectWins('O'),
     stopGame,
-    ...preventCompletionOfLineWithTwoXs,
+    ...preventCompletionOfLineWithTwoXs(board),
     startAtCenter,
     ...defaultMoves,
   })
+  let winner: Winner
   feedback({
-    X({ square }: { square: number }) {
-      actual.push({
-        player: 'X',
-        square,
-      })
-      board.delete(square)
-    },
-    O({ square }: { square: number }) {
-      actual.push({
-        player: 'O',
-        square,
-      })
-      board.delete(square)
-    },
-  })
-  trigger({ type: 'X', detail: { square: 0 } })
-  trigger({ type: 'X', detail: { square: 3 } })
-  //@ts-ignore: test
-  expect(actual).toEqual([
-    { player: 'X', square: 0 },
-    { player: 'O', square: 4 },
-    { player: 'X', square: 3 },
-    { player: 'O', square: 6 },
-  ])
-})
-```
-
-So there is the working implementation for a bProgram tic-tac-toe app. Let's see a full game play out.
-
-```ts
-test('Game 1', () => {
-  const board = new Set(squares)
-  const { addThreads, feedback, trigger } = bProgram()
-  const actual: ({ player: 'X' | 'O'; win: number[] })
-
-  addThreads({
-    ...playerWins('O'),
-    ...playerWins('X'),
-    enforceTurns,
-    ...squaresTaken,
-    stopGame,
-    ...preventCompletionOfLineWithTwoXs,
-    startAtCenter,
-    ...defaultMoves,
-  })
-  feedback({
+    // When BPEvent `X` happens we delete the square provided in the event's detail
     X({ square }: { square: number }) {
       board.delete(square)
     },
+    // When BPEvent `O` happens we delete the square provided in the event's detail
     O({ square }: { square: number }) {
       board.delete(square)
     },
-    XWin({ win }: { win: [number, number, number] }) {
-      actual = {
-        player: 'X',
-        win,
-      }
-    },
-    OWin({ win }: { win: [number, number, number] }) {
-      actual = {
-        player: 'O',
-        win,
-      }
+    // When BPEvent `win` happens we set the winner
+    win(detail: Winner) {
+      winner = detail
     },
   })
-  trigger({ type: 'X', detail: { square: 5 } })
-  trigger({ type: 'X', detail: { square: 0 } })
-  trigger({ type: 'X', detail: { square: 7 } })
+  trigger({ type: 'X', detail: { square: 2 } })
   trigger({ type: 'X', detail: { square: 6 } })
-  trigger({ type: 'X', detail: { square: 3 } })
-  //@ts-ignore: test
-  expect(actual).toEqual({
-    player: "X",
-    win: [ 0, 3, 6 ],
-  })
-  expect(board).toEqual(new Set())
+  trigger({ type: 'X', detail: { square: 8 } })
+  expect(board.has(7)).toBe(false) // O has blocked X from winning with [6, 7, 8]
+  trigger({ type: 'X', detail: { square: 5 } })
+  expect(winner).toEqual({ player: 'X', squares: [2, 5, 8] })
 })
 ```
 
-Here is an example of how `X` could win. Notice that the winning move is `[ 0, 3, 6 ]` not `[ 6, 7, 8 ]`. That's because of the order of the winning conditions in the `winConditions` array. The order of operations really matters in bProgram.
+So now we have working implementation of the logic for our tic-tac-toe app. Even though our program blocked `X` from winning with **[6, 7, 8]**. We are still able to win by taking 5! That's because of the order of the winning conditions in the `winConditions` array. The order of operations really matters in bProgram when creating threads.
+
+---
+
+Now maybe we really should start thinking about our [user interface](./02-user-interface.md) and the new requirements that result from?
