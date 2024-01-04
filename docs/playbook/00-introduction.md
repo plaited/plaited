@@ -1,38 +1,57 @@
 # Introduction
 
-Plaited is a design system first UI framework for rapidly designing and developing interfaces as requirements change and evolve. We provide the tools necessary for crafting **Component Driven User Interfaces** with [Web Components](https://developer.mozilla.org/en-US/docs/Web/Web_Components).
+Plaited is a web framework for rapidly designing and developing interfaces as requirements change and evolve. It's been designed for the following use cases:
 
-## Component driven user interfaces
+  1. Developing cross-framework design systems
+  2. Developing [modnet web apps](https://rachelaliana.medium.com/past-the-internet-the-emergence-of-the-modnet-6ad49b7e2ee8)
 
-This development and design practice involves building user interfaces with modular components. UIs are built from the "bottom up", starting with sub-atomic design tokens through basic components and progressively combined to assemble screens.
+## Behavioral Programming
 
-## Event Driven Components
+Plaited is built around the behavioral programming algorithm. In behavioral programming a behavioral program `bProgram` employs specialized programming idioms for expressing what must, may,
+or must not happen, and a novel method for the collective execution of the resulting scenarios.
 
-Need to write a paragraph or two on
+These specialized idoms are effectively rules for determining how we apply feedback to an object based on a triggering event, be it user or system initiated. Each `bProgram` can be broken into three parts:
 
-## Core concepts
+1. trigger(s): Send `bProgram` a `BPEvent` that initiates a run of `bProgram`
+2. threads: `RulesFunction` that apply rules based on the `RuleSet` parameters
+3. feedback: Actions that manipulate an object based on the selected event(s)
 
-- Triggers
-- Rules
-- Feedback
+## Trigger
 
-We feel the best to learn this often to play with it
+Everything in Plaited is based on sending a `BPEvent` from one `bProgram` to another. Our `bProgram` agent based approach to design allows for various message passing based architectural patterns. Each `BPEvent` is an object that consist of two keys `type` and `detail`. Type is the name of the event and `detail` is optional data we pass with our event.
 
-So [shall we play a game](./01-shall-play-a-game.md)
+## Threads
 
-<!-- # Why?
+The key to understanding coding in Plaited is in grasping how to work with threads.
 
-Modern UI frameworks generally place design systems and design integration as an afterthought to be handled by the community. Further modern UI frameworks are generally data driven. By this we mean that the UI components react to changes in the data passed to them. This is why React is called React. There's nothing wrong with this mental model for engineers but this model doesn't always vibe with our non-engineering partners.
+Each thread specifies three sets of events: (1) requested events: the thread proposes that these be considered for triggering, and asks to be notified when any of them occurs; (2) waited-for events: the thread does not request these, but asks to be notified when any of them is triggered; and (3) blocked events: the thread currently forbids triggering any of these events
 
-We've discovered over the years Dan Saffer's Microinteraction mental model worked great when pairing with non-engineering partners to discuss our UI and make changes. However that model is fundamentally event driven. Where events are triggered, rules are applied and feedback shows us what has changed.
+When all threads are at a synchronization point, an event is chosen, that is requested by at least one thread and is not blocked by any thread. The selected event is then triggered by resuming all the threads that either requested it or are waiting for it. Each of these resumed threads then proceeds with its execution, all the way to its next synchronization point, where it again presents new sets of requested, waited-for and blocked events. The other threads remain at their last synchronization points, oblivious to the triggered event, until an event is selected that they have requested or are waiting for. When all threads are again at a synchronization point, the event selection process repeats.
 
-Back in 2019 we cam across the behavioral programming algorithm which we found aligned with this mental model succinctly and sought to apply it to dom manipulation. We'd mange the event log and rules to manipulate how we change a object. Wether that object is an array, an object literal or in the case of our components the Shadow DOM.
+We build our threads by making use of three functions `sync`, `thread` & `loop`. These functions are used to create an object of threads we pass to our `bProgram` `addThreads` method.
 
-In this doc site we won't start with Components instead as  Design system first framework we'll start with our smallest part, design-tokens the sub-atomic element in modern component driven web applications.
+### Sync
 
+As we mentioned earlier our threads continually move through synchronization points. We create these points using our `sync` function which return a `RulesFunction`. The `sync` function takes a `RuleSet` as a parameter. `RuleSet` is an object with three keys:
+  
+- waitFor: string(s) referencing the `BPEvent` type or a callback(s) that returns true. This callback receives the proposed `BPEvent` as an argument.
+- block: string(s) referencing the `BPEvent` type or a callback(s) that returns true. This callback receives the proposed `BPEvent` as an argument.
+- request: Proposed `BPEvent` or a function that when invoked returns a `BPEvent` also known as a `BPEventTemplate`
 
+### Thread
+
+A single synchronization point as expressed by `sync` is often not enough to express our rules in a given thread. The function `thread` like `sync` returns a `RuleFunction`. However it is used to compose an arbitrary number of `RulesFunction` together to express more complex rules.
+
+### Loop
+
+Often we want to carry out a rules infinitely each time our `bProgram` is triggered, or at least while some mode or condition is still true. The `loop` function allows us to do this. Like `thread` it can be used for composition and returns a `RulesFunction`. However it's first argument can be a synchronous function that will be called at each synchronization point to see if it still returns true and thus allow our threads synchronization points to remain in play when selecting the next `BPEvent`.
+
+## Feedback
+
+What about state we might ask? When we build are apps using `bProgram` the state of an object is  is implicitly managed. Our `bProgram` orchestrates the manipulations we can apply to one or more object in a natural manner. This is possible because of the `bProgram` `feedback` method.
+
+The `feedback` method takes an `Action` parameter which is an object string key function pairs. Each Action function takes a detail which is provided to it by an `BPEvent` who's type is the same as the key(name) of the action function.
 
 ---
 
-
-Modern interfaces are built from the bottom and our framework should  -->
+Alright that enough theory let's learn by doing. So [shall we play a game](./01-shall-play-a-game.md)

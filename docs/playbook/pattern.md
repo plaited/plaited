@@ -52,3 +52,15 @@ import { MyFragment } from './my-fragment'
 
 
 ```
+
+I'm not quite sure about this
+
+- Give permission to access fragment(s) on your site
+- Give permission to iframe fragment(s) on another site
+- Get permission to iframe a fragment(s) from another site
+- Get permission to view  fragment(s) on another site
+- Share fragments public
+
+So how would this work with the client < - > communication? Well you'd either need to open an iframe which means external domain would need to allow CORS. The other option is opening a new window/tab. We can't use popup not enough cross browser utility. So let's aay we do that well technically you'd need to have the tab to the other client open for as long as you need. HMM yeah that's a no go. honestly it's sorta gross. So if someone is using this then I think the simplest way to do this is to simply create a a route.
+
+
