@@ -77,11 +77,11 @@ export type CandidateBid = {
   template?: BPEventTemplate
 }
 
-export type Actions<T extends StructuredCloneable | Event> = { [key: string]: (detail: T) => void | Promise<void> }
+export type Actions<T = any> = { [key: string]: (detail: T) => void | Promise<void> }
 
 export type Feedback = (actions: Actions) => void
 export type AddThreads = (threads: Record<string, RulesFunction>) => void
-export type Trigger = <T extends StructuredCloneable | Event>(args: BPEvent<T>) => void
+export type Trigger = <T = any>(args: BPEvent<T>) => void
 
 export type Sync = <T extends StructuredCloneable | Event>(set: RuleSet<T>) => RulesFunction<T>
 export type Thread = (...rules: RulesFunction[]) => RulesFunction
