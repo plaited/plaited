@@ -12,16 +12,12 @@ type StructuredCloneable =
   | FileList
   | ArrayBuffer
   | ArrayBufferView
-  | StructuredCloneableArray
-  | StructuredCloneableObject
   | Map<StructuredCloneable, StructuredCloneable>
-  | Set<StructuredCloneable>;
-
-interface StructuredCloneableObject {
-  [key: string]: StructuredCloneable;
-}
-
-type StructuredCloneableArray = Array<StructuredCloneable>
+  | Set<StructuredCloneable>
+  | Array<StructuredCloneable>
+  | {
+    [key: string]: StructuredCloneable;
+  };
 
 
 export type BPEvent<T = any> = { type: string; detail?: T }
@@ -81,13 +77,13 @@ export type CandidateBid = {
   template?: BPEventTemplate
 }
 
-export type Actions<T = any> = { [key: string]: (detail: T) => void | Promise<void> }
+export type Actions<T extends StructuredCloneable | Event> = { [key: string]: (detail: T) => void | Promise<void> }
 
 export type Feedback = (actions: Actions) => void
 export type AddThreads = (threads: Record<string, RulesFunction>) => void
-export type Trigger = <T = any>(args: BPEvent<T>) => void
+export type Trigger = <T extends StructuredCloneable | Event>(args: BPEvent<T>) => void
 
-export type Sync = <T = any>(set: RuleSet<T>) => RulesFunction<T>
+export type Sync = <T extends StructuredCloneable | Event>(set: RuleSet<T>) => RulesFunction<T>
 export type Thread = (...rules: RulesFunction[]) => RulesFunction
 export type Loop = (ruleOrCallback: RulesFunction | (() => boolean), ...rules: RulesFunction[]) => RulesFunction
 

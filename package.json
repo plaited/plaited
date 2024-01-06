@@ -10,7 +10,7 @@
     "libs-storybook/*",
     "libs-test/*",
     "libs-token/*",
-    "playbook"
+    "docs"
   ],
   "scripts": {
     "build": "lerna run build --stream",
