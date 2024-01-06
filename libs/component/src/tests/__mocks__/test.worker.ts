@@ -3,7 +3,7 @@ import { handlePostMessage } from '../../utils.js'
 
 const { trigger, feedback } = bProgram()
 
-const { send } = handlePostMessage({
+const send = handlePostMessage({
   trigger,
   observedTriggers: ['calculate'],
 })

@@ -1,6 +1,6 @@
-import { Component, css, sync, loop, thread, RulesFunction } from "plaited"
-import { OMarker } from "./o-marker.js"
-import { XMarker } from "./x-marker.js"
+import { Component, css, sync, loop, thread, RulesFunction } from 'plaited'
+import { OMarker } from './o-marker.js'
+import { XMarker } from './x-marker.js'
 const winConditions = [
   //rows
   [0, 1, 2],
@@ -99,44 +99,44 @@ const detectWins = (player: 'X' | 'O') =>
     return acc
   }, {})
 
-  const stopGame = thread(sync({ waitFor: 'win' }), sync({ block: ['X', 'O'] }))
+const stopGame = thread(sync({ waitFor: 'win' }), sync({ block: ['X', 'O'] }))
 
-  const defaultMoves: Record<string, RulesFunction> = {}
-  for (const square of squares) {
-    defaultMoves[`defaultMoves(${square})`] = loop(
+const defaultMoves: Record<string, RulesFunction> = {}
+for (const square of squares) {
+  defaultMoves[`defaultMoves(${square})`] = loop(
+    sync<Square>({
+      request: {
+        type: 'O',
+        detail: { square },
+      },
+    }),
+  )
+}
+
+const startAtCenter = sync({
+  request: {
+    type: 'O',
+    detail: { square: 4 },
+  },
+})
+
+const preventCompletionOfLineWithTwoXs = (board: Set<number>) => {
+  const threads: Record<string, RulesFunction> = {}
+  for (const win of winConditions) {
+    threads[`StopXWin(${win})`] = thread(
       sync<Square>({
-        request: {
-          type: 'O',
-          detail: { square },
-        },
+        waitFor: ({ type, detail }) => type === 'X' && win.includes(detail.square),
+      }),
+      sync<Square>({
+        waitFor: ({ type, detail }) => type === 'X' && win.includes(detail.square),
+      }),
+      sync<Square>({
+        request: () => ({ type: 'O', detail: { square: win.find((num) => board.has(num)) || 0 } }),
       }),
     )
   }
-  
-  const startAtCenter = sync({
-    request: {
-      type: 'O',
-      detail: { square: 4 },
-    },
-  })
-
-  const preventCompletionOfLineWithTwoXs = (board: Set<number>) => {
-    const threads: Record<string, RulesFunction> = {}
-    for (const win of winConditions) {
-      threads[`StopXWin(${win})`] = thread(
-        sync<Square>({
-          waitFor: ({ type, detail }) => type === 'X' && win.includes(detail.square),
-        }),
-        sync<Square>({
-          waitFor: ({ type, detail }) => type === 'X' && win.includes(detail.square),
-        }),
-        sync<Square>({
-          request: () => ({ type: 'O', detail: { square: win.find((num) => board.has(num)) || 0 } }),
-        }),
-      )
-    }
-    return threads
-  }
+  return threads
+}
 export const TicTacToeBoard = Component({
   tag: 'tic-tac-toe-board',
   template: (
@@ -144,15 +144,17 @@ export const TicTacToeBoard = Component({
       className={cls.board}
       stylesheet={$stylesheet}
     >
-      {Array.from(Array(9).keys()).map(n => (<button
+      {Array.from(Array(9).keys()).map((n) => (
+        <button
           className={cls.square}
           value={n}
-          bp-trigger={{click: 'click'}}
+          bp-trigger={{ click: 'click' }}
           bp-target={`${n}`}
-        ></button>))}
+        ></button>
+      ))}
     </div>
   ),
-  bp({feedback, $, addThreads, trigger}){
+  bp({ feedback, $, addThreads, trigger }) {
     const board = new Set(squares)
     addThreads({
       enforceTurns,
@@ -165,7 +167,7 @@ export const TicTacToeBoard = Component({
       ...defaultMoves,
     })
     feedback({
-        // When BPEvent X happens we delete the square provided in the event's detail
+      // When BPEvent X happens we delete the square provided in the event's detail
       X({ square }: Square) {
         board.delete(square)
         $(`${square}`)[0]?.render(<XMarker />)
@@ -175,13 +177,13 @@ export const TicTacToeBoard = Component({
         board.delete(square)
         $(`${square}`)[0]?.render(<OMarker />)
       },
-      click(evt: MouseEvent & { target: HTMLButtonElement }){
+      click(evt: MouseEvent & { target: HTMLButtonElement }) {
         const { target } = evt
         const { value } = target
         if (value) {
-          trigger({ type: 'X', detail: { square: Number(value) }})
+          trigger({ type: 'X', detail: { square: Number(value) } })
         }
-      }
+      },
     })
-  }
+  },
 })

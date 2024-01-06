@@ -2,7 +2,8 @@
 import { isTypeOf } from '@plaited/utils'
 import { Trigger, BPEvent } from '@plaited/behavioral'
 import { SSE } from '@plaited/component-types'
-import { isMessageEvent, DelegatedListener, delegates } from './private-utils.js'
+import { delegates, DelegatedListener } from './delegated-listener.js'
+import { isMessageEvent } from './private-utils.js'
 import { createTemplate } from './fetch-html.js'
 
 export const sse = (url: string): SSE => {

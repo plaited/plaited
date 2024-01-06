@@ -1,5 +1,5 @@
+import type { PlaitedElementConstructor, PlaitedElement } from '@plaited/component-types'
 import { isTypeOf } from '@plaited/utils'
-import { PlaitedElementConstructor, PlaitedElement } from '@plaited/component-types'
 
 export { connectHDA } from './connect-hda.js'
 export { eventSourceHandler } from './event-source-handler.js'

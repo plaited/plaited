@@ -1,11 +1,13 @@
 import { bpAddress } from '@plaited/jsx/utils'
 import { noop } from '@plaited/utils'
 import { Messenger, SSE, WS, BPEventSourceHandler, PostMessenger, Publisher } from '@plaited/component-types'
-import { isHDA, Plaited_Context, navigateEventType, delegates, DelegatedListener, emit } from './private-utils.js'
+import { delegates, DelegatedListener } from './delegated-listener.js'
+import { PlaitedContext, NavigateEventType } from './constants.js'
+import { hasPlaitedContext, emit } from './private-utils.js'
 
 export const eventSourceHandler: BPEventSourceHandler = ({ root, host, trigger, observedTriggers }) => {
   const disconnectCallbacks = new Set<() => void>() // holds unsubscribe callbacks
-  if (isHDA(window) && window[Plaited_Context].hda) {
+  if (hasPlaitedContext(window) && window[PlaitedContext].hda) {
     delegates.set(
       root,
       new DelegatedListener((event) => {
@@ -28,7 +30,7 @@ export const eventSourceHandler: BPEventSourceHandler = ({ root, host, trigger, 
                 event.preventDefault()
                 event.stopPropagation()
                 emit(host)({
-                  type: navigateEventType,
+                  type: NavigateEventType,
                   detail: new URL(href, window.location.href),
                   bubbles: true,
                   composed: true,

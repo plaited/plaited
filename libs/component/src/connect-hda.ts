@@ -2,7 +2,8 @@
 import { fetchHTML, createDoc } from './fetch-html.js'
 import { displayContent } from './display-content.js'
 import { isTypeOf } from '@plaited/utils'
-import { navigateEventType, DelegatedListener, delegates, Plaited_Context } from './private-utils.js'
+import { delegates, DelegatedListener } from './delegated-listener.js'
+import { NavigateEventType, PlaitedContext } from './constants.js'
 
 const navigate = async (event: CustomEvent<URL>) => {
   const { detail: url } = event
@@ -24,7 +25,7 @@ export const connectHDA = () => {
   const html = document.querySelector('html')
   if (html) {
     Object.assign(window, {
-      [Plaited_Context]: {
+      [PlaitedContext]: {
         hda: true,
       },
     })
@@ -32,10 +33,10 @@ export const connectHDA = () => {
     !delegates.has(window) && delegates.set(window, new DelegatedListener(pop))
     window.addEventListener('popstate', delegates.get(window))
     !delegates.has(html) && delegates.set(html, new DelegatedListener(navigate))
-    html.addEventListener(navigateEventType, delegates.get(html))
+    html.addEventListener(NavigateEventType, delegates.get(html))
     return () => {
       window.removeEventListener('popstate', delegates.get(window))
-      html.removeEventListener(navigateEventType, delegates.get(html))
+      html.removeEventListener(NavigateEventType, delegates.get(html))
     }
   }
 }

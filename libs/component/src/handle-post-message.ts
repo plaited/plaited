@@ -24,6 +24,6 @@ export const handlePostMessage = ({
     trueTypeOf(context) === 'window' ? context.postMessage(data, targetOrigin) : context.postMessage(data)
   }
   context.addEventListener('message', eventHandler, false)
-  const disconnect = () => context.removeEventListener('message', eventHandler)
-  return Object.freeze<{ send: (evt: BPEvent) => void; disconnect: () => void }>({ send, disconnect })
+  send.disconnect = () => context.removeEventListener('message', eventHandler)
+  return send
 }

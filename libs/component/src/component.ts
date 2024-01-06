@@ -9,7 +9,8 @@ import type {
   PlaitedTemplate,
 } from '@plaited/component-types'
 import { $, cssCache, clone } from './sugar.js'
-import { DelegatedListener, delegates, emit } from './private-utils.js'
+import { delegates, DelegatedListener } from './delegated-listener.js'
+import { emit } from './private-utils.js'
 import { defineRegistry } from './utils.js'
 import { eventSourceHandler } from './event-source-handler.js'
 import { onlyObservedTriggers } from './only-observed-triggers.js'
