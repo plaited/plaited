@@ -1,8 +1,34 @@
-export type BPEvent<T = unknown> = { type: string; detail?: T }
+/* eslint-disable @typescript-eslint/no-explicit-any */
+type StructuredCloneable =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | Date
+  | RegExp
+  | Blob
+  | File
+  | FileList
+  | ArrayBuffer
+  | ArrayBufferView
+  | StructuredCloneableArray
+  | StructuredCloneableObject
+  | Map<StructuredCloneable, StructuredCloneable>
+  | Set<StructuredCloneable>;
 
-export type BPEventTemplate<T = unknown> = () => BPEvent<T>
+interface StructuredCloneableObject {
+  [key: string]: StructuredCloneable;
+}
 
-export type BPListener<T = unknown> = string | ((args: { type: string; detail: T }) => boolean)
+type StructuredCloneableArray = Array<StructuredCloneable>
+
+
+export type BPEvent<T = any> = { type: string; detail?: T }
+
+export type BPEventTemplate<T = any> = () => BPEvent<T>
+
+export type BPListener<T = any> = string | ((args: { type: string; detail: T }) => boolean)
 
 export interface LogCallback<T> {
   (args: T): void
@@ -31,13 +57,13 @@ export type Logger<T> = {
   callback: LogCallback<T>
 }
 
-export type RuleSet<T = unknown> = {
+export type RuleSet<T = any> = {
   waitFor?: BPListener<T> | BPListener<T>[]
   request?: BPEvent<T> | BPEventTemplate<T>
   block?: BPListener<T> | BPListener<T>[]
 }
 
-export type RulesFunction<T = unknown> = () => IterableIterator<RuleSet<T>>
+export type RulesFunction<T = any> = () => IterableIterator<RuleSet<T>>
 
 export type RunningBid = {
   trigger?: true
@@ -51,18 +77,17 @@ export type CandidateBid = {
   thread: string
   priority: number
   type: string
-  detail?: unknown
+  detail?: any
   template?: BPEventTemplate
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Actions<T = any> = { [key: string]: (detail: T) => void | Promise<void> }
 
 export type Feedback = (actions: Actions) => void
 export type AddThreads = (threads: Record<string, RulesFunction>) => void
-export type Trigger = <T = unknown>(args: BPEvent<T>) => void
+export type Trigger = <T = any>(args: BPEvent<T>) => void
 
-export type Sync = <T = unknown>(set: RuleSet<T>) => RulesFunction<T>
+export type Sync = <T = any>(set: RuleSet<T>) => RulesFunction<T>
 export type Thread = (...rules: RulesFunction[]) => RulesFunction
 export type Loop = (ruleOrCallback: RulesFunction | (() => boolean), ...rules: RulesFunction[]) => RulesFunction
 

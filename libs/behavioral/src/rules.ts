@@ -29,7 +29,7 @@ export const thread: Thread = (...rules) =>
  */
 export const loop: Loop = (ruleOrCallback, ...rules) => {
   let condition = () => true
-  isTypeOf<RulesFunction<any>>(ruleOrCallback, 'generatorfunction') ?
+  isTypeOf<RulesFunction>(ruleOrCallback, 'generatorfunction') ?
     rules.unshift(ruleOrCallback)
   : (condition = ruleOrCallback)
   return function* () {

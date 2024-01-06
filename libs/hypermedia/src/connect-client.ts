@@ -1,8 +1,9 @@
 /** Utility function for enabling hypermedia patterns */
-import { DelegatedListener, delegates, navigateEventType } from '@plaited/component/utils'
+import { DelegatedListener, delegates } from '@plaited/component/utils'
 import { fetchHTML, createDoc } from './fetch-html.js'
 import { displayContent } from './display-content.js'
 import { isTypeOf } from '@plaited/utils'
+import { navigateEventType } from './constants.js'
 
 const navigate = async (event: CustomEvent<URL>) => {
   const { detail: url } = event
