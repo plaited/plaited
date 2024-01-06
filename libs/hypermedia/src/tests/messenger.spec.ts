@@ -1,6 +1,6 @@
 import { test } from '@plaited/rite'
 import sinon from 'sinon'
-import { messenger } from '../utils.js'
+import { messenger } from '../messenger.js'
 
 test('messenger: connect, send, close', async (t) => {
   const msg = messenger()

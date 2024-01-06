@@ -6,12 +6,6 @@ import { delegates, DelegatedListener, emit } from '@plaited/component/utils'
 import { Plaited_Context, navigateEventType } from './constants.js'
 import { isHDA } from './type-checks.js'
 
-// Create an object with a value and a circular reference to itself.
-const original = { name: 'MDN' }
-original.itself = original
-
-// Clone it
-const clone = structuredClone(original)
 
 export const eventSourceHandler: BPEventSourceHandler = ({ root, host, privateTrigger, publicTrigger }) => {
   const disconnectCallbacks = new Set<() => void>() // holds unsubscribe callbacks

@@ -1,23 +1,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-type StructuredCloneable =
-  | string
-  | number
-  | boolean
-  | null
-  | undefined
-  | Date
-  | RegExp
-  | Blob
-  | File
-  | FileList
-  | ArrayBuffer
-  | ArrayBufferView
-  | Map<StructuredCloneable, StructuredCloneable>
-  | Set<StructuredCloneable>
-  | Array<StructuredCloneable>
-  | {
-    [key: string]: StructuredCloneable;
-  };
+// type StructuredCloneable =
+//   | string
+//   | number
+//   | boolean
+//   | null
+//   | undefined
+//   | Date
+//   | RegExp
+//   | Blob
+//   | File
+//   | FileList
+//   | ArrayBuffer
+//   | ArrayBufferView
+//   | Map<StructuredCloneable, StructuredCloneable>
+//   | Set<StructuredCloneable>
+//   | Array<StructuredCloneable>
+//   | {
+//     [key: string]: StructuredCloneable;
+//   };
 
 
 export type BPEvent<T = any> = { type: string; detail?: T }
@@ -83,7 +83,7 @@ export type Feedback = (actions: Actions) => void
 export type AddThreads = (threads: Record<string, RulesFunction>) => void
 export type Trigger = <T = any>(args: BPEvent<T>) => void
 
-export type Sync = <T extends StructuredCloneable | Event>(set: RuleSet<T>) => RulesFunction<T>
+export type Sync = <T = any>(set: RuleSet<T>) => RulesFunction<T>
 export type Thread = (...rules: RulesFunction[]) => RulesFunction
 export type Loop = (ruleOrCallback: RulesFunction | (() => boolean), ...rules: RulesFunction[]) => RulesFunction
 

@@ -1,5 +1,5 @@
 import { bProgram } from '@plaited/behavioral'
-import { linkMain } from '../../utils.js'
+import { linkMain } from '../../link-main.js'
 
 const { trigger, feedback } = bProgram()
 

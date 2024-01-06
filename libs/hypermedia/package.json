@@ -25,9 +25,9 @@
     "access": "public"
   },
   "scripts": {
-    "build": "exit 0",
-    "test": "exit 0",
-    "test-watch": "exit 0"
+    "build": "tsc --project tsconfig.json",
+    "test": "web-test-runner",
+    "test-watch": "web-test-runner --watch"
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
