@@ -1,14 +1,12 @@
 import { bpAddress } from '@plaited/jsx/utils'
 import { test } from '@plaited/rite'
-import { Component } from '../component.js'
-import { messenger } from '../messenger.js'
-import { eventSourceHandler } from '@plaited/hypermedia'
+import { Component } from '../index.js'
+import { messenger } from '../utils.js'
 
 test('dynamic island comms', async (t) => {
   const msg = messenger()
   const wrapper = document.querySelector('body')
   const ElOne = Component({
-    eventSourceHandler,
     tag: 'dynamic-one',
     observedTriggers: ['disable'],
     template: (
@@ -39,7 +37,6 @@ test('dynamic island comms', async (t) => {
     },
   })
   const ElTwo = Component({
-    eventSourceHandler,
     tag: 'dynamic-two',
     observedTriggers: ['add'],
     template: <h1 bp-target='header'>Hello</h1>,

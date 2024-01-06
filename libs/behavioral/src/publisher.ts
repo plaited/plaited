@@ -21,7 +21,9 @@ export const publisher = <T>() => {
    */
   createPublisher.subscribe = (listener: (msg: T) => void) => {
     listeners.add(listener)
-    return () => listeners.delete(listener)
+    return () => {
+      listeners.delete(listener)
+    }
   }
 
   return createPublisher

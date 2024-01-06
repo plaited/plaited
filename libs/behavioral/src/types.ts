@@ -1,24 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// type StructuredCloneable =
-//   | string
-//   | number
-//   | boolean
-//   | null
-//   | undefined
-//   | Date
-//   | RegExp
-//   | Blob
-//   | File
-//   | FileList
-//   | ArrayBuffer
-//   | ArrayBufferView
-//   | Map<StructuredCloneable, StructuredCloneable>
-//   | Set<StructuredCloneable>
-//   | Array<StructuredCloneable>
-//   | {
-//     [key: string]: StructuredCloneable;
-//   };
-
 
 export type BPEvent<T = any> = { type: string; detail?: T }
 
@@ -95,9 +75,3 @@ export type BProgram = <T>(logger?: Logger<T> | undefined) => Readonly<{
   loop: Loop
   sync: Sync
 }>
-
-export type Publisher<T extends BPEvent = BPEvent> = {
-  (value: T): void
-  subscribe(listener: (msg: T) => void): () => boolean
-  type: 'publisher'
-}

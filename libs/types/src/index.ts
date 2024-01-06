@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { BProgram, Trigger, BPEvent, Publisher, Logger, DefaultLogCallbackParams } from '@plaited/behavioral'
+import { BProgram, Trigger, BPEvent, Logger, DefaultLogCallbackParams } from '@plaited/behavioral'
 import * as CSS from 'csstype'
 
 type Booleanish = boolean | 'true' | 'false'
@@ -1384,12 +1384,24 @@ export type TagsType = {
   [K in keyof ElementAttributeList]: (attrs: ElementAttributeList[K]) => TemplateObject
 }
 
-export type Send = (recipient: string, detail: BPEvent) => void
+export type Publisher = {
+  (value: BPEvent): void
+  subscribe(trigger: Trigger, observedTriggers: string[]): () => void
+  type: 'publisher'
+}
 
-export type Messenger = Send & {
-  connect(recipient: string, trigger: Trigger | Worker): (() => void) | undefined
+export type Messenger = {
+  (recipient: string, detail: BPEvent): void
+  connect(args: { recipient: string; trigger: Trigger | Worker; observedTriggers: string[] }): (() => void) | undefined
   has(recipient: string): boolean
   type: 'messenger'
+}
+
+export type PostMessenger = {
+  (args: BPEvent): void
+  disconnect(): void
+  connect(trigger: Trigger, observedTriggers: string[]): () => void
+  type: 'post-messenger'
 }
 
 export type SSE = {
@@ -1444,18 +1456,13 @@ export type Clone = <T>(
   callback: ($: QuerySelector, data: T) => void,
 ) => (data: T) => DocumentFragment
 
-export type BPEventSourceHandler = ({
-  root,
-  host,
-  privateTrigger,
-  publicTrigger,
-}: {
+export type BPEventSourceHandler = (args: {
+  observedTriggers: string[]
   root: ShadowRoot
   host: HTMLElement
-  privateTrigger: Trigger
-  publicTrigger: Trigger
+  trigger: Trigger
 }) => {
-  connect: (comm: Messenger | Publisher | SSE | WS) => () => void
+  connect: (comm: Messenger | Publisher | SSE | WS | PostMessenger) => () => void
   disconnect: () => void
 }
 
@@ -1471,22 +1478,7 @@ export type BProps = {
   host: PlaitedElement
   emit: Emit
   clone: Clone
-  connect?: never
-} & ReturnType<BProgram>
-
-export type BPropsWithEventSource = {
-  /** query for elements with the bp-target attribute in the Island's shadowDom and slots */
-  $: QuerySelector
-  /** The DOM node context allowing easy light & shadow dom access
-   * @example
-   * // returns the div element inside
-   * // the shadowRoot of the element instance
-   * const shadowEl = host.shadowRoot.querySelector('div')
-   */
-  host: PlaitedElement
-  emit: Emit
-  clone: Clone
-  connect: (comm: Publisher | Messenger | SSE | WS) => () => void
+  connect: (comm: Messenger | Publisher | SSE | WS | PostMessenger) => () => void
 } & ReturnType<BProgram>
 
 export interface PlaitedElement extends HTMLElement {
@@ -1515,7 +1507,7 @@ export type PlaitedTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
 
 type BPFunction<T extends BPEventSourceHandler | undefined> = (
   this: PlaitedElement,
-  props: T extends BPEventSourceHandler ? BPropsWithEventSource : BProps,
+  props: BProps,
 ) => void | Promise<void>
 
 export type PlaitedComponent = <T extends Attrs = Attrs, L = DefaultLogCallbackParams>(args: {

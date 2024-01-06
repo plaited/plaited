@@ -1,6 +1,6 @@
 import { createTemplate } from '@plaited/jsx'
 import { bpTrigger } from '@plaited/jsx/utils'
-import { Trigger, bProgram, BPEvent } from '@plaited/behavioral'
+import { BPEvent, Trigger, bProgram } from '@plaited/behavioral'
 import type {
   PlaitedElementConstructor,
   PlaitedElement,
@@ -9,8 +9,10 @@ import type {
   PlaitedTemplate,
 } from '@plaited/component-types'
 import { $, cssCache, clone } from './sugar.js'
-import { trueTypeOf } from '@plaited/utils'
-import { emit, DelegatedListener, delegates, defineRegistry } from './utils.js'
+import { DelegatedListener, delegates, emit } from './private-utils.js'
+import { defineRegistry } from './utils.js'
+import { eventSourceHandler } from './event-source-handler.js'
+import { onlyObservedTriggers } from './only-observed-triggers.js'
 
 const isElement = (node: Node): node is Element => node.nodeType === 1
 
@@ -45,11 +47,10 @@ const getTriggerType = (event: Event, context: Element) => {
 export const Component: PlaitedComponent = ({
   tag,
   template,
-  observedTriggers,
+  observedTriggers = [],
   observedAttributes,
   mode = 'open',
   delegatesFocus = true,
-  eventSourceHandler,
   bp,
   logger,
   connectedCallback,
@@ -63,7 +64,6 @@ export const Component: PlaitedComponent = ({
   class Base extends HTMLElement implements PlaitedElement {
     static tag = _tag
     static observedAttributes = observedAttributes
-    #observedTriggers = new Set(observedTriggers ?? [])
     internals_: ElementInternals
     #root: ShadowRoot
     $: QuerySelector
@@ -101,31 +101,29 @@ export const Component: PlaitedComponent = ({
     connectedCallback() {
       if (bp) {
         const { trigger, ...rest } = bProgram(logger)
-        const args = {
-          $: this.$,
+        const { connect, disconnect } = eventSourceHandler({
+          observedTriggers,
+          root: this.#root,
           host: this,
-          emit: emit(this),
-          clone: clone(this.#root),
           trigger,
-          ...rest,
-        }
-        if (eventSourceHandler) {
-          const { connect, disconnect } = eventSourceHandler({
-            root: this.#root,
-            host: this,
-            publicTrigger: this.trigger,
-            privateTrigger: trigger,
-          })
-          Object.assign(args, { connect })
-          this.#disconnectEventSources = disconnect
-        }
+        })
+        /** Public trigger method allows triggers of only observedTriggers from outside component */
+        this.#disconnectEventSources = disconnect
         this.#trigger = trigger // listeners need trigger to be available on instance
         this.#delegateListeners(
           // just connected/upgraded then delegate listeners nodes with bp-trigger attribute
           Array.from(this.#root.querySelectorAll<Element>(`[${bpTrigger}]`)),
         )
         this.#shadowObserver = this.#createShadowObserver() // create a shadow observer to watch for modification & addition of nodes with bp-trigger attribute
-        void bp.bind(this)(args)
+        void bp.bind(this)({
+          connect,
+          $: this.$,
+          host: this,
+          emit: emit(this),
+          clone: clone(this.#root),
+          trigger,
+          ...rest,
+        })
       }
       connectedCallback && connectedCallback.bind(this)()
     }
@@ -134,7 +132,6 @@ export const Component: PlaitedComponent = ({
       this.#disconnectEventSources?.()
       disconnectedCallback && disconnectedCallback.bind(this)()
     }
-
     /** If delegated listener does not have element then delegate it's callback with auto cleanup*/
     #createDelegatedListener(el: Element) {
       delegates.set(
@@ -188,14 +185,8 @@ export const Component: PlaitedComponent = ({
       })
       return mo
     }
-    /** Public trigger method allows triggers of only observedTriggers from outside component */
-    trigger(args: BPEvent) {
-      const name = this.dataset.address ?? this.tagName.toLowerCase()
-      if (trueTypeOf(args) !== 'object') return console.error(`Invalid TriggerArg passed to Component [${name}]`)
-      const { type, detail } = args
-      if (!('type' in args)) return console.error(`TriggerArg missing [type]`)
-      if (this.#observedTriggers.has(type)) return this.#trigger?.({ type, detail })
-      return console.warn(`Component [${name}] is not observing trigger [${type}]`)
+    trigger(event: BPEvent) {
+      this.#trigger && onlyObservedTriggers(this.#trigger, observedTriggers)(event)
     }
   }
   Object.assign(Base.prototype, rest)

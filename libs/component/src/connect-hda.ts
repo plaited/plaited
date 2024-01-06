@@ -1,9 +1,8 @@
 /** Utility function for enabling hypermedia patterns */
-import { DelegatedListener, delegates } from '@plaited/component/utils'
 import { fetchHTML, createDoc } from './fetch-html.js'
 import { displayContent } from './display-content.js'
 import { isTypeOf } from '@plaited/utils'
-import { navigateEventType } from './constants.js'
+import { navigateEventType, DelegatedListener, delegates, Plaited_Context } from './private-utils.js'
 
 const navigate = async (event: CustomEvent<URL>) => {
   const { detail: url } = event
@@ -21,9 +20,14 @@ const pop = ({ state }: PopStateEvent) => {
   }
 }
 
-export const connectClient = () => {
+export const connectHDA = () => {
   const html = document.querySelector('html')
   if (html) {
+    Object.assign(window, {
+      [Plaited_Context]: {
+        hda: true,
+      },
+    })
     history.replaceState(new XMLSerializer().serializeToString(html), '', document.location.href)
     !delegates.has(window) && delegates.set(window, new DelegatedListener(pop))
     window.addEventListener('popstate', delegates.get(window))

@@ -1,5 +1,5 @@
 import { test } from '@plaited/rite'
-import { indexedDB } from '../indexed-db.js'
+import { indexedDB } from '../utils.js'
 import sinon from 'sinon'
 
 test('indexedDB', async (t) => {

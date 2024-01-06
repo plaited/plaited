@@ -1,13 +1,9 @@
-import { Publisher } from '@plaited/behavioral'
 import { bpAddress } from '@plaited/jsx/utils'
 import { noop } from '@plaited/utils'
-import { Messenger, SSE, WS, BPEventSourceHandler } from '@plaited/component-types'
-import { delegates, DelegatedListener, emit } from '@plaited/component/utils'
-import { Plaited_Context, navigateEventType } from './constants.js'
-import { isHDA } from './type-checks.js'
+import { Messenger, SSE, WS, BPEventSourceHandler, PostMessenger, Publisher } from '@plaited/component-types'
+import { isHDA, Plaited_Context, navigateEventType, delegates, DelegatedListener, emit } from './private-utils.js'
 
-
-export const eventSourceHandler: BPEventSourceHandler = ({ root, host, privateTrigger, publicTrigger }) => {
+export const eventSourceHandler: BPEventSourceHandler = ({ root, host, trigger, observedTriggers }) => {
   const disconnectCallbacks = new Set<() => void>() // holds unsubscribe callbacks
   if (isHDA(window) && window[Plaited_Context].hda) {
     delegates.set(
@@ -61,21 +57,21 @@ export const eventSourceHandler: BPEventSourceHandler = ({ root, host, privateTr
   }
 
   /** connect trigger to a Messenger or Publisher */
-  const connect = (comm: Messenger | Publisher | SSE | WS) => {
-    if (comm?.type === 'sse') return disconnectEventSource(comm(privateTrigger))
-    if (comm?.type === 'ws') return disconnectEventSource(comm.connect(privateTrigger))
-    if (comm?.type === 'publisher') return disconnectEventSource(comm.subscribe(publicTrigger))
+  const connect = (comm: Messenger | Publisher | SSE | WS | PostMessenger) => {
+    if (comm?.type === 'sse') return disconnectEventSource(comm(trigger))
+    if (comm?.type === 'ws') return disconnectEventSource(comm.connect(trigger))
+    if (comm?.type === 'publisher') return disconnectEventSource(comm.subscribe(trigger, observedTriggers))
+    if (comm?.type === 'post-messenger') return disconnectEventSource(comm.connect(trigger, observedTriggers))
     if (comm?.type === 'messenger') {
       const recipient = host.getAttribute(bpAddress)
       if (!recipient) {
         console.error(`Component ${host.tagName.toLowerCase()} is missing an attribute [${bpAddress}]`)
         return noop // if we're missing an address on our component return noop and console.error msg
       }
-      return disconnectEventSource(comm.connect(recipient, publicTrigger))
+      return disconnectEventSource(comm.connect({ recipient, trigger, observedTriggers }))
     }
     return noop
   }
-
   const disconnect = () => {
     if (disconnectCallbacks.size) {
       disconnectCallbacks.forEach((unsubscribe) => {
@@ -84,6 +80,5 @@ export const eventSourceHandler: BPEventSourceHandler = ({ root, host, privateTr
       disconnectCallbacks.clear()
     }
   }
-
   return { connect, disconnect }
 }

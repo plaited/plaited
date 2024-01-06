@@ -1,9 +1,12 @@
 import { bProgram } from '@plaited/behavioral'
-import { linkMain } from '../../link-main.js'
+import { handlePostMessage } from '../../utils.js'
 
 const { trigger, feedback } = bProgram()
 
-const { send } = linkMain(self, trigger)
+const { send } = handlePostMessage({
+  trigger,
+  observedTriggers: ['calculate'],
+})
 
 const calculator = {
   add(a: number, b: number) {
@@ -22,7 +25,7 @@ const calculator = {
 
 feedback({
   calculate({ a, b, operation }: { a: number; b: number; operation: 'add' | 'subtract' | 'multiply' | 'divide' }) {
-    send('main', {
+    send({
       type: 'update',
       detail: calculator[operation](a, b),
     })

@@ -1,10 +1,10 @@
 /** Utility function for enabling hypermedia patterns */
 import { isTypeOf } from '@plaited/utils'
-import { DelegatedListener, delegates } from '@plaited/component/utils'
 import { Trigger, BPEvent } from '@plaited/behavioral'
 import { SSE } from '@plaited/component-types'
-import { isMessageEvent } from './utils.js'
+import { isMessageEvent, DelegatedListener, delegates } from './private-utils.js'
 import { createTemplate } from './fetch-html.js'
+
 export const sse = (url: string): SSE => {
   let eventSource: EventSource | undefined = new EventSource(url, { withCredentials: true })
   const connect = (trigger: Trigger) => {
@@ -19,8 +19,6 @@ export const sse = (url: string): SSE => {
         } catch (error) {
           console.error('Error parsing incoming message:', error)
         }
-      } else {
-        trigger({ type: `ws:${event.type}`, detail: event })
       }
     }
     if (eventSource) {
