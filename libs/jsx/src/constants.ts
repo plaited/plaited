@@ -1,4 +1,4 @@
-import { VoidTags, BooleanAttributes } from '@plaited/component-types'
+import { VoidTags, BooleanAttributes } from '@plaited/types'
 /** attribute used to manipulate a dom element */
 export const bpTarget = 'bp-target'
 /** attribute used to wire a dom element to the component event listener */

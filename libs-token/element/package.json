@@ -32,7 +32,7 @@
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@plaited/component": "5.6.2",
+    "@plaited/client": "5.6.2",
     "@plaited/jsx": "5.6.2"
   }
 }

@@ -1,4 +1,4 @@
-import { Component } from '@plaited/component'
+import { Component } from '@plaited/client'
 import { css } from '@plaited/jsx'
 import { stylesheets } from '@plaited/jsx/utils'
 

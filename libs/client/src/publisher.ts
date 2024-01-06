@@ -1,6 +1,6 @@
 import { BPEvent, Trigger } from '@plaited/behavioral'
 import { onlyObservedTriggers } from './only-observed-triggers.js'
-import { Publisher } from '@plaited/component-types'
+import { Publisher } from '@plaited/types'
 /**
  * @description  Creates a new BPEvent publisher.
  * A publisher object is a function that can be called with a value of type BPEvent,

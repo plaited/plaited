@@ -1,5 +1,5 @@
 import { test } from '@plaited/rite'
-import { QuerySelector, Position, PlaitedElement } from '@plaited/component-types'
+import { QuerySelector, Position, PlaitedElement } from '@plaited/types'
 import { Component } from '../index.js'
 
 let did = 1

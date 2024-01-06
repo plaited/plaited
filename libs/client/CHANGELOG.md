@@ -5,15 +5,15 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## 5.6.2 (2023-12-16)
 
-**Note:** Version bump only for package @plaited/component
+**Note:** Version bump only for package @plaited/client
 
 ## 5.6.1 (2023-12-15)
 
-**Note:** Version bump only for package @plaited/component
+**Note:** Version bump only for package @plaited/client
 
 # 5.6.0 (2023-12-10)
 
-**Note:** Version bump only for package @plaited/component
+**Note:** Version bump only for package @plaited/client
 
 # 5.5.0 (2023-12-04)
 
@@ -23,31 +23,31 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## 5.4.1 (2023-12-02)
 
-**Note:** Version bump only for package @plaited/component
+**Note:** Version bump only for package @plaited/client
 
 # 5.4.0 (2023-12-02)
 
-**Note:** Version bump only for package @plaited/component
+**Note:** Version bump only for package @plaited/client
 
 # 5.3.0 (2023-11-19)
 
-**Note:** Version bump only for package @plaited/component
+**Note:** Version bump only for package @plaited/client
 
 # 5.2.0 (2023-11-13)
 
-**Note:** Version bump only for package @plaited/component
+**Note:** Version bump only for package @plaited/client
 
 ## 5.1.2 (2023-11-12)
 
-**Note:** Version bump only for package @plaited/component
+**Note:** Version bump only for package @plaited/client
 
 ## 5.0.7 (2023-11-12)
 
-**Note:** Version bump only for package @plaited/component
+**Note:** Version bump only for package @plaited/client
 
 ## 5.0.6 (2023-11-11)
 
-**Note:** Version bump only for package @plaited/component
+**Note:** Version bump only for package @plaited/client
 
 ## 5.0.5 (2023-11-10)
 
@@ -69,27 +69,27 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## 5.0.2 (2023-11-06)
 
-**Note:** Version bump only for package @plaited/component
+**Note:** Version bump only for package @plaited/client
 
 ## 5.0.1 (2023-11-01)
 
-**Note:** Version bump only for package @plaited/component
+**Note:** Version bump only for package @plaited/client
 
 # 5.0.0 (2023-10-31)
 
-**Note:** Version bump only for package @plaited/component
+**Note:** Version bump only for package @plaited/client
 
 # 5.0.0-next-1 (2023-10-31)
 
-**Note:** Version bump only for package @plaited/component
+**Note:** Version bump only for package @plaited/client
 
 # 4.1.0 (2023-10-28)
 
-**Note:** Version bump only for package @plaited/component
+**Note:** Version bump only for package @plaited/client
 
 ## 4.0.1 (2023-10-28)
 
-**Note:** Version bump only for package @plaited/component
+**Note:** Version bump only for package @plaited/client
 
 # 4.0.0 (2023-10-25)
 

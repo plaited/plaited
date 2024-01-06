@@ -1,4 +1,4 @@
-export * from '@plaited/component'
+export * from '@plaited/client'
 export * from '@plaited/jsx'
 export * from '@plaited/behavioral'
-export * from '@plaited/component-types'
+export * from '@plaited/types'

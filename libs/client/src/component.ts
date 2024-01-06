@@ -7,7 +7,7 @@ import type {
   PlaitedComponent,
   QuerySelector,
   PlaitedTemplate,
-} from '@plaited/component-types'
+} from '@plaited/types'
 import { $, cssCache, clone } from './sugar.js'
 import { delegates, DelegatedListener } from './delegated-listener.js'
 import { emit } from './private-utils.js'

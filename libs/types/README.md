@@ -1,3 +1,3 @@
-# @plaited/component-types
+# @plaited/types
 
 Plaited component types

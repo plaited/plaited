@@ -1,4 +1,4 @@
-import { Emit } from '@plaited/component-types'
+import { Emit } from '@plaited/types'
 
 import { PlaitedContext } from './constants.js'
 

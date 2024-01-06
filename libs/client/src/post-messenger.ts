@@ -1,6 +1,6 @@
 import type { Trigger, BPEvent } from '@plaited/behavioral'
 import { publisher } from './publisher.js'
-import type { PostMessenger } from '@plaited/component-types'
+import type { PostMessenger } from '@plaited/types'
 /**
  * Enables communication between agents on the main thread and a dedicated postMessage client
  */

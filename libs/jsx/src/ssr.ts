@@ -1,4 +1,4 @@
-import { TemplateObject } from '@plaited/component-types'
+import { TemplateObject } from '@plaited/types'
 import { escape, isTypeOf } from '@plaited/utils'
 import { validPrimitiveChildren } from './constants.js'
 if (typeof global.HTMLElement === 'undefined') {

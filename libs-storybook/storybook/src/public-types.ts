@@ -10,7 +10,7 @@ import type {
   Args,
 } from '@storybook/types'
 import type { PlaitedRender, ExtractTemplateParameter } from './types.js'
-import type { FunctionTemplate, PlaitedTemplate } from '@plaited/component-types'
+import type { FunctionTemplate, PlaitedTemplate } from '@plaited/types'
 
 export type { Args, ArgTypes, Parameters, StrictArgs } from '@storybook/types'
 export type { PlaitedRender }

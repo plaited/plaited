@@ -1,6 +1,6 @@
 import { bpAddress } from '@plaited/jsx/utils'
 import { noop } from '@plaited/utils'
-import { Messenger, SSE, WS, BPEventSourceHandler, PostMessenger, Publisher } from '@plaited/component-types'
+import { Messenger, SSE, WS, BPEventSourceHandler, PostMessenger, Publisher } from '@plaited/types'
 import { delegates, DelegatedListener } from './delegated-listener.js'
 import { PlaitedContext, NavigateEventType } from './constants.js'
 import { hasPlaitedContext, emit } from './private-utils.js'

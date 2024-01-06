@@ -1,4 +1,4 @@
-import type { TemplateObject, Attrs } from '@plaited/component-types'
+import type { TemplateObject, Attrs } from '@plaited/types'
 import { kebabCase } from '@plaited/utils'
 import { adoptStylesheets } from '@plaited/miles/utils'
 

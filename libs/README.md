@@ -14,8 +14,8 @@ This lib set serves as a workspace for working on our rendering library Plaited
 
 - [@plaited/behavioral](behavioral/README.md): implicit state management
   library using the behavioral programming algorithm
-- [@plaited/component](component/README.md): createComponent ui rending utility
-- [@plaited/component-types](component/README.md): typedefs for @plaited/component and @plaited/jsx
+- [@plaited/client](component/README.md): createComponent ui rending utility
+- [@plaited/types](component/README.md): typedefs for @plaited/client and @plaited/jsx
 - [@plaited/jsx](jsx/README.md):
   - templating utility and types
   - css-in-js utility to enable templating utility's style hoisting pattern

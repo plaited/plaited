@@ -7,7 +7,7 @@ import {
   PlaitedElementConstructor,
   TemplateObject,
   VoidTags,
-} from '@plaited/component-types'
+} from '@plaited/types'
 
 /** createTemplate function used for ssr */
 export const createTemplate: CreateTemplate = (_tag, attrs) => {

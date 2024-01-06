@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { FT, TemplateObject } from '@plaited/component-types'
+import { FT, TemplateObject } from '@plaited/types'
 import { createTemplate as h, css, Fragment } from '../index.js'
 import { ssr } from '../ssr.js'
 import beautify from 'beautify'

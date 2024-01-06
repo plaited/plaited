@@ -5,15 +5,15 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## 5.6.2 (2023-12-16)
 
-**Note:** Version bump only for package @plaited/component-types
+**Note:** Version bump only for package @plaited/types
 
 ## 5.6.1 (2023-12-15)
 
-**Note:** Version bump only for package @plaited/component-types
+**Note:** Version bump only for package @plaited/types
 
 # 5.6.0 (2023-12-10)
 
-**Note:** Version bump only for package @plaited/component-types
+**Note:** Version bump only for package @plaited/types
 
 # 5.5.0 (2023-12-04)
 
@@ -23,8 +23,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## 5.4.1 (2023-12-02)
 
-**Note:** Version bump only for package @plaited/component-types
+**Note:** Version bump only for package @plaited/types
 
 # 5.4.0 (2023-12-02)
 
-**Note:** Version bump only for package @plaited/component-types
+**Note:** Version bump only for package @plaited/types
