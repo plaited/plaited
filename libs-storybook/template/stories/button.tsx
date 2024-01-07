@@ -1,5 +1,5 @@
 import { FT, css } from 'plaited'
-import { classNames } from 'plaited/utils'
+import { classNames } from 'plaited/client'
 
 const { $stylesheet, ...cls } = css`
   .storybook-button {
