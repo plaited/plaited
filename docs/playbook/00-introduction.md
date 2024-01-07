@@ -7,36 +7,41 @@ Plaited is a web framework for rapidly designing and developing interfaces as re
 
 ## Behavioral Programming
 
-Plaited is built around the behavioral programming algorithm. In behavioral programming a behavioral program `bProgram` employs specialized programming idioms for expressing what must, may,
-or must not happen, and a novel method for the collective execution of the resulting scenarios.
+Plaited is built around [the behavioral programming algorithm](https://www.wisdom.weizmann.ac.il/~amarron/BP%20-%20CACM%20-%20Author%20version.pdf). In behavioral programming a behavioral program `bProgram` employs specialized programming idioms for expressing what **must**, **may**, or **must not** happen. `bProgram` also includes a [novel method](#sync) for the collective execution of the resulting scenarios.
 
-These specialized idoms are effectively rules for determining how we apply feedback to an object based on a triggering event, be it user or system initiated. Each `bProgram` can be broken into three parts:
+These specialized idioms are effectively rules for determining how we apply feedback to an object based on a triggering event initiated by the user or the system. Each `bProgram` can be broken into three parts:
 
-1. trigger(s): Send `bProgram` a `BPEvent` that initiates a run of `bProgram`
-2. threads: `RulesFunction` that apply rules based on the `RuleSet` parameters
-3. feedback: Actions that manipulate an object based on the selected event(s)
+1. [trigger](#trigger)(s): Send `bProgram` a `BPEvent` that initiates a run of `bProgram`
+2. [threads](#threads): `RulesFunction` that apply rules based on the `RuleSet` parameters
+3. [feedback](#feedback): Actions that manipulate an object based on the selected event(s)
 
 ## Trigger
 
-Everything in Plaited is based on sending a `BPEvent` from one `bProgram` to another. Our `bProgram` agent based approach to design allows for various message passing based architectural patterns. Each `BPEvent` is an object that consist of two keys `type` and `detail`. Type is the name of the event and `detail` is optional data we pass with our event.
+Everything in Plaited is based on sending a `BPEvent` from one `bProgram` to another. Our `bProgram` agent based approach to design allows for various message passing based architectural patterns. Each `BPEvent` is an object with two keys `type` and `detail`. Type is the name of the event and `detail` is optional data we pass with our event.
 
 ## Threads
 
 The key to understanding coding in Plaited is in grasping how to work with threads.
 
-Each thread specifies three sets of events: (1) requested events: the thread proposes that these be considered for triggering, and asks to be notified when any of them occurs; (2) waited-for events: the thread does not request these, but asks to be notified when any of them is triggered; and (3) blocked events: the thread currently forbids triggering any of these events
+Each thread specifies three sets of events:
 
-When all threads are at a synchronization point, an event is chosen, that is requested by at least one thread and is not blocked by any thread. The selected event is then triggered by resuming all the threads that either requested it or are waiting for it. Each of these resumed threads then proceeds with its execution, all the way to its next synchronization point, where it again presents new sets of requested, waited-for and blocked events. The other threads remain at their last synchronization points, oblivious to the triggered event, until an event is selected that they have requested or are waiting for. When all threads are again at a synchronization point, the event selection process repeats.
+**requested events**: the thread proposes that these events be considered for triggering and asks to be notified when any of the events occur.
 
-We build our threads by making use of three functions `sync`, `thread` & `loop`. These functions are used to create an object of threads we pass to our `bProgram` `addThreads` method.
+**waited-for events**: the thread does not request these but asks to be notified when any of them is triggered.
+
+**blocked events**: the thread currently forbids triggering any of these events
+
+When all threads are at a synchronization point an event is chosen. That chosen event must be requested by at least one thread and may not be blocked by any other current thread. The selected event is then triggered by resuming all the threads that either requested it or are waiting for it. Each of these resumed threads then proceeds with its execution to its next synchronization point. At the next synchronization point resumed threads again present a new sets of requested, waited-for and blocked events. The other threads remain at their last synchronization points, oblivious to the triggered event, until an event is selected that they have requested or are waiting for. When all threads are again at a synchronization point, the event selection process repeats.
+
+We build our threads by making use of three functions `sync`, `thread`, and `loop`. These functions are used to create an object of threads we pass to our `bProgram` `addThreads` method.
 
 ### Sync
 
 As we mentioned earlier our threads continually move through synchronization points. We create these points using our `sync` function which return a `RulesFunction`. The `sync` function takes a `RuleSet` as a parameter. `RuleSet` is an object with three keys:
   
+- request: A proposed `BPEvent` or a function that when invoked returns a `BPEvent` also known as a `BPEventTemplate`
 - waitFor: string(s) referencing the `BPEvent` type or a callback(s) that returns true. This callback receives the proposed `BPEvent` as an argument.
 - block: string(s) referencing the `BPEvent` type or a callback(s) that returns true. This callback receives the proposed `BPEvent` as an argument.
-- request: Proposed `BPEvent` or a function that when invoked returns a `BPEvent` also known as a `BPEventTemplate`
 
 ### Thread
 
@@ -48,9 +53,9 @@ Often we want to carry out a rules infinitely each time our `bProgram` is trigge
 
 ## Feedback
 
-What about state we might ask? When we build are apps using `bProgram` the state of an object is  is implicitly managed. Our `bProgram` orchestrates the manipulations we can apply to one or more object in a natural manner. This is possible because of the `bProgram` `feedback` method.
+What about state we might ask? When we build apps using `bProgram` the state of an object is implicitly managed. Our `bProgram` orchestrates the manipulations we can apply to one or more object in a natural manner. This is possible because of the `bProgram` `feedback` method.
 
-The `feedback` method takes an `Action` parameter which is an object string key function pairs. Each Action function takes a detail which is provided to it by an `BPEvent` who's type is the same as the key(name) of the action function.
+The `feedback` method takes an `Action` parameter which is an object of string key function pairs. Each Action function takes a detail which is provided to it by an `BPEvent` who's type is the same as the key(name) of the action function.
 
 ---
 
