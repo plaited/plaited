@@ -1,15 +1,11 @@
 import { Emit } from '@plaited/types'
+import { PlaitedHDA } from './constants.js'
 
-import { PlaitedContext } from './constants.js'
-
-type WindowWithPlaitedContext = Window & {
-  [PlaitedContext]: {
-    hda?: boolean
-    logger?: (param: unknown) => void
-  }
-}
-
-export const hasPlaitedContext = (win: Window): win is WindowWithPlaitedContext => PlaitedContext in win
+export const hasPlaitedContext = (
+  win: Window,
+): win is Window & {
+  [PlaitedHDA]: true
+} => PlaitedHDA in win && win[PlaitedHDA] === true
 
 export const isMessageEvent = (event: MessageEvent | Event): event is MessageEvent => event.type === 'message'
 
@@ -26,3 +22,25 @@ export const emit =
     })
     host.dispatchEvent(event)
   }
+let parser: {
+  parseFromString(
+    string: string,
+    type: DOMParserSupportedType,
+    options: {
+      includeShadowRoots: boolean
+    },
+  ): Document
+}
+
+if (typeof window !== 'undefined' && window.DOMParser) {
+  parser = new DOMParser()
+}
+
+export const createDoc = (page: string) => parser.parseFromString(page, 'text/html', { includeShadowRoots: true })
+
+export const createTemplate = (content: string) => {
+  const fragment = parser.parseFromString(`<template>${content}</template>`, 'text/html', {
+    includeShadowRoots: true,
+  })
+  return fragment.head.firstChild as HTMLTemplateElement
+}

@@ -3,10 +3,9 @@ import { isTypeOf } from '@plaited/utils'
 import { Trigger, BPEvent } from '@plaited/behavioral'
 import { SSE } from '@plaited/types'
 import { delegates, DelegatedListener } from './delegated-listener.js'
-import { isMessageEvent } from './private-utils.js'
-import { createTemplate } from './fetch-html.js'
+import { isMessageEvent, createTemplate } from './private-utils.js'
 
-export const sse = (url: string): SSE => {
+export const useSSE = (url: string): SSE => {
   let eventSource: EventSource | undefined = new EventSource(url, { withCredentials: true })
   const connect = (trigger: Trigger) => {
     const callback = (event: MessageEvent | Event) => {

@@ -1,6 +1,7 @@
 import type { Trigger, BPEvent } from '@plaited/behavioral'
-import { publisher } from './publisher.js'
+import { usePublisher } from './use-publisher.js'
 import type { PostMessenger } from '@plaited/types'
+import { PlaitedElement } from '@plaited/types'
 /**
  * Enables communication between agents on the main thread and a dedicated postMessage client
  */
@@ -10,11 +11,11 @@ const isWorker = (client: PostMessageClient): client is Worker => client instanc
 const isServiceWorkerContainer = (client: PostMessageClient): client is ServiceWorkerContainer =>
   client instanceof ServiceWorkerContainer
 
-export const postMessenger = (postMessageClient: PostMessageClient): PostMessenger => {
-  const pub = publisher()
+export const usePostMessageClient = (postMessageClient: PostMessageClient): PostMessenger => {
+  const pub = usePublisher()
   const handleMessage = ({ data }: { data: BPEvent }) => pub(data)
-  const connect = (trigger: Trigger, observedTriggers: string[]) => {
-    return pub.subscribe(trigger, observedTriggers)
+  const connect = (trigger: Trigger, observedTriggers: string[] | PlaitedElement) => {
+    return pub.connect(trigger, observedTriggers)
   }
   const workerClient = (
     /** the url of our worker relative to the public directory*/

@@ -6,7 +6,7 @@ import { onlyObservedTriggers } from './only-observed-triggers.js'
  * @description Is a utility function that allows us to send messages
  * to and receive messages from the window, in a worker or iframe
  */
-export const handlePostMessage = ({
+export const usePostMessage = ({
   trigger,
   observedTriggers,
   targetOrigin = '*',

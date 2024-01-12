@@ -11,8 +11,8 @@ import type {
 import { $, cssCache, clone } from './sugar.js'
 import { delegates, DelegatedListener } from './delegated-listener.js'
 import { emit } from './private-utils.js'
-import { defineRegistry } from './utils.js'
-import { eventSourceHandler } from './event-source-handler.js'
+import { hasLogger } from './type-guard.js'
+import { defineRegistry } from './define-registry.js'
 import { onlyObservedTriggers } from './only-observed-triggers.js'
 
 const isElement = (node: Node): node is Element => node.nodeType === 1
@@ -44,16 +44,14 @@ const getTriggerType = (event: Event, context: Element) => {
  * @param {function} args.bp - behavioral program callback
  * @returns {PlaitedTemplate} A PlaitedTemplate of the PlaitedComponent
  */
-
 export const Component: PlaitedComponent = ({
   tag,
   template,
-  observedTriggers = [],
+  observedTriggers,
   observedAttributes,
   mode = 'open',
   delegatesFocus = true,
   bp,
-  logger,
   connectedCallback,
   disconnectedCallback,
   ...rest
@@ -65,6 +63,9 @@ export const Component: PlaitedComponent = ({
   class Base extends HTMLElement implements PlaitedElement {
     static tag = _tag
     static observedAttributes = observedAttributes
+    get observedTriggers() {
+      return observedTriggers
+    }
     internals_: ElementInternals
     #root: ShadowRoot
     $: QuerySelector
@@ -101,15 +102,7 @@ export const Component: PlaitedComponent = ({
     #disconnectEventSources?: () => void
     connectedCallback() {
       if (bp) {
-        const { trigger, ...rest } = bProgram(logger)
-        const { connect, disconnect } = eventSourceHandler({
-          observedTriggers,
-          root: this.#root,
-          host: this,
-          trigger,
-        })
-        /** Public trigger method allows triggers of only observedTriggers from outside component */
-        this.#disconnectEventSources = disconnect
+        const { trigger, ...rest } = bProgram(hasLogger(window) ? window.logger : undefined)
         this.#trigger = trigger // listeners need trigger to be available on instance
         this.#delegateListeners(
           // just connected/upgraded then delegate listeners nodes with bp-trigger attribute
@@ -117,9 +110,9 @@ export const Component: PlaitedComponent = ({
         )
         this.#shadowObserver = this.#createShadowObserver() // create a shadow observer to watch for modification & addition of nodes with bp-trigger attribute
         void bp.bind(this)({
-          connect,
           $: this.$,
           host: this,
+          root: this.#root,
           emit: emit(this),
           clone: clone(this.#root),
           trigger,
@@ -127,6 +120,11 @@ export const Component: PlaitedComponent = ({
         })
       }
       connectedCallback && connectedCallback.bind(this)()
+    }
+    set disconnectEventSources(cb: () => void) {
+      if (!this.#disconnectEventSources) {
+        this.#disconnectEventSources = cb
+      }
     }
     disconnectedCallback() {
       this.#shadowObserver?.disconnect()
@@ -187,7 +185,7 @@ export const Component: PlaitedComponent = ({
       return mo
     }
     trigger(event: BPEvent) {
-      this.#trigger && onlyObservedTriggers(this.#trigger, observedTriggers)(event)
+      this.#trigger && onlyObservedTriggers(this.#trigger, this)(event)
     }
   }
   Object.assign(Base.prototype, rest)

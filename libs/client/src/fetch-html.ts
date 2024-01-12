@@ -1,29 +1,6 @@
 import { wait } from '@plaited/utils'
-
+import { createTemplate, createDoc } from './private-utils.js'
 type FetchHTMLOptions = RequestInit & { retry?: number; retryDelay?: number; partial?: boolean }
-
-let parser: {
-  parseFromString(
-    string: string,
-    type: DOMParserSupportedType,
-    options: {
-      includeShadowRoots: boolean
-    },
-  ): Document
-}
-
-if (typeof window !== 'undefined' && window.DOMParser) {
-  parser = new DOMParser()
-}
-
-export const createDoc = (page: string) => parser.parseFromString(page, 'text/html', { includeShadowRoots: true })
-
-export const createTemplate = (content: string) => {
-  const fragment = parser.parseFromString(`<template>${content}</template>`, 'text/html', {
-    includeShadowRoots: true,
-  })
-  return fragment.head.firstChild as HTMLTemplateElement
-}
 
 /**
  * @description  A utility function to fetch HTML content from the server with error handling and retries.

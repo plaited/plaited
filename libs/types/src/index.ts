@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { BProgram, Trigger, BPEvent, Logger, DefaultLogCallbackParams } from '@plaited/behavioral'
+import { BProgram, Trigger, BPEvent } from '@plaited/behavioral'
 import * as CSS from 'csstype'
 
 type Booleanish = boolean | 'true' | 'false'
@@ -1384,15 +1384,21 @@ export type TagsType = {
   [K in keyof ElementAttributeList]: (attrs: ElementAttributeList[K]) => TemplateObject
 }
 
+export type Disconnect = () => void
+
 export type Publisher = {
   (value: BPEvent): void
-  subscribe(trigger: Trigger, observedTriggers: string[]): () => void
+  connect(trigger: Trigger, observedTriggers: string[] | PlaitedElement): Disconnect
   type: 'publisher'
 }
 
 export type Messenger = {
   (recipient: string, detail: BPEvent): void
-  connect(args: { recipient: string; trigger: Trigger | Worker; observedTriggers: string[] }): (() => void) | undefined
+  connect(args: {
+    recipient: string
+    trigger: Trigger | Worker
+    observedTriggers: string[] | PlaitedElement
+  }): Disconnect | undefined
   has(recipient: string): boolean
   type: 'messenger'
 }
@@ -1400,7 +1406,7 @@ export type Messenger = {
 export type PostMessenger = {
   (args: BPEvent): void
   disconnect(): void
-  connect(trigger: Trigger, observedTriggers: string[]): () => void
+  connect(trigger: Trigger, observedTriggers: string[] | PlaitedElement): Disconnect
   type: 'post-messenger'
 }
 
@@ -1411,7 +1417,7 @@ export type SSE = {
 
 export type WS = {
   (message: BPEvent): void
-  connect: (trigger: Trigger) => () => void
+  connect: (trigger: Trigger) => Disconnect
   type: 'ws'
 }
 
@@ -1456,16 +1462,6 @@ export type Clone = <T>(
   callback: ($: QuerySelector, data: T) => void,
 ) => (data: T) => DocumentFragment
 
-export type BPEventSourceHandler = (args: {
-  observedTriggers: string[]
-  root: ShadowRoot
-  host: HTMLElement
-  trigger: Trigger
-}) => {
-  connect: (comm: Messenger | Publisher | SSE | WS | PostMessenger) => () => void
-  disconnect: () => void
-}
-
 export type BProps = {
   /** query for elements with the bp-target attribute in the Island's shadowDom and slots */
   $: QuerySelector
@@ -1476,9 +1472,9 @@ export type BProps = {
    * const shadowEl = host.shadowRoot.querySelector('div')
    */
   host: PlaitedElement
+  root: ShadowRoot
   emit: Emit
   clone: Clone
-  connect: (comm: Messenger | Publisher | SSE | WS | PostMessenger) => () => void
 } & ReturnType<BProgram>
 
 export interface PlaitedElement extends HTMLElement {
@@ -1493,6 +1489,8 @@ export interface PlaitedElement extends HTMLElement {
   formDisabledCallback?(this: PlaitedElement, disabled: boolean): void
   formResetCallback?(this: PlaitedElement): void
   formStateRestoreCallback?(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
+  set disconnectEventSources(cb: () => void)
+  readonly observedTriggers?: string[]
 }
 
 export interface PlaitedElementConstructor {
@@ -1505,12 +1503,9 @@ export type PlaitedTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
   tag: `${string}-${string}`
 }
 
-type BPFunction<T extends BPEventSourceHandler | undefined> = (
-  this: PlaitedElement,
-  props: BProps,
-) => void | Promise<void>
+type BPFunction = (this: PlaitedElement, props: BProps) => void | Promise<void>
 
-export type PlaitedComponent = <T extends Attrs = Attrs, L = DefaultLogCallbackParams>(args: {
+export type PlaitedComponent = <T extends Attrs = Attrs>(args: {
   /** PlaitedComponent tag name */
   tag: `${string}-${string}`
   /** Component template */
@@ -1523,10 +1518,7 @@ export type PlaitedComponent = <T extends Attrs = Attrs, L = DefaultLogCallbackP
   mode?: 'open' | 'closed'
   /** configure whether to delegate focus or not @defaultValue 'true' */
   delegatesFocus?: boolean
-  /** pass an behavioral program event source handler */
-  eventSourceHandler?: BPEventSourceHandler
-  logger?: Logger<L>
-  bp?: BPFunction<(typeof args)['eventSourceHandler']>
+  bp?: BPFunction
   connectedCallback?(this: PlaitedElement): void
   attributeChangedCallback?(this: PlaitedElement, name: string, oldValue: string | null, newValue: string | null): void
   disconnectedCallback?(this: PlaitedElement): void

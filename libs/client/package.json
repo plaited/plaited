@@ -12,19 +12,15 @@
   "bugs": {
     "url": "https://github.com/plaited/plaited/issues"
   },
-  "homepage": "https://github.com/plaited/plaited/tree/main/libs/component#readme",
+  "homepage": "https://github.com/plaited/plaited/tree/main/libs/client#readme",
   "type": "module",
   "main": "./dist/index.js",
   "exports": {
     ".": "./dist/index.js",
-    "./jsx-runtime": "./dist/jsx-runtime.js",
-    "./jsx-dev-runtime": "./dist/jsx-dev-runtime.js",
     "./utils": "./dist/utils.js"
   },
   "files": [
-    "./dist/**",
-    "./jsx-runtime.js",
-    "./jsx-dev-runtime.js"
+    "./dist/**"
   ],
   "publishConfig": {
     "access": "public"

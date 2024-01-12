@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 import { ensureArray, isTypeOf } from '@plaited/utils'
-import { publisher } from './publisher.js'
 import {
   CandidateBid,
   Logger,
@@ -14,7 +13,7 @@ import {
   AddThreads,
   BProgram,
 } from './types.js'
-import { triggerWaitFor, isListeningFor, isPendingRequest } from './private-utils.js'
+import { triggerWaitFor, isListeningFor, isPendingRequest, publisher } from './private-utils.js'
 import { thread, sync, loop } from './rules.js'
 /**
  * Creates a behavioral program that manages the execution of behavioral threads.

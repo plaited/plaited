@@ -1,9 +1,9 @@
 import { bProgram } from '@plaited/behavioral'
-import { handlePostMessage } from '../../utils.js'
+import { usePostMessage } from '../../utils.js'
 
 const { trigger, feedback } = bProgram()
 
-const send = handlePostMessage({
+const send = usePostMessage({
   trigger,
   observedTriggers: ['calculate'],
 })

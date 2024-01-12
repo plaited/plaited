@@ -1,10 +1,10 @@
 import { bpAddress } from '@plaited/jsx/utils'
 import { test } from '@plaited/rite'
 import { Component } from '../index.js'
-import { messenger } from '../utils.js'
+import { useMessenger, useEventSources } from '../utils.js'
 
 test('dynamic island comms', async (t) => {
-  const msg = messenger()
+  const msg = useMessenger()
   const wrapper = document.querySelector('body')
   const ElOne = Component({
     tag: 'dynamic-one',
@@ -19,7 +19,8 @@ test('dynamic island comms', async (t) => {
         </button>
       </div>
     ),
-    bp({ feedback, $, connect }) {
+    bp({ feedback, $, root, trigger }) {
+      const connect = useEventSources(root, trigger)
       const disconnect = connect(msg)
       feedback({
         disable() {
@@ -40,7 +41,8 @@ test('dynamic island comms', async (t) => {
     tag: 'dynamic-two',
     observedTriggers: ['add'],
     template: <h1 bp-target='header'>Hello</h1>,
-    bp({ $, feedback, addThreads, thread, sync, connect }) {
+    bp({ $, feedback, addThreads, thread, sync, root, trigger }) {
+      const connect = useEventSources(root, trigger)
       connect(msg)
       addThreads({
         onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),

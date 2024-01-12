@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import sinon from 'sinon'
-import { publisher } from '../publisher.js'
+import { publisher } from '../private-utils.js'
 
 test('publisher()', () => {
   const pub = publisher<number>()

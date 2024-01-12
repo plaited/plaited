@@ -1,2 +1,3 @@
 export const NavigateEventType = 'plaited-navigate'
-export const PlaitedContext = '__PLAITED_CONTEXT__'
+export const PlaitedHDA = '__PLAITED_HDA__'
+export const PlaitedLogger = '__PLAITED_LOGGER__'

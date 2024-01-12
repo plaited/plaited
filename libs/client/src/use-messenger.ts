@@ -1,5 +1,5 @@
 import type { Trigger, BPEvent } from '@plaited/behavioral'
-import type { Messenger } from '@plaited/types'
+import type { Messenger, PlaitedElement } from '@plaited/types'
 import { onlyObservedTriggers } from './only-observed-triggers.js'
 /** Enables communication between agents in a web app.
  * Agents can be Islands, or behavioral program running in the main thread.
@@ -7,8 +7,7 @@ import { onlyObservedTriggers } from './only-observed-triggers.js'
  * fire and forget).
 
  */
-
-export const messenger = (id?: string): Messenger => {
+export const useMessenger = (id?: string): Messenger => {
   const recipients = new Map<string, (evt: BPEvent) => void>()
   /** send BPEvent to another recipient */
   const send = (recipient: string, detail: BPEvent) => {
@@ -24,7 +23,7 @@ export const messenger = (id?: string): Messenger => {
     trigger,
     observedTriggers,
   }: {
-    observedTriggers: string[]
+    observedTriggers: string[] | PlaitedElement
     recipient: string
     trigger: Trigger
   }) => {

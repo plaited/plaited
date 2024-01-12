@@ -3,12 +3,11 @@ import { isTypeOf } from '@plaited/utils'
 import { Trigger, BPEvent } from '@plaited/behavioral'
 import { WS } from '@plaited/types'
 import { delegates, DelegatedListener } from './delegated-listener.js'
-import { isMessageEvent } from './private-utils.js'
-import { createTemplate } from './fetch-html.js'
+import { isMessageEvent, createTemplate } from './private-utils.js'
 
 const isCloseEvent = (event: CloseEvent | Event): event is CloseEvent => event.type === 'close'
 
-export const ws = (url: string): WS => {
+export const useWS = (url: string): WS => {
   const maxRetries = 3
   let retryCount = 0
   let socket: WebSocket | undefined

@@ -1,9 +1,9 @@
 import { test } from '@plaited/rite'
 import sinon from 'sinon'
-import { messenger } from '../utils.js'
+import { useMessenger } from '../utils.js'
 
 test('messenger: connect, send, close', async (t) => {
-  const msg = messenger()
+  const msg = useMessenger()
   const spy = sinon.spy()
   const close = msg.connect({
     recipient: 'actor1',
@@ -27,7 +27,7 @@ test('messenger: connect, send, close', async (t) => {
   })
 })
 test('messenger: send, connect, close', async (t) => {
-  const msg = messenger()
+  const msg = useMessenger()
   const spy = sinon.spy()
   msg('actor1', { type: 'b', detail: { value: 4 } })
   const close = msg.connect({
@@ -51,7 +51,7 @@ test('messenger: send, connect, close', async (t) => {
   close()
 })
 test('messenger: connect, close, send', async (t) => {
-  const msg = messenger()
+  const msg = useMessenger()
   const spy = sinon.spy()
   msg.connect({
     recipient: 'actor1',
