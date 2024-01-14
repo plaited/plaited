@@ -1,22 +1,30 @@
-import { Glob } from 'bun'
+import Bun from 'bun'
+import { Bundles } from './types.js'
 
-export const bundle = async (__dirname: string, ext = 'module') => {
-  const glob = new Glob(`**/*.${ext}.{ts,tsx}`)
+export const bundle = async (__dirname: string, ext = 'module', sourcemap = false): Promise<Bundles> => {
+  const glob = new Bun.Glob(`**/*.${ext}.{ts,tsx,js,jsx}`)
 
   const entrypoints = []
   for await (const file of glob.scan({ cwd: __dirname })) {
-    entrypoints.push(import.meta.resolveSync(`${__dirname}/${file}`))
+    entrypoints.push(Bun.resolveSync(`./${file}`, __dirname))
   }
 
-  if (entrypoints.length === 0) return { entries: [], outputs: [], __dirname }
+  if (entrypoints.length === 0) return { outputs: [], __dirname }
 
   const result = await Bun.build({
     entrypoints,
     minify: true,
     splitting: true,
+    sourcemap: sourcemap ? 'inline' : 'none',
   })
 
-  const entries = result.outputs.filter(({ kind }) => kind === 'entry-point')
-
-  return { entries, outputs: result.outputs, __dirname }
+  return {
+    outputs: [
+      ...result.outputs,
+      ...result.outputs.flatMap((output) =>
+        output.kind === 'entry-point' ? { path: output.path, loader: output.loader } : [],
+      ),
+    ],
+    __dirname,
+  }
 }

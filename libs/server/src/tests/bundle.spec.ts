@@ -3,7 +3,7 @@ import { bundle } from '../bundle.js'
 
 test('bundle', async () => {
   const __dirname = import.meta.dir
-
   const { outputs } = await bundle(__dirname)
-  expect(outputs?.length).toBe(3)
+  expect(outputs?.length).toBe(5)
+  expect(outputs.filter((output) => 'kind' in output).length).toBe(3)
 })

@@ -11,7 +11,7 @@ import type {
 import { $, cssCache, clone } from './sugar.js'
 import { delegates, DelegatedListener } from './delegated-listener.js'
 import { emit } from './private-utils.js'
-import { hasLogger } from './type-guard.js'
+import { hasLogger } from './type-guards.js'
 import { defineRegistry } from './define-registry.js'
 import { onlyObservedTriggers } from './only-observed-triggers.js'
 
