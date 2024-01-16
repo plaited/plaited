@@ -5,7 +5,7 @@ DISCLAIMER: THIS IS AN INTERNAL DEPENDENCY FOR PLAITED LIBS AND APPS. IT IS OPEN
 This package contains the following utilities used by
 [plaited](https://www.npmjs.com/package/plaited):
 
-- css-in-js utility
+- css-in-js utilities
 - jsx runtime utility
 - template utility
 - ssr utility

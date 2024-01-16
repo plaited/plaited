@@ -1,4 +1,4 @@
-import { escape, kebabCase, isTypeOf, ensureArray } from '@plaited/utils'
+import { escape, kebabCase, isTypeOf } from '@plaited/utils'
 import { booleanAttrs, primitives, voidTags, validPrimitiveChildren, bpTrigger as bpTriggerKey } from './constants.js'
 import {
   Attrs,
@@ -8,6 +8,8 @@ import {
   TemplateObject,
   VoidTags,
 } from '@plaited/types'
+
+const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj.flat() : [obj])
 
 /** createTemplate function used for ssr */
 export const createTemplate: CreateTemplate = (_tag, attrs) => {
@@ -60,6 +62,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
      * skip on attempts to provide `on` attributes
      */
     if (key.startsWith('on')) {
+      console.log(key)
       throw new Error(`Event handler attributes are not allowed:  [${key}]`)
     }
     /** test for and handle boolean attributes */

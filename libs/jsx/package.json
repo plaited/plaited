@@ -17,7 +17,6 @@
   "main": "./dist/index.js",
   "exports": {
     ".": "./dist/index.js",
-    "./ssr": "./dist/ssr.js",
     "./utils": "./dist/utils.js",
     "./jsx-runtime": "./dist/jsx-runtime.js",
     "./jsx-dev-runtime": "./dist/jsx-dev-runtime.js"
