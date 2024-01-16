@@ -1,10 +1,10 @@
 # User Interface
 
-We need to make an interface for our for our game. We'll `X` and `O` markers and a board.
+We need to make an interface for our for our game. We'll use `X` and `O` markers and a `board`.
 
 ## Components
 
-Our Markers a built using our custom JSX transform which can be used by adding the following to you tsconfig.json or jsconfig.json. This will allow bundlers, bun, deno, and tsc to properly transpile our code.
+Our Markers are built using our custom JSX transform which can be used by adding the following to you tsconfig.json or jsconfig.json. This will allow bundlers, bun, deno, and tsc to properly transpile our code.
 
 ```json
 {
@@ -15,11 +15,66 @@ Our Markers a built using our custom JSX transform which can be used by adding t
 }
 ```
 
-Plaited also comes with a purpose designed css solution which allows for perfomant sharing of styles between our FunctionTemplate(s) and PlaitedTemplate(s). When using this library our styles are hoisted up to the nears web component shadow dom and deduplicated then applied via constructable stylesheet.
+Plaited also comes with a purpose designed CSS solution which allows for perfomant sharing of styles between our FunctionTemplate(s) and PlaitedTemplate(s). When using this library our styles are hoisted up to the nearest web component's shadow DOM, de-duplicated and then applied via constructable stylesheet(s).
 
-### XMarker
+### The Board
 
-Our X marker which we'll append to the board. We've given it some simple styles. 
+The game board has 9 squares. For the purposes of an accessible game board we will style each square in the UI as buttons and group all squares inside a board element with the `role="group"`.
+
+```ts
+import { FunctionTemplate, css } from "plaited"
+
+const { $stylesheet, ...cls } = css`
+  .board {
+    display: inline-grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+  }
+  .square {
+    all: unset;
+    width: 44px;
+    height: 44px;
+    box-sizing: border-box;
+    border: 1px solid transparent;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    border-right: 1px solid black;
+    border-bottom: 1px solid black;
+
+    &:nth-child(-n + 3) {
+      border-top: 1px solid black;
+    }
+
+    &:nth-child(3n + 1) {
+      border-left: 1px solid black;
+    }
+  }
+`
+
+export const BoardMarker: FunctionTemplate = () => (
+  <div
+    role="group"
+    aria-label='board'
+    className={cls.board}
+    stylesheet={$stylesheet}
+  >
+    {Array.from(Array(9).keys()).map((n) => (
+      <button
+        className={cls.square}
+        value={n}
+        bp-trigger={{ click: 'click' }}
+        bp-target={`${n}`}
+      ></button>
+    ))}
+  </div>    
+)
+```
+
+### X Marker
+
+Our X marker must be append to the board. We've given it some simple styles.
 
 ```ts
 import { FunctionTemplate, css } from "plaited"
@@ -44,7 +99,9 @@ export const XMarker: FunctionTemplate = () => (
   )
 ```
 
-### OMarker
+### O Marker
+
+Our O marker must also be append to the board and given some styles.
 
 ```ts
 import { FunctionTemplate, css } from "plaited"
@@ -70,3 +127,4 @@ export const OMarker: FunctionTemplate = () => (
 )
 ```
 
+Next we'll put it all together.

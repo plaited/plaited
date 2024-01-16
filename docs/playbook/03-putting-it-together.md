@@ -1,8 +1,17 @@
+# Putting it together
+
+So we've created some rules for our game and a set of user interface elements. Next we'll put it all together.
+
+```ts
+// import plaited
 import { Component, css, sync, loop, thread, RulesFunction } from 'plaited'
+
+// import our UI components
 import { OMarker } from './o-marker.js'
 import { XMarker } from './x-marker.js'
 import { BoardMarker } from './board-marker.js'
 
+// Set our win conditions
 const winConditions = [
   //rows
   [0, 1, 2],
@@ -17,40 +26,15 @@ const winConditions = [
   [2, 4, 6],
 ]
 
+// Set our squares
 const squares = [0, 1, 2, 3, 4, 5, 6, 7, 8]
 
+// Define our type
 type Square = { square: number }
 
-const { $stylesheet, ...cls } = css`
-  .board {
-    display: inline-grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
-  }
-  .square {
-    all: unset;
-    width: 44px;
-    height: 44px;
-    box-sizing: border-box;
-    border: 1px solid transparent;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    border-right: 1px solid black;
-    border-bottom: 1px solid black;
-
-    &:nth-child(-n + 3) {
-      border-top: 1px solid black;
-    }
-
-    &:nth-child(3n + 1) {
-      border-left: 1px solid black;
-    }
-  }
-`
+// Define our rules
+// These are the same as those established in 01
 const enforceTurns = loop(sync<Square>({ waitFor: 'X', block: 'O' }), sync<Square>({ waitFor: 'O', block: 'X' }))
-
 const squaresTaken: Record<string, RulesFunction> = {}
 for (const square of squares) {
   squaresTaken[`(${square}) taken`] = thread(
@@ -62,7 +46,6 @@ for (const square of squares) {
     }),
   )
 }
-
 type Winner = { player: 'X' | 'O'; squares: number[] }
 const detectWins = (player: 'X' | 'O') =>
   winConditions.reduce((acc: Record<string, RulesFunction>, squares) => {
@@ -82,9 +65,7 @@ const detectWins = (player: 'X' | 'O') =>
     )
     return acc
   }, {})
-
 const stopGame = thread(sync({ waitFor: 'win' }), sync({ block: ['X', 'O'] }))
-
 const defaultMoves: Record<string, RulesFunction> = {}
 for (const square of squares) {
   defaultMoves[`defaultMoves(${square})`] = loop(
@@ -96,14 +77,12 @@ for (const square of squares) {
     }),
   )
 }
-
 const startAtCenter = sync({
   request: {
     type: 'O',
     detail: { square: 4 },
   },
 })
-
 const preventCompletionOfLineWithTwoXs = (board: Set<number>) => {
   const threads: Record<string, RulesFunction> = {}
   for (const win of winConditions) {
@@ -121,6 +100,8 @@ const preventCompletionOfLineWithTwoXs = (board: Set<number>) => {
   }
   return threads
 }
+
+// Finally we'll create the TicTacToeBoard
 export const TicTacToeBoard = Component({
   tag: 'tic-tac-toe-board',
   template: <BoardMarker />,
@@ -137,17 +118,17 @@ export const TicTacToeBoard = Component({
       ...defaultMoves,
     })
     feedback({
-      // When BPEvent X happens we delete the square provided in the event's detail
+      // When BPEvent X happens we delete the square provided in the event's detail then render an XMarker at that square
       X({ square }: Square) {
         board.delete(square)
         $(`${square}`)[0]?.render(<XMarker />)
       },
-      // When BPEvent X happens we delete the square provided in the event's detail
+      // When BPEvent X happens we delete the square provided in the event's detail then render an XMarker at that square
       O({ square }: Square) {
         board.delete(square)
         $(`${square}`)[0]?.render(<OMarker />)
       },
-      // When BPEvent click happens
+      // When BPEvent click happens we'll capture the mouse event and target element then trigger an 'X' event and pass it the button value
       click(evt: MouseEvent & { target: HTMLButtonElement }) {
         const { target } = evt
         const { value } = target
@@ -158,3 +139,4 @@ export const TicTacToeBoard = Component({
     })
   },
 })
+```
