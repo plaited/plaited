@@ -20,6 +20,6 @@
     "@storybook/html-vite": "7.6.4",
     "start-server-and-test": "2.0.3",
     "storybook": "7.6.4",
-    "vite": "5.0.9"
+    "vite": "5.0.12"
   }
 }
