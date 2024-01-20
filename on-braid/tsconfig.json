@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "declaration": true,
+    "moduleResolution": "nodenext",
+    "outDir": "dist",
+    "rootDir": "src",
+    "strict": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "@plaited/jsx"
+  },
+  "exclude": ["**/dist", "**/tests/"]
+}

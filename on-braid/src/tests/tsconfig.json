@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2022",
+    "module": "NodeNext",
+    "declaration": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "@plaited/jsx",
+    "moduleResolution": "nodenext",
+    "types": ["bun-types"]
+  }
+}
