@@ -43,9 +43,9 @@
   "dependencies": {
     "@plaited/types": "5.6.2",
     "@plaited/storybook-utils": "5.6.2",
-    "@storybook/core-client": "7.6.8",
+    "@storybook/core-client": "7.6.10",
     "@storybook/global": "5.0.0",
-    "@storybook/preview-api": "7.6.8",
-    "@storybook/types": "7.6.8"
+    "@storybook/preview-api": "7.6.10",
+    "@storybook/types": "7.6.10"
   }
 }

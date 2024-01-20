@@ -1501,10 +1501,10 @@ export interface PlaitedElementConstructor {
 export type PlaitedTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
   define: (silent?: boolean) => void
   tag: `${string}-${string}`
+  $: '🐻'
 }
 
 type BPFunction = (this: PlaitedElement, props: BProps) => void | Promise<void>
-
 export type PlaitedComponent = <T extends Attrs = Attrs>(args: {
   /** PlaitedComponent tag name */
   tag: `${string}-${string}`

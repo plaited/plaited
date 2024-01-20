@@ -2,11 +2,11 @@ import { TemplateObject } from '@plaited/types'
 import { escape, isTypeOf } from '@plaited/utils'
 import { validPrimitiveChildren } from './constants.js'
 
+if (typeof global.HTMLElement === 'undefined') {
+  // @ts-ignore node env
+  global.HTMLElement = class HTMLElement {}
+}
 export const ssr = (...templates: TemplateObject[]) => {
-  if (typeof global.HTMLElement === 'undefined') {
-    // @ts-ignore node env
-    global.HTMLElement = class HTMLElement {}
-  }
   const arr = []
   const stylesheets = new Set<string>()
   const length = templates.length

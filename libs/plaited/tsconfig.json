@@ -5,7 +5,6 @@
     "module": "NodeNext",
     "declaration": true,
     "moduleResolution": "nodenext",
-    "lib": ["dom", "es2022"],
     "outDir": "dist",
     "rootDir": "src",
     "strict": true

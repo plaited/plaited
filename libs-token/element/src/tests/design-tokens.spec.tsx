@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import { getTokenElement } from '../index.js'
 import { css } from '@plaited/jsx'
-import { ssr } from '@plaited/jsx/ssr'
+import { ssr } from 'plaited/ssr'
 import beautify from 'beautify'
 
 test('getTokenElement', () => {

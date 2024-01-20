@@ -10,6 +10,7 @@
     "libs-storybook/*",
     "libs-test/*",
     "libs-token/*",
+    "on-braid",
     "docs"
   ],
   "scripts": {
@@ -40,6 +41,7 @@
     "@commitlint/config-lerna-scopes": "18.4.4",
     "@playwright/test": "1.40.1",
     "@types/sinon": "17.0.3",
+    "@types/beautify": "0.0.3",
     "beautify": "0.0.8",
     "@types/bun": "1.0.1",
     "bun-types": "1.0.22",

@@ -207,5 +207,6 @@ export const Component: PlaitedComponent = ({
     })
   ft.define = (silent = true) => defineRegistry(new Set<PlaitedElementConstructor>(registry), silent)
   ft.tag = _tag
+  ft.$ = '🐻'
   return ft
 }
