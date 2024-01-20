@@ -1,21 +1,23 @@
-> That’s because we misunderstand play itself, casting it as exuberant, silly, a frippery that signals to us that our children are still young enough to have not yet turned their minds to more weighty endeavours. But play is serious. Play is absolute. Play is the complete absorption in something that doesn’t matter to the external world, but which matters completely to you. It’s an immersion in your own interests that becomes a feeling in itself, a potent emotion. Play is a disappearance into a space of our choosing, invisible to those outside the game. It is the pursuit of pure flow, a sandbox mind in which we can test new thoughts, new selves. It’s a form of symbolic living, a way to transpose one reality onto another and mine it for meaning. Play is a form of enchantment.”
-> ― Katherine May, Enchantment: Awakening Wonder in an Anxious Age
-
 # Shall we play a game?
 
-The game is tic-tac-toe. While it may seem counter intuitive for a UI library we won't be starting with the UI. In fact maybe we should leave it as an [afterthought](https://michel.codes/blogs/ui-as-an-afterthought) for the time being.
+> We misunderstand play itself, casting it as exuberant, silly, a frippery that signals to us that our children are still young enough to have not yet turned their minds to more weighty endeavours. But play is serious. Play is absolute. Play is the complete absorption in something that doesn’t matter to the external world, but which matters completely to you. It’s an immersion in your own interests that becomes a feeling in itself, a potent emotion. Play is a disappearance into a space of our choosing, invisible to those outside the game. It is the pursuit of pure flow, a sandbox mind in which we can test new thoughts, new selves. It’s a form of symbolic living, a way to transpose one reality onto another and mine it for meaning. Play is a form of enchantment.”
+> ― Katherine May, Enchantment: Awakening Wonder in an Anxious Age
+
+The game is tic-tac-toe. While it may seem counter intuitive for a UI library we won't be starting with the UI. In fact we should leave the [UI as an afterthought](https://michel.codes/blogs/ui-as-an-afterthought) for the time being.
 
 ## Setup
 
-We first want to create a `bProgram` to orchestrate our game.
+We start by importing a new `bProgram` to orchestrate our game.
 
 ```ts
 import { bProgram, loop, RulesFunc, sync, thread } from 'plaited'
 ```
 
-We've now imported `bProgram`, `loop`, `sync`, `thread` and a typescript definition for our `RulesFunc`.
+Here we've brought in `bProgram`, the threads functions `loop`, `sync`, and `thread` and a typescript definition for our `RulesFunc`.
 
-Next we need to create some data structures. We'll need a object to represent the game `squares`.
+Next, we'll create some data structures.
+
+First we'll need a object to represent the game. We'll call this `squares`.
 
 ```ts
 const squares = [
@@ -25,7 +27,7 @@ const squares = [
 ]
 ```
 
-We then want to define our winning conditions for players.
+Then we then want to define our winning conditions for players.
 
 ```ts
 const winConditions = [
@@ -52,11 +54,11 @@ type Square = { square: number }
 
 ## Requirements
 
-We'll use TDD to validate our program as we iteratively add requirements
+From here we'll use test driven development (TDD) to validate our program as we iteratively add requirements
 
 ### Taking a square
 
-We create a new `board` by initiating a new Set using the squares array. Then we init a new `bProgram` and destructure our `feedback` and `trigger` methods. We pass our `feedback` an actions object that consist of two actions `X` and `O` that when called will delete the corresponding square from the board.
+We assign the `board` by initiating a new Set using the squares array. Then we call the `bProgram` to initiate a new behavioral program and destructure our `feedback` and `trigger` methods. We pass our `feedback` an actions object that consist of two actions `X` and `O` which when either are called, will delete the corresponding square from the board.
 
 To test that this works we call trigger with the `BPEvent` `{ type: 'X', detail: { square: 1 } }` and assert that the `board` no longer has `1` in it. We do the same for an `O`.
 
@@ -67,11 +69,11 @@ test('taking a square', () => {
   // We create a new board for the game
   board = new Set(squares)
   feedback({
-    // When BPEvent X happens we delete the square provided in the event's detail
+    // When BPEvent X happens delete the square provided in the event's detail
     X({ square }: Square) {
       board.delete(square)
     },
-    // When BPEvent X happens we delete the square provided in the event's detail
+    // When BPEvent O happens delete the square provided in the event's detail
     O({ square }: Square) {
       board.delete(square)
     },
@@ -87,14 +89,18 @@ test('taking a square', () => {
 })
 ```
 
+In the current scenario. This works but there is nothing stopping `X` or `O` from going twice in a row.
+
 ### Enforcing turns
 
 We'll add a new thread, `enforceTurns`, which loops between two sync statements `onlyXCanGo` and `onlyOCanGo`. Only one of these statements can be enforced at any one time. This enforces the rule of the game that they take turns until someone wins.
 
 ```ts
+// sync threads to wait for each player and block the other.
 const onlyXCanGo = sync<Square>({ waitFor: 'X', block: 'O' })
 const onlyOCanGo = sync<Square>({ waitFor: 'O', block: 'X' })
 
+// A loop thread iterates between sync threads after each is requested.
 const enforceTurns = loop([onlyXCanGo, onlyOCanGo])
 
 test('take turns', () => {
@@ -130,13 +136,13 @@ test('take turns', () => {
 })
 ```
 
-In the test above `X` takes it's first turn but after playing square `1` it can't make any more moves until `O` takes a turn. O attempts to take an extra turn but no matter how many times `O` triggers another move. The game will only recognize it's actual move as square `0`.
+In the test above `X` takes it's first turn but after playing square `1` it can't make any more moves until `O` takes a turn. `O` takes it's turn by playing square `0` but then attempts to take an extra turn however, no matter how many times `O` triggers another move the game will only recognize it's move as the last approved request, which is square `0`.
 
-But right now there is nothing stopping `X` from also playing a move on `0` in the next round. Let's add a new threads preventing players from making moves on squares that are already taken.
+But right now there is nothing stopping `X` from also playing a move on `0` in the next round. Let's add new threads preventing players from making moves on squares that are already taken.
 
 ### Squares taken
 
-Each square may only be taken by players once. After that, all other moves on that square are blocked. We loop over our squares an create a thread with two synchronization points. 
+Business logic dictates that each square may only be taken by players once. After that, all other moves on that square are blocked. Here we loop over our squares an create a thread for each square with two synchronization points `waitFor` and `block`. Because they are `sync` functions the `block` thread will only be reached after the square has been requested by `X` or `O`.
 
 ```ts
 const squaresTaken: Record<string, RulesFunction> = {}
@@ -165,7 +171,7 @@ test('squares taken', () => {
     X({ square }: Square) {
       board.delete(square)
     },
-    // When BPEvent X happens we delete the square provided in the event's detail
+    // When BPEvent O happens we delete the square provided in the event's detail
     O({ square }: Square) {
       board.delete(square)
     },
@@ -182,8 +188,9 @@ test('squares taken', () => {
   trigger({ type: 'X', detail: { square: 1 } })
   // O takes tries to take square 2
   trigger({ type: 'O', detail: { square: 2 } })
-  // O can't because it's X's turn still as their move was not valid
+  // O can't take it's turn because the program is still waiting for X to take a valid turn.
   expect(board.has(2)).toBe(true)
+  // X takes square 2
   trigger({ type: 'X', detail: { square: 2 } })
   expect(board.has(2)).toBe(false)
 })
@@ -193,7 +200,7 @@ test('squares taken', () => {
 
 ### Detect winner
 
-We need to create our players' win detection threads. The function `detectWins` takes the player `X` or `O` and returns the respective threads by using reduce to iterate over the `winConditions`, thus allowing our `bProgram` to detect when a player has won.
+The function `detectWins` takes the player `X` or `O` and returns the respective threads by using reduce to iterate over the `winConditions`, thus allowing our `bProgram` to detect when a player has won.
 
 ```ts
 type Winner = { player: 'X' | 'O'; squares: number[] }
@@ -305,7 +312,7 @@ Unfortunately we don't have anyone to play with so we need our game to provide u
 
 For every square we want to create a thread for our `bProgram` to be able to request an `O` `BPEvent`, thus enabling our app to take on the role of `O`. This will be our first time using the `request` parameter in a `RuleSet`.
 
-With that in mind there are a couple of things to note. The **order** in which we add our threads matters. threads added before other have a greater priority. This means that if two threads request a`BPEvent` at the same synchronization point then the one with the higher priority will be select.
+With that in mind there are a couple of things to note. The **order** in which we add our threads matters. Thread prioritization follows a first in - first out pattern with the higher thread having the greater prioritization. This means that if two threads request a `BPEvent` at the same synchronization point then the one with the higher priority will be selected.
 
 ```ts
 const defaultMoves: Record<string, RulesFunction> = {}
@@ -402,11 +409,12 @@ test('start at center', () => {
   expect(board.has(4)).toBe(false)
 })
 ```
-We make a basic move taking the top left corner. Then our program takes the center `square` 4. If app was really a good player, it would also try to stop it's opponent from winning.
+
+We make a basic move taking the top left corner. Then our program takes the center `square` 4. If the app was really a good player, it would also try to stop it's opponent from winning.
 
 ### Prevent completion of line with two Xs
 
-We need to prevent the completion of a line of three squares. We thus create a function called `preventXFromCompletingALine` that returns the threads necessary to do so. Our app will now try to prevent the completion of a line with two squares already taken. We pass in this spread of threads before before `startAtCenter` so our app will always check if `X` has already taken two squares in a line before making a move.
+We need to prevent the completion of a line of three squares. Thus we create a function called `preventXFromCompletingALine` that returns the threads necessary to do so. Our app will now try to prevent the completion of a line with two squares already taken. We pass in this spread of threads before before `startAtCenter` so our app will always check if `X` has already taken two squares in a line before making a move.
 
 ```ts
 const preventCompletionOfLineWithTwoXs = (board: Set<number>) => {
