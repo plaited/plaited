@@ -1,1 +1,1 @@
-export { ssr } from '@plaited/jsx/ssr'
+export { ssr } from './jsx/ssr.js'

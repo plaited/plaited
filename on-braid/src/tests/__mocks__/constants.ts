@@ -1,4 +1,4 @@
-import { css } from '@plaited/jsx'
+import { css } from 'plaited'
 
 export const nestedDeclarativeStyles = css`
   .nested-label {

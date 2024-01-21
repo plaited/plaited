@@ -8,7 +8,7 @@
     "rootDir": "src",
     "strict": true,
     "jsx": "react-jsx",
-    "jsxImportSource": "@plaited/jsx"
+    "jsxImportSource": "plaited"
   },
   "exclude": ["**/dist", "**/tests/"]
 }

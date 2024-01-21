@@ -1,6 +1,0 @@
-export * from '@plaited/client'
-export * from '@plaited/client/utils'
-export * from '@plaited/behavioral'
-export * from '@plaited/behavioral/utils'
-export * from '@plaited/jsx'
-export { classNames, stylesheets } from '@plaited/jsx/utils'

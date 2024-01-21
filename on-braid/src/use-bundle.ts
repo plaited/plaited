@@ -1,7 +1,7 @@
 import Bun, { BuildArtifact } from 'bun'
 import { Database } from 'bun:sqlite'
-import { trueTypeOf } from '@plaited/utils'
-import { PlaitedTemplate } from '@plaited/types'
+import { trueTypeOf } from '../../libs/utils/dist/index.js'
+import type { PlaitedTemplate } from 'plaited'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isPlaitedComponent = (mod: any): mod is PlaitedTemplate =>

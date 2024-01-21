@@ -1,8 +1,7 @@
 import type { RenderContext, ArgsStoryFn, PartialStoryFn, Args } from '@storybook/types'
 
 import type { StoryFnPlaitedReturnType, PlaitedRender } from './types.js'
-
-import { createFragment, filterAttrs } from '@plaited/storybook-utils'
+import { createFragment, filterAttrs } from './utils.js'
 
 export const render: ArgsStoryFn<PlaitedRender> = (args, context) => {
   const { id, component } = context

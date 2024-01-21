@@ -1,8 +1,8 @@
-import { TemplateObject } from '@plaited/types'
-import { escape, isTypeOf } from '@plaited/utils'
-import { validPrimitiveChildren } from '@plaited/jsx/utils'
-import { camelCase } from '@plaited/utils'
+import type { TemplateObject } from 'plaited'
+import { escape, isTypeOf, camelCase } from '@plaited/utils'
 import { Database } from 'bun:sqlite'
+
+const validPrimitiveChildren = new Set(['number', 'string', 'bigint'])
 
 if (typeof global.HTMLElement === 'undefined') {
   // @ts-ignore node env

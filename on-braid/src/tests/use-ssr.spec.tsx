@@ -1,12 +1,11 @@
 import { test, expect, beforeAll } from 'bun:test'
 import { Database } from 'bun:sqlite'
-import { FT, TemplateObject } from '@plaited/types'
+import { FT, TemplateObject, css } from 'plaited'
 import { useSSR } from '../use-ssr.js'
 import beautify from 'beautify'
 import { NestedCustomElement } from './__mocks__/nested-component.js'
 import { TopCustomElement } from './__mocks__/top-component.js'
 import { nestedChildrenStyles, nestedHostStyles } from './__mocks__/constants.js'
-import { css } from '@plaited/jsx'
 
 let ssr: ReturnType<typeof useSSR>
 
