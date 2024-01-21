@@ -1,4 +1,4 @@
-import { bProgram } from '@plaited/behavioral'
+import { bProgram } from '../../../index.js'
 import { usePostMessage } from '../../utils.js'
 
 const { trigger, feedback } = bProgram()

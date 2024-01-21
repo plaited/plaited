@@ -18,6 +18,6 @@ export const throws: Throws = (
     catchPromise(fn(...args))
     return undefined
   } catch (err) {
-    return err instanceof Error ? err.toString() : `${err}`
+    return err.toString()
   }
 }

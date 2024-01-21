@@ -6,10 +6,10 @@ import { getColor, getRule } from '../utils.js'
 
 const dropShadowCallback = (allTokens: DesignTokenGroup) => ($value: Exclude<DropShadowValue, AliasValue>) => {
   const { offsetX, offsetY, blur, color } = $value
-  const value: (string | number)[] = [offsetX, offsetY, blur]
+  const value: (number | string | undefined)[] = [offsetX, offsetY, blur]
   if (hasAlias(color)) {
     value.push(resolveCSSVar(color, allTokens))
-  } else {
+  } else if (color) {
     value.push(getColor(color))
   }
   return value.filter(Boolean).join(' ')

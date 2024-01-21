@@ -7,9 +7,9 @@ import { getRule, getColor } from '../utils.js'
 const colorMapCallback = (allTokens: DesignTokenGroup) => ($value: Exclude<GradientValue, AliasValue>) => {
   const { gradientFunction, angleShapePosition, colorStops } = $value
   const stops = colorStops.map(({ color, position }) =>
-    hasAlias(color) ?
-      [resolveCSSVar(color, allTokens), position].filter(Boolean).join(' ')
-    : [getColor(color), position].filter(Boolean).join(' '),
+    hasAlias(color) ? [resolveCSSVar(color, allTokens), position].filter(Boolean).join(' ')
+    : color ? [getColor(color), position].filter(Boolean).join(' ')
+    : [color, position].filter(Boolean).join(' '),
   )
   return `${gradientFunction}(${[angleShapePosition, ...stops].filter(Boolean).join(',')})`
 }

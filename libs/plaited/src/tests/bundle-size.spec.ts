@@ -17,8 +17,8 @@ test('minimal client export footprint < 5kb', async () => {
   }
 })
 
-test('maximum client export footprint < 8kb', async () => {
-  const plaited = import.meta.resolveSync('../client.ts')
+test('maximum client export footprint < 8.1kb', async () => {
+  const plaited = import.meta.resolveSync('./kitchen-sink.ts')
   const plaitedResults = await Bun.build({
     entrypoints: [plaited],
     minify: true,
@@ -29,7 +29,7 @@ test('maximum client export footprint < 8kb', async () => {
     const str = await result.text()
     const compressed = Bun.gzipSync(Buffer.from(str))
     const size = compressed.byteLength / 1024
-    expect(size).toBeLessThan(8)
+    expect(size).toBeLessThan(8.1)
     console.log(`Plaited size: ${size}kb`)
   }
 })

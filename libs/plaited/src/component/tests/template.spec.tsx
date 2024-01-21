@@ -1,5 +1,5 @@
 import { test } from '@plaited/rite'
-import { css } from '../../jsx/index.js'
+import { css } from '../../css.js'
 import { Component } from '../index.js'
 import { canUseDOM } from '@plaited/utils'
 

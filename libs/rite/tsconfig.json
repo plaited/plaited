@@ -1,15 +1,13 @@
 {
   "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
     "target": "ES2022",
     "module": "NodeNext",
     "declaration": true,
     "moduleResolution": "nodenext",
     "outDir": "dist",
     "rootDir": "src",
-    "strict": true,
-    "jsx": "react-jsx",
-    "jsxImportSource": "plaited"
+    "allowSyntheticDefaultImports": true,
+    "lib": ["dom", "es2022", "DOM.Iterable"]
   },
   "exclude": ["**/dist", "**/tests/"]
 }

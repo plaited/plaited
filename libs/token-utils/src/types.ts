@@ -337,7 +337,7 @@ export type StaticToken<T extends string, V extends DesignValue> = {
 
 export type ContextualToken<T extends string, V extends DesignValue> = {
   $description: string
-  $extensions?: {
+  $extensions: {
     ['plaited-context']: $Context
     [key: string]: unknown
   }
@@ -490,7 +490,6 @@ export type PrimitiveLikeValues =
   | FontStyleValue
   | FontWeightValue
   | TextTransformValue
-
 
 export type Queries = {
   [key: string]: string

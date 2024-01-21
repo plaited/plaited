@@ -3,7 +3,7 @@ import sinon from 'sinon'
 import { usePostMessageClient } from '../utils.js'
 
 test('messenger: with worker', async (t) => {
-  const worker = new Worker(new URL('/src/tests/__mocks__/test.worker.ts', import.meta.url), {
+  const worker = new Worker(new URL('/src/component/tests/__mocks__/test.worker.ts', import.meta.url), {
     type: 'module',
   })
   const msg = usePostMessageClient(worker)
