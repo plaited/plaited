@@ -1,5 +1,4 @@
-
-import { Formatter, GridMinMaxArgs, GridTemplateValue, GridTemplateToken, GridTemplateAreasValue  } from '../types.js'
+import { Formatter, GridMinMaxArgs, GridTemplateValue, GridTemplateToken, GridTemplateAreasValue } from '../types.js'
 import { hasAlias, resolveCSSVar } from '../resolve.js'
 import { kebabCase } from '@plaited/utils'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'

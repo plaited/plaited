@@ -1,6 +1,6 @@
 /** Utility function for enabling hypermedia patterns */
 import { isTypeOf } from '@plaited/utils'
-import { Trigger, BPEvent,SSE } from '../types.js'
+import { Trigger, BPEvent, SSE } from '../types.js'
 import { delegates, DelegatedListener } from './delegated-listener.js'
 import { isMessageEvent, createTemplate } from './private-utils.js'
 

@@ -1,4 +1,4 @@
-import { Formatter, FontFamilyValue, FontFamilyToken, AliasValue  } from '../types.js'
+import { Formatter, FontFamilyValue, FontFamilyToken, AliasValue } from '../types.js'
 import { hasAlias, resolveCSSVar } from '../resolve.js'
 import { kebabCase } from '@plaited/utils'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'

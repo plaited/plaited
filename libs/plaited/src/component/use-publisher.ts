@@ -1,4 +1,4 @@
-import { Publisher, PlaitedElement,  BPEvent, Trigger  } from '../types.js'
+import { Publisher, PlaitedElement, BPEvent, Trigger } from '../types.js'
 import { onlyObservedTriggers } from './only-observed-triggers.js'
 /**
  * @description  Creates a new BPEvent publisher.

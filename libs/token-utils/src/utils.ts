@@ -1,4 +1,4 @@
-import { Queries, ColorSchemes, ColorValue, AliasValue, $Context  } from './types.js'
+import { Queries, ColorSchemes, ColorValue, AliasValue, $Context } from './types.js'
 
 export const getRem = (val: number, base: number) => `${val / base}rem`
 

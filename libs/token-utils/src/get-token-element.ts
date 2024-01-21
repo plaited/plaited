@@ -10,6 +10,6 @@ const { $stylesheet } = css`
 export const getTokenElement = (stylesheet: string, tag: `${string}-${string}` = 'design-tokens') => {
   return Component({
     tag,
-    template: h('slot', {stylesheet: stylesheets($stylesheet, stylesheet)}),
+    template: h('slot', { stylesheet: stylesheets($stylesheet, stylesheet) }),
   })
 }

@@ -1,4 +1,13 @@
-import { Queries, ColorSchemes, $Context, DesignToken, StaticToken, ContextualToken, BaseToken, DesignValue  } from './types.js'
+import {
+  Queries,
+  ColorSchemes,
+  $Context,
+  DesignToken,
+  StaticToken,
+  ContextualToken,
+  BaseToken,
+  DesignValue,
+} from './types.js'
 
 export const isValidContext = ({
   context,

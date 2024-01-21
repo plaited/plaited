@@ -32,8 +32,6 @@ let parser: {
   ): Document
 }
 
-
-
 export const createDoc = (page: string) => {
   if (typeof window !== 'undefined' && window.DOMParser) {
     parser = new DOMParser()

@@ -1,4 +1,4 @@
-import { Formatter, TransitionValue, TransitionToken, AliasValue, DesignTokenGroup  } from '../types.js'
+import { Formatter, TransitionValue, TransitionToken, AliasValue, DesignTokenGroup } from '../types.js'
 import { hasAlias, resolveCSSVar } from '../resolve.js'
 import { kebabCase } from '@plaited/utils'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'

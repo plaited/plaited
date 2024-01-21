@@ -1,4 +1,4 @@
-import { Formatter, PrimitiveLikeTokens, PrimitiveLikeValues  } from '../types.js'
+import { Formatter, PrimitiveLikeTokens, PrimitiveLikeValues } from '../types.js'
 import { hasAlias, resolveCSSVar } from '../resolve.js'
 import { kebabCase } from '@plaited/utils'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'
