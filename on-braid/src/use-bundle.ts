@@ -45,7 +45,17 @@ const isEntry = async ({ db, table, path, cwd }: { db: Database; table: string; 
 
 export const useBundle =
   (db: Database, table: string) =>
-  async (cwd: string, sourcemap = false): Promise<BuildArtifact[]> => {
+  async ({
+    cwd,
+    sourcemap = false,
+    entries = [],
+    publicPath = '',
+  }: {
+    cwd: string
+    sourcemap?: boolean
+    entries?: string[]
+    publicPath?: string
+  }): Promise<BuildArtifact[]> => {
     const glob = new Bun.Glob(`**/*.{ts,tsx,js,jsx}`)
     const modulePaths = await Array.fromAsync(glob.scan({ cwd }))
     const entrypoints: string[] = []
@@ -64,10 +74,11 @@ export const useBundle =
     }
     if (entrypoints.length === 0) return []
     const result = await Bun.build({
-      entrypoints,
+      entrypoints: [...entrypoints, ...entries.map((path) => Bun.resolveSync(`./${path}`, cwd))],
       minify: true,
       splitting: true,
       sourcemap: sourcemap ? 'inline' : 'none',
+      publicPath,
     })
     return result.outputs
   }

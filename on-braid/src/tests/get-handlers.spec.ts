@@ -8,9 +8,9 @@ test('getHandlers', async () => {
   const db = new Database(':memory:')
   const query = db.query(`CREATE TABLE ${registry} (tag TEXT PRIMARY KEY, path TEXT NOT NULL)`)
   query.run()
-  const __dirname = import.meta.dir
+  const cwd = import.meta.dir
   const bundle = useBundle(db, registry)
-  const outputs = await bundle(__dirname)
+  const outputs = await bundle({ cwd })
   const map = await getHandlers(outputs)
   expect(map.size).toBe(4)
   expect(outputs.flatMap(({ kind, path }) => (kind === 'entry-point' ? path : []))).toMatchSnapshot()

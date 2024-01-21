@@ -7,9 +7,9 @@ test('useBundle', async () => {
   const db = new Database(':memory:')
   const query = db.query(`CREATE TABLE ${registry} (tag TEXT PRIMARY KEY, path TEXT NOT NULL)`)
   query.run()
-  const __dirname = import.meta.dir
+  const cwd = import.meta.dir
   const bundle = useBundle(db, registry)
-  const outputs = await bundle(__dirname)
+  const outputs = await bundle({ cwd })
   expect(outputs?.length).toBe(4)
   expect(outputs.filter((output) => output?.kind === 'entry-point').length).toBe(3)
   expect(outputs.filter((output) => output?.kind === 'chunk').length).toBe(1)
