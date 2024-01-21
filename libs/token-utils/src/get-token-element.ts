@@ -1,5 +1,4 @@
-import { Component, css, h } from 'plaited'
-import { stylesheets } from 'plaited/css'
+import { Component, css, h, stylesheets } from 'plaited'
 
 const { $stylesheet } = css`
   :host {
