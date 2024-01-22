@@ -1,6 +1,6 @@
 import Bun, { BuildArtifact } from 'bun'
 import { Database } from 'bun:sqlite'
-import { trueTypeOf } from '../../libs/utils/dist/index.js'
+import { trueTypeOf } from '@plaited/utils'
 import type { PlaitedTemplate } from 'plaited'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

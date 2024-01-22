@@ -7,7 +7,6 @@
   "workspaces": [
     "libs/*",
     "libs-storybook/*",
-    "on-braid",
     "docs"
   ],
   "scripts": {
