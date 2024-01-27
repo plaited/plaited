@@ -3,7 +3,7 @@
 Plaited is a web framework for rapidly designing and developing interfaces as requirements change and evolve. It's been designed for the following use cases:
 
   1. Developing cross-framework design systems
-  2. Developing [modnet web apps](https://rachelaliana.medium.com/past-the-internet-the-emergence-of-the-modnet-6ad49b7e2ee8)
+  2. Developing [modnet](https://rachelaliana.medium.com/past-the-internet-the-emergence-of-the-modnet-6ad49b7e2ee8) module interfaces
 
 ## Behavioral Programming
 
@@ -40,8 +40,8 @@ We build our threads by making use of three functions `sync`, `thread`, and `loo
 As we mentioned earlier our threads continually move through synchronization points. We create these points using our `sync` function which return a `RulesFunction`. The `sync` function takes a `RuleSet` as a parameter. `RuleSet` is an object with three keys:
   
 - request: A proposed `BPEvent` or a function that when invoked returns a `BPEvent` also known as a `BPEventTemplate`
-- waitFor: string(s) referencing the `BPEvent` type or a callback(s) that returns true. This callback receives the proposed `BPEvent` as an argument.
-- block: string(s) referencing the `BPEvent` type or a callback(s) that returns true. This callback receives the proposed `BPEvent` as an argument.
+- waitFor: string(s) referencing the `BPEvent` type or a callback(s) that returns a boolean. This callback receives the proposed `BPEvent` as an argument.
+- block: string(s) referencing the `BPEvent` type or a callback(s) that returns boolean. This callback receives the proposed `BPEvent` as an argument.
 
 ### Thread
 
@@ -49,7 +49,7 @@ A single synchronization point as expressed by `sync` is often not enough to exp
 
 ### Loop
 
-Often we want to carry out a rules infinitely each time our `bProgram` is triggered, or at least while some mode or condition is still true. The `loop` function allows us to do this. Like `thread` it can be used for composition and returns a `RulesFunction`. However it's first argument can be a synchronous function that will be called at each synchronization point to see if it still returns true and thus allow our threads synchronization points to remain in play when selecting the next `BPEvent`.
+Often we want to carry out a rules infinitely each time our `bProgram` is triggered, or at least while some mode or condition is still true. The `loop` function allows us to do this. Like `thread` it can be used for composition and returns a `RulesFunction`. However it's first argument can be a function that will be called at each synchronization point to see if it still returns true and thus allow our thread's synchronization points to remain in play when selecting the next `BPEvent`.
 
 ## Feedback
 
