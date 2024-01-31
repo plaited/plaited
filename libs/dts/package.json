@@ -1,0 +1,24 @@
+{
+  "name": "@plaited/dts",
+  "private": true,
+  "engines": {
+    "bun": ">= v1.0.25"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "./dist/**"
+  ],
+  "scripts": {
+    "build": "bun run build.ts",
+    "build-watch": "bun run build --watch"
+  },
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "get-tsconfig": "4.7.2",
+    "dts-bundle-generator": "9.2.5"
+  }
+}
