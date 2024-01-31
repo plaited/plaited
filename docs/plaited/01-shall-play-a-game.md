@@ -1,8 +1,5 @@
 # Shall we play a game?
 
-> We misunderstand play itself, casting it as exuberant, silly, a frippery that signals to us that our children are still young enough to have not yet turned their minds to more weighty endeavours. But play is serious. Play is absolute. Play is the complete absorption in something that doesn’t matter to the external world, but which matters completely to you. It’s an immersion in your own interests that becomes a feeling in itself, a potent emotion. Play is a disappearance into a space of our choosing, invisible to those outside the game. It is the pursuit of pure flow, a sandbox mind in which we can test new thoughts, new selves. It’s a form of symbolic living, a way to transpose one reality onto another and mine it for meaning. Play is a form of enchantment.”
-> ― Katherine May, Enchantment: Awakening Wonder in an Anxious Age
-
 The game is tic-tac-toe. While it may seem counter intuitive for a UI library we won't be starting with the UI. In fact we should leave the [UI as an afterthought](https://michel.codes/blogs/ui-as-an-afterthought) for the time being.
 
 ## Setup
@@ -101,7 +98,7 @@ const onlyXCanGo = sync<Square>({ waitFor: 'X', block: 'O' })
 const onlyOCanGo = sync<Square>({ waitFor: 'O', block: 'X' })
 
 // A loop thread iterates between sync threads after each is requested.
-const enforceTurns = loop([onlyXCanGo, onlyOCanGo])
+const enforceTurns = loop(onlyXCanGo, onlyOCanGo)
 
 test('take turns', () => {
   // We create a new bProgram
@@ -142,7 +139,7 @@ But right now there is nothing stopping `X` from also playing a move on `0` in t
 
 ### Squares taken
 
-Business logic dictates that each square may only be taken by players once. After that, all other moves on that square are blocked. Here we loop over our squares an create a thread for each square with two synchronization points `waitFor` and `block`. Because they are `sync` functions the `block` thread will only be reached after the square has been requested by `X` or `O`.
+Our games logic dictates that each square may only be taken by players once. After that, all other moves on that square are blocked. Here we loop over our squares an create a thread for each square with two synchronization points `waitFor` and `block`. Because they are `sync` functions the `block` thread will only be reached after the square has been requested by `X` or `O`.
 
 ```ts
 const squaresTaken: Record<string, RulesFunction> = {}

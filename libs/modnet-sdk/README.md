@@ -1,4 +1,4 @@
-# @plaited/server
+# [WIP] @plaited/modnet-sdk
 
 - We import a component say `tic-tac-toe`
 - We can render it with `ssr`

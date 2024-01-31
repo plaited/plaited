@@ -7,7 +7,7 @@ Plaited is a web framework for rapidly designing and developing interfaces as re
 
 ## Behavioral Programming
 
-Plaited is built around [the behavioral programming algorithm](https://www.wisdom.weizmann.ac.il/~amarron/BP%20-%20CACM%20-%20Author%20version.pdf). In behavioral programming a behavioral program `bProgram` employs specialized programming idioms for expressing what **must**, **may**, or **must not** happen. `bProgram` also includes a [novel method](#sync) for the collective execution of the resulting scenarios.
+Plaited is built around [the behavioral programming algorithm](https://www.wisdom.weizmann.ac.il/~amarron/BP%20-%20CACM%20-%20Author%20version.pdf). In behavioral programming a behavioral program (`bProgram`) employs specialized programming idioms for expressing what **must**, **may**, or **must not** happen. A `bProgram` also includes a [novel method](#sync) for the collective execution of the resulting scenarios.
 
 These specialized idioms are effectively rules for determining how we apply feedback to an object based on a triggering event initiated by the user or the system. Each `bProgram` can be broken into three parts:
 
@@ -17,7 +17,7 @@ These specialized idioms are effectively rules for determining how we apply feed
 
 ## Trigger
 
-Everything in Plaited is based on sending a `BPEvent` from one `bProgram` to another. Our `bProgram` agent based approach to design allows for various message passing based architectural patterns. Each `BPEvent` is an object with two keys `type` and `detail`. Type is the name of the event and `detail` is optional data we pass with our event.
+Everything in Plaited is based on sending a `BPEvent` from one `bProgram` to another. Our `bProgram` agent based approach to design allows for various message passing architectural patterns. Each `BPEvent` is an object with two keys `type` and `detail`. Type is the name of the event and `detail` is optional data we pass with our event.
 
 ## Threads
 
@@ -27,7 +27,7 @@ Each thread specifies three sets of events:
 
 **requested events**: the thread proposes that these events be considered for triggering and asks to be notified when any of the events occur.
 
-**waited-for events**: the thread does not request these but asks to be notified when any of them is triggered.
+**waited-for events**: the thread does not request these but asks to be notified when any of them are triggered.
 
 **blocked events**: the thread currently forbids triggering any of these events
 
