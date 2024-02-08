@@ -1,5 +1,4 @@
-import type { Trigger, BPEvent } from '@plaited/behavioral'
-import type { Messenger, PlaitedElement } from '../types.js'
+import type { Messenger, PlaitedElement, Trigger, BPEvent } from '../types.js'
 import { onlyObservedTriggers } from './only-observed-triggers.js'
 /** Enables communication between agents in a web app.
  * Agents can be Islands, or behavioral program running in the main thread.
