@@ -13,13 +13,13 @@
     "@plaited/storybook-rite": "workspace:*",
     "@plaited/storybook": "workspace:*",
     "@storybook/test-runner": "0.16.0",
-    "@storybook/addon-essentials": "7.6.4",
-    "@storybook/addon-interactions": "7.6.4",
-    "@storybook/addon-links": "7.6.4",
-    "@storybook/blocks": "7.6.4",
-    "@storybook/html-vite": "7.6.4",
+    "@storybook/addon-essentials": "7.6.11",
+    "@storybook/addon-interactions": "7.6.11",
+    "@storybook/addon-links": "7.6.11",
+    "@storybook/blocks": "7.6.11",
+    "@storybook/html-vite": "7.6.11",
     "start-server-and-test": "2.0.3",
-    "storybook": "7.6.4",
-    "vite": "5.0.9"
+    "storybook": "7.6.11",
+    "vite": "5.0.12"
   }
 }

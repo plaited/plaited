@@ -1,0 +1,9 @@
+// Bun Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`getHandlers 1`] = `
+[
+  "./random-component.js",
+  "./top-component.js",
+  "./nested-component.js",
+]
+`;

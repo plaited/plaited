@@ -1,16 +1,16 @@
 {
   "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
     "target": "ES2022",
     "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
     "declaration": true,
-    "moduleResolution": "nodenext",
-    "jsx": "react-jsx",
-    "jsxImportSource": "plaited",
-    "lib": ["dom", "es2022"],
+    
+    "strict": true,
+    "skipLibCheck": true,
+
     "outDir": "dist",
     "rootDir": "src",
-    "strict": true
   },
   "exclude": ["**/dist", "**/tests/"]
 }

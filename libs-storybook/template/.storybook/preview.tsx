@@ -1,5 +1,4 @@
-import type { Preview } from '@plaited/storybook'
-import { createFragment } from '@plaited/storybook-utils'
+import { Preview, createFragment } from '@plaited/storybook'
 
 const preview: Preview = {
   decorators: [

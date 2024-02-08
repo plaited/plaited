@@ -40,8 +40,8 @@
   "types": "dist/index.d.ts",
   "dependencies": {
     "@plaited/storybook": "5.6.2",
-    "@storybook/builder-vite": "7.6.4",
-    "@storybook/core-server": "7.6.4",
-    "@storybook/node-logger": "7.6.4"
+    "@storybook/builder-vite": "7.6.11",
+    "@storybook/core-server": "7.6.11",
+    "@storybook/node-logger": "7.6.11"
   }
 }

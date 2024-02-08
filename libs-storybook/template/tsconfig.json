@@ -1,14 +1,19 @@
 {
   "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
     "target": "ES2022",
     "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
     "declaration": true,
-    "moduleResolution": "nodenext",
+    
+    "strict": true,
+    "skipLibCheck": true,
+
+    "outDir": "dist",
+    "rootDir": "stories",
+
     "jsx": "react-jsx",
     "jsxImportSource": "plaited",
-    "lib": ["dom", "es2022"],
-    "strict": true
   },
   "include": ["stories/**/*", ".storybook/**/*"],
   "exclude": ["**/dist", "**/tests/"]

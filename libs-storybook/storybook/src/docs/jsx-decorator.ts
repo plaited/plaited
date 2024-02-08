@@ -1,7 +1,7 @@
 import type { PartialStoryFn, StoryContext } from '@storybook/types'
 import { addons, useEffect } from '@storybook/preview-api'
 import { SNIPPET_RENDERED, SourceType } from '@storybook/docs-tools'
-import { createJSXString } from '@plaited/storybook-utils'
+import { createJSXString } from '../utils.js'
 import type { PlaitedRender } from '../types.js'
 
 function skipSourceRender(context: StoryContext<PlaitedRender>) {

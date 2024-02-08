@@ -1,28 +1,19 @@
-# plaited
+# Plaited libs
 
-This lib set serves as a workspace for working on our rendering library Plaited
+## Rendering
 
-## Libraries
+- [plaited](./plaited/README.md): Plaited component render library for design systems and modnet modules
 
-### External usage
+## Testing
 
-- [plaited](plaited/README.md): plaited library package
+- [@plaited/assert](./assert/README.md): Assertion library used by @plaited/rite and [@plaited/storybook-rite](../libs-storybook/storybook-rite/README.md)
+- [@plaited/rite](./rite/README.md): [Modern web](https://modern-web.dev/) unit test framework based on RITEway.
 
+## Utilities
 
-### Internal usage
-
-**The following libraries are not recommended for usage outside the Plaited organization. They are dependencies for our Plaited libs and apps. These libraries are open sourced as reference implementation. Take as a dependency at your own risk.**
-
-- [@plaited/behavioral](behavioral/README.md): implicit state management
-  library using the behavioral programming algorithm
-- [@plaited/component](component/README.md): createComponent ui rending utility
-- [@plaited/component-types](component/README.md): typedefs for @plaited/component and @plaited/jsx
-- [@plaited/jsx](jsx/README.md):
-  - templating utility and types
-  - css-in-js utility to enable templating utility's style hoisting pattern
-  - data attribute constants for templating utility
-  - server side rendering utility for templating utility
-  - jsx runtime for templating utility
-  - classNames utility function for conditionally joining css class names
-  - stylesheets utility function for conditionally joining css-on-js utility function generated stylesheet objects
-- [@plaited/utils](utils/README.md): runtime agnostic utility functions
+- [@plaited/miles](./miles/README.md): Cross framework css library for to be used for delivering css-in-js in light DOM frameworks
+- [@plaited/utils](./utils/README.md): Platform/Framework agnostic utility functions
+- [@plaited/token-utils]('./token-utils/README.md'):
+  - create a Plaited component for applying design tokens to web application
+  - create a JSON schema from design tokens that locks in values and allows addition of news values
+  - transform token into outputs suitable for CSS and Typescript usage

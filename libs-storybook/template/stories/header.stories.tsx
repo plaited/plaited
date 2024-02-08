@@ -1,5 +1,4 @@
-import { createFragment } from '@plaited/storybook-utils'
-import { StoryObj, Meta } from '@plaited/storybook'
+import { StoryObj, Meta, createFragment } from '@plaited/storybook'
 import { assert, findByText, findByAttribute } from '@plaited/storybook-rite'
 import { Header } from './header.js'
 

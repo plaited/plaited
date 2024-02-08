@@ -1,0 +1,313 @@
+// Bun Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`useSSR: Self closing - html 1`] = `"<input type="text" />"`;
+
+exports[`useSSR: Self closing - svg 1`] = `"<polygon points="0,100 50,25 50,75 100,0" />"`;
+
+exports[`useSSR: Falsey - undefined 1`] = `"<div></div>"`;
+
+exports[`useSSR: Falsey - null 1`] = `"<div></div>"`;
+
+exports[`useSSR: Falsey - false 1`] = `"<div></div>"`;
+
+exports[`useSSR: Not really Falsey - "" 1`] = `"<div></div>"`;
+
+exports[`useSSR: Not really Falsey - 0 1`] = `"<div>0</div>"`;
+
+exports[`useSSR: Not really Falsey - NaN 1`] = `"<div>NaN</div>"`;
+
+exports[`useSSR: Bad template - NaN 1`] = `"<div></div>"`;
+
+exports[`useSSR: Conditional 1`] = `"<div>hello</div>"`;
+
+exports[`useSSR: Style attribute 1`] = `"<div style="background-color:blue; margin:12px; --cssVar:red;">styles</div>"`;
+
+exports[`useSSR: bp-trigger attribute 1`] = `"<div bp-trigger="click:random focus:thing">triggers</div>"`;
+
+exports[`useSSR: Array of templates 1`] = `
+"<ul>
+    <li>0</li>
+    <li>1</li>
+    <li>2</li>
+    <li>3</li>
+    <li>4</li>
+    <li>5</li>
+    <li>6</li>
+    <li>7</li>
+    <li>8</li>
+    <li>9</li>
+</ul>"
+`;
+
+exports[`useSSR: Should not throw on script tag with trusted attribute 1`] = `"<script type="module" " src="main.js " "></script>"`;
+
+exports[`useSSR: Escapes children 1`] = `
+"<div>&lt;script type=&quot;text/javascript&quot;&gt; const hostRegex = /^https?://([^/]+)/.*$/i;
+    const host = document.URL.replace(hostRegex, &#39;$1&#39;); const socket
+    = new WebSocket(/); const reload = () =&gt;{ location.reload(); console.log(&#39;...reloading&#39;);
+    }; socket.addEventListener(&#39;message&#39;, reload); console.log(&#39;[plaited]
+    listening for file changes&#39;); &lt;/script&gt;</div>"
+`;
+
+exports[`useSSR: Does not escape children when trusted 1`] = `
+"<div>
+    <script type="text/javascript">
+        const hostRegex = /^https?://([^/]+)/.*$/i;
+        const host = document.URL.replace(hostRegex, '$1');
+        const socket = new WebSocket(/);
+        const reload = () =>{
+          location.reload();
+          console.log('...reloading');
+        };
+        socket.addEventListener('message', reload);
+        console.log('[plaited] listening for file changes');
+    </script>
+</div>"
+`;
+
+exports[`useSSR: Non declarative shadow DOM template 1`] = `
+"<ul>
+    <template><span>I am a span!!!</span>
+    </template>
+    <li>item-0</li>
+    <li>item-1</li>
+    <li>item-2</li>
+    <li>item-3</li>
+    <li>item-4</li>
+    <li>item-5</li>
+    <li>item-6</li>
+    <li>item-7</li>
+    <li>item-8</li>
+    <li>item-9</li>
+</ul>"
+`;
+
+exports[`Fragment 1`] = `
+"<li>In 5</li>
+<li>In 4</li>
+<li>In 3</li>
+<li>In 2</li>
+<li>In 1</li>
+<li>Blast Off!!!</li>"
+`;
+
+exports[`useSSR: Declarative shadow dom hoisting its styles 1`] = `
+"<script type="module" async>
+    await Promise.all([
+      [
+        "nestedComponent",
+        "/nested-component.js"
+      ]
+    ].map(async ([tag, path])=> {
+      try {
+        const modules = await import(path)
+        modules[tag].define()
+      } catch (err) {
+        console.error(err)
+      }
+    }))
+</script>
+<nested-component>
+    <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+        <style>
+            .nested-label_LTU0Mz { font-weight: bold; }
+        </style><span class="nested-label_LTU0Mz">inside nested template</span>
+        <slot
+        name="nested"></slot>
+    </template>
+</nested-component>"
+`;
+
+exports[`useSSR: Declarative shadow dom with host styles 1`] = `
+"<script type="module" async>
+    await Promise.all([
+      [
+        "nestedComponent",
+        "/nested-component.js"
+      ]
+    ].map(async ([tag, path])=> {
+      try {
+        const modules = await import(path)
+        modules[tag].define()
+      } catch (err) {
+        console.error(err)
+      }
+    }))
+</script>
+<style>
+    nested-component { display: flex; flex-direction: column; }
+</style>
+<nested-component>
+    <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+        <style>
+            .nested-label_LTU0Mz { font-weight: bold; }
+        </style><span class="nested-label_LTU0Mz">inside nested template</span>
+        <slot
+        name="nested"></slot>
+    </template>
+</nested-component>"
+`;
+
+exports[`useSSR: Declarative shadow dom with styled slotted component 1`] = `
+"<script type="module" async>
+    await Promise.all([
+      [
+        "nestedComponent",
+        "/nested-component.js"
+      ]
+    ].map(async ([tag, path])=> {
+      try {
+        const modules = await import(path)
+        modules[tag].define()
+      } catch (err) {
+        console.error(err)
+      }
+    }))
+</script>
+<style>
+    nested-component { display: flex; flex-direction: column; }.slotted-paragraph_LTc5ND { color: rebeccapurple; }
+</style>
+<nested-component>
+    <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+        <style>
+            .nested-label_LTU0Mz { font-weight: bold; }
+        </style><span class="nested-label_LTU0Mz">inside nested template</span>
+        <slot
+        name="nested"></slot>
+    </template>
+    <p class="slotted-paragraph_LTc5ND" slot="nested">slotted paragraph</p>
+</nested-component>"
+`;
+
+exports[`useSSR: Declarative shadow dom with another declarative shadow dom 1`] = `
+"<script type="module" async>
+    await Promise.all([
+      [
+        "nestedComponent",
+        "/nested-component.js"
+      ],
+      [
+        "topComponent",
+        "/top-component.js"
+      ]
+    ].map(async ([tag, path])=> {
+      try {
+        const modules = await import(path)
+        modules[tag].define()
+      } catch (err) {
+        console.error(err)
+      }
+    }))
+</script>
+<top-component>
+    <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+        <style>
+            .slotted-paragraph_LTc5ND { color: rebeccapurple; }
+        </style>
+        <nested-component>
+            <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+                <style>
+                    .nested-label_LTU0Mz { font-weight: bold; }
+                </style><span class="nested-label_LTU0Mz">inside nested template</span>
+                <slot
+                name="nested"></slot>
+            </template>
+            <p class="slotted-paragraph_LTc5ND" slot="nested">slotted paragraph</p>
+        </nested-component>
+    </template>
+</top-component>"
+`;
+
+exports[`useSSR: Declarative shadow dom with another declarative shadow dom plus host styles 1`] = `
+"<script type="module" async>
+    await Promise.all([
+      [
+        "nestedComponent",
+        "/nested-component.js"
+      ],
+      [
+        "topComponent",
+        "/top-component.js"
+      ]
+    ].map(async ([tag, path])=> {
+      try {
+        const modules = await import(path)
+        modules[tag].define()
+      } catch (err) {
+        console.error(err)
+      }
+    }))
+</script>
+<style>
+    top-component { display: block; }
+</style>
+<top-component>
+    <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+        <style>
+            .slotted-paragraph_LTc5ND { color: rebeccapurple; }
+        </style>
+        <nested-component>
+            <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+                <style>
+                    .nested-label_LTU0Mz { font-weight: bold; }
+                </style><span class="nested-label_LTU0Mz">inside nested template</span>
+                <slot
+                name="nested"></slot>
+            </template>
+            <p class="slotted-paragraph_LTc5ND" slot="nested">slotted paragraph</p>
+        </nested-component>
+    </template>
+</top-component>"
+`;
+
+exports[`useSSR: Declarative shadow dom with another declarative shadow dom plus host styles and child 1`] = `
+"<script type="module" async>
+    await Promise.all([
+      [
+        "nestedComponent",
+        "/nested-component.js"
+      ],
+      [
+        "topComponent",
+        "/top-component.js"
+      ]
+    ].map(async ([tag, path])=> {
+      try {
+        const modules = await import(path)
+        modules[tag].define()
+      } catch (err) {
+        console.error(err)
+      }
+    }))
+</script>
+<style>
+    .image_Mjc4MD { width: 100%; aspect-ratio: 16 / 9; }
+</style>
+<top-component>
+    <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+        <style>
+            .slotted-paragraph_LTc5ND { color: rebeccapurple; }
+        </style>
+        <nested-component>
+            <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+                <style>
+                    .nested-label_LTU0Mz { font-weight: bold; }
+                </style><span class="nested-label_LTU0Mz">inside nested template</span>
+                <slot
+                name="nested"></slot>
+            </template>
+            <p class="slotted-paragraph_LTc5ND" slot="nested">slotted paragraph</p>
+        </nested-component>
+    </template>
+    <img class="image_Mjc4MD" />
+</top-component>"
+`;
+
+exports[`useSSR: Properly hoist and deduplicates multiple stylesheets on a single node 1`] = `
+"<style>
+    .a_NTA5Nj { width: 100%; }.a_LTIzMT { color: blue; }
+</style>
+<div></div>"
+`;
+
+exports[`useSSR: Trims whitespace 1`] = `"<div>trims white-space</div>"`;
