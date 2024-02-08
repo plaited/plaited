@@ -46,7 +46,7 @@
   "devDependencies": {
     "@plaited/rite": "workspace:*",
     "@web/dev-server": "0.4.2",
-    "@web/dev-server-esbuild": "1.0.1",
+    "@web/dev-server-esbuild": "1.0.2",
     "@web/test-runner": "0.18.0",
     "@web/test-runner-core": "0.13.0",
     "@web/test-runner-playwright": "0.11.0"
