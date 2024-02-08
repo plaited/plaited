@@ -10,7 +10,7 @@
     "skipLibCheck": true,
 
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": "stories",
 
     "jsx": "react-jsx",
     "jsxImportSource": "plaited",

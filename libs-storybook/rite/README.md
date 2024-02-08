@@ -52,8 +52,7 @@ export interface Assertion {
 When it comes to testing we like to keep it simple with basic deep equality checking, and meaningful test messages that clearly state, given some condition we should expect some outcome.
 
 ```ts
-import { createFragment } from '@plaited/storybook-utils'
-import { StoryObj, Meta } from '@plaited/storybook'
+import { StoryObj, Meta, createFragment } from '@plaited/storybook'
 import { withActions } from '@storybook/addon-actions/decorator'
 import { assert, throws, findByText, findByAttribute} from '@plaited/storybook-rite'
 import { Header } from './header.js'
