@@ -20,6 +20,6 @@ jobs:
           runCmd: |
             git fetch origin main
             bun install
-            bunx playwright install
+            bunx playwright install --with-deps
             bunx lerna run build
             bunx lerna run test --since=origin/main

@@ -4,7 +4,7 @@
 bun install
 
 # Install Playwright dependencies
-bunx playwright install
+bunx playwright install --with-deps
 
 # Run build
 bun run build 
