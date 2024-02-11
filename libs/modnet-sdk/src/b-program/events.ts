@@ -16,6 +16,13 @@ export const types = {
   CONNECT_COLLECTION_TO_NETWORK: 'connect collection to network',
   DISCONNECT_COLLECTION_FROM_NETWORK: 'disconnect collection from network',
   REQUEST_TO_CONNECT_COLLECTION_TO_NETWORK: 'request to connect collection to network',
+  SET_MODULE_TEMPLATE_CONTENT_TYPE: 'set module template content type',
+  GET_MODULE_SCHEMA: 'get module schema',
+  SET_MODULE_TEMPLATE_CHANNELS: 'set module template channels',
+  SET_MODULE_TEMPLATE_MICROINTERACTIONS: 'set module template microinteractions',
+  SET_MODULE_TEMPLATE_BOUNDARIES: 'set module template boundaries',
+  SET_MODULE_TEMPLATE_MECHANICS: 'set module template mechanics',
+  SET_MODULE_TEMPLATE_SCALE: 'set module template scale',
 } as const
 
 export const events = {
@@ -72,5 +79,26 @@ export const events = {
     collectionId: string,
   ): BPEvent<{ networkId: string; collectionId: string }> {
     return { type: types.REQUEST_TO_CONNECT_COLLECTION_TO_NETWORK, detail: { networkId, collectionId } }
+  },
+  setModuleTemplateContentType(contentType: string): BPEvent<string> {
+    return { type: types.SET_MODULE_TEMPLATE_CONTENT_TYPE, detail: contentType }
+  },
+  getModuleSchema(id: string): BPEvent<string> {
+    return { type: types.GET_MODULE_SCHEMA, detail: id }
+  },
+  setModuleTemplateChannels(channels: string[]): BPEvent<string[]> {
+    return { type: types.SET_MODULE_TEMPLATE_CHANNELS, detail: channels }
+  },
+  setModuleTemplateMicrointeractions(microinteractions: string[]): BPEvent<string[]> {
+    return { type: types.SET_MODULE_TEMPLATE_MICROINTERACTIONS, detail: microinteractions }
+  },
+  setModuleTemplateBoundaries(boundaries: string[]): BPEvent<string[]> {
+    return { type: types.SET_MODULE_TEMPLATE_BOUNDARIES, detail: boundaries }
+  },
+  setModuleTemplateMechanics(mechanics: string[]): BPEvent<string[]> {
+    return { type: types.SET_MODULE_TEMPLATE_MECHANICS, detail: mechanics }
+  },
+  setModuleTemplateScale(scale: string): BPEvent<string> {
+    return { type: types.SET_MODULE_TEMPLATE_SCALE, detail: scale }
   },
 } as const
