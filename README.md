@@ -3,10 +3,11 @@
 # Plaited
 Plaited is design system first framework for rapidly designing and developing interfaces as requirements change and evolve. This mono repo serves as the workspace for working on our development libraries and tooling. It is divided into 4 workspaces.
 
-1. [libs](libs/README.md): Rendering libraries, state managment and utilities
-2. [libs-storybook](libs-storybook/README.md): Storybook development libraries and tooling
-3. [libs-token](libs-token/README.md): Design token format libraries and tooling
-4. [libs-test](libs-test/README.md): Test libraries and tooling
+1. [libs](libs/README.md):
+  - Rendering libraries, state managment and utilities
+  - Design token format libraries and tooling
+  - Test libraries and tooling
+3. [libs-storybook](libs-storybook/README.md): Storybook development libraries and tooling
 
 
 ## Dev Requirements
