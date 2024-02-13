@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# 6.0.0 (2024-02-13)
+
+
+### Features
+
+* **token-utils:** update exports ([#149](https://github.com/plaited/plaited/issues/149)) ([4aba05e](https://github.com/plaited/plaited/commit/4aba05e959878725d36a155ac28a7f0d5ee27815))
+
+
+
+
+
 ## 5.6.2 (2023-12-16)
 
 **Note:** Version bump only for package @plaited/token-transformer

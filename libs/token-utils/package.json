@@ -1,6 +1,6 @@
 {
   "name": "@plaited/token-utils",
-  "version": "5.6.2",
+  "version": "6.0.0",
   "license": "ISC",
   "engines": {
     "node": ">= v18.15.0"
@@ -32,7 +32,7 @@
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "plaited": "5.6.2",
-    "@plaited/utils": "5.6.2"
+    "@plaited/utils": "6.0.0",
+    "plaited": "6.0.0"
   }
 }
