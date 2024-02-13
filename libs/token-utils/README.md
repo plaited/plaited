@@ -1,5 +1,3 @@
-# @plaited/token-transformer
+# @plaited/token-utils
 
-Transforms a design tokens object of the type DesignTokenGroup to TS and CSS.
-Allows extension of type DesignTokenGroup and supplying ones owns CSS and TS
-formatters
+Based on typescript types derived from the [Design Token Format](https://design-tokens.github.io/community-group/format/) this library enables JSON schema generation, generation of CSS custom properties, TS/JS mappings to CSS custom properties, and a Plaited component to deliver tokens to web applications consuming design tokens via CSS custom properties.
