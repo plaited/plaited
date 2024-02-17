@@ -58,11 +58,11 @@ export const useBundle =
   }): Promise<BuildArtifact[]> => {
     const glob = new Bun.Glob(`**/*.{ts,tsx,js,jsx}`)
     const modulePaths = await Array.fromAsync(glob.scan({ cwd }))
-    const entrypoints: string[] = []
     if (modulePaths.length === 0) {
       console.error('No modules found')
       return []
     }
+    const entrypoints: string[] = []
     for (const path of modulePaths) {
       const entry = await isEntry({
         db,
