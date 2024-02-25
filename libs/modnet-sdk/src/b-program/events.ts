@@ -5,49 +5,15 @@ const crudTypes = <T extends string>(context: T) =>
   [`CREATE_${context}`, `READ_${context}`, `UPDATE_${context}`, `DELETE_${context}`] as const
 
 export const types = {
-  // MODULE_SCHEMA
   ...keyMirror(
     ...crudTypes('MODULE_SCHEMA'),
-    'DOWNLOAD_MODULE_SCHEMA',
-    'SEARCH_FOR_MODULE_SCHEMA',
-    ...crudTypes('MODULE_SCHEMA_SCALE'),
-    ...crudTypes('MODULE_SCHEMA_BOUNDARIES'),
-    ...crudTypes('MODULE_SCHEMA_DESCRIPTION'),
-    ...crudTypes('MODULE_SCHEMA_ACTIONS'),
-    ...crudTypes('MODULE_SCHEMA_CHANNELS'),
-    ...crudTypes('MODULE_SCHEMA_MICROINTERACTIONS'),
-  ),
-  // MODULE
-  ...keyMirror(
+    'QUERY_MODULE_SCHEMA',
     ...crudTypes('MODULE'),
-    ...crudTypes('MODULE_DESCRIPTION'),
-    ...crudTypes('MODULE_BOUNDARIES'),
-    'SEARCH_FOR_MODULES',
-    'ADD_MODULE_TO_COLLECTION',
-    'REMOVE_MODULE_FROM_COLLECTION',
-    'CONNECT_MODULE_TO_NETWORK',
-    'DISCONNECT_MODULE_FROM_NETWORK',
-    'REQUEST_TO_CONNECT_MODULE_TO_NETWORK',
-  ),
-  // BLOCK
-  ...keyMirror(
+    'QUERY_MODULE',
     ...crudTypes('BLOCK'),
-    ...crudTypes('BLOCK_DESCRIPTION'),
-    ...crudTypes('BLOCK_SITUATIONAL_CONNECTEDNESS'),
-    ...crudTypes('BLOCK_SYSTEM_CONNECTEDNESS'),
-    ...crudTypes('BLOCK_BOUNDARIES'),
-    'SEARCH_FOR_BLOCK',
-    'CONNECT_BLOCK_TO_NETWORK',
-    'DISCONNECT_BLOCK_FROM_NETWORK',
-    'REQUEST_TO_CONNECT_BLOCK_TO_NETWORK',
-  ),
-  // MODULE NETWORK
-  ...keyMirror(
+    'QUERY_BLOCK',
     ...crudTypes('NETWORK'),
-    ...crudTypes('NETWORK_DESCRIPTION'),
-    ...crudTypes('NETWORK_STRUCTURE'),
-    ...crudTypes('NETWORK_BOUNDARIES'),
-    'SEARCH_FOR_NETWORK',
+    'QUERY_NETWORK',
     'CONNECT_TO_NETWORK',
     'DISCONNECT_FROM_NETWORK',
   ),
