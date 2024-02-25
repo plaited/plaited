@@ -71,8 +71,14 @@ export const css = (
   const styles =
     tokens?.map((token) => (typeof token === 'string' ? reduceWhitespace(token) : addClass(token.content))).join('') ||
     ''
-  return Object.freeze({
+  const obj = Object.freeze({
     ...Object.fromEntries(classes),
     $stylesheet: reduceWhitespace(styles).trim(),
+  })
+  return new Proxy(obj, {
+    get(target: typeof obj, prop: string) {
+      if (!(prop in target)) console.warn(`Class [${prop}] does not exist in stylesheet`)
+      return target[prop as keyof typeof obj]
+    },
   })
 }
