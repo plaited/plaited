@@ -1,8 +1,8 @@
 import { DefaultLogCallbackParams, BPEvent } from 'plaited'
 
 type Event = BPEvent & {
-  edges: Map<string, Set<number>>
-  runs: Set<number>
+  edges: Map<string, Set<string>>
+  runs: Set<string>
   step: 'start' | 'step' | 'end'
 }
 
@@ -15,21 +15,22 @@ const mapEvents = ({ logs, map, run }: { logs: DefaultLogCallbackParams[]; map: 
     const selected = logs[step].filter((bid) => bid.selected)[0]
     const type = selected.type
     const id = `s${step}_${type}`
+    const runId = `run_${run}`
     if (map.has(id)) {
       const node = map.get(id) as Event
-      next && node.edges.has(next) ? node.edges.get(next)?.add(run)
-      : next ? node.edges.set(next, new Set([run]))
+      next && node.edges.has(next) ? node.edges.get(next)?.add(runId)
+      : next ? node.edges.set(next, new Set([runId]))
       : (node.edges = new Map())
-      node.runs.add(run)
+      node.runs.add(runId)
     } else {
       map.set(id, {
         type,
-        runs: new Set([run]),
+        runs: new Set([runId]),
         ...(next ?
           {
             shape: step === 0 ? 'rectangle' : 'parallelogram',
             step: step === 0 ? 'start' : 'step',
-            edges: new Map([[next, new Set([run])]]),
+            edges: new Map([[next, new Set([runId])]]),
           }
         : { edges: new Map(), shape: 'rectangle', step: 'end' }),
       })

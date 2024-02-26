@@ -33,6 +33,7 @@
   },
   "scripts": {
     "build": "tsc --project tsconfig.json",
+    "build-watch": "bun run build --watch",
     "test": "bun run test-bun && npm run test-web",
     "test-bun": "bun test src/**[!component]/*",
     "test-bun-watch": "bun test src/**[!component]/* --watch",

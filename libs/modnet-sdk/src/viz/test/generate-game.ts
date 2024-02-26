@@ -1,7 +1,6 @@
 import { bProgram, sync, loop, thread, RulesFunction, DefaultLogCallbackParams, BPEvent } from 'plaited'
 import { useLogger } from '../use-logger.js'
-import { generateDot } from '../generate-dot.js'
-import { dotToSVG } from '../dot-to-svg.js'
+
 
 const winConditions = [
   //rows
@@ -98,9 +97,9 @@ const preventCompletionOfLineWithTwoXs = (board: Set<number>) => {
 const onNoWin = thread(...squares.map((_) => sync({ waitFor: ['X', 'O'] })), sync({ request: { type: 'noWin' } }))
 const onWin = thread(sync({ waitFor: 'win' }), sync({ block: 'noWin' }))
 
-const runs: DefaultLogCallbackParams[][] = []
+export const runs: DefaultLogCallbackParams[][] = []
 
-const games = [
+export const games = [
   // No winner
   [
     { type: 'X', detail: { square: 4 } },
@@ -132,7 +131,7 @@ const games = [
   ],
 ]
 
-const generate = (game: BPEvent[]) => {
+export const generate = (game: BPEvent[]) => {
   const log: DefaultLogCallbackParams[] = []
   const logger = useLogger(log)
   const { addThreads, feedback, trigger } = bProgram(logger)
@@ -163,9 +162,11 @@ const generate = (game: BPEvent[]) => {
   runs.push(log)
 }
 
-for (const game of games) generate(game)
+// for (const game of games) generate(game)
 
-const dot = generateDot(runs)
-const svg = await dotToSVG(dot)
+// const dot = generateDot(runs)
+// const svg = await dotToSVG(dot)
 
-console.log(svg)
+// const formattedSVG = formatSVG(svg!)
+
+// console.log(formattedSVG)

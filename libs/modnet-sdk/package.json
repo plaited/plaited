@@ -32,7 +32,8 @@
     "plaited": "workspace:*",
     "@viz-js/viz": "3.2.4",
     "@svgdotjs/svg.js": "3.2.0",
-    "@svgdotjs/svg.panzoom.js": "2.1.2"
+    "@svgdotjs/svg.panzoom.js": "2.1.2",
+    "linkedom": "0.16.8"
   },
   "devDependencies": {}
 }

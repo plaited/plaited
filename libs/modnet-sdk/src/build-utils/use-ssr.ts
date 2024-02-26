@@ -19,7 +19,7 @@ await Promise.all(${JSON.stringify(arr, null, 2)}.map(async ([tag, path])=> {
   }
 }))
 `
-
+const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1)
 export const useSSR =
   (db: Database, table: string) =>
   (...templates: TemplateObject[]) => {
@@ -39,7 +39,7 @@ export const useSSR =
         for (const { tag } of child.registry) {
           const query = db.query(`SELECT path FROM ${table} WHERE tag = $tag`)
           const result = query.get({ $tag: tag }) as { path: string }
-          result?.path && importMap.push([camelCase(tag), result.path])
+          result?.path && importMap.push([capitalize(camelCase(tag)), result.path])
         }
         continue
       }
@@ -47,7 +47,6 @@ export const useSSR =
       const safeChild = escape(`${child}`)
       arr.push(safeChild)
     }
-
     const style = stylesheets.size ? `<style>${[...stylesheets].join('')}</style>` : ''
     const script = importMap.length ? `<script type="module" async>${importTemplate(importMap)}</script>` : ''
     const str = arr.join('')

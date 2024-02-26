@@ -80,5 +80,6 @@ export const useBundle =
       sourcemap: sourcemap ? 'inline' : 'none',
       publicPath,
     })
+  
     return result.outputs
   }
