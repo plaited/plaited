@@ -1,8 +1,7 @@
-import { parseHTML } from 'linkedom';
-import {cls} from './graph.styles.js';
+import { parseHTML } from 'linkedom'
+import { cls } from './graph.styles.js'
 
 export const formatSVG = (str: string) => {
-  
   const { document } = parseHTML(`
   <!doctype html>
   <html lang="en">
@@ -22,7 +21,7 @@ export const formatSVG = (str: string) => {
   svg.setAttribute('data-target', 'graph')
   svg.classList.remove('graph')
   svg.classList.add(cls.graph)
-  svg.setAttribute('data-trigger', 'click:clickGroup hover:hoverGroup')
+  svg.setAttribute('bp-trigger', 'click:clickGroup hover:hoverGroup')
 
   for (const $a of svg.querySelectorAll('a')) {
     const $g = $a.parentNode?.parentNode as SVGSVGElement
