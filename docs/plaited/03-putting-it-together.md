@@ -29,24 +29,14 @@ const winConditions = [
 // Set our squares
 const squares = [0, 1, 2, 3, 4, 5, 6, 7, 8]
 
-// Define our type
+// Define the types
 type Square = { square: number }
+type Winner = { player: 'X' | 'O'; squares: number[] }
 
 // Define our rules
 // These are the same as those established in 01
 const enforceTurns = loop(sync<Square>({ waitFor: 'X', block: 'O' }), sync<Square>({ waitFor: 'O', block: 'X' }))
-const squaresTaken: Record<string, RulesFunction> = {}
-for (const square of squares) {
-  squaresTaken[`(${square}) taken`] = thread(
-    sync<Square>({
-      waitFor: ({ detail }) => square === detail.square,
-    }),
-    sync<Square>({
-      block: ({ detail }) => square === detail.square,
-    }),
-  )
-}
-type Winner = { player: 'X' | 'O'; squares: number[] }
+const stopGame = thread(sync({ waitFor: 'win' }), sync({ block: ['X', 'O'] }))
 const detectWins = (player: 'X' | 'O') =>
   winConditions.reduce((acc: Record<string, RulesFunction>, squares) => {
     acc[`${player}Wins (${squares})`] = thread(
@@ -65,18 +55,6 @@ const detectWins = (player: 'X' | 'O') =>
     )
     return acc
   }, {})
-const stopGame = thread(sync({ waitFor: 'win' }), sync({ block: ['X', 'O'] }))
-const defaultMoves: Record<string, RulesFunction> = {}
-for (const square of squares) {
-  defaultMoves[`defaultMoves(${square})`] = loop(
-    sync<Square>({
-      request: {
-        type: 'O',
-        detail: { square },
-      },
-    }),
-  )
-}
 const startAtCenter = sync({
   request: {
     type: 'O',
@@ -100,14 +78,38 @@ const preventCompletionOfLineWithTwoXs = (board: Set<number>) => {
   }
   return threads
 }
+const defaultMoves: Record<string, RulesFunction> = {}
+const squaresTaken: Record<string, RulesFunction> = {}
+for (const square of squares) {
+  defaultMoves[`defaultMoves(${square})`] = loop(
+    sync<Square>({
+      request: {
+        type: 'O',
+        detail: { square },
+      },
+    }),
+  )
 
-// Finally we'll create the TicTacToeBoard
+  squaresTaken[`(${square}) taken`] = thread(
+    sync<Square>({
+      waitFor: ({ detail }) => square === detail.square,
+    }),
+    sync<Square>({
+      block: ({ detail }) => square === detail.square,
+    }),
+  )
+}
+
+
+// Then create the TicTacToeBoard
+// These are the same as those established in 02
 export const TicTacToeBoard = Component({
   tag: 'tic-tac-toe-board',
   template: <BoardMarker />,
   bp({ feedback, $, addThreads, trigger }) {
     const board = new Set(squares)
     addThreads({
+      // Add all our rules as bProgram threads
       enforceTurns,
       ...squaresTaken,
       ...detectWins('X'),
