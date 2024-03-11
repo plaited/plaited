@@ -3,6 +3,8 @@
     "target": "ES2022",
     "module": "NodeNext",
     "declaration": true,
-    "moduleResolution": "nodenext"
+    "moduleResolution": "nodenext",
+    "jsx": "react-jsx",
+    "jsxImportSource": "plaited"
   }
 }

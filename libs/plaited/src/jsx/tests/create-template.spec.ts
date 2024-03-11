@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 import { FT, TemplateObject } from '../../types.js'
-import { css } from '../../css/index.js'
+import { createStyles, css } from '../../css/index.js'
 import { createTemplate as h, Fragment } from '../index.js'
 import beautify from 'beautify'
 
@@ -165,23 +165,36 @@ test('Fragment', () => {
   ).toMatchSnapshot()
 })
 
-const nestedDeclarativeStyles = css`
-  .nested-label {
-    font-weight: bold;
-  }
-`
+const styles = createStyles({
+  nestedLabel: {
+    fontWeight: 'bold',
+  },
+  nestedComponent: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  slottedParagraph: {
+    color: 'rebeccapurple',
+  },
+  topComponent: {
+    display: 'block',
+  },
+  image: {
+    width: '100%',
+    aspectRatio: '16 / 9',
+  },
+})
 
-const NestedCustomElement: FT = ({ children, stylesheet }) =>
+const NestedCustomElement: FT = ({ children, ...props }) =>
   h('nested-component', {
-    stylesheet,
+    ...props,
     children: [
       Template({
         shadowrootmode: 'open',
         shadowrootdelegatesfocus: true,
         children: [
           h('span', {
-            className: nestedDeclarativeStyles['nested-label'],
-            stylesheet: nestedDeclarativeStyles.$stylesheet,
+            ...styles.nestedLabel,
             children: 'inside nested template',
           }),
           h('slot', { name: 'nested' }),
@@ -196,32 +209,18 @@ test('createTemplate: CustomElement hoisting its styles', () => {
   expect({ content: render(el), stylesheets: el.stylesheets }).toMatchSnapshot()
 })
 
-const nestedHostStyles = css`
-  nested-component {
-    display: flex;
-    flex-direction: column;
-  }
-`
-
 test('createTemplate: CustomElement with declarative shadow dom & host styles', () => {
-  const el = h(NestedCustomElement, { stylesheet: nestedHostStyles.$stylesheet })
+  const el = h(NestedCustomElement, { ...styles.nestedComponent })
   expect({ content: render(el), stylesheets: el.stylesheets }).toMatchSnapshot()
 })
 
-const nestedChildrenStyles = css`
-  .slotted-paragraph {
-    color: rebeccapurple;
-  }
-`
-
 test('createTemplate: CustomElement with styled slotted component', () => {
   const el = h(NestedCustomElement, {
-    stylesheet: nestedHostStyles.$stylesheet,
+    ...styles.nestedComponent,
     children: [
       h('p', {
         slot: 'nested',
-        className: nestedChildrenStyles['slotted-paragraph'],
-        stylesheet: nestedChildrenStyles.$stylesheet,
+        ...styles.slottedParagraph,
         children: 'slotted paragraph',
       }),
     ],
@@ -229,9 +228,9 @@ test('createTemplate: CustomElement with styled slotted component', () => {
   expect({ content: render(el), stylesheets: el.stylesheets }).toMatchSnapshot()
 })
 
-const TopCustomElement: FT = ({ children, stylesheet }) =>
+const TopCustomElement: FT = ({ children, ...props }) =>
   h('top-component', {
-    stylesheet,
+    ...props,
     children: [
       Template({
         shadowrootdelegatesfocus: true,
@@ -239,8 +238,7 @@ const TopCustomElement: FT = ({ children, stylesheet }) =>
         children: h(NestedCustomElement, {
           children: h('p', {
             slot: 'nested',
-            className: nestedChildrenStyles['slotted-paragraph'],
-            stylesheet: nestedChildrenStyles.$stylesheet,
+            ...styles.slottedParagraph,
             children: 'slotted paragraph',
           }),
         }),
@@ -254,28 +252,15 @@ test('createTemplate: CustomElement with declarative shadow dom and nested decla
   expect({ content: render(el), stylesheets: el.stylesheets }).toMatchSnapshot()
 })
 
-const hostStyles = css`
-  top-component {
-    display: block;
-  }
-`
-
 test('createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles', () => {
-  const el = h(TopCustomElement, { stylesheet: hostStyles.$stylesheet })
+  const el = h(TopCustomElement, { ...styles.topComponent })
   expect({ content: render(el), stylesheets: el.stylesheets }).toMatchSnapshot()
 })
 
-const imageStyles = css`
-  .image {
-    width: 100%;
-    aspect-ratio: 16 / 9;
-  }
-`
-
 test('createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles and child', () => {
   const el = h(TopCustomElement, {
-    stylesheet: hostStyles.$stylesheet,
-    children: h('img', { className: imageStyles.image, stylesheet: imageStyles.$stylesheet }),
+    ...styles.topComponent,
+    children: h('img', { ...styles.image }),
   })
   expect({ content: render(el), stylesheets: el.stylesheets }).toMatchSnapshot()
 })
@@ -300,9 +285,27 @@ const sheet3 = css`
 test('ssr: Properly hoist and deduplicates multiple stylesheets on a single node', () => {
   expect(
     h('div', {
-      stylesheet: [sheet1.$stylesheet, sheet2.$stylesheet, sheet3.$stylesheet],
+      stylesheet: [sheet1, sheet2, sheet3],
     }).stylesheets.size,
   ).toBe(2)
+})
+
+test('ssr: filters out falsey stylesheets', () => {
+  expect(
+    h('div', {
+      stylesheet: ['truthy', false && 'false', false && 'false', undefined && 'void', null && 'null'],
+    }).stylesheets.size,
+  ).toBe(1)
+})
+
+test('ssr: filters out falsey classNames', () => {
+  expect(
+    render(
+      h('div', {
+        className: ['truthy', false && 'false', undefined && 'void', null && 'null'],
+      }),
+    ),
+  ).toMatchSnapshot()
 })
 
 test('createTemplate: Trims whitespace', () => {

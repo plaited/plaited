@@ -91,121 +91,167 @@ exports[`Fragment 1`] = `
 <li>Blast Off!!!</li>"
 `;
 
-exports[`ssr: Declarative shadow dom hoisting its styles 1`] = `
+exports[`createTemplate: CustomElement hoisting its styles 1`] = `
+{
+  "content": 
 "<nested-component>
     <template shadowrootmode="open" shadowrootdelegatesfocus="true">
         <style>
-            .nested-label_LTU0Mz { font-weight: bold; }
-        </style><span class="nested-label_LTU0Mz">inside nested template</span>
+            .p-13zrhcr{font-weight:bold}
+        </style><span class="nestedLabel_-ncexap p-13zrhcr">inside nested template</span>
         <slot
         name="nested"></slot>
     </template>
 </nested-component>"
+,
+  "stylesheets":   Set {},
+}
 `;
 
-exports[`ssr: Declarative shadow dom with host styles 1`] = `
+exports[`createTemplate: CustomElement with declarative shadow dom & host styles 1`] = `
+{
+  "content": 
 "<style>
-    nested-component { display: flex; flex-direction: column; }
+    .p1elkwju{display:flex}.p-1q8jja5{flex-direction:column}
 </style>
-<nested-component>
+<nested-component class="nestedComponent_-6sxbb p1elkwju p-1q8jja5">
     <template shadowrootmode="open" shadowrootdelegatesfocus="true">
         <style>
-            .nested-label_LTU0Mz { font-weight: bold; }
-        </style><span class="nested-label_LTU0Mz">inside nested template</span>
+            .p-13zrhcr{font-weight:bold}
+        </style><span class="nestedLabel_-ncexap p-13zrhcr">inside nested template</span>
         <slot
         name="nested"></slot>
     </template>
 </nested-component>"
+,
+  "stylesheets":   
+Set {
+    ".p1elkwju{display:flex}",
+    ".p-1q8jja5{flex-direction:column}",
+  }
+,
+}
 `;
 
-exports[`ssr: Declarative shadow dom with styled slotted component 1`] = `
+exports[`createTemplate: CustomElement with styled slotted component 1`] = `
+{
+  "content": 
 "<style>
-    nested-component { display: flex; flex-direction: column; }.slotted-paragraph_LTc5ND { color: rebeccapurple; }
+    .p1elkwju{display:flex}.p-1q8jja5{flex-direction:column}.p-7t9obj{color:rebeccapurple}
 </style>
-<nested-component>
+<nested-component class="nestedComponent_-6sxbb p1elkwju p-1q8jja5">
     <template shadowrootmode="open" shadowrootdelegatesfocus="true">
         <style>
-            .nested-label_LTU0Mz { font-weight: bold; }
-        </style><span class="nested-label_LTU0Mz">inside nested template</span>
+            .p-13zrhcr{font-weight:bold}
+        </style><span class="nestedLabel_-ncexap p-13zrhcr">inside nested template</span>
         <slot
         name="nested"></slot>
     </template>
-    <p class="slotted-paragraph_LTc5ND" slot="nested">slotted paragraph</p>
+    <p class="slottedParagraph_-6clsxr p-7t9obj" slot="nested">slotted paragraph</p>
 </nested-component>"
+,
+  "stylesheets":   
+Set {
+    ".p1elkwju{display:flex}",
+    ".p-1q8jja5{flex-direction:column}",
+    ".p-7t9obj{color:rebeccapurple}",
+  }
+,
+}
 `;
 
-exports[`ssr: Declarative shadow dom with another declarative shadow dom 1`] = `
+exports[`createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom 1`] = `
+{
+  "content": 
 "<top-component>
     <template shadowrootdelegatesfocus="true" shadowrootmode="open">
         <style>
-            .slotted-paragraph_LTc5ND { color: rebeccapurple; }
+            .p-7t9obj{color:rebeccapurple}
         </style>
         <nested-component>
             <template shadowrootmode="open" shadowrootdelegatesfocus="true">
                 <style>
-                    .nested-label_LTU0Mz { font-weight: bold; }
-                </style><span class="nested-label_LTU0Mz">inside nested template</span>
+                    .p-13zrhcr{font-weight:bold}
+                </style><span class="nestedLabel_-ncexap p-13zrhcr">inside nested template</span>
                 <slot
                 name="nested"></slot>
             </template>
-            <p class="slotted-paragraph_LTc5ND" slot="nested">slotted paragraph</p>
+            <p class="slottedParagraph_-6clsxr p-7t9obj" slot="nested">slotted paragraph</p>
         </nested-component>
     </template>
 </top-component>"
+,
+  "stylesheets":   Set {},
+}
 `;
 
-exports[`ssr: Declarative shadow dom with another declarative shadow dom plus host styles 1`] = `
+exports[`createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles 1`] = `
+{
+  "content": 
 "<style>
-    top-component { display: block; }
+    .p-1kjunei{display:block}
 </style>
-<top-component>
+<top-component class="topComponent_cl61h5 p-1kjunei">
     <template shadowrootdelegatesfocus="true" shadowrootmode="open">
         <style>
-            .slotted-paragraph_LTc5ND { color: rebeccapurple; }
+            .p-7t9obj{color:rebeccapurple}
         </style>
         <nested-component>
             <template shadowrootmode="open" shadowrootdelegatesfocus="true">
                 <style>
-                    .nested-label_LTU0Mz { font-weight: bold; }
-                </style><span class="nested-label_LTU0Mz">inside nested template</span>
+                    .p-13zrhcr{font-weight:bold}
+                </style><span class="nestedLabel_-ncexap p-13zrhcr">inside nested template</span>
                 <slot
                 name="nested"></slot>
             </template>
-            <p class="slotted-paragraph_LTc5ND" slot="nested">slotted paragraph</p>
+            <p class="slottedParagraph_-6clsxr p-7t9obj" slot="nested">slotted paragraph</p>
         </nested-component>
     </template>
 </top-component>"
+,
+  "stylesheets":   
+Set {
+    ".p-1kjunei{display:block}",
+  }
+,
+}
 `;
 
-exports[`ssr: Declarative shadow dom with another declarative shadow dom plus host styles and child 1`] = `
+exports[`createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles and child 1`] = `
+{
+  "content": 
 "<style>
-    top-component { display: block; }.image_Mjc4MD { width: 100%; aspect-ratio: 16 / 9; }
+    .p-1kjunei{display:block}.p1twa58b{width:100%}.p-sl9lkd{aspect-ratio:16 / 9}
 </style>
-<top-component>
+<top-component class="topComponent_cl61h5 p-1kjunei">
     <template shadowrootdelegatesfocus="true" shadowrootmode="open">
         <style>
-            .slotted-paragraph_LTc5ND { color: rebeccapurple; }
+            .p-7t9obj{color:rebeccapurple}
         </style>
         <nested-component>
             <template shadowrootmode="open" shadowrootdelegatesfocus="true">
                 <style>
-                    .nested-label_LTU0Mz { font-weight: bold; }
-                </style><span class="nested-label_LTU0Mz">inside nested template</span>
+                    .p-13zrhcr{font-weight:bold}
+                </style><span class="nestedLabel_-ncexap p-13zrhcr">inside nested template</span>
                 <slot
                 name="nested"></slot>
             </template>
-            <p class="slotted-paragraph_LTc5ND" slot="nested">slotted paragraph</p>
+            <p class="slottedParagraph_-6clsxr p-7t9obj" slot="nested">slotted paragraph</p>
         </nested-component>
     </template>
-    <img class="image_Mjc4MD" />
+    <img class="image_21tay0h p1twa58b p-sl9lkd" />
 </top-component>"
+,
+  "stylesheets":   
+Set {
+    ".p-1kjunei{display:block}",
+    ".p1twa58b{width:100%}",
+    ".p-sl9lkd{aspect-ratio:16 / 9}",
+  }
+,
+}
 `;
 
-exports[`ssr: Properly hoist and deduplicates multiple stylesheets on a single node 1`] = `
-"<style>
-    .a_NTA5Nj { width: 100%; }.a_LTIzMT { color: blue; }
-</style>
-<div></div>"
-`;
+exports[`ssr: filters out falsey classNames 1`] = `"<div class="truthy"></div>"`;
 
-exports[`ssr: Trims whitespace 1`] = `"<div>trims white-space</div>"`;
+exports[`createTemplate: Trims whitespace 1`] = `"<div>trims white-space</div>"`;

@@ -1,0 +1,115 @@
+// Bun Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`createStyles: simple rules 1`] = `
+{
+  "$": [Function: $],
+  "base": {
+    "className": "base_-5cbd2np po6dgn4 p-bxtjeu p7knf96",
+    "stylesheet": [
+      ".po6dgn4{fontz-size:16px}",
+      ".p-bxtjeu{line-height:1.5}",
+      ".p7knf96{color:rgb(60,60,60)}",
+    ],
+  },
+  "highlighted": {
+    "className": "highlighted_-6clsxr p-7t9obj",
+    "stylesheet": [
+      ".p-7t9obj{color:rebeccapurple}",
+    ],
+  },
+}
+`;
+
+exports[`createStyles: Pseudo-classes 1`] = `
+{
+  "$": [Function: $],
+  "button": {
+    "className": "button_44w5co p11qcwkk",
+    "stylesheet": [
+      ".p11qcwkk{background-color:lightblue}",
+    ],
+  },
+}
+`;
+
+exports[`createStyles: Pseudo-classes 2`] = `
+{
+  "$": [Function: $],
+  "button": {
+    "className": "button_99m2p4f p11qcwkk pk2siy2:hover p-2eykfzw:active",
+    "stylesheet": [
+      ".p11qcwkk{background-color:lightblue}",
+      ".pk2siy2:hover{background-color:blue}",
+      ".p-2eykfzw:active{background-color:darkblue}",
+    ],
+  },
+}
+`;
+
+exports[`createStyles: Pseudo-elements 1`] = `
+{
+  "$": [Function: $],
+  "input": {
+    "className": "input_1cjzmke pst78p6 p-f5f5uo p-dl4gbk:invalid",
+    "stylesheet": [
+      ".pst78p6{::placeholder:#999}",
+      ".p-f5f5uo{color:#333}",
+      ".p-dl4gbk:invalid{color:red}",
+    ],
+  },
+}
+`;
+
+exports[`createStyles: media query 1`] = `
+{
+  "$": [Function: $],
+  "base": {
+    "className": "base_3y9lv6j p-265g0z p-2qe9hlz p-2nmjim5",
+    "stylesheet": [
+      ".p-265g0z{width:800}",
+      "@media (max-width: 800px){.p-2qe9hlz{width:100%}}",
+      "@media (min-width: 1540px){.p-2nmjim5{width:1366}}",
+    ],
+  },
+}
+`;
+
+exports[`createStyles: combining conditions 1`] = `
+{
+  "$": [Function: $],
+  "button": {
+    "className": "button_6s46r6w p-39m7ycl p-188rkrm:hover p-wa1046:active",
+    "stylesheet": [
+      ".p-39m7ycl{color:var(--blue-link)}",
+      "@media (hover: hover){.p-188rkrm:hover{color:scale(1.1)}}",
+      ".p-wa1046:active{color:scale(0.9)}",
+    ],
+  },
+}
+`;
+
+exports[`JSX: spread 1`] = `
+{
+  "$": "🦄",
+  "client": [
+    "<button ",
+    "class="button_6s46r6w p-39m7ycl p-188rkrm:hover p-wa1046:active" ",
+    ">",
+    "</button>",
+  ],
+  "registry":   Set {},
+  "server": [
+    "<button ",
+    "class="button_6s46r6w p-39m7ycl p-188rkrm:hover p-wa1046:active" ",
+    ">",
+    "</button>",
+  ],
+  "stylesheets":   
+Set {
+    ".p-39m7ycl{color:var(--blue-link)}",
+    "@media (hover: hover){.p-188rkrm:hover{color:scale(1.1)}}",
+    ".p-wa1046:active{color:scale(0.9)}",
+  }
+,
+}
+`;

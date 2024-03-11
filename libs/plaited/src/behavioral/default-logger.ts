@@ -15,6 +15,7 @@ export const defaultLogger: DefaultLogger = ({ candidates, selectedEvent, pendin
     detail?: unknown
     priority: number
     blockedBy?: string
+    trigger?: true | 'object' | 'person'
   }[] = []
   for (const bid of candidates) {
     const blockedCB = isListeningFor(bid)
@@ -25,6 +26,7 @@ export const defaultLogger: DefaultLogger = ({ candidates, selectedEvent, pendin
       priority: bid.priority,
       detail: bid.detail,
       blockedBy: blockingThreads.find(({ block }) => blockedCB(block))?.thread,
+      trigger: bid.trigger,
     })
   }
   return ruleSets.sort((a, b) => a.priority - b.priority)

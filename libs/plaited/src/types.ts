@@ -43,7 +43,7 @@ export type RuleSet<T = any> = {
 export type RulesFunction<T = any> = () => IterableIterator<RuleSet<T>>
 
 export type RunningBid = {
-  trigger?: true
+  trigger?: true | 'object' | 'person'
   thread: string
   priority: number
   generator: IterableIterator<RuleSet>
@@ -55,6 +55,7 @@ export type CandidateBid = {
   priority: number
   type: string
   detail?: any
+  trigger?: true | 'object' | 'person'
   template?: BPEventTemplate
 }
 
@@ -62,7 +63,7 @@ export type Actions<T = any> = { [key: string]: (detail: T) => void | Promise<vo
 
 export type Feedback = (actions: Actions) => void
 export type AddThreads = (threads: Record<string, RulesFunction>) => void
-export type Trigger = <T = any>(args: BPEvent<T>) => void
+export type Trigger = <T = any>(args: BPEvent<T>, triggerType?: 'object' | 'person') => void
 
 export type Sync = <T = any>(set: RuleSet<T>) => RulesFunction<T>
 export type Thread = (...rules: RulesFunction[]) => RulesFunction
@@ -133,12 +134,12 @@ export type CSSProperties = CSS.Properties<string | number> & {
 
 export type PlaitedAttributes = {
   class?: never
-  className?: string
+  className?: string | Array<string | undefined | false | null>
   children?: Children
   ['bp-address']?: string
   ['bp-target']?: string
   ['bp-trigger']?: Record<string, string>
-  stylesheet?: string | string[]
+  stylesheet?: string | Array<string | undefined | false | null>
   /** setting trusted to true will disable all escaping security policy measures for this element template */
   trusted?: boolean
   style?: CSSProperties

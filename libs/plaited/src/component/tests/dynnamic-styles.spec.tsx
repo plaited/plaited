@@ -1,40 +1,26 @@
 import { test } from '@plaited/rite'
-import { css, stylesheets } from '../../css.js'
+import { createStyles } from '../../css.js'
 import { Component } from '../index.js'
 
 test('dynamic styles', async (t) => {
   const body = document.querySelector('body')
-  const { $stylesheet, ...cls } = css`
-    .noRepeat {
-      color: blue;
-    }
-    .repeat {
-      color: red;
-    }
-  `
+  const styles = createStyles({
+    noRepeat: {
+      color: 'blue',
+      textDecoration: 'underline',
+    },
+    repeat: {
+      color: 'purple',
+      textDecoration: 'underline',
+    },
+  })
   const Fixture = Component({
     tag: 'dynamic-only',
     template: <div bp-target='target'></div>,
     bp({ $ }) {
       const [target] = $<HTMLDivElement>('target')
-      target.insert(
-        'beforeend',
-        <div
-          stylesheet={$stylesheet}
-          className={cls.noRepeat}
-        >
-          construable stylesheet applied once
-        </div>,
-      )
-      target.insert(
-        'beforeend',
-        <div
-          stylesheet={$stylesheet}
-          className={cls.repeat}
-        >
-          not applied
-        </div>,
-      )
+      target.insert('beforeend', <div {...styles.noRepeat}>construable stylesheet applied once</div>)
+      target.insert('beforeend', <div {...styles.repeat}>not applied</div>)
     },
   })
   Fixture.define()
@@ -44,31 +30,28 @@ test('dynamic styles', async (t) => {
   const root = target.getRootNode() as ShadowRoot
   t({
     given: 'dynamic render of the same stylesheet twice',
-    should: 'have adoptedStyleSheets of length 1',
+    should: 'have adoptedStyleSheets of length 3',
     actual: root.adoptedStyleSheets.length,
-    expected: 1,
+    expected: 3,
   })
 })
 
 test('with default and dynamic styles', async (t) => {
   const body = document.querySelector('body')
-  const { $stylesheet, ...cls } = css`
-    .root {
-      color: blue;
-    }
-  `
-  const { $stylesheet: stylesheet2, ...cls2 } = css`
-    .override {
-      color: red;
-    }
-  `
+  const styles = createStyles({
+    root: {
+      color: 'blue',
+    },
+    override: {
+      color: 'red',
+    },
+  })
   const Fixture = Component({
     tag: 'with-default-styles',
     template: (
       <div
         bp-target='target-2'
-        className={cls.root}
-        stylesheet={$stylesheet}
+        {...styles.root}
       ></div>
     ),
     bp({ $ }) {
@@ -76,8 +59,8 @@ test('with default and dynamic styles', async (t) => {
       target.insert(
         'beforeend',
         <div
-          stylesheet={stylesheets($stylesheet, stylesheet2)}
-          className={cls2.override}
+          className={[styles.override.className, styles.root.className]}
+          stylesheet={[...styles.override.stylesheet, ...styles.root.stylesheet]}
         >
           construable stylesheet applied only for second sheet
         </div>,

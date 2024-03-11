@@ -51,11 +51,12 @@ export const bProgram: BProgram = <T>(logger?: Logger<T>) => {
   function selectNextEvent() {
     const blocked: BPListener[] = []
     const candidates: CandidateBid[] = []
-    for (const { request, priority, block, thread } of pending) {
+    for (const { request, priority, block, thread, trigger } of pending) {
       block && blocked.push(...ensureArray(block))
       request &&
         candidates.push({
           priority,
+          trigger,
           thread,
           ...(isTypeOf<BPEventTemplate>(request, 'function') ? { template: request, ...request() } : request),
         })
@@ -100,7 +101,7 @@ export const bProgram: BProgram = <T>(logger?: Logger<T>) => {
     run()
   }
 
-  const trigger: Trigger = (request) => {
+  const trigger: Trigger = (request, triggerType) => {
     const thread = function* () {
       yield {
         request,
@@ -110,7 +111,7 @@ export const bProgram: BProgram = <T>(logger?: Logger<T>) => {
     running.add({
       thread: request.type,
       priority: 0,
-      trigger: true,
+      trigger: triggerType ?? true,
       generator: thread(),
     })
     run()

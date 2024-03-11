@@ -100,10 +100,11 @@ exports[`createTemplate: CustomElement hoisting its styles 1`] = `
 
 exports[`createTemplate: CustomElement with declarative shadow dom & host styles 1`] = `
 {
-  "content": "<nested-component></nested-component>",
+  "content": "<nested-component class="nestedComponent_-6sxbb p1elkwju p-1q8jja5"></nested-component>",
   "stylesheets":   
 Set {
-    "nested-component { display: flex; flex-direction: column; }",
+    ".p1elkwju{display:flex}",
+    ".p-1q8jja5{flex-direction:column}",
   }
 ,
 }
@@ -112,14 +113,15 @@ Set {
 exports[`createTemplate: CustomElement with styled slotted component 1`] = `
 {
   "content": 
-"<nested-component>
-    <p class="slotted-paragraph_LTc5ND" slot="nested">slotted paragraph</p>
+"<nested-component class="nestedComponent_-6sxbb p1elkwju p-1q8jja5">
+    <p class="slottedParagraph_-6clsxr p-7t9obj" slot="nested">slotted paragraph</p>
 </nested-component>"
 ,
   "stylesheets":   
 Set {
-    "nested-component { display: flex; flex-direction: column; }",
-    ".slotted-paragraph_LTc5ND { color: rebeccapurple; }",
+    ".p1elkwju{display:flex}",
+    ".p-1q8jja5{flex-direction:column}",
+    ".p-7t9obj{color:rebeccapurple}",
   }
 ,
 }
@@ -134,10 +136,10 @@ exports[`createTemplate: CustomElement with declarative shadow dom and nested de
 
 exports[`createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles 1`] = `
 {
-  "content": "<top-component></top-component>",
+  "content": "<top-component class="topComponent_cl61h5 p-1kjunei"></top-component>",
   "stylesheets":   
 Set {
-    "top-component { display: block; }",
+    ".p-1kjunei{display:block}",
   }
 ,
 }
@@ -146,17 +148,20 @@ Set {
 exports[`createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles and child 1`] = `
 {
   "content": 
-"<top-component>
-    <img class="image_Mjc4MD" />
+"<top-component class="topComponent_cl61h5 p-1kjunei">
+    <img class="image_21tay0h p1twa58b p-sl9lkd" />
 </top-component>"
 ,
   "stylesheets":   
 Set {
-    "top-component { display: block; }",
-    ".image_Mjc4MD { width: 100%; aspect-ratio: 16 / 9; }",
+    ".p-1kjunei{display:block}",
+    ".p1twa58b{width:100%}",
+    ".p-sl9lkd{aspect-ratio:16 / 9}",
   }
 ,
 }
 `;
+
+exports[`ssr: filters out falsey classNames 1`] = `"<div class="truthy"></div>"`;
 
 exports[`createTemplate: Trims whitespace 1`] = `"<div>trims white-space</div>"`;

@@ -29,7 +29,10 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   }
   const tag = _tag.toLowerCase().trim()
   const stylesheets = new Set<string>()
-  stylesheet && ensureArray(stylesheet).forEach((s) => !stylesheets.has(s) && stylesheets.add(s))
+  stylesheet &&
+    (ensureArray(stylesheet).filter(Boolean) as string[]).forEach(
+      (s: string) => !stylesheets.has(s) && stylesheets.add(s),
+    )
   const children = ensureArray(_children)
   /** If the tag is script we must explicitly pass trusted */
   if (tag === 'script' && !trusted) {
@@ -40,7 +43,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const start = [`<${tag} `]
   /** handle JS reserved words commonly used in html class & for*/
   if (htmlFor) start.push(`for="${htmlFor}" `)
-  if (className) start.push(`class="${className}" `)
+  if (className) start.push(`class="${Array.isArray(className) ? className.filter(Boolean).join(' ') : className}" `)
   /** if we have bpTrigger attribute wire up formatted correctly*/
   if (bpTrigger) {
     const value = Object.entries(bpTrigger)

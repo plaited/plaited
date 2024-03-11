@@ -1,5 +1,5 @@
 import { test } from '@plaited/rite'
-import { css } from '../../css.js'
+import { createStyles } from '../../css.js'
 import { Component } from '../index.js'
 import { canUseDOM } from '@plaited/utils'
 
@@ -25,19 +25,18 @@ export const createTemplateElement = (content: string) => {
 }
 
 test('template', async (t) => {
-  const { $stylesheet, ...cls } = css`
-    .inner {
-      color: blue;
-    }
-  `
+  const styles = createStyles({
+    inner: {
+      color: 'blue',
+    },
+  })
   const content = 'client side rendered'
   const Fixture = Component({
     tag: 'template-element',
     template: (
       <div
         data-test='content'
-        className={cls.inner}
-        stylesheet={$stylesheet}
+        {...styles.inner}
       >
         {content}
       </div>
@@ -64,31 +63,28 @@ test('template', async (t) => {
 })
 
 test('template existing declarative shadowdom', async (t) => {
-  const { $stylesheet, ...cls } = css`
-    .inner {
-      color: red;
-    }
-  `
+  const styles = createStyles({
+    inner: {
+      color: 'red',
+    },
+    span: {
+      color: 'green',
+    },
+  })
   const Fixture = Component({
     tag: 'with-declarative-shadow-dom',
     template: (
       <div
         bp-target='inner'
-        className={cls.inner}
-        stylesheet={$stylesheet}
+        {...styles.inner}
       >
         before hydration
       </div>
     ),
     bp({ $ }) {
-      const { $stylesheet, ...cls2 } = css`
-        .span {
-          color: green;
-        }
-      `
       const [inner] = $('inner')
-      inner.render(<span stylesheet={$stylesheet}>after hydration</span>)
-      inner.attr('class', `${cls2.span} ${cls.inner}`)
+      inner.render(<span stylesheet={styles.span.stylesheet}>after hydration</span>)
+      inner.attr('class', styles.span.className)
     },
   })
   const template = createTemplateElement((<Fixture bp-target='host' />).server.join(''))
@@ -97,13 +93,13 @@ test('template existing declarative shadowdom', async (t) => {
   body.append(frag)
   const host = await t.findByAttribute<HTMLElement>('bp-target', 'host')
   let inner = await t.findByAttribute('bp-target', 'inner', host)
-  const style = await t.findByText($stylesheet, host)
+  const style = await t.findByText(styles.inner.stylesheet.join(' '), host)
   let textContent = inner.textContent
   t({
     given: 'before registering custom element',
     should: 'have style tag',
     actual: style.textContent,
-    expected: $stylesheet,
+    expected: styles.inner.stylesheet.join(' '),
   })
   t({
     given: 'before registering custom element',
