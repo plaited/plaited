@@ -1,7 +1,7 @@
 import { Component, css } from 'plaited'
 import { Button } from './button.js'
 
-const { $stylesheet, ...cls } = css`
+const stylesheet = css`
   .storybook-header {
     font-family: 'Nunito Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
@@ -39,8 +39,8 @@ const { $stylesheet, ...cls } = css`
 export const Header = Component({
   tag: 'header-el',
   template: (
-    <header stylesheet={$stylesheet}>
-      <div className={cls['storybook-header']}>
+    <header stylesheet={stylesheet}>
+      <div className='storybook-header'>
         <div>
           <svg
             width='32'
@@ -95,7 +95,7 @@ export const Header = Component({
       newValue ?
         bar.render(
           <>
-            <span className={cls['welcome']}>
+            <span className='welcome'>
               Welcome, <b>{newValue}</b>!
             </span>
             <Button

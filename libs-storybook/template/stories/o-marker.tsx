@@ -1,17 +1,16 @@
-import { FunctionTemplate, css } from 'plaited'
+import { FunctionTemplate, createStyles } from 'plaited'
 
-const { $stylesheet, ...cls } = css`
-  .o {
-    width: 20px;
-    height: 20px;
-    color: #f2e7dc;
-  }
-`
+const styles = createStyles({
+  o: {
+    width: '20px',
+    height: '20px',
+    color: '#f2e7dc',
+  },
+})
 
 export const OMarker: FunctionTemplate = () => (
   <svg
-    className={cls.o}
-    stylesheet={$stylesheet}
+    {...styles.o}
     viewBox='0 0 20 20'
     fill='none'
     xmlns='http://www.w3.org/2000/svg'

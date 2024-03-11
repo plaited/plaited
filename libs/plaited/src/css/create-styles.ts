@@ -1,17 +1,5 @@
 import { hashString, kebabCase } from '@plaited/utils'
-import { CSSProperties } from '../types.js'
-
-type CSSPropertiesObjectLiteral<T extends keyof CSSProperties> = {
-  default?: CSSProperties[T]
-  [key: `@${'container' | 'layer' | 'media' | 'supports'}${string}`]: CSSProperties[T]
-  [key: `:${string}`]: CSSProperties[T] | CSSPropertiesObjectLiteral<T>
-}
-
-type CSSClasses = {
-  [key: string]: {
-    [key in keyof CSSProperties]: CSSProperties[key] | CSSPropertiesObjectLiteral<key> | string
-  }
-}
+import { CSSProperties, CSSPropertiesObjectLiteral, CSSClasses, StyleObjects } from '../types.js'
 
 const createClassHash = (...args: (string | number)[]) => 'p' + hashString(args.join(' '))?.toString(36)
 
@@ -46,19 +34,20 @@ const formatStyles = <T extends CSSClasses>({
   selectors = [],
 }: {
   cls: string
-  stylesheets: Map<keyof StyleObject<T>, Map<string, string>>
+  stylesheets: Map<keyof StyleObjects<T>, Map<string, string>>
   value: CSSPropertiesObjectLiteral<typeof prop> | CSSProperties[typeof prop]
   prop: string
   selectors?: string[]
 }) => {
+  const val = isPrimitive(value) ? value : value.default
   const map = stylesheets.get(cls) ?? stylesheets.set(cls, new Map<string, string>()).get(cls)!
   const [selector = '', ...atRules] = selectors
-  const val = isPrimitive(value) ? value : value.default
   if (val) {
     const hash = createClassHash(val, prop, selector, ...atRules)
+    if (map.has(hash)) return
     const length = atRules.length
     map.set(
-      `${hash}${selector}`,
+      hash,
       length ?
         handleAtRules({
           prop,
@@ -88,20 +77,13 @@ const formatStyles = <T extends CSSClasses>({
   }
 }
 
-type StyleObject<T extends CSSClasses> = {
-  [key in keyof T]: {
-    className: string
-    stylesheet: string[]
-  }
-}
-
 /** A types safe function for creating hashed utility className(s) and stylesheet(s) */
 export const createStyles = <T extends CSSClasses>(
   classNames: T,
-): StyleObject<T> & {
+): StyleObjects<T> & {
   $: (key: string) => string | undefined
 } => {
-  const stylesheets = new Map<keyof StyleObject<T>, Map<string, string>>()
+  const stylesheets = new Map<keyof StyleObjects<T>, Map<string, string>>()
   for (const cls in classNames) {
     const props = classNames[cls]
     for (const prop in props) {
@@ -121,7 +103,7 @@ export const createStyles = <T extends CSSClasses>(
       }
     }
   }
-  const toRet: StyleObject<T> = {} as StyleObject<T>
+  const toRet: StyleObjects<T> = {} as StyleObjects<T>
   for (const [name, sheets] of stylesheets) {
     const classNames = [...sheets.keys()].join(' ')
     toRet[name] = {

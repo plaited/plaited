@@ -36,7 +36,7 @@ exports[`createStyles: Pseudo-classes 2`] = `
 {
   "$": [Function: $],
   "button": {
-    "className": "button_99m2p4f p11qcwkk pk2siy2:hover p-2eykfzw:active",
+    "className": "button_4v8xfrv p11qcwkk pk2siy2 p-2eykfzw",
     "stylesheet": [
       ".p11qcwkk{background-color:lightblue}",
       ".pk2siy2:hover{background-color:blue}",
@@ -50,7 +50,7 @@ exports[`createStyles: Pseudo-elements 1`] = `
 {
   "$": [Function: $],
   "input": {
-    "className": "input_1cjzmke pst78p6 p-f5f5uo p-dl4gbk:invalid",
+    "className": "input_22n0mql pst78p6 p-f5f5uo p-dl4gbk",
     "stylesheet": [
       ".pst78p6{::placeholder:#999}",
       ".p-f5f5uo{color:#333}",
@@ -78,7 +78,7 @@ exports[`createStyles: combining conditions 1`] = `
 {
   "$": [Function: $],
   "button": {
-    "className": "button_6s46r6w p-39m7ycl p-188rkrm:hover p-wa1046:active",
+    "className": "button_45oqlis p-39m7ycl p-188rkrm p-wa1046",
     "stylesheet": [
       ".p-39m7ycl{color:var(--blue-link)}",
       "@media (hover: hover){.p-188rkrm:hover{color:scale(1.1)}}",
@@ -93,14 +93,14 @@ exports[`JSX: spread 1`] = `
   "$": "🦄",
   "client": [
     "<button ",
-    "class="button_6s46r6w p-39m7ycl p-188rkrm:hover p-wa1046:active" ",
+    "class="button_45oqlis p-39m7ycl p-188rkrm p-wa1046" ",
     ">",
     "</button>",
   ],
   "registry":   Set {},
   "server": [
     "<button ",
-    "class="button_6s46r6w p-39m7ycl p-188rkrm:hover p-wa1046:active" ",
+    "class="button_45oqlis p-39m7ycl p-188rkrm p-wa1046" ",
     ">",
     "</button>",
   ],

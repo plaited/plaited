@@ -1,0 +1,40 @@
+// Bun Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`assignStyles 1`] = `
+{
+  "className": "button_kvg5vg p49uqw9n p1ri95dn p-c0syh9 p-2ezhu34 p-2qvsfi4 p2plywwi p10xl1ef small_163g06v pntfuxu p12x8yyc primary_-156y5z6 pyird39 p-2w4nzkx",
+  "stylesheet": [
+    ".p49uqw9n{font-family:Nunito Sans, Helvetica Neue, Helvetica, Arial, sans-serif}",
+    ".p1ri95dn{font-weight:700}",
+    ".p-c0syh9{border:0}",
+    ".p-2ezhu34{border-radius:3em}",
+    ".p-2qvsfi4{cursor:pointer}",
+    ".p2plywwi{display:inline-block}",
+    ".p10xl1ef{line-height:1}",
+    ".pntfuxu{font-size:12px}",
+    ".p12x8yyc{padding:10px 16px}",
+    ".pyird39{color:white}",
+    ".p-2w4nzkx{background-color:#1ea7fd}",
+  ],
+}
+`;
+
+exports[`assignStyles 2`] = `
+{
+  "className": "button_kvg5vg p49uqw9n p1ri95dn p-c0syh9 p-2ezhu34 p-2qvsfi4 p2plywwi p10xl1ef large_10r87xp p14vlh7q p188r5x1 secondary_49l08bw p-f5f5uo p1ti1rrq pqxf18d",
+  "stylesheet": [
+    ".p49uqw9n{font-family:Nunito Sans, Helvetica Neue, Helvetica, Arial, sans-serif}",
+    ".p1ri95dn{font-weight:700}",
+    ".p-c0syh9{border:0}",
+    ".p-2ezhu34{border-radius:3em}",
+    ".p-2qvsfi4{cursor:pointer}",
+    ".p2plywwi{display:inline-block}",
+    ".p10xl1ef{line-height:1}",
+    ".p14vlh7q{font-size:16px}",
+    ".p188r5x1{padding:12px 24px}",
+    ".p-f5f5uo{color:#333}",
+    ".p1ti1rrq{background-color:transparent}",
+    ".pqxf18d{box-shadow:rgba(0, 0, 0, 0.15) 0px 0px 0px 1px inset}",
+  ],
+}
+`;

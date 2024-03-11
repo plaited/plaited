@@ -1,7 +1,7 @@
 import { Component, PlaitedElement, css } from 'plaited'
 import { Header } from './header.js'
 
-const { $stylesheet, ...cls } = css`
+const stylesheet = css`
   .storybook-page {
     font-family: 'Nunito Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-size: 14px;
@@ -74,7 +74,7 @@ const { $stylesheet, ...cls } = css`
 `
 
 const template = (
-  <article stylesheet={$stylesheet}>
+  <article stylesheet={stylesheet}>
     <Header
       bp-target='header'
       bp-trigger={{
@@ -84,7 +84,7 @@ const template = (
       }}
     />
 
-    <section className={cls['storybook-page']}>
+    <section className='storybook-page'>
       <h2>Pages in Storybook</h2>
       <p>
         We recommend building UIs with a{' '}
@@ -129,8 +129,8 @@ const template = (
         </a>
         .
       </p>
-      <div className={cls['tip-wrapper']}>
-        <span className={cls['tip']}>Tip</span> Adjust the width of the canvas with the{' '}
+      <div className='tip-wrapper'>
+        <span className='tip'>Tip</span> Adjust the width of the canvas with the{' '}
         <svg
           width='10'
           height='10'

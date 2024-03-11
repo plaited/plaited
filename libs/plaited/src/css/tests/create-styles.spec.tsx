@@ -98,7 +98,7 @@ test('$: query class', () => {
       },
     },
   })
-  expect(s.$('button')).toBe('button_6s46r6w')
+  expect(s.$('button')).toBe('button_45oqlis')
 })
 
 test('JSX: spread', () => {

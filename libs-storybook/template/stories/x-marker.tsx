@@ -1,17 +1,16 @@
-import { FunctionTemplate, css } from 'plaited'
+import { FunctionTemplate, createStyles } from 'plaited'
 
-const { $stylesheet, ...cls } = css`
-  .x {
-    width: 20px;
-    height: 20px;
-    color: #a9d9d0;
-  }
-`
+const styles = createStyles({
+  x: {
+    width: '20px',
+    height: '20px',
+    color: '#a9d9d0',
+  },
+})
 
 export const XMarker: FunctionTemplate = () => (
   <svg
-    className={cls.x}
-    stylesheet={$stylesheet}
+    {...styles.x}
     viewBox='0 0 21 21'
     fill='none'
   >

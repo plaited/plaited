@@ -132,6 +132,30 @@ export type CSSProperties = CSS.Properties<string | number> & {
   [key: string]: string | number
 }
 
+export type CSSPropertiesObjectLiteral<T extends keyof CSSProperties> = {
+  default?: CSSProperties[T]
+  [key: `@${'container' | 'layer' | 'media' | 'supports'}${string}`]: CSSProperties[T]
+  [key: `:${string}`]: CSSProperties[T] | CSSPropertiesObjectLiteral<T>
+}
+
+export type CSSClasses = {
+  [key: string]: {
+    [key in keyof CSSProperties]: CSSProperties[key] | CSSPropertiesObjectLiteral<key> | string
+  }
+}
+
+export type StyleObject = {
+  className?: string
+  stylesheet?: string[]
+}
+
+export type StyleObjects<T extends CSSClasses> = {
+  [key in keyof T]: {
+    className: string
+    stylesheet: string[]
+  }
+}
+
 export type PlaitedAttributes = {
   class?: never
   className?: string | Array<string | undefined | false | null>
