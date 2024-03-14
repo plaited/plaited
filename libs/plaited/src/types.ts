@@ -135,17 +135,16 @@ export type CSSProperties = CSS.Properties<string | number> & {
 export type CSSPropertiesObjectLiteral<T extends keyof CSSProperties> = {
   default?: CSSProperties[T]
   [key: `@${'container' | 'layer' | 'media' | 'supports'}${string}`]: CSSProperties[T]
-  [key: `:${string}`]: CSSProperties[T] | CSSPropertiesObjectLiteral<T>
+  [key: `:${string}` | `[${string}`]: CSSProperties[T] | CSSPropertiesObjectLiteral<T>
+  [key: `:host${string}`]: never
 }
 
 export type CSSClasses = {
-  [key: string]: {
-    [key in keyof CSSProperties]: CSSProperties[key] | CSSPropertiesObjectLiteral<key> | string
-  }
+  [key in keyof CSSProperties]: CSSProperties[key] | CSSPropertiesObjectLiteral<key> | string
 }
 
 export type StyleObject = {
-  className?: string
+  className?: string[]
   stylesheet?: string[]
 }
 

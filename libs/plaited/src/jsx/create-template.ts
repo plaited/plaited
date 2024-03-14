@@ -24,6 +24,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     ...attributes
   } = attrs
   const registry = new Set<PlaitedElementConstructor>()
+  console.log({_tag})
   if (typeof _tag === 'function') {
     return _tag(attrs)
   }

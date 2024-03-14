@@ -1,5 +1,5 @@
 import { hashString, kebabCase } from '@plaited/utils'
-import { CSSProperties, CSSPropertiesObjectLiteral, CSSClasses, StyleObjects } from '../types.js'
+import { CSSProperties, CSSPropertiesObjectLiteral, CSSClasses, StyleObject } from '../types.js'
 
 const createClassHash = (...args: (string | number)[]) => 'p' + hashString(args.join(' '))?.toString(36)
 
@@ -27,26 +27,23 @@ const handleAtRules = ({
   }, '')
 
 const formatStyles = <T extends CSSClasses>({
-  cls,
   stylesheets,
   value,
   prop,
   selectors = [],
 }: {
-  cls: string
-  stylesheets: Map<keyof StyleObjects<T>, Map<string, string>>
+  stylesheets: Map<string, string>
   value: CSSPropertiesObjectLiteral<typeof prop> | CSSProperties[typeof prop]
   prop: string
   selectors?: string[]
 }) => {
   const val = isPrimitive(value) ? value : value.default
-  const map = stylesheets.get(cls) ?? stylesheets.set(cls, new Map<string, string>()).get(cls)!
   const [selector = '', ...atRules] = selectors
   if (val) {
     const hash = createClassHash(val, prop, selector, ...atRules)
-    if (map.has(hash)) return
+    if (stylesheets.has(hash)) return
     const length = atRules.length
-    map.set(
+    stylesheets.set(
       hash,
       length ?
         handleAtRules({
@@ -64,12 +61,11 @@ const formatStyles = <T extends CSSClasses>({
     const { default: _, ...rest } = value
     for (const context in rest) {
       formatStyles<T>({
-        cls,
         prop,
         stylesheets,
         value: rest[context as keyof typeof rest],
         selectors: [
-          context.startsWith(':') ? selector + context : selector,
+          /^(:|\[)/.test(context) ? selector + context : selector,
           ...(/^@(container|layer|media|supports)/.test(context) ? [...atRules, context] : atRules),
         ],
       })
@@ -78,44 +74,26 @@ const formatStyles = <T extends CSSClasses>({
 }
 
 /** A types safe function for creating hashed utility className(s) and stylesheet(s) */
-export const createStyles = <T extends CSSClasses>(
-  classNames: T,
-): StyleObjects<T> & {
-  $: (key: string) => string | undefined
-} => {
-  const stylesheets = new Map<keyof StyleObjects<T>, Map<string, string>>()
-  for (const cls in classNames) {
-    const props = classNames[cls]
-    for (const prop in props) {
-      const value = props[prop]
-      if (isPrimitive(value)) {
-        const map = stylesheets.get(cls) ?? stylesheets.set(cls, new Map<string, string>()).get(cls)!
-        const hash = createClassHash(value, prop, '')
-        const sheet = `.${hash}{${kebabCase(prop)}:${value}}`
-        map.set(`${hash}`, sheet)
-      } else {
-        formatStyles<T>({
-          cls,
-          prop,
-          stylesheets,
-          value,
-        })
-      }
-    }
-  }
-  const toRet: StyleObjects<T> = {} as StyleObjects<T>
-  for (const [name, sheets] of stylesheets) {
-    const classNames = [...sheets.keys()].join(' ')
-    toRet[name] = {
-      className: `${name as string}_${hashString(classNames)?.toString(36) ?? ''} ${classNames}`,
-      stylesheet: [...sheets.values()],
+export const createStyles = (
+  props: CSSClasses,
+): StyleObject => {
+  const stylesheets = new Map<string, string>()
+  for (const prop in props) {
+    const value = props[prop]
+    if (isPrimitive(value)) {
+      const hash = createClassHash(value, prop, '')
+      const sheet = `.${hash}{${kebabCase(prop)}:${value}}`
+      stylesheets.set(`${hash}`, sheet)
+    } else {
+      formatStyles({
+        prop,
+        stylesheets,
+        value,
+      })
     }
   }
   return {
-    ...toRet,
-    $(key: string) {
-      const obj = toRet[key]
-      if (obj) return obj.className.split(' ')[0]
-    },
+    className: [...stylesheets.keys()],
+    stylesheet: [...stylesheets.values()]
   }
 }
