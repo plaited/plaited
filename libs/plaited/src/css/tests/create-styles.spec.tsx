@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 import { createStyles } from '../create-styles.js'
-
+import { assignStyles } from '../assign-styles.js'
 test('createStyles: simple rules', () => {
   const s = createStyles({
     base: {
@@ -83,22 +83,6 @@ test('createStyles: combining conditions', () => {
       },
     }),
   ).toMatchSnapshot()
-})
-
-test('$: query class', () => {
-  const s = createStyles({
-    button: {
-      color: {
-        default: 'var(--blue-link)',
-        ':hover': {
-          default: null,
-          '@media (hover: hover)': 'scale(1.1)',
-        },
-        ':active': 'scale(0.9)',
-      },
-    },
-  })
-  expect(s.$('button')).toBe('button_45oqlis')
 })
 
 test('JSX: spread', () => {

@@ -5,7 +5,10 @@ export type Primitive = null | undefined | number | string | boolean | bigint
 const isTruthy = (val: Primitive) => trueTypeOf(val) === 'string' || trueTypeOf(val) === 'number'
 
 /** Tagged template function for creating global css stylesheet */
-export const css = (strings: TemplateStringsArray, ...expressions: Array<Primitive | Primitive[]>): string => {
+export const css = (
+  strings: TemplateStringsArray,
+  ...expressions: Array<Primitive | Primitive[]>
+): { stylesheet: string } => {
   const { raw } = strings
   let result = expressions.reduce<string>((acc, subst, i) => {
     acc += reduceWhitespace(raw[i])
@@ -19,5 +22,5 @@ export const css = (strings: TemplateStringsArray, ...expressions: Array<Primiti
     }
     return acc + filteredSubst
   }, '')
-  return (result += reduceWhitespace(raw[raw.length - 1]))
+  return Object.freeze({ stylesheet: (result += reduceWhitespace(raw[raw.length - 1])) })
 }

@@ -24,7 +24,6 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     ...attributes
   } = attrs
   const registry = new Set<PlaitedElementConstructor>()
-  console.log({_tag})
   if (typeof _tag === 'function') {
     return _tag(attrs)
   }
@@ -78,7 +77,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     const value = attributes[key]
     /** P2 typeof attribute is NOT {@type Primitive} then skip and do nothing */
     if (!primitives.has(typeof value)) {
-      throw new Error(`Attributes not declared in BaseAttrs must be of type Primitive: ${key} is not primitive`)
+      throw new Error(`Attributes not declared in PlaitedAttributes must be of type Primitive: ${key} is not primitive`)
     }
     /** set the value so long as it's not nullish in we use the formatted value  */
     const formattedValue = value ?? ''

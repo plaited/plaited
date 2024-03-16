@@ -2,19 +2,18 @@
 
 exports[`createStyles: simple rules 1`] = `
 {
-  "$": [Function: $],
   "base": {
-    "className": "base_-5cbd2np po6dgn4 p-bxtjeu p7knf96",
+    "className": "base__1f8ei0o p_2h8kl40 p4c01gd6 p10v3vx6",
     "stylesheet": [
-      ".po6dgn4{fontz-size:16px}",
-      ".p-bxtjeu{line-height:1.5}",
-      ".p7knf96{color:rgb(60,60,60)}",
+      ".p_2h8kl40{fontz-size:16px}",
+      ".p4c01gd6{line-height:1.5}",
+      ".p10v3vx6{color:rgb(60,60,60)}",
     ],
   },
   "highlighted": {
-    "className": "highlighted_-6clsxr p-7t9obj",
+    "className": "highlighted_g28n4j p91m869",
     "stylesheet": [
-      ".p-7t9obj{color:rebeccapurple}",
+      ".p91m869{color:rebeccapurple}",
     ],
   },
 }
@@ -22,11 +21,10 @@ exports[`createStyles: simple rules 1`] = `
 
 exports[`createStyles: Pseudo-classes 1`] = `
 {
-  "$": [Function: $],
   "button": {
-    "className": "button_44w5co p11qcwkk",
+    "className": "button__8iz41n p2l5cglg",
     "stylesheet": [
-      ".p11qcwkk{background-color:lightblue}",
+      ".p2l5cglg{background-color:lightblue}",
     ],
   },
 }
@@ -34,13 +32,12 @@ exports[`createStyles: Pseudo-classes 1`] = `
 
 exports[`createStyles: Pseudo-classes 2`] = `
 {
-  "$": [Function: $],
   "button": {
-    "className": "button_4v8xfrv p11qcwkk pk2siy2 p-2eykfzw",
+    "className": "button_1tjvtxt p2l5cglg p1sj0k0a p3ni2mzo",
     "stylesheet": [
-      ".p11qcwkk{background-color:lightblue}",
-      ".pk2siy2:hover{background-color:blue}",
-      ".p-2eykfzw:active{background-color:darkblue}",
+      ".p2l5cglg{background-color:lightblue}",
+      ".p1sj0k0a{&:hover{background-color:blue}}",
+      ".p3ni2mzo{&:active{background-color:darkblue}}",
     ],
   },
 }
@@ -48,13 +45,11 @@ exports[`createStyles: Pseudo-classes 2`] = `
 
 exports[`createStyles: Pseudo-elements 1`] = `
 {
-  "$": [Function: $],
   "input": {
-    "className": "input_22n0mql pst78p6 p-f5f5uo p-dl4gbk",
+    "className": "input_1etkoss pqpi8rk p_1uwdrog",
     "stylesheet": [
-      ".pst78p6{::placeholder:#999}",
-      ".p-f5f5uo{color:#333}",
-      ".p-dl4gbk:invalid{color:red}",
+      ".pqpi8rk{color:#333}",
+      ".p_1uwdrog{&:invalid{color:red}}",
     ],
   },
 }
@@ -62,13 +57,12 @@ exports[`createStyles: Pseudo-elements 1`] = `
 
 exports[`createStyles: media query 1`] = `
 {
-  "$": [Function: $],
   "base": {
-    "className": "base_3y9lv6j p-265g0z p-2qe9hlz p-2nmjim5",
+    "className": "base_3d4s76s paqr07x p_3zvevs7 p_l1op19",
     "stylesheet": [
-      ".p-265g0z{width:800}",
-      "@media (max-width: 800px){.p-2qe9hlz{width:100%}}",
-      "@media (min-width: 1540px){.p-2nmjim5{width:1366}}",
+      ".paqr07x{width:800}",
+      ".p_3zvevs7{@media (max-width: 800px){width:100%}}",
+      ".p_l1op19{@media (min-width: 1540px){width:1366}}",
     ],
   },
 }
@@ -76,13 +70,12 @@ exports[`createStyles: media query 1`] = `
 
 exports[`createStyles: combining conditions 1`] = `
 {
-  "$": [Function: $],
   "button": {
-    "className": "button_45oqlis p-39m7ycl p-188rkrm p-wa1046",
+    "className": "button_mb2ltj p_2dr9p51 p_d33wg2 p_1bahz5i",
     "stylesheet": [
-      ".p-39m7ycl{color:var(--blue-link)}",
-      "@media (hover: hover){.p-188rkrm:hover{color:scale(1.1)}}",
-      ".p-wa1046:active{color:scale(0.9)}",
+      ".p_2dr9p51{color:var(--blue-link)}",
+      ".p_d33wg2{&:hover{@media (hover: hover){color:scale(1.1)}}}",
+      ".p_1bahz5i{&:active{color:scale(0.9)}}",
     ],
   },
 }
@@ -93,22 +86,22 @@ exports[`JSX: spread 1`] = `
   "$": "🦄",
   "client": [
     "<button ",
-    "class="button_45oqlis p-39m7ycl p-188rkrm p-wa1046" ",
+    "class="button_mb2ltj p_2dr9p51 p_d33wg2 p_1bahz5i" ",
     ">",
     "</button>",
   ],
   "registry":   Set {},
   "server": [
     "<button ",
-    "class="button_45oqlis p-39m7ycl p-188rkrm p-wa1046" ",
+    "class="button_mb2ltj p_2dr9p51 p_d33wg2 p_1bahz5i" ",
     ">",
     "</button>",
   ],
   "stylesheets":   
 Set {
-    ".p-39m7ycl{color:var(--blue-link)}",
-    "@media (hover: hover){.p-188rkrm:hover{color:scale(1.1)}}",
-    ".p-wa1046:active{color:scale(0.9)}",
+    ".p_2dr9p51{color:var(--blue-link)}",
+    ".p_d33wg2{&:hover{@media (hover: hover){color:scale(1.1)}}}",
+    ".p_1bahz5i{&:active{color:scale(0.9)}}",
   }
 ,
 }
