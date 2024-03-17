@@ -32,7 +32,6 @@ const styles = createStyles({
     padding: '12px 24px',
   },
 })
-console.log(styles.button.stylesheet)
 export const Button: FT<{
   label?: string
   size?: 'small' | 'medium' | 'large'
