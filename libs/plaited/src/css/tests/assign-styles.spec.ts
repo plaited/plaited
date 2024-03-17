@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { assignStyles, createStyles } from '../index.js'
+import { assignStyles, createStyles, css } from '../index.js'
 
 test('assignStyles', () => {
   const styles = createStyles({
@@ -30,8 +30,17 @@ test('assignStyles', () => {
       padding: '12px 24px',
     },
   })
+  const host = css`
+    :host {
+      color: red;
+    }
+  `
   let primary = true
-  expect(assignStyles(styles.button, styles['small'], primary ? styles.primary : styles.secondary)).toMatchSnapshot()
+  expect(
+    assignStyles(styles.button, styles['small'], primary ? styles.primary : styles.secondary, host),
+  ).toMatchSnapshot()
   primary = false
-  expect(assignStyles(styles.button, styles['large'], primary ? styles.primary : styles.secondary)).toMatchSnapshot()
+  expect(
+    assignStyles(styles.button, styles['large'], primary ? styles.primary : styles.secondary, host),
+  ).toMatchSnapshot()
 })

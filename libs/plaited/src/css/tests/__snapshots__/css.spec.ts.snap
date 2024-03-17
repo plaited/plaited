@@ -1,7 +1,19 @@
 // Bun Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`css(): for global 1`] = `"@keyframes slidein { from { margin-left: 100%; width: 300%; } to { margin-left: 0%; width: 100%; } } .button { background-color: rgba(255, 0, 0, 0.2); } .button4:disabled { background-color: rgba(255, 0, 0, 0.8); } ._button-4:disabled > .combinator { background-color: va(--background-color); } ._button-4:disabled + :not(.link) { background-color: var(--background-color-disabled); }"`;
+exports[`css(): for global 1`] = `
+{
+  "stylesheet": " @keyframes slidein { from { margin-left: 100%; width: 300%; } to { margin-left: 0%; width: 100%; } } .button { background-color: rgba(255, 0, 0, 0.2); } .button4:disabled { background-color: rgba(255, 0, 0, 0.8); } ._button-4:disabled > .combinator { background-color: va(--background-color); } ._button-4:disabled + :not(.link) { background-color: var(--background-color-disabled); } ",
+}
+`;
 
-exports[`css(): for global 2`] = `".button { background-color: rgba(255, 0, 0, 0.2); } .button4:disabled { background-color: rgba(255, 0, 0, 0.8); } ._button-4:disabled > .combinator { background-color: va(--background-color); } ._button-4:disabled + :not(.link) { background-color: var(--background-color-disabled); }"`;
+exports[`css(): for global 2`] = `
+{
+  "stylesheet": " .button { background-color: rgba(255, 0, 0, 0.2); } .button4:disabled { background-color: rgba(255, 0, 0, 0.8); } ._button-4:disabled > .combinator { background-color: va(--background-color); } ._button-4:disabled + :not(.link) { background-color: var(--background-color-disabled); } ",
+}
+`;
 
-exports[`css(): for global 3`] = `".top { color: red; & .nested { color: blue; &.nested2 { color: green; } } }"`;
+exports[`css(): for global 3`] = `
+{
+  "stylesheet": " .top { color: red; & .nested { color: blue; &.nested2 { color: green; } } } ",
+}
+`;

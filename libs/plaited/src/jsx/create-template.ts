@@ -9,8 +9,6 @@ import {
   VoidTags,
 } from '../types.js'
 
-const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj.flat() : [obj])
-
 /** createTemplate function used for ssr */
 export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const {
@@ -28,12 +26,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     return _tag(attrs)
   }
   const tag = _tag.toLowerCase().trim()
-  const stylesheets = new Set<string>()
-  stylesheet &&
-    (ensureArray(stylesheet).filter(Boolean) as string[]).forEach(
-      (s: string) => !stylesheets.has(s) && stylesheets.add(s),
-    )
-  const children = ensureArray(_children)
+
   /** If the tag is script we must explicitly pass trusted */
   if (tag === 'script' && !trusted) {
     throw new Error("Script tag not allowed unless 'trusted' property set")
@@ -84,6 +77,11 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     /** handle the rest of the attributes */
     start.push(`${key}="${trusted ? `${formattedValue}" ` : escape(`${formattedValue}`)}" `)
   }
+  /** Create are stylesheet set */
+  const stylesheets =
+    stylesheet ?
+      new Set<string>(Array.isArray(stylesheet) ? (stylesheet.filter(Boolean) as string[]) : [stylesheet])
+    : new Set<string>()
 
   /** Our tag is a void tag so we can return it once we apply attributes */
   if (voidTags.has(tag as keyof VoidTags)) {
@@ -100,6 +98,8 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const clientEnd: string[] = []
   /** Test if the the tag is a template and if it's a declarative shadow dom template */
   const isDeclarativeShadowDOM = tag === 'template' && Object.hasOwn(attrs, 'shadowrootmode')
+  /** Ensure children is an array */
+  const children = Array.isArray(_children) ? _children.flat() : [_children]
   /** time to append the children to our template if we have em*/
   const length = children.length
   const serverEnd: string[] = []
@@ -145,7 +145,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
 export { createTemplate as h }
 
 export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
-  const children = ensureArray(_children)
+  const children = Array.isArray(_children) ? _children.flat() : [_children]
   const client: string[] = []
   const server: string[] = []
   const stylesheets = new Set<string>()

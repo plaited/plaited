@@ -1,5 +1,5 @@
 import { hashString, kebabCase } from '@plaited/utils'
-import { CSSProperties, CSSPropertiesObjectLiteral, CSSClasses, StyleObjects } from '../types.js'
+import { CSSProperties, CSSPropertiesObjectLiteral, CSSClasses, CreateStylesObjects } from '../types.js'
 
 const createClassHash = (...args: (string | number)[]) =>
   hashString(args.join(' '))?.toString(36).replace(/^-/g, '_') ?? ''
@@ -22,7 +22,7 @@ const formatStyles = ({
   if (isPrimitive(value)) {
     const hash = createClassHash(prop, value, ...selectors)
     const className = `p${hash}`
-    const rule = `${kebabCase(prop)}:${value}`
+    const rule = `${kebabCase(prop)}:${value};`
     if (!selectors.length) return map.set(className, `.${className}{${rule}}`)
     const arr = selectors.map((str) => (str.startsWith('@') ? `${str}{` : `&${str}{`))
     return map.set(className, `.${className}{${arr.join('')}${rule}${'}'.repeat(arr.length)}}`)
@@ -51,4 +51,4 @@ export const createStyles = <T extends CSSClasses>(classNames: T) =>
       stylesheet: [...map.values()],
     }
     return acc
-  }, {} as StyleObjects<T>)
+  }, {} as CreateStylesObjects<T>)

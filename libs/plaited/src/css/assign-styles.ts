@@ -1,12 +1,13 @@
-import { StyleObject } from '../types.js'
+import { AssignStylesObject } from '../types.js'
 
-export const assignStyles = (...styleObjects: Array<StyleObject | undefined | false | null>) => {
-  const className = []
-  const stylesheet: string[] = []
+export const assignStyles = (...styleObjects: Array<AssignStylesObject | undefined | false | null>) => {
+  const cls: Array<string | undefined | false | null> = []
+  const style: Array<string | undefined | false | null> = []
   for (const styleObject of styleObjects) {
     if (!styleObject) continue
-    styleObject?.className && className.push(styleObject.className)
-    styleObject?.stylesheet && stylesheet.push(...styleObject.stylesheet)
+    const { className, stylesheet } = styleObject
+    className && cls.push(...(Array.isArray(className) ? className : [className]))
+    stylesheet && style.push(...(Array.isArray(stylesheet) ? stylesheet : [stylesheet]))
   }
-  return { className: className.join(' '), stylesheet }
+  return { className: cls, stylesheet: style }
 }

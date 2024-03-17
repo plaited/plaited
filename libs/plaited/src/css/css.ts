@@ -2,7 +2,8 @@ import { trueTypeOf, reduceWhitespace } from '@plaited/utils'
 
 export type Primitive = null | undefined | number | string | boolean | bigint
 
-const isTruthy = (val: Primitive) => trueTypeOf(val) === 'string' || trueTypeOf(val) === 'number'
+const isTruthy = (val: Primitive): val is string | number =>
+  trueTypeOf(val) === 'string' || trueTypeOf(val) === 'number'
 
 /** Tagged template function for creating global css stylesheet */
 export const css = (
@@ -14,10 +15,10 @@ export const css = (
     acc += reduceWhitespace(raw[i])
     let filteredSubst =
       Array.isArray(subst) ? subst.filter(isTruthy).join('')
-      : isTruthy(subst) ? subst
+      : isTruthy(subst) ? `${subst}`
       : ''
     if (acc.endsWith('$')) {
-      filteredSubst = escape(filteredSubst as string)
+      filteredSubst = escape(filteredSubst)
       acc = acc.slice(0, -1)
     }
     return acc + filteredSubst

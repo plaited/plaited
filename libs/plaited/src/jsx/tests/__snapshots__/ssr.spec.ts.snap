@@ -97,8 +97,8 @@ exports[`createTemplate: CustomElement hoisting its styles 1`] = `
 "<nested-component>
     <template shadowrootmode="open" shadowrootdelegatesfocus="true">
         <style>
-            .p-13zrhcr{font-weight:bold}
-        </style><span class="nestedLabel_-ncexap p-13zrhcr">inside nested template</span>
+            .p_ju9u1n{font-weight:bold;}
+        </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
         <slot
         name="nested"></slot>
     </template>
@@ -112,13 +112,13 @@ exports[`createTemplate: CustomElement with declarative shadow dom & host styles
 {
   "content": 
 "<style>
-    .p1elkwju{display:flex}.p-1q8jja5{flex-direction:column}
+    .p1rlu8mi{display:flex;}.p_8mez4t{flex-direction:column;}
 </style>
-<nested-component class="nestedComponent_-6sxbb p1elkwju p-1q8jja5">
+<nested-component class="nestedComponent_ey8y76 p1rlu8mi p_8mez4t">
     <template shadowrootmode="open" shadowrootdelegatesfocus="true">
         <style>
-            .p-13zrhcr{font-weight:bold}
-        </style><span class="nestedLabel_-ncexap p-13zrhcr">inside nested template</span>
+            .p_ju9u1n{font-weight:bold;}
+        </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
         <slot
         name="nested"></slot>
     </template>
@@ -126,8 +126,8 @@ exports[`createTemplate: CustomElement with declarative shadow dom & host styles
 ,
   "stylesheets":   
 Set {
-    ".p1elkwju{display:flex}",
-    ".p-1q8jja5{flex-direction:column}",
+    ".p1rlu8mi{display:flex;}",
+    ".p_8mez4t{flex-direction:column;}",
   }
 ,
 }
@@ -137,24 +137,24 @@ exports[`createTemplate: CustomElement with styled slotted component 1`] = `
 {
   "content": 
 "<style>
-    .p1elkwju{display:flex}.p-1q8jja5{flex-direction:column}.p-7t9obj{color:rebeccapurple}
+    .p1rlu8mi{display:flex;}.p_8mez4t{flex-direction:column;}.p91m869{color:rebeccapurple;}
 </style>
-<nested-component class="nestedComponent_-6sxbb p1elkwju p-1q8jja5">
+<nested-component class="nestedComponent_ey8y76 p1rlu8mi p_8mez4t">
     <template shadowrootmode="open" shadowrootdelegatesfocus="true">
         <style>
-            .p-13zrhcr{font-weight:bold}
-        </style><span class="nestedLabel_-ncexap p-13zrhcr">inside nested template</span>
+            .p_ju9u1n{font-weight:bold;}
+        </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
         <slot
         name="nested"></slot>
     </template>
-    <p class="slottedParagraph_-6clsxr p-7t9obj" slot="nested">slotted paragraph</p>
+    <p class="slottedParagraph_g28n4j p91m869" slot="nested">slotted paragraph</p>
 </nested-component>"
 ,
   "stylesheets":   
 Set {
-    ".p1elkwju{display:flex}",
-    ".p-1q8jja5{flex-direction:column}",
-    ".p-7t9obj{color:rebeccapurple}",
+    ".p1rlu8mi{display:flex;}",
+    ".p_8mez4t{flex-direction:column;}",
+    ".p91m869{color:rebeccapurple;}",
   }
 ,
 }
@@ -166,17 +166,17 @@ exports[`createTemplate: CustomElement with declarative shadow dom and nested de
 "<top-component>
     <template shadowrootdelegatesfocus="true" shadowrootmode="open">
         <style>
-            .p-7t9obj{color:rebeccapurple}
+            .p91m869{color:rebeccapurple;}
         </style>
         <nested-component>
             <template shadowrootmode="open" shadowrootdelegatesfocus="true">
                 <style>
-                    .p-13zrhcr{font-weight:bold}
-                </style><span class="nestedLabel_-ncexap p-13zrhcr">inside nested template</span>
+                    .p_ju9u1n{font-weight:bold;}
+                </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
                 <slot
                 name="nested"></slot>
             </template>
-            <p class="slottedParagraph_-6clsxr p-7t9obj" slot="nested">slotted paragraph</p>
+            <p class="slottedParagraph_g28n4j p91m869" slot="nested">slotted paragraph</p>
         </nested-component>
     </template>
 </top-component>"
@@ -189,29 +189,29 @@ exports[`createTemplate: CustomElement with declarative shadow dom and nested de
 {
   "content": 
 "<style>
-    .p-1kjunei{display:block}
+    .p131mv1i{display:block;}
 </style>
-<top-component class="topComponent_cl61h5 p-1kjunei">
+<top-component class="topComponent_46img7 p131mv1i">
     <template shadowrootdelegatesfocus="true" shadowrootmode="open">
         <style>
-            .p-7t9obj{color:rebeccapurple}
+            .p91m869{color:rebeccapurple;}
         </style>
         <nested-component>
             <template shadowrootmode="open" shadowrootdelegatesfocus="true">
                 <style>
-                    .p-13zrhcr{font-weight:bold}
-                </style><span class="nestedLabel_-ncexap p-13zrhcr">inside nested template</span>
+                    .p_ju9u1n{font-weight:bold;}
+                </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
                 <slot
                 name="nested"></slot>
             </template>
-            <p class="slottedParagraph_-6clsxr p-7t9obj" slot="nested">slotted paragraph</p>
+            <p class="slottedParagraph_g28n4j p91m869" slot="nested">slotted paragraph</p>
         </nested-component>
     </template>
 </top-component>"
 ,
   "stylesheets":   
 Set {
-    ".p-1kjunei{display:block}",
+    ".p131mv1i{display:block;}",
   }
 ,
 }
@@ -221,32 +221,32 @@ exports[`createTemplate: CustomElement with declarative shadow dom and nested de
 {
   "content": 
 "<style>
-    .p-1kjunei{display:block}.p1twa58b{width:100%}.p-sl9lkd{aspect-ratio:16 / 9}
+    .p131mv1i{display:block;}.p_mygp1{width:100%;}.p_x8x9vx{aspect-ratio:16 / 9;}
 </style>
-<top-component class="topComponent_cl61h5 p-1kjunei">
+<top-component class="topComponent_46img7 p131mv1i">
     <template shadowrootdelegatesfocus="true" shadowrootmode="open">
         <style>
-            .p-7t9obj{color:rebeccapurple}
+            .p91m869{color:rebeccapurple;}
         </style>
         <nested-component>
             <template shadowrootmode="open" shadowrootdelegatesfocus="true">
                 <style>
-                    .p-13zrhcr{font-weight:bold}
-                </style><span class="nestedLabel_-ncexap p-13zrhcr">inside nested template</span>
+                    .p_ju9u1n{font-weight:bold;}
+                </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
                 <slot
                 name="nested"></slot>
             </template>
-            <p class="slottedParagraph_-6clsxr p-7t9obj" slot="nested">slotted paragraph</p>
+            <p class="slottedParagraph_g28n4j p91m869" slot="nested">slotted paragraph</p>
         </nested-component>
     </template>
-    <img class="image_21tay0h p1twa58b p-sl9lkd" />
+    <img class="image__c0ru3k p_mygp1 p_x8x9vx" />
 </top-component>"
 ,
   "stylesheets":   
 Set {
-    ".p-1kjunei{display:block}",
-    ".p1twa58b{width:100%}",
-    ".p-sl9lkd{aspect-ratio:16 / 9}",
+    ".p131mv1i{display:block;}",
+    ".p_mygp1{width:100%;}",
+    ".p_x8x9vx{aspect-ratio:16 / 9;}",
   }
 ,
 }

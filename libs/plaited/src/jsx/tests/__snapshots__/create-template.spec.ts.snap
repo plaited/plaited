@@ -100,11 +100,11 @@ exports[`createTemplate: CustomElement hoisting its styles 1`] = `
 
 exports[`createTemplate: CustomElement with declarative shadow dom & host styles 1`] = `
 {
-  "content": "<nested-component class="nestedComponent_-6sxbb p1elkwju p-1q8jja5"></nested-component>",
+  "content": "<nested-component class="nestedComponent_ey8y76 p1rlu8mi p_8mez4t"></nested-component>",
   "stylesheets":   
 Set {
-    ".p1elkwju{display:flex}",
-    ".p-1q8jja5{flex-direction:column}",
+    ".p1rlu8mi{display:flex;}",
+    ".p_8mez4t{flex-direction:column;}",
   }
 ,
 }
@@ -113,15 +113,15 @@ Set {
 exports[`createTemplate: CustomElement with styled slotted component 1`] = `
 {
   "content": 
-"<nested-component class="nestedComponent_-6sxbb p1elkwju p-1q8jja5">
-    <p class="slottedParagraph_-6clsxr p-7t9obj" slot="nested">slotted paragraph</p>
+"<nested-component class="nestedComponent_ey8y76 p1rlu8mi p_8mez4t">
+    <p class="slottedParagraph_g28n4j p91m869" slot="nested">slotted paragraph</p>
 </nested-component>"
 ,
   "stylesheets":   
 Set {
-    ".p1elkwju{display:flex}",
-    ".p-1q8jja5{flex-direction:column}",
-    ".p-7t9obj{color:rebeccapurple}",
+    ".p1rlu8mi{display:flex;}",
+    ".p_8mez4t{flex-direction:column;}",
+    ".p91m869{color:rebeccapurple;}",
   }
 ,
 }
@@ -136,10 +136,10 @@ exports[`createTemplate: CustomElement with declarative shadow dom and nested de
 
 exports[`createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles 1`] = `
 {
-  "content": "<top-component class="topComponent_cl61h5 p-1kjunei"></top-component>",
+  "content": "<top-component class="topComponent_46img7 p131mv1i"></top-component>",
   "stylesheets":   
 Set {
-    ".p-1kjunei{display:block}",
+    ".p131mv1i{display:block;}",
   }
 ,
 }
@@ -148,15 +148,15 @@ Set {
 exports[`createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles and child 1`] = `
 {
   "content": 
-"<top-component class="topComponent_cl61h5 p-1kjunei">
-    <img class="image_21tay0h p1twa58b p-sl9lkd" />
+"<top-component class="topComponent_46img7 p131mv1i">
+    <img class="image__c0ru3k p_mygp1 p_x8x9vx" />
 </top-component>"
 ,
   "stylesheets":   
 Set {
-    ".p-1kjunei{display:block}",
-    ".p1twa58b{width:100%}",
-    ".p-sl9lkd{aspect-ratio:16 / 9}",
+    ".p131mv1i{display:block;}",
+    ".p_mygp1{width:100%;}",
+    ".p_x8x9vx{aspect-ratio:16 / 9;}",
   }
 ,
 }

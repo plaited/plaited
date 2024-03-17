@@ -91,7 +91,6 @@ test('JSX: spread', () => {
       color: {
         default: 'var(--blue-link)',
         ':hover': {
-          default: null,
           '@media (hover: hover)': 'scale(1.1)',
         },
         ':active': 'scale(0.9)',

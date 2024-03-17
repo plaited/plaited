@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 import { FT, TemplateObject } from '../../types.js'
-import { createStyles, css } from '../../css/index.js'
+import { createStyles, css, assignStyles } from '../../css/index.js'
 import { createTemplate as h, Fragment } from '../index.js'
 import beautify from 'beautify'
 
@@ -285,7 +285,7 @@ const sheet3 = css`
 test('ssr: Properly hoist and deduplicates multiple stylesheets on a single node', () => {
   expect(
     h('div', {
-      stylesheet: [sheet1, sheet2, sheet3],
+      ...assignStyles(sheet1, sheet2, sheet3),
     }).stylesheets.size,
   ).toBe(2)
 })

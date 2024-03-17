@@ -145,12 +145,12 @@ export type CSSClasses = {
   }
 }
 
-export type StyleObject = {
-  className?: string
-  stylesheet?: string[]
+export type AssignStylesObject = {
+  className?: string | Array<string | undefined | false | null>
+  stylesheet?: string | Array<string | undefined | false | null>
 }
 
-export type StyleObjects<T extends CSSClasses> = {
+export type CreateStylesObjects<T extends CSSClasses> = {
   [key in keyof T]: {
     className: string
     stylesheet: string[]
