@@ -64,3 +64,13 @@ Okay so client code should be separate from server side none of that next js mes
 
 
 
+# Content is Code and Code is Content
+
+A schema is used to describe content.
+
+So we have DID,  Decentralized Identifier, document that we are going to use to
+
+Data stored has a did and a schema
+
+
+

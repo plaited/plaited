@@ -1,6 +1,6 @@
 import { FunctionTemplate, css } from 'plaited'
 import { FlowDiagram } from './flow-diagram.js'
-
+import { register } from '../build-utils/register.js'
 const { $stylesheet } = css`
   body{
     height: 100vh;
@@ -8,7 +8,7 @@ const { $stylesheet } = css`
     margin: 0;
   }
 `
-export const Page: FunctionTemplate = () => (
+export default register(() => (
   <html>
     <head>
       <title>Viz</title>
@@ -17,4 +17,5 @@ export const Page: FunctionTemplate = () => (
       <FlowDiagram />
     </body>
   </html>
-)
+), import.meta.file)
+

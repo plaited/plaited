@@ -10,6 +10,7 @@ test('useBundle', async () => {
   const cwd = import.meta.dir
   const bundle = useBundle(db, registry)
   const outputs = await bundle({ cwd })
+  console.log(outputs)
   expect(outputs?.length).toBe(4)
   expect(outputs.filter((output) => output?.kind === 'entry-point').length).toBe(3)
   expect(outputs.filter((output) => output?.kind === 'chunk').length).toBe(1)

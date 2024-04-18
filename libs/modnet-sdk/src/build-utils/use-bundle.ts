@@ -3,6 +3,8 @@ import { Database } from 'bun:sqlite'
 import { trueTypeOf } from '@plaited/utils'
 import type { PlaitedTemplate } from 'plaited'
 
+import './html-element.js'
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isPlaitedComponent = (mod: any): mod is PlaitedTemplate =>
   trueTypeOf(mod) === 'function' && mod?.$ === '🐻'
@@ -80,6 +82,5 @@ export const useBundle =
       sourcemap: sourcemap ? 'inline' : 'none',
       publicPath,
     })
-  
     return result.outputs
   }

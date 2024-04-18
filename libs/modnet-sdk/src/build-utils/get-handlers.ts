@@ -25,3 +25,4 @@ export const getHandlers = async (outputs: BuildArtifact[]) => {
   )
   return handlers
 }
+

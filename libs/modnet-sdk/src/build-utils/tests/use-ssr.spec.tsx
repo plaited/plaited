@@ -1,11 +1,11 @@
 import { test, expect, beforeAll } from 'bun:test'
 import { Database } from 'bun:sqlite'
-import { FT, TemplateObject, css } from 'plaited'
-import { useSSR } from '../use-ssr.js'
+import { FT, TemplateObject, css, assignStyles } from 'plaited'
+import { useSSR } from '../init-render.js'
 import beautify from 'beautify'
-import { NestedCustomElement } from './__mocks__/nested-component.js'
-import { TopCustomElement } from './__mocks__/top-component.js'
-import { nestedChildrenStyles, nestedHostStyles } from './__mocks__/constants.js'
+import { NestedCustomElement } from './__mocks__/deeper/nested-component/nested-component.js'
+import { TopCustomElement } from './__mocks__/deeper/top-component.js'
+import { styles } from './__mocks__/deeper/constants.js'
 
 let ssr: ReturnType<typeof useSSR>
 
@@ -227,22 +227,11 @@ test('useSSR: Declarative shadow dom with another declarative shadow dom', () =>
   expect(render(<TopCustomElement />)).toMatchSnapshot()
 })
 
-const hostStyles = css`
-  top-component {
-    display: block;
-  }
-`
 
 test('useSSR: Declarative shadow dom with another declarative shadow dom plus host styles', () => {
   expect(render(<TopCustomElement stylesheet={hostStyles.$stylesheet} />)).toMatchSnapshot()
 })
 
-const imageStyles = css`
-  .image {
-    width: 100%;
-    aspect-ratio: 16 / 9;
-  }
-`
 
 test('useSSR: Declarative shadow dom with another declarative shadow dom plus host styles and child', () => {
   expect(
@@ -256,6 +245,7 @@ test('useSSR: Declarative shadow dom with another declarative shadow dom plus ho
     ),
   ).toMatchSnapshot()
 })
+
 
 const sheet1 = css`
   .a {
@@ -276,7 +266,7 @@ const sheet3 = css`
 
 test('useSSR: Properly hoist and deduplicates multiple stylesheets on a single node', () => {
   expect(
-    render(<div stylesheet={[sheet1.$stylesheet, sheet2.$stylesheet, sheet3.$stylesheet]}></div>),
+    render(<div {...assignStyles(sheet1, sheet2, sheet3) }></div>),
   ).toMatchSnapshot()
 })
 
