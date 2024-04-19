@@ -8,7 +8,7 @@ const { $stylesheet } = css`
     margin: 0;
   }
 `
-export default register(() => (
+export default () => (
   <html>
     <head>
       <title>Viz</title>
@@ -17,5 +17,5 @@ export default register(() => (
       <FlowDiagram />
     </body>
   </html>
-), import.meta.file)
+)
 

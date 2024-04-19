@@ -13,11 +13,6 @@ const hasRequiredFile = async (dir:string, ext: '.tsx' | '.jsx') => {
   return index && layout
 }
 
-const hasRootLayout = async (dir:string, ext: '.tsx' | '.jsx') => {
-  const rootIndex = Bun.file(`${dir}/index${ext}`)
-  return await rootIndex.exists()
-}
-
 const bundle = async ({
   entrypoints,
   sourcemap = false,

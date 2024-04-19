@@ -1,7 +1,7 @@
 import { test, expect, beforeAll } from 'bun:test'
 import { Database } from 'bun:sqlite'
 import { FT, TemplateObject, css, assignStyles } from 'plaited'
-import { useSSR } from '../init-render.js'
+import { useSSR } from '../render.js'
 import beautify from 'beautify'
 import { NestedCustomElement } from './__mocks__/deeper/nested-component/nested-component.js'
 import { TopCustomElement } from './__mocks__/deeper/top-component.js'
