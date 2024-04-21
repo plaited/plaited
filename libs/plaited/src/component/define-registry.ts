@@ -1,7 +1,8 @@
-import type { PlaitedElementConstructor } from '../types.js'
+import type { GetPlaitedElement } from '../types.js'
 
-export const defineRegistry = (registry: Set<PlaitedElementConstructor>, silent = false) => {
-  for (const el of registry) {
+export const defineRegistry = (registry: Set<GetPlaitedElement>, silent = false) => {
+  for (const cb of registry) {
+    const el = cb()
     const elTag = el.tag
     if (customElements.get(elTag)) {
       !silent && console.error(`${elTag} already defined`)

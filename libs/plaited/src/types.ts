@@ -85,7 +85,7 @@ export type TemplateObject = {
   client: string[]
   server: string[]
   stylesheets: Set<string>
-  registry: Set<PlaitedElementConstructor>
+  registry: Set<GetPlaitedElement>
   $: '🦄'
 }
 
@@ -1598,6 +1598,8 @@ export interface PlaitedElementConstructor {
   tag: string
   new (): PlaitedElement
 }
+
+export type GetPlaitedElement = () => PlaitedElementConstructor
 
 export type PlaitedTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
   define: (silent?: boolean) => void

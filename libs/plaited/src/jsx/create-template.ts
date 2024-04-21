@@ -1,13 +1,6 @@
 import { escape, kebabCase, isTypeOf } from '@plaited/utils'
 import { booleanAttrs, primitives, voidTags, validPrimitiveChildren, bpTrigger as bpTriggerKey } from './constants.js'
-import {
-  Attrs,
-  BooleanAttributes,
-  CreateTemplate,
-  PlaitedElementConstructor,
-  TemplateObject,
-  VoidTags,
-} from '../types.js'
+import { Attrs, BooleanAttributes, CreateTemplate, GetPlaitedElement, TemplateObject, VoidTags } from '../types.js'
 
 /** createTemplate function used for ssr */
 export const createTemplate: CreateTemplate = (_tag, attrs) => {
@@ -21,7 +14,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     htmlFor,
     ...attributes
   } = attrs
-  const registry = new Set<PlaitedElementConstructor>()
+  const registry = new Set<GetPlaitedElement>()
   if (typeof _tag === 'function') {
     return _tag(attrs)
   }
@@ -149,7 +142,7 @@ export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
   const client: string[] = []
   const server: string[] = []
   const stylesheets = new Set<string>()
-  const registry = new Set<PlaitedElementConstructor>()
+  const registry = new Set<GetPlaitedElement>()
   const length = children.length
   for (let i = 0; i < length; i++) {
     const child = children[i]
