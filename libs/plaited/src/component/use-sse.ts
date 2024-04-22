@@ -1,9 +1,9 @@
 /** Utility function for enabling hypermedia patterns */
 import { isTypeOf } from '@plaited/utils'
 import { Trigger, BPEvent, SSE } from '../types.js'
-import { delegates, DelegatedListener } from './delegated-listener.js'
-import { isMessageEvent, createTemplate } from './private-utils.js'
-
+import { DelegatedListener, delegates } from './delegated-listener.js'
+import { createTemplate } from './parser-utils.js'
+import { isMessageEvent } from './type-guards.js'
 export const useSSE = (url: string): SSE => {
   let eventSource: EventSource | undefined = new EventSource(url, { withCredentials: true })
   const connect = (trigger: Trigger) => {

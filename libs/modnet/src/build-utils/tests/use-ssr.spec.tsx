@@ -5,7 +5,7 @@ import { useSSR } from '../render.js'
 import beautify from 'beautify'
 import { NestedCustomElement } from './__mocks__/_components/nested-component/nested-component.js'
 import { TopCustomElement } from './__mocks__/_components/top-component.js'
-import { styles } from './__mocks__/constants.js'
+import { styles } from './constants.js'
 
 let ssr: ReturnType<typeof useSSR>
 

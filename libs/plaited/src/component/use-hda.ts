@@ -1,10 +1,7 @@
 /** Utility function for enabling hypermedia patterns */
 import { isTypeOf } from '@plaited/utils'
-import { fetchHTML } from './fetch-html.js'
-import { createDoc } from './private-utils.js'
 import { displayContent } from './display-content.js'
-import { delegates, DelegatedListener } from './delegated-listener.js'
-import { NavigateEventType, PlaitedHDA } from './constants.js'
+import { DelegatedListener, delegates, createDoc, fetchHTML, NavigateEventType, PLAITED_HDA } from 'plaited/utils'
 
 const navigate = async (event: CustomEvent<URL>) => {
   const { detail: url } = event
@@ -28,22 +25,15 @@ const pop = ({ state }: PopStateEvent) => {
  *
  * The function returns a cleanup function that removes the event listeners when called.
  *
- * @returns {Function} A cleanup function that removes the event listeners.
  */
-export const useHDA = () => {
-  const html = document.querySelector('html')
-  if (html) {
-    Object.assign(window, {
-      [PlaitedHDA]: true,
-    })
-    history.replaceState(new XMLSerializer().serializeToString(html), '', document.location.href)
-    !delegates.has(window) && delegates.set(window, new DelegatedListener(pop))
-    window.addEventListener('popstate', delegates.get(window))
-    !delegates.has(html) && delegates.set(html, new DelegatedListener(navigate))
-    html.addEventListener(NavigateEventType, delegates.get(html))
-    return () => {
-      window.removeEventListener('popstate', delegates.get(window))
-      html.removeEventListener(NavigateEventType, delegates.get(html))
-    }
-  }
+const html = document.querySelector('html')
+if (html) {
+  Object.assign(window, {
+    [PLAITED_HDA]: true,
+  })
+  history.replaceState(new XMLSerializer().serializeToString(html), '', document.location.href)
+  !delegates.has(window) && delegates.set(window, new DelegatedListener(pop))
+  window.addEventListener('popstate', delegates.get(window))
+  !delegates.has(html) && delegates.set(html, new DelegatedListener(navigate))
+  html.addEventListener(NavigateEventType, delegates.get(html))
 }

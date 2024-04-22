@@ -1,5 +1,5 @@
 import { wait } from '@plaited/utils'
-import { createTemplate, createDoc } from './private-utils.js'
+import { createTemplate, createDoc } from './parser-utils.js'
 type FetchHTMLOptions = RequestInit & { retry?: number; retryDelay?: number; partial?: boolean }
 
 /**

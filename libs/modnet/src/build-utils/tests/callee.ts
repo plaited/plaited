@@ -1,8 +1,12 @@
 import { RadomComponent } from './__mocks__/_components/random-component.js'
+import path from 'node:path'
 
-const transpiler = new Bun.Transpiler({
-  loader: 'tsx',
-})
+// const rel = path.relative('/_components/random-component', `./constants.js`);
+
+// console.log({rel})
+// const transpiler = new Bun.Transpiler({
+//   loader: 'tsx',
+// })
 
 // console.log(RadomComponent)
 // const router = new Bun.FileSystemRouter({
@@ -18,23 +22,10 @@ const glob = new Bun.Glob(`**/_components/**/*.{tsx}`)
 const files = await Array.fromAsync(glob.scan({ cwd }))
 const entrypoints = files.map((entry) => `${import.meta.dir}/__mocks__/${entry}`)
 const result = await Bun.build({
-  entrypoints: [...entrypoints, 'plaited/utils'],
+  entrypoints: [...entrypoints, ''],
   minify: true,
   splitting: true,
-  root: `${import.meta.dir}/__mocks__`,
-  plugins: [
-    {
-      name: 'demo',
-      setup(build) {
-        console.log(build.config.sourcemap) // "external"
-
-        build.config.minify = true // enable minification
-
-        // `plugins` is readonly
-        console.log(`Number of plugins: ${build.config.plugins.length}`)
-      },
-    },
-  ],
+  root: cwd,
 })
 console.log(result.outputs)
 // const sourcemap = result.outputs.flatMap((output) => output.kind === 'entry-point' ? output : [])[0].sourcemap

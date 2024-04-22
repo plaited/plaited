@@ -1,12 +1,13 @@
 import { PlaitedTemplate } from 'plaited'
 import { trueTypeOf } from '@plaited/utils'
+import { PLAITED_COMPONENT_IDENTIFIER } from 'plaited/utils'
 import { componentMap } from './constants.js'
 
 const globPrefix = '**/_components/**/*'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isPlaitedComponent = (mod: any): mod is PlaitedTemplate =>
-  trueTypeOf(mod) === 'function' && mod?.$ === '🐻'
+  trueTypeOf(mod) === 'function' && mod?.$ === PLAITED_COMPONENT_IDENTIFIER
 
 export const globComponents = async (dir: string) => {
   const glob = new Bun.Glob(`${globPrefix}.tsx`)

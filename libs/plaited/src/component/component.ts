@@ -11,11 +11,12 @@ import type {
   PlaitedTemplate,
 } from '../types.js'
 import { $, cssCache, clone } from './sugar.js'
-import { delegates, DelegatedListener } from './delegated-listener.js'
-import { emit } from './private-utils.js'
+import { DelegatedListener, delegates } from './delegated-listener.js'
 import { hasLogger } from './type-guards.js'
 import { defineRegistry } from './define-registry.js'
 import { onlyObservedTriggers } from './only-observed-triggers.js'
+import { emit } from './emit.js'
+import { PLAITED_COMPONENT_IDENTIFIER } from './constants.js'
 
 const isElement = (node: Node): node is Element => node.nodeType === 1
 
@@ -212,6 +213,6 @@ export const Component: PlaitedComponent = ({
     })
   ft.define = (silent = true) => defineRegistry(new Set<GetPlaitedElement>(registry), silent)
   ft.tag = _tag
-  ft.$ = '🐻'
+  ft.$ = PLAITED_COMPONENT_IDENTIFIER
   return ft
 }

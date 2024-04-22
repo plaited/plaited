@@ -1,8 +1,9 @@
 /** Utility function for enabling hypermedia patterns */
 import { isTypeOf } from '@plaited/utils'
 import { Trigger, BPEvent, WS } from '../types.js'
-import { delegates, DelegatedListener } from './delegated-listener.js'
-import { isMessageEvent, createTemplate } from './private-utils.js'
+import { DelegatedListener, delegates } from './delegated-listener.js'
+import { createTemplate } from './parser-utils.js'
+import { isMessageEvent } from './type-guards.js'
 
 const isCloseEvent = (event: CloseEvent | Event): event is CloseEvent => event.type === 'close'
 

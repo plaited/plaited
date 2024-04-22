@@ -1,9 +1,15 @@
 import { noop } from '@plaited/utils'
 import { bpAddress } from '../jsx/constants.js'
 import { Messenger, SSE, WS, PostMessenger, Publisher, PlaitedElement, Disconnect, Trigger } from '../types.js'
-import { delegates, DelegatedListener } from './delegated-listener.js'
-import { NavigateEventType } from './constants.js'
-import { hasPlaitedContext, emit } from './private-utils.js'
+import { DelegatedListener, delegates } from './delegated-listener.js'
+import { NavigateEventType, PLAITED_HDA } from './constants.js'
+import { emit } from './emit.js'
+
+const hasPlaitedContext = (
+  win: Window,
+): win is Window & {
+  [PLAITED_HDA]: true
+} => PLAITED_HDA in win && win[PLAITED_HDA] === true
 
 export const useEventSources = (
   root: ShadowRoot,

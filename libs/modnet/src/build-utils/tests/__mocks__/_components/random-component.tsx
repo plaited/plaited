@@ -1,5 +1,5 @@
 import { Component } from 'plaited'
-import { styles } from '../constants.js'
+import { styles } from '../../constants.js'
 
 export const RadomComponent = Component({
   tag: 'random-component',

@@ -1,6 +1,14 @@
 import type { TemplateObject } from 'plaited'
 import { componentMap } from './constants.js'
 
+const rewritePath = (
+  path: string,
+  obj: {
+    path: string
+    name: string
+  },
+) => {}
+
 const importTemplate = (
   arr: {
     path: string
@@ -17,7 +25,7 @@ await Promise.all(${JSON.stringify(arr, null, 2)}.map(async ({path, name})=> {
 }))
 `
 
-export const render = (template: TemplateObject) => {
+export const render = ({ template, path }: { template: TemplateObject; path: string }) => {
   const { server, stylesheets, registry } = template
   const components: {
     path: string

@@ -1,5 +1,5 @@
 import { Component } from 'plaited'
-import { styles } from '../constants.js'
+import { styles } from '../../constants.js'
 import { NestedCustomElement } from './nested-component/nested-component.js'
 
 export const TopCustomElement = Component({
