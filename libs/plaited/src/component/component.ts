@@ -64,7 +64,6 @@ export const Component: PlaitedComponent = ({
   const _tag = tag.toLowerCase() as `${string}-${string}`
   const getPlaitedElement = () => {
     class Base extends HTMLElement implements PlaitedElement {
-      static tag = _tag
       static observedAttributes = observedAttributes
       get observedTriggers() {
         return observedTriggers
@@ -194,6 +193,7 @@ export const Component: PlaitedComponent = ({
     Object.assign(Base.prototype, rest)
     return Base
   }
+  getPlaitedElement.tag = _tag
   const registry = new Set<GetPlaitedElement>([...template.registry, getPlaitedElement])
   const ft: PlaitedTemplate = ({ children = [], ...attrs }) =>
     createTemplate(tag, {

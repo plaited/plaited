@@ -1595,11 +1595,13 @@ export interface PlaitedElement extends HTMLElement {
 }
 
 export interface PlaitedElementConstructor {
-  tag: string
   new (): PlaitedElement
 }
 
-export type GetPlaitedElement = () => PlaitedElementConstructor
+export type GetPlaitedElement = {
+  (): PlaitedElementConstructor
+  tag: string
+}
 
 export type PlaitedTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
   define: (silent?: boolean) => void
