@@ -31,7 +31,7 @@ export const globComponents = async (dir: string) => {
                 2,
               )}`,
             )
-          componentMap.set(mod.tag, { path, name })
+          componentMap.set(mod.tag, { path: `/${path.replace(/\.tsx$/, '.js')}`, name })
         }
         return path
       } catch (err) {
