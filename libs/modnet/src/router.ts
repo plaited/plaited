@@ -1,15 +1,28 @@
 import path from 'node:path'
-import { fileExtensions } from './constants.js'
 
-const getPublicRoutes = (routes: [string, string][]): string[] =>
-  routes.flatMap(([_, filePath]) => {
-    return !filePath.split(path.sep).some((part) => part.startsWith('_')) ? filePath : []
-  })
-
-const getRouter = (dir: string) => {
-  return new Bun.FileSystemRouter({
+export const getRouter = (dir: string) => {
+  const router = new Bun.FileSystemRouter({
     style: 'nextjs',
     dir,
-    fileExtensions,
+    fileExtensions: ['.tsx', '.ts'],
   })
+
+  const publicRoutes = new Map<string, string>()
+  const getPublicRoutes = () => {
+    publicRoutes.size && publicRoutes.clear()
+    for (const route in router.routes) {
+      const filePath = router.routes[route]
+      if (
+        !path
+          .dirname(filePath)
+          .split(path.sep)
+          .some((part) => part.startsWith('_'))
+      ) {
+        publicRoutes.set(route, filePath)
+      }
+    }
+    return publicRoutes
+  }
+
+  return { router, getPublicRoutes }
 }
