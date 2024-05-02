@@ -1,12 +1,12 @@
-import { Formatter, DimensionLikeTokens, DimensionLikeValues } from '../types.js'
-import { hasAlias, resolveCSSVar } from '../resolve.js'
+import { Formatter, DimensionLikeTokens, DimensionLikeValues } from '../../types.js'
+import { hasAlias } from '../has-alias.js'
 import { kebabCase } from '@plaited/utils'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'
-import { getRule, getRem } from '../utils.js'
+import { getRule, getRem, resolveCSSVar} from '../css-utils.js'
 
 export const dimension: Formatter<DimensionLikeTokens> = (
   token,
-  { allTokens, tokenPath, baseFontSize, ...contexts },
+  { allTokens, tokenPath, baseFontSize, contexts },
 ) => {
   const prop = kebabCase(tokenPath.join(' '))
   if (isStaticToken<DimensionLikeTokens, DimensionLikeValues>(token)) {
@@ -26,9 +26,9 @@ export const dimension: Formatter<DimensionLikeTokens> = (
         toRet.push(getRule({ prop, value: resolveCSSVar(contextValue, allTokens) }))
         continue
       }
-      const context = { type: $context, id }
-      if (isValidContext({ context, ...contexts })) {
-        toRet.push(getRule({ prop, value: getRem(contextValue, baseFontSize), context, ...contexts }))
+      const ctx = { type: $context, id }
+      if (isValidContext({ ctx, contexts })) {
+        toRet.push(getRule({ prop, value: getRem(contextValue, baseFontSize), ctx, contexts }))
       }
     }
   }

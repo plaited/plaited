@@ -115,16 +115,30 @@ export type FlexWrapValue = 'wrap' | 'wrap-reverse' | AliasValue
  */
 export type FlexValue =
   | {
-      display: AliasValue
-      flexDirection?: AliasValue
-      columnGap?: AliasValue
-      rowGap?: AliasValue
-      justifyContent?: AliasValue
-      alignItems?: AliasValue
-      flexWrap?: AliasValue
-      alignContent?: AliasValue
+      display: "flex" | "inline-flex";
+      flexDirection?: "row" | "row-reverse" | "column" | "column-reverse";
+      columnGap?: AliasValue;
+      rowGap?: AliasValue;
+      justifyContent?:
+        | "start"
+        | "end"
+        | "center"
+        | "space-between"
+        | "space-around"
+        | "space-evenly"
+        | string;
+      alignItems?: "stretch" | "center" | "baseline" | "start" | "end" | string;
+      flexWrap?: "wrap" | "wrap-reverse";
+      alignContent?:
+        | "start"
+        | "end"
+        | "center"
+        | "space-between"
+        | "space-around"
+        | "space-evenly"
+        | string;
     }
-  | AliasValue
+  | AliasValue;
 /**
  * Gap value type relies on the gap formatter for css tokens
  * and the defaultFormat formatter for ts tokens
@@ -136,7 +150,7 @@ export type GapValue = DimensionValue | `${number}%`
 export type GridAutoFlowValue = 'row' | 'column' | 'row dense' | 'column dense' | AliasValue
 
 export type GridMinMaxArgs = number | `${number}fr` | `${number}%` | 'auto' | 'min-content' | 'max-content'
-export type GridTemplateAreasValue = `"${string}"`[]
+export type GridTemplateAreasValue = string
 export type GridTemplateAxisValue =
   | GridMinMaxArgs
   | {
@@ -170,21 +184,37 @@ export type GridTemplateValue = GridTemplateAreasValue | GridTemplateRowsOrColum
  */
 export type GridValue =
   | {
-      display: AliasValue
-      gridTemplateColumns?: AliasValue // take a look at one more time before adding GridTemplate
-      gridTemplateRows?: AliasValue // take a look at one more time before adding GridTemplate
-      gridTemplateAreas?: AliasValue // take a look at one more time before adding GridTemplate
-      columnGap?: AliasValue
-      rowGap?: AliasValue
-      justifyItems?: AliasValue
-      alignItems?: AliasValue
-      justifyContent?: AliasValue
-      alignContent?: AliasValue
-      gridAutoColumns?: AliasValue // take a look at one more time before adding GridTemplate
-      gridAutoRows?: AliasValue // take a look at one more time before adding GridTemplate
-      gridAutoFlow?: AliasValue
+      display: "grid" | "inline-grid";
+      gridTemplateColumns?: AliasValue; // take a look at one more time before adding GridTemplate
+      gridTemplateRows?: AliasValue; // take a look at one more time before adding GridTemplate
+      gridTemplateAreas?: AliasValue; // take a look at one more time before adding GridTemplate
+      columnGap?: AliasValue;
+      rowGap?: AliasValue;
+      justifyItems?: "start" | "end" | "center" | "stretch" | string;
+      alignItems?: "start" | "end" | "center" | "stretch" | string;
+      justifyContent?:
+        | "start"
+        | "end"
+        | "center"
+        | "stretch"
+        | "space-between"
+        | "space-around"
+        | "space-evenly"
+        | string;
+      alignContent?:
+        | "start"
+        | "end"
+        | "center"
+        | "stretch"
+        | "space-between"
+        | "space-around"
+        | "space-evenly"
+        | string;
+      gridAutoColumns?: AliasValue; // take a look at one more time before adding GridTemplate
+      gridAutoRows?: AliasValue; // take a look at one more time before adding GridTemplate
+      gridAutoFlow?: AliasValue;
     }
-  | AliasValue
+  | AliasValue;
 
 /**
  * Transition value types
@@ -323,7 +353,7 @@ export type DesignValue =
   | TextTransformValue
   | TypographyValue
 
-export type $Context = 'media-query' | 'color-scheme' | 'container-query'
+export type ContextTypes = 'media-query' | 'color-scheme'
 
 export type StaticToken<T extends string, V extends DesignValue> = {
   $description: string
@@ -338,7 +368,7 @@ export type StaticToken<T extends string, V extends DesignValue> = {
 export type ContextualToken<T extends string, V extends DesignValue> = {
   $description: string
   $extensions: {
-    ['plaited-context']: $Context
+    ['plaited-context']: ContextTypes
     [key: string]: unknown
   }
   $type: T
@@ -491,71 +521,65 @@ export type PrimitiveLikeValues =
   | FontWeightValue
   | TextTransformValue
 
-export type Queries = {
-  [key: string]: string
-}
-
-export type ColorSchemes = {
-  light?: 'light'
-  dark?: 'dark'
-}
-
-export type FormatList = (args: {
-  tokens: DesignTokenGroup
-  allTokens: DesignTokenGroup
-  tokenPath?: string[]
-  formatters: GetFormatters
-  baseFontSize: number
-  mediaQueries?: Queries
-  containerQueries?: Queries
-  colorSchemes?: ColorSchemes
-}) => string
-
-export type FormatToken<T> = (args: {
-  $value: T
-  tokenPath: string[]
-  allTokens: DesignTokenGroup
-  baseFontSize: number
-  mediaQueries?: Queries
-  containerQueries?: Queries
-  colorSchemes?: ColorSchemes
-}) => string
-
-export type Formatter<T extends DesignToken = DesignToken> = (
-  token: T,
-  details: {
-    tokenPath: string[]
-    allTokens: DesignTokenGroup
-    baseFontSize: number
-    mediaQueries?: Queries
-    containerQueries?: Queries
-    colorSchemes?: ColorSchemes
-  },
-) => string
-
-export type GetFormatters = <T extends DesignTokenGroup = DesignTokenGroup, F extends DesignToken = DesignToken>(
-  token: F,
-  details: {
-    tokenPath: string[]
-    allTokens: T
-    baseFontSize: number
-    mediaQueries?: Queries
-    containerQueries?: Queries
-    colorSchemes?: ColorSchemes
-  },
-) => string
-
-export type TransformerParams = {
-  /** an object of the type {@link DesignTokenGroup} */
-  tokens: DesignTokenGroup
-  /** used for rem calculation default 20 */
-  baseFontSize?: number
-  /** extend token formatters by passing in custom formatter */
-  formatters?: GetFormatters
-  /** named media queries */
-  mediaQueries?: Queries
-  /** container queries */
-  containerQueries?: Queries
-  /** color schemes */
-  colorSchemes?: ColorSchemes
-}
+  export type MediaQueries = {
+    [key: string]: string;
+  };
+  
+  export type ColorSchemes = {
+    light?: "light";
+    dark?: "dark";
+  };
+  
+  export type Contexts = {
+    mediaQueries: MediaQueries;
+    colorSchemes: ColorSchemes;
+  };
+  
+  export type FormatList = (args: {
+    tokens: DesignTokenGroup;
+    allTokens: DesignTokenGroup;
+    tokenPath?: string[];
+    getFormatters: GetFormatters;
+    baseFontSize: number;
+    contexts: Contexts;
+  }) => string;
+  
+  export type Formatter<T extends DesignToken = DesignToken> = (
+    token: T,
+    details: {
+      tokenPath: string[];
+      allTokens: DesignTokenGroup;
+      baseFontSize: number;
+      contexts: Contexts;
+    }
+  ) => string;
+  
+  export type GetFormatters = <
+    T extends DesignTokenGroup = DesignTokenGroup,
+    F extends DesignToken = DesignToken,
+  >(
+    token: F,
+    details: {
+      tokenPath: string[];
+      allTokens: T;
+      baseFontSize: number;
+      contexts: Contexts;
+    }
+  ) => string;
+  
+  export type TransformerParams = {
+    /** an object of the type {@link DesignTokenGroup} */
+    tokens: DesignTokenGroup;
+    /** used for rem calculation default 20 */
+    baseFontSize: number;
+    contexts: Contexts;
+  };
+  
+  export type TransformTokensParams = {
+    /** an object of the type {@link DesignTokenGroup} */
+    tokens: DesignTokenGroup;
+    /** used for rem calculation default 20 */
+    baseFontSize?: number;
+    /** named media queries */
+    contexts?: Partial<Contexts>;
+  };

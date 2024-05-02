@@ -1,8 +1,8 @@
-import { Formatter, FontFamilyValue, FontFamilyToken, AliasValue } from '../types.js'
-import { hasAlias, resolveCSSVar } from '../resolve.js'
+import { Formatter, FontFamilyValue, FontFamilyToken, AliasValue } from '../../types.js'
+import { hasAlias } from '../has-alias.js'
 import { kebabCase } from '@plaited/utils'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'
-import { getRule } from '../utils.js'
+import { getRule, resolveCSSVar } from '../css-utils.js'
 
 const fontFamilyCallback = ($value: Exclude<FontFamilyValue, AliasValue>) =>
   Array.isArray($value) ? $value.map((font) => (/\s/g.test(font) ? `"${font}"` : font)).join(',')
@@ -11,7 +11,7 @@ const fontFamilyCallback = ($value: Exclude<FontFamilyValue, AliasValue>) =>
 
 export const fontFamily: Formatter<FontFamilyToken> = (
   token,
-  { allTokens, tokenPath, baseFontSize: _, ...contexts },
+  { allTokens, tokenPath, baseFontSize: _, contexts },
 ) => {
   const prop = kebabCase(tokenPath.join(' '))
   if (isStaticToken<FontFamilyToken, FontFamilyValue>(token)) {
@@ -31,9 +31,9 @@ export const fontFamily: Formatter<FontFamilyToken> = (
         toRet.push(getRule({ prop, value: resolveCSSVar(contextValue, allTokens) }))
         continue
       }
-      const context = { type: $context, id }
-      if (isValidContext({ context, ...contexts })) {
-        toRet.push(getRule({ prop, value: fontFamilyCallback(contextValue), context, ...contexts }))
+      const ctx = { type: $context, id }
+      if (isValidContext({ ctx, contexts })) {
+        toRet.push(getRule({ prop, value: fontFamilyCallback(contextValue), ctx, contexts }))
       }
     }
   }

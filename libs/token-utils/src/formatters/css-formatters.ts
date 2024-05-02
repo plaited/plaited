@@ -1,21 +1,21 @@
 import { GetFormatters } from '../types.js'
-import { border } from './border.js'
-import { color } from './color.js'
-import { dimension } from './dimension.js'
-import { fontFamily } from './font-family.js'
-import { gradient } from './gradient.js'
-import { defaultFormat } from './default-format.js'
-import { dropShadow } from './drop-shadow.js'
-import { transition } from './transition.js'
-import { composite } from './composite.js'
-import { gridTemplate } from './grid-template.js'
-import { gap } from './gap.js'
+import { border } from './css/border.js'
+import { color } from './css/color.js'
+import { dimension } from './css/dimension.js'
+import { fontFamily } from './css/font-family.js'
+import { gradient } from './css/gradient.js'
+import { defaultFormat } from './css/default-format.js'
+import { dropShadow } from './css/drop-shadow.js'
+import { transition } from './css/transition.js'
+import { composite } from './css/composite.js'
+import { gridTemplate } from './css/grid-template.js'
+import { gap } from './css/gap.js'
 
 /**
  * This formatter object will return formatters that will create content for an
  * optimized css stylesheet of css custom properties to be applied to
  */
-export const defaultCSSFormatters: GetFormatters = (token, details) => {
+export const getFormatters: GetFormatters = (token, details) => {
   switch (token.$type) {
     case 'dimension':
     case 'lineHeight':

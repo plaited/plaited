@@ -2,8 +2,7 @@
  * Utility helpers for resolving aliased values in tokens object
  */
 
-import { DesignToken, DesignTokenGroup, AliasValue } from './types.js'
-import { camelCase, kebabCase } from '@plaited/utils'
+import { DesignToken, DesignTokenGroup } from '../types.js'
 
 const getResolvedValue = (path: string[], tokens: DesignTokenGroup | undefined): DesignToken | undefined => {
   let toRet = { ...tokens }
@@ -11,24 +10,18 @@ const getResolvedValue = (path: string[], tokens: DesignTokenGroup | undefined):
     const key = path[i]
     const exist = key in toRet
     if (exist) {
-      //@ts-ignore: error handling
+      //@ts-expect-error:: error handling
       toRet = toRet[key]
     }
     !exist && console.error('\x1b[36m', `\ninvalid path — token(${path.join('.')})`, '\x1b[31m', '\x1b[0m')
   }
-  //@ts-ignore: dynamic type checking
+  //@ts-expect-error: dynamic type checking
   if (Object.hasOwn(toRet, '$value')) return toRet
   console.error('\x1b[36m', `\nincomplete path — token(${path.join('.')})`, '\x1b[0m')
   return
 }
 
-export const hasAlias = ($value: unknown): $value is AliasValue => {
-  if (typeof $value !== 'string') return false
-  const regex = /^(?:\{)([^"]*?)(?:\})$/
-  return regex.test($value)
-}
-
-export const resolve = (
+export const resolveAlias = (
   value: string,
   allTokens: DesignTokenGroup | undefined,
 ): [DesignToken, string[]] | undefined => {
@@ -38,18 +31,4 @@ export const resolve = (
   if (val) {
     return [val, path]
   }
-}
-
-export const resolveCSSVar = (value: string, allTokens: DesignTokenGroup | undefined) => {
-  const res = resolve(value, allTokens)
-  if (!res) return ''
-  const [, path] = res
-  return `var(--${kebabCase(path.join(' '))})`
-}
-
-export const resolveTSVar = (value: string, allTokens: DesignTokenGroup) => {
-  const res = resolve(value, allTokens)
-  if (!res) return ''
-  const [, path] = res
-  return camelCase(path.join(' '))
 }

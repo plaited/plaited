@@ -1,8 +1,8 @@
-import { Formatter, TransitionValue, TransitionToken, AliasValue, DesignTokenGroup } from '../types.js'
-import { hasAlias, resolveCSSVar } from '../resolve.js'
+import { Formatter, TransitionValue, TransitionToken, AliasValue, DesignTokenGroup } from '../../types.js'
+import { hasAlias } from '../has-alias.js'
 import { kebabCase } from '@plaited/utils'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'
-import { getRule } from '../utils.js'
+import { getRule, resolveCSSVar } from '../css-utils.js'
 
 const transitionCallback = (allTokens: DesignTokenGroup) => ($value: Exclude<TransitionValue, AliasValue>) => {
   const { duration, delay, timingFunction } = $value
@@ -19,7 +19,7 @@ const transitionCallback = (allTokens: DesignTokenGroup) => ($value: Exclude<Tra
 
 export const transition: Formatter<TransitionToken> = (
   token,
-  { allTokens, tokenPath, baseFontSize: _, ...contexts },
+  { allTokens, tokenPath, baseFontSize: _, contexts },
 ) => {
   const cb = transitionCallback(allTokens)
   const prop = kebabCase(tokenPath.join(' '))
@@ -40,9 +40,9 @@ export const transition: Formatter<TransitionToken> = (
         toRet.push(getRule({ prop, value: resolveCSSVar(contextValue, allTokens) }))
         continue
       }
-      const context = { type: $context, id }
-      if (isValidContext({ context, ...contexts })) {
-        toRet.push(getRule({ prop, value: cb(contextValue), context, ...contexts }))
+      const ctx = { type: $context, id }
+      if (isValidContext({ ctx, contexts })) {
+        toRet.push(getRule({ prop, value: cb(contextValue), ctx, contexts }))
       }
     }
   }

@@ -1,8 +1,8 @@
-import { Formatter, GradientValue, GradientToken, DesignTokenGroup, AliasValue } from '../types.js'
-import { hasAlias, resolveCSSVar } from '../resolve.js'
+import { Formatter, GradientValue, GradientToken, DesignTokenGroup, AliasValue } from '../../types.js'
+import { hasAlias } from '../has-alias.js'
 import { kebabCase } from '@plaited/utils'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'
-import { getRule, getColor } from '../utils.js'
+import { getRule, getColor, resolveCSSVar } from '../css-utils.js'
 
 const colorMapCallback = (allTokens: DesignTokenGroup) => ($value: Exclude<GradientValue, AliasValue>) => {
   const { gradientFunction, angleShapePosition, colorStops } = $value
@@ -14,7 +14,7 @@ const colorMapCallback = (allTokens: DesignTokenGroup) => ($value: Exclude<Gradi
   return `${gradientFunction}(${[angleShapePosition, ...stops].filter(Boolean).join(',')})`
 }
 
-export const gradient: Formatter<GradientToken> = (token, { allTokens, tokenPath, baseFontSize: _, ...contexts }) => {
+export const gradient: Formatter<GradientToken> = (token, { allTokens, tokenPath, baseFontSize: _, contexts }) => {
   const cb = colorMapCallback(allTokens)
   const prop = kebabCase(tokenPath.join(' '))
   if (isStaticToken<GradientToken, GradientValue>(token)) {
@@ -37,14 +37,14 @@ export const gradient: Formatter<GradientToken> = (token, { allTokens, tokenPath
         toRet.push(getRule({ prop, value: resolveCSSVar(contextValue, allTokens) }))
         continue
       }
-      const context = { type: $context, id }
-      if (isValidContext({ context, ...contexts })) {
+      const ctx = { type: $context, id }
+      if (isValidContext({ ctx, contexts })) {
         toRet.push(
           getRule({
             prop,
             value: cb(contextValue),
-            context,
-            ...contexts,
+            ctx,
+            contexts,
           }),
         )
       }

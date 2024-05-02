@@ -1,7 +1,7 @@
-import { Formatter, AliasValue, BorderToken, BorderValue, DesignTokenGroup } from '../types.js'
-import { hasAlias, resolveCSSVar } from '../resolve.js'
+import { Formatter, AliasValue, BorderToken, BorderValue, DesignTokenGroup } from '../../types.js'
+import { hasAlias } from '../has-alias.js'
 import { kebabCase } from '@plaited/utils'
-import { getRem, getRule, getColor } from '../utils.js'
+import { getRem, getRule, getColor, resolveCSSVar } from '../css-utils.js'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'
 
 const borderCallback =
@@ -12,7 +12,7 @@ const borderCallback =
     return `${_width} ${style} ${_color}`
   }
 
-export const border: Formatter<BorderToken> = (token, { tokenPath, allTokens, baseFontSize, ...contexts }) => {
+export const border: Formatter<BorderToken> = (token, { tokenPath, allTokens, baseFontSize, contexts }) => {
   const cb = borderCallback(allTokens, baseFontSize)
   if (isStaticToken<BorderToken, BorderValue>(token)) {
     const { $value } = token
@@ -33,9 +33,9 @@ export const border: Formatter<BorderToken> = (token, { tokenPath, allTokens, ba
         toRet.push(getRule({ prop, value: resolveCSSVar(contextValue, allTokens) }))
         continue
       }
-      const context = { type: $context, id }
-      if (isValidContext({ context, ...contexts })) {
-        toRet.push(getRule({ prop, value: cb(contextValue), context, ...contexts }))
+      const ctx = { type: $context, id }
+      if (isValidContext({ ctx, contexts })) {
+        toRet.push(getRule({ prop, value: cb(contextValue), ctx, contexts }))
       }
     }
   }

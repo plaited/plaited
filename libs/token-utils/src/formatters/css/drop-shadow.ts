@@ -1,8 +1,8 @@
-import { Formatter, DropShadowValue, DropShadowToken, DesignTokenGroup, AliasValue } from '../types.js'
-import { hasAlias, resolveCSSVar } from '../resolve.js'
+import { Formatter, DropShadowValue, DropShadowToken, DesignTokenGroup, AliasValue } from '../../types.js'
+import { hasAlias } from '../has-alias.js'
 import { kebabCase } from '@plaited/utils'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'
-import { getColor, getRule } from '../utils.js'
+import { getColor, getRule, resolveCSSVar } from '../css-utils.js'
 
 const dropShadowCallback = (allTokens: DesignTokenGroup) => ($value: Exclude<DropShadowValue, AliasValue>) => {
   const { offsetX, offsetY, blur, color } = $value
@@ -17,7 +17,7 @@ const dropShadowCallback = (allTokens: DesignTokenGroup) => ($value: Exclude<Dro
 
 export const dropShadow: Formatter<DropShadowToken> = (
   token,
-  { allTokens, tokenPath, baseFontSize: _, ...contexts },
+  { allTokens, tokenPath, baseFontSize: _, contexts },
 ) => {
   const prop = kebabCase(tokenPath.join(' '))
   const cb = dropShadowCallback(allTokens)
@@ -38,9 +38,9 @@ export const dropShadow: Formatter<DropShadowToken> = (
         toRet.push(getRule({ prop, value: resolveCSSVar(contextValue, allTokens) }))
         continue
       }
-      const context = { type: $context, id }
-      if (isValidContext({ context, ...contexts })) {
-        toRet.push(getRule({ prop, value: cb(contextValue), context, ...contexts }))
+      const ctx = { type: $context, id }
+      if (isValidContext({ ctx, contexts })) {
+        toRet.push(getRule({ prop, value: cb(contextValue), ctx, contexts }))
       }
     }
   }

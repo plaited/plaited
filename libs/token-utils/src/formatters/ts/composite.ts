@@ -1,6 +1,7 @@
 import { camelCase } from '@plaited/utils'
-import { Formatter, AliasValue, FlexToken, GridToken, TypographyToken } from '../types.js'
-import { hasAlias, resolveTSVar } from '../resolve.js'
+import { Formatter, AliasValue, FlexToken, GridToken, TypographyToken } from '../../types.js'
+import { hasAlias } from '../has-alias.js'
+import { resolveTSVar } from '../ts-utils.js'
 
 type CompositeToken = FlexToken | GridToken | TypographyToken
 

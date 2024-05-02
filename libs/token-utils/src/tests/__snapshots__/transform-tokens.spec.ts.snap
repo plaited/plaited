@@ -1,92 +1,259 @@
 // Bun Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`transform-ts-tokens 1`] = `
-"export const sizeX1 = 'var(--size-x1)'
-export const sizeX2 = 'var(--size-x2)'
-export const sizeX3 = 'var(--size-x3)'
-export const sizeS3 = 'var(--size-s3)'
-export const backgroundColorPurpleX1 = 'var(--background-color-purple-x1)'
-export const backgroundColorPurpleX2 = 'var(--background-color-purple-x2)'
-export const backgroundColorPurpleX3 = 'var(--background-color-purple-x3)'
-export const borderRadiusX1 = 'var(--border-radius-x1)'
-export const borderRadiusX2 = 'var(--border-radius-x2)'
-export const borderRadiusX3 = 'var(--border-radius-x3)'
-export const fontSizeX1 = 'var(--font-size-x1)'
-export const fontFamilySansSerif = 'var(--font-family-sans-serif)'
-export const fontWeightX1 = 'var(--font-weight-x1)'
-export const letterSpacingX1 = 'var(--letter-spacing-x1)'
-export const lineHeightX1 = 'var(--line-height-x1)'
-export const typographyX1 = {
-  fontFamily: fontFamilySansSerif,
-  fontSize: fontSizeX1,
-  fontWeight: fontWeightX1,
-  letterSpacing: letterSpacingX1,
-  lineHeight: lineHeightX1,
-}
-export const actionPrimaryRestBorderRadius = borderRadiusX1
-export const actionPrimaryRestBackgroundColor = backgroundColorPurpleX2
-export const actionPrimaryRestTypography = typographyX1
+exports[`token group 1`] = `
+":host {
+    --line-height-xxs: 0.0125rem;
+    --line-height-xs: 0.025rem;
+    --line-height-sm: 0.0375rem;
+    --line-height-md: 0.05rem;
+    --line-height-ml: 0.0625rem;
+    --line-height-lg: 0.075rem;
+    --line-height-xl: 0.1rem;
+    --line-height-xxl: 0.15rem;
+    --line-height-xxxl: 0.175rem;
+}"
+`;
+
+exports[`token group 2`] = `
+"export const lineHeightXxs = 'var(--line-height-xxs)'
+export const lineHeightXs = 'var(--line-height-xs)'
+export const lineHeightSm = 'var(--line-height-sm)'
+export const lineHeightMd = 'var(--line-height-md)'
+export const lineHeightMl = 'var(--line-height-ml)'
+export const lineHeightLg = 'var(--line-height-lg)'
+export const lineHeightXl = 'var(--line-height-xl)'
+export const lineHeightXxl = 'var(--line-height-xxl)'
+export const lineHeightXxxl = 'var(--line-height-xxxl)'
 "
 `;
 
-exports[`transform-css-tokens 1`] = `
-"@media screen and (min-width: 1920px) {
-    :host {
-        --size-x1: 0.2rem;
-        --size-x2: 0.4rem;
-        --size-x3: 0.7rem;
-    }
-}
+exports[`nested token group 1`] = `
+":host {
+    --colors-gray-10: oklch(97.91% 0 0 / none);
+}"
+`;
 
-:host([data-media-query="tv"]) {
-    --size-x1: 0.2rem;
-    --size-x2: 0.4rem;
-    --size-x3: 0.7rem;
-}
+exports[`nested token group 2`] = `
+"export const colorsGray10 = 'var(--colors-gray-10)'
+"
+`;
 
-@media screen and (max-width: 767px) {
-    :host {
-        --size-x1: 0.1rem;
-        --size-x2: 0.4rem;
-        --size-x3: 0.8rem;
-    }
-}
-
-:host([data-media-query="mobile"]) {
-    --size-x1: 0.1rem;
-    --size-x2: 0.4rem;
-    --size-x3: 0.8rem;
-}
-
-:host {
-    --size-x1: 0.1rem;
-    --size-x2: 0.3rem;
-    --size-x3: 0.6rem;
-    --size-s3: 0.6rem;
-    --background-color-purple-x1: oklch(39% 0.22184604903824146 289.1379241925685 / none);
-    --background-color-purple-x2: oklch(45.38% 0.236 304.59 / none);
-    --background-color-purple-x3: oklch(48.67% 0.245 310.63 / none);
-    --border-radius-x1: 0.15rem;
-    --border-radius-x2: 0.25rem;
-    --border-radius-x3: 0.35rem;
-    --font-size-x1: 0.7rem;
-    --font-family-sans-serif: Roboto,sans-serif;
-    --font-weight-x1: 700;
-    --letter-spacing-x1: normal;
-    --line-height-x1: 1;
+exports[`context: [media-query] 1`] = `
+":host {
+    --size-dynamic-100: 0.15rem;
 }
 
 @media screen and (min-width: 1024px) {
     :host {
-        --size-x1: 0.1rem;
-        --size-x2: 0.3rem;
-        --size-x3: 0.6rem;
+        --size-dynamic-100: 0.15rem;
     }
 }
 
 :host([data-media-query="desktop"]) {
-    --size-x1: 0.1rem;
-    --size-x2: 0.3rem;
-    --size-x3: 0.6rem;
+    --size-dynamic-100: 0.15rem;
+}
+
+@media screen and (min-width: 1920px) {
+    :host {
+        --size-dynamic-100: 0.2rem;
+    }
+}
+
+:host([data-media-query="tv"]) {
+    --size-dynamic-100: 0.2rem;
+}
+
+@media screen and (max-width: 767px) {
+    :host {
+        --size-dynamic-100: 0.1rem;
+    }
+}
+
+:host([data-media-query="mobile"]) {
+    --size-dynamic-100: 0.1rem;
 }"
+`;
+
+exports[`context: [media-query] 2`] = `
+"export const sizeDynamic100 = 'var(--size-dynamic-100)'
+"
+`;
+
+exports[`context: [color-scheme] 1`] = `
+":host {
+    --colors-background-primary: oklch(100% 0 0 / 0.5);
+}
+
+@media (prefers-color-scheme:light) {
+    :host {
+        --colors-background-primary: oklch(100% 0 0 / 0.5);
+    }
+}
+
+:host([data-color-scheme="light"]) {
+    --colors-background-primary: oklch(100% 0 0 / 0.5);
+}
+
+@media (prefers-color-scheme:dark) {
+    :host {
+        --colors-background-primary: oklch(0% 0 0 / 0.5);
+    }
+}
+
+:host([data-color-scheme="dark"]) {
+    --colors-background-primary: oklch(0% 0 0 / 0.5);
+}"
+`;
+
+exports[`context: [color-scheme] 2`] = `
+"export const colorsBackgroundPrimary = 'var(--colors-background-primary)'
+"
+`;
+
+exports[`context: [media-query, color-scheme] 1`] = `
+"@media screen and (min-width: 1920px) {
+    :host {
+        --size-dynamic-100: 0.2rem;
+    }
+}
+
+:host([data-media-query="tv"]) {
+    --size-dynamic-100: 0.2rem;
+}
+
+@media screen and (max-width: 767px) {
+    :host {
+        --size-dynamic-100: 0.1rem;
+    }
+}
+
+:host([data-media-query="mobile"]) {
+    --size-dynamic-100: 0.1rem;
+}
+
+:host {
+    --size-dynamic-100: 0.15rem;
+    --colors-background-primary: oklch(100% 0 0 / 0.5);
+}
+
+@media screen and (min-width: 1024px) {
+    :host {
+        --size-dynamic-100: 0.15rem;
+    }
+}
+
+:host([data-media-query="desktop"]) {
+    --size-dynamic-100: 0.15rem;
+}
+
+@media (prefers-color-scheme:light) {
+    :host {
+        --colors-background-primary: oklch(100% 0 0 / 0.5);
+    }
+}
+
+:host([data-color-scheme="light"]) {
+    --colors-background-primary: oklch(100% 0 0 / 0.5);
+}
+
+@media (prefers-color-scheme:dark) {
+    :host {
+        --colors-background-primary: oklch(0% 0 0 / 0.5);
+    }
+}
+
+:host([data-color-scheme="dark"]) {
+    --colors-background-primary: oklch(0% 0 0 / 0.5);
+}"
+`;
+
+exports[`context: [media-query, color-scheme] 2`] = `
+"export const sizeDynamic100 = 'var(--size-dynamic-100)'
+export const colorsBackgroundPrimary = 'var(--colors-background-primary)'
+"
+`;
+
+exports[`alias 1`] = `
+":host {
+    --colors-gray-100: oklch(98.21% 0 0 / none);
+}"
+`;
+
+exports[`alias 2`] = `
+"export const colorsGray100 = 'var(--colors-gray-100)'
+export const surfaceSecondary100 = colorsGray100
+"
+`;
+
+exports[`alias + context 1`] = `
+":host {
+    --colors-white-100: oklch(97.91% 0 0 / none);
+    --colors-charcoal-100: oklch(18.31% 0.004 285.99 / none);
+    --surface-secondary-100: var(--colors-white-100);
+    --surface-secondary-100: var(--colors-charcoal-100);
+}"
+`;
+
+exports[`alias + context 2`] = `
+"export const colorsWhite100 = 'var(--colors-white-100)'
+export const colorsCharcoal100 = 'var(--colors-charcoal-100)'
+export const surfaceSecondary100 = 'var(--surface-secondary-100)'
+"
+`;
+
+exports[`exercise token types 1`] = `
+":host {
+    --font-weight: 700;
+    --letter-spacing: normal;
+    --border: 0.05rem solid oklch(0% 0 0 / none);
+    --drop-shadow: 4 4 oklch(0% 0 0 / 0.5);
+    --gradient: linear-gradient(45deg,oklch(0% 0 0 / 0.5) 20%,oklch(100% 0 0 / 0.5) 80%);
+    --font-family: Roboto,sans-serif;
+    --transition: 0.3s 0s ease-in-out;
+    --transition-cubic: 0.3s 0s cubic-bezier(0.25 0.1 0.25 1);
+    --gap: 0.5rem;
+    --gap-percent: 10%;
+    --grid-template: "a a a" "b c c" "b c c";
+    --grid-template-columns: 3rem 3rem;
+    --font-size: 0.7rem;
+    --line-height: 1;
+    --primitive-string: primitive string;
+    --primitive-number: 50;
+}"
+`;
+
+exports[`exercise token types 2`] = `
+"export const fontWeight = 'var(--font-weight)'
+export const letterSpacing = 'var(--letter-spacing)'
+export const border = 'var(--border)'
+export const dropShadow = 'var(--drop-shadow)'
+export const gradient = 'var(--gradient)'
+export const fontFamily = 'var(--font-family)'
+export const transition = 'var(--transition)'
+export const transitionCubic = 'var(--transition-cubic)'
+export const gap = 'var(--gap)'
+export const gapPercent = 'var(--gap-percent)'
+export const gridTemplate = 'var(--grid-template)'
+export const gridTemplateColumns = 'var(--grid-template-columns)'
+export const fontSize = 'var(--font-size)'
+export const lineHeight = 'var(--line-height)'
+export const typography = {
+  fontFamily: fontFamily,
+  fontSize: fontSize,
+  fontWeight: fontWeight,
+  letterSpacing: letterSpacing,
+  lineHeight: lineHeight,
+}
+export const flex = {
+  display: ,
+  columnGap: gap,
+}
+export const grid = {
+  display: ,
+  columnGap: gap,
+  rowGap: gapPercent,
+}
+export const primitiveString = 'var(--primitive-string)'
+export const primitiveNumber = 'var(--primitive-number)'
+"
 `;

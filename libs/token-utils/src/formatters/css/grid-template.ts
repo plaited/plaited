@@ -1,8 +1,8 @@
-import { Formatter, GridMinMaxArgs, GridTemplateValue, GridTemplateToken, GridTemplateAreasValue } from '../types.js'
-import { hasAlias, resolveCSSVar } from '../resolve.js'
-import { kebabCase } from '@plaited/utils'
+import { Formatter, GridMinMaxArgs, GridTemplateValue, GridTemplateToken, GridTemplateAreasValue } from '../../types.js'
+import { hasAlias } from '../has-alias.js'
+import { kebabCase, isTypeOf } from '@plaited/utils'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'
-import { getRule, getRem } from '../utils.js'
+import { getRule, getRem, resolveCSSVar } from '../css-utils.js'
 
 const getFitContent = ({
   func,
@@ -34,12 +34,9 @@ const getMinMax = ({
     typeof max === 'number' ? getRem(max, baseFontSize) : max
   })`
 
-const isTemplateAreaValues = ($value: GridTemplateValue): $value is GridTemplateAreasValue =>
-  typeof $value[0] === 'string' && /"(\w*)"/.test($value[0])
-
 const gridTemplateCallback = (baseFontSize: number) => ($value: GridTemplateValue) => {
-  if (isTemplateAreaValues($value)) {
-    return $value.join(' ')
+  if (isTypeOf<string>($value, "string")) {
+    return $value;
   }
   return $value.reduce<string>((acc, cur) => {
     if (typeof cur === 'number') {
@@ -100,7 +97,7 @@ const gridTemplateCallback = (baseFontSize: number) => ($value: GridTemplateValu
 
 export const gridTemplate: Formatter<GridTemplateToken> = (
   token,
-  { allTokens, tokenPath, baseFontSize, ...contexts },
+  { allTokens, tokenPath, baseFontSize, contexts },
 ) => {
   const cb = gridTemplateCallback(baseFontSize)
   const prop = kebabCase(tokenPath.join(' '))
@@ -121,9 +118,9 @@ export const gridTemplate: Formatter<GridTemplateToken> = (
         toRet.push(getRule({ prop, value: resolveCSSVar(contextValue, allTokens) }))
         continue
       }
-      const context = { type: $context, id }
-      if (isValidContext({ context, ...contexts })) {
-        toRet.push(getRule({ prop, value: cb(contextValue), context, ...contexts }))
+      const ctx = { type: $context, id }
+      if (isValidContext({ ctx, contexts })) {
+        toRet.push(getRule({ prop, value: cb(contextValue), ctx, contexts }))
       }
     }
   }
