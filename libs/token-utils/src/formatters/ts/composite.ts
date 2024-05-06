@@ -1,15 +1,22 @@
 import { camelCase } from '@plaited/utils'
-import { Formatter, AliasValue, FlexToken, GridToken, TypographyToken } from '../../types.js'
+import { Formatter, CompositeToken } from '../../types.js'
 import { hasAlias } from '../has-alias.js'
-import { resolveTSVar } from '../ts-utils.js'
-
-type CompositeToken = FlexToken | GridToken | TypographyToken
+import { resolveTSVar, isValidAlias } from '../ts-utils.js'
 
 export const composite: Formatter<CompositeToken> = (token, { tokenPath, allTokens }) => {
   const { $value } = token
-  if (hasAlias($value)) {
-    return `export const ${camelCase(tokenPath.join(' '))} = ${resolveTSVar($value as AliasValue, allTokens)}`
+  if(hasAlias($value) && !isValidAlias($value, allTokens)) {
+    return ''
   }
-  const toRet = Object.entries($value).map(([key, val]) => `  ${key}: ${resolveTSVar(val, allTokens)},`)
+  if (hasAlias($value)) {
+    return `export const ${camelCase(tokenPath.join(' '))} = ${resolveTSVar($value, allTokens)}`
+  }
+  const toRet: string[] = []
+  for(const key in $value) {
+    const val = $value[key]
+    if (isValidAlias(val, allTokens)) {
+      toRet.push(`  ${key}: ${resolveTSVar(val, allTokens)},`)
+    }
+  }
   return [`export const ${camelCase(tokenPath.join(' '))} = {`, ...toRet, '}'].join('\n')
 }

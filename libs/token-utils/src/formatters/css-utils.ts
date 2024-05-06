@@ -1,10 +1,10 @@
-import type { MediaQueries, ColorSchemes, ColorValue, AliasValue, ContextTypes, DesignTokenGroup } from '../types.js'
-import { kebabCase } from '@plaited/utils';
-import { resolveAlias } from './resole-alias.js';
+import type { MediaQueries, ColorSchemes, ColorValue, AliasValue, ContextTypes, DesignTokenGroup, DesignToken, BaseToken } from '../types.js'
+import { kebabCase, isTypeOf } from '@plaited/utils';
+import { resolveAlias } from './resolve-alias.js';
 
-export const getRem = (val: number, base: number) => `${val / base}rem`
+export const remSuffix = (val: number) => `${val}rem`
 
-export const getColor = (color: Exclude<ColorValue, AliasValue>) =>
+export const getColor = (color: Exclude<ColorValue, AliasValue>) => isTypeOf<string>(color, 'string') ? color :
   `oklch(${color.l ?? 'none'} ${color.c ?? 'none'} ${color.h ?? 'none'} / ${color.a ?? 'none'})`
 
 export const getRule = ({
@@ -62,3 +62,7 @@ export const resolveCSSVar = (value: string, allTokens: DesignTokenGroup | undef
   const [, path] = res
   return `var(--${kebabCase(path.join(' '))})`
 }
+
+export const hasCommaSeparatedValue = <T extends DesignToken>(
+  token: BaseToken<T['$value'], T['$type']>,
+) => Boolean(token?.$extensions?.plaited?.commaSeparated);

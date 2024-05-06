@@ -33,13 +33,11 @@ const deduplicate = (css: string) => {
  */
 export const transformToCSS = ({
   tokens,
-  baseFontSize,
   contexts,
 }: TransformerParams) => {
   const content = formatList({
     tokens,
     allTokens: tokens,
-    baseFontSize,
     getFormatters,
     contexts,
   });

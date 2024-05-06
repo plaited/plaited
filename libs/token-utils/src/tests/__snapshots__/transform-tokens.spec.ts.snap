@@ -2,35 +2,21 @@
 
 exports[`token group 1`] = `
 ":host {
-    --line-height-xxs: 0.0125rem;
-    --line-height-xs: 0.025rem;
-    --line-height-sm: 0.0375rem;
-    --line-height-md: 0.05rem;
-    --line-height-ml: 0.0625rem;
-    --line-height-lg: 0.075rem;
-    --line-height-xl: 0.1rem;
-    --line-height-xxl: 0.15rem;
-    --line-height-xxxl: 0.175rem;
-}"
+  --line-height-xxs: 0.25rem;
+}
+"
 `;
 
 exports[`token group 2`] = `
 "export const lineHeightXxs = 'var(--line-height-xxs)'
-export const lineHeightXs = 'var(--line-height-xs)'
-export const lineHeightSm = 'var(--line-height-sm)'
-export const lineHeightMd = 'var(--line-height-md)'
-export const lineHeightMl = 'var(--line-height-ml)'
-export const lineHeightLg = 'var(--line-height-lg)'
-export const lineHeightXl = 'var(--line-height-xl)'
-export const lineHeightXxl = 'var(--line-height-xxl)'
-export const lineHeightXxxl = 'var(--line-height-xxxl)'
 "
 `;
 
 exports[`nested token group 1`] = `
 ":host {
-    --colors-gray-10: oklch(97.91% 0 0 / none);
-}"
+  --colors-gray-10: oklch(97.91% 0 0 / none);
+}
+"
 `;
 
 exports[`nested token group 2`] = `
@@ -40,38 +26,33 @@ exports[`nested token group 2`] = `
 
 exports[`context: [media-query] 1`] = `
 ":host {
-    --size-dynamic-100: 0.15rem;
+  --size-dynamic-100: 3rem;
 }
-
 @media screen and (min-width: 1024px) {
-    :host {
-        --size-dynamic-100: 0.15rem;
-    }
+  :host {
+    --size-dynamic-100: 3rem;
+  }
 }
-
 :host([data-media-query="desktop"]) {
-    --size-dynamic-100: 0.15rem;
+  --size-dynamic-100: 3rem;
 }
-
 @media screen and (min-width: 1920px) {
-    :host {
-        --size-dynamic-100: 0.2rem;
-    }
+  :host {
+    --size-dynamic-100: 4rem;
+  }
 }
-
 :host([data-media-query="tv"]) {
-    --size-dynamic-100: 0.2rem;
+  --size-dynamic-100: 4rem;
 }
-
 @media screen and (max-width: 767px) {
-    :host {
-        --size-dynamic-100: 0.1rem;
-    }
+  :host {
+    --size-dynamic-100: 2rem;
+  }
 }
-
 :host([data-media-query="mobile"]) {
-    --size-dynamic-100: 0.1rem;
-}"
+  --size-dynamic-100: 2rem;
+}
+"
 `;
 
 exports[`context: [media-query] 2`] = `
@@ -81,28 +62,25 @@ exports[`context: [media-query] 2`] = `
 
 exports[`context: [color-scheme] 1`] = `
 ":host {
+  --colors-background-primary: oklch(100% 0 0 / 0.5);
+}
+@media (prefers-color-scheme: light) {
+  :host {
     --colors-background-primary: oklch(100% 0 0 / 0.5);
+  }
 }
-
-@media (prefers-color-scheme:light) {
-    :host {
-        --colors-background-primary: oklch(100% 0 0 / 0.5);
-    }
-}
-
 :host([data-color-scheme="light"]) {
-    --colors-background-primary: oklch(100% 0 0 / 0.5);
+  --colors-background-primary: oklch(100% 0 0 / 0.5);
 }
-
-@media (prefers-color-scheme:dark) {
-    :host {
-        --colors-background-primary: oklch(0% 0 0 / 0.5);
-    }
-}
-
-:host([data-color-scheme="dark"]) {
+@media (prefers-color-scheme: dark) {
+  :host {
     --colors-background-primary: oklch(0% 0 0 / 0.5);
-}"
+  }
+}
+:host([data-color-scheme="dark"]) {
+  --colors-background-primary: oklch(0% 0 0 / 0.5);
+}
+"
 `;
 
 exports[`context: [color-scheme] 2`] = `
@@ -112,59 +90,50 @@ exports[`context: [color-scheme] 2`] = `
 
 exports[`context: [media-query, color-scheme] 1`] = `
 "@media screen and (min-width: 1920px) {
-    :host {
-        --size-dynamic-100: 0.2rem;
-    }
+  :host {
+    --size-dynamic-100: 4rem;
+  }
 }
-
 :host([data-media-query="tv"]) {
-    --size-dynamic-100: 0.2rem;
+  --size-dynamic-100: 4rem;
 }
-
 @media screen and (max-width: 767px) {
-    :host {
-        --size-dynamic-100: 0.1rem;
-    }
+  :host {
+    --size-dynamic-100: 2rem;
+  }
 }
-
 :host([data-media-query="mobile"]) {
-    --size-dynamic-100: 0.1rem;
+  --size-dynamic-100: 2rem;
 }
-
 :host {
-    --size-dynamic-100: 0.15rem;
-    --colors-background-primary: oklch(100% 0 0 / 0.5);
+  --size-dynamic-100: 3rem;
+  --colors-background-primary: oklch(100% 0 0 / 0.5);
 }
-
 @media screen and (min-width: 1024px) {
-    :host {
-        --size-dynamic-100: 0.15rem;
-    }
+  :host {
+    --size-dynamic-100: 3rem;
+  }
 }
-
 :host([data-media-query="desktop"]) {
-    --size-dynamic-100: 0.15rem;
+  --size-dynamic-100: 3rem;
 }
-
-@media (prefers-color-scheme:light) {
-    :host {
-        --colors-background-primary: oklch(100% 0 0 / 0.5);
-    }
-}
-
-:host([data-color-scheme="light"]) {
+@media (prefers-color-scheme: light) {
+  :host {
     --colors-background-primary: oklch(100% 0 0 / 0.5);
+  }
 }
-
-@media (prefers-color-scheme:dark) {
-    :host {
-        --colors-background-primary: oklch(0% 0 0 / 0.5);
-    }
+:host([data-color-scheme="light"]) {
+  --colors-background-primary: oklch(100% 0 0 / 0.5);
 }
-
-:host([data-color-scheme="dark"]) {
+@media (prefers-color-scheme: dark) {
+  :host {
     --colors-background-primary: oklch(0% 0 0 / 0.5);
-}"
+  }
+}
+:host([data-color-scheme="dark"]) {
+  --colors-background-primary: oklch(0% 0 0 / 0.5);
+}
+"
 `;
 
 exports[`context: [media-query, color-scheme] 2`] = `
@@ -175,23 +144,41 @@ export const colorsBackgroundPrimary = 'var(--colors-background-primary)'
 
 exports[`alias 1`] = `
 ":host {
-    --colors-gray-100: oklch(98.21% 0 0 / none);
-}"
+  --colors-gray-100: oklch(98.21% 0 0 / none);
+  --surface-secondary-100: var(--colors-gray-100);
+}
+"
 `;
 
 exports[`alias 2`] = `
 "export const colorsGray100 = 'var(--colors-gray-100)'
-export const surfaceSecondary100 = colorsGray100
+export const surfaceSecondary100 = 'var(--surface-secondary-100)'
 "
 `;
 
 exports[`alias + context 1`] = `
 ":host {
-    --colors-white-100: oklch(97.91% 0 0 / none);
-    --colors-charcoal-100: oklch(18.31% 0.004 285.99 / none);
+  --colors-white-100: oklch(97.91% 0 0 / none);
+  --colors-charcoal-100: oklch(18.31% 0.004 285.99 / none);
+  --surface-secondary-100: var(--colors-white-100);
+}
+@media (prefers-color-scheme: light) {
+  :host {
     --surface-secondary-100: var(--colors-white-100);
+  }
+}
+:host([data-color-scheme="light"]) {
+  --surface-secondary-100: var(--colors-white-100);
+}
+@media (prefers-color-scheme: dark) {
+  :host {
     --surface-secondary-100: var(--colors-charcoal-100);
-}"
+  }
+}
+:host([data-color-scheme="dark"]) {
+  --surface-secondary-100: var(--colors-charcoal-100);
+}
+"
 `;
 
 exports[`alias + context 2`] = `
@@ -203,38 +190,26 @@ export const surfaceSecondary100 = 'var(--surface-secondary-100)'
 
 exports[`exercise token types 1`] = `
 ":host {
-    --font-weight: 700;
-    --letter-spacing: normal;
-    --border: 0.05rem solid oklch(0% 0 0 / none);
-    --drop-shadow: 4 4 oklch(0% 0 0 / 0.5);
-    --gradient: linear-gradient(45deg,oklch(0% 0 0 / 0.5) 20%,oklch(100% 0 0 / 0.5) 80%);
-    --font-family: Roboto,sans-serif;
-    --transition: 0.3s 0s ease-in-out;
-    --transition-cubic: 0.3s 0s cubic-bezier(0.25 0.1 0.25 1);
-    --gap: 0.5rem;
-    --gap-percent: 10%;
-    --grid-template: "a a a" "b c c" "b c c";
-    --grid-template-columns: 3rem 3rem;
-    --font-size: 0.7rem;
-    --line-height: 1;
-    --primitive-string: primitive string;
-    --primitive-number: 50;
-}"
+  --font-weight: 700;
+  --letter-spacing: normal;
+  --font-size: 14rem;
+  --line-height: 1;
+  --gradient: linear-gradient(
+    45deg,
+    oklch(0% 0 0 / 0.5) 20%,
+    oklch(100% 0 0 / 0.5) 80%
+  );
+  --font-family: Roboto, sans-serif;
+  --array-of-sizes: 60rem 60rem;
+  --string: primitive string;
+  --number: 50;
+}
+"
 `;
 
 exports[`exercise token types 2`] = `
 "export const fontWeight = 'var(--font-weight)'
 export const letterSpacing = 'var(--letter-spacing)'
-export const border = 'var(--border)'
-export const dropShadow = 'var(--drop-shadow)'
-export const gradient = 'var(--gradient)'
-export const fontFamily = 'var(--font-family)'
-export const transition = 'var(--transition)'
-export const transitionCubic = 'var(--transition-cubic)'
-export const gap = 'var(--gap)'
-export const gapPercent = 'var(--gap-percent)'
-export const gridTemplate = 'var(--grid-template)'
-export const gridTemplateColumns = 'var(--grid-template-columns)'
 export const fontSize = 'var(--font-size)'
 export const lineHeight = 'var(--line-height)'
 export const typography = {
@@ -244,16 +219,10 @@ export const typography = {
   letterSpacing: letterSpacing,
   lineHeight: lineHeight,
 }
-export const flex = {
-  display: ,
-  columnGap: gap,
-}
-export const grid = {
-  display: ,
-  columnGap: gap,
-  rowGap: gapPercent,
-}
-export const primitiveString = 'var(--primitive-string)'
-export const primitiveNumber = 'var(--primitive-number)'
+export const gradient = 'var(--gradient)'
+export const fontFamily = 'var(--font-family)'
+export const arrayOfSizes = 'var(--array-of-sizes)'
+export const string = 'var(--string)'
+export const number = 'var(--number)'
 "
 `;

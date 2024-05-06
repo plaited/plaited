@@ -14,35 +14,30 @@ const colorMapCallback = (allTokens: DesignTokenGroup) => ($value: Exclude<Gradi
   return `${gradientFunction}(${[angleShapePosition, ...stops].filter(Boolean).join(',')})`
 }
 
-export const gradient: Formatter<GradientToken> = (token, { allTokens, tokenPath, baseFontSize: _, contexts }) => {
+export const gradient: Formatter<GradientToken> = (token, { allTokens, tokenPath, contexts }) => {
   const cb = colorMapCallback(allTokens)
   const prop = kebabCase(tokenPath.join(' '))
-  if (isStaticToken<GradientToken, GradientValue>(token)) {
+  if (isStaticToken(token)) {
     const { $value } = token
-    if (hasAlias($value)) return ''
     return getRule({
       prop,
-      value: cb($value),
+      value: hasAlias($value) ? resolveCSSVar($value, allTokens) : cb($value),
     })
   }
   const toRet: string[] = []
-  if (isContextualToken<GradientToken, GradientValue>(token)) {
+  if (isContextualToken(token)) {
     const {
       $value,
-      $extensions: { 'plaited-context': $context },
+      $extensions: { plaited:  { context: $context } },
     } = token
     for (const id in $value) {
       const contextValue = $value[id]
-      if (hasAlias(contextValue)) {
-        toRet.push(getRule({ prop, value: resolveCSSVar(contextValue, allTokens) }))
-        continue
-      }
       const ctx = { type: $context, id }
       if (isValidContext({ ctx, contexts })) {
         toRet.push(
           getRule({
             prop,
-            value: cb(contextValue),
+            value: hasAlias(contextValue) ? resolveCSSVar(contextValue, allTokens) : cb(contextValue),
             ctx,
             contexts,
           }),

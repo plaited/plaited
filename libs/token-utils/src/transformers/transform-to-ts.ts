@@ -10,13 +10,11 @@ import { getFormatters } from '../formatters/ts-formatters.js'
  */
 export const transformToTS = ({
   tokens,
-  baseFontSize,
   contexts,
 }: TransformerParams) => {
   const content = formatList({
     tokens,
     allTokens: tokens,
-    baseFontSize,
     getFormatters,
     contexts,
   });

@@ -3,9 +3,8 @@ import {
   Contexts,
   DesignToken,
   StaticToken,
-  ContextualToken,
   BaseToken,
-  DesignValue,
+  ContextualToken,
 } from "../types.js";
 
 export const isValidContext = ({
@@ -34,18 +33,10 @@ export const isValidContext = ({
   return true;
 };
 
-export const isContextualToken = <U extends DesignToken, V extends DesignValue>(
-  token: BaseToken<U["$type"], V>
-): token is ContextualToken<U["$type"], V> => {
-  if (!token?.$extensions) return false;
-  const { "plaited-context": $context } = token.$extensions;
-  return $context !== undefined;
-};
+export const isStaticToken = <T extends DesignToken>(
+  token: BaseToken<T['$value'], T['$type']>,
+): token is StaticToken<T['$value'], T['$type']> => !token?.$extensions?.plaited?.context;
 
-export const isStaticToken = <U extends DesignToken, V extends DesignValue>(
-  token: BaseToken<U["$type"], V>
-): token is StaticToken<U["$type"], V> => {
-  if (!token?.$extensions) return true;
-  const { "plaited-context": $context } = token.$extensions;
-  return $context === undefined;
-};
+export const isContextualToken = <T extends DesignToken>(
+  token: BaseToken<T['$value'], T['$type']>,
+): token is ContextualToken<T['$value'], T['$type']> => Boolean(token?.$extensions?.plaited?.context);

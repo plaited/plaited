@@ -10,9 +10,11 @@ export const tokens: DesignTokenGroup = {
         mobile: 2,
         desktop: 2,
       },
-      $type: 'dimension',
+      $type: 'size',
       $description: 'mock description',
-      $extensions: { 'plaited-context': 'media-query' },
+      $extensions: { plaited: {
+        context: 'media-query',
+      } },
     },
     x2: {
       $value: {
@@ -20,8 +22,10 @@ export const tokens: DesignTokenGroup = {
         mobile: 8,
         tv: 8,
       },
-      $type: 'dimension',
-      $extensions: { 'plaited-context': 'media-query' },
+      $type: 'size',
+      $extensions: { plaited: {
+        context: 'media-query',
+      } },
       $description: 'mock description',
     },
     x3: {
@@ -30,13 +34,15 @@ export const tokens: DesignTokenGroup = {
         tv: 14,
         mobile: 16,
       },
-      $type: 'dimension',
-      $extensions: { 'plaited-context': 'media-query' },
+      $type: 'size',
+      $extensions: { plaited: {
+        context: 'media-query',
+      } },
       $description: 'mock description',
     },
     s3: {
       $value: 12,
-      $type: 'dimension',
+      $type: 'size',
       $description: 'mock description',
     },
   },
@@ -72,42 +78,40 @@ export const tokens: DesignTokenGroup = {
     },
   },
   borderRadius: {
-    x1: { $value: 3, $type: 'dimension', $description: 'mock description' },
-    x2: { $value: 5, $type: 'dimension', $description: 'mock description' },
-    x3: { $value: 7, $type: 'dimension', $description: 'mock description' },
+    x1: { $value: 3, $type: 'size', $description: 'mock description' },
+    x2: { $value: 5, $type: 'size', $description: 'mock description' },
+    x3: { $value: 7, $type: 'size', $description: 'mock description' },
   },
   fontSize: {
     x1: {
       $value: 14,
-      $type: 'dimension',
+      $type: 'size',
       $description: 'mock description',
     },
   },
   fontFamily: {
     sansSerif: {
       $value: ['Roboto', 'sans-serif'],
-      $type: 'fontFamily',
       $description: 'mock description',
+      $extensions: { plaited: { commaSeparated: true }}
     },
   },
   fontWeight: {
     x1: {
       $value: 700,
-      $type: 'fontWeight',
       $description: 'mock description',
     },
   },
   letterSpacing: {
     x1: {
       $value: 'normal',
-      $type: 'primitive',
       $description: 'mock description',
     },
   },
   lineHeight: {
     x1: {
       $value: 1,
-      $type: 'primitive',
+      $type: undefined,
       $description: 'mock description',
     },
   },
@@ -120,7 +124,7 @@ export const tokens: DesignTokenGroup = {
         letterSpacing: '{letterSpacing.x1}',
         lineHeight: '{lineHeight.x1}',
       },
-      $type: 'typography',
+      $type: 'composite',
       $description: 'mock description',
     },
   },
@@ -129,7 +133,7 @@ export const tokens: DesignTokenGroup = {
       rest: {
         borderRadius: {
           $value: '{borderRadius.x1}',
-          $type: 'dimension',
+          $type: 'size',
           $description: 'mock description',
         },
         backgroundColor: {
@@ -139,7 +143,7 @@ export const tokens: DesignTokenGroup = {
         },
         typography: {
           $value: '{typography.x1}',
-          $type: 'typography',
+          $type: 'composite',
           $description: 'mock description',
         },
       },
@@ -153,19 +157,19 @@ test('parse(): snapshot', () => {
   expect(actual).toMatchSnapshot()
 })
 test('parse(): verify required props', () => {
-  //@ts-expect-error: it exist
+  //@ts-ignore: it exist
   const expected = Object.keys(tokens.size.x1.$value)
   expect(actual?.properties?.size?.properties?.x1?.properties?.$value?.required).toEqual(expected)
 })
 test('parse(): verify const props', () => {
-  //@ts-expect-error: it exist
+  //@ts-ignore: it exist
   const expected = tokens.backgroundColor.purple.x1.$value
   // eslint-disable-next-line no-unsafe-optional-chaining
   const value = actual?.properties?.backgroundColor?.properties?.purple?.properties?.x1.properties?.$value?.properties
   expect({ l: value?.l?.const, c: value?.c?.const, h: value?.h?.const }).toEqual(expected)
 })
 test('parse(): handles arrays', () => {
-  //@ts-expect-error: it exist
+  // @ts-ignore: it exist
   const expected = tokens.fontFamily.sansSerif.$value.map((str: string) => ({
     const: str,
     type: 'string',

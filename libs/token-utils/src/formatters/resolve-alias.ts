@@ -10,15 +10,13 @@ const getResolvedValue = (path: string[], tokens: DesignTokenGroup | undefined):
     const key = path[i]
     const exist = key in toRet
     if (exist) {
-      //@ts-expect-error:: error handling
+      //@ts-ignore: dynamic error handling
       toRet = toRet[key]
     }
-    !exist && console.error('\x1b[36m', `\ninvalid path — token(${path.join('.')})`, '\x1b[31m', '\x1b[0m')
+    !exist && console.error(`Invalid token alias: {${path.join(".")}}`);
   }
-  //@ts-expect-error: dynamic type checking
+  //@ts-ignore: dynamic type checking
   if (Object.hasOwn(toRet, '$value')) return toRet
-  console.error('\x1b[36m', `\nincomplete path — token(${path.join('.')})`, '\x1b[0m')
-  return
 }
 
 export const resolveAlias = (

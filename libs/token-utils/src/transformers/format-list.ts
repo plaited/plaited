@@ -7,7 +7,6 @@ export const formatList: FormatList = ({
   tokenPath = [],
   getFormatters,
   allTokens,
-  baseFontSize,
   contexts,
 }) => {
   let string = "";
@@ -19,7 +18,6 @@ export const formatList: FormatList = ({
     const formattedValue = getFormatters(token, {
       tokenPath,
       allTokens,
-      baseFontSize,
       contexts,
     });
     string += formattedValue ? `${formattedValue}\n` : "";
@@ -27,7 +25,6 @@ export const formatList: FormatList = ({
     for (const name in tokens) {
       if (Object.hasOwn(tokens, name)) {
         string += formatList({
-          baseFontSize,
           tokens: tokens[name] as DesignTokenGroup,
           tokenPath: [...tokenPath, name],
           getFormatters,

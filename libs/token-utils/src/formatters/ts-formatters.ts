@@ -8,12 +8,7 @@ import { composite } from './ts/composite.js'
  * inline styles in ts/js component files
  */
 export const getFormatters: GetFormatters = (token, details) => {
-  switch (token.$type) {
-    case 'typography':
-    case 'grid':
-    case 'flex':
-      return composite(token, details)
-    default:
-      return defaultFormat(token, details)
-  }
+  const { $type } = token
+  if($type=== 'composite') return composite(token, details)
+  return defaultFormat(token, details)
 }

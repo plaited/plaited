@@ -1,42 +1,36 @@
 import { test, expect, jest } from 'bun:test'
-import beautify from 'beautify'
+import * as prettier from "prettier"
 
 import { transformTokens } from "../transform-tokens.js";
 import { DesignTokenGroup } from "../types.js";
 
-test("empty token group", () => {
+test("empty token group", async () => {
   const tokens = {
     colors: {},
   };
   const { css, ts } = transformTokens({
     tokens,
   });
-  expect(beautify(css, { format: 'css' })).toBe('');
+  const prettyCSS = await prettier.format(css, { parser: "css" });
+  expect(prettyCSS).toBe('');
   expect(ts).toBe('');
 });
 
-test("token group", () => {
+test("token group", async () => {
   const tokens: DesignTokenGroup = {
     lineHeight: {
-      xxs: { $value: 0.25, $type: "lineHeight", $description: "mock description" },
-      xs: { $value: 0.5, $type: "lineHeight", $description: "mock description" },
-      sm: { $value: 0.75, $type: "lineHeight", $description: "mock description" },
-      md: { $value: 1, $type: "lineHeight", $description: "mock description" },
-      ml: { $value: 1.25, $type: "lineHeight", $description: "mock description" },
-      lg: { $value: 1.5, $type: "lineHeight", $description: "mock description" },
-      xl: { $value: 2, $type: "lineHeight", $description: "mock description" },
-      xxl: { $value: 3, $type: "lineHeight", $description: "mock description" },
-      xxxl: { $value: 3.5, $type: "lineHeight", $description: "mock description" },
+      xxs: { $value: 0.25, $type: "size", $description: "mock description" },
     },
   };
   const { css, ts } = transformTokens({
     tokens,
   });
-  expect(beautify(css, { format: 'css' })).toMatchSnapshot();
+ const prettyCSS = await prettier.format(css, { parser: "css" });
+expect(prettyCSS).toMatchSnapshot();
   expect(ts).toMatchSnapshot();
 });
 
-test("nested token group", () => {
+test("nested token group", async () => {
   const tokens: DesignTokenGroup = {
     colors: {
       gray: {
@@ -51,11 +45,12 @@ test("nested token group", () => {
   const { css, ts } = transformTokens({
     tokens,
   });
-  expect(beautify(css, { format: 'css' })).toMatchSnapshot();
+ const prettyCSS = await prettier.format(css, { parser: "css" });
+expect(prettyCSS).toMatchSnapshot();
   expect(ts).toMatchSnapshot();
 });
 
-test("context: [media-query]", () => {
+test("context: [media-query]", async () => {
   const tokens: DesignTokenGroup = {
     size: {
       dynamic: {
@@ -65,9 +60,13 @@ test("context: [media-query]", () => {
             tv: 4,
             mobile: 2,
           },
-          $type: "dimension",
+          $type: "size",
           $description: "mock description",
-          $extensions: { "plaited-context": "media-query" },
+          $extensions: { 
+            "plaited": {
+              context: "media-query"
+            } 
+          },
         },
       },
     },
@@ -82,11 +81,12 @@ test("context: [media-query]", () => {
       },
     },
   });
-  expect(beautify(css, { format: 'css' })).toMatchSnapshot();
+ const prettyCSS = await prettier.format(css, { parser: "css" });
+expect(prettyCSS).toMatchSnapshot();
   expect(ts).toMatchSnapshot();
 });
 
-test("context: [color-scheme]", () => {
+test("context: [color-scheme]", async () => {
   const tokens: DesignTokenGroup = {
     colors: {
       background: {
@@ -106,7 +106,9 @@ test("context: [color-scheme]", () => {
             },
           },
           $type: "color",
-          $extensions: { "plaited-context": "color-scheme" },
+          $extensions: { "plaited": {
+            context: "color-scheme"
+          } },
           $description: "mock description",
         },
       },
@@ -121,11 +123,12 @@ test("context: [color-scheme]", () => {
       },
     },
   });
-  expect(beautify(css, { format: 'css' })).toMatchSnapshot();
+ const prettyCSS = await prettier.format(css, { parser: "css" });
+expect(prettyCSS).toMatchSnapshot();
   expect(ts).toMatchSnapshot();
 });
 
-test("context: [media-query, color-scheme]", () => {
+test("context: [media-query, color-scheme]", async () => {
   const tokens: DesignTokenGroup = {
     size: {
       dynamic: {
@@ -135,9 +138,9 @@ test("context: [media-query, color-scheme]", () => {
             mobile: 2,
             desktop:3,
           },
-          $type: "dimension",
+          $type: "size",
           $description: "mock description",
-          $extensions: { "plaited-context": "media-query" },
+          $extensions: { "plaited": { context: "media-query"} },
         },
       },
     },
@@ -159,7 +162,7 @@ test("context: [media-query, color-scheme]", () => {
             },
           },
           $type: "color",
-          $extensions: { "plaited-context": "color-scheme" },
+          $extensions: { "plaited": {context: "color-scheme"} },
           $description: "mock description",
         },
       },
@@ -179,11 +182,12 @@ test("context: [media-query, color-scheme]", () => {
       },
     },
   });
-  expect(beautify(css, { format: 'css' })).toMatchSnapshot();
+ const prettyCSS = await prettier.format(css, { parser: "css" });
+expect(prettyCSS).toMatchSnapshot();
   expect(ts).toMatchSnapshot();
 });
 
-test("alias", () => {
+test("alias", async () => {
   const tokens: DesignTokenGroup = {
     colors: {
       gray: {
@@ -207,11 +211,12 @@ test("alias", () => {
   const { css, ts } = transformTokens({
     tokens,
   });
-  expect(beautify(css, { format: 'css' })).toMatchSnapshot();
+ const prettyCSS = await prettier.format(css, { parser: "css" });
+expect(prettyCSS).toMatchSnapshot();
   expect(ts).toMatchSnapshot();
 });
 
-test("alias + context", () => {
+test("alias + context", async () => {
   const tokens: DesignTokenGroup = {
     colors: {
       white: {
@@ -238,7 +243,7 @@ test("alias + context", () => {
           },
           $type: "color",
           $description: "mock description",
-          $extensions: { "plaited-context": "color-scheme" },
+          $extensions: { "plaited": {context: "color-scheme"} },
         },
       },
     },
@@ -252,44 +257,36 @@ test("alias + context", () => {
       },
     },
   });
-  expect(beautify(css, { format: 'css' })).toMatchSnapshot();
+ const prettyCSS = await prettier.format(css, { parser: "css" });
+expect(prettyCSS).toMatchSnapshot();
   expect(ts).toMatchSnapshot();
 });
 
-test("exercise token types", () => {
+test("exercise token types", async () => {
   const tokens: DesignTokenGroup = {
-    fontWeight: { $value: 700, $type: "fontWeight", $description: "mock description" },
+    fontWeight: { $value: 700, $description: "mock description", $type: undefined },
     letterSpacing: {
       $value: "normal",
-      $type: "primitive",
       $description: "mock description"
     },
-    border: {
-      $value: {
-        width: 1,
-        style: "solid",
-        color: {
-          l: "0%",
-          c: 0,
-          h: 0,
-        },
-      },
-      $type: "border",
+    fontSize: {
+      $value: 14,
+      $type: "size",
+      $description: "mock description",
+    },
+    lineHeight: {
+      $value: 1,
       $description: "mock description"
     },
-    dropShadow: {
+    typography: {
       $value: {
-        offsetX: 0,
-        offsetY: 4,
-        blur: 4,
-        color: {
-          l: "0%",
-          c: 0,
-          h: 0,
-          a: 0.5,
-        },
+        fontFamily: "{fontFamily}",
+        fontSize: "{fontSize}",
+        fontWeight: "{fontWeight}",
+        letterSpacing: "{letterSpacing}",
+        lineHeight: "{lineHeight}",
       },
-      $type: "dropShadow",
+      $type: "composite",
       $description: "mock description"
     },
     gradient: {
@@ -315,97 +312,21 @@ test("exercise token types", () => {
       $description: "mock description"
     },
     fontFamily: {
-      $value: ["Roboto", "sans-serif"],
-      $type: "fontFamily",
-      $description: "mock description"
-    },
-    transition: {
-      $value: {
-        duration: "0.3s",
-        delay: "0s",
-        timingFunction: "ease-in-out",
-      },
-      $type: "transition",
-      $description: "mock description"
-    },
-    transitionCubic: {
-      $value: {
-        duration: "0.3s",
-        delay: "0s",
-        timingFunction: {
-          function: "cubic-bezier",
-          values: [0.25, 0.1, 0.25, 1],
-        },
-      },
-      $type: "transition",
-      $description: "mock description"
-    },
-    gap: {
-      $value: 10,
-      $type: "gap",
-      $description: "mock description"
-    },
-    gapPercent: {
-      $value: "10%",
-      $type: "gap",
-      $description: "mock description"
-    },
-    gridTemplate: {
-      $value: `"a a a"\n"b c c"\n"b c c"`,
-      $type: "gridTemplate",
-      $description: "mock description"
-    },
-    gridTemplateColumns: {
-      $value: [60, 60],
-      $type: "gridTemplate",
-      $description: "mock description"
-    },
-    fontSize: {
-      $value: 14,
-      $type: "dimension",
+      $value: ['Roboto', 'sans-serif'],
       $description: "mock description",
+      $extensions: { "plaited": { commaSeparated: true } },
     },
-    lineHeight: {
-      $value: 1,
-      $type: "primitive",
+    arrayOfSizes: {
+      $value: [60, 60],
+      $type: "size",
       $description: "mock description"
     },
-    typography: {
-      $value: {
-        fontFamily: "{fontFamily}",
-        fontSize: "{fontSize}",
-        fontWeight: "{fontWeight}",
-        letterSpacing: "{letterSpacing}",
-        lineHeight: "{lineHeight}",
-      },
-      $type: "typography",
-      $description: "mock description"
-    },
-    flex: {
-      $value: {
-        display: "flex",
-        columnGap: "{gap}",
-      },
-      $type: "flex",
-      $description: "mock description"
-    },
-    grid: {
-      $value: {
-        display: "inline-grid",
-        columnGap: "{gap}",
-        rowGap: "{gapPercent}",
-      },
-      $type: "grid",
-      $description: "mock description"
-    },
-    primitiveString: {
+    string: {
       $value: "primitive string",
-      $type: "primitive",
       $description: "mock description"
     },
-    primitiveNumber: {
+    number: {
       $value: 50,
-      $type: "primitive",
       $description: "mock description"
     },
   };
@@ -418,11 +339,12 @@ test("exercise token types", () => {
       },
     },
   });
-  expect(beautify(css, { format: 'css' })).toMatchSnapshot();
+ const prettyCSS = await prettier.format(css, { parser: "css" });
+expect(prettyCSS).toMatchSnapshot();
   expect(ts).toMatchSnapshot();
 });
 
-test("invalid alias", () => {
+test("invalid alias", async () => {
   const tokens: DesignTokenGroup = {
     colors: {
       white: {
@@ -458,18 +380,19 @@ test("invalid alias", () => {
   });
 });
 
-test("invalid context", () => {
+test("invalid context", async () => {
   const tokens: DesignTokenGroup = {
     size: {
       dynamic: {
+        //@ts-expect-error: it exist
         "1": {
           $value: {
             desktop: 2,
           },
-          $type: "dimension",
+          $type: "size",
           $description: "mock description",
-          //@ts-expect-error: it exist
-          $extensions: { "plaited-context": "media" },
+          //@ts-ignore: it exist
+          $extensions: { "plaited": {context: "media"} },
         },
       },
     },
@@ -487,7 +410,7 @@ test("invalid context", () => {
   });
 });
 
-test("invalid context key", () => {
+test("invalid context key", async () => {
   const tokens: DesignTokenGroup = {
     size: {
       dynamic: {
@@ -495,9 +418,9 @@ test("invalid context key", () => {
           $value: {
             tv: 4,
           },
-          $type: "dimension",
+          $type: "size",
           $description: "mock description",
-          $extensions: { "plaited-context": "media-query" },
+          $extensions: { "plaited": {context: "media-query"} },
         },
       },
     },

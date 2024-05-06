@@ -4,7 +4,6 @@ import { TransformTokensParams } from "./types.js";
 
 export const transformTokens = ({
   tokens,
-  baseFontSize = 20,
   contexts: { mediaQueries = {}, colorSchemes = {} } = {},
 }: TransformTokensParams): {
   css: string;
@@ -12,7 +11,6 @@ export const transformTokens = ({
 } => ({
   css: transformToCSS({
     tokens,
-    baseFontSize,
     contexts: {
       colorSchemes,
       mediaQueries,
@@ -20,7 +18,6 @@ export const transformTokens = ({
   }),
   ts: transformToTS({
     tokens,
-    baseFontSize,
     contexts: {
       colorSchemes,
       mediaQueries,
