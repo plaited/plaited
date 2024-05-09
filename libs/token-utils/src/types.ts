@@ -6,7 +6,7 @@ export type AliasValue = `{${string}}`
 /**
  * Default value type relies on the defaultFormat formatter for ts tokens and css tokens
  */
-export type DefaultValue = string | number | AliasValue | (string | number | AliasValue)[] 
+export type DefaultValue = string | number | AliasValue | (string | number | AliasValue)[]
 
 /**
  * Number or percentage values relies on the defaultFormat formatter for ts tokens and css tokens
@@ -29,14 +29,19 @@ export type ColorValue =
       a?: AmountValue
     }
   | `#${string}`
-  |AliasValue
-
+  | 'transparent'
+  | AliasValue
 
 /**
  * Size value type relies on the size formatter for css tokens
  * and the defaultFormat formatter for ts tokens
  */
-export type SizeValue = AmountValue | AmountValue[]
+export type SizeValue =
+  | `${number}%`
+  | `${number}px`
+  | `${number}rem`
+  | AliasValue
+  | (`${number}%` | `${number}px` | `${number}rem` | AliasValue)[]
 
 /**
  * Gradient value type relies on the gradient formatter for css tokens
@@ -59,20 +64,13 @@ export type GradientValue =
     }
   | AliasValue
 
-export type CompositeValue =
-  | { [key: string]: AliasValue}
-  | AliasValue
+export type CompositeValue = { [key: string]: AliasValue } | AliasValue
 
 export type ContextValue<V> = {
   [key: string]: V
 }
 
-export type DesignValue =
-  | DefaultValue
-  | ColorValue
-  | SizeValue
-  | GradientValue
-  | CompositeValue
+export type DesignValue = DefaultValue | ColorValue | SizeValue | GradientValue | CompositeValue
 
 export type ContextTypes = 'media-query' | 'color-scheme'
 
@@ -104,7 +102,7 @@ export type BaseToken<V extends DesignValue, T = undefined> = StaticToken<V, T> 
 
 export type DefaultToken = BaseToken<DefaultValue>
 
-export type AmountToken = BaseToken<AmountValue, 'amount'> 
+export type AmountToken = BaseToken<AmountValue, 'amount'>
 
 export type AngleToken = BaseToken<AngleValue, 'angle'>
 
@@ -123,6 +121,14 @@ export type CompositeToken = {
   $value: CompositeValue
 }
 
+export type NamedTokenValues = {
+  amount: AmountValue
+  angle: AngleValue
+  color: ColorValue
+  size: SizeValue
+  gradient: GradientValue
+}
+
 export type DesignToken =
   | DefaultToken
   | AmountToken
@@ -138,58 +144,55 @@ export type DesignTokenGroup = {
 }
 
 export type MediaQueries = {
-  [key: string]: string;
-};
+  [key: string]: string
+}
 
 export type ColorSchemes = {
-  light?: "light";
-  dark?: "dark";
-};
+  light?: 'light'
+  dark?: 'dark'
+}
 
 export type Contexts = {
-  mediaQueries: MediaQueries;
-  colorSchemes: ColorSchemes;
-};
+  mediaQueries: MediaQueries
+  colorSchemes: ColorSchemes
+}
 
 export type FormatList = (args: {
-  tokens: DesignTokenGroup;
-  allTokens: DesignTokenGroup;
-  tokenPath?: string[];
-  getFormatters: GetFormatters;
-  contexts: Contexts;
-  $type?: string,
-}) => string;
+  tokens: DesignTokenGroup
+  allTokens: DesignTokenGroup
+  tokenPath?: string[]
+  getFormatters: GetFormatters
+  contexts: Contexts
+  $type?: string
+}) => string
 
 export type Formatter<T extends DesignToken = DesignToken> = (
   token: T,
   details: {
-    tokenPath: string[];
-    allTokens: DesignTokenGroup;
-    contexts: Contexts;
-  }
-) => string;
+    tokenPath: string[]
+    allTokens: DesignTokenGroup
+    contexts: Contexts
+  },
+) => string
 
-export type GetFormatters = <
-  T extends DesignTokenGroup = DesignTokenGroup,
-  F extends DesignToken = DesignToken,
->(
+export type GetFormatters = <T extends DesignTokenGroup = DesignTokenGroup, F extends DesignToken = DesignToken>(
   token: F,
   details: {
-    tokenPath: string[];
-    allTokens: T;
-    contexts: Contexts;
-  }
-) => string;
+    tokenPath: string[]
+    allTokens: T
+    contexts: Contexts
+  },
+) => string
 
 export type TransformerParams = {
   /** an object of the type {@link DesignTokenGroup} */
-  tokens: DesignTokenGroup;
-  contexts: Contexts;
-};
+  tokens: DesignTokenGroup
+  contexts: Contexts
+}
 
 export type TransformTokensParams = {
   /** an object of the type {@link DesignTokenGroup} */
-  tokens: DesignTokenGroup;
+  tokens: DesignTokenGroup
   /** named media queries */
-  contexts?: Partial<Contexts>;
-};
+  contexts?: Partial<Contexts>
+}

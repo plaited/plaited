@@ -1,6 +1,5 @@
 import { GetFormatters } from '../types.js'
 import { color } from './css/color.js'
-import { size } from './css/size.js'
 import { gradient } from './css/gradient.js'
 import { defaultFormatter } from './css/default-formatter.js'
 
@@ -10,12 +9,9 @@ import { defaultFormatter } from './css/default-formatter.js'
  */
 export const getFormatters: GetFormatters = (token, details) => {
   const { $type } = token
-  if($type === 'size') return size(token, details)
-  if($type === 'color') return color(token, details)
-  if($type === 'gradient') return gradient(token, details)
-  if($type === 'angle'
-    || $type === 'amount'
-    || $type === undefined
-  ) return defaultFormatter(token, details)
+  if ($type === 'color') return color(token, details)
+  if ($type === 'gradient') return gradient(token, details)
+  if ($type === 'angle' || $type === 'amount' || $type === undefined || $type === 'size')
+    return defaultFormatter(token, details)
   return ''
 }

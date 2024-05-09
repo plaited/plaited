@@ -6,42 +6,48 @@ export const tokens: DesignTokenGroup = {
   size: {
     x1: {
       $value: {
-        tv: 4,
-        mobile: 2,
-        desktop: 2,
+        tv: '4rem',
+        mobile: '2rem',
+        desktop: '2rem',
       },
       $type: 'size',
       $description: 'mock description',
-      $extensions: { plaited: {
-        context: 'media-query',
-      } },
+      $extensions: {
+        plaited: {
+          context: 'media-query',
+        },
+      },
     },
     x2: {
       $value: {
-        desktop: 6,
-        mobile: 8,
-        tv: 8,
+        desktop: '6rem',
+        mobile: '8rem',
+        tv: '8rem',
       },
       $type: 'size',
-      $extensions: { plaited: {
-        context: 'media-query',
-      } },
+      $extensions: {
+        plaited: {
+          context: 'media-query',
+        },
+      },
       $description: 'mock description',
     },
     x3: {
       $value: {
-        desktop: 12,
-        tv: 14,
-        mobile: 16,
+        desktop: '12rem',
+        tv: '14rem',
+        mobile: '16rem',
       },
       $type: 'size',
-      $extensions: { plaited: {
-        context: 'media-query',
-      } },
+      $extensions: {
+        plaited: {
+          context: 'media-query',
+        },
+      },
       $description: 'mock description',
     },
     s3: {
-      $value: 12,
+      $value: '12rem',
       $type: 'size',
       $description: 'mock description',
     },
@@ -78,13 +84,13 @@ export const tokens: DesignTokenGroup = {
     },
   },
   borderRadius: {
-    x1: { $value: 3, $type: 'size', $description: 'mock description' },
-    x2: { $value: 5, $type: 'size', $description: 'mock description' },
-    x3: { $value: 7, $type: 'size', $description: 'mock description' },
+    x1: { $value: '3rem', $type: 'size', $description: 'mock description' },
+    x2: { $value: '5rem', $type: 'size', $description: 'mock description' },
+    x3: { $value: '7rem', $type: 'size', $description: 'mock description' },
   },
   fontSize: {
     x1: {
-      $value: 14,
+      $value: '14rem',
       $type: 'size',
       $description: 'mock description',
     },
@@ -93,7 +99,7 @@ export const tokens: DesignTokenGroup = {
     sansSerif: {
       $value: ['Roboto', 'sans-serif'],
       $description: 'mock description',
-      $extensions: { plaited: { commaSeparated: true }}
+      $extensions: { plaited: { commaSeparated: true } },
     },
   },
   fontWeight: {

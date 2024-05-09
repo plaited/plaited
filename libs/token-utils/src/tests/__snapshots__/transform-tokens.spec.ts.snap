@@ -2,216 +2,216 @@
 
 exports[`token group 1`] = `
 ":host {
-  --line-height-xxs: 0.25rem;
+  --pl-line-height-xxs: 0.25rem;
 }
 "
 `;
 
 exports[`token group 2`] = `
-"export const lineHeightXxs = 'var(--line-height-xxs)'
+"export const lineHeightXxs = "var(--pl-line-height-xxs)"
 "
 `;
 
 exports[`nested token group 1`] = `
 ":host {
-  --colors-gray-10: oklch(97.91% 0 0 / none);
+  --pl-colors-gray-10: oklch(97.91% 0 0 / none);
 }
 "
 `;
 
 exports[`nested token group 2`] = `
-"export const colorsGray10 = 'var(--colors-gray-10)'
+"export const colorsGray10 = "var(--pl-colors-gray-10)"
 "
 `;
 
 exports[`context: [media-query] 1`] = `
 ":host {
-  --size-dynamic-100: 3rem;
+  --pl-size-dynamic-100: 3rem;
 }
 @media screen and (min-width: 1024px) {
   :host {
-    --size-dynamic-100: 3rem;
+    --pl-size-dynamic-100: 3rem;
   }
 }
 :host([data-media-query="desktop"]) {
-  --size-dynamic-100: 3rem;
+  --pl-size-dynamic-100: 3rem;
 }
 @media screen and (min-width: 1920px) {
   :host {
-    --size-dynamic-100: 4rem;
+    --pl-size-dynamic-100: 4rem;
   }
 }
 :host([data-media-query="tv"]) {
-  --size-dynamic-100: 4rem;
+  --pl-size-dynamic-100: 4rem;
 }
 @media screen and (max-width: 767px) {
   :host {
-    --size-dynamic-100: 2rem;
+    --pl-size-dynamic-100: 2rem;
   }
 }
 :host([data-media-query="mobile"]) {
-  --size-dynamic-100: 2rem;
+  --pl-size-dynamic-100: 2rem;
 }
 "
 `;
 
 exports[`context: [media-query] 2`] = `
-"export const sizeDynamic100 = 'var(--size-dynamic-100)'
+"export const sizeDynamic100 = "var(--pl-size-dynamic-100)"
 "
 `;
 
 exports[`context: [color-scheme] 1`] = `
 ":host {
-  --colors-background-primary: oklch(100% 0 0 / 0.5);
+  --pl-colors-background-primary: oklch(100% 0 0 / 0.5);
 }
 @media (prefers-color-scheme: light) {
   :host {
-    --colors-background-primary: oklch(100% 0 0 / 0.5);
+    --pl-colors-background-primary: oklch(100% 0 0 / 0.5);
   }
 }
 :host([data-color-scheme="light"]) {
-  --colors-background-primary: oklch(100% 0 0 / 0.5);
+  --pl-colors-background-primary: oklch(100% 0 0 / 0.5);
 }
 @media (prefers-color-scheme: dark) {
   :host {
-    --colors-background-primary: oklch(0% 0 0 / 0.5);
+    --pl-colors-background-primary: oklch(0% 0 0 / 0.5);
   }
 }
 :host([data-color-scheme="dark"]) {
-  --colors-background-primary: oklch(0% 0 0 / 0.5);
+  --pl-colors-background-primary: oklch(0% 0 0 / 0.5);
 }
 "
 `;
 
 exports[`context: [color-scheme] 2`] = `
-"export const colorsBackgroundPrimary = 'var(--colors-background-primary)'
+"export const colorsBackgroundPrimary = "var(--pl-colors-background-primary)"
 "
 `;
 
 exports[`context: [media-query, color-scheme] 1`] = `
 "@media screen and (min-width: 1920px) {
   :host {
-    --size-dynamic-100: 4rem;
+    --pl-size-dynamic-100: 4rem;
   }
 }
 :host([data-media-query="tv"]) {
-  --size-dynamic-100: 4rem;
+  --pl-size-dynamic-100: 4rem;
 }
 @media screen and (max-width: 767px) {
   :host {
-    --size-dynamic-100: 2rem;
+    --pl-size-dynamic-100: 2rem;
   }
 }
 :host([data-media-query="mobile"]) {
-  --size-dynamic-100: 2rem;
+  --pl-size-dynamic-100: 2rem;
 }
 :host {
-  --size-dynamic-100: 3rem;
-  --colors-background-primary: oklch(100% 0 0 / 0.5);
+  --pl-size-dynamic-100: 3rem;
+  --pl-colors-background-primary: oklch(100% 0 0 / 0.5);
 }
 @media screen and (min-width: 1024px) {
   :host {
-    --size-dynamic-100: 3rem;
+    --pl-size-dynamic-100: 3rem;
   }
 }
 :host([data-media-query="desktop"]) {
-  --size-dynamic-100: 3rem;
+  --pl-size-dynamic-100: 3rem;
 }
 @media (prefers-color-scheme: light) {
   :host {
-    --colors-background-primary: oklch(100% 0 0 / 0.5);
+    --pl-colors-background-primary: oklch(100% 0 0 / 0.5);
   }
 }
 :host([data-color-scheme="light"]) {
-  --colors-background-primary: oklch(100% 0 0 / 0.5);
+  --pl-colors-background-primary: oklch(100% 0 0 / 0.5);
 }
 @media (prefers-color-scheme: dark) {
   :host {
-    --colors-background-primary: oklch(0% 0 0 / 0.5);
+    --pl-colors-background-primary: oklch(0% 0 0 / 0.5);
   }
 }
 :host([data-color-scheme="dark"]) {
-  --colors-background-primary: oklch(0% 0 0 / 0.5);
+  --pl-colors-background-primary: oklch(0% 0 0 / 0.5);
 }
 "
 `;
 
 exports[`context: [media-query, color-scheme] 2`] = `
-"export const sizeDynamic100 = 'var(--size-dynamic-100)'
-export const colorsBackgroundPrimary = 'var(--colors-background-primary)'
+"export const sizeDynamic100 = "var(--pl-size-dynamic-100)"
+export const colorsBackgroundPrimary = "var(--pl-colors-background-primary)"
 "
 `;
 
 exports[`alias 1`] = `
 ":host {
-  --colors-gray-100: oklch(98.21% 0 0 / none);
-  --surface-secondary-100: var(--colors-gray-100);
+  --pl-colors-gray-100: oklch(98.21% 0 0 / none);
+  --pl-surface-secondary-100: var(--pl-colors-gray-100);
 }
 "
 `;
 
 exports[`alias 2`] = `
-"export const colorsGray100 = 'var(--colors-gray-100)'
-export const surfaceSecondary100 = 'var(--surface-secondary-100)'
+"export const colorsGray100 = "var(--pl-colors-gray-100)"
+export const surfaceSecondary100 = "var(--pl-surface-secondary-100)"
 "
 `;
 
 exports[`alias + context 1`] = `
 ":host {
-  --colors-white-100: oklch(97.91% 0 0 / none);
-  --colors-charcoal-100: oklch(18.31% 0.004 285.99 / none);
-  --surface-secondary-100: var(--colors-white-100);
+  --pl-colors-white-100: oklch(97.91% 0 0 / none);
+  --pl-colors-charcoal-100: oklch(18.31% 0.004 285.99 / none);
+  --pl-surface-secondary-100: var(--pl-colors-white-100);
 }
 @media (prefers-color-scheme: light) {
   :host {
-    --surface-secondary-100: var(--colors-white-100);
+    --pl-surface-secondary-100: var(--pl-colors-white-100);
   }
 }
 :host([data-color-scheme="light"]) {
-  --surface-secondary-100: var(--colors-white-100);
+  --pl-surface-secondary-100: var(--pl-colors-white-100);
 }
 @media (prefers-color-scheme: dark) {
   :host {
-    --surface-secondary-100: var(--colors-charcoal-100);
+    --pl-surface-secondary-100: var(--pl-colors-charcoal-100);
   }
 }
 :host([data-color-scheme="dark"]) {
-  --surface-secondary-100: var(--colors-charcoal-100);
+  --pl-surface-secondary-100: var(--pl-colors-charcoal-100);
 }
 "
 `;
 
 exports[`alias + context 2`] = `
-"export const colorsWhite100 = 'var(--colors-white-100)'
-export const colorsCharcoal100 = 'var(--colors-charcoal-100)'
-export const surfaceSecondary100 = 'var(--surface-secondary-100)'
+"export const colorsWhite100 = "var(--pl-colors-white-100)"
+export const colorsCharcoal100 = "var(--pl-colors-charcoal-100)"
+export const surfaceSecondary100 = "var(--pl-surface-secondary-100)"
 "
 `;
 
 exports[`exercise token types 1`] = `
 ":host {
-  --font-weight: 700;
-  --letter-spacing: normal;
-  --font-size: 14rem;
-  --line-height: 1;
-  --gradient: linear-gradient(
+  --pl-font-weight: 700;
+  --pl-letter-spacing: normal;
+  --pl-font-size: 14px;
+  --pl-line-height: 1.5;
+  --pl-gradient: linear-gradient(
     45deg,
     oklch(0% 0 0 / 0.5) 20%,
     oklch(100% 0 0 / 0.5) 80%
   );
-  --font-family: Roboto, sans-serif;
-  --array-of-sizes: 60rem 60rem;
-  --string: primitive string;
-  --number: 50;
+  --pl-font-family: Roboto, sans-serif;
+  --pl-array-of-sizes: 60px 60px;
+  --pl-string: primitive string;
+  --pl-number: 50;
 }
 "
 `;
 
 exports[`exercise token types 2`] = `
-"export const fontWeight = 'var(--font-weight)'
-export const letterSpacing = 'var(--letter-spacing)'
-export const fontSize = 'var(--font-size)'
-export const lineHeight = 'var(--line-height)'
+"export const fontWeight = "var(--pl-font-weight)"
+export const letterSpacing = "var(--pl-letter-spacing)"
+export const fontSize = "var(--pl-font-size)"
+export const lineHeight = "var(--pl-line-height)"
 export const typography = {
   fontFamily: fontFamily,
   fontSize: fontSize,
@@ -219,10 +219,10 @@ export const typography = {
   letterSpacing: letterSpacing,
   lineHeight: lineHeight,
 }
-export const gradient = 'var(--gradient)'
-export const fontFamily = 'var(--font-family)'
-export const arrayOfSizes = 'var(--array-of-sizes)'
-export const string = 'var(--string)'
-export const number = 'var(--number)'
+export const gradient = "var(--pl-gradient)"
+export const fontFamily = "var(--pl-font-family)"
+export const arrayOfSizes = "var(--pl-array-of-sizes)"
+export const string = "var(--pl-string)"
+export const number = "var(--pl-number)"
 "
 `;

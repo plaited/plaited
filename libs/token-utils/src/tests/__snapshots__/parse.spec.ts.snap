@@ -232,8 +232,8 @@ exports[`parse(): snapshot 1`] = `
               "type": "string",
             },
             "$value": {
-              "const": 3,
-              "type": "number",
+              "const": "3rem",
+              "type": "string",
             },
           },
           "required": [
@@ -252,8 +252,8 @@ exports[`parse(): snapshot 1`] = `
               "type": "string",
             },
             "$value": {
-              "const": 5,
-              "type": "number",
+              "const": "5rem",
+              "type": "string",
             },
           },
           "required": [
@@ -272,8 +272,8 @@ exports[`parse(): snapshot 1`] = `
               "type": "string",
             },
             "$value": {
-              "const": 7,
-              "type": "number",
+              "const": "7rem",
+              "type": "string",
             },
           },
           "required": [
@@ -355,8 +355,8 @@ exports[`parse(): snapshot 1`] = `
               "type": "string",
             },
             "$value": {
-              "const": 14,
-              "type": "number",
+              "const": "14rem",
+              "type": "string",
             },
           },
           "required": [
@@ -459,8 +459,8 @@ exports[`parse(): snapshot 1`] = `
               "type": "string",
             },
             "$value": {
-              "const": 12,
-              "type": "number",
+              "const": "12rem",
+              "type": "string",
             },
           },
           "required": [
@@ -500,16 +500,16 @@ exports[`parse(): snapshot 1`] = `
             "$value": {
               "properties": {
                 "desktop": {
-                  "const": 2,
-                  "type": "number",
+                  "const": "2rem",
+                  "type": "string",
                 },
                 "mobile": {
-                  "const": 2,
-                  "type": "number",
+                  "const": "2rem",
+                  "type": "string",
                 },
                 "tv": {
-                  "const": 4,
-                  "type": "number",
+                  "const": "4rem",
+                  "type": "string",
                 },
               },
               "required": [
@@ -558,16 +558,16 @@ exports[`parse(): snapshot 1`] = `
             "$value": {
               "properties": {
                 "desktop": {
-                  "const": 6,
-                  "type": "number",
+                  "const": "6rem",
+                  "type": "string",
                 },
                 "mobile": {
-                  "const": 8,
-                  "type": "number",
+                  "const": "8rem",
+                  "type": "string",
                 },
                 "tv": {
-                  "const": 8,
-                  "type": "number",
+                  "const": "8rem",
+                  "type": "string",
                 },
               },
               "required": [
@@ -616,16 +616,16 @@ exports[`parse(): snapshot 1`] = `
             "$value": {
               "properties": {
                 "desktop": {
-                  "const": 12,
-                  "type": "number",
+                  "const": "12rem",
+                  "type": "string",
                 },
                 "mobile": {
-                  "const": 16,
-                  "type": "number",
+                  "const": "16rem",
+                  "type": "string",
                 },
                 "tv": {
-                  "const": 14,
-                  "type": "number",
+                  "const": "14rem",
+                  "type": "string",
                 },
               },
               "required": [
