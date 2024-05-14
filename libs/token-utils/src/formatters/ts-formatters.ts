@@ -9,6 +9,6 @@ import { composite } from './ts/composite.js'
  */
 export const getFormatters: GetFormatters = (token, details) => {
   const { $type } = token
-  if($type=== 'composite') return composite(token, details)
+  if ($type === 'composite') return composite(token, details)
   return defaultFormat(token, details)
 }

@@ -13,7 +13,7 @@ const getResolvedValue = (path: string[], tokens: DesignTokenGroup | undefined):
       //@ts-ignore: dynamic error handling
       toRet = toRet[key]
     }
-    !exist && console.error(`Invalid token alias: {${path.join(".")}}`);
+    !exist && console.error(`Invalid token alias: {${path.join('.')}}`)
   }
   //@ts-ignore: dynamic type checking
   if (Object.hasOwn(toRet, '$value')) return toRet

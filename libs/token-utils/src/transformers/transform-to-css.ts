@@ -31,15 +31,12 @@ const deduplicate = (css: string) => {
  * @param {TransformerParams} params - The parameters for the transformation.
  * @returns {string} The transformed CSS rules with deduplicated selectors.
  */
-export const transformToCSS = ({
-  tokens,
-  contexts,
-}: TransformerParams) => {
+export const transformToCSS = ({ tokens, contexts }: TransformerParams) => {
   const content = formatList({
     tokens,
     allTokens: tokens,
     getFormatters,
     contexts,
-  });
+  })
   return deduplicate(content)
-};
+}

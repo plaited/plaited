@@ -8,15 +8,12 @@ import { getFormatters } from '../formatters/ts-formatters.js'
  * @param {TransformerParams} params - The parameters for the transformation.
  * @returns {string} The transformed js variables.
  */
-export const transformToTS = ({
-  tokens,
-  contexts,
-}: TransformerParams) => {
+export const transformToTS = ({ tokens, contexts }: TransformerParams) => {
   const content = formatList({
     tokens,
     allTokens: tokens,
     getFormatters,
     contexts,
-  });
+  })
   return content
-};
+}
