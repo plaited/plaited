@@ -1,25 +1,45 @@
-import { Formatter, DefaultToken, AngleToken, AmountToken, SizeToken } from '../../types.js'
+import {
+  Formatter,
+  DefaultToken,
+  AngleToken,
+  AmountToken,
+  SizeToken,
+  DefaultValue,
+  AngleValue,
+  AmountValue,
+  SizeValue,
+  DesignTokenGroup,
+  DesignToken,
+} from '../../types.js'
 import { hasAlias } from '../has-alias.js'
 import { kebabCase } from '@plaited/utils'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'
 import { getRule, resolveCSSVar, hasCommaSeparatedValue } from '../css-utils.js'
+
+const defaultCallback =
+  (allTokens: DesignTokenGroup) =>
+  ($value: DefaultValue | AngleValue | AmountValue | SizeValue, token: DesignToken) => {
+    return (
+      hasAlias($value) ? resolveCSSVar($value, allTokens)
+      : Array.isArray($value) ?
+        $value
+          .map((val) => (hasAlias(val) ? resolveCSSVar(val, allTokens) : val))
+          .join(hasCommaSeparatedValue(token) ? ', ' : ' ')
+      : $value
+    )
+  }
 
 export const defaultFormatter: Formatter<DefaultToken | AngleToken | AmountToken | SizeToken> = (
   token,
   { allTokens, tokenPath, contexts },
 ) => {
   const prop = kebabCase(tokenPath.join(' '))
+  const cb = defaultCallback(allTokens)
   if (isStaticToken(token)) {
     const { $value } = token
     return getRule({
       prop,
-      value:
-        hasAlias($value) ? resolveCSSVar($value, allTokens)
-        : Array.isArray($value) ?
-          $value
-            .map((val) => (hasAlias(val) ? resolveCSSVar(val, allTokens) : val))
-            .join(hasCommaSeparatedValue(token) ? ', ' : ' ')
-        : $value,
+      value: cb($value, token),
     })
   }
   const toRet: string[] = []
@@ -37,13 +57,7 @@ export const defaultFormatter: Formatter<DefaultToken | AngleToken | AmountToken
         toRet.push(
           getRule({
             prop,
-            value:
-              hasAlias(contextValue) ? resolveCSSVar(contextValue, allTokens)
-              : Array.isArray(contextValue) ?
-                contextValue
-                  .map((val) => (hasAlias(val) ? resolveCSSVar(val, allTokens) : val))
-                  .join(hasCommaSeparatedValue(token) ? ', ' : ' ')
-              : contextValue,
+            value: cb(contextValue, token),
             ctx,
             contexts,
           }),

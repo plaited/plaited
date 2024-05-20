@@ -64,20 +64,37 @@ export type GradientValue =
     }
   | AliasValue
 
+/**
+ * Shadow value type relies on the shadow formatter for css tokens
+ * and the defaultFormat formatter for ts tokens based on co
+ */
+export type ShadowValue =
+  | {
+      inset?: 'inset'
+      lengths: [SizeValue, SizeValue, SizeValue?]
+      color?: ColorValue
+    }
+  | {
+      inset?: 'inset'
+      lengths: [SizeValue, SizeValue, SizeValue?]
+      color?: ColorValue
+    }[]
+  | AliasValue
+
 export type CompositeValue = { [key: string]: AliasValue } | AliasValue
 
 export type ContextValue<V> = {
   [key: string]: V
 }
 
-export type DesignValue = DefaultValue | ColorValue | SizeValue | GradientValue | CompositeValue
+export type DesignValue = DefaultValue | ColorValue | SizeValue | GradientValue | ShadowValue | CompositeValue
 
 export type ContextTypes = 'media-query' | 'color-scheme'
 
 export type StaticToken<V extends DesignValue, T = undefined> = {
   $description: string
   $extensions?: {
-    ['plaited']?: {
+    plaited?: {
       context?: never
       commaSeparated?: boolean
     }
@@ -89,7 +106,7 @@ export type StaticToken<V extends DesignValue, T = undefined> = {
 export type ContextualToken<V extends DesignValue, T = undefined> = {
   $description: string
   $extensions: {
-    ['plaited']: {
+    plaited: {
       context: ContextTypes
       commaSeparated?: boolean
     }
@@ -112,6 +129,14 @@ export type SizeToken = BaseToken<SizeValue, 'size'>
 
 export type GradientToken = BaseToken<GradientValue, 'gradient'>
 
+export type ShadowToken = BaseToken<ShadowValue, 'shadow'> & {
+  $extensions?: {
+    plaited?: {
+      dropShadow?: boolean
+    }
+  }
+}
+
 export type CompositeToken = {
   $description: string
   $extensions?: {
@@ -127,6 +152,7 @@ export type NamedTokenValues = {
   color: ColorValue
   size: SizeValue
   gradient: GradientValue
+  shadow: ShadowValue
 }
 
 export type DesignToken =
@@ -136,6 +162,7 @@ export type DesignToken =
   | ColorToken
   | SizeToken
   | GradientToken
+  | ShadowToken
   | CompositeToken
 
 // general tokens object type definition

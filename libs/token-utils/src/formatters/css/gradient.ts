@@ -1,10 +1,11 @@
-import { Formatter, GradientValue, GradientToken, DesignTokenGroup, AliasValue } from '../../types.js'
+import { Formatter, GradientValue, GradientToken, DesignTokenGroup } from '../../types.js'
 import { hasAlias } from '../has-alias.js'
 import { kebabCase } from '@plaited/utils'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'
 import { getRule, getColor, resolveCSSVar } from '../css-utils.js'
 
-const colorMapCallback = (allTokens: DesignTokenGroup) => ($value: Exclude<GradientValue, AliasValue>) => {
+const colorMapCallback = (allTokens: DesignTokenGroup) => ($value: GradientValue) => {
+  if (hasAlias($value)) return resolveCSSVar($value, allTokens)
   const { gradientFunction, angleShapePosition, colorStops } = $value
   const stops = colorStops.map(({ color, position }) =>
     hasAlias(color) ? [resolveCSSVar(color, allTokens), position].filter(Boolean).join(' ')
@@ -21,7 +22,7 @@ export const gradient: Formatter<GradientToken> = (token, { allTokens, tokenPath
     const { $value } = token
     return getRule({
       prop,
-      value: hasAlias($value) ? resolveCSSVar($value, allTokens) : cb($value),
+      value: cb($value),
     })
   }
   const toRet: string[] = []
@@ -39,7 +40,7 @@ export const gradient: Formatter<GradientToken> = (token, { allTokens, tokenPath
         toRet.push(
           getRule({
             prop,
-            value: hasAlias(contextValue) ? resolveCSSVar(contextValue, allTokens) : cb(contextValue),
+            value: cb(contextValue),
             ctx,
             contexts,
           }),

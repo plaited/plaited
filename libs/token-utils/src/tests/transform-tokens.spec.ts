@@ -353,6 +353,29 @@ test('exercise token types', async () => {
       $value: 50,
       $description: 'mock description',
     },
+    boxShadow0: {
+      $type: 'shadow',
+      $value: {
+        lengths: ['1px', '3px', '5px'],
+      },
+      $description: 'mock description',
+    },
+    boxShadow1: {
+      $type: 'shadow',
+      $value: {
+        inset: 'inset',
+        lengths: ['1px', '3px', '5px'],
+      },
+      $description: 'mock description',
+    },
+    boxShadow2: {
+      $type: 'shadow',
+      $value: {
+        color: '#fff',
+        lengths: ['1px', '3px', '5px'],
+      },
+      $description: 'mock description',
+    },
   }
   const { css, ts } = transformTokens({
     tokens,

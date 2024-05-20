@@ -203,6 +203,9 @@ exports[`exercise token types 1`] = `
   --pl-array-of-sizes: 60px 60px;
   --pl-string: primitive string;
   --pl-number: 50;
+  --pl-box-shadow0: 1px 3px 5px;
+  --pl-box-shadow1: inset 1px 3px 5px;
+  --pl-box-shadow2: 1px 3px 5px #fff;
 }
 "
 `;
@@ -224,5 +227,8 @@ export const fontFamily = "var(--pl-font-family)"
 export const arrayOfSizes = "var(--pl-array-of-sizes)"
 export const string = "var(--pl-string)"
 export const number = "var(--pl-number)"
+export const boxShadow0 = "var(--pl-box-shadow0)"
+export const boxShadow1 = "var(--pl-box-shadow1)"
+export const boxShadow2 = "var(--pl-box-shadow2)"
 "
 `;
