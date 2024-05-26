@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import { FT, TemplateObject } from '../../types.js'
-import { css, createStyles, assignStyles } from '../../css/index.js'
-import { createTemplate as h, Fragment } from '../index.js'
+import { css, createStyles, assignStyles } from '../../index.js'
+import { createTemplate as h, Fragment } from '../create-template.js'
 import { ssr } from '../ssr.js'
 import beautify from 'beautify'
 

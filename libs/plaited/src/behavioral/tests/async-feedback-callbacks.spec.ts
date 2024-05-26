@@ -1,5 +1,6 @@
 import { test, expect } from 'bun:test'
-import { bProgram, sync } from '../index.js'
+import { bProgram } from '../b-program.js'
+import { sync } from '../rules.js'
 import { wait } from '@plaited/utils'
 
 test('async feedback callbacks', async () => {

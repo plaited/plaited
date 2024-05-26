@@ -1,5 +1,6 @@
 import { test, expect } from 'bun:test'
-import { bProgram, thread, sync, loop } from '../index.js'
+import { bProgram } from '../b-program.js'
+import { loop, sync, thread } from '../rules.js'
 
 test('firing trigger and adding threads in actions', () => {
   const actual: string[] = []

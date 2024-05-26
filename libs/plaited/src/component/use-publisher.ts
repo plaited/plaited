@@ -1,5 +1,5 @@
 import { Publisher, PlaitedElement, BPEvent, Trigger } from '../types.js'
-import { onlyObservedTriggers } from './only-observed-triggers.js'
+import { onlyObservedTriggers } from '../shared/only-observed-triggers.js'
 /**
  * @description  Creates a new BPEvent publisher.
  * A publisher object is a function that can be called with a value of type BPEvent,

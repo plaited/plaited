@@ -1,5 +1,5 @@
 import { bProgram } from '../../../index.js'
-import { usePostMessage } from '../../utils.js'
+import { usePostMessage } from '../../use-post-message.js'
 
 const { trigger, feedback } = bProgram()
 

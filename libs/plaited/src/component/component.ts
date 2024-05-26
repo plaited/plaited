@@ -1,6 +1,6 @@
-import { createTemplate } from '../jsx/index.js'
+import { createTemplate } from '../jsx/create-template.js'
 import { bpTrigger } from '../jsx/constants.js'
-import { bProgram } from '../behavioral/index.js'
+import { bProgram } from '../behavioral/b-program.js'
 import type {
   BPEvent,
   Trigger,
@@ -14,9 +14,9 @@ import { $, cssCache, clone } from './sugar.js'
 import { DelegatedListener, delegates } from './delegated-listener.js'
 import { hasLogger } from './type-guards.js'
 import { defineRegistry } from './define-registry.js'
-import { onlyObservedTriggers } from './only-observed-triggers.js'
+import { onlyObservedTriggers } from '../shared/only-observed-triggers.js'
 import { emit } from './emit.js'
-import { PLAITED_COMPONENT_IDENTIFIER } from './constants.js'
+import { PLAITED_COMPONENT_IDENTIFIER } from '../shared/constants.js'
 
 const isElement = (node: Node): node is Element => node.nodeType === 1
 

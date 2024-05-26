@@ -2,7 +2,7 @@ import { noop } from '@plaited/utils'
 import { bpAddress } from '../jsx/constants.js'
 import { Messenger, SSE, WS, PostMessenger, Publisher, PlaitedElement, Disconnect, Trigger } from '../types.js'
 import { DelegatedListener, delegates } from './delegated-listener.js'
-import { NavigateEventType, PLAITED_HDA } from './constants.js'
+import { NavigateEventType, PLAITED_HDA } from '../shared/constants.js'
 import { emit } from './emit.js'
 
 const hasPlaitedContext = (

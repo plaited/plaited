@@ -9,7 +9,7 @@ const isWorker = (client: PostMessageClient): client is Worker => client instanc
 const isServiceWorkerContainer = (client: PostMessageClient): client is ServiceWorkerContainer =>
   client instanceof ServiceWorkerContainer
 
-export const usePostMessageClient = (postMessageClient: PostMessageClient): PostMessenger => {
+export const useWorker = (postMessageClient: PostMessageClient): PostMessenger => {
   const pub = usePublisher()
   const handleMessage = ({ data }: { data: BPEvent }) => pub(data)
   const connect = (trigger: Trigger, observedTriggers: string[] | PlaitedElement) => {

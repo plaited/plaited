@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 import { createStyles } from '../create-styles.js'
-import { assignStyles } from '../assign-styles.js'
+
 test('createStyles: simple rules', () => {
   const s = createStyles({
     base: {

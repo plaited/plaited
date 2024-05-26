@@ -1,6 +1,6 @@
 import { test } from '@plaited/rite'
 import { QuerySelector, Position, PlaitedElement } from '../../types.js'
-import { Component } from '../index.js'
+import { Component } from '../component.js'
 
 let did = 1
 const adjectives = [

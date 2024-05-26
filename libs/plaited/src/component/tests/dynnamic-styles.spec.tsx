@@ -1,6 +1,6 @@
 import { test } from '@plaited/rite'
-import { createStyles } from '../../css.js'
-import { Component } from '../index.js'
+import { createStyles } from '../../index.js'
+import { Component } from '../component.js'
 
 test('dynamic styles', async (t) => {
   const body = document.querySelector('body')

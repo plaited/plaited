@@ -1,9 +1,9 @@
-import { css } from '../../../css.js'
-import { Component } from '../../index.js'
+import { css } from '../../../index.js'
+import { Component } from '../../component.js'
 import { opacityHex } from '@plaited/utils'
 import { SVG } from './noun-braids-2633610.js'
 
-export const { $stylesheet, ...classes } = css`
+export const stylesheet = css`
   .zone {
     border: 1px black dashed;
     margin: 24px;
@@ -45,34 +45,41 @@ export const { $stylesheet, ...classes } = css`
 
 const SubIsland = Component({
   tag: 'sub-island',
-  template: <h3 className={classes['sub-island']}>sub island</h3>,
+  template: (
+    <h3
+      className={'sub-island'}
+      {...stylesheet}
+    >
+      sub island
+    </h3>
+  ),
 })
 
 export const ShadowIsland = Component({
   tag: 'shadow-island',
   template: (
     <div
-      className={classes.mount}
-      stylesheet={$stylesheet}
+      {...stylesheet}
+      className={'mount'}
       bp-target='wrapper'
     >
       <div
-        className={classes.zone}
+        className={'zone'}
         bp-target='zone'
       ></div>
       <div
-        className={classes.row}
+        className={'row'}
         bp-target='button-row'
       >
         <button
           bp-trigger={{ click: 'start' }}
-          className={classes.button}
+          className={'button'}
         >
           start
         </button>
         <button
           bp-trigger={{ click: 'addButton' }}
-          className={classes.button}
+          className={'button'}
         >
           addButton
         </button>
@@ -89,7 +96,7 @@ export const ShadowIsland = Component({
       addSubIsland() {
         const [zone] = $('zone')
         /** render dynamic island to zone */
-        zone?.insert('beforeend', <SubIsland stylesheet={$stylesheet} />)
+        zone?.insert('beforeend', <SubIsland {...stylesheet} />)
       },
       addButton() {
         host.insertAdjacentHTML('beforeend', `<button slot='button'>add svg</button>`)

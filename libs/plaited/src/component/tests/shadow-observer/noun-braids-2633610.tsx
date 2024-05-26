@@ -1,12 +1,10 @@
-/* eslint-disable max-len */
-import { classes } from './shadow.island.js'
 export const SVG = () => (
   <svg
     width='125'
     height='125'
     version='1.1'
     viewBox='0 0 700 700'
-    className={classes.svg}
+    className={'svg'}
     bp-trigger={{ click: 'removeSvg' }}
     bp-target='svg'
   >

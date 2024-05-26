@@ -20,8 +20,8 @@
     "./utils": "./dist/utils.js",
     "./jsx-runtime": "./dist/jsx-runtime.js",
     "./jsx-dev-runtime": "./dist/jsx-dev-runtime.js",
-    "./css": "./dist/css.js",
-    "./ssr": "./dist/ssr.js"
+    "./ssr": "./dist/ssr.js",
+    "./worker": "./dist/worker.js"
   },
   "files": [
     "./dist/**",
@@ -35,9 +35,9 @@
     "build": "tsc --project tsconfig.json",
     "build-watch": "bun run build --watch",
     "test": "bun run test-bun && npm run test-web",
-    "test-bun": "bun test src/**[!component]/*",
-    "test-bun-watch": "bun test src/**[!component]/* --watch",
-    "test-web": "web-test-runner \"src/component/tests/**/*.spec.ts(x)?\"",
+    "test-bun": "bun test src/**[!component,!worker]/*",
+    "test-bun-watch": "bun test src/**[!component,!worker]/* --watch",
+    "test-web": "web-test-runner \"src/(component|worker)/tests/**/*.spec.ts(x)?\"",
     "test-web-watch": "web-test-runner \"src/component/tests/**/*.spec.ts(x)?\" --watch"
   },
   "types": "./dist/index.d.ts",

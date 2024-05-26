@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import { FT, TemplateObject } from '../../types.js'
-import { createStyles, css, assignStyles } from '../../css/index.js'
-import { createTemplate as h, Fragment } from '../index.js'
+import { createStyles, css, assignStyles } from '../../index.js'
+import { createTemplate as h, Fragment } from '../create-template.js'
 import beautify from 'beautify'
 
 const render = (tpl: TemplateObject) => beautify(tpl.client.join(''), { format: 'html' })
@@ -23,6 +23,7 @@ test('createTemplate: Falsey - null', () => {
 })
 
 test('createTemplate: Falsey - false', () => {
+  // @ts-expect-error: test
   expect(render(h('div', { children: false }))).toMatchSnapshot()
 })
 
@@ -31,14 +32,17 @@ test('createTemplate: Not really Falsey - ""', () => {
 })
 
 test('createTemplate: Not really Falsey - 0', () => {
+  // @ts-expect-error: test
   expect(render(h('div', { children: 0 }))).toMatchSnapshot()
 })
 
 test('createTemplate: Not really Falsey - NaN', () => {
+  // @ts-expect-error: test
   expect(render(h('div', { children: NaN }))).toMatchSnapshot()
 })
 
 test('createTemplate: Bad template - NaN', () => {
+  // @ts-expect-error: test
   expect(render(h('div', { children: { string: 'string' } }))).toMatchSnapshot()
 })
 

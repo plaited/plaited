@@ -1,6 +1,6 @@
 import { test } from '@plaited/rite'
-import { createStyles } from '../../css.js'
-import { Component } from '../index.js'
+import { createStyles } from '../../index.js'
+import { Component } from '../component.js'
 import { canUseDOM } from '@plaited/utils'
 
 let parser: {

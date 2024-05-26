@@ -1,12 +1,12 @@
 import { test } from '@plaited/rite'
 import sinon from 'sinon'
-import { usePostMessageClient } from '../utils.js'
+import { useWorker } from '../../component/utils.js'
 
 test('messenger: with worker', async (t) => {
-  const worker = new Worker(new URL('/src/component/tests/__mocks__/test.worker.ts', import.meta.url), {
+  const worker = new Worker(new URL('/src/worker/tests/__mocks__/test.worker.ts', import.meta.url), {
     type: 'module',
   })
-  const msg = usePostMessageClient(worker)
+  const msg = useWorker(worker)
   const spy = sinon.spy()
   msg.connect(spy, ['update'])
 

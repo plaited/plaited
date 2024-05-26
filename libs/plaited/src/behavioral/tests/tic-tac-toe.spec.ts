@@ -1,6 +1,7 @@
 import { test, expect } from 'bun:test'
 import { RulesFunction } from '../../types.js'
-import { bProgram, loop, sync, thread } from '../index.js'
+import { bProgram } from '../b-program.js'
+import { loop, sync, thread } from '../rules.js'
 
 const winConditions = [
   //rows

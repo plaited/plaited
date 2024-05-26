@@ -1,6 +1,6 @@
 import { test } from '@plaited/rite'
 import { bpAddress } from '../../jsx/constants.js'
-import { Component } from '../index.js'
+import { Component } from '../component.js'
 import { useMessenger, useEventSources } from '../utils.js'
 
 test('dynamic island comms', async (t) => {

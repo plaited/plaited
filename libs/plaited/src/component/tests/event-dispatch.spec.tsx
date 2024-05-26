@@ -1,5 +1,5 @@
 import { test } from '@plaited/rite'
-import { Component } from '../index.js'
+import { Component } from '../component.js'
 
 test('eventTriggers', async (t) => {
   const wrapper = document.querySelector('body')

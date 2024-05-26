@@ -1,5 +1,7 @@
 import { test, expect } from 'bun:test'
-import { assignStyles, createStyles, css } from '../index.js'
+import { assignStyles } from '../assign-styles.js'
+import { createStyles } from '../create-styles.js'
+import { css } from '../css.js'
 
 test('assignStyles', () => {
   const styles = createStyles({

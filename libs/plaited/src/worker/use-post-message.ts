@@ -1,6 +1,6 @@
 import { trueTypeOf } from '@plaited/utils'
 import { Trigger, BPEvent } from '../types.js'
-import { onlyObservedTriggers } from './only-observed-triggers.js'
+import { onlyObservedTriggers } from '../shared/only-observed-triggers.js'
 
 /**
  * @description Is a utility function that allows us to send messages

@@ -1,5 +1,6 @@
 import { test, expect } from 'bun:test'
-import { bProgram, loop, thread, sync } from '../index.js'
+import { thread, sync, loop } from '../rules.js'
+import { bProgram } from '../b-program.js'
 import { defaultLogger } from '../default-logger.js'
 import { DefaultLogCallbackParams } from '../../types.js'
 
