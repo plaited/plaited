@@ -1,13 +1,4 @@
-import type {
-  MediaQueries,
-  ColorSchemes,
-  ColorValue,
-  AliasValue,
-  ContextTypes,
-  DesignTokenGroup,
-  DesignToken,
-  BaseToken,
-} from '../types.js'
+import type { MediaQueries, ColorSchemes, ColorValue, AliasValue, ContextTypes, DesignTokenGroup } from '../types.js'
 import { kebabCase, isTypeOf } from '@plaited/utils'
 import { resolveAlias } from './resolve-alias.js'
 import { prefix } from './constants.js'
@@ -73,6 +64,3 @@ export const resolveCSSVar = (value: string, allTokens: DesignTokenGroup | undef
   const [, path] = res
   return `var(--${prefix}-${kebabCase(path.join(' '))})`
 }
-
-export const hasCommaSeparatedValue = <T extends DesignToken>(token: BaseToken<T['$value'], T['$type']>) =>
-  Boolean(token?.$extensions?.plaited?.commaSeparated)

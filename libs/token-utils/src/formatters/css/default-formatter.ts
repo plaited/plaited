@@ -9,22 +9,19 @@ import {
   AmountValue,
   SizeValue,
   DesignTokenGroup,
-  DesignToken,
 } from '../../types.js'
 import { hasAlias } from '../has-alias.js'
 import { kebabCase } from '@plaited/utils'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'
-import { getRule, resolveCSSVar, hasCommaSeparatedValue } from '../css-utils.js'
+import { getRule, resolveCSSVar } from '../css-utils.js'
 
 const defaultCallback =
-  (allTokens: DesignTokenGroup) =>
-  ($value: DefaultValue | AngleValue | AmountValue | SizeValue, token: DesignToken) => {
+  (allTokens: DesignTokenGroup, isCommaSeparated?: boolean) =>
+  ($value: DefaultValue | AngleValue | AmountValue | SizeValue) => {
     return (
       hasAlias($value) ? resolveCSSVar($value, allTokens)
       : Array.isArray($value) ?
-        $value
-          .map((val) => (hasAlias(val) ? resolveCSSVar(val, allTokens) : val))
-          .join(hasCommaSeparatedValue(token) ? ', ' : ' ')
+        $value.map((val) => (hasAlias(val) ? resolveCSSVar(val, allTokens) : val)).join(isCommaSeparated ? ', ' : ' ')
       : $value
     )
   }
@@ -33,13 +30,14 @@ export const defaultFormatter: Formatter<DefaultToken | AngleToken | AmountToken
   token,
   { allTokens, tokenPath, contexts },
 ) => {
+  const isCommaSeparated = Boolean(token?.$extensions?.plaited?.commaSeparated)
   const prop = kebabCase(tokenPath.join(' '))
-  const cb = defaultCallback(allTokens)
+  const cb = defaultCallback(allTokens, isCommaSeparated)
   if (isStaticToken(token)) {
     const { $value } = token
     return getRule({
       prop,
-      value: cb($value, token),
+      value: cb($value),
     })
   }
   const toRet: string[] = []
@@ -57,7 +55,7 @@ export const defaultFormatter: Formatter<DefaultToken | AngleToken | AmountToken
         toRet.push(
           getRule({
             prop,
-            value: cb(contextValue, token),
+            value: cb(contextValue),
             ctx,
             contexts,
           }),
