@@ -1,6 +1,6 @@
-import { DelegatedListener, delegates } from '../component/delegated-listener.js'
+import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
 import { NavigateEventType } from '../shared/constants.js'
-import { emit } from '../component/emit.js'
+import { emit } from '../shared/emit.js'
 import { PlaitedElement } from '../types.js'
 
 export const connectShadowroot = (shadowRoot: ShadowRoot) => {

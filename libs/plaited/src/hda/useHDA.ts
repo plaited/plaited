@@ -1,8 +1,7 @@
 /** Utility function for enabling hypermedia patterns */
-import type { Logger } from '../types.js'
 import { isTypeOf } from '@plaited/utils'
 import { displayContent } from './display-content.js'
-import { DelegatedListener, delegates } from '../component/delegated-listener.js'
+import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
 import { createDoc } from '../shared/parser-utils.js'
 import { fetchHTML } from './fetch-html.js'
 import { NavigateEventType, PLAITED_HDA_HOOK } from '../shared/constants.js'
@@ -14,7 +13,7 @@ import { connectShadowroot } from './connect-shadowroot.js'
  * The module returns a cleanup function that removes the event listeners when called.
  *
  */
-export const useHDA = <T>(logger: Logger<T>) => {
+export const useHDA = () => {
   const html = document.querySelector('html')
   if (html) {
     const navigate = async (event: CustomEvent<URL>) => {
@@ -25,7 +24,6 @@ export const useHDA = <T>(logger: Logger<T>) => {
         displayContent(htmlContent)
       }
     }
-
     const pop = ({ state }: PopStateEvent) => {
       if (isTypeOf<string>(state, 'string')) {
         const htmlContent = createDoc(state)
