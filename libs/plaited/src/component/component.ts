@@ -1,11 +1,11 @@
 import { bProgram } from '../behavioral/b-program.js'
 import type { PlaitedComponent, PlaitedElement, BPEvent, QuerySelector, Trigger } from '../types.js'
 import { clone } from './sugar.js'
-import { hasLogger } from './type-guards.js'
+import { hasLogger, hasHDA } from './type-guards.js'
 import { emit } from '../shared/emit.js'
 import { useEventSources } from './use-event-sources.js'
 import { getPlaitedTemplate } from './get-plaited-template.js'
-import { PLAITED_LOGGER } from '../shared/constants.js'
+import { PLAITED_HDA_HOOK, PLAITED_LOGGER } from '../shared/constants.js'
 import { bpTrigger } from '../jsx/constants.js'
 import { cssCache, $ } from './sugar.js'
 import { shadowObserver, addListeners } from './shadow-observer.js'
@@ -73,6 +73,7 @@ export const Component: PlaitedComponent = ({
       #disconnectEventSources?: () => void
       #trigger?: Trigger
       connectedCallback() {
+        hasHDA(window) && window[PLAITED_HDA_HOOK](this.#root)
         if (bp) {
           const logger = hasLogger(window) ? window[PLAITED_LOGGER] : undefined
           const { trigger, ...rest } = bProgram(logger)
