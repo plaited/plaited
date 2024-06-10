@@ -32,8 +32,8 @@ const createDelegatedListener = (el: Element, trigger: Trigger) => {
   )
 }
 
-/** delegate event listeners  for elements in list */
-export const delegateListeners = (elements: Element[], trigger: Trigger) => {
+/** add delegated event listeners  for elements in list */
+export const addListeners = (elements: Element[], trigger: Trigger) => {
   for (const el of elements) {
     if (el.tagName === 'SLOT' && el.hasAttribute('slot')) continue // skip nested slots
     !delegates.has(el) && createDelegatedListener(el, trigger) // bind a callback for element if we haven't already
@@ -51,15 +51,15 @@ export const shadowObserver = (root: ShadowRoot, trigger: Trigger) => {
       if (mutation.type === 'attributes') {
         const el = mutation.target
         if (isElement(el)) {
-          mutation.attributeName === bpTrigger && el.getAttribute(bpTrigger) && delegateListeners([el], trigger)
+          mutation.attributeName === bpTrigger && el.getAttribute(bpTrigger) && addListeners([el], trigger)
         }
       } else if (mutation.addedNodes.length) {
         const length = mutation.addedNodes.length
         for (let i = 0; i < length; i++) {
           const node = mutation.addedNodes[i]
           if (isElement(node)) {
-            node.hasAttribute(bpTrigger) && delegateListeners([node], trigger)
-            delegateListeners(Array.from(node.querySelectorAll(`[${bpTrigger}]`)), trigger)
+            node.hasAttribute(bpTrigger) && addListeners([node], trigger)
+            addListeners(Array.from(node.querySelectorAll(`[${bpTrigger}]`)), trigger)
           }
         }
       }

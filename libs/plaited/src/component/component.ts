@@ -8,7 +8,7 @@ import { getPlaitedTemplate } from './get-plaited-template.js'
 import { PLAITED_LOGGER } from '../shared/constants.js'
 import { bpTrigger } from '../jsx/constants.js'
 import { cssCache, $ } from './sugar.js'
-import { shadowObserver, delegateListeners } from './shadow-observer.js'
+import { shadowObserver, addListeners } from './shadow-observer.js'
 import { onlyObservedTriggers } from '../shared/only-observed-triggers.js'
 /**
  * Creates a PlaitedComponent
@@ -77,7 +77,7 @@ export const Component: PlaitedComponent = ({
           const logger = hasLogger(window) ? window[PLAITED_LOGGER] : undefined
           const { trigger, ...rest } = bProgram(logger)
           this.#trigger = trigger
-          delegateListeners(
+          addListeners(
             // just connected/upgraded then delegate listeners nodes with bp-trigger attribute
             Array.from(this.#root.querySelectorAll<Element>(`[${bpTrigger}]`)),
             trigger,
