@@ -5,7 +5,6 @@ import beautify from 'beautify'
 
 test('getTokenElement', () => {
   let DesignTokens = getTokenElement(`:host{--blue: blue}`)
-
   expect(beautify(ssr(<DesignTokens />), { format: 'html' })).toMatchSnapshot()
   DesignTokens = getTokenElement(`:host{--blue: blue}`, 'plaited-tokens')
   expect(

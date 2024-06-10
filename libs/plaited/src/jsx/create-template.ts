@@ -1,6 +1,7 @@
 import { escape, kebabCase, isTypeOf } from '@plaited/utils'
 import { booleanAttrs, primitives, voidTags, validPrimitiveChildren, bpTrigger as bpTriggerKey } from './constants.js'
 import { Attrs, BooleanAttributes, CreateTemplate, GetPlaitedElement, TemplateObject, VoidTags } from '../types.js'
+import { PLAITED_TEMPLATE_IDENTIFIER } from '../shared/constants.js'
 
 /** createTemplate function used for ssr */
 export const createTemplate: CreateTemplate = (_tag, attrs) => {
@@ -84,7 +85,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       server: start,
       stylesheets,
       registry,
-      $: '🦄',
+      $: PLAITED_TEMPLATE_IDENTIFIER,
     }
   }
   start.push('>')
@@ -99,7 +100,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   for (let i = 0; i < length; i++) {
     const child = children[i]
     /** P1 child IS {@type Template}*/
-    if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === '🦄') {
+    if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === PLAITED_TEMPLATE_IDENTIFIER) {
       clientEnd.push(...child.client)
       serverEnd.push(...child.server)
       for (const sheet of child.stylesheets) stylesheets.add(sheet)
@@ -131,7 +132,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     server: [...start, ...serverEnd],
     stylesheets,
     registry,
-    $: '🦄',
+    $: PLAITED_TEMPLATE_IDENTIFIER,
   }
 }
 
@@ -146,7 +147,7 @@ export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
   const length = children.length
   for (let i = 0; i < length; i++) {
     const child = children[i]
-    if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === '🦄') {
+    if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === PLAITED_TEMPLATE_IDENTIFIER) {
       client.push(...child.client)
       server.push(...child.server)
       for (const sheet of child.stylesheets) stylesheets.add(sheet)
@@ -162,6 +163,6 @@ export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
     stylesheets,
     server,
     registry,
-    $: '🦄',
+    $: PLAITED_TEMPLATE_IDENTIFIER,
   }
 }

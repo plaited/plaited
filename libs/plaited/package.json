@@ -17,10 +17,11 @@
   "main": "./dist/index.js",
   "exports": {
     ".": "./dist/index.js",
-    "./utils": "./dist/utils.js",
-    "./jsx-runtime": "./dist/jsx-runtime.js",
+    "./hda": "./dist/hda.js",
     "./jsx-dev-runtime": "./dist/jsx-dev-runtime.js",
+    "./jsx-runtime": "./dist/jsx-runtime.js",
     "./ssr": "./dist/ssr.js",
+    "./utils": "./dist/utils.js",
     "./worker": "./dist/worker.js"
   },
   "files": [
@@ -35,10 +36,10 @@
     "build": "tsc --project tsconfig.json",
     "build-watch": "bun run build --watch",
     "test": "bun run test-bun && npm run test-web",
-    "test-bun": "bun test src/**[!component,!worker]/*",
-    "test-bun-watch": "bun test src/**[!component,!worker]/* --watch",
-    "test-web": "web-test-runner \"src/(component|worker)/tests/**/*.spec.ts(x)?\"",
-    "test-web-watch": "web-test-runner \"src/component/tests/**/*.spec.ts(x)?\" --watch"
+    "test-bun": "bun test tests/bun/*",
+    "test-bun-watch": "bun test tests/bun/* --watch",
+    "test-web": "web-test-runner \"tests/web/*.spec.ts(x)?\"",
+    "test-web-watch": "web-test-runner \"tests/web/*.spec.ts(x)?\" --watch"
   },
   "types": "./dist/index.d.ts",
   "dependencies": {

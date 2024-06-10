@@ -1,38 +1,15 @@
-import { createTemplate } from '../jsx/create-template.js'
-import { bpTrigger } from '../jsx/constants.js'
 import { bProgram } from '../behavioral/b-program.js'
-import type {
-  BPEvent,
-  Trigger,
-  GetPlaitedElement,
-  PlaitedElement,
-  PlaitedComponent,
-  QuerySelector,
-  PlaitedTemplate,
-} from '../types.js'
-import { $, cssCache, clone } from './sugar.js'
-import { DelegatedListener, delegates } from './delegated-listener.js'
+import type { PlaitedComponent, PlaitedElement, BPEvent, QuerySelector, Trigger } from '../types.js'
+import { clone } from './sugar.js'
 import { hasLogger } from './type-guards.js'
-import { defineRegistry } from './define-registry.js'
-import { onlyObservedTriggers } from '../shared/only-observed-triggers.js'
 import { emit } from './emit.js'
-import { PLAITED_COMPONENT_IDENTIFIER } from '../shared/constants.js'
-
-const isElement = (node: Node): node is Element => node.nodeType === 1
-
-const getTriggerMap = (el: Element) =>
-  new Map((el.getAttribute(bpTrigger) as string).split(' ').map((pair) => pair.split(':')) as [string, string][])
-
-/** get trigger for elements respective event from triggerTypeMap */
-const getTriggerType = (event: Event, context: Element) => {
-  const el =
-    context.tagName !== 'SLOT' && event.currentTarget === context ? context
-    : event.composedPath().find((el) => el instanceof ShadowRoot) === context.getRootNode() ? context
-    : undefined
-  if (!el) return
-  return getTriggerMap(el).get(event.type)
-}
-
+import { useEventSources } from './use-event-sources.js'
+import { getPlaitedTemplate } from './get-plaited-template.js'
+import { PLAITED_LOGGER } from '../shared/constants.js'
+import { bpTrigger } from '../jsx/constants.js'
+import { cssCache, $ } from './sugar.js'
+import { shadowObserver, delegateListeners } from './shadow-observer.js'
+import { onlyObservedTriggers } from '../shared/only-observed-triggers.js'
 /**
  * Creates a PlaitedComponent
  * @param {object} args - Arguments for the PlaitedComponent
@@ -59,12 +36,10 @@ export const Component: PlaitedComponent = ({
   disconnectedCallback,
   ...rest
 }) => {
-  if (!tag) {
-    throw new Error(`Component is missing a [tag]`)
-  }
-  const _tag = tag.toLowerCase() as `${string}-${string}`
+  if (!tag) throw new Error(`Component is missing a [tag]`)
+  if (!template) throw new Error(`Component [${tag}] is missing a [template]`)
   const getPlaitedElement = () => {
-    class Base extends HTMLElement implements PlaitedElement {
+    class BaseElement extends HTMLElement implements PlaitedElement {
       static observedAttributes = observedAttributes
       get observedTriggers() {
         return observedTriggers
@@ -74,7 +49,6 @@ export const Component: PlaitedComponent = ({
       $: QuerySelector
       constructor() {
         super()
-        if (!template) throw new Error(`Component [${tag}] is missing a [template]`)
         this.internals_ = this.attachInternals()
         if (this.internals_.shadowRoot) {
           this.#root = this.internals_.shadowRoot
@@ -93,126 +67,58 @@ export const Component: PlaitedComponent = ({
           }
         }
         cssCache.set(this.#root, new Set<string>([...template.stylesheets]))
-        /** Warn ourselves not to overwrite the trigger method */
-        if (this.trigger !== this.constructor.prototype.trigger) {
-          throw new Error('trigger method cannot be overridden in a subclass.')
-        }
-        this.trigger = this.trigger.bind(this)
         this.$ = $(this.#root)
       }
-      #trigger?: Trigger
       #shadowObserver?: MutationObserver
       #disconnectEventSources?: () => void
+      #trigger?: Trigger
       connectedCallback() {
         if (bp) {
-          const { trigger, ...rest } = bProgram(hasLogger(window) ? window.logger : undefined)
-          this.#trigger = trigger // listeners need trigger to be available on instance
-          this.#delegateListeners(
+          const logger = hasLogger(window) ? window[PLAITED_LOGGER] : undefined
+          const { trigger, ...rest } = bProgram(logger)
+          this.#trigger = trigger
+          delegateListeners(
             // just connected/upgraded then delegate listeners nodes with bp-trigger attribute
             Array.from(this.#root.querySelectorAll<Element>(`[${bpTrigger}]`)),
+            trigger,
           )
-          this.#shadowObserver = this.#createShadowObserver() // create a shadow observer to watch for modification & addition of nodes with bp-trigger attribute
+          this.#shadowObserver = shadowObserver(this.#root, trigger) // create a shadow observer to watch for modification & addition of nodes with bp-trigger attribute
+          const [connect, disconnectEventSources] = useEventSources({
+            trigger: trigger,
+            observedTriggers,
+            host: this,
+          })
+          this.#disconnectEventSources = disconnectEventSources
           void bp.bind(this)({
             $: this.$,
             host: this,
             root: this.#root,
             emit: emit(this),
             clone: clone(this.#root),
+            connect,
             trigger,
             ...rest,
           })
         }
         connectedCallback && connectedCallback.bind(this)()
       }
-      set disconnectEventSources(cb: () => void) {
-        if (!this.#disconnectEventSources) {
-          this.#disconnectEventSources = cb
-        }
-      }
       disconnectedCallback() {
         this.#shadowObserver?.disconnect()
         this.#disconnectEventSources?.()
         disconnectedCallback && disconnectedCallback.bind(this)()
       }
-      /** If delegated listener does not have element then delegate it's callback with auto cleanup*/
-      #createDelegatedListener(el: Element) {
-        delegates.set(
-          el,
-          new DelegatedListener((event) => {
-            const triggerType = el.getAttribute(bpTrigger) && getTriggerType(event, el)
-            triggerType ?
-              /** if key is present in `bp-trigger` trigger event on instance's bProgram */
-              this.#trigger?.({ type: triggerType, detail: event })
-            : /** if key is not present in `bp-trigger` remove event listener for this event on Element */
-              el.removeEventListener(event.type, delegates.get(el))
-          }),
-        )
-      }
-      /** delegate event listeners  for elements in list */
-      #delegateListeners(elements: Element[]) {
-        for (const el of elements) {
-          if (el.tagName === 'SLOT' && el.hasAttribute('slot')) continue // skip nested slots
-          !delegates.has(el) && this.#createDelegatedListener(el) // bind a callback for element if we haven't already
-          for (const [event] of getTriggerMap(el)) {
-            // add event listeners for each event type
-            el.addEventListener(event, delegates.get(el))
-          }
-        }
-      }
-      /**  Observes the addition of nodes to the shadow dom and changes to and child's bp-trigger attribute */
-      #createShadowObserver() {
-        const mo = new MutationObserver((mutationsList) => {
-          for (const mutation of mutationsList) {
-            if (mutation.type === 'attributes') {
-              const el = mutation.target
-              if (isElement(el)) {
-                mutation.attributeName === bpTrigger && el.getAttribute(bpTrigger) && this.#delegateListeners([el])
-              }
-            } else if (mutation.addedNodes.length) {
-              const length = mutation.addedNodes.length
-              for (let i = 0; i < length; i++) {
-                const node = mutation.addedNodes[i]
-                if (isElement(node)) {
-                  node.hasAttribute(bpTrigger) && this.#delegateListeners([node])
-                  this.#delegateListeners(Array.from(node.querySelectorAll(`[${bpTrigger}]`)))
-                }
-              }
-            }
-          }
-        })
-        mo.observe(this.#root, {
-          attributeFilter: [bpTrigger],
-          childList: true,
-          subtree: true,
-        })
-        return mo
-      }
       trigger(event: BPEvent) {
-        this.#trigger && onlyObservedTriggers(this.#trigger, this)(event)
+        if (this.#trigger && observedTriggers) onlyObservedTriggers(this.#trigger, observedTriggers)(event)
       }
     }
-    Object.assign(Base.prototype, rest)
-    return Base
+    Object.assign(BaseElement.prototype, rest)
+    return BaseElement
   }
-  getPlaitedElement.tag = _tag
-  const registry = new Set<GetPlaitedElement>([...template.registry, getPlaitedElement])
-  const ft: PlaitedTemplate = ({ children = [], ...attrs }) =>
-    createTemplate(tag, {
-      ...attrs,
-      children: [
-        createTemplate('template', {
-          shadowrootmode: mode,
-          shadowrootdelegatesfocus: delegatesFocus,
-          children: {
-            ...template,
-            registry,
-          },
-        }),
-        ...(Array.isArray(children) ? children : [children]),
-      ],
-    })
-  ft.define = (silent = true) => defineRegistry(new Set<GetPlaitedElement>(registry), silent)
-  ft.tag = _tag
-  ft.$ = PLAITED_COMPONENT_IDENTIFIER
-  return ft
+  getPlaitedElement.tag = tag.toLowerCase() as `${string}-${string}`
+  return getPlaitedTemplate({
+    getPlaitedElement,
+    mode,
+    delegatesFocus,
+    template,
+  })
 }

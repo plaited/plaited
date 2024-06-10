@@ -1,4 +1,4 @@
-import { createTemplate, Fragment } from './jsx/index.js'
+import { createTemplate, Fragment } from './jsx/create-template.js'
 import { ElementAttributeList } from './types.js'
 export { createTemplate as h, createTemplate as jsx, createTemplate as jsxDEV, createTemplate as jsxs, Fragment }
 

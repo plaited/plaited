@@ -1,11 +1,9 @@
 import { isTypeOf } from '@plaited/utils'
-import type { Logger, PlaitedElement } from '../types.js'
-import { PLAITED_LOGGER } from '../shared/constants.js'
+import type { Logger, HDAHook } from '../types.js'
+import { PLAITED_LOGGER, PLAITED_HDA_HOOK } from '../shared/constants.js'
 
-export const hasLogger = <T>(win: Window): win is Window & { logger: Logger<T> } =>
-  PLAITED_LOGGER in win && isTypeOf<Logger<T>>(win[PLAITED_LOGGER], 'function')
+export const hasLogger = (win: Window): win is Window & { [PLAITED_LOGGER]: Logger } =>
+  PLAITED_LOGGER in win && isTypeOf<Logger>(win[PLAITED_LOGGER], 'function')
 
-export const isMessageEvent = (event: MessageEvent | Event): event is MessageEvent => event.type === 'message'
-
-export const isPlaited = (el: Element): el is PlaitedElement =>
-  isTypeOf<PlaitedElement>(el, 'htmlelement') && 'trigger' in el
+export const hasHDA = (win: Window): win is Window & { [PLAITED_HDA_HOOK]: HDAHook } =>
+  PLAITED_HDA_HOOK in win && isTypeOf<HDAHook>(win[PLAITED_HDA_HOOK], 'function')

@@ -1,13 +1,13 @@
 import { trueTypeOf } from '@plaited/utils'
-import { PlaitedElement, Trigger, BPEvent } from '../types.js'
+import { Trigger, BPEvent } from '../types.js'
 
 export const onlyObservedTriggers =
-  (trigger: Trigger, el: PlaitedElement | string[]) =>
+  (trigger: Trigger, observedTriggers: string[]) =>
   (args: BPEvent): void => {
-    const _observedTriggers = new Set(Array.isArray(el) ? el : el.observedTriggers ?? [])
+    const observed = new Set(observedTriggers)
     if (trueTypeOf(args) !== 'object') return console.error(`Invalid BPEvent`)
     const { type, detail } = args
     if (!('type' in args)) return console.error(`BPEvent missing [type]`)
-    if (_observedTriggers.has(type)) return trigger?.({ type, detail })
+    if (observed.has(type)) return trigger?.({ type, detail })
     return console.warn(`Not observing trigger [${type}]`)
   }

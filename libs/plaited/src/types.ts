@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as CSS from 'csstype'
+import { PLAITED_TEMPLATE_IDENTIFIER } from './shared/constants.js'
 
 export type BPEvent<T = any> = { type: string; detail?: T }
 
@@ -29,7 +30,7 @@ export interface DefaultLogger {
   callback: LogCallback<DefaultLogCallbackParams>
 }
 
-export type Logger<T> = {
+export type Logger<T = unknown> = {
   (args: { pending: Set<PendingBid>; selectedEvent: CandidateBid; candidates: CandidateBid[] }): T
   callback: LogCallback<T>
 }
@@ -86,7 +87,7 @@ export type TemplateObject = {
   server: string[]
   stylesheets: Set<string>
   registry: Set<GetPlaitedElement>
-  $: '🦄'
+  $: typeof PLAITED_TEMPLATE_IDENTIFIER
 }
 
 export type Child = string | TemplateObject
@@ -1499,7 +1500,7 @@ export type Messenger = {
     recipient: string
     trigger: Trigger | Worker
     observedTriggers: string[] | PlaitedElement
-  }): Disconnect | undefined
+  }): Disconnect
   has(recipient: string): boolean
   type: 'messenger'
 }
@@ -1512,7 +1513,7 @@ export type PostMessenger = {
 }
 
 export type SSE = {
-  (trigger: Trigger): () => void
+  (trigger: Trigger): Disconnect
   type: 'sse'
 }
 
@@ -1576,21 +1577,21 @@ export type BProps = {
   root: ShadowRoot
   emit: Emit
   clone: Clone
+  connect: (comm: Messenger | Publisher | SSE | WS | PostMessenger) => Disconnect
 } & ReturnType<BProgram>
 
 export interface PlaitedElement extends HTMLElement {
   internals_: ElementInternals
   trigger: Trigger
   $: QuerySelector
-  connectedCallback?(this: PlaitedElement): void
+  connectedCallback(this: PlaitedElement): void
   attributeChangedCallback?(name: string, oldValue: string | null, newValue: string | null): void
-  disconnectedCallback?(this: PlaitedElement): void
+  disconnectedCallback(this: PlaitedElement): void
   adoptedCallback?(this: PlaitedElement): void
   formAssociatedCallback?(this: PlaitedElement, form: HTMLFormElement): void
   formDisabledCallback?(this: PlaitedElement, disabled: boolean): void
   formResetCallback?(this: PlaitedElement): void
   formStateRestoreCallback?(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
-  set disconnectEventSources(cb: () => void)
   readonly observedTriggers?: string[]
 }
 
@@ -1600,7 +1601,7 @@ export interface PlaitedElementConstructor {
 
 export type GetPlaitedElement = {
   (): PlaitedElementConstructor
-  tag: string
+  tag: `${string}-${string}`
 }
 
 export type PlaitedTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
@@ -1633,3 +1634,5 @@ export type PlaitedComponent = <T extends Attrs = Attrs>(args: {
   formResetCallback?(this: PlaitedElement): void
   formStateRestoreCallback?(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
 }) => PlaitedTemplate<T>
+
+export type HDAHook = (shadowRoot: ShadowRoot) => () => void

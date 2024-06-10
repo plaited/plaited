@@ -41,7 +41,6 @@
   },
   "types": "dist/index.d.ts",
   "dependencies": {
-    "@plaited/miles": "6.0.0",
     "@storybook/core-client": "7.6.13",
     "@storybook/global": "5.0.0",
     "@storybook/preview-api": "7.6.13",
