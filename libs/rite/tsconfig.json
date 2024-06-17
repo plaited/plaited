@@ -2,13 +2,19 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
     "declaration": true,
-    "moduleResolution": "nodenext",
+    
+    "skipLibCheck": true,
+
     "outDir": "dist",
     "rootDir": "src",
-    "allowSyntheticDefaultImports": true,
+
     "lib": ["dom", "es2022", "DOM.Iterable"],
-    "skipLibCheck": true
+
+    "jsx": "react-jsx",
+    "jsxImportSource": "plaited",
   },
   "exclude": ["**/dist", "**/tests/"]
 }
