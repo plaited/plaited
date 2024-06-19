@@ -11,10 +11,7 @@
     "outDir": "dist",
     "rootDir": "src",
 
-    "lib": ["dom", "es2022", "DOM.Iterable"],
-
-    "jsx": "react-jsx",
-    "jsxImportSource": "plaited",
+    "lib": ["dom", "es2022", "DOM.Iterable"]
   },
   "exclude": ["**/dist", "**/tests/"]
 }
