@@ -22,13 +22,6 @@ export const Primary: Story = {
     primary: true,
     label: 'Primary Button',
   },
-  decorators: [
-    (Story, args) => {
-      const frag = createFragment(<div style={{ margin: '3em' }}></div>)
-      frag.firstElementChild?.append(Story())
-      return frag
-    },
-  ],
 }
 
 export const Secondary: Story = {

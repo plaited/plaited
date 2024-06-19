@@ -1,9 +1,9 @@
 import type { WebRenderer } from '@storybook/types'
-import type { FunctionTemplate, PlaitedTemplate } from 'plaited'
+import type { FunctionTemplate, PlaitedTemplate, TemplateObject } from 'plaited'
 
 export type { RenderContext } from '@storybook/types'
 
-export type StoryFnPlaitedReturnType = DocumentFragment
+export type StoryFnPlaitedReturnType = TemplateObject
 
 export interface ShowErrorArgs {
   title: string
