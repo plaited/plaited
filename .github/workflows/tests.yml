@@ -23,3 +23,4 @@ jobs:
             bunx playwright install --with-deps
             bunx lerna run build
             bunx lerna run test --since=origin/main
+            bun run test-storybook
