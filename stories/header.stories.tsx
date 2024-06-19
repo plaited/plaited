@@ -23,10 +23,7 @@ export default meta
 type Story = StoryObj<typeof Header>
 
 export const LoggedIn: Story = {
-  render({ user }, extra) {
-    const frag = createFragment(<Header user={user?.name} />)
-    return frag
-  },
+  render: ({ user }) => <Header user={user?.name} />,
   play: async ({ canvasElement }) => {
     const button = await findByText<HTMLButtonElement>('Log out', canvasElement)
     assert({
