@@ -1,92 +1,228 @@
 // Bun Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`transform-ts-tokens 1`] = `
-"export const sizeX1 = 'var(--size-x1)'
-export const sizeX2 = 'var(--size-x2)'
-export const sizeX3 = 'var(--size-x3)'
-export const sizeS3 = 'var(--size-s3)'
-export const backgroundColorPurpleX1 = 'var(--background-color-purple-x1)'
-export const backgroundColorPurpleX2 = 'var(--background-color-purple-x2)'
-export const backgroundColorPurpleX3 = 'var(--background-color-purple-x3)'
-export const borderRadiusX1 = 'var(--border-radius-x1)'
-export const borderRadiusX2 = 'var(--border-radius-x2)'
-export const borderRadiusX3 = 'var(--border-radius-x3)'
-export const fontSizeX1 = 'var(--font-size-x1)'
-export const fontFamilySansSerif = 'var(--font-family-sans-serif)'
-export const fontWeightX1 = 'var(--font-weight-x1)'
-export const letterSpacingX1 = 'var(--letter-spacing-x1)'
-export const lineHeightX1 = 'var(--line-height-x1)'
-export const typographyX1 = {
-  fontFamily: fontFamilySansSerif,
-  fontSize: fontSizeX1,
-  fontWeight: fontWeightX1,
-  letterSpacing: letterSpacingX1,
-  lineHeight: lineHeightX1,
+exports[`token group 1`] = `
+":host {
+  --pl-line-height-xxs: 0.25rem;
 }
-export const actionPrimaryRestBorderRadius = borderRadiusX1
-export const actionPrimaryRestBackgroundColor = backgroundColorPurpleX2
-export const actionPrimaryRestTypography = typographyX1
 "
 `;
 
-exports[`transform-css-tokens 1`] = `
-"@media screen and (min-width: 1920px) {
-    :host {
-        --size-x1: 0.2rem;
-        --size-x2: 0.4rem;
-        --size-x3: 0.7rem;
-    }
-}
+exports[`token group 2`] = `
+"export const lineHeightXxs = "var(--pl-line-height-xxs)"
+"
+`;
 
-:host([data-media-query="tv"]) {
-    --size-x1: 0.2rem;
-    --size-x2: 0.4rem;
-    --size-x3: 0.7rem;
+exports[`nested token group 1`] = `
+":host {
+  --pl-colors-gray-10: oklch(97.91% 0 0 / none);
 }
+"
+`;
 
-@media screen and (max-width: 767px) {
-    :host {
-        --size-x1: 0.1rem;
-        --size-x2: 0.4rem;
-        --size-x3: 0.8rem;
-    }
+exports[`nested token group 2`] = `
+"export const colorsGray10 = "var(--pl-colors-gray-10)"
+"
+`;
+
+exports[`context: [media-query] 1`] = `
+":host {
+  --pl-size-dynamic-100: 3rem;
 }
-
-:host([data-media-query="mobile"]) {
-    --size-x1: 0.1rem;
-    --size-x2: 0.4rem;
-    --size-x3: 0.8rem;
-}
-
-:host {
-    --size-x1: 0.1rem;
-    --size-x2: 0.3rem;
-    --size-x3: 0.6rem;
-    --size-s3: 0.6rem;
-    --background-color-purple-x1: oklch(39% 0.22184604903824146 289.1379241925685 / none);
-    --background-color-purple-x2: oklch(45.38% 0.236 304.59 / none);
-    --background-color-purple-x3: oklch(48.67% 0.245 310.63 / none);
-    --border-radius-x1: 0.15rem;
-    --border-radius-x2: 0.25rem;
-    --border-radius-x3: 0.35rem;
-    --font-size-x1: 0.7rem;
-    --font-family-sans-serif: Roboto,sans-serif;
-    --font-weight-x1: 700;
-    --letter-spacing-x1: normal;
-    --line-height-x1: 1;
-}
-
 @media screen and (min-width: 1024px) {
-    :host {
-        --size-x1: 0.1rem;
-        --size-x2: 0.3rem;
-        --size-x3: 0.6rem;
-    }
+  :host {
+    --pl-size-dynamic-100: 3rem;
+  }
 }
-
 :host([data-media-query="desktop"]) {
-    --size-x1: 0.1rem;
-    --size-x2: 0.3rem;
-    --size-x3: 0.6rem;
-}"
+  --pl-size-dynamic-100: 3rem;
+}
+@media screen and (min-width: 1920px) {
+  :host {
+    --pl-size-dynamic-100: 4rem;
+  }
+}
+:host([data-media-query="tv"]) {
+  --pl-size-dynamic-100: 4rem;
+}
+@media screen and (max-width: 767px) {
+  :host {
+    --pl-size-dynamic-100: 2rem;
+  }
+}
+:host([data-media-query="mobile"]) {
+  --pl-size-dynamic-100: 2rem;
+}
+"
+`;
+
+exports[`context: [media-query] 2`] = `
+"export const sizeDynamic100 = "var(--pl-size-dynamic-100)"
+"
+`;
+
+exports[`context: [color-scheme] 1`] = `
+":host {
+  --pl-colors-background-primary: oklch(100% 0 0 / 0.5);
+}
+@media (prefers-color-scheme: light) {
+  :host {
+    --pl-colors-background-primary: oklch(100% 0 0 / 0.5);
+  }
+}
+:host([data-color-scheme="light"]) {
+  --pl-colors-background-primary: oklch(100% 0 0 / 0.5);
+}
+@media (prefers-color-scheme: dark) {
+  :host {
+    --pl-colors-background-primary: oklch(0% 0 0 / 0.5);
+  }
+}
+:host([data-color-scheme="dark"]) {
+  --pl-colors-background-primary: oklch(0% 0 0 / 0.5);
+}
+"
+`;
+
+exports[`context: [color-scheme] 2`] = `
+"export const colorsBackgroundPrimary = "var(--pl-colors-background-primary)"
+"
+`;
+
+exports[`context: [media-query, color-scheme] 1`] = `
+"@media screen and (min-width: 1920px) {
+  :host {
+    --pl-size-dynamic-100: 4rem;
+  }
+}
+:host([data-media-query="tv"]) {
+  --pl-size-dynamic-100: 4rem;
+}
+@media screen and (max-width: 767px) {
+  :host {
+    --pl-size-dynamic-100: 2rem;
+  }
+}
+:host([data-media-query="mobile"]) {
+  --pl-size-dynamic-100: 2rem;
+}
+:host {
+  --pl-size-dynamic-100: 3rem;
+  --pl-colors-background-primary: oklch(100% 0 0 / 0.5);
+}
+@media screen and (min-width: 1024px) {
+  :host {
+    --pl-size-dynamic-100: 3rem;
+  }
+}
+:host([data-media-query="desktop"]) {
+  --pl-size-dynamic-100: 3rem;
+}
+@media (prefers-color-scheme: light) {
+  :host {
+    --pl-colors-background-primary: oklch(100% 0 0 / 0.5);
+  }
+}
+:host([data-color-scheme="light"]) {
+  --pl-colors-background-primary: oklch(100% 0 0 / 0.5);
+}
+@media (prefers-color-scheme: dark) {
+  :host {
+    --pl-colors-background-primary: oklch(0% 0 0 / 0.5);
+  }
+}
+:host([data-color-scheme="dark"]) {
+  --pl-colors-background-primary: oklch(0% 0 0 / 0.5);
+}
+"
+`;
+
+exports[`context: [media-query, color-scheme] 2`] = `
+"export const sizeDynamic100 = "var(--pl-size-dynamic-100)"
+export const colorsBackgroundPrimary = "var(--pl-colors-background-primary)"
+"
+`;
+
+exports[`alias 1`] = `
+":host {
+  --pl-colors-gray-100: oklch(98.21% 0 0 / none);
+  --pl-surface-secondary-100: var(--pl-colors-gray-100);
+}
+"
+`;
+
+exports[`alias 2`] = `
+"export const colorsGray100 = "var(--pl-colors-gray-100)"
+export const surfaceSecondary100 = "var(--pl-surface-secondary-100)"
+"
+`;
+
+exports[`alias + context 1`] = `
+":host {
+  --pl-colors-white-100: oklch(97.91% 0 0 / none);
+  --pl-colors-charcoal-100: oklch(18.31% 0.004 285.99 / none);
+  --pl-surface-secondary-100: var(--pl-colors-white-100);
+}
+@media (prefers-color-scheme: light) {
+  :host {
+    --pl-surface-secondary-100: var(--pl-colors-white-100);
+  }
+}
+:host([data-color-scheme="light"]) {
+  --pl-surface-secondary-100: var(--pl-colors-white-100);
+}
+@media (prefers-color-scheme: dark) {
+  :host {
+    --pl-surface-secondary-100: var(--pl-colors-charcoal-100);
+  }
+}
+:host([data-color-scheme="dark"]) {
+  --pl-surface-secondary-100: var(--pl-colors-charcoal-100);
+}
+"
+`;
+
+exports[`alias + context 2`] = `
+"export const colorsWhite100 = "var(--pl-colors-white-100)"
+export const colorsCharcoal100 = "var(--pl-colors-charcoal-100)"
+export const surfaceSecondary100 = "var(--pl-surface-secondary-100)"
+"
+`;
+
+exports[`exercise token types 1`] = `
+":host {
+  --pl-font-weight: 700;
+  --pl-letter-spacing: normal;
+  --pl-font-size: 14px;
+  --pl-line-height: 1.5;
+  --pl-gradient: linear-gradient(
+    45deg,
+    oklch(0% 0 0 / 0.5) 20%,
+    oklch(100% 0 0 / 0.5) 80%
+  );
+  --pl-font-family: Roboto, sans-serif;
+  --pl-array-of-sizes: 60px 60px;
+  --pl-string: primitive string;
+  --pl-number: 50;
+}
+"
+`;
+
+exports[`exercise token types 2`] = `
+"export const fontWeight = "var(--pl-font-weight)"
+export const letterSpacing = "var(--pl-letter-spacing)"
+export const fontSize = "var(--pl-font-size)"
+export const lineHeight = "var(--pl-line-height)"
+export const typography = {
+  fontFamily: fontFamily,
+  fontSize: fontSize,
+  fontWeight: fontWeight,
+  letterSpacing: letterSpacing,
+  lineHeight: lineHeight,
+}
+export const gradient = "var(--pl-gradient)"
+export const fontFamily = "var(--pl-font-family)"
+export const arrayOfSizes = "var(--pl-array-of-sizes)"
+export const string = "var(--pl-string)"
+export const number = "var(--pl-number)"
+"
 `;

@@ -1,7 +1,7 @@
 #!/bin/bash
 if [ -z "${1}" ]
 then
-  declare -a dirs=("docs" "libs" "libs-storybook");
+  declare -a dirs=("docs" "libs");
 
   ## now loop through the above array
   for i in "${dirs[@]}"

@@ -5,9 +5,8 @@
   },
   "type": "module",
   "workspaces": [
-    "libs/*",
-    "libs-storybook/*",
-    "docs"
+    "docs",
+    "libs/*"
   ],
   "scripts": {
     "build": "lerna run build --stream",
@@ -17,7 +16,9 @@
     "postinstall": "husky install",
     "prepare": "husky install",
     "prettier": "prettier . --write",
-    "test": "lerna run test --stream"
+    "storybook": "storybook dev -p 6006 --ci",
+    "test": "lerna run test --stream",
+    "test-storybook": "start-server-and-test 'bun run storybook' http://localhost:6006 'bunx test-storybook'"
   },
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [
@@ -37,6 +38,10 @@
     "@commitlint/config-conventional": "18.6.0",
     "@commitlint/config-lerna-scopes": "18.4.4",
     "@playwright/test": "1.41.2",
+    "@storybook/test-runner": "0.16.0",
+    "@storybook/addon-essentials": "7.6.13",
+    "@storybook/addon-interactions": "7.6.13",
+    "@storybook/html-vite": "7.6.13",
     "@types/sinon": "17.0.3",
     "@types/beautify": "0.0.3",
     "beautify": "0.0.8",
@@ -50,6 +55,9 @@
     "playwright": "1.41.2",
     "prettier": "3.2.5",
     "sinon": "17.0.1",
-    "typescript": "5.3.3"
+    "start-server-and-test": "2.0.3",
+    "storybook": "7.6.13",
+    "typescript": "5.3.3",
+    "vite": "5.0.12"
   }
 }
