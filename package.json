@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "build": "lerna run build --stream",
+    "clean": "bash scripts/clean.bash",
     "lint": "eslint . --ext .ts,.tsx,.js,.cjs",
     "lint:fix": "bun run lint --fix --quiet",
     "postinstall": "husky install",
