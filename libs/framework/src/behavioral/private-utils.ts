@@ -16,21 +16,21 @@ export const isListeningFor = ({ type, detail }: CandidateBid) => {
     : listener === type
 }
 
-export const publisher = <T>() => {
+export const createPublisher = <T>() => {
   const listeners = new Set<(value: T) => void>()
-  function createPublisher(value: T) {
+  function publisher(value: T) {
     for (const cb of listeners) {
       cb(value)
     }
   }
-  createPublisher.subscribe = (listener: (msg: T) => void) => {
+  publisher.subscribe = (listener: (msg: T) => void) => {
     listeners.add(listener)
     return () => {
       listeners.delete(listener)
     }
   }
 
-  return createPublisher
+  return publisher
 }
 
 export const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj : [obj])

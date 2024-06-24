@@ -1,9 +1,9 @@
 import { expect, test } from 'bun:test'
 import sinon from 'sinon'
-import { publisher } from '../private-utils.js'
+import { createPublisher } from '../private-utils.js'
 
-test('publisher()', () => {
-  const pub = publisher<number>()
+test('createPublisher()', () => {
+  const pub = createPublisher<number>()
   const callback = sinon.spy()
   const disconnect = pub.subscribe(callback)
   pub(1)

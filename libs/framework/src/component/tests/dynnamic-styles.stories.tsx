@@ -10,30 +10,29 @@ const meta: Meta = {
 
 export default meta
 
-export const basic: StoryObj = {
-  play: async ({ canvasElement }) => {
-    const styles = createStyles({
-      noRepeat: {
-        color: 'blue',
-        textDecoration: 'underline',
-      },
-      repeat: {
-        color: 'purple',
-        textDecoration: 'underline',
-      },
-    })
-    const Fixture = Component({
-      tag: 'dynamic-only',
-      template: <div bp-target='target'></div>,
-      bp({ $ }) {
-        const [target] = $<HTMLDivElement>('target')
-        target.insert('beforeend', <div {...styles.noRepeat}>construable stylesheet applied once</div>)
-        target.insert('beforeend', <div {...styles.repeat}>not applied</div>)
-      },
-    })
-    Fixture.define()
-    canvasElement.append(document.createElement(Fixture.tag))
+const { noRepeat, repeat } = createStyles({
+  noRepeat: {
+    color: 'blue',
+    textDecoration: 'underline',
+  },
+  repeat: {
+    color: 'purple',
+    textDecoration: 'underline',
+  },
+})
+const DynamicOnly = Component({
+  tag: 'dynamic-only',
+  template: <div bp-target='target'></div>,
+  bp({ $ }) {
+    const [target] = $<HTMLDivElement>('target')
+    target.insert('beforeend', <div {...noRepeat}>construable stylesheet applied once</div>)
+    target.insert('beforeend', <div {...repeat}>not applied</div>)
+  },
+})
 
+export const basic: StoryObj = {
+  render: () => <DynamicOnly />,
+  play: async () => {
     const target = await findByAttribute('bp-target', 'target')
     const root = target.getRootNode() as ShadowRoot
     assert({
@@ -45,39 +44,40 @@ export const basic: StoryObj = {
   },
 }
 
+const { root, override } = createStyles({
+  root: {
+    color: 'blue',
+  },
+  override: {
+    color: 'red',
+  },
+})
+
+const WithDefaultStyles = Component({
+  tag: 'with-default-styles',
+  template: (
+    <div
+      bp-target='target-2'
+      {...root}
+    ></div>
+  ),
+  bp({ $ }) {
+    const [target] = $<HTMLDivElement>('target-2')
+    target.insert(
+      'beforeend',
+      <div
+        className={[override.className, root.className]}
+        stylesheet={[...override.stylesheet, ...root.stylesheet]}
+      >
+        construable stylesheet applied only for second sheet
+      </div>,
+    )
+  },
+})
+
 export const withDefault: StoryObj = {
-  play: async ({ canvasElement }) => {
-    const styles = createStyles({
-      root: {
-        color: 'blue',
-      },
-      override: {
-        color: 'red',
-      },
-    })
-    const Fixture = Component({
-      tag: 'with-default-styles',
-      template: (
-        <div
-          bp-target='target-2'
-          {...styles.root}
-        ></div>
-      ),
-      bp({ $ }) {
-        const [target] = $<HTMLDivElement>('target-2')
-        target.insert(
-          'beforeend',
-          <div
-            className={[styles.override.className, styles.root.className]}
-            stylesheet={[...styles.override.stylesheet, ...styles.root.stylesheet]}
-          >
-            construable stylesheet applied only for second sheet
-          </div>,
-        )
-      },
-    })
-    Fixture.define()
-    canvasElement.append(document.createElement(Fixture.tag))
+  render: () => <WithDefaultStyles />,
+  play: async () => {
     const target = await findByAttribute('bp-target', 'target-2')
     const root = target.getRootNode() as ShadowRoot
     assert({

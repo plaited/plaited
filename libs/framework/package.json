@@ -21,6 +21,7 @@
     "./jsx-dev-runtime": "./dist/jsx-dev-runtime.js",
     "./jsx-runtime": "./dist/jsx-runtime.js",
     "./ssr": "./dist/ssr.js",
+    "./token-utils": "./dist/token-utils.js",
     "./utils": "./dist/utils.js"
   },
   "files": [
@@ -34,7 +35,7 @@
   "scripts": {
     "build": "tsc --project tsconfig.json",
     "build-watch": "bun run build --watch",
-    "test": "bun test tests/bun/*",
+    "test": "bun test",
     "test-watch": "bun test tests/bun/* --watch"
   },
   "types": "./dist/index.d.ts",

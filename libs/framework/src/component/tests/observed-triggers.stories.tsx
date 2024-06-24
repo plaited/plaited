@@ -10,73 +10,70 @@ const meta: Meta = {
 
 export default meta
 
+const Inner = Component({
+  tag: 'inner-component',
+  template: <h1 bp-target='header'>Hello</h1>,
+  observedTriggers: ['add'],
+  bp({ $, feedback, addThreads, thread, sync, emit }) {
+    addThreads({
+      onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),
+    })
+    feedback({
+      disable() {
+        emit({ type: 'disable', bubbles: true })
+      },
+      add(detail: string) {
+        const [header] = $('header')
+        header.insert('beforeend', <>{detail}</>)
+      },
+    })
+  },
+})
+
+const Outer = Component({
+  tag: 'outer-component',
+  template: (
+    <div>
+      <slot
+        bp-target='slot'
+        bp-trigger={{ disable: 'disable' }}
+      ></slot>
+      <button
+        bp-target='button'
+        bp-trigger={{ click: 'click' }}
+      >
+        Add "world!"
+      </button>
+    </div>
+  ),
+  bp({ feedback, $ }) {
+    feedback({
+      disable() {
+        const [button] = $<HTMLButtonElement>('button')
+        button && (button.disabled = true)
+      },
+      click() {
+        const [slot] = $<HTMLSlotElement>('slot')
+        for (const el of slot.assignedElements()) {
+          if (isPlaitedElement(el)) {
+            el.trigger({ type: 'add', detail: ' World!' })
+            break
+          }
+        }
+      },
+    })
+  },
+})
+
 export const observedTriggers: StoryObj = {
-  play: async ({ canvasElement }) => {
-    const Bottom = Component({
-      tag: 'bottom-component',
-      template: <h1 bp-target='header'>Hello</h1>,
-      observedTriggers: ['add'],
-      bp({ $, feedback, addThreads, thread, sync, emit }) {
-        addThreads({
-          onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),
-        })
-        feedback({
-          disable() {
-            emit({ type: 'disable', bubbles: true })
-          },
-          add(detail: string) {
-            const [header] = $('header')
-            header.insert('beforeend', <>{detail}</>)
-          },
-        })
-      },
-    })
-
-    const Top = Component({
-      tag: 'top-component',
-      template: (
-        <div>
-          <slot
-            bp-target='slot'
-            bp-trigger={{ disable: 'disable' }}
-          ></slot>
-          <button
-            bp-target='button'
-            bp-trigger={{ click: 'click' }}
-          >
-            Add "world!"
-          </button>
-        </div>
-      ),
-      bp({ feedback, $ }) {
-        feedback({
-          disable() {
-            const [button] = $<HTMLButtonElement>('button')
-            button && (button.disabled = true)
-          },
-          click() {
-            const [slot] = $<HTMLSlotElement>('slot')
-            for (const el of slot.assignedElements()) {
-              if (isPlaitedElement(el)) {
-                el.trigger({ type: 'add', detail: ' World!' })
-                break
-              }
-            }
-          },
-        })
-      },
-    })
-
-    // Create elements and append to dom
-    const top = document.createElement(Top.tag)
-    const bottom = document.createElement(Bottom.tag)
-    canvasElement.insertAdjacentElement('beforeend', top)
-    top.insertAdjacentElement('beforeend', bottom)
-
-    // // Define elements
-    Top.define()
-    Bottom.define()
-
+  render: () => (
+    <>
+      <Outer>
+        <Inner />
+      </Outer>
+    </>
+  ),
+  play: async () => {
     let button = await findByAttribute('bp-target', 'button')
     const header = await findByAttribute('bp-target', 'header')
     assert({

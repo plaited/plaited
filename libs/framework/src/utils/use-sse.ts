@@ -1,19 +1,20 @@
 /** Utility function for enabling hypermedia patterns */
-import { isTypeOf } from '@plaited/utils'
-import { Trigger, BPEvent, SSE } from '../types.js'
+import { Trigger, Message, UseServerSentEvents } from '../types.js'
 import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
 import { createTemplateElement } from '../shared/parser-utils.js'
-import { isMessageEvent } from './is-message-event.js'
-export const useSSE = (url: string): SSE => {
+import { isMessageEvent, isMessage } from './is-message-event.js'
+
+export const useSSE = (url: string): UseServerSentEvents => {
   let eventSource: EventSource | undefined = new EventSource(url, { withCredentials: true })
-  const connect = (trigger: Trigger) => {
+  const connect = (trigger: Trigger, subscriber: string) => {
     const callback = (event: MessageEvent | Event) => {
       if (isMessageEvent(event)) {
         try {
-          const message: BPEvent<string> = JSON.parse(event.data)
-          if ('type' in message && isTypeOf<string>(message.detail, 'string')) {
-            const template = createTemplateElement(message.detail)
-            trigger({ type: message.type, detail: template.content })
+          const message: Message<string> = JSON.parse(event.data)
+          if (isMessage(message) && message.address === subscriber) {
+            const { event } = message
+            const template = createTemplateElement(event.detail ?? '')
+            trigger({ type: event.type, detail: template.content })
           }
         } catch (error) {
           console.error('Error parsing incoming message:', error)

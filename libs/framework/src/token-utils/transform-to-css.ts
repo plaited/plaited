@@ -1,7 +1,7 @@
 import { reduceWhitespace } from '@plaited/utils'
-import { TransformerParams } from '../types.js'
-import { getFormatters } from '../formatters/css-formatters.js'
-import { formatList } from './format-list.js'
+import { TransformerParams } from './types.js'
+import { getFormatters } from './formatters/css-formatters.js'
+import { formatList } from './formatters/format-list.js'
 
 const deduplicate = (css: string) => {
   const regex = /((?:.*:host|:host\([^)]*\))[^{\n]*)\{(\s*[\s\S]*?\s*)\}/gm
@@ -31,12 +31,18 @@ const deduplicate = (css: string) => {
  * @param {TransformerParams} params - The parameters for the transformation.
  * @returns {string} The transformed CSS rules with deduplicated selectors.
  */
-export const transformToCSS = ({ tokens, contexts }: TransformerParams) => {
+export const transformToCSS = ({
+  tokens,
+  contexts: { mediaQueries = {}, colorSchemes = {} } = {},
+}: TransformerParams) => {
   const content = formatList({
     tokens,
     allTokens: tokens,
     getFormatters,
-    contexts,
+    contexts: {
+      colorSchemes,
+      mediaQueries,
+    },
   })
   return deduplicate(content)
 }

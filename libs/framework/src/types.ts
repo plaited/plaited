@@ -1488,44 +1488,39 @@ export type TagsType = {
 
 export type Disconnect = () => void
 
-export type Publisher = {
+export type Message<T = unknown> = {
+  address: string
+  event: BPEvent<T>
+}
+
+export type UsePublisher = {
   (value: BPEvent): void
   connect(trigger: Trigger, observedTriggers: string[] | PlaitedElement): Disconnect
   type: 'publisher'
 }
 
-export type Messenger = {
-  (recipient: string, detail: BPEvent): void
-  connect(args: {
-    recipient: string
-    trigger: Trigger | Worker
-    observedTriggers: string[] | PlaitedElement
-  }): Disconnect
-  has(recipient: string): boolean
+export type UseMessenger = {
+  (args: Message): void
+  connect(args: { trigger: Trigger; observedTriggers: string[]; address: string }): Disconnect
+  has(address: string): boolean
   type: 'messenger'
 }
 
-export type PostMessenger = {
+export type UseWorker = {
   (args: BPEvent): void
-  disconnect(): void
-  connect(trigger: Trigger, observedTriggers: string[] | PlaitedElement): Disconnect
-  type: 'post-messenger'
+  connect(trigger: Trigger): Disconnect
+  type: 'worker'
 }
 
-export type SSE = {
-  (trigger: Trigger): Disconnect
+export type UseServerSentEvents = {
+  (trigger: Trigger, address: string): Disconnect
   type: 'sse'
 }
 
-export type WS = {
+export type UseWebSocket = {
   (message: BPEvent): void
-  connect: (trigger: Trigger) => Disconnect
+  connect: (trigger: Trigger, address: string) => Disconnect
   type: 'ws'
-}
-
-export type Message = {
-  recipient: string
-  detail: BPEvent
 }
 
 export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
@@ -1577,7 +1572,7 @@ export type BProps = {
   root: ShadowRoot
   emit: Emit
   clone: Clone
-  connect: (comm: Messenger | Publisher | SSE | WS | PostMessenger) => Disconnect
+  connect: (comm: UseServerSentEvents | UseWebSocket | UseWorker | UseMessenger) => Disconnect
 } & ReturnType<BProgram>
 
 export interface PlaitedElement extends HTMLElement {

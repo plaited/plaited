@@ -1,27 +1,27 @@
 /** Utility function for enabling hypermedia patterns */
-import { isTypeOf } from '@plaited/utils'
-import { Trigger, BPEvent, WS } from '../types.js'
+import { Trigger, BPEvent, UseWebSocket, Message } from '../types.js'
 import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
 import { createTemplateElement } from '../shared/parser-utils.js'
-import { isMessageEvent } from './is-message-event.js'
+import { isMessageEvent, isMessage } from './is-message-event.js'
 
 const isCloseEvent = (event: CloseEvent | Event): event is CloseEvent => event.type === 'close'
 
-export const useWS = (url: string): WS => {
+export const useWS = (url: string): UseWebSocket => {
   const maxRetries = 3
   let retryCount = 0
   let socket: WebSocket | undefined
-  const connect = (trigger: Trigger) => {
+  const connect = (trigger: Trigger, subscriber: string) => {
     if (retryCount < maxRetries) {
       socket = new WebSocket(url, [])
     }
     const callback = (event: MessageEvent | Event) => {
       if (isMessageEvent(event)) {
         try {
-          const message: BPEvent = JSON.parse(event.data)
-          if ('type' in message && isTypeOf<string>(message.detail, 'string')) {
-            const template = createTemplateElement(message.detail)
-            trigger({ type: message.type, detail: template.content })
+          const message: Message<string> = JSON.parse(event.data)
+          if (isMessage(message) && message.address === subscriber) {
+            const { event } = message
+            const template = createTemplateElement(event.detail ?? '')
+            trigger({ type: event.type, detail: template.content })
           }
         } catch (error) {
           console.error('Error parsing incoming message:', error)

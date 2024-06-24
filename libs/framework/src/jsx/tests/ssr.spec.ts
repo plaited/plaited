@@ -21,6 +21,7 @@ test('ssr: Falsey - undefined', () => {
 })
 
 test('ssr: Falsey - null', () => {
+  //@ts-expect-error: children is null
   expect(render(h('div', { children: null }))).toMatchSnapshot()
 })
 
@@ -147,6 +148,7 @@ test('ssr: Non declarative shadow DOM template', () => {
     h('ul', {
       children: [
         Template({ children: h('span', { children: 'I am a span!!!' }) }),
+        //@ts-expect-error: children is not undefined
         ...(Array.isArray(children) ? children : [children]),
       ],
     })
@@ -207,6 +209,7 @@ const NestedCustomElement: FT = ({ children, ...props }) =>
           h('slot', { name: 'nested' }),
         ],
       }),
+      //@ts-expect-error: children is not undefined
       ...(Array.isArray(children) ? children : [children]),
     ],
   })
@@ -250,6 +253,7 @@ const TopCustomElement: FT = ({ children, ...props }) =>
           }),
         }),
       }),
+      //@ts-expect-error: children is not undefined
       ...(Array.isArray(children) ? children : [children]),
     ],
   })

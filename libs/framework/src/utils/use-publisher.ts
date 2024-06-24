@@ -1,4 +1,4 @@
-import { Publisher, BPEvent, Trigger } from '../types.js'
+import { UsePublisher, BPEvent, Trigger } from '../types.js'
 import { onlyObservedTriggers } from '../shared/only-observed-triggers.js'
 /**
  * @description  Creates a new BPEvent publisher.
@@ -7,13 +7,11 @@ import { onlyObservedTriggers } from '../shared/only-observed-triggers.js'
  * Listeners use the `subscribe` method connect to the publisher.
  * @returns A new publisher object.
  **/
-export const usePublisher = (): Publisher => {
+export const usePublisher = (): UsePublisher => {
   const listeners = new Set<(value: BPEvent) => void>()
 
   function createPublisher(value: BPEvent) {
-    for (const cb of listeners) {
-      cb(value)
-    }
+    for (const cb of listeners) cb(value)
   }
 
   /**
