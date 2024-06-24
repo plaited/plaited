@@ -6,8 +6,8 @@ Plaited is design system first framework for rapidly designing and developing in
 1. [libs](libs/README.md):
   - Rendering libraries, state managment and utilities
   - Design token format libraries and tooling
-  - Test libraries and tooling
-3. [libs-storybook](libs-storybook/README.md): Storybook development libraries and tooling
+  - Test library
+  - Storybook development libraries and tooling
 
 
 ## Dev Requirements
@@ -27,7 +27,7 @@ Plaited is design system first framework for rapidly designing and developing in
 
 1. Clone repository and ensure you have bun >= 1.0.7
 2. Run `bunx playwright install`
-3. Run `bash setup.sh`
+3. Run `bash scripts/setup.sh`
 
 ### devcontainer setup
 
