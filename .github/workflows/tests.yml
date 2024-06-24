@@ -8,19 +8,22 @@ on:
 
 jobs:
   test-pr:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_PAT }}
+      - uses: oven-sh/setup-bun@v1
       - name: Test
         uses: devcontainers/ci@v0.3
-        with:
-          runCmd: |
-            git fetch origin main
-            bun install
-            bunx playwright install --with-deps
-            bunx lerna run build
-            bunx lerna run test --since=origin/main
-            bun run test-storybook
+      - name: Install depenencies
+        run: |
+          bun install
+          bunx playwright install --with-deps
+      - name: Build packages
+        run: bun run build
+      - name: Run tests
+        run: |
+          bun run test
+          bun run test-storybook
