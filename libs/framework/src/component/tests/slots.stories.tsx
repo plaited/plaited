@@ -59,21 +59,15 @@ const Fixture = Component({
   },
 })
 
-//define our fixture
-Fixture.define()
-// We need to define our nest-slot Component
-Nested.define()
-
 export const slots: StoryObj = {
-  play: async ({ canvasElement }) => {
-    canvasElement.insertAdjacentHTML(
-      'beforeend',
-      `<${Fixture.tag}>
+  render: () => (
+    <Fixture>
       <button>Slot</button>
       <button slot='named'>Named</button>
       <button slot='nested'>Nested</button>
-    </${Fixture.tag}>`,
-    )
+    </Fixture>
+  ),
+  play: async () => {
     let button = await findByText('Slot')
     button && (await fireEvent(button, 'click'))
     assert({

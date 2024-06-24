@@ -11,6 +11,46 @@ const meta: Meta = {
 
 export default meta
 
+const styles = createStyles({
+  inner: {
+    color: 'blue',
+  },
+})
+const content = 'client side rendered'
+
+const Fixture = Component({
+  tag: 'template-element',
+  template: (
+    <div
+      data-test='content'
+      {...styles.inner}
+    >
+      {content}
+    </div>
+  ),
+})
+
+export const noDeclarativeShadowDom: StoryObj = {
+  render: () => <Fixture />,
+  play: async () => {
+    const host = document.querySelector(Fixture.tag)
+    const inner = await findByAttribute('data-test', 'content')
+    const textContent = inner.textContent
+    assert({
+      given: 'Appending template-element',
+      should: 'have a div with content',
+      actual: textContent,
+      expected: content,
+    })
+    assert({
+      given: 'Appending template-element',
+      should: 'have constructable adoptedStyleSheets',
+      actual: host.shadowRoot.adoptedStyleSheets.length,
+      expected: 1,
+    })
+  },
+}
+
 let parser: {
   parseFromString(
     string: string,
@@ -30,45 +70,6 @@ const createTemplateElement = (content: string) => {
     includeShadowRoots: true,
   })
   return fragment.head.firstChild as HTMLTemplateElement
-}
-
-export const noDeclarativeShadowDom: StoryObj = {
-  play: async ({ canvasElement }) => {
-    const styles = createStyles({
-      inner: {
-        color: 'blue',
-      },
-    })
-    const content = 'client side rendered'
-    const Fixture = Component({
-      tag: 'template-element',
-      template: (
-        <div
-          data-test='content'
-          {...styles.inner}
-        >
-          {content}
-        </div>
-      ),
-    })
-    Fixture.define()
-    const host = document.createElement(Fixture.tag)
-    canvasElement.append(host)
-    const inner = await findByAttribute('data-test', 'content')
-    const textContent = inner.textContent
-    assert({
-      given: 'Appending template-element',
-      should: 'have a div with content',
-      actual: textContent,
-      expected: content,
-    })
-    assert({
-      given: 'Appending template-element',
-      should: 'have constructable adoptedStyleSheets',
-      actual: host.shadowRoot.adoptedStyleSheets.length,
-      expected: 1,
-    })
-  },
 }
 
 export const withDeclarativeShadowDom: StoryObj = {

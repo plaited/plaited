@@ -1,6 +1,6 @@
-import { TransformerParams } from '../types.js'
-import { formatList } from './format-list.js'
-import { getFormatters } from '../formatters/ts-formatters.js'
+import { TransformerParams } from './types.js'
+import { formatList } from './formatters/format-list.js'
+import { getFormatters } from './formatters/ts-formatters.js'
 
 /**
  * Transforms design tokens into a mapping to css custom properties references to be used
@@ -8,12 +8,18 @@ import { getFormatters } from '../formatters/ts-formatters.js'
  * @param {TransformerParams} params - The parameters for the transformation.
  * @returns {string} The transformed js variables.
  */
-export const transformToTS = ({ tokens, contexts }: TransformerParams) => {
+export const transformToTS = ({
+  tokens,
+  contexts: { mediaQueries = {}, colorSchemes = {} } = {},
+}: TransformerParams) => {
   const content = formatList({
     tokens,
     allTokens: tokens,
     getFormatters,
-    contexts,
+    contexts: {
+      colorSchemes,
+      mediaQueries,
+    },
   })
   return content
 }

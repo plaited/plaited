@@ -13,7 +13,7 @@ import {
   AddThreads,
   BProgram,
 } from '../types.js'
-import { triggerWaitFor, isListeningFor, isPendingRequest, publisher, ensureArray } from './private-utils.js'
+import { triggerWaitFor, isListeningFor, isPendingRequest, createPublisher, ensureArray } from './private-utils.js'
 import { thread, sync, loop } from './rules.js'
 /**
  * Creates a behavioral program that manages the execution of behavioral threads.
@@ -25,8 +25,8 @@ import { thread, sync, loop } from './rules.js'
 export const bProgram: BProgram = <T>(logger?: Logger<T>) => {
   const pending = new Set<PendingBid>()
   const running = new Set<RunningBid>()
-  const actionPublisher = publisher<BPEvent>()
-  const snapshotPublisher = logger && publisher<T>()
+  const actionPublisher = createPublisher<BPEvent>()
+  const snapshotPublisher = logger && createPublisher<T>()
   function run() {
     running.size && step()
   }

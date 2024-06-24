@@ -149,9 +149,9 @@ const Fixture = Component({
 Fixture.define()
 
 export const beforebegin = {
-  play: async ({ canvasElement }) => {
-    const fixture = document.createElement(Fixture.tag) as PlaitedElement
-    canvasElement.append(fixture)
+  render: () => <Fixture />,
+  play: async () => {
+    const fixture = document.querySelector(Fixture.tag) as PlaitedElement
     let root = await findByAttribute<HTMLDivElement>('bp-target', 'root')
     assert({
       given: 'before calling trigger',
@@ -174,13 +174,12 @@ export const beforebegin = {
       actual: root.lastChild,
       expected: table,
     })
-    fixture.remove()
   },
 }
 export const afterbegin = {
-  play: async ({ canvasElement }) => {
-    const fixture = document.createElement(Fixture.tag) as PlaitedElement
-    canvasElement.append(fixture)
+  render: () => <Fixture />,
+  play: async () => {
+    const fixture = document.querySelector(Fixture.tag) as PlaitedElement
     const table = await findByAttribute<HTMLTableElement>('bp-target', 'table')
     assert({
       given: 'before calling trigger',
@@ -210,13 +209,12 @@ export const afterbegin = {
       actual: nodeList.indexOf(lastChild),
       expected: 199,
     })
-    fixture.remove()
   },
 }
 export const beforeend = {
-  play: async ({ canvasElement }) => {
-    const fixture = document.createElement(Fixture.tag) as PlaitedElement
-    canvasElement.append(fixture)
+  render: () => <Fixture />,
+  play: async () => {
+    const fixture = document.querySelector(Fixture.tag) as PlaitedElement
     const table = await findByAttribute<HTMLTableElement>('bp-target', 'table')
     assert({
       given: 'before calling trigger',
@@ -246,13 +244,12 @@ export const beforeend = {
       actual: nodeList.indexOf(lastChild),
       expected: 99,
     })
-    fixture.remove()
   },
 }
 export const afterend = {
-  play: async ({ canvasElement }) => {
-    const fixture = document.createElement(Fixture.tag) as PlaitedElement
-    canvasElement.append(fixture)
+  render: () => <Fixture />,
+  play: async () => {
+    const fixture = document.querySelector(Fixture.tag) as PlaitedElement
     let root = await findByAttribute<HTMLDivElement>('bp-target', 'root')
     assert({
       given: 'before calling trigger',
@@ -275,13 +272,12 @@ export const afterend = {
       actual: root.firstChild,
       expected: table,
     })
-    fixture.remove()
   },
 }
 export const render = {
-  play: async ({ canvasElement }) => {
-    const fixture = document.createElement(Fixture.tag) as PlaitedElement
-    canvasElement.append(fixture)
+  render: () => <Fixture />,
+  play: async () => {
+    const fixture = document.querySelector(Fixture.tag) as PlaitedElement
     const table = await findByAttribute<HTMLTableElement>('bp-target', 'table')
     assert({
       given: 'before calling trigger',
@@ -296,13 +292,12 @@ export const render = {
       actual: table.childElementCount,
       expected: 100,
     })
-    fixture.remove()
   },
 }
 export const replace = {
-  play: async ({ canvasElement }) => {
-    const fixture = document.createElement(Fixture.tag) as PlaitedElement
-    canvasElement.append(fixture)
+  render: () => <Fixture />,
+  play: async () => {
+    const fixture = document.querySelector(Fixture.tag) as PlaitedElement
     const root = await findByAttribute<HTMLDivElement>('bp-target', 'root')
     assert({
       given: 'before calling trigger',
@@ -317,13 +312,12 @@ export const replace = {
       actual: root.firstChild instanceof HTMLSpanElement,
       expected: true,
     })
-    fixture.remove()
   },
 }
 export const getAttribute = {
-  play: async ({ canvasElement }) => {
-    const fixture = document.createElement(Fixture.tag) as PlaitedElement
-    canvasElement.append(fixture)
+  render: () => <Fixture />,
+  play: async () => {
+    const fixture = document.querySelector(Fixture.tag) as PlaitedElement
     const root = await findByAttribute<HTMLDivElement>('bp-target', 'root')
     assert({
       given: 'before calling trigger',
@@ -338,13 +332,12 @@ export const getAttribute = {
       actual: root.firstChild instanceof Text,
       expected: true,
     })
-    fixture.remove()
   },
 }
 export const removeAttributes = {
-  play: async ({ canvasElement }) => {
-    const fixture = document.createElement(Fixture.tag) as PlaitedElement
-    canvasElement.append(fixture)
+  render: () => <Fixture />,
+  play: async () => {
+    const fixture = document.querySelector(Fixture.tag) as PlaitedElement
     fixture.trigger({ type: 'render' })
     let label = await findByAttribute<HTMLDivElement>('bp-target', 'label')
     assert({
@@ -361,14 +354,13 @@ export const removeAttributes = {
       actual: label,
       expected: undefined,
     })
-    fixture.remove()
   },
 }
 
 export const multiSetAttributes = {
-  play: async ({ canvasElement }) => {
-    const fixture = document.createElement(Fixture.tag) as PlaitedElement
-    canvasElement.append(fixture)
+  render: () => <Fixture />,
+  play: async () => {
+    const fixture = document.querySelector(Fixture.tag) as PlaitedElement
     fixture.trigger({ type: 'render' })
     let el = await findByAttribute<HTMLDivElement>('bp-target', 'delete')
     const can = await findByAttribute<HTMLSpanElement>('bp-target', 'cancel')
@@ -423,6 +415,5 @@ export const multiSetAttributes = {
       actual: el.getAttribute('class'),
       expected: null,
     })
-    fixture.remove()
   },
 }

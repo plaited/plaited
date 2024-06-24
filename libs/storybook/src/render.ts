@@ -1,7 +1,7 @@
 import type { RenderContext, ArgsStoryFn, PartialStoryFn, Args, StoryContext } from '@storybook/types'
 
-import type { StoryFnPlaitedReturnType, PlaitedRender } from './types.js'
-import { createFragment, filterAttrs } from './utils.js'
+import type { PlaitedRender } from './types.js'
+import { createFragment, filterAttrs, defineRegistry } from './utils.js'
 
 export const render: ArgsStoryFn<PlaitedRender> = (args, context) => {
   const { id, component } = context
@@ -10,13 +10,6 @@ export const render: ArgsStoryFn<PlaitedRender> = (args, context) => {
   }
   const { attrs } = filterAttrs(args)
   return component(attrs)
-  // const frag = createFragment(
-  // const element = frag.firstElementChild
-  // if (!element) return frag
-  // for (const event in events) {
-  //   element && Object.assign(element, { [event]: events[event as `on${string}`] })
-  // }
-  // return frag
 }
 
 const plaitedRender = (story: DocumentFragment | null, canvasElement: Element) => {
@@ -39,6 +32,7 @@ const StoryHarness = ({
   storyContext: StoryContext
 }) => {
   const content = storyFn()
+  defineRegistry(content.registry)
   const frag = createFragment(content)
   const { events } = filterAttrs(storyContext.args)
   const element = frag.firstElementChild

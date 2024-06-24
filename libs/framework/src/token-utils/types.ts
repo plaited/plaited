@@ -187,12 +187,6 @@ export type GetFormatters = <T extends DesignTokenGroup = DesignTokenGroup, F ex
 export type TransformerParams = {
   /** an object of the type {@link DesignTokenGroup} */
   tokens: DesignTokenGroup
-  contexts: Contexts
-}
-
-export type TransformTokensParams = {
-  /** an object of the type {@link DesignTokenGroup} */
-  tokens: DesignTokenGroup
   /** named media queries */
   contexts?: Partial<Contexts>
 }
