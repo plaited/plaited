@@ -1,0 +1,46 @@
+{
+  "name": "plaited",
+  "version": "6.0.0",
+  "license": "ISC",
+  "engines": {
+    "node": ">= v18.15.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plaited/plaited.git"
+  },
+  "bugs": {
+    "url": "https://github.com/plaited/plaited/issues"
+  },
+  "homepage": "https://github.com/plaited/plaited/tree/main/libs/plaited#readme",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./hda": "./dist/hda.js",
+    "./jsx-dev-runtime": "./dist/jsx-dev-runtime.js",
+    "./jsx-runtime": "./dist/jsx-runtime.js",
+    "./ssr": "./dist/ssr.js",
+    "./token-utils": "./dist/token-utils.js",
+    "./utils": "./dist/utils.js"
+  },
+  "files": [
+    "./dist/**",
+    "./jsx-runtime.js",
+    "./jsx-dev-runtime.js"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "build-watch": "bun run build --watch",
+    "test": "bun test",
+    "test-watch": "bun test tests/bun/* --watch"
+  },
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@plaited/utils": "6.0.0",
+    "csstype": "3.1.3"
+  }
+}
