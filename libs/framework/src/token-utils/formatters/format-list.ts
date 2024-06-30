@@ -1,4 +1,3 @@
-/* eslint-disable no-return-assign */
 import { FormatList, DesignToken, DesignTokenGroup } from '../types.js'
 import { trueTypeOf } from '@plaited/utils'
 

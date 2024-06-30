@@ -1,3 +1,4 @@
+/* eslint-disable no-constant-binary-expression */
 import { test, expect } from 'bun:test'
 import { h, Fragment } from '../create-template.js'
 import { createStyles, css, assignStyles, FT, TemplateObject } from '../../index.js'

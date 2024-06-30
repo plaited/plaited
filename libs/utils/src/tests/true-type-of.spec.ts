@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
-/* eslint-disable func-names */
 import { test, expect } from 'bun:test'
 import { trueTypeOf } from '../index.js'
 

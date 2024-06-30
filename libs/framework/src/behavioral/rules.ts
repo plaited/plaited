@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { isTypeOf } from '@plaited/utils'
 import { Sync, RulesFunction, Loop, Thread } from '../types.js'
 

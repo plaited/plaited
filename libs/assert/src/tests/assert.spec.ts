@@ -1,4 +1,3 @@
-/* eslint-disable max-len */
 import { test, expect } from 'bun:test'
 import sinon from 'sinon'
 import { assert } from '../assert.js'

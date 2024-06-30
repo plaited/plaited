@@ -1,38 +1,42 @@
 /** Utility function for enabling hypermedia patterns */
-import { Trigger, BPEvent, UseWebSocket, Message } from '../types.js'
+import { Trigger, BPEvent, UseWebSocket } from '../types.js'
 import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
 import { createTemplateElement } from '../shared/parser-utils.js'
-import { isMessageEvent, isMessage } from './is-message-event.js'
+import { isBPEvent } from './is-bp-event.js'
 
 const isCloseEvent = (event: CloseEvent | Event): event is CloseEvent => event.type === 'close'
 
-export const useWS = (url: string): UseWebSocket => {
+export const useWS: UseWebSocket = (url, protocols) => {
   const maxRetries = 3
   let retryCount = 0
   let socket: WebSocket | undefined
-  const connect = (trigger: Trigger, subscriber: string) => {
+  const connect = (trigger: Trigger, address: string) => {
     if (retryCount < maxRetries) {
-      socket = new WebSocket(url, [])
+      socket = new WebSocket(url, protocols)
     }
-    const callback = (event: MessageEvent | Event) => {
-      if (isMessageEvent(event)) {
+    const callback = (event: MessageEvent) => {
+      if (event.type === address) {
         try {
-          const message: Message<string> = JSON.parse(event.data)
-          if (isMessage(message) && message.address === subscriber) {
-            const { event } = message
-            const template = createTemplateElement(event.detail ?? '')
-            trigger({ type: event.type, detail: template.content })
+          const evt: BPEvent<string> = JSON.parse(event.data)
+          if (isBPEvent(evt)) {
+            const template = createTemplateElement(evt.detail ?? '')
+            trigger({ type: evt.type, detail: template.content })
           }
         } catch (error) {
           console.error('Error parsing incoming message:', error)
         }
-      } else if (isCloseEvent(event)) {
+      }
+      if (isCloseEvent(event)) {
         if ([1006, 1012, 1013].indexOf(event.code) >= 0) {
           // Abnormal Closure/Service Restart/Try Again Later
           setTimeout(connect, Math.pow(2, retryCount) * 1000) // Retry the connection after a delay (e.g., exponential backoff)
         }
-      } else if (event.type === 'open') {
+      }
+      if (event.type === 'open') {
         retryCount = 0
+      }
+      if (event.type === 'error') {
+        console.error('WebSocket error: ', event)
       }
     }
     if (socket) {
@@ -40,7 +44,7 @@ export const useWS = (url: string): UseWebSocket => {
       // WebSocket connection opened
       socket.addEventListener('open', delegates.get(socket))
       // Handle incoming messages
-      socket.addEventListener('message', delegates.get(socket))
+      socket.addEventListener(address, delegates.get(socket))
       // Handle WebSocket errors
       socket.addEventListener('error', delegates.get(socket))
       // WebSocket connection closed

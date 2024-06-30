@@ -14,7 +14,7 @@ const adoptStylesheets = (...stylesheets: string[]) => {
     instanceStyles.add(stylesheet)
     newStyleSheets.push(sheet)
   }
-  // eslint-disable-next-line compat/compat
+
   document.adoptedStyleSheets = [...document.adoptedStyleSheets, ...newStyleSheets]
 }
 

@@ -1,17 +1,6 @@
 import { noop } from '@plaited/utils'
 import { bpAddress } from '../jsx/constants.js'
-import {
-  UseMessenger,
-  UseWebSocket,
-  UseServerSentEvents,
-  UseWorker,
-  PlaitedElement,
-  Disconnect,
-  Trigger,
-  UsePublisher,
-} from '../types.js'
-
-type EventSources = UseMessenger | UseWebSocket | UseServerSentEvents | UseWorker | UsePublisher
+import { EventSources, PlaitedElement, Disconnect, Trigger } from '../types.js'
 
 const logMissingObserverTriggers = (host: PlaitedElement, source: EventSources['type']) => {
   console.error(
@@ -49,8 +38,8 @@ export const useEventSources = ({
     }
     if (comm?.type === 'sse') return disconnectEventSource(comm(trigger, address))
     if (comm?.type === 'ws') return disconnectEventSource(comm.connect(trigger, address))
+    if (comm?.type === 'publisher') return disconnectEventSource(comm(trigger))
     if (!observedTriggers) return logMissingObserverTriggers(host, comm.type)
-    if (comm?.type === 'publisher') return disconnectEventSource(comm.connect(trigger, observedTriggers))
     if (comm?.type === 'messenger' && observedTriggers)
       return disconnectEventSource(comm.connect({ trigger, observedTriggers, address }))
     return noop

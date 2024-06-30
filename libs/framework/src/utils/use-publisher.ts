@@ -1,33 +1,22 @@
-import { UsePublisher, BPEvent, Trigger } from '../types.js'
-import { onlyObservedTriggers } from '../shared/only-observed-triggers.js'
-/**
- * @description  Creates a new BPEvent publisher.
- * A publisher object is a function that can be called with a value of type BPEvent,
- * which will notify all subscribed listeners with that value.
- * Listeners use the `subscribe` method connect to the publisher.
- * @returns A new publisher object.
- **/
-export const usePublisher = (): UsePublisher => {
-  const listeners = new Set<(value: BPEvent) => void>()
+import { UsePublisher, Trigger } from '../types.js'
 
-  function createPublisher(value: BPEvent) {
+export const usePublisher: UsePublisher = <T = unknown>() => {
+  const listeners = new Set<(value?: T) => void>()
+  // The publisher function that notifies all subscribed listeners with optional value.
+  const pub = (value?: T) => {
     for (const cb of listeners) cb(value)
   }
-
-  /**
-   * Subscribes a listener to the publisher.
-   * @param listener - The listener function to connect.
-   * @returns A function that can be called to unsubscribe the listener.
-   */
-  createPublisher.connect = (trigger: Trigger, observedTriggers: string[]) => {
-    const _trigger = onlyObservedTriggers(trigger, observedTriggers)
-    listeners.add(_trigger)
-    return () => {
-      listeners.delete(_trigger)
+  // Subscribes a trigger and BPEvent to the publisher.
+  const sub = (type: string) => {
+    const connect = (trigger: Trigger) => {
+      const cb = (detail?: T) => trigger<T>({ type, detail })
+      listeners.add(cb)
+      return () => {
+        listeners.delete(cb)
+      }
     }
+    connect.type = 'publisher' as const
+    return connect
   }
-
-  createPublisher.type = 'publisher' as const
-
-  return createPublisher
+  return [pub, sub]
 }

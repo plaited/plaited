@@ -1,3 +1,8 @@
 module.exports = {
-  ...require('@plaited/eslint-prettier-config/prettier'),
+  semi: false,
+  singleQuote: true,
+  jsxSingleQuote: true,
+  printWidth: 120,
+  singleAttributePerLine: true,
+  experimentalTernaries: true,
 }

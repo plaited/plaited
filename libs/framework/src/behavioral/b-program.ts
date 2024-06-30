@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-use-before-define */
 import { isTypeOf } from '@plaited/utils'
 import {
   CandidateBid,

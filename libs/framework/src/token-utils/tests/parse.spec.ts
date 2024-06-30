@@ -168,9 +168,9 @@ test('parse(): verify required props', () => {
   expect(actual?.properties?.size?.properties?.x1?.properties?.$value?.required).toEqual(expected)
 })
 test('parse(): verify const props', () => {
-  //@ts-ignore: it exist
+  //@ts-ignore: it exi st
   const expected = tokens.backgroundColor.purple.x1.$value
-  // eslint-disable-next-line no-unsafe-optional-chaining
+
   const value = actual?.properties?.backgroundColor?.properties?.purple?.properties?.x1.properties?.$value?.properties
   expect({ l: value?.l?.const, c: value?.c?.const, h: value?.h?.const }).toEqual(expected)
 })

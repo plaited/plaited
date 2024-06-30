@@ -4,12 +4,11 @@ import sinon from 'sinon'
 import { useWorker } from '../../utils.js'
 
 test('usePostMessage', async () => {
-  const worker = new Worker(new URL('./worker.ts', import.meta.url), {
+  const msg = useWorker(new URL('./worker.ts', import.meta.url), {
     type: 'module',
   })
-  const msg = useWorker(worker)
   const spy = sinon.spy()
-  msg.connect(spy, ['update'])
+  msg.connect(spy)
 
   msg({
     type: 'calculate',

@@ -181,7 +181,7 @@ test('detect winner', () => {
   trigger({ type: 'X', detail: { square: 1 } })
   trigger({ type: 'O', detail: { square: 4 } })
   trigger({ type: 'X', detail: { square: 2 } })
-  //@ts-expect-error: winner exists
+
   expect(winner).toEqual({ player: 'X', squares: [0, 1, 2] })
 })
 
@@ -219,7 +219,7 @@ test('stop game', () => {
   trigger({ type: 'X', detail: { square: 1 } })
   trigger({ type: 'O', detail: { square: 4 } })
   trigger({ type: 'X', detail: { square: 2 } })
-  //@ts-expect-error: winner exists
+
   expect(winner).toEqual({ player: 'X', squares: [0, 1, 2] })
   // O tries to take square 5 after a winner has been declared
   trigger({ type: 'O', detail: { square: 5 } })
@@ -251,7 +251,7 @@ test('defaultMoves', () => {
     stopGame,
     ...defaultMoves,
   })
-  let winner: Winner
+
   feedback({
     // When BPEvent `X` happens we delete the square provided in the event's detail
     X({ square }: { square: number }) {
@@ -260,10 +260,6 @@ test('defaultMoves', () => {
     // When BPEvent `O` happens we delete the square provided in the event's detail
     O({ square }: { square: number }) {
       board.delete(square)
-    },
-    // When BPEvent `win` happens we set the winner
-    win(detail: Winner) {
-      winner = detail
     },
   })
   trigger({ type: 'X', detail: { square: 0 } })
@@ -291,7 +287,7 @@ test('start at center', () => {
     startAtCenter,
     ...defaultMoves,
   })
-  let winner: Winner
+
   feedback({
     // When BPEvent `X` happens we delete the square provided in the event's detail
     X({ square }: { square: number }) {
@@ -300,10 +296,6 @@ test('start at center', () => {
     // When BPEvent `O` happens we delete the square provided in the event's detail
     O({ square }: { square: number }) {
       board.delete(square)
-    },
-    // When BPEvent `win` happens we set the winner
-    win(detail: Winner) {
-      winner = detail
     },
   })
   trigger({ type: 'X', detail: { square: 0 } })
@@ -362,6 +354,6 @@ test('prevent completion of line with two Xs', () => {
   trigger({ type: 'X', detail: { square: 8 } })
   expect(board.has(7)).toBe(false) // O has blocked X from winning with [6, 7, 8]
   trigger({ type: 'X', detail: { square: 5 } })
-  //@ts-expect-error: winner exists
+
   expect(winner).toEqual({ player: 'X', squares: [2, 5, 8] })
 })

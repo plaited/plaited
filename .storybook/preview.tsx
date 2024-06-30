@@ -1,8 +1,8 @@
-import { Preview, createFragment } from '@plaited/storybook'
+import { Preview } from '@plaited/storybook'
 
 const preview: Preview = {
   decorators: [
-    (Story, ...args) => (
+    (Story) => (
       <div style={{ margin: '3em' }}>
         {' '}
         <Story />

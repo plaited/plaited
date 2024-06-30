@@ -17,7 +17,6 @@ export const createIDB = (dbName: string, storeName: string) => {
         new Promise<void>((resolve, reject) => {
           const transaction = db.transaction(storeName, type)
           transaction.oncomplete = () => resolve()
-          // eslint-disable-next-line no-multi-assign
           transaction.onabort = transaction.onerror = () => reject(transaction.error)
           callback(transaction.objectStore(storeName))
         }),

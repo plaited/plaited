@@ -1,5 +1,5 @@
 import { assert, findByAttribute } from '@plaited/storybook-rite'
-import { Meta, StoryObj } from '@plaited/storybook'
+import { Meta } from '@plaited/storybook'
 import { QuerySelector, Position, PlaitedElement } from '../../types.js'
 import { Component } from '../component.js'
 

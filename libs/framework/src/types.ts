@@ -1493,35 +1493,63 @@ export type Message<T = unknown> = {
   event: BPEvent<T>
 }
 
-export type UsePublisher = {
-  (value: BPEvent): void
-  connect(trigger: Trigger, observedTriggers: string[] | PlaitedElement): Disconnect
+type Publish = <T = unknown>(value?: T) => void
+type Subscribe = (type: string) => {
+  (trigger: Trigger): () => void
   type: 'publisher'
 }
 
+export type UsePublisher = {
+  (): [Publish, Subscribe]
+}
+
 export type UseMessenger = {
-  (args: Message): void
-  connect(args: { trigger: Trigger; observedTriggers: string[]; address: string }): Disconnect
-  has(address: string): boolean
-  type: 'messenger'
+  (): {
+    (args: Message): void
+    connect(args: { trigger: Trigger; observedTriggers: string[]; address: string }): Disconnect
+    has(address: string): boolean
+    type: 'messenger'
+  }
 }
 
 export type UseWorker = {
-  (args: BPEvent): void
-  connect(trigger: Trigger): Disconnect
-  type: 'worker'
+  (
+    scriptURL: string | URL,
+    options?: WorkerOptions,
+  ): {
+    (args: BPEvent): void
+    connect(trigger: Trigger): Disconnect
+    type: 'worker'
+  }
 }
 
 export type UseServerSentEvents = {
-  (trigger: Trigger, address: string): Disconnect
-  type: 'sse'
+  (
+    url: string | URL,
+    eventSourceInitDict?: EventSourceInit,
+  ): {
+    (trigger: Trigger, address: string): Disconnect
+    type: 'sse'
+  }
 }
 
 export type UseWebSocket = {
-  (message: BPEvent): void
-  connect: (trigger: Trigger, address: string) => Disconnect
-  type: 'ws'
+  (
+    url: string | URL,
+    protocols?: string | string[],
+  ): {
+    (message: BPEvent): void
+    connect: (trigger: Trigger, address: string) => Disconnect
+    type: 'ws'
+  }
 }
+
+export type EventSources =
+  | ReturnType<UseMessenger>
+  | ReturnType<UseWebSocket>
+  | ReturnType<UseServerSentEvents>
+  | ReturnType<UseWorker>
+  | ReturnType<ReturnType<UsePublisher>[1]>
 
 export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
 

@@ -9,7 +9,7 @@ import { onlyObservedTriggers } from '../shared/only-observed-triggers.js'
 
  */
 
-export const useMessenger = (): UseMessenger => {
+export const useMessenger: UseMessenger = () => {
   const contacts = new Map<string, (evt: BPEvent) => void>()
   const hasRecipient = (address: string) => {
     if (!contacts.has(address)) {
