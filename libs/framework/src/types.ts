@@ -1540,7 +1540,7 @@ export type Sugar = {
 
 export type SugaredElement<T extends Element = Element> = T & Sugar
 
-export type Emit = (
+export type UseEmit = (host: HTMLElement) => (
   args: BPEvent & {
     bubbles?: boolean
     cancelable?: boolean
@@ -1551,10 +1551,9 @@ export type Emit = (
 export type ConnectArgs = [ReturnType<UseWorker>] | [ReturnType<UseSocket>] | [string, ReturnType<UsePublisher>]
 
 /** Clone feature for handling list situations where structure is consistent but the data rendered is what is different. This is a performance feature */
-export type Clone = <T>(
-  template: TemplateObject,
-  callback: ($: QuerySelector, data: T) => void,
-) => (data: T) => DocumentFragment
+export type UseClone = (
+  shadowRoot: ShadowRoot,
+) => <T>(template: TemplateObject, callback: ($: QuerySelector, data: T) => void) => (data: T) => DocumentFragment
 
 export type BProps = {
   /** query for elements with the bp-target attribute in the Island's shadowDom and slots */
@@ -1566,8 +1565,8 @@ export type BProps = {
    * const shadowEl = host.shadowRoot.querySelector('div')
    */
   host: PlaitedElement
-  emit: Emit
-  clone: Clone
+  emit: ReturnType<UseEmit>
+  clone: ReturnType<UseClone>
   connect: (...args: ConnectArgs) => Disconnect
 } & Omit<ReturnType<BProgram>, 'feedback'>
 

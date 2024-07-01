@@ -1,6 +1,6 @@
 import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
 import { NavigateEventType } from '../shared/constants.js'
-import { emit } from '../shared/emit.js'
+import { useEmit } from '../shared/use-emit.js'
 import { PlaitedElement } from '../types.js'
 
 export const connectShadowroot = (shadowRoot: ShadowRoot) => {
@@ -25,7 +25,7 @@ export const connectShadowroot = (shadowRoot: ShadowRoot) => {
             if (local) {
               event.preventDefault()
               event.stopPropagation()
-              emit(shadowRoot.host as PlaitedElement)({
+              useEmit(shadowRoot.host as PlaitedElement)({
                 type: NavigateEventType,
                 detail: new URL(href, window.location.href),
                 bubbles: true,

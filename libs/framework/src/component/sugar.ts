@@ -6,7 +6,6 @@ import type {
   TemplateObject,
   QuerySelector,
   BooleanAttributes,
-  Clone,
 } from '../types.js'
 import { booleanAttrs, bpTarget } from '../jsx/constants.js'
 import { defineRegistry } from './define-registry.js'
@@ -49,7 +48,7 @@ const updateAttributes = (element: Element, attr: string, val: string | null | n
   element.setAttribute(attr, `${val}`)
 }
 
-const handleTemplateObject = (shadowRoot: ShadowRoot, fragment: TemplateObject) => {
+export const handleTemplateObject = (shadowRoot: ShadowRoot, fragment: TemplateObject) => {
   const { client, stylesheets, registry } = fragment
   registry.size && defineRegistry(registry, true)
   stylesheets.size && void updateShadowRootStyles(shadowRoot, stylesheets)
@@ -100,7 +99,7 @@ const getSugar = (shadowRoot: ShadowRoot): Sugar => ({
 
 const assignedElements = new WeakSet<Element>()
 const hasSugar = (element: Element): element is SugaredElement => assignedElements.has(element)
-const assignSugar = <T extends Element = Element>(sugar: Sugar, elements: Element[]) => {
+export const assignSugar = <T extends Element = Element>(sugar: Sugar, elements: Element[]) => {
   const length = elements.length
   for (let i = 0; i < length; i++) {
     const el = elements[i]
@@ -112,23 +111,11 @@ const assignSugar = <T extends Element = Element>(sugar: Sugar, elements: Elemen
 }
 
 const sugarRoots = new WeakMap<ShadowRoot, Sugar>()
-export const $ = (
-  shadowRoot: ShadowRoot,
-  context: DocumentFragment | ShadowRoot | Element = shadowRoot,
-): QuerySelector => {
-  const sugar =
-    sugarRoots.get(shadowRoot) ?? (sugarRoots.set(shadowRoot, getSugar(shadowRoot)).get(shadowRoot) as Sugar)
-  return <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
-    assignSugar<T>(sugar, Array.from(context.querySelectorAll<Element>(`[${bpTarget}${match}"${target}"]`)))
-}
+export const getSugarInstance = (shadowRoot: ShadowRoot) =>
+  sugarRoots.get(shadowRoot) ?? (sugarRoots.set(shadowRoot, getSugar(shadowRoot)).get(shadowRoot) as Sugar)
 
-export const clone =
-  (shadowRoot: ShadowRoot): Clone =>
-  (template, callback) => {
-    const content = handleTemplateObject(shadowRoot, template)
-    return (data) => {
-      const clone = content.cloneNode(true) as DocumentFragment
-      callback($(shadowRoot, clone), data)
-      return clone
-    }
-  }
+export const useQuery = (shadowRoot: ShadowRoot): QuerySelector => {
+  const sugar = getSugarInstance(shadowRoot)
+  return <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
+    assignSugar<T>(sugar, Array.from(shadowRoot.querySelectorAll<Element>(`[${bpTarget}${match}"${target}"]`)))
+}

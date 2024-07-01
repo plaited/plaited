@@ -1,4 +1,5 @@
 import { Component, css } from 'plaited'
+import { useQuery } from 'plaited/utils'
 import { Button } from './button.js'
 
 const stylesheet = css`
@@ -91,7 +92,8 @@ export const Header = Component({
   publicEvents: ['user'],
   attributeChangedCallback(name: string, _, newValue: string) {
     if (name === 'user') {
-      const [bar] = this.$('button-bar')
+      const $ = useQuery(this.shadowRoot)
+      const [bar] = $('button-bar')
       newValue ?
         bar.render(
           <>

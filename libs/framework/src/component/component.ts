@@ -1,29 +1,16 @@
 import { bProgram } from '../behavioral/b-program.js'
 import type { PlaitedComponent, PlaitedElement, BPEvent, QuerySelector, Trigger, Disconnect } from '../types.js'
-import { clone } from './sugar.js'
+import { useClone } from './use-clone.js'
 import { hasLogger, hasHDA } from './type-guards.js'
-import { emit } from '../shared/emit.js'
+import { useEmit } from '../shared/use-emit.js'
 import { useConnect } from './use-connect.js'
 import { getPlaitedTemplate } from './get-plaited-template.js'
-import { PLAITED_HDA_HOOK, PLAITED_LOGGER, PLAITED_COMPONENT_IDENTIFIER } from '../shared/constants.js'
+import { PLAITED_HDA_HOOK, PLAITED_LOGGER } from '../shared/constants.js'
 import { bpTrigger } from '../jsx/constants.js'
-import { cssCache, $ } from './sugar.js'
+import { cssCache, useQuery } from './sugar.js'
 import { shadowObserver, addListeners } from './shadow-observer.js'
 import { onlyPublicEvents } from '../shared/only-public-events.js'
-/**
- * Creates a PlaitedComponent
- * @param {object} args - Arguments for the PlaitedComponent
- * @param {string} args.tag - PlaitedComponent tag name
- * @param {string[]} args.observedAttributes - observed Attributes that will trigger the native `attributeChangedCallback` method when modified
- * @param {string[]} args.publicEvents - observed triggers that can be fired from outside component by invoking `trigger` method directly, via messenger, or via publisher
- * @param {string} args.mode - define wether island's custom element is open or closed. @defaultValue 'open'  @values 'open' | 'closed'
- * @param {boolean} args.delegatesFocus - configure whether to delegate focus or not @defaultValue 'true'
- * @param {function} args.eventSourceHandler - callback to handle event sources like messenger, publisher, web socket, or server sent events
- * @param {function} args.strategy - event selection strategy callback from behavioral library
- * @param {boolean|function} args.logger - logger function to receive messages from behavioral program selectedEvent publisher
- * @param {function} args.bp - behavioral program callback
- * @returns {PlaitedTemplate} A PlaitedTemplate of the PlaitedComponent
- */
+
 export const Component: PlaitedComponent = ({
   tag,
   template,
@@ -67,7 +54,7 @@ export const Component: PlaitedComponent = ({
           }
         }
         cssCache.set(this.#root, new Set<string>([...template.stylesheets]))
-        this.#query = $(this.#root)
+        this.#query = useQuery(this.#root)
       }
       #shadowObserver?: MutationObserver
       #disconnectSet = new Set<Disconnect>()
@@ -88,8 +75,8 @@ export const Component: PlaitedComponent = ({
           const actions = bp.bind(this)({
             $: this.#query,
             host: this,
-            emit: emit(this),
-            clone: clone(this.#root),
+            emit: useEmit(this),
+            clone: useClone(this.#root),
             connect: useConnect({ trigger, disconnectSet: this.#disconnectSet, host: this }),
             trigger,
             ...rest,
