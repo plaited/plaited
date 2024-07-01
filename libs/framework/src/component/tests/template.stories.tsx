@@ -84,7 +84,6 @@ export const withDeclarativeShadowDom: StoryObj = {
     })
     const template = (<Fixture bp-target='host' />).server.join('')
 
-    console.log(Document.parseHTMLUnsafe((<Fixture bp-target='host' />).server.join('')))
     // @ts-ignore: new dom api
     canvasElement.setHTMLUnsafe(template)
 

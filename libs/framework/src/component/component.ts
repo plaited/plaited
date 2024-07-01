@@ -91,7 +91,6 @@ export const Component: PlaitedComponent = ({
           const actions = bp.bind(this)({
             $: this.$,
             host: this,
-            root: this.#root,
             emit: emit(this),
             clone: clone(this.#root),
             connect: useConnect({ trigger, addDisconnect: this.#addDisconnect.bind(this), host: this }),

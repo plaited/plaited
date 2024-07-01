@@ -1566,7 +1566,6 @@ export type BProps = {
    * const shadowEl = host.shadowRoot.querySelector('div')
    */
   host: PlaitedElement
-  root: ShadowRoot
   emit: Emit
   clone: Clone
   connect: (...args: ConnectArgs) => Disconnect
