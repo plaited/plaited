@@ -1,6 +1,6 @@
-import { assert, findByAttribute, findByText } from '@plaited/storybook-rite'
+import { assert, findByAttribute, findByText, wait } from '@plaited/storybook-rite'
 import { Meta, StoryObj } from '@plaited/storybook'
-import { createStyles } from '../../index.js'
+import { PlaitedElement, createStyles } from '../../index.js'
 import { Component } from '../component.js'
 import { canUseDOM } from '@plaited/utils'
 
@@ -51,27 +51,6 @@ export const noDeclarativeShadowDom: StoryObj = {
   },
 }
 
-let parser: {
-  parseFromString(
-    string: string,
-    type: DOMParserSupportedType,
-    options: {
-      includeShadowRoots: boolean
-    },
-  ): Document
-}
-
-if (canUseDOM()) {
-  parser = new DOMParser()
-}
-
-const createTemplateElement = (content: string) => {
-  const fragment = parser.parseFromString(`<template>${content}</template>`, 'text/html', {
-    includeShadowRoots: true,
-  })
-  return fragment.head.firstChild as HTMLTemplateElement
-}
-
 export const withDeclarativeShadowDom: StoryObj = {
   play: async ({ canvasElement }) => {
     const styles = createStyles({
@@ -84,6 +63,7 @@ export const withDeclarativeShadowDom: StoryObj = {
     })
     const Fixture = Component({
       tag: 'with-declarative-shadow-dom',
+      observedTriggers: ['render'],
       template: (
         <div
           bp-target='inner'
@@ -93,14 +73,22 @@ export const withDeclarativeShadowDom: StoryObj = {
         </div>
       ),
       bp({ $ }) {
-        const [inner] = $('inner')
-        inner.render(<span stylesheet={styles.span.stylesheet}>after hydration</span>)
-        inner.attr('class', styles.span.className)
+        return {
+          render() {
+            const [inner] = $('inner')
+            inner.render(<span stylesheet={styles.span.stylesheet}>after hydration</span>)
+            inner.attr('class', styles.span.className)
+          },
+        }
       },
     })
-    const template = createTemplateElement((<Fixture bp-target='host' />).server.join(''))
-    canvasElement.append(template.content)
-    const host = await findByAttribute<HTMLElement>('bp-target', 'host')
+    const template = (<Fixture bp-target='host' />).server.join('')
+
+    console.log(Document.parseHTMLUnsafe((<Fixture bp-target='host' />).server.join('')))
+    // @ts-ignore: new dom api
+    canvasElement.setHTMLUnsafe(template)
+
+    const host = await findByAttribute<PlaitedElement>('bp-target', 'host')
     let inner = await findByAttribute('bp-target', 'inner', host)
     const style = await findByText(styles.inner.stylesheet.join(' '), host)
     let textContent = inner.textContent
@@ -125,6 +113,8 @@ export const withDeclarativeShadowDom: StoryObj = {
       expected: 'rgb(255, 0, 0)',
     })
     Fixture.define()
+    host.trigger({ type: 'render' })
+
     inner = await findByAttribute('bp-target', 'inner', host)
     textContent = inner.textContent
     computedStyle = window.getComputedStyle(inner)

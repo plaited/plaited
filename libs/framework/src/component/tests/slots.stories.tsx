@@ -18,12 +18,12 @@ const nestedSlot = sinon.spy()
 const Nested = Component({
   tag: 'nested-slot',
   template: <slot bp-trigger={{ click: 'nested' }}></slot>,
-  bp(props): void | Promise<void> {
-    props.feedback({
+  bp() {
+    return {
       nested() {
         nestedSlot('nested-slot')
       },
-    })
+    }
   },
 })
 
@@ -44,19 +44,17 @@ const Fixture = Component({
       </Nested>
     </div>
   ),
-  bp({ feedback }) {
-    feedback({
-      slot() {
-        defaultSlot('default-slot')
-      },
-      named() {
-        namedSlot('named-slot')
-      },
-      nested() {
-        passThroughSlot('pass-through-slot')
-      },
-    })
-  },
+  bp: () => ({
+    slot() {
+      defaultSlot('default-slot')
+    },
+    named() {
+      namedSlot('named-slot')
+    },
+    nested() {
+      passThroughSlot('pass-through-slot')
+    },
+  }),
 })
 
 export const slots: StoryObj = {

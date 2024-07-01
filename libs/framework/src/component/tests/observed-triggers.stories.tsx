@@ -14,11 +14,11 @@ const Inner = Component({
   tag: 'inner-component',
   template: <h1 bp-target='header'>Hello</h1>,
   observedTriggers: ['add'],
-  bp({ $, feedback, addThreads, thread, sync, emit }) {
+  bp({ $, addThreads, thread, sync, emit }) {
     addThreads({
       onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),
     })
-    feedback({
+    return {
       disable() {
         emit({ type: 'disable', bubbles: true })
       },
@@ -26,7 +26,7 @@ const Inner = Component({
         const [header] = $('header')
         header.insert('beforeend', <>{detail}</>)
       },
-    })
+    }
   },
 })
 
@@ -46,8 +46,8 @@ const Outer = Component({
       </button>
     </div>
   ),
-  bp({ feedback, $ }) {
-    feedback({
+  bp({ $ }) {
+    return {
       disable() {
         const [button] = $<HTMLButtonElement>('button')
         button && (button.disabled = true)
@@ -61,7 +61,7 @@ const Outer = Component({
           }
         }
       },
-    })
+    }
   },
 })
 

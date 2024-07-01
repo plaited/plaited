@@ -2,8 +2,7 @@
 import { isTypeOf } from '@plaited/utils'
 import { displayContent } from './display-content.js'
 import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
-import { createDoc } from '../shared/parser-utils.js'
-import { fetchHTML } from './fetch-html.js'
+import { fetchHTML, FetchHTMLOptions } from './fetch-html.js'
 import { NavigateEventType, PLAITED_HDA_HOOK } from '../shared/constants.js'
 import { connectShadowroot } from './connect-shadowroot.js'
 /**
@@ -13,21 +12,21 @@ import { connectShadowroot } from './connect-shadowroot.js'
  * The module returns a cleanup function that removes the event listeners when called.
  *
  */
-export const useHDA = () => {
+
+export const useHDA = ({ retry = 3, retryDelay = 1_000, ...options }: FetchHTMLOptions) => {
   const html = document.querySelector('html')
   if (html) {
     const navigate = async (event: CustomEvent<URL>) => {
       const { detail: url } = event
-      const htmlContent = await fetchHTML(url.href, { partial: false })
-      if (htmlContent) {
-        history.pushState(new XMLSerializer().serializeToString(htmlContent), '', url.href)
-        displayContent(htmlContent)
+      const htmlString = await fetchHTML(url.href, { retry, retryDelay, ...options })
+      if (htmlString) {
+        history.pushState(htmlString, '', url.href)
+        displayContent(htmlString)
       }
     }
     const pop = ({ state }: PopStateEvent) => {
       if (isTypeOf<string>(state, 'string')) {
-        const htmlContent = createDoc(state)
-        displayContent(htmlContent)
+        displayContent(state)
       }
     }
 

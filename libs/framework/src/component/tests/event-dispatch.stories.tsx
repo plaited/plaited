@@ -20,12 +20,12 @@ const Bottom = Component({
     </button>
   ),
   observedTriggers: ['add'],
-  bp({ feedback, emit }) {
-    feedback({
+  bp({ emit }) {
+    return {
       click() {
         emit({ type: 'append' })
       },
-    })
+    }
   },
 })
 
@@ -37,13 +37,13 @@ const Top = Component({
       <Bottom bp-trigger={{ append: 'append' }}></Bottom>
     </div>
   ),
-  bp({ feedback, $ }) {
-    feedback({
+  bp({ $ }) {
+    return {
       append() {
         const [header] = $('header')
         header.insert('beforeend', <> World!</>)
       },
-    })
+    }
   },
 })
 

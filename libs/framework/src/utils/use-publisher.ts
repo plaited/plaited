@@ -7,16 +7,14 @@ export const usePublisher: UsePublisher = <T = unknown>() => {
     for (const cb of listeners) cb(value)
   }
   // Subscribes a trigger and BPEvent to the publisher.
-  const sub = (type: string) => {
-    const connect = (trigger: Trigger) => {
-      const cb = (detail?: T) => trigger<T>({ type, detail })
-      listeners.add(cb)
-      return () => {
-        listeners.delete(cb)
-      }
+  const sub = (type: string, trigger: Trigger) => {
+    const cb = (detail?: T) => trigger<T>({ type, detail })
+    listeners.add(cb)
+    return () => {
+      listeners.delete(cb)
     }
-    connect.type = 'publisher' as const
-    return connect
   }
-  return [pub, sub]
+  pub.type = 'publisher' as const
+  pub.sub = sub
+  return pub
 }

@@ -1,12 +1,11 @@
 /** Utility function for enabling hypermedia patterns */
-import { Trigger, BPEvent, UseWebSocket } from '../types.js'
+import { Trigger, BPEvent, UseSocket } from '../types.js'
 import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
-import { createTemplateElement } from '../shared/parser-utils.js'
 import { isBPEvent } from './is-bp-event.js'
 
 const isCloseEvent = (event: CloseEvent | Event): event is CloseEvent => event.type === 'close'
 
-export const useWS: UseWebSocket = (url, protocols) => {
+export const useSocket: UseSocket = (url, protocols) => {
   const maxRetries = 3
   let retryCount = 0
   let socket: WebSocket | undefined
@@ -19,8 +18,10 @@ export const useWS: UseWebSocket = (url, protocols) => {
         try {
           const evt: BPEvent<string> = JSON.parse(event.data)
           if (isBPEvent(evt)) {
-            const template = createTemplateElement(evt.detail ?? '')
-            trigger({ type: evt.type, detail: template.content })
+            const tpl = document.createElement('template')
+            // @ts-ignore: https://developer.mozilla.org/en-US/docs/Web/API/Element/setHTMLUnsafe
+            tpl.setHTMLUnsafe(evt.detail ?? '')
+            trigger({ type: evt.type, detail: tpl.content })
           }
         } catch (error) {
           console.error('Error parsing incoming message:', error)
@@ -63,6 +64,6 @@ export const useWS: UseWebSocket = (url, protocols) => {
     }
   }
   send.connect = connect
-  send.type = 'ws' as const
+  send.type = 'socket' as const
   return send
 }

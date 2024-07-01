@@ -1,14 +1,13 @@
 import { wait } from '@plaited/utils'
-import { createTemplateElement, createDoc } from '../shared/parser-utils.js'
-type FetchHTMLOptions = RequestInit & { retry?: number; retryDelay?: number; partial?: boolean }
 
+export type FetchHTMLOptions = RequestInit & { retry: number; retryDelay: number; partial: boolean }
 /**
  * @description  A utility function to fetch HTML content from the server with error handling and retries.
  */
 export const fetchHTML = async (
   url: RequestInfo | URL,
-  { retry = 3, retryDelay = 1_000, partial = true, ...options }: FetchHTMLOptions,
-): Promise<DocumentFragment | Document | undefined> => {
+  { retry, retryDelay, ...options }: FetchHTMLOptions,
+): Promise<string | undefined> => {
   while (retry > 0) {
     try {
       const response = await fetch(url, options)
@@ -23,12 +22,7 @@ export const fetchHTML = async (
             throw new Error(`HTML request failed with status code ${response.status}`)
         }
       }
-      // Parse and return the HTML content as text
-      const htmlContent = await response.text()
-      if (partial) {
-        return createTemplateElement(htmlContent).content
-      }
-      return createDoc(htmlContent)
+      return await response.text()
     } catch (error) {
       console.error('Fetch error:', error)
       await wait(retryDelay)

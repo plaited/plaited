@@ -1488,27 +1488,11 @@ export type TagsType = {
 
 export type Disconnect = () => void
 
-export type Message<T = unknown> = {
-  address: string
-  event: BPEvent<T>
-}
-
-type Publish = <T = unknown>(value?: T) => void
-type Subscribe = (type: string) => {
-  (trigger: Trigger): () => void
-  type: 'publisher'
-}
-
 export type UsePublisher = {
-  (): [Publish, Subscribe]
-}
-
-export type UseMessenger = {
   (): {
-    (args: Message): void
-    connect(args: { trigger: Trigger; observedTriggers: string[]; address: string }): Disconnect
-    has(address: string): boolean
-    type: 'messenger'
+    <T = unknown>(value?: T): void
+    sub: (type: string, trigger: Trigger) => () => void
+    type: 'publisher'
   }
 }
 
@@ -1523,33 +1507,16 @@ export type UseWorker = {
   }
 }
 
-export type UseServerSentEvents = {
-  (
-    url: string | URL,
-    eventSourceInitDict?: EventSourceInit,
-  ): {
-    (trigger: Trigger, address: string): Disconnect
-    type: 'sse'
-  }
-}
-
-export type UseWebSocket = {
+export type UseSocket = {
   (
     url: string | URL,
     protocols?: string | string[],
   ): {
     (message: BPEvent): void
     connect: (trigger: Trigger, address: string) => Disconnect
-    type: 'ws'
+    type: 'socket'
   }
 }
-
-export type EventSources =
-  | ReturnType<UseMessenger>
-  | ReturnType<UseWebSocket>
-  | ReturnType<UseServerSentEvents>
-  | ReturnType<UseWorker>
-  | ReturnType<ReturnType<UsePublisher>[1]>
 
 export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
 
@@ -1581,6 +1548,8 @@ export type Emit = (
   },
 ) => void
 
+export type ConnectArgs = [ReturnType<UseWorker>] | [ReturnType<UseSocket>] | [string, ReturnType<UsePublisher>]
+
 /** Clone feature for handling list situations where structure is consistent but the data rendered is what is different. This is a performance feature */
 export type Clone = <T>(
   template: TemplateObject,
@@ -1600,8 +1569,8 @@ export type BProps = {
   root: ShadowRoot
   emit: Emit
   clone: Clone
-  connect: (comm: UseServerSentEvents | UseWebSocket | UseWorker | UseMessenger) => Disconnect
-} & ReturnType<BProgram>
+  connect: (...args: ConnectArgs) => Disconnect
+} & Omit<ReturnType<BProgram>, 'feedback'>
 
 export interface PlaitedElement extends HTMLElement {
   internals_: ElementInternals
@@ -1633,7 +1602,7 @@ export type PlaitedTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
   $: '🐻'
 }
 
-type BPFunction = (this: PlaitedElement, props: BProps) => void | Promise<void>
+type BPFunction = (this: PlaitedElement, props: BProps) => Actions
 export type PlaitedComponent = <T extends Attrs = Attrs>(args: {
   /** PlaitedComponent tag name */
   tag: `${string}-${string}`

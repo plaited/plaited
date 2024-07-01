@@ -109,9 +109,9 @@ const Fixture = Component({
   ),
   tag: 'table-fixture',
   observedTriggers: ['insert', 'render', 'replace', 'remove', 'removeAttributes', 'getAttribute', 'multiSetAttributes'],
-  bp({ $, clone, feedback }) {
+  bp({ $, clone }) {
     const cb = clone(row, forEachRow)
-    feedback({
+    return {
       replace() {
         $('table')[0].replace(<span>I'm jsut a span</span>)
       },
@@ -142,7 +142,7 @@ const Fixture = Component({
           }),
         )
       },
-    })
+    }
   },
 })
 

@@ -1,9 +1,9 @@
 import { bProgram } from '../behavioral/b-program.js'
-import type { PlaitedComponent, PlaitedElement, BPEvent, QuerySelector, Trigger } from '../types.js'
+import type { PlaitedComponent, PlaitedElement, BPEvent, QuerySelector, Trigger, Disconnect } from '../types.js'
 import { clone } from './sugar.js'
 import { hasLogger, hasHDA } from './type-guards.js'
 import { emit } from '../shared/emit.js'
-import { useEventSources } from './use-event-sources.js'
+import { useConnect } from './use-connect.js'
 import { getPlaitedTemplate } from './get-plaited-template.js'
 import { PLAITED_HDA_HOOK, PLAITED_LOGGER } from '../shared/constants.js'
 import { bpTrigger } from '../jsx/constants.js'
@@ -70,13 +70,16 @@ export const Component: PlaitedComponent = ({
         this.$ = $(this.#root)
       }
       #shadowObserver?: MutationObserver
-      #disconnectEventSources?: () => void
+      #disconnectSet = new Set<Disconnect>()
+      #addDisconnect(cb: Disconnect) {
+        return this.#disconnectSet.add(cb)
+      }
       #trigger?: Trigger
       connectedCallback() {
         hasHDA(window) && window[PLAITED_HDA_HOOK](this.#root)
         if (bp) {
           const logger = hasLogger(window) ? window[PLAITED_LOGGER] : undefined
-          const { trigger, ...rest } = bProgram(logger)
+          const { trigger, feedback, ...rest } = bProgram(logger)
           this.#trigger = trigger
           addListeners(
             // just connected/upgraded then delegate listeners nodes with bp-trigger attribute
@@ -84,28 +87,24 @@ export const Component: PlaitedComponent = ({
             trigger,
           )
           this.#shadowObserver = shadowObserver(this.#root, trigger) // create a shadow observer to watch for modification & addition of nodes with bp-trigger attribute
-          const [connect, disconnectEventSources] = useEventSources({
-            trigger: trigger,
-            observedTriggers,
-            host: this,
-          })
-          this.#disconnectEventSources = disconnectEventSources
-          void bp.bind(this)({
+
+          const actions = bp.bind(this)({
             $: this.$,
             host: this,
             root: this.#root,
             emit: emit(this),
             clone: clone(this.#root),
-            connect,
+            connect: useConnect({ trigger, addDisconnect: this.#addDisconnect.bind(this), host: this }),
             trigger,
             ...rest,
           })
+          feedback(actions)
         }
         connectedCallback && connectedCallback.bind(this)()
       }
       disconnectedCallback() {
         this.#shadowObserver?.disconnect()
-        this.#disconnectEventSources?.()
+        for (const cb of this.#disconnectSet) cb()
         disconnectedCallback && disconnectedCallback.bind(this)()
       }
       trigger(event: BPEvent) {

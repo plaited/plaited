@@ -1,8 +1,8 @@
 import { Component } from '../../index.js'
-import { useMessenger } from '../../utils.js'
+import { usePublisher } from '../../utils.js'
 
-const msg = useMessenger()
-
+const sendDisable = usePublisher()
+const sendAdd = usePublisher()
 export const ElOne = Component({
   tag: 'dynamic-one',
   observedTriggers: ['disable'],
@@ -16,24 +16,18 @@ export const ElOne = Component({
       </button>
     </div>
   ),
-  bp({ feedback, $, connect }) {
-    const disconnect = connect(msg)
-    feedback({
+  bp({ $, connect }) {
+    const disconnect = connect('disable', sendDisable)
+    return {
       disable() {
         const [button] = $<HTMLButtonElement>('button')
         button && button.attr('disabled', true)
         disconnect()
       },
       click() {
-        msg({
-          address: 'two',
-          event: {
-            type: 'add',
-            detail: { value: ' World!' },
-          },
-        })
+        sendAdd({ value: ' World!' })
       },
-    })
+    }
   },
 })
 
@@ -41,19 +35,19 @@ export const ElTwo = Component({
   tag: 'dynamic-two',
   observedTriggers: ['add'],
   template: <h1 bp-target='header'>Hello</h1>,
-  bp({ $, feedback, addThreads, thread, sync, connect }) {
-    connect(msg)
+  bp({ $, addThreads, thread, sync, connect }) {
+    connect('add', sendAdd)
     addThreads({
       onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),
     })
-    feedback({
+    return {
       disable() {
-        msg({ address: 'one', event: { type: 'disable' } })
+        sendDisable()
       },
       add(detail: { value: string }) {
         const [header] = $('header')
         header.insert('beforeend', <>{detail.value}</>)
       },
-    })
+    }
   },
 })

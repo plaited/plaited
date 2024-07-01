@@ -87,13 +87,13 @@ export const ShadowIsland = Component({
       </div>
     </div>
   ),
-  bp({ feedback, addThreads, sync, thread, host, $, loop }) {
+  bp({ addThreads, sync, thread, host, $, loop }) {
     addThreads({
       onRemoveSvg: thread(sync({ waitFor: 'removeSvg' }), sync({ request: { type: 'addSubIsland' } })),
       onStart: thread(sync({ waitFor: 'start' }), sync({ request: { type: 'addSlot' } })),
       onAddSvg: loop(sync({ waitFor: 'add-svg' }), sync({ request: { type: 'modifyAttributes' } })),
     })
-    feedback({
+    return {
       addSubIsland() {
         const [zone] = $('zone')
         /** render dynamic island to zone */
@@ -125,6 +125,6 @@ export const ShadowIsland = Component({
         const [zone] = $('zone')
         zone?.insert('beforeend', <SVG />)
       },
-    })
+    }
   },
 })

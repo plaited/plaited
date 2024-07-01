@@ -1,9 +1,8 @@
 import { test, expect } from 'bun:test'
-
+import path from 'path'
 test('minimal client export footprint < 5.5b', async () => {
-  const plaited = import.meta.resolveSync('../../src/index.ts')
   const plaitedResults = await Bun.build({
-    entrypoints: [plaited],
+    entrypoints: [path.resolve(import.meta.dir, '../../src/index.js')],
     minify: true,
   })
 
@@ -18,9 +17,8 @@ test('minimal client export footprint < 5.5b', async () => {
 })
 
 test('maximum client export footprint < 8.5kb', async () => {
-  const plaited = import.meta.resolveSync('./kitchen-sink.ts')
   const plaitedResults = await Bun.build({
-    entrypoints: [plaited],
+    entrypoints: [path.resolve(import.meta.dir, './kitchen-sink.ts')],
     minify: true,
   })
 
@@ -29,7 +27,7 @@ test('maximum client export footprint < 8.5kb', async () => {
     const str = await result.text()
     const compressed = Bun.gzipSync(Buffer.from(str))
     const size = compressed.byteLength / 1024
-    expect(size).toBeLessThan(8.5)
+    expect(size).toBeLessThan(8)
     console.log(`Plaited size: ${size}kb`)
   }
 })
