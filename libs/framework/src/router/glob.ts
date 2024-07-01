@@ -1,4 +1,4 @@
-import { PlaitedTemplate } from 'plaited'
+import { PlaitedTemplate } from '../types.js'
 import { trueTypeOf } from '@plaited/utils'
 import { PLAITED_COMPONENT_IDENTIFIER } from '../shared/constants.js'
 import { componentMap } from './constants.js'

@@ -17,15 +17,18 @@
   "main": "./dist/index.js",
   "exports": {
     ".": "./dist/index.js",
+    "./behavioral": "./dist/behavioral.js",
     "./hda": "./dist/hda.js",
     "./jsx-dev-runtime": "./dist/jsx-dev-runtime.js",
     "./jsx-runtime": "./dist/jsx-runtime.js",
     "./ssr": "./dist/ssr.js",
     "./token-utils": "./dist/token-utils.js",
+    "./types": "./src/types.ts",
     "./utils": "./dist/utils.js"
   },
   "files": [
     "./dist/**",
+    "./src/types.ts",
     "./jsx-runtime.js",
     "./jsx-dev-runtime.js"
   ],
@@ -38,7 +41,7 @@
     "test": "bun test src/**/*",
     "test-watch": "bun test tests/* --watch"
   },
-  "types": "./dist/index.d.ts",
+  "types": "./dist/types.d.ts",
   "dependencies": {
     "@plaited/utils": "6.0.0",
     "csstype": "3.1.3"

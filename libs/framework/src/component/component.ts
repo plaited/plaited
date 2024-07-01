@@ -1,5 +1,7 @@
+import type { BPEvent, Trigger } from '../behavioral/types.js'
+import type { Disconnect } from '../utils/types.js'
+import type { PlaitedComponent, PlaitedElement, QuerySelector } from './types.js'
 import { bProgram } from '../behavioral/b-program.js'
-import type { PlaitedComponent, PlaitedElement, BPEvent, QuerySelector, Trigger, Disconnect } from '../types.js'
 import { useClone } from './use-clone.js'
 import { hasLogger, hasHDA } from './type-guards.js'
 import { useEmit } from '../shared/use-emit.js'

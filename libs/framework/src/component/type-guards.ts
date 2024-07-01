@@ -1,5 +1,6 @@
+import type { Logger } from '../behavioral/types.js'
+import type { HDAHook } from './types.js'
 import { isTypeOf } from '@plaited/utils'
-import type { Logger, HDAHook } from '../types.js'
 import { PLAITED_LOGGER, PLAITED_HDA_HOOK } from '../shared/constants.js'
 
 export const hasLogger = (win: Window): win is Window & { [PLAITED_LOGGER]: Logger } =>

@@ -11,7 +11,7 @@ import {
   BPEventTemplate,
   AddThreads,
   BProgram,
-} from '../types.js'
+} from './types.js'
 import { triggerWaitFor, isListeningFor, isPendingRequest, createPublisher, ensureArray } from './private-utils.js'
 import { thread, sync, loop } from './rules.js'
 /**

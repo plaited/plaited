@@ -1,4 +1,7 @@
-import { Component, css, h, assignStyles } from 'plaited'
+import { Component } from '../component/component.js'
+import { css } from '../css/css.js'
+import { assignStyles } from '../css/assign-styles.js'
+import { h } from '../jsx/create-template.js'
 
 export const getTokenElement = (stylesheet: string, tag: `${string}-${string}` = 'design-tokens') => {
   return Component({

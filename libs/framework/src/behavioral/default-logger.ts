@@ -1,4 +1,4 @@
-import { DefaultLogger } from '../types.js'
+import { DefaultLogger } from './types.js'
 
 import { isListeningFor, isPendingRequest } from './private-utils.js'
 

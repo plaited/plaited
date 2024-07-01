@@ -1,4 +1,4 @@
-import type { TemplateObject, Attrs, GetPlaitedElement } from 'plaited'
+import type { TemplateObject, Attrs, GetPlaitedElement } from 'plaited/types'
 import { kebabCase } from '@plaited/utils'
 
 const cssCache = new WeakMap<Document, Set<string>>()

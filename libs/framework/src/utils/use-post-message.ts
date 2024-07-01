@@ -1,5 +1,5 @@
 import { trueTypeOf } from '@plaited/utils'
-import { Trigger, BPEvent } from '../types.js'
+import type { Trigger, BPEvent } from '../behavioral/types.js'
 import { onlyPublicEvents } from '../shared/only-public-events.js'
 
 /**

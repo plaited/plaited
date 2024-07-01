@@ -1,4 +1,4 @@
-import { BPEvent } from '../types.js'
+import { BPEvent } from './types.js'
 import { sync } from './rules.js'
 
 /** @description RandomEvent Event template selects a random event from a list of events */

@@ -1,4 +1,4 @@
-import type { TemplateObject } from 'plaited'
+import type { TemplateObject } from '../types.js'
 import { componentMap } from './constants.js'
 
 const importTemplate = (

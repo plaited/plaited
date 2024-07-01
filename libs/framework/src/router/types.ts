@@ -1,4 +1,4 @@
-import { TemplateObject } from 'plaited'
+import type { TemplateObject } from '../types.js'
 
 export type Handler = <T extends Record<string, unknown> = Record<string, unknown>>(
   req: Request,

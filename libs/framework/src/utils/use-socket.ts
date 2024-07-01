@@ -1,5 +1,6 @@
 /** Utility function for enabling hypermedia patterns */
-import { Trigger, BPEvent, UseSocket } from '../types.js'
+import type { Trigger, BPEvent } from '../behavioral/types.js'
+import type { UseSocket } from './types.js'
 import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
 import { isBPEvent } from './is-bp-event.js'
 

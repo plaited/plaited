@@ -1,6 +1,6 @@
 import { handleTemplateObject, getSugarInstance, assignSugar } from './use-query.js'
 import { bpTarget } from '../jsx/constants.js'
-import type { SelectorMatch, UseClone } from '../types.js'
+import type { SelectorMatch, UseClone } from './types.js'
 
 export const useClone: UseClone = (shadowRoot) => {
   const sugar = getSugarInstance(shadowRoot)

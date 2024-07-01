@@ -1,6 +1,5 @@
-import { css } from '../../../index.js'
+import { Component, css } from 'plaited'
 
-import { Component } from '../../component.js'
 import { opacityHex } from '@plaited/utils'
 import { SVG } from './noun-braids-2633610.js'
 

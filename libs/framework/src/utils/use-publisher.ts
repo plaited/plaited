@@ -1,4 +1,5 @@
-import { UsePublisher, Trigger } from '../types.js'
+import type { Trigger } from '../behavioral/types.js'
+import type { UsePublisher } from './types.js'
 
 export const usePublisher: UsePublisher = <T = unknown>() => {
   const listeners = new Set<(value?: T) => void>()

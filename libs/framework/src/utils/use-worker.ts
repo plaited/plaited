@@ -1,4 +1,5 @@
-import type { UseWorker, Trigger, BPEvent } from '../types.js'
+import { Trigger, BPEvent } from '../behavioral/types.js'
+import type { UseWorker } from './types.js'
 import { isBPEvent } from './is-bp-event.js'
 /**
  * Enables communication between agents on the main thread and a dedicated postMessage client

@@ -1,6 +1,7 @@
+import type { GetPlaitedElement } from '../component/types.js'
+import type { Attrs, BooleanAttributes, CreateTemplate, TemplateObject, VoidTags } from '../types.js'
 import { escape, kebabCase, isTypeOf } from '@plaited/utils'
 import { booleanAttrs, primitives, voidTags, validPrimitiveChildren, bpTrigger as bpTriggerKey } from './constants.js'
-import { Attrs, BooleanAttributes, CreateTemplate, GetPlaitedElement, TemplateObject, VoidTags } from '../types.js'
 import { PLAITED_TEMPLATE_IDENTIFIER } from '../shared/constants.js'
 
 /** createTemplate function used for ssr */
