@@ -3,31 +3,23 @@ import { noop } from '@plaited/utils'
 import { bpAddress } from '../jsx/constants.js'
 
 export const useConnect =
-  ({
-    trigger,
-    addDisconnect,
-    host,
-  }: {
-    trigger: Trigger
-    addDisconnect: (arg: Disconnect) => Set<Disconnect>
-    host: PlaitedElement
-  }) =>
+  ({ trigger, disconnectSet, host }: { trigger: Trigger; disconnectSet: Set<Disconnect>; host: PlaitedElement }) =>
   (...args: ConnectArgs) => {
     if (args.length === 2) {
       const [type, pub] = args
       const cb = pub.sub(type, trigger)
-      const set = addDisconnect(cb)
+      disconnectSet.add(cb)
       return () => {
-        set.delete(cb)
+        disconnectSet.delete(cb)
         cb()
       }
     }
     const [source] = args
     if (source.type === 'worker') {
       const cb = source.connect(trigger)
-      const set = addDisconnect(cb)
+      disconnectSet.add(cb)
       return () => {
-        set.delete(cb)
+        disconnectSet.delete(cb)
         cb()
       }
     }
@@ -37,9 +29,9 @@ export const useConnect =
       return noop // if we're missing an address on our component return noop and console.error msg
     }
     const cb = source.connect(trigger, address)
-    const set = addDisconnect(cb)
+    disconnectSet.add(cb)
     return () => {
-      set.delete(cb)
+      disconnectSet.delete(cb)
       cb()
     }
   }

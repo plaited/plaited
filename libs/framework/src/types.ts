@@ -1574,7 +1574,6 @@ export type BProps = {
 export interface PlaitedElement extends HTMLElement {
   internals_: ElementInternals
   trigger: Trigger
-  $: QuerySelector
   connectedCallback(this: PlaitedElement): void
   attributeChangedCallback?(name: string, oldValue: string | null, newValue: string | null): void
   disconnectedCallback(this: PlaitedElement): void

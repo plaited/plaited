@@ -1,7 +1,7 @@
 import { assert, findByAttribute, fireEvent } from '@plaited/storybook-rite'
 import { Meta, StoryObj } from '@plaited/storybook'
 import { Component } from '../component.js'
-import { isPlaitedElement } from '../../utils.js'
+import { getPlaitedChildren } from '../../utils.js'
 
 const meta: Meta = {
   title: 'Tests',
@@ -54,12 +54,8 @@ const Outer = Component({
       },
       click() {
         const [slot] = $<HTMLSlotElement>('slot')
-        for (const el of slot.assignedElements()) {
-          if (isPlaitedElement(el)) {
-            el.trigger({ type: 'add', detail: ' World!' })
-            break
-          }
-        }
+        const [el] = getPlaitedChildren(slot)
+        el.trigger({ type: 'add', detail: ' World!' })
       },
     }
   },

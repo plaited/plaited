@@ -5,7 +5,7 @@ import { hasLogger, hasHDA } from './type-guards.js'
 import { emit } from '../shared/emit.js'
 import { useConnect } from './use-connect.js'
 import { getPlaitedTemplate } from './get-plaited-template.js'
-import { PLAITED_HDA_HOOK, PLAITED_LOGGER } from '../shared/constants.js'
+import { PLAITED_HDA_HOOK, PLAITED_LOGGER, PLAITED_COMPONENT_IDENTIFIER } from '../shared/constants.js'
 import { bpTrigger } from '../jsx/constants.js'
 import { cssCache, $ } from './sugar.js'
 import { shadowObserver, addListeners } from './shadow-observer.js'
@@ -46,7 +46,7 @@ export const Component: PlaitedComponent = ({
       }
       internals_: ElementInternals
       #root: ShadowRoot
-      $: QuerySelector
+      #query: QuerySelector
       constructor() {
         super()
         this.internals_ = this.attachInternals()
@@ -67,13 +67,10 @@ export const Component: PlaitedComponent = ({
           }
         }
         cssCache.set(this.#root, new Set<string>([...template.stylesheets]))
-        this.$ = $(this.#root)
+        this.#query = $(this.#root)
       }
       #shadowObserver?: MutationObserver
       #disconnectSet = new Set<Disconnect>()
-      #addDisconnect(cb: Disconnect) {
-        return this.#disconnectSet.add(cb)
-      }
       #trigger?: Trigger
       connectedCallback() {
         hasHDA(window) && window[PLAITED_HDA_HOOK](this.#root)
@@ -89,11 +86,11 @@ export const Component: PlaitedComponent = ({
           this.#shadowObserver = shadowObserver(this.#root, trigger) // create a shadow observer to watch for modification & addition of nodes with bp-trigger attribute
 
           const actions = bp.bind(this)({
-            $: this.$,
+            $: this.#query,
             host: this,
             emit: emit(this),
             clone: clone(this.#root),
-            connect: useConnect({ trigger, addDisconnect: this.#addDisconnect.bind(this), host: this }),
+            connect: useConnect({ trigger, disconnectSet: this.#disconnectSet, host: this }),
             trigger,
             ...rest,
           })

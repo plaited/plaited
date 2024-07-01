@@ -1,6 +1,6 @@
 export * from './behavioral/utils.js'
 export * from './utils/fetch-json.js'
-export * from './utils/is-plaited.js'
+export * from './utils/get-plaited-children.js'
 export * from './utils/use-indexed-db.js'
 export * from './utils/use-logger.js'
 export * from './utils/use-post-message.js'
