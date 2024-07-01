@@ -1,20 +1,13 @@
 import { trueTypeOf } from '@plaited/utils'
-import type { Trigger, BPEvent } from '../behavioral/types.js'
+import type { UsePostMessage } from './types.js'
+import type { BPEvent } from '../behavioral/types.js'
 import { onlyPublicEvents } from '../shared/only-public-events.js'
 
 /**
  * @description Is a utility function that allows us to send messages
  * to and receive messages from the window, in a worker or iframe
  */
-export const usePostMessage = ({
-  trigger,
-  publicEvents,
-  targetOrigin = '*',
-}: {
-  trigger: Trigger
-  publicEvents: string[]
-  targetOrigin?: string
-}) => {
+export const usePostMessage: UsePostMessage = ({ trigger, publicEvents, targetOrigin = '*' }) => {
   const _trigger = onlyPublicEvents(trigger, publicEvents)
   const eventHandler = ({ data }: { data: BPEvent }) => {
     _trigger(data)

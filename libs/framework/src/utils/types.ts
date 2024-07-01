@@ -31,3 +31,16 @@ export type UseSocket = {
     type: 'socket'
   }
 }
+
+export type UsePostMessage = ({
+  trigger,
+  publicEvents,
+  targetOrigin,
+}: {
+  trigger: Trigger
+  publicEvents: string[]
+  targetOrigin?: string
+}) => {
+  (data: BPEvent): void
+  disconnect(): void
+}

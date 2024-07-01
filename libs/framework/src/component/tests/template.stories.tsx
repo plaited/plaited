@@ -1,8 +1,7 @@
-import { assert, findByAttribute, findByText, wait } from '@plaited/storybook-rite'
+import { assert, findByAttribute, findByText } from '@plaited/storybook-rite'
 import { Meta, StoryObj } from '@plaited/storybook'
 import { PlaitedElement, createStyles } from '../../index.js'
 import { Component } from '../component.js'
-import { canUseDOM } from '@plaited/utils'
 
 const meta: Meta = {
   title: 'Tests/template',
