@@ -13,7 +13,7 @@ export default meta
 const Inner = Component({
   tag: 'inner-component',
   template: <h1 bp-target='header'>Hello</h1>,
-  observedTriggers: ['add'],
+  publicEvents: ['add'],
   bp({ $, addThreads, thread, sync, emit }) {
     addThreads({
       onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),
@@ -65,7 +65,7 @@ const Outer = Component({
   },
 })
 
-export const observedTriggers: StoryObj = {
+export const publicEvents: StoryObj = {
   render: () => (
     <>
       <Outer>

@@ -108,7 +108,7 @@ const Fixture = Component({
     </div>
   ),
   tag: 'table-fixture',
-  observedTriggers: ['insert', 'render', 'replace', 'remove', 'removeAttributes', 'getAttribute', 'multiSetAttributes'],
+  publicEvents: ['insert', 'render', 'replace', 'remove', 'removeAttributes', 'getAttribute', 'multiSetAttributes'],
   bp({ $, clone }) {
     const cb = clone(row, forEachRow)
     return {

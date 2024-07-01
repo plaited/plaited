@@ -8,14 +8,14 @@ import { onlyObservedTriggers } from '../shared/only-observed-triggers.js'
  */
 export const usePostMessage = ({
   trigger,
-  observedTriggers,
+  publicEvents,
   targetOrigin = '*',
 }: {
   trigger: Trigger
-  observedTriggers: string[]
+  publicEvents: string[]
   targetOrigin?: string
 }) => {
-  const _trigger = onlyObservedTriggers(trigger, observedTriggers)
+  const _trigger = onlyObservedTriggers(trigger, publicEvents)
   const eventHandler = ({ data }: { data: BPEvent }) => {
     _trigger(data)
   }

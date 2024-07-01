@@ -21,7 +21,7 @@ const { noRepeat, repeat } = createStyles({
   },
 })
 const DynamicOnly = Component({
-  observedTriggers: ['render'],
+  publicEvents: ['render'],
   tag: 'dynamic-only',
   template: <div bp-target='target'></div>,
   bp({ $ }) {
@@ -61,7 +61,7 @@ const { root, override } = createStyles({
 })
 
 const WithDefaultStyles = Component({
-  observedTriggers: ['render'],
+  publicEvents: ['render'],
   tag: 'with-default-styles',
   template: (
     <div

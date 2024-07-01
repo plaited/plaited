@@ -13,7 +13,7 @@ import { connectShadowroot } from './connect-shadowroot.js'
  *
  */
 
-export const useHDA = ({ retry = 3, retryDelay = 1_000, ...options }: FetchHTMLOptions) => {
+export const useHDA = ({ retry, retryDelay, ...options }: FetchHTMLOptions = { retry: 3, retryDelay: 1_000 }) => {
   const html = document.querySelector('html')
   if (html) {
     const navigate = async (event: CustomEvent<URL>) => {

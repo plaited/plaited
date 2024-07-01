@@ -5,7 +5,7 @@ const { trigger, feedback } = bProgram()
 
 const send = usePostMessage({
   trigger,
-  observedTriggers: ['calculate'],
+  publicEvents: ['calculate'],
 })
 
 const calculator = {

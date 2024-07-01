@@ -19,7 +19,7 @@ const Bottom = Component({
       Add
     </button>
   ),
-  observedTriggers: ['add'],
+  publicEvents: ['add'],
   bp({ emit }) {
     return {
       click() {

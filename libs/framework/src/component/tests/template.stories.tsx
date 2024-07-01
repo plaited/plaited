@@ -63,7 +63,7 @@ export const withDeclarativeShadowDom: StoryObj = {
     })
     const Fixture = Component({
       tag: 'with-declarative-shadow-dom',
-      observedTriggers: ['render'],
+      publicEvents: ['render'],
       template: (
         <div
           bp-target='inner'

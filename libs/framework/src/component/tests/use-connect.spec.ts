@@ -1,15 +1,16 @@
 import { test, expect } from 'bun:test'
-import { connectToPublisher } from '../connect-to-publisher.js'
+import { useConnect } from '../use-connect.js'
 import sinon from 'sinon'
 import { usePublisher } from '../../utils.js'
 import { Disconnect } from '../../types.js'
 
-test('connectToPublisher: sub before pub then disconnect', () => {
+test('useConnect: with usePublisher', () => {
   const disconnectSet = new Set<Disconnect>()
   const addDisconnect = (cb: Disconnect) => disconnectSet.add(cb)
   const pub = usePublisher()
   const spy = sinon.spy()
-  const disconnect = connectToPublisher(spy, addDisconnect)('a', pub)
+  // @ts-expect-error: just testing publisher
+  const disconnect = useConnect({ trigger: spy, addDisconnect })('a', pub)
   pub({ value: 4 })
   expect(spy.calledWith({ type: 'a', detail: { value: 4 } })).toBeTrue()
   expect(disconnectSet.size).toBe(1)

@@ -5,7 +5,7 @@ const sendDisable = usePublisher()
 const sendAdd = usePublisher()
 export const ElOne = Component({
   tag: 'dynamic-one',
-  observedTriggers: ['disable'],
+  publicEvents: ['disable'],
   template: (
     <div>
       <button
@@ -33,7 +33,7 @@ export const ElOne = Component({
 
 export const ElTwo = Component({
   tag: 'dynamic-two',
-  observedTriggers: ['add'],
+  publicEvents: ['add'],
   template: <h1 bp-target='header'>Hello</h1>,
   bp({ $, addThreads, thread, sync, connect }) {
     connect('add', sendAdd)

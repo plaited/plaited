@@ -1,6 +1,6 @@
 import { wait } from '@plaited/utils'
 
-export type FetchHTMLOptions = RequestInit & { retry: number; retryDelay: number; partial: boolean }
+export type FetchHTMLOptions = RequestInit & { retry: number; retryDelay: number }
 /**
  * @description  A utility function to fetch HTML content from the server with error handling and retries.
  */

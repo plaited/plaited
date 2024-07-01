@@ -39,7 +39,7 @@ const stylesheet = css`
 export const Header = Component({
   tag: 'header-el',
   template: (
-    <header stylesheet={stylesheet}>
+    <header {...stylesheet}>
       <div className='storybook-header'>
         <div>
           <svg
@@ -88,7 +88,7 @@ export const Header = Component({
     </header>
   ),
   observedAttributes: ['user'],
-  observedTriggers: ['user'],
+  publicEvents: ['user'],
   attributeChangedCallback(name: string, _, newValue: string) {
     if (name === 'user') {
       const [bar] = this.$('button-bar')
@@ -122,12 +122,12 @@ export const Header = Component({
         )
     }
   },
-  bp({ feedback, host }) {
-    feedback({
+  bp({ host }) {
+    return {
       click(e: MouseEvent & { target: HTMLButtonElement }) {
         const value = e.target.value
         host.dispatchEvent(new CustomEvent(value, { bubbles: true }))
       },
-    })
+    }
   },
 })

@@ -74,7 +74,7 @@ const stylesheet = css`
 `
 
 const template = (
-  <article stylesheet={stylesheet}>
+  <article {...stylesheet}>
     <Header
       bp-target='header'
       bp-trigger={{
@@ -157,9 +157,9 @@ const template = (
 export const Page = Component({
   tag: 'page-el',
   template,
-  bp({ $, feedback }) {
+  bp({ $ }) {
     const [header] = $<PlaitedElement>('header')
-    feedback({
+    return {
       onLogin() {
         header.attr('user', 'Jane Doe')
       },
@@ -169,6 +169,6 @@ export const Page = Component({
       onCreateAccount() {
         header.attr('user', 'Jane Doe')
       },
-    })
+    }
   },
 })

@@ -96,7 +96,7 @@ const preventCompletionOfLineWithTwoXs = (board: Set<number>) => {
 export const TicTacToeBoard = Component({
   tag: 'tic-tac-toe-board',
   template: <BoardMarker />,
-  bp({ feedback, $, addThreads, trigger }) {
+  bp({ $, addThreads, trigger }) {
     const board = new Set(squares)
     addThreads({
       enforceTurns,
@@ -108,7 +108,7 @@ export const TicTacToeBoard = Component({
       startAtCenter,
       ...defaultMoves,
     })
-    feedback({
+    return {
       // When BPEvent X happens we delete the square provided in the event's detail
       X({ square }: Square) {
         board.delete(square)
@@ -127,6 +127,6 @@ export const TicTacToeBoard = Component({
           trigger({ type: 'X', detail: { square: Number(value) } })
         }
       },
-    })
+    }
   },
 })

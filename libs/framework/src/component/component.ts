@@ -15,7 +15,7 @@ import { onlyObservedTriggers } from '../shared/only-observed-triggers.js'
  * @param {object} args - Arguments for the PlaitedComponent
  * @param {string} args.tag - PlaitedComponent tag name
  * @param {string[]} args.observedAttributes - observed Attributes that will trigger the native `attributeChangedCallback` method when modified
- * @param {string[]} args.observedTriggers - observed triggers that can be fired from outside component by invoking `trigger` method directly, via messenger, or via publisher
+ * @param {string[]} args.publicEvents - observed triggers that can be fired from outside component by invoking `trigger` method directly, via messenger, or via publisher
  * @param {string} args.mode - define wether island's custom element is open or closed. @defaultValue 'open'  @values 'open' | 'closed'
  * @param {boolean} args.delegatesFocus - configure whether to delegate focus or not @defaultValue 'true'
  * @param {function} args.eventSourceHandler - callback to handle event sources like messenger, publisher, web socket, or server sent events
@@ -27,7 +27,7 @@ import { onlyObservedTriggers } from '../shared/only-observed-triggers.js'
 export const Component: PlaitedComponent = ({
   tag,
   template,
-  observedTriggers,
+  publicEvents,
   observedAttributes,
   mode = 'open',
   delegatesFocus = true,
@@ -41,8 +41,8 @@ export const Component: PlaitedComponent = ({
   const getPlaitedElement = () => {
     class BaseElement extends HTMLElement implements PlaitedElement {
       static observedAttributes = observedAttributes
-      get observedTriggers() {
-        return observedTriggers
+      get publicEvents() {
+        return publicEvents
       }
       internals_: ElementInternals
       #root: ShadowRoot
@@ -107,7 +107,7 @@ export const Component: PlaitedComponent = ({
         disconnectedCallback && disconnectedCallback.bind(this)()
       }
       trigger(event: BPEvent) {
-        if (this.#trigger && observedTriggers) onlyObservedTriggers(this.#trigger, observedTriggers)(event)
+        if (this.#trigger && publicEvents) onlyObservedTriggers(this.#trigger, publicEvents)(event)
       }
     }
     Object.assign(BaseElement.prototype, rest)

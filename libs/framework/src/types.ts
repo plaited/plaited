@@ -1583,7 +1583,7 @@ export interface PlaitedElement extends HTMLElement {
   formDisabledCallback?(this: PlaitedElement, disabled: boolean): void
   formResetCallback?(this: PlaitedElement): void
   formStateRestoreCallback?(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
-  readonly observedTriggers?: string[]
+  readonly publicEvents?: string[]
 }
 
 export interface PlaitedElementConstructor {
@@ -1610,7 +1610,7 @@ export type PlaitedComponent = <T extends Attrs = Attrs>(args: {
   /** observed Attributes that will trigger the native `attributeChangedCallback` method when modified*/
   observedAttributes?: string[]
   /** observed triggers that can be fired from outside component by invoking `trigger` method directly, via messenger, or via publisher */
-  observedTriggers?: string[]
+  publicEvents?: string[]
   /** define wether island's custom element is open or closed. @defaultValue 'open'*/
   mode?: 'open' | 'closed'
   /** configure whether to delegate focus or not @defaultValue 'true' */
