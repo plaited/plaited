@@ -1,7 +1,7 @@
 import { trueTypeOf } from '@plaited/utils'
 import { Trigger, BPEvent } from '../types.js'
 
-export const onlyObservedTriggers =
+export const onlyPublicEvents =
   (trigger: Trigger, publicEvents: string[]) =>
   (args: BPEvent): void => {
     const observed = new Set(publicEvents)

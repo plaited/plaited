@@ -1,6 +1,6 @@
 import { trueTypeOf } from '@plaited/utils'
 import { Trigger, BPEvent } from '../types.js'
-import { onlyObservedTriggers } from '../shared/only-observed-triggers.js'
+import { onlyPublicEvents } from '../shared/only-public-events.js'
 
 /**
  * @description Is a utility function that allows us to send messages
@@ -15,7 +15,7 @@ export const usePostMessage = ({
   publicEvents: string[]
   targetOrigin?: string
 }) => {
-  const _trigger = onlyObservedTriggers(trigger, publicEvents)
+  const _trigger = onlyPublicEvents(trigger, publicEvents)
   const eventHandler = ({ data }: { data: BPEvent }) => {
     _trigger(data)
   }

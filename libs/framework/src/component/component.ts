@@ -9,7 +9,7 @@ import { PLAITED_HDA_HOOK, PLAITED_LOGGER } from '../shared/constants.js'
 import { bpTrigger } from '../jsx/constants.js'
 import { cssCache, $ } from './sugar.js'
 import { shadowObserver, addListeners } from './shadow-observer.js'
-import { onlyObservedTriggers } from '../shared/only-observed-triggers.js'
+import { onlyPublicEvents } from '../shared/only-public-events.js'
 /**
  * Creates a PlaitedComponent
  * @param {object} args - Arguments for the PlaitedComponent
@@ -107,7 +107,7 @@ export const Component: PlaitedComponent = ({
         disconnectedCallback && disconnectedCallback.bind(this)()
       }
       trigger(event: BPEvent) {
-        if (this.#trigger && publicEvents) onlyObservedTriggers(this.#trigger, publicEvents)(event)
+        if (this.#trigger && publicEvents) onlyPublicEvents(this.#trigger, publicEvents)(event)
       }
     }
     Object.assign(BaseElement.prototype, rest)
