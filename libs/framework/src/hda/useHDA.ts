@@ -5,13 +5,6 @@ import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
 import { fetchHTML, FetchHTMLOptions } from './fetch-html.js'
 import { NavigateEventType, PLAITED_HDA_HOOK } from '../shared/constants.js'
 import { connectShadowroot } from './connect-shadowroot.js'
-/**
- * Initializes the Hypermedia Driven Application (HDA) by setting up event listeners for navigation and popstate events.
- * It also serializes the current HTML document and replaces the current history state with it.
- *
- * The module returns a cleanup function that removes the event listeners when called.
- *
- */
 
 export const useHDA = ({ retry, retryDelay, ...options }: FetchHTMLOptions = { retry: 3, retryDelay: 1_000 }) => {
   const html = document.querySelector('html')

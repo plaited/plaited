@@ -7,7 +7,7 @@ import { useConnect } from './use-connect.js'
 import { getPlaitedTemplate } from './get-plaited-template.js'
 import { PLAITED_HDA_HOOK, PLAITED_LOGGER } from '../shared/constants.js'
 import { bpTrigger } from '../jsx/constants.js'
-import { cssCache, useQuery } from './sugar.js'
+import { cssCache, useQuery } from './use-query.js'
 import { shadowObserver, addListeners } from './shadow-observer.js'
 import { onlyPublicEvents } from '../shared/only-public-events.js'
 
