@@ -13,7 +13,6 @@ export const render: ArgsStoryFn<PlaitedRender> = (args, context) => {
 }
 
 const plaitedRender = (story: DocumentFragment | null, canvasElement: Element) => {
-  console.log(story)
   if (!story) return canvasElement.replaceChildren()
   canvasElement.replaceChildren(story)
 }
