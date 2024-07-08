@@ -1,5 +1,5 @@
 import { escape, isTypeOf } from '@plaited/utils'
-import { TemplateObject } from '../types.js'
+import type { TemplateObject } from '../jsx/types.js'
 import { VALID_PRIMITIVE_CHILDREN } from '../jsx/constants.js'
 
 export const useSSR =

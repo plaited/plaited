@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 import sinon from 'sinon'
-import { usePublisher } from '../../utils.js'
+import { usePublisher } from '../../client-utils.js'
 
 test('usePublisher: sub before pub then disconnect', () => {
   const pub = usePublisher()

@@ -44,3 +44,9 @@ export type UsePostMessage = ({
   (data: BPEvent): void
   disconnect(): void
 }
+
+import type { Logger } from '../behavioral/types.js'
+
+export type FetchHTMLOptions = RequestInit & { retry: number; retryDelay: number }
+
+export type WireArgs = FetchHTMLOptions & { logger?: Logger }

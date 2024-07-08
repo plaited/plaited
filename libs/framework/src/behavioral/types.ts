@@ -7,7 +7,7 @@ export type BPEventTemplate<T = any> = () => BPEvent<T>
 export type BPListener<T = any> = string | ((args: { type: string; detail: T }) => boolean)
 
 export interface LogCallback<T> {
-  (args: T): void
+  (args: T): void | Promise<void>
 }
 
 export type DefaultLogCallbackParams = {

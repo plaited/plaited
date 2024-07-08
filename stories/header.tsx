@@ -1,5 +1,4 @@
-import { Component, css } from 'plaited'
-import { useQuery } from 'plaited/utils'
+import { Component, css, useQuery } from 'plaited'
 import { Button } from './button.js'
 
 const stylesheet = css`

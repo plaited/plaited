@@ -17,13 +17,13 @@ export const isListeningFor = ({ type, detail }: CandidateBid) => {
 }
 
 export const createPublisher = <T>() => {
-  const listeners = new Set<(value: T) => void>()
+  const listeners = new Set<(value: T) => void | Promise<void>>()
   function publisher(value: T) {
     for (const cb of listeners) {
-      cb(value)
+      void cb(value)
     }
   }
-  publisher.subscribe = (listener: (msg: T) => void) => {
+  publisher.subscribe = (listener: (msg: T) => void | Promise<void>) => {
     listeners.add(listener)
     return () => {
       listeners.delete(listener)

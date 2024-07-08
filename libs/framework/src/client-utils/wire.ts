@@ -2,12 +2,13 @@
 import { isTypeOf } from '@plaited/utils'
 import { displayContent } from './display-content.js'
 import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
-import { fetchHTML, FetchHTMLOptions } from './fetch-html.js'
+import { fetchHTML } from './fetch-html.js'
 import { NAVIGATE_EVENT_TYPE } from './constants.js'
-import { PLAITED_CAPTURE_HOOK } from '../shared/constants.js'
+import { PLAITED_CAPTURE_HOOK, PLAITED_LOGGER } from '../shared/constants.js'
 import { captureHook } from './capture-hook.js'
+import { WireArgs } from './types.js'
 
-export const wire = ({ retry, retryDelay, ...options }: FetchHTMLOptions = { retry: 3, retryDelay: 1_000 }) => {
+export const wire = ({ retry, retryDelay, logger, ...options }: WireArgs = { retry: 3, retryDelay: 1_000 }) => {
   const html = document.querySelector('html')
   if (html) {
     const navigate = async (event: CustomEvent<URL>) => {
@@ -26,6 +27,7 @@ export const wire = ({ retry, retryDelay, ...options }: FetchHTMLOptions = { ret
 
     Object.assign(window, {
       [PLAITED_CAPTURE_HOOK]: captureHook,
+      [PLAITED_LOGGER]: logger,
     })
 
     history.replaceState(new XMLSerializer().serializeToString(html), '', document.location.href)

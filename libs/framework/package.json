@@ -18,12 +18,12 @@
   "exports": {
     ".": "./dist/index.js",
     "./behavioral": "./dist/behavioral.js",
+    "./client-utils": "./dist/client-utils.js",
     "./jsx-dev-runtime": "./dist/jsx-dev-runtime.js",
     "./jsx-runtime": "./dist/jsx-runtime.js",
     "./server": "./dist/server.js",
     "./token-utils": "./dist/token-utils.js",
-    "./types": "./src/types.ts",
-    "./utils": "./dist/utils.js"
+    "./types": "./src/types.ts"
   },
   "files": [
     "./dist/**",

@@ -1,9 +1,6 @@
 import { wait } from '@plaited/utils'
+import { FetchHTMLOptions } from './types.js'
 
-export type FetchHTMLOptions = RequestInit & { retry: number; retryDelay: number }
-/**
- * @description  A utility function to fetch HTML content from the server with error handling and retries.
- */
 export const fetchHTML = async (
   url: RequestInfo | URL,
   { retry, retryDelay, ...options }: FetchHTMLOptions,

@@ -8,5 +8,3 @@ export const GLOB_PATTERN_MODULE = `**/${IGNORED_DIR_PREFIX}*/module.@(tsx|ts)`
 export const GLOB_PATTERN_WORKER = `**/${IGNORED_DIR_PREFIX}*/worker.@(tsx|ts)`
 export const GLOB_PATTERN_SOCKET = `**/${IGNORED_DIR_PREFIX}*/socket.@(tsx|ts)`
 export const GLOB_PATTERN_COMPONENT = `**/{${COMPONENT_DIR}/**/*,${IGNORED_DIR_PREFIX}*/module}.@(tsx|ts)`
-
-export const NAVIGATE_EVENT_TYPE = 'plaited-navigate'

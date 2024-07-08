@@ -1,5 +1,5 @@
 import { Component } from '../../index.js'
-import { usePublisher } from '../../utils.js'
+import { usePublisher } from '../../client-utils.js'
 
 const sendDisable = usePublisher()
 const sendAdd = usePublisher()
