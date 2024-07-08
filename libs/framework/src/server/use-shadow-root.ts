@@ -3,7 +3,7 @@ import { NavigateEventType } from '../shared/constants.js'
 import { useEmit } from '../shared/use-emit.js'
 import { PlaitedElement } from '../component/types.js'
 
-export const connectShadowroot = (shadowRoot: ShadowRoot) => {
+export const useShadowRoot = (shadowRoot: ShadowRoot) => {
   delegates.set(
     shadowRoot,
     new DelegatedListener((event) => {

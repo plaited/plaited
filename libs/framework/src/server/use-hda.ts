@@ -4,7 +4,7 @@ import { displayContent } from './display-content.js'
 import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
 import { fetchHTML, FetchHTMLOptions } from './fetch-html.js'
 import { NavigateEventType, PLAITED_HDA_HOOK } from '../shared/constants.js'
-import { connectShadowroot } from './connect-shadowroot.js'
+import { useShadowRoot } from './use-shadow-root.js'
 
 export const useHDA = ({ retry, retryDelay, ...options }: FetchHTMLOptions = { retry: 3, retryDelay: 1_000 }) => {
   const html = document.querySelector('html')
@@ -24,7 +24,7 @@ export const useHDA = ({ retry, retryDelay, ...options }: FetchHTMLOptions = { r
     }
 
     Object.assign(window, {
-      [PLAITED_HDA_HOOK]: connectShadowroot,
+      [PLAITED_HDA_HOOK]: useShadowRoot,
     })
 
     history.replaceState(new XMLSerializer().serializeToString(html), '', document.location.href)

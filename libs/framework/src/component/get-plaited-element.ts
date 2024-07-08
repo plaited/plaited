@@ -57,7 +57,7 @@ export const getPlaitedElement = ({
     #disconnectSet = new Set<Disconnect>()
     #trigger?: Trigger
     connectedCallback() {
-      hasHDA(window) && window[PLAITED_HDA_HOOK](this.#root)
+      hasHDA(window) && this.#disconnectSet.add(window[PLAITED_HDA_HOOK](this.#root))
       if (bp) {
         const logger = hasLogger(window) ? window[PLAITED_LOGGER] : undefined
         const { trigger, feedback, ...rest } = bProgram(logger)
