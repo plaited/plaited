@@ -32,7 +32,7 @@ export type UseEmit = (host: HTMLElement) => (
   },
 ) => void
 
-export type ConnectArgs = [ReturnType<UseWorker>] | [ReturnType<UseSocket>] | [string, ReturnType<UsePublisher>]
+export type ConnectArgs = [ReturnType<UseWorker>] | [string, ReturnType<UsePublisher>]
 
 /** Clone feature for handling list situations where structure is consistent but the data rendered is what is different. This is a performance feature */
 export type UseClone = (
@@ -52,6 +52,7 @@ export type BProps = {
   emit: ReturnType<UseEmit>
   clone: ReturnType<UseClone>
   connect: (...args: ConnectArgs) => Disconnect
+  sendSocket: ReturnType<UseSocket>[1] | (<T = never>(..._: T[]) => void)
 } & Omit<ReturnType<BProgram>, 'feedback'>
 
 export interface PlaitedElement extends HTMLElement {
@@ -109,4 +110,4 @@ export type PlaitedComponent = <T extends Attrs = Attrs>(
   },
 ) => PlaitedTemplate<T>
 
-export type HDAHook = (shadowRoot: ShadowRoot) => () => void
+export type CaptureHook = (shadowRoot: ShadowRoot) => () => void

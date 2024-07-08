@@ -1,9 +1,7 @@
-import type { ConnectArgs, Disconnect, PlaitedElement, Trigger } from '../types.js'
-import { noop } from '@plaited/utils'
-import { BP_ADDRESS } from '../jsx/constants.js'
+import type { ConnectArgs, Disconnect, Trigger } from '../types.js'
 
 export const useConnect =
-  ({ trigger, disconnectSet, host }: { trigger: Trigger; disconnectSet: Set<Disconnect>; host: PlaitedElement }) =>
+  ({ trigger, disconnectSet }: { trigger: Trigger; disconnectSet: Set<Disconnect>; }) =>
   (...args: ConnectArgs) => {
     if (args.length === 2) {
       const [type, pub] = args
@@ -15,20 +13,7 @@ export const useConnect =
       }
     }
     const [source] = args
-    if (source.type === 'worker') {
-      const cb = source.connect(trigger)
-      disconnectSet.add(cb)
-      return () => {
-        disconnectSet.delete(cb)
-        cb()
-      }
-    }
-    const address = host.getAttribute(BP_ADDRESS) ?? undefined
-    if (!address) {
-      console.error(`Component ${host.tagName.toLowerCase()} is missing an attribute [${BP_ADDRESS}]`)
-      return noop // if we're missing an address on our component return noop and console.error msg
-    }
-    const cb = source.connect(trigger, address)
+    const cb = source.connect(trigger)
     disconnectSet.add(cb)
     return () => {
       disconnectSet.delete(cb)

@@ -1,6 +1,6 @@
 /** Utility function for enabling hypermedia patterns */
 import type { Trigger, BPEvent } from '../behavioral/types.js'
-import type { UseSocket } from './types.js'
+import type { UseSocket, SocketMessage } from './types.js'
 import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
 import { isBPEvent } from './is-bp-event.js'
 
@@ -10,12 +10,12 @@ export const useSocket: UseSocket = (url, protocols) => {
   const maxRetries = 3
   let retryCount = 0
   let socket: WebSocket | undefined
-  const connect = (trigger: Trigger, address: string) => {
+  const connect = (trigger: Trigger, address?: string) => {
     if (retryCount < maxRetries) {
       socket = new WebSocket(url, protocols)
     }
     const callback = (event: MessageEvent) => {
-      if (event.type === address) {
+      if (address === event.type) {
         try {
           const evt: BPEvent<string> = JSON.parse(event.data)
           if (isBPEvent(evt)) {
@@ -46,7 +46,7 @@ export const useSocket: UseSocket = (url, protocols) => {
       // WebSocket connection opened
       socket.addEventListener('open', delegates.get(socket))
       // Handle incoming messages
-      socket.addEventListener(address, delegates.get(socket))
+      address && socket.addEventListener(address, delegates.get(socket))
       // Handle WebSocket errors
       socket.addEventListener('error', delegates.get(socket))
       // WebSocket connection closed
@@ -59,12 +59,10 @@ export const useSocket: UseSocket = (url, protocols) => {
       }
     }
   }
-  const send = (message: BPEvent) => {
+  const send = <T = unknown>(message: SocketMessage<T>) => {
     if (socket?.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify(message))
     }
   }
-  send.connect = connect
-  send.type = 'socket' as const
-  return send
+  return [connect, send]
 }

@@ -21,15 +21,20 @@ export type UseWorker = {
   }
 }
 
+export type SocketMessage<T = unknown> = {
+  address: string
+  event: BPEvent<T>
+}
+
 export type UseSocket = {
   (
     url: string | URL,
     protocols?: string | string[],
-  ): {
-    (message: BPEvent): void
-    connect: (trigger: Trigger, address: string) => Disconnect
-    type: 'socket'
-  }
+  ): [
+   (trigger: Trigger, address?: string) => Disconnect,
+  (message: SocketMessage) => void
+  ]
+    
 }
 
 export type UsePostMessage = ({
@@ -49,4 +54,4 @@ import type { Logger } from '../behavioral/types.js'
 
 export type FetchHTMLOptions = RequestInit & { retry: number; retryDelay: number }
 
-export type WireArgs = FetchHTMLOptions & { logger?: Logger }
+export type WireArgs = FetchHTMLOptions & { logger?: Logger, socket?: ReturnType<UseSocket> }

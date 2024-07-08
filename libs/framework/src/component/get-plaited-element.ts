@@ -1,16 +1,17 @@
 import type { BPEvent, Trigger } from '../behavioral/types.js'
-import type { Disconnect } from '../utils-client/types.js'
+import type { Disconnect, UseSocket } from '../utils-client/types.js'
 import type { PlaitedElement, QuerySelector, GetPlaitedElementArgs } from './types.js'
 import { bProgram } from '../behavioral/b-program.js'
 import { useClone } from './use-clone.js'
-import { hasLogger, hasHDA } from './type-guards.js'
+import { hasLogger, hasCaptureHook, hasSocketHook } from './type-guards.js'
 import { useEmit } from '../shared/use-emit.js'
 import { useConnect } from './use-connect.js'
-import { PLAITED_CAPTURE_HOOK, PLAITED_LOGGER } from '../shared/constants.js'
-import { BP_TRIGGER } from '../jsx/constants.js'
+import { PLAITED_CAPTURE_HOOK, PLAITED_LOGGER, PLAITED_SOCKET_HOOK } from '../shared/constants.js'
+import { BP_TRIGGER , BP_ADDRESS} from '../jsx/constants.js'
 import { cssCache, useQuery } from './use-query.js'
 import { shadowObserver, addListeners } from './shadow-observer.js'
 import { onlyPublicEvents } from '../shared/only-public-events.js'
+import { noop } from '@plaited/utils'
 
 export const getPlaitedElement = ({
   template,
@@ -57,7 +58,7 @@ export const getPlaitedElement = ({
     #disconnectSet = new Set<Disconnect>()
     #trigger?: Trigger
     connectedCallback() {
-      hasHDA(window) && this.#disconnectSet.add(window[PLAITED_CAPTURE_HOOK](this.#root))
+      hasCaptureHook(window) && this.#disconnectSet.add(window[PLAITED_CAPTURE_HOOK](this.#root))
       if (bp) {
         const logger = hasLogger(window) ? window[PLAITED_LOGGER] : undefined
         const { trigger, feedback, ...rest } = bProgram(logger)
@@ -68,13 +69,18 @@ export const getPlaitedElement = ({
           trigger,
         )
         this.#shadowObserver = shadowObserver(this.#root, trigger) // create a shadow observer to watch for modification & addition of nodes with bp-trigger attribute
-
+        let sendSocket: ReturnType<UseSocket>[1] | (<T = never>(..._: T[]) => void) = noop
+        if(hasSocketHook(window) && this.getAttribute(BP_ADDRESS)) {
+          sendSocket = window[PLAITED_SOCKET_HOOK][1]
+          this.#disconnectSet.add(window[PLAITED_SOCKET_HOOK][0](trigger, this.getAttribute(BP_ADDRESS) ?? undefined))
+        }
         const actions = bp.bind(this)({
           $: this.#query,
           host: this,
           emit: useEmit(this),
           clone: useClone(this.#root),
-          connect: useConnect({ trigger, disconnectSet: this.#disconnectSet, host: this }),
+          connect: useConnect({ trigger, disconnectSet: this.#disconnectSet }),
+          sendSocket,
           trigger,
           ...rest,
         })
