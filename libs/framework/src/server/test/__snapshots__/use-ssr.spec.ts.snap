@@ -1,5 +1,15 @@
 // Bun Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`useSSR: empty imports 1`] = `"<div>text</div>"`;
+
+exports[`useSSR: with imports 1`] = `
+"<script type="module" async>
+    import 'test/entry-1.js';
+    import 'test/entry-2.js';
+</script>
+<div>text</div>"
+`;
+
 exports[`ssr: Self closing - html 1`] = `"<input type="text" />"`;
 
 exports[`ssr: Self closing - svg 1`] = `"<polygon points="0,100 50,25 50,75 100,0" />"`;

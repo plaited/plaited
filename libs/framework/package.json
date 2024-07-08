@@ -18,10 +18,9 @@
   "exports": {
     ".": "./dist/index.js",
     "./behavioral": "./dist/behavioral.js",
-    "./hda": "./dist/hda.js",
     "./jsx-dev-runtime": "./dist/jsx-dev-runtime.js",
     "./jsx-runtime": "./dist/jsx-runtime.js",
-    "./ssr": "./dist/ssr.js",
+    "./server": "./dist/server.js",
     "./token-utils": "./dist/token-utils.js",
     "./types": "./src/types.ts",
     "./utils": "./dist/utils.js"

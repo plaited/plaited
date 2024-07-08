@@ -1,37 +1,31 @@
+import type { PlaitedTemplate, TemplateObject } from '../types.js'
 import { createTemplate } from '../jsx/create-template.js'
-import type { GetPlaitedElement, PlaitedTemplate, TemplateObject } from '../types.js'
-import { defineRegistry } from './define-registry.js'
 import { PLAITED_COMPONENT_IDENTIFIER } from '../shared/constants.js'
 
 export const getPlaitedTemplate = ({
-  getPlaitedElement,
+  tag,
   mode,
   delegatesFocus,
   template,
 }: {
-  getPlaitedElement: GetPlaitedElement
+  tag: `${string}-${string}`
   mode: 'open' | 'closed'
   delegatesFocus: boolean
   template: TemplateObject
 }) => {
-  const registry = new Set<GetPlaitedElement>([...template.registry, getPlaitedElement])
   const ft: PlaitedTemplate = ({ children = [], ...attrs }) =>
-    createTemplate(getPlaitedElement.tag, {
+    createTemplate(tag, {
       ...attrs,
       children: [
         createTemplate('template', {
           shadowrootmode: mode,
           shadowrootdelegatesfocus: delegatesFocus,
-          children: {
-            ...template,
-            registry,
-          },
+          children: template,
         }),
         ...(Array.isArray(children) ? children : [children]),
       ],
     })
-  ft.define = (silent = true) => defineRegistry(new Set<GetPlaitedElement>(registry), silent)
-  ft.tag = getPlaitedElement.tag
+  ft.tag = tag
   ft.$ = PLAITED_COMPONENT_IDENTIFIER
   return ft
 }

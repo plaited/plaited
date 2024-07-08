@@ -72,21 +72,14 @@ export interface PlaitedElementConstructor {
   new (): PlaitedElement
 }
 
-export type GetPlaitedElement = {
-  (): PlaitedElementConstructor
-  tag: `${string}-${string}`
-}
-
 export type PlaitedTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
-  define: (silent?: boolean) => void
   tag: `${string}-${string}`
   $: '🐻'
 }
 
 type BPFunction = (this: PlaitedElement, props: BProps) => Actions
-export type PlaitedComponent = <T extends Attrs = Attrs>(args: {
-  /** PlaitedComponent tag name */
-  tag: `${string}-${string}`
+
+export type GetPlaitedElementArgs = {
   /** Component template */
   template: TemplateObject
   /** observed Attributes that will trigger the native `attributeChangedCallback` method when modified*/
@@ -94,9 +87,9 @@ export type PlaitedComponent = <T extends Attrs = Attrs>(args: {
   /** observed triggers that can be fired from outside component by invoking `trigger` method directly, via messenger, or via publisher */
   publicEvents?: string[]
   /** define wether island's custom element is open or closed. @defaultValue 'open'*/
-  mode?: 'open' | 'closed'
+  mode: 'open' | 'closed'
   /** configure whether to delegate focus or not @defaultValue 'true' */
-  delegatesFocus?: boolean
+  delegatesFocus: boolean
   bp?: BPFunction
   connectedCallback?(this: PlaitedElement): void
   attributeChangedCallback?(this: PlaitedElement, name: string, oldValue: string | null, newValue: string | null): void
@@ -106,6 +99,14 @@ export type PlaitedComponent = <T extends Attrs = Attrs>(args: {
   formDisabledCallback?(this: PlaitedElement, disabled: boolean): void
   formResetCallback?(this: PlaitedElement): void
   formStateRestoreCallback?(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
-}) => PlaitedTemplate<T>
+}
+
+export type PlaitedComponent = <T extends Attrs = Attrs>(
+  args: Omit<GetPlaitedElementArgs, 'mode' | 'delegatesFocus'> & {
+    tag: `${string}-${string}`
+    mode?: 'open' | 'closed'
+    delegatesFocus?: boolean
+  },
+) => PlaitedTemplate<T>
 
 export type HDAHook = (shadowRoot: ShadowRoot) => () => void

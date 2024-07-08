@@ -146,8 +146,6 @@ const Fixture = Component({
   },
 })
 
-Fixture.define()
-
 export const beforebegin = {
   render: () => <Fixture />,
   play: async () => {

@@ -1,4 +1,3 @@
-import type { GetPlaitedElement } from '../component/types.js'
 import type { CSSProperties } from '../css/types.js'
 import { PLAITED_TEMPLATE_IDENTIFIER } from '../shared/constants.js'
 
@@ -9,7 +8,6 @@ export type TemplateObject = {
   client: string[]
   server: string[]
   stylesheets: Set<string>
-  registry: Set<GetPlaitedElement>
   $: typeof PLAITED_TEMPLATE_IDENTIFIER
 }
 
@@ -1320,6 +1318,7 @@ export type ElementAttributeList = {
   tspan: DetailedSVGAttributes
   use: DetailedSVGUseAttributes
   view: DetailedSVGAttributes
+  [key: `${string}-${string}`]: DetailedHTMLAttributes
 }
 
 export type Attrs<T extends DetailedHTMLAttributes = DetailedHTMLAttributes> = DetailedHTMLAttributes & T

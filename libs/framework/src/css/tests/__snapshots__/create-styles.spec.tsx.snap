@@ -90,7 +90,6 @@ exports[`JSX: spread 1`] = `
     ">",
     "</button>",
   ],
-  "registry":   Set {},
   "server": [
     "<button ",
     "class="button_mb2ltj p_2dr9p51 p_d33wg2 p_1bahz5i" ",

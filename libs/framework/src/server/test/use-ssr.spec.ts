@@ -1,13 +1,23 @@
 /* eslint-disable no-constant-binary-expression */
 import { test, expect } from 'bun:test'
-import { h, Fragment } from '../create-template.js'
+import { h, Fragment } from '../../jsx/create-template.js'
 import { css, createStyles, assignStyles, FT, TemplateObject } from '../../index.js'
-import { ssr } from '../ssr.js'
+import { useSSR } from '../use-ssr.js'
 import beautify from 'beautify'
 
 const render = (template: TemplateObject) => {
-  return beautify(ssr(template), { format: 'html' })
+  return beautify(useSSR()(template), { format: 'html' })
 }
+
+test('useSSR: empty imports', () => {
+  const tpl = beautify(useSSR()(h('div', { children: 'text' })), { format: 'html' })
+  expect(tpl).toMatchSnapshot()
+})
+
+test('useSSR: with imports', () => {
+  const tpl = beautify(useSSR('test/entry-1.js', 'test/entry-2.js')(h('div', { children: 'text' })), { format: 'html' })
+  expect(tpl).toMatchSnapshot()
+})
 
 test('ssr: Self closing - html', () => {
   expect(render(h('input', { type: 'text' }))).toMatchSnapshot()

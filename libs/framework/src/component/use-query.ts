@@ -8,7 +8,6 @@ import type {
   BooleanAttributes,
 } from '../types.js'
 import { booleanAttrs, bpTarget } from '../jsx/constants.js'
-import { defineRegistry } from './define-registry.js'
 /**
  * Inspired by blingblingjs
  * (c) Adam Argyle - MIT
@@ -49,8 +48,7 @@ const updateAttributes = (element: Element, attr: string, val: string | null | n
 }
 
 export const handleTemplateObject = (shadowRoot: ShadowRoot, fragment: TemplateObject) => {
-  const { client, stylesheets, registry } = fragment
-  registry.size && defineRegistry(registry, true)
+  const { client, stylesheets } = fragment
   stylesheets.size && void updateShadowRootStyles(shadowRoot, stylesheets)
   const template = document.createElement('template')
   template.innerHTML = client.join('')

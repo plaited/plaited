@@ -1,4 +1,4 @@
-export const bundle = async ({
+export const useBuild = async ({
   entrypoints,
   dir,
   sourcemap = false,
@@ -10,7 +10,7 @@ export const bundle = async ({
   publicPath?: string
 }) => {
   const result = await Bun.build({
-    entrypoints: [`${import.meta.dir}/hda.ts`, ...entrypoints],
+    entrypoints,
     minify: true,
     publicPath,
     root: dir,

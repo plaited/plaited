@@ -2,7 +2,8 @@ import { assert, findByAttribute, findByText } from '@plaited/storybook-rite'
 import { Meta, StoryObj } from '@plaited/storybook'
 import { PlaitedElement, createStyles } from '../../index.js'
 import { Component } from '../component.js'
-
+import type { FT } from '../../jsx/types.js'
+import { createTemplate } from '../../jsx/create-template.js'
 const meta: Meta = {
   title: 'Tests/template',
   component: () => <></>,
@@ -60,28 +61,26 @@ export const withDeclarativeShadowDom: StoryObj = {
         color: 'green',
       },
     })
-    const Fixture = Component({
-      tag: 'with-declarative-shadow-dom',
-      publicEvents: ['render'],
-      template: (
-        <div
-          bp-target='inner'
-          {...styles.inner}
+    const Content = () => (
+      <div
+        bp-target='inner'
+        {...styles.inner}
+      >
+        before hydration
+      </div>
+    )
+    const tag = 'with-declarative-shadow-dom'
+    const template = createTemplate(tag, {
+      'bp-target': 'host',
+      children: (
+        <template
+          shadowrootmode='open'
+          shadowrootdelegatesfocus
         >
-          before hydration
-        </div>
+          <Content />
+        </template>
       ),
-      bp({ $ }) {
-        return {
-          render() {
-            const [inner] = $('inner')
-            inner.render(<span stylesheet={styles.span.stylesheet}>after hydration</span>)
-            inner.attr('class', styles.span.className)
-          },
-        }
-      },
-    })
-    const template = (<Fixture bp-target='host' />).server.join('')
+    }).server.join('')
 
     // @ts-ignore: new dom api
     canvasElement.setHTMLUnsafe(template)
@@ -110,7 +109,20 @@ export const withDeclarativeShadowDom: StoryObj = {
       actual: color,
       expected: 'rgb(255, 0, 0)',
     })
-    Fixture.define()
+    Component({
+      tag,
+      publicEvents: ['render'],
+      template: <Content />,
+      bp({ $ }) {
+        return {
+          render() {
+            const [inner] = $('inner')
+            inner.render(<span stylesheet={styles.span.stylesheet}>after hydration</span>)
+            inner.attr('class', styles.span.className)
+          },
+        }
+      },
+    })
     host.trigger({ type: 'render' })
 
     inner = await findByAttribute('bp-target', 'inner', host)
