@@ -21,8 +21,8 @@
     "./jsx-dev-runtime": "./dist/jsx-dev-runtime.js",
     "./jsx-runtime": "./dist/jsx-runtime.js",
     "./utils-client": "./dist/utils-client.js",
+    "./utils-design-token": "./dist/utils-design-token.js",
     "./utils-server": "./dist/utils-server.js",
-    "./utils": "./dist/utils-design-token.js",
     "./types": "./src/types.ts"
   },
   "files": [
