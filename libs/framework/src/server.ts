@@ -1,6 +1,6 @@
+export { findDuplicateTags } from './server/find-duplicates-tags.js'
 export { useBuildArtifacts } from './server/use-build-artifacts.js'
-export { useBuild } from './server/use-build.js'
-export { useHDA } from './server/use-hda.js'
 export { useMiddleware } from './server/use-middleware.js'
 export { useScanImports } from './server/use-scan-imports.js'
 export { useSSR } from './server/use-ssr.js'
+export { wire } from './server/wire.js'

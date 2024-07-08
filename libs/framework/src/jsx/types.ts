@@ -1,5 +1,5 @@
 import type { CSSProperties } from '../css/types.js'
-import { PLAITED_TEMPLATE_IDENTIFIER } from '../shared/constants.js'
+import { PLAITED_TEMPLATE_IDENTIFIER } from './constants.js'
 
 type Booleanish = boolean | 'true' | 'false'
 type CrossOrigin = 'anonymous' | 'use-credentials' | ''

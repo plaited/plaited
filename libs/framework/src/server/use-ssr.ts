@@ -1,6 +1,6 @@
 import { escape, isTypeOf } from '@plaited/utils'
 import { TemplateObject } from '../types.js'
-import { validPrimitiveChildren } from '../jsx/constants.js'
+import { VALID_PRIMITIVE_CHILDREN } from '../jsx/constants.js'
 
 export const useSSR =
   (...importPaths: string[]) =>
@@ -17,7 +17,7 @@ export const useSSR =
         }
         continue
       }
-      if (!validPrimitiveChildren.has(typeof child)) continue
+      if (!VALID_PRIMITIVE_CHILDREN.has(typeof child)) continue
       const safeChild = escape(`${child}`)
       arr.push(safeChild)
     }

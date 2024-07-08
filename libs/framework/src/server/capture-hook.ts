@@ -1,9 +1,9 @@
 import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
-import { NavigateEventType } from '../shared/constants.js'
+import { NAVIGATE_EVENT_TYPE } from './constants.js'
 import { useEmit } from '../shared/use-emit.js'
 import { PlaitedElement } from '../component/types.js'
 
-export const useShadowRoot = (shadowRoot: ShadowRoot) => {
+export const captureHook = (shadowRoot: ShadowRoot) => {
   delegates.set(
     shadowRoot,
     new DelegatedListener((event) => {
@@ -26,7 +26,7 @@ export const useShadowRoot = (shadowRoot: ShadowRoot) => {
               event.preventDefault()
               event.stopPropagation()
               useEmit(shadowRoot.host as PlaitedElement)({
-                type: NavigateEventType,
+                type: NAVIGATE_EVENT_TYPE,
                 detail: new URL(href, window.location.href),
                 bubbles: true,
                 composed: true,

@@ -1,11 +1,11 @@
 import type { Trigger } from '../types.js'
 import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
-import { bpTrigger } from '../jsx/constants.js'
+import { BP_TRIGGER } from '../jsx/constants.js'
 
 const isElement = (node: Node): node is Element => node.nodeType === 1
 
 const getTriggerMap = (el: Element) =>
-  new Map((el.getAttribute(bpTrigger) as string).split(' ').map((pair) => pair.split(':')) as [string, string][])
+  new Map((el.getAttribute(BP_TRIGGER) as string).split(' ').map((pair) => pair.split(':')) as [string, string][])
 
 /** get trigger for elements respective event from triggerTypeMap */
 const getTriggerType = (event: Event, context: Element) => {
@@ -22,7 +22,7 @@ const createDelegatedListener = (el: Element, trigger: Trigger) => {
   delegates.set(
     el,
     new DelegatedListener((event) => {
-      const triggerType = el.getAttribute(bpTrigger) && getTriggerType(event, el)
+      const triggerType = el.getAttribute(BP_TRIGGER) && getTriggerType(event, el)
       triggerType ?
         /** if key is present in `bp-trigger` trigger event on instance's bProgram */
         trigger?.({ type: triggerType, detail: event })
@@ -51,22 +51,22 @@ export const shadowObserver = (root: ShadowRoot, trigger: Trigger) => {
       if (mutation.type === 'attributes') {
         const el = mutation.target
         if (isElement(el)) {
-          mutation.attributeName === bpTrigger && el.getAttribute(bpTrigger) && addListeners([el], trigger)
+          mutation.attributeName === BP_TRIGGER && el.getAttribute(BP_TRIGGER) && addListeners([el], trigger)
         }
       } else if (mutation.addedNodes.length) {
         const length = mutation.addedNodes.length
         for (let i = 0; i < length; i++) {
           const node = mutation.addedNodes[i]
           if (isElement(node)) {
-            node.hasAttribute(bpTrigger) && addListeners([node], trigger)
-            addListeners(Array.from(node.querySelectorAll(`[${bpTrigger}]`)), trigger)
+            node.hasAttribute(BP_TRIGGER) && addListeners([node], trigger)
+            addListeners(Array.from(node.querySelectorAll(`[${BP_TRIGGER}]`)), trigger)
           }
         }
       }
     }
   })
   mo.observe(root, {
-    attributeFilter: [bpTrigger],
+    attributeFilter: [BP_TRIGGER],
     childList: true,
     subtree: true,
   })

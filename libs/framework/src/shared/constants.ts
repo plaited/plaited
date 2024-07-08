@@ -1,5 +1,3 @@
-export const NavigateEventType = 'plaited-navigate'
-export const PLAITED_HDA_HOOK = '__PLAITED_HDA_HOOK__'
+export const PLAITED_CAPTURE_HOOK = '__PLAITED_CAPTURE_HOOK__'
 export const PLAITED_LOGGER = '__PLAITED_LOGGER__'
 export const PLAITED_COMPONENT_IDENTIFIER = '🐻'
-export const PLAITED_TEMPLATE_IDENTIFIER = '🦄'

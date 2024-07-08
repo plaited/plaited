@@ -1,12 +1,12 @@
-import { VoidTags, BooleanAttributes } from '../types.js'
+import { VoidTags, BooleanAttributes } from './types.js'
 /** attribute used to manipulate a dom element */
-export const bpTarget = 'bp-target'
+export const BP_TARGET = 'bp-target'
 /** attribute used to wire a dom element to the component event listener */
-export const bpTrigger = 'bp-trigger'
+export const BP_TRIGGER = 'bp-trigger'
 /** attribute used to wire a dom element to a useMessenger exchange */
-export const bpAddress = 'bp-address'
+export const BP_ADDRESS = 'bp-address'
 /** void attributes */
-export const voidTags = new Set<keyof VoidTags>([
+export const VOID_TAGS = new Set<keyof VoidTags>([
   'area',
   'base',
   'br',
@@ -32,7 +32,7 @@ export const voidTags = new Set<keyof VoidTags>([
   'use',
 ])
 /** boolean attributes */
-export const booleanAttrs = new Set<BooleanAttributes>([
+export const BOOLEAN_ATTRS = new Set<BooleanAttributes>([
   'allowfullscreen',
   'async',
   'autofocus',
@@ -65,6 +65,8 @@ export const booleanAttrs = new Set<BooleanAttributes>([
   'allowpopups',
 ])
 
-export const primitives = new Set(['null', 'undefined', 'number', 'string', 'boolean', 'bigint'])
+export const PRIMITIVES = new Set(['null', 'undefined', 'number', 'string', 'boolean', 'bigint'])
 
-export const validPrimitiveChildren = new Set(['number', 'string', 'bigint'])
+export const VALID_PRIMITIVE_CHILDREN = new Set(['number', 'string', 'bigint'])
+
+export const PLAITED_TEMPLATE_IDENTIFIER = '🦄'

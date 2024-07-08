@@ -15,14 +15,6 @@ export type MiddleWareHandler = <T extends Record<string, unknown> = Record<stri
   ctx?: T & { next: Handler },
 ) => Promise<Response>
 
-export type ComponentMap = Map<
-  string,
-  {
-    path: string
-    name: string
-  }
->
-
 export type Context = {
   content: string
   scale: number

@@ -7,7 +7,7 @@ import type {
   QuerySelector,
   BooleanAttributes,
 } from '../types.js'
-import { booleanAttrs, bpTarget } from '../jsx/constants.js'
+import { BOOLEAN_ATTRS, BP_TARGET } from '../jsx/constants.js'
 /**
  * Inspired by blingblingjs
  * (c) Adam Argyle - MIT
@@ -39,7 +39,7 @@ const updateAttributes = (element: Element, attr: string, val: string | null | n
   // Remove the attribute if val is null or undefined, and it currently exists
   if (val === null && element.hasAttribute(attr)) return element.removeAttribute(attr)
   // Set the attribute if it is a boolean attribute and it does not exist
-  if (booleanAttrs.has(attr as BooleanAttributes)) {
+  if (BOOLEAN_ATTRS.has(attr as BooleanAttributes)) {
     !element.hasAttribute(attr) && element.toggleAttribute(attr, true)
     return
   }
@@ -115,5 +115,5 @@ export const getSugarInstance = (shadowRoot: ShadowRoot) =>
 export const useQuery = (shadowRoot: ShadowRoot): QuerySelector => {
   const sugar = getSugarInstance(shadowRoot)
   return <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
-    assignSugar<T>(sugar, Array.from(shadowRoot.querySelectorAll<Element>(`[${bpTarget}${match}"${target}"]`)))
+    assignSugar<T>(sugar, Array.from(shadowRoot.querySelectorAll<Element>(`[${BP_TARGET}${match}"${target}"]`)))
 }

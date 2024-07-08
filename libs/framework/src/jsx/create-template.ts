@@ -1,7 +1,13 @@
 import type { Attrs, BooleanAttributes, CreateTemplate, TemplateObject, VoidTags } from '../types.js'
 import { escape, kebabCase, isTypeOf } from '@plaited/utils'
-import { booleanAttrs, primitives, voidTags, validPrimitiveChildren, bpTrigger as bpTriggerKey } from './constants.js'
-import { PLAITED_TEMPLATE_IDENTIFIER } from '../shared/constants.js'
+import {
+  PLAITED_TEMPLATE_IDENTIFIER,
+  BOOLEAN_ATTRS,
+  PRIMITIVES,
+  VOID_TAGS,
+  VALID_PRIMITIVE_CHILDREN,
+  BP_TRIGGER,
+} from './constants.js'
 
 /** createTemplate function used for ssr */
 export const createTemplate: CreateTemplate = (_tag, attrs) => {
@@ -35,7 +41,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     const value = Object.entries(bpTrigger)
       .map<string>(([ev, req]) => `${ev}:${req}`)
       .join(' ')
-    start.push(`${bpTriggerKey}="${value}" `)
+    start.push(`${BP_TRIGGER}="${value}" `)
   }
   /** if we have style add it to element */
   if (style) {
@@ -55,14 +61,14 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       throw new Error(`Event handler attributes are not allowed:  [${key}]`)
     }
     /** test for and handle boolean attributes */
-    if (booleanAttrs.has(key as BooleanAttributes)) {
+    if (BOOLEAN_ATTRS.has(key as BooleanAttributes)) {
       start.push(`${key} `)
       continue
     }
     /** Grab the value from the attribute */
     const value = attributes[key]
     /** P2 typeof attribute is NOT {@type Primitive} then skip and do nothing */
-    if (!primitives.has(typeof value)) {
+    if (!PRIMITIVES.has(typeof value)) {
       throw new Error(`Attributes not declared in PlaitedAttributes must be of type Primitive: ${key} is not primitive`)
     }
     /** set the value so long as it's not nullish in we use the formatted value  */
@@ -77,7 +83,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     : new Set<string>()
 
   /** Our tag is a void tag so we can return it once we apply attributes */
-  if (voidTags.has(tag as keyof VoidTags)) {
+  if (VOID_TAGS.has(tag as keyof VoidTags)) {
     start.push('/>')
     return {
       client: start,
@@ -105,7 +111,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       continue
     }
     /** P2 typeof child is NOT a valid primitive child then skip and do nothing */
-    if (!validPrimitiveChildren.has(typeof child)) continue
+    if (!VALID_PRIMITIVE_CHILDREN.has(typeof child)) continue
     /** P3 child IS {@type Primitive} */
     const str = trusted ? `${child}` : escape(`${child}`)
     clientEnd.push(str)
@@ -147,7 +153,7 @@ export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
       server.push(...child.server)
       for (const sheet of child.stylesheets) stylesheets.add(sheet)
     }
-    if (!validPrimitiveChildren.has(typeof child)) continue
+    if (!VALID_PRIMITIVE_CHILDREN.has(typeof child)) continue
     const safeChild = escape(`${child}`)
     client.push(safeChild)
     server.push(safeChild)
