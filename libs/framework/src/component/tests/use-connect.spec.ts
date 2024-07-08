@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import { useConnect } from '../use-connect.js'
 import sinon from 'sinon'
-import { usePublisher } from '../../client-utils.js'
+import { usePublisher } from '../../utils-client.js'
 import { Disconnect } from '../../types.js'
 
 test('useConnect: with usePublisher', () => {

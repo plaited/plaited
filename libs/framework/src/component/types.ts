@@ -1,6 +1,6 @@
 import type { Actions, BProgram, Trigger, BPEvent } from '../behavioral/types.js'
 import type { TemplateObject, Attrs, FunctionTemplate } from '../jsx/types.js'
-import type { UseSocket, UseWorker, UsePublisher, Disconnect } from '../client-utils/types.js'
+import type { UseSocket, UseWorker, UsePublisher, Disconnect } from '../utils-client/types.js'
 
 export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
 
