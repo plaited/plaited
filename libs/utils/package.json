@@ -18,21 +18,19 @@
     "utils"
   ],
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./src/index.ts",
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./src/index.ts"
   },
   "files": [
-    "./dist/**"
+    "./src/**",
+    "!**/spec/*"
   ],
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "tsc --project tsconfig.json",
-    "build-watch": "bun run build --watch",
     "test": "bun test src/**/*.spec.ts",
     "test-watch": "bun test --watch"
-  },
-  "types": "./dist/index.d.ts"
+  }
 }

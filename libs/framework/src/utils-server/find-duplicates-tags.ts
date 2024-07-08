@@ -3,7 +3,7 @@ import { isTypeOf } from '@plaited/utils'
 import { PLAITED_COMPONENT_IDENTIFIER } from '../shared/constants.js'
 import { GLOB_PATTERN_COMPONENT } from './constants.js'
 
-export const isPlaitedComponent = (mod: unknown): mod is PlaitedTemplate =>
+const isPlaitedComponent = (mod: unknown): mod is PlaitedTemplate =>
   isTypeOf<PlaitedTemplate>(mod, 'function') && mod?.$ === PLAITED_COMPONENT_IDENTIFIER
 
 export const findDuplicateTags = async (dir: string, pattern = GLOB_PATTERN_COMPONENT) => {

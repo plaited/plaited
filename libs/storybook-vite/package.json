@@ -36,7 +36,6 @@
     "build": "tsc --skipLibCheck",
     "build-watch": "bun run build --watch"
   },
-  "types": "dist/index.d.ts",
   "dependencies": {
     "@plaited/storybook": "6.0.0",
     "@storybook/builder-vite": "7.6.13",

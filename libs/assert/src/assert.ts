@@ -1,11 +1,9 @@
+import type { AssertionErrorInterface } from './types.js'
 import { deepEqual } from '@plaited/utils'
+import { ASSERTION_ERROR_NAME } from './constants.js'
 
-export interface Assertion {
-  <T>(param: { given: string; should: string; actual: T; expected: T }): void
-}
-
-export class AssertionError extends Error {
-  override name = 'AssertionError'
+export class AssertionError extends Error implements AssertionErrorInterface {
+  override name = ASSERTION_ERROR_NAME
   constructor(message: string) {
     super(message)
   }
@@ -13,8 +11,8 @@ export class AssertionError extends Error {
 
 const requiredKeys = ['given', 'should', 'actual', 'expected']
 
-export const assert: Assertion = (param) => {
-  const args = param ?? ({} as unknown as Parameters<Assertion>[0])
+export const assert = <T>(param: { given: string; should: string; actual: T; expected: T }) => {
+  const args = param
   const missing = requiredKeys.filter((k) => !Object.keys(args).includes(k))
   if (missing.length) {
     const msg = [`The following parameters are required by 'assert': (`, `  ${missing.join(', ')}`, ')'].join('\n')

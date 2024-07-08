@@ -1,4 +1,4 @@
-import { GetFormatters } from '../types.js'
+import type { GetFormatters } from '../types.js'
 import { defaultFormat } from './ts/default-format.js'
 import { composite } from './ts/composite.js'
 

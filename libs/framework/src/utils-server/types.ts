@@ -1,4 +1,4 @@
-import type { TemplateObject } from '../types.js'
+import type { TemplateObject } from '../jsx/types.js'
 
 export type Handler = <T extends Record<string, unknown> = Record<string, unknown>>(
   req: Request,

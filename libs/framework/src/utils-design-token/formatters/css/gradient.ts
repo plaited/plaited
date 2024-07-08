@@ -1,4 +1,4 @@
-import { Formatter, GradientValue, GradientToken, DesignTokenGroup } from '../../types.js'
+import type { Formatter, GradientValue, GradientToken, DesignTokenGroup } from '../../types.js'
 import { hasAlias } from '../has-alias.js'
 import { kebabCase } from '@plaited/utils'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'

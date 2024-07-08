@@ -1,6 +1,5 @@
 import { wait } from '@plaited/utils'
-
-type FetchJSONOptions = RequestInit & { retry: number; retryDelay: number }
+import type { FetchJSONOptions } from './types.js'
 
 /**
  * @description  A simple utility function to fetch data that handles common edge cases around failure

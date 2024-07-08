@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import { bProgram } from '../b-program.js'
 import { thread, sync, loop } from '../rules.js'
-import { defaultLogger } from '../utils.js'
+import { defaultDevtool } from '../utils.js'
 import { DefaultLogCallbackParams } from '../../types.js'
 
 test('Add hot water 3 times', () => {
@@ -89,8 +89,8 @@ test('interleave', () => {
 
 test('logging', () => {
   const logs: DefaultLogCallbackParams[] = []
-  defaultLogger.callback = (log) => logs.push(log)
-  const { addThreads, trigger } = bProgram(defaultLogger)
+  defaultDevtool.callback = (log) => logs.push(log)
+  const { addThreads, trigger } = bProgram(defaultDevtool)
   addThreads({
     addHot: thread(
       sync({ request: { type: 'hot' } }),

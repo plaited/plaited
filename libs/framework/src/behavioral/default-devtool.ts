@@ -1,8 +1,8 @@
-import { DefaultLogger } from './types.js'
+import { DefaultDevtool } from './types.js'
 
 import { isListeningFor, isPendingRequest } from './private-utils.js'
 
-export const defaultLogger: DefaultLogger = ({ candidates, selectedEvent, pending }) => {
+export const defaultDevtool: DefaultDevtool = ({ candidates, selectedEvent, pending }) => {
   const blockingThreads = [...pending].flatMap(({ block, thread }) =>
     block && Array.isArray(block) ? block.map((listener) => ({ block: listener, thread }))
     : block ? [{ block, thread }]
@@ -32,4 +32,4 @@ export const defaultLogger: DefaultLogger = ({ candidates, selectedEvent, pendin
   return ruleSets.sort((a, b) => a.priority - b.priority)
 }
 
-defaultLogger.callback = (log) => console.table(log)
+defaultDevtool.callback = (log) => console.table(log)

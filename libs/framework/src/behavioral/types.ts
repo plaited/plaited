@@ -19,7 +19,7 @@ export type DefaultLogCallbackParams = {
   blockedBy?: string
 }[]
 
-export interface DefaultLogger {
+export interface DefaultDevtool {
   (args: {
     pending: Set<PendingBid>
     selectedEvent: CandidateBid
@@ -28,7 +28,7 @@ export interface DefaultLogger {
   callback: LogCallback<DefaultLogCallbackParams>
 }
 
-export type Logger<T = unknown> = {
+export type Devtool<T = unknown> = {
   (args: { pending: Set<PendingBid>; selectedEvent: CandidateBid; candidates: CandidateBid[] }): T
   callback: LogCallback<T>
 }
@@ -68,7 +68,7 @@ export type Sync = <T = any>(set: RuleSet<T>) => RulesFunction<T>
 export type Thread = (...rules: RulesFunction[]) => RulesFunction
 export type Loop = (ruleOrCallback: RulesFunction | (() => boolean), ...rules: RulesFunction[]) => RulesFunction
 
-export type BProgram = <T>(logger?: Logger<T> | undefined) => Readonly<{
+export type BProgram = <T>(devtool?: Devtool<T> | undefined) => Readonly<{
   addThreads: AddThreads
   feedback: Feedback
   trigger: Trigger

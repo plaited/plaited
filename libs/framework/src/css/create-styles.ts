@@ -1,5 +1,5 @@
+import type { CSSProperties, CSSPropertiesObjectLiteral, CSSClasses, CreateStylesObjects } from './types.js'
 import { hashString, kebabCase } from '@plaited/utils'
-import { CSSProperties, CSSPropertiesObjectLiteral, CSSClasses, CreateStylesObjects } from '../types.js'
 
 const createClassHash = (...args: (string | number)[]) =>
   hashString(args.join(' '))?.toString(36).replace(/^-/g, '_') ?? ''

@@ -1,5 +1,5 @@
 import type { WebRenderer } from '@storybook/types'
-import type { FunctionTemplate, PlaitedTemplate, TemplateObject } from 'plaited/types'
+import type { FunctionTemplate, PlaitedTemplate, TemplateObject } from 'plaited'
 
 export type { RenderContext } from '@storybook/types'
 

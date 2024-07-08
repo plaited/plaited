@@ -1,4 +1,6 @@
-import type { PlaitedTemplate, TemplateObject } from '../types.js'
+import type { TemplateObject } from '../jsx/types.js'
+import type { PlaitedTemplate } from './types.js'
+
 import { createTemplate } from '../jsx/create-template.js'
 import { PLAITED_COMPONENT_IDENTIFIER } from '../shared/constants.js'
 

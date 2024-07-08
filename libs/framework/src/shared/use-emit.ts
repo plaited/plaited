@@ -1,4 +1,4 @@
-import { UseEmit } from '../types.js'
+import { UseEmit } from './types.js'
 
 /** @description emit a custom event cancelable and composed are true by default */
 export const useEmit: UseEmit =

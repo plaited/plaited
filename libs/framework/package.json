@@ -14,33 +14,27 @@
   },
   "homepage": "https://github.com/plaited/plaited/tree/main/libs/plaited#readme",
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./src/index.ts",
   "exports": {
-    ".": "./dist/index.js",
-    "./behavioral": "./dist/behavioral.js",
-    "./jsx-dev-runtime": "./dist/jsx-dev-runtime.js",
-    "./jsx-runtime": "./dist/jsx-runtime.js",
-    "./utils-client": "./dist/utils-client.js",
-    "./utils-design-token": "./dist/utils-design-token.js",
-    "./utils-server": "./dist/utils-server.js",
-    "./types": "./src/types.ts"
+    ".": "./src/index.ts",
+    "./behavioral": "./src/behavioral.ts",
+    "./jsx-dev-runtime": "./src/jsx/dev-runtime.ts",
+    "./jsx-runtime": "./src/jsx/runtime.ts",
+    "./utils-client": "./src/utils-client.ts",
+    "./utils-design-token": "./src/utils-design-token.ts",
+    "./utils-server": "./src/utils-server.ts"
   },
   "files": [
-    "./dist/**",
-    "./src/types.ts",
-    "./jsx-runtime.js",
-    "./jsx-dev-runtime.js"
+    "./src/**",
+    "!**/spec/*"
   ],
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "tsc --project tsconfig.json",
-    "build-watch": "bun run build --watch",
     "test": "bun test src/**/*",
     "test-watch": "bun test tests/* --watch"
   },
-  "types": "./dist/types.d.ts",
   "dependencies": {
     "@plaited/utils": "6.0.0",
     "csstype": "3.1.3"

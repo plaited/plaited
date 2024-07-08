@@ -1,12 +1,7 @@
+import type { TemplateObject, BooleanAttributes } from '../jsx/types.js'
+import type { SugaredElement, Sugar, SelectorMatch, QuerySelector } from './types.js'
+
 import { isTypeOf } from '@plaited/utils'
-import type {
-  SugaredElement,
-  Sugar,
-  SelectorMatch,
-  TemplateObject,
-  QuerySelector,
-  BooleanAttributes,
-} from '../types.js'
 import { BOOLEAN_ATTRS, BP_TARGET } from '../jsx/constants.js'
 /**
  * Inspired by blingblingjs

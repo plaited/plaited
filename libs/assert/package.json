@@ -21,21 +21,20 @@
     "testing library"
   ],
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./src/index.ts",
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./src/index.ts"
   },
   "files": [
-    "./dist/**"
+    "./src/**",
+    "!**/spec/*"
   ],
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "tsc --project tsconfig.json",
-    "test": "bun run build && bun test src/**/*.spec.ts"
+    "test": "bun test src/**/*.spec.ts"
   },
-  "types": "./dist/index.d.ts",
   "dependencies": {
     "@plaited/utils": "6.0.0"
   }

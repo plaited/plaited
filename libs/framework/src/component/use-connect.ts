@@ -1,7 +1,9 @@
-import type { ConnectArgs, Disconnect, Trigger } from '../types.js'
+import type { Trigger } from '../behavioral/types.js'
+import type { Disconnect } from '../utils-client/types.js'
+import type { ConnectArgs } from './types.js'
 
 export const useConnect =
-  ({ trigger, disconnectSet }: { trigger: Trigger; disconnectSet: Set<Disconnect>; }) =>
+  ({ trigger, disconnectSet }: { trigger: Trigger; disconnectSet: Set<Disconnect> }) =>
   (...args: ConnectArgs) => {
     if (args.length === 2) {
       const [type, pub] = args

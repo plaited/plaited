@@ -1,68 +1,102 @@
-/** Utility function for enabling hypermedia patterns */
-import type { Trigger, BPEvent } from '../behavioral/types.js'
+import type { Trigger } from '../behavioral/types.js'
 import type { UseSocket, SocketMessage } from './types.js'
 import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
-import { isBPEvent } from './is-bp-event.js'
+import { SOCKET_URL } from './constants.js'
+import { isTypeOf, noop } from '@plaited/utils'
 
-const isCloseEvent = (event: CloseEvent | Event): event is CloseEvent => event.type === 'close'
+const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => event.type === 'close'
 
-export const useSocket: UseSocket = (url, protocols) => {
+export const isSocketMessage = (msg: unknown): msg is SocketMessage<string> => {
+  return (
+    isTypeOf<{ [key: string]: unknown }>(msg, 'object') &&
+    'address' in msg &&
+    typeof msg.address === 'string' &&
+    'event' in msg &&
+    isTypeOf<{ [key: string]: unknown }>(msg.event, 'object') &&
+    'type' in msg.event &&
+    typeof msg.event?.type === 'string' &&
+    typeof msg.event?.detail === 'string'
+  )
+}
+
+export const useSocket: UseSocket = (url = SOCKET_URL, protocols) => {
+  const connect = () => {
+    const sock = new WebSocket(url, protocols)
+    delegates.set(sock, new DelegatedListener(callback))
+    // WebSocket connection opened
+    sock.addEventListener('open', delegates.get(sock))
+    // Handle incoming messages
+    sock.addEventListener('message', delegates.get(sock))
+    // Handle WebSocket errors
+    sock.addEventListener('error', delegates.get(sock))
+    // WebSocket connection closed
+    sock.addEventListener('close', delegates.get(sock))
+    return sock
+  }
+  let socket: WebSocket | undefined = connect()
+
   const maxRetries = 3
   let retryCount = 0
-  let socket: WebSocket | undefined
-  const connect = (trigger: Trigger, address?: string) => {
+  const retry = () => {
     if (retryCount < maxRetries) {
-      socket = new WebSocket(url, protocols)
+      setTimeout(connect, Math.pow(2, retryCount) * 1000)
     }
-    const callback = (event: MessageEvent) => {
-      if (address === event.type) {
-        try {
-          const evt: BPEvent<string> = JSON.parse(event.data)
-          if (isBPEvent(evt)) {
+    socket = undefined
+  }
+
+  const callback = (evt: MessageEvent) => {
+    if (evt.type === 'message') {
+      try {
+        const message = JSON.parse(evt.data)
+        if (isSocketMessage(message)) {
+          const { address, event } = message
+          if (subscribers.has(address)) {
             const tpl = document.createElement('template')
             // @ts-ignore: https://developer.mozilla.org/en-US/docs/Web/API/Element/setHTMLUnsafe
-            tpl.setHTMLUnsafe(evt.detail ?? '')
-            trigger({ type: evt.type, detail: tpl.content })
+            tpl.setHTMLUnsafe(event.detail)
+            subscribers.get(address)?.({ type: event.type, detail: tpl.content })
           }
-        } catch (error) {
-          console.error('Error parsing incoming message:', error)
         }
-      }
-      if (isCloseEvent(event)) {
-        if ([1006, 1012, 1013].indexOf(event.code) >= 0) {
-          // Abnormal Closure/Service Restart/Try Again Later
-          setTimeout(connect, Math.pow(2, retryCount) * 1000) // Retry the connection after a delay (e.g., exponential backoff)
-        }
-      }
-      if (event.type === 'open') {
-        retryCount = 0
-      }
-      if (event.type === 'error') {
-        console.error('WebSocket error: ', event)
+      } catch (error) {
+        console.error('Error parsing incoming message:', error)
       }
     }
-    if (socket) {
-      delegates.set(socket, new DelegatedListener(callback))
-      // WebSocket connection opened
-      socket.addEventListener('open', delegates.get(socket))
-      // Handle incoming messages
-      address && socket.addEventListener(address, delegates.get(socket))
-      // Handle WebSocket errors
-      socket.addEventListener('error', delegates.get(socket))
-      // WebSocket connection closed
-      socket.addEventListener('close', delegates.get(socket))
+    if (isCloseEvent(evt)) {
+      // Abnormal Closure/Service Restart/Try Again Later
+      if ([1006, 1012, 1013].indexOf(evt.code) >= 0) retry()
     }
-    return () => {
-      if (socket) {
-        socket.close()
-        socket = undefined
-      }
+    if (evt.type === 'open') {
+      retryCount = 0
+    }
+    if (evt.type === 'error') {
+      console.error('WebSocket error: ', evt)
     }
   }
-  const send = <T = unknown>(message: SocketMessage<T>) => {
+
+  const subscribers = new Map<string, Trigger>()
+  const subscribe = (address: string, trigger: Trigger) => {
+    if (!subscribers.has(address)) {
+      subscribers.set(address, trigger)
+      return () => {
+        subscribers.delete(address)
+      }
+    }
+    console.error(`Sock already subscribed to address: [${address}]`)
+    return noop
+  }
+
+  const publish = <T = unknown>(message: SocketMessage<T>) => {
+    const cb = () => {
+      publish(message)
+      socket?.removeEventListener('open', cb)
+    }
     if (socket?.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify(message))
+      return socket.send(JSON.stringify(message))
     }
+    if (!socket) {
+      socket = connect()
+    }
+    socket?.addEventListener('open', cb)
   }
-  return [connect, send]
+  return [publish, subscribe]
 }

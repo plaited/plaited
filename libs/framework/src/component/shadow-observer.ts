@@ -1,4 +1,4 @@
-import type { Trigger } from '../types.js'
+import type { Trigger } from '../behavioral/types.js'
 import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
 import { BP_TRIGGER } from '../jsx/constants.js'
 

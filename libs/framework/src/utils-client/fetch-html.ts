@@ -3,7 +3,7 @@ import { FetchHTMLOptions } from './types.js'
 
 export const fetchHTML = async (
   url: RequestInfo | URL,
-  { retry, retryDelay, ...options }: FetchHTMLOptions,
+  { retry = 3, retryDelay = 1_000, ...options }: FetchHTMLOptions,
 ): Promise<string | undefined> => {
   while (retry > 0) {
     try {

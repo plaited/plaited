@@ -13,4 +13,4 @@ export const shuffleSyncs = (...syncs: (typeof sync)[]) => {
   return syncs
 }
 
-export { defaultLogger } from './default-logger.js'
+export { defaultDevtool } from './default-devtool.js'

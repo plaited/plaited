@@ -1,4 +1,4 @@
-import type { Attrs, BooleanAttributes, CreateTemplate, TemplateObject, VoidTags } from '../types.js'
+import type { Attrs, BooleanAttributes, CreateTemplate, TemplateObject, VoidTags } from './types.js'
 import { escape, kebabCase, isTypeOf } from '@plaited/utils'
 import {
   PLAITED_TEMPLATE_IDENTIFIER,

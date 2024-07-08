@@ -1,6 +1,7 @@
-import type { Actions, BProgram, Trigger, BPEvent } from '../behavioral/types.js'
+import type { Actions, BProgram, Trigger } from '../behavioral/types.js'
 import type { TemplateObject, Attrs, FunctionTemplate } from '../jsx/types.js'
-import type { UseSocket, UseWorker, UsePublisher, Disconnect } from '../utils-client/types.js'
+import type { UseWorker, UsePublisher, Disconnect, ExtendHooks, PublishToSocket } from '../utils-client/types.js'
+import type { UseEmit } from '../shared/types.js'
 
 export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
 
@@ -24,14 +25,6 @@ export type Sugar = {
 
 export type SugaredElement<T extends Element = Element> = T & Sugar
 
-export type UseEmit = (host: HTMLElement) => (
-  args: BPEvent & {
-    bubbles?: boolean
-    cancelable?: boolean
-    composed?: boolean
-  },
-) => void
-
 export type ConnectArgs = [ReturnType<UseWorker>] | [string, ReturnType<UsePublisher>]
 
 /** Clone feature for handling list situations where structure is consistent but the data rendered is what is different. This is a performance feature */
@@ -52,7 +45,7 @@ export type BProps = {
   emit: ReturnType<UseEmit>
   clone: ReturnType<UseClone>
   connect: (...args: ConnectArgs) => Disconnect
-  sendSocket: ReturnType<UseSocket>[1] | (<T = never>(..._: T[]) => void)
+  pubSock: PublishToSocket
 } & Omit<ReturnType<BProgram>, 'feedback'>
 
 export interface PlaitedElement extends HTMLElement {
@@ -81,6 +74,7 @@ export type PlaitedTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
 type BPFunction = (this: PlaitedElement, props: BProps) => Actions
 
 export type GetPlaitedElementArgs = {
+  tag: `${string}-${string}`
   /** Component template */
   template: TemplateObject
   /** observed Attributes that will trigger the native `attributeChangedCallback` method when modified*/
@@ -100,14 +94,17 @@ export type GetPlaitedElementArgs = {
   formDisabledCallback?(this: PlaitedElement, disabled: boolean): void
   formResetCallback?(this: PlaitedElement): void
   formStateRestoreCallback?(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
+} & ExtendHooks
+
+export type PlaitedComponentArgs = Omit<
+  GetPlaitedElementArgs,
+  'mode' | 'delegatesFocus' | 'ajax' | 'socket' | 'devtool'
+> & {
+  mode?: 'open' | 'closed'
+  delegatesFocus?: boolean
 }
 
-export type PlaitedComponent = <T extends Attrs = Attrs>(
-  args: Omit<GetPlaitedElementArgs, 'mode' | 'delegatesFocus'> & {
-    tag: `${string}-${string}`
-    mode?: 'open' | 'closed'
-    delegatesFocus?: boolean
-  },
-) => PlaitedTemplate<T>
-
-export type CaptureHook = (shadowRoot: ShadowRoot) => () => void
+export type PlaitedComponent = {
+  <T extends Attrs = Attrs>(args: PlaitedComponentArgs): PlaitedTemplate<T>
+  extend: (args: ExtendHooks) => <T extends Attrs = Attrs>(args: PlaitedComponentArgs) => PlaitedTemplate<T>
+}

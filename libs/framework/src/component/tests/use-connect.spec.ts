@@ -8,7 +8,6 @@ test('useConnect: with usePublisher', () => {
   const disconnectSet = new Set<Disconnect>()
   const pub = usePublisher()
   const spy = sinon.spy()
-  // @ts-expect-error: just testing publisher
   const disconnect = useConnect({ trigger: spy, disconnectSet })('a', pub)
   pub({ value: 4 })
   expect(spy.calledWith({ type: 'a', detail: { value: 4 } })).toBeTrue()

@@ -1,6 +1,6 @@
+import type { DesignTokenGroup } from '../types.js'
 import { camelCase, kebabCase } from '@plaited/utils'
 import { resolveAlias } from './resolve-alias.js'
-import type { DesignTokenGroup } from '../types.js'
 import { prefix } from './constants.js'
 export const resolveTSVar = (value: string, allTokens: DesignTokenGroup) => {
   const res = resolveAlias(value, allTokens)

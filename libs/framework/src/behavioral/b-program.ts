@@ -1,7 +1,7 @@
 import { isTypeOf } from '@plaited/utils'
 import {
   CandidateBid,
-  Logger,
+  Devtool,
   Feedback,
   BPListener,
   PendingBid,
@@ -17,15 +17,15 @@ import { thread, sync, loop } from './rules.js'
 /**
  * Creates a behavioral program that manages the execution of behavioral threads.
  *
- * @template T The type of the logger's output.
- * @param {Logger<T>} logger - An optional logger function or true to use default event log callback. It receives a stream of event selection snapshots.
+ * @template T The type of the devtool's output.
+ * @param {Devtool<T>} devtool - An optional devtool function or true to use default event log callback. It receives a stream of event selection snapshots.
  * @returns {Object} An object containing methods for managing the program and executing behavioral threads.
  */
-export const bProgram: BProgram = <T>(logger?: Logger<T>) => {
+export const bProgram: BProgram = <T>(devtool?: Devtool<T>) => {
   const pending = new Set<PendingBid>()
   const running = new Set<RunningBid>()
   const actionPublisher = createPublisher<BPEvent>()
-  const snapshotPublisher = logger && createPublisher<T>()
+  const snapshotPublisher = devtool && createPublisher<T>()
   function run() {
     running.size && step()
   }
@@ -74,7 +74,7 @@ export const bProgram: BProgram = <T>(logger?: Logger<T>) => {
       ({ priority: priorityA }, { priority: priorityB }) => priorityA - priorityB,
     )[0]
     if (selectedEvent) {
-      snapshotPublisher && snapshotPublisher(logger({ candidates, selectedEvent, pending }))
+      snapshotPublisher && snapshotPublisher(devtool({ candidates, selectedEvent, pending }))
       nextStep(selectedEvent)
     }
   }
@@ -135,7 +135,7 @@ export const bProgram: BProgram = <T>(logger?: Logger<T>) => {
     }
   }
 
-  if (snapshotPublisher) snapshotPublisher.subscribe((data) => logger.callback(data))
+  if (snapshotPublisher) snapshotPublisher.subscribe((data) => devtool.callback(data))
 
   return Object.freeze({
     /** add thread function to behavioral program */

@@ -1,5 +1,5 @@
 export * from './behavioral/rules.js'
 export { bProgram } from './behavioral/b-program.js'
 export * from './behavioral/utils.js'
-export type { UsePostMessage } from './utils-client/types.js'
-export { usePostMessage } from './utils-client/use-post-message.js'
+
+export { usePostMessage } from './shared/use-post-message.js'

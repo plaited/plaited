@@ -2,8 +2,9 @@ import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
 import { NAVIGATE_EVENT_TYPE } from './constants.js'
 import { useEmit } from '../shared/use-emit.js'
 import { PlaitedElement } from '../component/types.js'
+import { CaptureHook } from './types.js'
 
-export const captureHook = (shadowRoot: ShadowRoot) => {
+export const captureHook: CaptureHook = (shadowRoot) => {
   delegates.set(
     shadowRoot,
     new DelegatedListener((event) => {

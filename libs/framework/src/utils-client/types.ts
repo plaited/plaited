@@ -1,4 +1,4 @@
-import type { BPEvent, Trigger } from '../behavioral/types.js'
+import type { BPEvent, Trigger, Devtool } from '../behavioral/types.js'
 
 export type Disconnect = () => void
 
@@ -26,32 +26,21 @@ export type SocketMessage<T = unknown> = {
   event: BPEvent<T>
 }
 
+export type PublishToSocket = (message: SocketMessage) => void
+export type SubscribeToSocket = (address: string, trigger: Trigger) => Disconnect
+
 export type UseSocket = {
-  (
-    url: string | URL,
-    protocols?: string | string[],
-  ): [
-   (trigger: Trigger, address?: string) => Disconnect,
-  (message: SocketMessage) => void
-  ]
-    
+  (url?: string | URL, protocols?: string | string[]): [PublishToSocket, SubscribeToSocket]
 }
 
-export type UsePostMessage = ({
-  trigger,
-  publicEvents,
-  targetOrigin,
-}: {
-  trigger: Trigger
-  publicEvents: string[]
-  targetOrigin?: string
-}) => {
-  (data: BPEvent): void
-  disconnect(): void
+export type FetchHTMLOptions = RequestInit & { retry?: number; retryDelay?: number }
+
+export type CaptureHook = (shadowRoot: ShadowRoot) => Disconnect
+
+export type UseAjax = (args: RequestInit & { retry?: number; retryDelay?: number }) => CaptureHook
+
+export type ExtendHooks = {
+  devtool?: Devtool
+  socket?: ReturnType<UseSocket>
+  ajax?: ReturnType<UseAjax>
 }
-
-import type { Logger } from '../behavioral/types.js'
-
-export type FetchHTMLOptions = RequestInit & { retry: number; retryDelay: number }
-
-export type WireArgs = FetchHTMLOptions & { logger?: Logger, socket?: ReturnType<UseSocket> }

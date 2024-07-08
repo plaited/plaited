@@ -1,7 +1,0 @@
-export * from './behavioral/types.js'
-export * from './component/types.js'
-export * from './css/types.js'
-export * from './jsx/types.js'
-export * from './utils-client/types.js'
-export * from './utils-design-token/types.js'
-export * from './utils-server/types.js'

@@ -1,4 +1,4 @@
-import { ContextTypes, Contexts, DesignToken, StaticToken, BaseToken, ContextualToken } from '../types.js'
+import type { ContextTypes, Contexts, DesignToken, StaticToken, BaseToken, ContextualToken } from '../types.js'
 
 export const isValidContext = ({
   ctx,

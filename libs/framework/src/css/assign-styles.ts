@@ -1,4 +1,4 @@
-import { AssignStylesObject } from '../types.js'
+import type { AssignStylesObject } from './types.js'
 
 export const assignStyles = (...styleObjects: Array<AssignStylesObject | undefined | false | null>) => {
   const cls: Array<string | undefined | false | null> = []
