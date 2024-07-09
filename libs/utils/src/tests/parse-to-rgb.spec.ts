@@ -1,8 +1,7 @@
 import { test, expect } from 'bun:test'
-import { parseToRgb } from '../parse-to-rgb.js'
+import { parseToRgb } from '../index.js'
 
 test('parseToRgb: improper hex', () => {
-  //@ts-expect-error: improper hex
   expect(parseToRgb('8A99A8')).toBe(undefined)
 })
 test('parseToRgb: six digits', () => {

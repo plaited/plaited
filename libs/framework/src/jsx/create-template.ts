@@ -1,5 +1,5 @@
 import type { Attrs, BooleanAttributes, CreateTemplate, TemplateObject, VoidTags } from './types.js'
-import { isTypeOf, kebabCase, escape } from '../utils.js'
+import { isTypeOf, kebabCase, escape } from '@plaited/utils'
 import {
   PLAITED_TEMPLATE_IDENTIFIER,
   BOOLEAN_ATTRS,

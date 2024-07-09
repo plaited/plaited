@@ -1,5 +1,5 @@
 {
-  "name": "plaited",
+  "name": "@plaited/utils",
   "version": "6.0.0",
   "license": "ISC",
   "engines": {
@@ -12,18 +12,15 @@
   "bugs": {
     "url": "https://github.com/plaited/plaited/issues"
   },
-  "homepage": "https://github.com/plaited/plaited/tree/main/libs/plaited#readme",
+  "homepage": "https://github.com/plaited/plaited/tree/main/libs-cross-framework/utils#readme",
+  "keywords": [
+    "plaited",
+    "utils"
+  ],
   "type": "module",
   "main": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./jsx-dev-runtime": "./src/jsx/dev-runtime.ts",
-    "./jsx-runtime": "./src/jsx/runtime.ts",
-    "./utils-behavioral": "./src/utils-behavioral.ts",
-    "./utils-client": "./src/utils-client.ts",
-    "./utils-design-token": "./src/utils-design-token.ts",
-    "./utils-server": "./src/utils-server.ts",
-    "./utils-worker": "./src/utils-worker.ts"
+    ".": "./src/index.ts"
   },
   "files": [
     "./src/**",
@@ -37,9 +34,5 @@
     "test": "bun test src/**/*",
     "test-watch": "bun test tests/* --watch",
     "watch": "bun run check --watch"
-  },
-  "dependencies": {
-    "@plaited/utils": "6.0.0",
-    "csstype": "3.1.3"
   }
 }

@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { keyMirror } from '../key-mirror.js'
+import { keyMirror } from '../index.js'
 
 test('keyMirror(): return an object of mirrored keys as values', () => {
   expect(keyMirror('a', 'b', 'c')).toEqual({

@@ -2,7 +2,7 @@ import type { Trigger } from '../behavioral/types.js'
 import type { UseSocket, SocketMessage } from './types.js'
 import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
 import { SOCKET_URL } from './constants.js'
-import { isTypeOf, noop } from '../utils.js'
+import { isTypeOf, noop } from '@plaited/utils'
 
 const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => event.type === 'close'
 

@@ -1,4 +1,4 @@
-import { isTypeOf } from '../utils.js'
+import { isTypeOf } from '@plaited/utils'
 import { Sync, RulesFunction, Loop, Thread } from './types.js'
 
 /**

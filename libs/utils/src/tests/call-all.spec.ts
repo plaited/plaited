@@ -1,6 +1,6 @@
 import sinon from 'sinon'
 import { test, expect } from 'bun:test'
-import { callAll } from '../call-all.js'
+import { callAll } from '../index.js'
 
 test('callAll()', () => {
   const expected = 'string'

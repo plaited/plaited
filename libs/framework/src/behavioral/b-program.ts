@@ -1,4 +1,4 @@
-import { isTypeOf } from '../utils.js'
+import { isTypeOf } from '@plaited/utils'
 import {
   CandidateBid,
   Devtool,

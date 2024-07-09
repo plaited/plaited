@@ -1,7 +1,0 @@
-export * from './assert/assert.js'
-export { findByAttribute } from './assert/find-by-attribute.js'
-export { findByText } from './assert/find-by-text.js'
-export { fireEvent } from './assert/fire-event.js'
-export { match } from './assert/match.js'
-export { throws } from './assert/throws.js'
-export { wait } from './utils/wait.js'

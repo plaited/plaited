@@ -1,5 +1,5 @@
 import type { PlaitedTemplate } from '../component/types.js'
-import { isTypeOf } from '../utils.js'
+import { isTypeOf } from '@plaited/utils'
 import { PLAITED_COMPONENT_IDENTIFIER } from '../shared/constants.js'
 import { GLOB_PATTERN_COMPONENT } from './constants.js'
 

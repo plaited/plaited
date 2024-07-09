@@ -1,4 +1,4 @@
-import { trueTypeOf } from '../utils.js'
+import { trueTypeOf } from '@plaited/utils'
 import type { UsePostMessage } from './types.js'
 import type { BPEvent } from '../behavioral/types.js'
 import { onlyPublicEvents } from '../shared/only-public-events.js'

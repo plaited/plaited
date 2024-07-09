@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { wait } from '../../utils.js'
+import { wait } from '@plaited/utils'
 import sinon from 'sinon'
 import { useWorker } from '../use-worker.js'
 

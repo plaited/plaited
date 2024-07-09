@@ -1,4 +1,4 @@
-import { trueTypeOf } from '../utils.js'
+import { trueTypeOf } from '@plaited/utils'
 import { createIDB } from './create-idb.js'
 
 type UpdateStoreArg<T = unknown> = (arg: T) => T

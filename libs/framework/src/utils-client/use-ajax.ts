@@ -1,5 +1,5 @@
 /** Utility function for enabling hypermedia patterns */
-import { isTypeOf, canUseDOM } from '../utils.js'
+import { isTypeOf, canUseDOM } from '@plaited/utils'
 import { displayContent } from './display-content.js'
 import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
 import { fetchHTML } from './fetch-html.js'

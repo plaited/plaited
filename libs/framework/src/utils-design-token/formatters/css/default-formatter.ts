@@ -11,7 +11,7 @@ import type {
   DesignTokenGroup,
 } from '../../types.js'
 import { hasAlias } from '../has-alias.js'
-import { kebabCase } from '../../../utils.js'
+import { kebabCase } from '@plaited/utils'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'
 import { getRule, resolveCSSVar } from '../css-utils.js'
 

@@ -3,7 +3,7 @@ import sinon from 'sinon'
 import { assert } from '../assert.js'
 import { throws } from '../throws.js'
 import { match } from '../match.js'
-import { wait } from '../../utils.js'
+import { wait } from '@plaited/utils'
 const sum = (...args: number[]) => {
   if (args.some((v) => Number.isNaN(v))) throw new TypeError('NaN')
   return args.reduce((acc, n) => acc + n, 0)
@@ -135,19 +135,17 @@ test('assert: required params', async () => {
   try {
     await spy()
   } catch (err) {
-    // @ts-expect-error: testing error message
     expect(err.message).toBe(
       "The following parameters are required by 'assert': (\n  given, should, actual, expected\n)",
     )
   }
   expect(spy.calledOnce).toBe(true)
-  // @ts-expect-error: testing partial
+  //@ts-ignore: testing error message
   const partialParam = async () => await assert({ given: 'some keys', should: 'find the missing keys' })
   spy = sinon.spy(partialParam)
   try {
     await spy()
   } catch (err) {
-    // @ts-expect-error: testing error message
     expect(err.message).toBe("The following parameters are required by 'assert': (\n  actual, expected\n)")
   }
   expect(spy.calledOnce).toBe(true)

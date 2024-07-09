@@ -45,6 +45,7 @@
     "@storybook/global": "5.0.0",
     "@storybook/preview-api": "7.6.13",
     "@storybook/types": "7.6.13",
+    "@plaited/utils": "6.0.0",
     "plaited": "6.0.0"
   }
 }

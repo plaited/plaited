@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { deepEqual } from '../deep-equal.js'
+import { deepEqual } from '../index.js'
 
 test('deepEqual()', () => {
   /** Primitive values */
