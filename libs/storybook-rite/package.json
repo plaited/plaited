@@ -41,7 +41,7 @@
   },
   "types": "dist/index.d.ts",
   "dependencies": {
-    "@plaited/assert": "6.0.0",
+    "plaited": "6.0.0",
     "@storybook/instrumenter": "7.6.13"
   },
   "peerDependencies": {
