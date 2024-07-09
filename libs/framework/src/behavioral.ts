@@ -1,4 +1,5 @@
 export * from './behavioral/rules.js'
-export { bProgram } from './behavioral/b-program.js'
-export * from './behavioral/utils.js'
-export { usePostMessage } from './utils/use-post-message.js'
+export * from './behavioral/b-program.js'
+export * from './behavioral/shuffle-syncs.js'
+export * from './behavioral/default-devtool.js'
+export * from './behavioral/random-event.js'
