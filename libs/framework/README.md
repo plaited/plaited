@@ -4,14 +4,12 @@ Rapidly code web interfaces as requirements change and evolve.
 
 ## Requirements
 
-### JavaScript runtime options
-
-1. [Node](https://nodejs.org/en) >= v18
-2. Any modern evergreen browser
+- exports['*']: Typescript >=  5.5.2
+- export['utils-server']:  Bun >= 1.1.17
 
 ## Installing
 
-`npm install --save plaited`
+`bun install --save plaited`
 
 ## Library goals
 
