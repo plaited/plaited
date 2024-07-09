@@ -1,7 +1,8 @@
 import { test, expect } from 'bun:test'
 import { useConnect } from '../use-connect.js'
 import sinon from 'sinon'
-import { usePublisher, Disconnect } from '../../utils-client.js'
+import { usePublisher } from '../../utils-client.js'
+import { Disconnect } from '../../shared/types.js'
 
 test('useConnect: with usePublisher', () => {
   const disconnectSet = new Set<Disconnect>()

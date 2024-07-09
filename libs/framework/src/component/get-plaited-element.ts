@@ -1,5 +1,5 @@
 import type { BPEvent, Trigger } from '../behavioral/types.js'
-import type { Disconnect } from '../utils-client/types.js'
+import type { Disconnect } from '../shared/types.js'
 import type { PlaitedElement, QuerySelector, GetPlaitedElementArgs } from './types.js'
 import { bProgram } from '../behavioral/b-program.js'
 import { useClone } from './use-clone.js'

@@ -1,5 +1,6 @@
 import type { Trigger } from '../behavioral/types.js'
-import type { UsePublisher, Disconnect } from '../utils-client/types.js'
+import type { UsePublisher } from '../utils-client/types.js'
+import type { Disconnect } from '../shared/types.js'
 
 export const connectToPublisher =
   (trigger: Trigger, addDisconnect: (arg: Disconnect) => Set<Disconnect>) =>

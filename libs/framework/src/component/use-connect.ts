@@ -1,5 +1,5 @@
 import type { Trigger } from '../behavioral/types.js'
-import type { Disconnect } from '../utils-client/types.js'
+import type { Disconnect } from '../shared/types.js'
 import type { ConnectArgs } from './types.js'
 
 export const useConnect =

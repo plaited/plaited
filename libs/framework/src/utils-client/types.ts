@@ -1,21 +1,10 @@
 import type { BPEvent, Trigger, Devtool } from '../behavioral/types.js'
-
-export type Disconnect = () => void
+import type { Disconnect } from '../shared/types.js'
 
 export type UsePublisher = {
   (): {
     <T = unknown>(value?: T): void
     sub: (type: string, trigger: Trigger) => () => void
-  }
-}
-
-export type UseWorker = {
-  (
-    scriptURL: string | URL,
-    options?: WorkerOptions,
-  ): {
-    (args: BPEvent): void
-    connect(trigger: Trigger): Disconnect
   }
 }
 

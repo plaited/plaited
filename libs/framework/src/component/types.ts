@@ -1,6 +1,8 @@
 import type { Actions, BProgram, Trigger } from '../behavioral/types.js'
 import type { TemplateObject, Attrs, FunctionTemplate } from '../jsx/types.js'
-import type { UseWorker, UsePublisher, Disconnect, ExtendHooks, PublishToSocket } from '../utils-client/types.js'
+import type { UsePublisher, ExtendHooks, PublishToSocket } from '../utils-client/types.js'
+import type { Disconnect } from '../shared/types.js'
+import type { UseWorker } from '../utils-worker/types.js'
 import type { UseEmit } from '../shared/use-emit.js'
 
 export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'

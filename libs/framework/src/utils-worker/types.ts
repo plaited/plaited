@@ -1,14 +1,15 @@
-import type {
-  BPEvent,
-  BProgram,
-  Devtool,
-  Actions,
-  Trigger,
-  Thread,
-  Loop,
-  Sync,
-  AddThreads,
-} from '../behavioral/types.js'
+import type { BPEvent, Devtool, Actions, Trigger, Thread, Loop, Sync, AddThreads } from '../behavioral/types.js'
+import { Disconnect } from '../shared/types.js'
+
+export type UseWorker = {
+  (
+    scriptURL: string | URL,
+    options?: WorkerOptions,
+  ): {
+    (args: BPEvent): void
+    connect(trigger: Trigger): Disconnect
+  }
+}
 
 export type UsePostMessage = ({
   trigger,
