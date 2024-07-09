@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { RulesFunction } from '../../types.js'
+import { RulesFunction } from '../types.js'
 import { bProgram } from '../b-program.js'
 import { loop, sync, thread } from '../rules.js'
 
@@ -181,7 +181,7 @@ test('detect winner', () => {
   trigger({ type: 'X', detail: { square: 1 } })
   trigger({ type: 'O', detail: { square: 4 } })
   trigger({ type: 'X', detail: { square: 2 } })
-
+  // @ts-expect-error: testing winner
   expect(winner).toEqual({ player: 'X', squares: [0, 1, 2] })
 })
 
@@ -219,7 +219,7 @@ test('stop game', () => {
   trigger({ type: 'X', detail: { square: 1 } })
   trigger({ type: 'O', detail: { square: 4 } })
   trigger({ type: 'X', detail: { square: 2 } })
-
+  // @ts-expect-error: testing winner
   expect(winner).toEqual({ player: 'X', squares: [0, 1, 2] })
   // O tries to take square 5 after a winner has been declared
   trigger({ type: 'O', detail: { square: 5 } })
@@ -354,6 +354,6 @@ test('prevent completion of line with two Xs', () => {
   trigger({ type: 'X', detail: { square: 8 } })
   expect(board.has(7)).toBe(false) // O has blocked X from winning with [6, 7, 8]
   trigger({ type: 'X', detail: { square: 5 } })
-
+  // @ts-expect-error: testing winner
   expect(winner).toEqual({ player: 'X', squares: [2, 5, 8] })
 })

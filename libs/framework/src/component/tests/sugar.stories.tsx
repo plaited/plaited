@@ -1,6 +1,6 @@
 import { assert, findByAttribute } from '@plaited/storybook-rite'
 import { Meta } from '@plaited/storybook'
-import { QuerySelector, Position, PlaitedElement } from '../../types.js'
+import { QuerySelector, Position, PlaitedElement } from '../types.js'
 import { Component } from '../component.js'
 
 const meta: Meta = {
@@ -154,7 +154,7 @@ export const beforebegin = {
     assert({
       given: 'before calling trigger',
       should: 'root child count shoudl be 100',
-      actual: root.childElementCount,
+      actual: root?.childElementCount,
       expected: 1,
     })
     fixture.trigger({ type: 'insert', detail: 'beforebegin' })
@@ -162,14 +162,14 @@ export const beforebegin = {
     assert({
       given: 'after calling trigger',
       should: 'root child count should be 101',
-      actual: root.childElementCount,
+      actual: root?.childElementCount,
       expected: 101,
     })
     const table = await findByAttribute<HTMLTableElement>('bp-target', 'table')
     assert({
       given: 'after calling trigger',
       should: 'root last child should be the table',
-      actual: root.lastChild,
+      actual: root?.lastChild,
       expected: table,
     })
   },
@@ -182,18 +182,19 @@ export const afterbegin = {
     assert({
       given: 'before calling trigger',
       should: 'table children should be empty',
-      actual: table.childElementCount,
+      actual: table?.childElementCount,
       expected: 0,
     })
     fixture.trigger({ type: 'insert', detail: 'afterbegin' })
     assert({
       given: 'before calling trigger',
       should: 'table children should be 100',
-      actual: table.childElementCount,
+      actual: table?.childElementCount,
       expected: 100,
     })
-    const lastChild = table.lastChild
+    const lastChild = table?.lastChild
     fixture.trigger({ type: 'insert', detail: 'afterbegin' })
+    // @ts-expect-error: allow it to error
     const nodeList = Array.from(table.childNodes)
     assert({
       given: 'after calling trigger again',
@@ -204,6 +205,7 @@ export const afterbegin = {
     assert({
       given: 'after calling trigger again',
       should: 'original last child should be 200th',
+      // @ts-expect-error: allow it to error
       actual: nodeList.indexOf(lastChild),
       expected: 199,
     })
@@ -217,18 +219,19 @@ export const beforeend = {
     assert({
       given: 'before calling trigger',
       should: 'table children should be empty',
-      actual: table.childElementCount,
+      actual: table?.childElementCount,
       expected: 0,
     })
     fixture.trigger({ type: 'insert', detail: 'beforeend' })
     assert({
       given: 'before calling trigger',
       should: 'table children should be 100',
-      actual: table.childElementCount,
+      actual: table?.childElementCount,
       expected: 100,
     })
-    const lastChild = table.lastChild
+    const lastChild = table?.lastChild
     fixture.trigger({ type: 'insert', detail: 'beforeend' })
+    // @ts-expect-error: allow it to error
     const nodeList = Array.from(table.childNodes)
     assert({
       given: 'after calling trigger again',
@@ -239,6 +242,7 @@ export const beforeend = {
     assert({
       given: 'after calling trigger again',
       should: 'the original last child should be the 100th child',
+      // @ts-expect-error: allow it to error
       actual: nodeList.indexOf(lastChild),
       expected: 99,
     })
@@ -252,7 +256,7 @@ export const afterend = {
     assert({
       given: 'before calling trigger',
       should: 'root child count should be 1',
-      actual: root.childElementCount,
+      actual: root?.childElementCount,
       expected: 1,
     })
     fixture.trigger({ type: 'insert', detail: 'afterend' })
@@ -260,14 +264,14 @@ export const afterend = {
     assert({
       given: 'after calling trigger',
       should: 'root child count should be 101',
-      actual: root.childElementCount,
+      actual: root?.childElementCount,
       expected: 101,
     })
     const table = await findByAttribute<HTMLTableElement>('bp-target', 'table')
     assert({
       given: 'after calling trigger',
       should: 'root first childe should be the table',
-      actual: root.firstChild,
+      actual: root?.firstChild,
       expected: table,
     })
   },
@@ -280,14 +284,14 @@ export const render = {
     assert({
       given: 'before calling trigger',
       should: 'table children should be empty',
-      actual: table.childElementCount,
+      actual: table?.childElementCount,
       expected: 0,
     })
     fixture.trigger({ type: 'render' })
     assert({
       given: 'before calling trigger',
       should: 'table children should be 100',
-      actual: table.childElementCount,
+      actual: table?.childElementCount,
       expected: 100,
     })
   },
@@ -300,14 +304,14 @@ export const replace = {
     assert({
       given: 'before calling trigger',
       should: 'root first child should be a table',
-      actual: root.firstChild instanceof HTMLTableElement,
+      actual: root?.firstChild instanceof HTMLTableElement,
       expected: true,
     })
     fixture.trigger({ type: 'replace' })
     assert({
       given: 'before calling trigger',
       should: 'root first childe children should be a span',
-      actual: root.firstChild instanceof HTMLSpanElement,
+      actual: root?.firstChild instanceof HTMLSpanElement,
       expected: true,
     })
   },
@@ -320,14 +324,14 @@ export const getAttribute = {
     assert({
       given: 'before calling trigger',
       should: 'root firstChild should be a table',
-      actual: root.firstChild instanceof HTMLTableElement,
+      actual: root?.firstChild instanceof HTMLTableElement,
       expected: true,
     })
     fixture.trigger({ type: 'getAttribute' })
     assert({
       given: 'after calling trigger',
       should: 'root firstChild should be text',
-      actual: root.firstChild instanceof Text,
+      actual: root?.firstChild instanceof Text,
       expected: true,
     })
   },
@@ -371,13 +375,13 @@ export const multiSetAttributes = {
     assert({
       given: 'before calling multiSetAttributes trigger',
       should: 'el should have class',
-      actual: el.getAttribute('class'),
+      actual: el?.getAttribute('class'),
       expected: 'glyphicon glyphicon-remove',
     })
     assert({
       given: 'before calling multiSetAttributes trigger',
       should: 'aria-hiden should be true',
-      actual: el.getAttribute('aria-hidden'),
+      actual: el?.getAttribute('aria-hidden'),
       expected: 'true',
     })
     assert({
@@ -404,13 +408,13 @@ export const multiSetAttributes = {
     assert({
       given: 'after calling removeAttributes trigger',
       should: 'aria-hiden should be false',
-      actual: el.getAttribute('aria-hidden'),
+      actual: el?.getAttribute('aria-hidden'),
       expected: 'false',
     })
     assert({
       given: 'after calling removeAttributes trigger',
       should: 'el should not have class attribute',
-      actual: el.getAttribute('class'),
+      actual: el?.getAttribute('class'),
       expected: null,
     })
   },

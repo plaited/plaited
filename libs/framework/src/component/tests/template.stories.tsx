@@ -35,7 +35,7 @@ export const noDeclarativeShadowDom: StoryObj = {
   play: async () => {
     const host = document.querySelector(Fixture.tag)
     const inner = await findByAttribute('data-test', 'content')
-    const textContent = inner.textContent
+    const textContent = inner?.textContent
     assert({
       given: 'Appending template-element',
       should: 'have a div with content',
@@ -45,7 +45,7 @@ export const noDeclarativeShadowDom: StoryObj = {
     assert({
       given: 'Appending template-element',
       should: 'have constructable adoptedStyleSheets',
-      actual: host.shadowRoot.adoptedStyleSheets.length,
+      actual: host?.shadowRoot?.adoptedStyleSheets.length,
       expected: 1,
     })
   },
@@ -88,11 +88,11 @@ export const withDeclarativeShadowDom: StoryObj = {
     const host = await findByAttribute<PlaitedElement>('bp-target', 'host')
     let inner = await findByAttribute('bp-target', 'inner', host)
     const style = await findByText(styles.inner.stylesheet.join(' '), host)
-    let textContent = inner.textContent
+    let textContent = inner?.textContent
     assert({
       given: 'before registering custom element',
       should: 'have style tag',
-      actual: style.textContent,
+      actual: style?.textContent,
       expected: styles.inner.stylesheet.join(' '),
     })
     assert({
@@ -101,6 +101,7 @@ export const withDeclarativeShadowDom: StoryObj = {
       actual: textContent,
       expected: 'before hydration',
     })
+    // @ts-expect-error: allow it to error
     let computedStyle = window.getComputedStyle(inner)
     let color = computedStyle.color
     assert({
@@ -123,10 +124,11 @@ export const withDeclarativeShadowDom: StoryObj = {
         }
       },
     })
-    host.trigger({ type: 'render' })
+    host?.trigger({ type: 'render' })
 
     inner = await findByAttribute('bp-target', 'inner', host)
-    textContent = inner.textContent
+    textContent = inner?.textContent
+    // @ts-expect-error: allow it to error
     computedStyle = window.getComputedStyle(inner)
     color = computedStyle.color
     assert({

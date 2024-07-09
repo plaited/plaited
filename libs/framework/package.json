@@ -32,8 +32,10 @@
     "access": "public"
   },
   "scripts": {
+    "check": "tsc --project tsconfig.json",
     "test": "bun test src/**/*",
-    "test-watch": "bun test tests/* --watch"
+    "test-watch": "bun test tests/* --watch",
+    "watch": "bun run check --watch"
   },
   "dependencies": {
     "@plaited/utils": "6.0.0",

@@ -39,13 +39,13 @@ export const basic: StoryObj = {
   render: () => <DynamicOnly />,
   play: async () => {
     const target = document.querySelector<PlaitedElement>(DynamicOnly.tag)
-    const shadowRoot = target.shadowRoot
-    target.trigger({ type: 'render' })
+    const shadowRoot = target?.shadowRoot
+    target?.trigger({ type: 'render' })
     await wait(60)
     assert({
       given: 'dynamic render of the same stylesheet twice',
       should: 'have adoptedStyleSheets of length 3',
-      actual: shadowRoot.adoptedStyleSheets.length,
+      actual: shadowRoot?.adoptedStyleSheets.length,
       expected: 3,
     })
   },
@@ -91,13 +91,13 @@ export const withDefault: StoryObj = {
   render: () => <WithDefaultStyles />,
   play: async () => {
     const target = document.querySelector<PlaitedElement>(WithDefaultStyles.tag)
-    const shadowRoot = target.shadowRoot
-    target.trigger({ type: 'render' })
+    const shadowRoot = target?.shadowRoot
+    target?.trigger({ type: 'render' })
     await wait(60)
     assert({
       given: 'dynamic render with default styles from template',
       should: 'have adoptedStyleSheets of length 2',
-      actual: shadowRoot.adoptedStyleSheets.length,
+      actual: shadowRoot?.adoptedStyleSheets.length,
       expected: 2,
     })
   },

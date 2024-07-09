@@ -6,11 +6,11 @@ export type BPEventTemplate<T = any> = () => BPEvent<T>
 
 export type BPListener<T = any> = string | ((args: { type: string; detail: T }) => boolean)
 
-export interface LogCallback<T> {
+export interface DevtoolCallback<T> {
   (args: T): void | Promise<void>
 }
 
-export type DefaultLogCallbackParams = {
+export type DefaultDevtoolCallbackParams = {
   thread: string
   selected: boolean
   type: string
@@ -24,13 +24,13 @@ export interface DefaultDevtool {
     pending: Set<PendingBid>
     selectedEvent: CandidateBid
     candidates: CandidateBid[]
-  }): DefaultLogCallbackParams
-  callback: LogCallback<DefaultLogCallbackParams>
+  }): DefaultDevtoolCallbackParams
+  callback: DevtoolCallback<DefaultDevtoolCallbackParams>
 }
 
 export type Devtool<T = unknown> = {
   (args: { pending: Set<PendingBid>; selectedEvent: CandidateBid; candidates: CandidateBid[] }): T
-  callback: LogCallback<T>
+  callback: DevtoolCallback<T>
 }
 
 export type RuleSet<T = any> = {

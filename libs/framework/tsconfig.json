@@ -9,11 +9,12 @@
     "strict": true,
     "skipLibCheck": true,
 
-    "outDir": "dist",
     "rootDir": "src",
 
     "jsx": "react-jsx",
     "jsxImportSource": "plaited",
+
+    "allowImportingTsExtensions":true,
+    "noEmit": true
   },
-  "exclude": ["**/dist", "**/tests/"]
 }
