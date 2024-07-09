@@ -21,6 +21,7 @@
     "./behavioral": "./src/behavioral.ts",
     "./jsx-dev-runtime": "./src/jsx/dev-runtime.ts",
     "./jsx-runtime": "./src/jsx/runtime.ts",
+    "./utils": "./src/utils.ts",
     "./utils-client": "./src/utils-client.ts",
     "./utils-design-token": "./src/utils-design-token.ts",
     "./utils-server": "./src/utils-server.ts"
@@ -39,7 +40,6 @@
     "watch": "bun run check --watch"
   },
   "dependencies": {
-    "@plaited/utils": "6.0.0",
     "csstype": "3.1.3"
   }
 }

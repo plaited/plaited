@@ -23,7 +23,7 @@ export const componentComms: StoryObj = {
     assert({
       given: 'render',
       should: 'header should contain string',
-      actual: header?.innerHTML,
+      actual: header?.textContent,
       expected: 'Hello',
     })
     button && (await fireEvent(button, 'click'))

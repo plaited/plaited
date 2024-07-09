@@ -1,4 +1,4 @@
-import { trueTypeOf } from '@plaited/utils'
+import { trueTypeOf } from '../utils.js'
 import { Trigger, BPEvent } from '../behavioral/types.js'
 
 export const onlyPublicEvents =

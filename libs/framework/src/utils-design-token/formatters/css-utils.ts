@@ -1,5 +1,5 @@
 import type { MediaQueries, ColorSchemes, ColorValue, AliasValue, ContextTypes, DesignTokenGroup } from '../types.js'
-import { kebabCase, isTypeOf } from '@plaited/utils'
+import { kebabCase, isTypeOf } from '../../utils.js'
 import { resolveAlias } from './resolve-alias.js'
 import { prefix } from './constants.js'
 export const remSuffix = (val: number) => `${val}rem`

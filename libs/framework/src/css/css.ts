@@ -1,4 +1,4 @@
-import { trueTypeOf, reduceWhitespace } from '@plaited/utils'
+import { trueTypeOf, reduceWhitespace } from '../utils.js'
 
 export type Primitive = null | undefined | number | string | boolean | bigint
 

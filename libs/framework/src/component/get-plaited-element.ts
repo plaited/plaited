@@ -9,7 +9,7 @@ import { BP_TRIGGER, BP_ADDRESS } from '../jsx/constants.js'
 import { cssCache, useQuery } from './use-query.js'
 import { shadowObserver, addListeners } from './shadow-observer.js'
 import { onlyPublicEvents } from '../shared/only-public-events.js'
-import { noop, ueid, canUseDOM } from '@plaited/utils'
+import { noop, ueid, canUseDOM } from 'plaited/utils'
 
 export const getPlaitedElement = ({
   tag,

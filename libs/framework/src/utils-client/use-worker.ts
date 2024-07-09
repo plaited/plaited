@@ -1,6 +1,6 @@
 import { Trigger, BPEvent } from '../behavioral/types.js'
 import type { UseWorker } from './types.js'
-import { isTypeOf } from '@plaited/utils'
+import { isTypeOf } from '../utils.js'
 /**
  * Enables communication between agents on the main thread and a dedicated postMessage client
  */

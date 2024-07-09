@@ -1,4 +1,4 @@
-import { keyMirror } from '@plaited/utils'
+import { keyMirror } from '../utils.js'
 
 export const MODULE_SCALE = keyMirror('S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'rel')
 

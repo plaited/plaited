@@ -1,5 +1,5 @@
 import type { Formatter } from '../../types.js'
-import { camelCase } from '@plaited/utils'
+import { camelCase } from '../../../utils.js'
 import { hasAlias } from '../has-alias.js'
 import { isValidAlias, getCssVar } from '../ts-utils.js'
 

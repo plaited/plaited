@@ -1,6 +1,6 @@
 import { Component, css } from 'plaited'
 
-import { opacityHex } from '@plaited/utils'
+import { opacityHex } from '../../../utils.js'
 import { SVG } from './noun-braids-2633610.js'
 
 export const stylesheet = css`

@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import { bProgram } from '../b-program.js'
 import { sync } from '../rules.js'
-import { wait } from '@plaited/utils'
+import { wait } from '../../utils.js'
 
 test('async feedback callbacks', async () => {
   const actual: string[] = []

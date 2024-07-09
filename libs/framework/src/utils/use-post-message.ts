@@ -1,7 +1,7 @@
-import { trueTypeOf } from '@plaited/utils'
-import type { UsePostMessage } from './types.js'
+import { trueTypeOf } from '../utils.js'
+import type { UsePostMessage } from '../shared/types.js'
 import type { BPEvent } from '../behavioral/types.js'
-import { onlyPublicEvents } from './only-public-events.js'
+import { onlyPublicEvents } from '../shared/only-public-events.js'
 
 /**
  * @description Is a utility function that allows us to send messages

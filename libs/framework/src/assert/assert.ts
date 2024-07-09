@@ -1,5 +1,5 @@
 import type { AssertionErrorInterface } from './types.js'
-import { deepEqual } from '@plaited/utils'
+import { deepEqual } from '../utils.js'
 import { ASSERTION_ERROR_NAME } from './constants.js'
 
 export class AssertionError extends Error implements AssertionErrorInterface {

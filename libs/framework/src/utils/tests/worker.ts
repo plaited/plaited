@@ -1,5 +1,5 @@
 import { bProgram } from '../../behavioral.js'
-import { usePostMessage } from '../use-post-message.js'
+import { usePostMessage } from '../../utils/use-post-message.ts'
 
 const { trigger, feedback } = bProgram()
 

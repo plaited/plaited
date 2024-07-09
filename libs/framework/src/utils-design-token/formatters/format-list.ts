@@ -1,5 +1,5 @@
 import type { FormatList, DesignToken, DesignTokenGroup } from '../types.js'
-import { trueTypeOf } from '@plaited/utils'
+import { trueTypeOf } from '../../utils.js'
 
 export const formatList: FormatList = ({ tokens, tokenPath = [], getFormatters, allTokens, contexts }) => {
   let string = ''

@@ -3,7 +3,6 @@
   "private": true,
   "type": "module",
   "devDependencies": {
-    "plaited": "workspace:*",
-    "@plaited/utils": "workspace:*"
+    "plaited": "workspace:*"
   }
 }

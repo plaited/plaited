@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { noop } from '@plaited/utils'
+import { noop } from '../utils.js'
 import { AssertionErrorConstructor } from './types.js'
 const isPromise = (x: any) => x && typeof x.then === 'function'
 const catchAndReturn = (x: Promise<unknown>) => x.catch((y) => y)
