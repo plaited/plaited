@@ -2,10 +2,6 @@
   "name": "@plaited/docs",
   "private": true,
   "type": "module",
-  "scripts": {
-    "build": "exit 0",
-    "test": "exit 0"
-  },
   "devDependencies": {
     "plaited": "workspace:*",
     "@plaited/utils": "workspace:*"
