@@ -18,13 +18,14 @@
   "exports": {
     ".": "./src/index.ts",
     "./assert": "./src/assert.ts",
-    "./behavioral": "./src/behavioral.ts",
     "./jsx-dev-runtime": "./src/jsx/dev-runtime.ts",
     "./jsx-runtime": "./src/jsx/runtime.ts",
     "./utils": "./src/utils.ts",
+    "./utils-behavioral": "./src/utils-behavioral.ts",
     "./utils-client": "./src/utils-client.ts",
     "./utils-design-token": "./src/utils-design-token.ts",
-    "./utils-server": "./src/utils-server.ts"
+    "./utils-server": "./src/utils-server.ts",
+    "./utils-worker": "./src/utils-worker.ts"
   },
   "files": [
     "./src/**",

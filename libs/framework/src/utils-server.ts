@@ -1,6 +1,4 @@
 export type * from './utils-server/types.js'
-export type * from './shared/types.js'
-export { fetchJSON } from './shared/fetch-json.js'
 export { findDuplicateTags } from './utils-server/find-duplicates-tags.js'
 export { useBuildArtifacts } from './utils-server/use-build-artifacts.js'
 export { useMiddleware } from './utils-server/use-middleware.js'

@@ -1,5 +1,6 @@
-import { wait } from '../utils.js'
-import type { FetchJSONOptions } from './types.js'
+import { wait } from './wait.js'
+
+export type FetchJSONOptions = RequestInit & { retry: number; retryDelay: number }
 
 /**
  * @description  A simple utility function to fetch data that handles common edge cases around failure

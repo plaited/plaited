@@ -6,7 +6,6 @@ export type UsePublisher = {
   (): {
     <T = unknown>(value?: T): void
     sub: (type: string, trigger: Trigger) => () => void
-    type: 'publisher'
   }
 }
 
@@ -17,7 +16,6 @@ export type UseWorker = {
   ): {
     (args: BPEvent): void
     connect(trigger: Trigger): Disconnect
-    type: 'worker'
   }
 }
 

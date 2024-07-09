@@ -15,7 +15,6 @@ export const usePublisher: UsePublisher = <T = unknown>() => {
       listeners.delete(cb)
     }
   }
-  pub.type = 'publisher' as const
   pub.sub = sub
   return pub
 }

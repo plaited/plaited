@@ -1,5 +1,5 @@
 import { trueTypeOf } from '../utils.js'
-import type { UsePostMessage } from '../shared/types.js'
+import type { UsePostMessage } from './types.js'
 import type { BPEvent } from '../behavioral/types.js'
 import { onlyPublicEvents } from '../shared/only-public-events.js'
 

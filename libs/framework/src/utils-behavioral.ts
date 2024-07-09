@@ -1,5 +1,3 @@
-export * from './behavioral/rules.js'
-export * from './behavioral/b-program.js'
 export * from './behavioral/shuffle-syncs.js'
 export * from './behavioral/default-devtool.js'
 export * from './behavioral/random-event.js'
