@@ -1,6 +1,6 @@
 import { usePostMessage } from './use-post-message.js'
 import { bProgram } from '../behavioral/b-program.js'
-import { DefineWorker } from './types.js'
+import type { DefineWorker } from './types.js'
 
 export const defineWorker: DefineWorker = (callback, { publicEvents, targetOrigin, devtool }) => {
   const { feedback, ...rest } = bProgram(devtool)

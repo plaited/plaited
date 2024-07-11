@@ -1,5 +1,5 @@
 import type { BPEvent, Devtool, Actions, Trigger, Thread, Loop, Sync, AddThreads } from '../behavioral/types.js'
-import { Disconnect } from '../shared/types.js'
+import type { Disconnect } from '../component/types.js'
 
 export type UseWorker = {
   (

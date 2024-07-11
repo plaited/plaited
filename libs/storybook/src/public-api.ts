@@ -1,8 +1,8 @@
 import type { Addon_ClientStoryApi, Addon_Loadable } from '@storybook/types'
 import { start } from '@storybook/preview-api'
 
-import { renderToCanvas } from './render.js'
 import type { PlaitedRender } from './types.js'
+import { renderToCanvas } from './render.js'
 
 export interface ClientApi extends Addon_ClientStoryApi<PlaitedRender['storyResult']> {
   configure(loader: Addon_Loadable, module: NodeModule): void

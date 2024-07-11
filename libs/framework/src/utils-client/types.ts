@@ -1,5 +1,5 @@
 import type { BPEvent, Trigger, Devtool } from '../behavioral/types.js'
-import type { Disconnect } from '../shared/types.js'
+import type { Disconnect } from '../component/types.js'
 
 export type UsePublisher = {
   (): {

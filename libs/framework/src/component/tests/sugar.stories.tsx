@@ -1,6 +1,6 @@
 import { assert, findByAttribute } from '@plaited/storybook-rite'
 import { Meta } from '@plaited/storybook'
-import { QuerySelector, Position, PlaitedElement } from '../types.js'
+import type { QuerySelector, Position, PlaitedElement } from '../types.js'
 import { Component } from '../component.js'
 
 const meta: Meta = {

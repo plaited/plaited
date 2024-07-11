@@ -2,7 +2,6 @@ import { assert, findByAttribute, findByText } from '@plaited/storybook-rite'
 import { Meta, StoryObj } from '@plaited/storybook'
 import { PlaitedElement, createStyles } from '../../index.js'
 import { Component } from '../component.js'
-import type { FT } from '../../jsx/types.js'
 import { createTemplate } from '../../jsx/create-template.js'
 const meta: Meta = {
   title: 'Tests/template',

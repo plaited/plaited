@@ -1,4 +1,4 @@
-import { DefaultDevtool } from './types.js'
+import type { DefaultDevtool } from './types.js'
 
 import { isListeningFor, isPendingRequest } from './private-utils.js'
 

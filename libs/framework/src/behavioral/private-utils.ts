@@ -1,5 +1,5 @@
 import { isTypeOf } from '@plaited/utils'
-import { BPListener, BPEvent, CandidateBid, BPEventTemplate } from './types.js'
+import type { BPListener, BPEvent, CandidateBid, BPEventTemplate } from './types.js'
 
 export const triggerWaitFor = () => true
 

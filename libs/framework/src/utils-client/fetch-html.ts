@@ -1,5 +1,5 @@
 import { wait } from '@plaited/utils'
-import { FetchHTMLOptions } from './types.js'
+import type { FetchHTMLOptions } from './types.js'
 
 export const fetchHTML = async (
   url: RequestInfo | URL,

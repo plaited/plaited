@@ -1,4 +1,4 @@
-import { Trigger, BPEvent } from '../behavioral/types.js'
+import type { Trigger, BPEvent } from '../behavioral/types.js'
 import type { UseWorker } from './types.js'
 import { isTypeOf } from '@plaited/utils'
 /**

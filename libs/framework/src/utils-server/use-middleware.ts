@@ -1,4 +1,4 @@
-import { Handler, MiddleWareHandler } from './types.js'
+import type { Handler, MiddleWareHandler } from './types.js'
 
 export const useMiddleware = (middleware?: MiddleWareHandler) => {
   return async (handler: Handler) => {

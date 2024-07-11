@@ -1,5 +1,5 @@
 import { trueTypeOf } from '@plaited/utils'
-import { Trigger, BPEvent } from '../behavioral/types.js'
+import type { Trigger, BPEvent } from '../behavioral/types.js'
 
 export const onlyPublicEvents =
   (trigger: Trigger, publicEvents: string[]) =>

@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { RulesFunction } from '../types.js'
+import type { RulesFunction } from '../types.js'
 import { bProgram } from '../b-program.js'
 import { loop, sync, thread } from '../rules.js'
 

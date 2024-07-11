@@ -1,4 +1,4 @@
-import { Sync } from './types.js'
+import type { Sync } from './types.js'
 
 /** @description Shuffle sync statements */
 export const shuffleSyncs = (...syncs: Sync[]) => {

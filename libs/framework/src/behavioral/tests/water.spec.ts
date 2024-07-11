@@ -2,7 +2,7 @@ import { test, expect } from 'bun:test'
 import { bProgram } from '../b-program.js'
 import { thread, sync, loop } from '../rules.js'
 import { defaultDevtool } from '../default-devtool.js'
-import { DefaultDevtoolCallbackParams } from '../types.js'
+import type { DefaultDevtoolCallbackParams } from '../types.js'
 
 test('Add hot water 3 times', () => {
   const actual: string[] = []

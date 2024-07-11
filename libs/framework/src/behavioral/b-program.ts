@@ -1,5 +1,5 @@
 import { isTypeOf } from '@plaited/utils'
-import {
+import type {
   CandidateBid,
   Devtool,
   Feedback,

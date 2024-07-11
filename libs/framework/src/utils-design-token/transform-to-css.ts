@@ -1,5 +1,5 @@
 import { reduceWhitespace } from '@plaited/utils'
-import { TransformerParams } from './types.js'
+import type { TransformerParams } from './types.js'
 import { getFormatters } from './formatters/css-formatters.js'
 import { formatList } from './formatters/format-list.js'
 
