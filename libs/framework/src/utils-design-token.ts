@@ -1,5 +1,0 @@
-export type * from './utils-design-token/types.js'
-export { getTokenElement } from './utils-design-token/get-token-element.js'
-export { tokenSchema } from './utils-design-token/token-schema.js'
-export { transformToCSS } from './utils-design-token/transform-to-css.js'
-export { transformToTS } from './utils-design-token/transform-to-ts.js'

@@ -21,8 +21,9 @@
     "./jsx-runtime": "./src/jsx/runtime.ts",
     "./utils-behavioral": "./src/utils-behavioral.ts",
     "./utils-client": "./src/utils-client.ts",
-    "./utils-design-token": "./src/utils-design-token.ts",
     "./utils-server": "./src/utils-server.ts",
+    "./utils-style": "./src/utils-style.ts",
+    "./utils-test": "./src/utils-test.ts",
     "./utils-worker": "./src/utils-worker.ts"
   },
   "files": [
