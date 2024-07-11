@@ -82,7 +82,7 @@ export const getPlaitedElement = ({
             emit: useEmit(this),
             clone: useClone(this.#root),
             connect: useConnect({ trigger, disconnectSet: this.#disconnectSet }),
-            pubSock: socket?.[0] ?? noop,
+            socket: socket?.[0] ?? (() => noop),
             trigger,
             ...rest,
           })

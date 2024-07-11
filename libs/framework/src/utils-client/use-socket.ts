@@ -1,4 +1,4 @@
-import type { Trigger } from '../behavioral/types.js'
+import type { Trigger, BPEvent } from '../behavioral/types.js'
 import type { UseSocket, SocketMessage } from './types.js'
 import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
 import { SOCKET_URL } from './constants.js'
@@ -85,18 +85,21 @@ export const useSocket: UseSocket = (url = SOCKET_URL, protocols) => {
     return noop
   }
 
-  const publish = <T = unknown>(message: SocketMessage<T>) => {
-    const cb = () => {
-      publish(message)
-      socket?.removeEventListener('open', cb)
+  const publish =
+    <T = unknown>(address: string) =>
+    (event: BPEvent<T>) => {
+      const cb = () => {
+        publish(address)(event)
+        socket?.removeEventListener('open', cb)
+      }
+      if (socket?.readyState === WebSocket.OPEN) {
+        const message: SocketMessage<T> = { address, event }
+        return socket.send(JSON.stringify(message))
+      }
+      if (!socket) {
+        socket = connect()
+      }
+      socket?.addEventListener('open', cb)
     }
-    if (socket?.readyState === WebSocket.OPEN) {
-      return socket.send(JSON.stringify(message))
-    }
-    if (!socket) {
-      socket = connect()
-    }
-    socket?.addEventListener('open', cb)
-  }
   return [publish, subscribe]
 }

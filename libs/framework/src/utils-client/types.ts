@@ -13,7 +13,7 @@ export type SocketMessage<T = unknown> = {
   event: BPEvent<T>
 }
 
-export type PublishToSocket = (message: SocketMessage) => void
+export type PublishToSocket = <T = unknown>(address: string) => (event: BPEvent<T>) => void
 export type SubscribeToSocket = (address: string, trigger: Trigger) => Disconnect
 
 export type UseSocket = {

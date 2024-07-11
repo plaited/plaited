@@ -48,7 +48,7 @@ export type BProps = {
   emit: ReturnType<UseEmit>
   clone: ReturnType<UseClone>
   connect: (...args: ConnectArgs) => Disconnect
-  pubSock: PublishToSocket
+  socket: PublishToSocket
 } & Omit<ReturnType<BProgram>, 'feedback'>
 
 export interface PlaitedElement extends HTMLElement {
