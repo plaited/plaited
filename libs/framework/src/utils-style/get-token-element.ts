@@ -1,4 +1,4 @@
-import { Component } from '../component/component.js'
+import { Component } from '../client/component.js'
 import { css } from '../css/css.js'
 import { assignStyles } from '../css/assign-styles.js'
 import { h } from '../jsx/create-template.js'

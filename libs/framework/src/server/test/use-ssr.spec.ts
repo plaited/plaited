@@ -1,57 +1,70 @@
 /* eslint-disable no-constant-binary-expression */
 import { test, expect } from 'bun:test'
-import { h, Fragment } from '../create-template.js'
-import { createStyles, css, assignStyles, FT, TemplateObject } from '../../mod.js'
+import { h, Fragment } from '../../jsx/create-template.js'
+import { css, createStyles, assignStyles, FT, TemplateObject } from '../../mod.js'
+import { useSSR } from '../use-ssr.js'
 import beautify from 'beautify'
 
-const render = (tpl: TemplateObject) => beautify(tpl.client.join(''), { format: 'html' })
+const render = (template: TemplateObject) => {
+  return beautify(useSSR()(template), { format: 'html' })
+}
 
-test('createTemplate: Self closing - html', () => {
+test('useSSR: empty imports', () => {
+  const tpl = beautify(useSSR()(h('div', { children: 'text' })), { format: 'html' })
+  expect(tpl).toMatchSnapshot()
+})
+
+test('useSSR: with imports', () => {
+  const tpl = beautify(useSSR('test/entry-1.js', 'test/entry-2.js')(h('div', { children: 'text' })), { format: 'html' })
+  expect(tpl).toMatchSnapshot()
+})
+
+test('ssr: Self closing - html', () => {
   expect(render(h('input', { type: 'text' }))).toMatchSnapshot()
 })
 
-test('createTemplate: Self closing - svg', () => {
+test('ssr: Self closing - svg', () => {
   expect(render(h('polygon', { points: '0,100 50,25 50,75 100,0' }))).toMatchSnapshot()
 })
 
-test('createTemplate: Falsey - undefined', () => {
+test('ssr: Falsey - undefined', () => {
   expect(render(h('div', { children: undefined }))).toMatchSnapshot()
 })
 
-test('createTemplate: Falsey - null', () => {
+test('ssr: Falsey - null', () => {
   //@ts-expect-error: children is null
   expect(render(h('div', { children: null }))).toMatchSnapshot()
 })
 
-test('createTemplate: Falsey - false', () => {
-  // @ts-expect-error: test
+test('ssr: Falsey - false', () => {
+  // @ts-expect-error: testing false
   expect(render(h('div', { children: false }))).toMatchSnapshot()
 })
 
-test('createTemplate: Not really Falsey - ""', () => {
+test('ssr: Not really Falsey - ""', () => {
   expect(render(h('div', { children: '' }))).toMatchSnapshot()
 })
 
-test('createTemplate: Not really Falsey - 0', () => {
-  // @ts-expect-error: test
+test('ssr: Not really Falsey - 0', () => {
+  // @ts-expect-error: testing 0
   expect(render(h('div', { children: 0 }))).toMatchSnapshot()
 })
 
-test('createTemplate: Not really Falsey - NaN', () => {
-  // @ts-expect-error: test
+test('ssr: Not really Falsey - NaN', () => {
+  // @ts-expect-error: testing NaN
   expect(render(h('div', { children: NaN }))).toMatchSnapshot()
 })
 
-test('createTemplate: Bad template - NaN', () => {
-  // @ts-expect-error: test
+test('ssr: Bad template - NaN', () => {
+  // @ts-expect-error: testing bad object
   expect(render(h('div', { children: { string: 'string' } }))).toMatchSnapshot()
 })
 
-test('createTemplate: Conditional', () => {
+test('ssr: Conditional', () => {
   expect(render(h('div', { children: true && 'hello' }))).toMatchSnapshot()
 })
 
-test('createTemplate: Style attribute', () => {
+test('ssr: Style attribute', () =>
   expect(
     render(
       h('div', {
@@ -59,10 +72,9 @@ test('createTemplate: Style attribute', () => {
         children: 'styles',
       }),
     ),
-  ).toMatchSnapshot()
-})
+  ).toMatchSnapshot())
 
-test('createTemplate: bp-trigger attribute', () =>
+test('ssr: bp-trigger attribute', () =>
   expect(
     render(
       h('div', {
@@ -75,7 +87,7 @@ test('createTemplate: bp-trigger attribute', () =>
     ),
   ).toMatchSnapshot())
 
-test('createTemplate: Array of templates', () =>
+test('ssr: Array of templates', () =>
   expect(
     render(
       h('ul', {
@@ -84,7 +96,7 @@ test('createTemplate: Array of templates', () =>
     ),
   ).toMatchSnapshot())
 
-test('createTemplate: Should throw with attribute starting with on', () => {
+test('ssr: Should throw with attribute starting with on', () => {
   expect(() => {
     h('div', {
       children: h('template', {
@@ -98,17 +110,17 @@ test('createTemplate: Should throw with attribute starting with on', () => {
   }).toThrow()
 })
 
-test('createTemplate: should throw on script tag', () => {
+test('ssr: should throw on script tag', () => {
   expect(() => {
     h('script', { type: 'module', src: 'main.js' })
   }).toThrow()
 })
 
-test('createTemplate: Should not throw on script tag with trusted attribute', () => {
+test('ssr: Should not throw on script tag with trusted attribute', () => {
   expect(render(h('script', { type: 'module', src: 'main.js', trusted: true }))).toMatchSnapshot()
 })
 
-test('createTemplate: Escapes children', () => {
+test('ssr: Escapes children', () => {
   const scriptContent = `<script type="text/javascript">
 const hostRegex = /^https?://([^/]+)/.*$/i;
 const host = document.URL.replace(hostRegex, '$1');
@@ -120,10 +132,11 @@ const reload = () =>{
 socket.addEventListener('message', reload);
 console.log('[plaited] listening for file changes');
 </script>`
+
   expect(render(h('div', { children: scriptContent }))).toMatchSnapshot()
 })
 
-test('createTemplate: Does not escape children when trusted', () => {
+test('ssr: Does not escape children when trusted', () => {
   const scriptContent = `<script type="text/javascript">
 const hostRegex = /^https?://([^/]+)/.*$/i;
 const host = document.URL.replace(hostRegex, '$1');
@@ -135,12 +148,13 @@ const reload = () =>{
 socket.addEventListener('message', reload);
 console.log('[plaited] listening for file changes');
 </script>`
+
   expect(render(h('div', { trusted: true, children: scriptContent }))).toMatchSnapshot()
 })
 
 const Template: FT = (attrs) => h('template', attrs)
 
-test('createTemplate: Non declarative shadow DOM template', () => {
+test('ssr: Non declarative shadow DOM template', () => {
   const List: FT = ({ children }) =>
     h('ul', {
       children: [

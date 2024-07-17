@@ -21,6 +21,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     htmlFor,
     ...attributes
   } = attrs
+  const registry = new Set<string>()
   if (typeof _tag === 'function') {
     return _tag(attrs)
   }
@@ -89,6 +90,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       client: start,
       server: start,
       stylesheets,
+      registry,
       $: PLAITED_TEMPLATE_IDENTIFIER,
     }
   }
@@ -108,6 +110,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       clientEnd.push(...child.client)
       serverEnd.push(...child.server)
       for (const sheet of child.stylesheets) stylesheets.add(sheet)
+      for (const component of child.registry) registry.add(component)
       continue
     }
     /** P2 typeof child is NOT a valid primitive child then skip and do nothing */
@@ -134,6 +137,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     client: isDeclarativeShadowDOM ? [] : [...start, ...clientEnd],
     server: [...start, ...serverEnd],
     stylesheets,
+    registry,
     $: PLAITED_TEMPLATE_IDENTIFIER,
   }
 }
@@ -145,6 +149,7 @@ export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
   const client: string[] = []
   const server: string[] = []
   const stylesheets = new Set<string>()
+  const registry = new Set<string>()
   const length = children.length
   for (let i = 0; i < length; i++) {
     const child = children[i]
@@ -152,6 +157,7 @@ export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
       client.push(...child.client)
       server.push(...child.server)
       for (const sheet of child.stylesheets) stylesheets.add(sheet)
+      for (const component of child.registry) registry.add(component)
     }
     if (!VALID_PRIMITIVE_CHILDREN.has(typeof child)) continue
     const safeChild = escape(`${child}`)
@@ -162,6 +168,7 @@ export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
     client,
     stylesheets,
     server,
+    registry,
     $: PLAITED_TEMPLATE_IDENTIFIER,
   }
 }

@@ -3,7 +3,7 @@ import path from 'path'
 
 test('minimal client bundle footprint < 5.5b', async () => {
   const plaitedResults = await Bun.build({
-    entrypoints: [path.resolve(import.meta.dir, '../../src/index.ts')],
+    entrypoints: [path.resolve(import.meta.dir, '../../src/mod.ts')],
     minify: true,
   })
   expect(plaitedResults.outputs.length).toBe(1)

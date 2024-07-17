@@ -1,5 +1,5 @@
 import type { BPEvent, Devtool, Actions, Trigger, Thread, Loop, Sync, AddThreads } from '../behavioral/types.js'
-import type { Disconnect } from '../component/types.js'
+import type { Disconnect } from '../client/types.js'
 
 export type UseWorker = {
   (
@@ -24,7 +24,7 @@ export type UsePostMessage = ({
   disconnect(): void
 }
 
-export type DefineWorkerParam = [
+export type DefineWorkerParams = [
   (args: {
     send: ReturnType<UsePostMessage>
     addThreads: AddThreads
@@ -36,4 +36,4 @@ export type DefineWorkerParam = [
   { devtool?: Devtool; publicEvents: string[]; targetOrigin?: string },
 ]
 
-export type DefineWorker = (...args: DefineWorkerParam) => void
+export type DefineWorker = (...args: DefineWorkerParams) => void

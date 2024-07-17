@@ -1,6 +1,6 @@
 export type * from './utils-server/types.js'
-export { findDuplicateTags } from './utils-server/find-duplicates-tags.js'
+export { checkForDuplicateTagNames } from './utils-server/check-for-duplicates-tag-names.js'
+export { defineSocket } from './utils-server/define-socket.js'
 export { useBuildArtifacts } from './utils-server/use-build-artifacts.js'
-export { useMiddleware } from './utils-server/use-middleware.js'
 export { useScanImports } from './utils-server/use-scan-imports.js'
 export { useSSR } from './utils-server/use-ssr.js'
