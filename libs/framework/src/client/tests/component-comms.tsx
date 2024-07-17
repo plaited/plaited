@@ -1,4 +1,4 @@
-import { Component } from '../../mod.js'
+import { Component } from '../../index.js'
 import { usePublisher } from '../../utils-client.js'
 
 const sendDisable = usePublisher()

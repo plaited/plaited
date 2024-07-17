@@ -1,19 +1,19 @@
-import type { TemplateObject, Attrs} from '../jsx/types.js'
+import type { Attrs, TemplateObject} from '../jsx/types.js'
 import { createTemplate } from '../jsx/create-template.js'
+import { PLAITED_COMPONENT_IDENTIFIER } from '../shared/constants.js'
+import { PlaitedTemplate } from './types.js'
 
-export const getPlaitedTemplate = <T extends Attrs, U>({
+export const getPlaitedTemplate = <T extends Attrs>({
   tag,
   mode,
   delegatesFocus,
   template,
-  type,
 }: {
   tag: `${string}-${string}`
   mode: 'open' | 'closed'
   delegatesFocus: boolean
   template: TemplateObject
-  type: U
-}) => {
+}): PlaitedTemplate<T> => {
   const registry = new Set<string>([...template.registry, tag])
   const ft = ({ children = [], ...attrs }: T) =>
     createTemplate(tag, {
@@ -29,6 +29,6 @@ export const getPlaitedTemplate = <T extends Attrs, U>({
     })
   ft.registry = registry
   ft.tag = tag
-  ft.type = type
+  ft.$ = PLAITED_COMPONENT_IDENTIFIER
   return ft
 }

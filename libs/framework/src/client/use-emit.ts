@@ -1,12 +1,4 @@
-import type { BPEvent } from '../behavioral/types.js'
-
-export type UseEmit = (host: HTMLElement) => (
-  args: BPEvent & {
-    bubbles?: boolean
-    cancelable?: boolean
-    composed?: boolean
-  },
-) => void
+import type { UseEmit } from './types.js'
 
 /** @description emit a custom event cancelable and composed are true by default */
 export const useEmit: UseEmit =

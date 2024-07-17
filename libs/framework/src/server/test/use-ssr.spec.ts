@@ -1,7 +1,7 @@
 /* eslint-disable no-constant-binary-expression */
 import { test, expect } from 'bun:test'
 import { h, Fragment } from '../../jsx/create-template.js'
-import { css, createStyles, assignStyles, FT, TemplateObject } from '../../mod.js'
+import { css, createStyles, assignStyles, FT, TemplateObject } from '../../index.js'
 import { useSSR } from '../use-ssr.js'
 import beautify from 'beautify'
 

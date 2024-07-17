@@ -16,5 +16,6 @@ export const usePublisher: UsePublisher = <T = unknown>() => {
     }
   }
   pub.sub = sub
+  pub.type = 'publisher' as const
   return pub
 }

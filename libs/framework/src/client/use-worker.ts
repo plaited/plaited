@@ -20,5 +20,6 @@ export const useWorker: UseWorker = (scriptURL, options) => {
     return () => worker.removeEventListener('message', handleMessage)
   }
   post.connect = connect
+  post.type = 'worker' as const
   return post
 }

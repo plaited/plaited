@@ -1,8 +1,7 @@
 import type { Actions, BProgram, Devtool, Trigger, BPEvent } from '../behavioral/types.js'
 import type { TemplateObject, Attrs, FunctionTemplate } from '../jsx/types.js'
-import type { UseWorker } from '../utils-worker/types.js'
-import type { UseEmit } from '../shared/use-emit.js'
-import { PLAITED_COMPONENT_TYPE, PLAITED_MODULE_TYPE } from '../shared/constants.js'
+import type { PLAITED_COMPONENT_IDENTIFIER } from '../shared/constants.js'
+
 export type Disconnect = () => void
 
 export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
@@ -27,14 +26,10 @@ export type Sugar = {
 
 export type SugaredElement<T extends Element = Element> = T & Sugar
 
-export type ConnectArgs = [ReturnType<UseWorker>] | [string, ReturnType<UsePublisher>]
-
 /** Clone feature for handling list situations where structure is consistent but the data rendered is what is different. This is a performance feature */
 export type UseClone = (
   shadowRoot: ShadowRoot,
 ) => <T>(template: TemplateObject, callback: ($: QuerySelector, data: T) => void) => (data: T) => DocumentFragment
-
-
 
 export interface PlaitedElement extends HTMLElement {
   internals_: ElementInternals
@@ -60,11 +55,12 @@ export type SocketMessage<T = unknown> = {
   event: BPEvent<T>
 }
 
-export type PublishToSocket = <T = unknown>(address: string) => (event: BPEvent<T>) => void
-export type SubscribeToSocket = (address: string, trigger: Trigger) => Disconnect
-
 export type UseSocket = {
-  (url?: string | URL, protocols?: string | string[]): [PublishToSocket, SubscribeToSocket]
+  (address: string): {
+    <T>(event: BPEvent<T>): void;
+    subscribe: (address: string, trigger: Trigger) => Disconnect;
+    type: 'socket'
+  }
 }
 
 export type UseAjax = (shadowRoot: ShadowRoot) => Disconnect
@@ -73,11 +69,32 @@ export type UsePublisher = {
   (): {
     <T = unknown>(value?: T): void
     sub: (type: string, trigger: Trigger) => () => void
+    type: 'publisher'
   }
 }
 
+export type UseWorker = {
+  (
+    scriptURL: string | URL,
+    options?: WorkerOptions,
+  ): {
+    (args: BPEvent): void
+    connect(trigger: Trigger): Disconnect
+    type: 'worker'
+  }
+}
 
-type ComponentBProps = {
+export type ConnectArgs = [ReturnType<UseWorker>] | [string, ReturnType<UsePublisher>] | [ReturnType<UseSocket>]
+
+export type UseEmit = (host: HTMLElement) => (
+  args: BPEvent & {
+    bubbles?: boolean
+    cancelable?: boolean
+    composed?: boolean
+  },
+) => void
+
+type BProps = {
   /** query for elements with the bp-target attribute in the Island's shadowDom and slots */
   $: QuerySelector
   /** The DOM node context allowing easy light & shadow dom access
@@ -92,36 +109,15 @@ type ComponentBProps = {
   connect: (...args: ConnectArgs) => Disconnect
 } & Omit<ReturnType<BProgram>, 'feedback'>
 
-type ComponentBPMethod = (this: PlaitedElement, props: ComponentBProps) => Actions
+type BPMethod = (this: PlaitedElement, props: BProps) => Actions
 
-type ModuleBProps = {
-  /** query for elements with the bp-target attribute in the Island's shadowDom and slots */
-  $: QuerySelector
-  /** The DOM node context allowing easy light & shadow dom access
-   * @example
-   * // returns the div element inside
-   * // the shadowRoot of the element instance
-   * const shadowEl = host.shadowRoot.querySelector('div')
-   */
-  host: PlaitedElement
-  emit: ReturnType<UseEmit>
-  clone: ReturnType<UseClone>
-  connect: (...args: ConnectArgs) => Disconnect
-  socket: PublishToSocket
-} & Omit<ReturnType<BProgram>, 'feedback'>
-
-type ModuleBPMethod = (this: PlaitedElement, props: ModuleBProps) => Actions
-
-
-type PlaitedElementArgs<T> = {
+export type GetPlaitedElementArgs = {
   tag: `${string}-${string}`
-  /** Component template */
   template: TemplateObject
-  /** observed Attributes that will trigger the native `attributeChangedCallback` method when modified*/
+  mode?: 'open' | 'closed'
+  delegatesFocus?: boolean
   observedAttributes?: string[]
-  /** observed triggers that can be fired from outside component by invoking `trigger` method directly, via messenger, or via publisher */
   publicEvents?: string[]
-
   devtool?: Devtool
   connectedCallback?(this: PlaitedElement): void
   attributeChangedCallback?(this: PlaitedElement, name: string, oldValue: string | null, newValue: string | null): void
@@ -131,43 +127,16 @@ type PlaitedElementArgs<T> = {
   formDisabledCallback?(this: PlaitedElement, disabled: boolean): void
   formResetCallback?(this: PlaitedElement): void
   formStateRestoreCallback?(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
-  bp: T
+  bp?: BPMethod
 }
 
-
-export type GetPlaitedElement = (args:PlaitedElementArgs<ComponentBPMethod | ModuleBPMethod> & {
-  useAjax?: UseAjax
-  publish?:  PublishToSocket
-  subscribe?: SubscribeToSocket
-  address?: string
-  mode: 'open' | 'closed'
-  delegatesFocus: boolean
-}) => void
-
-export type ComponentTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
+export type PlaitedTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
   registry: Set<string>
   tag: `${string}-${string}`
-  type: typeof PLAITED_COMPONENT_TYPE
-}
-
-export type ModuleTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
-  registry: Set<string>
-  tag: `${string}-${string}`
-  type: typeof PLAITED_MODULE_TYPE
+  $: typeof PLAITED_COMPONENT_IDENTIFIER
 }
 
 
-export type ComponentArgs = PlaitedElementArgs<ComponentBPMethod> & {
-mode?: 'open' | 'closed'
-delegatesFocus?: boolean
-}
-
-export type ModuleArgs = PlaitedElementArgs<ModuleBPMethod> & {
-  address: string
-  mode?: 'open' | 'closed'
-  delegatesFocus?: boolean
-}
-
-
+export type PlaitedComponent = <T extends Attrs = Attrs>( args: GetPlaitedElementArgs) => PlaitedTemplate<T>
 
 

@@ -1,7 +1,7 @@
 import { assert, wait } from '@plaited/storybook-rite'
 import { Meta, StoryObj } from '@plaited/storybook'
 import { Component } from '../component.js'
-import { PlaitedElement, createStyles } from '../../mod.js'
+import { PlaitedElement, createStyles } from '../../index.js'
 
 const meta: Meta = {
   title: 'Tests/dynamicStyles',

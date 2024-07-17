@@ -1,33 +1,30 @@
 import type { BPEvent, Trigger } from '../behavioral/types.js'
 import type { Disconnect } from './types.js'
-import type { PlaitedElement, QuerySelector, GetPlaitedElement } from './types.js'
+import type { PlaitedElement, QuerySelector, GetPlaitedElementArgs } from './types.js'
 import { bProgram } from '../behavioral/b-program.js'
 import { useClone } from './use-clone.js'
-import { useEmit } from '../shared/use-emit.js'
+import { useEmit } from './use-emit.js'
 import { useConnect } from './use-connect.js'
-import { BP_TRIGGER } from '../jsx/constants.js'
+import { BP_TRIGGER, BP_ADDRESS } from '../jsx/constants.js'
 import { cssCache, useQuery } from './use-query.js'
 import { shadowObserver, addListeners } from './shadow-observer.js'
 import { onlyPublicEvents } from '../shared/only-public-events.js'
 import { canUseDOM } from '@plaited/utils'
+import { useAjax } from './use-ajax.js'
 
-export const getPlaitedElement: GetPlaitedElement = ({
+export const getPlaitedElement = ({
   tag,
   template,
-  mode,
-  delegatesFocus,
+  mode = 'open',
+  delegatesFocus = true,
   publicEvents,
   observedAttributes,
   connectedCallback,
   disconnectedCallback,
   bp,
   devtool,
-  publish,
-  subscribe,
-  useAjax,
-  address = '',
   ...rest
-}) => {
+}:GetPlaitedElementArgs) => {
   if (canUseDOM() && !customElements.get(tag)) {
     class BaseElement extends HTMLElement implements PlaitedElement {
       static observedAttributes = observedAttributes
@@ -63,7 +60,7 @@ export const getPlaitedElement: GetPlaitedElement = ({
       #disconnectSet = new Set<Disconnect>()
       #trigger?: Trigger
       connectedCallback() {
-        useAjax && this.#disconnectSet.add(useAjax(this.#root))
+        this.#disconnectSet.add(useAjax(this.#root))
         if (bp) {
           const { trigger, feedback, ...rest } = bProgram(devtool)
           this.#trigger = trigger
@@ -73,19 +70,19 @@ export const getPlaitedElement: GetPlaitedElement = ({
             trigger,
           )
           this.#shadowObserver = shadowObserver(this.#root, trigger) // create a shadow observer to watch for modification & addition of nodes with bp-trigger attribute
+          const address = this.getAttribute(BP_ADDRESS) ?? undefined
           const actions = bp.bind(this)({
             $: this.#query,
             host: this,
             emit: useEmit(this),
             clone: useClone(this.#root),
-            connect: useConnect({ trigger, disconnectSet: this.#disconnectSet }),
+            connect: useConnect({ trigger, disconnectSet: this.#disconnectSet, address }),
             // @ts-ignore: union mismatch
             socket: publish,
             trigger,
             ...rest,
           })
           feedback(actions)
-          subscribe && subscribe(address, trigger)
         }
         connectedCallback && connectedCallback.bind(this)()
       }

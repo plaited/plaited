@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import { wait } from '@plaited/utils'
 import sinon from 'sinon'
-import { useWorker } from '../use-worker.js'
+import { useWorker } from '../../client/use-worker.js'
 
 test('utils-worker', async () => {
   const msg = useWorker(new URL('./worker.ts', import.meta.url), {

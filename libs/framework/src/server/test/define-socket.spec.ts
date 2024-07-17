@@ -1,6 +1,6 @@
 import { test, expect } from "bun:test";
 import { defineSocket } from "../define-socket.js";
-import { SocketMessage } from "../../utils-client.js";
+import { SocketMessage } from "../../client/types.js";
 import { wait } from '@plaited/utils'
 
 const connect = async () =>  new Promise<WebSocket>((resolve, reject) => {

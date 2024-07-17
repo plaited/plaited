@@ -1,12 +1,12 @@
-import type { Trigger } from '../behavioral/types.js'
-import type { SocketMessage, PublishToSocket, SubscribeToSocket} from './types.js'
+import type { BPEvent, Trigger } from '../behavioral/types.js'
+import type { SocketMessage, UseSocket} from './types.js'
 import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
 import { SOCKET_URL } from './constants.js'
 import { isTypeOf, noop, canUseDOM } from '@plaited/utils'
 
 const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => event.type === 'close'
 
-export const isSocketMessage = (msg: unknown): msg is SocketMessage<string> => {
+const isSocketMessage = (msg: unknown): msg is SocketMessage<string> => {
   return (
     isTypeOf<{ [key: string]: unknown }>(msg, 'object') &&
     'address' in msg &&
@@ -78,23 +78,20 @@ if(canUseDOM()) {
   }
 }
 
-export const subscribe: SubscribeToSocket = (address, trigger) => {
-  if (!subscribers.has(address)) {
-    subscribers.set(address, trigger)
-    return () => {
-      subscribers.delete(address)
+export const useSocket:UseSocket = (address: string) => {
+  const subscribe = (bpAddress: string, trigger: Trigger) => {
+    if (!subscribers.has(bpAddress)) {
+      subscribers.set(bpAddress, trigger)
+      return () => {
+        subscribers.delete(bpAddress)
+      }
     }
+    console.error(`Socket already has subscriber with address: [${bpAddress}]`)
+    return noop
   }
-  console.error(`Sock already subscribed to address: [${address}]`)
-  return noop
-}
-
-
-export const publish:PublishToSocket =
-(address: string) =>
-(event) => {
+  const publish = <T>(event: BPEvent<T>) => {
   const cb = () => {
-    publish(address)(event)
+    publish(event)
     socket?.removeEventListener('open', cb)
   }
   if (socket?.readyState === WebSocket.OPEN) {
@@ -105,4 +102,8 @@ export const publish:PublishToSocket =
     socket = connect()
   }
   socket?.addEventListener('open', cb)
+  }
+  publish.subscribe = subscribe
+  publish.type = 'socket' as const
+  return publish
 }

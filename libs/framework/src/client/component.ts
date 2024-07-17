@@ -1,18 +1,14 @@
-import type { ComponentTemplate, ComponentArgs } from './types.js'
-import type { Attrs } from '../mod.js'
+import type { PlaitedComponent } from './types.js'
 import { getPlaitedTemplate } from './get-plaited-template.js'
 import { getPlaitedElement } from './get-plaited-element.js'
-import { PLAITED_COMPONENT_TYPE } from '../shared/constants.js'
 
-
-export const Component = <T extends Attrs = Attrs>({
+export const Component: PlaitedComponent = ({
   tag,
   template,
   mode = 'open',
   delegatesFocus = true,
   ...rest
-}: ComponentArgs
-): ComponentTemplate<T> => {
+}) => {
   getPlaitedElement({
     tag,
     mode,
@@ -20,11 +16,10 @@ export const Component = <T extends Attrs = Attrs>({
     template,
     ...rest,
   })
-  return getPlaitedTemplate<T, typeof PLAITED_COMPONENT_TYPE>({
+  return getPlaitedTemplate({
     tag,
     mode,
     delegatesFocus,
     template,
-    type: PLAITED_COMPONENT_TYPE
   })
 }

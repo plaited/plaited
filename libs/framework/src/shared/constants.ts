@@ -1,5 +1,2 @@
-export const PLAITED_CAPTURE_HOOK = '__PLAITED_CAPTURE_HOOK__'
-export const PLAITED_LOGGER = '__PLAITED_LOGGER__'
-export const PLAITED_SOCKET_HOOK = '__PLAITED_SOCKET_HOOK__'
-export const PLAITED_COMPONENT_TYPE = 'COMPONENT'
-export const PLAITED_MODULE_TYPE = 'MODULE'
+export const PLAITED_COMPONENT_IDENTIFIER = '🐻' as const
+export const NAVIGATE_EVENT_TYPE = 'plaited-navigate' as const
