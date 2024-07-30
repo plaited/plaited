@@ -1,4 +1,4 @@
-import { Component, sync, loop, thread, RulesFunction } from 'plaited'
+import { defineTemplate, sync, loop, thread, RulesFunction } from 'plaited'
 import { OMarker } from './o-marker.js'
 import { XMarker } from './x-marker.js'
 import { BoardMarker } from './board-marker.js'
@@ -93,9 +93,9 @@ const preventCompletionOfLineWithTwoXs = (board: Set<number>) => {
   }
   return threads
 }
-export const TicTacToeBoard = Component({
+export const TicTacToeBoard = defineTemplate({
   tag: 'tic-tac-toe-board',
-  template: <BoardMarker />,
+  shadowRoot: <BoardMarker />,
   bp({ $, addThreads, trigger }) {
     const board = new Set(squares)
     addThreads({

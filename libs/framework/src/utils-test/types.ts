@@ -48,7 +48,7 @@ export type Play = (args: {
   wait: Wait
 }) => Promise<void> | void
 
-export type Parameters =  {
+export type Parameters = {
   a11y?: axe.RuleObject // Defaults to true
   timeout?: number // Defaults to 5_000 ms
   description?: string // Defaults to undefined
@@ -63,13 +63,15 @@ export type Meta<T extends Attrs = Attrs> = {
 export type StoryObj<T extends Attrs | Meta = Attrs> = {
   render: FunctionTemplate<T> | PlaitedTemplate<T>
   play?: Play
-  attrs?: T extends Attrs ? T : T extends Meta ? T['attrs'] : Attrs
+  attrs?: T extends Attrs ? T
+  : T extends Meta ? T['attrs']
+  : Attrs
   parameters?: Parameters
 }
 
 export type StoriesExport = Meta | StoryObj
 
 export type ComposeStories = {
-  (stories: Record<string, StoriesExport>): [string, Parameters][];
-  extend(root: string): (stories: Record<string, StoriesExport>) => [string, Parameters][];
+  (stories: Record<string, StoriesExport>): [string, Parameters][]
+  extend(root: string): (stories: Record<string, StoriesExport>) => [string, Parameters][]
 }

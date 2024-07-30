@@ -1,22 +1,18 @@
 import { AxeBuilder } from '@axe-core/playwright'
 import type axe from 'axe-core'
-import type {  Parameters } from './types.js';
-import { STORYBOOK_PATH_ROOT } from './constants.js';
-import {  BrowserType, chromium, devices  } from 'playwright';
-import { ValueOf } from '@plaited/utils';
+import type { Parameters } from './types.js'
+import { STORYBOOK_PATH_ROOT } from './constants.js'
+import { BrowserType, chromium, devices } from 'playwright'
+import { ValueOf } from '@plaited/utils'
 
 declare global {
-  function useStory (arg: {path: string, params: Parameters}): Promise<(string | axe.Result)[]>;
+  function useStory(arg: { path: string; params: Parameters }): Promise<(string | axe.Result)[]>
 }
 
-export const useStoriesFixture = async (args?: {
-  browserType?: BrowserType;
-  root?: string;
-  cwd?: string;
-}) => {
+export const useStoriesFixture = async (args?: { browserType?: BrowserType; root?: string; cwd?: string }) => {
   const { browserType = chromium, root = STORYBOOK_PATH_ROOT, cwd = process.cwd() } = args || {}
   const beforeAll = async () => {
-    const browser = await browserType.launch({ headless: true});
+    const browser = await browserType.launch({ headless: true })
     globalThis.useStory = async ({
       path,
       params,
@@ -31,20 +27,17 @@ export const useStoriesFixture = async (args?: {
       record?: boolean
     }) => {
       const recordVideo = record ? { dir: `${cwd}/.plaited` } : undefined
-      const context = await browser.newContext({recordVideo, colorScheme, ...device });
+      const context = await browser.newContext({ recordVideo, colorScheme, ...device })
       const violations: (axe.Result | string)[] = []
       const { a11y } = params
-      const page = await context.newPage();
-      page.on('pageerror', exception => {
+      const page = await context.newPage()
+      page.on('pageerror', (exception) => {
         violations.push(exception.message)
-      });
+      })
       page.goto(`${root}/${path}`)
-      const axe = await new AxeBuilder({ page })
-      .options({ rules: a11y })
-      .include(root)
-      .analyze()
+      const axe = await new AxeBuilder({ page }).options({ rules: a11y }).include(root).analyze()
       violations.push(...axe.violations)
-      await context.close();
+      await context.close()
       return violations
     }
   }

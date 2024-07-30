@@ -2,7 +2,7 @@ import { wait } from '@plaited/utils'
 
 export const fetchHTML = async (url: RequestInfo | URL): Promise<string | undefined> => {
   let retry = 3
-  while (retry> 0) {
+  while (retry > 0) {
     try {
       const response = await fetch(url)
       if (!response.ok) {

@@ -1,4 +1,4 @@
-import { Component, PlaitedElement, css } from 'plaited'
+import { defineTemplate, PlaitedElement, css } from 'plaited'
 import { Header } from './header.js'
 
 const stylesheet = css`
@@ -73,7 +73,7 @@ const stylesheet = css`
   }
 `
 
-const template = (
+const shadowRoot = (
   <article {...stylesheet}>
     <Header
       bp-target='header'
@@ -154,9 +154,9 @@ const template = (
   </article>
 )
 
-export const Page = Component({
+export const Page = defineTemplate({
   tag: 'page-el',
-  template,
+  shadowRoot,
   bp({ $ }) {
     const [header] = $<PlaitedElement>('header')
     return {

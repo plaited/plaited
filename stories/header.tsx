@@ -1,4 +1,4 @@
-import { Component, css, useQuery } from 'plaited'
+import { defineTemplate, css, useQuery } from 'plaited'
 import { Button } from './button.js'
 
 const stylesheet = css`
@@ -36,9 +36,9 @@ const stylesheet = css`
   }
 `
 
-export const Header = Component({
+export const Header = defineTemplate({
   tag: 'header-el',
-  template: (
+  shadowRoot: (
     <header {...stylesheet}>
       <div className='storybook-header'>
         <div>

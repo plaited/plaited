@@ -1,5 +1,7 @@
 import type { CSSProperties } from '../css/types.js'
 import { PLAITED_TEMPLATE_IDENTIFIER } from './constants.js'
+import { BP_TARGET, BP_TRIGGER } from './constants.js'
+import { BP_HREF } from '../shared/constants.js'
 
 type Booleanish = boolean | 'true' | 'false'
 type CrossOrigin = 'anonymous' | 'use-credentials' | ''
@@ -55,9 +57,8 @@ export type PlaitedAttributes = {
   class?: never
   className?: string | Array<string | undefined | false | null>
   children?: Children
-  ['bp-address']?: string
-  ['bp-target']?: string
-  ['bp-trigger']?: Record<string, string>
+  [BP_TARGET]?: string
+  [BP_TRIGGER]?: Record<string, string>
   stylesheet?: string | Array<string | undefined | false | null>
   /** setting trusted to true will disable all escaping security policy measures for this element template */
   trusted?: boolean
@@ -428,6 +429,7 @@ type HTMLAttributeAnchorTarget = '_self' | '_blank' | '_parent' | '_top'
 type DetailedAnchorHTMLAttributes = DetailedHTMLAttributes & {
   download?: boolean
   href?: string
+  [BP_HREF]?: string
   hreflang?: string
   media?: string
   ping?: string
