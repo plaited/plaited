@@ -17,7 +17,7 @@ export const throws: Throws = (
   try {
     catchPromise(fn(...args))
     return undefined
-  } catch (err) {
+  } catch (err: any) {
     return err.toString()
   }
 }

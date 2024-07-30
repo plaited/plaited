@@ -24,6 +24,6 @@ export const assert: Assertion = (param) => {
   const { given = undefined, should = '', actual = undefined, expected = undefined } = args
   if (!deepEqual(actual, expected)) {
     const message = `Given ${given}: should ${should}`
-    throw new AssertionError(JSON.stringify({ message, actual, expected }))
+    throw new AssertionError(JSON.stringify({ message, actual, expected }, null, 2))
   }
 }

@@ -8,9 +8,6 @@
     
     "skipLibCheck": true,
 
-    "outDir": "dist",
-    "rootDir": "assert",
-
     "lib": ["dom", "es2022", "DOM.Iterable"]
   },
   "exclude": ["**/dist", "**/tests/"]
