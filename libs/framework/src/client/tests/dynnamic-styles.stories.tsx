@@ -1,6 +1,6 @@
 import { assert, wait } from '@plaited/storybook-rite'
 import { Meta, StoryObj } from '@plaited/storybook'
-import { Component } from '../component.js'
+import { defineTemplate } from '../define-template.js'
 import { PlaitedElement, createStyles } from '../../index.js'
 
 const meta: Meta = {
@@ -20,10 +20,10 @@ const { noRepeat, repeat } = createStyles({
     textDecoration: 'underline',
   },
 })
-const DynamicOnly = Component({
+const DynamicOnly = defineTemplate({
   publicEvents: ['render'],
   tag: 'dynamic-only',
-  template: <div bp-target='target'></div>,
+  shadowRoot: <div bp-target='target'></div>,
   bp({ $ }) {
     return {
       render() {
@@ -60,10 +60,10 @@ const { root, override } = createStyles({
   },
 })
 
-const WithDefaultStyles = Component({
+const WithDefaultStyles = defineTemplate({
   publicEvents: ['render'],
   tag: 'with-default-styles',
-  template: (
+  shadowRoot: (
     <div
       bp-target='target-2'
       {...root}

@@ -29,27 +29,27 @@ const usePostMessage: UsePostMessage = ({ trigger, publicEvents, targetOrigin })
   return send
 }
 
-type DefineWorkerParams = [
-  (args: {
+type DefineWorkerArgs = {
+  bp: (args: {
     send: ReturnType<UsePostMessage>
     addThreads: AddThreads
     trigger: Trigger
     thread: Thread
     loop: Loop
     sync: Sync
-  }) => Actions,
-  { devtool?: Devtool; publicEvents: string[]; targetOrigin?: string },
-]
+  }) => Actions
+  devtool?: Devtool
+  publicEvents: string[]
+  targetOrigin?: string
+}
 
-type DefineWorker = (...args: DefineWorkerParams) => void
-
-export const defineWorker: DefineWorker = (callback, { publicEvents, targetOrigin, devtool }) => {
+export const defineWorker = ({ bp, publicEvents, targetOrigin, devtool }: DefineWorkerArgs) => {
   const { feedback, ...rest } = bProgram(devtool)
   const send = usePostMessage({
     trigger: rest.trigger,
     publicEvents,
     targetOrigin,
   })
-  const actions = callback({ ...rest, send })
+  const actions = bp({ ...rest, send })
   feedback(actions)
 }

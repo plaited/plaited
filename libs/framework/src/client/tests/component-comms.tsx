@@ -1,12 +1,12 @@
-import { Component } from '../../index.js'
-import { usePublisher } from '../../utils-client.js'
+import { defineTemplate } from '../../index.js'
+import { usePublisher } from '../use-publisher.js'
 
 const sendDisable = usePublisher()
-const sendAdd = usePublisher()
-export const ElOne = Component({
+const sendAdd = usePublisher<{ value: string }>()
+export const ElOne = defineTemplate({
   tag: 'dynamic-one',
   publicEvents: ['disable'],
-  template: (
+  shadowRoot: (
     <div>
       <button
         bp-target='button'
@@ -16,8 +16,8 @@ export const ElOne = Component({
       </button>
     </div>
   ),
-  bp({ $, connect }) {
-    const disconnect = connect('disable', sendDisable)
+  bp({ $, host }) {
+    const disconnect = sendDisable.sub(host, 'disable')
     return {
       disable() {
         const [button] = $<HTMLButtonElement>('button')
@@ -31,12 +31,12 @@ export const ElOne = Component({
   },
 })
 
-export const ElTwo = Component({
+export const ElTwo = defineTemplate({
   tag: 'dynamic-two',
   publicEvents: ['add'],
-  template: <h1 bp-target='header'>Hello</h1>,
-  bp({ $, addThreads, thread, sync, connect }) {
-    connect('add', sendAdd)
+  shadowRoot: <h1 bp-target='header'>Hello</h1>,
+  bp({ $, addThreads, thread, sync, host }) {
+    sendAdd.sub(host, 'add')
     addThreads({
       onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),
     })

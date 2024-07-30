@@ -1,7 +1,7 @@
 import { assert, findByAttribute, findByText } from '@plaited/storybook-rite'
 import { Meta, StoryObj } from '@plaited/storybook'
 import { PlaitedElement, createStyles } from '../../index.js'
-import { Component } from '../component.js'
+import { defineTemplate } from '../define-template.js'
 import { createTemplate } from '../../jsx/create-template.js'
 const meta: Meta = {
   title: 'Tests/template',
@@ -17,9 +17,9 @@ const styles = createStyles({
 })
 const content = 'client side rendered'
 
-const Fixture = Component({
+const Fixture = defineTemplate({
   tag: 'template-element',
-  template: (
+  shadowRoot: (
     <div
       data-test='content'
       {...styles.inner}
@@ -109,10 +109,10 @@ export const withDeclarativeShadowDom: StoryObj = {
       actual: color,
       expected: 'rgb(255, 0, 0)',
     })
-    Component({
+    defineTemplate({
       tag,
       publicEvents: ['render'],
-      template: <Content />,
+      shadowRoot: <Content />,
       bp({ $ }) {
         return {
           render() {

@@ -1,6 +1,6 @@
 import { assert, findByAttribute, fireEvent } from '@plaited/storybook-rite'
 import { Meta, StoryObj } from '@plaited/storybook'
-import { Component } from '../component.js'
+import { defineTemplate } from '../define-template.js'
 import { getPlaitedChildren } from '../../utils-client.js'
 
 const meta: Meta = {
@@ -10,9 +10,9 @@ const meta: Meta = {
 
 export default meta
 
-const Inner = Component({
+const Inner = defineTemplate({
   tag: 'inner-component',
-  template: <h1 bp-target='header'>Hello</h1>,
+  shadowRoot: <h1 bp-target='header'>Hello</h1>,
   publicEvents: ['add'],
   bp({ $, addThreads, thread, sync, emit }) {
     addThreads({
@@ -30,9 +30,9 @@ const Inner = Component({
   },
 })
 
-const Outer = Component({
+const Outer = defineTemplate({
   tag: 'outer-component',
-  template: (
+  shadowRoot: (
     <div>
       <slot
         bp-target='slot'

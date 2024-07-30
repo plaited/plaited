@@ -1,10 +1,10 @@
 import { assert, findByAttribute } from '@plaited/storybook-rite'
 import { Meta } from '@plaited/storybook'
 import type { QuerySelector, Position, PlaitedElement } from '../types.js'
-import { Component } from '../component.js'
+import { defineTemplate } from '../define-template.js'
 
 const meta: Meta = {
-  title: 'Tests/Sugar',
+  title: 'Tests/QueryBindings',
   component: () => <></>,
 }
 
@@ -101,8 +101,8 @@ const forEachRow = ($: QuerySelector, data: DataItem) => {
   $('label')[0].render(<>{data.label}</>)
 }
 
-const Fixture = Component({
-  template: (
+const Fixture = defineTemplate({
+  shadowRoot: (
     <div bp-target='root'>
       <table bp-target='table'></table>
     </div>

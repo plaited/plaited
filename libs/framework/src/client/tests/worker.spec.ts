@@ -1,14 +1,20 @@
 import { test, expect } from 'bun:test'
 import { wait } from '@plaited/utils'
 import sinon from 'sinon'
-import { useWorker } from '../../client/use-worker.js'
+import { useWorker } from '../use-worker.js'
+import { BPEvent } from '../../behavioral/types.js'
+import { PlaitedElement } from '../types.js'
+import { noop } from '@plaited/utils'
 
 test('utils-worker', async () => {
-  const msg = useWorker(new URL('./worker.ts', import.meta.url), {
-    type: 'module',
-  })
   const spy = sinon.spy()
-  msg.connect(spy)
+
+  const host = {
+    trigger: (evt: BPEvent) => spy(evt),
+    addDisconnectedCallback: noop,
+  } as PlaitedElement
+
+  const msg = useWorker(host, new URL('./worker.ts', import.meta.url))
 
   msg({
     type: 'calculate',

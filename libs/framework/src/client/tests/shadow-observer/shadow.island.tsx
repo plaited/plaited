@@ -1,4 +1,4 @@
-import { Component, css } from 'plaited'
+import { defineTemplate, css } from 'plaited'
 
 import { opacityHex } from '@plaited/utils'
 import { SVG } from './noun-braids-2633610.js'
@@ -43,9 +43,9 @@ export const stylesheet = css`
   }
 `
 
-const SubIsland = Component({
+const SubIsland = defineTemplate({
   tag: 'sub-island',
-  template: (
+  shadowRoot: (
     <h3
       className={'sub-island'}
       {...stylesheet}
@@ -55,9 +55,9 @@ const SubIsland = Component({
   ),
 })
 
-export const ShadowIsland = Component({
+export const ShadowIsland = defineTemplate({
   tag: 'shadow-island',
-  template: (
+  shadowRoot: (
     <div
       {...stylesheet}
       className={'mount'}

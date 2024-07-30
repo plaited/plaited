@@ -1,6 +1,6 @@
 import { assert, findByAttribute, fireEvent } from '@plaited/storybook-rite'
 import { Meta, StoryObj } from '@plaited/storybook'
-import { Component } from '../component.js'
+import { defineTemplate } from '../define-template.js'
 
 const meta: Meta = {
   title: 'Tests',
@@ -9,9 +9,9 @@ const meta: Meta = {
 
 export default meta
 
-const Bottom = Component({
+const Bottom = defineTemplate({
   tag: 'bottom-component',
-  template: (
+  shadowRoot: (
     <button
       bp-target='button'
       bp-trigger={{ click: 'click' }}
@@ -29,9 +29,9 @@ const Bottom = Component({
   },
 })
 
-const Top = Component({
+const Top = defineTemplate({
   tag: 'top-component',
-  template: (
+  shadowRoot: (
     <div>
       <h1 bp-target='header'>Hello</h1>
       <Bottom bp-trigger={{ append: 'append' }}></Bottom>

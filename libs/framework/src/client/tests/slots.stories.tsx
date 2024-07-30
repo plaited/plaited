@@ -1,6 +1,6 @@
 import { assert, findByText, fireEvent } from '@plaited/storybook-rite'
 import { Meta, StoryObj } from '@plaited/storybook'
-import { Component } from '../component.js'
+import { defineTemplate } from '../define-template.js'
 import sinon from 'sinon'
 
 const meta: Meta = {
@@ -15,21 +15,21 @@ const passThroughSlot = sinon.spy()
 const namedSlot = sinon.spy()
 const nestedSlot = sinon.spy()
 
-const Nested = Component({
+const Nested = defineTemplate({
   tag: 'nested-slot',
-  template: <slot bp-trigger={{ click: 'nested' }}></slot>,
+  shadowRoot: <slot bp-trigger={{ click: 'nested' }}></slot>,
   bp() {
     return {
       nested() {
-        nestedSlot('nested-slot')
+        nestedSlot()
       },
     }
   },
 })
 
-const Fixture = Component({
+const Fixture = defineTemplate({
   tag: 'slot-test',
-  template: (
+  shadowRoot: (
     <div>
       <slot bp-trigger={{ click: 'slot' }}></slot>
       <slot
@@ -46,13 +46,13 @@ const Fixture = Component({
   ),
   bp: () => ({
     slot() {
-      defaultSlot('default-slot')
+      defaultSlot()
     },
     named() {
-      namedSlot('named-slot')
+      namedSlot()
     },
     nested() {
-      passThroughSlot('pass-through-slot')
+      passThroughSlot()
     },
   }),
 })
@@ -71,7 +71,7 @@ export const slots: StoryObj = {
     assert({
       given: `default slot click of element in event's composed path`,
       should: 'trigger feedback action',
-      actual: defaultSlot.calledWith('default-slot'),
+      actual: defaultSlot.called,
       expected: true,
     })
     button = await findByText('Named')
@@ -79,7 +79,7 @@ export const slots: StoryObj = {
     assert({
       given: `named slot click of element in event's composed path`,
       should: 'trigger feedback action',
-      actual: namedSlot.calledWith('named-slot'),
+      actual: namedSlot.called,
       expected: true,
     })
     button = await findByText('Nested')
@@ -87,15 +87,13 @@ export const slots: StoryObj = {
     assert({
       given: `nested slot click of element in event's composed path`,
       should: 'not trigger feedback action',
-      actual: passThroughSlot.calledWith('pass-through-slot'),
+      actual: passThroughSlot.called,
       expected: false,
     })
-    button = await findByText('Nested')
-    button && (await fireEvent(button, 'click'))
     assert({
       given: `nested slot click of element in event's composed path`,
       should: 'not trigger feedback action',
-      actual: nestedSlot.calledWith('nested-slot'),
+      actual: nestedSlot.called,
       expected: true,
     })
   },

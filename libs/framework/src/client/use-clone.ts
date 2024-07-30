@@ -1,13 +1,13 @@
-import { handleTemplateObject, getSugarInstance, assignSugar } from './use-query.js'
+import { handleTemplateObject, getBoundInstance, assignBinding } from './use-query.js'
 import { BP_TARGET } from '../jsx/constants.js'
 import type { SelectorMatch, UseClone } from './types.js'
 
 export const useClone: UseClone = (shadowRoot) => {
-  const sugar = getSugarInstance(shadowRoot)
+  const instance = getBoundInstance(shadowRoot)
   const Query =
     (frag: DocumentFragment) =>
     <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
-      assignSugar<T>(sugar, Array.from(frag.querySelectorAll<Element>(`[${BP_TARGET}${match}"${target}"]`)))
+      assignBinding<T>(instance, Array.from(frag.querySelectorAll<Element>(`[${BP_TARGET}${match}"${target}"]`)))
   return (template, callback) => {
     return (data) => {
       const content = handleTemplateObject(shadowRoot, template)

@@ -1,5 +1,5 @@
 import type { TemplateObject, BooleanAttributes } from '../jsx/types.js'
-import type { SugaredElement, Sugar, SelectorMatch, QuerySelector } from './types.js'
+import type { BoundElement, Bindings, SelectorMatch, QuerySelector } from './types.js'
 
 import { isTypeOf } from '@plaited/utils'
 import { BOOLEAN_ATTRS, BP_TARGET } from '../jsx/constants.js'
@@ -64,7 +64,7 @@ const mapTemplates = (shadowRoot: ShadowRoot, templates: (TemplateObject | Docum
   return content
 }
 
-const getSugar = (shadowRoot: ShadowRoot): Sugar => ({
+const getBindings = (shadowRoot: ShadowRoot): Bindings => ({
   render(...templates) {
     this.replaceChildren(...mapTemplates(shadowRoot, templates))
   },
@@ -90,25 +90,26 @@ const getSugar = (shadowRoot: ShadowRoot): Sugar => ({
   },
 })
 
-const assignedElements = new WeakSet<Element>()
-const hasSugar = (element: Element): element is SugaredElement => assignedElements.has(element)
-export const assignSugar = <T extends Element = Element>(sugar: Sugar, elements: Element[]) => {
+const boundElementSet = new WeakSet<Element>()
+const hasBinding = (element: Element): element is BoundElement => boundElementSet.has(element)
+
+export const assignBinding = <T extends Element = Element>(bindings: Bindings, elements: Element[]) => {
   const length = elements.length
   for (let i = 0; i < length; i++) {
     const el = elements[i]
-    if (hasSugar(el)) continue
-    const sugarEl = Object.assign(el, sugar)
-    assignedElements.add(sugarEl)
+    if (hasBinding(el)) continue
+    const boundEl = Object.assign(el, bindings)
+    boundElementSet.add(boundEl)
   }
-  return elements as SugaredElement<T>[]
+  return elements as BoundElement<T>[]
 }
 
-const sugarRoots = new WeakMap<ShadowRoot, Sugar>()
-export const getSugarInstance = (shadowRoot: ShadowRoot) =>
-  sugarRoots.get(shadowRoot) ?? (sugarRoots.set(shadowRoot, getSugar(shadowRoot)).get(shadowRoot) as Sugar)
+const bindingsMap = new WeakMap<ShadowRoot, Bindings>()
+export const getBoundInstance = (shadowRoot: ShadowRoot) =>
+  bindingsMap.get(shadowRoot) ?? (bindingsMap.set(shadowRoot, getBindings(shadowRoot)).get(shadowRoot) as Bindings)
 
 export const useQuery = (shadowRoot: ShadowRoot): QuerySelector => {
-  const sugar = getSugarInstance(shadowRoot)
+  const instance = getBoundInstance(shadowRoot)
   return <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
-    assignSugar<T>(sugar, Array.from(shadowRoot.querySelectorAll<Element>(`[${BP_TARGET}${match}"${target}"]`)))
+    assignBinding<T>(instance, Array.from(shadowRoot.querySelectorAll<Element>(`[${BP_TARGET}${match}"${target}"]`)))
 }

@@ -13,10 +13,10 @@ export interface QuerySelector {
     target: string,
     /** This options enables querySelectorAll and modified the attribute selector for bp-target{@default {all: false, mod: "=" } } {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}*/
     match?: SelectorMatch,
-  ): SugaredElement<T>[]
+  ): BoundElement<T>[]
 }
 
-export type Sugar = {
+export type Bindings = {
   render(this: Element, ...template: (TemplateObject | DocumentFragment | Element | string)[]): void
   insert(this: Element, position: Position, ...template: (TemplateObject | DocumentFragment | Element | string)[]): void
   replace(this: Element, ...template: (TemplateObject | DocumentFragment | Element | string)[]): void
@@ -24,7 +24,7 @@ export type Sugar = {
   attr(this: Element, attr: string, val?: string | null | number | boolean): string | null | void
 }
 
-export type SugaredElement<T extends Element = Element> = T & Sugar
+export type BoundElement<T extends Element = Element> = T & Bindings
 
 /** Clone feature for handling list situations where structure is consistent but the data rendered is what is different. This is a performance feature */
 export type UseClone = (
@@ -34,6 +34,7 @@ export type UseClone = (
 export interface PlaitedElement extends HTMLElement {
   internals_: ElementInternals
   trigger: Trigger
+  addDisconnectedCallback(callback: Disconnect): void
   connectedCallback(this: PlaitedElement): void
   attributeChangedCallback?(name: string, oldValue: string | null, newValue: string | null): void
   disconnectedCallback(this: PlaitedElement): void
@@ -49,42 +50,12 @@ export interface PlaitedElementConstructor {
   new (): PlaitedElement
 }
 
-
 export type SocketMessage<T = unknown> = {
   address: string
   event: BPEvent<T>
 }
 
-export type UseSocket = {
-  (address: string): {
-    <T>(event: BPEvent<T>): void;
-    subscribe: (address: string, trigger: Trigger) => Disconnect;
-    type: 'socket'
-  }
-}
-
-export type UseAjax = (shadowRoot: ShadowRoot) => Disconnect
-
-export type UsePublisher = {
-  (): {
-    <T = unknown>(value?: T): void
-    sub: (type: string, trigger: Trigger) => () => void
-    type: 'publisher'
-  }
-}
-
-export type UseWorker = {
-  (
-    scriptURL: string | URL,
-    options?: WorkerOptions,
-  ): {
-    (args: BPEvent): void
-    connect(trigger: Trigger): Disconnect
-    type: 'worker'
-  }
-}
-
-export type ConnectArgs = [ReturnType<UseWorker>] | [string, ReturnType<UsePublisher>] | [ReturnType<UseSocket>]
+export type NavigationListener = (shadowRoot: ShadowRoot) => Disconnect
 
 export type UseEmit = (host: HTMLElement) => (
   args: BPEvent & {
@@ -106,14 +77,13 @@ type BProps = {
   host: PlaitedElement
   emit: ReturnType<UseEmit>
   clone: ReturnType<UseClone>
-  connect: (...args: ConnectArgs) => Disconnect
 } & Omit<ReturnType<BProgram>, 'feedback'>
 
-type BPMethod = (this: PlaitedElement, props: BProps) => Actions
+type BPCallback = (this: PlaitedElement, props: BProps) => Actions
 
-export type GetPlaitedElementArgs = {
+export type DefinePlaitedElementArgs = {
   tag: `${string}-${string}`
-  template: TemplateObject
+  shadowRoot: TemplateObject
   mode?: 'open' | 'closed'
   delegatesFocus?: boolean
   observedAttributes?: string[]
@@ -127,16 +97,13 @@ export type GetPlaitedElementArgs = {
   formDisabledCallback?(this: PlaitedElement, disabled: boolean): void
   formResetCallback?(this: PlaitedElement): void
   formStateRestoreCallback?(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
-  bp?: BPMethod
+  bp?: BPCallback
 }
 
 export type PlaitedTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
   registry: Set<string>
   tag: `${string}-${string}`
+  observedAttributes: string[]
+  publicEvents: string[]
   $: typeof PLAITED_COMPONENT_IDENTIFIER
 }
-
-
-export type PlaitedComponent = <T extends Attrs = Attrs>( args: GetPlaitedElementArgs) => PlaitedTemplate<T>
-
-
