@@ -29,7 +29,6 @@ export const createPublisher = <T>() => {
       listeners.delete(listener)
     }
   }
-
   return publisher
 }
 

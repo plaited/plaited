@@ -45,13 +45,13 @@ export const loop: Loop = (ruleOrCallback, ...rules) => {
  * Creates a synchronization set for a behavioral thread. At synchronization points,
  * each behavioral thread specifies three sets of parameters: request, waitFor, and block.
  *
- * @param {RuleSet} options - An object containing three properties: request, waitFor, and block. See [`RuleSet`](libs/behavioral/src/types.ts).
+ * @param {SynchronizationPoint} options - An object containing three properties: request, waitFor, and block. See [`SynchronizationPoint`](libs/behavioral/src/types.ts).
  * @param {BPEvent[] | BPEventTemplate} options.request - A behavioral program event or event template that the thread proposes. See [`BPEvent`](libs/behavioral/src/types.ts), [`BPEventTemplate`](libs/behavioral/src/types.ts).
  * @param {BPListener[] | BPListener} options.waitFor - An array of behavioral program listeners or a single listener that is waiting for a specific event or event who satisfies it's callback. See [`BPListener`](libs/behavioral/src/types.ts).
  * @param {BPListener[] | BPListener} options.blocked - An array of behavioral program listeners or a single listener that is blocking a specific event or event who satisfies it's callback. See [`BPListener`](libs/behavioral/src/types.ts).
  * @returns {RulesFunction} Synchronization set used for applying the execution of rules to the behavioral program. See [`RulesFunction`](libs/behavioral/src/types.ts).
  */
-export const sync: Sync = (set) =>
+export const sync: Sync = (syncPoint) =>
   function* () {
-    yield set
+    yield syncPoint
   }

@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { Disconnect  } from "../shared/types.js";
 
 export type BPEvent<T = any> = { type: string; detail?: T }
 
@@ -10,7 +11,7 @@ export interface DevtoolCallback<T> {
   (args: T): void | Promise<void>
 }
 
-export type DefaultDevtoolCallbackParams = {
+export type SnapshotMessage = {
   thread: string
   selected: boolean
   type: string
@@ -19,35 +20,30 @@ export type DefaultDevtoolCallbackParams = {
   blockedBy?: string
 }[]
 
-export interface DefaultDevtool {
-  (args: {
-    pending: Set<PendingBid>
+export type SnapshotFormatter = (args: {
+    pending: Map<string, PendingBid>
     selectedEvent: CandidateBid
     candidates: CandidateBid[]
-  }): DefaultDevtoolCallbackParams
-  callback: DevtoolCallback<DefaultDevtoolCallbackParams>
-}
+}) =>  SnapshotMessage
 
-export type Devtool<T = unknown> = {
-  (args: { pending: Set<PendingBid>; selectedEvent: CandidateBid; candidates: CandidateBid[] }): T
-  callback: DevtoolCallback<T>
-}
+export type SnapshotListener = (msg: SnapshotMessage) => void | Promise<void>
 
-export type RuleSet<T = any> = {
+export type Snapshot = (listener: SnapshotListener) =>  Disconnect
+
+export type SynchronizationPoint<T = any> = {
   waitFor?: BPListener<T> | BPListener<T>[]
   request?: BPEvent<T> | BPEventTemplate<T>
   block?: BPListener<T> | BPListener<T>[]
 }
 
-export type RulesFunction<T = any> = () => IterableIterator<RuleSet<T>>
+export type RulesFunction<T = any> = () => IterableIterator<SynchronizationPoint<T>>
 
 export type RunningBid = {
   trigger?: true | 'object' | 'person'
-  thread: string
   priority: number
-  generator: IterableIterator<RuleSet>
+  generator: IterableIterator<SynchronizationPoint>
 }
-export type PendingBid = RuleSet & RunningBid
+export type PendingBid = SynchronizationPoint & RunningBid
 
 export type CandidateBid = {
   thread: string
@@ -61,18 +57,22 @@ export type CandidateBid = {
 export type Actions<T = any> = { [key: string]: (detail: T) => void | Promise<void> }
 
 export type Feedback = (actions: Actions) => void
-export type AddThreads = (threads: Record<string, RulesFunction>) => void
+export type Rules = {
+  clear: () => void
+  delete: (thread: string) => boolean
+  has:(thread: string) => boolean
+  set:(threads: Record<string, RulesFunction>) => void
+}
+export type DeleteThread = (thread: string) => void
 export type Trigger = <T = any>(args: BPEvent<T>, triggerType?: 'object' | 'person') => void
 
-export type Sync = <T = any>(set: RuleSet<T>) => RulesFunction<T>
+export type Sync = <T = any>(syncPoint: SynchronizationPoint<T>) => RulesFunction<T>
 export type Thread = (...rules: RulesFunction[]) => RulesFunction
 export type Loop = (ruleOrCallback: RulesFunction | (() => boolean), ...rules: RulesFunction[]) => RulesFunction
 
-export type BProgram = <T>(devtool?: Devtool<T> | undefined) => Readonly<{
-  addThreads: AddThreads
+export type BProgram = () => Readonly<{
+  rules: Rules
   feedback: Feedback
   trigger: Trigger
-  thread: Thread
-  loop: Loop
-  sync: Sync
+  snapshot: Snapshot
 }>

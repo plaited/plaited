@@ -1,11 +1,11 @@
 import { test, expect } from 'bun:test'
 import { bProgram } from '../b-program.js'
-import { loop, sync, thread } from '../rules.js'
+import { loop, sync, thread } from '../rules-function.js'
 
 test('firing trigger and adding threads in actions', () => {
   const actual: string[] = []
-  const { addThreads, trigger, feedback } = bProgram()
-  addThreads({
+  const { rules, trigger, feedback } = bProgram()
+  rules.set({
     addHotOnce: sync({ request: { type: 'hot_1' } }),
     mixHotCold: loop(
       sync({
@@ -22,7 +22,7 @@ test('firing trigger and adding threads in actions', () => {
     hot_1() {
       actual.push('hot')
       trigger({ type: 'cold' })
-      addThreads({
+      rules.set({
         addMoreHot: thread(sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } })),
         addMoreCold: thread(sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } })),
       })

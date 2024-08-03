@@ -697,7 +697,7 @@ When creating a sync statement using our sync function we pass it an object of
 the following type.
 
 ```ts
-export type RuleSet<T extends Detail = Detail> = {
+export type SynchronizationPoint<T extends Detail = Detail> = {
   waitFor?: BPListener<T> | BPListener<T>[]
   request?: BPEvent<T> | BPEventTemplate<T>
   block?: BPListener<T> | BPListener<T>[]

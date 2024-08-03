@@ -1,12 +1,12 @@
 import { test, expect } from 'bun:test'
 import { bProgram } from '../b-program.js'
-import { sync } from '../rules.js'
+import { sync } from '../rules-function.js'
 import { wait } from '@plaited/utils'
 
 test('async feedback callbacks', async () => {
   const actual: string[] = []
-  const { addThreads, trigger, feedback } = bProgram()
-  addThreads({
+  const { rules, trigger, feedback } = bProgram()
+  rules.set({
     onInit: sync({ request: { type: 'init' } }),
     afterInit: sync({ request: { type: 'afterInit' } }),
   })

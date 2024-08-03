@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import type { RulesFunction } from '../types.js'
 import { bProgram } from '../b-program.js'
-import { loop, sync, thread } from '../rules.js'
+import { loop, sync, thread } from '../rules-function.js'
 
 const winConditions = [
   //rows
@@ -51,10 +51,10 @@ const enforceTurns = loop(sync<Square>({ waitFor: 'X', block: 'O' }), sync<Squar
 
 test('take turns', () => {
   // We create a new bProgram
-  const { feedback, trigger, addThreads } = bProgram()
+  const { feedback, trigger, rules } = bProgram()
   // We create a new board for the game
   board = new Set(squares)
-  addThreads({
+  rules.set({
     enforceTurns,
   })
   feedback({
@@ -95,10 +95,10 @@ for (const square of squares) {
 
 test('squares taken', () => {
   // We create a new bProgram
-  const { feedback, trigger, addThreads } = bProgram()
+  const { feedback, trigger, rules } = bProgram()
   // We create a new board for the game
   board = new Set(squares)
-  addThreads({
+  rules.set({
     enforceTurns,
     ...squaresTaken,
   })
@@ -152,10 +152,10 @@ const detectWins = (player: 'X' | 'O') =>
 
 test('detect winner', () => {
   // We create a new bProgram
-  const { feedback, trigger, addThreads } = bProgram()
+  const { feedback, trigger, rules } = bProgram()
   // We create a new board for the game
   board = new Set(squares)
-  addThreads({
+  rules.set({
     enforceTurns,
     ...squaresTaken,
     ...detectWins('X'),
@@ -189,10 +189,10 @@ const stopGame = thread(sync({ waitFor: 'win' }), sync({ block: ['X', 'O'] }))
 
 test('stop game', () => {
   // We create a new bProgram
-  const { feedback, trigger, addThreads } = bProgram()
+  const { feedback, trigger, rules } = bProgram()
   // We create a new board for the game
   board = new Set(squares)
-  addThreads({
+  rules.set({
     enforceTurns,
     ...squaresTaken,
     ...detectWins('X'),
@@ -240,10 +240,10 @@ for (const square of squares) {
 
 test('defaultMoves', () => {
   // We create a new bProgram
-  const { feedback, trigger, addThreads } = bProgram()
+  const { feedback, trigger, rules } = bProgram()
   // We create a new board for the game
   board = new Set(squares)
-  addThreads({
+  rules.set({
     enforceTurns,
     ...squaresTaken,
     ...detectWins('X'),
@@ -275,10 +275,10 @@ const startAtCenter = sync({
 
 test('start at center', () => {
   // We create a new bProgram
-  const { feedback, trigger, addThreads } = bProgram()
+  const { feedback, trigger, rules } = bProgram()
   // We create a new board for the game
   board = new Set(squares)
-  addThreads({
+  rules.set({
     enforceTurns,
     ...squaresTaken,
     ...detectWins('X'),
@@ -321,10 +321,10 @@ const preventCompletionOfLineWithTwoXs = (board: Set<number>) => {
 
 test('prevent completion of line with two Xs', () => {
   // We create a new bProgram
-  const { feedback, trigger, addThreads } = bProgram()
+  const { feedback, trigger, rules } = bProgram()
   // We create a new board for the game
   board = new Set(squares)
-  addThreads({
+  rules.set({
     enforceTurns,
     ...squaresTaken,
     ...detectWins('X'),

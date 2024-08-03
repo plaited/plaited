@@ -1,13 +1,12 @@
 import { test, expect } from 'bun:test'
 import { bProgram } from '../b-program.js'
-import { thread, sync, loop } from '../rules.js'
-import { defaultDevtool } from '../default-devtool.js'
-import type { DefaultDevtoolCallbackParams } from '../types.js'
+import { thread, sync, loop } from '../rules-function.js'
+import type { SnapshotMessage } from '../types.js'
 
 test('Add hot water 3 times', () => {
   const actual: string[] = []
-  const { addThreads, trigger, feedback } = bProgram()
-  addThreads({
+  const { rules, trigger, feedback } = bProgram()
+  rules.set({
     addHot: thread(
       sync({ request: { type: 'hot' } }),
       sync({ request: { type: 'hot' } }),
@@ -25,8 +24,8 @@ test('Add hot water 3 times', () => {
 
 test('Add hot/cold water 3 times', () => {
   const actual: string[] = []
-  const { addThreads, trigger, feedback } = bProgram()
-  addThreads({
+  const { rules, trigger, feedback } = bProgram()
+  rules.set({
     addHot: thread(
       sync({ request: { type: 'hot' } }),
       sync({ request: { type: 'hot' } }),
@@ -52,8 +51,8 @@ test('Add hot/cold water 3 times', () => {
 
 test('interleave', () => {
   const actual: string[] = []
-  const { addThreads, trigger, feedback } = bProgram()
-  addThreads({
+  const { rules, trigger, feedback } = bProgram()
+  rules.set({
     addHot: thread(
       sync({ request: { type: 'hot' } }),
       sync({ request: { type: 'hot' } }),
@@ -88,12 +87,12 @@ test('interleave', () => {
 })
 
 test('logging', () => {
-  const logs: DefaultDevtoolCallbackParams[] = []
-  defaultDevtool.callback = (log) => {
-    logs.push(log)
-  }
-  const { addThreads, trigger } = bProgram(defaultDevtool)
-  addThreads({
+  const snapshots: SnapshotMessage[] = []
+  const { rules, trigger, snapshot } = bProgram()
+  snapshot((snapshot: SnapshotMessage) => {
+    snapshots.push(snapshot)
+  })
+  rules.set({
     addHot: thread(
       sync({ request: { type: 'hot' } }),
       sync({ request: { type: 'hot' } }),
@@ -116,5 +115,5 @@ test('logging', () => {
     ),
   })
   trigger({ type: 'start' })
-  expect(logs).toMatchSnapshot()
+  expect(snapshots).toMatchSnapshot()
 })

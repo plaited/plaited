@@ -1,9 +1,9 @@
-import type { DefaultDevtool } from './types.js'
+import type { SnapshotFormatter } from './types.js'
 
 import { isListeningFor, isPendingRequest } from './private-utils.js'
 
-export const defaultDevtool: DefaultDevtool = ({ candidates, selectedEvent, pending }) => {
-  const blockingThreads = [...pending].flatMap(({ block, thread }) =>
+export const snapshotFormatter: SnapshotFormatter = ({ candidates, selectedEvent, pending }) => {
+  const blockingThreads = [...pending].flatMap(([thread, { block }]) =>
     block && Array.isArray(block) ? block.map((listener) => ({ block: listener, thread }))
     : block ? [{ block, thread }]
     : [],
@@ -31,5 +31,3 @@ export const defaultDevtool: DefaultDevtool = ({ candidates, selectedEvent, pend
   }
   return ruleSets.sort((a, b) => a.priority - b.priority)
 }
-
-defaultDevtool.callback = (log) => console.table(log)

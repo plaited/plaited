@@ -1,9 +1,8 @@
 //BEHAVIORAL
 export type * from './behavioral/types.js'
-export { sync, thread, loop } from './behavioral/rules.js'
+export { sync, thread, loop } from './behavioral/rules-function.js'
 export { bProgram } from './behavioral/b-program.js'
 export { shuffleSyncs } from './behavioral/shuffle-syncs.js'
-export { defaultDevtool } from './behavioral/default-devtool.js'
 export { randomEvent } from './behavioral/random-event.js'
 //CLIENT
 export type * from './client/types.js'
@@ -13,7 +12,6 @@ export { getPlaitedChildren } from './client/get-plaited-children.js'
 export { useIndexedDB } from './client/use-indexed-db.js'
 export { usePublisher } from './client/use-publisher.js'
 export { useWorker } from './client/use-worker.js'
-export { useQuery } from './client/use-query.js'
 //CSS
 export type * from './css/types.js'
 export { assignStyles } from './css/assign-styles.js'
