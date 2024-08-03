@@ -73,7 +73,7 @@ const stylesheet = css`
   }
 `
 
-const shadowRoot = (
+const shadowDom = (
   <article {...stylesheet}>
     <Header
       bp-target='header'
@@ -156,7 +156,7 @@ const shadowRoot = (
 
 export const Page = defineTemplate({
   tag: 'page-el',
-  shadowRoot,
+  shadowDom,
   bp({ $ }) {
     const [header] = $<PlaitedElement>('header')
     return {

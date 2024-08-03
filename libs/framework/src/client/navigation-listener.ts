@@ -1,5 +1,6 @@
 /** Utility function for enabling hypermedia patterns */
-import type { Disconnect, PlaitedElement } from './types.js'
+import type { Disconnect } from '../shared/types.js'
+import type { PlaitedElement } from './types.js'
 import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
 import { NAVIGATE_EVENT_TYPE } from '../shared/constants.js'
 import { useEmit } from './use-emit.js'

@@ -1,29 +1,32 @@
-import type { DefinePlaitedElementArgs, PlaitedTemplate } from './types.js'
+import type { DefinePlaitedTemplateArgs, PlaitedTemplate } from './types.js'
 import type { Attrs } from '../jsx/types.js'
 import { getPlaitedTemplate } from './get-plaited-template.js'
 import { definePlaitedElement } from './define-plaited-element.js'
+import { createTemplate } from '../jsx/create-template.js'
 
 export const defineTemplate = <T extends Attrs = Attrs>({
   tag,
-  shadowRoot,
+  shadowDom = createTemplate('slot', {}),
   mode = 'open',
   delegatesFocus = true,
   observedAttributes,
   publicEvents,
   ...rest
-}: DefinePlaitedElementArgs): PlaitedTemplate<T> => {
+}: DefinePlaitedTemplateArgs): PlaitedTemplate<T> => {
   definePlaitedElement({
     tag,
     mode,
     delegatesFocus,
-    shadowRoot,
+    shadowDom,
+    publicEvents,
+    observedAttributes,
     ...rest,
   })
   return getPlaitedTemplate({
     tag,
     mode,
     delegatesFocus,
-    shadowRoot,
+    shadowDom,
     publicEvents,
     observedAttributes,
   })

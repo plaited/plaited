@@ -38,7 +38,7 @@ const stylesheet = css`
 
 export const Header = defineTemplate({
   tag: 'header-el',
-  shadowRoot: (
+  shadowDom: (
     <header {...stylesheet}>
       <div className='storybook-header'>
         <div>
@@ -90,8 +90,8 @@ export const Header = defineTemplate({
   observedAttributes: ['user'],
   publicEvents: ['user'],
   attributeChangedCallback(name: string, _, newValue: string) {
+    const $ = useQuery(this.shadowRoot)
     if (name === 'user') {
-      const $ = useQuery(this.shadowRoot)
       const [bar] = $('button-bar')
       newValue ?
         bar.render(

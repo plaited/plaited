@@ -95,10 +95,10 @@ const preventCompletionOfLineWithTwoXs = (board: Set<number>) => {
 }
 export const TicTacToeBoard = defineTemplate({
   tag: 'tic-tac-toe-board',
-  shadowRoot: <BoardMarker />,
-  bp({ $, addThreads, trigger }) {
+  shadowDom: <BoardMarker />,
+  bp({ $, rules, trigger }) {
     const board = new Set(squares)
-    addThreads({
+    rules.set({
       enforceTurns,
       ...squaresTaken,
       ...detectWins('X'),

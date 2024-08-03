@@ -11,6 +11,7 @@ export { defineWorker } from './client/define-worker.js'
 export { getPlaitedChildren } from './client/get-plaited-children.js'
 export { useIndexedDB } from './client/use-indexed-db.js'
 export { usePublisher } from './client/use-publisher.js'
+export { useQuery } from './client/use-query.js'
 export { useWorker } from './client/use-worker.js'
 //CSS
 export type * from './css/types.js'

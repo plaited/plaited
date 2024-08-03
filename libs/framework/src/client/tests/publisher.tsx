@@ -5,7 +5,7 @@ const pub = usePublisher<number>(0)
 
 export const Publisher = defineTemplate({
   tag: 'publisher-component',
-  shadowRoot: (
+  shadowDom: (
     <button
       bp-trigger={{ click: 'increment' }}
       bp-target='button'
@@ -14,8 +14,8 @@ export const Publisher = defineTemplate({
     </button>
   ),
   publicEvents: ['add'],
-  bp({ addThreads, thread, sync }) {
-    addThreads({
+  bp({ rules, thread, sync }) {
+    rules.set({
       onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),
     })
     return {
@@ -28,7 +28,7 @@ export const Publisher = defineTemplate({
 
 export const Subscriber = defineTemplate({
   tag: 'subscriber-component',
-  shadowRoot: <h1 bp-target='count'>{pub.get()}</h1>,
+  shadowDom: <h1 bp-target='count'>{pub.get()}</h1>,
   publicEvents: ['update'],
   bp({ $, host }) {
     pub.sub(host, 'update')

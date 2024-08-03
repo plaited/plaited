@@ -12,7 +12,7 @@ Plaited is built around [the behavioral programming algorithm](https://www.wisdo
 These specialized idioms are effectively rules for determining how we apply feedback to an object based on a triggering event initiated by the user or the system. Each `bProgram` can be broken into three parts:
 
 1. [trigger](#trigger)(s): Send `bProgram` a `BPEvent` that initiates a run of `bProgram`
-2. [threads](#threads): `RulesFunction` that apply rules based on the `RuleSet` parameters
+2. [threads](#threads): `RulesFunction` that apply rules based on the `SynchronizationPoint` parameters
 3. [feedback](#feedback): Actions that manipulate an object based on the selected event(s)
 
 ## Trigger
@@ -37,7 +37,7 @@ We build our threads by making use of three functions `sync`, `thread`, and `loo
 
 ### Sync
 
-As we mentioned earlier our threads continually move through synchronization points. We create these points using our `sync` function which return a `RulesFunction`. The `sync` function takes a `RuleSet` as a parameter. `RuleSet` is an object with three keys:
+As we mentioned earlier our threads continually move through synchronization points. We create these points using our `sync` function which return a `RulesFunction`. The `sync` function takes a `SynchronizationPoint` as a parameter. `SynchronizationPoint` is an object with three keys:
   
 - request: A proposed `BPEvent` or a function that when invoked returns a `BPEvent` also known as a `BPEventTemplate`
 - waitFor: string(s) referencing the `BPEvent` type or a callback(s) that returns a boolean. This callback receives the proposed `BPEvent` as an argument.

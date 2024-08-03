@@ -1,7 +1,7 @@
 import { assert, findByAttribute, fireEvent } from '@plaited/storybook-rite'
 import { Meta, StoryObj } from '@plaited/storybook'
 import { defineTemplate } from '../define-template.js'
-import { getPlaitedChildren } from '../../utils-client.js'
+import { getPlaitedChildren } from '../../index.js'
 
 const meta: Meta = {
   title: 'Tests',
@@ -12,10 +12,10 @@ export default meta
 
 const Inner = defineTemplate({
   tag: 'inner-component',
-  shadowRoot: <h1 bp-target='header'>Hello</h1>,
+  shadowDom: <h1 bp-target='header'>Hello</h1>,
   publicEvents: ['add'],
-  bp({ $, addThreads, thread, sync, emit }) {
-    addThreads({
+  bp({ $, rules, thread, sync, emit }) {
+    rules.set({
       onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),
     })
     return {
@@ -32,7 +32,7 @@ const Inner = defineTemplate({
 
 const Outer = defineTemplate({
   tag: 'outer-component',
-  shadowRoot: (
+  shadowDom: (
     <div>
       <slot
         bp-target='slot'

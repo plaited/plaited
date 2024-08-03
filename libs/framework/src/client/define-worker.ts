@@ -1,21 +1,11 @@
 import { bProgram } from '../behavioral/b-program.js'
-import { AddThreads, Trigger, Thread, Loop, Sync, Actions, Devtool, BPEvent } from '../behavioral/types.js'
+import type { DefineWorkerArgs } from './types.js'
+import type { BPEvent } from '../behavioral/types.js'
+import { sync, loop, thread } from '../behavioral/rules-function.js'
 import { onlyPublicEvents } from '../shared/only-public-events.js'
 
-type UsePostMessage = ({
-  trigger,
-  publicEvents,
-  targetOrigin,
-}: {
-  trigger: Trigger
-  publicEvents: string[]
-  targetOrigin?: string
-}) => {
-  (data: BPEvent): void
-  disconnect(): void
-}
-
-const usePostMessage: UsePostMessage = ({ trigger, publicEvents, targetOrigin }) => {
+export const defineWorker = ({ bp, publicEvents, targetOrigin }: DefineWorkerArgs) => {
+  const { feedback, trigger, ...rest } = bProgram()
   const _trigger = onlyPublicEvents(trigger, publicEvents)
   const eventHandler = ({ data }: { data: BPEvent }) => {
     _trigger(data)
@@ -26,30 +16,6 @@ const usePostMessage: UsePostMessage = ({ trigger, publicEvents, targetOrigin })
   }
   context.addEventListener('message', eventHandler, false)
   send.disconnect = () => context.removeEventListener('message', eventHandler)
-  return send
-}
-
-type DefineWorkerArgs = {
-  bp: (args: {
-    send: ReturnType<UsePostMessage>
-    addThreads: AddThreads
-    trigger: Trigger
-    thread: Thread
-    loop: Loop
-    sync: Sync
-  }) => Actions
-  devtool?: Devtool
-  publicEvents: string[]
-  targetOrigin?: string
-}
-
-export const defineWorker = ({ bp, publicEvents, targetOrigin, devtool }: DefineWorkerArgs) => {
-  const { feedback, ...rest } = bProgram(devtool)
-  const send = usePostMessage({
-    trigger: rest.trigger,
-    publicEvents,
-    targetOrigin,
-  })
-  const actions = bp({ ...rest, send })
+  const actions = bp({ trigger, send, sync, loop, thread, ...rest})
   feedback(actions)
 }

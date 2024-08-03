@@ -23,7 +23,7 @@ const { noRepeat, repeat } = createStyles({
 const DynamicOnly = defineTemplate({
   publicEvents: ['render'],
   tag: 'dynamic-only',
-  shadowRoot: <div bp-target='target'></div>,
+  shadowDom: <div bp-target='target'></div>,
   bp({ $ }) {
     return {
       render() {
@@ -63,7 +63,7 @@ const { root, override } = createStyles({
 const WithDefaultStyles = defineTemplate({
   publicEvents: ['render'],
   tag: 'with-default-styles',
-  shadowRoot: (
+  shadowDom: (
     <div
       bp-target='target-2'
       {...root}

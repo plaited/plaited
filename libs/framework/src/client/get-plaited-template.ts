@@ -7,18 +7,18 @@ export const getPlaitedTemplate = <T extends Attrs>({
   tag,
   mode,
   delegatesFocus,
-  shadowRoot,
+  shadowDom,
   publicEvents = [],
   observedAttributes = [],
 }: {
   tag: `${string}-${string}`
   mode: 'open' | 'closed'
   delegatesFocus: boolean
-  shadowRoot: TemplateObject
+  shadowDom: TemplateObject
   publicEvents?: string[]
   observedAttributes?: string[]
 }): PlaitedTemplate<T> => {
-  const registry = new Set<string>([...shadowRoot.registry, tag])
+  const registry = new Set<string>([...shadowDom.registry, tag])
   const ft = ({ children = [], ...attrs }: T) =>
     createTemplate(tag, {
       ...attrs,
@@ -26,7 +26,7 @@ export const getPlaitedTemplate = <T extends Attrs>({
         createTemplate('template', {
           shadowrootmode: mode,
           shadowrootdelegatesfocus: delegatesFocus,
-          children: shadowRoot,
+          children: shadowDom,
         }),
         ...(Array.isArray(children) ? children : [children]),
       ],

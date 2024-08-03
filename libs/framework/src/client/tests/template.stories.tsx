@@ -19,7 +19,7 @@ const content = 'client side rendered'
 
 const Fixture = defineTemplate({
   tag: 'template-element',
-  shadowRoot: (
+  shadowDom: (
     <div
       data-test='content'
       {...styles.inner}
@@ -112,7 +112,7 @@ export const withDeclarativeShadowDom: StoryObj = {
     defineTemplate({
       tag,
       publicEvents: ['render'],
-      shadowRoot: <Content />,
+      shadowDom: <Content />,
       bp({ $ }) {
         return {
           render() {

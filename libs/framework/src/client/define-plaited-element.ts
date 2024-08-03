@@ -1,7 +1,8 @@
 import type { BPEvent, Trigger } from '../behavioral/types.js'
-import type { Disconnect } from './types.js'
-import type { PlaitedElement, QuerySelector, DefinePlaitedElementArgs } from './types.js'
+import type { Disconnect } from '../shared/types.js'
+import type { PlaitedElement, QuerySelector, DefinePlaitedTemplateArgs } from './types.js'
 import { bProgram } from '../behavioral/b-program.js'
+import { sync, loop, thread } from '../behavioral/rules-function.js'
 import { useClone } from './use-clone.js'
 import { useEmit } from './use-emit.js'
 import { BP_TRIGGER } from '../jsx/constants.js'
@@ -9,29 +10,34 @@ import { useQuery, cssCache } from './use-query.js'
 import { shadowObserver, addListeners } from './shadow-observer.js'
 import { onlyPublicEvents } from '../shared/only-public-events.js'
 import { canUseDOM } from '@plaited/utils'
+import { TemplateObject } from '../jsx/types.js'
 
 export const definePlaitedElement = ({
   tag,
-  shadowRoot,
+  shadowDom,
   mode = 'open',
   delegatesFocus = true,
+  formAssociated,
   publicEvents,
   observedAttributes,
+  bp,
   connectedCallback,
   disconnectedCallback,
-  bp,
-  devtool,
   ...rest
-}: DefinePlaitedElementArgs) => {
+}: DefinePlaitedTemplateArgs & { shadowDom: TemplateObject }) => {
   if (canUseDOM() && !customElements.get(tag)) {
     class BaseElement extends HTMLElement implements PlaitedElement {
       static observedAttributes = observedAttributes
+      static formAssociated = formAssociated
       get publicEvents() {
         return publicEvents
       }
       internals_: ElementInternals
       #root: ShadowRoot
       #query: QuerySelector
+      #shadowObserver?: MutationObserver
+      #trigger?: Trigger
+      #disconnectSet = new Set<Disconnect>()
       constructor() {
         super()
         this.internals_ = this.attachInternals()
@@ -39,7 +45,7 @@ export const definePlaitedElement = ({
           this.#root = this.internals_.shadowRoot
         } else {
           this.#root = this.attachShadow({ mode, delegatesFocus })
-          const { client, stylesheets } = shadowRoot
+          const { client, stylesheets } = shadowDom
           this.#root.innerHTML = client.join('')
           if (stylesheets.size) {
             const adoptedStyleSheets: CSSStyleSheet[] = []
@@ -51,15 +57,13 @@ export const definePlaitedElement = ({
             this.#root.adoptedStyleSheets = adoptedStyleSheets
           }
         }
-        cssCache.set(this.#root, new Set<string>([...shadowRoot.stylesheets]))
+        cssCache.set(this.#root, new Set<string>([...shadowDom.stylesheets]))
         this.#query = useQuery(this.#root)
       }
-      #shadowObserver?: MutationObserver
-      #disconnectSet = new Set<Disconnect>()
-      #trigger?: Trigger
       connectedCallback() {
+        connectedCallback?.bind(this)()
         if (bp) {
-          const { trigger, feedback, ...rest } = bProgram(devtool)
+          const { trigger, feedback, ...rest } = bProgram()
           this.#trigger = trigger
           addListeners(
             // just connected/upgraded then delegate listeners nodes with bp-trigger attribute
@@ -67,27 +71,26 @@ export const definePlaitedElement = ({
             trigger,
           )
           this.#shadowObserver = shadowObserver(this.#root, trigger) // create a shadow observer to watch for modification & addition of nodes with bp-trigger attribute
-
           const actions = bp.bind(this)({
             $: this.#query,
             host: this,
             emit: useEmit(this),
             clone: useClone(this.#root),
             trigger,
+            sync,
+            loop,
+            thread,
             ...rest,
           })
           feedback(actions)
         }
-        connectedCallback && connectedCallback.bind(this)()
       }
       disconnectedCallback() {
         this.#shadowObserver?.disconnect()
         for (const cb of this.#disconnectSet) cb()
-        disconnectedCallback && disconnectedCallback.bind(this)()
+        disconnectedCallback?.bind(this)()
       }
-      addDisconnectedCallback(cb: Disconnect) {
-        this.#disconnectSet.add(cb)
-      }
+      addDisconnectedCallback(cb: Disconnect) {this.#disconnectSet.add(cb)}
       trigger(event: BPEvent) {
         if (this.#trigger && publicEvents) onlyPublicEvents(this.#trigger, publicEvents)(event)
       }

@@ -25,16 +25,16 @@ export function usePublisher<T>(initialValue: T) {
   // Subscribes a trigger and BPEvent to the publisher.
   const sub = (host: PlaitedElement, eventType: string) => {
     if (host.publicEvents?.includes(eventType)) {
-      console.error(`Event [${eventType}] is not public`)
-      return noop
+      const cb = (detail?: T) => host.trigger<T>({ type: eventType, detail })
+      listeners.add(cb)
+      const disconnect = () => {
+        listeners.delete(cb)
+      }
+      host.addDisconnectedCallback(disconnect)
+      return disconnect
     }
-    const cb = (detail?: T) => host.trigger<T>({ type: eventType, detail })
-    listeners.add(cb)
-    const disconnect = () => {
-      listeners.delete(cb)
-    }
-    host.addDisconnectedCallback(disconnect)
-    return disconnect
+    console.error(`Event [${eventType}] is not public`)
+    return noop
   }
   pub.sub = sub
   pub.get = get

@@ -102,7 +102,7 @@ const forEachRow = ($: QuerySelector, data: DataItem) => {
 }
 
 const Fixture = defineTemplate({
-  shadowRoot: (
+  shadowDom: (
     <div bp-target='root'>
       <table bp-target='table'></table>
     </div>

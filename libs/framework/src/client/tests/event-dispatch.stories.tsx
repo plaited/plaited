@@ -11,7 +11,7 @@ export default meta
 
 const Bottom = defineTemplate({
   tag: 'bottom-component',
-  shadowRoot: (
+  shadowDom: (
     <button
       bp-target='button'
       bp-trigger={{ click: 'click' }}
@@ -31,7 +31,7 @@ const Bottom = defineTemplate({
 
 const Top = defineTemplate({
   tag: 'top-component',
-  shadowRoot: (
+  shadowDom: (
     <div>
       <h1 bp-target='header'>Hello</h1>
       <Bottom bp-trigger={{ append: 'append' }}></Bottom>

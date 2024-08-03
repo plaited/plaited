@@ -3,10 +3,11 @@ import { usePublisher } from '../use-publisher.js'
 
 const sendDisable = usePublisher()
 const sendAdd = usePublisher<{ value: string }>()
+
 export const ElOne = defineTemplate({
   tag: 'dynamic-one',
   publicEvents: ['disable'],
-  shadowRoot: (
+  shadowDom: (
     <div>
       <button
         bp-target='button'
@@ -31,13 +32,14 @@ export const ElOne = defineTemplate({
   },
 })
 
+
 export const ElTwo = defineTemplate({
   tag: 'dynamic-two',
   publicEvents: ['add'],
-  shadowRoot: <h1 bp-target='header'>Hello</h1>,
-  bp({ $, addThreads, thread, sync, host }) {
+  shadowDom: <h1 bp-target='header'>Hello</h1>,
+  bp({ $, rules, thread, sync, host }) {
     sendAdd.sub(host, 'add')
-    addThreads({
+    rules.set({
       onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),
     })
     return {
@@ -51,3 +53,4 @@ export const ElTwo = defineTemplate({
     }
   },
 })
+

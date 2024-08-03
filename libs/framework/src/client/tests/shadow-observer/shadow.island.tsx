@@ -45,7 +45,7 @@ export const stylesheet = css`
 
 const SubIsland = defineTemplate({
   tag: 'sub-island',
-  shadowRoot: (
+  shadowDom: (
     <h3
       className={'sub-island'}
       {...stylesheet}
@@ -57,7 +57,7 @@ const SubIsland = defineTemplate({
 
 export const ShadowIsland = defineTemplate({
   tag: 'shadow-island',
-  shadowRoot: (
+  shadowDom: (
     <div
       {...stylesheet}
       className={'mount'}
@@ -86,8 +86,8 @@ export const ShadowIsland = defineTemplate({
       </div>
     </div>
   ),
-  bp({ addThreads, sync, thread, host, $, loop }) {
-    addThreads({
+  bp({ rules, sync, thread, host, $, loop }) {
+    rules.set({
       onRemoveSvg: thread(sync({ waitFor: 'removeSvg' }), sync({ request: { type: 'addSubIsland' } })),
       onStart: thread(sync({ waitFor: 'start' }), sync({ request: { type: 'addSlot' } })),
       onAddSvg: loop(sync({ waitFor: 'add-svg' }), sync({ request: { type: 'modifyAttributes' } })),

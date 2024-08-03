@@ -1,8 +1,7 @@
-import type { Actions, BProgram, Devtool, Trigger, BPEvent } from '../behavioral/types.js'
+import type { Rules, Trigger, Actions, Snapshot, BPEvent, Sync, Loop, Thread  } from '../behavioral/types.js'
 import type { TemplateObject, Attrs, FunctionTemplate } from '../jsx/types.js'
 import type { PLAITED_COMPONENT_IDENTIFIER } from '../shared/constants.js'
-
-export type Disconnect = () => void
+import { Disconnect } from '../shared/types.js'
 
 export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
 
@@ -32,18 +31,20 @@ export type UseClone = (
 ) => <T>(template: TemplateObject, callback: ($: QuerySelector, data: T) => void) => (data: T) => DocumentFragment
 
 export interface PlaitedElement extends HTMLElement {
-  internals_: ElementInternals
+  // Custom Methods and properties
   trigger: Trigger
   addDisconnectedCallback(callback: Disconnect): void
-  connectedCallback(this: PlaitedElement): void
-  attributeChangedCallback?(name: string, oldValue: string | null, newValue: string | null): void
-  disconnectedCallback(this: PlaitedElement): void
-  adoptedCallback?(this: PlaitedElement): void
-  formAssociatedCallback?(this: PlaitedElement, form: HTMLFormElement): void
-  formDisabledCallback?(this: PlaitedElement, disabled: boolean): void
-  formResetCallback?(this: PlaitedElement): void
-  formStateRestoreCallback?(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
   readonly publicEvents?: string[]
+  // Default Methods and Properties
+  internals_: ElementInternals
+  adoptedCallback?:{(this: PlaitedElement): void}
+  attributeChangedCallback?:{(this: PlaitedElement, name: string, oldValue: string | null, newValue: string | null): void}
+  connectedCallback(this: PlaitedElement): void
+  disconnectedCallback(this: PlaitedElement): void
+  formAssociatedCallback?:{(this: PlaitedElement, form: HTMLFormElement): void}
+  formDisabledCallback?:{(this: PlaitedElement, disabled: boolean): void}
+  formResetCallback?:{(this: PlaitedElement): void}
+  formStateRestoreCallback?:{(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void}
 }
 
 export interface PlaitedElementConstructor {
@@ -65,39 +66,40 @@ export type UseEmit = (host: HTMLElement) => (
   },
 ) => void
 
-type BProps = {
-  /** query for elements with the bp-target attribute in the Island's shadowDom and slots */
-  $: QuerySelector
-  /** The DOM node context allowing easy light & shadow dom access
-   * @example
-   * // returns the div element inside
-   * // the shadowRoot of the element instance
-   * const shadowEl = host.shadowRoot.querySelector('div')
-   */
-  host: PlaitedElement
-  emit: ReturnType<UseEmit>
-  clone: ReturnType<UseClone>
-} & Omit<ReturnType<BProgram>, 'feedback'>
-
-type BPCallback = (this: PlaitedElement, props: BProps) => Actions
-
-export type DefinePlaitedElementArgs = {
+export type DefinePlaitedTemplateArgs = {
   tag: `${string}-${string}`
-  shadowRoot: TemplateObject
+  shadowDom: TemplateObject
   mode?: 'open' | 'closed'
   delegatesFocus?: boolean
   observedAttributes?: string[]
   publicEvents?: string[]
-  devtool?: Devtool
-  connectedCallback?(this: PlaitedElement): void
-  attributeChangedCallback?(this: PlaitedElement, name: string, oldValue: string | null, newValue: string | null): void
-  disconnectedCallback?(this: PlaitedElement): void
-  adoptedCallback?(this: PlaitedElement): void
-  formAssociatedCallback?(this: PlaitedElement, form: HTMLFormElement): void
-  formDisabledCallback?(this: PlaitedElement, disabled: boolean): void
-  formResetCallback?(this: PlaitedElement): void
-  formStateRestoreCallback?(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
-  bp?: BPCallback
+  formAssociated?: true 
+  bp?: {
+    (
+      this: PlaitedElement,
+      args: {
+      $: QuerySelector
+      host: PlaitedElement
+      emit: ReturnType<UseEmit>
+      clone: ReturnType<UseClone>
+      // Behavioral Program
+      trigger: Trigger
+      rules: Rules
+      snapshot: Snapshot
+      thread: Thread
+      loop: Loop
+      sync: Sync
+    }
+    ):Actions
+  }
+  adoptedCallback?:{(this: PlaitedElement): void}
+  attributeChangedCallback?:{(this: PlaitedElement, name: string, oldValue: string | null, newValue: string | null): void}
+  connectedCallback?:{(this: PlaitedElement): void}
+  disconnectedCallback?:{(this: PlaitedElement): void}
+  formAssociatedCallback?:{(this: PlaitedElement, form: HTMLFormElement): void}
+  formDisabledCallback?:{(this: PlaitedElement, disabled: boolean): void}
+  formResetCallback?:{(this: PlaitedElement): void}
+  formStateRestoreCallback?:{(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void}
 }
 
 export type PlaitedTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
@@ -106,4 +108,21 @@ export type PlaitedTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
   observedAttributes: string[]
   publicEvents: string[]
   $: typeof PLAITED_COMPONENT_IDENTIFIER
+}
+
+export type  DefineWorkerArgs = {
+  bp: (args: {
+    send:{
+      (data: BPEvent): void
+      disconnect(): void
+    }
+    trigger: Trigger
+    rules: Rules
+    snapshot: Snapshot
+    thread: Thread
+    loop: Loop
+    sync: Sync
+  }) => Actions
+  publicEvents: string[]
+  targetOrigin?: string
 }
