@@ -7,8 +7,7 @@ type Booleanish = boolean | 'true' | 'false'
 type CrossOrigin = 'anonymous' | 'use-credentials' | ''
 
 export type TemplateObject = {
-  client: string[]
-  server: string[]
+  html: string[]
   stylesheets: Set<string>
   registry: Set<string>
   $: typeof PLAITED_TEMPLATE_IDENTIFIER

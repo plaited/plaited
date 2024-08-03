@@ -93,14 +93,34 @@ exports[`Fragment 1`] = `
 
 exports[`createTemplate: CustomElement hoisting its styles 1`] = `
 {
-  "content": "<nested-component></nested-component>",
+  "content": 
+"<nested-component>
+    <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+        <style>
+            .p_ju9u1n{font-weight:bold;}
+        </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
+        <slot
+        name="nested"></slot>
+    </template>
+</nested-component>"
+,
   "stylesheets":   Set {},
 }
 `;
 
 exports[`createTemplate: CustomElement with declarative shadow dom & host styles 1`] = `
 {
-  "content": "<nested-component class="nestedComponent_ey8y76 p1rlu8mi p_8mez4t"></nested-component>",
+  "content": 
+"<nested-component class="nestedComponent_ey8y76 p1rlu8mi p_8mez4t">
+    <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+        <style>
+            .p_ju9u1n{font-weight:bold;}
+        </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
+        <slot
+        name="nested"></slot>
+    </template>
+</nested-component>"
+,
   "stylesheets":   
 Set {
     ".p1rlu8mi{display:flex;}",
@@ -114,6 +134,13 @@ exports[`createTemplate: CustomElement with styled slotted component 1`] = `
 {
   "content": 
 "<nested-component class="nestedComponent_ey8y76 p1rlu8mi p_8mez4t">
+    <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+        <style>
+            .p_ju9u1n{font-weight:bold;}
+        </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
+        <slot
+        name="nested"></slot>
+    </template>
     <p class="slottedParagraph_g28n4j p91m869" slot="nested">slotted paragraph</p>
 </nested-component>"
 ,
@@ -129,14 +156,50 @@ Set {
 
 exports[`createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom 1`] = `
 {
-  "content": "<top-component></top-component>",
+  "content": 
+"<top-component>
+    <template shadowrootdelegatesfocus="true" shadowrootmode="open">
+        <style>
+            .p91m869{color:rebeccapurple;}
+        </style>
+        <nested-component>
+            <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+                <style>
+                    .p_ju9u1n{font-weight:bold;}
+                </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
+                <slot
+                name="nested"></slot>
+            </template>
+            <p class="slottedParagraph_g28n4j p91m869" slot="nested">slotted paragraph</p>
+        </nested-component>
+    </template>
+</top-component>"
+,
   "stylesheets":   Set {},
 }
 `;
 
 exports[`createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles 1`] = `
 {
-  "content": "<top-component class="topComponent_46img7 p131mv1i"></top-component>",
+  "content": 
+"<top-component class="topComponent_46img7 p131mv1i">
+    <template shadowrootdelegatesfocus="true" shadowrootmode="open">
+        <style>
+            .p91m869{color:rebeccapurple;}
+        </style>
+        <nested-component>
+            <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+                <style>
+                    .p_ju9u1n{font-weight:bold;}
+                </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
+                <slot
+                name="nested"></slot>
+            </template>
+            <p class="slottedParagraph_g28n4j p91m869" slot="nested">slotted paragraph</p>
+        </nested-component>
+    </template>
+</top-component>"
+,
   "stylesheets":   
 Set {
     ".p131mv1i{display:block;}",
@@ -149,6 +212,21 @@ exports[`createTemplate: CustomElement with declarative shadow dom and nested de
 {
   "content": 
 "<top-component class="topComponent_46img7 p131mv1i">
+    <template shadowrootdelegatesfocus="true" shadowrootmode="open">
+        <style>
+            .p91m869{color:rebeccapurple;}
+        </style>
+        <nested-component>
+            <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+                <style>
+                    .p_ju9u1n{font-weight:bold;}
+                </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
+                <slot
+                name="nested"></slot>
+            </template>
+            <p class="slottedParagraph_g28n4j p91m869" slot="nested">slotted paragraph</p>
+        </nested-component>
+    </template>
     <img class="image__c0ru3k p_mygp1 p_x8x9vx" />
 </top-component>"
 ,

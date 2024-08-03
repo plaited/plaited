@@ -87,28 +87,23 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   if (VOID_TAGS.has(tag as keyof VoidTags)) {
     start.push('/>')
     return {
-      client: start,
-      server: start,
+      html: start,
       stylesheets,
       registry,
       $: PLAITED_TEMPLATE_IDENTIFIER,
     }
   }
   start.push('>')
-  const clientEnd: string[] = []
-  /** Test if the the tag is a template and if it's a declarative shadow dom template */
-  const isDeclarativeShadowDOM = tag === 'template' && Object.hasOwn(attrs, 'shadowrootmode')
+  const end: string[] = []
   /** Ensure children is an array */
   const children = Array.isArray(_children) ? _children.flat() : [_children]
   /** time to append the children to our template if we have em*/
   const length = children.length
-  const serverEnd: string[] = []
   for (let i = 0; i < length; i++) {
     const child = children[i]
     /** P1 child IS {@type Template}*/
     if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === PLAITED_TEMPLATE_IDENTIFIER) {
-      clientEnd.push(...child.client)
-      serverEnd.push(...child.server)
+      end.push(...child.html)
       for (const sheet of child.stylesheets) stylesheets.add(sheet)
       for (const component of child.registry) registry.add(component)
       continue
@@ -117,10 +112,11 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     if (!VALID_PRIMITIVE_CHILDREN.has(typeof child)) continue
     /** P3 child IS {@type Primitive} */
     const str = trusted ? `${child}` : escape(`${child}`)
-    clientEnd.push(str)
-    serverEnd.push(str)
+    end.push(str)
   }
-  if (isDeclarativeShadowDOM) {
+  end.push(`</${tag}>`)
+  /** Test if the the tag is a template and if it's a declarative shadow dom */
+  if ( tag === 'template' && Object.hasOwn(attrs, 'shadowrootmode')) {
     /** We continue to hoist our stylesheet until we run
      * into a declarative shadow dom then we push the
      * stylesheet as the first child of the declarative
@@ -131,11 +127,8 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       stylesheets.clear()
     }
   }
-  clientEnd.push(`</${tag}>`)
-  serverEnd.push(`</${tag}>`)
   return {
-    client: isDeclarativeShadowDOM ? [] : [...start, ...clientEnd],
-    server: [...start, ...serverEnd],
+    html: [...start, ...end],
     stylesheets,
     registry,
     $: PLAITED_TEMPLATE_IDENTIFIER,
@@ -146,28 +139,24 @@ export { createTemplate as h }
 
 export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
   const children = Array.isArray(_children) ? _children.flat() : [_children]
-  const client: string[] = []
-  const server: string[] = []
+  const html: string[] = []
   const stylesheets = new Set<string>()
   const registry = new Set<string>()
   const length = children.length
   for (let i = 0; i < length; i++) {
     const child = children[i]
     if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === PLAITED_TEMPLATE_IDENTIFIER) {
-      client.push(...child.client)
-      server.push(...child.server)
+      html.push(...child.html)
       for (const sheet of child.stylesheets) stylesheets.add(sheet)
       for (const component of child.registry) registry.add(component)
     }
     if (!VALID_PRIMITIVE_CHILDREN.has(typeof child)) continue
     const safeChild = escape(`${child}`)
-    client.push(safeChild)
-    server.push(safeChild)
+    html.push(safeChild)
   }
   return {
-    client,
+    html,
     stylesheets,
-    server,
     registry,
     $: PLAITED_TEMPLATE_IDENTIFIER,
   }

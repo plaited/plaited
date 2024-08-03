@@ -20,12 +20,12 @@ const adoptStylesheets = (...stylesheets: string[]) => {
 
 // Create document fragment from template object
 export const createFragment = (template: TemplateObject) => {
-  const { client, stylesheets } = template
+  const { html, stylesheets } = template
   if (stylesheets.size) {
     adoptStylesheets(...stylesheets)
   }
   const tpl = document.createElement('template')
-  tpl.innerHTML = client.join('')
+  tpl.setHTMLUnsafe(html.join(''))
   return tpl.content
 }
 

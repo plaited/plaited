@@ -1,16 +1,19 @@
-import { assert, wait } from '@plaited/storybook-rite'
+import { assert, wait, findByText, findByAttribute } from '@plaited/storybook-rite'
 import { Meta, StoryObj } from '@plaited/storybook'
 import { defineTemplate } from '../define-template.js'
 import { PlaitedElement, createStyles } from '../../index.js'
 
 const meta: Meta = {
-  title: 'Tests/dynamicStyles',
+  title: 'Tests',
   component: () => <></>,
 }
 
 export default meta
 
-const { noRepeat, repeat } = createStyles({
+const { noRepeat, repeat, initial } = createStyles({
+  initial: {
+    border: '1px solid black',
+  },
   noRepeat: {
     color: 'blue',
     textDecoration: 'underline',
@@ -23,7 +26,7 @@ const { noRepeat, repeat } = createStyles({
 const DynamicOnly = defineTemplate({
   publicEvents: ['render'],
   tag: 'dynamic-only',
-  shadowDom: <div bp-target='target'></div>,
+  shadowDom: <div bp-target='target' {...initial}></div>,
   bp({ $ }) {
     return {
       render() {
@@ -35,70 +38,30 @@ const DynamicOnly = defineTemplate({
   },
 })
 
-export const basic: StoryObj = {
-  render: () => <DynamicOnly />,
+export const dynamicStyles: StoryObj = {
+  render: () => <DynamicOnly data-testid="target"/>,
   play: async () => {
-    const target = document.querySelector<PlaitedElement>(DynamicOnly.tag)
-    const shadowRoot = target?.shadowRoot
-    target?.trigger({ type: 'render' })
-    await wait(60)
+    const style = await findByText(initial.stylesheet.join(''))
     assert({
-      given: 'dynamic render of the same stylesheet twice',
-      should: 'have adoptedStyleSheets of length 3',
-      actual: shadowRoot?.adoptedStyleSheets.length,
-      expected: 3,
+      given: 'Render with initial stylesheet, Style tag',
+      should: 'have the initial stylesheet only',
+      actual: style?.textContent,
+      expected: initial.stylesheet.join(''),
     })
-  },
-}
-
-const { root, override } = createStyles({
-  root: {
-    color: 'blue',
-  },
-  override: {
-    color: 'red',
-  },
-})
-
-const WithDefaultStyles = defineTemplate({
-  publicEvents: ['render'],
-  tag: 'with-default-styles',
-  shadowDom: (
-    <div
-      bp-target='target-2'
-      {...root}
-    ></div>
-  ),
-  bp({ $ }) {
-    return {
-      render() {
-        const [target] = $<HTMLDivElement>('target-2')
-        target.insert(
-          'beforeend',
-          <div
-            className={[override.className, root.className]}
-            stylesheet={[...override.stylesheet, ...root.stylesheet]}
-          >
-            construable stylesheet applied only for second sheet
-          </div>,
-        )
-      },
-    }
-  },
-})
-
-export const withDefault: StoryObj = {
-  render: () => <WithDefaultStyles />,
-  play: async () => {
-    const target = document.querySelector<PlaitedElement>(WithDefaultStyles.tag)
-    const shadowRoot = target?.shadowRoot
+    const target = await findByAttribute<PlaitedElement>('data-testid', 'target')
+    assert({
+      given: 'target has not been triggered',
+      should: 'have adoptedStyleSheets of length 0',
+      actual:  target?.shadowRoot?.adoptedStyleSheets.length,
+      expected: 0,
+    })
     target?.trigger({ type: 'render' })
     await wait(60)
     assert({
-      given: 'dynamic render with default styles from template',
-      should: 'have adoptedStyleSheets of length 2',
-      actual: shadowRoot?.adoptedStyleSheets.length,
-      expected: 2,
+      given: 'target has been triggered',
+      should: 'have adoptedStyleSheets of length 3',
+      actual:  target?.shadowRoot?.adoptedStyleSheets.length,
+      expected: 3,
     })
   },
 }

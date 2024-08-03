@@ -6,7 +6,7 @@ import { sync, loop, thread } from '../behavioral/rules-function.js'
 import { useClone } from './use-clone.js'
 import { useEmit } from './use-emit.js'
 import { BP_TRIGGER } from '../jsx/constants.js'
-import { useQuery, cssCache } from './use-query.js'
+import { useQuery, cssCache, handleTemplateObject } from './use-query.js'
 import { shadowObserver, addListeners } from './shadow-observer.js'
 import { onlyPublicEvents } from '../shared/only-public-events.js'
 import { canUseDOM } from '@plaited/utils'
@@ -33,7 +33,7 @@ export const definePlaitedElement = ({
         return publicEvents
       }
       internals_: ElementInternals
-      #root: ShadowRoot
+      get #root() { return this.internals_.shadowRoot as ShadowRoot}
       #query: QuerySelector
       #shadowObserver?: MutationObserver
       #trigger?: Trigger
@@ -41,23 +41,11 @@ export const definePlaitedElement = ({
       constructor() {
         super()
         this.internals_ = this.attachInternals()
-        if (this.internals_.shadowRoot) {
-          this.#root = this.internals_.shadowRoot
-        } else {
-          this.#root = this.attachShadow({ mode, delegatesFocus })
-          const { client, stylesheets } = shadowDom
-          this.#root.innerHTML = client.join('')
-          if (stylesheets.size) {
-            const adoptedStyleSheets: CSSStyleSheet[] = []
-            for (const style of stylesheets) {
-              const sheet = new CSSStyleSheet()
-              sheet.replaceSync(style)
-              adoptedStyleSheets.push(sheet)
-            }
-            this.#root.adoptedStyleSheets = adoptedStyleSheets
-          }
-        }
         cssCache.set(this.#root, new Set<string>([...shadowDom.stylesheets]))
+        if (this.internals_.shadowRoot === null) {
+          this.attachShadow({ mode, delegatesFocus })
+          handleTemplateObject(this.#root, shadowDom)
+        }
         this.#query = useQuery(this.#root)
       }
       connectedCallback() {

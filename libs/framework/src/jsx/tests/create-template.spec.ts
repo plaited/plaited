@@ -4,7 +4,7 @@ import { h, Fragment } from '../create-template.js'
 import { createStyles, css, assignStyles, FT, TemplateObject } from '../../index.js'
 import beautify from 'beautify'
 
-const render = (tpl: TemplateObject) => beautify(tpl.client.join(''), { format: 'html' })
+const render = (tpl: TemplateObject) => beautify(tpl.html.join(''), { format: 'html' })
 
 test('createTemplate: Self closing - html', () => {
   expect(render(h('input', { type: 'text' }))).toMatchSnapshot()
