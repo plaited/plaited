@@ -22,10 +22,10 @@ const createDelegatedListener = (el: Element, trigger: Trigger) => {
   delegates.set(
     el,
     new DelegatedListener((event) => {
-      const triggerType = el.getAttribute(BP_TRIGGER) && getTriggerType(event, el)
-      triggerType ?
+      const type = el.getAttribute(BP_TRIGGER) && getTriggerType(event, el)
+      type ?
         /** if key is present in `bp-trigger` trigger event on instance's bProgram */
-        trigger?.({ type: triggerType, detail: event })
+        trigger?.({ type, detail: event })
       : /** if key is not present in `bp-trigger` remove event listener for this event on Element */
         el.removeEventListener(event.type, delegates.get(el))
     }),

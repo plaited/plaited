@@ -1,8 +1,8 @@
-import type { UseEmit } from './types.js'
+import { Emit } from "./types.js"
 
 /** @description emit a custom event cancelable and composed are true by default */
-export const useEmit: UseEmit =
-  (host) =>
+export const useEmit =
+  (host: HTMLElement): Emit =>
   ({ type, detail, bubbles = false, cancelable = true, composed = true }) => {
     if (!type) return
     const event = new CustomEvent(type, {

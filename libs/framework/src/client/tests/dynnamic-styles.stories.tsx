@@ -27,7 +27,7 @@ const DynamicOnly = defineTemplate({
   publicEvents: ['render'],
   tag: 'dynamic-only',
   shadowDom: <div bp-target='target' {...initial}></div>,
-  bp({ $ }) {
+  connectedCallback({ $ }) {
     return {
       render() {
         const [target] = $<HTMLDivElement>('target')

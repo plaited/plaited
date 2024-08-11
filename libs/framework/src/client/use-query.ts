@@ -1,13 +1,13 @@
-import type { TemplateObject, BooleanAttributes } from '../jsx/types.js'
-import type { BoundElement, Bindings, SelectorMatch, QuerySelector } from './types.js'
 
-import { isTypeOf } from '@plaited/utils'
-import { BOOLEAN_ATTRS, BP_TARGET } from '../jsx/constants.js'
 /**
  * Inspired by blingblingjs
  * (c) Adam Argyle - MIT
  * {@see https://github.com/argyleink/blingblingjs}
  */
+import type { Bindings, BoundElement, QuerySelector, SelectorMatch } from './types.js'
+import type { TemplateObject, BooleanAttributes } from '../jsx/types.js'
+import { isTypeOf } from '@plaited/utils'
+import { BOOLEAN_ATTRS, BP_TARGET } from '../jsx/constants.js'
 
 export const cssCache = new WeakMap<ShadowRoot, Set<string>>()
 
@@ -64,6 +64,7 @@ const mapTemplates = (shadowRoot: ShadowRoot, templates: (TemplateObject | Docum
   return content
 }
 
+
 const getBindings = (shadowRoot: ShadowRoot): Bindings => ({
   render(...templates) {
     this.replaceChildren(...mapTemplates(shadowRoot, templates))
@@ -107,6 +108,7 @@ export const assignBinding = <T extends Element = Element>(bindings: Bindings, e
 const bindingsMap = new WeakMap<ShadowRoot, Bindings>()
 export const getBoundInstance = (shadowRoot: ShadowRoot) =>
   bindingsMap.get(shadowRoot) ?? (bindingsMap.set(shadowRoot, getBindings(shadowRoot)).get(shadowRoot) as Bindings)
+
 
 export const useQuery = (shadowRoot: ShadowRoot): QuerySelector => {
   const instance = getBoundInstance(shadowRoot)

@@ -20,7 +20,7 @@ const Bottom = defineTemplate({
     </button>
   ),
   publicEvents: ['add'],
-  bp({ emit }) {
+  connectedCallback({ emit }) {
     return {
       click() {
         emit({ type: 'append' })
@@ -37,7 +37,7 @@ const Top = defineTemplate({
       <Bottom bp-trigger={{ append: 'append' }}></Bottom>
     </div>
   ),
-  bp({ $ }) {
+  connectedCallback({ $ }) {
     return {
       append() {
         const [header] = $('header')

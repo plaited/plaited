@@ -14,7 +14,7 @@ export const Publisher = defineTemplate({
     </button>
   ),
   publicEvents: ['add'],
-  bp({ rules, thread, sync }) {
+  connectedCallback({ rules, thread, sync }) {
     rules.set({
       onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),
     })
@@ -30,7 +30,7 @@ export const Subscriber = defineTemplate({
   tag: 'subscriber-component',
   shadowDom: <h1 bp-target='count'>{pub.get()}</h1>,
   publicEvents: ['update'],
-  bp({ $, host }) {
+  connectedCallback({ $, host }) {
     pub.sub(host, 'update')
     return {
       update(value: number) {

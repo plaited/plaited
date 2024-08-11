@@ -1,4 +1,4 @@
-import type { Attrs, TemplateObject } from '../jsx/types.js'
+import type { Attrs, TemplateObject, CustomElementTag } from '../jsx/types.js'
 import { createTemplate } from '../jsx/create-template.js'
 import { PLAITED_COMPONENT_IDENTIFIER } from '../shared/constants.js'
 import { PlaitedTemplate } from './types.js'
@@ -11,7 +11,7 @@ export const getPlaitedTemplate = <T extends Attrs>({
   publicEvents = [],
   observedAttributes = [],
 }: {
-  tag: `${string}-${string}`
+  tag: CustomElementTag
   mode: 'open' | 'closed'
   delegatesFocus: boolean
   shadowDom: TemplateObject

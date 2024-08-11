@@ -157,7 +157,7 @@ const shadowDom = (
 export const Page = defineTemplate({
   tag: 'page-el',
   shadowDom,
-  bp({ $ }) {
+  connectedCallback({ $ }) {
     const [header] = $<PlaitedElement>('header')
     return {
       onLogin() {

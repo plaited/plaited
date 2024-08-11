@@ -12,13 +12,17 @@ export const navigationListener = (shadowRoot: ShadowRoot): Disconnect => {
       if (event.type === 'click') {
         const path = event.composedPath()
         for (const element of path) {
-          if (element instanceof HTMLAnchorElement && element.hasAttribute('bp-href')) {
-            const href = element.getAttribute('bp-href') ?? ''
-            const local = href?.includes(window.location.origin)
-            if (local) {
-              useEmit(shadowRoot.host as PlaitedElement)({
+          if (element instanceof HTMLAnchorElement && element.hasAttribute('href')) {
+            const href = element.getAttribute('href')
+            const target = element.getAttribute('target')
+            const targetIsSelf = target === null || target === '_self'
+            if (href?.startsWith(window.location.origin) && targetIsSelf) {
+              event.preventDefault()
+              event.stopPropagation()
+              const emit =  useEmit(shadowRoot.host as PlaitedElement)
+              emit<string>({
                 type: NAVIGATE_EVENT_TYPE,
-                detail: new URL(href, window.location.href),
+                detail: href,
                 bubbles: true,
                 composed: true,
               })

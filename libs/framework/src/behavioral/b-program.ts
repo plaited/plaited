@@ -99,7 +99,7 @@ export const bProgram: BProgram = () => {
     run()
   }
 
-  const trigger: Trigger = (request, triggerType) => {
+  const trigger: Trigger = (request) => {
     const thread = function* () {
       yield {
         request,
@@ -108,7 +108,7 @@ export const bProgram: BProgram = () => {
     }
     running.set(request.type, {
       priority: 0,
-      trigger: triggerType ?? true,
+      trigger:  true,
       generator: thread(),
     })
     run()
@@ -133,11 +133,11 @@ export const bProgram: BProgram = () => {
       }
     },
     has: (thread) => running.has(thread) || pending.has(thread),
-    clear: () => {
-      running.clear()
-      pending.clear()
-    },
-    delete: (thread) => running.delete(thread) || pending.delete(thread),
+    // clear: () => {
+    //   running.clear()
+    //   pending.clear()
+    // },
+    // delete: (thread) => running.delete(thread) || pending.delete(thread),
   }
 
   const snapshot: Snapshot = listener => {

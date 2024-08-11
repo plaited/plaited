@@ -1,6 +1,6 @@
 import type { BPEvent, Trigger } from '../behavioral/types.js'
 import type { Disconnect } from '../shared/types.js'
-import type { PlaitedElement, QuerySelector, DefinePlaitedTemplateArgs } from './types.js'
+import type { PlaitedElement, DefinePlaitedTemplateArgs, QuerySelector } from './types.js'
 import { bProgram } from '../behavioral/b-program.js'
 import { sync, loop, thread } from '../behavioral/rules-function.js'
 import { useClone } from './use-clone.js'
@@ -9,8 +9,9 @@ import { BP_TRIGGER } from '../jsx/constants.js'
 import { useQuery, cssCache, handleTemplateObject } from './use-query.js'
 import { shadowObserver, addListeners } from './shadow-observer.js'
 import { onlyPublicEvents } from '../shared/only-public-events.js'
-import { canUseDOM } from '@plaited/utils'
+import { canUseDOM, isTypeOf } from '@plaited/utils'
 import { TemplateObject } from '../jsx/types.js'
+import { navigationListener } from './navigation-listener.js'
 
 export const definePlaitedElement = ({
   tag,
@@ -20,7 +21,6 @@ export const definePlaitedElement = ({
   formAssociated,
   publicEvents,
   observedAttributes,
-  bp,
   connectedCallback,
   disconnectedCallback,
   ...rest
@@ -49,8 +49,8 @@ export const definePlaitedElement = ({
         this.#query = useQuery(this.#root)
       }
       connectedCallback() {
-        connectedCallback?.bind(this)()
-        if (bp) {
+        isTypeOf<string>(history?.state?.plaited, 'string') && navigationListener(this.#root)
+        if (connectedCallback) {
           const { trigger, feedback, ...rest } = bProgram()
           this.#trigger = trigger
           addListeners(
@@ -59,7 +59,7 @@ export const definePlaitedElement = ({
             trigger,
           )
           this.#shadowObserver = shadowObserver(this.#root, trigger) // create a shadow observer to watch for modification & addition of nodes with bp-trigger attribute
-          const actions = bp.bind(this)({
+          const actions = connectedCallback.bind(this)({
             $: this.#query,
             host: this,
             emit: useEmit(this),

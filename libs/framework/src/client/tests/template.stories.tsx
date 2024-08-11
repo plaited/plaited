@@ -113,7 +113,7 @@ export const withDeclarativeShadowDom: StoryObj = {
       tag,
       publicEvents: ['render'],
       shadowDom: <Content />,
-      bp({ $ }) {
+      connectedCallback({ $ }) {
         return {
           render() {
             const [inner] = $('inner')

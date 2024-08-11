@@ -86,7 +86,7 @@ export const ShadowIsland = defineTemplate({
       </div>
     </div>
   ),
-  bp({ rules, sync, thread, host, $, loop }) {
+  connectedCallback({ rules, sync, thread, host, $, loop }) {
     rules.set({
       onRemoveSvg: thread(sync({ waitFor: 'removeSvg' }), sync({ request: { type: 'addSubIsland' } })),
       onStart: thread(sync({ waitFor: 'start' }), sync({ request: { type: 'addSlot' } })),

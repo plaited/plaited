@@ -17,7 +17,7 @@ export const ElOne = defineTemplate({
       </button>
     </div>
   ),
-  bp({ $, host }) {
+  connectedCallback({ $, host }) {
     const disconnect = sendDisable.sub(host, 'disable')
     return {
       disable() {
@@ -37,7 +37,7 @@ export const ElTwo = defineTemplate({
   tag: 'dynamic-two',
   publicEvents: ['add'],
   shadowDom: <h1 bp-target='header'>Hello</h1>,
-  bp({ $, rules, thread, sync, host }) {
+  connectedCallback({ $, rules, thread, sync, host }) {
     sendAdd.sub(host, 'add')
     rules.set({
       onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),

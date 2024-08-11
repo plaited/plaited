@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import sinon from 'sinon'
 import { usePublisher } from '../use-publisher.js'
-import { BPEvent } from '../../behavioral/types.js'
+import { BPEvent } from '../../behavioral/private-types.js'
 import { PlaitedElement } from '../types.js'
 import { noop } from '@plaited/utils'
 

@@ -1,7 +1,6 @@
 import type { CSSProperties } from '../css/types.js'
 import { PLAITED_TEMPLATE_IDENTIFIER } from './constants.js'
 import { BP_TARGET, BP_TRIGGER } from './constants.js'
-import { BP_HREF } from '../shared/constants.js'
 
 type Booleanish = boolean | 'true' | 'false'
 type CrossOrigin = 'anonymous' | 'use-credentials' | ''
@@ -428,7 +427,6 @@ type HTMLAttributeAnchorTarget = '_self' | '_blank' | '_parent' | '_top'
 type DetailedAnchorHTMLAttributes = DetailedHTMLAttributes & {
   download?: boolean
   href?: string
-  [BP_HREF]?: string
   hreflang?: string
   media?: string
   ping?: string
@@ -1320,7 +1318,7 @@ export type ElementAttributeList = {
   tspan: DetailedSVGAttributes
   use: DetailedSVGUseAttributes
   view: DetailedSVGAttributes
-  [key: `${string}-${string}`]: DetailedHTMLAttributes
+  [key: CustomElementTag]: DetailedHTMLAttributes
 }
 
 export type Attrs<T extends DetailedHTMLAttributes = DetailedHTMLAttributes> = DetailedHTMLAttributes & T
@@ -1332,7 +1330,10 @@ export type FT<
   T extends Attrs = Attrs,
 > = FunctionTemplate<T>
 
-export type Tag = string | `${string}-${string}` | FT
+
+export type CustomElementTag = `${string}-${string}`
+
+export type Tag = string | CustomElementTag | FT
 
 export type VoidTags = {
   area: { children?: never }
@@ -1363,7 +1364,7 @@ export type VoidTags = {
 type InferAttrs<T extends Tag> =
   T extends keyof ElementAttributeList ? ElementAttributeList[T]
   : T extends FT ? Parameters<T>[0]
-  : T extends `${string}-${string}` ? DetailedHTMLAttributes
+  : T extends CustomElementTag ? DetailedHTMLAttributes
   : Attrs
 
 export interface CreateTemplate {

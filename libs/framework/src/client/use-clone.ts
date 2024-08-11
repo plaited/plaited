@@ -1,8 +1,9 @@
+import type { SelectorMatch, Clone } from './types.js'
 import { handleTemplateObject, getBoundInstance, assignBinding } from './use-query.js'
 import { BP_TARGET } from '../jsx/constants.js'
-import type { SelectorMatch, UseClone } from './types.js'
 
-export const useClone: UseClone = (shadowRoot) => {
+/** Clone feature for handling list situations where structure is consistent but the data rendered is what is different. This is a performance feature */
+export const useClone = (shadowRoot: ShadowRoot): Clone => {
   const instance = getBoundInstance(shadowRoot)
   const Query =
     (frag: DocumentFragment) =>

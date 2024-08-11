@@ -14,7 +14,7 @@ const Inner = defineTemplate({
   tag: 'inner-component',
   shadowDom: <h1 bp-target='header'>Hello</h1>,
   publicEvents: ['add'],
-  bp({ $, rules, thread, sync, emit }) {
+  connectedCallback({ $, rules, thread, sync, emit }) {
     rules.set({
       onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),
     })
@@ -46,7 +46,7 @@ const Outer = defineTemplate({
       </button>
     </div>
   ),
-  bp({ $ }) {
+  connectedCallback({ $ }) {
     return {
       disable() {
         const [button] = $<HTMLButtonElement>('button')

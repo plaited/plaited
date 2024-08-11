@@ -17,7 +17,7 @@ const calculator = {
 
 defineWorker({
   publicEvents: ['calculate'],
-  bp: ({ send }) => {
+  connectedCallback: ({ send }) => {
     return {
       calculate({ a, b, operation }: { a: number; b: number; operation: 'add' | 'subtract' | 'multiply' | 'divide' }) {
         send({

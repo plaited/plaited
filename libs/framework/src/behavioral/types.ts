@@ -58,13 +58,13 @@ export type Actions<T = any> = { [key: string]: (detail: T) => void | Promise<vo
 
 export type Feedback = (actions: Actions) => void
 export type Rules = {
-  clear: () => void
-  delete: (thread: string) => boolean
+  // clear: () => void
+  // delete: (thread: string) => boolean
   has:(thread: string) => boolean
   set:(threads: Record<string, RulesFunction>) => void
 }
 export type DeleteThread = (thread: string) => void
-export type Trigger = <T = any>(args: BPEvent<T>, triggerType?: 'object' | 'person') => void
+export type Trigger = <T = any>(args: BPEvent<T>) => void
 
 export type Sync = <T = any>(syncPoint: SynchronizationPoint<T>) => RulesFunction<T>
 export type Thread = (...rules: RulesFunction[]) => RulesFunction

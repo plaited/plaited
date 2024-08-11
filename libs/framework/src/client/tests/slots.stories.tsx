@@ -18,7 +18,7 @@ const nestedSlot = sinon.spy()
 const Nested = defineTemplate({
   tag: 'nested-slot',
   shadowDom: <slot bp-trigger={{ click: 'nested' }}></slot>,
-  bp() {
+  connectedCallback() {
     return {
       nested() {
         nestedSlot()
@@ -44,7 +44,7 @@ const Fixture = defineTemplate({
       </Nested>
     </div>
   ),
-  bp: () => ({
+  connectedCallback: () => ({
     slot() {
       defaultSlot()
     },

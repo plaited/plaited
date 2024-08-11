@@ -123,7 +123,7 @@ export const Header = defineTemplate({
         )
     }
   },
-  bp({ host }) {
+  connectedCallback({ host }) {
     return {
       click(e: MouseEvent & { target: HTMLButtonElement }) {
         const value = e.target.value

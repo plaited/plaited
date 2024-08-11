@@ -109,7 +109,7 @@ const Fixture = defineTemplate({
   ),
   tag: 'table-fixture',
   publicEvents: ['insert', 'render', 'replace', 'remove', 'removeAttributes', 'getAttribute', 'multiSetAttributes'],
-  bp({ $, clone }) {
+  connectedCallback({ $, clone }) {
     const cb = clone(row, forEachRow)
     return {
       replace() {
