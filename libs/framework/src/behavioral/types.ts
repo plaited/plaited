@@ -32,6 +32,7 @@ export type Snapshot = (listener: SnapshotListener) =>  Disconnect
 
 export type SynchronizationPoint<T = any> = {
   waitFor?: BPListener<T> | BPListener<T>[]
+  interrupt?: BPListener<T> | BPListener<T>[]
   request?: BPEvent<T> | BPEventTemplate<T>
   block?: BPListener<T> | BPListener<T>[]
 }

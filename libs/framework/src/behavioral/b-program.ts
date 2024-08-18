@@ -80,17 +80,15 @@ export const bProgram: BProgram = () => {
   // Queue up bids for next step of super step
   function nextStep(selectedEvent: CandidateBid) {
     for (const [thread, bid] of pending) {
-      const { waitFor, request, generator } = bid
+      const { waitFor, request, generator, interrupt } = bid
       if (!generator) continue
-
-      if (
-        // Is a pending a event the selectedEvent
-        (request && isPendingRequest(selectedEvent, request)) ||
-        // Are we waiting for selectedEvent
-        ensureArray(waitFor).some(isListeningFor(selectedEvent))
-      ) {
-        running.set(thread, bid)
-        pending.delete(thread)
+      const isInterrupted = ensureArray(interrupt).some(isListeningFor(selectedEvent))
+      const isWaitedFor = ensureArray(waitFor).some(isListeningFor(selectedEvent))
+      const hasPendingRequest = request && isPendingRequest(selectedEvent, request)
+      isInterrupted && generator.return?.()
+      if (hasPendingRequest || isInterrupted || isWaitedFor) {
+          running.set(thread, bid)
+          pending.delete(thread)
       }
     }
     // To avoid infinite loop with calling trigger from feedback always publish select event
@@ -133,11 +131,6 @@ export const bProgram: BProgram = () => {
       }
     },
     has: (thread) => running.has(thread) || pending.has(thread),
-    // clear: () => {
-    //   running.clear()
-    //   pending.clear()
-    // },
-    // delete: (thread) => running.delete(thread) || pending.delete(thread),
   }
 
   const snapshot: Snapshot = listener => {
