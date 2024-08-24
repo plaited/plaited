@@ -1,11 +1,10 @@
-
 /**
  * Inspired by blingblingjs
  * (c) Adam Argyle - MIT
  * {@see https://github.com/argyleink/blingblingjs}
  */
 import type { Bindings, BoundElement, QuerySelector, SelectorMatch } from './types.js'
-import type { TemplateObject, BooleanAttributes } from '../jsx/types.js'
+import type { TemplateObject } from '../jsx/types.js'
 import { isTypeOf } from '@plaited/utils'
 import { BOOLEAN_ATTRS, P_TARGET } from '../jsx/constants.js'
 
@@ -34,7 +33,7 @@ const updateAttributes = (element: Element, attr: string, val: string | null | n
   // Remove the attribute if val is null or undefined, and it currently exists
   if (val === null && element.hasAttribute(attr)) return element.removeAttribute(attr)
   // Set the attribute if it is a boolean attribute and it does not exist
-  if (BOOLEAN_ATTRS.has(attr as BooleanAttributes)) {
+  if (BOOLEAN_ATTRS.has(attr)) {
     !element.hasAttribute(attr) && element.toggleAttribute(attr, true)
     return
   }
@@ -63,7 +62,6 @@ const mapTemplates = (shadowRoot: ShadowRoot, templates: (TemplateObject | Docum
   }
   return content
 }
-
 
 const getBindings = (shadowRoot: ShadowRoot): Bindings => ({
   render(...templates) {
@@ -108,7 +106,6 @@ export const assignBinding = <T extends Element = Element>(bindings: Bindings, e
 const bindingsMap = new WeakMap<ShadowRoot, Bindings>()
 export const getBoundInstance = (shadowRoot: ShadowRoot) =>
   bindingsMap.get(shadowRoot) ?? (bindingsMap.set(shadowRoot, getBindings(shadowRoot)).get(shadowRoot) as Bindings)
-
 
 export const useQuery = (shadowRoot: ShadowRoot): QuerySelector => {
   const instance = getBoundInstance(shadowRoot)

@@ -1,4 +1,4 @@
-import type { Attrs, BooleanAttributes, CreateTemplate, TemplateObject, VoidTags } from './types.js'
+import type { Attrs, CreateTemplate, TemplateObject } from './types.js'
 import { isTypeOf, kebabCase, escape } from '@plaited/utils'
 import {
   PLAITED_TEMPLATE_IDENTIFIER,
@@ -64,11 +64,10 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     /** Grab the value from the attribute */
     const value = attributes[key]
     /** test for and handle boolean attributes */
-    if (BOOLEAN_ATTRS.has(key as BooleanAttributes)) {
+    if (BOOLEAN_ATTRS.has(key)) {
       value && start.push(`${key} `)
       continue
     }
-
     /** P2 typeof attribute is NOT {@type Primitive} then skip and do nothing */
     if (!PRIMITIVES.has(typeof value)) {
       throw new Error(`Attributes not declared in PlaitedAttributes must be of type Primitive: ${key} is not primitive`)
@@ -85,7 +84,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     : new Set<string>()
 
   /** Our tag is a void tag so we can return it once we apply attributes */
-  if (VOID_TAGS.has(tag as keyof VoidTags)) {
+  if (VOID_TAGS.has(tag)) {
     start.push('/>')
     return {
       html: start,

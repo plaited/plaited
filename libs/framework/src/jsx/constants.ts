@@ -1,10 +1,9 @@
-import { VoidTags, BooleanAttributes } from './types.js'
 /** attribute used to manipulate a dom element */
 export const P_TARGET = 'p-target' as const
 /** attribute used to wire a dom element to the component event listener */
 export const P_TRIGGER = 'p-trigger' as const
-/** void attributes */
-export const VOID_TAGS = new Set<keyof VoidTags>([
+
+export const VOID_TAGS = new Set([
   'area',
   'base',
   'br',
@@ -30,7 +29,7 @@ export const VOID_TAGS = new Set<keyof VoidTags>([
   'use',
 ])
 /** boolean attributes */
-export const BOOLEAN_ATTRS = new Set<BooleanAttributes>([
+export const BOOLEAN_ATTRS = new Set([
   'allowfullscreen',
   'async',
   'autofocus',
@@ -40,6 +39,9 @@ export const BOOLEAN_ATTRS = new Set<BooleanAttributes>([
   'default',
   'defer',
   'disabled',
+  'disablepictureinpicture',
+  'disableremoteplayback',
+  'download',
   'formnovalidate',
   'inert',
   'ismap',

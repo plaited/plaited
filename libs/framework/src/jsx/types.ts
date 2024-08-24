@@ -16,42 +16,6 @@ export type Child = string | TemplateObject
 
 export type Children = Child[] | Child
 
-export type BooleanAttributes =
-  | 'allowfullscreen'
-  | 'async'
-  | 'autofocus'
-  | 'autoplay'
-  | 'checked'
-  | 'controls'
-  | 'default'
-  | 'defer'
-  | 'disabled'
-  | 'disablepictureinpicture'
-  | 'disableremoteplayback'
-  | 'download'
-  | 'formnovalidate'
-  | 'inert'
-  | 'ismap'
-  | 'itemscope'
-  | 'loop'
-  | 'multiple'
-  | 'muted'
-  | 'nomodule'
-  | 'novalidate'
-  | 'open'
-  | 'playsinline'
-  | 'readonly'
-  | 'required'
-  | 'reversed'
-  | 'selected'
-  | 'shadowrootdelegatesfocus'
-  // Electron attributes
-  | 'nodeintegration'
-  | 'nodeintegrationinsubframes'
-  | 'plugins'
-  | 'disablewebsecurity'
-  | 'allowpopups'
-
 export type PlaitedAttributes = {
   class?: never
   className?: string | Array<string | undefined | false | null>
@@ -1331,36 +1295,9 @@ export type FT<
   T extends Attrs = Attrs,
 > = FunctionTemplate<T>
 
-
 export type CustomElementTag = `${string}-${string}`
 
 export type Tag = string | CustomElementTag | FT
-
-export type VoidTags = {
-  area: { children?: never }
-  base: { children?: never }
-  br: { children?: never }
-  col: { children?: never }
-  embed: { children?: never }
-  hr: { children?: never }
-  img: { children?: never }
-  input: { children?: never }
-  link: { children?: never }
-  menuitem: { children?: never }
-  meta: { children?: never }
-  source: { children?: never }
-  track: { children?: never }
-  wbr: { children?: never }
-  circle: { children?: never }
-  ellipse: { children?: never }
-  line: { children?: never }
-  path: { children?: never }
-  polygon: { children?: never }
-  polyline: { children?: never }
-  rect: { children?: never }
-  stop: { children?: never }
-  use: { children?: never }
-}
 
 type InferAttrs<T extends Tag> =
   T extends keyof ElementAttributeList ? ElementAttributeList[T]
