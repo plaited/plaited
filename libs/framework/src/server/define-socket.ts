@@ -1,7 +1,7 @@
 // import type { DefineSocketHandler, DefineSocketConfig, ServerWebSocket, DefineSocketReturn } from './types.js'
 // import type { BPEvent, Trigger } from '../behavioral/types.js'
 // import { bProgram } from '../behavioral/b-program.js'
-// import { sync, point } from '../behavioral/sync.js'  
+// import { sync, point } from '../behavioral/sync.js'
 // import { onlyPublicEvents } from '../shared/only-public-events.js'
 
 // export const defineSocket = <T = unknown>(

@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Disconnect  } from "../shared/types.js";
+import { Disconnect } from '../shared/types.js'
 
 export type BPEvent<T = any> = { type: string; detail?: T }
 
 export type BPEventTemplate<T = any> = () => BPEvent<T>
 
-export type BPListener<T = any> = string | ((args: { type: string; detail: T}) => boolean)
+export type BPListener<T = any> = string | ((args: { type: string; detail: T }) => boolean)
 
 export interface DevtoolCallback<T> {
   (args: T): void | Promise<void>
@@ -21,14 +21,14 @@ export type SnapshotMessage = {
 }[]
 
 export type SnapshotFormatter = (args: {
-    pending: Map<string, PendingBid>
-    selectedEvent: CandidateBid
-    candidates: CandidateBid[]
-}) =>  SnapshotMessage
+  pending: Map<string, PendingBid>
+  selectedEvent: CandidateBid
+  candidates: CandidateBid[]
+}) => SnapshotMessage
 
 export type SnapshotListener = (msg: SnapshotMessage) => void | Promise<void>
 
-export type UseSnapshot = (listener: SnapshotListener) =>  Disconnect
+export type UseSnapshot = (listener: SnapshotListener) => Disconnect
 
 export type Idioms<T = any> = {
   waitFor?: BPListener<T> | BPListener<T>[]
@@ -61,8 +61,8 @@ export type UseFeedback = (actions: Actions) => Disconnect
 export type Repeat = true | ((ctx?: (id: string) => unknown) => boolean)
 
 export type BThreads = {
-  has:(thread: string) => {running: boolean, pending: boolean}
-  set:(threads: Record<string, RulesFunction>) => void
+  has: (thread: string) => { running: boolean; pending: boolean }
+  set: (threads: Record<string, RulesFunction>) => void
 }
 export type DeleteThread = (thread: string) => void
 export type Trigger = <T = any>(args: BPEvent<T>) => void

@@ -3,14 +3,14 @@ import { PLAITED_PAGES_CACHE } from './constants.js'
 
 export const fetchHTML = async (
   url: string,
-  { retry, retryDelay, ...rest }: { retry: number; retryDelay: number; } & RequestInit,
-): Promise<Response| undefined> => {
-  const cache = await caches.open(PLAITED_PAGES_CACHE);
-  const response = await cache.match(url);
-  if(response) { 
-    cache.put(url, response.clone());
+  { retry, retryDelay, ...rest }: { retry: number; retryDelay: number } & RequestInit,
+): Promise<Response | undefined> => {
+  const cache = await caches.open(PLAITED_PAGES_CACHE)
+  const response = await cache.match(url)
+  if (response) {
+    cache.put(url, response.clone())
     return response
-  };
+  }
   while (retry > 0) {
     try {
       const response = await fetch(url, rest)
@@ -28,10 +28,10 @@ export const fetchHTML = async (
         }
       }
       if (response.headers.get('content-type')?.includes('text/html')) {
-        cache.put(url, response.clone());
+        cache.put(url, response.clone())
         return response
       } else {
-        throw new Error('The response is not HTML');
+        throw new Error('The response is not HTML')
       }
     } catch (error) {
       console.error('Fetch error:', error)

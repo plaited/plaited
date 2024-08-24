@@ -1,1 +1,1 @@
-export { defineTemplate } from "../client/define-template.js";
+export { defineTemplate } from '../client/define-template.js'

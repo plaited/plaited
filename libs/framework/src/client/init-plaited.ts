@@ -9,12 +9,15 @@ import { NAVIGATE_EVENT_TYPE } from '../shared/constants.js'
 let id = 0
 let direction: 'forwards' | 'backwards' = 'forwards'
 
-const updatePage = async (event: CustomEvent<string> | PlaitedPopStateEvent, args: Omit<InitPlaitedArgs, 'skipViewTransition' | 'viewTransitionCallback' | 'viewTransitionTypes'>) => {
+const updatePage = async (
+  event: CustomEvent<string> | PlaitedPopStateEvent,
+  args: Omit<InitPlaitedArgs, 'skipViewTransition' | 'viewTransitionCallback' | 'viewTransitionTypes'>,
+) => {
   const { retry = 3, retryDelay = 1000, credentials = 'same-origin', ...rest } = args || {}
   const isCustomEvent = event instanceof CustomEvent
   const href = isCustomEvent ? event.detail : event.state.plaited
   // Prevent navigation to the current page
-  if(isCustomEvent && href === window.location.href) return
+  if (isCustomEvent && href === window.location.href) return
   // Fetch the html content from the server or cache
   const res = await fetchHTML(href, { retry, retryDelay, credentials, ...rest })
   if (res) {
@@ -23,7 +26,7 @@ const updatePage = async (event: CustomEvent<string> | PlaitedPopStateEvent, arg
     const prevId = id
     id = isCustomEvent ? id + 1 : event.state.id
     direction = prevId > id ? 'backwards' : 'forwards'
-    isCustomEvent  && history.pushState({ plaited: href, id }, title, href)
+    isCustomEvent && history.pushState({ plaited: href, id }, title, href)
   }
 }
 
@@ -32,23 +35,23 @@ const transitionHelper = ({
   types,
   update,
 }: {
-  skipTransition: boolean;
-  types: string[];
-  update: () => void;
+  skipTransition: boolean
+  types: string[]
+  update: () => void
 }) => {
   const unsupported = (error: string) => {
-    const updateCallbackDone = Promise.resolve(update()).then(() => {});
+    const updateCallbackDone = Promise.resolve(update()).then(() => {})
     return {
       ready: Promise.reject(Error(error)),
       updateCallbackDone,
       finished: updateCallbackDone,
       skipTransition: () => {},
       types: [...types, direction],
-    };
+    }
   }
   // @ts-ignore - TS doesn't know about startViewTransition
   if (skipTransition || !document.startViewTransition) {
-    return unsupported('View Transitions are not supported in this browser');
+    return unsupported('View Transitions are not supported in this browser')
   }
 
   try {
@@ -56,41 +59,40 @@ const transitionHelper = ({
     const transition: ViewTransition = document.startViewTransition({
       update,
       types,
-    });
-    return transition;
+    })
+    return transition
   } catch (e) {
-    return unsupported('View Transitions with types are not supported in this browser');
+    return unsupported('View Transitions with types are not supported in this browser')
   }
 }
 
-const transitionCallback = async (transition: ViewTransition) =>  {
+const transitionCallback = async (transition: ViewTransition) => {
   try {
-    await transition.ready;
-  }
-  catch (e) {
+    await transition.ready
+  } catch (e) {
     // @ts-ignore - TS doesn't know about startViewTransition
-    !!document.startViewTransition && console.error('Error starting view transition:', e);
+    !!document.startViewTransition && console.error('Error starting view transition:', e)
   }
 }
 
-const skipCallback = () => false;
+const skipCallback = () => false
 
 export const initPlaited = ({
   skipViewTransition = skipCallback,
   viewTransitionCallback = transitionCallback,
   viewTransitionTypes = [],
   ...rest
-} : InitPlaitedArgs = {}) => {
-  const navigate = async (event: CustomEvent<string> | PlaitedPopStateEvent,) => {
+}: InitPlaitedArgs = {}) => {
+  const navigate = async (event: CustomEvent<string> | PlaitedPopStateEvent) => {
     const transition = transitionHelper({
       update() {
-        updatePage(event, rest);
+        updatePage(event, rest)
       },
       types: viewTransitionTypes,
       skipTransition: skipViewTransition(),
-    });
+    })
     viewTransitionCallback(transition)
-    await transition.updateCallbackDone;
+    await transition.updateCallbackDone
   }
   if (canUseDOM()) {
     const initialState = history?.state || { plaited: window.location.href, id }

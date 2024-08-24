@@ -32,7 +32,6 @@ export const ElOne = defineTemplate({
   },
 })
 
-
 export const ElTwo = defineTemplate({
   tag: 'dynamic-two',
   publicEvents: ['add'],
@@ -53,4 +52,3 @@ export const ElTwo = defineTemplate({
     }
   },
 })
-

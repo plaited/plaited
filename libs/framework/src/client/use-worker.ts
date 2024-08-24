@@ -8,12 +8,12 @@ import { P_WORKER } from './constants.js'
 const isBPEvent = (data: unknown): data is BPEvent => {
   return isTypeOf<{ [key: string]: unknown }>(data, 'object') && 'type' in data && isTypeOf<string>(data.type, 'string')
 }
-export type PostToWorker =  {
-  <T>(args: BPEvent<T>): void;
-  disconnect(): void;
+export type PostToWorker = {
+  <T>(args: BPEvent<T>): void
+  disconnect(): void
 }
-export const useWorker = (host: { trigger: Trigger }):[PostToWorker, (path:string | null) => void] => {
-  let worker: Worker
+export const useWorker = (host: { trigger: Trigger }): [PostToWorker, (path: string | null) => void] => {
+  let worker: Worker | undefined
   const fallback: PostToWorker = noop as PostToWorker
   fallback.disconnect = noop
   const handleMessage = (event: MessageEvent<BPEvent>) => {
@@ -22,17 +22,20 @@ export const useWorker = (host: { trigger: Trigger }):[PostToWorker, (path:strin
   let post: PostToWorker = fallback
   const updateWorker = (path: string | null) => {
     worker?.removeEventListener('message', handleMessage)
-    if(!path) {
+    if (!path) {
       post = fallback
       return console.error(`Missing directive: ${P_WORKER}`)
     }
     worker = new Worker(path, { type: 'module' })
     worker.addEventListener('message', handleMessage)
-    const next = <T>(args: BPEvent<T>) => worker.postMessage(args)
-    next.disconnect = () => worker.removeEventListener('message', handleMessage)
+    const next = <T>(args: BPEvent<T>) => worker?.postMessage(args)
+    next.disconnect = () => {
+      worker?.removeEventListener('message', handleMessage)
+      worker = undefined
+    }
     post = next
   }
-  const send: PostToWorker =  <T>(args: BPEvent<T>) => post(args)
+  const send: PostToWorker = <T>(args: BPEvent<T>) => post(args)
   send.disconnect = () => post.disconnect()
   return [send, updateWorker]
 }

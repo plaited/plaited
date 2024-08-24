@@ -16,7 +16,7 @@ import { P_WORKER } from './constants.js'
 
 export const definePlaitedElement = ({
   tag,
-  shadowDom,
+  stylesheets,
   formAssociated,
   publicEvents,
   observedAttributes = [],
@@ -24,7 +24,7 @@ export const definePlaitedElement = ({
   disconnectedCallback,
   attributeChangedCallback,
   ...rest
-}: Omit<DefinePlaitedTemplateArgs, 'mode' | 'delegateFocus'>) => {
+}: Omit<DefinePlaitedTemplateArgs, 'mode' | 'delegateFocus' | 'shadowDom'> & { stylesheets: Set<string> }) => {
   if (canUseDOM() && !customElements.get(tag)) {
     class BaseElement extends HTMLElement implements PlaitedElement {
       static observedAttributes = [...observedAttributes, P_WORKER]
@@ -33,7 +33,9 @@ export const definePlaitedElement = ({
         return publicEvents
       }
       internals_: ElementInternals
-      get #root() { return this.internals_.shadowRoot as ShadowRoot}
+      get #root() {
+        return this.internals_.shadowRoot as ShadowRoot
+      }
       #query: QuerySelector
       #shadowObserver?: MutationObserver
       #trigger?: Trigger
@@ -41,7 +43,7 @@ export const definePlaitedElement = ({
       constructor() {
         super()
         this.internals_ = this.attachInternals()
-        cssCache.set(this.#root, new Set<string>([...shadowDom.stylesheets]))
+        cssCache.set(this.#root, new Set<string>([...stylesheets]))
         this.#query = useQuery(this.#root)
       }
       #updateWorker?: (newValue: string | null) => void
@@ -65,7 +67,12 @@ export const definePlaitedElement = ({
             host: this,
             emit: useEmit(this),
             clone: useClone(this.#root),
-            connect: useConnect({host: this, disconnectSet: this.#disconnectSet, trigger, setUpdateWorker: (updateWorker) => this.#updateWorker = updateWorker}),
+            connect: useConnect({
+              host: this,
+              disconnectSet: this.#disconnectSet,
+              trigger,
+              setUpdateWorker: (updateWorker) => (this.#updateWorker = updateWorker),
+            }),
             trigger,
             sync,
             point,

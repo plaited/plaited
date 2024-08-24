@@ -26,7 +26,12 @@ const { noRepeat, repeat, initial } = createStyles({
 const DynamicOnly = defineTemplate({
   publicEvents: ['render'],
   tag: 'dynamic-only',
-  shadowDom: <div p-target='target' {...initial}></div>,
+  shadowDom: (
+    <div
+      p-target='target'
+      {...initial}
+    ></div>
+  ),
   connectedCallback({ $ }) {
     return {
       render() {
@@ -39,7 +44,7 @@ const DynamicOnly = defineTemplate({
 })
 
 export const dynamicStyles: StoryObj = {
-  render: () => <DynamicOnly data-testid="target"/>,
+  render: () => <DynamicOnly data-testid='target' />,
   play: async () => {
     const style = await findByText(initial.stylesheet.join(''))
     assert({
@@ -52,7 +57,7 @@ export const dynamicStyles: StoryObj = {
     assert({
       given: 'target has not been triggered',
       should: 'have adoptedStyleSheets of length 0',
-      actual:  target?.shadowRoot?.adoptedStyleSheets.length,
+      actual: target?.shadowRoot?.adoptedStyleSheets.length,
       expected: 0,
     })
     target?.trigger({ type: 'render' })
@@ -60,7 +65,7 @@ export const dynamicStyles: StoryObj = {
     assert({
       given: 'target has been triggered',
       should: 'have adoptedStyleSheets of length 3',
-      actual:  target?.shadowRoot?.adoptedStyleSheets.length,
+      actual: target?.shadowRoot?.adoptedStyleSheets.length,
       expected: 3,
     })
   },

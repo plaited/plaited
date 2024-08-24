@@ -181,10 +181,7 @@ test('detect winner', () => {
   expect(winner).toEqual({ player: 'X', squares: [0, 1, 2] })
 })
 
-const stopGame = sync([
-  point({ waitFor: 'win' }),
-  point({ block: ['X', 'O'] })
-], true)
+const stopGame = sync([point({ waitFor: 'win' }), point({ block: ['X', 'O'] })], true)
 
 test('stop game', () => {
   // We create a new bProgram
@@ -227,14 +224,17 @@ test('stop game', () => {
 
 const defaultMoves: Record<string, RulesFunction> = {}
 for (const square of squares) {
-  defaultMoves[`defaultMoves(${square})`] = sync([
-    point<Square>({
-      request: {
-        type: 'O',
-        detail: { square },
-      },
-    }),
-  ], true)
+  defaultMoves[`defaultMoves(${square})`] = sync(
+    [
+      point<Square>({
+        request: {
+          type: 'O',
+          detail: { square },
+        },
+      }),
+    ],
+    true,
+  )
 }
 
 test('defaultMoves', () => {

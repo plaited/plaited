@@ -14,7 +14,7 @@ let retryCount = 0
 
 const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => event.type === 'close'
 
-const isClientMessage = (msg: unknown): msg is SendClientMessage=> {
+const isClientMessage = (msg: unknown): msg is SendClientMessage => {
   return (
     isTypeOf<{ [key: string]: unknown }>(msg, 'object') &&
     isTypeOf<string>(msg?.address, 'string') &&
@@ -37,11 +37,14 @@ const triggerElement = (evt: MessageEvent) => {
     const host = subscribers.get(address)
     if (host && event?.detail) {
       const { type, detail } = event
-      subscribers.get(address)?.trigger<PlaitedActionParam>({ type, detail: {
-        append: () => host.append(createDocumentFragment(detail)),
-        prepend: () => host.prepend(createDocumentFragment(detail)),
-        render: () => host.replaceChildren(createDocumentFragment(detail)),
-      }})
+      subscribers.get(address)?.trigger<PlaitedActionParam>({
+        type,
+        detail: {
+          append: () => host.append(createDocumentFragment(detail)),
+          prepend: () => host.prepend(createDocumentFragment(detail)),
+          render: () => host.replaceChildren(createDocumentFragment(detail)),
+        },
+      })
     }
   }
 }
@@ -79,7 +82,7 @@ const connect = () => {
 const retry = () => {
   if (retryCount < maxRetries) {
     // To get max we use a cap: 9999ms base: 1000ms
-    const max = Math.min(9999, 1000 * Math.pow(2, retryCount));
+    const max = Math.min(9999, 1000 * Math.pow(2, retryCount))
     // We then select a random value between 0 and max
     setTimeout(connect, Math.floor(Math.random() * max))
     retryCount++
@@ -87,15 +90,14 @@ const retry = () => {
   socket = undefined
 }
 
-
-export const toAddress = (tag: CustomElementTag, id?:string): string => `${tag}${id ? `#${id}` : ''}`
+export const toAddress = (tag: CustomElementTag, id?: string): string => `${tag}${id ? `#${id}` : ''}`
 
 export type SendToSocket = {
-  <T extends SendSocketDetail>(event: BPEvent<T>): void | (<T = never>(..._: T[]) => void);
-  disconnect: () => void;
+  <T extends SendSocketDetail>(event: BPEvent<T>): void | (<T = never>(..._: T[]) => void)
+  disconnect: () => void
 }
 
-export const useSocket = (host: PlaitedElement):SendToSocket => {
+export const useSocket = (host: PlaitedElement): SendToSocket => {
   const id = toAddress(host.tagName.toLowerCase() as CustomElementTag, host.id)
   subscribers.set(id, host)
   const disconnect = () => {
@@ -103,7 +105,7 @@ export const useSocket = (host: PlaitedElement):SendToSocket => {
   }
   const send = <T extends SendSocketDetail>(event: BPEvent<T>) => {
     const address = host.getAttribute(P_SOCKET)
-    if(!address) {
+    if (!address) {
       console.error(`Missing directive: ${P_SOCKET}`)
       return noop
     }

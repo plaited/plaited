@@ -7,30 +7,27 @@ test('firing trigger and adding bThreads in actions', () => {
   const { bThreads, trigger, useFeedback } = bProgram()
   bThreads.set({
     addHotOnce: point({ request: { type: 'hot_1' } }),
-    mixHotCold: sync([
-      point({
-        waitFor: ({ type }) => type.startsWith('hot'),
-        block: ({ type }) => type.startsWith('cold'),
-      }),
-      point({
-        waitFor: ({ type }) => type.startsWith('cold'),
-        block: ({ type }) => type.startsWith('hot'),
-      }),
-    ], true),
+    mixHotCold: sync(
+      [
+        point({
+          waitFor: ({ type }) => type.startsWith('hot'),
+          block: ({ type }) => type.startsWith('cold'),
+        }),
+        point({
+          waitFor: ({ type }) => type.startsWith('cold'),
+          block: ({ type }) => type.startsWith('hot'),
+        }),
+      ],
+      true,
+    ),
   })
   useFeedback({
     hot_1() {
       actual.push('hot')
       trigger({ type: 'cold' })
       bThreads.set({
-        addMoreHot: sync([
-          point({ request: { type: 'hot' } }),
-          point({ request: { type: 'hot' } })
-        ]),
-        addMoreCold: sync([
-          point({ request: { type: 'cold' } }),
-          point({ request: { type: 'cold' } })
-        ]),
+        addMoreHot: sync([point({ request: { type: 'hot' } }), point({ request: { type: 'hot' } })]),
+        addMoreCold: sync([point({ request: { type: 'cold' } }), point({ request: { type: 'cold' } })]),
       })
     },
     cold() {

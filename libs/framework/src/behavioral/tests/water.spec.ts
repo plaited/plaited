@@ -7,7 +7,7 @@ test('Add hot water 3 times', () => {
   const actual: string[] = []
   const { bThreads, trigger, useFeedback } = bProgram()
   bThreads.set({
-    addHot:sync([
+    addHot: sync([
       point({ request: { type: 'hot' } }),
       point({ request: { type: 'hot' } }),
       point({ request: { type: 'hot' } }),
@@ -26,12 +26,12 @@ test('Add hot/cold water 3 times', () => {
   const actual: string[] = []
   const { bThreads, trigger, useFeedback } = bProgram()
   bThreads.set({
-    addHot:sync([
+    addHot: sync([
       point({ request: { type: 'hot' } }),
       point({ request: { type: 'hot' } }),
       point({ request: { type: 'hot' } }),
     ]),
-    addCold:sync([
+    addCold: sync([
       point({ request: { type: 'cold' } }),
       point({ request: { type: 'cold' } }),
       point({ request: { type: 'cold' } }),
@@ -53,20 +53,17 @@ test('interleave', () => {
   const actual: string[] = []
   const { bThreads, trigger, useFeedback } = bProgram()
   bThreads.set({
-    addHot:sync([
+    addHot: sync([
       point({ request: { type: 'hot' } }),
       point({ request: { type: 'hot' } }),
       point({ request: { type: 'hot' } }),
     ]),
-    addCold:sync([
+    addCold: sync([
       point({ request: { type: 'cold' } }),
       point({ request: { type: 'cold' } }),
       point({ request: { type: 'cold' } }),
     ]),
-    mixHotCold: sync([
-      point({ waitFor: 'hot', block: 'cold'}),
-      point({ waitFor: 'cold', block: 'hot'}),
-    ], true)
+    mixHotCold: sync([point({ waitFor: 'hot', block: 'cold' }), point({ waitFor: 'cold', block: 'hot' })], true),
   })
   useFeedback({
     hot() {
@@ -87,20 +84,17 @@ test('logging', () => {
     snapshots.push(snapshot)
   })
   bThreads.set({
-    addHot:sync([
+    addHot: sync([
       point({ request: { type: 'hot' } }),
       point({ request: { type: 'hot' } }),
       point({ request: { type: 'hot' } }),
     ]),
-    addCold:sync([
+    addCold: sync([
       point({ request: { type: 'cold' } }),
       point({ request: { type: 'cold' } }),
       point({ request: { type: 'cold' } }),
     ]),
-    mixHotCold: sync([
-      point({ waitFor: 'hot', block: 'cold'}),
-      point({ waitFor: 'cold', block: 'hot'}),
-    ], true)
+    mixHotCold: sync([point({ waitFor: 'hot', block: 'cold' }), point({ waitFor: 'cold', block: 'hot' })], true),
   })
   trigger({ type: 'start' })
   expect(snapshots).toMatchSnapshot()

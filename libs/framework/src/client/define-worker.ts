@@ -1,11 +1,23 @@
-import type { BPEvent, Trigger, SynchronizationPoint, UseSnapshot, BThreads, Synchronize, Actions } from '../behavioral/types.js'
+import type {
+  BPEvent,
+  Trigger,
+  SynchronizationPoint,
+  UseSnapshot,
+  BThreads,
+  Synchronize,
+  Actions,
+} from '../behavioral/types.js'
 import { bProgram } from '../behavioral/b-program.js'
 import { sync, point } from '../behavioral/sync.js'
 import { onlyPublicEvents } from '../shared/only-public-events.js'
 
-export const defineWorker = ({ connectedCallback, publicEvents, targetOrigin }:  {
+export const defineWorker = ({
+  connectedCallback,
+  publicEvents,
+  targetOrigin,
+}: {
   connectedCallback: (args: {
-    send:{
+    send: {
       (data: BPEvent): void
       disconnect(): void
     }
@@ -29,6 +41,6 @@ export const defineWorker = ({ connectedCallback, publicEvents, targetOrigin }: 
   }
   context.addEventListener('message', eventHandler, false)
   send.disconnect = () => context.removeEventListener('message', eventHandler)
-  const actions = connectedCallback({ trigger, send, sync, point, ...rest})
+  const actions = connectedCallback({ trigger, send, sync, point, ...rest })
   useFeedback(actions)
 }

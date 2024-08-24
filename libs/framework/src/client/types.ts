@@ -1,4 +1,12 @@
-import type { Trigger, Actions, UseSnapshot, Synchronize, SynchronizationPoint, BThreads, BPEvent } from '../behavioral/types.js'
+import type {
+  Trigger,
+  Actions,
+  UseSnapshot,
+  Synchronize,
+  SynchronizationPoint,
+  BThreads,
+  BPEvent,
+} from '../behavioral/types.js'
 import type { TemplateObject, Attrs, FunctionTemplate, CustomElementTag } from '../jsx/types.js'
 import type { PLAITED_COMPONENT_IDENTIFIER } from '../shared/constants.js'
 import { P_SOCKET } from './constants.js'
@@ -25,7 +33,10 @@ export interface QuerySelector {
   ): BoundElement<T>[]
 }
 
-export type Clone = <T>(template: TemplateObject, callback: ($: QuerySelector, data: T) => void) => (data: T) => DocumentFragment
+export type Clone = <T>(
+  template: TemplateObject,
+  callback: ($: QuerySelector, data: T) => void,
+) => (data: T) => DocumentFragment
 
 export type Emit = <T = unknown>(
   args: BPEvent<T> & {
@@ -41,14 +52,16 @@ export interface PlaitedElement extends HTMLElement {
   readonly publicEvents?: string[]
   // Default Methods and Properties
   internals_: ElementInternals
-  adoptedCallback?:{(this: PlaitedElement): void}
-  attributeChangedCallback?:{(this: PlaitedElement, name: string, oldValue: string | null, newValue: string | null): void}
+  adoptedCallback?: { (this: PlaitedElement): void }
+  attributeChangedCallback?: {
+    (this: PlaitedElement, name: string, oldValue: string | null, newValue: string | null): void
+  }
   connectedCallback(this: PlaitedElement): void
   disconnectedCallback(this: PlaitedElement): void
-  formAssociatedCallback?:{(this: PlaitedElement, form: HTMLFormElement): void}
-  formDisabledCallback?:{(this: PlaitedElement, disabled: boolean): void}
-  formResetCallback?:{(this: PlaitedElement): void}
-  formStateRestoreCallback?:{(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void}
+  formAssociatedCallback?: { (this: PlaitedElement, form: HTMLFormElement): void }
+  formDisabledCallback?: { (this: PlaitedElement, disabled: boolean): void }
+  formResetCallback?: { (this: PlaitedElement): void }
+  formStateRestoreCallback?: { (this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void }
 }
 
 export interface PlaitedElementConstructor {
@@ -60,12 +73,12 @@ export type ConnectedCallbackArgs = {
   host: PlaitedElement
   emit: Emit
   clone: Clone
-  connect:Connect
+  connect: Connect
   // Behavioral Program
   trigger: Trigger
   bThreads: BThreads
   useSnapshot: UseSnapshot
-  sync: Synchronize 
+  sync: Synchronize
   point: SynchronizationPoint
 }
 
@@ -76,23 +89,22 @@ export type DefinePlaitedTemplateArgs = {
   delegatesFocus?: boolean
   observedAttributes?: string[]
   publicEvents?: string[]
-  formAssociated?: true 
+  formAssociated?: true
   connectedCallback?: {
-    (
-      this: PlaitedElement,
-      args: ConnectedCallbackArgs
-    ):Actions
+    (this: PlaitedElement, args: ConnectedCallbackArgs): Actions
   }
-  adoptedCallback?:{(this: PlaitedElement): void}
-  attributeChangedCallback?:{(this: PlaitedElement, name: string, oldValue: string | null, newValue: string | null): void}
-  disconnectedCallback?:{(this: PlaitedElement): void}
-  formAssociatedCallback?:{(this: PlaitedElement, form: HTMLFormElement): void}
-  formDisabledCallback?:{(this: PlaitedElement, disabled: boolean): void}
-  formResetCallback?:{(this: PlaitedElement): void}
-  formStateRestoreCallback?:{(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void}
+  adoptedCallback?: { (this: PlaitedElement): void }
+  attributeChangedCallback?: {
+    (this: PlaitedElement, name: string, oldValue: string | null, newValue: string | null): void
+  }
+  disconnectedCallback?: { (this: PlaitedElement): void }
+  formAssociatedCallback?: { (this: PlaitedElement, form: HTMLFormElement): void }
+  formDisabledCallback?: { (this: PlaitedElement, disabled: boolean): void }
+  formResetCallback?: { (this: PlaitedElement): void }
+  formStateRestoreCallback?: { (this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void }
 }
 
-export type PlaitedTemplateAttrs =  Attrs & {
+export type PlaitedTemplateAttrs = Attrs & {
   [P_SOCKET]?: string
 }
 
@@ -115,13 +127,7 @@ export type PlaitedActionParam = {
   render: () => void
 }
 
-export type SendSocketDetail = 
-  | string
-  | number
-  | boolean
-  | null
-  | JsonObject
-  | JsonArray
+export type SendSocketDetail = string | number | boolean | null | JsonObject | JsonArray
 
 interface JsonObject {
   [key: string]: SendSocketDetail
@@ -129,20 +135,22 @@ interface JsonObject {
 
 interface JsonArray extends Array<SendSocketDetail> {}
 
-export interface PlaitedPopStateEvent extends PopStateEvent { state: { plaited: string, id: number } }
-
-export type ViewTransition = {
-  ready: Promise<never>;
-  updateCallbackDone: Promise<void>;
-  finished: Promise<void>;
-  skipTransition: () => void;
-  types: string[];
+export interface PlaitedPopStateEvent extends PopStateEvent {
+  state: { plaited: string; id: number }
 }
 
-export type InitPlaitedArgs =  {
-  retry?: number;
-  retryDelay?: number;
-  skipViewTransition?: () => boolean,
+export type ViewTransition = {
+  ready: Promise<never>
+  updateCallbackDone: Promise<void>
+  finished: Promise<void>
+  skipTransition: () => void
+  types: string[]
+}
+
+export type InitPlaitedArgs = {
+  retry?: number
+  retryDelay?: number
+  skipViewTransition?: () => boolean
   viewTransitionCallback?: (transition: ViewTransition) => Promise<void>
-  viewTransitionTypes?: string[];
+  viewTransitionTypes?: string[]
 } & RequestInit

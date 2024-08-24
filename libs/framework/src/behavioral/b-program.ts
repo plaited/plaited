@@ -24,10 +24,12 @@ export const bProgram: BProgram = () => {
   const running = new Map<string, RunningBid>()
 
   const actionPublisher = createPublisher<BPEvent>()
-  let snapshotPublisher: {
-    (value: SnapshotMessage): void;
-    subscribe(listener: (msg: SnapshotMessage) => void | Promise<void>): () => void;
-  } | undefined
+  let snapshotPublisher:
+    | {
+        (value: SnapshotMessage): void
+        subscribe(listener: (msg: SnapshotMessage) => void | Promise<void>): () => void
+      }
+    | undefined
   function run() {
     running.size && step()
   }
@@ -88,8 +90,8 @@ export const bProgram: BProgram = () => {
       const hasPendingRequest = request && isPendingRequest(selectedEvent, request)
       isInterrupted && generator.return?.()
       if (hasPendingRequest || isInterrupted || isWaitedFor) {
-          running.set(thread, bid)
-          pending.delete(thread)
+        running.set(thread, bid)
+        pending.delete(thread)
       }
     }
     // To avoid infinite loop with calling trigger from feedback always publish select event
@@ -107,14 +109,14 @@ export const bProgram: BProgram = () => {
     }
     running.set(request.type, {
       priority: 0,
-      trigger:  true,
+      trigger: true,
       generator: thread(),
     })
     run()
   }
 
   const useFeedback: UseFeedback = (actions) => {
-   const disconnect = actionPublisher.subscribe((data: BPEvent) => {
+    const disconnect = actionPublisher.subscribe((data: BPEvent) => {
       const { type, detail = {} } = data
       if (Object.hasOwn(actions, type)) {
         void actions[type](detail)
@@ -132,11 +134,11 @@ export const bProgram: BProgram = () => {
         })
       }
     },
-    has: (thread) => ({running: running.has(thread), pending: pending.has(thread)}),
+    has: (thread) => ({ running: running.has(thread), pending: pending.has(thread) }),
   }
 
-  const useSnapshot: UseSnapshot = listener => {
-    if(snapshotPublisher === undefined) (snapshotPublisher = createPublisher<SnapshotMessage>())
+  const useSnapshot: UseSnapshot = (listener) => {
+    if (snapshotPublisher === undefined) snapshotPublisher = createPublisher<SnapshotMessage>()
     return snapshotPublisher.subscribe(listener)
   }
 

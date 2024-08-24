@@ -124,7 +124,7 @@ const udomdiff = (
   return b
 }
 
-export const displayContent  = (htmlContent: string) => {
+export const displayContent = (htmlContent: string) => {
   const future = Document.parseHTMLUnsafe(htmlContent)
   const head = document.querySelector('head')
   const futureHead = future.querySelector('head')

@@ -19,7 +19,7 @@ export const navigationListener = (shadowRoot: ShadowRoot): Disconnect => {
             if (href?.startsWith(window.location.origin) && targetIsSelf) {
               event.preventDefault()
               event.stopPropagation()
-              const emit =  useEmit(shadowRoot.host as PlaitedElement)
+              const emit = useEmit(shadowRoot.host as PlaitedElement)
               emit<string>({
                 type: NAVIGATE_EVENT_TYPE,
                 detail: href,

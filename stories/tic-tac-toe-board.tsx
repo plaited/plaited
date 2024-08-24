@@ -21,58 +21,64 @@ const squares = [0, 1, 2, 3, 4, 5, 6, 7, 8]
 
 type Square = { square: number }
 
-const enforceTurns = sync([
-  point<Square>({ waitFor: 'X', block: 'O' }),
-  point<Square>({ waitFor: 'O', block: 'X' })
-], true)
+const enforceTurns = sync(
+  [point<Square>({ waitFor: 'X', block: 'O' }), point<Square>({ waitFor: 'O', block: 'X' })],
+  true,
+)
 
 const squaresTaken: Record<string, RulesFunction> = {}
 for (const square of squares) {
-  squaresTaken[`(${square}) taken`] = sync([
-    point<Square>({
-      waitFor: ({ detail }) => square === detail.square,
-    }),
-    point<Square>({
-      block: ({ detail }) => square === detail.square,
-    }),
-  ], true)
+  squaresTaken[`(${square}) taken`] = sync(
+    [
+      point<Square>({
+        waitFor: ({ detail }) => square === detail.square,
+      }),
+      point<Square>({
+        block: ({ detail }) => square === detail.square,
+      }),
+    ],
+    true,
+  )
 }
 
 type Winner = { player: 'X' | 'O'; squares: number[] }
 const detectWins = (player: 'X' | 'O') =>
   winConditions.reduce((acc: Record<string, RulesFunction>, squares) => {
-    acc[`${player}Wins (${squares})`] = sync([
-      point<{ square: number }>({
-        waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
-      }),
-      point<{ square: number }>({
-        waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
-      }),
-      point<{ square: number }>({
-        waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
-      }),
-      point<Winner>({
-        request: { type: 'win', detail: { squares, player } },
-      }),
-    ], true)
+    acc[`${player}Wins (${squares})`] = sync(
+      [
+        point<{ square: number }>({
+          waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
+        }),
+        point<{ square: number }>({
+          waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
+        }),
+        point<{ square: number }>({
+          waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
+        }),
+        point<Winner>({
+          request: { type: 'win', detail: { squares, player } },
+        }),
+      ],
+      true,
+    )
     return acc
   }, {})
 
-const stopGame = sync([
-  point({ waitFor: 'win' }),
-  point({ block: ['X', 'O'] })
-], true)
+const stopGame = sync([point({ waitFor: 'win' }), point({ block: ['X', 'O'] })], true)
 
 const defaultMoves: Record<string, RulesFunction> = {}
 for (const square of squares) {
-  defaultMoves[`defaultMoves(${square})`] = sync([
-    point<Square>({
-      request: {
-        type: 'O',
-        detail: { square },
-      },
-    }),
-  ], true)
+  defaultMoves[`defaultMoves(${square})`] = sync(
+    [
+      point<Square>({
+        request: {
+          type: 'O',
+          detail: { square },
+        },
+      }),
+    ],
+    true,
+  )
 }
 
 const startAtCenter = point({

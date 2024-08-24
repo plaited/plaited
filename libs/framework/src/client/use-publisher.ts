@@ -1,16 +1,16 @@
 import { Trigger } from '../behavioral/types.js'
 import { Disconnect } from '../shared/types.js'
 
-export type SubscribeToPublisher =  (eventType: string, trigger:Trigger) =>  Disconnect
+export type SubscribeToPublisher = (eventType: string, trigger: Trigger) => Disconnect
 export type Publisher<T> = ReturnType<typeof usePublisher<T>>
-export function usePublisher<T>(initialValue: T):{
+export function usePublisher<T>(initialValue: T): {
   (value: T): void
   sub: SubscribeToPublisher
   get(): T
 }
 export function usePublisher<T>(initialValue?: never): {
   (value?: T): void
-  sub:SubscribeToPublisher
+  sub: SubscribeToPublisher
   get(): T | undefined
 }
 export function usePublisher<T>(initialValue: T) {
@@ -34,4 +34,3 @@ export function usePublisher<T>(initialValue: T) {
   pub.get = get
   return pub
 }
-

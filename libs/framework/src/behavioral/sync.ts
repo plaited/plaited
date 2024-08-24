@@ -8,21 +8,21 @@ import type { SynchronizationPoint, Synchronize } from './types.js'
  * @returns {RulesFunction} A new behavioral thread that combines the provided synchronization sets.
  */
 export const sync: Synchronize = (rules, repeat) => {
-    return repeat
-    ? function* () {
-      while (isTypeOf<boolean>(repeat, 'boolean') ? repeat: repeat()) {
+  return repeat ?
+      function* () {
+        while (isTypeOf<boolean>(repeat, 'boolean') ? repeat : repeat()) {
+          const length = rules.length
+          for (let i = 0; i < length; i++) {
+            yield* rules[i]()
+          }
+        }
+      }
+    : function* () {
         const length = rules.length
         for (let i = 0; i < length; i++) {
           yield* rules[i]()
         }
       }
-    }
-    : function * () {
-      const length = rules.length
-      for (let i = 0; i < length; i++) {
-        yield* rules[i]()
-      }
-    }
 }
 
 /**

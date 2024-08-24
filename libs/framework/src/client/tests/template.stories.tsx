@@ -10,12 +10,11 @@ const meta: Meta = {
 
 export default meta
 
-
 export const defaultModeAndFocus: StoryObj = {
   render: () => {
     const ModeOpen = defineTemplate({
       tag: 'mode-open',
-      shadowDom: <span>mode open and delegates focus</span>
+      shadowDom: <span>mode open and delegates focus</span>,
     })
     return <ModeOpen p-target='el' />
   },
@@ -33,7 +32,7 @@ export const defaultModeAndFocus: StoryObj = {
       actual: host?.shadowRoot?.mode,
       expected: 'open',
     })
-  }
+  },
 }
 
 export const delegatesFocusFalse: StoryObj = {
@@ -41,7 +40,7 @@ export const delegatesFocusFalse: StoryObj = {
     const DelegateFalse = defineTemplate({
       tag: 'delegate-false',
       delegatesFocus: false,
-      shadowDom: <span>mode open and delegates focus</span>
+      shadowDom: <span>mode open and delegates focus</span>,
     })
     return <DelegateFalse p-target='el' />
   },
@@ -59,7 +58,7 @@ export const delegatesFocusFalse: StoryObj = {
       actual: host?.shadowRoot?.mode,
       expected: 'open',
     })
-  }
+  },
 }
 
 export const closedMode: StoryObj = {
@@ -67,7 +66,7 @@ export const closedMode: StoryObj = {
     const ClosedMode = defineTemplate({
       tag: 'mode-closed',
       mode: 'closed',
-      shadowDom: <span>mode open and delegates focus</span>
+      shadowDom: <span>mode open and delegates focus</span>,
     })
     return <ClosedMode p-target='el' />
   },
@@ -80,7 +79,7 @@ export const closedMode: StoryObj = {
       actual: host?.shadowRoot,
       expected: null,
     })
-  }
+  },
 }
 
 export const hydration: StoryObj = {
