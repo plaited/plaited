@@ -31,7 +31,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   if (tag === 'script' && !trusted) {
     throw new Error("Script tag not allowed unless 'trusted' property set")
   }
-
+  const isDeclarativeShadowDom = tag === 'template' && Object.hasOwn(attrs, 'shadowrootmode')
   /** Now to create an array to store our node attributes */
   const start = [`<${tag} `]
   /** handle JS reserved words commonly used in html class & for*/
@@ -61,13 +61,14 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       console.log(key)
       throw new Error(`Event handler attributes are not allowed:  [${key}]`)
     }
-    /** test for and handle boolean attributes */
-    if (BOOLEAN_ATTRS.has(key as BooleanAttributes)) {
-      start.push(`${key} `)
-      continue
-    }
     /** Grab the value from the attribute */
     const value = attributes[key]
+    /** test for and handle boolean attributes */
+    if (BOOLEAN_ATTRS.has(key as BooleanAttributes)) {
+      value && start.push(`${key} `)
+      continue
+    }
+
     /** P2 typeof attribute is NOT {@type Primitive} then skip and do nothing */
     if (!PRIMITIVES.has(typeof value)) {
       throw new Error(`Attributes not declared in PlaitedAttributes must be of type Primitive: ${key} is not primitive`)
@@ -116,7 +117,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   }
   end.push(`</${tag}>`)
   /** Test if the the tag is a template and if it's a declarative shadow dom */
-  if ( tag === 'template' && Object.hasOwn(attrs, 'shadowrootmode')) {
+  if (isDeclarativeShadowDom) {
     /** We continue to hoist our stylesheet until we run
      * into a declarative shadow dom then we push the
      * stylesheet as the first child of the declarative

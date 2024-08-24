@@ -44,6 +44,7 @@ export type BooleanAttributes =
   | 'required'
   | 'reversed'
   | 'selected'
+  | 'shadowrootdelegatesfocus'
   // Electron attributes
   | 'nodeintegration'
   | 'nodeintegrationinsubframes'

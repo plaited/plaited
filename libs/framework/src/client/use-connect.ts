@@ -6,6 +6,8 @@ import { SendToSocket, useSocket } from "./use-socket.js";
 import { PostToWorker, useWorker } from "./use-worker.js";
 import { WORKER, SOCKET, P_WORKER } from "./constants.js";
 
+export type Connect = ReturnType<typeof useConnect>
+
 export const useConnect = ({
   host,
   disconnectSet,
@@ -20,7 +22,7 @@ export const useConnect = ({
   function connect (target: typeof WORKER): PostToWorker
   function connect (target: typeof SOCKET): SendToSocket
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function connect (target: Publisher<any>, type: string): void
+  function connect (target: Publisher<any>, type: string): Disconnect
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function connect (target: typeof WORKER | typeof SOCKET | Publisher<any>, type?: string){
     if(target === WORKER) {

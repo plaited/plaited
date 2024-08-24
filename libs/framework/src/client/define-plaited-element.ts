@@ -6,19 +6,17 @@ import { sync, point } from '../behavioral/sync.js'
 import { useClone } from './use-clone.js'
 import { useEmit } from './use-emit.js'
 import { P_TRIGGER } from '../jsx/constants.js'
-import { useQuery, cssCache, handleTemplateObject } from './use-query.js'
+import { useQuery, cssCache } from './use-query.js'
 import { shadowObserver, addListeners } from './shadow-observer.js'
 import { onlyPublicEvents } from '../shared/only-public-events.js'
 import { canUseDOM, isTypeOf } from '@plaited/utils'
-import { TemplateObject } from '../jsx/types.js'
 import { navigationListener } from './navigation-listener.js'
 import { useConnect } from './use-connect.js'
 import { P_WORKER } from './constants.js'
+
 export const definePlaitedElement = ({
   tag,
   shadowDom,
-  mode = 'open',
-  delegatesFocus = true,
   formAssociated,
   publicEvents,
   observedAttributes = [],
@@ -26,7 +24,7 @@ export const definePlaitedElement = ({
   disconnectedCallback,
   attributeChangedCallback,
   ...rest
-}: DefinePlaitedTemplateArgs & { shadowDom: TemplateObject }) => {
+}: Omit<DefinePlaitedTemplateArgs, 'mode' | 'delegateFocus'>) => {
   if (canUseDOM() && !customElements.get(tag)) {
     class BaseElement extends HTMLElement implements PlaitedElement {
       static observedAttributes = [...observedAttributes, P_WORKER]
@@ -44,10 +42,6 @@ export const definePlaitedElement = ({
         super()
         this.internals_ = this.attachInternals()
         cssCache.set(this.#root, new Set<string>([...shadowDom.stylesheets]))
-        if (this.internals_.shadowRoot === null) {
-          this.attachShadow({ mode, delegatesFocus })
-          handleTemplateObject(this.#root, shadowDom)
-        }
         this.#query = useQuery(this.#root)
       }
       #updateWorker?: (newValue: string | null) => void
@@ -63,7 +57,7 @@ export const definePlaitedElement = ({
           addListeners(
             // just connected/upgraded then delegate listeners nodes with p-trigger attribute
             Array.from(this.#root.querySelectorAll<Element>(`[${P_TRIGGER}]`)),
-            trigger,
+            this.#trigger,
           )
           this.#shadowObserver = shadowObserver(this.#root, trigger) // create a shadow observer to watch for modification & addition of nodes with p-trigger attribute
           const actions = connectedCallback.bind(this)({
@@ -77,13 +71,13 @@ export const definePlaitedElement = ({
             point,
             ...rest,
           })
-          const disconnect =useFeedback(actions)
-          this.#disconnectSet.add(disconnect)
+          this.#disconnectSet.add(useFeedback(actions))
         }
       }
       disconnectedCallback() {
         this.#shadowObserver?.disconnect()
         for (const cb of this.#disconnectSet) cb()
+        this.#disconnectSet.clear()
         disconnectedCallback?.bind(this)()
       }
       trigger(event: BPEvent) {

@@ -10,47 +10,80 @@ const meta: Meta = {
 
 export default meta
 
-const styles = createStyles({
-  inner: {
-    color: 'blue',
+
+export const defaultModeAndFocus: StoryObj = {
+  render: () => {
+    const ModeOpen = defineTemplate({
+      tag: 'mode-open',
+      shadowDom: <span>mode open and delegates focus</span>
+    })
+    return <ModeOpen p-target='el' />
   },
-})
-const content = 'client side rendered'
-
-const Fixture = defineTemplate({
-  tag: 'template-element',
-  shadowDom: (
-    <div
-      data-test='content'
-      {...styles.inner}
-    >
-      {content}
-    </div>
-  ),
-})
-
-export const noDeclarativeShadowDom: StoryObj = {
-  render: () => <Fixture />,
   play: async () => {
-    const host = document.querySelector(Fixture.tag)
-    const inner = await findByAttribute('data-test', 'content')
-    const textContent = inner?.textContent
+    const host = await findByAttribute<PlaitedElement>('p-target', 'el')
     assert({
-      given: 'Appending template-element',
-      should: 'have a div with content',
-      actual: textContent,
-      expected: content,
+      given: 'setHTMLUnsafe',
+      should: 'delegate focus',
+      actual: host?.shadowRoot?.delegatesFocus,
+      expected: true,
     })
     assert({
-      given: 'Appending template-element',
-      should: 'have constructable adoptedStyleSheets',
-      actual: host?.shadowRoot?.adoptedStyleSheets.length,
-      expected: 1,
+      given: 'setHTMLUnsafe',
+      should: 'delegate focus',
+      actual: host?.shadowRoot?.mode,
+      expected: 'open',
     })
-  },
+  }
 }
 
-export const withDeclarativeShadowDom: StoryObj = {
+export const delegatesFocusFalse: StoryObj = {
+  render: () => {
+    const DelegateFalse = defineTemplate({
+      tag: 'delegate-false',
+      delegatesFocus: false,
+      shadowDom: <span>mode open and delegates focus</span>
+    })
+    return <DelegateFalse p-target='el' />
+  },
+  play: async () => {
+    const host = await findByAttribute<PlaitedElement>('p-target', 'el')
+    assert({
+      given: 'setHTMLUnsafe',
+      should: 'delegate focus',
+      actual: host?.shadowRoot?.delegatesFocus,
+      expected: false,
+    })
+    assert({
+      given: 'setHTMLUnsafe',
+      should: 'delegate focus',
+      actual: host?.shadowRoot?.mode,
+      expected: 'open',
+    })
+  }
+}
+
+export const closedMode: StoryObj = {
+  render: () => {
+    const ClosedMode = defineTemplate({
+      tag: 'mode-closed',
+      mode: 'closed',
+      shadowDom: <span>mode open and delegates focus</span>
+    })
+    return <ClosedMode p-target='el' />
+  },
+  play: async () => {
+    const host = await findByAttribute<PlaitedElement>('p-target', 'el')
+    console.log(host?.shadowRoot)
+    assert({
+      given: 'setHTMLUnsafe',
+      should: 'return null',
+      actual: host?.shadowRoot,
+      expected: null,
+    })
+  }
+}
+
+export const hydration: StoryObj = {
   play: async ({ canvasElement }) => {
     const styles = createStyles({
       inner: {

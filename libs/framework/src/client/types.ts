@@ -2,12 +2,7 @@ import type { Trigger, Actions, UseSnapshot, Synchronize, SynchronizationPoint, 
 import type { TemplateObject, Attrs, FunctionTemplate, CustomElementTag } from '../jsx/types.js'
 import type { PLAITED_COMPONENT_IDENTIFIER } from '../shared/constants.js'
 import { P_SOCKET } from './constants.js'
-import type { SendToSocket } from  './use-socket.js'
-import type { PostToWorker } from './use-worker.js'
-import type { Publisher  } from './use-publisher.js'
-import { WORKER, SOCKET } from './constants.js'
-import { Disconnect } from '../shared/types.js'
-
+import { Connect } from './use-connect.js'
 export type Bindings = {
   render(this: Element, ...template: (TemplateObject | DocumentFragment | Element | string)[]): void
   insert(this: Element, position: Position, ...template: (TemplateObject | DocumentFragment | Element | string)[]): void
@@ -60,6 +55,20 @@ export interface PlaitedElementConstructor {
   new (): PlaitedElement
 }
 
+export type ConnectedCallbackArgs = {
+  $: QuerySelector
+  host: PlaitedElement
+  emit: Emit
+  clone: Clone
+  connect:Connect
+  // Behavioral Program
+  trigger: Trigger
+  bThreads: BThreads
+  useSnapshot: UseSnapshot
+  sync: Synchronize 
+  point: SynchronizationPoint
+}
+
 export type DefinePlaitedTemplateArgs = {
   tag: CustomElementTag
   shadowDom: TemplateObject
@@ -71,24 +80,7 @@ export type DefinePlaitedTemplateArgs = {
   connectedCallback?: {
     (
       this: PlaitedElement,
-      args: {
-      $: QuerySelector
-      host: PlaitedElement
-      emit: Emit
-      clone: Clone
-      connect: {
-        (target: typeof WORKER): PostToWorker;
-        (target: typeof SOCKET): SendToSocket;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (target: Publisher<any>, type: string): Disconnect;
-      }
-      // Behavioral Program
-      trigger: Trigger
-      bThreads: BThreads
-      useSnapshot: UseSnapshot
-      sync: Synchronize 
-      point: SynchronizationPoint
-    }
+      args: ConnectedCallbackArgs
     ):Actions
   }
   adoptedCallback?:{(this: PlaitedElement): void}

@@ -55,6 +55,7 @@ export const BOOLEAN_ATTRS = new Set<BooleanAttributes>([
   'required',
   'reversed',
   'selected',
+  'shadowrootdelegatesfocus',
   // Electron attributes
   'nodeintegration',
   'nodeintegrationinsubframes',
