@@ -2,19 +2,17 @@ import { Trigger } from '../behavioral/types.js'
 import { Disconnect } from '../shared/types.js'
 
 export type SubscribeToPublisher =  (eventType: string, trigger:Trigger) =>  Disconnect
-export type PublisherWithoutInitialValue<T = undefined> = {
-  (value?: T): void
-  sub:SubscribeToPublisher
-  get(): T | undefined
-}
-export type PublisherWithInitialValue<T = unknown> = {
+export type Publisher<T> = ReturnType<typeof usePublisher<T>>
+export function usePublisher<T>(initialValue: T):{
   (value: T): void
   sub: SubscribeToPublisher
   get(): T
 }
-
-export function usePublisher<T>(initialValue: T):PublisherWithInitialValue<T>
-export function usePublisher<T = undefined>(initialValue?: never): PublisherWithoutInitialValue<T>
+export function usePublisher<T>(initialValue?: never): {
+  (value?: T): void
+  sub:SubscribeToPublisher
+  get(): T | undefined
+}
 export function usePublisher<T>(initialValue: T) {
   let store: T = initialValue
   const listeners = new Set<(value?: T) => void>()
@@ -36,3 +34,4 @@ export function usePublisher<T>(initialValue: T) {
   pub.get = get
   return pub
 }
+

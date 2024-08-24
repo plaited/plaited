@@ -4,8 +4,9 @@ import type { PLAITED_COMPONENT_IDENTIFIER } from '../shared/constants.js'
 import { P_SOCKET } from './constants.js'
 import type { SendToSocket } from  './use-socket.js'
 import type { PostToWorker } from './use-worker.js'
-import type { PublisherWithInitialValue, PublisherWithoutInitialValue } from './use-publisher.js'
+import type { Publisher  } from './use-publisher.js'
 import { WORKER, SOCKET } from './constants.js'
+import { Disconnect } from '../shared/types.js'
 
 export type Bindings = {
   render(this: Element, ...template: (TemplateObject | DocumentFragment | Element | string)[]): void
@@ -78,7 +79,8 @@ export type DefinePlaitedTemplateArgs = {
       connect: {
         (target: typeof WORKER): PostToWorker;
         (target: typeof SOCKET): SendToSocket;
-        (target: PublisherWithInitialValue | PublisherWithoutInitialValue, type: string): void;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (target: Publisher<any>, type: string): Disconnect;
       }
       // Behavioral Program
       trigger: Trigger
