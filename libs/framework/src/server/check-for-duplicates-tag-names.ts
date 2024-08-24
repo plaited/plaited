@@ -1,12 +1,12 @@
 import type { PlaitedTemplate } from '../client/types.js'
 import { isTypeOf } from '@plaited/utils'
 import { PLAITED_COMPONENT_IDENTIFIER } from '../shared/constants.js'
-import { GLOB_PATTERN_COMPONENT } from './constants.js'
+import { GLOB_PATTERN_DUPLICATE_TAGS } from './constants.js'
 
 const isPlaitedComponent = (mod: unknown): mod is PlaitedTemplate =>
   isTypeOf<PlaitedTemplate>(mod, 'function') && mod?.$ === PLAITED_COMPONENT_IDENTIFIER
 
-export const checkForDuplicateTagNames = async (dir: string, pattern = GLOB_PATTERN_COMPONENT) => {
+export const checkForDuplicateTagNames = async (dir: string, pattern = GLOB_PATTERN_DUPLICATE_TAGS) => {
   const glob = new Bun.Glob(pattern)
   const components = new Map<string, string[]>()
   const componentPaths = await Array.fromAsync(glob.scan({ cwd: dir }))

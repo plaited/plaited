@@ -6,7 +6,7 @@ import {
   PRIMITIVES,
   VOID_TAGS,
   VALID_PRIMITIVE_CHILDREN,
-  BP_TRIGGER,
+  P_TRIGGER,
 } from './constants.js'
 
 /** createTemplate function used for ssr */
@@ -16,7 +16,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     trusted,
     stylesheet,
     style,
-    'bp-trigger': bpTrigger,
+    'p-trigger': bpTrigger,
     className,
     htmlFor,
     ...attributes
@@ -42,7 +42,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     const value = Object.entries(bpTrigger)
       .map<string>(([ev, req]) => `${ev}:${req}`)
       .join(' ')
-    start.push(`${BP_TRIGGER}="${value}" `)
+    start.push(`${P_TRIGGER}="${value}" `)
   }
   /** if we have style add it to element */
   if (style) {
@@ -54,7 +54,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   }
   /** next we want to loops through our attributes */
   for (const key in attributes) {
-    /** P1 all events are delegated via the bp-trigger attribute so we want
+    /** P1 all events are delegated via the p-trigger attribute so we want
      * skip on attempts to provide `on` attributes
      */
     if (key.startsWith('on')) {

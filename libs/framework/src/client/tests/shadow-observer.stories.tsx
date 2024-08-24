@@ -12,9 +12,9 @@ export default meta
 export const shadowObserver: StoryObj = {
   render: () => <ShadowIsland />,
   play: async () => {
-    let button = await findByAttribute('bp-trigger', 'click:start')
+    let button = await findByAttribute('p-trigger', 'click:start')
     button && (await fireEvent(button, 'click'))
-    let row = await findByAttribute('bp-target', 'button-row')
+    let row = await findByAttribute('p-target', 'button-row')
     assert({
       given: 'clicking start',
       should: 'have add button in row',
@@ -23,7 +23,7 @@ export const shadowObserver: StoryObj = {
     })
 
     button && (await fireEvent(button, 'click'))
-    row = await findByAttribute('bp-target', 'button-row')
+    row = await findByAttribute('p-target', 'button-row')
     assert({
       given: 'clicking start again',
       should: 'not add another button to row',
@@ -31,7 +31,7 @@ export const shadowObserver: StoryObj = {
       expected: 3,
     })
 
-    button = await findByAttribute('bp-trigger', 'click:addButton')
+    button = await findByAttribute('p-trigger', 'click:addButton')
     button && (await fireEvent(button, 'click'))
     button = await findByText<HTMLButtonElement>('add svg')
 
@@ -43,14 +43,14 @@ export const shadowObserver: StoryObj = {
     })
 
     button && (await fireEvent(button, 'click'))
-    let zone = await findByAttribute('bp-target', 'zone')
+    let zone = await findByAttribute('p-target', 'zone')
     assert({
       given: 'clicking add svg',
       should: 'adds a svg to zone',
       actual: zone?.children.length,
       expected: 1,
     })
-    const svg = await findByAttribute('bp-target', 'svg')
+    const svg = await findByAttribute('p-target', 'svg')
     assert({
       given: 'add-svg event',
       should: 'zone child is an svg',
@@ -60,7 +60,7 @@ export const shadowObserver: StoryObj = {
 
     button = await findByText('add svg')
     button && (await fireEvent(button, 'click'))
-    zone = await findByAttribute('bp-target', 'zone')
+    zone = await findByAttribute('p-target', 'zone')
     assert({
       given: 'clicking add svg again',
       should: 'not add another svg to zone',

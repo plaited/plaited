@@ -19,8 +19,8 @@ export const PubSub: StoryObj = {
     )
   },
   play: async () => {
-    const button = await findByAttribute('bp-target', 'button')
-    const count = await findByAttribute('bp-target', 'count')
+    const button = await findByAttribute('p-target', 'button')
+    const count = await findByAttribute('p-target', 'count')
     assert({
       given: 'mount',
       should: 'increment count',

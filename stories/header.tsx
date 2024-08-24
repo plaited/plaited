@@ -69,8 +69,8 @@ export const Header = defineTemplate({
           <h1>Acme</h1>
         </div>
         <div
-          bp-target='button-bar'
-          bp-trigger={{ click: 'click' }}
+          p-target='button-bar'
+          p-trigger={{ click: 'click' }}
         >
           <Button
             size='small'

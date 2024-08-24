@@ -19,12 +19,9 @@
     ".": "./src/index.ts",
     "./jsx-dev-runtime": "./src/jsx/dev-runtime.ts",
     "./jsx-runtime": "./src/jsx/runtime.ts",
-    "./utils-behavioral": "./src/utils-behavioral.ts",
     "./utils-server": "./src/utils-server.ts",
-    "./utils-storybook": "./src/utils-style.ts",
     "./utils-style": "./src/utils-style.ts",
-    "./utils-test": "./src/utils-test.ts",
-    "./utils-worker": "./src/utils-worker.ts"
+    "./utils-test": "./src/utils-test.ts"
   },
   "files": [
     "./src/**",

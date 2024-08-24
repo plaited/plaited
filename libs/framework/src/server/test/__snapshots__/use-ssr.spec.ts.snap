@@ -32,7 +32,7 @@ exports[`ssr: Conditional 1`] = `"<div>hello</div>"`;
 
 exports[`ssr: Style attribute 1`] = `"<div style="background-color:blue; margin:12px; --cssVar:red;">styles</div>"`;
 
-exports[`ssr: bp-trigger attribute 1`] = `"<div bp-trigger="click:random focus:thing">triggers</div>"`;
+exports[`ssr: p-trigger attribute 1`] = `"<div p-trigger="click:random focus:thing">triggers</div>"`;
 
 exports[`ssr: Array of templates 1`] = `
 "<ul>

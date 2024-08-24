@@ -1,7 +1,11 @@
-import type { Rules, Trigger, Actions, Snapshot, Sync, Loop, Thread, BPEvent  } from '../behavioral/types.js'
+import type { Trigger, Actions, UseSnapshot, Synchronize, SynchronizationPoint, BThreads, BPEvent } from '../behavioral/types.js'
 import type { TemplateObject, Attrs, FunctionTemplate, CustomElementTag } from '../jsx/types.js'
 import type { PLAITED_COMPONENT_IDENTIFIER } from '../shared/constants.js'
-import type { Disconnect } from '../shared/types.js'
+import { P_SOCKET } from './constants.js'
+import type { SendToSocket } from  './use-socket.js'
+import type { PostToWorker } from './use-worker.js'
+import type { PublisherWithInitialValue, PublisherWithoutInitialValue } from './use-publisher.js'
+import { WORKER, SOCKET } from './constants.js'
 
 export type Bindings = {
   render(this: Element, ...template: (TemplateObject | DocumentFragment | Element | string)[]): void
@@ -20,7 +24,7 @@ export type SelectorMatch = '=' | '~=' | '|=' | '^=' | '$=' | '*='
 export interface QuerySelector {
   <T extends Element = Element>(
     target: string,
-    /** This options enables querySelectorAll and modified the attribute selector for bp-target{@default {all: false, mod: "=" } } {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}*/
+    /** This options enables querySelectorAll and modified the attribute selector for p-target{@default {all: false, mod: "=" } } {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}*/
     match?: SelectorMatch,
   ): BoundElement<T>[]
 }
@@ -38,7 +42,6 @@ export type Emit = <T = unknown>(
 export interface PlaitedElement extends HTMLElement {
   // Custom Methods and properties
   trigger: Trigger
-  addDisconnectedCallback(callback: Disconnect): void
   readonly publicEvents?: string[]
   // Default Methods and Properties
   internals_: ElementInternals
@@ -72,13 +75,17 @@ export type DefinePlaitedTemplateArgs = {
       host: PlaitedElement
       emit: Emit
       clone: Clone
+      connect: {
+        (target: typeof WORKER): PostToWorker;
+        (target: typeof SOCKET): SendToSocket;
+        (target: PublisherWithInitialValue | PublisherWithoutInitialValue, type: string): void;
+      }
       // Behavioral Program
       trigger: Trigger
-      rules: Rules
-      snapshot: Snapshot
-      thread: Thread
-      loop: Loop
-      sync: Sync
+      bThreads: BThreads
+      useSnapshot: UseSnapshot
+      sync: Synchronize 
+      point: SynchronizationPoint
     }
     ):Actions
   }
@@ -91,7 +98,11 @@ export type DefinePlaitedTemplateArgs = {
   formStateRestoreCallback?:{(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void}
 }
 
-export type PlaitedTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
+export type PlaitedTemplateAttrs =  Attrs & {
+  [P_SOCKET]?: string
+}
+
+export type PlaitedTemplate<T extends PlaitedTemplateAttrs = PlaitedTemplateAttrs> = FunctionTemplate<T> & {
   registry: Set<string>
   tag: CustomElementTag
   observedAttributes: string[]
@@ -123,3 +134,21 @@ interface JsonObject {
 }
 
 interface JsonArray extends Array<SendSocketDetail> {}
+
+export interface PlaitedPopStateEvent extends PopStateEvent { state: { plaited: string, id: number } }
+
+export type ViewTransition = {
+  ready: Promise<never>;
+  updateCallbackDone: Promise<void>;
+  finished: Promise<void>;
+  skipTransition: () => void;
+  types: string[];
+}
+
+export type InitPlaitedArgs =  {
+  retry?: number;
+  retryDelay?: number;
+  skipViewTransition?: () => boolean,
+  viewTransitionCallback?: (transition: ViewTransition) => Promise<void>
+  viewTransitionTypes?: string[];
+} & RequestInit

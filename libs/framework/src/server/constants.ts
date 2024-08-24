@@ -1,11 +1,7 @@
-import { keyMirror } from '@plaited/utils'
-
-export const MODULE_SCALE = keyMirror('S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'rel')
-
 export const IGNORED_DIR_PREFIX = '[!_]'
 export const TEMPLATES_DIR = '_templates'
-export const GLOB_PATTERN_MODULE = `**/${IGNORED_DIR_PREFIX}*/module.@(tsx|ts)`
+export const GLOB_PATTERN_TEMPLATE = `**/${IGNORED_DIR_PREFIX}*/template.@(tsx|ts)`
 export const GLOB_PATTERN_WORKER = `**/${IGNORED_DIR_PREFIX}*/worker.@(tsx|ts)`
-export const GLOB_PATTERN_SOCKET = `**/${IGNORED_DIR_PREFIX}*/socket.@(tsx|ts)`
-export const GLOB_PATTERN_STORIES = `**/{${TEMPLATES_DIR}/**/*.stories,${IGNORED_DIR_PREFIX}*/stories}.@(tsx|ts)`
-export const GLOB_PATTERN_COMPONENT = `**/{${TEMPLATES_DIR}/**/*,${IGNORED_DIR_PREFIX}*/module}.@(tsx|ts)`
+export const GLOB_PATTERN_ROUTE = `**/${IGNORED_DIR_PREFIX}*/route.@(tsx|ts)`
+export const GLOB_PATTERN_STORIES = `**/${TEMPLATES_DIR}/**/*.stories.@(tsx|ts)` // This is probably not going to be needed as we'll just make the route a story
+export const GLOB_PATTERN_DUPLICATE_TAGS = `**/${TEMPLATES_DIR}/**/*.@(tsx|ts)` // Also plaited templates go in templates

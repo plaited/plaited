@@ -10,8 +10,8 @@ export const ElOne = defineTemplate({
   shadowDom: (
     <div>
       <button
-        bp-target='button'
-        bp-trigger={{ click: 'click' }}
+        p-target='button'
+        p-trigger={{ click: 'click' }}
       >
         Add "world!"
       </button>
@@ -36,11 +36,11 @@ export const ElOne = defineTemplate({
 export const ElTwo = defineTemplate({
   tag: 'dynamic-two',
   publicEvents: ['add'],
-  shadowDom: <h1 bp-target='header'>Hello</h1>,
-  connectedCallback({ $, rules, thread, sync, host }) {
+  shadowDom: <h1 p-target='header'>Hello</h1>,
+  connectedCallback({ $, sync, bThreads, point, host }) {
     sendAdd.sub(host, 'add')
-    rules.set({
-      onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),
+    bThreads.set({
+      onAdd: sync([point({ waitFor: 'add' }), point({ request: { type: 'disable' } })]),
     })
     return {
       disable() {

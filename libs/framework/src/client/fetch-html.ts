@@ -1,16 +1,11 @@
 import { wait } from '@plaited/utils'
 import { PLAITED_PAGES_CACHE } from './constants.js'
 
-const cachedRequestList: string[] = []
 export const fetchHTML = async (
   url: string,
-  { retry, retryDelay, cacheSize }: { retry: number; retryDelay: number; cacheSize: number },
+  { retry, retryDelay, ...rest }: { retry: number; retryDelay: number; } & RequestInit,
 ): Promise<Response| undefined> => {
   const cache = await caches.open(PLAITED_PAGES_CACHE);
-  if(cachedRequestList.length >= cacheSize) {
-    const oldestRequest = cachedRequestList.shift() as string;
-    cache.delete(oldestRequest);
-  }
   const response = await cache.match(url);
   if(response) { 
     cache.put(url, response.clone());
@@ -18,7 +13,7 @@ export const fetchHTML = async (
   };
   while (retry > 0) {
     try {
-      const response = await fetch(url, { credentials: 'same-origin'})
+      const response = await fetch(url, rest)
       if (!response.ok) {
         // Handle specific status codes or throw a generic error
         switch (response.status) {
@@ -33,7 +28,6 @@ export const fetchHTML = async (
         }
       }
       if (response.headers.get('content-type')?.includes('text/html')) {
-        cachedRequestList.push(url)
         cache.put(url, response.clone());
         return response
       } else {

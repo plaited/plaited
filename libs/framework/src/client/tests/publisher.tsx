@@ -7,16 +7,16 @@ export const Publisher = defineTemplate({
   tag: 'publisher-component',
   shadowDom: (
     <button
-      bp-trigger={{ click: 'increment' }}
-      bp-target='button'
+      p-trigger={{ click: 'increment' }}
+      p-target='button'
     >
       increment
     </button>
   ),
   publicEvents: ['add'],
-  connectedCallback({ rules, thread, sync }) {
-    rules.set({
-      onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),
+  connectedCallback({ bThreads, sync, point }) {
+    bThreads.set({
+      onAdd: sync([point({ waitFor: 'add' }), point({ request: { type: 'disable' } })]),
     })
     return {
       increment() {
@@ -28,10 +28,10 @@ export const Publisher = defineTemplate({
 
 export const Subscriber = defineTemplate({
   tag: 'subscriber-component',
-  shadowDom: <h1 bp-target='count'>{pub.get()}</h1>,
+  shadowDom: <h1 p-target='count'>{pub.get()}</h1>,
   publicEvents: ['update'],
   connectedCallback({ $, host }) {
-    pub.sub(host, 'update')
+    pub.sub('update', host)
     return {
       update(value: number) {
         const [count] = $('count')

@@ -1,6 +1,6 @@
 //BEHAVIORAL
 export type * from './behavioral/types.js'
-export { sync, thread, loop } from './behavioral/rules-function.js'
+export { sync, point } from './behavioral/sync.js'
 export { bProgram } from './behavioral/b-program.js'
 export { shuffleSyncs } from './behavioral/shuffle-syncs.js'
 export { randomEvent } from './behavioral/random-event.js'
@@ -13,8 +13,7 @@ export { initPlaited } from './client/init-plaited.js'
 export { useIndexedDB } from './client/use-indexed-db.js'
 export { usePublisher } from './client/use-publisher.js'
 export { useQuery } from './client/use-query.js'
-export { usePlaited, toAddress } from './client/use-plaited.js'
-export { useWorker } from './client/use-worker.js'
+export { toAddress } from './client/use-socket.js'
 //CSS
 export type * from './css/types.js'
 export { assignStyles } from './css/assign-styles.js'

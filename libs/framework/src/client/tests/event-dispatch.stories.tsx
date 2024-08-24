@@ -13,8 +13,8 @@ const Bottom = defineTemplate({
   tag: 'bottom-component',
   shadowDom: (
     <button
-      bp-target='button'
-      bp-trigger={{ click: 'click' }}
+      p-target='button'
+      p-trigger={{ click: 'click' }}
     >
       Add
     </button>
@@ -33,8 +33,8 @@ const Top = defineTemplate({
   tag: 'top-component',
   shadowDom: (
     <div>
-      <h1 bp-target='header'>Hello</h1>
-      <Bottom bp-trigger={{ append: 'append' }}></Bottom>
+      <h1 p-target='header'>Hello</h1>
+      <Bottom p-trigger={{ append: 'append' }}></Bottom>
     </div>
   ),
   connectedCallback({ $ }) {
@@ -55,8 +55,8 @@ export const eventDispatch: StoryObj = {
     </>
   ),
   play: async () => {
-    const button = await findByAttribute('bp-target', 'button')
-    const header = await findByAttribute('bp-target', 'header')
+    const button = await findByAttribute('p-target', 'button')
+    const header = await findByAttribute('p-target', 'header')
     assert({
       given: 'render',
       should: 'header should contain string',

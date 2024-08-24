@@ -76,8 +76,8 @@ const stylesheet = css`
 const shadowDom = (
   <article {...stylesheet}>
     <Header
-      bp-target='header'
-      bp-trigger={{
+      p-target='header'
+      p-trigger={{
         onLogin: 'onLogin',
         onLogout: 'onLogout',
         onCreateAccount: 'onCreateAccount',

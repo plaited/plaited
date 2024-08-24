@@ -12,11 +12,11 @@ export default meta
 
 const Inner = defineTemplate({
   tag: 'inner-component',
-  shadowDom: <h1 bp-target='header'>Hello</h1>,
+  shadowDom: <h1 p-target='header'>Hello</h1>,
   publicEvents: ['add'],
-  connectedCallback({ $, rules, thread, sync, emit }) {
-    rules.set({
-      onAdd: thread(sync({ waitFor: 'add' }), sync({ request: { type: 'disable' } })),
+  connectedCallback({ $, bThreads, sync, point, emit }) {
+    bThreads.set({
+      onAdd: sync([point({ waitFor: 'add' }), point({ request: { type: 'disable' } })]),
     })
     return {
       disable() {
@@ -35,12 +35,12 @@ const Outer = defineTemplate({
   shadowDom: (
     <div>
       <slot
-        bp-target='slot'
-        bp-trigger={{ disable: 'disable' }}
+        p-target='slot'
+        p-trigger={{ disable: 'disable' }}
       ></slot>
       <button
-        bp-target='button'
-        bp-trigger={{ click: 'click' }}
+        p-target='button'
+        p-trigger={{ click: 'click' }}
       >
         Add "world!"
       </button>
@@ -70,8 +70,8 @@ export const publicEvents: StoryObj = {
     </>
   ),
   play: async () => {
-    let button = await findByAttribute('bp-target', 'button')
-    const header = await findByAttribute('bp-target', 'header')
+    let button = await findByAttribute('p-target', 'button')
+    const header = await findByAttribute('p-target', 'header')
     assert({
       given: 'render',
       should: 'header should contain string',
@@ -85,7 +85,7 @@ export const publicEvents: StoryObj = {
       actual: header?.innerHTML,
       expected: 'Hello World!',
     })
-    button = await findByAttribute('bp-target', 'button')
+    button = await findByAttribute('p-target', 'button')
     assert({
       given: 'clicking button',
       should: 'be disabled',

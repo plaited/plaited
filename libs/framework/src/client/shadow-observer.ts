@@ -1,11 +1,11 @@
 import type { Trigger } from '../behavioral/types.js'
 import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
-import { BP_TRIGGER } from '../jsx/constants.js'
+import { P_TRIGGER } from '../jsx/constants.js'
 
 const isElement = (node: Node): node is Element => node.nodeType === 1
 
 const getTriggerMap = (el: Element) =>
-  new Map((el.getAttribute(BP_TRIGGER) as string).split(' ').map((pair) => pair.split(':')) as [string, string][])
+  new Map((el.getAttribute(P_TRIGGER) as string).split(' ').map((pair) => pair.split(':')) as [string, string][])
 
 /** get trigger for elements respective event from triggerTypeMap */
 const getTriggerType = (event: Event, context: Element) => {
@@ -22,11 +22,11 @@ const createDelegatedListener = (el: Element, trigger: Trigger) => {
   delegates.set(
     el,
     new DelegatedListener((event) => {
-      const type = el.getAttribute(BP_TRIGGER) && getTriggerType(event, el)
+      const type = el.getAttribute(P_TRIGGER) && getTriggerType(event, el)
       type ?
-        /** if key is present in `bp-trigger` trigger event on instance's bProgram */
+        /** if key is present in `p-trigger` trigger event on instance's bProgram */
         trigger?.({ type, detail: event })
-      : /** if key is not present in `bp-trigger` remove event listener for this event on Element */
+      : /** if key is not present in `p-trigger` remove event listener for this event on Element */
         el.removeEventListener(event.type, delegates.get(el))
     }),
   )
@@ -45,28 +45,28 @@ export const addListeners = (elements: Element[], trigger: Trigger) => {
 }
 
 export const shadowObserver = (root: ShadowRoot, trigger: Trigger) => {
-  /**  Observes the addition of nodes to the shadow dom and changes to and child's bp-trigger attribute */
+  /**  Observes the addition of nodes to the shadow dom and changes to and child's p-trigger attribute */
   const mo = new MutationObserver((mutationsList) => {
     for (const mutation of mutationsList) {
       if (mutation.type === 'attributes') {
         const el = mutation.target
         if (isElement(el)) {
-          mutation.attributeName === BP_TRIGGER && el.getAttribute(BP_TRIGGER) && addListeners([el], trigger)
+          mutation.attributeName === P_TRIGGER && el.getAttribute(P_TRIGGER) && addListeners([el], trigger)
         }
       } else if (mutation.addedNodes.length) {
         const length = mutation.addedNodes.length
         for (let i = 0; i < length; i++) {
           const node = mutation.addedNodes[i]
           if (isElement(node)) {
-            node.hasAttribute(BP_TRIGGER) && addListeners([node], trigger)
-            addListeners(Array.from(node.querySelectorAll(`[${BP_TRIGGER}]`)), trigger)
+            node.hasAttribute(P_TRIGGER) && addListeners([node], trigger)
+            addListeners(Array.from(node.querySelectorAll(`[${P_TRIGGER}]`)), trigger)
           }
         }
       }
     }
   })
   mo.observe(root, {
-    attributeFilter: [BP_TRIGGER],
+    attributeFilter: [P_TRIGGER],
     childList: true,
     subtree: true,
   })

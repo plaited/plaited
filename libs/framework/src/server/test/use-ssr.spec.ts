@@ -74,11 +74,11 @@ test('ssr: Style attribute', () =>
     ),
   ).toMatchSnapshot())
 
-test('ssr: bp-trigger attribute', () =>
+test('ssr: p-trigger attribute', () =>
   expect(
     render(
       h('div', {
-        'bp-trigger': {
+        'p-trigger': {
           click: 'random',
           focus: 'thing',
         },

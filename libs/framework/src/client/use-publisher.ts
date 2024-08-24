@@ -1,18 +1,20 @@
-import type { PlaitedElement } from './types.js'
-import { noop } from '@plaited/utils'
+import { Trigger } from '../behavioral/types.js'
+import { Disconnect } from '../shared/types.js'
 
-export function usePublisher<T>(initialValue: T): {
-  (value: T): void
-  sub(host: PlaitedElement, eventType: string): () => void
-  get(): T
-}
-export function usePublisher<T = undefined>(
-  initialValue?: never,
-): {
+export type SubscribeToPublisher =  (eventType: string, trigger:Trigger) =>  Disconnect
+export type PublisherWithoutInitialValue<T = undefined> = {
   (value?: T): void
-  sub(host: PlaitedElement, eventType: string): () => void
+  sub:SubscribeToPublisher
   get(): T | undefined
 }
+export type PublisherWithInitialValue<T = unknown> = {
+  (value: T): void
+  sub: SubscribeToPublisher
+  get(): T
+}
+
+export function usePublisher<T>(initialValue: T):PublisherWithInitialValue<T>
+export function usePublisher<T = undefined>(initialValue?: never): PublisherWithoutInitialValue<T>
 export function usePublisher<T>(initialValue: T) {
   let store: T = initialValue
   const listeners = new Set<(value?: T) => void>()
@@ -23,18 +25,12 @@ export function usePublisher<T>(initialValue: T) {
     for (const cb of listeners) cb(value)
   }
   // Subscribes a trigger and BPEvent to the publisher.
-  const sub = (host: PlaitedElement, eventType: string) => {
-    if (host.publicEvents?.includes(eventType)) {
-      const cb = (detail?: T) => host.trigger<T>({ type: eventType, detail })
-      listeners.add(cb)
-      const disconnect = () => {
-        listeners.delete(cb)
-      }
-      host.addDisconnectedCallback(disconnect)
-      return disconnect
+  const sub = (eventType: string, trigger: Trigger) => {
+    const cb = (detail?: T) => trigger<T>({ type: eventType, detail })
+    listeners.add(cb)
+    return () => {
+      listeners.delete(cb)
     }
-    console.error(`Event [${eventType}] is not public`)
-    return noop
   }
   pub.sub = sub
   pub.get = get

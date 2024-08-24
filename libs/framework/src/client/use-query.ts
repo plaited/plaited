@@ -7,7 +7,7 @@
 import type { Bindings, BoundElement, QuerySelector, SelectorMatch } from './types.js'
 import type { TemplateObject, BooleanAttributes } from '../jsx/types.js'
 import { isTypeOf } from '@plaited/utils'
-import { BOOLEAN_ATTRS, BP_TARGET } from '../jsx/constants.js'
+import { BOOLEAN_ATTRS, P_TARGET } from '../jsx/constants.js'
 
 export const cssCache = new WeakMap<ShadowRoot, Set<string>>()
 
@@ -113,5 +113,5 @@ export const getBoundInstance = (shadowRoot: ShadowRoot) =>
 export const useQuery = (shadowRoot: ShadowRoot): QuerySelector => {
   const instance = getBoundInstance(shadowRoot)
   return <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
-    assignBinding<T>(instance, Array.from(shadowRoot.querySelectorAll<Element>(`[${BP_TARGET}${match}"${target}"]`)))
+    assignBinding<T>(instance, Array.from(shadowRoot.querySelectorAll<Element>(`[${P_TARGET}${match}"${target}"]`)))
 }

@@ -1,30 +1,36 @@
 import { test, expect } from 'bun:test'
 import { bProgram } from '../b-program.js'
-import { loop, sync, thread } from '../rules-function.js'
+import { sync, point } from '../sync.js'
 
-test('firing trigger and adding threads in actions', () => {
+test('firing trigger and adding bThreads in actions', () => {
   const actual: string[] = []
-  const { rules, trigger, feedback } = bProgram()
-  rules.set({
-    addHotOnce: sync({ request: { type: 'hot_1' } }),
-    mixHotCold: loop(
-      sync({
+  const { bThreads, trigger, useFeedback } = bProgram()
+  bThreads.set({
+    addHotOnce: point({ request: { type: 'hot_1' } }),
+    mixHotCold: sync([
+      point({
         waitFor: ({ type }) => type.startsWith('hot'),
         block: ({ type }) => type.startsWith('cold'),
       }),
-      sync({
+      point({
         waitFor: ({ type }) => type.startsWith('cold'),
         block: ({ type }) => type.startsWith('hot'),
       }),
-    ),
+    ], true),
   })
-  feedback({
+  useFeedback({
     hot_1() {
       actual.push('hot')
       trigger({ type: 'cold' })
-      rules.set({
-        addMoreHot: thread(sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } })),
-        addMoreCold: thread(sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } })),
+      bThreads.set({
+        addMoreHot: sync([
+          point({ request: { type: 'hot' } }),
+          point({ request: { type: 'hot' } })
+        ]),
+        addMoreCold: sync([
+          point({ request: { type: 'cold' } }),
+          point({ request: { type: 'cold' } })
+        ]),
       })
     },
     cold() {

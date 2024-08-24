@@ -134,7 +134,7 @@ Let's say we've rendered our Header component in a logged out state to the canva
 ```ts
 export const LoggedOut: Story = {
   play: async ({ canvasElement }) => {
-    const bar = await findByAttribute("bp-target", "button-bar", canvasElement);
+    const bar = await findByAttribute("p-target", "button-bar", canvasElement);
     assert({
       given: "Logged out mode",
       should: "Button bar should have two children",

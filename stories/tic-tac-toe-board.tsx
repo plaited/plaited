@@ -1,4 +1,4 @@
-import { defineTemplate, sync, loop, thread, RulesFunction } from 'plaited'
+import { defineTemplate, RulesFunction, sync, point } from 'plaited'
 import { OMarker } from './o-marker.js'
 import { XMarker } from './x-marker.js'
 import { BoardMarker } from './board-marker.js'
@@ -21,55 +21,61 @@ const squares = [0, 1, 2, 3, 4, 5, 6, 7, 8]
 
 type Square = { square: number }
 
-const enforceTurns = loop(sync<Square>({ waitFor: 'X', block: 'O' }), sync<Square>({ waitFor: 'O', block: 'X' }))
+const enforceTurns = sync([
+  point<Square>({ waitFor: 'X', block: 'O' }),
+  point<Square>({ waitFor: 'O', block: 'X' })
+], true)
 
 const squaresTaken: Record<string, RulesFunction> = {}
 for (const square of squares) {
-  squaresTaken[`(${square}) taken`] = thread(
-    sync<Square>({
+  squaresTaken[`(${square}) taken`] = sync([
+    point<Square>({
       waitFor: ({ detail }) => square === detail.square,
     }),
-    sync<Square>({
+    point<Square>({
       block: ({ detail }) => square === detail.square,
     }),
-  )
+  ], true)
 }
 
 type Winner = { player: 'X' | 'O'; squares: number[] }
 const detectWins = (player: 'X' | 'O') =>
   winConditions.reduce((acc: Record<string, RulesFunction>, squares) => {
-    acc[`${player}Wins (${squares})`] = thread(
-      sync<{ square: number }>({
+    acc[`${player}Wins (${squares})`] = sync([
+      point<{ square: number }>({
         waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
       }),
-      sync<{ square: number }>({
+      point<{ square: number }>({
         waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
       }),
-      sync<{ square: number }>({
+      point<{ square: number }>({
         waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
       }),
-      sync<Winner>({
+      point<Winner>({
         request: { type: 'win', detail: { squares, player } },
       }),
-    )
+    ], true)
     return acc
   }, {})
 
-const stopGame = thread(sync({ waitFor: 'win' }), sync({ block: ['X', 'O'] }))
+const stopGame = sync([
+  point({ waitFor: 'win' }),
+  point({ block: ['X', 'O'] })
+], true)
 
 const defaultMoves: Record<string, RulesFunction> = {}
 for (const square of squares) {
-  defaultMoves[`defaultMoves(${square})`] = loop(
-    sync<Square>({
+  defaultMoves[`defaultMoves(${square})`] = sync([
+    point<Square>({
       request: {
         type: 'O',
         detail: { square },
       },
     }),
-  )
+  ], true)
 }
 
-const startAtCenter = sync({
+const startAtCenter = point({
   request: {
     type: 'O',
     detail: { square: 4 },
@@ -79,26 +85,26 @@ const startAtCenter = sync({
 const preventCompletionOfLineWithTwoXs = (board: Set<number>) => {
   const threads: Record<string, RulesFunction> = {}
   for (const win of winConditions) {
-    threads[`StopXWin(${win})`] = thread(
-      sync<Square>({
+    threads[`StopXWin(${win})`] = sync([
+      point<Square>({
         waitFor: ({ type, detail }) => type === 'X' && win.includes(detail.square),
       }),
-      sync<Square>({
+      point<Square>({
         waitFor: ({ type, detail }) => type === 'X' && win.includes(detail.square),
       }),
-      sync<Square>({
+      point<Square>({
         request: () => ({ type: 'O', detail: { square: win.find((num) => board.has(num)) || 0 } }),
       }),
-    )
+    ])
   }
   return threads
 }
 export const TicTacToeBoard = defineTemplate({
   tag: 'tic-tac-toe-board',
   shadowDom: <BoardMarker />,
-  connectedCallback({ $, rules, trigger }) {
+  connectedCallback({ $, bThreads, trigger }) {
     const board = new Set(squares)
-    rules.set({
+    bThreads.set({
       enforceTurns,
       ...squaresTaken,
       ...detectWins('X'),

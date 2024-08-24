@@ -62,7 +62,7 @@ export const withDeclarativeShadowDom: StoryObj = {
     })
     const Content = () => (
       <div
-        bp-target='inner'
+        p-target='inner'
         {...styles.inner}
       >
         before hydration
@@ -70,7 +70,7 @@ export const withDeclarativeShadowDom: StoryObj = {
     )
     const tag = 'with-declarative-shadow-dom'
     const template = createTemplate(tag, {
-      'bp-target': 'host',
+      'p-target': 'host',
       children: (
         <template
           shadowrootmode='open'
@@ -79,13 +79,12 @@ export const withDeclarativeShadowDom: StoryObj = {
           <Content />
         </template>
       ),
-    }).server.join('')
+    }).html.join('')
 
-    // @ts-ignore: new dom api
     canvasElement.setHTMLUnsafe(template)
 
-    const host = await findByAttribute<PlaitedElement>('bp-target', 'host')
-    let inner = await findByAttribute('bp-target', 'inner', host)
+    const host = await findByAttribute<PlaitedElement>('p-target', 'host')
+    let inner = await findByAttribute('p-target', 'inner', host)
     const style = await findByText(styles.inner.stylesheet.join(' '), host)
     let textContent = inner?.textContent
     assert({
@@ -125,7 +124,7 @@ export const withDeclarativeShadowDom: StoryObj = {
     })
     host?.trigger({ type: 'render' })
 
-    inner = await findByAttribute('bp-target', 'inner', host)
+    inner = await findByAttribute('p-target', 'inner', host)
     textContent = inner?.textContent
     // @ts-expect-error: allow it to error
     computedStyle = window.getComputedStyle(inner)

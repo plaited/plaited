@@ -1,6 +1,6 @@
 import type { BPEvent, Trigger, Rules, Snapshot, Thread, Loop, Sync, Actions } from '../behavioral/types.js'
 import { bProgram } from '../behavioral/b-program.js'
-import { sync, loop, thread } from '../behavioral/rules-function.js'
+import { sync, loop, thread } from '../behavioral/sync.js'
 import { onlyPublicEvents } from '../shared/only-public-events.js'
 
 export const defineWorker = ({ connectedCallback, publicEvents, targetOrigin }:  {

@@ -2,8 +2,8 @@ import { trueTypeOf } from '@plaited/utils'
 import type { Trigger, BPEvent } from '../behavioral/types.js'
 
 export const onlyPublicEvents =
-  (trigger: Trigger, publicEvents: string[]) =>
-  (args: BPEvent): void => {
+  <T = unknown>(trigger: Trigger, publicEvents: string[]) =>
+  (args: BPEvent<T>): void => {
     const observed = new Set(publicEvents)
     if (trueTypeOf(args) !== 'object') return console.error(`Invalid BPEvent`)
     const { type, detail } = args

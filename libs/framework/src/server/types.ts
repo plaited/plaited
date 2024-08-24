@@ -1,4 +1,4 @@
-import type { BPEvent, Devtool, Actions, Trigger, Thread, Loop, Sync, AddThreads } from '../behavioral/types.js'
+import type { BPEvent, Actions, Trigger, Thread, Loop, Sync, Rules, Snapshot } from '../behavioral/types.js'
 
 export type ServerWebSocket<T = unknown> = Parameters<
   Extract<Parameters<typeof Bun.serve<T>>[0], { websocket: unknown; unix?: never }>['websocket']['message']
@@ -6,15 +6,16 @@ export type ServerWebSocket<T = unknown> = Parameters<
 
 export type DefineSocketHandler<T> = (args: {
   send: (address: string) => (event: BPEvent<string>) => ReturnType<ServerWebSocket['send']>
-  addThreads: AddThreads
+  rules: Rules
   trigger: Trigger
   thread: Thread
   loop: Loop
   sync: Sync
+  snapshot: Snapshot 
   getContext: () => T
 }) => Actions
 
-export type DefineSocketConfig = { devtool?: Devtool; publicEvents: string[]; address: string }
+export type DefineSocketConfig = { publicEvents: string[]; address: string }
 
 export type DefineSocketReturn<T> = {
   address: string

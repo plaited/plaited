@@ -5,8 +5,8 @@ export const SVG = () => (
     version='1.1'
     viewBox='0 0 700 700'
     className={'svg'}
-    bp-trigger={{ click: 'removeSvg' }}
-    bp-target='svg'
+    p-trigger={{ click: 'removeSvg' }}
+    p-target='svg'
   >
     <defs>
       <symbol

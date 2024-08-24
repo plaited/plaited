@@ -62,11 +62,11 @@ test('createTemplate: Style attribute', () => {
   ).toMatchSnapshot()
 })
 
-test('createTemplate: bp-trigger attribute', () =>
+test('createTemplate: p-trigger attribute', () =>
   expect(
     render(
       h('div', {
-        'bp-trigger': {
+        'p-trigger': {
           click: 'random',
           focus: 'thing',
         },

@@ -2,7 +2,7 @@ import { test, expect } from 'bun:test'
 import { wait } from '@plaited/utils'
 import sinon from 'sinon'
 import { useWorker } from '../use-worker.js'
-import { BPEvent } from '../../behavioral/private-types.js'
+import { BPEvent } from '../../behavioral/types.js'
 import { PlaitedElement } from '../types.js'
 import { noop } from '@plaited/utils'
 

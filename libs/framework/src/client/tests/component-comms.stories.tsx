@@ -18,8 +18,8 @@ export const componentComms: StoryObj = {
     )
   },
   play: async () => {
-    let button = await findByAttribute('bp-target', 'button')
-    const header = await findByAttribute('bp-target', 'header')
+    let button = await findByAttribute('p-target', 'button')
+    const header = await findByAttribute('p-target', 'header')
     assert({
       given: 'render',
       should: 'header should contain string',
@@ -33,7 +33,7 @@ export const componentComms: StoryObj = {
       actual: header?.innerHTML,
       expected: 'Hello World!',
     })
-    button = await findByAttribute('bp-target', 'button')
+    button = await findByAttribute('p-target', 'button')
     assert({
       given: 'clicking button',
       should: 'be disabled',

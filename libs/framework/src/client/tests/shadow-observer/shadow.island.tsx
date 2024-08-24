@@ -61,24 +61,24 @@ export const ShadowIsland = defineTemplate({
     <div
       {...stylesheet}
       className={'mount'}
-      bp-target='wrapper'
+      p-target='wrapper'
     >
       <div
         className={'zone'}
-        bp-target='zone'
+        p-target='zone'
       ></div>
       <div
         className={'row'}
-        bp-target='button-row'
+        p-target='button-row'
       >
         <button
-          bp-trigger={{ click: 'start' }}
+          p-trigger={{ click: 'start' }}
           className={'button'}
         >
           start
         </button>
         <button
-          bp-trigger={{ click: 'addButton' }}
+          p-trigger={{ click: 'addButton' }}
           className={'button'}
         >
           addButton
@@ -86,11 +86,11 @@ export const ShadowIsland = defineTemplate({
       </div>
     </div>
   ),
-  connectedCallback({ rules, sync, thread, host, $, loop }) {
-    rules.set({
-      onRemoveSvg: thread(sync({ waitFor: 'removeSvg' }), sync({ request: { type: 'addSubIsland' } })),
-      onStart: thread(sync({ waitFor: 'start' }), sync({ request: { type: 'addSlot' } })),
-      onAddSvg: loop(sync({ waitFor: 'add-svg' }), sync({ request: { type: 'modifyAttributes' } })),
+  connectedCallback({ bThreads, host, $, sync, point }) {
+    bThreads.set({
+      onRemoveSvg: sync([point({ waitFor: 'removeSvg' }), point({ request: { type: 'addSubIsland' } })]),
+      onStart: sync([point({ waitFor: 'start' }), point({ request: { type: 'addSlot' } })]),
+      onAddSvg: sync([point({ waitFor: 'add-svg' }), point({ request: { type: 'modifyAttributes' } })], true),
     })
     return {
       addSubIsland() {
@@ -103,7 +103,7 @@ export const ShadowIsland = defineTemplate({
       },
       modifyAttributes() {
         const [slot] = $('add-svg-slot')
-        slot?.attr('bp-trigger', null)
+        slot?.attr('p-trigger', null)
       },
       addSlot() {
         const [row] = $('button-row')
@@ -111,8 +111,8 @@ export const ShadowIsland = defineTemplate({
           'beforeend',
           <slot
             name='button'
-            bp-target='add-svg-slot'
-            bp-trigger={{ click: 'add-svg' }}
+            p-target='add-svg-slot'
+            p-trigger={{ click: 'add-svg' }}
           ></slot>,
         )
       },

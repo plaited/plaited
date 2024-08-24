@@ -11,7 +11,7 @@ export const useSSR =
     for (let i = 0; i < length; i++) {
       const child = templates[i]
       if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === '🦄') {
-        arr.push(...child.server)
+        arr.push(...child.html)
         for (const sheet of child.stylesheets) {
           stylesheets.add(sheet)
         }

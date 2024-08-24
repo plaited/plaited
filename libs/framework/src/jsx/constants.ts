@@ -1,8 +1,8 @@
 import { VoidTags, BooleanAttributes } from './types.js'
 /** attribute used to manipulate a dom element */
-export const BP_TARGET = 'bp-target' as const
+export const P_TARGET = 'p-target' as const
 /** attribute used to wire a dom element to the component event listener */
-export const BP_TRIGGER = 'bp-trigger' as const
+export const P_TRIGGER = 'p-trigger' as const
 /** void attributes */
 export const VOID_TAGS = new Set<keyof VoidTags>([
   'area',

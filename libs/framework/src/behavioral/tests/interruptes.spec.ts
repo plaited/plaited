@@ -1,17 +1,18 @@
 import { expect, describe, it } from 'bun:test'
 import { bProgram } from '../b-program.js'
-import { sync, loop } from '../rules-function.js'
+import { sync, point } from '../sync.js'
 
 describe('interrupt', () => {
-  const addHot = loop(
-    sync({ waitFor: 'add', interrupt: ['terminate'] }),
-    sync({ request: { type: 'hot' } }),
-  )
+  const addHot = sync([
+    point({ waitFor: 'add', interrupt: ['terminate'] }),
+    point({ request: { type: 'hot' } })
+  ], true)
+  
   it('should not interrupt', () => {
     const actual: string[] = []
-    const { rules, trigger, feedback } = bProgram()
-    rules.set({addHot})
-    feedback({
+    const { bThreads, trigger, useFeedback } = bProgram()
+    bThreads.set({addHot})
+    useFeedback({
       hot() {
         actual.push('hot')
       },
@@ -20,13 +21,13 @@ describe('interrupt', () => {
     trigger({ type: 'add' })
     trigger({ type: 'add' })
     expect(actual).toEqual(['hot', 'hot', 'hot'])
-    expect(rules.has('addHot')).toBe(true)
+    expect(bThreads.has('addHot')).toEqual({running: false, pending: true})
   })
   it('should interrupt', () => {
     const actual: string[] = []
-    const { rules, trigger, feedback } = bProgram()
-    rules.set({addHot})
-    feedback({
+    const { bThreads, trigger, useFeedback } = bProgram()
+    bThreads.set({addHot})
+    useFeedback({
       hot() {
         actual.push('hot')
       },
@@ -36,6 +37,6 @@ describe('interrupt', () => {
     trigger({ type: 'terminate' })
     trigger({ type: 'add' })
     expect(actual).toEqual(['hot', 'hot'])
-    expect(rules.has('addHot')).toBe(false)
+    expect(bThreads.has('addHot')).toEqual({running: false, pending: false})
   })
 })

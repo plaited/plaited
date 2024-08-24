@@ -2,25 +2,27 @@ import { isTypeOf } from '@plaited/utils'
 import type {
   CandidateBid,
   SnapshotMessage,
-  Feedback,
+  UseFeedback,
   BPListener,
   PendingBid,
   RunningBid,
   BPEvent,
   Trigger,
   BPEventTemplate,
-  Rules,
   BProgram,
-  Snapshot
+  BThreads,
+  UseSnapshot,
 } from './types.js'
 import { triggerWaitFor, isListeningFor, isPendingRequest, createPublisher, ensureArray } from './private-utils.js'
 import { snapshotFormatter } from './snapshot-formatter.js'
+
 /**
  * Creates a behavioral program that manages the execution of behavioral threads.
  */
 export const bProgram: BProgram = () => {
   const pending = new Map<string, PendingBid>()
   const running = new Map<string, RunningBid>()
+
   const actionPublisher = createPublisher<BPEvent>()
   let snapshotPublisher: {
     (value: SnapshotMessage): void;
@@ -81,7 +83,6 @@ export const bProgram: BProgram = () => {
   function nextStep(selectedEvent: CandidateBid) {
     for (const [thread, bid] of pending) {
       const { waitFor, request, generator, interrupt } = bid
-      if (!generator) continue
       const isInterrupted = ensureArray(interrupt).some(isListeningFor(selectedEvent))
       const isWaitedFor = ensureArray(waitFor).some(isListeningFor(selectedEvent))
       const hasPendingRequest = request && isPendingRequest(selectedEvent, request)
@@ -112,16 +113,17 @@ export const bProgram: BProgram = () => {
     run()
   }
 
-  const feedback: Feedback = (actions) => {
-    actionPublisher.subscribe((data: BPEvent) => {
+  const useFeedback: UseFeedback = (actions) => {
+   const disconnect = actionPublisher.subscribe((data: BPEvent) => {
       const { type, detail = {} } = data
       if (Object.hasOwn(actions, type)) {
         void actions[type](detail)
       }
     })
+    return disconnect
   }
 
-  const rules: Rules = {
+  const bThreads: BThreads = {
     set: (threads) => {
       for (const thread in threads) {
         running.set(thread, {
@@ -130,22 +132,22 @@ export const bProgram: BProgram = () => {
         })
       }
     },
-    has: (thread) => running.has(thread) || pending.has(thread),
+    has: (thread) => ({running: running.has(thread), pending: pending.has(thread)}),
   }
 
-  const snapshot: Snapshot = listener => {
+  const useSnapshot: UseSnapshot = listener => {
     if(snapshotPublisher === undefined) (snapshotPublisher = createPublisher<SnapshotMessage>())
     return snapshotPublisher.subscribe(listener)
   }
 
   return Object.freeze({
-    /** add and delete rules functions of behavioral program */
-    rules,
-    /** connect action function to behavioral program */
-    feedback,
+    /** add threads functions to behavioral program and verify if there still active */
+    bThreads,
     /** trigger a run and event on behavioral program */
     trigger,
+    /** connect action function to behavioral program */
+    useFeedback,
     /** connect a listener that receives state snapshots for each step of a running behavioral program */
-    snapshot,
+    useSnapshot,
   })
 }

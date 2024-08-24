@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import type { RulesFunction } from '../types.js'
 import { bProgram } from '../b-program.js'
-import { loop, sync, thread } from '../rules-function.js'
+import { sync, point } from '../sync.js'
 
 const winConditions = [
   //rows
@@ -24,10 +24,10 @@ type Square = { square: number }
 
 test('taking a square', () => {
   // We create a new bProgram
-  const { feedback, trigger } = bProgram()
+  const { useFeedback, trigger } = bProgram()
   // We create a new board for the game
   board = new Set(squares)
-  feedback({
+  useFeedback({
     // When BPEvent X happens we delete the square provided in the event's detail
     X({ square }: Square) {
       board.delete(square)
@@ -47,17 +47,17 @@ test('taking a square', () => {
   expect(board.has(0)).toBe(false)
 })
 
-const enforceTurns = loop(sync<Square>({ waitFor: 'X', block: 'O' }), sync<Square>({ waitFor: 'O', block: 'X' }))
+const enforceTurns = sync([point({ waitFor: 'X', block: 'O' }), point({ waitFor: 'O', block: 'X' })], true)
 
 test('take turns', () => {
   // We create a new bProgram
-  const { feedback, trigger, rules } = bProgram()
+  const { useFeedback, trigger, bThreads } = bProgram()
   // We create a new board for the game
   board = new Set(squares)
-  rules.set({
+  bThreads.set({
     enforceTurns,
   })
-  feedback({
+  useFeedback({
     // When BPEvent X happens we delete the square provided in the event's detail
     X({ square }: Square) {
       board.delete(square)
@@ -83,26 +83,22 @@ test('take turns', () => {
 
 const squaresTaken: Record<string, RulesFunction> = {}
 for (const square of squares) {
-  squaresTaken[`(${square}) taken`] = thread(
-    sync<Square>({
-      waitFor: ({ detail }) => square === detail.square,
-    }),
-    sync<Square>({
-      block: ({ detail }) => square === detail.square,
-    }),
-  )
+  squaresTaken[`(${square}) taken`] = sync([
+    point({ waitFor: ({ detail }) => square === detail.square }),
+    point({ block: ({ detail }) => square === detail.square }),
+  ])
 }
 
 test('squares taken', () => {
   // We create a new bProgram
-  const { feedback, trigger, rules } = bProgram()
+  const { useFeedback, trigger, bThreads } = bProgram()
   // We create a new board for the game
   board = new Set(squares)
-  rules.set({
+  bThreads.set({
     enforceTurns,
     ...squaresTaken,
   })
-  feedback({
+  useFeedback({
     // When BPEvent X happens we delete the square provided in the event's detail
     X({ square }: Square) {
       board.delete(square)
@@ -133,36 +129,36 @@ test('squares taken', () => {
 type Winner = { player: 'X' | 'O'; squares: number[] }
 const detectWins = (player: 'X' | 'O') =>
   winConditions.reduce((acc: Record<string, RulesFunction>, squares) => {
-    acc[`${player}Wins (${squares})`] = thread(
-      sync<{ square: number }>({
+    acc[`${player}Wins (${squares})`] = sync([
+      point<{ square: number }>({
         waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
       }),
-      sync<{ square: number }>({
+      point<{ square: number }>({
         waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
       }),
-      sync<{ square: number }>({
+      point<{ square: number }>({
         waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
       }),
-      sync<Winner>({
+      point<Winner>({
         request: { type: 'win', detail: { squares, player } },
       }),
-    )
+    ])
     return acc
   }, {})
 
 test('detect winner', () => {
   // We create a new bProgram
-  const { feedback, trigger, rules } = bProgram()
+  const { useFeedback, trigger, bThreads } = bProgram()
   // We create a new board for the game
   board = new Set(squares)
-  rules.set({
+  bThreads.set({
     enforceTurns,
     ...squaresTaken,
     ...detectWins('X'),
     ...detectWins('O'),
   })
   let winner: Winner
-  feedback({
+  useFeedback({
     // When BPEvent `X` happens we delete the square provided in the event's detail
     X({ square }: { square: number }) {
       board.delete(square)
@@ -185,14 +181,17 @@ test('detect winner', () => {
   expect(winner).toEqual({ player: 'X', squares: [0, 1, 2] })
 })
 
-const stopGame = thread(sync({ waitFor: 'win' }), sync({ block: ['X', 'O'] }))
+const stopGame = sync([
+  point({ waitFor: 'win' }),
+  point({ block: ['X', 'O'] })
+], true)
 
 test('stop game', () => {
   // We create a new bProgram
-  const { feedback, trigger, rules } = bProgram()
+  const { useFeedback, trigger, bThreads } = bProgram()
   // We create a new board for the game
   board = new Set(squares)
-  rules.set({
+  bThreads.set({
     enforceTurns,
     ...squaresTaken,
     ...detectWins('X'),
@@ -200,7 +199,7 @@ test('stop game', () => {
     stopGame,
   })
   let winner: Winner
-  feedback({
+  useFeedback({
     // When BPEvent `X` happens we delete the square provided in the event's detail
     X({ square }: { square: number }) {
       board.delete(square)
@@ -228,22 +227,22 @@ test('stop game', () => {
 
 const defaultMoves: Record<string, RulesFunction> = {}
 for (const square of squares) {
-  defaultMoves[`defaultMoves(${square})`] = loop(
-    sync<Square>({
+  defaultMoves[`defaultMoves(${square})`] = sync([
+    point<Square>({
       request: {
         type: 'O',
         detail: { square },
       },
     }),
-  )
+  ], true)
 }
 
 test('defaultMoves', () => {
   // We create a new bProgram
-  const { feedback, trigger, rules } = bProgram()
+  const { useFeedback, trigger, bThreads } = bProgram()
   // We create a new board for the game
   board = new Set(squares)
-  rules.set({
+  bThreads.set({
     enforceTurns,
     ...squaresTaken,
     ...detectWins('X'),
@@ -252,7 +251,7 @@ test('defaultMoves', () => {
     ...defaultMoves,
   })
 
-  feedback({
+  useFeedback({
     // When BPEvent `X` happens we delete the square provided in the event's detail
     X({ square }: { square: number }) {
       board.delete(square)
@@ -266,7 +265,7 @@ test('defaultMoves', () => {
   expect(board.has(1)).toBe(false)
 })
 
-const startAtCenter = sync({
+const startAtCenter = point({
   request: {
     type: 'O',
     detail: { square: 4 },
@@ -275,10 +274,10 @@ const startAtCenter = sync({
 
 test('start at center', () => {
   // We create a new bProgram
-  const { feedback, trigger, rules } = bProgram()
+  const { useFeedback, trigger, bThreads } = bProgram()
   // We create a new board for the game
   board = new Set(squares)
-  rules.set({
+  bThreads.set({
     enforceTurns,
     ...squaresTaken,
     ...detectWins('X'),
@@ -288,7 +287,7 @@ test('start at center', () => {
     ...defaultMoves,
   })
 
-  feedback({
+  useFeedback({
     // When BPEvent `X` happens we delete the square provided in the event's detail
     X({ square }: { square: number }) {
       board.delete(square)
@@ -302,29 +301,29 @@ test('start at center', () => {
   expect(board.has(4)).toBe(false)
 })
 const preventCompletionOfLineWithTwoXs = (board: Set<number>) => {
-  const threads: Record<string, RulesFunction> = {}
+  const bThreads: Record<string, RulesFunction> = {}
   for (const win of winConditions) {
-    threads[`StopXWin(${win})`] = thread(
-      sync<Square>({
+    bThreads[`StopXWin(${win})`] = sync([
+      point<Square>({
         waitFor: ({ type, detail }) => type === 'X' && win.includes(detail.square),
       }),
-      sync<Square>({
+      point<Square>({
         waitFor: ({ type, detail }) => type === 'X' && win.includes(detail.square),
       }),
-      sync<Square>({
+      point<Square>({
         request: () => ({ type: 'O', detail: { square: win.find((num) => board.has(num)) as number } }),
       }),
-    )
+    ])
   }
-  return threads
+  return bThreads
 }
 
 test('prevent completion of line with two Xs', () => {
   // We create a new bProgram
-  const { feedback, trigger, rules } = bProgram()
+  const { useFeedback, trigger, bThreads } = bProgram()
   // We create a new board for the game
   board = new Set(squares)
-  rules.set({
+  bThreads.set({
     enforceTurns,
     ...squaresTaken,
     ...detectWins('X'),
@@ -335,7 +334,7 @@ test('prevent completion of line with two Xs', () => {
     ...defaultMoves,
   })
   let winner: Winner
-  feedback({
+  useFeedback({
     // When BPEvent `X` happens we delete the square provided in the event's detail
     X({ square }: { square: number }) {
       board.delete(square)

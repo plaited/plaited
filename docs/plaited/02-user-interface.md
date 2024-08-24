@@ -64,8 +64,8 @@ export const BoardMarker: FunctionTemplate = () => (
       <button
         className={cls.square}
         value={n}
-        bp-trigger={{ click: 'click' }}
-        bp-target={`${n}`}
+        p-trigger={{ click: 'click' }}
+        p-target={`${n}`}
       ></button>
     ))}
   </div>    
