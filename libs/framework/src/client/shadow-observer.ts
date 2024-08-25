@@ -35,7 +35,7 @@ const createDelegatedListener = (el: Element, trigger: Trigger) => {
 /** add delegated event listeners  for elements in list */
 export const addListeners = (elements: Element[], trigger: Trigger) => {
   for (const el of elements) {
-    if (el.tagName === 'SLOT' && el.hasAttribute('slot')) continue // skip nested slots
+    if (el.tagName === 'SLOT' && Boolean(el.assignedSlot)) continue // skip nested slots
     !delegates.has(el) && createDelegatedListener(el, trigger) // bind a callback for element if we haven't already
     for (const [event] of getTriggerMap(el)) {
       // add event listeners for each event type

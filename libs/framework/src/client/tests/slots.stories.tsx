@@ -14,21 +14,35 @@ const defaultSlot = sinon.spy()
 const passThroughSlot = sinon.spy()
 const namedSlot = sinon.spy()
 const nestedSlot = sinon.spy()
+const nestedInShadowSlot = sinon.spy()
 
-const Nested = defineTemplate({
-  tag: 'nested-slot',
-  shadowDom: <slot p-trigger={{ click: 'nested' }}></slot>,
+const Inner = defineTemplate({
+  tag: 'inner-slot',
+  shadowDom: (
+    <>
+      <slot p-trigger={{ click: 'nested' }}></slot>
+      <slot
+        p-trigger={{ click: 'nestedInShadow' }}
+        name='shadow'
+      ></slot>
+    </>
+  ),
   connectedCallback() {
     return {
-      nested() {
+      nested(e: Event) {
+        e.stopPropagation()
         nestedSlot()
+      },
+      nestedInShadow(e: Event) {
+        e.stopPropagation()
+        nestedInShadowSlot()
       },
     }
   },
 })
 
-const Fixture = defineTemplate({
-  tag: 'slot-test',
+const Outer = defineTemplate({
+  tag: 'outer-slot',
   shadowDom: (
     <div>
       <slot p-trigger={{ click: 'slot' }}></slot>
@@ -36,12 +50,10 @@ const Fixture = defineTemplate({
         name='named'
         p-trigger={{ click: 'named' }}
       ></slot>
-      <Nested>
-        <slot
-          name='nested'
-          p-trigger={{ click: 'nested' }}
-        ></slot>
-      </Nested>
+      <Inner p-trigger={{ click: 'passThrough' }}>
+        <slot name='nested'></slot>
+        <button slot='shadow'>Shadow</button>
+      </Inner>
     </div>
   ),
   connectedCallback: () => ({
@@ -51,7 +63,7 @@ const Fixture = defineTemplate({
     named() {
       namedSlot()
     },
-    nested() {
+    passThrough() {
       passThroughSlot()
     },
   }),
@@ -59,41 +71,55 @@ const Fixture = defineTemplate({
 
 export const slots: StoryObj = {
   render: () => (
-    <Fixture>
+    <Outer>
       <button>Slot</button>
       <button slot='named'>Named</button>
       <button slot='nested'>Nested</button>
-    </Fixture>
+    </Outer>
   ),
   play: async () => {
     let button = await findByText('Slot')
     button && (await fireEvent(button, 'click'))
     assert({
-      given: `default slot click of element in event's composed path`,
-      should: 'trigger feedback action',
+      given: `button in default slot`,
+      should: 'trigger Outer feedback action',
       actual: defaultSlot.called,
       expected: true,
     })
     button = await findByText('Named')
     button && (await fireEvent(button, 'click'))
     assert({
-      given: `named slot click of element in event's composed path`,
-      should: 'trigger feedback action',
+      given: `button in named slot`,
+      should: 'trigger Outer feedback action',
       actual: namedSlot.called,
       expected: true,
     })
     button = await findByText('Nested')
     button && (await fireEvent(button, 'click'))
     assert({
-      given: `nested slot click of element in event's composed path`,
-      should: 'not trigger feedback action',
+      given: `click nested & slotted button in Outer light dom`,
+      should: 'not trigger Outer feedback action',
       actual: passThroughSlot.called,
       expected: false,
     })
     assert({
-      given: `nested slot click of element in event's composed path`,
-      should: 'not trigger feedback action',
+      given: `click nested & slotted button in Outer light dom`,
+      should: 'trigger Outer feedback action',
       actual: nestedSlot.called,
+      expected: true,
+    })
+    button = await findByText('Shadow')
+    button && (await fireEvent(button, 'click'))
+    assert({
+      given: `click slotted button in Outer shadow dom`,
+      should: 'not trigger Outer feedback action',
+      actual: passThroughSlot.called,
+      expected: false,
+    })
+    assert({
+      given: `click slotted button in Outer shadow dom`,
+      should: 'trigger Inner feedback action',
+      actual: nestedInShadowSlot.called,
       expected: true,
     })
   },
