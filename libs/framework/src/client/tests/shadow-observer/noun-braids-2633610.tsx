@@ -1,4 +1,6 @@
-export const SVG = () => (
+import { Attrs } from 'plaited'
+
+export const SVG = (props: Attrs) => (
   <svg
     width='125'
     height='125'
@@ -7,6 +9,7 @@ export const SVG = () => (
     className={'svg'}
     p-trigger={{ click: 'removeSvg' }}
     p-target='svg'
+    {...props}
   >
     <defs>
       <symbol

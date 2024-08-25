@@ -1,7 +1,7 @@
 /* eslint-disable no-constant-binary-expression */
 import { test, expect } from 'bun:test'
 import { h, Fragment } from '../../jsx/create-template.js'
-import { css, createStyles, assignStyles, FT, TemplateObject } from '../../index.js'
+import { css, FT, TemplateObject } from '../../index.js'
 import { useSSR } from '../use-ssr.js'
 import beautify from 'beautify'
 
@@ -185,7 +185,7 @@ test('Fragment', () => {
   ).toMatchSnapshot()
 })
 
-const styles = createStyles({
+const styles = css.create({
   nestedLabel: {
     fontWeight: 'bold',
   },
@@ -287,27 +287,22 @@ test('createTemplate: CustomElement with declarative shadow dom and nested decla
   expect({ content: render(el), stylesheets: el.stylesheets }).toMatchSnapshot()
 })
 
-const sheet1 = css`
-  .a {
-    width: 100%;
-  }
-`
-const sheet2 = css`
-  .a {
-    width: 100%;
-  }
-`
-
-const sheet3 = css`
-  .a {
-    color: blue;
-  }
-`
+const hoistStyles = css.create({
+  var1: {
+    width: '100%',
+  },
+  var2: {
+    width: '100%',
+  },
+  var3: {
+    color: 'blue',
+  },
+})
 
 test('ssr: Properly hoist and deduplicates multiple stylesheets on a single node', () => {
   expect(
     h('div', {
-      ...assignStyles(sheet1, sheet2, sheet3),
+      ...css.assign(hoistStyles.var1, hoistStyles.var2, hoistStyles.var3),
     }).stylesheets.size,
   ).toBe(2)
 })

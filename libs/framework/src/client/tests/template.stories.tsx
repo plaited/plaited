@@ -1,6 +1,6 @@
 import { assert, findByAttribute, findByText } from '@plaited/storybook-rite'
 import { Meta, StoryObj } from '@plaited/storybook'
-import { PlaitedElement, createStyles } from '../../index.js'
+import { PlaitedElement, css } from '../../index.js'
 import { defineTemplate } from '../define-template.js'
 import { createTemplate } from '../../jsx/create-template.js'
 const meta: Meta = {
@@ -84,7 +84,7 @@ export const closedMode: StoryObj = {
 
 export const hydration: StoryObj = {
   play: async ({ canvasElement }) => {
-    const styles = createStyles({
+    const styles = css.create({
       inner: {
         color: 'red',
       },

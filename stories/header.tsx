@@ -1,45 +1,41 @@
 import { defineTemplate, css, useQuery } from 'plaited'
 import { Button } from './button.js'
 
-const stylesheet = css`
-  .storybook-header {
-    font-family: 'Nunito Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    padding: 15px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .storybook-header svg {
-    display: inline-block;
-    vertical-align: top;
-  }
-
-  .storybook-header h1 {
-    font-weight: 700;
-    font-size: 20px;
-    line-height: 1;
-    margin: 6px 0 6px 10px;
-    display: inline-block;
-    vertical-align: top;
-  }
-
-  .storybook-header button + button {
-    margin-left: 10px;
-  }
-
-  .storybook-header .welcome {
-    color: #333;
-    font-size: 14px;
-    margin-right: 10px;
-  }
-`
+const styles = css.create({
+  storybookHeader: {
+    fontFamily: "'Nunito Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif",
+    borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
+    padding: '15px 20px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  storybookHeaderSvg: {
+    display: 'inline-block',
+    verticalAlign: 'top',
+  },
+  storybookHeaderH1: {
+    fontWeight: 700,
+    fontSize: '20px',
+    lineHeight: 1,
+    margin: '6px 0 6px 10px',
+    display: 'inline-block',
+    verticalAlign: 'top',
+  },
+  storybookHeaderButtonPlusButton: {
+    marginLeft: '10px',
+  },
+  storybookHeaderWelcome: {
+    color: '#333',
+    fontSize: '14px',
+    marginRight: '10px',
+  },
+})
 
 export const Header = defineTemplate({
   tag: 'header-el',
   shadowDom: (
-    <header {...stylesheet}>
+    <header {...styles.storybookHeader}>
       <div className='storybook-header'>
         <div>
           <svg
@@ -47,6 +43,7 @@ export const Header = defineTemplate({
             height='32'
             viewBox='0 0 32 32'
             xmlns='http://www.w3.org/2000/svg'
+            {...styles.storybookHeaderSvg}
           >
             <g
               fill='none'
@@ -66,7 +63,7 @@ export const Header = defineTemplate({
               />
             </g>
           </svg>
-          <h1>Acme</h1>
+          <h1 {...styles.storybookHeaderH1}>Acme</h1>
         </div>
         <div
           p-target='button-bar'
@@ -82,6 +79,7 @@ export const Header = defineTemplate({
             size='small'
             value='onCreateAccount'
             label='Sign up'
+            {...styles.storybookHeaderButtonPlusButton}
           />
         </div>
       </div>
@@ -96,7 +94,7 @@ export const Header = defineTemplate({
       newValue ?
         bar.render(
           <>
-            <span className='welcome'>
+            <span {...styles.storybookHeaderWelcome}>
               Welcome, <b>{newValue}</b>!
             </span>
             <Button
@@ -118,6 +116,7 @@ export const Header = defineTemplate({
               size='small'
               value='onCreateAccount'
               label='Sign up'
+              {...styles.storybookHeaderButtonPlusButton}
             />
           </>,
         )

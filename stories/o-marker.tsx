@@ -1,6 +1,6 @@
-import { FunctionTemplate, createStyles } from 'plaited'
+import { FunctionTemplate, css } from 'plaited'
 
-const styles = createStyles({
+const styles = css.create({
   o: {
     width: '20px',
     height: '20px',

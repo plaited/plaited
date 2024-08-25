@@ -1,6 +1,6 @@
-import { FT, createStyles, assignStyles } from 'plaited'
+import { FT, css } from 'plaited'
 
-const styles = createStyles({
+const styles = css.create({
   button: {
     fontFamily: 'Nunito Sans, Helvetica Neue, Helvetica, Arial, sans-serif',
     fontWeight: 700,
@@ -42,7 +42,7 @@ export const Button: FT<{
   <button
     {...rest}
     type='button'
-    {...assignStyles(styles.button, styles[size], primary ? styles.primary : styles.secondary)}
+    {...css.assign(styles.button, styles[size], primary ? styles.primary : styles.secondary)}
     value={value}
     style={backgroundColor ? { backgroundColor } : undefined}
   >

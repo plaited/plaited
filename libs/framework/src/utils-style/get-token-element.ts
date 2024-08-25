@@ -1,6 +1,5 @@
 import { defineTemplate } from '../client/define-template.js'
-import { css } from '../css/css.js'
-import { assignStyles } from '../css/assign-styles.js'
+import { css } from '../client/css.js'
 import { h } from '../jsx/create-template.js'
 import type { CustomElementTag } from '../jsx/types.js'
 
@@ -8,12 +7,10 @@ export const getTokenElement = (stylesheet: string, tag: CustomElementTag = 'des
   return defineTemplate({
     tag,
     shadowDom: h('slot', {
-      stylesheet: assignStyles(
-        css`
-          :host {
-            display: contents;
-          }
-        `,
+      stylesheet: css.assign(
+        css.host({
+          display: 'contents',
+        }),
         { stylesheet },
       ).stylesheet,
     }),

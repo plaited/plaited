@@ -1,6 +1,6 @@
-import { FunctionTemplate, createStyles } from 'plaited'
+import { FunctionTemplate, css } from 'plaited'
 
-const styles = createStyles({
+const styles = css.create({
   board: {
     display: 'inline-grid',
     gridTemplateColumns: 'repeat(3, 1fr)',

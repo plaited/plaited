@@ -1,7 +1,7 @@
 import { assert, wait, findByText, findByAttribute } from '@plaited/storybook-rite'
 import { Meta, StoryObj } from '@plaited/storybook'
 import { defineTemplate } from '../define-template.js'
-import { PlaitedElement, createStyles } from '../../index.js'
+import { PlaitedElement, css } from '../../index.js'
 
 const meta: Meta = {
   title: 'Tests',
@@ -10,7 +10,7 @@ const meta: Meta = {
 
 export default meta
 
-const { noRepeat, repeat, initial } = createStyles({
+const { noRepeat, repeat, initial } = css.create({
   initial: {
     border: '1px solid black',
   },

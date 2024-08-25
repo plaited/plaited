@@ -95,7 +95,7 @@ exports[`createTemplate: CustomElement hoisting its styles 1`] = `
 {
   "content": 
 "<nested-component>
-    <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+    <template shadowrootmode="open" shadowrootdelegatesfocus>
         <style>
             .p_ju9u1n{font-weight:bold;}
         </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
@@ -112,7 +112,7 @@ exports[`createTemplate: CustomElement with declarative shadow dom & host styles
 {
   "content": 
 "<nested-component class="nestedComponent_ey8y76 p1rlu8mi p_8mez4t">
-    <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+    <template shadowrootmode="open" shadowrootdelegatesfocus>
         <style>
             .p_ju9u1n{font-weight:bold;}
         </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
@@ -134,7 +134,7 @@ exports[`createTemplate: CustomElement with styled slotted component 1`] = `
 {
   "content": 
 "<nested-component class="nestedComponent_ey8y76 p1rlu8mi p_8mez4t">
-    <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+    <template shadowrootmode="open" shadowrootdelegatesfocus>
         <style>
             .p_ju9u1n{font-weight:bold;}
         </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
@@ -158,12 +158,12 @@ exports[`createTemplate: CustomElement with declarative shadow dom and nested de
 {
   "content": 
 "<top-component>
-    <template shadowrootdelegatesfocus="true" shadowrootmode="open">
+    <template shadowrootdelegatesfocus shadowrootmode="open">
         <style>
             .p91m869{color:rebeccapurple;}
         </style>
         <nested-component>
-            <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+            <template shadowrootmode="open" shadowrootdelegatesfocus>
                 <style>
                     .p_ju9u1n{font-weight:bold;}
                 </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
@@ -183,12 +183,12 @@ exports[`createTemplate: CustomElement with declarative shadow dom and nested de
 {
   "content": 
 "<top-component class="topComponent_46img7 p131mv1i">
-    <template shadowrootdelegatesfocus="true" shadowrootmode="open">
+    <template shadowrootdelegatesfocus shadowrootmode="open">
         <style>
             .p91m869{color:rebeccapurple;}
         </style>
         <nested-component>
-            <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+            <template shadowrootmode="open" shadowrootdelegatesfocus>
                 <style>
                     .p_ju9u1n{font-weight:bold;}
                 </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
@@ -212,12 +212,12 @@ exports[`createTemplate: CustomElement with declarative shadow dom and nested de
 {
   "content": 
 "<top-component class="topComponent_46img7 p131mv1i">
-    <template shadowrootdelegatesfocus="true" shadowrootmode="open">
+    <template shadowrootdelegatesfocus shadowrootmode="open">
         <style>
             .p91m869{color:rebeccapurple;}
         </style>
         <nested-component>
-            <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+            <template shadowrootmode="open" shadowrootdelegatesfocus>
                 <style>
                     .p_ju9u1n{font-weight:bold;}
                 </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
