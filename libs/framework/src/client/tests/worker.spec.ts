@@ -4,15 +4,18 @@ import sinon from 'sinon'
 import { useWorker } from '../use-worker.js'
 import { BPEvent } from '../../behavioral/types.js'
 
-test('utils-worker', async () => {
-  const spy = sinon.spy()
+test('userWorker|defineWorker: exports id', async () => {
+  const { default: calculator } = await import(`${import.meta.dir}/worker.ts`)
+  expect(calculator.id).toBe('calculator')
+})
 
+test('userWorker|defineWorker: send and receive', async () => {
+  const spy = sinon.spy()
   const host = {
     trigger: (evt: BPEvent) => spy(evt),
   }
-
-  const [send, updateWorker] = useWorker(host)
-  updateWorker(`${import.meta.dir}/worker.ts`)
+  const [send, connectWorker] = useWorker(host)
+  connectWorker(`${import.meta.dir}/worker.registry.ts`)
   send({
     type: 'calculate',
     detail: { a: 9, b: 10, operation: 'multiply' },

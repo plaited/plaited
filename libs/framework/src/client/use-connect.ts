@@ -12,12 +12,12 @@ export const useConnect = ({
   host,
   disconnectSet,
   trigger,
-  setUpdateWorker,
+  workers,
 }: {
   host: PlaitedElement
   disconnectSet: Set<Disconnect>
   trigger: Trigger
-  setUpdateWorker: (updateWorker: (newValue: string | null) => void) => void
+  workers?: string
 }) => {
   function connect(target: typeof WORKER): PostToWorker
   function connect(target: typeof SOCKET): SendToSocket
@@ -27,9 +27,10 @@ export const useConnect = ({
   function connect(target: typeof WORKER | typeof SOCKET | Publisher<any>, type?: string) {
     if (target === WORKER) {
       const path = host.getAttribute(P_WORKER)
-      const [send, updateWorker] = useWorker(host)
-      setUpdateWorker(updateWorker)
-      updateWorker(path)
+      const [send, connectWorker] = useWorker(host)
+      if (path && workers && self?.location?.origin) {
+        connectWorker(`${self?.location?.origin}/${workers}/${path}`)
+      }
       disconnectSet.add(send.disconnect)
       return send
     }

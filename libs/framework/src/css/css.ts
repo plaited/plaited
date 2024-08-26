@@ -8,6 +8,7 @@ import type {
   AssignStylesObject,
 } from './types.js'
 import { hashString, kebabCase } from '@plaited/utils'
+
 const createClassHash = (...args: (string | number)[]) =>
   hashString(args.join(' '))?.toString(36).replace(/^-/g, '_') ?? ''
 

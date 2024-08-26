@@ -1,14 +1,7 @@
 import type { Attrs, CreateTemplate, TemplateObject } from './types.js'
 import { isTypeOf, kebabCase, escape } from '@plaited/utils'
-import {
-  PLAITED_TEMPLATE_IDENTIFIER,
-  BOOLEAN_ATTRS,
-  PRIMITIVES,
-  VOID_TAGS,
-  VALID_PRIMITIVE_CHILDREN,
-  P_TRIGGER,
-} from './constants.js'
-
+import { BOOLEAN_ATTRS, PRIMITIVES, VOID_TAGS, VALID_PRIMITIVE_CHILDREN, P_TRIGGER } from './constants.js'
+import { PLAITED_TEMPLATE_OBJECT_IDENTIFIER } from '../shared/constants.js'
 /** createTemplate function used for ssr */
 export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const {
@@ -21,7 +14,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     htmlFor,
     ...attributes
   } = attrs
-  const registry = new Set<string>()
+  const registry: string[] = []
   if (typeof _tag === 'function') {
     return _tag(attrs)
   }
@@ -78,10 +71,8 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     start.push(`${key}="${trusted ? `${formattedValue}" ` : escape(`${formattedValue}`)}" `)
   }
   /** Create are stylesheet set */
-  const stylesheets =
-    stylesheet ?
-      new Set<string>(Array.isArray(stylesheet) ? (stylesheet.filter(Boolean) as string[]) : [stylesheet])
-    : new Set<string>()
+  let stylesheets =
+    stylesheet ? [...(Array.isArray(stylesheet) ? (stylesheet.filter(Boolean) as string[]) : [stylesheet])] : []
 
   /** Our tag is a void tag so we can return it once we apply attributes */
   if (VOID_TAGS.has(tag)) {
@@ -90,7 +81,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       html: start,
       stylesheets,
       registry,
-      $: PLAITED_TEMPLATE_IDENTIFIER,
+      $: PLAITED_TEMPLATE_OBJECT_IDENTIFIER,
     }
   }
   start.push('>')
@@ -102,10 +93,10 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   for (let i = 0; i < length; i++) {
     const child = children[i]
     /** P1 child IS {@type Template}*/
-    if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === PLAITED_TEMPLATE_IDENTIFIER) {
+    if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === PLAITED_TEMPLATE_OBJECT_IDENTIFIER) {
       end.push(...child.html)
-      for (const sheet of child.stylesheets) stylesheets.add(sheet)
-      for (const component of child.registry) registry.add(component)
+      stylesheets.push(...child.stylesheets)
+      registry.push(...child.registry)
       continue
     }
     /** P2 typeof child is NOT a valid primitive child then skip and do nothing */
@@ -122,16 +113,16 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
      * stylesheet as the first child of the declarative
      * shadowDom template array  and clear the stylesheets set
      */
-    if (stylesheets.size) {
-      start.push(`<style>${Array.from(stylesheets).join('')}</style>`)
-      stylesheets.clear()
+    if (stylesheets.length) {
+      start.push(`<style>${Array.from(new Set(stylesheets)).join('')}</style>`)
+      stylesheets = []
     }
   }
   return {
     html: [...start, ...end],
     stylesheets,
     registry,
-    $: PLAITED_TEMPLATE_IDENTIFIER,
+    $: PLAITED_TEMPLATE_OBJECT_IDENTIFIER,
   }
 }
 
@@ -140,15 +131,15 @@ export { createTemplate as h }
 export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
   const children = Array.isArray(_children) ? _children.flat() : [_children]
   const html: string[] = []
-  const stylesheets = new Set<string>()
-  const registry = new Set<string>()
+  const stylesheets: string[] = []
+  const registry: string[] = []
   const length = children.length
   for (let i = 0; i < length; i++) {
     const child = children[i]
-    if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === PLAITED_TEMPLATE_IDENTIFIER) {
+    if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === PLAITED_TEMPLATE_OBJECT_IDENTIFIER) {
       html.push(...child.html)
-      for (const sheet of child.stylesheets) stylesheets.add(sheet)
-      for (const component of child.registry) registry.add(component)
+      stylesheets.push(...child.stylesheets)
+      registry.push(...child.registry)
     }
     if (!VALID_PRIMITIVE_CHILDREN.has(typeof child)) continue
     const safeChild = escape(`${child}`)
@@ -158,6 +149,6 @@ export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
     html,
     stylesheets,
     registry,
-    $: PLAITED_TEMPLATE_IDENTIFIER,
+    $: PLAITED_TEMPLATE_OBJECT_IDENTIFIER,
   }
 }

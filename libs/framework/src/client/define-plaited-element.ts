@@ -22,9 +22,8 @@ export const definePlaitedElement = ({
   observedAttributes = [],
   connectedCallback,
   disconnectedCallback,
-  attributeChangedCallback,
   ...rest
-}: Omit<DefinePlaitedTemplateArgs, 'mode' | 'delegateFocus' | 'shadowDom'> & { stylesheets: Set<string> }) => {
+}: Omit<DefinePlaitedTemplateArgs, 'mode' | 'delegateFocus' | 'shadowDom'> & { stylesheets: string[] }) => {
   if (canUseDOM() && !customElements.get(tag)) {
     class BaseElement extends HTMLElement implements PlaitedElement {
       static observedAttributes = [...observedAttributes, P_WORKER]
@@ -43,13 +42,8 @@ export const definePlaitedElement = ({
       constructor() {
         super()
         this.internals_ = this.attachInternals()
-        cssCache.set(this.#root, new Set<string>([...stylesheets]))
+        cssCache.set(this.#root, new Set<string>(stylesheets))
         this.#query = useQuery(this.#root)
-      }
-      #updateWorker?: (newValue: string | null) => void
-      attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
-        name === P_WORKER && this.#updateWorker?.(newValue)
-        attributeChangedCallback?.bind(this)(name, oldValue, newValue)
       }
       connectedCallback() {
         isTypeOf<string>(history?.state?.plaited, 'string') && navigationListener(this.#root)
@@ -71,7 +65,7 @@ export const definePlaitedElement = ({
               host: this,
               disconnectSet: this.#disconnectSet,
               trigger,
-              setUpdateWorker: (updateWorker) => (this.#updateWorker = updateWorker),
+              workers: undefined,
             }),
             trigger,
             sync,

@@ -1,5 +1,5 @@
 import type { CSSProperties } from '../css/types.js'
-import { PLAITED_TEMPLATE_IDENTIFIER } from './constants.js'
+import { PLAITED_TEMPLATE_OBJECT_IDENTIFIER } from '../shared/constants.js'
 import { P_TARGET, P_TRIGGER } from './constants.js'
 
 type Booleanish = boolean | 'true' | 'false'
@@ -7,9 +7,9 @@ type CrossOrigin = 'anonymous' | 'use-credentials' | ''
 
 export type TemplateObject = {
   html: string[]
-  stylesheets: Set<string>
-  registry: Set<string>
-  $: typeof PLAITED_TEMPLATE_IDENTIFIER
+  stylesheets: string[]
+  registry: string[]
+  $: typeof PLAITED_TEMPLATE_OBJECT_IDENTIFIER
 }
 
 export type Child = string | TemplateObject

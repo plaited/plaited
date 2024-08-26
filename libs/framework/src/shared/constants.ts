@@ -1,2 +1,5 @@
-export const PLAITED_COMPONENT_IDENTIFIER = '🐻' as const
+export const PLAITED_TEMPLATE_IDENTIFIER = Symbol('PLAITED TEMPLATE')
+export const PLAITED_TEMPLATE_OBJECT_IDENTIFIER = Symbol('PLAITED TEMPLATE OBJECT')
+export const PLAITED_WORKER_IDENTIFIER = Symbol('PLAITED WORKER')
+export const PLAITED_SOCKET_IDENTIFIER = Symbol('PLAITED SOCKET')
 export const NAVIGATE_EVENT_TYPE = 'plaited:navigate' as const

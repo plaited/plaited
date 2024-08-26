@@ -20,7 +20,7 @@ export const useWorker = (host: { trigger: Trigger }): [PostToWorker, (path: str
     isBPEvent(event.data) && host.trigger(event.data)
   }
   let post: PostToWorker = fallback
-  const updateWorker = (path: string | null) => {
+  const connectWorker = (path: string | null) => {
     worker?.removeEventListener('message', handleMessage)
     if (!path) {
       post = fallback
@@ -37,5 +37,5 @@ export const useWorker = (host: { trigger: Trigger }): [PostToWorker, (path: str
   }
   const send: PostToWorker = <T>(args: BPEvent<T>) => post(args)
   send.disconnect = () => post.disconnect()
-  return [send, updateWorker]
+  return [send, connectWorker]
 }

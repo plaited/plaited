@@ -1,4 +1,3 @@
-import type * as CSS from 'csstype'
 import type {
   Trigger,
   Actions,
@@ -9,50 +8,9 @@ import type {
   BPEvent,
 } from '../behavioral/types.js'
 import type { TemplateObject, Attrs, FunctionTemplate, CustomElementTag } from '../jsx/types.js'
-import type { PLAITED_COMPONENT_IDENTIFIER } from '../shared/constants.js'
+import type { PLAITED_TEMPLATE_IDENTIFIER } from '../shared/constants.js'
 import { P_SOCKET } from './constants.js'
 import { Connect } from './use-connect.js'
-
-export type CSSProperties = CSS.Properties<string | number> & {
-  [key: string]: string | number
-}
-
-export type CreateNestedCSS<T extends keyof CSSProperties> = {
-  default?: CSSProperties[T]
-  [key: `@${'container' | 'layer' | 'media' | 'supports'}${string}`]: CSSProperties[T]
-  [key: `:${string}`]: CSSProperties[T] | CreateNestedCSS<T>
-  [key: `[${string}`]: CSSProperties[T] | CreateNestedCSS<T>
-}
-
-export type CreateCSS = {
-  [key: string]: {
-    [key in keyof CSSProperties]: CSSProperties[key] | CreateNestedCSS<key> | string
-  }
-}
-export type CreateHostCSSWithSelector<T extends keyof CSSProperties> = {
-  [key: string]: CSSProperties[T]
-}
-export type CreateHostCSS = {
-  [key in keyof CSSProperties]: CSSProperties[key] | CreateHostCSSWithSelector<key>
-}
-
-export type CreateKeyframeCSS = {
-  from?: { [key in keyof CSSProperties]: CSSProperties[key] }
-  to?: { [key in keyof CSSProperties]: CSSProperties[key] }
-  [key: `${number}%`]: { [key in keyof CSSProperties]: CSSProperties[key] }
-}
-
-export type AssignStylesObject = {
-  className?: string | Array<string | undefined | false | null>
-  stylesheet?: string | Array<string | undefined | false | null>
-}
-
-export type CreateStylesObjects<T extends CreateCSS> = {
-  [key in keyof T]: {
-    className: string
-    stylesheet: string[]
-  }
-}
 
 export type Bindings = {
   render(this: Element, ...template: (TemplateObject | DocumentFragment | Element | string)[]): void
@@ -156,7 +114,7 @@ export type PlaitedTemplate<T extends PlaitedTemplateAttrs = PlaitedTemplateAttr
   tag: CustomElementTag
   observedAttributes: string[]
   publicEvents: string[]
-  $: typeof PLAITED_COMPONENT_IDENTIFIER
+  $: typeof PLAITED_TEMPLATE_IDENTIFIER
 }
 
 export type SendClientMessage = {

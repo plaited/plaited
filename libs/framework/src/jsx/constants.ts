@@ -69,5 +69,3 @@ export const BOOLEAN_ATTRS = new Set([
 export const PRIMITIVES = new Set(['null', 'undefined', 'number', 'string', 'boolean', 'bigint'])
 
 export const VALID_PRIMITIVE_CHILDREN = new Set(['number', 'string', 'bigint'])
-
-export const PLAITED_TEMPLATE_IDENTIFIER = '🦄'

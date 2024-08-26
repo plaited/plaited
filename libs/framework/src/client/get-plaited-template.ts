@@ -1,6 +1,6 @@
 import type { Attrs, TemplateObject, CustomElementTag } from '../jsx/types.js'
 import { createTemplate } from '../jsx/create-template.js'
-import { PLAITED_COMPONENT_IDENTIFIER } from '../shared/constants.js'
+import { PLAITED_TEMPLATE_IDENTIFIER } from '../shared/constants.js'
 import { PlaitedTemplate } from './types.js'
 
 export const getPlaitedTemplate = <T extends Attrs>({
@@ -33,7 +33,7 @@ export const getPlaitedTemplate = <T extends Attrs>({
     })
   ft.registry = registry
   ft.tag = tag
-  ft.$ = PLAITED_COMPONENT_IDENTIFIER
+  ft.$ = PLAITED_TEMPLATE_IDENTIFIER
   ft.publicEvents = publicEvents
   ft.observedAttributes = observedAttributes
   return ft

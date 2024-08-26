@@ -43,7 +43,7 @@ const updateAttributes = (element: Element, attr: string, val: string | null | n
 
 export const handleTemplateObject = (shadowRoot: ShadowRoot, fragment: TemplateObject) => {
   const { html, stylesheets } = fragment
-  stylesheets.size && void updateShadowRootStyles(shadowRoot, stylesheets)
+  stylesheets.length && void updateShadowRootStyles(shadowRoot, new Set(stylesheets))
   const template = document.createElement('template')
   template.setHTMLUnsafe(html.join(''))
   return template.content

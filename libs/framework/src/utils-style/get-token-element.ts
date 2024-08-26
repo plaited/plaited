@@ -1,5 +1,5 @@
 import { defineTemplate } from '../client/define-template.js'
-import { css } from '../client/css.js'
+import { css } from '../css/css.js'
 import { h } from '../jsx/create-template.js'
 import type { CustomElementTag } from '../jsx/types.js'
 
