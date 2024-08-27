@@ -14,8 +14,7 @@ test('userWorker|defineWorker: send and receive', async () => {
   const host = {
     trigger: (evt: BPEvent) => spy(evt),
   }
-  const [send, connectWorker] = useWorker(host)
-  connectWorker(`${import.meta.dir}/worker.registry.ts`)
+  const send = useWorker(host, `${import.meta.dir}/worker.ts`)
   send({
     type: 'calculate',
     detail: { a: 9, b: 10, operation: 'multiply' },

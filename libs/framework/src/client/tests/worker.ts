@@ -16,7 +16,6 @@ const calculator = {
 }
 
 export default defineWorker({
-  id: 'calculator',
   publicEvents: ['calculate'],
   connectedCallback: ({ send }) => {
     return {

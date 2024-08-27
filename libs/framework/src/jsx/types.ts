@@ -1,5 +1,5 @@
 import type { CSSProperties } from '../css/types.js'
-import { PLAITED_TEMPLATE_OBJECT_IDENTIFIER } from '../shared/constants.js'
+import { TEMPLATE_OBJECT_IDENTIFIER } from '../shared/constants.js'
 import { P_TARGET, P_TRIGGER } from './constants.js'
 
 type Booleanish = boolean | 'true' | 'false'
@@ -9,7 +9,7 @@ export type TemplateObject = {
   html: string[]
   stylesheets: string[]
   registry: string[]
-  $: typeof PLAITED_TEMPLATE_OBJECT_IDENTIFIER
+  $: typeof TEMPLATE_OBJECT_IDENTIFIER
 }
 
 export type Child = string | TemplateObject

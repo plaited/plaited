@@ -9,8 +9,10 @@ import type {
 } from '../behavioral/types.js'
 import type { TemplateObject, Attrs, FunctionTemplate, CustomElementTag } from '../jsx/types.js'
 import type { PLAITED_TEMPLATE_IDENTIFIER } from '../shared/constants.js'
-import { P_SOCKET } from './constants.js'
-import { Connect } from './use-connect.js'
+import { P_HANDLER } from './constants.js'
+import type { Publisher } from './use-publisher.js'
+import type { SendToHandler } from './use-handler.js'
+import type { Disconnect } from '../shared/types.js'
 
 export type Bindings = {
   render(this: Element, ...template: (TemplateObject | DocumentFragment | Element | string)[]): void
@@ -69,12 +71,21 @@ export interface PlaitedElementConstructor {
   new (): PlaitedElement
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type SubscribeToPublisher = (target: Publisher<any>, type: string) => Disconnect
+
+export type PostToWorker = {
+  <T>(args: BPEvent<T>): void
+  disconnect(): void
+}
+
 export type ConnectedCallbackArgs = {
   $: QuerySelector
   host: PlaitedElement
   emit: Emit
   clone: Clone
-  connect: Connect
+  subscribe: SubscribeToPublisher
+  send: { handler: SendToHandler; worker: PostToWorker }
   // Behavioral Program
   trigger: Trigger
   bThreads: BThreads
@@ -106,7 +117,7 @@ export type DefinePlaitedTemplateArgs = {
 }
 
 export type PlaitedTemplateAttrs = Attrs & {
-  [P_SOCKET]?: string
+  [P_HANDLER]?: string
 }
 
 export type PlaitedTemplate<T extends PlaitedTemplateAttrs = PlaitedTemplateAttrs> = FunctionTemplate<T> & {
@@ -155,3 +166,5 @@ export type InitPlaitedArgs = {
   viewTransitionCallback?: (transition: ViewTransition) => Promise<void>
   viewTransitionTypes?: string[]
 } & RequestInit
+
+export type NavigateEventDetail = { href: string; clientX: number; clientY: number }

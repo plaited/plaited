@@ -3,8 +3,7 @@ import type { CustomElementTag } from '../jsx/types.js'
 import type { PlaitedElement, SendSocketDetail, PlaitedActionParam } from './types.js'
 import type { SendClientMessage } from './types.js'
 import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
-import { P_SOCKET } from './constants.js'
-import { isTypeOf, noop } from '@plaited/utils'
+import { isTypeOf } from '@plaited/utils'
 
 const subscribers = new Map<string, PlaitedElement>()
 const retryStatusCodes = new Set([1006, 1012, 1013])
@@ -92,23 +91,18 @@ const retry = () => {
 
 export const toAddress = (tag: CustomElementTag, id?: string): string => `${tag}${id ? `#${id}` : ''}`
 
-export type SendToSocket = {
+export type SendToHandler = {
   <T extends SendSocketDetail>(event: BPEvent<T>): void | (<T = never>(..._: T[]) => void)
   disconnect: () => void
 }
 
-export const useSocket = (host: PlaitedElement): SendToSocket => {
+export const useHandler = (host: PlaitedElement, address: string): SendToHandler => {
   const id = toAddress(host.tagName.toLowerCase() as CustomElementTag, host.id)
   subscribers.set(id, host)
   const disconnect = () => {
     subscribers.delete(id)
   }
   const send = <T extends SendSocketDetail>(event: BPEvent<T>) => {
-    const address = host.getAttribute(P_SOCKET)
-    if (!address) {
-      console.error(`Missing directive: ${P_SOCKET}`)
-      return noop
-    }
     const fallback = () => {
       send(event)
       socket?.removeEventListener('open', fallback)

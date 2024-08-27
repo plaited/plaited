@@ -1,7 +1,7 @@
 import type { Attrs, CreateTemplate, TemplateObject } from './types.js'
 import { isTypeOf, kebabCase, escape } from '@plaited/utils'
 import { BOOLEAN_ATTRS, PRIMITIVES, VOID_TAGS, VALID_PRIMITIVE_CHILDREN, P_TRIGGER } from './constants.js'
-import { PLAITED_TEMPLATE_OBJECT_IDENTIFIER } from '../shared/constants.js'
+import { TEMPLATE_OBJECT_IDENTIFIER } from '../shared/constants.js'
 /** createTemplate function used for ssr */
 export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const {
@@ -81,7 +81,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       html: start,
       stylesheets,
       registry,
-      $: PLAITED_TEMPLATE_OBJECT_IDENTIFIER,
+      $: TEMPLATE_OBJECT_IDENTIFIER,
     }
   }
   start.push('>')
@@ -93,7 +93,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   for (let i = 0; i < length; i++) {
     const child = children[i]
     /** P1 child IS {@type Template}*/
-    if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === PLAITED_TEMPLATE_OBJECT_IDENTIFIER) {
+    if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === TEMPLATE_OBJECT_IDENTIFIER) {
       end.push(...child.html)
       stylesheets.push(...child.stylesheets)
       registry.push(...child.registry)
@@ -122,7 +122,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     html: [...start, ...end],
     stylesheets,
     registry,
-    $: PLAITED_TEMPLATE_OBJECT_IDENTIFIER,
+    $: TEMPLATE_OBJECT_IDENTIFIER,
   }
 }
 
@@ -136,7 +136,7 @@ export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
   const length = children.length
   for (let i = 0; i < length; i++) {
     const child = children[i]
-    if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === PLAITED_TEMPLATE_OBJECT_IDENTIFIER) {
+    if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === TEMPLATE_OBJECT_IDENTIFIER) {
       html.push(...child.html)
       stylesheets.push(...child.stylesheets)
       registry.push(...child.registry)
@@ -149,6 +149,6 @@ export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
     html,
     stylesheets,
     registry,
-    $: PLAITED_TEMPLATE_OBJECT_IDENTIFIER,
+    $: TEMPLATE_OBJECT_IDENTIFIER,
   }
 }
