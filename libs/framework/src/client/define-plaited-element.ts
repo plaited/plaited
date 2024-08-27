@@ -73,14 +73,20 @@ export const definePlaitedElement = ({
       }
       connectedCallback() {
         if (connectedCallback) {
+          // create a behavioral program
           const { trigger, useFeedback, ...rest } = bProgram()
           this.#trigger = trigger
-          addListeners(
-            // just connected/upgraded then delegate listeners nodes with p-trigger attribute
-            Array.from(this.#root.querySelectorAll<Element>(`[${P_TRIGGER}]`)),
-            trigger,
-          )
-          this.#shadowObserver = shadowObserver(this.#root, trigger) // create a shadow observer to watch for modification & addition of nodes with p-trigger attribute
+          // Delegate listeners nodes with p-trigger directive on connection or upgrade
+          addListeners(Array.from(this.#root.querySelectorAll<Element>(`[${P_TRIGGER}]`)), trigger)
+          // Create a shadow observer to watch for modification & addition of nodes with p-trigger directive
+          this.#shadowObserver = shadowObserver(this.#root, trigger)
+          // create a handler to send message to server based on p-handler directive
+          const handler: SendToHandler = (event) => this.#sendDirective[P_HANDLER](event)
+          handler.disconnect = () => this.#sendDirective[P_HANDLER].disconnect()
+          // create a handler to send message to web worker based on p-worker directive
+          const worker: PostToWorker = (event) => this.#sendDirective[P_WORKER](event)
+          worker.disconnect = () => this.#sendDirective[P_WORKER].disconnect()
+          // bind connectedCallback to the custom element wih the following arguments
           const actions = connectedCallback.bind(this)({
             $: this.#query,
             host: this,
@@ -91,12 +97,13 @@ export const definePlaitedElement = ({
               this.#disconnectSet.add(disconnect)
               return disconnect
             }) as SubscribeToPublisher,
-            send: { handler: this.#sendDirective[P_HANDLER], worker: this.#sendDirective[P_WORKER] },
+            send: { handler, worker },
             trigger,
             sync,
             point,
             ...rest,
           })
+          // Subscribe feedback actions to behavioral program and add disconnect callback to disconnect set
           this.#disconnectSet.add(useFeedback(actions))
         }
       }
@@ -112,8 +119,9 @@ export const definePlaitedElement = ({
         return fallback as T
       }
       #connectSendDirective(attr: typeof P_HANDLER | typeof P_WORKER, value: string) {
-        if (attr === P_HANDLER) this.#sendDirective[attr] === useHandler(this, value)
-        if (attr === P_WORKER) this.#sendDirective[attr] === useWorker(this, value)
+        const send = attr === P_HANDLER ? useHandler(this, value) : useWorker(this, value)
+        this.#sendDirective[attr] === send
+        this.#disconnectSet.add(send.disconnect)
       }
       trigger(event: BPEvent) {
         if (this.#trigger && publicEvents) onlyPublicEvents(this.#trigger, publicEvents)(event)
