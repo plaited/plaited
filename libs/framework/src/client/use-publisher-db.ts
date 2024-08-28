@@ -38,7 +38,6 @@ export function usePublisherDB<T>(
   (newValue: T): Promise<void>
   sub: SubscribeToPublisher
   get: () => Promise<T | undefined>
-  delete: () => Promise<void>
 }>
 export function usePublisherDB<T>(
   key: string,
@@ -51,7 +50,6 @@ export function usePublisherDB<T>(
   (newValue: T): Promise<void>
   sub: SubscribeToPublisher
   get: () => Promise<T>
-  delete: () => Promise<void>
 }>
 // Async Pub Sub that allows us the get Last Value Cache and subscribe to changes and persist the value in indexedDB
 export async function usePublisherDB<T>(
@@ -71,11 +69,11 @@ export async function usePublisherDB<T>(
   const channel = new BroadcastChannel(`${databaseName}_${storeName}_${key}`)
 
   const updateStore = (newValue: T) => db('readwrite', (store) => store.put(newValue, key))
-  const deleteStore = () => db('readwrite', (store) => store.delete(key))
+
   // If initial value provided update store
   initialValue !== undefined && (await updateStore(initialValue))
 
-  const readStore = () => {
+  const get = () => {
     let req: IDBRequest<T>
     return db('readonly', (store) => {
       req = store.get(key)
@@ -84,18 +82,17 @@ export async function usePublisherDB<T>(
 
   const pub = async (newValue: T) => {
     await updateStore(newValue)
-    const next = await readStore()
+    const next = await get()
     channel.postMessage(next)
   }
 
   pub.sub = (eventType: string, trigger: Trigger, getLVC = false) => {
     const channel = new BroadcastChannel(`${databaseName}_${storeName}_${key}`)
     const handler = (event: MessageEvent<T>) => trigger<T>({ type: eventType, detail: event.data })
-    getLVC && void readStore().then((value) => trigger<T>({ type: eventType, detail: value }))
+    getLVC && void get().then((value) => trigger<T>({ type: eventType, detail: value }))
     channel.addEventListener('message', handler)
     return () => channel.removeEventListener('message', handler)
   }
-  pub.get = readStore
-  pub.delete = deleteStore
+  pub.get = get
   return pub
 }
