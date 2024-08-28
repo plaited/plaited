@@ -17,8 +17,8 @@ export const ElOne = defineTemplate({
       </button>
     </div>
   ),
-  connectedCallback({ $, connect }) {
-    const disconnect = connect(sendDisable, 'disable')
+  connectedCallback({ $, subscribe }) {
+    const disconnect = subscribe(sendDisable, 'disable')
     return {
       disable() {
         const [button] = $<HTMLButtonElement>('button')
@@ -36,8 +36,8 @@ export const ElTwo = defineTemplate({
   tag: 'dynamic-two',
   publicEvents: ['add'],
   shadowDom: <h1 p-target='header'>Hello</h1>,
-  connectedCallback({ $, sync, bThreads, point, connect }) {
-    connect(sendAdd, 'add')
+  connectedCallback({ $, sync, bThreads, point, subscribe }) {
+    subscribe(sendAdd, 'add')
     bThreads.set({
       onAdd: sync([point({ waitFor: 'add' }), point({ request: { type: 'disable' } })]),
     })

@@ -4,11 +4,6 @@ import sinon from 'sinon'
 import { useWorker } from '../use-worker.js'
 import { BPEvent } from '../../behavioral/types.js'
 
-test('userWorker|defineWorker: exports id', async () => {
-  const { default: calculator } = await import(`${import.meta.dir}/worker.ts`)
-  expect(calculator.id).toBe('calculator')
-})
-
 test('userWorker|defineWorker: send and receive', async () => {
   const spy = sinon.spy()
   const host = {

@@ -1,10 +1,10 @@
 import { assert, wait } from '@plaited/storybook-rite'
 import { Meta, StoryObj } from '@plaited/storybook'
-import { useIndexedDB } from '../use-indexed-db.js'
+import { usePublisherDB } from '../use-publisher-db.js'
 import sinon from 'sinon'
 
 const meta: Meta = {
-  title: 'Tests/useIndexedDB',
+  title: 'Tests/usePublisherDB',
   component: () => <></>,
 }
 
@@ -13,24 +13,24 @@ type Story = StoryObj
 
 export const basic: Story = {
   play: async () => {
-    const [get, set] = await useIndexedDB<number>('basic', 0)
-    let actual = await get()
+    const pub = await usePublisherDB<number>('basic', 0)
+    let actual = await pub.get()
     assert({
       given: 'get',
       should: 'return 0',
       actual,
       expected: 0,
     })
-    await set(4)
-    actual = await get()
+    await pub(4)
+    actual = await pub.get()
     assert({
       given: 'set with 4',
       should: 'return 4',
       actual,
       expected: 4,
     })
-    await set((x) => x + 1)
-    actual = await get()
+    await pub((await pub.get()) + 1)
+    actual = await pub.get()
     assert({
       given: 'callback with previous value',
       should: 'return 5',
@@ -38,14 +38,15 @@ export const basic: Story = {
       expected: 5,
     })
 
-    actual = await set(7)
+    await pub(7)
+    actual = await pub.get()
     assert({
       given: 'actual from set',
       should: 'return 7',
       actual,
       expected: 7,
     })
-    actual = await get()
+    actual = await pub.get()
     assert({
       given: 'get called right after',
       should: 'return 7',
@@ -57,8 +58,8 @@ export const basic: Story = {
 
 export const withSubscription: Story = {
   play: async () => {
-    const [get, set] = await useIndexedDB('subscription', 1)
-    const actual = await get()
+    const pub = await usePublisherDB('subscription', 1)
+    const actual = await pub.get()
     assert({
       given: 'get',
       should: 'return initial value',
@@ -66,17 +67,17 @@ export const withSubscription: Story = {
       expected: 1,
     })
     const spy = sinon.spy()
-    const disconnect = get.subscribe(spy)
-    await set(3)
+    const disconnect = pub.sub('a', spy)
+    await pub(3)
     await wait(60)
     assert({
       given: 'subscription to store',
       should: 'trigger callback with last value',
       actual: spy.args,
-      expected: [[3]],
+      expected: [[{ type: 'a', detail: 3 }]],
     })
     disconnect()
-    await set(5)
+    await pub(5)
     await wait(60)
     assert({
       given: 'disconnecting subscription',

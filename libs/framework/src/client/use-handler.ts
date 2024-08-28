@@ -1,10 +1,10 @@
 import type { BPEvent } from '../behavioral/types.js'
 import type { CustomElementTag } from '../jsx/types.js'
-import type { PlaitedElement, SendSocketDetail, PlaitedActionParam } from './types.js'
-import type { SendClientMessage } from './types.js'
+import type { PlaitedElement, SendSocketDetail } from './types.js'
+import type { UpdateLightDomMessage } from './types.js'
 import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
 import { isTypeOf } from '@plaited/utils'
-
+import { UPDATE_LIGHT_DOM, UPDATE_LIGHT_DOM_METHODS } from '../shared/constants.js'
 const subscribers = new Map<string, PlaitedElement>()
 const retryStatusCodes = new Set([1006, 1012, 1013])
 const maxRetries = 3
@@ -13,13 +13,14 @@ let retryCount = 0
 
 const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => event.type === 'close'
 
-const isClientMessage = (msg: unknown): msg is SendClientMessage => {
+const isUpdateLightDomMessage = (msg: unknown): msg is UpdateLightDomMessage => {
   return (
     isTypeOf<{ [key: string]: unknown }>(msg, 'object') &&
+    msg?.action === UPDATE_LIGHT_DOM &&
     isTypeOf<string>(msg?.address, 'string') &&
-    isTypeOf<{ [key: string]: unknown }>(msg?.event, 'object') &&
-    isTypeOf<string>(msg?.event?.type, 'string') &&
-    isTypeOf<string>(msg?.event?.detail, 'string')
+    isTypeOf<string>(msg?.html, 'string') &&
+    isTypeOf<string>(msg?.method, 'string') &&
+    msg?.method in UPDATE_LIGHT_DOM_METHODS
   )
 }
 
@@ -29,21 +30,30 @@ const createDocumentFragment = (html: string) => {
   return tpl.content
 }
 
-const triggerElement = (evt: MessageEvent) => {
+const updateElement = ({
+  host,
+  html,
+  method,
+}: {
+  host: PlaitedElement
+  html: string
+  method: keyof typeof UPDATE_LIGHT_DOM_METHODS
+}) => {
+  const methods = {
+    append: () => host.append(createDocumentFragment(html)),
+    prepend: () => host.prepend(createDocumentFragment(html)),
+    replaceChildren: () => host.replaceChildren(createDocumentFragment(html)),
+  }
+  methods[method]()
+}
+
+const triggerElement = (evt: MessageEvent<string>) => {
   const message = JSON.parse(evt.data)
-  if (isClientMessage(message)) {
-    const { address, event } = message
+  if (isUpdateLightDomMessage(message)) {
+    const { address, method, html } = message
     const host = subscribers.get(address)
-    if (host && event?.detail) {
-      const { type, detail } = event
-      subscribers.get(address)?.trigger<PlaitedActionParam>({
-        type,
-        detail: {
-          append: () => host.append(createDocumentFragment(detail)),
-          prepend: () => host.prepend(createDocumentFragment(detail)),
-          render: () => host.replaceChildren(createDocumentFragment(detail)),
-        },
-      })
+    if (host) {
+      updateElement({ host, html, method })
     }
   }
 }

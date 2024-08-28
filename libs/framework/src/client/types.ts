@@ -13,7 +13,8 @@ import { P_HANDLER } from './constants.js'
 import type { Publisher } from './use-publisher.js'
 import type { SendToHandler } from './use-handler.js'
 import type { Disconnect } from '../shared/types.js'
-
+import { UPDATE_LIGHT_DOM, UPDATE_LIGHT_DOM_METHODS, TRIGGER_ELEMENT } from '../shared/constants.js'
+import { ValueOf } from '@plaited/utils'
 export type Bindings = {
   render(this: Element, ...template: (TemplateObject | DocumentFragment | Element | string)[]): void
   insert(this: Element, position: Position, ...template: (TemplateObject | DocumentFragment | Element | string)[]): void
@@ -168,3 +169,18 @@ export type InitPlaitedArgs = {
 } & RequestInit
 
 export type NavigateEventDetail = { href: string; clientX: number; clientY: number }
+
+export type UpdateLightDomMethods = 'replaceChildren' | 'prepend' | 'append'
+
+export type UpdateLightDomMessage = {
+  address: string
+  action: typeof UPDATE_LIGHT_DOM
+  method: ValueOf<typeof UPDATE_LIGHT_DOM_METHODS>
+  html: string
+}
+
+export type TriggerElementMessage = {
+  address: string
+  action: typeof TRIGGER_ELEMENT
+  event: BPEvent<string>
+}
