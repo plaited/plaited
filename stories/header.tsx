@@ -87,11 +87,11 @@ export const Header = defineTemplate({
   ),
   observedAttributes: ['user'],
   publicEvents: ['user'],
-  connectedCallback({ root, $ }) {
+  connectedCallback({ $, emit }) {
     return {
       click(e: MouseEvent & { target: HTMLButtonElement }) {
         const value = e.target.value
-        root.host.dispatchEvent(new CustomEvent(value, { bubbles: true }))
+        emit({ type: value, bubbles: true })
       },
       onAttributeChanged({ name, newValue }) {
         if (name === 'user') {

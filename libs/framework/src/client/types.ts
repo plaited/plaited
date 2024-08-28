@@ -113,6 +113,16 @@ export type PlaitedElementCallbackActions = {
   }) => void | Promise<void>
 }
 
+type RequirePlaitedElementCallbackActions = Required<PlaitedElementCallbackActions>
+
+export type PlaitedElementCallbackParameters = {
+  [K in keyof RequirePlaitedElementCallbackActions]: Parameters<RequirePlaitedElementCallbackActions[K]> extends (
+    undefined
+  ) ?
+    undefined
+  : Parameters<RequirePlaitedElementCallbackActions[K]>[0]
+}
+
 export type DefinePlaitedTemplateArgs = {
   tag: CustomElementTag
   shadowDom: TemplateObject
@@ -161,22 +171,6 @@ interface JsonArray extends Array<SendSocketDetail> {}
 export interface PlaitedPopStateEvent extends PopStateEvent {
   state: { plaited: string; id: number }
 }
-
-export type ViewTransition = {
-  ready: Promise<never>
-  updateCallbackDone: Promise<void>
-  finished: Promise<void>
-  skipTransition: () => void
-  types: string[]
-}
-
-export type InitPlaitedArgs = {
-  retry?: number
-  retryDelay?: number
-  skipViewTransition?: () => boolean
-  viewTransitionCallback?: (transition: ViewTransition) => Promise<void>
-  viewTransitionTypes?: string[]
-} & RequestInit
 
 export type NavigateEventDetail = { href: string; clientX: number; clientY: number }
 
