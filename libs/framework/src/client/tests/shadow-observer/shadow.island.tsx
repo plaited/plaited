@@ -86,7 +86,7 @@ export const ShadowIsland = defineTemplate({
       </div>
     </div>
   ),
-  connectedCallback({ bThreads, host, $, sync, point }) {
+  connectedCallback({ bThreads, $, sync, point, root }) {
     bThreads.set({
       onRemoveSvg: sync([point({ waitFor: 'removeSvg' }), point({ request: { type: 'addSubIsland' } })]),
       onStart: sync([point({ waitFor: 'start' }), point({ request: { type: 'addSlot' } })]),
@@ -99,7 +99,7 @@ export const ShadowIsland = defineTemplate({
         zone?.insert('beforeend', <SubIsland {...styles['sub-island']} />)
       },
       addButton() {
-        host.insertAdjacentHTML('beforeend', `<button slot='button'>add svg</button>`)
+        root.host.insertAdjacentHTML('beforeend', `<button slot='button'>add svg</button>`)
       },
       modifyAttributes() {
         const [slot] = $('add-svg-slot')

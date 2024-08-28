@@ -12,7 +12,6 @@ export { defineWorker } from './client/define-worker.js'
 export { getPlaitedChildren } from './client/get-plaited-children.js'
 export { usePublisherDB } from './client/use-publisher-db.js'
 export { usePublisher } from './client/use-publisher.js'
-export { useQuery } from './client/use-query.js'
 export { toAddress } from './client/use-handler.js'
 //CSS
 export type * from './css/types.js'

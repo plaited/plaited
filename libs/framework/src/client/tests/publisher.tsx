@@ -30,8 +30,8 @@ export const Subscriber = defineTemplate({
   tag: 'subscriber-component',
   shadowDom: <h1 p-target='count'>{pub.get()}</h1>,
   publicEvents: ['update'],
-  connectedCallback({ $, connect }) {
-    connect(pub, 'update')
+  connectedCallback({ $, subscribe }) {
+    subscribe(pub, 'update')
     return {
       update(value: number) {
         const [count] = $('count')

@@ -289,7 +289,7 @@ test('ssr: Properly hoist and deduplicates multiple stylesheets on a single node
   expect(
     h('div', {
       ...css.assign(hoistStyles.var1, hoistStyles.var2, hoistStyles.var3),
-    }).stylesheets.size,
+    }).stylesheets.length,
   ).toBe(2)
 })
 
@@ -297,7 +297,7 @@ test('ssr: filters out falsey stylesheets', () => {
   expect(
     h('div', {
       stylesheet: ['truthy', false && 'false', false && 'false', undefined && 'void', null && 'null'],
-    }).stylesheets.size,
+    }).stylesheets.length,
   ).toBe(1)
 })
 

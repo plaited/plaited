@@ -1,7 +1,7 @@
 import { escape, isTypeOf } from '@plaited/utils'
 import type { TemplateObject } from '../jsx/types.js'
 import { VALID_PRIMITIVE_CHILDREN } from '../jsx/constants.js'
-
+import { TEMPLATE_OBJECT_IDENTIFIER } from '../shared/constants.js'
 export const useSSR =
   (...importPaths: string[]) =>
   (...templates: TemplateObject[]) => {
@@ -10,7 +10,7 @@ export const useSSR =
     const length = templates.length
     for (let i = 0; i < length; i++) {
       const child = templates[i]
-      if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === '🦄') {
+      if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === TEMPLATE_OBJECT_IDENTIFIER) {
         arr.push(...child.html)
         for (const sheet of child.stylesheets) {
           stylesheets.add(sheet)

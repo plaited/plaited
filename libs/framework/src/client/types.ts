@@ -15,6 +15,8 @@ import type { SendToHandler } from './use-handler.js'
 import type { Disconnect } from '../shared/types.js'
 import { UPDATE_LIGHT_DOM, UPDATE_LIGHT_DOM_METHODS, TRIGGER_ELEMENT } from '../shared/constants.js'
 import { ValueOf } from '@plaited/utils'
+import { callbacks } from './constants.js'
+
 export type Bindings = {
   render(this: Element, ...template: (TemplateObject | DocumentFragment | Element | string)[]): void
   insert(this: Element, position: Position, ...template: (TemplateObject | DocumentFragment | Element | string)[]): void
@@ -54,18 +56,16 @@ export interface PlaitedElement extends HTMLElement {
   // Custom Methods and properties
   trigger: Trigger
   readonly publicEvents?: string[]
-  // Default Methods and Properties
-  internals_: ElementInternals
   adoptedCallback?: { (this: PlaitedElement): void }
   attributeChangedCallback?: {
     (this: PlaitedElement, name: string, oldValue: string | null, newValue: string | null): void
   }
   connectedCallback(this: PlaitedElement): void
   disconnectedCallback(this: PlaitedElement): void
-  formAssociatedCallback?: { (this: PlaitedElement, form: HTMLFormElement): void }
-  formDisabledCallback?: { (this: PlaitedElement, disabled: boolean): void }
-  formResetCallback?: { (this: PlaitedElement): void }
-  formStateRestoreCallback?: { (this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void }
+  formAssociatedCallback(this: PlaitedElement, form: HTMLFormElement): void
+  formDisabledCallback(this: PlaitedElement, disabled: boolean): void
+  formResetCallback(this: PlaitedElement): void
+  formStateRestoreCallback(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
 }
 
 export interface PlaitedElementConstructor {
@@ -82,12 +82,13 @@ export type PostToWorker = {
 
 export type ConnectedCallbackArgs = {
   $: QuerySelector
-  host: PlaitedElement
+  root: ShadowRoot
+  internals: ElementInternals
   emit: Emit
   clone: Clone
   subscribe: SubscribeToPublisher
   send: { handler: SendToHandler; worker: PostToWorker }
-  // Behavioral Program
+  // OnlyConnectedCallbackArgs
   trigger: Trigger
   bThreads: BThreads
   useSnapshot: UseSnapshot
@@ -95,26 +96,35 @@ export type ConnectedCallbackArgs = {
   point: SynchronizationPoint
 }
 
+export type PlaitedElementCallbackActions = {
+  [callbacks.onAdopted]?: () => void | Promise<void>
+  [callbacks.onAttributeChanged]?: (args: {
+    name: string
+    oldValue: string | null
+    newValue: string | null
+  }) => void | Promise<void>
+  [callbacks.onDisconnected]?: () => void | Promise<void>
+  [callbacks.onFormAssociated]?: (args: { form: HTMLFormElement }) => void | Promise<void>
+  [callbacks.onFormDisabled]?: (args: { disabled: boolean }) => void | Promise<void>
+  [callbacks.onFormReset]?: () => void | Promise<void>
+  [callbacks.onFormStateRestore]?: (args: {
+    state: unknown
+    reason: 'autocomplete' | 'restore'
+  }) => void | Promise<void>
+}
+
 export type DefinePlaitedTemplateArgs = {
   tag: CustomElementTag
   shadowDom: TemplateObject
-  mode?: 'open' | 'closed'
   delegatesFocus?: boolean
+  mode?: 'open' | 'closed'
+  slotAssignment?: 'named' | 'manual'
   observedAttributes?: string[]
   publicEvents?: string[]
   formAssociated?: true
   connectedCallback?: {
-    (this: PlaitedElement, args: ConnectedCallbackArgs): Actions
+    (this: PlaitedElement, args: ConnectedCallbackArgs): Actions<PlaitedElementCallbackActions>
   }
-  adoptedCallback?: { (this: PlaitedElement): void }
-  attributeChangedCallback?: {
-    (this: PlaitedElement, name: string, oldValue: string | null, newValue: string | null): void
-  }
-  disconnectedCallback?: { (this: PlaitedElement): void }
-  formAssociatedCallback?: { (this: PlaitedElement, form: HTMLFormElement): void }
-  formDisabledCallback?: { (this: PlaitedElement, disabled: boolean): void }
-  formResetCallback?: { (this: PlaitedElement): void }
-  formStateRestoreCallback?: { (this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void }
 }
 
 export type PlaitedTemplateAttrs = Attrs & {
@@ -183,4 +193,10 @@ export type TriggerElementMessage = {
   address: string
   action: typeof TRIGGER_ELEMENT
   event: BPEvent<string>
+}
+
+export type AttachShadowOptions = {
+  delegatesFocus: boolean
+  mode: 'open' | 'closed'
+  slotAssignment: 'named' | 'manual'
 }

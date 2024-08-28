@@ -334,17 +334,21 @@ test('prevent completion of line with two Xs', () => {
     ...defaultMoves,
   })
   let winner: Winner
-  useFeedback({
+  useFeedback<{
+    X: (detail: Square) => void
+    O: (detail: Square) => void
+    win: (detail: Winner) => void
+  }>({
     // When BPEvent `X` happens we delete the square provided in the event's detail
-    X({ square }: { square: number }) {
+    X({ square }) {
       board.delete(square)
     },
     // When BPEvent `O` happens we delete the square provided in the event's detail
-    O({ square }: { square: number }) {
+    O({ square }) {
       board.delete(square)
     },
     // When BPEvent `win` happens we set the winner
-    win(detail: Winner) {
+    win(detail) {
       winner = detail
     },
   })

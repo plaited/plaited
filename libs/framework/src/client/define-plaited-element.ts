@@ -1,4 +1,4 @@
-import type { BPEvent, Trigger } from '../behavioral/types.js'
+import type { BPEvent, Trigger, BThreads, UseFeedback, UseSnapshot } from '../behavioral/types.js'
 import type { Disconnect } from '../shared/types.js'
 import type {
   PlaitedElement,
@@ -6,31 +6,33 @@ import type {
   QuerySelector,
   SubscribeToPublisher,
   PostToWorker,
+  AttachShadowOptions,
 } from './types.js'
 import { bProgram } from '../behavioral/b-program.js'
 import { sync, point } from '../behavioral/sync.js'
 import { useClone } from './use-clone.js'
 import { useEmit } from './use-emit.js'
 import { P_TRIGGER } from '../jsx/constants.js'
-import { useQuery, cssCache } from './use-query.js'
+import { useQuery, handleTemplateObject } from './use-query.js'
 import { shadowObserver, addListeners } from './shadow-observer.js'
 import { onlyPublicEvents } from '../shared/only-public-events.js'
 import { canUseDOM, noop } from '@plaited/utils'
 import { P_WORKER, P_HANDLER } from './constants.js'
 import { SendToHandler, useHandler } from './use-handler.js'
 import { useWorker } from './use-worker.js'
-
+import { callbacks } from './constants.js'
 export const definePlaitedElement = ({
   tag,
-  stylesheets,
   formAssociated,
   publicEvents,
   observedAttributes = [],
+  shadowDom,
+  delegatesFocus,
+  mode,
+  slotAssignment,
   connectedCallback,
-  disconnectedCallback,
-  attributeChangedCallback,
   ...rest
-}: Omit<DefinePlaitedTemplateArgs, 'mode' | 'delegateFocus' | 'shadowDom'> & { stylesheets: string[] }) => {
+}: DefinePlaitedTemplateArgs & AttachShadowOptions) => {
   if (canUseDOM() && !customElements.get(tag)) {
     class BaseElement extends HTMLElement implements PlaitedElement {
       static observedAttributes = [...observedAttributes, P_WORKER]
@@ -38,13 +40,16 @@ export const definePlaitedElement = ({
       get publicEvents() {
         return publicEvents
       }
-      internals_: ElementInternals
+      #internals: ElementInternals
       get #root() {
-        return this.internals_.shadowRoot as ShadowRoot
+        return this.#internals.shadowRoot as ShadowRoot
       }
       #query: QuerySelector
       #shadowObserver?: MutationObserver
-      #trigger?: Trigger
+      #trigger: Trigger
+      #useFeedback: UseFeedback
+      #useSnapshot: UseSnapshot
+      #bThreads: BThreads
       #disconnectSet = new Set<Disconnect>()
       #sendDirective = {
         [P_HANDLER]: this.#fallbackSendDirective<SendToHandler>(P_HANDLER),
@@ -52,9 +57,16 @@ export const definePlaitedElement = ({
       }
       constructor() {
         super()
-        this.internals_ = this.attachInternals()
-        cssCache.set(this.#root, new Set<string>(stylesheets))
+        this.#internals = this.attachInternals()
+        const frag = handleTemplateObject(this.#root, shadowDom)
+        this.attachShadow({ mode, delegatesFocus, slotAssignment })
+        this.#root.replaceChildren(frag)
         this.#query = useQuery(this.#root)
+        const { trigger, useFeedback, useSnapshot, bThreads } = bProgram()
+        this.#trigger = trigger
+        this.#useFeedback = useFeedback
+        this.#useSnapshot = useSnapshot
+        this.#bThreads = bThreads
       }
       attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
         if (newValue && (name === P_WORKER || name === P_HANDLER)) {
@@ -69,17 +81,15 @@ export const definePlaitedElement = ({
           disconnect()
           this.#sendDirective[name] = this.#fallbackSendDirective(name)
         }
-        attributeChangedCallback?.bind(this)(name, oldValue, newValue)
+        this.#trigger({ type: callbacks.onAttributeChanged, detail: { name, oldValue, newValue } })
       }
       connectedCallback() {
         if (connectedCallback) {
           // create a behavioral program
-          const { trigger, useFeedback, ...rest } = bProgram()
-          this.#trigger = trigger
           // Delegate listeners nodes with p-trigger directive on connection or upgrade
-          addListeners(Array.from(this.#root.querySelectorAll<Element>(`[${P_TRIGGER}]`)), trigger)
-          // Create a shadow observer to watch for modification & addition of nodes with p-trigger directive
-          this.#shadowObserver = shadowObserver(this.#root, trigger)
+          addListeners(Array.from(this.#root.querySelectorAll<Element>(`[${P_TRIGGER}]`)), this.#trigger)
+          // Create a shadow observer to watch for modification & addition of nodes with p-this.#trigger directive
+          this.#shadowObserver = shadowObserver(this.#root, this.#trigger)
           // create a handler to send message to server based on p-handler directive
           const handler: SendToHandler = (event) => this.#sendDirective[P_HANDLER](event)
           handler.disconnect = () => this.#sendDirective[P_HANDLER].disconnect()
@@ -89,29 +99,47 @@ export const definePlaitedElement = ({
           // bind connectedCallback to the custom element wih the following arguments
           const actions = connectedCallback.bind(this)({
             $: this.#query,
-            host: this,
+            root: this.#root,
+            internals: this.#internals,
             emit: useEmit(this),
             clone: useClone(this.#root),
             subscribe: ((target, type) => {
-              const disconnect = target.sub(type, trigger)
+              const disconnect = target.sub(type, this.#trigger)
               this.#disconnectSet.add(disconnect)
               return disconnect
             }) as SubscribeToPublisher,
             send: { handler, worker },
-            trigger,
+            trigger: this.#trigger,
+            useSnapshot: this.#useSnapshot,
+            bThreads: this.#bThreads,
             sync,
             point,
             ...rest,
           })
           // Subscribe feedback actions to behavioral program and add disconnect callback to disconnect set
-          this.#disconnectSet.add(useFeedback(actions))
+          this.#disconnectSet.add(this.#useFeedback(actions))
         }
       }
       disconnectedCallback() {
         this.#shadowObserver?.disconnect()
         for (const cb of this.#disconnectSet) cb()
         this.#disconnectSet.clear()
-        disconnectedCallback?.bind(this)()
+        this.#trigger({ type: callbacks.onDisconnected })
+      }
+      adoptedCallback() {
+        this.#trigger({ type: callbacks.onAdopted })
+      }
+      formAssociatedCallback(form: HTMLFormElement) {
+        this.#trigger({ type: callbacks.onFormAssociated, detail: { form } })
+      }
+      formDisabledCallback(disabled: boolean) {
+        this.#trigger({ type: callbacks.onFormDisabled, detail: { disabled } })
+      }
+      formResetCallback() {
+        this.#trigger({ type: callbacks.onFormReset })
+      }
+      formStateRestoreCallback(state: unknown, reason: 'autocomplete' | 'restore') {
+        this.#trigger({ type: callbacks.onFormStateRestore, detail: { state, reason } })
       }
       #fallbackSendDirective<T>(directive: string) {
         const fallback = () => console.error(`Missing directive: ${directive}`)
@@ -124,10 +152,9 @@ export const definePlaitedElement = ({
         this.#disconnectSet.add(send.disconnect)
       }
       trigger(event: BPEvent) {
-        if (this.#trigger && publicEvents) onlyPublicEvents(this.#trigger, publicEvents)(event)
+        publicEvents && onlyPublicEvents(this.#trigger, publicEvents)(event)
       }
     }
-    Object.assign(BaseElement.prototype, rest)
     customElements.define(tag, BaseElement)
   }
 }

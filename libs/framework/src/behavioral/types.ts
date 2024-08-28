@@ -54,10 +54,9 @@ export type CandidateBid = {
   trigger?: true | 'object' | 'person'
   template?: BPEventTemplate
 }
-
-export type Actions<T = any> = { [key: string]: (detail: T) => void | Promise<void> }
-
-export type UseFeedback = (actions: Actions) => Disconnect
+type DefaultActions = Record<string, (detail: any) => void | Promise<void>>
+export type Actions<T = DefaultActions> = DefaultActions & T
+export type UseFeedback = <T = DefaultActions>(actions: Actions<T>) => Disconnect
 export type Repeat = true | ((ctx?: (id: string) => unknown) => boolean)
 
 export type BThreads = {

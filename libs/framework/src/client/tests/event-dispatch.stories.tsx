@@ -51,7 +51,6 @@ export const eventDispatch: StoryObj = {
   render: () => (
     <>
       <Top />
-      <Bottom />
     </>
   ),
   play: async () => {

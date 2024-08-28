@@ -1,4 +1,4 @@
-import { defineTemplate, css, useQuery } from 'plaited'
+import { defineTemplate, css } from 'plaited'
 import { Button } from './button.js'
 
 const styles = css.create({
@@ -87,46 +87,45 @@ export const Header = defineTemplate({
   ),
   observedAttributes: ['user'],
   publicEvents: ['user'],
-  attributeChangedCallback(name: string, _, newValue: string) {
-    const $ = useQuery(this.shadowRoot)
-    if (name === 'user') {
-      const [bar] = $('button-bar')
-      newValue ?
-        bar.render(
-          <>
-            <span {...styles.storybookHeaderWelcome}>
-              Welcome, <b>{newValue}</b>!
-            </span>
-            <Button
-              size='small'
-              value='onLogout'
-              label='Log out'
-            />
-          </>,
-        )
-      : bar.render(
-          <>
-            <Button
-              size='small'
-              value='onLogin'
-              label='Log in'
-            />
-            <Button
-              primary
-              size='small'
-              value='onCreateAccount'
-              label='Sign up'
-              {...styles.storybookHeaderButtonPlusButton}
-            />
-          </>,
-        )
-    }
-  },
-  connectedCallback({ host }) {
+  connectedCallback({ root, $ }) {
     return {
       click(e: MouseEvent & { target: HTMLButtonElement }) {
         const value = e.target.value
-        host.dispatchEvent(new CustomEvent(value, { bubbles: true }))
+        root.host.dispatchEvent(new CustomEvent(value, { bubbles: true }))
+      },
+      onAttributeChanged({ name, newValue }) {
+        if (name === 'user') {
+          const [bar] = $('button-bar')
+          newValue ?
+            bar.render(
+              <>
+                <span {...styles.storybookHeaderWelcome}>
+                  Welcome, <b>{newValue}</b>!
+                </span>
+                <Button
+                  size='small'
+                  value='onLogout'
+                  label='Log out'
+                />
+              </>,
+            )
+          : bar.render(
+              <>
+                <Button
+                  size='small'
+                  value='onLogin'
+                  label='Log in'
+                />
+                <Button
+                  primary
+                  size='small'
+                  value='onCreateAccount'
+                  label='Sign up'
+                  {...styles.storybookHeaderButtonPlusButton}
+                />
+              </>,
+            )
+        }
       },
     }
   },

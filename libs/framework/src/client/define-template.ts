@@ -8,14 +8,18 @@ export const defineTemplate = <T extends Attrs = Attrs>({
   shadowDom,
   mode = 'open',
   delegatesFocus = true,
+  slotAssignment = 'named',
   observedAttributes,
   publicEvents,
   ...rest
 }: DefinePlaitedTemplateArgs): PlaitedTemplate<T> => {
   definePlaitedElement({
     tag,
-    stylesheets: shadowDom.stylesheets,
+    shadowDom,
     publicEvents,
+    slotAssignment,
+    delegatesFocus,
+    mode,
     observedAttributes,
     ...rest,
   })
