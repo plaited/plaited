@@ -98,7 +98,7 @@ Alright that looks good!
 any string really to trigger a run on our program but it's probably best that
 it's not `trigger({ type: "hot" })` or `trigger({ type: "cold" })` as those are
 events we're requesting in our synchronization points. If we used either we'd be
-prematurely triggering the **action** callbacks we passed to our **feedback**
+prematurely triggering the **action** ELEMENT_CALLBACKS we passed to our **feedback**
 function.
 
 ### 2. Now let's also add cold water 3 times:

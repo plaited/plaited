@@ -1,10 +1,10 @@
 import type { BPEvent } from '../behavioral/types.js'
 import type { CustomElementTag } from '../jsx/types.js'
-import type { PlaitedElement, SendSocketDetail } from './types.js'
-import type { UpdateLightDomMessage } from './types.js'
+import type { PlaitedElement } from './types.js'
+import type { InsertMessage, TriggerMessageDetail, TriggerMessage } from '../shared/types.js'
 import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
 import { isTypeOf } from '@plaited/utils'
-import { UPDATE_LIGHT_DOM, UPDATE_LIGHT_DOM_METHODS } from '../shared/constants.js'
+import { ACTION_INSERT, INSERT_METHODS, ACTION_TRIGGER } from '../shared/constants.js'
 const subscribers = new Map<string, PlaitedElement>()
 const retryStatusCodes = new Set([1006, 1012, 1013])
 const maxRetries = 3
@@ -13,14 +13,23 @@ let retryCount = 0
 
 const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => event.type === 'close'
 
-const isUpdateLightDomMessage = (msg: unknown): msg is UpdateLightDomMessage => {
+const isInsertMessage = (msg: unknown): msg is InsertMessage => {
   return (
     isTypeOf<{ [key: string]: unknown }>(msg, 'object') &&
-    msg?.action === UPDATE_LIGHT_DOM &&
+    msg?.action === ACTION_INSERT &&
     isTypeOf<string>(msg?.address, 'string') &&
     isTypeOf<string>(msg?.html, 'string') &&
     isTypeOf<string>(msg?.method, 'string') &&
-    msg?.method in UPDATE_LIGHT_DOM_METHODS
+    msg?.method in INSERT_METHODS
+  )
+}
+
+const isTriggerMessage = (msg: unknown): msg is TriggerMessage => {
+  return (
+    isTypeOf<{ [key: string]: unknown }>(msg, 'object') &&
+    msg?.action === ACTION_TRIGGER &&
+    isTypeOf<string>(msg?.address, 'string') &&
+    isTypeOf<string>(msg?.type, 'string')
   )
 }
 
@@ -37,7 +46,7 @@ const updateElement = ({
 }: {
   host: PlaitedElement
   html: string
-  method: keyof typeof UPDATE_LIGHT_DOM_METHODS
+  method: keyof typeof INSERT_METHODS
 }) => {
   const methods = {
     append: () => host.append(createDocumentFragment(html)),
@@ -48,13 +57,20 @@ const updateElement = ({
 }
 
 const triggerElement = (evt: MessageEvent<string>) => {
-  const message = JSON.parse(evt.data)
-  if (isUpdateLightDomMessage(message)) {
-    const { address, method, html } = message
-    const host = subscribers.get(address)
-    if (host) {
-      updateElement({ host, html, method })
+  try {
+    const message = JSON.parse(evt.data)
+    if (isInsertMessage(message)) {
+      const { address, method, html } = message
+      const host = subscribers.get(address)
+      host && updateElement({ host, html, method })
     }
+    if (isTriggerMessage(message)) {
+      const { address, type, detail } = message
+      const host = subscribers.get(address)
+      host?.trigger({ type, detail })
+    }
+  } catch (error) {
+    console.error('Error parsing incoming message:', error)
   }
 }
 
@@ -102,7 +118,7 @@ const retry = () => {
 export const toAddress = (tag: CustomElementTag, id?: string): string => `${tag}${id ? `#${id}` : ''}`
 
 export type SendToHandler = {
-  <T extends SendSocketDetail>(event: BPEvent<T>): void | (<T = never>(..._: T[]) => void)
+  <T extends TriggerMessageDetail>(event: BPEvent<T>): void | (<T = never>(..._: T[]) => void)
   disconnect: () => void
 }
 
@@ -112,7 +128,7 @@ export const useHandler = (host: PlaitedElement, address: string): SendToHandler
   const disconnect = () => {
     subscribers.delete(id)
   }
-  const send = <T extends SendSocketDetail>(event: BPEvent<T>) => {
+  const send = <T extends TriggerMessageDetail>(event: BPEvent<T>) => {
     const fallback = () => {
       send(event)
       socket?.removeEventListener('open', fallback)

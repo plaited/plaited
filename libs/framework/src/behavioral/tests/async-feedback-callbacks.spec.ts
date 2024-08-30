@@ -2,7 +2,7 @@ import { test, expect } from 'bun:test'
 import { bProgram } from '../b-program.js'
 import { wait } from '@plaited/utils'
 import { point } from '../sync.js'
-test('async feedback callbacks', async () => {
+test('async feedback ELEMENT_CALLBACKS', async () => {
   const actual: string[] = []
   const { bThreads, trigger, useFeedback } = bProgram()
   bThreads.set({

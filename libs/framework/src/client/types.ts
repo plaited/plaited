@@ -13,9 +13,7 @@ import { P_HANDLER } from './constants.js'
 import type { Publisher } from './use-publisher.js'
 import type { SendToHandler } from './use-handler.js'
 import type { Disconnect } from '../shared/types.js'
-import { UPDATE_LIGHT_DOM, UPDATE_LIGHT_DOM_METHODS, TRIGGER_ELEMENT } from '../shared/constants.js'
-import { ValueOf } from '@plaited/utils'
-import { callbacks } from './constants.js'
+import { ELEMENT_CALLBACKS } from './constants.js'
 
 export type Bindings = {
   render(this: Element, ...template: (TemplateObject | DocumentFragment | Element | string)[]): void
@@ -97,17 +95,17 @@ export type ConnectedCallbackArgs = {
 }
 
 export type PlaitedElementCallbackActions = {
-  [callbacks.onAdopted]?: () => void | Promise<void>
-  [callbacks.onAttributeChanged]?: (args: {
+  [ELEMENT_CALLBACKS.onAdopted]?: () => void | Promise<void>
+  [ELEMENT_CALLBACKS.onAttributeChanged]?: (args: {
     name: string
     oldValue: string | null
     newValue: string | null
   }) => void | Promise<void>
-  [callbacks.onDisconnected]?: () => void | Promise<void>
-  [callbacks.onFormAssociated]?: (args: { form: HTMLFormElement }) => void | Promise<void>
-  [callbacks.onFormDisabled]?: (args: { disabled: boolean }) => void | Promise<void>
-  [callbacks.onFormReset]?: () => void | Promise<void>
-  [callbacks.onFormStateRestore]?: (args: {
+  [ELEMENT_CALLBACKS.onDisconnected]?: () => void | Promise<void>
+  [ELEMENT_CALLBACKS.onFormAssociated]?: (args: { form: HTMLFormElement }) => void | Promise<void>
+  [ELEMENT_CALLBACKS.onFormDisabled]?: (args: { disabled: boolean }) => void | Promise<void>
+  [ELEMENT_CALLBACKS.onFormReset]?: () => void | Promise<void>
+  [ELEMENT_CALLBACKS.onFormStateRestore]?: (args: {
     state: unknown
     reason: 'autocomplete' | 'restore'
   }) => void | Promise<void>
@@ -149,48 +147,8 @@ export type PlaitedTemplate<T extends PlaitedTemplateAttrs = PlaitedTemplateAttr
   $: typeof PLAITED_TEMPLATE_IDENTIFIER
 }
 
-export type SendClientMessage = {
-  address: string
-  event: BPEvent<string>
-}
-
-export type PlaitedActionParam = {
-  append: () => void
-  prepend: () => void
-  render: () => void
-}
-
-export type SendSocketDetail = string | number | boolean | null | JsonObject | JsonArray
-
-interface JsonObject {
-  [key: string]: SendSocketDetail
-}
-
-interface JsonArray extends Array<SendSocketDetail> {}
-
 export interface PlaitedPopStateEvent extends PopStateEvent {
   state: { plaited: string; id: number }
 }
 
 export type NavigateEventDetail = { href: string; clientX: number; clientY: number }
-
-export type UpdateLightDomMethods = 'replaceChildren' | 'prepend' | 'append'
-
-export type UpdateLightDomMessage = {
-  address: string
-  action: typeof UPDATE_LIGHT_DOM
-  method: ValueOf<typeof UPDATE_LIGHT_DOM_METHODS>
-  html: string
-}
-
-export type TriggerElementMessage = {
-  address: string
-  action: typeof TRIGGER_ELEMENT
-  event: BPEvent<string>
-}
-
-export type AttachShadowOptions = {
-  delegatesFocus: boolean
-  mode: 'open' | 'closed'
-  slotAssignment: 'named' | 'manual'
-}

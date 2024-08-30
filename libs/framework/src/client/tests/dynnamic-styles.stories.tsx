@@ -60,7 +60,7 @@ export const dynamicStyles: StoryObj = {
       actual: target?.shadowRoot?.adoptedStyleSheets.length,
       expected: 0,
     })
-    target?.trigger({ type: 'render' })
+    target?.trigger({ type: 'onAdopted' })
     await wait(60)
     assert({
       given: 'target has been triggered',

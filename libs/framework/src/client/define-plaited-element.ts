@@ -6,7 +6,6 @@ import type {
   QuerySelector,
   SubscribeToPublisher,
   PostToWorker,
-  AttachShadowOptions,
   PlaitedElementCallbackParameters,
 } from './types.js'
 import { bProgram } from '../behavioral/b-program.js'
@@ -21,7 +20,13 @@ import { canUseDOM, noop } from '@plaited/utils'
 import { P_WORKER, P_HANDLER } from './constants.js'
 import { SendToHandler, useHandler } from './use-handler.js'
 import { useWorker } from './use-worker.js'
-import { callbacks } from './constants.js'
+import { ELEMENT_CALLBACKS } from './constants.js'
+
+type AttachShadowOptions = {
+  delegatesFocus: boolean
+  mode: 'open' | 'closed'
+  slotAssignment: 'named' | 'manual'
+}
 
 export const definePlaitedElement = ({
   tag,
@@ -33,7 +38,6 @@ export const definePlaitedElement = ({
   mode,
   slotAssignment,
   connectedCallback,
-  ...rest
 }: DefinePlaitedTemplateArgs & AttachShadowOptions) => {
   if (canUseDOM() && !customElements.get(tag)) {
     customElements.define(
@@ -103,7 +107,6 @@ export const definePlaitedElement = ({
               bThreads: this.#bThreads,
               sync,
               point,
-              ...rest,
             })
             // Subscribe feedback actions to behavioral program and add disconnect callback to disconnect set
             this.#disconnectSet.add(this.#useFeedback(actions))
@@ -113,7 +116,7 @@ export const definePlaitedElement = ({
           this.#shadowObserver?.disconnect()
           for (const cb of this.#disconnectSet) cb()
           this.#disconnectSet.clear()
-          this.#trigger({ type: callbacks.onDisconnected })
+          this.#trigger({ type: ELEMENT_CALLBACKS.onDisconnected })
         }
         attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
           if (newValue && (name === P_WORKER || name === P_HANDLER)) {
@@ -129,31 +132,31 @@ export const definePlaitedElement = ({
             this.#sendDirective[name] = this.#fallbackSendDirective(name)
           }
           this.#trigger<PlaitedElementCallbackParameters['onAttributeChanged']>({
-            type: callbacks.onAttributeChanged,
+            type: ELEMENT_CALLBACKS.onAttributeChanged,
             detail: { name, oldValue, newValue },
           })
         }
         adoptedCallback() {
-          this.#trigger({ type: callbacks.onAdopted })
+          this.#trigger({ type: ELEMENT_CALLBACKS.onAdopted })
         }
         formAssociatedCallback(form: HTMLFormElement) {
           this.#trigger<PlaitedElementCallbackParameters['onFormAssociated']>({
-            type: callbacks.onFormAssociated,
+            type: ELEMENT_CALLBACKS.onFormAssociated,
             detail: { form },
           })
         }
         formDisabledCallback(disabled: boolean) {
           this.#trigger<PlaitedElementCallbackParameters['onFormDisabled']>({
-            type: callbacks.onFormDisabled,
+            type: ELEMENT_CALLBACKS.onFormDisabled,
             detail: { disabled },
           })
         }
         formResetCallback() {
-          this.#trigger({ type: callbacks.onFormReset })
+          this.#trigger({ type: ELEMENT_CALLBACKS.onFormReset })
         }
         formStateRestoreCallback(state: unknown, reason: 'autocomplete' | 'restore') {
           this.#trigger<PlaitedElementCallbackParameters['onFormStateRestore']>({
-            type: callbacks.onFormStateRestore,
+            type: ELEMENT_CALLBACKS.onFormStateRestore,
             detail: { state, reason },
           })
         }
