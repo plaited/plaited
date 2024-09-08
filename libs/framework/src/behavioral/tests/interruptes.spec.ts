@@ -1,9 +1,9 @@
 import { expect, describe, it } from 'bun:test'
 import { bProgram } from '../b-program.js'
-import { sync, point } from '../sync.js'
+import { bThread, bSync } from '../b-thread.js'
 
 describe('interrupt', () => {
-  const addHot = sync([point({ waitFor: 'add', interrupt: ['terminate'] }), point({ request: { type: 'hot' } })], true)
+  const addHot = bThread([bSync({ waitFor: 'add', interrupt: ['terminate'] }), bSync({ request: { type: 'hot' } })], true)
 
   it('should not interrupt', () => {
     const actual: string[] = []

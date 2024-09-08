@@ -1,7 +1,7 @@
 /* eslint-disable no-constant-binary-expression */
 import { test, expect } from 'bun:test'
 import { h, Fragment } from '../create-template.js'
-import { css, FT, TemplateObject } from '../../index.js'
+import { css, FunctionTemplate, TemplateObject } from '../../index.js'
 import beautify from 'beautify'
 
 const render = (tpl: TemplateObject) => beautify(tpl.html.join(''), { format: 'html' })
@@ -138,10 +138,10 @@ console.log('[plaited] listening for file changes');
   expect(render(h('div', { trusted: true, children: scriptContent }))).toMatchSnapshot()
 })
 
-const Template: FT = (attrs) => h('template', attrs)
+const Template: FunctionTemplate = (attrs) => h('template', attrs)
 
 test('createTemplate: Non declarative shadow DOM template', () => {
-  const List: FT = ({ children }) =>
+  const List: FunctionTemplate = ({ children }) =>
     h('ul', {
       children: [
         Template({ children: h('span', { children: 'I am a span!!!' }) }),
@@ -191,7 +191,7 @@ const styles = css.create({
   },
 })
 
-const NestedCustomElement: FT = ({ children, ...props }) =>
+const NestedCustomElement: FunctionTemplate = ({ children, ...props }) =>
   h('nested-component', {
     ...props,
     children: [
@@ -235,7 +235,7 @@ test('createTemplate: CustomElement with styled slotted component', () => {
   expect({ content: render(el), stylesheets: el.stylesheets }).toMatchSnapshot()
 })
 
-const TopCustomElement: FT = ({ children, ...props }) =>
+const TopCustomElement: FunctionTemplate = ({ children, ...props }) =>
   h('top-component', {
     ...props,
     children: [

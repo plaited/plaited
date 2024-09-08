@@ -1,7 +1,6 @@
 import { test, expect } from 'bun:test'
-import type { RulesFunction } from '../types.js'
 import { bProgram } from '../b-program.js'
-import { sync, point } from '../sync.js'
+import { bThread, bSync, RulesFunction } from '../b-thread.js'
 
 const winConditions = [
   //rows
@@ -47,7 +46,7 @@ test('taking a square', () => {
   expect(board.has(0)).toBe(false)
 })
 
-const enforceTurns = sync([point({ waitFor: 'X', block: 'O' }), point({ waitFor: 'O', block: 'X' })], true)
+const enforceTurns = bThread([bSync({ waitFor: 'X', block: 'O' }), bSync({ waitFor: 'O', block: 'X' })], true)
 
 test('take turns', () => {
   // We create a new bProgram
@@ -83,9 +82,9 @@ test('take turns', () => {
 
 const squaresTaken: Record<string, RulesFunction> = {}
 for (const square of squares) {
-  squaresTaken[`(${square}) taken`] = sync([
-    point({ waitFor: ({ detail }) => square === detail.square }),
-    point({ block: ({ detail }) => square === detail.square }),
+  squaresTaken[`(${square}) taken`] = bThread([
+    bSync<{square: number}>({ waitFor: ({ detail }) => square === detail.square }),
+    bSync<{square: number}>({ block: ({ detail }) => square === detail.square }),
   ])
 }
 
@@ -129,17 +128,17 @@ test('squares taken', () => {
 type Winner = { player: 'X' | 'O'; squares: number[] }
 const detectWins = (player: 'X' | 'O') =>
   winConditions.reduce((acc: Record<string, RulesFunction>, squares) => {
-    acc[`${player}Wins (${squares})`] = sync([
-      point<{ square: number }>({
+    acc[`${player}Wins (${squares})`] = bThread([
+      bSync<{ square: number }>({
         waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
       }),
-      point<{ square: number }>({
+      bSync<{ square: number }>({
         waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
       }),
-      point<{ square: number }>({
+      bSync<{ square: number }>({
         waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
       }),
-      point<Winner>({
+      bSync<Winner>({
         request: { type: 'win', detail: { squares, player } },
       }),
     ])
@@ -163,14 +162,14 @@ test('detect winner', () => {
     X({ square }: { square: number }) {
       board.delete(square)
     },
-    // When BPEvent `O` happens we delete the square provided in the event's detail
-    O({ square }: { square: number }) {
-      board.delete(square)
-    },
-    // When BPEvent `win` happens we set the winner
-    win(detail: Winner) {
-      winner = detail
-    },
+    // // When BPEvent `O` happens we delete the square provided in the event's detail
+    // O({ square }: { square: number }) {
+    //   board.delete(square)
+    // },
+    // // When BPEvent `win` happens we set the winner
+    // win(detail: Winner) {
+    //   winner = detail
+    // },
   })
   trigger({ type: 'X', detail: { square: 0 } })
   trigger({ type: 'O', detail: { square: 3 } })
@@ -181,7 +180,7 @@ test('detect winner', () => {
   expect(winner).toEqual({ player: 'X', squares: [0, 1, 2] })
 })
 
-const stopGame = sync([point({ waitFor: 'win' }), point({ block: ['X', 'O'] })], true)
+const stopGame = bThread([bSync({ waitFor: 'win' }), bSync({ block: ['X', 'O'] })], true)
 
 test('stop game', () => {
   // We create a new bProgram
@@ -224,9 +223,9 @@ test('stop game', () => {
 
 const defaultMoves: Record<string, RulesFunction> = {}
 for (const square of squares) {
-  defaultMoves[`defaultMoves(${square})`] = sync(
+  defaultMoves[`defaultMoves(${square})`] = bThread(
     [
-      point<Square>({
+      bSync<Square>({
         request: {
           type: 'O',
           detail: { square },
@@ -265,7 +264,7 @@ test('defaultMoves', () => {
   expect(board.has(1)).toBe(false)
 })
 
-const startAtCenter = point({
+const startAtCenter = bSync({
   request: {
     type: 'O',
     detail: { square: 4 },
@@ -303,14 +302,14 @@ test('start at center', () => {
 const preventCompletionOfLineWithTwoXs = (board: Set<number>) => {
   const bThreads: Record<string, RulesFunction> = {}
   for (const win of winConditions) {
-    bThreads[`StopXWin(${win})`] = sync([
-      point<Square>({
+    bThreads[`StopXWin(${win})`] = bThread([
+      bSync<Square>({
         waitFor: ({ type, detail }) => type === 'X' && win.includes(detail.square),
       }),
-      point<Square>({
+      bSync<Square>({
         waitFor: ({ type, detail }) => type === 'X' && win.includes(detail.square),
       }),
-      point<Square>({
+      bSync<Square>({
         request: () => ({ type: 'O', detail: { square: win.find((num) => board.has(num)) as number } }),
       }),
     ])

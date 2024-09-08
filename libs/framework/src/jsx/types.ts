@@ -374,7 +374,7 @@ type HTMLAttributes = AriaAttributes &
 
 // Combine both filters
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type DetailedHTMLAttributes = HTMLAttributes & Record<string, any>
+export type DetailedHTMLAttributes = HTMLAttributes & Record<string, any>
 
 type HTMLAttributeReferrerPolicy =
   | ''
@@ -523,7 +523,7 @@ type DetailedIframeHTMLAttributes = DetailedHTMLAttributes & {
 type DetailedImgHTMLAttributes = DetailedHTMLAttributes & {
   alt?: string
   crossorigin?: CrossOrigin
-  decoding?: 'async' | 'auto' | 'sync'
+  decoding?: 'async' | 'auto' | 'bThread'
   height?: number | string
   loading?: 'eager' | 'lazy'
   referrerpolicy?: HTMLAttributeReferrerPolicy
@@ -883,7 +883,7 @@ type DetailedSVGAttributes = DetailedHTMLAttributes & {
   cx?: string
   cy?: string
   d?: string
-  decoding?: 'sync' | 'async' | 'auto' | string
+  decoding?: 'bThread' | 'async' | 'auto' | string
   diffuseConstant?: number | string
   direction?: 'ltr' | 'rtl' | string
   display?: string
@@ -1290,25 +1290,4 @@ export type Attrs<T extends DetailedHTMLAttributes = DetailedHTMLAttributes> = D
 
 export type FunctionTemplate<T extends Attrs = Attrs> = (attrs: T & PlaitedAttributes) => TemplateObject
 
-export type FT<
-  //Alias for FunctionTemplate
-  T extends Attrs = Attrs,
-> = FunctionTemplate<T>
-
 export type CustomElementTag = `${string}-${string}`
-
-export type Tag = string | CustomElementTag | FT
-
-type InferAttrs<T extends Tag> =
-  T extends keyof ElementAttributeList ? ElementAttributeList[T]
-  : T extends FT ? Parameters<T>[0]
-  : T extends CustomElementTag ? DetailedHTMLAttributes
-  : Attrs
-
-export interface CreateTemplate {
-  <T extends Tag>(tag: T, attrs: InferAttrs<T>): TemplateObject
-}
-
-export type TagsType = {
-  [K in keyof ElementAttributeList]: (attrs: ElementAttributeList[K]) => TemplateObject
-}

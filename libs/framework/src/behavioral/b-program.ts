@@ -1,21 +1,129 @@
-import { isTypeOf } from '@plaited/utils'
+import type { Disconnect } from '../shared/types.js'
 import type {
-  CandidateBid,
-  SnapshotMessage,
-  UseFeedback,
-  BPListener,
-  PendingBid,
-  RunningBid,
   BPEvent,
-  Trigger,
   BPEventTemplate,
-  BProgram,
-  BThreads,
-  UseSnapshot,
-} from './types.js'
-import { triggerWaitFor, isListeningFor, isPendingRequest, createPublisher, ensureArray } from './private-utils.js'
-import { snapshotFormatter } from './snapshot-formatter.js'
+  BPListener,
+  Idioms,
+  RulesFunction,
+} from './b-thread.js'
+import { isTypeOf } from '../utils/true-type-of.js'
 
+type RunningBid = {
+  trigger?: true | 'object' | 'person'
+  priority: number
+  generator: IterableIterator<Idioms>
+}
+type PendingBid = Idioms & RunningBid
+
+type CandidateBid = {
+  thread: string
+  priority: number
+  type: string
+  detail?: unknown
+  trigger?: true | 'object' | 'person'
+  template?: BPEventTemplate
+}
+
+export type SnapshotMessage = {
+  thread: string
+  selected: boolean
+  type: string
+  detail?: unknown
+  priority: number
+  blockedBy?: string
+}[]
+
+type SnapshotFormatter = (args: {
+  pending: Map<string, PendingBid>
+  selectedEvent: CandidateBid
+  candidates: CandidateBid[]
+}) => SnapshotMessage
+
+export type SnapshotListener = (msg: SnapshotMessage) => void | Promise<void>
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type DefaultActions = Record<string, (detail: any) => void | Promise<void>>
+
+export type Actions<T = DefaultActions> = DefaultActions & T
+export type UseFeedback = <T = DefaultActions>(actions: Actions<T>) => Disconnect
+export type UseSnapshot = (listener: SnapshotListener) => Disconnect
+export type BThreads = {
+  has: (thread: string) => { running: boolean; pending: boolean }
+  set: (threads: Record<string, RulesFunction>) => void
+}
+ 
+export type Trigger = <T>(args: BPEvent<T>) => void
+
+export type BProgram = () => Readonly<{
+  bThreads: BThreads
+  trigger: Trigger
+  useFeedback: UseFeedback
+  useSnapshot: UseSnapshot
+}>
+
+const triggerWaitFor = () => true
+
+const createPublisher = <T>() => {
+  const listeners = new Set<(value: T) => void | Promise<void>>()
+  function publisher(value: T) {
+    for (const cb of listeners) {
+      void cb(value)
+    }
+  }
+  publisher.subscribe = (listener: (msg: T) => void | Promise<void>) => {
+    listeners.add(listener)
+    return () => {
+      listeners.delete(listener)
+    }
+  }
+  return publisher
+}
+
+const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj : [obj])
+
+const isListeningFor = ({ type, detail }: CandidateBid) => {
+  return (listener: BPListener): boolean =>
+    typeof listener !== 'string' ?
+      listener({
+        detail,
+        type,
+      })
+    : listener === type
+}
+
+ 
+const isPendingRequest = (selectedEvent: CandidateBid, event: BPEvent | BPEventTemplate) =>
+  isTypeOf<BPEventTemplate>(event, 'function') ? event === selectedEvent?.template : event.type == selectedEvent.type
+
+const snapshotFormatter: SnapshotFormatter = ({ candidates, selectedEvent, pending }) => {
+  const blockingThreads = [...pending].flatMap(([thread, { block }]) =>
+    block && Array.isArray(block) ? block.map((listener) => ({ block: listener, thread }))
+    : block ? [{ block, thread }]
+    : [],
+  )
+  const ruleSets: {
+    thread: string
+    selected: boolean
+    type: string
+    detail?: unknown
+    priority: number
+    blockedBy?: string
+    trigger?: true | 'object' | 'person'
+  }[] = []
+  for (const bid of candidates) {
+    const blockedCB = isListeningFor(bid)
+    ruleSets.push({
+      thread: bid.thread,
+      selected: isPendingRequest(selectedEvent, bid),
+      type: bid.type,
+      priority: bid.priority,
+      detail: bid.detail,
+      blockedBy: blockingThreads.find(({ block }) => blockedCB(block))?.thread,
+      trigger: bid.trigger,
+    })
+  }
+  return ruleSets.sort((a, b) => a.priority - b.priority)
+}
 /**
  * Creates a behavioral program that manages the execution of behavioral threads.
  */
@@ -60,7 +168,8 @@ export const bProgram: BProgram = () => {
           priority,
           trigger,
           thread,
-          ...(isTypeOf<BPEventTemplate>(request, 'function') ? { template: request, ...request() } : request),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ...(isTypeOf<BPEventTemplate<any>>(request, 'function') ? { template: request, ...request() } : request),
         })
     }
     const filteredBids: CandidateBid[] = []

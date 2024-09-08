@@ -1,6 +1,7 @@
 import { assert, findByAttribute } from '@plaited/storybook-rite'
 import { Meta } from '@plaited/storybook'
-import type { QuerySelector, Position, PlaitedElement } from '../types.js'
+import type { Position } from '../use-shorthand.js'
+import type { PlaitedElement } from '../define-plaited-element.js'
 import { defineTemplate } from '../define-template.js'
 
 const meta: Meta = {
@@ -95,12 +96,6 @@ const row = (
   </tr>
 )
 
-const forEachRow = ($: QuerySelector, data: DataItem) => {
-  $('row')[0].attr('p-target', `${data.id}`)
-  $('id')[0].render(<>{data.id}</>)
-  $('label')[0].render(<>{data.label}</>)
-}
-
 const Fixture = defineTemplate({
   shadowDom: (
     <div p-target='root'>
@@ -109,11 +104,15 @@ const Fixture = defineTemplate({
   ),
   tag: 'table-fixture',
   publicEvents: ['insert', 'render', 'replace', 'remove', 'removeAttributes', 'getAttribute', 'multiSetAttributes'],
-  connectedCallback({ $, clone }) {
-    const cb = clone(row, forEachRow)
+  connectedCallback({ $ }) {
+    const cb = $.clone<DataItem>(row, ($, data) => {
+      $('row')[0].attr('p-target', `${data.id}`)
+      $('id')[0].render(<>{data.id}</>)
+      $('label')[0].render(<>{data.label}</>)
+    })
     return {
       replace() {
-        $('table')[0].replace(<span>I'm jsut a span</span>)
+        $('table')[0].replace(<span>I'm just a span</span>)
       },
       render() {
         $('table')[0].render(...buildData(100).map(cb))

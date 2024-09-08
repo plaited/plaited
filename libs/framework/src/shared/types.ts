@@ -1,7 +1,11 @@
+import type { Trigger } from '../behavioral.js'
+import type { ValueOf } from '../utils.js'
 import { ACTION_INSERT, INSERT_METHODS, ACTION_TRIGGER } from './constants.js'
-import { ValueOf } from '@plaited/utils'
 
 export type Disconnect = () => void
+
+export type SubscribeToPublisher = (eventType: string, trigger: Trigger, getLVC?: boolean) => Disconnect
+
 
 export type InsertMethods = 'replaceChildren' | 'prepend' | 'append'
 

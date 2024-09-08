@@ -11,30 +11,31 @@ export type CreateNestedCSS<T extends keyof CSSProperties> = {
   [key: `[${string}`]: CSSProperties[T] | CreateNestedCSS<T>
 }
 
-export type CreateCSS = {
+export type CSSClasses = {
   [key: string]: {
     [key in keyof CSSProperties]: CSSProperties[key] | CreateNestedCSS<key> | string
   }
 }
-export type CreateHostCSSWithSelector<T extends keyof CSSProperties> = {
+
+type CreateHostCSSWithSelector<T extends keyof CSSProperties> = {
   [key: string]: CSSProperties[T]
 }
-export type CreateHostCSS = {
+export type CSSHostProperties = {
   [key in keyof CSSProperties]: CSSProperties[key] | CreateHostCSSWithSelector<key>
 }
 
-export type CreateKeyframeCSS = {
+export type CSSKeyFrames = {
   from?: { [key in keyof CSSProperties]: CSSProperties[key] }
   to?: { [key in keyof CSSProperties]: CSSProperties[key] }
   [key: `${number}%`]: { [key in keyof CSSProperties]: CSSProperties[key] }
 }
 
-export type AssignStylesObject = {
+export type StylesObject = {
   className?: string | Array<string | undefined | false | null>
   stylesheet?: string | Array<string | undefined | false | null>
 }
 
-export type CreateStylesObjects<T extends CreateCSS> = {
+export type StyleObjects<T extends CSSClasses> = {
   [key in keyof T]: {
     className: string
     stylesheet: string[]

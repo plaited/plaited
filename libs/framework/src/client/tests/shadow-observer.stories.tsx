@@ -73,7 +73,7 @@ export const shadowObserver: StoryObj = {
     const h3 = await findByText('sub island')
     assert({
       given: 'removeSvg event triggered',
-      should: 'still have children in zone appended in subsequent sync step',
+      should: 'still have children in zone appended in subsequent bThread step',
       actual: zone?.children.length,
       expected: 1,
     })

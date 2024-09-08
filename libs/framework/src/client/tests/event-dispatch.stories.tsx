@@ -20,10 +20,10 @@ const Bottom = defineTemplate({
     </button>
   ),
   publicEvents: ['add'],
-  connectedCallback({ emit }) {
+  connectedCallback({ $ }) {
     return {
       click() {
-        emit({ type: 'append' })
+        $.dispatch({ type: 'append' })
       },
     }
   },

@@ -1,16 +1,15 @@
 import { test, expect } from 'bun:test'
-import { bProgram } from '../b-program.js'
-import { point, sync } from '../sync.js'
-import type { SnapshotMessage } from '../types.js'
+import { bProgram, SnapshotMessage } from '../b-program.js'
+import { bSync, bThread } from '../b-thread.js'
 
 test('Add hot water 3 times', () => {
   const actual: string[] = []
   const { bThreads, trigger, useFeedback } = bProgram()
   bThreads.set({
-    addHot: sync([
-      point({ request: { type: 'hot' } }),
-      point({ request: { type: 'hot' } }),
-      point({ request: { type: 'hot' } }),
+    addHot: bThread([
+      bSync({ request: { type: 'hot' } }),
+      bSync({ request: { type: 'hot' } }),
+      bSync({ request: { type: 'hot' } }),
     ]),
   })
   useFeedback({
@@ -26,15 +25,15 @@ test('Add hot/cold water 3 times', () => {
   const actual: string[] = []
   const { bThreads, trigger, useFeedback } = bProgram()
   bThreads.set({
-    addHot: sync([
-      point({ request: { type: 'hot' } }),
-      point({ request: { type: 'hot' } }),
-      point({ request: { type: 'hot' } }),
+    addHot: bThread([
+      bSync({ request: { type: 'hot' } }),
+      bSync({ request: { type: 'hot' } }),
+      bSync({ request: { type: 'hot' } }),
     ]),
-    addCold: sync([
-      point({ request: { type: 'cold' } }),
-      point({ request: { type: 'cold' } }),
-      point({ request: { type: 'cold' } }),
+    addCold: bThread([
+      bSync({ request: { type: 'cold' } }),
+      bSync({ request: { type: 'cold' } }),
+      bSync({ request: { type: 'cold' } }),
     ]),
   })
   useFeedback({
@@ -53,17 +52,17 @@ test('interleave', () => {
   const actual: string[] = []
   const { bThreads, trigger, useFeedback } = bProgram()
   bThreads.set({
-    addHot: sync([
-      point({ request: { type: 'hot' } }),
-      point({ request: { type: 'hot' } }),
-      point({ request: { type: 'hot' } }),
+    addHot: bThread([
+      bSync({ request: { type: 'hot' } }),
+      bSync({ request: { type: 'hot' } }),
+      bSync({ request: { type: 'hot' } }),
     ]),
-    addCold: sync([
-      point({ request: { type: 'cold' } }),
-      point({ request: { type: 'cold' } }),
-      point({ request: { type: 'cold' } }),
+    addCold: bThread([
+      bSync({ request: { type: 'cold' } }),
+      bSync({ request: { type: 'cold' } }),
+      bSync({ request: { type: 'cold' } }),
     ]),
-    mixHotCold: sync([point({ waitFor: 'hot', block: 'cold' }), point({ waitFor: 'cold', block: 'hot' })], true),
+    mixHotCold: bThread([bSync({ waitFor: 'hot', block: 'cold' }), bSync({ waitFor: 'cold', block: 'hot' })], true),
   })
   useFeedback({
     hot() {
@@ -84,17 +83,17 @@ test('logging', () => {
     snapshots.push(snapshot)
   })
   bThreads.set({
-    addHot: sync([
-      point({ request: { type: 'hot' } }),
-      point({ request: { type: 'hot' } }),
-      point({ request: { type: 'hot' } }),
+    addHot: bThread([
+      bSync({ request: { type: 'hot' } }),
+      bSync({ request: { type: 'hot' } }),
+      bSync({ request: { type: 'hot' } }),
     ]),
-    addCold: sync([
-      point({ request: { type: 'cold' } }),
-      point({ request: { type: 'cold' } }),
-      point({ request: { type: 'cold' } }),
+    addCold: bThread([
+      bSync({ request: { type: 'cold' } }),
+      bSync({ request: { type: 'cold' } }),
+      bSync({ request: { type: 'cold' } }),
     ]),
-    mixHotCold: sync([point({ waitFor: 'hot', block: 'cold' }), point({ waitFor: 'cold', block: 'hot' })], true),
+    mixHotCold: bThread([bSync({ waitFor: 'hot', block: 'cold' }), bSync({ waitFor: 'cold', block: 'hot' })], true),
   })
   trigger({ type: 'start' })
   expect(snapshots).toMatchSnapshot()

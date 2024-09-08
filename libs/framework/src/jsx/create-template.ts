@@ -1,7 +1,18 @@
-import type { Attrs, CreateTemplate, TemplateObject } from './types.js'
-import { isTypeOf, kebabCase, escape } from '@plaited/utils'
+import type { Attrs, DetailedHTMLAttributes, TemplateObject, ElementAttributeList, CustomElementTag, FunctionTemplate } from './types.js'
+import { isTypeOf, kebabCase, escape } from '../utils.js'
 import { BOOLEAN_ATTRS, PRIMITIVES, VOID_TAGS, VALID_PRIMITIVE_CHILDREN, P_TRIGGER } from './constants.js'
 import { TEMPLATE_OBJECT_IDENTIFIER } from '../shared/constants.js'
+
+type Tag = string | CustomElementTag | FunctionTemplate
+
+type InferAttrs<T extends Tag> =
+  T extends keyof ElementAttributeList ? ElementAttributeList[T]
+  : T extends FunctionTemplate ? Parameters<T>[0]
+  : T extends CustomElementTag ? DetailedHTMLAttributes
+  : Attrs
+
+type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => TemplateObject
+
 /** createTemplate function used for ssr */
 export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const {

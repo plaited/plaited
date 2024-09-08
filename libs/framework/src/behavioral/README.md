@@ -24,7 +24,7 @@ programs in JavaScript.
   - [Event detail](#event-detail)
   - [Request event and trigger argument](#request-event-and-trigger-argument)
   - [WaitFor and block events](#waitfor-and-block-events)
-  - [Sync argument](#sync-argument)
+  - [Sync argument](#bThread-argument)
 
   [Learn about behavioral programming](https://github.com/plaited/plaited/tree/main/playbook/coding/learn-about-behavioral-programming.md)
 
@@ -63,7 +63,7 @@ test('Add hot water 3 times', () => {
      * 3. blocked events: the threads currently forbids
      * triggering any of these events
      */
-    sync,
+    bThread,
     /** trigger the run of the behavioral program by requesting
      * the event passed as an argument
      */
@@ -77,9 +77,9 @@ test('Add hot water 3 times', () => {
   } = bProgram()
   addThreads({
     addHot: thread(
-      sync({ request: { type: 'hot' } }),
-      sync({ request: { type: 'hot' } }),
-      sync({ request: { type: 'hot' } }),
+      bThread({ request: { type: 'hot' } }),
+      bThread({ request: { type: 'hot' } }),
+      bThread({ request: { type: 'hot' } }),
     ),
   })
   feedback({
@@ -106,17 +106,17 @@ function.
 ```ts
 test('Add hot/cold water 3 times', () => {
   const actual: string[] = []
-  const { addThreads, thread, sync, trigger, feedback } = bProgram()
+  const { addThreads, thread, bThread, trigger, feedback } = bProgram()
   addThreads({
     addHot: thread(
-      sync({ request: { type: 'hot' } }),
-      sync({ request: { type: 'hot' } }),
-      sync({ request: { type: 'hot' } }),
+      bThread({ request: { type: 'hot' } }),
+      bThread({ request: { type: 'hot' } }),
+      bThread({ request: { type: 'hot' } }),
     ),
     addCold: thread(
-      sync({ request: { type: 'cold' } }),
-      sync({ request: { type: 'cold' } }),
-      sync({ request: { type: 'cold' } }),
+      bThread({ request: { type: 'cold' } }),
+      bThread({ request: { type: 'cold' } }),
+      bThread({ request: { type: 'cold' } }),
     ),
   })
   feedback({
@@ -146,7 +146,7 @@ test('interleave', () => {
   const {
     addThreads,
     thread,
-    sync,
+    bThread,
     trigger,
     feedback,
     /**
@@ -156,21 +156,21 @@ test('interleave', () => {
   } = bProgram()
   addThreads({
     addHot: thread(
-      sync({ request: { type: 'hot' } }),
-      sync({ request: { type: 'hot' } }),
-      sync({ request: { type: 'hot' } }),
+      bThread({ request: { type: 'hot' } }),
+      bThread({ request: { type: 'hot' } }),
+      bThread({ request: { type: 'hot' } }),
     ),
     addCold: thread(
-      sync({ request: { type: 'cold' } }),
-      sync({ request: { type: 'cold' } }),
-      sync({ request: { type: 'cold' } }),
+      bThread({ request: { type: 'cold' } }),
+      bThread({ request: { type: 'cold' } }),
+      bThread({ request: { type: 'cold' } }),
     ),
     mixHotCold: loop(
-      sync({
+      bThread({
         waitFor: 'hot',
         block: 'cold',
       }),
-      sync({
+      bThread({
         waitFor: 'cold',
         block: 'hot',
       }),
@@ -206,11 +206,11 @@ easy(_ish_) steps.
 
 We need to do a little setup to iteratively develop our app in a TDD like
 manner. First we'll import our testing utils. Then we'll import `bProgram`,
-`loop`, `thread`, and `sync` form `@plaited/behavioral`.
+`loop`, `thread`, and `bThread` form `@plaited/behavioral`.
 
 ```ts
 import { expect, test } from 'bun:test'
-import { bProgram, loop, RulesFunction, sync, thread } from '@plaited/behavioral'
+import { bProgram, loop, RulesFunction, bThread, thread } from '@plaited/behavioral'
 
 const winConditions = [
   //rows
@@ -240,16 +240,16 @@ a player has won.
 const playerWins = (player: 'X' | 'O') =>
   winConditions.reduce((acc: Record<string, RulesFunction>, win) => {
     acc[`${player}Wins (${win})`] = thread(
-      sync<{ square: number }>({
+      bThread<{ square: number }>({
         waitFor: ({ type, detail }) => type === player && win.includes(detail.square),
       }),
-      sync<{ square: number }>({
+      bThread<{ square: number }>({
         waitFor: ({ type, detail }) => type === player && win.includes(detail.square),
       }),
-      sync<{ square: number }>({
+      bThread<{ square: number }>({
         waitFor: ({ type, detail }) => type === player && win.includes(detail.square),
       }),
-      sync<{ win: number[] }>({
+      bThread<{ win: number[] }>({
         request: { type: `${player}Win`, detail: { win } },
       }),
     )
@@ -282,7 +282,7 @@ We'll next create a new thread, `enforceTurns`, that uses our loop function to
 interleave moves.
 
 ```ts
-const enforceTurns = loop(sync({ waitFor: 'X', block: 'O' }), sync({ waitFor: 'O', block: 'X' }))
+const enforceTurns = loop(bThread({ waitFor: 'X', block: 'O' }), bThread({ waitFor: 'O', block: 'X' }))
 
 test('enforceTurns', () => {
   const { addThreads, feedback, trigger } = bProgram()
@@ -327,10 +327,10 @@ over the squares to create our `squaresTaken` threads.
 ```ts
 const squaresTaken = squares.reduce((acc: Record<string, RulesFunction>, square) => {
   acc[`(${square}) taken`] = thread(
-    sync<{ square: number }>({
+    bThread<{ square: number }>({
       waitFor:  ({ detail }) => square === detail.square ,
     }),
-    sync<{ square: number }>({
+    bThread<{ square: number }>({
       block:  ({ detail }) => square === detail.square ,
     }),
   )
@@ -347,8 +347,8 @@ test('squaresTaken', () => {
     ...playerWins('O'),
     ...playerWins('X'),
     enforceTurns: loop(
-      sync({ waitFor:  'X', block:  'O' }),
-      sync({ waitFor:  'O', block:  'X' }),
+      bThread({ waitFor:  'X', block:  'O' }),
+      bThread({ waitFor:  'O', block:  'X' }),
     ),
     ...squaresTaken,
   })
@@ -374,7 +374,7 @@ We'll create a simple thread that will wait for one the win events, `XWin` |
 `OWin` and then block a future move by the next player up.
 
 ```ts
-const stopGame = thread(sync({ waitFor: ['XWin', 'OWin'] }), sync({ block: ['X', 'O'] }))
+const stopGame = thread(bThread({ waitFor: ['XWin', 'OWin'] }), bThread({ block: ['X', 'O'] }))
 
 test('stopGame', () => {
   const { addThreads, feedback, trigger } = bProgram()
@@ -446,7 +446,7 @@ unless that square has already been taken and the move blocked by our
 ```ts
 const defaultMoves = squares.reduce((threads, square) => {
   threads[`defaultMoves(${square})`] = loop(
-    sync({
+    bThread({
       request: {
         type: 'O',
         detail: { square },
@@ -519,7 +519,7 @@ selects a requested event.
 
 ```ts
 const startAtCenter = thread(
-  sync({
+  bThread({
     request: {
       type: 'O',
       detail: { square: 4 },
@@ -593,13 +593,13 @@ test('prevent completion of line with two Xs', () => {
   const actual: ({ player: 'X' | 'O'; square: number } | { player: 'X' | 'O'; win: number[] })[] = []
   const preventCompletionOfLineWithTwoXs = winConditions.reduce((acc: Record<string, RulesFunction>, win) => {
     acc[`StopXWin(${win})`] = thread(
-      sync<{ square: number }>({
+      bThread<{ square: number }>({
         waitFor: ({ type, detail }) => type === 'X' && win.includes(detail.square),
       }),
-      sync<{ square: number }>({
+      bThread<{ square: number }>({
         waitFor: ({ type, detail }) => type === 'X' && win.includes(detail.square),
       }),
-      sync<{ square: number }>({
+      bThread<{ square: number }>({
         request: () => ({ type: 'O', detail: { square: win.find((num) => board.has(num)) } }),
       }),
     )
@@ -669,7 +669,7 @@ waitFor events and block and block events respectively.
 
 ### Request event and trigger argument
 
-This is type of the object used by the **sync** function as value to be passed
+This is type of the object used by the **bThread** function as value to be passed
 to the **request** key and the argument for our **trigger** function.
 
 ```ts
@@ -684,7 +684,7 @@ export type BPEventTemplate<T = unknown> = () => BPEvent<T>
 
 ### WaitFor and block events
 
-This is type of object used by the **sync** function as the value to be passed
+This is type of object used by the **bThread** function as the value to be passed
 to the **waitFor** and **block** keys
 
 ```ts
@@ -693,11 +693,11 @@ export type BPListener<T = unknown> = string | ((args: { type: string; detail: T
 
 ### Sync argument
 
-When creating a sync statement using our sync function we pass it an object of
+When creating a bThread statement using our bThread function we pass it an object of
 the following type.
 
 ```ts
-export type SynchronizationPoint<T extends Detail = Detail> = {
+export type BSync<T extends Detail = Detail> = {
   waitFor?: BPListener<T> | BPListener<T>[]
   request?: BPEvent<T> | BPEventTemplate<T>
   block?: BPListener<T> | BPListener<T>[]

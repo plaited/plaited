@@ -3,7 +3,7 @@ import type axe from 'axe-core'
 import type { Parameters } from './types.js'
 import { STORYBOOK_PATH_ROOT } from './constants.js'
 import { BrowserType, chromium, devices } from 'playwright'
-import { ValueOf } from '@plaited/utils'
+import { ValueOf } from '../utils.js'
 
 declare global {
   function useStory(arg: { path: string; params: Parameters }): Promise<(string | axe.Result)[]>

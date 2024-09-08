@@ -1,13 +1,13 @@
 import type {
   CSSProperties,
+  CSSHostProperties,
+  CSSKeyFrames,
+  CSSClasses,
   CreateNestedCSS,
-  CreateCSS,
-  CreateStylesObjects,
-  CreateHostCSS,
-  CreateKeyframeCSS,
-  AssignStylesObject,
+  StyleObjects,
+  StylesObject,
 } from './types.js'
-import { hashString, kebabCase } from '@plaited/utils'
+import { hashString, kebabCase } from '../utils.js'
 
 const createClassHash = (...args: (string | number)[]) =>
   hashString(args.join(' '))?.toString(36).replace(/^-/g, '_') ?? ''
@@ -48,7 +48,7 @@ const formatStyles = ({
 }
 
 /** A types safe function for creating hashed utility className(s) and stylesheet(s) */
-const create = <T extends CreateCSS>(classNames: T) =>
+const create = <T extends CSSClasses>(classNames: T) =>
   Object.entries(classNames).reduce((acc, [cls, props]) => {
     const map = new Map<string, string>()
     for (const prop in props) formatStyles({ map, prop, value: props[prop] })
@@ -59,9 +59,9 @@ const create = <T extends CreateCSS>(classNames: T) =>
       stylesheet: [...map.values()],
     }
     return acc
-  }, {} as CreateStylesObjects<T>)
+  }, {} as StyleObjects<T>)
 
-const host = (props: CreateHostCSS) => {
+const host = (props: CSSHostProperties) => {
   const arr: string[] = []
   for (const prop in props) {
     const value = props[prop]
@@ -80,7 +80,7 @@ const host = (props: CreateHostCSS) => {
   return { stylesheet: [...arr] }
 }
 
-const keyframes = (name: string, frames: CreateKeyframeCSS) => {
+const keyframes = (name: string, frames: CSSKeyFrames) => {
   const arr: string[] = []
   for (const value in frames) {
     const props = frames[value as keyof typeof frames]
@@ -96,7 +96,7 @@ const keyframes = (name: string, frames: CreateKeyframeCSS) => {
   return getFrames
 }
 
-const assign = (...styleObjects: Array<AssignStylesObject | undefined | false | null>) => {
+const assign = (...styleObjects: Array<StylesObject | undefined | false | null>) => {
   const cls: Array<string | undefined | false | null> = []
   const style: Array<string | undefined | false | null> = []
   for (const styleObject of styleObjects) {

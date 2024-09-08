@@ -1,6 +1,9 @@
-import type { Trigger, BPEvent } from '../behavioral/types.js'
-import { isBPEvent } from '../behavioral/is-bp-event.js'
-import { PostToWorker } from './types.js'
+import { Trigger, BPEvent, isBPEvent} from '../behavioral.js'
+
+export type PostToWorker = {
+  <T>(args: BPEvent<T>): void
+  disconnect(): void
+}
 
 export const useWorker = (host: { trigger: Trigger }, path: string): PostToWorker => {
   const handleMessage = (event: MessageEvent<BPEvent>) => {

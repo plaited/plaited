@@ -1,19 +1,19 @@
 import { test, expect } from 'bun:test'
 import { bProgram } from '../b-program.js'
-import { wait } from '@plaited/utils'
-import { point } from '../sync.js'
+import { wait } from '../../assert/wait.js'
+import { bSync } from '../b-thread.js'
 test('async feedback ELEMENT_CALLBACKS', async () => {
   const actual: string[] = []
   const { bThreads, trigger, useFeedback } = bProgram()
   bThreads.set({
-    onInit: point({ request: { type: 'init' } }),
-    afterInit: point({ request: { type: 'afterInit' } }),
+    onInit: bSync({ request: { type: 'init' } }),
+    afterInit: bSync({ request: { type: 'afterInit' } }),
   })
   useFeedback({
     async init() {
       actual.push('init')
       await wait(100)
-      trigger({ type: 'update' })
+      trigger({ type: 'update' , detail: 'update' })
     },
     afterInit() {
       actual.push('afterInit')

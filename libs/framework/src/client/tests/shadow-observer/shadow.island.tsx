@@ -86,11 +86,11 @@ export const ShadowIsland = defineTemplate({
       </div>
     </div>
   ),
-  connectedCallback({ bThreads, $, sync, point, root }) {
+  connectedCallback({ bThreads, $, bThread, bSync, root }) {
     bThreads.set({
-      onRemoveSvg: sync([point({ waitFor: 'removeSvg' }), point({ request: { type: 'addSubIsland' } })]),
-      onStart: sync([point({ waitFor: 'start' }), point({ request: { type: 'addSlot' } })]),
-      onAddSvg: sync([point({ waitFor: 'add-svg' }), point({ request: { type: 'modifyAttributes' } })], true),
+      onRemoveSvg: bThread([bSync({ waitFor: 'removeSvg' }), bSync({ request: { type: 'addSubIsland' } })]),
+      onStart: bThread([bSync({ waitFor: 'start' }), bSync({ request: { type: 'addSlot' } })]),
+      onAddSvg: bThread([bSync({ waitFor: 'add-svg' }), bSync({ request: { type: 'modifyAttributes' } })], true),
     })
     return {
       addSubIsland() {

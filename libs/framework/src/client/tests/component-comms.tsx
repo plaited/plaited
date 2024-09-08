@@ -1,8 +1,8 @@
 import { defineTemplate } from '../../index.js'
-import { usePublisher } from '../use-publisher.js'
+import { useStore } from '../use-store.js'
 
-const sendDisable = usePublisher()
-const sendAdd = usePublisher<{ value: string }>()
+const sendDisable = useStore()
+const sendAdd = useStore<{ value: string }>()
 
 export const ElOne = defineTemplate({
   tag: 'dynamic-one',
@@ -36,10 +36,10 @@ export const ElTwo = defineTemplate({
   tag: 'dynamic-two',
   publicEvents: ['add'],
   shadowDom: <h1 p-target='header'>Hello</h1>,
-  connectedCallback({ $, sync, bThreads, point, subscribe }) {
+  connectedCallback({ $, bThread, bThreads, bSync, subscribe }) {
     subscribe(sendAdd, 'add')
     bThreads.set({
-      onAdd: sync([point({ waitFor: 'add' }), point({ request: { type: 'disable' } })]),
+      onAdd: bThread([bSync({ waitFor: 'add' }), bSync({ request: { type: 'disable' } })]),
     })
     return {
       disable() {

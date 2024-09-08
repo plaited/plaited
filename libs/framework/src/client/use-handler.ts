@@ -1,11 +1,13 @@
-import type { BPEvent } from '../behavioral/types.js'
+import type { BPEvent, Trigger } from '../behavioral.js'
 import type { CustomElementTag } from '../jsx/types.js'
-import type { PlaitedElement } from './types.js'
 import type { InsertMessage, TriggerMessageDetail, TriggerMessage } from '../shared/types.js'
-import { DelegatedListener, delegates } from '../shared/delegated-listener.js'
-import { isTypeOf } from '@plaited/utils'
+import { DelegatedListener, delegates } from './delegated-listener.js'
+import { isTypeOf } from '../utils/true-type-of.js'
 import { ACTION_INSERT, INSERT_METHODS, ACTION_TRIGGER } from '../shared/constants.js'
-const subscribers = new Map<string, PlaitedElement>()
+
+type SubscriberElement = HTMLElement & { trigger: Trigger }
+
+const subscribers = new Map<string, SubscriberElement>()
 const retryStatusCodes = new Set([1006, 1012, 1013])
 const maxRetries = 3
 let socket: WebSocket | undefined
@@ -44,7 +46,7 @@ const updateElement = ({
   html,
   method,
 }: {
-  host: PlaitedElement
+  host: SubscriberElement
   html: string
   method: keyof typeof INSERT_METHODS
 }) => {
@@ -122,12 +124,7 @@ export type SendToHandler = {
   disconnect: () => void
 }
 
-export const useHandler = (host: PlaitedElement, address: string): SendToHandler => {
-  const id = toAddress(host.tagName.toLowerCase() as CustomElementTag, host.id)
-  subscribers.set(id, host)
-  const disconnect = () => {
-    subscribers.delete(id)
-  }
+export const useSend = (address: string) => {
   const send = <T extends TriggerMessageDetail>(event: BPEvent<T>) => {
     const fallback = () => {
       send(event)
@@ -140,6 +137,16 @@ export const useHandler = (host: PlaitedElement, address: string): SendToHandler
     if (!socket) connect()
     socket?.addEventListener('open', fallback)
   }
+  return send
+} 
+
+export const useHandler = (host: SubscriberElement, address: string): SendToHandler => {
+  const id = toAddress(host.tagName.toLowerCase() as CustomElementTag, host.id)
+  subscribers.set(id, host)
+  const disconnect = () => {
+    subscribers.delete(id)
+  }
+  const send = useSend(address) as SendToHandler
   send.disconnect = disconnect
   return send
 }

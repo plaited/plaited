@@ -1,31 +1,104 @@
-import type { BPEvent, Trigger, BThreads, UseFeedback, UseSnapshot } from '../behavioral/types.js'
 import type { Disconnect } from '../shared/types.js'
-import type {
-  PlaitedElement,
-  DefinePlaitedTemplateArgs,
-  QuerySelector,
-  SubscribeToPublisher,
-  PostToWorker,
-  PlaitedElementCallbackParameters,
-} from './types.js'
-import { bProgram } from '../behavioral/b-program.js'
-import { sync, point } from '../behavioral/sync.js'
-import { useClone } from './use-clone.js'
-import { useEmit } from './use-emit.js'
+import type { PostToWorker } from './use-worker.js'
+import type { TemplateObject, CustomElementTag } from '../jsx/types.js'
+import {
+  Actions,
+  BPEvent,
+  BSync,
+  BThread,
+  BThreads,
+  Trigger,
+  UseFeedback,
+  UseSnapshot,
+  bProgram,
+  bThread,
+  bSync,
+} from '../behavioral.js'
 import { P_TRIGGER } from '../jsx/constants.js'
-import { useQuery, handleTemplateObject } from './use-query.js'
+import { Shorthand, useShorthand, handleTemplateObject } from './use-shorthand.js'
 import { shadowObserver, addListeners } from './shadow-observer.js'
 import { onlyPublicEvents } from '../shared/only-public-events.js'
-import { canUseDOM, noop } from '@plaited/utils'
+import { SubscribeToPublisher } from '../shared/types.js'
+import { canUseDOM } from './can-use-dom.js'
+import { noop } from '../utils.js'
 import { P_WORKER, P_HANDLER } from './constants.js'
 import { SendToHandler, useHandler } from './use-handler.js'
 import { useWorker } from './use-worker.js'
 import { ELEMENT_CALLBACKS } from './constants.js'
 
-type AttachShadowOptions = {
+export interface PlaitedElement extends HTMLElement {
+  // Custom Methods and properties
+  trigger: Trigger
+  readonly publicEvents?: string[]
+  adoptedCallback?: { (this: PlaitedElement): void }
+  attributeChangedCallback?: {
+    (this: PlaitedElement, name: string, oldValue: string | null, newValue: string | null): void
+  }
+  connectedCallback(this: PlaitedElement): void
+  disconnectedCallback(this: PlaitedElement): void
+  formAssociatedCallback(this: PlaitedElement, form: HTMLFormElement): void
+  formDisabledCallback(this: PlaitedElement, disabled: boolean): void
+  formResetCallback(this: PlaitedElement): void
+  formStateRestoreCallback(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
+}
+
+type Subscribe = (target: {
+  sub:SubscribeToPublisher
+}, type: string, getLVC?: boolean) => Disconnect
+
+export type ConnectedCallbackArgs = {
+  $: Shorthand
+  root: ShadowRoot
+  internals: ElementInternals
+  subscribe: Subscribe
+  send: { handler: SendToHandler; worker: PostToWorker }
+  // OnlyConnectedCallbackArgs
+  trigger: Trigger
+  bThreads: BThreads
+  useSnapshot: UseSnapshot
+  bThread: BThread
+  bSync: BSync
+}
+
+export type PlaitedElementCallbackActions = {
+  [ELEMENT_CALLBACKS.onAdopted]?: () => void | Promise<void>
+  [ELEMENT_CALLBACKS.onAttributeChanged]?: (args: {
+    name: string
+    oldValue: string | null
+    newValue: string | null
+  }) => void | Promise<void>
+  [ELEMENT_CALLBACKS.onDisconnected]?: () => void | Promise<void>
+  [ELEMENT_CALLBACKS.onFormAssociated]?: (args: { form: HTMLFormElement }) => void | Promise<void>
+  [ELEMENT_CALLBACKS.onFormDisabled]?: (args: { disabled: boolean }) => void | Promise<void>
+  [ELEMENT_CALLBACKS.onFormReset]?: () => void | Promise<void>
+  [ELEMENT_CALLBACKS.onFormStateRestore]?: (args: {
+    state: unknown
+    reason: 'autocomplete' | 'restore'
+  }) => void | Promise<void>
+}
+
+type RequirePlaitedElementCallbackActions = Required<PlaitedElementCallbackActions>
+
+type PlaitedElementCallbackParameters = {
+  [K in keyof RequirePlaitedElementCallbackActions]: Parameters<RequirePlaitedElementCallbackActions[K]> extends (
+    undefined
+  ) ?
+    undefined
+  : Parameters<RequirePlaitedElementCallbackActions[K]>[0]
+}
+
+export type DefinePlaitedElementArgs = {
+  tag: CustomElementTag
+  shadowDom: TemplateObject
   delegatesFocus: boolean
   mode: 'open' | 'closed'
   slotAssignment: 'named' | 'manual'
+  observedAttributes?: string[]
+  publicEvents?: string[]
+  formAssociated?: true
+  connectedCallback?: {
+    (this: PlaitedElement, args: ConnectedCallbackArgs): Actions<PlaitedElementCallbackActions>
+  }
 }
 
 export const definePlaitedElement = ({
@@ -38,7 +111,7 @@ export const definePlaitedElement = ({
   mode,
   slotAssignment,
   connectedCallback,
-}: DefinePlaitedTemplateArgs & AttachShadowOptions) => {
+}: DefinePlaitedElementArgs) => {
   if (canUseDOM() && !customElements.get(tag)) {
     customElements.define(
       tag,
@@ -52,7 +125,7 @@ export const definePlaitedElement = ({
         get #root() {
           return this.#internals.shadowRoot as ShadowRoot
         }
-        #query: QuerySelector
+        #shorthand: Shorthand
         #shadowObserver?: MutationObserver
         #trigger: Trigger
         #useFeedback: UseFeedback
@@ -69,7 +142,7 @@ export const definePlaitedElement = ({
           const frag = handleTemplateObject(this.#root, shadowDom)
           this.attachShadow({ mode, delegatesFocus, slotAssignment })
           this.#root.replaceChildren(frag)
-          this.#query = useQuery(this.#root)
+          this.#shorthand = useShorthand(this.#root)
           const { trigger, useFeedback, useSnapshot, bThreads } = bProgram()
           this.#trigger = trigger
           this.#useFeedback = useFeedback
@@ -91,22 +164,20 @@ export const definePlaitedElement = ({
             worker.disconnect = () => this.#sendDirective[P_WORKER].disconnect()
             // bind connectedCallback to the custom element wih the following arguments
             const actions = connectedCallback.bind(this)({
-              $: this.#query,
+              $: this.#shorthand,
               root: this.#root,
               internals: this.#internals,
-              emit: useEmit(this),
-              clone: useClone(this.#root),
-              subscribe: ((target, type) => {
-                const disconnect = target.sub(type, this.#trigger)
+              subscribe: ((target, type, getLVC) => {
+                const disconnect = target.sub(type, this.#trigger, getLVC)
                 this.#disconnectSet.add(disconnect)
                 return disconnect
-              }) as SubscribeToPublisher,
+              }) as Subscribe,
               send: { handler, worker },
               trigger: this.#trigger,
               useSnapshot: this.#useSnapshot,
               bThreads: this.#bThreads,
-              sync,
-              point,
+              bThread,
+              bSync,
             })
             // Subscribe feedback actions to behavioral program and add disconnect callback to disconnect set
             this.#disconnectSet.add(this.#useFeedback(actions))

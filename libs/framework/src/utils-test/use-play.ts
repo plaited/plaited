@@ -1,12 +1,6 @@
-import { wait } from '@plaited/utils'
+
 import type { Play } from './types.js'
-import { assert } from './assert/assert.js'
-import { findByAttribute } from './assert/find-by-attribute.js'
-import { findByText } from './assert/find-by-text.js'
-import { fireEvent } from './assert/fire-event.js'
-import { match } from './assert/match.js'
-import { TimeoutError } from './assert/errors.js'
-import { throws } from './assert/throws.js'
+import {wait, assert, findByAttribute, findByText, fireEvent, match, TimeoutError, throws} from '../assert.js'
 
 const timeout = async (time: number = 5_000) => {
   await wait(time)

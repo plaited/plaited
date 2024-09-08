@@ -1,13 +1,7 @@
-import type { PlaitedElement } from './types.js'
-import { isTypeOf } from '@plaited/utils'
+import type { PlaitedElement } from './define-plaited-element.js'
+import { isTypeOf } from '../utils.js'
 
-const isPlaitedElement = (el: unknown): el is PlaitedElement =>
+export const isPlaitedElement = (el: unknown): el is PlaitedElement =>
   isTypeOf<PlaitedElement>(el, 'htmlelement') && 'trigger' in el
 
 export const getPlaitedChildren = (slot: HTMLSlotElement) => [...slot.assignedElements()].filter(isPlaitedElement)
-
-export const useSlots = (slot: HTMLSlotElement) => {
-  const getPlaited = () => [...slot.assignedElements()].filter(isPlaitedElement)
-  const forEachPlaited = (cb: (...el: PlaitedElement[]) => void | Promise<void>) => cb(...getPlaited())
-  return { getPlaited, forEachPlaited }
-}
