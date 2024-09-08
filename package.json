@@ -26,19 +26,19 @@
   },
   "files": [
     "./src/**",
-    "!**/spec/*"
+    "!./src/**/tests/*",
+    "!./src/**/*.spec.@(tsx|ts)"
   ],
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
+    "check": "tsc --project tsconfig.json",
     "clean": "bash scripts/clean.bash",
     "lint": "eslint . --ignore-pattern \"**/dist/*\"",
     "lint:fix": "bun run lint --fix --quiet --ignore-pattern \"**/dist/*\"",
-    "postinstall": "husky install",
-    "prepare": "husky install",
+    "prepare": "git config core.hooksPath .hooks",
     "prettier": "prettier . --write",
-    "check": "tsc --project tsconfig.json",
     "test": "start-server-and-test 'bun run storybook' http://localhost:6006 'bun test tests/* --watch'",
     "watch": "bun run check --watch"
   },
@@ -61,14 +61,9 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.10.0",
-    "@commitlint/cli": "19.4.1",
     "@commitlint/config-conventional": "19.4.1",
     "@eslint/js": "9.10.0",
     "@playwright/test": "1.47.0",
-    "@storybook/test-runner": "0.19.1",
-    "@storybook/addon-essentials": "8.2.9",
-    "@storybook/addon-interactions": "8.2.9",
-    "@storybook/html-vite": "8.2.9",
     "@types/beautify": "0.0.3",
     "@types/sinon": "17.0.3",
     "@types/eslint__js": "8.42.3",
@@ -80,16 +75,12 @@
     "eslint-config-prettier": "9.1.0",
     "format-package": "7.0.0",
     "globals": "15.9.0",
-    "husky": "9.1.5",
     "lint-staged": "15.2.10",
     "playwright": "1.47.0",
     "prettier": "3.3.3",
     "sinon": "18.0.0",
     "start-server-and-test": "2.0.6",
-    "storybook": "8.2.9",
     "typescript": "5.5.4",
-    "vite": "5.4.3",
-    "typescript-eslint": "8.4.0",
-    "zod": "3.23.8"
+    "typescript-eslint": "8.4.0"
   }
 }
