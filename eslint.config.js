@@ -1,10 +1,9 @@
-// @ts-check
-
 import globals from 'globals'
 import eslint from '@eslint/js'
 import tseslint from 'typescript-eslint'
 import eslintConfigPrettier from 'eslint-config-prettier'
 
+// @ts-ignore: valid rule
 export default tseslint.config(eslint.configs.recommended, ...tseslint.configs.recommended, eslintConfigPrettier, {
   languageOptions: {
     ecmaVersion: 'latest',
