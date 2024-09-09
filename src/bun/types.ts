@@ -8,7 +8,7 @@ import type {
   UseSnapshot,
   UseFeedback,
 } from '../behavioral.js'
-import { Attrs, TemplateObject } from '../jsx/types.js';
+import { Attrs, TemplateObject } from '../jsx/jsx.types.js';
 
 export type ServerWebSocket<T = unknown> = Parameters<
   Extract<Parameters<typeof Bun.serve<T>>[0], { websocket: unknown; unix?: never }>['websocket']['message']

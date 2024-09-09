@@ -1,4 +1,4 @@
-import type { Attrs, FunctionTemplate, CustomElementTag } from '../jsx/types.js'
+import type { Attrs, FunctionTemplate, CustomElementTag } from '../jsx/jsx.types.js'
 import { PLAITED_TEMPLATE_IDENTIFIER } from '../shared/constants.js'
 import { DefinePlaitedElementArgs, definePlaitedElement } from './define-plaited-element.js'
 import { P_HANDLER } from './constants.js'

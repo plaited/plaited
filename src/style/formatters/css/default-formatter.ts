@@ -8,8 +8,8 @@ import type {
   AmountValue,
   SizeValue,
   DesignTokenGroup,
-} from '../../types.js'
-import type { Formatter } from '../types.js'
+} from '../../token.types.js'
+import type { Formatter } from '../formatters.types.js'
 import { hasAlias } from '../has-alias.js'
 import { kebabCase } from '../../../utils.js'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'

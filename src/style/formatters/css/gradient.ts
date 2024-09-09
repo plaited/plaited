@@ -1,5 +1,5 @@
-import type { GradientValue, GradientToken, DesignTokenGroup } from '../../types.js'
-import type { Formatter } from '../types.js'
+import type { GradientValue, GradientToken, DesignTokenGroup } from '../../token.types.js'
+import type { Formatter } from '../formatters.types.js'
 import { hasAlias } from '../has-alias.js'
 import { kebabCase } from '../../../utils.js'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'

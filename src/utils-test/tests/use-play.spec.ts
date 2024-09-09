@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 import type { Play } from '../types.js'
-import { usePlay } from '../use-play.js'
+import { usePlay } from '../../assert/use-play.js'
 
 const play: Play = async ({ wait }) => {
   await wait(100)

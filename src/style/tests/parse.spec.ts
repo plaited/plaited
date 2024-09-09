@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 import { parse } from '../token-schema.js'
-import type { DesignTokenGroup } from '../types.js'
+import type { DesignTokenGroup } from '../token.types.js'
 
 export const tokens: DesignTokenGroup = {
   size: {

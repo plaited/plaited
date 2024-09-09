@@ -14,13 +14,13 @@ const Inner = defineTemplate({
   tag: 'inner-component',
   shadowDom: <h1 p-target='header'>Hello</h1>,
   publicEvents: ['add'],
-  connectedCallback({ $, bThreads, bThread, bSync }) {
+  connectedCallback({ $, bThreads, bThread, bSync, emit }) {
     bThreads.set({
       onAdd: bThread([bSync({ waitFor: 'add' }), bSync({ request: { type: 'disable' } })]),
     })
     return {
       disable() {
-        $.dispatch({ type: 'disable', bubbles: true })
+        emit({ type: 'disable', bubbles: true })
       },
       add(detail: string) {
         const [header] = $('header')

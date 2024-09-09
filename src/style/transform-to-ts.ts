@@ -1,4 +1,4 @@
-import type { TransformerParams } from './types.js'
+import type { TransformerParams } from './token.types.js'
 import { formatList } from './formatters/format-list.js'
 import { getFormatters } from './formatters/ts-formatters.js'
 

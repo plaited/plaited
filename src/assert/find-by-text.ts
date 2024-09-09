@@ -1,4 +1,4 @@
-type FindByText = <T extends HTMLElement = HTMLElement>(
+export type FindByText = <T extends HTMLElement = HTMLElement>(
   searchText: string | RegExp,
   context?: HTMLElement,
 ) => Promise<T | undefined>

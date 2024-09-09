@@ -1,5 +1,5 @@
-import type { CompositeToken } from '../../types.js'
-import type { Formatter } from '../types.js'
+import type { CompositeToken } from '../../token.types.js'
+import type { Formatter } from '../formatters.types.js'
 import { camelCase } from '../../../utils/case.js'
 import { hasAlias } from '../has-alias.js'
 import { resolveTSVar, isValidAlias } from '../ts-utils.js'

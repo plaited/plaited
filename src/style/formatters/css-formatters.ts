@@ -1,4 +1,4 @@
-import type { GetFormatters } from './types.js'
+import type { GetFormatters } from './formatters.types.js'
 import { color } from './css/color.js'
 import { gradient } from './css/gradient.js'
 import { defaultFormatter } from './css/default-formatter.js'

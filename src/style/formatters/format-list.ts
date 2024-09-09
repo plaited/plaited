@@ -1,5 +1,5 @@
-import type { DesignToken, DesignTokenGroup, Contexts } from '../types.js'
-import type { GetFormatters } from './types.js'
+import type { DesignToken, DesignTokenGroup, Contexts } from '../token.types.js'
+import type { GetFormatters } from './formatters.types.js'
 import { trueTypeOf } from '../../utils.js'
 
 type FormatList = (args: {

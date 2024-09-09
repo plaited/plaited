@@ -1,4 +1,4 @@
-type FindByAttribute = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+export type FindByAttribute = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
   attributeName: string,
   attributeValue: string | RegExp,
   context?: HTMLElement | SVGElement,

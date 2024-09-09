@@ -1,6 +1,6 @@
 import type { BPEvent, Trigger } from '../behavioral.js'
-import type { CustomElementTag } from '../jsx/types.js'
-import type { InsertMessage, TriggerMessageDetail, TriggerMessage } from '../shared/types.js'
+import type { CustomElementTag } from '../jsx/jsx.types.js'
+import type { InsertMessage, TriggerMessageDetail, TriggerMessage } from '../shared/shared.types.js'
 import { DelegatedListener, delegates } from './delegated-listener.js'
 import { isTypeOf } from '../utils/true-type-of.js'
 import { ACTION_INSERT, INSERT_METHODS, ACTION_TRIGGER } from '../shared/constants.js'

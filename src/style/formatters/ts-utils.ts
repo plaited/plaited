@@ -1,4 +1,4 @@
-import type { DesignTokenGroup } from '../types.js'
+import type { DesignTokenGroup } from '../token.types.js'
 import { camelCase, kebabCase } from '../../utils.js'
 import { resolveAlias } from './resolve-alias.js'
 import { prefix } from './constants.js'

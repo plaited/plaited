@@ -5,7 +5,7 @@ type EventArguments = {
   detail?: Record<string, unknown>
 }
 
-type FireEvent = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+export type FireEvent = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
   element: T,
   eventName: string,
   options?: EventArguments,

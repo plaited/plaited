@@ -1,4 +1,4 @@
-type Match = (str: string) => (pattern: string | RegExp) => string
+export type Match = (str: string) => (pattern: string | RegExp) => string
 
 const escapeRegex = (str: string) => str.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
 

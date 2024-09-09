@@ -1,4 +1,4 @@
-import type { Formatter } from '../types.js'
+import type { Formatter } from '../formatters.types.js'
 import { camelCase } from '../../../utils/case.js'
 import { hasAlias } from '../has-alias.js'
 import { isValidAlias, getCssVar } from '../ts-utils.js'

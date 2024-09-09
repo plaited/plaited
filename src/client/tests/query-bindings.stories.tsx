@@ -1,8 +1,9 @@
 import { assert, findByAttribute } from '@plaited/storybook-rite'
 import { Meta } from '@plaited/storybook'
-import type { Position } from '../use-shorthand.js'
+import type { Position } from '../use-query.js'
 import type { PlaitedElement } from '../define-plaited-element.js'
 import { defineTemplate } from '../define-template.js'
+import type { CloneCallback } from '../use-query.js'
 
 const meta: Meta = {
   title: 'Tests/QueryBindings',
@@ -96,6 +97,12 @@ const row = (
   </tr>
 )
 
+const forEachRow: CloneCallback<DataItem> = ($, data) => {
+  $('row')[0].attr('p-target', `${data.id}`)
+  $('id')[0].render(<>{data.id}</>)
+  $('label')[0].render(<>{data.label}</>)
+}
+
 const Fixture = defineTemplate({
   shadowDom: (
     <div p-target='root'>
@@ -105,11 +112,7 @@ const Fixture = defineTemplate({
   tag: 'table-fixture',
   publicEvents: ['insert', 'render', 'replace', 'remove', 'removeAttributes', 'getAttribute', 'multiSetAttributes'],
   connectedCallback({ $ }) {
-    const cb = $.clone<DataItem>(row, ($, data) => {
-      $('row')[0].attr('p-target', `${data.id}`)
-      $('id')[0].render(<>{data.id}</>)
-      $('label')[0].render(<>{data.label}</>)
-    })
+    const cb = $.clone(row, forEachRow)
     return {
       replace() {
         $('table')[0].replace(<span>I'm just a span</span>)

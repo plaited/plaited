@@ -1,6 +1,6 @@
-import type { Disconnect } from '../shared/types.js'
+import type { Disconnect } from '../shared/shared.types.js'
 import type { PostToWorker } from './use-worker.js'
-import type { TemplateObject, CustomElementTag } from '../jsx/types.js'
+import type { TemplateObject, CustomElementTag } from '../jsx/jsx.types.js'
 import {
   Actions,
   BPEvent,
@@ -15,10 +15,10 @@ import {
   bSync,
 } from '../behavioral.js'
 import { P_TRIGGER } from '../jsx/constants.js'
-import { Shorthand, useShorthand, handleTemplateObject } from './use-shorthand.js'
+import { QuerySelector, useQuery, handleTemplateObject } from './use-query.js'
 import { shadowObserver, addListeners } from './shadow-observer.js'
 import { onlyPublicEvents } from '../shared/only-public-events.js'
-import { SubscribeToPublisher } from '../shared/types.js'
+import { SubscribeToPublisher } from '../shared/shared.types.js'
 import { canUseDOM } from './can-use-dom.js'
 import { noop } from '../utils.js'
 import { P_WORKER, P_HANDLER } from './constants.js'
@@ -46,13 +46,21 @@ type Subscribe = (target: {
   sub:SubscribeToPublisher
 }, type: string, getLVC?: boolean) => Disconnect
 
+type Emit = <T = unknown>(
+  args: BPEvent<T> & {
+    bubbles?: boolean
+    cancelable?: boolean
+    composed?: boolean
+  },
+) => void
+
 export type ConnectedCallbackArgs = {
-  $: Shorthand
+  $: QuerySelector
   root: ShadowRoot
   internals: ElementInternals
   subscribe: Subscribe
   send: { handler: SendToHandler; worker: PostToWorker }
-  // OnlyConnectedCallbackArgs
+  emit: Emit
   trigger: Trigger
   bThreads: BThreads
   useSnapshot: UseSnapshot
@@ -101,6 +109,8 @@ export type DefinePlaitedElementArgs = {
   }
 }
 
+
+
 export const definePlaitedElement = ({
   tag,
   formAssociated,
@@ -125,7 +135,7 @@ export const definePlaitedElement = ({
         get #root() {
           return this.#internals.shadowRoot as ShadowRoot
         }
-        #shorthand: Shorthand
+        #query: QuerySelector
         #shadowObserver?: MutationObserver
         #trigger: Trigger
         #useFeedback: UseFeedback
@@ -142,7 +152,7 @@ export const definePlaitedElement = ({
           const frag = handleTemplateObject(this.#root, shadowDom)
           this.attachShadow({ mode, delegatesFocus, slotAssignment })
           this.#root.replaceChildren(frag)
-          this.#shorthand = useShorthand(this.#root)
+          this.#query = useQuery(this.#root)
           const { trigger, useFeedback, useSnapshot, bThreads } = bProgram()
           this.#trigger = trigger
           this.#useFeedback = useFeedback
@@ -164,7 +174,7 @@ export const definePlaitedElement = ({
             worker.disconnect = () => this.#sendDirective[P_WORKER].disconnect()
             // bind connectedCallback to the custom element wih the following arguments
             const actions = connectedCallback.bind(this)({
-              $: this.#shorthand,
+              $: this.#query,
               root: this.#root,
               internals: this.#internals,
               subscribe: ((target, type, getLVC) => {
@@ -173,6 +183,7 @@ export const definePlaitedElement = ({
                 return disconnect
               }) as Subscribe,
               send: { handler, worker },
+              emit: this.#emit,
               trigger: this.#trigger,
               useSnapshot: this.#useSnapshot,
               bThreads: this.#bThreads,
@@ -240,6 +251,16 @@ export const definePlaitedElement = ({
           const send = attr === P_HANDLER ? useHandler(this, value) : useWorker(this, value)
           this.#sendDirective[attr] === send
           this.#disconnectSet.add(send.disconnect)
+        }
+        #emit({ type, detail, bubbles = false, cancelable = true, composed = true }: Parameters<Emit>[0]) {
+          if (!type) return
+          const event = new CustomEvent(type, {
+            bubbles,
+            cancelable,
+            composed,
+            detail,
+          })
+          this.dispatchEvent(event)
         }
         trigger(event: BPEvent) {
           publicEvents && onlyPublicEvents(this.#trigger, publicEvents)(event)

@@ -6,7 +6,7 @@ import type {
   CreateNestedCSS,
   StyleObjects,
   StylesObject,
-} from './types.js'
+} from './css.types.js'
 import { hashString, kebabCase } from '../utils.js'
 
 const createClassHash = (...args: (string | number)[]) =>

@@ -1,4 +1,4 @@
-import type { CSSProperties } from '../css/types.js'
+import type { CSSProperties } from '../css/css.types.js'
 import { TEMPLATE_OBJECT_IDENTIFIER } from '../shared/constants.js'
 import { P_TARGET, P_TRIGGER } from './constants.js'
 

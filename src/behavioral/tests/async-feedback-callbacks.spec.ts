@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 import { bProgram } from '../b-program.js'
-import { wait } from '../../assert/wait.js'
+import { wait } from '../../utils/wait.js'
 import { bSync } from '../b-thread.js'
 test('async feedback ELEMENT_CALLBACKS', async () => {
   const actual: string[] = []

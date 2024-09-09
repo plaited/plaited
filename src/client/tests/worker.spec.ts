@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { wait } from '../../assert/wait.js'
+import { wait } from '../../utils/wait.js'
 import sinon from 'sinon'
 import { useWorker } from '../use-worker.js'
 import { BPEvent } from '../../behavioral.js'

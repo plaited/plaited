@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { noop } from '../utils.js'
 
-type Throws = <U extends unknown[], V>(
+export type Throws = <U extends unknown[], V>(
   fn: (...args: U) => V,
   ...args: U
 ) => string | undefined | Promise<string | undefined>

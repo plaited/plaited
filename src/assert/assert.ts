@@ -1,10 +1,8 @@
 import { deepEqual } from './deep-equal.js'
 import { isTypeOf } from '../utils/true-type-of.js'
 import { AssertionError, MissingTestParamsError } from './errors.js'
-import { useSend } from '../client/use-handler.js'
-import { PLAITED_TEST_HANDLER } from '../shared/constants.js'
 
-type Assert = <T>(param: { given: string; should: string; actual: T; expected: T }) => void
+export type Assert = <T>(param: { given: string; should: string; actual: T; expected: T }) => void
 
 const requiredKeys = ['given', 'should', 'actual', 'expected']
 
@@ -14,7 +12,7 @@ const replacer = (_: string| number | symbol, value: unknown) => value && typeof
   ? JSON.stringify(value, replacer, 2)
   : `${value}`
 
-export const unsafeAssert:Assert = (param) => {
+export const assert:Assert = (param) => {
   const args = param
   const missing = requiredKeys.filter((k) => !Object.keys(args).includes(k))
   if (missing.length) {
@@ -28,17 +26,5 @@ export const unsafeAssert:Assert = (param) => {
   }
 }
 
-export const assert:Assert = (param) => {
-  try {
-    unsafeAssert(param)
-  } catch (error) {
-    if(error instanceof AssertionError || error instanceof MissingTestParamsError) {
-      const send = useSend(PLAITED_TEST_HANDLER)
-      send({ type: error.name, detail: {
-        location: window?.location.href,
-        message: error.message,
-      }})
-    }
-  }
-}
+
 

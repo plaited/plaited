@@ -1,5 +1,4 @@
-import type { TemplateObject } from '../jsx/types.js'
-import type { BPEvent } from '../behavioral/b-thread.js'
+import type { TemplateObject } from '../jsx/jsx.types.js'
 import { isTypeOf } from '../utils/true-type-of.js'
 import { BOOLEAN_ATTRS, P_TARGET } from '../jsx/constants.js'
 
@@ -17,28 +16,20 @@ export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
 
 export type SelectorMatch = '=' | '~=' | '|=' | '^=' | '$=' | '*='
 
-
-type Dispatch = <T = unknown>(
-  args: BPEvent<T> & {
-    bubbles?: boolean
-    cancelable?: boolean
-    composed?: boolean
-  },
-) => void
-
 type Query = <T extends Element = Element>(
   target: string,
   /** This options enables querySelectorAll and modified the attribute selector for p-target{@default {all: false, mod: "=" } } {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}*/
   match?: SelectorMatch,
 ) => BoundElement<T>[]
 
+export type CloneCallback<T> = ($:Query, data: T ) => void
+
 type Clone = <T>(
   template: TemplateObject,
-  callback: ($:Query, data: T ) => void,
+  callback: CloneCallback<T>
 ) => (data: T) => DocumentFragment
 
-export type Shorthand = Query & {
-  dispatch: Dispatch
+export type QuerySelector = Query & {
   clone: Clone
 }
 
@@ -141,7 +132,7 @@ const bindingsMap = new WeakMap<ShadowRoot, Bindings>()
 export const getBoundInstance = (shadowRoot: ShadowRoot) =>
   bindingsMap.get(shadowRoot) ?? (bindingsMap.set(shadowRoot, getBindings(shadowRoot)).get(shadowRoot) as Bindings)
 
-export const useShorthand = (shadowRoot: ShadowRoot): Shorthand => {
+export const useQuery = (shadowRoot: ShadowRoot): QuerySelector => {
   const instance = getBoundInstance(shadowRoot)
   const select = <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
     assignBinding<T>(instance, Array.from(shadowRoot.querySelectorAll<Element>(`[${P_TARGET}${match}"${target}"]`)))
@@ -149,16 +140,6 @@ export const useShorthand = (shadowRoot: ShadowRoot): Shorthand => {
     (frag: DocumentFragment) =>
     <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
       assignBinding<T>(instance, Array.from(frag.querySelectorAll<Element>(`[${P_TARGET}${match}"${target}"]`)))
-  const dispatch:Dispatch =  ({ type, detail, bubbles = false, cancelable = true, composed = true }) => {
-    if (!type) return
-    const event = new CustomEvent(type, {
-      bubbles,
-      cancelable,
-      composed,
-      detail,
-    })
-    shadowRoot.host.dispatchEvent(event)
-  }
   const clone:Clone = (template, callback) => {
     return (data) => {
       const content = handleTemplateObject(shadowRoot, template)
@@ -166,7 +147,6 @@ export const useShorthand = (shadowRoot: ShadowRoot): Shorthand => {
       return content
     }
   }
-  select.dispatch = dispatch
   select.clone = clone
   return select
 }

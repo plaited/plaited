@@ -3,7 +3,7 @@ import * as prettier from 'prettier'
 
 import { transformToCSS } from '../transform-to-css.js'
 import { transformToTS } from '../transform-to-ts.js'
-import type { DesignTokenGroup } from '../types.js'
+import type { DesignTokenGroup } from '../token.types.js'
 
 test('empty token group', async () => {
   const tokens = {
