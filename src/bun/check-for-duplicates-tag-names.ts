@@ -1,7 +1,7 @@
 import type { PlaitedTemplate } from '../client/types.js'
 import { isTypeOf } from '../utils/true-type-of.js'
 import { PLAITED_TEMPLATE_IDENTIFIER } from '../shared/constants.js'
-import { GLOB_PATTERN_DUPLICATE_TAGS } from './constants.js'
+import { GLOB_PATTERN_DUPLICATE_TAGS } from './bun.constants.js'
 
 const isPlaitedComponent = (mod: unknown): mod is PlaitedTemplate =>
   isTypeOf<PlaitedTemplate>(mod, 'function') && mod?.$ === PLAITED_TEMPLATE_IDENTIFIER

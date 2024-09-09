@@ -14,7 +14,7 @@ import {
   bThread,
   bSync,
 } from '../behavioral.js'
-import { P_TRIGGER } from '../jsx/constants.js'
+import { P_TRIGGER } from '../jsx/jsx.constants.js'
 import { QuerySelector, useQuery, handleTemplateObject } from './use-query.js'
 import { shadowObserver, addListeners } from './shadow-observer.js'
 import { onlyPublicEvents } from '../shared/only-public-events.js'

@@ -1,6 +1,6 @@
 import type { Attrs, DetailedHTMLAttributes, TemplateObject, ElementAttributeList, CustomElementTag, FunctionTemplate } from './jsx.types.js'
 import { isTypeOf, kebabCase, escape } from '../utils.js'
-import { BOOLEAN_ATTRS, PRIMITIVES, VOID_TAGS, VALID_PRIMITIVE_CHILDREN, P_TRIGGER } from './constants.js'
+import { BOOLEAN_ATTRS, PRIMITIVES, VOID_TAGS, VALID_PRIMITIVE_CHILDREN, P_TRIGGER } from './jsx.constants.js'
 import { TEMPLATE_OBJECT_IDENTIFIER } from '../shared/constants.js'
 
 type Tag = string | CustomElementTag | FunctionTemplate

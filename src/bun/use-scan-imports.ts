@@ -1,5 +1,5 @@
 import { dirname, sep, resolve } from 'node:path'
-import { TEMPLATES_DIR } from './constants.js'
+import { TEMPLATES_DIR } from './bun.constants.js'
 
 export const useScanImports = (dir: string = TEMPLATES_DIR) => {
   const transpiler = new Bun.Transpiler({

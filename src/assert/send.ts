@@ -1,6 +1,6 @@
 import { useSend } from '../client/use-handler.js'
 import { PLAITED_TEST_HANDLER, } from '../shared/constants.js'
-import { UNKNOWN_ERROR, TEST_EXCEPTION} from './constants.js'
+import { UNKNOWN_ERROR, TEST_EXCEPTION} from './assert.constants.js'
 
 export type FailedTest = {
   id: string

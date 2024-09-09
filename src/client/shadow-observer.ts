@@ -1,6 +1,6 @@
 import type { Trigger } from '../behavioral.js'
 import { DelegatedListener, delegates } from './delegated-listener.js'
-import { P_TRIGGER } from '../jsx/constants.js'
+import { P_TRIGGER } from '../jsx/jsx.constants.js'
 
 const isElement = (node: Node): node is Element => node.nodeType === 1
 

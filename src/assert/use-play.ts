@@ -6,7 +6,7 @@ import { match } from './match.js'
 import { throws } from './throws.js'
 import { wait } from '../utils/wait.js'
 import { TimeoutError, AssertionError, MissingTestParamsError } from './errors.js'
-import { TEST_PASSED, TEST_EXCEPTION, DEFAULT_PLAY_TIMEOUT } from './constants.js'
+import { TEST_PASSED, TEST_EXCEPTION, DEFAULT_PLAY_TIMEOUT } from './assert.constants.js'
 import { send, sendUnknownError, FailedTest, PassedTest } from './send.js'
 
 export type Play = (args: {

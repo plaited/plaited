@@ -1,6 +1,6 @@
 import type { TemplateObject } from '../jsx/jsx.types.js'
 import { isTypeOf } from '../utils/true-type-of.js'
-import { BOOLEAN_ATTRS, P_TARGET } from '../jsx/constants.js'
+import { BOOLEAN_ATTRS, P_TARGET } from '../jsx/jsx.constants.js'
 
 type Bindings = {
   render(this: Element, ...template: (TemplateObject | DocumentFragment | Element | string)[]): void

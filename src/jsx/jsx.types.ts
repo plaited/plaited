@@ -1,6 +1,6 @@
 import type { CSSProperties } from '../css/css.types.js'
 import { TEMPLATE_OBJECT_IDENTIFIER } from '../shared/constants.js'
-import { P_TARGET, P_TRIGGER } from './constants.js'
+import { P_TARGET, P_TRIGGER } from './jsx.constants.js'
 
 type Booleanish = boolean | 'true' | 'false'
 type CrossOrigin = 'anonymous' | 'use-credentials' | ''

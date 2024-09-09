@@ -4,7 +4,6 @@ import type { Play } from './use-play.js';
 
 export type Parameters = {
   a11y?: RuleObject // Defaults to true
-  description: string // Defaults to undefined
   timeout?: number // Defaults to 5_000 ms
 }
 
@@ -24,7 +23,3 @@ export type TemplateStory<T extends Attrs = Attrs> = {
 
 export type StoryObj<T extends Attrs = Attrs> = TemplateStory<T> | ModuleStory<T>
 
-// export type ComposeStories = {
-//   (stories: Record<string, StoryObj>): [string, Parameters][]
-//   extend(root: string): (stories: Record<string, StoriesExport>) => [string, Parameters][]
-// }

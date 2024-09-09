@@ -1,4 +1,4 @@
-import { ASSERTION_ERROR, TIMEOUT_ERROR, MISSING_TEST_PARAMS_ERROR } from './constants.js'
+import { ASSERTION_ERROR, TIMEOUT_ERROR, MISSING_TEST_PARAMS_ERROR } from './assert.constants.js'
 
 export class AssertionError extends Error implements Error {
   override name = ASSERTION_ERROR
