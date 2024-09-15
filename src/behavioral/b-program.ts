@@ -1,4 +1,4 @@
-import type { Disconnect } from '../shared/shared.types.js'
+import type { Disconnect } from '../internal/internal.types.js'
 import type {
   BPEvent,
   BPEventTemplate,

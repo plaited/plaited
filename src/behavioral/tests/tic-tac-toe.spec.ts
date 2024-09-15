@@ -163,13 +163,13 @@ test('detect winner', () => {
       board.delete(square)
     },
     // // When BPEvent `O` happens we delete the square provided in the event's detail
-    // O({ square }: { square: number }) {
-    //   board.delete(square)
-    // },
-    // // When BPEvent `win` happens we set the winner
-    // win(detail: Winner) {
-    //   winner = detail
-    // },
+    O({ square }: { square: number }) {
+      board.delete(square)
+    },
+    // When BPEvent `win` happens we set the winner
+    win(detail: Winner) {
+      winner = detail
+    },
   })
   trigger({ type: 'X', detail: { square: 0 } })
   trigger({ type: 'O', detail: { square: 3 } })
