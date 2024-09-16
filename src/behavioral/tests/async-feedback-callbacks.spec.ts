@@ -13,7 +13,7 @@ test('async feedback ELEMENT_CALLBACKS', async () => {
     async init() {
       actual.push('init')
       await wait(100)
-      trigger({ type: 'update' , detail: 'update' })
+      trigger({ type: 'update', detail: 'update' })
     },
     afterInit() {
       actual.push('afterInit')

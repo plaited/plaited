@@ -1,4 +1,11 @@
-import type { MediaQueries, ColorSchemes, ColorValue, AliasValue, ContextTypes, DesignTokenGroup } from '../token.types.js'
+import type {
+  MediaQueries,
+  ColorSchemes,
+  ColorValue,
+  AliasValue,
+  ContextTypes,
+  DesignTokenGroup,
+} from '../token.types.js'
 import { isTypeOf, kebabCase } from '../../utils.js'
 import { resolveAlias } from './resolve-alias.js'
 import { prefix } from './formatters.constants.js'

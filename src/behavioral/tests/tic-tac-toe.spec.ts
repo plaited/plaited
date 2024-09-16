@@ -83,8 +83,8 @@ test('take turns', () => {
 const squaresTaken: Record<string, RulesFunction> = {}
 for (const square of squares) {
   squaresTaken[`(${square}) taken`] = bThread([
-    bSync<{square: number}>({ waitFor: ({ detail }) => square === detail.square }),
-    bSync<{square: number}>({ block: ({ detail }) => square === detail.square }),
+    bSync<{ square: number }>({ waitFor: ({ detail }) => square === detail.square }),
+    bSync<{ square: number }>({ block: ({ detail }) => square === detail.square }),
   ])
 }
 

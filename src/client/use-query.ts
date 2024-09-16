@@ -22,12 +22,9 @@ type Query = <T extends Element = Element>(
   match?: SelectorMatch,
 ) => BoundElement<T>[]
 
-export type CloneCallback<T> = ($:Query, data: T ) => void
+export type CloneCallback<T> = ($: Query, data: T) => void
 
-type Clone = <T>(
-  template: TemplateObject,
-  callback: CloneCallback<T>
-) => (data: T) => DocumentFragment
+type Clone = <T>(template: TemplateObject, callback: CloneCallback<T>) => (data: T) => DocumentFragment
 
 export type QuerySelector = Query & {
   clone: Clone
@@ -140,7 +137,7 @@ export const useQuery = (shadowRoot: ShadowRoot): QuerySelector => {
     (frag: DocumentFragment) =>
     <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
       assignBinding<T>(instance, Array.from(frag.querySelectorAll<Element>(`[${P_TARGET}${match}"${target}"]`)))
-  const clone:Clone = (template, callback) => {
+  const clone: Clone = (template, callback) => {
     return (data) => {
       const content = handleTemplateObject(shadowRoot, template)
       callback(selectFrag(content), data)

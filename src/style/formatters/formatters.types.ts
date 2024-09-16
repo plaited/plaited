@@ -1,4 +1,4 @@
-import { DesignToken, DesignTokenGroup, Contexts } from "../token.types.js"
+import { DesignToken, DesignTokenGroup, Contexts } from '../token.types.js'
 
 export type Formatter<T extends DesignToken = DesignToken> = (
   token: T,

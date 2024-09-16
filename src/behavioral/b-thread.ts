@@ -54,7 +54,7 @@ export const bThread: BThread = (rules, repeat) => {
  * @param {BPListener[] | BPListener} options.blocked - An array of behavioral program listeners or a single listener that is blocking a specific event or event who satisfies it's callback. See [`BPListener`](libs/behavioral/src/types.ts).
  * @returns {RulesFunction} Synchronization set used for applying the execution of rules to the behavioral program. See [`RulesFunction`](libs/behavioral/src/types.ts).
  */
-export const bSync: BSync =  (syncPoint) =>
+export const bSync: BSync = (syncPoint) =>
   function* () {
     yield syncPoint
   }

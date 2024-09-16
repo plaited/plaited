@@ -29,7 +29,7 @@ export const basic: Story = {
       actual,
       expected: 4,
     })
-    await pub(await pub.get() + 1)
+    await pub((await pub.get()) + 1)
     actual = await pub.get()
     assert({
       given: 'callback with previous value',

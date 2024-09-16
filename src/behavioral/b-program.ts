@@ -1,11 +1,5 @@
 import type { Disconnect } from '../internal/internal.types.js'
-import type {
-  BPEvent,
-  BPEventTemplate,
-  BPListener,
-  Idioms,
-  RulesFunction,
-} from './b-thread.js'
+import type { BPEvent, BPEventTemplate, BPListener, Idioms, RulesFunction } from './b-thread.js'
 import { isTypeOf } from '../utils/true-type-of.js'
 
 type RunningBid = {
@@ -51,7 +45,7 @@ export type BThreads = {
   has: (thread: string) => { running: boolean; pending: boolean }
   set: (threads: Record<string, RulesFunction>) => void
 }
- 
+
 export type Trigger = <T>(args: BPEvent<T>) => void
 
 export type BProgram = () => Readonly<{
@@ -91,7 +85,6 @@ const isListeningFor = ({ type, detail }: CandidateBid) => {
     : listener === type
 }
 
- 
 const isPendingRequest = (selectedEvent: CandidateBid, event: BPEvent | BPEventTemplate) =>
   isTypeOf<BPEventTemplate>(event, 'function') ? event === selectedEvent?.template : event.type == selectedEvent.type
 

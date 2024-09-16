@@ -3,7 +3,10 @@ import { bProgram } from '../b-program.js'
 import { bThread, bSync } from '../b-thread.js'
 
 describe('interrupt', () => {
-  const addHot = bThread([bSync({ waitFor: 'add', interrupt: ['terminate'] }), bSync({ request: { type: 'hot' } })], true)
+  const addHot = bThread(
+    [bSync({ waitFor: 'add', interrupt: ['terminate'] }), bSync({ request: { type: 'hot' } })],
+    true,
+  )
 
   it('should not interrupt', () => {
     const actual: string[] = []
