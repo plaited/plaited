@@ -10,7 +10,7 @@ import {
   bThread,
   bSync,
 } from '../behavioral.js'
-import { onlyPublicEvents } from '../shared/only-public-events.js'
+import { usePublicEvents } from '../internal/use-public-events.js'
 
 export const defineWorker = ({
   connectedCallback,
@@ -32,7 +32,7 @@ export const defineWorker = ({
   targetOrigin?: string
 }) => {
   const { useFeedback, trigger, ...rest } = bProgram()
-  const _trigger = onlyPublicEvents(trigger, publicEvents)
+  const _trigger = usePublicEvents(trigger, publicEvents)
   const eventHandler = ({ data }: { data: BPEvent }) => {
     _trigger(data)
   }

@@ -1,7 +1,7 @@
 import { assert, findByAttribute } from '@plaited/storybook-rite'
 import { Meta } from '@plaited/storybook'
 import type { Position } from '../use-query.js'
-import type { PlaitedElement } from '../define-plaited-element.js'
+import type { PlaitedElement } from '../define-element.js'
 import { defineTemplate } from '../define-template.js'
 import type { CloneCallback } from '../use-query.js'
 

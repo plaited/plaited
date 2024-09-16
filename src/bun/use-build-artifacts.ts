@@ -1,5 +1,5 @@
 import { BuildArtifact } from 'bun'
-import { isJsMimeType, createZippedResponse } from './create-zipped-response.js'
+import { isJsMimeType, createZippedResponse } from '../internal/create-zipped-response.js'
 
 export const useBuildArtifacts = async (outputs: BuildArtifact[]) => {
   const handlers = new Map<string, () => Response>()

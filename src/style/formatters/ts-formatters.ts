@@ -7,7 +7,7 @@ import { composite } from './ts/composite.js'
  * a treeshakeable mapping to css custom properties references to be used
  * inline styles in ts/js component files
  */
-export const getFormatters: GetFormatters = (token, details) => {
+export const tsFormatters: GetFormatters = (token, details) => {
   const { $type } = token
   if ($type === 'composite') return composite(token, details)
   return defaultFormat(token, details)

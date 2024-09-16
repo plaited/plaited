@@ -1,7 +1,7 @@
 import { assert, findByAttribute, fireEvent } from '@plaited/storybook-rite'
 import { Meta, StoryObj } from '@plaited/storybook'
 import { defineTemplate } from '../define-template.js'
-import { getPlaitedChildren } from '../../index.js'
+import { getPlaitedChildren } from '../../internal/get-plaited-children.js'
 
 const meta: Meta = {
   title: 'Tests',

@@ -1,5 +1,5 @@
 import type { Trigger } from '../behavioral.js'
-import type { SubscribeToPublisher, Disconnect } from '../shared/shared.types.js'
+import type { SubscribeToPublisher, Disconnect } from '../internal/internal.types.js'
 
 export function useStore<T>(initialValue: T): {
   (value: T): void
@@ -42,19 +42,19 @@ export const useComputed = <T>(initialValue: () => T, deps: ReturnType<typeof us
     if (!store) store = initialValue()
     return store
   }
-  const disconnectDeps: Disconnect[]= [] 
-  const update:Trigger = (..._) => {
+  const disconnectDeps: Disconnect[] = []
+  const update: Trigger = (..._) => {
     store = initialValue()
     for (const cb of listeners) cb(store)
   }
-  const sub:SubscribeToPublisher = (eventType: string, trigger: Trigger, getLVC = false) => {
-    if(!listeners.size) disconnectDeps.push(...deps.map((dep) => dep.sub('update', update)))
+  const sub: SubscribeToPublisher = (eventType: string, trigger: Trigger, getLVC = false) => {
+    if (!listeners.size) disconnectDeps.push(...deps.map((dep) => dep.sub('update', update)))
     const cb = (detail?: T) => trigger<T>({ type: eventType, detail })
     getLVC && cb(get())
     listeners.add(cb)
     return () => {
       listeners.delete(cb)
-      if(!listeners.size) for (const dep of disconnectDeps) dep()
+      if (!listeners.size) for (const dep of disconnectDeps) dep()
     }
   }
   get.sub = sub

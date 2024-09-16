@@ -1,18 +1,14 @@
 import { test, expect, jest } from 'bun:test'
 import * as prettier from 'prettier'
 
-import { transformToCSS } from '../transform-to-css.js'
-import { transformToTS } from '../transform-to-ts.js'
+import { transformTokens } from '../transform-tokens.js'
 import type { DesignTokenGroup } from '../token.types.js'
 
 test('empty token group', async () => {
   const tokens = {
     colors: {},
   }
-  const css = transformToCSS({
-    tokens,
-  })
-  const ts = transformToTS({
+  const { css, ts } = transformTokens({
     tokens,
   })
   const prettyCSS = await prettier.format(css, { parser: 'css' })
@@ -26,10 +22,7 @@ test('token group', async () => {
       xxs: { $value: '0.25rem', $type: 'size', $description: 'mock description' },
     },
   }
-  const css = transformToCSS({
-    tokens,
-  })
-  const ts = transformToTS({
+  const { css, ts } = transformTokens({
     tokens,
   })
   const prettyCSS = await prettier.format(css, { parser: 'css' })
@@ -53,10 +46,7 @@ test('nested token group', async () => {
       },
     },
   }
-  const css = transformToCSS({
-    tokens,
-  })
-  const ts = transformToTS({
+  const { css, ts } = transformTokens({
     tokens,
   })
   const prettyCSS = await prettier.format(css, { parser: 'css' })
@@ -85,17 +75,7 @@ test('context: [media-query]', async () => {
       },
     },
   }
-  const css = transformToCSS({
-    tokens,
-    contexts: {
-      mediaQueries: {
-        desktop: 'screen and (min-width: 1024px)',
-        tv: 'screen and (min-width: 1920px)',
-        mobile: 'screen and (max-width: 767px)',
-      },
-    },
-  })
-  const ts = transformToTS({
+  const { ts, css } = transformTokens({
     tokens,
     contexts: {
       mediaQueries: {
@@ -140,16 +120,7 @@ test('context: [color-scheme]', async () => {
       },
     },
   }
-  const css = transformToCSS({
-    tokens,
-    contexts: {
-      colorSchemes: {
-        light: 'light',
-        dark: 'dark',
-      },
-    },
-  })
-  const ts = transformToTS({
+  const { css, ts } = transformTokens({
     tokens,
     contexts: {
       colorSchemes: {
@@ -203,21 +174,7 @@ test('context: [media-query, color-scheme]', async () => {
       },
     },
   }
-  const css = transformToCSS({
-    tokens,
-    contexts: {
-      mediaQueries: {
-        desktop: 'screen and (min-width: 1024px)',
-        mobile: 'screen and (max-width: 767px)',
-        tv: 'screen and (min-width: 1920px)',
-      },
-      colorSchemes: {
-        light: 'light',
-        dark: 'dark',
-      },
-    },
-  })
-  const ts = transformToTS({
+  const { css, ts } = transformTokens({
     tokens,
     contexts: {
       mediaQueries: {
@@ -261,10 +218,7 @@ test('alias', async () => {
       },
     },
   }
-  const css = transformToCSS({
-    tokens,
-  })
-  const ts = transformToTS({
+  const { css, ts } = transformTokens({
     tokens,
   })
   const prettyCSS = await prettier.format(css, { parser: 'css' })
@@ -312,16 +266,7 @@ test('alias + context', async () => {
       },
     },
   }
-  const css = transformToCSS({
-    tokens,
-    contexts: {
-      colorSchemes: {
-        light: 'light',
-        dark: 'dark',
-      },
-    },
-  })
-  const ts = transformToTS({
+  const { css, ts } = transformTokens({
     tokens,
     contexts: {
       colorSchemes: {
@@ -409,16 +354,7 @@ test('exercise token types', async () => {
       $description: 'mock description',
     },
   }
-  const css = transformToCSS({
-    tokens,
-    contexts: {
-      colorSchemes: {
-        light: 'light',
-        dark: 'dark',
-      },
-    },
-  })
-  const ts = transformToTS({
+  const { css, ts } = transformTokens({
     tokens,
     contexts: {
       colorSchemes: {
@@ -459,7 +395,7 @@ test('invalid alias', async () => {
     },
   }
   console.error = jest.fn()
-  transformToCSS({
+  transformTokens({
     tokens,
   })
   //@ts-expect-error: it exist
@@ -485,11 +421,8 @@ test('invalid context', async () => {
       },
     },
   }
-  transformToCSS({
-    tokens,
-  })
   console.error = jest.fn()
-  transformToCSS({
+  transformTokens({
     tokens,
   })
   //@ts-expect-error: it exist
@@ -514,7 +447,7 @@ test('invalid context key', async () => {
     },
   }
   console.error = jest.fn()
-  transformToCSS({
+  transformTokens({
     tokens,
     contexts: {
       mediaQueries: {

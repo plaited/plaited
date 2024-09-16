@@ -1,9 +1,9 @@
 import { test, expect } from 'bun:test'
 import sinon from 'sinon'
-import { unsafeAssert } from '../assert.js'
+import { assert } from '../assert.js'
 import { throws } from '../throws.js'
 import { match } from '../match.js'
-import { wait } from '../../utils/wait.js'
+import { wait } from '../../utils.js'
 const sum = (...args: number[]) => {
   if (args.some((v) => Number.isNaN(v))) throw new TypeError('NaN')
   return args.reduce((acc, n) => acc + n, 0)
@@ -20,7 +20,7 @@ test('assert: sum()', () => {
   const should = 'return the correct sum'
 
   expect(() =>
-    unsafeAssert({
+    assert({
       given: 'no arguments',
       should: 'return 0',
       actual: sum(),
@@ -29,7 +29,7 @@ test('assert: sum()', () => {
   ).not.toThrow()
 
   expect(() =>
-    unsafeAssert({
+    assert({
       given: 'zero',
       should,
       actual: sum(2, 0),
@@ -38,7 +38,7 @@ test('assert: sum()', () => {
   ).not.toThrow()
 
   expect(() =>
-    unsafeAssert({
+    assert({
       given: 'negative numbers',
       should,
       actual: sum(1, -4),
@@ -46,7 +46,7 @@ test('assert: sum()', () => {
     }),
   ).not.toThrow()
   expect(() =>
-    unsafeAssert({
+    assert({
       given: 'NaN',
       should: 'throw',
       actual: throws(sum, 1, NaN),
@@ -58,7 +58,7 @@ test('assert: sum()', () => {
 test('assert: handles async', async () => {
   expect(async () => {
     const actual = await resolveAfter()
-    unsafeAssert({
+    assert({
       given: 'promise',
       should: 'resolve',
       actual,
@@ -71,7 +71,7 @@ test('assert: handles async', async () => {
       throw error
     }
     const actual = await throws(erred, 'irrelevant')
-    unsafeAssert({
+    assert({
       given: 'an async function that throws',
       should: 'await and return the value of the error',
       actual,
@@ -89,7 +89,7 @@ test('assert: throw returns undefined when not thrown', async () => {
       }
     }
     const actual = await throws(reverence, 'irreverent', true)
-    unsafeAssert({
+    assert({
       given: 'reverent receives irreverent attitude but has a pass',
       should: 'not throw error',
       actual,
@@ -101,7 +101,7 @@ test('assert: throw returns undefined when not thrown', async () => {
 test('wait()', async () => {
   await wait(20)
   expect(() =>
-    unsafeAssert({
+    assert({
       given: 'a wait call',
       should: 'should pause for 20ms',
       actual: true,
@@ -119,7 +119,7 @@ test('match()', () => {
   const contains = match(textToSearch)
 
   expect(() =>
-    unsafeAssert({
+    assert({
       given,
       should,
       actual: contains(pattern),
@@ -130,7 +130,7 @@ test('match()', () => {
 
 test('assert: required params', async () => {
   //@ts-ignore: testing error message
-  const noParams = async () => await unsafeAssert({})
+  const noParams = async () => await assert({})
   let spy = sinon.spy(noParams)
   try {
     await spy()
@@ -142,7 +142,7 @@ test('assert: required params', async () => {
   }
   expect(spy.calledOnce).toBe(true)
   //@ts-ignore: testing error message
-  const partialParam = async () => await unsafeAssert({ given: 'some keys', should: 'find the missing keys' })
+  const partialParam = async () => await assert({ given: 'some keys', should: 'find the missing keys' })
   spy = sinon.spy(partialParam)
   try {
     await spy()
@@ -155,7 +155,7 @@ test('assert: required params', async () => {
 
 test('assert: throws on failure', () => {
   expect(() =>
-    unsafeAssert({
+    assert({
       given: 'number',
       should: 'equal number',
       actual: 0,
@@ -164,7 +164,7 @@ test('assert: throws on failure', () => {
   ).toThrow('{"message":"Given number: should equal number","actual":0,"expected":1}')
 
   expect(() =>
-    unsafeAssert({
+    assert({
       given: 'regex',
       should: 'equal regex',
       actual: /test/i,
@@ -173,7 +173,7 @@ test('assert: throws on failure', () => {
   ).toThrow('{"message":"Given regex: should equal regex","actual":{},"expected":{}}')
 
   expect(() =>
-    unsafeAssert({
+    assert({
       given: 'false',
       should: 'equal false',
       actual: null,
@@ -182,7 +182,7 @@ test('assert: throws on failure', () => {
   ).toThrow('{"message":"Given false: should equal false","actual":null,"expected":false}')
 
   expect(() =>
-    unsafeAssert({
+    assert({
       given: 'array',
       should: 'equal array',
       actual: ['nope'],
@@ -191,7 +191,7 @@ test('assert: throws on failure', () => {
   ).toThrow('{"message":"Given array: should equal array","actual":["nope"],"expected":["array"]}')
 
   expect(() =>
-    unsafeAssert({
+    assert({
       given: 'set',
       should: 'equal set',
       actual: new Set(['nope']),
@@ -200,7 +200,7 @@ test('assert: throws on failure', () => {
   ).toThrow('{"message":"Given set: should equal set","actual":{},"expected":{}}')
 
   expect(() =>
-    unsafeAssert({
+    assert({
       given: 'map',
       should: 'equal map',
       actual: new Map([['key', 'nope']]),
@@ -209,7 +209,7 @@ test('assert: throws on failure', () => {
   ).toThrow('{"message":"Given map: should equal map","actual":{},"expected":{}}')
 
   expect(() =>
-    unsafeAssert({
+    assert({
       given: 'object',
       should: 'equal object',
       actual: {

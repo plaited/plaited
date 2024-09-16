@@ -1,17 +1,18 @@
 import type { Attrs, FunctionTemplate, CustomElementTag } from '../jsx/jsx.types.js'
-import { PLAITED_TEMPLATE_IDENTIFIER } from '../shared/constants.js'
-import { DefinePlaitedElementArgs, definePlaitedElement } from './define-plaited-element.js'
-import { P_HANDLER } from './constants.js'
+import { PLAITED_TEMPLATE_IDENTIFIER } from '../internal/internal.constants.js'
+import { DefineElementArgs, defineElement } from './define-element.js'
+import { P_WORKER, P_SERVER } from '../jsx/jsx.constants.js'
 import { createTemplate } from '../jsx/create-template.js'
 
-export interface DefinePlaitedTemplateArgs extends Omit<DefinePlaitedElementArgs, 'delegatesFocus' | 'mode' | 'slotAssignment'> {
+interface DefineTemplateArgs extends Omit<DefineElementArgs, 'delegatesFocus' | 'mode' | 'slotAssignment'> {
   delegatesFocus?: boolean
   mode?: 'open' | 'closed'
   slotAssignment?: 'named' | 'manual'
 }
 
 export type PlaitedTemplateAttrs = Attrs & {
-  [P_HANDLER]?: string
+  [P_WORKER]?: string
+  [P_SERVER]?: boolean
 }
 
 export type PlaitedTemplate<T extends PlaitedTemplateAttrs = PlaitedTemplateAttrs> = FunctionTemplate<T> & {
@@ -31,8 +32,8 @@ export const defineTemplate = <T extends Attrs = Attrs>({
   publicEvents = [],
   observedAttributes = [],
   ...rest
-}: DefinePlaitedTemplateArgs): PlaitedTemplate<T> => {
-  definePlaitedElement({
+}: DefineTemplateArgs): PlaitedTemplate<T> => {
+  defineElement({
     tag,
     shadowDom,
     publicEvents,

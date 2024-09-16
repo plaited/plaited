@@ -1,3 +1,4 @@
+//BEHAVIORAL
 export {
   Actions,
   BProgram,
@@ -19,5 +20,3 @@ export {
   bSync,
   isBPEvent,
 } from './behavioral/b-thread.js'
-export { randomEvent } from './behavioral/random-event.js'
-export { shuffleSyncs } from './behavioral/shuffle-syncs.js'

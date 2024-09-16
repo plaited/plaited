@@ -16,5 +16,5 @@
 
     "noEmit": true
   },
-  "exclude": ["**/dist", "**/stories/"]
+  "exclude": ["**/tests", "**/stories/", "src/css/types/css.d.ts"]
 }

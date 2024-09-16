@@ -3,6 +3,9 @@ export const P_TARGET = 'p-target' as const
 /** attribute used to wire a dom element to the component event listener */
 export const P_TRIGGER = 'p-trigger' as const
 
+export const P_SERVER = 'p-server' as const
+export const P_WORKER = 'p-worker' as const
+
 export const VOID_TAGS = new Set([
   'area',
   'base',
@@ -30,6 +33,7 @@ export const VOID_TAGS = new Set([
 ])
 /** boolean attributes */
 export const BOOLEAN_ATTRS = new Set([
+  P_SERVER,
   'allowfullscreen',
   'async',
   'autofocus',

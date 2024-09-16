@@ -1,18 +1,17 @@
-import { deepEqual } from './deep-equal.js'
-import { isTypeOf } from '../utils/true-type-of.js'
+import { deepEqual, isTypeOf } from '../utils.js'
 import { AssertionError, MissingTestParamsError } from './errors.js'
 
 export type Assert = <T>(param: { given: string; should: string; actual: T; expected: T }) => void
 
 const requiredKeys = ['given', 'should', 'actual', 'expected']
 
-const replacer = (_: string| number | symbol, value: unknown) => value && typeof value === 'object' && 'toString' in value
-  ? value.toString()
-  : isTypeOf<Record<string, unknown>>(value, 'object') || isTypeOf<unknown[]>(value, 'array')
-  ? JSON.stringify(value, replacer, 2)
+const replacer = (_: string | number | symbol, value: unknown) =>
+  value && typeof value === 'object' && 'toString' in value ? value.toString()
+  : isTypeOf<Record<string, unknown>>(value, 'object') || isTypeOf<unknown[]>(value, 'array') ?
+    JSON.stringify(value, replacer, 2)
   : `${value}`
 
-export const assert:Assert = (param) => {
+export const assert: Assert = (param) => {
   const args = param
   const missing = requiredKeys.filter((k) => !Object.keys(args).includes(k))
   if (missing.length) {
@@ -25,6 +24,3 @@ export const assert:Assert = (param) => {
     throw new AssertionError(JSON.stringify({ message, actual, expected }, replacer, 2))
   }
 }
-
-
-
