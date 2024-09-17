@@ -1,7 +1,9 @@
 import { assert, findByAttribute, fireEvent } from '@plaited/storybook-rite'
 import { Meta, StoryObj } from '@plaited/storybook'
 import { defineTemplate } from '../define-template.js'
-import { getPlaitedChildren } from '../../internal/get-plaited-children.js'
+import { isPlaitedElement } from '../../workshop/is-plaited-template.js'
+
+export const getPlaitedChildren = (slot: HTMLSlotElement) => [...slot.assignedElements()].filter(isPlaitedElement)
 
 const meta: Meta = {
   title: 'Tests',

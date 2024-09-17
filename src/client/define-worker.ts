@@ -10,7 +10,7 @@ import {
   bThread,
   bSync,
 } from '../behavioral.js'
-import { usePublicEvents } from '../internal/use-public-events.js'
+import { usePublicEvents } from './use-public-events.js'
 
 export const defineWorker = ({
   connectedCallback,

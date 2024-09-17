@@ -7,8 +7,14 @@ import type {
   FunctionTemplate,
 } from './jsx.types.js'
 import { isTypeOf, kebabCase, escape } from '../utils.js'
-import { BOOLEAN_ATTRS, PRIMITIVES, VOID_TAGS, VALID_PRIMITIVE_CHILDREN, P_TRIGGER } from './jsx.constants.js'
-import { TEMPLATE_OBJECT_IDENTIFIER } from '../internal/internal.constants.js'
+import {
+  BOOLEAN_ATTRS,
+  PRIMITIVES,
+  VOID_TAGS,
+  VALID_PRIMITIVE_CHILDREN,
+  P_TRIGGER,
+  TEMPLATE_OBJECT_IDENTIFIER,
+} from './jsx.constants.js'
 
 type Tag = string | CustomElementTag | FunctionTemplate
 

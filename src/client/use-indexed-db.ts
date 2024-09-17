@@ -1,5 +1,5 @@
 import type { Trigger } from '../behavioral.js'
-import type { SubscribeToPublisher } from '../internal/internal.types.js'
+import type { SubscribeToPublisher } from './client.types.js'
 import { PLAITED_INDEXED_DB, PLAITED_STORE } from './client.constants.js'
 
 type CreateIDBCallback = (arg: IDBObjectStore) => void

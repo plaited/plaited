@@ -1,19 +1,20 @@
+import type { BuildOutput } from 'bun'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { rm } from 'fs/promises'
 import { tmpdir } from 'node:os'
-import { GLOB_PATTERN_STORIES } from './storybook.constants.js'
+import { useSSR } from './use-ssr.js'
 import { kebabCase, hashString } from '../utils.js'
+import { STORIES_GLOB_PATTERN, USE_PLAY_ROUTE, WORKSHOP_ROUTE_ROOT } from './workshop.constants.js'
+import { StoryObj, Parameters } from './workshop.types.js'
 import { Page } from './Page.js'
-import { useSSR } from '../bun/use-ssr.js'
-import { StoryObj, Parameters } from './storybook.types.js'
-import { jsMimeTypes } from '../internal/create-zipped-response.js'
-import type { BuildOutput } from 'bun'
+import { jsMimeTypes } from './create-zipped-response.js'
+
 const usePlayRegex = /\/use-play\.js$/
 const jsRegex = /\.js$/
+const rootRegex = /^\.\//
 
 const globAndSortStories = async (root: string) => {
-  const glob = new Bun.Glob(GLOB_PATTERN_STORIES)
+  const glob = new Bun.Glob(STORIES_GLOB_PATTERN)
   const routes = new Map<string, { filePath: string; exportName: string; id: string }>()
   const paths = await Array.fromAsync(glob.scan({ cwd: root }))
   const entries: Set<string> = new Set()
@@ -30,7 +31,7 @@ const globAndSortStories = async (root: string) => {
           const suffix = `.stories${ext}`
           const basename = filePath.endsWith(suffix) ? kebabCase(path.basename(filePath, suffix)) : ''
           const storyName = kebabCase(exportName)
-          const route = ['_stories', dirname, basename, storyName].filter(Boolean).join('/')
+          const route = [WORKSHOP_ROUTE_ROOT, dirname, basename, storyName].filter(Boolean).join('/')
           if (routes.has(route)) {
             const { filePath: prevPath, exportName: prevName } = routes.get(route)!
             console.log(
@@ -44,7 +45,7 @@ const globAndSortStories = async (root: string) => {
           const id = hashString(route)?.toString(36) ?? [basename, storyName].filter(Boolean).join('--')
           routes.set(route, { filePath: storySrc, exportName, id })
           const entryPath = path.join(tmp, `${route}.js`)
-          await Bun.write(entryPath, `import {${exportName}} from '${filePath}'`)
+          await Bun.write(entryPath, `export {${exportName}} from '${filePath}'`)
           entries.add(entryPath)
         }
       } catch (err) {
@@ -59,31 +60,33 @@ const buildStories = async (root: string, entrypoints: string[]) =>
   await Bun.build({
     entrypoints: [Bun.resolveSync('./use-play.tsx', import.meta.dir), ...entrypoints],
     format: 'esm',
-    sourcemap: 'inline',
-    splitting: true,
+    minify: process.env.NODE_ENV === 'production',
     root,
+    sourcemap: process.env.NODE_ENV === 'production' ? 'none' : 'inline',
+    splitting: true,
+    target: 'browser',
   })
 
 const mapStories = async ({
-  root,
   outputs,
   routes,
   responseMap,
   storyMap,
 }: {
-  root: string
   outputs: BuildOutput['outputs']
   routes: Map<string, { filePath: string; exportName: string; id: string }>
   responseMap: Map<string, Response>
   storyMap: Set<{ id: string; pathname: string; parameters?: Parameters; searchParams?: string }>
 }) => {
-  const rootRegex = RegExp(`^${root}`)
   await Promise.all(
     outputs.map(async (blob) => {
       const { path, kind } = blob
-      // Probably don't need this regex but may need something similar if path is like ../../*.js
-      responseMap.set(path.replace(rootRegex, ''), new Response(blob, { headers: { 'Content-Type': jsMimeTypes[0] } }))
-      if (usePlayRegex.test(path) || kind !== 'entry-point') return
+      const isUsePlay = usePlayRegex.test(path)
+      responseMap.set(
+        isUsePlay ? USE_PLAY_ROUTE : path.replace(rootRegex, '/'),
+        new Response(blob, { headers: { 'Content-Type': jsMimeTypes[0] } }),
+      )
+      if (isUsePlay || kind !== 'entry-point') return
       const key = path.replace(jsRegex, '')
       const route = routes.get(key)
       if (route) {
@@ -94,29 +97,15 @@ const mapStories = async ({
         } catch (err) {
           return console.error(err)
         }
-        const { render: Render, attrs, parameters, location, searchParams } = story
-        if (Render) {
-          const ssr = useSSR(path)
-          const page = ssr(
-            <Page storyId={id}>
-              <Render {...(attrs ?? {})} />
-            </Page>,
-          )
-          responseMap.set(key, new Response(`<!DOCTYPE html>\n${page}`, { headers: { 'Content-Type': 'text/html' } }))
-          storyMap.add({
-            id,
-            pathname: key,
-            parameters,
-          })
-        }
-        if (location) {
-          storyMap.add({
-            id,
-            pathname: location,
-            parameters,
-            searchParams: searchParams?.toString(),
-          })
-        }
+        const { render: Render, attrs, parameters } = story
+        const ssr = useSSR(USE_PLAY_ROUTE, path)
+        const page = ssr(<Page storyId={id}>{Render && <Render {...(attrs ?? {})} />}</Page>)
+        responseMap.set(key, new Response(`<!DOCTYPE html>\n${page}`, { headers: { 'Content-Type': 'text/html' } }))
+        storyMap.add({
+          id,
+          pathname: key,
+          parameters,
+        })
       }
     }),
   )
@@ -135,11 +124,11 @@ export const getStories = async (root: string) => {
   let outputs: BuildOutput['outputs'] = []
   let success: BuildOutput['success'] = false
   try {
-    ;({ outputs, success, logs } = await buildStories(root, [...entries]))
+    ;({ outputs, success, logs } = await buildStories(tmp, [...entries]))
   } catch {
     console.error(logs)
   }
-  success && (await mapStories({ root, outputs, routes, responseMap, storyMap }))
-  await rm(tmp, { recursive: true })
+  success && (await mapStories({ outputs, routes, responseMap, storyMap }))
+  await fs.rm(tmp, { recursive: true })
   return { storyMap, responseMap }
 }

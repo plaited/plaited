@@ -1,17 +1,15 @@
+import { css, defineTemplate, SendServer } from 'plaited'
+import { wait } from '../utils.js'
 import { assert } from '../assert/assert.js'
 import { findByAttribute } from '../assert/find-by-attribute.js'
 import { findByText } from '../assert/find-by-text.js'
 import { fireEvent } from '../assert/fire-event.js'
 import { match } from '../assert/match.js'
 import { throws } from '../assert/throws.js'
-import { wait } from '../utils/wait.js'
 import { TimeoutError, AssertionError, MissingTestParamsError } from '../assert/errors.js'
 import { TEST_PASSED, TEST_EXCEPTION, DEFAULT_PLAY_TIMEOUT, UNKNOWN_ERROR } from '../assert/assert.constants.js'
-import { defineTemplate } from '../client/define-template.js'
-import { SendServer } from '../client/use-server.js'
-import { StoryObj } from './storybook.types.js'
-import { css } from '../css/css.js'
-import { USE_PAY_TAG, PLAY_EVENT } from './storybook.constants.js'
+import { StoryObj } from './workshop.types.js'
+import { USE_PAY_TAG, PLAY_EVENT } from './workshop.constants.js'
 
 export type FailedTest = {
   id: string

@@ -1,4 +1,4 @@
-import type { Disconnect } from '../internal/internal.types.js'
+import type { Disconnect } from '../client/client.types.js'
 import type { BPEvent, BPEventTemplate, BPListener, Idioms, RulesFunction } from './b-thread.js'
 import { isTypeOf } from '../utils/true-type-of.js'
 

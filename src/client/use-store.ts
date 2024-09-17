@@ -1,5 +1,5 @@
 import type { Trigger } from '../behavioral.js'
-import type { SubscribeToPublisher, Disconnect } from '../internal/internal.types.js'
+import type { SubscribeToPublisher, Disconnect } from './client.types.js'
 
 export function useStore<T>(initialValue: T): {
   (value: T): void
