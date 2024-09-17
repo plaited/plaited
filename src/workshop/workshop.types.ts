@@ -24,3 +24,13 @@ export type TemplateStory<T extends Attrs = Attrs> = {
 } & BaseStory
 
 export type StoryObj<T extends Attrs = Attrs> = TemplateStory<T> | PlayOnlyStory
+
+export type Handler = <T extends Record<string, unknown> = Record<string, unknown>>(
+  req: Request,
+  ctx?: T,
+) => Promise<Response>
+
+export type MiddleWareHandler = <T extends Record<string, unknown> = Record<string, unknown>>(
+  req: Request,
+  ctx?: T & { next: Handler },
+) => Promise<Response>

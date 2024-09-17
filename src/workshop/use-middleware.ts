@@ -1,4 +1,4 @@
-import type { Handler, MiddleWareHandler } from '../bun/bun.types.js'
+import type { Handler, MiddleWareHandler } from './workshop.types.js'
 
 export const useMiddleware = (middleware?: MiddleWareHandler) => {
   return async (handler: Handler) => {
