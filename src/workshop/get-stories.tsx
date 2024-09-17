@@ -1,6 +1,7 @@
 import type { BuildOutput } from 'bun'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import * as esbuild from 'esbuild'
 import { tmpdir } from 'node:os'
 import { useSSR } from './use-ssr.js'
 import { kebabCase, hashString } from '../utils.js'
@@ -56,13 +57,16 @@ const globAndSortStories = async (root: string) => {
   return { entries, routes, tmp }
 }
 
-const buildStories = async (root: string, entrypoints: string[]) =>
-  await Bun.build({
-    entrypoints: [Bun.resolveSync('./use-play.tsx', import.meta.dir), ...entrypoints],
+const buildStories = async (absWorkingDir: string, entrypoints: string[]) =>
+  await esbuild.build({
+    entryPoints: [Bun.resolveSync('./use-play.tsx', import.meta.dir), ...entrypoints],
     format: 'esm',
     minify: process.env.NODE_ENV === 'production',
-    root,
-    sourcemap: process.env.NODE_ENV === 'production' ? 'none' : 'inline',
+    absWorkingDir,
+    outdir: '.',
+    write: false,
+    bundle: true,
+    sourcemap: process.env.NODE_ENV === 'production' ? undefined : 'inline',
     splitting: true,
     target: 'browser',
   })
