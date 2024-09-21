@@ -14,7 +14,12 @@
     "jsx": "react-jsx",
     "jsxImportSource": "plaited",
 
-    "noEmit": true
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "plaited/jsx-runtime": ["./src/jsx/runtime.ts"],
+      "plaited/jsx-dev-runtime": ["./src/jsx/dev-runtime.ts"]
+    }
   },
-  "exclude": ["**/tests", "**/stories/", "src/css/types/css.d.ts"]
+  "exclude": ["**/stories/", "src/css/types/css.d.ts"]
 }

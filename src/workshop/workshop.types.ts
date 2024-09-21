@@ -1,29 +1,29 @@
-import { Attrs, FunctionTemplate } from 'plaited'
+import { Attrs, FunctionTemplate, PlaitedTemplate } from '../index.js'
 import type { Play } from './use-play.js'
 
 export type Parameters = {
   a11y?: Record<string, string> | false
   timeout?: number // Defaults to 5_000 ms
   cookies?: Record<string, string>
+  style?: {
+    stylesheet: string[];
+  }
 }
 
-export type BaseStory = {
+export type Meta<T extends Attrs = Attrs> = {
+  args?: T
   parameters?: Parameters
+  template?: FunctionTemplate<T> | PlaitedTemplate<T>
 }
 
-export type PlayOnlyStory = {
-  attrs?: never
-  render?: never
-  play: Play
-} & BaseStory
-
-export type TemplateStory<T extends Attrs = Attrs> = {
-  attrs?: T
-  render: FunctionTemplate<T>
+export type StoryObj<T extends Attrs | Meta = Attrs> = {
+  args?: T extends Attrs ? T
+  : T extends Meta ? T['args']
+  : Attrs
+  parameters?: Parameters
   play?: Play
-} & BaseStory
-
-export type StoryObj<T extends Attrs = Attrs> = TemplateStory<T> | PlayOnlyStory
+  template?: FunctionTemplate<T>
+}
 
 export type Handler = <T extends Record<string, unknown> = Record<string, unknown>>(
   req: Request,

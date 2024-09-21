@@ -9,10 +9,10 @@ import { throws } from '../assert/throws.js'
 import { TimeoutError, AssertionError, MissingTestParamsError } from '../assert/errors.js'
 import { TEST_PASSED, TEST_EXCEPTION, DEFAULT_PLAY_TIMEOUT, UNKNOWN_ERROR } from '../assert/assert.constants.js'
 import { StoryObj } from './workshop.types.js'
-import { USE_PAY_TAG, PLAY_EVENT } from './workshop.constants.js'
+import { PLAITED_TEXT_FIXTURE, PLAY_EVENT } from './workshop.constants.js'
 
 export type FailedTest = {
-  id: string
+  route: string
   filePath: string
   exportName: string
   location: string
@@ -21,7 +21,7 @@ export type FailedTest = {
 }
 
 export type PassedTest = {
-  id: string
+  route: string
 }
 
 export type Play = (args: {
@@ -39,10 +39,10 @@ type UsePlay = (arg: {
   exportName: string
   filePath: string
   hostElement: Element
-  id: string
   play: Play
-  time?: number
+  route: string
   send: SendServer
+  time?: number
 }) => Promise<void>
 
 const timeout = async (time: number = DEFAULT_PLAY_TIMEOUT) => {
@@ -50,7 +50,7 @@ const timeout = async (time: number = DEFAULT_PLAY_TIMEOUT) => {
   return true
 }
 
-const usePlay: UsePlay = async ({ exportName, filePath, hostElement, id, play, time, send }) => {
+const usePlay: UsePlay = async ({ exportName, filePath, hostElement, route, play, time, send }) => {
   try {
     const timedOut = await Promise.race([
       play({
@@ -65,8 +65,8 @@ const usePlay: UsePlay = async ({ exportName, filePath, hostElement, id, play, t
       }),
       timeout(time),
     ])
-    if (timedOut) throw new TimeoutError(`Story ${id} exceeded timeout of ${time} ms`)
-    send<PassedTest>({ type: TEST_PASSED, detail: { id } })
+    if (timedOut) throw new TimeoutError(`Story [${route}] exceeded timeout of ${time} ms`)
+    send<PassedTest>({ type: TEST_PASSED, detail: { route } })
   } catch (error) {
     if (error instanceof TimeoutError || error instanceof AssertionError || error instanceof MissingTestParamsError)
       return send<FailedTest>({
@@ -75,7 +75,7 @@ const usePlay: UsePlay = async ({ exportName, filePath, hostElement, id, play, t
           exportName,
           error: error.toString(),
           filePath,
-          id,
+          route,
           location: window?.location.href,
           type: error.name,
         },
@@ -87,7 +87,7 @@ const usePlay: UsePlay = async ({ exportName, filePath, hostElement, id, play, t
           exportName,
           error: error.toString(),
           filePath,
-          id,
+          route,
           location: window?.location.href,
           type: TEST_EXCEPTION,
         },
@@ -95,8 +95,8 @@ const usePlay: UsePlay = async ({ exportName, filePath, hostElement, id, play, t
   }
 }
 
-export const UsePlay = defineTemplate({
-  tag: USE_PAY_TAG,
+export const UseTestFixture = defineTemplate({
+  tag: PLAITED_TEXT_FIXTURE,
   publicEvents: [PLAY_EVENT],
   shadowDom: (
     <slot
@@ -107,15 +107,15 @@ export const UsePlay = defineTemplate({
   ),
   connectedCallback({ send, root }) {
     return {
-      async [PLAY_EVENT]({ exportName, filePath, id }: { exportName: string; filePath: string; id: string }) {
+      async [PLAY_EVENT]({ exportName, filePath, route }: { exportName: string; filePath: string;  route: string}) {
         const { [exportName]: story } = (await import(filePath)) as { [key: string]: StoryObj }
         try {
           story?.play &&
             (await usePlay({
               play: story.play,
-              id,
               time: story?.parameters?.timeout,
               send: send.server,
+              route,
               filePath,
               exportName,
               hostElement: root.host,
@@ -127,7 +127,7 @@ export const UsePlay = defineTemplate({
               detail: {
                 exportName,
                 filePath,
-                id,
+                route,
                 location: window?.location.href,
                 type: TEST_EXCEPTION,
                 error: error.toString(),

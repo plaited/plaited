@@ -29,7 +29,7 @@ export const useSSR =
     const bodyIndex = bodyMatch ? bodyMatch.index + bodyMatch[0].length : 0
     const script =
       importPaths.length ?
-        `<script type="module" async>${importPaths.map((path) => `import '${path}';`).join('\n')}</script>`
+        `<script type="module">${importPaths.map((path) => `import '${path}';`).join('\n')}</script>`
       : ''
     const index = headIndex !== -1 ? headIndex : bodyIndex
 

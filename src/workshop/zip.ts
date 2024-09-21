@@ -3,8 +3,8 @@ export const jsMimeTypes = ['text/javascript;charset=utf-8', 'application/json;c
 export const isJsMimeType = (type: string): type is (typeof jsMimeTypes)[number] =>
   jsMimeTypes.includes(type as (typeof jsMimeTypes)[number])
 
-export const createZippedResponse = (str: string, type: (typeof jsMimeTypes)[number]) => {
-  const compressed = Bun.gzipSync(str)
+export const zipContent = (content: string, type: (typeof jsMimeTypes)[number]) => {
+  const compressed = Bun.gzipSync(content)
   return new Response(compressed, {
     headers: {
       'content-type': type,

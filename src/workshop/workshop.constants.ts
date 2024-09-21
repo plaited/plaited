@@ -1,12 +1,18 @@
-export const STORIES_GLOB_PATTERN = `**/{stories,*.stories}.{tsx,ts}`
-export const USE_PAY_TAG = 'plaited-test-fixture' as const
 export const PLAY_EVENT = 'play'
-export const USE_PLAY_ROUTE = '/_plaited/use-play.js'
+export const PLAITED_TEXT_FIXTURE = 'plaited-test-fixture' as const
+export const USE_PLAY_ROUTE = '/use-play.js'
 
-export const WORKSHOP_ROUTE_ROOT = '/_workshop'
+export const STORY_GLOB_PATTERN = `**/{stories,*.stories}.{tsx,ts}`
+export const STORY_EXTENSION = '.story'
+export const STORY_FILTER_REGEX =  /\.story$/
+export const STORY_NAMESPACE = 'story'
 
-export const TEMPLATE_FILE_REGEX = /^((?!\/_).)*\/template\.tsx?$/
-export const WORKER_FILE_REGEX = /^((?!\/_).)*\/worker\.tsx?$/
+export const SERVER_TEMPLATE_NAMESPACE = 'server-template'
+export const TEMPLATE_FILTER_REGEX = /^((?!\/_).)*\/template\.tsx$/
+export const TEMPLATE_BUILD_FILTER_REGEX = /^\/template\.tsx$/
+export const TEMPLATE_GLOB_PATTERN = `**/template.tsx`
+export const TEMPLATE_EXTENSION = '.template'
+export const TEMPLATE_DIRECTORY = '_templates'
 
-export const TEMPLATE_GLOB_PATTERN = `**/template.{tsx,ts}`
-export const WORKER_GLOB_PATTERN = `**/worker.{tsx,ts}`
+export const WORKER_FILTER_REGEX = /^((?!\/_).)*\/worker\.ts$/
+export const WORKER_GLOB_PATTERN = `**/worker.ts`
