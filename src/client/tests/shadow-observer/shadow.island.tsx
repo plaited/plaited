@@ -1,4 +1,5 @@
-import { defineTemplate, css } from 'plaited'
+import { css } from '../../../css/css.js'
+import { defineTemplate } from '../../define-template.js'
 import { SVG } from './noun-braids-2633610.js'
 
 export const styles = css.create({

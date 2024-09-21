@@ -2,19 +2,18 @@ import path from "path"
 import { build } from "./build.js"
 import { globStories, globTemplates, globWorkers } from "./glob.js"
 import { mapStories } from "./map.js"
-import { scanStoryExports } from "./scan.js"
+import { scanStoryExports, StoriesMap } from "./scan.js"
 
-export const run = async (dir: string) => {
-  const storyFiles = await globStories(dir)
-  const templateFiles = await globTemplates(dir)
-  const workerFiles = await globWorkers(dir)
-  const storyExports = await Promise.all(
-    storyFiles.map(async (filePath) => await scanStoryExports(dir, filePath))
+export const run = async (cwd: string) => {
+  const storyFiles = await globStories(cwd)
+  const templateFiles = await globTemplates(cwd)
+  const workerFiles = await globWorkers(cwd)
+  const stories: StoriesMap = new Map()
+  await Promise.all(
+    storyFiles.map(async (filePath) => await scanStoryExports({ filePath: `./${filePath}`, stories, cwd }))
   )
-  const stories = new Map(storyExports.flat())
-  console.log(stories)
+await mapStories(cwd, stories) 
 
-  const { responseMap, virtualEntries } = await mapStories(dir, stories) 
   // const storyPaths = [...responseMap.keys()]
   // const {outputFiles, ...result} = await build({
   //   absWorkingDir: dir,
@@ -25,4 +24,4 @@ export const run = async (dir: string) => {
 }
 
 const dir = path.resolve(process.cwd(), 'src')
-console.log(dir)
+run(dir)

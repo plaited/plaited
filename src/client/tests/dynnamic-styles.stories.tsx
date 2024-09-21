@@ -1,6 +1,7 @@
-import { StoryObj } from '../../workshop.js'
+import { StoryObj } from '../../workshop/workshop.types.js'
 import { defineTemplate } from '../define-template.js'
-import { PlaitedElement, css } from '../../index.js'
+import type { PlaitedElement } from '../define-element.js'
+import { css } from '../../css/css.js'
 
 const { noRepeat, repeat, initial } = css.create({
   initial: {

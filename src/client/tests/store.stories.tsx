@@ -1,4 +1,4 @@
-import { StoryObj } from '../../workshop.js'
+import { StoryObj } from '../../workshop/workshop.types.js'
 import { Subscriber, Publisher } from './store.js'
 
 export const Signal: StoryObj = {

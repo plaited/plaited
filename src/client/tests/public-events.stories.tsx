@@ -1,6 +1,6 @@
-import { StoryObj } from '../../workshop.js'
+import type { StoryObj } from '../../workshop/workshop.types.js'
 import { isTypeOf } from '../../utils/is-type-of.js'
-import { PlaitedElement } from '../../index.js'
+import type { PlaitedElement } from '../define-element.js'
 import { defineTemplate } from '../define-template.js'
 
 const isPlaitedElement = (el: unknown): el is PlaitedElement =>

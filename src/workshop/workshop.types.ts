@@ -1,4 +1,4 @@
-import { Attrs, FunctionTemplate } from '../index.js'
+import type { Attrs, FunctionTemplate } from '../jsx/jsx.types.js'
 import type { Play } from './use-play.js'
 
 export type Params = {

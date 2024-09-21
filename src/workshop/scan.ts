@@ -2,7 +2,7 @@ import path from 'node:path'
 import { kebabCase } from '../utils/case.js'
 import {
   TEMPLATE_DIRECTORY,
-  STORY_EXTENSION,
+  STORIES_FILTERS_REGEX,
 } from './workshop.constants.js'
 
 const transpiler = new Bun.Transpiler({
@@ -25,28 +25,34 @@ export const scanTemplateImports = async (filePath: string): Promise<string> => 
   return [...imports].join('\n')
 }
 
-export const scanStoryExports = async (cwd: string, filePath: string) => {
-  const rootRegex = new RegExp(`^${cwd}`)
-  const file = Bun.file(filePath)
+export type StoriesMap = Map<string, {
+  filePath: string;
+  exportName: string;
+  template: string;
+}>
+
+export const scanStoryExports = async ({
+  cwd = process.cwd(),
+  filePath,
+  stories,
+}:{
+  cwd?: string,
+  filePath: string,
+  stories:StoriesMap
+}) => {
+  const file = Bun.file(Bun.resolveSync(filePath, cwd))
   const code = await file.text()
+  
   const { exports } = transpiler.scan(code)
-  const entries = new Map<string, {
-    filePath: string;
-    exportName: string;
-    template: string;
-  }>()
-    for(const exportName of exports) {
+  for(const exportName of exports) {
     const dirname = path
       .dirname(filePath)
-      .replace(rootRegex, '')
       .toLowerCase()
-    const ext = path.extname(filePath)
-    const suffix = `${STORY_EXTENSION}${ext}`
-    const basename = filePath.endsWith(suffix) ? kebabCase(path.basename(filePath, suffix)) : ''
+    const basename = STORIES_FILTERS_REGEX.test(filePath) ? kebabCase(path.basename(filePath.replace(STORIES_FILTERS_REGEX, ''))) : ''
     const storyName = kebabCase(exportName)
     const route = basename ? `${dirname}/${basename}--${storyName}` : `${dirname}/${basename}`
-    if (entries.has(route)) {
-      const { exportName: prevName } = entries.get(route)!
+    if (stories.has(route)) {
+      const { exportName: prevName } = stories.get(route)!
       console.log(
         `\nDuplicate story names:` +
           `\n  path: ${filePath}` +
@@ -56,11 +62,10 @@ export const scanStoryExports = async (cwd: string, filePath: string) => {
       continue
     }
     const template =  `export {${exportName}} from '${filePath}'`
-    entries.set(route, {
+    stories.set(route, {
       filePath,
       exportName,
       template
     })
   }
-  return [...entries]
 }

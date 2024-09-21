@@ -1,4 +1,5 @@
-import { defineTemplate, css } from '../index.js'
+import { defineTemplate } from '../client/define-template.js'
+import { css } from '../css/css.js'
 import { Button } from './button.js'
 
 const styles = css.create({

@@ -3,6 +3,7 @@ export const PLAITED_TEXT_FIXTURE = 'plaited-test-fixture' as const
 export const USE_PLAY_ROUTE = '/use-play.js'
 
 export const STORY_GLOB_PATTERN = `**/{stories,*.stories}.{tsx,ts}`
+export const STORIES_FILTERS_REGEX= /\.stories.tsx?$/
 export const STORY_EXTENSION = '.story'
 export const STORY_FILTER_REGEX =  /\.story$/
 export const STORY_NAMESPACE = 'story'

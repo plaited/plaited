@@ -1,4 +1,4 @@
-import { StoryObj } from '../../workshop.js'
+import { StoryObj } from '../../workshop/workshop.types.js'
 import { ElOne, ElTwo } from './component-comms.js'
 
 export const componentComms: StoryObj = {

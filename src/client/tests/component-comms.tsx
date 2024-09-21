@@ -1,4 +1,4 @@
-import { defineTemplate } from '../../index.js'
+import { defineTemplate } from '../define-template.js'
 import { useStore } from '../use-store.js'
 
 const sendDisable = useStore()

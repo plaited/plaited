@@ -1,4 +1,4 @@
-import { StoryObj } from '../../workshop.js'
+import { StoryObj } from '../../workshop/workshop.types.js'
 import { defineTemplate } from '../define-template.js'
 
 const Bottom = defineTemplate({

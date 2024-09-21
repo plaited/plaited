@@ -1,4 +1,5 @@
-import { FT, css } from '../index.js'
+import { FT } from '../jsx/jsx.types.js'
+import { css } from '../css/css.js'
 
 const styles = css.create({
   button: {

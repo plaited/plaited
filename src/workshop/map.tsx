@@ -37,39 +37,43 @@ export const mapStories = async (cwd: string, stories: Map<string, {
   for (const [route, { template, exportName, filePath, }] of stories) {
     const entryPath = `${route}${STORY_EXTENSION}`
     virtualEntries.set(entryPath, template)
-    const { [exportName]: story, default: meta } = (await import(filePath)) as { [key: string]: StoryObj }
-    const imports = [story?.play && USE_PLAY_ROUTE, entryPath].filter(p => p !== undefined)
-    const ssr = useSSR(...imports)
-    const args = {
-      ...meta?.args,
-      ...story?.args
-    }
-    const a11y = story?.parameters?.a11y === false
-      ? 'false'
-      : meta?.parameters?.a11y === false && !story?.parameters?.a11y
-      ? 'false'
-      : objectToHeader({
-        ...meta?.parameters?.a11y,
-        ...story?.parameters?.a11y
-      })
-    const timeout = story?.parameters?.timeout ?? meta?.parameters?.timeout ?? DEFAULT_PLAY_TIMEOUT
-    const cookies = objectToHeader({
-      ...story?.parameters?.cookies,
-      ...meta?.parameters?.cookies
-    })
-    const tpl = story?.template ?? meta?.template
-    const page = ssr(
-      <Page route={route}>
-        <UseTestFixture children={tpl?.(args)} {...css.assign(meta?.parameters?.style, story?.parameters?.style)}/>
-      </Page>
-    ) 
-    const headers = new Headers({
-      'Content-Type': 'text/html',
-      'Cookies': cookies,
-      'Timeout': `${timeout}`,
-      'A11y': a11y
-    })
-    responseMap.set(route, new Response(`<!DOCTYPE html>\n${page}`, { headers }))
+    const importPath = Bun.resolveSync(filePath, cwd)
+    console.log(importPath)
+    await import(importPath)
+    // const { [exportName]: story, default: meta } = (await import(importPath)) as { [key: string]: StoryObj }
+  //   const imports = [story?.play && USE_PLAY_ROUTE, entryPath].filter(p => p !== undefined)
+  //   const ssr = useSSR(...imports)
+  //   const args = {
+  //     ...meta?.args,
+  //     ...story?.args
+  //   }
+  //   const a11y = story?.parameters?.a11y === false
+  //     ? 'false'
+  //     : meta?.parameters?.a11y === false && !story?.parameters?.a11y
+  //     ? 'false'
+  //     : objectToHeader({
+  //       ...meta?.parameters?.a11y,
+  //       ...story?.parameters?.a11y
+  //     })
+  //   const timeout = story?.parameters?.timeout ?? meta?.parameters?.timeout ?? DEFAULT_PLAY_TIMEOUT
+  //   const cookies = objectToHeader({
+  //     ...story?.parameters?.cookies,
+  //     ...meta?.parameters?.cookies
+  //   })
+  //   const tpl = story?.template ?? meta?.template
+  //   const page = ssr(
+  //     <Page route={route}>
+  //       <UseTestFixture children={tpl?.(args)} {...css.assign(meta?.parameters?.style, story?.parameters?.style)}/>
+  //     </Page>
+  //   ) 
+  //   const headers = new Headers({
+  //     'Content-Type': 'text/html',
+  //     'Cookies': cookies,
+  //     'Timeout': `${timeout}`,
+  //     'A11y': a11y
+  //   })
+  //   responseMap.set(route, new Response(`<!DOCTYPE html>\n${page}`, { headers }))
   }
-  return { virtualEntries, responseMap }
+  // return { virtualEntries, responseMap }
 }
+

@@ -1,4 +1,4 @@
-import { StoryObj, Meta } from '../workshop.js'
+import { StoryObj, Meta } from '..//workshop.types.js'
 import { Header } from './header.js'
 
 const meta: Meta<typeof Header> = {

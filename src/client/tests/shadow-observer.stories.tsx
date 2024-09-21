@@ -1,4 +1,4 @@
-import { StoryObj } from '../../workshop.js'
+import { StoryObj } from '../../workshop/workshop.types.js'
 import { ShadowIsland } from './shadow-observer/shadow.island.js'
 
 

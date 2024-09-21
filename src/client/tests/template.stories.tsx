@@ -1,5 +1,6 @@
-import { StoryObj } from '../../workshop.js'
-import { PlaitedElement, css } from '../../index.js'
+import type { StoryObj } from '../../workshop/workshop.types.js'
+import type { PlaitedElement } from '../define-element.js'
+import { css } from '../../css/css.js'
 import { defineTemplate } from '../define-template.js'
 import { createTemplate } from '../../jsx/create-template.js'
 
