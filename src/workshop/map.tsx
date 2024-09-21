@@ -1,6 +1,6 @@
 import { basename } from 'path'
 import { FunctionTemplate } from '../jsx/jsx.types.js'
-import { UseTestFixture } from './use-test-fixture.js'
+import { UseTestFixture } from './use-play.js'
 import { useSSR } from './use-ssr.js'
 import { USE_PLAY_ROUTE, STORY_EXTENSION } from './workshop.constants.js'
 import { StoryObj } from './workshop.types.js'

@@ -1,4 +1,4 @@
-import { defineTemplate, css } from 'plaited'
+import { defineTemplate, css } from '../index.js'
 import { Button } from './button.js'
 
 const styles = css.create({
@@ -32,7 +32,7 @@ const styles = css.create({
   },
 })
 
-export const Header = defineTemplate({
+export const Header = defineTemplate<{ user?: string}>({
   tag: 'header-el',
   shadowDom: (
     <header {...styles.storybookHeader}>

@@ -1,21 +1,13 @@
-import { findByAttribute, match, assert } from '@plaited/storybook-rite'
 import { Button } from './button.js'
-import { Meta, StoryObj } from '@plaited/storybook'
-// More on how to set up stories at: https://storybook.js.org/docs/preact/writing-stories/introduction
+import { Meta, StoryObj } from '../workshop.js'
+
 const meta: Meta<typeof Button> = {
-  title: 'Example/Button',
-  component: Button,
-  tags: ['autodocs'],
-  argTypes: {
-    backgroundColor: { control: 'color' },
-    onClick: { action: 'onClick' },
-  },
+  template: Button,
 }
 
 export default meta
 type Story = StoryObj<typeof Button>
 
-// More on writing stories with args: https://storybook.js.org/docs/preact/writing-stories/args
 export const Primary: Story = {
   args: {
     'p-target': 'button',
@@ -40,8 +32,8 @@ export const Large: Story = {
 }
 
 export const Small: Story = {
-  play: async ({ canvasElement }) => {
-    const button = await findByAttribute<HTMLButtonElement>('type', 'button', canvasElement)
+  play: async ({ assert, findByAttribute, match }) => {
+    const button = await findByAttribute<HTMLButtonElement>('type', 'button')
     const expected = 'Small Button'
     const contains = match(button.innerHTML)
     assert({

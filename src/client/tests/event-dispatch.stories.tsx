@@ -1,13 +1,5 @@
-import { assert, findByAttribute, fireEvent } from '@plaited/storybook-rite'
-import { Meta, StoryObj } from '@plaited/storybook'
+import { StoryObj } from '../../workshop.js'
 import { defineTemplate } from '../define-template.js'
-
-const meta: Meta = {
-  title: 'Tests',
-  component: () => <></>,
-}
-
-export default meta
 
 const Bottom = defineTemplate({
   tag: 'bottom-component',
@@ -48,12 +40,12 @@ const Top = defineTemplate({
 })
 
 export const eventDispatch: StoryObj = {
-  render: () => (
+  template: () => (
     <>
       <Top />
     </>
   ),
-  play: async () => {
+  play: async ({ assert, findByAttribute, fireEvent}) => {
     const button = await findByAttribute('p-target', 'button')
     const header = await findByAttribute('p-target', 'header')
     assert({

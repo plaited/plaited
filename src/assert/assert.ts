@@ -1,4 +1,5 @@
-import { deepEqual, isTypeOf } from '../utils.js'
+import { deepEqual } from '../utils/deep-equal.js'
+import { isTypeOf } from '../utils/is-type-of.js';
 import { AssertionError, MissingTestParamsError } from './errors.js'
 
 export type Assert = <T>(param: { given: string; should: string; actual: T; expected: T }) => void

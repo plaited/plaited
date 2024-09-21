@@ -1,4 +1,4 @@
-import { keyMirror } from '../utils.js'
+import { keyMirror } from '../utils/key-mirror.js'
 
 export const PLAITED_STORE = 'PLAITED_STORE' as const
 export const PLAITED_INDEXED_DB = 'PLAITED_INDEXED_DB' as const

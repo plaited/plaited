@@ -6,7 +6,8 @@ import type {
   ContextTypes,
   DesignTokenGroup,
 } from '../token.types.js'
-import { isTypeOf, kebabCase } from '../../utils.js'
+import { isTypeOf } from '../../utils/is-type-of.js'
+import { kebabCase } from '../../utils/case.js'
 import { resolveAlias } from './resolve-alias.js'
 import { prefix } from './formatters.constants.js'
 export const remSuffix = (val: number) => `${val}rem`

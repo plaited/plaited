@@ -1,4 +1,5 @@
-import { isTypeOf, escape } from '../utils.js'
+import { escape } from '../utils/escape.js'
+import { isTypeOf } from '../utils/is-type-of.js'
 import type { TemplateObject } from '../jsx/jsx.types.js'
 import { VALID_PRIMITIVE_CHILDREN, TEMPLATE_OBJECT_IDENTIFIER } from '../jsx/jsx.constants.js'
 

@@ -2,19 +2,21 @@ import type { Disconnect, SubscribeToPublisher } from './client.types.js'
 import type { PostToWorker } from './use-worker.js'
 import type { TemplateObject, CustomElementTag } from '../jsx/jsx.types.js'
 import { P_WORKER, P_SERVER } from '../jsx/jsx.constants.js'
-import {
-  Actions,
-  BPEvent,
-  BSync,
-  BThread,
-  BThreads,
-  Trigger,
-  UseFeedback,
-  UseSnapshot,
-  bProgram,
+import { 
+  type BPEvent,
+  type BSync,
+  type BThread,
   bThread,
   bSync,
-} from '../behavioral.js'
+} from '../behavioral/b-thread.js'
+import {
+  type Actions,
+  type BThreads,
+  type Trigger,
+  type UseFeedback,
+  type UseSnapshot,
+  bProgram,
+} from '../behavioral/b-program.js'
 import { P_TRIGGER } from '../jsx/jsx.constants.js'
 import { QuerySelector, useQuery, handleTemplateObject } from './use-query.js'
 import { shadowObserver, addListeners } from './shadow-observer.js'

@@ -1,4 +1,5 @@
-import { Trigger, BPEvent, isBPEvent } from '../behavioral.js'
+import { type BPEvent, isBPEvent } from '../behavioral/b-thread.js'
+import type { Trigger} from '../behavioral/b-program.js'
 
 export type PostToWorker = {
   <T>(args: BPEvent<T>): void

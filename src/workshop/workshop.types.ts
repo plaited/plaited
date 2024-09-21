@@ -1,7 +1,7 @@
-import { Attrs, FunctionTemplate, PlaitedTemplate } from '../index.js'
+import { Attrs, FunctionTemplate } from '../index.js'
 import type { Play } from './use-play.js'
 
-export type Parameters = {
+export type Params = {
   a11y?: Record<string, string> | false
   timeout?: number // Defaults to 5_000 ms
   cookies?: Record<string, string>
@@ -10,17 +10,17 @@ export type Parameters = {
   }
 }
 
-export type Meta<T extends Attrs = Attrs> = {
-  args?: T
-  parameters?: Parameters
-  template?: FunctionTemplate<T> | PlaitedTemplate<T>
+export type Meta<T extends FunctionTemplate = FunctionTemplate> = {
+  args?: Parameters<T>[0]
+  parameters?: Params
+  template?: T
 }
 
-export type StoryObj<T extends Attrs | Meta = Attrs> = {
-  args?: T extends Attrs ? T
+export type StoryObj<T extends FunctionTemplate | Meta = Meta> = {
+  args?: T extends FunctionTemplate ? Parameters<T>[0]
   : T extends Meta ? T['args']
   : Attrs
-  parameters?: Parameters
+  parameters?: Params
   play?: Play
   template?: FunctionTemplate<T>
 }

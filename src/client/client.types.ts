@@ -1,4 +1,4 @@
-import type { Trigger } from '../behavioral.js'
+import type { Trigger } from '../behavioral/b-program.js'
 
 export type Disconnect = () => void
 

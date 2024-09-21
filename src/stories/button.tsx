@@ -1,4 +1,4 @@
-import { FT, css } from 'plaited'
+import { FT, css } from '../index.js'
 
 const styles = css.create({
   button: {

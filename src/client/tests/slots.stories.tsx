@@ -1,14 +1,6 @@
-import { assert, findByText, fireEvent } from '@plaited/storybook-rite'
-import { Meta, StoryObj } from '@plaited/storybook'
+import { StoryObj } from '../../workshop.js'
 import { defineTemplate } from '../define-template.js'
 import sinon from 'sinon'
-
-const meta: Meta = {
-  title: 'Tests',
-  component: () => <></>,
-}
-
-export default meta
 
 const defaultSlot = sinon.spy()
 const passThroughSlot = sinon.spy()
@@ -70,14 +62,14 @@ const Outer = defineTemplate({
 })
 
 export const slots: StoryObj = {
-  render: () => (
+  template: () => (
     <Outer>
       <button>Slot</button>
       <button slot='named'>Named</button>
       <button slot='nested'>Nested</button>
     </Outer>
   ),
-  play: async () => {
+  play: async ({ assert, findByText, fireEvent }) => {
     let button = await findByText('Slot')
     button && (await fireEvent(button, 'click'))
     assert({

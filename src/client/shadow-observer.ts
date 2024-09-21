@@ -1,4 +1,4 @@
-import type { Trigger } from '../behavioral.js'
+import type { Trigger } from '../behavioral/b-program.js'
 import { DelegatedListener, delegates } from './delegated-listener.js'
 import { P_TRIGGER } from '../jsx/jsx.constants.js'
 

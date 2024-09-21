@@ -1,5 +1,5 @@
 import type { DesignTokenGroup } from '../token.types.js'
-import { camelCase, kebabCase } from '../../utils.js'
+import { camelCase, kebabCase } from '../../utils/case.js'
 import { resolveAlias } from './resolve-alias.js'
 import { prefix } from './formatters.constants.js'
 export const resolveTSVar = (value: string, allTokens: DesignTokenGroup) => {

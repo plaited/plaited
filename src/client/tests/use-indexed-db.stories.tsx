@@ -1,18 +1,9 @@
-import { assert, wait } from '@plaited/storybook-rite'
-import { Meta, StoryObj } from '@plaited/storybook'
+import { StoryObj } from '../../workshop.js'
 import { useIndexedDB } from '../use-indexed-db.js'
 import sinon from 'sinon'
 
-const meta: Meta = {
-  title: 'Tests/useIndexedDB',
-  component: () => <></>,
-}
-
-export default meta
-type Story = StoryObj
-
-export const basic: Story = {
-  play: async () => {
+export const basic: StoryObj = {
+  play: async ({ assert }) => {
     const pub = await useIndexedDB<number>('basic', 0)
     let actual = await pub.get()
     assert({
@@ -56,8 +47,8 @@ export const basic: Story = {
   },
 }
 
-export const withSubscription: Story = {
-  play: async () => {
+export const withSubscription: StoryObj = {
+  play: async ({ assert, wait }) => {
     const pub = await useIndexedDB('subscription', 1)
     const actual = await pub.get()
     assert({

@@ -1,16 +1,12 @@
-import { assert, findByAttribute, fireEvent } from '@plaited/storybook-rite'
-import { Meta, StoryObj } from '@plaited/storybook'
+import { StoryObj } from '../../workshop.js'
+import { isTypeOf } from '../../utils/is-type-of.js'
+import { PlaitedElement } from '../../index.js'
 import { defineTemplate } from '../define-template.js'
-import { isPlaitedElement } from '../../workshop/is-plaited-template.js'
 
-export const getPlaitedChildren = (slot: HTMLSlotElement) => [...slot.assignedElements()].filter(isPlaitedElement)
+const isPlaitedElement = (el: unknown): el is PlaitedElement =>
+  isTypeOf<PlaitedElement>(el, 'htmlelement') && 'trigger' in el
 
-const meta: Meta = {
-  title: 'Tests',
-  component: () => <></>,
-}
-
-export default meta
+const getPlaitedChildren = (slot: HTMLSlotElement) => [...slot.assignedElements()].filter(isPlaitedElement)
 
 const Inner = defineTemplate({
   tag: 'inner-component',
@@ -64,14 +60,14 @@ const Outer = defineTemplate({
 })
 
 export const publicEvents: StoryObj = {
-  render: () => (
+  template: () => (
     <>
       <Outer>
         <Inner />
       </Outer>
     </>
   ),
-  play: async () => {
+  play: async ({assert, findByAttribute, fireEvent}) => {
     let button = await findByAttribute('p-target', 'button')
     const header = await findByAttribute('p-target', 'header')
     assert({

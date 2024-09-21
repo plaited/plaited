@@ -1,14 +1,6 @@
-import { assert, wait, findByText, findByAttribute } from '@plaited/storybook-rite'
-import { Meta, StoryObj } from '@plaited/storybook'
+import { StoryObj } from '../../workshop.js'
 import { defineTemplate } from '../define-template.js'
 import { PlaitedElement, css } from '../../index.js'
-
-const meta: Meta = {
-  title: 'Tests',
-  component: () => <></>,
-}
-
-export default meta
 
 const { noRepeat, repeat, initial } = css.create({
   initial: {
@@ -44,8 +36,8 @@ const DynamicOnly = defineTemplate({
 })
 
 export const dynamicStyles: StoryObj = {
-  render: () => <DynamicOnly data-testid='target' />,
-  play: async () => {
+  template: () => <DynamicOnly data-testid='target' />,
+  play: async ({ findByText, assert, findByAttribute, wait}) => {
     const style = await findByText(initial.stylesheet.join(''))
     assert({
       given: 'Render with initial stylesheet, Style tag',

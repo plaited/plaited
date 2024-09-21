@@ -1,17 +1,10 @@
-import { assert, findByAttribute, fireEvent, findByText } from '@plaited/storybook-rite'
-import { Meta, StoryObj } from '@plaited/storybook'
+import { StoryObj } from '../../workshop.js'
 import { ShadowIsland } from './shadow-observer/shadow.island.js'
 
-const meta: Meta = {
-  title: 'Tests',
-  component: () => <></>,
-}
-
-export default meta
 
 export const shadowObserver: StoryObj = {
-  render: () => <ShadowIsland />,
-  play: async () => {
+  template: ShadowIsland,
+  play: async ({ assert, findByAttribute, findByText, fireEvent }) => {
     let button = await findByAttribute('p-trigger', 'click:start')
     button && (await fireEvent(button, 'click'))
     let row = await findByAttribute('p-target', 'button-row')

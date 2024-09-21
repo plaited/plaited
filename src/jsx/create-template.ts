@@ -6,7 +6,9 @@ import type {
   CustomElementTag,
   FunctionTemplate,
 } from './jsx.types.js'
-import { isTypeOf, kebabCase, escape } from '../utils.js'
+import { isTypeOf } from '../utils/is-type-of.js'
+import { kebabCase } from '../utils/case.js'
+import { escape } from '../utils/escape.js'
 import {
   BOOLEAN_ATTRS,
   PRIMITIVES,

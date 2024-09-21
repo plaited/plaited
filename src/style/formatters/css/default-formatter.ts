@@ -11,7 +11,7 @@ import type {
 } from '../../token.types.js'
 import type { Formatter } from '../formatters.types.js'
 import { hasAlias } from '../has-alias.js'
-import { kebabCase } from '../../../utils.js'
+import { kebabCase } from '../../../utils/case.js'
 import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'
 import { getRule, resolveCSSVar } from '../css-utils.js'
 

@@ -1,4 +1,4 @@
-import { FunctionTemplate, css } from 'plaited'
+import { FunctionTemplate, css } from '../index.js'
 
 const styles = css.create({
   o: {

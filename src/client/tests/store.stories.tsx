@@ -1,16 +1,8 @@
-import { assert, findByAttribute, fireEvent } from '@plaited/storybook-rite'
-import { Meta, StoryObj } from '@plaited/storybook'
+import { StoryObj } from '../../workshop.js'
 import { Subscriber, Publisher } from './store.js'
 
-const meta: Meta = {
-  title: 'Tests',
-  component: () => <></>,
-}
-
-export default meta
-
 export const Signal: StoryObj = {
-  render: () => {
+  template: () => {
     return (
       <>
         <Publisher />
@@ -18,7 +10,7 @@ export const Signal: StoryObj = {
       </>
     )
   },
-  play: async () => {
+  play: async ({ assert, findByAttribute, fireEvent }) => {
     const button = await findByAttribute('p-target', 'button')
     const count = await findByAttribute('p-target', 'count')
     assert({

@@ -1,16 +1,8 @@
-import { assert, findByAttribute } from '@plaited/storybook-rite'
-import { Meta } from '@plaited/storybook'
+import { StoryObj } from '../../workshop.js'
 import type { Position } from '../use-query.js'
 import type { PlaitedElement } from '../define-element.js'
 import { defineTemplate } from '../define-template.js'
 import type { CloneCallback } from '../use-query.js'
-
-const meta: Meta = {
-  title: 'Tests/QueryBindings',
-  component: () => <></>,
-}
-
-export default meta
 
 let did = 1
 const adjectives = [
@@ -148,9 +140,9 @@ const Fixture = defineTemplate({
   },
 })
 
-export const beforebegin = {
-  render: () => <Fixture />,
-  play: async () => {
+export const beforebegin: StoryObj = {
+  template: Fixture,
+  play: async ({ findByAttribute, assert }) => {
     const fixture = document.querySelector(Fixture.tag) as PlaitedElement
     let root = await findByAttribute<HTMLDivElement>('p-target', 'root')
     assert({
@@ -176,9 +168,9 @@ export const beforebegin = {
     })
   },
 }
-export const afterbegin = {
-  render: () => <Fixture />,
-  play: async () => {
+export const afterbegin: StoryObj = {
+  template: Fixture,
+  play: async ({ findByAttribute, assert }) => {
     const fixture = document.querySelector(Fixture.tag) as PlaitedElement
     const table = await findByAttribute<HTMLTableElement>('p-target', 'table')
     assert({
@@ -213,9 +205,9 @@ export const afterbegin = {
     })
   },
 }
-export const beforeend = {
-  render: () => <Fixture />,
-  play: async () => {
+export const beforeend: StoryObj = {
+  template: Fixture,
+  play: async ({ assert, findByAttribute}) => {
     const fixture = document.querySelector(Fixture.tag) as PlaitedElement
     const table = await findByAttribute<HTMLTableElement>('p-target', 'table')
     assert({
@@ -250,9 +242,9 @@ export const beforeend = {
     })
   },
 }
-export const afterend = {
-  render: () => <Fixture />,
-  play: async () => {
+export const afterend: StoryObj = {
+  template: Fixture,
+  play: async ({ assert, findByAttribute }) => {
     const fixture = document.querySelector(Fixture.tag) as PlaitedElement
     let root = await findByAttribute<HTMLDivElement>('p-target', 'root')
     assert({
@@ -278,9 +270,9 @@ export const afterend = {
     })
   },
 }
-export const render = {
-  render: () => <Fixture />,
-  play: async () => {
+export const render: StoryObj = {
+  template: Fixture,
+  play: async ({ findByAttribute, assert}) => {
     const fixture = document.querySelector(Fixture.tag) as PlaitedElement
     const table = await findByAttribute<HTMLTableElement>('p-target', 'table')
     assert({
@@ -298,9 +290,9 @@ export const render = {
     })
   },
 }
-export const replace = {
-  render: () => <Fixture />,
-  play: async () => {
+export const replace: StoryObj = {
+  template: Fixture,
+  play: async ({ assert, findByAttribute }) => {
     const fixture = document.querySelector(Fixture.tag) as PlaitedElement
     const root = await findByAttribute<HTMLDivElement>('p-target', 'root')
     assert({
@@ -318,9 +310,9 @@ export const replace = {
     })
   },
 }
-export const getAttribute = {
-  render: () => <Fixture />,
-  play: async () => {
+export const getAttribute: StoryObj = {
+  template: Fixture,
+  play: async ({ assert, findByAttribute}) => {
     const fixture = document.querySelector(Fixture.tag) as PlaitedElement
     const root = await findByAttribute<HTMLDivElement>('p-target', 'root')
     assert({
@@ -338,9 +330,9 @@ export const getAttribute = {
     })
   },
 }
-export const removeAttributes = {
-  render: () => <Fixture />,
-  play: async () => {
+export const removeAttributes: StoryObj = {
+  template: Fixture,
+  play: async ({ assert, findByAttribute}) => {
     const fixture = document.querySelector(Fixture.tag) as PlaitedElement
     fixture.trigger({ type: 'render' })
     let label = await findByAttribute<HTMLDivElement>('p-target', 'label')
@@ -361,9 +353,9 @@ export const removeAttributes = {
   },
 }
 
-export const multiSetAttributes = {
-  render: () => <Fixture />,
-  play: async () => {
+export const multiSetAttributes: StoryObj = {
+  template: Fixture,
+  play: async ({ assert, findByAttribute }) => {
     const fixture = document.querySelector(Fixture.tag) as PlaitedElement
     fixture.trigger({ type: 'render' })
     let el = await findByAttribute<HTMLDivElement>('p-target', 'delete')

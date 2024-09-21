@@ -1,6 +1,6 @@
 import type { Disconnect } from '../client/client.types.js'
 import type { BPEvent, BPEventTemplate, BPListener, Idioms, RulesFunction } from './b-thread.js'
-import { isTypeOf } from '../utils/true-type-of.js'
+import { isTypeOf } from '../utils/is-type-of.js'
 
 type RunningBid = {
   trigger?: true | 'object' | 'person'

@@ -1,4 +1,4 @@
-import type { Trigger } from '../behavioral.js'
+import type { Trigger } from '../behavioral/b-program.js'
 import type { SubscribeToPublisher, Disconnect } from './client.types.js'
 
 export function useStore<T>(initialValue: T): {

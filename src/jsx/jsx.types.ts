@@ -1288,5 +1288,6 @@ export type ElementAttributeList = {
 export type Attrs<T extends DetailedHTMLAttributes = DetailedHTMLAttributes> = DetailedHTMLAttributes & T
 
 export type FunctionTemplate<T extends Attrs = Attrs> = (attrs: T & PlaitedAttributes) => TemplateObject
+export type FT<T extends Attrs = Attrs> = FunctionTemplate<T>
 
 export type CustomElementTag = `${string}-${string}`

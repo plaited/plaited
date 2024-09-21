@@ -1,24 +1,17 @@
-import { assert, findByAttribute, findByText } from '@plaited/storybook-rite'
-import { Meta, StoryObj } from '@plaited/storybook'
+import { StoryObj } from '../../workshop.js'
 import { PlaitedElement, css } from '../../index.js'
 import { defineTemplate } from '../define-template.js'
 import { createTemplate } from '../../jsx/create-template.js'
-const meta: Meta = {
-  title: 'Tests/template',
-  component: () => <></>,
-}
-
-export default meta
 
 export const defaultModeAndFocus: StoryObj = {
-  render: () => {
+  template: () => {
     const ModeOpen = defineTemplate({
       tag: 'mode-open',
       shadowDom: <span>mode open and delegates focus</span>,
     })
     return <ModeOpen p-target='el' />
   },
-  play: async () => {
+  play: async ({ assert, findByAttribute}) => {
     const host = await findByAttribute<PlaitedElement>('p-target', 'el')
     assert({
       given: 'setHTMLUnsafe',
@@ -36,7 +29,7 @@ export const defaultModeAndFocus: StoryObj = {
 }
 
 export const delegatesFocusFalse: StoryObj = {
-  render: () => {
+  template: () => {
     const DelegateFalse = defineTemplate({
       tag: 'delegate-false',
       delegatesFocus: false,
@@ -44,7 +37,7 @@ export const delegatesFocusFalse: StoryObj = {
     })
     return <DelegateFalse p-target='el' />
   },
-  play: async () => {
+  play: async ({ assert, findByAttribute}) => {
     const host = await findByAttribute<PlaitedElement>('p-target', 'el')
     assert({
       given: 'setHTMLUnsafe',
@@ -62,7 +55,7 @@ export const delegatesFocusFalse: StoryObj = {
 }
 
 export const closedMode: StoryObj = {
-  render: () => {
+  template: () => {
     const ClosedMode = defineTemplate({
       tag: 'mode-closed',
       mode: 'closed',
@@ -70,7 +63,7 @@ export const closedMode: StoryObj = {
     })
     return <ClosedMode p-target='el' />
   },
-  play: async () => {
+  play: async ({ assert, findByAttribute}) => {
     const host = await findByAttribute<PlaitedElement>('p-target', 'el')
     console.log(host?.shadowRoot)
     assert({
@@ -83,7 +76,7 @@ export const closedMode: StoryObj = {
 }
 
 export const hydration: StoryObj = {
-  play: async ({ canvasElement }) => {
+  play: async ({ assert, findByAttribute, findByText, hostElement }) => {
     const styles = css.create({
       inner: {
         color: 'red',
@@ -113,7 +106,7 @@ export const hydration: StoryObj = {
       ),
     }).html.join('')
 
-    canvasElement.setHTMLUnsafe(template)
+    hostElement.setHTMLUnsafe(template)
 
     const host = await findByAttribute<PlaitedElement>('p-target', 'host')
     let inner = await findByAttribute('p-target', 'inner', host)

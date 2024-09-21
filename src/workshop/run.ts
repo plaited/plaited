@@ -1,3 +1,4 @@
+import path from "path"
 import { build } from "./build.js"
 import { globStories, globTemplates, globWorkers } from "./glob.js"
 import { mapStories } from "./map.js"
@@ -11,13 +12,17 @@ export const run = async (dir: string) => {
     storyFiles.map(async (filePath) => await scanStoryExports(dir, filePath))
   )
   const stories = new Map(storyExports.flat())
+  console.log(stories)
 
   const { responseMap, virtualEntries } = await mapStories(dir, stories) 
-  const storyPaths = [...responseMap.keys()]
-  const {outputFiles, ...result} = await build({
-    absWorkingDir: dir,
-    entries: [...workerFiles, ...templateFiles],
-    virtualEntries
-  })
-  console.log(outputFiles)
+  // const storyPaths = [...responseMap.keys()]
+  // const {outputFiles, ...result} = await build({
+  //   absWorkingDir: dir,
+  //   entries: [...workerFiles, ...templateFiles],
+  //   virtualEntries
+  // })
+  // console.log(outputFiles)
 }
+
+const dir = path.resolve(process.cwd(), 'src')
+console.log(dir)

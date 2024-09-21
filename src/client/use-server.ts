@@ -1,6 +1,8 @@
-import type { BPEvent, Trigger } from '../behavioral.js'
+import type { BPEvent } from '../behavioral/b-thread.js'
+import type { Trigger } from '../behavioral/b-program.js'
 import type { CustomElementTag } from '../jsx/jsx.types.js'
-import { ValueOf, isTypeOf } from '../utils.js'
+import type { ValueOf } from '../utils/value-of.type.js'
+import { isTypeOf } from '../utils/is-type-of.js'
 import { ACTION_INSERT, ACTION_TRIGGER, INSERT_METHODS } from './client.constants.js'
 import { DelegatedListener, delegates } from './delegated-listener.js'
 

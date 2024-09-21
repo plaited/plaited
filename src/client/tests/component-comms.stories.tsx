@@ -1,15 +1,8 @@
-import { assert, findByAttribute, fireEvent } from '@plaited/storybook-rite'
-import { Meta, StoryObj } from '@plaited/storybook'
+import { StoryObj } from '../../workshop.js'
 import { ElOne, ElTwo } from './component-comms.js'
-const meta: Meta = {
-  title: 'Tests',
-  component: () => <></>,
-}
-
-export default meta
 
 export const componentComms: StoryObj = {
-  render: () => {
+  template: () => {
     return (
       <>
         <ElOne bp-address='one' />
@@ -17,7 +10,7 @@ export const componentComms: StoryObj = {
       </>
     )
   },
-  play: async () => {
+  play: async ({ findByAttribute, assert, fireEvent}) => {
     let button = await findByAttribute('p-target', 'button')
     const header = await findByAttribute('p-target', 'header')
     assert({

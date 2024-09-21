@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { kebabCase } from '../utils.js'
+import { kebabCase } from '../utils/case.js'
 import {
   TEMPLATE_DIRECTORY,
   STORY_EXTENSION,
@@ -36,7 +36,10 @@ export const scanStoryExports = async (cwd: string, filePath: string) => {
     template: string;
   }>()
     for(const exportName of exports) {
-    const dirname = path.dirname(filePath).replace(rootRegex, '')
+    const dirname = path
+      .dirname(filePath)
+      .replace(rootRegex, '')
+      .toLowerCase()
     const ext = path.extname(filePath)
     const suffix = `${STORY_EXTENSION}${ext}`
     const basename = filePath.endsWith(suffix) ? kebabCase(path.basename(filePath, suffix)) : ''
