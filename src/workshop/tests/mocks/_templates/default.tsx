@@ -1,3 +1,3 @@
-export default function() {
+export default function () {
   return <div>default export</div>
 }

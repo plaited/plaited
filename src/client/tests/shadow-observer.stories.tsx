@@ -1,7 +1,6 @@
 import { StoryObj } from '../../workshop/workshop.types.js'
 import { ShadowIsland } from './shadow-observer/shadow.island.js'
 
-
 export const shadowObserver: StoryObj = {
   template: ShadowIsland,
   play: async ({ assert, findByAttribute, findByText, fireEvent }) => {

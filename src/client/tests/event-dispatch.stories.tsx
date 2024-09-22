@@ -45,7 +45,7 @@ export const eventDispatch: StoryObj = {
       <Top />
     </>
   ),
-  play: async ({ assert, findByAttribute, fireEvent}) => {
+  play: async ({ assert, findByAttribute, fireEvent }) => {
     const button = await findByAttribute('p-target', 'button')
     const header = await findByAttribute('p-target', 'header')
     assert({

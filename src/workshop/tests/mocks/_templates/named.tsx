@@ -1,3 +1,3 @@
-export const Named = () =>{
+export const Named = () => {
   return <div>Named Export</div>
 }

@@ -6,7 +6,7 @@ export type Params = {
   timeout?: number // Defaults to 5_000 ms
   cookies?: Record<string, string>
   style?: {
-    stylesheet: string[];
+    stylesheet: string[]
   }
 }
 

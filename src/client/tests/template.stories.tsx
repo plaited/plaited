@@ -12,7 +12,7 @@ export const defaultModeAndFocus: StoryObj = {
     })
     return <ModeOpen p-target='el' />
   },
-  play: async ({ assert, findByAttribute}) => {
+  play: async ({ assert, findByAttribute }) => {
     const host = await findByAttribute<PlaitedElement>('p-target', 'el')
     assert({
       given: 'setHTMLUnsafe',
@@ -38,7 +38,7 @@ export const delegatesFocusFalse: StoryObj = {
     })
     return <DelegateFalse p-target='el' />
   },
-  play: async ({ assert, findByAttribute}) => {
+  play: async ({ assert, findByAttribute }) => {
     const host = await findByAttribute<PlaitedElement>('p-target', 'el')
     assert({
       given: 'setHTMLUnsafe',
@@ -64,7 +64,7 @@ export const closedMode: StoryObj = {
     })
     return <ClosedMode p-target='el' />
   },
-  play: async ({ assert, findByAttribute}) => {
+  play: async ({ assert, findByAttribute }) => {
     const host = await findByAttribute<PlaitedElement>('p-target', 'el')
     console.log(host?.shadowRoot)
     assert({

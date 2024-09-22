@@ -2,13 +2,7 @@ import type { Disconnect, SubscribeToPublisher } from './client.types.js'
 import type { PostToWorker } from './use-worker.js'
 import type { TemplateObject, CustomElementTag } from '../jsx/jsx.types.js'
 import { P_WORKER, P_SERVER } from '../jsx/jsx.constants.js'
-import { 
-  type BPEvent,
-  type BSync,
-  type BThread,
-  bThread,
-  bSync,
-} from '../behavioral/b-thread.js'
+import { type BPEvent, type BSync, type BThread, bThread, bSync } from '../behavioral/b-thread.js'
 import {
   type Actions,
   type BThreads,

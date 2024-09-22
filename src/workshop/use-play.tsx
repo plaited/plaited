@@ -1,6 +1,6 @@
 import { css } from '../css/css.js'
 import { defineTemplate } from '../client/define-template.js'
-import type { SendServer } from '../client/use-server.js' 
+import type { SendServer } from '../client/use-server.js'
 import { wait } from '../utils/wait.js'
 import { assert } from '../assert/assert.js'
 import { findByAttribute } from '../assert/find-by-attribute.js'
@@ -109,7 +109,7 @@ export const UseTestFixture = defineTemplate({
   ),
   connectedCallback({ send, root }) {
     return {
-      async [PLAY_EVENT]({ exportName, filePath, route }: { exportName: string; filePath: string;  route: string}) {
+      async [PLAY_EVENT]({ exportName, filePath, route }: { exportName: string; filePath: string; route: string }) {
         const { [exportName]: story } = (await import(filePath)) as { [key: string]: StoryObj }
         try {
           story?.play &&

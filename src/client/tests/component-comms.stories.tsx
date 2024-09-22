@@ -10,7 +10,7 @@ export const componentComms: StoryObj = {
       </>
     )
   },
-  play: async ({ findByAttribute, assert, fireEvent}) => {
+  play: async ({ findByAttribute, assert, fireEvent }) => {
     let button = await findByAttribute('p-target', 'button')
     const header = await findByAttribute('p-target', 'header')
     assert({

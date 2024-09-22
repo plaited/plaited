@@ -38,7 +38,7 @@ const DynamicOnly = defineTemplate({
 
 export const dynamicStyles: StoryObj = {
   template: () => <DynamicOnly data-testid='target' />,
-  play: async ({ findByText, assert, findByAttribute, wait}) => {
+  play: async ({ findByText, assert, findByAttribute, wait }) => {
     const style = await findByText(initial.stylesheet.join(''))
     assert({
       given: 'Render with initial stylesheet, Style tag',

@@ -1,17 +1,5 @@
-import {
-  type BPEvent,
-  type BSync,
-  type BThread,
-  bThread,
-  bSync,
-} from '../behavioral/b-thread.js'
-import {
-  type Actions,
-  type UseSnapshot,
-  type BThreads,
-  type Trigger,
-  bProgram,
-} from '../behavioral/b-program.js'
+import { type BPEvent, type BSync, type BThread, bThread, bSync } from '../behavioral/b-thread.js'
+import { type Actions, type UseSnapshot, type BThreads, type Trigger, bProgram } from '../behavioral/b-program.js'
 import { usePublicEvents } from './use-public-events.js'
 
 export const defineWorker = ({

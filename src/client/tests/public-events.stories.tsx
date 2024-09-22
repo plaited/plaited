@@ -67,7 +67,7 @@ export const publicEvents: StoryObj = {
       </Outer>
     </>
   ),
-  play: async ({assert, findByAttribute, fireEvent}) => {
+  play: async ({ assert, findByAttribute, fireEvent }) => {
     let button = await findByAttribute('p-target', 'button')
     const header = await findByAttribute('p-target', 'header')
     assert({

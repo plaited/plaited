@@ -3,7 +3,7 @@ import type { Trigger } from '../behavioral/b-program.js'
 import type { CustomElementTag } from '../jsx/jsx.types.js'
 import type { ValueOf } from '../utils/value-of.type.js'
 import { isTypeOf } from '../utils/is-type-of.js'
-import { ACTION_INSERT, ACTION_TRIGGER, INSERT_METHODS } from './client.constants.js'
+import { ACTION_INSERT, ACTION_TRIGGER, INSERT_METHODS, PLAITED_PATHNAME } from './client.constants.js'
 import { DelegatedListener, delegates } from './delegated-listener.js'
 
 export type InsertMessage = {
@@ -125,7 +125,7 @@ const callback = (evt: MessageEvent) => {
 }
 
 const connect = () => {
-  socket = new WebSocket(self?.location?.origin.replace(/^http/, 'ws'))
+  socket = new WebSocket(`${self?.location?.origin.replace(/^http/, 'ws')}${PLAITED_PATHNAME}`)
   delegates.set(socket, new DelegatedListener(callback))
   // WebSocket connection opened
   socket.addEventListener('open', delegates.get(socket))
