@@ -1,4 +1,5 @@
-import { FunctionTemplate, css } from '../index.js'
+import type { FunctionTemplate } from '../jsx/jsx.types.js'
+import { css } from '../css/css.js'
 
 const styles = css.create({
   x: {

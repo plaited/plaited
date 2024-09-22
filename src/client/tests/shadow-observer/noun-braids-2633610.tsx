@@ -1,4 +1,4 @@
-import { Attrs } from 'plaited'
+import { Attrs } from '../../../jsx/jsx.types.js'
 
 export const SVG = (props: Attrs) => (
   <svg

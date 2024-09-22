@@ -1,4 +1,4 @@
-import { StoryObj, Meta } from '..//workshop.types.js'
+import { StoryObj, Meta } from '../workshop/workshop.types.js'
 import { Header } from './header.js'
 
 const meta: Meta<typeof Header> = {
@@ -25,7 +25,7 @@ export const LoggedIn: Story = {
     })
   },
   args: {
-    user:  'Jane Doe',
+    user: 'Jane Doe',
   },
 }
 
