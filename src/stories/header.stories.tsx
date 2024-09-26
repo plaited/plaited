@@ -35,7 +35,7 @@ export const LoggedOut: Story = {
     assert({
       given: 'Logged out mode',
       should: 'Button bar should have two children',
-      actual: bar.childElementCount,
+      actual: bar?.childElementCount,
       expected: 2,
     })
   },

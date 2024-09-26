@@ -1,5 +1,5 @@
 import type { Disconnect, SubscribeToPublisher } from './client.types.js'
-import type { PostToWorker } from './use-worker.js'
+import type { PostToWorker } from '../worker/use-worker.js'
 import type { TemplateObject, CustomElementTag } from '../jsx/jsx.types.js'
 import { P_WORKER, P_SERVER } from '../jsx/jsx.constants.js'
 import { type BPEvent, type BSync, type BThread, bThread, bSync } from '../behavioral/b-thread.js'
@@ -14,10 +14,10 @@ import {
 import { P_TRIGGER } from '../jsx/jsx.constants.js'
 import { QuerySelector, useQuery, handleTemplateObject } from './use-query.js'
 import { shadowObserver, addListeners } from './shadow-observer.js'
-import { usePublicEvents } from './use-public-events.js'
+import { usePublicEvents } from '../behavioral/use-public-events.js'
 import { canUseDOM } from './can-use-dom.js'
 import { SendServer, useServer } from './use-server.js'
-import { useWorker } from './use-worker.js'
+import { useWorker } from '../worker/use-worker.js'
 import { ELEMENT_CALLBACKS } from './client.constants.js'
 
 export interface PlaitedElement extends HTMLElement {
@@ -251,7 +251,7 @@ export const defineElement = ({
           this.#sendWorker.disconnect()
           this.#disconnectSet.delete(this.#sendWorker.disconnect)
           this.#sendWorker =
-            value === null ? this.#fallbackSendDirective<PostToWorker>(P_WORKER) : useWorker(this, value)
+            value === null ? this.#fallbackSendDirective<PostToWorker>(P_WORKER) : useWorker(this.trigger.bind(this), value)
         }
         #setSendServer(value: string | null) {
           this.#sendServer.disconnect()

@@ -6,9 +6,9 @@ export type PostToWorker = {
   disconnect(): void
 }
 
-export const useWorker = (host: { trigger: Trigger }, path: string): PostToWorker => {
+export const useWorker = (trigger: Trigger, path: string): PostToWorker => {
   const handleMessage = (event: MessageEvent<BPEvent>) => {
-    isBPEvent(event.data) && host.trigger(event.data)
+    isBPEvent(event.data) && trigger(event.data)
   }
   const worker = new Worker(path, { type: 'module' })
   worker.addEventListener('message', handleMessage)

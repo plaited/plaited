@@ -33,7 +33,7 @@ const styles = css.create({
   },
 })
 
-export const Header = defineTemplate<{ user?: string }>({
+export const Header = defineTemplate({
   tag: 'header-el',
   shadowDom: (
     <header {...styles.storybookHeader}>

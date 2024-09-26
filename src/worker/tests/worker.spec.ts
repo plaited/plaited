@@ -6,10 +6,7 @@ import type { BPEvent } from '../../behavioral/b-thread.js'
 
 test('userWorker|defineWorker: send and receive', async () => {
   const spy = sinon.spy()
-  const host = {
-    trigger: (evt: BPEvent) => spy(evt),
-  }
-  const send = useWorker(host, `${import.meta.dir}/worker.ts`)
+  const send = useWorker((evt: BPEvent) => spy(evt), `${import.meta.dir}/worker.ts`)
   send({
     type: 'calculate',
     detail: { a: 9, b: 10, operation: 'multiply' },

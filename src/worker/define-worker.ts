@@ -1,8 +1,8 @@
 import { type BPEvent, type BSync, type BThread, bThread, bSync } from '../behavioral/b-thread.js'
 import { type Actions, type UseSnapshot, type BThreads, type Trigger, bProgram } from '../behavioral/b-program.js'
-import { usePublicEvents } from './use-public-events.js'
+import { usePublicEvents } from '../behavioral/use-public-events.js'
 
-export const defineWorker = ({
+export const defineWorker = <T extends Actions>({
   connectedCallback,
   publicEvents,
   targetOrigin,
@@ -17,7 +17,7 @@ export const defineWorker = ({
     bThreads: BThreads
     bThread: BThread
     bSync: BSync
-  }) => Actions
+  }) => Actions<T>
   publicEvents: string[]
   targetOrigin?: string
 }) => {

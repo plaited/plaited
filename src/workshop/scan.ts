@@ -2,11 +2,12 @@ import path from 'node:path'
 import { kebabCase } from '../utils/case.js'
 import { TEMPLATE_DIRECTORY, STORIES_FILTERS_REGEX } from './workshop.constants.js'
 
-const transpiler = new Bun.Transpiler({
+export const transpiler = new Bun.Transpiler({
   loader: 'tsx',
 })
 
-export const scanTemplateImports = async (cwd: string, filePath: string): Promise<string> => {
+
+export const scanTemplate = async (cwd: string, filePath: string): Promise<[string, string]> => {
   const absolutePath = Bun.resolveSync(`./${filePath}`, cwd)
   const file = Bun.file(absolutePath)
   const code = await file.text()
@@ -20,58 +21,44 @@ export const scanTemplateImports = async (cwd: string, filePath: string): Promis
     const fromTemplates = filepath.split(path.sep).includes(TEMPLATE_DIRECTORY)
     fromTemplates && imports.add(`export * from '${absolutePath}';`)
   }
-  return [...imports].join('\n')
+  const content = [...imports].join('\n')
+  return [`${filePath}`, content]
 }
 
-export type StoriesMap = Map<
-  string,
-  {
-    entryPath: string
-    exportName: string
-    template: string
-    relativePath: string
-  }
->
-
-export const scanStoryExports = async ({
-  cwd = process.cwd(),
+export const scanStories = async ({
+  cwd,
   filePath,
-  stories,
   tmp,
-}: {
-  cwd?: string
-  filePath: string
-  stories: StoriesMap
+}:{
+  cwd: string,
+  filePath: string,
   tmp: string
 }) => {
-  const relativePath = `./${filePath}`
-  const file = Bun.file(Bun.resolveSync(relativePath, cwd))
+  const absolutePath = Bun.resolveSync(`./${filePath}`, cwd)
+  const file = Bun.file(absolutePath)
   const code = await file.text()
   const { exports } = transpiler.scan(code)
+  const entires = new Map<string, string>()
   for (const exportName of exports) {
     const dirname = path.dirname(filePath).toLowerCase()
     const basename =
       STORIES_FILTERS_REGEX.test(filePath) ? kebabCase(path.basename(filePath.replace(STORIES_FILTERS_REGEX, ''))) : ''
     const storyName = kebabCase(exportName)
-    const route = basename ? `/${dirname}/${basename}--${storyName}` : `${dirname}/${basename}`
-    if (stories.has(route)) {
-      const { exportName: prevName } = stories.get(route)!
+    const id = basename ? `${basename}--${storyName}` : basename
+    const route = `${dirname}/${id}.ts`
+    if (entires.has(route)) {
       console.log(
         `\nDuplicate story names:` +
           `\n  path: ${filePath}` +
-          `\n  exportName: ${prevName}` +
-          `\n  Rename: ${exportName}`,
+          `\n  exportName: ${exportName}` +
+          `\n  id: ${id}`,
       )
       continue
     }
-    const template = `export {${exportName}} from '${Bun.resolveSync(relativePath, cwd)}';`
-    const entryPath = `${tmp}/${route}.js`
-    Bun.write(entryPath, template)
-    stories.set(route, {
-      entryPath,
-      exportName,
-      template,
-      relativePath,
-    })
+    const template = `export {${exportName}} from '${absolutePath}';`
+    const entryPath = `${tmp}/${route}`
+    await Bun.write(entryPath, template)
+    entires.set(route, template)
   }
+  return [...entires]
 }

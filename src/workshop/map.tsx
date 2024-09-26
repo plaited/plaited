@@ -6,7 +6,7 @@ import { USE_PLAY_ROUTE } from './workshop.constants.js'
 import { StoryObj } from './workshop.types.js'
 import { DEFAULT_PLAY_TIMEOUT } from '../assert/assert.constants.js'
 import { css } from '../css/css.js'
-import type { StoriesMap } from './scan.js'
+import { transpiler } from './scan.js'
 import { BuildOutput } from 'bun'
 import { zip, jsMimeTypes } from './zip.js'
 
@@ -29,23 +29,22 @@ const objectToHeader = (obj: Record<string, string>) => {
 }
 
 export const mapStories = async ({
-  cwd,
-  stories,
-  tmp,
+  storyMap,
   responseMap,
 }: {
-  cwd: string
-  stories: StoriesMap
-  tmp: string
+  storyMap: [string, string][]
   responseMap: Map<string, Response>
 }) => {
-  const regex = new RegExp(`^${tmp}/`)
   await Promise.all(
-    [...stories].map(async ([route, { exportName, entryPath, relativePath }]) => {
-      const importPath = Bun.resolveSync(relativePath, cwd)
-      const { [exportName]: story, default: meta } = (await import(importPath)) as { [key: string]: StoryObj }
-      const imports = [story?.play && USE_PLAY_ROUTE, entryPath.replace(regex, '')].filter((p) => p !== undefined)
-      const ssr = useSSR(...imports)
+    storyMap.map(async ([filePath, content]) => {
+      const route = `/${filePath.replace(/\.ts$/, '')}`
+      const {imports, exports} = transpiler.scan(content)
+      const exportName = exports[0]
+      const { path } = imports[0]
+
+      const { [exportName]: story, default: meta } = (await import(path)) as { [key: string]: StoryObj }
+      const scripts = [story?.play && USE_PLAY_ROUTE, `/${filePath.replace(/\.ts$/, '.js')}`].filter((p) => p !== undefined)
+      const ssr = useSSR(...scripts)
       const args = {
         ...meta?.args,
         ...story?.args,
@@ -86,7 +85,6 @@ export const mapEntries = async (outputs: BuildOutput['outputs'], responseMap: M
   await Promise.all(
     outputs.map(async (blob) => {
       const { path } = blob
-      console.log(path)
       const text = await blob.text()
       const regex = new RegExp(`${USE_PLAY_ROUTE}$`)
       const resp = zip(text, jsMimeTypes[0])
