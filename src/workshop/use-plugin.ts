@@ -1,27 +1,50 @@
-import { BunPlugin } from 'bun'
-import { STORY_FILTER_REGEX, STORY_NAMESPACE } from './workshop.constants.js'
+import type { BunPlugin } from 'bun'
+import path from 'node:path'
+import { TEMPLATE_FILTER_REGEX, SERVER_TEMPLATE_NAMESPACE, TEMPLATE_DIRECTORY } from './workshop.constants.js'
 
-export const usePlugin = (virtualEntries: Map<string, string>): BunPlugin => ({
+const transpiler = new Bun.Transpiler({
+  loader: 'tsx',
+})
+
+const scanTemplate = async (cwd: string, filePath: string): Promise<string> => {
+  const absolutePath = Bun.resolveSync(`./${filePath}`, cwd)
+  const file = Bun.file(absolutePath)
+  const code = await file.text()
+  const filePaths = transpiler.scanImports(code)
+  const imports = new Set<string>()
+  for (const { path: filepath, kind } of filePaths) {
+    const isImportStatement = kind !== 'import-statement'
+    const isDynamicImport = kind !== 'dynamic-import'
+    const isModule = isImportStatement || isDynamicImport
+    if (!isModule) continue
+    const fromTemplates = filepath.split(path.sep).includes(TEMPLATE_DIRECTORY)
+    fromTemplates && imports.add(`export * from '${absolutePath}';`)
+  }
+  const content = [...imports].join('\n')
+  return content
+}
+
+export const usePlugin = (root: string): BunPlugin => ({
   name: 'workshop-plugin',
   setup({ onResolve, onLoad }) {
     onResolve(
       {
-        filter: STORY_FILTER_REGEX,
+        filter: /\/template.tsx?$/,
+        namespace: 'entry-point',
       },
-      (args) => {
-        return { path: args.path, namespace: STORY_NAMESPACE }
+      ({path, namespace, ...rest}) => {
+       return TEMPLATE_FILTER_REGEX.test(path)
+          ? { path, namespace: SERVER_TEMPLATE_NAMESPACE, ...rest}
+          :  { path, namespace, ...rest }
       },
     )
     onLoad(
       {
         filter: /\.*/,
-        namespace: STORY_NAMESPACE,
+        namespace: SERVER_TEMPLATE_NAMESPACE,
       },
-      ({ path }) => {
-        const contents = virtualEntries.get(path)
-        if (!contents) {
-          throw new Error(`Could not find virtual module ${path}`)
-        }
+      async ({ path }) => {
+        const [, contents] = await scanTemplate(root, path)
         return { contents, loader: 'tsx' }
       },
     )

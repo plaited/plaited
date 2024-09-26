@@ -1,47 +1,33 @@
-import fs from 'node:fs/promises'
-import os from 'node:os'
-import path from 'node:path'
 import { build } from './build.js'
 import { globStories, globWorkers } from './glob.js'
-import { mapStories } from './map.js'
-import { scanStories } from './scan.js'
-import { WORKER_FILTER_REGEX } from './workshop.constants.js'
+import { mapStoryResponses, mapEntryResponses } from './map.js'
+import { USE_PLAY_FILE_PATH } from './workshop.constants.js'
 const getRoutesAndPath = async (cwd: string) => {
-  const workerFiles = await globWorkers(cwd)
-  const workerEntries = workerFiles.flatMap(
-    filePath => WORKER_FILTER_REGEX.test(filePath)
-      ? Bun.resolveSync(`./${filePath}`, cwd)
-      : []
-    )
-  const storyFiles = await globStories(cwd)
-  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'workshop-'))
-  const storyMap = await Promise.all(
-    storyFiles.map(async (filePath) => await scanStories({cwd, filePath, tmp}))
-  ).then((arr) => arr.flat())
+  const workerEntries = await globWorkers(cwd)
+  const storyEntries = await globStories(cwd)
   const responseMap: Map<string, Response> = new Map()
-  await mapStories({ storyMap, responseMap })
   const getResponses = () => {
     const toRet: Record<string, Response> = {}
     for (const [path, response] of responseMap) {
       toRet[path] = response.clone()
     }
     return toRet
-  } 
-  const storyEntries = storyMap.map(arr => `${tmp}/${arr[0]}`)
-  const entries =[
+  }
+  await mapStoryResponses({ storyEntries, responseMap, cwd })
+  const entries = [
+    ...storyEntries,
     ...workerEntries,
-    ...storyEntries  
+    USE_PLAY_FILE_PATH,
   ]
-  const result= await build(tmp, entries)
-  console.log(result)
-  // if (!success) {
-  //   console.error(logs)
-  //   return { pathnames, getResponses }
-  // }
-  // mapEntries(outputs, responseMap)
-  
-  await fs.rmdir(tmp, { recursive: true })
-  // return { pathnames, getResponses }
+  const {outputs, success, logs} = await build(cwd, entries)
+  if (!success) {
+    console.error(logs)
+    return { pathnames:[...responseMap.keys()], getResponses }
+  }
+  await mapEntryResponses({outputs, responseMap})
+  console.log(responseMap)
+
+  return { pathnames: [...responseMap.keys()], getResponses }
 }
 await getRoutesAndPath(`${process.cwd()}/src`)
 // export const useServer = async ({

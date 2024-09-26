@@ -7,7 +7,7 @@ import { PLAITED_TEXT_FIXTURE, PLAY_EVENT } from './workshop.constants.js'
 import type { TriggerMessage } from '../client/use-server.js'
 import { ACTION_TRIGGER } from "../client/client.constants.js";
 import { FailedTest, PassedTest } from "./use-play.js";
-import { StoriesMap } from "./scan.js";
+import { StoriesMap } from "./scan-template.js";
 
 export const useRunner = async ({
   pathnames,

@@ -1,37 +1,17 @@
-import { TEMPLATE_FILTER_REGEX, SERVER_TEMPLATE_NAMESPACE } from './workshop.constants.js'
-import { scanTemplate } from './scan.js'
+import { usePlugin } from "./use-plugin.js"
 
-export const build = async (root: string, entries: string[]) => {
+export const build = async (
+  root: string,
+  entrypoints: string[]
+) => {
+  const isProd = process.env.NODE_ENV === 'production'
   return await Bun.build({
     root,
-    entrypoints: [Bun.resolveSync('./use-play.tsx', import.meta.dir), ...entries],
+    entrypoints,
+    sourcemap: isProd ? 'none' : 'inline',
+    minify: isProd,
     splitting: true,
-    sourcemap: 'inline',
-    plugins: [
-      {
-        name: 'workshop-plugin',
-        setup({ onResolve, onLoad }) {
-          onResolve(
-            {
-              filter: TEMPLATE_FILTER_REGEX,
-              namespace: 'entry-point',
-            },
-            (args) => {
-              return { path: args.path, namespace: SERVER_TEMPLATE_NAMESPACE }
-            },
-          )
-          onLoad(
-            {
-              filter: /\.*/,
-              namespace: SERVER_TEMPLATE_NAMESPACE,
-            },
-            async ({ path }) => {
-              const [, contents] = await scanTemplate(root, path)
-              return { contents, loader: 'tsx' }
-            },
-          )
-        },
-      },
-    ],
+    publicPath: '/',
+    plugins: [usePlugin(root)],
   })
 }

@@ -4,7 +4,8 @@ import { TEMPLATE_FILTER_REGEX, WORKER_FILTER_REGEX } from '../workshop.constant
 test('TEMPLATE_FILTER_REGEX', () => {
   expect(TEMPLATE_FILTER_REGEX.test('/template.tsx')).toBeTrue()
   expect(TEMPLATE_FILTER_REGEX.test('/dir/sub/template.tsx')).toBeTrue()
-  expect(TEMPLATE_FILTER_REGEX.test('/dir/sub/template.ts')).toBeFalse()
+  expect(TEMPLATE_FILTER_REGEX.test('/dir/sub/template.ts')).toBeTrue()
+  expect(TEMPLATE_FILTER_REGEX.test('/dir/_sub/template.ts')).toBeFalse()
   expect(TEMPLATE_FILTER_REGEX.test('/dir/_sub/button/template.tsx')).toBeFalse()
 })
 
