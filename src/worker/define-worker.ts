@@ -1,5 +1,12 @@
 import { type BPEvent, type BSync, type BThread, bThread, bSync } from '../behavioral/b-thread.js'
-import { type Actions, type UseSnapshot, type BThreads, type Trigger, bProgram, type Disconnect} from '../behavioral/b-program.js'
+import {
+  type Actions,
+  type UseSnapshot,
+  type BThreads,
+  type Trigger,
+  bProgram,
+  type Disconnect,
+} from '../behavioral/b-program.js'
 import { usePublicEvents } from '../client/use-public-events.js'
 
 export const defineWorker = <T extends Actions>({
@@ -23,7 +30,7 @@ export const defineWorker = <T extends Actions>({
 }) => {
   const disconnectSet = new Set<Disconnect>()
   const { useFeedback, trigger, ...rest } = bProgram()
-  const _trigger = usePublicEvents({trigger, publicEvents, disconnectSet})
+  const _trigger = usePublicEvents({ trigger, publicEvents, disconnectSet })
   const eventHandler = ({ data }: { data: BPEvent }) => {
     _trigger(data)
   }

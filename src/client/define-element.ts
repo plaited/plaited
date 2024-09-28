@@ -126,14 +126,16 @@ export const defineElement = ({
           this.#root.replaceChildren(frag)
           this.#query = useQuery(this.#root)
           const { trigger, useFeedback, useSnapshot, bThreads } = bProgram()
-          this.#trigger = Object.assign(trigger, { addDisconnectCallback: (cb: Disconnect) => this.#disconnectSet.add(cb) })
+          this.#trigger = Object.assign(trigger, {
+            addDisconnectCallback: (cb: Disconnect) => this.#disconnectSet.add(cb),
+          })
           this.#useFeedback = useFeedback
           this.#useSnapshot = useSnapshot
           this.#bThreads = bThreads
           this.trigger = usePublicEvents({
             trigger,
             publicEvents,
-            disconnectSet: this.#disconnectSet
+            disconnectSet: this.#disconnectSet,
           })
         }
         attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {

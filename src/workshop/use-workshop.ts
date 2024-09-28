@@ -3,7 +3,6 @@ import { globStories, globWorkers } from './glob.js'
 import { mapStoryResponses, mapEntryResponses } from './map.js'
 import { USE_PLAY_FILE_PATH } from './workshop.constants.js'
 
-
 export const getRoutesAndPath = async (cwd: string) => {
   const workerEntries = await globWorkers(cwd)
   const storyEntries = await globStories(cwd)
@@ -16,21 +15,17 @@ export const getRoutesAndPath = async (cwd: string) => {
     return toRet
   }
   const stories = await mapStoryResponses({ storyEntries, responseMap, cwd })
-  const entries = [
-    ...storyEntries,
-    ...workerEntries,
-    USE_PLAY_FILE_PATH,
-  ]
-  const {outputs, success, logs} = await build(cwd, entries)
+  const entries = [...storyEntries, ...workerEntries, USE_PLAY_FILE_PATH]
+  const { outputs, success, logs } = await build(cwd, entries)
   if (!success) {
     return console.error(logs)
   }
-  await mapEntryResponses({outputs, responseMap})
+  await mapEntryResponses({ outputs, responseMap })
 
   return { stories, getResponses }
 }
 const obj = await getRoutesAndPath(`${process.cwd()}/src`)
-if(obj){
+if (obj) {
   console.log(obj.stories)
 }
 // export const useServer = async ({
@@ -74,6 +69,3 @@ if(obj){
 //   })
 //   return {server, pathnames, getResponses}
 // }
-
-
-

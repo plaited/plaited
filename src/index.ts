@@ -9,13 +9,7 @@ export type {
   SnapshotMessage,
   Trigger,
 } from './behavioral/b-program.js'
-export type {
-  BPEvent,
-  BPEventTemplate,
-  BSync,
-  BThread,
-  RulesFunction,
-} from './behavioral/b-thread.js'
+export type { BPEvent, BPEventTemplate, BSync, BThread, RulesFunction } from './behavioral/b-thread.js'
 //CLIENT
 export type { PlaitedElement } from './client/define-element.js'
 export type { CloneCallback, Position, SelectorMatch } from './client/use-query.js'

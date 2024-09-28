@@ -115,7 +115,7 @@ export const useServer = (path: `/${string}`) => {
         console.error('WebSocket error: ', evt)
       }
     },
-    connect(){
+    connect() {
       socket = new WebSocket(`${self?.location?.origin.replace(/^http/, 'ws')}${path}`)
       delegates.set(socket, new DelegatedListener(ws.callback))
       // WebSocket connection opened
@@ -136,7 +136,7 @@ export const useServer = (path: `/${string}`) => {
         retryCount++
       }
       socket = undefined
-    }
+    },
   }
   const send = <T extends JSONDetail>(event: BPEvent<T>) => {
     const fallback = () => {

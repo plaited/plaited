@@ -8,7 +8,7 @@ export type Params = {
   a11y?: Record<string, string> | false
   timeout?: number // Defaults to 5_000 ms
   cookies?: Record<string, string>
-  styles?: StylesObject,
+  styles?: StylesObject
   description?: string
   scale?: Scale
 }
@@ -38,4 +38,4 @@ export type MiddleWareHandler = <T extends Record<string, unknown> = Record<stri
   ctx?: T & { next: Handler },
 ) => Promise<Response>
 
-export type TestParams = { a11y: false | { [x: string]: string; }; timeout: number; }
+export type TestParams = { a11y: false | { [x: string]: string }; timeout: number }

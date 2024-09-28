@@ -32,10 +32,10 @@ export const usePlugin = (root: string): BunPlugin => ({
         filter: /\/template.tsx?$/,
         namespace: 'entry-point',
       },
-      ({path, namespace, ...rest}) => {
-       return TEMPLATE_FILTER_REGEX.test(path)
-          ? { path, namespace: SERVER_TEMPLATE_NAMESPACE, ...rest}
-          :  { path, namespace, ...rest }
+      ({ path, namespace, ...rest }) => {
+        return TEMPLATE_FILTER_REGEX.test(path) ?
+            { path, namespace: SERVER_TEMPLATE_NAMESPACE, ...rest }
+          : { path, namespace, ...rest }
       },
     )
     onLoad(

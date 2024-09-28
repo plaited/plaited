@@ -7,7 +7,7 @@ export const useWorker = (trigger: PlaitedTrigger | Trigger, path: string) => {
     isBPEvent(event.data) && trigger(event.data)
   }
   const worker = new Worker(path, { type: 'module' })
-   
+
   worker.addEventListener('message', handleMessage)
   const post = <T>(args: BPEvent<T>) => worker?.postMessage(args)
   const disconnect = () => {

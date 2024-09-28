@@ -1,9 +1,6 @@
-import { usePlugin } from "./use-plugin.js"
+import { usePlugin } from './use-plugin.js'
 
-export const build = async (
-  root: string,
-  entrypoints: string[]
-) => {
+export const build = async (root: string, entrypoints: string[]) => {
   const isProd = process.env.NODE_ENV === 'production'
   return await Bun.build({
     root,
