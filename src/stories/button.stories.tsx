@@ -35,7 +35,7 @@ export const Small: Story = {
   play: async ({ assert, findByAttribute, match }) => {
     const button = await findByAttribute<HTMLButtonElement>('type', 'button')
     const expected = 'Small Button'
-    const contains = match(button.innerHTML)
+    const contains = match(button?.innerHTML ?? '')
     assert({
       given: 'label arg passed to story',
       should: 'render with label content',

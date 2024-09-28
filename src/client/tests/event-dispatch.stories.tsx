@@ -1,6 +1,6 @@
 import { StoryObj } from '../../workshop/workshop.types.js'
 import { defineTemplate } from '../define-template.js'
-
+import { useDispatch } from '../use-dispatch.js'
 const Bottom = defineTemplate({
   tag: 'bottom-component',
   shadowDom: (
@@ -12,10 +12,11 @@ const Bottom = defineTemplate({
     </button>
   ),
   publicEvents: ['add'],
-  connectedCallback({ emit }) {
+  connectedCallback() {
+    const dispatch = useDispatch(this)
     return {
       click() {
-        emit({ type: 'append' })
+        dispatch({ type: 'append' })
       },
     }
   },

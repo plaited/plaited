@@ -28,13 +28,7 @@ const objectToHeader = (obj: Record<string, string>) => {
     .join('; ')
 }
 
-const createStoryRoute = ({
-  storyFile,
-  exportName,
-}:{
-  storyFile: string,
-  exportName: string,
-}) => {
+const createStoryRoute = ({ storyFile, exportName }: { storyFile: string; exportName: string }) => {
   const dirname = path.dirname(storyFile)
   const basename =
     STORIES_FILTERS_REGEX.test(storyFile) ? kebabCase(path.basename(storyFile.replace(STORIES_FILTERS_REGEX, ''))) : ''
@@ -42,7 +36,6 @@ const createStoryRoute = ({
   const id = basename ? `${basename}--${storyName}` : basename
   return `${dirname}/${id}`
 }
-
 
 const updateHTMLResponses = ({
   story,
@@ -64,8 +57,8 @@ const updateHTMLResponses = ({
     ...story?.args,
   }
   const a11y =
-    story?.parameters?.a11y === false || meta?.parameters?.a11y === false
-    ? false
+    story?.parameters?.a11y === false || meta?.parameters?.a11y === false ?
+      false
     : {
         ...meta?.parameters?.a11y,
         ...story?.parameters?.a11y,
@@ -80,7 +73,7 @@ const updateHTMLResponses = ({
     <Story route={route}>
       <UseTestFixture
         children={tpl?.(args)}
-        {...css.assign(meta?.parameters?.style, story?.parameters?.style)}
+        {...css.assign(meta?.parameters?.styles, story?.parameters?.styles)}
       />
     </Story>,
   )
@@ -107,12 +100,12 @@ export const mapStoryResponses = async ({
   const routes: [string, TestParams][] = []
   await Promise.all(
     storyEntries.map(async (entry) => {
-      const { default: meta, ...stories } = (await import(entry)) as { 
-        default: Meta,
-        [key: string]: StoryObj 
+      const { default: meta, ...stories } = (await import(entry)) as {
+        default: Meta
+        [key: string]: StoryObj
       }
       const storyFile = entry.replace(new RegExp(`^${cwd}`), '')
-      for(const exportName in stories) {
+      for (const exportName in stories) {
         const route = createStoryRoute({ storyFile, exportName })
         const story = stories[exportName]
         const params = updateHTMLResponses({ story, meta, route, responseMap, storyFile })
@@ -126,7 +119,7 @@ export const mapStoryResponses = async ({
 export const mapEntryResponses = async ({
   outputs,
   responseMap,
-}:{
+}: {
   outputs: BuildOutput['outputs']
   responseMap: Map<string, Response>
 }) => {
@@ -136,10 +129,9 @@ export const mapEntryResponses = async ({
       const text = await blob.text()
       const regex = new RegExp(`${USE_PLAY_ROUTE}$`)
       const resp = zip(text, jsMimeTypes[0])
-      const route = kind === 'entry-point' && regex.test(path)
-        ? USE_PLAY_ROUTE
-        :  kind === 'entry-point'
-        ? `/${path}`
+      const route =
+        kind === 'entry-point' && regex.test(path) ? USE_PLAY_ROUTE
+        : kind === 'entry-point' ? `/${path}`
         : path.replace(/^\./, '')
       responseMap.set(route, resp)
     }),

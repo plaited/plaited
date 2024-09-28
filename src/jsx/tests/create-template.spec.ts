@@ -145,7 +145,7 @@ test('createTemplate: Non declarative shadow DOM template', () => {
     h('ul', {
       children: [
         Template({ children: h('span', { children: 'I am a span!!!' }) }),
-        //@ts-expect-error: children is not undefined
+        //@ts-expect-error: test
         ...(Array.isArray(children) ? children : [children]),
       ],
     })
@@ -206,7 +206,7 @@ const NestedCustomElement: FunctionTemplate = ({ children, ...props }) =>
           h('slot', { name: 'nested' }),
         ],
       }),
-      //@ts-expect-error: children is not undefined
+      //@ts-expect-error: test
       ...(Array.isArray(children) ? children : [children]),
     ],
   })
@@ -250,7 +250,7 @@ const TopCustomElement: FunctionTemplate = ({ children, ...props }) =>
           }),
         }),
       }),
-      //@ts-expect-error: children is not undefined
+      //@ts-expect-error: test
       ...(Array.isArray(children) ? children : [children]),
     ],
   })
@@ -296,6 +296,7 @@ test('ssr: Properly hoist and deduplicates multiple stylesheets on a single node
 test('ssr: filters out falsey stylesheets', () => {
   expect(
     h('div', {
+      //@ts-ignore: testing falsey stylesheets
       stylesheet: ['truthy', false && 'false', false && 'false', undefined && 'void', null && 'null'],
     }).stylesheets.length,
   ).toBe(1)
@@ -305,6 +306,7 @@ test('ssr: filters out falsey classNames', () => {
   expect(
     render(
       h('div', {
+        //@ts-ignore: testing falsey classNames
         className: ['truthy', false && 'false', undefined && 'void', null && 'null'],
       }),
     ),

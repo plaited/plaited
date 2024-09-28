@@ -2,7 +2,7 @@ import type { StoryObj } from '../../workshop/workshop.types.js'
 import { isTypeOf } from '../../utils/is-type-of.js'
 import type { PlaitedElement } from '../define-element.js'
 import { defineTemplate } from '../define-template.js'
-
+import { useDispatch } from '../use-dispatch.js'
 const isPlaitedElement = (el: unknown): el is PlaitedElement =>
   isTypeOf<PlaitedElement>(el, 'htmlelement') && 'trigger' in el
 
@@ -12,13 +12,14 @@ const Inner = defineTemplate({
   tag: 'inner-component',
   shadowDom: <h1 p-target='header'>Hello</h1>,
   publicEvents: ['add'],
-  connectedCallback({ $, bThreads, bThread, bSync, emit }) {
+  connectedCallback({ $, bThreads, bThread, bSync }) {
+    const dispatch = useDispatch(this)
     bThreads.set({
       onAdd: bThread([bSync({ waitFor: 'add' }), bSync({ request: { type: 'disable' } })]),
     })
     return {
       disable() {
-        emit({ type: 'disable', bubbles: true })
+        dispatch({ type: 'disable', bubbles: true })
       },
       add(detail: string) {
         const [header] = $('header')

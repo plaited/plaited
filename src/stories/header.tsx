@@ -1,4 +1,5 @@
 import { defineTemplate } from '../client/define-template.js'
+import { useDispatch } from '../client/use-dispatch.js'
 import { css } from '../css/css.js'
 import { Button } from './button.js'
 
@@ -88,11 +89,12 @@ export const Header = defineTemplate({
   ),
   observedAttributes: ['user'],
   publicEvents: ['user'],
-  connectedCallback({ $, emit }) {
+  connectedCallback({ $ }) {
+    const dispatch = useDispatch(this)
     return {
       click(e: MouseEvent & { target: HTMLButtonElement }) {
         const value = e.target.value
-        emit({ type: value, bubbles: true })
+        dispatch({ type: value, bubbles: true })
       },
       onAttributeChanged({ name, newValue }) {
         if (name === 'user') {

@@ -310,6 +310,7 @@ test('ssr: Properly hoist and deduplicates multiple stylesheets on a single node
 test('ssr: filters out falsey stylesheets', () => {
   expect(
     h('div', {
+      //@ts-ignore: testing falsey stylesheets
       stylesheet: ['truthy', false && 'false', false && 'false', undefined && 'void', null && 'null'],
     }).stylesheets.length,
   ).toBe(1)
@@ -319,6 +320,7 @@ test('ssr: filters out falsey classNames', () => {
   expect(
     render(
       h('div', {
+        //@ts-ignore: testing falsey classNames
         className: ['truthy', false && 'false', undefined && 'void', null && 'null'],
       }),
     ),

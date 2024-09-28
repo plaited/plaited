@@ -1,6 +1,5 @@
 import { css } from '../css/css.js'
 import { defineTemplate } from '../client/define-template.js'
-import type { SendServer } from '../client/use-server.js'
 import { wait } from '../utils/wait.js'
 import { assert } from '../assert/assert.js'
 import { findByAttribute } from '../assert/find-by-attribute.js'
@@ -12,6 +11,7 @@ import { TimeoutError, AssertionError, MissingTestParamsError } from '../assert/
 import { TEST_PASSED, TEST_EXCEPTION, DEFAULT_PLAY_TIMEOUT, UNKNOWN_ERROR } from '../assert/assert.constants.js'
 import { StoryObj } from './workshop.types.js'
 import { PLAITED_TEXT_FIXTURE, PLAY_EVENT } from './workshop.constants.js'
+import { useServer } from '../client/use-server.js'
 
 export type FailedTest = {
   route: string
@@ -43,7 +43,7 @@ type UsePlay = (arg: {
   hostElement: Element
   play: Play
   route: string
-  send: SendServer
+  send: ReturnType<typeof useServer>
   time?: number
 }) => Promise<void>
 
@@ -107,25 +107,27 @@ export const UseTestFixture = defineTemplate({
       })}
     ></slot>
   ),
-  connectedCallback({ send, root }) {
+  connectedCallback({ root }) {
+    const send = useServer('/')
+    send.connect(this)
     return {
       async [PLAY_EVENT]({ exportName, filePath, route }: { exportName: string; filePath: string; route: string }) {
         const { [exportName]: story } = (await import(filePath)) as { [key: string]: StoryObj }
         try {
-          story?.play
-          ? await usePlay({
+          story?.play ?
+            await usePlay({
               play: story.play,
               time: story?.parameters?.timeout,
-              send: send.server,
+              send,
               route,
               filePath,
               exportName,
               hostElement: root.host,
             })
-          : send.server<PassedTest>({ type: TEST_PASSED, detail: { route } })
+          : send<PassedTest>({ type: TEST_PASSED, detail: { route } })
         } catch (error) {
           if (error instanceof Error)
-            return send.server<FailedTest>({
+            return send<FailedTest>({
               type: UNKNOWN_ERROR,
               detail: {
                 exportName,
