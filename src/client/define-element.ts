@@ -117,7 +117,6 @@ export const defineElement = ({
         #bThreads: BThreads
         #disconnectSet = new Set<Disconnect>()
         trigger: PlaitedTrigger
-        // #subscribe: Subscribe
         #mounted = false
         constructor() {
           super()
