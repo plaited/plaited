@@ -1,7 +1,7 @@
 import { defineTemplate } from '../define-template.js'
 import { useStore } from '../use-store.js'
 
-const pub = useStore<number>(0)
+const store = useStore<number>(0)
 
 export const Publisher = defineTemplate({
   tag: 'publisher-component',
@@ -20,7 +20,7 @@ export const Publisher = defineTemplate({
     })
     return {
       increment() {
-        pub(pub.get() + 1)
+        store(store.get() + 1)
       },
     }
   },
@@ -28,10 +28,10 @@ export const Publisher = defineTemplate({
 
 export const Subscriber = defineTemplate({
   tag: 'subscriber-component',
-  shadowDom: <h1 p-target='count'>{pub.get()}</h1>,
+  shadowDom: <h1 p-target='count'>{store.get()}</h1>,
   publicEvents: ['update'],
-  connectedCallback({ $, subscribe }) {
-    subscribe(pub, 'update')
+  connectedCallback({ $, trigger }) {
+    store.effect('update', trigger)
     return {
       update(value: number) {
         const [count] = $('count')

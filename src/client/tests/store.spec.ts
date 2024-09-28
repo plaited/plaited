@@ -2,32 +2,32 @@ import { test, expect } from 'bun:test'
 import sinon from 'sinon'
 import { useStore } from '../use-store.js'
 
-test('useStore: sub before pub then disconnect', () => {
-  const pub = useStore<{ value: number }>()
+test('useStore: effect before store then disconnect', () => {
+  const store = useStore<{ value: number }>({ value: 0 })
   const spy = sinon.spy()
-  const disconnect = pub.sub('a', spy)
-  pub({ value: 4 })
+  const disconnect = store.effect('a', spy)
+  store({ value: 4 })
   expect(spy.calledWith({ type: 'a', detail: { value: 4 } })).toBeTrue()
   disconnect()
-  pub({ value: 5 })
+  store({ value: 5 })
   expect(spy.calledTwice).toBeFalse()
 })
 
-test('useStore: pub before sub then disconnect', () => {
+test('useStore: store before effect then disconnect', () => {
   const spy = sinon.spy()
-  const pub = useStore<{ value: number }>()
-  pub({ value: 4 })
-  const disconnect = pub.sub('b', spy)
-  pub({ value: 4 })
+  const store = useStore<{ value: number }>({ value: 0 })
+  store({ value: 4 })
+  const disconnect = store.effect('b', spy)
+  store({ value: 4 })
   disconnect()
   expect(spy.calledTwice).toBeFalse()
 })
 
-test('useStore: sub then disconnect before pub', () => {
+test('useStore: effect then disconnect before store', () => {
   const spy = sinon.spy()
-  const pub = useStore<{ value: number }>()
-  const disconnect = pub.sub('b', spy)
+  const store = useStore<{ value: number }>({ value: 0 })
+  const disconnect = store.effect('b', spy)
   disconnect()
-  pub({ value: 4 })
+  store({ value: 4 })
   expect(spy.called).toBeFalse()
 })

@@ -14,7 +14,7 @@ test('Maximum client bundle footprint < 8.5kb', async () => {
     const compressed = Bun.gzipSync(str)
     const size = compressed.byteLength / 1024
     expect(size).toBeLessThan(8.5)
-    console.log(`Plaited minimum initial size: ${size}kb`)
+    console.log(`Plaited main size: ${size}kb`)
   }
 })
 
@@ -31,6 +31,6 @@ test('defineTemplate export footprint < 6kb', async () => {
     const compressed = Bun.gzipSync(Buffer.from(str))
     const size = compressed.byteLength / 1024
     expect(size).toBeLessThan(6)
-    console.log(`Plaited size: ${size}kb`)
+    console.log(`Plaited minimum size: ${size}kb`)
   }
 })
