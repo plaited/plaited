@@ -1,5 +1,5 @@
 import type { TemplateObject, CustomElementTag } from '../jsx/jsx.types.js'
-import { type BPEvent, type BSync, type BThread, bThread, bSync } from '../behavioral/b-thread.js'
+import { type BSync, type BThread, bThread, bSync } from '../behavioral/b-thread.js'
 import {
   type Actions,
   type BThreads,
@@ -126,9 +126,7 @@ export const defineElement = ({
           this.#root.replaceChildren(frag)
           this.#query = useQuery(this.#root)
           const { trigger, useFeedback, useSnapshot, bThreads } = bProgram()
-          const plaitedTrigger = <T>(args: BPEvent<T>)  => trigger<T>(args)
-          plaitedTrigger.addDisconnectCallback = (cb: Disconnect) => this.#disconnectSet.add(cb)
-          this.#trigger = plaitedTrigger
+          this.#trigger = Object.assign(trigger, { addDisconnectCallback: (cb: Disconnect) => this.#disconnectSet.add(cb) })
           this.#useFeedback = useFeedback
           this.#useSnapshot = useSnapshot
           this.#bThreads = bThreads
