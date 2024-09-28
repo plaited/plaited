@@ -58,7 +58,7 @@ export const withSubscription: StoryObj = {
       expected: 1,
     })
     const spy = sinon.spy()
-    const disconnect = pub.sub('a', spy)
+    const disconnect = pub.effect('a', spy)
     await pub(3)
     await wait(60)
     assert({

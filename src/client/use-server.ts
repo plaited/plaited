@@ -1,10 +1,10 @@
 import type { BPEvent } from '../behavioral/b-thread.js'
-import type { Trigger } from '../behavioral/b-program.js'
 import type { CustomElementTag } from '../jsx/jsx.types.js'
 import type { ValueOf } from '../utils/value-of.type.js'
 import { isTypeOf } from '../utils/is-type-of.js'
-import { ACTION_INSERT, ACTION_TRIGGER, INSERT_METHODS, PLAITED_PATHNAME } from './client.constants.js'
+import { ACTION_INSERT, ACTION_TRIGGER, INSERT_METHODS } from './client.constants.js'
 import { DelegatedListener, delegates } from './delegated-listener.js'
+import { PlaitedElement } from './define-element.js'
 
 export type InsertMessage = {
   address: string
@@ -28,16 +28,28 @@ export type TriggerMessage<T extends JSONDetail = JSONDetail> = {
   detail?: T
 }
 
-type SubscriberElement = HTMLElement & { trigger: Trigger }
-
-export type SendServer = {
-  <T extends JSONDetail>(event: BPEvent<T>): void
-  disconnect: () => void
+const createDocumentFragment = (html: string) => {
+  const tpl = document.createElement('template')
+  tpl.setHTMLUnsafe(html)
+  return tpl.content
 }
 
-export type UseServer = (host: SubscriberElement) => SendServer
-
-const subscribers = new Map<string, SubscriberElement>()
+const updateElement = ({
+  host,
+  html,
+  method,
+}: {
+  host: PlaitedElement
+  html: string
+  method: keyof typeof INSERT_METHODS
+}) => {
+  const methods = {
+    append: () => host.append(createDocumentFragment(html)),
+    prepend: () => host.prepend(createDocumentFragment(html)),
+    replaceChildren: () => host.replaceChildren(createDocumentFragment(html)),
+  }
+  methods[method]()
+}
 
 const isInsertMessage = (msg: unknown): msg is InsertMessage => {
   return (
@@ -59,102 +71,72 @@ const isTriggerMessage = (msg: unknown): msg is TriggerMessage => {
   )
 }
 
-const createDocumentFragment = (html: string) => {
-  const tpl = document.createElement('template')
-  tpl.setHTMLUnsafe(html)
-  return tpl.content
-}
-
-const updateElement = ({
-  host,
-  html,
-  method,
-}: {
-  host: SubscriberElement
-  html: string
-  method: keyof typeof INSERT_METHODS
-}) => {
-  const methods = {
-    append: () => host.append(createDocumentFragment(html)),
-    prepend: () => host.prepend(createDocumentFragment(html)),
-    replaceChildren: () => host.replaceChildren(createDocumentFragment(html)),
-  }
-  methods[method]()
-}
-
-const elementTrigger = (data: string | Record<string, unknown>) => {
-  try {
-    const message = isTypeOf<string>(data, 'strng') ? JSON.parse(data) : data
-    if (isInsertMessage(message)) {
-      const { address, method, html } = message
-      const host = subscribers.get(address)
-      host && updateElement({ host, html, method })
-    }
-    if (isTriggerMessage(message)) {
-      const { address, type, detail } = message
-      const host = subscribers.get(address)
-      host?.trigger({ type, detail })
-    }
-  } catch (error) {
-    console.error('Error parsing incoming message:', error)
-  }
-}
-
-const retryStatusCodes = new Set([1006, 1012, 1013])
-const maxRetries = 3
-let socket: WebSocket | undefined
-let retryCount = 0
-
 const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => event.type === 'close'
 
-const callback = (evt: MessageEvent) => {
-  if (evt.type === 'message') {
+export const toAddress = (tag: CustomElementTag, id?: string): string => `${tag}${id ? `#${id}` : ''}`
+
+export const useServer = (path: `/${string}`) => {
+  const subscribers = new Map<string, PlaitedElement>()
+  const retryStatusCodes = new Set([1006, 1012, 1013])
+  const maxRetries = 3
+  let socket: WebSocket | undefined
+  let retryCount = 0
+  const elementTrigger = (data: string | Record<string, unknown>) => {
     try {
-      elementTrigger(evt.data)
+      const message = isTypeOf<string>(data, 'string') ? JSON.parse(data) : data
+      if (isInsertMessage(message)) {
+        const { address, method, html } = message
+        const host = subscribers.get(address)
+        host && updateElement({ host, html, method })
+      }
+      if (isTriggerMessage(message)) {
+        const { address, type, detail } = message
+        const host = subscribers.get(address)
+        host?.trigger({ type, detail })
+      }
     } catch (error) {
       console.error('Error parsing incoming message:', error)
     }
   }
-  if (isCloseEvent(evt) && retryStatusCodes.has(evt.code)) retry()
-  if (evt.type === 'open') {
-    retryCount = 0
-  }
-  if (evt.type === 'error') {
-    console.error('WebSocket error: ', evt)
-  }
-}
-
-const connect = () => {
-  socket = new WebSocket(`${self?.location?.origin.replace(/^http/, 'ws')}${PLAITED_PATHNAME}`)
-  delegates.set(socket, new DelegatedListener(callback))
-  // WebSocket connection opened
-  socket.addEventListener('open', delegates.get(socket))
-  // Handle incoming messages
-  socket.addEventListener('message', delegates.get(socket))
-  // Handle WebSocket errors
-  socket.addEventListener('error', delegates.get(socket))
-  // WebSocket connection closed
-  socket.addEventListener('close', delegates.get(socket))
-}
-
-const retry = () => {
-  if (retryCount < maxRetries) {
-    // To get max we use a cap: 9999ms base: 1000ms
-    const max = Math.min(9999, 1000 * Math.pow(2, retryCount))
-    // We then select a random value between 0 and max
-    setTimeout(connect, Math.floor(Math.random() * max))
-    retryCount++
-  }
-  socket = undefined
-}
-
-export const toAddress = (tag: CustomElementTag, id?: string): string => `${tag}${id ? `#${id}` : ''}`
-
-export const useServer: UseServer = (host) => {
-  const id = toAddress(host.tagName.toLowerCase() as CustomElementTag, host.id)
-  subscribers.set(id, host)
-  const disconnect = () => {
-    subscribers.delete(id)
+  const ws = {
+    callback(evt: MessageEvent) {
+      if (evt.type === 'message') {
+        try {
+          elementTrigger(evt.data)
+        } catch (error) {
+          console.error('Error parsing incoming message:', error)
+        }
+      }
+      if (isCloseEvent(evt) && retryStatusCodes.has(evt.code)) ws.retry()
+      if (evt.type === 'open') {
+        retryCount = 0
+      }
+      if (evt.type === 'error') {
+        console.error('WebSocket error: ', evt)
+      }
+    },
+    connect(){
+      socket = new WebSocket(`${self?.location?.origin.replace(/^http/, 'ws')}${path}`)
+      delegates.set(socket, new DelegatedListener(ws.callback))
+      // WebSocket connection opened
+      socket.addEventListener('open', delegates.get(socket))
+      // Handle incoming messages
+      socket.addEventListener('message', delegates.get(socket))
+      // Handle WebSocket errors
+      socket.addEventListener('error', delegates.get(socket))
+      // WebSocket connection closed
+      socket.addEventListener('close', delegates.get(socket))
+    },
+    retry() {
+      if (retryCount < maxRetries) {
+        // To get max we use a cap: 9999ms base: 1000ms
+        const max = Math.min(9999, 1000 * Math.pow(2, retryCount))
+        // We then select a random value between 0 and max
+        setTimeout(ws.connect, Math.floor(Math.random() * max))
+        retryCount++
+      }
+      socket = undefined
+    }
   }
   const send = <T extends JSONDetail>(event: BPEvent<T>) => {
     const fallback = () => {
@@ -164,9 +146,18 @@ export const useServer: UseServer = (host) => {
     if (socket?.readyState === WebSocket.OPEN) {
       return socket.send(JSON.stringify(event))
     }
-    if (!socket) connect()
+    if (!socket) ws.connect()
     socket?.addEventListener('open', fallback)
   }
-  send.disconnect = disconnect
+  const connect = (host: PlaitedElement) => {
+    const id = toAddress(host.tagName.toLowerCase() as CustomElementTag, host.id)
+    subscribers.set(id, host)
+    const disconnect = () => {
+      subscribers.delete(id)
+    }
+    host.trigger.addDisconnectCallback?.(disconnect)
+    return disconnect
+  }
+  send.connect = connect
   return send
 }

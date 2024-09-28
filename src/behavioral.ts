@@ -22,4 +22,4 @@ export {
 } from './behavioral/b-thread.js'
 export { randomEvent } from './behavioral/random-event.js'
 export { shuffleSyncs } from './behavioral/shuffle-syncs.js'
-export { usePublicEvents } from './behavioral/use-public-events.js'
+export { usePublicEvents } from './client/use-public-events.js'

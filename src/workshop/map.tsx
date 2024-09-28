@@ -3,7 +3,7 @@ import { FunctionTemplate } from '../jsx/jsx.types.js'
 import { UseTestFixture } from './use-play.js'
 import { useSSR } from './use-ssr.js'
 import { USE_PLAY_ROUTE, STORIES_FILTERS_REGEX } from './workshop.constants.js'
-import { StoryObj, Meta } from './workshop.types.js'
+import { StoryObj, Meta, TestParams } from './workshop.types.js'
 import { DEFAULT_PLAY_TIMEOUT } from '../assert/assert.constants.js'
 import { css } from '../css/css.js'
 import { kebabCase } from '../utils/case.js'
@@ -56,7 +56,7 @@ const updateHTMLResponses = ({
   route: string
   responseMap: Map<string, Response>
   storyFile: string
-}) => {
+}): TestParams => {
   const scripts = [story?.play && USE_PLAY_ROUTE, storyFile].filter((p) => p !== undefined)
   const ssr = useSSR(...scripts)
   const args = {
@@ -64,12 +64,12 @@ const updateHTMLResponses = ({
     ...story?.args,
   }
   const a11y =
-    story?.parameters?.a11y === false ? 'false'
-    : meta?.parameters?.a11y === false && !story?.parameters?.a11y ? 'false'
-    : objectToHeader({
+    story?.parameters?.a11y === false || meta?.parameters?.a11y === false
+    ? false
+    : {
         ...meta?.parameters?.a11y,
         ...story?.parameters?.a11y,
-      })
+      }
   const timeout = story?.parameters?.timeout ?? meta?.parameters?.timeout ?? DEFAULT_PLAY_TIMEOUT
   const cookies = objectToHeader({
     ...story?.parameters?.cookies,
@@ -87,10 +87,12 @@ const updateHTMLResponses = ({
   const headers = new Headers({
     'Content-Type': 'text/html',
     Cookies: cookies,
-    Timeout: `${timeout}`,
-    A11y: a11y,
   })
   responseMap.set(route, new Response(`<!DOCTYPE html>\n${page}`, { headers }))
+  return {
+    a11y,
+    timeout,
+  }
 }
 
 export const mapStoryResponses = async ({
@@ -102,6 +104,7 @@ export const mapStoryResponses = async ({
   responseMap: Map<string, Response>
   cwd: string
 }) => {
+  const routes: [string, TestParams][] = []
   await Promise.all(
     storyEntries.map(async (entry) => {
       const { default: meta, ...stories } = (await import(entry)) as { 
@@ -112,10 +115,12 @@ export const mapStoryResponses = async ({
       for(const exportName in stories) {
         const route = createStoryRoute({ storyFile, exportName })
         const story = stories[exportName]
-        updateHTMLResponses({ story, meta, route, responseMap, storyFile })
+        const params = updateHTMLResponses({ story, meta, route, responseMap, storyFile })
+        routes.push([route, params])
       }
     }),
   )
+  return routes
 }
 
 export const mapEntryResponses = async ({

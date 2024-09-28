@@ -1,6 +1,5 @@
 import type { Attrs, FunctionTemplate, CustomElementTag } from '../jsx/jsx.types.js'
 import { DefineElementArgs, defineElement } from './define-element.js'
-import { P_WORKER, P_SERVER } from '../jsx/jsx.constants.js'
 import { createTemplate } from '../jsx/create-template.js'
 import { PLAITED_TEMPLATE_IDENTIFIER } from './client.constants.js'
 
@@ -10,12 +9,7 @@ interface DefineTemplateArgs extends Omit<DefineElementArgs, 'delegatesFocus' | 
   slotAssignment?: 'named' | 'manual'
 }
 
-export type PlaitedTemplateAttrs = Attrs & {
-  [P_WORKER]?: string
-  [P_SERVER]?: boolean
-}
-
-export type PlaitedTemplate<T extends PlaitedTemplateAttrs = PlaitedTemplateAttrs> = FunctionTemplate<T> & {
+export type PlaitedTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
   registry: Set<string>
   tag: CustomElementTag
   observedAttributes: string[]

@@ -1,11 +1,9 @@
-import type { Disconnect, SubscribeToPublisher } from './client.types.js'
-import type { PostToWorker } from '../worker/use-worker.js'
 import type { TemplateObject, CustomElementTag } from '../jsx/jsx.types.js'
-import { P_WORKER, P_SERVER } from '../jsx/jsx.constants.js'
 import { type BPEvent, type BSync, type BThread, bThread, bSync } from '../behavioral/b-thread.js'
 import {
   type Actions,
   type BThreads,
+  type Disconnect,
   type Trigger,
   type UseFeedback,
   type UseSnapshot,
@@ -14,15 +12,14 @@ import {
 import { P_TRIGGER } from '../jsx/jsx.constants.js'
 import { QuerySelector, useQuery, handleTemplateObject } from './use-query.js'
 import { shadowObserver, addListeners } from './shadow-observer.js'
-import { usePublicEvents } from '../behavioral/use-public-events.js'
+import { usePublicEvents } from './use-public-events.js'
 import { canUseDOM } from './can-use-dom.js'
-import { SendServer, useServer } from './use-server.js'
-import { useWorker } from '../worker/use-worker.js'
 import { ELEMENT_CALLBACKS } from './client.constants.js'
+import type { PlaitedTrigger } from './client.types.js'
 
 export interface PlaitedElement extends HTMLElement {
   // Custom Methods and properties
-  trigger: Trigger
+  trigger: PlaitedTrigger
   readonly publicEvents?: string[]
   adoptedCallback?: { (this: PlaitedElement): void }
   attributeChangedCallback?: {
@@ -36,29 +33,10 @@ export interface PlaitedElement extends HTMLElement {
   formStateRestoreCallback(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
 }
 
-type Subscribe = (
-  target: {
-    sub: SubscribeToPublisher
-  },
-  type: string,
-  getLVC?: boolean,
-) => Disconnect
-
-type Emit = <T = unknown>(
-  args: BPEvent<T> & {
-    bubbles?: boolean
-    cancelable?: boolean
-    composed?: boolean
-  },
-) => void
-
 export type ConnectedCallbackArgs = {
   $: QuerySelector
   root: ShadowRoot
   internals: ElementInternals
-  subscribe: Subscribe
-  send: { server: SendServer; worker: PostToWorker }
-  emit: Emit
   trigger: Trigger
   bThreads: BThreads
   useSnapshot: UseSnapshot
@@ -122,7 +100,7 @@ export const defineElement = ({
     customElements.define(
       tag,
       class extends HTMLElement implements PlaitedElement {
-        static observedAttributes = [...observedAttributes, P_WORKER]
+        static observedAttributes = [...observedAttributes]
         static formAssociated = formAssociated
         get publicEvents() {
           return publicEvents
@@ -133,14 +111,13 @@ export const defineElement = ({
         }
         #query: QuerySelector
         #shadowObserver?: MutationObserver
-        #trigger: Trigger
+        #trigger: PlaitedTrigger
         #useFeedback: UseFeedback
         #useSnapshot: UseSnapshot
         #bThreads: BThreads
         #disconnectSet = new Set<Disconnect>()
-        #sendServer = this.#fallbackSendDirective<SendServer>(P_SERVER)
-        #sendWorker = this.#fallbackSendDirective<PostToWorker>(P_WORKER)
-        trigger: Trigger
+        trigger: PlaitedTrigger
+        // #subscribe: Subscribe
         #mounted = false
         constructor() {
           super()
@@ -150,16 +127,20 @@ export const defineElement = ({
           this.#root.replaceChildren(frag)
           this.#query = useQuery(this.#root)
           const { trigger, useFeedback, useSnapshot, bThreads } = bProgram()
-          this.#trigger = trigger
+          const plaitedTrigger = <T>(args: BPEvent<T>)  => trigger<T>(args)
+          plaitedTrigger.addDisconnectCallback = (cb: Disconnect) => this.#disconnectSet.add(cb)
+          this.#trigger = plaitedTrigger
           this.#useFeedback = useFeedback
           this.#useSnapshot = useSnapshot
           this.#bThreads = bThreads
-          this.trigger = usePublicEvents(this.#trigger, publicEvents)
+          this.trigger = usePublicEvents({
+            trigger,
+            publicEvents,
+            disconnectSet: this.#disconnectSet
+          })
         }
         attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
           if (!this.#mounted) return
-          if (name === P_WORKER && oldValue !== newValue) this.#setSendWorker(newValue)
-          if (name === P_SERVER && oldValue !== newValue) this.#setSendServer(newValue)
           this.#trigger<PlaitedElementCallbackParameters['onAttributeChanged']>({
             type: ELEMENT_CALLBACKS.onAttributeChanged,
             detail: { name, oldValue, newValue },
@@ -170,31 +151,16 @@ export const defineElement = ({
         }
         connectedCallback() {
           this.#mounted = true
-          // create a server to send message to server based on p-server directive
-          const server: SendServer = (event) => this.#sendServer(event)
-          server.disconnect = () => this.#sendServer.disconnect()
-          this.hasAttribute(P_SERVER) && this.#setSendServer(this.getAttribute(P_SERVER))
           if (connectedCallback) {
             // Delegate listeners nodes with p-trigger directive on connection or upgrade
             addListeners(Array.from(this.#root.querySelectorAll<Element>(`[${P_TRIGGER}]`)), this.#trigger)
             // Create a shadow observer to watch for modification & addition of nodes with p-this.#trigger directive
             this.#shadowObserver = shadowObserver(this.#root, this.#trigger)
-            // create a server to send message to web worker based on p-worker directive
-            const worker: PostToWorker = (event) => this.#sendWorker(event)
-            worker.disconnect = () => this.#sendWorker.disconnect()
-            this.hasAttribute(P_WORKER) && this.#setSendWorker(this.getAttribute(P_WORKER))
             // bind connectedCallback to the custom element wih the following arguments
             const actions = connectedCallback.bind(this)({
               $: this.#query,
               root: this.#root,
               internals: this.#internals,
-              subscribe: ((target, type, getLVC) => {
-                const disconnect = target.sub(type, this.#trigger, getLVC)
-                this.#disconnectSet.add(disconnect)
-                return disconnect
-              }) as Subscribe,
-              send: { server, worker },
-              emit: this.#emit,
               trigger: this.#trigger,
               useSnapshot: this.#useSnapshot,
               bThreads: this.#bThreads,
@@ -231,32 +197,6 @@ export const defineElement = ({
             type: ELEMENT_CALLBACKS.onFormStateRestore,
             detail: { state, reason },
           })
-        }
-        #emit({ type, detail, bubbles = false, cancelable = true, composed = true }: Parameters<Emit>[0]) {
-          if (!type) return
-          const event = new CustomEvent(type, {
-            bubbles,
-            cancelable,
-            composed,
-            detail,
-          })
-          this.dispatchEvent(event)
-        }
-        #fallbackSendDirective<T>(directive: string) {
-          const fallback = () => console.error(`Missing directive: ${directive}`)
-          fallback.disconnect = () => {}
-          return fallback as T
-        }
-        #setSendWorker(value: string | null) {
-          this.#sendWorker.disconnect()
-          this.#disconnectSet.delete(this.#sendWorker.disconnect)
-          this.#sendWorker =
-            value === null ? this.#fallbackSendDirective<PostToWorker>(P_WORKER) : useWorker(this.trigger.bind(this), value)
-        }
-        #setSendServer(value: string | null) {
-          this.#sendServer.disconnect()
-          this.#disconnectSet.delete(this.#sendServer.disconnect)
-          this.#sendServer = value === null ? this.#fallbackSendDirective<PostToWorker>(P_WORKER) : useServer(this)
         }
       },
     )

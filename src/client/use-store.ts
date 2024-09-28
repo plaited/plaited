@@ -1,14 +1,15 @@
-import type { Trigger } from '../behavioral/b-program.js'
-import type { SubscribeToPublisher, Disconnect } from './client.types.js'
+import type { Trigger, Disconnect } from '../behavioral/b-program.js'
+import { type Effect, type PlaitedTrigger, isPlaitedTrigger} from './client.types.js'
 
 export function useStore<T>(initialValue: T): {
   (value: T): void
-  sub: SubscribeToPublisher
+  effect: Effect
   get(): T
 }
+
 export function useStore<T>(initialValue?: never): {
   (value?: T): void
-  sub: SubscribeToPublisher
+  effect: Effect
   get(): T | undefined
 }
 // Pub Sub that allows us the get Last Value Cache (LVC)and subscribe to changes
@@ -22,15 +23,17 @@ export function useStore<T>(initialValue: T) {
     for (const cb of listeners) cb(value)
   }
   // Subscribes a trigger and BPEvent to the publisher.
-  const sub = (eventType: string, trigger: Trigger, getLVC = false) => {
+  const effect = (eventType: string, trigger: Trigger | PlaitedTrigger, getLVC = false) => {
     const cb = (detail?: T) => trigger<T>({ type: eventType, detail })
     getLVC && cb(store)
     listeners.add(cb)
-    return () => {
+    const disconnect = () => {
       listeners.delete(cb)
     }
+    isPlaitedTrigger(trigger) && trigger.addDisconnectCallback(disconnect)
+    return disconnect
   }
-  set.sub = sub
+  set.effect = effect
   set.get = get
   return set
 }
@@ -47,16 +50,18 @@ export const useComputed = <T>(initialValue: () => T, deps: ReturnType<typeof us
     store = initialValue()
     for (const cb of listeners) cb(store)
   }
-  const sub: SubscribeToPublisher = (eventType: string, trigger: Trigger, getLVC = false) => {
-    if (!listeners.size) disconnectDeps.push(...deps.map((dep) => dep.sub('update', update)))
+  const effect: Effect = (eventType: string, trigger: Trigger | PlaitedTrigger, getLVC = false) => {
+    if (!listeners.size) disconnectDeps.push(...deps.map((dep) => dep.effect('update', update)))
     const cb = (detail?: T) => trigger<T>({ type: eventType, detail })
     getLVC && cb(get())
     listeners.add(cb)
-    return () => {
+    const disconnect = () => {
       listeners.delete(cb)
       if (!listeners.size) for (const dep of disconnectDeps) dep()
     }
+    isPlaitedTrigger(trigger) && trigger.addDisconnectCallback(disconnect)
+    return disconnect
   }
-  get.sub = sub
+  get.effect = effect
   return get
 }

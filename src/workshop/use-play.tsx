@@ -103,7 +103,7 @@ export const UseTestFixture = defineTemplate({
   shadowDom: (
     <slot
       {...css.host({
-        display: 'contents',
+        display: 'block',
       })}
     ></slot>
   ),
@@ -112,8 +112,8 @@ export const UseTestFixture = defineTemplate({
       async [PLAY_EVENT]({ exportName, filePath, route }: { exportName: string; filePath: string; route: string }) {
         const { [exportName]: story } = (await import(filePath)) as { [key: string]: StoryObj }
         try {
-          story?.play &&
-            (await usePlay({
+          story?.play
+          ? await usePlay({
               play: story.play,
               time: story?.parameters?.timeout,
               send: send.server,
@@ -121,7 +121,8 @@ export const UseTestFixture = defineTemplate({
               filePath,
               exportName,
               hostElement: root.host,
-            }))
+            })
+          : send.server<PassedTest>({ type: TEST_PASSED, detail: { route } })
         } catch (error) {
           if (error instanceof Error)
             return send.server<FailedTest>({

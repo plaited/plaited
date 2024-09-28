@@ -1,4 +1,3 @@
-import type { Disconnect } from '../client/client.types.js'
 import type { BPEvent, BPEventTemplate, BPListener, Idioms, RulesFunction } from './b-thread.js'
 import { isTypeOf } from '../utils/is-type-of.js'
 
@@ -17,6 +16,8 @@ type CandidateBid = {
   trigger?: true | 'object' | 'person'
   template?: BPEventTemplate
 }
+
+export type Disconnect = () => void
 
 export type SnapshotMessage = {
   thread: string

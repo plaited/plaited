@@ -1,6 +1,6 @@
 import type { Trigger } from '../behavioral/b-program.js'
-import type { SubscribeToPublisher } from './client.types.js'
-import { PLAITED_INDEXED_DB, PLAITED_STORE } from './client.constants.js'
+import { type PlaitedTrigger, type Effect, isPlaitedTrigger } from '../client/client.types.js'
+import { PLAITED_INDEXED_DB, PLAITED_STORE } from '../client/client.constants.js'
 
 type CreateIDBCallback = (arg: IDBObjectStore) => void
 const createIDB = (dbName: string, storeName: string) => {
@@ -34,7 +34,7 @@ export function useIndexedDB<T>(
   },
 ): Promise<{
   (newValue: T): Promise<void>
-  sub: SubscribeToPublisher
+  effect: Effect
   get: () => Promise<T | undefined>
 }>
 export function useIndexedDB<T>(
@@ -46,7 +46,7 @@ export function useIndexedDB<T>(
   },
 ): Promise<{
   (newValue: T): Promise<void>
-  sub: SubscribeToPublisher
+  effect: Effect
   get: () => Promise<T>
 }>
 // Async Pub Sub that allows us the get Last Value Cache and subscribe to changes and persist the value in indexedDB
@@ -84,13 +84,16 @@ export async function useIndexedDB<T>(
     channel.postMessage(next)
   }
 
-  set.sub = (eventType: string, trigger: Trigger, getLVC = false) => {
+  const effect = (eventType: string, trigger: Trigger | PlaitedTrigger, getLVC = false) => {
     const channel = new BroadcastChannel(`${databaseName}_${storeName}_${key}`)
     const handler = (event: MessageEvent<T>) => trigger<T>({ type: eventType, detail: event.data })
     getLVC && void get().then((value) => trigger<T>({ type: eventType, detail: value }))
     channel.addEventListener('message', handler)
-    return () => channel.removeEventListener('message', handler)
+    const disconnect = () => channel.removeEventListener('message', handler)
+    isPlaitedTrigger(trigger) && trigger.addDisconnectCallback(disconnect)
+    return disconnect
   }
   set.get = get
+  set.effect = effect
   return set
 }
