@@ -25,5 +25,5 @@ jobs:
         run: bun run build
       - name: Run tests
         run: |
-          bun run test
-          bun run test-storybook
+          bun run test-bun
+          bun run test-stories

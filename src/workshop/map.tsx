@@ -54,7 +54,7 @@ const updateHTMLResponses = ({
   exportName: string
 }): TestParams => {
   const storyPath = storyFile.replace(/\.tsx?$/, '.js')
-  const scripts = [story?.play && USE_PLAY_ROUTE, storyPath].filter((p) => p !== undefined)
+  const scripts = [USE_PLAY_ROUTE, storyPath].filter((p) => p !== undefined)
   const ssr = useSSR(...scripts)
   const args = {
     ...meta?.args,

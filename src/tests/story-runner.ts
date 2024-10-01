@@ -1,5 +1,4 @@
 import { chromium, BrowserContext } from 'playwright';
-import { bSync, bThread } from '../behavioral/b-thread.js';
 import { bProgram } from '../behavioral/b-program.js';
 import { getStories } from '../workshop/get-stories.js'
 import { isTypeOf } from '../utils/is-type-of.js';
@@ -8,7 +7,6 @@ import { type FailedTestEvent, type PassedTestEvent, PLAITED_TEXT_FIXTURE } from
 import { TEST_PASSED, TEST_EXCEPTION, UNKNOWN_ERROR } from '../assert/assert.constants.js';
 import { ACTION_TRIGGER } from '../client/client.constants.js';
 import { ServerWebSocket, Server } from 'bun'
-import { run } from 'node:test';
 
 
 const cwd = `${process.cwd()}/src`
@@ -59,19 +57,21 @@ const config ={
 
 const server = Bun.serve(config)
 
+
 useFeedback({
   async end() {
+    await Promise.all([...contexts].map(async context => await context.close()))
     console.log("Fail: ", fail.size)
     console.log("Pass: ", pass.size)
-    await Promise.all([...contexts].map(async context => await context.close()))
-    console.log("Closed all contexts")
     if(fail.size) {
       process.exitCode = 1;
     } else {
       process.exitCode = 0;
     }
-    server.stop()
-    process.exit()
+    if(!process.execArgv.includes('--hot')) {
+      server.stop()
+      process.exit()
+    }
   },
   [TEST_EXCEPTION]({route, ...rest}: FailedTestEvent['detail']) {
     fail.add(route)
@@ -99,3 +99,13 @@ await Promise.all(stories.map(async ([route]) => {
   const page = await context.newPage();
   await page.goto(`http://localhost:3000${route}`);
 }))
+
+process.on("SIGINT", async () => {
+  console.log("\nCtrl-C was pressed");
+  await Promise.all([...contexts].map(async context => await context.close()))
+  process.exit();
+});
+
+process.on('exit', (code) => {
+  console.log(`Process exited with code ${code}`);
+});

@@ -134,7 +134,7 @@ export const UseTestFixture = defineTemplate<{
       async [PLAY_EVENT]() {
         const { [exportName]: story } = (await import(filePath)) as { [key: string]: StoryObj }
         try {
-          story?.play ?
+          if(story?.play) {
             await usePlay({
               play: story.play,
               time: story?.parameters?.timeout,
@@ -144,7 +144,10 @@ export const UseTestFixture = defineTemplate<{
               exportName,
               hostElement: root.host,
             })
-          : send<PassedTestEvent['detail']>({ type: TEST_PASSED, detail: { route } })
+          } else {
+            console.log("✓", route)
+            send<PassedTestEvent['detail']>({ type: TEST_PASSED, detail: { route } })
+          }
         } catch (error) {
           if (error instanceof Error) {
             send<FailedTestEvent['detail']>({
