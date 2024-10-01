@@ -59,10 +59,6 @@ const config ={
 
 const server = Bun.serve(config)
 
-for(const [route] of stories){
-  console.log(`http://localhost:3000${route}`)
-}
-
 useFeedback({
   async end() {
     console.log("Fail: ", fail.size)
@@ -74,23 +70,25 @@ useFeedback({
     } else {
       process.exitCode = 0;
     }
+    server.stop()
+    process.exit()
   },
-  [TEST_EXCEPTION](detail: FailedTestEvent['detail']) {
-    fail.add(detail.route)
-    running.delete(detail.route)
-    console.error(detail)
+  [TEST_EXCEPTION]({route, ...rest}: FailedTestEvent['detail']) {
+    fail.add(route)
+    running.delete(route)
+    console.error(`http://localhost:3000${route}\n`, rest)
     running.size === 0 && trigger({ type: 'end' })
   },
-  [UNKNOWN_ERROR](detail: FailedTestEvent['detail']) {
-    fail.add(detail.route)
-    running.delete(detail.route)
-    console.error(detail)
+  [UNKNOWN_ERROR]({route, ...rest}: FailedTestEvent['detail']) {
+    fail.add(route)
+    running.delete(route)
+    console.error(`http://localhost:3000${route}\n`, rest)
     running.size === 0 && trigger({ type: 'end' })
   },
-  [TEST_PASSED](detail: PassedTestEvent['detail']) {
-    pass.add(detail.route)
-    running.delete(detail.route)
-    console.log("✓ ", detail.route)
+  [TEST_PASSED]({ route }: PassedTestEvent['detail']) {
+    pass.add(route)
+    running.delete(route)
+    console.log("✓ ", `http://localhost:3000${route}`)
     running.size === 0 && trigger({ type: 'end' })
   }
 })

@@ -8,8 +8,10 @@ const meta: Meta<typeof Header> = {
 export default meta
 type Story = StoryObj<typeof Header>
 
-export const LoggedIn: Story = {
-  play: async ({ findByText, assert }) => {
+export const LogIn: Story = {
+  play: async ({ findByText, assert, findByAttribute }) => {
+    const header = await findByAttribute('data-testid', 'header')
+    header?.setAttribute('user', 'Jane')
     const button = await findByText<HTMLButtonElement>('Log out')
     assert({
       given: 'button rendered',
@@ -25,7 +27,7 @@ export const LoggedIn: Story = {
     })
   },
   args: {
-    user: 'Jane Doe',
+    ['data-testid']: 'header',
   },
 }
 
