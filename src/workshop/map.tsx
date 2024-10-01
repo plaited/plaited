@@ -16,7 +16,10 @@ const Page: FunctionTemplate<{ route: string }> = ({ children, route }) => {
     <html>
       <head>
         <title>Story:{id}</title>
-        <link rel="shortcut icon" href="#" />
+        <link
+          rel='shortcut icon'
+          href='#'
+        />
       </head>
       <body>{children}</body>
     </html>

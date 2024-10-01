@@ -17,19 +17,23 @@ const { noRepeat, repeat, initial } = css.create({
   },
 })
 
-
 export const dynamicStyles: StoryObj = {
   template: () => <></>,
   play: async ({ findByText, assert, findByAttribute, wait, hostElement }) => {
     hostElement.setHTMLUnsafe(
-    (<dynamic-only data-testid="element">
-      <template shadowrootmode='open' shadowrootdelegatesfocus>
-          <div
-          p-target='target'
-          {...initial}
-        ></div>
-      </template>
-    </dynamic-only>).html.join('')
+      (
+        <dynamic-only data-testid='element'>
+          <template
+            shadowrootmode='open'
+            shadowrootdelegatesfocus
+          >
+            <div
+              p-target='target'
+              {...initial}
+            ></div>
+          </template>
+        </dynamic-only>
+      ).html.join(''),
     )
     const style = await findByText(initial.stylesheet.join(''))
     assert({

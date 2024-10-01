@@ -18,12 +18,12 @@ export const PLAITED_TEXT_FIXTURE = 'plaited-test-fixture' as const
 export type FailedTestEvent = {
   type: typeof TEST_EXCEPTION | typeof UNKNOWN_ERROR
   detail: {
-  route: string
-  filePath: string
-  exportName: string
-  location: string
-  type: string
-  error: string
+    route: string
+    filePath: string
+    exportName: string
+    location: string
+    type: string
+    error: string
   }
 }
 
@@ -77,7 +77,7 @@ const usePlay: UsePlay = async ({ exportName, filePath, hostElement, route, play
     ])
     if (timedOut) throw new TimeoutError(`Story [${route}] exceeded timeout of ${time} ms`)
     send<PassedTestEvent['detail']>({ type: TEST_PASSED, detail: { route } })
-    console.log("✓ ", route)
+    console.log('✓ ', route)
   } catch (error) {
     if (error instanceof TimeoutError || error instanceof AssertionError || error instanceof MissingTestParamsError) {
       send<FailedTestEvent['detail']>({
@@ -106,7 +106,7 @@ const usePlay: UsePlay = async ({ exportName, filePath, hostElement, route, play
         },
       })
       throw error
-    } 
+    }
   }
 }
 
@@ -134,7 +134,7 @@ export const UseTestFixture = defineTemplate<{
       async [PLAY_EVENT]() {
         const { [exportName]: story } = (await import(filePath)) as { [key: string]: StoryObj }
         try {
-          if(story?.play) {
+          if (story?.play) {
             await usePlay({
               play: story.play,
               time: story?.parameters?.timeout,
@@ -145,7 +145,7 @@ export const UseTestFixture = defineTemplate<{
               hostElement: root.host,
             })
           } else {
-            console.log("✓", route)
+            console.log('✓', route)
             send<PassedTestEvent['detail']>({ type: TEST_PASSED, detail: { route } })
           }
         } catch (error) {
