@@ -150,6 +150,7 @@ export const useServer = (path: `/${string}`) => {
     socket?.addEventListener('open', fallback)
   }
   const connect = (host: PlaitedElement) => {
+    if (!socket) ws.connect()
     const id = toAddress(host.tagName.toLowerCase() as CustomElementTag, host.id)
     subscribers.set(id, host)
     const disconnect = () => {

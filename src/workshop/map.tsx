@@ -10,12 +10,13 @@ import { kebabCase } from '../utils/case.js'
 import { BuildOutput } from 'bun'
 import { zip, jsMimeTypes } from './zip.js'
 
-const Story: FunctionTemplate<{ route: string }> = ({ children, route }) => {
+const Page: FunctionTemplate<{ route: string }> = ({ children, route }) => {
   const id = path.basename(route)
   return (
     <html>
       <head>
         <title>Story:{id}</title>
+        <link rel="shortcut icon" href="#" />
       </head>
       <body>{children}</body>
     </html>
@@ -43,14 +44,17 @@ const updateHTMLResponses = ({
   route,
   responseMap,
   storyFile,
+  exportName,
 }: {
   story: StoryObj
   meta: Meta
   route: string
   responseMap: Map<string, Response>
   storyFile: string
+  exportName: string
 }): TestParams => {
-  const scripts = [story?.play && USE_PLAY_ROUTE, storyFile].filter((p) => p !== undefined)
+  const storyPath = storyFile.replace(/\.tsx?$/, '.js')
+  const scripts = [story?.play && USE_PLAY_ROUTE, storyPath].filter((p) => p !== undefined)
   const ssr = useSSR(...scripts)
   const args = {
     ...meta?.args,
@@ -70,12 +74,15 @@ const updateHTMLResponses = ({
   })
   const tpl = story?.template ?? meta?.template
   const page = ssr(
-    <Story route={route}>
+    <Page route={route}>
       <UseTestFixture
+        p-name={exportName}
+        p-route={route}
+        p-path={storyPath}
         children={tpl?.(args)}
         {...css.assign(meta?.parameters?.styles, story?.parameters?.styles)}
       />
-    </Story>,
+    </Page>,
   )
   const headers = new Headers({
     'Content-Type': 'text/html',
@@ -108,7 +115,7 @@ export const mapStoryResponses = async ({
       for (const exportName in stories) {
         const route = createStoryRoute({ storyFile, exportName })
         const story = stories[exportName]
-        const params = updateHTMLResponses({ story, meta, route, responseMap, storyFile })
+        const params = updateHTMLResponses({ story, meta, route, responseMap, storyFile, exportName })
         routes.push([route, params])
       }
     }),

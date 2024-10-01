@@ -10,20 +10,28 @@ import { throws } from '../assert/throws.js'
 import { TimeoutError, AssertionError, MissingTestParamsError } from '../assert/errors.js'
 import { TEST_PASSED, TEST_EXCEPTION, DEFAULT_PLAY_TIMEOUT, UNKNOWN_ERROR } from '../assert/assert.constants.js'
 import { StoryObj } from './workshop.types.js'
-import { PLAITED_TEXT_FIXTURE, PLAY_EVENT } from './workshop.constants.js'
 import { useServer } from '../client/use-server.js'
 
-export type FailedTest = {
+export const PLAY_EVENT = 'play'
+export const PLAITED_TEXT_FIXTURE = 'plaited-test-fixture' as const
+
+export type FailedTestEvent = {
+  type: typeof TEST_EXCEPTION | typeof UNKNOWN_ERROR
+  detail: {
   route: string
   filePath: string
   exportName: string
   location: string
   type: string
   error: string
+  }
 }
 
-export type PassedTest = {
-  route: string
+export type PassedTestEvent = {
+  type: typeof TEST_PASSED
+  detail: {
+    route: string
+  }
 }
 
 export type Play = (args: {
@@ -54,6 +62,7 @@ const timeout = async (time: number = DEFAULT_PLAY_TIMEOUT) => {
 
 const usePlay: UsePlay = async ({ exportName, filePath, hostElement, route, play, time, send }) => {
   try {
+    console.log({play})
     const timedOut = await Promise.race([
       play({
         assert,
@@ -68,10 +77,10 @@ const usePlay: UsePlay = async ({ exportName, filePath, hostElement, route, play
       timeout(time),
     ])
     if (timedOut) throw new TimeoutError(`Story [${route}] exceeded timeout of ${time} ms`)
-    send<PassedTest>({ type: TEST_PASSED, detail: { route } })
+    send<PassedTestEvent['detail']>({ type: TEST_PASSED, detail: { route } })
   } catch (error) {
     if (error instanceof TimeoutError || error instanceof AssertionError || error instanceof MissingTestParamsError)
-      return send<FailedTest>({
+      return send<FailedTestEvent['detail']>({
         type: TEST_EXCEPTION,
         detail: {
           exportName,
@@ -83,7 +92,7 @@ const usePlay: UsePlay = async ({ exportName, filePath, hostElement, route, play
         },
       })
     if (error instanceof Error)
-      return send<FailedTest>({
+      return send<FailedTestEvent['detail']>({
         type: UNKNOWN_ERROR,
         detail: {
           exportName,
@@ -97,7 +106,11 @@ const usePlay: UsePlay = async ({ exportName, filePath, hostElement, route, play
   }
 }
 
-export const UseTestFixture = defineTemplate({
+export const UseTestFixture = defineTemplate<{
+  'p-name': string
+  'p-path': string
+  'p-route': string
+}>({
   tag: PLAITED_TEXT_FIXTURE,
   publicEvents: [PLAY_EVENT],
   shadowDom: (
@@ -108,10 +121,13 @@ export const UseTestFixture = defineTemplate({
     ></slot>
   ),
   connectedCallback({ root }) {
-    const send = useServer('/')
+    const send = useServer('/_test-runner')
     send.connect(this)
+    const route = this.getAttribute('p-route') as string
+    const filePath = this.getAttribute('p-path') as string
+    const exportName = this.getAttribute('p-name') as string
     return {
-      async [PLAY_EVENT]({ exportName, filePath, route }: { exportName: string; filePath: string; route: string }) {
+      async [PLAY_EVENT]() {
         const { [exportName]: story } = (await import(filePath)) as { [key: string]: StoryObj }
         try {
           story?.play ?
@@ -124,10 +140,10 @@ export const UseTestFixture = defineTemplate({
               exportName,
               hostElement: root.host,
             })
-          : send<PassedTest>({ type: TEST_PASSED, detail: { route } })
+          : send<PassedTestEvent['detail']>({ type: TEST_PASSED, detail: { route } })
         } catch (error) {
           if (error instanceof Error)
-            return send<FailedTest>({
+            return send<FailedTestEvent['detail']>({
               type: UNKNOWN_ERROR,
               detail: {
                 exportName,

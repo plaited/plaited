@@ -64,9 +64,9 @@ export const closedMode: StoryObj = {
     })
     return <ClosedMode p-target='el' />
   },
-  play: async ({ assert, findByAttribute }) => {
+  play: async ({ assert, findByAttribute,  }) => {
+    console.log("test run")
     const host = await findByAttribute<PlaitedElement>('p-target', 'el')
-    console.log(host?.shadowRoot)
     assert({
       given: 'setHTMLUnsafe',
       should: 'return null',

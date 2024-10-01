@@ -1,5 +1,3 @@
-export const PLAY_EVENT = 'play'
-export const PLAITED_TEXT_FIXTURE = 'plaited-test-fixture' as const
 export const USE_PLAY_ROUTE = '/use-play.js'
 export const USE_PLAY_FILE_PATH = Bun.resolveSync('./use-play.tsx', import.meta.dir)
 
