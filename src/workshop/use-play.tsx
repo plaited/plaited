@@ -62,7 +62,6 @@ const timeout = async (time: number = DEFAULT_PLAY_TIMEOUT) => {
 
 const usePlay: UsePlay = async ({ exportName, filePath, hostElement, route, play, time, send }) => {
   try {
-    console.log({play})
     const timedOut = await Promise.race([
       play({
         assert,
@@ -78,9 +77,10 @@ const usePlay: UsePlay = async ({ exportName, filePath, hostElement, route, play
     ])
     if (timedOut) throw new TimeoutError(`Story [${route}] exceeded timeout of ${time} ms`)
     send<PassedTestEvent['detail']>({ type: TEST_PASSED, detail: { route } })
+    console.log("✓ ", route)
   } catch (error) {
-    if (error instanceof TimeoutError || error instanceof AssertionError || error instanceof MissingTestParamsError)
-      return send<FailedTestEvent['detail']>({
+    if (error instanceof TimeoutError || error instanceof AssertionError || error instanceof MissingTestParamsError) {
+      send<FailedTestEvent['detail']>({
         type: TEST_EXCEPTION,
         detail: {
           exportName,
@@ -91,8 +91,10 @@ const usePlay: UsePlay = async ({ exportName, filePath, hostElement, route, play
           type: error.name,
         },
       })
-    if (error instanceof Error)
-      return send<FailedTestEvent['detail']>({
+      throw error
+    }
+    if (error instanceof Error) {
+      send<FailedTestEvent['detail']>({
         type: UNKNOWN_ERROR,
         detail: {
           exportName,
@@ -103,6 +105,8 @@ const usePlay: UsePlay = async ({ exportName, filePath, hostElement, route, play
           type: TEST_EXCEPTION,
         },
       })
+      throw error
+    } 
   }
 }
 
@@ -142,8 +146,8 @@ export const UseTestFixture = defineTemplate<{
             })
           : send<PassedTestEvent['detail']>({ type: TEST_PASSED, detail: { route } })
         } catch (error) {
-          if (error instanceof Error)
-            return send<FailedTestEvent['detail']>({
+          if (error instanceof Error) {
+            send<FailedTestEvent['detail']>({
               type: UNKNOWN_ERROR,
               detail: {
                 exportName,
@@ -154,6 +158,8 @@ export const UseTestFixture = defineTemplate<{
                 error: error.toString(),
               },
             })
+            throw error
+          }
         }
       },
     }

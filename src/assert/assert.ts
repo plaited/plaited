@@ -6,11 +6,14 @@ export type Assert = <T>(param: { given: string; should: string; actual: T; expe
 
 const requiredKeys = ['given', 'should', 'actual', 'expected']
 
-const replacer = (_: string | number | symbol, value: unknown) =>
-  value && typeof value === 'object' && 'toString' in value ? value.toString()
+const replacer = (key: string | number | symbol, value: unknown) => {
+  if(!key) return value
+  return value && typeof value === 'object' && 'toString' in value ? value.toString()
   : isTypeOf<Record<string, unknown>>(value, 'object') || isTypeOf<unknown[]>(value, 'array') ?
     JSON.stringify(value, replacer, 2)
   : `${value}`
+}
+
 
 export const assert: Assert = (param) => {
   const args = param

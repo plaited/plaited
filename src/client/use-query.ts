@@ -33,7 +33,7 @@ export type QuerySelector = Query & {
 export const cssCache = new WeakMap<ShadowRoot, Set<string>>()
 
 const updateShadowRootStyles = async (root: ShadowRoot, stylesheets: Set<string>) => {
-  const instanceStyles = cssCache.get(root)
+  const instanceStyles = cssCache.get(root) ?? cssCache.set(root, new Set()).get(root)
   const newStyleSheets: CSSStyleSheet[] = []
   try {
     await Promise.all(

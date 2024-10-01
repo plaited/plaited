@@ -56,7 +56,6 @@ export const eventDispatch: StoryObj = {
       expected: 'Hello',
     })
     button && (await fireEvent(button, 'click'))
-    console.log(header?.textContent)
     assert({
       given: 'clicking button',
       should: 'append string to header',

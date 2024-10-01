@@ -16,29 +16,21 @@ const { noRepeat, repeat, initial } = css.create({
     textDecoration: 'underline',
   },
 })
-const DynamicOnly = defineTemplate({
-  publicEvents: ['render'],
-  tag: 'dynamic-only',
-  shadowDom: (
-    <div
-      p-target='target'
-      {...initial}
-    ></div>
-  ),
-  connectedCallback({ $ }) {
-    return {
-      render() {
-        const [target] = $<HTMLDivElement>('target')
-        target.insert('beforeend', <div {...noRepeat}>construable stylesheet applied once</div>)
-        target.insert('beforeend', <div {...repeat}>not applied</div>)
-      },
-    }
-  },
-})
+
 
 export const dynamicStyles: StoryObj = {
-  template: () => <DynamicOnly data-testid='target' />,
-  play: async ({ findByText, assert, findByAttribute, wait }) => {
+  template: () => <></>,
+  play: async ({ findByText, assert, findByAttribute, wait, hostElement }) => {
+    hostElement.setHTMLUnsafe(
+    (<dynamic-only data-testid="element">
+      <template shadowrootmode='open' shadowrootdelegatesfocus>
+          <div
+          p-target='target'
+          {...initial}
+        ></div>
+      </template>
+    </dynamic-only>).html.join('')
+    )
     const style = await findByText(initial.stylesheet.join(''))
     assert({
       given: 'Render with initial stylesheet, Style tag',
@@ -46,20 +38,40 @@ export const dynamicStyles: StoryObj = {
       actual: style?.textContent,
       expected: initial.stylesheet.join(''),
     })
-    const target = await findByAttribute<PlaitedElement>('data-testid', 'target')
+    defineTemplate({
+      publicEvents: ['render'],
+      tag: 'dynamic-only',
+      shadowDom: (
+        <div
+          p-target='target'
+          {...initial}
+        ></div>
+      ),
+      connectedCallback({ $ }) {
+        return {
+          render() {
+            const [target] = $<HTMLDivElement>('target')
+            target.insert('beforeend', <div {...noRepeat}>construable stylesheet applied once</div>)
+            target.insert('beforeend', <div {...repeat}>not applied</div>)
+          },
+        }
+      },
+    })
+    let target = await findByAttribute<PlaitedElement>('data-testid', 'element')
     assert({
       given: 'target has not been triggered',
-      should: 'have adoptedStyleSheets of length 0',
+      should: 'have adoptedStyleSheets of length 1',
       actual: target?.shadowRoot?.adoptedStyleSheets.length,
-      expected: 0,
+      expected: 1,
     })
-    target?.trigger({ type: 'onAdopted' })
+    target?.trigger({ type: 'render' })
     await wait(60)
+    target = await findByAttribute<PlaitedElement>('data-testid', 'element')
     assert({
       given: 'target has been triggered',
       should: 'have adoptedStyleSheets of length 3',
       actual: target?.shadowRoot?.adoptedStyleSheets.length,
-      expected: 3,
+      expected: 4,
     })
   },
 }

@@ -1,12 +1,14 @@
-import { chromium } from 'playwright';
+import { chromium, BrowserContext } from 'playwright';
+import { bSync, bThread } from '../behavioral/b-thread.js';
+import { bProgram } from '../behavioral/b-program.js';
 import { getStories } from '../workshop/get-stories.js'
 import { isTypeOf } from '../utils/is-type-of.js';
 import { isBPEvent } from '../behavioral/b-thread.js'
 import { type FailedTestEvent, type PassedTestEvent, PLAITED_TEXT_FIXTURE } from '../workshop/use-play.js'
-import { TEST_PASSED, TEST_EXCEPTION } from '../assert/assert.constants.js';
-import { wait } from 'src/utils.js';
+import { TEST_PASSED, TEST_EXCEPTION, UNKNOWN_ERROR } from '../assert/assert.constants.js';
 import { ACTION_TRIGGER } from '../client/client.constants.js';
-import { ServerWebSocket, Server, Request } from 'bun'
+import { ServerWebSocket, Server } from 'bun'
+import { run } from 'node:test';
 
 
 const cwd = `${process.cwd()}/src`
@@ -15,9 +17,11 @@ const browser = await chromium.launch();
 const running = new Map(stories)
 const fail = new Set()
 const pass = new Set()
-
+const contexts = new Set<BrowserContext>()
 const isAnExceptionEvent = (data: unknown): data is FailedTestEvent => isBPEvent(data) && TEST_EXCEPTION === data.type
 const isAPassedTestEvent = (data: unknown): data is PassedTestEvent => isBPEvent(data) && TEST_PASSED === data.type
+
+const { useFeedback, trigger } = bProgram()
 
 const config ={
   static: getResponses(),
@@ -34,28 +38,18 @@ const config ={
   },
   websocket: {
     open(ws: ServerWebSocket<unknown>) {
-      console.log(`WebSocket opened: server`);
       ws.send(JSON.stringify({
         address: PLAITED_TEXT_FIXTURE,
         action: ACTION_TRIGGER,
         type: 'play',
       }))
     }, 
-    message(ws: ServerWebSocket<unknown>, message: string | Buffer) {
+    message(_: ServerWebSocket<unknown>, message: string | Buffer) {
       if(!isTypeOf<string>(message, 'string')) return
       try {
         const json = JSON.parse(message);
-        console.log(json)
-        if(isAnExceptionEvent(json)) {
-          console.error(json.detail)
-          fail.add(json.detail.route)
-          running.delete(json.detail.route)
-        }
-        if(isAPassedTestEvent(json)) {
-          console.log("✓ ", json.detail.route)
-          pass.add(json.detail.route)
-          running.delete(json.detail.route)
-        }
+        if(isAnExceptionEvent(json)) trigger<FailedTestEvent['detail']>(json)
+        if(isAPassedTestEvent(json)) trigger<PassedTestEvent['detail']>(json)
       } catch (error) {
         console.error(error);
       }
@@ -63,43 +57,47 @@ const config ={
   }
 }
 
-
-
 const server = Bun.serve(config)
 
-await Promise.all(stories.map(async ([route, { timeout }]) => {
+for(const [route] of stories){
+  console.log(`http://localhost:3000${route}`)
+}
+
+useFeedback({
+  async end() {
+    console.log("Fail: ", fail.size)
+    console.log("Pass: ", pass.size)
+    await Promise.all([...contexts].map(async context => await context.close()))
+    console.log("Closed all contexts")
+    if(fail.size) {
+      process.exitCode = 1;
+    } else {
+      process.exitCode = 0;
+    }
+  },
+  [TEST_EXCEPTION](detail: FailedTestEvent['detail']) {
+    fail.add(detail.route)
+    running.delete(detail.route)
+    console.error(detail)
+    running.size === 0 && trigger({ type: 'end' })
+  },
+  [UNKNOWN_ERROR](detail: FailedTestEvent['detail']) {
+    fail.add(detail.route)
+    running.delete(detail.route)
+    console.error(detail)
+    running.size === 0 && trigger({ type: 'end' })
+  },
+  [TEST_PASSED](detail: PassedTestEvent['detail']) {
+    pass.add(detail.route)
+    running.delete(detail.route)
+    console.log("✓ ", detail.route)
+    running.size === 0 && trigger({ type: 'end' })
+  }
+})
+
+await Promise.all(stories.map(async ([route]) => {
   const context = await browser.newContext();
+  contexts.add(context)
   const page = await context.newPage();
-  page.on('websocket', ws => {
-    ws.on('framereceived', data => {
-      console.log(`WebSocket opened: page`);
-    });
-
-
-    ws.on('framesent', frame => {
-      if(!isTypeOf<string>(frame, 'string')) return
-      try {
-        const message = JSON.parse(frame);
-        if(isAnExceptionEvent(message) || isAPassedTestEvent(message)) page.close();
-      } catch (error) {
-        console.error(error)
-      }
-    });
-  });
-
   await page.goto(`http://localhost:3000${route}`);
-  
-  await wait(timeout + 100)
-  await page.close()
 }))
-
-// await server.stop()
-
-// console.log("Fail: ", fail.size)
-// console.log("Pass: ", pass.size)
-
-// if(fail.size) {
-//   process.exitCode = 1;
-// } else {
-//   process.exitCode = 0;
-// }
