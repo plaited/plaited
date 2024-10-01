@@ -104,7 +104,7 @@ exports[`createTemplate: CustomElement hoisting its styles 1`] = `
     </template>
 </nested-component>"
 ,
-  "stylesheets":   Set {},
+  "stylesheets": [],
 }
 `;
 
@@ -121,12 +121,10 @@ exports[`createTemplate: CustomElement with declarative shadow dom & host styles
     </template>
 </nested-component>"
 ,
-  "stylesheets":   
-Set {
+  "stylesheets": [
     ".p1rlu8mi{display:flex;}",
     ".p_8mez4t{flex-direction:column;}",
-  }
-,
+  ],
 }
 `;
 
@@ -144,13 +142,11 @@ exports[`createTemplate: CustomElement with styled slotted component 1`] = `
     <p class="slottedParagraph_g28n4j p91m869" slot="nested">slotted paragraph</p>
 </nested-component>"
 ,
-  "stylesheets":   
-Set {
+  "stylesheets": [
     ".p1rlu8mi{display:flex;}",
     ".p_8mez4t{flex-direction:column;}",
     ".p91m869{color:rebeccapurple;}",
-  }
-,
+  ],
 }
 `;
 
@@ -175,7 +171,7 @@ exports[`createTemplate: CustomElement with declarative shadow dom and nested de
     </template>
 </top-component>"
 ,
-  "stylesheets":   Set {},
+  "stylesheets": [],
 }
 `;
 
@@ -200,11 +196,9 @@ exports[`createTemplate: CustomElement with declarative shadow dom and nested de
     </template>
 </top-component>"
 ,
-  "stylesheets":   
-Set {
+  "stylesheets": [
     ".p131mv1i{display:block;}",
-  }
-,
+  ],
 }
 `;
 
@@ -230,13 +224,11 @@ exports[`createTemplate: CustomElement with declarative shadow dom and nested de
     <img class="image__c0ru3k p_mygp1 p_x8x9vx" />
 </top-component>"
 ,
-  "stylesheets":   
-Set {
+  "stylesheets": [
     ".p131mv1i{display:block;}",
     ".p_mygp1{width:100%;}",
     ".p_x8x9vx{aspect-ratio:16 / 9;}",
-  }
-,
+  ],
 }
 `;
 

@@ -41,14 +41,13 @@
     "lint-fix": "bun run lint --fix --quiet --ignore-pattern \"**/dist/*\"",
     "prepare": "git config core.hooksPath .hooks",
     "prettier": "prettier . --write",
-    "test-bun": "bun test",
+    "test": "bun run test-stories && bun test",
     "test-stories": "bun run src/tests/story-runner.ts",
-    "test": "bun run test-stories",
     "watch": "bun run check --watch"
   },
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [
-      "bun run lint:fix",
+      "bun run lint-fix",
       "bun run prettier"
     ],
     "package.json": [

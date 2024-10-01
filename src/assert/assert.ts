@@ -1,6 +1,8 @@
 import { deepEqual } from '../utils/deep-equal.js'
 import { isTypeOf } from '../utils/is-type-of.js'
 import { AssertionError, MissingTestParamsError } from './errors.js'
+import { PRIMITIVES } from './assert.constants.js'
+import { trueTypeOf } from '../utils/true-type-of.js'
 
 export type Assert = <T>(param: { given: string; should: string; actual: T; expected: T }) => void
 
@@ -9,10 +11,11 @@ const requiredKeys = ['given', 'should', 'actual', 'expected']
 const replacer = (key: string | number | symbol, value: unknown) => {
   if (!key) return value
   return (
-    value && typeof value === 'object' && 'toString' in value ? value.toString()
-    : isTypeOf<Record<string, unknown>>(value, 'object') || isTypeOf<unknown[]>(value, 'array') ?
-      JSON.stringify(value, replacer, 2)
-    : `${value}`
+    isTypeOf<Record<string, unknown>>(value, 'object') || isTypeOf<unknown[]>(value, 'array') ? value
+    : value instanceof Set ? `Set <${JSON.stringify(Array.from(value))}>`
+    : value instanceof Map ? `Map <${JSON.stringify(Object.fromEntries(value))}>`
+    : PRIMITIVES.has(trueTypeOf(value)) ? value
+    : (value?.toString?.() ?? value)
   )
 }
 

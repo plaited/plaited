@@ -153,7 +153,7 @@ test('assert: required params', async () => {
   expect(spy.calledOnce).toBe(true)
 })
 
-test('assert: throws on failure', () => {
+test.only('assert: throws on failure', () => {
   expect(() =>
     assert({
       given: 'number',
@@ -161,7 +161,7 @@ test('assert: throws on failure', () => {
       actual: 0,
       expected: 1,
     }),
-  ).toThrow('{"message":"Given number: should equal number","actual":0,"expected":1}')
+  ).toThrow('{\n  "message": "Given number: should equal number",\n  "actual": 0,\n  "expected": 1\n}')
 
   expect(() =>
     assert({
@@ -170,7 +170,7 @@ test('assert: throws on failure', () => {
       actual: /test/i,
       expected: /test/,
     }),
-  ).toThrow('{"message":"Given regex: should equal regex","actual":{},"expected":{}}')
+  ).toThrow('{\n  "message": "Given regex: should equal regex",\n  "actual": "/test/i",\n  "expected": "/test/"\n}')
 
   expect(() =>
     assert({
@@ -179,7 +179,7 @@ test('assert: throws on failure', () => {
       actual: null,
       expected: false,
     }),
-  ).toThrow('{"message":"Given false: should equal false","actual":null,"expected":false}')
+  ).toThrow('{\n  "message": "Given false: should equal false",\n  "actual": null,\n  "expected": false\n}')
 
   expect(() =>
     assert({
@@ -188,16 +188,20 @@ test('assert: throws on failure', () => {
       actual: ['nope'],
       expected: ['array'],
     }),
-  ).toThrow('{"message":"Given array: should equal array","actual":["nope"],"expected":["array"]}')
+  ).toThrow(
+    '{\n  "message": "Given array: should equal array",\n  "actual": [\n    "nope"\n  ],\n  "expected": [\n    "array"\n  ]\n}',
+  )
 
   expect(() =>
     assert({
       given: 'set',
       should: 'equal set',
-      actual: new Set(['nope']),
-      expected: new Set(['set']),
+      actual: new Set(['nope', 2]),
+      expected: new Set(['set', 2]),
     }),
-  ).toThrow('{"message":"Given set: should equal set","actual":{},"expected":{}}')
+  ).toThrow(
+    '{\n  "message": "Given set: should equal set",\n  "actual": "Set <[\\"nope\\",2]>",\n  "expected": "Set <[\\"set\\",2]>"\n}',
+  )
 
   expect(() =>
     assert({
@@ -206,7 +210,9 @@ test('assert: throws on failure', () => {
       actual: new Map([['key', 'nope']]),
       expected: new Map([['key', 'value']]),
     }),
-  ).toThrow('{"message":"Given map: should equal map","actual":{},"expected":{}}')
+  ).toThrow(
+    '{\n  "message": "Given map: should equal map",\n  "actual": "Map <{\\"key\\":\\"nope\\"}>",\n  "expected": "Map <{\\"key\\":\\"value\\"}>"\n}',
+  )
 
   expect(() =>
     assert({
@@ -219,5 +225,7 @@ test('assert: throws on failure', () => {
         key: 'value',
       },
     }),
-  ).toThrow('{"message":"Given object: should equal object","actual":{"nope":3},"expected":{"key":"value"}}')
+  ).toThrow(
+    '{\n  "message": "Given object: should equal object",\n  "actual": {\n    "nope": 3\n  },\n  "expected": {\n    "key": "value"\n  }\n}',
+  )
 })

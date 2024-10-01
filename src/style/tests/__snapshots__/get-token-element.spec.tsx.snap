@@ -2,9 +2,9 @@
 
 exports[`getTokenElement 1`] = `
 "<design-tokens>
-    <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+    <template shadowrootmode="open" shadowrootdelegatesfocus>
         <style>
-            :host { display: contents; } :host{--blue: blue}
+            :host{display:contents;}:host{--blue: blue}
         </style>
         <slot></slot>
     </template>
@@ -13,9 +13,9 @@ exports[`getTokenElement 1`] = `
 
 exports[`getTokenElement 2`] = `
 "<plaited-tokens>
-    <template shadowrootmode="open" shadowrootdelegatesfocus="true">
+    <template shadowrootmode="open" shadowrootdelegatesfocus>
         <style>
-            :host { display: contents; } :host{--blue: blue}
+            :host{display:contents;}:host{--blue: blue}
         </style>
         <slot></slot>
     </template>

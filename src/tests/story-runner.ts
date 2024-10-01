@@ -102,6 +102,7 @@ await Promise.all(
 
 process.on('SIGINT', async () => {
   console.log('\nCtrl-C was pressed')
+  server.stop()
   await Promise.all([...contexts].map(async (context) => await context.close()))
   process.exit()
 })

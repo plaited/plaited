@@ -105,7 +105,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     start.push('/>')
     return {
       html: start,
-      stylesheets,
+      stylesheets: [...new Set(stylesheets)],
       registry,
       $: TEMPLATE_OBJECT_IDENTIFIER,
     }
@@ -133,6 +133,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   }
   end.push(`</${tag}>`)
   /** Test if the the tag is a template and if it's a declarative shadow dom */
+  stylesheets = [...new Set(stylesheets)]
   if (isDeclarativeShadowDom) {
     /** We continue to hoist our stylesheet until we run
      * into a declarative shadow dom then we push the
@@ -140,7 +141,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
      * shadowDom template array  and clear the stylesheets set
      */
     if (stylesheets.length) {
-      start.push(`<style>${Array.from(new Set(stylesheets)).join('')}</style>`)
+      start.push(`<style>${stylesheets.join('')}</style>`)
       stylesheets = []
     }
   }
@@ -173,7 +174,7 @@ export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
   }
   return {
     html,
-    stylesheets,
+    stylesheets: [...new Set(stylesheets)],
     registry,
     $: TEMPLATE_OBJECT_IDENTIFIER,
   }
