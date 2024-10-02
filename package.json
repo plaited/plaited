@@ -1,63 +1,84 @@
 {
+  "name": "plaited",
+  "version": "7.0.0-alpha.0",
   "license": "ISC",
   "engines": {
-    "node": ">= v18.15.0"
+    "node": ">= v22.9.0"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plaited/plaited.git"
+  },
+  "bugs": {
+    "url": "https://github.com/plaited/plaited/issues"
+  },
+  "homepage": "https://github.com/plaited/plaited/tree/main/libs/plaited#readme",
   "type": "module",
-  "workspaces": [
-    "docs",
-    "libs/*"
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./behavioral": "./src/behavioral.ts",
+    "./indexedDB": "./src/indexedDB.ts",
+    "./jsx-dev-runtime": "./src/jsx/dev-runtime.ts",
+    "./jsx-runtime": "./src/jsx/runtime.ts",
+    "./style": "./src/style.ts",
+    "./utils": "./src/utils.ts",
+    "./worker": "./src/worker.ts"
+  },
+  "files": [
+    "./src/**",
+    "!./src/**/tests/*",
+    "!./src/**/*.spec.@(tsx|ts)"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "build": "lerna run build --stream",
-    "clean": "bash scripts/clean.bash",
-    "lint": "eslint . --ext .ts,.tsx,.js,.cjs",
-    "lint:fix": "bun run lint --fix --quiet",
-    "postinstall": "husky install",
-    "prepare": "husky install",
+    "check": "tsc --project tsconfig.json",
+    "copy-css-types": "bash scripts/copy-css-types.sh",
+    "lint": "eslint . --ignore-pattern \"**/dist/*\"",
+    "lint-fix": "bun run lint --fix --quiet --ignore-pattern \"**/dist/*\"",
+    "prepare": "git config core.hooksPath .hooks",
     "prettier": "prettier . --write",
-    "storybook": "storybook dev -p 6006 --ci",
-    "test": "lerna run test --stream",
-    "test-storybook": "start-server-and-test 'bun run storybook' http://localhost:6006 'bunx test-storybook'"
+    "test": "bun run test-stories && bun test",
+    "test-stories": "bun run src/tests/story-runner.ts",
+    "watch": "bun run check --watch"
   },
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [
-      "bun run lint:fix",
+      "bun run lint-fix",
       "bun run prettier"
     ],
     "package.json": [
       "format-package -w"
     ]
   },
-  "browserslist": [
-    "> 2%"
-  ],
   "devDependencies": {
-    "@plaited/eslint-prettier-config": "1.0.3",
-    "@commitlint/cli": "19.3.0",
-    "@commitlint/config-conventional": "19.2.2",
-    "@commitlint/config-lerna-scopes": "19.0.0",
-    "@playwright/test": "1.44.1",
-    "@storybook/test-runner": "0.16.0",
-    "@storybook/addon-essentials": "7.6.13",
-    "@storybook/addon-interactions": "7.6.13",
-    "@storybook/html-vite": "7.6.13",
-    "@types/sinon": "17.0.3",
+    "@axe-core/playwright": "4.10.0",
+    "@commitlint/cli": "19.5.0",
+    "@commitlint/config-conventional": "19.5.0",
+    "@eslint/js": "9.11.1",
+    "@playwright/test": "1.47.2",
     "@types/beautify": "0.0.3",
+    "@types/bun": "1.1.10",
+    "@types/eslint__js": "8.42.3",
+    "@types/node": "22.7.4",
+    "@types/sinon": "17.0.3",
     "beautify": "0.0.8",
-    "@types/bun": "1.1.5",
+    "bun-types": "1.1.29",
+    "csstype": "3.1.3",
     "cz-conventional-changelog": "3.3.0",
-    "eslint": "9.5.0",
+    "esbuild": "0.24.0",
+    "eslint": "9.11.1",
+    "eslint-config-prettier": "9.1.0",
     "format-package": "7.0.0",
-    "husky": "9.0.11",
-    "lerna": "8.1.3",
-    "lint-staged": "15.2.7",
-    "playwright": "1.44.1",
-    "prettier": "3.3.2",
-    "sinon": "18.0.0",
-    "start-server-and-test": "2.0.4",
-    "storybook": "7.6.13",
-    "typescript": "5.5.2",
-    "vite": "5.3.1"
+    "globals": "15.10.0",
+    "lint-staged": "15.2.10",
+    "playwright": "1.47.2",
+    "prettier": "3.3.3",
+    "sinon": "19.0.2",
+    "start-server-and-test": "2.0.8",
+    "typescript": "5.6.2",
+    "typescript-eslint": "8.8.0"
   }
 }

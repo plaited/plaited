@@ -5,7 +5,9 @@
     "source.fixAll.eslint": "explicit"
   },
   "cSpell.words": [
+    "indexeddb",
     "microapps",
+    "openreq",
     "shadowrootdelegatesfocus",
     "shadowrootmode"
   ],

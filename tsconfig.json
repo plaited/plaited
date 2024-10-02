@@ -2,10 +2,24 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
     "declaration": true,
-    "moduleResolution": "nodenext",
+    
+    "strict": true,
+    "skipLibCheck": true,
+
+    "rootDir": "src",
+
     "jsx": "react-jsx",
-    "jsxImportSource": "plaited"
+    "jsxImportSource": "plaited",
+
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "plaited/jsx-runtime": ["./src/jsx/runtime.ts"],
+      "plaited/jsx-dev-runtime": ["./src/jsx/dev-runtime.ts"]
+    }
   },
-  "exclude": ["**/dist"]
+  "exclude": ["src/css/types/css.d.ts"]
 }

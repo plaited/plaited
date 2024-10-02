@@ -42,7 +42,7 @@ const winConditions = [
 ]
 ```
 
-Finally we want to create a few variable that represents our board and a type representing our square to be used by our `RuleSet` and `trigger`.
+Finally we want to create a few variable that represents our board and a type representing our square to be used by our `SynchronizationPoint` and `trigger`.
 
 ```ts
 let board: Set<number>
@@ -307,7 +307,7 @@ Unfortunately we don't have anyone to play with so we need our game to provide u
 
 ### Default Moves
 
-For every square we want to create a thread for our `bProgram` to be able to request an `O` `BPEvent`, thus enabling our app to take on the role of `O`. This will be our first time using the `request` parameter in a `RuleSet`.
+For every square we want to create a thread for our `bProgram` to be able to request an `O` `BPEvent`, thus enabling our app to take on the role of `O`. This will be our first time using the `request` parameter in a `SynchronizationPoint`.
 
 With that in mind there are a couple of things to note. The **order** in which we add our threads matters. Thread prioritization follows a first in - first out pattern with the higher thread having the greater prioritization. This means that if two threads request a `BPEvent` at the same synchronization point then the one with the higher priority will be selected.
 

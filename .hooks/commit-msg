@@ -1,0 +1,3 @@
+#!/bin/sh
+
+npx commitlint -x @commitlint/config-conventional -e $1

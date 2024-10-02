@@ -35,7 +35,10 @@ jobs:
         run: |
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor}}@users.noreply.github.com"
-          bunx lerna version ${{ github.event.inputs.version }} --no-private --exact --conventional-commits --create-release github --message "ci: publish [skip ci]" --yes
+          npm version --no-git-tag-version ${{ github.event.inputs.version }}
+          git add -A
+          git commit -m "ci: publish [skip ci]"
+          gh release create ${{ github.event.inputs.version }} --generate-notes
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
 
@@ -46,6 +49,6 @@ jobs:
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> .npmrc
           npm whoami
           npm config set registry https://registry.npmjs.org/
-          bunx lerna publish from-package --yes
+          npm publish --access public
         env:
           NPM_TOKEN: ${{ secrets.NPM_PAT }}
