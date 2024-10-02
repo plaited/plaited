@@ -35,7 +35,6 @@
   },
   "scripts": {
     "check": "tsc --project tsconfig.json",
-    "clean": "bash scripts/clean.bash",
     "copy-css-types": "bash scripts/copy-css-types.sh",
     "lint": "eslint . --ignore-pattern \"**/dist/*\"",
     "lint-fix": "bun run lint --fix --quiet --ignore-pattern \"**/dist/*\"",
@@ -48,7 +47,8 @@
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [
       "bun run lint-fix",
-      "bun run prettier"
+      "bun run prettier",
+      "bun run copy-css-types"
     ],
     "package.json": [
       "format-package -w"
