@@ -27,7 +27,7 @@ export const LogIn: Story = {
     })
   },
   args: {
-    ['data-testid']: 'heade',
+    ['data-testid']: 'header',
   },
 }
 
