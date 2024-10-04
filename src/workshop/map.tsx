@@ -1,6 +1,6 @@
 import path from 'path'
 import { FunctionTemplate } from '../jsx/jsx.types.js'
-import { UseTestFixture } from './use-play.js'
+import { PlaitedFixture } from './use-play.js'
 import { useSSR } from './use-ssr.js'
 import { USE_PLAY_ROUTE, STORIES_FILTERS_REGEX } from './workshop.constants.js'
 import { StoryObj, Meta, TestParams } from './workshop.types.js'
@@ -48,6 +48,7 @@ const updateHTMLResponses = ({
   responseMap,
   storyFile,
   exportName,
+  websocketUrl,
 }: {
   story: StoryObj
   meta: Meta
@@ -55,6 +56,7 @@ const updateHTMLResponses = ({
   responseMap: Map<string, Response>
   storyFile: string
   exportName: string
+  websocketUrl: `/${string}`
 }): TestParams => {
   const storyPath = storyFile.replace(/\.tsx?$/, '.js')
   const scripts = [USE_PLAY_ROUTE, storyPath].filter((p) => p !== undefined)
@@ -78,10 +80,11 @@ const updateHTMLResponses = ({
   const tpl = story?.template ?? meta?.template
   const page = ssr(
     <Page route={route}>
-      <UseTestFixture
+      <PlaitedFixture
         p-name={exportName}
         p-route={route}
-        p-path={storyPath}
+        p-file={storyFile}
+        p-socket={websocketUrl}
         children={tpl?.(args)}
         {...css.assign(meta?.parameters?.styles, story?.parameters?.styles)}
       />
@@ -102,10 +105,12 @@ export const mapStoryResponses = async ({
   storyEntries,
   responseMap,
   cwd,
+  websocketUrl,
 }: {
   storyEntries: string[]
   responseMap: Map<string, Response>
   cwd: string
+  websocketUrl: `/${string}`
 }) => {
   const routes: [string, TestParams][] = []
   await Promise.all(
@@ -118,7 +123,7 @@ export const mapStoryResponses = async ({
       for (const exportName in stories) {
         const route = createStoryRoute({ storyFile, exportName })
         const story = stories[exportName]
-        const params = updateHTMLResponses({ story, meta, route, responseMap, storyFile, exportName })
+        const params = updateHTMLResponses({ story, meta, route, responseMap, storyFile, exportName, websocketUrl })
         routes.push([route, params])
       }
     }),

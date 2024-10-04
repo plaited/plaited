@@ -1,6 +1,6 @@
 import { defineTemplate } from '../define-template.js'
 import { useStore } from '../use-store.js'
-
+import { FT } from 'src/jsx/jsx.types.js'
 const sendDisable = useStore()
 const sendAdd = useStore<{ value: string }>()
 
@@ -52,3 +52,12 @@ export const ElTwo = defineTemplate({
     }
   },
 })
+
+export const ComponentComms: FT = () => {
+  return (
+    <>
+      <ElOne bp-address='one' />
+      <ElTwo bp-address='two' />
+    </>
+  )
+}

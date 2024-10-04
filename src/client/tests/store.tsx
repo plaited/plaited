@@ -1,9 +1,10 @@
+import { FT } from 'src/jsx/jsx.types.js'
 import { defineTemplate } from '../define-template.js'
 import { useStore } from '../use-store.js'
 
 const store = useStore<number>(0)
 
-export const Publisher = defineTemplate({
+const Publisher = defineTemplate({
   tag: 'publisher-component',
   shadowDom: (
     <button
@@ -26,7 +27,7 @@ export const Publisher = defineTemplate({
   },
 })
 
-export const Subscriber = defineTemplate({
+const Subscriber = defineTemplate({
   tag: 'subscriber-component',
   shadowDom: <h1 p-target='count'>{store.get()}</h1>,
   publicEvents: ['update'],
@@ -40,3 +41,10 @@ export const Subscriber = defineTemplate({
     }
   },
 })
+
+export const Fixture: FT = () => (
+  <>
+    <Publisher />
+    <Subscriber />
+  </>
+)

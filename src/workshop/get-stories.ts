@@ -3,7 +3,7 @@ import { globStories, globWorkers } from './glob.js'
 import { mapStoryResponses, mapEntryResponses } from './map.js'
 import { USE_PLAY_FILE_PATH } from './workshop.constants.js'
 
-export const getStories = async (cwd: string) => {
+export const getStories = async (cwd: string, websocketUrl: `/${string}`) => {
   const workerEntries = await globWorkers(cwd)
   const storyEntries = await globStories(cwd)
   const responseMap: Map<string, Response> = new Map()
@@ -14,7 +14,7 @@ export const getStories = async (cwd: string) => {
     }
     return toRet
   }
-  const stories = await mapStoryResponses({ storyEntries, responseMap, cwd })
+  const stories = await mapStoryResponses({ storyEntries, responseMap, cwd, websocketUrl })
   const entries = [...storyEntries, ...workerEntries, USE_PLAY_FILE_PATH]
   const { outputs, success, logs } = await build(cwd, entries)
   if (!success) {

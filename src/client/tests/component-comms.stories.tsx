@@ -1,15 +1,8 @@
 import { StoryObj } from '../../workshop/workshop.types.js'
-import { ElOne, ElTwo } from './component-comms.js'
+import { ComponentComms } from './component-comms.js'
 
 export const componentComms: StoryObj = {
-  template: () => {
-    return (
-      <>
-        <ElOne bp-address='one' />
-        <ElTwo bp-address='two' />
-      </>
-    )
-  },
+  template: ComponentComms,
   play: async ({ findByAttribute, assert, fireEvent }) => {
     let button = await findByAttribute('p-target', 'button')
     const header = await findByAttribute('p-target', 'header')

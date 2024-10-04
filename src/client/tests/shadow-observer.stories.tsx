@@ -1,5 +1,5 @@
 import { StoryObj } from '../../workshop/workshop.types.js'
-import { ShadowIsland } from './shadow-observer/shadow.island.js'
+import { ShadowIsland } from './shadow-observer.js'
 
 export const shadowObserver: StoryObj = {
   template: ShadowIsland,

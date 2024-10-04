@@ -8,22 +8,29 @@ import { fireEvent } from '../assert/fire-event.js'
 import { match } from '../assert/match.js'
 import { throws } from '../assert/throws.js'
 import { TimeoutError, AssertionError, MissingTestParamsError } from '../assert/errors.js'
-import { TEST_PASSED, TEST_EXCEPTION, DEFAULT_PLAY_TIMEOUT, UNKNOWN_ERROR } from '../assert/assert.constants.js'
+import {
+  TEST_PASSED,
+  TEST_EXCEPTION,
+  DEFAULT_PLAY_TIMEOUT,
+  UNKNOWN_ERROR,
+  ASSERTION_ERROR,
+  MISSING_TEST_PARAMS_ERROR,
+  TIMEOUT_ERROR,
+} from '../assert/assert.constants.js'
 import { StoryObj } from './workshop.types.js'
 import { useServer } from '../client/use-server.js'
 
 export const PLAY_EVENT = 'play'
-export const PLAITED_TEXT_FIXTURE = 'plaited-test-fixture' as const
+export const PLAITED_FIXTURE = 'plaited-test-fixture' as const
 
 export type FailedTestEvent = {
   type: typeof TEST_EXCEPTION | typeof UNKNOWN_ERROR
   detail: {
     route: string
-    filePath: string
-    exportName: string
-    location: string
+    file: string
+    story: string
+    url: string
     type: string
-    error: string
   }
 }
 
@@ -83,12 +90,14 @@ const usePlay: UsePlay = async ({ exportName, filePath, hostElement, route, play
       send<FailedTestEvent['detail']>({
         type: TEST_EXCEPTION,
         detail: {
-          exportName,
-          error: error.toString(),
-          filePath,
+          story: exportName,
+          file: filePath,
           route,
-          location: window?.location.href,
-          type: error.name,
+          url: window?.location.href,
+          type:
+            error instanceof AssertionError ? ASSERTION_ERROR
+            : error instanceof TimeoutError ? TIMEOUT_ERROR
+            : MISSING_TEST_PARAMS_ERROR,
         },
       })
       throw error
@@ -97,12 +106,11 @@ const usePlay: UsePlay = async ({ exportName, filePath, hostElement, route, play
       send<FailedTestEvent['detail']>({
         type: UNKNOWN_ERROR,
         detail: {
-          exportName,
-          error: error.toString(),
-          filePath,
+          story: exportName,
+          file: filePath,
           route,
-          location: window?.location.href,
-          type: TEST_EXCEPTION,
+          url: window?.location.href,
+          type: UNKNOWN_ERROR,
         },
       })
       throw error
@@ -110,12 +118,13 @@ const usePlay: UsePlay = async ({ exportName, filePath, hostElement, route, play
   }
 }
 
-export const UseTestFixture = defineTemplate<{
+export const PlaitedFixture = defineTemplate<{
   'p-name': string
-  'p-path': string
+  'p-file': string
   'p-route': string
+  'p-socket': `/${string}`
 }>({
-  tag: PLAITED_TEXT_FIXTURE,
+  tag: PLAITED_FIXTURE,
   publicEvents: [PLAY_EVENT],
   shadowDom: (
     <slot
@@ -125,14 +134,16 @@ export const UseTestFixture = defineTemplate<{
     ></slot>
   ),
   connectedCallback({ root }) {
-    const send = useServer('/_test-runner')
+    const send = useServer(this.getAttribute('p-socket') as `/${string}`)
     send.connect(this)
     const route = this.getAttribute('p-route') as string
-    const filePath = this.getAttribute('p-path') as string
+    const filePath = this.getAttribute('p-file') as string
     const exportName = this.getAttribute('p-name') as string
     return {
       async [PLAY_EVENT]() {
-        const { [exportName]: story } = (await import(filePath)) as { [key: string]: StoryObj }
+        const { [exportName]: story } = (await import(filePath.replace(/\.tsx?$/, '.js'))) as {
+          [key: string]: StoryObj
+        }
         try {
           if (story?.play) {
             await usePlay({
@@ -153,12 +164,11 @@ export const UseTestFixture = defineTemplate<{
             send<FailedTestEvent['detail']>({
               type: UNKNOWN_ERROR,
               detail: {
-                exportName,
-                filePath,
+                story: exportName,
+                file: filePath,
                 route,
-                location: window?.location.href,
-                type: TEST_EXCEPTION,
-                error: error.toString(),
+                url: window?.location.href,
+                type: UNKNOWN_ERROR,
               },
             })
             throw error
