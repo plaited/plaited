@@ -1,8 +1,8 @@
 import { defineTemplate } from '../define-template.js'
-import { useStore } from '../use-store.js'
+import { useSignal } from '../use-signal.js'
 import { FT } from 'src/jsx/jsx.types.js'
-const sendDisable = useStore()
-const sendAdd = useStore<{ value: string }>()
+const sendDisable = useSignal()
+const sendAdd = useSignal<{ value: string }>()
 
 export const ElOne = defineTemplate({
   tag: 'dynamic-one',

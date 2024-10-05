@@ -1,7 +1,7 @@
 import path from 'path'
 import { FunctionTemplate } from '../jsx/jsx.types.js'
 import { PlaitedFixture } from './use-play.js'
-import { useSSR } from './use-ssr.js'
+import { useSSR } from '../jsx/use-ssr.js'
 import { USE_PLAY_ROUTE, STORIES_FILTERS_REGEX } from './workshop.constants.js'
 import { StoryObj, Meta, TestParams } from './workshop.types.js'
 import { DEFAULT_PLAY_TIMEOUT } from '../assert/assert.constants.js'

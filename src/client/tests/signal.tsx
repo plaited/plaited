@@ -1,8 +1,8 @@
 import { FT } from 'src/jsx/jsx.types.js'
 import { defineTemplate } from '../define-template.js'
-import { useStore } from '../use-store.js'
+import { useSignal } from '../use-signal.js'
 
-const store = useStore<number>(0)
+const store = useSignal<number>(0)
 
 const Publisher = defineTemplate({
   tag: 'publisher-component',

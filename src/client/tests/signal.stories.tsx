@@ -1,5 +1,5 @@
 import { StoryObj } from '../../workshop/workshop.types.js'
-import { Fixture } from './store.js'
+import { Fixture } from './signal.js'
 
 export const Signal: StoryObj = {
   template: Fixture,
