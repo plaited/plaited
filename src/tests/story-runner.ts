@@ -119,3 +119,11 @@ process.on('SIGINT', async () => {
   await Promise.all([...contexts].map(async (context) => await context.close()))
   trigger({ type: 'SIGINT' })
 })
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error)
+})
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason)
+})
