@@ -1,4 +1,3 @@
-import { build } from './build.js'
 import { globStories, globWorkers } from './glob.js'
 import { mapStoryResponses, mapEntryResponses } from './map.js'
 import { USE_PLAY_FILE_PATH } from './workshop.constants.js'
@@ -15,8 +14,14 @@ export const getStories = async (cwd: string, websocketUrl: `/${string}`) => {
     return toRet
   }
   const stories = await mapStoryResponses({ storyEntries, responseMap, cwd, websocketUrl })
-  const entries = [...storyEntries, ...workerEntries, USE_PLAY_FILE_PATH]
-  const { outputs, success, logs } = await build(cwd, entries)
+  const entrypoints = [...storyEntries, ...workerEntries, USE_PLAY_FILE_PATH]
+  const { outputs, success, logs } = await Bun.build({
+    root: cwd,
+    entrypoints,
+    sourcemap: 'inline',
+    splitting: true,
+    publicPath: '/',
+  })
   if (!success) {
     console.error(logs)
     return { stories, getResponses }

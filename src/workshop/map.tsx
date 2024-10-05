@@ -5,7 +5,6 @@ import { useSSR } from '../jsx/use-ssr.js'
 import { USE_PLAY_ROUTE, STORIES_FILTERS_REGEX } from './workshop.constants.js'
 import { StoryObj, Meta, TestParams } from './workshop.types.js'
 import { DEFAULT_PLAY_TIMEOUT } from '../assert/assert.constants.js'
-import { css } from '../css/css.js'
 import { kebabCase } from '../utils/case.js'
 import { BuildOutput } from 'bun'
 import { zip, jsMimeTypes } from './zip.js'
@@ -24,12 +23,6 @@ const Page: FunctionTemplate<{ route: string }> = ({ children, route }) => {
       <body>{children}</body>
     </html>
   )
-}
-
-const objectToHeader = (obj: Record<string, string>) => {
-  return Object.entries(obj)
-    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-    .join('; ')
 }
 
 const createStoryRoute = ({ storyFile, exportName }: { storyFile: string; exportName: string }) => {
@@ -61,22 +54,9 @@ const updateHTMLResponses = ({
   const storyPath = storyFile.replace(/\.tsx?$/, '.js')
   const scripts = [USE_PLAY_ROUTE, storyPath].filter((p) => p !== undefined)
   const ssr = useSSR(...scripts)
-  const args = {
-    ...meta?.args,
-    ...story?.args,
-  }
-  const a11y =
-    story?.parameters?.a11y === false || meta?.parameters?.a11y === false ?
-      false
-    : {
-        ...meta?.parameters?.a11y,
-        ...story?.parameters?.a11y,
-      }
-  const timeout = story?.parameters?.timeout ?? meta?.parameters?.timeout ?? DEFAULT_PLAY_TIMEOUT
-  const cookies = objectToHeader({
-    ...story?.parameters?.cookies,
-    ...meta?.parameters?.cookies,
-  })
+  const args = story?.args ?? meta?.args ?? {}
+  const styles = story?.parameters?.styles ?? meta?.parameters?.styles ?? {}
+  const headers = story?.parameters?.headers?.(process.env) ?? meta?.parameters?.headers?.(process.env) ?? new Headers()
   const tpl = story?.template ?? meta?.template
   const page = ssr(
     <Page route={route}>
@@ -86,18 +66,16 @@ const updateHTMLResponses = ({
         p-file={storyFile}
         p-socket={websocketUrl}
         children={tpl?.(args)}
-        {...css.assign(meta?.parameters?.styles, story?.parameters?.styles)}
+        {...styles}
       />
     </Page>,
   )
-  const headers = new Headers({
-    'Content-Type': 'text/html',
-    Cookies: cookies,
-  })
   responseMap.set(route, new Response(`<!DOCTYPE html>\n${page}`, { headers }))
   return {
-    a11y,
-    timeout,
+    a11y: story?.parameters?.a11y ?? meta?.parameters?.a11y,
+    description: story?.parameters?.description ?? meta?.parameters?.description,
+    scale: story?.parameters?.scale ?? meta?.parameters?.scale,
+    timeout: story?.parameters?.timeout ?? meta?.parameters?.timeout ?? DEFAULT_PLAY_TIMEOUT,
   }
 }
 
