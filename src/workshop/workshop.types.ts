@@ -28,16 +28,6 @@ export type StoryObj<T extends FunctionTemplate | Meta = Meta> = {
   template?: FunctionTemplate<T>
 }
 
-export type Handler = <T extends Record<string, unknown> = Record<string, unknown>>(
-  req: Request,
-  ctx?: T,
-) => Promise<Response>
-
-export type MiddleWareHandler = <T extends Record<string, unknown> = Record<string, unknown>>(
-  req: Request,
-  ctx?: T & { next: Handler },
-) => Promise<Response>
-
 export type TestParams = {
   a11y?: false | Record<string, string>
   description?: string
