@@ -11,7 +11,6 @@ import { TimeoutError, AssertionError, MissingTestParamsError } from '../assert/
 import {
   TEST_PASSED,
   TEST_EXCEPTION,
-  DEFAULT_PLAY_TIMEOUT,
   UNKNOWN_ERROR,
   ASSERTION_ERROR,
   MISSING_TEST_PARAMS_ERROR,
@@ -20,6 +19,7 @@ import {
 import { StoryObj } from './workshop.types.js'
 import { useServer } from '../client/use-server.js'
 
+export const DEFAULT_PLAY_TIMEOUT = 5_000
 export const PLAY_EVENT = 'play'
 export const PLAITED_FIXTURE = 'plaited-test-fixture' as const
 
