@@ -1,4 +1,4 @@
-import type { Attrs, FunctionTemplate, CustomElementTag } from '../jsx/jsx.types.js'
+import type { FunctionTemplate, CustomElementTag, Attrs } from '../jsx/jsx.types.js'
 import { DefineElementArgs, defineElement } from './define-element.js'
 import { createTemplate } from '../jsx/create-template.js'
 import { PLAITED_TEMPLATE_IDENTIFIER } from './client.constants.js'

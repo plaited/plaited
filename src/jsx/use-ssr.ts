@@ -1,7 +1,7 @@
 import { escape } from '../utils/escape.js'
 import { isTypeOf } from '../utils/is-type-of.js'
-import type { TemplateObject } from '../jsx/jsx.types.js'
-import { VALID_PRIMITIVE_CHILDREN, TEMPLATE_OBJECT_IDENTIFIER } from '../jsx/jsx.constants.js'
+import type { TemplateObject } from './jsx.types.js'
+import { VALID_PRIMITIVE_CHILDREN, TEMPLATE_OBJECT_IDENTIFIER } from './jsx.constants.js'
 
 export const useSSR =
   (...importPaths: string[]) =>
@@ -25,14 +25,16 @@ export const useSSR =
     const style = stylesheets.size ? `<style>${[...stylesheets].join('')}</style>` : ''
     const str = arr.join('')
     const headIndex = str.indexOf('</head>')
-    const bodyRegex = /<body\b[^>]*>/i
-    const bodyMatch = bodyRegex.exec(str)
-    const bodyIndex = bodyMatch ? bodyMatch.index + bodyMatch[0].length : 0
+    const startBodyRegex = /<body\b[^>]*>/i
+    const startBodyMatch = startBodyRegex.exec(str)
+    const startBodyIndex = startBodyMatch ? startBodyMatch.index + startBodyMatch[0].length : 0
+    const endBodyRegex = /<\/body\b[^>]*>/i
+    const endBodyMatch = endBodyRegex.exec(str)
+    const endBodyIndex = endBodyMatch ? endBodyMatch.index : str.length
     const script =
       importPaths.length ?
         `<script type="module">${importPaths.map((path) => `import '${path}';`).join('\n')}</script>`
       : ''
-    const index = headIndex !== -1 ? headIndex : bodyIndex
-
-    return str.slice(0, index) + script + style + str.slice(index)
+    const index = headIndex !== -1 ? headIndex : startBodyIndex
+    return str.slice(0, index) + style + str.slice(index, endBodyIndex) + script + str.slice(endBodyIndex)
   }

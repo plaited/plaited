@@ -1,8 +1,8 @@
 import { defineTemplate } from '../define-template.js'
-import { useStore } from '../use-store.js'
-
-const sendDisable = useStore()
-const sendAdd = useStore<{ value: string }>()
+import { useSignal } from '../use-signal.js'
+import { FT } from 'src/jsx/jsx.types.js'
+const sendDisable = useSignal()
+const sendAdd = useSignal<{ value: string }>()
 
 export const ElOne = defineTemplate({
   tag: 'dynamic-one',
@@ -52,3 +52,12 @@ export const ElTwo = defineTemplate({
     }
   },
 })
+
+export const ComponentComms: FT = () => {
+  return (
+    <>
+      <ElOne bp-address='one' />
+      <ElTwo bp-address='two' />
+    </>
+  )
+}

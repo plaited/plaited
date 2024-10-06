@@ -1,6 +1,6 @@
-import { css } from '../../../css/css.js'
-import { defineTemplate } from '../../define-template.js'
-import { SVG } from './noun-braids-2633610.js'
+import { css } from '../../css/css.js'
+import { defineTemplate } from '../define-template.js'
+import { FT } from 'src/jsx/jsx.types.js'
 
 export const styles = css.create({
   button: {
@@ -59,6 +59,28 @@ const SubIsland = defineTemplate({
   tag: 'sub-island',
   shadowDom: <h3>sub island</h3>,
 })
+
+const SVG: FT = (props) => (
+  <svg
+    width='125'
+    height='125'
+    version='1.1'
+    viewBox='0 0 700 700'
+    className={'svg'}
+    p-trigger={{ click: 'removeSvg' }}
+    p-target='svg'
+    {...props}
+  >
+    <circle
+      cx='50'
+      cy='50'
+      r='40'
+      stroke='black'
+      stroke-width='3'
+      fill='red'
+    />
+  </svg>
+)
 
 export const ShadowIsland = defineTemplate({
   tag: 'shadow-island',

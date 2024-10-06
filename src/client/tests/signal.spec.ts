@@ -1,9 +1,9 @@
 import { test, expect } from 'bun:test'
 import sinon from 'sinon'
-import { useStore } from '../use-store.js'
+import { useSignal } from '../use-signal.js'
 
-test('useStore: effect before store then disconnect', () => {
-  const store = useStore<{ value: number }>({ value: 0 })
+test('useSignal: effect before store then disconnect', () => {
+  const store = useSignal<{ value: number }>({ value: 0 })
   const spy = sinon.spy()
   const disconnect = store.effect('a', spy)
   store({ value: 4 })
@@ -13,9 +13,9 @@ test('useStore: effect before store then disconnect', () => {
   expect(spy.calledTwice).toBeFalse()
 })
 
-test('useStore: store before effect then disconnect', () => {
+test('useSignal: store before effect then disconnect', () => {
   const spy = sinon.spy()
-  const store = useStore<{ value: number }>({ value: 0 })
+  const store = useSignal<{ value: number }>({ value: 0 })
   store({ value: 4 })
   const disconnect = store.effect('b', spy)
   store({ value: 4 })
@@ -23,9 +23,9 @@ test('useStore: store before effect then disconnect', () => {
   expect(spy.calledTwice).toBeFalse()
 })
 
-test('useStore: effect then disconnect before store', () => {
+test('useSignal: effect then disconnect before store', () => {
   const spy = sinon.spy()
-  const store = useStore<{ value: number }>({ value: 0 })
+  const store = useSignal<{ value: number }>({ value: 0 })
   const disconnect = store.effect('b', spy)
   disconnect()
   store({ value: 4 })

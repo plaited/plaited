@@ -18,7 +18,6 @@ const { noRepeat, repeat, initial } = css.create({
 })
 
 export const dynamicStyles: StoryObj = {
-  template: () => <></>,
   play: async ({ findByText, assert, findByAttribute, wait, hostElement }) => {
     hostElement.setHTMLUnsafe(
       (

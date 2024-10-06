@@ -1,74 +1,8 @@
 import { StoryObj } from '../../workshop/workshop.types.js'
-import { defineTemplate } from '../define-template.js'
-import sinon from 'sinon'
-
-const defaultSlot = sinon.spy()
-const passThroughSlot = sinon.spy()
-const namedSlot = sinon.spy()
-const nestedSlot = sinon.spy()
-const nestedInShadowSlot = sinon.spy()
-
-const Inner = defineTemplate({
-  tag: 'inner-slot',
-  shadowDom: (
-    <>
-      <slot p-trigger={{ click: 'nested' }}></slot>
-      <slot
-        p-trigger={{ click: 'nestedInShadow' }}
-        name='shadow'
-      ></slot>
-    </>
-  ),
-  connectedCallback() {
-    return {
-      nested(e: Event) {
-        e.stopPropagation()
-        nestedSlot()
-      },
-      nestedInShadow(e: Event) {
-        e.stopPropagation()
-        nestedInShadowSlot()
-      },
-    }
-  },
-})
-
-const Outer = defineTemplate({
-  tag: 'outer-slot',
-  shadowDom: (
-    <div>
-      <slot p-trigger={{ click: 'slot' }}></slot>
-      <slot
-        name='named'
-        p-trigger={{ click: 'named' }}
-      ></slot>
-      <Inner p-trigger={{ click: 'passThrough' }}>
-        <slot name='nested'></slot>
-        <button slot='shadow'>Shadow</button>
-      </Inner>
-    </div>
-  ),
-  connectedCallback: () => ({
-    slot() {
-      defaultSlot()
-    },
-    named() {
-      namedSlot()
-    },
-    passThrough() {
-      passThroughSlot()
-    },
-  }),
-})
+import { Fixture, defaultSlot, passThroughSlot, namedSlot, nestedSlot, nestedInShadowSlot } from './slots.js'
 
 export const slots: StoryObj = {
-  template: () => (
-    <Outer>
-      <button>Slot</button>
-      <button slot='named'>Named</button>
-      <button slot='nested'>Nested</button>
-    </Outer>
-  ),
+  template: Fixture,
   play: async ({ assert, findByText, fireEvent }) => {
     let button = await findByText('Slot')
     button && (await fireEvent(button, 'click'))

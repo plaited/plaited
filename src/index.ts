@@ -16,9 +16,10 @@ export type { CloneCallback, Position, SelectorMatch } from './client/use-query.
 export { type PlaitedTemplate, defineTemplate } from './client/define-template.js'
 export { useDispatch } from './client/use-dispatch.js'
 export { useServer } from './client/use-server.js'
-export { useStore, useComputed } from './client/use-store.js'
+export { useSignal, useComputed } from './client/use-signal.js'
 //STYLE
 export type * from './css/css.types.js'
 export { css } from './css/css.js'
 //JSX
 export type * from './jsx/jsx.types.js'
+export { useSSR } from './jsx/use-ssr.js'

@@ -1,15 +1,8 @@
 import { StoryObj } from '../../workshop/workshop.types.js'
-import { Subscriber, Publisher } from './store.js'
+import { Fixture } from './signal.js'
 
 export const Signal: StoryObj = {
-  template: () => {
-    return (
-      <>
-        <Publisher />
-        <Subscriber />
-      </>
-    )
-  },
+  template: Fixture,
   play: async ({ assert, findByAttribute, fireEvent }) => {
     const button = await findByAttribute('p-target', 'button')
     const count = await findByAttribute('p-target', 'count')

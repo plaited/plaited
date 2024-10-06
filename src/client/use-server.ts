@@ -75,7 +75,7 @@ const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => 
 
 export const toAddress = (tag: CustomElementTag, id?: string): string => `${tag}${id ? `#${id}` : ''}`
 
-export const useServer = (path: `/${string}`) => {
+export const useServer = (url: string | `/${string}` | URL, protocols?: string | string[]) => {
   const subscribers = new Map<string, PlaitedElement>()
   const retryStatusCodes = new Set([1006, 1012, 1013])
   const maxRetries = 3
@@ -116,7 +116,11 @@ export const useServer = (path: `/${string}`) => {
       }
     },
     connect() {
-      socket = new WebSocket(`${self?.location?.origin.replace(/^http/, 'ws')}${path}`)
+      const path =
+        isTypeOf<string>(url, 'string') && url.startsWith('/') ?
+          `${self?.location?.origin.replace(/^http/, 'ws')}${url}`
+        : url
+      socket = new WebSocket(path, protocols)
       delegates.set(socket, new DelegatedListener(ws.callback))
       // WebSocket connection opened
       socket.addEventListener('open', delegates.get(socket))

@@ -6,11 +6,11 @@ export type Scale = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 'rel'
 
 export type Params = {
   a11y?: Record<string, string> | false
-  timeout?: number // Defaults to 5_000 ms
-  cookies?: Record<string, string>
-  styles?: StylesObject
   description?: string
+  headers?: (env: NodeJS.ProcessEnv) => Headers
   scale?: Scale
+  styles?: StylesObject
+  timeout?: number // Defaults to 5_000 ms
 }
 
 export type Meta<T extends FunctionTemplate = FunctionTemplate> = {
@@ -38,4 +38,9 @@ export type MiddleWareHandler = <T extends Record<string, unknown> = Record<stri
   ctx?: T & { next: Handler },
 ) => Promise<Response>
 
-export type TestParams = { a11y: false | { [x: string]: string }; timeout: number }
+export type TestParams = {
+  a11y?: false | Record<string, string>
+  description?: string
+  scale?: Scale
+  timeout: number
+}

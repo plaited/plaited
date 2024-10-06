@@ -1,13 +1,39 @@
 // Bun Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`useSSR: empty imports 1`] = `"<div>text</div>"`;
-
 exports[`useSSR: with imports 1`] = `
-"<script type="module">
+"<div>text</div>
+<script type="module">
     import 'test/entry-1.js';
     import 'test/entry-2.js';
-</script>
-<div>text</div>"
+</script>"
+`;
+
+exports[`useSSR: with imports and body 1`] = `
+"<body class="body_18a0lbx p_mygp1 pv4i7qk p_wsdntf">
+    <style>
+        .p_mygp1{width:100%;}.pv4i7qk{padding:0;}.p_wsdntf{height:100vh;}
+    </style>
+    <div type="text"></div>
+    <script type="module">
+        import 'test/entry-1.js';
+        import 'test/entry-2.js';
+    </script>
+</body>"
+`;
+
+exports[`useSSR: with imports and body + head 1`] = `
+"<head>
+    <style>
+        .p_mygp1{width:100%;}.pv4i7qk{padding:0;}.p_wsdntf{height:100vh;}
+    </style>
+</head>
+<body class="body_18a0lbx p_mygp1 pv4i7qk p_wsdntf">
+    <div type="text"></div>
+    <script type="module">
+        import 'test/entry-1.js';
+        import 'test/entry-2.js';
+    </script>
+</body>"
 `;
 
 exports[`ssr: Self closing - html 1`] = `"<input type="text" />"`;

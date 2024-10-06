@@ -1,19 +1,19 @@
 import type { Trigger, Disconnect } from '../behavioral/b-program.js'
 import { type Effect, type PlaitedTrigger, isPlaitedTrigger } from './client.types.js'
 
-export function useStore<T>(initialValue: T): {
+export function useSignal<T>(initialValue: T): {
   (value: T): void
   effect: Effect
   get(): T
 }
 
-export function useStore<T>(initialValue?: never): {
+export function useSignal<T>(initialValue?: never): {
   (value?: T): void
   effect: Effect
   get(): T | undefined
 }
-// Pub Sub that allows us the get Last Value Cache (LVC)and subscribe to changes
-export function useStore<T>(initialValue: T) {
+//A Pub Sub that allows us the get Last Value Cache (LVC) and subscribe to changes via the effect method
+export function useSignal<T>(initialValue: T) {
   let store: T = initialValue
   const listeners = new Set<(value?: T) => void>()
   const get = () => store
@@ -38,7 +38,7 @@ export function useStore<T>(initialValue: T) {
   return set
 }
 
-export const useComputed = <T>(initialValue: () => T, deps: ReturnType<typeof useStore>[]) => {
+export const useComputed = <T>(initialValue: () => T, deps: ReturnType<typeof useSignal>[]) => {
   let store: T
   const listeners = new Set<(value?: T) => void>()
   const get = () => {
