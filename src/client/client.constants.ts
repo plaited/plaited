@@ -11,7 +11,7 @@ export const ELEMENT_CALLBACKS = {
   onFormDisabled: 'onFormDisabled',
   onFormReset: 'onFormReset',
   onFormStateRestore: 'onFormStateRestore',
-}
+} as const
 
 export const ACTION_INSERT = 'ACTION_INSERT'
 export const INSERT_METHODS = keyMirror('append', 'prepend', 'replaceChildren')

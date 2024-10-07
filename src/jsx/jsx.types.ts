@@ -372,8 +372,8 @@ type HTMLAttributes = AriaAttributes &
   }
 
 // Combine both filters
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type DetailedHTMLAttributes = HTMLAttributes & Record<string, any>
+
+export type DetailedHTMLAttributes = HTMLAttributes & Record<string, unknown>
 
 type HTMLAttributeReferrerPolicy =
   | ''

@@ -25,7 +25,9 @@ export type StoryObj<T extends FunctionTemplate | Meta = Meta> = {
   : Attrs
   parameters?: Params
   play?: Play
-  template?: FunctionTemplate<T>
+  template?: T extends FunctionTemplate ? T
+  : T extends Meta ? T['template']
+  : FunctionTemplate
 }
 
 export type TestParams = {

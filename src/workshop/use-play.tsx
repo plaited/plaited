@@ -21,7 +21,7 @@ import { useServer } from '../client/use-server.js'
 
 export const DEFAULT_PLAY_TIMEOUT = 5_000
 export const PLAY_EVENT = 'play'
-export const PLAITED_FIXTURE = 'plaited-test-fixture' as const
+export const PLAITED_FIXTURE = 'plaited-test-fixture'
 
 export type FailedTestEvent = {
   type: typeof TEST_EXCEPTION | typeof UNKNOWN_ERROR

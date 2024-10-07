@@ -6,7 +6,16 @@ import { USE_PLAY_ROUTE, STORIES_FILTERS_REGEX } from './workshop.constants.js'
 import { StoryObj, Meta, TestParams } from './workshop.types.js'
 import { kebabCase } from '../utils/case.js'
 import { BuildOutput } from 'bun'
-import { zip, jsMimeTypes } from './zip.js'
+
+const zip = (content: string) => {
+  const compressed = Bun.gzipSync(content)
+  return new Response(compressed, {
+    headers: {
+      'content-type': 'text/javascript;charset=utf-8',
+      'content-encoding': 'gzip',
+    },
+  })
+}
 
 const Page: FunctionTemplate<{ route: string }> = ({ children, route }) => {
   const id = path.basename(route)
@@ -120,7 +129,7 @@ export const mapEntryResponses = async ({
       const { path, kind } = blob
       const text = await blob.text()
       const regex = new RegExp(`${USE_PLAY_ROUTE}$`)
-      const resp = zip(text, jsMimeTypes[0])
+      const resp = zip(text)
       const route =
         kind === 'entry-point' && regex.test(path) ? USE_PLAY_ROUTE
         : kind === 'entry-point' ? `/${path}`
