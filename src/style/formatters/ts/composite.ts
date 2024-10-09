@@ -1,8 +1,8 @@
-import type { CompositeToken } from '../../token.types.js'
-import type { Formatter } from '../formatters.types.js'
-import { camelCase } from '../../../utils/case.js'
-import { hasAlias } from '../has-alias.js'
-import { resolveTSVar, isValidAlias } from '../ts-utils.js'
+import type { CompositeToken } from '../../token.types.ts'
+import type { Formatter } from '../formatters.types.ts'
+import { camelCase } from '../../../utils/case.ts'
+import { hasAlias } from '../has-alias.ts'
+import { resolveTSVar, isValidAlias } from '../ts-utils.ts'
 
 export const composite: Formatter<CompositeToken> = (token, { tokenPath, allTokens }) => {
   const { $value } = token

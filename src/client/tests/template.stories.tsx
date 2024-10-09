@@ -1,9 +1,9 @@
-import type { StoryObj } from '../../workshop/workshop.types.js'
-import type { PlaitedElement } from '../define-element.js'
-import { css } from '../../css/css.js'
-import { defineTemplate } from '../define-template.js'
-import { createTemplate } from '../../jsx/create-template.js'
-import { ModeOpen, DelegateFalse, ClosedMode } from './template.js'
+import type { StoryObj } from '../../workshop/workshop.types.ts'
+import type { PlaitedElement } from '../define-element.ts'
+import { css } from '../../css/css.ts'
+import { defineTemplate } from '../define-template.ts'
+import { createTemplate } from '../../jsx/create-template.ts'
+import { ModeOpen, DelegateFalse, ClosedMode } from './template.tsx'
 export const defaultModeAndFocus: StoryObj = {
   template: () => <ModeOpen p-target='el' />,
   play: async ({ assert, findByAttribute }) => {

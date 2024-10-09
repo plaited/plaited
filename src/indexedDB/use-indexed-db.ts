@@ -1,6 +1,6 @@
-import type { Trigger } from '../behavioral/b-program.js'
-import { type PlaitedTrigger, type Effect, isPlaitedTrigger } from '../client/client.types.js'
-import { PLAITED_INDEXED_DB, PLAITED_STORE } from '../client/client.constants.js'
+import type { Trigger } from '../behavioral/b-program.ts'
+import { type PlaitedTrigger, type Effect, isPlaitedTrigger } from '../client/client.types.ts'
+import { PLAITED_INDEXED_DB, PLAITED_STORE } from '../client/client.constants.ts'
 
 type CreateIDBCallback = (arg: IDBObjectStore) => void
 const createIDB = (dbName: string, storeName: string) => {

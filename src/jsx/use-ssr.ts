@@ -1,7 +1,7 @@
-import { escape } from '../utils/escape.js'
-import { isTypeOf } from '../utils/is-type-of.js'
-import type { TemplateObject } from './jsx.types.js'
-import { VALID_PRIMITIVE_CHILDREN, TEMPLATE_OBJECT_IDENTIFIER } from './jsx.constants.js'
+import { escape } from '../utils/escape.ts'
+import { isTypeOf } from '../utils/is-type-of.ts'
+import type { TemplateObject } from './jsx.types.ts'
+import { VALID_PRIMITIVE_CHILDREN, TEMPLATE_OBJECT_IDENTIFIER } from './jsx.constants.ts'
 
 export const useSSR =
   (...importPaths: string[]) =>

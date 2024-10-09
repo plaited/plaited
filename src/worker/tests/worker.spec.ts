@@ -1,8 +1,8 @@
 import { test, expect } from 'bun:test'
-import { wait } from '../../utils/wait.js'
+import { wait } from '../../utils/wait.ts'
 import sinon from 'sinon'
-import { useWorker } from '../use-worker.js'
-import type { BPEvent } from '../../behavioral/b-thread.js'
+import { useWorker } from '../use-worker.ts'
+import type { BPEvent } from '../../behavioral/b-thread.ts'
 
 test('userWorker|defineWorker: send and receive', async () => {
   const spy = sinon.spy()

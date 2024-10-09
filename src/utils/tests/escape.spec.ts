@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { escape, unescape } from '../escape.js'
+import { escape, unescape } from '../escape.ts'
 
 test('escape(): correct escape', () => {
   expect(escape('&<>\'"')).toBe('&amp;&lt;&gt;&#39;&quot;')

@@ -1,4 +1,4 @@
-import { defineWorker } from '../define-worker.js'
+import { defineWorker } from '../define-worker.ts'
 
 const calculator = {
   add(a: number, b: number) {

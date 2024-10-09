@@ -1,6 +1,6 @@
-import type { GetFormatters } from './formatters.types.js'
-import { defaultFormat } from './ts/default-format.js'
-import { composite } from './ts/composite.js'
+import type { GetFormatters } from './formatters.types.ts'
+import { defaultFormat } from './ts/default-format.ts'
+import { composite } from './ts/composite.ts'
 
 /**
  * This formatter object will return formatters that will create content for

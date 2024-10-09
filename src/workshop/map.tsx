@@ -1,10 +1,10 @@
 import path from 'path'
-import { type FunctionTemplate } from '../jsx/jsx.types.js'
-import { PlaitedFixture, DEFAULT_PLAY_TIMEOUT } from './use-play.js'
-import { useSSR } from '../jsx/use-ssr.js'
-import { USE_PLAY_ROUTE, STORIES_FILTERS_REGEX } from './workshop.constants.js'
-import type { StoryObj, Meta, TestParams } from './workshop.types.js'
-import { kebabCase } from '../utils/case.js'
+import { type FunctionTemplate } from '../jsx/jsx.types.ts'
+import { PlaitedFixture, DEFAULT_PLAY_TIMEOUT } from './use-play.tsx'
+import { useSSR } from '../jsx/use-ssr.ts'
+import { USE_PLAY_ROUTE, STORIES_FILTERS_REGEX } from './workshop.constants.ts'
+import type { StoryObj, Meta, TestParams } from './workshop.types.ts'
+import { kebabCase } from '../utils/case.ts'
 import type { BuildOutput } from 'bun'
 
 const zip = (content: string) => {

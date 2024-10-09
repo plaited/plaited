@@ -1,13 +1,13 @@
-import { css } from '../css/css.js'
-import { defineTemplate } from '../client/define-template.js'
-import { wait } from '../utils/wait.js'
-import { assert } from '../assert/assert.js'
-import { findByAttribute } from '../assert/find-by-attribute.js'
-import { findByText } from '../assert/find-by-text.js'
-import { fireEvent } from '../assert/fire-event.js'
-import { match } from '../assert/match.js'
-import { throws } from '../assert/throws.js'
-import { TimeoutError, AssertionError, MissingTestParamsError } from '../assert/errors.js'
+import { css } from '../css/css.ts'
+import { defineTemplate } from '../client/define-template.ts'
+import { wait } from '../utils/wait.ts'
+import { assert } from '../assert/assert.ts'
+import { findByAttribute } from '../assert/find-by-attribute.ts'
+import { findByText } from '../assert/find-by-text.ts'
+import { fireEvent } from '../assert/fire-event.ts'
+import { match } from '../assert/match.ts'
+import { throws } from '../assert/throws.ts'
+import { TimeoutError, AssertionError, MissingTestParamsError } from '../assert/errors.ts'
 import {
   TEST_PASSED,
   TEST_EXCEPTION,
@@ -15,9 +15,9 @@ import {
   ASSERTION_ERROR,
   MISSING_TEST_PARAMS_ERROR,
   TIMEOUT_ERROR,
-} from '../assert/assert.constants.js'
-import type { StoryObj } from './workshop.types.js'
-import { useServer } from '../client/use-server.js'
+} from '../assert/assert.constants.ts'
+import type { StoryObj } from './workshop.types.ts'
+import { useServer } from '../client/use-server.ts'
 
 export const DEFAULT_PLAY_TIMEOUT = 5_000
 export const PLAY_EVENT = 'play'

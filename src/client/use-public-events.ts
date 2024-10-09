@@ -1,5 +1,5 @@
-import type { Trigger, Disconnect } from '../behavioral/b-program.js'
-import type { PlaitedTrigger } from './client.types.js'
+import type { Trigger, Disconnect } from '../behavioral/b-program.ts'
+import type { PlaitedTrigger } from './client.types.ts'
 
 export const usePublicEvents = (args: {
   trigger: Trigger

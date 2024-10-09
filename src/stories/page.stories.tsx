@@ -1,5 +1,5 @@
-import type { StoryObj } from '../workshop/workshop.types.js'
-import { Page } from './page.js'
+import type { StoryObj } from '../workshop/workshop.types.ts'
+import { Page } from './page.tsx'
 
 export const LoggedOut: StoryObj = {
   template: Page,

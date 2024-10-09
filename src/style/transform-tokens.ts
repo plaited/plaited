@@ -1,7 +1,7 @@
-import type { TransformerParams } from './token.types.js'
-import { cssFormatters } from './formatters/css-formatters.js'
-import { tsFormatters } from './formatters/ts-formatters.js'
-import { formatList } from './formatters/format-list.js'
+import type { TransformerParams } from './token.types.ts'
+import { cssFormatters } from './formatters/css-formatters.ts'
+import { tsFormatters } from './formatters/ts-formatters.ts'
+import { formatList } from './formatters/format-list.ts'
 
 const deduplicate = (css: string) => {
   const regex = /((?:.*:host|:host\([^)]*\))[^{\n]*)\{(\s*[\s\S]*?\s*)\}/gm

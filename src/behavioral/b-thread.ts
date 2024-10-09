@@ -1,4 +1,4 @@
-import { isTypeOf } from '../utils/is-type-of.js'
+import { isTypeOf } from '../utils/is-type-of.ts'
 
 type Repeat = true | ((ctx?: (id: string) => unknown) => boolean)
 export type BPEvent<T = unknown> = { type: string; detail?: T }

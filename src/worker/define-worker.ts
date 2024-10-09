@@ -1,4 +1,4 @@
-import { type BPEvent, type BSync, type BThread, bThread, bSync } from '../behavioral/b-thread.js'
+import { type BPEvent, type BSync, type BThread, bThread, bSync } from '../behavioral/b-thread.ts'
 import {
   type Actions,
   type UseSnapshot,
@@ -6,8 +6,8 @@ import {
   type Trigger,
   bProgram,
   type Disconnect,
-} from '../behavioral/b-program.js'
-import { usePublicEvents } from '../client/use-public-events.js'
+} from '../behavioral/b-program.ts'
+import { usePublicEvents } from '../client/use-public-events.ts'
 
 export const defineWorker = <A extends Actions>({
   connectedCallback,

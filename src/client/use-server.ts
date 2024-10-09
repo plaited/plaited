@@ -1,10 +1,10 @@
-import type { BPEvent } from '../behavioral/b-thread.js'
-import type { CustomElementTag } from '../jsx/jsx.types.js'
-import type { ValueOf } from '../utils/value-of.type.js'
-import { isTypeOf } from '../utils/is-type-of.js'
-import { ACTION_INSERT, ACTION_TRIGGER, INSERT_METHODS } from './client.constants.js'
-import { DelegatedListener, delegates } from './delegated-listener.js'
-import type { PlaitedElement } from './define-element.js'
+import type { BPEvent } from '../behavioral/b-thread.ts'
+import type { CustomElementTag } from '../jsx/jsx.types.ts'
+import type { ValueOf } from '../utils/value-of.type.ts'
+import { isTypeOf } from '../utils/is-type-of.ts'
+import { ACTION_INSERT, ACTION_TRIGGER, INSERT_METHODS } from './client.constants.ts'
+import { DelegatedListener, delegates } from './delegated-listener.ts'
+import type { PlaitedElement } from './define-element.ts'
 
 export type InsertMessage = {
   address: string

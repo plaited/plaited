@@ -1,2 +1,2 @@
-export { useWorker } from './worker/use-worker.js'
-export { defineWorker } from './worker/define-worker.js'
+export { useWorker } from './worker/use-worker.ts'
+export { defineWorker } from './worker/define-worker.ts'

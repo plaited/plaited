@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { trueTypeOf } from '../true-type-of.js'
+import { trueTypeOf } from '../true-type-of.ts'
 
 test('trueTypeOf()', () => {
   expect(trueTypeOf([])).toBe('array')

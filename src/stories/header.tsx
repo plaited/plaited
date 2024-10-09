@@ -1,7 +1,7 @@
-import { defineTemplate } from '../client/define-template.js'
-import { useDispatch } from '../client/use-dispatch.js'
-import { css } from '../css/css.js'
-import { Button } from './button.js'
+import { defineTemplate } from '../client/define-template.ts'
+import { useDispatch } from '../client/use-dispatch.ts'
+import { css } from '../css/css.ts'
+import { Button } from './button.tsx'
 
 const styles = css.create({
   storybookHeader: {

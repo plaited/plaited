@@ -1,5 +1,5 @@
 import type { ServerWebSocket } from 'bun'
-import { type BSync, type BThread, bThread, bSync } from '../behavioral/b-thread.js'
+import { type BSync, type BThread, bThread, bSync } from '../behavioral/b-thread.ts'
 import {
   type Actions,
   type UseSnapshot,
@@ -7,9 +7,9 @@ import {
   type Trigger,
   bProgram,
   type Disconnect,
-} from '../behavioral/b-program.js'
-import { usePublicEvents } from '../client/use-public-events.js'
-import type { PlaitedTrigger } from '../client/client.types.js'
+} from '../behavioral/b-program.ts'
+import { usePublicEvents } from '../client/use-public-events.ts'
+import type { PlaitedTrigger } from '../client/client.types.ts'
 
 export const defineModule = <A extends Actions, W = unknown>({
   id,

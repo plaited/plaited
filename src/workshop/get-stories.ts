@@ -1,6 +1,6 @@
-import { globStories, globWorkers } from './glob.js'
-import { mapStoryResponses, mapEntryResponses } from './map.js'
-import { USE_PLAY_FILE_PATH } from './workshop.constants.js'
+import { globStories, globWorkers } from './glob.ts'
+import { mapStoryResponses, mapEntryResponses } from './map.tsx'
+import { USE_PLAY_FILE_PATH } from './workshop.constants.ts'
 
 export const getStories = async (cwd: string, websocketUrl: `/${string}`) => {
   const workerEntries = await globWorkers(cwd)

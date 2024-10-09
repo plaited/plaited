@@ -1,8 +1,8 @@
 import { test, expect, jest } from 'bun:test'
 import * as prettier from 'prettier'
 
-import { transformTokens } from '../transform-tokens.js'
-import type { DesignTokenGroup } from '../token.types.js'
+import { transformTokens } from '../transform-tokens.ts'
+import type { DesignTokenGroup } from '../token.types.ts'
 
 test('empty token group', async () => {
   const tokens = {

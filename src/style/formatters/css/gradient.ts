@@ -1,9 +1,9 @@
-import type { GradientValue, GradientToken, DesignTokenGroup } from '../../token.types.js'
-import type { Formatter } from '../formatters.types.js'
-import { hasAlias } from '../has-alias.js'
-import { kebabCase } from '../../../utils/case.js'
-import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'
-import { getRule, getColor, resolveCSSVar } from '../css-utils.js'
+import type { GradientValue, GradientToken, DesignTokenGroup } from '../../token.types.ts'
+import type { Formatter } from '../formatters.types.ts'
+import { hasAlias } from '../has-alias.ts'
+import { kebabCase } from '../../../utils/case.ts'
+import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.ts'
+import { getRule, getColor, resolveCSSVar } from '../css-utils.ts'
 
 const colorMapCallback = (allTokens: DesignTokenGroup) => ($value: GradientValue) => {
   if (hasAlias($value)) return resolveCSSVar($value, allTokens)

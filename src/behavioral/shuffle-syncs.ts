@@ -1,4 +1,4 @@
-import type { BSync } from './b-thread.js'
+import type { BSync } from './b-thread.ts'
 
 /** @description Shuffle synchronization bSync statements */
 export const shuffleSyncs = (...syncs: BSync[]) => {

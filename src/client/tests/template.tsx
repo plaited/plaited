@@ -1,4 +1,4 @@
-import { defineTemplate } from '../../client/define-template.js'
+import { defineTemplate } from '../../client/define-template.ts'
 
 export const DelegateFalse = defineTemplate({
   tag: 'delegate-false',

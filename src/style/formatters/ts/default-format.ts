@@ -1,7 +1,7 @@
-import type { Formatter } from '../formatters.types.js'
-import { camelCase } from '../../../utils/case.js'
-import { hasAlias } from '../has-alias.js'
-import { isValidAlias, getCssVar } from '../ts-utils.js'
+import type { Formatter } from '../formatters.types.ts'
+import { camelCase } from '../../../utils/case.ts'
+import { hasAlias } from '../has-alias.ts'
+import { isValidAlias, getCssVar } from '../ts-utils.ts'
 
 export const defaultFormat: Formatter = (token, { allTokens, tokenPath }) => {
   const { $value } = token

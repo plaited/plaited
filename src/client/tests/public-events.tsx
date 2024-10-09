@@ -1,8 +1,8 @@
-import type { FT } from '../../jsx/jsx.types.js'
-import { isTypeOf } from '../../utils/is-type-of.js'
-import type { PlaitedElement } from '../define-element.js'
-import { defineTemplate } from '../define-template.js'
-import { useDispatch } from '../use-dispatch.js'
+import type { FT } from '../../jsx/jsx.types.ts'
+import { isTypeOf } from '../../utils/is-type-of.ts'
+import type { PlaitedElement } from '../define-element.ts'
+import { defineTemplate } from '../define-template.ts'
+import { useDispatch } from '../use-dispatch.ts'
 const isPlaitedElement = (el: unknown): el is PlaitedElement =>
   isTypeOf<PlaitedElement>(el, 'htmlelement') && 'trigger' in el
 
