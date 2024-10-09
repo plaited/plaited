@@ -1,11 +1,11 @@
 import path from 'path'
-import { FunctionTemplate } from '../jsx/jsx.types.js'
+import { type FunctionTemplate } from '../jsx/jsx.types.js'
 import { PlaitedFixture, DEFAULT_PLAY_TIMEOUT } from './use-play.js'
 import { useSSR } from '../jsx/use-ssr.js'
 import { USE_PLAY_ROUTE, STORIES_FILTERS_REGEX } from './workshop.constants.js'
-import { StoryObj, Meta, TestParams } from './workshop.types.js'
+import type { StoryObj, Meta, TestParams } from './workshop.types.js'
 import { kebabCase } from '../utils/case.js'
-import { BuildOutput } from 'bun'
+import type { BuildOutput } from 'bun'
 
 const zip = (content: string) => {
   const compressed = Bun.gzipSync(content)
@@ -35,10 +35,9 @@ const Page: FunctionTemplate<{ route: string }> = ({ children, route }) => {
 
 const createStoryRoute = ({ storyFile, exportName }: { storyFile: string; exportName: string }) => {
   const dirname = path.dirname(storyFile)
-  const basename =
-    STORIES_FILTERS_REGEX.test(storyFile) ? kebabCase(path.basename(storyFile.replace(STORIES_FILTERS_REGEX, ''))) : ''
+  const basename = kebabCase(path.basename(storyFile.replace(STORIES_FILTERS_REGEX, '')))
   const storyName = kebabCase(exportName)
-  const id = basename ? `${basename}--${storyName}` : basename
+  const id = `${basename}--${storyName}`
   return `${dirname}/${id}`
 }
 

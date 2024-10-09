@@ -1,5 +1,5 @@
 import { Button } from './button.js'
-import { Meta, StoryObj } from '../workshop/workshop.types.js'
+import type { Meta, StoryObj } from '../workshop/workshop.types.js'
 
 const meta: Meta<typeof Button> = {
   template: Button,

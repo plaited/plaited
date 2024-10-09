@@ -1,4 +1,4 @@
-import { FT } from 'src/jsx/jsx.types.js'
+import type { FT } from '../../jsx/jsx.types.js'
 import { isTypeOf } from '../../utils/is-type-of.js'
 import type { PlaitedElement } from '../define-element.js'
 import { defineTemplate } from '../define-template.js'

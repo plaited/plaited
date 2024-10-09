@@ -1,12 +1,12 @@
-import { chromium, BrowserContext } from 'playwright'
+import { chromium, type BrowserContext } from 'playwright'
 import { bProgram } from '../behavioral/b-program.js'
 import { getStories } from '../workshop/get-stories.js'
 import { isTypeOf } from '../utils/is-type-of.js'
 import { isBPEvent } from '../behavioral/b-thread.js'
-import { type FailedTestEvent, type PassedTestEvent, PLAITED_FIXTURE } from '../workshop/use-play.js'
+import { type FailedTestEvent, type PassedTestEvent, PLAITED_FIXTURE } from '../workshop/use-play.tsx'
 import { TEST_PASSED, TEST_EXCEPTION, UNKNOWN_ERROR } from '../assert/assert.constants.js'
-import { ACTION_TRIGGER } from '../client/client.constants.js'
-import { ServerWebSocket, Server } from 'bun'
+import { ACTION_TRIGGER } from '../client/client.constants.ts'
+import type { ServerWebSocket, Server } from 'bun'
 
 const cwd = `${process.cwd()}/src`
 const { stories, getResponses } = await getStories(cwd, '/_test-runner')

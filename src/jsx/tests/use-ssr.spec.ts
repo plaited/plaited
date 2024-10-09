@@ -2,7 +2,7 @@
 import { test, expect } from 'bun:test'
 import { h, Fragment } from '../create-template.js'
 import { css } from '../../css/css.js'
-import { FunctionTemplate, TemplateObject } from '../jsx.types.js'
+import type { FunctionTemplate, TemplateObject } from '../jsx.types.js'
 import { useSSR } from '../use-ssr.js'
 import beautify from 'beautify'
 

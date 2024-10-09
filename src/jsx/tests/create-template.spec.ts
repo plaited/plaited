@@ -1,7 +1,7 @@
 /* eslint-disable no-constant-binary-expression */
 import { test, expect } from 'bun:test'
 import { h, Fragment } from '../create-template.js'
-import { css, FunctionTemplate, TemplateObject } from '../../index.js'
+import { css, type FunctionTemplate, type TemplateObject } from '../../index.js'
 import beautify from 'beautify'
 
 const render = (tpl: TemplateObject) => beautify(tpl.html.join(''), { format: 'html' })

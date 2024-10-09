@@ -1,4 +1,4 @@
-import { StoryObj } from '../../workshop/workshop.types.js'
+import type { StoryObj } from '../../workshop/workshop.types.js'
 import { Fixture, defaultSlot, passThroughSlot, namedSlot, nestedSlot, nestedInShadowSlot } from './slots.js'
 
 export const slots: StoryObj = {

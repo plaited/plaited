@@ -16,7 +16,7 @@ import {
   MISSING_TEST_PARAMS_ERROR,
   TIMEOUT_ERROR,
 } from '../assert/assert.constants.js'
-import { StoryObj } from './workshop.types.js'
+import type { StoryObj } from './workshop.types.js'
 import { useServer } from '../client/use-server.js'
 
 export const DEFAULT_PLAY_TIMEOUT = 5_000

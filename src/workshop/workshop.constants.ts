@@ -1,7 +1,7 @@
 export const USE_PLAY_ROUTE = '/use-play.js'
 export const USE_PLAY_FILE_PATH = Bun.resolveSync('./use-play.tsx', import.meta.dir)
 
-export const STORY_GLOB_PATTERN = `**/{stories,*.stories}.{tsx,ts}`
+export const STORY_GLOB_PATTERN = `**/*.stories.{tsx,ts}`
 export const STORIES_FILTERS_REGEX = /\.stories.tsx?$/
 
 export const TEMPLATE_FILTER_REGEX = /^((?!\/_).)*\/template\.tsx?$/

@@ -1,6 +1,6 @@
 import { defineTemplate } from '../define-template.js'
 import { useSignal } from '../use-signal.js'
-import { FT } from 'src/jsx/jsx.types.js'
+import type { FT } from '../../jsx/jsx.types.js'
 const sendDisable = useSignal()
 const sendAdd = useSignal<{ value: string }>()
 

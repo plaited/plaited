@@ -4,7 +4,7 @@ import type { ValueOf } from '../utils/value-of.type.js'
 import { isTypeOf } from '../utils/is-type-of.js'
 import { ACTION_INSERT, ACTION_TRIGGER, INSERT_METHODS } from './client.constants.js'
 import { DelegatedListener, delegates } from './delegated-listener.js'
-import { PlaitedElement } from './define-element.js'
+import type { PlaitedElement } from './define-element.js'
 
 export type InsertMessage = {
   address: string

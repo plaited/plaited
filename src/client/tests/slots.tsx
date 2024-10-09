@@ -1,4 +1,4 @@
-import { FT } from 'src/jsx/jsx.types.js'
+import type { FT } from '../../jsx/jsx.types.js'
 import { defineTemplate } from '../define-template.js'
 import sinon from 'sinon'
 
