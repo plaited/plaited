@@ -5,17 +5,6 @@ import { useSSR } from '../jsx/use-ssr.ts'
 import { USE_PLAY_ROUTE, STORIES_FILTERS_REGEX } from './workshop.constants.ts'
 import type { StoryObj, Meta, TestParams } from './workshop.types.ts'
 import { kebabCase } from '../utils/case.ts'
-import type { BuildOutput } from 'bun'
-
-const zip = (content: string) => {
-  const compressed = Bun.gzipSync(content)
-  return new Response(compressed, {
-    headers: {
-      'content-type': 'text/javascript;charset=utf-8',
-      'content-encoding': 'gzip',
-    },
-  })
-}
 
 const Page: FunctionTemplate<{ route: string }> = ({ children, route }) => {
   const id = path.basename(route)
@@ -58,9 +47,7 @@ const updateHTMLResponses = ({
   exportName: string
   websocketUrl: `/${string}`
 }): TestParams => {
-  const storyPath = storyFile.replace(/\.tsx?$/, '.js')
-  const scripts = [USE_PLAY_ROUTE, storyPath].filter((p) => p !== undefined)
-  const ssr = useSSR(...scripts)
+  const ssr = useSSR(USE_PLAY_ROUTE, storyFile)
   const args = story?.args ?? meta?.args ?? {}
   const styles = story?.parameters?.styles ?? meta?.parameters?.styles ?? {}
   const headers = story?.parameters?.headers?.(process.env) ?? meta?.parameters?.headers?.(process.env) ?? new Headers()
@@ -114,26 +101,4 @@ export const mapStoryResponses = async ({
     }),
   )
   return routes
-}
-
-export const mapEntryResponses = async ({
-  outputs,
-  responseMap,
-}: {
-  outputs: BuildOutput['outputs']
-  responseMap: Map<string, Response>
-}) => {
-  await Promise.all(
-    outputs.map(async (blob) => {
-      const { path, kind } = blob
-      const text = await blob.text()
-      const regex = new RegExp(`${USE_PLAY_ROUTE}$`)
-      const resp = zip(text)
-      const route =
-        kind === 'entry-point' && regex.test(path) ? USE_PLAY_ROUTE
-        : kind === 'entry-point' ? `/${path}`
-        : path.replace(/^\./, '')
-      responseMap.set(route, resp)
-    }),
-  )
 }

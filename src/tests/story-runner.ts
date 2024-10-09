@@ -1,12 +1,13 @@
 import { chromium, type BrowserContext } from 'playwright'
 import { bProgram } from '../behavioral/b-program.ts'
-import { getStories } from '../workshop/get-stories.ts'
+import { getStories, getFile } from '../workshop/get.ts'
 import { isTypeOf } from '../utils/is-type-of.ts'
 import { isBPEvent } from '../behavioral/b-thread.ts'
 import { type FailedTestEvent, type PassedTestEvent, PLAITED_FIXTURE } from '../workshop/use-play.tsx'
 import { TEST_PASSED, TEST_EXCEPTION, UNKNOWN_ERROR } from '../assert/assert.constants.ts'
 import { ACTION_TRIGGER } from '../client/client.constants.ts'
 import type { ServerWebSocket, Server } from 'bun'
+import { USE_PLAY_ROUTE, USE_PLAY_FILE_PATH } from '../workshop/workshop.constants.ts'
 
 const cwd = `${process.cwd()}/src`
 const { stories, getResponses } = await getStories(cwd, '/_test-runner')
@@ -23,9 +24,17 @@ const { useFeedback, trigger } = bProgram()
 const config = {
   static: getResponses(),
   port: 3000,
-  fetch(req: Request, server: Server) {
-    const url = new URL(req.url)
-    if (url.pathname === '/_test-runner') {
+  async fetch(req: Request, server: Server) {
+    const { pathname } = new URL(req.url)
+    if(/\.tsx?$/.test(pathname)) {
+      if(pathname === USE_PLAY_ROUTE) {
+        return await getFile(USE_PLAY_FILE_PATH)
+      } else {
+        const path = Bun.resolveSync(`.${pathname}`, cwd)
+        return await getFile(path)
+      }
+    }
+    if (pathname === '/_test-runner') {
       const success = server.upgrade(req)
       return success ? undefined : new Response('WebSocket upgrade error', { status: 400 })
     }

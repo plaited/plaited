@@ -5,6 +5,9 @@
   "engines": {
     "node": ">= v22.9.0"
   },
+  "workspaces": [
+    "mmm"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/plaited/plaited.git"

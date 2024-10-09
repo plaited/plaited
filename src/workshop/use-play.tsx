@@ -141,7 +141,7 @@ export const PlaitedFixture = defineTemplate<{
     const exportName = this.getAttribute('p-name') as string
     return {
       async [PLAY_EVENT]() {
-        const { [exportName]: story } = (await import(filePath.replace(/\.tsx?$/, '.js'))) as {
+        const { [exportName]: story } = (await import(filePath)) as {
           [key: string]: StoryObj
         }
         try {
