@@ -25,7 +25,6 @@ const config = {
   port: 3000,
   async fetch(req: Request, server: Server) {
     const { pathname } = new URL(req.url)
-    // console.log(pathname)
     if (/\.js$/.test(pathname)) {
       const path = Bun.resolveSync(`.${pathname}`, cwd)
       return await getFile(path)

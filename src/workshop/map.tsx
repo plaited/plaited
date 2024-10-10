@@ -23,6 +23,7 @@ const Page: FunctionTemplate<{ route: string }> = ({ children, route }) => {
           {JSON.stringify({
             imports: {
               'plaited/jsx-runtime': '/jsx/runtime.js',
+              sinon: '/sinon.js',
             },
           })}
         </script>
@@ -57,7 +58,8 @@ const updateHTMLResponses = ({
   exportName: string
   websocketUrl: `/${string}`
 }): TestParams => {
-  const ssr = useSSR(USE_PLAY_ROUTE, storyFile.replace(/\.tsx?$/, '.js'))
+  const entryPath = storyFile.replace(/\.tsx?$/, '.js')
+  const ssr = useSSR(USE_PLAY_ROUTE, entryPath)
   const args = story?.args ?? meta?.args ?? {}
   const styles = story?.parameters?.styles ?? meta?.parameters?.styles ?? {}
   const headers = story?.parameters?.headers?.(process.env) ?? meta?.parameters?.headers?.(process.env) ?? new Headers()
@@ -67,7 +69,7 @@ const updateHTMLResponses = ({
       <PlaitedFixture
         p-name={exportName}
         p-route={route}
-        p-file={storyFile}
+        p-file={entryPath}
         p-socket={websocketUrl}
         children={tpl?.(args)}
         {...styles}

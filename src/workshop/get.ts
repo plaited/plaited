@@ -1,6 +1,17 @@
 import { transform } from '@swc/core'
 import { globStories } from './glob.js'
 import { mapStoryResponses } from './map.js'
+import { SION_ROUTE } from './workshop.constants.js'
+
+const zip = (content: string) => {
+  const compressed = Bun.gzipSync(content)
+  return new Response(compressed, {
+    headers: {
+      'content-type': 'text/javascript;charset=utf-8',
+      'content-encoding': 'gzip',
+    },
+  })
+}
 
 export const getStories = async (cwd: string, websocketUrl: `/${string}`) => {
   const storyEntries = await globStories(cwd)
@@ -13,17 +24,12 @@ export const getStories = async (cwd: string, websocketUrl: `/${string}`) => {
     return toRet
   }
   const stories = await mapStoryResponses({ storyEntries, responseMap, cwd, websocketUrl })
-  return { stories, getResponses }
-}
-
-const zip = (content: string) => {
-  const compressed = Bun.gzipSync(content)
-  return new Response(compressed, {
-    headers: {
-      'content-type': 'text/javascript;charset=utf-8',
-      'content-encoding': 'gzip',
-    },
+  const { outputs } = await Bun.build({
+    entrypoints: ['sinon'],
   })
+  const sinon = await outputs[0].text()
+  responseMap.set(SION_ROUTE, zip(sinon))
+  return { stories, getResponses }
 }
 
 export const getFile = async (path: string) => {
