@@ -10,10 +10,10 @@ import {
   bProgram,
 } from '../behavioral/b-program.js'
 import { P_TRIGGER } from '../jsx/jsx.constants.js'
-import { QuerySelector, useQuery, handleTemplateObject } from './use-query.js'
+import { type QuerySelector, useQuery, handleTemplateObject } from './use-query.js'
 import { shadowObserver, addListeners } from './shadow-observer.js'
 import { usePublicEvents } from './use-public-events.js'
-import { canUseDOM } from './can-use-dom.js'
+import { canUseDOM } from '../utils/can-use-dom.js'
 import { ELEMENT_CALLBACKS } from './client.constants.js'
 import type { PlaitedTrigger } from './client.types.js'
 

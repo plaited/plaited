@@ -15,11 +15,13 @@ const calculator = {
   },
 }
 
-defineWorker({
+defineWorker<{
+  calculate: (args: { a: number; b: number; operation: 'add' | 'subtract' | 'multiply' | 'divide' }) => void
+}>({
   publicEvents: ['calculate'],
-  connectedCallback: ({ send }) => {
+  connectedCallback({ send }) {
     return {
-      calculate({ a, b, operation }: { a: number; b: number; operation: 'add' | 'subtract' | 'multiply' | 'divide' }) {
+      calculate({ a, b, operation }) {
         send({
           type: 'update',
           detail: calculator[operation](a, b),

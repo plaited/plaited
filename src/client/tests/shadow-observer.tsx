@@ -1,6 +1,6 @@
 import { css } from '../../css/css.js'
 import { defineTemplate } from '../define-template.js'
-import { FT } from 'src/jsx/jsx.types.js'
+import type { FT } from '../../jsx/jsx.types.js'
 
 export const styles = css.create({
   button: {

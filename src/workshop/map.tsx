@@ -1,12 +1,10 @@
 import path from 'path'
-import { FunctionTemplate } from '../jsx/jsx.types.js'
+import { type FunctionTemplate } from '../jsx/jsx.types.js'
 import { PlaitedFixture, DEFAULT_PLAY_TIMEOUT } from './use-play.js'
 import { useSSR } from '../jsx/use-ssr.js'
 import { USE_PLAY_ROUTE, STORIES_FILTERS_REGEX } from './workshop.constants.js'
-import { StoryObj, Meta, TestParams } from './workshop.types.js'
+import type { StoryObj, Meta, TestParams } from './workshop.types.js'
 import { kebabCase } from '../utils/case.js'
-import { BuildOutput } from 'bun'
-import { zip, jsMimeTypes } from './zip.js'
 
 const Page: FunctionTemplate<{ route: string }> = ({ children, route }) => {
   const id = path.basename(route)
@@ -18,6 +16,17 @@ const Page: FunctionTemplate<{ route: string }> = ({ children, route }) => {
           rel='shortcut icon'
           href='#'
         />
+        <script
+          trusted
+          type='importmap'
+        >
+          {JSON.stringify({
+            imports: {
+              'plaited/jsx-runtime': '/jsx/runtime.js',
+              sinon: '/sinon.js',
+            },
+          })}
+        </script>
       </head>
       <body>{children}</body>
     </html>
@@ -26,10 +35,9 @@ const Page: FunctionTemplate<{ route: string }> = ({ children, route }) => {
 
 const createStoryRoute = ({ storyFile, exportName }: { storyFile: string; exportName: string }) => {
   const dirname = path.dirname(storyFile)
-  const basename =
-    STORIES_FILTERS_REGEX.test(storyFile) ? kebabCase(path.basename(storyFile.replace(STORIES_FILTERS_REGEX, ''))) : ''
+  const basename = kebabCase(path.basename(storyFile.replace(STORIES_FILTERS_REGEX, '')))
   const storyName = kebabCase(exportName)
-  const id = basename ? `${basename}--${storyName}` : basename
+  const id = `${basename}--${storyName}`
   return `${dirname}/${id}`
 }
 
@@ -50,9 +58,8 @@ const updateHTMLResponses = ({
   exportName: string
   websocketUrl: `/${string}`
 }): TestParams => {
-  const storyPath = storyFile.replace(/\.tsx?$/, '.js')
-  const scripts = [USE_PLAY_ROUTE, storyPath].filter((p) => p !== undefined)
-  const ssr = useSSR(...scripts)
+  const entryPath = storyFile.replace(/\.tsx?$/, '.js')
+  const ssr = useSSR(USE_PLAY_ROUTE, entryPath)
   const args = story?.args ?? meta?.args ?? {}
   const styles = story?.parameters?.styles ?? meta?.parameters?.styles ?? {}
   const headers = story?.parameters?.headers?.(process.env) ?? meta?.parameters?.headers?.(process.env) ?? new Headers()
@@ -62,7 +69,7 @@ const updateHTMLResponses = ({
       <PlaitedFixture
         p-name={exportName}
         p-route={route}
-        p-file={storyFile}
+        p-file={entryPath}
         p-socket={websocketUrl}
         children={tpl?.(args)}
         {...styles}
@@ -106,26 +113,4 @@ export const mapStoryResponses = async ({
     }),
   )
   return routes
-}
-
-export const mapEntryResponses = async ({
-  outputs,
-  responseMap,
-}: {
-  outputs: BuildOutput['outputs']
-  responseMap: Map<string, Response>
-}) => {
-  await Promise.all(
-    outputs.map(async (blob) => {
-      const { path, kind } = blob
-      const text = await blob.text()
-      const regex = new RegExp(`${USE_PLAY_ROUTE}$`)
-      const resp = zip(text, jsMimeTypes[0])
-      const route =
-        kind === 'entry-point' && regex.test(path) ? USE_PLAY_ROUTE
-        : kind === 'entry-point' ? `/${path}`
-        : path.replace(/^\./, '')
-      responseMap.set(route, resp)
-    }),
-  )
 }

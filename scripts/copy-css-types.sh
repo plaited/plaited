@@ -1,5 +1,4 @@
 #!/bin/bash
-#!/bin/bash
 
 # Define source and target files
 CSS_SRC="node_modules/csstype/index.d.ts"

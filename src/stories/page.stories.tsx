@@ -1,4 +1,4 @@
-import { StoryObj } from '../workshop/workshop.types.js'
+import type { StoryObj } from '../workshop/workshop.types.js'
 import { Page } from './page.js'
 
 export const LoggedOut: StoryObj = {

@@ -9,7 +9,7 @@ import {
 } from '../behavioral/b-program.js'
 import { usePublicEvents } from '../client/use-public-events.js'
 
-export const defineWorker = <T extends Actions>({
+export const defineWorker = <A extends Actions>({
   connectedCallback,
   publicEvents,
   targetOrigin,
@@ -24,7 +24,7 @@ export const defineWorker = <T extends Actions>({
     bThreads: BThreads
     bThread: BThread
     bSync: BSync
-  }) => Actions<T>
+  }) => A
   publicEvents: string[]
   targetOrigin?: string
 }) => {

@@ -1,4 +1,4 @@
-import { StoryObj } from '../../workshop/workshop.types.js'
+import type { StoryObj } from '../../workshop/workshop.types.js'
 import type { PlaitedElement } from '../define-element.js'
 import { Fixture } from './query-bindings.js'
 

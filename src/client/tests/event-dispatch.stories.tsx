@@ -1,4 +1,4 @@
-import { StoryObj } from '../../workshop/workshop.types.js'
+import type { StoryObj } from '../../workshop/workshop.types.js'
 import { Top } from './event-dispatch.js'
 
 export const eventDispatch: StoryObj = {

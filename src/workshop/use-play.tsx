@@ -16,12 +16,12 @@ import {
   MISSING_TEST_PARAMS_ERROR,
   TIMEOUT_ERROR,
 } from '../assert/assert.constants.js'
-import { StoryObj } from './workshop.types.js'
+import type { StoryObj } from './workshop.types.js'
 import { useServer } from '../client/use-server.js'
 
 export const DEFAULT_PLAY_TIMEOUT = 5_000
 export const PLAY_EVENT = 'play'
-export const PLAITED_FIXTURE = 'plaited-test-fixture' as const
+export const PLAITED_FIXTURE = 'plaited-test-fixture'
 
 export type FailedTestEvent = {
   type: typeof TEST_EXCEPTION | typeof UNKNOWN_ERROR
@@ -141,7 +141,7 @@ export const PlaitedFixture = defineTemplate<{
     const exportName = this.getAttribute('p-name') as string
     return {
       async [PLAY_EVENT]() {
-        const { [exportName]: story } = (await import(filePath.replace(/\.tsx?$/, '.js'))) as {
+        const { [exportName]: story } = (await import(filePath)) as {
           [key: string]: StoryObj
         }
         try {
