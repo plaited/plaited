@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { WORKER_FILTER_REGEX, TEMPLATE_FILTER_REGEX } from '../workshop.constants.ts'
+import { WORKER_FILTER_REGEX, TEMPLATE_FILTER_REGEX } from '../workshop.constants.js'
 
 test('TEMPLATE_FILTER_REGEX', () => {
   expect(TEMPLATE_FILTER_REGEX.test('/template.tsx')).toBeTrue()

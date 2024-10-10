@@ -3,8 +3,8 @@
  * (c) suxiaoxin - MIT
  * {@see https://github.com/easy-json-schema/easy-json-schema}
  */
-import { trueTypeOf } from '../utils/true-type-of.ts'
-import type { DesignToken, DesignTokenGroup } from './token.types.ts'
+import { trueTypeOf } from '../utils/true-type-of.js'
+import type { DesignToken, DesignTokenGroup } from './token.types.js'
 
 const supportType = ['string', 'number', 'array', 'object', 'boolean', 'integer']
 

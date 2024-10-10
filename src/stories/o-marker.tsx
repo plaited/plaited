@@ -1,5 +1,5 @@
-import type { FunctionTemplate } from '../jsx/jsx.types.ts'
-import { css } from '../css/css.ts'
+import type { FunctionTemplate } from '../jsx/jsx.types.js'
+import { css } from '../css/css.js'
 
 const styles = css.create({
   o: {

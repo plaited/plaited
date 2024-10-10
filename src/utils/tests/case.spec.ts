@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { camelCase, kebabCase } from '../case.ts'
+import { camelCase, kebabCase } from '../case.js'
 
 test('camelCase should convert hyphenated string to camel case', () => {
   expect(camelCase('hello-world')).toBe('helloWorld')

@@ -1,7 +1,7 @@
-import type { DesignTokenGroup } from '../token.types.ts'
-import { camelCase, kebabCase } from '../../utils/case.ts'
-import { resolveAlias } from './resolve-alias.ts'
-import { prefix } from './formatters.constants.ts'
+import type { DesignTokenGroup } from '../token.types.js'
+import { camelCase, kebabCase } from '../../utils/case.js'
+import { resolveAlias } from './resolve-alias.js'
+import { prefix } from './formatters.constants.js'
 export const resolveTSVar = (value: string, allTokens: DesignTokenGroup) => {
   const res = resolveAlias(value, allTokens)
   if (!res) return ''

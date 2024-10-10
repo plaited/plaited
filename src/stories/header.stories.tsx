@@ -1,5 +1,5 @@
-import type { StoryObj, Meta } from '../workshop/workshop.types.ts'
-import { Header } from './header.tsx'
+import type { StoryObj, Meta } from '../workshop/workshop.types.js'
+import { Header } from './header.js'
 
 const meta: Meta<typeof Header> = {
   template: Header,

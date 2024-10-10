@@ -1,8 +1,8 @@
-import { deepEqual } from '../utils/deep-equal.ts'
-import { trueTypeOf } from '../utils/true-type-of.ts'
-import { isTypeOf } from '../utils/is-type-of.ts'
-import { AssertionError, MissingTestParamsError } from './errors.ts'
-import { PRIMITIVES } from './assert.constants.ts'
+import { deepEqual } from '../utils/deep-equal.js'
+import { trueTypeOf } from '../utils/true-type-of.js'
+import { isTypeOf } from '../utils/is-type-of.js'
+import { AssertionError, MissingTestParamsError } from './errors.js'
+import { PRIMITIVES } from './assert.constants.js'
 
 export type Assert = <T>(param: { given: string; should: string; actual: T; expected: T }) => void
 

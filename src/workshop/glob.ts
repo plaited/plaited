@@ -4,7 +4,7 @@ import {
   TEMPLATE_GLOB_PATTERN,
   WORKER_FILTER_REGEX,
   WORKER_GLOB_PATTERN,
-} from './workshop.constants.ts'
+} from './workshop.constants.js'
 
 export const globStories = async (cwd: string) => {
   const glob = new Bun.Glob(STORY_GLOB_PATTERN)

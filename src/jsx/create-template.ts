@@ -5,10 +5,10 @@ import type {
   ElementAttributeList,
   CustomElementTag,
   FunctionTemplate,
-} from './jsx.types.ts'
-import { isTypeOf } from '../utils/is-type-of.ts'
-import { kebabCase } from '../utils/case.ts'
-import { escape } from '../utils/escape.ts'
+} from './jsx.types.js'
+import { isTypeOf } from '../utils/is-type-of.js'
+import { kebabCase } from '../utils/case.js'
+import { escape } from '../utils/escape.js'
 import {
   BOOLEAN_ATTRS,
   PRIMITIVES,
@@ -16,7 +16,7 @@ import {
   VALID_PRIMITIVE_CHILDREN,
   P_TRIGGER,
   TEMPLATE_OBJECT_IDENTIFIER,
-} from './jsx.constants.ts'
+} from './jsx.constants.js'
 
 type Tag = string | CustomElementTag | FunctionTemplate
 

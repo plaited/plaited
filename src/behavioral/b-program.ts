@@ -1,5 +1,5 @@
-import type { BPEvent, BPEventTemplate, BPListener, Idioms, RulesFunction } from './b-thread.ts'
-import { isTypeOf } from '../utils/is-type-of.ts'
+import type { BPEvent, BPEventTemplate, BPListener, Idioms, RulesFunction } from './b-thread.js'
+import { isTypeOf } from '../utils/is-type-of.js'
 
 type RunningBid = {
   trigger?: true | 'object' | 'person'

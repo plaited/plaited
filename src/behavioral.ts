@@ -9,7 +9,7 @@ export {
   type SnapshotMessage,
   type Trigger,
   bProgram,
-} from './behavioral/b-program.ts'
+} from './behavioral/b-program.js'
 export {
   type BPEvent,
   type BPEventTemplate,
@@ -19,7 +19,7 @@ export {
   bThread,
   bSync,
   isBPEvent,
-} from './behavioral/b-thread.ts'
-export { randomEvent } from './behavioral/random-event.ts'
-export { shuffleSyncs } from './behavioral/shuffle-syncs.ts'
-export { usePublicEvents } from './client/use-public-events.ts'
+} from './behavioral/b-thread.js'
+export { randomEvent } from './behavioral/random-event.js'
+export { shuffleSyncs } from './behavioral/shuffle-syncs.js'
+export { usePublicEvents } from './client/use-public-events.js'

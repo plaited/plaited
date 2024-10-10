@@ -8,18 +8,18 @@ export type {
   SnapshotListener,
   SnapshotMessage,
   Trigger,
-} from './behavioral/b-program.ts'
-export type { BPEvent, BPEventTemplate, BSync, BThread, RulesFunction } from './behavioral/b-thread.ts'
+} from './behavioral/b-program.js'
+export type { BPEvent, BPEventTemplate, BSync, BThread, RulesFunction } from './behavioral/b-thread.js'
 //CLIENT
-export type { PlaitedElement } from './client/define-element.ts'
-export type { CloneCallback, Position, SelectorMatch } from './client/use-query.ts'
-export { type PlaitedTemplate, defineTemplate } from './client/define-template.ts'
-export { useDispatch } from './client/use-dispatch.ts'
-export { useServer } from './client/use-server.ts'
-export { useSignal, useComputed } from './client/use-signal.ts'
+export type { PlaitedElement } from './client/define-element.js'
+export type { CloneCallback, Position, SelectorMatch } from './client/use-query.js'
+export { type PlaitedTemplate, defineTemplate } from './client/define-template.js'
+export { useDispatch } from './client/use-dispatch.js'
+export { useServer } from './client/use-server.js'
+export { useSignal, useComputed } from './client/use-signal.js'
 //STYLE
-export type * from './css/css.types.ts'
-export { css } from './css/css.ts'
+export type * from './css/css.types.js'
+export { css } from './css/css.js'
 //JSX
-export type * from './jsx/jsx.types.ts'
-export { useSSR } from './jsx/use-ssr.ts'
+export type * from './jsx/jsx.types.js'
+export { useSSR } from './jsx/use-ssr.js'

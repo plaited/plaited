@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { getTokenElement } from '../get-token-element.ts'
+import { getTokenElement } from '../get-token-element.js'
 import beautify from 'beautify'
 
 test('getTokenElement', () => {

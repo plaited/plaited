@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { ueid } from '../ueid.ts'
+import { ueid } from '../ueid.js'
 
 test('ueid: returns a string', () => {
   const output = ueid()

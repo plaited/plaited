@@ -5,11 +5,11 @@ import type {
   AliasValue,
   ContextTypes,
   DesignTokenGroup,
-} from '../token.types.ts'
-import { isTypeOf } from '../../utils/is-type-of.ts'
-import { kebabCase } from '../../utils/case.ts'
-import { resolveAlias } from './resolve-alias.ts'
-import { prefix } from './formatters.constants.ts'
+} from '../token.types.js'
+import { isTypeOf } from '../../utils/is-type-of.js'
+import { kebabCase } from '../../utils/case.js'
+import { resolveAlias } from './resolve-alias.js'
+import { prefix } from './formatters.constants.js'
 export const remSuffix = (val: number) => `${val}rem`
 
 export const getColor = (color: Exclude<ColorValue, AliasValue>) =>

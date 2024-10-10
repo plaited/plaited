@@ -1,5 +1,5 @@
-import type { FT } from '../../jsx/jsx.types.ts'
-import { defineTemplate } from '../define-template.ts'
+import type { FT } from '../../jsx/jsx.types.js'
+import { defineTemplate } from '../define-template.js'
 import sinon from 'sinon'
 
 export const defaultSlot = sinon.spy()

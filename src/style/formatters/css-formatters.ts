@@ -1,7 +1,7 @@
-import type { GetFormatters } from './formatters.types.ts'
-import { color } from './css/color.ts'
-import { gradient } from './css/gradient.ts'
-import { defaultFormatter } from './css/default-formatter.ts'
+import type { GetFormatters } from './formatters.types.js'
+import { color } from './css/color.js'
+import { gradient } from './css/gradient.js'
+import { defaultFormatter } from './css/default-formatter.js'
 
 /**
  * This formatter object will return formatters that will create content for an

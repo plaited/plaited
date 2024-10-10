@@ -1,1 +1,1 @@
-export { defineTemplate } from '../index.ts'
+export { defineTemplate } from '../index.js'

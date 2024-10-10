@@ -1,8 +1,8 @@
-import { defineTemplate } from '../client/define-template.ts'
-import { bThread, bSync, type RulesFunction } from '../behavioral/b-thread.ts'
-import { OMarker } from './o-marker.tsx'
-import { XMarker } from './x-marker.tsx'
-import { BoardMarker } from './board-marker.tsx'
+import { defineTemplate } from '../client/define-template.js'
+import { bThread, bSync, type RulesFunction } from '../behavioral/b-thread.js'
+import { OMarker } from './o-marker.js'
+import { XMarker } from './x-marker.js'
+import { BoardMarker } from './board-marker.js'
 
 const winConditions = [
   //rows

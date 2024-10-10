@@ -1,5 +1,5 @@
-import { XMarker } from './x-marker.tsx'
-import type { StoryObj } from '../workshop/workshop.types.ts'
+import { XMarker } from './x-marker.js'
+import type { StoryObj } from '../workshop/workshop.types.js'
 
 export const Render: StoryObj = {
   template: XMarker,

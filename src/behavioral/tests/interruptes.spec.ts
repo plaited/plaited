@@ -1,6 +1,6 @@
 import { expect, describe, it } from 'bun:test'
-import { bProgram } from '../b-program.ts'
-import { bThread, bSync } from '../b-thread.ts'
+import { bProgram } from '../b-program.js'
+import { bThread, bSync } from '../b-thread.js'
 
 describe('interrupt', () => {
   const addHot = bThread(

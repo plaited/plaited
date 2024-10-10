@@ -1,1 +1,1 @@
-export { useIndexedDB } from './indexedDB/use-indexed-db.ts'
+export { useIndexedDB } from './indexedDB/use-indexed-db.js'

@@ -1,4 +1,4 @@
-import { trueTypeOf } from './true-type-of.ts'
+import { trueTypeOf } from './true-type-of.js'
 /**
  * Calls all the given functions with the same arguments and returns nothing.
  * If a function is not actually a function, it is skipped.

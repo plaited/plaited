@@ -1,6 +1,6 @@
-import type { StoryObj } from '../../workshop/workshop.types.ts'
-import type { PlaitedElement } from '../define-element.ts'
-import { Fixture } from './query-bindings.tsx'
+import type { StoryObj } from '../../workshop/workshop.types.js'
+import type { PlaitedElement } from '../define-element.js'
+import { Fixture } from './query-bindings.js'
 
 export const beforebegin: StoryObj = {
   template: Fixture,

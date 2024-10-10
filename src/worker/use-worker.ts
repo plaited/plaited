@@ -1,6 +1,6 @@
-import { type BPEvent, isBPEvent } from '../behavioral/b-thread.ts'
-import { type Trigger } from '../behavioral/b-program.ts'
-import { type PlaitedTrigger, isPlaitedTrigger } from '../client/client.types.ts'
+import { type BPEvent, isBPEvent } from '../behavioral/b-thread.js'
+import { type Trigger } from '../behavioral/b-program.js'
+import { type PlaitedTrigger, isPlaitedTrigger } from '../client/client.types.js'
 
 export const useWorker = (trigger: PlaitedTrigger | Trigger, path: string) => {
   const handleMessage = (event: MessageEvent<BPEvent>) => {

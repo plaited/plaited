@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 import sinon from 'sinon'
-import { useSignal } from '../use-signal.ts'
+import { useSignal } from '../use-signal.js'
 
 test('useSignal: effect before store then disconnect', () => {
   const store = useSignal<{ value: number }>({ value: 0 })

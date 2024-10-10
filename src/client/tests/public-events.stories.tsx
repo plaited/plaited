@@ -1,5 +1,5 @@
-import type { StoryObj } from '../../workshop/workshop.types.ts'
-import { Template } from './public-events.tsx'
+import type { StoryObj } from '../../workshop/workshop.types.js'
+import { Template } from './public-events.js'
 
 export const publicEvents: StoryObj = {
   template: Template,

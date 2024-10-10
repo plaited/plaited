@@ -1,5 +1,5 @@
-import type { StoryObj } from '../../workshop/workshop.types.ts'
-import { Top } from './event-dispatch.tsx'
+import type { StoryObj } from '../../workshop/workshop.types.js'
+import { Top } from './event-dispatch.js'
 
 export const eventDispatch: StoryObj = {
   template: Top,

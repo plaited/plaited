@@ -1,10 +1,10 @@
 import path from 'path'
-import { type FunctionTemplate } from '../jsx/jsx.types.ts'
-import { PlaitedFixture, DEFAULT_PLAY_TIMEOUT } from './use-play.tsx'
-import { useSSR } from '../jsx/use-ssr.ts'
-import { USE_PLAY_ROUTE, STORIES_FILTERS_REGEX } from './workshop.constants.ts'
-import type { StoryObj, Meta, TestParams } from './workshop.types.ts'
-import { kebabCase } from '../utils/case.ts'
+import { type FunctionTemplate } from '../jsx/jsx.types.js'
+import { PlaitedFixture, DEFAULT_PLAY_TIMEOUT } from './use-play.js'
+import { useSSR } from '../jsx/use-ssr.js'
+import { USE_PLAY_ROUTE, STORIES_FILTERS_REGEX } from './workshop.constants.js'
+import type { StoryObj, Meta, TestParams } from './workshop.types.js'
+import { kebabCase } from '../utils/case.js'
 
 const Page: FunctionTemplate<{ route: string }> = ({ children, route }) => {
   const id = path.basename(route)
@@ -16,6 +16,16 @@ const Page: FunctionTemplate<{ route: string }> = ({ children, route }) => {
           rel='shortcut icon'
           href='#'
         />
+        <script
+          trusted
+          type='importmap'
+        >
+          {JSON.stringify({
+            imports: {
+              'plaited/jsx-runtime': '/jsx/runtime.js',
+            },
+          })}
+        </script>
       </head>
       <body>{children}</body>
     </html>
@@ -47,7 +57,7 @@ const updateHTMLResponses = ({
   exportName: string
   websocketUrl: `/${string}`
 }): TestParams => {
-  const ssr = useSSR(USE_PLAY_ROUTE, storyFile)
+  const ssr = useSSR(USE_PLAY_ROUTE, storyFile.replace(/\.tsx?$/, '.js'))
   const args = story?.args ?? meta?.args ?? {}
   const styles = story?.parameters?.styles ?? meta?.parameters?.styles ?? {}
   const headers = story?.parameters?.headers?.(process.env) ?? meta?.parameters?.headers?.(process.env) ?? new Headers()

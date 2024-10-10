@@ -1,7 +1,7 @@
-import type { FunctionTemplate, CustomElementTag, Attrs } from '../jsx/jsx.types.ts'
-import { type DefineElementArgs, defineElement } from './define-element.ts'
-import { createTemplate } from '../jsx/create-template.ts'
-import { PLAITED_TEMPLATE_IDENTIFIER } from './client.constants.ts'
+import type { FunctionTemplate, CustomElementTag, Attrs } from '../jsx/jsx.types.js'
+import { type DefineElementArgs, defineElement } from './define-element.js'
+import { createTemplate } from '../jsx/create-template.js'
+import { PLAITED_TEMPLATE_IDENTIFIER } from './client.constants.js'
 
 interface DefineTemplateArgs extends Omit<DefineElementArgs, 'delegatesFocus' | 'mode' | 'slotAssignment'> {
   delegatesFocus?: boolean

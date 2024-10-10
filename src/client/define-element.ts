@@ -1,5 +1,5 @@
-import type { TemplateObject, CustomElementTag } from '../jsx/jsx.types.ts'
-import { type BSync, type BThread, bThread, bSync } from '../behavioral/b-thread.ts'
+import type { TemplateObject, CustomElementTag } from '../jsx/jsx.types.js'
+import { type BSync, type BThread, bThread, bSync } from '../behavioral/b-thread.js'
 import {
   type Actions,
   type BThreads,
@@ -8,14 +8,14 @@ import {
   type UseFeedback,
   type UseSnapshot,
   bProgram,
-} from '../behavioral/b-program.ts'
-import { P_TRIGGER } from '../jsx/jsx.constants.ts'
-import { type QuerySelector, useQuery, handleTemplateObject } from './use-query.ts'
-import { shadowObserver, addListeners } from './shadow-observer.ts'
-import { usePublicEvents } from './use-public-events.ts'
-import { canUseDOM } from '../utils/can-use-dom.ts'
-import { ELEMENT_CALLBACKS } from './client.constants.ts'
-import type { PlaitedTrigger } from './client.types.ts'
+} from '../behavioral/b-program.js'
+import { P_TRIGGER } from '../jsx/jsx.constants.js'
+import { type QuerySelector, useQuery, handleTemplateObject } from './use-query.js'
+import { shadowObserver, addListeners } from './shadow-observer.js'
+import { usePublicEvents } from './use-public-events.js'
+import { canUseDOM } from '../utils/can-use-dom.js'
+import { ELEMENT_CALLBACKS } from './client.constants.js'
+import type { PlaitedTrigger } from './client.types.js'
 
 export interface PlaitedElement extends HTMLElement {
   // Custom Methods and properties

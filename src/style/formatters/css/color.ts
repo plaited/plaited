@@ -1,9 +1,9 @@
-import type { ColorToken, DesignTokenGroup, ColorValue } from '../../token.types.ts'
-import type { Formatter } from '../formatters.types.ts'
-import { hasAlias } from '../has-alias.ts'
-import { kebabCase } from '../../../utils/case.ts'
-import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.ts'
-import { getRule, getColor, resolveCSSVar } from '../css-utils.ts'
+import type { ColorToken, DesignTokenGroup, ColorValue } from '../../token.types.js'
+import type { Formatter } from '../formatters.types.js'
+import { hasAlias } from '../has-alias.js'
+import { kebabCase } from '../../../utils/case.js'
+import { isContextualToken, isStaticToken, isValidContext } from '../context-guard.js'
+import { getRule, getColor, resolveCSSVar } from '../css-utils.js'
 
 const colorCallback = (allTokens: DesignTokenGroup) => ($value: ColorValue) =>
   hasAlias($value) ? resolveCSSVar($value, allTokens) : getColor($value)

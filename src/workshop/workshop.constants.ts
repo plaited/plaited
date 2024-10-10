@@ -1,4 +1,4 @@
-export const USE_PLAY_ROUTE = '/use-play.tsx'
+export const USE_PLAY_ROUTE = '/workshop/use-play.js'
 export const USE_PLAY_FILE_PATH = Bun.resolveSync('./use-play.tsx', import.meta.dir)
 
 export const STORY_GLOB_PATTERN = `**/*.stories.{tsx,ts}`

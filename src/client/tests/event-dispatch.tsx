@@ -1,5 +1,5 @@
-import { defineTemplate } from '../define-template.ts'
-import { useDispatch } from '../use-dispatch.ts'
+import { defineTemplate } from '../define-template.js'
+import { useDispatch } from '../use-dispatch.js'
 
 const Bottom = defineTemplate({
   tag: 'bottom-component',

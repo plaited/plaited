@@ -6,9 +6,9 @@ import type {
   CreateNestedCSS,
   StyleObjects,
   StylesObject,
-} from './css.types.ts'
-import { kebabCase } from '../utils/case.ts'
-import { hashString } from '../utils/hash-string.ts'
+} from './css.types.js'
+import { kebabCase } from '../utils/case.js'
+import { hashString } from '../utils/hash-string.js'
 
 const createClassHash = (...args: (string | number)[]) =>
   hashString(args.join(' '))?.toString(36).replace(/^-/g, '_') ?? ''

@@ -1,9 +1,9 @@
 /* eslint-disable no-constant-binary-expression */
 import { test, expect } from 'bun:test'
-import { h, Fragment } from '../create-template.ts'
-import { css } from '../../css/css.ts'
-import type { FunctionTemplate, TemplateObject } from '../jsx.types.ts'
-import { useSSR } from '../use-ssr.ts'
+import { h, Fragment } from '../create-template.js'
+import { css } from '../../css/css.js'
+import type { FunctionTemplate, TemplateObject } from '../jsx.types.js'
+import { useSSR } from '../use-ssr.js'
 import beautify from 'beautify'
 
 const render = (template: TemplateObject) => {

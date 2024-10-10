@@ -1,13 +1,12 @@
 import { chromium, type BrowserContext } from 'playwright'
-import { bProgram } from '../behavioral/b-program.ts'
-import { getStories, getFile } from '../workshop/get.ts'
-import { isTypeOf } from '../utils/is-type-of.ts'
-import { isBPEvent } from '../behavioral/b-thread.ts'
-import { type FailedTestEvent, type PassedTestEvent, PLAITED_FIXTURE } from '../workshop/use-play.tsx'
-import { TEST_PASSED, TEST_EXCEPTION, UNKNOWN_ERROR } from '../assert/assert.constants.ts'
-import { ACTION_TRIGGER } from '../client/client.constants.ts'
+import { bProgram } from '../behavioral/b-program.js'
+import { getStories, getFile } from '../workshop/get.js'
+import { isTypeOf } from '../utils/is-type-of.js'
+import { isBPEvent } from '../behavioral/b-thread.js'
+import { type FailedTestEvent, type PassedTestEvent, PLAITED_FIXTURE } from '../workshop/use-play.js'
+import { TEST_PASSED, TEST_EXCEPTION, UNKNOWN_ERROR } from '../assert/assert.constants.js'
+import { ACTION_TRIGGER } from '../client/client.constants.js'
 import type { ServerWebSocket, Server } from 'bun'
-import { USE_PLAY_ROUTE, USE_PLAY_FILE_PATH } from '../workshop/workshop.constants.ts'
 
 const cwd = `${process.cwd()}/src`
 const { stories, getResponses } = await getStories(cwd, '/_test-runner')
@@ -26,13 +25,10 @@ const config = {
   port: 3000,
   async fetch(req: Request, server: Server) {
     const { pathname } = new URL(req.url)
-    if(/\.tsx?$/.test(pathname)) {
-      if(pathname === USE_PLAY_ROUTE) {
-        return await getFile(USE_PLAY_FILE_PATH)
-      } else {
-        const path = Bun.resolveSync(`.${pathname}`, cwd)
-        return await getFile(path)
-      }
+    // console.log(pathname)
+    if (/\.js$/.test(pathname)) {
+      const path = Bun.resolveSync(`.${pathname}`, cwd)
+      return await getFile(path)
     }
     if (pathname === '/_test-runner') {
       const success = server.upgrade(req)

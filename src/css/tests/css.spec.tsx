@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { css } from '../css.ts'
+import { css } from '../css.js'
 
 test('css.create: simple rules', () => {
   const s = css.create({

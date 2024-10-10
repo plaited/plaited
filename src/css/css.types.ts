@@ -1,4 +1,4 @@
-import type * as CSS from './types/css.ts'
+import type * as CSS from './types/css.js'
 
 export type CSSProperties = CSS.Properties<string | number> & {
   [key: string]: string | number

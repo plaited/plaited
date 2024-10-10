@@ -1,4 +1,4 @@
-import type { AliasValue } from '../token.types.ts'
+import type { AliasValue } from '../token.types.js'
 
 export const hasAlias = ($value: unknown): $value is AliasValue => {
   if (typeof $value !== 'string') return false

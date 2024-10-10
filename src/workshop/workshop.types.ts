@@ -1,6 +1,6 @@
-import type { Attrs, FunctionTemplate } from '../jsx/jsx.types.ts'
-import type { Play } from './use-play.tsx'
-import type { StylesObject } from '../css/css.types.ts'
+import type { Attrs, FunctionTemplate } from '../jsx/jsx.types.js'
+import type { Play } from './use-play.js'
+import type { StylesObject } from '../css/css.types.js'
 
 export type Scale = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 'rel'
 

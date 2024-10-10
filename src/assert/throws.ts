@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { noop } from '../utils/noop.ts'
+import { noop } from '../utils/noop.js'
 
 export type Throws = <U extends unknown[], V>(
   fn: (...args: U) => V,

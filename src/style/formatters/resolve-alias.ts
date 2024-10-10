@@ -2,7 +2,7 @@
  * Utility helpers for resolving aliased values in tokens object
  */
 
-import type { DesignToken, DesignTokenGroup } from '../token.types.ts'
+import type { DesignToken, DesignTokenGroup } from '../token.types.js'
 
 const getResolvedValue = (path: string[], tokens: DesignTokenGroup | undefined): DesignToken | undefined => {
   let toRet = { ...tokens }

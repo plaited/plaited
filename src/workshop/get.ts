@@ -1,6 +1,6 @@
-import { extname } from 'node:path'
-import { globStories } from './glob.ts'
-import { mapStoryResponses } from './map.tsx'
+import { transform } from '@swc/core'
+import { globStories } from './glob.js'
+import { mapStoryResponses } from './map.js'
 
 export const getStories = async (cwd: string, websocketUrl: `/${string}`) => {
   const storyEntries = await globStories(cwd)
@@ -26,29 +26,29 @@ const zip = (content: string) => {
   })
 }
 
-const transpiler = new Bun.Transpiler({
-  loader: "tsx",
-  tsconfig: {
-    "compilerOptions": {
-      "jsx": "react-jsx",
-      "jsxImportSource": "plaited",
-      "paths": {
-        "plaited/jsx-runtime": [Bun.resolveSync("../jsx/runtime.ts", import.meta.dir)],
-        "plaited/jsx-dev-runtime": [Bun.resolveSync("../jsx/dev-runtime.ts", import.meta.dir)]
-      }
-    },
-  }
-});
-
-export const getFile = async (path:string ) => {
-  const file = Bun.file(path) 
+export const getFile = async (path: string) => {
+  const file = Bun.file(path)
   try {
-    const code = await file.text()
-    const loader = extname(path).slice(1) === 'tsx' ? 'tsx' : 'ts'
-    const result = await transpiler.transform(code, loader)
-    return zip(result)
+    const text = await file.text()
+    const { code } = await transform(text, {
+      filename: path,
+      // sourceMaps: 'inline',
+      jsc: {
+        target: 'es2022',
+        parser: {
+          syntax: 'typescript',
+          tsx: true,
+        },
+        transform: {
+          react: {
+            runtime: 'automatic',
+            importSource: 'plaited',
+          },
+        },
+      },
+    })
+    return zip(code)
   } catch (error) {
     console.error(error)
   }
 }
-  

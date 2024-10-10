@@ -1,4 +1,4 @@
-import { getHexOpacityMap } from './get-hex-opacity-map.ts'
+import { getHexOpacityMap } from './get-hex-opacity-map.js'
 
 /** parse a hex code to an rgb(a) value */
 export const hexToRgb = (hex: string) => {

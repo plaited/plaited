@@ -1,6 +1,6 @@
 import sinon from 'sinon'
 import { test, expect, beforeEach, afterEach } from 'bun:test'
-import { useDebounce } from '../use-debounce.ts'
+import { useDebounce } from '../use-debounce.js'
 
 let clock: sinon.SinonFakeTimers
 
