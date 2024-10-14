@@ -1282,7 +1282,7 @@ export type ElementAttributeList = {
   tspan: DetailedSVGAttributes
   use: DetailedSVGUseAttributes
   view: DetailedSVGAttributes
-  [key: CustomElementTag]: DetailedHTMLAttributes
+  [key: string]: DetailedHTMLAttributes
 }
 
 export type Attrs<T extends DetailedHTMLAttributes = DetailedHTMLAttributes> = DetailedHTMLAttributes & T

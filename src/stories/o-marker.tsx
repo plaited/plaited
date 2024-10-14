@@ -1,5 +1,4 @@
-import type { FunctionTemplate } from '../jsx/jsx.types.js'
-import { css } from '../css/css.js'
+import { css, type FT } from 'plaited'
 
 const styles = css.create({
   o: {
@@ -9,7 +8,7 @@ const styles = css.create({
   },
 })
 
-export const OMarker: FunctionTemplate = () => (
+export const OMarker: FT = () => (
   <svg
     {...styles.o}
     viewBox='0 0 20 20'

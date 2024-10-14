@@ -1,4 +1,4 @@
-import type { StoryObj } from '../../workshop/workshop.types.js'
+import type { StoryObj } from '../../assert/assert.types.js'
 import { ShadowIsland } from './shadow-observer.js'
 
 export const shadowObserver: StoryObj = {

@@ -1,8 +1,7 @@
-import type { StoryObj } from '../../workshop/workshop.types.js'
+import type { StoryObj } from '../../assert/assert.types.js'
 import type { PlaitedElement } from '../define-element.js'
 import { css } from '../../css/css.js'
 import { defineTemplate } from '../define-template.js'
-import { createTemplate } from '../../jsx/create-template.js'
 import { ModeOpen, DelegateFalse, ClosedMode } from './template.js'
 export const defaultModeAndFocus: StoryObj = {
   template: () => <ModeOpen p-target='el' />,
@@ -73,20 +72,18 @@ export const hydration: StoryObj = {
         before hydration
       </div>
     )
-    const tag = 'with-declarative-shadow-dom'
-    const template = createTemplate(tag, {
-      'p-target': 'host',
-      children: (
+    const Tag = 'with-declarative-shadow-dom'
+    const template = (
+      <Tag p-target='host'>
         <template
           shadowrootmode='open'
           shadowrootdelegatesfocus
         >
           <Content />
         </template>
-      ),
-    }).html.join('')
-
-    hostElement.setHTMLUnsafe(template)
+      </Tag>
+    )
+    hostElement.setHTMLUnsafe(template.html.join(''))
 
     const host = await findByAttribute<PlaitedElement>('p-target', 'host')
     let inner = await findByAttribute('p-target', 'inner', host)
@@ -114,7 +111,7 @@ export const hydration: StoryObj = {
       expected: 'rgb(255, 0, 0)',
     })
     defineTemplate({
-      tag,
+      tag: Tag,
       publicEvents: ['render'],
       shadowDom: <Content />,
       connectedCallback({ $ }) {

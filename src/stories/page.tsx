@@ -1,6 +1,4 @@
-import type { PlaitedElement } from '../client/define-element.js'
-import { defineTemplate } from '../client/define-template.js'
-import { css } from '../css/css.js'
+import { css, defineTemplate, type PlaitedElement } from 'plaited'
 import { Header } from './header.js'
 
 const styles = css.create({

@@ -1,6 +1,4 @@
-import { defineTemplate } from '../client/define-template.js'
-import { useDispatch } from '../client/use-dispatch.js'
-import { css } from '../css/css.js'
+import { css, defineTemplate, useDispatch } from 'plaited'
 import { Button } from './button.js'
 
 const styles = css.create({

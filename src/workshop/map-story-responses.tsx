@@ -1,34 +1,9 @@
 import path from 'path'
-import { type FunctionTemplate } from '../jsx/jsx.types.js'
-import { PlaitedFixture, DEFAULT_PLAY_TIMEOUT } from './use-play.js'
+import { PlaitedFixture } from '../assert/plaited-fixture.js'
 import { useSSR } from '../jsx/use-ssr.js'
-import { USE_PLAY_ROUTE, STORIES_FILTERS_REGEX } from './workshop.constants.js'
-import type { StoryObj, Meta, TestParams } from './workshop.types.js'
+import { PLAITED_ASSERT_ROUTE, STORIES_FILTERS_REGEX, DEFAULT_PLAY_TIMEOUT } from '../assert/assert.constants.js'
+import type { StoryObj, Meta, TestParams } from '../assert/assert.types.js'
 import { kebabCase } from '../utils/case.js'
-
-const Page: FunctionTemplate<{ route: string; imports: Record<string, string> }> = ({ children, route, imports }) => {
-  const id = path.basename(route)
-  return (
-    <html>
-      <head>
-        <title>Story:{id}</title>
-        <link
-          rel='shortcut icon'
-          href='#'
-        />
-        <script
-          trusted
-          type='importmap'
-        >
-          {JSON.stringify({
-            imports,
-          })}
-        </script>
-      </head>
-      <body>{children}</body>
-    </html>
-  )
-}
 
 const createStoryRoute = ({ storyFile, exportName }: { storyFile: string; exportName: string }) => {
   const dirname = path.dirname(storyFile)
@@ -42,7 +17,7 @@ const updateHTMLResponses = ({
   story,
   meta,
   route,
-  responseMap,
+  responses,
   storyFile,
   exportName,
   runnerPath,
@@ -51,34 +26,48 @@ const updateHTMLResponses = ({
   story: StoryObj
   meta: Meta
   route: string
-  responseMap: Map<string, Response>
+  responses: Map<string, Response>
   storyFile: string
   exportName: string
   runnerPath: `/${string}`
   imports: Record<string, string>
 }): TestParams => {
   const entryPath = storyFile.replace(/\.tsx?$/, '.js')
-  const ssr = useSSR(USE_PLAY_ROUTE, entryPath)
+  const ssr = useSSR(PLAITED_ASSERT_ROUTE, entryPath)
   const args = story?.args ?? meta?.args ?? {}
   const styles = story?.parameters?.styles ?? meta?.parameters?.styles ?? {}
   const headers = story?.parameters?.headers?.(process.env) ?? meta?.parameters?.headers?.(process.env) ?? new Headers()
   const tpl = story?.template ?? meta?.template
   const page = ssr(
-    <Page
-      route={route}
-      imports={imports}
-    >
-      <PlaitedFixture
-        p-name={exportName}
-        p-route={route}
-        p-file={entryPath}
-        p-socket={runnerPath}
-        children={tpl?.(args)}
-        {...styles}
-      />
-    </Page>,
+    <html>
+      <head>
+        <title>Story:{path.basename(route)}</title>
+        <link
+          rel='shortcut icon'
+          href='#'
+        />
+        <script
+          trusted
+          type='importmap'
+        >
+          {JSON.stringify({
+            imports,
+          })}
+        </script>
+      </head>
+      <body>
+        <PlaitedFixture
+          p-name={exportName}
+          p-route={route}
+          p-file={entryPath}
+          p-socket={runnerPath}
+          children={tpl?.(args)}
+          {...styles}
+        />
+      </body>
+    </html>,
   )
-  responseMap.set(route, new Response(`<!DOCTYPE html>\n${page}`, { headers }))
+  responses.set(route, new Response(`<!DOCTYPE html>\n${page}`, { headers }))
   return {
     a11y: story?.parameters?.a11y ?? meta?.parameters?.a11y,
     description: story?.parameters?.description ?? meta?.parameters?.description,
@@ -89,13 +78,13 @@ const updateHTMLResponses = ({
 
 export const mapStoryResponses = async ({
   storyEntries,
-  responseMap,
+  responses,
   cwd,
   runnerPath,
   imports,
 }: {
   storyEntries: string[]
-  responseMap: Map<string, Response>
+  responses: Map<string, Response>
   cwd: string
   runnerPath: `/${string}`
   imports: Record<string, string>
@@ -115,7 +104,7 @@ export const mapStoryResponses = async ({
           story,
           meta,
           route,
-          responseMap,
+          responses,
           storyFile,
           exportName,
           runnerPath,
