@@ -1,13 +1,9 @@
-import { css } from '../css/css.js'
-import { defineTemplate } from '../client/define-template.js'
-import { wait } from '../utils/wait.js'
 import { assert } from '../assert/assert.js'
 import { findByAttribute } from '../assert/find-by-attribute.js'
 import { findByText } from '../assert/find-by-text.js'
 import { fireEvent } from '../assert/fire-event.js'
 import { match } from '../assert/match.js'
 import { throws } from '../assert/throws.js'
-import { TimeoutError, AssertionError, MissingTestParamsError } from '../assert/errors.js'
 import {
   TEST_PASSED,
   TEST_EXCEPTION,
@@ -16,30 +12,16 @@ import {
   MISSING_TEST_PARAMS_ERROR,
   TIMEOUT_ERROR,
 } from '../assert/assert.constants.js'
-import type { StoryObj } from './workshop.types.js'
+import { TimeoutError, AssertionError, MissingTestParamsError } from '../assert/errors.js'
+import { css } from '../css/css.js'
+import { defineTemplate } from '../client/define-template.js'
 import { useServer } from '../client/use-server.js'
+import { wait } from '../utils/wait.js'
+import type { StoryObj, FailedTestEvent, PassedTestEvent } from './workshop.types.js'
 
 export const DEFAULT_PLAY_TIMEOUT = 5_000
 export const PLAY_EVENT = 'play'
 export const PLAITED_FIXTURE = 'plaited-test-fixture'
-
-export type FailedTestEvent = {
-  type: typeof TEST_EXCEPTION | typeof UNKNOWN_ERROR
-  detail: {
-    route: string
-    file: string
-    story: string
-    url: string
-    type: string
-  }
-}
-
-export type PassedTestEvent = {
-  type: typeof TEST_PASSED
-  detail: {
-    route: string
-  }
-}
 
 export type Play = (args: {
   assert: typeof assert

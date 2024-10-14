@@ -1,3 +1,5 @@
+import { ACTION_TRIGGER } from '../client/client.constants.js'
+import { PLAITED_FIXTURE, PLAY_EVENT } from './use-play.js'
 export const USE_PLAY_ROUTE = '/workshop/use-play.js'
 export const SION_ROUTE = '/sinon.js'
 export const USE_PLAY_FILE_PATH = Bun.resolveSync('./use-play.tsx', import.meta.dir)
@@ -12,3 +14,9 @@ export const TEMPLATE_DIRECTORY = '_templates'
 
 export const WORKER_FILTER_REGEX = /^((?!\/_).)*\/worker\.ts$/
 export const WORKER_GLOB_PATTERN = `**/worker.ts`
+
+export const RUN_PLAY_ACTION = {
+  address: PLAITED_FIXTURE,
+  action: ACTION_TRIGGER,
+  type: PLAY_EVENT,
+}
