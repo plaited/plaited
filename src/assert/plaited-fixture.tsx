@@ -35,7 +35,7 @@ export type Play = (args: {
 
 type UsePlay = (arg: {
   exportName: string
-  filePath: string
+  storyFile: string
   hostElement: Element
   play: Play
   route: string
@@ -48,7 +48,7 @@ const timeout = async (time: number = DEFAULT_PLAY_TIMEOUT) => {
   return true
 }
 
-const usePlay: UsePlay = async ({ exportName, filePath, hostElement, route, play, time, send }) => {
+const usePlay: UsePlay = async ({ exportName, storyFile, hostElement, route, play, time, send }) => {
   try {
     const timedOut = await Promise.race([
       play({
@@ -72,7 +72,7 @@ const usePlay: UsePlay = async ({ exportName, filePath, hostElement, route, play
         type: TEST_EXCEPTION,
         detail: {
           story: exportName,
-          file: filePath,
+          file: storyFile,
           route,
           url: window?.location.href,
           type:
@@ -88,7 +88,7 @@ const usePlay: UsePlay = async ({ exportName, filePath, hostElement, route, play
         type: UNKNOWN_ERROR,
         detail: {
           story: exportName,
-          file: filePath,
+          file: storyFile,
           route,
           url: window?.location.href,
           type: UNKNOWN_ERROR,
@@ -101,6 +101,7 @@ const usePlay: UsePlay = async ({ exportName, filePath, hostElement, route, play
 
 export const PlaitedFixture = defineTemplate<{
   'p-name': string
+  'p-entry': string
   'p-file': string
   'p-route': string
   'p-socket': `/${string}`
@@ -118,11 +119,12 @@ export const PlaitedFixture = defineTemplate<{
     const send = useServer(this.getAttribute('p-socket') as `/${string}`)
     send.connect(this)
     const route = this.getAttribute('p-route') as string
-    const filePath = this.getAttribute('p-file') as string
+    const storyFile = this.getAttribute('p-file') as string
+    const entryPath = this.getAttribute('p-entry') as string
     const exportName = this.getAttribute('p-name') as string
     return {
       async [PLAY_EVENT]() {
-        const { [exportName]: story } = (await import(filePath)) as {
+        const { [exportName]: story } = (await import(entryPath)) as {
           [key: string]: StoryObj
         }
         try {
@@ -132,7 +134,8 @@ export const PlaitedFixture = defineTemplate<{
               time: story?.parameters?.timeout,
               send,
               route,
-              filePath,
+              storyFile,
+              entryPath,
               exportName,
               hostElement: root.host,
             })
@@ -146,7 +149,7 @@ export const PlaitedFixture = defineTemplate<{
               type: UNKNOWN_ERROR,
               detail: {
                 story: exportName,
-                file: filePath,
+                file: storyFile,
                 route,
                 url: window?.location.href,
                 type: UNKNOWN_ERROR,

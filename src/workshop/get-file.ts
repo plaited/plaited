@@ -7,7 +7,7 @@ export const getFile = async (path: string) => {
     const text = await file.text()
     const { code } = await transform(text, {
       filename: path,
-      // sourceMaps: 'inline',
+      sourceMaps: 'inline',
       jsc: {
         target: 'es2022',
         parser: {
@@ -25,5 +25,6 @@ export const getFile = async (path: string) => {
     return zip(code)
   } catch (error) {
     console.error(error)
+    return new Response('File not found', { status: 404 })
   }
 }

@@ -4,18 +4,19 @@ import type { FailedTestEvent, PassedTestEvent } from '../assert/assert.types.js
 import { RUN_PLAY_ACTION } from '../assert/assert.constants.js'
 import { isAPassedTestEvent, isAnExceptionEvent } from '../assert/type-guards.js'
 import { isTypeOf } from '../utils/is-type-of.js'
-import { getFile } from './get-file.js'
 
 export const getServerConfig = ({
   responses,
   cwd,
   trigger,
   runnerPath,
+  getFile,
 }: {
   responses: Map<string, Response>
   cwd: string
   trigger: Trigger
   runnerPath?: string
+  getFile: (path: string) => Promise<Response>
 }) => ({
   static: Object.fromEntries(responses),
   port: 3000,

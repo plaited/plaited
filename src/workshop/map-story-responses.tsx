@@ -59,7 +59,8 @@ const updateHTMLResponses = ({
         <PlaitedFixture
           p-name={exportName}
           p-route={route}
-          p-file={entryPath}
+          p-entry={entryPath}
+          p-file={storyFile}
           p-socket={runnerPath}
           children={tpl?.(args)}
           {...styles}

@@ -6,6 +6,7 @@ import { getServerConfig } from './get-server-config.js'
 import { getEntryPoints } from './get-entry-points.js'
 import { getStories } from './get-stories.js'
 import { zip } from './zip.js'
+import { getFile } from './get-file.js'
 
 const cwd = `${process.cwd()}/src`
 const runnerPath = '/_test-runner'
@@ -49,6 +50,7 @@ const { useFeedback, trigger } = bProgram()
 
 const server = Bun.serve(
   getServerConfig({
+    getFile,
     trigger,
     responses,
     runnerPath,
