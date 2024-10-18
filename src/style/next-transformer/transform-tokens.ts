@@ -21,11 +21,14 @@ import type {
   AngleValue,
   SizeValue,
   AmountValue,
+  MediaQueries,
+  ColorSchemes,
 } from '../token.types.js'
 import { defaultPrefix } from './transformer.constants.js'
 import {
   deduplicateCSS,
   getAliasExportName,
+  getAliasedCSSVar,
   getCssVarName,
   getColor,
   isDesignToken,
@@ -41,25 +44,33 @@ export class TransformTokens {
   #contexts: Contexts
   constructor({
     tokens,
-    contexts,
+    contexts = {},
     tokenPrefix = defaultPrefix,
   }: {
     tokens: DesignTokenGroup
-    contexts: Contexts
+    contexts?: { mediaQueries?: MediaQueries; colorSchemes?: ColorSchemes }
     tokenPrefix?: string
   }) {
     this.#tokenPrefix = tokenPrefix
-    this.#contexts = contexts ?? {}
+    this.#contexts = { mediaQueries: {}, colorSchemes: {}, ...contexts }
     this.flattenTokens(tokens)
   }
+  checkAlias(alias: string) {
+    const hasAlias = this.#db.has(alias)
+    if (!hasAlias) {
+      console.error(`Invalid token alias: {${alias}}`)
+    }
+    return hasAlias
+  }
   get ts() {
-    return [...this.#db]
+    const str = [...this.#db]
       .flatMap(([key, token]) => {
         const tokenPath = key.split('.')
         if (token.$type === 'composite') return this.getCompositeTokenReference(tokenPath, token) ?? []
         return this.getTokenReference(tokenPath, token) ?? []
       })
       .join('\n')
+    return str.length ? str + '\n' : ''
   }
   get css() {
     const vars = [...this.#db]
@@ -75,7 +86,8 @@ export class TransformTokens {
         )
       })
       .join('\n')
-    return deduplicateCSS(vars)
+    const str = deduplicateCSS(vars)
+    return str.length ? str + '\n' : ''
   }
   flattenTokens(tokens: DesignTokenGroup, tokenPath: string[] = []) {
     if (trueTypeOf(tokens) !== 'object') return
@@ -100,7 +112,7 @@ export class TransformTokens {
             .flatMap((val) => {
               if (valueIsAlias(val)) {
                 const alias = matchAlias(val)
-                return this.#db.has(alias) ? getCssVarName(alias.split('.'), this.#tokenPrefix) : []
+                return this.checkAlias(alias) ? getCssVarName(alias.split('.'), this.#tokenPrefix) : []
               }
               return val
             })
@@ -126,7 +138,7 @@ export class TransformTokens {
       const stops = colorStops.flatMap(({ color, position }) => {
         if (valueIsAlias(color)) {
           const alias = matchAlias(color)
-          return this.#db.has(alias) ?
+          return this.checkAlias(alias) ?
               [getCssVarName(alias.split('.'), this.#tokenPrefix), position].filter(Boolean).join(' ')
             : []
         }
@@ -158,8 +170,8 @@ export class TransformTokens {
   }
   formatAliasValue({ $value, prop, ctx }: { $value: string; prop: string; ctx?: CTX }) {
     const alias = matchAlias($value)
-    return this.#db.has(alias) ?
-        this.getCSSRules({ prop, value: getCssVarName(alias.split('.'), this.#tokenPrefix), ctx })
+    return this.checkAlias(alias) ?
+        this.getCSSRules({ prop, value: getAliasedCSSVar(alias.split('.'), this.#tokenPrefix), ctx })
       : ''
   }
   formatContextualToken<V extends DesignValue, T = unknown>(
@@ -224,30 +236,28 @@ export class TransformTokens {
   getTokenReference(tokenPath: string[], token: Exclude<DesignToken, CompositeToken>) {
     const { $value } = token
     const isAlias = valueIsAlias($value)
-    if (isAlias && !this.#db.has(matchAlias($value) ?? '')) {
+    if (isAlias && !this.checkAlias(matchAlias($value) ?? '')) {
       console.error(`Alias ${matchAlias($value)} not found`)
       return undefined
     }
-    return `${this.getValueComment(token)}export const ${camelCase(tokenPath.join(' '))} = ${getCssVarName(tokenPath, this.#tokenPrefix)}`
+    return `export const ${camelCase(tokenPath.join(' '))} = ${getCssVarName(tokenPath, this.#tokenPrefix)}`
   }
   getCompositeTokenReference(tokenPath: string[], token: CompositeToken) {
     const { $value } = token
     const isAlias = valueIsAlias($value)
     if (isAlias) {
       const alias = matchAlias($value)
-      const validAlias = this.#db.has(alias)
+      const validAlias = this.checkAlias(alias)
       !validAlias && console.error(`Alias ${alias} not found`)
-      return validAlias ?
-          `${this.getValueComment(token)}export const ${camelCase(tokenPath.join(' '))} = ${getAliasExportName(alias)}`
-        : undefined
+      return validAlias ? `export const ${camelCase(tokenPath.join(' '))} = ${getAliasExportName(alias)}` : undefined
     }
     const toRet: string[] = []
     for (const key in $value) {
       const val = $value[key]
       const alias = matchAlias(val)
-      if (this.#db.has(alias)) {
+      if (this.checkAlias(alias)) {
         const name = getAliasExportName(alias)
-        toRet.push(`${this.getValueComment(token)}  ${key}: ${name},`)
+        toRet.push(`  ${key}: ${name},`)
       }
     }
     return toRet.length ? [`export const ${camelCase(tokenPath.join(' '))} = {`, ...toRet, '}'].join('\n') : undefined

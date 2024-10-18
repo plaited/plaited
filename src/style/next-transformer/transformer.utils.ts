@@ -38,6 +38,9 @@ export const getAliasExportName = (alias: string) => {
   return camelCase(path.join(' '))
 }
 
+export const getAliasedCSSVar = (tokenPath: string[], prefix: string) =>
+  `var(--${prefix}-${kebabCase(tokenPath.join(' '))})` as const
+
 export const getCssVarName = (tokenPath: string[], prefix: string) =>
   `"var(--${prefix}-${kebabCase(tokenPath.join(' '))})"` as const
 
@@ -47,7 +50,7 @@ export const getColor = (color: ColorValue) =>
   )
 
 export const isDesignToken = (obj: DesignToken | DesignTokenGroup): obj is DesignToken =>
-  trueTypeOf(obj) !== 'object' && Object.hasOwn(obj, '$value')
+  trueTypeOf(obj) === 'object' && Object.hasOwn(obj, '$value')
 
 export const isStaticToken = <T extends DesignToken>(
   token: BaseToken<T['$value'], T['$type']>,
