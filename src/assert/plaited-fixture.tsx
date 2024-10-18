@@ -135,7 +135,6 @@ export const PlaitedFixture = defineTemplate<{
               send,
               route,
               storyFile,
-              entryPath,
               exportName,
               hostElement: root.host,
             })

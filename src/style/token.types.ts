@@ -163,3 +163,8 @@ export type TransformerParams = {
   /** named media queries */
   contexts?: Partial<Contexts>
 }
+
+export type CTX = {
+  type: ContextTypes
+  id: string
+}
