@@ -40,6 +40,11 @@ export const getAliasExportName = (alias: AliasValue) => {
 
 export const getTokenPath = (value: string) => matchAlias(value).split('.')
 
+export const getProp = (value: string) => {
+  const path = matchAlias(value).split('.')
+  return kebabCase(path.join(' '))
+}
+
 export const convertTokenPathToValue = (tokenPath: string[], prefix: string) =>
   `var(--${prefix}-${kebabCase(tokenPath.join(' '))})` as const
 

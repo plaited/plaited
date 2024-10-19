@@ -1,7 +1,9 @@
-import { camelCase, kebabCase } from '../../utils/case.js'
+import { camelCase } from '../../utils/case.js'
 import { trueTypeOf } from '../../utils/true-type-of.js'
 import type {
   DesignToken,
+  DesignTokenEntry,
+  FilterCallback,
   DesignTokenGroup,
   Contexts,
   CompositeToken,
@@ -32,6 +34,7 @@ import {
   deduplicateCSS,
   getAliasExportName,
   getColor,
+  getProp,
   getTokenPath,
   isDesignToken,
   isStaticToken,
@@ -40,7 +43,7 @@ import {
 } from './transformer.utils.js'
 
 export class TransformTokens {
-  db = new Map<string, DesignToken>()
+  db = new Map<AliasValue, DesignTokenEntry>()
   tokenPrefix: string
   contexts: Contexts
   constructor({
@@ -56,6 +59,7 @@ export class TransformTokens {
     this.contexts = { mediaQueries: {}, colorSchemes: {}, ...contexts }
     this.flattenTokens(tokens)
   }
+  // VALIDATE ALIAS EXIST IN DB
   checkAlias(alias: AliasValue) {
     const hasAlias = this.db.has(alias)
     if (!hasAlias) {
@@ -63,6 +67,7 @@ export class TransformTokens {
     }
     return hasAlias
   }
+  // GET TS DESIGN TOKEN REFERENCES
   get ts() {
     const str = [...this.db]
       .flatMap(([key, token]) => {
@@ -73,16 +78,16 @@ export class TransformTokens {
       .join('\n')
     return str.length ? str + '\n' : ''
   }
+  // GET CSS VARIABLE FORMATTED DESIGN TOKENS
   get css() {
     const vars = [...this.db]
       .flatMap(([key, token]) => {
-        const tokenPath = getTokenPath(key)
         const { $type } = token
         return (
-          $type === 'color' ? (this.formatColorToken(tokenPath, token) ?? [])
-          : $type === 'gradient' ? (this.formatGradientToken(tokenPath, token) ?? [])
+          $type === 'color' ? (this.formatColorToken(key, token) ?? [])
+          : $type === 'gradient' ? (this.formatGradientToken(key, token) ?? [])
           : $type === 'angle' || $type === 'amount' || $type === undefined || $type === 'size' ?
-            (this.formatToken(tokenPath, token) ?? [])
+            (this.formatToken(key, token) ?? [])
           : []
         )
       })
@@ -90,18 +95,20 @@ export class TransformTokens {
     const str = deduplicateCSS(vars)
     return str.length ? str + '\n' : ''
   }
+  // FLATTEN DESIGN TOKEN GROUP
   flattenTokens(tokens: DesignTokenGroup, tokenPath: string[] = []) {
     if (trueTypeOf(tokens) !== 'object') return
     if (isDesignToken(tokens)) {
-      this.db.set(`{${camelCase(tokenPath.join('.'))}}`, tokens)
+      this.db.set(`{${camelCase(tokenPath.join('.'))}}`, { ...tokens, dependents: [], dependencies: [] })
     } else {
       for (const name in tokens) {
         this.flattenTokens(tokens[name] as DesignTokenGroup, [...tokenPath, name])
       }
     }
   }
-  formatToken(tokenPath: string[], token: DefaultToken | AngleToken | AmountToken | SizeToken) {
-    const prop = kebabCase(tokenPath.join(' '))
+  // FORMAT DESIGN TOKEN METHODS
+  formatToken(key: AliasValue, token: DefaultToken | AngleToken | AmountToken | SizeToken) {
+    const prop = getProp(key)
     const isCommaSeparated = Boolean(token?.$extensions?.plaited?.commaSeparated)
     const cb = ($value: DefaultValue | AngleValue | AmountValue | SizeValue, ctx?: CTX) => {
       if (valueIsAlias($value)) {
@@ -128,8 +135,8 @@ export class TransformTokens {
       'angle' | 'amount' | 'size' | undefined
     >(token, cb)
   }
-  formatGradientToken(tokenPath: string[], token: GradientToken) {
-    const prop = kebabCase(tokenPath.join(' '))
+  formatGradientToken(key: AliasValue, token: GradientToken) {
+    const prop = getProp(key)
     const cb = ($value: GradientValue, ctx?: CTX) => {
       if (valueIsAlias($value)) {
         return this.formatAliasValue({ $value, prop, ctx })
@@ -154,8 +161,8 @@ export class TransformTokens {
     }
     return this.formatContextualToken<GradientValue, 'gradient'>(token, cb)
   }
-  formatColorToken(tokenPath: string[], token: ColorToken) {
-    const prop = kebabCase(tokenPath.join(' '))
+  formatColorToken(key: AliasValue, token: ColorToken) {
+    const prop = getProp(key)
     const cb = ($value: ColorValue, ctx?: CTX) => {
       if (valueIsAlias($value)) {
         return this.formatAliasValue({ $value, prop, ctx })
@@ -231,6 +238,7 @@ export class TransformTokens {
     }
     return ''
   }
+  // GET TOKEN REFERENCE METHODS
   getTokenReference(tokenPath: string[], token: Exclude<DesignToken, CompositeToken>) {
     const { $value } = token
     if (valueIsAlias($value) && !this.checkAlias($value)) {
@@ -267,5 +275,17 @@ export class TransformTokens {
         : `/**\n* @value ${JSON.stringify(aliasedToken.$value, null, 2)}\n*/`
     }
     return `/**\n* @value ${JSON.stringify(token.$value, null, 2)}\n*/`
+  }
+  // QUERY DESIGN TOKEN METHODS
+  filter = (cb: FilterCallback) => {
+    const arr = [...structuredClone(this.db)]
+    return arr.filter(cb)
+  }
+  get = (alias: AliasValue) => {
+    const value = this.db.get(alias)
+    if (value) return structuredClone(value)
+  }
+  has = (alias: AliasValue) => {
+    return this.db.has(alias)
   }
 }

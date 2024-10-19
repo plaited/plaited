@@ -461,3 +461,64 @@ test('invalid context key', async () => {
     expect(call[0]).toBe(`[tv] not found in mediaQueries`)
   })
 })
+
+test('query methods', async () => {
+  const tokens: DesignTokenGroup = {
+    colors: {
+      gray: {
+        10: {
+          $value: {
+            l: '97.91%',
+            c: 0,
+            h: 0,
+          },
+          $type: 'color',
+          $description: 'mock description',
+        },
+      },
+      white: {
+        100: {
+          $value: {
+            l: '97.91%',
+            c: 0,
+            h: 0,
+          },
+          $type: 'color',
+          $description: 'mock description',
+        },
+      },
+      charcoal: {
+        100: {
+          $value: {
+            l: '18.31%',
+            c: 0.004,
+            h: 285.99,
+          },
+          $type: 'color',
+          $description: 'mock description',
+        },
+      },
+    },
+    number: {
+      $value: 50,
+      $description: 'mock description',
+    },
+  }
+  const { filter, get, has } = new TransformTokens({
+    tokens,
+    contexts: {
+      colorSchemes: {
+        light: 'light',
+        dark: 'dark',
+      },
+    },
+  })
+  expect(has('{number}')).toBe(true)
+  expect(has('{numberr}')).toBe(false)
+  expect(has('{colors.gray.10}')).toBe(true)
+  expect(has('{colors.gray.11}')).toBe(false)
+  expect(get('{colors.gray.10}')).toMatchSnapshot()
+  const filterEntries = filter(([, entry]) => entry.$type === 'color')
+  expect(filterEntries.length).toBe(3)
+  expect(filterEntries).toMatchSnapshot()
+})

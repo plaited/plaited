@@ -168,3 +168,14 @@ export type CTX = {
   type: ContextTypes
   id: string
 }
+
+export type DesignTokenEntry = DesignToken & {
+  dependencies: string[]
+  dependents: []
+}
+
+export type FilterCallback = (
+  entry: [AliasValue, DesignTokenEntry],
+  index: number,
+  arr: [AliasValue, DesignTokenEntry][],
+) => boolean

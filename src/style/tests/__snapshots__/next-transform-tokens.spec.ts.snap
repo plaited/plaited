@@ -226,3 +226,64 @@ export const string = "var(--pl-string)"
 export const number = "var(--pl-number)"
 "
 `;
+
+exports[`query methods 1`] = `
+{
+  "$description": "mock description",
+  "$type": "color",
+  "$value": {
+    "c": 0,
+    "h": 0,
+    "l": "97.91%",
+  },
+  "dependencies": [],
+  "dependents": [],
+}
+`;
+
+exports[`query methods 2`] = `
+[
+  [
+    "{colors.gray.10}",
+    {
+      "$description": "mock description",
+      "$type": "color",
+      "$value": {
+        "c": 0,
+        "h": 0,
+        "l": "97.91%",
+      },
+      "dependencies": [],
+      "dependents": [],
+    },
+  ],
+  [
+    "{colors.white.100}",
+    {
+      "$description": "mock description",
+      "$type": "color",
+      "$value": {
+        "c": 0,
+        "h": 0,
+        "l": "97.91%",
+      },
+      "dependencies": [],
+      "dependents": [],
+    },
+  ],
+  [
+    "{colors.charcoal.100}",
+    {
+      "$description": "mock description",
+      "$type": "color",
+      "$value": {
+        "c": 0.004,
+        "h": 285.99,
+        "l": "18.31%",
+      },
+      "dependencies": [],
+      "dependents": [],
+    },
+  ],
+]
+`;
