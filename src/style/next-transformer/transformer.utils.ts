@@ -33,16 +33,20 @@ export const deduplicateCSS = (css: string) => {
     .join('')
 }
 
-export const getAliasExportName = (alias: string) => {
-  const path = alias.split('.')
+export const getAliasExportName = (alias: AliasValue) => {
+  const path = matchAlias(alias).split('.')
   return camelCase(path.join(' '))
 }
 
-export const getAliasedCSSVar = (tokenPath: string[], prefix: string) =>
+export const getTokenPath = (value: string) => matchAlias(value).split('.')
+
+export const convertTokenPathToValue = (tokenPath: string[], prefix: string) =>
   `var(--${prefix}-${kebabCase(tokenPath.join(' '))})` as const
 
-export const getCssVarName = (tokenPath: string[], prefix: string) =>
-  `"var(--${prefix}-${kebabCase(tokenPath.join(' '))})"` as const
+export const convertAliasToCssVar = (alias: AliasValue, prefix: string) => {
+  const tokenPath = matchAlias(alias).split('.')
+  return `var(--${prefix}-${kebabCase(tokenPath.join(' '))})` as const
+}
 
 export const getColor = (color: ColorValue) =>
   isTypeOf<string>(color, 'string') ? color : (
@@ -74,7 +78,7 @@ export const isValidContext = ({ id, type }: CTX, contexts: Contexts) => {
   return true
 }
 
-export const matchAlias = (value: string) => value.match(/^(?:\{)([^"]*?)(?:\})$/)?.[1] ?? ''
+const matchAlias = (value: string) => value.match(/^(?:\{)([^"]*?)(?:\})$/)?.[1] ?? ''
 
 export const valueIsAlias = (value: unknown): value is AliasValue => {
   if (isTypeOf<string>(value, 'string')) {
