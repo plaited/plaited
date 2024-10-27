@@ -15,7 +15,9 @@ const createClassHash = (...args: (string | number)[]) =>
 
 const isPrimitive = (val: string | number | CreateNestedCSS<string>): val is string | number =>
   typeof val === 'string' || typeof val === 'number'
+
 const caseProp = (prop: string) => (prop.startsWith('--') ? prop : kebabCase(prop))
+
 const formatStyles = ({
   map,
   value,

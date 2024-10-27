@@ -1,22 +1,22 @@
 /**
  * Alias value type points to another token value
  */
-export type AliasValue = `{${string}}`
+export type Alias = `{${string}}`
 
 /**
  * Default value type relies on the defaultFormat formatter for ts tokens and css tokens
  */
-export type DefaultValue = string | number | AliasValue | (string | number | AliasValue)[]
+export type DefaultValue = string | number | Alias | (string | number | Alias)[]
 
 /**
  * Number or percentage values relies on the defaultFormat formatter for ts tokens and css tokens
  */
-export type AmountValue = number | `${number}%` | AliasValue
+export type AmountValue = number | `${number}%` | Alias
 
 /**
  * Number or percentage values relies on the defaultFormat formatter for ts tokens and css tokens
  */
-export type AngleValue = `${number}deg` | `${number}grad` | `${number}rad` | `${number}turn` | AliasValue
+export type AngleValue = `${number}deg` | `${number}grad` | `${number}rad` | `${number}turn` | Alias
 
 /**
  * Color value type relies on the color formatter for css tokens and defaultFormat formatter for ts tokens
@@ -30,7 +30,7 @@ export type ColorValue =
     }
   | `#${string}`
   | 'transparent'
-  | AliasValue
+  | Alias
 
 /**
  * Size value type relies on the size formatter for css tokens
@@ -40,65 +40,39 @@ export type SizeValue =
   | `${number}%`
   | `${number}px`
   | `${number}rem`
-  | AliasValue
-  | (`${number}%` | `${number}px` | `${number}rem` | AliasValue)[]
+  | Alias
+  | (`${number}%` | `${number}px` | `${number}rem` | Alias)[]
 
 /**
- * Gradient value type relies on the gradient formatter for css tokens
- * and the defaultFormat formatter for ts tokens
+ * Function value type is used to set CSS function tokens
  */
-export type GradientValue =
+export type FunctionValue =
   | {
-      gradientFunction:
-        | 'linear-gradient'
-        | 'radial-gradient'
-        | 'conic-gradient'
-        | 'repeating-linear-gradient'
-        | 'repeating-radial-gradient'
-        | 'repeating-conic-gradient'
-      angleShapePosition?: string
-      colorStops: {
-        color?: ColorValue
-        position?: string
-      }[]
+      function: string
+      arguments: DefaultValue
     }
-  | AliasValue
+  | Alias
 
-export type CompositeValue = { [key: string]: AliasValue } | AliasValue
+export type CompositeValue = { [key: string]: Alias } | Alias
 
-export type ContextValue<V> = {
-  [key: string]: V
+export type DesignValue = DefaultValue | ColorValue | SizeValue | FunctionValue | CompositeValue
+
+export type MediaQueries = Map<`@${string}`, string>
+
+export type DefaultMediaQueries = {
+  colorScheme?: '@light' | '@dark'
+  screen?: `@${string}`
 }
 
-export type DesignValue = DefaultValue | ColorValue | SizeValue | GradientValue | CompositeValue
+export type MediaValue<V extends DesignValue = DesignValue> = {
+  [key: `@${string}`]: V
+}
 
-export type ContextTypes = 'media-query' | 'color-scheme'
-
-export type StaticToken<V extends DesignValue, T = undefined> = {
+export type BaseToken<V extends DesignValue, T = undefined> = {
   $description: string
-  $extensions?: {
-    plaited?: {
-      context?: never
-      commaSeparated?: boolean
-    }
-    [key: string]: unknown
-  }
-  $value: V
+  $csv?: boolean
+  $value: V | MediaValue<V>
 } & (T extends undefined ? { $type?: never } : { $type: T })
-
-export type ContextualToken<V extends DesignValue, T = undefined> = {
-  $description: string
-  $extensions: {
-    plaited: {
-      context: ContextTypes
-      commaSeparated?: boolean
-    }
-    [key: string]: unknown
-  }
-  $value: ContextValue<V>
-} & (T extends undefined ? { $type?: never } : { $type: T })
-
-export type BaseToken<V extends DesignValue, T = undefined> = StaticToken<V, T> | ContextualToken<V, T>
 
 export type DefaultToken = BaseToken<DefaultValue>
 
@@ -110,23 +84,12 @@ export type ColorToken = BaseToken<ColorValue, 'color'>
 
 export type SizeToken = BaseToken<SizeValue, 'size'>
 
-export type GradientToken = BaseToken<GradientValue, 'gradient'>
+export type FunctionToken = BaseToken<FunctionValue, 'function'>
 
 export type CompositeToken = {
   $description: string
-  $extensions?: {
-    [key: string]: unknown
-  }
   $type: 'composite'
   $value: CompositeValue
-}
-
-export type NamedTokenValues = {
-  amount: AmountValue
-  angle: AngleValue
-  color: ColorValue
-  size: SizeValue
-  gradient: GradientValue
 }
 
 export type DesignToken =
@@ -135,7 +98,7 @@ export type DesignToken =
   | AngleToken
   | ColorToken
   | SizeToken
-  | GradientToken
+  | FunctionToken
   | CompositeToken
 
 // general tokens object type definition
@@ -143,39 +106,20 @@ export type DesignTokenGroup = {
   [key: string]: DesignTokenGroup | DesignToken
 }
 
-export type MediaQueries = {
-  [key: string]: string
-}
-
-export type ColorSchemes = {
-  light?: 'light'
-  dark?: 'dark'
-}
-
-export type Contexts = {
-  mediaQueries: MediaQueries
-  colorSchemes: ColorSchemes
-}
-
-export type TransformerParams = {
-  /** an object of the type {@link DesignTokenGroup} */
-  tokens: DesignTokenGroup
-  /** named media queries */
-  contexts?: Partial<Contexts>
-}
-
-export type CTX = {
-  type: ContextTypes
-  id: string
-}
-
 export type DesignTokenEntry = DesignToken & {
-  dependencies: string[]
-  dependents: []
+  dependencies: Alias[]
+  dependents: Alias[]
+  exportName?: string
+  cssVar?: string
 }
 
-export type FilterCallback = (
-  entry: [AliasValue, DesignTokenEntry],
-  index: number,
-  arr: [AliasValue, DesignTokenEntry][],
-) => boolean
+type FilterCallback = (entry: [Alias, DesignTokenEntry], index: number, arr: [Alias, DesignTokenEntry][]) => boolean
+
+export interface TransformTokensInterface {
+  get ts(): string
+  get css(): string
+  get entries(): [Alias, DesignTokenEntry][]
+  filter(cb: FilterCallback): [Alias, DesignTokenEntry][]
+  get(alias: Alias): DesignTokenEntry | undefined
+  has(alias: Alias): boolean
+}
