@@ -1,49 +1,34 @@
 import { test, expect } from 'bun:test'
-import { parse } from '../get-token-schema.js'
+import { getTokenSchema } from '../get-token-schema.js'
 import type { DesignTokenGroup } from '../token.types.js'
 
 export const tokens: DesignTokenGroup = {
   size: {
     x1: {
       $value: {
-        tv: '4rem',
-        mobile: '2rem',
-        desktop: '2rem',
+        '@tv': '4rem',
+        '@mobile': '2rem',
+        '@desktop': '2rem',
       },
       $type: 'size',
       $description: 'mock description',
-      $extensions: {
-        plaited: {
-          context: 'media-query',
-        },
-      },
     },
     x2: {
       $value: {
-        desktop: '6rem',
-        mobile: '8rem',
-        tv: '8rem',
+        '@desktop': '6rem',
+        '@mobile': '8rem',
+        '@tv': '8rem',
       },
       $type: 'size',
-      $extensions: {
-        plaited: {
-          context: 'media-query',
-        },
-      },
       $description: 'mock description',
     },
     x3: {
       $value: {
-        desktop: '12rem',
-        tv: '14rem',
-        mobile: '16rem',
+        '@desktop': '12rem',
+        '@tv': '14rem',
+        '@mobile': '16rem',
       },
       $type: 'size',
-      $extensions: {
-        plaited: {
-          context: 'media-query',
-        },
-      },
       $description: 'mock description',
     },
     s3: {
@@ -99,7 +84,7 @@ export const tokens: DesignTokenGroup = {
     sansSerif: {
       $value: ['Roboto', 'sans-serif'],
       $description: 'mock description',
-      $extensions: { plaited: { commaSeparated: true } },
+      $csv: true,
     },
   },
   fontWeight: {
@@ -157,7 +142,7 @@ export const tokens: DesignTokenGroup = {
   },
 }
 
-const actual = parse({ tokens })
+const actual = getTokenSchema(tokens)
 
 test('parse(): snapshot', () => {
   expect(actual).toMatchSnapshot()

@@ -295,27 +295,11 @@ exports[`parse(): snapshot 1`] = `
       "properties": {
         "sansSerif": {
           "properties": {
+            "$csv": {
+              "type": "boolean",
+            },
             "$description": {
               "type": "string",
-            },
-            "$extensions": {
-              "properties": {
-                "plaited": {
-                  "properties": {
-                    "commaSeparated": {
-                      "type": "boolean",
-                    },
-                  },
-                  "required": [
-                    "commaSeparated",
-                  ],
-                  "type": "object",
-                },
-              },
-              "required": [
-                "plaited",
-              ],
-              "type": "object",
             },
             "$value": {
               "items": [
@@ -334,7 +318,7 @@ exports[`parse(): snapshot 1`] = `
           "required": [
             "$value",
             "$description",
-            "$extensions",
+            "$csv",
           ],
           "type": "object",
         },
@@ -475,47 +459,28 @@ exports[`parse(): snapshot 1`] = `
             "$description": {
               "type": "string",
             },
-            "$extensions": {
-              "properties": {
-                "plaited": {
-                  "properties": {
-                    "context": {
-                      "type": "string",
-                    },
-                  },
-                  "required": [
-                    "context",
-                  ],
-                  "type": "object",
-                },
-              },
-              "required": [
-                "plaited",
-              ],
-              "type": "object",
-            },
             "$type": {
               "type": "string",
             },
             "$value": {
               "properties": {
-                "desktop": {
+                "@desktop": {
                   "const": "2rem",
                   "type": "string",
                 },
-                "mobile": {
+                "@mobile": {
                   "const": "2rem",
                   "type": "string",
                 },
-                "tv": {
+                "@tv": {
                   "const": "4rem",
                   "type": "string",
                 },
               },
               "required": [
-                "tv",
-                "mobile",
-                "desktop",
+                "@tv",
+                "@mobile",
+                "@desktop",
               ],
               "type": "object",
             },
@@ -524,7 +489,6 @@ exports[`parse(): snapshot 1`] = `
             "$value",
             "$type",
             "$description",
-            "$extensions",
           ],
           "type": "object",
         },
@@ -533,47 +497,28 @@ exports[`parse(): snapshot 1`] = `
             "$description": {
               "type": "string",
             },
-            "$extensions": {
-              "properties": {
-                "plaited": {
-                  "properties": {
-                    "context": {
-                      "type": "string",
-                    },
-                  },
-                  "required": [
-                    "context",
-                  ],
-                  "type": "object",
-                },
-              },
-              "required": [
-                "plaited",
-              ],
-              "type": "object",
-            },
             "$type": {
               "type": "string",
             },
             "$value": {
               "properties": {
-                "desktop": {
+                "@desktop": {
                   "const": "6rem",
                   "type": "string",
                 },
-                "mobile": {
+                "@mobile": {
                   "const": "8rem",
                   "type": "string",
                 },
-                "tv": {
+                "@tv": {
                   "const": "8rem",
                   "type": "string",
                 },
               },
               "required": [
-                "desktop",
-                "mobile",
-                "tv",
+                "@desktop",
+                "@mobile",
+                "@tv",
               ],
               "type": "object",
             },
@@ -581,7 +526,6 @@ exports[`parse(): snapshot 1`] = `
           "required": [
             "$value",
             "$type",
-            "$extensions",
             "$description",
           ],
           "type": "object",
@@ -591,47 +535,28 @@ exports[`parse(): snapshot 1`] = `
             "$description": {
               "type": "string",
             },
-            "$extensions": {
-              "properties": {
-                "plaited": {
-                  "properties": {
-                    "context": {
-                      "type": "string",
-                    },
-                  },
-                  "required": [
-                    "context",
-                  ],
-                  "type": "object",
-                },
-              },
-              "required": [
-                "plaited",
-              ],
-              "type": "object",
-            },
             "$type": {
               "type": "string",
             },
             "$value": {
               "properties": {
-                "desktop": {
+                "@desktop": {
                   "const": "12rem",
                   "type": "string",
                 },
-                "mobile": {
+                "@mobile": {
                   "const": "16rem",
                   "type": "string",
                 },
-                "tv": {
+                "@tv": {
                   "const": "14rem",
                   "type": "string",
                 },
               },
               "required": [
-                "desktop",
-                "tv",
-                "mobile",
+                "@desktop",
+                "@tv",
+                "@mobile",
               ],
               "type": "object",
             },
@@ -639,7 +564,6 @@ exports[`parse(): snapshot 1`] = `
           "required": [
             "$value",
             "$type",
-            "$extensions",
             "$description",
           ],
           "type": "object",
