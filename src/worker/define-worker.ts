@@ -12,7 +12,6 @@ import { usePublicEvents } from '../client/use-public-events.js'
 export const defineWorker = <A extends Actions>({
   connectedCallback,
   publicEvents,
-  targetOrigin,
 }: {
   connectedCallback: (args: {
     send: {
@@ -26,7 +25,6 @@ export const defineWorker = <A extends Actions>({
     bSync: BSync
   }) => A
   publicEvents: string[]
-  targetOrigin?: string
 }) => {
   const disconnectSet = new Set<Disconnect>()
   const { useFeedback, trigger, ...rest } = bProgram()
@@ -35,9 +33,7 @@ export const defineWorker = <A extends Actions>({
     _trigger(data)
   }
   const context = self
-  const send = (data: BPEvent) => {
-    targetOrigin ? context.postMessage(data, targetOrigin) : context.postMessage(data)
-  }
+  const send = (data: BPEvent) => context.postMessage(data)
   context.addEventListener('message', eventHandler, false)
   send.disconnect = () => {
     context.removeEventListener('message', eventHandler)
