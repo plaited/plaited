@@ -494,3 +494,35 @@ test('query methods', async () => {
   expect(filterEntries).toMatchSnapshot('color token only')
   expect(entries).toMatchSnapshot('all tokens')
 })
+
+test('fractional scale', async () => {
+  const tokens: DesignTokenGroup = {
+    size: {
+      0: { $value: '0rem', $type: 'size', $description: 'mock description' },
+      '0.5': { $value: '0.125rem', $type: 'size', $description: 'mock description' },
+      1: { $value: '0.25rem', $type: 'size', $description: 'mock description' },
+      '1.5': { $value: '0.375rem', $type: 'size', $description: 'mock description' },
+      2: { $value: '0.5rem', $type: 'size', $description: 'mock description' },
+      '2.5': { $value: '0.5rem', $type: 'size', $description: 'mock description' },
+      3: { $value: '0.75rem', $type: 'size', $description: 'mock description' },
+      '3.5': { $value: '0.875rem', $type: 'size', $description: 'mock description' },
+      4: { $value: '1rem', $type: 'size', $description: 'mock description' },
+    },
+    paddingSmall: { $value: '{size.0_5}', $type: 'size', $description: 'mock description' },
+    bodyFont: {
+      $type: 'composite',
+      $description: 'mock description',
+      $value: {
+        lineHeight: '{size.4}',
+        fontSize: '{size.3_5}',
+      },
+    },
+  }
+  const { css, ts, entries } = new TransformTokens({
+    tokens,
+  })
+  const prettyCSS = await prettier.format(css, { parser: 'css' })
+  expect(prettyCSS).toMatchSnapshot()
+  expect(ts).toMatchSnapshot()
+  expect(entries).toMatchSnapshot('fractional scale entries')
+})

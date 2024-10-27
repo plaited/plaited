@@ -24,24 +24,35 @@ export const combineCSSRules = (css: string) => {
     .join('')
 }
 
+export const getTokenPath = (value: string) => matchAlias(value).split('.')
+
+export const getAlias = (tokenPath: string[]): Alias => {
+  const lastKeyIsDecimal = /^\d*\.\d+$/.test(tokenPath[tokenPath.length - 1])
+  const lastKey = lastKeyIsDecimal && `${tokenPath.pop()}`.replace('.', '_')
+  return lastKey ? `{${camelCase(tokenPath.join('.'))}.${lastKey}}` : `{${camelCase(tokenPath.join('.'))}}`
+}
+
+export const getExportName = (tokenPath: string[]): string => {
+  const lastKeyIsDecimal = /^\d*_\d+$/.test(tokenPath[tokenPath.length - 1])
+  const lastKey = lastKeyIsDecimal && tokenPath.pop()
+  return lastKey ? `${camelCase(tokenPath.join(' '))}${lastKey}` : camelCase(tokenPath.join(' '))
+}
+
 export const getAliasExportName = (alias: Alias) => {
-  const path = matchAlias(alias).split('.')
-  return camelCase(path.join(' '))
+  const path = getTokenPath(alias)
+  return getExportName(path)
 }
 
 export const getComment = ($value: DesignValue) => `/**\n* @value ${JSON.stringify($value, null, 2)}\n*/`
 
-export const getTokenPath = (value: string) => matchAlias(value).split('.')
-
-export const getProp = (value: string) => {
-  const path = matchAlias(value).split('.')
-  return kebabCase(path.join(' '))
+export const getProp = (value: Alias) => {
+  const tokenPath = getTokenPath(value)
+  const lastKeyIsDecimal = /^\d*_\d+$/.test(tokenPath[tokenPath.length - 1])
+  const lastKey = lastKeyIsDecimal && tokenPath.pop()
+  return lastKeyIsDecimal ? `${kebabCase(tokenPath.join(' '))}-${lastKey}` : kebabCase(tokenPath.join(' '))
 }
 
-export const convertAliasToCssVar = (alias: Alias, prefix: string) => {
-  const tokenPath = matchAlias(alias).split('.')
-  return `var(--${prefix}-${kebabCase(tokenPath.join(' '))})` as const
-}
+export const convertAliasToCssVar = (alias: Alias, prefix: string) => `var(--${prefix}-${getProp(alias)})`
 
 export const isDesignToken = (obj: DesignToken | DesignTokenGroup): obj is DesignToken =>
   trueTypeOf(obj) === 'object' && Object.hasOwn(obj, '$value')
@@ -50,7 +61,7 @@ export const isMediaValue = ($value: unknown): $value is MediaValue<DesignValue>
   return isTypeOf<Record<string, unknown>>($value, 'object') && Object.keys($value).every((key) => key.startsWith('@'))
 }
 
-export const matchAlias = (value: string) => value.match(/^(?:\{)([^"]*?)(?:\})$/)?.[1] ?? ''
+const matchAlias = (value: string) => value.match(/^(?:\{)([^"]*?)(?:\})$/)?.[1] ?? ''
 
 export const valueIsAlias = (value: unknown): value is Alias => {
   if (isTypeOf<string>(value, 'string')) {

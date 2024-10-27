@@ -1,4 +1,3 @@
-import { camelCase, kebabCase } from '../utils/case.js'
 import { isTypeOf } from '../utils/is-type-of.js'
 import { trueTypeOf } from '../utils/true-type-of.js'
 import type {
@@ -17,12 +16,13 @@ import {
   colorSchemeMediaQueries,
   convertAliasToCssVar,
   combineCSSRules,
+  getAlias,
   getAliasExportName,
+  getExportName,
   getProp,
   getTokenPath,
   isDesignToken,
   isMediaValue,
-  matchAlias,
   valueIsAlias,
   formatNonMediaRule,
   formatMediaRule,
@@ -109,7 +109,7 @@ export class TransformTokens implements TransformTokensInterface {
     if (trueTypeOf(tokens) !== 'object') return
     if (isDesignToken(tokens)) {
       if (topLevel) return
-      const alias: Alias = `{${camelCase(tokenPath.join('.'))}}`
+      const alias = getAlias(tokenPath)
       if (this.#db.has(alias)) {
         return console.error(`Alias ${alias} already exist rename token at [${tokenPath.join(', ')}]`)
       }
@@ -142,9 +142,8 @@ export class TransformTokens implements TransformTokensInterface {
   }
   #convertAliasToCssVar(key: Alias, $value: Alias) {
     if (this.#checkAlias($value)) {
-      const tokenPath = matchAlias($value).split('.')
       this.#updateDependencies(key, $value)
-      return `var(--${this.#tokenPrefix}-${kebabCase(tokenPath.join(' '))})` as const
+      return convertAliasToCssVar($value, this.#tokenPrefix)
     }
   }
   #getValue({ key, $value, $csv }: { key: Alias; $value: DefaultValue; $csv?: boolean }) {
@@ -225,7 +224,7 @@ export class TransformTokens implements TransformTokensInterface {
     const { $value, $type } = token
     const tokenPath = getTokenPath(key)
     const isAlias = valueIsAlias($value)
-    const exportName = camelCase(tokenPath.join(' '))
+    const exportName = getExportName(tokenPath)
     const entry = this.#db.get(key)!
     entry['exportName'] = exportName
     if (isAlias || $type !== 'composite') {
