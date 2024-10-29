@@ -1,14 +1,13 @@
 import { test, expect, jest } from 'bun:test'
 import * as prettier from 'prettier'
 
-import { transformTokens } from '../transform-tokens.js'
+import { TransformTokens } from '../transform-tokens.js'
 import type { DesignTokenGroup } from '../token.types.js'
 
-test('empty token group', async () => {
-  const tokens = {
-    colors: {},
-  }
-  const { css, ts } = transformTokens({
+test('Token no group', async () => {
+  const tokens = { $value: '45deg', $type: 'angle', $description: 'mock description' }
+  const { css, ts } = new TransformTokens({
+    //@ts-expect-error: should gracefully fail
     tokens,
   })
   const prettyCSS = await prettier.format(css, { parser: 'css' })
@@ -16,37 +15,69 @@ test('empty token group', async () => {
   expect(ts).toBe('')
 })
 
-test('token group', async () => {
-  const tokens: DesignTokenGroup = {
-    lineHeight: {
-      xxs: { $value: '0.25rem', $type: 'size', $description: 'mock description' },
-    },
+test('Empty tokens group', async () => {
+  const tokens = {}
+  const { css, ts } = new TransformTokens({
+    tokens,
+  })
+  const prettyCSS = await prettier.format(css, { parser: 'css' })
+  expect(prettyCSS).toBe('')
+  expect(ts).toBe('')
+})
+
+test('Empty nested token group', async () => {
+  const tokens = {
+    colors: {},
   }
-  const { css, ts } = transformTokens({
+  const { css, ts } = new TransformTokens({
+    tokens,
+  })
+  const prettyCSS = await prettier.format(css, { parser: 'css' })
+  expect(prettyCSS).toBe('')
+  expect(ts).toBe('')
+})
+
+test('Single Token in group', async () => {
+  const tokens: DesignTokenGroup = {
+    single: { $value: '45deg', $type: 'angle', $description: 'mock description' },
+  }
+  const { css, ts, entries } = new TransformTokens({
     tokens,
   })
   const prettyCSS = await prettier.format(css, { parser: 'css' })
   expect(prettyCSS).toMatchSnapshot()
   expect(ts).toMatchSnapshot()
+  expect(entries.length).toBe(1)
 })
 
-test('nested token group', async () => {
+test('Nested token group (2 levels)', async () => {
+  const tokens: DesignTokenGroup = {
+    one: {
+      two: { $value: '20%', $type: 'amount', $description: 'mock description' },
+    },
+  }
+  const { css, ts, entries } = new TransformTokens({
+    tokens,
+  })
+  const prettyCSS = await prettier.format(css, { parser: 'css' })
+  expect(prettyCSS).toMatchSnapshot()
+  expect(ts).toMatchSnapshot()
+  expect(entries.length).toBe(1)
+})
+
+test('Color hex', async () => {
   const tokens: DesignTokenGroup = {
     colors: {
-      gray: {
-        10: {
-          $value: {
-            l: '97.91%',
-            c: 0,
-            h: 0,
-          },
+      white: {
+        1: {
+          $value: '#fff',
           $type: 'color',
           $description: 'mock description',
         },
       },
     },
   }
-  const { css, ts } = transformTokens({
+  const { css, ts } = new TransformTokens({
     tokens,
   })
   const prettyCSS = await prettier.format(css, { parser: 'css' })
@@ -54,55 +85,91 @@ test('nested token group', async () => {
   expect(ts).toMatchSnapshot()
 })
 
-test('context: [media-query]', async () => {
+test('mediaQueries: screen', async () => {
+  const tokens: DesignTokenGroup = {
+    size: {
+      100: {
+        $value: {
+          '@desktop': '3rem',
+          '@tv': '4rem',
+          '@mobile': '2rem',
+        },
+        $type: 'size',
+        $description: 'mock description',
+      },
+    },
+  }
+  const { ts, css } = new TransformTokens({
+    tokens,
+    defaultMediaQueries: {
+      screen: '@mobile',
+    },
+    mediaQueries: new Map([
+      ['@mobile', 'screen and (max-width: 767px)'],
+      ['@desktop', 'screen and (min-width: 1024px)'],
+      ['@tv', 'screen and (min-width: 1920px)'],
+    ]),
+  })
+  const prettyCSS = await prettier.format(css, { parser: 'css' })
+  expect(prettyCSS).toMatchSnapshot()
+  expect(ts).toMatchSnapshot()
+})
+
+test('mediaQueries:m colorScheme', async () => {
+  const tokens: DesignTokenGroup = {
+    gray: {
+      $value: {
+        '@dark': {
+          l: '0%',
+          c: 0,
+          h: 0,
+          a: 0.5,
+        },
+        '@light': {
+          l: '100%',
+          c: 0,
+          h: 0,
+          a: 0.5,
+        },
+      },
+      $type: 'color',
+      $description: 'mock description',
+    },
+  }
+  const { css, ts } = new TransformTokens({
+    tokens,
+  })
+  const prettyCSS = await prettier.format(css, { parser: 'css' })
+  expect(prettyCSS).toMatchSnapshot()
+  expect(ts).toMatchSnapshot()
+})
+
+test('mediaQueries', async () => {
   const tokens: DesignTokenGroup = {
     size: {
       dynamic: {
         100: {
           $value: {
-            desktop: '3rem',
-            tv: '4rem',
-            mobile: '2rem',
+            '@tv': '4rem',
+            '@mobile': '2rem',
+            '@desktop': '3rem',
           },
           $type: 'size',
           $description: 'mock description',
-          $extensions: {
-            plaited: {
-              context: 'media-query',
-            },
-          },
         },
       },
     },
-  }
-  const { ts, css } = transformTokens({
-    tokens,
-    contexts: {
-      mediaQueries: {
-        desktop: 'screen and (min-width: 1024px)',
-        tv: 'screen and (min-width: 1920px)',
-        mobile: 'screen and (max-width: 767px)',
-      },
-    },
-  })
-  const prettyCSS = await prettier.format(css, { parser: 'css' })
-  expect(prettyCSS).toMatchSnapshot()
-  expect(ts).toMatchSnapshot()
-})
-
-test('context: [color-scheme]', async () => {
-  const tokens: DesignTokenGroup = {
     colors: {
       background: {
         primary: {
           $value: {
-            light: {
+            '@light': {
               l: '100%',
               c: 0,
               h: 0,
               a: 0.5,
             },
-            dark: {
+            '@dark': {
               l: '0%',
               c: 0,
               h: 0,
@@ -110,82 +177,21 @@ test('context: [color-scheme]', async () => {
             },
           },
           $type: 'color',
-          $extensions: {
-            plaited: {
-              context: 'color-scheme',
-            },
-          },
           $description: 'mock description',
         },
       },
     },
   }
-  const { css, ts } = transformTokens({
+  const { css, ts } = new TransformTokens({
     tokens,
-    contexts: {
-      colorSchemes: {
-        light: 'light',
-        dark: 'dark',
-      },
-    },
-  })
-  const prettyCSS = await prettier.format(css, { parser: 'css' })
-  expect(prettyCSS).toMatchSnapshot()
-  expect(ts).toMatchSnapshot()
-})
-
-test('context: [media-query, color-scheme]', async () => {
-  const tokens: DesignTokenGroup = {
-    size: {
-      dynamic: {
-        100: {
-          $value: {
-            tv: '4rem',
-            mobile: '2rem',
-            desktop: '3rem',
-          },
-          $type: 'size',
-          $description: 'mock description',
-          $extensions: { plaited: { context: 'media-query' } },
-        },
-      },
-    },
-    colors: {
-      background: {
-        primary: {
-          $value: {
-            light: {
-              l: '100%',
-              c: 0,
-              h: 0,
-              a: 0.5,
-            },
-            dark: {
-              l: '0%',
-              c: 0,
-              h: 0,
-              a: 0.5,
-            },
-          },
-          $type: 'color',
-          $extensions: { plaited: { context: 'color-scheme' } },
-          $description: 'mock description',
-        },
-      },
-    },
-  }
-  const { css, ts } = transformTokens({
-    tokens,
-    contexts: {
-      mediaQueries: {
-        desktop: 'screen and (min-width: 1024px)',
-        mobile: 'screen and (max-width: 767px)',
-        tv: 'screen and (min-width: 1920px)',
-      },
-      colorSchemes: {
-        light: 'light',
-        dark: 'dark',
-      },
+    mediaQueries: new Map([
+      ['@mobile', 'screen and (max-width: 767px)'],
+      ['@desktop', 'screen and (min-width: 1024px)'],
+      ['@tv', 'screen and (min-width: 1920px)'],
+    ]),
+    defaultMediaQueries: {
+      colorScheme: '@dark',
+      screen: '@mobile',
     },
   })
   const prettyCSS = await prettier.format(css, { parser: 'css' })
@@ -218,7 +224,7 @@ test('alias', async () => {
       },
     },
   }
-  const { css, ts } = transformTokens({
+  const { css, ts } = new TransformTokens({
     tokens,
   })
   const prettyCSS = await prettier.format(css, { parser: 'css' })
@@ -226,16 +232,12 @@ test('alias', async () => {
   expect(ts).toMatchSnapshot()
 })
 
-test('alias + context', async () => {
+test('alias + mediaQueries', async () => {
   const tokens: DesignTokenGroup = {
     colors: {
       white: {
         100: {
-          $value: {
-            l: '97.91%',
-            c: 0,
-            h: 0,
-          },
+          $value: '#fff',
           $type: 'color',
           $description: 'mock description',
         },
@@ -256,112 +258,71 @@ test('alias + context', async () => {
       secondary: {
         100: {
           $value: {
-            light: '{colors.white.100}',
-            dark: '{colors.charcoal.100}',
+            '@light': '{colors.white.100}',
+            '@dark': '{colors.charcoal.100}',
           },
           $type: 'color',
           $description: 'mock description',
-          $extensions: { plaited: { context: 'color-scheme' } },
         },
       },
     },
   }
-  const { css, ts } = transformTokens({
+  const { css, ts } = new TransformTokens({
     tokens,
-    contexts: {
-      colorSchemes: {
-        light: 'light',
-        dark: 'dark',
-      },
-    },
   })
   const prettyCSS = await prettier.format(css, { parser: 'css' })
   expect(prettyCSS).toMatchSnapshot()
   expect(ts).toMatchSnapshot()
 })
 
-test('exercise token types', async () => {
+test('function tokens', async () => {
   const tokens: DesignTokenGroup = {
-    fontWeight: { $value: 700, $description: 'mock description', $type: undefined },
-    letterSpacing: {
-      $value: 'normal',
-      $description: 'mock description',
-    },
-    fontSize: {
-      $value: '14px',
-      $type: 'size',
-      $description: 'mock description',
-    },
-    lineHeight: {
-      $value: 1.5,
-      $description: 'mock description',
-    },
-    typography: {
-      $value: {
-        fontFamily: '{fontFamily}',
-        fontSize: '{fontSize}',
-        fontWeight: '{fontWeight}',
-        letterSpacing: '{letterSpacing}',
-        lineHeight: '{lineHeight}',
-      },
-      $type: 'composite',
-      $description: 'mock description',
-    },
     gradient: {
-      $value: {
-        gradientFunction: 'linear-gradient',
-        angleShapePosition: '45deg',
-        colorStops: [
-          {
-            color: {
-              l: '0%',
-              c: 0,
-              h: 0,
-              a: 0.5,
-            },
-            position: '20%',
+      color: {
+        1: {
+          $value: {
+            l: '0%',
+            c: 0,
+            h: 0,
+            a: 0.5,
           },
-          {
-            color: {
-              l: '100%',
-              c: 0,
-              h: 0,
-              a: 0.5,
-            },
-            position: '80%',
+          $type: 'color',
+          $description: 'mock description',
+        },
+        2: {
+          $value: {
+            l: '100%',
+            c: 0,
+            h: 0,
+            a: 0.5,
           },
-        ],
+          $type: 'color',
+          $description: 'mock description',
+        },
       },
-      $type: 'gradient',
-      $description: 'mock description',
-    },
-    fontFamily: {
-      $value: ['Roboto', 'sans-serif'],
-      $description: 'mock description',
-      $extensions: { plaited: { commaSeparated: true } },
-    },
-    arrayOfSizes: {
-      $value: ['60px', '60px'],
-      $type: 'size',
-      $description: 'mock description',
-    },
-    string: {
-      $value: 'primitive string',
-      $description: 'mock description',
-    },
-    number: {
-      $value: 50,
-      $description: 'mock description',
+      stop: {
+        1: {
+          $value: ['{gradient.color.1}', '20%'],
+          $description: 'mock description',
+        },
+        2: {
+          $value: ['{gradient.color.2}', '80%'],
+          $description: 'mock description',
+        },
+      },
+      primary: {
+        $value: {
+          function: 'linear-gradient',
+          arguments: ['45deg', '{gradient.stop.1}', '{gradient.stop.2}'],
+        },
+        $type: 'function',
+        $description: 'mock description',
+        $csv: true,
+      },
     },
   }
-  const { css, ts } = transformTokens({
+  const { css, ts } = new TransformTokens({
     tokens,
-    contexts: {
-      colorSchemes: {
-        light: 'light',
-        dark: 'dark',
-      },
-    },
   })
   const prettyCSS = await prettier.format(css, { parser: 'css' })
   expect(prettyCSS).toMatchSnapshot()
@@ -395,7 +356,7 @@ test('invalid alias', async () => {
     },
   }
   console.error = jest.fn()
-  transformTokens({
+  new TransformTokens({
     tokens,
   })
   //@ts-expect-error: it exist
@@ -411,18 +372,17 @@ test('invalid context', async () => {
         //@ts-expect-error: it exist
         '1': {
           $value: {
-            desktop: 2,
+            '@desktop': 2,
           },
           $type: 'size',
           $description: 'mock description',
           //@ts-ignore: it exist
-          $extensions: { plaited: { context: 'media' } },
         },
       },
     },
   }
   console.error = jest.fn()
-  transformTokens({
+  new TransformTokens({
     tokens,
   })
   //@ts-expect-error: it exist
@@ -437,27 +397,132 @@ test('invalid context key', async () => {
       dynamic: {
         '1': {
           $value: {
-            tv: '4rem',
+            '@tv': '4rem',
           },
           $type: 'size',
           $description: 'mock description',
-          $extensions: { plaited: { context: 'media-query' } },
         },
       },
     },
   }
   console.error = jest.fn()
-  transformTokens({
+  new TransformTokens({
     tokens,
-    contexts: {
-      mediaQueries: {
-        desktop: 'screen and (min-width: 1024px)',
-        mobile: 'screen and (max-width: 767px)',
-      },
-    },
+    mediaQueries: new Map([
+      ['@mobile', 'screen and (max-width: 767px)'],
+      ['@desktop', 'screen and (min-width: 1024px)'],
+    ]),
   })
   //@ts-expect-error: it exist
   console.error.mock.calls.forEach((call) => {
     expect(call[0]).toBe(`[tv] not found in mediaQueries`)
   })
+})
+
+test('Invalid top level group name', async () => {
+  const tokens: DesignTokenGroup = {
+    1: {
+      2: { $value: '20%', $type: 'amount', $description: 'mock description' },
+    },
+  }
+  console.error = jest.fn()
+  new TransformTokens({
+    tokens,
+  })
+  //@ts-expect-error: it exist
+  console.error.mock.calls.forEach((call) => {
+    expect(call[0]).toBe(`Rename top level token group [1]. Top level keys cannot start with a number.`)
+  })
+})
+
+test('query methods', async () => {
+  const tokens: DesignTokenGroup = {
+    gradient: {
+      color: {
+        1: {
+          $value: {
+            l: '0%',
+            c: 0,
+            h: 0,
+            a: 0.5,
+          },
+          $type: 'color',
+          $description: 'mock description',
+        },
+        2: {
+          $value: {
+            l: '100%',
+            c: 0,
+            h: 0,
+            a: 0.5,
+          },
+          $type: 'color',
+          $description: 'mock description',
+        },
+      },
+      stop: {
+        1: {
+          $value: ['{gradient.color.1}', '20%'],
+          $description: 'mock description',
+        },
+        2: {
+          $value: ['{gradient.color.2}', '80%'],
+          $description: 'mock description',
+        },
+      },
+      primary: {
+        $value: {
+          function: 'linear-gradient',
+          arguments: ['45deg', '{gradient.stop.1}', '{gradient.stop.2}'],
+        },
+        $type: 'function',
+        $description: 'mock description',
+        $csv: true,
+      },
+    },
+  }
+  const { filter, get, has, entries } = new TransformTokens({
+    tokens,
+  })
+  expect(has('{gradient.color.1}')).toBe(true)
+  expect(has('{gradient.color.3}')).toBe(false)
+  expect(has('{gradient.stop.1}')).toBe(true)
+  expect(has('{gradient.stop.11}')).toBe(false)
+  expect(get('{gradient.primary}')).toMatchSnapshot('single gradient token')
+  const filterEntries = filter(([, entry]) => entry.$type === 'color')
+  expect(filterEntries.length).toBe(2)
+  expect(filterEntries).toMatchSnapshot('color token only')
+  expect(entries).toMatchSnapshot('all tokens')
+})
+
+test('fractional scale', async () => {
+  const tokens: DesignTokenGroup = {
+    size: {
+      0: { $value: '0rem', $type: 'size', $description: 'mock description' },
+      '0.5': { $value: '0.125rem', $type: 'size', $description: 'mock description' },
+      1: { $value: '0.25rem', $type: 'size', $description: 'mock description' },
+      '1.5': { $value: '0.375rem', $type: 'size', $description: 'mock description' },
+      2: { $value: '0.5rem', $type: 'size', $description: 'mock description' },
+      '2.5': { $value: '0.5rem', $type: 'size', $description: 'mock description' },
+      3: { $value: '0.75rem', $type: 'size', $description: 'mock description' },
+      '3.5': { $value: '0.875rem', $type: 'size', $description: 'mock description' },
+      4: { $value: '1rem', $type: 'size', $description: 'mock description' },
+    },
+    paddingSmall: { $value: '{size.0_5}', $type: 'size', $description: 'mock description' },
+    bodyFont: {
+      $type: 'composite',
+      $description: 'mock description',
+      $value: {
+        lineHeight: '{size.4}',
+        fontSize: '{size.3_5}',
+      },
+    },
+  }
+  const { css, ts, entries } = new TransformTokens({
+    tokens,
+  })
+  const prettyCSS = await prettier.format(css, { parser: 'css' })
+  expect(prettyCSS).toMatchSnapshot()
+  expect(ts).toMatchSnapshot()
+  expect(entries).toMatchSnapshot('fractional scale entries')
 })

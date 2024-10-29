@@ -16,6 +16,4 @@ export const ELEMENT_CALLBACKS = {
 export const ACTION_INSERT = 'ACTION_INSERT'
 export const INSERT_METHODS = keyMirror('append', 'prepend', 'replaceChildren')
 export const ACTION_TRIGGER = 'ACTION_TRIGGER'
-export const PLAITED_TEMPLATE_IDENTIFIER = Symbol('PLAITED TEMPLATE')
-
-export const DISCONNECT_IDENTIFIER = Symbol('DISCONNECT IDENTIFIER')
+export const PLAITED_TEMPLATE_IDENTIFIER = '🐻' as const

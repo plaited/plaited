@@ -3,7 +3,7 @@ import type { PlaitedTrigger } from './client.types.js'
 
 export const usePublicEvents = (args: {
   trigger: Trigger
-  publicEvents?: string[]
+  publicEvents?: string[] | ReadonlyArray<string>
   disconnectSet?: Set<Disconnect>
 }) => {
   const observed = new Set(args?.publicEvents || [])

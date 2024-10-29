@@ -70,4 +70,4 @@ export const PRIMITIVES = new Set(['null', 'undefined', 'number', 'string', 'boo
 
 export const VALID_PRIMITIVE_CHILDREN = new Set(['number', 'string', 'bigint'])
 
-export const TEMPLATE_OBJECT_IDENTIFIER = Symbol('TEMPLATE OBJECT')
+export const TEMPLATE_OBJECT_IDENTIFIER = '🦄'

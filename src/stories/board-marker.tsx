@@ -1,5 +1,4 @@
-import type { FunctionTemplate } from '../jsx/jsx.types.js'
-import { css } from '../css/css.js'
+import { type FT, css } from 'plaited'
 
 const styles = css.create({
   board: {
@@ -28,7 +27,7 @@ const styles = css.create({
   },
 })
 
-export const BoardMarker: FunctionTemplate = () => (
+export const BoardMarker: FT = () => (
   <div
     role='group'
     aria-label='board'

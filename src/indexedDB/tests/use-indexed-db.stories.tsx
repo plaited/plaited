@@ -1,4 +1,4 @@
-import type { StoryObj } from '../../workshop/workshop.types.js'
+import type { StoryObj } from '../../assert/assert.types.js'
 import { useIndexedDB } from '../use-indexed-db.js'
 import sinon from 'sinon'
 

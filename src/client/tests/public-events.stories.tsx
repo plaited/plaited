@@ -1,4 +1,4 @@
-import type { StoryObj } from '../../workshop/workshop.types.js'
+import type { StoryObj } from '../../assert/assert.types.js'
 import { Template } from './public-events.js'
 
 export const publicEvents: StoryObj = {

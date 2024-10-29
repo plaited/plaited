@@ -23,7 +23,7 @@ const isSchema = (object: Schema) => {
   return false
 }
 
-export const parse = <T extends DesignTokenGroup = DesignTokenGroup>({
+const parse = <T extends DesignTokenGroup = DesignTokenGroup>({
   tokens,
   JsonSchema = {},
   isValue = false,

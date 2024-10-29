@@ -1,5 +1,5 @@
-import { defineTemplate } from '../client/define-template.js'
-import { bThread, bSync, type RulesFunction } from '../behavioral/b-thread.js'
+import { defineTemplate, type RulesFunction } from 'plaited'
+import { bThread, bSync } from 'plaited/behavioral'
 import { OMarker } from './o-marker.js'
 import { XMarker } from './x-marker.js'
 import { BoardMarker } from './board-marker.js'

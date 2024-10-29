@@ -1,4 +1,4 @@
-import { type StoryObj } from '../../workshop/workshop.types.js'
+import { type StoryObj } from '../../assert/assert.types.js'
 import { ComponentComms } from './component-comms.js'
 
 export const componentComms: StoryObj = {
