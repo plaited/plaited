@@ -1,15 +1,17 @@
+import { type Actions } from '../behavioral/b-program.js'
 import type { FunctionTemplate, CustomElementTag, Attrs } from '../jsx/jsx.types.js'
 import { type DefineElementArgs, defineElement } from './define-element.js'
 import { createTemplate } from '../jsx/create-template.js'
 import { PLAITED_TEMPLATE_IDENTIFIER } from './client.constants.js'
 
-interface DefineTemplateArgs extends Omit<DefineElementArgs, 'delegatesFocus' | 'mode' | 'slotAssignment'> {
+interface DefineTemplateArgs<A extends Actions>
+  extends Omit<DefineElementArgs<A>, 'delegatesFocus' | 'mode' | 'slotAssignment'> {
   delegatesFocus?: boolean
   mode?: 'open' | 'closed'
   slotAssignment?: 'named' | 'manual'
 }
 
-export type PlaitedTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
+export type PlaitedTemplate = FunctionTemplate & {
   registry: Set<string>
   tag: CustomElementTag
   observedAttributes: string[]
@@ -17,7 +19,7 @@ export type PlaitedTemplate<T extends Attrs = Attrs> = FunctionTemplate<T> & {
   $: typeof PLAITED_TEMPLATE_IDENTIFIER
 }
 
-export const defineTemplate = <T extends Attrs = Attrs>({
+export const defineTemplate = <A extends Actions>({
   tag,
   shadowDom,
   mode = 'open',
@@ -26,8 +28,8 @@ export const defineTemplate = <T extends Attrs = Attrs>({
   publicEvents = [],
   observedAttributes = [],
   ...rest
-}: DefineTemplateArgs): PlaitedTemplate<T> => {
-  defineElement({
+}: DefineTemplateArgs<A>): PlaitedTemplate => {
+  defineElement<A>({
     tag,
     shadowDom,
     publicEvents,
@@ -38,7 +40,7 @@ export const defineTemplate = <T extends Attrs = Attrs>({
     ...rest,
   })
   const registry = new Set<string>([...shadowDom.registry, tag])
-  const ft = ({ children = [], ...attrs }: T) =>
+  const ft = ({ children = [], ...attrs }: Attrs) =>
     createTemplate(tag, {
       ...attrs,
       children: [

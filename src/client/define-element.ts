@@ -71,7 +71,7 @@ type PlaitedElementCallbackParameters = {
   : Parameters<RequirePlaitedElementCallbackActions[K]>[0]
 }
 
-export type DefineElementArgs = {
+export type DefineElementArgs<A extends Actions> = {
   tag: CustomElementTag
   shadowDom: TemplateObject
   delegatesFocus: boolean
@@ -81,11 +81,11 @@ export type DefineElementArgs = {
   publicEvents?: string[]
   formAssociated?: true
   connectedCallback?: {
-    (this: PlaitedElement, args: ConnectedCallbackArgs): Actions<PlaitedElementCallbackActions>
+    (this: PlaitedElement, args: ConnectedCallbackArgs): A & PlaitedElementCallbackActions
   }
 }
 
-export const defineElement = ({
+export const defineElement = <A extends Actions>({
   tag,
   formAssociated,
   publicEvents,
@@ -95,7 +95,7 @@ export const defineElement = ({
   mode,
   slotAssignment,
   connectedCallback,
-}: DefineElementArgs) => {
+}: DefineElementArgs<A>) => {
   if (canUseDOM() && !customElements.get(tag)) {
     customElements.define(
       tag,

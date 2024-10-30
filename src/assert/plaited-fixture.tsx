@@ -99,13 +99,7 @@ const usePlay: UsePlay = async ({ exportName, storyFile, hostElement, route, pla
   }
 }
 
-export const PlaitedFixture = defineTemplate<{
-  'p-name': string
-  'p-entry': string
-  'p-file': string
-  'p-route': string
-  'p-socket': `/${string}`
-}>({
+export const PlaitedFixture = defineTemplate({
   tag: PLAITED_FIXTURE,
   publicEvents: [PLAY_EVENT],
   shadowDom: (
