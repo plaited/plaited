@@ -25,6 +25,8 @@ const styles = css.create({
      *
      */
     opacity: '0',
+    margin: '0',
+    padding: '0',
   },
 })
 
@@ -35,16 +37,20 @@ const DecorateCheckbox = defineTemplate<{
 }>({
   tag: 'decorate-checkbox',
   shadowDom: (
-    <div {...styles.grid}>
+    <>
       <div
         p-target='symbol'
         {...styles.symbol}
       />
       <slot
+        {...css.host({
+          display: 'inline-grid',
+          gridTemplate: '"input" 16px / 16px',
+        })}
         p-trigger={keyMirror('click', 'slotchange')}
         p-target='slot'
       />
-    </div>
+    </>
   ),
   connectedCallback({ trigger, $ }) {
     return {
@@ -69,9 +75,9 @@ const DecorateCheckbox = defineTemplate<{
  * need to fix Stories acceting FT<ElementAttributeList['input]>
  */
 
-export const Checkbox: FT = ({ className }) => {
+export const Checkbox: FT = () => {
   return (
-    <DecorateCheckbox className={className}>
+    <DecorateCheckbox>
       <input
         type='checkbox'
         {...styles.input}
