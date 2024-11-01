@@ -29,7 +29,6 @@ const formatStyles = ({
   prop: string
   selectors?: string[]
 }) => {
-  if (!value) return
   if (isPrimitive(value)) {
     const hash = createClassHash(prop, value, ...selectors)
     const className = `p${hash}`
