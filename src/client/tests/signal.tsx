@@ -15,7 +15,7 @@ const Publisher = defineTemplate({
     </button>
   ),
   publicEvents: ['add'],
-  connectedCallback({ bThreads, bThread, bSync }) {
+  bProgram({ bThreads, bThread, bSync }) {
     bThreads.set({
       onAdd: bThread([bSync({ waitFor: 'add' }), bSync({ request: { type: 'disable' } })]),
     })
@@ -31,7 +31,7 @@ const Subscriber = defineTemplate({
   tag: 'subscriber-component',
   shadowDom: <h1 p-target='count'>{store.get()}</h1>,
   publicEvents: ['update'],
-  connectedCallback({ $, trigger }) {
+  bProgram({ $, trigger }) {
     store.effect('update', trigger)
     return {
       update(value: number) {

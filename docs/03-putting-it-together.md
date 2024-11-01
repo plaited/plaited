@@ -106,7 +106,7 @@ for (const square of squares) {
 export const TicTacToeBoard = Component({
   tag: 'tic-tac-toe-board',
   template: <BoardMarker />,
-  connectedCallback({ feedback, $, addThreads, trigger }) {
+  bProgram({ feedback, $, addThreads, trigger }) {
     const board = new Set(squares)
     addThreads({
       // Add all our rules as bProgram threads

@@ -114,7 +114,7 @@ export const hydration: StoryObj = {
       tag: Tag,
       publicEvents: ['render'],
       shadowDom: <Content />,
-      connectedCallback({ $ }) {
+      bProgram({ $ }) {
         return {
           render() {
             const [inner] = $('inner')

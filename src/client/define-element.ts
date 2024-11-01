@@ -1,4 +1,5 @@
 import type { TemplateObject, CustomElementTag } from '../jsx/jsx.types.js'
+import { BOOLEAN_ATTRS } from '../jsx/jsx.constants.js'
 import { type BSync, type BThread, bThread, bSync } from '../behavioral/b-thread.js'
 import {
   type Actions,
@@ -51,6 +52,7 @@ export type PlaitedElementCallbackActions = {
     oldValue: string | null
     newValue: string | null
   }) => void | Promise<void>
+  [ELEMENT_CALLBACKS.onConnected]?: () => void | Promise<void>
   [ELEMENT_CALLBACKS.onDisconnected]?: () => void | Promise<void>
   [ELEMENT_CALLBACKS.onFormAssociated]?: (args: { form: HTMLFormElement }) => void | Promise<void>
   [ELEMENT_CALLBACKS.onFormDisabled]?: (args: { disabled: boolean }) => void | Promise<void>
@@ -71,7 +73,7 @@ type PlaitedElementCallbackParameters = {
   : Parameters<RequirePlaitedElementCallbackActions[K]>[0]
 }
 
-export type DefineElementArgs = {
+export type DefineElementArgs<A extends Actions> = {
   tag: CustomElementTag
   shadowDom: TemplateObject
   delegatesFocus: boolean
@@ -80,12 +82,12 @@ export type DefineElementArgs = {
   observedAttributes?: string[]
   publicEvents?: string[]
   formAssociated?: true
-  connectedCallback?: {
-    (this: PlaitedElement, args: ConnectedCallbackArgs): Actions<PlaitedElementCallbackActions>
+  bProgram?: {
+    (this: PlaitedElement, args: ConnectedCallbackArgs): A & PlaitedElementCallbackActions
   }
 }
 
-export const defineElement = ({
+export const defineElement = <A extends Actions>({
   tag,
   formAssociated,
   publicEvents,
@@ -94,8 +96,8 @@ export const defineElement = ({
   delegatesFocus,
   mode,
   slotAssignment,
-  connectedCallback,
-}: DefineElementArgs) => {
+  bProgram: callback,
+}: DefineElementArgs<A>) => {
   if (canUseDOM() && !customElements.get(tag)) {
     customElements.define(
       tag,
@@ -150,13 +152,23 @@ export const defineElement = ({
         }
         connectedCallback() {
           this.#mounted = true
-          if (connectedCallback) {
+          for (const attr of observedAttributes) {
+            Reflect.defineProperty(this, attr, {
+              get() {
+                return BOOLEAN_ATTRS.has(attr) ? this.hasAttribute(attr) : this.getAttribute(attr)
+              },
+              set(value: unknown) {
+                BOOLEAN_ATTRS.has(attr) ? this.toggleAttribute(attr, value) : this.setAttribute(attr, `${value}`)
+              },
+            })
+          }
+          if (callback) {
             // Delegate listeners nodes with p-trigger directive on connection or upgrade
             addListeners(Array.from(this.#root.querySelectorAll<Element>(`[${P_TRIGGER}]`)), this.#trigger)
             // Create a shadow observer to watch for modification & addition of nodes with p-this.#trigger directive
             this.#shadowObserver = shadowObserver(this.#root, this.#trigger)
             // bind connectedCallback to the custom element wih the following arguments
-            const actions = connectedCallback.bind(this)({
+            const actions = callback.bind(this)({
               $: this.#query,
               root: this.#root,
               internals: this.#internals,
@@ -168,6 +180,7 @@ export const defineElement = ({
             })
             // Subscribe feedback actions to behavioral program and add disconnect callback to disconnect set
             this.#disconnectSet.add(this.#useFeedback(actions))
+            this.#trigger({ type: ELEMENT_CALLBACKS.onConnected })
           }
         }
         disconnectedCallback() {

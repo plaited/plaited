@@ -19,7 +19,7 @@ const Inner = defineTemplate({
       ></slot>
     </>
   ),
-  connectedCallback() {
+  bProgram() {
     return {
       nested(e: Event) {
         e.stopPropagation()
@@ -48,7 +48,7 @@ const Outer = defineTemplate({
       </Inner>
     </div>
   ),
-  connectedCallback: () => ({
+  bProgram: () => ({
     slot() {
       defaultSlot()
     },

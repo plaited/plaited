@@ -87,7 +87,7 @@ export const Header = defineTemplate({
   ),
   observedAttributes: ['user'],
   publicEvents: ['user'],
-  connectedCallback({ $ }) {
+  bProgram({ $ }) {
     const dispatch = useDispatch(this)
     return {
       click(e: MouseEvent & { target: HTMLButtonElement }) {

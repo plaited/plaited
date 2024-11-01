@@ -101,7 +101,7 @@ export const Fixture = defineTemplate({
   ),
   tag: 'table-fixture',
   publicEvents: ['insert', 'render', 'replace', 'remove', 'removeAttributes', 'getAttribute', 'multiSetAttributes'],
-  connectedCallback({ $ }) {
+  bProgram({ $ }) {
     const cb = $.clone(row, forEachRow)
     return {
       replace() {

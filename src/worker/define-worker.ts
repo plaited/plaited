@@ -10,10 +10,10 @@ import {
 import { usePublicEvents } from '../client/use-public-events.js'
 
 export const defineWorker = <A extends Actions>({
-  connectedCallback,
+  bProgram: callback,
   publicEvents,
 }: {
-  connectedCallback: (args: {
+  bProgram: (args: {
     send: {
       (data: BPEvent): void
       disconnect(): void
@@ -40,6 +40,6 @@ export const defineWorker = <A extends Actions>({
     disconnectSet.forEach((disconnect) => disconnect())
     disconnectSet.clear()
   }
-  const actions = connectedCallback({ trigger, send, bThread, bSync, ...rest })
+  const actions = callback({ trigger, send, bThread, bSync, ...rest })
   useFeedback(actions)
 }

@@ -99,13 +99,7 @@ const usePlay: UsePlay = async ({ exportName, storyFile, hostElement, route, pla
   }
 }
 
-export const PlaitedFixture = defineTemplate<{
-  'p-name': string
-  'p-entry': string
-  'p-file': string
-  'p-route': string
-  'p-socket': `/${string}`
-}>({
+export const PlaitedFixture = defineTemplate({
   tag: PLAITED_FIXTURE,
   publicEvents: [PLAY_EVENT],
   shadowDom: (
@@ -115,7 +109,7 @@ export const PlaitedFixture = defineTemplate<{
       })}
     ></slot>
   ),
-  connectedCallback({ root }) {
+  bProgram({ root }) {
     const send = useServer(this.getAttribute('p-socket') as `/${string}`)
     send.connect(this)
     const route = this.getAttribute('p-route') as string

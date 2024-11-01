@@ -130,13 +130,14 @@ exports[`css.keyframes 1`] = `
 exports[`css.assign 1`] = `
 {
   "className": [
-    "button_10z7gf1 p_30wbosl p_jz2gbp p_lvo2c0 p_2bsqz24 p_1g64ozy p4bu535j",
+    "button_6g4l0hk p_30wbosl p_jz2gbp p_18s0619 p_lvo2c0 p_2bsqz24 p_1g64ozy p4bu535j",
     "small__3f1jkpy p_lrhn32 p_17cdq7g",
     "primary_1ih230g puounk5 p26wlstb",
   ],
   "stylesheet": [
     ".p_30wbosl{font-family:Nunito Sans, Helvetica Neue, Helvetica, Arial, sans-serif;}",
     ".p_jz2gbp{font-weight:700;}",
+    ".p_18s0619{border:0;}",
     ".p_lvo2c0{border-radius:3em;}",
     ".p_2bsqz24{cursor:pointer;}",
     ".p_1g64ozy{display:inline-block;}",
@@ -153,13 +154,14 @@ exports[`css.assign 1`] = `
 exports[`css.assign 2`] = `
 {
   "className": [
-    "button_10z7gf1 p_30wbosl p_jz2gbp p_lvo2c0 p_2bsqz24 p_1g64ozy p4bu535j",
+    "button_6g4l0hk p_30wbosl p_jz2gbp p_18s0619 p_lvo2c0 p_2bsqz24 p_1g64ozy p4bu535j",
     "large_1nh99gg p_lrhjq2 pgqc8fp",
     "secondary_1dc80ru pqpi8rk p21ealbq p7rxdrct",
   ],
   "stylesheet": [
     ".p_30wbosl{font-family:Nunito Sans, Helvetica Neue, Helvetica, Arial, sans-serif;}",
     ".p_jz2gbp{font-weight:700;}",
+    ".p_18s0619{border:0;}",
     ".p_lvo2c0{border-radius:3em;}",
     ".p_2bsqz24{cursor:pointer;}",
     ".p_1g64ozy{display:inline-block;}",

@@ -12,7 +12,7 @@ const Inner = defineTemplate({
   tag: 'inner-component',
   shadowDom: <h1 p-target='header'>Hello</h1>,
   publicEvents: ['add'],
-  connectedCallback({ $, bThreads, bThread, bSync }) {
+  bProgram({ $, bThreads, bThread, bSync }) {
     const dispatch = useDispatch(this)
     bThreads.set({
       onAdd: bThread([bSync({ waitFor: 'add' }), bSync({ request: { type: 'disable' } })]),
@@ -45,7 +45,7 @@ const Outer = defineTemplate({
       </button>
     </div>
   ),
-  connectedCallback({ $ }) {
+  bProgram({ $ }) {
     return {
       disable() {
         const [button] = $<HTMLButtonElement>('button')

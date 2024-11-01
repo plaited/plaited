@@ -12,7 +12,7 @@ const Bottom = defineTemplate({
     </button>
   ),
   publicEvents: ['add'],
-  connectedCallback() {
+  bProgram() {
     const dispatch = useDispatch(this)
     return {
       click() {
@@ -30,7 +30,7 @@ export const Top = defineTemplate({
       <Bottom p-trigger={{ append: 'append' }}></Bottom>
     </div>
   ),
-  connectedCallback({ $ }) {
+  bProgram({ $ }) {
     return {
       append() {
         const [header] = $('header')

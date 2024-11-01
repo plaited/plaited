@@ -26,7 +26,7 @@ import {
   valueIsAlias,
   formatNonMediaRule,
   formatMediaRule,
-} from './transformer.utils.js'
+} from './token.utils.js'
 
 export class TransformTokens implements TransformTokensInterface {
   #db = new Map<Alias, DesignTokenEntry>()
@@ -103,7 +103,6 @@ export class TransformTokens implements TransformTokensInterface {
     const str = [...this.#db].flatMap(([key, token]) => this.#getTokenReference(key, token) ?? []).join('\n')
     return str.length ? str + '\n' : ''
   }
-
   #flattenTokens(tokens: DesignTokenGroup, tokenPath: string[] = []) {
     const topLevel = !tokenPath.length
     if (trueTypeOf(tokens) !== 'object') return

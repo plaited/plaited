@@ -19,7 +19,7 @@ defineWorker<{
   calculate: (args: { a: number; b: number; operation: 'add' | 'subtract' | 'multiply' | 'divide' }) => void
 }>({
   publicEvents: ['calculate'],
-  connectedCallback({ send }) {
+  bProgram({ send }) {
     return {
       calculate({ a, b, operation }) {
         send({
