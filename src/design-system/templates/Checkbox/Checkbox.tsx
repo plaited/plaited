@@ -1,5 +1,5 @@
-import { defineTemplate, type FT, css } from 'plaited'
-import { keyMirror } from 'plaited/utils'
+import { defineTemplate, css } from 'plaited'
+import { isTypeOf } from 'plaited/utils'
 
 const styles = css.create({
   grid: {
@@ -9,79 +9,87 @@ const styles = css.create({
   symbol: {
     height: '16px',
     width: '16px',
-    backgroundColor: {
-      default: 'lightblue',
-      '[data-checked="true"]': 'blue',
-    },
+    backgroundColor: 'var(--fill)',
     gridArea: 'input',
   },
   input: {
     gridArea: 'input',
     height: '16px',
     width: '16px',
-    /**
-     * TODO
-     * need to fix css accepting 0 value
-     *
-     */
-    opacity: '0',
-    margin: '0',
-    padding: '0',
+    opacity: 0,
+    margin: 0,
+    padding: 0,
   },
 })
 
-const DecorateCheckbox = defineTemplate<{
+const hostStyles = css.host({
+  display: 'inline-grid',
+  gridTemplate: '"input" 16px / 16px',
+  '--fill': {
+    default: 'lightblue',
+    ':state(checked)': 'blue',
+    ':state(disabled)': 'grey',
+  },
+})
+
+export const DecoratedCheckbox = defineTemplate<{
   click(evt: MouseEvent & { target: HTMLInputElement }): void
-  slotchange(): void
-  update(val: boolean): void
+  checked(val: boolean): void
+  disabled(val: boolean): void
 }>({
-  tag: 'decorate-checkbox',
+  tag: 'decorated-checkbox',
+  observedAttributes: ['disabled', 'checked'],
+  formAssociated: true,
   shadowDom: (
     <>
       <div
         p-target='symbol'
-        {...styles.symbol}
-      />
-      <slot
-        {...css.host({
-          display: 'inline-grid',
-          gridTemplate: '"input" 16px / 16px',
-        })}
-        p-trigger={keyMirror('click', 'slotchange')}
-        p-target='slot'
+        {...css.assign(styles.symbol, hostStyles)}
+        p-trigger={{ click: 'click' }}
       />
     </>
   ),
-  connectedCallback({ trigger, $ }) {
+  bProgram({ trigger, internals, root, bThreads, bSync, bThread }) {
+    bThreads.set({
+      onDisabled: bThread(
+        [bSync({ block: ({ type }) => type === 'checked' && internals.states.has('disabled') })],
+        true,
+      ),
+    })
     return {
-      slotchange() {
-        const [slot] = $<HTMLSlotElement>('slot')
-        const [input] = slot.assignedElements() as [HTMLInputElement]
-        input && trigger({ type: 'update', detail: input.checked })
+      click() {
+        trigger({ type: 'update', detail: !internals.states.has('checked') })
       },
-      click(evt) {
-        trigger({ type: 'update', detail: evt.target.checked })
+      checked(val) {
+        if (val) {
+          internals.states.add('checked')
+          internals.setFormValue('on', 'checked')
+        } else {
+          internals.states.delete('checked')
+          internals.setFormValue('off')
+        }
       },
-      update(val) {
-        const [span] = $('symbol')
-        span?.attr('data-checked', val)
+      disabled(val) {
+        if (val) {
+          internals.states.add('disabled')
+        } else {
+          internals.states.delete('disabled')
+        }
+      },
+      onAttributeChanged({ name, newValue }) {
+        name === 'checked' && trigger({ type: 'checked', detail: isTypeOf<string>(newValue, 'string') })
+        name === 'disabled' && trigger({ type: 'disabled', detail: isTypeOf<string>(newValue, 'string') })
+      },
+      onConnected() {
+        if (root.host.hasAttribute('checked')) {
+          internals.states.add('checked')
+          internals.setFormValue('on', 'checked')
+        }
+        if (root.host.hasAttribute('disabled')) {
+          internals.states.add('disabled')
+          internals.setFormValue('on', 'disabled')
+        }
       },
     }
   },
 })
-
-/**
- * TODO
- * need to fix Stories acceting FT<ElementAttributeList['input]>
- */
-
-export const Checkbox: FT = () => {
-  return (
-    <DecorateCheckbox>
-      <input
-        type='checkbox'
-        {...styles.input}
-      />
-    </DecorateCheckbox>
-  )
-}
