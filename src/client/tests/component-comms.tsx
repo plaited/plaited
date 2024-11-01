@@ -17,7 +17,7 @@ export const ElOne = defineTemplate({
       </button>
     </div>
   ),
-  connectedCallback({ $, trigger }) {
+  bProgram({ $, trigger }) {
     const disconnect = sendDisable.effect('disable', trigger)
     return {
       disable() {
@@ -36,7 +36,7 @@ export const ElTwo = defineTemplate({
   tag: 'dynamic-two',
   publicEvents: ['add'],
   shadowDom: <h1 p-target='header'>Hello</h1>,
-  connectedCallback({ $, bThread, bThreads, bSync, trigger }) {
+  bProgram({ $, bThread, bThreads, bSync, trigger }) {
     sendAdd.effect('add', trigger)
     bThreads.set({
       onAdd: bThread([bSync({ waitFor: 'add' }), bSync({ request: { type: 'disable' } })]),

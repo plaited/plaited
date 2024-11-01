@@ -50,7 +50,7 @@ export const dynamicStyles: StoryObj = {
           {...initial}
         ></div>
       ),
-      connectedCallback({ $ }) {
+      bProgram({ $ }) {
         return {
           render() {
             const [target] = $<HTMLDivElement>('target')

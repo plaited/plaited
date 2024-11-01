@@ -6,6 +6,7 @@ export const PLAITED_INDEXED_DB = 'PLAITED_INDEXED_DB'
 export const ELEMENT_CALLBACKS = {
   onAdopted: 'onAdopted',
   onAttributeChanged: 'onAttributeChanged',
+  onConnected: 'onConnected',
   onDisconnected: 'onDisconnected',
   onFormAssociated: 'onFormAssociated',
   onFormDisabled: 'onFormDisabled',

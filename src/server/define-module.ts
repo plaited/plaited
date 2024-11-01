@@ -14,11 +14,11 @@ import type { PlaitedTrigger } from '../client/client.types.js'
 export const defineModule = <A extends Actions, W = unknown>({
   id,
   publicEvents = [],
-  connectedCallback,
+  bProgram: callback,
 }: {
   id: string
   publicEvents?: string[]
-  connectedCallback: (args: {
+  bProgram: (args: {
     ws: ServerWebSocket<W>
     trigger: Trigger
     useSnapshot: UseSnapshot
@@ -34,7 +34,7 @@ export const defineModule = <A extends Actions, W = unknown>({
   const disconnectSet = new Set<Disconnect>()
   const { useFeedback, trigger, ...rest } = bProgram()
   const connect = (ws: ServerWebSocket<W>) => {
-    const actions = connectedCallback({ trigger, bThread, bSync, ws, ...rest })
+    const actions = callback({ trigger, bThread, bSync, ws, ...rest })
     useFeedback(actions)
     return usePublicEvents({ trigger, publicEvents, disconnectSet })
   }

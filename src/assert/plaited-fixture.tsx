@@ -109,7 +109,7 @@ export const PlaitedFixture = defineTemplate({
       })}
     ></slot>
   ),
-  connectedCallback({ root }) {
+  bProgram({ root }) {
     const send = useServer(this.getAttribute('p-socket') as `/${string}`)
     send.connect(this)
     const route = this.getAttribute('p-route') as string
