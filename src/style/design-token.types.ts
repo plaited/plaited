@@ -115,7 +115,7 @@ export type DesignTokenEntry = DesignToken & {
 
 type FilterCallback = (entry: [Alias, DesignTokenEntry], index: number, arr: [Alias, DesignTokenEntry][]) => boolean
 
-export interface TransformTokensInterface {
+export interface TransformDesignTokensInterface {
   get ts(): string
   get css(): string
   get entries(): [Alias, DesignTokenEntry][]

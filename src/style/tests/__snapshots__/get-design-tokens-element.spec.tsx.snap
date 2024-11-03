@@ -22,3 +22,26 @@ exports[`getTokenElement 2`] = `
     <div>hello world!</div>
 </plaited-tokens>"
 `;
+
+exports[`getDesignTokensElement 1`] = `
+"<design-tokens>
+    <template shadowrootmode="open" shadowrootdelegatesfocus>
+        <style>
+            :host{display:contents;}:host{--blue: blue}
+        </style>
+        <slot></slot>
+    </template>
+</design-tokens>"
+`;
+
+exports[`getDesignTokensElement 2`] = `
+"<plaited-tokens>
+    <template shadowrootmode="open" shadowrootdelegatesfocus>
+        <style>
+            :host{display:contents;}:host{--blue: blue}
+        </style>
+        <slot></slot>
+    </template>
+    <div>hello world!</div>
+</plaited-tokens>"
+`;
