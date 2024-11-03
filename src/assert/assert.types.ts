@@ -14,7 +14,7 @@ export type Params = {
   timeout?: number // Defaults to 5_000 ms
 }
 
-export type FunctionTemplateArgs<T extends FunctionTemplate> = Parameters<T>[0]
+export type Args<T extends FunctionTemplate> = Parameters<T>[0]
 
 export type Meta<T extends Attrs = Attrs> = {
   args?: Attrs

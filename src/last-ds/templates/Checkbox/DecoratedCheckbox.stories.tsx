@@ -1,9 +1,7 @@
-import { type StoryObj, type FunctionTemplateArgs } from 'plaited/assert'
+import { type StoryObj, type Args } from 'plaited/assert'
 import { DecoratedCheckbox } from './DecoratedCheckbox.js'
 
-type Args = FunctionTemplateArgs<typeof DecoratedCheckbox>
-
-export const checkbox: StoryObj<Args> = {
+export const checkbox: StoryObj<Args<typeof DecoratedCheckbox>> = {
   template: DecoratedCheckbox,
   async play({ findByAttribute, assert }) {
     const input = document.querySelector('input')
