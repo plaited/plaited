@@ -1,30 +1,30 @@
 import { type StoryObj } from 'plaited/assert'
-import { DecoratedCheckbox } from './Checkbox.js'
+import { ButtonCheckbox } from './ButtonCheckbox.js'
 
 export const checkbox: StoryObj = {
-  template: DecoratedCheckbox,
+  template: ButtonCheckbox,
   async play() {
-    const [checkbox] = document.getElementsByTagName('decorated-checkbox')
+    const [checkbox] = document.getElementsByTagName(ButtonCheckbox.tag)
     checkbox?.setAttribute('checked', '')
   },
 }
 
 export const checked: StoryObj = {
-  template: DecoratedCheckbox,
+  template: ButtonCheckbox,
   args: {
     checked: true,
   },
 }
 
 export const disabled: StoryObj = {
-  template: DecoratedCheckbox,
+  template: ButtonCheckbox,
   args: {
     disabled: true,
   },
 }
 
 export const disabledAndChecked: StoryObj = {
-  template: DecoratedCheckbox,
+  template: ButtonCheckbox,
   args: {
     disabled: true,
     checked: true,
