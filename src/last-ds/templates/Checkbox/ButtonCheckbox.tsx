@@ -8,19 +8,10 @@ const styles = css.create({
     backgroundColor: 'var(--fill)',
     gridArea: 'input',
   },
-  input: {
-    gridArea: 'input',
-    height: '16px',
-    width: '16px',
-    opacity: 0,
-    margin: 0,
-    padding: 0,
-  },
 })
 
 const hostStyles = css.host({
   display: 'inline-grid',
-  gridTemplate: '"input" 16px / 16px',
   '--fill': {
     default: 'lightblue',
     ':state(checked)': 'blue',
