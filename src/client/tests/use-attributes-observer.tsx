@@ -18,7 +18,7 @@ export const AttributesObserver = defineTemplate({
     const [newValue] = $<HTMLSpanElement>('newValue')
     const [el] = slot.assignedElements()
     const observe = useAttributesObserver('change', trigger)
-    observe(el, ['disabled', 'value', 'checked'])
+    observe(el, ['disabled', 'value'])
     return {
       change(detail: { name: string; oldValue: string | null; newValue: string | null }) {
         name.render(detail.name)
