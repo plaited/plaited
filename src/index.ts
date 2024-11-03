@@ -14,6 +14,7 @@ export type { BPEvent, BPEventTemplate, BSync, BThread, RulesFunction } from './
 export type { PlaitedElement } from './client/define-element.js'
 export type { CloneCallback, Position, SelectorMatch } from './client/use-query.js'
 export { type PlaitedTemplate, defineTemplate } from './client/define-template.js'
+export { type ObsrvedAttributeDetail, useAttributesObserver } from './client/use-attributes-observer.js'
 export { useDispatch } from './client/use-dispatch.js'
 export { useIndexedDB } from './client/use-indexed-db.js'
 export { useServer } from './client/use-server.js'
