@@ -30,6 +30,6 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ['src/css/types/*'],
+    ignores: ['src/style/types/*'],
   },
 )

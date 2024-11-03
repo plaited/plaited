@@ -16,7 +16,7 @@ import {
   PLAITED_FIXTURE,
 } from './assert.constants.js'
 import { TimeoutError, AssertionError, MissingTestParamsError } from './errors.js'
-import { css } from '../css/css.js'
+import { css } from '../style/css.js'
 import { defineTemplate } from '../client/define-template.js'
 import { useServer } from '../client/use-server.js'
 import { wait } from '../utils/wait.js'

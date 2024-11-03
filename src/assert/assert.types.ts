@@ -1,6 +1,6 @@
 import type { Attrs, FunctionTemplate } from '../jsx/jsx.types.js'
 import type { Play } from './plaited-fixture.js'
-import type { StylesObject } from '../css/css.types.js'
+import type { StylesObject } from '../style/css.types.js'
 import { TEST_PASSED, TEST_EXCEPTION, UNKNOWN_ERROR } from './assert.constants.js'
 
 export type Scale = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 'rel'
