@@ -4,7 +4,7 @@
  * {@see https://github.com/easy-json-schema/easy-json-schema}
  */
 import { trueTypeOf } from '../utils/true-type-of.js'
-import type { DesignToken, DesignTokenGroup } from './token.types.js'
+import type { DesignToken, DesignTokenGroup } from './design-token.types.js'
 
 const supportType = ['string', 'number', 'array', 'object', 'boolean', 'integer']
 
@@ -116,6 +116,6 @@ const parse = <T extends DesignTokenGroup = DesignTokenGroup>({
  * @param tokens - The design token group to parse.
  * @returns The populated JSON schema.
  */
-export const getTokenSchema = <T extends DesignTokenGroup = DesignTokenGroup>(tokens: T) => {
+export const getDesignTokensSchema = <T extends DesignTokenGroup = DesignTokenGroup>(tokens: T) => {
   return parse<T>({ tokens })
 }

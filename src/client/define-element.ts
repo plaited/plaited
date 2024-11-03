@@ -167,7 +167,7 @@ export const defineElement = <A extends Actions>({
             addListeners(Array.from(this.#root.querySelectorAll<Element>(`[${P_TRIGGER}]`)), this.#trigger)
             // Create a shadow observer to watch for modification & addition of nodes with p-this.#trigger directive
             this.#shadowObserver = shadowObserver(this.#root, this.#trigger)
-            // bind connectedCallback to the custom element wih the following arguments
+            // bind connectedCallback to the custom element with the following arguments
             const actions = callback.bind(this)({
               $: this.#query,
               root: this.#root,

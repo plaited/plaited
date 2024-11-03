@@ -18,7 +18,7 @@ test('Maximum client bundle footprint < 8.5kb', async () => {
   }
 })
 
-test('defineTemplate export footprint < 6kb', async () => {
+test('defineTemplate export footprint < 5kb', async () => {
   const plaited = import.meta.resolveSync('./minimal.ts')
   const plaitedResults = await Bun.build({
     entrypoints: [plaited],
@@ -30,7 +30,7 @@ test('defineTemplate export footprint < 6kb', async () => {
     const str = await result.text()
     const compressed = Bun.gzipSync(Buffer.from(str))
     const size = compressed.byteLength / 1024
-    expect(size).toBeLessThan(6)
+    expect(size).toBeLessThan(5)
     console.log(`Plaited minimum size: ${size}kb`)
   }
 })

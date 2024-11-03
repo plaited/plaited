@@ -3,7 +3,7 @@ import { trueTypeOf } from '../utils/true-type-of.js'
 import type {
   DesignToken,
   DesignTokenEntry,
-  TransformTokensInterface,
+  TransformDesignTokensInterface,
   DesignTokenGroup,
   ColorValue,
   FunctionValue,
@@ -11,7 +11,7 @@ import type {
   DefaultMediaQueries,
   MediaQueries,
   Alias,
-} from './token.types.js'
+} from './design-token.types.js'
 import {
   colorSchemeMediaQueries,
   convertAliasToCssVar,
@@ -26,9 +26,9 @@ import {
   valueIsAlias,
   formatNonMediaRule,
   formatMediaRule,
-} from './token.utils.js'
+} from './transform-design-tokens.utils.js'
 
-export class TransformTokens implements TransformTokensInterface {
+export class TransformDesignTokens implements TransformDesignTokensInterface {
   #db = new Map<Alias, DesignTokenEntry>()
   #tokenPrefix: string
   #ts: string
@@ -77,21 +77,21 @@ export class TransformTokens implements TransformTokensInterface {
   /**
    * Get a filtered list of design token entries
    */
-  filter: TransformTokensInterface['filter'] = (cb) => {
+  filter: TransformDesignTokensInterface['filter'] = (cb) => {
     const arr = [...structuredClone(this.#db)]
     return arr.filter(cb)
   }
   /**
    * Get a design token's entry via it's Alias
    */
-  get: TransformTokensInterface['get'] = (alias) => {
+  get: TransformDesignTokensInterface['get'] = (alias) => {
     const value = this.#db.get(alias)
     if (value) return structuredClone(value)
   }
   /**
    * Check if design token exist via it's Alias
    */
-  has: TransformTokensInterface['has'] = (alias) => {
+  has: TransformDesignTokensInterface['has'] = (alias) => {
     return this.#db.has(alias)
   }
   #createCSS() {
@@ -249,9 +249,14 @@ export class TransformTokens implements TransformTokensInterface {
   }
   #getComment(alias: Alias): string | undefined {
     if (this.#checkAlias(alias)) {
-      const { $value } = this.#db.get(alias)!
+      const { $value, $description } = this.#db.get(alias)!
       if (valueIsAlias($value)) return this.#getComment($value)
-      return `/**\n@value ${JSON.stringify($value, null, 2)}\n**/`
+      return [
+        '/**',
+        ...($description ? [`  @description ${$description}`] : []),
+        `  @value ${JSON.stringify($value, null, 1)}`,
+        '*/',
+      ].join('\n')
     }
   }
 }

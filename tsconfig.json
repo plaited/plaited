@@ -22,7 +22,7 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
-    
+
     "jsxImportSource": "plaited",
     "paths": {
       "plaited": ["./src/index.ts"],
@@ -30,11 +30,10 @@
       "plaited/jsx-dev-runtime": ["./src/jsx/dev-runtime.ts"],
       "plaited/assert": ["/src/assert.ts"],
       "plaited/behavioral": ["./src/behavioral.ts"],
-      "plaited/indexedDB": ["./src/indexedDB.ts"],
       "plaited/style": ["./src/style.ts"],
       "plaited/utils": ["./src/utils.ts"],
       "plaited/worker": ["./src/worker.ts"]
     }
   },
-  "exclude": ["src/css/types/css.d.ts"]
+  "exclude": ["src/style/types/css.d.ts"]
 }

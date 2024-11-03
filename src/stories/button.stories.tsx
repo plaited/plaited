@@ -1,12 +1,12 @@
 import { Button } from './button.js'
-import type { StoryObj, Meta } from 'plaited/assert'
+import type { StoryObj, Meta, Args } from 'plaited/assert'
 
-const meta: Meta<typeof Button> = {
+const meta: Meta<Args<typeof Button>> = {
   template: Button,
 }
 
 export default meta
-type Story = StoryObj<typeof Button>
+type Story = StoryObj<Args<typeof Button>>
 
 export const Primary: Story = {
   args: {

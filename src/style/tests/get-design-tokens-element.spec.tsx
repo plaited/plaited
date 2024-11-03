@@ -1,11 +1,11 @@
 import { test, expect } from 'bun:test'
-import { getTokenElement } from '../get-token-element.js'
+import { getDesignTokensElement } from '../get-design-tokens-element.js'
 import beautify from 'beautify'
 
-test('getTokenElement', () => {
-  let DesignTokens = getTokenElement(`:host{--blue: blue}`)
+test('getDesignTokensElement', () => {
+  let DesignTokens = getDesignTokensElement(`:host{--blue: blue}`)
   expect(beautify((<DesignTokens />).html.join(''), { format: 'html' })).toMatchSnapshot()
-  DesignTokens = getTokenElement(`:host{--blue: blue}`, 'plaited-tokens')
+  DesignTokens = getDesignTokensElement(`:host{--blue: blue}`, 'plaited-tokens')
   expect(
     beautify(
       (

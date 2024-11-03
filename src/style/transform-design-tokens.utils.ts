@@ -1,4 +1,4 @@
-import type { DesignToken, DesignTokenGroup, DesignValue, MediaValue, Alias } from './token.types.js'
+import type { DesignToken, DesignTokenGroup, DesignValue, MediaValue, Alias } from './design-token.types.js'
 import { isTypeOf } from '../utils/is-type-of.js'
 import { trueTypeOf } from '../utils/true-type-of.js'
 import { kebabCase, camelCase } from '../utils/case.js'
@@ -42,8 +42,6 @@ export const getAliasExportName = (alias: Alias) => {
   const path = getTokenPath(alias)
   return getExportName(path)
 }
-
-export const getComment = ($value: DesignValue) => `/**\n* @value ${JSON.stringify($value, null, 2)}\n*/`
 
 export const getProp = (value: Alias) => {
   const tokenPath = getTokenPath(value)

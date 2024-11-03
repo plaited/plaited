@@ -1,12 +1,12 @@
-import type { StoryObj, Meta } from 'plaited/assert'
+import type { StoryObj, Meta, Args } from 'plaited/assert'
 import { Header } from './header.js'
 
-const meta: Meta<typeof Header> = {
+const meta: Meta<Args<typeof Header>> = {
   template: Header,
 }
 
 export default meta
-type Story = StoryObj<typeof Header>
+type Story = StoryObj<Args<typeof Header>>
 
 export const LogIn: Story = {
   play: async ({ findByText, assert, findByAttribute }) => {

@@ -1,6 +1,6 @@
 import type { Attrs, FunctionTemplate } from '../jsx/jsx.types.js'
 import type { Play } from './plaited-fixture.js'
-import type { StylesObject } from '../css/css.types.js'
+import type { StylesObject } from '../style/css.types.js'
 import { TEST_PASSED, TEST_EXCEPTION, UNKNOWN_ERROR } from './assert.constants.js'
 
 export type Scale = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 'rel'
@@ -14,21 +14,19 @@ export type Params = {
   timeout?: number // Defaults to 5_000 ms
 }
 
-export type Meta<T extends FunctionTemplate = FunctionTemplate> = {
-  args?: Parameters<T>[0]
+export type Args<T extends FunctionTemplate> = Parameters<T>[0]
+
+export type Meta<T extends Attrs = Attrs> = {
+  args?: Attrs
   parameters?: Params
-  template?: T
+  template?: FunctionTemplate<T>
 }
 
-export type StoryObj<T extends FunctionTemplate | Meta = Meta> = {
-  args?: T extends FunctionTemplate ? Parameters<T>[0]
-  : T extends Meta ? T['args']
-  : Attrs
+export type StoryObj<T extends Attrs = Attrs> = {
+  args?: Attrs
   parameters?: Params
   play?: Play
-  template?: T extends FunctionTemplate ? T
-  : T extends Meta ? T['template']
-  : FunctionTemplate
+  template?: FunctionTemplate<T>
 }
 
 export type TestParams = {

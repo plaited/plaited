@@ -1,12 +1,12 @@
 import { test, expect, jest } from 'bun:test'
 import * as prettier from 'prettier'
 
-import { TransformTokens } from '../transform-tokens.js'
-import type { DesignTokenGroup } from '../token.types.js'
+import { TransformDesignTokens } from '../transform-design-tokens.js'
+import type { DesignTokenGroup } from '../design-token.types'
 
 test('Token no group', async () => {
   const tokens = { $value: '45deg', $type: 'angle', $description: 'mock description' }
-  const { css, ts } = new TransformTokens({
+  const { css, ts } = new TransformDesignTokens({
     //@ts-expect-error: should gracefully fail
     tokens,
   })
@@ -17,7 +17,7 @@ test('Token no group', async () => {
 
 test('Empty tokens group', async () => {
   const tokens = {}
-  const { css, ts } = new TransformTokens({
+  const { css, ts } = new TransformDesignTokens({
     tokens,
   })
   const prettyCSS = await prettier.format(css, { parser: 'css' })
@@ -29,7 +29,7 @@ test('Empty nested token group', async () => {
   const tokens = {
     colors: {},
   }
-  const { css, ts } = new TransformTokens({
+  const { css, ts } = new TransformDesignTokens({
     tokens,
   })
   const prettyCSS = await prettier.format(css, { parser: 'css' })
@@ -41,7 +41,7 @@ test('Single Token in group', async () => {
   const tokens: DesignTokenGroup = {
     single: { $value: '45deg', $type: 'angle', $description: 'mock description' },
   }
-  const { css, ts, entries } = new TransformTokens({
+  const { css, ts, entries } = new TransformDesignTokens({
     tokens,
   })
   const prettyCSS = await prettier.format(css, { parser: 'css' })
@@ -56,7 +56,7 @@ test('Nested token group (2 levels)', async () => {
       two: { $value: '20%', $type: 'amount', $description: 'mock description' },
     },
   }
-  const { css, ts, entries } = new TransformTokens({
+  const { css, ts, entries } = new TransformDesignTokens({
     tokens,
   })
   const prettyCSS = await prettier.format(css, { parser: 'css' })
@@ -77,7 +77,7 @@ test('Color hex', async () => {
       },
     },
   }
-  const { css, ts } = new TransformTokens({
+  const { css, ts } = new TransformDesignTokens({
     tokens,
   })
   const prettyCSS = await prettier.format(css, { parser: 'css' })
@@ -99,7 +99,7 @@ test('mediaQueries: screen', async () => {
       },
     },
   }
-  const { ts, css } = new TransformTokens({
+  const { ts, css } = new TransformDesignTokens({
     tokens,
     defaultMediaQueries: {
       screen: '@mobile',
@@ -136,7 +136,7 @@ test('mediaQueries:m colorScheme', async () => {
       $description: 'mock description',
     },
   }
-  const { css, ts } = new TransformTokens({
+  const { css, ts } = new TransformDesignTokens({
     tokens,
   })
   const prettyCSS = await prettier.format(css, { parser: 'css' })
@@ -182,7 +182,7 @@ test('mediaQueries', async () => {
       },
     },
   }
-  const { css, ts } = new TransformTokens({
+  const { css, ts } = new TransformDesignTokens({
     tokens,
     mediaQueries: new Map([
       ['@mobile', 'screen and (max-width: 767px)'],
@@ -224,7 +224,7 @@ test('alias', async () => {
       },
     },
   }
-  const { css, ts } = new TransformTokens({
+  const { css, ts } = new TransformDesignTokens({
     tokens,
   })
   const prettyCSS = await prettier.format(css, { parser: 'css' })
@@ -267,7 +267,7 @@ test('alias + mediaQueries', async () => {
       },
     },
   }
-  const { css, ts } = new TransformTokens({
+  const { css, ts } = new TransformDesignTokens({
     tokens,
   })
   const prettyCSS = await prettier.format(css, { parser: 'css' })
@@ -321,7 +321,7 @@ test('function tokens', async () => {
       },
     },
   }
-  const { css, ts } = new TransformTokens({
+  const { css, ts } = new TransformDesignTokens({
     tokens,
   })
   const prettyCSS = await prettier.format(css, { parser: 'css' })
@@ -356,7 +356,7 @@ test('invalid alias', async () => {
     },
   }
   console.error = jest.fn()
-  new TransformTokens({
+  new TransformDesignTokens({
     tokens,
   })
   //@ts-expect-error: it exist
@@ -382,7 +382,7 @@ test('invalid context', async () => {
     },
   }
   console.error = jest.fn()
-  new TransformTokens({
+  new TransformDesignTokens({
     tokens,
   })
   //@ts-expect-error: it exist
@@ -406,7 +406,7 @@ test('invalid context key', async () => {
     },
   }
   console.error = jest.fn()
-  new TransformTokens({
+  new TransformDesignTokens({
     tokens,
     mediaQueries: new Map([
       ['@mobile', 'screen and (max-width: 767px)'],
@@ -426,7 +426,7 @@ test('Invalid top level group name', async () => {
     },
   }
   console.error = jest.fn()
-  new TransformTokens({
+  new TransformDesignTokens({
     tokens,
   })
   //@ts-expect-error: it exist
@@ -481,7 +481,7 @@ test('query methods', async () => {
       },
     },
   }
-  const { filter, get, has, entries } = new TransformTokens({
+  const { filter, get, has, entries } = new TransformDesignTokens({
     tokens,
   })
   expect(has('{gradient.color.1}')).toBe(true)
@@ -518,7 +518,7 @@ test('fractional scale', async () => {
       },
     },
   }
-  const { css, ts, entries } = new TransformTokens({
+  const { css, ts, entries } = new TransformDesignTokens({
     tokens,
   })
   const prettyCSS = await prettier.format(css, { parser: 'css' })
