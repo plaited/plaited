@@ -1,6 +1,6 @@
 import type { StoryObj } from '../../assert/assert.types.js'
 import type { PlaitedElement } from '../define-element.js'
-import { css } from '../../css/css.js'
+import { css } from '../../style/css.js'
 import { defineTemplate } from '../define-template.js'
 import { ModeOpen, DelegateFalse, ClosedMode } from './template.js'
 export const defaultModeAndFocus: StoryObj = {
