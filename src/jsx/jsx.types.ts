@@ -411,21 +411,15 @@ type DetailedAreaHTMLAttributes = DetailedHTMLAttributes & {
   referrerpolicy?: HTMLAttributeReferrerPolicy
   shape?: string
   target?: string
-  children?: never
 }
 
 type DetailedBaseHTMLAttributes = DetailedHTMLAttributes & {
   href?: string
   target?: string
-  children?: never
 }
 
 type DetailedBlockquoteHTMLAttributes = DetailedHTMLAttributes & {
   cite?: string
-}
-
-type DetailedBrHTMLAttributes = DetailedHTMLAttributes & {
-  children?: never
 }
 
 type DetailedButtonHTMLAttributes = DetailedHTMLAttributes & {
@@ -449,7 +443,6 @@ type DetailedCanvasHTMLAttributes = DetailedHTMLAttributes & {
 type DetailedColHTMLAttributes = DetailedHTMLAttributes & {
   span?: number
   width?: number | string
-  children?: never
 }
 
 type DetailedColgroupHTMLAttributes = DetailedHTMLAttributes & {
@@ -478,7 +471,6 @@ type DetailedEmbedHTMLAttributes = DetailedHTMLAttributes & {
   src?: string
   type?: string
   width?: number | string
-  children?: never
 }
 
 type DetailedFieldsetHTMLAttributes = DetailedHTMLAttributes & {
@@ -496,10 +488,6 @@ type DetailedFormHTMLAttributes = DetailedHTMLAttributes & {
   name?: string
   novalidate?: boolean
   target?: string
-}
-
-type DetailedHrHTMLAttributes = DetailedHTMLAttributes & {
-  children?: never
 }
 
 type DetailedHtmlHTMLAttributes = DetailedHTMLAttributes & {
@@ -531,7 +519,6 @@ type DetailedImgHTMLAttributes = DetailedHTMLAttributes & {
   srcset?: string
   usemap?: string
   width?: number | string
-  children?: never
 }
 
 type DetailedInsHTMLAttributes = DetailedHTMLAttributes & {
@@ -595,7 +582,6 @@ type DetailedInputHTMLAttributes = DetailedHTMLAttributes & {
   type?: HTMLInputTypeAttribute
   value?: string | number
   width?: number | string
-  children?: never
 }
 
 type DetailedLabelHTMLAttributes = DetailedHTMLAttributes & {
@@ -622,14 +608,10 @@ type DetailedLinkHTMLAttributes = DetailedHTMLAttributes & {
   sizes?: string
   type?: string
   charSet?: string
-  children?: never
 }
 
 type DetailedMapHTMLAttributes = DetailedHTMLAttributes & {
   name?: string
-}
-type DetailedMenuitemHTMLAttributes = DetailedHTMLAttributes & {
-  children?: never
 }
 
 type DetailedMenuHTMLAttributes = DetailedHTMLAttributes & {
@@ -655,7 +637,6 @@ type DetailedMetaHTMLAttributes = DetailedHTMLAttributes & {
   name?: string
   media?: string
   content?: string
-  children?: never
 }
 
 type DetailedMeterHTMLAttributes = DetailedHTMLAttributes & {
@@ -747,7 +728,6 @@ type DetailedSourceHTMLAttributes = DetailedHTMLAttributes & {
   srcset?: string
   type?: string
   width?: number | string
-  children?: never
 }
 
 type DetailedStyleHTMLAttributes = DetailedHTMLAttributes & {
@@ -821,7 +801,6 @@ type DetailedTrackHTMLAttributes = DetailedHTMLAttributes & {
   label?: string
   src?: string
   srclang?: string
-  children?: never
 }
 
 type DetailedVideoHTMLAttributes = DetailedMediaHTMLAttributes & {
@@ -833,11 +812,7 @@ type DetailedVideoHTMLAttributes = DetailedMediaHTMLAttributes & {
   disableremoteplayback?: boolean
 }
 
-type DetailedWbrAttributes = DetailedHTMLAttributes & {
-  children?: never
-}
-
-type DetailedSVGAttributes = DetailedHTMLAttributes & {
+export type DetailedSVGAttributes = DetailedHTMLAttributes & {
   'accent-height'?: number
   accumulate?: 'none' | 'sum' | string
   additive?: 'replace' | 'sum' | string
@@ -1063,33 +1038,7 @@ type DetailedSVGAttributes = DetailedHTMLAttributes & {
   yChannelSelector?: 'R' | 'G' | 'B' | 'A' | string
   z?: number | string
 }
-type DetailedSVGCircleAttributes = DetailedSVGAttributes & {
-  children?: never
-}
-type DetailedSVGEllipseAttributes = DetailedSVGAttributes & {
-  children?: never
-}
-type DetailedSVGLineAttributes = DetailedSVGAttributes & {
-  children?: never
-}
-type DetailedSVGPathAttributes = DetailedSVGAttributes & {
-  children?: never
-}
-type DetailedSVGPolygonAttributes = DetailedSVGAttributes & {
-  children?: never
-}
-type DetailedSVGPolylineAttributes = DetailedSVGAttributes & {
-  children?: never
-}
-type DetailedSVGRectAttributes = DetailedSVGAttributes & {
-  children?: never
-}
-type DetailedSVGStopAttributes = DetailedSVGAttributes & {
-  children?: never
-}
-type DetailedSVGUseAttributes = DetailedSVGAttributes & {
-  children?: never
-}
+
 type DetailedWebViewHTMLAttributes = DetailedHTMLAttributes & {
   src?: string
   nodeintegration?: boolean
@@ -1121,7 +1070,7 @@ export type ElementAttributeList = {
   big: DetailedHTMLAttributes
   blockquote: DetailedBlockquoteHTMLAttributes
   body: DetailedHTMLAttributes
-  br: DetailedBrHTMLAttributes
+  br: DetailedHTMLAttributes
   button: DetailedButtonHTMLAttributes
   canvas: DetailedCanvasHTMLAttributes
   caption: DetailedHTMLAttributes
@@ -1155,7 +1104,7 @@ export type ElementAttributeList = {
   head: DetailedHTMLAttributes
   header: DetailedHTMLAttributes
   hgroup: DetailedHTMLAttributes
-  hr: DetailedHrHTMLAttributes
+  hr: DetailedHTMLAttributes
   html: DetailedHtmlHTMLAttributes
   i: DetailedHTMLAttributes
   iframe: DetailedIframeHTMLAttributes
@@ -1171,7 +1120,7 @@ export type ElementAttributeList = {
   map: DetailedMapHTMLAttributes
   mark: DetailedHTMLAttributes
   menu: DetailedMenuHTMLAttributes
-  menuitem: DetailedMenuitemHTMLAttributes
+  menuitem: DetailedHTMLAttributes
   meta: DetailedMetaHTMLAttributes
   meter: DetailedMeterHTMLAttributes
   nav: DetailedHTMLAttributes
@@ -1220,18 +1169,18 @@ export type ElementAttributeList = {
   ul: DetailedHTMLAttributes
   var: DetailedHTMLAttributes
   video: DetailedVideoHTMLAttributes
-  wbr: DetailedWbrAttributes
+  wbr: DetailedHTMLAttributes
   webview: DetailedWebViewHTMLAttributes
   //SVG
   svg: DetailedSVGAttributes
   animate: DetailedSVGAttributes
-  circle: DetailedSVGCircleAttributes
+  circle: DetailedSVGAttributes
   animateMotion: DetailedSVGAttributes
   animateTransform: DetailedSVGAttributes
   clipPath: DetailedSVGAttributes
   defs: DetailedSVGAttributes
   desc: DetailedSVGAttributes
-  ellipse: DetailedSVGEllipseAttributes
+  ellipse: DetailedSVGAttributes
   feBlend: DetailedSVGAttributes
   feColorMatrix: DetailedSVGAttributes
   feComponentTransfer: DetailedSVGAttributes
@@ -1261,26 +1210,26 @@ export type ElementAttributeList = {
   foreignObject: DetailedSVGAttributes
   g: DetailedSVGAttributes
   image: DetailedSVGAttributes
-  line: DetailedSVGLineAttributes
+  line: DetailedSVGAttributes
   linearGradient: DetailedSVGAttributes
   marker: DetailedSVGAttributes
   mask: DetailedSVGAttributes
   metadata: DetailedSVGAttributes
   mpath: DetailedSVGAttributes
-  path: DetailedSVGPathAttributes
+  path: DetailedSVGAttributes
   pattern: DetailedSVGAttributes
-  polygon: DetailedSVGPolygonAttributes
-  polyline: DetailedSVGPolylineAttributes
+  polygon: DetailedSVGAttributes
+  polyline: DetailedSVGAttributes
   radialGradient: DetailedSVGAttributes
-  rect: DetailedSVGRectAttributes
+  rect: DetailedSVGAttributes
   set: DetailedSVGAttributes
-  stop: DetailedSVGStopAttributes
+  stop: DetailedSVGAttributes
   switch: DetailedSVGAttributes
   symbol: DetailedSVGAttributes
   text: DetailedSVGAttributes
   textPath: DetailedSVGAttributes
   tspan: DetailedSVGAttributes
-  use: DetailedSVGUseAttributes
+  use: DetailedSVGAttributes
   view: DetailedSVGAttributes
   [key: string]: DetailedHTMLAttributes
 }

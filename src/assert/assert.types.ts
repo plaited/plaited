@@ -14,21 +14,19 @@ export type Params = {
   timeout?: number // Defaults to 5_000 ms
 }
 
-export type Meta<T extends FunctionTemplate = FunctionTemplate> = {
-  args?: Parameters<T>[0]
+export type FunctionTemplateArgs<T extends FunctionTemplate> = Parameters<T>[0]
+
+export type Meta<T extends Attrs = Attrs> = {
+  args?: Attrs
   parameters?: Params
-  template?: T
+  template?: FunctionTemplate<T>
 }
 
-export type StoryObj<T extends FunctionTemplate | Meta = Meta> = {
-  args?: T extends FunctionTemplate ? Parameters<T>[0]
-  : T extends Meta ? T['args']
-  : Attrs
+export type StoryObj<T extends Attrs = Attrs> = {
+  args?: Attrs
   parameters?: Params
   play?: Play
-  template?: T extends FunctionTemplate ? T
-  : T extends Meta ? T['template']
-  : FunctionTemplate
+  template?: FunctionTemplate<T>
 }
 
 export type TestParams = {

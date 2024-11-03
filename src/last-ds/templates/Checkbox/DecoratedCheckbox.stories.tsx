@@ -1,11 +1,29 @@
-import { type StoryObj } from 'plaited/assert'
+import { type StoryObj, type FunctionTemplateArgs } from 'plaited/assert'
 import { DecoratedCheckbox } from './DecoratedCheckbox.js'
 
-export const checkbox: StoryObj = {
+type Args = FunctionTemplateArgs<typeof DecoratedCheckbox>
+
+export const checkbox: StoryObj<Args> = {
   template: DecoratedCheckbox,
-  async play() {
-    const [checkbox] = document.getElementsByTagName(DecoratedCheckbox.tag)
-    checkbox?.setAttribute('checked', '')
+  async play({ findByAttribute, assert }) {
+    const input = document.querySelector('input')
+    let symbol = await findByAttribute('p-target', 'symbol')
+    let backgroundColor = getComputedStyle(symbol as Element).backgroundColor
+    assert({
+      given: 'render of decorated checkbox',
+      should: 'have light blue background',
+      expected: 'rgb(173, 216, 230)',
+      actual: backgroundColor,
+    })
+    input?.toggleAttribute('checked')
+    symbol = await findByAttribute('p-target', 'symbol')
+    backgroundColor = getComputedStyle(symbol as Element).backgroundColor
+    assert({
+      given: 'toggling slotted input checked attributed',
+      should: 'have blue background',
+      expected: 'rgb(0, 0, 255)',
+      actual: backgroundColor,
+    })
   },
 }
 

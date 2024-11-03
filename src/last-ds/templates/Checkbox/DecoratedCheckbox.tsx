@@ -1,7 +1,18 @@
-import { defineTemplate, css } from 'plaited'
+import {
+  defineTemplate,
+  css,
+  useAttributesObserver,
+  type ObservedAttributesDetail,
+  type FT,
+  type ElementAttributeList,
+} from 'plaited'
 import { isTypeOf } from 'plaited/utils'
 
 const styles = css.create({
+  grid: {
+    display: 'inline-grid',
+    gridTemplate: '"input" 16px / 16px',
+  },
   symbol: {
     height: '16px',
     width: '16px',
@@ -28,79 +39,54 @@ const hostStyles = css.host({
   },
 })
 
-export const DecoratedCheckbox = defineTemplate<{
-  click(evt: MouseEvent & { target: HTMLInputElement }): void
-  checked(val: boolean): void
-  disabled(val: boolean): void
-  valueChange(val: string | null): void
+export const DecorateCheckbox = defineTemplate<{
+  change(detail: ObservedAttributesDetail): void
+  slotchange(): void
 }>({
-  tag: 'decorated-checkbox',
-  observedAttributes: ['disabled', 'checked', 'value'],
-  formAssociated: true,
+  tag: 'decorate-checkbox',
   shadowDom: (
-    <div
-      p-target='symbol'
-      {...css.assign(styles.symbol, hostStyles)}
-      p-trigger={{ click: 'click' }}
-    />
+    <>
+      <div
+        p-target='symbol'
+        {...css.assign(styles.symbol, hostStyles)}
+        p-trigger={{ click: 'click' }}
+      />
+      <slot
+        p-target='slot'
+        p-trigger={{ slotchange: 'slotchange' }}
+      ></slot>
+    </>
   ),
-  bProgram({ trigger, internals, root, bThreads, bSync, bThread }) {
-    bThreads.set({
-      onDisabled: bThread(
-        [
-          bSync({
-            block: [
-              ({ type }) => type === 'checked' && internals.states.has('disabled'),
-              ({ type }) => type === 'valueChange' && internals.states.has('disabled'),
-            ],
-          }),
-        ],
-        true,
-      ),
-    })
+  bProgram({ $, internals, trigger }) {
+    let [slot] = $<HTMLSlotElement>('slot')
+    let [input] = slot.assignedElements()
+    let inputObserver = useAttributesObserver('change', trigger)
     return {
-      click() {
-        trigger({ type: 'checked', detail: !internals.states.has('checked') })
+      slotchange() {
+        ;[slot] = $<HTMLSlotElement>('slot')
+        ;[input] = slot.assignedElements()
+        inputObserver = useAttributesObserver('change', trigger)
       },
-      checked(val) {
-        root.host.toggleAttribute('checked', val)
-        if (val) {
-          internals.states.add('checked')
-          internals.setFormValue('on', root.host.getAttribute('value') ?? 'checked')
-        } else {
-          internals.states.delete('checked')
-          internals.setFormValue('off')
-        }
-      },
-      disabled(val) {
-        if (val) {
-          internals.states.add('disabled')
-        } else {
-          internals.states.delete('disabled')
-        }
-      },
-      valueChange(val) {
-        const isChecked = internals.states.has('checked')
-        if (val && isChecked) {
-          internals.setFormValue('on', val)
-        } else if (isChecked) {
-          internals.setFormValue('on', 'checked')
-        }
-      },
-      onAttributeChanged({ name, newValue }) {
-        name === 'checked' && trigger({ type: 'checked', detail: isTypeOf<string>(newValue, 'string') })
-        name === 'disabled' && trigger({ type: 'disabled', detail: isTypeOf<string>(newValue, 'string') })
-        name === 'value' && trigger({ type: 'valueChange', detail: newValue })
+      change({ name, newValue }) {
+        isTypeOf<string>(newValue, 'string') ? internals.states.add(name) : internals.states.delete(name)
       },
       onConnected() {
-        if (root.host.hasAttribute('checked')) {
-          internals.states.add('checked')
-          internals.setFormValue('on', root.host.getAttribute('value') ?? 'checked')
-        }
-        if (root.host.hasAttribute('disabled')) {
-          internals.states.add('disabled')
-        }
+        input.hasAttribute('checked') && internals.states.add('checked')
+        input.hasAttribute('disabled') && internals.states.add('disabled')
+        inputObserver(input, ['checked', 'disabled'])
       },
     }
   },
 })
+
+export const DecoratedCheckbox: FT<ElementAttributeList['input']> = (props) => {
+  return (
+    <DecorateCheckbox>
+      <input
+        {...styles.input}
+        type='checkbox'
+        {...props}
+      />
+    </DecorateCheckbox>
+  )
+}
