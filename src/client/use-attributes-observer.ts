@@ -1,7 +1,7 @@
 import type { Disconnect, Trigger } from '../behavioral/b-program.js'
 import { type PlaitedTrigger, isPlaitedTrigger } from './client.types.js'
 
-export type ObsrvedAttributeDetail = {
+export type ObservedAttributesDetail = {
   oldValue: null | string
   newValue: null | string
   name: string
@@ -14,7 +14,7 @@ export const useAttributesObserver = (eventType: string, trigger: PlaitedTrigger
         if (mutation.type === 'attributes') {
           const name = mutation.attributeName as string
           const newValue = assignedElement.getAttribute(name)
-          trigger<ObsrvedAttributeDetail>({
+          trigger<ObservedAttributesDetail>({
             type: eventType,
             detail: {
               oldValue: mutation.oldValue,
