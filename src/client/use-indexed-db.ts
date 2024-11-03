@@ -28,7 +28,7 @@ const createIDB = (dbName: string, storeName: string) => {
 export function useIndexedDB<T>(
   key: string,
   initialValue?: never,
-  option?: {
+  options?: {
     databaseName: string
     storeName: string
   },
@@ -56,20 +56,22 @@ export async function useIndexedDB<T>(
   /** initial value can be undefined */
   initialValue: T,
   /** you can actually pass it an reference to another indexedDB */
-  option?: {
-    databaseName: string
-    storeName: string
+  options?: {
+    databaseName?: string
+    storeName?: string
+    useCachedValue?: boolean
   },
 ) {
-  const databaseName = option?.databaseName ?? PLAITED_INDEXED_DB
-  const storeName = option?.storeName ?? PLAITED_STORE
+  const databaseName = options?.databaseName ?? PLAITED_INDEXED_DB
+  const storeName = options?.storeName ?? PLAITED_STORE
   const db = createIDB(databaseName, storeName)
   const channel = new BroadcastChannel(`${databaseName}_${storeName}_${key}`)
 
   const write = (newValue: T) => db('readwrite', (store) => store.put(newValue, key))
 
-  // If initial value provided update store
-  initialValue !== undefined && (await write(initialValue))
+  if (initialValue !== undefined && !options?.useCachedValue) {
+    await write(initialValue)
+  }
 
   const get = () => {
     let req: IDBRequest<T>
