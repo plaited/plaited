@@ -570,3 +570,34 @@ test('fractional scale', async () => {
   expect(ts).toMatchSnapshot()
   expect(entries).toMatchSnapshot('fractional scale entries')
 })
+
+test('Throw on circular dependency', async () => {
+  const tokens: DesignTokenGroup = {
+    circular: {
+      $value: '{dependent}',
+      $type: 'color',
+      $description: 'mock description',
+    },
+    white: {
+      $value: '{circular}',
+      $type: 'color',
+      $description: 'mock description',
+    },
+    dependent: {
+      $value: '{white}',
+      $type: 'color',
+      $description: 'mock description',
+    },
+  }
+  const t = () => {
+    new TransformDesignTokens({
+      tokens,
+    })
+  }
+  try {
+    t()
+  } catch (e) {
+    //@ts-expect-error: it's an error
+    expect(e?.message).toBe(`Circular dependency found for {circular}\ndependencyPath: [{dependent}, {white}]`)
+  }
+})

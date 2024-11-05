@@ -96,44 +96,58 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
   has: TransformDesignTokensInterface['has'] = (alias) => {
     return this.#db.has(alias)
   }
+  #circularDependencyCheck(dependent: Alias, dependency: Alias, path: string[] = []) {
+    const depPath = [...path, dependency]
+    const { dependencies } = this.#db.get(dependency) ?? {}
+    if (!dependencies) return
+    if (dependencies.includes(dependent)) {
+      throw new Error(`Circular dependency found for ${dependent}\ndependencyPath: [${depPath.join(', ')}]`)
+    }
+    for (const dep of dependencies) {
+      this.#circularDependencyCheck(dependent, dep, depPath)
+    }
+  }
   #sortAndMapEntries({
     arr,
     clone,
     type,
-    depAlias,
+    dependency,
   }: {
     arr: string[]
     clone: Map<`{${string}}`, DesignTokenEntry>
     type: 'ts' | 'css'
-    depAlias?: `{${string}}`
+    dependency?: Alias
   }) {
-    if (depAlias) {
-      const entry = clone.get(depAlias)
+    if (dependency) {
+      const entry = clone.get(dependency)
       if (!entry) return
       const dependencies = entry.dependencies
       if (dependencies.length)
-        for (const dep of dependencies)
+        for (const dep of dependencies) {
           this.#sortAndMapEntries({
             arr,
             type,
             clone,
-            depAlias: dep,
+            dependency: dep,
           })
+        }
       const str = entry[type]
       str && arr.push(str)
-      clone.delete(depAlias)
+      clone.delete(dependency)
       return
     }
     for (const [key, entry] of clone) {
       const dependencies = entry.dependencies
       if (dependencies.length) {
-        for (const dep of dependencies)
+        for (const dep of dependencies) {
+          this.#circularDependencyCheck(key, dep)
           this.#sortAndMapEntries({
             arr,
             type,
             clone,
-            depAlias: dep,
+            dependency: dep,
           })
+        }
       }
       const str = entry[type]
       str && arr.push(str)
@@ -199,11 +213,16 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
     }
     return hasAlias
   }
+
   #updateDependencies(dependent: Alias, dependency: Alias) {
-    const dependentDependencies = this.#db.get(dependent)!.dependencies
-    !dependentDependencies.includes(dependency) && dependentDependencies.push(dependency)
-    const dependencyDependents = this.#db.get(dependency)!.dependents
-    !dependencyDependents.includes(dependent) && dependencyDependents.push(dependent)
+    const { dependencies } = this.#db.get(dependent) ?? {}
+    if (dependencies) {
+      !dependencies.includes(dependency) && dependencies.push(dependency)
+    }
+    const { dependents } = this.#db.get(dependency) ?? {}
+    if (dependents) {
+      !dependents.includes(dependent) && dependents.push(dependent)
+    }
   }
   #convertAliasToCssVar(key: Alias, $value: Alias) {
     if (this.#checkAlias($value)) {
