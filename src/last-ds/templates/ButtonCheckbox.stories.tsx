@@ -4,7 +4,7 @@ import { ButtonCheckbox } from './ButtonCheckbox.js'
 export const checkbox: StoryObj = {
   template: ButtonCheckbox,
   async play() {
-    const [checkbox] = document.getElementsByTagName(ButtonCheckbox.tag)
+    const checkbox = document.querySelector(ButtonCheckbox.tag)
     checkbox?.setAttribute('checked', '')
   },
 }

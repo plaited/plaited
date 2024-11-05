@@ -278,6 +278,25 @@ test('alias + mediaQueries', async () => {
 test('function tokens', async () => {
   const tokens: DesignTokenGroup = {
     gradient: {
+      primary: {
+        $value: {
+          function: 'linear-gradient',
+          arguments: ['45deg', '{gradient.stop.1}', '{gradient.stop.2}'],
+        },
+        $type: 'function',
+        $description: 'mock description',
+        $csv: true,
+      },
+      stop: {
+        1: {
+          $value: ['{gradient.color.1}', '20%'],
+          $description: 'mock description',
+        },
+        2: {
+          $value: ['{gradient.color.2}', '80%'],
+          $description: 'mock description',
+        },
+      },
       color: {
         1: {
           $value: {
@@ -300,6 +319,19 @@ test('function tokens', async () => {
           $description: 'mock description',
         },
       },
+    },
+  }
+  const { css, ts } = new TransformDesignTokens({
+    tokens,
+  })
+  const prettyCSS = await prettier.format(css, { parser: 'css' })
+  expect(prettyCSS).toMatchSnapshot()
+  expect(ts).toMatchSnapshot()
+})
+
+test('camelCases keys when generating alias', async () => {
+  const tokens: DesignTokenGroup = {
+    gradient: {
       stop: {
         1: {
           $value: ['{gradient.color.1}', '20%'],
@@ -310,23 +342,35 @@ test('function tokens', async () => {
           $description: 'mock description',
         },
       },
-      primary: {
-        $value: {
-          function: 'linear-gradient',
-          arguments: ['45deg', '{gradient.stop.1}', '{gradient.stop.2}'],
+      Color: {
+        1: {
+          $value: {
+            l: '0%',
+            c: 0,
+            h: 0,
+            a: 0.5,
+          },
+          $type: 'color',
+          $description: 'mock description',
         },
-        $type: 'function',
-        $description: 'mock description',
-        $csv: true,
+        2: {
+          $value: {
+            l: '100%',
+            c: 0,
+            h: 0,
+            a: 0.5,
+          },
+          $type: 'color',
+          $description: 'mock description',
+        },
       },
     },
   }
-  const { css, ts } = new TransformDesignTokens({
+  const { entries } = new TransformDesignTokens({
     tokens,
   })
-  const prettyCSS = await prettier.format(css, { parser: 'css' })
-  expect(prettyCSS).toMatchSnapshot()
-  expect(ts).toMatchSnapshot()
+
+  expect(entries.length).toBe(4)
 })
 
 test('invalid alias', async () => {
@@ -525,4 +569,35 @@ test('fractional scale', async () => {
   expect(prettyCSS).toMatchSnapshot()
   expect(ts).toMatchSnapshot()
   expect(entries).toMatchSnapshot('fractional scale entries')
+})
+
+test('Throw on circular dependency', async () => {
+  const tokens: DesignTokenGroup = {
+    circular: {
+      $value: '{dependent}',
+      $type: 'color',
+      $description: 'mock description',
+    },
+    white: {
+      $value: '{circular}',
+      $type: 'color',
+      $description: 'mock description',
+    },
+    dependent: {
+      $value: '{white}',
+      $type: 'color',
+      $description: 'mock description',
+    },
+  }
+  const t = () => {
+    new TransformDesignTokens({
+      tokens,
+    })
+  }
+  try {
+    t()
+  } catch (e) {
+    //@ts-expect-error: it's an error
+    expect(e?.message).toBe(`Circular dependency found for {circular}\ndependencyPath: [{dependent}, {white}]`)
+  }
 })
