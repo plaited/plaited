@@ -83,9 +83,9 @@ export const DecoratedCheckbox: FT<ElementAttributeList['input']> = (props) => {
   return (
     <DecorateCheckbox>
       <input
+        {...props}
         {...styles.input}
         type='checkbox'
-        {...props}
       />
     </DecorateCheckbox>
   )
