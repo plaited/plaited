@@ -1,3 +1,4 @@
+import { camelCase } from '../utils/case.js'
 import { isTypeOf } from '../utils/is-type-of.js'
 import { trueTypeOf } from '../utils/true-type-of.js'
 import type {
@@ -94,13 +95,77 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
   has: TransformDesignTokensInterface['has'] = (alias) => {
     return this.#db.has(alias)
   }
+  #sortAndMapEntries({
+    arr,
+    clone,
+    type,
+    depAlias,
+  }: {
+    arr: string[]
+    clone: Map<`{${string}}`, DesignTokenEntry>
+    type: 'ts' | 'css'
+    depAlias?: `{${string}}`
+  }) {
+    if (depAlias) {
+      const entry = clone.get(depAlias)
+      if (!entry) return
+      const dependencies = entry.dependencies
+      if (dependencies.length)
+        for (const dep of dependencies)
+          this.#sortAndMapEntries({
+            arr,
+            type,
+            clone,
+            depAlias: dep,
+          })
+      const str = entry[type]
+      str && arr.push(str)
+      clone.delete(depAlias)
+      return
+    }
+    for (const [key, entry] of clone) {
+      const dependencies = entry.dependencies
+      if (dependencies.length) {
+        for (const dep of dependencies)
+          this.#sortAndMapEntries({
+            arr,
+            type,
+            clone,
+            depAlias: dep,
+          })
+      }
+      const str = entry[type]
+      str && arr.push(str)
+      clone.delete(key)
+    }
+  }
   #createCSS() {
-    const vars = [...structuredClone(this.#db)].flatMap(([key, token]) => this.#tokenToCss(key, token) ?? []).join('\n')
+    for (const [key, entry] of this.#db) {
+      this.#tokenToCss(key, entry)
+    }
+    const clone = structuredClone(this.#db)
+    const arr: string[] = []
+    this.#sortAndMapEntries({
+      arr,
+      clone,
+      type: 'css',
+    })
+    const vars = arr.join('\n')
     const str = combineCSSRules(vars)
     return str.length ? str + '\n' : ''
   }
   #createTS() {
-    const str = [...this.#db].flatMap(([key, token]) => this.#getTokenReference(key, token) ?? []).join('\n')
+    for (const [key, entry] of this.#db) {
+      this.#getTokenReference(key, entry)
+    }
+    const clone = structuredClone(this.#db)
+    const arr: string[] = []
+    this.#sortAndMapEntries({
+      arr,
+      clone,
+      type: 'ts',
+    })
+    const str = arr.join('\n')
     return str.length ? str + '\n' : ''
   }
   #flattenTokens(tokens: DesignTokenGroup, tokenPath: string[] = []) {
@@ -108,7 +173,7 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
     if (trueTypeOf(tokens) !== 'object') return
     if (isDesignToken(tokens)) {
       if (topLevel) return
-      const alias = getAlias(tokenPath)
+      const alias = getAlias(tokenPath.map((str) => camelCase(str)))
       if (this.#db.has(alias)) {
         return console.error(`Alias ${alias} already exist rename token at [${tokenPath.join(', ')}]`)
       }
@@ -123,21 +188,21 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
       }
     }
   }
+  #updateEntry({ entry, content, type }: { entry: DesignTokenEntry; content?: string; type: 'ts' | 'css' }) {
+    entry[type] = content
+  }
+  #checkAlias(alias: Alias) {
+    const hasAlias = this.#db.has(alias)
+    if (!hasAlias) {
+      console.error(`Invalid token alias: ${alias}`)
+    }
+    return hasAlias
+  }
   #updateDependencies(dependent: Alias, dependency: Alias) {
     const dependentDependencies = this.#db.get(dependent)!.dependencies
     !dependentDependencies.includes(dependency) && dependentDependencies.push(dependency)
     const dependencyDependents = this.#db.get(dependency)!.dependents
     !dependencyDependents.includes(dependent) && dependencyDependents.push(dependent)
-  }
-  #logInvalidAlias(alias: Alias) {
-    return console.error(`Invalid token alias: ${alias}`)
-  }
-  #checkAlias(alias: Alias) {
-    const hasAlias = this.#db.has(alias)
-    if (!hasAlias) {
-      this.#logInvalidAlias(alias)
-    }
-    return hasAlias
   }
   #convertAliasToCssVar(key: Alias, $value: Alias) {
     if (this.#checkAlias($value)) {
@@ -172,23 +237,42 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
     const { $type, $csv, $value } = token
     const entry = this.#db.get(key)!
     const cssVar = `--${this.#tokenPrefix}-${getProp(key)}`
-    entry['cssVar'] = cssVar
+    entry.cssVar = cssVar
     if ($type === 'color') {
-      if (!isMediaValue($value)) return formatNonMediaRule(cssVar, this.#getColor(key, $value))
+      if (!isMediaValue($value)) {
+        return this.#updateEntry({
+          entry,
+          content: formatNonMediaRule(cssVar, this.#getColor(key, $value)),
+          type: 'css',
+        })
+      }
       const map = new Map<string, string>(
         Object.entries($value).map<[string, string]>(([media, val]) => [media, this.#getColor(key, val)]),
       )
-      return this.#getCSSRules(cssVar, map)
+      return this.#updateEntry({
+        entry,
+        content: this.#getCSSRules(cssVar, map),
+        type: 'css',
+      })
     }
     if ($type === 'function') {
-      if (!isMediaValue($value)) return formatNonMediaRule(cssVar, this.#getFunction({ key, $value, $csv }))
+      if (!isMediaValue($value))
+        return this.#updateEntry({
+          entry,
+          content: formatNonMediaRule(cssVar, this.#getFunction({ key, $value, $csv })),
+          type: 'css',
+        })
       const map = new Map<string, string>(
         Object.entries($value).map<[string, string]>(([media, val]) => [
           media,
           this.#getFunction({ key, $value: val, $csv }),
         ]),
       )
-      return this.#getCSSRules(cssVar, map)
+      return this.#updateEntry({
+        entry,
+        content: this.#getCSSRules(cssVar, map),
+        type: 'css',
+      })
     }
     if (isMediaValue($value)) {
       const map = new Map<string, string | number>(
@@ -197,9 +281,17 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
           this.#getValue({ key, $value: val, $csv }),
         ]),
       )
-      return this.#getCSSRules(cssVar, map)
+      return this.#updateEntry({
+        entry,
+        content: this.#getCSSRules(cssVar, map),
+        type: 'css',
+      })
     }
-    return formatNonMediaRule(cssVar, this.#getValue({ key, $value, $csv }))
+    return this.#updateEntry({
+      entry,
+      content: formatNonMediaRule(cssVar, this.#getValue({ key, $value, $csv })),
+      type: 'css',
+    })
   }
   #getCSSRules(cssVar: string, $value: Map<string, string | number>) {
     const toRet: string[] = []
@@ -228,13 +320,17 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
     entry['exportName'] = exportName
     if (isAlias || $type !== 'composite') {
       const comment = this.#getComment(isAlias ? $value : key)
-      if (comment) {
-        return [
-          comment,
-          `export const ${exportName} = ${isAlias ? getAliasExportName($value) : `"${convertAliasToCssVar(key, this.#tokenPrefix)}" as const`}`,
-        ].join('\n')
-      }
-      return undefined
+      return this.#updateEntry({
+        entry,
+        content:
+          comment ?
+            [
+              comment,
+              `export const ${exportName} = ${isAlias ? getAliasExportName($value) : `"${convertAliasToCssVar(key, this.#tokenPrefix)}" as const`}`,
+            ].join('\n')
+          : undefined,
+        type: 'ts',
+      })
     }
     const toRet: string[] = []
     for (const key in $value) {
@@ -245,7 +341,11 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
         toRet.push(comment, `  ${key}: ${name},`)
       }
     }
-    return toRet.length ? [`export const ${exportName} = {`, ...toRet, '}'].join('\n') : undefined
+    return this.#updateEntry({
+      entry,
+      content: toRet.length ? [`export const ${exportName} = {`, ...toRet, '}'].join('\n') : undefined,
+      type: 'ts',
+    })
   }
   #getComment(alias: Alias): string | undefined {
     if (this.#checkAlias(alias)) {

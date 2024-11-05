@@ -110,7 +110,9 @@ export type DesignTokenEntry = DesignToken & {
   dependencies: Alias[]
   dependents: Alias[]
   exportName?: string
+  ts?: string
   cssVar?: string
+  css?: string
 }
 
 type FilterCallback = (entry: [Alias, DesignTokenEntry], index: number, arr: [Alias, DesignTokenEntry][]) => boolean
