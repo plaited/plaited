@@ -861,7 +861,9 @@ export const size3 = "var(--pl-size-3)" as const"
 ,
       "cssVar": "--pl-size-4",
       "dependencies": [],
-      "dependents": [],
+      "dependents": [
+        "{bodyFont}",
+      ],
       "exportName": "size4",
       "ts": 
 "/**
@@ -959,7 +961,9 @@ export const size2_5 = "var(--pl-size-2_5)" as const"
 ,
       "cssVar": "--pl-size-3_5",
       "dependencies": [],
-      "dependents": [],
+      "dependents": [
+        "{bodyFont}",
+      ],
       "exportName": "size3_5",
       "ts": 
 "/**
@@ -1005,7 +1009,10 @@ export const paddingSmall = size0_5"
         "fontSize": "{size.3_5}",
         "lineHeight": "{size.4}",
       },
-      "dependencies": [],
+      "dependencies": [
+        "{size.4}",
+        "{size.3_5}",
+      ],
       "dependents": [],
       "exportName": "bodyFont",
       "ts": 

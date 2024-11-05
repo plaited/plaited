@@ -12,6 +12,7 @@ import type {
   DefaultMediaQueries,
   MediaQueries,
   Alias,
+  CompositeToken,
 } from './design-token.types.js'
 import {
   colorSchemeMediaQueries,
@@ -232,8 +233,18 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
     if (valueIsAlias($value)) return this.#convertAliasToCssVar(key, $value) ?? ''
     return `${$value.function}(${this.#getValue({ key, $csv, $value: $value.arguments })})`
   }
+  #setCompositeDeps(dependent: Alias, token: CompositeToken) {
+    if (token.$type === 'composite') {
+      const { $value } = token
+      if (isTypeOf<Alias>($value, 'string')) return this.#updateDependencies(dependent, $value)
+      for (const dependency of Object.values($value)) {
+        this.#updateDependencies(dependent, dependency)
+      }
+      return
+    }
+  }
   #tokenToCss(key: Alias, token: DesignToken) {
-    if (token.$type === 'composite') return
+    if (token.$type === 'composite') return this.#setCompositeDeps(key, token)
     const { $type, $csv, $value } = token
     const entry = this.#db.get(key)!
     const cssVar = `--${this.#tokenPrefix}-${getProp(key)}`
