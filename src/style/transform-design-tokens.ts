@@ -61,7 +61,7 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
     this.#mediaQueries = new Map([...colorSchemeMediaQueries, ...(mediaQueries ?? [])])
     this.#flattenTokens(tokens)
     this.#css = this.#createCSS()
-    this.#ts = this.#createTS_EXTENSION()
+    this.#ts = this.#createTS()
   }
   /**
    * Typescript references to CSS variables
@@ -174,7 +174,7 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
     const str = combineCSSRules(vars)
     return str.length ? str + '\n' : ''
   }
-  #createTS_EXTENSION() {
+  #createTS() {
     for (const [key, entry] of this.#db) {
       this.#getTokenReference(key, entry)
     }
