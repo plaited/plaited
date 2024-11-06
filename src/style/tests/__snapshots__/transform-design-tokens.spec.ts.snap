@@ -101,7 +101,7 @@ exports[`mediaQueries:m colorScheme 1`] = `
     --pl-gray: oklch(100% 0 0 / 0.5);
   }
 }
-:host([data-media-query="@light"]) {
+:host([data-color-scheme="@light"]) {
   --pl-gray: oklch(100% 0 0 / 0.5);
 }
 @media (prefers-color-scheme: dark) {
@@ -109,7 +109,7 @@ exports[`mediaQueries:m colorScheme 1`] = `
     --pl-gray: oklch(0% 0 0 / 0.5);
   }
 }
-:host([data-media-query="@dark"]) {
+:host([data-color-scheme="@dark"]) {
   --pl-gray: oklch(0% 0 0 / 0.5);
 }
 "
@@ -171,7 +171,7 @@ exports[`mediaQueries 1`] = `
     --pl-colors-background-primary: oklch(100% 0 0 / 0.5);
   }
 }
-:host([data-media-query="@light"]) {
+:host([data-color-scheme="@light"]) {
   --pl-colors-background-primary: oklch(100% 0 0 / 0.5);
 }
 @media (prefers-color-scheme: dark) {
@@ -179,7 +179,7 @@ exports[`mediaQueries 1`] = `
     --pl-colors-background-primary: oklch(0% 0 0 / 0.5);
   }
 }
-:host([data-media-query="@dark"]) {
+:host([data-color-scheme="@dark"]) {
   --pl-colors-background-primary: oklch(0% 0 0 / 0.5);
 }
 "
@@ -257,7 +257,7 @@ exports[`alias + mediaQueries 1`] = `
     --pl-surface-secondary-100: var(--pl-colors-white-100);
   }
 }
-:host([data-media-query="@light"]) {
+:host([data-color-scheme="@light"]) {
   --pl-surface-secondary-100: var(--pl-colors-white-100);
 }
 @media (prefers-color-scheme: dark) {
@@ -265,7 +265,7 @@ exports[`alias + mediaQueries 1`] = `
     --pl-surface-secondary-100: var(--pl-colors-charcoal-100);
   }
 }
-:host([data-media-query="@dark"]) {
+:host([data-color-scheme="@dark"]) {
   --pl-surface-secondary-100: var(--pl-colors-charcoal-100);
 }
 "
