@@ -72,6 +72,14 @@ export const valueIsAlias = (value: unknown): value is Alias => {
 export const formatNonMediaRule = (cssVar: string, value: string | number) =>
   [`:host{`, `${cssVar}:${value};`, '}'].join('\n')
 
+export const LIGHT_ID = '@light' as const
+export const DARK_ID = '@dark' as const
+export const DATA_COLOR_SCHEME = 'data-color-scheme' as const
+export const DATA_MEDIA_QUERY = 'data-media-query' as const
+export const TS_EXTENSION = 'ts' as const
+export const CSS_EXTENSION = 'css' as const
+export const PLAITED_PREFIX = 'pl' as const
+
 export const formatMediaRule = ({
   cssVar,
   query,
@@ -87,12 +95,12 @@ export const formatMediaRule = ({
     `@media ${query}{:host{`,
     `${cssVar}:${value};`,
     '}}',
-    `:host([data-media-query="${id}"]){`,
+    `:host([${id === LIGHT_ID || id === DARK_ID ? `${DATA_COLOR_SCHEME}="${id}"` : `${DATA_MEDIA_QUERY}="${id}"`}]){`,
     `${cssVar}:${value};`,
     '}',
   ].join('\n')
 
-export const colorSchemeMediaQueries = new Map<'@light' | '@dark', string>([
-  ['@light', '(prefers-color-scheme: light)'],
-  ['@dark', '(prefers-color-scheme: dark)'],
+export const colorSchemeMediaQueries = new Map<typeof LIGHT_ID | typeof DARK_ID, string>([
+  [LIGHT_ID, '(prefers-color-scheme: light)'],
+  [DARK_ID, '(prefers-color-scheme: dark)'],
 ])

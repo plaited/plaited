@@ -28,6 +28,11 @@ import {
   valueIsAlias,
   formatNonMediaRule,
   formatMediaRule,
+  LIGHT_ID,
+  DARK_ID,
+  TS_EXTENSION,
+  CSS_EXTENSION,
+  PLAITED_PREFIX,
 } from './transform-design-tokens.utils.js'
 
 export class TransformDesignTokens implements TransformDesignTokensInterface {
@@ -36,10 +41,10 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
   #ts: string
   #css: string
   #defaultMediaQueries: DefaultMediaQueries
-  #mediaQueries: Map<'@light' | '@dark' | `@${string}`, string>
+  #mediaQueries: Map<typeof LIGHT_ID | typeof DARK_ID | `@${string}`, string>
   constructor({
     tokens,
-    tokenPrefix = 'pl',
+    tokenPrefix = PLAITED_PREFIX,
     defaultMediaQueries = {},
     mediaQueries,
   }: {
@@ -56,7 +61,7 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
     this.#mediaQueries = new Map([...colorSchemeMediaQueries, ...(mediaQueries ?? [])])
     this.#flattenTokens(tokens)
     this.#css = this.#createCSS()
-    this.#ts = this.#createTS()
+    this.#ts = this.#createTS_EXTENSION()
   }
   /**
    * Typescript references to CSS variables
@@ -115,7 +120,7 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
   }: {
     arr: string[]
     clone: Map<`{${string}}`, DesignTokenEntry>
-    type: 'ts' | 'css'
+    type: typeof TS_EXTENSION | typeof CSS_EXTENSION
     dependency?: Alias
   }) {
     if (dependency) {
@@ -163,13 +168,13 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
     this.#sortAndMapEntries({
       arr,
       clone,
-      type: 'css',
+      type: CSS_EXTENSION,
     })
     const vars = arr.join('\n')
     const str = combineCSSRules(vars)
     return str.length ? str + '\n' : ''
   }
-  #createTS() {
+  #createTS_EXTENSION() {
     for (const [key, entry] of this.#db) {
       this.#getTokenReference(key, entry)
     }
@@ -178,7 +183,7 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
     this.#sortAndMapEntries({
       arr,
       clone,
-      type: 'ts',
+      type: TS_EXTENSION,
     })
     const str = arr.join('\n')
     return str.length ? str + '\n' : ''
@@ -273,7 +278,7 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
         return this.#updateEntry({
           entry,
           content: formatNonMediaRule(cssVar, this.#getColor(key, $value)),
-          type: 'css',
+          type: CSS_EXTENSION,
         })
       }
       const map = new Map<string, string>(
@@ -282,7 +287,7 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
       return this.#updateEntry({
         entry,
         content: this.#getCSSRules(cssVar, map),
-        type: 'css',
+        type: CSS_EXTENSION,
       })
     }
     if ($type === 'function') {
@@ -290,7 +295,7 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
         return this.#updateEntry({
           entry,
           content: formatNonMediaRule(cssVar, this.#getFunction({ key, $value, $csv })),
-          type: 'css',
+          type: CSS_EXTENSION,
         })
       const map = new Map<string, string>(
         Object.entries($value).map<[string, string]>(([media, val]) => [
@@ -301,7 +306,7 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
       return this.#updateEntry({
         entry,
         content: this.#getCSSRules(cssVar, map),
-        type: 'css',
+        type: CSS_EXTENSION,
       })
     }
     if (isMediaValue($value)) {
@@ -314,13 +319,13 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
       return this.#updateEntry({
         entry,
         content: this.#getCSSRules(cssVar, map),
-        type: 'css',
+        type: CSS_EXTENSION,
       })
     }
     return this.#updateEntry({
       entry,
       content: formatNonMediaRule(cssVar, this.#getValue({ key, $value, $csv })),
-      type: 'css',
+      type: CSS_EXTENSION,
     })
   }
   #getCSSRules(cssVar: string, $value: Map<string, string | number>) {
@@ -359,7 +364,7 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
               `export const ${exportName} = ${isAlias ? getAliasExportName($value) : `"${convertAliasToCssVar(key, this.#tokenPrefix)}" as const`}`,
             ].join('\n')
           : undefined,
-        type: 'ts',
+        type: TS_EXTENSION,
       })
     }
     const toRet: string[] = []
@@ -374,7 +379,7 @@ export class TransformDesignTokens implements TransformDesignTokensInterface {
     return this.#updateEntry({
       entry,
       content: toRet.length ? [`export const ${exportName} = {`, ...toRet, '}'].join('\n') : undefined,
-      type: 'ts',
+      type: TS_EXTENSION,
     })
   }
   #getComment(alias: Alias): string | undefined {
