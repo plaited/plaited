@@ -81,6 +81,12 @@ export const useServer = (url: string | `/${string}` | URL, protocols?: string |
   const maxRetries = 3
   let socket: WebSocket | undefined
   let retryCount = 0
+  let isVisible = document.hidden
+  const visibilityCallback = () => {
+    isVisible = document.hidden
+  }
+  delegates.set(document, new DelegatedListener(visibilityCallback))
+  document.addEventListener('visibilitychange', delegates.get(document))
   const elementTrigger = (data: string | Record<string, unknown>) => {
     try {
       const message = isTypeOf<string>(data, 'string') ? JSON.parse(data) : data
@@ -120,16 +126,18 @@ export const useServer = (url: string | `/${string}` | URL, protocols?: string |
         isTypeOf<string>(url, 'string') && url.startsWith('/') ?
           `${self?.location?.origin.replace(/^http/, 'ws')}${url}`
         : url
-      socket = new WebSocket(path, protocols)
-      delegates.set(socket, new DelegatedListener(ws.callback))
-      // WebSocket connection opened
-      socket.addEventListener('open', delegates.get(socket))
-      // Handle incoming messages
-      socket.addEventListener('message', delegates.get(socket))
-      // Handle WebSocket errors
-      socket.addEventListener('error', delegates.get(socket))
-      // WebSocket connection closed
-      socket.addEventListener('close', delegates.get(socket))
+      if (isVisible || document.hasFocus()) {
+        socket = new WebSocket(path, protocols)
+        delegates.set(socket, new DelegatedListener(ws.callback))
+        // WebSocket connection opened
+        socket.addEventListener('open', delegates.get(socket))
+        // Handle incoming messages
+        socket.addEventListener('message', delegates.get(socket))
+        // Handle WebSocket errors
+        socket.addEventListener('error', delegates.get(socket))
+        // WebSocket connection closed
+        socket.addEventListener('close', delegates.get(socket))
+      }
     },
     retry() {
       if (retryCount < maxRetries) {

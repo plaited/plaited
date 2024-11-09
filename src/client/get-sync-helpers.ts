@@ -27,54 +27,52 @@ const createIDB = (dbName: string, storeName: string) => {
 
 // Async Pub Sub that allows us the get Last Value Cache and subscribe to changes and persist the value in indexedDB
 export const getSyncHelpers = <T>({
-  key,
+  address,
   databaseName = PLAITED_INDEXED_DB,
   storeName = PLAITED_STORE,
   persist,
 }: {
   /** key for stored value */
-  key: string
+  address: string
   databaseName?: string
   storeName?: string
   persist?: boolean
 }) => {
-  const channel = new BroadcastChannel(`${databaseName}_${storeName}_${key}`)
-  const db = createIDB(databaseName, storeName)
-  const write = (newValue: T) => db('readwrite', (store) => store.put(newValue, key))
+  const channel = new BroadcastChannel(persist ? `${databaseName}_${storeName}_${address}` : address)
+  // const db = createIDB(databaseName, storeName)
+  // const write = (newValue: T) => db('readwrite', (store) => store.put(newValue, key))
 
-  const onInitialize = async (initialValue?: T) => {
-    if (initialValue !== undefined && !persist) {
-      await write(initialValue)
-    }
-  }
+  // const onInitialize = async (initialValue?: T) => {
+  //   if (initialValue !== undefined && !persist) {
+  //     await write(initialValue)
+  //   }
+  // }
 
-  const get = () => {
-    let req: IDBRequest<T>
-    return db('readonly', (store) => {
-      req = store.get(key)
-    }).then(() => req.result)
-  }
+  // const get = () => {
+  //   let req: IDBRequest<T>
+  //   return db('readonly', (store) => {
+  //     req = store.get(key)
+  //   }).then(() => req.result)
+  // }
 
-  const onUpdate = async (newValue: T) => {
-    await write(newValue)
-    const next = await get()
-    channel.postMessage(next)
-  }
+  // const onUpdate = async (newValue: T) => {
+  //   await write(newValue)
+  //   const next = await get()
+  //   channel.postMessage(next)
+  // }
 
-  const onEffect = (eventType: string, trigger: Trigger | PlaitedTrigger, getLVC: boolean) => {
-    const channel = new BroadcastChannel(`${databaseName}_${storeName}_${key}`)
-    const handler = (event: MessageEvent<T>) => trigger<T>({ type: eventType, detail: event.data })
-    if (getLVC && !document.hasFocus()) {
-      void get().then((value) => trigger<T>({ type: eventType, detail: value }))
-    }
-    channel.addEventListener('message', handler)
-    const disconnect = () => channel.removeEventListener('message', handler)
-    isPlaitedTrigger(trigger) && trigger.addDisconnectCallback(disconnect)
-    return disconnect
-  }
+  // const onEffect = (eventType: string, trigger: Trigger | PlaitedTrigger, getLVC: boolean) => {
+  //   const handler = (event: MessageEvent<T>) => trigger<T>({ type: eventType, detail: event.data })
+  //   getLVC && void get().then((value) => trigger<T>({ type: eventType, detail: value }))
+  //   channel.addEventListener('message', handler)
+  //   const disconnect = () => channel.removeEventListener('message', handler)
+  //   isPlaitedTrigger(trigger) && trigger.addDisconnectCallback(disconnect)
+  //   return disconnect
+  // }
   return {
-    onUpdate,
-    onEffect,
-    onInitialize,
+    channel,
+    // onUpdate,
+    // onEffect,
+    // onInitialize,
   }
 }
