@@ -44,7 +44,7 @@ export const addListeners = (elements: Element[], trigger: Trigger) => {
   }
 }
 
-export const shadowObserver = (root: ShadowRoot, trigger: Trigger) => {
+export const getShadowObserver = (root: ShadowRoot, trigger: Trigger) => {
   /**  Observes the addition of nodes to the shadow dom and changes to and child's p-trigger attribute */
   const mo = new MutationObserver((mutationsList) => {
     for (const mutation of mutationsList) {

@@ -129,7 +129,7 @@ const bindingsMap = new WeakMap<ShadowRoot, Bindings>()
 export const getBoundInstance = (shadowRoot: ShadowRoot) =>
   bindingsMap.get(shadowRoot) ?? (bindingsMap.set(shadowRoot, getBindings(shadowRoot)).get(shadowRoot) as Bindings)
 
-export const useQuery = (shadowRoot: ShadowRoot): QuerySelector => {
+export const getQueryHelper = (shadowRoot: ShadowRoot): QuerySelector => {
   const instance = getBoundInstance(shadowRoot)
   const select = <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
     assignBinding<T>(instance, Array.from(shadowRoot.querySelectorAll<Element>(`[${P_TARGET}${match}"${target}"]`)))

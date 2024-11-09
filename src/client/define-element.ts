@@ -11,9 +11,9 @@ import {
   bProgram,
 } from '../behavioral/b-program.js'
 import { P_TRIGGER } from '../jsx/jsx.constants.js'
-import { type QuerySelector, useQuery, handleTemplateObject } from './use-query.js'
-import { shadowObserver, addListeners } from './shadow-observer.js'
-import { usePublicEvents } from './use-public-events.js'
+import { type QuerySelector, getQueryHelper, handleTemplateObject } from './get-query-helper.js'
+import { getShadowObserver, addListeners } from './get-shadow-observer.js'
+import { getPublicTrigger } from './get-public-trigger.js'
 import { canUseDOM } from '../utils/can-use-dom.js'
 import { ELEMENT_CALLBACKS } from './client.constants.js'
 import type { PlaitedTrigger } from './client.types.js'
@@ -126,7 +126,7 @@ export const defineElement = <A extends Actions>({
           const frag = handleTemplateObject(this.#root, shadowDom)
           this.attachShadow({ mode, delegatesFocus, slotAssignment })
           this.#root.replaceChildren(frag)
-          this.#query = useQuery(this.#root)
+          this.#query = getQueryHelper(this.#root)
           const { trigger, useFeedback, useSnapshot, bThreads } = bProgram()
           this.#trigger = Object.assign(trigger, {
             addDisconnectCallback: (cb: Disconnect) => this.#disconnectSet.add(cb),
@@ -134,7 +134,7 @@ export const defineElement = <A extends Actions>({
           this.#useFeedback = useFeedback
           this.#useSnapshot = useSnapshot
           this.#bThreads = bThreads
-          this.trigger = usePublicEvents({
+          this.trigger = getPublicTrigger({
             trigger,
             publicEvents,
             disconnectSet: this.#disconnectSet,
@@ -166,7 +166,7 @@ export const defineElement = <A extends Actions>({
             // Delegate listeners nodes with p-trigger directive on connection or upgrade
             addListeners(Array.from(this.#root.querySelectorAll<Element>(`[${P_TRIGGER}]`)), this.#trigger)
             // Create a shadow observer to watch for modification & addition of nodes with p-this.#trigger directive
-            this.#shadowObserver = shadowObserver(this.#root, this.#trigger)
+            this.#shadowObserver = getShadowObserver(this.#root, this.#trigger)
             // bind connectedCallback to the custom element with the following arguments
             const actions = callback.bind(this)({
               $: this.#query,

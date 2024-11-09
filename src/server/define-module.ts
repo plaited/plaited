@@ -8,7 +8,7 @@ import {
   bProgram,
   type Disconnect,
 } from '../behavioral/b-program.js'
-import { usePublicEvents } from '../client/use-public-events.js'
+import { getPublicTrigger } from '../client/get-public-trigger.js'
 import type { PlaitedTrigger } from '../client/client.types.js'
 
 export const defineModule = <A extends Actions, W = unknown>({
@@ -36,7 +36,7 @@ export const defineModule = <A extends Actions, W = unknown>({
   const connect = (ws: ServerWebSocket<W>) => {
     const actions = callback({ trigger, bThread, bSync, ws, ...rest })
     useFeedback(actions)
-    return usePublicEvents({ trigger, publicEvents, disconnectSet })
+    return getPublicTrigger({ trigger, publicEvents, disconnectSet })
   }
   connect.id = id
   connect.disconnect = () => {

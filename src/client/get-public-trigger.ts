@@ -1,7 +1,7 @@
 import type { Trigger, Disconnect } from '../behavioral/b-program.js'
 import type { PlaitedTrigger } from './client.types.js'
 
-export const usePublicEvents = (args: {
+export const getPublicTrigger = (args: {
   trigger: Trigger
   publicEvents?: string[] | ReadonlyArray<string>
   disconnectSet?: Set<Disconnect>

@@ -7,7 +7,7 @@ import {
   bProgram,
   type Disconnect,
 } from '../behavioral/b-program.js'
-import { usePublicEvents } from '../client/use-public-events.js'
+import { getPublicTrigger } from '../client/get-public-trigger.js'
 
 export const defineWorker = <A extends Actions>({
   bProgram: callback,
@@ -28,7 +28,7 @@ export const defineWorker = <A extends Actions>({
 }) => {
   const disconnectSet = new Set<Disconnect>()
   const { useFeedback, trigger, ...rest } = bProgram()
-  const _trigger = usePublicEvents({ trigger, publicEvents, disconnectSet })
+  const _trigger = getPublicTrigger({ trigger, publicEvents, disconnectSet })
   const eventHandler = ({ data }: { data: BPEvent }) => {
     _trigger(data)
   }
