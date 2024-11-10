@@ -71,12 +71,28 @@ const isTriggerMessage = (msg: unknown): msg is TriggerMessage => {
   )
 }
 
+const isPlaitedMessage = (msg: unknown): msg is TriggerMessage | InsertMessage => {
+  return isTypeOf<{ [key: string]: unknown }>(msg, 'object') && isTypeOf<string>(msg?.address, 'string')
+}
+
+const handleMessage = (host: PlaitedElement) => (data: TriggerMessage | InsertMessage) => {
+  const message = isTypeOf<string>(data, 'string') ? JSON.parse(data) : data
+  if (isInsertMessage(message)) {
+    const { method, html } = message
+    host && updateElement({ host, html, method })
+  }
+  if (isTriggerMessage(message)) {
+    const { type, detail } = message
+    host?.trigger({ type, detail })
+  }
+}
+
 const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => event.type === 'close'
 
 export const toAddress = (tag: CustomElementTag, id?: string): string => `${tag}${id ? `#${id}` : ''}`
 
 export const useServer = (url: string | `/${string}` | URL, protocols?: string | string[]) => {
-  const subscribers = new Map<string, PlaitedElement>()
+  const subscribers = new Map<string, ReturnType<typeof handleMessage>>()
   const retryStatusCodes = new Set([1006, 1012, 1013])
   const maxRetries = 3
   let socket: WebSocket | undefined
@@ -87,28 +103,17 @@ export const useServer = (url: string | `/${string}` | URL, protocols?: string |
   }
   delegates.set(document, new DelegatedListener(visibilityCallback))
   document.addEventListener('visibilitychange', delegates.get(document))
-  const elementTrigger = (data: string | Record<string, unknown>) => {
-    try {
-      const message = isTypeOf<string>(data, 'string') ? JSON.parse(data) : data
-      if (isInsertMessage(message)) {
-        const { address, method, html } = message
-        const host = subscribers.get(address)
-        host && updateElement({ host, html, method })
-      }
-      if (isTriggerMessage(message)) {
-        const { address, type, detail } = message
-        const host = subscribers.get(address)
-        host?.trigger({ type, detail })
-      }
-    } catch (error) {
-      console.error('Error parsing incoming message:', error)
-    }
-  }
+
   const ws = {
     callback(evt: MessageEvent) {
       if (evt.type === 'message') {
         try {
-          elementTrigger(evt.data)
+          const { data } = evt
+          const message = isTypeOf<string>(data, 'string') ? JSON.parse(data) : data
+          if (isPlaitedMessage(message)) {
+            const handler = subscribers.get(message.address)
+            handler && handler(message)
+          }
         } catch (error) {
           console.error('Error parsing incoming message:', error)
         }
@@ -164,7 +169,7 @@ export const useServer = (url: string | `/${string}` | URL, protocols?: string |
   const connect = (host: PlaitedElement) => {
     if (!socket) ws.connect()
     const id = toAddress(host.tagName.toLowerCase() as CustomElementTag, host.id)
-    subscribers.set(id, host)
+    subscribers.set(id, handleMessage(host))
     const disconnect = () => {
       subscribers.delete(id)
     }
