@@ -109,13 +109,16 @@ export const PlaitedFixture = defineTemplate({
       })}
     ></slot>
   ),
-  bProgram({ root }) {
+  bProgram({ root, bThreads, bThread, bSync }) {
     const send = useServer({ url: this.getAttribute('p-socket') as `/${string}` })
     send.connect(this)
     const route = this.getAttribute('p-route') as string
     const storyFile = this.getAttribute('p-file') as string
     const entryPath = this.getAttribute('p-entry') as string
     const exportName = this.getAttribute('p-name') as string
+    bThreads.set({
+      onPlay: bThread([bSync({ waitFor: PLAY_EVENT }), bSync({ block: PLAY_EVENT })]),
+    })
     return {
       async [PLAY_EVENT]() {
         const { [exportName]: story } = (await import(entryPath)) as {

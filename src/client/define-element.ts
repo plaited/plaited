@@ -11,7 +11,7 @@ import {
   bProgram,
 } from '../behavioral/b-program.js'
 import { P_TRIGGER } from '../jsx/jsx.constants.js'
-import { type QuerySelector, getQueryHelper, handleTemplateObject } from './get-query-helper.js'
+import { type QuerySelector, getQuery, handleTemplateObject } from './get-query.js'
 import { getShadowObserver, addListeners } from './get-shadow-observer.js'
 import { getPublicTrigger } from './get-public-trigger.js'
 import { canUseDOM } from '../utils/can-use-dom.js'
@@ -127,7 +127,7 @@ export const defineElement = <A extends Actions>({
           const frag = handleTemplateObject(this.#root, shadowDom)
           this.attachShadow({ mode, delegatesFocus, slotAssignment })
           this.#root.replaceChildren(frag)
-          this.#query = getQueryHelper(this.#root)
+          this.#query = getQuery(this.#root)
           const { trigger, useFeedback, useSnapshot, bThreads } = bProgram()
           this.#trigger = Object.assign(trigger, {
             addDisconnectCallback: (cb: Disconnect) => this.#disconnectSet.add(cb),

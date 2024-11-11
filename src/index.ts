@@ -18,6 +18,7 @@ export { type ObservedAttributesDetail, useAttributesObserver } from './client/u
 export { useDispatch } from './client/use-dispatch.js'
 export { useServer } from './client/use-server.js'
 export { useSignal, useComputed } from './client/use-signal.js'
+export { useSignalDB, useComputedDB } from './client/use-signal-db.js'
 //STYLE
 export type * from './style/css.types.js'
 export { css } from './style/css.js'

@@ -1,12 +1,12 @@
 import type { BPEvent } from '../behavioral/b-thread.js'
 import type { CustomElementTag } from '../jsx/jsx.types.js'
 import { isTypeOf } from '../utils/is-type-of.js'
-import { INSERT_METHODS, PLAITED_INBOX_STORE, PLAITED_SENT_STORE } from './client.constants.js'
+import { INSERT_METHODS } from './client.constants.js'
 import type { InsertMessage, TriggerMessage, JSONDetail, PlaitedMessage } from './client.types.js'
 import { DelegatedListener, delegates } from './delegated-listener.js'
 import type { PlaitedElement } from './define-element.js'
 import { isInsertMessage, isPlaitedMessage, isTriggerMessage } from './client.guards.js'
-import { createIDB } from './create-idb.js'
+
 const createDocumentFragment = (html: string) => {
   const tpl = document.createElement('template')
   tpl.setHTMLUnsafe(html)
@@ -45,28 +45,20 @@ const handleMessage =
 
 const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => event.type === 'close'
 
+const PLAITED_CHANNEL = 'PLAITED_CHANNEL'
+
 export const toAddress = (tag: CustomElementTag, id?: string): string => `${tag}${id ? `#${id}` : ''}`
 
-export const useServer = ({
-  url,
-  protocols,
-  databaseName,
-}: {
-  url: string | `/${string}` | URL
-  protocols?: string | string[]
-  databaseName?: string
-}) => {
+export const useServer = ({ url, protocols }: { url: string | `/${string}` | URL; protocols?: string | string[] }) => {
   const subscribers = new Map<string, ReturnType<typeof handleMessage>>()
   const retryStatusCodes = new Set([1006, 1012, 1013])
   const maxRetries = 3
   let socket: WebSocket | undefined
   let retryCount = 0
-  let isHidden = document.hidden
+  let documentIsHidden = document.hidden
 
-  const inbox = createIDB<PlaitedMessage>(PLAITED_INBOX_STORE, databaseName)
-  const sent = createIDB<TriggerMessage>(PLAITED_SENT_STORE, databaseName)
   const ws = {
-    callback(evt: MessageEvent) {
+    async callback(evt: MessageEvent) {
       if (evt.type === 'message') {
         try {
           const { data } = evt
@@ -75,7 +67,7 @@ export const useServer = ({
             const { address } = message
             const handler = subscribers.get(address)
             handler && handler({ data: message })
-            const channel = new BroadcastChannel(`${databaseName}_${PLAITED_INBOX_STORE}_${address}`)
+            const channel = new BroadcastChannel(`${PLAITED_CHANNEL}_${address}`)
             channel.postMessage(message)
             channel.close()
           }
@@ -96,7 +88,7 @@ export const useServer = ({
         isTypeOf<string>(url, 'string') && url.startsWith('/') ?
           `${self?.location?.origin.replace(/^http/, 'ws')}${url}`
         : url
-      if (!isHidden) {
+      if (!documentIsHidden) {
         socket = new WebSocket(path, protocols)
         delegates.set(socket, new DelegatedListener(ws.callback))
         // WebSocket connection opened
@@ -120,38 +112,43 @@ export const useServer = ({
       socket = undefined
     },
   }
-  const visibilityCallback = () => {
-    isHidden = document.hidden
-    if (isHidden) {
-      socket?.close()
-      socket = undefined
-    }
-    if (!isHidden && !socket) {
-      ws.connect()
-    }
-  }
-  delegates.set(document, new DelegatedListener(visibilityCallback))
-  document.addEventListener('visibilitychange', delegates.get(document))
   const send = <T extends JSONDetail>(event: BPEvent<T>) => {
     const fallback = () => {
       send(event)
       socket?.removeEventListener('open', fallback)
     }
     if (socket?.readyState === WebSocket.OPEN) {
-      return socket.send(JSON.stringify(event))
+      socket.send(JSON.stringify(event))
+      if (documentIsHidden) {
+        socket?.close()
+        socket = undefined
+      }
+      return
     }
     if (!socket) ws.connect()
     socket?.addEventListener('open', fallback)
   }
-  const connect = (host: PlaitedElement, getLVC?: boolean) => {
+  const documentVisibilityCallback = () => {
+    documentIsHidden = document.hidden
+    if (documentIsHidden) {
+      socket?.close()
+      socket = undefined
+    } else {
+      ws.connect()
+    }
+  }
+  delegates.set(document, new DelegatedListener(documentVisibilityCallback))
+  document.addEventListener('visibilitychange', delegates.get(document))
+  const connect = (host: PlaitedElement) => {
     if (!socket) ws.connect()
     const address = toAddress(host.tagName.toLowerCase() as CustomElementTag, host.id)
-    const channel = new BroadcastChannel(`${databaseName}_${PLAITED_INBOX_STORE}_${address}`)
+    const channel = new BroadcastChannel(`${PLAITED_CHANNEL}_${address}`)
     const handler = handleMessage(host)
     const channelCallback = (evt: { data: PlaitedMessage }) => {
-      isHidden && handler(evt)
+      if (documentIsHidden) {
+        handler(evt)
+      }
     }
-    // getLVC &&  void inbox.get(address).then((value) => value && handler({ data: value}))
     channel.addEventListener('message', channelCallback)
     subscribers.set(address, handler)
     const disconnect = () => {

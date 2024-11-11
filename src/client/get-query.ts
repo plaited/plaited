@@ -129,21 +129,21 @@ const bindingsMap = new WeakMap<ShadowRoot, Bindings>()
 export const getBoundInstance = (shadowRoot: ShadowRoot) =>
   bindingsMap.get(shadowRoot) ?? (bindingsMap.set(shadowRoot, getBindings(shadowRoot)).get(shadowRoot) as Bindings)
 
-export const getQueryHelper = (shadowRoot: ShadowRoot): QuerySelector => {
+export const getQuery = (shadowRoot: ShadowRoot): QuerySelector => {
   const instance = getBoundInstance(shadowRoot)
-  const select = <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
+  const query = <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
     assignBinding<T>(instance, Array.from(shadowRoot.querySelectorAll<Element>(`[${P_TARGET}${match}"${target}"]`)))
-  const selectFrag =
+  const queryFrag =
     (frag: DocumentFragment) =>
     <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
       assignBinding<T>(instance, Array.from(frag.querySelectorAll<Element>(`[${P_TARGET}${match}"${target}"]`)))
   const clone: Clone = (template, callback) => {
     return (data) => {
       const content = handleTemplateObject(shadowRoot, template)
-      callback(selectFrag(content), data)
+      callback(queryFrag(content), data)
       return content
     }
   }
-  select.clone = clone
-  return select
+  query.clone = clone
+  return query
 }
