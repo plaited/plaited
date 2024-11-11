@@ -1,5 +1,6 @@
 import type { Trigger, Disconnect } from '../behavioral/b-program.js'
-import { type Effect, type PlaitedTrigger, isPlaitedTrigger } from './client.types.js'
+import { type Effect, type PlaitedTrigger } from './client.types.js'
+import { isPlaitedTrigger } from './client.guards.js'
 
 export function useSignal<T>(initialValue: T): {
   (value: T): void

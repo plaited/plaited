@@ -37,6 +37,7 @@ export interface PlaitedElement extends HTMLElement {
 export type ConnectedCallbackArgs = {
   $: QuerySelector
   root: ShadowRoot
+  host: PlaitedElement
   internals: ElementInternals
   trigger: Trigger
   bThreads: BThreads
@@ -170,6 +171,7 @@ export const defineElement = <A extends Actions>({
             // bind connectedCallback to the custom element with the following arguments
             const actions = callback.bind(this)({
               $: this.#query,
+              host: this,
               root: this.#root,
               internals: this.#internals,
               trigger: this.#trigger,

@@ -85,7 +85,7 @@ export const hydration: StoryObj = {
     )
     hostElement.setHTMLUnsafe(template.html.join(''))
 
-    const host = await findByAttribute<PlaitedElement>('p-target', 'host')
+    let host = await findByAttribute<PlaitedElement>('p-target', 'host')
     let inner = await findByAttribute('p-target', 'inner', host)
     const style = await findByText(styles.inner.stylesheet.join(' '), host)
     let textContent = inner?.textContent
@@ -124,6 +124,7 @@ export const hydration: StoryObj = {
         }
       },
     })
+    host = await findByAttribute<PlaitedElement>('p-target', 'host')
     host?.trigger({ type: 'render' })
 
     inner = await findByAttribute('p-target', 'inner', host)

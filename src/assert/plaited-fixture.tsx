@@ -110,7 +110,7 @@ export const PlaitedFixture = defineTemplate({
     ></slot>
   ),
   bProgram({ root }) {
-    const send = useServer(this.getAttribute('p-socket') as `/${string}`)
+    const send = useServer({ url: this.getAttribute('p-socket') as `/${string}` })
     send.connect(this)
     const route = this.getAttribute('p-route') as string
     const storyFile = this.getAttribute('p-file') as string
