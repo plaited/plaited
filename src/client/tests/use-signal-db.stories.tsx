@@ -1,5 +1,5 @@
 import type { StoryObj } from '../../assert/assert.types.js'
-import { useSignalDB } from '../use-signal-db.js'
+import { useSignalDB, useComputedDB } from '../use-signal-db.js'
 import sinon from 'sinon'
 
 export const basic: StoryObj = {
@@ -69,6 +69,39 @@ export const withSubscription: StoryObj = {
     })
     disconnect()
     await pub(5)
+    await wait(60)
+    assert({
+      given: 'disconnecting subscription',
+      should: 'not trigger callback',
+      actual: spy.callCount,
+      expected: 1,
+    })
+  },
+}
+
+export const useComputed: StoryObj = {
+  play: async ({ assert, wait }) => {
+    const store = await useSignalDB('computed', 1)
+    const actual = await store.get()
+    assert({
+      given: 'get',
+      should: 'return initial value',
+      actual,
+      expected: 1,
+    })
+    const spy = sinon.spy()
+    const computed = await useComputedDB<number>(async () => (await store.get()) + 2, [store])
+    const disconnect = await computed.effect('a', spy)
+    await store(3)
+    await wait(60)
+    assert({
+      given: 'subscription to store',
+      should: 'trigger callback with last value',
+      actual: spy.args,
+      expected: [[{ type: 'a', detail: 5 }]],
+    })
+    disconnect()
+    await store(5)
     await wait(60)
     assert({
       given: 'disconnecting subscription',

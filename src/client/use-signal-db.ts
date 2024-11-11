@@ -6,18 +6,18 @@ import { PLAITED_INDEXED_DB, PLAITED_STORE } from '../client/client.constants.js
 type CreateIDBCallback = (arg: IDBObjectStore) => void
 type ComputedTrigger = () => Promise<void>
 
-export function useSignalDB<T>(
-  key: string,
-  initialValue?: never,
-  options?: {
-    databaseName: string
-    storeName: string
-  },
-): Promise<{
-  (newValue: T): Promise<void>
+type SignalWithInitialValue<T> = {
+  (value: T): Promise<void>
   effect: Effect
-  get: () => Promise<T | undefined>
-}>
+  get(): Promise<T>
+}
+
+type SignalWithoutInitialValue<T> = {
+  (value?: T): Promise<void>
+  effect: Effect
+  get(): Promise<T | undefined>
+}
+
 export function useSignalDB<T>(
   key: string,
   initialValue: T,
@@ -25,11 +25,15 @@ export function useSignalDB<T>(
     databaseName: string
     storeName: string
   },
-): Promise<{
-  (newValue: T): Promise<void>
-  effect: Effect
-  get: () => Promise<T>
-}>
+): Promise<SignalWithInitialValue<T>>
+export function useSignalDB<T>(
+  key: string,
+  initialValue?: never,
+  options?: {
+    databaseName: string
+    storeName: string
+  },
+): Promise<SignalWithoutInitialValue<T>>
 export async function useSignalDB<T>(
   /** key for stored value */
   key: string,
@@ -92,7 +96,10 @@ export async function useSignalDB<T>(
   return set
 }
 
-export const useComputedDB = <T>(initialValue: () => Promise<T>, deps: Awaited<ReturnType<typeof useSignalDB>>[]) => {
+export const useComputedDB = <T>(
+  initialValue: () => Promise<T>,
+  deps: (SignalWithInitialValue<T> | SignalWithoutInitialValue<T>)[],
+) => {
   let store: T
   const listeners = new Set<(value?: T) => void>()
   const get = async () => {

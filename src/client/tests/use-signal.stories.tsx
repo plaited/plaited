@@ -1,5 +1,5 @@
 import type { StoryObj } from '../../assert/assert.types.js'
-import { Fixture } from './signal.js'
+import { Fixture } from './use-signal.js'
 
 export const Signal: StoryObj = {
   template: Fixture,
