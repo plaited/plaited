@@ -1,10 +1,9 @@
-import { type Actions } from '../behavioral/b-program.js'
 import type { FunctionTemplate, CustomElementTag, Attrs } from '../jsx/jsx.types.js'
-import { type DefineElementArgs, defineElement } from './define-element.js'
+import { type DefineElementArgs, defineElement, type PlaitedActions } from './define-element.js'
 import { createTemplate } from '../jsx/create-template.js'
-import { PLAITED_TEMPLATE_IDENTIFIER } from './client.constants.js'
+import { PLAITED_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './client.constants.js'
 
-interface DefineTemplateArgs<A extends Actions>
+interface DefineTemplateArgs<A extends PlaitedActions>
   extends Omit<DefineElementArgs<A>, 'delegatesFocus' | 'mode' | 'slotAssignment'> {
   delegatesFocus?: boolean
   mode?: 'open' | 'closed'
@@ -19,24 +18,32 @@ export type PlaitedTemplate = FunctionTemplate & {
   $: typeof PLAITED_TEMPLATE_IDENTIFIER
 }
 
-export const defineTemplate = <A extends Actions>({
+export const defineTemplate = <A extends PlaitedActions>({
   tag,
   shadowDom,
   mode = 'open',
   delegatesFocus = true,
   slotAssignment = 'named',
-  publicEvents = [],
+  publicEvents,
   observedAttributes = [],
+  connectStream,
   ...rest
 }: DefineTemplateArgs<A>): PlaitedTemplate => {
+  const events: string[] = [
+    ...(publicEvents ?? []),
+    ...(connectStream ?
+      [ELEMENT_CALLBACKS.onAppend, ELEMENT_CALLBACKS.onPrepend, ELEMENT_CALLBACKS.onReplaceChildren]
+    : []),
+  ]
   defineElement<A>({
     tag,
     shadowDom,
-    publicEvents,
+    publicEvents: events,
     slotAssignment,
     delegatesFocus,
     mode,
     observedAttributes,
+    connectStream,
     ...rest,
   })
   const registry = new Set<string>([...shadowDom.registry, tag])
@@ -55,7 +62,7 @@ export const defineTemplate = <A extends Actions>({
   ft.registry = registry
   ft.tag = tag
   ft.$ = PLAITED_TEMPLATE_IDENTIFIER
-  ft.publicEvents = publicEvents
+  ft.publicEvents = events
   ft.observedAttributes = observedAttributes
   return ft
 }

@@ -1,6 +1,4 @@
 import type { Trigger, Disconnect } from '../behavioral/b-program.js'
-import type { ValueOf } from '../utils/value-of.type.js'
-import { ACTION_INSERT, ACTION_TRIGGER, INSERT_METHODS } from './client.constants.js'
 
 export type PlaitedTrigger = Trigger & {
   addDisconnectCallback: (disconnect: Disconnect) => void
@@ -8,11 +6,20 @@ export type PlaitedTrigger = Trigger & {
 
 export type Effect = (eventType: string, trigger: Trigger | PlaitedTrigger, getLVC?: boolean) => Disconnect
 
-export type InsertMessage = {
-  address: string
-  action: typeof ACTION_INSERT
-  method: ValueOf<typeof INSERT_METHODS>
-  html: string
+export interface PlaitedElement extends HTMLElement {
+  // Custom Methods and properties
+  trigger: PlaitedTrigger
+  readonly publicEvents?: string[]
+  adoptedCallback?: { (this: PlaitedElement): void }
+  attributeChangedCallback?: {
+    (this: PlaitedElement, name: string, oldValue: string | null, newValue: string | null): void
+  }
+  connectedCallback(this: PlaitedElement): void
+  disconnectedCallback(this: PlaitedElement): void
+  formAssociatedCallback(this: PlaitedElement, form: HTMLFormElement): void
+  formDisabledCallback(this: PlaitedElement, disabled: boolean): void
+  formResetCallback(this: PlaitedElement): void
+  formStateRestoreCallback(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
 }
 
 export type JSONDetail = string | number | boolean | null | JsonObject | JsonArray
@@ -23,11 +30,13 @@ type JsonObject = {
 
 type JsonArray = Array<JSONDetail>
 
-export type TriggerMessage<T extends JSONDetail = JSONDetail> = {
+export type PlaitedMessage<T extends JSONDetail = JSONDetail> = {
   address: string
-  action: typeof ACTION_TRIGGER
   type: string
   detail?: T
 }
 
-export type PlaitedMessage = InsertMessage | TriggerMessage
+export type Send = {
+  <T extends PlaitedMessage>(message: T): void
+  connect: (host: PlaitedElement) => () => void
+}

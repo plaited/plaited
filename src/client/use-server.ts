@@ -1,34 +1,11 @@
 import type { BPEvent } from '../behavioral/b-thread.js'
 import type { CustomElementTag } from '../jsx/jsx.types.js'
 import { isTypeOf } from '../utils/is-type-of.js'
-import { INSERT_METHODS } from './client.constants.js'
-import type { InsertMessage, TriggerMessage, JSONDetail, PlaitedMessage } from './client.types.js'
+import type { JSONDetail, PlaitedMessage } from './client.types.js'
 import { DelegatedListener, delegates } from './delegated-listener.js'
 import type { PlaitedElement } from './define-element.js'
-import { isInsertMessage, isPlaitedMessage, isTriggerMessage } from './client.guards.js'
-
-const createDocumentFragment = (html: string) => {
-  const tpl = document.createElement('template')
-  tpl.setHTMLUnsafe(html)
-  return tpl.content
-}
-
-const updateElement = ({
-  host,
-  html,
-  method,
-}: {
-  host: PlaitedElement
-  html: string
-  method: keyof typeof INSERT_METHODS
-}) => {
-  const methods = {
-    append: () => host.append(createDocumentFragment(html)),
-    prepend: () => host.prepend(createDocumentFragment(html)),
-    replaceChildren: () => host.replaceChildren(createDocumentFragment(html)),
-  }
-  methods[method]()
-}
+import { isPlaitedMessage } from './client.guards.js'
+import { useSignalDB } from './use-signal-db.js'
 
 const handleMessage =
   (host: PlaitedElement) =>
@@ -56,7 +33,7 @@ export const useServer = ({ url, protocols }: { url: string | `/${string}` | URL
   let socket: WebSocket | undefined
   let retryCount = 0
   let documentIsHidden = document.hidden
-
+  const store = useSignalDB(PLAITED_CHANNEL)
   const ws = {
     async callback(evt: MessageEvent) {
       if (evt.type === 'message') {

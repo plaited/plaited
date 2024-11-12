@@ -16,23 +16,7 @@ import { getShadowObserver, addListeners } from './get-shadow-observer.js'
 import { getPublicTrigger } from './get-public-trigger.js'
 import { canUseDOM } from '../utils/can-use-dom.js'
 import { ELEMENT_CALLBACKS } from './client.constants.js'
-import type { PlaitedTrigger } from './client.types.js'
-
-export interface PlaitedElement extends HTMLElement {
-  // Custom Methods and properties
-  trigger: PlaitedTrigger
-  readonly publicEvents?: string[]
-  adoptedCallback?: { (this: PlaitedElement): void }
-  attributeChangedCallback?: {
-    (this: PlaitedElement, name: string, oldValue: string | null, newValue: string | null): void
-  }
-  connectedCallback(this: PlaitedElement): void
-  disconnectedCallback(this: PlaitedElement): void
-  formAssociatedCallback(this: PlaitedElement, form: HTMLFormElement): void
-  formDisabledCallback(this: PlaitedElement, disabled: boolean): void
-  formResetCallback(this: PlaitedElement): void
-  formStateRestoreCallback(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
-}
+import type { PlaitedTrigger, PlaitedElement } from './client.types.js'
 
 export type ConnectedCallbackArgs = {
   $: QuerySelector
@@ -64,6 +48,12 @@ export type PlaitedElementCallbackActions = {
   }) => void | Promise<void>
 }
 
+export type PlaitedActions = Actions & {
+  [ELEMENT_CALLBACKS.onAppend]?: never
+  [ELEMENT_CALLBACKS.onPrepend]?: never
+  [ELEMENT_CALLBACKS.onReplaceChildren]?: never
+}
+
 type RequirePlaitedElementCallbackActions = Required<PlaitedElementCallbackActions>
 
 type PlaitedElementCallbackParameters = {
@@ -74,7 +64,7 @@ type PlaitedElementCallbackParameters = {
   : Parameters<RequirePlaitedElementCallbackActions[K]>[0]
 }
 
-export type DefineElementArgs<A extends Actions> = {
+export type DefineElementArgs<A extends PlaitedActions> = {
   tag: CustomElementTag
   shadowDom: TemplateObject
   delegatesFocus: boolean
@@ -83,12 +73,19 @@ export type DefineElementArgs<A extends Actions> = {
   observedAttributes?: string[]
   publicEvents?: string[]
   formAssociated?: true
+  connectStream?: (host: PlaitedElement) => Disconnect
   bProgram?: {
     (this: PlaitedElement, args: ConnectedCallbackArgs): A & PlaitedElementCallbackActions
   }
 }
 
-export const defineElement = <A extends Actions>({
+const createDocumentFragment = (html: string) => {
+  const tpl = document.createElement('template')
+  tpl.setHTMLUnsafe(html)
+  return tpl.content
+}
+
+export const defineElement = <A extends PlaitedActions>({
   tag,
   formAssociated,
   publicEvents,
@@ -97,6 +94,7 @@ export const defineElement = <A extends Actions>({
   delegatesFocus,
   mode,
   slotAssignment,
+  connectStream,
   bProgram: callback,
 }: DefineElementArgs<A>) => {
   if (canUseDOM() && !customElements.get(tag)) {
@@ -181,7 +179,19 @@ export const defineElement = <A extends Actions>({
               bSync,
             })
             // Subscribe feedback actions to behavioral program and add disconnect callback to disconnect set
-            this.#disconnectSet.add(this.#useFeedback(actions))
+            const streamActions = {
+              [ELEMENT_CALLBACKS.onAppend]: (html: string) => this.append(createDocumentFragment(html)),
+              [ELEMENT_CALLBACKS.onPrepend]: (html: string) => this.prepend(createDocumentFragment(html)),
+              [ELEMENT_CALLBACKS.onReplaceChildren]: (html: string) =>
+                this.replaceChildren(createDocumentFragment(html)),
+            }
+            this.#disconnectSet.add(
+              this.#useFeedback({
+                ...actions,
+                ...(connectStream ? streamActions : {}),
+              }),
+            )
+            connectStream && this.#disconnectSet.add(connectStream(this))
             this.#trigger({ type: ELEMENT_CALLBACKS.onConnected })
           }
         }

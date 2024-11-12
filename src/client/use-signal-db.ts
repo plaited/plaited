@@ -59,7 +59,10 @@ export async function useSignalDB<T>(
     })
     return new Promise<void>((resolve, reject) => {
       const transaction = dbp.transaction(storeName, type)
-      transaction.oncomplete = () => resolve()
+      transaction.oncomplete = () => {
+        dbp.close()
+        resolve()
+      }
       transaction.onabort = transaction.onerror = () => reject(transaction.error)
       callback(transaction.objectStore(storeName))
     })

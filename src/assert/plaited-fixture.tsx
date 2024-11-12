@@ -155,6 +155,7 @@ export const PlaitedFixture = defineTemplate({
           }
         }
       },
+      onConnected() {},
     }
   },
 })

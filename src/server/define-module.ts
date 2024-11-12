@@ -1,4 +1,4 @@
-import type { ServerWebSocket } from 'bun'
+import type { Server } from 'bun'
 import { type BSync, type BThread, bThread, bSync } from '../behavioral/b-thread.js'
 import {
   type Actions,
@@ -9,39 +9,36 @@ import {
   type Disconnect,
 } from '../behavioral/b-program.js'
 import { getPublicTrigger } from '../client/get-public-trigger.js'
-import type { PlaitedTrigger } from '../client/client.types.js'
 
-export const defineModule = <A extends Actions, W = unknown>({
-  id,
-  publicEvents = [],
-  bProgram: callback,
-}: {
-  id: string
-  publicEvents?: string[]
-  bProgram: (args: {
-    ws: ServerWebSocket<W>
+type MiddlewareArgs = {
+  server: Server
+  [key: string]: unknown
+}
+
+type BProgramCallback<A extends Actions, T extends MiddlewareArgs> = (
+  args: {
     trigger: Trigger
     useSnapshot: UseSnapshot
     bThreads: BThreads
     bThread: BThread
     bSync: BSync
-  }) => A
-}): {
-  (ws: ServerWebSocket<W>): PlaitedTrigger
-  id: string
-  disconnect(): void
-} => {
+  } & T,
+) => A
+
+export const defineModule = <A extends Actions>(id: string, publicEvents: string[] = []) => {
   const disconnectSet = new Set<Disconnect>()
   const { useFeedback, trigger, ...rest } = bProgram()
-  const connect = (ws: ServerWebSocket<W>) => {
-    const actions = callback({ trigger, bThread, bSync, ws, ...rest })
-    useFeedback(actions)
-    return getPublicTrigger({ trigger, publicEvents, disconnectSet })
+  return <T extends MiddlewareArgs>(callback: BProgramCallback<A, T>) => {
+    const connect = (args: T) => {
+      const actions = callback({ ...args, ...rest, trigger, bThread, bSync })
+      useFeedback(actions)
+    }
+    connect.id = id
+    connect.disconnect = () => {
+      disconnectSet.forEach((disconnect) => disconnect())
+      disconnectSet.clear()
+    }
+    connect.trigger = getPublicTrigger({ trigger, publicEvents, disconnectSet })
+    return connect
   }
-  connect.id = id
-  connect.disconnect = () => {
-    disconnectSet.forEach((disconnect) => disconnect())
-    disconnectSet.clear()
-  }
-  return connect
 }
