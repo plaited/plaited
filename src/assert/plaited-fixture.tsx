@@ -14,13 +14,15 @@ import {
   DEFAULT_PLAY_TIMEOUT,
   PLAY_EVENT,
   PLAITED_FIXTURE,
+  PLAITED_RUNNER,
+  FIXTURE_CONNECTED,
 } from './assert.constants.js'
 import { TimeoutError, AssertionError, MissingTestParamsError } from './errors.js'
 import { css } from '../style/css.js'
 import { defineTemplate } from '../client/define-template.js'
-import { useServer } from '../client/use-server.js'
+import { useStream } from '../client/use-stream.js'
 import { wait } from '../utils/wait.js'
-import type { StoryObj, FailedTestEvent, PassedTestEvent } from './assert.types.js'
+import type { StoryObj } from './assert.types.js'
 
 export type Play = (args: {
   assert: typeof assert
@@ -39,7 +41,7 @@ type UsePlay = (arg: {
   hostElement: Element
   play: Play
   route: string
-  send: ReturnType<typeof useServer>
+  send: ReturnType<typeof useStream>
   time?: number
 }) => Promise<void>
 
@@ -64,11 +66,12 @@ const usePlay: UsePlay = async ({ exportName, storyFile, hostElement, route, pla
       timeout(time),
     ])
     if (timedOut) throw new TimeoutError(`Story [${route}] exceeded timeout of ${time} ms`)
-    send<PassedTestEvent['detail']>({ type: TEST_PASSED, detail: { route } })
+    send({ address: PLAITED_RUNNER, type: TEST_PASSED, detail: { route } })
     console.log('✓ ', route)
   } catch (error) {
     if (error instanceof TimeoutError || error instanceof AssertionError || error instanceof MissingTestParamsError) {
-      send<FailedTestEvent['detail']>({
+      send({
+        address: PLAITED_RUNNER,
         type: TEST_EXCEPTION,
         detail: {
           story: exportName,
@@ -84,7 +87,8 @@ const usePlay: UsePlay = async ({ exportName, storyFile, hostElement, route, pla
       throw error
     }
     if (error instanceof Error) {
-      send<FailedTestEvent['detail']>({
+      send({
+        address: PLAITED_RUNNER,
         type: UNKNOWN_ERROR,
         detail: {
           story: exportName,
@@ -102,6 +106,7 @@ const usePlay: UsePlay = async ({ exportName, storyFile, hostElement, route, pla
 export const PlaitedFixture = defineTemplate({
   tag: PLAITED_FIXTURE,
   publicEvents: [PLAY_EVENT],
+  connectStream: { getLVC: true },
   shadowDom: (
     <slot
       {...css.host({
@@ -110,8 +115,7 @@ export const PlaitedFixture = defineTemplate({
     ></slot>
   ),
   bProgram({ root, bThreads, bThread, bSync }) {
-    const send = useServer({ url: this.getAttribute('p-socket') as `/${string}` })
-    send.connect(this)
+    const send = useStream({ url: this.getAttribute('p-socket') as `/${string}` })
     const route = this.getAttribute('p-route') as string
     const storyFile = this.getAttribute('p-file') as string
     const entryPath = this.getAttribute('p-entry') as string
@@ -121,6 +125,7 @@ export const PlaitedFixture = defineTemplate({
     })
     return {
       async [PLAY_EVENT]() {
+        console.log('playing')
         const { [exportName]: story } = (await import(entryPath)) as {
           [key: string]: StoryObj
         }
@@ -137,11 +142,12 @@ export const PlaitedFixture = defineTemplate({
             })
           } else {
             console.log('✓', route)
-            send<PassedTestEvent['detail']>({ type: TEST_PASSED, detail: { route } })
+            send({ address: PLAITED_RUNNER, type: TEST_PASSED, detail: { route } })
           }
         } catch (error) {
           if (error instanceof Error) {
-            send<FailedTestEvent['detail']>({
+            send({
+              address: PLAITED_RUNNER,
               type: UNKNOWN_ERROR,
               detail: {
                 story: exportName,
@@ -155,7 +161,12 @@ export const PlaitedFixture = defineTemplate({
           }
         }
       },
-      onConnected() {},
+      onConnected() {
+        send({
+          address: PLAITED_RUNNER,
+          type: FIXTURE_CONNECTED,
+        })
+      },
     }
   },
 })

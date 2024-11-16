@@ -1,18 +1,17 @@
 import { chromium, type BrowserContext } from 'playwright'
-import { bProgram } from '../behavioral.js'
+import { type Trigger } from '../behavioral/b-program.js'
 import * as esbuild from 'esbuild'
-import { getActions } from './get-actions.js'
 import type { Server, ServerWebSocket } from 'bun'
 import { isTypeOf } from '../utils/is-type-of.js'
-import { isTriggerMessage } from '../client/client.guards.js'
 import { getEntryPoints } from './get-entry-points.js'
 import { getStories } from './get-stories.js'
 import { zip } from './zip.js'
 import { getFile } from './get-file.js'
-import type { MessageDetail } from '../server/server.type.js'
+import { runnerModdule } from './define-runner.js'
+import { isPlaitedMessage } from '../client/client.guards.js'
 
 const cwd = `${process.cwd()}/src`
-const runnerPath = '/_test-runner'
+const streamURL = '/_test-runner'
 
 const imports = {
   plaited: '/_plaited/plaited.js',
@@ -28,7 +27,7 @@ const imports = {
 
 const { stories, responses } = await getStories({
   cwd,
-  runnerPath,
+  streamURL,
   imports,
 })
 
@@ -48,8 +47,7 @@ for (const { path, text } of outputFiles) {
 const browser = await chromium.launch()
 const contexts = new Set<BrowserContext>()
 
-const { useFeedback, trigger } = bProgram()
-const triggers = new Map([['runner', trigger]])
+const map = new Map<string, Trigger>()
 
 const server = Bun.serve({
   static: Object.fromEntries(responses),
@@ -60,23 +58,21 @@ const server = Bun.serve({
       const path = Bun.resolveSync(`.${pathname}`, cwd)
       return await getFile(path)
     }
-    if (pathname === runnerPath) {
+    if (pathname === streamURL) {
       const success = server.upgrade(req)
       return success ? undefined : new Response('WebSocket upgrade error', { status: 400 })
     }
     return new Response('Upgrade failed', { status: 500 })
   },
   websocket: {
-    open(ws) {},
     message(ws: ServerWebSocket<unknown>, message: string | Buffer) {
       if (!isTypeOf<string>(message, 'string')) return
       try {
         const json = JSON.parse(message)
-        if (isTriggerMessage(json)) {
-          const { address } = json
-          const trigger = triggers.get(address)
-          const detail: MessageDetail = { message: json.detail, ws }
-          trigger<MessageDetail>?.({ type: json.type, detail })
+        if (isPlaitedMessage(json)) {
+          const { address, type, detail } = json
+          const trigger = map.get(address)
+          trigger?.({ type, detail: { message: detail, ws } })
         }
       } catch (error) {
         console.error(error)
@@ -85,15 +81,14 @@ const server = Bun.serve({
   },
 })
 
-const actions = getActions({
-  stories,
-  contexts,
-  server,
-  trigger,
-  port: server.port,
-})
-
-useFeedback(actions)
+map.set(
+  runnerModdule.id,
+  runnerModdule({
+    stories,
+    contexts,
+    port: 3000,
+  }),
+)
 
 await Promise.all(
   stories.map(async ([route]) => {
@@ -107,7 +102,7 @@ await Promise.all(
 process.on('SIGINT', async () => {
   server.stop()
   await Promise.all([...contexts].map(async (context) => await context.close()))
-  trigger({ type: 'SIGINT' })
+  map.get(runnerModdule.id)!({ type: 'SIGINT' })
 })
 
 process.on('uncaughtException', (error) => {
@@ -116,4 +111,8 @@ process.on('uncaughtException', (error) => {
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason)
+})
+
+process.on('exit', () => {
+  server.stop()
 })

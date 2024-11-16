@@ -1,6 +1,6 @@
 import type { StoryObj } from '../../assert/assert.types.js'
 import { defineTemplate } from '../define-template.js'
-import type { PlaitedElement } from '../define-element.js'
+import type { PlaitedElement } from '../client.types.js'
 import { css } from '../../style/css.js'
 
 const { noRepeat, repeat, initial } = css.create({

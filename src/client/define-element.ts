@@ -17,6 +17,9 @@ import { getPublicTrigger } from './get-public-trigger.js'
 import { canUseDOM } from '../utils/can-use-dom.js'
 import { ELEMENT_CALLBACKS } from './client.constants.js'
 import type { PlaitedTrigger, PlaitedElement } from './client.types.js'
+import { connectInbox } from './use-stream.utils.js'
+import { isTypeOf } from '../utils/is-type-of.js'
+import { noop } from '../utils/noop.js'
 
 export type ConnectedCallbackArgs = {
   $: QuerySelector
@@ -28,6 +31,7 @@ export type ConnectedCallbackArgs = {
   useSnapshot: UseSnapshot
   bThread: BThread
   bSync: BSync
+  disconnectStream: Disconnect
 }
 
 export type PlaitedElementCallbackActions = {
@@ -73,7 +77,7 @@ export type DefineElementArgs<A extends PlaitedActions> = {
   observedAttributes?: string[]
   publicEvents?: string[]
   formAssociated?: true
-  connectStream?: (host: PlaitedElement) => Disconnect
+  connectStream?: boolean | { getLVC?: boolean }
   bProgram?: {
     (this: PlaitedElement, args: ConnectedCallbackArgs): A & PlaitedElementCallbackActions
   }
@@ -119,6 +123,7 @@ export const defineElement = <A extends PlaitedActions>({
         #disconnectSet = new Set<Disconnect>()
         trigger: PlaitedTrigger
         #mounted = false
+        #disconnectStream: Disconnect = noop
         constructor() {
           super()
           this.#internals = this.attachInternals()
@@ -175,6 +180,7 @@ export const defineElement = <A extends PlaitedActions>({
               trigger: this.#trigger,
               useSnapshot: this.#useSnapshot,
               bThreads: this.#bThreads,
+              disconnectStream: this.#disconnectStream,
               bThread,
               bSync,
             })
@@ -191,7 +197,12 @@ export const defineElement = <A extends PlaitedActions>({
                 ...(connectStream ? streamActions : {}),
               }),
             )
-            connectStream && this.#disconnectSet.add(connectStream(this))
+            if (connectStream) {
+              this.#disconnectStream =
+                isTypeOf<{ getLVC?: boolean }>(connectStream, 'object') ?
+                  connectInbox(this, connectStream?.getLVC)
+                : connectInbox(this)
+            }
             this.#trigger({ type: ELEMENT_CALLBACKS.onConnected })
           }
         }

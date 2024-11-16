@@ -9,15 +9,15 @@ export const globStories = async (cwd: string) => {
 
 export const getStories = async ({
   cwd,
-  runnerPath,
+  streamURL,
   imports,
 }: {
   cwd: string
-  runnerPath: `/${string}`
+  streamURL: `/${string}`
   imports: Record<string, string>
 }) => {
   const storyEntries = await globStories(cwd)
   const responses: Map<string, Response> = new Map()
-  const stories = await mapStoryResponses({ storyEntries, responses, cwd, runnerPath, imports })
+  const stories = await mapStoryResponses({ storyEntries, responses, cwd, streamURL, imports })
   return { stories, responses }
 }

@@ -1,6 +1,6 @@
 import type { FT } from '../../jsx/jsx.types.js'
 import { isTypeOf } from '../../utils/is-type-of.js'
-import type { PlaitedElement } from '../define-element.js'
+import type { PlaitedElement } from '../client.types.js'
 import { defineTemplate } from '../define-template.js'
 import { useDispatch } from '../use-dispatch.js'
 const isPlaitedElement = (el: unknown): el is PlaitedElement =>

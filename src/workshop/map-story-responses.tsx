@@ -20,7 +20,7 @@ const updateHTMLResponses = ({
   responses,
   storyFile,
   exportName,
-  runnerPath,
+  streamURL,
   imports,
 }: {
   story: StoryObj
@@ -29,7 +29,7 @@ const updateHTMLResponses = ({
   responses: Map<string, Response>
   storyFile: string
   exportName: string
-  runnerPath: `/${string}`
+  streamURL: `/${string}`
   imports: Record<string, string>
 }): TestParams => {
   const entryPath = storyFile.replace(/\.tsx?$/, '.js')
@@ -61,7 +61,7 @@ const updateHTMLResponses = ({
           p-route={route}
           p-entry={entryPath}
           p-file={storyFile}
-          p-socket={runnerPath}
+          p-socket={streamURL}
           children={tpl?.(args)}
           {...styles}
         />
@@ -81,13 +81,13 @@ export const mapStoryResponses = async ({
   storyEntries,
   responses,
   cwd,
-  runnerPath,
+  streamURL,
   imports,
 }: {
   storyEntries: string[]
   responses: Map<string, Response>
   cwd: string
-  runnerPath: `/${string}`
+  streamURL: `/${string}`
   imports: Record<string, string>
 }) => {
   const routes: [string, TestParams][] = []
@@ -108,7 +108,7 @@ export const mapStoryResponses = async ({
           responses,
           storyFile,
           exportName,
-          runnerPath,
+          streamURL,
           imports,
         })
         routes.push([route, params])

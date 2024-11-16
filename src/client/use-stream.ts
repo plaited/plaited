@@ -1,39 +1,17 @@
-import type { BPEvent } from '../behavioral/b-thread.js'
-import type { CustomElementTag } from '../jsx/jsx.types.js'
 import { isTypeOf } from '../utils/is-type-of.js'
-import type { JSONDetail, PlaitedMessage } from './client.types.js'
+import type { PlaitedMessage } from './client.types.js'
 import { DelegatedListener, delegates } from './delegated-listener.js'
-import type { PlaitedElement } from './define-element.js'
 import { isPlaitedMessage } from './client.guards.js'
-import { useSignalDB } from './use-signal-db.js'
-
-const handleMessage =
-  (host: PlaitedElement) =>
-  ({ data }: { data: TriggerMessage | InsertMessage }) => {
-    if (isInsertMessage(data)) {
-      const { method, html } = data
-      updateElement({ host, html, method })
-    }
-    if (isTriggerMessage(data)) {
-      const { type, detail } = data
-      host.trigger({ type, detail })
-    }
-  }
+import { updateInbox } from './use-stream.utils.js'
 
 const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => event.type === 'close'
 
-const PLAITED_CHANNEL = 'PLAITED_CHANNEL'
-
-export const toAddress = (tag: CustomElementTag, id?: string): string => `${tag}${id ? `#${id}` : ''}`
-
-export const useServer = ({ url, protocols }: { url: string | `/${string}` | URL; protocols?: string | string[] }) => {
-  const subscribers = new Map<string, ReturnType<typeof handleMessage>>()
+export const useStream = ({ url, protocols }: { url: string | `/${string}` | URL; protocols?: string | string[] }) => {
   const retryStatusCodes = new Set([1006, 1012, 1013])
   const maxRetries = 3
   let socket: WebSocket | undefined
   let retryCount = 0
   let documentIsHidden = document.hidden
-  const store = useSignalDB(PLAITED_CHANNEL)
   const ws = {
     async callback(evt: MessageEvent) {
       if (evt.type === 'message') {
@@ -41,12 +19,7 @@ export const useServer = ({ url, protocols }: { url: string | `/${string}` | URL
           const { data } = evt
           const message = isTypeOf<string>(data, 'string') ? JSON.parse(data) : data
           if (isPlaitedMessage(message)) {
-            const { address } = message
-            const handler = subscribers.get(address)
-            handler && handler({ data: message })
-            const channel = new BroadcastChannel(`${PLAITED_CHANNEL}_${address}`)
-            channel.postMessage(message)
-            channel.close()
+            await updateInbox(message)
           }
         } catch (error) {
           console.error('Error parsing incoming message:', error)
@@ -89,13 +62,13 @@ export const useServer = ({ url, protocols }: { url: string | `/${string}` | URL
       socket = undefined
     },
   }
-  const send = <T extends JSONDetail>(event: BPEvent<T>) => {
+  const send = <T extends PlaitedMessage>(message: T) => {
     const fallback = () => {
-      send(event)
+      send(message)
       socket?.removeEventListener('open', fallback)
     }
     if (socket?.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify(event))
+      socket.send(JSON.stringify(message))
       if (documentIsHidden) {
         socket?.close()
         socket = undefined
@@ -116,26 +89,5 @@ export const useServer = ({ url, protocols }: { url: string | `/${string}` | URL
   }
   delegates.set(document, new DelegatedListener(documentVisibilityCallback))
   document.addEventListener('visibilitychange', delegates.get(document))
-  const connect = (host: PlaitedElement) => {
-    if (!socket) ws.connect()
-    const address = toAddress(host.tagName.toLowerCase() as CustomElementTag, host.id)
-    const channel = new BroadcastChannel(`${PLAITED_CHANNEL}_${address}`)
-    const handler = handleMessage(host)
-    const channelCallback = (evt: { data: PlaitedMessage }) => {
-      if (documentIsHidden) {
-        handler(evt)
-      }
-    }
-    channel.addEventListener('message', channelCallback)
-    subscribers.set(address, handler)
-    const disconnect = () => {
-      subscribers.delete(address)
-      channel.removeEventListener('message', channelCallback)
-      channel.close()
-    }
-    host.trigger.addDisconnectCallback?.(disconnect)
-    return disconnect
-  }
-  send.connect = connect
   return send
 }

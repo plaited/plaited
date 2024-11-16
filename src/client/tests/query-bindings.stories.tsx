@@ -1,5 +1,5 @@
 import type { StoryObj } from '../../assert/assert.types.js'
-import type { PlaitedElement } from '../define-element.js'
+import type { PlaitedElement } from '../client.types.js'
 import { Fixture } from './query-bindings.js'
 
 export const beforebegin: StoryObj = {

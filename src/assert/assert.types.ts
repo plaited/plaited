@@ -37,6 +37,7 @@ export type TestParams = {
 }
 
 export type FailedTestEvent = {
+  address: string
   type: typeof TEST_EXCEPTION | typeof UNKNOWN_ERROR
   detail: {
     route: string
@@ -48,6 +49,7 @@ export type FailedTestEvent = {
 }
 
 export type PassedTestEvent = {
+  address: string
   type: typeof TEST_PASSED
   detail: {
     route: string

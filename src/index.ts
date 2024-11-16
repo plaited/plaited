@@ -11,14 +11,13 @@ export type {
 } from './behavioral/b-program.js'
 export type { BPEvent, BPEventTemplate, BSync, BThread, RulesFunction } from './behavioral/b-thread.js'
 //CLIENT
-export type { PlaitedElement } from './client/define-element.js'
-export type { CloneCallback, Position, SelectorMatch } from './client/get-query-helper.js'
+export type * from './client/client.types.js'
+export type { CloneCallback, Position, SelectorMatch } from './client/get-query.js'
 export { type PlaitedTemplate, defineTemplate } from './client/define-template.js'
 export { type ObservedAttributesDetail, useAttributesObserver } from './client/use-attributes-observer.js'
 export { useDispatch } from './client/use-dispatch.js'
-export { useServer } from './client/use-server.js'
+export { useStream } from './client/use-stream.js'
 export { useSignal, useComputed } from './client/use-signal.js'
-export { useSignalDB, useComputedDB } from './client/use-signal-db.js'
 //STYLE
 export type * from './style/css.types.js'
 export { css } from './style/css.js'

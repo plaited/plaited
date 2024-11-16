@@ -1,4 +1,3 @@
-import type { BPEvent } from '../behavioral/b-thread.js'
 import type { JSONDetail } from '../client/client.types.js'
 import type { ServerWebSocket } from 'bun'
 
