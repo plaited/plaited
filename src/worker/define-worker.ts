@@ -1,6 +1,6 @@
 import { type BPEvent, type BSync, type BThread, bThread, bSync } from '../behavioral/b-thread.js'
 import {
-  type Actions,
+  type Handlers,
   type UseSnapshot,
   type BThreads,
   type Trigger,
@@ -9,7 +9,7 @@ import {
 } from '../behavioral/b-program.js'
 import { getPublicTrigger } from '../client/get-public-trigger.js'
 
-export const defineWorker = <A extends Actions>({
+export const defineWorker = <A extends Handlers>({
   bProgram: callback,
   publicEvents,
 }: {

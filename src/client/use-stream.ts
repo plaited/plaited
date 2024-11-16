@@ -6,7 +6,7 @@ import { updateInbox } from './use-stream.utils.js'
 
 const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => event.type === 'close'
 
-export const useStream = ({ url, protocols }: { url: string | `/${string}` | URL; protocols?: string | string[] }) => {
+export const useStream = (url: string | `/${string}` | URL, protocols?: string | string[]) => {
   const retryStatusCodes = new Set([1006, 1012, 1013])
   const maxRetries = 3
   let socket: WebSocket | undefined

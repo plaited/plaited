@@ -37,10 +37,10 @@ type SnapshotFormatter = (args: {
 export type SnapshotListener = (msg: SnapshotMessage) => void | Promise<void>
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type DefaultActions = Record<string, (detail: any) => void | Promise<void>>
+type DefaultHandlers = Record<string, (detail: any) => void | Promise<void>>
 
-export type Actions<T = DefaultActions> = DefaultActions & T
-export type UseFeedback = <T = DefaultActions>(actions: Actions<T>) => Disconnect
+export type Handlers<T = DefaultHandlers> = DefaultHandlers & T
+export type UseFeedback = <T = DefaultHandlers>(actions: Handlers<T>) => Disconnect
 export type UseSnapshot = (listener: SnapshotListener) => Disconnect
 export type BThreads = {
   has: (thread: string) => { running: boolean; pending: boolean }

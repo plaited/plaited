@@ -2,7 +2,7 @@ import type { TemplateObject, CustomElementTag } from '../jsx/jsx.types.js'
 import { BOOLEAN_ATTRS } from '../jsx/jsx.constants.js'
 import { type BSync, type BThread, bThread, bSync } from '../behavioral/b-thread.js'
 import {
-  type Actions,
+  type Handlers,
   type BThreads,
   type Disconnect,
   type Trigger,
@@ -34,7 +34,7 @@ export type ConnectedCallbackArgs = {
   disconnectStream: Disconnect
 }
 
-export type PlaitedElementCallbackActions = {
+export type PlaitedElementCallbackHandlers = {
   [ELEMENT_CALLBACKS.onAdopted]?: () => void | Promise<void>
   [ELEMENT_CALLBACKS.onAttributeChanged]?: (args: {
     name: string
@@ -52,23 +52,23 @@ export type PlaitedElementCallbackActions = {
   }) => void | Promise<void>
 }
 
-export type PlaitedActions = Actions & {
+export type PlaitedHandlers = Handlers & {
   [ELEMENT_CALLBACKS.onAppend]?: never
   [ELEMENT_CALLBACKS.onPrepend]?: never
   [ELEMENT_CALLBACKS.onReplaceChildren]?: never
 }
 
-type RequirePlaitedElementCallbackActions = Required<PlaitedElementCallbackActions>
+type RequirePlaitedElementCallbackHandlers = Required<PlaitedElementCallbackHandlers>
 
 type PlaitedElementCallbackParameters = {
-  [K in keyof RequirePlaitedElementCallbackActions]: Parameters<RequirePlaitedElementCallbackActions[K]> extends (
+  [K in keyof RequirePlaitedElementCallbackHandlers]: Parameters<RequirePlaitedElementCallbackHandlers[K]> extends (
     undefined
   ) ?
     undefined
-  : Parameters<RequirePlaitedElementCallbackActions[K]>[0]
+  : Parameters<RequirePlaitedElementCallbackHandlers[K]>[0]
 }
 
-export type DefineElementArgs<A extends PlaitedActions> = {
+export type DefineElementArgs<A extends PlaitedHandlers> = {
   tag: CustomElementTag
   shadowDom: TemplateObject
   delegatesFocus: boolean
@@ -79,7 +79,7 @@ export type DefineElementArgs<A extends PlaitedActions> = {
   formAssociated?: true
   connectStream?: boolean | { getLVC?: boolean }
   bProgram?: {
-    (this: PlaitedElement, args: ConnectedCallbackArgs): A & PlaitedElementCallbackActions
+    (this: PlaitedElement, args: ConnectedCallbackArgs): A & PlaitedElementCallbackHandlers
   }
 }
 
@@ -89,7 +89,7 @@ const createDocumentFragment = (html: string) => {
   return tpl.content
 }
 
-export const defineElement = <A extends PlaitedActions>({
+export const defineElement = <A extends PlaitedHandlers>({
   tag,
   formAssociated,
   publicEvents,
@@ -185,7 +185,7 @@ export const defineElement = <A extends PlaitedActions>({
               bSync,
             })
             // Subscribe feedback actions to behavioral program and add disconnect callback to disconnect set
-            const streamActions = {
+            const streamHandlers = {
               [ELEMENT_CALLBACKS.onAppend]: (html: string) => this.append(createDocumentFragment(html)),
               [ELEMENT_CALLBACKS.onPrepend]: (html: string) => this.prepend(createDocumentFragment(html)),
               [ELEMENT_CALLBACKS.onReplaceChildren]: (html: string) =>
@@ -194,7 +194,7 @@ export const defineElement = <A extends PlaitedActions>({
             this.#disconnectSet.add(
               this.#useFeedback({
                 ...actions,
-                ...(connectStream ? streamActions : {}),
+                ...(connectStream ? streamHandlers : {}),
               }),
             )
             if (connectStream) {

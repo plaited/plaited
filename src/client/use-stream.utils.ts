@@ -40,7 +40,6 @@ const getBroadcastChannelName = (address: string) => `${databaseName}_${storeNam
 export const getAddress = (tag: CustomElementTag, id?: string): string => `${tag}${id ? `#${id}` : ''}`
 
 export const updateInbox = async ({ address, ...event }: PlaitedMessage) => {
-  console.log('hit')
   await db('readwrite', (store) => store.put(event, address))
   const channel = new BroadcastChannel(getBroadcastChannelName(address))
   channel.postMessage(event)

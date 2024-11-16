@@ -1,6 +1,6 @@
 //BEHAVIORAL
 export type {
-  Actions,
+  Handlers,
   BProgram,
   UseFeedback,
   UseSnapshot,
