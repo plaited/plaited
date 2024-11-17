@@ -31,8 +31,7 @@
       "plaited/assert": ["/src/assert.ts"],
       "plaited/behavioral": ["./src/behavioral.ts"],
       "plaited/style": ["./src/style.ts"],
-      "plaited/utils": ["./src/utils.ts"],
-      "plaited/workshop": ["./src/workshop.ts"]
+      "plaited/utils": ["./src/utils.ts"]
     }
   },
   "exclude": ["src/style/types/css.d.ts"]

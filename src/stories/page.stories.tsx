@@ -1,4 +1,4 @@
-import type { StoryObj } from 'plaited/workshop'
+import type { StoryObj } from 'plaited/assert'
 import { Page } from './page.js'
 
 export const LoggedOut: StoryObj = {

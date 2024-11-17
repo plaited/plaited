@@ -92,3 +92,6 @@ export const useSendRunner = (url: string | `/${string}` | URL, protocols?: stri
   }
   return send
 }
+
+export const PLAITED_FIXTURE = 'plaited-test-fixture'
+export const PLAITED_RUNNER = 'PLAITED_RUNNER'

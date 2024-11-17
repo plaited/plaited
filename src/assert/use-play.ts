@@ -1,21 +1,24 @@
-import { assert } from '../assert/assert.js'
-import { findByAttribute } from '../assert/find-by-attribute.js'
-import { findByText } from '../assert/find-by-text.js'
-import { fireEvent } from '../assert/fire-event.js'
-import { match } from '../assert/match.js'
-import { throws } from '../assert/throws.js'
-import { ASSERTION_ERROR, MISSING_TEST_PARAMS_ERROR } from '../assert/assert.constants.js'
-import { AssertionError, MissingTestParamsError } from '../assert/errors.js'
-import { TEST_PASSED, TEST_EXCEPTION, UNKNOWN_ERROR, TIMEOUT_ERROR } from './workshop.constants.js'
-import type { StoryObj, Play } from './workshop.types.js'
-import { wait } from '../utils/wait.js'
+import { assert } from './assert.js'
+import { findByAttribute } from './find-by-attribute.js'
+import { findByText } from './find-by-text.js'
+import { fireEvent } from './fire-event.js'
+import { match } from './match.js'
+import { throws } from './throws.js'
 import {
+  ASSERTION_ERROR,
+  MISSING_TEST_PARAMS_ERROR,
+  TEST_PASSED,
+  TEST_EXCEPTION,
+  UNKNOWN_ERROR,
+  TIMEOUT_ERROR,
   DEFAULT_PLAY_TIMEOUT,
   PLAY_EVENT,
-  PLAITED_RUNNER,
   FIXTURE_CONNECTED,
-  TimeoutError,
-} from './workshop.constants.js'
+} from './assert.constants.js'
+import { AssertionError, MissingTestParamsError } from './errors.js'
+import type { StoryObj, Play } from './assert.types.js'
+import { wait } from '../utils/wait.js'
+import { TimeoutError } from './errors.js'
 import type { PlaitedMessage, PlaitedElement } from '../main/plaited.types.js'
 import { bSync, bThread } from '../behavioral/b-thread.js'
 import type { BThreads } from '../behavioral/b-program.js'
@@ -26,6 +29,7 @@ const timeout = async (time: number = DEFAULT_PLAY_TIMEOUT) => {
 }
 
 const playStory = async ({
+  address,
   exportName,
   storyFile,
   hostElement,
@@ -34,6 +38,7 @@ const playStory = async ({
   time,
   send,
 }: {
+  address: string
   exportName: string
   storyFile: string
   hostElement: Element
@@ -57,12 +62,12 @@ const playStory = async ({
       timeout(time),
     ])
     if (timedOut) throw new TimeoutError(`Story [${route}] exceeded timeout of ${time} ms`)
-    send({ address: PLAITED_RUNNER, type: TEST_PASSED, detail: { route } })
+    send({ address, type: TEST_PASSED, detail: { route } })
     console.log('✓ ', route)
   } catch (error) {
     if (error instanceof TimeoutError || error instanceof AssertionError || error instanceof MissingTestParamsError) {
       send({
-        address: PLAITED_RUNNER,
+        address,
         type: TEST_EXCEPTION,
         detail: {
           story: exportName,
@@ -79,7 +84,7 @@ const playStory = async ({
     }
     if (error instanceof Error) {
       send({
-        address: PLAITED_RUNNER,
+        address,
         type: UNKNOWN_ERROR,
         detail: {
           story: exportName,
@@ -95,6 +100,7 @@ const playStory = async ({
 }
 
 export const usePlay = ({
+  address,
   entryPath,
   exportName,
   host,
@@ -103,6 +109,7 @@ export const usePlay = ({
   storyFile,
   bThreads,
 }: {
+  address: string
   entryPath: string
   exportName: string
   host: PlaitedElement
@@ -122,6 +129,7 @@ export const usePlay = ({
       try {
         if (story?.play) {
           await playStory({
+            address,
             play: story.play,
             time: story?.parameters?.timeout,
             send,
@@ -132,12 +140,12 @@ export const usePlay = ({
           })
         } else {
           console.log('✓', route)
-          send({ address: PLAITED_RUNNER, type: TEST_PASSED, detail: { route } })
+          send({ address, type: TEST_PASSED, detail: { route } })
         }
       } catch (error) {
         if (error instanceof Error) {
           send({
-            address: PLAITED_RUNNER,
+            address,
             type: UNKNOWN_ERROR,
             detail: {
               story: exportName,
@@ -153,7 +161,7 @@ export const usePlay = ({
     },
     onConnected() {
       send({
-        address: PLAITED_RUNNER,
+        address,
         type: FIXTURE_CONNECTED,
       })
     },

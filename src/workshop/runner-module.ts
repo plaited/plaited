@@ -1,7 +1,15 @@
 import { defineModule, type ModuleMessageDetail } from './define-module.js'
-import { TEST_PASSED, TEST_EXCEPTION, UNKNOWN_ERROR } from './workshop.constants.js'
-import { FIXTURE_CONNECTED, PLAITED_FIXTURE, PLAY_EVENT, PLAITED_RUNNER } from './workshop.constants.js'
-import type { FailedTestEvent, PassedTestEvent, TestParams } from './workshop.types.js'
+import {
+  TEST_PASSED,
+  TEST_EXCEPTION,
+  UNKNOWN_ERROR,
+  FIXTURE_CONNECTED,
+  PLAY_EVENT,
+} from '../assert/assert.constants.js'
+import type { FailedTestEvent, PassedTestEvent, TestParams } from '../assert/assert.types.js'
+import { PLAITED_FIXTURE } from './plaited-fixture.utils.js'
+
+export const PLAITED_RUNNER = 'PLAITED_RUNNER'
 
 export const runnerModdule = defineModule({
   id: PLAITED_RUNNER,

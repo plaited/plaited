@@ -1,8 +1,8 @@
 import { defineTemplate } from '../main/define-template.js'
 import { css } from '../style/css.js'
-import { PLAITED_FIXTURE, PLAY_EVENT } from './workshop.constants.js'
-import { connectTestRunner, useSendRunner } from './plaited-fixture.utils.js'
-import { usePlay } from './use-play.js'
+import { PLAY_EVENT } from '../assert/assert.constants.js'
+import { connectTestRunner, useSendRunner, PLAITED_FIXTURE, PLAITED_RUNNER } from './plaited-fixture.utils.js'
+import { usePlay } from '../assert/use-play.js'
 
 export const PlaitedFixture = defineTemplate({
   tag: PLAITED_FIXTURE,
@@ -23,6 +23,7 @@ export const PlaitedFixture = defineTemplate({
     const entryPath = this.getAttribute('p-entry') as string
     const exportName = this.getAttribute('p-name') as string
     return usePlay({
+      address: PLAITED_RUNNER,
       bThreads,
       send,
       route,

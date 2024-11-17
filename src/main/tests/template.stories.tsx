@@ -1,4 +1,4 @@
-import type { StoryObj } from 'plaited/workshop'
+import type { StoryObj } from 'plaited/assert'
 import type { PlaitedElement } from '../plaited.types.js'
 import { css } from '../../style/css.js'
 import { defineTemplate } from '../define-template.js'

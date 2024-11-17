@@ -1,4 +1,4 @@
-import type { StoryObj } from 'plaited/workshop'
+import type { StoryObj } from 'plaited/assert'
 import { Template } from './public-events.js'
 
 export const publicEvents: StoryObj = {

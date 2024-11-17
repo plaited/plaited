@@ -21,7 +21,6 @@ const imports = {
   'plaited/jsx-dev-runtime': '/_plaited/dev-runtime.js',
   'plaited/style': '/_plaited/style.js',
   'plaited/utils': '/_plaited/utils.js',
-  'plaited/workshop': '/_plaited/workshop.js',
   sinon: '/_sinon/sinon.js',
 } as const
 

@@ -23,8 +23,7 @@
     "./jsx-dev-runtime": "./src/jsx/dev-runtime.ts",
     "./jsx-runtime": "./src/jsx/runtime.ts",
     "./style": "./src/style.ts",
-    "./utils": "./src/utils.ts",
-    "./workshop": "./src/workshop.ts"
+    "./utils": "./src/utils.ts"
   },
   "files": [
     "./src/**",
