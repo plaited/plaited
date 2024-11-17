@@ -1,4 +1,4 @@
-import { type StoryObj } from 'plaited/assert'
+import { type StoryObj } from 'plaited/workshop'
 import { ButtonCheckbox } from './ButtonCheckbox.js'
 
 export const checkbox: StoryObj = {

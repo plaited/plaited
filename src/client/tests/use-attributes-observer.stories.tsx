@@ -1,4 +1,4 @@
-import type { StoryObj } from '../../assert/assert.types.js'
+import type { StoryObj } from 'plaited/workshop'
 import { AttributesObserver } from './use-attributes-observer.js'
 
 export const Example: StoryObj = {

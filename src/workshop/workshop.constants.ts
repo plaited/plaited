@@ -13,3 +13,7 @@ export const RUN_PLAY_ACTION = {
 }
 
 export const FIXTURE_CONNECTED = 'FIXTURE_CONNECTED'
+export const UNKNOWN_ERROR = 'UNKNOWN_ERROR'
+export const TIMEOUT_ERROR = 'TIMEOUT_ERROR'
+export const TEST_PASSED = 'TEST_PASSED'
+export const TEST_EXCEPTION = 'TEST_EXCEPTION'

@@ -8,8 +8,6 @@ import type { match } from '../assert/match.js'
 import type { throws } from '../assert/throws.js'
 import type { wait } from '../utils/wait.js'
 
-import { TEST_PASSED, TEST_EXCEPTION, UNKNOWN_ERROR } from './assert.constants.js'
-
 export type Scale = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 'rel'
 
 export type Params = {
@@ -52,24 +50,4 @@ export type TestParams = {
   description?: string
   scale?: Scale
   timeout: number
-}
-
-export type FailedTestEvent = {
-  address: string
-  type: typeof TEST_EXCEPTION | typeof UNKNOWN_ERROR
-  detail: {
-    route: string
-    file: string
-    story: string
-    url: string
-    type: string
-  }
-}
-
-export type PassedTestEvent = {
-  address: string
-  type: typeof TEST_PASSED
-  detail: {
-    route: string
-  }
 }

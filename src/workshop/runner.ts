@@ -22,6 +22,7 @@ const imports = {
   'plaited/style': '/_plaited/style.js',
   'plaited/utils': '/_plaited/utils.js',
   'plaited/worker': '/_plaited/worker.js',
+  'plaited/workshop': '/_plaited/workshop.js',
   sinon: '/_sinon/sinon.js',
 } as const
 

@@ -1,5 +1,5 @@
 import { Button } from './button.js'
-import type { StoryObj, Meta, Args } from 'plaited/assert'
+import type { StoryObj, Meta, Args } from 'plaited/workshop'
 
 const meta: Meta<Args<typeof Button>> = {
   template: Button,
