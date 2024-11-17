@@ -9,7 +9,7 @@ import { AssertionError, MissingTestParamsError } from '../assert/errors.js'
 import { TEST_PASSED, TEST_EXCEPTION, UNKNOWN_ERROR, TIMEOUT_ERROR } from './workshop.constants.js'
 import { TimeoutError } from './plaited-fixture.utils.js'
 import type { StoryObj, Play } from './story.types.js'
-import { defineTemplate } from '../client/define-template.js'
+import { defineTemplate } from '../main/define-template.js'
 import { css } from '../style/css.js'
 import { wait } from '../utils/wait.js'
 import {

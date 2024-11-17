@@ -32,7 +32,6 @@
       "plaited/behavioral": ["./src/behavioral.ts"],
       "plaited/style": ["./src/style.ts"],
       "plaited/utils": ["./src/utils.ts"],
-      "plaited/worker": ["./src/worker.ts"],
       "plaited/workshop": ["./src/workshop.ts"]
     }
   },

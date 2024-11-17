@@ -16,7 +16,7 @@ import { getShadowObserver, addListeners } from './get-shadow-observer.js'
 import { getPublicTrigger } from './get-public-trigger.js'
 import { canUseDOM } from '../utils/can-use-dom.js'
 import { ELEMENT_CALLBACKS } from './client.constants.js'
-import type { PlaitedTrigger, PlaitedElement } from './client.types.js'
+import type { PlaitedTrigger, PlaitedElement } from './plaited.types.js'
 import { noop } from '../utils/noop.js'
 
 export type ConnectedCallbackArgs = {

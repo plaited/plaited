@@ -1,4 +1,4 @@
-import { defineModule, type ModuleMessageDetail } from '../server/define-module.js'
+import { defineModule, type ModuleMessageDetail } from './define-module.js'
 import { TEST_PASSED, TEST_EXCEPTION, UNKNOWN_ERROR } from './workshop.constants.js'
 import { FIXTURE_CONNECTED, PLAITED_FIXTURE, PLAY_EVENT, PLAITED_RUNNER } from './workshop.constants.js'
 import type { FailedTestEvent, PassedTestEvent } from './workshop.types.js'

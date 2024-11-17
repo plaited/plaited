@@ -7,7 +7,7 @@ import {
   bProgram,
   type Disconnect,
 } from '../behavioral/b-program.js'
-import { getPublicTrigger } from '../client/get-public-trigger.js'
+import { getPublicTrigger } from '../main/get-public-trigger.js'
 
 export const defineWorker = <A extends Handlers>({
   bProgram: callback,

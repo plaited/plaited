@@ -1,5 +1,5 @@
 import type { StoryObj } from 'plaited/workshop'
-import type { PlaitedElement } from '../client.types.js'
+import type { PlaitedElement } from '../plaited.types.js'
 import { Fixture } from './query-bindings.js'
 
 export const beforebegin: StoryObj = {

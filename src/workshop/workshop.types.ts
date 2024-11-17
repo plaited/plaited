@@ -1,4 +1,4 @@
-import type { JSONDetail } from '../client/client.types.js'
+import type { JSONDetail } from '../main/plaited.types.js'
 import type { ServerWebSocket } from 'bun'
 import type { TEST_EXCEPTION, UNKNOWN_ERROR, TEST_PASSED } from './workshop.constants.js'
 

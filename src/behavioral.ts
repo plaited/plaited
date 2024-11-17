@@ -22,4 +22,4 @@ export {
 } from './behavioral/b-thread.js'
 export { randomEvent } from './behavioral/random-event.js'
 export { shuffleSyncs } from './behavioral/shuffle-syncs.js'
-export { getPublicTrigger } from './client/get-public-trigger.js'
+export { getPublicTrigger } from './main/get-public-trigger.js'

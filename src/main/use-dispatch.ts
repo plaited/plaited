@@ -1,5 +1,5 @@
 import { type BPEvent } from '../behavioral/b-thread.js'
-import { type PlaitedElement } from './client.types.js'
+import { type PlaitedElement } from './plaited.types.js'
 
 type Dispatch = <T = unknown>(
   args: BPEvent<T> & {

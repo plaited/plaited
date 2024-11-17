@@ -17,14 +17,14 @@
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./assert": "./src/assert.ts",
     "./behavioral": "./src/behavioral.ts",
     "./indexedDB": "./src/indexedDB.ts",
     "./jsx-dev-runtime": "./src/jsx/dev-runtime.ts",
     "./jsx-runtime": "./src/jsx/runtime.ts",
     "./style": "./src/style.ts",
     "./utils": "./src/utils.ts",
-    "./worker": "./src/worker.ts",
-    "./assert": "./src/assert.ts"
+    "./workshop": "./src/workshop.ts"
   },
   "files": [
     "./src/**",

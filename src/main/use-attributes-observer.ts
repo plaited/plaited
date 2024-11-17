@@ -1,5 +1,5 @@
 import type { Disconnect, Trigger } from '../behavioral/b-program.js'
-import { type PlaitedTrigger } from './client.types.js'
+import { type PlaitedTrigger } from './plaited.types.js'
 import { isPlaitedTrigger } from './client.guards.js'
 
 export type ObservedAttributesDetail = {

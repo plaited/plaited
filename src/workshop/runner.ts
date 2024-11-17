@@ -7,8 +7,8 @@ import { getEntryPoints } from './get-entry-points.js'
 import { getStories } from './get-stories.js'
 import { zip } from './zip.js'
 import { getFile } from './get-file.js'
-import { runnerModdule } from './define-runner.js'
-import { isPlaitedMessage } from '../client/client.guards.js'
+import { runnerModdule } from './runner-module.js'
+import { isPlaitedMessage } from '../main/client.guards.js'
 
 const cwd = `${process.cwd()}/src`
 const streamURL = '/_test-runner'
@@ -21,7 +21,6 @@ const imports = {
   'plaited/jsx-dev-runtime': '/_plaited/dev-runtime.js',
   'plaited/style': '/_plaited/style.js',
   'plaited/utils': '/_plaited/utils.js',
-  'plaited/worker': '/_plaited/worker.js',
   'plaited/workshop': '/_plaited/workshop.js',
   sinon: '/_sinon/sinon.js',
 } as const

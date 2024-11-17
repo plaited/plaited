@@ -1,5 +1,5 @@
 import type { Trigger } from '../behavioral/b-program.js'
-import type { PlaitedTrigger, PlaitedMessage } from './client.types'
+import type { PlaitedTrigger, PlaitedMessage } from './plaited.types'
 import { isTypeOf } from '../utils/is-type-of.js'
 
 export const isPlaitedTrigger = (trigger: Trigger): trigger is PlaitedTrigger => 'addDisconnectCallback' in trigger
