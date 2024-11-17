@@ -1,4 +1,4 @@
-import type { StoryObj } from 'plaited/assert'
+import type { StoryObj } from 'plaited/test'
 import { Fixture } from './use-signal.js'
 
 export const Signal: StoryObj = {

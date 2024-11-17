@@ -1,12 +1,6 @@
 import { defineModule, type ModuleMessageDetail } from './define-module.js'
-import {
-  TEST_PASSED,
-  TEST_EXCEPTION,
-  UNKNOWN_ERROR,
-  FIXTURE_CONNECTED,
-  PLAY_EVENT,
-} from '../assert/assert.constants.js'
-import type { FailedTestEvent, PassedTestEvent, TestParams } from '../assert/assert.types.js'
+import { TEST_PASSED, TEST_EXCEPTION, UNKNOWN_ERROR, FIXTURE_CONNECTED, PLAY_EVENT } from '../test/assert.constants.js'
+import type { FailedTestEvent, PassedTestEvent, TestParams } from '../test/assert.types.js'
 import { PLAITED_FIXTURE } from './plaited-fixture.utils.js'
 
 export const PLAITED_RUNNER = 'PLAITED_RUNNER'

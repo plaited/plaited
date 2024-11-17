@@ -1,4 +1,4 @@
-import type { StoryObj } from 'plaited/assert'
+import type { StoryObj } from 'plaited/test'
 import { Top } from './event-dispatch.js'
 
 export const eventDispatch: StoryObj = {

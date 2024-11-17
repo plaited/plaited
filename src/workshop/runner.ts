@@ -15,11 +15,11 @@ const streamURL = '/_test-runner'
 
 const imports = {
   plaited: '/_plaited/plaited.js',
-  'plaited/assert': '/_plaited/assert.js',
   'plaited/behavioral': '/_plaited/behavioral.js',
   'plaited/jsx-runtime': '/_plaited/runtime.js',
   'plaited/jsx-dev-runtime': '/_plaited/dev-runtime.js',
   'plaited/style': '/_plaited/style.js',
+  'plaited/test': '/_plaited/test.js',
   'plaited/utils': '/_plaited/utils.js',
   sinon: '/_sinon/sinon.js',
 } as const

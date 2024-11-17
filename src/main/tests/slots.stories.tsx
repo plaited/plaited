@@ -1,4 +1,4 @@
-import type { StoryObj } from 'plaited/assert'
+import type { StoryObj } from 'plaited/test'
 import { Fixture, defaultSlot, passThroughSlot, namedSlot, nestedSlot, nestedInShadowSlot } from './slots.js'
 
 export const slots: StoryObj = {

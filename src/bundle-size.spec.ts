@@ -3,10 +3,9 @@ import path from 'path'
 
 test('Maximum client bundle footprint < 6.5kb', async () => {
   const plaitedResults = await Bun.build({
-    entrypoints: [path.resolve(import.meta.dir, '../index.ts')],
+    entrypoints: [path.resolve(import.meta.dir, './index.ts')],
     minify: true,
   })
-  console.log(path.resolve(import.meta.dir, '../index.ts'))
   expect(plaitedResults.outputs.length).toBe(1)
   for (const result of plaitedResults.outputs) {
     // Can be consumed as blobs
@@ -19,9 +18,8 @@ test('Maximum client bundle footprint < 6.5kb', async () => {
 })
 
 test('defineTemplate export footprint < 5kb', async () => {
-  const plaited = import.meta.resolveSync('./minimal.ts')
   const plaitedResults = await Bun.build({
-    entrypoints: [plaited],
+    entrypoints: [path.resolve(import.meta.dir, './main/define-template.ts')],
     minify: true,
   })
 
