@@ -17,3 +17,10 @@ export const UNKNOWN_ERROR = 'UNKNOWN_ERROR'
 export const TIMEOUT_ERROR = 'TIMEOUT_ERROR'
 export const TEST_PASSED = 'TEST_PASSED'
 export const TEST_EXCEPTION = 'TEST_EXCEPTION'
+
+export class TimeoutError extends Error {
+  override name = TIMEOUT_ERROR
+  constructor(message: string) {
+    super(message)
+  }
+}

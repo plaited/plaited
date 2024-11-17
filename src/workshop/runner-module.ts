@@ -1,8 +1,7 @@
 import { defineModule, type ModuleMessageDetail } from './define-module.js'
 import { TEST_PASSED, TEST_EXCEPTION, UNKNOWN_ERROR } from './workshop.constants.js'
 import { FIXTURE_CONNECTED, PLAITED_FIXTURE, PLAY_EVENT, PLAITED_RUNNER } from './workshop.constants.js'
-import type { FailedTestEvent, PassedTestEvent } from './workshop.types.js'
-import type { TestParams } from './story.types.js'
+import type { FailedTestEvent, PassedTestEvent, TestParams } from './workshop.types.js'
 
 export const runnerModdule = defineModule({
   id: PLAITED_RUNNER,

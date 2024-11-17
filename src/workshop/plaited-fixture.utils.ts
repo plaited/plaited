@@ -3,7 +3,6 @@ import type { PlaitedMessage, PlaitedElement } from '../main/plaited.types.js'
 import { DelegatedListener, delegates } from '../main/delegated-listener.js'
 import type { CustomElementTag } from '../jsx/jsx.types.js'
 import { isTypeOf } from '../utils/is-type-of.js'
-import { TIMEOUT_ERROR } from './workshop.constants.js'
 
 const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => event.type === 'close'
 
@@ -80,7 +79,7 @@ export const useSendRunner = (url: string | `/${string}` | URL, protocols?: stri
       socket = undefined
     },
   }
-  const send = <T extends PlaitedMessage>(message: T) => {
+  const send = (message: PlaitedMessage) => {
     const fallback = () => {
       send(message)
       socket?.removeEventListener('open', fallback)
@@ -92,11 +91,4 @@ export const useSendRunner = (url: string | `/${string}` | URL, protocols?: stri
     socket?.addEventListener('open', fallback)
   }
   return send
-}
-
-export class TimeoutError extends Error {
-  override name = TIMEOUT_ERROR
-  constructor(message: string) {
-    super(message)
-  }
 }

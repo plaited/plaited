@@ -1,93 +1,8 @@
-import { assert } from '../assert/assert.js'
-import { findByAttribute } from '../assert/find-by-attribute.js'
-import { findByText } from '../assert/find-by-text.js'
-import { fireEvent } from '../assert/fire-event.js'
-import { match } from '../assert/match.js'
-import { throws } from '../assert/throws.js'
-import { ASSERTION_ERROR, MISSING_TEST_PARAMS_ERROR } from '../assert/assert.constants.js'
-import { AssertionError, MissingTestParamsError } from '../assert/errors.js'
-import { TEST_PASSED, TEST_EXCEPTION, UNKNOWN_ERROR, TIMEOUT_ERROR } from './workshop.constants.js'
-import { TimeoutError } from './plaited-fixture.utils.js'
-import type { StoryObj, Play } from './story.types.js'
 import { defineTemplate } from '../main/define-template.js'
 import { css } from '../style/css.js'
-import { wait } from '../utils/wait.js'
-import {
-  DEFAULT_PLAY_TIMEOUT,
-  PLAY_EVENT,
-  PLAITED_FIXTURE,
-  PLAITED_RUNNER,
-  FIXTURE_CONNECTED,
-} from './workshop.constants.js'
-import { useSendRunner, connectTestRunner } from './plaited-fixture.utils.js'
-
-type UsePlay = (arg: {
-  exportName: string
-  storyFile: string
-  hostElement: Element
-  play: Play
-  route: string
-  send: ReturnType<typeof useSendRunner>
-  time?: number
-}) => Promise<void>
-
-const timeout = async (time: number = DEFAULT_PLAY_TIMEOUT) => {
-  await wait(time)
-  return true
-}
-
-const usePlay: UsePlay = async ({ exportName, storyFile, hostElement, route, play, time, send }) => {
-  try {
-    const timedOut = await Promise.race([
-      play({
-        assert,
-        findByAttribute,
-        findByText,
-        fireEvent,
-        hostElement,
-        match,
-        throws,
-        wait,
-      }),
-      timeout(time),
-    ])
-    if (timedOut) throw new TimeoutError(`Story [${route}] exceeded timeout of ${time} ms`)
-    send({ address: PLAITED_RUNNER, type: TEST_PASSED, detail: { route } })
-    console.log('✓ ', route)
-  } catch (error) {
-    if (error instanceof TimeoutError || error instanceof AssertionError || error instanceof MissingTestParamsError) {
-      send({
-        address: PLAITED_RUNNER,
-        type: TEST_EXCEPTION,
-        detail: {
-          story: exportName,
-          file: storyFile,
-          route,
-          url: window?.location.href,
-          type:
-            error instanceof AssertionError ? ASSERTION_ERROR
-            : error instanceof TimeoutError ? TIMEOUT_ERROR
-            : MISSING_TEST_PARAMS_ERROR,
-        },
-      })
-      throw error
-    }
-    if (error instanceof Error) {
-      send({
-        address: PLAITED_RUNNER,
-        type: UNKNOWN_ERROR,
-        detail: {
-          story: exportName,
-          file: storyFile,
-          route,
-          url: window?.location.href,
-          type: UNKNOWN_ERROR,
-        },
-      })
-      throw error
-    }
-  }
-}
+import { PLAITED_FIXTURE, PLAY_EVENT } from './workshop.constants.js'
+import { connectTestRunner, useSendRunner } from './plaited-fixture.utils.js'
+import { usePlay } from './use-play.js'
 
 export const PlaitedFixture = defineTemplate({
   tag: PLAITED_FIXTURE,
@@ -100,59 +15,21 @@ export const PlaitedFixture = defineTemplate({
       })}
     ></slot>
   ),
-  bProgram({ root, bThreads, bThread, bSync, host }) {
+  bProgram({ bThreads, host }) {
     connectTestRunner(host)
     const send = useSendRunner(this.getAttribute('p-socket') as `/${string}`)
     const route = this.getAttribute('p-route') as string
     const storyFile = this.getAttribute('p-file') as string
     const entryPath = this.getAttribute('p-entry') as string
     const exportName = this.getAttribute('p-name') as string
-    bThreads.set({
-      onPlay: bThread([bSync({ waitFor: PLAY_EVENT }), bSync({ block: PLAY_EVENT })]),
+    return usePlay({
+      bThreads,
+      send,
+      route,
+      storyFile,
+      exportName,
+      entryPath,
+      host,
     })
-    return {
-      async [PLAY_EVENT]() {
-        const { [exportName]: story } = (await import(entryPath)) as {
-          [key: string]: StoryObj
-        }
-        try {
-          if (story?.play) {
-            await usePlay({
-              play: story.play,
-              time: story?.parameters?.timeout,
-              send,
-              route,
-              storyFile,
-              exportName,
-              hostElement: root.host,
-            })
-          } else {
-            console.log('✓', route)
-            send({ address: PLAITED_RUNNER, type: TEST_PASSED, detail: { route } })
-          }
-        } catch (error) {
-          if (error instanceof Error) {
-            send({
-              address: PLAITED_RUNNER,
-              type: UNKNOWN_ERROR,
-              detail: {
-                story: exportName,
-                file: storyFile,
-                route,
-                url: window?.location.href,
-                type: UNKNOWN_ERROR,
-              },
-            })
-            throw error
-          }
-        }
-      },
-      onConnected() {
-        send({
-          address: PLAITED_RUNNER,
-          type: FIXTURE_CONNECTED,
-        })
-      },
-    }
   },
 })

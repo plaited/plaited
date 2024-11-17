@@ -30,10 +30,10 @@ type JsonObject = {
 
 type JsonArray = Array<JSONDetail>
 
-export type PlaitedMessage<T extends JSONDetail = JSONDetail> = {
+export type PlaitedMessage<D extends JSONDetail = JSONDetail> = {
   address: string
   type: string
-  detail?: T
+  detail?: D
 }
 
 export type Send = {
