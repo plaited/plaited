@@ -15,7 +15,7 @@ import { type QuerySelector, getQuery, handleTemplateObject } from './get-query.
 import { getShadowObserver, addListeners } from './get-shadow-observer.js'
 import { getPublicTrigger } from './get-public-trigger.js'
 import { canUseDOM } from '../utils/can-use-dom.js'
-import { ELEMENT_CALLBACKS } from './client.constants.js'
+import { ELEMENT_CALLBACKS } from './plaited.constants.js'
 import type { PlaitedTrigger, PlaitedElement } from './plaited.types.js'
 import { noop } from '../utils/noop.js'
 

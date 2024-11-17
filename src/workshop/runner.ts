@@ -8,7 +8,7 @@ import { getStories } from './get-stories.js'
 import { zip } from './zip.js'
 import { getFile } from './get-file.js'
 import { runnerModdule } from './runner-module.js'
-import { isPlaitedMessage } from '../main/client.guards.js'
+import { isPlaitedMessage } from '../main/plaited.guards.js'
 
 const cwd = `${process.cwd()}/src`
 const streamURL = '/_test-runner'

@@ -1,7 +1,7 @@
 import type { FunctionTemplate, CustomElementTag, Attrs } from '../jsx/jsx.types.js'
 import { type DefineElementArgs, defineElement, type PlaitedHandlers } from './define-element.js'
 import { createTemplate } from '../jsx/create-template.js'
-import { PLAITED_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './client.constants.js'
+import { PLAITED_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './plaited.constants.js'
 
 interface DefineTemplateArgs<A extends PlaitedHandlers>
   extends Omit<DefineElementArgs<A>, 'delegatesFocus' | 'mode' | 'slotAssignment'> {

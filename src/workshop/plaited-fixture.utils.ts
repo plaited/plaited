@@ -1,4 +1,4 @@
-import { isPlaitedMessage } from '../main/client.guards.js'
+import { isPlaitedMessage } from '../main/plaited.guards.js'
 import type { PlaitedMessage, PlaitedElement } from '../main/plaited.types.js'
 import { DelegatedListener, delegates } from '../main/delegated-listener.js'
 import type { CustomElementTag } from '../jsx/jsx.types.js'
