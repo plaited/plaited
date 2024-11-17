@@ -1,6 +1,13 @@
 import type { Attrs, FunctionTemplate } from '../jsx/jsx.types.js'
-import type { Play } from './plaited-fixture.js'
 import type { StylesObject } from '../style/css.types.js'
+import type { assert } from '../assert/assert.js'
+import type { findByAttribute } from '../assert/find-by-attribute.js'
+import type { findByText } from '../assert/find-by-text.js'
+import type { fireEvent } from '../assert/fire-event.js'
+import type { match } from '../assert/match.js'
+import type { throws } from '../assert/throws.js'
+import type { wait } from '../utils/wait.js'
+
 import { TEST_PASSED, TEST_EXCEPTION, UNKNOWN_ERROR } from './assert.constants.js'
 
 export type Scale = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 'rel'
@@ -21,6 +28,17 @@ export type Meta<T extends Attrs = Attrs> = {
   parameters?: Params
   template?: FunctionTemplate<T>
 }
+
+export type Play = (args: {
+  assert: typeof assert
+  findByAttribute: typeof findByAttribute
+  findByText: typeof findByText
+  fireEvent: typeof fireEvent
+  hostElement: Element
+  match: typeof match
+  throws: typeof throws
+  wait: typeof wait
+}) => Promise<void>
 
 export type StoryObj<T extends Attrs = Attrs> = {
   args?: Attrs

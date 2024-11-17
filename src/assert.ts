@@ -16,4 +16,3 @@ export {
   TIMEOUT_ERROR,
 } from './assert/assert.constants.js'
 export { TimeoutError, AssertionError, MissingTestParamsError } from './assert/errors.js'
-export { PlaitedFixture } from './assert/plaited-fixture.js'

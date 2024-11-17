@@ -26,12 +26,12 @@ export const defineTemplate = <A extends PlaitedHandlers>({
   slotAssignment = 'named',
   publicEvents,
   observedAttributes = [],
-  connectStream,
+  streamAssociated,
   ...rest
 }: DefineTemplateArgs<A>): PlaitedTemplate => {
   const events: string[] = [
     ...(publicEvents ?? []),
-    ...(connectStream ?
+    ...(streamAssociated ?
       [ELEMENT_CALLBACKS.onAppend, ELEMENT_CALLBACKS.onPrepend, ELEMENT_CALLBACKS.onReplaceChildren]
     : []),
   ]
@@ -43,7 +43,7 @@ export const defineTemplate = <A extends PlaitedHandlers>({
     delegatesFocus,
     mode,
     observedAttributes,
-    connectStream,
+    streamAssociated,
     ...rest,
   })
   const registry = new Set<string>([...shadowDom.registry, tag])

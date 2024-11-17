@@ -1,5 +1,5 @@
 import { mapStoryResponses } from './map-story-responses.js'
-import { STORY_GLOB_PATTERN } from '../assert/assert.constants.js'
+import { STORY_GLOB_PATTERN } from './workshop.constants.js'
 
 export const globStories = async (cwd: string) => {
   const glob = new Bun.Glob(STORY_GLOB_PATTERN)

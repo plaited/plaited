@@ -1,9 +1,9 @@
-import { assert } from './assert.js'
-import { findByAttribute } from './find-by-attribute.js'
-import { findByText } from './find-by-text.js'
-import { fireEvent } from './fire-event.js'
-import { match } from './match.js'
-import { throws } from './throws.js'
+import { assert } from '../assert/assert.js'
+import { findByAttribute } from '../assert/find-by-attribute.js'
+import { findByText } from '../assert/find-by-text.js'
+import { fireEvent } from '../assert/fire-event.js'
+import { match } from '../assert/match.js'
+import { throws } from '../assert/throws.js'
 import {
   TEST_PASSED,
   TEST_EXCEPTION,
@@ -11,29 +11,20 @@ import {
   ASSERTION_ERROR,
   MISSING_TEST_PARAMS_ERROR,
   TIMEOUT_ERROR,
+} from '../assert/assert.constants.js'
+import { TimeoutError, AssertionError, MissingTestParamsError } from '../assert/errors.js'
+import type { StoryObj, Play } from '../assert/assert.types.js'
+import { defineTemplate } from '../client/define-template.js'
+import { css } from '../style/css.js'
+import { wait } from '../utils/wait.js'
+import {
   DEFAULT_PLAY_TIMEOUT,
   PLAY_EVENT,
   PLAITED_FIXTURE,
   PLAITED_RUNNER,
   FIXTURE_CONNECTED,
-} from './assert.constants.js'
-import { TimeoutError, AssertionError, MissingTestParamsError } from './errors.js'
-import { css } from '../style/css.js'
-import { defineTemplate } from '../client/define-template.js'
-import { useStream } from '../client/use-stream.js'
-import { wait } from '../utils/wait.js'
-import type { StoryObj } from './assert.types.js'
-
-export type Play = (args: {
-  assert: typeof assert
-  findByAttribute: typeof findByAttribute
-  findByText: typeof findByText
-  fireEvent: typeof fireEvent
-  hostElement: Element
-  match: typeof match
-  throws: typeof throws
-  wait: typeof wait
-}) => Promise<void>
+} from './workshop.constants.js'
+import { useSendRunner, connectTestRunner } from './plaited-fixture.utils.js'
 
 type UsePlay = (arg: {
   exportName: string
@@ -41,7 +32,7 @@ type UsePlay = (arg: {
   hostElement: Element
   play: Play
   route: string
-  send: ReturnType<typeof useStream>
+  send: ReturnType<typeof useSendRunner>
   time?: number
 }) => Promise<void>
 
@@ -106,7 +97,7 @@ const usePlay: UsePlay = async ({ exportName, storyFile, hostElement, route, pla
 export const PlaitedFixture = defineTemplate({
   tag: PLAITED_FIXTURE,
   publicEvents: [PLAY_EVENT],
-  connectStream: { getLVC: true },
+  streamAssociated: true,
   shadowDom: (
     <slot
       {...css.host({
@@ -114,8 +105,9 @@ export const PlaitedFixture = defineTemplate({
       })}
     ></slot>
   ),
-  bProgram({ root, bThreads, bThread, bSync }) {
-    const send = useStream(this.getAttribute('p-socket') as `/${string}`)
+  bProgram({ root, bThreads, bThread, bSync, host }) {
+    connectTestRunner(host)
+    const send = useSendRunner(this.getAttribute('p-socket') as `/${string}`)
     const route = this.getAttribute('p-route') as string
     const storyFile = this.getAttribute('p-file') as string
     const entryPath = this.getAttribute('p-entry') as string
@@ -125,7 +117,6 @@ export const PlaitedFixture = defineTemplate({
     })
     return {
       async [PLAY_EVENT]() {
-        console.log('playing')
         const { [exportName]: story } = (await import(entryPath)) as {
           [key: string]: StoryObj
         }

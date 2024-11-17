@@ -16,7 +16,6 @@ export type { CloneCallback, Position, SelectorMatch } from './client/get-query.
 export { type PlaitedTemplate, defineTemplate } from './client/define-template.js'
 export { type ObservedAttributesDetail, useAttributesObserver } from './client/use-attributes-observer.js'
 export { useDispatch } from './client/use-dispatch.js'
-export { useStream } from './client/use-stream.js'
 export { useSignal, useComputed } from './client/use-signal.js'
 //STYLE
 export type * from './style/css.types.js'

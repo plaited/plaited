@@ -1,13 +1,6 @@
 import { defineModule, type ModuleMessageDetail } from '../server/define-module.js'
-import {
-  TEST_PASSED,
-  TEST_EXCEPTION,
-  UNKNOWN_ERROR,
-  FIXTURE_CONNECTED,
-  PLAITED_FIXTURE,
-  PLAY_EVENT,
-  PLAITED_RUNNER,
-} from '../assert/assert.constants.js'
+import { TEST_PASSED, TEST_EXCEPTION, UNKNOWN_ERROR } from '../assert/assert.constants.js'
+import { FIXTURE_CONNECTED, PLAITED_FIXTURE, PLAY_EVENT, PLAITED_RUNNER } from './workshop.constants.js'
 import type { TestParams, FailedTestEvent, PassedTestEvent } from '../assert/assert.types.js'
 
 export const runnerModdule = defineModule({

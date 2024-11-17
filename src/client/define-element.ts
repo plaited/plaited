@@ -17,8 +17,6 @@ import { getPublicTrigger } from './get-public-trigger.js'
 import { canUseDOM } from '../utils/can-use-dom.js'
 import { ELEMENT_CALLBACKS } from './client.constants.js'
 import type { PlaitedTrigger, PlaitedElement } from './client.types.js'
-import { connectInbox } from './use-stream.utils.js'
-import { isTypeOf } from '../utils/is-type-of.js'
 import { noop } from '../utils/noop.js'
 
 export type ConnectedCallbackArgs = {
@@ -77,7 +75,7 @@ export type DefineElementArgs<A extends PlaitedHandlers> = {
   observedAttributes?: string[]
   publicEvents?: string[]
   formAssociated?: true
-  connectStream?: boolean | { getLVC?: boolean }
+  streamAssociated?: true
   bProgram?: {
     (this: PlaitedElement, args: ConnectedCallbackArgs): A & PlaitedElementCallbackHandlers
   }
@@ -98,7 +96,7 @@ export const defineElement = <A extends PlaitedHandlers>({
   delegatesFocus,
   mode,
   slotAssignment,
-  connectStream,
+  streamAssociated,
   bProgram: callback,
 }: DefineElementArgs<A>) => {
   if (canUseDOM() && !customElements.get(tag)) {
@@ -185,26 +183,19 @@ export const defineElement = <A extends PlaitedHandlers>({
               bSync,
             })
             // Subscribe feedback actions to behavioral program and add disconnect callback to disconnect set
-            const streamHandlers = {
-              [ELEMENT_CALLBACKS.onAppend]: (html: string) => this.append(createDocumentFragment(html)),
-              [ELEMENT_CALLBACKS.onPrepend]: (html: string) => this.prepend(createDocumentFragment(html)),
-              [ELEMENT_CALLBACKS.onReplaceChildren]: (html: string) =>
-                this.replaceChildren(createDocumentFragment(html)),
-            }
             this.#disconnectSet.add(
               this.#useFeedback({
                 ...actions,
-                ...(connectStream ? streamHandlers : {}),
+                ...(streamAssociated && {
+                  [ELEMENT_CALLBACKS.onAppend]: (html: string) => this.append(createDocumentFragment(html)),
+                  [ELEMENT_CALLBACKS.onPrepend]: (html: string) => this.prepend(createDocumentFragment(html)),
+                  [ELEMENT_CALLBACKS.onReplaceChildren]: (html: string) =>
+                    this.replaceChildren(createDocumentFragment(html)),
+                }),
               }),
             )
-            if (connectStream) {
-              this.#disconnectStream =
-                isTypeOf<{ getLVC?: boolean }>(connectStream, 'object') ?
-                  connectInbox(this, connectStream?.getLVC)
-                : connectInbox(this)
-            }
-            this.#trigger({ type: ELEMENT_CALLBACKS.onConnected })
           }
+          this.#trigger({ type: ELEMENT_CALLBACKS.onConnected })
         }
         disconnectedCallback() {
           this.#shadowObserver?.disconnect()

@@ -1,17 +1,33 @@
+import { isPlaitedMessage } from '../client/client.guards.js'
+import type { PlaitedMessage, PlaitedElement } from '../client/client.types.js'
+import { DelegatedListener, delegates } from '../client/delegated-listener.js'
+import type { CustomElementTag } from '../jsx/jsx.types.js'
 import { isTypeOf } from '../utils/is-type-of.js'
-import type { PlaitedMessage } from './client.types.js'
-import { DelegatedListener, delegates } from './delegated-listener.js'
-import { isPlaitedMessage } from './client.guards.js'
-import { updateInbox } from './use-stream.utils.js'
 
 const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => event.type === 'close'
 
-export const useStream = (url: string | `/${string}` | URL, protocols?: string | string[]) => {
+export const getAddress = (tag: CustomElementTag, id?: string): string => `${tag}${id ? `#${id}` : ''}`
+
+export const connectTestRunner = (host: PlaitedElement) => {
+  const address = getAddress(host.tagName.toLowerCase() as CustomElementTag, host.id)
+  const channel = new BroadcastChannel(address)
+  const handler = (evt: MessageEvent<PlaitedMessage>) => {
+    host.trigger({ type: evt.data.type, detail: evt.data.detail })
+  }
+  channel.addEventListener('message', handler)
+  const disconnect = () => {
+    channel.removeEventListener('message', handler)
+    channel.close()
+  }
+  host.trigger.addDisconnectCallback(disconnect)
+  return disconnect
+}
+
+export const useSendRunner = (url: string | `/${string}` | URL, protocols?: string | string[]) => {
   const retryStatusCodes = new Set([1006, 1012, 1013])
   const maxRetries = 3
   let socket: WebSocket | undefined
   let retryCount = 0
-  let documentIsHidden = document.hidden
   const ws = {
     async callback(evt: MessageEvent) {
       if (evt.type === 'message') {
@@ -19,7 +35,10 @@ export const useStream = (url: string | `/${string}` | URL, protocols?: string |
           const { data } = evt
           const message = isTypeOf<string>(data, 'string') ? JSON.parse(data) : data
           if (isPlaitedMessage(message)) {
-            await updateInbox(message)
+            const { address, ...event } = message
+            const channel = new BroadcastChannel(address)
+            channel.postMessage(event)
+            channel.close()
           }
         } catch (error) {
           console.error('Error parsing incoming message:', error)
@@ -38,18 +57,16 @@ export const useStream = (url: string | `/${string}` | URL, protocols?: string |
         isTypeOf<string>(url, 'string') && url.startsWith('/') ?
           `${self?.location?.origin.replace(/^http/, 'ws')}${url}`
         : url
-      if (!documentIsHidden) {
-        socket = new WebSocket(path, protocols)
-        delegates.set(socket, new DelegatedListener(ws.callback))
-        // WebSocket connection opened
-        socket.addEventListener('open', delegates.get(socket))
-        // Handle incoming messages
-        socket.addEventListener('message', delegates.get(socket))
-        // Handle WebSocket errors
-        socket.addEventListener('error', delegates.get(socket))
-        // WebSocket connection closed
-        socket.addEventListener('close', delegates.get(socket))
-      }
+      socket = new WebSocket(path, protocols)
+      delegates.set(socket, new DelegatedListener(ws.callback))
+      // WebSocket connection opened
+      socket.addEventListener('open', delegates.get(socket))
+      // Handle incoming messages
+      socket.addEventListener('message', delegates.get(socket))
+      // Handle WebSocket errors
+      socket.addEventListener('error', delegates.get(socket))
+      // WebSocket connection closed
+      socket.addEventListener('close', delegates.get(socket))
     },
     retry() {
       if (retryCount < maxRetries) {
@@ -68,26 +85,10 @@ export const useStream = (url: string | `/${string}` | URL, protocols?: string |
       socket?.removeEventListener('open', fallback)
     }
     if (socket?.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify(message))
-      if (documentIsHidden) {
-        socket?.close()
-        socket = undefined
-      }
-      return
+      return socket.send(JSON.stringify(message))
     }
     if (!socket) ws.connect()
     socket?.addEventListener('open', fallback)
   }
-  const documentVisibilityCallback = () => {
-    documentIsHidden = document.hidden
-    if (documentIsHidden) {
-      socket?.close()
-      socket = undefined
-    } else {
-      ws.connect()
-    }
-  }
-  delegates.set(document, new DelegatedListener(documentVisibilityCallback))
-  document.addEventListener('visibilitychange', delegates.get(document))
   return send
 }

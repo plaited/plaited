@@ -1,7 +1,7 @@
 import path from 'path'
-import { PlaitedFixture } from '../assert/plaited-fixture.js'
+import { PlaitedFixture } from './plaited-fixture.js'
 import { useSSR } from '../jsx/use-ssr.js'
-import { PLAITED_ASSERT_ROUTE, STORIES_FILTERS_REGEX, DEFAULT_PLAY_TIMEOUT } from '../assert/assert.constants.js'
+import { STORIES_FILTERS_REGEX, DEFAULT_PLAY_TIMEOUT } from './workshop.constants.js'
 import type { StoryObj, Meta, TestParams } from '../assert/assert.types.js'
 import { kebabCase } from '../utils/case.js'
 
@@ -33,7 +33,7 @@ const updateHTMLResponses = ({
   imports: Record<string, string>
 }): TestParams => {
   const entryPath = storyFile.replace(/\.tsx?$/, '.js')
-  const ssr = useSSR(PLAITED_ASSERT_ROUTE, entryPath)
+  const ssr = useSSR('/workshop/plaited-fixture.js', entryPath)
   const args = story?.args ?? meta?.args ?? {}
   const styles = story?.parameters?.styles ?? meta?.parameters?.styles ?? {}
   const headers = story?.parameters?.headers?.(process.env) ?? meta?.parameters?.headers?.(process.env) ?? new Headers()
