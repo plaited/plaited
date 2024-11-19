@@ -1,8 +1,8 @@
 import path from 'path'
-import { PlaitedFixture } from '../assert/plaited-fixture.js'
+import { PlaitedFixture } from './plaited-fixture.js'
 import { useSSR } from '../jsx/use-ssr.js'
-import { PLAITED_ASSERT_ROUTE, STORIES_FILTERS_REGEX, DEFAULT_PLAY_TIMEOUT } from '../assert/assert.constants.js'
-import type { StoryObj, Meta, TestParams } from '../assert/assert.types.js'
+import { STORIES_FILTERS_REGEX, DEFAULT_PLAY_TIMEOUT } from '../test/assert.constants.js'
+import type { StoryObj, Meta, TestParams } from '../test/assert.types.js'
 import { kebabCase } from '../utils/case.js'
 
 const createStoryRoute = ({ storyFile, exportName }: { storyFile: string; exportName: string }) => {
@@ -20,7 +20,7 @@ const updateHTMLResponses = ({
   responses,
   storyFile,
   exportName,
-  runnerPath,
+  streamURL,
   imports,
 }: {
   story: StoryObj
@@ -29,11 +29,11 @@ const updateHTMLResponses = ({
   responses: Map<string, Response>
   storyFile: string
   exportName: string
-  runnerPath: `/${string}`
+  streamURL: `/${string}`
   imports: Record<string, string>
 }): TestParams => {
   const entryPath = storyFile.replace(/\.tsx?$/, '.js')
-  const ssr = useSSR(PLAITED_ASSERT_ROUTE, entryPath)
+  const ssr = useSSR('/workshop/plaited-fixture.js', entryPath)
   const args = story?.args ?? meta?.args ?? {}
   const styles = story?.parameters?.styles ?? meta?.parameters?.styles ?? {}
   const headers = story?.parameters?.headers?.(process.env) ?? meta?.parameters?.headers?.(process.env) ?? new Headers()
@@ -61,7 +61,7 @@ const updateHTMLResponses = ({
           p-route={route}
           p-entry={entryPath}
           p-file={storyFile}
-          p-socket={runnerPath}
+          p-socket={streamURL}
           children={tpl?.(args)}
           {...styles}
         />
@@ -81,13 +81,13 @@ export const mapStoryResponses = async ({
   storyEntries,
   responses,
   cwd,
-  runnerPath,
+  streamURL,
   imports,
 }: {
   storyEntries: string[]
   responses: Map<string, Response>
   cwd: string
-  runnerPath: `/${string}`
+  streamURL: `/${string}`
   imports: Record<string, string>
 }) => {
   const routes: [string, TestParams][] = []
@@ -108,7 +108,7 @@ export const mapStoryResponses = async ({
           responses,
           storyFile,
           exportName,
-          runnerPath,
+          streamURL,
           imports,
         })
         routes.push([route, params])

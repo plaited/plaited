@@ -1,31 +1,32 @@
 import { chromium, type BrowserContext } from 'playwright'
-import { bProgram } from '../behavioral.js'
+import { type Trigger } from '../behavioral/b-program.js'
 import * as esbuild from 'esbuild'
-import { getActions } from './get-actions.js'
-import { getServerConfig } from './get-server-config.js'
+import type { Server, ServerWebSocket } from 'bun'
+import { isTypeOf } from '../utils/is-type-of.js'
 import { getEntryPoints } from './get-entry-points.js'
 import { getStories } from './get-stories.js'
 import { zip } from './zip.js'
 import { getFile } from './get-file.js'
+import { runnerModdule } from './runner-module.js'
+import { isPlaitedMessage } from '../main/plaited.guards.js'
 
 const cwd = `${process.cwd()}/src`
-const runnerPath = '/_test-runner'
+const streamURL = '/_test-runner'
 
 const imports = {
   plaited: '/_plaited/plaited.js',
-  'plaited/assert': '/_plaited/assert.js',
   'plaited/behavioral': '/_plaited/behavioral.js',
   'plaited/jsx-runtime': '/_plaited/runtime.js',
   'plaited/jsx-dev-runtime': '/_plaited/dev-runtime.js',
   'plaited/style': '/_plaited/style.js',
+  'plaited/test': '/_plaited/test.js',
   'plaited/utils': '/_plaited/utils.js',
-  'plaited/worker': '/_plaited/worker.js',
   sinon: '/_sinon/sinon.js',
 } as const
 
 const { stories, responses } = await getStories({
   cwd,
-  runnerPath,
+  streamURL,
   imports,
 })
 
@@ -45,27 +46,48 @@ for (const { path, text } of outputFiles) {
 const browser = await chromium.launch()
 const contexts = new Set<BrowserContext>()
 
-const { useFeedback, trigger } = bProgram()
+const map = new Map<string, Trigger>()
 
-const server = Bun.serve(
-  getServerConfig({
-    getFile,
-    trigger,
-    responses,
-    runnerPath,
-    cwd,
-  }),
-)
-
-const actions = getActions({
-  stories,
-  contexts,
-  server,
-  trigger,
-  port: server.port,
+const server = Bun.serve({
+  static: Object.fromEntries(responses),
+  port: 3000,
+  async fetch(req: Request, server: Server) {
+    const { pathname } = new URL(req.url)
+    if (/\.js$/.test(pathname)) {
+      const path = Bun.resolveSync(`.${pathname}`, cwd)
+      return await getFile(path)
+    }
+    if (pathname === streamURL) {
+      const success = server.upgrade(req)
+      return success ? undefined : new Response('WebSocket upgrade error', { status: 400 })
+    }
+    return new Response('Upgrade failed', { status: 500 })
+  },
+  websocket: {
+    message(ws: ServerWebSocket<unknown>, message: string | Buffer) {
+      if (!isTypeOf<string>(message, 'string')) return
+      try {
+        const json = JSON.parse(message)
+        if (isPlaitedMessage(json)) {
+          const { address, type, detail } = json
+          const trigger = map.get(address)
+          trigger?.({ type, detail: { message: detail, ws } })
+        }
+      } catch (error) {
+        console.error(error)
+      }
+    },
+  },
 })
 
-useFeedback(actions)
+map.set(
+  runnerModdule.id,
+  runnerModdule({
+    stories,
+    contexts,
+    port: 3000,
+  }),
+)
 
 await Promise.all(
   stories.map(async ([route]) => {
@@ -79,7 +101,7 @@ await Promise.all(
 process.on('SIGINT', async () => {
   server.stop()
   await Promise.all([...contexts].map(async (context) => await context.close()))
-  trigger({ type: 'SIGINT' })
+  map.get(runnerModdule.id)!({ type: 'SIGINT' })
 })
 
 process.on('uncaughtException', (error) => {
@@ -88,4 +110,8 @@ process.on('uncaughtException', (error) => {
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason)
+})
+
+process.on('exit', () => {
+  server.stop()
 })

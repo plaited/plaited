@@ -1,4 +1,4 @@
-import type { StoryObj, Meta, Args } from 'plaited/assert'
+import type { StoryObj, Meta, Args } from 'plaited/test'
 import { Header } from './header.js'
 
 const meta: Meta<Args<typeof Header>> = {

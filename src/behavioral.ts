@@ -1,6 +1,6 @@
 //BEHAVIORAL
 export {
-  type Actions,
+  type Handlers,
   type BProgram,
   type UseFeedback,
   type UseSnapshot,
@@ -22,4 +22,4 @@ export {
 } from './behavioral/b-thread.js'
 export { randomEvent } from './behavioral/random-event.js'
 export { shuffleSyncs } from './behavioral/shuffle-syncs.js'
-export { usePublicEvents } from './client/use-public-events.js'
+export { getPublicTrigger } from './main/get-public-trigger.js'

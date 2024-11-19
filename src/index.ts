@@ -1,6 +1,6 @@
 //BEHAVIORAL
 export type {
-  Actions,
+  Handlers,
   BProgram,
   UseFeedback,
   UseSnapshot,
@@ -11,14 +11,14 @@ export type {
 } from './behavioral/b-program.js'
 export type { BPEvent, BPEventTemplate, BSync, BThread, RulesFunction } from './behavioral/b-thread.js'
 //CLIENT
-export type { PlaitedElement } from './client/define-element.js'
-export type { CloneCallback, Position, SelectorMatch } from './client/use-query.js'
-export { type PlaitedTemplate, defineTemplate } from './client/define-template.js'
-export { type ObservedAttributesDetail, useAttributesObserver } from './client/use-attributes-observer.js'
-export { useDispatch } from './client/use-dispatch.js'
-export { useIndexedDB } from './client/use-indexed-db.js'
-export { useServer } from './client/use-server.js'
-export { useSignal, useComputed } from './client/use-signal.js'
+export type * from './main/plaited.types.js'
+export type { CloneCallback, Position, SelectorMatch } from './main/get-query.js'
+export { type PlaitedTemplate, defineTemplate } from './main/define-template.js'
+export { type ObservedAttributesDetail, useAttributesObserver } from './main/use-attributes-observer.js'
+export { useDispatch } from './main/use-dispatch.js'
+export { useSignal, useComputed } from './main/use-signal.js'
+export { useWorker } from './main/use-worker.js'
+export { defineWorker } from './main/define-worker.js'
 //STYLE
 export type * from './style/css.types.js'
 export { css } from './style/css.js'
