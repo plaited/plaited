@@ -1,30 +1,30 @@
 import { type StoryObj } from 'plaited/test'
-import { ButtonCheckbox } from './ButtonCheckbox.js'
+import { ToggleInput } from './ToggleInput.js'
 
 export const checkbox: StoryObj = {
-  template: ButtonCheckbox,
+  template: ToggleInput,
   async play() {
-    const checkbox = document.querySelector(ButtonCheckbox.tag)
+    const checkbox = document.querySelector(ToggleInput.tag)
     checkbox?.setAttribute('checked', '')
   },
 }
 
 export const checked: StoryObj = {
-  template: ButtonCheckbox,
+  template: ToggleInput,
   args: {
     checked: true,
   },
 }
 
 export const disabled: StoryObj = {
-  template: ButtonCheckbox,
+  template: ToggleInput,
   args: {
     disabled: true,
   },
 }
 
 export const disabledAndChecked: StoryObj = {
-  template: ButtonCheckbox,
+  template: ToggleInput,
   args: {
     disabled: true,
     checked: true,

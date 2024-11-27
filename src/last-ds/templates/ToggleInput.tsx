@@ -19,13 +19,13 @@ const hostStyles = css.host({
   },
 })
 
-export const ButtonCheckbox = defineTemplate<{
+export const ToggleInput = defineTemplate<{
   click(evt: MouseEvent & { target: HTMLInputElement }): void
   checked(val: boolean): void
   disabled(val: boolean): void
   valueChange(val: string | null): void
 }>({
-  tag: 'button-checkbox',
+  tag: 'toggle-input',
   observedAttributes: ['disabled', 'checked', 'value'],
   formAssociated: true,
   shadowDom: (
