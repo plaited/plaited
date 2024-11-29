@@ -23,7 +23,7 @@ type DefineModule = <A extends Handlers>(args: {
     ctx?: Record<string, unknown>,
   ): A
 }) => {
-  (ctx?: Parameters<(typeof args)['bProgram']>[1]): Trigger
+  <C extends Record<string, unknown>>(ctx?: C): Trigger
   id: string
 }
 

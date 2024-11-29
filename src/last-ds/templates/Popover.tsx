@@ -1,5 +1,5 @@
-import { defineTemplate, css, useAttributesObserver, type ObservedAttributesDetail } from 'plaited'
-import { isTypeOf, keyMirror } from 'plaited/utils'
+import { defineTemplate, css } from 'plaited'
+// import { isTypeOf, keyMirror } from 'plaited/utils'
 
 const styles = css.create({
   button: {
@@ -8,9 +8,9 @@ const styles = css.create({
   },
 })
 
-const hostStyles = css.host({
-  display: 'contents',
-})
+// const hostStyles = css.host({
+//   display: 'contents',
+// })
 
 export const DecoratedPopover = defineTemplate({
   tag: 'decorated-popover',
@@ -31,10 +31,10 @@ export const DecoratedPopover = defineTemplate({
       </div>
     </>
   ),
-  bProgram({ $, internals, trigger }) {
-    let [popoverTrigger] = $<HTMLSlotElement>('popover-trigger')
-    let [popoverTarget] = $<HTMLSlotElement>('popover-target')
-    let [button] = $<HTMLSlotElement>('button')
+  bProgram({ $ }) {
+    // let [popoverTrigger] = $<HTMLSlotElement>('popover-trigger')
+    // let [popoverTarget] = $<HTMLSlotElement>('popover-target')
+    const [button] = $<HTMLSlotElement>('button')
     return {
       slotchange() {},
       onConnected() {

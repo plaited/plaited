@@ -1,10 +1,10 @@
 import type { FunctionTemplate, CustomElementTag, Attrs } from '../jsx/jsx.types.js'
-import { type DefineElementArgs, defineElement, type PlaitedHandlers } from './define-element.js'
+import { type GetElementArgs, getElement, type PlaitedHandlers } from './get-element.js'
 import { createTemplate } from '../jsx/create-template.js'
 import { PLAITED_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './plaited.constants.js'
 
 interface DefineTemplateArgs<A extends PlaitedHandlers>
-  extends Omit<DefineElementArgs<A>, 'delegatesFocus' | 'mode' | 'slotAssignment'> {
+  extends Omit<GetElementArgs<A>, 'delegatesFocus' | 'mode' | 'slotAssignment'> {
   delegatesFocus?: boolean
   mode?: 'open' | 'closed'
   slotAssignment?: 'named' | 'manual'
@@ -35,7 +35,7 @@ export const defineTemplate = <A extends PlaitedHandlers>({
       [ELEMENT_CALLBACKS.onAppend, ELEMENT_CALLBACKS.onPrepend, ELEMENT_CALLBACKS.onReplaceChildren]
     : []),
   ]
-  defineElement<A>({
+  getElement<A>({
     tag,
     shadowDom,
     publicEvents: events,

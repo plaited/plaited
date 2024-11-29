@@ -66,7 +66,7 @@ type PlaitedElementCallbackParameters = {
   : Parameters<RequirePlaitedElementCallbackHandlers[K]>[0]
 }
 
-export type DefineElementArgs<A extends PlaitedHandlers> = {
+export type GetElementArgs<A extends PlaitedHandlers> = {
   tag: CustomElementTag
   shadowDom: TemplateObject
   delegatesFocus: boolean
@@ -87,7 +87,7 @@ const createDocumentFragment = (html: string) => {
   return tpl.content
 }
 
-export const defineElement = <A extends PlaitedHandlers>({
+export const getElement = <A extends PlaitedHandlers>({
   tag,
   formAssociated,
   publicEvents,

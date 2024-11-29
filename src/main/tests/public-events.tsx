@@ -1,11 +1,7 @@
 import type { FT } from '../../jsx/jsx.types.js'
-import { isTypeOf } from '../../utils/is-type-of.js'
-import type { PlaitedElement } from '../plaited.types.js'
 import { defineTemplate } from '../define-template.js'
 import { useDispatch } from '../use-dispatch.js'
-const isPlaitedElement = (el: unknown): el is PlaitedElement =>
-  isTypeOf<PlaitedElement>(el, 'htmlelement') && 'trigger' in el
-
+import { isPlaitedElement } from '../plaited.guards.js'
 const getPlaitedChildren = (slot: HTMLSlotElement) => [...slot.assignedElements()].filter(isPlaitedElement)
 
 const Inner = defineTemplate({
