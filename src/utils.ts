@@ -1,5 +1,6 @@
 export { canUseDOM } from './utils/can-use-dom.js'
 export { kebabCase, camelCase } from './utils/case.js'
+export { delegates, DelegatedListener } from './utils/delegated-listener.js'
 export { escape, unescape } from './utils/escape.js'
 export { deepEqual } from './utils/deep-equal.js'
 export { hashString } from './utils/hash-string.js'

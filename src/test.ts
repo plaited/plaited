@@ -1,4 +1,5 @@
 export * from './test/assert.types.js'
+export * from './test/assert.constants.js'
 export { assert } from './test/assert.js'
 export { findByAttribute } from './test/find-by-attribute.js'
 export { findByText } from './test/find-by-text.js'

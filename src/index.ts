@@ -12,6 +12,7 @@ export type {
 export type { BPEvent, BPEventTemplate, BSync, BThread, RulesFunction } from './behavioral/b-thread.js'
 //CLIENT
 export type * from './main/plaited.types.js'
+export * from './main/plaited.guards.js'
 export type { CloneCallback, Position, SelectorMatch } from './main/get-query.js'
 export { defineModule } from './main/define-module.js'
 export { type PlaitedTemplate, defineTemplate } from './main/define-template.js'

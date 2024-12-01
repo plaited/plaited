@@ -1,8 +1,15 @@
 import type { ServerWebSocket } from 'bun'
-import type { JSONDetail } from '../main/plaited.types.js'
-import { defineModule } from '../main/define-module.js'
-import { TEST_PASSED, TEST_EXCEPTION, UNKNOWN_ERROR, FIXTURE_CONNECTED, PLAY_EVENT } from '../test/assert.constants.js'
-import type { FailedTestEvent, PassedTestEvent, TestParams } from '../test/assert.types.js'
+import { defineModule, type JSONDetail } from 'plaited'
+import {
+  type FailedTestEvent,
+  type PassedTestEvent,
+  type TestParams,
+  TEST_PASSED,
+  TEST_EXCEPTION,
+  UNKNOWN_ERROR,
+  FIXTURE_CONNECTED,
+  PLAY_EVENT,
+} from 'plaited/test'
 import { PLAITED_FIXTURE } from './plaited-fixture.utils.js'
 
 type ModuleMessageDetail<T extends JSONDetail | undefined = undefined> = {

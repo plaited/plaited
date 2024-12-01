@@ -1,9 +1,8 @@
 import path from 'path'
 import { PlaitedFixture } from './plaited-fixture.js'
-import { useSSR } from '../jsx/use-ssr.js'
-import { STORIES_FILTERS_REGEX, DEFAULT_PLAY_TIMEOUT } from '../test/assert.constants.js'
-import type { StoryObj, Meta, TestParams } from '../test/assert.types.js'
-import { kebabCase } from '../utils/case.js'
+import { useSSR } from 'plaited'
+import { STORIES_FILTERS_REGEX, DEFAULT_PLAY_TIMEOUT, type StoryObj, type Meta, type TestParams } from 'plaited/test'
+import { kebabCase } from 'plaited/utils'
 
 const createStoryRoute = ({ storyFile, exportName }: { storyFile: string; exportName: string }) => {
   const dirname = path.dirname(storyFile)

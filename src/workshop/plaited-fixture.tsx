@@ -1,8 +1,6 @@
-import { defineTemplate } from '../main/define-template.js'
-import { css } from '../style/css.js'
-import { PLAY_EVENT } from '../test/assert.constants.js'
+import { defineTemplate, css } from 'plaited'
+import { PLAY_EVENT, usePlay } from 'plaited/test'
 import { connectTestRunner, useSendRunner, PLAITED_FIXTURE, PLAITED_RUNNER } from './plaited-fixture.utils.js'
-import { usePlay } from '../test/use-play.js'
 
 export const PlaitedFixture = defineTemplate({
   tag: PLAITED_FIXTURE,
