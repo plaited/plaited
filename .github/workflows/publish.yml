@@ -29,7 +29,6 @@ jobs:
       - name: Setup
         run: |
           bun install
-          bun run build
 
       - name: Version
         run: |
