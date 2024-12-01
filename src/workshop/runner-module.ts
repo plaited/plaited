@@ -1,7 +1,14 @@
-import { defineModule, type ModuleMessageDetail } from './define-module.js'
+import type { ServerWebSocket } from 'bun'
+import type { JSONDetail } from '../main/plaited.types.js'
+import { defineModule } from '../main/define-module.js'
 import { TEST_PASSED, TEST_EXCEPTION, UNKNOWN_ERROR, FIXTURE_CONNECTED, PLAY_EVENT } from '../test/assert.constants.js'
 import type { FailedTestEvent, PassedTestEvent, TestParams } from '../test/assert.types.js'
 import { PLAITED_FIXTURE } from './plaited-fixture.utils.js'
+
+type ModuleMessageDetail<T extends JSONDetail | undefined = undefined> = {
+  ws: ServerWebSocket<unknown>
+  message: T
+}
 
 export const PLAITED_RUNNER = 'PLAITED_RUNNER'
 

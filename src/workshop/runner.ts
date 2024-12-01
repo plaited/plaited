@@ -115,3 +115,11 @@ process.on('unhandledRejection', (reason, promise) => {
 process.on('exit', () => {
   server.stop()
 })
+
+process.on('SIGTERM', () => {
+  server.stop()
+})
+
+process.on('SIGHUP', () => {
+  server.stop()
+})

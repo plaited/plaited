@@ -66,7 +66,7 @@ type PlaitedElementCallbackParameters = {
   : Parameters<RequirePlaitedElementCallbackHandlers[K]>[0]
 }
 
-export type DefineElementArgs<A extends PlaitedHandlers> = {
+export type GetElementArgs<A extends PlaitedHandlers> = {
   tag: CustomElementTag
   shadowDom: TemplateObject
   delegatesFocus: boolean
@@ -87,7 +87,7 @@ const createDocumentFragment = (html: string) => {
   return tpl.content
 }
 
-export const defineElement = <A extends PlaitedHandlers>({
+export const getElement = <A extends PlaitedHandlers>({
   tag,
   formAssociated,
   publicEvents,
@@ -98,7 +98,7 @@ export const defineElement = <A extends PlaitedHandlers>({
   slotAssignment,
   streamAssociated,
   bProgram: callback,
-}: DefineElementArgs<A>) => {
+}: GetElementArgs<A>) => {
   if (canUseDOM() && !customElements.get(tag)) {
     customElements.define(
       tag,
@@ -120,7 +120,6 @@ export const defineElement = <A extends PlaitedHandlers>({
         #bThreads: BThreads
         #disconnectSet = new Set<Disconnect>()
         trigger: PlaitedTrigger
-        #mounted = false
         #disconnectStream: Disconnect = noop
         constructor() {
           super()
@@ -143,7 +142,6 @@ export const defineElement = <A extends PlaitedHandlers>({
           })
         }
         attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
-          if (!this.#mounted) return
           this.#trigger<PlaitedElementCallbackParameters['onAttributeChanged']>({
             type: ELEMENT_CALLBACKS.onAttributeChanged,
             detail: { name, oldValue, newValue },
@@ -153,7 +151,6 @@ export const defineElement = <A extends PlaitedHandlers>({
           this.#trigger({ type: ELEMENT_CALLBACKS.onAdopted })
         }
         connectedCallback() {
-          this.#mounted = true
           for (const attr of observedAttributes) {
             Reflect.defineProperty(this, attr, {
               get() {
