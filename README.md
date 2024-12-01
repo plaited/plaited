@@ -4,15 +4,15 @@
 Plaited is design system first framework for rapidly designing and developing interfaces as requirements change and evolve.
 
 ## Features
-- Declartive Shadow Dom based server side first rendering library
+- Declarative Shadow Dom based server side first rendering library
 - Dedicated  CSS-IN-JS
 - Dedicated JSX Runtime
 - Behavioral Programming based reactivity
+- Signal Utiltites
 - Websocket based server integration patterns
-- IndexedDB, Web Worker, and Store/Signal based utilities
+- Web Worker utilities
 - Design token format libraries and tooling
 - Test library
-- UI Workshop utils
 
 ## Dev Requirements
 
