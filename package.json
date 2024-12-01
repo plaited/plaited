@@ -12,13 +12,12 @@
   "bugs": {
     "url": "https://github.com/plaited/plaited/issues"
   },
-  "homepage": "https://github.com/plaited/plaited/tree/main/libs/plaited#readme",
+  "homepage": "https://github.com/plaited/plaited/tree/main#readme",
   "type": "module",
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
     "./behavioral": "./src/behavioral.ts",
-    "./indexedDB": "./src/indexedDB.ts",
     "./jsx-dev-runtime": "./src/jsx/dev-runtime.ts",
     "./jsx-runtime": "./src/jsx/runtime.ts",
     "./style": "./src/style.ts",
@@ -78,7 +77,6 @@
     "playwright": "1.49.0",
     "prettier": "3.4.1",
     "sinon": "19.0.2",
-    "start-server-and-test": "2.0.8",
     "typescript": "5.7.2",
     "typescript-eslint": "8.16.0"
   }
