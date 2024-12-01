@@ -13,12 +13,13 @@ export type { BPEvent, BPEventTemplate, BSync, BThread, RulesFunction } from './
 //CLIENT
 export type * from './main/plaited.types.js'
 export type { CloneCallback, Position, SelectorMatch } from './main/get-query.js'
+export { defineModule } from './main/define-module.js'
 export { type PlaitedTemplate, defineTemplate } from './main/define-template.js'
+export { defineWorker } from './main/define-worker.js'
 export { type ObservedAttributesDetail, useAttributesObserver } from './main/use-attributes-observer.js'
 export { useDispatch } from './main/use-dispatch.js'
 export { useSignal, useComputed } from './main/use-signal.js'
 export { useWorker } from './main/use-worker.js'
-export { defineWorker } from './main/define-worker.js'
 //STYLE
 export type * from './style/css.types.js'
 export { css } from './style/css.js'
