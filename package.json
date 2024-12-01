@@ -1,6 +1,6 @@
 {
   "name": "plaited",
-  "version": "7.0.0-alpha.0",
+  "version": "7.0.0-alpha",
   "license": "ISC",
   "engines": {
     "node": ">= v22.9.0"
