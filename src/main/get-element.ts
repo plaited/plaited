@@ -13,7 +13,7 @@ import {
 import { P_TRIGGER } from '../jsx/jsx.constants.js'
 import { type QuerySelector, getQuery, handleTemplateObject } from './get-query.js'
 import { getShadowObserver, addListeners } from './get-shadow-observer.js'
-import { getPublicTrigger } from './get-public-trigger.js'
+import { getPublicTrigger } from '../behavioral/get-public-trigger.js'
 import { canUseDOM } from '../utils/can-use-dom.js'
 import { ELEMENT_CALLBACKS } from './plaited.constants.js'
 import type { PlaitedTrigger, PlaitedElement } from './plaited.types.js'

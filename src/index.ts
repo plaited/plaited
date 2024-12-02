@@ -14,7 +14,6 @@ export type { BPEvent, BPEventTemplate, BSync, BThread, RulesFunction } from './
 export type * from './main/plaited.types.js'
 export * from './main/plaited.guards.js'
 export type { CloneCallback, Position, SelectorMatch } from './main/get-query.js'
-export { defineModule } from './main/define-module.js'
 export { type PlaitedTemplate, defineTemplate } from './main/define-template.js'
 export { defineWorker } from './main/define-worker.js'
 export { type ObservedAttributesDetail, useAttributesObserver } from './main/use-attributes-observer.js'

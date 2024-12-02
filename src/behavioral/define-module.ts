@@ -1,6 +1,6 @@
-import { type BSync, type BThread, bThread, bSync } from '../behavioral/b-thread.js'
-import { type Handlers, type UseSnapshot, type BThreads, type Trigger, bProgram } from '../behavioral/b-program.js'
-import { getPublicTrigger } from '../main/get-public-trigger.js'
+import { type BSync, type BThread, bThread, bSync } from './b-thread.js'
+import { type Handlers, type UseSnapshot, type BThreads, type Trigger, bProgram } from './b-program.js'
+import { getPublicTrigger } from './get-public-trigger.js'
 
 type DefineModule = <A extends Handlers>(args: {
   id: string

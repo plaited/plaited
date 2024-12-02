@@ -1,5 +1,6 @@
 import type { ServerWebSocket } from 'bun'
-import { defineModule, type JSONDetail } from 'plaited'
+import { type JSONDetail } from 'plaited'
+import { defineModule } from 'plaited/behavioral'
 import {
   type FailedTestEvent,
   type PassedTestEvent,
