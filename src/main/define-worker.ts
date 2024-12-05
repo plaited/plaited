@@ -17,19 +17,19 @@ export const defineWorker = <A extends Handlers>({
   const disconnectSet = new Set<Disconnect>()
   const context = self
   const send = (data: BPEvent) => context.postMessage(data)
-  const init = defineBProgram<A, WorkerContext>({
+  const { init, addDisconnectCallback } = defineBProgram<A, WorkerContext>({
     publicEvents,
     disconnectSet,
     bProgram,
   })
-  const trigger = init({
+  const publicTrigger = init({
     send,
     disconnect: () => disconnectSet.forEach((disconnect) => disconnect()),
   })
   const eventHandler = ({ data }: { data: BPEvent }) => {
-    trigger(data)
+    publicTrigger(data)
   }
-  trigger.addDisconnectCallback(() => {
+  addDisconnectCallback(() => {
     context.removeEventListener('message', eventHandler)
     disconnectSet.clear()
   })

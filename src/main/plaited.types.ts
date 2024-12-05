@@ -1,13 +1,11 @@
 import type { Trigger, Disconnect } from '../behavioral/b-program.js'
-import type { PublicTrigger } from '../behavioral/get-public-trigger.js'
-
-export type PlaitedTrigger = PublicTrigger
+import type { PlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
 
 export type Effect = (eventType: string, trigger: Trigger | PlaitedTrigger, getLVC?: boolean) => Disconnect
 
 export interface PlaitedElement extends HTMLElement {
   // Custom Methods and properties
-  trigger: PlaitedTrigger
+  trigger: Trigger
   readonly publicEvents?: string[]
   adoptedCallback?: { (this: PlaitedElement): void }
   attributeChangedCallback?: {

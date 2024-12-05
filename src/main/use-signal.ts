@@ -1,5 +1,6 @@
 import type { Trigger, Disconnect } from '../behavioral/b-program.js'
-import { type Effect, type PlaitedTrigger } from './plaited.types.js'
+import type { PlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
+import { type Effect } from './plaited.types.js'
 import { isPlaitedTrigger } from './plaited.guards.js'
 
 type SignalWithInitialValue<T> = {

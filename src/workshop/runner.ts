@@ -82,7 +82,7 @@ const server = Bun.serve({
 
 map.set(
   runnerModdule.id,
-  runnerModdule.trigger({
+  runnerModdule.init({
     stories,
     contexts,
     port: 3000,

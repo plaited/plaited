@@ -13,8 +13,8 @@ export const PlaitedFixture = defineTemplate({
       })}
     ></slot>
   ),
-  bProgram({ bThreads, host }) {
-    connectTestRunner(host)
+  bProgram({ bThreads, host, trigger }) {
+    connectTestRunner(host, trigger)
     const send = useSendRunner(this.getAttribute('p-socket') as `/${string}`)
     const route = this.getAttribute('p-route') as string
     const storyFile = this.getAttribute('p-file') as string

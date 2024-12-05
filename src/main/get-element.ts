@@ -16,7 +16,8 @@ import { getShadowObserver, addListeners } from './get-shadow-observer.js'
 import { getPublicTrigger } from '../behavioral/get-public-trigger.js'
 import { canUseDOM } from '../utils/can-use-dom.js'
 import { ELEMENT_CALLBACKS } from './plaited.constants.js'
-import type { PlaitedTrigger, PlaitedElement } from './plaited.types.js'
+import { type PlaitedTrigger, getPlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
+import type { PlaitedElement } from './plaited.types.js'
 import { noop } from '../utils/noop.js'
 
 export type ConnectedCallbackArgs = {
@@ -24,7 +25,7 @@ export type ConnectedCallbackArgs = {
   root: ShadowRoot
   host: PlaitedElement
   internals: ElementInternals
-  trigger: Trigger
+  trigger: PlaitedTrigger
   bThreads: BThreads
   useSnapshot: UseSnapshot
   bThread: BThread
@@ -119,7 +120,7 @@ export const getElement = <A extends PlaitedHandlers>({
         #useSnapshot: UseSnapshot
         #bThreads: BThreads
         #disconnectSet = new Set<Disconnect>()
-        trigger: PlaitedTrigger
+        trigger: Trigger
         #disconnectStream: Disconnect = noop
         constructor() {
           super()
@@ -129,16 +130,13 @@ export const getElement = <A extends PlaitedHandlers>({
           this.#root.replaceChildren(frag)
           this.#query = getQuery(this.#root)
           const { trigger, useFeedback, useSnapshot, bThreads } = bProgram()
-          this.#trigger = Object.assign(trigger, {
-            addDisconnectCallback: (cb: Disconnect) => this.#disconnectSet.add(cb),
-          })
+          this.#trigger = getPlaitedTrigger(trigger, this.#disconnectSet)
           this.#useFeedback = useFeedback
           this.#useSnapshot = useSnapshot
           this.#bThreads = bThreads
           this.trigger = getPublicTrigger({
             trigger,
             publicEvents,
-            disconnectSet: this.#disconnectSet,
           })
         }
         attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
