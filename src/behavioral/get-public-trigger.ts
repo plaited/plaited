@@ -1,5 +1,8 @@
 import type { Trigger, Disconnect } from '../behavioral/b-program.js'
-import type { PlaitedTrigger } from './plaited.types.js'
+
+export type PublicTrigger = Trigger & {
+  addDisconnectCallback: (disconnect: Disconnect) => void
+}
 
 export const getPublicTrigger = (args: {
   trigger: Trigger
@@ -7,7 +10,7 @@ export const getPublicTrigger = (args: {
   disconnectSet?: Set<Disconnect>
 }) => {
   const observed = new Set(args?.publicEvents || [])
-  const trigger: PlaitedTrigger = ({ type, detail }) => {
+  const trigger: PublicTrigger = ({ type, detail }) => {
     if (observed.has(type)) return args.trigger?.({ type: type, detail: detail })
     if (type) console.warn(`Not observing trigger [${type}]`)
   }

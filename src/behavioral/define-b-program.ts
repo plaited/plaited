@@ -1,20 +1,8 @@
 import { type BSync, type BThread, bThread, bSync } from './b-thread.js'
-import {
-  type Handlers,
-  type UseSnapshot,
-  type BThreads,
-  type Trigger,
-  bProgram,
-  type Disconnect,
-  type UseFeedback,
-} from './b-program.js'
+import { type Handlers, type UseSnapshot, type BThreads, type Trigger, bProgram, type Disconnect } from './b-program.js'
 import { getPublicTrigger } from './get-public-trigger.js'
 
-export type PublicTrigger = Trigger & {
-  addDisconnectCallback: (disconnect: Disconnect) => void
-}
-
-export type BProgramProps = {
+export type DefineBProgramProps = {
   bSync: BSync
   bThread: BThread
   bThreads: BThreads
@@ -22,15 +10,9 @@ export type BProgramProps = {
   useSnapshot: UseSnapshot
 }
 
-export type BProgramCallback<A extends Handlers, C extends Record<string, unknown> = Record<string, unknown>> = (
-  props: BProgramProps & C,
+type BProgramCallback<A extends Handlers, C extends Record<string, unknown> = Record<string, unknown>> = (
+  props: DefineBProgramProps & C,
 ) => A
-
-export type DefineBProgram = () => {
-  <C extends Record<string, unknown> = never>(ctx?: C): PublicTrigger
-  useFeedback: UseFeedback
-  trigger: Trigger
-}
 
 export const defineBProgram = <A extends Handlers, C extends Record<string, unknown> = Record<string, unknown>>(args: {
   publicEvents: string[]

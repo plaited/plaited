@@ -1,8 +1,7 @@
 import type { Trigger, Disconnect } from '../behavioral/b-program.js'
+import type { PublicTrigger } from '../behavioral/get-public-trigger.js'
 
-export type PlaitedTrigger = Trigger & {
-  addDisconnectCallback: (disconnect: Disconnect) => void
-}
+export type PlaitedTrigger = PublicTrigger
 
 export type Effect = (eventType: string, trigger: Trigger | PlaitedTrigger, getLVC?: boolean) => Disconnect
 
