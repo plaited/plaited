@@ -14,16 +14,25 @@ type BProgramCallback<A extends Handlers, C extends Record<string, unknown> = Re
   props: DefineBProgramProps & C,
 ) => A
 
-export const defineBProgram = <A extends Handlers, C extends Record<string, unknown> = Record<string, unknown>>(args: {
+export const defineBProgram = <A extends Handlers, C extends Record<string, unknown> = Record<string, unknown>>({
+  disconnectSet,
+  ...args
+}: {
   publicEvents: string[]
   disconnectSet?: Set<Disconnect>
   bProgram: BProgramCallback<A, C>
 }) => {
   const { useFeedback, trigger, ...rest } = bProgram()
+  if (disconnectSet) {
+    Object.assign(trigger, {
+      addDisconnectCallback: (cb: Disconnect) => disconnectSet.add(cb),
+    })
+  }
   const init = (ctx?: C) => {
-    const actions = args.bProgram({ ...rest, trigger, bSync, bThread, ...(ctx ?? ({} as C)) })
+    const { bProgram, publicEvents } = args
+    const actions = bProgram({ ...rest, trigger, bSync, bThread, ...(ctx ?? ({} as C)) })
     useFeedback(actions)
-    return getPublicTrigger({ trigger, publicEvents: args.publicEvents, disconnectSet: args?.disconnectSet })
+    return getPublicTrigger({ trigger, publicEvents, disconnectSet })
   }
   init.useFeedback = useFeedback
   init.trigger = trigger
