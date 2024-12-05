@@ -14,9 +14,9 @@
   },
   "homepage": "https://github.com/plaited/plaited/tree/main#readme",
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./src/main.ts",
   "exports": {
-    ".": "./src/index.ts",
+    ".": "./src/main.ts",
     "./behavioral": "./src/behavioral.ts",
     "./jsx-dev-runtime": "./src/jsx/dev-runtime.ts",
     "./jsx-runtime": "./src/jsx/runtime.ts",
