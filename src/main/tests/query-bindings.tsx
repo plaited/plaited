@@ -1,4 +1,4 @@
-import type { Position, CloneCallback } from '../get-query.js'
+import type { Position, CloneCallback } from '../plaited.types'
 import { defineTemplate } from '../define-template.js'
 
 let did = 1
