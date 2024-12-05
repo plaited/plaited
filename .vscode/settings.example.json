@@ -4,13 +4,7 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
-  "cSpell.words": [
-    "indexeddb",
-    "microapps",
-    "openreq",
-    "shadowrootdelegatesfocus",
-    "shadowrootmode"
-  ],
+  "cSpell.words": ["shadowrootdelegatesfocus", "shadowrootmode"],
   "markdownlint.config": {
     "MD041": false
   }
