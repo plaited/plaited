@@ -34,9 +34,6 @@ export const defineBProgram = <A extends Handlers, C extends Record<string, unkn
     useFeedback(actions)
     return getPublicTrigger({ trigger, publicEvents })
   }
-  return {
-    useFeedback,
-    addDisconnectCallback: (cb: Disconnect) => disconnectSet.add(cb),
-    init,
-  }
+  init.addDisconnectCallback = (cb: Disconnect) => disconnectSet.add(cb)
+  return init
 }
