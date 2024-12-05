@@ -32,3 +32,8 @@ yarn.lock
 # Yarn
 .pnp.*
 .yarn/*
+
+
+# VSCODE
+.vscode/extensions.json
+.vscode/settings.json
