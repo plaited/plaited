@@ -1,4 +1,4 @@
-export * from './test/assert.types.js'
+export type * from './test/assert.types.js'
 export * from './test/assert.constants.js'
 export * from './test/assert.js'
 export * from './test/find-by-attribute.js'

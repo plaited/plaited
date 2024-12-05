@@ -2,6 +2,7 @@ import { type BSync, type BThread, bThread, bSync } from './b-thread.js'
 import { type Handlers, type UseSnapshot, type BThreads, bProgram, type Disconnect } from './b-program.js'
 import { getPublicTrigger } from './get-public-trigger.js'
 import { getPlaitedTrigger, type PlaitedTrigger } from './get-plaited-trigger.js'
+
 export type DefineBProgramProps = {
   bSync: BSync
   bThread: BThread
