@@ -2,6 +2,8 @@ import type { TemplateObject } from '../jsx/jsx.types.js'
 import { isTypeOf } from '../utils/is-type-of.js'
 import { BOOLEAN_ATTRS, P_TARGET } from '../jsx/jsx.constants.js'
 
+export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
+
 type Bindings = {
   render(this: Element, ...template: (TemplateObject | DocumentFragment | Element | string)[]): void
   insert(this: Element, position: Position, ...template: (TemplateObject | DocumentFragment | Element | string)[]): void
@@ -11,8 +13,6 @@ type Bindings = {
 }
 
 type BoundElement<T extends Element = Element> = T & Bindings
-
-export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
 
 export type SelectorMatch = '=' | '~=' | '|=' | '^=' | '$=' | '*='
 
