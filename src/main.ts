@@ -12,4 +12,4 @@ export type * from './style/css.types.js'
 export * from './style/css.js'
 //JSX
 export type * from './jsx/jsx.types.js'
-export * from './jsx/use-ssr.js'
+export * from './jsx/ssr.js'

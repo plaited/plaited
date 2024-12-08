@@ -1,6 +1,6 @@
 import path from 'path'
 import { PlaitedFixture } from './plaited-fixture.js'
-import { useSSR } from 'plaited'
+import { ssr } from 'plaited'
 import { STORIES_FILTERS_REGEX, DEFAULT_PLAY_TIMEOUT, type StoryObj, type Meta, type TestParams } from 'plaited/test'
 import { kebabCase } from 'plaited/utils'
 
@@ -32,7 +32,6 @@ const updateHTMLResponses = ({
   imports: Record<string, string>
 }): TestParams => {
   const entryPath = storyFile.replace(/\.tsx?$/, '.js')
-  const ssr = useSSR('/workshop/plaited-fixture.js', entryPath)
   const args = story?.args ?? meta?.args ?? {}
   const styles = story?.parameters?.styles ?? meta?.parameters?.styles ?? {}
   const headers = story?.parameters?.headers?.(process.env) ?? meta?.parameters?.headers?.(process.env) ?? new Headers()
@@ -64,6 +63,12 @@ const updateHTMLResponses = ({
           children={tpl?.(args)}
           {...styles}
         />
+        <script
+          type='module'
+          trusted
+        >
+          {['/workshop/plaited-fixture.js', entryPath].map((path) => `import '${path}';`).join('\n')}
+        </script>
       </body>
     </html>,
   )
