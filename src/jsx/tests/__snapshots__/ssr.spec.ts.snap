@@ -1,23 +1,11 @@
 // Bun Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`useSSR: with imports 1`] = `
-"<div>text</div>
-<script type="module">
-    import 'test/entry-1.js';
-    import 'test/entry-2.js';
-</script>"
-`;
-
 exports[`useSSR: with imports and body 1`] = `
 "<body class="body_18a0lbx p_mygp1 pv4i7qk p_wsdntf">
     <style>
         .p_mygp1{width:100%;}.pv4i7qk{padding:0;}.p_wsdntf{height:100vh;}
     </style>
     <div type="text"></div>
-    <script type="module">
-        import 'test/entry-1.js';
-        import 'test/entry-2.js';
-    </script>
 </body>"
 `;
 
@@ -29,10 +17,6 @@ exports[`useSSR: with imports and body + head 1`] = `
 </head>
 <body class="body_18a0lbx p_mygp1 pv4i7qk p_wsdntf">
     <div type="text"></div>
-    <script type="module">
-        import 'test/entry-1.js';
-        import 'test/entry-2.js';
-    </script>
 </body>"
 `;
 

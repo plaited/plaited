@@ -1,14 +1,12 @@
-import { isPlaitedMessage } from '../main/plaited.guards.js'
-import type { PlaitedMessage, PlaitedElement } from '../main/plaited.types.js'
-import { DelegatedListener, delegates } from '../main/delegated-listener.js'
-import type { CustomElementTag } from '../jsx/jsx.types.js'
-import { isTypeOf } from '../utils/is-type-of.js'
+import { isPlaitedMessage, type PlaitedMessage, type PlaitedElement, type CustomElementTag } from 'plaited'
+import { isTypeOf, DelegatedListener, delegates } from 'plaited/utils'
+import type { PlaitedTrigger } from '../behavioral/get-plaited-trigger'
 
 const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => event.type === 'close'
 
 export const getAddress = (tag: CustomElementTag, id?: string): string => `${tag}${id ? `#${id}` : ''}`
 
-export const connectTestRunner = (host: PlaitedElement) => {
+export const connectTestRunner = (host: PlaitedElement, trigger: PlaitedTrigger) => {
   const address = getAddress(host.tagName.toLowerCase() as CustomElementTag, host.id)
   const channel = new BroadcastChannel(address)
   const handler = (evt: MessageEvent<PlaitedMessage>) => {
@@ -19,7 +17,7 @@ export const connectTestRunner = (host: PlaitedElement) => {
     channel.removeEventListener('message', handler)
     channel.close()
   }
-  host.trigger.addDisconnectCallback(disconnect)
+  trigger.addDisconnectCallback(disconnect)
   return disconnect
 }
 

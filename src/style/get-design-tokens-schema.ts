@@ -8,7 +8,7 @@ import type { DesignToken, DesignTokenGroup } from './design-token.types.js'
 
 const supportType = ['string', 'number', 'array', 'object', 'boolean', 'integer']
 
-export type Schema = {
+type Schema = {
   items?: Schema[] | Schema
   required?: string[]
   properties?: Record<string, Schema>

@@ -2,9 +2,10 @@ import { deepEqual } from '../utils/deep-equal.js'
 import { trueTypeOf } from '../utils/true-type-of.js'
 import { isTypeOf } from '../utils/is-type-of.js'
 import { AssertionError, MissingTestParamsError } from './errors.js'
-import { PRIMITIVES } from './assert.constants.js'
 
 export type Assert = <T>(param: { given: string; should: string; actual: T; expected: T }) => void
+
+const PRIMITIVES = new Set(['null', 'undefined', 'number', 'string', 'boolean', 'bigint'])
 
 const requiredKeys = ['given', 'should', 'actual', 'expected']
 

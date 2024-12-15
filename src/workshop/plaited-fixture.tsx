@@ -1,8 +1,6 @@
-import { defineTemplate } from '../main/define-template.js'
-import { css } from '../style/css.js'
-import { PLAY_EVENT } from '../test/assert.constants.js'
+import { defineTemplate, css } from 'plaited'
+import { PLAY_EVENT, usePlay } from 'plaited/test'
 import { connectTestRunner, useSendRunner, PLAITED_FIXTURE, PLAITED_RUNNER } from './plaited-fixture.utils.js'
-import { usePlay } from '../test/use-play.js'
 
 export const PlaitedFixture = defineTemplate({
   tag: PLAITED_FIXTURE,
@@ -15,8 +13,8 @@ export const PlaitedFixture = defineTemplate({
       })}
     ></slot>
   ),
-  bProgram({ bThreads, host }) {
-    connectTestRunner(host)
+  bProgram({ bThreads, host, trigger }) {
+    connectTestRunner(host, trigger)
     const send = useSendRunner(this.getAttribute('p-socket') as `/${string}`)
     const route = this.getAttribute('p-route') as string
     const storyFile = this.getAttribute('p-file') as string

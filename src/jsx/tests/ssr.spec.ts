@@ -3,17 +3,12 @@ import { test, expect } from 'bun:test'
 import { h, Fragment } from '../create-template.js'
 import { css } from '../../style/css.js'
 import type { FunctionTemplate, TemplateObject } from '../jsx.types.js'
-import { useSSR } from '../use-ssr.js'
+import { ssr } from '../ssr.js'
 import beautify from 'beautify'
 
 const render = (template: TemplateObject) => {
-  return beautify(useSSR()(template), { format: 'html' })
+  return beautify(ssr(template), { format: 'html' })
 }
-
-test('useSSR: with imports', () => {
-  const tpl = beautify(useSSR('test/entry-1.js', 'test/entry-2.js')(h('div', { children: 'text' })), { format: 'html' })
-  expect(tpl).toMatchSnapshot()
-})
 
 const bodyStyles = css.create({
   body: {
@@ -24,25 +19,15 @@ const bodyStyles = css.create({
 })
 
 test('useSSR: with imports and body', () => {
-  const tpl = beautify(
-    useSSR(
-      'test/entry-1.js',
-      'test/entry-2.js',
-    )(h('body', { children: h('div', { type: 'text' }), ...bodyStyles.body })),
-    { format: 'html' },
-  )
-  expect(tpl).toMatchSnapshot()
+  expect(render(h('body', { children: h('div', { type: 'text' }), ...bodyStyles.body }))).toMatchSnapshot()
 })
 
 test('useSSR: with imports and body + head', () => {
-  const tpl = beautify(
-    useSSR(
-      'test/entry-1.js',
-      'test/entry-2.js',
-    )(Fragment({ children: [h('head', {}), h('body', { children: h('div', { type: 'text' }), ...bodyStyles.body })] })),
-    { format: 'html' },
-  )
-  expect(tpl).toMatchSnapshot()
+  expect(
+    render(
+      Fragment({ children: [h('head', {}), h('body', { children: h('div', { type: 'text' }), ...bodyStyles.body })] }),
+    ),
+  ).toMatchSnapshot()
 })
 
 test('ssr: Self closing - html', () => {
