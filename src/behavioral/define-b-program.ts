@@ -26,14 +26,14 @@ export const defineBProgram = <A extends Handlers, C extends Record<string, unkn
   const { useFeedback, trigger, ...rest } = bProgram()
   const init = (ctx?: C) => {
     const { bProgram, publicEvents } = args
-    const actions = bProgram({
+    const handlers = bProgram({
       ...rest,
       trigger: getPlaitedTrigger(trigger, disconnectSet),
       bSync,
       bThread,
       ...(ctx ?? ({} as C)),
     })
-    useFeedback(actions)
+    useFeedback(handlers)
     return getPublicTrigger({ trigger, publicEvents })
   }
   init.addDisconnectCallback = (cb: Disconnect) => disconnectSet.add(cb)

@@ -40,7 +40,7 @@ export type SnapshotListener = (msg: SnapshotMessage) => void | Promise<void>
 type DefaultHandlers = Record<string, (detail: any) => void | Promise<void>>
 
 export type Handlers<T = DefaultHandlers> = DefaultHandlers & T
-export type UseFeedback = <T = DefaultHandlers>(actions: Handlers<T>) => Disconnect
+export type UseFeedback = <T = DefaultHandlers>(handlers: Handlers<T>) => Disconnect
 export type UseSnapshot = (listener: SnapshotListener) => Disconnect
 export type BThreads = {
   has: (thread: string) => { running: boolean; pending: boolean }
@@ -218,11 +218,11 @@ export const bProgram: BProgram = () => {
     run()
   }
 
-  const useFeedback: UseFeedback = (actions) => {
+  const useFeedback: UseFeedback = (handlers) => {
     const disconnect = actionPublisher.subscribe((data: BPEvent) => {
       const { type, detail = {} } = data
-      if (Object.hasOwn(actions, type)) {
-        void actions[type](detail)
+      if (Object.hasOwn(handlers, type)) {
+        void handlers[type](detail)
       }
     })
     return disconnect

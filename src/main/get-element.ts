@@ -165,7 +165,7 @@ export const getElement = <A extends PlaitedHandlers>({
             // Create a shadow observer to watch for modification & addition of nodes with p-this.#trigger directive
             this.#shadowObserver = getShadowObserver(this.#root, this.#trigger)
             // bind connectedCallback to the custom element with the following arguments
-            const actions = callback.bind(this)({
+            const handlers = callback.bind(this)({
               $: this.#query,
               host: this,
               root: this.#root,
@@ -177,10 +177,10 @@ export const getElement = <A extends PlaitedHandlers>({
               bThread,
               bSync,
             })
-            // Subscribe feedback actions to behavioral program and add disconnect callback to disconnect set
+            // Subscribe feedback handlers to behavioral program and add disconnect callback to disconnect set
             this.#disconnectSet.add(
               this.#useFeedback({
-                ...actions,
+                ...handlers,
                 ...(streamAssociated && {
                   [ELEMENT_CALLBACKS.onAppend]: (html: string) => this.append(createDocumentFragment(html)),
                   [ELEMENT_CALLBACKS.onPrepend]: (html: string) => this.prepend(createDocumentFragment(html)),
