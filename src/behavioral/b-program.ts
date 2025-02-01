@@ -175,7 +175,7 @@ export const bProgram: BProgram = () => {
         filteredBids.push(candidate)
       }
     }
-    /** @description Priority Queue BPEvent Selection Strategy */
+    /** @summary Priority Queue BPEvent Selection Strategy */
     const selectedEvent = filteredBids.sort(
       ({ priority: priorityA }, { priority: priorityB }) => priorityA - priorityB,
     )[0]

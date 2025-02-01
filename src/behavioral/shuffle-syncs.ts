@@ -1,6 +1,6 @@
 import type { BSync } from './b-thread.js'
 
-/** @description Shuffle synchronization bSync statements */
+/** @summary Shuffle synchronization bSync statements */
 export const shuffleSyncs = (...syncs: BSync[]) => {
   for (let i = syncs.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))

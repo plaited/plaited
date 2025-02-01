@@ -3,7 +3,7 @@ import { wait } from './wait.js'
 type FetchJSONOptions = RequestInit & { retry: number; retryDelay: number }
 
 /**
- * @description  A simple utility function to fetch data that handles common edge cases around failure
+ * @summary  A simple utility function to fetch data that handles common edge cases around failure
  */
 export const fetchJSON = async <T = unknown>(
   url: RequestInfo | URL,

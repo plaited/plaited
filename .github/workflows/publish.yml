@@ -36,6 +36,7 @@ jobs:
           git config user.email "${{ github.actor}}@users.noreply.github.com"
           npm version --no-git-tag-version ${{ github.event.inputs.version }}
           bun run copy-css-types
+          bunx typedoc --tsconfig tsconfig.json
           git add -A
           git commit -m "ci: publish [skip ci]"
           git push
