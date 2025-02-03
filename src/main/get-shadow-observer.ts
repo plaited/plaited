@@ -32,7 +32,28 @@ const createDelegatedListener = (el: Element, trigger: Trigger) => {
   )
 }
 
-/** add delegated event listeners  for elements in list */
+/**
+ * Sets up delegated event listeners for elements with p-trigger attributes.
+ * Handles event delegation and automatic cleanup.
+ *
+ * @param elements Array of elements to observe
+ * @param trigger Event trigger function
+ *
+ * @example
+ * ```ts
+ * // Add listeners to elements with p-trigger
+ * addListeners(
+ *   element.querySelectorAll('[p-trigger]'),
+ *   trigger
+ * );
+ * ```
+ *
+ * @remarks
+ * - Skips nested slots
+ * - Creates delegated listeners only once per element
+ * - Handles multiple event types per element
+ * - Automatically removes invalid event listeners
+ */
 export const addListeners = (elements: Element[], trigger: Trigger) => {
   for (const el of elements) {
     if (el.tagName === 'SLOT' && Boolean(el.assignedSlot)) continue // skip nested slots
@@ -43,7 +64,54 @@ export const addListeners = (elements: Element[], trigger: Trigger) => {
     }
   }
 }
-
+/**
+ * Creates a MutationObserver for shadow DOM to handle dynamic p-trigger elements.
+ * Observes attribute changes and node additions for event delegation.
+ *
+ * @param root ShadowRoot to observe
+ * @param trigger Event trigger function
+ * @returns MutationObserver instance
+ *
+ * @example
+ * ```ts
+ * // In component context
+ * const Component = defineTemplate({
+ *   tag: 'my-component',
+ *   shadowDom: template,
+ *   bProgram({ trigger }) {
+ *     const observer = getShadowObserver(this.shadowRoot, trigger);
+ *
+ *     return {
+ *       // Cleanup on disconnect
+ *       onDisconnected() {
+ *         observer.disconnect();
+ *       }
+ *     };
+ *   }
+ * });
+ * ```
+ *
+ * Features:
+ * - Observes p-trigger attribute changes
+ * - Watches for new elements
+ * - Handles nested elements
+ * - Automatic event delegation
+ * - Deep tree observation
+ *
+ * @remarks
+ * - Observes entire shadow DOM tree
+ * - Filters for p-trigger attribute changes
+ * - Handles dynamically added elements
+ * - Sets up event delegation automatically
+ * - Requires manual disconnect when done
+ *
+ * Implementation details:
+ * - Uses MutationObserver for DOM changes
+ * - Delegates events through p-trigger attribute
+ * - Handles both direct and nested elements
+ * - Manages event listener lifecycle
+ * - Provides automatic cleanup of invalid listeners
+ */
 export const getShadowObserver = (root: ShadowRoot, trigger: Trigger) => {
   /**  Observes the addition of nodes to the shadow dom and changes to and child's p-trigger attribute */
   const mo = new MutationObserver((mutationsList) => {

@@ -10,7 +10,93 @@ interface DefineTemplateArgs<A extends PlaitedHandlers>
   mode?: 'open' | 'closed'
   slotAssignment?: 'named' | 'manual'
 }
+/**
+ * Creates a template function for defining Plaited components with built-in SSR support.
+ * Combines custom element definition with template generation for server and client rendering.
+ *
+ * @template A Type extending PlaitedHandlers for component behavior
+ * @param config Component configuration with template and behavior
+ * @returns Template function with metadata for component registration
+ *
+ * Features:
+ * - Server-side rendering support
+ * - Custom element registration
+ * - Shadow DOM template generation
+ * - Event delegation setup
+ * - Attribute observation
+ * - Stream mutation support
+ *
+ * @example
+ import type { type FT, defineTemplate, useSignal } from 'plaited'
 
+ const store = useSignal<number>(0)
+
+ const Publisher = defineTemplate({
+   tag: 'publisher-component',
+   shadowDom: (
+     <button
+       p-trigger={{ click: 'increment' }}
+       p-target='button'
+     >
+       increment
+     </button>
+   ),
+   publicEvents: ['add'],
+   bProgram({ bThreads, bThread, bSync }) {
+     bThreads.set({
+       onAdd: bThread([bSync({ waitFor: 'add' }), bSync({ request: { type: 'disable' } })]),
+     })
+     return {
+       increment() {
+         store.set(store.get() + 1)
+       },
+     }
+   },
+ })
+
+ const Subscriber = defineTemplate({
+   tag: 'subscriber-component',
+   shadowDom: <h1 p-target='count'>{store.get()}</h1>,
+   publicEvents: ['update'],
+   bProgram({ $, trigger }) {
+     store.listen('update', trigger)
+     return {
+       update(value: number) {
+         const [count] = $('count')
+         count.render(`${value}`)
+       },
+     }
+   },
+ })
+
+ export const Fixture: FT = () => (
+   <>
+     <Publisher />
+     <Subscriber />
+   </>
+ )
+
+ *
+ * @remarks
+ * - Generates both client and server templates
+ * - Handles declarative shadow DOM
+ * - Manages component registration
+ * - Provides SSR-compatible output
+ * - Maintains type safety
+ * - Handles hydration automatically
+ *
+ * Return Value Properties:
+ * - registry: Set of registered child plaited elements tags
+ * - tag: Component's custom element tag
+ * - $: Template identifier
+ * - publicEvents: Available event types
+ * - observedAttributes: Observed attribute names
+ *
+ * Default Configuration:
+ * - mode: 'open'
+ * - delegatesFocus: true
+ * - slotAssignment: 'named'
+ */
 export const defineTemplate = <A extends PlaitedHandlers>({
   tag,
   shadowDom,
