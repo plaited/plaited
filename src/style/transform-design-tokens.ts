@@ -35,6 +35,91 @@ import {
   PLAITED_PREFIX,
 } from './transform-design-tokens.utils.js'
 
+/**
+ * Transforms design tokens into CSS custom properties and TypeScript references.
+ * Handles token resolution, dependency management, and code generation.
+ *
+ * Features:
+ * - Converts design tokens to CSS variables
+ * - Generates TypeScript type definitions
+ * - Manages token dependencies and circular references
+ * - Supports media queries and color schemes
+ * - Handles token aliasing and composition
+ * - Provides token validation and error checking
+ *
+ * @class
+ * @implements {TransformDesignTokensInterface}
+ *
+ * @example
+ * const transformer = new TransformDesignTokens({
+ *   tokens: {
+ *     colors: {
+ *       primary: {
+ *         $description: "Primary brand color",
+ *         $type: "color",
+ *         $value: "#FF0000"
+ *       }
+ *     }
+ *   },
+ *   tokenPrefix: "brand",
+ *   defaultMediaQueries: { colorScheme: "@light" }
+ * });
+ *
+ * // Get CSS output
+ * console.log(transformer.css);
+ * // :hoot { --brand-colors-primary: #FF0000; }
+ *
+ * // Get TypeScript output
+ * console.log(transformer.ts);
+ * // export const colorsPrimary = "--brand-colors-primary" as const;
+ *
+ * // Query token entries
+ * const allEntries = transformer.entries;  // All token entries
+ * const colorTokens = transformer.filter(([alias]) => alias.includes('color'));
+ * const primaryToken = transformer.get('{colors.primary}');
+ * const hasToken = transformer.has('{colors.primary}');
+ *
+ * @property {string} ts - Generated TypeScript definitions
+ * @property {string} css - Generated CSS custom properties
+ * @property {Array<[Alias, DesignTokenEntry]>} entries - Gets all token entries as [Alias, DesignTokenEntry][]
+ * Methods:
+ * @method filter Filters token entries using a callback function
+ * @method get Retrieves a specific token entry by its alias
+ * @method has Checks if a token exists by its alias
+ *
+ * @example Query Methods
+ * // Filter tokens
+ * const shadows = transformer.filter(([alias, entry]) =>
+ *   entry.$type === 'function' && alias.includes('shadow')
+ * );
+ *
+ * // Get specific token
+ * const primary = transformer.get('{colors.primary}');
+ * if (primary) {
+ *   console.log(primary.$value);
+ * }
+ *
+ * // Check token existence
+ * if (transformer.has('{colors.secondary}')) {
+ *   // Use secondary color
+ * }
+ *
+ * @param options Configuration options
+ * @param options.tokens Design token group to transform
+ * @param options.tokenPrefix Prefix for CSS custom properties (default: 'pl')
+ * @param options.mediaQueries Custom media query definitions
+ * @param options.defaultMediaQueries Default media query settings
+ *
+ * @remarks
+ * - Handles circular dependency detection
+ * - Supports nested token structures
+ * - Preserves token documentation
+ * - Provides deep cloned copies of entries for safety
+ * - Supports filtering and querying token collections
+ * - Enables efficient token lookup and validation
+ *
+ * @throws {Error} On circular dependencies or invalid token definitions
+ */
 export class TransformDesignTokens implements TransformDesignTokensInterface {
   #db = new Map<Alias, DesignTokenEntry>()
   #tokenPrefix: string

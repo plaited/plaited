@@ -109,7 +109,60 @@ const assign = (...styleObjects: Array<StylesObject | undefined | false | null>)
   }
   return { className: cls, stylesheet: style }
 }
-
+/**
+ * Comprehensive CSS-in-JS utility for creating and managing styles.
+ * Provides type-safe CSS generation with automatic class name hashing and style deduplication.
+ *
+ * @namespace css
+ *
+ * @property create - Creates hashed utility classes with stylesheets
+ * @example
+ * const styles = css.create({
+ *   button: {
+ *     color: 'blue',
+ *     '@media (max-width: 768px)': { color: 'red' }
+ *   }
+ * });
+ *
+ * @property host - Generates shadow DOM host styles with selector support
+ * @example
+ * const hostStyles = css.host({
+ *   color: {
+ *     default: 'black',
+ *     '.dark-theme': 'white'
+ *   }
+ * });
+ *
+ * @property keyframes - Creates CSS animations with unique names
+ * @example
+ * const fade = css.keyframes('fade', {
+ *   from: { opacity: 0 },
+ *   to: { opacity: 1 }
+ * });
+ *
+ * @property assign - Combines multiple style objects
+ * @example
+ * const combined = css.assign(
+ *   styles.button,
+ *   isActive && styles.active
+ * );
+ *
+ * Features:
+ * - Type-safe CSS properties and values
+ * - Automatic class name hashing for CSS isolation
+ * - Support for nested selectors and media queries
+ * - Shadow DOM host styling
+ * - CSS animation generation
+ * - Style composition and conditional application
+ * - Automatic vendor prefixing
+ *
+ * @remarks
+ * - Uses deterministic hashing for consistent class names
+ * - Supports all CSS features including custom properties
+ * - Handles selector specificity automatically
+ * - Provides clean TypeScript types for autocompletion
+ * - Optimizes stylesheet generation for performance
+ */
 export const css = {
   create,
   host,

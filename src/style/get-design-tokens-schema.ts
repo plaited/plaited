@@ -111,10 +111,65 @@ const parse = <T extends DesignTokenGroup = DesignTokenGroup>({
 }
 
 /**
- * Parses a {@link DesignTokenGroup} group into a JSON schema where the tokens values
- * locked in as const.
- * @param tokens - The design token group to parse.
- * @returns The populated JSON schema.
+ * Converts a design token group into a JSON Schema with strict type validation.
+ * Based on easy-json-schema (MIT licensed).
+ *
+ * Features:
+ * - Full design token structure validation
+ * - Const assertions for token values
+ * - Nested object and array support
+ * - Required field tracking
+ * - Type inference for TypeScript
+ *
+ * @template T Type extending DesignTokenGroup
+ * @param tokens Design token group to convert to JSON Schema
+ * @returns JSON Schema object with:
+ *  - Type definitions
+ *  - Required fields
+ *  - Const values for tokens
+ *  - Nested property schemas
+ *
+ * @example
+ * const tokens = {
+ *   colors: {
+ *     primary: {
+ *       $description: "Primary brand color",
+ *       $type: "color",
+ *       $value: "#FF0000"
+ *     }
+ *   }
+ * };
+ *
+ * const schema = getDesignTokensSchema(tokens);
+ * // Results in:
+ * // {
+ * //   type: "object",
+ * //   required: ["colors"],
+ * //   properties: {
+ * //     colors: {
+ * //       type: "object",
+ * //       required: ["primary"],
+ * //       properties: {
+ * //         primary: {
+ * //           type: "object",
+ * //           required: ["$description", "$type", "$value"],
+ * //           properties: {
+ * //             $value: { type: "string", const: "#FF0000" }
+ * //           }
+ * //         }
+ * //       }
+ * //     }
+ * //   }
+ * // }
+ *
+ * @remarks
+ * - Maintains type safety through schema generation
+ * - Handles all valid design token value types
+ * - Preserves token hierarchy in schema
+ * - Useful for validation and documentation
+ * - Can be used with standard JSON Schema validators
+ *
+ * @see https://github.com/easy-json-schema/easy-json-schema Original implementation
  */
 export const getDesignTokensSchema = <T extends DesignTokenGroup = DesignTokenGroup>(tokens: T) => {
   return parse<T>({ tokens })
