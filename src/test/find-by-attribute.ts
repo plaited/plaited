@@ -1,16 +1,74 @@
+/**
+ * Type definition for the shadow DOM-aware attribute finder function.
+ * Supports generic element types and optional search context.
+ *
+ * @template T Element type to search for (defaults to HTMLElement | SVGElement)
+ * @param attributeName Name of attribute to match
+ * @param attributeValue Value to match (string or RegExp)
+ * @param context Optional element to limit search scope
+ * @returns Promise resolving to matched element or undefined
+ */
 export type FindByAttribute = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
   attributeName: string,
   attributeValue: string | RegExp,
   context?: HTMLElement | SVGElement,
 ) => Promise<T | undefined>
 /**
- * Finds the first element that matches the given attribute name and value within the given context.
- * Searches within shadow DOM if present.
+ * Asynchronously finds elements by attribute, searching through both light and shadow DOM.
+ * Supports string and RegExp matching with optional search context.
  *
- * @param attributeName - The name of the attribute to search for.
- * @param attributeValue - The value of the attribute to search for. Can be a string or a regular expression.
- * @param context - The context within which to search for the element. Defaults to the entire document.
- * @returns A promise that resolves to the first element that matches the given attribute name and value, or undefined if no such element is found.
+ * @template T Element type to return (defaults to HTMLElement | SVGElement)
+ * @param attributeName Attribute name to search for
+ * @param attributeValue Attribute value or pattern to match
+ * @param context Optional element to scope the search
+ * @returns Promise<T | undefined> First matching element or undefined
+ *
+ * @example Basic Usage
+ * ```ts
+ * // Find by exact match
+ * const element = await findByAttribute('data-testid', 'user-profile');
+ *
+ * // Find by pattern
+ * const element = await findByAttribute('class', /button-\w+/);
+ * ```
+ *
+ * @example With Context and Type
+ * ```ts
+ * // Search within specific container
+ * const container = document.querySelector('.container');
+ * const button = await findByAttribute<HTMLButtonElement>(
+ *   'role',
+ *   'submit',
+ *   container
+ * );
+ * ```
+ *
+ * @example Shadow DOM Search
+ * ```ts
+ * // Searches through shadow DOM boundaries
+ * const element = await findByAttribute(
+ *   'p-target',
+ *   'content',
+ *   customElement
+ * );
+ * ```
+ *
+ * Features:
+ * - Shadow DOM traversal
+ * - Regular expression support
+ * - Type-safe element returns
+ * - Scoped searching
+ * - Async operation
+ * - Animation frame timing
+ *
+ * @remarks
+ * - Returns first matching element
+ * - Searches synchronously but returns Promise
+ * - Traverses all shadow roots
+ * - Uses requestAnimationFrame
+ * - Handles missing attributes
+ * - Type-safe return values
+ *
  */
 export const findByAttribute: FindByAttribute = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
   attributeName: string,
