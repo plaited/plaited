@@ -7,7 +7,58 @@ const PLAITED_STORE = 'PLAITED_STORE'
 
 type CreateIDBCallback = (arg: IDBObjectStore) => void
 
-// Async Pub Sub that allows us the get Last Value Cache and subscribe to changes and persist the value in indexedDB
+/**
+ * Creates a persistent pub/sub store using IndexedDB with broadcast channel support.
+ * Provides last-value-cache (LVC) functionality and cross-tab synchronization.
+ *
+ * Features:
+ * - Persistent storage using IndexedDB
+ * - Cross-tab/window communication
+ * - Last-value-cache retrieval
+ * - Type-safe data handling
+ * - Automatic database initialization
+ * - Clean disconnect handling
+ *
+ * @template T Type of data to be stored
+ *
+ * @param key Unique identifier for the stored value
+ * @param options Configuration options
+ * @param options.databaseName Custom IndexedDB database name (default: 'PLAITED_INDEXED_DB')
+ * @param options.storeName Custom object store name (default: 'PLAITED_STORE')
+ *
+ * @returns Object containing:
+ * - get(): Promise<T> Retrieves stored value
+ * - set(value: T): Promise<void> Updates stored value and broadcasts change
+ * - listen(eventType: string, trigger: Trigger | PlaitedTrigger, getLVC?: boolean):
+ *     () => void Subscribes to value changes
+ *
+ * @example
+ * // Basic usage
+ * const store = await useIndexedDB<UserData>('user-preferences');
+ *
+ * // Store data
+ * await store.set({ theme: 'dark' });
+ *
+ * // Retrieve data
+ * const data = await store.get();
+ *
+ * // Listen for changes
+ * const disconnect = store.listen('USER_UPDATED', trigger, true);
+ *
+ * @example
+ * // Custom database configuration
+ * const store = await useIndexedDB<Config>('settings', {
+ *   databaseName: 'MyApp',
+ *   storeName: 'Configuration'
+ * });
+ *
+ * @remarks
+ * - Uses BroadcastChannel for cross-tab communication
+ * - Automatically handles database creation and upgrades
+ * - Provides disconnect callbacks for cleanup
+ * - Supports last-value-cache pattern with getLVC parameter
+ * - Thread-safe for concurrent access
+ */
 export const useIndexedDB = async <T>(
   /** key for stored value */
   key: string,

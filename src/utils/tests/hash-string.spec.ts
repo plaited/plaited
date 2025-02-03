@@ -8,3 +8,7 @@ test('hashString(): Given a string, return a hash', () => {
 test('hashString(): Given a empty string, return null', () => {
   expect(hashString('')).toBe(null)
 })
+
+test('hashString(): returns consistent value', () => {
+  expect(hashString('hello')).toBe(hashString('hello'))
+})

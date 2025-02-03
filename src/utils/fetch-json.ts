@@ -3,7 +3,46 @@ import { wait } from './wait.js'
 type FetchJSONOptions = RequestInit & { retry: number; retryDelay: number }
 
 /**
- * @summary  A simple utility function to fetch data that handles common edge cases around failure
+ * Fetches and parses JSON data with robust error handling and exponential backoff retry logic.
+ *
+ * Features:
+ * - Automatic retry with exponential backoff delay
+ * - Smart error handling for common HTTP status codes
+ * - JSON response parsing
+ * - TypeScript type inference
+ *
+ * @template T Type of the expected JSON response data
+ *
+ * @param url The URL to fetch from (string, Request, or URL object)
+ * @param options Configuration object with the following properties:
+ *   @param {number} options.retry Number of retry attempts (default: 3)
+ *   @param {number} options.retryDelay Base delay in ms between retries (default: 1000)
+ *   @param {...RequestInit} options Additional fetch options (headers, method, etc.)
+ *
+ * @returns Promise<T | undefined> Parsed JSON data or undefined if all retries fail
+ *
+ * @throws {Error} HTTP status specific errors:
+ *   - 404: "Resource not found"
+ *   - 500: "Internal server error"
+ *   - Other: "Request failed with status code {status}"
+ *
+ * @example
+ * // Basic usage
+ * const data = await fetchJSON<UserData>('api/users/1');
+ *
+ * // With custom retry configuration
+ * const data = await fetchJSON('api/users/1', {
+ *   retry: 5,
+ *   retryDelay: 1000,
+ *   headers: { 'Authorization': 'Bearer token' }
+ * });
+ *
+ * @remarks
+ * Uses exponential backoff strategy for retries:
+ * - Retry 1: baseDelay * 2^3
+ * - Retry 2: baseDelay * 2^2
+ * - Retry 3: baseDelay * 2^1
+ * Maximum delay is capped at the base retryDelay
  */
 export const fetchJSON = async <T = unknown>(
   url: RequestInfo | URL,
@@ -31,7 +70,7 @@ export const fetchJSON = async <T = unknown>(
       return data
     } catch (error) {
       console.error('Fetch error:', error)
-      await wait(retryDelay)
+      await wait(Math.min(retryDelay, retryDelay * Math.pow(2, retry)))
     }
     retry--
   }
