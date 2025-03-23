@@ -1,9 +1,8 @@
 /* eslint-disable no-constant-binary-expression */
 import { test, expect } from 'bun:test'
-import { h, Fragment } from '../create-template.js'
-import { css } from '../../style/css.js'
-import type { FunctionTemplate, TemplateObject } from '../jsx.types.js'
-import { ssr } from '../ssr.js'
+import { type FunctionTemplate, type TemplateObject, ssr } from 'plaited'
+import { h, Fragment } from 'plaited/jsx-runtime'
+import { css } from 'plaited/style'
 import beautify from 'beautify'
 
 const render = (template: TemplateObject) => {

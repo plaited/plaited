@@ -2,6 +2,9 @@ import type { StoryObj } from 'plaited/test'
 import { AttributesObserver } from './use-attributes-observer.js'
 
 export const Example: StoryObj = {
+  description: `Example of how to use useAttributesObserver to observe attributes changes and trigger
+  events in a plaited elements. This story is used to validate that when a slotted element such as input
+  has a change event `,
   template: () => (
     <AttributesObserver>
       <input type='checkbox' />

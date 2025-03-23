@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { hexToRgb } from '../hex-to-rgb.js'
+import { hexToRgb } from 'plaited/utils'
 
 test('hexToRgb: improper hex', () => {
   //@ts-expect-error: testing invalid value

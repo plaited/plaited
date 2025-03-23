@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
-import { bProgram } from '../b-program.js'
-import { wait } from '../../utils/wait.js'
-import { bSync } from '../b-thread.js'
+import { bProgram, bSync } from 'plaited/behavioral'
+import { wait } from 'plaited/utils'
+
 test('async feedback ELEMENT_CALLBACKS', async () => {
   const actual: string[] = []
   const { bThreads, trigger, useFeedback } = bProgram()

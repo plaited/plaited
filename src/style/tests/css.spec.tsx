@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
-import { css } from '../css.js'
+import { css } from 'plaited/style'
 
-test('css.create: simple rules', () => {
+test('css.create: supports simple rules', () => {
   const s = css.create({
     base: {
       fontzSize: `16px`,
@@ -15,7 +15,7 @@ test('css.create: simple rules', () => {
   expect(s).toMatchSnapshot()
 })
 
-test('css.create: custom props', () => {
+test('css.create: supports custom props', () => {
   const s = css.create({
     customProps: {
       '--customColor': 'red',
@@ -25,7 +25,7 @@ test('css.create: custom props', () => {
   expect(s).toMatchSnapshot()
 })
 
-test('css.create: Pseudo-classes', () => {
+test('css.create: supports pseudo-classes', () => {
   expect(
     css.create({
       button: {
@@ -46,7 +46,7 @@ test('css.create: Pseudo-classes', () => {
   ).toMatchSnapshot()
 })
 
-test('css.create: Pseudo-elements', () => {
+test('css.create: supports pseudo-elements', () => {
   expect(
     css.create({
       input: {
@@ -64,7 +64,7 @@ test('css.create: Pseudo-elements', () => {
   ).toMatchSnapshot()
 })
 
-test('css.create: media query', () => {
+test('css.create: supports media query', () => {
   expect(
     css.create({
       base: {
@@ -78,7 +78,7 @@ test('css.create: media query', () => {
   ).toMatchSnapshot()
 })
 
-test('css.create: combining conditions', () => {
+test('css.create: supports combining conditions', () => {
   expect(
     css.create({
       button: {
@@ -94,7 +94,7 @@ test('css.create: combining conditions', () => {
   ).toMatchSnapshot()
 })
 
-test('JSX: spread', () => {
+test('css.create: works with JSX via spread operator', () => {
   const s = css.create({
     button: {
       color: {

@@ -1,8 +1,8 @@
 import path from 'path'
-import { PlaitedFixture } from './plaited-fixture.js'
 import { ssr } from 'plaited'
-import { STORIES_FILTERS_REGEX, DEFAULT_PLAY_TIMEOUT, type StoryObj, type Meta, type TestParams } from 'plaited/test'
+import { STORIES_FILTERS_REGEX, DEFAULT_PLAY_TIMEOUT, type StoryObj, type TestParams } from 'plaited/test'
 import { kebabCase } from 'plaited/utils'
+import { PlaitedFixture } from './plaited-fixture.js'
 
 const createStoryRoute = ({ storyFile, exportName }: { storyFile: string; exportName: string }) => {
   const dirname = path.dirname(storyFile)
@@ -14,7 +14,6 @@ const createStoryRoute = ({ storyFile, exportName }: { storyFile: string; export
 
 const updateHTMLResponses = ({
   story,
-  meta,
   route,
   responses,
   storyFile,
@@ -23,7 +22,6 @@ const updateHTMLResponses = ({
   imports,
 }: {
   story: StoryObj
-  meta: Meta
   route: string
   responses: Map<string, Response>
   storyFile: string
@@ -32,10 +30,10 @@ const updateHTMLResponses = ({
   imports: Record<string, string>
 }): TestParams => {
   const entryPath = storyFile.replace(/\.tsx?$/, '.js')
-  const args = story?.args ?? meta?.args ?? {}
-  const styles = story?.parameters?.styles ?? meta?.parameters?.styles ?? {}
-  const headers = story?.parameters?.headers?.(process.env) ?? meta?.parameters?.headers?.(process.env) ?? new Headers()
-  const tpl = story?.template ?? meta?.template
+  const args = story?.args ?? {}
+  const styles = story?.parameters?.styles ?? {}
+  const headers = story?.parameters?.headers?.(process.env) ?? new Headers()
+  const tpl = story?.template
   const page = ssr(
     <html>
       <head>
@@ -74,10 +72,10 @@ const updateHTMLResponses = ({
   )
   responses.set(route, new Response(`<!DOCTYPE html>\n${page}`, { headers }))
   return {
-    a11y: story?.parameters?.a11y ?? meta?.parameters?.a11y,
-    description: story?.parameters?.description ?? meta?.parameters?.description,
-    scale: story?.parameters?.scale ?? meta?.parameters?.scale,
-    timeout: story?.parameters?.timeout ?? meta?.parameters?.timeout ?? DEFAULT_PLAY_TIMEOUT,
+    a11y: story?.parameters?.a11y,
+    description: story?.description,
+    scale: story?.parameters?.scale,
+    timeout: story?.parameters?.timeout ?? DEFAULT_PLAY_TIMEOUT,
   }
 }
 
@@ -97,8 +95,7 @@ export const mapStoryResponses = async ({
   const routes: [string, TestParams][] = []
   await Promise.all(
     storyEntries.map(async (entry) => {
-      const { default: meta, ...stories } = (await import(entry)) as {
-        default: Meta
+      const { default: _, ...stories } = (await import(entry)) as {
         [key: string]: StoryObj
       }
       const storyFile = entry.replace(new RegExp(`^${cwd}`), '')
@@ -107,7 +104,6 @@ export const mapStoryResponses = async ({
         const story = stories[exportName]
         const params = updateHTMLResponses({
           story,
-          meta,
           route,
           responses,
           storyFile,

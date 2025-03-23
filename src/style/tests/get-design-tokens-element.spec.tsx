@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { getDesignTokensElement } from '../get-design-tokens-element.js'
+import { getDesignTokensElement } from 'plaited/style'
 import beautify from 'beautify'
 
 test('getDesignTokensElement', () => {

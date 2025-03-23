@@ -1,5 +1,4 @@
-import { defineTemplate } from '../define-template.js'
-import { useAttributesObserver } from '../use-attributes-observer.js'
+import { defineTemplate, useAttributesObserver } from 'plaited'
 
 export const AttributesObserver = defineTemplate({
   tag: 'attribute-observer',

@@ -1,6 +1,6 @@
 import { isPlaitedMessage, type PlaitedMessage, type PlaitedElement, type CustomElementTag } from 'plaited'
 import { isTypeOf, DelegatedListener, delegates } from 'plaited/utils'
-import type { PlaitedTrigger } from '../behavioral/get-plaited-trigger'
+import type { PlaitedTrigger } from 'plaited/behavioral'
 
 const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => event.type === 'close'
 

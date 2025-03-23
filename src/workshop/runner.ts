@@ -1,14 +1,14 @@
 import { chromium, type BrowserContext } from 'playwright'
-import { type Trigger } from '../behavioral/b-program.js'
+import { isPlaitedMessage } from 'plaited'
+import { type Trigger } from 'plaited/behavioral'
+import { isTypeOf } from 'plaited/utils'
 import * as esbuild from 'esbuild'
 import type { Server, ServerWebSocket } from 'bun'
-import { isTypeOf } from 'plaited/utils'
 import { getEntryPoints } from './get-entry-points.js'
 import { getStories } from './get-stories.js'
 import { zip } from './zip.js'
 import { getFile } from './get-file.js'
 import { runnerModdule } from './runner-module.js'
-import { isPlaitedMessage } from 'plaited'
 
 const cwd = `${process.cwd()}/src`
 const streamURL = '/_test-runner'

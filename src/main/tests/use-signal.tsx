@@ -1,6 +1,4 @@
-import type { FT } from '../../jsx/jsx.types.js'
-import { defineTemplate } from '../define-template.js'
-import { useSignal } from '../use-signal.js'
+import { type FT, defineTemplate, useSignal } from 'plaited'
 
 const store = useSignal<number>(0)
 

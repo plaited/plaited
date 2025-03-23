@@ -1,5 +1,4 @@
-import { defineTemplate } from '../define-template.js'
-import { useDispatch } from '../use-dispatch.js'
+import { defineTemplate, useDispatch } from 'plaited'
 
 export const Nested = defineTemplate({
   tag: 'nested-el',
@@ -12,8 +11,8 @@ export const Nested = defineTemplate({
     </button>
   ),
   publicEvents: ['add'],
-  bProgram() {
-    const dispatch = useDispatch(this)
+  bProgram({ host }) {
+    const dispatch = useDispatch(host)
     return {
       click() {
         dispatch({ type: 'append', bubbles: true, composed: true })

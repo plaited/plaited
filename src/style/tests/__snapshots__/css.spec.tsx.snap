@@ -1,6 +1,6 @@
 // Bun Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`css.create: simple rules 1`] = `
+exports[`css.create: supports simple rules 1`] = `
 {
   "base": {
     "className": "base__1f8ei0o p_2h8kl40 p4c01gd6 p10v3vx6",
@@ -19,7 +19,7 @@ exports[`css.create: simple rules 1`] = `
 }
 `;
 
-exports[`css.create: custom props 1`] = `
+exports[`css.create: supports custom props 1`] = `
 {
   "customProps": {
     "className": "customProps_5lz1ma pxn6850 p3bm6rq9",
@@ -31,7 +31,7 @@ exports[`css.create: custom props 1`] = `
 }
 `;
 
-exports[`css.create: Pseudo-classes 1`] = `
+exports[`css.create: supports pseudo-classes 1`] = `
 {
   "button": {
     "className": "button__8iz41n p2l5cglg",
@@ -42,7 +42,7 @@ exports[`css.create: Pseudo-classes 1`] = `
 }
 `;
 
-exports[`css.create: Pseudo-classes 2`] = `
+exports[`css.create: supports pseudo-classes 2`] = `
 {
   "button": {
     "className": "button_1tjvtxt p2l5cglg p1sj0k0a p3ni2mzo",
@@ -55,7 +55,7 @@ exports[`css.create: Pseudo-classes 2`] = `
 }
 `;
 
-exports[`css.create: Pseudo-elements 1`] = `
+exports[`css.create: supports pseudo-elements 1`] = `
 {
   "input": {
     "className": "input_1etkoss pqpi8rk p_1uwdrog",
@@ -67,7 +67,7 @@ exports[`css.create: Pseudo-elements 1`] = `
 }
 `;
 
-exports[`css.create: media query 1`] = `
+exports[`css.create: supports media query 1`] = `
 {
   "base": {
     "className": "base_3d4s76s paqr07x p_3zvevs7 p_l1op19",
@@ -80,7 +80,7 @@ exports[`css.create: media query 1`] = `
 }
 `;
 
-exports[`css.create: combining conditions 1`] = `
+exports[`css.create: supports combining conditions 1`] = `
 {
   "button": {
     "className": "button_mb2ltj p_2dr9p51 p_d33wg2 p_1bahz5i",
@@ -93,7 +93,7 @@ exports[`css.create: combining conditions 1`] = `
 }
 `;
 
-exports[`JSX: spread 1`] = `
+exports[`css.create: works with JSX via spread operator 1`] = `
 {
   "$": "🦄",
   "html": [

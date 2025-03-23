@@ -1,8 +1,5 @@
 import type { StoryObj } from 'plaited/test'
-import { defineTemplate } from '../define-template.js'
-import type { PlaitedElement } from '../plaited.types\
-.js'
-import { css } from '../../style/css.js'
+import { defineTemplate, type PlaitedElement, css } from 'plaited'
 
 const { noRepeat, repeat, initial } = css.create({
   initial: {
@@ -19,6 +16,9 @@ const { noRepeat, repeat, initial } = css.create({
 })
 
 export const dynamicStyles: StoryObj = {
+  description: `This story is used to validate that when rendering/inserting new JSX with styles
+  into the plaited element shadow dom those styles sheets are applied to the constructed styles
+  and do not repeat`,
   play: async ({ findByText, assert, findByAttribute, wait, hostElement }) => {
     hostElement.setHTMLUnsafe(
       (

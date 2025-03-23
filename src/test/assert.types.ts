@@ -25,7 +25,6 @@ export type Scale = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 'rel'
  */
 export type Params = {
   a11y?: Record<string, string> | false
-  description?: string
   headers?: (env: NodeJS.ProcessEnv) => Headers
   scale?: Scale
   styles?: StylesObject
@@ -37,15 +36,7 @@ export type Params = {
  * @template T Function template type
  */
 export type Args<T extends FunctionTemplate> = Parameters<T>[0]
-/**
- * Metadata configuration for test stories.
- * @template T Attributes type for the template
- */
-export type Meta<T extends Attrs = Attrs> = {
-  args?: Attrs
-  parameters?: Params
-  template?: FunctionTemplate<T>
-}
+
 /**
  * Test play function type for interaction testing.
  * Provides utilities for assertion and DOM manipulation.
@@ -74,13 +65,52 @@ export type Play = (args: {
   throws: typeof throws
   wait: typeof wait
 }) => Promise<void>
+
 /**
- * Story object type for defining component test scenarios.
- * @template T Attributes type for the template
+ * Story object type that requires a play function for test scenarios.
+ * Used when you need to define interactive tests or assertions.
+ * @template T Attributes type for the template, defaults to Attrs
+ */
+export type PlayStoryObj<T extends Attrs = Attrs> = {
+  /** Optional arguments/props to pass to the template */
+  args?: Attrs
+  /** Description of what this story test demonstrates */
+  description: string
+  /** Optional test parameters for configuring the story behavior */
+  parameters?: Params
+  /** Required test function that defines interactions and assertions */
+  play: Play
+  /** Optional template function for custom template rendering */
+  template?: FunctionTemplate<T>
+}
+/**
+ * Story object type where the play function is optional.
+ * Used for visual testing scenarios that may not require interactions.
+ * @template T Attributes type for the template, defaults to Attrs
+ */
+export type TemplateStoryObj<T extends Attrs = Attrs> = {
+  /** Optional arguments/props to pass to the template */
+  args?: Attrs
+  /** Description of what this story test demonstrates */
+  description: string
+  /** Optional test parameters for configuring the story behavior */
+  parameters?: Params
+  /** Optional test function for interactions and assertions */
+  play?: Play
+  /** Optional template function for custom template rendering */
+  template?: FunctionTemplate<T>
+}
+
+/**
+ * Union type representing all valid story object configurations.
+ * Can be either a PlayStoryObj (requiring play function) or TemplateStoryObj (optional play).
+ * Used for defining component test scenarios.
+ * @template T Attributes type for the template, defaults to Attrs
  *
  * @example
  * ```ts
  * const Primary: StoryObj = {
+ *   description: "description of what the story is for"
  *   args: { title: 'Hello' },
  *   parameters: { scale: 2 },
  *   play: async ({ assert }) => {
@@ -89,12 +119,7 @@ export type Play = (args: {
  * };
  * ```
  */
-export type StoryObj<T extends Attrs = Attrs> = {
-  args?: Attrs
-  parameters?: Params
-  play?: Play
-  template?: FunctionTemplate<T>
-}
+export type StoryObj<T extends Attrs = Attrs> = PlayStoryObj<T> | TemplateStoryObj<T>
 /**
  * Required test parameters with resolved defaults.
  * Used internally for test execution.

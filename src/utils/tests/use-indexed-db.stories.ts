@@ -1,8 +1,9 @@
 import type { StoryObj } from 'plaited/test'
-import { useIndexedDB } from '../use-indexed-db.js'
+import { useIndexedDB } from 'plaited/utils'
 import sinon from 'sinon'
 
 export const basic: StoryObj = {
+  description: `validate useIndexedDB utility works as expected`,
   play: async ({ assert }) => {
     const db = await useIndexedDB<number>('basic')
     let actual = await db.get()
@@ -40,6 +41,7 @@ export const basic: StoryObj = {
 }
 
 export const withSubscription: StoryObj = {
+  description: `validate listening to changes on indexedDB entry triggers callback`,
   play: async ({ assert, wait }) => {
     const db = await useIndexedDB('subscription')
     await db.set(1)

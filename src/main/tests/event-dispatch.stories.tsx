@@ -2,6 +2,9 @@ import type { StoryObj } from 'plaited/test'
 import { Outer, Slotted, Nested } from './event-dispatch.js'
 
 export const eventDispatch: StoryObj = {
+  description: `Example of how to use useDispatch to broadcast events between plaited elements nested within
+  another plaited elements shadow dom. When the button in nested-el is clicked the h1 in outer-el shadow dom's
+  has a string appended to it`,
   template: Outer,
   play: async ({ assert, findByAttribute, fireEvent }) => {
     const button = await findByAttribute('p-target', 'button')
@@ -23,6 +26,9 @@ export const eventDispatch: StoryObj = {
 }
 
 export const eventDispatchSlot: StoryObj = {
+  description: `Example of how to use useDispatch to broadcast events between plaited elements slotted within
+another plaited elements light dom. When the button in nested-el is clicked the h1 in parent-el shadow dom has a
+string appended to it`,
   template: () => (
     <Slotted>
       <div>

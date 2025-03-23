@@ -1,6 +1,5 @@
 import { test, expect } from 'bun:test'
-import { bProgram, type SnapshotMessage } from '../b-program.js'
-import { bSync, bThread } from '../b-thread.js'
+import { bProgram, bSync, bThread, type SnapshotMessage } from 'plaited/behavioral'
 
 test('Add hot water 3 times', () => {
   const actual: string[] = []

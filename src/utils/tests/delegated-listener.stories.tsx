@@ -1,7 +1,9 @@
 import { type StoryObj } from 'plaited/test'
-import { DelegatedListener, delegates } from '../delegated-listener.js'
+import { DelegatedListener, delegates } from 'plaited/utils'
 
 export const test: StoryObj = {
+  description: `Validates that the delegated event listener function ensures bound events are
+  propeerly delegated and only called once event if a listener is attached twice`,
   template: () => <button data-testid='button'>click me</button>,
   play: async ({ findByAttribute, fireEvent, assert }) => {
     const btn = await findByAttribute<HTMLButtonElement>('data-testid', 'button')

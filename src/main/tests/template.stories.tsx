@@ -1,9 +1,10 @@
 import type { StoryObj } from 'plaited/test'
-import type { PlaitedElement } from '../plaited.types.js'
-import { css } from '../../style/css.js'
-import { defineTemplate } from '../define-template.js'
+import { type PlaitedElement, css, defineTemplate } from 'plaited'
 import { ModeOpen, DelegateFalse, ClosedMode } from './template.js'
+
 export const defaultModeAndFocus: StoryObj = {
+  description: `This test is used to validate a plaited element created using defineTemplate
+  default to having it's mode open`,
   template: () => <ModeOpen p-target='el' />,
   play: async ({ assert, findByAttribute }) => {
     const host = await findByAttribute<PlaitedElement>('p-target', 'el')
@@ -23,6 +24,8 @@ export const defaultModeAndFocus: StoryObj = {
 }
 
 export const delegatesFocusFalse: StoryObj = {
+  description: `This test is used to validate a plaited element created using defineTemplate
+  with the parameter delefateFocus set to false does not allow focus delegation.`,
   template: () => <DelegateFalse p-target='el' />,
   play: async ({ assert, findByAttribute }) => {
     const host = await findByAttribute<PlaitedElement>('p-target', 'el')
@@ -42,6 +45,8 @@ export const delegatesFocusFalse: StoryObj = {
 }
 
 export const closedMode: StoryObj = {
+  description: `This test is used to validate a plaited element created using defineTemplate
+  with the parameter mode set to false create a custom element with a closed shadow dom.`,
   template: () => <ClosedMode p-target='el' />,
   play: async ({ assert, findByAttribute }) => {
     const host = await findByAttribute<PlaitedElement>('p-target', 'el')
@@ -55,6 +60,8 @@ export const closedMode: StoryObj = {
 }
 
 export const hydration: StoryObj = {
+  description: `This test is used to validate a plaited element rendered but not defined yet correctly hydrates
+  once defined using defineTemplate by checking the content once the public event render triggered`,
   play: async ({ assert, findByAttribute, findByText, hostElement }) => {
     const styles = css.create({
       inner: {

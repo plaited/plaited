@@ -1,8 +1,8 @@
 import { test, expect } from 'bun:test'
 import sinon from 'sinon'
-import { useSignal, useComputed } from '../use-signal.js'
+import { useSignal, useComputed } from 'plaited'
 
-test('useSignal: effect before store then disconnect', () => {
+test('useSignal:calling listen before setting store then disconnecting', () => {
   const store = useSignal<{ value: number }>({ value: 0 })
   const spy = sinon.spy()
   const disconnect = store.listen('a', spy)
@@ -13,7 +13,7 @@ test('useSignal: effect before store then disconnect', () => {
   expect(spy.calledTwice).toBeFalse()
 })
 
-test('useSignal: store before effect then disconnect', () => {
+test('useSignal:setting store before calling listen then disconnecting', () => {
   const spy = sinon.spy()
   const store = useSignal<{ value: number }>({ value: 0 })
   store.set({ value: 4 })
@@ -23,7 +23,7 @@ test('useSignal: store before effect then disconnect', () => {
   expect(spy.calledTwice).toBeFalse()
 })
 
-test('useSignal: effect then disconnect before store', () => {
+test('useSignal: calling listen then disconnecting before setting store', () => {
   const spy = sinon.spy()
   const store = useSignal<{ value: number }>({ value: 0 })
   const disconnect = store.listen('b', spy)
@@ -32,7 +32,7 @@ test('useSignal: effect then disconnect before store', () => {
   expect(spy.called).toBeFalse()
 })
 
-test('useComputed', () => {
+test('validate useComputed function as expected', () => {
   const spy = sinon.spy()
   const store = useSignal<number>(1)
   const computed = useComputed<number>(() => store.get() + 2, [store])

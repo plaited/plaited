@@ -1,8 +1,6 @@
 import { test, expect, jest } from 'bun:test'
 import * as prettier from 'prettier'
-
-import { TransformDesignTokens } from '../transform-design-tokens.js'
-import type { DesignTokenGroup } from '../design-token.types'
+import { TransformDesignTokens, type DesignTokenGroup } from 'plaited/style'
 
 test('Token no group', async () => {
   const tokens = { $value: '45deg', $type: 'angle', $description: 'mock description' }
