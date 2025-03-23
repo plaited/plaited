@@ -42,6 +42,7 @@
     "prettier": "prettier . --write",
     "test": "bun run test-stories && bun test",
     "test-stories": "bun run src/workshop/runner.ts",
+    "typedoc": "bunx typedoc --tsconfig tsconfig.json",
     "watch": "bun run check --watch"
   },
   "lint-staged": {
