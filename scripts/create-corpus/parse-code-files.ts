@@ -1,47 +1,28 @@
 import ts from 'typescript'
-import { TSDocParser, DocComment } from '@microsoft/tsdoc'
 import { Ollama } from 'ollama'
+import path from 'path'
+import fs from 'fs'
 
 const ollama = new Ollama()
-const embeddingModel = 'ph4i-mini' // While sources mention phi-1, you specified phi4-mini. Use accordingly.
+const embeddingModel = 'phi4-mini'
 
-interface CodeElementInfo {
-  kind: string
-  name: string
-  signature: string
-  documentation?: string
-  fullText: string
-}
-
-const formatTSDocComment = (docComment: DocComment): string => {
-  try {
-    let formatted = docComment?.summarySection?.getChildNodes()[0]?.toString().trim() || ''
-
-    const params = docComment.params
-    if (params) {
-      params.blocks.forEach((paramBlock) => {
-        if (paramBlock?.parameterName) {
-          formatted += `\n@param ${paramBlock.parameterName} - ${paramBlock.content.getChildNodes()[0]?.toString().trim()}`
-        }
-      })
-    }
-
-    const returns = docComment.returnsBlock
-    if (returns) {
-      formatted += `\n@returns ${returns.content.getChildNodes()[0]?.toString().trim()}`
-    }
-
-    return formatted
-  } catch (error) {
-    console.warn('Error formatting TSDoc comment:', error)
-    return ''
-  }
+interface FileAnalysis {
+  filePath: string
+  source: string
+  imports: string[]
+  exports: {
+    name: string
+    description?: string
+    embedding?: number[]
+  }[]
+  fileEmbedding: number[]
 }
 
 export const parseCodeFiles = async (typescriptFiles: string[]) => {
-  const codeElements: CodeElementInfo[] = []
+  const fileAnalyses: FileAnalysis[] = []
+  const processedFiles = new Set<string>()
+  const transpiler = new Bun.Transpiler({ loader: 'tsx' })
 
-  // Create compiler host and program
   const compilerOptions = {
     target: ts.ScriptTarget.Latest,
     module: ts.ModuleKind.CommonJS,
@@ -49,108 +30,129 @@ export const parseCodeFiles = async (typescriptFiles: string[]) => {
     checkJs: true,
   }
 
-  const compilerHost = ts.createCompilerHost(compilerOptions)
-  const program = ts.createProgram(typescriptFiles, compilerOptions, compilerHost)
-  const checker = program.getTypeChecker()
-  const parser = new TSDocParser()
-
-  // Process each source file
-  for (const sourceFile of program.getSourceFiles()) {
-    // Skip declaration files and files not in our input list
-    if (sourceFile.isDeclarationFile || !typescriptFiles.includes(sourceFile.fileName)) {
-      continue
+  async function processFile(filePath: string) {
+    if (processedFiles.has(filePath)) {
+      return
     }
 
-    const visit = (node: ts.Node) => {
-      // Helper function to get symbol safely
-      const getSymbol = (node: ts.Node): ts.Symbol | undefined => {
-        try {
-          return checker.getSymbolAtLocation(node) || undefined
-        } catch {
-          return undefined
-        }
+    processedFiles.add(filePath)
+
+    const sourceText = await fs.promises.readFile(filePath, 'utf-8')
+    const { exports, imports } = transpiler.scan(sourceText)
+
+    // Create program for each file to get AST
+    const program = ts.createProgram([filePath], compilerOptions)
+    const sourceFile = program.getSourceFile(filePath)
+
+    if (!sourceFile) {
+      console.error(`Could not get source file for ${filePath}`)
+      return
+    }
+
+    const exportedElements: { name: string; description?: string; embedding?: number[] }[] = []
+    const isStoryFile = filePath.endsWith('stories.tsx')
+
+    // Resolve and process imports
+    const resolvedImports = imports
+      .filter((imp) => {
+        const path = imp.path
+        return path.endsWith('.ts') || path.endsWith('.tsx')
+      })
+      .map((imp) => {
+        const dir = path.dirname(filePath)
+        return path.resolve(dir, imp.path)
+      })
+
+    // Process fixture imports recursively
+    for (const importPath of resolvedImports) {
+      if (fs.existsSync(importPath) && !processedFiles.has(importPath)) {
+        await processFile(importPath)
       }
+    }
 
-      if (
-        (ts.isFunctionDeclaration(node) ||
-          ts.isClassDeclaration(node) ||
-          ts.isInterfaceDeclaration(node) ||
-          ts.isTypeAliasDeclaration(node)) &&
-        node.name
-      ) {
-        const symbol = getSymbol(node.name)
-
-        if (symbol && symbol.flags & ts.SymbolFlags.ExportValue) {
-          let documentation: string | undefined = undefined
-          const symbolDocs = symbol.getDocumentationComment(checker)
-          if (symbolDocs.length > 0) {
-            const docString = ts.displayPartsToString(symbolDocs)
-            const docComment = parser.parseString(`/*${docString}*/`).docComment
-            documentation = formatTSDocComment(docComment)
-          }
-
-          const signature = checker.typeToString(checker.getTypeAtLocation(node), node, ts.TypeFormatFlags.NoTruncation)
-
-          codeElements.push({
-            kind: ts.SyntaxKind[node.kind],
-            name: symbol.name,
-            signature,
-            documentation,
-            fullText: node.getFullText(sourceFile).trim(),
-          })
-        }
-      } else if (ts.isVariableStatement(node)) {
-        // Handle exported variables
-        node.declarationList.declarations.forEach((declaration) => {
-          if (ts.isIdentifier(declaration.name)) {
-            const symbol = getSymbol(declaration.name)
-            if (symbol && symbol.flags & ts.SymbolFlags.ExportValue) {
-              const documentation = symbol
-                .getDocumentationComment(checker)
-                .map((doc) => doc.text)
-                .join('\n')
-
-              codeElements.push({
-                kind: 'VariableDeclaration',
-                name: symbol.name,
-                signature: checker.typeToString(
-                  checker.getTypeAtLocation(declaration),
-                  declaration,
-                  ts.TypeFormatFlags.NoTruncation,
-                ),
-                documentation,
-                fullText: node.getFullText(sourceFile).trim(),
+    const visit = async (node: ts.Node) => {
+      if (ts.isVariableDeclaration(node) && exports.includes(node.name.getText())) {
+        if (isStoryFile) {
+          const description = extractStoryDescription(node)
+          if (description) {
+            try {
+              const descriptionEmbedding = await ollama.embeddings({
+                model: embeddingModel,
+                prompt: description,
               })
+
+              exportedElements.push({
+                name: node.name.getText(),
+                description,
+                embedding: descriptionEmbedding.embedding,
+              })
+            } catch (error) {
+              console.error(`Error generating embedding for ${node.name.getText()}:`, error)
             }
           }
-        })
+        } else {
+          // For fixture files, generate embeddings of the entire export
+          try {
+            const exportText = node.getText()
+            const exportEmbedding = await ollama.embeddings({
+              model: embeddingModel,
+              prompt: exportText,
+            })
+
+            exportedElements.push({
+              name: node.name.getText(),
+              embedding: exportEmbedding.embedding,
+            })
+          } catch (error) {
+            console.error(`Error generating embedding for ${node.name.getText()}:`, error)
+          }
+        }
       }
 
       ts.forEachChild(node, visit)
     }
 
-    visit(sourceFile)
-  }
-
-  const embeddings: { [key: string]: number[] } = {}
-
-  // Generate embeddings for each code element
-  for (const element of codeElements) {
-    const textToEmbed = `${element.kind}: ${element.name} ${element.signature}. Documentation: ${
-      element.documentation || 'No documentation.'
-    } Code: ${element.fullText}`
+    await visit(sourceFile)
 
     try {
-      const response = await ollama.embeddings({
+      const fileEmbedding = await ollama.embeddings({
         model: embeddingModel,
-        prompt: textToEmbed,
+        prompt: sourceText,
       })
-      embeddings[element.fullText] = response.embedding
-      console.log(`Generated embedding for: ${element.kind} ${element.name}`)
+
+      fileAnalyses.push({
+        filePath,
+        source: sourceText,
+        imports: resolvedImports,
+        exports: exportedElements,
+        fileEmbedding: fileEmbedding.embedding,
+      })
     } catch (error) {
-      console.error(`Error generating embedding for ${element.kind} ${element.name}:`, error)
+      console.error(`Error generating file embedding for ${filePath}:`, error)
     }
   }
 
-  return { codeElements, embeddings }
+  // Process initial files
+  for (const file of typescriptFiles) {
+    await processFile(file)
+  }
+
+  return fileAnalyses
+}
+
+function extractStoryDescription(node: ts.Node): string | undefined {
+  if (ts.isVariableDeclaration(node) && node.initializer && ts.isObjectLiteralExpression(node.initializer)) {
+    const descriptionProp = node.initializer.properties.find(
+      (prop) => ts.isPropertyAssignment(prop) && prop.name.getText() === 'description',
+    )
+
+    if (
+      descriptionProp &&
+      ts.isPropertyAssignment(descriptionProp) &&
+      ts.isStringLiteral(descriptionProp.initializer)
+    ) {
+      return descriptionProp.initializer.text
+    }
+  }
+  return undefined
 }
