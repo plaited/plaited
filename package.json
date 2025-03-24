@@ -42,7 +42,7 @@
     "prettier": "prettier . --write",
     "test": "bun run test-stories && bun test",
     "test-stories": "bun run src/workshop/runner.ts",
-    "typedoc": "bunx typedoc --tsconfig tsconfig.json",
+    "typedoc": "bunx typedoc --tsconfig tsconfig.json --plugin typedoc-plugin-markdown",
     "watch": "bun run check --watch"
   },
   "lint-staged": {
@@ -76,11 +76,17 @@
     "format-package": "7.0.0",
     "globals": "15.14.0",
     "lint-staged": "15.4.3",
+    "ollama": "^0.5.14",
     "playwright": "1.50.1",
     "prettier": "3.4.2",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
     "sinon": "19.0.2",
-    "typedoc": "0.27.6",
+    "typedoc": "0.28.1",
+    "typedoc-plugin-markdown": "4.5.2",
     "typescript": "5.7.3",
-    "typescript-eslint": "8.22.0"
+    "typescript-eslint": "8.22.0",
+    "unified": "^11.0.5",
+    "unist-util-select": "^5.1.0"
   }
 }
