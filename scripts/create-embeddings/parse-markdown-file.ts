@@ -5,7 +5,7 @@ import gfm from 'remark-gfm'
 import { Ollama } from 'ollama'
 import type { RootContent, TableRow, TableCell, Root } from 'mdast'
 
-import { embeddingModels } from './create-corpus.constants.js'
+import { embeddingModels } from './create-embeddings.constants.js'
 
 interface LinkNode {
   type: string
