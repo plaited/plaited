@@ -25,7 +25,7 @@ export const parseCodeFiles = async (typescriptFiles: string[]) => {
 
   const compilerOptions = {
     target: ts.ScriptTarget.Latest,
-    module: ts.ModuleKind.CommonJS,
+    module: ts.ModuleKind.ESNext,
     allowJs: true,
     checkJs: true,
   }
