@@ -1,6 +1,6 @@
 // scripts/create-corpus/tests/parse-code-files.spec.ts
 import { expect, test, beforeAll } from 'bun:test'
-import { parseCodeFiles } from '../parse-code-files.js'
+import { parseCodeFiles } from '../parse-story-file.js'
 import fs from 'fs'
 import path from 'path'
 

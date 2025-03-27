@@ -2,7 +2,7 @@ import { type StoryObj } from 'plaited/test'
 import { ToggleInput } from './form-associated-example.js'
 
 export const checkbox: StoryObj = {
-  description: `renders toggle input dvalidates we can set attribute on it and it chenges`,
+  description: `renders toggle input and validates we can set attribute on it and it chenges`,
   template: ToggleInput,
   async play() {
     const checkbox = document.querySelector(ToggleInput.tag)
