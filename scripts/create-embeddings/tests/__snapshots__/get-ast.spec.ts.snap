@@ -1,0 +1,161 @@
+// Bun Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`getAst should correctly parse and print TypeScript source code 1`] = `
+{
+  "kind": 36,
+  "statements": [
+    {
+      "docs": [],
+      "hasDeclareKeyword": false,
+      "isAsync": false,
+      "isDefaultExport": false,
+      "isExported": false,
+      "isGenerator": false,
+      "kind": 13,
+      "name": "hello",
+      "overloads": [],
+      "parameters": [
+        {
+          "decorators": [],
+          "hasOverrideKeyword": false,
+          "hasQuestionToken": false,
+          "initializer": undefined,
+          "isReadonly": false,
+          "isRestParameter": false,
+          "kind": 30,
+          "name": "name",
+          "scope": undefined,
+          "type": "string",
+        },
+      ],
+      "returnType": "string",
+      "statements": [
+        "return \`Hello, \${name}!\`;",
+      ],
+      "typeParameters": [],
+    },
+  ],
+}
+`;
+
+exports[`getAst should handle empty source code 1`] = `
+{
+  "kind": 36,
+  "statements": [],
+}
+`;
+
+exports[`getAst should preserve complex TypeScript syntax 1`] = `
+{
+  "kind": 36,
+  "statements": [
+    {
+      "callSignatures": [],
+      "constructSignatures": [],
+      "docs": [],
+      "extends": [],
+      "getAccessors": [],
+      "hasDeclareKeyword": false,
+      "indexSignatures": [],
+      "isDefaultExport": false,
+      "isExported": false,
+      "kind": 19,
+      "methods": [],
+      "name": "User",
+      "properties": [
+        {
+          "docs": [],
+          "hasQuestionToken": false,
+          "initializer": undefined,
+          "isReadonly": false,
+          "kind": 33,
+          "name": "name",
+          "type": "string",
+        },
+        {
+          "docs": [],
+          "hasQuestionToken": false,
+          "initializer": undefined,
+          "isReadonly": false,
+          "kind": 33,
+          "name": "age",
+          "type": "number",
+        },
+      ],
+      "setAccessors": [],
+      "typeParameters": [],
+    },
+    {
+      "ctors": [],
+      "decorators": [],
+      "docs": [],
+      "extends": undefined,
+      "getAccessors": [],
+      "hasDeclareKeyword": false,
+      "implements": [],
+      "isAbstract": false,
+      "isDefaultExport": false,
+      "isExported": false,
+      "kind": 2,
+      "methods": [
+        {
+          "decorators": [],
+          "docs": [],
+          "hasOverrideKeyword": false,
+          "hasQuestionToken": false,
+          "isAbstract": false,
+          "isAsync": false,
+          "isGenerator": false,
+          "isStatic": false,
+          "kind": 26,
+          "name": "addUser",
+          "overloads": [],
+          "parameters": [
+            {
+              "decorators": [],
+              "hasOverrideKeyword": false,
+              "hasQuestionToken": false,
+              "initializer": undefined,
+              "isReadonly": false,
+              "isRestParameter": false,
+              "kind": 30,
+              "name": "user",
+              "scope": undefined,
+              "type": "User",
+            },
+          ],
+          "returnType": "void",
+          "scope": "public",
+          "statements": [
+            "this.users.push(user);",
+          ],
+          "typeParameters": [],
+        },
+      ],
+      "name": "UserService",
+      "properties": [
+        {
+          "decorators": [],
+          "docs": [],
+          "hasAccessorKeyword": false,
+          "hasDeclareKeyword": false,
+          "hasExclamationToken": false,
+          "hasOverrideKeyword": false,
+          "hasQuestionToken": false,
+          "initializer": "[]",
+          "isAbstract": false,
+          "isReadonly": false,
+          "isStatic": false,
+          "kind": 31,
+          "name": "users",
+          "scope": "private",
+          "type": "User[]",
+        },
+      ],
+      "setAccessors": [],
+      "staticBlocks": [],
+      "typeParameters": [],
+    },
+  ],
+}
+`;

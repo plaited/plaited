@@ -1,78 +1,52 @@
 import { expect, test, describe } from 'bun:test'
-import { getAst } from '../get-ast'
+import { getAst } from '../get-typescript-ast'
 
 describe('getAst', () => {
-  test('should correctly parse simple variable declaration', () => {
-    const source = `const x = 5;`
-    const result = getAst(source, 'test.ts')
-
-    expect(result.kind).toBe('SourceFile')
-    expect(result.text).toBe('const x = 5;')
-
-    const syntaxList = result.children?.find((child) => child.kind === 'SyntaxList')
-    expect(syntaxList).toBeDefined()
-
-    const varDecList = syntaxList?.children?.[0]?.children?.find((child) => child.kind === 'VariableDeclarationList')
-    expect(varDecList).toBeDefined()
-    expect(varDecList?.text).toInclude('const x = 5')
+  test('should correctly parse and print TypeScript source code', () => {
+    // Arrange
+    const path = 'test.ts'
+    const source = `
+      function hello(name: string): string {
+        return \`Hello, \${name}!\`;
+      }
+    `
+    // Act
+    const result = getAst(path, source)
+    // Assert
+    expect(result).toMatchSnapshot()
   })
 
-  test('should correctly parse function declaration', () => {
-    const source = `function test() {
-      return true;
-    }`
-    const result = getAst(source, 'test.ts')
-
-    expect(result.kind).toBe('SourceFile')
-    const syntaxList = result.children?.find((child) => child.kind === 'SyntaxList')
-    const funcDecl = syntaxList?.children?.[0]
-    expect(funcDecl?.kind).toBe('FunctionDeclaration')
-    expect(funcDecl?.text).toInclude('function test')
-  })
-
-  test('should handle multiple statements', () => {
-    const source = `const a = 1;
-    let b = 2;
-    var c = 3;`
-    const result = getAst(source, 'test.ts')
-
-    const syntaxList = result.children?.find((child) => child.kind === 'SyntaxList')
-    const statements = syntaxList?.children
-
-    expect(statements?.length).toBe(3)
-    expect(statements?.[0].text).toInclude('const a = 1')
-    expect(statements?.[1].text).toInclude('let b = 2')
-    expect(statements?.[2].text).toInclude('var c = 3')
-  })
-
-  test('should handle empty source', () => {
+  test('should handle empty source code', () => {
+    // Arrange
+    const path = 'empty.ts'
     const source = ''
-    const result = getAst(source, 'test.ts')
-
-    expect(result.kind).toBe('SourceFile')
-    expect(result.text).toBe('')
-    expect(result.children).toBeArray()
+    // Act
+    const result = getAst(path, source)
+    // Assert
+    expect(result).toMatchSnapshot()
   })
 
-  test('should maintain proper node hierarchy', () => {
-    const source = `if (true) {
-      console.log("test");
-    }`
-    const result = getAst(source, 'test.ts')
+  test('should preserve complex TypeScript syntax', () => {
+    // Arrange
+    const path = 'complex.ts'
+    const source = `
+      interface User {
+        name: string;
+        age: number;
+      }
 
-    expect(result.kind).toBe('SourceFile')
-    const syntaxList = result.children?.find((child) => child.kind === 'SyntaxList')
-    const ifStatement = syntaxList?.children?.[0]
-    expect(ifStatement?.kind).toBe('IfStatement')
+      class UserService {
+        private users: User[] = [];
 
-    const block = ifStatement?.children?.find((child) => child.kind === 'Block')
-    expect(block).toBeDefined()
-  })
+        public addUser(user: User): void {
+          this.users.push(user);
+        }
+      }
+    `
 
-  // Helper test to visualize the AST structure
-  test.skip('debug: show AST structure', () => {
-    const source = `const x = 5;`
-    const result = getAst(source, 'test.ts')
-    console.log(JSON.stringify(result, null, 2))
+    // Act
+    const result = getAst(path, source)
+    // Assert
+    expect(result).toMatchSnapshot()
   })
 })

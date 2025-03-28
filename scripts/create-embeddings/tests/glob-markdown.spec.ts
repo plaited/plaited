@@ -1,9 +1,9 @@
 import { expect, test, describe, beforeAll, afterAll } from 'bun:test'
-import { findMarkdownFiles } from '../find-markdown-files.js'
+import { globMarkdownFiles } from '../glob-markdown-files.js'
 import { mkdir, writeFile, rm } from 'fs/promises'
 import { join } from 'path'
 
-describe('findMarkdownFiles', () => {
+describe('globMarkdownFiles', () => {
   const testDir = `${import.meta.dir}/stub-markdown`
   const emptyDir = `${import.meta.dir}/stub-empty`
   // Setup test directory and files before tests
@@ -21,7 +21,7 @@ describe('findMarkdownFiles', () => {
   })
 
   test('finds all markdown files in directory', async () => {
-    const files = await findMarkdownFiles(testDir)
+    const files = await globMarkdownFiles(testDir)
 
     expect(files).toHaveLength(3)
     expect(files).toContain('test1.md')
@@ -32,7 +32,7 @@ describe('findMarkdownFiles', () => {
   test('returns empty array for directory with no markdown files', async () => {
     await mkdir(emptyDir, { recursive: true })
 
-    const files = await findMarkdownFiles(emptyDir)
+    const files = await globMarkdownFiles(emptyDir)
 
     expect(files).toHaveLength(0)
 
