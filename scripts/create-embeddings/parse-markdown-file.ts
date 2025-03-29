@@ -2,20 +2,14 @@ import markdown from 'remark-parse'
 import { unified } from 'unified'
 import { selectAll } from 'unist-util-select'
 import gfm from 'remark-gfm'
-import { Ollama } from 'ollama'
 import type { RootContent, TableRow, TableCell, Root } from 'mdast'
+import { generateBlockEmbeddings, type Block } from './generate-embeddings'
+import { EMBEDDING_MODELS } from './create-embeddings.constants'
 
-import { embeddingModels } from './create-embeddings.constants.js'
-
-interface LinkNode {
+type LinkNode = {
   type: string
   url: string
   title?: string
-}
-
-interface MarkdownBlock {
-  type: string
-  content: string
 }
 
 const processAST = (source: string) => {
@@ -34,8 +28,8 @@ const extractTextFromNode = (node: RootContent): string => {
   return ''
 }
 
-const createMarkdownBlocks = (ast: RootContent | Root): MarkdownBlock[] => {
-  const blocks: MarkdownBlock[] = []
+const createMarkdownBlocks = (ast: RootContent | Root): Block[] => {
+  const blocks: Block[] = []
 
   const traverse = (node: RootContent | Root) => {
     if (node.type === 'paragraph') {
@@ -71,26 +65,6 @@ const createMarkdownBlocks = (ast: RootContent | Root): MarkdownBlock[] => {
   return blocks.filter((block) => block.content.trim() !== '') // Filter out empty blocks
 }
 
-// Function to generate embeddings for the created blocks
-const generateBlockEmbeddings = async (blocks: MarkdownBlock[]) => {
-  const embeddings = []
-  const ollama = new Ollama()
-
-  try {
-    for (const block of blocks) {
-      const response = await ollama.embeddings({
-        model: embeddingModels.markdown,
-        prompt: block.content,
-      })
-      embeddings.push({ block, embedding: response.embedding })
-    }
-  } catch (error) {
-    console.error('Error generating embeddings:', error)
-  }
-
-  return embeddings
-}
-
 const extractLinks = (ast: Root): string[] => {
   // Select all link nodes from the AST
   const linkNodes = selectAll('link', ast) as LinkNode[]
@@ -102,7 +76,7 @@ export const parseMarkdownFile = async (source: string) => {
   const ast = processAST(source)
   const links = extractLinks(ast)
   const blocks = createMarkdownBlocks(ast)
-  const embeddings = await generateBlockEmbeddings(blocks)
+  const embeddings = await generateBlockEmbeddings(EMBEDDING_MODELS.PHI4_MINI, ...blocks)
   return {
     ast,
     links,

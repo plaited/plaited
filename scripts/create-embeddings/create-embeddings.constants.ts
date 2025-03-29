@@ -1,5 +1,3 @@
-const PHI4_MINI = 'phi4-mini'
-export const embeddingModels = {
-  ts: PHI4_MINI,
-  markdown: PHI4_MINI,
-}
+export const EMBEDDING_MODELS = {
+  PHI4_MINI: 'PHI4_MINI',
+} as const

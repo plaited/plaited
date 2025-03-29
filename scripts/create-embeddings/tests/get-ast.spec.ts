@@ -1,7 +1,7 @@
 import { expect, test, describe } from 'bun:test'
-import { getAst } from '../get-typescript-ast'
+import { getTypescriptAst } from '../get-typescript-ast'
 
-describe('getAst', () => {
+describe('getTypescriptAst', () => {
   test('should correctly parse and print TypeScript source code', () => {
     // Arrange
     const path = 'test.ts'
@@ -11,7 +11,7 @@ describe('getAst', () => {
       }
     `
     // Act
-    const result = getAst(path, source)
+    const result = getTypescriptAst(path, source)
     // Assert
     expect(result).toMatchSnapshot()
   })
@@ -21,7 +21,7 @@ describe('getAst', () => {
     const path = 'empty.ts'
     const source = ''
     // Act
-    const result = getAst(path, source)
+    const result = getTypescriptAst(path, source)
     // Assert
     expect(result).toMatchSnapshot()
   })
@@ -45,7 +45,7 @@ describe('getAst', () => {
     `
 
     // Act
-    const result = getAst(path, source)
+    const result = getTypescriptAst(path, source)
     // Assert
     expect(result).toMatchSnapshot()
   })

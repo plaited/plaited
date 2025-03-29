@@ -1,21 +1,18 @@
 import { Ollama } from 'ollama'
 import { embeddingModels } from './create-embeddings.constants.js'
 
-const generateEmbedding = async (code: string) => {
-  const ollama = new Ollama({})
-  try {
-    const response = await ollama.embeddings({
-      model: embeddingModels.ts,
-      prompt: code,
-    })
-    return response.embedding
-  } catch (error) {
-    console.error('Error generating embeddings:', error)
-  }
-}
+import { generateBlockEmbeddings, type Block } from './generate-embeddings'
+import { EMBEDDING_MODELS } from './create-embeddings.constants'
 
 export const parseStoryFile = async (filePath: string, source: string) => {
   // const codeLines = traverse(ast)
   // const codeString = codeLines.join('\n')
   // return await generateEmbedding(codeString)
+  return {
+    ast,
+    imports,
+    exports,
+    source,
+    embeddings,
+  }
 }
