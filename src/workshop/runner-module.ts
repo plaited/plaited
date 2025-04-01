@@ -10,7 +10,7 @@ import {
   UNKNOWN_ERROR,
   FIXTURE_CONNECTED,
   PLAY_EVENT,
-} from 'plaited/test'
+} from 'plaited/testing'
 import { PLAITED_FIXTURE } from './plaited-fixture.utils.js'
 
 type ModuleMessageDetail<T extends JSONDetail | undefined = undefined> = {

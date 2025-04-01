@@ -1,4 +1,4 @@
-import type { StoryObj } from 'plaited/test'
+import type { StoryObj } from 'plaited/testing'
 import { type PlaitedElement } from 'plaited'
 import { Fixture } from './query-bindings.js'
 

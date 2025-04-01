@@ -107,7 +107,7 @@ const assign = (...styleObjects: Array<StylesObject | undefined | false | null>)
     className && cls.push(...(Array.isArray(className) ? className : [className]))
     stylesheet && style.push(...(Array.isArray(stylesheet) ? stylesheet : [stylesheet]))
   }
-  return { className: cls, stylesheet: style }
+  return { className: cls.length ? cls : undefined, stylesheet: style.length ? style : undefined }
 }
 /**
  * Comprehensive CSS-in-JS utility for creating and managing styles.

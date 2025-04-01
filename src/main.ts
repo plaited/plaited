@@ -8,8 +8,9 @@ export * from './main/use-dispatch.js'
 export * from './main/use-signal.js'
 export * from './main/use-worker.js'
 //STYLE
-export type * from './style/css.types.js'
-export * from './style/css.js'
+export type * from './styling/css.types.js'
+export * from './styling/css.js'
 //JSX
 export type * from './jsx/jsx.types.js'
 export * from './jsx/ssr.js'
+export * from './jsx/create-template.js'

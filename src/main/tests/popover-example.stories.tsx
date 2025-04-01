@@ -1,4 +1,4 @@
-import { type StoryObj } from 'plaited/test'
+import { type StoryObj } from 'plaited/testing'
 import { DecoratedPopover, DecoratedPopoverClose } from './popover-example.js'
 
 export const Example: StoryObj = {

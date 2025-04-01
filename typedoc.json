@@ -1,5 +1,0 @@
-{
-  "$schema": "https://typedoc.org/schema.json",
-  "entryPoints": ["./src/behavioral.ts", "./src/main.ts", "./src/style.ts", "./src/test.ts", "./src/utils.ts"],
-  "out": "typedocs"
-}

@@ -1,4 +1,4 @@
-import type { StoryObj } from 'plaited/test'
+import type { StoryObj } from 'plaited/testing'
 import { Outer, Slotted, Nested } from './event-dispatch.js'
 
 export const eventDispatch: StoryObj = {

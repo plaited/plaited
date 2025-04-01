@@ -38,12 +38,12 @@ export const getDesignTokensElement = (stylesheet: string, tag: CustomElementTag
   return defineTemplate({
     tag,
     shadowDom: h('slot', {
-      stylesheet: css.assign(
+      ...css.assign(
         css.host({
           display: 'contents',
         }),
         { stylesheet },
-      ).stylesheet,
+      ),
     }),
   })
 }

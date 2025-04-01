@@ -1,4 +1,4 @@
-import { STORY_GLOB_PATTERN } from 'plaited/test'
+import { STORY_GLOB_PATTERN } from 'plaited/testing'
 import { mapStoryResponses } from './map-story-responses.js'
 
 export const globStories = async (cwd: string) => {

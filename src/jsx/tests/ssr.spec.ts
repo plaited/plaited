@@ -2,7 +2,7 @@
 import { test, expect } from 'bun:test'
 import { type FunctionTemplate, type TemplateObject, ssr } from 'plaited'
 import { h, Fragment } from 'plaited/jsx-runtime'
-import { css } from 'plaited/style'
+import { css } from 'plaited/styling'
 import beautify from 'beautify'
 
 const render = (template: TemplateObject) => {

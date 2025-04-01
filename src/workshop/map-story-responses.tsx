@@ -1,6 +1,6 @@
 import path from 'path'
 import { ssr } from 'plaited'
-import { STORIES_FILTERS_REGEX, DEFAULT_PLAY_TIMEOUT, type StoryObj, type TestParams } from 'plaited/test'
+import { STORIES_FILTERS_REGEX, DEFAULT_PLAY_TIMEOUT, type StoryObj, type TestParams } from 'plaited/testing'
 import { kebabCase } from 'plaited/utils'
 import { PlaitedFixture } from './plaited-fixture.js'
 

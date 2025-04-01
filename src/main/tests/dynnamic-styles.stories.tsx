@@ -1,4 +1,4 @@
-import type { StoryObj } from 'plaited/test'
+import type { StoryObj } from 'plaited/testing'
 import { defineTemplate, type PlaitedElement, css } from 'plaited'
 
 const { noRepeat, repeat, initial } = css.create({

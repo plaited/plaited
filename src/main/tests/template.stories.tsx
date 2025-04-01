@@ -1,4 +1,4 @@
-import type { StoryObj } from 'plaited/test'
+import type { StoryObj } from 'plaited/testing'
 import { type PlaitedElement, css, defineTemplate } from 'plaited'
 import { ModeOpen, DelegateFalse, ClosedMode } from './template.js'
 

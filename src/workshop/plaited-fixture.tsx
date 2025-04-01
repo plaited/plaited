@@ -1,5 +1,5 @@
 import { defineTemplate, css } from 'plaited'
-import { PLAY_EVENT, usePlay } from 'plaited/test'
+import { PLAY_EVENT, usePlay } from 'plaited/testing'
 import { connectTestRunner, useSendRunner, PLAITED_FIXTURE, PLAITED_RUNNER } from './plaited-fixture.utils.js'
 
 export const PlaitedFixture = defineTemplate({

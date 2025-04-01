@@ -1,4 +1,4 @@
-import type { StoryObj } from 'plaited/test'
+import type { StoryObj } from 'plaited/testing'
 import { useIndexedDB } from 'plaited/utils'
 import sinon from 'sinon'
 

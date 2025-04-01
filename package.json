@@ -20,15 +20,15 @@
     "./behavioral": "./src/behavioral.ts",
     "./jsx-dev-runtime": "./src/jsx/dev-runtime.ts",
     "./jsx-runtime": "./src/jsx/runtime.ts",
-    "./style": "./src/style.ts",
-    "./test": "./src/test.ts",
+    "./styling": "./src/styling.ts",
+    "./testing": "./src/testing.ts",
     "./utils": "./src/utils.ts"
   },
   "files": [
     "./src/**",
-    "./typedocs/**",
     "!./src/**/tests/*",
-    "!./src/**/*.spec.@(tsx|ts)"
+    "!./src/**/*.spec.@(tsx|ts)",
+    "!./src/**/*.stories.@(tsx|ts)"
   ],
   "publishConfig": {
     "access": "public"
@@ -42,7 +42,6 @@
     "prettier": "prettier . --write",
     "test": "bun run test-stories && bun test",
     "test-stories": "bun run src/workshop/runner.ts",
-    "typedoc": "bunx typedoc --tsconfig tsconfig.json --plugin typedoc-plugin-markdown",
     "watch": "bun run check --watch"
   },
   "lint-staged": {
@@ -84,8 +83,6 @@
     "remark-parse": "^11.0.0",
     "sinon": "19.0.2",
     "ts-morph": "25.0.1",
-    "typedoc": "0.28.1",
-    "typedoc-plugin-markdown": "4.5.2",
     "typescript": "5.7.3",
     "typescript-eslint": "8.22.0",
     "unified": "^11.0.5",
