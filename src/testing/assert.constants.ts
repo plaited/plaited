@@ -13,3 +13,6 @@ export const UNKNOWN_ERROR = 'UNKNOWN_ERROR'
 export const TIMEOUT_ERROR = 'TIMEOUT_ERROR'
 export const TEST_PASSED = 'TEST_PASSED'
 export const TEST_EXCEPTION = 'TEST_EXCEPTION'
+
+export const PLAITED_FIXTURE = 'plaited-test-fixture'
+export const PLAITED_RUNNER = 'PLAITED_RUNNER'
