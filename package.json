@@ -25,10 +25,7 @@
     "./utils": "./src/utils.ts"
   },
   "files": [
-    "./src/**",
-    "!./src/**/tests/*",
-    "!./src/**/*.spec.@(tsx|ts)",
-    "!./src/**/*.stories.@(tsx|ts)"
+    "./src/**"
   ],
   "publishConfig": {
     "access": "public"
