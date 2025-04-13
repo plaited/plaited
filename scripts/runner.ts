@@ -4,7 +4,7 @@ import { type Trigger } from 'plaited/behavioral'
 import { isTypeOf } from 'plaited/utils'
 import type { Server, ServerWebSocket } from 'bun'
 import { runnerModdule } from './runner-module.js'
-import { getStoriesAndResponses } from './get-stories-and-responses.js'
+import { getStoriesAndResponses } from 'plaited/workshop'
 
 const cwd = `${process.cwd()}/src`
 const streamURL = '/_test-runner'

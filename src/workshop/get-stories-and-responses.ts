@@ -13,12 +13,12 @@ export const getStoriesAndResponses = async (cwd: string, streamURL: `/${string}
   for (const res of artifacts) {
     const path = res.path
     const content = await res.text()
-    const formatedPath =
+    const formattedPath =
       path.startsWith('.') ? path.replace('.', '')
       : !path.startsWith('/') ? `/${path}`
       : path
 
-    responses.set(formatedPath, zip(content))
+    responses.set(formattedPath, zip(content))
   }
   const stories = await mapStoryResponses({ entries, responses, cwd, streamURL, libraryImportMap })
   return { stories, responses }

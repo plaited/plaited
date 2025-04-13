@@ -3,7 +3,7 @@
   "version": "7.0.0-alpha-9",
   "license": "ISC",
   "engines": {
-    "node": ">= v22.9.0"
+    "bun": ">= v1.2.9"
   },
   "repository": {
     "type": "git",
@@ -22,7 +22,8 @@
     "./jsx-runtime": "./src/jsx-runtime.ts",
     "./styling": "./src/styling.ts",
     "./testing": "./src/testing.ts",
-    "./utils": "./src/utils.ts"
+    "./utils": "./src/utils.ts",
+    "./workshop": "./src/workshop.ts"
   },
   "files": [
     "./src/**"
@@ -38,7 +39,7 @@
     "prepare": "git config core.hooksPath .hooks",
     "prettier": "prettier . --write",
     "test": "bun run test-stories && bun test",
-    "test-stories": "bun run workshop/runner.ts",
+    "test-stories": "bun run scripts/runner.ts",
     "watch": "bun run check --watch"
   },
   "lint-staged": {
@@ -49,6 +50,18 @@
     "package.json": [
       "format-package -w"
     ]
+  },
+  "peerDependenciesMeta": {
+    "@types/bun": {
+      "optional": true
+    },
+    "bun": {
+      "optional": true
+    }
+  },
+  "peerDependencies": {
+    "@types/bun": "^1.2.9",
+    "bun": "^1.2.9"
   },
   "devDependencies": {
     "@commitlint/cli": "19.8.0",

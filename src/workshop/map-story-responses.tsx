@@ -1,5 +1,5 @@
 import path from 'path'
-import { ssr } from '../src/jsx/ssr.js'
+import { ssr } from '../jsx/ssr.js'
 import {
   STORIES_FILTERS_REGEX,
   DEFAULT_PLAY_TIMEOUT,
