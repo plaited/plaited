@@ -18,8 +18,8 @@
   "exports": {
     ".": "./src/main.ts",
     "./behavioral": "./src/behavioral.ts",
-    "./jsx-dev-runtime": "./src/dev-runtime.ts",
-    "./jsx-runtime": "./src/runtime.ts",
+    "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
+    "./jsx-runtime": "./src/jsx-runtime.ts",
     "./styling": "./src/styling.ts",
     "./testing": "./src/testing.ts",
     "./utils": "./src/utils.ts"

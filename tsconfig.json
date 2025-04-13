@@ -26,8 +26,8 @@
     "jsxImportSource": "plaited",
     "paths": {
       "plaited": ["./src/index.ts"],
-      "plaited/jsx-runtime": ["./src/runtime.ts"],
-      "plaited/jsx-dev-runtime": ["./src/dev-runtime.ts"],
+      "plaited/jsx-runtime": ["./src/jsx-runtime.ts"],
+      "plaited/jsx-dev-runtime": ["./src/jsx-dev-runtime.ts"],
       "plaited/testing": ["/src/testing.ts"],
       "plaited/behavioral": ["./src/behavioral.ts"],
       "plaited/styling": ["./src/styling.ts"],
