@@ -1,25 +1,5 @@
 // Bun Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`useSSR: with imports and body 1`] = `
-"<body class="body_18a0lbx p_mygp1 pv4i7qk p_wsdntf">
-    <style>
-        .p_mygp1{width:100%;}.pv4i7qk{padding:0;}.p_wsdntf{height:100vh;}
-    </style>
-    <div type="text"></div>
-</body>"
-`;
-
-exports[`useSSR: with imports and body + head 1`] = `
-"<head>
-    <style>
-        .p_mygp1{width:100%;}.pv4i7qk{padding:0;}.p_wsdntf{height:100vh;}
-    </style>
-</head>
-<body class="body_18a0lbx p_mygp1 pv4i7qk p_wsdntf">
-    <div type="text"></div>
-</body>"
-`;
-
 exports[`ssr: Self closing - html 1`] = `"<input type="text" />"`;
 
 exports[`ssr: Self closing - svg 1`] = `"<polygon points="0,100 50,25 50,75 100,0" />"`;

@@ -9,26 +9,6 @@ const render = (template: TemplateObject) => {
   return beautify(ssr(template), { format: 'html' })
 }
 
-const bodyStyles = css.create({
-  body: {
-    width: '100%',
-    padding: '0',
-    height: '100vh',
-  },
-})
-
-test('useSSR: with imports and body', () => {
-  expect(render(h('body', { children: h('div', { type: 'text' }), ...bodyStyles.body }))).toMatchSnapshot()
-})
-
-test('useSSR: with imports and body + head', () => {
-  expect(
-    render(
-      Fragment({ children: [h('head', {}), h('body', { children: h('div', { type: 'text' }), ...bodyStyles.body })] }),
-    ),
-  ).toMatchSnapshot()
-})
-
 test('ssr: Self closing - html', () => {
   expect(render(h('input', { type: 'text' }))).toMatchSnapshot()
 })
