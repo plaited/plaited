@@ -10,8 +10,8 @@ import {
   UNKNOWN_ERROR,
   FIXTURE_CONNECTED,
   PLAY_EVENT,
+  PLAITED_FIXTURE,
 } from 'plaited/testing'
-import { PLAITED_FIXTURE } from './plaited-fixture.utils.js'
 
 type ModuleMessageDetail<T extends JSONDetail | undefined = undefined> = {
   ws: ServerWebSocket<unknown>

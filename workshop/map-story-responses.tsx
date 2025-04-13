@@ -1,8 +1,13 @@
 import path from 'path'
-import { ssr } from 'plaited'
-import { STORIES_FILTERS_REGEX, DEFAULT_PLAY_TIMEOUT, type StoryObj, type TestParams } from 'plaited/testing'
+import { ssr } from '../src/jsx/ssr.js'
+import {
+  STORIES_FILTERS_REGEX,
+  DEFAULT_PLAY_TIMEOUT,
+  type StoryObj,
+  type TestParams,
+  PlaitedFixture,
+} from 'plaited/testing'
 import { kebabCase } from 'plaited/utils'
-import { PlaitedFixture } from './plaited-fixture.js'
 
 const createStoryRoute = ({ storyFile, exportName }: { storyFile: string; exportName: string }) => {
   const dirname = path.dirname(storyFile)
@@ -19,7 +24,7 @@ const updateHTMLResponses = ({
   storyFile,
   exportName,
   streamURL,
-  imports,
+  libraryImportMap,
 }: {
   story: StoryObj
   route: string
@@ -27,7 +32,7 @@ const updateHTMLResponses = ({
   storyFile: string
   exportName: string
   streamURL: `/${string}`
-  imports: Record<string, string>
+  libraryImportMap: Record<string, string>
 }): TestParams => {
   const entryPath = storyFile.replace(/\.tsx?$/, '.js')
   const args = story?.args ?? {}
@@ -47,7 +52,7 @@ const updateHTMLResponses = ({
           type='importmap'
         >
           {JSON.stringify({
-            imports,
+            imports: libraryImportMap,
           })}
         </script>
       </head>
@@ -62,10 +67,10 @@ const updateHTMLResponses = ({
           {...styles}
         />
         <script
-          type='module'
           trusted
+          type='module'
         >
-          {['/workshop/plaited-fixture.js', entryPath].map((path) => `import '${path}';`).join('\n')}
+          {`import {PlaitedFixture} from 'plaited/testing'`}
         </script>
       </body>
     </html>,
@@ -80,21 +85,21 @@ const updateHTMLResponses = ({
 }
 
 export const mapStoryResponses = async ({
-  storyEntries,
+  entries,
   responses,
   cwd,
   streamURL,
-  imports,
+  libraryImportMap,
 }: {
-  storyEntries: string[]
+  entries: string[]
   responses: Map<string, Response>
   cwd: string
   streamURL: `/${string}`
-  imports: Record<string, string>
+  libraryImportMap: Record<string, string>
 }) => {
   const routes: [string, TestParams][] = []
   await Promise.all(
-    storyEntries.map(async (entry) => {
+    entries.map(async (entry) => {
       const { default: _, ...stories } = (await import(entry)) as {
         [key: string]: StoryObj
       }
@@ -109,7 +114,7 @@ export const mapStoryResponses = async ({
           storyFile,
           exportName,
           streamURL,
-          imports,
+          libraryImportMap,
         })
         routes.push([route, params])
       }

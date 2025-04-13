@@ -39,7 +39,7 @@ exports[`createTemplate: Array of templates 1`] = `
 </ul>"
 `;
 
-exports[`createTemplate: Should not throw on script tag with trusted attribute 1`] = `"<script type="module" " src="main.js " "></script>"`;
+exports[`createTemplate: Should not throw on script tag with trusted attribute 1`] = `"<script type="module" src="main.js"></script>"`;
 
 exports[`createTemplate: Escapes children 1`] = `
 "<div>&lt;script type=&quot;text/javascript&quot;&gt; const hostRegex = /^https?://([^/]+)/.*$/i;

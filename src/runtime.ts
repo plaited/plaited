@@ -1,5 +1,5 @@
-import type { ElementAttributeList } from './jsx.types.js'
-import { createTemplate, Fragment } from './create-template.js'
+import type { ElementAttributeList } from './jsx/jsx.types.js'
+import { createTemplate, Fragment } from './jsx/create-template.js'
 
 /**
  * Production JSX Runtime exports.

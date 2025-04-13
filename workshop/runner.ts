@@ -2,47 +2,14 @@ import { chromium, type BrowserContext } from 'playwright'
 import { isPlaitedMessage } from 'plaited'
 import { type Trigger } from 'plaited/behavioral'
 import { isTypeOf } from 'plaited/utils'
-import * as esbuild from 'esbuild'
 import type { Server, ServerWebSocket } from 'bun'
-import { getEntryPoints } from './get-entry-points.js'
-import { getStories } from './get-stories.js'
-import { zip } from './zip.js'
-import { getFile } from './get-file.js'
 import { runnerModdule } from './runner-module.js'
+import { getStoriesAndResponses } from './get-stories-and-responses.js'
 
 const cwd = `${process.cwd()}/src`
 const streamURL = '/_test-runner'
 
-const imports = {
-  plaited: '/_plaited/plaited.js',
-  'plaited/behavioral': '/_plaited/behavioral.js',
-  'plaited/jsx-runtime': '/_plaited/runtime.js',
-  'plaited/jsx-dev-runtime': '/_plaited/dev-runtime.js',
-  'plaited/styling': '/_plaited/styling.js',
-  'plaited/testing': '/_plaited/test.js',
-  'plaited/utils': '/_plaited/utils.js',
-  sinon: '/_sinon/sinon.js',
-} as const
-
-const { stories, responses } = await getStories({
-  cwd,
-  streamURL,
-  imports,
-})
-
-const { outputFiles } = await esbuild.build({
-  entryPoints: getEntryPoints(imports),
-  write: false,
-  outdir: '/',
-  format: 'esm',
-  bundle: true,
-  splitting: true,
-})
-
-for (const { path, text } of outputFiles) {
-  responses.set(path, zip(text))
-}
-
+const { stories, responses } = await getStoriesAndResponses(cwd, streamURL)
 const browser = await chromium.launch()
 const contexts = new Set<BrowserContext>()
 
@@ -53,10 +20,6 @@ const server = Bun.serve({
   port: 3000,
   async fetch(req: Request, server: Server) {
     const { pathname } = new URL(req.url)
-    if (/\.js$/.test(pathname)) {
-      const path = Bun.resolveSync(`.${pathname}`, cwd)
-      return await getFile(path)
-    }
     if (pathname === streamURL) {
       const success = server.upgrade(req)
       return success ? undefined : new Response('WebSocket upgrade error', { status: 400 })
