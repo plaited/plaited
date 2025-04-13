@@ -3,13 +3,13 @@ import { isPlaitedMessage } from 'plaited'
 import { type Trigger } from 'plaited/behavioral'
 import { isTypeOf } from 'plaited/utils'
 import type { Server, ServerWebSocket } from 'bun'
-import { runnerModdule } from './runner-module.js'
-import { getStoriesAndResponses } from 'plaited/workshop'
+import { runnerModdule } from './runner.module.js'
+import { getWorkshop } from 'plaited/workshop'
 
 const cwd = `${process.cwd()}/src`
 const streamURL = '/_test-runner'
 
-const { stories, responses } = await getStoriesAndResponses(cwd, streamURL)
+const { stories, responses } = await getWorkshop({ cwd, streamURL })
 const browser = await chromium.launch()
 const contexts = new Set<BrowserContext>()
 

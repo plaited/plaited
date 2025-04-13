@@ -2,9 +2,27 @@ import { getLibrary } from './get-library.js'
 import { globStories } from './glob-stories.js'
 import { mapStoryResponses } from './map-story-responses.js'
 import { getStoryArtifacts } from './get-story-artifacts.js'
-import { zip } from './zip.js'
+import { defaultGetHTMLResponse, type GetHTMLResponse } from './default-get-html-responses.js'
 
-export const getStoriesAndResponses = async (cwd: string, streamURL: `/${string}`) => {
+const zip = (content: string) => {
+  const compressed = Bun.gzipSync(content)
+  return new Response(compressed, {
+    headers: {
+      'content-type': 'text/javascript;charset=utf-8',
+      'content-encoding': 'gzip',
+    },
+  })
+}
+
+export const getWorkshop = async ({
+  cwd,
+  streamURL,
+  getHTMLResponse = defaultGetHTMLResponse,
+}: {
+  cwd: string
+  streamURL: `/${string}`
+  getHTMLResponse?: GetHTMLResponse
+}) => {
   const responses: Map<string, Response> = new Map()
   const entries = await globStories(cwd)
   const { libraryImportMap, libraryArtifacts } = await getLibrary()
@@ -20,6 +38,6 @@ export const getStoriesAndResponses = async (cwd: string, streamURL: `/${string}
 
     responses.set(formattedPath, zip(content))
   }
-  const stories = await mapStoryResponses({ entries, responses, cwd, streamURL, libraryImportMap })
+  const stories = await mapStoryResponses({ entries, responses, cwd, streamURL, libraryImportMap, getHTMLResponse })
   return { stories, responses }
 }
