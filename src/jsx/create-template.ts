@@ -119,7 +119,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     /** set the value so long as it's not nullish in we use the formatted value  */
     const formattedValue = value ?? ''
     /** handle the rest of the attributes */
-    start.push(`${key}="${trusted ? `${formattedValue}" ` : escape(`${formattedValue}`)}" `)
+    start.push(`${key}="${trusted ? formattedValue : escape(formattedValue)}" `)
   }
   /** Create are stylesheet set */
   let stylesheets =
