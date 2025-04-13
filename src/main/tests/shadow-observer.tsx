@@ -1,6 +1,4 @@
-import { css } from '../../style/css.js'
-import { defineTemplate } from '../define-template.js'
-import type { FT } from '../../jsx/jsx.types.js'
+import { css, defineTemplate, type FT } from 'plaited'
 
 export const styles = css.create({
   button: {

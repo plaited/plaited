@@ -1,8 +1,7 @@
 import { test, expect } from 'bun:test'
-import { bProgram } from '../b-program.js'
-import { bThread, bSync } from '../b-thread.js'
+import { bProgram, bThread, bSync } from 'plaited/behavioral'
 
-test('firing trigger and adding bThreads in actions', () => {
+test('firing trigger and adding bThreads in handlers', () => {
   const actual: string[] = []
   const { bThreads, trigger, useFeedback } = bProgram()
   bThreads.set({

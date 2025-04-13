@@ -16,9 +16,27 @@ type CandidateBid = {
   trigger?: true | 'object' | 'person'
   template?: BPEventTemplate
 }
-
+/**
+ * Represents a cleanup function that removes listeners or handlers.
+ * Used for disconnecting from event streams, removing observers, or cleaning up resources.
+ * @returns void - Performs cleanup when called
+ * @example
+ * const disconnect = someListener(handler);
+ * // Later, when cleanup is needed:
+ * disconnect();
+ */
 export type Disconnect = () => void
 
+/**
+ * Represents a diagnostic message containing the state of behavioral threads at runtime.
+ * Each array element describes a thread's status including:
+ * - The thread identifier
+ * - Whether it was selected for execution
+ * - The event type
+ * - Optional event details
+ * - Thread priority
+ * - Optional blocking thread information
+ */
 export type SnapshotMessage = {
   thread: string
   selected: boolean
@@ -34,21 +52,66 @@ type SnapshotFormatter = (args: {
   candidates: CandidateBid[]
 }) => SnapshotMessage
 
+/**
+ * A callback function that processes diagnostic snapshots of the behavioral program's state.
+ * Can be used for debugging, logging, or monitoring thread execution states.
+ * @param msg An array of thread states containing execution details and selection status
+ * @returns Void or a Promise that resolves to void
+ */
 export type SnapshotListener = (msg: SnapshotMessage) => void | Promise<void>
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type DefaultHandlers = Record<string, (detail: any) => void | Promise<void>>
 
+/**
+ * A collection of callback functions that execute when their corresponding requests are selected.
+ * Handlers can be synchronous or asynchronous and execute non-blocking operations.
+ * Extends DefaultHandlers with additional custom handlers of type T.
+ */
 export type Handlers<T = DefaultHandlers> = DefaultHandlers & T
-export type UseFeedback = <T = DefaultHandlers>(actions: Handlers<T>) => Disconnect
+/**
+ * Hook for subscribing to behavioral program events with custom handlers.
+ * Enables pub/sub pattern for event handling and program state feedback.
+ * @template T Type of event handlers, defaults to DefaultHandlers
+ * @param handlers Object containing event handling functions
+ * @returns A disconnect function that removes the event handlers when called
+ * @example
+ * const disconnect = useFeedback({
+ *   onEventA: (detail) => console.log(detail),
+ *   onEventB: async (detail) => await doSomething(detail)
+ * });
+ */
+export type UseFeedback = <T = DefaultHandlers>(handlers: Handlers<T>) => Disconnect
+/**
+ * Hook for registering a snapshot listener to monitor behavioral program execution.
+ * @param listener A callback function that receives state snapshots during program execution
+ * @returns A disconnect function that removes the snapshot listener when called
+ */
 export type UseSnapshot = (listener: SnapshotListener) => Disconnect
+/**
+ * Utility for managing behavioral threads within a program.
+ * @property has - Checks if a thread exists and its execution status
+ * @property set - Registers new behavioral threads with their rule functions
+ */
 export type BThreads = {
   has: (thread: string) => { running: boolean; pending: boolean }
   set: (threads: Record<string, RulesFunction>) => void
 }
-
+/**
+ * Function for triggering events in the behavioral program.
+ * Initiates the processing of a behavioral event through the program's threads.
+ * @param args The event data to be processed by the behavioral program
+ */
 export type Trigger = <T>(args: BPEvent<T>) => void
-
+/**
+ * Factory function that creates a behavioral program instance.
+ * Returns an immutable object containing core utilities for managing the program:
+ * - bThreads: For thread management
+ * - trigger: For event dispatching
+ * - useFeedback: For registering feedback listeners
+ * - useSnapshot: For monitoring program state
+ * @returns Readonly object containing behavioral program utilities
+ */
 export type BProgram = () => Readonly<{
   bThreads: BThreads
   trigger: Trigger
@@ -119,7 +182,14 @@ const snapshotFormatter: SnapshotFormatter = ({ candidates, selectedEvent, pendi
   return ruleSets.sort((a, b) => a.priority - b.priority)
 }
 /**
- * Creates a behavioral program that manages the execution of behavioral threads.
+ * Creates a behavioral program that orchestrates the execution of behavioral threads.
+ * A behavioral program coordinates multiple threads, managing their event selection,
+ * synchronization, and interaction to implement complex system behaviors.
+ *
+ * @remarks
+ * Behavioral programs follow the Behavioral Programming paradigm, where system behavior
+ * emerges from the interaction of independent threads that can request, wait for,
+ * or block events.
  */
 export const bProgram: BProgram = () => {
   const pending = new Map<string, PendingBid>()
@@ -175,7 +245,7 @@ export const bProgram: BProgram = () => {
         filteredBids.push(candidate)
       }
     }
-    /** @description Priority Queue BPEvent Selection Strategy */
+    /** @summary Priority Queue BPEvent Selection Strategy */
     const selectedEvent = filteredBids.sort(
       ({ priority: priorityA }, { priority: priorityB }) => priorityA - priorityB,
     )[0]
@@ -218,11 +288,11 @@ export const bProgram: BProgram = () => {
     run()
   }
 
-  const useFeedback: UseFeedback = (actions) => {
+  const useFeedback: UseFeedback = (handlers) => {
     const disconnect = actionPublisher.subscribe((data: BPEvent) => {
       const { type, detail = {} } = data
-      if (Object.hasOwn(actions, type)) {
-        void actions[type](detail)
+      if (Object.hasOwn(handlers, type)) {
+        void handlers[type](detail)
       }
     })
     return disconnect

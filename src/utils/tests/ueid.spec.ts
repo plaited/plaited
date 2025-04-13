@@ -1,16 +1,20 @@
 import { test, expect } from 'bun:test'
-import { ueid } from '../ueid.js'
+import { ueid } from 'plaited/utils'
 
 test('ueid: returns a string', () => {
   const output = ueid()
   expect(typeof output).toBe('string')
+  expect(output.length).toBe(11)
 })
 
 test('ueid: should return unique ids', () => {
-  const ids = new Array(5).fill(null).map(ueid)
+  const ids = new Array(5).fill('').map(ueid)
   const unique = [...new Set(ids)]
   expect(ids.length).toBe(5)
   expect(unique.length).toBe(5)
+  for (const id of unique) {
+    expect(id.length).toBe(11)
+  }
 })
 
 test('ueid: supports an optional prefix', () => {

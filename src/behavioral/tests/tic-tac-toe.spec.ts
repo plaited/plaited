@@ -1,6 +1,5 @@
 import { test, expect } from 'bun:test'
-import { bProgram } from '../b-program.js'
-import { bThread, bSync, type RulesFunction } from '../b-thread.js'
+import { bProgram, bThread, bSync, type RulesFunction } from 'plaited/behavioral'
 
 const winConditions = [
   //rows

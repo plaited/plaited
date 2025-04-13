@@ -1,15 +1,18 @@
-import type { StoryObj } from 'plaited/test'
-import type { PlaitedElement } from '../plaited.types.js'
+import type { StoryObj } from 'plaited/testing'
+import { type PlaitedElement } from 'plaited'
 import { Fixture } from './query-bindings.js'
 
 export const beforebegin: StoryObj = {
+  description: `This story is used to validate that insert
+  helper on the plaited element's QuerySelector, $. When passed the beforebegin as the first argument, it
+  inserts content passed as the subsequent arguments before target element.`,
   template: Fixture,
   play: async ({ findByAttribute, assert }) => {
     const fixture = document.querySelector(Fixture.tag) as PlaitedElement
     let root = await findByAttribute<HTMLDivElement>('p-target', 'root')
     assert({
       given: 'before calling trigger',
-      should: 'root child count shoudl be 100',
+      should: 'root child count should be 100',
       actual: root?.childElementCount,
       expected: 1,
     })
@@ -31,6 +34,9 @@ export const beforebegin: StoryObj = {
   },
 }
 export const afterbegin: StoryObj = {
+  description: `This story is used to validate that insert
+  helper on the plaited element's QuerySelector, $. When passed the afterbegin as the first argument, it
+  prepends content passed as the subsequent arguments to the target element.`,
   template: Fixture,
   play: async ({ findByAttribute, assert }) => {
     const fixture = document.querySelector(Fixture.tag) as PlaitedElement
@@ -68,6 +74,9 @@ export const afterbegin: StoryObj = {
   },
 }
 export const beforeend: StoryObj = {
+  description: `This story is used to validate that insert
+  helper on the plaited element's QuerySelector, $. When passed the beforeend as the first argument, it
+  appends content passed as the subsequent arguments to the target element.`,
   template: Fixture,
   play: async ({ assert, findByAttribute }) => {
     const fixture = document.querySelector(Fixture.tag) as PlaitedElement
@@ -105,6 +114,9 @@ export const beforeend: StoryObj = {
   },
 }
 export const afterend: StoryObj = {
+  description: `This story is used to validate that insert
+  helper on the plaited element's QuerySelector, $. When passed the afterend as the first argument, it
+  inserts content passed as the subsequent arguments after the target element.`,
   template: Fixture,
   play: async ({ assert, findByAttribute }) => {
     const fixture = document.querySelector(Fixture.tag) as PlaitedElement
@@ -133,6 +145,9 @@ export const afterend: StoryObj = {
   },
 }
 export const render: StoryObj = {
+  description: `This story is used to validate that render helper on
+  the plaited element's QuerySelector, $. When invoked it replaces all the children
+  of the target element with the content passed to it as arguments.`,
   template: Fixture,
   play: async ({ findByAttribute, assert }) => {
     const fixture = document.querySelector(Fixture.tag) as PlaitedElement
@@ -153,6 +168,9 @@ export const render: StoryObj = {
   },
 }
 export const replace: StoryObj = {
+  description: `This story is used to validate that replace
+  helper on the plaited element's QuerySelector, $. When invoked it replaces the
+  target element with content passed to it as arguments.`,
   template: Fixture,
   play: async ({ assert, findByAttribute }) => {
     const fixture = document.querySelector(Fixture.tag) as PlaitedElement
@@ -173,6 +191,9 @@ export const replace: StoryObj = {
   },
 }
 export const getAttribute: StoryObj = {
+  description: `This story is used to validate that attr
+  helper on the plaited element's QuerySelector, $. When invoked with only a attribute name it returns
+  the attribute value if it the attribute exist on the target element.`,
   template: Fixture,
   play: async ({ assert, findByAttribute }) => {
     const fixture = document.querySelector(Fixture.tag) as PlaitedElement
@@ -193,6 +214,9 @@ export const getAttribute: StoryObj = {
   },
 }
 export const removeAttributes: StoryObj = {
+  description: `This story is used to validate that attr
+  helper on the plaited element's QuerySelector, $. When invoked with the attribute name and null
+  it removes the the attribute from the element.`,
   template: Fixture,
   play: async ({ assert, findByAttribute }) => {
     const fixture = document.querySelector(Fixture.tag) as PlaitedElement
@@ -216,6 +240,10 @@ export const removeAttributes: StoryObj = {
 }
 
 export const multiSetAttributes: StoryObj = {
+  description: `This story is used to validate that attr
+  helper on the plaited element's QuerySelector, $. When invoked with an object of key value pairs
+  it resets or adds the attributes to the element if the value is not null for a given key. If the value is
+  null it deletes the attribute from the element.`,
   template: Fixture,
   play: async ({ assert, findByAttribute }) => {
     const fixture = document.querySelector(Fixture.tag) as PlaitedElement
@@ -236,7 +264,7 @@ export const multiSetAttributes: StoryObj = {
     })
     assert({
       given: 'before calling multiSetAttributes trigger',
-      should: 'aria-hiden should be true',
+      should: 'aria-hidden should be true',
       actual: el?.getAttribute('aria-hidden'),
       expected: 'true',
     })
@@ -263,7 +291,7 @@ export const multiSetAttributes: StoryObj = {
     })
     assert({
       given: 'after calling removeAttributes trigger',
-      should: 'aria-hiden should be false',
+      should: 'aria-hidden should be false',
       actual: el?.getAttribute('aria-hidden'),
       expected: 'false',
     })

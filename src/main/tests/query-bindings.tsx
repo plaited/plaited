@@ -1,5 +1,4 @@
-import type { Position, CloneCallback } from '../get-query.js'
-import { defineTemplate } from '../define-template.js'
+import { type Position, type CloneCallback, defineTemplate } from 'plaited'
 
 let did = 1
 const adjectives = [

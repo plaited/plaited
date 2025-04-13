@@ -1,10 +1,10 @@
 import { test, expect } from 'bun:test'
-import { wait } from '../../utils/wait.js'
+import { wait } from 'plaited/utils'
 import sinon from 'sinon'
-import { useWorker } from '../use-worker.js'
-import type { BPEvent } from '../../behavioral/b-thread.js'
+import { useWorker } from 'plaited'
+import type { BPEvent } from 'plaited/behavioral'
 
-test('userWorker|defineWorker: send and receive', async () => {
+test('validate userWorker and defineWorker utilities function as expected', async () => {
   const spy = sinon.spy()
   const send = useWorker((evt: BPEvent) => spy(evt), `${import.meta.dir}/worker.ts`)
   send({

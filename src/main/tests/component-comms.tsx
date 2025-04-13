@@ -1,11 +1,10 @@
-import { defineTemplate } from '../define-template.js'
-import { useSignal } from '../use-signal.js'
-import type { FT } from '../../jsx/jsx.types.js'
+import { defineTemplate, type FT, useSignal } from 'plaited'
+
 const sendDisable = useSignal()
 const sendAdd = useSignal<{ value: string }>()
 
 export const ElOne = defineTemplate({
-  tag: 'dynamic-one',
+  tag: 'elemenmt-one',
   publicEvents: ['disable'],
   shadowDom: (
     <div>
@@ -18,7 +17,7 @@ export const ElOne = defineTemplate({
     </div>
   ),
   bProgram({ $, trigger }) {
-    const disconnect = sendDisable.effect('disable', trigger)
+    const disconnect = sendDisable.listen('disable', trigger)
     return {
       disable() {
         const [button] = $<HTMLButtonElement>('button')
@@ -26,24 +25,24 @@ export const ElOne = defineTemplate({
         disconnect()
       },
       click() {
-        sendAdd({ value: ' World!' })
+        sendAdd.set({ value: ' World!' })
       },
     }
   },
 })
 
 export const ElTwo = defineTemplate({
-  tag: 'dynamic-two',
+  tag: 'element-two',
   publicEvents: ['add'],
   shadowDom: <h1 p-target='header'>Hello</h1>,
   bProgram({ $, bThread, bThreads, bSync, trigger }) {
-    sendAdd.effect('add', trigger)
+    sendAdd.listen('add', trigger)
     bThreads.set({
       onAdd: bThread([bSync({ waitFor: 'add' }), bSync({ request: { type: 'disable' } })]),
     })
     return {
       disable() {
-        sendDisable()
+        sendDisable.set()
       },
       add(detail: { value: string }) {
         const [header] = $('header')
@@ -56,8 +55,8 @@ export const ElTwo = defineTemplate({
 export const ComponentComms: FT = () => {
   return (
     <>
-      <ElOne bp-address='one' />
-      <ElTwo bp-address='two' />
+      <ElOne />
+      <ElTwo />
     </>
   )
 }

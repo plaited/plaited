@@ -3,18 +3,33 @@ import { P_TARGET, P_TRIGGER, TEMPLATE_OBJECT_IDENTIFIER } from './jsx.constants
 
 type Booleanish = boolean | 'true' | 'false'
 type CrossOrigin = 'anonymous' | 'use-credentials' | ''
-
+/**
+ * Represents the structure of a template object used for rendering.
+ * @property html Array of HTML string segments to be combined
+ * @property stylesheets Array of stylesheet contents
+ * @property registry Array of registered template identifiers
+ * @property $ Template object identifier for type checking
+ */
 export type TemplateObject = {
   html: string[]
   stylesheets: string[]
   registry: string[]
   $: typeof TEMPLATE_OBJECT_IDENTIFIER
 }
-
+/**
+ * Basic child types that can be rendered in a template.
+ * Can be either a string or a TemplateObject.
+ */
 export type Child = string | TemplateObject
-
+/**
+ * Collection of renderable children.
+ * Can be either a single child or an array of children.
+ */
 export type Children = Child[] | Child
-
+/**
+ * Core attributes available to all Plaited components.
+ * Extends HTML standard attributes with Plaited-specific features.
+ */
 export type PlaitedAttributes = {
   class?: never
   className?: string | Array<string | undefined | false | null>
@@ -1054,7 +1069,10 @@ type DetailedWebViewHTMLAttributes = DetailedHTMLAttributes & {
   enableblinkfeatures?: string
   disableblinkfeatures?: string
 }
-
+/**
+ * Comprehensive mapping of HTML element tags to their respective attribute types.
+ * Includes both standard HTML elements and SVG elements.
+ */
 export type ElementAttributeList = {
   a: DetailedAnchorHTMLAttributes
   abbr: DetailedHTMLAttributes
@@ -1233,10 +1251,22 @@ export type ElementAttributeList = {
   view: DetailedSVGAttributes
   [key: string]: DetailedHTMLAttributes
 }
-
+/**
+ * Generic type for component attributes.
+ * Combines DetailedHTMLAttributes with optional custom attributes.
+ */
 export type Attrs<T extends DetailedHTMLAttributes = DetailedHTMLAttributes> = DetailedHTMLAttributes & T
-
+/**
+ * Function type for component templates that return a TemplateObject.
+ * @template T Type extending base Attrs
+ */
 export type FunctionTemplate<T extends Attrs = Attrs> = (attrs: T & PlaitedAttributes) => TemplateObject
+/**
+ * Shorthand alias for FunctionTemplate.
+ */
 export type FT<T extends Attrs = Attrs> = FunctionTemplate<T>
-
+/**
+ * Pattern type for custom element tag names.
+ * Enforces the required format of containing at least one hyphen.
+ */
 export type CustomElementTag = `${string}-${string}`

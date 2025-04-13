@@ -9,7 +9,6 @@ Plaited is design system first framework for rapidly designing and developing in
 - Dedicated JSX Runtime
 - Behavioral Programming based reactivity
 - Signal Utiltites
-- Websocket based server integration patterns
 - Web Worker utilities
 - Design token format libraries and tooling
 - Test library
@@ -18,12 +17,12 @@ Plaited is design system first framework for rapidly designing and developing in
 
 ### local
 
-- bun >= 1.0.7
+- bun >= v1.2.9
 
 ## Dev Setup
 
 ### local setup
 
-1. Clone repository and ensure you have bun >= 1.0.7
+1. Clone repository and ensure you have bun >= v1.2.9
 2. Run `bunx playwright install`
-3. Run `bash scripts/setup.sh`
+3. Run `bun install`

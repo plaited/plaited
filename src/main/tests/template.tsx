@@ -1,4 +1,4 @@
-import { defineTemplate } from '../../main/define-template.js'
+import { defineTemplate } from 'plaited'
 
 export const DelegateFalse = defineTemplate({
   tag: 'delegate-false',

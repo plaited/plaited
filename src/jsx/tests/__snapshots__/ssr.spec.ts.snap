@@ -1,0 +1,249 @@
+// Bun Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ssr: Self closing - html 1`] = `"<input type="text" />"`;
+
+exports[`ssr: Self closing - svg 1`] = `"<polygon points="0,100 50,25 50,75 100,0" />"`;
+
+exports[`ssr: Falsey - undefined 1`] = `"<div></div>"`;
+
+exports[`ssr: Falsey - null 1`] = `"<div></div>"`;
+
+exports[`ssr: Falsey - false 1`] = `"<div></div>"`;
+
+exports[`ssr: Not really Falsey - "" 1`] = `"<div></div>"`;
+
+exports[`ssr: Not really Falsey - 0 1`] = `"<div>0</div>"`;
+
+exports[`ssr: Not really Falsey - NaN 1`] = `"<div>NaN</div>"`;
+
+exports[`ssr: Bad template - NaN 1`] = `"<div></div>"`;
+
+exports[`ssr: Conditional 1`] = `"<div>hello</div>"`;
+
+exports[`ssr: Style attribute 1`] = `"<div style="background-color:blue; margin:12px; --cssVar:red;">styles</div>"`;
+
+exports[`ssr: p-trigger attribute 1`] = `"<div p-trigger="click:random focus:thing">triggers</div>"`;
+
+exports[`ssr: Array of templates 1`] = `
+"<ul>
+    <li>0</li>
+    <li>1</li>
+    <li>2</li>
+    <li>3</li>
+    <li>4</li>
+    <li>5</li>
+    <li>6</li>
+    <li>7</li>
+    <li>8</li>
+    <li>9</li>
+</ul>"
+`;
+
+exports[`ssr: Should not throw on script tag with trusted attribute 1`] = `"<script type="module" src="main.js"></script>"`;
+
+exports[`ssr: Escapes children 1`] = `
+"<div>&lt;script type=&quot;text/javascript&quot;&gt; const hostRegex = /^https?://([^/]+)/.*$/i;
+    const host = document.URL.replace(hostRegex, &#39;$1&#39;); const socket
+    = new WebSocket(/); const reload = () =&gt;{ location.reload(); console.log(&#39;...reloading&#39;);
+    }; socket.addEventListener(&#39;message&#39;, reload); console.log(&#39;[plaited]
+    listening for file changes&#39;); &lt;/script&gt;</div>"
+`;
+
+exports[`ssr: Does not escape children when trusted 1`] = `
+"<div>
+    <script type="text/javascript">
+        const hostRegex = /^https?://([^/]+)/.*$/i;
+        const host = document.URL.replace(hostRegex, '$1');
+        const socket = new WebSocket(/);
+        const reload = () =>{
+          location.reload();
+          console.log('...reloading');
+        };
+        socket.addEventListener('message', reload);
+        console.log('[plaited] listening for file changes');
+    </script>
+</div>"
+`;
+
+exports[`ssr: Non declarative shadow DOM template 1`] = `
+"<ul>
+    <template><span>I am a span!!!</span>
+    </template>
+    <li>item-0</li>
+    <li>item-1</li>
+    <li>item-2</li>
+    <li>item-3</li>
+    <li>item-4</li>
+    <li>item-5</li>
+    <li>item-6</li>
+    <li>item-7</li>
+    <li>item-8</li>
+    <li>item-9</li>
+</ul>"
+`;
+
+exports[`Fragment 1`] = `
+"<li>In 5</li>
+<li>In 4</li>
+<li>In 3</li>
+<li>In 2</li>
+<li>In 1</li>
+<li>Blast Off!!!</li>"
+`;
+
+exports[`createTemplate: CustomElement hoisting its styles 1`] = `
+{
+  "content": 
+"<nested-component>
+    <template shadowrootmode="open" shadowrootdelegatesfocus>
+        <style>
+            .p_ju9u1n{font-weight:bold;}
+        </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
+        <slot
+        name="nested"></slot>
+    </template>
+</nested-component>"
+,
+  "stylesheets": [],
+}
+`;
+
+exports[`createTemplate: CustomElement with declarative shadow dom & host styles 1`] = `
+{
+  "content": 
+"<style>
+    .p1rlu8mi{display:flex;}.p_8mez4t{flex-direction:column;}
+</style>
+<nested-component class="nestedComponent_ey8y76 p1rlu8mi p_8mez4t">
+    <template shadowrootmode="open" shadowrootdelegatesfocus>
+        <style>
+            .p_ju9u1n{font-weight:bold;}
+        </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
+        <slot
+        name="nested"></slot>
+    </template>
+</nested-component>"
+,
+  "stylesheets": [
+    ".p1rlu8mi{display:flex;}",
+    ".p_8mez4t{flex-direction:column;}",
+  ],
+}
+`;
+
+exports[`createTemplate: CustomElement with styled slotted component 1`] = `
+{
+  "content": 
+"<style>
+    .p1rlu8mi{display:flex;}.p_8mez4t{flex-direction:column;}.p91m869{color:rebeccapurple;}
+</style>
+<nested-component class="nestedComponent_ey8y76 p1rlu8mi p_8mez4t">
+    <template shadowrootmode="open" shadowrootdelegatesfocus>
+        <style>
+            .p_ju9u1n{font-weight:bold;}
+        </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
+        <slot
+        name="nested"></slot>
+    </template>
+    <p class="slottedParagraph_g28n4j p91m869" slot="nested">slotted paragraph</p>
+</nested-component>"
+,
+  "stylesheets": [
+    ".p1rlu8mi{display:flex;}",
+    ".p_8mez4t{flex-direction:column;}",
+    ".p91m869{color:rebeccapurple;}",
+  ],
+}
+`;
+
+exports[`createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom 1`] = `
+{
+  "content": 
+"<top-component>
+    <template shadowrootdelegatesfocus shadowrootmode="open">
+        <style>
+            .p91m869{color:rebeccapurple;}
+        </style>
+        <nested-component>
+            <template shadowrootmode="open" shadowrootdelegatesfocus>
+                <style>
+                    .p_ju9u1n{font-weight:bold;}
+                </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
+                <slot
+                name="nested"></slot>
+            </template>
+            <p class="slottedParagraph_g28n4j p91m869" slot="nested">slotted paragraph</p>
+        </nested-component>
+    </template>
+</top-component>"
+,
+  "stylesheets": [],
+}
+`;
+
+exports[`createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles 1`] = `
+{
+  "content": 
+"<style>
+    .p131mv1i{display:block;}
+</style>
+<top-component class="topComponent_46img7 p131mv1i">
+    <template shadowrootdelegatesfocus shadowrootmode="open">
+        <style>
+            .p91m869{color:rebeccapurple;}
+        </style>
+        <nested-component>
+            <template shadowrootmode="open" shadowrootdelegatesfocus>
+                <style>
+                    .p_ju9u1n{font-weight:bold;}
+                </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
+                <slot
+                name="nested"></slot>
+            </template>
+            <p class="slottedParagraph_g28n4j p91m869" slot="nested">slotted paragraph</p>
+        </nested-component>
+    </template>
+</top-component>"
+,
+  "stylesheets": [
+    ".p131mv1i{display:block;}",
+  ],
+}
+`;
+
+exports[`createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles and child 1`] = `
+{
+  "content": 
+"<style>
+    .p131mv1i{display:block;}.p_mygp1{width:100%;}.p_x8x9vx{aspect-ratio:16 / 9;}
+</style>
+<top-component class="topComponent_46img7 p131mv1i">
+    <template shadowrootdelegatesfocus shadowrootmode="open">
+        <style>
+            .p91m869{color:rebeccapurple;}
+        </style>
+        <nested-component>
+            <template shadowrootmode="open" shadowrootdelegatesfocus>
+                <style>
+                    .p_ju9u1n{font-weight:bold;}
+                </style><span class="nestedLabel__15w1ydc p_ju9u1n">inside nested template</span>
+                <slot
+                name="nested"></slot>
+            </template>
+            <p class="slottedParagraph_g28n4j p91m869" slot="nested">slotted paragraph</p>
+        </nested-component>
+    </template>
+    <img class="image__c0ru3k p_mygp1 p_x8x9vx" />
+</top-component>"
+,
+  "stylesheets": [
+    ".p131mv1i{display:block;}",
+    ".p_mygp1{width:100%;}",
+    ".p_x8x9vx{aspect-ratio:16 / 9;}",
+  ],
+}
+`;
+
+exports[`ssr: filters out falsey classNames 1`] = `"<div class="truthy"></div>"`;
+
+exports[`createTemplate: Trims whitespace 1`] = `"<div>trims white-space</div>"`;

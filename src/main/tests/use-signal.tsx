@@ -1,6 +1,4 @@
-import type { FT } from '../../jsx/jsx.types.js'
-import { defineTemplate } from '../define-template.js'
-import { useSignal } from '../use-signal.js'
+import { type FT, defineTemplate, useSignal } from 'plaited'
 
 const store = useSignal<number>(0)
 
@@ -21,7 +19,7 @@ const Publisher = defineTemplate({
     })
     return {
       increment() {
-        store(store.get() + 1)
+        store.set(store.get() + 1)
       },
     }
   },
@@ -32,7 +30,7 @@ const Subscriber = defineTemplate({
   shadowDom: <h1 p-target='count'>{store.get()}</h1>,
   publicEvents: ['update'],
   bProgram({ $, trigger }) {
-    store.effect('update', trigger)
+    store.listen('update', trigger)
     return {
       update(value: number) {
         const [count] = $('count')

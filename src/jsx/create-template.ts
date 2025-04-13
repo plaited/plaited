@@ -28,7 +28,32 @@ type InferAttrs<T extends Tag> =
 
 type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => TemplateObject
 
-/** createTemplate function used for ssr */
+/**
+ * Creates a server-side rendering (SSR) template for HTML elements and components.
+ * Handles attribute sanitization, event delegation, and stylesheet management.
+ *
+ * Features:
+ * - Sanitizes HTML content for security
+ * - Manages declarative shadow DOM
+ * - Processes behavioral triggers (p-trigger)
+ * - Handles stylesheet hoisting and deduplication
+ * - Supports component composition
+ *
+ * @param _tag Element tag name or component function
+ * @param attrs Object containing element attributes and children
+ * @returns TemplateObject containing:
+ *  - html: Array of HTML string segments
+ *  - stylesheets: Deduplicated array of stylesheet contents
+ *  - registry: Array of registered identifiers
+ *  - $: Template identifier
+ *
+ * @throws {Error} When using unsecured script tags or invalid event handlers
+ * @example
+ * const template = createTemplate('div', {
+ *   className: 'container',
+ *   children: ['Hello World']
+ * });
+ */
 export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const {
     children: _children,
@@ -94,7 +119,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     /** set the value so long as it's not nullish in we use the formatted value  */
     const formattedValue = value ?? ''
     /** handle the rest of the attributes */
-    start.push(`${key}="${trusted ? `${formattedValue}" ` : escape(`${formattedValue}`)}" `)
+    start.push(`${key}="${trusted ? formattedValue : escape(formattedValue)}" `)
   }
   /** Create are stylesheet set */
   let stylesheets =

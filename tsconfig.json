@@ -26,13 +26,13 @@
     "jsxImportSource": "plaited",
     "paths": {
       "plaited": ["./src/index.ts"],
-      "plaited/jsx-runtime": ["./src/jsx/runtime.ts"],
-      "plaited/jsx-dev-runtime": ["./src/jsx/dev-runtime.ts"],
-      "plaited/test": ["/src/test.ts"],
+      "plaited/jsx-runtime": ["./src/jsx-runtime.ts"],
+      "plaited/jsx-dev-runtime": ["./src/jsx-dev-runtime.ts"],
+      "plaited/testing": ["/src/testing.ts"],
       "plaited/behavioral": ["./src/behavioral.ts"],
-      "plaited/style": ["./src/style.ts"],
+      "plaited/styling": ["./src/styling.ts"],
       "plaited/utils": ["./src/utils.ts"]
     }
   },
-  "exclude": ["src/style/types/css.d.ts"]
+  "exclude": ["src/styling/types/css.d.ts"]
 }

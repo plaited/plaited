@@ -38,6 +38,7 @@ jobs:
           bun run copy-css-types
           git add -A
           git commit -m "ci: publish [skip ci]"
+          git push
           gh release create ${{ github.event.inputs.version }} --generate-notes
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}

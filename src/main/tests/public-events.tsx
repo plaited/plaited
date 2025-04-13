@@ -1,15 +1,13 @@
-import type { FT } from '../../jsx/jsx.types.js'
-import { defineTemplate } from '../define-template.js'
-import { useDispatch } from '../use-dispatch.js'
-import { isPlaitedElement } from '../plaited.guards.js'
+import { type FT, defineTemplate, useDispatch, isPlaitedElement } from 'plaited'
+
 const getPlaitedChildren = (slot: HTMLSlotElement) => [...slot.assignedElements()].filter(isPlaitedElement)
 
 const Inner = defineTemplate({
   tag: 'inner-component',
   shadowDom: <h1 p-target='header'>Hello</h1>,
   publicEvents: ['add'],
-  bProgram({ $, bThreads, bThread, bSync }) {
-    const dispatch = useDispatch(this)
+  bProgram({ $, bThreads, bThread, bSync, host }) {
+    const dispatch = useDispatch(host)
     bThreads.set({
       onAdd: bThread([bSync({ waitFor: 'add' }), bSync({ request: { type: 'disable' } })]),
     })

@@ -1,7 +1,10 @@
-import type { StoryObj } from 'plaited/test'
+import type { StoryObj } from 'plaited/testing'
 import { ShadowIsland } from './shadow-observer.js'
 
 export const shadowObserver: StoryObj = {
+  description: `This story is used to validate that the shadow dom mutation observer
+  of plaited elements created by defineTemplate function properly binds events declared with the
+  p-trigger attribute on elements in it's shadow dom.`,
   template: ShadowIsland,
   play: async ({ assert, findByAttribute, findByText, fireEvent }) => {
     let button = await findByAttribute('p-trigger', 'click:start')
