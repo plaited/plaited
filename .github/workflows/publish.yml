@@ -65,6 +65,10 @@ jobs:
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> .npmrc
           npm whoami
           npm config set registry https://registry.npmjs.org/
-          npm publish --access public
+          if [[ -n "${{ github.event.inputs.experimental }}" ]]; then
+              npm publish --access public --tag experimental
+            else
+              npm publish --access public
+            fi
         env:
           NPM_TOKEN: ${{ secrets.NPM_PAT }}
