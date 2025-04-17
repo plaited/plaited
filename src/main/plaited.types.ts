@@ -2,7 +2,7 @@ import type { Trigger } from '../behavioral/b-program.js'
 import type { CustomElementTag, FunctionTemplate } from '../jsx/jsx.types.js'
 import { PLAITED_TEMPLATE_IDENTIFIER } from './plaited.constants.js'
 
-export type { Position, SelectorMatch, CloneCallback } from './get-query.js'
+export type { Position, SelectorMatch } from './assign-dom-helpers.js'
 /**
  * Extended HTMLElement interface for Plaited custom elements.
  * Includes lifecycle callbacks and custom functionality.

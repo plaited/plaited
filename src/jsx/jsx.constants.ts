@@ -89,7 +89,7 @@ export const PRIMITIVES = new Set(['null', 'undefined', 'number', 'string', 'boo
  * Set of JavaScript primitive types that can be safely used as child content.
  * Defines which primitive values can be rendered as element children.
  */
-export const VALID_PRIMITIVE_CHILDREN = new Set(['number', 'string', 'bigint'])
+export const VALID_PRIMITIVE_CHILDREN = new Set(['number', 'string'])
 /**
  * Unique identifier for template objects.
  * Used to distinguish template objects from other values during rendering.

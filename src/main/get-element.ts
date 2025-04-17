@@ -10,9 +10,17 @@ import {
   type UseSnapshot,
   bProgram,
 } from '../behavioral/b-program.js'
-import { P_TRIGGER } from '../jsx/jsx.constants.js'
-import { type QuerySelector, getQuery, handleTemplateObject } from './get-query.js'
-import { getShadowObserver, addListeners } from './get-shadow-observer.js'
+import { P_TRIGGER, P_TARGET } from '../jsx/jsx.constants.js'
+import {
+  type Query,
+  type SelectorMatch,
+  type BoundElement,
+  getDocumentFragment,
+  assignHelpers,
+  getBoundElements,
+} from './assign-helpers.js'
+import { addListeners } from './add-listeners.js'
+import { getShadowObserver } from './get-shadow-observer.js'
 import { getPublicTrigger } from '../behavioral/get-public-trigger.js'
 import { canUseDOM } from '../utils/can-use-dom.js'
 import { ELEMENT_CALLBACKS } from './plaited.constants.js'
@@ -34,7 +42,7 @@ import type { PlaitedElement } from './plaited.types.js'
  * @property bSync Synchronization utility
  */
 export type BProgramArgs = {
-  $: QuerySelector
+  $: Query
   root: ShadowRoot
   host: PlaitedElement
   internals: ElementInternals
@@ -383,7 +391,6 @@ export const getElement = <A extends PlaitedHandlers>({
         get #root() {
           return this.#internals.shadowRoot as ShadowRoot
         }
-        #query: QuerySelector
         #shadowObserver?: MutationObserver
         #trigger: PlaitedTrigger
         #useFeedback: UseFeedback
@@ -394,10 +401,9 @@ export const getElement = <A extends PlaitedHandlers>({
         constructor() {
           super()
           this.#internals = this.attachInternals()
-          const frag = handleTemplateObject(this.#root, shadowDom)
+          const frag = getDocumentFragment(this.#root, [shadowDom])
           this.attachShadow({ mode, delegatesFocus, slotAssignment })
           this.#root.replaceChildren(frag)
-          this.#query = getQuery(this.#root)
           const { trigger, useFeedback, useSnapshot, bThreads } = bProgram()
           this.#trigger = getPlaitedTrigger(trigger, this.#disconnectSet)
           this.#useFeedback = useFeedback
@@ -431,11 +437,19 @@ export const getElement = <A extends PlaitedHandlers>({
           if (callback) {
             // Delegate listeners nodes with p-trigger directive on connection or upgrade
             addListeners(Array.from(this.#root.querySelectorAll<Element>(`[${P_TRIGGER}]`)), this.#trigger)
+            // Bind DOM helpers to nodes with p-target directive on connection or upgrade
+            assignHelpers(
+              getBoundElements(this.#root),
+              Array.from(this.#root.querySelectorAll<Element>(`[${P_TARGET}]`)),
+            )
             // Create a shadow observer to watch for modification & addition of nodes with p-this.#trigger directive
             this.#shadowObserver = getShadowObserver(this.#root, this.#trigger)
             // bind connectedCallback to the custom element with the following arguments
             const handlers = callback.bind(this)({
-              $: this.#query,
+              $: <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
+                Array.from(
+                  this.#root.querySelectorAll<Element>(`[${P_TARGET}${match}"${target}"]`),
+                ) as BoundElement<T>[],
               host: this,
               root: this.#root,
               internals: this.#internals,

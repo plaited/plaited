@@ -1,4 +1,4 @@
-import type { CSSProperties } from '../style/css.types.js'
+import type { CSSProperties } from '../styling/css.types.js'
 import { P_TARGET, P_TRIGGER, TEMPLATE_OBJECT_IDENTIFIER } from './jsx.constants.js'
 
 type Booleanish = boolean | 'true' | 'false'
@@ -20,7 +20,7 @@ export type TemplateObject = {
  * Basic child types that can be rendered in a template.
  * Can be either a string or a TemplateObject.
  */
-export type Child = string | TemplateObject
+export type Child = number | string | TemplateObject
 /**
  * Collection of renderable children.
  * Can be either a single child or an array of children.
