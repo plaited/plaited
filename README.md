@@ -1,28 +1,23 @@
 [![Build/Tests](https://github.com/plaited/plaited/actions/workflows/tests.yml/badge.svg)](https://github.com/plaited/plaited/actions/workflows/tests.yml)
 
 # Plaited
-Plaited is design system first framework for rapidly designing and developing interfaces as requirements change and evolve.
+Plaited is a design system first framework for rapidly designing and developing interfaces as requirements change and evolve.
 
-## Features
-- Declarative Shadow Dom based server side first rendering library
-- Dedicated  CSS-IN-JS
-- Dedicated JSX Runtime
-- Behavioral Programming based reactivity
-- Signal Utiltites
-- Web Worker utilities
-- Design token format libraries and tooling
-- Test library
+This repository contains the complete source code for the Plaited, including many test scripts. However, other test scripts and most of the documentation are managed separately. 
 
-## Dev Requirements
+**Plaited is open-source, not open-contribution** If you are reading this on GitHub or some other Git repository or service, then you are looking at a mirror. While the Plaited source code is managed using Git, it is done as a submodule of our Plaited Pro offering.
 
-### local
+See our ~~on-line documentation~~ for more information about what Plaited is and how it works.
 
-- bun >= v1.2.9
+## Contacting The Plaited Devs
+The preferred way to ask questions or make comments about Plaited or to report bugs against Plaited is to visit [Plaited Discussions](https://github.com/orgs/plaited/discussions). 
 
-## Dev Setup
+## Requirements
+- bun >= v1.2.9 (preffered)
+- node >= v22.6.0 (through the --experimental-strip-types flag)
 
-### local setup
+## Download
+```bun instatll -d plaited```
 
-1. Clone repository and ensure you have bun >= v1.2.9
-2. Run `bunx playwright install`
-3. Run `bun install`
+### Test Runner
+To make use of the workshop test runner utilities and setup script [bun](https://bun.sh/) is required.
