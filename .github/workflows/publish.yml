@@ -6,14 +6,29 @@ on:
       version:
         description: 'New version tag (e.g., 1.0.0)'
         required: true
+      experimental:
+        description: 'Experimental number (optional, will create a version like x.y.z-experimental-N)'
+        required: false
 jobs:
   publish:
     runs-on: ubuntu-22.04
 
     steps:
+      - name: Set version
+        id: set_version
+        run: |
+          base_version="${{ github.event.inputs.version }}"
+          experimental="${{ github.event.inputs.experimental }}"
+
+          if [[ -n "$experimental" ]]; then
+            echo "version=${base_version}-experimental-${experimental}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${base_version}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Validate input version
         run: |
-          version="${{ github.event.inputs.version }}"
+          version="${{ steps.set_version.outputs.version }}"
           if [[ ! $version =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-([a-zA-Z0-9_-]+))?$ ]]; then
             echo "Error: Version must have the format 'x.y.z' or 'x.y.z-<string>', where x, y, and z are numbers."
             exit 1
@@ -34,12 +49,12 @@ jobs:
         run: |
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor}}@users.noreply.github.com"
-          npm version --no-git-tag-version ${{ github.event.inputs.version }}
+          npm version --no-git-tag-version ${{ steps.set_version.outputs.version }}
           bun run copy-css-types
           git add -A
           git commit -m "ci: publish [skip ci]"
           git push
-          gh release create ${{ github.event.inputs.version }} --generate-notes
+          gh release create ${{ steps.set_version.outputs.version }} --generate-notes
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
 
