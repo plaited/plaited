@@ -34,7 +34,7 @@ export type PlaitedAttributes = {
   class?: never
   className?: string | Array<string | undefined | false | null>
   children?: Children
-  [P_TARGET]?: string
+  [P_TARGET]?: string | number
   [P_TRIGGER]?: Record<string, string>
   stylesheet?: string | Array<string | undefined | false | null>
   /** setting trusted to true will disable all escaping security policy measures for this element template */
@@ -336,7 +336,7 @@ type HTMLAttributes = AriaAttributes &
     dir?: string
     draggable?: Booleanish
     hidden?: boolean
-    id?: string
+    id?: string | number
     lang?: string
     nonce?: string
     placeholder?: string

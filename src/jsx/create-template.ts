@@ -102,7 +102,6 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
      * skip on attempts to provide `on` attributes
      */
     if (key.startsWith('on')) {
-      console.log(key)
       throw new Error(`Event handler attributes are not allowed:  [${key}]`)
     }
     /** Grab the value from the attribute */
