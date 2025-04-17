@@ -1,4 +1,4 @@
-import { type Position, type CloneCallback, defineTemplate } from 'plaited'
+import { type Position, defineTemplate } from 'plaited'
 
 let did = 1
 const adjectives = [
@@ -63,14 +63,11 @@ const buildData = (count: number): Data => {
   return data
 }
 
-const row = (
-  <tr p-target='row'>
-    <td
-      className='col-md-1'
-      p-target='id'
-    ></td>
+const Row = (data: DataItem) => (
+  <tr p-target={`${data.id}`}>
+    <td className='col-md-1'>{data.id}</td>
     <td className='col-md-4'>
-      <a p-target='label'></a>
+      <a p-target='label'>{data.label}</a>
     </td>
     <td className='col-md-1'>
       <a>
@@ -85,12 +82,6 @@ const row = (
   </tr>
 )
 
-const forEachRow: CloneCallback<DataItem> = ($, data) => {
-  $('row')[0].attr('p-target', `${data.id}`)
-  $('id')[0].render(<>{data.id}</>)
-  $('label')[0].render(<>{data.label}</>)
-}
-
 export const Fixture = defineTemplate({
   shadowDom: (
     <div p-target='root'>
@@ -100,16 +91,15 @@ export const Fixture = defineTemplate({
   tag: 'table-fixture',
   publicEvents: ['insert', 'render', 'replace', 'remove', 'removeAttributes', 'getAttribute', 'multiSetAttributes'],
   bProgram({ $ }) {
-    const cb = $.clone(row, forEachRow)
     return {
       replace() {
         $('table')[0].replace(<span>I'm just a span</span>)
       },
       render() {
-        $('table')[0].render(...buildData(100).map(cb))
+        $('table')[0].render(...buildData(100).map(Row))
       },
       insert(position: Position) {
-        $('table')[0].insert(position, ...buildData(100).map(cb))
+        $('table')[0].insert(position, ...buildData(100).map(Row))
       },
       remove() {
         $('table')[0].replaceChildren()

@@ -1,6 +1,6 @@
 {
   "name": "plaited",
-  "version": "7.1.1-experimental-0",
+  "version": "7.1.1-experimental-1",
   "license": "ISC",
   "engines": {
     "bun": ">= v1.2.9"
@@ -26,7 +26,10 @@
     "./workshop": "./src/workshop.ts"
   },
   "files": [
-    "./src/**"
+    "./src/**",
+    "!./src/**/tests/*",
+    "!./src/**/*.spec.@(tsx|ts)",
+    "!./src/**/*.stories.@(tsx|ts)"
   ],
   "publishConfig": {
     "access": "public"
