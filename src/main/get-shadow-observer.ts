@@ -1,7 +1,7 @@
 import type { Trigger } from '../behavioral/b-program.js'
-import { P_TRIGGER } from '../jsx/jsx.constants.js'
+import { P_TRIGGER, P_TARGET } from '../jsx/jsx.constants.js'
 import { addListeners } from './add-listeners.js'
-
+import { type Bindings, assignHelpers } from './assign-helpers.js'
 const isElement = (node: Node): node is Element => node.nodeType === 1
 
 /**
@@ -52,14 +52,23 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  * - Manages event listener lifecycle
  * - Provides automatic cleanup of invalid listeners
  */
-export const getShadowObserver = (root: ShadowRoot, trigger: Trigger) => {
+export const getShadowObserver = ({
+  root,
+  trigger,
+  bindings,
+}: {
+  root: ShadowRoot
+  trigger: Trigger
+  bindings: Bindings
+}) => {
   /**  Observes the addition of nodes to the shadow dom and changes to and child's p-trigger attribute */
   const mo = new MutationObserver((mutationsList) => {
     for (const mutation of mutationsList) {
       if (mutation.type === 'attributes') {
         const el = mutation.target
         if (isElement(el)) {
-          mutation.attributeName === P_TRIGGER && el.getAttribute(P_TRIGGER) && addListeners([el], trigger)
+          mutation.attributeName === P_TRIGGER && el.getAttribute(P_TRIGGER) && addListeners(trigger, [el])
+          mutation.attributeName === P_TARGET && el.getAttribute(P_TARGET) && assignHelpers(bindings, [el])
         }
       } else if (mutation.addedNodes.length) {
         const length = mutation.addedNodes.length
@@ -67,10 +76,16 @@ export const getShadowObserver = (root: ShadowRoot, trigger: Trigger) => {
           const node = mutation.addedNodes[i]
           if (isElement(node)) {
             addListeners(
+              trigger,
               node.hasAttribute(P_TRIGGER) ?
                 [node, ...Array.from(node.querySelectorAll(`[${P_TRIGGER}]`))]
               : Array.from(node.querySelectorAll(`[${P_TRIGGER}]`)),
-              trigger,
+            )
+            assignHelpers(
+              bindings,
+              node.hasAttribute(P_TARGET) ?
+                [node, ...Array.from(node.querySelectorAll(`[${P_TARGET}]`))]
+              : Array.from(node.querySelectorAll(`[${P_TARGET}]`)),
             )
           }
         }
@@ -78,7 +93,7 @@ export const getShadowObserver = (root: ShadowRoot, trigger: Trigger) => {
     }
   })
   mo.observe(root, {
-    attributeFilter: [P_TRIGGER],
+    attributeFilter: [P_TRIGGER, P_TARGET],
     childList: true,
     subtree: true,
   })

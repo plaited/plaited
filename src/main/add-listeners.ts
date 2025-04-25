@@ -16,7 +16,7 @@ const getTriggerType = (event: Event, context: Element) => {
 }
 
 /** If delegated listener does not have element then delegate it's callback with auto cleanup*/
-const createDelegatedListener = (el: Element, trigger: Trigger) => {
+const createDelegatedListener = (trigger: Trigger, el: Element) => {
   delegates.set(
     el,
     new DelegatedListener((event) => {
@@ -52,10 +52,10 @@ const createDelegatedListener = (el: Element, trigger: Trigger) => {
  * - Handles multiple event types per element
  * - Automatically removes invalid event listeners
  */
-export const addListeners = (elements: Element[], trigger: Trigger) => {
+export const addListeners = (trigger: Trigger, elements: Element[]) => {
   for (const el of elements) {
     if (el.tagName === 'SLOT' && Boolean(el.assignedSlot)) continue // skip nested slots
-    !delegates.has(el) && createDelegatedListener(el, trigger) // bind a callback for element if we haven't already
+    !delegates.has(el) && createDelegatedListener(trigger, el) // bind a callback for element if we haven't already
     for (const [event] of getTriggerMap(el)) {
       // add event listeners for each event type
       el.addEventListener(event, delegates.get(el))
