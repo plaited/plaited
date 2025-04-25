@@ -1,7 +1,7 @@
 import type { Trigger } from '../behavioral/b-program.js'
 import { P_TRIGGER, P_TARGET } from '../jsx/jsx.constants.js'
 import { addListeners } from './add-listeners.js'
-import { assignHelpers, getBoundElements } from './assign-helpers.js'
+import { assignHelpers, type Bindings } from './assign-helpers.js'
 
 const isElement = (node: Node): node is Element => node.nodeType === 1
 
@@ -53,8 +53,15 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  * - Manages event listener lifecycle
  * - Provides automatic cleanup of invalid listeners
  */
-export const getShadowObserver = (root: ShadowRoot, trigger: Trigger) => {
-  const boundElements = getBoundElements(root)
+export const getShadowObserver = ({
+  root,
+  bindings,
+  trigger,
+}: {
+  root: ShadowRoot
+  bindings: Bindings
+  trigger: Trigger
+}) => {
   /**  Observes the addition of nodes to the shadow dom and changes to and child's p-trigger attribute */
   const mo = new MutationObserver((mutationsList) => {
     for (const mutation of mutationsList) {
@@ -62,7 +69,7 @@ export const getShadowObserver = (root: ShadowRoot, trigger: Trigger) => {
         const el = mutation.target
         if (isElement(el)) {
           mutation.attributeName === P_TRIGGER && el.getAttribute(P_TRIGGER) && addListeners([el], trigger)
-          mutation.attributeName === P_TARGET && el.getAttribute(P_TARGET) && assignHelpers(boundElements, [el])
+          mutation.attributeName === P_TARGET && el.getAttribute(P_TARGET) && assignHelpers(bindings, [el])
         }
       } else if (mutation.addedNodes.length) {
         const length = mutation.addedNodes.length
@@ -71,7 +78,7 @@ export const getShadowObserver = (root: ShadowRoot, trigger: Trigger) => {
           if (isElement(node)) {
             const targets = Array.from(node.querySelectorAll(`[${P_TARGET}]`))
             node.hasAttribute(P_TARGET) && targets.push(node)
-            assignHelpers(boundElements, targets)
+            assignHelpers(bindings, targets)
             const triggers = Array.from(node.querySelectorAll(`[${P_TRIGGER}]`))
             node.hasAttribute(P_TRIGGER) && triggers.push(node)
             addListeners(triggers, trigger)

@@ -17,7 +17,7 @@ import {
   type BoundElement,
   getDocumentFragment,
   assignHelpers,
-  getBoundElements,
+  getBindings,
 } from './assign-helpers.js'
 import { addListeners } from './add-listeners.js'
 import { getShadowObserver } from './get-shadow-observer.js'
@@ -435,15 +435,18 @@ export const getElement = <A extends PlaitedHandlers>({
             })
           }
           if (callback) {
+            // Get dom helper bindings
+            const bindings = getBindings(this.#root)
             // Delegate listeners nodes with p-trigger directive on connection or upgrade
             addListeners(Array.from(this.#root.querySelectorAll<Element>(`[${P_TRIGGER}]`)), this.#trigger)
             // Bind DOM helpers to nodes with p-target directive on connection or upgrade
-            assignHelpers(
-              getBoundElements(this.#root),
-              Array.from(this.#root.querySelectorAll<Element>(`[${P_TARGET}]`)),
-            )
+            assignHelpers(bindings, Array.from(this.#root.querySelectorAll<Element>(`[${P_TARGET}]`)))
             // Create a shadow observer to watch for modification & addition of nodes with p-this.#trigger directive
-            this.#shadowObserver = getShadowObserver(this.#root, this.#trigger)
+            this.#shadowObserver = getShadowObserver({
+              bindings,
+              root: this.#root,
+              trigger: this.#trigger,
+            })
             // bind connectedCallback to the custom element with the following arguments
             const handlers = callback.bind(this)({
               $: <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>

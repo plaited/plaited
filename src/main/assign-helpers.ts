@@ -26,7 +26,7 @@ import { BOOLEAN_ATTRS } from '../jsx/jsx.constants.js'
  */
 export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
 
-type BoundElements = {
+export type Bindings = {
   render(this: Element, ...template: (TemplateObject | string | number)[]): void
   insert(this: Element, position: Position, ...template: (TemplateObject | string | number)[]): void
   replace(this: Element, ...template: (TemplateObject | string | number)[]): void
@@ -34,7 +34,7 @@ type BoundElements = {
   attr(this: Element, attr: string, val?: string | null | number | boolean): string | null | void
 }
 
-export type BoundElement<T extends Element = Element> = T & BoundElements
+export type BoundElement<T extends Element = Element> = T & Bindings
 /**
  * Type for element matching strategies in attribute selectors.
  * Supports all CSS attribute selector operators.
@@ -110,7 +110,7 @@ export const getDocumentFragment = (shadowRoot: ShadowRoot, templates: (Template
   return template.content
 }
 
-const getDomHelpers = (shadowRoot: ShadowRoot): BoundElements => ({
+export const getBindings = (shadowRoot: ShadowRoot): Bindings => ({
   render(...templates) {
     this.replaceChildren(getDocumentFragment(shadowRoot, templates))
   },
@@ -146,7 +146,7 @@ const hasBinding = (element: Element): element is BoundElement => boundElementSe
  * @param elements Array of elements to enhance
  * @returns Array of enhanced elements with bound methods
  */
-export const assignHelpers = <T extends Element = Element>(bindings: BoundElements, elements: Element[]) => {
+export const assignHelpers = <T extends Element = Element>(bindings: Bindings, elements: Element[]) => {
   const length = elements.length
   for (let i = 0; i < length; i++) {
     const el = elements[i]
@@ -156,15 +156,3 @@ export const assignHelpers = <T extends Element = Element>(bindings: BoundElemen
   }
   return elements as BoundElement<T>[]
 }
-
-const bindingsMap = new WeakMap<ShadowRoot, BoundElements>()
-/**
- * Retrieves or creates binding methods for a shadow root.
- * Caches bindings to prevent duplicate creation.
- *
- * @param shadowRoot Shadow root to get bindings for
- * @returns Binding methods for DOM manipulation
- */
-export const getBoundElements = (shadowRoot: ShadowRoot) =>
-  bindingsMap.get(shadowRoot) ??
-  (bindingsMap.set(shadowRoot, getDomHelpers(shadowRoot)).get(shadowRoot) as BoundElements)
