@@ -11,14 +11,7 @@ import {
   bProgram,
 } from '../behavioral/b-program.js'
 import { P_TRIGGER, P_TARGET } from '../jsx/jsx.constants.js'
-import {
-  type Query,
-  type SelectorMatch,
-  type BoundElement,
-  getDocumentFragment,
-  assignHelpers,
-  getBindings,
-} from './assign-helpers.js'
+import { type Query, type SelectorMatch, getDocumentFragment, assignHelpers, getBindings } from './assign-helpers.js'
 import { addListeners } from './add-listeners.js'
 import { getShadowObserver } from './get-shadow-observer.js'
 import { getPublicTrigger } from '../behavioral/get-public-trigger.js'
@@ -442,17 +435,11 @@ export const getElement = <A extends PlaitedHandlers>({
             // Bind DOM helpers to nodes with p-target directive on connection or upgrade
             assignHelpers(bindings, Array.from(this.#root.querySelectorAll<Element>(`[${P_TARGET}]`)))
             // Create a shadow observer to watch for modification & addition of nodes with p-this.#trigger directive
-            this.#shadowObserver = getShadowObserver({
-              bindings,
-              root: this.#root,
-              trigger: this.#trigger,
-            })
+            this.#shadowObserver = getShadowObserver(this.#root, this.#trigger)
             // bind connectedCallback to the custom element with the following arguments
             const handlers = callback.bind(this)({
               $: <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
-                Array.from(
-                  this.#root.querySelectorAll<Element>(`[${P_TARGET}${match}"${target}"]`),
-                ) as BoundElement<T>[],
+                assignHelpers(bindings, Array.from(this.#root.querySelectorAll<T>(`[${P_TARGET}${match}"${target}"]`))),
               host: this,
               root: this.#root,
               internals: this.#internals,
