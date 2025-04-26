@@ -50,7 +50,7 @@ export function useSignal<T>(initialValue?: never): SignalWithoutInitialValue<T>
  * counter.listen('COUNT_CHANGED', trigger, true);
  *
  * // In component context
- * const Counter = defineTemplate({
+ * const Counter = defineElement({
  *   tag: 'my-counter',
  *   bProgram({ trigger }) {
  *     const count = useSignal(0);
@@ -116,7 +116,7 @@ export function useSignal<T>(initialValue: T) {
  *
  * @example
  * // In component context
- * const Calculator = defineTemplate({
+ * const Calculator = defineElement({
  *   tag: 'my-calculator',
  *   bProgram({ trigger }) {
  *     const first = useSignal(5);

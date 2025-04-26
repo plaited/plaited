@@ -17,9 +17,9 @@ test('Maximum client bundle footprint < 6.5kb', async () => {
   }
 })
 
-test('defineTemplate export footprint < 5kb', async () => {
+test('defineElement export footprint < 5kb', async () => {
   const plaitedResults = await Bun.build({
-    entrypoints: [path.resolve(import.meta.dir, './main/define-template.ts')],
+    entrypoints: [path.resolve(import.meta.dir, './main/define-element.ts')],
     minify: true,
   })
 

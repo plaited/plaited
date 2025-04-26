@@ -1,4 +1,4 @@
-import { css, defineTemplate, type FT } from 'plaited'
+import { css, defineElement, type FT } from 'plaited'
 
 export const styles = css.create({
   button: {
@@ -53,7 +53,7 @@ export const styles = css.create({
   },
 })
 
-const SubIsland = defineTemplate({
+const SubIsland = defineElement({
   tag: 'sub-island',
   shadowDom: <h3>sub island</h3>,
 })
@@ -80,7 +80,7 @@ const SVG: FT = (props) => (
   </svg>
 )
 
-export const ShadowIsland = defineTemplate({
+export const ShadowIsland = defineElement({
   tag: 'shadow-island',
   shadowDom: (
     <div p-target='wrapper'>

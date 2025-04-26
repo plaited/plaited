@@ -1,9 +1,9 @@
 import type { StoryObj } from 'plaited/testing'
-import { type PlaitedElement, css, defineTemplate } from 'plaited'
+import { type PlaitedElement, css, defineElement } from 'plaited'
 import { ModeOpen, DelegateFalse, ClosedMode } from './template.js'
 
 export const defaultModeAndFocus: StoryObj = {
-  description: `This test is used to validate a plaited element created using defineTemplate
+  description: `This test is used to validate a plaited element created using defineElement
   default to having it's mode open`,
   template: () => <ModeOpen p-target='el' />,
   play: async ({ assert, findByAttribute }) => {
@@ -24,7 +24,7 @@ export const defaultModeAndFocus: StoryObj = {
 }
 
 export const delegatesFocusFalse: StoryObj = {
-  description: `This test is used to validate a plaited element created using defineTemplate
+  description: `This test is used to validate a plaited element created using defineElement
   with the parameter delefateFocus set to false does not allow focus delegation.`,
   template: () => <DelegateFalse p-target='el' />,
   play: async ({ assert, findByAttribute }) => {
@@ -45,7 +45,7 @@ export const delegatesFocusFalse: StoryObj = {
 }
 
 export const closedMode: StoryObj = {
-  description: `This test is used to validate a plaited element created using defineTemplate
+  description: `This test is used to validate a plaited element created using defineElement
   with the parameter mode set to false create a custom element with a closed shadow dom.`,
   template: () => <ClosedMode p-target='el' />,
   play: async ({ assert, findByAttribute }) => {
@@ -61,7 +61,7 @@ export const closedMode: StoryObj = {
 
 export const hydration: StoryObj = {
   description: `This test is used to validate a plaited element rendered but not defined yet correctly hydrates
-  once defined using defineTemplate by checking the content once the public event render triggered`,
+  once defined using defineElement by checking the content once the public event render triggered`,
   play: async ({ assert, findByAttribute, findByText, hostElement }) => {
     const styles = css.create({
       inner: {
@@ -117,7 +117,7 @@ export const hydration: StoryObj = {
       actual: color,
       expected: 'rgb(255, 0, 0)',
     })
-    defineTemplate({
+    defineElement({
       tag: Tag,
       publicEvents: ['render'],
       shadowDom: <Content />,

@@ -1,4 +1,4 @@
-import { type Position, defineTemplate, useTemplate } from 'plaited'
+import { type Position, defineElement, useTemplate } from 'plaited'
 
 let did = 1
 const adjectives = [
@@ -63,7 +63,7 @@ const buildData = (count: number): Data => {
   return data
 }
 
-export const Fixture = defineTemplate({
+export const Fixture = defineElement({
   shadowDom: (
     <div p-target='root'>
       <table p-target='table'></table>

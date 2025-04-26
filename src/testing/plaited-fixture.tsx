@@ -1,11 +1,11 @@
 import { css } from '../styling/css'
-import { defineTemplate } from '../main/define-template'
+import { defineElement } from '../main/define-element'
 import { usePlay } from './use-play'
 import { PLAY_EVENT, PLAITED_FIXTURE, PLAITED_RUNNER } from './assert.constants'
 import { connectTestRunner, useSendRunner } from './plaited-fixture.utils'
 import { h } from '../jsx/create-template.js'
 
-export const PlaitedFixture = defineTemplate({
+export const PlaitedFixture = defineElement({
   tag: PLAITED_FIXTURE,
   publicEvents: [PLAY_EVENT],
   streamAssociated: true,

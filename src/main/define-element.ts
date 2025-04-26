@@ -1,5 +1,3 @@
-import type { TemplateObject, CustomElementTag } from '../jsx/jsx.types.js'
-import { BOOLEAN_ATTRS } from '../jsx/jsx.constants.js'
 import { type BSync, type BThread, bThread, bSync } from '../behavioral/b-thread.js'
 import {
   type Handlers,
@@ -10,15 +8,17 @@ import {
   type UseSnapshot,
   bProgram,
 } from '../behavioral/b-program.js'
-import { P_TRIGGER, P_TARGET } from '../jsx/jsx.constants.js'
-import { getDocumentFragment, assignHelpers, getBindings } from './assign-helpers.js'
-import { addListeners } from './add-listeners.js'
-import { getShadowObserver } from './get-shadow-observer.js'
+import { type PlaitedTrigger, getPlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
 import { getPublicTrigger } from '../behavioral/get-public-trigger.js'
 import { canUseDOM } from '../utils/can-use-dom.js'
-import { ELEMENT_CALLBACKS } from './plaited.constants.js'
-import { type PlaitedTrigger, getPlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
-import type { PlaitedElement, Query, SelectorMatch } from './plaited.types.js'
+import type { Attrs, TemplateObject, CustomElementTag } from '../jsx/jsx.types.js'
+import { P_TRIGGER, P_TARGET, BOOLEAN_ATTRS } from '../jsx/jsx.constants.js'
+import { createTemplate } from '../jsx/create-template.js'
+import { addListeners } from './add-listeners.js'
+import { getDocumentFragment, assignHelpers, getBindings } from './assign-helpers.js'
+import { getShadowObserver } from './get-shadow-observer.js'
+import { PLAITED_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './plaited.constants.js'
+import type { PlaitedTemplate, PlaitedElement, Query, SelectorMatch } from './plaited.types.js'
 
 /**
  * Arguments passed to component's connected callback.
@@ -248,129 +248,118 @@ const createDocumentFragment = (html: string) => {
   tpl.setHTMLUnsafe(html)
   return tpl.content
 }
+
+interface DefineElementArgs<A extends PlaitedHandlers>
+  extends Omit<GetElementArgs<A>, 'delegatesFocus' | 'mode' | 'slotAssignment'> {
+  delegatesFocus?: boolean
+  mode?: 'open' | 'closed'
+  slotAssignment?: 'named' | 'manual'
+}
 /**
- * Creates and registers a custom element with Plaited's behavioral programming model.
- * Provides comprehensive custom element functionality with shadow DOM, form association,
- * and behavioral programming integration.
+ * Creates a template function for defining Plaited components with built-in SSR support.
+ * Combines custom element definition with template generation for server and client rendering.
  *
- * @template A Type extending PlaitedHandlers for element's event handling
- * @param config Element configuration and behavior definition
+ * @template A Type extending PlaitedHandlers for component behavior
+ * @param config Component configuration with template and behavior
+ * @returns Template function with metadata for component registration
  *
  * Features:
- * - Shadow DOM encapsulation
- * - Form association support
- * - Event delegation
+ * - Server-side rendering support
+ * - Custom element registration
+ * - Shadow DOM template generation
+ * - Event delegation setup
  * - Attribute observation
- * - Stream-based DOM mutations
- * - Behavioral programming model
- * - Automatic cleanup
+ * - Stream mutation support
  *
- * @example Basic Custom Element
- * ```ts
- * const MyElement = getElement({
- *   tag: 'my-element',
- *   shadowDom: html`
- *     <div p-target="container">
- *       <slot></slot>
- *     </div>
- *   `,
- *   mode: 'open',
- *   delegatesFocus: false,
- *   slotAssignment: 'named',
- *   observedAttributes: ['disabled'],
- *   publicEvents: ['change'],
- *
- *   bProgram({ $, trigger }) {
- *     const [container] = $('container');
- *
- *     return {
- *       onConnected() {
- *         console.log('Element connected');
- *       },
- *
- *       onAttributeChanged({ name, newValue }) {
- *         if (name === 'disabled') {
- *           container.attr('disabled', newValue);
- *         }
- *       }
- *     };
- *   }
- * });
- * ```
- *
- * @example Form-Associated Element
- * ```ts
- * const FormElement = getElement({
- *   tag: 'form-element',
- *   formAssociated: true,
- *   // ... other config
- *
- *   bProgram({ internals, trigger }) {
- *     return {
- *       onFormAssociated({ form }) {
- *         console.log('Associated with form:', form);
- *       },
- *
- *       UPDATE_VALUE({ value }) {
- *         internals.setFormValue(value);
- *         trigger({
- *           type: 'change',
- *           detail: value
- *         });
- *       }
- *     };
- *   }
- * });
- * ```
- *
- * @example Stream-Associated Element
- * ```ts
- * const StreamElement = getElement({
- *   tag: 'stream-element',
- *   streamAssociated: true,
- *   // ... other config
- *
- *   bProgram({ trigger }) {
- *     return {
- *       // DOM mutations handled automatically
- *     };
- *   }
- * });
- * ```
+ * @example
+ import type { type FT, defineElement, useSignal } from 'plaited'
+
+ const store = useSignal<number>(0)
+
+ const Publisher = defineElement({
+   tag: 'publisher-component',
+   shadowDom: (
+     <button
+       p-trigger={{ click: 'increment' }}
+       p-target='button'
+     >
+       increment
+     </button>
+   ),
+   publicEvents: ['add'],
+   bProgram({ bThreads, bThread, bSync }) {
+     bThreads.set({
+       onAdd: bThread([bSync({ waitFor: 'add' }), bSync({ request: { type: 'disable' } })]),
+     })
+     return {
+       increment() {
+         store.set(store.get() + 1)
+       },
+     }
+   },
+ })
+
+ const Subscriber = defineElement({
+   tag: 'subscriber-component',
+   shadowDom: <h1 p-target='count'>{store.get()}</h1>,
+   publicEvents: ['update'],
+   bProgram({ $, trigger }) {
+     store.listen('update', trigger)
+     return {
+       update(value: number) {
+         const [count] = $('count')
+         count.render(`${value}`)
+       },
+     }
+   },
+ })
+
+ export const Fixture: FT = () => (
+   <>
+     <Publisher />
+     <Subscriber />
+   </>
+ )
+
  *
  * @remarks
- * - Only registers if element isn't already defined
- * - Requires DOM environment (checks with canUseDOM)
- * - Automatically manages element lifecycle
- * - Handles attribute reflection
- * - Manages event delegation
- * - Provides automatic cleanup
+ * - Generates both client and server templates
+ * - Handles declarative shadow DOM
+ * - Manages component registration
+ * - Provides SSR-compatible output
  * - Maintains type safety
+ * - Handles hydration automatically
  *
- * Private Fields:
- * - #internals: ElementInternals instance
- * - #root: Shadow root reference
- * - #query: Shadow DOM query utility
- * - #shadowObserver: Mutation observer for p-trigger
- * - #trigger: Internal event trigger
- * - #useFeedback: Event feedback utility
- * - #useSnapshot: State snapshot utility
- * - #bThreads: Behavioral thread management
- * - #disconnectSet: Cleanup callback storage
+ * Return Value Properties:
+ * - registry: Set of registered child plaited elements tags
+ * - tag: Component's custom element tag
+ * - $: Template identifier
+ * - publicEvents: Available event types
+ * - observedAttributes: Observed attribute names
  *
+ * Default Configuration:
+ * - mode: 'open'
+ * - delegatesFocus: true
+ * - slotAssignment: 'named'
  */
-export const getElement = <A extends PlaitedHandlers>({
+export const defineElement = <A extends PlaitedHandlers>({
   tag,
-  formAssociated,
+  shadowDom,
+  mode = 'open',
+  delegatesFocus = true,
+  slotAssignment = 'named',
   publicEvents,
   observedAttributes = [],
-  shadowDom,
-  delegatesFocus,
-  mode,
-  slotAssignment,
   streamAssociated,
+  formAssociated,
   bProgram: callback,
-}: GetElementArgs<A>) => {
+}: DefineElementArgs<A>): PlaitedTemplate => {
+  const events: string[] = [
+    ...(publicEvents ?? []),
+    ...(streamAssociated ?
+      [ELEMENT_CALLBACKS.onAppend, ELEMENT_CALLBACKS.onPrepend, ELEMENT_CALLBACKS.onReplaceChildren]
+    : []),
+  ]
   if (canUseDOM() && !customElements.get(tag)) {
     customElements.define(
       tag,
@@ -498,4 +487,23 @@ export const getElement = <A extends PlaitedHandlers>({
       },
     )
   }
+  const registry = new Set<string>([...shadowDom.registry, tag])
+  const ft = ({ children = [], ...attrs }: Attrs) =>
+    createTemplate(tag, {
+      ...attrs,
+      children: [
+        createTemplate('template', {
+          shadowrootmode: mode,
+          shadowrootdelegatesfocus: delegatesFocus,
+          children: shadowDom,
+        }),
+        ...(Array.isArray(children) ? children : [children]),
+      ],
+    })
+  ft.registry = registry
+  ft.tag = tag
+  ft.$ = PLAITED_TEMPLATE_IDENTIFIER
+  ft.publicEvents = events
+  ft.observedAttributes = observedAttributes
+  return ft
 }

@@ -17,7 +17,7 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  * @example
  * ```ts
  * // In component context
- * const Component = defineTemplate({
+ * const Component = defineElement({
  *   tag: 'my-component',
  *   shadowDom: template,
  *   bProgram({ trigger }) {
