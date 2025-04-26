@@ -11,14 +11,14 @@ import {
   bProgram,
 } from '../behavioral/b-program.js'
 import { P_TRIGGER, P_TARGET } from '../jsx/jsx.constants.js'
-import { type Query, type SelectorMatch, getDocumentFragment, assignHelpers, getBindings } from './assign-helpers.js'
+import { getDocumentFragment, assignHelpers, getBindings } from './assign-helpers.js'
 import { addListeners } from './add-listeners.js'
 import { getShadowObserver } from './get-shadow-observer.js'
 import { getPublicTrigger } from '../behavioral/get-public-trigger.js'
 import { canUseDOM } from '../utils/can-use-dom.js'
 import { ELEMENT_CALLBACKS } from './plaited.constants.js'
 import { type PlaitedTrigger, getPlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
-import type { PlaitedElement } from './plaited.types.js'
+import type { PlaitedElement, Query, SelectorMatch } from './plaited.types.js'
 
 /**
  * Arguments passed to component's connected callback.

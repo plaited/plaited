@@ -1,7 +1,9 @@
 import type { Trigger } from '../behavioral/b-program.js'
 import { P_TRIGGER, P_TARGET } from '../jsx/jsx.constants.js'
 import { addListeners } from './add-listeners.js'
-import { type Bindings, assignHelpers } from './assign-helpers.js'
+import { assignHelpers } from './assign-helpers.js'
+import type { Bindings } from './plaited.types.js'
+
 const isElement = (node: Node): node is Element => node.nodeType === 1
 
 /**
