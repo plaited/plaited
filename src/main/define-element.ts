@@ -383,7 +383,7 @@ export const defineElement = <A extends PlaitedHandlers>({
         constructor() {
           super()
           this.#internals = this.attachInternals()
-          const frag = getDocumentFragment(this.#root, [shadowDom])
+          const frag = getDocumentFragment(this.#root, shadowDom)
           this.attachShadow({ mode, delegatesFocus, slotAssignment })
           this.#root.replaceChildren(frag)
           const { trigger, useFeedback, useSnapshot, bThreads } = bProgram()

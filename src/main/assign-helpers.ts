@@ -40,37 +40,34 @@ const updateAttributes = (element: Element, attr: string, val: string | null | n
   element.setAttribute(attr, `${val}`)
 }
 
-export const getDocumentFragment = (shadowRoot: ShadowRoot, templates: (TemplateObject | string | number)[]) => {
-  const content: (string | number)[] = []
-  const length = templates.length
-  for (let i = 0; i < length; i++) {
-    const fragment = templates[i]
-    if (isTypeOf<TemplateObject>(fragment, 'object')) {
-      const { html, stylesheets } = fragment
-      stylesheets.length && void updateShadowRootStyles(shadowRoot, new Set(stylesheets))
-      content.push(...html)
-    } else {
-      content.push(fragment)
-    }
-  }
+export const getDocumentFragment = (shadowRoot: ShadowRoot, templateObject: TemplateObject) => {
+  const { html, stylesheets } = templateObject
+  stylesheets.length && void updateShadowRootStyles(shadowRoot, new Set(stylesheets))
   const template = document.createElement('template')
-  template.setHTMLUnsafe(content.join(''))
+  template.setHTMLUnsafe(html.join(''))
   return template.content
 }
 
+const formatFragments = (shadowRoot: ShadowRoot, fragments: (number | string | TemplateObject | DocumentFragment)[]) =>
+  fragments.map((frag) =>
+    isTypeOf<TemplateObject>(frag, 'object') ? getDocumentFragment(shadowRoot, frag)
+    : isTypeOf<number>(frag, 'number') ? `${frag}`
+    : frag,
+  )
+
 export const getBindings = (shadowRoot: ShadowRoot): Bindings => ({
-  render(...templates) {
-    this.replaceChildren(getDocumentFragment(shadowRoot, templates))
+  render(...fragments) {
+    this.replaceChildren(...formatFragments(shadowRoot, fragments))
   },
-  insert(position, ...templates) {
-    const content = getDocumentFragment(shadowRoot, templates)
-    position === 'beforebegin' ? this.before(content)
-    : position === 'afterbegin' ? this.prepend(content)
-    : position === 'beforeend' ? this.append(content)
-    : this.after(content)
+  insert(position, ...fragments) {
+    const content = formatFragments(shadowRoot, fragments)
+    position === 'beforebegin' ? this.before(...content)
+    : position === 'afterbegin' ? this.prepend(...content)
+    : position === 'beforeend' ? this.append(...content)
+    : this.after(...content)
   },
-  replace(...templates) {
-    this.replaceWith(getDocumentFragment(shadowRoot, templates))
+  replace(...fragments) {
+    this.replaceWith(...formatFragments(shadowRoot, fragments))
   },
   attr(attr, val) {
     if (isTypeOf<string>(attr, 'string')) {

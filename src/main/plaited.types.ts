@@ -28,9 +28,9 @@ import { PLAITED_TEMPLATE_IDENTIFIER } from './plaited.constants.js'
 export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
 
 export type Bindings = {
-  render(this: Element, ...template: (TemplateObject | string | number)[]): void
-  insert(this: Element, position: Position, ...template: (TemplateObject | string | number)[]): void
-  replace(this: Element, ...template: (TemplateObject | string | number)[]): void
+  render(this: Element, ...template: (TemplateObject | string | number | DocumentFragment)[]): void
+  insert(this: Element, position: Position, ...template: (TemplateObject | string | number | DocumentFragment)[]): void
+  replace(this: Element, ...template: (TemplateObject | string | number | DocumentFragment)[]): void
   attr(this: Element, attr: Record<string, string | null | number | boolean>, val?: never): void
   attr(this: Element, attr: string, val?: string | null | number | boolean): string | null | void
 }
