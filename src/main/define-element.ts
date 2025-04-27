@@ -493,9 +493,11 @@ export const defineElement = <A extends PlaitedHandlers>({
             detail: { state, reason },
           })
         }
-        #addListeners(elements: Element[] | NodeList) {
-          for (const el of elements) {
-            if (!isElement(el) || (el.tagName === 'SLOT' && Boolean(el.assignedSlot))) continue // skip nested slots
+        #addListeners(elements: NodeListOf<Element> | Element[]) {
+          const length = elements.length
+          for (let i = 0; i < length; i++) {
+            const el = elements[i]
+            if (el.tagName === 'SLOT' && Boolean(el.assignedSlot)) continue // skip nested slots
             !delegates.has(el) &&
               delegates.set(
                 el,
@@ -534,6 +536,7 @@ export const defineElement = <A extends PlaitedHandlers>({
                         [node, ...node.querySelectorAll(`[${P_TRIGGER}]`)]
                       : node.querySelectorAll(`[${P_TRIGGER}]`),
                     )
+
                     assignHelpers(
                       bindings,
                       node.hasAttribute(P_TARGET) ?

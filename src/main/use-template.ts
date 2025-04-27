@@ -8,8 +8,8 @@ export const useTemplate = <T>(el: BoundElement<HTMLTemplateElement>, callback: 
   return (data: T) => {
     const clone = content.cloneNode(true) as DocumentFragment
     callback(
-      <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
-        assignHelpers<T>(bindings, clone.querySelectorAll<T>(`[${P_TARGET}${match}"${target}"]`)),
+      <E extends Element = Element>(target: string, match: SelectorMatch = '=') =>
+        assignHelpers<E>(bindings, clone.querySelectorAll<E>(`[${P_TARGET}${match}"${target}"]`)),
       data,
     )
     return clone
