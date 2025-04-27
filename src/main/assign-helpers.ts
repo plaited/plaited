@@ -1,6 +1,5 @@
 import type { TemplateObject } from '../jsx/jsx.types.js'
 import { BOOLEAN_ATTRS } from '../jsx/jsx.constants.js'
-
 import type { Bindings, BoundElement } from './plaited.types.js'
 /**
  * Cache for storing stylesheets per ShadowRoot.
@@ -89,8 +88,6 @@ export const getBindings = (shadowRoot: ShadowRoot): Bindings => ({
     }
   },
 })
-const boundElementSet = new WeakSet<Element>()
-const hasBinding = (element: Element): element is BoundElement => boundElementSet.has(element)
 /**
  * Assigns DOM manipulation methods to elements.
  * Adds render, insert, replace, and attribute manipulation capabilities.
@@ -101,10 +98,6 @@ const hasBinding = (element: Element): element is BoundElement => boundElementSe
  */
 export const assignHelpers = <T extends Element = Element>(bindings: Bindings, elements: NodeListOf<T> | T[]) => {
   const length = elements.length
-  for (let i = 0; i < length; i++) {
-    const el = elements[i]
-    if (hasBinding(el)) continue
-    boundElementSet.add(Object.assign(el, bindings))
-  }
+  for (let i = 0; i < length; i++) !('attr' in elements[i]) && Object.assign(elements[i], bindings)
   return elements as BoundElement<T>[]
 }

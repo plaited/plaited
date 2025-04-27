@@ -1,6 +1,5 @@
 import type { Trigger } from '../behavioral/b-program.js'
 import type { CustomElementTag, FunctionTemplate, TemplateObject } from '../jsx/jsx.types.js'
-import { PLAITED_TEMPLATE_IDENTIFIER } from './plaited.constants.js'
 
 /**
  * Valid insertion positions for DOM elements relative to a reference element.
@@ -50,12 +49,6 @@ export type BoundElement<T extends Element = Element> = T & Bindings
  */
 export type SelectorMatch = '=' | '~=' | '|=' | '^=' | '$=' | '*='
 
-export type Query = <T extends Element = Element>(
-  target: string,
-  /** This options enables querySelectorAll and modified the attribute selector for p-target{@default {all: false, mod: "=" } } {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}*/
-  match?: SelectorMatch,
-) => BoundElement<T>[]
-
 /**
  * Extended HTMLElement interface for Plaited custom elements.
  * Includes lifecycle callbacks and custom functionality.
@@ -104,7 +97,6 @@ export type PlaitedTemplate = FunctionTemplate & {
   tag: CustomElementTag
   observedAttributes: string[]
   publicEvents: string[]
-  $: typeof PLAITED_TEMPLATE_IDENTIFIER
 }
 /**
  * Type for JSON-serializable message details.

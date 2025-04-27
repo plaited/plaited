@@ -17,7 +17,7 @@ import { P_TRIGGER, P_TARGET, BOOLEAN_ATTRS } from '../jsx/jsx.constants.js'
 import { createTemplate } from '../jsx/create-template.js'
 import { getDocumentFragment, assignHelpers, getBindings } from './assign-helpers.js'
 import { PLAITED_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './plaited.constants.js'
-import type { PlaitedTemplate, PlaitedElement, Query, SelectorMatch, Bindings } from './plaited.types.js'
+import type { PlaitedTemplate, PlaitedElement, SelectorMatch, Bindings, BoundElement } from './plaited.types.js'
 
 /**
  * Arguments passed to component's connected callback.
@@ -34,7 +34,11 @@ import type { PlaitedTemplate, PlaitedElement, Query, SelectorMatch, Bindings } 
  * @property bSync Synchronization utility
  */
 export type BProgramArgs = {
-  $: Query
+  $: <E extends Element = Element>(
+    target: string,
+    /** This options enables querySelectorAll and modified the attribute selector for p-target{@default {all: false, mod: "=" } } {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}*/
+    match?: SelectorMatch,
+  ) => NodeListOf<BoundElement<E>>
   root: ShadowRoot
   host: PlaitedElement
   internals: ElementInternals
@@ -441,7 +445,7 @@ export const defineElement = <A extends PlaitedHandlers>({
             // bind connectedCallback to the custom element with the following arguments
             const handlers = callback.bind(this)({
               $: <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
-                Array.from(this.#root.querySelectorAll<T>(`[${P_TARGET}${match}"${target}"]`)),
+                this.#root.querySelectorAll<BoundElement<T>>(`[${P_TARGET}${match}"${target}"]`),
               host: this,
               root: this.#root,
               internals: this.#internals,
