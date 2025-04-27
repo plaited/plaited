@@ -1,6 +1,6 @@
-import { defineTemplate, useAttributesObserver } from 'plaited'
+import { defineElement, useAttributesObserver } from 'plaited'
 
-export const AttributesObserver = defineTemplate({
+export const AttributesObserver = defineElement({
   tag: 'attribute-observer',
   shadowDom: (
     <>

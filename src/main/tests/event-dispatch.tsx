@@ -1,6 +1,6 @@
-import { defineTemplate, useDispatch } from 'plaited'
+import { defineElement, useDispatch } from 'plaited'
 
-export const Nested = defineTemplate({
+export const Nested = defineElement({
   tag: 'nested-el',
   shadowDom: (
     <button
@@ -21,7 +21,7 @@ export const Nested = defineTemplate({
   },
 })
 
-export const Outer = defineTemplate({
+export const Outer = defineElement({
   tag: 'outer-el',
   shadowDom: (
     <div>
@@ -39,7 +39,7 @@ export const Outer = defineTemplate({
   },
 })
 
-export const Slotted = defineTemplate({
+export const Slotted = defineElement({
   tag: 'parent-el',
   shadowDom: (
     <div>

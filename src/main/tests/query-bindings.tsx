@@ -1,4 +1,4 @@
-import { type Position, defineTemplate } from 'plaited'
+import { type Position, defineElement, useTemplate } from 'plaited'
 
 let did = 1
 const adjectives = [
@@ -63,43 +63,51 @@ const buildData = (count: number): Data => {
   return data
 }
 
-const Row = (data: DataItem) => (
-  <tr p-target={`${data.id}`}>
-    <td className='col-md-1'>{data.id}</td>
-    <td className='col-md-4'>
-      <a p-target='label'>{data.label}</a>
-    </td>
-    <td className='col-md-1'>
-      <a>
-        <span
-          className='glyphicon glyphicon-remove'
-          aria-hidden='true'
-          p-target='delete'
-        ></span>
-      </a>
-    </td>
-    <td className='col-md-6'></td>
-  </tr>
-)
-
-export const Fixture = defineTemplate({
+export const Fixture = defineElement({
   shadowDom: (
     <div p-target='root'>
       <table p-target='table'></table>
+      <template p-target='row-template'>
+        <tr p-target='row'>
+          <td
+            className='col-md-1'
+            p-target='id'
+          ></td>
+          <td className='col-md-4'>
+            <a p-target='label'></a>
+          </td>
+          <td className='col-md-1'>
+            <a>
+              <span
+                className='glyphicon glyphicon-remove'
+                aria-hidden='true'
+                p-target='delete'
+              ></span>
+            </a>
+          </td>
+          <td className='col-md-6'></td>
+        </tr>
+      </template>
     </div>
   ),
   tag: 'table-fixture',
   publicEvents: ['insert', 'render', 'replace', 'remove', 'removeAttributes', 'getAttribute', 'multiSetAttributes'],
   bProgram({ $ }) {
+    const [template] = $<HTMLTemplateElement>('row-template')
+    const cb = useTemplate<DataItem>(template, ($, data) => {
+      $('row')[0].attr('p-target', data.id)
+      $('id')[0].render(data.id)
+      $('label')[0].render(data.label)
+    })
     return {
       replace() {
         $('table')[0].replace(<span>I'm just a span</span>)
       },
       render() {
-        $('table')[0].render(...buildData(100).map(Row))
+        $('table')[0].render(...buildData(100).map(cb))
       },
       insert(position: Position) {
-        $('table')[0].insert(position, ...buildData(100).map(Row))
+        $('table')[0].insert(position, ...buildData(100).map(cb))
       },
       remove() {
         $('table')[0].replaceChildren()

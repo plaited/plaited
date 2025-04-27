@@ -1,60 +1,6 @@
 import type { TemplateObject } from '../jsx/jsx.types.js'
-import { isTypeOf } from '../utils/is-type-of.js'
 import { BOOLEAN_ATTRS } from '../jsx/jsx.constants.js'
-/**
- * Valid insertion positions for DOM elements relative to a reference element.
- * Follows the insertAdjacentElement/HTML specification.
- *
- * @type {string}
- * Values:
- * - 'beforebegin': Before the reference element itself
- * - 'afterbegin':  Inside the reference element, before its first child
- * - 'beforeend':   Inside the reference element, after its last child
- * - 'afterend':    After the reference element itself
- *
- * @example
- * // Visual representation:
- * // <!-- beforebegin -->
- * // <div>           // reference element
- * //   <!-- afterbegin -->
- * //   content
- * //   <!-- beforeend -->
- * // </div>
- * // <!-- afterend -->
- *
- * @see https://developer.mozilla.org/en-US/docs/Web/API/Element/insertAdjacentElement
- */
-export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
-
-export type Bindings = {
-  render(this: Element, ...template: (TemplateObject | string | number)[]): void
-  insert(this: Element, position: Position, ...template: (TemplateObject | string | number)[]): void
-  replace(this: Element, ...template: (TemplateObject | string | number)[]): void
-  attr(this: Element, attr: Record<string, string | null | number | boolean>, val?: never): void
-  attr(this: Element, attr: string, val?: string | null | number | boolean): string | null | void
-}
-
-export type BoundElement<T extends Element = Element> = T & Bindings
-/**
- * Type for element matching strategies in attribute selectors.
- * Supports all CSS attribute selector operators.
- *
- * Values:
- * - '=':  Exact match
- * - '~=': Space-separated list contains
- * - '|=': Exact match or prefix followed by hyphen
- * - '^=': Starts with
- * - '$=': Ends with
- * - '*=': Contains
- */
-export type SelectorMatch = '=' | '~=' | '|=' | '^=' | '$=' | '*='
-
-export type Query = <T extends Element = Element>(
-  target: string,
-  /** This options enables querySelectorAll and modified the attribute selector for p-target{@default {all: false, mod: "=" } } {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}*/
-  match?: SelectorMatch,
-) => BoundElement<T>[]
-
+import type { Bindings, BoundElement } from './plaited.types.js'
 /**
  * Cache for storing stylesheets per ShadowRoot.
  * Prevents duplicate style injection and maintains stylesheet references.
@@ -92,40 +38,47 @@ const updateAttributes = (element: Element, attr: string, val: string | null | n
   element.setAttribute(attr, `${val}`)
 }
 
-export const getDocumentFragment = (shadowRoot: ShadowRoot, templates: (TemplateObject | string | number)[]) => {
-  const content: (string | number)[] = []
-  const length = templates.length
-  for (let i = 0; i < length; i++) {
-    const fragment = templates[i]
-    if (isTypeOf<TemplateObject>(fragment, 'object')) {
-      const { html, stylesheets } = fragment
-      stylesheets.length && void updateShadowRootStyles(shadowRoot, new Set(stylesheets))
-      content.push(...html)
-    } else {
-      content.push(fragment)
-    }
-  }
+export const getDocumentFragment = (shadowRoot: ShadowRoot, templateObject: TemplateObject) => {
+  const { html, stylesheets } = templateObject
+  stylesheets.length && void updateShadowRootStyles(shadowRoot, new Set(stylesheets))
   const template = document.createElement('template')
-  template.setHTMLUnsafe(content.join(''))
+  template.setHTMLUnsafe(html.join(''))
   return template.content
 }
 
+const formatFragments = (
+  shadowRoot: ShadowRoot,
+  fragments: (number | string | TemplateObject | DocumentFragment)[],
+) => {
+  const length = fragments.length
+  const toRet: (string | DocumentFragment)[] = []
+  for (let i = 0; i < length; i++) {
+    const frag = fragments[i]
+    toRet.push(
+      frag instanceof DocumentFragment || typeof frag === 'string' ? frag
+      : typeof frag === 'number' ? `${frag}`
+      : getDocumentFragment(shadowRoot, frag),
+    )
+  }
+  return toRet
+}
+
 export const getBindings = (shadowRoot: ShadowRoot): Bindings => ({
-  render(...templates) {
-    this.replaceChildren(getDocumentFragment(shadowRoot, templates))
+  render(...fragments) {
+    this.replaceChildren(...formatFragments(shadowRoot, fragments))
   },
-  insert(position, ...templates) {
-    const content = getDocumentFragment(shadowRoot, templates)
-    position === 'beforebegin' ? this.before(content)
-    : position === 'afterbegin' ? this.prepend(content)
-    : position === 'beforeend' ? this.append(content)
-    : this.after(content)
+  insert(position, ...fragments) {
+    const content = formatFragments(shadowRoot, fragments)
+    position === 'beforebegin' ? this.before(...content)
+    : position === 'afterbegin' ? this.prepend(...content)
+    : position === 'beforeend' ? this.append(...content)
+    : this.after(...content)
   },
-  replace(...templates) {
-    this.replaceWith(getDocumentFragment(shadowRoot, templates))
+  replace(...fragments) {
+    this.replaceWith(...formatFragments(shadowRoot, fragments))
   },
   attr(attr, val) {
-    if (isTypeOf<string>(attr, 'string')) {
+    if (typeof attr === 'string') {
       // Return the attribute value if val is not provided
       if (val === undefined) return this.getAttribute(attr)
       return updateAttributes(this, attr, val)
@@ -135,9 +88,6 @@ export const getBindings = (shadowRoot: ShadowRoot): Bindings => ({
     }
   },
 })
-
-const boundElementSet = new WeakSet<Element>()
-const hasBinding = (element: Element): element is BoundElement => boundElementSet.has(element)
 /**
  * Assigns DOM manipulation methods to elements.
  * Adds render, insert, replace, and attribute manipulation capabilities.
@@ -146,13 +96,8 @@ const hasBinding = (element: Element): element is BoundElement => boundElementSe
  * @param elements Array of elements to enhance
  * @returns Array of enhanced elements with bound methods
  */
-export const assignHelpers = <T extends Element = Element>(bindings: Bindings, elements: Element[]) => {
+export const assignHelpers = <T extends Element = Element>(bindings: Bindings, elements: NodeListOf<T> | T[]) => {
   const length = elements.length
-  for (let i = 0; i < length; i++) {
-    const el = elements[i]
-    if (hasBinding(el)) continue
-    const boundEl = Object.assign(el, bindings)
-    boundElementSet.add(boundEl)
-  }
+  for (let i = 0; i < length; i++) !('attr' in elements[i]) && Object.assign(elements[i], bindings)
   return elements as BoundElement<T>[]
 }

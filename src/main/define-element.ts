@@ -1,5 +1,3 @@
-import type { TemplateObject, CustomElementTag } from '../jsx/jsx.types.js'
-import { BOOLEAN_ATTRS } from '../jsx/jsx.constants.js'
 import { type BSync, type BThread, bThread, bSync } from '../behavioral/b-thread.js'
 import {
   type Handlers,
@@ -10,15 +8,16 @@ import {
   type UseSnapshot,
   bProgram,
 } from '../behavioral/b-program.js'
-import { P_TRIGGER, P_TARGET } from '../jsx/jsx.constants.js'
-import { type Query, type SelectorMatch, getDocumentFragment, assignHelpers, getBindings } from './assign-helpers.js'
-import { addListeners } from './add-listeners.js'
-import { getShadowObserver } from './get-shadow-observer.js'
-import { getPublicTrigger } from '../behavioral/get-public-trigger.js'
-import { canUseDOM } from '../utils/can-use-dom.js'
-import { ELEMENT_CALLBACKS } from './plaited.constants.js'
 import { type PlaitedTrigger, getPlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
-import type { PlaitedElement } from './plaited.types.js'
+import { getPublicTrigger } from '../behavioral/get-public-trigger.js'
+import { delegates, DelegatedListener } from '../utils/delegated-listener.js'
+import { canUseDOM } from '../utils/can-use-dom.js'
+import type { Attrs, TemplateObject, CustomElementTag } from '../jsx/jsx.types.js'
+import { P_TRIGGER, P_TARGET, BOOLEAN_ATTRS } from '../jsx/jsx.constants.js'
+import { createTemplate } from '../jsx/create-template.js'
+import { getDocumentFragment, assignHelpers, getBindings } from './assign-helpers.js'
+import { PLAITED_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './plaited.constants.js'
+import type { PlaitedTemplate, PlaitedElement, SelectorMatch, Bindings, BoundElement } from './plaited.types.js'
 
 /**
  * Arguments passed to component's connected callback.
@@ -35,7 +34,11 @@ import type { PlaitedElement } from './plaited.types.js'
  * @property bSync Synchronization utility
  */
 export type BProgramArgs = {
-  $: Query
+  $: <E extends Element = Element>(
+    target: string,
+    /** This options enables querySelectorAll and modified the attribute selector for p-target{@default {all: false, mod: "=" } } {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}*/
+    match?: SelectorMatch,
+  ) => NodeListOf<BoundElement<E>>
   root: ShadowRoot
   host: PlaitedElement
   internals: ElementInternals
@@ -248,129 +251,132 @@ const createDocumentFragment = (html: string) => {
   tpl.setHTMLUnsafe(html)
   return tpl.content
 }
+
+interface DefineElementArgs<A extends PlaitedHandlers>
+  extends Omit<GetElementArgs<A>, 'delegatesFocus' | 'mode' | 'slotAssignment'> {
+  delegatesFocus?: boolean
+  mode?: 'open' | 'closed'
+  slotAssignment?: 'named' | 'manual'
+}
+
+const getTriggerMap = (el: Element) =>
+  new Map((el.getAttribute(P_TRIGGER) as string).split(' ').map((pair) => pair.split(':')) as [string, string][])
+
+/** get trigger for elements respective event from triggerTypeMap */
+const getTriggerType = (event: Event, context: Element) => {
+  const el =
+    context.tagName !== 'SLOT' && event.currentTarget === context ? context
+    : event.composedPath().find((el) => el instanceof ShadowRoot) === context.getRootNode() ? context
+    : undefined
+  if (!el) return
+  return getTriggerMap(el).get(event.type)
+}
+const isElement = (node: Node): node is Element => node.nodeType === 1
 /**
- * Creates and registers a custom element with Plaited's behavioral programming model.
- * Provides comprehensive custom element functionality with shadow DOM, form association,
- * and behavioral programming integration.
+ * Creates a template function for defining Plaited components with built-in SSR support.
+ * Combines custom element definition with template generation for server and client rendering.
  *
- * @template A Type extending PlaitedHandlers for element's event handling
- * @param config Element configuration and behavior definition
+ * @template A Type extending PlaitedHandlers for component behavior
+ * @param config Component configuration with template and behavior
+ * @returns Template function with metadata for component registration
  *
  * Features:
- * - Shadow DOM encapsulation
- * - Form association support
- * - Event delegation
+ * - Server-side rendering support
+ * - Custom element registration
+ * - Shadow DOM template generation
+ * - Event delegation setup
  * - Attribute observation
- * - Stream-based DOM mutations
- * - Behavioral programming model
- * - Automatic cleanup
+ * - Stream mutation support
  *
- * @example Basic Custom Element
- * ```ts
- * const MyElement = getElement({
- *   tag: 'my-element',
- *   shadowDom: html`
- *     <div p-target="container">
- *       <slot></slot>
- *     </div>
- *   `,
- *   mode: 'open',
- *   delegatesFocus: false,
- *   slotAssignment: 'named',
- *   observedAttributes: ['disabled'],
- *   publicEvents: ['change'],
- *
- *   bProgram({ $, trigger }) {
- *     const [container] = $('container');
- *
- *     return {
- *       onConnected() {
- *         console.log('Element connected');
- *       },
- *
- *       onAttributeChanged({ name, newValue }) {
- *         if (name === 'disabled') {
- *           container.attr('disabled', newValue);
- *         }
- *       }
- *     };
- *   }
- * });
- * ```
- *
- * @example Form-Associated Element
- * ```ts
- * const FormElement = getElement({
- *   tag: 'form-element',
- *   formAssociated: true,
- *   // ... other config
- *
- *   bProgram({ internals, trigger }) {
- *     return {
- *       onFormAssociated({ form }) {
- *         console.log('Associated with form:', form);
- *       },
- *
- *       UPDATE_VALUE({ value }) {
- *         internals.setFormValue(value);
- *         trigger({
- *           type: 'change',
- *           detail: value
- *         });
- *       }
- *     };
- *   }
- * });
- * ```
- *
- * @example Stream-Associated Element
- * ```ts
- * const StreamElement = getElement({
- *   tag: 'stream-element',
- *   streamAssociated: true,
- *   // ... other config
- *
- *   bProgram({ trigger }) {
- *     return {
- *       // DOM mutations handled automatically
- *     };
- *   }
- * });
- * ```
+ * @example
+ import type { type FT, defineElement, useSignal } from 'plaited'
+
+ const store = useSignal<number>(0)
+
+ const Publisher = defineElement({
+   tag: 'publisher-component',
+   shadowDom: (
+     <button
+       p-trigger={{ click: 'increment' }}
+       p-target='button'
+     >
+       increment
+     </button>
+   ),
+   publicEvents: ['add'],
+   bProgram({ bThreads, bThread, bSync }) {
+     bThreads.set({
+       onAdd: bThread([bSync({ waitFor: 'add' }), bSync({ request: { type: 'disable' } })]),
+     })
+     return {
+       increment() {
+         store.set(store.get() + 1)
+       },
+     }
+   },
+ })
+
+ const Subscriber = defineElement({
+   tag: 'subscriber-component',
+   shadowDom: <h1 p-target='count'>{store.get()}</h1>,
+   publicEvents: ['update'],
+   bProgram({ $, trigger }) {
+     store.listen('update', trigger)
+     return {
+       update(value: number) {
+         const [count] = $('count')
+         count.render(`${value}`)
+       },
+     }
+   },
+ })
+
+ export const Fixture: FT = () => (
+   <>
+     <Publisher />
+     <Subscriber />
+   </>
+ )
+
  *
  * @remarks
- * - Only registers if element isn't already defined
- * - Requires DOM environment (checks with canUseDOM)
- * - Automatically manages element lifecycle
- * - Handles attribute reflection
- * - Manages event delegation
- * - Provides automatic cleanup
+ * - Generates both client and server templates
+ * - Handles declarative shadow DOM
+ * - Manages component registration
+ * - Provides SSR-compatible output
  * - Maintains type safety
+ * - Handles hydration automatically
  *
- * Private Fields:
- * - #internals: ElementInternals instance
- * - #root: Shadow root reference
- * - #query: Shadow DOM query utility
- * - #shadowObserver: Mutation observer for p-trigger
- * - #trigger: Internal event trigger
- * - #useFeedback: Event feedback utility
- * - #useSnapshot: State snapshot utility
- * - #bThreads: Behavioral thread management
- * - #disconnectSet: Cleanup callback storage
+ * Return Value Properties:
+ * - registry: Set of registered child plaited elements tags
+ * - tag: Component's custom element tag
+ * - $: Template identifier
+ * - publicEvents: Available event types
+ * - observedAttributes: Observed attribute names
  *
+ * Default Configuration:
+ * - mode: 'open'
+ * - delegatesFocus: true
+ * - slotAssignment: 'named'
  */
-export const getElement = <A extends PlaitedHandlers>({
+export const defineElement = <A extends PlaitedHandlers>({
   tag,
-  formAssociated,
+  shadowDom,
+  mode = 'open',
+  delegatesFocus = true,
+  slotAssignment = 'named',
   publicEvents,
   observedAttributes = [],
-  shadowDom,
-  delegatesFocus,
-  mode,
-  slotAssignment,
   streamAssociated,
+  formAssociated,
   bProgram: callback,
-}: GetElementArgs<A>) => {
+}: DefineElementArgs<A>): PlaitedTemplate => {
+  const events: string[] = [
+    ...(publicEvents ?? []),
+    ...(streamAssociated ?
+      [ELEMENT_CALLBACKS.onAppend, ELEMENT_CALLBACKS.onPrepend, ELEMENT_CALLBACKS.onReplaceChildren]
+    : []),
+  ]
   if (canUseDOM() && !customElements.get(tag)) {
     customElements.define(
       tag,
@@ -394,7 +400,7 @@ export const getElement = <A extends PlaitedHandlers>({
         constructor() {
           super()
           this.#internals = this.attachInternals()
-          const frag = getDocumentFragment(this.#root, [shadowDom])
+          const frag = getDocumentFragment(this.#root, shadowDom)
           this.attachShadow({ mode, delegatesFocus, slotAssignment })
           this.#root.replaceChildren(frag)
           const { trigger, useFeedback, useSnapshot, bThreads } = bProgram()
@@ -431,19 +437,15 @@ export const getElement = <A extends PlaitedHandlers>({
             // Get dom helper bindings
             const bindings = getBindings(this.#root)
             // Delegate listeners nodes with p-trigger directive on connection or upgrade
-            addListeners(this.#trigger, Array.from(this.#root.querySelectorAll<Element>(`[${P_TRIGGER}]`)))
+            this.#addListeners(this.#root.querySelectorAll<Element>(`[${P_TRIGGER}]`))
             // Bind DOM helpers to nodes with p-target directive on connection or upgrade
-            assignHelpers(bindings, Array.from(this.#root.querySelectorAll<Element>(`[${P_TARGET}]`)))
+            assignHelpers(bindings, this.#root.querySelectorAll<Element>(`[${P_TARGET}]`))
             // Create a shadow observer to watch for modification & addition of nodes with p-this.#trigger directive
-            this.#shadowObserver = getShadowObserver({
-              root: this.#root,
-              trigger: this.#trigger,
-              bindings,
-            })
+            this.#shadowObserver = this.#getShadowObserver(bindings)
             // bind connectedCallback to the custom element with the following arguments
             const handlers = callback.bind(this)({
               $: <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
-                Array.from(this.#root.querySelectorAll<T>(`[${P_TARGET}${match}"${target}"]`)),
+                this.#root.querySelectorAll<BoundElement<T>>(`[${P_TARGET}${match}"${target}"]`),
               host: this,
               root: this.#root,
               internals: this.#internals,
@@ -495,7 +497,88 @@ export const getElement = <A extends PlaitedHandlers>({
             detail: { state, reason },
           })
         }
+        #addListeners(elements: NodeListOf<Element> | Element[]) {
+          const length = elements.length
+          for (let i = 0; i < length; i++) {
+            const el = elements[i]
+            if (el.tagName === 'SLOT' && Boolean(el.assignedSlot)) continue // skip nested slots
+            !delegates.has(el) &&
+              delegates.set(
+                el,
+                new DelegatedListener((event) => {
+                  const type = el.getAttribute(P_TRIGGER) && getTriggerType(event, el)
+                  type ?
+                    /** if key is present in `p-trigger` trigger event on instance's bProgram */
+                    this.#trigger?.({ type, detail: event })
+                  : /** if key is not present in `p-trigger` remove event listener for this event on Element */
+                    el.removeEventListener(event.type, delegates.get(el))
+                }),
+              )
+            for (const [event] of getTriggerMap(el)) {
+              // add event listeners for each event type
+              el.addEventListener(event, delegates.get(el))
+            }
+          }
+        }
+        #getShadowObserver(bindings: Bindings) {
+          /**  Observes the addition of nodes to the shadow dom and changes to and child's p-trigger attribute */
+          const mo = new MutationObserver((mutationsList) => {
+            for (const mutation of mutationsList) {
+              if (mutation.type === 'attributes') {
+                const el = mutation.target
+                if (isElement(el)) {
+                  mutation.attributeName === P_TRIGGER && el.getAttribute(P_TRIGGER) && this.#addListeners([el])
+                  mutation.attributeName === P_TARGET && el.getAttribute(P_TARGET) && assignHelpers(bindings, [el])
+                }
+              } else if (mutation.addedNodes.length) {
+                const length = mutation.addedNodes.length
+                for (let i = 0; i < length; i++) {
+                  const node = mutation.addedNodes[i]
+                  if (isElement(node)) {
+                    this.#addListeners(
+                      node.hasAttribute(P_TRIGGER) ?
+                        [node, ...node.querySelectorAll(`[${P_TRIGGER}]`)]
+                      : node.querySelectorAll(`[${P_TRIGGER}]`),
+                    )
+
+                    assignHelpers(
+                      bindings,
+                      node.hasAttribute(P_TARGET) ?
+                        [node, ...node.querySelectorAll(`[${P_TARGET}]`)]
+                      : node.querySelectorAll(`[${P_TARGET}]`),
+                    )
+                  }
+                }
+              }
+            }
+          })
+          mo.observe(this.#root, {
+            attributeFilter: [P_TRIGGER, P_TARGET],
+            childList: true,
+            subtree: true,
+          })
+          return mo
+        }
       },
     )
   }
+  const registry = new Set<string>([...shadowDom.registry, tag])
+  const ft = ({ children = [], ...attrs }: Attrs) =>
+    createTemplate(tag, {
+      ...attrs,
+      children: [
+        createTemplate('template', {
+          shadowrootmode: mode,
+          shadowrootdelegatesfocus: delegatesFocus,
+          children: shadowDom,
+        }),
+        ...(Array.isArray(children) ? children : [children]),
+      ],
+    })
+  ft.registry = registry
+  ft.tag = tag
+  ft.$ = PLAITED_TEMPLATE_IDENTIFIER
+  ft.publicEvents = events
+  ft.observedAttributes = observedAttributes
+  return ft
 }

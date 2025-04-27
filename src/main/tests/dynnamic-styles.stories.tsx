@@ -1,5 +1,5 @@
 import type { StoryObj } from 'plaited/testing'
-import { defineTemplate, type PlaitedElement, css } from 'plaited'
+import { defineElement, type PlaitedElement, css } from 'plaited'
 
 const { noRepeat, repeat, initial } = css.create({
   initial: {
@@ -42,7 +42,7 @@ export const dynamicStyles: StoryObj = {
       actual: style?.textContent,
       expected: initial.stylesheet.join(''),
     })
-    defineTemplate({
+    defineElement({
       publicEvents: ['render'],
       tag: 'dynamic-only',
       shadowDom: (

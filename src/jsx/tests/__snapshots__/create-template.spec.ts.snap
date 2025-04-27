@@ -232,6 +232,4 @@ exports[`createTemplate: CustomElement with declarative shadow dom and nested de
 }
 `;
 
-exports[`ssr: filters out falsey classNames 1`] = `"<div class="truthy"></div>"`;
-
 exports[`createTemplate: Trims whitespace 1`] = `"<div>trims white-space</div>"`;

@@ -1,8 +1,8 @@
-import { type FT, defineTemplate, useSignal } from 'plaited'
+import { type FT, defineElement, useSignal } from 'plaited'
 
 const store = useSignal<number>(0)
 
-const Publisher = defineTemplate({
+const Publisher = defineElement({
   tag: 'publisher-component',
   shadowDom: (
     <button
@@ -25,7 +25,7 @@ const Publisher = defineTemplate({
   },
 })
 
-const Subscriber = defineTemplate({
+const Subscriber = defineElement({
   tag: 'subscriber-component',
   shadowDom: <h1 p-target='count'>{store.get()}</h1>,
   publicEvents: ['update'],

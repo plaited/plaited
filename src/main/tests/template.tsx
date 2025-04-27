@@ -1,17 +1,17 @@
-import { defineTemplate } from 'plaited'
+import { defineElement } from 'plaited'
 
-export const DelegateFalse = defineTemplate({
+export const DelegateFalse = defineElement({
   tag: 'delegate-false',
   delegatesFocus: false,
   shadowDom: <span>mode open and delegates focus</span>,
 })
 
-export const ModeOpen = defineTemplate({
+export const ModeOpen = defineElement({
   tag: 'mode-open',
   shadowDom: <span>mode open and delegates focus</span>,
 })
 
-export const ClosedMode = defineTemplate({
+export const ClosedMode = defineElement({
   tag: 'mode-closed',
   mode: 'closed',
   shadowDom: <span>mode open and delegates focus</span>,

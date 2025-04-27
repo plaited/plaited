@@ -1,8 +1,54 @@
 import type { Trigger } from '../behavioral/b-program.js'
-import type { CustomElementTag, FunctionTemplate } from '../jsx/jsx.types.js'
-import { PLAITED_TEMPLATE_IDENTIFIER } from './plaited.constants.js'
+import type { CustomElementTag, FunctionTemplate, TemplateObject } from '../jsx/jsx.types.js'
 
-export type { Position, SelectorMatch } from './assign-dom-helpers.js'
+/**
+ * Valid insertion positions for DOM elements relative to a reference element.
+ * Follows the insertAdjacentElement/HTML specification.
+ *
+ * @type {string}
+ * Values:
+ * - 'beforebegin': Before the reference element itself
+ * - 'afterbegin':  Inside the reference element, before its first child
+ * - 'beforeend':   Inside the reference element, after its last child
+ * - 'afterend':    After the reference element itself
+ *
+ * @example
+ * // Visual representation:
+ * // <!-- beforebegin -->
+ * // <div>           // reference element
+ * //   <!-- afterbegin -->
+ * //   content
+ * //   <!-- beforeend -->
+ * // </div>
+ * // <!-- afterend -->
+ *
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/Element/insertAdjacentElement
+ */
+export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
+
+export type Bindings = {
+  render(this: Element, ...template: (TemplateObject | string | number | DocumentFragment)[]): void
+  insert(this: Element, position: Position, ...template: (TemplateObject | string | number | DocumentFragment)[]): void
+  replace(this: Element, ...template: (TemplateObject | string | number | DocumentFragment)[]): void
+  attr(this: Element, attr: Record<string, string | null | number | boolean>, val?: never): void
+  attr(this: Element, attr: string, val?: string | null | number | boolean): string | null | void
+}
+
+export type BoundElement<T extends Element = Element> = T & Bindings
+/**
+ * Type for element matching strategies in attribute selectors.
+ * Supports all CSS attribute selector operators.
+ *
+ * Values:
+ * - '=':  Exact match
+ * - '~=': Space-separated list contains
+ * - '|=': Exact match or prefix followed by hyphen
+ * - '^=': Starts with
+ * - '$=': Ends with
+ * - '*=': Contains
+ */
+export type SelectorMatch = '=' | '~=' | '|=' | '^=' | '$=' | '*='
+
 /**
  * Extended HTMLElement interface for Plaited custom elements.
  * Includes lifecycle callbacks and custom functionality.
@@ -51,7 +97,6 @@ export type PlaitedTemplate = FunctionTemplate & {
   tag: CustomElementTag
   observedAttributes: string[]
   publicEvents: string[]
-  $: typeof PLAITED_TEMPLATE_IDENTIFIER
 }
 /**
  * Type for JSON-serializable message details.

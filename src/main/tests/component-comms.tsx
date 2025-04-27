@@ -1,9 +1,9 @@
-import { defineTemplate, type FT, useSignal } from 'plaited'
+import { defineElement, type FT, useSignal } from 'plaited'
 
 const sendDisable = useSignal()
 const sendAdd = useSignal<{ value: string }>()
 
-export const ElOne = defineTemplate({
+export const ElOne = defineElement({
   tag: 'elemenmt-one',
   publicEvents: ['disable'],
   shadowDom: (
@@ -31,7 +31,7 @@ export const ElOne = defineTemplate({
   },
 })
 
-export const ElTwo = defineTemplate({
+export const ElTwo = defineElement({
   tag: 'element-two',
   publicEvents: ['add'],
   shadowDom: <h1 p-target='header'>Hello</h1>,

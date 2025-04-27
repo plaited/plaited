@@ -32,11 +32,11 @@ export type Children = Child[] | Child
  */
 export type PlaitedAttributes = {
   class?: never
-  className?: string | Array<string | undefined | false | null>
+  className?: string | string[]
   children?: Children
   [P_TARGET]?: string | number
   [P_TRIGGER]?: Record<string, string>
-  stylesheet?: string | Array<string | undefined | false | null>
+  stylesheet?: string | string[]
   /** setting trusted to true will disable all escaping security policy measures for this element template */
   trusted?: boolean
   style?: CSSProperties

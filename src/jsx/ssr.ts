@@ -31,7 +31,7 @@ import { VALID_PRIMITIVE_CHILDREN, TEMPLATE_OBJECT_IDENTIFIER } from './jsx.cons
  * @example Style Injection
  * ```ts
  * // Styles are automatically collected and injected
- * const StyledComponent = defineTemplate({
+ * const StyledComponent = defineElement({
  *   tag: 'styled-component',
  *   shadowDom: (
  *     <div class={styles.container}>

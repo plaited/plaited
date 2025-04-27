@@ -1,4 +1,4 @@
-import { defineTemplate } from '../main/define-template.js'
+import { defineElement } from '../main/define-element.js'
 import { css } from './css.js'
 import { h } from '../jsx/create-template.js'
 import type { CustomElementTag } from '../jsx/jsx.types.js'
@@ -35,7 +35,7 @@ import type { CustomElementTag } from '../jsx/jsx.types.js'
  * - Follows web components specification
  */
 export const getDesignTokensElement = (stylesheet: string, tag: CustomElementTag = 'design-tokens') => {
-  return defineTemplate({
+  return defineElement({
     tag,
     shadowDom: h('slot', {
       ...css.assign(

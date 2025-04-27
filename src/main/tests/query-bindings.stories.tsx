@@ -14,7 +14,7 @@ export const beforebegin: StoryObj = {
       given: 'before calling trigger',
       should: 'root child count should be 100',
       actual: root?.childElementCount,
-      expected: 1,
+      expected: 2,
     })
     fixture.trigger({ type: 'insert', detail: 'beforebegin' })
     root = await findByAttribute<HTMLDivElement>('p-target', 'root')
@@ -22,7 +22,7 @@ export const beforebegin: StoryObj = {
       given: 'after calling trigger',
       should: 'root child count should be 101',
       actual: root?.childElementCount,
-      expected: 101,
+      expected: 102,
     })
     const table = await findByAttribute<HTMLTableElement>('p-target', 'table')
     assert({
@@ -123,9 +123,9 @@ export const afterend: StoryObj = {
     let root = await findByAttribute<HTMLDivElement>('p-target', 'root')
     assert({
       given: 'before calling trigger',
-      should: 'root child count should be 1',
+      should: 'root child count should be 2',
       actual: root?.childElementCount,
-      expected: 1,
+      expected: 2,
     })
     fixture.trigger({ type: 'insert', detail: 'afterend' })
     root = await findByAttribute<HTMLDivElement>('p-target', 'root')
@@ -133,7 +133,7 @@ export const afterend: StoryObj = {
       given: 'after calling trigger',
       should: 'root child count should be 101',
       actual: root?.childElementCount,
-      expected: 101,
+      expected: 102,
     })
     const table = await findByAttribute<HTMLTableElement>('p-target', 'table')
     assert({

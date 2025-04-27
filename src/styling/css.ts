@@ -99,13 +99,13 @@ const keyframes = (name: string, frames: CSSKeyFrames) => {
 }
 
 const assign = (...styleObjects: Array<StylesObject | undefined | false | null>) => {
-  const cls: Array<string | undefined | false | null> = []
-  const style: Array<string | undefined | false | null> = []
+  const cls: string[] = []
+  const style: string[] = []
   for (const styleObject of styleObjects) {
     if (!styleObject) continue
     const { className, stylesheet } = styleObject
-    className && cls.push(...(Array.isArray(className) ? className : [className]))
-    stylesheet && style.push(...(Array.isArray(stylesheet) ? stylesheet : [stylesheet]))
+    className && cls.push(...(Array.isArray(className) ? (className.filter(Boolean) as string[]) : [className]))
+    stylesheet && style.push(...(Array.isArray(stylesheet) ? (stylesheet.filter(Boolean) as string[]) : [stylesheet]))
   }
   return { className: cls.length ? cls : undefined, stylesheet: style.length ? style : undefined }
 }

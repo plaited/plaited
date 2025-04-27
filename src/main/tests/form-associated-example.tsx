@@ -1,4 +1,4 @@
-import { defineTemplate, css } from 'plaited'
+import { defineElement, css } from 'plaited'
 import { isTypeOf } from 'plaited/utils'
 
 const styles = css.create({
@@ -19,7 +19,7 @@ const hostStyles = css.host({
   },
 })
 
-export const ToggleInput = defineTemplate<{
+export const ToggleInput = defineElement<{
   click(evt: MouseEvent & { target: HTMLInputElement }): void
   checked(val: boolean): void
   disabled(val: boolean): void
