@@ -10,15 +10,14 @@ import {
 } from '../behavioral/b-program.js'
 import { type PlaitedTrigger, getPlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
 import { getPublicTrigger } from '../behavioral/get-public-trigger.js'
+import { delegates, DelegatedListener } from '../utils/delegated-listener.js'
 import { canUseDOM } from '../utils/can-use-dom.js'
 import type { Attrs, TemplateObject, CustomElementTag } from '../jsx/jsx.types.js'
 import { P_TRIGGER, P_TARGET, BOOLEAN_ATTRS } from '../jsx/jsx.constants.js'
 import { createTemplate } from '../jsx/create-template.js'
-import { addListeners } from './add-listeners.js'
 import { getDocumentFragment, assignHelpers, getBindings } from './assign-helpers.js'
-import { getShadowObserver } from './get-shadow-observer.js'
 import { PLAITED_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './plaited.constants.js'
-import type { PlaitedTemplate, PlaitedElement, Query, SelectorMatch } from './plaited.types.js'
+import type { PlaitedTemplate, PlaitedElement, Query, SelectorMatch, Bindings } from './plaited.types.js'
 
 /**
  * Arguments passed to component's connected callback.
@@ -255,6 +254,20 @@ interface DefineElementArgs<A extends PlaitedHandlers>
   mode?: 'open' | 'closed'
   slotAssignment?: 'named' | 'manual'
 }
+
+const getTriggerMap = (el: Element) =>
+  new Map((el.getAttribute(P_TRIGGER) as string).split(' ').map((pair) => pair.split(':')) as [string, string][])
+
+/** get trigger for elements respective event from triggerTypeMap */
+const getTriggerType = (event: Event, context: Element) => {
+  const el =
+    context.tagName !== 'SLOT' && event.currentTarget === context ? context
+    : event.composedPath().find((el) => el instanceof ShadowRoot) === context.getRootNode() ? context
+    : undefined
+  if (!el) return
+  return getTriggerMap(el).get(event.type)
+}
+const isElement = (node: Node): node is Element => node.nodeType === 1
 /**
  * Creates a template function for defining Plaited components with built-in SSR support.
  * Combines custom element definition with template generation for server and client rendering.
@@ -420,15 +433,11 @@ export const defineElement = <A extends PlaitedHandlers>({
             // Get dom helper bindings
             const bindings = getBindings(this.#root)
             // Delegate listeners nodes with p-trigger directive on connection or upgrade
-            addListeners(this.#trigger, Array.from(this.#root.querySelectorAll<Element>(`[${P_TRIGGER}]`)))
+            this.#addListeners(this.#root.querySelectorAll<Element>(`[${P_TRIGGER}]`))
             // Bind DOM helpers to nodes with p-target directive on connection or upgrade
-            assignHelpers(bindings, Array.from(this.#root.querySelectorAll<Element>(`[${P_TARGET}]`)))
+            assignHelpers(bindings, this.#root.querySelectorAll<Element>(`[${P_TARGET}]`))
             // Create a shadow observer to watch for modification & addition of nodes with p-this.#trigger directive
-            this.#shadowObserver = getShadowObserver({
-              root: this.#root,
-              trigger: this.#trigger,
-              bindings,
-            })
+            this.#shadowObserver = this.#getShadowObserver(bindings)
             // bind connectedCallback to the custom element with the following arguments
             const handlers = callback.bind(this)({
               $: <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
@@ -483,6 +492,65 @@ export const defineElement = <A extends PlaitedHandlers>({
             type: ELEMENT_CALLBACKS.onFormStateRestore,
             detail: { state, reason },
           })
+        }
+        #addListeners(elements: Element[] | NodeList) {
+          for (const el of elements) {
+            if (!isElement(el) || (el.tagName === 'SLOT' && Boolean(el.assignedSlot))) continue // skip nested slots
+            !delegates.has(el) &&
+              delegates.set(
+                el,
+                new DelegatedListener((event) => {
+                  const type = el.getAttribute(P_TRIGGER) && getTriggerType(event, el)
+                  type ?
+                    /** if key is present in `p-trigger` trigger event on instance's bProgram */
+                    this.#trigger?.({ type, detail: event })
+                  : /** if key is not present in `p-trigger` remove event listener for this event on Element */
+                    el.removeEventListener(event.type, delegates.get(el))
+                }),
+              )
+            for (const [event] of getTriggerMap(el)) {
+              // add event listeners for each event type
+              el.addEventListener(event, delegates.get(el))
+            }
+          }
+        }
+        #getShadowObserver(bindings: Bindings) {
+          /**  Observes the addition of nodes to the shadow dom and changes to and child's p-trigger attribute */
+          const mo = new MutationObserver((mutationsList) => {
+            for (const mutation of mutationsList) {
+              if (mutation.type === 'attributes') {
+                const el = mutation.target
+                if (isElement(el)) {
+                  mutation.attributeName === P_TRIGGER && el.getAttribute(P_TRIGGER) && this.#addListeners([el])
+                  mutation.attributeName === P_TARGET && el.getAttribute(P_TARGET) && assignHelpers(bindings, [el])
+                }
+              } else if (mutation.addedNodes.length) {
+                const length = mutation.addedNodes.length
+                for (let i = 0; i < length; i++) {
+                  const node = mutation.addedNodes[i]
+                  if (isElement(node)) {
+                    this.#addListeners(
+                      node.hasAttribute(P_TRIGGER) ?
+                        [node, ...node.querySelectorAll(`[${P_TRIGGER}]`)]
+                      : node.querySelectorAll(`[${P_TRIGGER}]`),
+                    )
+                    assignHelpers(
+                      bindings,
+                      node.hasAttribute(P_TARGET) ?
+                        [node, ...node.querySelectorAll(`[${P_TARGET}]`)]
+                      : node.querySelectorAll(`[${P_TARGET}]`),
+                    )
+                  }
+                }
+              }
+            }
+          })
+          mo.observe(this.#root, {
+            attributeFilter: [P_TRIGGER, P_TARGET],
+            childList: true,
+            subtree: true,
+          })
+          return mo
         }
       },
     )

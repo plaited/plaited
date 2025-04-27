@@ -7,6 +7,7 @@ import type {
   FunctionTemplate,
 } from './jsx.types.js'
 import { isTypeOf } from '../utils/is-type-of.js'
+import { trueTypeOf } from '../utils/true-type-of.js'
 import { kebabCase } from '../utils/case.js'
 import { escape } from '../utils/escape.js'
 import {
@@ -66,7 +67,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     ...attributes
   } = attrs
   const registry: string[] = []
-  if (typeof _tag === 'function') {
+  if (isTypeOf<FunctionTemplate>(_tag, 'function')) {
     return _tag(attrs)
   }
   const tag = _tag.toLowerCase().trim()
@@ -80,7 +81,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const start = [`<${tag} `]
   /** handle JS reserved words commonly used in html class & for*/
   if (htmlFor) start.push(`for="${htmlFor}" `)
-  if (className) start.push(`class="${Array.isArray(className) ? className.filter(Boolean).join(' ') : className}" `)
+  if (className) start.push(`class="${Array.isArray(className) ? className.join(' ') : className}" `)
   /** if we have bpTrigger attribute wire up formatted correctly*/
   if (bpTrigger) {
     const value = Object.entries(bpTrigger)
@@ -112,7 +113,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       continue
     }
     /** P2 typeof attribute is NOT {@type Primitive} then skip and do nothing */
-    if (!PRIMITIVES.has(typeof value)) {
+    if (!PRIMITIVES.has(trueTypeOf(value))) {
       throw new Error(`Attributes not declared in PlaitedAttributes must be of type Primitive: ${key} is not primitive`)
     }
     /** set the value so long as it's not nullish in we use the formatted value  */
@@ -121,8 +122,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     start.push(`${key}="${trusted ? formattedValue : escape(formattedValue)}" `)
   }
   /** Create are stylesheet set */
-  let stylesheets =
-    stylesheet ? [...(Array.isArray(stylesheet) ? (stylesheet.filter(Boolean) as string[]) : [stylesheet])] : []
+  let stylesheets = stylesheet ? [...(Array.isArray(stylesheet) ? stylesheet : [stylesheet])] : []
 
   /** Our tag is a void tag so we can return it once we apply attributes */
   if (VOID_TAGS.has(tag)) {
@@ -150,7 +150,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       continue
     }
     /** P2 typeof child is NOT a valid primitive child then skip and do nothing */
-    if (!VALID_PRIMITIVE_CHILDREN.has(typeof child)) continue
+    if (!VALID_PRIMITIVE_CHILDREN.has(trueTypeOf(child))) continue
     /** P3 child IS {@type Primitive} */
     const str = trusted ? `${child}` : escape(`${child}`)
     end.push(str)
@@ -192,7 +192,7 @@ export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
       stylesheets.push(...child.stylesheets)
       registry.push(...child.registry)
     }
-    if (!VALID_PRIMITIVE_CHILDREN.has(typeof child)) continue
+    if (!VALID_PRIMITIVE_CHILDREN.has(trueTypeOf(child))) continue
     const safeChild = escape(`${child}`)
     html.push(safeChild)
   }

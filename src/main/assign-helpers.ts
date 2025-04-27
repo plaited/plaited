@@ -99,12 +99,12 @@ const hasBinding = (element: Element): element is BoundElement => boundElementSe
  * @param elements Array of elements to enhance
  * @returns Array of enhanced elements with bound methods
  */
-export const assignHelpers = <T extends Element = Element>(bindings: Bindings, elements: Element[]) => {
+export const assignHelpers = (bindings: Bindings, elements: NodeList | Element[]) => {
   const length = elements.length
   for (let i = 0; i < length; i++) {
-    const el = elements[i]
+    const el = elements[i] as Element
     if (hasBinding(el)) continue
     boundElementSet.add(Object.assign(el, bindings))
   }
-  return elements as BoundElement<T>[]
+  return elements
 }

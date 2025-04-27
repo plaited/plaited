@@ -286,7 +286,7 @@ const hoistStyles = css.create({
   },
 })
 
-test('ssr: Properly hoist and deduplicates multiple stylesheets on a single node', () => {
+test('createTemplate: Properly hoist and deduplicates multiple stylesheets on a single node', () => {
   expect(
     h('div', {
       ...css.assign(hoistStyles.var1, hoistStyles.var2, hoistStyles.var3),
@@ -294,24 +294,12 @@ test('ssr: Properly hoist and deduplicates multiple stylesheets on a single node
   ).toBe(2)
 })
 
-test('ssr: filters out falsey stylesheets', () => {
+test('createTemplate: filters out falsey style object', () => {
   expect(
     h('div', {
-      //@ts-ignore: testing falsey stylesheets
-      stylesheet: ['truthy', false && 'false', false && 'false', undefined && 'void', null && 'null'],
+      ...css.assign(hoistStyles.var1, hoistStyles.var2, false, undefined, null),
     }).stylesheets.length,
   ).toBe(1)
-})
-
-test('ssr: filters out falsey classNames', () => {
-  expect(
-    render(
-      h('div', {
-        //@ts-ignore: testing falsey classNames
-        className: ['truthy', false && 'false', undefined && 'void', null && 'null'],
-      }),
-    ),
-  ).toMatchSnapshot()
 })
 
 test('createTemplate: Trims whitespace', () => {
