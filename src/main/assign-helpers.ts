@@ -1,5 +1,4 @@
 import type { TemplateObject } from '../jsx/jsx.types.js'
-import { isTypeOf } from '../utils/is-type-of.js'
 import { BOOLEAN_ATTRS } from '../jsx/jsx.constants.js'
 
 import type { Bindings, BoundElement } from './plaited.types.js'
@@ -48,12 +47,22 @@ export const getDocumentFragment = (shadowRoot: ShadowRoot, templateObject: Temp
   return template.content
 }
 
-const formatFragments = (shadowRoot: ShadowRoot, fragments: (number | string | TemplateObject | DocumentFragment)[]) =>
-  fragments.map((frag) =>
-    isTypeOf<TemplateObject>(frag, 'object') ? getDocumentFragment(shadowRoot, frag)
-    : isTypeOf<number>(frag, 'number') ? `${frag}`
-    : frag,
-  )
+const formatFragments = (
+  shadowRoot: ShadowRoot,
+  fragments: (number | string | TemplateObject | DocumentFragment)[],
+) => {
+  const length = fragments.length
+  const toRet: (string | DocumentFragment)[] = []
+  for (let i = 0; i < length; i++) {
+    const frag = fragments[i]
+    toRet.push(
+      frag instanceof DocumentFragment || typeof frag === 'string' ? frag
+      : typeof frag === 'number' ? `${frag}`
+      : getDocumentFragment(shadowRoot, frag),
+    )
+  }
+  return toRet
+}
 
 export const getBindings = (shadowRoot: ShadowRoot): Bindings => ({
   render(...fragments) {
@@ -70,7 +79,7 @@ export const getBindings = (shadowRoot: ShadowRoot): Bindings => ({
     this.replaceWith(...formatFragments(shadowRoot, fragments))
   },
   attr(attr, val) {
-    if (isTypeOf<string>(attr, 'string')) {
+    if (typeof attr === 'string') {
       // Return the attribute value if val is not provided
       if (val === undefined) return this.getAttribute(attr)
       return updateAttributes(this, attr, val)
@@ -95,8 +104,7 @@ export const assignHelpers = <T extends Element = Element>(bindings: Bindings, e
   for (let i = 0; i < length; i++) {
     const el = elements[i]
     if (hasBinding(el)) continue
-    const boundEl = Object.assign(el, bindings)
-    boundElementSet.add(boundEl)
+    boundElementSet.add(Object.assign(el, bindings))
   }
   return elements as BoundElement<T>[]
 }
