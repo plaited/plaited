@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'bun:test'
-import { bProgram, bThread, bSync } from 'plaited/behavioral'
+import { bProgram, bThread, bSync, type SnapshotMessage } from 'plaited/behavioral'
 
 /**
  * Test suite for demonstrating the 'interrupt' idiom in behavioral programming.
@@ -55,8 +55,12 @@ describe('interrupt', () => {
    * - The `bThreads.has('addHot')` check should confirm the thread is neither running nor pending.
    */
   it('should interrupt', () => {
+    const snapshots: SnapshotMessage[] = []
     const actual: string[] = []
-    const { bThreads, trigger, useFeedback } = bProgram()
+    const { bThreads, trigger, useFeedback, useSnapshot } = bProgram()
+    useSnapshot((snapshot: SnapshotMessage) => {
+      snapshots.push(snapshot)
+    })
     bThreads.set({ addHot })
     useFeedback({
       hot() {
@@ -69,5 +73,6 @@ describe('interrupt', () => {
     trigger({ type: 'add' })
     expect(actual).toEqual(['hot', 'hot'])
     expect(bThreads.has('addHot')).toEqual({ running: false, pending: false })
+    expect(snapshots).toMatchSnapshot()
   })
 })
