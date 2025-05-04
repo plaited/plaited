@@ -39,10 +39,20 @@ describe('interrupt', () => {
   })
 
   /**
-   * Test case: Demonstrates that the 'terminate' event successfully interrupts the 'addHot' thread.
-   * After being interrupted, the thread stops executing and no longer requests 'hot' events,
-   * even if subsequent 'add' events are triggered.
-   * The thread is no longer running or pending.
+   * Test case: Verifies that the 'terminate' event correctly interrupts the 'addHot' b-thread.
+   *
+   * Steps:
+   * 1. Set up the b-program with the 'addHot' thread.
+   * 2. Register a feedback handler to track 'hot' events.
+   * 3. Trigger 'add' twice, causing 'addHot' to request 'hot' twice.
+   * 4. Trigger the 'terminate' event, which is configured as an interrupt for 'addHot'.
+   * 5. Trigger 'add' again after the interrupt.
+   *
+   * Expected outcome:
+   * - The 'hot' event should only be recorded twice (from before the interrupt).
+   * - The 'addHot' thread should be terminated by the 'terminate' event.
+   * - Subsequent 'add' events should not trigger 'hot' requests because the thread is no longer active.
+   * - The `bThreads.has('addHot')` check should confirm the thread is neither running nor pending.
    */
   it('should interrupt', () => {
     const actual: string[] = []

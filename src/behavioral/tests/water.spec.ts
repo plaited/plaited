@@ -2,8 +2,20 @@ import { test, expect } from 'bun:test'
 import { bProgram, bSync, bThread, type SnapshotMessage } from 'plaited/behavioral'
 
 /**
- * Test scenario: Demonstrates a simple behavioral program with a single thread
- * that requests the 'hot' event three times sequentially.
+ * Test scenario: Demonstrates a basic behavioral program (`bProgram`).
+ * It features a single b-thread (`addHot`) that sequentially requests the 'hot' event three times.
+ * This showcases the fundamental concept of a thread making requests.
+ *
+ * Setup:
+ * - A `bProgram` instance is created.
+ * - A b-thread named 'addHot' is defined using `bThread` and `bSync`.
+ *   - It consists of three steps, each requesting the 'hot' event.
+ * - A feedback handler using `useFeedback` is registered to track when 'hot' events are selected.
+ * - The program is initiated by triggering a 'start' event (though any event could start it).
+ *
+ * Expected Outcome:
+ * - The 'hot' event handler should be called three times, in sequence.
+ * - The `actual` array should contain ['hot', 'hot', 'hot'].
  */
 test('Add hot water 3 times', () => {
   const actual: string[] = []
@@ -25,10 +37,18 @@ test('Add hot water 3 times', () => {
 })
 
 /**
- * Test scenario: Demonstrates a behavioral program with two independent threads.
- * One thread requests 'hot' three times, and the other requests 'cold' three times.
- * Without coordination, the 'hot' requests are selected first due to priority,
- * followed by the 'cold' requests.
+ * Test scenario: Illustrates the behavior of multiple independent b-threads running concurrently.
+ * One thread (`addHot`) requests 'hot' three times, while another (`addCold`) requests 'cold' three times.
+ * This demonstrates the default event selection strategy based on thread registration order (priority).
+ *
+ * Setup:
+ * - Similar to the previous test, but with an additional 'addCold' thread.
+ * - Feedback handlers are registered for both 'hot' and 'cold' events.
+ *
+ * Expected Outcome:
+ * - Since 'addHot' is registered first (implicitly higher priority), all its 'hot' requests
+ *   are selected and executed before any 'cold' requests from 'addCold'.
+ * - The `actual` array should contain ['hot', 'hot', 'hot', 'cold', 'cold', 'cold'].
  */
 test('Add hot/cold water 3 times', () => {
   const actual: string[] = []
