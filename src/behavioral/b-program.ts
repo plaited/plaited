@@ -31,21 +31,28 @@ export type Disconnect = () => void
  * Represents a diagnostic message containing the state of behavioral threads at runtime.
  * Each array element describes a thread's status including:
  * - The thread identifier
- * - Whether it was selected for execution
- * - The event type
- * - Optional event details
- * - Thread priority
- * - Optional blocking thread information
+ * - Whether it was selected for execution in the current step
+ * - The event type requested or waited for by the thread
+ * - Optional event details associated with the request or wait
+ * - The priority level of the thread's bid
+ * - Optional identifier of a thread that is blocking this thread's request
  */
 export type SnapshotMessage = {
+  /** The unique identifier for the behavioral thread. */
   thread: string
+  /** Indicates if the thread's bid was selected for execution in the current step. */
   selected: boolean
+  /** The type of event the thread is requesting or waiting for. */
   type: string
+  /** Optional data associated with the event. */
   detail?: unknown
+  /** The priority level assigned to the thread's bid. Lower numbers indicate higher priority. */
   priority: number
+  /** If blocked, the identifier of the thread causing the block; otherwise, undefined. */
   blockedBy?: string
 }[]
 
+/** @internal Formats the internal state into a SnapshotMessage. */
 type SnapshotFormatter = (args: {
   pending: Map<string, PendingBid>
   selectedEvent: CandidateBid
@@ -53,41 +60,87 @@ type SnapshotFormatter = (args: {
 }) => SnapshotMessage
 
 /**
- * A callback function that processes diagnostic snapshots of the behavioral program's state.
- * Can be used for debugging, logging, or monitoring thread execution states.
- * @param msg An array of thread states containing execution details and selection status
- * @returns Void or a Promise that resolves to void
+ * A callback function invoked with a snapshot of the behavioral program's state at each step.
+ * Useful for debugging, logging, or monitoring the execution flow and thread interactions.
+ * The listener receives an array (`SnapshotMessage`) detailing the status of each active thread.
+ *
+ * @param msg An array representing the state of behavioral threads during a step.
+ * @returns Can be synchronous (`void`) or asynchronous (`Promise<void>`).
+ * @example
+ * const listener: SnapshotListener = (snapshot) => {
+ *   console.log('Current step snapshot:', snapshot);
+ * };
+ * useSnapshot(listener);
  */
 export type SnapshotListener = (msg: SnapshotMessage) => void | Promise<void>
 
+/**
+ * @internal Defines the basic structure for event handlers used in `useFeedback`.
+ * A record where keys are event types (strings) and values are functions
+ * that handle the event's detail payload.
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type DefaultHandlers = Record<string, (detail: any) => void | Promise<void>>
 
 /**
- * A collection of callback functions that execute when their corresponding requests are selected.
- * Handlers can be synchronous or asynchronous and execute non-blocking operations.
- * Extends DefaultHandlers with additional custom handlers of type T.
+ * Represents a collection of callback functions (handlers) keyed by event type.
+ * These handlers are executed when a corresponding event is selected and published by the b-program.
+ * Handlers can perform synchronous or asynchronous operations based on the event's detail.
+ *
+ * @template T Allows extending the base `DefaultHandlers` with more specific handler types.
+ * @example
+ * type MyHandlers = Handlers<{
+ *   'user/login': (credentials: { user: string }) => void;
+ *   'data/load': (params: { id: number }) => Promise<void>;
+ * }>;
+ *
+ * const myHandlers: MyHandlers = {
+ *   'user/login': ({ user }) => console.log(`${user} logged in`),
+ *   'data/load': async ({ id }) => { await fetchData(id); },
+ * };
  */
 export type Handlers<T = DefaultHandlers> = DefaultHandlers & T
+
 /**
- * Hook for subscribing to behavioral program events with custom handlers.
- * Enables pub/sub pattern for event handling and program state feedback.
- * @template T Type of event handlers, defaults to DefaultHandlers
- * @param handlers Object containing event handling functions
- * @returns A disconnect function that removes the event handlers when called
+ * A hook for subscribing to events published by the behavioral program.
+ * It allows external code to react to the events selected during the program's execution cycle.
+ * Provide an object where keys are event types and values are the corresponding handler functions.
+ *
+ * @template T The type definition for the handlers object, extending `DefaultHandlers`.
+ * @param handlers An object mapping event types (string) to handler functions.
+ *                 Each handler receives the `detail` payload of the selected event.
+ * @returns A `Disconnect` function. Call this function to unsubscribe the handlers and stop receiving events.
  * @example
  * const disconnect = useFeedback({
- *   onEventA: (detail) => console.log(detail),
- *   onEventB: async (detail) => await doSomething(detail)
+ *   'ui/button-click': (detail) => console.log('Button clicked:', detail),
+ *   'api/response': async (data) => {
+ *     await processApiResponse(data);
+ *   }
  * });
+ *
+ * // To stop listening:
+ * // disconnect();
  */
 export type UseFeedback = <T = DefaultHandlers>(handlers: Handlers<T>) => Disconnect
+
 /**
- * Hook for registering a snapshot listener to monitor behavioral program execution.
- * @param listener A callback function that receives state snapshots during program execution
- * @returns A disconnect function that removes the snapshot listener when called
+ * A hook for registering a `SnapshotListener` to observe the internal state of the b-program at each step.
+ * This is primarily used for debugging and monitoring purposes.
+ *
+ * @param listener The callback function (`SnapshotListener`) that will receive the `SnapshotMessage` array.
+ * @returns A `Disconnect` function. Call this function to unregister the listener.
+ * @example
+ * const snapshotListener: SnapshotListener = (snapshot) => {
+ *   // Log the snapshot or send it to a monitoring tool
+ *   console.table(snapshot);
+ * };
+ * const disconnectSnapshot = useSnapshot(snapshotListener);
+ *
+ * // To stop monitoring:
+ * // disconnectSnapshot();
  */
 export type UseSnapshot = (listener: SnapshotListener) => Disconnect
+
 /**
  * Utility for managing behavioral threads within a program.
  * @property has - Checks if a thread exists and its execution status
