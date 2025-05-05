@@ -2,69 +2,55 @@ import { escape } from '../utils/escape.js'
 import { isTypeOf } from '../utils/is-type-of.js'
 import type { TemplateObject } from './jsx.types.js'
 import { VALID_PRIMITIVE_CHILDREN, TEMPLATE_OBJECT_IDENTIFIER } from './jsx.constants.js'
+
 /**
- * Generates HTML string output for server-side rendering with style injection.
- * Combines multiple templates, handles style deduplication, and ensures proper HTML escaping.
+ * @description Generates an HTML string from Plaited template objects for server-side rendering (SSR).
+ * It recursively processes templates, collects unique stylesheets, and injects them into the resulting HTML string.
+ * Primitive values are safely escaped.
  *
- * Features:
- * - Style deduplication
- * - Automatic style injection
- * - HTML escaping
- * - Template composition
- * - Head/body detection
+ * @param {...TemplateObject} templates - One or more Plaited template objects to render.
+ * @returns {string} An HTML string representation of the provided templates, with collected styles injected.
  *
- * @param templates Array of template objects to render
- * @returns HTML string with injected styles
+ * @example
+ * ```typescript
+ * import { ssr, createTemplate } from '@plaited/jsx'
+ * import { MyComponent } from './my-component.js' // Assuming MyComponent is a PlaitedTemplate or FunctionTemplate
  *
- * @example Basic Usage
- * ```ts
- * const html = ssr(
- *   createTemplate('html', {}, [
- *     createTemplate('head', {}),
- *     createTemplate('body', {}, [
- *       MyComponent({ title: 'Hello' })
- *     ])
- *   ])
- * );
- * ```
- *
- * @example Style Injection
- * ```ts
- * // Styles are automatically collected and injected
- * const StyledComponent = defineElement({
- *   tag: 'styled-component',
- *   shadowDom: (
- *     <div class={styles.container}>
- *       Content
- *     </div>
+ * const pageTemplate = createTemplate('html', {
+ *    lang: 'en'
+ *    children: [
+ *   createTemplate('head', {},
+ *     createTemplate('meta', { charset: 'utf-8' }),
+ *     createTemplate('title', {}, 'My SSR Page')
+ *   ),
+ *   createTemplate('body', {},
+ *     createTemplate('header', {},
+ *       createTemplate('h1', {}, 'Welcome')
+ *     ),
+ *     MyComponent({ message: 'Hello from SSR!' })
  *   )
- * });
- *
- * const html = ssr(
- *   <html>
- *     <head />
- *     <body>
- *       <StyledComponent />
- *     </body>
- *   </html>
+ * ]
+ *  },
  * );
- * // Results in styles being injected inside template tag of styled-component
- * ```
  *
- * Style Injection Rules:
- * 1. Collects all unique styles from templates that are not part of plaited elements shadow dom
- * 2. Injects before </head> if found
- * 3. Injects after <body> if no </head>
- * 4. Injects before html template content if no <body> or </head>
- * 4. Deduplicates identical styles
+ * const htmlString = ssr(pageTemplate);
+ *
+ * console.log(htmlString);
+ * // Output will be the HTML string with styles from MyComponent (and others)
+ * // injected right before the closing </head> tag (or after <body> if no <head>).
+ * ```
  *
  * @remarks
- * - Handles nested template composition
- * - Safely escapes primitive values
- * - Skips invalid child types
- * - Maintains template object structure
- * - Optimizes style injection
- * - Preserves HTML structure
+ * - **Style Injection:** Stylesheets (`.stylesheets`) from all processed `TemplateObject` instances are collected.
+ *   Duplicate stylesheets are automatically ignored. The collected styles are combined into a single `<style>`
+ *   tag and injected into the HTML output.
+ * - **Injection Point:** The `<style>` tag is injected preferably right before the closing `</head>` tag.
+ *   If `</head>` is not found, it attempts to inject right after the opening `<body ...>` tag.
+ *   If neither is found, styles are prepended to the beginning of the generated string.
+ * - **Child Handling:** Only valid primitive types (string, number, boolean, bigint) and `TemplateObject`
+ *   instances are processed as children. Other types are ignored. Primitive children are escaped for safety.
+ * - **Template Structure:** It expects standard HTML structure (`<html>`, `<head>`, `<body>`) for optimal
+ *   style injection, but it will attempt injection even if the structure is non-standard.
  */
 export const ssr = (...templates: TemplateObject[]) => {
   const arr = []

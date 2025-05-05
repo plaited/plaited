@@ -2,7 +2,7 @@
  * Plaited Behavioral Programming Module
  *
  * This module provides tools and utilities for implementing application logic
- * using the Behavioral Programming paradigm. It allows developers to define
+ * using the Be havioral Programming paradigm. It allows developers to define
  * independent behavioral threads (b-threads) that coordinate through events.
  *
  * Key exports include:
