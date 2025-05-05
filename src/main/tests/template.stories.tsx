@@ -1,3 +1,21 @@
+/**
+ * Story suite demonstrating Shadow DOM initialization modes and behaviors.
+ * Tests various shadow root configurations and focus delegation.
+ *
+ * Tests:
+ * - Default 'open' mode behavior
+ * - Focus delegation settings
+ * - 'closed' mode behavior
+ * - Template hydration
+ * - Style application
+ *
+ * Key validations:
+ * - Shadow root mode settings
+ * - Focus delegation handling
+ * - Content hydration process
+ * - Style sheet adoption
+ */
+
 import type { StoryObj } from 'plaited/testing'
 import { type PlaitedElement, css, defineElement } from 'plaited'
 import { ModeOpen, DelegateFalse, ClosedMode } from './template.js'

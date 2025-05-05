@@ -985,7 +985,7 @@ export type DetailedSVGAttributes = DetailedHTMLAttributes & {
   gradientUnits?: 'userSpaceOnUse' | 'objectBoundingBox' | string
   height?: number | string
   href?: string
-  id?: string
+  id?: string | number
   'image-rendering'?: 'auto' | 'optimizeSpeed' | 'optimizeQuality' | string
   in?: 'SourceGraphic' | 'SourceAlpha' | 'BackgroundImage' | 'BackgroundAlpha' | 'FillPaint' | 'StrokePaint' | string
   in2?: 'SourceGraphic' | 'SourceAlpha' | 'BackgroundImage' | 'BackgroundAlpha' | 'FillPaint' | 'StrokePaint' | string

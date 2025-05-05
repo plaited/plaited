@@ -1,3 +1,58 @@
+/**
+ * Demonstrates how to expose and handle public events in Plaited components.
+ * Shows the interaction between parent and child components through event handling
+ * and state management.
+ *
+ * Features:
+ * - Public event declaration
+ * - Event bubbling control
+ * - Parent-child communication
+ * - State synchronization
+ * - Element attribute management
+ *
+ * @example
+ * ```tsx
+ * // Child component with public events
+ * const Child = defineElement({
+ *   tag: 'my-child',
+ *   publicEvents: ['statusChange'],
+ *   shadowDom: (
+ *     <button p-trigger={{ click: 'toggleStatus' }}>
+ *       Toggle
+ *     </button>
+ *   ),
+ *   bProgram({ host }) {
+ *     const dispatch = useDispatch(host);
+ *     return {
+ *       toggleStatus() {
+ *         dispatch({
+ *           type: 'statusChange',
+ *           detail: { active: true }
+ *         });
+ *       }
+ *     };
+ *   }
+ * });
+ *
+ * // Parent handling child events
+ * const Parent = defineElement({
+ *   tag: 'my-parent',
+ *   shadowDom: (
+ *     <Child p-trigger={{
+ *       statusChange: 'handleStatus'
+ *     }} />
+ *   ),
+ *   bProgram({ $ }) {
+ *     return {
+ *       handleStatus({ detail }) {
+ *         console.log('Status changed:', detail.active);
+ *       }
+ *     };
+ *   }
+ * });
+ * ```
+ */
+
 import { type FT, defineElement, useDispatch, isPlaitedElement } from 'plaited'
 
 const getPlaitedChildren = (slot: HTMLSlotElement) => [...slot.assignedElements()].filter(isPlaitedElement)

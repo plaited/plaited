@@ -1,3 +1,63 @@
+/**
+ * Demonstrates Plaited's DOM querying and manipulation capabilities through the $ selector
+ * and element bindings. Shows how to efficiently manage large datasets with templating
+ * and dynamic updates.
+ *
+ * Features:
+ * - Template-based rendering
+ * - Attribute manipulation
+ * - DOM manipulation methods
+ * - Position-based insertion
+ * - Batch operations
+ *
+ * @example
+ * ```tsx
+ * const ListComponent = defineElement({
+ *   tag: 'list-component',
+ *   shadowDom: (
+ *     <div p-target="container">
+ *       <template p-target="item-template">
+ *         <li p-target="item">
+ *           <span p-target="label" />
+ *           <button p-target="delete" />
+ *         </li>
+ *       </template>
+ *       <ul p-target="list" />
+ *     </div>
+ *   ),
+ *   bProgram({ $ }) {
+ *     const [template] = $<HTMLTemplateElement>('item-template');
+ *     const createItem = useTemplate(template, ($, item) => {
+ *       $('item')[0].attr('data-id', item.id);
+ *       $('label')[0].render(item.label);
+ *       $('delete')[0].render('Delete');
+ *     });
+ *
+ *     return {
+ *       // Insert items at start of list
+ *       prependItems(items) {
+ *         $('list')[0].insert('afterbegin', ...items.map(createItem));
+ *       },
+ *
+ *       // Replace all items
+ *       setItems(items) {
+ *         $('list')[0].render(...items.map(createItem));
+ *       },
+ *
+ *       // Update item attributes
+ *       updateItem(id, attrs) {
+ *         $('item', { mod: '*=', all: true }).forEach(item => {
+ *           if (item.getAttribute('data-id') === id) {
+ *             item.attr(attrs);
+ *           }
+ *         });
+ *       }
+ *     };
+ *   }
+ * });
+ * ```
+ */
+
 import { type Position, defineElement, useTemplate } from 'plaited'
 
 let did = 1
