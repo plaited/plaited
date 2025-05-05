@@ -1,24 +1,25 @@
 /// <reference lib="dom" />
 /**
- * Checks if the current environment has access to the DOM API.
- * Useful for conditional execution of DOM-dependent code in isomorphic applications.
+ * @description Checks if the current JavaScript environment has access to the standard DOM APIs.
+ * This is useful for creating isomorphic (universal) applications that can run on both the server and the client.
  *
- * Verifies:
- * - Window object exists
- * - Document object exists
- * - createElement method is available
- *
- * @returns {boolean} true if running in a browser environment with DOM access,
- *                    false if in a non-DOM environment (e.g., server-side rendering)
+ * @returns {boolean} Returns `true` if the code is running in a browser-like environment
+ * where `window`, `window.document`, and `window.document.createElement` are available.
+ * Returns `false` otherwise (e.g., in a Node.js environment without a DOM simulation library).
  *
  * @example
+ * ```typescript
+ * import { canUseDOM } from 'plaited/utils';
+ *
  * if (canUseDOM()) {
- *   // Safe to use DOM APIs
- *   document.getElementById('app')
+ *   // This code runs only in the browser
+ *   const element = document.getElementById('my-element');
+ *   element?.addEventListener('click', () => console.log('Clicked!'));
  * } else {
- *   // Handle non-DOM environment
- *   console.log('DOM not available')
+ *   // This code runs only on the server (or non-DOM environment)
+ *   console.log('DOM APIs are not available.');
  * }
+ * ```
  */
 export const canUseDOM = () => {
   return !!(typeof window !== 'undefined' && window.document && window.document.createElement)

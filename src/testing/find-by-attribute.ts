@@ -1,74 +1,57 @@
 /**
- * Type definition for the shadow DOM-aware attribute finder function.
- * Supports generic element types and optional search context.
+ * @description Type definition for a function that asynchronously finds an element
+ * by a specific attribute name and value, searching through light and shadow DOM.
  *
- * @template T Element type to search for (defaults to HTMLElement | SVGElement)
- * @param attributeName Name of attribute to match
- * @param attributeValue Value to match (string or RegExp)
- * @param context Optional element to limit search scope
- * @returns Promise resolving to matched element or undefined
+ * @template T - The expected element type (HTMLElement or SVGElement) to be returned. Defaults to `HTMLElement | SVGElement`.
+ * @param {string} attributeName - The name of the attribute to search for.
+ * @param {string | RegExp} attributeValue - The exact string value or a regular expression pattern to match against the attribute's value.
+ * @param {HTMLElement | SVGElement} [context=document] - An optional element within which to limit the search scope. Defaults to the entire `document`.
+ * @returns {Promise<T | undefined>} A promise that resolves to the first element (of type T) with the matching attribute, or `undefined` if no match is found.
  */
 export type FindByAttribute = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
   attributeName: string,
   attributeValue: string | RegExp,
   context?: HTMLElement | SVGElement,
 ) => Promise<T | undefined>
+
 /**
- * Asynchronously finds elements by attribute, searching through both light and shadow DOM.
- * Supports string and RegExp matching with optional search context.
+ * @description Asynchronously searches for an element by a specific attribute and its value,
+ * traversing both the light DOM and any nested shadow DOM trees.
  *
- * @template T Element type to return (defaults to HTMLElement | SVGElement)
- * @param attributeName Attribute name to search for
- * @param attributeValue Attribute value or pattern to match
- * @param context Optional element to scope the search
- * @returns Promise<T | undefined> First matching element or undefined
+ * @template T - The expected element type (HTMLElement or SVGElement) to be returned. Defaults to `HTMLElement | SVGElement`.
+ * @param {string} attributeName - The name of the attribute to query.
+ * @param {string | RegExp} attributeValue - The exact string value or a regular expression to match against the attribute's value.
+ * @param {HTMLElement | SVGElement} [context=document] - An optional element (or the document itself) to serve as the starting point for the search. Defaults to `document`.
+ * @returns {Promise<T | undefined>} A promise that resolves with the first matching element (cast to type T) or `undefined` if no element with the specified attribute and value is found.
  *
  * @example Basic Usage
- * ```ts
- * // Find by exact match
- * const element = await findByAttribute('data-testid', 'user-profile');
+ * ```typescript
+ * import { findByAttribute } from 'plaited/testing';
  *
- * // Find by pattern
- * const element = await findByAttribute('class', /button-\w+/);
+ * // Find an element with the attribute data-testid="login-button"
+ * const loginButton = await findByAttribute('data-testid', 'login-button');
+ *
+ * // Find an element whose class attribute contains 'icon-' followed by letters
+ * const iconElement = await findByAttribute('class', /icon-\w+/);
  * ```
  *
- * @example With Context and Type
- * ```ts
- * // Search within specific container
- * const container = document.querySelector('.container');
- * const button = await findByAttribute<HTMLButtonElement>(
- *   'role',
- *   'submit',
- *   container
- * );
- * ```
+ * @example Usage with Context and Specific Type
+ * ```typescript
+ * const container = document.getElementById('user-section');
  *
- * @example Shadow DOM Search
- * ```ts
- * // Searches through shadow DOM boundaries
- * const element = await findByAttribute(
- *   'p-target',
- *   'content',
- *   customElement
- * );
- * ```
+ * // Find an <input> element within the container with name="email"
+ * const emailInput = await findByAttribute<HTMLInputElement>('name', 'email', container);
  *
- * Features:
- * - Shadow DOM traversal
- * - Regular expression support
- * - Type-safe element returns
- * - Scoped searching
- * - Async operation
- * - Animation frame timing
+ * if (emailInput) {
+ *   console.log(emailInput.value);
+ * }
+ * ```
  *
  * @remarks
- * - Returns first matching element
- * - Searches synchronously but returns Promise
- * - Traverses all shadow roots
- * - Uses requestAnimationFrame
- * - Handles missing attributes
- * - Type-safe return values
- *
+ * - The search is performed recursively through all child nodes (element nodes) and shadow roots.
+ * - It checks the attribute value using `getAttribute`.
+ * - Handles both exact string matches and regular expression tests.
+ * - The search operation is scheduled using `requestAnimationFrame`, but the core traversal is synchronous within that frame.
  */
 export const findByAttribute: FindByAttribute = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
   attributeName: string,
