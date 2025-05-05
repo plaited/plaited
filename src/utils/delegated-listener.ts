@@ -1,14 +1,53 @@
 /**
- * Class that implements the EventListener interface for delegated event handling.
- * Wraps callback functions to handle events in a consistent way with proper typing.
+ * Event listener class that implements the EventListener interface for robust event delegation.
+ * Provides type-safe event handling and proper Promise handling for async callbacks.
  *
- * @template T Type of Event to be handled, defaults to base Event
+ * @template T - Event type to handle, extends the base Event interface (e.g., MouseEvent, KeyboardEvent)
+ *
+ * @implements {EventListener}
+ *
+ * @remarks
+ * Key features:
+ * - Type-safe event handling with TypeScript
+ * - Support for both sync and async callbacks
+ * - Proper 'this' binding in event handlers
+ * - Compatible with all standard DOM events
+ * - Memory-efficient event delegation
  *
  * @example
- * const listener = new DelegatedListener((e: MouseEvent) => {
- *   console.log('Mouse position:', e.clientX, e.clientY)
+ * Basic Usage
+ * ```ts
+ * // Simple click handler
+ * const clickListener = new DelegatedListener((e: MouseEvent) => {
+ *   console.log('Clicked at:', e.clientX, e.clientY);
  * });
- * element.addEventListener('click', listener);
+ * element.addEventListener('click', clickListener);
+ * ```
+ *
+ * @example
+ * Async Event Handling
+ * ```ts
+ * // Async form submission handler
+ * const submitListener = new DelegatedListener(async (e: SubmitEvent) => {
+ *   e.preventDefault();
+ *   await submitForm(e.target as HTMLFormElement);
+ * });
+ * form.addEventListener('submit', submitListener);
+ * ```
+ *
+ * @example
+ * Custom Event Handling
+ * ```ts
+ * // Custom event handler with type checking
+ * interface CustomEvent extends Event {
+ *   detail: { message: string };
+ * }
+ *
+ * const customListener = new DelegatedListener((e: CustomEvent) => {
+ *   console.log(e.detail.message);
+ * });
+ * element.addEventListener('custom-event', customListener);
+ * ```
  */
 export class DelegatedListener<T extends Event = Event> {
   callback: (ev: T) => void | Promise<void>
@@ -19,13 +58,36 @@ export class DelegatedListener<T extends Event = Event> {
     void this.callback(evt)
   }
 }
+
 /**
- * WeakMap storing event delegation relationships between EventTargets.
- * Uses weak references to allow garbage collection of unused event targets.
+ * Global WeakMap for storing event delegation relationships between DOM elements.
+ * Provides memory-safe storage for event delegation data that automatically
+ * cleans up when elements are removed from the DOM.
  *
  * @remarks
+ * Implementation details:
+ * - Uses WeakMap to prevent memory leaks
  * - Keys are EventTarget instances (elements, documents, windows)
- * - Values are implementation-specific delegation data
- * - Automatically cleans up when targets are no longer referenced
+ * - Values can store delegation mappings and handler references
+ * - Automatically garbage collects when targets are destroyed
+ *
+ * @example
+ * Internal Usage (for implementation reference)
+ * ```ts
+ * // Store delegation data
+ * delegates.set(element, {
+ *   handlers: new Map(),
+ *   children: new Set()
+ * });
+ *
+ * // Retrieve delegation data
+ * const data = delegates.get(element);
+ * if (data) {
+ *   // Handle delegation
+ * }
+ *
+ * // Data is automatically cleaned up when element is removed
+ * element.remove(); // WeakMap reference is eligible for GC
+ * ```
  */
 export const delegates = new WeakMap<EventTarget>()

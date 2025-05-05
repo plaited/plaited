@@ -1,28 +1,70 @@
 /**
- * Generates a unique enough identifier (UEID) for non-cryptographic purposes.
- * Combines timestamp and random values for practical uniqueness.
+ * Generates a Unique Enough IDentifier (UEID) for non-cryptographic purposes.
+ * Combines timestamp and random components for practical uniqueness in everyday applications.
+ *
+ * @param prefix - Optional string to prepend to the generated ID (default: '')
+ * @returns A string combining prefix, base36 timestamp, and random value
  *
  * Features:
+ * - ~11 characters (plus optional prefix)
+ * - Time-based sequential component
+ * - Random suffix for uniqueness
+ * - Base36 encoding for compactness
+ * - Consistent lowercase format
  * - Optional prefix support
- * - Compact base36 encoding
- * - Time-based for sequential uniqueness
- * - Additional random component
- * - Lowercase for consistency
- *
- * @param prefix Optional string to prepend to the ID (default: '')
- * @returns String in format: prefix + base36(timestamp) + base36(random)
  *
  * @example
- * ueid()           // "lpf98qw2"
- * ueid('user_')    // "user_lpf98qw2"
- * ueid('temp-')    // "temp-lpf98qw2"
+ * Basic Usage
+ * ```ts
+ * const id = ueid();           // "lpf98qw2"
+ * const userId = ueid('user_'); // "user_lpf98qw2"
+ * const tempId = ueid('temp-'); // "temp-lpf98qw2"
+ * ```
+ *
+ * @example
+ * DOM Element IDs
+ * ```ts
+ * const element = document.createElement('div');
+ * element.id = ueid('input-');  // "input-lpf98qw2"
+ * ```
+ *
+ * @example
+ * Temporary Cache Keys
+ * ```ts
+ * const cache = new Map();
+ * const cacheKey = ueid('cache-');
+ * cache.set(cacheKey, data);
+ * ```
+ *
+ * @example
+ * React Key Props
+ * ```ts
+ * const items = data.map(item => (
+ *   <li key={ueid('item-')}>{item.name}</li>
+ * ));
+ * ```
  *
  * @remarks
- * - Not cryptographically secure - use crypto.randomUUID() for that
- * - Collision possible but unlikely in normal usage
- * - Timestamp ensures basic sequential ordering
- * - Useful for temporary IDs, DOM elements, or non-critical uniqueness
- * - approximately 11 characters long (plus prefix)
+ * Important Considerations:
+ * 1. Security: Not cryptographically secure
+ *    - Use crypto.randomUUID() for security-critical identifiers
+ *    - Suitable for non-sensitive temporary IDs
+ *
+ * 2. Uniqueness:
+ *    - Combines timestamp and random values
+ *    - Collisions possible but rare in normal usage
+ *    - Timestamp provides basic sequential ordering
+ *
+ * 3. Best Used For:
+ *    - Temporary DOM element IDs
+ *    - Cache keys
+ *    - Debug/logging identifiers
+ *    - Test data generation
+ *
+ * 4. Performance:
+ *    - Lightweight computation
+ *    - No external dependencies
+ *    - No async operations
  */
 export const ueid = (prefix = '') => {
   const id = (Date.now().toString(36) + Math.random().toString(36).slice(2, 5)).toLowerCase()

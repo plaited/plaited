@@ -1,47 +1,103 @@
 /**
  * Type definition for an object with mirrored key-value pairs.
- * Keys and values are identical strings, and all properties are readonly.
+ * Each key is a string literal that matches its corresponding value.
  *
- * @template Keys Array of string literals defining allowed keys
+ * @template Keys - Array of string literals defining the allowed keys
  *
  * @example
- * type Colors = KeyMirror<['red', 'blue', 'green']>
+ * Type Definition
+ * ```ts
+ * type Actions = KeyMirror<['CREATE', 'UPDATE', 'DELETE']>;
  * // Results in:
  * // {
- * //   readonly red: 'red'
- * //   readonly blue: 'blue'
- * //   readonly green: 'green'
+ * //   readonly CREATE: 'CREATE'
+ * //   readonly UPDATE: 'UPDATE'
+ * //   readonly DELETE: 'DELETE'
  * // }
+ * ```
+ *
+ * @example
+ * With Union Types
+ * ```ts
+ * type Status = 'pending' | 'active' | 'completed';
+ * type StatusMap = KeyMirror<[Status]>;
+ * ```
  */
 export type KeyMirror<Keys extends string[]> = {
   readonly [K in Keys[number]]: K
 }
 
 /**
- * Creates an immutable object where each key matches its corresponding value.
- * Useful for creating enum-like objects or constant mappings.
+ * Creates an immutable object where keys mirror their values, providing type-safe
+ * string constants for use in TypeScript applications.
  *
- * @template Keys Tuple type of string literals
- * @param inputs String values to use as both keys and values
- * @returns Frozen object with mirrored key-value pairs
+ * @template Keys - Tuple type of string literals
+ * @param inputs - String values to use as both keys and values
+ * @returns A frozen object where each key equals its value
  *
  * @example
- * const Colors = keyMirror('red', 'blue', 'green')
- * // Returns frozen object:
- * // {
- * //   red: 'red',
- * //   blue: 'blue',
- * //   green: 'green'
- * // }
+ * Basic Usage
+ * ```ts
+ * const ActionTypes = keyMirror('CREATE', 'UPDATE', 'DELETE');
+ * console.log(ActionTypes.CREATE); // 'CREATE'
+ * ActionTypes.CREATE = 'MODIFY'; // Error: cannot modify frozen object
+ * ```
  *
- * // TypeScript usage:
- * type ColorKey = keyof typeof Colors  // 'red' | 'blue' | 'green'
- * const color = Colors.red             // type is 'red'
+ * @example
+ * With Type Safety
+ * ```ts
+ * function handleAction(type: keyof typeof ActionTypes) {
+ *   switch (type) {
+ *     case ActionTypes.CREATE: return 'Creating...';
+ *     case ActionTypes.UPDATE: return 'Updating...';
+ *     case ActionTypes.DELETE: return 'Deleting...';
+ *   }
+ * }
+ * ```
+ *
+ * @example
+ * Redux-style Actions
+ * ```ts
+ * const TodoActions = keyMirror(
+ *   'ADD_TODO',
+ *   'TOGGLE_TODO',
+ *   'SET_VISIBILITY'
+ * );
+ *
+ * dispatch({
+ *   type: TodoActions.ADD_TODO,
+ *   payload: { text: 'Learn TypeScript' }
+ * });
+ * ```
+ *
+ * @example
+ * Event Constants
+ * ```ts
+ * const Events = keyMirror(
+ *   'click',
+ *   'mouseenter',
+ *   'mouseleave'
+ * );
+ *
+ * element.addEventListener(Events.click, () => {
+ *   // TypeScript knows Events.click is 'click'
+ * });
+ * ```
  *
  * @remarks
- * - Object is frozen to prevent modifications
+ * Key Features:
+ * - Creates immutable constant mappings
  * - Provides TypeScript type safety
- * - Useful for action types, event names, or other string constants
+ * - Prevents typos in string literals
+ * - Enables IDE autocompletion
+ * - Useful for:
+ *   - Redux action types
+ *   - Event name constants
+ *   - Enum-like objects
+ *   - State machine transitions
+ *   - API endpoint mappings
+ *
+ * @throws {TypeError} When inputs contain non-string values
  */
 export const keyMirror = <Keys extends string[]>(...inputs: Keys) => {
   const mirrored = inputs.reduce((acc, key) => ({ ...acc, [key]: key }), {} as KeyMirror<Keys>)
