@@ -34,12 +34,10 @@ test('createTemplate: Not really Falsey - ""', () => {
 })
 
 test('createTemplate: Not really Falsey - 0', () => {
-  // @ts-expect-error: test
   expect(render(h('div', { children: 0 }))).toMatchSnapshot()
 })
 
 test('createTemplate: Not really Falsey - NaN', () => {
-  // @ts-expect-error: test
   expect(render(h('div', { children: NaN }))).toMatchSnapshot()
 })
 

@@ -4,53 +4,107 @@ import type { TemplateObject } from './jsx.types.js'
 import { VALID_PRIMITIVE_CHILDREN, TEMPLATE_OBJECT_IDENTIFIER } from './jsx.constants.js'
 
 /**
- * @description Generates an HTML string from Plaited template objects for server-side rendering (SSR).
- * It recursively processes templates, collects unique stylesheets, and injects them into the resulting HTML string.
- * Primitive values are safely escaped.
+ * Server-Side Rendering (SSR) for Plaited Templates
  *
- * @param {...TemplateObject} templates - One or more Plaited template objects to render.
- * @returns {string} An HTML string representation of the provided templates, with collected styles injected.
+ * Generates static HTML strings from Plaited template objects with automatic style injection
+ * and security measures. Optimized for server-side environments and static generation.
+ *
+ * @param templates - One or more Plaited template objects to render
+ * @returns HTML string with injected styles and processed content
+ *
+ * Key Features:
+ * - Automatic style collection and deduplication
+ * - Security-first content escaping
+ * - Shadow DOM support
+ * - Intelligent style injection
+ * - Custom element registration tracking
  *
  * @example
- * ```typescript
- * import { ssr, createTemplate } from '@plaited/jsx'
- * import { MyComponent } from './my-component.js' // Assuming MyComponent is a PlaitedTemplate or FunctionTemplate
+ * Basic Page Rendering
+ * ```ts
+ * import { ssr, h } from 'plaited'
  *
- * const pageTemplate = createTemplate('html', {
- *    lang: 'en'
- *    children: [
- *   createTemplate('head', {},
- *     createTemplate('meta', { charset: 'utf-8' }),
- *     createTemplate('title', {}, 'My SSR Page')
- *   ),
- *   createTemplate('body', {},
- *     createTemplate('header', {},
- *       createTemplate('h1', {}, 'Welcome')
- *     ),
- *     MyComponent({ message: 'Hello from SSR!' })
- *   )
- * ]
- *  },
- * );
+ * const page = h('html', {
+ *   children: [
+ *     h('head', {
+ *       children: h('title', { children: 'My Page' })
+ *     }),
+ *     h('body', {
+ *       children: h('h1', { children: 'Hello World' })
+ *     })
+ *   ]
+ * })
  *
- * const htmlString = ssr(pageTemplate);
+ * const html = ssr(page)
+ * ```
  *
- * console.log(htmlString);
- * // Output will be the HTML string with styles from MyComponent (and others)
- * // injected right before the closing </head> tag (or after <body> if no <head>).
+ * @example
+ * Component with Styles
+ * ```ts
+ * import { ssr, h } from 'plaited'
+ * import { css } from 'plaited/styling'
+ *
+ * const styles = css.create({
+ *   card: {
+ *     padding: '1rem',
+ *     borderRadius: '4px',
+ *     boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+ *   }
+ * })
+ *
+ * const Card = ({ children }) => h('div', {
+ *   ...styles.card,
+ *   children
+ * })
+ *
+ * const html = ssr(
+ *   h(Card, { children: 'Styled content' })
+ * )
+ * ```
+ *
+ * @example
+ * Shadow DOM Components
+ * ```ts
+ * import { ssr, h } from 'plaited'
+ *
+ * const CustomElement = () => h('my-element', {
+ *   children: h('template', {
+ *     shadowrootmode: 'open',
+ *     children: h('p', { children: 'Shadow content' })
+ *   })
+ * })
+ *
+ * const html = ssr(h(CustomElement))
  * ```
  *
  * @remarks
- * - **Style Injection:** Stylesheets (`.stylesheets`) from all processed `TemplateObject` instances are collected.
- *   Duplicate stylesheets are automatically ignored. The collected styles are combined into a single `<style>`
- *   tag and injected into the HTML output.
- * - **Injection Point:** The `<style>` tag is injected preferably right before the closing `</head>` tag.
- *   If `</head>` is not found, it attempts to inject right after the opening `<body ...>` tag.
- *   If neither is found, styles are prepended to the beginning of the generated string.
- * - **Child Handling:** Only valid primitive types (string, number, boolean, bigint) and `TemplateObject`
- *   instances are processed as children. Other types are ignored. Primitive children are escaped for safety.
- * - **Template Structure:** It expects standard HTML structure (`<html>`, `<head>`, `<body>`) for optimal
- *   style injection, but it will attempt injection even if the structure is non-standard.
+ * Style Injection Strategy:
+ * 1. Collects styles from all template objects
+ * 2. Deduplicates styles using Set
+ * 3. Injects combined styles in optimal location:
+ *    - Before </head> (preferred)
+ *    - After <body> (fallback)
+ *    - At start of document (last resort)
+ *
+ * Security Features:
+ * - Automatic HTML escaping for primitive values
+ * - XSS prevention through content sanitization
+ * - Opt-in trusted content with `trusted` prop
+ *
+ * Processing Details:
+ * 1. Templates are recursively processed
+ * 2. Stylesheets are collected and deduplicated
+ * 3. Content is escaped unless marked as trusted
+ * 4. Custom element tags are registered
+ * 5. Shadow DOM templates are preserved
+ * 6. Final HTML string is assembled with injected styles
+ *
+ * Best Practices:
+ * - Keep templates modular and composable
+ * - Use CSS modules for style scoping
+ * - Leverage shadow DOM for encapsulation
+ * - Avoid inline scripts unless trusted
+ * - Structure HTML with proper head/body tags
  */
 export const ssr = (...templates: TemplateObject[]) => {
   const arr = []

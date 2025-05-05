@@ -1,3 +1,125 @@
+/**
+ * Plaited JSX Template Creation System
+ *
+ * Core module for converting JSX-like calls into Plaited template objects.
+ * Provides security-first template creation with automatic style management
+ * and declarative shadow DOM support.
+ *
+ * @packageDocumentation
+ *
+ * @example
+ * Basic Element Creation
+ * ```tsx
+ * import { h } from 'plaited/jsx-runtime'
+ *
+ * const div = h('div', {
+ *   className: 'container',
+ *   children: 'Hello World'
+ * })
+ * ```
+ *
+ * @example
+ * Custom Component
+ * ```tsx
+ * const Card = ({ title, children }) => h('div', {
+ *   className: 'card',
+ *   children: [
+ *     h('h2', { children: title }),
+ *     h('div', { className: 'content', children })
+ *   ]
+ * })
+ *
+ * const card = h(Card, {
+ *   title: 'Welcome',
+ *   children: 'Card content'
+ * })
+ * ```
+ *
+ * @example
+ * Shadow DOM and Styles
+ * ```tsx
+ * import { css } from 'plaited/styling'
+ *
+ * const styles = css.create({
+ *   container: {
+ *     padding: '1rem',
+ *     border: '1px solid #ccc'
+ *   }
+ * })
+ *
+ * const ShadowComponent = () => h('custom-element', {
+ *   children: h('template', {
+ *     shadowrootmode: 'open',
+ *     children: h('div', {
+ *       ...styles.container,
+ *       children: 'Shadow content'
+ *     })
+ *   })
+ * })
+ * ```
+ *
+ * @example
+ * Event Handling
+ * ```tsx
+ * const Button = () => h('button', {
+ *   'p-trigger': {
+ *     click: 'BUTTON_CLICKED',
+ *     focus: 'BUTTON_FOCUSED'
+ *   },
+ *   children: 'Click me'
+ * })
+ * ```
+ *
+ * @remarks
+ * Security Features:
+ * 1. HTML Escaping
+ *    - Automatic escaping of attribute values
+ *    - Child content sanitization
+ *    - Opt-in trusted content via `trusted` prop
+ *
+ * 2. Event Safety
+ *   - No `on*` event handlers allowed
+ *   - Uses declarative `p-trigger` system
+ *   - Prevents script injection attacks
+ *
+ * 3. Script Protection
+ *   - `<script>` tags require explicit `trusted={true}`
+ *   - Inline scripts blocked by default
+ *
+ * Style Management:
+ * 1. Stylesheet Hoisting
+ *   - Automatic collection up component tree
+ *   - Deduplication via Set
+ *   - Shadow DOM boundary awareness
+ *
+ * 2. Style Attributes
+ *   - Object syntax with camelCase props
+ *   - CSS variable support
+ *   - Auto kebab-case conversion
+ *
+ * Shadow DOM Support:
+ * - Declarative shadow root creation
+ * - Automatic style injection
+ * - Focus delegation
+ * - Slot management
+ *
+ * Best Practices:
+ * 1. Security
+ *   - Never use `trusted={true}` with untrusted content
+ *   - Validate all dynamic attribute values
+ *   - Use `p-trigger` for events, not `on*` attributes
+ *
+ * 2. Performance
+ *   - Keep templates small and focused
+ *   - Use Fragment to avoid wrapper elements
+ *   - Leverage stylesheet hoisting
+ *
+ * 3. Styles
+ *   - Use CSS modules with `css.create()`
+ *   - Leverage shadow DOM for style encapsulation
+ *   - Group related styles in objects
+ */
+
 import type {
   Attrs,
   DetailedHTMLAttributes,
