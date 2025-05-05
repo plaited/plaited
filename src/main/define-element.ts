@@ -196,78 +196,200 @@ const getTriggerType = (event: Event, context: Element) => {
 const isElement = (node: Node): node is Element => node.nodeType === 1
 
 /**
- * @description Defines a Plaited custom element and returns a template function for its usage.
- * This is the primary function for creating reusable Plaited components. It handles custom element registration,
- * shadow DOM setup, event delegation, attribute observation, lifecycle management, and behavioral programming integration.
+ * Creates a reusable Web Component with behavioral programming, event delegation, and shadow DOM support.
+ * The `defineElement` function is the core building block of Plaited applications, providing a
+ * declarative way to create custom elements with robust state management and DOM interactions.
  *
- * @template A - A type extending `PlaitedHandlers` defining the component's specific event handlers and lifecycle callbacks.
- * @param {DefineElementArgs<A>} config - The configuration object defining the element's properties and behavior. See `GetElementArgs` for details (note: `DefineElementArgs` makes some properties optional).
- * @returns {PlaitedTemplate} A Plaited template function (`(attrs: Attrs) => TemplateObject`).
- *   - When called (e.g., via JSX), it generates a `TemplateObject` representing the custom element instance, including its declarative shadow DOM structure.
- *   - This returned function also carries metadata:
- *     - `tag`: The custom element tag name.
- *     - `registry`: A Set of all Plaited component tags used within this component's template (including itself).
- *     - `$`: The Plaited template identifier symbol.
- *     - `publicEvents`: The array of declared public event types.
- *     - `observedAttributes`: The array of observed attribute names.
+ * @template A Generic type extending PlaitedHandlers for component-specific events
+ * @param config Component configuration object
+ * @returns Template function for creating instances of the custom element
  *
  * @example
- * ```typescript
- * import { defineElement, h, PlaitedElement, BProgramArgs, PlaitedHandlers } from 'plaited';
+ * Basic Counter Component
+ * ```tsx
+ * const Counter = defineElement({
+ *   tag: 'my-counter',
+ *   shadowDom: (
+ *     <div>
+ *       <button p-target="decBtn" p-trigger={{ click: 'DECREMENT' }}>-</button>
+ *       <span p-target="count">0</span>
+ *       <button p-target="incBtn" p-trigger={{ click: 'INCREMENT' }}>+</button>
+ *     </div>
+ *   ),
+ *   bProgram({ $ }) {
+ *     const [countEl] = $('count');
+ *     let count = 0;
  *
- * interface CounterHandlers extends PlaitedHandlers {
- *   increment: () => void;
- *   decrement: () => void;
+ *     return {
+ *       INCREMENT() {
+ *         count++;
+ *         countEl.render(`${count}`);
+ *       },
+ *       DECREMENT() {
+ *         count--;
+ *         countEl.render(`${count}`);
+ *       }
+ *     };
+ *   }
+ * });
+ * ```
+ *
+ * @example
+ * Form-Associated Component
+ * ```tsx
+ * interface FormFieldEvents {
+ *   'value-change': (value: string) => void;
+ *   validate: () => void;
  * }
  *
- * const Counter = defineElement<CounterHandlers>({
- *   tag: 'simple-counter',
- *   observedAttributes: ['initial-value'],
+ * const FormField = defineElement<FormFieldEvents>({
+ *   tag: 'form-field',
+ *   formAssociated: true,
+ *   observedAttributes: ['label', 'required'],
  *   shadowDom: (
- *     <>
- *       <button p-trigger={{ click: 'decrement' }}>-</button>
- *       <span p-target="count">0</span>
- *       <button p-trigger={{ click: 'increment' }}>+</button>
- *     </>
+ *     <div>
+ *       <label p-target="label" />
+ *       <input
+ *         p-target="input"
+ *         p-trigger={{
+ *           input: 'value-change',
+ *           blur: 'validate'
+ *         }}
+ *       />
+ *       <span p-target="error" />
+ *     </div>
  *   ),
- *   bProgram({ $, host }) {
- *     let count = 0;
- *     const [countSpan] = $<HTMLSpanElement>('count');
+ *   bProgram({ $, host, internals }) {
+ *     const [label] = $('label');
+ *     const [input] = $<HTMLInputElement>('input');
+ *     const [error] = $('error');
  *
  *     return {
  *       onConnected() {
- *         count = parseInt(host['initial-value'] ?? '0', 10); // Access observed attribute as property
- *         countSpan.render(`${count}`);
+ *         label.render(host.label || '');
+ *         input.attr({ required: host.required });
  *       },
- *       increment() {
- *         count++;
- *         countSpan.render(`${count}`);
+ *       onAttributeChanged({ name, newValue }) {
+ *         if (name === 'label') {
+ *           label.render(newValue || '');
+ *         }
  *       },
- *       decrement() {
- *         count--;
- *         countSpan.render(`${count}`);
+ *       'value-change'({ target }) {
+ *         const value = (target as HTMLInputElement).value;
+ *         internals.setFormValue(value);
  *       },
+ *       validate() {
+ *         const isValid = input.checkValidity();
+ *         if (!isValid) {
+ *           error.render('This field is required');
+ *           internals.setValidity({
+ *             valueMissing: true
+ *           }, 'This field is required');
+ *         } else {
+ *           error.render('');
+ *           internals.setValidity({});
+ *         }
+ *       }
  *     };
- *   },
+ *   }
  * });
+ * ```
  *
- * // Usage in another component or template:
- * const App = () => (
- *   <div>
- *     <Counter initial-value="10" />
- *   </div>
- * );
+ * @example
+ * Component with Behavioral Threads
+ * ```tsx
+ * const ToggleButton = defineElement({
+ *   tag: 'toggle-button',
+ *   shadowDom: (
+ *     <button
+ *       p-target="btn"
+ *       p-trigger={{ click: 'TOGGLE' }}
+ *     >
+ *       Toggle Me
+ *     </button>
+ *   ),
+ *   bProgram({ $, bThreads, bThread, bSync }) {
+ *     const [btn] = $('btn');
+ *
+ *     // Setup behavioral threads
+ *     bThreads.set({
+ *       toggleState: bThread([
+ *         bSync({ waitFor: 'TOGGLE' }),
+ *         bSync({ request: { type: 'UPDATE_STATE' }})
+ *       ], true)
+ *     });
+ *
+ *     let isActive = false;
+ *
+ *     return {
+ *       UPDATE_STATE() {
+ *         isActive = !isActive;
+ *         btn.attr({
+ *           'aria-pressed': isActive.toString(),
+ *           class: isActive ? 'active' : ''
+ *         });
+ *       }
+ *     };
+ *   }
+ * });
  * ```
  *
  * @remarks
- * - Automatically registers the custom element using `customElements.define` if it's not already defined and `canUseDOM()` is true.
- * - Sets up the shadow DOM based on the `shadowDom` template, `mode`, `delegatesFocus`, and `slotAssignment` options.
- * - Initializes the behavioral program (`bProgram`) and connects its handlers.
- * - Manages event delegation for elements with the `p-trigger` attribute within the shadow DOM.
- * - Binds helper methods (`render`, `insert`, `attr`, etc.) to elements selected via `$` or elements with `p-target` added later.
- * - Sets up a `MutationObserver` to handle dynamically added/modified elements with `p-trigger` or `p-target`.
- * - Handles automatic cleanup of listeners and observers during `disconnectedCallback`.
- * - Provides SSR-compatible template generation by returning a `PlaitedTemplate` function.
+ * Key Concepts:
+ * 1. Component Definition
+ *    - Define custom element tags with required hyphen
+ *    - Shadow DOM encapsulation for styles/content
+ *    - Attribute observing and property reflection
+ *    - Form association support
+ *
+ * 2. Event & State Management
+ *    - Declarative event bindings via p-trigger
+ *    - Behavioral programming with bProgram
+ *    - Thread-based state management
+ *    - Event delegation for performance
+ *
+ * 3. DOM Interactions
+ *    - Element selection via p-target
+ *    - Helper methods: render, insert, attr
+ *    - Shadow DOM APIs and slots
+ *    - Dynamic content updates
+ *
+ * Best Practices:
+ * 1. Component Design
+ *    - Keep components focused and single-purpose
+ *    - Use TypeScript for props/events typing
+ *    - Leverage shadow DOM for encapsulation
+ *    - Follow web components standards
+ *
+ * 2. State Management
+ *    - Use behavioral threads for complex state
+ *    - Maintain immutable state patterns
+ *    - Handle cleanup in disconnectedCallback
+ *    - Leverage element internals API
+ *
+ * 3. Performance
+ *    - Minimize DOM queries with p-target
+ *    - Use event delegation via p-trigger
+ *    - Batch DOM updates when possible
+ *    - Clean up resources/listeners properly
+ *
+ * Configuration Options:
+ * - tag: Custom element tag name (must contain hyphen)
+ * - shadowDom: Component's shadow DOM template
+ * - mode: Shadow root mode ('open'|'closed')
+ * - delegatesFocus: Focus delegation behavior
+ * - observedAttributes: Attributes to watch
+ * - formAssociated: Enable form features
+ * - publicEvents: Externally triggerable events
+ * - bProgram: Component behavior definition
+ *
+ * Available Utilities:
+ * - $: Shadow root scoped element selector
+ * - trigger: Event dispatch with cleanup
+ * - bThreads: Behavioral thread management
+ * - internals: Form/ARIA APIs access
+ * - host: Custom element instance
+ * - root: Shadow root reference
  */
 export const defineElement = <A extends PlaitedHandlers>({
   tag,

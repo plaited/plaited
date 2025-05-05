@@ -6,10 +6,10 @@ import { isPlaitedTrigger } from './plaited.guards.js'
  * Type definition for signal subscription function.
  * Enables event-based monitoring of signal value changes.
  *
- * @param eventType Event type identifier
- * @param trigger Event trigger function
- * @param getLVC Whether to get last value cache immediately
- * @returns Disconnect function for cleanup
+ * @param eventType Event type identifier for the triggered event
+ * @param trigger Component's trigger function for handling value changes
+ * @param getLVC Whether to immediately trigger with current value
+ * @returns Cleanup function for removing the subscription
  */
 export type Listen = (eventType: string, trigger: Trigger | PlaitedTrigger, getLVC?: boolean) => Disconnect
 
@@ -28,49 +28,106 @@ type SignalWithoutInitialValue<T> = {
 export function useSignal<T>(initialValue: T): SignalWithInitialValue<T>
 export function useSignal<T>(initialValue?: never): SignalWithoutInitialValue<T>
 /**
- * Creates a reactive signal with state management and subscription capabilities.
- * Supports last value caching and type-safe value updates.
+ * Creates a reactive signal for state management in Plaited components.
+ * Provides a pub/sub pattern for sharing state between components with automatic cleanup.
  *
  * @template T Type of signal value
  * @param initialValue Optional initial value for the signal
- * @returns Signal management object
+ * @returns Signal management object with get/set/listen methods
  *
- * Features:
- * - Get/Set value operations
- * - Event-based subscriptions
- * - Last value caching
- * - Type-safe updates
- * - Automatic cleanup
+ * @example Shared state between components
+ * ```tsx
+ * // Create a shared cart state
+ * const cartState = useSignal<CartItem[]>([]);
  *
- * @example
- * // Basic usage with event handling
- * const counter = useSignal(0);
- *
- * // Listen for changes with immediate value
- * counter.listen('COUNT_CHANGED', trigger, true);
- *
- * // In component context
- * const Counter = defineElement({
- *   tag: 'my-counter',
+ * const AddToCart = defineElement({
+ *   tag: 'add-to-cart',
+ *   shadowDom: (
+ *     <button
+ *       p-target="addBtn"
+ *       p-trigger={{ click: 'ADD_ITEM' }}
+ *     >
+ *       Add to Cart
+ *     </button>
+ *   ),
  *   bProgram({ trigger }) {
- *     const count = useSignal(0);
- *
- *     // Subscribe to changes
- *     const disconnect = count.listen('COUNT_CHANGED', trigger, true);
- *
  *     return {
- *       INCREMENT: () => count.set(count.get() + 1),
- *       COUNT_CHANGED: (value: number) => console.log('New count:', value),
- *       onDisconnected: () => disconnect()
- *     }
+ *       ADD_ITEM() {
+ *         const currentCart = cartState.get();
+ *         cartState.set([...currentCart, { id: 'new-item', qty: 1 }]);
+ *       }
+ *     };
  *   }
  * });
  *
- * @remarks
- * - Provides pub/sub pattern for value changes
- * - Maintains single source of truth
- * - Supports multiple subscribers
- * - Handles cleanup automatically
+ * const CartCount = defineElement({
+ *   tag: 'cart-count',
+ *   shadowDom: (
+ *     <div>
+ *       <span p-target="count">0</span> items
+ *     </div>
+ *   ),
+ *   bProgram({ $, trigger }) {
+ *     const [count] = $('count');
+ *
+ *     // Subscribe to cart changes with immediate value
+ *     cartState.listen('CART_UPDATED', trigger, true);
+ *
+ *     return {
+ *       CART_UPDATED(items: CartItem[]) {
+ *         count.render(items.length.toString());
+ *       }
+ *     };
+ *   }
+ * });
+ * ```
+ *
+ * @example Form state management
+ * ```tsx
+ * const FormField = defineElement({
+ *   tag: 'form-field',
+ *   shadowDom: (
+ *     <div>
+ *       <input
+ *         p-target="input"
+ *         p-trigger={{ input: 'ON_INPUT' }}
+ *       />
+ *       <span p-target="error" />
+ *     </div>
+ *   ),
+ *   bProgram({ $, trigger }) {
+ *     const [input] = $<HTMLInputElement>('input');
+ *     const [error] = $('error');
+ *
+ *     // Create field state
+ *     const fieldState = useSignal({
+ *       value: '',
+ *       isValid: true,
+ *       error: ''
+ *     });
+ *
+ *     // Listen for state changes
+ *     fieldState.listen('FIELD_STATE_CHANGED', trigger);
+ *
+ *     return {
+ *       ON_INPUT() {
+ *         const value = input.value;
+ *         const isValid = value.length >= 3;
+ *
+ *         fieldState.set({
+ *           value,
+ *           isValid,
+ *           error: isValid ? '' : 'Must be at least 3 characters'
+ *         });
+ *       },
+ *
+ *       FIELD_STATE_CHANGED({ error }) {
+ *         error.render(error || '');
+ *       }
+ *     };
+ *   }
+ * });
+ * ```
  */
 export function useSignal<T>(initialValue: T) {
   let store: T = initialValue
@@ -99,52 +156,84 @@ export function useSignal<T>(initialValue: T) {
   }
 }
 /**
- * Creates a computed signal derived from other signals.
- * Automatically updates when dependencies change.
+ * Creates a computed signal that automatically updates based on dependencies.
+ * Perfect for derived state in Plaited components.
  *
  * @template T Type of computed value
- * @param initialValue Function that computes the value
+ * @param initialValue Function that computes the derived value
  * @param deps Array of signals this computation depends on
  * @returns Readonly signal with computed value
  *
- * Features:
- * - Derived state management
- * - Automatic dependency tracking
- * - Lazy evaluation
- * - Efficient updates
- * - Resource cleanup
+ * @example Price calculator component
+ * ```tsx
+ * const PriceCalculator = defineElement({
+ *   tag: 'price-calculator',
+ *   shadowDom: (
+ *     <div>
+ *       <div>
+ *         Quantity:
+ *         <input
+ *           type="number"
+ *           p-target="qty"
+ *           p-trigger={{ input: 'UPDATE_QTY' }}
+ *           value="1"
+ *         />
+ *       </div>
+ *       <div>
+ *         Unit Price:
+ *         <input
+ *           type="number"
+ *           p-target="price"
+ *           p-trigger={{ input: 'UPDATE_PRICE' }}
+ *           value="10.00"
+ *         />
+ *       </div>
+ *       <div>Total: <span p-target="total">$10.00</span></div>
+ *     </div>
+ *   ),
+ *   bProgram({ $, trigger }) {
+ *     const [qtyInput] = $<HTMLInputElement>('qty');
+ *     const [priceInput] = $<HTMLInputElement>('price');
+ *     const [total] = $('total');
  *
- * @example
- * // In component context
- * const Calculator = defineElement({
- *   tag: 'my-calculator',
- *   bProgram({ trigger }) {
- *     const first = useSignal(5);
- *     const second = useSignal(10);
+ *     const quantity = useSignal(1);
+ *     const unitPrice = useSignal(10.00);
  *
- *     const sum = useComputed(
- *       () => first.get() + second.get(),
- *       [first, second]
+ *     // Computed total that updates when quantity or price changes
+ *     const totalPrice = useComputed(
+ *       () => quantity.get() * unitPrice.get(),
+ *       [quantity, unitPrice]
  *     );
  *
- *     // Listen for computed changes
- *     const disconnect = sum.listen('SUM_CHANGED', trigger, true);
+ *     // Listen for total changes
+ *     totalPrice.listen('TOTAL_CHANGED', trigger, true);
  *
  *     return {
- *       UPDATE_FIRST: (value: number) => first.set(value),
- *       UPDATE_SECOND: (value: number) => second.set(value),
- *       SUM_CHANGED: (value: number) => console.log('New sum:', value),
- *       onDisconnected: () => disconnect()
- *     }
+ *       UPDATE_QTY() {
+ *         quantity.set(Number(qtyInput.value) || 0);
+ *       },
+ *
+ *       UPDATE_PRICE() {
+ *         unitPrice.set(Number(priceInput.value) || 0);
+ *       },
+ *
+ *       TOTAL_CHANGED(value: number) {
+ *         total.render(`$${value.toFixed(2)}`);
+ *       }
+ *     };
  *   }
  * });
+ * ```
  *
  * @remarks
- * - Only updates when dependencies change
- * - Lazy initialization of computed value
- * - Manages dependency subscriptions
- * - Cleans up when last listener disconnects
- * - Supports multiple dependent signals
+ * - Computed values are lazy - only calculated when needed
+ * - Dependencies are tracked automatically
+ * - Clean up is handled automatically
+ * - Perfect for derived state like:
+ *   - Filtered lists
+ *   - Total calculations
+ *   - Form validation
+ *   - Data transformations
  */
 export const useComputed = <T>(
   initialValue: () => T,

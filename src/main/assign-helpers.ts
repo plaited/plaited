@@ -3,12 +3,26 @@ import { BOOLEAN_ATTRS } from '../jsx/jsx.constants.js'
 import type { Bindings, BoundElement } from './plaited.types.js'
 
 /**
- * @description WeakMap used to cache adopted stylesheets per ShadowRoot.
- * This prevents redundant parsing and adoption of the same CSSStyleSheet
- * instance within a single component instance, optimizing performance when
- * styles are dynamically added or components are re-rendered.
- * The key is the `ShadowRoot` instance, and the value is a `Set` of stylesheet strings
- * that have already been processed and adopted for that root.
+ * Cache for storing adopted stylesheets per ShadowRoot to prevent duplicate processing.
+ * Used internally by the framework to optimize style adoption performance.
+ *
+ * @internal
+ * @example
+ * ```tsx
+ * // Framework internal use:
+ * const ComponentWithStyles = defineElement({
+ *   tag: 'styled-component',
+ *   shadowDom: (
+ *     <div {...styles.container}>
+ *       <h1 {...styles.title}>Title</h1>
+ *     </div>
+ *   ),
+ *   bProgram({ $, root }) {
+ *     // Styles are automatically cached per instance
+ *     // Subsequent renders reuse cached stylesheets
+ *   }
+ * });
+ * ```
  */
 export const cssCache = new WeakMap<ShadowRoot, Set<string>>()
 
@@ -46,19 +60,34 @@ const updateAttributes = (element: Element, attr: string, val: string | null | n
 }
 
 /**
- * @description Creates a `DocumentFragment` from a Plaited `TemplateObject`.
- * It processes the template's HTML string and ensures its associated stylesheets
- * are adopted by the provided `shadowRoot` (using the `cssCache` for deduplication).
+ * Creates a DocumentFragment from a Plaited template object, handling both content and styles.
+ * Used internally when rendering templates within components.
  *
- * @param {ShadowRoot} shadowRoot - The shadow root instance where the styles should be adopted.
- * @param {TemplateObject} templateObject - The Plaited template object containing `html` and `stylesheets`.
- * @returns {DocumentFragment} A document fragment containing the parsed HTML content from the template object.
+ * @param shadowRoot - The shadow root where styles will be adopted
+ * @param templateObject - Plaited template object containing HTML and stylesheets
+ * @returns A document fragment with the template content
  *
  * @example
- * ```typescript
- * // Assuming `myTemplate` is a TemplateObject, `this.#root` is a ShadowRoot, and el is an element
- * const fragment = getDocumentFragment(this.#root, myTemplate);
- * el.appendChild(fragment); // Append the content to the element
+ * ```tsx
+ * const DynamicContent = defineElement({
+ *   tag: 'dynamic-content',
+ *   shadowDom: <div p-target="container" />,
+ *   bProgram({ $, root }) {
+ *     const [container] = $('container');
+ *
+ *     return {
+ *       UPDATE_CONTENT({ content }) {
+ *         // The framework automatically handles style adoption
+ *         // when using template objects with render/insert/replace
+ *         container.render(
+ *           <div {...styles.dynamicContent}>
+ *             {content}
+ *           </div>
+ *         );
+ *       }
+ *     };
+ *   }
+ * });
  * ```
  */
 export const getDocumentFragment = (shadowRoot: ShadowRoot, templateObject: TemplateObject) => {
@@ -88,22 +117,65 @@ const formatFragments = (
 }
 
 /**
- * @description Creates a `Bindings` object containing helper methods for DOM manipulation,
- * bound to a specific `shadowRoot` context. These methods handle stylesheet adoption
- * when inserting content derived from `TemplateObject` instances.
+ * Creates DOM manipulation helper methods bound to a specific shadow root.
+ * These methods are automatically attached to elements with p-target attributes.
  *
- * The returned object's methods (`render`, `insert`, `replace`, `attr`) are intended to be
- * assigned to elements queried within the Plaited component (see `assignHelpers`).
+ * @param shadowRoot - The shadow root context for DOM operations
+ * @returns Object containing helper methods (render, insert, replace, attr)
  *
- * @param {ShadowRoot} shadowRoot - The shadow root context for stylesheet adoption and fragment processing.
- * @returns {Bindings} An object containing the DOM helper methods:
- *   - `render`: Replaces the element's content.
- *   - `insert`: Inserts content relative to the element ('beforebegin', 'afterbegin', 'beforeend', 'afterend').
- *   - `replace`: Replaces the element itself with new content.
- *   - `attr`: Gets or sets attributes on the element.
+ * @example
+ * ```tsx
+ * const TodoList = defineElement({
+ *   tag: 'todo-list',
+ *   shadowDom: (
+ *     <div>
+ *       <ul p-target="list">
+ *         <li p-target="placeholder">No items yet</li>
+ *       </ul>
+ *       <button
+ *         p-target="addBtn"
+ *         p-trigger={{ click: 'ADD_ITEM' }}
+ *       >
+ *         Add Item
+ *       </button>
+ *     </div>
+ *   ),
+ *   bProgram({ $ }) {
+ *     const [list] = $('list');
+ *     const [placeholder] = $('placeholder');
+ *     let items = 0;
  *
- * @remarks
- * The `this` context within these methods refers to the element they are bound to.
+ *     return {
+ *       ADD_ITEM() {
+ *         if (items === 0) {
+ *           placeholder.remove();
+ *         }
+ *
+ *         // Helper methods support JSX and handle style adoption
+ *         list.insert('beforeend',
+ *           <li {...styles.item}>
+ *             Item {++items}
+ *             <button
+ *               p-target="deleteBtn"
+ *               p-trigger={{ click: 'DELETE_ITEM' }}
+ *               {...styles.deleteBtn}
+ *             >
+ *               ×
+ *             </button>
+ *           </li>
+ *         );
+ *       },
+ *
+ *       DELETE_ITEM({ currentTarget }) {
+ *         currentTarget.closest('li').remove();
+ *         if (--items === 0) {
+ *           list.render(<li p-target="placeholder">No items yet</li>);
+ *         }
+ *       }
+ *     };
+ *   }
+ * });
+ * ```
  */
 export const getBindings = (shadowRoot: ShadowRoot): Bindings => ({
   /** Replaces the children of the bound element with the provided fragments. */
@@ -136,29 +208,54 @@ export const getBindings = (shadowRoot: ShadowRoot): Bindings => ({
 })
 
 /**
- * @description Assigns the Plaited DOM helper methods (from a `Bindings` object) to a list of elements.
- * This enhances standard DOM elements with methods like `render`, `insert`, `replace`, and `attr`,
- * making DOM manipulation within Plaited components more convenient and integrated with stylesheet management.
- * It only assigns the methods if they don't already exist on the element.
+ * Assigns Plaited helper methods to DOM elements.
+ * Used internally to enhance elements with p-target attributes.
  *
- * @template T - The type of the elements in the list, defaulting to `Element`.
- * @param {Bindings} bindings - The object containing the helper methods (typically created by `getBindings`).
- * @param {NodeListOf<T> | T[]} elements - A `NodeListOf` or array of elements to enhance.
- * @returns {BoundElement<T>[]} The same array of elements, now typed as `BoundElement<T>` to reflect the added methods.
+ * @template T Element type being enhanced
+ * @param bindings Helper methods to attach
+ * @param elements Elements to enhance
+ * @returns Enhanced elements array
  *
  * @example
- * ```typescript
- * // Inside a Plaited component's setup (e.g., connectedCallback or bProgram)
- * const bindings = getBindings(this.#root);
- * const targetElements = this.#root.querySelectorAll('[p-target]');
- * const boundElements = assignHelpers(bindings, targetElements);
+ * ```tsx
+ * const DynamicElement = defineElement({
+ *   tag: 'dynamic-element',
+ *   shadowDom: <div p-target="root" />,
+ *   bProgram({ $, root }) {
+ *     const [container] = $('root');
  *
- * // Now you can use the helper methods directly on the elements:
- * if (boundElements.length > 0) {
- *   boundElements[0].render('New content');
- *   boundElements[0].attr('data-state', 'updated');
- * }
+ *     return {
+ *       ADD_DYNAMIC_CONTENT() {
+ *         // When new elements with p-target are added,
+ *         // they automatically get helper methods
+ *         container.render(
+ *           <div>
+ *             <span p-target="text">Dynamic text</span>
+ *             <button
+ *               p-target="btn"
+ *               p-trigger={{ click: 'UPDATE' }}
+ *             >
+ *               Update
+ *             </button>
+ *           </div>
+ *         );
+ *       },
+ *
+ *       UPDATE() {
+ *         // Can immediately use helper methods on new elements
+ *         const [text] = $('text');
+ *         text.render('Updated content');
+ *       }
+ *     };
+ *   }
+ * });
  * ```
+ *
+ * @remarks
+ * - Helper methods are only added if they don't already exist
+ * - Methods are bound to the element's context
+ * - Handles style adoption automatically
+ * - TypeScript typing is preserved
  */
 export const assignHelpers = <T extends Element = Element>(bindings: Bindings, elements: NodeListOf<T> | T[]) => {
   const length = elements.length

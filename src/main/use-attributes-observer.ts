@@ -3,34 +3,43 @@ import type { PlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
 import { isPlaitedTrigger } from './plaited.guards.js'
 
 /**
- * @description Type definition for the detail object dispatched when an observed attribute changes.
+ * Type definition for the detail object dispatched when an observed attribute changes.
+ * This is used to track attribute modifications on elements within Plaited components.
  *
- * @property {string | null} oldValue - The value of the attribute before the change, or `null` if the attribute was newly added.
- * @property {string | null} newValue - The new value of the attribute, or `null` if the attribute was removed.
- * @property {string} name - The name of the attribute that changed.
+ * @property oldValue - Previous value of the attribute, or `null` if newly added
+ * @property newValue - Current value of the attribute, or `null` if removed
+ * @property name - Name of the attribute that changed
  *
- * @example
- * ```typescript
- * // Example detail object for a 'class' attribute change
- * const detail: ObservedAttributesDetail = {
- *   oldValue: "button",
- *   newValue: "button active",
- *   name: "class"
- * };
+ * @example Using with a Plaited component that tracks aria state changes
+ * ```tsx
+ * const AriaWatcher = defineElement({
+ *   tag: 'aria-watcher',
+ *   shadowDom: (
+ *     <div>
+ *       <button
+ *         p-target="button"
+ *         aria-expanded="false"
+ *       >
+ *         Toggle Menu
+ *       </button>
+ *       <div p-target="status">Watching aria-expanded...</div>
+ *     </div>
+ *   ),
+ *   bProgram({ $, trigger }) {
+ *     const [button] = $<HTMLButtonElement>('button');
+ *     const [status] = $('status');
  *
- * // Example detail object for adding a 'disabled' attribute
- * const detailAdded: ObservedAttributesDetail = {
- *   oldValue: null,
- *   newValue: "", // Boolean attributes often have an empty string value when present
- *   name: "disabled"
- * };
+ *     // Watch for aria-expanded changes
+ *     const observeAria = useAttributesObserver('ariaChange', trigger);
+ *     observeAria(button, ['aria-expanded']);
  *
- * // Example detail object for removing a 'data-id' attribute
- * const detailRemoved: ObservedAttributesDetail = {
- *   oldValue: "user-123",
- *   newValue: null,
- *   name: "data-id"
- * };
+ *     return {
+ *       ariaChange({ name, oldValue, newValue }: ObservedAttributesDetail) {
+ *         status.render(`${name} changed from ${oldValue} to ${newValue}`);
+ *       }
+ *     };
+ *   }
+ * });
  * ```
  */
 export type ObservedAttributesDetail = {
@@ -40,57 +49,103 @@ export type ObservedAttributesDetail = {
 }
 
 /**
- * @description A hook that creates a `MutationObserver` specifically configured to watch for attribute changes on a target element.
- * When specified attributes change, it dispatches an event using the provided Plaited trigger function.
- * It automatically handles observer disconnection when the component is disconnected (if using `PlaitedTrigger`).
+ * Creates a MutationObserver to watch for attribute changes on elements within a Plaited component.
+ * When specified attributes change, it triggers an event that can be handled in the component's bProgram.
  *
- * @param {string} eventType - The `type` of the event to dispatch via the trigger function when an attribute changes.
- * @param {PlaitedTrigger | Trigger} trigger - The Plaited trigger function (`PlaitedTrigger` preferred for auto-cleanup) or a standard `Trigger` function used to dispatch the event.
- * @returns {(assignedElement: Element, attributeFilter: string[]) => Disconnect} A function that, when called:
- *   - Takes the target `assignedElement` (the element to observe) and an array `attributeFilter` (the names of attributes to watch).
- *   - Starts the `MutationObserver`.
- *   - Returns a `Disconnect` function that can be manually called to stop the observer. Auto disconnects is handled if using `PlaitedTrigger`.
+ * @param eventType - The event type to trigger when attributes change
+ * @param trigger - The Plaited trigger function (prefer PlaitedTrigger for automatic cleanup)
+ * @returns A function to start observing attributes on a specific element
  *
- * @example Usage within a Plaited component's bProgram
- * ```typescript
- * import { defineElement, useAttributesObserver, h, type ObservedAttributesDetail } from 'plaited';
+ * @example Monitoring form field state changes
+ * ```tsx
+ * const FormField = defineElement({
+ *   tag: 'form-field',
+ *   shadowDom: (
+ *     <div class="field-wrapper">
+ *       <input
+ *         p-target="input"
+ *         type="text"
+ *       />
+ *       <span p-target="status" class="status"></span>
+ *     </div>
+ *   ),
+ *   bProgram({ $, trigger }) {
+ *     const [input] = $<HTMLInputElement>('input');
+ *     const [status] = $('status');
  *
- * export const AttributeWatcher = defineElement({
- *   tag: 'attribute-watcher',
+ *     // Watch for disabled, readonly, and required attributes
+ *     const observeField = useAttributesObserver('fieldStateChange', trigger);
+ *     observeField(input, ['disabled', 'readonly', 'required']);
+ *
+ *     return {
+ *       fieldStateChange({ name, newValue }: ObservedAttributesDetail) {
+ *         const state = newValue === '' ? 'enabled' : 'disabled';
+ *         status.render(
+ *           <span class={`status-${state}`}>
+ *             Field is now {name}: {state}
+ *           </span>
+ *         );
+ *       }
+ *     };
+ *   }
+ * });
+ * ```
+ *
+ * @example Dynamic ARIA attributes monitoring
+ * ```tsx
+ * const MenuButton = defineElement({
+ *   tag: 'menu-button',
  *   shadowDom: (
  *     <>
- *       <slot p-target="slot"></slot>
- *       <p>Last change:</p>
- *       <pre p-target="output">No changes yet.</pre>
+ *       <button
+ *         p-target="trigger"
+ *         aria-expanded="false"
+ *         aria-controls="menu"
+ *       >
+ *         Menu
+ *       </button>
+ *       <div
+ *         id="menu"
+ *         p-target="menu"
+ *         role="menu"
+ *         hidden
+ *       >
+ *         <slot></slot>
+ *       </div>
  *     </>
  *   ),
  *   bProgram({ $, trigger }) {
- *     const [slotEl] = $<HTMLSlotElement>('slot');
- *     const [outputEl] = $<HTMLPreElement>('output');
+ *     const [triggerBtn] = $<HTMLButtonElement>('trigger');
+ *     const [menu] = $('menu');
  *
- *     // Get the function to start observing
- *     const observeAttributes = useAttributesObserver('attributeChanged', trigger);
+ *     // Watch both aria-expanded and aria-controls
+ *     const observeAria = useAttributesObserver('ariaStateChange', trigger);
+ *     observeAria(triggerBtn, ['aria-expanded', 'aria-controls']);
  *
  *     return {
- *       attributeChanged(detail: ObservedAttributesDetail) {
- *         outputEl.render(JSON.stringify(detail, null, 2));
+ *       ariaStateChange({ name, newValue }: ObservedAttributesDetail) {
+ *         if (name === 'aria-expanded') {
+ *           menu.attr('hidden', newValue === 'false');
+ *         }
  *       },
- *     };
- *   },
- * });
  *
- * // Example HTML usage:
- * // <attribute-watcher>
- * //   <div class="initial" data-state="idle">Observed Element</div>
- * // </attribute-watcher>
- * // Changing the class or data-state of the inner div will trigger 'attributeChanged'.
+ *       TOGGLE_MENU() {
+ *         triggerBtn.attr('aria-expanded',
+ *           triggerBtn.attr('aria-expanded') === 'true' ? 'false' : 'true'
+ *         );
+ *       }
+ *     };
+ *   }
+ * });
  * ```
  *
  * @remarks
- * - Leverages the `MutationObserver` API.
- * - Filters observations to only the specified `attributeFilter`.
- * - Includes `attributeOldValue: true` in the observer options, providing the `oldValue` in the detail.
- * - If a `PlaitedTrigger` is provided, the observer's `disconnect` method is automatically added to the trigger's disconnect callbacks, ensuring cleanup when the component disconnects. If a standard `Trigger` is used, manual disconnection (e.g., in `onDisconnected`) is recommended.
+ * - Uses MutationObserver to efficiently track attribute changes
+ * - Automatically cleans up when using PlaitedTrigger
+ * - Ideal for monitoring ARIA states, form field states, and custom attributes
+ * - Works with both host element and elements within the shadow DOM
+ * - Can observe multiple attributes simultaneously
+ * - Triggers immediately when attributes change via JavaScript or user interaction
  */
 export const useAttributesObserver = (eventType: string, trigger: PlaitedTrigger | Trigger) => {
   return (assignedElement: Element, attributeFilter: string[]) => {
