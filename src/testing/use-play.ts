@@ -23,11 +23,22 @@ import type { PlaitedMessage, PlaitedElement } from '../main/plaited.types.js'
 import { bSync, bThread } from '../behavioral/b-thread.js'
 import type { BThreads } from '../behavioral/b-program.js'
 
+/**
+ * Creates a promise that resolves after a specified time, used for implementing timeouts.
+ * @param time The timeout duration in milliseconds. Defaults to DEFAULT_PLAY_TIMEOUT.
+ * @returns A promise that resolves to true after the timeout.
+ * @internal
+ */
 const timeout = async (time: number = DEFAULT_PLAY_TIMEOUT) => {
   await wait(time)
   return true
 }
 
+/**
+ * Executes the play function of a story, handling timeouts and error reporting.
+ * @param options Configuration object for playing the story.
+ * @internal
+ */
 const playStory = async ({
   address,
   exportName,
@@ -38,14 +49,22 @@ const playStory = async ({
   time,
   send,
 }: {
+  /** The address of the test runner to send messages to. */
   address: string
+  /** The name of the exported story object. */
   exportName: string
+  /** The file path of the story. */
   storyFile: string
+  /** The host element where the story is rendered. */
   hostElement: Element
-  play: Play
+  /** The route identifier for the story. */
   route: string
-  send: (message: PlaitedMessage) => void
+  /** The play function to execute. */
+  play: Play
+  /** Optional timeout duration in milliseconds. */
   time?: number
+  /** Function to send messages back to the test runner. */
+  send: (message: PlaitedMessage) => void
 }) => {
   try {
     const timedOut = await Promise.race([
@@ -99,6 +118,30 @@ const playStory = async ({
   }
 }
 
+/**
+ * Creates a behavioral program configuration for executing a story's play function
+ * within a Plaited testing fixture. It handles importing the story, running the
+ * play function with appropriate context and utilities, managing timeouts, and
+ * reporting results or errors back to the test runner via a messaging channel.
+ *
+ * @param options Configuration object for the play hook.
+ * @returns An object containing event handlers (`[PLAY_EVENT]`, `onConnected`) for the bProgram.
+ *
+ * @example
+ * ```ts
+ * // Used internally by PlaitedFixture
+ * const bProgramConfig = usePlay({
+ *   address: 'PLAITED_RUNNER',
+ *   entryPath: '/path/to/story.stories.js',
+ *   exportName: 'Primary',
+ *   host: fixtureElement,
+ *   route: 'component--primary',
+ *   send: sendMessageToRunner,
+ *   storyFile: 'path/to/story.stories.ts',
+ *   bThreads: bProgramInstance.bThreads,
+ * });
+ * ```
+ */
 export const usePlay = ({
   address,
   entryPath,
@@ -109,13 +152,21 @@ export const usePlay = ({
   storyFile,
   bThreads,
 }: {
+  /** The address identifier for the test runner (e.g., PLAITED_RUNNER). */
   address: string
+  /** The path to the compiled story module file. */
   entryPath: string
+  /** The name of the exported story object within the module. */
   exportName: string
+  /** The PlaitedElement instance hosting the fixture. */
   host: PlaitedElement
+  /** The unique route identifier for this story test. */
   route: string
+  /** Function to send messages (test results/errors) back to the test runner. */
   send: (message: PlaitedMessage) => void
+  /** The original source file path of the story. */
   storyFile: string
+  /** The BThreads instance from the host's bProgram. */
   bThreads: BThreads
 }) => {
   bThreads.set({

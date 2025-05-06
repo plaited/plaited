@@ -1,72 +1,54 @@
 /**
- * Type definition for shadow DOM-aware text search function.
- * Supports finding elements by their text content across shadow boundaries.
+ * @description Type definition for a function that asynchronously finds an element
+ * containing specific text content, searching through light and shadow DOM.
  *
- * @template T Element type to return (defaults to HTMLElement)
- * @param searchText Text content to find (string or RegExp)
- * @param context Optional element to limit search scope
- * @returns Promise resolving to element containing text or undefined
+ * @template T - The expected HTMLElement type to be returned. Defaults to `HTMLElement`.
+ * @param {string | RegExp} searchText - The exact string or regular expression pattern to match within the text content of elements.
+ * @param {HTMLElement} [context=document.body] - An optional element within which to limit the search scope. Defaults to `document.body`.
+ * @returns {Promise<T | undefined>} A promise that resolves to the first element (of type T) containing the matching text, or `undefined` if no match is found.
  */
 export type FindByText = <T extends HTMLElement = HTMLElement>(
   searchText: string | RegExp,
   context?: HTMLElement,
 ) => Promise<T | undefined>
+
 /**
- * Asynchronously finds elements by their text content, searching through both light and shadow DOM.
- * Returns the parent element of matching text nodes.
+ * @description Asynchronously searches for an element by its text content, traversing both the light DOM
+ * and any nested shadow DOM trees. Returns the immediate parent element of the first matching text node found.
  *
- * @template T Element type to return (defaults to HTMLElement)
- * @param searchText Text to search for (exact match or RegExp pattern)
- * @param context Optional element to scope the search (defaults to document.body)
- * @returns Promise<T | undefined> Element containing matching text or undefined
+ * @template T - The expected HTMLElement type to be returned. Defaults to `HTMLElement`.
+ * @param {string | RegExp} searchText - The exact string or a regular expression to match against the trimmed text content of elements.
+ * @param {HTMLElement} [context=document.body] - An optional HTMLElement to serve as the starting point for the search. Defaults to `document.body`.
+ * @returns {Promise<T | undefined>} A promise that resolves with the first matching parent element (cast to type T) or `undefined` if no element contains the specified text.
  *
  * @example Basic Usage
- * ```ts
- * // Find by exact text
- * const element = await findByText('Click me');
+ * ```typescript
+ * import { findByText } from 'plaited/testing';
  *
- * // Find by pattern
- * const element = await findByText(/Submit|Send/);
+ * // Find an element containing the exact text "Submit Button"
+ * const submitButton = await findByText('Submit Button');
+ *
+ * // Find an element containing text that matches the regex /Save|Update/
+ * const saveOrUpdateButton = await findByText(/Save|Update/);
  * ```
  *
- * @example With Context and Type
- * ```ts
- * // Search within container with type
- * const button = await findByText<HTMLButtonElement>(
- *   'Submit',
- *   formElement
- * );
+ * @example Usage with Context and Specific Type
+ * ```typescript
+ * const formElement = document.getElementById('my-form');
  *
- * if (button) {
- *   button.disabled = true;
+ * // Find a <button> element within the form containing "Login"
+ * const loginButton = await findByText<HTMLButtonElement>('Login', formElement);
+ *
+ * if (loginButton) {
+ *   loginButton.disabled = true;
  * }
  * ```
  *
- * @example Shadow DOM Search
- * ```ts
- * // Search through custom elements
- * const element = await findByText(
- *   'Hidden Content',
- *   customElement
- * );
- * ```
- *
- * Features:
- * - Shadow DOM traversal
- * - Regular expression matching
- * - Type-safe returns
- * - Scoped searching
- * - Async operation
- * - Trim whitespace
- *
  * @remarks
- * - Returns parent of first matching text node
- * - Searches synchronously but returns Promise
- * - Traverses all shadow roots
- * - Uses requestAnimationFrame
- * - Trims text content before matching
- * - Handles nested shadow DOM
- *
+ * - The search is performed recursively through all child nodes and shadow roots.
+ * - Text content is trimmed (`.textContent?.trim()`) before comparison.
+ * - The function returns the `parentElement` of the matching text node.
+ * - The search operation is scheduled using `requestAnimationFrame` but the core traversal is synchronous within that frame.
  */
 export const findByText: FindByText = <T extends HTMLElement = HTMLElement>(
   searchText: string | RegExp,

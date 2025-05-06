@@ -5,10 +5,29 @@ import { isTypeOf } from '../utils/is-type-of.js'
 import { DelegatedListener, delegates } from '../utils/delegated-listener.js'
 import type { PlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
 
+/** @internal Type guard to check if an event is a WebSocket CloseEvent. */
 const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => event.type === 'close'
 
+/**
+ * Generates a unique address string for a Plaited element based on its tag name and optional ID.
+ * Used for BroadcastChannel communication.
+ * @param tag The custom element tag name.
+ * @param id Optional ID attribute of the element.
+ * @returns A unique address string (e.g., 'my-component#instance-1').
+ * @internal
+ */
 export const getAddress = (tag: CustomElementTag, id?: string): string => `${tag}${id ? `#${id}` : ''}`
 
+/**
+ * Connects a Plaited test fixture element to the test runner using a BroadcastChannel.
+ * Listens for messages on the channel and triggers corresponding events on the host element.
+ * Automatically cleans up the listener when the host disconnects.
+ *
+ * @param host The PlaitedElement instance representing the test fixture.
+ * @param trigger The PlaitedTrigger instance associated with the host.
+ * @returns A function to manually disconnect the BroadcastChannel listener.
+ * @internal
+ */
 export const connectTestRunner = (host: PlaitedElement, trigger: PlaitedTrigger) => {
   const address = getAddress(host.tagName.toLowerCase() as CustomElementTag, host.id)
   const channel = new BroadcastChannel(address)
@@ -24,6 +43,17 @@ export const connectTestRunner = (host: PlaitedElement, trigger: PlaitedTrigger)
   return disconnect
 }
 
+/**
+ * Creates a function (`send`) for sending messages from the test fixture (browser)
+ * back to the test runner server via WebSocket. Handles WebSocket connection,
+ * message queuing, automatic reconnection with exponential backoff on specific close codes,
+ * and forwarding incoming messages from the server to the appropriate BroadcastChannel.
+ *
+ * @param url The WebSocket server URL. Can be a full URL or a path starting with '/'.
+ * @param protocols Optional WebSocket subprotocols.
+ * @returns A `send` function `(message: PlaitedMessage) => void` that queues or sends messages to the WebSocket server.
+ * @internal
+ */
 export const useSendRunner = (url: string | `/${string}` | URL, protocols?: string | string[]) => {
   const retryStatusCodes = new Set([1006, 1012, 1013])
   const maxRetries = 3

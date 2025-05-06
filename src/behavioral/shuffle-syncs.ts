@@ -1,17 +1,27 @@
 import type { BSync } from './b-thread.js'
 
 /**
- * Randomly reorders a sequence of behavioral synchronization points.
- * Uses Fisher-Yates shuffle algorithm to create non-deterministic execution order.
- * @param syncs Array of behavioral synchronization functions to be shuffled
- * @returns The same synchronization functions in a randomized order
+ * Randomly shuffles an array of behavioral synchronization points (`BSync`).
+ * This utility employs the Fisher-Yates (Knuth) shuffle algorithm to randomize the order
+ * of the provided synchronization steps. It's useful for introducing non-determinism
+ * into b-threads, often for testing or simulating scenarios where the exact order
+ * of operations is not fixed or needs to be varied.
+ *
+ * @param syncs An array of `BSync` objects representing the synchronization points to shuffle.
+ * @returns A new array containing the same `BSync` objects but in a randomized order.
  * @example
- * const shuffledSequence = shuffleSyncs(
- *   bSync({ request: { type: 'event1' } })
- *   bSync({ request: { type: 'event2' } }),
- *   bSync({ request: { type: 'event3' } }),
+ * import { bSync, bThread, shuffleSyncs } from 'plaited/behavioral';
+ *
+ * const randomOrderThread = bThread(
+ *   shuffleSyncs(
+ *     bSync({ request: { type: 'stepA' } }),
+ *     bSync({ request: { type: 'stepB' } }),
+ *     bSync({ request: { type: 'stepC' } })
+ *   )
  * );
- * // Returns the same syncs in random order
+ *
+ * // The order in which 'stepA', 'stepB', and 'stepC' are requested
+ * // by randomOrderThread will vary each time the thread runs.
  */
 export const shuffleSyncs = (...syncs: BSync[]) => {
   for (let i = syncs.length - 1; i > 0; i--) {

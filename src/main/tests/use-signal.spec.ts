@@ -1,3 +1,15 @@
+/**
+ * Test suite for validating signal behavior in Plaited.
+ * Tests state management, subscription handling, and cleanup.
+ *
+ * Tests:
+ * - Signal subscription and unsubscription
+ * - Event triggering order
+ * - Computed signal updates
+ * - Memory leak prevention
+ * - Edge case handling
+ */
+
 import { test, expect } from 'bun:test'
 import sinon from 'sinon'
 import { useSignal, useComputed } from 'plaited'
