@@ -49,13 +49,14 @@ export type Disconnect = () => void
  * It's an array where each element describes the status of an active b-thread.
  * Useful for debugging, monitoring, and understanding the program's execution flow.
  *
- * @property thread - The unique identifier of the thread associated with this bid (stringified if this bid originated from an external `trigger()` as they use a Symbol identifier).
- * @property trigger - Indicates if this bid originated from an external `trigger()` call (`true`) rather than a thread's `request` (`false`).
- * @property selected - Indicates if this specific bid (request) was the one selected for execution in the current step.
+ * @property thread - The unique identifier of the thread associated with this bid (stringified if from `trigger()`).
+ * @property trigger - Indicates if this bid originated from external `trigger()` (true) vs thread's `request` (false).
+ * @property selected - Indicates if this bid was selected for execution in the current step.
  * @property type - The event type the thread is currently requesting or waiting for.
  * @property detail - Optional data associated with the event.
- * @property priority - The priority level of the thread's current bid. Lower numbers mean higher priority.
- * @property blockedBy - If this thread's request is blocked, the identifier of the blocking thread.
+ * @property priority - The priority level of the thread's bid. Lower numbers = higher priority.
+ * @property blockedBy - If this thread's request is blocked, ID of the blocking thread.
+ * @property interrupts - If this bid interrupts another thread, ID of the interrupted thread.
  */
 export type SnapshotMessage = {
   /** The unique identifier of the thread associated with this bid (stringified if this bid originated from an external `trigger()` as they use a Symbol identifier). */
