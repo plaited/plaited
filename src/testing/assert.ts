@@ -20,6 +20,21 @@ type AssertParams<T> = {
  */
 export type Assert = <T>(param: AssertParams<T>) => void
 
+const PRIMITIVES = new Set(['null', 'undefined', 'number', 'string', 'boolean', 'bigint'])
+
+const requiredKeys = ['given', 'should', 'actual', 'expected']
+
+const replacer = (key: string | number | symbol, value: unknown) => {
+  if (!key) return value
+  return (
+    isTypeOf<Record<string, unknown>>(value, 'object') || isTypeOf<unknown[]>(value, 'array') ? value
+    : value instanceof Set ? `Set <${JSON.stringify(Array.from(value))}>`
+    : value instanceof Map ? `Map <${JSON.stringify(Object.fromEntries(value))}>`
+    : PRIMITIVES.has(trueTypeOf(value)) ? value
+    : (value?.toString?.() ?? value)
+  )
+}
+
 /**
  * A powerful assertion function for testing with detailed error reporting and type safety.
  * This function compares values and throws detailed errors when assertions fail.
@@ -125,19 +140,4 @@ export const assert: Assert = (param) => {
     const message = `Given ${given}: should ${should}`
     throw new AssertionError(JSON.stringify({ message, actual, expected }, replacer, 2))
   }
-}
-
-const PRIMITIVES = new Set(['null', 'undefined', 'number', 'string', 'boolean', 'bigint'])
-
-const requiredKeys = ['given', 'should', 'actual', 'expected']
-
-const replacer = (key: string | number | symbol, value: unknown) => {
-  if (!key) return value
-  return (
-    isTypeOf<Record<string, unknown>>(value, 'object') || isTypeOf<unknown[]>(value, 'array') ? value
-    : value instanceof Set ? `Set <${JSON.stringify(Array.from(value))}>`
-    : value instanceof Map ? `Map <${JSON.stringify(Object.fromEntries(value))}>`
-    : PRIMITIVES.has(trueTypeOf(value)) ? value
-    : (value?.toString?.() ?? value)
-  )
 }
