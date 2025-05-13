@@ -1,5 +1,5 @@
 /**
- * Generates a Unique Enough IDentifier (UEID) for non-cryptographic purposes.
+ * Generates a Unique Enough Identifier (UEID) for non-cryptographic purposes.
  * Combines timestamp and random components for practical uniqueness in everyday applications.
  *
  * @param prefix - Optional string to prepend to the generated ID (default: '')

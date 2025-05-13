@@ -125,9 +125,9 @@ export type CSSKeyFrames = {
  */
 export type StylesObject = {
   /** A single class name or an array of class names. */
-  className?: string | Array<string | undefined | false | null>
+  className?: string | Array<string>
   /** A single CSS stylesheet string or an array of stylesheet strings. */
-  stylesheet?: string | Array<string | undefined | false | null>
+  stylesheet?: string | Array<string>
 }
 /**
  * Maps CSS class definitions to their compiled representation.
