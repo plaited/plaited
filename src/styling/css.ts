@@ -302,24 +302,37 @@ const assign = (...styleObjects: Array<StylesObject | undefined | false | null>)
 
 /**
  * @namespace css
- * @description A utility namespace providing functions for creating and managing
- * type-safe, scoped CSS styles within Plaited applications. It leverages
- * CSS-in-JS patterns with automatic class name hashing and supports modern CSS features like nesting.
+ * @description A powerful CSS-in-JS system providing type-safe, scoped styling capabilities for Plaited applications.
+ * Built specifically for modern component architecture with focus on developer experience and runtime performance.
  *
- * @property {function} create - Creates style objects with hashed class names and CSS rules from a configuration object. Handles nested selectors and properties.
- * @property {function} host - Generates styles specifically for the `:host` of a shadow DOM component.
- * @property {function} keyframes - Defines CSS `@keyframes` animations with unique, hashed names.
- * @property {function} assign - Merges multiple style objects, facilitating conditional styling and composition.
+ * ## Key Features
  *
- * @see {@link create} For generating component-specific styles.
- * @see {@link host} For styling the component's host element.
- * @see {@link keyframes} For defining animations.
- * @see {@link assign} For combining style objects.
+ * - **Atomic CSS Generation**: Creates optimized, deduplicated style rules
+ * - **Type Safety**: Complete TypeScript integration with property autocompletion
+ * - **Nested Selectors**: Support for pseudo-classes, attributes, and media queries
+ * - **Shadow DOM Integration**: First-class support for web components and custom elements
+ * - **Zero Runtime Dependencies**: Minimal size impact with maximum performance
+ * - **Design Token Compatibility**: Seamless integration with design system tokens
+ *
+ * The system automatically generates unique, collision-free class names and optimizes
+ * style output to minimize CSS duplication and specificity issues.
+ *
+ * @property {function} create - Generates style objects with hashed class names from style definitions
+ * @property {function} host - Creates shadow DOM host styles with attribute and state-based conditions
+ * @property {function} keyframes - Defines reusable CSS animations with unique identifiers
+ * @property {function} assign - Combines and conditionally applies multiple style objects
+ *
+ * @see {@link create} For component styling with atomic CSS generation
+ * @see {@link host} For shadow DOM host styling with contextual selectors
+ * @see {@link keyframes} For creating scoped CSS animations
+ * @see {@link assign} For style composition with conditional application
  *
  * @remarks
- * - Integrates seamlessly with Plaited's `defineElement` and JSX (`h` function).
- * - Generated stylesheets are automatically collected and managed by Plaited.
- * - Promotes style encapsulation and avoids global CSS conflicts.
+ * - Designed to work with both Plaited components and standard HTML elements
+ * - Stylesheets are automatically collected and managed by the rendering system
+ * - Efficiently handles style reapplication without unnecessary DOM operations
+ * - Compatible with server-side rendering and static site generation
+ * - Uses deterministic hashing for predictable class name generation
  */
 export const css = {
   create,
