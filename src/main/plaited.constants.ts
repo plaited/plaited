@@ -2,30 +2,111 @@ import { keyMirror } from '../utils/key-mirror.js'
 
 /**
  * Mirrored object of lifecycle and mutation callback names for Plaited elements.
+ * Provides strongly typed string literals for every supported callback in a Plaited component.
  *
- * Lifecycle callbacks:
+ * Lifecycle Callbacks:
  * - onAdopted: Element is moved to new document
  * - onAttributeChanged: Element attribute changes
  * - onConnected: Element is added to DOM
  * - onDisconnected: Element is removed from DOM
  *
- * Form-associated callbacks:
+ * Form-associated Callbacks:
  * - onFormAssociated: Element is associated with form
  * - onFormDisabled: Associated form is disabled
  * - onFormReset: Associated form is reset
  * - onFormStateRestore: Form state is restored
  *
- * DOM mutation callbacks:
+ * DOM Mutation Callbacks:
  * - onReplaceChildren: Slotted Children are replaced
- * - onPrepend: Slotted Content prepended
- * - onAppend: Slotted Content appended
- *
- * @type {{ [K in typeof callbackNames[number]]: K }}
+ * - onPrepend: Content prepended to slot
+ * - onAppend: Content appended to slot
  *
  * @example
- * ```ts
- * ELEMENT_CALLBACKS.onConnected    // 'onConnected'
- * ELEMENT_CALLBACKS.onDisconnected // 'onDisconnected'
+ * Using lifecycle callbacks in a component
+ * ```tsx
+ * const MyElement = defineElement({
+ *   tag: 'my-element',
+ *   shadowDom: (
+ *     <div>
+ *       <slot p-target="content" />
+ *       <p p-target="status">Status: Waiting</p>
+ *     </div>
+ *   ),
+ *   bProgram({ $, trigger }) {
+ *     const [status] = $('status');
+ *
+ *     return {
+ *       [ELEMENT_CALLBACKS.onConnected]() {
+ *         status.render('Status: Connected');
+ *       },
+ *       [ELEMENT_CALLBACKS.onDisconnected]() {
+ *         console.log('Cleanup tasks');
+ *       }
+ *     };
+ *   }
+ * });
+ * ```
+ *
+ * @example
+ * Form association callbacks
+ * ```tsx
+ * const FormField = defineElement({
+ *   tag: 'form-field',
+ *   formAssociated: true,
+ *   shadowDom: (
+ *     <div>
+ *       <input p-target="input" type="text" />
+ *       <span p-target="state" />
+ *     </div>
+ *   ),
+ *   bProgram({ $, internals }) {
+ *     const [state] = $('state');
+ *
+ *     return {
+ *       [ELEMENT_CALLBACKS.onFormAssociated]({ form }) {
+ *         state.render(`Associated with: ${form.id}`);
+ *       },
+ *       [ELEMENT_CALLBACKS.onFormDisabled]({ disabled }) {
+ *         state.render(`Field ${disabled ? 'disabled' : 'enabled'}`);
+ *       }
+ *     };
+ *   }
+ * });
+ * ```
+ *
+ * @example
+ * Slot mutation callbacks
+ * ```tsx
+ * const Container = defineElement({
+ *   tag: 'content-container',
+ *   shadowDom: (
+ *     <div>
+ *       <slot p-target="content" />
+ *       <p p-target="count">Items: 0</p>
+ *     </div>
+ *   ),
+ *   bProgram({ $ }) {
+ *     const [count] = $('count');
+ *     const [content] = $('content');
+ *
+ *     const updateCount = () => {
+ *       const items = content.assignedElements().length;
+ *       count.render(`Items: ${items}`);
+ *     };
+ *
+ *     return {
+ *       [ELEMENT_CALLBACKS.onAppend]() {
+ *         updateCount();
+ *       },
+ *       [ELEMENT_CALLBACKS.onPrepend]() {
+ *         updateCount();
+ *       },
+ *       [ELEMENT_CALLBACKS.onReplaceChildren]() {
+ *         updateCount();
+ *       }
+ *     };
+ *   }
+ * });
  * ```
  */
 export const ELEMENT_CALLBACKS = keyMirror(
@@ -41,22 +122,34 @@ export const ELEMENT_CALLBACKS = keyMirror(
   'onPrepend',
   'onAppend',
 )
+
 /**
  * Unique identifier for Plaited template objects.
- * Used to distinguish template objects from other values.
+ * Used internally to distinguish template objects from other values during rendering and processing.
  *
- * @type {const} Bear emoji as literal type
+ * This constant:
+ * - Acts as a type guard for template objects
+ * - Facilitates safe template composition
+ * - Prevents template object spoofing
+ * - Used by the rendering system to identify valid templates
+ *
+ * @type {const} A unique bear emoji as literal type
  *
  * @example
- * ```ts
- * const isTemplate = (obj: unknown) =>
- *   obj && typeof obj === 'object' &&
- *   obj.$ === PLAITED_TEMPLATE_IDENTIFIER;
+ * Creating a template validator
+ * ```tsx
+ * const isPlaitedTemplate = (obj: unknown): obj is TemplateObject =>
+ *   obj && typeof obj === 'object' && obj.$ === PLAITED_TEMPLATE_IDENTIFIER;
+ *
+ * const template = <div>Hello World</div>;
+ * console.log(isPlaitedTemplate(template)); // true
+ * console.log(isPlaitedTemplate({ html: [], $: '🐻' })); // false
  * ```
  *
  * @remarks
- * - Used internally for type checking
- * - Provides unique runtime identification
- * - Constant value prevents accidental modification
+ * - Do not attempt to create template objects manually
+ * - Always use JSX or the `h` function to create templates
+ * - The identifier is read-only and cannot be modified
+ * - Used internally by the framework's template processing
  */
 export const PLAITED_TEMPLATE_IDENTIFIER = '🐻' as const

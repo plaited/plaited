@@ -1,3 +1,20 @@
+/**
+ * Test stories for validating attribute observation in Plaited components.
+ * Tests the useAttributesObserver hook functionality.
+ *
+ * Story Features:
+ * - Attribute change detection
+ * - Multiple attribute observation
+ * - Change event details
+ * - Observer cleanup
+ *
+ * Test Coverage:
+ * - Attribute addition/removal
+ * - Value changes
+ * - Multiple observers
+ * - Edge cases
+ */
+
 import type { StoryObj } from 'plaited/testing'
 import { AttributesObserver } from './use-attributes-observer.js'
 

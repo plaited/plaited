@@ -1,10 +1,80 @@
 /**
- * Determines if two objects are deeply equal.
- * @param objA - The first object to compare.
- * @param objB - The second object to compare.
- * @param map - A WeakMap used to solve the circular reference problem.
- * @returns A boolean indicating whether the two objects are deeply equal.
- * @example deepEqual(['array'], ['array']) => true
+ * Performs a deep equality comparison between two values of any type.
+ * Handles primitive values, objects, arrays, and built-in JavaScript objects.
+ *
+ * @param objA - First value to compare
+ * @param objB - Second value to compare
+ * @param map - Internal WeakMap used for circular reference detection
+ * @returns `true` if values are deeply equal, `false` otherwise
+ *
+ * @remarks
+ * Supports comparison of:
+ * - Primitive values (string, number, boolean, null, undefined)
+ * - Objects and nested objects
+ * - Arrays and nested arrays
+ * - Dates
+ * - RegExp objects
+ * - Map objects
+ * - Set objects
+ * - ArrayBuffer and TypedArrays
+ * - Handles circular references
+ *
+ * @example
+ * Basic Usage
+ * ```ts
+ * // Primitive values
+ * deepEqual(42, 42)                    // true
+ * deepEqual('hello', 'hello')          // true
+ *
+ * // Arrays
+ * deepEqual([1, 2, 3], [1, 2, 3])     // true
+ * deepEqual([1, [2, 3]], [1, [2, 3]]) // true
+ *
+ * // Objects
+ * deepEqual({a: 1, b: 2}, {a: 1, b: 2}) // true
+ * ```
+ *
+ * @example
+ * Complex Types
+ * ```ts
+ * // Dates
+ * deepEqual(new Date('2023'), new Date('2023'))  // true
+ *
+ * // Sets
+ * deepEqual(new Set([1, 2]), new Set([1, 2]))    // true
+ *
+ * // Maps
+ * deepEqual(
+ *   new Map([['a', 1], ['b', 2]]),
+ *   new Map([['a', 1], ['b', 2]])
+ * )  // true
+ *
+ * // RegExp
+ * deepEqual(/test/gi, /test/gi)  // true
+ * ```
+ *
+ * @example
+ * Edge Cases
+ * ```ts
+ * // Circular references
+ * const obj1 = { a: 1 }
+ * const obj2 = { a: 1 }
+ * obj1.self = obj1
+ * obj2.self = obj2
+ * deepEqual(obj1, obj2)  // true
+ *
+ * // TypedArrays
+ * deepEqual(
+ *   new Int8Array([1, 2, 3]),
+ *   new Int8Array([1, 2, 3])
+ * )  // true
+ *
+ * // Different types
+ * deepEqual([1, 2, 3], "1,2,3")  // false
+ * ```
+ *
+ * @throws {Error} Will not throw errors, but may have unexpected results if
+ * comparing objects with custom prototype chains or non-standard object types
  */
 export const deepEqual = (objA: unknown, objB: unknown, map = new WeakMap()) => {
   //  First-level filtering
