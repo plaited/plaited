@@ -7,8 +7,8 @@ import type { Trigger, Disconnect } from '../behavioral/b-program.js'
  * This allows resources or subscriptions initiated via the trigger's context
  * to be properly cleaned up when the context is destroyed.
  *
- * @property addDisconnectCallback - A function to register a cleanup callback
- *   that should be executed when the component or context associated with this trigger is disconnected.
+ * @property addDisconnectCallback - A function to register a cleanup callback that should be 
+ *   executed when the component or context associated with this trigger is disconnected
  */
 export type PlaitedTrigger = Trigger & {
   addDisconnectCallback: (disconnect: Disconnect) => void
@@ -18,14 +18,14 @@ export type PlaitedTrigger = Trigger & {
  * This function takes a base `Trigger` and a `Set` intended to hold `Disconnect` functions.
  * It adds the `addDisconnectCallback` method to the trigger, which allows consumers
  * to add their cleanup logic (e.g., unsubscribing from listeners, clearing timeouts)
- * to the provided `disconnectSet`. This set is typically managed elsewhere and invoked
- * during the teardown phase of the component or context owning the trigger.
+ * to the provided `disconnectSet`.
  *
- * @param trigger The base `Trigger` function obtained from `bProgram()`.
- * @param disconnectSet A `Set` instance where registered `Disconnect` callbacks will be stored.
- * @returns The original `trigger` function, augmented with the `addDisconnectCallback` method,
- *          and cast to the `PlaitedTrigger` type.
+ * @param trigger - The base `Trigger` function obtained from `bProgram()`
+ * @param disconnectSet - A `Set` instance where registered `Disconnect` callbacks will be stored
+ * @returns The original `trigger` function, augmented with the `addDisconnectCallback` method
+ * 
  * @example
+ * ```ts
  * const baseTrigger = bProgram().trigger;
  * const cleanupCallbacks = new Set<Disconnect>();
  *
@@ -38,6 +38,7 @@ export type PlaitedTrigger = Trigger & {
  *
  * // Later, during component teardown:
  * // cleanupCallbacks.forEach(cb => cb());
+ * ```
  */
 export const getPlaitedTrigger = (trigger: Trigger, disconnectSet: Set<Disconnect>) => {
   Object.assign(trigger, {

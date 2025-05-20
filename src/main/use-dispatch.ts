@@ -3,7 +3,15 @@ import { type PlaitedElement } from './plaited.types.js'
 
 /**
  * Type definition for the dispatch function that sends custom events from Plaited elements.
- * Extends BPEvent with CustomEvent initialization options.
+ * Provides type-safe event dispatching with CustomEvent initialization options.
+ * 
+ * @template T - The type of data to be included in the event's detail property
+ * @param args - Event configuration object containing:
+ *   - type: The event type/name
+ *   - detail: Event-specific data (optional)
+ *   - bubbles: Whether the event bubbles up through the DOM tree (default: false)
+ *   - cancelable: Whether the event can be canceled (default: true)
+ *   - composed: Whether the event crosses shadow DOM boundaries (default: true)
  */
 type Dispatch = <T = unknown>(
   args: BPEvent<T> & {

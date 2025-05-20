@@ -5,9 +5,15 @@ import { getPlaitedTrigger, type PlaitedTrigger } from './get-plaited-trigger.js
 
 /**
  * Defines the properties passed to the `BProgramCallback` function.
- * This object bundles the core utilities (`bSync`, `bThread`, `bThreads`, `useSnapshot`)
- * and the enhanced `PlaitedTrigger` needed to define the behavior and feedback
- * mechanisms of a behavioral program instance.
+ * This object bundles the core utilities and the enhanced `PlaitedTrigger`
+ * needed to define behavior and feedback mechanisms.
+ * 
+ * @property bSync - Factory for creating synchronization points that define wait conditions, request events,
+ *   block events, and interrupt logic for behavioral threads
+ * @property bThread - Factory for creating behavioral threads that encapsulate reactive logic sequences
+ * @property bThreads - Utility for managing behavioral threads, including adding, removing, and checking status
+ * @property trigger - An enhanced trigger function that allows registering disconnect callbacks for cleanup
+ * @property useSnapshot - Hook for registering a snapshot listener to monitor program state changes
  */
 export type DefineBProgramProps = {
   /** Factory for creating synchronization points. */
@@ -92,11 +98,20 @@ export const defineBProgram = <A extends Handlers, C extends Record<string, unkn
   disconnectSet = new Set<Disconnect>(),
   ...args
 }: {
-  /** Defines the public event interface for this bProgram instance. */
+  /** 
+   * Defines the public event interface for this bProgram instance.
+   * Only events listed here can be triggered through the public trigger.
+   */
   publicEvents: string[]
-  /** Optional Set to manage cleanup callbacks associated with this instance. */
+  /** 
+   * Optional Set to manage cleanup callbacks associated with this instance.
+   * All disconnect callbacks will be added to this set for centralized cleanup.
+   */
   disconnectSet?: Set<Disconnect>
-  /** The callback function defining the bProgram's threads and feedback handlers. */
+  /** 
+   * The callback function defining the bProgram's threads and feedback handlers.
+   * This function contains the core behavioral logic of the program.
+   */
   bProgram: BProgramCallback<A, C>
 }) => {
   const { useFeedback, trigger, ...rest } = bProgram()

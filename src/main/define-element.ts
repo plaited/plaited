@@ -40,7 +40,11 @@ import type { PlaitedTemplate, PlaitedElement, SelectorMatch, Bindings, BoundEle
 export type BProgramArgs = {
   $: <E extends Element = Element>(
     target: string,
-    /** This options enables querySelectorAll and modified the attribute selector for p-target{@default {all: false, mod: "=" } } {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}*/
+    /** 
+     * This option enables querySelectorAll and modifies the attribute selector for p-target
+     * @default {all: false, mod: "="}
+     * @see {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}
+     */
     match?: SelectorMatch,
   ) => NodeListOf<BoundElement<E>>
   root: ShadowRoot
@@ -173,7 +177,10 @@ const createDocumentFragment = (html: string) => {
   return tpl.content
 }
 
-/** @internal Interface extending GetElementArgs for internal use, making optional properties explicit. */
+/**
+ * @internal
+ * Interface extending GetElementArgs for internal use, making optional properties explicit.
+ */
 interface DefineElementArgs<A extends PlaitedHandlers>
   extends Omit<GetElementArgs<A>, 'delegatesFocus' | 'mode' | 'slotAssignment'> {
   delegatesFocus?: boolean

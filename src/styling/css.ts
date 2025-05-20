@@ -10,25 +10,45 @@ import type {
 import { kebabCase } from '../utils/case.js'
 import { hashString } from '../utils/hash-string.js'
 
-/** @internal Helper function to create a deterministic hash for class names based on style properties and selectors. */
+/**
+ * @internal
+ * Helper function to create a deterministic hash for class names based on style properties and selectors.
+ * 
+ * @param args - The strings and numbers to hash together
+ * @returns A base36 hash string prefixed with underscore if negative
+ */
 const createClassHash = (...args: (string | number)[]) =>
   hashString(args.join(' '))?.toString(36).replace(/^-/g, '_') ?? ''
 
-/** @internal Type guard to check if a value is a primitive CSS value (string or number). */
+/**
+ * @internal
+ * Type guard to check if a value is a primitive CSS value (string or number).
+ * 
+ * @param val - The value to test
+ * @returns True if the value is a string or number
+ */
 const isPrimitive = (val: string | number | CreateNestedCSS<string>): val is string | number =>
   typeof val === 'string' || typeof val === 'number'
 
-/** @internal Converts a CSS property name to kebab-case unless it's already a CSS variable (--*). */
+/**
+ * @internal
+ * Converts a CSS property name to kebab-case unless it's already a CSS variable (--*).
+ * 
+ * @param prop - The property name to convert
+ * @returns The kebab-cased property or unchanged CSS variable
+ */
 const caseProp = (prop: string) => (prop.startsWith('--') ? prop : kebabCase(prop))
 
 /**
- * @internal Recursively processes nested CSS rules (like media queries, pseudo-classes)
+ * @internal
+ * Recursively processes nested CSS rules (like media queries, pseudo-classes)
  * defined in a `CreateNestedCSS` object, generating hashed class names and CSS rules,
  * and populating the provided map.
- * @param map - A Map to store generated class names and their corresponding CSS rules.
- * @param value - The CSS property value, which can be a primitive or a nested object.
- * @param prop - The CSS property name (e.g., 'color', 'backgroundColor').
- * @param selectors - An array accumulating nested selectors (e.g., [':hover', '@media (...)']).
+ * 
+ * @param map - A Map to store generated class names and their corresponding CSS rules
+ * @param value - The CSS property value, which can be a primitive or a nested object
+ * @param prop - The CSS property name (e.g., 'color', 'backgroundColor')
+ * @param selectors - An array accumulating nested selectors (e.g., [':hover', '@media (...)'])
  */
 const formatStyles = ({
   map,
@@ -333,6 +353,14 @@ const assign = (...styleObjects: Array<StylesObject | undefined | false | null>)
  * - Efficiently handles style reapplication without unnecessary DOM operations
  * - Compatible with server-side rendering and static site generation
  * - Uses deterministic hashing for predictable class name generation
+ */
+/**
+ * The CSS module exports a collection of utilities for creating and managing styles in Plaited applications.
+ * 
+ * @see {@link create} For defining component styles with atomic CSS generation
+ * @see {@link host} For creating shadow DOM host styles with contextual selectors
+ * @see {@link keyframes} For defining CSS animations with unique identifiers
+ * @see {@link assign} For combining multiple style objects with conditional application
  */
 export const css = {
   create,

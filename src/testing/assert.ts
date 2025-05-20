@@ -126,7 +126,6 @@ const replacer = (key: string | number | symbol, value: unknown) => {
 /**
  * Main assertion function for testing with detailed error reporting.
  * @see {Assert} for type definition and examples
- * @internal
  */
 export const assert: Assert = (param) => {
   const args = param

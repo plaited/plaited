@@ -156,34 +156,34 @@ type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => TemplateO
 
 /**
  * Core function for creating Plaited template objects from JSX-like calls.
- * This function is typically invoked via the `h` alias (inspired by react=jsx).
- * It processes tags, attributes, and children to produce a `TemplateObject`
- * which includes HTML string fragments and associated stylesheets, ready for rendering or further processing.
- *
- * Key responsibilities include:
- * - Handling standard HTML/SVG tags, custom element tags, and FunctionTemplate components.
- * - Sanitizing attribute values and child content via HTML escaping (unless the `trusted` attribute is `true`).
- * - Correctly formatting boolean attributes (e.g., `disabled`, `checked`).
- * - Handling special attributes like `className` (maps to `class`), `htmlFor` (maps to `for`).
- * - Processing Plaited-specific attributes:
- *   - `p-trigger`: Serializes event-to-action mappings.
- *   - `stylesheet`: Collects stylesheet strings for hoisting.
- *   - `style`: Converts a style object into an inline style string.
- *   - `trusted`: Disables escaping for the element's attributes and children (use with caution).
- * - Hoisting stylesheets up the template tree until a declarative shadow DOM boundary (`<template shadowrootmode="...">`) is encountered, where they are injected as a `<style>` tag.
- * - Preventing potentially unsafe constructs like `on*` event handler attributes and `<script>` tags without the `trusted` attribute.
- *
- * @param _tag The tag name (string for HTML/SVG/custom elements) or a FunctionTemplate component.
- * @param attrs The attributes/props object for the element or component, including `children`.
- * @returns A `TemplateObject` containing the processed HTML strings (`html`), collected stylesheets (`stylesheets`), component registry info (`registry`), and an identifier (`$`).
- * @throws {Error} If an `on*` attribute (e.g., `onclick`) is used. Event handling should use `p-trigger`.
- * @throws {Error} If a `<script>` tag is used without the `trusted={true}` attribute.
- * @throws {Error} If an attribute value is not a primitive type (string, number, boolean, null, undefined), excluding Plaited-specific object/array types like `style`, `p-trigger`, `stylesheet`, `className`, `children`.
+ * 
+ * @param _tag - The tag name (string for HTML/SVG/custom elements) or a FunctionTemplate
+ * @param attrs - The attributes/props object for the element, including `children`
+ * @returns A `TemplateObject` containing the processed HTML strings (`html`), collected stylesheets (`stylesheets`), registry info (`registry`), and an identifier (`$`)
+ * @throws {Error} If an `on*` attribute (e.g., `onclick`) is used. Event handling should use `p-trigger`
+ * @throws {Error} If a `<script>` tag is used without the `trusted={true}` attribute
+ * @throws {Error} If an attribute value is not a primitive type (string, number, boolean, null, undefined), excluding Plaited-specific object/array types
+ * 
  * @example
+ * ```ts
  * const template = createTemplate('div', {
  *   className: 'container',
  *   children: ['Hello World']
  * });
+ * ```
+ * 
+ * Key responsibilities include:
+ * - Handling standard HTML/SVG tags, custom element tags, and FunctionTemplates
+ * - Sanitizing attribute values and child content via HTML escaping (unless the `trusted` attribute is `true`)
+ * - Correctly formatting boolean attributes (e.g., `disabled`, `checked`)
+ * - Handling special attributes like `className` (maps to `class`), `htmlFor` (maps to `for`)
+ * - Processing Plaited-specific attributes:
+ *   - `p-trigger`: Serializes event-to-action mappings
+ *   - `stylesheet`: Collects stylesheet strings for hoisting
+ *   - `style`: Converts a style object into an inline style string
+ *   - `trusted`: Disables escaping for the element's attributes and children (use with caution)
+ * - Hoisting stylesheets up the template tree until a declarative shadow DOM boundary (`<template shadowrootmode="...">`) is encountered
+ * - Preventing potentially unsafe constructs like `on*` event handler attributes and `<script>` tags without the `trusted` attribute
  */
 export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const {
@@ -309,24 +309,37 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
 
 /**
  * Alias for `createTemplate`, commonly used as the JSX factory function (`jsx` or `jsxs` in JSX transform).
- * This follows the convention established by react-jsx and adopted by many JSX frameworks, providing a concise way to create elements.
+ * This follows the convention established by react-jsx and adopted by many JSX frameworks.
  *
- * @see createTemplate For detailed behavior and parameters.
+ * @see createTemplate For detailed behavior and parameters
+ * 
  * @example
+ * ```ts
  * import { h } from 'plaited/jsx-runtime';
  *
- * const element = h('div', { id: 'example', className: 'container', children: 'Hello World' });');
- * const component = h(MyComponent, { data: 'some data' });
+ * const element = h('div', { 
+ *   id: 'example', 
+ *   className: 'container', 
+ *   children: 'Hello World' 
+ * });
+ * 
+ * const templateFunction = h(MyTemplateFunction, { 
+ *   data: 'some data' 
+ * });
+ * ```
  */
 export { createTemplate as h }
 
 /**
- * Represents a JSX Fragment. Allows grouping multiple children without adding an extra wrapper node to the resulting HTML structure.
- * It processes its children, collecting their HTML fragments and stylesheets into a single `TemplateObject`.
+ * Represents a JSX Fragment. Allows grouping multiple children without adding an extra wrapper node 
+ * to the resulting HTML structure. It processes its children, collecting their HTML fragments 
+ * and stylesheets into a single `TemplateObject`.
  *
- * @param attrs An attributes object, primarily used to access the `children` prop. Other attributes passed to Fragment are ignored.
- * @returns A `TemplateObject` containing the combined HTML and stylesheets of its direct children.
+ * @param attrs - An attributes object, primarily used to access the `children` prop (other attributes are ignored)
+ * @returns A `TemplateObject` containing the combined HTML and stylesheets of its direct children
+ * 
  * @example
+ * ```tsx
  * import { Fragment, h } from 'plaited/jsx-runtime';
  *
  * const listItems = (
@@ -335,18 +348,18 @@ export { createTemplate as h }
  *     <li>Item 2</li>
  *   </Fragment>
  * );
- * // Resulting TemplateObject.html roughly: ['<li>Item 1</li>', '<li>Item 2</li>']
+ * // Resulting TemplateObject.html: ['<li>Item 1</li>', '<li>Item 2</li>']
  *
  * const mixedContent = h('div', {
- * children: (
- *      <Fragment>
- *        <span>Part 1</span>
- *        {' Part 2'}
- *      </Fragment>
- *    )
- *  }
- * );
- * // Resulting TemplateObject.html roughly: ['<div>', '<span>Part 1</span>', ' Part 2', '</div>']
+ *   children: (
+ *     <Fragment>
+ *       <span>Part 1</span>
+ *       {' Part 2'}
+ *     </Fragment>
+ *   )
+ * });
+ * // Resulting TemplateObject.html: ['<div>', '<span>Part 1</span>', ' Part 2', '</div>']
+ * ```
  */
 export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
   const children = Array.isArray(_children) ? _children.flat() : [_children]
