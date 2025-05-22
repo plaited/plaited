@@ -37,7 +37,7 @@ export type CreateNestedCSS<T extends keyof CSSProperties> = {
   /** Rules applied based on pseudo-classes (e.g., :hover, :focus). Can be nested further. */
   [key: `:${string}`]: CSSProperties[T] | CreateNestedCSS<T>
   /** Rules applied based on attribute selectors (e.g., [disabled], [data-state="active"]). Can be nested further. */
-  [key: `[${string}`]: CSSProperties[T] | CreateNestedCSS<T>
+  [key: `[${string}]`]: CSSProperties[T] | CreateNestedCSS<T>
 }
 /**
  * Defines a collection of CSS class definitions. Each key represents a class name,
@@ -119,13 +119,13 @@ export type CSSKeyFrames = {
  *
  * @example
  * const elementStyles: StylesObject = {
- *   className: ['base-class', isActive && 'active-class'],
+ *   class: ['base-class', isActive && 'active-class'],
  *   stylesheet: [commonStyles, componentSpecificStyles],
  * };
  */
 export type StylesObject = {
   /** A single class name or an array of class names. */
-  className?: string | Array<string>
+  class?: string | Array<string>
   /** A single CSS stylesheet string or an array of stylesheet strings. */
   stylesheet?: string | Array<string>
 }
@@ -137,7 +137,7 @@ export type StylesObject = {
 export type StyleObjects<T extends CSSClasses> = {
   [key in keyof T]: {
     /** The generated unique class name for the style definition. */
-    className: string
+    class: string
     /** An array containing the generated CSS stylesheet strings. */
     stylesheet: string[]
   }

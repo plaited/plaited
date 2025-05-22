@@ -127,8 +127,7 @@ const matchAlias = (value: string) => value.match(/^(?:\{)([^"]*?)(?:\})$/)?.[1]
  */
 export const valueIsAlias = (value: unknown): value is Alias => {
   if (isTypeOf<string>(value, 'string')) {
-    const match = matchAlias(value)
-    return Boolean(match?.[1])
+    return matchAlias(value).length > 0
   }
   return false
 }

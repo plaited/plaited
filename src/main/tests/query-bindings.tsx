@@ -130,22 +130,22 @@ export const Fixture = defineElement({
       <template p-target='row-template'>
         <tr p-target='row'>
           <td
-            className='col-md-1'
+            class='col-md-1'
             p-target='id'
           ></td>
-          <td className='col-md-4'>
+          <td class='col-md-4'>
             <a p-target='label'></a>
           </td>
-          <td className='col-md-1'>
+          <td class='col-md-1'>
             <a>
               <span
-                className='glyphicon glyphicon-remove'
+                class='glyphicon glyphicon-remove'
                 aria-hidden='true'
                 p-target='delete'
               ></span>
             </a>
           </td>
-          <td className='col-md-6'></td>
+          <td class='col-md-6'></td>
         </tr>
       </template>
     </div>

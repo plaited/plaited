@@ -13,7 +13,7 @@
  * import { h } from 'plaited/jsx-runtime'
  *
  * const div = h('div', {
- *   className: 'container',
+ *   class: 'container',
  *   children: 'Hello World'
  * })
  * ```
@@ -22,10 +22,10 @@
  * Custom Component
  * ```tsx
  * const Card = ({ title, children }) => h('div', {
- *   className: 'card',
+ *   class: 'card',
  *   children: [
  *     h('h2', { children: title }),
- *     h('div', { className: 'content', children })
+ *     h('div', { class: 'content', children })
  *   ]
  * })
  *
@@ -156,22 +156,22 @@ type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => TemplateO
 
 /**
  * Core function for creating Plaited template objects from JSX-like calls.
- * 
+ *
  * @param _tag - The tag name (string for HTML/SVG/custom elements) or a FunctionTemplate
  * @param attrs - The attributes/props object for the element, including `children`
  * @returns A `TemplateObject` containing the processed HTML strings (`html`), collected stylesheets (`stylesheets`), registry info (`registry`), and an identifier (`$`)
  * @throws {Error} If an `on*` attribute (e.g., `onclick`) is used. Event handling should use `p-trigger`
  * @throws {Error} If a `<script>` tag is used without the `trusted={true}` attribute
  * @throws {Error} If an attribute value is not a primitive type (string, number, boolean, null, undefined), excluding Plaited-specific object/array types
- * 
+ *
  * @example
  * ```ts
  * const template = createTemplate('div', {
- *   className: 'container',
+ *   class: 'container',
  *   children: ['Hello World']
  * });
  * ```
- * 
+ *
  * Key responsibilities include:
  * - Handling standard HTML/SVG tags, custom element tags, and FunctionTemplates
  * - Sanitizing attribute values and child content via HTML escaping (unless the `trusted` attribute is `true`)
@@ -192,15 +192,15 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     stylesheet,
     style,
     'p-trigger': bpTrigger,
-    className,
-    htmlFor,
+    class: className,
+    for: htmlFor,
     ...attributes
   } = attrs
   const registry: string[] = []
   if (isTypeOf<FunctionTemplate>(_tag, 'function')) {
     return _tag(attrs)
   }
-  const tag = _tag.toLowerCase().trim()
+  const tag = escape(_tag.toLowerCase().trim())
 
   /** If the tag is script we must explicitly pass trusted */
   if (tag === 'script' && !trusted) {
@@ -210,14 +210,14 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   /** Now to create an array to store our node attributes */
   const start = [`<${tag} `]
   /** handle JS reserved words commonly used in html class & for*/
-  if (htmlFor) start.push(`for="${htmlFor}" `)
-  if (className) start.push(`class="${Array.isArray(className) ? className.join(' ') : className}" `)
+  if (htmlFor) start.push(`for="${escape(htmlFor)}" `)
+  if (className) start.push(`class="${escape(Array.isArray(className) ? className.join(' ') : className)}" `)
   /** if we have bpTrigger attribute wire up formatted correctly*/
   if (bpTrigger) {
     const value = Object.entries(bpTrigger)
       .map<string>(([ev, req]) => `${ev}:${req}`)
       .join(' ')
-    start.push(`${P_TRIGGER}="${value}" `)
+    start.push(`${P_TRIGGER}="${escape(value)}" `)
   }
   /** if we have style add it to element */
   if (style) {
@@ -242,14 +242,13 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       value && start.push(`${key} `)
       continue
     }
-    /** P2 typeof attribute is NOT {@type Primitive} then skip and do nothing */
+    if (value == null || value === '') continue
     if (!PRIMITIVES.has(trueTypeOf(value))) {
+      /** P2 typeof attribute is NOT {@type Primitive} then skip and do nothing */
       throw new Error(`Attributes not declared in PlaitedAttributes must be of type Primitive: ${key} is not primitive`)
     }
-    /** set the value so long as it's not nullish in we use the formatted value  */
-    const formattedValue = value ?? ''
     /** handle the rest of the attributes */
-    start.push(`${key}="${trusted ? formattedValue : escape(formattedValue)}" `)
+    start.push(`${escape(key)}="${trusted ? value : escape(value)}" `)
   }
   /** Create are stylesheet set */
   let stylesheets = stylesheet ? [...(Array.isArray(stylesheet) ? stylesheet : [stylesheet])] : []
@@ -295,7 +294,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
      * shadowDom template array  and clear the stylesheets set
      */
     if (stylesheets.length) {
-      start.push(`<style>${stylesheets.join('')}</style>`)
+      start.push(`<style>${escape(stylesheets.join(''))}</style>`)
       stylesheets = []
     }
   }
@@ -312,32 +311,32 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
  * This follows the convention established by react-jsx and adopted by many JSX frameworks.
  *
  * @see createTemplate For detailed behavior and parameters
- * 
+ *
  * @example
  * ```ts
  * import { h } from 'plaited/jsx-runtime';
  *
- * const element = h('div', { 
- *   id: 'example', 
- *   className: 'container', 
- *   children: 'Hello World' 
+ * const element = h('div', {
+ *   id: 'example',
+ *   class: 'container',
+ *   children: 'Hello World'
  * });
- * 
- * const templateFunction = h(MyTemplateFunction, { 
- *   data: 'some data' 
+ *
+ * const templateFunction = h(MyTemplateFunction, {
+ *   data: 'some data'
  * });
  * ```
  */
 export { createTemplate as h }
 
 /**
- * Represents a JSX Fragment. Allows grouping multiple children without adding an extra wrapper node 
- * to the resulting HTML structure. It processes its children, collecting their HTML fragments 
+ * Represents a JSX Fragment. Allows grouping multiple children without adding an extra wrapper node
+ * to the resulting HTML structure. It processes its children, collecting their HTML fragments
  * and stylesheets into a single `TemplateObject`.
  *
  * @param attrs - An attributes object, primarily used to access the `children` prop (other attributes are ignored)
  * @returns A `TemplateObject` containing the combined HTML and stylesheets of its direct children
- * 
+ *
  * @example
  * ```tsx
  * import { Fragment, h } from 'plaited/jsx-runtime';

@@ -61,7 +61,7 @@ export type Bindings = {
    *
    * // Replace with JSX content
    * container.render(
-   *   <div className="content">
+   *   <div class="content">
    *     <h1>New Content</h1>
    *     <p>Some text</p>
    *   </div>
@@ -88,7 +88,7 @@ export type Bindings = {
    *
    * // Add new item at the end
    * list.insert('beforeend',
-   *   <li className="todo-item">New task</li>
+   *   <li class="todo-item">New task</li>
    * );
    *
    * // Add header before the list
@@ -109,7 +109,7 @@ export type Bindings = {
    *
    * // Replace with new element
    * oldMessage.replace(
-   *   <div className="new-message">
+   *   <div class="new-message">
    *     <strong>Updated!</strong>
    *     <p>New content here</p>
    *   </div>

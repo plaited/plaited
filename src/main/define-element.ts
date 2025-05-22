@@ -40,7 +40,7 @@ import type { PlaitedTemplate, PlaitedElement, SelectorMatch, Bindings, BoundEle
 export type BProgramArgs = {
   $: <E extends Element = Element>(
     target: string,
-    /** 
+    /**
      * This option enables querySelectorAll and modifies the attribute selector for p-target
      * @default {all: false, mod: "="}
      * @see {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}
@@ -200,6 +200,7 @@ const getTriggerType = (event: Event, context: Element) => {
   if (!el) return
   return getTriggerMap(el).get(event.type)
 }
+
 const isElement = (node: Node): node is Element => node.nodeType === 1
 
 /**
@@ -439,8 +440,8 @@ export const defineElement = <A extends PlaitedHandlers>({
         constructor() {
           super()
           this.#internals = this.attachInternals()
-          const frag = getDocumentFragment(this.#root, shadowDom)
           this.attachShadow({ mode, delegatesFocus, slotAssignment })
+          const frag = getDocumentFragment(this.#root, shadowDom)
           this.#root.replaceChildren(frag)
           const { trigger, useFeedback, useSnapshot, bThreads } = bProgram()
           this.#trigger = getPlaitedTrigger(trigger, this.#disconnectSet)

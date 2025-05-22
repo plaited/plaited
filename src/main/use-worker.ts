@@ -49,7 +49,7 @@ import { isPlaitedTrigger } from './plaited.guards.js'
  *
  *       PROCESS_COMPLETE({ detail }) {
  *         result.render(
- *           <div className="results">
+ *           <div class="results">
  *             <h3>Results:</h3>
  *             <pre>{JSON.stringify(detail.results, null, 2)}</pre>
  *           </div>
@@ -129,6 +129,7 @@ export const useWorker = (trigger: PlaitedTrigger | Trigger, path: string) => {
   const post = <T>(args: BPEvent<T>) => worker?.postMessage(args)
   const disconnect = () => {
     worker?.removeEventListener('message', handleMessage)
+    worker?.terminate()
   }
   isPlaitedTrigger(trigger) && trigger.addDisconnectCallback(disconnect)
   post.disconnect = disconnect

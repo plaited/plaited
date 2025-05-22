@@ -13,7 +13,7 @@ import { hashString } from '../utils/hash-string.js'
 /**
  * @internal
  * Helper function to create a deterministic hash for class names based on style properties and selectors.
- * 
+ *
  * @param args - The strings and numbers to hash together
  * @returns A base36 hash string prefixed with underscore if negative
  */
@@ -23,7 +23,7 @@ const createClassHash = (...args: (string | number)[]) =>
 /**
  * @internal
  * Type guard to check if a value is a primitive CSS value (string or number).
- * 
+ *
  * @param val - The value to test
  * @returns True if the value is a string or number
  */
@@ -33,7 +33,7 @@ const isPrimitive = (val: string | number | CreateNestedCSS<string>): val is str
 /**
  * @internal
  * Converts a CSS property name to kebab-case unless it's already a CSS variable (--*).
- * 
+ *
  * @param prop - The property name to convert
  * @returns The kebab-cased property or unchanged CSS variable
  */
@@ -44,7 +44,7 @@ const caseProp = (prop: string) => (prop.startsWith('--') ? prop : kebabCase(pro
  * Recursively processes nested CSS rules (like media queries, pseudo-classes)
  * defined in a `CreateNestedCSS` object, generating hashed class names and CSS rules,
  * and populating the provided map.
- * 
+ *
  * @param map - A Map to store generated class names and their corresponding CSS rules
  * @param value - The CSS property value, which can be a primitive or a nested object
  * @param prop - The CSS property name (e.g., 'color', 'backgroundColor')
@@ -92,7 +92,7 @@ const formatStyles = ({
  *                         Property keys are camelCased CSS properties (e.g., `backgroundColor`) or CSS variables (`--my-var`).
  *                         Values can be primitives (string/number) or nested objects (`CreateNestedCSS`) for conditional styles.
  * @returns {StyleObjects<T>} An object mirroring the input structure (`T`). Each key holds a `StylesObject` containing:
- *                            - `className`: A string of space-separated, generated class names (e.g., "button_abc p123 p456").
+ *                            - `class`: A string of space-separated, generated class names (e.g., "button_abc p123 p456").
  *                                           Includes a base class (`button_abc`) and atomic classes (`p123`, `p456`).
  *                            - `stylesheet`: An array of CSS rule strings corresponding to the generated classes.
  *
@@ -105,7 +105,7 @@ const formatStyles = ({
  *     padding: '10px 15px',
  *   }
  * });
- * // styles.primaryButton.className -> "primaryButton_xyz p111 p222 p333"
+ * // styles.primaryButton.class -> "primaryButton_xyz p111 p222 p333"
  * // styles.primaryButton.stylesheet -> [".p111{background-color:blue;}", ".p222{color:white;}", ...]
  * ```
  *
@@ -154,7 +154,7 @@ const create = <T extends CSSClasses>(classNames: T) =>
     const classes = [...map.keys()]
     const hash = createClassHash(...classes)
     acc[cls as keyof T] = {
-      className: [`${cls}_${hash}`, ...classes].join(' '),
+      class: [`${cls}_${hash}`, ...classes].join(' '),
       stylesheet: [...map.values()],
     }
     return acc
@@ -171,7 +171,7 @@ const create = <T extends CSSClasses>(classNames: T) =>
  *        - Objects: Where keys are selectors relative to `:host` (e.g., `'.active'`, `'[disabled]'`, `':host-context(.theme-dark)'`)
  *          and values are the corresponding CSS property values for that condition. The key `'default'` applies to the base `:host`.
  * @returns {StylesObject} A `StylesObject` containing only the `stylesheet` array with the generated `:host` rules.
- *                         The `className` property will be undefined.
+ *                         The `class` property will be undefined.
  *
  * @example
  * ```typescript
@@ -270,12 +270,12 @@ const keyframes = (name: string, frames: CSSKeyFrames) => {
 
 /**
  * Merges multiple `StylesObject` instances (or falsy values like `undefined`, `false`, `null`)
- * into a single `StylesObject`. It concatenates `className` strings and `stylesheet` arrays
+ * into a single `StylesObject`. It concatenates `class` strings and `stylesheet` arrays
  * from all valid input objects. Falsy values are ignored, enabling easy conditional style composition.
  *
  * @param {...(StylesObject | undefined | false | null)} styleObjects - A variable number of `StylesObject` instances or falsy values.
- * @returns {StylesObject} A new `StylesObject` with combined `className` and `stylesheet` properties.
- *                         If no valid `StylesObject`s are provided, returns `{ className: undefined, stylesheet: undefined }`.
+ * @returns {StylesObject} A new `StylesObject` with combined `class` and `stylesheet` properties.
+ *                         If no valid `StylesObject`s are provided, returns `{ class: undefined, stylesheet: undefined }`.
  *
  * @example Conditional Styling
  * ```typescript
@@ -292,7 +292,7 @@ const keyframes = (name: string, frames: CSSKeyFrames) => {
  *   isDisabled && disabled.disabled // Ignored if isDisabled is false
  * );
  *
- * // buttonStyles.className -> "base_abc p111 active_def p222" (if isActive)
+ * // buttonStyles.class -> "base_abc p111 active_def p222" (if isActive)
  * // buttonStyles.stylesheet -> [".p111{color:black;}", ".p222{font-weight:bold;}"]
  *
  * const MyButton = () => <button {...buttonStyles}>Click</button>;
@@ -313,11 +313,11 @@ const assign = (...styleObjects: Array<StylesObject | undefined | false | null>)
   const style: string[] = []
   for (const styleObject of styleObjects) {
     if (!styleObject) continue
-    const { className, stylesheet } = styleObject
+    const { class: className, stylesheet } = styleObject
     className && cls.push(...(Array.isArray(className) ? (className.filter(Boolean) as string[]) : [className]))
     stylesheet && style.push(...(Array.isArray(stylesheet) ? (stylesheet.filter(Boolean) as string[]) : [stylesheet]))
   }
-  return { className: cls.length ? cls : undefined, stylesheet: style.length ? style : undefined }
+  return { class: cls.length ? cls : undefined, stylesheet: style.length ? style : undefined }
 }
 
 /**
@@ -356,7 +356,7 @@ const assign = (...styleObjects: Array<StylesObject | undefined | false | null>)
  */
 /**
  * The CSS module exports a collection of utilities for creating and managing styles in Plaited applications.
- * 
+ *
  * @see {@link create} For defining component styles with atomic CSS generation
  * @see {@link host} For creating shadow DOM host styles with contextual selectors
  * @see {@link keyframes} For defining CSS animations with unique identifiers

@@ -14,7 +14,7 @@ import { createTemplate, Fragment } from './jsx/create-template.js'
  * /** @jsxImportSource plaited *\/
  *
  * const element = (
- *   <div className="container">
+ *   <div class="container">
  *     <h1>Hello World</h1>
  *     <p>Welcome to Plaited</p>
  *   </div>
@@ -40,7 +40,7 @@ import { createTemplate, Fragment } from './jsx/create-template.js'
  * import { jsx, Fragment } from 'plaited/jsx-runtime'
  *
  * const element = jsx('div', {
- *   className: 'container',
+ *   class: 'container',
  *   children: [
  *     jsx('h1', { children: 'Hello' }),
  *     jsx('p', { children: 'World' })

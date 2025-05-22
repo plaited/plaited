@@ -64,7 +64,7 @@ const SVG: FT = (props) => (
     height='125'
     version='1.1'
     viewBox='0 0 700 700'
-    className={'svg'}
+    class={'svg'}
     p-trigger={{ click: 'removeSvg' }}
     p-target='svg'
     {...props}

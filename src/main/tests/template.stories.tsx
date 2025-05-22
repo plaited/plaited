@@ -144,7 +144,7 @@ export const hydration: StoryObj = {
           render() {
             const [inner] = $('inner')
             inner.render(<span stylesheet={styles.span.stylesheet}>after hydration</span>)
-            inner.attr('class', styles.span.className)
+            inner.attr('class', styles.span.class)
           },
         }
       },

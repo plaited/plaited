@@ -31,8 +31,7 @@ export type Children = Child[] | Child
  * Defines core attributes applicable to all elements processed by Plaited's JSX factory.
  * Includes standard HTML attributes, ARIA attributes, and Plaited-specific extensions.
  *
- * @property class - Intentionally marked as `never` to encourage using `className`.
- * @property className - Supports standard `string` or an `array` of strings for CSS classes.
+ * @property class - Supports standard `string` or an `array` of strings for CSS classes.
  * @property children - Represents the child elements or content.
  * @property p-target - Used to identify elements for targeted updates or interactions (value is usually a string or number).
  * @property p-trigger - Defines declarative event bindings for behavioral programming integration (maps event names to action types).
@@ -41,8 +40,7 @@ export type Children = Child[] | Child
  * @property style - Accepts a `CSSProperties` object (similar to React) for inline styles.
  */
 export type PlaitedAttributes = {
-  class?: never
-  className?: string | string[]
+  class?: string | string[]
   children?: Children
   [P_TARGET]?: string | number
   [P_TRIGGER]?: Record<string, string>
@@ -561,7 +559,7 @@ type DetailedIframeHTMLAttributes = DetailedHTMLAttributes & {
 type DetailedImgHTMLAttributes = DetailedHTMLAttributes & {
   alt?: string
   crossorigin?: CrossOrigin
-  decoding?: 'async' | 'auto' | 'bThread'
+  decoding?: 'async' | 'auto' | 'sync'
   height?: number | string
   loading?: 'eager' | 'lazy'
   referrerpolicy?: HTMLAttributeReferrerPolicy
@@ -638,11 +636,10 @@ type DetailedInputHTMLAttributes = DetailedHTMLAttributes & {
   width?: number | string
 }
 
-/** Detailed attributes specific to the `<label>` element. Note the use of `htmlFor` instead of `for`. */
+/** Detailed attributes specific to the `<label>` element */
 type DetailedLabelHTMLAttributes = DetailedHTMLAttributes & {
   form?: string
-  for?: never
-  htmlFor?: string
+  for?: string
 }
 
 /** Detailed attributes specific to the `<li>` element. */
@@ -749,11 +746,10 @@ type DetailedOptionHTMLAttributes = DetailedHTMLAttributes & {
   value?: string | number
 }
 
-/** Detailed attributes specific to the `<output>` element. Note the use of `htmlFor` instead of `for`. */
+/** Detailed attributes specific to the `<output>` element. */
 type DetailedOutputHTMLAttributes = DetailedHTMLAttributes & {
   form?: string
-  for?: never
-  htmlFor?: string
+  for?: string
   name?: string
 }
 
@@ -938,7 +934,7 @@ export type DetailedSVGAttributes = DetailedHTMLAttributes & {
   cx?: string
   cy?: string
   d?: string
-  decoding?: 'bThread' | 'async' | 'auto' | string
+  decoding?: 'sync' | 'async' | 'auto' | string
   diffuseConstant?: number | string
   direction?: 'ltr' | 'rtl' | string
   display?: string
@@ -1129,7 +1125,7 @@ type DetailedWebViewHTMLAttributes = DetailedHTMLAttributes & {
   preload?: string
   httpreferrer?: string
   useragent?: string
-  disablewebsecurity: boolean
+  disablewebsecurity?: boolean
   partition?: string
   allowpopups?: boolean
   webpreferences?: string
