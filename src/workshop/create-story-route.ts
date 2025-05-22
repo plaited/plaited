@@ -6,12 +6,12 @@ import { kebabCase } from 'plaited/utils'
 /**
  * Creates a standardized route path for story files in the workshop system.
  * Converts file paths and export names to kebab-case for consistent URL structure.
- * 
+ *
  * @param options - Configuration object
  * @param options.storyFile - The file path of the story
  * @param options.exportName - The exported component/story name
  * @returns A formatted route path string in the format "{directory}/{basename}--{storyName}"
- * 
+ *
  * @example
  * ```ts
  * // For a file "/src/components/Button.stories.tsx" with export "PrimaryButton"

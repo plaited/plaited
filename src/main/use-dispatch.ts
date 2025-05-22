@@ -4,7 +4,7 @@ import { type PlaitedElement } from './plaited.types.js'
 /**
  * Type definition for the dispatch function that sends custom events from Plaited elements.
  * Provides type-safe event dispatching with CustomEvent initialization options.
- * 
+ *
  * @template T - The type of data to be included in the event's detail property
  * @param args - Event configuration object containing:
  *   - type: The event type/name
