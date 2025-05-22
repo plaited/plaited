@@ -1,3 +1,21 @@
+/**
+ * Test stories for validating slot behavior and event handling in Plaited components.
+ * Tests event propagation through slots and shadow boundaries.
+ *
+ * Story Features:
+ * - Default slot testing
+ * - Named slot validation
+ * - Nested slot behavior
+ * - Event propagation patterns
+ * - Shadow DOM boundaries
+ *
+ * Test Coverage:
+ * - Event bubbling through slots
+ * - Named vs default slots
+ * - Nested slot composition
+ * - Event handling hierarchy
+ */
+
 import type { StoryObj } from 'plaited/testing'
 import { Fixture, defaultSlot, passThroughSlot, namedSlot, nestedSlot, nestedInShadowSlot } from './slots.js'
 

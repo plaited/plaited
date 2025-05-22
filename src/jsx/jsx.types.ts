@@ -4,11 +4,13 @@ import { P_TARGET, P_TRIGGER, TEMPLATE_OBJECT_IDENTIFIER } from './jsx.constants
 type Booleanish = boolean | 'true' | 'false'
 type CrossOrigin = 'anonymous' | 'use-credentials' | ''
 /**
- * Represents the structure of a template object used for rendering.
- * @property html Array of HTML string segments to be combined
- * @property stylesheets Array of stylesheet contents
- * @property registry Array of registered template identifiers
- * @property $ Template object identifier for type checking
+ * Represents the internal structure produced by Plaited's JSX factory (`h` or `createTemplate`).
+ * This object contains the processed HTML strings and associated metadata needed for rendering.
+ *
+ * @property html - An array of string fragments representing the HTML structure.
+ * @property stylesheets - An array of CSS stylesheet strings collected from this template and its children.
+ * @property registry - An array of custom element tag names encountered within this template
+ * @property $ - A unique symbol (`TEMPLATE_OBJECT_IDENTIFIER`) used as a type guard to identify Plaited template objects.
  */
 export type TemplateObject = {
   html: string[]
@@ -17,22 +19,28 @@ export type TemplateObject = {
   $: typeof TEMPLATE_OBJECT_IDENTIFIER
 }
 /**
- * Basic child types that can be rendered in a template.
- * Can be either a string or a TemplateObject.
+ * Represents the valid primitive types that can be rendered directly as children within JSX.
+ * This includes numbers (which are converted to strings) and strings. TemplateObjects are also valid children for composition.
  */
 export type Child = number | string | TemplateObject
 /**
- * Collection of renderable children.
- * Can be either a single child or an array of children.
+ * Represents the children prop in JSX. It can be a single valid child (`Child`) or an array of children.
  */
 export type Children = Child[] | Child
 /**
- * Core attributes available to all Plaited components.
- * Extends HTML standard attributes with Plaited-specific features.
+ * Defines core attributes applicable to all elements processed by Plaited's JSX factory.
+ * Includes standard HTML attributes, ARIA attributes, and Plaited-specific extensions.
+ *
+ * @property class - Supports standard `string` or an `array` of strings for CSS classes.
+ * @property children - Represents the child elements or content.
+ * @property p-target - Used to identify elements for targeted updates or interactions (value is usually a string or number).
+ * @property p-trigger - Defines declarative event bindings for behavioral programming integration (maps event names to action types).
+ * @property stylesheet - Accepts a CSS string or an array of strings to be associated with the element, hoisted, and deduplicated.
+ * @property trusted - If `true`, disables HTML escaping for the element's attributes and children that are not TemplateObject's. Use with extreme caution, only with sanitized or known-safe content.
+ * @property style - Accepts a `CSSProperties` object (similar to React) for inline styles.
  */
 export type PlaitedAttributes = {
-  class?: never
-  className?: string | string[]
+  class?: string | string[]
   children?: Children
   [P_TARGET]?: string | number
   [P_TRIGGER]?: Record<string, string>
@@ -42,7 +50,7 @@ export type PlaitedAttributes = {
   style?: CSSProperties
 }
 
-// All the WAI-ARIA 1.1 attributes from https://www.w3.org/TR/wai-aria-1.1/
+/** Defines WAI-ARIA attributes for accessibility. */
 type AriaAttributes = {
   /** Identifies the currently active element when DOM focus is on a composite widget, textbox, group, or application. */
   'aria-activedescendant'?: string
@@ -255,7 +263,7 @@ type AriaAttributes = {
   'aria-valuetext'?: string
 }
 
-// All the WAI-ARIA 1.1 role attribute values from https://www.w3.org/TR/wai-aria-1.1/#role_definitions
+/** Defines allowed values for the ARIA `role` attribute. */
 type AriaRole =
   | 'alert'
   | 'alertdialog'
@@ -327,6 +335,7 @@ type AriaRole =
   | 'treegrid'
   | 'treeitem'
 
+/** Base HTML attributes common to most elements, including ARIA attributes and Plaited-specific ones. */
 type HTMLAttributes = AriaAttributes &
   PlaitedAttributes & {
     // Standard HTML Attributes
@@ -386,10 +395,15 @@ type HTMLAttributes = AriaAttributes &
     is?: string
   }
 
-// Combine both filters
+/**
+ * Represents detailed HTML attributes, including standard HTML, ARIA, Plaited-specific,
+ * and allowing for any custom `data-*` or other attributes via `Record<string, any>`.
+ * This is the base type often extended for specific HTML elements.
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type DetailedHTMLAttributes = HTMLAttributes & Record<string, any>
 
+/** HTML attribute type for the `referrerpolicy` attribute. */
 type HTMLAttributeReferrerPolicy =
   | ''
   | 'no-referrer'
@@ -401,8 +415,10 @@ type HTMLAttributeReferrerPolicy =
   | 'strict-origin-when-cross-origin'
   | 'unsafe-url'
 
+/** HTML attribute type for the anchor `target` attribute. */
 type HTMLAttributeAnchorTarget = '_self' | '_blank' | '_parent' | '_top'
 
+/** Detailed attributes specific to the `<a>` (anchor) element. */
 type DetailedAnchorHTMLAttributes = DetailedHTMLAttributes & {
   download?: boolean
   href?: string
@@ -414,8 +430,10 @@ type DetailedAnchorHTMLAttributes = DetailedHTMLAttributes & {
   referrerpolicy?: HTMLAttributeReferrerPolicy
 }
 
+/** Detailed attributes specific to the `<audio>` element. */
 type DetailedAudioHTMLAttributes = DetailedMediaHTMLAttributes
 
+/** Detailed attributes specific to the `<area>` element. */
 type DetailedAreaHTMLAttributes = DetailedHTMLAttributes & {
   alt?: string
   coords?: string
@@ -428,15 +446,18 @@ type DetailedAreaHTMLAttributes = DetailedHTMLAttributes & {
   target?: string
 }
 
+/** Detailed attributes specific to the `<base>` element. */
 type DetailedBaseHTMLAttributes = DetailedHTMLAttributes & {
   href?: string
   target?: string
 }
 
+/** Detailed attributes specific to the `<blockquote>` element. */
 type DetailedBlockquoteHTMLAttributes = DetailedHTMLAttributes & {
   cite?: string
 }
 
+/** Detailed attributes specific to the `<button>` element. */
 type DetailedButtonHTMLAttributes = DetailedHTMLAttributes & {
   disabled?: boolean
   form?: string
@@ -450,37 +471,45 @@ type DetailedButtonHTMLAttributes = DetailedHTMLAttributes & {
   value?: string | number
 }
 
+/** Detailed attributes specific to the `<canvas>` element. */
 type DetailedCanvasHTMLAttributes = DetailedHTMLAttributes & {
   height?: number | string
   width?: number | string
 }
 
+/** Detailed attributes specific to the `<col>` element. */
 type DetailedColHTMLAttributes = DetailedHTMLAttributes & {
   span?: number
   width?: number | string
 }
 
+/** Detailed attributes specific to the `<colgroup>` element. */
 type DetailedColgroupHTMLAttributes = DetailedHTMLAttributes & {
   span?: number
 }
 
+/** Detailed attributes specific to the `<data>` element. */
 type DetailedDataHTMLAttributes = DetailedHTMLAttributes & {
   value?: string | number
 }
 
+/** Detailed attributes specific to the `<details>` element. */
 type DetailedDetailsHTMLAttributes = DetailedHTMLAttributes & {
   open?: boolean
 }
 
+/** Detailed attributes specific to the `<del>` element. */
 type DetailedDelHTMLAttributes = DetailedHTMLAttributes & {
   cite?: string
   datetime?: string
 }
 
+/** Detailed attributes specific to the `<dialog>` element. */
 type DetailedDialogHTMLAttributes = DetailedHTMLAttributes & {
   open?: boolean
 }
 
+/** Detailed attributes specific to the `<embed>` element. */
 type DetailedEmbedHTMLAttributes = DetailedHTMLAttributes & {
   height?: number | string
   src?: string
@@ -488,12 +517,14 @@ type DetailedEmbedHTMLAttributes = DetailedHTMLAttributes & {
   width?: number | string
 }
 
+/** Detailed attributes specific to the `<fieldset>` element. */
 type DetailedFieldsetHTMLAttributes = DetailedHTMLAttributes & {
   disabled?: boolean
   form?: string
   name?: string
 }
 
+/** Detailed attributes specific to the `<form>` element. */
 type DetailedFormHTMLAttributes = DetailedHTMLAttributes & {
   'accept-charset'?: string
   action?: string
@@ -505,10 +536,12 @@ type DetailedFormHTMLAttributes = DetailedHTMLAttributes & {
   target?: string
 }
 
+/** Detailed attributes specific to the `<html>` element. */
 type DetailedHtmlHTMLAttributes = DetailedHTMLAttributes & {
   manifest?: string
 }
 
+/** Detailed attributes specific to the `<iframe>` element. */
 type DetailedIframeHTMLAttributes = DetailedHTMLAttributes & {
   allow?: string
   height?: number | string
@@ -522,10 +555,11 @@ type DetailedIframeHTMLAttributes = DetailedHTMLAttributes & {
   width?: number | string
 }
 
+/** Detailed attributes specific to the `<img>` element. */
 type DetailedImgHTMLAttributes = DetailedHTMLAttributes & {
   alt?: string
   crossorigin?: CrossOrigin
-  decoding?: 'async' | 'auto' | 'bThread'
+  decoding?: 'async' | 'auto' | 'sync'
   height?: number | string
   loading?: 'eager' | 'lazy'
   referrerpolicy?: HTMLAttributeReferrerPolicy
@@ -536,11 +570,13 @@ type DetailedImgHTMLAttributes = DetailedHTMLAttributes & {
   width?: number | string
 }
 
+/** Detailed attributes specific to the `<ins>` element. */
 type DetailedInsHTMLAttributes = DetailedHTMLAttributes & {
   cite?: string
   datetime?: string
 }
 
+/** Defines allowed values for the input `type` attribute. */
 type HTMLInputTypeAttribute =
   | 'button'
   | 'checkbox'
@@ -565,6 +601,7 @@ type HTMLInputTypeAttribute =
   | 'url'
   | 'week'
 
+/** Detailed attributes specific to the `<input>` element. */
 type DetailedInputHTMLAttributes = DetailedHTMLAttributes & {
   accept?: string
   alt?: string
@@ -599,16 +636,18 @@ type DetailedInputHTMLAttributes = DetailedHTMLAttributes & {
   width?: number | string
 }
 
+/** Detailed attributes specific to the `<label>` element */
 type DetailedLabelHTMLAttributes = DetailedHTMLAttributes & {
   form?: string
-  for?: never
-  htmlFor?: string
+  for?: string
 }
 
+/** Detailed attributes specific to the `<li>` element. */
 type DetailedLiHTMLAttributes = DetailedHTMLAttributes & {
   value?: string | number
 }
 
+/** Detailed attributes specific to the `<link>` element. */
 type DetailedLinkHTMLAttributes = DetailedHTMLAttributes & {
   as?: string
   crossorigin?: CrossOrigin
@@ -625,14 +664,17 @@ type DetailedLinkHTMLAttributes = DetailedHTMLAttributes & {
   charSet?: string
 }
 
+/** Detailed attributes specific to the `<map>` element. */
 type DetailedMapHTMLAttributes = DetailedHTMLAttributes & {
   name?: string
 }
 
+/** Detailed attributes specific to the `<menu>` element. */
 type DetailedMenuHTMLAttributes = DetailedHTMLAttributes & {
   type?: string
 }
 
+/** Detailed attributes common to media elements like `<audio>` and `<video>`. */
 type DetailedMediaHTMLAttributes = DetailedHTMLAttributes & {
   autoplay?: boolean
   controls?: boolean
@@ -646,6 +688,7 @@ type DetailedMediaHTMLAttributes = DetailedHTMLAttributes & {
   src?: string
 }
 
+/** Detailed attributes specific to the `<meta>` element. */
 type DetailedMetaHTMLAttributes = DetailedHTMLAttributes & {
   charset?: string
   'http-equiv'?: string
@@ -654,6 +697,7 @@ type DetailedMetaHTMLAttributes = DetailedHTMLAttributes & {
   content?: string
 }
 
+/** Detailed attributes specific to the `<meter>` element. */
 type DetailedMeterHTMLAttributes = DetailedHTMLAttributes & {
   form?: string
   high?: number
@@ -664,10 +708,12 @@ type DetailedMeterHTMLAttributes = DetailedHTMLAttributes & {
   value?: string | number
 }
 
+/** Detailed attributes specific to the `<q>` (quote) element. */
 type DetailedQuoteHTMLAttributes = DetailedHTMLAttributes & {
   cite?: string
 }
 
+/** Detailed attributes specific to the `<object>` element. */
 type DetailedObjectHTMLAttributes = DetailedHTMLAttributes & {
   classid?: string
   data?: string
@@ -679,17 +725,20 @@ type DetailedObjectHTMLAttributes = DetailedHTMLAttributes & {
   width?: number | string
 }
 
+/** Detailed attributes specific to the `<ol>` (ordered list) element. */
 type DetailedOlHTMLAttributes = DetailedHTMLAttributes & {
   reversed?: boolean
   start?: number
   type?: '1' | 'a' | 'A' | 'i' | 'I'
 }
 
+/** Detailed attributes specific to the `<optgroup>` element. */
 type DetailedOptgroupHTMLAttributes = DetailedHTMLAttributes & {
   disabled?: boolean
   label?: string
 }
 
+/** Detailed attributes specific to the `<option>` element. */
 type DetailedOptionHTMLAttributes = DetailedHTMLAttributes & {
   disabled?: boolean
   label?: string
@@ -697,22 +746,25 @@ type DetailedOptionHTMLAttributes = DetailedHTMLAttributes & {
   value?: string | number
 }
 
+/** Detailed attributes specific to the `<output>` element. */
 type DetailedOutputHTMLAttributes = DetailedHTMLAttributes & {
   form?: string
-  for?: never
-  htmlFor?: string
+  for?: string
   name?: string
 }
 
+/** Detailed attributes specific to the `<progress>` element. */
 type DetailedProgressHTMLAttributes = DetailedHTMLAttributes & {
   max?: number | string
   value?: string | number
 }
 
+/** Detailed attributes specific to the `<slot>` element. */
 type DetailedSlotHTMLAttributes = DetailedHTMLAttributes & {
   name?: string
 }
 
+/** Detailed attributes specific to the `<script>` element. Requires `trusted={true}` to be used. */
 type DetailedScriptHTMLAttributes = DetailedHTMLAttributes & {
   async?: boolean
   crossorigin?: CrossOrigin
@@ -724,6 +776,7 @@ type DetailedScriptHTMLAttributes = DetailedHTMLAttributes & {
   type?: string
 }
 
+/** Detailed attributes specific to the `<select>` element. */
 type DetailedSelectHTMLAttributes = DetailedHTMLAttributes & {
   autocomplete?: string
   disabled?: boolean
@@ -735,6 +788,7 @@ type DetailedSelectHTMLAttributes = DetailedHTMLAttributes & {
   value?: string | number
 }
 
+/** Detailed attributes specific to the `<source>` element. */
 type DetailedSourceHTMLAttributes = DetailedHTMLAttributes & {
   height?: number | string
   media?: string
@@ -745,12 +799,12 @@ type DetailedSourceHTMLAttributes = DetailedHTMLAttributes & {
   width?: number | string
 }
 
+/** Detailed attributes specific to the `<style>` element. */
 type DetailedStyleHTMLAttributes = DetailedHTMLAttributes & {
   media?: string
-  scoped?: boolean
-  type?: string
 }
 
+/** Detailed attributes specific to the `<table>` element. */
 type DetailedTableHTMLAttributes = DetailedHTMLAttributes & {
   align?: 'left' | 'center' | 'right'
   bgcolor?: string
@@ -763,11 +817,13 @@ type DetailedTableHTMLAttributes = DetailedHTMLAttributes & {
   width?: number | string
 }
 
+/** Detailed attributes specific to the `<template>` element, including declarative shadow DOM attributes. */
 type DetailedTemplateHTMLAttributes = DetailedHTMLAttributes & {
   shadowrootmode?: 'open' | 'closed'
   shadowrootdelegatesfocus?: boolean
 }
 
+/** Detailed attributes specific to the `<textarea>` element. */
 type DetailedTextareaHTMLAttributes = DetailedHTMLAttributes & {
   autocomplete?: string
   cols?: number
@@ -785,6 +841,7 @@ type DetailedTextareaHTMLAttributes = DetailedHTMLAttributes & {
   wrap?: string
 }
 
+/** Detailed attributes specific to the `<td>` (table data) element. */
 type DetailedTdHTMLAttributes = DetailedHTMLAttributes & {
   align?: 'left' | 'center' | 'right' | 'justify' | 'char'
   colspan?: number
@@ -797,6 +854,7 @@ type DetailedTdHTMLAttributes = DetailedHTMLAttributes & {
   valign?: 'top' | 'middle' | 'bottom' | 'baseline'
 }
 
+/** Detailed attributes specific to the `<th>` (table header) element. */
 type DetailedThHTMLAttributes = DetailedHTMLAttributes & {
   align?: 'left' | 'center' | 'right' | 'justify' | 'char'
   colspan?: number
@@ -806,10 +864,12 @@ type DetailedThHTMLAttributes = DetailedHTMLAttributes & {
   abbr?: string
 }
 
+/** Detailed attributes specific to the `<time>` element. */
 type DetailedTimeHTMLAttributes = DetailedHTMLAttributes & {
   datetime?: string
 }
 
+/** Detailed attributes specific to the `<track>` element. */
 type DetailedTrackHTMLAttributes = DetailedHTMLAttributes & {
   default?: boolean
   kind?: 'subtitles' | 'captions' | 'descriptions' | 'chapters' | 'metadata'
@@ -818,6 +878,7 @@ type DetailedTrackHTMLAttributes = DetailedHTMLAttributes & {
   srclang?: string
 }
 
+/** Detailed attributes specific to the `<video>` element. */
 type DetailedVideoHTMLAttributes = DetailedMediaHTMLAttributes & {
   height?: string
   playsinline?: boolean
@@ -827,6 +888,7 @@ type DetailedVideoHTMLAttributes = DetailedMediaHTMLAttributes & {
   disableremoteplayback?: boolean
 }
 
+/** Detailed attributes for SVG elements, extending base HTML attributes. */
 export type DetailedSVGAttributes = DetailedHTMLAttributes & {
   'accent-height'?: number
   accumulate?: 'none' | 'sum' | string
@@ -872,7 +934,7 @@ export type DetailedSVGAttributes = DetailedHTMLAttributes & {
   cx?: string
   cy?: string
   d?: string
-  decoding?: 'bThread' | 'async' | 'auto' | string
+  decoding?: 'sync' | 'async' | 'auto' | string
   diffuseConstant?: number | string
   direction?: 'ltr' | 'rtl' | string
   display?: string
@@ -919,7 +981,7 @@ export type DetailedSVGAttributes = DetailedHTMLAttributes & {
   gradientUnits?: 'userSpaceOnUse' | 'objectBoundingBox' | string
   height?: number | string
   href?: string
-  id?: string
+  id?: string | number
   'image-rendering'?: 'auto' | 'optimizeSpeed' | 'optimizeQuality' | string
   in?: 'SourceGraphic' | 'SourceAlpha' | 'BackgroundImage' | 'BackgroundAlpha' | 'FillPaint' | 'StrokePaint' | string
   in2?: 'SourceGraphic' | 'SourceAlpha' | 'BackgroundImage' | 'BackgroundAlpha' | 'FillPaint' | 'StrokePaint' | string
@@ -1054,6 +1116,7 @@ export type DetailedSVGAttributes = DetailedHTMLAttributes & {
   z?: number | string
 }
 
+/** Detailed attributes specific to the Electron `<webview>` tag. */
 type DetailedWebViewHTMLAttributes = DetailedHTMLAttributes & {
   src?: string
   nodeintegration?: boolean
@@ -1062,7 +1125,7 @@ type DetailedWebViewHTMLAttributes = DetailedHTMLAttributes & {
   preload?: string
   httpreferrer?: string
   useragent?: string
-  disablewebsecurity: boolean
+  disablewebsecurity?: boolean
   partition?: string
   allowpopups?: boolean
   webpreferences?: string
@@ -1070,8 +1133,10 @@ type DetailedWebViewHTMLAttributes = DetailedHTMLAttributes & {
   disableblinkfeatures?: string
 }
 /**
- * Comprehensive mapping of HTML element tags to their respective attribute types.
- * Includes both standard HTML elements and SVG elements.
+ * A comprehensive mapping of intrinsic HTML and SVG element tag names
+ * to their corresponding detailed attribute types (`Detailed*HTMLAttributes` or `DetailedSVGAttributes`).
+ * This is used by TypeScript's JSX type checking (`JSX.IntrinsicElements`) to validate attributes passed to elements.
+ * It also allows for arbitrary string keys to accommodate custom elements, mapping them to `DetailedHTMLAttributes`.
  */
 export type ElementAttributeList = {
   a: DetailedAnchorHTMLAttributes
@@ -1249,24 +1314,34 @@ export type ElementAttributeList = {
   tspan: DetailedSVGAttributes
   use: DetailedSVGAttributes
   view: DetailedSVGAttributes
-  [key: string]: DetailedHTMLAttributes
+  [key: string]: DetailedHTMLAttributes // Allows custom element tags
 }
 /**
- * Generic type for component attributes.
- * Combines DetailedHTMLAttributes with optional custom attributes.
+ * Generic type for component attributes/props.
+ * It combines the base `DetailedHTMLAttributes` (providing standard HTML/ARIA/Plaited attributes)
+ * with an optional generic type `T` for component-specific properties.
+ *
+ * @template T An optional type extending `DetailedHTMLAttributes` to include custom props for a component. Defaults to `DetailedHTMLAttributes`.
  */
 export type Attrs<T extends DetailedHTMLAttributes = DetailedHTMLAttributes> = DetailedHTMLAttributes & T
 /**
- * Function type for component templates that return a TemplateObject.
- * @template T Type extending base Attrs
+ * Defines the signature for a Plaited functional component template.
+ * A functional component is a function that accepts an `Attrs` object (props)
+ * and returns a `TemplateObject`.
+ *
+ * @template T The type of the props object accepted by the component, extending `Attrs`. Defaults to `Attrs`.
+ * @param attrs The props object passed to the component during rendering. Includes standard attributes, Plaited attributes, and custom props defined by `T`.
+ * @returns A `TemplateObject` representing the component's rendered output.
  */
 export type FunctionTemplate<T extends Attrs = Attrs> = (attrs: T & PlaitedAttributes) => TemplateObject
 /**
- * Shorthand alias for FunctionTemplate.
+ * Shorthand alias for `FunctionTemplate`.
+ *
+ * @see FunctionTemplate
  */
 export type FT<T extends Attrs = Attrs> = FunctionTemplate<T>
 /**
- * Pattern type for custom element tag names.
- * Enforces the required format of containing at least one hyphen.
+ * Represents the string pattern for a valid custom element tag name.
+ * Custom element names must contain at least one hyphen (`-`).
  */
 export type CustomElementTag = `${string}-${string}`

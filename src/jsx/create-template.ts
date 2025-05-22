@@ -1,3 +1,125 @@
+/**
+ * Plaited JSX Template Creation System
+ *
+ * Core module for converting JSX-like calls into Plaited template objects.
+ * Provides security-first template creation with automatic style management
+ * and declarative shadow DOM support.
+ *
+ * @packageDocumentation
+ *
+ * @example
+ * Basic Element Creation
+ * ```tsx
+ * import { h } from 'plaited/jsx-runtime'
+ *
+ * const div = h('div', {
+ *   class: 'container',
+ *   children: 'Hello World'
+ * })
+ * ```
+ *
+ * @example
+ * Custom Component
+ * ```tsx
+ * const Card = ({ title, children }) => h('div', {
+ *   class: 'card',
+ *   children: [
+ *     h('h2', { children: title }),
+ *     h('div', { class: 'content', children })
+ *   ]
+ * })
+ *
+ * const card = h(Card, {
+ *   title: 'Welcome',
+ *   children: 'Card content'
+ * })
+ * ```
+ *
+ * @example
+ * Shadow DOM and Styles
+ * ```tsx
+ * import { css } from 'plaited/styling'
+ *
+ * const styles = css.create({
+ *   container: {
+ *     padding: '1rem',
+ *     border: '1px solid #ccc'
+ *   }
+ * })
+ *
+ * const ShadowComponent = () => h('custom-element', {
+ *   children: h('template', {
+ *     shadowrootmode: 'open',
+ *     children: h('div', {
+ *       ...styles.container,
+ *       children: 'Shadow content'
+ *     })
+ *   })
+ * })
+ * ```
+ *
+ * @example
+ * Event Handling
+ * ```tsx
+ * const Button = () => h('button', {
+ *   'p-trigger': {
+ *     click: 'BUTTON_CLICKED',
+ *     focus: 'BUTTON_FOCUSED'
+ *   },
+ *   children: 'Click me'
+ * })
+ * ```
+ *
+ * @remarks
+ * Security Features:
+ * 1. HTML Escaping
+ *    - Automatic escaping of attribute values
+ *    - Child content sanitization
+ *    - Opt-in trusted content via `trusted` prop
+ *
+ * 2. Event Safety
+ *   - No `on*` event handlers allowed
+ *   - Uses declarative `p-trigger` system
+ *   - Prevents script injection attacks
+ *
+ * 3. Script Protection
+ *   - `<script>` tags require explicit `trusted={true}`
+ *   - Inline scripts blocked by default
+ *
+ * Style Management:
+ * 1. Stylesheet Hoisting
+ *   - Automatic collection up component tree
+ *   - Deduplication via Set
+ *   - Shadow DOM boundary awareness
+ *
+ * 2. Style Attributes
+ *   - Object syntax with camelCase props
+ *   - CSS variable support
+ *   - Auto kebab-case conversion
+ *
+ * Shadow DOM Support:
+ * - Declarative shadow root creation
+ * - Automatic style injection
+ * - Focus delegation
+ * - Slot management
+ *
+ * Best Practices:
+ * 1. Security
+ *   - Never use `trusted={true}` with untrusted content
+ *   - Validate all dynamic attribute values
+ *   - Use `p-trigger` for events, not `on*` attributes
+ *
+ * 2. Performance
+ *   - Keep templates small and focused
+ *   - Use Fragment to avoid wrapper elements
+ *   - Leverage stylesheet hoisting
+ *
+ * 3. Styles
+ *   - Use CSS modules with `css.create()`
+ *   - Leverage shadow DOM for style encapsulation
+ *   - Group related styles in objects
+ */
+
 import type {
   Attrs,
   DetailedHTMLAttributes,
@@ -19,41 +141,49 @@ import {
   TEMPLATE_OBJECT_IDENTIFIER,
 } from './jsx.constants.js'
 
+/** @internal Represents the possible types for a tag in a JSX element: a standard HTML/SVG tag name (string), a custom element tag name (string with hyphen), or a FunctionTemplate component. */
 type Tag = string | CustomElementTag | FunctionTemplate
 
+/** @internal Utility type to infer the correct attribute type (`Attrs`) based on the provided tag type (`Tag`). It maps standard tags to their detailed attributes, FunctionTemplates to their parameter types, and custom elements/other strings to default detailed attributes. */
 type InferAttrs<T extends Tag> =
   T extends keyof ElementAttributeList ? ElementAttributeList[T]
   : T extends FunctionTemplate ? Parameters<T>[0]
   : T extends CustomElementTag ? DetailedHTMLAttributes
   : Attrs
 
+/** @internal The signature for the core template creation function (`createTemplate`). Ensures type safety between the tag and its attributes. */
 type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => TemplateObject
 
 /**
- * Creates a server-side rendering (SSR) template for HTML elements and components.
- * Handles attribute sanitization, event delegation, and stylesheet management.
+ * Core function for creating Plaited template objects from JSX-like calls.
  *
- * Features:
- * - Sanitizes HTML content for security
- * - Manages declarative shadow DOM
- * - Processes behavioral triggers (p-trigger)
- * - Handles stylesheet hoisting and deduplication
- * - Supports component composition
+ * @param _tag - The tag name (string for HTML/SVG/custom elements) or a FunctionTemplate
+ * @param attrs - The attributes/props object for the element, including `children`
+ * @returns A `TemplateObject` containing the processed HTML strings (`html`), collected stylesheets (`stylesheets`), registry info (`registry`), and an identifier (`$`)
+ * @throws {Error} If an `on*` attribute (e.g., `onclick`) is used. Event handling should use `p-trigger`
+ * @throws {Error} If a `<script>` tag is used without the `trusted={true}` attribute
+ * @throws {Error} If an attribute value is not a primitive type (string, number, boolean, null, undefined), excluding Plaited-specific object/array types
  *
- * @param _tag Element tag name or component function
- * @param attrs Object containing element attributes and children
- * @returns TemplateObject containing:
- *  - html: Array of HTML string segments
- *  - stylesheets: Deduplicated array of stylesheet contents
- *  - registry: Array of registered identifiers
- *  - $: Template identifier
- *
- * @throws {Error} When using unsecured script tags or invalid event handlers
  * @example
+ * ```ts
  * const template = createTemplate('div', {
- *   className: 'container',
+ *   class: 'container',
  *   children: ['Hello World']
  * });
+ * ```
+ *
+ * Key responsibilities include:
+ * - Handling standard HTML/SVG tags, custom element tags, and FunctionTemplates
+ * - Sanitizing attribute values and child content via HTML escaping (unless the `trusted` attribute is `true`)
+ * - Correctly formatting boolean attributes (e.g., `disabled`, `checked`)
+ * - Handling special attributes like `className` (maps to `class`), `htmlFor` (maps to `for`)
+ * - Processing Plaited-specific attributes:
+ *   - `p-trigger`: Serializes event-to-action mappings
+ *   - `stylesheet`: Collects stylesheet strings for hoisting
+ *   - `style`: Converts a style object into an inline style string
+ *   - `trusted`: Disables escaping for the element's attributes and children (use with caution)
+ * - Hoisting stylesheets up the template tree until a declarative shadow DOM boundary (`<template shadowrootmode="...">`) is encountered
+ * - Preventing potentially unsafe constructs like `on*` event handler attributes and `<script>` tags without the `trusted` attribute
  */
 export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const {
@@ -62,15 +192,15 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     stylesheet,
     style,
     'p-trigger': bpTrigger,
-    className,
-    htmlFor,
+    class: className,
+    for: htmlFor,
     ...attributes
   } = attrs
   const registry: string[] = []
   if (isTypeOf<FunctionTemplate>(_tag, 'function')) {
     return _tag(attrs)
   }
-  const tag = _tag.toLowerCase().trim()
+  const tag = escape(_tag.toLowerCase().trim())
 
   /** If the tag is script we must explicitly pass trusted */
   if (tag === 'script' && !trusted) {
@@ -80,14 +210,14 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   /** Now to create an array to store our node attributes */
   const start = [`<${tag} `]
   /** handle JS reserved words commonly used in html class & for*/
-  if (htmlFor) start.push(`for="${htmlFor}" `)
-  if (className) start.push(`class="${Array.isArray(className) ? className.join(' ') : className}" `)
+  if (htmlFor) start.push(`for="${escape(htmlFor)}" `)
+  if (className) start.push(`class="${escape(Array.isArray(className) ? className.join(' ') : className)}" `)
   /** if we have bpTrigger attribute wire up formatted correctly*/
   if (bpTrigger) {
     const value = Object.entries(bpTrigger)
       .map<string>(([ev, req]) => `${ev}:${req}`)
       .join(' ')
-    start.push(`${P_TRIGGER}="${value}" `)
+    start.push(`${P_TRIGGER}="${escape(value)}" `)
   }
   /** if we have style add it to element */
   if (style) {
@@ -112,14 +242,13 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       value && start.push(`${key} `)
       continue
     }
-    /** P2 typeof attribute is NOT {@type Primitive} then skip and do nothing */
+    if (value == null || value === '') continue
     if (!PRIMITIVES.has(trueTypeOf(value))) {
+      /** P2 typeof attribute is NOT {@type Primitive} then skip and do nothing */
       throw new Error(`Attributes not declared in PlaitedAttributes must be of type Primitive: ${key} is not primitive`)
     }
-    /** set the value so long as it's not nullish in we use the formatted value  */
-    const formattedValue = value ?? ''
     /** handle the rest of the attributes */
-    start.push(`${key}="${trusted ? formattedValue : escape(formattedValue)}" `)
+    start.push(`${escape(key)}="${trusted ? value : escape(value)}" `)
   }
   /** Create are stylesheet set */
   let stylesheets = stylesheet ? [...(Array.isArray(stylesheet) ? stylesheet : [stylesheet])] : []
@@ -165,7 +294,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
      * shadowDom template array  and clear the stylesheets set
      */
     if (stylesheets.length) {
-      start.push(`<style>${stylesheets.join('')}</style>`)
+      start.push(`<style>${escape(stylesheets.join(''))}</style>`)
       stylesheets = []
     }
   }
@@ -177,8 +306,60 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   }
 }
 
+/**
+ * Alias for `createTemplate`, commonly used as the JSX factory function (`jsx` or `jsxs` in JSX transform).
+ * This follows the convention established by react-jsx and adopted by many JSX frameworks.
+ *
+ * @see createTemplate For detailed behavior and parameters
+ *
+ * @example
+ * ```ts
+ * import { h } from 'plaited/jsx-runtime';
+ *
+ * const element = h('div', {
+ *   id: 'example',
+ *   class: 'container',
+ *   children: 'Hello World'
+ * });
+ *
+ * const templateFunction = h(MyTemplateFunction, {
+ *   data: 'some data'
+ * });
+ * ```
+ */
 export { createTemplate as h }
 
+/**
+ * Represents a JSX Fragment. Allows grouping multiple children without adding an extra wrapper node
+ * to the resulting HTML structure. It processes its children, collecting their HTML fragments
+ * and stylesheets into a single `TemplateObject`.
+ *
+ * @param attrs - An attributes object, primarily used to access the `children` prop (other attributes are ignored)
+ * @returns A `TemplateObject` containing the combined HTML and stylesheets of its direct children
+ *
+ * @example
+ * ```tsx
+ * import { Fragment, h } from 'plaited/jsx-runtime';
+ *
+ * const listItems = (
+ *   <Fragment>
+ *     <li>Item 1</li>
+ *     <li>Item 2</li>
+ *   </Fragment>
+ * );
+ * // Resulting TemplateObject.html: ['<li>Item 1</li>', '<li>Item 2</li>']
+ *
+ * const mixedContent = h('div', {
+ *   children: (
+ *     <Fragment>
+ *       <span>Part 1</span>
+ *       {' Part 2'}
+ *     </Fragment>
+ *   )
+ * });
+ * // Resulting TemplateObject.html: ['<div>', '<span>Part 1</span>', ' Part 2', '</div>']
+ * ```
+ */
 export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
   const children = Array.isArray(_children) ? _children.flat() : [_children]
   const html: string[] = []

@@ -2,14 +2,101 @@ import type { ElementAttributeList } from './jsx/jsx.types.js'
 import { createTemplate, Fragment } from './jsx/create-template.js'
 
 /**
- * Production JSX Runtime exports.
- * Provides standardized entry points for JSX compilation and rendering.
- * @exports
- * - h: Hyperscript-compatible template creation (for tools like Babel)
- * - jsx: Standard JSX transformation entry point
- * - jsxDEV: Development mode JSX transformation (included for compatibility)
- * - jsxs: Static JSX transformation for optimized builds
- * - Fragment: Fragment component for wrapping multiple elements
+ * Plaited JSX Runtime Implementation
+ *
+ * Production-ready JSX runtime that converts JSX syntax into Plaited template objects.
+ * This module provides the core functionality for JSX transformation and rendering in Plaited applications.
+ *
+ * @packageDocumentation
+ *
+ * @example
+ * Basic JSX Usage
+ * ```tsx
+ * /** @jsxImportSource plaited *\/
+ *
+ * const element = (
+ *   <div class="container">
+ *     <h1>Hello World</h1>
+ *     <p>Welcome to Plaited</p>
+ *   </div>
+ * )
+ * ```
+ *
+ * @example
+ * Fragment Usage
+ * ```tsx
+ * /** @jsxImportSource plaited *\/
+ *
+ * const list = (
+ *   <>
+ *     <li>Item 1</li>
+ *     <li>Item 2</li>
+ *   </>
+ * )
+ * ```
+ *
+ * @example
+ * Manual Factory Usage
+ * ```tsx
+ * import { jsx, Fragment } from 'plaited/jsx-runtime'
+ *
+ * const element = jsx('div', {
+ *   class: 'container',
+ *   children: [
+ *     jsx('h1', { children: 'Hello' }),
+ *     jsx('p', { children: 'World' })
+ *   ]
+ * })
+ *
+ * const list = jsx(Fragment, {
+ *   children: [
+ *     jsx('li', { children: 'Item 1' }),
+ *     jsx('li', { children: 'Item 2' })
+ *   ]
+ * })
+ * ```
+ *
+ * @remarks
+ * Configuration:
+ * 1. TypeScript Setup
+ *    ```json
+ *    {
+ *      "compilerOptions": {
+ *        "jsx": "react-jsx",
+ *        "jsxImportSource": "plaited"
+ *      }
+ *    }
+ *    ```
+ *
+ * 2. Babel Setup
+ *    ```json
+ *    {
+ *      "plugins": [
+ *        ["@babel/plugin-transform-react-jsx", {
+ *          "runtime": "automatic",
+ *          "importSource": "plaited"
+ *        }]
+ *      ]
+ *    }
+ *    ```
+ *
+ * Key Features:
+ * - Full JSX syntax support
+ * - TypeScript type checking
+ * - Fragment support
+ * - Development mode hints
+ * - Static optimization
+ *
+ * Factory Functions:
+ * - jsx: Standard transformation
+ * - jsxs: Static optimization
+ * - jsxDEV: Development hints
+ * - h: Hyperscript compatibility
+ *
+ * Types:
+ * - IntrinsicElements: HTML/SVG element types
+ * - ElementAttributeList: Attribute types
+ * - JSX namespace: Global JSX types
  */
 export { createTemplate as h, createTemplate as jsx, createTemplate as jsxDEV, createTemplate as jsxs, Fragment }
 

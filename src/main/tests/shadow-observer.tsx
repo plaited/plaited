@@ -64,7 +64,7 @@ const SVG: FT = (props) => (
     height='125'
     version='1.1'
     viewBox='0 0 700 700'
-    className={'svg'}
+    class={'svg'}
     p-trigger={{ click: 'removeSvg' }}
     p-target='svg'
     {...props}
@@ -79,6 +79,47 @@ const SVG: FT = (props) => (
     />
   </svg>
 )
+
+/**
+ * Demonstrates Shadow DOM mutation observation and dynamic content management in Plaited.
+ * Shows how to handle dynamic updates to shadow content, manage styles, and handle
+ * shadow boundary interactions.
+ *
+ * Features:
+ * - Shadow DOM mutation observation
+ * - Dynamic style management
+ * - Conditional rendering
+ * - Component lifecycle handling
+ * - Event delegation in shadow DOM
+ *
+ * @example
+ * ```tsx
+ * const DynamicContent = defineElement({
+ *   tag: 'dynamic-content',
+ *   shadowDom: (
+ *     <div p-target="container">
+ *       <slot p-trigger={{ slotchange: 'handleSlotChange' }} />
+ *       <div p-target="dynamic" />
+ *     </div>
+ *   ),
+ *   bProgram({ $, bThreads, bThread, bSync }) {
+ *     bThreads.set({
+ *       onUpdate: bThread([
+ *         bSync({ waitFor: 'update' }),
+ *         bSync({ request: { type: 'render' }})
+ *       ])
+ *     });
+ *
+ *     return {
+ *       render() {
+ *         const [target] = $('dynamic');
+ *         target.render(<div>New content!</div>);
+ *       }
+ *     };
+ *   }
+ * });
+ * ```
+ */
 
 export const ShadowIsland = defineElement({
   tag: 'shadow-island',

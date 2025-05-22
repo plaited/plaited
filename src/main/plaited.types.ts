@@ -1,6 +1,6 @@
 import type { Trigger } from '../behavioral/b-program.js'
 import type { CustomElementTag, FunctionTemplate, TemplateObject } from '../jsx/jsx.types.js'
-
+import { type PLAITED_TEMPLATE_IDENTIFIER } from './plaited.constants.js'
 /**
  * Valid insertion positions for DOM elements relative to a reference element.
  * Follows the insertAdjacentElement/HTML specification.
@@ -26,10 +26,122 @@ import type { CustomElementTag, FunctionTemplate, TemplateObject } from '../jsx/
  */
 export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
 
+/**
+ * Core helper methods bound to elements within Plaited components.
+ * Provides a safe and efficient way to manipulate DOM elements while maintaining
+ * style encapsulation and proper event handling.
+ *
+ * @interface Bindings
+ * @example
+ * Using bindings in a component:
+ * ```tsx
+ * bProgram: ({ $ }) => {
+ *   const [content] = $('content');
+ *
+ *   return {
+ *     UPDATE_CONTENT: ({ text }) => {
+ *       content.render(<p>{text}</p>);
+ *     },
+ *     INSERT_HEADER: ({ title }) => {
+ *       content.insert('beforebegin', <h1>{title}</h1>);
+ *     }
+ *   };
+ * }
+ * ```
+ */
 export type Bindings = {
+  /**
+   * Replaces all children of the element with the provided content.
+   * Handles style adoption and template processing automatically.
+   *
+   * @param template Content to render (JSX elements, strings, numbers, or fragments)
+   * @example
+   * ```tsx
+   * const [container] = $('main');
+   *
+   * // Replace with JSX content
+   * container.render(
+   *   <div class="content">
+   *     <h1>New Content</h1>
+   *     <p>Some text</p>
+   *   </div>
+   * );
+   *
+   * // Replace with text
+   * container.render('Simple text');
+   * ```
+   */
   render(this: Element, ...template: (TemplateObject | string | number | DocumentFragment)[]): void
+
+  /**
+   * Inserts content at a specified position relative to the element.
+   *
+   * @param position Where to insert the content:
+   *   - 'beforebegin': Before the element
+   *   - 'afterbegin': Inside the element, before its first child
+   *   - 'beforeend': Inside the element, after its last child
+   *   - 'afterend': After the element
+   * @param template Content to insert
+   * @example
+   * ```tsx
+   * const [list] = $('todo-list');
+   *
+   * // Add new item at the end
+   * list.insert('beforeend',
+   *   <li class="todo-item">New task</li>
+   * );
+   *
+   * // Add header before the list
+   * list.insert('beforebegin',
+   *   <h2>Todo Items:</h2>
+   * );
+   * ```
+   */
   insert(this: Element, position: Position, ...template: (TemplateObject | string | number | DocumentFragment)[]): void
+
+  /**
+   * Replaces the element itself with new content.
+   *
+   * @param template Content to replace the element with
+   * @example
+   * ```tsx
+   * const [oldMessage] = $('message');
+   *
+   * // Replace with new element
+   * oldMessage.replace(
+   *   <div class="new-message">
+   *     <strong>Updated!</strong>
+   *     <p>New content here</p>
+   *   </div>
+   * );
+   * ```
+   */
   replace(this: Element, ...template: (TemplateObject | string | number | DocumentFragment)[]): void
+
+  /**
+   * Gets or sets element attributes with type safety.
+   *
+   * @param attr Attribute name or object containing multiple attributes
+   * @param val Value to set (when using string attr name)
+   * @returns Current attribute value when getting a single attribute
+   * @example
+   * ```tsx
+   * const [button] = $('submit-btn');
+   *
+   * // Set multiple attributes
+   * button.attr({
+   *   'aria-label': 'Submit form',
+   *   'data-state': 'ready',
+   *   disabled: false
+   * });
+   *
+   * // Get single attribute
+   * const state = button.attr('data-state');
+   *
+   * // Set single attribute
+   * button.attr('aria-expanded', 'true');
+   * ```
+   */
   attr(this: Element, attr: Record<string, string | null | number | boolean>, val?: never): void
   attr(this: Element, attr: string, val?: string | null | number | boolean): string | null | void
 }
@@ -97,6 +209,7 @@ export type PlaitedTemplate = FunctionTemplate & {
   tag: CustomElementTag
   observedAttributes: string[]
   publicEvents: string[]
+  $: typeof PLAITED_TEMPLATE_IDENTIFIER
 }
 /**
  * Type for JSON-serializable message details.

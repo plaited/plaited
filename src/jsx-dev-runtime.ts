@@ -2,14 +2,100 @@ import type { ElementAttributeList } from './jsx/jsx.types.js'
 import { createTemplate, Fragment } from './jsx/create-template.js'
 
 /**
- * JSX Runtime exports for development environments.
- * Provides aliases for the template creation function to support various build tools and JSX configurations.
- * @exports
- * - h: Hyperscript-style template creation
- * - jsx: Standard JSX runtime
- * - jsxDEV: Development-specific JSX runtime
- * - jsxs: Static JSX runtime
- * - Fragment: Support for fragment syntax
+ *  * Plaited JSX Development Runtime
+ *
+ * Specialized JSX runtime for development environments with enhanced debugging and validation.
+ * Shares core functionality with the production runtime but adds development-specific features.
+ *
+ * @packageDocumentation
+ * @example
+ * Basic JSX Usage
+ * ```tsx
+ * /** @jsxImportSource plaited *\/
+ *
+ * const element = (
+ *   <div class="container">
+ *     <h1>Hello World</h1>
+ *     <p>Welcome to Plaited</p>
+ *   </div>
+ * )
+ * ```
+ *
+ * @example
+ * Fragment Usage
+ * ```tsx
+ * /** @jsxImportSource plaited *\/
+ *
+ * const list = (
+ *   <>
+ *     <li>Item 1</li>
+ *     <li>Item 2</li>
+ *   </>
+ * )
+ * ```
+ *
+ * @example
+ * Manual Factory Usage
+ * ```tsx
+ * import { jsx, Fragment } from 'plaited/jsx-runtime'
+ *
+ * const element = jsx('div', {
+ *   class: 'container',
+ *   children: [
+ *     jsx('h1', { children: 'Hello' }),
+ *     jsx('p', { children: 'World' })
+ *   ]
+ * })
+ *
+ * const list = jsx(Fragment, {
+ *   children: [
+ *     jsx('li', { children: 'Item 1' }),
+ *     jsx('li', { children: 'Item 2' })
+ *   ]
+ * })
+ * ```
+ *
+ * @remarks
+ * Configuration:
+ * 1. TypeScript Setup
+ *    ```json
+ *    {
+ *      "compilerOptions": {
+ *        "jsx": "react-jsx",
+ *        "jsxImportSource": "plaited"
+ *      }
+ *    }
+ *    ```
+ *
+ * 2. Babel Setup
+ *    ```json
+ *    {
+ *      "plugins": [
+ *        ["@babel/plugin-transform-react-jsx", {
+ *          "runtime": "automatic",
+ *          "importSource": "plaited"
+ *        }]
+ *      ]
+ *    }
+ *    ```
+ *
+ * Key Features:
+ * - Full JSX syntax support
+ * - TypeScript type checking
+ * - Fragment support
+ * - Development mode hints
+ * - Static optimization
+ *
+ * Factory Functions:
+ * - jsx: Standard transformation
+ * - jsxs: Static optimization
+ * - jsxDEV: Development hints
+ * - h: Hyperscript compatibility
+ *
+ * Types:
+ * - IntrinsicElements: HTML/SVG element types
+ * - ElementAttributeList: Attribute types
+ * - JSX namespace: Global JSX types
  */
 export { createTemplate as h, createTemplate as jsx, createTemplate as jsxDEV, createTemplate as jsxs, Fragment }
 /**

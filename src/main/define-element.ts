@@ -20,23 +20,31 @@ import { PLAITED_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './plaited.consta
 import type { PlaitedTemplate, PlaitedElement, SelectorMatch, Bindings, BoundElement } from './plaited.types.js'
 
 /**
- * Arguments passed to component's connected callback.
- * Provides core utilities and context for component initialization.
+ * @description Arguments passed to the `bProgram` function when defining a Plaited element.
+ * Provides essential utilities and context for the element's behavior and lifecycle management.
  *
- * @property $ Query selector for shadow DOM elements
- * @property root Component's shadow root
- * @property host Reference to component instance
- * @property internals ElementInternals instance
- * @property trigger Event trigger function
- * @property bThreads Behavioral thread management
- * @property useSnapshot State snapshot utility
- * @property bThread Thread creation utility
- * @property bSync Synchronization utility
+ * @property {function} $ - A query selector function scoped to the component's shadow root.
+ *   Accepts a `p-target` value and an optional `SelectorMatch` modifier (e.g., `*=` for contains).
+ *   Returns a `NodeListOf<BoundElement<E>>` containing Plaited-enhanced elements.
+ * @property {ShadowRoot} root - A reference to the component's shadow root.
+ * @property {PlaitedElement} host - A reference to the custom element instance itself.
+ * @property {ElementInternals} internals - The `ElementInternals` instance associated with the element,
+ *   providing access to form association features, ARIA properties, etc. Available when `formAssociated: true`.
+ * @property {PlaitedTrigger} trigger - The trigger function for dispatching events within the component's
+ *   behavioral program. Automatically manages disconnect callbacks.
+ * @property {BThreads} bThreads - An interface for managing behavioral threads (`bThread` instances).
+ * @property {UseSnapshot} useSnapshot - A function to get the current state snapshot of the behavioral program.
+ * @property {BThread} bThread - A utility function for creating behavioral threads.
+ * @property {BSync} bSync - A utility function for defining synchronization points within behavioral threads.
  */
 export type BProgramArgs = {
   $: <E extends Element = Element>(
     target: string,
-    /** This options enables querySelectorAll and modified the attribute selector for p-target{@default {all: false, mod: "=" } } {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}*/
+    /**
+     * This option enables querySelectorAll and modifies the attribute selector for p-target
+     * @default {all: false, mod: "="}
+     * @see {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}
+     */
     match?: SelectorMatch,
   ) => NodeListOf<BoundElement<E>>
   root: ShadowRoot
@@ -48,30 +56,20 @@ export type BProgramArgs = {
   bThread: BThread
   bSync: BSync
 }
+
 /**
- * Type definition for all lifecycle and form-associated callback handlers in Plaited elements.
- * All callbacks optionally support async operations.
+ * @description Type definition mapping standard Custom Element lifecycle callbacks and
+ * Form-Associated Custom Element callbacks to their handler function signatures within Plaited.
+ * All handlers are optional and can be synchronous or asynchronous (`async`/`Promise`).
  *
- * Lifecycle Callbacks:
- * @property onAdopted Called when element is moved to new document
- * @property onAttributeChanged Called when observed attribute changes
- * @property onConnected Called when element is added to DOM
- * @property onDisconnected Called when element is removed from DOM
- *
- * Form Association Callbacks:
- * @property onFormAssociated Called when element is associated with a form
- * @property onFormDisabled Called when associated form is disabled/enabled
- * @property onFormReset Called when associated form is reset
- * @property onFormStateRestore Called when form state is restored
- *
- *
- * @remarks
- * - All callbacks are optional
- * - All callbacks can be async (return Promise)
- * - Form callbacks only fire if element is form-associated
- * - Attribute callbacks only fire for observed attributes
- * - Handlers receive strongly-typed arguments
- * - Maintains proper 'this' binding in callbacks
+ * @property {() => void | Promise<void>} [onAdopted] - Called when the element is moved to a new document (e.g., via `document.adoptNode`).
+ * @property {(args: { name: string, oldValue: string | null, newValue: string | null }) => void | Promise<void>} [onAttributeChanged] - Called when an attribute listed in `observedAttributes` changes.
+ * @property {() => void | Promise<void>} [onConnected] - Called when the element is first connected to the document's DOM. Ideal for setup, initial rendering, and event listeners.
+ * @property {() => void | Promise<void>} [onDisconnected] - Called when the element is disconnected from the document's DOM. Ideal for cleanup (removing listeners, stopping timers/observers).
+ * @property {(args: { form: HTMLFormElement }) => void | Promise<void>} [onFormAssociated] - Called when the element becomes associated with a form. Requires `formAssociated: true`.
+ * @property {(args: { disabled: boolean }) => void | Promise<void>} [onFormDisabled] - Called when the element's disabled state changes due to the parent `<fieldset>`'s disabled state changing. Requires `formAssociated: true`.
+ * @property {() => void | Promise<void>} [onFormReset] - Called when the associated form is reset. Requires `formAssociated: true`.
+ * @property {(args: { state: unknown, reason: 'autocomplete' | 'restore' }) => void | Promise<void>} [onFormStateRestore] - Called when the browser tries to restore the element's state (e.g., during navigation or browser restart). Requires `formAssociated: true`.
  */
 export type PlaitedElementCallbackHandlers = {
   [ELEMENT_CALLBACKS.onAdopted]?: () => void | Promise<void>
@@ -90,54 +88,40 @@ export type PlaitedElementCallbackHandlers = {
     reason: 'autocomplete' | 'restore'
   }) => void | Promise<void>
 }
+
 /**
- * Extended handlers type that combines behavioral program handlers with lifecycle callbacks,
- * explicitly excluding DOM mutation handlers that are managed internally.
+ * @description Represents the combined type for handlers within a Plaited component's `bProgram`.
+ * It merges the base behavioral program `Handlers` type (allowing any event type string as a key)
+ * with the specific `PlaitedElementCallbackHandlers` for lifecycle and form events.
  *
- * @extends {Handlers} Base behavioral program handlers
+ * It explicitly *excludes* `onAppend`, `onPrepend`, and `onReplaceChildren` handlers, as these
+ * are managed internally when the `streamAssociated` option is enabled in `defineElement`.
  *
- * Excluded Handlers:
- * - onAppend: Managed by stream association
- * - onPrepend: Managed by stream association
- * - onReplaceChildren: Managed by stream association
- *
+ * @template T - Can optionally extend `Handlers` to provide more specific types for custom events.
  * @example
- * ```ts
- * type MyHandlers = PlaitedHandlers & {
- *   UPDATE: (data: MyData) => void;
- *   RESET: () => void;
- * };
+ * ```typescript
+ * type MyCustomEvents = {
+ *   'user-login': (detail: { userId: string }) => void;
+ *   'data-loaded': (detail: { data: Record<string, any> }) => Promise<void>;
+ * }
  *
- * const handlers: MyHandlers = {
+ * type MyComponentHandlers = PlaitedHandlers<MyCustomEvents>;
+ *
+ * const handlers: MyComponentHandlers = {
  *   // Custom event handlers
- *   UPDATE(data) {
- *     console.log('Update received:', data);
- *   },
- *   RESET() {
- *     console.log('Reset triggered');
- *   },
+ *   'user-login': ({ userId }) => { console.log(`User ${userId} logged in.`); },
+ *   'data-loaded': async ({ data }) => { await processData(data); },
  *
- *   // Lifecycle handlers
- *   onConnected() {
- *     console.log('Element connected');
- *   },
+ *   // Lifecycle handler
+ *   onConnected() { console.log('Component connected.'); },
  *
- *   // ❌ These are not allowed (managed internally)
- *   // onAppend: () => {}, // Type error
- *   // onPrepend: () => {}, // Type error
- *   // onReplaceChildren: () => {} // Type error
+ *   // Form handler (if formAssociated: true)
+ *   onFormReset() { resetComponentState(); },
+ *
+ *   // Invalid handlers (will cause type errors)
+ *   // onAppend: () => {},
  * };
  * ```
- *
- * @remarks
- * - Combines behavioral and lifecycle handlers
- * - Prevents manual DOM mutation handling
- * - Ensures proper stream handling
- * - Maintains type safety
- * - Allows custom event handlers
- * - Preserves lifecycle callbacks
- *
- * @see streamAssociated option in GetElementArgs for DOM mutation handling
  */
 export type PlaitedHandlers = Handlers & {
   [ELEMENT_CALLBACKS.onAppend]?: never
@@ -154,82 +138,23 @@ type PlaitedElementCallbackParameters = {
     undefined
   : Parameters<RequirePlaitedElementCallbackHandlers[K]>[0]
 }
+
 /**
- * Configuration options for creating a Plaited custom element.
- * Defines element behavior, structure, and capabilities.
+ * @description Configuration object used to define a Plaited custom element.
+ * Specifies the element's tag name, shadow DOM structure, behavior, and lifecycle hooks.
  *
- * @template A Type extending PlaitedHandlers for element's event handling
+ * @template A - A type extending `PlaitedHandlers` that defines the specific event handlers and lifecycle callbacks implemented in the `bProgram`.
  *
- * Properties:
- * @property tag Custom element tag name (must contain hyphen)
- * @property shadowDom Shadow DOM template definition
- * @property delegatesFocus Whether to delegate focus through shadow DOM
- * @property mode Shadow root encapsulation mode
- * @property slotAssignment Slot content distribution strategy
- * @property observedAttributes Array of attributes to watch for changes
- * @property publicEvents Array of exposed event types
- * @property formAssociated Enable form-associated custom element features
- * @property streamAssociated Enable stream-based DOM mutations
- * @property bProgram Behavioral program definition with lifecycle hooks
- *
- * @example Basic Element
- * ```ts
- * const config: GetElementArgs<MyHandlers> = {
- *   tag: 'my-element',
- *   shadowDom: template,
- *   mode: 'open',
- *   delegatesFocus: false,
- *   slotAssignment: 'named',
- *   observedAttributes: ['disabled', 'value'],
- *   publicEvents: ['change', 'input'],
- *   bProgram({ $, trigger }) {
- *     return {
- *       onConnected() {
- *         console.log('Connected');
- *       },
- *       onChange(detail) {
- *         trigger({ type: 'update', detail });
- *       }
- *     };
- *   }
- * };
- * ```
- *
- * @example Form Association
- * ```ts
- * const formConfig: GetElementArgs<FormHandlers> = {
- *   ...config,
- *   formAssociated: true,
- *   bProgram({ $, trigger, internals }) {
- *     return {
- *       onFormAssociated({ form }) {
- *         console.log('Associated with:', form);
- *       },
- *       onFormReset() {
- *         internals.setFormValue('');
- *       }
- *     };
- *   }
- * };
- * ```
- *
- * @example Stream Association
- * ```ts
- * const streamConfig: GetElementArgs<StreamHandlers> = {
- *   ...config,
- *   streamAssociated: true,
- *   // Enables automatic handling of DOM mutations
- *   // through onAppend, onPrepend, onReplaceChildren
- * };
- * ```
- *
- * @remarks
- * - Custom element tag must contain a hyphen
- * - Mode 'closed' provides stronger encapsulation
- * - Form association enables form-specific callbacks
- * - Stream association enables DOM mutation handlers
- * - Observed attributes trigger attributeChanged
- * - Public events are exposed outside shadow DOM
+ * @property {CustomElementTag} tag - The tag name for the custom element (e.g., 'my-element'). Must contain a hyphen.
+ * @property {TemplateObject} shadowDom - The Plaited template object defining the element's shadow DOM structure. Typically created using JSX (`h`).
+ * @property {boolean} [delegatesFocus=true] - If `true`, focus requests on the host element are delegated to the first focusable element within its shadow DOM. Corresponds to `attachShadow({ delegatesFocus: ... })`.
+ * @property {'open' | 'closed'} [mode='open'] - The encapsulation mode for the shadow DOM ('open' allows external JavaScript access, 'closed' restricts it). Corresponds to `attachShadow({ mode: ... })`.
+ * @property {'named' | 'manual'} [slotAssignment='named'] - The slot assignment mode for the shadow DOM. 'named' is the default behavior. Corresponds to `attachShadow({ slotAssignment: ... })`.
+ * @property {string[]} [observedAttributes=[]] - An array of attribute names that the element should observe for changes. Changes trigger the `onAttributeChanged` callback. Also makes these attributes available as properties on the host element instance.
+ * @property {string[]} [publicEvents=[]] - An array of event types that the component allows to be triggered on itself(outside its own `bProgram`). Used by `host.trigger`.
+ * @property {true} [formAssociated] - If `true`, registers the element as a Form-Associated Custom Element, enabling form-related callbacks (`onFormAssociated`, etc.) and interaction with the `ElementInternals` API.
+ * @property {true} [streamAssociated] - If `true`, enables Plaited's stream-based DOM mutation handlers (`onAppend`, `onPrepend`, `onReplaceChildren`) within the `bProgram`. These handlers receive HTML strings to update the element's light DOM content.
+ * @property {(this: PlaitedElement, args: BProgramArgs) => A & PlaitedElementCallbackHandlers} [bProgram] - The behavioral program function. It receives `BProgramArgs` (containing `$`, `trigger`, `host`, etc.) and should return an object containing event handlers and lifecycle callbacks defined by type `A`. The `this` context inside `bProgram` refers to the custom element instance.
  */
 export type GetElementArgs<A extends PlaitedHandlers> = {
   tag: CustomElementTag
@@ -252,6 +177,10 @@ const createDocumentFragment = (html: string) => {
   return tpl.content
 }
 
+/**
+ * @internal
+ * Interface extending GetElementArgs for internal use, making optional properties explicit.
+ */
 interface DefineElementArgs<A extends PlaitedHandlers>
   extends Omit<GetElementArgs<A>, 'delegatesFocus' | 'mode' | 'slotAssignment'> {
   delegatesFocus?: boolean
@@ -271,93 +200,204 @@ const getTriggerType = (event: Event, context: Element) => {
   if (!el) return
   return getTriggerMap(el).get(event.type)
 }
+
 const isElement = (node: Node): node is Element => node.nodeType === 1
+
 /**
- * Creates a template function for defining Plaited components with built-in SSR support.
- * Combines custom element definition with template generation for server and client rendering.
+ * Creates a reusable Web Component with behavioral programming, event delegation, and shadow DOM support.
+ * The `defineElement` function is the core building block of Plaited applications, providing a
+ * declarative way to create custom elements with robust state management and DOM interactions.
  *
- * @template A Type extending PlaitedHandlers for component behavior
- * @param config Component configuration with template and behavior
- * @returns Template function with metadata for component registration
- *
- * Features:
- * - Server-side rendering support
- * - Custom element registration
- * - Shadow DOM template generation
- * - Event delegation setup
- * - Attribute observation
- * - Stream mutation support
+ * @template A Generic type extending PlaitedHandlers for component-specific events
+ * @param config Component configuration object
+ * @returns Template function for creating instances of the custom element
  *
  * @example
- import type { type FT, defineElement, useSignal } from 'plaited'
-
- const store = useSignal<number>(0)
-
- const Publisher = defineElement({
-   tag: 'publisher-component',
-   shadowDom: (
-     <button
-       p-trigger={{ click: 'increment' }}
-       p-target='button'
-     >
-       increment
-     </button>
-   ),
-   publicEvents: ['add'],
-   bProgram({ bThreads, bThread, bSync }) {
-     bThreads.set({
-       onAdd: bThread([bSync({ waitFor: 'add' }), bSync({ request: { type: 'disable' } })]),
-     })
-     return {
-       increment() {
-         store.set(store.get() + 1)
-       },
-     }
-   },
- })
-
- const Subscriber = defineElement({
-   tag: 'subscriber-component',
-   shadowDom: <h1 p-target='count'>{store.get()}</h1>,
-   publicEvents: ['update'],
-   bProgram({ $, trigger }) {
-     store.listen('update', trigger)
-     return {
-       update(value: number) {
-         const [count] = $('count')
-         count.render(`${value}`)
-       },
-     }
-   },
- })
-
- export const Fixture: FT = () => (
-   <>
-     <Publisher />
-     <Subscriber />
-   </>
- )
-
+ * Basic Counter Component
+ * ```tsx
+ * const Counter = defineElement({
+ *   tag: 'my-counter',
+ *   shadowDom: (
+ *     <div>
+ *       <button p-target="decBtn" p-trigger={{ click: 'DECREMENT' }}>-</button>
+ *       <span p-target="count">0</span>
+ *       <button p-target="incBtn" p-trigger={{ click: 'INCREMENT' }}>+</button>
+ *     </div>
+ *   ),
+ *   bProgram({ $ }) {
+ *     const [countEl] = $('count');
+ *     let count = 0;
+ *
+ *     return {
+ *       INCREMENT() {
+ *         count++;
+ *         countEl.render(`${count}`);
+ *       },
+ *       DECREMENT() {
+ *         count--;
+ *         countEl.render(`${count}`);
+ *       }
+ *     };
+ *   }
+ * });
+ * ```
+ *
+ * @example
+ * Form-Associated Component
+ * ```tsx
+ * interface FormFieldEvents {
+ *   'value-change': (value: string) => void;
+ *   validate: () => void;
+ * }
+ *
+ * const FormField = defineElement<FormFieldEvents>({
+ *   tag: 'form-field',
+ *   formAssociated: true,
+ *   observedAttributes: ['label', 'required'],
+ *   shadowDom: (
+ *     <div>
+ *       <label p-target="label" />
+ *       <input
+ *         p-target="input"
+ *         p-trigger={{
+ *           input: 'value-change',
+ *           blur: 'validate'
+ *         }}
+ *       />
+ *       <span p-target="error" />
+ *     </div>
+ *   ),
+ *   bProgram({ $, host, internals }) {
+ *     const [label] = $('label');
+ *     const [input] = $<HTMLInputElement>('input');
+ *     const [error] = $('error');
+ *
+ *     return {
+ *       onConnected() {
+ *         label.render(host.label || '');
+ *         input.attr({ required: host.required });
+ *       },
+ *       onAttributeChanged({ name, newValue }) {
+ *         if (name === 'label') {
+ *           label.render(newValue || '');
+ *         }
+ *       },
+ *       'value-change'({ target }) {
+ *         const value = (target as HTMLInputElement).value;
+ *         internals.setFormValue(value);
+ *       },
+ *       validate() {
+ *         const isValid = input.checkValidity();
+ *         if (!isValid) {
+ *           error.render('This field is required');
+ *           internals.setValidity({
+ *             valueMissing: true
+ *           }, 'This field is required');
+ *         } else {
+ *           error.render('');
+ *           internals.setValidity({});
+ *         }
+ *       }
+ *     };
+ *   }
+ * });
+ * ```
+ *
+ * @example
+ * Component with Behavioral Threads
+ * ```tsx
+ * const ToggleButton = defineElement({
+ *   tag: 'toggle-button',
+ *   shadowDom: (
+ *     <button
+ *       p-target="btn"
+ *       p-trigger={{ click: 'TOGGLE' }}
+ *     >
+ *       Toggle Me
+ *     </button>
+ *   ),
+ *   bProgram({ $, bThreads, bThread, bSync }) {
+ *     const [btn] = $('btn');
+ *
+ *     // Setup behavioral threads
+ *     bThreads.set({
+ *       toggleState: bThread([
+ *         bSync({ waitFor: 'TOGGLE' }),
+ *         bSync({ request: { type: 'UPDATE_STATE' }})
+ *       ], true)
+ *     });
+ *
+ *     let isActive = false;
+ *
+ *     return {
+ *       UPDATE_STATE() {
+ *         isActive = !isActive;
+ *         btn.attr({
+ *           'aria-pressed': isActive.toString(),
+ *           class: isActive ? 'active' : ''
+ *         });
+ *       }
+ *     };
+ *   }
+ * });
+ * ```
  *
  * @remarks
- * - Generates both client and server templates
- * - Handles declarative shadow DOM
- * - Manages component registration
- * - Provides SSR-compatible output
- * - Maintains type safety
- * - Handles hydration automatically
+ * Key Concepts:
+ * 1. Component Definition
+ *    - Define custom element tags with required hyphen
+ *    - Shadow DOM encapsulation for styles/content
+ *    - Attribute observing and property reflection
+ *    - Form association support
  *
- * Return Value Properties:
- * - registry: Set of registered child plaited elements tags
- * - tag: Component's custom element tag
- * - $: Template identifier
- * - publicEvents: Available event types
- * - observedAttributes: Observed attribute names
+ * 2. Event & State Management
+ *    - Declarative event bindings via p-trigger
+ *    - Behavioral programming with bProgram
+ *    - Thread-based state management
+ *    - Event delegation for performance
  *
- * Default Configuration:
- * - mode: 'open'
- * - delegatesFocus: true
- * - slotAssignment: 'named'
+ * 3. DOM Interactions
+ *    - Element selection via p-target
+ *    - Helper methods: render, insert, attr
+ *    - Shadow DOM APIs and slots
+ *    - Dynamic content updates
+ *
+ * Best Practices:
+ * 1. Component Design
+ *    - Keep components focused and single-purpose
+ *    - Use TypeScript for props/events typing
+ *    - Leverage shadow DOM for encapsulation
+ *    - Follow web components standards
+ *
+ * 2. State Management
+ *    - Use behavioral threads for complex state
+ *    - Maintain immutable state patterns
+ *    - Handle cleanup in disconnectedCallback
+ *    - Leverage element internals API
+ *
+ * 3. Performance
+ *    - Minimize DOM queries with p-target
+ *    - Use event delegation via p-trigger
+ *    - Batch DOM updates when possible
+ *    - Clean up resources/listeners properly
+ *
+ * Configuration Options:
+ * - tag: Custom element tag name (must contain hyphen)
+ * - shadowDom: Component's shadow DOM template
+ * - mode: Shadow root mode ('open'|'closed')
+ * - delegatesFocus: Focus delegation behavior
+ * - observedAttributes: Attributes to watch
+ * - formAssociated: Enable form features
+ * - publicEvents: Externally triggerable events
+ * - bProgram: Component behavior definition
+ *
+ * Available Utilities:
+ * - $: Shadow root scoped element selector
+ * - trigger: Event dispatch with cleanup
+ * - bThreads: Behavioral thread management
+ * - internals: Form/ARIA APIs access
+ * - host: Custom element instance
+ * - root: Shadow root reference
  */
 export const defineElement = <A extends PlaitedHandlers>({
   tag,
@@ -400,8 +440,8 @@ export const defineElement = <A extends PlaitedHandlers>({
         constructor() {
           super()
           this.#internals = this.attachInternals()
-          const frag = getDocumentFragment(this.#root, shadowDom)
           this.attachShadow({ mode, delegatesFocus, slotAssignment })
+          const frag = getDocumentFragment(this.#root, shadowDom)
           this.#root.replaceChildren(frag)
           const { trigger, useFeedback, useSnapshot, bThreads } = bProgram()
           this.#trigger = getPlaitedTrigger(trigger, this.#disconnectSet)

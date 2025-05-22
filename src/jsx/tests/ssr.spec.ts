@@ -36,12 +36,10 @@ test('ssr: Not really Falsey - ""', () => {
 })
 
 test('ssr: Not really Falsey - 0', () => {
-  // @ts-expect-error: testing 0
   expect(render(h('div', { children: 0 }))).toMatchSnapshot()
 })
 
 test('ssr: Not really Falsey - NaN', () => {
-  // @ts-expect-error: testing NaN
   expect(render(h('div', { children: NaN }))).toMatchSnapshot()
 })
 
