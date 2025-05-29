@@ -54,27 +54,6 @@ type CandidateBid = {
  * - Cancelling pending operations
  *
  * @returns void - Performs the cleanup action when called with no return value.
- * @example
- * // Subscribing to feedback events from a bProgram
- * const { useFeedback } = bProgram();
- * const disconnect = useFeedback({
- *   'USER_LOGIN': (userData) => authenticateUser(userData),
- *   'SESSION_TIMEOUT': () => redirectToLogin()
- * });
- *
- * // When no longer needed (e.g., component unmount)
- * disconnect(); // Removes all handlers and stops receiving events
- *
- * @example
- * // Monitoring state changes with useSnapshot
- * const { useSnapshot } = bProgram();
- * const stopMonitoring = useSnapshot((snapshot) => {
- *   console.log('Current program state:', snapshot);
- *   logStateToAnalytics(snapshot);
- * });
- *
- * // Later, when monitoring should stop
- * stopMonitoring();
  */
 export type Disconnect = () => void
 
@@ -637,12 +616,12 @@ const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj : [obj])
  */
 const isListeningFor = ({ type, detail }: CandidateBid) => {
   return (listener: BPListener): boolean =>
-    typeof listener !== 'string' ?
-      listener({
+    isTypeOf<string>(listener, 'string') ?
+      listener === type
+    : listener({
         detail,
         type,
       })
-    : listener === type
 }
 
 /**
@@ -818,7 +797,7 @@ export const bProgram: BProgram = () => {
    * 2. Collects all request declarations as candidate events
    * 3. Filters out candidates that are blocked
    * 4. Selects the highest priority remaining candidate
-   * 5. If an event is selected, publishes a snapshot and proceeds to the next step
+   * 5. If an event is selected and there is an defined snapshot publisher, publishes a snapshot and proceeds to the next step
    * 6. If no event is selected, the super-step ends (program pauses until external trigger)
    */
   function selectNextEvent() {
@@ -839,7 +818,6 @@ export const bProgram: BProgram = () => {
     const length = candidates.length
     for (let i = 0; i < length; i++) {
       const candidate = candidates[i]
-      // Are we blocking the the candidate event
       if (!blocked.some(isListeningFor(candidate))) {
         filteredBids.push(candidate)
       }
@@ -877,8 +855,9 @@ export const bProgram: BProgram = () => {
         pending.delete(thread)
       }
     }
-    // To avoid infinite loop with calling trigger from feedback always publish select event
-    // after checking if request(s) is waitList and before our next run
+    /** To avoid infinite loop with calling trigger from feedback always publish select event
+     *  after checking if request(s) is waitList and before our next run
+     */
     actionPublisher({ type: selectedEvent.type, detail: selectedEvent.detail })
     run()
   }
@@ -948,7 +927,11 @@ export const bProgram: BProgram = () => {
    */
   const useSnapshot: UseSnapshot = (listener) => {
     if (snapshotPublisher === undefined) snapshotPublisher = createPublisher<SnapshotMessage>()
-    return snapshotPublisher.subscribe(listener)
+    const unsubscribe = snapshotPublisher.subscribe(listener)
+    return () => {
+      unsubscribe()
+      snapshotPublisher = undefined
+    }
   }
 
   /**
