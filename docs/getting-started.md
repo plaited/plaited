@@ -164,7 +164,6 @@ export const MessageReceiver = defineElement({
 // <message-receiver></message-receiver>
 // Clicking the button in <message-sender> will update the text in <message-receiver>.
 ```
-```
 
 ## 4. Reactive Computations with `useComputed`
 `useComputed` allows you to create signals whose values are derived from other signals. These "computed signals" automatically update when their dependencies change.
@@ -528,7 +527,7 @@ export const AttributeMonitor = defineElement({
 
     return {
       'slotted-attr-changed'(detail: ObservedAttributesDetail) {
-        outputEl.insert('beforeend', 
+        outputEl.insert('beforeend',
           <p>Attribute '{detail.name}' changed from '{detail.oldValue ?? 'null'}' to '{detail.newValue ?? 'null'}'</p>
         );
       }
@@ -609,7 +608,7 @@ export const SimpleInput = defineElement({
       INPUT_CHANGED() {
         internals.setFormValue(inputEl.value); // Update form value on input
         // Optionally, re-validate on input
-        // host.trigger({ type: 'VALIDATE' }); 
+        // host.trigger({ type: 'VALIDATE' });
       },
       VALIDATE() {
         if (inputEl.required && !inputEl.value) {
@@ -697,7 +696,7 @@ export const TodoListApp = defineElement({
       const [itemEl] = item$('item')
       const [textEl] = item$('text')
       const [checkboxEl] = item$<HTMLInputElement>('checkbox')
-      
+
       itemEl.attr('data-id', todo.id) // Store ID on the <li> for easier targeting
       textEl.render(todo.text)
       checkboxEl.checked = todo.completed // Set checkbox state directly
