@@ -1,22 +1,3 @@
-/**
- * Test stories for Shadow DOM mutation observation and dynamic updates.
- * Validates proper event binding and content management.
- *
- * Story Features:
- * - Shadow DOM mutation handling
- * - Dynamic content updates
- * - Event delegation
- * - State synchronization
- * - Style management
- *
- * Test Coverage:
- * - Event binding
- * - DOM mutations
- * - Style application
- * - Component lifecycle
- * - Event propagation
- */
-
 import type { StoryObj } from 'plaited/testing'
 import { ShadowIsland } from './shadow-observer.js'
 

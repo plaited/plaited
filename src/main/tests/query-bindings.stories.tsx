@@ -1,22 +1,3 @@
-/**
- * Test stories for validating Plaited's DOM query and manipulation utilities.
- * Tests various insertion positions, attribute manipulation, and rendering methods.
- *
- * Story Features:
- * - Position-based DOM insertion ('beforebegin', 'afterbegin', etc)
- * - Element replacement
- * - Attribute management
- * - Batch rendering
- * - Multi-attribute operations
- *
- * Test Coverage:
- * - Position-based insertion
- * - Element replacement
- * - Attribute manipulation
- * - Batch operations
- * - Edge cases
- */
-
 import type { StoryObj } from 'plaited/testing'
 import { type PlaitedElement } from 'plaited'
 import { Fixture } from './query-bindings.js'

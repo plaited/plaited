@@ -149,7 +149,6 @@ import { P_TARGET } from '../jsx/jsx.constants.js'
  *    - Keep templates focused and minimal
  *    - Use TypeScript for data typing
  *    - Leverage CSS modules for styles
- *    - Clean up removed templates properly
  */
 export const useTemplate = <T>(
   el: BoundElement<HTMLTemplateElement>,

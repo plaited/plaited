@@ -86,24 +86,6 @@ import { isPlaitedTrigger } from './plaited.guards.js'
  * });
  * ```
  *
- * @example Handling worker cleanup explicitly
- * ```tsx
- * const AsyncComponent = defineElement({
- *   tag: 'async-component',
- *   shadowDom: <div p-target="content" />,
- *   bProgram({ trigger }) {
- *     const sendToWorker = useWorker(trigger, './worker.ts');
- *
- *     return {
- *       onDisconnected() {
- *         // Explicit cleanup if needed
- *         sendToWorker.disconnect();
- *       }
- *     };
- *   }
- * });
- * ```
- *
  * @remarks
  * Key Features:
  * - Automatic cleanup when using PlaitedTrigger
