@@ -13,12 +13,14 @@ Creates a custom web component with behavioral programming support.
 ```ts
 interface ElementConfig<T extends EventDetail = EventDetail> {
   tag: string                          // Custom element tag name
-  shadowDom?: Template | string        // Shadow DOM template
+  shadowDom: Template | string         // Shadow DOM template (required)
+  mode?: 'open' | 'closed'             // Shadow DOM mode (default: 'open')
+  delegatesFocus?: boolean             // Delegate focus to shadow DOM
+  slotAssignment?: 'named' | 'manual'  // Slot assignment mode
   observedAttributes?: string[]        // Attributes to observe
   formAssociated?: boolean            // Enable form association
-  delegatesFocus?: boolean            // Delegate focus to shadow DOM
+  streamAssociated?: boolean          // Enable stream association
   publicEvents?: string[]             // Events exposed to parent
-  usesMotion?: boolean                // Enable motion/animations
   bProgram?: (args: BProgramArgs) => Handlers<T>
 }
 ```
@@ -45,15 +47,14 @@ function useWorker<T extends BPEvent>(
 ): WorkerPostMessage<T> & { disconnect: () => void }
 ```
 
-#### `useTemplate(template, [target])`
+#### `useTemplate(template)`
 
-Renders templates with automatic updates.
+Creates a factory function for efficient template cloning with data binding.
 
 ```ts
-function useTemplate(
-  template: Template | DocumentFragment | string,
-  target?: Element
-): TemplateController
+function useTemplate<T extends Template>(
+  template: T
+): (data?: PlaitedData) => BoundTemplate
 ```
 
 #### `useDispatch(element)`
@@ -71,12 +72,24 @@ function useDispatch<T extends CustomEvent>(
 Creates reactive state with automatic updates.
 
 ```ts
-function useSignal<T>(initialValue: T): Signal<T>
+function useSignal<T>(initialValue: T): {
+  get(): T                           // Get current value
+  set(newValue: T): void             // Set new value
+  listen(listener: (value: T) => void): () => void  // Subscribe to changes
+}
+```
 
-interface Signal<T> {
-  (): T                    // Get current value
-  (newValue: T): void      // Set new value
-  subscribe(listener: (value: T) => void): () => void
+#### `useComputed(compute, deps)`
+
+Creates derived reactive state.
+
+```ts
+function useComputed<T>(
+  compute: () => T,
+  deps: Array<{ get(): unknown }>
+): {
+  get(): T
+  listen(listener: (value: T) => void): () => void
 }
 ```
 
@@ -96,10 +109,33 @@ function useAttributesObserver(
 
 ```ts
 isTemplate(value: unknown): value is Template
-isStyleSheet(value: unknown): value is StyleSheet
 isTemplateResult(value: unknown): value is TemplateResult
 isPlaitedElement(value: unknown): value is PlaitedElement
-isPlaitedTrigger(value: unknown): value is PlaitedTrigger
+isPlaitedTrigger(value: unknown): value is PlaitedTrigger<any>
+```
+
+### BProgramArgs Interface
+
+```ts
+interface BProgramArgs<T extends EventDetail = EventDetail> {
+  $: (selector: string) => BoundElement | null  // Enhanced element selector
+  trigger: PlaitedTrigger<T>                    // Event trigger with cleanup
+  host: HTMLElement                             // Component host element
+  root: ShadowRoot | HTMLElement               // Shadow root or host
+  // Direct access to behavioral primitives
+  bThread: BThread                              // Thread factory
+  bSync: BSync                                  // Sync factory
+  // Lifecycle hooks
+  onConnected?: () => void
+  onDisconnected?: () => void
+  onAttributeChanged?: (name: string, oldValue: string | null, newValue: string | null) => void
+  onAdopted?: () => void
+  // Form-associated callbacks (when formAssociated: true)
+  onFormAssociated?: (form: HTMLFormElement) => void
+  onFormDisabled?: (disabled: boolean) => void
+  onFormReset?: () => void
+  onFormStateRestore?: (state: any, mode: 'restore' | 'autocomplete') => void
+}
 ```
 
 ## Behavioral Module (`plaited/behavioral`)
@@ -119,15 +155,17 @@ function bProgram<T extends BPEvent>(): {
 }
 ```
 
-#### `bThread(steps, [repeat])`
+#### `bThread(rules, [repeat])`
 
-Creates a behavioral thread from synchronization steps.
+Creates a behavioral thread from generator functions.
 
 ```ts
-function bThread<T extends BPEvent>(
-  steps: SyncStatement<T>[],
-  repeat?: boolean
-): BThread<T>
+function bThread(
+  rules: RulesFunction[],
+  repeat?: true | (() => boolean)
+): RulesFunction
+
+type RulesFunction = Generator<Idioms<any>, any, BPEvent<any>>
 ```
 
 #### `bSync(statement)`
@@ -135,12 +173,14 @@ function bThread<T extends BPEvent>(
 Creates a synchronization point.
 
 ```ts
-interface SyncStatement<T extends BPEvent> {
-  request?: T | T[]      // Events to propose
-  waitFor?: EventPredicate<T>   // Events to wait for
-  block?: EventPredicate<T>     // Events to block
-  interrupt?: EventPredicate<T>  // Events that terminate thread
+interface Idioms<T extends BPEvent> {
+  request?: T | T[]                  // Events to propose
+  waitFor?: BPListener<T>            // Events to wait for
+  block?: BPListener<T>              // Events to block
+  interrupt?: BPListener<T>          // Events that terminate thread
 }
+
+type BPListener<T> = string | ((event: T) => boolean)
 ```
 
 #### `defineBProgram(config)`
@@ -148,19 +188,36 @@ interface SyncStatement<T extends BPEvent> {
 Creates a reusable behavioral program module.
 
 ```ts
-interface BProgramConfig<T extends BPEvent> {
-  publicEvents?: string[]
-  bProgram: (args: BProgramFactoryArgs<T>) => Handlers<T>
+interface DefineBProgramProps<T extends BPEvent> {
+  trigger: PlaitedTrigger<T>
+  publicEvents?: string[] | ReadonlyArray<string>
 }
+
+function defineBProgram<T extends BPEvent>(config: {
+  publicEvents?: string[]
+  bProgram: (props: DefineBProgramProps<T>) => Handlers<T>
+}): (props: DefineBProgramProps<T>) => Handlers<T>
 ```
 
 ### Utility Functions
 
 ```ts
-randomEvent(requested: BPEvent[]): BPEvent
-shuffleSyncs<T>(syncs: SyncStatement<T>[]): SyncStatement<T>[]
-getPublicTrigger<T>(trigger: Trigger<T>, publicEvents: string[]): PublicTrigger<T>
-getPlaitedTrigger<T>(trigger: Trigger<T>, cleanupFns: Set<() => void>): PlaitedTrigger<T>
+randomEvent(...events: BPEvent[]): BPEvent
+shuffleSyncs(...syncs: BSync[]): BSync[]
+getPublicTrigger(args: { 
+  trigger: Trigger; 
+  publicEvents?: string[] | ReadonlyArray<string> 
+}): Trigger
+getPlaitedTrigger<T>(
+  trigger: Trigger<T>, 
+  cleanupFns: Set<() => void>
+): PlaitedTrigger<T>
+```
+
+### Type Guards
+
+```ts
+isBPEvent<T>(event: unknown): event is BPEvent<T>
 ```
 
 ## Styling Module (`plaited/styling`)
@@ -237,9 +294,14 @@ class TransformDesignTokens {
     tokenCase?: 'camelCase' | 'kebabCase'
   })
   
-  get css(): string      // CSS custom properties
-  get ts(): string       // TypeScript constants
-  get map(): Record<string, string>  // Token mapping
+  get css(): string                   // CSS custom properties
+  get ts(): string                    // TypeScript constants
+  get map(): Record<string, string>   // Token mapping
+  get entries(): Array<[string, DesignTokenValue]>  // All token entries
+  
+  has(alias: string): boolean         // Check if token exists
+  get(alias: string): DesignTokenValue | undefined  // Get specific token
+  filter(callback: (entry: [string, DesignTokenValue]) => boolean): Array<[string, DesignTokenValue]>
 }
 ```
 
@@ -291,6 +353,11 @@ interface FindOptions {
   timeout?: number
   exact?: boolean
 }
+
+function findByText<T extends Element = Element>(
+  text: string,
+  options?: FindOptions
+): Promise<T | undefined>
 ```
 
 #### `findByAttribute(attribute, value, [options])`
@@ -298,22 +365,29 @@ interface FindOptions {
 Finds elements by attribute.
 
 ```ts
-function findByAttribute(
+function findByAttribute<T extends Element = Element>(
   attribute: string,
   value: string,
   options?: FindOptions
-): Promise<Element>
+): Promise<T | undefined>
 ```
 
-#### `fireEvent(element, eventType, [detail])`
+#### `fireEvent(element, eventType, [eventArgs])`
 
 Simulates DOM events.
 
 ```ts
+interface EventArguments {
+  bubbles?: boolean
+  composed?: boolean
+  cancelable?: boolean
+  detail?: any
+}
+
 function fireEvent(
   element: Element,
   eventType: string,
-  detail?: any
+  eventArgs?: EventArguments
 ): Promise<void>
 ```
 
@@ -353,9 +427,29 @@ Story configuration type.
 ```ts
 interface StoryObj<T> {
   args?: Partial<T>
-  play?: PlayFunction
-  parameters?: Record<string, any>
+  play?: Play
+  parameters?: Params
 }
+
+type Play = (context: {
+  canvasElement: HTMLElement
+  step: (name: string, fn: () => void | Promise<void>) => Promise<void>
+}) => void | Promise<void>
+```
+
+#### `usePlay(story, options)`
+
+Executes story play functions.
+
+```ts
+function usePlay(
+  story: { play?: Play },
+  options: {
+    canvasElement: HTMLElement
+    onError?: (error: Error) => void
+    onSuccess?: () => void
+  }
+): void
 ```
 
 #### `PlaitedFixture`
@@ -370,6 +464,14 @@ Test fixture custom element for story runners.
   p-entry="/dist/component.stories.js"
   p-name="Story"
 />
+```
+
+### Error Classes
+
+```ts
+class AssertionError extends Error
+class MissingTestParamsError extends Error
+class TimeoutError extends Error
 ```
 
 ## Utilities Module (`plaited/utils`)
@@ -393,7 +495,7 @@ ueid(): string  // Unique element ID
 ```ts
 escape(str: string): string
 unescape(str: string): string
-hashString(str: string): number
+hashString(str: string): number | null  // null for empty strings
 
 // Case conversion
 camelCase(str: string): string
@@ -406,7 +508,7 @@ snakeCase(str: string): string
 
 ```ts
 deepEqual(a: unknown, b: unknown): boolean
-keyMirror<T extends string>(keys: T[]): Record<T, T>
+keyMirror<Keys extends string>(...inputs: Keys): KeyMirror<Keys>
 ```
 
 ### Event Handling
@@ -416,12 +518,21 @@ class DelegatedListener {
   constructor(handler: (event: Event) => void)
   handleEvent(event: Event): void
 }
+
+// Global delegate storage
+const delegates: WeakMap<EventTarget, Map<string, DelegatedListener>>
 ```
 
 ### Async Utilities
 
 ```ts
 wait(ms: number): Promise<void>
+```
+
+### Other Utilities
+
+```ts
+noop<T = never>(..._: T[]): void  // No-operation function
 ```
 
 ## Workshop Module (`plaited/workshop`)
@@ -440,6 +551,17 @@ mapStoryResponses(stories: StoryMap): ResponseMap
 
 // Library management
 getLibrary(stories: StoryFile[]): Library
+
+// HTML response generator type
+type GetHTMLResponse = (options: {
+  title: string
+  lib: string
+  socket: string
+  route: string
+  file: string
+  entry: string
+  name: string
+}) => string
 ```
 
 ## JSX Configuration
