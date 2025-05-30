@@ -767,7 +767,7 @@ Key behavioral threads:
 -   `preventCompletionOfLineWithTwoXs`: A simple AI strategy for player O to block X from winning.
 -   `startAtCenter` & `defaultMoves`: Provides some default moves for player O if no blocking move is available.
 
-```plaited-workspaces/stories/tic-tac-toe-board.tsx#L6-130
+```tsx
 const winConditions = [
   //rows
   [0, 1, 2],
@@ -913,7 +913,7 @@ export const TicTacToeBoard = defineElement({
 
 This functional component renders the 3x3 grid. Each cell is a button that, when clicked, triggers a `click` event. The `p-target` attribute allows the `bProgram` to identify which square was clicked.
 
-```plaited-workspaces/stories/board-marker.tsx#L28-45
+```tsx
 export const BoardMarker: FT = () => (
   <div
     role='group'
@@ -937,7 +937,7 @@ export const BoardMarker: FT = () => (
 These are simple functional components that render SVG images for the X and O markers. They are dynamically rendered into the clicked squares by the `bProgram` of `TicTacToeBoard`.
 
 **`x-marker.tsx`**
-```plaited-workspaces/stories/x-marker.tsx#L10-19
+```tsx
 export const XMarker: FT = () => (
   <svg
     {...styles.x}
@@ -953,7 +953,7 @@ export const XMarker: FT = () => (
 ```
 
 **`o-marker.tsx`**
-```plaited-workspaces/stories/o-marker.tsx#L10-20
+```tsx
 export const OMarker: FT = () => (
   <svg
     {...styles.o}
@@ -969,7 +969,7 @@ export const OMarker: FT = () => (
 )
 ```
 
-This example provides a practical demonstration of how Plaited's behavioral programming features can be used to build interactive and rule-driven applications. You can also explore the [`tic-tac-toe-board.stories.tsx`](../../stories/tic-tac-toe-board.stories.tsx) file to see how this component is set up for interactive viewing and testing in a Storybook environment.
+This example provides a practical demonstration of how Plaited's behavioral programming features can be used to build interactive and rule-driven applications.
 
 ## 12. Using Web Workers
 Offload computationally intensive tasks to Web Workers using `useWorker` and `defineWorker`.
