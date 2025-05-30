@@ -11,17 +11,17 @@ This guide provides a comprehensive reference for all public APIs exported by Pl
 Creates a custom web component with behavioral programming support.
 
 ```ts
-interface ElementConfig<T extends EventDetail = EventDetail> {
-  tag: string                          // Custom element tag name
-  shadowDom: Template | string         // Shadow DOM template (required)
-  mode?: 'open' | 'closed'             // Shadow DOM mode (default: 'open')
+interface DefineElementArgs<A extends PlaitedHandlers> {
+  tag: string                          // Custom element tag name (required)
+  shadowDom: PlaitedTemplate           // Shadow DOM template (required)
+  mode?: ShadowRootMode                // Shadow DOM mode (default: 'open')
   delegatesFocus?: boolean             // Delegate focus to shadow DOM
-  slotAssignment?: 'named' | 'manual'  // Slot assignment mode
+  slotAssignment?: SlotAssignmentMode  // Slot assignment mode
   observedAttributes?: string[]        // Attributes to observe
-  formAssociated?: boolean            // Enable form association
-  streamAssociated?: boolean          // Enable stream association
-  publicEvents?: string[]             // Events exposed to parent
-  bProgram?: (args: BProgramArgs) => Handlers<T>
+  formAssociated?: boolean             // Enable form association
+  streamAssociated?: boolean           // Enable stream association
+  publicEvents?: string[]              // Events exposed to parent
+  bProgram?: (args: GetElementArgs<A>) => A
 }
 ```
 
@@ -30,10 +30,10 @@ interface ElementConfig<T extends EventDetail = EventDetail> {
 Creates a type-safe web worker with behavioral programming.
 
 ```ts
-interface WorkerConfig<T extends EventDetail = EventDetail> {
+function defineWorker<A extends Handlers>(config: {
   publicEvents?: string[]
-  bProgram: (args: WorkerBProgramArgs) => Handlers<T>
-}
+  bProgram: (args: WorkerGetBProgramArgs<A>) => A
+}): WorkerConstructor
 ```
 
 #### `useWorker(trigger, path)`
@@ -41,10 +41,10 @@ interface WorkerConfig<T extends EventDetail = EventDetail> {
 Integrates web workers with Plaited components.
 
 ```ts
-function useWorker<T extends BPEvent>(
+function useWorker<T>(
   trigger: Trigger<T> | PlaitedTrigger<T>,
   path: string
-): WorkerPostMessage<T> & { disconnect: () => void }
+): ((message: T) => void) & { disconnect: () => void }
 ```
 
 #### `useTemplate(el, callback)`
@@ -69,79 +69,64 @@ function useTemplate<T>(
 Creates a typed event dispatcher.
 
 ```ts
-function useDispatch<T extends CustomEvent>(
-  element: EventTarget
-): (event: T) => void
+function useDispatch<T extends PlaitedCustomEvent>(
+  element: PlaitedElement
+): (detail: T['detail']) => void
 ```
 
-#### `useSignal(initialValue)`
+#### `useSignal(initialValue, [signalName])`
 
 Creates reactive state with automatic updates.
 
 ```ts
-function useSignal<T>(initialValue: T): {
+function useSignal<T>(
+  initialValue: T,
+  signalName?: string
+): {
   get(): T                           // Get current value
   set(newValue: T): void             // Set new value
-  listen(listener: (value: T) => void): () => void  // Subscribe to changes
+  listen(eventType: string, trigger: Trigger | PlaitedTrigger, getLVC?: boolean): Disconnect
 }
 ```
 
-#### `useComputed(compute, deps)`
+#### `useAttributesObserver(element)`
 
-Creates derived reactive state.
-
-```ts
-function useComputed<T>(
-  compute: () => T,
-  deps: Array<{ get(): unknown }>
-): {
-  get(): T
-  listen(listener: (value: T) => void): () => void
-}
-```
-
-#### `useAttributesObserver(element, callback, [attributeFilter])`
-
-Observes attribute changes on elements.
+Creates an attribute observer factory for elements.
 
 ```ts
 function useAttributesObserver(
-  element: Element,
-  callback: (mutation: MutationRecord) => void,
-  attributeFilter?: string[]
-): () => void
+  element: Element
+): (callback: MutationCallback, attributeFilter?: string[]) => Disconnect
 ```
 
 ### Type Guards
 
 ```ts
-isTemplate(value: unknown): value is Template
-isTemplateResult(value: unknown): value is TemplateResult
 isPlaitedElement(value: unknown): value is PlaitedElement
 isPlaitedTrigger(value: unknown): value is PlaitedTrigger<any>
+isPlaitedMessage(value: unknown): value is PlaitedMessage<any>
+isPlaitedTemplateFunction(value: unknown): value is PlaitedTemplateFunction
 ```
 
-### BProgramArgs Interface
+### BProgramArgs and GetElementArgs Types
 
 ```ts
-interface BProgramArgs<T extends EventDetail = EventDetail> {
-  $: (selector: string) => BoundElement | null  // Enhanced element selector
-  trigger: PlaitedTrigger<T>                    // Event trigger with cleanup
-  host: HTMLElement                             // Component host element
-  root: ShadowRoot | HTMLElement               // Shadow root or host
-  // Direct access to behavioral primitives
-  bThread: BThread                              // Thread factory
-  bSync: BSync                                  // Sync factory
-  // Lifecycle hooks
-  onConnected?: () => void
-  onDisconnected?: () => void
-  onAttributeChanged?: (name: string, oldValue: string | null, newValue: string | null) => void
-  onAdopted?: () => void
-  // Form-associated callbacks (when formAssociated: true)
-  onFormAssociated?: (form: HTMLFormElement) => void
-  onFormDisabled?: (disabled: boolean) => void
-  onFormReset?: () => void
-  onFormStateRestore?: (state: any, mode: 'restore' | 'autocomplete') => void
+interface BProgramArgs<T> {
+  bThreads: BThreads<T>               // Thread management
+  trigger: PlaitedTrigger<T>          // Event trigger with cleanup
+  internals: ElementInternals | null  // Form-associated internals
+  useSnapshot: UseSnapshot            // State snapshot utility
+  bThread: BThread                    // Thread factory
+  bSync: BSync                        // Sync factory
+}
+
+interface GetElementArgs<A extends PlaitedHandlers> extends BProgramArgs<PlaitedMessage<A>> {
+  $: <T extends Element = Element>(
+    target: string,
+    match?: SelectorMatch
+  ) => BoundElement<T>[]              // Enhanced element selector
+  root: ShadowRoot | HTMLElement     // Shadow root or host
+  host: HTMLElement                   // Component host element
 }
 ```
 
@@ -154,10 +139,10 @@ interface BProgramArgs<T extends EventDetail = EventDetail> {
 Creates a behavioral program instance.
 
 ```ts
-function bProgram<T extends BPEvent>(): {
-  bThreads: BThreads<T>
-  trigger: Trigger<T>
-  useFeedback: UseFeedback<T>
+function bProgram(): {
+  bThreads: BThreads
+  trigger: Trigger
+  useFeedback: UseFeedback
   useSnapshot: UseSnapshot
 }
 ```
@@ -172,7 +157,7 @@ function bThread(
   repeat?: true | (() => boolean)
 ): RulesFunction
 
-type RulesFunction = Generator<Idioms<any>, any, BPEvent<any>>
+type RulesFunction = () => Generator<Idioms, void, undefined>
 ```
 
 #### `bSync(statement)`
@@ -180,14 +165,18 @@ type RulesFunction = Generator<Idioms<any>, any, BPEvent<any>>
 Creates a synchronization point.
 
 ```ts
-interface Idioms<T extends BPEvent> {
-  request?: T | T[]                  // Events to propose
-  waitFor?: BPListener<T>            // Events to wait for
-  block?: BPListener<T>              // Events to block
-  interrupt?: BPListener<T>          // Events that terminate thread
+function bSync(idioms: Idioms): RulesFunction
+
+interface Idioms<T = any> {
+  request?: BPEvent<T> | BPEventTemplate<T>  // Event to propose
+  waitFor?: BPListener<T>                     // Events to wait for
+  block?: BPListener<T>                       // Events to block
+  interrupt?: BPListener<T>                   // Events that terminate thread
 }
 
-type BPListener<T> = string | ((event: T) => boolean)
+type BPListener<T = any> = string | ((args: { type: string; detail: T }) => boolean)
+type BPEvent<T = any> = { type: string; detail: T }
+type BPEventTemplate<T = any> = (detail?: T) => BPEvent<T>
 ```
 
 #### `defineBProgram(config)`
@@ -195,27 +184,34 @@ type BPListener<T> = string | ((event: T) => boolean)
 Creates a reusable behavioral program module.
 
 ```ts
-interface DefineBProgramProps<T extends BPEvent> {
+interface DefineBProgramProps<T = any> {
   trigger: PlaitedTrigger<T>
   publicEvents?: string[] | ReadonlyArray<string>
+  bSync: BSync
+  bThread: BThread
+  bThreads: BThreads<T>
+  useSnapshot: UseSnapshot
 }
 
-function defineBProgram<T extends BPEvent>(config: {
+function defineBProgram<
+  A extends Handlers = Handlers,
+  C extends Record<string, unknown> = Record<string, unknown>
+>(config: {
   publicEvents?: string[]
-  bProgram: (props: DefineBProgramProps<T>) => Handlers<T>
-}): (props: DefineBProgramProps<T>) => Handlers<T>
+  bProgram: (props: DefineBProgramProps<PlaitedMessage<A>> & C) => A
+}): (props: { trigger: PlaitedTrigger<PlaitedMessage<A>> } & C) => A
 ```
 
 ### Utility Functions
 
 ```ts
-randomEvent(...events: BPEvent[]): BPEvent
-shuffleSyncs(...syncs: BSync[]): BSync[]
+randomEvent<T = any>(...events: BPEvent<T>[]): BPEvent<T>
+shuffleSyncs(...syncs: RulesFunction[]): RulesFunction[]
 getPublicTrigger(args: { 
   trigger: Trigger; 
   publicEvents?: string[] | ReadonlyArray<string> 
 }): Trigger
-getPlaitedTrigger<T>(
+getPlaitedTrigger<T = any>(
   trigger: Trigger<T>, 
   cleanupFns: Set<() => void>
 ): PlaitedTrigger<T>
@@ -337,37 +333,33 @@ function getDesignTokensSchema(
 
 ### Assertion and Testing
 
-#### `assert(config)`
+#### `assert(params)`
 
 Type-safe test assertions.
 
 ```ts
-interface AssertConfig {
+function assert<T>(params: AssertParams<T>): void
+
+type AssertParams<T> = {
   given: string      // Test context
   should: string     // Expected behavior
-  actual: unknown    // Actual value
-  expected: unknown  // Expected value
+  actual: T          // Actual value
+  expected: T        // Expected value
 }
 ```
 
-#### `findByText(text, [options])`
+#### `findByText(searchText, [context])`
 
 Finds elements by text content.
 
 ```ts
-interface FindOptions {
-  container?: Element
-  timeout?: number
-  exact?: boolean
-}
-
 function findByText<T extends Element = Element>(
-  text: string,
-  options?: FindOptions
+  searchText: string | RegExp,
+  context?: HTMLElement
 ): Promise<T | undefined>
 ```
 
-#### `findByAttribute(attribute, value, [options])`
+#### `findByAttribute(attribute, value, [context])`
 
 Finds elements by attribute.
 
@@ -375,7 +367,7 @@ Finds elements by attribute.
 function findByAttribute<T extends Element = Element>(
   attribute: string,
   value: string,
-  options?: FindOptions
+  context?: HTMLElement
 ): Promise<T | undefined>
 ```
 
@@ -384,11 +376,11 @@ function findByAttribute<T extends Element = Element>(
 Simulates DOM events.
 
 ```ts
-interface EventArguments {
+type EventArguments = {
   bubbles?: boolean
   composed?: boolean
   cancelable?: boolean
-  detail?: any
+  detail?: Record<string, unknown>
 }
 
 function fireEvent(
@@ -427,36 +419,45 @@ const result = match({
 
 ### Story Testing
 
-#### `StoryObj<T>`
-
-Story configuration type.
+#### Story Types
 
 ```ts
-interface StoryObj<T> {
-  args?: Partial<T>
+type StoryObj<T> = PlayStoryObj<T> | TemplateStoryObj<T>
+
+interface PlayStoryObj<T> {
+  args?: T
+  template?: PlaitedTemplate
+  description: string
+  play: Play
+  parameters?: Params
+}
+
+interface TemplateStoryObj<T> {
+  args?: T
+  template?: PlaitedTemplate
+  description: string
   play?: Play
   parameters?: Params
 }
 
-type Play = (context: {
-  canvasElement: HTMLElement
-  step: (name: string, fn: () => void | Promise<void>) => Promise<void>
+type Play = (utils: {
+  assert: typeof assert
+  findByAttribute: typeof findByAttribute
+  findByText: typeof findByText
+  fireEvent: typeof fireEvent
+  hostElement: HTMLElement
+  match: typeof match
+  throws: typeof throws
+  wait: typeof wait
 }) => void | Promise<void>
-```
 
-#### `usePlay(story, options)`
-
-Executes story play functions.
-
-```ts
-function usePlay(
-  story: { play?: Play },
-  options: {
-    canvasElement: HTMLElement
-    onError?: (error: Error) => void
-    onSuccess?: () => void
-  }
-): void
+interface Params {
+  a11y?: boolean
+  headers?: Record<string, string>
+  scale?: Scale
+  styles?: string
+  timeout?: number
+}
 ```
 
 #### `PlaitedFixture`
@@ -507,8 +508,6 @@ hashString(str: string): number | null  // null for empty strings
 // Case conversion
 camelCase(str: string): string
 kebabCase(str: string): string
-pascalCase(str: string): string
-snakeCase(str: string): string
 ```
 
 ### Data Structures
@@ -547,28 +546,57 @@ noop<T = never>(..._: T[]): void  // No-operation function
 ### Development Tools
 
 ```ts
-// Story file utilities
-globStories(patterns: string[]): Promise<string[]>
-getStoryArtifacts(file: string): Promise<StoryArtifacts>
+// Story file discovery
+function globStories(cwd: string): Promise<string[]>
 
-// Server utilities
-createStoryRoute(config: StoryRouteConfig): Route
-getWorkshop(config: WorkshopConfig): Workshop
-mapStoryResponses(stories: StoryMap): ResponseMap
+// Build artifacts generation
+function getStoryArtifacts(
+  cwd: string, 
+  entrypoints: string[]
+): Promise<BuildArtifact[]>
+
+// Route creation
+function createStoryRoute(config: { 
+  storyFile: string
+  exportName: string 
+}): string
+
+// Workshop setup
+function getWorkshop(config: {
+  cwd: string
+  streamURL: `/${string}`
+  getHTMLResponse?: GetHTMLResponse
+}): Promise<{
+  stories: [string, TestParams][]
+  responses: Map<string, Response>
+}>
+
+// Story response mapping
+function mapStoryResponses(config: {
+  entries: string[]
+  responses: Map<string, Response>
+  cwd: string
+  streamURL: `/${string}`
+  libraryImportMap: Record<string, string>
+  getHTMLResponse: GetHTMLResponse
+}): Promise<[string, TestParams][]>
 
 // Library management
-getLibrary(stories: StoryFile[]): Library
+function getLibrary(): Promise<{
+  libraryArtifacts: BuildArtifact[]
+  libraryImportMap: Record<string, string>
+}>
 
 // HTML response generator type
-type GetHTMLResponse = (options: {
-  title: string
-  lib: string
-  socket: string
+type GetHTMLResponse = (params: {
+  story: StoryObj
   route: string
-  file: string
-  entry: string
-  name: string
-}) => string
+  responses: Map<string, Response>
+  storyFile: string
+  exportName: string
+  streamURL: `/${string}`
+  libraryImportMap: Record<string, string>
+}) => TestParams
 ```
 
 ## JSX Configuration
