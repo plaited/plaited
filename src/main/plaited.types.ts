@@ -1,6 +1,7 @@
 import type { Trigger } from '../behavioral/b-program.js'
 import type { CustomElementTag, FunctionTemplate, TemplateObject } from '../jsx/jsx.types.js'
 import { type PLAITED_TEMPLATE_IDENTIFIER } from './plaited.constants.js'
+import type { StylesObject } from '../styling/css.types.js'
 /**
  * Valid insertion positions for DOM elements relative to a reference element.
  * Follows the insertAdjacentElement/HTML specification.
@@ -145,8 +146,8 @@ export type Bindings = {
    * button.attr('disabled', 'null);
    * ```
    */
-  attr(this: Element, attr: Record<string, string | null | number | boolean>, val?: never): void
-  attr(this: Element, attr: string, val?: string | null | number | boolean): string | null | void
+  attr(this: Element, attr: Record<string, string | null | number | boolean | StylesObject>, val?: never): void
+  attr(this: Element, attr: string, val?: string | null | number | boolean | StylesObject): string | null | void
 }
 
 export type BoundElement<T extends Element = Element> = T & Bindings

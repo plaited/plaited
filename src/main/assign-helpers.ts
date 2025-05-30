@@ -1,7 +1,8 @@
 import type { TemplateObject } from '../jsx/jsx.types.js'
 import { BOOLEAN_ATTRS } from '../jsx/jsx.constants.js'
 import type { Bindings, BoundElement } from './plaited.types.js'
-
+import type { StylesObject } from '../styling/css.types.js'
+import { isTypeOf } from '../utils/is-type-of.js'
 /**
  * @internal Cache for storing adopted stylesheets per ShadowRoot to prevent duplicate processing.
  * Used internally by the framework to optimize style adoption performance.
@@ -29,7 +30,17 @@ const updateShadowRootStyles = async (root: ShadowRoot, stylesheets: Set<string>
 }
 
 /** @internal Safely updates or removes an attribute on an element, handling boolean attributes correctly. */
-const updateAttributes = (element: Element, attr: string, val: string | null | number | boolean) => {
+const updateAttributes = ({
+  element,
+  attr,
+  val,
+  root,
+}: {
+  element: Element
+  attr: string | 'class'
+  val: string | null | number | boolean | StylesObject
+  root: ShadowRoot
+}) => {
   // Remove the attribute if val is null or undefined, and it currently exists
   if (val === null && element.hasAttribute(attr)) return element.removeAttribute(attr)
   // Set the attribute if it is a boolean attribute and it does not exist
@@ -38,7 +49,12 @@ const updateAttributes = (element: Element, attr: string, val: string | null | n
     return
   }
   // Set the attribute if the new value is different from the current value
-  element.setAttribute(attr, `${val}`)
+  if (attr === 'class' && isTypeOf<StylesObject>(val, 'object')) {
+    void updateShadowRootStyles(root, new Set(val.stylesheet))
+    element.setAttribute(attr, `${val.class}`)
+  } else {
+    element.setAttribute(attr, `${val}`)
+  }
 }
 
 /**
@@ -97,10 +113,20 @@ export const getBindings = (shadowRoot: ShadowRoot): Bindings => ({
     if (typeof attr === 'string') {
       // Return the attribute value if val is not provided
       if (val === undefined) return this.getAttribute(attr)
-      return updateAttributes(this, attr, val)
+      return updateAttributes({
+        root: shadowRoot,
+        element: this,
+        attr,
+        val,
+      })
     }
     for (const key in attr) {
-      updateAttributes(this, key, attr[key])
+      updateAttributes({
+        root: shadowRoot,
+        element: this,
+        attr: key,
+        val: attr[key],
+      })
     }
   },
 })

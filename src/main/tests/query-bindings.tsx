@@ -1,4 +1,10 @@
-import { type Position, defineElement, useTemplate } from 'plaited'
+import { type Position, defineElement, useTemplate, css } from 'plaited'
+
+const styles = css.create({
+  root: {
+    textDecorationLine: 'line-through',
+  },
+})
 
 let did = 1
 const adjectives = [
@@ -91,7 +97,17 @@ export const Fixture = defineElement({
     </div>
   ),
   tag: 'table-fixture',
-  publicEvents: ['insert', 'render', 'replace', 'remove', 'removeAttributes', 'getAttribute', 'multiSetAttributes'],
+  publicEvents: [
+    'insert',
+    'render',
+    'replace',
+    'remove',
+    'removeAttributes',
+    'getAttribute',
+    'multiSetAttributes',
+    'setStyle',
+    'setAttribute',
+  ],
   bProgram({ $ }) {
     const [template] = $<HTMLTemplateElement>('row-template')
     const cb = useTemplate<DataItem>(template, ($, data) => {
@@ -119,6 +135,14 @@ export const Fixture = defineElement({
       removeAttributes() {
         const labels = $('label')
         labels.forEach((label) => label.attr('p-target', null))
+      },
+      setAttribute() {
+        const [root] = $('root')
+        root.attr('aria-label', 'helper fixture')
+      },
+      setStyle() {
+        const [root] = $('root')
+        root.attr('class', styles.root)
       },
       multiSetAttributes() {
         const dels = $('delete')
