@@ -151,7 +151,65 @@ export const SignalCounter = defineElement({
 })
 ```
 
-## 4. Styling Your Component
+## 4. Reactive Computations with `useComputed`
+`useComputed` allows you to create signals whose values are derived from other signals. These "computed signals" automatically update when their dependencies change.
+
+```tsx
+// computed-name.tsx
+import { defineElement, useSignal, useComputed } from 'plaited'
+
+const firstNameSignal = useSignal('Plaited')
+const lastNameSignal = useSignal('Framework')
+
+// Create a computed signal for the full name
+const fullNameSignal = useComputed(
+  () => `${firstNameSignal.get()} ${lastNameSignal.get()}`,
+  [firstNameSignal, lastNameSignal] // Dependencies
+)
+
+export const ComputedName = defineElement({
+  tag: 'computed-name',
+  shadowDom: (
+    <div>
+      <input
+        type="text"
+        p-target="firstNameInput"
+        p-trigger={{ input: 'UPDATE_FIRST_NAME' }}
+        value={firstNameSignal.get()}
+      />
+      <input
+        type="text"
+        p-target="lastNameInput"
+        p-trigger={{ input: 'UPDATE_LAST_NAME' }}
+        value={lastNameSignal.get()}
+      />
+      <p>Full Name: <span p-target="fullNameDisplay">{fullNameSignal.get()}</span></p>
+    </div>
+  ),
+  bProgram({ $, trigger }) {
+    const [firstNameInputEl] = $<HTMLInputElement>('firstNameInput')
+    const [lastNameInputEl] = $<HTMLInputElement>('lastNameInput')
+    const [fullNameDisplayEl] = $('fullNameDisplay')
+
+    // Listen to changes in fullNameSignal
+    fullNameSignal.listen('FULL_NAME_CHANGED', trigger, true)
+
+    return {
+      UPDATE_FIRST_NAME() {
+        firstNameSignal.set(firstNameInputEl.value)
+      },
+      UPDATE_LAST_NAME() {
+        lastNameSignal.set(lastNameInputEl.value)
+      },
+      FULL_NAME_CHANGED(newName: string) {
+        fullNameDisplayEl.render(newName)
+      },
+    }
+  },
+})
+```
+
+## 5. Styling Your Component
 
 Plaited offers a type-safe CSS-in-JS solution via the `css` object.
 
@@ -236,7 +294,40 @@ export const SmartButton = defineElement({
 
 ```
 
-## 5. Component Communication
+### Defining Animations with `css.keyframes`
+Create reusable CSS animations:
+```tsx
+// animated-box.tsx
+import { defineElement, css } from 'plaited'
+
+const fadeIn = css.keyframes('fadeIn', {
+  from: { opacity: 0, transform: 'translateY(20px)' },
+  to: { opacity: 1, transform: 'translateY(0)' },
+})
+
+const styles = css.create({
+  box: {
+    width: '100px',
+    height: '100px',
+    backgroundColor: 'tomato',
+    animationName: fadeIn.id, // Use the generated animation name
+    animationDuration: '1s',
+    animationFillMode: 'forwards',
+  },
+})
+
+export const AnimatedBox = defineElement({
+  tag: 'animated-box',
+  shadowDom: (
+    // Include the keyframes stylesheet along with component styles
+    <div {...css.assign(styles.box, fadeIn())}>I will fade in!</div>
+  ),
+})
+```
+`fadeIn()` returns a `StylesObject` like `{ stylesheet: ["@keyframes fadeIn_xyz {...}"] }`.
+`fadeIn.id` provides the unique animation name for use in `animationName`.
+
+## 6. Component Communication
 
 ### Shared State with `useSignal`
 As seen with `SignalCounter`, `useSignal` is excellent for sharing state between components, even if they aren't direct parent/child.
@@ -327,7 +418,7 @@ export const EventListener = defineElement({
 })
 ```
 
-## 6. Rendering Lists with `useTemplate`
+## 7. Rendering Lists with `useTemplate`
 
 For efficiently rendering lists or repeated structures, Plaited provides `useTemplate`. It clones a `<template>` element and populates it with data.
 
@@ -386,7 +477,7 @@ export const UserList = defineElement({
 })
 ```
 
-## 7. Interacting with Attributes
+## 8. Interacting with Attributes
 
 ### Observing Slotted Element Attributes with `useAttributesObserver`
 Sometimes, a component needs to react when attributes change on an element *slotted into it*. `useAttributesObserver` is designed for this.
@@ -468,7 +559,7 @@ export const SelfObserver = defineElement({
 // Then: document.querySelector('self-observer').setAttribute('status', 'done');
 ```
 
-## 8. Form-Associated Components
+## 9. Form-Associated Components
 Plaited components can participate in HTML forms. Set `formAssociated: true` in `defineElement`.
 
 ```tsx
@@ -528,7 +619,7 @@ The `internals` object (an `ElementInternals` instance) provides methods like:
 - `internals.form`: Access to the parent form.
 - `internals.states`: A `CustomStateSet` for custom pseudo-classes (e.g., `:state(checked)`).
 
-## 9. A More Complete Example: Todo List
+## 10. A More Complete Example: Todo List
 
 This example ties together `defineElement`, `bProgram`, `useSignal`, `useTemplate`, and `css.create`.
 
@@ -639,7 +730,7 @@ export const TodoListApp = defineElement({
 })
 ```
 
-## 10. Using Web Workers
+## 11. Using Web Workers
 Offload computationally intensive tasks to Web Workers using `useWorker` and `defineWorker`.
 
 **Component side (`my-component.tsx`):**
@@ -701,7 +792,7 @@ defineWorker<{ MULTIPLY: (data: { a: number; b: number }) => void }>({
 ```
 The component uses `useWorker(trigger, path)` to get a function for sending messages to the worker. The worker uses `defineWorker` and its provided `send` function to communicate back.
 
-## 11. Introduction to Behavioral Programming
+## 12. Introduction to Behavioral Programming
 At its core, Plaited leverages behavioral programming (BP) principles. For more intricate scenarios, you can use BP directly. BP involves defining "b-threads" – small, independent pieces of behavior (generator functions) that run concurrently and synchronize using events.
 
 In `defineElement`, the `bProgram` function is the entry point. `bThread` and `bSync` utilities are provided via `BProgramArgs`:
@@ -765,7 +856,7 @@ export const BPComponent = defineElement({
 })
 ```
 
-## Next Steps
+## 13. Next Steps
 
 This guide has covered the foundational concepts of Plaited. To dive deeper:
 
@@ -775,4 +866,3 @@ This guide has covered the foundational concepts of Plaited. To dive deeper:
 4.  **Advanced Behavioral Scenarios**: Explore more complex patterns with `bProgram`, `bThread`, and `bSync`.
 
 Happy Hacking!
-```
