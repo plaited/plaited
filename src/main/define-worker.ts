@@ -97,39 +97,6 @@ type WorkerContext = {
  * });
  * ```
  *
- * @example Data Analysis Worker
- * ```tsx
- * // analysis-worker.ts
- * defineWorker<{
- *   analyze: (args: { dataset: DataPoint[] }) => void
- * }>({
- *   publicEvents: ['analyze'],
- *   bProgram({ send }) {
- *     const computeMetrics = (data: DataPoint[]) => {
- *       // Expensive calculations...
- *       return { mean, median, stdDev };
- *     };
- *
- *     return {
- *       analyze({ dataset }) {
- *         // Break down analysis into steps
- *         send({
- *           type: 'STATUS_UPDATE',
- *           detail: { status: 'Validating data...' }
- *         });
- *
- *         const metrics = computeMetrics(dataset);
- *
- *         send({
- *           type: 'ANALYSIS_COMPLETE',
- *           detail: { metrics }
- *         });
- *       }
- *     };
- *   }
- * });
- * ```
- *
  * @remarks
  * Worker Configuration:
  * - Must be defined in a separate file

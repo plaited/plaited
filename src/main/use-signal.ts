@@ -81,53 +81,6 @@ export function useSignal<T>(initialValue?: never): SignalWithoutInitialValue<T>
  *   }
  * });
  * ```
- *
- * @example Form state management
- * ```tsx
- * const FormField = defineElement({
- *   tag: 'form-field',
- *   shadowDom: (
- *     <div>
- *       <input
- *         p-target="input"
- *         p-trigger={{ input: 'ON_INPUT' }}
- *       />
- *       <span p-target="error" />
- *     </div>
- *   ),
- *   bProgram({ $, trigger }) {
- *     const [input] = $<HTMLInputElement>('input');
- *     const [error] = $('error');
- *
- *     // Create field state
- *     const fieldState = useSignal({
- *       value: '',
- *       isValid: true,
- *       error: ''
- *     });
- *
- *     // Listen for state changes
- *     fieldState.listen('FIELD_STATE_CHANGED', trigger);
- *
- *     return {
- *       ON_INPUT() {
- *         const value = input.value;
- *         const isValid = value.length >= 3;
- *
- *         fieldState.set({
- *           value,
- *           isValid,
- *           error: isValid ? '' : 'Must be at least 3 characters'
- *         });
- *       },
- *
- *       FIELD_STATE_CHANGED({ error }) {
- *         error.render(error || '');
- *       }
- *     };
- *   }
- * });
- * ```
  */
 export function useSignal<T>(initialValue: T) {
   let store: T = initialValue
