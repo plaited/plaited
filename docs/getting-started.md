@@ -744,7 +744,234 @@ export const TodoListApp = defineElement({
 })
 ```
 
-## 11. Using Web Workers
+## 11. A More Challenging Example: Tic Tac Toe Game
+
+For a more involved example that demonstrates complex behavioral programming patterns, check out the Tic Tac Toe game implementation. This example showcases:
+
+-   Managing game state (board, current player, win conditions).
+-   Enforcing game rules using behavioral threads (`bThread` and `bSync`).
+-   Dynamically rendering UI components based on game events.
+-   Structuring a component with a more complex behavioral program.
+
+Here's a look at the key components and their core logic:
+
+### a. The Main Game Logic: `tic-tac-toe-board.tsx`
+
+This component orchestrates the game. It defines win conditions, enforces player turns using behavioral threads, and updates the UI when a square is clicked.
+
+Key behavioral threads:
+-   `enforceTurns`: Ensures players alternate turns (X then O).
+-   `squaresTaken`: Prevents a square from being selected more than once.
+-   `detectWins`: Checks for a winning condition after each move for both X and O.
+-   `stopGame`: Blocks further moves once a win condition is met.
+-   `preventCompletionOfLineWithTwoXs`: A simple AI strategy for player O to block X from winning.
+-   `startAtCenter` & `defaultMoves`: Provides some default moves for player O if no blocking move is available.
+
+```plaited-workspaces/stories/tic-tac-toe-board.tsx#L6-130
+const winConditions = [
+  //rows
+  [0, 1, 2],
+  [3, 4, 5],
+  [6, 7, 8],
+  // columns
+  [0, 3, 6],
+  [1, 4, 7],
+  [2, 5, 8],
+  // diagonals
+  [0, 4, 8],
+  [2, 4, 6],
+]
+
+const squares = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+
+type Square = { square: number }
+
+const enforceTurns = bThread(
+  [bSync<Square>({ waitFor: 'X', block: 'O' }), bSync<Square>({ waitFor: 'O', block: 'X' })],
+  true,
+)
+
+const squaresTaken: Record<string, RulesFunction> = {}
+for (const square of squares) {
+  squaresTaken[`(${square}) taken`] = bThread(
+    [
+      bSync<Square>({
+        waitFor: ({ detail }) => square === detail.square,
+      }),
+      bSync<Square>({
+        block: ({ detail }) => square === detail.square,
+      }),
+    ],
+    true,
+  )
+}
+
+type Winner = { player: 'X' | 'O'; squares: number[] }
+const detectWins = (player: 'X' | 'O') =>
+  winConditions.reduce((acc: Record<string, RulesFunction>, squares) => {
+    acc[`${player}Wins (${squares})`] = bThread(
+      [
+        bSync<{ square: number }>({
+          waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
+        }),
+        bSync<{ square: number }>({
+          waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
+        }),
+        bSync<{ square: number }>({
+          waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
+        }),
+        bSync<Winner>({
+          request: { type: 'win', detail: { squares, player } },
+        }),
+      ],
+      true,
+    )
+    return acc
+  }, {})
+
+const stopGame = bThread([bSync({ waitFor: 'win' }), bSync({ block: ['X', 'O'] })], true)
+
+const defaultMoves: Record<string, RulesFunction> = {}
+for (const square of squares) {
+  defaultMoves[`defaultMoves(${square})`] = bThread(
+    [
+      bSync<Square>({
+        request: {
+          type: 'O',
+          detail: { square },
+        },
+      }),
+    ],
+    true,
+  )
+}
+
+const startAtCenter = bSync({
+  request: {
+    type: 'O',
+    detail: { square: 4 },
+  },
+})
+
+const preventCompletionOfLineWithTwoXs = (board: Set<number>) => {
+  const threads: Record<string, RulesFunction> = {}
+  for (const win of winConditions) {
+    threads[`StopXWin(${win})`] = bThread([
+      bSync<Square>({
+        waitFor: ({ type, detail }) => type === 'X' && win.includes(detail.square),
+      }),
+      bSync<Square>({
+        waitFor: ({ type, detail }) => type === 'X' && win.includes(detail.square),
+      }),
+      bSync<Square>({
+        request: () => ({ type: 'O', detail: { square: win.find((num) => board.has(num)) || 0 } }),
+      }),
+    ])
+  }
+  return threads
+}
+export const TicTacToeBoard = defineElement({
+  tag: 'tic-tac-toe-board',
+  shadowDom: <BoardMarker />,
+  bProgram({ $, bThreads, trigger }) {
+    const board = new Set(squares)
+    bThreads.set({
+      enforceTurns,
+      ...squaresTaken,
+      ...detectWins('X'),
+      ...detectWins('O'),
+      stopGame,
+      ...preventCompletionOfLineWithTwoXs(board),
+      startAtCenter,
+      ...defaultMoves,
+    })
+    return {
+      // When BPEvent X happens we delete the square provided in the event's detail
+      X({ square }: Square) {
+        board.delete(square)
+        $(`${square}`)[0]?.render(<XMarker />)
+      },
+      // When BPEvent X happens we delete the square provided in the event's detail
+      O({ square }: Square) {
+        board.delete(square)
+        $(`${square}`)[0]?.render(<OMarker />)
+      },
+      // When BPEvent click happens
+      click(evt: MouseEvent & { target: HTMLButtonElement }) {
+        const { target } = evt
+        const { value } = target
+        if (value) {
+          trigger({ type: 'X', detail: { square: Number(value) } })
+        }
+      },
+    }
+  },
+})
+```
+
+### b. The Game Board UI: `board-marker.tsx`
+
+This functional component renders the 3x3 grid. Each cell is a button that, when clicked, triggers a `click` event. The `p-target` attribute allows the `bProgram` to identify which square was clicked.
+
+```plaited-workspaces/stories/board-marker.tsx#L28-45
+export const BoardMarker: FT = () => (
+  <div
+    role='group'
+    aria-label='board'
+    {...styles.board}
+  >
+    {Array.from(Array(9).keys()).map((n) => (
+      <button
+        {...styles.square}
+        value={n}
+        p-trigger={{ click: 'click' }}
+        p-target={`${n}`}
+      ></button>
+    ))}
+  </div>
+)
+```
+
+### c. Player Markers: `x-marker.tsx` and `o-marker.tsx`
+
+These are simple functional components that render SVG images for the X and O markers. They are dynamically rendered into the clicked squares by the `bProgram` of `TicTacToeBoard`.
+
+**`x-marker.tsx`**
+```plaited-workspaces/stories/x-marker.tsx#L10-19
+export const XMarker: FT = () => (
+  <svg
+    {...styles.x}
+    viewBox='0 0 21 21'
+    fill='none'
+  >
+    <path
+      d='M16 0.900002C16.5 0.400002 17.1 0.200001 17.8 0.200001C19.2 0.200001 20.3 1.3 20.3 2.7C20.3 3.4 20 4 19.6 4.5L13.8 10.2L19.4 15.8L19.5 15.9C20 16.4 20.2 17 20.2 17.7C20.2 19.1 19.1 20.2 17.7 20.2C17 20.2 16.4 19.9 15.9 19.5L15.8 19.4L15.7 19.3L10.1 13.7L4.4 19.4C3.9 19.9 3.3 20.1 2.6 20.1C1.2 20.1 0.0999985 19 0.0999985 17.6C0.0999985 16.9 0.399995 16.3 0.799995 15.8L6.5 10.1L0.900002 4.5L0.699997 4.3C0.199997 3.9 0 3.2 0 2.5C0 1.1 1.1 0 2.5 0C3.2 0 3.8 0.300001 4.3 0.700001L4.4 0.799999L10.1 6.4L16 0.900002Z'
+      fill='currentColor'
+    />
+  </svg>
+)
+```
+
+**`o-marker.tsx`**
+```plaited-workspaces/stories/o-marker.tsx#L10-20
+export const OMarker: FT = () => (
+  <svg
+    {...styles.o}
+    viewBox='0 0 20 20'
+    fill='none'
+    xmlns='http://www.w3.org/2000/svg'
+  >
+    <path
+      d='M0 10C0 15.5 4.5 20 10 20C15.5 20 20 15.5 20 10C20 4.5 15.5 0 10 0C4.5 0 0 4.4 0 10ZM15 10C15 12.8 12.8 15 10 15C7.2 15 5 12.8 5 10C5 7.2 7.2 5 10 5C12.8 5 15 7.2 15 10Z'
+      fill='currentColor'
+    />
+  </svg>
+)
+```
+
+This example provides a practical demonstration of how Plaited's behavioral programming features can be used to build interactive and rule-driven applications. You can also explore the [`tic-tac-toe-board.stories.tsx`](../../stories/tic-tac-toe-board.stories.tsx) file to see how this component is set up for interactive viewing and testing in a Storybook environment.
+
+## 12. Using Web Workers
 Offload computationally intensive tasks to Web Workers using `useWorker` and `defineWorker`.
 
 **Component side (`my-component.tsx`):**
@@ -806,7 +1033,7 @@ defineWorker<{ MULTIPLY: (data: { a: number; b: number }) => void }>({
 ```
 The component uses `useWorker(trigger, path)` to get a function for sending messages to the worker. The worker uses `defineWorker` and its provided `send` function to communicate back.
 
-## 12. Introduction to Behavioral Programming
+## 13. Introduction to Behavioral Programming
 At its core, Plaited leverages behavioral programming (BP) principles. For more intricate scenarios, you can use BP directly. BP involves defining "b-threads" – small, independent pieces of behavior (generator functions) that run concurrently and synchronize using events.
 
 In `defineElement`, the `bProgram` function is the entry point. `bThread` and `bSync` utilities are provided via `BProgramArgs`:
@@ -870,7 +1097,7 @@ export const BPComponent = defineElement({
 })
 ```
 
-## 13. Next Steps
+## 14. Next Steps
 
 This guide has covered the foundational concepts of Plaited. To dive deeper:
 
