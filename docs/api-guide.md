@@ -124,6 +124,33 @@ function useSignal<T>(): {
 };
 ```
 
+#### `useComputed(computeFn, dependencies)`
+
+Creates a reactive computed signal that derives its value from other signals.
+
+```ts
+import type { Trigger, PlaitedTrigger, Disconnect } from 'plaited/behavioral';
+import type { useSignal } from 'plaited'; // Assuming useSignal is the primary signal type
+
+// Type for the return value of useSignal or another useComputed
+type SignalLike<T> = {
+  get(): T;
+  listen(eventType: string, trigger: Trigger | PlaitedTrigger, getLVC?: boolean): Disconnect;
+};
+
+function useComputed<T>(
+  computeFn: () => T,      // Function to compute the derived value
+  dependencies: SignalLike<any>[] // Array of signals this computed value depends on
+): {
+  get(): T;                 // Get the current computed value
+  listen(
+    eventType: string,
+    trigger: Trigger | PlaitedTrigger,
+    getLVC?: boolean
+  ): Disconnect;           // Listen for changes to the computed value
+};
+```
+
 #### `useAttributesObserver(eventType, trigger)`
 
 Creates an attribute observer factory for elements. This is a higher-order function.
@@ -186,6 +213,50 @@ type BProgramArgs = {
   /** Factory for defining synchronization points. */
   bSync: BSync;
 };
+```
+
+### JSX Exports
+
+Plaited re-exports core JSX functionalities from `plaited/jsx-runtime` for convenience.
+
+#### `h(tag, attrs)`
+
+Alias for `createTemplate`. This is the JSX factory function used when `jsxImportSource` is set to "plaited".
+
+```ts
+import type { TemplateObject, Attrs, FunctionTemplate, CustomElementTag } from 'plaited/jsx-runtime';
+
+type Tag = string | CustomElementTag | FunctionTemplate;
+
+type InferAttrs<T extends Tag> =
+  T extends keyof ElementAttributeList ? ElementAttributeList[T]
+  : T extends FunctionTemplate ? Parameters<T>[0]
+  : T extends CustomElementTag ? DetailedHTMLAttributes
+  : Attrs;
+
+function h<T extends Tag>(tag: T, attrs: InferAttrs<T>): TemplateObject;
+```
+
+#### `Fragment(props)`
+
+A component that allows grouping children without adding an extra DOM node.
+
+```ts
+import type { TemplateObject, Attrs } from 'plaited/jsx-runtime';
+
+function Fragment(props: Attrs): TemplateObject; // Primarily uses props.children
+```
+
+### Server-Side Rendering
+
+#### `ssr(...templates)`
+
+Serializes Plaited template objects into an HTML string, primarily for server-side rendering or static site generation.
+
+```ts
+import type { TemplateObject } from 'plaited/jsx-runtime';
+
+function ssr(...templates: TemplateObject[]): string;
 ```
 
 ## Behavioral Module (`plaited/behavioral`)
@@ -402,6 +473,80 @@ const combined = css.assign(
 ```
 
 ### Design Tokens
+
+#### Design Token Types
+
+Defines the structure and allowed values for design tokens used within Plaited.
+
+```ts
+// Template literal type representing a reference to another design token (e.g., '{colors.primary}')
+type Alias = `{${string}}`;
+
+// Basic value types for tokens
+type DefaultValue = string | number | Alias | (string | number | Alias)[];
+type AmountValue = number | `${number}%` | Alias; // Numeric or percentage values, or alias
+type AngleValue = `${number}deg` | `${number}grad` | `${number}rad` | `${number}turn` | Alias;
+
+// Color value definition
+type ColorValue = {
+  l?: AmountValue; c?: AmountValue; h?: number | AngleValue; a?: AmountValue;
+} | `#${string}` | 'transparent' | Alias;
+
+// Size measurements
+type SizeValue = `${number}%` | `${number}px` | `${number}rem` | Alias | (`${number}%` | `${number}px` | `${number}rem` | Alias)[];
+
+// CSS function definitions
+type FunctionValue = { function: string; arguments: DefaultValue; } | Alias;
+
+// Composite tokens combining multiple token references
+type CompositeValue = { [key: string]: Alias } | Alias;
+
+// Union of all possible design token value types
+type DesignValue = DefaultValue | ColorValue | SizeValue | FunctionValue | CompositeValue;
+
+// Media query definitions
+type MediaQueries = Map<`@${string}`, string>;
+type DefaultMediaQueries = { colorScheme?: '@light' | '@dark'; screen?: `@${string}`; };
+
+// Responsive value definition for design tokens
+type MediaValue<V extends DesignValue = DesignValue> = { [key: `@${string}`]: V };
+
+// Base structure for all design tokens
+type BaseToken<V extends DesignValue, T = undefined> = {
+  $description: string;
+  $csv?: boolean; // If value is an array, should it be comma-separated in CSS?
+  $value: V | MediaValue<V>;
+} & (T extends undefined ? { $type?: never } : { $type: T });
+
+// Specific token types
+type DefaultToken = BaseToken<DefaultValue>;
+type AmountToken = BaseToken<AmountValue, 'amount'>;
+type AngleToken = BaseToken<AngleValue, 'angle'>;
+type ColorToken = BaseToken<ColorValue, 'color'>;
+type SizeToken = BaseToken<SizeValue, 'size'>;
+type FunctionToken = BaseToken<FunctionValue, 'function'>;
+type CompositeToken = {
+  $description: string;
+  $type: 'composite';
+  $value: CompositeValue;
+};
+
+// Union of all possible token types
+type DesignToken = DefaultToken | AmountToken | AngleToken | ColorToken | SizeToken | FunctionToken | CompositeToken;
+
+// Hierarchical structure for organizing design tokens
+type DesignTokenGroup = { [key: string]: DesignTokenGroup | DesignToken };
+
+// Extended token type with resolution and dependency information (used internally by TransformDesignTokens)
+type DesignTokenEntry = DesignToken & {
+  dependencies: Alias[];
+  dependents: Alias[];
+  exportName?: string;
+  ts?: string;
+  cssVar?: string;
+  css?: string;
+};
+```
 
 #### `TransformDesignTokens`
 
@@ -758,3 +903,4 @@ To use JSX with Plaited, configure TypeScript:
 ```
 
 This enables the use of JSX syntax in `.tsx` files with full type checking and IntelliSense support.
+```
