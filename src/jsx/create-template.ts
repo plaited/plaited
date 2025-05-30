@@ -176,7 +176,6 @@ type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => TemplateO
  * - Handling standard HTML/SVG tags, custom element tags, and FunctionTemplates
  * - Sanitizing attribute values and child content via HTML escaping (unless the `trusted` attribute is `true`)
  * - Correctly formatting boolean attributes (e.g., `disabled`, `checked`)
- * - Handling special attributes like `className` (maps to `class`), `htmlFor` (maps to `for`)
  * - Processing Plaited-specific attributes:
  *   - `p-trigger`: Serializes event-to-action mappings
  *   - `stylesheet`: Collects stylesheet strings for hoisting
