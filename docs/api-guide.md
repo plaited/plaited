@@ -47,14 +47,21 @@ function useWorker<T extends BPEvent>(
 ): WorkerPostMessage<T> & { disconnect: () => void }
 ```
 
-#### `useTemplate(template)`
+#### `useTemplate(el, callback)`
 
-Creates a factory function for efficient template cloning with data binding.
+Creates a template factory function for efficient dynamic content generation with dynamic data binding.
 
 ```ts
-function useTemplate<T extends Template>(
-  template: T
-): (data?: PlaitedData) => BoundTemplate
+function useTemplate<T>(
+  el: BoundElement<HTMLTemplateElement>,
+  callback: (
+    $: <E extends Element = Element>(
+      target: string,
+      match?: SelectorMatch
+    ) => BoundElement<E>[],
+    data: T
+  ) => void
+): (data: T) => DocumentFragment
 ```
 
 #### `useDispatch(element)`
@@ -214,7 +221,7 @@ getPlaitedTrigger<T>(
 ): PlaitedTrigger<T>
 ```
 
-### Type Guards
+### Behavioral Type Guards
 
 ```ts
 isBPEvent<T>(event: unknown): event is BPEvent<T>
