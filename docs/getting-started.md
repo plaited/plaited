@@ -109,46 +109,61 @@ Elements selected with `$` are augmented with helper methods:
 
 ## 3. Managing State with `useSignal`
 
-For more complex state management or when state needs to be shared, Plaited provides `useSignal`. Signals are reactive values that automatically trigger updates in components listening to them.
+Plaited's `bProgram` is typically used for managing state internal to a component. However, when state needs to be shared *between* different Plaited components, `useSignal` provides a powerful solution. Signals are reactive values that, when updated, can automatically trigger actions in any component listening to them. This allows for decoupled communication and state synchronization across your application.
 
-Let's refactor our counter:
+Here's an example of two components sharing a message:
 
 ```tsx
-// signal-counter.tsx
+// shared-message-system.tsx
 import { defineElement, useSignal } from 'plaited'
 
-const countSignal = useSignal(0) // Create a signal, initialized to 0. Can be exported and shared.
+// 1. Create a shared signal. This can be exported and imported by any component.
+const sharedMessage = useSignal('Hello from signal!')
 
-export const SignalCounter = defineElement({
-  tag: 'signal-counter',
+// 2. Component that updates the shared signal
+export const MessageSender = defineElement({
+  tag: 'message-sender',
   shadowDom: (
-    <div>
-      <button p-trigger={{ click: 'DECREMENT' }}>-</button>
-      {/* The span will be updated reactively when countSignal changes */}
-      <span p-target="count">{countSignal.get()}</span>
-      <button p-trigger={{ click: 'INCREMENT' }}>+</button>
-    </div>
+    <button p-trigger={{ click: 'UPDATE_MESSAGE' }}>
+      Update Message
+    </button>
   ),
-  bProgram({ $, trigger }) {
-    const [countEl] = $('count')
-
-    // Listen to changes in countSignal. When it changes, trigger an 'UPDATE_DISPLAY' action.
-    // The `true` argument triggers the listener immediately with the signal's current value.
-    countSignal.listen('UPDATE_DISPLAY', trigger, true)
-
+  bProgram() {
     return {
-      INCREMENT() {
-        countSignal.set(countSignal.get() + 1) // Update the signal's value
-      },
-      DECREMENT() {
-        countSignal.set(countSignal.get() - 1)
-      },
-      UPDATE_DISPLAY(newCount: number) { // This action is triggered by countSignal.listen
-        countEl.render(`${newCount}`)
+      UPDATE_MESSAGE() {
+        sharedMessage.set('Updated message via signal!')
       },
     }
   },
 })
+
+// 3. Component that displays the shared signal's value
+export const MessageReceiver = defineElement({
+  tag: 'message-receiver',
+  shadowDom: (
+    <p>Received: <span p-target="display">{sharedMessage.get()}</span></p>
+  ),
+  bProgram({ $, trigger }) {
+    const [displayEl] = $('display')
+
+    // Listen for changes to the sharedMessage signal.
+    // When it changes, trigger the 'MESSAGE_UPDATED' action.
+    // The `true` argument ensures the listener is called immediately with the current value.
+    sharedMessage.listen('MESSAGE_UPDATED', trigger, true)
+
+    return {
+      MESSAGE_UPDATED(newMessage: string) {
+        displayEl.render(newMessage)
+      },
+    }
+  },
+})
+
+// How to use them in HTML:
+// <message-sender></message-sender>
+// <message-receiver></message-receiver>
+// Clicking the button in <message-sender> will update the text in <message-receiver>.
+```
 ```
 
 ## 4. Reactive Computations with `useComputed`
