@@ -1,6 +1,5 @@
 import type { Disconnect, Trigger } from '../behavioral/b-program.js'
-import type { PlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
-import { isPlaitedTrigger } from './plaited.guards.js'
+import { type PlaitedTrigger, isPlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
 
 /**
  * Defines the structure of the event detail object dispatched when an observed attribute

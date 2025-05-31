@@ -1,7 +1,6 @@
 import { type BPEvent, isBPEvent } from '../behavioral/b-thread.js'
 import { type Trigger } from '../behavioral/b-program.js'
-import type { PlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
-import { isPlaitedTrigger } from './plaited.guards.js'
+import { type PlaitedTrigger, isPlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
 
 /**
  * Creates a type-safe interface for Web Worker communication within Plaited components.

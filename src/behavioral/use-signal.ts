@@ -1,6 +1,5 @@
-import type { Trigger, Disconnect } from '../behavioral/b-program.js'
-import type { PlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
-import { isPlaitedTrigger } from './plaited.guards.js'
+import type { Trigger, Disconnect } from './b-program.js'
+import { type PlaitedTrigger, isPlaitedTrigger } from './get-plaited-trigger.js'
 
 /**
  * Type definition for signal subscription function.

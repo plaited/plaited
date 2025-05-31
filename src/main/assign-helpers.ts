@@ -137,6 +137,6 @@ export const getBindings = (shadowRoot: ShadowRoot): Bindings => ({
  */
 export const assignHelpers = <T extends Element = Element>(bindings: Bindings, elements: NodeListOf<T> | T[]) => {
   const length = elements.length
-  for (let i = 0; i < length; i++) !('attr' in elements[i]) && Object.assign(elements[i], bindings)
+  for (let i = 0; i < length; i++) !Object.hasOwn(elements[i], 'attr') && Object.assign(elements[i], bindings)
   return elements as BoundElement<T>[]
 }
