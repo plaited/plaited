@@ -1,8 +1,7 @@
 import { test, expect } from 'bun:test'
 import { wait } from 'plaited/utils'
 import sinon from 'sinon'
-import { useWorker } from 'plaited'
-import type { BPEvent } from 'plaited/behavioral'
+import { type BPEvent, useWorker } from 'plaited/behavioral'
 
 test('validate userWorker and defineWorker utilities function as expected', async () => {
   const spy = sinon.spy()
