@@ -1,8 +1,8 @@
 import { type StoryObj } from 'plaited/testing'
-import { ToggleInput } from './form-associated-example.js'
+import { ToggleInput } from './ToggleInput.js'
 
 export const checkbox: StoryObj = {
-  description: `renders toggle input and validates we can set attribute on it and it chenges`,
+  description: 'Default checkbox state',
   template: ToggleInput,
   async play() {
     const checkbox = document.querySelector(ToggleInput.tag)
@@ -11,7 +11,7 @@ export const checkbox: StoryObj = {
 }
 
 export const checked: StoryObj = {
-  description: `renders toggle input checked`,
+  description: 'Checked state',
   template: ToggleInput,
   args: {
     checked: true,
@@ -19,7 +19,7 @@ export const checked: StoryObj = {
 }
 
 export const disabled: StoryObj = {
-  description: `renders toggle input disabled`,
+  description: 'Disabled state',
   template: ToggleInput,
   args: {
     disabled: true,
@@ -27,7 +27,7 @@ export const disabled: StoryObj = {
 }
 
 export const disabledAndChecked: StoryObj = {
-  description: `renders toggle input disabled and checked`,
+  description: 'Disabled and checked state',
   template: ToggleInput,
   args: {
     disabled: true,

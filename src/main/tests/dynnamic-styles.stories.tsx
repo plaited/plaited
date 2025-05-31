@@ -14,30 +14,7 @@ const { noRepeat, repeat, initial } = css.create({
     textDecoration: 'underline',
   },
 })
-/**
- * Demonstrates dynamic stylesheet management in Plaited components.
- * Shows how to efficiently handle style updates and prevent duplicate
- * style declarations in the Shadow DOM.
- *
- * Features:
- * - Constructable stylesheets
- * - Dynamic style application
- * - Style deduplication
- * - Shadow DOM style scoping
- * - Style sheet adoption
- *
- * The story validates:
- * 1. Initial stylesheet application
- * 2. Dynamic style updates
- * 3. Style deduplication
- * 4. Stylesheet adoption handling
- *
- * Key patterns:
- * - Using css.create for style definitions
- * - Dynamic style insertion
- * - Style sheet management
- * - Shadow DOM style encapsulation
- */
+
 export const dynamicStyles: StoryObj = {
   description: `This story is used to validate that when rendering/inserting new JSX with styles
   into the plaited element shadow dom those styles sheets are applied to the constructed styles

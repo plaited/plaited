@@ -1,7 +1,6 @@
-import { type BPEvent, isBPEvent } from '../behavioral/b-thread.js'
-import { type Trigger } from '../behavioral/b-program.js'
-import type { PlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
-import { isPlaitedTrigger } from './plaited.guards.js'
+import { type BPEvent, isBPEvent } from './b-thread.js'
+import { type Trigger } from './b-program.js'
+import { type PlaitedTrigger, isPlaitedTrigger } from './get-plaited-trigger.js'
 
 /**
  * Creates a type-safe interface for Web Worker communication within Plaited components.
@@ -80,24 +79,6 @@ import { isPlaitedTrigger } from './plaited.guards.js'
  *           type: 'PROCESS_COMPLETE',
  *           detail: { results: processedData }
  *         });
- *       }
- *     };
- *   }
- * });
- * ```
- *
- * @example Handling worker cleanup explicitly
- * ```tsx
- * const AsyncComponent = defineElement({
- *   tag: 'async-component',
- *   shadowDom: <div p-target="content" />,
- *   bProgram({ trigger }) {
- *     const sendToWorker = useWorker(trigger, './worker.ts');
- *
- *     return {
- *       onDisconnected() {
- *         // Explicit cleanup if needed
- *         sendToWorker.disconnect();
  *       }
  *     };
  *   }

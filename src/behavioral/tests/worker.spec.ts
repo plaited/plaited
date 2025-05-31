@@ -1,19 +1,7 @@
-/**
- * Test suite for validating Web Worker functionality in Plaited.
- * Tests worker creation, message passing, and cleanup behavior.
- *
- * Tests:
- * - Worker instantiation
- * - Message passing between main thread and worker
- * - Type safety of worker messages
- * - Worker cleanup and disposal
- */
-
 import { test, expect } from 'bun:test'
 import { wait } from 'plaited/utils'
 import sinon from 'sinon'
-import { useWorker } from 'plaited'
-import type { BPEvent } from 'plaited/behavioral'
+import { type BPEvent, useWorker } from 'plaited/behavioral'
 
 test('validate userWorker and defineWorker utilities function as expected', async () => {
   const spy = sinon.spy()

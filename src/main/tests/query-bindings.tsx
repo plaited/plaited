@@ -1,64 +1,10 @@
-/**
- * Demonstrates Plaited's DOM querying and manipulation capabilities through the $ selector
- * and element bindings. Shows how to efficiently manage large datasets with templating
- * and dynamic updates.
- *
- * Features:
- * - Template-based rendering
- * - Attribute manipulation
- * - DOM manipulation methods
- * - Position-based insertion
- * - Batch operations
- *
- * @example
- * ```tsx
- * const ListComponent = defineElement({
- *   tag: 'list-component',
- *   shadowDom: (
- *     <div p-target="container">
- *       <template p-target="item-template">
- *         <li p-target="item">
- *           <span p-target="label" />
- *           <button p-target="delete" />
- *         </li>
- *       </template>
- *       <ul p-target="list" />
- *     </div>
- *   ),
- *   bProgram({ $ }) {
- *     const [template] = $<HTMLTemplateElement>('item-template');
- *     const createItem = useTemplate(template, ($, item) => {
- *       $('item')[0].attr('data-id', item.id);
- *       $('label')[0].render(item.label);
- *       $('delete')[0].render('Delete');
- *     });
- *
- *     return {
- *       // Insert items at start of list
- *       prependItems(items) {
- *         $('list')[0].insert('afterbegin', ...items.map(createItem));
- *       },
- *
- *       // Replace all items
- *       setItems(items) {
- *         $('list')[0].render(...items.map(createItem));
- *       },
- *
- *       // Update item attributes
- *       updateItem(id, attrs) {
- *         $('item', { mod: '*=', all: true }).forEach(item => {
- *           if (item.getAttribute('data-id') === id) {
- *             item.attr(attrs);
- *           }
- *         });
- *       }
- *     };
- *   }
- * });
- * ```
- */
+import { type Position, defineElement, useTemplate, css } from 'plaited'
 
-import { type Position, defineElement, useTemplate } from 'plaited'
+const styles = css.create({
+  root: {
+    textDecorationLine: 'line-through',
+  },
+})
 
 let did = 1
 const adjectives = [
@@ -151,7 +97,17 @@ export const Fixture = defineElement({
     </div>
   ),
   tag: 'table-fixture',
-  publicEvents: ['insert', 'render', 'replace', 'remove', 'removeAttributes', 'getAttribute', 'multiSetAttributes'],
+  publicEvents: [
+    'insert',
+    'render',
+    'replace',
+    'remove',
+    'removeAttributes',
+    'getAttribute',
+    'multiSetAttributes',
+    'setStyle',
+    'setAttribute',
+  ],
   bProgram({ $ }) {
     const [template] = $<HTMLTemplateElement>('row-template')
     const cb = useTemplate<DataItem>(template, ($, data) => {
@@ -179,6 +135,14 @@ export const Fixture = defineElement({
       removeAttributes() {
         const labels = $('label')
         labels.forEach((label) => label.attr('p-target', null))
+      },
+      setAttribute() {
+        const [root] = $('root')
+        root.attr('aria-label', 'helper fixture')
+      },
+      setStyle() {
+        const [root] = $('root')
+        root.attr('class', styles.root)
       },
       multiSetAttributes() {
         const dels = $('delete')

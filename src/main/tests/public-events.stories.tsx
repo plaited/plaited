@@ -1,22 +1,3 @@
-/**
- * Test stories for validating public event handling in Plaited components.
- * Demonstrates parent-child component communication through custom events.
- *
- * Story Features:
- * - Custom event propagation
- * - Parent-child communication
- * - Event handling validation
- * - State synchronization
- * - Component lifecycle events
- *
- * Test Scenarios:
- * - Event triggering and handling
- * - DOM updates from events
- * - Component state changes
- * - Button state management
- * - Event cleanup
- */
-
 import type { StoryObj } from 'plaited/testing'
 import { Template } from './public-events.js'
 

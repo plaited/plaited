@@ -7,7 +7,7 @@ import { P_TARGET } from '../jsx/jsx.constants.js'
  * Enables reusable template patterns with dynamic data binding and automatic style management.
  *
  * @template T - Type of data used to populate each template instance
- * @param el - Template element with the base structure (must have p-target attribute)
+ * @param el - BoundElement of type HTMLTemplateElement
  * @param callback - Function to populate the cloned template with data
  * @returns Factory function that creates populated DocumentFragments
  *
@@ -149,7 +149,6 @@ import { P_TARGET } from '../jsx/jsx.constants.js'
  *    - Keep templates focused and minimal
  *    - Use TypeScript for data typing
  *    - Leverage CSS modules for styles
- *    - Clean up removed templates properly
  */
 export const useTemplate = <T>(
   el: BoundElement<HTMLTemplateElement>,

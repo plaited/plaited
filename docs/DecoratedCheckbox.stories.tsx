@@ -1,13 +1,13 @@
 import { type StoryObj, type Args } from 'plaited/testing'
-import { DecoratedCheckbox } from './decorated-element.js'
+import { DecoratedCheckbox } from './DecoratedCheckbox.js'
 
 export const example: StoryObj<Args<typeof DecoratedCheckbox>> = {
+  template: DecoratedCheckbox,
   description: `
     DecoratedCheckbox template uses a plaited template
     to decorate an input element
     of the type checkbox.
   `,
-  template: DecoratedCheckbox,
   async play({ findByAttribute, assert }) {
     const input = document.querySelector('input')
     let symbol = await findByAttribute('p-target', 'symbol')
@@ -31,24 +31,24 @@ export const example: StoryObj<Args<typeof DecoratedCheckbox>> = {
 }
 
 export const checked: StoryObj = {
-  description: `renders decorated checkbox checked`,
   template: DecoratedCheckbox,
+  description: `DecoratedCheckbox rendered with the checked prop set to true.`,
   args: {
     checked: true,
   },
 }
 
 export const disabled: StoryObj = {
-  description: `renders decorated checkbox disabled`,
   template: DecoratedCheckbox,
+  description: `DecoratedCheckbox rendered with the disabled prop set to true.`,
   args: {
     disabled: true,
   },
 }
 
 export const disabledAndChecked: StoryObj = {
-  description: `renders decorated checkbox disabled and checked`,
   template: DecoratedCheckbox,
+  description: `DecoratedCheckbox rendered with the disabled and checked props set to true.`,
   args: {
     disabled: true,
     checked: true,

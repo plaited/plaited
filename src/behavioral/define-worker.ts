@@ -1,6 +1,6 @@
-import { defineBProgram, type DefineBProgramProps } from '../behavioral/define-b-program.js'
-import type { BPEvent } from '../behavioral/b-thread.js'
-import type { Disconnect, Handlers } from '../behavioral/b-program.js'
+import { defineBProgram, type DefineBProgramProps } from './define-b-program.js'
+import type { BPEvent } from './b-thread.js'
+import type { Disconnect, Handlers } from './b-program.js'
 
 type WorkerContext = {
   send(data: BPEvent): void
@@ -91,39 +91,6 @@ type WorkerContext = {
  *
  *       PROCESS_COMPLETE() {
  *         progress.render('Processing complete!');
- *       }
- *     };
- *   }
- * });
- * ```
- *
- * @example Data Analysis Worker
- * ```tsx
- * // analysis-worker.ts
- * defineWorker<{
- *   analyze: (args: { dataset: DataPoint[] }) => void
- * }>({
- *   publicEvents: ['analyze'],
- *   bProgram({ send }) {
- *     const computeMetrics = (data: DataPoint[]) => {
- *       // Expensive calculations...
- *       return { mean, median, stdDev };
- *     };
- *
- *     return {
- *       analyze({ dataset }) {
- *         // Break down analysis into steps
- *         send({
- *           type: 'STATUS_UPDATE',
- *           detail: { status: 'Validating data...' }
- *         });
- *
- *         const metrics = computeMetrics(dataset);
- *
- *         send({
- *           type: 'ANALYSIS_COMPLETE',
- *           detail: { metrics }
- *         });
  *       }
  *     };
  *   }
