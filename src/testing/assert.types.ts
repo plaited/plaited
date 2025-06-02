@@ -106,7 +106,7 @@ export type Play = (args: {
  * @property {Play} play - The required asynchronous function containing test interactions and assertions using the provided testing utilities.
  * @property {FunctionTemplate<T>} [template] - An optional Plaited template function used to render the component for this story. If omitted, a default template might be used based on convention.
  */
-export type PlayStoryObj<T extends Attrs = Attrs> = {
+export type InteractionStoryObj<T extends Attrs = Attrs> = {
   args?: Attrs
   description: string
   parameters?: Params
@@ -124,18 +124,18 @@ export type PlayStoryObj<T extends Attrs = Attrs> = {
  * @property {Play} [play] - An optional asynchronous function for test interactions and assertions.
  * @property {FunctionTemplate<T>} [template] - An optional Plaited template function used to render the component for this story.
  */
-export type TemplateStoryObj<T extends Attrs = Attrs> = {
+export type SnapshotStoryObj<T extends Attrs = Attrs> = {
   args?: Attrs
   description: string
   parameters?: Params
-  play?: Play
+  play?: never
   template?: FunctionTemplate<T>
 }
 
 /**
  * Represents a single story definition within a `.stories.ts` or `.stories.tsx` file.
- * It configures how a component is rendered and tested. Can be either a `PlayStoryObj`
- * (requiring a `play` function) or a `TemplateStoryObj` (where `play` is optional).
+ * It configures how a component is rendered and tested. Can be either a `InteractionStoryObj`
+ * (requiring a `play` function) or a `SnapshotStoryObj` (where `play` is optional).
  *
  * @template T - The type of attributes/props expected by the story's template. Defaults to `Attrs`.
  *
@@ -160,7 +160,7 @@ export type TemplateStoryObj<T extends Attrs = Attrs> = {
  * };
  * ```
  */
-export type StoryObj<T extends Attrs = Attrs> = PlayStoryObj<T> | TemplateStoryObj<T>
+export type StoryObj<T extends Attrs = Attrs> = InteractionStoryObj<T> | SnapshotStoryObj<T>
 /**
  * Represents the resolved test parameters used internally during test execution,
  * after merging story-specific parameters with defaults.

@@ -156,12 +156,12 @@ type PlaitedElementCallbackParameters = {
  * @property {true} [streamAssociated] - If `true`, enables Plaited's stream-based DOM mutation handlers (`onAppend`, `onPrepend`, `onReplaceChildren`) within the `bProgram`. These handlers receive HTML strings to update the element's light DOM content.
  * @property {(this: PlaitedElement, args: BProgramArgs) => A & PlaitedElementCallbackHandlers} [bProgram] - The behavioral program function. It receives `BProgramArgs` (containing `$`, `trigger`, `host`, etc.) and should return an object containing event handlers and lifecycle callbacks defined by type `A`. The `this` context inside `bProgram` refers to the custom element instance.
  */
-export type GetElementArgs<A extends PlaitedHandlers> = {
+export type DefineElementArgs<A extends PlaitedHandlers> = {
   tag: CustomElementTag
   shadowDom: TemplateObject
-  delegatesFocus: boolean
-  mode: 'open' | 'closed'
-  slotAssignment: 'named' | 'manual'
+  delegatesFocus?: boolean
+  mode?: 'open' | 'closed'
+  slotAssignment?: 'named' | 'manual'
   observedAttributes?: string[]
   publicEvents?: string[]
   formAssociated?: true
@@ -175,17 +175,6 @@ const createDocumentFragment = (html: string) => {
   const tpl = document.createElement('template')
   tpl.setHTMLUnsafe(html)
   return tpl.content
-}
-
-/**
- * @internal
- * Interface extending GetElementArgs for internal use, making optional properties explicit.
- */
-interface DefineElementArgs<A extends PlaitedHandlers>
-  extends Omit<GetElementArgs<A>, 'delegatesFocus' | 'mode' | 'slotAssignment'> {
-  delegatesFocus?: boolean
-  mode?: 'open' | 'closed'
-  slotAssignment?: 'named' | 'manual'
 }
 
 const getTriggerMap = (el: Element) =>
