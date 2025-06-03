@@ -1,6 +1,11 @@
 import { expect, test } from 'bun:test'
 import { transform } from '../transform'
 test('transform', async () => {
-  await transform('src/workshop/tests/eg.tsx')
-  expect(true).toBe(true) // Placeholder assertion, replace with actual test logic
+  const expected = `import { h } from "plaited/jsx-runtime"
+export const Button = () => h("button", {
+  children: "Click me"
+}, undefined, false, undefined, this);\n`
+  const path = Bun.resolveSync(`.${'/src/workshop/tests/eg.js'}`, process.cwd())
+  const actual = await transform(path)
+  expect(actual).toBe(expected)
 })
