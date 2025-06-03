@@ -42,6 +42,7 @@
     "prepare": "git config core.hooksPath .hooks",
     "prettier": "prettier . --write",
     "test": "bun run test-stories && bun test **/*.spec.{ts,tsx}",
+    "test:playwright": "playwright test",
     "test-stories": "bun run scripts/runner.ts",
     "watch": "bun run check --watch"
   },

@@ -1,10 +1,10 @@
-import { exports, name } from '../../package.json' with { type: 'json' }
+import pack from '../../package.json' with { type: 'json' }
 
 const _plaited = '_plaited'
 
 export const getLibrary = async () => {
   const libraryImportMap: Record<string, string> = {}
-  for (const [key, value] of Object.entries(exports)) {
+  for (const [key, value] of Object.entries(pack.exports)) {
     if (key.includes('workshop')) continue
     const formattedKey = key.replace(/^\./, name)
     const formattedValue = value.replace(/^\.\/src/, `/${_plaited}`)
