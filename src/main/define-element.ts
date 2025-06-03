@@ -651,15 +651,25 @@ export const defineElement = <A extends PlaitedHandlers>({
       },
     )
   }
+  /** We continue to hoist our stylesheet until we  create a custom element then we add it to front of the html array*/
+  shadowDom.html.unshift(`<style>${shadowDom.stylesheets.join('')}</style>`)
   const registry = new Set<string>([...shadowDom.registry, tag])
   const ft = ({ children = [], ...attrs }: Attrs) =>
     createTemplate(tag, {
       ...attrs,
+      /** We continue to hoist our part attributes until we create a custom element then we expose them as scoped to the tag*/
+      exportparts: shadowDom.parts.flatMap((part) => (part ? `${part}:${tag}--${part},` : [])).join(' '),
       children: [
         createTemplate('template', {
           shadowrootmode: mode,
           shadowrootdelegatesfocus: delegatesFocus,
-          children: shadowDom,
+          children: {
+            ...shadowDom,
+            /** Having hoisted our stylsheets we reset the stylesheet array on the TemplateObject */
+            stylesheets: [],
+            /** Having hoisted our parts we reset the parts array on the TemplateObject */
+            parts: [],
+          },
         }),
         ...(Array.isArray(children) ? children : [children]),
       ],

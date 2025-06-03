@@ -102,11 +102,12 @@ exports[`css.create: works with JSX via spread operator 1`] = `
     ">",
     "</button>",
   ],
+  "parts": [],
   "registry": [],
   "stylesheets": [
     ".p_2dr9p51{color:var(--blue-link);}",
-    ".p_d33wg2{&:hover{@media (hover: hover){color:scale(1.1);}}}",
-    ".p_1bahz5i{&:active{color:scale(0.9);}}",
+    ".p_d33wg2{&amp;:hover{@media (hover: hover){color:scale(1.1);}}}",
+    ".p_1bahz5i{&amp;:active{color:scale(0.9);}}",
   ],
 }
 `;

@@ -16,6 +16,7 @@ export type TemplateObject = {
   html: string[]
   stylesheets: string[]
   registry: string[]
+  parts: string[]
   $: typeof TEMPLATE_OBJECT_IDENTIFIER
 }
 /**
@@ -42,6 +43,7 @@ export type Children = Child[] | Child
 export type PlaitedAttributes = {
   class?: string | string[]
   children?: Children
+  part?: string | string[]
   [P_TARGET]?: string | number
   [P_TRIGGER]?: Record<string, string>
   stylesheet?: string | string[]
