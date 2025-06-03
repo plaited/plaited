@@ -74,6 +74,6 @@ export const start = () => {
 
   process.on('SIGHUP', () => {
     server.stop()
-  })  
+  })
   return server
 }
