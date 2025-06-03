@@ -1,5 +1,5 @@
 import type { StoryObj } from 'plaited/testing'
-import { type PlaitedElement } from 'plaited'
+import { type PlaitedElement, css, defineElement, ssr } from 'plaited'
 import { ModeOpen, DelegateFalse, ClosedMode } from './template.js'
 
 export const defaultModeAndFocus: StoryObj = {
@@ -59,97 +59,98 @@ export const closedMode: StoryObj = {
   },
 }
 
-// export const hydration: StoryObj = {
-//   description: `This test is used to validate a plaited element rendered but not defined yet correctly hydrates
-//   once defined using defineElement by checking the content once the public event render triggered`,
-//   play: async ({ assert, findByAttribute, findByText, hostElement }) => {
-//     const styles = css.create({
-//       inner: {
-//         color: 'red',
-//       },
-//       span: {
-//         color: 'green',
-//       },
-//     })
-//     const Content = () => (
-//       <div
-//         p-target='inner'
-//         {...styles.inner}
-//       >
-//         before hydration
-//       </div>
-//     )
-//     const Tag = 'with-declarative-shadow-dom'
-//     const template = (
-//       <Tag p-target='host'>
-//         <template
-//           shadowrootmode='open'
-//           shadowrootdelegatesfocus
-//         >
-//           <Content />
-//         </template>
-//       </Tag>
-//     )
-//     hostElement.setHTMLUnsafe(template.html.join(''))
+export const hydration: StoryObj = {
+  description: `This test is used to validate a plaited element rendered but not defined yet correctly hydrates
+  once defined using defineElement by checking the content once the public event render triggered`,
+  play: async ({ assert, findByAttribute, findByText, hostElement }) => {
+    const styles = css.create({
+      inner: {
+        color: 'red',
+      },
+      span: {
+        color: 'green',
+      },
+    })
+    const Content = () => (
+      <div
+        p-target='inner'
+        {...styles.inner}
+      >
+        before hydration
+      </div>
+    )
+    const Tag = 'with-declarative-shadow-dom'
+    hostElement.setHTMLUnsafe(
+      ssr(
+        <Tag p-target='host'>
+          <template
+            shadowrootmode='open'
+            shadowrootdelegatesfocus
+          >
+            <Content />
+          </template>
+        </Tag>,
+      ),
+    )
 
-//     let host = await findByAttribute<PlaitedElement>('p-target', 'host')
-//     let inner = await findByAttribute('p-target', 'inner', host)
-//     const style = await findByText(styles.inner.stylesheet.join(' '), host)
-//     let textContent = inner?.textContent
-//     assert({
-//       given: 'before registering custom element',
-//       should: 'have style tag',
-//       actual: style?.textContent,
-//       expected: styles.inner.stylesheet.join(' '),
-//     })
-//     assert({
-//       given: 'before registering custom element',
-//       should: 'pre-hydration text content',
-//       actual: textContent,
-//       expected: 'before hydration',
-//     })
-//     // @ts-expect-error: allow it to error
-//     let computedStyle = window.getComputedStyle(inner)
-//     let color = computedStyle.color
-//     assert({
-//       given: 'before registering custom element',
-//       should: 'color of inner should be red',
-//       actual: color,
-//       expected: 'rgb(255, 0, 0)',
-//     })
-//     defineElement({
-//       tag: Tag,
-//       publicEvents: ['render'],
-//       shadowDom: <Content />,
-//       bProgram({ $ }) {
-//         return {
-//           render() {
-//             const [inner] = $('inner')
-//             inner.render(<span stylesheet={styles.span.stylesheet}>after hydration</span>)
-//             inner.attr('class', styles.span.class)
-//           },
-//         }
-//       },
-//     })
-//     host = await findByAttribute<PlaitedElement>('p-target', 'host')
-//     host?.trigger({ type: 'render' })
+    let host = await findByAttribute<PlaitedElement>('p-target', 'host')
+    let inner = await findByAttribute('p-target', 'inner', host)
+    const style = await findByText(styles.inner.stylesheet.join(' '), host)
+    let textContent = inner?.textContent
+    assert({
+      given: 'before registering custom element',
+      should: 'have style tag',
+      actual: style?.textContent,
+      expected: styles.inner.stylesheet.join(' '),
+    })
+    assert({
+      given: 'before registering custom element',
+      should: 'pre-hydration text content',
+      actual: textContent,
+      expected: 'before hydration',
+    })
+    // @ts-expect-error: allow it to error
+    let computedStyle = window.getComputedStyle(inner)
+    let color = computedStyle.color
+    assert({
+      given: 'before registering custom element',
+      should: 'color of inner should be red',
+      actual: color,
+      expected: 'rgb(255, 0, 0)',
+    })
+    defineElement({
+      tag: Tag,
+      publicEvents: ['render'],
+      shadowDom: <Content />,
+      bProgram({ $ }) {
+        return {
+          render() {
+            const [inner] = $('inner')
+            inner.render(<span stylesheet={styles.span.stylesheet}>after hydration</span>)
+            inner.attr('class', styles.span.class)
+          },
+        }
+      },
+    })
+    host = await findByAttribute<PlaitedElement>('p-target', 'host')
+    host?.trigger({ type: 'render' })
 
-//     inner = await findByAttribute('p-target', 'inner', host)
-//     textContent = inner?.textContent
-//     // @ts-expect-error: allow it to error
-//     computedStyle = window.getComputedStyle(inner)
-//     color = computedStyle.color
-//     assert({
-//       given: 'after registering custom element',
-//       should: 'have post hydration text content',
-//       actual: textContent,
-//       expected: 'after hydration',
-//     })
-//     assert({
-//       given: 'before registering custom element',
-//       should: 'color of inner should be green',
-//       actual: color,
-//       expected: 'rgb(0, 128, 0)',
-//     })
-//   },
-// }
+    inner = await findByAttribute('p-target', 'inner', host)
+    textContent = inner?.textContent
+    // @ts-expect-error: allow it to error
+    computedStyle = window.getComputedStyle(inner)
+    color = computedStyle.color
+    assert({
+      given: 'after registering custom element',
+      should: 'have post hydration text content',
+      actual: textContent,
+      expected: 'after hydration',
+    })
+    assert({
+      given: 'before registering custom element',
+      should: 'color of inner should be green',
+      actual: color,
+      expected: 'rgb(0, 128, 0)',
+    })
+  },
+}

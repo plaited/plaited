@@ -1,5 +1,6 @@
 import { ssr } from 'plaited'
-import { Page } from './Fixture.js'
+import { Page } from './page.js'
+import { HydratingElement } from './hydrating-element.js'
 import { getLibrary } from 'plaited/workshop'
 
 const zip = (content: string) => {
@@ -13,7 +14,7 @@ const zip = (content: string) => {
 }
 const { libraryImportMap, libraryArtifacts } = await getLibrary()
 const { outputs } = await Bun.build({
-  entrypoints: [`${import.meta.dir}/Fixture.tsx`],
+  entrypoints: [`${import.meta.dir}/page.tsx`, `${import.meta.dir}/hydrating-element.tsx`],
   splitting: true,
   root: import.meta.dir,
   external: ['plaited'],
@@ -33,33 +34,46 @@ for (const res of artifacts) {
   responses.set(formattedPath, zip(content))
 }
 /** Add out fixture to the response map */
-responses.set('/', new Response(ssr(<Page libraryImportMap={libraryImportMap} />)))
+responses.set(
+  '/',
+  new Response(
+    ssr(
+      <Page libraryImportMap={libraryImportMap}>
+        <HydratingElement />
+      </Page>,
+    ),
+  ),
+)
 /** Create a bun server to server fixture and bundles */
-const server = Bun.serve({
-  port: 3001,
-  routes: Object.fromEntries(responses),
-})
 
-process.on('SIGINT', async () => {
-  server.stop()
-})
+export const start = () => {
+  const server = Bun.serve({
+    port: 3001,
+    routes: Object.fromEntries(responses),
+  })
 
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error)
-})
+  process.on('SIGINT', async () => {
+    server.stop()
+  })
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason)
-})
+  process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error)
+  })
 
-process.on('exit', () => {
-  server.stop()
-})
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason)
+  })
 
-process.on('SIGTERM', () => {
-  server.stop()
-})
+  process.on('exit', () => {
+    server.stop()
+  })
 
-process.on('SIGHUP', () => {
-  server.stop()
-})
+  process.on('SIGTERM', () => {
+    server.stop()
+  })
+
+  process.on('SIGHUP', () => {
+    server.stop()
+  })  
+  return server
+}

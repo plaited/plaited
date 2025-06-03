@@ -1,21 +1,30 @@
 import { defineElement, type FT } from 'plaited'
 
-export const trigger = 'add-default-slot'
+export const DEFINE = 'define-element'
+export const FIXTURE_ELEMENT_TAG = 'fixture-element'
+export const EMPTY_SLOT = 'Empty slot'
 
 const Fixture = defineElement({
-  tag: 'fixture-element',
-  publicEvents: [trigger],
+  tag: FIXTURE_ELEMENT_TAG,
+  publicEvents: [DEFINE],
+  streamAssociated: true,
   shadowDom: (
     <>
+      <slot>{EMPTY_SLOT}</slot>
       <span p-target='stub' />
-      <slot name='named'>Named Slot</slot>
     </>
   ),
   bProgram({ $ }) {
     return {
-      [trigger]() {
+      [DEFINE]() {
         const [stub] = $('stub')
-        stub.replace(<slot>Default Slot</slot>)
+        stub.replace(
+          <script
+            trusted
+            src='/hydrating-element.js'
+            type='module'
+          />,
+        )
       },
     }
   },
@@ -41,7 +50,7 @@ export const Page: FT<{ libraryImportMap: Record<string, string> }> = ({ library
     <body>
       <script
         trusted
-        src='/Fixture.js'
+        src='/page.js'
         type='module'
       />
       <Fixture />
