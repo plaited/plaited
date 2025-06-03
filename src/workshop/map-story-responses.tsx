@@ -1,6 +1,6 @@
 import { type StoryObj, type TestParams } from '../testing/assert.types.js'
 import { createStoryRoute } from './create-story-route.js'
-import { type GetHTMLResponse } from './default-get-html-responses.js'
+import { type GetHTMLResponse } from './get-test-preview.js'
 
 export const mapStoryResponses = async ({
   entries,

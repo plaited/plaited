@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { transform } from '../transform'
+import { transform } from '../transform-local-file'
 test('transform', async () => {
   const expected = `import { h } from "plaited/jsx-runtime"
 export const Button = () => h("button", {

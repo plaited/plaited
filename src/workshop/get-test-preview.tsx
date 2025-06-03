@@ -4,34 +4,33 @@ import { type StoryObj, type TestParams } from '../testing/assert.types.js'
 import { PlaitedFixture } from '../testing/plaited-fixture.js'
 import { ssr } from '../jsx/ssr.js'
 
-export type GetHTMLResponse = ({
+export type GetTestPreview = ({
   story,
   route,
   responses,
-  storyFile,
+  relativePath,
   exportName,
   streamURL,
-  libraryImportMap,
+  imports,
 }: {
   story: StoryObj
   route: string
   responses: Map<string, Response>
-  storyFile: string
+  relativePath: string
   exportName: string
   streamURL: `/${string}`
-  libraryImportMap: Record<string, string>
+  imports: Record<string, string>
 }) => TestParams
 
-export const defaultGetHTMLResponse: GetHTMLResponse = ({
+export const getTestPreview: GetTestPreview = ({
   story,
   route,
   responses,
-  storyFile,
+  relativePath,
   exportName,
-  streamURL,
-  libraryImportMap,
+  imports,
 }): TestParams => {
-  const entryPath = storyFile.replace(/\.tsx?$/, '.js')
+  const entryPath = relativePath.replace(/\.tsx?$/, '.js')
   const args = story?.args ?? {}
   const styles = story?.parameters?.styles ?? {}
   const headers = story?.parameters?.headers?.(process.env) ?? new Headers()
@@ -49,7 +48,7 @@ export const defaultGetHTMLResponse: GetHTMLResponse = ({
           type='importmap'
         >
           {JSON.stringify({
-            imports: libraryImportMap,
+            imports,
           })}
         </script>
       </head>
@@ -58,8 +57,7 @@ export const defaultGetHTMLResponse: GetHTMLResponse = ({
           p-name={exportName}
           p-route={route}
           p-entry={entryPath}
-          p-file={storyFile}
-          p-socket={streamURL}
+          p-file={relativePath}
           children={tpl?.(args)}
           {...styles}
         />

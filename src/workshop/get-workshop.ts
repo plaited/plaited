@@ -1,8 +1,8 @@
-import { getLibrary } from './get-library.js'
+import { getLibrary } from './build-external-libraries.js'
 import { globStories } from './glob-stories.js'
 import { mapStoryResponses } from './map-story-responses.js'
 import { getStoryArtifacts } from './get-story-artifacts.js'
-import { defaultGetHTMLResponse, type GetHTMLResponse } from './default-get-html-responses.js'
+import { defaultGetHTMLResponse, type GetHTMLResponse } from './get-test-preview.js'
 
 const zip = (content: string) => {
   const compressed = Bun.gzipSync(content)
