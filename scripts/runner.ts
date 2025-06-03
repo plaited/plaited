@@ -20,6 +20,10 @@ const server = Bun.serve({
   port: 3000,
   async fetch(req: Request, server: Server) {
     const { pathname } = new URL(req.url)
+    if (/\.js$/.test(pathname)) {
+      const path = Bun.resolveSync(`.${pathname}`, cwd)
+      return await getFile(path)
+    }
     if (pathname === streamURL) {
       const success = server.upgrade(req)
       return success ? undefined : new Response('WebSocket upgrade error', { status: 400 })
