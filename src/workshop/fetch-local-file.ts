@@ -4,7 +4,7 @@ export const fetchLocalFile = (rootDirectory: string) => async (request: Request
   const { pathname } = new URL(request.url)
   try {
     const path =
-      /\.js$/.test(pathname) ?
+      /\.js(x)$/.test(pathname) ?
         Bun.resolveSync(`.${pathname}`, rootDirectory)
       : Bun.resolveSync(`.${pathname}.js`, rootDirectory)
     return transformLocalFile(path)

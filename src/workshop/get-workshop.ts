@@ -1,5 +1,5 @@
 import { getLibrary } from './build-external-libraries.js'
-import { globStories } from './glob-stories.js'
+import { globStories } from './glob-files.js'
 import { mapStoryResponses } from './map-story-responses.js'
 import { getStoryArtifacts } from './get-story-artifacts.js'
 import { defaultGetHTMLResponse, type GetHTMLResponse } from './get-test-preview.js'

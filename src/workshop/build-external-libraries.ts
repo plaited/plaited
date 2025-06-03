@@ -11,7 +11,7 @@ type EntryPointBuildArtifact = BunBuildArtifact & {
 const isEntryPoint = (output: BunBuildArtifact): output is EntryPointBuildArtifact => output.kind === 'entry-point'
 
 export const buildExternalLibraries = async (
-  externalLibraries: string[] = [],
+  externalLibraries: Set<string>,
 ): Promise<{
   outputs: Bun.BuildOutput['outputs']
   importMap: Record<string, string>
