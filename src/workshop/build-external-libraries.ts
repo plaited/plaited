@@ -1,3 +1,5 @@
+import { zip } from './workshop.utils'
+
 // Define the base artifact type from Bun
 type BunBuildArtifact = Bun.BuildOutput['outputs'][number]
 
@@ -12,10 +14,8 @@ const isEntryPoint = (output: BunBuildArtifact): output is EntryPointBuildArtifa
 
 export const buildExternalLibraries = async (
   externalLibraries: Set<string>,
-): Promise<{
-  outputs: Bun.BuildOutput['outputs']
-  importMap: Record<string, string>
-}> => {
+  responseMap: Map<string, Response>,
+): Promise<Record<string, string>> => {
   const importMap: Record<string, string> = {}
   const buildEntrypoints: string[] = []
   const resolvedPathToLibraryName: Record<string, string> = {}
@@ -33,7 +33,7 @@ export const buildExternalLibraries = async (
 
   if (buildEntrypoints.length === 0) {
     // This means all libraries failed to resolve or the input array was effectively empty
-    return { outputs: [], importMap: {} }
+    return {}
   }
 
   const { outputs } = await Bun.build({
@@ -42,22 +42,22 @@ export const buildExternalLibraries = async (
     naming: 'node_modules/[name].[ext]', // Outputs to _node_modules directory structure
     sourcemap: 'inline',
   })
-  for (const output of outputs) {
-    // We are interested in the entry points to map them back to the original library name
-    if (isEntryPoint(output)) {
-      // Cast to the more specific type after checking the kind.
-      const entryPointArtifact = output
-      const originalLibraryName = resolvedPathToLibraryName[entryPointArtifact.entrypoint]
-      if (originalLibraryName) {
-        // Ensure the path starts with a '/' for typical import map usage
-        importMap[originalLibraryName] =
-          entryPointArtifact.path.startsWith('/') ? entryPointArtifact.path : `/${entryPointArtifact.path}`
+  await Promise.all(
+    outputs.map(async (output) => {
+      // We are interested in the entry points to map them back to the original library name
+      if (isEntryPoint(output)) {
+        // Cast to the more specific type after checking the kind.
+        const entryPointArtifact = output
+        const originalLibraryName = resolvedPathToLibraryName[entryPointArtifact.entrypoint]
+        if (originalLibraryName) {
+          // Ensure the path starts with a '/' for typical import map usage
+          const path = entryPointArtifact.path.startsWith('/') ? entryPointArtifact.path : `/${entryPointArtifact.path}`
+          importMap[originalLibraryName] = path
+          const code = await output.text()
+          responseMap.set(path, zip(code))
+        }
       }
-    }
-  }
-
-  return {
-    outputs,
-    importMap,
-  }
+    }),
+  )
+  return importMap
 }

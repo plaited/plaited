@@ -1,5 +1,4 @@
-import { transpiler } from './workshop.constants.js'
-import { zip } from './zip.js'
+import { transpiler, zip } from './workshop.utils.js'
 
 const H = 'h'
 const jsxRuntime = `import { ${H} } from "plaited/jsx-runtime"\n`

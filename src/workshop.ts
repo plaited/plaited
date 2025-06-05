@@ -1,5 +1,5 @@
 export * from './workshop/create-story-route.js'
-export * from './workshop/get-test-preview.js'
+export * from './workshop/get-test-params.js'
 export * from './workshop/get-external-libraries.js'
 export * from './workshop/get-story-artifacts.js'
 export * from './workshop/get-workshop.js'

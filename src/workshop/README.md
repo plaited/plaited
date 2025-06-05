@@ -5,3 +5,4 @@ Workshop Input:
 
 Workshop Output:
 - server
+- routes

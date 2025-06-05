@@ -1,35 +1,20 @@
 import path from 'node:path'
-import { DEFAULT_PLAY_TIMEOUT } from '../testing/assert.constants.js'
-import { type StoryObj, type TestParams } from '../testing/assert.types.js'
+import { type StoryObj } from '../testing/assert.types.js'
 import { PlaitedFixture } from '../testing/plaited-fixture.js'
 import { ssr } from '../jsx/ssr.js'
+import { getLiveReloadScript } from './workshop.utils.js'
 
-export type GetTestPreview = ({
-  story,
-  route,
-  responses,
-  relativePath,
-  exportName,
-  streamURL,
-  imports,
-}: {
+export type Createstpage = {
   story: StoryObj
   route: string
   responses: Map<string, Response>
   relativePath: string
   exportName: string
-  streamURL: `/${string}`
   imports: Record<string, string>
-}) => TestParams
+  port: number
+}
 
-export const getTestPreview: GetTestPreview = ({
-  story,
-  route,
-  responses,
-  relativePath,
-  exportName,
-  imports,
-}): TestParams => {
+export const createTestPage = ({ story, route, responses, relativePath, exportName, imports, port }: Createstpage) => {
   const entryPath = relativePath.replace(/\.tsx?$/, '.js')
   const args = story?.args ?? {}
   const styles = story?.parameters?.styles ?? {}
@@ -65,16 +50,12 @@ export const getTestPreview: GetTestPreview = ({
           trusted
           type='module'
         >
-          {`import {PlaitedFixture} from 'plaited/testing'`}
+          {`import {PlaitedFixture} from 'plaited/testing'
+            ${getLiveReloadScript(port)}
+          `}
         </script>
       </body>
     </html>,
   )
   responses.set(route, new Response(`<!DOCTYPE html>\n${page}`, { headers }))
-  return {
-    a11y: story?.parameters?.a11y,
-    description: story?.description,
-    scale: story?.parameters?.scale,
-    timeout: story?.parameters?.timeout ?? DEFAULT_PLAY_TIMEOUT,
-  }
 }
