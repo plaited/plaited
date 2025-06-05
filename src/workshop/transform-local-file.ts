@@ -1,3 +1,4 @@
+import { transpiler } from './workshop.constants.js'
 import { zip } from './zip.js'
 
 const H = 'h'
@@ -11,17 +12,7 @@ export const transformLocalFile = async (path: string) => {
     return new Response(`File not found: ${path}`, { status: 404 })
   }
   const code = await file.text()
-  const transpiler = new Bun.Transpiler({
-    loader: 'tsx',
-    tsconfig: JSON.stringify({
-      compilerOptions: {
-        jsx: 'react-jsx',
-        jsxFactory: 'h',
-        jsxFragmentFactory: 'Fragment',
-        jsxImportSource: 'plaited',
-      },
-    }),
-  })
+
   const result = transpiler.transformSync(code)
   const hasJSXRuntime = result.includes('jsxDEV_7x81h0kn')
   const toRet = hasJSXRuntime ? jsxRuntime + result.replaceAll(jsxRuntimeIdentifier, H) : result

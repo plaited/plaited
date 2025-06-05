@@ -1,6 +1,4 @@
-const transpiler = new Bun.Transpiler({
-  loader: 'tsx',
-})
+import { transpiler } from './workshop.constants'
 
 export const setExternalLibraries = async ({
   root,
