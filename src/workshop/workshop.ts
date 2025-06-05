@@ -30,7 +30,7 @@ export const workshop = async ({ cwd, port = 3000 }: WorkshopParams) => {
     }),
   )
   globalThis.reloadCount ??= 0
-  return Bun.serve({
+  const server = Bun.serve({
     static: Object.fromEntries(responses),
     port,
     async fetch(req: Request) {
@@ -63,4 +63,8 @@ export const workshop = async ({ cwd, port = 3000 }: WorkshopParams) => {
       return new Response('NOT FOUND', { status: 404 })
     },
   })
+  return {
+    server,
+    stories,
+  }
 }
