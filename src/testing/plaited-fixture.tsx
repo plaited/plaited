@@ -16,7 +16,8 @@ import {
   TIMEOUT_ERROR,
   DEFAULT_PLAY_TIMEOUT,
   FIXTURE_CONNECTED,
-  PLAY_EVENT, PLAITED_FIXTURE,
+  PLAY_EVENT,
+  PLAITED_FIXTURE,
 } from './assert.constants.js'
 import { AssertionError, MissingTestParamsError } from './errors.js'
 import type { StoryObj, Play } from './assert.types.js'
@@ -137,63 +138,64 @@ const playStory = async ({
  * </plaited-test-fixture>
  * ```
  */
-export const PlaitedFixture = defineElement({
-    tag: PLAITED_FIXTURE,
-    publicEvents: [PLAY_EVENT],
-    streamAssociated: true,
-    shadowDom: h('slot', {
-      ...css.host({
-        display: 'contents',
-      }),
+export const PlaitedFixture = defineElement<{
+  [PLAY_EVENT](detail: {
+    route: string
+    filePath: string
+    entryPath: string
+    exportName: string
+    story: StoryObj
+  }): void
+}>({
+  tag: PLAITED_FIXTURE,
+  publicEvents: [PLAY_EVENT],
+  streamAssociated: true,
+  shadowDom: h('slot', {
+    ...css.host({
+      display: 'contents',
     }),
-    bProgram({ bThreads, host, bThread, bSync }) {
-      const route = host.getAttribute('p-route') as string
-      const filePath = host.getAttribute('p-file') as string
-      const entryPath = host.getAttribute('p-entry') as string
-      const exportName = host.getAttribute('p-name') as string
-      bThreads.set({
-        onPlay: bThread([bSync({ waitFor: PLAY_EVENT }), bSync({ block: PLAY_EVENT })]),
-      })
-      return {
-        async [PLAY_EVENT]() {
-          const { [exportName]: story } = (await import(entryPath)) as {
-            [key: string]: StoryObj
+  }),
+  bProgram({ bThreads, host, bThread, bSync }) {
+    bThreads.set({
+      onPlay: bThread([bSync({ waitFor: PLAY_EVENT }), bSync({ block: PLAY_EVENT })]),
+    })
+    return {
+      async [PLAY_EVENT]({ route, filePath, exportName, story }) {
+        try {
+          if (story?.play) {
+            await playStory({
+              play: story.play,
+              time: story?.parameters?.timeout,
+              route,
+              filePath,
+              exportName,
+              hostElement: host,
+            })
+          } else {
+            console.log('✓', route)
+            console.dir({ type: TEST_PASSED, detail: { route } })
           }
-          try {
-            if (story?.play) {
-              await playStory({
-                play: story.play,
-                time: story?.parameters?.timeout,
+        } catch (error) {
+          if (error instanceof Error) {
+            console.dir({
+              type: UNKNOWN_ERROR,
+              detail: {
+                story: exportName,
+                file: filePath,
                 route,
-                filePath,
-                exportName,
-                hostElement: host,
-              })
-            } else {
-              console.log('✓', route)
-              console.dir({  type: TEST_PASSED, detail: { route } })
-            }
-          } catch (error) {
-            if (error instanceof Error) {
-              console.dir({
+                url: window?.location.href,
                 type: UNKNOWN_ERROR,
-                detail: {
-                  story: exportName,
-                  file: filePath,
-                  route,
-                  url: window?.location.href,
-                  type: UNKNOWN_ERROR,
-                },
-              })
-              throw error
-            }
+              },
+            })
+            throw error
           }
-        },
-        onConnected() {
-          console.dir({
-            type: FIXTURE_CONNECTED,
-          })
-        },
-      }
-    },
-  })
+        }
+      },
+      onConnected() {
+        console.dir({
+          type: FIXTURE_CONNECTED,
+        })
+      },
+    }
+  },
+})

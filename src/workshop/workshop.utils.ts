@@ -1,67 +1,74 @@
 import { Glob } from 'bun'
+import { type BunPlugin } from 'bun'
 
-export async function globFiles(cwd: string): Promise<string[]> {
-  const glob = new Glob('**/*.{tsx,ts}')
+import { STORY_GLOB_PATTERN, STORIES_FILTERS_REGEX } from '../testing/assert.constants'
+
+export async function globEntries(cwd: string): Promise<string[]> {
+  const glob = new Glob(STORY_GLOB_PATTERN)
   const paths = await Array.fromAsync(glob.scan({ cwd }))
   return paths.map((path) => Bun.resolveSync(`./${path}`, cwd))
 }
 
-export const transpiler = new Bun.Transpiler({
-  loader: 'tsx',
-  tsconfig: JSON.stringify({
-    compilerOptions: {
-      jsx: 'react-jsx',
-      jsxFactory: 'h',
-      jsxFragmentFactory: 'Fragment',
-      jsxImportSource: 'plaited',
-    },
-  }),
-})
-
 export const LIVE_RELOAD_PATHNAME = `/reload`
+
+export const cacheBustHeaders = {
+  'cache-control': 'no-cache, must-revalidate',
+  expires: 'Mon, 1 Jun 2025 06:30:30 GMT',
+}
 
 export const zip = (content: string) => {
   const compressed = Bun.gzipSync(content)
   return new Response(compressed, {
     headers: {
+      ...cacheBustHeaders,
       'content-type': 'text/javascript;charset=utf-8',
       'content-encoding': 'gzip',
     },
   })
 }
 
-export const getLiveReloadScript = (port: number) => `
-if (typeof(EventSource) !== "undefined") {
-   console.log("EventSource API is supported. Connecting to SSE...");
-   const eventSource = new EventSource("http://localhost:${port}${LIVE_RELOAD_PATHNAME}");
-
-   eventSource.onopen = function(event) {
-       console.log("SSE Connection Opened:", event);
-   };
-
-   eventSource.onmessage = function(event) {
-       console.log("SSE Message Received:", event.data);
-   };
-
-   eventSource.addEventListener('reload', function(event) {
-       console.log("SSE 'reload' Event Received. Data:", event.data);
-       console.log("Reloading page in a moment...");
-       // Reload the page after a short delay
-       setTimeout(() => {
-           window.location.reload();
-       }, 750);
-   });
-
-   eventSource.onerror = function(event) {
-       console.error("SSE Error Occurred:", event);
-       if (eventSource.readyState === EventSource.CLOSED) {
-           console.warn("SSE Connection was closed.");
-       } else if (eventSource.readyState === EventSource.CONNECTING) {
-           console.warn("SSE Connection is trying to reconnect.");
-       }
-   };
-
-} else {
-   console.error("Sorry, your browser does not support server-sent events (EventSource API).");
+const appendTextFixture: BunPlugin = {
+  name: 'plaited-testing-import',
+  setup(runtime) {
+    runtime.onLoad(
+      {
+        filter: STORIES_FILTERS_REGEX,
+      },
+      async (props) => {
+        const file = await Bun.file(props.path).text()
+        return {
+          contents: `import 'plaited/testing';\n${file}`,
+        }
+      },
+    )
+  },
 }
-`
+
+export const buildEntries = async ({
+  cwd,
+  entrypoints,
+  responses,
+}: {
+  cwd: string
+  entrypoints: string[]
+  responses: Map<string, Response>
+}): Promise<void> => {
+  const { outputs } = await Bun.build({
+    entrypoints,
+    splitting: true,
+    sourcemap: 'inline',
+    root: cwd,
+    plugins: [appendTextFixture],
+  })
+  await Promise.all(
+    outputs.map(async (output) => {
+      const { path } = output
+      const formattedPath =
+        path.startsWith('.') ? path.replace('.', '')
+        : !path.startsWith('/') ? `/${path}`
+        : path
+      const code = await output.text()
+      responses.set(formattedPath, zip(code))
+    }),
+  )
+}

@@ -3,6 +3,8 @@ export const ASSERTION_ERROR = 'ASSERTION_ERROR'
 /** Error type identifier when required test parameters are missing. */
 export const MISSING_TEST_PARAMS_ERROR = 'MISSING_TEST_PARAMS_ERROR'
 
+/** Glob pattern used to find story files within the project. */
+export const STORY_GLOB_PATTERN = `**/*.stories.{tsx,ts}`
 /** Regular expression used to filter files based on the story file naming convention. */
 export const STORIES_FILTERS_REGEX = /\.stories.tsx?$/
 

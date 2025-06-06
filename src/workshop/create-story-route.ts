@@ -22,9 +22,9 @@ import { kebabCase } from 'plaited/utils'
  * // Returns: "/src/components/button--primary-button"
  * ```
  */
-export const createStoryRoute = ({ relativePath, exportName }: { relativePath: string; exportName: string }) => {
-  const dirname = path.dirname(relativePath)
-  const basename = kebabCase(path.basename(relativePath.replace(STORIES_FILTERS_REGEX, '')))
+export const createStoryRoute = ({ filePath, exportName }: { filePath: string; exportName: string }) => {
+  const dirname = path.dirname(filePath)
+  const basename = kebabCase(path.basename(filePath.replace(STORIES_FILTERS_REGEX, '')))
   const storyName = kebabCase(exportName)
   const id = `${basename}--${storyName}`
   return `${dirname}/${id}`

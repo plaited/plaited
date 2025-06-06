@@ -6,34 +6,25 @@ import { createTestPage } from './create-test-page.js'
 export type CreateResponseParams = {
   entry: string
   cwd: string
-  imports: Record<string, string>
   responses: Map<string, Response>
   stories: Map<string, TestParams>
   port: number
 }
 
-export const setStoriesAndResponses = async ({
-  entry,
-  cwd,
-  imports,
-  responses,
-  stories,
-  port,
-}: CreateResponseParams) => {
+export const setStoriesAndResponses = async ({ entry, cwd, responses, stories, port }: CreateResponseParams) => {
   const { default: _, ...rest } = (await import(entry)) as {
     [key: string]: StoryObj
   }
   for (const exportName in rest) {
     const story = rest[exportName]
-    const relativePath = entry.replace(new RegExp(`^${cwd}`), '')
-    const route = createStoryRoute({ relativePath, exportName })
+    const filePath = entry.replace(new RegExp(`^${cwd}`), '')
+    const route = createStoryRoute({ filePath, exportName })
     createTestPage({
       story,
       route,
       responses,
-      relativePath,
+      filePath,
       exportName,
-      imports,
       port,
     })
     stories.set(route, {
