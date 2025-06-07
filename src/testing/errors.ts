@@ -1,14 +1,14 @@
-import { ASSERTION_ERROR, MISSING_TEST_PARAMS_ERROR, TIMEOUT_ERROR } from './assert.constants.js'
+import { FAILED_ASSERTION, MISSING_ASSERTION_PARAMETER } from './assert.constants.js'
 
 /**
  * Custom error for test assertion failures.
  * Thrown when an assertion condition is not met.
  *
  * @extends Error
- * @property name Constant identifier 'ASSERTION_ERROR'
+ * @property name Constant identifier 'FAILED_ASSERTION'
  */
-export class AssertionError extends Error implements Error {
-  override name = ASSERTION_ERROR
+export class FailedAssertionError extends Error implements Error {
+  override name = FAILED_ASSERTION
   constructor(message: string) {
     super(message)
   }
@@ -18,24 +18,10 @@ export class AssertionError extends Error implements Error {
  * Thrown when required test configuration is not provided.
  *
  * @extends Error
- * @property name Constant identifier 'MISSING_TEST_PARAMS_ERROR'
+ * @property name Constant identifier 'MISSING_ASSERTION_PARAMETER'
  */
-export class MissingTestParamsError extends Error {
-  override name = MISSING_TEST_PARAMS_ERROR
-  constructor(message: string) {
-    super(message)
-  }
-}
-/**
- * Custom error for test timeout scenarios.
- * Thrown when a test exceeds its specified timeout duration.
- *
- * @extends Error
- * @property name Constant identifier 'TIMEOUT_ERROR'
- *
- */
-export class TimeoutError extends Error {
-  override name = TIMEOUT_ERROR
+export class MissingAssertionParameterError extends Error {
+  override name = MISSING_ASSERTION_PARAMETER
   constructor(message: string) {
     super(message)
   }

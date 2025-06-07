@@ -1,15 +1,19 @@
+declare global {
+  // eslint-disable-next-line no-var
+  var reloadCount: number
+}
+
 import { Glob } from 'bun'
 import { type BunPlugin } from 'bun'
 
 import { STORY_GLOB_PATTERN, STORIES_FILTERS_REGEX } from '../testing/assert.constants'
+import { TIMEOUT_ERROR } from './workshop.constants.js'
 
 export async function globEntries(cwd: string): Promise<string[]> {
   const glob = new Glob(STORY_GLOB_PATTERN)
   const paths = await Array.fromAsync(glob.scan({ cwd }))
   return paths.map((path) => Bun.resolveSync(`./${path}`, cwd))
 }
-
-export const LIVE_RELOAD_PATHNAME = `/reload`
 
 export const cacheBustHeaders = {
   'cache-control': 'no-cache, must-revalidate',
@@ -71,4 +75,19 @@ export const buildEntries = async ({
       responses.set(formattedPath, zip(code))
     }),
   )
+}
+
+/**
+ * Custom error for test timeout scenarios.
+ * Thrown when a test exceeds its specified timeout duration.
+ *
+ * @extends Error
+ * @property name Constant identifier 'TIMEOUT_ERROR'
+ *
+ */
+export class TimeoutError extends Error {
+  override name = TIMEOUT_ERROR
+  constructor(message: string) {
+    super(message)
+  }
 }

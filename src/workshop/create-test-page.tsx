@@ -3,74 +3,54 @@ import { type StoryObj } from '../testing/assert.types.js'
 import { PlaitedFixture } from '../testing/plaited-fixture.js'
 import { ssr } from '../jsx/ssr.js'
 import { PLAY_EVENT, PLAITED_FIXTURE } from '../testing/assert.constants'
-import { LIVE_RELOAD_PATHNAME, cacheBustHeaders } from './workshop.utils.js'
+import type { PageOptions } from './workshop.types.js'
 
-export type Createstpage = {
+type Createstpage = {
   story: StoryObj
   route: string
-  responses: Map<string, Response>
-  filePath: string
+  entry: string
   exportName: string
-  port: number
-}
+} & PageOptions
 
-export const getLiveReloadScript = ({
-  port,
+const createFixtureLoadScript = ({
   route,
-  filePath,
+  entry,
   entryPath,
   exportName,
 }: {
-  port: number
   route: string
-  filePath: string
+  entry: string
   entryPath: string
   exportName: string
 }) => `
-const eventSource = new EventSource("http://localhost:${port}${LIVE_RELOAD_PATHNAME}");
-
-eventSource.addEventListener('open', async (event) =>{
-  console.log("SSE Connection Opened:", event);
-  const { ${exportName} } = await import('${entryPath}');
-  await customElements.whenDefined("${PLAITED_FIXTURE}")
-  const fixture = document.querySelector("${PLAITED_FIXTURE}");
-  fixture.trigger({
-    type: '${PLAY_EVENT}',
-    detail: {
-      route: "${route}",
-      filePath: "${filePath}",
-      entryPath: "${entryPath}",
-      exportName: "${exportName}",
-      story: ${exportName}
-    }
-  });
+const { ${exportName} } = await import('${entry}');
+await customElements.whenDefined("${PLAITED_FIXTURE}")
+const fixture = document.querySelector("${PLAITED_FIXTURE}");
+fixture.trigger({
+  type: '${PLAY_EVENT}',
+  detail: {
+    route: "${route}",
+    entry: "${entry}",
+    entryPath: "${entryPath}",
+    exportName: "${exportName}",
+    story: ${exportName}
+  }
 });
-
-eventSource.addEventListener('reload', (event) => {
-    console.log("SSE 'reload' Event Received. Data:", { reloads: event.data });
-    console.log("Reloading page in a moment...");
-    // Reload the page after a short delay
-    setTimeout(() => {
-        window.location.reload();
-    }, 750);
-});
-
-eventSource.addEventListener('error', (event) => {
-    console.error("SSE Error Occurred:", event);
-    if (eventSource.readyState === EventSource.CLOSED) {
-        console.warn("SSE Connection was closed.");
-    } else if (eventSource.readyState === EventSource.CONNECTING) {
-        console.warn("SSE Connection is trying to reconnect.");
-    }
-})
 `
 
-export const createTestPage = ({ story, route, responses, filePath, exportName, port }: Createstpage) => {
-  const entryPath = filePath.replace(/\.tsx?$/, '.js')
+export const createTestPage = async ({
+  story,
+  route,
+  entry,
+  exportName,
+  background,
+  color,
+  designTokens,
+  output,
+}: Createstpage) => {
   const args = story?.args ?? {}
-  const styles = story?.parameters?.styles ?? {}
-  const headers = story?.parameters?.headers?.(process.env) ?? new Headers()
   const tpl = story?.template
+  const entryPath = Bun.resolveSync(entry, output)
   const page = ssr(
     <html>
       <head>
@@ -79,28 +59,21 @@ export const createTestPage = ({ story, route, responses, filePath, exportName, 
           rel='shortcut icon'
           href='#'
         />
+        <style>{designTokens}</style>
       </head>
-      <body>
-        <PlaitedFixture
-          children={tpl?.(args)}
-          {...styles}
-        />
+      <body style={{ background: background ?? '', color: color ?? '', margin: 0 }}>
+        <PlaitedFixture children={tpl?.(args)} />
         <script
           trusted
+          async
           type='module'
         >
-          {getLiveReloadScript({ port, exportName, filePath, entryPath, route })}
+          {createFixtureLoadScript({ exportName, entry, entryPath, route })}
         </script>
       </body>
     </html>,
   )
-  responses.set(
-    route,
-    new Response(`<!DOCTYPE html>\n${page}`, {
-      headers: {
-        ...cacheBustHeaders,
-        ...headers,
-      },
-    }),
-  )
+  const html = `<!DOCTYPE html>\n${page}`
+  const filePath = Bun.resolveSync(`.${route}.html`, output)
+  return await Bun.write(filePath, html)
 }

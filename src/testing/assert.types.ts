@@ -7,7 +7,7 @@ import type { findByText } from './find-by-text.js'
 import type { fireEvent } from './fire-event.js'
 import type { match } from './match.js'
 import type { throws } from './throws.js'
-import type { TEST_EXCEPTION, UNKNOWN_ERROR, TEST_PASSED } from './assert.constants.js'
+import type { FAILED_ASSERTION, MISSING_ASSERTION_PARAMETER, UNKNOWN_ERROR, TEST_PASSED } from './assert.constants.js'
 
 /**
  * Defines Agentic Card scale of visual implementation.
@@ -174,28 +174,61 @@ export type TestParams = {
 }
 /**
  * Represents the data structure sent from the test fixture to the runner
- * when a test fails due to an assertion, timeout, missing parameters, or an unknown error.
+ * when a test fails due to an failed assertion, missing parameters.
+ *
+ * @property {string} address - The identifier of the test runner (e.g., `PLAITED_RUNNER`).
+ * @property {typeof MISSING_ASSERTION_PARAMETER | typeof FAILED_ASSERTION} type - The type of failure event.
+ * @property {object} detail - Contextual information about the failed test.
+ * @property {string} detail.message - Error message indicating missing parameters.
+ * @property {string} detail.story - The exported name of the story object.
+ * @property {string} detail.file - The source file path of the story.
+ * @property {string} detail.route - The unique route identifier of the story.
+ * @property {string} detail.url - The URL of the test page when the error occurred.
+ * @property {string} detail.trace - A string representing the stack trace of the error.
+ */
+export type InteractionTestFailure = {
+  address: string
+  type: typeof FAILED_ASSERTION | typeof MISSING_ASSERTION_PARAMETER
+  detail: {
+    message: string
+    story: string
+    file: string
+    route: string
+    url: string
+    trace: string
+  }
+}
+/**
+ * Represents the data structure sent from the test fixture to the runner
+ * when a test fails due to an unknown error.
  *
  * @property {string} address - The identifier of the test runner (e.g., `PLAITED_RUNNER`).
  * @property {typeof TEST_EXCEPTION | typeof UNKNOWN_ERROR} type - The type of failure event.
  * @property {object} detail - Contextual information about the failed test.
- * @property {string} detail.route - The unique route identifier of the story.
- * @property {string} detail.file - The source file path of the story.
+ * @property {string} detail.name - Unknown error name if present.
+ * @property {string} detail.message - Error message indicating missing parameters.
+ * @property {string} detail.trace - A string representing the stack trace of the error.
+ * @property {string} detail.cause - Error cause if known.
  * @property {string} detail.story - The exported name of the story object.
+ * @property {string} detail.file - The source file path of the story.
+ * @property {string} detail.route - The unique route identifier of the story.
  * @property {string} detail.url - The URL of the test page when the error occurred.
- * @property {string} detail.type - A string code representing the specific error type (e.g., `ASSERTION_ERROR`, `TIMEOUT_ERROR`).
  */
-export type FailedTestEvent = {
+export type UnknownTestError = {
   address: string
-  type: typeof TEST_EXCEPTION | typeof UNKNOWN_ERROR
+  type: typeof UNKNOWN_ERROR
   detail: {
-    route: string
-    file: string
+    name: string
+    message: string
+    trace: string
+    cause: string
     story: string
+    file: string
+    route: string
     url: string
-    type: string
   }
 }
+
 /**
  * Represents the data structure sent from the test fixture to the runner
  * when a test completes successfully (either its `play` function finished without error
@@ -206,7 +239,7 @@ export type FailedTestEvent = {
  * @property {object} detail - Contextual information about the passed test.
  * @property {string} detail.route - The unique route identifier of the story that passed.
  */
-export type PassedTestEvent = {
+export type InteractionTestPassed = {
   address: string
   type: typeof TEST_PASSED
   detail: {

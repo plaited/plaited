@@ -1,52 +1,43 @@
-import { workshop } from 'plaited/workshop'
+import { workshop, DEFAULT_PLAY_TIMEOUT } from 'plaited/workshop'
+import { useSignal } from 'plaited/behavioral'
 import { chromium, type BrowserContext } from 'playwright'
 
 const cwd = `${process.cwd()}/src`
 
-const { server, stories } = await workshop({ cwd, port: 3000 })
+const port = 3000
+const stories = await workshop({ cwd, port })
 
-const stopServer = async () => {
-  console.log('\n...stopping server')
-  await server?.stop(true)
-  console.log('server stopped')
-}
+// const browser = await chromium.launch()
+// const contexts = new Set<BrowserContext>()
 
-process.on('SIGINT', async () => {
-  await stopServer()
-  process.exit()
-})
+// await Promise.allSettled(
+//   [...stories].map(async ([route, params]) => {
+//     const context = await browser.newContext()
+//     /**
+//      * count of routes
+//      * send message to module as a trigger
+//      * once count is done we want to close all browser context we can use useSignal for that.
+//      */
+//     contexts.add(context)
+//     const page = await context.newPage()
+//     await page.goto(`http://localhost:${port}${route}`)
 
-process.on('uncaughtException', (error) => {
-  console?.error('Uncaught Exception:', error)
-})
+//     page.on('console', async (msg) => {
+//       if (msg.type() === 'dir') {
+//         const args = await Promise.all(msg.args().map((arg) => arg.jsonValue()))
+//         console.log(`[Page: ${route}] console.dir:`, ...args)
+//       }
+//     })
 
-process.on('unhandledRejection', (reason, promise) => {
-  console?.error('Unhandled Rejection at:', promise, 'reason:', reason)
-})
-
-process.on('exit', async () => {
-  await stopServer()
-  console.log('server stopped')
-})
-
-process.on('SIGTERM', async () => {
-  await stopServer()
-  process.exit()
-})
-
-process.on('SIGHUP', async () => {
-  await stopServer()
-  process.exit()
-})
-
-const browser = await chromium.launch()
-const contexts = new Set<BrowserContext>()
-
-await Promise.allSettled(
-  [...stories].map(async ([route, params]) => {
-    const context = await browser.newContext()
-    contexts.add(context)
-    const page = await context.newPage()
-    await page.goto(`http://localhost:${server.port}${route}`)
-  }),
-)
+//     setTimeout(async () => {
+//       console.log(`Closing context for page ${route} after 5 seconds.`)
+//       try {
+//         await context.close()
+//       } catch (e) {
+//         console.error(`Error closing context for ${route}:`, e)
+//       } finally {
+//         contexts.delete(context)
+//       }
+//     }, 5000)
+//   }),
+// )
