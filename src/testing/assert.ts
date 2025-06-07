@@ -1,7 +1,7 @@
 import { deepEqual } from '../utils/deep-equal.js'
 import { trueTypeOf } from '../utils/true-type-of.js'
 import { isTypeOf } from '../utils/is-type-of.js'
-import { AssertionError, MissingTestParamsError } from './errors.js'
+import { FailedAssertionError, MissingAssertionParameterError } from './errors.js'
 
 /**
  * Parameters for the assertion function
@@ -47,8 +47,8 @@ const replacer = (key: string | number | symbol, value: unknown) => {
  * @param param.actual - The value or result being tested
  * @param param.expected - The expected value or result to compare against
  *
- * @throws {MissingTestParamsError} When any required parameter (given, should, actual, expected) is missing
- * @throws {AssertionError} When the assertion fails, providing a detailed comparison of actual vs expected values
+ * @throws {MissingAssertionParameterError} When any required parameter (given, should, actual, expected) is missing
+ * @throws {FailedAssertionError} When the assertion fails, providing a detailed comparison of actual vs expected values
  *
  * @example
  * Simple Value Comparison
@@ -132,11 +132,11 @@ export const assert: Assert = (param) => {
   const missing = requiredKeys.filter((k) => !Object.keys(args).includes(k))
   if (missing.length) {
     const msg = [`The following parameters are required by 'assert': (`, `  ${missing.join(', ')}`, ')'].join('\n')
-    throw new MissingTestParamsError(msg)
+    throw new MissingAssertionParameterError(msg)
   }
   const { given = undefined, should = '', actual = undefined, expected = undefined } = args
   if (!deepEqual(actual, expected)) {
     const message = `Given ${given}: should ${should}`
-    throw new AssertionError(JSON.stringify({ message, actual, expected }, replacer, 2))
+    throw new FailedAssertionError(JSON.stringify({ message, actual: actual ?? 'undefined', expected }, replacer, 2))
   }
 }

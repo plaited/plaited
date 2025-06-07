@@ -1,7 +1,11 @@
 /** Error type identifier for failed assertions within a play function. */
-export const ASSERTION_ERROR = 'ASSERTION_ERROR'
-/** Error type identifier when required test parameters are missing. */
-export const MISSING_TEST_PARAMS_ERROR = 'MISSING_TEST_PARAMS_ERROR'
+export const FAILED_ASSERTION = 'FAILED_ASSERTION'
+/** Error type identifier when required assertiom parameters are missing. */
+export const MISSING_ASSERTION_PARAMETER = 'MISSING_ASSERTION_PARAMETER'
+/** Error type identifier for unexpected or unknown errors during test execution. */
+export const UNKNOWN_ERROR = 'UNKNOWN_ERROR'
+/** Event fired when an interaction test successfully executes without error or assertion failures */
+export const TEST_PASSED = 'TEST_PASSED'
 
 /** Glob pattern used to find story files within the project. */
 export const STORY_GLOB_PATTERN = `**/*.stories.{tsx,ts}`
@@ -15,14 +19,6 @@ export const PLAY_EVENT = 'play'
 
 /** Event type indicating that the test fixture element has connected to the DOM. */
 export const FIXTURE_CONNECTED = 'FIXTURE_CONNECTED'
-/** Error type identifier for unexpected or unknown errors during test execution. */
-export const UNKNOWN_ERROR = 'UNKNOWN_ERROR'
-/** Error type identifier when a play function exceeds its timeout duration. */
-export const TIMEOUT_ERROR = 'TIMEOUT_ERROR'
-/** Event type indicating that a story test has passed successfully. */
-export const TEST_PASSED = 'TEST_PASSED'
-/** Event type indicating a test exception occurred (assertion, timeout, missing params). */
-export const TEST_EXCEPTION = 'TEST_EXCEPTION'
 
 /** The custom element tag name for the Plaited test fixture component. */
 export const PLAITED_FIXTURE = 'plaited-test-fixture'

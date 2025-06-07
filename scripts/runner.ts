@@ -1,88 +1,42 @@
+import { workshop, DEFAULT_PLAY_TIMEOUT } from 'plaited/workshop'
+import { useSignal } from 'plaited/behavioral'
 import { chromium, type BrowserContext } from 'playwright'
-import { isPlaitedMessage } from 'plaited'
-import { type Trigger } from 'plaited/behavioral'
-import { isTypeOf } from 'plaited/utils'
-import type { Server, ServerWebSocket } from 'bun'
-import { runnerModdule } from './runner.module.js'
-import { getWorkshop } from 'plaited/workshop'
 
 const cwd = `${process.cwd()}/src`
-const streamURL = '/_test-runner'
+const output = `${process.cwd()}/.plaited`
+const stories = await workshop({ cwd, output })
 
-const { stories, responses } = await getWorkshop({ cwd, streamURL })
-const browser = await chromium.launch()
-const contexts = new Set<BrowserContext>()
+// const browser = await chromium.launch()
+// const contexts = new Set<BrowserContext>()
 
-const map = new Map<string, Trigger>()
+// await Promise.allSettled(
+//   [...stories].map(async ([route, params]) => {
+//     const context = await browser.newContext()
+//     /**
+//      * count of routes
+//      * send message to module as a trigger
+//      * once count is done we want to close all browser context we can use useSignal for that.
+//      */
+//     contexts.add(context)
+//     const page = await context.newPage()
+//     await page.goto(`http://localhost:${port}${route}`)
 
-const server = Bun.serve({
-  static: Object.fromEntries(responses),
-  port: 3000,
-  async fetch(req: Request, server: Server) {
-    const { pathname } = new URL(req.url)
-    if (pathname === streamURL) {
-      const success = server.upgrade(req)
-      return success ? undefined : new Response('WebSocket upgrade error', { status: 400 })
-    }
-    return new Response('Upgrade failed', { status: 500 })
-  },
-  websocket: {
-    message(ws: ServerWebSocket<unknown>, message: string | Buffer) {
-      if (!isTypeOf<string>(message, 'string')) return
-      try {
-        const json = JSON.parse(message)
-        if (isPlaitedMessage(json)) {
-          const { address, type, detail } = json
-          const trigger = map.get(address)
-          trigger?.({ type, detail: { message: detail, ws } })
-        }
-      } catch (error) {
-        console.error(error)
-      }
-    },
-  },
-})
+//     page.on('console', async (msg) => {
+//       if (msg.type() === 'dir') {
+//         const args = await Promise.all(msg.args().map((arg) => arg.jsonValue()))
+//         console.log(`[Page: ${route}] console.dir:`, ...args)
+//       }
+//     })
 
-map.set(
-  runnerModdule.id,
-  runnerModdule.init({
-    stories,
-    contexts,
-    port: 3000,
-  }),
-)
-
-await Promise.all(
-  stories.map(async ([route]) => {
-    const context = await browser.newContext()
-    contexts.add(context)
-    const page = await context.newPage()
-    await page.goto(`http://localhost:${server.port}${route}`)
-  }),
-)
-
-process.on('SIGINT', async () => {
-  server.stop()
-  await Promise.all([...contexts].map(async (context) => await context.close()))
-  map.get(runnerModdule.id)!({ type: 'SIGINT' })
-})
-
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error)
-})
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason)
-})
-
-process.on('exit', () => {
-  server.stop()
-})
-
-process.on('SIGTERM', () => {
-  server.stop()
-})
-
-process.on('SIGHUP', () => {
-  server.stop()
-})
+//     setTimeout(async () => {
+//       console.log(`Closing context for page ${route} after 5 seconds.`)
+//       try {
+//         await context.close()
+//       } catch (e) {
+//         console.error(`Error closing context for ${route}:`, e)
+//       } finally {
+//         contexts.delete(context)
+//       }
+//     }, 5000)
+//   }),
+// )
