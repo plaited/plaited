@@ -1,8 +1,8 @@
 import path from 'node:path'
-import type { StoryObj, StoryDetail } from '../testing/assert.types.js'
+import type { StoryObj } from '../testing/assert.types.js'
 import { PlaitedFixture } from '../testing/plaited-fixture.js'
 import { ssr } from '../jsx/ssr.js'
-import { PLAY_EVENT, PLAITED_FIXTURE } from '../testing/assert.constants'
+import { PLAY_EVENT } from '../testing/assert.constants'
 import type { PageOptions } from './workshop.types.js'
 
 type Createstpage = {
@@ -23,19 +23,23 @@ const createFixtureLoadScript = ({
   exportName: string
   entry: string
 }) => `
-import { exportName } from '${importPath}'
-await customElements.whenDefined("${PLAITED_FIXTURE}")
-const fixture = document.querySelector("${PLAITED_FIXTURE}");
-console.log('hit')
-fixture.trigger({
-  type: '${PLAY_EVENT}',
-  detail: {
-    route: "${route}",
-    entry: "${entry}",
-    exportName: "${exportName}",
-    story: ${exportName}
-  }
-});
+import { type PlaitedElement } from 'plaited'
+import { PlaitedFixture } from 'plaited/testing'
+import { canUseDOM} from 'plaited/utils'
+import { ${exportName} } from '${importPath}'
+if(canUseDOM()) {
+  await customElements.whenDefined(PlaitedFixture.tag)
+  const fixture = document.querySelector<PlaitedElement>(PlaitedFixture.tag);
+  fixture?.trigger({
+    type: '${PLAY_EVENT}',
+    detail: {
+      route: "${route}",
+      entry: "${entry}",
+      exportName: "${exportName}",
+      story: ${exportName}
+    }
+  });
+}
 `
 
 export const createTestPage = async ({
@@ -67,18 +71,12 @@ export const createTestPage = async ({
         <script
           type='module'
           trusted
-          src='plaited/testing'
+          src='./index.ts'
         />
-        <script
-          trusted
-          type='module'
-          id='story'
-        >
-          {createFixtureLoadScript({ importPath, route, exportName, entry })}
-        </script>
       </body>
     </html>,
   )
   const html = `<!DOCTYPE html>\n${page}`
-  return await Bun.write(`${storyPath}/index.html`, html)
+  await Bun.write(`${storyPath}/index.ts`, createFixtureLoadScript({ importPath, route, exportName, entry }))
+  await Bun.write(`${storyPath}/index.html`, html)
 }

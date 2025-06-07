@@ -1,16 +1,2 @@
 <!DOCTYPE html>
-<html ><head ><title >Story:delegated-listener--test</title><link rel="shortcut icon" href="#" /><style ></style></head><body style="background:; color:; margin:0;" ><plaited-test-fixture ><template shadowrootmode="open" shadowrootdelegatesfocus ><style>:host{display:contents;}</style><slot ></slot></template><button data-testid="button" >click me</button></plaited-test-fixture><script type="module" src="plaited/testing" ></script><script type="module" id="story" >
-import { exportName } from '../../../../src/utils/tests/delegated-listener.stories.tsx'
-await customElements.whenDefined("plaited-test-fixture")
-const fixture = document.querySelector("plaited-test-fixture");
-console.log('hit')
-fixture.trigger({
-  type: 'play',
-  detail: {
-    route: "/utils/tests/delegated-listener--test",
-    entry: "/Users/eirby/Workspace/lab/plaited/src/utils/tests/delegated-listener.stories.tsx",
-    exportName: "test",
-    story: test
-  }
-});
-</script></body></html>
+<html ><head ><title >Story:delegated-listener--test</title><link rel="shortcut icon" href="#" /><style ></style></head><body style="background:; color:; margin:0;" ><plaited-test-fixture ><template shadowrootmode="open" shadowrootdelegatesfocus ><style>:host{display:contents;}</style><slot ></slot></template><button data-testid="button" >click me</button></plaited-test-fixture><script type="module" src="./index.ts" ></script></body></html>
