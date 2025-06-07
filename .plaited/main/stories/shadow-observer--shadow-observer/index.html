@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html ><head ><title >Story:shadow-observer--shadow-observer</title><link rel="shortcut icon" href="#" /><style ></style></head><body style="background:; color:; margin:0;" ><plaited-test-fixture ><template shadowrootmode="open" shadowrootdelegatesfocus ><style>:host{display:contents;}</style><slot ></slot></template><shadow-island ><template shadowrootmode="open" shadowrootdelegatesfocus ><style>.p_25q71a6{border:1px black dashed;}.p_2gyg7sf{margin:24px;}.pleg3l3{padding:12px;}.p_wqyttz{height:300px;}.p1rlu8mi{display:flex;}.p_8mez4t{flex-direction:column;}.p_iowm7o{gap:25px;}.p_34ukc5m{position:relative;}.p_ioxi56{gap:10px;}.p_eqzmi4{border:1px solid black;}.p9ju47s{padding:4px 8px;}.p_2bsqz24{cursor:pointer;}.p27yi61x{background-color:white;}.pua3r0h{color:black;}.p_lvo17d{border-radius:4px;}.p_9lprip{height:18px;}.p_lvtxe{width:auto;}</style><div p-target="wrapper" ><div class="zone_4q6a0s8 p_25q71a6 p_2gyg7sf pleg3l3 p_wqyttz p1rlu8mi p_8mez4t p_iowm7o p_34ukc5m" p-target="zone" ></div><div class="row_9erq5w p1rlu8mi p_ioxi56 pleg3l3" p-target="button-row" ><button class="button__5m5rq5n p_eqzmi4 p9ju47s p_2bsqz24 p27yi61x pua3r0h p_lvo17d p_9lprip p_lvtxe" p-trigger="click:start" >start</button><button class="button__5m5rq5n p_eqzmi4 p9ju47s p_2bsqz24 p27yi61x pua3r0h p_lvo17d p_9lprip p_lvtxe" p-trigger="click:addButton" >addButton</button></div></div></template></shadow-island></plaited-test-fixture><script type="module" src="plaited/testing" ></script><script type="module" id="story" >
+import { exportName } from '../../../../src/main/stories/shadow-observer.stories.tsx'
+await customElements.whenDefined("plaited-test-fixture")
+const fixture = document.querySelector("plaited-test-fixture");
+console.log('hit')
+fixture.trigger({
+  type: 'play',
+  detail: {
+    route: "/main/stories/shadow-observer--shadow-observer",
+    entry: "/Users/eirby/Workspace/lab/plaited/src/main/stories/shadow-observer.stories.tsx",
+    exportName: "shadowObserver",
+    story: shadowObserver
+  }
+});
+</script></body></html>

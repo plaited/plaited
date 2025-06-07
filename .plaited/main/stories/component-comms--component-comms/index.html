@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html ><head ><title >Story:component-comms--component-comms</title><link rel="shortcut icon" href="#" /><style ></style></head><body style="background:; color:; margin:0;" ><plaited-test-fixture ><template shadowrootmode="open" shadowrootdelegatesfocus ><style>:host{display:contents;}</style><slot ></slot></template><elemenmt-one ><template shadowrootmode="open" shadowrootdelegatesfocus ><style></style><div ><button p-trigger="click:click" p-target="button" >Add &quot;world!&quot;</button></div></template></elemenmt-one><element-two ><template shadowrootmode="open" shadowrootdelegatesfocus ><style></style><h1 p-target="header" >Hello</h1></template></element-two></plaited-test-fixture><script type="module" src="plaited/testing" ></script><script type="module" id="story" >
+import { exportName } from '../../../../src/main/stories/component-comms.stories.tsx'
+await customElements.whenDefined("plaited-test-fixture")
+const fixture = document.querySelector("plaited-test-fixture");
+console.log('hit')
+fixture.trigger({
+  type: 'play',
+  detail: {
+    route: "/main/stories/component-comms--component-comms",
+    entry: "/Users/eirby/Workspace/lab/plaited/src/main/stories/component-comms.stories.tsx",
+    exportName: "componentComms",
+    story: componentComms
+  }
+});
+</script></body></html>

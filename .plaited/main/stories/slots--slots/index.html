@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html ><head ><title >Story:slots--slots</title><link rel="shortcut icon" href="#" /><style ></style></head><body style="background:; color:; margin:0;" ><plaited-test-fixture ><template shadowrootmode="open" shadowrootdelegatesfocus ><style>:host{display:contents;}</style><slot ></slot></template><outer-slot ><template shadowrootmode="open" shadowrootdelegatesfocus ><style></style><div ><slot p-trigger="click:slot" ></slot><slot p-trigger="click:named" name="named" ></slot><inner-slot p-trigger="click:passThrough" ><template shadowrootmode="open" shadowrootdelegatesfocus ><style></style><slot p-trigger="click:nested" ></slot><slot p-trigger="click:nestedInShadow" name="shadow" ></slot></template><slot name="nested" ></slot><button slot="shadow" >Shadow</button></inner-slot></div></template><button >Slot</button><button slot="named" >Named</button><button slot="nested" >Nested</button></outer-slot></plaited-test-fixture><script type="module" src="plaited/testing" ></script><script type="module" id="story" >
+import { exportName } from '../../../../src/main/stories/slots.stories.tsx'
+await customElements.whenDefined("plaited-test-fixture")
+const fixture = document.querySelector("plaited-test-fixture");
+console.log('hit')
+fixture.trigger({
+  type: 'play',
+  detail: {
+    route: "/main/stories/slots--slots",
+    entry: "/Users/eirby/Workspace/lab/plaited/src/main/stories/slots.stories.tsx",
+    exportName: "slots",
+    story: slots
+  }
+});
+</script></body></html>

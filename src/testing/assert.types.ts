@@ -1,4 +1,4 @@
-import type { Attrs, FunctionTemplate } from '../jsx/jsx.types.js'
+import type { Attrs, FunctionTemplate, TemplateObject } from '../jsx/jsx.types.js'
 import type { StylesObject } from '../styling/css.types.js'
 import type { wait } from '../utils/wait.js'
 import type { assert } from './assert.js'
@@ -186,13 +186,12 @@ export type TestParams = {
  * @property {string} detail.url - The URL of the test page when the error occurred.
  * @property {string} detail.trace - A string representing the stack trace of the error.
  */
-export type InteractionTestFailure = {
-  address: string
+export type InteractionTestFailureEvent = {
   type: typeof FAILED_ASSERTION | typeof MISSING_ASSERTION_PARAMETER
   detail: {
     message: string
-    story: string
-    file: string
+    exportName: string
+    entry: string
     route: string
     url: string
     trace: string
@@ -214,16 +213,14 @@ export type InteractionTestFailure = {
  * @property {string} detail.route - The unique route identifier of the story.
  * @property {string} detail.url - The URL of the test page when the error occurred.
  */
-export type UnknownTestError = {
-  address: string
+export type UnknownTestErrorEvent = {
   type: typeof UNKNOWN_ERROR
   detail: {
     name: string
     message: string
     trace: string
-    cause: string
-    story: string
-    file: string
+    exportName: string
+    entry: string
     route: string
     url: string
   }
@@ -245,4 +242,27 @@ export type InteractionTestPassed = {
   detail: {
     route: string
   }
+}
+
+export type InteractionDetail = {
+  route: string
+  entry: string
+  exportName: string
+  story: InteractionStoryObj
+}
+
+export type SnapshotDetail = {
+  route: string
+  entry: string
+  exportName: string
+  story: SnapshotStoryObj
+}
+
+export type StoryDetail = InteractionDetail | SnapshotDetail
+
+export type CreateStory = <T extends Attrs = Attrs>(
+  args: StoryObj<T>,
+) => {
+  template: TemplateObject
+  params: Params
 }

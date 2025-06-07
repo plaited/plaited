@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html ><head ><title >Story:use-attributes-observer--example</title><link rel="shortcut icon" href="#" /><style ></style></head><body style="background:; color:; margin:0;" ><plaited-test-fixture ><template shadowrootmode="open" shadowrootdelegatesfocus ><style>:host{display:contents;}</style><slot ></slot></template><attribute-observer ><template shadowrootmode="open" shadowrootdelegatesfocus ><style></style><slot p-target="slot" ></slot><p p-target="name" ></p><p p-target="oldValue" ></p><p p-target="newValue" ></p></template><input type="checkbox" /></attribute-observer></plaited-test-fixture><script type="module" src="plaited/testing" ></script><script type="module" id="story" >
+import { exportName } from '../../../../src/main/stories/use-attributes-observer.stories.tsx'
+await customElements.whenDefined("plaited-test-fixture")
+const fixture = document.querySelector("plaited-test-fixture");
+console.log('hit')
+fixture.trigger({
+  type: 'play',
+  detail: {
+    route: "/main/stories/use-attributes-observer--example",
+    entry: "/Users/eirby/Workspace/lab/plaited/src/main/stories/use-attributes-observer.stories.tsx",
+    exportName: "Example",
+    story: Example
+  }
+});
+</script></body></html>

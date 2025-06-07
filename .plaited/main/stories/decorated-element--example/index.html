@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html ><head ><title >Story:decorated-element--example</title><link rel="shortcut icon" href="#" /><style ></style><style>.p_3xucay4{grid-area:input;}.p_9lpt77{height:16px;}.p_my9yk{width:16px;}.p1t0bvf2{opacity:0;}.p_1cu73vx{margin:0;}.pv4i7qk{padding:0;}</style></head><body style="background:; color:; margin:0;" ><plaited-test-fixture ><template shadowrootmode="open" shadowrootdelegatesfocus ><style>:host{display:contents;}</style><slot ></slot></template><decorate-checkbox ><template shadowrootmode="open" shadowrootdelegatesfocus ><style>.p_9lpt77{height:16px;}.p_my9yk{width:16px;}.p4i5rmpr{background-color:var(--fill);}.p_3xucay4{grid-area:input;}:host{display:inline-grid;}:host{grid-template:&quot;input&quot; 16px / 16px;}:host{--fill:lightblue;}:host(:state(checked)){--fill:blue;}:host(:state(disabled)){--fill:grey;}</style><div class="symbol_22n7468 p_9lpt77 p_my9yk p4i5rmpr p_3xucay4" p-trigger="click:click" p-target="symbol" ></div><slot p-trigger="slotchange:slotchange" p-target="slot" ></slot></template><input class="input_78jnaoo p_3xucay4 p_9lpt77 p_my9yk p1t0bvf2 p_1cu73vx pv4i7qk" type="checkbox" /></decorate-checkbox></plaited-test-fixture><script type="module" src="plaited/testing" ></script><script type="module" id="story" >
+import { exportName } from '../../../../src/main/stories/decorated-element.stories.tsx'
+await customElements.whenDefined("plaited-test-fixture")
+const fixture = document.querySelector("plaited-test-fixture");
+console.log('hit')
+fixture.trigger({
+  type: 'play',
+  detail: {
+    route: "/main/stories/decorated-element--example",
+    entry: "/Users/eirby/Workspace/lab/plaited/src/main/stories/decorated-element.stories.tsx",
+    exportName: "example",
+    story: example
+  }
+});
+</script></body></html>

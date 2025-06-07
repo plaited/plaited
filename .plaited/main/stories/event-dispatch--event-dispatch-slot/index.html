@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html ><head ><title >Story:event-dispatch--event-dispatch-slot</title><link rel="shortcut icon" href="#" /><style ></style></head><body style="background:; color:; margin:0;" ><plaited-test-fixture ><template shadowrootmode="open" shadowrootdelegatesfocus ><style>:host{display:contents;}</style><slot ></slot></template><parent-el ><template shadowrootmode="open" shadowrootdelegatesfocus ><style></style><div ><h1 p-target="header" >Hello</h1><slot p-trigger="append:append" ></slot></div></template><div ><nested-el ><template shadowrootmode="open" shadowrootdelegatesfocus ><style></style><button p-trigger="click:click" p-target="button" >Add</button></template></nested-el></div></parent-el></plaited-test-fixture><script type="module" src="plaited/testing" ></script><script type="module" id="story" >
+import { exportName } from '../../../../src/main/stories/event-dispatch.stories.tsx'
+await customElements.whenDefined("plaited-test-fixture")
+const fixture = document.querySelector("plaited-test-fixture");
+console.log('hit')
+fixture.trigger({
+  type: 'play',
+  detail: {
+    route: "/main/stories/event-dispatch--event-dispatch-slot",
+    entry: "/Users/eirby/Workspace/lab/plaited/src/main/stories/event-dispatch.stories.tsx",
+    exportName: "eventDispatchSlot",
+    story: eventDispatchSlot
+  }
+});
+</script></body></html>

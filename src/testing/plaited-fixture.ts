@@ -17,24 +17,13 @@ import {
   PLAITED_FIXTURE,
 } from './assert.constants.js'
 import { FailedAssertionError, MissingAssertionParameterError } from './errors.js'
-import type { InteractionStoryObj, SnapshotStoryObj } from './assert.types.js'
+import type {
+  InteractionDetail,
+  SnapshotDetail,
+  InteractionTestFailureEvent,
+  UnknownTestErrorEvent,
+} from './assert.types.js'
 import { wait } from '../utils/wait.js'
-
-type InteractionDetail = {
-  route: string
-  filePath: string
-  entryPath: string
-  exportName: string
-  story: InteractionStoryObj
-}
-
-type SnapshotDetail = {
-  route: string
-  filePath: string
-  entryPath: string
-  exportName: string
-  story: SnapshotStoryObj
-}
 
 /**
  * Trims the error name and message from the top of a stack trace string.
@@ -101,7 +90,7 @@ export const PlaitedFixture = defineElement<{
       ]),
     })
     return {
-      async [PLAY_EVENT]({ route, filePath, exportName, story }) {
+      async [PLAY_EVENT]({ route, entry, exportName, story }) {
         const { play } = story
         try {
           await play({
@@ -118,31 +107,32 @@ export const PlaitedFixture = defineElement<{
         } catch (error) {
           console.log(error)
           if (error instanceof FailedAssertionError || error instanceof MissingAssertionParameterError) {
-            console.dir({
+            const event: InteractionTestFailureEvent = {
               type: error instanceof FailedAssertionError ? FAILED_ASSERTION : MISSING_ASSERTION_PARAMETER,
               detail: {
-                message: error.message,
-                story: exportName,
-                file: filePath,
                 route,
+                entry,
+                exportName,
+                message: error.message,
                 url: window?.location.href,
                 trace: getTraceOnly(error.stack ?? 'no trace'),
               },
-            })
+            }
+            console.dir(event)
           } else if (error instanceof Error) {
-            console.dir({
+            const event: UnknownTestErrorEvent = {
               type: UNKNOWN_ERROR,
               detail: {
+                route,
+                entry,
+                exportName,
                 name: error?.name,
                 message: error?.message,
                 trace: getTraceOnly(error.stack ?? 'no trace'),
-                cause: error?.cause,
-                story: exportName,
-                file: filePath,
-                route,
                 url: window?.location.href,
               },
-            })
+            }
+            console.dir(event)
           }
         }
       },
@@ -154,6 +144,3 @@ export const PlaitedFixture = defineElement<{
     }
   },
 })
-if (import.meta.hot) {
-  console.log('hot')
-}

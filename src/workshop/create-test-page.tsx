@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { type StoryObj } from '../testing/assert.types.js'
+import type { StoryObj, StoryDetail } from '../testing/assert.types.js'
 import { PlaitedFixture } from '../testing/plaited-fixture.js'
 import { ssr } from '../jsx/ssr.js'
 import { PLAY_EVENT, PLAITED_FIXTURE } from '../testing/assert.constants'
@@ -14,24 +14,24 @@ type Createstpage = {
 
 const createFixtureLoadScript = ({
   route,
-  entry,
-  entryPath,
+  importPath,
   exportName,
+  entry,
 }: {
+  importPath: string
   route: string
-  entry: string
-  entryPath: string
   exportName: string
+  entry: string
 }) => `
-const { ${exportName} } = await import('${entry}');
+import { exportName } from '${importPath}'
 await customElements.whenDefined("${PLAITED_FIXTURE}")
 const fixture = document.querySelector("${PLAITED_FIXTURE}");
+console.log('hit')
 fixture.trigger({
   type: '${PLAY_EVENT}',
   detail: {
     route: "${route}",
     entry: "${entry}",
-    entryPath: "${entryPath}",
     exportName: "${exportName}",
     story: ${exportName}
   }
@@ -50,7 +50,8 @@ export const createTestPage = async ({
 }: Createstpage) => {
   const args = story?.args ?? {}
   const tpl = story?.template
-  const entryPath = Bun.resolveSync(entry, output)
+  const storyPath = path.resolve(output, `.${route}`)
+  const importPath = path.relative(storyPath, entry)
   const page = ssr(
     <html>
       <head>
@@ -64,16 +65,20 @@ export const createTestPage = async ({
       <body style={{ background: background ?? '', color: color ?? '', margin: 0 }}>
         <PlaitedFixture children={tpl?.(args)} />
         <script
-          trusted
-          async
           type='module'
+          trusted
+          src='plaited/testing'
+        />
+        <script
+          trusted
+          type='module'
+          id='story'
         >
-          {createFixtureLoadScript({ exportName, entry, entryPath, route })}
+          {createFixtureLoadScript({ importPath, route, exportName, entry })}
         </script>
       </body>
     </html>,
   )
   const html = `<!DOCTYPE html>\n${page}`
-  const filePath = Bun.resolveSync(`.${route}.html`, output)
-  return await Bun.write(filePath, html)
+  return await Bun.write(`${storyPath}/index.html`, html)
 }

@@ -3,9 +3,8 @@ import { useSignal } from 'plaited/behavioral'
 import { chromium, type BrowserContext } from 'playwright'
 
 const cwd = `${process.cwd()}/src`
-
-const port = 3000
-const stories = await workshop({ cwd, port })
+const output = `${process.cwd()}/.plaited`
+const stories = await workshop({ cwd, output })
 
 // const browser = await chromium.launch()
 // const contexts = new Set<BrowserContext>()
