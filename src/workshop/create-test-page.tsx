@@ -76,7 +76,9 @@ export const createTestPage = async ({
       </body>
     </html>,
   )
+  const htmlPath = `${storyPath}/index.html`
   const html = `<!DOCTYPE html>\n${page}`
   await Bun.write(`${storyPath}/index.ts`, createFixtureLoadScript({ importPath, route, exportName, entry }))
-  await Bun.write(`${storyPath}/index.html`, html)
+  await Bun.write(htmlPath, html)
+  return htmlPath
 }

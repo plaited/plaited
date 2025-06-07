@@ -20,8 +20,9 @@ export const cacheBustHeaders = {
   expires: 'Mon, 1 Jun 2025 06:30:30 GMT',
 }
 
-export const zip = (content: string) => {
-  const compressed = Bun.gzipSync(content)
+export const zip = async (artifact: Bun.BuildArtifact) => {
+  const code = await artifact.text()
+  const compressed = Bun.gzipSync(code)
   return new Response(compressed, {
     headers: {
       ...cacheBustHeaders,
@@ -49,20 +50,21 @@ const appendTextFixture: BunPlugin = {
 }
 
 export const buildEntries = async ({
-  cwd,
-  entrypoints,
+  output,
+  htmlEntries,
   responses,
 }: {
-  cwd: string
-  entrypoints: string[]
+  output: string
+  htmlEntries: string[]
   responses: Map<string, Response>
 }): Promise<void> => {
   const { outputs } = await Bun.build({
-    entrypoints,
+    entrypoints: htmlEntries,
     splitting: true,
     sourcemap: 'inline',
-    root: cwd,
+    root: output,
     plugins: [appendTextFixture],
+    minify: true,
   })
   await Promise.all(
     outputs.map(async (output) => {
@@ -71,8 +73,10 @@ export const buildEntries = async ({
         path.startsWith('.') ? path.replace('.', '')
         : !path.startsWith('/') ? `/${path}`
         : path
-      const code = await output.text()
-      responses.set(formattedPath, zip(code))
+      responses.set(
+        formattedPath,
+        output.type.startsWith('text/javascript;') ? await zip(output) : new Response(output),
+      )
     }),
   )
 }
