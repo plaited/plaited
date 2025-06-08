@@ -1,4 +1,4 @@
-import { workshop } from 'plaited/workshop'
+import { workshop } from '../src/workshop/workshop.js'
 // import { useSignal } from 'plaited/behavioral'
 // import { chromium, type BrowserContext } from 'playwright'
 

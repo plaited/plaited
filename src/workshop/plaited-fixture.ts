@@ -1,29 +1,28 @@
 import { css } from '../styling/css'
 import { defineElement } from '../main/define-element'
 import { h } from '../jsx/create-template.js'
-import { assert } from './assert.js'
-import { findByAttribute } from './find-by-attribute.js'
-import { findByText } from './find-by-text.js'
-import { fireEvent } from './fire-event.js'
-import { match } from './match.js'
-import { throws } from './throws.js'
+import { FAILED_ASSERTION, MISSING_ASSERTION_PARAMETER } from './testing/testing.constants.js'
 import {
-  FAILED_ASSERTION,
-  MISSING_ASSERTION_PARAMETER,
+  PLAITED_FIXTURE,
+  PLAY_EVENT,
+  FIXTURE_CONNECTED,
   TEST_PASSED,
   UNKNOWN_ERROR,
-  FIXTURE_CONNECTED,
-  PLAY_EVENT,
-  PLAITED_FIXTURE,
-} from './workshop.constants.js'
-import { FailedAssertionError, MissingAssertionParameterError } from './errors.js'
+} from './plaited-fixture.constants.js'
+import { FailedAssertionError, MissingAssertionParameterError } from './testing/errors.js'
 import type {
   InteractionDetail,
   SnapshotDetail,
   InteractionTestFailureEvent,
   UnknownTestErrorEvent,
-} from './workshop.types.js'
+} from './plaited-fixture.types'
 import { wait } from '../utils/wait.js'
+import { assert } from './testing/assert.js'
+import { match } from './testing/match.js'
+import { throws } from './testing/throws.js'
+import { findByAttribute } from './testing/find-by-attribute.js'
+import { findByText } from './testing/find-by-text'
+import { fireEvent } from './testing/fire-event.js'
 
 /**
  * Trims the error name and message from the top of a stack trace string.

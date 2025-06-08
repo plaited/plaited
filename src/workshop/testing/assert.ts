@@ -1,6 +1,6 @@
-import { deepEqual } from '../utils/deep-equal.js'
-import { trueTypeOf } from '../utils/true-type-of.js'
-import { isTypeOf } from '../utils/is-type-of.js'
+import { deepEqual } from '../../utils/deep-equal.js'
+import { trueTypeOf } from '../../utils/true-type-of.js'
+import { isTypeOf } from '../../utils/is-type-of.js'
 import { FailedAssertionError, MissingAssertionParameterError } from './errors.js'
 
 /**

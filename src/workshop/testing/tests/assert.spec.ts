@@ -1,6 +1,9 @@
 import { test, expect } from 'bun:test'
 import sinon from 'sinon'
-import { assert, throws, match, wait } from 'plaited/workshop'
+import { wait } from '../../../utils/wait.js'
+import { assert } from '../assert.js'
+import { match } from '../match.js'
+import { throws } from '../throws.js'
 
 const sum = (...args: number[]) => {
   if (args.some((v) => Number.isNaN(v))) throw new TypeError('NaN')

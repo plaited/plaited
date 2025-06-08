@@ -1,4 +1,4 @@
-import { FAILED_ASSERTION, MISSING_ASSERTION_PARAMETER } from './workshop.constants.js'
+import { FAILED_ASSERTION, MISSING_ASSERTION_PARAMETER } from './testing.constants'
 
 /**
  * Custom error for test assertion failures.

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { noop } from '../utils/noop.js'
+import { noop } from '../../utils/noop.js'
 
 /**
  * Type definition for error catching utility function.

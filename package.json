@@ -13,6 +13,9 @@
     "url": "https://github.com/plaited/plaited/issues"
   },
   "homepage": "https://github.com/plaited/plaited/tree/main#readme",
+  "bin": {
+    "workshop": "./.bin/mcp-server.ts"
+  },
   "type": "module",
   "main": "./src/main.ts",
   "exports": {
@@ -41,8 +44,8 @@
     "prepare": "git config core.hooksPath .hooks",
     "prettier": "prettier . --write",
     "test": "bun run test-stories && bun test **/*.spec.{ts,tsx}",
-    "test:playwright": "bunx playwright test",
     "test-stories": "bun run scripts/runner.ts",
+    "test:playwright": "bunx playwright test",
     "watch": "bun run check --watch"
   },
   "lint-staged": {
@@ -55,23 +58,22 @@
     ]
   },
   "peerDependenciesMeta": {
-    "@types/bun": {
+    "@modelcontextprotocol/sdk": {
       "optional": true
     },
-    "bun": {
+    "@types/bun": {
       "optional": true
     }
   },
   "peerDependencies": {
-    "@types/bun": "^1.2.9",
-    "bun": "^1.2.9"
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@types/bun": "^1.2.15"
   },
   "devDependencies": {
     "@commitlint/cli": "19.8.1",
     "@commitlint/config-conventional": "19.8.1",
     "@eslint/js": "^9.28.0",
     "@playwright/test": "1.52.0",
-    "@swc/core": "1.11.29",
     "@types/beautify": "0.0.3",
     "@types/bun": "1.2.13",
     "@types/node": "22.15.19",
