@@ -1,4 +1,4 @@
-import { workshop, DEFAULT_PLAY_TIMEOUT } from 'plaited/workshop'
+import { workshop } from 'plaited/workshop'
 import { useSignal } from 'plaited/behavioral'
 import { chromium, type BrowserContext } from 'playwright'
 

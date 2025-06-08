@@ -196,6 +196,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     part,
     ...attributes
   } = attrs
+
   const registry: string[] = []
   if (isTypeOf<FunctionTemplate>(_tag, 'function')) {
     return _tag(attrs)

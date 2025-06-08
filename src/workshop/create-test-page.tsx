@@ -4,6 +4,7 @@ import { PlaitedFixture } from '../testing/plaited-fixture.js'
 import { ssr } from '../jsx/ssr.js'
 import { PLAY_EVENT } from '../testing/assert.constants'
 import type { PageOptions } from './workshop.types.js'
+import { wait } from '../utils/wait.js'
 
 type Createstpage = {
   story: StoryObj
@@ -25,21 +26,22 @@ const createFixtureLoadScript = ({
 }) => `
 import { type PlaitedElement } from 'plaited'
 import { PlaitedFixture } from 'plaited/testing'
-import { canUseDOM} from 'plaited/utils'
 import { ${exportName} } from '${importPath}'
-if(canUseDOM()) {
-  await customElements.whenDefined(PlaitedFixture.tag)
-  const fixture = document.querySelector<PlaitedElement>(PlaitedFixture.tag);
-  fixture?.trigger({
-    type: '${PLAY_EVENT}',
-    detail: {
-      route: "${route}",
-      entry: "${entry}",
-      exportName: "${exportName}",
-      story: ${exportName}
-    }
-  });
-}
+
+import.meta.hot.accept();
+
+await customElements.whenDefined(PlaitedFixture.tag)
+const fixture = document.querySelector<PlaitedElement>(PlaitedFixture.tag);
+fixture?.trigger({
+  type: '${PLAY_EVENT}',
+  detail: {
+    route: "${route}",
+    entry: "${entry}",
+    exportName: "${exportName}",
+    story: ${exportName}
+  }
+});
+
 `
 
 export const createTestPage = async ({
@@ -79,6 +81,8 @@ export const createTestPage = async ({
   const htmlPath = `${storyPath}/index.html`
   const html = `<!DOCTYPE html>\n${page}`
   await Bun.write(`${storyPath}/index.ts`, createFixtureLoadScript({ importPath, route, exportName, entry }))
+  await wait(60)
   await Bun.write(htmlPath, html)
-  return htmlPath
+  const { default: resp } = await import(htmlPath)
+  return { [route]: resp }
 }

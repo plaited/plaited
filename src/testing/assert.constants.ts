@@ -12,8 +12,6 @@ export const STORY_GLOB_PATTERN = `**/*.stories.{tsx,ts}`
 /** Regular expression used to filter files based on the story file naming convention. */
 export const STORIES_FILTERS_REGEX = /\.stories.tsx?$/
 
-/** Default timeout duration (in milliseconds) for story play functions. */
-export const DEFAULT_PLAY_TIMEOUT = 5_000
 /** Event type used internally to trigger the execution of a story's play function. */
 export const PLAY_EVENT = 'play'
 

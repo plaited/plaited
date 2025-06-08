@@ -28,7 +28,6 @@ export type Scale = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 'rel'
  */
 export type Params = {
   a11y?: Record<string, string> | false
-  headers?: (env: NodeJS.ProcessEnv) => Headers
   scale?: Scale
   styles?: StylesObject
   timeout?: number // Defaults to 5_000 ms
@@ -161,17 +160,7 @@ export type SnapshotStoryObj<T extends Attrs = Attrs> = {
  * ```
  */
 export type StoryObj<T extends Attrs = Attrs> = InteractionStoryObj<T> | SnapshotStoryObj<T>
-/**
- * Represents the resolved test parameters used internally during test execution,
- * after merging story-specific parameters with defaults.
- * @internal
- */
-export type TestParams = {
-  a11y?: false | Record<string, string>
-  description?: string
-  scale?: Scale
-  timeout: number
-}
+
 /**
  * Represents the data structure sent from the test fixture to the runner
  * when a test fails due to an failed assertion, missing parameters.
