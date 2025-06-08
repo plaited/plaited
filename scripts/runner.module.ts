@@ -11,7 +11,7 @@ import {
   FIXTURE_CONNECTED,
   PLAY_EVENT,
   PLAITED_FIXTURE,
-} from 'plaited/testing'
+} from 'plaited/workshop'
 
 type ModuleMessageDetail<T extends JSONDetail | undefined = undefined> = {
   ws: ServerWebSocket<unknown>

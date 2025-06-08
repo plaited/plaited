@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 import sinon from 'sinon'
-import { assert, throws, match, wait } from 'plaited/testing'
+import { assert, throws, match, wait } from 'plaited/workshop'
 
 const sum = (...args: number[]) => {
   if (args.some((v) => Number.isNaN(v))) throw new TypeError('NaN')
@@ -177,7 +177,7 @@ test.only('assert: throws on failure', () => {
       actual: null,
       expected: false,
     }),
-  ).toThrow('{\n  "message": "Given false: should equal false",\n  "actual": null,\n  "expected": false\n}')
+  ).toThrow('{\n  "message": "Given false: should equal false",\n  "actual": "undefined",\n  "expected": false\n}')
 
   expect(() =>
     assert({

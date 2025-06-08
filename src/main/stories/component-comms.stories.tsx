@@ -1,4 +1,4 @@
-import { type StoryObj } from 'plaited/testing'
+import { type StoryObj } from 'plaited/workshop'
 import { ComponentComms } from './component-comms.js'
 
 export const componentComms: StoryObj = {

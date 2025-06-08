@@ -1,6 +1,6 @@
 import { Glob } from 'bun'
 
-import { STORY_GLOB_PATTERN } from '../testing/assert.constants'
+import { STORY_GLOB_PATTERN } from './workshop.constants'
 import { TIMEOUT_ERROR } from './workshop.constants.js'
 
 export async function globEntries(cwd: string): Promise<string[]> {

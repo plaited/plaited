@@ -15,14 +15,14 @@ import {
   FIXTURE_CONNECTED,
   PLAY_EVENT,
   PLAITED_FIXTURE,
-} from './assert.constants.js'
+} from './workshop.constants.js'
 import { FailedAssertionError, MissingAssertionParameterError } from './errors.js'
 import type {
   InteractionDetail,
   SnapshotDetail,
   InteractionTestFailureEvent,
   UnknownTestErrorEvent,
-} from './assert.types.js'
+} from './workshop.types.js'
 import { wait } from '../utils/wait.js'
 
 /**

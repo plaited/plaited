@@ -26,7 +26,7 @@ export type FindByAttribute = <T extends HTMLElement | SVGElement = HTMLElement 
  *
  * @example Basic Usage
  * ```typescript
- * import { findByAttribute } from 'plaited/testing';
+ * import { findByAttribute } from 'plaited/workshop';
  *
  * // Find an element with the attribute data-testid="login-button"
  * const loginButton = await findByAttribute('data-testid', 'login-button');

@@ -23,7 +23,7 @@ export type FindByText = <T extends HTMLElement = HTMLElement>(
  *
  * @example Basic Usage
  * ```typescript
- * import { findByText } from 'plaited/testing';
+ * import { findByText } from 'plaited/workshop';
  *
  * // Find an element containing the exact text "Submit Button"
  * const submitButton = await findByText('Submit Button');

@@ -1,4 +1,4 @@
-import type { StoryObj } from 'plaited/testing'
+import type { StoryObj } from 'plaited/workshop'
 import { ShadowIsland } from './shadow-observer.js'
 
 export const shadowObserver: StoryObj = {

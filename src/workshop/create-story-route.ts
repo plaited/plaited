@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { STORIES_FILTERS_REGEX } from 'plaited/testing'
+import { STORIES_FILTERS_REGEX } from './workshop.constants.js'
 
 import { kebabCase } from 'plaited/utils'
 

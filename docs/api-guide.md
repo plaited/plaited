@@ -609,7 +609,7 @@ Converts a `DesignTokenGroup` into a JSON Schema for validation.
 -   `tokens`: The design token group to convert.
 -   Returns: A JSON Schema object.
 
-## Testing Module (`plaited/testing`)
+## Testing Module (`plaited/workshop`)
 
 Provides utilities for testing Plaited components and stories.
 

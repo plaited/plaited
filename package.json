@@ -21,7 +21,6 @@
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
     "./jsx-runtime": "./src/jsx-runtime.ts",
     "./styling": "./src/styling.ts",
-    "./testing": "./src/testing.ts",
     "./utils": "./src/utils.ts",
     "./workshop": "./src/workshop.ts"
   },

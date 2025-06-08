@@ -1,4 +1,4 @@
-import { type StoryObj } from 'plaited/testing'
+import { type StoryObj } from 'plaited/workshop'
 import { ToggleInput } from './form-associated-example.js'
 
 export const checkbox: StoryObj = {

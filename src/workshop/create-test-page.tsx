@@ -1,9 +1,8 @@
 import path from 'node:path'
-import type { StoryObj } from '../testing/assert.types.js'
-import { PlaitedFixture } from '../testing/plaited-fixture.js'
+import { PlaitedFixture } from './plaited-fixture.js'
 import { ssr } from '../jsx/ssr.js'
-import { PLAY_EVENT } from '../testing/assert.constants'
-import type { PageOptions } from './workshop.types.js'
+import { PLAY_EVENT } from './workshop.constants.js'
+import type { PageOptions, StoryObj } from './workshop.types.js'
 import { wait } from '../utils/wait.js'
 
 type Createstpage = {
@@ -25,7 +24,7 @@ const createFixtureLoadScript = ({
   entry: string
 }) => `
 import { type PlaitedElement } from 'plaited'
-import { PlaitedFixture } from 'plaited/testing'
+import { PlaitedFixture } from 'plaited/workshop'
 import { ${exportName} } from '${importPath}'
 
 import.meta.hot.accept();
