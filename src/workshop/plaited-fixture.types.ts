@@ -1,4 +1,4 @@
-import type { Attrs, FunctionTemplate, TemplateObject } from '../jsx/jsx.types.js'
+import type { Attrs, FunctionTemplate } from '../jsx/jsx.types.js'
 import type { StylesObject } from '../styling/css.types.js'
 import type { wait } from '../utils/wait.js'
 import type { assert } from './testing/assert.js'
@@ -8,14 +8,8 @@ import type { fireEvent } from './testing/fire-event.js'
 import type { match } from './testing/match.js'
 import type { throws } from './testing/throws.js'
 import type { FAILED_ASSERTION, MISSING_ASSERTION_PARAMETER } from './testing/testing.constants.js'
-import type { UNKNOWN_ERROR, TEST_PASSED } from './plaited-fixture.constants.js'
+import type { UNKNOWN_ERROR, STORY_PURPOSE, SCALE } from './plaited-fixture.constants.js'
 
-/**
- * Defines Agentic Card scale of visual implementation.
- * - `1` to `8`
- * - `'rel'`: Indicates a relative scale.
- */
-export type Scale = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 'rel'
 /**
  * @internal Configuration parameters for a specific story test.
  * These options control the testing environment and behavior for a single story.
@@ -29,9 +23,20 @@ export type Scale = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 'rel'
  */
 export type Params = {
   a11y?: Record<string, string> | false
-  scale?: Scale
+  scale?: typeof SCALE
   styles?: StylesObject
   timeout?: number // Defaults to 5_000 ms
+  purpose?: typeof STORY_PURPOSE // Defaults to test
+}
+
+/**
+ * Represents the resolved workshop server parameters used internally by plaited/workshop,
+ * after merging story-specific parameters with defaults.
+ * @internal
+ */
+export type ServerParams = Omit<Params, 'styles'> & {
+  timeout: number
+  purpose: typeof STORY_PURPOSE
 }
 
 /**
@@ -216,24 +221,6 @@ export type UnknownTestErrorEvent = {
   }
 }
 
-/**
- * Represents the data structure sent from the test fixture to the runner
- * when a test completes successfully (either its `play` function finished without error
- * or it had no `play` function).
- *
- * @property {string} address - The identifier of the test runner (e.g., `PLAITED_RUNNER`).
- * @property {typeof TEST_PASSED} type - Indicates a successful test completion.
- * @property {object} detail - Contextual information about the passed test.
- * @property {string} detail.route - The unique route identifier of the story that passed.
- */
-export type InteractionTestPassed = {
-  address: string
-  type: typeof TEST_PASSED
-  detail: {
-    route: string
-  }
-}
-
 export type InteractionDetail = {
   route: string
   entry: string
@@ -249,21 +236,3 @@ export type SnapshotDetail = {
 }
 
 export type StoryDetail = InteractionDetail | SnapshotDetail
-
-export type CreateStory = <T extends Attrs = Attrs>(
-  args: StoryObj<T>,
-) => {
-  template: TemplateObject
-  params: Params
-}
-
-/**
- * Represents the resolved test parameters used internally during test execution,
- * after merging story-specific parameters with defaults.
- * @internal
- */
-export type TestParams = {
-  a11y?: false | Record<string, string>
-  scale?: Scale
-  timeout: number
-}

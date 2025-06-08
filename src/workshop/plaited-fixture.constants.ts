@@ -1,4 +1,5 @@
-/** The custom element tag name for the Plaited test fixture component. */
+import { keyMirror } from '../utils/key-mirror.js'
+
 export const PLAITED_FIXTURE = 'plaited-test-fixture'
 /** Event type used internally to trigger the execution of a story's play function. */
 export const PLAY_EVENT = 'play'
@@ -8,3 +9,7 @@ export const FIXTURE_CONNECTED = 'FIXTURE_CONNECTED'
 export const UNKNOWN_ERROR = 'UNKNOWN_ERROR'
 /** Event type indicating that a story test has passed successfully. */
 export const TEST_PASSED = 'TEST_PASSED'
+
+export const SCALE = keyMirror('1', '2', '3', '4', '5', '6', '7', '8', 'rel')
+
+export const STORY_PURPOSE = keyMirror('test', 'demo', 'train')

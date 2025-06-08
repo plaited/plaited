@@ -55,6 +55,7 @@ export const createTestPage = async ({
 }: Createstpage) => {
   const args = story?.args ?? {}
   const tpl = story?.template
+  const styles = story?.parameters?.styles
   const storyPath = path.resolve(output, `.${route}`)
   const importPath = path.relative(storyPath, entry)
   const page = ssr(
@@ -68,7 +69,10 @@ export const createTestPage = async ({
         <style>{designTokens}</style>
       </head>
       <body style={{ background: background ?? '', color: color ?? '', margin: 0 }}>
-        <PlaitedFixture children={tpl?.(args)} />
+        <PlaitedFixture
+          children={tpl?.(args)}
+          {...styles}
+        />
         <script
           type='module'
           trusted
