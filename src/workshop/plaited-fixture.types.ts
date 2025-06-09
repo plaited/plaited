@@ -23,10 +23,10 @@ import { UNKNOWN_ERROR, STORY_PURPOSE, SCALE } from './plaited-fixture.constants
  */
 export type Params = {
   a11y?: Record<string, string> | false
-  scale?: typeof SCALE
+  scale?: keyof typeof SCALE
   styles?: StylesObject
   timeout?: number // Defaults to 5_000 ms
-  purpose?: typeof STORY_PURPOSE // Defaults to test
+  purpose?: keyof typeof STORY_PURPOSE // Defaults to test
 }
 
 /**
