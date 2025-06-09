@@ -1,10 +1,10 @@
-import { workshop } from '../src/workshop/workshop.js'
+import { useTestingServer } from '../src/workshop/use-testing-server.js'
 // import { useSignal } from 'plaited/behavioral'
 // import { chromium, type BrowserContext } from 'playwright'
 
 const cwd = `${process.cwd()}/src`
 const output = `${process.cwd()}/.plaited`
-await workshop({ cwd, output })
+const { stories } = await useTestingServer({ cwd, output })
 
 // const browser = await chromium.launch()
 // const contexts = new Set<BrowserContext>()

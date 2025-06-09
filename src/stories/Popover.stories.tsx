@@ -1,4 +1,4 @@
-import { type StoryObj, STORY_PURPOSE } from 'plaited/workshop'
+import { type StoryObj, STORY_USAGE } from 'plaited/workshop'
 import { DecoratedPopover, DecoratedPopoverClose } from './Popover.js'
 
 export const Example: StoryObj = {
@@ -16,6 +16,6 @@ export const Example: StoryObj = {
     </DecoratedPopover>
   ),
   parameters: {
-    purpose: STORY_PURPOSE.demo,
+    usage: STORY_USAGE.doc,
   },
 }

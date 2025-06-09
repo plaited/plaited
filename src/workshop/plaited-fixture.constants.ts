@@ -12,4 +12,4 @@ export const TEST_PASSED = 'TEST_PASSED'
 
 export const SCALE = keyMirror('1', '2', '3', '4', '5', '6', '7', '8', 'rel')
 
-export const STORY_PURPOSE = keyMirror('test', 'demo', 'train')
+export const STORY_USAGE = keyMirror('test', 'doc', 'train')

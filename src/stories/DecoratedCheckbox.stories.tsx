@@ -1,4 +1,4 @@
-import { type StoryObj, type Args, STORY_PURPOSE } from 'plaited/workshop'
+import { type StoryObj, type Args, STORY_USAGE } from 'plaited/workshop'
 import { DecoratedCheckbox } from './DecoratedCheckbox.js'
 
 export const example: StoryObj<Args<typeof DecoratedCheckbox>> = {
@@ -29,7 +29,7 @@ export const example: StoryObj<Args<typeof DecoratedCheckbox>> = {
     })
   },
   parameters: {
-    purpose: STORY_PURPOSE.demo,
+    usage: STORY_USAGE.doc,
   },
 }
 
@@ -40,7 +40,7 @@ export const checked: StoryObj = {
     checked: true,
   },
   parameters: {
-    purpose: STORY_PURPOSE.demo,
+    usage: STORY_USAGE.doc,
   },
 }
 
@@ -51,7 +51,7 @@ export const disabled: StoryObj = {
     disabled: true,
   },
   parameters: {
-    purpose: STORY_PURPOSE.demo,
+    usage: STORY_USAGE.doc,
   },
 }
 
@@ -63,6 +63,6 @@ export const disabledAndChecked: StoryObj = {
     checked: true,
   },
   parameters: {
-    purpose: STORY_PURPOSE.demo,
+    usage: STORY_USAGE.doc,
   },
 }

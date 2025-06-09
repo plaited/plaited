@@ -30,4 +30,4 @@ export type PageOptions = {
 export type WorkshopParams = {
   cwd: string
   port?: number
-} & PageOptions
+} & Omit<PageOptions, 'output '>

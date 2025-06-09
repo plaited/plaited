@@ -8,14 +8,14 @@ import type { FireEvent } from './testing/use-fire-event.js'
 import type { Match } from './testing/match.js'
 import type { Throws } from './testing/throws.js'
 import { FAILED_ASSERTION, MISSING_ASSERTION_PARAMETER } from './testing/testing.constants.js'
-import { UNKNOWN_ERROR, STORY_PURPOSE, SCALE } from './plaited-fixture.constants.js'
+import { UNKNOWN_ERROR, STORY_USAGE, SCALE } from './plaited-fixture.constants.js'
 
 /**
  * @internal Configuration parameters for a specific story test.
  * These options control the testing environment and behavior for a single story.
  *
  * @property {Record<string, string> | false} [a11y] - Accessibility testing configuration. If set to an object, enables Axe-core checks with the specified rules. If `false`, disables a11y checks for this story.
- * @property {string} [description] - A description of the story's purpose or the scenario it tests. Often displayed in test reports.
+ * @property {string} [description] - A description of the story's usage or the scenario it tests. Often displayed in test reports.
  * @property {(env: NodeJS.ProcessEnv) => Headers} [headers] - A factory function to create custom HTTP headers for server-side rendering or fetching within the test environment.
  * @property {Scale} [scale] - The Agentic Card Scale to use when rendering and testing this story. See `Scale` type.
  * @property {StylesObject} [styles] - Additional CSS styles to apply specifically to the context of this story test. Useful for overriding global styles or adding test-specific visual aids.
@@ -26,7 +26,7 @@ export type Params = {
   scale?: keyof typeof SCALE
   styles?: StylesObject
   timeout?: number // Defaults to 5_000 ms
-  purpose?: keyof typeof STORY_PURPOSE // Defaults to test
+  usage?: keyof typeof STORY_USAGE // Defaults to test
 }
 
 /**
@@ -36,7 +36,7 @@ export type Params = {
  */
 export type ServerParams = Omit<Params, 'styles'> & {
   timeout: number
-  purpose: typeof STORY_PURPOSE
+  usage: keyof typeof STORY_USAGE
 }
 
 /**
@@ -106,7 +106,7 @@ export type Play = (args: {
  *
  * @template T - The type of attributes/props expected by the story's template. Defaults to `Attrs`.
  * @property {T} [args] - Optional props/attributes passed to the story's template function.
- * @property {string} description - A mandatory description of the story's purpose or test scenario.
+ * @property {string} description - A mandatory description of the story's usage or test scenario.
  * @property {Params} [parameters] - Optional parameters to configure the test environment for this story (e.g., Agentic Card Scale, timeout).
  * @property {Play} play - The required asynchronous function containing test interactions and assertions using the provided testing utilities.
  * @property {FunctionTemplate<T>} [template] - An optional Plaited template function used to render the component for this story. If omitted, a default template might be used based on convention.
@@ -124,7 +124,7 @@ export type InteractionStoryObj<T extends Attrs = Attrs> = {
  *
  * @template T - The type of attributes/props expected by the story's template. Defaults to `Attrs`.
  * @property {T} [args] - Optional props/attributes passed to the story's template function.
- * @property {string} description - A mandatory description of the story's purpose.
+ * @property {string} description - A mandatory description of the story's usage.
  * @property {Params} [parameters] - Optional parameters to configure the test environment for this story.
  * @property {Play} [play] - An optional asynchronous function for test interactions and assertions.
  * @property {FunctionTemplate<T>} [template] - An optional Plaited template function used to render the component for this story.

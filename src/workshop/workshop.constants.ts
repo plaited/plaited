@@ -10,3 +10,7 @@ export const TIMEOUT_ERROR = 'TIMEOUT_ERROR'
 
 /** Default timeout duration (in milliseconds) for story play functions. */
 export const DEFAULT_PLAY_TIMEOUT = 5_000
+
+export const OUTPUT_DIR = '/.plaited'
+export const TESTING_OUTPUT_DIR = `${OUTPUT_DIR}/testing`
+export const TRAINING_OUTPUT_DIR = `${OUTPUT_DIR}/training`

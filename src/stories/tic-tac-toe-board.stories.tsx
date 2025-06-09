@@ -1,4 +1,4 @@
-import { type StoryObj, STORY_PURPOSE } from 'plaited/workshop'
+import { type StoryObj, STORY_USAGE } from 'plaited/workshop'
 import { TicTacToeBoard } from './tic-tac-toe-board.js'
 import { BoardMarker } from './board-marker.js'
 import { OMarker } from './o-marker.js'
@@ -8,7 +8,7 @@ export const BoardMarkerRender: StoryObj = {
   description: '',
   template: BoardMarker,
   parameters: {
-    purpose: STORY_PURPOSE.demo,
+    usage: STORY_USAGE.doc,
   },
 }
 
@@ -16,7 +16,7 @@ export const TicTacToeBoardRender: StoryObj = {
   description: '',
   template: TicTacToeBoard,
   parameters: {
-    purpose: STORY_PURPOSE.demo,
+    usage: STORY_USAGE.doc,
   },
 }
 
@@ -24,7 +24,7 @@ export const OMarkerRender: StoryObj = {
   description: '',
   template: OMarker,
   parameters: {
-    purpose: STORY_PURPOSE.demo,
+    usage: STORY_USAGE.doc,
   },
 }
 
@@ -32,6 +32,6 @@ export const XMarkerRender: StoryObj = {
   description: '',
   template: XMarker,
   parameters: {
-    purpose: STORY_PURPOSE.demo,
+    usage: STORY_USAGE.doc,
   },
 }
