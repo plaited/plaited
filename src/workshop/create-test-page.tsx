@@ -2,7 +2,8 @@ import path from 'node:path'
 import { PlaitedFixture } from './plaited-fixture.js'
 import { ssr } from '../jsx/ssr.js'
 import { PLAY_EVENT } from './plaited-fixture.constants.js'
-import type { PageOptions, StoryObj } from './workshop.types.js'
+import type { StoryObj } from './plaited-fixture.types.js'
+import type { PageOptions } from './workshop.types.js'
 import { wait } from '../utils/wait.js'
 
 type Createstpage = {

@@ -1,3 +1,4 @@
+import type { SnapshotMessage } from '../behavioral/b-program.js'
 import { css } from '../styling/css'
 import { defineElement } from '../main/define-element'
 import { h } from '../jsx/create-template.js'
@@ -16,14 +17,13 @@ import type {
   InteractionTestFailureEvent,
   UnknownTestErrorEvent,
 } from './plaited-fixture.types'
-import { wait } from '../utils/wait.js'
-import { assert } from './testing/assert.js'
+import { useWait } from './testing/use-wait.js'
+import { useAssert } from './testing/use-assert.js'
 import { match } from './testing/match.js'
 import { throws } from './testing/throws.js'
-import { findByAttribute } from './testing/find-by-attribute.js'
-import { findByText } from './testing/find-by-text'
-import { fireEvent } from './testing/fire-event.js'
-
+import { useFindByAttribute } from './testing/use-find-by-attribute.js'
+import { useFindByText } from './testing/use-find-by-text'
+import { useFireEvent } from './testing/use-fire-event.js'
 /**
  * Trims the error name and message from the top of a stack trace string.
  * @param {string} stack - The full error.stack string.
@@ -74,7 +74,7 @@ export const PlaitedFixture = defineElement<{
       display: 'contents',
     }),
   }),
-  bProgram({ bThreads, host, bThread, bSync }) {
+  bProgram({ bThreads, host, bThread, bSync, trigger, useSnapshot }) {
     bThreads.set({
       onPlay: bThread([
         bSync<InteractionDetail | SnapshotDetail>({
@@ -88,23 +88,25 @@ export const PlaitedFixture = defineElement<{
         bSync({ block: PLAY_EVENT }),
       ]),
     })
+    useSnapshot((snapshot: SnapshotMessage) => {
+      console.dir(snapshot)
+    })
     return {
       async [PLAY_EVENT]({ route, entry, exportName, story }) {
         const { play } = story
         try {
           await play({
-            assert,
-            findByAttribute,
-            findByText,
-            fireEvent,
+            assert: useAssert(trigger),
+            findByAttribute: useFindByAttribute(trigger),
+            findByText: useFindByText(trigger),
+            fireEvent: useFireEvent(trigger),
             hostElement: host,
             match,
             throws,
-            wait,
+            wait: useWait(trigger),
           })
-          console.dir({ type: TEST_PASSED, detail: { route } })
+          trigger({ type: TEST_PASSED, detail: { route } })
         } catch (error) {
-          console.log(error)
           if (error instanceof FailedAssertionError || error instanceof MissingAssertionParameterError) {
             const event: InteractionTestFailureEvent = {
               type: error instanceof FailedAssertionError ? FAILED_ASSERTION : MISSING_ASSERTION_PARAMETER,
@@ -117,7 +119,7 @@ export const PlaitedFixture = defineElement<{
                 trace: getTraceOnly(error.stack ?? 'no trace'),
               },
             }
-            console.dir(event)
+            trigger(event)
           } else if (error instanceof Error) {
             const event: UnknownTestErrorEvent = {
               type: UNKNOWN_ERROR,
@@ -131,12 +133,12 @@ export const PlaitedFixture = defineElement<{
                 url: window?.location.href,
               },
             }
-            console.dir(event)
+            trigger(event)
           }
         }
       },
       onConnected() {
-        console.dir({
+        trigger({
           type: FIXTURE_CONNECTED,
         })
       },

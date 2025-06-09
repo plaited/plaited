@@ -1,14 +1,14 @@
 import type { Attrs, FunctionTemplate } from '../jsx/jsx.types.js'
 import type { StylesObject } from '../styling/css.types.js'
-import type { wait } from '../utils/wait.js'
-import type { assert } from './testing/assert.js'
-import type { findByAttribute } from './testing/find-by-attribute.js'
-import type { findByText } from './testing/find-by-text.js'
-import type { fireEvent } from './testing/fire-event.js'
-import type { match } from './testing/match.js'
-import type { throws } from './testing/throws.js'
-import type { FAILED_ASSERTION, MISSING_ASSERTION_PARAMETER } from './testing/testing.constants.js'
-import type { UNKNOWN_ERROR, STORY_PURPOSE, SCALE } from './plaited-fixture.constants.js'
+import type { Wait } from '../utils/wait.js'
+import type { Assert } from './testing/use-assert.js'
+import type { FindByAttribute } from './testing/use-find-by-attribute.js'
+import type { FindByText } from './testing/use-find-by-text.js'
+import type { FireEvent } from './testing/use-fire-event.js'
+import type { Match } from './testing/match.js'
+import type { Throws } from './testing/throws.js'
+import { FAILED_ASSERTION, MISSING_ASSERTION_PARAMETER } from './testing/testing.constants.js'
+import { UNKNOWN_ERROR, STORY_PURPOSE, SCALE } from './plaited-fixture.constants.js'
 
 /**
  * @internal Configuration parameters for a specific story test.
@@ -90,14 +90,14 @@ export type Args<T extends FunctionTemplate> = Parameters<T>[0]
  * ```
  */
 export type Play = (args: {
-  assert: typeof assert
-  findByAttribute: typeof findByAttribute
-  findByText: typeof findByText
-  fireEvent: typeof fireEvent
+  assert: Assert
+  findByAttribute: FindByAttribute
+  findByText: FindByText
+  fireEvent: FireEvent
   hostElement: Element
-  match: typeof match
-  throws: typeof throws
-  wait: typeof wait
+  match: Match
+  throws: Throws
+  wait: Wait
 }) => Promise<void>
 
 /**

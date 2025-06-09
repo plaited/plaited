@@ -1,7 +1,8 @@
 import { globEntries } from './workshop.utils.js'
 import { createStoryRoute } from './create-story-route.js'
 import { createTestPage } from './create-test-page.js'
-import type { WorkshopParams, StoryObj, Params } from './workshop.types.js'
+import type { StoryObj, Params } from './plaited-fixture.types.js'
+import type { WorkshopParams } from './workshop.types.js'
 import { DEFAULT_PLAY_TIMEOUT } from './workshop.constants.js'
 
 export const workshop = async ({ cwd, output, background, color, designTokens, port = 3000 }: WorkshopParams) => {

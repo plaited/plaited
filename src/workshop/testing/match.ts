@@ -22,7 +22,10 @@
  * on the same source string. This is particularly useful when you need to search
  * for multiple patterns within the same text.
  */
-export type Match = (str: string) => (pattern: string | RegExp) => string
+export type Match = {
+  (str: string): (pattern: string | RegExp) => string
+  name: string
+}
 
 /**
  * Escapes special regular expression characters in a string.

@@ -1,9 +1,12 @@
 import { test, expect } from 'bun:test'
 import sinon from 'sinon'
+import { noop } from '../../../utils/noop.js'
 import { wait } from '../../../utils/wait.js'
-import { assert } from '../assert.js'
+import { useAssert } from '../use-assert.js'
 import { match } from '../match.js'
 import { throws } from '../throws.js'
+
+const assert = useAssert(noop)
 
 const sum = (...args: number[]) => {
   if (args.some((v) => Number.isNaN(v))) throw new TypeError('NaN')

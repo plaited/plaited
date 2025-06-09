@@ -42,10 +42,10 @@ import { noop } from '../../utils/noop.js'
  * // error === 'Error: Async error'
  * ```
  */
-export type Throws = <U extends unknown[], V>(
-  fn: (...args: U) => V,
-  ...args: U
-) => string | undefined | Promise<string | undefined>
+export type Throws = {
+  <U extends unknown[], V>(fn: (...args: U) => V, ...args: U): string | undefined | Promise<string | undefined>
+  name: string
+}
 
 /**
  * Checks if a value is a Promise by testing for the presence of a `then` method.
