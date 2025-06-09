@@ -1,20 +1,23 @@
 import { $ } from 'bun'
-import { mkdtemp, mkdir } from 'node:fs/promises'
-import { sep, resolve } from 'node:path'
+import { mkdtemp } from 'node:fs/promises'
+import { sep } from 'node:path'
 import { globEntries } from './workshop.utils.js'
 import { createStoryRoute } from './create-story-route.js'
 import { createTestPage } from './create-test-page.js'
 import type { StoryObj, ServerParams } from './plaited-fixture.types.js'
-import { STORY_USAGE } from './plaited-fixture.constants.js'
 import type { WorkshopParams } from './workshop.types.js'
 import { DEFAULT_PLAY_TIMEOUT } from './workshop.constants.js'
+import { OUTPUT_DIR } from '../../.plaited.js'
 
 export const useTestingServer = async ({ cwd, background, color, designTokens, port = 3000 }: WorkshopParams) => {
-  const tmp = resolve(`${import.meta.dir}`, '../../.plaited')
-  await mkdir(tmp, { recursive: true })
-  const output = await mkdtemp(`${tmp}${sep}`)
   const stories = new Map<string, ServerParams>()
+
+  await $`rm -rf ${OUTPUT_DIR} && mkdir ${OUTPUT_DIR}`
+
+  const output = await mkdtemp(`${OUTPUT_DIR}${sep}`)
+
   const entrypoints = await globEntries(cwd)
+
   const values = await Promise.allSettled(
     entrypoints.flatMap(async (entry) => {
       const { default: _, ...rest } = (await import(entry)) as {
@@ -28,7 +31,6 @@ export const useTestingServer = async ({ cwd, background, color, designTokens, p
             a11y: story?.parameters?.a11y,
             scale: story?.parameters?.scale,
             timeout: story?.parameters?.timeout ?? DEFAULT_PLAY_TIMEOUT,
-            usage: story?.parameters?.usage ?? STORY_USAGE.test,
           })
           return await createTestPage({
             output,
@@ -44,7 +46,9 @@ export const useTestingServer = async ({ cwd, background, color, designTokens, p
       )
     }),
   )
+
   const routes = values.flatMap((settled) => (settled.status === 'fulfilled' ? settled.value : []))
+
   const server = Bun.serve({
     port,
     development: {
@@ -56,7 +60,7 @@ export const useTestingServer = async ({ cwd, background, color, designTokens, p
 
   process.on('SIGINT', async () => {
     console.log('\n...stopping server')
-    await $`rm -rf ${tmp}`
+    await $`rm -rf ${OUTPUT_DIR}`
     process.exit()
   })
 
@@ -77,13 +81,13 @@ export const useTestingServer = async ({ cwd, background, color, designTokens, p
 
   process.on('SIGTERM', async () => {
     console.log('\n...stopping server')
-    await $`rm -rf ${tmp}`
+    await $`rm -rf ${OUTPUT_DIR}`
     process.exit()
   })
 
   process.on('SIGHUP', async () => {
     console.log('\n...stopping server')
-    await $`rm -rf ${tmp}`
+    await $`rm -rf ${OUTPUT_DIR}`
     process.exit()
   })
 

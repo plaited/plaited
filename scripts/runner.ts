@@ -1,10 +1,11 @@
 import { useTestingServer } from '../src/workshop/use-testing-server.js'
+import { defineBProgram } from 'plaited/behavioral'
 // import { useSignal } from 'plaited/behavioral'
 // import { chromium, type BrowserContext } from 'playwright'
 
 const cwd = `${process.cwd()}/src`
 const { stories } = await useTestingServer({ cwd })
-console.log(stories)
+// console.log(stories)
 // const browser = await chromium.launch()
 // const contexts = new Set<BrowserContext>()
 

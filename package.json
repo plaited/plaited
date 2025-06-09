@@ -28,6 +28,8 @@
     "./workshop": "./src/workshop.ts"
   },
   "files": [
+    "./.bin/**",
+    "./.plaited.ts",
     "./src/**",
     "!./src/**/tests/*",
     "!./src/**/*.spec.@(tsx|ts)",

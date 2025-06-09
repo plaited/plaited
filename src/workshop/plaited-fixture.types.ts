@@ -8,7 +8,7 @@ import type { FireEvent } from './testing/use-fire-event.js'
 import type { Match } from './testing/match.js'
 import type { Throws } from './testing/throws.js'
 import { FAILED_ASSERTION, MISSING_ASSERTION_PARAMETER } from './testing/testing.constants.js'
-import { UNKNOWN_ERROR, STORY_USAGE, SCALE } from './plaited-fixture.constants.js'
+import { UNKNOWN_ERROR, SCALE } from './plaited-fixture.constants.js'
 
 /**
  * @internal Configuration parameters for a specific story test.
@@ -26,7 +26,6 @@ export type Params = {
   scale?: keyof typeof SCALE
   styles?: StylesObject
   timeout?: number // Defaults to 5_000 ms
-  usage?: keyof typeof STORY_USAGE // Defaults to test
 }
 
 /**
@@ -36,7 +35,6 @@ export type Params = {
  */
 export type ServerParams = Omit<Params, 'styles'> & {
   timeout: number
-  usage: keyof typeof STORY_USAGE
 }
 
 /**
