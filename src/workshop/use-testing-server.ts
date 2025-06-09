@@ -1,13 +1,18 @@
+import { $ } from 'bun'
+import { mkdtemp, mkdir } from 'node:fs/promises'
+import { sep, resolve } from 'node:path'
 import { globEntries } from './workshop.utils.js'
 import { createStoryRoute } from './create-story-route.js'
 import { createTestPage } from './create-test-page.js'
 import type { StoryObj, ServerParams } from './plaited-fixture.types.js'
 import { STORY_USAGE } from './plaited-fixture.constants.js'
 import type { WorkshopParams } from './workshop.types.js'
-import { DEFAULT_PLAY_TIMEOUT, TESTING_OUTPUT_DIR } from './workshop.constants.js'
+import { DEFAULT_PLAY_TIMEOUT } from './workshop.constants.js'
 
 export const useTestingServer = async ({ cwd, background, color, designTokens, port = 3000 }: WorkshopParams) => {
-  const output = `${cwd}${TESTING_OUTPUT_DIR}`
+  const tmp = resolve(`${import.meta.dir}`, '../../.plaited')
+  await mkdir(tmp, { recursive: true })
+  const output = await mkdtemp(`${tmp}${sep}`)
   const stories = new Map<string, ServerParams>()
   const entrypoints = await globEntries(cwd)
   const values = await Promise.allSettled(
@@ -48,38 +53,42 @@ export const useTestingServer = async ({ cwd, background, color, designTokens, p
     },
     routes: Object.assign({}, ...routes),
   })
-  const stopServer = async () => {
-    console.log('\n...stopping server')
-    await server?.stop(true)
-    console.log('server stopped')
-  }
 
   process.on('SIGINT', async () => {
-    await stopServer()
+    console.log('\n...stopping server')
+    await $`rm -rf ${tmp}`
     process.exit()
   })
 
   process.on('uncaughtException', (error) => {
     console?.error('Uncaught Exception:', error)
+    process.exit(1)
   })
 
   process.on('unhandledRejection', (reason, promise) => {
     console?.error('Unhandled Rejection at:', promise, 'reason:', reason)
+    process.exit(1)
   })
 
   process.on('exit', async () => {
-    await stopServer()
+    await server?.stop(true)
     console.log('server stopped')
   })
 
   process.on('SIGTERM', async () => {
-    await stopServer()
+    console.log('\n...stopping server')
+    await $`rm -rf ${tmp}`
     process.exit()
   })
 
   process.on('SIGHUP', async () => {
-    await stopServer()
+    console.log('\n...stopping server')
+    await $`rm -rf ${tmp}`
     process.exit()
   })
-  return stories
+
+  return {
+    stories,
+    server,
+  }
 }

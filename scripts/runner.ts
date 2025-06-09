@@ -3,9 +3,8 @@ import { useTestingServer } from '../src/workshop/use-testing-server.js'
 // import { chromium, type BrowserContext } from 'playwright'
 
 const cwd = `${process.cwd()}/src`
-const output = `${process.cwd()}/.plaited`
-const { stories } = await useTestingServer({ cwd, output })
-
+const { stories } = await useTestingServer({ cwd })
+console.log(stories)
 // const browser = await chromium.launch()
 // const contexts = new Set<BrowserContext>()
 
