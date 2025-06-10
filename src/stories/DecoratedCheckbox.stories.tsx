@@ -1,4 +1,4 @@
-import { type StoryObj, type Args, STORY_USAGE } from 'plaited/workshop'
+import { type StoryObj, type Args } from 'plaited/workshop'
 import { DecoratedCheckbox } from './DecoratedCheckbox.js'
 
 export const example: StoryObj<Args<typeof DecoratedCheckbox>> = {
@@ -28,9 +28,6 @@ export const example: StoryObj<Args<typeof DecoratedCheckbox>> = {
       actual: backgroundColor,
     })
   },
-  parameters: {
-    usage: STORY_USAGE.doc,
-  },
 }
 
 export const checked: StoryObj = {
@@ -38,9 +35,6 @@ export const checked: StoryObj = {
   description: `DecoratedCheckbox rendered with the checked prop set to true.`,
   args: {
     checked: true,
-  },
-  parameters: {
-    usage: STORY_USAGE.doc,
   },
 }
 
@@ -50,9 +44,6 @@ export const disabled: StoryObj = {
   args: {
     disabled: true,
   },
-  parameters: {
-    usage: STORY_USAGE.doc,
-  },
 }
 
 export const disabledAndChecked: StoryObj = {
@@ -61,8 +52,5 @@ export const disabledAndChecked: StoryObj = {
   args: {
     disabled: true,
     checked: true,
-  },
-  parameters: {
-    usage: STORY_USAGE.doc,
   },
 }

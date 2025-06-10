@@ -4,13 +4,13 @@ import { sep } from 'node:path'
 import { globEntries } from './workshop.utils.js'
 import { createStoryRoute } from './create-story-route.js'
 import { createTestPage } from './create-test-page.js'
-import type { StoryObj, ServerParams } from './plaited-fixture.types.js'
-import type { WorkshopParams } from './workshop.types.js'
+import type { StoryObj } from './plaited-fixture.types.js'
+import type { WorkshopParams, TestParams } from './workshop.types.js'
 import { DEFAULT_PLAY_TIMEOUT } from './workshop.constants.js'
 import { OUTPUT_DIR } from '../../.plaited.js'
 
-export const useTestingServer = async ({ cwd, background, color, designTokens, port = 3000 }: WorkshopParams) => {
-  const stories = new Map<string, ServerParams>()
+export const useTestServer = async ({ cwd, background, color, designTokens, port = 3000 }: WorkshopParams) => {
+  const stories = new Map<string, TestParams[]>()
 
   await $`rm -rf ${OUTPUT_DIR} && mkdir ${OUTPUT_DIR}`
 
@@ -23,11 +23,13 @@ export const useTestingServer = async ({ cwd, background, color, designTokens, p
       const { default: _, ...rest } = (await import(entry)) as {
         [key: string]: StoryObj
       }
+      const filePath = entry.replace(new RegExp(`^${cwd}`), '')
+      stories.set(filePath, [])
       return await Promise.all(
-        Object.entries(rest).map(async ([exportName, story]) => {
-          const filePath = entry.replace(new RegExp(`^${cwd}`), '')
+        Object.entries(rest).flatMap(async ([exportName, story]) => {
           const route = createStoryRoute({ filePath, exportName })
-          stories.set(route, {
+          stories.get(filePath)?.push({
+            route,
             a11y: story?.parameters?.a11y,
             scale: story?.parameters?.scale,
             timeout: story?.parameters?.timeout ?? DEFAULT_PLAY_TIMEOUT,

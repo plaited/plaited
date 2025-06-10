@@ -1,4 +1,4 @@
-import { type StoryObj, STORY_USAGE } from 'plaited/workshop'
+import { type StoryObj } from 'plaited/workshop'
 import { ToggleInput } from './ToggleInput.js'
 
 export const checkbox: StoryObj = {
@@ -8,9 +8,6 @@ export const checkbox: StoryObj = {
     const checkbox = document.querySelector(ToggleInput.tag)
     checkbox?.setAttribute('checked', '')
   },
-  parameters: {
-    usage: STORY_USAGE.doc,
-  },
 }
 
 export const checked: StoryObj = {
@@ -18,9 +15,6 @@ export const checked: StoryObj = {
   template: ToggleInput,
   args: {
     checked: true,
-  },
-  parameters: {
-    usage: STORY_USAGE.doc,
   },
 }
 
@@ -30,9 +24,6 @@ export const disabled: StoryObj = {
   args: {
     disabled: true,
   },
-  parameters: {
-    usage: STORY_USAGE.doc,
-  },
 }
 
 export const disabledAndChecked: StoryObj = {
@@ -41,8 +32,5 @@ export const disabledAndChecked: StoryObj = {
   args: {
     disabled: true,
     checked: true,
-  },
-  parameters: {
-    usage: STORY_USAGE.doc,
   },
 }

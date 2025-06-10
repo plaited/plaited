@@ -1,17 +1,7 @@
 import type { ServerWebSocket } from 'bun'
 import { type JSONDetail } from 'plaited'
 import { defineBProgram } from 'plaited/behavioral'
-import {
-  type FailedTestEvent,
-  type PassedTestEvent,
-  type TestParams,
-  TEST_PASSED,
-  TEST_EXCEPTION,
-  UNKNOWN_ERROR,
-  FIXTURE_CONNECTED,
-  PLAY_EVENT,
-  PLAITED_FIXTURE,
-} from 'plaited/workshop'
+import { UNKNOWN_ERROR, FIXTURE_CONNECTED, PLAY_EVENT, PLAITED_FIXTURE } from 'plaited/workshop'
 
 type ModuleMessageDetail<T extends JSONDetail | undefined = undefined> = {
   ws: ServerWebSocket<unknown>

@@ -32,10 +32,10 @@ for (const square of squares) {
   squaresTaken[`(${square}) taken`] = bThread(
     [
       bSync<Square>({
-        waitFor: ({ detail }) => square === detail.square,
+        waitFor: ({ detail }) => square === detail?.square,
       }),
       bSync<Square>({
-        block: ({ detail }) => square === detail.square,
+        block: ({ detail }) => square === detail?.square,
       }),
     ],
     true,

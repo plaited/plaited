@@ -1,4 +1,4 @@
-import { type StoryObj, STORY_USAGE } from 'plaited/workshop'
+import { type StoryObj } from 'plaited/workshop'
 import { InputAddon } from './InputAddon.js'
 
 export const Example: StoryObj = {
@@ -8,7 +8,4 @@ export const Example: StoryObj = {
       <input slot='input' />
     </InputAddon>
   ),
-  parameters: {
-    usage: STORY_USAGE.doc,
-  },
 }

@@ -47,7 +47,7 @@
     "prettier": "prettier . --write",
     "test": "bun run test-stories && bun test **/*.spec.{ts,tsx}",
     "test-stories": "bun run scripts/runner.ts",
-    "test:playwright": "bunx playwright test",
+    "test:playwright": "bunx playwright test scripts/runner.spec.ts",
     "watch": "bun run check --watch"
   },
   "lint-staged": {
@@ -81,6 +81,7 @@
     "@types/node": "22.15.19",
     "@types/sinon": "17.0.4",
     "beautify": "0.0.8",
+    "bun": "^1.2.15",
     "bun-types": "1.2.13",
     "csstype": "3.1.3",
     "cz-conventional-changelog": "3.3.0",

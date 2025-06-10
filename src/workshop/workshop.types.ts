@@ -9,17 +9,6 @@ export type CreateStory = <T extends Attrs = Attrs>(
   params: Params
 }
 
-/**
- * Represents the resolved test parameters used internally during test execution,
- * after merging story-specific parameters with defaults.
- * @internal
- */
-export type TestParams = {
-  a11y?: false | Record<string, string>
-  scale?: typeof SCALE
-  timeout: number
-}
-
 export type PageOptions = {
   output: string
   background?: `var(${string})`
@@ -31,3 +20,14 @@ export type WorkshopParams = {
   cwd: string
   port?: number
 } & Omit<PageOptions, 'output'>
+
+/**
+ * Represents the resolved test parameters used internally during test execution,
+ * after merging story-specific parameters with defaults.
+ * @internal
+ */
+export type TestParams = Omit<Params, 'styles'> & {
+  timeout: number
+  scale?: keyof typeof SCALE
+  route: string
+}

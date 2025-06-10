@@ -29,15 +29,6 @@ export type Params = {
 }
 
 /**
- * Represents the resolved workshop server parameters used internally by plaited/workshop,
- * after merging story-specific parameters with defaults.
- * @internal
- */
-export type ServerParams = Omit<Params, 'styles'> & {
-  timeout: number
-}
-
-/**
  * Utility type to extract the argument/props type from a Plaited FunctionTemplate.
  * @template T - The FunctionTemplate type (e.g., `(props: { title: string }) => Template`).
  * @example type ButtonArgs = Args<typeof ButtonTemplate>; // { title: string }
