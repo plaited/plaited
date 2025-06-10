@@ -1,8 +1,8 @@
 import path from 'node:path'
-import { STORIES_FILTERS_REGEX } from './workshop.constants.js'
 
 import { kebabCase } from 'plaited/utils'
 
+const STORIES_FILTERS_REGEX = /\.stories.tsx?$/
 /**
  * Creates a standardized route path for story files in the workshop system.
  * Converts file paths and export names to kebab-case for consistent URL structure.

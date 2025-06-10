@@ -1,4 +1,4 @@
-import { FAILED_ASSERTION, MISSING_ASSERTION_PARAMETER } from './testing.constants'
+import { FAILED_ASSERTION, MISSING_ASSERTION_PARAMETER, TIMEOUT_ERROR } from './testing.constants'
 
 /**
  * Custom error for test assertion failures.
@@ -22,6 +22,21 @@ export class FailedAssertionError extends Error implements Error {
  */
 export class MissingAssertionParameterError extends Error {
   override name = MISSING_ASSERTION_PARAMETER
+  constructor(message: string) {
+    super(message)
+  }
+}
+
+/**
+ * Custom error for test timeout scenarios.
+ * Thrown when a test exceeds its specified timeout duration.
+ *
+ * @extends Error
+ * @property name Constant identifier 'TIMEOUT_ERROR'
+ *
+ */
+export class TimeoutError extends Error {
+  override name = TIMEOUT_ERROR
   constructor(message: string) {
     super(message)
   }

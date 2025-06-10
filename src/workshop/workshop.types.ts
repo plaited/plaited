@@ -1,13 +1,5 @@
-import type { Attrs, TemplateObject } from '../jsx/jsx.types.js'
 import type { StoryObj, Params } from './plaited-fixture.types.js'
 import { SCALE } from './plaited-fixture.constants.js'
-
-export type CreateStory = <T extends Attrs = Attrs>(
-  args: StoryObj<T>,
-) => {
-  template: TemplateObject
-  params: Params
-}
 
 export type PageOptions = {
   output: string
@@ -31,3 +23,13 @@ export type TestParams = Omit<Params, 'styles'> & {
   scale?: keyof typeof SCALE
   route: string
 }
+
+export type TestMap = Map<string, TestParams[]>
+
+export type Stories = {
+  [key: string]: StoryObj
+}
+
+export type TestRoutes = Record<string, () => Promise<Response>>
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type AssetRoutes = Record<string, any>

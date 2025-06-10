@@ -5,6 +5,8 @@ import { PLAY_EVENT } from './plaited-fixture.constants.js'
 import type { StoryObj } from './plaited-fixture.types.js'
 import type { PageOptions } from './workshop.types.js'
 import { wait } from '../utils/wait.js'
+import { createStoryRoute } from './create-story-route.js'
+import type { WorkshopParams, Stories } from './workshop.types.js'
 
 type Createstpage = {
   story: StoryObj
@@ -89,4 +91,37 @@ export const createTestPage = async ({
   await Bun.write(htmlPath, html)
   const { default: resp } = await import(htmlPath)
   return { [route]: resp }
+}
+
+type SetStorySetParams = {
+  entry: string
+  output: string
+  stories: Stories
+  filePath: string
+} & WorkshopParams
+
+export const getStorySetRoutes = async ({
+  background,
+  color,
+  designTokens,
+  entry,
+  output,
+  stories,
+  filePath,
+}: SetStorySetParams) => {
+  return await Promise.all(
+    Object.entries(stories).flatMap(async ([exportName, story]) => {
+      const route = createStoryRoute({ filePath, exportName })
+      return await createTestPage({
+        output,
+        story,
+        route,
+        entry,
+        exportName,
+        background,
+        color,
+        designTokens,
+      })
+    }),
+  )
 }

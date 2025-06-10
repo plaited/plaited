@@ -1,9 +1,9 @@
 import { $ } from 'bun'
 import { mkdtemp } from 'node:fs/promises'
 import { sep } from 'node:path'
-import { globEntries } from './workshop.utils.js'
+import { globStoryFiles } from './glob-story-files.js'
 import { createStoryRoute } from './create-story-route.js'
-import { createTestPage } from './create-test-page.js'
+import { createTestPage } from './get-story-set-routes.js'
 import type { StoryObj } from './plaited-fixture.types.js'
 import type { WorkshopParams, TestParams } from './workshop.types.js'
 import { DEFAULT_PLAY_TIMEOUT } from './workshop.constants.js'
@@ -16,7 +16,7 @@ export const useTestServer = async ({ cwd, background, color, designTokens, port
 
   const output = await mkdtemp(`${OUTPUT_DIR}${sep}`)
 
-  const entrypoints = await globEntries(cwd)
+  const entrypoints = await globStoryFiles(cwd)
 
   const values = await Promise.allSettled(
     entrypoints.flatMap(async (entry) => {
