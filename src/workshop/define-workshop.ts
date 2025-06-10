@@ -1,4 +1,3 @@
-import { defineBProgram, type DefineBProgramProps } from '../behavioral/define-b-program.js'
 import type { BPEvent } from '../behavioral/b-thread.js'
 import { type Disconnect, type Handlers, bProgram } from '../behavioral/b-program.js'
 import { $ } from 'bun'
