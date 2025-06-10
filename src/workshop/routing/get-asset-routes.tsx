@@ -8,13 +8,6 @@ import { wait } from '../../utils/wait.js'
 import { createStoryRoute } from './create-story-route.js'
 import type { WorkshopParams, Stories } from '../workshop.types.js'
 
-type Createstpage = {
-  story: StoryObj
-  route: string
-  entry: string
-  exportName: string
-} & PageOptions
-
 const createFixtureLoadScript = ({
   route,
   importPath,
@@ -46,7 +39,13 @@ fixture?.trigger({
 
 `
 
-export const createTestPage = async ({
+type CreatePageBundle = {
+  story: StoryObj
+  route: string
+  entry: string
+  exportName: string
+} & PageOptions
+export const createPageBundle = async ({
   story,
   route,
   entry,
@@ -55,7 +54,7 @@ export const createTestPage = async ({
   color,
   designTokens,
   output,
-}: Createstpage) => {
+}: CreatePageBundle) => {
   const args = story?.args ?? {}
   const tpl = story?.template
   const styles = story?.parameters?.styles
@@ -93,6 +92,33 @@ export const createTestPage = async ({
   return { [route]: resp }
 }
 
+type CreateIncludeBundle = {
+  story: StoryObj
+  route: string
+} & Pick<PageOptions, 'output'>
+
+const createInclude = async ({ story, route, output }: CreateIncludeBundle) => {
+  const args = story?.args ?? {}
+  const Template = story?.template
+  if (!Template) return {}
+  const fragment = (
+    <>
+      <Template {...args} />
+      <script
+        type='module'
+        trusted
+        src='./index.ts'
+      />
+    </>
+  )
+  const storyPath = path.resolve(output, `.${route}`)
+  const htmlPath = `${storyPath}/template.html`
+  await wait(60)
+  await Bun.write(htmlPath, fragment)
+  const { default: resp } = await import(htmlPath)
+  return { [`${route}.template`]: resp }
+}
+
 type SetStorySetParams = {
   entry: string
   output: string
@@ -112,7 +138,7 @@ export const getAssetRoutes = async ({
   return await Promise.all(
     Object.entries(stories).flatMap(async ([exportName, story]) => {
       const route = createStoryRoute({ filePath, exportName })
-      return await createTestPage({
+      const page = await createPageBundle({
         output,
         story,
         route,
@@ -122,6 +148,15 @@ export const getAssetRoutes = async ({
         color,
         designTokens,
       })
+      const include = await createInclude({
+        output,
+        story,
+        route,
+      })
+      return {
+        ...page,
+        ...include,
+      }
     }),
   )
 }
