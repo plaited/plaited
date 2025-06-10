@@ -1,11 +1,13 @@
-import { defineBProgram, type DefineBProgramProps } from './define-b-program.js'
 import type { BPEvent } from './b-thread.js'
 import type { Disconnect, Handlers } from './b-program.js'
+import { bProgram as bp, type BProgram } from './b-program.js'
+import { getPublicTrigger } from './get-public-trigger.js'
+import { getPlaitedTrigger } from './get-plaited-trigger.js'
 
 type WorkerContext = {
   send(data: BPEvent): void
   disconnect: Disconnect
-}
+} & Omit<ReturnType<BProgram>, 'useFeedback'>
 /**
  * Creates a behavioral program worker with type-safe message handling and lifecycle management.
  * Integrates Web Workers with Plaited's behavioral programming system for efficient background processing.
@@ -133,27 +135,32 @@ export const defineWorker = <A extends Handlers>({
   bProgram,
   publicEvents,
 }: {
-  bProgram: (args: DefineBProgramProps & WorkerContext) => A
+  bProgram: (args: WorkerContext) => A
   publicEvents: string[]
 }) => {
-  const disconnectSet = new Set<Disconnect>()
   const context = self
-  const send = (data: BPEvent) => context.postMessage(data)
-  const init = defineBProgram<A, WorkerContext>({
-    publicEvents,
-    disconnectSet,
-    bProgram,
-  })
-  const publicTrigger = init({
-    send,
-    disconnect: () => disconnectSet.forEach((disconnect) => disconnect()),
-  })
-  const eventHandler = ({ data }: { data: BPEvent }) => {
-    publicTrigger(data)
-  }
-  init.addDisconnectCallback(() => {
+  const disconnectSet = new Set<Disconnect>()
+  disconnectSet.add(() => {
     context.removeEventListener('message', eventHandler)
     disconnectSet.clear()
   })
+  const { useFeedback, trigger, ...rest } = bp()
+  const plaitedTrigger = getPlaitedTrigger(trigger, disconnectSet)
+  const send = (data: BPEvent) => context.postMessage(data)
+  const disconnect = () => {
+    disconnectSet.forEach((disconnect) => disconnect())
+    self.close()
+  }
+  const handlers = bProgram({
+    ...rest,
+    send,
+    disconnect,
+    trigger: plaitedTrigger,
+  })
+  useFeedback(handlers)
+  const publicTrigger = getPublicTrigger({ trigger, publicEvents })
+  const eventHandler = ({ data }: { data: BPEvent }) => {
+    publicTrigger(data)
+  }
   context.addEventListener('message', eventHandler, false)
 }

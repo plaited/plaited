@@ -8,9 +8,10 @@ export type PageOptions = {
   designTokens?: string
 }
 
-export type WorkshopParams = {
+export type DefineWorkshopParams = {
   cwd: string
   port?: number
+  publicEvents?: string[]
 } & Omit<PageOptions, 'output'>
 
 /**

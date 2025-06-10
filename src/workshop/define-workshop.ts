@@ -1,11 +1,16 @@
-// import { defineBProgram, type DefineBProgramProps } from '../behavioral/define-b-program.js'
-// import type { BPEvent } from '../behavioral/b-thread.js'
-// import type { Disconnect, Handlers } from '../behavioral/b-program.js'
-
+import { defineBProgram, type DefineBProgramProps } from '../behavioral/define-b-program.js'
+import type { BPEvent } from '../behavioral/b-thread.js'
+import { type Disconnect, type Handlers, bProgram } from '../behavioral/b-program.js'
+import { $ } from 'bun'
+import { mkdtemp } from 'node:fs/promises'
+import { sep } from 'node:path'
 import { Glob } from 'bun'
 import type { StoryObj } from './testing/plaited-fixture.types.js'
+import type { TestRoutes, DefineWorkshopParams } from './workshop.types.js'
+import { DEFAULT_PLAY_TIMEOUT } from './workshop.constants.js'
+import { OUTPUT_DIR } from '../../.plaited.js'
 
-const getStoriesFromfile = async (file: string) => {
+export const getStoriesFromfile = async (file: string) => {
   const { default: _, ...rest } = (await import(file)) as {
     [key: string]: StoryObj
   }
@@ -19,10 +24,20 @@ export async function globStoryFiles(cwd: string): Promise<string[]> {
   const paths = await Array.fromAsync(glob.scan({ cwd }))
   return paths.map((path) => Bun.resolveSync(`./${path}`, cwd))
 }
-// export const defineWorkshop = <A extends Handlers>({
-//   bProgram,
-//   publicEvents,
-// }: {
-//   bProgram: (args: DefineBProgramProps) => A
-//   publicEvents: string[]
-// }) => {}
+export const defineWorkshop = async <A extends Handlers>({
+  publicEvents,
+  routes,
+  cwd,
+  background,
+  color,
+  designTokens,
+  port = 3000,
+}: DefineWorkshopParams) => {
+  const { bThreads, useFeedback, useSnapshot } = bProgram()
+  //Clean up tmp directory
+  await $`rm -rf ${OUTPUT_DIR} && mkdir ${OUTPUT_DIR}`
+  // Create randomly named output directory in temp directory
+  const output = await mkdtemp(`${OUTPUT_DIR}${sep}`)
+  // Glob story files ??? I honestly
+  const entrypoints = await globStoryFiles(cwd)
+}
