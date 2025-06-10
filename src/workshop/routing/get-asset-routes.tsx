@@ -45,6 +45,7 @@ type CreatePageBundle = {
   entry: string
   exportName: string
 } & PageOptions
+
 export const createPageBundle = async ({
   story,
   route,
@@ -97,7 +98,7 @@ type CreateIncludeBundle = {
   route: string
 } & Pick<PageOptions, 'output'>
 
-const createInclude = async ({ story, route, output }: CreateIncludeBundle) => {
+export const createInclude = async ({ story, route, output }: CreateIncludeBundle) => {
   const args = story?.args ?? {}
   const Template = story?.template
   if (!Template) return {}
