@@ -1,8 +1,8 @@
-import type { SnapshotMessage } from '../behavioral/b-program.js'
-import { css } from '../styling/css'
-import { defineElement } from '../main/define-element'
-import { h } from '../jsx/create-template.js'
-import { FAILED_ASSERTION, MISSING_ASSERTION_PARAMETER } from './testing/testing.constants.js'
+import type { SnapshotMessage } from '../../behavioral/b-program.js'
+import { css } from '../../styling/css.js'
+import { defineElement } from '../../main/define-element.js'
+import { h } from '../../jsx/create-template.js'
+import { FAILED_ASSERTION, MISSING_ASSERTION_PARAMETER } from './testing.constants.js'
 import {
   PLAITED_FIXTURE,
   PLAY_EVENT,
@@ -10,20 +10,20 @@ import {
   TEST_PASSED,
   UNKNOWN_ERROR,
 } from './plaited-fixture.constants.js'
-import { FailedAssertionError, MissingAssertionParameterError } from './testing/errors.js'
+import { FailedAssertionError, MissingAssertionParameterError } from './errors.js'
 import type {
   InteractionDetail,
   SnapshotDetail,
   InteractionTestFailureEvent,
   UnknownTestErrorEvent,
 } from './plaited-fixture.types'
-import { useWait } from './testing/use-wait.js'
-import { useAssert } from './testing/use-assert.js'
-import { match } from './testing/match.js'
-import { throws } from './testing/throws.js'
-import { useFindByAttribute } from './testing/use-find-by-attribute.js'
-import { useFindByText } from './testing/use-find-by-text'
-import { useFireEvent } from './testing/use-fire-event.js'
+import { useWait } from './use-wait.js'
+import { useAssert } from './use-assert.js'
+import { match } from './match.js'
+import { throws } from './throws.js'
+import { useFindByAttribute } from './use-find-by-attribute.js'
+import { useFindByText } from './use-find-by-text.js'
+import { useFireEvent } from './use-fire-event.js'
 /**
  * Trims the error name and message from the top of a stack trace string.
  * @param {string} stack - The full error.stack string.
