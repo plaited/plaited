@@ -1,5 +1,5 @@
-import type { StoryObj, Params } from './plaited-fixture.types.js'
-import { SCALE } from './plaited-fixture.constants.js'
+import type { StoryObj, Params } from './testing/plaited-fixture.types.js'
+import { SCALE } from './testing/plaited-fixture.constants.js'
 
 export type PageOptions = {
   output: string

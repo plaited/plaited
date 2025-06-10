@@ -1,4 +1,4 @@
-import { keyMirror } from '../utils/key-mirror.js'
+import { keyMirror } from '../../utils/key-mirror.js'
 
 export const PLAITED_FIXTURE = 'plaited-test-fixture'
 /** Event type used internally to trigger the execution of a story's play function. */
