@@ -4,7 +4,7 @@ import { bProgram as bp, type BProgram } from './b-program.js'
 import { getPublicTrigger } from './get-public-trigger.js'
 import { getPlaitedTrigger } from './get-plaited-trigger.js'
 
-type WorkerContext = {
+type BProgramArgs = {
   send(data: BPEvent): void
   disconnect: Disconnect
 } & Omit<ReturnType<BProgram>, 'useFeedback'>
@@ -135,7 +135,7 @@ export const defineWorker = <A extends Handlers>({
   bProgram,
   publicEvents,
 }: {
-  bProgram: (args: WorkerContext) => A
+  bProgram: (args: BProgramArgs) => A
   publicEvents: string[]
 }) => {
   const context = self
