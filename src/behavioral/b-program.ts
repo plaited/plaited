@@ -213,6 +213,8 @@ type SnapshotFormatter = (args: {
  */
 export type SnapshotListener = (msg: SnapshotMessage) => void | Promise<void>
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type EventDetails = Record<string, any>
 /**
  * @internal Defines the basic structure for event handlers used in `useFeedback`.
  * A record where keys are event types (strings) and values are callback functions
@@ -292,7 +294,11 @@ type DefaultHandlers = Record<string, (detail: any) => void | Promise<void>>
  * const { useFeedback } = bProgram();
  * const disconnect = useFeedback(appHandlers);
  */
-export type Handlers<T = DefaultHandlers> = DefaultHandlers & T
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Handlers<Details extends EventDetails = EventDetails> = {
+  // Create specific handler signatures from the EventPayloadMap
+  [K in keyof Details]: (detail: Details[K]) => void | Promise<void>
+} & DefaultHandlers
 
 /**
  * A hook for subscribing to the events selected and published by the behavioral program.
@@ -346,7 +352,7 @@ export type Handlers<T = DefaultHandlers> = DefaultHandlers & T
  * // To stop listening later (e.g., component cleanup):
  * // disconnect();
  */
-export type UseFeedback = <T = DefaultHandlers>(handlers: Handlers<T>) => Disconnect
+export type UseFeedback = <T extends EventDetails = EventDetails>(handlers: Handlers<T>) => Disconnect
 
 /**
  * A hook for registering a `SnapshotListener` to monitor the internal state transitions of the b-program.

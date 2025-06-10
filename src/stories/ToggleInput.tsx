@@ -20,10 +20,10 @@ const hostStyles = css.host({
 })
 
 export const ToggleInput = defineElement<{
-  click(evt: MouseEvent & { target: HTMLInputElement }): void
-  checked(val: boolean): void
-  disabled(val: boolean): void
-  valueChange(val: string | null): void
+  click: MouseEvent & { target: HTMLInputElement }
+  checked: boolean
+  disabled: boolean
+  valueChange: string | null
 }>({
   tag: 'toggle-input',
   observedAttributes: ['disabled', 'checked', 'value'],

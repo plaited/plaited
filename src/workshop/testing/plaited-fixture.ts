@@ -64,7 +64,7 @@ const getTraceOnly = (stack: string) => {
  * ```
  */
 export const PlaitedFixture = defineElement<{
-  [PLAY_EVENT](detail: InteractionDetail): void
+  [PLAY_EVENT]: InteractionDetail
 }>({
   tag: PLAITED_FIXTURE,
   publicEvents: [PLAY_EVENT],

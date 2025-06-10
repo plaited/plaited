@@ -6,7 +6,7 @@ import type { StoryObj } from '../testing/plaited-fixture.types.js'
 import type { PageOptions } from '../workshop.types.js'
 import { wait } from '../../utils/wait.js'
 import { createStoryRoute } from './create-story-route.js'
-import type { WorkshopParams, Stories } from '../workshop.types.js'
+import type { DefineWorkshopParams, Stories } from '../workshop.types.js'
 
 const createFixtureLoadScript = ({
   route,
@@ -125,7 +125,7 @@ type SetStorySetParams = {
   output: string
   stories: Stories
   filePath: string
-} & WorkshopParams
+} & DefineWorkshopParams
 
 export const getAssetRoutes = async ({
   background,

@@ -1,5 +1,5 @@
 import type { BPEvent } from './b-thread.js'
-import type { Disconnect, Handlers } from './b-program.js'
+import type { Disconnect, Handlers, EventDetails } from './b-program.js'
 import { bProgram as bp, type BProgram } from './b-program.js'
 import { getPublicTrigger } from './get-public-trigger.js'
 import { getPlaitedTrigger } from './get-plaited-trigger.js'
@@ -131,11 +131,11 @@ type BProgramArgs = {
  *    - Consider data transfer costs
  *    - Use appropriate data structures
  */
-export const defineWorker = <A extends Handlers>({
+export const defineWorker = <A extends EventDetails>({
   bProgram,
   publicEvents,
 }: {
-  bProgram: (args: BProgramArgs) => A
+  bProgram: (args: BProgramArgs) => Handlers<A>
   publicEvents: string[]
 }) => {
   const context = self
@@ -144,23 +144,28 @@ export const defineWorker = <A extends Handlers>({
     context.removeEventListener('message', eventHandler)
     disconnectSet.clear()
   })
+  // Initiate  a Behanvioral Program
   const { useFeedback, trigger, ...rest } = bp()
-  const plaitedTrigger = getPlaitedTrigger(trigger, disconnectSet)
+  // Callback for sending events to the main window
   const send = (data: BPEvent) => context.postMessage(data)
+  // Disconnect callback can be used to disconnect listeners and close worker
   const disconnect = () => {
     disconnectSet.forEach((disconnect) => disconnect())
     self.close()
   }
-  const handlers = bProgram({
-    ...rest,
-    send,
-    disconnect,
-    trigger: plaitedTrigger,
-  })
-  useFeedback(handlers)
+  // BProgram callback returning handlers to be passed to useFeedback
+  useFeedback(
+    bProgram({
+      ...rest,
+      send,
+      disconnect,
+      trigger: getPlaitedTrigger(trigger, disconnectSet),
+    }),
+  )
+  // Public trigger  to receive events from main thread
   const publicTrigger = getPublicTrigger({ trigger, publicEvents })
-  const eventHandler = ({ data }: { data: BPEvent }) => {
-    publicTrigger(data)
-  }
+  // Event handler that for events from main thread
+  const eventHandler = ({ data }: { data: BPEvent }) => publicTrigger(data)
+  // Attach event listeners for events from main thread
   context.addEventListener('message', eventHandler, false)
 }

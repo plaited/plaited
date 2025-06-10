@@ -67,7 +67,7 @@ Creates a behavioral program worker for background processing. Typically used in
 ```ts
 <A extends Handlers>(config: {
   publicEvents: string[];
-  bProgram: (args: DefineBProgramProps & WorkerContext) => A;
+  bProgram: (args: BProgramPArgs) => A;
 }): void
 ```
 
@@ -389,37 +389,6 @@ type Idioms<T = any> = {
   interrupt?: BPListener<T> | BPListener<T>[]
   request?: BPEvent<T> | BPEventTemplate<T>
   block?: BPListener<T> | BPListener<T>[]
-}
-```
-
-#### `defineBProgram(config)`
-
-A higher-order function factory for creating and configuring behavioral programs, often for framework integration.
-
-```ts
-<A extends Handlers, C extends Record<string, unknown> = Record<string, unknown>>(
-  config: {
-    publicEvents?: string[];
-    disconnectSet?: Set<Disconnect>; // NEWLY ADDED
-    bProgram: (props: DefineBProgramProps & C) => A;
-  }
-): ((ctx?: C) => Trigger) & { addDisconnectCallback: (cb: Disconnect) => void } // MODIFIED RETURN
-```
-
-- `config.publicEvents`: Defines which events can be triggered via the returned public trigger.
-- `config.disconnectSet`: Optional `Set` to store cleanup functions.
-- `config.bProgram`: Callback defining threads and feedback handlers.
-- Returns: An `init` function that sets up the bProgram and returns a public `Trigger`. The `init` function also has an `addDisconnectCallback` method.
-
-**`DefineBProgramProps`** (passed to `bProgram` callback in `defineBProgram`)
-
-```ts
-type DefineBProgramProps = {
-  bSync: BSync
-  bThread: BThread
-  bThreads: BThreads
-  trigger: PlaitedTrigger // Enhanced trigger
-  useSnapshot: UseSnapshot
 }
 ```
 

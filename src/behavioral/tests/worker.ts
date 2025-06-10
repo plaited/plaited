@@ -16,7 +16,7 @@ const calculator = {
 }
 
 defineWorker<{
-  calculate: (args: { a: number; b: number; operation: 'add' | 'subtract' | 'multiply' | 'divide' }) => void
+  calculate: { a: number; b: number; operation: 'add' | 'subtract' | 'multiply' | 'divide' }
 }>({
   publicEvents: ['calculate'],
   bProgram({ send }) {

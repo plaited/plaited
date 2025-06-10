@@ -24,8 +24,8 @@ const hostStyles = css.host({
 })
 
 export const InputAddon = defineElement<{
-  updateDisable(detail: ObservedAttributesDetail): void
-  slotchange(): void
+  updateDisable: ObservedAttributesDetail
+  slotchange: undefined
 }>({
   tag: 'input-addon',
   shadowDom: (

@@ -40,8 +40,8 @@ const hostStyles = css.host({
 })
 
 export const DecorateCheckbox = defineElement<{
-  change(detail: ObservedAttributesDetail): void
-  slotchange(): void
+  change: ObservedAttributesDetail
+  slotchange: void
 }>({
   tag: 'decorate-checkbox',
   shadowDom: (

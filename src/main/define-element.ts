@@ -6,6 +6,7 @@ import {
   type Trigger,
   type UseFeedback,
   type UseSnapshot,
+  type EventDetails,
   bProgram,
 } from '../behavioral/b-program.js'
 import { type PlaitedTrigger, getPlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
@@ -123,11 +124,11 @@ export type PlaitedElementCallbackHandlers = {
  * };
  * ```
  */
-export type PlaitedHandlers = Handlers & {
+export type PlaitedEventDetails = {
   [ELEMENT_CALLBACKS.onAppend]?: never
   [ELEMENT_CALLBACKS.onPrepend]?: never
   [ELEMENT_CALLBACKS.onReplaceChildren]?: never
-}
+} & EventDetails
 
 type RequirePlaitedElementCallbackHandlers = Required<PlaitedElementCallbackHandlers>
 
@@ -156,7 +157,7 @@ type PlaitedElementCallbackParameters = {
  * @property {true} [streamAssociated] - If `true`, enables Plaited's stream-based DOM mutation handlers (`onAppend`, `onPrepend`, `onReplaceChildren`) within the `bProgram`. These handlers receive HTML strings to update the element's light DOM content.
  * @property {(this: PlaitedElement, args: BProgramArgs) => A & PlaitedElementCallbackHandlers} [bProgram] - The behavioral program function. It receives `BProgramArgs` (containing `$`, `trigger`, `host`, etc.) and should return an object containing event handlers and lifecycle callbacks defined by type `A`. The `this` context inside `bProgram` refers to the custom element instance.
  */
-export type DefineElementArgs<A extends PlaitedHandlers> = {
+export type DefineElementArgs<A extends PlaitedEventDetails> = {
   tag: CustomElementTag
   shadowDom: TemplateObject
   delegatesFocus?: boolean
@@ -167,7 +168,7 @@ export type DefineElementArgs<A extends PlaitedHandlers> = {
   formAssociated?: true
   streamAssociated?: true
   bProgram?: {
-    (this: PlaitedElement, args: BProgramArgs): A & PlaitedElementCallbackHandlers
+    (this: PlaitedElement, args: BProgramArgs): Handlers<A> & PlaitedElementCallbackHandlers
   }
 }
 
@@ -314,10 +315,10 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  })
 
  export const ToggleInput = defineElement<{
-   click(evt: MouseEvent & { target: HTMLInputElement }): void
-   checked(val: boolean): void
-   disabled(val: boolean): void
-   valueChange(val: string | null): void
+   click: MouseEvent & { target: HTMLInputElement }
+   checked boolean
+   disabled boolean
+   valueChange string | null
  }>({
    tag: 'toggle-input',
    observedAttributes: ['disabled', 'checked', 'value'],
@@ -448,7 +449,7 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  * - host: Custom element instance
  * - root: Shadow root reference
  */
-export const defineElement = <A extends PlaitedHandlers>({
+export const defineElement = <A extends EventDetails>({
   tag,
   shadowDom,
   mode = 'open',
