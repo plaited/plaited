@@ -78,7 +78,6 @@
     "@playwright/test": "1.52.0",
     "@types/beautify": "0.0.3",
     "@types/bun": "1.2.15",
-    "@types/eslint": "9.6.1",
     "@types/node": "24.0.0",
     "@types/sinon": "17.0.4",
     "beautify": "0.0.8",
