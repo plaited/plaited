@@ -26,7 +26,7 @@ export type Params = {
   scale?: keyof typeof SCALE
   styles?: StylesObject
   timeout?: number // Defaults to 5_000 ms
-  headers?: (env: NodeJS.ProcessEnv) => Headers
+  headers?: (env: NodeJS.ProcessEnv) => Headers | Promise<Headers>
 }
 
 /**

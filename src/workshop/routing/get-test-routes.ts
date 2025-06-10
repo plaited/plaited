@@ -5,7 +5,7 @@ export const getTestRoutes = ({ params, assetServer }: { params: TestParams[]; a
   for (const { route, headers } of params) {
     toRet[route] = async () => {
       return await fetch(new URL(route, assetServer.url), {
-        headers: headers?.(process.env),
+        headers: await headers?.(process.env),
       })
     }
   }
