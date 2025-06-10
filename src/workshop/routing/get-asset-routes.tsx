@@ -1,12 +1,12 @@
 import path from 'node:path'
-import { PlaitedFixture } from './testing/plaited-fixture.js'
-import { ssr } from '../jsx/ssr.js'
-import { PLAY_EVENT } from './testing/plaited-fixture.constants.js'
-import type { StoryObj } from './testing/plaited-fixture.types.js'
-import type { PageOptions } from './workshop.types.js'
-import { wait } from '../utils/wait.js'
+import { PlaitedFixture } from '../testing/plaited-fixture.js'
+import { ssr } from '../../jsx/ssr.js'
+import { PLAY_EVENT } from '../testing/plaited-fixture.constants.js'
+import type { StoryObj } from '../testing/plaited-fixture.types.js'
+import type { PageOptions } from '../workshop.types.js'
+import { wait } from '../../utils/wait.js'
 import { createStoryRoute } from './create-story-route.js'
-import type { WorkshopParams, Stories } from './workshop.types.js'
+import type { WorkshopParams, Stories } from '../workshop.types.js'
 
 type Createstpage = {
   story: StoryObj
@@ -100,7 +100,7 @@ type SetStorySetParams = {
   filePath: string
 } & WorkshopParams
 
-export const getStorySetRoutes = async ({
+export const getAssetRoutes = async ({
   background,
   color,
   designTokens,

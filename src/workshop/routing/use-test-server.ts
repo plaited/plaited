@@ -1,22 +1,21 @@
 import { $ } from 'bun'
-import { OUTPUT_DIR } from '../../.plaited.js'
-import type { TestRoutes } from './workshop.types.js'
+import { OUTPUT_DIR } from '../../../.plaited.js'
+import type { TestRoutes } from '../workshop.types.js'
 
-export const useDevServer = ({
+export const useTestServer = ({
   port,
   routes,
   assetServer,
+  development,
 }: {
   port: number
   routes: TestRoutes
   assetServer: Bun.Server
+  development?: Bun.ServeOptions['development']
 }) => {
   const server = Bun.serve({
     port,
-    development: {
-      hmr: true,
-      console: true,
-    },
+    development,
     routes,
   })
 

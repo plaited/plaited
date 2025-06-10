@@ -1,4 +1,4 @@
-import type { AssetRoutes } from './workshop.types.js'
+import type { AssetRoutes } from '../workshop.types.js'
 
 export const useAssetServer = ({
   port,

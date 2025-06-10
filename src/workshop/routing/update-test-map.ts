@@ -1,6 +1,6 @@
 import { createStoryRoute } from './create-story-route.js'
-import type { Stories, TestMap } from './workshop.types.js'
-import { DEFAULT_PLAY_TIMEOUT } from './workshop.constants.js'
+import type { Stories, TestMap } from '../workshop.types.js'
+import { DEFAULT_PLAY_TIMEOUT } from '../workshop.constants.js'
 
 export const updateTestMap = async ({
   cwd,
