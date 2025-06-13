@@ -1,7 +1,7 @@
-import { defineElement } from '../main/define-element.js'
-import { css } from './css.js'
-import { h } from '../jsx/create-template.js'
-import type { CustomElementTag } from '../jsx/jsx.types.js'
+import { defineElement } from '../../main/define-element.js'
+import { css } from '../../main/css.js'
+import { h } from '../../jsx/create-template.js'
+import type { CustomElementTag } from '../../jsx/jsx.types.js'
 
 /**
  * Creates a custom element template for injecting design tokens into the DOM.

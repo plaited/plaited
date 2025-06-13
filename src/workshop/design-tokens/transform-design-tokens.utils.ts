@@ -1,7 +1,7 @@
 import type { DesignToken, DesignTokenGroup, DesignValue, MediaValue, Alias } from './design-token.types.js'
-import { isTypeOf } from '../utils/is-type-of.js'
-import { trueTypeOf } from '../utils/true-type-of.js'
-import { kebabCase, camelCase } from '../utils/case.js'
+import { isTypeOf } from '../../utils/is-type-of.js'
+import { trueTypeOf } from '../../utils/true-type-of.js'
+import { kebabCase, camelCase } from '../../utils/case.js'
 
 /**
  * Combines duplicate CSS rules (like :host selectors) into a single rule block.

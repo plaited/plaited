@@ -38,7 +38,7 @@
  * @example
  * Shadow DOM and Styles
  * ```tsx
- * import { css } from 'plaited/styling'
+ * import { css } from 'plaited'
  *
  * const styles = css.create({
  *   container: {

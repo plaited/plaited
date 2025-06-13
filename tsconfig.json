@@ -30,9 +30,8 @@
       "plaited/jsx-dev-runtime": ["./src/jsx-dev-runtime.ts"],
       "plaited/workshop": ["/src/workshop.ts"],
       "plaited/behavioral": ["./src/behavioral.ts"],
-      "plaited/styling": ["./src/styling.ts"],
       "plaited/utils": ["./src/utils.ts"]
     }
   },
-  "exclude": ["src/styling/types/css.d.ts"]
+  "exclude": ["src/main/types/css.d.ts"]
 }

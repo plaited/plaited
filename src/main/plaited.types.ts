@@ -1,7 +1,7 @@
 import type { Trigger } from '../behavioral/b-program.js'
 import type { CustomElementTag, FunctionTemplate, TemplateObject } from '../jsx/jsx.types.js'
 import { type PLAITED_TEMPLATE_IDENTIFIER } from './plaited.constants.js'
-import type { StylesObject } from '../styling/css.types.js'
+import type { StylesObject } from './css.types.js'
 /**
  * Valid insertion positions for DOM elements relative to a reference element.
  * Follows the insertAdjacentElement/HTML specification.
@@ -232,24 +232,3 @@ type JsonObject = {
  * @internal
  */
 type JsonArray = Array<JSONDetail>
-/**
- * Structure for messages in the Plaited system.
- * Includes routing and payload information.
- *
- * @template D Type of detail data, must be JSON-serializable
- * @property address Routing information for the message
- * @property type Message type identifier
- * @property detail Optional payload data
- *
- * @example
- * const message: PlaitedMessage = {
- *   address: 'component-id',
- *   type: 'UPDATE',
- *   detail: { value: 42 }
- * };
- */
-export type PlaitedMessage<D extends JSONDetail = JSONDetail> = {
-  address: string
-  type: string
-  detail?: D
-}

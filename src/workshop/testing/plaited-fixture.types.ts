@@ -1,5 +1,5 @@
 import type { Attrs, FunctionTemplate } from '../../jsx/jsx.types.js'
-import type { StylesObject } from '../../styling/css.types.js'
+import type { StylesObject } from '../../main/css.types.js'
 import type { Wait } from '../../utils/wait.js'
 import type { Assert } from './use-assert.js'
 import type { FindByAttribute } from './use-find-by-attribute.js'

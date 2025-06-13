@@ -1,5 +1,5 @@
 import type { SnapshotMessage } from '../../behavioral/b-program.js'
-import { css } from '../../styling/css.js'
+import { css } from '../../main/css.js'
 import { defineElement } from '../../main/define-element.js'
 import { h } from '../../jsx/create-template.js'
 import { FAILED_ASSERTION, MISSING_ASSERTION_PARAMETER } from './testing.constants.js'
