@@ -2,7 +2,9 @@ import type { BPEvent, BPEventTemplate, BPListener, Idioms, RulesFunction } from
 import { isTypeOf } from '../utils/is-type-of.js'
 
 /**
- * @internal Represents a b-thread that is currently executing its generator function.
+ * @internal
+ * Represents a b-thread that is currently executing its generator function.
+ *
  * These are threads that are active and running between synchronization points.
  * Running threads are those that have been moved from the 'pending' state after an event
  * that matches their `waitFor`, `request`, or `interrupt` declarations has been selected.
@@ -16,14 +18,18 @@ type RunningBid = {
   generator: IterableIterator<Idioms>
 }
 /**
- * @internal Represents a b-thread that has yielded and is waiting for the next event selection.
+ * @internal
+ * Represents a b-thread that has yielded and is waiting for the next event selection.
+ *
  * These threads have reached a synchronization point and declared their `Idioms` (request, waitFor, block, interrupt).
  * The thread remains in this state until an event matching its `waitFor`, `request`, or `interrupt` is selected.
  */
 type PendingBid = Idioms & RunningBid
 
 /**
- * @internal Represents a potential event candidate derived from a pending thread's request.
+ * @internal
+ * Represents a potential event candidate derived from a pending thread's request.
+ *
  * During each super-step, the behavioral program collects all requested events as candidates,
  * filters out those that are blocked, and selects the highest priority remaining candidate.
  * This structure holds the metadata needed for this selection process.
@@ -54,6 +60,13 @@ type CandidateBid = {
  * - Cancelling pending operations
  *
  * @returns void - Performs the cleanup action when called with no return value.
+ *
+ * @example
+ * ```typescript
+ * const disconnect = useFeedback(handlers);
+ * // Later, when cleanup is needed:
+ * disconnect();
+ * ```
  */
 export type Disconnect = () => void
 
@@ -138,7 +151,9 @@ export type SnapshotMessage = {
 }[]
 
 /**
- * @internal A function type responsible for formatting the internal state of the bProgram into a `SnapshotMessage`.
+ * @internal
+ * A function type responsible for formatting the internal state of the bProgram into a `SnapshotMessage`.
+ *
  * This formatter transforms the raw internal program state into a standardized, human-readable format
  * that can be consumed by snapshot listeners, debuggers, and visualization tools.
  *
@@ -213,10 +228,44 @@ type SnapshotFormatter = (args: {
  */
 export type SnapshotListener = (msg: SnapshotMessage) => void | Promise<void>
 
+/**
+ * Represents a generic structure for event detail payloads.
+ * It's a record where keys are string identifiers (typically event property names)
+ * and values can be of any type. This type is often used as a constraint
+ * in more specific event handling types to allow for arbitrary data.
+ *
+ * It serves as the default type for the `Details` generic parameter in `Handlers<Details>`,
+ * meaning if no specific event map is provided, handlers will expect `EventDetails` for
+ * their payloads.
+ *
+ * @example
+ * ```typescript
+ * // Example of an event detail object conforming to EventDetails
+ * const loginEventDetails: EventDetails = {
+ *   username: "testuser",
+ *   timestamp: 1678886400000,
+ *   rememberMe: true,
+ * };
+ *
+ * // Can be used to type event payloads in a generic way
+ * function handleEvent(type: string, details: EventDetails) {
+ *   console.log(`Event ${type} occurred with details:`, details);
+ * }
+ *
+ * // When used with Handlers without a specific detail type
+ * const genericHandlers: Handlers = {
+ *   'ANY_EVENT': (details) => { // details here is EventDetails
+ *     console.log(details.someProperty);
+ *   }
+ * };
+ * ```
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type EventDetails = Record<string, any>
 /**
- * @internal Defines the basic structure for event handlers used in `useFeedback`.
+ * @internal
+ * Defines the basic structure for event handlers used in `useFeedback`.
+ *
  * A record where keys are event types (strings) and values are callback functions
  * that handle the event's detail payload when the corresponding event is selected.
  *
@@ -239,7 +288,7 @@ type DefaultHandlers = Record<string, (detail: any) => void | Promise<void>>
  * This type supports both synchronous and asynchronous handlers, making it suitable
  * for a wide range of use cases from UI updates to API calls or database operations.
  *
- * @template T Allows extending the base `DefaultHandlers` with more specific, typed handlers.
+ * @template Details Allows extending the base `DefaultHandlers` with more specific, typed handlers.
  *             This enables strong type checking for event detail payloads.
  *
  * @example
@@ -294,7 +343,6 @@ type DefaultHandlers = Record<string, (detail: any) => void | Promise<void>>
  * const { useFeedback } = bProgram();
  * const disconnect = useFeedback(appHandlers);
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Handlers<Details extends EventDetails = EventDetails> = {
   // Create specific handler signatures from the EventPayloadMap
   [K in keyof Details]: (detail: Details[K]) => void | Promise<void>
@@ -572,13 +620,16 @@ export type BProgram = () => Readonly<{
 }>
 
 /**
- * @internal A simple listener function that always returns true, used for triggered events.
+ * @internal
+ * A simple listener function that always returns true, used for triggered events.
  * This allows externally triggered events to satisfy the waitFor condition in the trigger thread.
  */
 const triggerWaitFor = () => true
 
 /**
- * @internal Creates a simple publish-subscribe mechanism for event distribution.
+ * @internal
+ * Creates a simple publish-subscribe mechanism for event distribution.
+ *
  * This function creates a publisher that maintains a set of listeners and provides methods
  * to publish values to all listeners and to subscribe/unsubscribe listeners.
  *
@@ -602,7 +653,9 @@ const createPublisher = <T>() => {
 }
 
 /**
- * @internal Utility function to ensure a value is an array.
+ * @internal
+ * Utility function to ensure a value is an array.
+ *
  * If the input is already an array, it is returned unchanged.
  * If the input is not an array, it is wrapped in an array.
  *
@@ -613,7 +666,9 @@ const createPublisher = <T>() => {
 const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj : [obj])
 
 /**
- * @internal Creates a checker function to determine if a given BPListener matches a CandidateBid.
+ * @internal
+ * Creates a checker function to determine if a given BPListener matches a CandidateBid.
+ *
  * This is used to check if an event matches waitFor, block, or interrupt declarations.
  *
  * @param type The event type to check against.
@@ -631,7 +686,9 @@ const isListeningFor = ({ type, detail }: CandidateBid) => {
 }
 
 /**
- * @internal Checks if a pending request (Idiom['request']) matches the selected event candidate.
+ * @internal
+ * Checks if a pending request (Idiom['request']) matches the selected event candidate.
+ *
  * This is used to determine if a thread's request was the one selected during event selection.
  *
  * @param selectedEvent The event candidate that was selected.
@@ -642,7 +699,9 @@ const isPendingRequest = (selectedEvent: CandidateBid, event: BPEvent | BPEventT
   isTypeOf<BPEventTemplate>(event, 'function') ? event === selectedEvent?.template : event.type == selectedEvent.type
 
 /**
- * @internal Formats the current state (pending bids, candidates, selected event) into a SnapshotMessage array.
+ * @internal
+ * Formats the current state (pending bids, candidates, selected event) into a SnapshotMessage array.
+ *
  * This function analyzes the relationships between threads (blocking, interruption), determines
  * which event was selected, and creates a comprehensive view of the current execution step.
  * The resulting array is sorted by priority to show higher priority events first.
@@ -730,7 +789,9 @@ const snapshotFormatter: SnapshotFormatter = ({ candidates, selectedEvent, pendi
  */
 export const bProgram: BProgram = () => {
   /**
-   * @internal Map of threads that have yielded and are waiting for event selection.
+   * @internal
+   * Map of threads that have yielded and are waiting for event selection.
+   *
    * Key: threadId (string for named threads, Symbol for trigger-originated threads)
    * Value: PendingBid containing the thread's generator and yielded Idioms.
    * These threads have reached a synchronization point and declared their behavioral intentions.
@@ -738,7 +799,9 @@ export const bProgram: BProgram = () => {
   const pending = new Map<string | symbol, PendingBid>()
 
   /**
-   * @internal Map of threads whose generators are ready to run (or have just been triggered).
+   * @internal
+   * Map of threads whose generators are ready to run (or have just been triggered).
+   *
    * Key: threadId (string for named threads, Symbol for trigger-originated threads)
    * Value: RunningBid containing the thread's generator.
    * These threads are about to execute until they yield at their next synchronization point.
@@ -746,13 +809,15 @@ export const bProgram: BProgram = () => {
   const running = new Map<string | symbol, RunningBid>()
 
   /**
-   * @internal Publisher for selected events, consumed by `useFeedback`.
+   * @internal
+   * Publisher for selected events, consumed by `useFeedback`.
    * This is the mechanism by which selected events are delivered to external handlers.
    */
   const actionPublisher = createPublisher<BPEvent>()
 
   /**
-   * @internal Publisher for state snapshots, consumed by `useSnapshot`. Lazily initialized.
+   * @internal
+   * Publisher for state snapshots, consumed by `useSnapshot`. Lazily initialized.
    * This is only created when a snapshot listener is registered, to avoid unnecessary overhead.
    */
   let snapshotPublisher:
@@ -763,7 +828,8 @@ export const bProgram: BProgram = () => {
     | undefined
 
   /**
-   * @internal Initiates a super-step if there are running threads.
+   * @internal
+   * Initiates a super-step if there are running threads.
    * This is the entry point for the behavioral program's execution cycle.
    * It checks if there are any threads ready to run, and if so, advances them.
    */
@@ -772,7 +838,9 @@ export const bProgram: BProgram = () => {
   }
 
   /**
-   * @internal Executes one part of the super-step: advancing running threads to their next yield.
+   * @internal
+   * Executes one part of the super-step: advancing running threads to their next yield.
+   *
    * This function:
    * 1. Iterates through all running threads
    * 2. Advances each thread's generator to its next yield point
@@ -797,13 +865,15 @@ export const bProgram: BProgram = () => {
   }
 
   /**
-   * @internal Executes the event selection part of the super-step.
+   * @internal
+   * Executes the event selection part of the super-step.
+   *
    * This function:
    * 1. Collects all block declarations from pending threads
    * 2. Collects all request declarations as candidate events
    * 3. Filters out candidates that are blocked
    * 4. Selects the highest priority remaining candidate
-   * 5. If an event is selected and there is an defined snapshot publisher, publishes a snapshot and proceeds to the next step
+   * 5. If an event is selected and there is a defined snapshot publisher, publishes a snapshot and proceeds to the next step
    * 6. If no event is selected, the super-step ends (program pauses until external trigger)
    */
   function selectNextEvent() {
@@ -828,7 +898,7 @@ export const bProgram: BProgram = () => {
         filteredBids.push(candidate)
       }
     }
-    /** @summary Priority Queue BPEvent Selection Strategy */
+    /** @internal Priority Queue BPEvent Selection Strategy */
     const selectedEvent = filteredBids.sort(
       ({ priority: priorityA }, { priority: priorityB }) => priorityA - priorityB,
     )[0]
@@ -839,7 +909,9 @@ export const bProgram: BProgram = () => {
   }
 
   /**
-   * @internal Processes the selected event, updates thread states, and triggers the next cycle.
+   * @internal
+   * Processes the selected event, updates thread states, and triggers the next cycle.
+   *
    * This function:
    * 1. Identifies threads waiting for, requesting, or interrupted by the selected event
    * 2. Terminates threads that were interrupted
@@ -861,15 +933,19 @@ export const bProgram: BProgram = () => {
         pending.delete(thread)
       }
     }
-    /** To avoid infinite loop with calling trigger from feedback always publish select event
-     *  after checking if request(s) is waitList and before our next run
+    /**
+     * @internal
+     * To avoid infinite loop with calling trigger from feedback always publish select event
+     * after checking if request(s) is waitList and before our next run
      */
     actionPublisher({ type: selectedEvent.type, detail: selectedEvent.detail })
     run()
   }
 
   /**
-   * @internal Implementation of the public `trigger` function.
+   * @internal
+   * Implementation of the public `trigger` function.
+   *
    * This creates a special temporary thread with highest priority (0) that:
    * 1. Requests the specified event
    * 2. Waits for any event (using triggerWaitFor which always returns true)
@@ -893,7 +969,9 @@ export const bProgram: BProgram = () => {
   }
 
   /**
-   * @internal Implementation of the public `useFeedback` hook.
+   * @internal
+   * Implementation of the public `useFeedback` hook.
+   *
    * This subscribes the provided handlers to the action publisher, which will
    * invoke the appropriate handler whenever a matching event is selected.
    * It returns a disconnect function that removes the subscription when called.
@@ -909,7 +987,9 @@ export const bProgram: BProgram = () => {
   }
 
   /**
-   * @internal Implementation of the public `bThreads` utility.
+   * @internal
+   * Implementation of the public `bThreads` utility.
+   *
    * This provides methods to add/replace threads and check thread status.
    * The implementation ensures proper thread initialization and state tracking.
    */
@@ -926,7 +1006,9 @@ export const bProgram: BProgram = () => {
   }
 
   /**
-   * @internal Implementation of the public `useSnapshot` hook.
+   * @internal
+   * Implementation of the public `useSnapshot` hook.
+   *
    * This lazily initializes the snapshot publisher if needed, then
    * subscribes the provided listener to receive state snapshots.
    * It returns a disconnect function that removes the subscription when called.
@@ -941,7 +1023,9 @@ export const bProgram: BProgram = () => {
   }
 
   /**
-   * @internal Return the frozen public API object.
+   * @internal
+   * Return the frozen public API object.
+   *
    * Object.freeze ensures the API surface is immutable, preventing accidental
    * modification of the program's interface. This provides a stable and
    * predictable API for consumers of the behavioral program.
