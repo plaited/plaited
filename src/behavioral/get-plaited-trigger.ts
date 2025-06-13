@@ -46,3 +46,36 @@ export const getPlaitedTrigger = (trigger: Trigger, disconnectSet: Set<Disconnec
   })
   return trigger as PlaitedTrigger
 }
+
+/**
+ * Type guard to identify enhanced Plaited triggers with disconnect capability.
+ * Used internally by the framework to ensure proper cleanup of component resources.
+ *
+ * @param trigger - The trigger function to check
+ * @returns True if the trigger includes disconnect callback support
+ *
+ * @example Using in a custom effect implementation
+ * ```tsx
+ * const useCustomEffect = (trigger: Trigger | PlaitedTrigger, callback: () => () => void) => {
+ *   if (isPlaitedTrigger(trigger)) {
+ *     const cleanup = callback();
+ *     // Register cleanup function to run on component disconnect
+ *     trigger.addDisconnectCallback(cleanup);
+ *   }
+ * };
+ *
+ * // Usage in a component
+ * const MyComponent = defineElement({
+ *   tag: 'my-component',
+ *   shadowDom: <div p-target="root" />,
+ *   bProgram({ trigger }) {
+ *     useCustomEffect(trigger, () => {
+ *       const interval = setInterval(() => console.log('tick'), 1000);
+ *       return () => clearInterval(interval);
+ *     });
+ *   }
+ * });
+ * ```
+ */
+export const isPlaitedTrigger = (trigger: Trigger): trigger is PlaitedTrigger =>
+  Object.hasOwn(trigger, 'addDisconnectCallback')

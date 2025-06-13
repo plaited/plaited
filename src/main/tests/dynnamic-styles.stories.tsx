@@ -1,4 +1,4 @@
-import type { StoryObj } from 'plaited/testing'
+import type { StoryObj } from 'plaited/workshop'
 import { defineElement, type PlaitedElement, css } from 'plaited'
 
 const { noRepeat, repeat, initial } = css.create({
@@ -14,77 +14,44 @@ const { noRepeat, repeat, initial } = css.create({
     textDecoration: 'underline',
   },
 })
-/**
- * Demonstrates dynamic stylesheet management in Plaited components.
- * Shows how to efficiently handle style updates and prevent duplicate
- * style declarations in the Shadow DOM.
- *
- * Features:
- * - Constructable stylesheets
- * - Dynamic style application
- * - Style deduplication
- * - Shadow DOM style scoping
- * - Style sheet adoption
- *
- * The story validates:
- * 1. Initial stylesheet application
- * 2. Dynamic style updates
- * 3. Style deduplication
- * 4. Stylesheet adoption handling
- *
- * Key patterns:
- * - Using css.create for style definitions
- * - Dynamic style insertion
- * - Style sheet management
- * - Shadow DOM style encapsulation
- */
+
+const DynamicOnly = defineElement({
+  publicEvents: ['render'],
+  tag: 'dynamic-only',
+  shadowDom: (
+    <div
+      p-target='target'
+      {...initial}
+    ></div>
+  ),
+  bProgram({ $ }) {
+    return {
+      render() {
+        const [target] = $<HTMLDivElement>('target')
+        target.insert('beforeend', <div {...noRepeat}>construable stylesheet applied once</div>)
+        target.insert('beforeend', <div {...repeat}>not applied</div>)
+      },
+    }
+  },
+})
+
 export const dynamicStyles: StoryObj = {
   description: `This story is used to validate that when rendering/inserting new JSX with styles
   into the plaited element shadow dom those styles sheets are applied to the constructed styles
   and do not repeat`,
-  play: async ({ findByText, assert, findByAttribute, wait, hostElement }) => {
-    hostElement.setHTMLUnsafe(
-      (
-        <dynamic-only data-testid='element'>
-          <template
-            shadowrootmode='open'
-            shadowrootdelegatesfocus
-          >
-            <div
-              p-target='target'
-              {...initial}
-            ></div>
-          </template>
-        </dynamic-only>
-      ).html.join(''),
-    )
-    const style = await findByText(initial.stylesheet.join(''))
+  template: () => <DynamicOnly data-testid='element' />,
+  play: async ({ findByText, assert, findByAttribute, wait }) => {
+    const template = document.createElement('template')
+    template.setHTMLUnsafe((<DynamicOnly />).html.join(''))
+    const style = await findByText(initial.stylesheet.join(''), template.content as unknown as HTMLElement)
     assert({
       given: 'Render with initial stylesheet, Style tag',
       should: 'have the initial stylesheet only',
       actual: style?.textContent,
       expected: initial.stylesheet.join(''),
     })
-    defineElement({
-      publicEvents: ['render'],
-      tag: 'dynamic-only',
-      shadowDom: (
-        <div
-          p-target='target'
-          {...initial}
-        ></div>
-      ),
-      bProgram({ $ }) {
-        return {
-          render() {
-            const [target] = $<HTMLDivElement>('target')
-            target.insert('beforeend', <div {...noRepeat}>construable stylesheet applied once</div>)
-            target.insert('beforeend', <div {...repeat}>not applied</div>)
-          },
-        }
-      },
-    })
     let target = await findByAttribute<PlaitedElement>('data-testid', 'element')
+    console.log(target)
     assert({
       given: 'target has not been triggered',
       should: 'have adoptedStyleSheets of length 1',

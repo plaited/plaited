@@ -1,7 +1,7 @@
 import { keyMirror } from '../utils/key-mirror.js'
 
 /**
- * Mirrored object of lifecycle and mutation callback names for Plaited elements.
+ * @internal Mirrored object of lifecycle and mutation callback names for Plaited elements.
  * Provides strongly typed string literals for every supported callback in a Plaited component.
  *
  * Lifecycle Callbacks:
@@ -124,7 +124,7 @@ export const ELEMENT_CALLBACKS = keyMirror(
 )
 
 /**
- * Unique identifier for Plaited template objects.
+ * @internal Unique identifier for Plaited template objects.
  * Used internally to distinguish template objects from other values during rendering and processing.
  *
  * This constant:

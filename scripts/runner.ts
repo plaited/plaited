@@ -1,88 +1,62 @@
-import { chromium, type BrowserContext } from 'playwright'
-import { isPlaitedMessage } from 'plaited'
-import { type Trigger } from 'plaited/behavioral'
-import { isTypeOf } from 'plaited/utils'
-import type { Server, ServerWebSocket } from 'bun'
-import { runnerModdule } from './runner.module.js'
-import { getWorkshop } from 'plaited/workshop'
+import puppeteer from 'puppeteer'
+import { useTestServer } from '../src/workshop/use-test-server.js'
+import { useSignal } from 'plaited/behavioral'
+import { performance } from 'perf_hooks' // Import performance
+
+const startTime = performance.now() // Start timer
 
 const cwd = `${process.cwd()}/src`
-const streamURL = '/_test-runner'
+const port = 3000
+const { server, stories } = await useTestServer({ cwd, port })
+const browser = await puppeteer.launch()
+const running = useSignal(new Set(stories.keys()))
+const flat = [...stories.values()].flat()
 
-const { stories, responses } = await getWorkshop({ cwd, streamURL })
-const browser = await chromium.launch()
-const contexts = new Set<BrowserContext>()
+// await Promise.all(
+//   stories.values().map(async (tests) => {
+//     for (const { route } of tests) {
+//       const page = await browser.newPage()
+//       const url = `http://localhost:${server.port}${route}`
+//       console.log(url)
+//       await page.goto(url, { waitUntil: 'domcontentloaded' })
+//       await page.close()
+//     }
+//   }),
+// )
 
-const map = new Map<string, Trigger>()
+// for (const tests of stories.values()) {
+//   await Promise.all(
+//     tests.map(async ({ route }) => {
+//       const page = await browser.newPage()
+//       const url = `http://localhost:${server.port}${route}`
+//       console.log(url)
+//       await page.goto(url, { waitUntil: 'domcontentloaded' })
+//       await page.close()
+//     }),
+//   )
+// }
+//
+for (const { route } of flat) {
+  const page = await browser.newPage()
+  const url = `http://localhost:${server.port}${route}`
+  console.log(url)
+  await page.goto(url, { waitUntil: 'domcontentloaded' })
+  await page.close()
+}
 
-const server = Bun.serve({
-  static: Object.fromEntries(responses),
-  port: 3000,
-  async fetch(req: Request, server: Server) {
-    const { pathname } = new URL(req.url)
-    if (pathname === streamURL) {
-      const success = server.upgrade(req)
-      return success ? undefined : new Response('WebSocket upgrade error', { status: 400 })
-    }
-    return new Response('Upgrade failed', { status: 500 })
-  },
-  websocket: {
-    message(ws: ServerWebSocket<unknown>, message: string | Buffer) {
-      if (!isTypeOf<string>(message, 'string')) return
-      try {
-        const json = JSON.parse(message)
-        if (isPlaitedMessage(json)) {
-          const { address, type, detail } = json
-          const trigger = map.get(address)
-          trigger?.({ type, detail: { message: detail, ws } })
-        }
-      } catch (error) {
-        console.error(error)
-      }
-    },
-  },
-})
+// await Promise.all(
+//   flat.map(async ({ route }) => {
+//     const page = await browser.newPage()
+//     const url = `http://localhost:${server.port}${route}`
+//     console.log(url)
+//     await page.goto(url, { waitUntil: 'domcontentloaded' })
+//     await page.close()
+//   }),
+// )
 
-map.set(
-  runnerModdule.id,
-  runnerModdule.init({
-    stories,
-    contexts,
-    port: 3000,
-  }),
-)
+console.log(flat)
+const endTime = performance.now() // End timer
+const duration = endTime - startTime
+console.log(`Execution time: ${duration.toFixed(2)} ms`) // Log execution time, formatted to 2 decimal places
 
-await Promise.all(
-  stories.map(async ([route]) => {
-    const context = await browser.newContext()
-    contexts.add(context)
-    const page = await context.newPage()
-    await page.goto(`http://localhost:${server.port}${route}`)
-  }),
-)
-
-process.on('SIGINT', async () => {
-  server.stop()
-  await Promise.all([...contexts].map(async (context) => await context.close()))
-  map.get(runnerModdule.id)!({ type: 'SIGINT' })
-})
-
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error)
-})
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason)
-})
-
-process.on('exit', () => {
-  server.stop()
-})
-
-process.on('SIGTERM', () => {
-  server.stop()
-})
-
-process.on('SIGHUP', () => {
-  server.stop()
-})
+process.exit(0)
