@@ -10,6 +10,13 @@ import { keyMirror } from '../utils/key-mirror.js'
 import { startServer } from './routing/start-server.js'
 import { bSync, getPublicTrigger } from 'plaited/behavioral'
 
+export type DefineWorkshopParams = {
+  cwd: string
+  port?: number
+  publicEvents?: string[]
+  development?: Bun.ServeOptions['development']
+} & Omit<PageOptions, 'output'>
+
 const PUBLIC_EVENTS = keyMirror(
   'TEST_STORY_SET',
   'TEST_ALL_STORY_SETS',

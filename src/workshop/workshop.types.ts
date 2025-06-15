@@ -2,20 +2,6 @@ import type { StoryObj, Params, A11yConfig } from './testing/plaited-fixture.typ
 import { SCALE } from './testing/plaited-fixture.constants.js'
 import type { BrowserContextOptions } from 'playwright'
 
-export type PageOptions = {
-  output: string
-  background?: `var(${string})`
-  color?: `var(${string})`
-  designTokens?: string
-}
-
-export type DefineWorkshopParams = {
-  cwd: string
-  port?: number
-  publicEvents?: string[]
-  development?: Bun.ServeOptions['development']
-} & Omit<PageOptions, 'output'>
-
 /**
  * Represents the resolved test parameters used internally during test execution,
  * after merging story-specific parameters with defaults.

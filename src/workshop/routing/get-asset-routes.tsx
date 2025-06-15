@@ -1,12 +1,13 @@
 import path from 'node:path'
+
 import { PlaitedFixture } from '../testing/plaited-fixture.js'
 import { ssr } from '../../jsx/ssr.js'
 import { FIXTURE_EVENTS } from '../testing/plaited-fixture.constants.js'
 import type { StoryObj } from '../testing/plaited-fixture.types.js'
-import type { PageOptions } from '../workshop.types.js'
+import type { StylesObject } from '../../main/css.types.js'
 import { wait } from '../../utils/wait.js'
 import { createStoryRoute } from './create-story-route.js'
-import type { DefineWorkshopParams, StorySet } from '../workshop.types.js'
+import type { StorySet } from '../workshop.types.js'
 
 const createFixtureLoadScript = ({ importPath, exportName }: { importPath: string; exportName: string }) => `
 import { type PlaitedElement } from 'plaited'
@@ -20,8 +21,13 @@ ${exportName}.play && fixture?.trigger({
   detail:  {play: ${exportName}.play, timeout: ${exportName}?.params?.timeout}
 });
 `
+export type PageOptions = {
+  output: string
+  bodyStyles?: StylesObject
+  designTokens?: string
+}
 
-type CreatePageBundle = {
+export type CreatePageBundleParams = {
   story: StoryObj
   route: string
   entry: string
@@ -33,11 +39,10 @@ export const createPageBundle = async ({
   route,
   entry,
   exportName,
-  background,
-  color,
+  bodyStyles,
   designTokens,
   output,
-}: CreatePageBundle) => {
+}: CreatePageBundleParams) => {
   const args = story?.args ?? {}
   const tpl = story?.template
   const styles = story?.parameters?.styles
@@ -53,7 +58,7 @@ export const createPageBundle = async ({
         />
         <style>{designTokens}</style>
       </head>
-      <body style={{ background: background ?? '', color: color ?? '', margin: 0 }}>
+      <body {...bodyStyles}>
         <PlaitedFixture
           children={tpl?.(args)}
           {...styles}
@@ -75,12 +80,12 @@ export const createPageBundle = async ({
   return { [route]: resp }
 }
 
-type CreateIncludeBundle = {
+export type CreateIncludeBundleParams = {
   story: StoryObj
   route: string
 } & Pick<PageOptions, 'output'>
 
-export const createInclude = async ({ story, route, output }: CreateIncludeBundle) => {
+export const createInclude = async ({ story, route, output }: CreateIncludeBundleParams) => {
   const args = story?.args ?? {}
   const Template = story?.template
   if (!Template) return {}
@@ -102,22 +107,20 @@ export const createInclude = async ({ story, route, output }: CreateIncludeBundl
   return { [`${route}.template`]: resp }
 }
 
-type SetStorySetParams = {
+export type GetAssetRoutesParams = {
   entry: string
-  output: string
   storySet: StorySet
   filePath: string
-} & DefineWorkshopParams
+} & PageOptions
 
 export const getAssetRoutes = async ({
-  background,
-  color,
+  bodyStyles,
   designTokens,
   entry,
   output,
   storySet,
   filePath,
-}: SetStorySetParams) => {
+}: GetAssetRoutesParams) => {
   return await Promise.all(
     Object.entries(storySet).flatMap(async ([exportName, story]) => {
       const route = createStoryRoute({ filePath, exportName })
@@ -127,8 +130,7 @@ export const getAssetRoutes = async ({
         route,
         entry,
         exportName,
-        background,
-        color,
+        bodyStyles,
         designTokens,
       })
       const include = await createInclude({

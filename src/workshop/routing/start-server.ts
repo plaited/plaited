@@ -4,6 +4,7 @@ import { sep } from 'node:path'
 import type { BrowserContextOptions } from 'playwright'
 import { OUTPUT_DIR } from '../../../.plaited.js'
 import { type Signal } from '../../behavioral/use-signal.js'
+import type { StylesObject } from '../../main/css.types.js'
 import type { StoryObj } from '../testing/plaited-fixture.types.js'
 import type { TestRoutes, AssetRoutes } from './routing.types.js'
 import type { TestParams } from '../workshop.types.js'
@@ -22,8 +23,7 @@ export const startServer = async ({
   development,
   port,
   testMapSignal,
-  colorSignal,
-  backgroundSignal,
+  bodyStylesSignal,
   designTokensSignal,
   recordVideoSignal,
   a11ySignal,
@@ -32,8 +32,7 @@ export const startServer = async ({
   development?: Bun.ServeOptions['development']
   port: number
   testMapSignal: Signal<Map<string, TestParams[]>>
-  colorSignal: Signal<`var(${string})`>
-  backgroundSignal: Signal<`var(${string})`>
+  bodyStylesSignal: Signal<StylesObject>
   designTokensSignal: Signal<string>
   recordVideoSignal: Signal<BrowserContextOptions['recordVideo'] | undefined>
   a11ySignal: Signal<boolean>
@@ -64,9 +63,7 @@ export const startServer = async ({
         storySetMap.entries().map(async ([entry, storySet]) => {
           const filePath = entry.replace(new RegExp(`^${cwd}`), '')
           const routes = await getAssetRoutes({
-            cwd,
-            background: backgroundSignal.get(),
-            color: colorSignal.get(),
+            bodyStyles: bodyStylesSignal.get(),
             designTokens: designTokensSignal.get(),
             output,
             storySet,
