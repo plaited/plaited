@@ -1,5 +1,5 @@
 import type { Trigger } from '../../behavioral/b-program.js'
-import { FIND_BY_ATTRIBUTE } from './testing.constants.js'
+
 /**
  * @description Type definition for a function that asynchronously finds an element
  * by a specific attribute name and value, searching through light and shadow DOM.
@@ -16,6 +16,8 @@ export type FindByAttribute = <T extends HTMLElement | SVGElement = HTMLElement 
   attributeValue: string | RegExp,
   context?: HTMLElement | SVGElement,
 ) => Promise<T | undefined>
+
+export const FIND_BY_ATTRIBUTE = 'FIND_BY_ATTRIBUTE'
 
 export const useFindByAttribute = (trigger: Trigger) => {
   /**

@@ -2,21 +2,10 @@ import type { SnapshotMessage } from '../../behavioral/b-program.js'
 import { css } from '../../main/css.js'
 import { defineElement } from '../../main/define-element.js'
 import { h } from '../../jsx/create-template.js'
-import { FAILED_ASSERTION, MISSING_ASSERTION_PARAMETER } from './testing.constants.js'
-import {
-  PLAITED_FIXTURE,
-  PLAY_EVENT,
-  FIXTURE_CONNECTED,
-  TEST_PASSED,
-  UNKNOWN_ERROR,
-} from './plaited-fixture.constants.js'
+import { wait } from '../../utils/wait.js'
+import { PLAITED_FIXTURE, FIXTURE_EVENTS, DEFAULT_PLAY_TIMEOUT } from './plaited-fixture.constants.js'
 import { FailedAssertionError, MissingAssertionParameterError } from './errors.js'
-import type {
-  InteractionDetail,
-  SnapshotDetail,
-  InteractionTestFailureEvent,
-  UnknownTestErrorEvent,
-} from './plaited-fixture.types'
+import type { InteractionStoryObj, Play, TestFailureEvent } from './plaited-fixture.types'
 import { useWait } from './use-wait.js'
 import { useAssert } from './use-assert.js'
 import { match } from './match.js'
@@ -64,82 +53,76 @@ const getTraceOnly = (stack: string) => {
  * ```
  */
 export const PlaitedFixture = defineElement<{
-  [PLAY_EVENT]: InteractionDetail
+  [FIXTURE_EVENTS.PLAY]?: { play: InteractionStoryObj['play']; timeout?: number }
 }>({
   tag: PLAITED_FIXTURE,
-  publicEvents: [PLAY_EVENT],
+  publicEvents: [FIXTURE_EVENTS.PLAY],
   streamAssociated: true,
   shadowDom: h('slot', {
     ...css.host({
       display: 'contents',
     }),
   }),
-  bProgram({ bThreads, host, bThread, bSync, trigger, useSnapshot }) {
-    bThreads.set({
-      onPlay: bThread([
-        bSync<InteractionDetail | SnapshotDetail>({
-          waitFor: PLAY_EVENT,
-          block: ({ type, detail }) => {
-            if (type !== PLAY_EVENT) return true
-            const { story } = detail
-            return !Object.hasOwn(story, 'play')
-          },
-        }),
-        bSync({ block: PLAY_EVENT }),
-      ]),
-    })
+  bProgram({ host, trigger, useSnapshot }) {
     useSnapshot((snapshot: SnapshotMessage) => {
       console.dir(snapshot)
     })
-    return {
-      async [PLAY_EVENT]({ route, entry, exportName, story }) {
-        const { play } = story
-        try {
-          await play({
-            assert: useAssert(trigger),
-            findByAttribute: useFindByAttribute(trigger),
-            findByText: useFindByText(trigger),
-            fireEvent: useFireEvent(trigger),
-            hostElement: host,
-            match,
-            throws,
-            wait: useWait(trigger),
-          })
-          trigger({ type: TEST_PASSED, detail: { route } })
-        } catch (error) {
-          if (error instanceof FailedAssertionError || error instanceof MissingAssertionParameterError) {
-            const event: InteractionTestFailureEvent = {
-              type: error instanceof FailedAssertionError ? FAILED_ASSERTION : MISSING_ASSERTION_PARAMETER,
-              detail: {
-                route,
-                entry,
-                exportName,
-                message: error.message,
-                url: window?.location.href,
-                trace: getTraceOnly(error.stack ?? 'no trace'),
-              },
-            }
-            trigger(event)
-          } else if (error instanceof Error) {
-            const event: UnknownTestErrorEvent = {
-              type: UNKNOWN_ERROR,
-              detail: {
-                route,
-                entry,
-                exportName,
-                name: error?.name,
-                message: error?.message,
-                trace: getTraceOnly(error.stack ?? 'no trace'),
-                url: window?.location.href,
-              },
-            }
-            trigger(event)
+    const timeout = async (time: number) => {
+      await wait(time)
+      return true
+    }
+    const interact = async (play: Play) => {
+      try {
+        await play?.({
+          assert: useAssert(trigger),
+          findByAttribute: useFindByAttribute(trigger),
+          findByText: useFindByText(trigger),
+          fireEvent: useFireEvent(trigger),
+          hostElement: host,
+          match,
+          throws,
+          wait: useWait(trigger),
+        })
+        trigger({ type: FIXTURE_EVENTS.TEST_PASSED })
+      } catch (error) {
+        if (error instanceof FailedAssertionError || error instanceof MissingAssertionParameterError) {
+          const event: TestFailureEvent = {
+            type:
+              error instanceof FailedAssertionError ?
+                FIXTURE_EVENTS.FAILED_ASSERTION
+              : FIXTURE_EVENTS.MISSING_ASSERTION_PARAMETER,
+            detail: {
+              name: error?.name,
+              message: error.message,
+              url: window?.location.href,
+              trace: getTraceOnly(error.stack ?? 'no trace'),
+            },
           }
+          trigger(event)
+        } else if (error instanceof Error) {
+          const event: TestFailureEvent = {
+            type: FIXTURE_EVENTS.UNKNOWN_ERROR,
+            detail: {
+              name: error?.name,
+              message: error?.message,
+              trace: getTraceOnly(error.stack ?? 'no trace'),
+              url: window?.location.href,
+            },
+          }
+          trigger(event)
+        }
+      }
+    }
+    return {
+      async [FIXTURE_EVENTS.PLAY](detail) {
+        if (detail) {
+          const timedOut = await Promise.race([interact(detail.play), timeout(detail.timeout ?? DEFAULT_PLAY_TIMEOUT)])
+          if (timedOut) trigger({ type: FIXTURE_EVENTS.TEST_TIMEOUT })
         }
       },
       onConnected() {
         trigger({
-          type: FIXTURE_CONNECTED,
+          type: FIXTURE_EVENTS.FIXTURE_CONNECTED,
         })
       },
     }

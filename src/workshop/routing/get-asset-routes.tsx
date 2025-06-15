@@ -1,42 +1,24 @@
 import path from 'node:path'
 import { PlaitedFixture } from '../testing/plaited-fixture.js'
 import { ssr } from '../../jsx/ssr.js'
-import { PLAY_EVENT } from '../testing/plaited-fixture.constants.js'
+import { FIXTURE_EVENTS } from '../testing/plaited-fixture.constants.js'
 import type { StoryObj } from '../testing/plaited-fixture.types.js'
 import type { PageOptions } from '../workshop.types.js'
 import { wait } from '../../utils/wait.js'
 import { createStoryRoute } from './create-story-route.js'
-import type { DefineWorkshopParams, Stories } from '../workshop.types.js'
+import type { DefineWorkshopParams, StorySet } from '../workshop.types.js'
 
-const createFixtureLoadScript = ({
-  route,
-  importPath,
-  exportName,
-  entry,
-}: {
-  importPath: string
-  route: string
-  exportName: string
-  entry: string
-}) => `
+const createFixtureLoadScript = ({ importPath, exportName }: { importPath: string; exportName: string }) => `
 import { type PlaitedElement } from 'plaited'
 import { PlaitedFixture } from 'plaited/workshop'
 import { ${exportName} } from '${importPath}'
 
-import.meta.hot.accept();
-
 await customElements.whenDefined(PlaitedFixture.tag)
 const fixture = document.querySelector<PlaitedElement>(PlaitedFixture.tag);
-fixture?.trigger({
-  type: '${PLAY_EVENT}',
-  detail: {
-    route: "${route}",
-    entry: "${entry}",
-    exportName: "${exportName}",
-    story: ${exportName}
-  }
+${exportName}.play && fixture?.trigger({
+  type: '${FIXTURE_EVENTS.PLAY}',
+  detail:  {play: ${exportName}.play, timeout: ${exportName}?.params?.timeout}
 });
-
 `
 
 type CreatePageBundle = {
@@ -86,7 +68,7 @@ export const createPageBundle = async ({
   )
   const htmlPath = `${storyPath}/index.html`
   const html = `<!DOCTYPE html>\n${page}`
-  await Bun.write(`${storyPath}/index.ts`, createFixtureLoadScript({ importPath, route, exportName, entry }))
+  await Bun.write(`${storyPath}/index.ts`, createFixtureLoadScript({ importPath, exportName }))
   await wait(60)
   await Bun.write(htmlPath, html)
   const { default: resp } = await import(htmlPath)
@@ -123,7 +105,7 @@ export const createInclude = async ({ story, route, output }: CreateIncludeBundl
 type SetStorySetParams = {
   entry: string
   output: string
-  stories: Stories
+  storySet: StorySet
   filePath: string
 } & DefineWorkshopParams
 
@@ -133,11 +115,11 @@ export const getAssetRoutes = async ({
   designTokens,
   entry,
   output,
-  stories,
+  storySet,
   filePath,
 }: SetStorySetParams) => {
   return await Promise.all(
-    Object.entries(stories).flatMap(async ([exportName, story]) => {
+    Object.entries(storySet).flatMap(async ([exportName, story]) => {
       const route = createStoryRoute({ filePath, exportName })
       const page = await createPageBundle({
         output,

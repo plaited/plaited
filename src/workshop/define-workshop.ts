@@ -1,63 +1,93 @@
-// import type { BPEvent } from '../behavioral/b-thread.js'
-// import { type Disconnect, type EventDetails, bProgram } from '../behavioral/b-program.js'
-// import { $ } from 'bun'
-// import { mkdtemp } from 'node:fs/promises'
-// import { sep } from 'node:path'
-// import { Glob } from 'bun'
-// import type { StoryObj } from './testing/plaited-fixture.types.js'
-// import type { TestRoutes, DefineWorkshopParams } from './workshop.types.js'
-// import { DEFAULT_PLAY_TIMEOUT } from './workshop.constants.js'
-// import { OUTPUT_DIR } from '../../.plaited.js'
-// import { keyMirror } from '../utils/key-mirror.js'
+import type { BPEvent } from '../behavioral/b-thread.js'
+import { type Disconnect, type Handlers, bProgram } from '../behavioral/b-program.js'
+import { useSignal } from '../behavioral/use-signal.js'
+import { Glob } from 'bun'
+import type { StoryObj } from './testing/plaited-fixture.types.js'
+import type { DefineWorkshopParams, TestParams } from './workshop.types.js'
+import { keyMirror } from '../utils/key-mirror.js'
+// import { getPublicTrigger } from './get-public-trigger.js'
+// import { getPlaitedTrigger } from './get-plaited-trigger.js'
+import { startServer } from './routing/start-server.js'
+import { bSync, getPublicTrigger } from 'plaited/behavioral'
 
-// export const getStoriesFromfile = async (file: string) => {
-//   const { default: _, ...rest } = (await import(file)) as {
-//     [key: string]: StoryObj
-//   }
-//   return rest
-// }
-// /** Glob pattern used to find story files within the project. */
-// const STORY_GLOB_PATTERN = `**/*.stories.{tsx,ts}`
+const PUBLIC_EVENTS = keyMirror(
+  'TEST_STORY_SET',
+  'TEST_ALL_STORY_SETS',
+  'GET_PLAY_STORY_SETS',
+  'GET_FILE_ROUTES',
+  'SET_CURRENT_WORKING_DIRECTORY',
+  'SET_TEST_BACKGROUND_STYLE',
+  'SET_TEST_PAGE_COLOR_STYLE',
+  'SET_DESIGN_TOKENS',
+  'GET_DESIGN_TOKEN_ENTRY',
+  'GET_FILTERED_DESIGN_TOKEN_ENTRIES',
+  'GET_ALL_DESIGN_TOKEN_ENTRIES',
+  'CHECK_IF_DESIGN_TOKEN_EXIST',
+)
 
-// export async function globStoryFiles(cwd: string): Promise<string[]> {
-//   const glob = new Glob(STORY_GLOB_PATTERN)
-//   const paths = await Array.fromAsync(glob.scan({ cwd }))
-//   return paths.map((path) => Bun.resolveSync(`./${path}`, cwd))
-// }
+const EVENTS = keyMirror('RELOAD_SERVER')
 
-// const EVENTS = keyMirror(
-//   'TEST_FILES',
-//   'TEST_ALL_FILES',
-//   'GET_FILE_ROUTES',
-//   'SET_CURRENT_WORKING_DIRECTORY',
-//   'SET_BACKGROUND_STYLE',
-//   'SET_COLOR_STYLE',
-//   'SET_DESIGN_TOKENS',
-//   'START_SEVER',
-// )
+export type WorkshopHandlers = Handlers<{
+  [PUBLIC_EVENTS.TEST_STORY_SET]: string
+  [PUBLIC_EVENTS.TEST_ALL_STORY_SETS]: void
+  [EVENTS.RELOAD_SERVER]: void
+  [PUBLIC_EVENTS.SET_TEST_BACKGROUND_STYLE]: string
+  [PUBLIC_EVENTS.SET_TEST_PAGE_COLOR_STYLE]: string
+  [PUBLIC_EVENTS.SET_DESIGN_TOKENS]: string
+  [PUBLIC_EVENTS.GET_DESIGN_TOKEN_ENTRY]: string
+  [PUBLIC_EVENTS.GET_FILTERED_DESIGN_TOKEN_ENTRIES]: string
+  [PUBLIC_EVENTS.GET_ALL_DESIGN_TOKEN_ENTRIES]: string
+  [PUBLIC_EVENTS.CHECK_IF_DESIGN_TOKEN_EXIST]: string
+}>
 
-// type ReservedEvents
+export const defineWorkshop = async ({
+  cwd,
+  background,
+  color,
+  designTokens,
+  development = {
+    hmr: true,
+    console: true,
+  },
+  port = 3000,
+}: DefineWorkshopParams) => {
+  const disconnectSet = new Set<Disconnect>()
+  const { bThreads, useFeedback, useSnapshot, trigger } = bProgram()
 
-// export const defineWorkshop = async <A extends EventDetails>({
-//   publicEvents,
-//   routes,
-//   cwd,
-//   background,
-//   color,
-//   designTokens,
-//   port = 3000,
-// }: DefineWorkshopParams) => {
-//   const { bThreads, useFeedback, useSnapshot } = bProgram()
-//   //Clean up tmp directory
-//   await $`rm -rf ${OUTPUT_DIR} && mkdir ${OUTPUT_DIR}`
-//   // Create randomly named output directory in temp directory
-//   const output = await mkdtemp(`${OUTPUT_DIR}${sep}`)
-//   // Glob story files ??? I honestly
-//   const entrypoints = await globStoryFiles(cwd)
+  const colorSignal = useSignal(color)
+  const backgroundSignal = useSignal(background)
+  const designTokensSignal = useSignal(designTokens)
+  const testMapSignal = useSignal(new Map<string, TestParams[]>())
 
-//   const defaultHandler: Handlers<{
-//     [typeof EVENTS.START_SEVER]: {}
-//   }> = {
-//     [START_SEVER]() {},
-//   }
-// }
+  const { url, reload } = await startServer({
+    colorSignal,
+    backgroundSignal,
+    designTokensSignal,
+    testMapSignal,
+    port,
+    cwd,
+    development,
+  })
+
+  useFeedback<WorkshopHandlers>({
+    async [PUBLIC_EVENTS.TEST_STORY_SET](filePath) {
+      // await
+    },
+    async [PUBLIC_EVENTS.TEST_ALL_STORY_SETS]() {
+      // await
+    },
+    async [EVENTS.RELOAD_SERVER]() {
+      await reload()
+    },
+    [PUBLIC_EVENTS.SET_TEST_BACKGROUND_STYLE]() {},
+    [PUBLIC_EVENTS.SET_TEST_PAGE_COLOR_STYLE]() {},
+    [PUBLIC_EVENTS.SET_DESIGN_TOKENS]() {},
+    [PUBLIC_EVENTS.GET_DESIGN_TOKEN_ENTRY]() {},
+    [PUBLIC_EVENTS.GET_FILTERED_DESIGN_TOKEN_ENTRIES]() {},
+    [PUBLIC_EVENTS.GET_ALL_DESIGN_TOKEN_ENTRIES]() {},
+    [PUBLIC_EVENTS.CHECK_IF_DESIGN_TOKEN_EXIST]() {},
+  })
+  return {
+    trigger: getPublicTrigger({ trigger, publicEvents: Object.values(PUBLIC_EVENTS) }),
+  }
+}

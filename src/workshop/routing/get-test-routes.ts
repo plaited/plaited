@@ -1,4 +1,5 @@
-import type { TestParams, TestRoutes } from '../workshop.types'
+import type { TestParams } from '../workshop.types.js'
+import type { TestRoutes } from './routing.types.js'
 
 export const getTestRoutes = ({ params, assetServer }: { params: TestParams[]; assetServer: Bun.Server }) => {
   const toRet: TestRoutes = {}

@@ -1,28 +1,32 @@
 import { createStoryRoute } from './create-story-route.js'
-import type { Stories, TestMap } from '../workshop.types.js'
-import { DEFAULT_PLAY_TIMEOUT } from '../workshop.constants.js'
+import type { StorySet, TestParams } from '../workshop.types.js'
+import type { BrowserContextOptions } from 'playwright'
 
-export const updateTestMap = async ({
-  cwd,
-  file,
-  testMap,
-  stories,
+export const updateTestMap = ({
+  filePath,
+  storySet,
+  recordVideo,
+  a11y = false,
 }: {
-  cwd: string
-  file: string
-  stories: Stories
-  testMap: TestMap
+  filePath: string
+  storySet: StorySet
+  recordVideo?: BrowserContextOptions['recordVideo']
+  a11y?: boolean
 }) => {
-  const filePath = file.replace(new RegExp(`^${cwd}`), '')
-  testMap.set(filePath, [])
-  for (const exportName in stories) {
+  const params: TestParams[] = []
+  for (const exportName in storySet) {
     const route = createStoryRoute({ filePath, exportName })
-    const story = stories[exportName]
-    testMap.get(filePath)?.push({
+    const story = storySet[exportName]
+    params.push({
       route,
-      a11y: story?.parameters?.a11y,
+      exportName,
+      filePath,
+      a11y: a11y ?? story?.parameters?.a11y,
+      headers: story?.parameters?.headers,
       scale: story?.parameters?.scale,
-      timeout: story?.parameters?.timeout ?? DEFAULT_PLAY_TIMEOUT,
+      interaction: Boolean(story?.play),
+      recordVideo,
     })
   }
+  return params
 }

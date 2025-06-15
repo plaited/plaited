@@ -1,5 +1,4 @@
 import type { Trigger } from '../../behavioral/b-program.js'
-import { FIND_BY_TEXT } from './testing.constants.js'
 /**
  * @description Type definition for a function that asynchronously finds an element
  * containing specific text content, searching through light and shadow DOM.
@@ -13,6 +12,8 @@ export type FindByText = {
   <T extends HTMLElement = HTMLElement>(searchText: string | RegExp, context?: HTMLElement): Promise<T | undefined>
   name: string
 }
+
+export const FIND_BY_TEXT = 'FIND_BY_TEXT'
 
 export const useFindByText = (trigger: Trigger) => {
   /**

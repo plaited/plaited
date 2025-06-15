@@ -3,7 +3,6 @@ import { deepEqual } from '../../utils/deep-equal.js'
 import { trueTypeOf } from '../../utils/true-type-of.js'
 import { isTypeOf } from '../../utils/is-type-of.js'
 import { FailedAssertionError, MissingAssertionParameterError } from './errors.js'
-import { ASSERT } from './testing.constants.js'
 
 /**
  * Parameters for the assertion function
@@ -36,6 +35,8 @@ const replacer = (key: string | number | symbol, value: unknown) => {
     : (value?.toString?.() ?? value)
   )
 }
+
+export const ASSERT = 'ASSERT'
 
 export const useAssert = (trigger: Trigger) => {
   /**

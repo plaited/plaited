@@ -12,17 +12,19 @@ import { type PlaitedTrigger, isPlaitedTrigger } from './get-plaited-trigger.js'
  */
 export type Listen = (eventType: string, trigger: Trigger | PlaitedTrigger, getLVC?: boolean) => Disconnect
 
-type SignalWithInitialValue<T> = {
+export type SignalWithInitialValue<T> = {
   set(value: T): void
   listen: Listen
   get(): T
 }
 
-type SignalWithoutInitialValue<T> = {
+export type SignalWithoutInitialValue<T> = {
   set(value?: T): void
   listen: Listen
   get(): T | undefined
 }
+
+export type Signal<T> = SignalWithInitialValue<T> | SignalWithoutInitialValue<T>
 
 export function useSignal<T>(initialValue: T): SignalWithInitialValue<T>
 export function useSignal<T>(initialValue?: never): SignalWithoutInitialValue<T>

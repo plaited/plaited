@@ -1,16 +1,22 @@
-import type { AssetRoutes } from '../workshop.types.js'
+import type { AssetRoutes } from './routing.types.js'
 
-export const useAssetServer = ({
+export const useAssetServer = async ({
   port,
-  routes,
+  getRoutes,
   development,
 }: {
-  routes: AssetRoutes
+  getRoutes: () => Promise<AssetRoutes>
   port: number
   development?: Bun.ServeOptions['development']
-}) =>
-  Bun.serve({
-    routes,
+}) => {
+  const assetServer = Bun.serve({
+    routes: await getRoutes(),
     development,
     port,
   })
+  const reloadAssetServer = async () =>
+    assetServer.reload({
+      routes: await getRoutes(),
+    })
+  return { assetServer, reloadAssetServer }
+}

@@ -1,5 +1,4 @@
 import type { Trigger } from '../../behavioral/b-program.js'
-import { FIRE_EVENT } from './testing.constants.js'
 /**
  * Configuration options for DOM event dispatch.
  * Used to customize event behavior and include additional data.
@@ -82,6 +81,8 @@ export type FireEvent = {
   ): Promise<void>
   name: string
 }
+
+export const FIRE_EVENT = 'FIRE_EVENT'
 
 export const useFireEvent = (trigger: Trigger) => {
   /**

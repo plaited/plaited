@@ -7,8 +7,12 @@ import type { FindByText } from './use-find-by-text.js'
 import type { FireEvent } from './use-fire-event.js'
 import type { Match } from './match.js'
 import type { Throws } from './throws.js'
-import { FAILED_ASSERTION, MISSING_ASSERTION_PARAMETER } from './testing.constants.js'
-import { UNKNOWN_ERROR, SCALE } from './plaited-fixture.constants.js'
+import { FIXTURE_EVENTS, SCALE } from './plaited-fixture.constants.js'
+
+export type A11yConfig = {
+  exclude?: string | string[]
+  disableRules?: string | string[]
+}
 
 /**
  * @internal Configuration parameters for a specific story test.
@@ -22,7 +26,7 @@ import { UNKNOWN_ERROR, SCALE } from './plaited-fixture.constants.js'
  * @property {number} [timeout=5000] - The maximum time (in milliseconds) allowed for the story's `play` function to complete. Defaults to `DEFAULT_PLAY_TIMEOUT` (5000ms).
  */
 export type Params = {
-  a11y?: Record<string, string> | false
+  a11y?: false | A11yConfig
   scale?: keyof typeof SCALE
   styles?: StylesObject
   timeout?: number // Defaults to 5_000 ms
@@ -159,63 +163,27 @@ export type StoryObj<T extends Attrs = Attrs> = InteractionStoryObj<T> | Snapsho
 
 /**
  * Represents the data structure sent from the test fixture to the runner
- * when a test fails due to an failed assertion, missing parameters.
+ * when a test fails due to an failed assertion, missing parameters, or unknown error in the client
  *
- * @property {string} address - The identifier of the test runner (e.g., `PLAITED_RUNNER`).
- * @property {typeof MISSING_ASSERTION_PARAMETER | typeof FAILED_ASSERTION} type - The type of failure event.
- * @property {object} detail - Contextual information about the failed test.
- * @property {string} detail.message - Error message indicating missing parameters.
- * @property {string} detail.story - The exported name of the story object.
- * @property {string} detail.file - The source file path of the story.
- * @property {string} detail.route - The unique route identifier of the story.
- * @property {string} detail.url - The URL of the test page when the error occurred.
- * @property {string} detail.trace - A string representing the stack trace of the error.
+ * @property {object} event - Test Failure Event.
+ * @property {typeof MISSING_ASSERTION_PARAMETER | typeof FAILED_ASSERTION |  typeof UNKNOWN_ERROR} event.type - The type of failure event.
+ * @property {object} event.detail - Contextual information about the failed test.
+ * @property {string} event.detail.name - Unknown error name if present.
+ * @property {string} event.detail.message - Error message indicating missing parameters.
+ * @property {string} event.detail.url - The URL of the test page when the error occurred.
+ * @property {string} event.detail.trace - A string representing the stack trace of the error.
  */
-export type InteractionTestFailureEvent = {
-  type: typeof FAILED_ASSERTION | typeof MISSING_ASSERTION_PARAMETER
-  detail: {
-    message: string
-    exportName: string
-    entry: string
-    route: string
-    url: string
-    trace: string
-  }
-}
-/**
- * Represents the data structure sent from the test fixture to the runner
- * when a test fails due to an unknown error.
- *
- * @property {string} address - The identifier of the test runner (e.g., `PLAITED_RUNNER`).
- * @property {typeof TEST_EXCEPTION | typeof UNKNOWN_ERROR} type - The type of failure event.
- * @property {object} detail - Contextual information about the failed test.
- * @property {string} detail.name - Unknown error name if present.
- * @property {string} detail.message - Error message indicating missing parameters.
- * @property {string} detail.trace - A string representing the stack trace of the error.
- * @property {string} detail.cause - Error cause if known.
- * @property {string} detail.story - The exported name of the story object.
- * @property {string} detail.file - The source file path of the story.
- * @property {string} detail.route - The unique route identifier of the story.
- * @property {string} detail.url - The URL of the test page when the error occurred.
- */
-export type UnknownTestErrorEvent = {
-  type: typeof UNKNOWN_ERROR
+export type TestFailureEvent = {
+  type:
+    | typeof FIXTURE_EVENTS.FAILED_ASSERTION
+    | typeof FIXTURE_EVENTS.MISSING_ASSERTION_PARAMETER
+    | typeof FIXTURE_EVENTS.UNKNOWN_ERROR
   detail: {
     name: string
     message: string
-    trace: string
-    exportName: string
-    entry: string
-    route: string
     url: string
+    trace: string
   }
-}
-
-export type InteractionDetail = {
-  route: string
-  entry: string
-  exportName: string
-  story: InteractionStoryObj
 }
 
 export type SnapshotDetail = {
@@ -224,5 +192,3 @@ export type SnapshotDetail = {
   exportName: string
   story: SnapshotStoryObj
 }
-
-export type StoryDetail = InteractionDetail | SnapshotDetail

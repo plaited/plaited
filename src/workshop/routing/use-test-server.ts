@@ -1,22 +1,22 @@
 import { $ } from 'bun'
 import { OUTPUT_DIR } from '../../../.plaited.js'
-import type { TestRoutes } from '../workshop.types.js'
+import type { TestRoutes } from './routing.types.js'
 
-export const useTestServer = ({
+export const useTestServer = async ({
   port,
-  routes,
+  getRoutes,
   assetServer,
   development,
 }: {
   port: number
-  routes: TestRoutes
+  getRoutes: () => Promise<TestRoutes>
   assetServer: Bun.Server
   development?: Bun.ServeOptions['development']
 }) => {
-  const server = Bun.serve({
+  const testServer = Bun.serve({
     port,
     development,
-    routes,
+    routes: await getRoutes(),
   })
 
   process.on('SIGINT', async () => {
@@ -36,7 +36,7 @@ export const useTestServer = ({
   })
 
   process.on('exit', async () => {
-    await server?.stop(true)
+    await testServer?.stop(true)
     await assetServer?.stop(true)
     console.log('server stopped')
   })
@@ -52,6 +52,9 @@ export const useTestServer = ({
     await $`rm -rf ${OUTPUT_DIR}`
     process.exit()
   })
-
-  return server
+  const reloadTestServer = async () =>
+    testServer.reload({
+      routes: await getRoutes(),
+    })
+  return { testServer, reloadTestServer }
 }
