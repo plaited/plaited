@@ -1,5 +1,6 @@
 import type { Browser, Page } from 'playwright'
 import type { Trigger } from '../../behavioral/b-program.js'
+import { type Signal } from '../../behavioral/use-signal.js'
 import { isTypeOf } from '../../utils/is-type-of.js'
 import { type A11yConfig } from './plaited-fixture.types.js'
 import type { TestParams } from '../workshop.types.js'
@@ -64,18 +65,18 @@ const visitStory = ({
 
 export const useVisitStory = ({
   browser,
-  testDarkColorScheme,
+  colorSchemeSupportSignal,
   serverURL,
   trigger,
 }: {
   browser: Browser
-  testDarkColorScheme: boolean
+  colorSchemeSupportSignal: Signal<boolean>
   trigger: Trigger
   serverURL: URL
 }) => {
   const visiStories = [
     visitStory({ browser, colorScheme: 'light', trigger, serverURL }),
-    testDarkColorScheme && visitStory({ browser, colorScheme: 'dark', trigger, serverURL }),
+    colorSchemeSupportSignal.get() && visitStory({ browser, colorScheme: 'dark', trigger, serverURL }),
   ]
   return async (params: TestParams) =>
     await Promise.all(visiStories.flatMap(async (visit) => (visit ? await visit(params) : [])))

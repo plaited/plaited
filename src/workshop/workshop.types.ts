@@ -26,7 +26,7 @@ export type TestParams = Omit<Params, 'styles' | 'a11y' | 'timeout'> & {
   scale?: keyof typeof SCALE
   route: string
   interaction: boolean
-  a11y: boolean | A11yConfig
+  a11y?: boolean | A11yConfig
   recordVideo?: BrowserContextOptions['recordVideo']
   filePath: string
 }

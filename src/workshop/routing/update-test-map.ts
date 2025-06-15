@@ -1,17 +1,18 @@
 import { createStoryRoute } from './create-story-route.js'
 import type { StorySet, TestParams } from '../workshop.types.js'
 import type { BrowserContextOptions } from 'playwright'
+import { type Signal } from '../../behavioral/use-signal.js'
 
 export const updateTestMap = ({
   filePath,
   storySet,
-  recordVideo,
-  a11y = false,
+  recordVideoSignal,
+  a11ySignal,
 }: {
   filePath: string
   storySet: StorySet
-  recordVideo?: BrowserContextOptions['recordVideo']
-  a11y?: boolean
+  recordVideoSignal: Signal<BrowserContextOptions['recordVideo'] | undefined>
+  a11ySignal: Signal<boolean>
 }) => {
   const params: TestParams[] = []
   for (const exportName in storySet) {
@@ -21,11 +22,11 @@ export const updateTestMap = ({
       route,
       exportName,
       filePath,
-      a11y: a11y ?? story?.parameters?.a11y,
+      a11y: story?.parameters?.a11y ?? a11ySignal.get(),
       headers: story?.parameters?.headers,
       scale: story?.parameters?.scale,
       interaction: Boolean(story?.play),
-      recordVideo,
+      recordVideo: recordVideoSignal.get(),
     })
   }
   return params

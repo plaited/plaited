@@ -25,8 +25,8 @@ export const startServer = async ({
   colorSignal,
   backgroundSignal,
   designTokensSignal,
-  recordVideo,
-  a11y,
+  recordVideoSignal,
+  a11ySignal,
 }: {
   cwd: string
   development?: Bun.ServeOptions['development']
@@ -35,8 +35,8 @@ export const startServer = async ({
   colorSignal: Signal<`var(${string})`>
   backgroundSignal: Signal<`var(${string})`>
   designTokensSignal: Signal<string>
-  recordVideo?: BrowserContextOptions['recordVideo']
-  a11y?: boolean
+  recordVideoSignal: Signal<BrowserContextOptions['recordVideo'] | undefined>
+  a11ySignal: Signal<boolean>
 }) => {
   //Cleanup
   await $`rm -rf ${OUTPUT_DIR} && mkdir ${OUTPUT_DIR}`
@@ -93,8 +93,8 @@ export const startServer = async ({
           const params = updateTestMap({
             storySet,
             filePath,
-            recordVideo,
-            a11y,
+            recordVideoSignal,
+            a11ySignal,
           })
           testMap.set(filePath, params)
           Object.assign(testRoutes, getTestRoutes({ params, assetServer }))
