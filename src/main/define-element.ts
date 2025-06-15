@@ -6,6 +6,7 @@ import {
   type Trigger,
   type UseFeedback,
   type UseSnapshot,
+  type EventDetails,
   bProgram,
 } from '../behavioral/b-program.js'
 import { type PlaitedTrigger, getPlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
@@ -123,11 +124,11 @@ export type PlaitedElementCallbackHandlers = {
  * };
  * ```
  */
-export type PlaitedHandlers = Handlers & {
+export type PlaitedEventDetails = {
   [ELEMENT_CALLBACKS.onAppend]?: never
   [ELEMENT_CALLBACKS.onPrepend]?: never
   [ELEMENT_CALLBACKS.onReplaceChildren]?: never
-}
+} & EventDetails
 
 type RequirePlaitedElementCallbackHandlers = Required<PlaitedElementCallbackHandlers>
 
@@ -156,18 +157,18 @@ type PlaitedElementCallbackParameters = {
  * @property {true} [streamAssociated] - If `true`, enables Plaited's stream-based DOM mutation handlers (`onAppend`, `onPrepend`, `onReplaceChildren`) within the `bProgram`. These handlers receive HTML strings to update the element's light DOM content.
  * @property {(this: PlaitedElement, args: BProgramArgs) => A & PlaitedElementCallbackHandlers} [bProgram] - The behavioral program function. It receives `BProgramArgs` (containing `$`, `trigger`, `host`, etc.) and should return an object containing event handlers and lifecycle callbacks defined by type `A`. The `this` context inside `bProgram` refers to the custom element instance.
  */
-export type GetElementArgs<A extends PlaitedHandlers> = {
+export type DefineElementArgs<A extends PlaitedEventDetails> = {
   tag: CustomElementTag
   shadowDom: TemplateObject
-  delegatesFocus: boolean
-  mode: 'open' | 'closed'
-  slotAssignment: 'named' | 'manual'
+  delegatesFocus?: boolean
+  mode?: 'open' | 'closed'
+  slotAssignment?: 'named' | 'manual'
   observedAttributes?: string[]
   publicEvents?: string[]
   formAssociated?: true
   streamAssociated?: true
   bProgram?: {
-    (this: PlaitedElement, args: BProgramArgs): A & PlaitedElementCallbackHandlers
+    (this: PlaitedElement, args: BProgramArgs): Handlers<A> & PlaitedElementCallbackHandlers
   }
 }
 
@@ -175,17 +176,6 @@ const createDocumentFragment = (html: string) => {
   const tpl = document.createElement('template')
   tpl.setHTMLUnsafe(html)
   return tpl.content
-}
-
-/**
- * @internal
- * Interface extending GetElementArgs for internal use, making optional properties explicit.
- */
-interface DefineElementArgs<A extends PlaitedHandlers>
-  extends Omit<GetElementArgs<A>, 'delegatesFocus' | 'mode' | 'slotAssignment'> {
-  delegatesFocus?: boolean
-  mode?: 'open' | 'closed'
-  slotAssignment?: 'named' | 'manual'
 }
 
 const getTriggerMap = (el: Element) =>
@@ -246,7 +236,7 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  * Form-Associated Component
  * ```tsx
  * interface FormFieldEvents {
- *   'value-change': (value: string) => void;
+ *   'value-change': (evt: ChangeEvent & { target: HTMLInputElement }) => void;
  *   validate: () => void;
  * }
  *
@@ -260,7 +250,7 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  *       <input
  *         p-target="input"
  *         p-trigger={{
- *           input: 'value-change',
+ *           change: 'value-change',
  *           blur: 'validate'
  *         }}
  *       />
@@ -283,7 +273,7 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  *         }
  *       },
  *       'value-change'({ target }) {
- *         const value = (target as HTMLInputElement).value;
+ *         const value = target.value
  *         internals.setFormValue(value);
  *       },
  *       validate() {
@@ -306,40 +296,100 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  * @example
  * Component with Behavioral Threads
  * ```tsx
- * const ToggleButton = defineElement({
- *   tag: 'toggle-button',
- *   shadowDom: (
- *     <button
- *       p-target="btn"
- *       p-trigger={{ click: 'TOGGLE' }}
- *     >
- *       Toggle Me
- *     </button>
- *   ),
- *   bProgram({ $, bThreads, bThread, bSync }) {
- *     const [btn] = $('btn');
- *
- *     // Setup behavioral threads
- *     bThreads.set({
- *       toggleState: bThread([
- *         bSync({ waitFor: 'TOGGLE' }),
- *         bSync({ request: { type: 'UPDATE_STATE' }})
- *       ], true)
- *     });
- *
- *     let isActive = false;
- *
- *     return {
- *       UPDATE_STATE() {
- *         isActive = !isActive;
- *         btn.attr({
- *           'aria-pressed': isActive.toString(),
- *           class: isActive ? 'active' : ''
- *         });
- *       }
- *     };
- *   }
- * });
+ * const styles = css.create({
+  symbol: {
+     height: '16px',
+     width: '16px',
+     backgroundColor: 'var(--fill)',
+     gridArea: 'input',
+   },
+ })
+
+ const hostStyles = css.host({
+   display: 'inline-grid',
+   '--fill': {
+     default: 'lightblue',
+     ':state(checked)': 'blue',
+     ':state(disabled)': 'grey',
+   },
+ })
+
+ export const ToggleInput = defineElement<{
+   click: MouseEvent & { target: HTMLInputElement }
+   checked boolean
+   disabled boolean
+   valueChange string | null
+ }>({
+   tag: 'toggle-input',
+   observedAttributes: ['disabled', 'checked', 'value'],
+   formAssociated: true,
+   shadowDom: (
+     <div
+       p-target='symbol'
+       {...css.assign(styles.symbol, hostStyles)}
+       p-trigger={{ click: 'click' }}
+     />
+   ),
+   bProgram({ trigger, internals, root, bThreads, bSync, bThread }) {
+     bThreads.set({
+       onDisabled: bThread(
+         [
+           bSync({
+             block: [
+               ({ type }) => type === 'checked' && internals.states.has('disabled'),
+               ({ type }) => type === 'valueChange' && internals.states.has('disabled'),
+             ],
+           }),
+         ],
+         true,
+       ),
+     })
+     return {
+       click() {
+         trigger({ type: 'checked', detail: !internals.states.has('checked') })
+       },
+       checked(val) {
+         root.host.toggleAttribute('checked', val)
+         if (val) {
+           internals.states.add('checked')
+           internals.setFormValue('on', root.host.getAttribute('value') ?? 'checked')
+         } else {
+           internals.states.delete('checked')
+           internals.setFormValue('off')
+         }
+       },
+       disabled(val) {
+         if (val) {
+           internals.states.add('disabled')
+         } else {
+           internals.states.delete('disabled')
+         }
+       },
+       valueChange(val) {
+         const isChecked = internals.states.has('checked')
+         if (val && isChecked) {
+           internals.setFormValue('on', val)
+         } else if (isChecked) {
+           internals.setFormValue('on', 'checked')
+         }
+       },
+       onAttributeChanged({ name, newValue }) {
+         name === 'checked' && trigger({ type: 'checked', detail: isTypeOf<string>(newValue, 'string') })
+         name === 'disabled' && trigger({ type: 'disabled', detail: isTypeOf<string>(newValue, 'string') })
+         name === 'value' && trigger({ type: 'valueChange', detail: newValue })
+       },
+       onConnected() {
+         if (root.host.hasAttribute('checked')) {
+           internals.states.add('checked')
+           internals.setFormValue('on', root.host.getAttribute('value') ?? 'checked')
+         }
+         if (root.host.hasAttribute('disabled')) {
+           internals.states.add('disabled')
+         }
+       },
+     }
+   },
+ })
  * ```
  *
  * @remarks
@@ -399,7 +449,7 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  * - host: Custom element instance
  * - root: Shadow root reference
  */
-export const defineElement = <A extends PlaitedHandlers>({
+export const defineElement = <A extends EventDetails>({
   tag,
   shadowDom,
   mode = 'open',
@@ -602,15 +652,25 @@ export const defineElement = <A extends PlaitedHandlers>({
       },
     )
   }
+  /** We continue to hoist our stylesheet until we  create a custom element then we add it to front of the html array*/
+  shadowDom.html.unshift(`<style>${shadowDom.stylesheets.join('')}</style>`)
   const registry = new Set<string>([...shadowDom.registry, tag])
   const ft = ({ children = [], ...attrs }: Attrs) =>
     createTemplate(tag, {
       ...attrs,
+      /** We continue to hoist our part attributes until we create a custom element then we expose them as scoped to the tag*/
+      exportparts: shadowDom.parts.flatMap((part) => (part ? `${part}:${tag}--${part},` : [])).join(' '),
       children: [
         createTemplate('template', {
           shadowrootmode: mode,
           shadowrootdelegatesfocus: delegatesFocus,
-          children: shadowDom,
+          children: {
+            ...shadowDom,
+            /** Having hoisted our stylsheets we reset the stylesheet array on the TemplateObject */
+            stylesheets: [],
+            /** Having hoisted our parts we reset the parts array on the TemplateObject */
+            parts: [],
+          },
         }),
         ...(Array.isArray(children) ? children : [children]),
       ],

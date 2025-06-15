@@ -1,22 +1,4 @@
-/**
- * Test stories for the DecoratedCheckbox component.
- * Validates component styling, state management, and event handling.
- *
- * Story Features:
- * - Visual state validation
- * - Attribute change testing
- * - Style computation verification
- * - State transitions
- *
- * Test Coverage:
- * - Initial styling
- * - Checked state changes
- * - Disabled state behavior
- * - Combined states
- * - Style computations
- */
-
-import { type StoryObj, type Args } from 'plaited/testing'
+import { type StoryObj, type Args } from 'plaited/workshop'
 import { DecoratedCheckbox } from './decorated-element.js'
 
 export const example: StoryObj<Args<typeof DecoratedCheckbox>> = {

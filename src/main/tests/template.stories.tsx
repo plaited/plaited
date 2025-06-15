@@ -1,23 +1,5 @@
-/**
- * Story suite demonstrating Shadow DOM initialization modes and behaviors.
- * Tests various shadow root configurations and focus delegation.
- *
- * Tests:
- * - Default 'open' mode behavior
- * - Focus delegation settings
- * - 'closed' mode behavior
- * - Template hydration
- * - Style application
- *
- * Key validations:
- * - Shadow root mode settings
- * - Focus delegation handling
- * - Content hydration process
- * - Style sheet adoption
- */
-
-import type { StoryObj } from 'plaited/testing'
-import { type PlaitedElement, css, defineElement } from 'plaited'
+import type { StoryObj } from 'plaited/workshop'
+import { type PlaitedElement, css, defineElement, ssr } from 'plaited'
 import { ModeOpen, DelegateFalse, ClosedMode } from './template.js'
 
 export const defaultModeAndFocus: StoryObj = {
@@ -98,17 +80,18 @@ export const hydration: StoryObj = {
       </div>
     )
     const Tag = 'with-declarative-shadow-dom'
-    const template = (
-      <Tag p-target='host'>
-        <template
-          shadowrootmode='open'
-          shadowrootdelegatesfocus
-        >
-          <Content />
-        </template>
-      </Tag>
+    hostElement.setHTMLUnsafe(
+      ssr(
+        <Tag p-target='host'>
+          <template
+            shadowrootmode='open'
+            shadowrootdelegatesfocus
+          >
+            <Content />
+          </template>
+        </Tag>,
+      ),
     )
-    hostElement.setHTMLUnsafe(template.html.join(''))
 
     let host = await findByAttribute<PlaitedElement>('p-target', 'host')
     let inner = await findByAttribute('p-target', 'inner', host)

@@ -7,7 +7,7 @@ import type { BSync } from './b-thread.js'
  * into b-threads, often for testing or simulating scenarios where the exact order
  * of operations is not fixed or needs to be varied.
  *
- * @param syncs An array of `BSync` objects representing the synchronization points to shuffle.
+ * @param syncs Rest parameter of `BSync` objects representing the synchronization points to shuffle.
  * @returns A new array containing the same `BSync` objects but in a randomized order.
  * @example
  * import { bSync, bThread, shuffleSyncs } from 'plaited/behavioral';

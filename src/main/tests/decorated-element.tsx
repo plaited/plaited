@@ -1,37 +1,3 @@
-/**
- * Example of creating a custom checkbox component that decorates a standard HTML input element
- * with enhanced visual styling and state management.
- *
- * Key Features:
- * - Uses CSS custom properties for dynamic styling
- * - Manages checked and disabled states
- * - Preserves native input functionality
- * - Uses Shadow DOM for style encapsulation
- * - Demonstrates attribute observation pattern
- *
- * @example
- * ```tsx
- * // Basic usage
- * const MyForm = () => (
- *   <form>
- *     <DecoratedCheckbox
- *       name="accept"
- *       checked={true}
- *       onChange={(e) => console.log(e.target.checked)}
- *     />
- *   </form>
- * );
- *
- * // With disabled state
- * const DisabledExample = () => (
- *   <DecoratedCheckbox
- *     disabled={true}
- *     checked={true}
- *   />
- * );
- * ```
- */
-
 import {
   defineElement,
   css,
@@ -74,8 +40,8 @@ const hostStyles = css.host({
 })
 
 export const DecorateCheckbox = defineElement<{
-  change(detail: ObservedAttributesDetail): void
-  slotchange(): void
+  change: ObservedAttributesDetail
+  slotchange: void
 }>({
   tag: 'decorate-checkbox',
   shadowDom: (

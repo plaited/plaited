@@ -58,6 +58,7 @@ type Dispatch = <T = unknown>(
  *
  * const ParentComponent = defineElement({
  *   tag: 'parent-component',
+ *   publicEvents: ['update-parent']
  *   shadowDom: (
  *     <div>
  *       <p p-target="message">Waiting for update...</p>

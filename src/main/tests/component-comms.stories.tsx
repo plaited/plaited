@@ -1,22 +1,4 @@
-/**
- * Test stories for component communication using signals.
- * Validates the pub/sub pattern between unrelated components.
- *
- * Story Features:
- * - Signal-based communication
- * - State synchronization
- * - Event propagation
- * - Cleanup validation
- *
- * Test Coverage:
- * - Message passing
- * - State updates
- * - Component interaction
- * - Event handling
- * - Cleanup behavior
- */
-
-import { type StoryObj } from 'plaited/testing'
+import { type StoryObj } from 'plaited/workshop'
 import { ComponentComms } from './component-comms.js'
 
 export const componentComms: StoryObj = {

@@ -1,23 +1,4 @@
-/**
- * Test stories for form-associated custom elements in Plaited.
- * Validates form control behavior and state management.
- *
- * Story Features:
- * - Form control initialization
- * - State synchronization
- * - Disabled state handling
- * - Value management
- * - Attribute changes
- *
- * Test Coverage:
- * - Toggle input behavior
- * - Attribute management
- * - Form value updates
- * - Disabled state behavior
- * - Initial state setup
- */
-
-import { type StoryObj } from 'plaited/testing'
+import { type StoryObj } from 'plaited/workshop'
 import { ToggleInput } from './form-associated-example.js'
 
 export const checkbox: StoryObj = {

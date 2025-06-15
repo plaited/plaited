@@ -1,4 +1,4 @@
-import { type StoryObj } from 'plaited/testing'
+import { type StoryObj } from 'plaited/workshop'
 import { DelegatedListener, delegates } from 'plaited/utils'
 
 export const test: StoryObj = {
