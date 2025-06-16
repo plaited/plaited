@@ -3,7 +3,7 @@ import type { Trigger } from '../../behavioral/b-program.js'
 import { type Signal } from '../../behavioral/use-signal.js'
 import { isTypeOf } from '../../utils/is-type-of.js'
 import { type A11yConfig } from './plaited-fixture.types.js'
-import type { TestParams } from '../workshop.types.js'
+import type { StoryParams } from '../workshop.types.js'
 import { useHandleConsoleMessage } from './use-handle-console-message.js'
 
 export const ACCESSIBILITY_VIOLATION = 'ACCESSIBILITY_VIOLATION'
@@ -38,7 +38,7 @@ const visitStory = ({
   trigger: Trigger
   serverURL: URL
 }) => {
-  return async (params: TestParams) => {
+  return async (params: StoryParams) => {
     const context = await browser.newContext({ recordVideo: params?.recordVideo, colorScheme })
     const page = await context.newPage()
     const handleConsoleMessage = useHandleConsoleMessage({ trigger, params, colorScheme, page })
@@ -78,6 +78,6 @@ export const useVisitStory = ({
     visitStory({ browser, colorScheme: 'light', trigger, serverURL }),
     colorSchemeSupportSignal.get() && visitStory({ browser, colorScheme: 'dark', trigger, serverURL }),
   ]
-  return async (params: TestParams) =>
+  return async (params: StoryParams) =>
     await Promise.all(visiStories.flatMap(async (visit) => (visit ? await visit(params) : [])))
 }

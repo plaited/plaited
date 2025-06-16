@@ -3,7 +3,7 @@ import path from 'node:path'
 import { PlaitedFixture } from '../testing/plaited-fixture.js'
 import { ssr } from '../../jsx/ssr.js'
 import { FIXTURE_EVENTS } from '../testing/plaited-fixture.constants.js'
-import type { StoryObj } from '../testing/plaited-fixture.types.js'
+import type { StoryObj, CookiesCallback } from '../testing/plaited-fixture.types.js'
 import type { StylesObject } from '../../main/css.types.js'
 import { wait } from '../../utils/wait.js'
 import { createStoryRoute } from './create-story-route.js'
@@ -21,6 +21,9 @@ ${exportName}.play && fixture?.trigger({
   detail:  {play: ${exportName}.play, timeout: ${exportName}?.params?.timeout}
 });
 `
+
+const createCookiesLoadSctip = (route: string) => `void fetch(${route})`
+
 export type PageOptions = {
   output: string
   bodyStyles?: StylesObject
@@ -46,6 +49,7 @@ export const createPageBundle = async ({
   const args = story?.args ?? {}
   const tpl = story?.template
   const styles = story?.parameters?.styles
+  const hasCookies = Boolean(story?.parameters?.cookies)
   const storyPath = path.resolve(output, `.${route}`)
   const importPath = path.relative(storyPath, entry)
   const page = ssr(
@@ -56,6 +60,7 @@ export const createPageBundle = async ({
           rel='shortcut icon'
           href='#'
         />
+        {hasCookies && <script trusted>{createCookiesLoadSctip(`${route}.cookies`)}</script>}
         <style>{designTokens}</style>
       </head>
       <body {...bodyStyles}>
@@ -64,6 +69,7 @@ export const createPageBundle = async ({
           {...styles}
         />
         <script
+          defer
           type='module'
           trusted
           src='./index.ts'
@@ -113,6 +119,40 @@ export type GetAssetRoutesParams = {
   filePath: string
 } & PageOptions
 
+export const createCookiesRoute = async (route: string, cb: CookiesCallback) => {
+  const cookiesToSet = await cb(process.env)
+  const validCookieNameRegex = /^[!#$%&'*+\-.^`|~0-9A-Za-z]+$/
+  const headers = new Headers()
+  for (const [key, value] of Object.entries(cookiesToSet)) {
+    // 1. VALIDATE THE COOKIE NAME (KEY) - More correct than encoding.
+    if (!validCookieNameRegex.test(key)) {
+      console.warn(`[Story Dev Server] Invalid cookie name "${key}". Skipping. Adhere to RFC 6265 token spec.`)
+      continue // Skip this invalid cookie
+    }
+
+    let finalValue
+
+    // 2. SERIALIZE THE VALUE if it's an array.
+    if (Array.isArray(value)) {
+      finalValue = JSON.stringify(value)
+    } else {
+      // Ensure even non-array values like numbers or booleans become strings.
+      finalValue = `${value}`
+    }
+
+    // 3. ENCODE THE FINAL SERIALIZED VALUE to make it a safe cookie-value.
+    const encodedValue = encodeURIComponent(finalValue)
+
+    // 4. ASSEMBLE the final cookie string with an un-encoded name and encoded value.
+    const cookieString = `${key}=${encodedValue}; Path=/; SameSite=Lax; HttpOnly`
+
+    headers.append('Set-Cookie', cookieString)
+  }
+
+  // Return the response with the correctly formatted headers
+  return { [`${route}.cookies`]: new Response(null, { status: 204, headers }) }
+}
+
 export const getAssetRoutes = async ({
   bodyStyles,
   designTokens,
@@ -138,7 +178,12 @@ export const getAssetRoutes = async ({
         story,
         route,
       })
+      let cookies: Record<string, Response> | undefined
+      if (story?.parameters?.cookies) {
+        cookies = await createCookiesRoute(route, story.parameters.cookies)
+      }
       return {
+        ...(cookies ?? {}),
         ...page,
         ...include,
       }

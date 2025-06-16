@@ -2,7 +2,7 @@ import { type ConsoleMessage, type Page } from 'playwright'
 import type { Trigger } from '../../behavioral/b-program.js'
 import type { BPEvent } from '../../behavioral/b-thread.js'
 import { isTypeOf } from '../../utils/is-type-of.js'
-import { type TestParams } from '../workshop.types.js'
+import { type StoryParams } from '../workshop.types.js'
 
 const isBPEvent = (obj: unknown): obj is BPEvent => {
   if (!isTypeOf<Record<string, unknown>>(obj, 'object')) return false
@@ -18,7 +18,7 @@ export const useHandleConsoleMessage = ({
   page,
 }: {
   trigger: Trigger
-  params: TestParams
+  params: StoryParams
   colorScheme?: 'light' | 'dark'
   page: Page
 }) => {
