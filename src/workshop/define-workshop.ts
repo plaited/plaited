@@ -1,11 +1,12 @@
 import type { BrowserContextOptions } from 'playwright'
-import { type Handlers, bProgram } from '../behavioral/b-program.js'
+import { bProgram } from '../behavioral/b-program.js'
 import { getPublicTrigger } from '../behavioral/get-public-trigger.js'
 import { useSignal } from '../behavioral/use-signal.js'
 import type { StylesObject } from '../main/css.types.js'
 import { keyMirror } from '../utils/key-mirror.js'
 import type { StoryParams } from './workshop.types.js'
 import { useServer } from './routing/use-server.js'
+import { defineTesting  } from './testing/define-testing.js'
 
 export type DefineWorkshopParams = {
   cwd: string
@@ -31,10 +32,11 @@ export const PUBLIC_EVENTS = keyMirror(
 
 const EVENTS = keyMirror('RELOAD_SERVER')
 
-export type WorkshopHandlers = Handlers<{
+export type WorkshopDetails = {
   [EVENTS.RELOAD_SERVER]: void
   [PUBLIC_EVENTS.LIST_ROUTES]: void
-}>
+  [PUBLIC_EVENTS.TEST_ALL_STORY_SETS]: void
+}
 
 export const defineWorkshop = async ({
   cwd,
@@ -46,32 +48,38 @@ export const defineWorkshop = async ({
 }: DefineWorkshopParams) => {
   const { useFeedback, trigger } = bProgram()
 
-  const bodyStylesSignal = useSignal<StylesObject>()
   const designTokensSignal = useSignal<string>()
-  const storySetMapSignal = useSignal(new Map<string, StoryParams[]>())
-  const recordVideoSignal = useSignal<BrowserContextOptions['recordVideo']>()
-  const a11ySignal = useSignal<boolean>()
 
-  const { url, reload } = await useServer({
+
+  const { url, reload, storyParamSetSignal } = await useServer({
     cwd,
     development,
     port,
-    bodyStylesSignal,
     designTokensSignal,
-    storySetMapSignal,
-    recordVideoSignal,
-    a11ySignal,
+  })
+  
+  const colorSchemeSupportSignal = useSignal(false)
+  
+  const testing = defineTesting({
+      colorSchemeSupportSignal,
+      serverURL: url,
+      storyParamSetSignal
   })
 
-  useFeedback<WorkshopHandlers>({
+
+
+  useFeedback<WorkshopDetails>({
+    async [PUBLIC_EVENTS.TEST_ALL_STORY_SETS]() {
+      // testSetSignal.set()
+    },
     async [EVENTS.RELOAD_SERVER]() {
       await reload()
     },
     async [PUBLIC_EVENTS.LIST_ROUTES]() {
-      const storySets = storySetMapSignal.get()
-      for (const [setFile, storyParams] of storySets) {
-        const hrefs = storyParams.map(({ route }) => `  ${new URL(route, url).href}`).join('\n')
-        console.log(`${setFile}:\n${hrefs}`)
+      const storyParamSet = storyParamSetSignal.get()
+      for (const { route, filePath} of storyParamSet) {
+        const hrefs = `  ${new URL(route, url).href}`
+        console.log(`${filePath}:\n${hrefs}`)
       }
     },
   })

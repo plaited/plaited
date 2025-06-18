@@ -1,18 +1,11 @@
+import type { BrowserContextOptions } from 'playwright'
 import type { Attrs, FunctionTemplate } from '../../jsx/jsx.types.js'
 import type { StylesObject } from '../../main/css.types.js'
 import type { Wait } from '../../utils/wait.js'
-import type { Assert } from './use-assert.js'
-import type { FindByAttribute } from './use-find-by-attribute.js'
-import type { FindByText } from './use-find-by-text.js'
-import type { FireEvent } from './use-fire-event.js'
 import type { Match } from './match.js'
 import type { Throws } from './throws.js'
-import { FIXTURE_EVENTS, SCALE } from './plaited-fixture.constants.js'
+import type { Assert, FindByAttribute, FindByText, FireEvent, CheckA11y } from './testing.types.js'
 
-export type A11yConfig = {
-  exclude?: string | string[]
-  disableRules?: string | string[]
-}
 export type CookiesCallback = (
   env: NodeJS.ProcessEnv,
 ) =>
@@ -30,11 +23,10 @@ export type CookiesCallback = (
  * @property {number} [timeout=5000] - The maximum time (in milliseconds) allowed for the story's `play` function to complete. Defaults to `DEFAULT_PLAY_TIMEOUT` (5000ms).
  */
 export type Params = {
-  a11y?: false | A11yConfig
-  scale?: keyof typeof SCALE
+  cookies?: CookiesCallback
+  recordVideo?: BrowserContextOptions['recordVideo']
   styles?: StylesObject
   timeout?: number // Defaults to 5_000 ms
-  cookies?: CookiesCallback
 }
 
 /**
@@ -96,6 +88,7 @@ export type Play = (args: {
   match: Match
   throws: Throws
   wait: Wait
+  checkA11y: CheckA11y
 }) => Promise<void>
 
 /**
@@ -177,22 +170,4 @@ export type StoryObj<T extends Attrs = Attrs> = InteractionStoryObj<T> | Snapsho
  * @property {string} event.detail.url - The URL of the test page when the error occurred.
  * @property {string} event.detail.trace - A string representing the stack trace of the error.
  */
-export type TestFailureEvent = {
-  type:
-    | typeof FIXTURE_EVENTS.FAILED_ASSERTION
-    | typeof FIXTURE_EVENTS.MISSING_ASSERTION_PARAMETER
-    | typeof FIXTURE_EVENTS.UNKNOWN_ERROR
-  detail: {
-    name: string
-    message: string
-    url: string
-    trace: string
-  }
-}
-
-export type SnapshotDetail = {
-  route: string
-  entry: string
-  exportName: string
-  story: SnapshotStoryObj
-}
+export type TestFailureEventDetail =   { name: string; message: string; url: string; trace: string }

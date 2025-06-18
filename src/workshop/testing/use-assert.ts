@@ -3,23 +3,7 @@ import { deepEqual } from '../../utils/deep-equal.js'
 import { trueTypeOf } from '../../utils/true-type-of.js'
 import { isTypeOf } from '../../utils/is-type-of.js'
 import { FailedAssertionError, MissingAssertionParameterError } from './errors.js'
-
-/**
- * Parameters for the assertion function
- * @template T - The type of values being compared
- */
-type AssertParams<T> = {
-  given: string
-  should: string
-  actual: T
-  expected: T
-}
-
-/**
- * Type definition for assertion function that provides structured comparison with detailed error reporting.
- * @template T - Type parameter representing the values being compared
- */
-export type Assert = <T>(param: AssertParams<T>) => void
+import type { Assert, AssertDetails } from './testing.types.js'
 
 const PRIMITIVES = new Set(['null', 'undefined', 'number', 'string', 'boolean', 'bigint'])
 
@@ -131,9 +115,8 @@ export const useAssert = (trigger: Trigger) => {
    * Main assertion function for testing with detailed error reporting.
    * @see {Assert} for type definition and examples
    */
-  const assert: Assert = (param) => {
-    trigger({ type: ASSERT, detail: param })
-    const args = param
+  const assert: Assert = (args) => {
+    trigger<AssertDetails>({ type: ASSERT, detail: [args] })
     const missing = requiredKeys.filter((k) => !Object.keys(args).includes(k))
     if (missing.length) {
       const msg = [`The following parameters are required by 'assert': (`, `  ${missing.join(', ')}`, ')'].join('\n')

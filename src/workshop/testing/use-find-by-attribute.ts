@@ -1,21 +1,5 @@
 import type { Trigger } from '../../behavioral/b-program.js'
-
-/**
- * @description Type definition for a function that asynchronously finds an element
- * by a specific attribute name and value, searching through light and shadow DOM.
- *
- * @template T - The expected element type (HTMLElement or SVGElement) to be returned. Defaults to `HTMLElement | SVGElement`.
- * @param {string} attributeName - The name of the attribute to search for.
- * @param {string | RegExp} attributeValue - The exact string value or a regular expression pattern to match against the attribute's value.
- * @param {HTMLElement | SVGElement} [context=document] - An optional element within which to limit the search scope. Defaults to the entire `document`.
- * @returns {Promise<T | undefined>} A promise that resolves to the first element (of type T) with the matching attribute, or `undefined` if no match is found.
- */
-
-export type FindByAttribute = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
-  attributeName: string,
-  attributeValue: string | RegExp,
-  context?: HTMLElement | SVGElement,
-) => Promise<T | undefined>
+import type { FindByAttribute, FindByAttributeDetails } from './testing.types.js'
 
 export const FIND_BY_ATTRIBUTE = 'FIND_BY_ATTRIBUTE'
 
@@ -64,9 +48,9 @@ export const useFindByAttribute = (trigger: Trigger) => {
     attributeValue: string | RegExp,
     context?: HTMLElement | SVGElement,
   ): Promise<T | undefined> => {
-    trigger({
+    trigger<FindByAttributeDetails>({
       type: FIND_BY_ATTRIBUTE,
-      detail: [attributeName, attributeValue, context].filter(Boolean),
+      detail: [attributeName, attributeValue, context],
     })
     const searchInShadowDom = (node: Node): T | undefined => {
       if (node.nodeType === 1) {

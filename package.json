@@ -64,6 +64,9 @@
     "@types/bun": {
       "optional": true
     },
+    "axe-core": {
+      "optional": true
+    },
     "playwright": {
       "optional": true
     },
@@ -74,11 +77,12 @@
   "peerDependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
     "@types/bun": "^1.2.15",
+    "axe-core": "4.10.3",
     "playwright": "^1.53.0",
     "zod": "^3.25.64"
   },
   "devDependencies": {
-    "@axe-core/playwright":"4.10.2",
+    "axe-core ": "4.10.3",
     "@commitlint/cli": "19.8.1",
     "@commitlint/config-conventional": "19.8.1",
     "@eslint/js": "^9.28.0",

@@ -3,9 +3,9 @@ import { css } from '../../main/css.js'
 import { defineElement } from '../../main/define-element.js'
 import { h } from '../../jsx/create-template.js'
 import { wait } from '../../utils/wait.js'
-import { PLAITED_FIXTURE, FIXTURE_EVENTS, DEFAULT_PLAY_TIMEOUT } from './plaited-fixture.constants.js'
-import { FailedAssertionError, MissingAssertionParameterError } from './errors.js'
-import type { InteractionStoryObj, Play, TestFailureEvent } from './plaited-fixture.types'
+import { PLAITED_FIXTURE, DEFAULT_PLAY_TIMEOUT, FIXTURE_EVENTS } from './plaited-fixture.constants.js'
+import { FailedAssertionError, MissingAssertionParameterError, AccessibilityError } from './errors.js'
+import type { InteractionStoryObj, Play, TestFailureEventDetail } from './plaited-fixture.types'
 import { useWait } from './use-wait.js'
 import { useAssert } from './use-assert.js'
 import { match } from './match.js'
@@ -13,6 +13,9 @@ import { throws } from './throws.js'
 import { useFindByAttribute } from './use-find-by-attribute.js'
 import { useFindByText } from './use-find-by-text.js'
 import { useFireEvent } from './use-fire-event.js'
+import { useCheckA11y } from './use-check-a11y.js'
+
+
 /**
  * Trims the error name and message from the top of a stack trace string.
  * @param {string} stack - The full error.stack string.
@@ -53,24 +56,39 @@ const getTraceOnly = (stack: string) => {
  * ```
  */
 export const PlaitedFixture = defineElement<{
-  [FIXTURE_EVENTS.PLAY]?: { play: InteractionStoryObj['play']; timeout?: number }
+  [FIXTURE_EVENTS.RUN]: { play?: InteractionStoryObj['play']; timeout?: number }
+  [FIXTURE_EVENTS.PLAY]:  { play: InteractionStoryObj['play']; timeout?: number }
 }>({
   tag: PLAITED_FIXTURE,
-  publicEvents: [FIXTURE_EVENTS.PLAY],
+  publicEvents: [FIXTURE_EVENTS.RUN],
   streamAssociated: true,
   shadowDom: h('slot', {
     ...css.host({
       display: 'contents',
     }),
   }),
-  bProgram({ host, trigger, useSnapshot }) {
-    useSnapshot((snapshot: SnapshotMessage) => {
-      console.dir(snapshot)
+  bProgram({ host, trigger, useSnapshot, bThreads, bThread, bSync }) {
+
+    bThreads.set({
+      onError: bThread([
+        bSync({
+          waitFor: [FIXTURE_EVENTS.ACCESSIBILITY_VIOLATION, FIXTURE_EVENTS.FAILED_ASSERTION, FIXTURE_EVENTS.MISSING_ASSERTION_PARAMETER, FIXTURE_EVENTS.UNKNOWN_ERROR]
+        }),
+        bSync({
+          block: [FIXTURE_EVENTS.RUN_COMPLETE, FIXTURE_EVENTS.TEST_TIMEOUT]
+        })
+      ], true)
     })
+
+    useSnapshot((snapshot: SnapshotMessage) => {
+      console.table(snapshot)
+    })
+
     const timeout = async (time: number) => {
       await wait(time)
       return true
     }
+
     const interact = async (play: Play) => {
       try {
         await play?.({
@@ -82,43 +100,51 @@ export const PlaitedFixture = defineElement<{
           match,
           throws,
           wait: useWait(trigger),
+          checkA11y: useCheckA11y(trigger)
         })
-        trigger({ type: FIXTURE_EVENTS.TEST_PASSED })
       } catch (error) {
-        if (error instanceof FailedAssertionError || error instanceof MissingAssertionParameterError) {
-          const event: TestFailureEvent = {
-            type:
-              error instanceof FailedAssertionError ?
-                FIXTURE_EVENTS.FAILED_ASSERTION
-              : FIXTURE_EVENTS.MISSING_ASSERTION_PARAMETER,
+        if (error instanceof FailedAssertionError ||
+          error instanceof MissingAssertionParameterError ||
+          error instanceof AccessibilityError
+        ) {
+          trigger<TestFailureEventDetail>({
+            type:error.name,
             detail: {
               name: error?.name,
               message: error.message,
               url: window?.location.href,
               trace: getTraceOnly(error.stack ?? 'no trace'),
             },
-          }
-          trigger(event)
+          })
         } else if (error instanceof Error) {
-          const event: TestFailureEvent = {
-            type: FIXTURE_EVENTS.UNKNOWN_ERROR,
+          trigger<TestFailureEventDetail>({
+            type: error.name,
             detail: {
               name: error?.name,
               message: error?.message,
               trace: getTraceOnly(error.stack ?? 'no trace'),
               url: window?.location.href,
             },
-          }
-          trigger(event)
+          })
         }
       }
     }
+    
     return {
-      async [FIXTURE_EVENTS.PLAY](detail) {
-        if (detail) {
-          const timedOut = await Promise.race([interact(detail.play), timeout(detail.timeout ?? DEFAULT_PLAY_TIMEOUT)])
-          if (timedOut) trigger({ type: FIXTURE_EVENTS.TEST_TIMEOUT })
+      [FIXTURE_EVENTS.RUN](detail) {
+        if(detail.play) {
+          trigger({type: FIXTURE_EVENTS.PLAY, detail})
+        } else {
+          trigger({ type: FIXTURE_EVENTS.RUN_COMPLETE })
         }
+      },
+      async [FIXTURE_EVENTS.PLAY](detail) {
+          const timedOut = await Promise.race([interact(detail.play), timeout(detail.timeout ?? DEFAULT_PLAY_TIMEOUT)])
+          if (timedOut) {
+            trigger({ type: FIXTURE_EVENTS.TEST_TIMEOUT })
+          } else {
+            trigger({ type: FIXTURE_EVENTS.RUN_COMPLETE })
+          } 
       },
       onConnected() {
         trigger({

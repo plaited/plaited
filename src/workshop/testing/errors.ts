@@ -2,6 +2,8 @@
 export const FAILED_ASSERTION = 'FAILED_ASSERTION'
 /** Error type identifier when required assertiom parameters are missing. */
 export const MISSING_ASSERTION_PARAMETER = 'MISSING_ASSERTION_PARAMETER'
+/** Error type identifier when timeout error occurs. */
+export const ACCESSIBILITY_VIOLATION = 'ACCESSIBILITY_VIOLATION'
 
 /**
  * Custom error for test assertion failures.
@@ -29,3 +31,18 @@ export class MissingAssertionParameterError extends Error implements Error {
     super(message)
   }
 }
+
+/**
+ * Custom error for accessibility violations error
+ * Thrown when timeout a11y finds an violation
+ *
+ * @extends Error
+ * @property name Constant identifier 'ACCESSIBILITY_VIOLATION'
+ */
+export class AccessibilityError extends Error implements Error {
+  override name = ACCESSIBILITY_VIOLATION
+  constructor(message: string) {
+    super(message)
+  }
+}
+

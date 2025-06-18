@@ -4,7 +4,6 @@ import { PlaitedFixture } from '../testing/plaited-fixture.js'
 import { ssr } from '../../jsx/ssr.js'
 import { FIXTURE_EVENTS } from '../testing/plaited-fixture.constants.js'
 import type { StoryObj, CookiesCallback } from '../testing/plaited-fixture.types.js'
-import type { StylesObject } from '../../main/css.types.js'
 import { wait } from '../../utils/wait.js'
 import { createStoryRoute } from './create-story-route.js'
 import type { StorySet } from '../workshop.types.js'
@@ -16,17 +15,16 @@ import { ${exportName} } from '${importPath}'
 
 await customElements.whenDefined(PlaitedFixture.tag)
 const fixture = document.querySelector<PlaitedElement>(PlaitedFixture.tag);
-${exportName}.play && fixture?.trigger({
-  type: '${FIXTURE_EVENTS.PLAY}',
-  detail:  {play: ${exportName}.play, timeout: ${exportName}?.params?.timeout}
+fixture?.trigger({
+  type: '${FIXTURE_EVENTS.RUN}',
+  detail:  {play: ${exportName}?.play, timeout: ${exportName}?.params?.timeout}
 });
 `
 
-const createCookiesLoadSctip = (route: string) => `void fetch(${route})`
+const createCookiesLoadScript = (route: string) => `void fetch(${route})`
 
-export type PageOptions = {
+type PageOptions = {
   output: string
-  bodyStyles?: StylesObject
   designTokens?: string
 }
 
@@ -42,7 +40,6 @@ export const createPageBundle = async ({
   route,
   entry,
   exportName,
-  bodyStyles,
   designTokens,
   output,
 }: CreatePageBundleParams) => {
@@ -60,14 +57,11 @@ export const createPageBundle = async ({
           rel='shortcut icon'
           href='#'
         />
-        {hasCookies && <script trusted>{createCookiesLoadSctip(`${route}.cookies`)}</script>}
+        {hasCookies && <script trusted>{createCookiesLoadScript(`${route}.cookies`)}</script>}
         <style>{designTokens}</style>
       </head>
-      <body {...bodyStyles}>
-        <PlaitedFixture
-          children={tpl?.(args)}
-          {...styles}
-        />
+      <body {...styles}>
+        <PlaitedFixture children={tpl?.(args)} />
         <script
           defer
           type='module'
@@ -154,7 +148,6 @@ export const createCookiesRoute = async (route: string, cb: CookiesCallback) => 
 }
 
 export const getAssetRoutes = async ({
-  bodyStyles,
   designTokens,
   entry,
   output,
@@ -170,7 +163,6 @@ export const getAssetRoutes = async ({
         route,
         entry,
         exportName,
-        bodyStyles,
         designTokens,
       })
       const include = await createInclude({

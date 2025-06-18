@@ -1,17 +1,5 @@
 import type { Trigger } from '../../behavioral/b-program.js'
-/**
- * @description Type definition for a function that asynchronously finds an element
- * containing specific text content, searching through light and shadow DOM.
- *
- * @template T - The expected HTMLElement type to be returned. Defaults to `HTMLElement`.
- * @param {string | RegExp} searchText - The exact string or regular expression pattern to match within the text content of elements.
- * @param {HTMLElement} [context=document.body] - An optional element within which to limit the search scope. Defaults to `document.body`.
- * @returns {Promise<T | undefined>} A promise that resolves to the first element (of type T) containing the matching text, or `undefined` if no match is found.
- */
-export type FindByText = {
-  <T extends HTMLElement = HTMLElement>(searchText: string | RegExp, context?: HTMLElement): Promise<T | undefined>
-  name: string
-}
+import type { FindByText, FindByTextDetail } from './testing.types.js'
 
 export const FIND_BY_TEXT = 'FIND_BY_TEXT'
 
@@ -58,7 +46,7 @@ export const useFindByText = (trigger: Trigger) => {
     searchText: string | RegExp,
     context?: HTMLElement,
   ): Promise<T | undefined> => {
-    trigger({ type: FIND_BY_TEXT, detail: [searchText, context].filter(Boolean) })
+    trigger<FindByTextDetail>({ type: FIND_BY_TEXT, detail: [searchText, context]  })
     const searchInShadowDom = (node: Node): T | undefined => {
       if (node.nodeType === Node.TEXT_NODE) {
         const content = node.textContent?.trim()

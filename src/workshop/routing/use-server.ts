@@ -1,15 +1,13 @@
 import { $ } from 'bun'
 import { mkdtemp } from 'node:fs/promises'
 import { sep } from 'node:path'
-import type { BrowserContextOptions } from 'playwright'
 import { OUTPUT_DIR } from '../../../.plaited.js'
-import type { Signal } from '../../behavioral/use-signal.js'
-import type { StylesObject } from '../../main/css.types.js'
+import { useSignal, type Signal } from '../../behavioral/use-signal.js'
 import type { StoryObj } from '../testing/plaited-fixture.types.js'
 import type { StoryParams } from '../workshop.types.js'
 import { globFiles } from './glob-files.js'
 import { getAssetRoutes } from './get-routes.js'
-import { updateStorySetMap } from './update-story-set-map.js'
+import { addStoryParams } from './add-story-params.js'
 
 /** Glob pattern used to find story files within the project. */
 const STORY_GLOB_PATTERN = `**/*.stories.{tsx,ts}`
@@ -18,20 +16,12 @@ export const useServer = async ({
   cwd,
   development,
   port,
-  storySetMapSignal,
-  bodyStylesSignal,
   designTokensSignal,
-  recordVideoSignal,
-  a11ySignal,
 }: {
   cwd: string
   development?: Bun.ServeOptions['development']
   port: number
-  storySetMapSignal: Signal<Map<string, StoryParams[]>>
-  bodyStylesSignal: Signal<StylesObject>
   designTokensSignal: Signal<string>
-  recordVideoSignal: Signal<BrowserContextOptions['recordVideo'] | undefined>
-  a11ySignal: Signal<boolean>
 }) => {
   //Cleanup
   await $`rm -rf ${OUTPUT_DIR} && mkdir ${OUTPUT_DIR}`
@@ -48,32 +38,25 @@ export const useServer = async ({
       storySets.set(entry, storySet)
     }),
   )
+  const storyParamSetSignal = useSignal<Set<StoryParams>>(new Set())
+  
   const getRoutes = async () => {
-    const storySetMap = new Map<string, StoryParams[]>()
-    const bunldedRoutes = {}
+    const bundledRoutes = {}
     await Promise.all(
       storySets.entries().map(async ([entry, storySet]) => {
         const filePath = entry.replace(new RegExp(`^${cwd}`), '')
-        const params = updateStorySetMap({
-          storySet,
-          filePath,
-          recordVideoSignal,
-          a11ySignal,
-        })
-        storySetMap.set(filePath, params)
+        addStoryParams({filePath, storySet, storyParamSetSignal})
         const routes = await getAssetRoutes({
-          bodyStyles: bodyStylesSignal.get(),
           designTokens: designTokensSignal.get(),
           output,
           storySet,
           entry,
           filePath,
         })
-        Object.assign(bunldedRoutes, ...routes)
+        Object.assign(bundledRoutes, ...routes)
       }),
     )
-    storySetMapSignal.set(storySetMap)
-    return bunldedRoutes
+    return bundledRoutes
   }
   const server = Bun.serve({
     routes: await getRoutes(),
@@ -114,13 +97,16 @@ export const useServer = async ({
     process.exit()
   })
 
-  const reload = async () =>
-    server.reload({
+  const reload = async () => {
+    storyParamSetSignal.set(new Set())
+    return server.reload({
       routes: await getRoutes(),
     })
+  }
 
   return {
     url: server.url,
     reload,
+    storyParamSetSignal
   }
 }

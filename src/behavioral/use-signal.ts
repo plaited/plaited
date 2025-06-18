@@ -191,7 +191,8 @@ export function useSignal<T>(initialValue: T) {
  */
 export const useComputed = <T>(
   initialValue: () => T,
-  deps: (SignalWithInitialValue<T> | SignalWithoutInitialValue<T>)[],
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  deps: (SignalWithInitialValue<any> | SignalWithoutInitialValue<any>)[],
 ) => {
   let store: T
   const listeners = new Set<(value?: T) => void>()
