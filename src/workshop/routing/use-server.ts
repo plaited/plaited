@@ -14,13 +14,9 @@ export const RELOAD_TOPIC = 'RELOAD_TOPIC'
 
 export const useServer = async ({
   cwd,
-  development,
-  port,
   designTokensSignal,
 }: {
   cwd: string
-  development?: Bun.ServeOptions['development']
-  port: number
   designTokensSignal: Signal<string>
 }) => {
   // Get Story Sets
@@ -60,8 +56,6 @@ export const useServer = async ({
   }
   const server = Bun.serve({
     routes: await getRoutes(),
-    development,
-    port,
     async fetch(req: Request, server: Bun.Server) {
       const { pathname } = new URL(req.url)
       if (pathname === RUNNER_URL) {

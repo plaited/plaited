@@ -7,8 +7,6 @@ import { defineTesting } from './testing/define-testing.js'
 
 export type DefineWorkshopParams = {
   cwd: string
-  port?: number
-  development?: Bun.ServeOptions['development']
 }
 
 export const PUBLIC_EVENTS = keyMirror(
@@ -35,15 +33,13 @@ export type WorkshopDetails = {
   [PUBLIC_EVENTS.TEST_ALL_STORIES]: void
 }
 
-export const defineWorkshop = async ({ cwd, development = false, port = 3000 }: DefineWorkshopParams) => {
+export const defineWorkshop = async ({ cwd }: DefineWorkshopParams) => {
   const { useFeedback, trigger } = bProgram()
 
   const designTokensSignal = useSignal<string>()
 
   const { url, reload, storyParamSetSignal, reloadClients } = await useServer({
     cwd,
-    development,
-    port,
     designTokensSignal,
   })
 
