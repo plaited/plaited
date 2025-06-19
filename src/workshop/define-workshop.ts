@@ -45,13 +45,13 @@ export const defineWorkshop = async ({
   const designTokensSignal = useSignal<string>()
 
 
-  const { url, reload, storyParamSetSignal } = await useServer({
+  const { url, reload, storyParamSetSignal, reloadClients } = await useServer({
     cwd,
     development,
     port,
     designTokensSignal,
   })
-  
+ 
   const colorSchemeSupportSignal = useSignal(false)
   
   await defineTesting({
@@ -60,7 +60,10 @@ export const defineWorkshop = async ({
     storyParamSetSignal
   })
 
-
+  if (process.execArgv.includes('--hot')) {
+    console.log('...reloading')
+    reloadClients()
+  } 
 
   useFeedback<WorkshopDetails>({
     async [PUBLIC_EVENTS.TEST_ALL_STORIES]() {

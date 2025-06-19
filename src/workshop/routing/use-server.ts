@@ -5,7 +5,7 @@ import { globFiles } from './glob-files.js'
 import { getHTMLRoutes } from './get-html-routes.js'
 import { addStoryParams } from './add-story-params.js'
 import { getEntryRoutes } from './get-entry-routes.js'
-import { RELOAD_STORY_PAGE, RUNNER_URL } from '../testing/plaited-fixture.constants.js'
+import { RELOAD_STORY_PAGE, RUNNER_URL } from '../testing/testing.constants.js'
 
 
 /** Glob pattern used to find story files within the project. */
@@ -113,6 +113,7 @@ export const useServer = async ({
     process.exit()
   })
 
+  const reloadClients = () =>  server.publish(RELOAD_TOPIC, RELOAD_STORY_PAGE)
   const reload = async () => {
     server.publish(RELOAD_TOPIC, RELOAD_STORY_PAGE)
     storyParamSetSignal.set(new Set())
@@ -124,6 +125,7 @@ export const useServer = async ({
   return {
     url: server.url,
     reload,
+    reloadClients,
     storyParamSetSignal,
   }
 }

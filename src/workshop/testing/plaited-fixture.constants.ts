@@ -27,6 +27,3 @@ export const FIXTURE_EVENTS = keyMirror(
   'UNKNOWN_ERROR',
   WAIT,
 )
-
-export const RUNNER_URL = '/.plaited/test-runner'
-export const RELOAD_STORY_PAGE = 'RELOAD_STORY_PAGE'

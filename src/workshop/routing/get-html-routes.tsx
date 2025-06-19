@@ -7,6 +7,7 @@ import type { StoryObj } from '../testing/plaited-fixture.types.js'
 import { createStoryRoute } from './create-story-route.js'
 import type { StorySet } from '../workshop.types.js'
 import { zip } from './zip.js'
+import { WORKSHOP_ROUTE } from '../testing/testing.constants.js'
 
 const getEntryPath = (route: string) =>{
   const segments =  route.split('/')
@@ -15,6 +16,7 @@ const getEntryPath = (route: string) =>{
 }
 
 const createFixtureLoadScript = ({ importPath, exportName }: { importPath: string; exportName: string }) => `
+import '${WORKSHOP_ROUTE}'
 import { ${exportName} } from '${importPath}'
 
 await customElements.whenDefined("${PlaitedFixture.tag}")
@@ -89,7 +91,7 @@ const createInclude = async ({ story, route }: {
     />,
   )
   return {
-    [ `${route}/template.html`]: zip({
+    [ `${route}.template`]: zip({
       content,
       contentType: 'text/html;charset=utf-8',
     }) 

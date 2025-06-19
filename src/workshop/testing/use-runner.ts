@@ -1,6 +1,6 @@
 import { isTypeOf } from '../../utils/is-type-of.js'
 import { DelegatedListener, delegates } from '../../utils/delegated-listener.js'
-import { RELOAD_STORY_PAGE, RUNNER_URL } from './plaited-fixture.constants.js'
+import { RELOAD_STORY_PAGE, RUNNER_URL } from './testing.constants.js'
 
 /** @internal Type guard to check if an event is a WebSocket CloseEvent. */
 const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => event.type === 'close'
@@ -16,7 +16,9 @@ export const useRunner = () => {
       if (evt.type === 'message') {
           const { data } = evt
           const message = isTypeOf<string>(data, 'string') && data === RELOAD_STORY_PAGE
-          if (message) window.location.reload();
+          if (message) {
+            window.location.reload()
+          };
        
       }
       if (isCloseEvent(evt) && retryStatusCodes.has(evt.code)) ws.retry()
@@ -50,4 +52,5 @@ export const useRunner = () => {
       socket = undefined
     },
   }
+  ws.connect()
 }
