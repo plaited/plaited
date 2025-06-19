@@ -95,7 +95,7 @@ export type PlaitedElementCallbackHandlers = {
  * It merges the base behavioral program `Handlers` type (allowing any event type string as a key)
  * with the specific `PlaitedElementCallbackHandlers` for lifecycle and form events.
  *
- * It explicitly *excludes* `onAppend`, `onPrepend`, and `onReplaceChildren` handlers, as these
+ * It explicitly *excludes* `append`, `prepend`, and `replaceChildren` handlers, as these
  * are managed internally when the `streamAssociated` option is enabled in `defineElement`.
  *
  * @template T - Can optionally extend `Handlers` to provide more specific types for custom events.
@@ -120,14 +120,14 @@ export type PlaitedElementCallbackHandlers = {
  *   onFormReset() { resetComponentState(); },
  *
  *   // Invalid handlers (will cause type errors)
- *   // onAppend: () => {},
+ *   // append: () => {},
  * };
  * ```
  */
 export type PlaitedEventDetails = {
-  [ELEMENT_CALLBACKS.onAppend]?: never
-  [ELEMENT_CALLBACKS.onPrepend]?: never
-  [ELEMENT_CALLBACKS.onReplaceChildren]?: never
+  [ELEMENT_CALLBACKS.append]?: never
+  [ELEMENT_CALLBACKS.prepend]?: never
+  [ELEMENT_CALLBACKS.replaceChildren]?: never
 } & EventDetails
 
 type RequirePlaitedElementCallbackHandlers = Required<PlaitedElementCallbackHandlers>
@@ -154,7 +154,7 @@ type PlaitedElementCallbackParameters = {
  * @property {string[]} [observedAttributes=[]] - An array of attribute names that the element should observe for changes. Changes trigger the `onAttributeChanged` callback. Also makes these attributes available as properties on the host element instance.
  * @property {string[]} [publicEvents=[]] - An array of event types that the component allows to be triggered on itself(outside its own `bProgram`). Used by `host.trigger`.
  * @property {true} [formAssociated] - If `true`, registers the element as a Form-Associated Custom Element, enabling form-related callbacks (`onFormAssociated`, etc.) and interaction with the `ElementInternals` API.
- * @property {true} [streamAssociated] - If `true`, enables Plaited's stream-based DOM mutation handlers (`onAppend`, `onPrepend`, `onReplaceChildren`) within the `bProgram`. These handlers receive HTML strings to update the element's light DOM content.
+ * @property {true} [streamAssociated] - If `true`, enables Plaited's stream-based DOM mutation handlers (`append`, `prepend`, `replaceChildren`) within the `bProgram`. These handlers receive HTML strings to update the element's light DOM content.
  * @property {(this: PlaitedElement, args: BProgramArgs) => A & PlaitedElementCallbackHandlers} [bProgram] - The behavioral program function. It receives `BProgramArgs` (containing `$`, `trigger`, `host`, etc.) and should return an object containing event handlers and lifecycle callbacks defined by type `A`. The `this` context inside `bProgram` refers to the custom element instance.
  */
 export type DefineElementArgs<A extends PlaitedEventDetails> = {
@@ -175,7 +175,20 @@ export type DefineElementArgs<A extends PlaitedEventDetails> = {
 const createDocumentFragment = (html: string) => {
   const tpl = document.createElement('template')
   tpl.setHTMLUnsafe(html)
-  return tpl.content
+  const clone = tpl.content.cloneNode(true) as DocumentFragment;
+  const scripts = clone.querySelectorAll<HTMLScriptElement>('script')
+  for(const script of scripts) {
+    const newScript = document.createElement('script');
+    for (const attr of script.attributes) {
+      newScript.setAttribute(attr.name, attr.value);
+    }
+    if (script.textContent) {
+      newScript.textContent = script.textContent;
+    }
+    script.parentNode?.appendChild(newScript);
+    script.parentNode?.removeChild(script);
+  }
+  return clone
 }
 
 const getTriggerMap = (el: Element) =>
@@ -464,7 +477,7 @@ export const defineElement = <A extends EventDetails>({
   const _publicEvents: string[] = [
     ...(publicEvents ?? []),
     ...(streamAssociated ?
-      [ELEMENT_CALLBACKS.onAppend, ELEMENT_CALLBACKS.onPrepend, ELEMENT_CALLBACKS.onReplaceChildren]
+      [ELEMENT_CALLBACKS.append, ELEMENT_CALLBACKS.prepend, ELEMENT_CALLBACKS.replaceChildren]
     : []),
   ]
   if (canUseDOM() && !customElements.get(tag)) {
@@ -550,10 +563,9 @@ export const defineElement = <A extends EventDetails>({
               this.#useFeedback({
                 ...handlers,
                 ...(streamAssociated && {
-                  [ELEMENT_CALLBACKS.onAppend]: (html: string) => this.append(createDocumentFragment(html)),
-                  [ELEMENT_CALLBACKS.onPrepend]: (html: string) => this.prepend(createDocumentFragment(html)),
-                  [ELEMENT_CALLBACKS.onReplaceChildren]: (html: string) =>
-                    this.replaceChildren(createDocumentFragment(html)),
+                  [ELEMENT_CALLBACKS.append]: (html: string) => this.append(createDocumentFragment(html)),
+                  [ELEMENT_CALLBACKS.prepend]: (html: string) => this.prepend(createDocumentFragment(html)),
+                  [ELEMENT_CALLBACKS.replaceChildren]: (html: string) => this.replaceChildren(createDocumentFragment(html)),
                 }),
               }),
             )

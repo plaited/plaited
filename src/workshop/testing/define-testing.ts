@@ -136,9 +136,7 @@ export const defineTesting = async ({
         serverURL,
         trigger,
       })
-      for(const storyParam of detail) {
-        await visitStory(storyParam)
-      }
+      await Promise.all([...detail].map(visitStory))
     },
     [TESTING_EVENTS.LOG_EVENT](detail) {
       const { snapshot, route, filePath, context, colorScheme, exportName } = detail  

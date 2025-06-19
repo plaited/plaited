@@ -1,7 +1,7 @@
 import { defineElement, type PlaitedElement, isPlaitedElement } from 'plaited'
 import type { StoryObj } from 'plaited/workshop'
 
-import { styles } from './hydrating-element.css.js'
+import { styles, GREEN, RED } from './hydrating-element.css.js'
 const TRIGGER_HYDRATING_ELEMENT = 'TRIGGER_HYDRATING_ELEMENT'
 const FIXTURE_ELEMENT_TAG = 'fixture-element'
 const EMPTY_SLOT = 'Empty slot'
@@ -49,7 +49,35 @@ export const test: StoryObj = {
       actual: fixture?.shadowRoot?.textContent,
       expected: EMPTY_SLOT,
     })
+    
+    fixture?.trigger({type: 'replaceChildren', detail: responseText})
 
-    fixture?.trigger({type: 'onReplaceChildren', detail: responseText})
+    const target = await findByAttribute<PlaitedElement>('data-testid', "target")
+    const styleElementAfterHydration = await findByText(styles.before.stylesheet.join(' '), target)
+    
+    assert({
+      given: 'after streaming target',
+      should: 'not have style tag',
+      actual: styleElementAfterHydration,
+      expected: undefined,
+    })
+
+    let inner = await findByAttribute<PlaitedElement>('p-target', "inner")
+    assert({
+      given: 'before triggering update on target',
+      should: 'have red color style',
+      actual: window.getComputedStyle(inner!).color,
+      expected: RED,
+    })
+
+    fixture?.trigger({type: TRIGGER_HYDRATING_ELEMENT, })
+    inner = await findByAttribute<PlaitedElement>('p-target', "inner")
+
+    assert({
+      given: 'after triggering update on target',
+      should: 'have green color style',
+      actual: window.getComputedStyle(inner!).color,
+      expected: GREEN,
+    })
   },
 }

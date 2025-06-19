@@ -118,9 +118,9 @@ export const ELEMENT_CALLBACKS = keyMirror(
   'onFormDisabled',
   'onFormReset',
   'onFormStateRestore',
-  'onReplaceChildren',
-  'onPrepend',
-  'onAppend',
+  'replaceChildren',
+  'prepend',
+  'append',
 )
 
 /**

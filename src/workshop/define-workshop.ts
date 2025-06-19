@@ -61,7 +61,6 @@ export const defineWorkshop = async ({
   })
 
   if (process.execArgv.includes('--hot')) {
-    console.log('...reloading')
     reloadClients()
   } 
 
