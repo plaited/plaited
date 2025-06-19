@@ -7,7 +7,6 @@ import { addStoryParams } from './add-story-params.js'
 import { getEntryRoutes } from './get-entry-routes.js'
 import { RELOAD_STORY_PAGE, RUNNER_URL } from '../testing/testing.constants.js'
 
-
 /** Glob pattern used to find story files within the project. */
 const STORY_GLOB_PATTERN = `**/*.stories.{tsx,ts}`
 
@@ -24,7 +23,6 @@ export const useServer = async ({
   port: number
   designTokensSignal: Signal<string>
 }) => {
-
   // Get Story Sets
   const entrypoints = await globFiles(cwd, STORY_GLOB_PATTERN)
   const storySets = new Map<string, Record<string, StoryObj>>()
@@ -44,7 +42,7 @@ export const useServer = async ({
 
   const getRoutes = async () => {
     const bundledRoutes = {
-      ...await getEntryRoutes(cwd, [...storySets.keys()])
+      ...(await getEntryRoutes(cwd, [...storySets.keys()])),
     }
     await Promise.all(
       storySets.entries().map(async ([entry, storySet]) => {
@@ -73,14 +71,14 @@ export const useServer = async ({
       return new Response('Not Found', { status: 404 })
     },
     websocket: {
-       open(ws) {
-        ws.subscribe(RELOAD_TOPIC);
+      open(ws) {
+        ws.subscribe(RELOAD_TOPIC)
       },
       message() {},
       close(ws) {
-         ws.unsubscribe(RELOAD_TOPIC);
-      }
-    }
+        ws.unsubscribe(RELOAD_TOPIC)
+      },
+    },
   })
 
   process.on('SIGINT', async () => {
@@ -113,7 +111,7 @@ export const useServer = async ({
     process.exit()
   })
 
-  const reloadClients = () =>  server.publish(RELOAD_TOPIC, RELOAD_STORY_PAGE)
+  const reloadClients = () => server.publish(RELOAD_TOPIC, RELOAD_STORY_PAGE)
   const reload = async () => {
     server.publish(RELOAD_TOPIC, RELOAD_STORY_PAGE)
     storyParamSetSignal.set(new Set())

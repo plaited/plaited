@@ -46,7 +46,7 @@ export const useFindByText = (trigger: Trigger) => {
     searchText: string | RegExp,
     context?: HTMLElement,
   ): Promise<T | undefined> => {
-    trigger<FindByTextDetail>({ type: FIND_BY_TEXT, detail: [searchText, context]  })
+    trigger<FindByTextDetail>({ type: FIND_BY_TEXT, detail: [searchText, context] })
     const searchInShadowDom = (node: Node): T | undefined => {
       if (node.nodeType === Node.TEXT_NODE) {
         const content = node.textContent?.trim()

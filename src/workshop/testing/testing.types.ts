@@ -5,9 +5,9 @@ import type { Wait } from '../../utils/wait.js'
 import type { PlaitedFixtureSnapshotMessage } from './testing.schema.js'
 
 export type LogMessageDetail = {
-    colorScheme: ColorScheme
-    context: BrowserContext
-    snapshot: PlaitedFixtureSnapshotMessage
+  colorScheme: ColorScheme
+  context: BrowserContext
+  snapshot: PlaitedFixtureSnapshotMessage
 } & StoryParams
 
 type InstrumentedDetails<T> = T
@@ -33,12 +33,11 @@ export type Assert = <T>(param: AssertParams<T>) => void
 
 export type AssertDetails = InstrumentedDetails<Parameters<Assert>>
 
-type CheckA11yArgs = {exclude?: axe.ContextProp, rules?: axe.RuleObject, config?: Omit<axe.Spec, 'reporter'>}
+type CheckA11yArgs = { exclude?: axe.ContextProp; rules?: axe.RuleObject; config?: Omit<axe.Spec, 'reporter'> }
 
-export type CheckA11y = (args:CheckA11yArgs) => Promise<void>
+export type CheckA11y = (args: CheckA11yArgs) => Promise<void>
 
 export type CheckA11yDetails = InstrumentedDetails<Parameters<CheckA11y>>
-
 
 /**
  * @description Type definition for a function that asynchronously finds an element

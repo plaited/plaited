@@ -9,7 +9,7 @@
 const buttonStories = {
   title: 'Button Component',
   component: 'Button',
-  
+
   // Default story
   default: {
     name: 'Default',
@@ -27,7 +27,7 @@ const buttonStories = {
           expect(button).toBeInTheDocument()
           expect(button).toBeEnabled()
           expect(button).toHaveTextContent('Click me')
-        `
+        `,
       },
       {
         name: 'Default - Keyboard Navigation',
@@ -41,11 +41,11 @@ const buttonStories = {
           
           await userEvent.keyboard('{Enter}')
           expect(mockHandler).toHaveBeenCalledTimes(2)
-        `
-      }
-    ]
+        `,
+      },
+    ],
   },
-  
+
   // Primary variant
   primary: {
     name: 'Primary',
@@ -62,14 +62,14 @@ const buttonStories = {
           const button = screen.getByRole('button')
           expect(button).toHaveClass('btn--primary')
           expect(getComputedStyle(button).backgroundColor).toBe('rgb(0, 122, 204)')
-        `
-      }
-    ]
+        `,
+      },
+    ],
   },
-  
+
   // Secondary variant
   secondary: {
-    name: 'Secondary', 
+    name: 'Secondary',
     description: 'Secondary button variant',
     template: `
       <pl-button variant="secondary">
@@ -83,11 +83,11 @@ const buttonStories = {
           const button = screen.getByRole('button')
           expect(button).toHaveClass('btn--secondary')
           expect(getComputedStyle(button).backgroundColor).toBe('transparent')
-        `
-      }
-    ]
+        `,
+      },
+    ],
   },
-  
+
   // Disabled state
   disabled: {
     name: 'Disabled',
@@ -104,7 +104,7 @@ const buttonStories = {
           const button = screen.getByRole('button')
           expect(button).toBeDisabled()
           expect(button).toHaveAttribute('aria-disabled', 'true')
-        `
+        `,
       },
       {
         name: 'Disabled - No Interaction',
@@ -112,11 +112,11 @@ const buttonStories = {
           const button = screen.getByRole('button')
           await userEvent.click(button)
           expect(mockHandler).not.toHaveBeenCalled()
-        `
-      }
-    ]
+        `,
+      },
+    ],
   },
-  
+
   // Toggle button
   toggle: {
     name: 'Toggle',
@@ -135,11 +135,11 @@ const buttonStories = {
           
           await userEvent.click(button)
           expect(button).toHaveAttribute('aria-pressed', 'true')
-        `
-      }
-    ]
+        `,
+      },
+    ],
   },
-  
+
   // Size variants
   sizes: {
     name: 'Sizes',
@@ -166,11 +166,11 @@ const buttonStories = {
           const smallHeight = getComputedStyle(small).minHeight
           const largeHeight = getComputedStyle(large).minHeight
           expect(parseInt(largeHeight)).toBeGreaterThan(parseInt(smallHeight))
-        `
-      }
-    ]
+        `,
+      },
+    ],
   },
-  
+
   // Interactive example
   interactive: {
     name: 'Interactive',
@@ -197,11 +197,11 @@ const buttonStories = {
           
           await userEvent.click(button)
           expect(output).toHaveTextContent(/Button clicked at/)
-        `
-      }
-    ]
+        `,
+      },
+    ],
   },
-  
+
   // Accessibility showcase
   accessibility: {
     name: 'Accessibility',
@@ -240,65 +240,65 @@ const buttonStories = {
           
           const submitButton = screen.getByLabelText('Submit Form')
           expect(submitButton).toHaveAttribute('aria-labelledby', 'submit-label')
-        `
-      }
-    ]
-  }
+        `,
+      },
+    ],
+  },
 }
 
 // Workshop configuration
 const workshopConfig = {
   title: 'Button Pattern Workshop',
   description: 'Complete ARIA button pattern implementation with behavioral programming',
-  
+
   stories: buttonStories,
-  
+
   // Design tokens used
   designTokens: {
     colors: {
       primary: '#007acc',
-      primaryHover: '#005a99', 
+      primaryHover: '#005a99',
       primaryActive: '#004477',
       text: '#ffffff',
-      danger: '#dc3545'
+      danger: '#dc3545',
     },
     spacing: {
       buttonPadding: '0.75rem 1.5rem',
-      borderRadius: '0.375rem'
+      borderRadius: '0.375rem',
     },
     typography: {
       fontWeight: '600',
-      fontSize: '1rem'
-    }
+      fontSize: '1rem',
+    },
   },
-  
+
   // Behavioral threads implemented
   behavioralFeatures: [
     'Click activation',
-    'Space key activation', 
+    'Space key activation',
     'Enter key activation',
     'Disabled state blocking',
     'Focus management',
-    'ARIA state synchronization'
+    'ARIA state synchronization',
   ],
-  
+
   // Compliance verification
   ariaCompliance: {
     role: 'button',
     keyboardSupport: ['Space', 'Enter'],
     states: ['aria-pressed', 'aria-disabled'],
     labeling: ['aria-label', 'aria-labelledby', 'aria-describedby'],
-    focusManagement: true
+    focusManagement: true,
   },
-  
+
   // Test suite summary
   testCoverage: {
     accessibility: '100%',
     keyboard: '100%',
     visual: '100%',
     interaction: '100%',
-    behavioral: '100%'
-  }
+    behavioral: '100%',
+  },
 }
 
 console.log('🎭 Generated Workshop Stories for Button Component')

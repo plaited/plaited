@@ -30,11 +30,11 @@ export const useHandleConsoleMessage = ({
           trigger<LogMessageDetail>({
             type: TESTING_EVENTS.LOG_EVENT,
             detail: {
-            snapshot: result.data,
-            colorScheme,
-            context,
-            ...params,
-          },
+              snapshot: result.data,
+              colorScheme,
+              context,
+              ...params,
+            },
           })
         }
       }

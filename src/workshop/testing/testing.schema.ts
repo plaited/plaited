@@ -1,7 +1,7 @@
-import { z } from "zod/v4";
+import { z } from 'zod/v4'
 import type { SnapshotMessage } from '../../behavioral/b-program.js'
-import { FIXTURE_EVENTS} from './plaited-fixture.constants.js'
-import type { ValueOf } from "../../utils/value-of.type.js";
+import { FIXTURE_EVENTS } from './plaited-fixture.constants.js'
+import type { ValueOf } from '../../utils/value-of.type.js'
 
 type SnapshotMessageBid = SnapshotMessage[number]
 
@@ -11,7 +11,7 @@ export interface PlaitedFixtureSnapshotMessageBid extends SnapshotMessageBid {
 
 export type PlaitedFixtureSnapshotMessage = PlaitedFixtureSnapshotMessageBid[]
 
-const MessageBidSchema = z.object({ 
+const MessageBidSchema = z.object({
   thread: z.string(),
   trigger: z.boolean(),
   selected: z.boolean(),
@@ -20,17 +20,18 @@ const MessageBidSchema = z.object({
   priority: z.number(),
   blockedBy: z.optional(z.string()),
   interrupts: z.optional(z.string()),
-});
+})
 
 export const SnapshotMessageSchema = MessageBidSchema.array()
-
 
 type CheckSame<
   TS_TYPE,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   TS_TYPE_REPEAT extends INFERRED_ZOD_TYPE,
   INFERRED_ZOD_TYPE extends TS_TYPE,
-> = never;
+> = never
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-type Checks = [CheckSame<PlaitedFixtureSnapshotMessage, PlaitedFixtureSnapshotMessage, z.infer<typeof SnapshotMessageSchema>>];
+type Checks = [
+  CheckSame<PlaitedFixtureSnapshotMessage, PlaitedFixtureSnapshotMessage, z.infer<typeof SnapshotMessageSchema>>,
+]

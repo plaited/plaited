@@ -33,7 +33,7 @@ import { useRunner } from './use-runner.js'
  */
 export const PlaitedFixture = defineElement<{
   [FIXTURE_EVENTS.RUN]: { play?: InteractionStoryObj['play']; timeout?: number }
-  [FIXTURE_EVENTS.PLAY]:  { play: InteractionStoryObj['play']; timeout?: number }
+  [FIXTURE_EVENTS.PLAY]: { play: InteractionStoryObj['play']; timeout?: number }
 }>({
   tag: PLAITED_FIXTURE,
   publicEvents: [FIXTURE_EVENTS.RUN],
@@ -44,16 +44,23 @@ export const PlaitedFixture = defineElement<{
     }),
   }),
   bProgram({ host, trigger, useSnapshot, bThreads, bThread, bSync }) {
-
     bThreads.set({
-      onError: bThread([
-        bSync({
-          waitFor: [FIXTURE_EVENTS.ACCESSIBILITY_VIOLATION, FIXTURE_EVENTS.FAILED_ASSERTION, FIXTURE_EVENTS.MISSING_ASSERTION_PARAMETER, FIXTURE_EVENTS.UNKNOWN_ERROR]
-        }),
-        bSync({
-          block: [FIXTURE_EVENTS.RUN_COMPLETE, FIXTURE_EVENTS.TEST_TIMEOUT]
-        })
-      ], true)
+      onError: bThread(
+        [
+          bSync({
+            waitFor: [
+              FIXTURE_EVENTS.ACCESSIBILITY_VIOLATION,
+              FIXTURE_EVENTS.FAILED_ASSERTION,
+              FIXTURE_EVENTS.MISSING_ASSERTION_PARAMETER,
+              FIXTURE_EVENTS.UNKNOWN_ERROR,
+            ],
+          }),
+          bSync({
+            block: [FIXTURE_EVENTS.RUN_COMPLETE, FIXTURE_EVENTS.TEST_TIMEOUT],
+          }),
+        ],
+        true,
+      ),
     })
 
     useSnapshot((snapshot: SnapshotMessage) => {
@@ -79,22 +86,17 @@ export const PlaitedFixture = defineElement<{
           match,
           throws,
           wait: useWait(trigger),
-          checkA11y: useCheckA11y(trigger)
+          checkA11y: useCheckA11y(trigger),
         })
       } catch (error) {
-        if(
-          error instanceof FailedAssertionError||
-          error instanceof AccessibilityError
-        ) {
+        if (error instanceof FailedAssertionError || error instanceof AccessibilityError) {
           trigger<TestFailureEventDetail>({
-            type:error.name,
-            detail: { [failure(error.name)]: JSON.parse(error.message)},
+            type: error.name,
+            detail: { [failure(error.name)]: JSON.parse(error.message) },
           })
-        }else if (
-          error instanceof MissingAssertionParameterError 
-        ) {
+        } else if (error instanceof MissingAssertionParameterError) {
           trigger<TestFailureEventDetail>({
-            type:error.name,
+            type: error.name,
             detail: { [failure(error.name)]: error.message },
           })
         } else if (error instanceof Error) {
@@ -108,19 +110,19 @@ export const PlaitedFixture = defineElement<{
     useRunner()
     return {
       [FIXTURE_EVENTS.RUN](detail) {
-        if(detail.play) {
-          trigger({type: FIXTURE_EVENTS.PLAY, detail})
+        if (detail.play) {
+          trigger({ type: FIXTURE_EVENTS.PLAY, detail })
         } else {
-          trigger({ type: FIXTURE_EVENTS.RUN_COMPLETE, detail: success()})
+          trigger({ type: FIXTURE_EVENTS.RUN_COMPLETE, detail: success() })
         }
       },
       async [FIXTURE_EVENTS.PLAY](detail) {
-          const timedOut = await Promise.race([interact(detail.play), timeout(detail.timeout ?? DEFAULT_PLAY_TIMEOUT)])
-          if (timedOut) {
-            trigger({ type: FIXTURE_EVENTS.TEST_TIMEOUT, detail: failure(FIXTURE_EVENTS.TEST_TIMEOUT) })
-          } else {
-            trigger({ type: FIXTURE_EVENTS.RUN_COMPLETE, detail: success() })
-          } 
+        const timedOut = await Promise.race([interact(detail.play), timeout(detail.timeout ?? DEFAULT_PLAY_TIMEOUT)])
+        if (timedOut) {
+          trigger({ type: FIXTURE_EVENTS.TEST_TIMEOUT, detail: failure(FIXTURE_EVENTS.TEST_TIMEOUT) })
+        } else {
+          trigger({ type: FIXTURE_EVENTS.RUN_COMPLETE, detail: success() })
+        }
       },
       onConnected() {
         trigger({

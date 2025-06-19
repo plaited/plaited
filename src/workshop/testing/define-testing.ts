@@ -70,6 +70,7 @@ export const defineTesting = async ({
     ),
   })
   let failed = 0
+  let passed = 0
   const handleFailure = async ({ url, filePath, exportName, context, colorScheme, detail }: FixtureEventDetail) => {
     // Get running tests map
     const running = runningSignal.get()
@@ -106,6 +107,7 @@ export const defineTesting = async ({
     //Print out result
     console.log(`${detail}:`, url)
 
+    passed++
     // Close context
     await context.close()
   }
@@ -151,7 +153,9 @@ export const defineTesting = async ({
     },
     async [TESTING_EVENTS.END]() {
       runningSignal.set(new Map())
-      if (process.execArgv.includes('--hot')) {
+      if (!process.execArgv.includes('--hot')) {
+        console.log('Fail: ', failed)
+        console.log('Pass: ', passed)
         failed ? process.exit(1) : process.exit(0)
       } else {
         failed = 0

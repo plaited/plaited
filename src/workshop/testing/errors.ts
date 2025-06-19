@@ -45,4 +45,3 @@ export class AccessibilityError extends Error implements Error {
     super(message)
   }
 }
-

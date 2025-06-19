@@ -175,18 +175,18 @@ export type DefineElementArgs<A extends PlaitedEventDetails> = {
 const createDocumentFragment = (html: string) => {
   const tpl = document.createElement('template')
   tpl.setHTMLUnsafe(html)
-  const clone = tpl.content.cloneNode(true) as DocumentFragment;
+  const clone = tpl.content.cloneNode(true) as DocumentFragment
   const scripts = clone.querySelectorAll<HTMLScriptElement>('script')
-  for(const script of scripts) {
-    const newScript = document.createElement('script');
+  for (const script of scripts) {
+    const newScript = document.createElement('script')
     for (const attr of script.attributes) {
-      newScript.setAttribute(attr.name, attr.value);
+      newScript.setAttribute(attr.name, attr.value)
     }
     if (script.textContent) {
-      newScript.textContent = script.textContent;
+      newScript.textContent = script.textContent
     }
-    script.parentNode?.appendChild(newScript);
-    script.parentNode?.removeChild(script);
+    script.parentNode?.appendChild(newScript)
+    script.parentNode?.removeChild(script)
   }
   return clone
 }
@@ -565,7 +565,8 @@ export const defineElement = <A extends EventDetails>({
                 ...(streamAssociated && {
                   [ELEMENT_CALLBACKS.append]: (html: string) => this.append(createDocumentFragment(html)),
                   [ELEMENT_CALLBACKS.prepend]: (html: string) => this.prepend(createDocumentFragment(html)),
-                  [ELEMENT_CALLBACKS.replaceChildren]: (html: string) => this.replaceChildren(createDocumentFragment(html)),
+                  [ELEMENT_CALLBACKS.replaceChildren]: (html: string) =>
+                    this.replaceChildren(createDocumentFragment(html)),
                 }),
               }),
             )

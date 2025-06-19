@@ -4,7 +4,6 @@ import { type Signal } from '../../behavioral/use-signal.js'
 import type { StoryParams } from '../workshop.types.js'
 import { useHandleConsoleMessage } from './use-handle-console-message.js'
 
-
 const visitStory = ({
   browser,
   colorScheme,
@@ -42,8 +41,8 @@ export const useVisitStory = ({
   serverURL: URL
 }) => {
   const visitations = [
-    visitStory({ browser, colorScheme: 'light', trigger, serverURL, }),
-    colorSchemeSupportSignal.get() && visitStory({ browser, colorScheme: 'dark', trigger, serverURL, }),
+    visitStory({ browser, colorScheme: 'light', trigger, serverURL }),
+    colorSchemeSupportSignal.get() && visitStory({ browser, colorScheme: 'dark', trigger, serverURL }),
   ]
   return async (params: StoryParams) =>
     await Promise.all(visitations.flatMap(async (visit) => (visit ? await visit(params) : [])))

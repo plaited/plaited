@@ -5,6 +5,6 @@ import type { WaitDetails } from './testing.types.js'
 export const WAIT = 'WAIT'
 
 export const useWait = (trigger: Trigger) => (ms: number) => {
-  trigger<WaitDetails>({ type: WAIT, detail:[ms] })
+  trigger<WaitDetails>({ type: WAIT, detail: [ms] })
   return wait(ms)
 }

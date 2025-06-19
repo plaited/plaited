@@ -3,7 +3,7 @@ import { getPublicTrigger } from '../behavioral/get-public-trigger.js'
 import { useSignal } from '../behavioral/use-signal.js'
 import { keyMirror } from '../utils/key-mirror.js'
 import { useServer } from './routing/use-server.js'
-import { defineTesting  } from './testing/define-testing.js'
+import { defineTesting } from './testing/define-testing.js'
 
 export type DefineWorkshopParams = {
   cwd: string
@@ -35,15 +35,10 @@ export type WorkshopDetails = {
   [PUBLIC_EVENTS.TEST_ALL_STORIES]: void
 }
 
-export const defineWorkshop = async ({
-  cwd,
-  development = false,
-  port = 3000,
-}: DefineWorkshopParams) => {
+export const defineWorkshop = async ({ cwd, development = false, port = 3000 }: DefineWorkshopParams) => {
   const { useFeedback, trigger } = bProgram()
 
   const designTokensSignal = useSignal<string>()
-
 
   const { url, reload, storyParamSetSignal, reloadClients } = await useServer({
     cwd,
@@ -51,18 +46,18 @@ export const defineWorkshop = async ({
     port,
     designTokensSignal,
   })
- 
+
   const colorSchemeSupportSignal = useSignal(false)
-  
+
   await defineTesting({
     colorSchemeSupportSignal,
     serverURL: url,
-    storyParamSetSignal
+    storyParamSetSignal,
   })
 
   if (process.execArgv.includes('--hot')) {
     reloadClients()
-  } 
+  }
 
   useFeedback<WorkshopDetails>({
     async [PUBLIC_EVENTS.TEST_ALL_STORIES]() {
@@ -73,7 +68,7 @@ export const defineWorkshop = async ({
     },
     async [PUBLIC_EVENTS.LIST_ROUTES]() {
       const storyParamSet = storyParamSetSignal.get()
-      for (const { route, filePath} of storyParamSet) {
+      for (const { route, filePath } of storyParamSet) {
         const hrefs = `  ${new URL(route, url).href}`
         console.log(`${filePath}:\n${hrefs}`)
       }

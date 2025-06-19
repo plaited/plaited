@@ -9,8 +9,8 @@ import type { StorySet } from '../workshop.types.js'
 import { zip } from './zip.js'
 import { WORKSHOP_ROUTE } from '../testing/testing.constants.js'
 
-const getEntryPath = (route: string) =>{
-  const segments =  route.split('/')
+const getEntryPath = (route: string) => {
+  const segments = route.split('/')
   const last = segments.pop()!
   return `${segments.join('/')}/${last.split('--')[0]}--index.js`
 }
@@ -68,16 +68,12 @@ const createPageBundle = async ({
     [route]: zip({
       content: `<!DOCTYPE html>\n${page}`,
       contentType: 'text/html;charset=utf-8',
-      headers: story?.parameters?.headers && await story?.parameters?.headers(process.env)
-    }) 
+      headers: story?.parameters?.headers && (await story?.parameters?.headers(process.env)),
+    }),
   }
 }
 
-
-const createInclude = async ({ story, route }: {
-  story: StoryObj
-  route: string
-}) => {
+const createInclude = async ({ story, route }: { story: StoryObj; route: string }) => {
   const args = story?.args ?? {}
   const Template = story?.template
   if (!Template) return {}
@@ -91,14 +87,18 @@ const createInclude = async ({ story, route }: {
     />,
   )
   return {
-    [ `${route}.template`]: zip({
+    [`${route}.template`]: zip({
       content,
       contentType: 'text/html;charset=utf-8',
-    }) 
+    }),
   }
 }
 
-export const getHTMLRoutes = async ({ designTokens, storySet, filePath }: {
+export const getHTMLRoutes = async ({
+  designTokens,
+  storySet,
+  filePath,
+}: {
   storySet: StorySet
   filePath: string
   designTokens?: string

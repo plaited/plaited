@@ -19,9 +19,7 @@ import { FIXTURE_EVENTS } from './plaited-fixture.constants.js'
  * @property {number} [timeout=5000] - The maximum time (in milliseconds) allowed for the story's `play` function to complete. Defaults to `DEFAULT_PLAY_TIMEOUT` (5000ms).
  */
 export type Params = {
-  headers?:  (
-    env: NodeJS.ProcessEnv,
-  ) => Headers | Promise<Headers>
+  headers?: (env: NodeJS.ProcessEnv) => Headers | Promise<Headers>
   recordVideo?: BrowserContextOptions['recordVideo']
   styles?: StylesObject
   timeout?: number // Defaults to 5_000 ms
@@ -158,9 +156,8 @@ export type StoryObj<T extends Attrs = Attrs> = InteractionStoryObj<T> | Snapsho
 
 export type TestFailureEventDetail = {
   [K in
-    typeof FIXTURE_EVENTS.ACCESSIBILITY_VIOLATION |
-    typeof FIXTURE_EVENTS.FAILED_ASSERTION |
-    typeof FIXTURE_EVENTS.MISSING_ASSERTION_PARAMETER |
-    typeof FIXTURE_EVENTS.UNKNOWN_ERROR
-  ]?: unknown
+    | typeof FIXTURE_EVENTS.ACCESSIBILITY_VIOLATION
+    | typeof FIXTURE_EVENTS.FAILED_ASSERTION
+    | typeof FIXTURE_EVENTS.MISSING_ASSERTION_PARAMETER
+    | typeof FIXTURE_EVENTS.UNKNOWN_ERROR]?: unknown
 }

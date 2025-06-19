@@ -5,7 +5,6 @@ import { RELOAD_STORY_PAGE, RUNNER_URL } from './testing.constants.js'
 /** @internal Type guard to check if an event is a WebSocket CloseEvent. */
 const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => event.type === 'close'
 
-
 export const useRunner = () => {
   const retryStatusCodes = new Set([1006, 1012, 1013])
   const maxRetries = 3
@@ -14,12 +13,11 @@ export const useRunner = () => {
   const ws = {
     async callback(evt: MessageEvent) {
       if (evt.type === 'message') {
-          const { data } = evt
-          const message = isTypeOf<string>(data, 'string') && data === RELOAD_STORY_PAGE
-          if (message) {
-            window.location.reload()
-          };
-       
+        const { data } = evt
+        const message = isTypeOf<string>(data, 'string') && data === RELOAD_STORY_PAGE
+        if (message) {
+          window.location.reload()
+        }
       }
       if (isCloseEvent(evt) && retryStatusCodes.has(evt.code)) ws.retry()
       if (evt.type === 'open') {
@@ -29,8 +27,8 @@ export const useRunner = () => {
         console.error('WebSocket error: ', evt)
       }
     },
-    connect() {    
-      socket = new WebSocket( `${self?.location?.origin.replace(/^http/, 'ws')}${RUNNER_URL}`)
+    connect() {
+      socket = new WebSocket(`${self?.location?.origin.replace(/^http/, 'ws')}${RUNNER_URL}`)
       delegates.set(socket, new DelegatedListener(ws.callback))
       // WebSocket connection opened
       socket.addEventListener('open', delegates.get(socket))
