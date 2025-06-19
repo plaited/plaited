@@ -45,11 +45,10 @@ export const test: StoryObj = {
 
     const fixture = await findByAttribute<PlaitedElement>('data-testid', 'fixture')
 
-    //@ts-ignore: testing failure
     assert({
       given: 'before streaming fixture shadowDom',
       should: 'have text content',
-      // actual: fixture?.shadowRoot?.textContent,
+      actual: fixture?.shadowRoot?.textContent,
       expected: EMPTY_SLOT,
     })
 

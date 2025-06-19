@@ -12,13 +12,7 @@ const STORY_GLOB_PATTERN = `**/*.stories.{tsx,ts}`
 
 export const RELOAD_TOPIC = 'RELOAD_TOPIC'
 
-export const useServer = async ({
-  cwd,
-  designTokensSignal,
-}: {
-  cwd: string
-  designTokensSignal: Signal<string>
-}) => {
+export const useServer = async ({ cwd, designTokensSignal }: { cwd: string; designTokensSignal: Signal<string> }) => {
   // Get Story Sets
   const entrypoints = await globFiles(cwd, STORY_GLOB_PATTERN)
   const storySets = new Map<string, Record<string, StoryObj>>()
