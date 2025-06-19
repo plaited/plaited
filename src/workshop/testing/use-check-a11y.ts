@@ -18,7 +18,7 @@ export const useCheckA11y = (trigger: Trigger) => {
       exclude
     }, { reporter: "no-passes", rules})
     axe.reset()
-    if(violations.length) throw new AccessibilityError(`Accessibility Violation:\n${JSON.stringify(violations, null, 2)}`)
+    if(violations.length) throw new AccessibilityError(JSON.stringify(violations))
   }
   return checkA11y
 }

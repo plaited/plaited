@@ -1,16 +1,17 @@
-import { $ } from 'bun'
-import { mkdtemp } from 'node:fs/promises'
-import { sep } from 'node:path'
-import { OUTPUT_DIR } from '../../../.plaited.js'
 import { useSignal, type Signal } from '../../behavioral/use-signal.js'
 import type { StoryObj } from '../testing/plaited-fixture.types.js'
 import type { StoryParams } from '../workshop.types.js'
 import { globFiles } from './glob-files.js'
-import { getAssetRoutes } from './get-routes.js'
+import { getHTMLRoutes } from './get-html-routes.js'
 import { addStoryParams } from './add-story-params.js'
+import { getEntryRoutes } from './get-entry-routes.js'
+import { RELOAD_STORY_PAGE, RUNNER_URL } from '../testing/plaited-fixture.constants.js'
+
 
 /** Glob pattern used to find story files within the project. */
 const STORY_GLOB_PATTERN = `**/*.stories.{tsx,ts}`
+
+export const RELOAD_TOPIC = 'RELOAD_TOPIC'
 
 export const useServer = async ({
   cwd,
@@ -23,34 +24,35 @@ export const useServer = async ({
   port: number
   designTokensSignal: Signal<string>
 }) => {
-  //Cleanup
-  await $`rm -rf ${OUTPUT_DIR} && mkdir ${OUTPUT_DIR}`
-  const output = await mkdtemp(`${OUTPUT_DIR}${sep}`)
 
   // Get Story Sets
   const entrypoints = await globFiles(cwd, STORY_GLOB_PATTERN)
   const storySets = new Map<string, Record<string, StoryObj>>()
   await Promise.all(
     entrypoints.map(async (entry) => {
-      const { default: _, ...storySet } = (await import(entry)) as {
-        [key: string]: StoryObj
+      try {
+        const { default: _, ...storySet } = (await import(entry)) as {
+          [key: string]: StoryObj
+        }
+        storySets.set(entry, storySet)
+      } catch (err) {
+        console.log(err)
       }
-      storySets.set(entry, storySet)
     }),
   )
   const storyParamSetSignal = useSignal<Set<StoryParams>>(new Set())
-  
+
   const getRoutes = async () => {
-    const bundledRoutes = {}
+    const bundledRoutes = {
+      ...await getEntryRoutes(cwd, [...storySets.keys()])
+    }
     await Promise.all(
       storySets.entries().map(async ([entry, storySet]) => {
         const filePath = entry.replace(new RegExp(`^${cwd}`), '')
-        addStoryParams({filePath, storySet, storyParamSetSignal})
-        const routes = await getAssetRoutes({
+        addStoryParams({ filePath, storySet, storyParamSetSignal })
+        const routes = await getHTMLRoutes({
           designTokens: designTokensSignal.get(),
-          output,
           storySet,
-          entry,
           filePath,
         })
         Object.assign(bundledRoutes, ...routes)
@@ -62,11 +64,27 @@ export const useServer = async ({
     routes: await getRoutes(),
     development,
     port,
+    async fetch(req: Request, server: Bun.Server) {
+      const { pathname } = new URL(req.url)
+      if (pathname === RUNNER_URL) {
+        const success = server.upgrade(req)
+        return success ? undefined : new Response('WebSocket upgrade error', { status: 400 })
+      }
+      return new Response('Not Found', { status: 404 })
+    },
+    websocket: {
+       open(ws) {
+        ws.subscribe(RELOAD_TOPIC);
+      },
+      message() {},
+      close(ws) {
+         ws.unsubscribe(RELOAD_TOPIC);
+      }
+    }
   })
 
   process.on('SIGINT', async () => {
     console.log('\n...stopping server')
-    await $`rm -rf ${OUTPUT_DIR}`
     process.exit()
   })
 
@@ -87,17 +105,16 @@ export const useServer = async ({
 
   process.on('SIGTERM', async () => {
     console.log('\n...stopping server')
-    await $`rm -rf ${OUTPUT_DIR}`
     process.exit()
   })
 
   process.on('SIGHUP', async () => {
     console.log('\n...stopping server')
-    await $`rm -rf ${OUTPUT_DIR}`
     process.exit()
   })
 
   const reload = async () => {
+    server.publish(RELOAD_TOPIC, RELOAD_STORY_PAGE)
     storyParamSetSignal.set(new Set())
     return server.reload({
       routes: await getRoutes(),
@@ -107,6 +124,6 @@ export const useServer = async ({
   return {
     url: server.url,
     reload,
-    storyParamSetSignal
+    storyParamSetSignal,
   }
 }

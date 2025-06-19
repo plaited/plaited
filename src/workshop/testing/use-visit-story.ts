@@ -22,7 +22,11 @@ const visitStory = ({
     const handleConsoleMessage = useHandleConsoleMessage({ trigger, params, colorScheme, context })
     page.on('console', handleConsoleMessage)
     const { href } = new URL(params.route, serverURL)
-    await page.goto(href, { waitUntil: 'domcontentloaded' })
+    try {
+      await page.goto(href, { waitUntil: 'domcontentloaded' })
+    } catch (error) {
+      console.log(error)
+    }
   }
 }
 

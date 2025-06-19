@@ -5,12 +5,8 @@ import type { Wait } from '../../utils/wait.js'
 import type { Match } from './match.js'
 import type { Throws } from './throws.js'
 import type { Assert, FindByAttribute, FindByText, FireEvent, CheckA11y } from './testing.types.js'
+import { FIXTURE_EVENTS } from './plaited-fixture.constants.js'
 
-export type CookiesCallback = (
-  env: NodeJS.ProcessEnv,
-) =>
-  | Record<string, (string | number) | (string | number)[]>
-  | Promise<Record<string, (string | number) | (string | number)[]>>
 /**
  * @internal Configuration parameters for a specific story test.
  * These options control the testing environment and behavior for a single story.
@@ -23,7 +19,9 @@ export type CookiesCallback = (
  * @property {number} [timeout=5000] - The maximum time (in milliseconds) allowed for the story's `play` function to complete. Defaults to `DEFAULT_PLAY_TIMEOUT` (5000ms).
  */
 export type Params = {
-  cookies?: CookiesCallback
+  headers?:  (
+    env: NodeJS.ProcessEnv,
+  ) => Headers | Promise<Headers>
   recordVideo?: BrowserContextOptions['recordVideo']
   styles?: StylesObject
   timeout?: number // Defaults to 5_000 ms
@@ -158,16 +156,11 @@ export type SnapshotStoryObj<T extends Attrs = Attrs> = {
  */
 export type StoryObj<T extends Attrs = Attrs> = InteractionStoryObj<T> | SnapshotStoryObj<T>
 
-/**
- * Represents the data structure sent from the test fixture to the runner
- * when a test fails due to an failed assertion, missing parameters, or unknown error in the client
- *
- * @property {object} event - Test Failure Event.
- * @property {typeof MISSING_ASSERTION_PARAMETER | typeof FAILED_ASSERTION |  typeof UNKNOWN_ERROR} event.type - The type of failure event.
- * @property {object} event.detail - Contextual information about the failed test.
- * @property {string} event.detail.name - Unknown error name if present.
- * @property {string} event.detail.message - Error message indicating missing parameters.
- * @property {string} event.detail.url - The URL of the test page when the error occurred.
- * @property {string} event.detail.trace - A string representing the stack trace of the error.
- */
-export type TestFailureEventDetail =   { name: string; message: string; url: string; trace: string }
+export type TestFailureEventDetail = {
+  [K in
+    typeof FIXTURE_EVENTS.ACCESSIBILITY_VIOLATION |
+    typeof FIXTURE_EVENTS.FAILED_ASSERTION |
+    typeof FIXTURE_EVENTS.MISSING_ASSERTION_PARAMETER |
+    typeof FIXTURE_EVENTS.UNKNOWN_ERROR
+  ]?: unknown
+}

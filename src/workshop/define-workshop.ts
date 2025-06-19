@@ -1,10 +1,7 @@
-import type { BrowserContextOptions } from 'playwright'
 import { bProgram } from '../behavioral/b-program.js'
 import { getPublicTrigger } from '../behavioral/get-public-trigger.js'
 import { useSignal } from '../behavioral/use-signal.js'
-import type { StylesObject } from '../main/css.types.js'
 import { keyMirror } from '../utils/key-mirror.js'
-import type { StoryParams } from './workshop.types.js'
 import { useServer } from './routing/use-server.js'
 import { defineTesting  } from './testing/define-testing.js'
 
@@ -16,7 +13,7 @@ export type DefineWorkshopParams = {
 
 export const PUBLIC_EVENTS = keyMirror(
   'TEST_STORY_SET',
-  'TEST_ALL_STORY_SETS',
+  'TEST_ALL_STORIES',
   'GET_PLAY_STORY_SETS',
   'GET_FILE_ROUTES',
   'SET_CURRENT_WORKING_DIRECTORY',
@@ -35,15 +32,12 @@ const EVENTS = keyMirror('RELOAD_SERVER')
 export type WorkshopDetails = {
   [EVENTS.RELOAD_SERVER]: void
   [PUBLIC_EVENTS.LIST_ROUTES]: void
-  [PUBLIC_EVENTS.TEST_ALL_STORY_SETS]: void
+  [PUBLIC_EVENTS.TEST_ALL_STORIES]: void
 }
 
 export const defineWorkshop = async ({
   cwd,
-  development = {
-    hmr: true,
-    console: true,
-  },
+  development = false,
   port = 3000,
 }: DefineWorkshopParams) => {
   const { useFeedback, trigger } = bProgram()
@@ -60,17 +54,17 @@ export const defineWorkshop = async ({
   
   const colorSchemeSupportSignal = useSignal(false)
   
-  const testing = defineTesting({
-      colorSchemeSupportSignal,
-      serverURL: url,
-      storyParamSetSignal
+  await defineTesting({
+    colorSchemeSupportSignal,
+    serverURL: url,
+    storyParamSetSignal
   })
 
 
 
   useFeedback<WorkshopDetails>({
-    async [PUBLIC_EVENTS.TEST_ALL_STORY_SETS]() {
-      // testSetSignal.set()
+    async [PUBLIC_EVENTS.TEST_ALL_STORIES]() {
+      storyParamSetSignal.set(new Set(storyParamSetSignal.get()))
     },
     async [EVENTS.RELOAD_SERVER]() {
       await reload()

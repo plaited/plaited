@@ -1,7 +1,7 @@
 import type { TemplateObject } from '../jsx/jsx.types.js'
 import { BOOLEAN_ATTRS } from '../jsx/jsx.constants.js'
 import type { Bindings, BoundElement } from './plaited.types.js'
-import type { StylesObject } from '../styling/css.types.js'
+import type { StylesObject } from './css.types.js'
 import { isTypeOf } from '../utils/is-type-of.js'
 /**
  * @internal Cache for storing adopted stylesheets per ShadowRoot to prevent duplicate processing.
@@ -52,6 +52,8 @@ const updateAttributes = ({
   if (attr === 'class' && isTypeOf<StylesObject>(val, 'object')) {
     void updateShadowRootStyles(root, new Set(val.stylesheet))
     element.setAttribute(attr, `${val.class}`)
+  } else if (attr === 'part') {
+    // TODO
   } else {
     element.setAttribute(attr, `${val}`)
   }

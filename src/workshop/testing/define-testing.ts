@@ -17,6 +17,8 @@ type FixtureEventDetail = {
     detail: unknown;
 }
 
+
+
 export type RunnerDetails = {
   [TESTING_EVENTS.RUN_TESTS]: Set<StoryParams>
   [TESTING_EVENTS.LOG_EVENT]: LogMessageDetail
@@ -41,19 +43,17 @@ export const defineTesting = async ({
   const { useFeedback, trigger, bThreads } = bProgram()
   
   const browser = await chromium.launch()
-  let passed = new Set<BrowserContext>()
-  let failed = new Set<BrowserContext>()
 
   storyParamSetSignal.listen(TESTING_EVENTS.RUN_TESTS, trigger)
   colorSchemeSupportSignal.listen(TESTING_EVENTS.RUN_TESTS, trigger)
   
-  const testCountSignal = useSignal<number>(0)
+  const runningSignal = useSignal<Map<string, Set<string>>>(new Map())
 
 
   bThreads.set({
     onCountChange: bThread([
       bSync({
-        block: ({type}) => {
+        waitFor: ({type}) => {
           const events = [
             FIXTURE_EVENTS.FAILED_ASSERTION,
             FIXTURE_EVENTS.MISSING_ASSERTION_PARAMETER,
@@ -63,26 +63,82 @@ export const defineTesting = async ({
             FIXTURE_EVENTS.ACCESSIBILITY_VIOLATION,
           ]
           if(!events.includes(type as typeof events[number])) return false
-          return testCountSignal.get() === passed.size + failed.size
+          return runningSignal.get().size === 1
         }
       }),
       bSync({ request: {type: TESTING_EVENTS.END}})
     ], true)
   })
 
+  const handleFailure = async ({
+        url,
+        filePath,
+        exportName,
+        context,
+        colorScheme,
+        detail
+      }: FixtureEventDetail) => {
+        // Get running tests map
+        const running = runningSignal.get()
+        // Get color schemes for current test url
+        const runningColorSchemes = running.get(url)!
+        // Delete colorScheme from running set
+        runningColorSchemes.delete(colorScheme)
+        // If set is zeroed out delete url from running map
+        !runningColorSchemes.size && running.delete(url)
+        
+        //Print out result
+        console.table({
+          url,
+          filePath: `.${filePath}`,
+          exportName,
+          colorScheme,
+        })
+        console.table(detail)
+
+        // Close context
+        await context.close()
+      }
+
+      const handleSuccess = async ({
+        url,
+        context,
+        colorScheme,
+        detail
+      }: FixtureEventDetail) => {
+        // Get running tests map
+        const running = runningSignal.get()
+        // Get color schemes for current test url
+        const runningColorSchemes = running.get(url)!
+        // Delete colorScheme from running set
+        runningColorSchemes.delete(colorScheme)
+        // If set is zeroed out delete url from running map
+        !runningColorSchemes.size && running.delete(url)
+        
+        //Print out result
+        console.log(`${detail}:`, url)
+
+        // Close context
+        await context.close()
+      }
+
   useFeedback<RunnerDetails>({
     async [TESTING_EVENTS.RUN_TESTS](detail) {
-      passed = new Set<BrowserContext>()
-      failed = new Set<BrowserContext>()
-      testCountSignal.set(colorSchemeSupportSignal.get() ? detail.size * 2 : detail.size)
+      runningSignal.set(new Map([...detail].map( ({route})=> { 
+        const url = new URL(route, serverURL).href
+        const colorSchemes = ["light"]
+        colorSchemeSupportSignal.get() && colorSchemes.push("dark")
+        return [url, new Set(colorSchemes)]
+      })))
       const visitStory = useVisitStory({
         browser,
         colorSchemeSupportSignal,
         serverURL,
         trigger,
       })
-      const testParams = [...detail]
-      await Promise.all(testParams.map(visitStory))
+      for(const storyParam of detail) {
+        await visitStory(storyParam)
+      }
     },
     [TESTING_EVENTS.LOG_EVENT](detail) {
       const { snapshot, route, filePath, context, colorScheme, exportName } = detail  
@@ -101,31 +157,13 @@ export const defineTesting = async ({
       }
     },
     async [TESTING_EVENTS.END]() {
-        await Promise.all([...passed, ...failed].map(async (context) => await context.close()))
+      runningSignal.set(new Map())
       },
-      [FIXTURE_EVENTS.FAILED_ASSERTION] (detail){
-        console.dir(detail)
-        failed.add(detail.context)
-      },
-      [FIXTURE_EVENTS.MISSING_ASSERTION_PARAMETER] (detail){
-        console.dir(detail)
-        failed.add(detail.context)
-      },
-      [FIXTURE_EVENTS.TEST_TIMEOUT] (detail){
-        console.dir(detail)
-        failed.add(detail.context)
-      },
-      [FIXTURE_EVENTS.UNKNOWN_ERROR] (detail){
-        console.dir(detail)
-        failed.add(detail.context)
-      },
-      [FIXTURE_EVENTS.ACCESSIBILITY_VIOLATION](detail){
-        console.dir(detail)
-        failed.add(detail.context)
-      },
-      [FIXTURE_EVENTS.RUN_COMPLETE] (detail){
-        console.dir(detail)
-        passed.add(detail.context)
-      },
+      [FIXTURE_EVENTS.FAILED_ASSERTION]: handleFailure,
+      [FIXTURE_EVENTS.MISSING_ASSERTION_PARAMETER]: handleFailure,
+      [FIXTURE_EVENTS.TEST_TIMEOUT]: handleFailure,
+      [FIXTURE_EVENTS.UNKNOWN_ERROR]: handleFailure,
+      [FIXTURE_EVENTS.ACCESSIBILITY_VIOLATION]: handleFailure,
+      [FIXTURE_EVENTS.RUN_COMPLETE]: handleSuccess,
   })
 }

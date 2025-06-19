@@ -14,31 +14,7 @@ import { useFindByAttribute } from './use-find-by-attribute.js'
 import { useFindByText } from './use-find-by-text.js'
 import { useFireEvent } from './use-fire-event.js'
 import { useCheckA11y } from './use-check-a11y.js'
-
-
-/**
- * Trims the error name and message from the top of a stack trace string.
- * @param {string} stack - The full error.stack string.
- * @returns {string} - A string containing only the trace lines.
- */
-const getTraceOnly = (stack: string) => {
-  // Split the stack string into an array of lines.
-  const lines = stack.split('\n')
-  // Find the index of the first line that starts with " at ", which marks
-  // the beginning of the actual trace in most JavaScript environments.
-  // We use .trim() to handle potential leading whitespace.
-  const firstTraceLineIndex = lines.findIndex((line) => line.trim().startsWith('at '))
-
-  if (firstTraceLineIndex !== -1) {
-    // If a trace line is found, slice the array from that line to the end,
-    // and then join it back into a single string.
-    return lines.slice(firstTraceLineIndex).join('\n')
-  }
-  // Fallback: If no line starts with " at ", it might be a different format
-  // or just the error message itself. We'll conservatively return the original
-  // stack, as we can't be sure where the message ends and the trace begins.
-  return stack
-}
+import { useRunner } from './use-runner.js'
 
 /**
  * @element plaited-test-fixture
@@ -89,6 +65,9 @@ export const PlaitedFixture = defineElement<{
       return true
     }
 
+    const success = () => '\x1b[32m ✓ \x1b[0m' + 'Success'
+    const failure = (label: string) => `\x1b[31m ${label} \x1b[0m`
+
     const interact = async (play: Play) => {
       try {
         await play?.({
@@ -103,47 +82,44 @@ export const PlaitedFixture = defineElement<{
           checkA11y: useCheckA11y(trigger)
         })
       } catch (error) {
-        if (error instanceof FailedAssertionError ||
-          error instanceof MissingAssertionParameterError ||
+        if(
+          error instanceof FailedAssertionError||
           error instanceof AccessibilityError
         ) {
           trigger<TestFailureEventDetail>({
             type:error.name,
-            detail: {
-              name: error?.name,
-              message: error.message,
-              url: window?.location.href,
-              trace: getTraceOnly(error.stack ?? 'no trace'),
-            },
+            detail: { [failure(error.name)]: JSON.parse(error.message)},
+          })
+        }else if (
+          error instanceof MissingAssertionParameterError 
+        ) {
+          trigger<TestFailureEventDetail>({
+            type:error.name,
+            detail: { [failure(error.name)]: error.message },
           })
         } else if (error instanceof Error) {
           trigger<TestFailureEventDetail>({
             type: error.name,
-            detail: {
-              name: error?.name,
-              message: error?.message,
-              trace: getTraceOnly(error.stack ?? 'no trace'),
-              url: window?.location.href,
-            },
+            detail: { [failure(error.name)]: error.message },
           })
         }
       }
     }
-    
+    useRunner()
     return {
       [FIXTURE_EVENTS.RUN](detail) {
         if(detail.play) {
           trigger({type: FIXTURE_EVENTS.PLAY, detail})
         } else {
-          trigger({ type: FIXTURE_EVENTS.RUN_COMPLETE })
+          trigger({ type: FIXTURE_EVENTS.RUN_COMPLETE, detail: success()})
         }
       },
       async [FIXTURE_EVENTS.PLAY](detail) {
           const timedOut = await Promise.race([interact(detail.play), timeout(detail.timeout ?? DEFAULT_PLAY_TIMEOUT)])
           if (timedOut) {
-            trigger({ type: FIXTURE_EVENTS.TEST_TIMEOUT })
+            trigger({ type: FIXTURE_EVENTS.TEST_TIMEOUT, detail: failure(FIXTURE_EVENTS.TEST_TIMEOUT) })
           } else {
-            trigger({ type: FIXTURE_EVENTS.RUN_COMPLETE })
+            trigger({ type: FIXTURE_EVENTS.RUN_COMPLETE, detail: success() })
           } 
       },
       onConnected() {

@@ -461,7 +461,7 @@ export const defineElement = <A extends EventDetails>({
   formAssociated,
   bProgram: callback,
 }: DefineElementArgs<A>): PlaitedTemplate => {
-  const events: string[] = [
+  const _publicEvents: string[] = [
     ...(publicEvents ?? []),
     ...(streamAssociated ?
       [ELEMENT_CALLBACKS.onAppend, ELEMENT_CALLBACKS.onPrepend, ELEMENT_CALLBACKS.onReplaceChildren]
@@ -474,7 +474,7 @@ export const defineElement = <A extends EventDetails>({
         static observedAttributes = [...observedAttributes]
         static formAssociated = formAssociated
         get publicEvents() {
-          return publicEvents
+          return _publicEvents
         }
         #internals: ElementInternals
         get #root() {
@@ -500,7 +500,7 @@ export const defineElement = <A extends EventDetails>({
           this.#bThreads = bThreads
           this.trigger = getPublicTrigger({
             trigger,
-            publicEvents,
+            publicEvents: _publicEvents,
           })
         }
         attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
@@ -678,7 +678,7 @@ export const defineElement = <A extends EventDetails>({
   ft.registry = registry
   ft.tag = tag
   ft.$ = PLAITED_TEMPLATE_IDENTIFIER
-  ft.publicEvents = events
+  ft.publicEvents = _publicEvents
   ft.observedAttributes = observedAttributes
   return ft
 }

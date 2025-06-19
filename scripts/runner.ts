@@ -2,17 +2,13 @@ import { defineWorkshop, PUBLIC_EVENTS } from '../src/workshop/define-workshop.j
 
 const cwd = `${process.cwd()}/src`
 
-const development = {
-  hmr: true,
-  console: true,
-}
 
 const port = 3000
 
 const trigger = await defineWorkshop({
   cwd,
-  development,
   port,
+  development: true
 })
 
-trigger({ type: PUBLIC_EVENTS.LIST_ROUTES })
+// trigger({ type: PUBLIC_EVENTS.TEST_ALL_STORIES })
