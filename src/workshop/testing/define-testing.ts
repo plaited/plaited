@@ -5,7 +5,7 @@ import { TESTING_EVENTS } from './testing.constants.js'
 import { FIXTURE_EVENTS } from './plaited-fixture.constants.js'
 import type { LogMessageDetail, ColorScheme } from './testing.types.js'
 import { useVisitStory } from './use-visit-story.js'
-import { defineActor } from '../../behavioral/define-actor.js'
+import { defineBProgram } from '../../behavioral/define-b-program.js'
 
 type FixtureEventDetail = {
   url: string
@@ -28,7 +28,7 @@ export type RunnerDetails = {
   [FIXTURE_EVENTS.ACCESSIBILITY_VIOLATION]: FixtureEventDetail
 }
 
-export const defineTesting = defineActor<
+export const defineTesting = defineBProgram<
   RunnerDetails,
   {
     colorSchemeSupportSignal: Signal<boolean>

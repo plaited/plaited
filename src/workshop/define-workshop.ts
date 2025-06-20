@@ -2,7 +2,7 @@ import { useSignal } from '../behavioral/use-signal.js'
 import { keyMirror } from '../utils/key-mirror.js'
 import { useServer } from './routing/use-server.js'
 import { defineTesting } from './testing/define-testing.js'
-import { defineActor } from '../behavioral/define-actor.js'
+import { defineBProgram } from '../behavioral/define-b-program.js'
 
 export type DefineWorkshopParams = {
   cwd: string
@@ -32,7 +32,7 @@ export type WorkshopDetails = {
   [PUBLIC_EVENTS.TEST_ALL_STORIES]: void
 }
 
-export const defineWorkshop = defineActor<WorkshopDetails, DefineWorkshopParams>({
+export const defineWorkshop = defineBProgram<WorkshopDetails, DefineWorkshopParams>({
   publicEvents: Object.values(PUBLIC_EVENTS),
   async bProgram({ cwd }) {
     const designTokensSignal = useSignal<string>()
