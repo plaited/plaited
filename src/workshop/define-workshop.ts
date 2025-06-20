@@ -1,8 +1,12 @@
-import { useSignal } from '../behavioral/use-signal.js'
+import { useSignal, useComputed } from '../behavioral/use-signal.js'
 import { keyMirror } from '../utils/key-mirror.js'
 import { useServer } from './routing/use-server.js'
 import { defineTesting } from './testing/define-testing.js'
 import { defineBProgram } from '../behavioral/define-b-program.js'
+import { MCP_EVENTS, MCP_TOOL_EVENTS } from './mcp/mcp.constants.js'
+import type { MCPDetails, MCPRequestInfo, RouteInfo } from './mcp/mcp.types.js'
+import { ListRoutesSchema, TestAllStoriesSchema, TestStorySetSchema } from './mcp/mcp.types.js'
+import { resolveMCPRequest } from './mcp/mcp-promise-manager.js'
 
 export type DefineWorkshopParams = {
   cwd: string
@@ -30,11 +34,11 @@ export type WorkshopDetails = {
   [EVENTS.RELOAD_SERVER]: void
   [PUBLIC_EVENTS.LIST_ROUTES]: void
   [PUBLIC_EVENTS.TEST_ALL_STORIES]: void
-}
+} & MCPDetails
 
 export const defineWorkshop = defineBProgram<WorkshopDetails, DefineWorkshopParams>({
-  publicEvents: Object.values(PUBLIC_EVENTS),
-  async bProgram({ cwd }) {
+  publicEvents: [...Object.values(PUBLIC_EVENTS), ...Object.values(MCP_EVENTS), ...Object.values(MCP_TOOL_EVENTS)],
+  async bProgram({ cwd, trigger, bThreads, bSync, bThread }) {
     const designTokensSignal = useSignal<string>()
 
     const { url, reload, storyParamSetSignal, reloadClients } = await useServer({
@@ -50,10 +54,93 @@ export const defineWorkshop = defineBProgram<WorkshopDetails, DefineWorkshopPara
       storyParamSetSignal,
     })
 
+    // MCP coordination signals
+    const pendingMCPRequestsSignal = useSignal<Map<string, MCPRequestInfo>>(new Map())
+    const routesDataSignal = useSignal<RouteInfo[]>([])
+
+    // Computed signal for automatic MCP responses
+    const mcpResponseSignal = useComputed(() => {
+      const routes = routesDataSignal.get()
+      const pending = pendingMCPRequestsSignal.get()
+
+      const responses = []
+
+      // Match available data with pending requests
+      for (const [requestId, requestInfo] of pending) {
+        switch (requestInfo.toolName) {
+          case 'list_routes':
+            if (routes.length > 0) {
+              responses.push({ requestId, data: { routes } })
+            }
+            break
+        }
+      }
+
+      return responses
+    }, [routesDataSignal, pendingMCPRequestsSignal])
+
+    // Automatic response triggering
+    mcpResponseSignal.listen(MCP_EVENTS.MCP_RESPONSE, trigger)
+
+    const schemas = {
+      list_routes: ListRoutesSchema,
+      test_all_stories: TestAllStoriesSchema,
+      test_story_set: TestStorySetSchema,
+    }
+
+    // Reusable MCP request handler (like handleFailure in testing)
+    const handleMCPRequest = async (toolName: keyof typeof schemas, params: unknown, requestId: string) => {
+      try {
+        const validatedParams = schemas[toolName]?.parse(params) ?? params
+
+        // Add to pending requests
+        const pending = pendingMCPRequestsSignal.get()
+        pending.set(requestId, { toolName, params: validatedParams, timestamp: Date.now() })
+        pendingMCPRequestsSignal.set(new Map(pending))
+
+        return validatedParams
+      } catch (error) {
+        // Handle validation error
+        trigger({
+          type: MCP_EVENTS.MCP_RESPONSE,
+          detail: [{ requestId, error: (error as Error).message }],
+        })
+        throw error
+      }
+    }
+
+    // B-threads for MCP coordination
+    bThreads.set({
+      mcpListRoutesCoordinator: bThread(
+        [
+          bSync({ waitFor: (event) => event.type === MCP_TOOL_EVENTS.MCP_LIST_ROUTES }),
+          bSync({ request: { type: PUBLIC_EVENTS.LIST_ROUTES } }),
+        ],
+        true,
+      ),
+
+      mcpTestAllStoriesCoordinator: bThread(
+        [
+          bSync({ waitFor: (event) => event.type === MCP_TOOL_EVENTS.MCP_TEST_ALL_STORIES }),
+          bSync({ request: { type: PUBLIC_EVENTS.TEST_ALL_STORIES } }),
+        ],
+        true,
+      ),
+
+      mcpTestStorySetCoordinator: bThread(
+        [
+          bSync({ waitFor: (event) => event.type === MCP_TOOL_EVENTS.MCP_TEST_STORY_SET }),
+          bSync({ request: { type: PUBLIC_EVENTS.TEST_STORY_SET } }),
+        ],
+        true,
+      ),
+    })
+
     if (process.execArgv.includes('--hot')) {
       reloadClients()
     }
     return {
+      // Existing handlers (enhanced to populate data signals)
       async [PUBLIC_EVENTS.TEST_ALL_STORIES]() {
         storyParamSetSignal.set(new Set(storyParamSetSignal.get()))
       },
@@ -62,10 +149,52 @@ export const defineWorkshop = defineBProgram<WorkshopDetails, DefineWorkshopPara
       },
       async [PUBLIC_EVENTS.LIST_ROUTES]() {
         const storyParamSet = storyParamSetSignal.get()
+        const routes: RouteInfo[] = []
         for (const { route, filePath } of storyParamSet) {
-          const hrefs = `  ${new URL(route, url).href}`
-          console.log(`${filePath}:\n${hrefs}`)
+          const href = new URL(route, url).href
+          routes.push({ filePath, href })
+          console.log(`${filePath}:\n  ${href}`) // Original behavior preserved
         }
+        routesDataSignal.set(routes) // Populate signal for MCP coordination
+      },
+
+      // MCP event handlers
+      async [MCP_EVENTS.MCP_TOOL_CALL]({ toolName, params, requestId }) {
+        // Route to specific tool event (like how LOG_EVENT routes by selected.type)
+        const toolEventMap: Record<string, string> = {
+          list_routes: MCP_TOOL_EVENTS.MCP_LIST_ROUTES,
+          test_all_stories: MCP_TOOL_EVENTS.MCP_TEST_ALL_STORIES,
+          test_story_set: MCP_TOOL_EVENTS.MCP_TEST_STORY_SET,
+        }
+
+        const toolEvent = toolEventMap[toolName]
+        if (toolEvent) {
+          trigger({ type: toolEvent, detail: { params, requestId } })
+        }
+      },
+
+      // Specific MCP tool handlers
+      async [MCP_TOOL_EVENTS.MCP_LIST_ROUTES]({ params, requestId }) {
+        await handleMCPRequest('list_routes', params, requestId)
+      },
+
+      async [MCP_TOOL_EVENTS.MCP_TEST_ALL_STORIES]({ params, requestId }) {
+        await handleMCPRequest('test_all_stories', params, requestId)
+      },
+
+      async [MCP_TOOL_EVENTS.MCP_TEST_STORY_SET]({ params, requestId }) {
+        await handleMCPRequest('test_story_set', params, requestId)
+      },
+
+      // MCP response handler
+      async [MCP_EVENTS.MCP_RESPONSE](responses) {
+        // Resolve MCP promises and clean up pending requests
+        const pending = pendingMCPRequestsSignal.get()
+        for (const { requestId, data, error } of responses) {
+          resolveMCPRequest(requestId, data, error)
+          pending.delete(requestId)
+        }
+        pendingMCPRequestsSignal.set(new Map(pending))
       },
     }
   },
