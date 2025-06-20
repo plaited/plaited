@@ -15,7 +15,7 @@ const calculator = {
   },
 }
 
-defineWorker<{
+await defineWorker<{
   calculate: { a: number; b: number; operation: 'add' | 'subtract' | 'multiply' | 'divide' }
 }>({
   publicEvents: ['calculate'],

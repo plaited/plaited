@@ -1,9 +1,8 @@
-import { bProgram } from '../behavioral/b-program.js'
-import { getPublicTrigger } from '../behavioral/get-public-trigger.js'
 import { useSignal } from '../behavioral/use-signal.js'
 import { keyMirror } from '../utils/key-mirror.js'
 import { useServer } from './routing/use-server.js'
 import { defineTesting } from './testing/define-testing.js'
+import { defineActor } from '../behavioral/define-actor.js'
 
 export type DefineWorkshopParams = {
   cwd: string
@@ -33,43 +32,41 @@ export type WorkshopDetails = {
   [PUBLIC_EVENTS.TEST_ALL_STORIES]: void
 }
 
-export const defineWorkshop = async ({ cwd }: DefineWorkshopParams) => {
-  const { useFeedback, trigger } = bProgram()
+export const defineWorkshop = defineActor<WorkshopDetails, DefineWorkshopParams>({
+  publicEvents: Object.values(PUBLIC_EVENTS),
+  async bProgram({ cwd }) {
+    const designTokensSignal = useSignal<string>()
 
-  const designTokensSignal = useSignal<string>()
+    const { url, reload, storyParamSetSignal, reloadClients } = await useServer({
+      cwd,
+      designTokensSignal,
+    })
 
-  const { url, reload, storyParamSetSignal, reloadClients } = await useServer({
-    cwd,
-    designTokensSignal,
-  })
+    const colorSchemeSupportSignal = useSignal(false)
 
-  const colorSchemeSupportSignal = useSignal(false)
+    await defineTesting({
+      colorSchemeSupportSignal,
+      serverURL: url,
+      storyParamSetSignal,
+    })
 
-  await defineTesting({
-    colorSchemeSupportSignal,
-    serverURL: url,
-    storyParamSetSignal,
-  })
-
-  if (process.execArgv.includes('--hot')) {
-    reloadClients()
-  }
-
-  useFeedback<WorkshopDetails>({
-    async [PUBLIC_EVENTS.TEST_ALL_STORIES]() {
-      storyParamSetSignal.set(new Set(storyParamSetSignal.get()))
-    },
-    async [EVENTS.RELOAD_SERVER]() {
-      await reload()
-    },
-    async [PUBLIC_EVENTS.LIST_ROUTES]() {
-      const storyParamSet = storyParamSetSignal.get()
-      for (const { route, filePath } of storyParamSet) {
-        const hrefs = `  ${new URL(route, url).href}`
-        console.log(`${filePath}:\n${hrefs}`)
-      }
-    },
-  })
-
-  return getPublicTrigger({ trigger, publicEvents: Object.values(PUBLIC_EVENTS) })
-}
+    if (process.execArgv.includes('--hot')) {
+      reloadClients()
+    }
+    return {
+      async [PUBLIC_EVENTS.TEST_ALL_STORIES]() {
+        storyParamSetSignal.set(new Set(storyParamSetSignal.get()))
+      },
+      async [EVENTS.RELOAD_SERVER]() {
+        await reload()
+      },
+      async [PUBLIC_EVENTS.LIST_ROUTES]() {
+        const storyParamSet = storyParamSetSignal.get()
+        for (const { route, filePath } of storyParamSet) {
+          const hrefs = `  ${new URL(route, url).href}`
+          console.log(`${filePath}:\n${hrefs}`)
+        }
+      },
+    }
+  },
+})

@@ -1,6 +1,6 @@
 import type { BPEvent } from './b-thread.js'
 import type { Disconnect, Handlers, EventDetails } from './b-program.js'
-import { bProgram as bp, type BProgram } from './b-program.js'
+import { bProgram, type BProgram } from './b-program.js'
 import { getPublicTrigger } from './get-public-trigger.js'
 import { getPlaitedTrigger } from './get-plaited-trigger.js'
 
@@ -131,21 +131,25 @@ type BProgramArgs = {
  *    - Consider data transfer costs
  *    - Use appropriate data structures
  */
-export const defineWorker = <A extends EventDetails>({
-  bProgram,
-  publicEvents,
-}: {
-  bProgram: (args: BProgramArgs) => Handlers<A>
+export const defineWorker = async <A extends EventDetails>(args: {
+  bProgram: (args: BProgramArgs) => Handlers<A> | Promise<Handlers<A>>
   publicEvents: string[]
 }) => {
   const context = self
+  // Initiate  a Behanvioral Program
+  const { useFeedback, trigger, ...rest } = bProgram()
+
+  // Public trigger  to receive events from main thread
+  const publicTrigger = getPublicTrigger({ trigger, publicEvents: args?.publicEvents })
+  // Event handler that for events from main thread
+  const eventHandler = ({ data }: { data: BPEvent }) => publicTrigger(data)
+
   const disconnectSet = new Set<Disconnect>()
   disconnectSet.add(() => {
     context.removeEventListener('message', eventHandler)
     disconnectSet.clear()
   })
-  // Initiate  a Behanvioral Program
-  const { useFeedback, trigger, ...rest } = bp()
+
   // Callback for sending events to the main window
   const send = (data: BPEvent) => context.postMessage(data)
   // Disconnect callback can be used to disconnect listeners and close worker
@@ -153,19 +157,16 @@ export const defineWorker = <A extends EventDetails>({
     disconnectSet.forEach((disconnect) => disconnect())
     self.close()
   }
+
   // BProgram callback returning handlers to be passed to useFeedback
   useFeedback(
-    bProgram({
+    await args.bProgram({
       ...rest,
       send,
       disconnect,
       trigger: getPlaitedTrigger(trigger, disconnectSet),
     }),
   )
-  // Public trigger  to receive events from main thread
-  const publicTrigger = getPublicTrigger({ trigger, publicEvents })
-  // Event handler that for events from main thread
-  const eventHandler = ({ data }: { data: BPEvent }) => publicTrigger(data)
   // Attach event listeners for events from main thread
   context.addEventListener('message', eventHandler, false)
 }
