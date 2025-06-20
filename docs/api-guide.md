@@ -4,7 +4,33 @@ This guide provides a comprehensive overview of the Plaited framework's public A
 
 ## Behavioral Module (`plaited/behavioral`)
 
-The Behavioral Module (`plaited/behavioral`) offers a powerful suite of tools for managing complex module logic and state in a structured, event-driven manner. It enables the implementation of **Behavioral Programming (BP)** patterns, allowing developers to define behaviors as a collection of loosely-coupled, synchronized threads (`bThread`, `bSync`). This module provides the core `bProgram` factory for orchestrating these behaviors, along with utilities for state management (`useSignal`, `useComputed`) and offloading intensive tasks to Web Workers (`defineWorker`, `useWorker`), all while maintaining a clear and reactive programming model.
+The Behavioral Module (`plaited/behavioral`) implements **Behavioral Programming (BP)**, a paradigm that treats behavior as the primary unit of modularity. Unlike traditional object-oriented or functional approaches, BP centers on independent, concurrent behavioral threads (`b-threads`) that communicate through event synchronization rather than direct method calls.
+
+### Understanding Behavioral Programming
+
+Behavioral Programming decomposes complex system logic into discrete, modular units of intent called **b-threads**. Each b-thread encapsulates a single facet of the system's required behavior and executes independently while coordinating with other threads through a sophisticated event-driven synchronization mechanism.
+
+#### Core Concepts
+
+**B-Threads as Modular Units of Intent**: In a design system context, separate b-threads might handle `HandleOpenState`, `EnforceAccessibility`, `BlockSubmitOnInvalid`, or `AnimateOnFocus`. Each thread focuses on a narrow behavioral concern, making the system more modular and easier to reason about.
+
+**Event-Driven Synchronization**: B-threads communicate exclusively through events using four core idioms:
+- **Request**: Propose that an event be triggered (expressing intent)
+- **Wait**: Passively observe for an event (expressing interest)  
+- **Block**: Prevent an event from being triggered (expressing prohibition)
+- **Interrupt**: Be terminated when a specific event occurs (expressing cancellation)
+
+**Coordinated Execution**: The system waits for all b-threads to reach synchronization points, then selects an event that is requested by at least one thread and not blocked by any. Priority is determined by the order threads are added to the program - earlier threads get higher priority (lower numbers). Events triggered externally via `trigger` receive the highest priority (0) and are considered immediately unless blocked by existing threads.
+
+### Actor-Like Coordination with Signals
+
+Plaited extends BP with **signals** - reactive state primitives that enable pub/sub coordination between behavioral programs executing in different contexts:
+- **Node.js programs** created with `defineBProgram`
+- **Browser main thread programs** using `defineBProgram` and `defineElement`  
+- **Web Worker programs** using `defineBProgram` and `defineWorker`
+- **Bun.js runtime programs** using `defineBProgram`
+
+Signals provide actor-like message passing, allowing behavioral programs to coordinate state changes across execution boundaries while maintaining the BP paradigm's modular, event-driven nature.
 
 ### Core Functions
 
@@ -99,6 +125,82 @@ type Idioms<T = any> = {
 -   `block`: A `BPListener` or an array of `BPListener`s. While this synchronization point is active, the b-thread will prevent any events matching these listeners from being selected by the `bProgram`. Blocking has higher precedence than requests.
 -   `interrupt`: A `BPListener` or an array of `BPListener`s. If an event matching one of these listeners is selected, the current execution flow of the b-thread will be terminated. If the thread is configured to repeat, it may restart. This is useful for cancellation patterns.
 
+### Higher-Order Program Utilities
+
+These utilities provide higher-level abstractions for creating and managing behavioral programs, particularly suited for integration within frameworks or components that manage lifecycle and cleanup.
+
+#### `defineBProgram(args)`
+
+A higher-order function factory for creating and configuring behavioral programs. It simplifies setup by encapsulating the creation of the bProgram instance, feedback handler registration, public event filtering, and automatic cleanup management.
+
+```ts
+<A extends EventDetails, C extends { [key: string]: unknown } = { [key: string]: unknown }>(args: {
+  publicEvents?: string[]
+  bProgram: (
+    args: {
+      bSync: BSync
+      bThread: BThread
+      bThreads: BThreads
+      disconnect: Disconnect
+      trigger: PlaitedTrigger
+      useSnapshot: UseSnapshot
+    } & C
+  ) => Handlers<A> | Promise<Handlers<A>>
+}) => (ctx: C) => Promise<Trigger>
+```
+
+- `args.publicEvents`: An optional array of event type strings that define the public API of this bProgram instance. Only these events can be triggered via the returned public trigger.
+- `args.bProgram`: The function that defines the threads and feedback handlers. It receives the standard bProgram utilities plus any context passed to the returned initialization function.
+- Returns: An async initialization function that accepts an optional context object (`C`) and returns a restricted public `Trigger`.
+
+**Usage Example:**
+
+```ts
+// Define a behavioral program for workshop functionality
+const createWorkshop = defineBProgram<WorkshopDetails, DefineWorkshopParams>({
+  publicEvents: ['TEST_ALL_STORIES', 'LIST_ROUTES'],
+  async bProgram({ cwd, trigger, bThreads, bSync, bThread, disconnect }) {
+    // Setup resources
+    const server = await useServer({ cwd })
+    
+    // Register cleanup
+    disconnect(() => server.close())
+    
+    // Define behavioral threads
+    bThreads.set({
+      reloadThread: bThread([
+        bSync({ waitFor: { type: 'RELOAD_SERVER' } })
+        // ... thread logic
+      ])
+    })
+    
+    // Return event handlers
+    return {
+      async TEST_ALL_STORIES() {
+        // Handle test execution
+      },
+      async LIST_ROUTES() {
+        // Handle route listing
+      }
+    }
+  }
+})
+
+// Initialize the program with context
+const workshopTrigger = await createWorkshop({ cwd: process.cwd() })
+
+// Use the public trigger (only allowed events can be triggered)
+workshopTrigger({ type: 'TEST_ALL_STORIES' }) // Allowed
+// workshopTrigger({ type: 'INTERNAL_EVENT' }) // Filtered out (warning logged)
+```
+
+The `defineBProgram` utility automatically handles:
+- Creating and configuring the underlying `bProgram` instance
+- Registering feedback handlers from your returned handlers object
+- Creating a public trigger that filters events based on `publicEvents`
+- Managing cleanup through the provided `disconnect` callback
+- Providing enhanced triggers with automatic disconnect management
+
 ### Web Worker Integration (Behavioral Programs in Workers)
 
 Plaited facilitates running behavioral programs within Web Workers for background processing.
@@ -147,7 +249,7 @@ Creates a communication interface from a Plaited web component's `bProgram` (or 
 
 ### State Management Utilities (Signals)
 
-Plaited provides reactive state primitives called signals, which can be used within or outside of `bProgram`s.
+Signals are reactive state primitives that enable actor-like coordination between behavioral programs running in different execution contexts. They provide a pub/sub mechanism for synchronizing values and updates across programs, whether they're created using low-level `bProgram` functions or higher-level utilities like `defineBProgram`, `defineElement`, and `defineWorker`.
 
 #### `useSignal(initialValue?)`
 
@@ -171,12 +273,12 @@ function useSignal<T>(initialValue?: never): {
 - `initialValue`: Optional initial value for the signal.
 - Returns an object with:
   - `get()`: Returns the current value of the signal.
-  - `set(value)`: Sets the signal's value and notifies all listeners.
-  - `listen(eventType, trigger, getLVC?)`: Subscribes a `trigger` to changes in the signal. When the signal's value changes, an event of `eventType` with the new value as `detail` is dispatched via the `trigger`.
-    - `eventType`: The `type` of the `BPEvent` to dispatch.
-    - `trigger`: The `Trigger` or `PlaitedTrigger` function to dispatch the event.
-    - `getLVC?` (Get Last Value Change, default: `false`): If `true`, the `trigger` is immediately called with the current signal value upon subscription.
-    - Returns a `Disconnect` function to unsubscribe the listener. If a `PlaitedTrigger` is used, this disconnect is automatically managed.
+  - `set(value)`: Sets the signal's value and notifies all subscribed behavioral programs.
+  - `listen(eventType, trigger, getLVC?)`: Subscribes a behavioral program's `trigger` to signal changes, enabling cross-program state coordination.
+    - `eventType`: The `type` of the `BPEvent` to dispatch to the subscribing program.
+    - `trigger`: The `Trigger` or `PlaitedTrigger` function of the behavioral program.
+    - `getLVC?` (Get Last Value Change, default: `false`): If `true`, immediately dispatches the current signal value upon subscription.
+    - Returns a `Disconnect` function to unsubscribe. If a `PlaitedTrigger` is used, cleanup is automatic.
 
 #### `useComputed(computeFn, dependencies)`
 
@@ -195,7 +297,7 @@ Creates a computed signal whose value is derived from other signals and automati
 - `dependencies`: An array of signal instances (created by `useSignal` or other `useComputed` calls) that this computed signal depends on. Each dependency must have `get` and `listen` methods.
 - Returns an object with:
   - `get()`: Returns the current computed value. The `computeFn` is re-evaluated lazily if dependencies have changed since the last `get()`.
-  - `listen(eventType, trigger, getLVC?)`: Subscribes to changes in the computed value. Works identically to `useSignal`\'s `listen` method.
+  - `listen(eventType, trigger, getLVC?)`: Subscribes behavioral programs to computed value changes, enabling reactive coordination across program boundaries.
 
 ### Utility Functions
 

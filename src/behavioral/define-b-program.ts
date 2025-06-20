@@ -18,25 +18,26 @@ import { getPublicTrigger } from './get-public-trigger.js'
  *
  * @template A The type of the `Handlers` object defining the feedback logic.
  * @template C An optional type for additional context passed to the `bProgram` callback during initialization.
- * @param config Configuration object for the behavioral program definition.
- * @param config.publicEvents An array of event type strings that define the public API of this bProgram instance.
- *                            Only these events can be triggered via the returned public trigger.
- * @param config.disconnectSet An optional `Set` to store cleanup functions (`Disconnect`). If not provided, a new Set is created.
- *                             This set should be managed externally and invoked upon teardown.
- * @param config.bProgram The `BProgramCallback` function that defines the threads and feedback handlers.
+ * @param args Configuration object for the behavioral program definition.
+ * @param args.publicEvents An optional array of event type strings that define the public API of this bProgram instance.
+ *                          Only these events can be triggered via the returned public trigger.
+ * @param args.bProgram The function that defines the threads and feedback handlers.
  * @returns An initialization function (`init`) tailored for this specific bProgram definition.
  *          - The `init` function accepts an optional context object (`C`) which is passed to the `bProgram` callback.
  *          - Calling `init` sets up the b-program, registers feedback handlers, and returns a restricted public `Trigger`.
- *          - The `init` function also has an `addDisconnectCallback` method attached, allowing external code
- *            to register cleanup logic associated with this bProgram instance.
+ *          - Cleanup functions can be registered using the `disconnect` callback provided to the bProgram function.
  * @example
- * const myBProgram = defineBProgram<{ MyHandlers }, { service: MyService }>({
+ * const createMyBProgram = defineBProgram<MyHandlers, { service: MyService }>({
  *   publicEvents: ['DO_ACTION', 'CANCEL'],
- *   bProgram: ({ bThreads, trigger, service, bSync, bThread }) => {
+ *   bProgram: ({ bThreads, trigger, service, bSync, bThread, disconnect }) => {
  *     // Define b-threads using bThreads.set(...)
  *     bThreads.set({
  *       myThread: bThread([...])
  *     });
+ *
+ *     // Register cleanup if needed:
+ *     const subscription = service.subscribe();
+ *     disconnect(() => subscription.unsubscribe());
  *
  *     // Return feedback handlers
  *     return {
@@ -48,18 +49,11 @@ import { getPublicTrigger } from './get-public-trigger.js'
  *
  * // In component setup:
  * const myServiceInstance = new MyService();
- * const publicTrigger = myBProgram({ service: myServiceInstance });
- *
- * // Register cleanup if needed:
- * const subscription = myServiceInstance.subscribe(publicTrigger);
- * myBProgram.addDisconnectCallback(() => subscription.unsubscribe());
+ * const publicTrigger = await createMyBProgram({ service: myServiceInstance });
  *
  * // Use the public trigger:
  * publicTrigger({ type: 'DO_ACTION', detail: { id: 1 } }); // Allowed
  * // publicTrigger({ type: 'INTERNAL_EVENT' }); // Disallowed (warning logged)
- *
- * // In component teardown:
- * // Invoke cleanup logic stored in the disconnectSet used (or created) by defineBProgram.
  */
 
 export const defineBProgram = <
