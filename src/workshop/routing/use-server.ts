@@ -49,6 +49,7 @@ export const useServer = async ({ cwd, designTokensSignal }: { cwd: string; desi
     return bundledRoutes
   }
   const server = Bun.serve({
+    port: 0, // Let system assign available port
     routes: await getRoutes(),
     async fetch(req: Request, server: Bun.Server) {
       const { pathname } = new URL(req.url)
@@ -113,5 +114,6 @@ export const useServer = async ({ cwd, designTokensSignal }: { cwd: string; desi
     reload,
     reloadClients,
     storyParamSetSignal,
+    server,
   }
 }

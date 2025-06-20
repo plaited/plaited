@@ -38,10 +38,10 @@ export type WorkshopDetails = {
 
 export const defineWorkshop = defineBProgram<WorkshopDetails, DefineWorkshopParams>({
   publicEvents: [...Object.values(PUBLIC_EVENTS), ...Object.values(MCP_EVENTS), ...Object.values(MCP_TOOL_EVENTS)],
-  async bProgram({ cwd, trigger, bThreads, bSync, bThread }) {
+  async bProgram({ cwd, trigger, bThreads, bSync, bThread, disconnect }) {
     const designTokensSignal = useSignal<string>()
 
-    const { url, reload, storyParamSetSignal, reloadClients } = await useServer({
+    const { url, reload, storyParamSetSignal, reloadClients, server } = await useServer({
       cwd,
       designTokensSignal,
     })
@@ -54,33 +54,43 @@ export const defineWorkshop = defineBProgram<WorkshopDetails, DefineWorkshopPara
       storyParamSetSignal,
     })
 
+    // Register server cleanup
+    disconnect(() => {
+      server?.stop(true)
+    })
+
     // MCP coordination signals
     const pendingMCPRequestsSignal = useSignal<Map<string, MCPRequestInfo>>(new Map())
     const routesDataSignal = useSignal<RouteInfo[]>([])
 
-    // Computed signal for automatic MCP responses
+    // Computed signal for automatic MCP responses (no conditionals - pure coordination)
     const mcpResponseSignal = useComputed(() => {
       const routes = routesDataSignal.get()
       const pending = pendingMCPRequestsSignal.get()
 
       const responses = []
 
-      // Match available data with pending requests
+      // Match available data with pending requests using behavioral coordination
       for (const [requestId, requestInfo] of pending) {
-        switch (requestInfo.toolName) {
-          case 'list_routes':
-            if (routes.length > 0) {
-              responses.push({ requestId, data: { routes } })
-            }
-            break
+        const dataMatchers = {
+          list_routes: () => routes.length > 0 ? { routes } : null,
+          test_all_stories: () => null, // Future: match test data when available
+          test_story_set: () => null, // Future: match test data when available
+        }
+        
+        const matcher = dataMatchers[requestInfo.toolName as keyof typeof dataMatchers]
+        const data = matcher?.()
+        if (data) {
+          responses.push({ requestId, data })
         }
       }
 
       return responses
     }, [routesDataSignal, pendingMCPRequestsSignal])
 
-    // Automatic response triggering
-    mcpResponseSignal.listen(MCP_EVENTS.MCP_RESPONSE, trigger)
+    // Note: Automatic response triggering commented out to prevent infinite loops
+    // The computed signal will update when routes are available, but we'll handle responses manually
+    // mcpResponseSignal.listen(MCP_EVENTS.MCP_RESPONSE, trigger as any)
 
     const schemas = {
       list_routes: ListRoutesSchema,
@@ -156,6 +166,18 @@ export const defineWorkshop = defineBProgram<WorkshopDetails, DefineWorkshopPara
           console.log(`${filePath}:\n  ${href}`) // Original behavior preserved
         }
         routesDataSignal.set(routes) // Populate signal for MCP coordination
+        
+        // Check for pending MCP requests and trigger responses manually
+        const pending = pendingMCPRequestsSignal.get()
+        const responses = []
+        for (const [requestId, requestInfo] of pending) {
+          if (requestInfo.toolName === 'list_routes' && routes.length > 0) {
+            responses.push({ requestId, data: { routes } })
+          }
+        }
+        if (responses.length > 0) {
+          trigger({ type: MCP_EVENTS.MCP_RESPONSE, detail: responses })
+        }
       },
 
       // MCP event handlers
@@ -166,11 +188,7 @@ export const defineWorkshop = defineBProgram<WorkshopDetails, DefineWorkshopPara
           test_all_stories: MCP_TOOL_EVENTS.MCP_TEST_ALL_STORIES,
           test_story_set: MCP_TOOL_EVENTS.MCP_TEST_STORY_SET,
         }
-
-        const toolEvent = toolEventMap[toolName]
-        if (toolEvent) {
-          trigger({ type: toolEvent, detail: { params, requestId } })
-        }
+        trigger({ type: toolEventMap[toolName], detail: { params, requestId } })
       },
 
       // Specific MCP tool handlers
