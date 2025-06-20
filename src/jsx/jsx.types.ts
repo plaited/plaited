@@ -1,4 +1,4 @@
-import type { CSSProperties } from '../styling/css.types.js'
+import type { CSSProperties } from '../main/css.types.js'
 import { P_TARGET, P_TRIGGER, TEMPLATE_OBJECT_IDENTIFIER } from './jsx.constants.js'
 
 type Booleanish = boolean | 'true' | 'false'
