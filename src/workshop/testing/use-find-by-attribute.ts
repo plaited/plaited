@@ -1,7 +1,6 @@
 import type { Trigger } from '../../behavioral/b-program.js'
 import type { FindByAttribute, FindByAttributeDetails } from './testing.types.js'
-
-export const FIND_BY_ATTRIBUTE = 'find_by_attribute'
+import { FIXTURE_EVENTS } from './testing.constants.js'
 
 export const useFindByAttribute = (trigger: Trigger) => {
   /**
@@ -49,7 +48,7 @@ export const useFindByAttribute = (trigger: Trigger) => {
     context?: HTMLElement | SVGElement,
   ): Promise<T | undefined> => {
     trigger<FindByAttributeDetails>({
-      type: FIND_BY_ATTRIBUTE,
+      type: FIXTURE_EVENTS.find_by_attribute,
       detail: [attributeName, attributeValue, context],
     })
     const searchInShadowDom = (node: Node): T | undefined => {

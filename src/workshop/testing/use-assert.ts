@@ -4,6 +4,7 @@ import { trueTypeOf } from '../../utils/true-type-of.js'
 import { isTypeOf } from '../../utils/is-type-of.js'
 import { FailedAssertionError, MissingAssertionParameterError } from './errors.js'
 import type { Assert, AssertDetails } from './testing.types.js'
+import { FIXTURE_EVENTS } from './testing.constants.js'
 
 const PRIMITIVES = new Set(['null', 'undefined', 'number', 'string', 'boolean', 'bigint'])
 
@@ -19,8 +20,6 @@ const replacer = (key: string | number | symbol, value: unknown) => {
     : (value?.toString?.() ?? value)
   )
 }
-
-export const ASSERT = 'assert'
 
 export const useAssert = (trigger: Trigger) => {
   /**
@@ -116,7 +115,7 @@ export const useAssert = (trigger: Trigger) => {
    * @see {Assert} for type definition and examples
    */
   const assert: Assert = (args) => {
-    trigger<AssertDetails>({ type: ASSERT, detail: [args] })
+    trigger<AssertDetails>({ type: FIXTURE_EVENTS.assert, detail: [args] })
     const missing = requiredKeys.filter((k) => !Object.keys(args).includes(k))
     if (missing.length) {
       const msg = [`The following parameters are required by 'assert': (`, `  ${missing.join(', ')}`, ')'].join('\n')

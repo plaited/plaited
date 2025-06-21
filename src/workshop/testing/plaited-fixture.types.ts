@@ -4,8 +4,8 @@ import type { StylesObject } from '../../main/css.types.js'
 import type { Wait } from '../../utils/wait.js'
 import type { Match } from './match.js'
 import type { Throws } from './throws.js'
-import type { Assert, FindByAttribute, FindByText, FireEvent, CheckA11y } from './testing.types.js'
-import { FIXTURE_EVENTS } from './plaited-fixture.constants.js'
+import type { Assert, FindByAttribute, FindByText, FireEvent, AccessibilityCheck } from './testing.types.js'
+import { FIXTURE_EVENTS } from './testing.constants.js'
 
 /**
  * @internal Configuration parameters for a specific story test.
@@ -84,7 +84,7 @@ export type Play = (args: {
   match: Match
   throws: Throws
   wait: Wait
-  checkA11y: CheckA11y
+  accessibilityCheck: AccessibilityCheck
 }) => Promise<void>
 
 /**

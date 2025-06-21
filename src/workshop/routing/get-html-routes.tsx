@@ -2,12 +2,11 @@ import path from 'node:path'
 
 import { PlaitedFixture } from '../testing/plaited-fixture.js'
 import { ssr } from '../../jsx/ssr.js'
-import { FIXTURE_EVENTS } from '../testing/plaited-fixture.constants.js'
 import type { StoryObj } from '../testing/plaited-fixture.types.js'
 import { createStoryRoute } from './create-story-route.js'
 import type { StorySet } from '../workshop.types.js'
 import { zip } from './zip.js'
-import { WORKSHOP_ROUTE } from '../testing/testing.constants.js'
+import { WORKSHOP_ROUTE, FIXTURE_EVENTS } from '../testing/testing.constants.js'
 
 const getEntryPath = (route: string) => {
   const segments = route.split('/')

@@ -1,7 +1,6 @@
 import type { Trigger } from '../../behavioral/b-program.js'
 import type { FindByText, FindByTextDetail } from './testing.types.js'
-
-export const FIND_BY_TEXT = 'find_by_text'
+import { FIXTURE_EVENTS } from './testing.constants.js'
 
 export const useFindByText = (trigger: Trigger) => {
   /**
@@ -46,7 +45,7 @@ export const useFindByText = (trigger: Trigger) => {
     searchText: string | RegExp,
     context?: HTMLElement,
   ): Promise<T | undefined> => {
-    trigger<FindByTextDetail>({ type: FIND_BY_TEXT, detail: [searchText, context] })
+    trigger<FindByTextDetail>({ type: FIXTURE_EVENTS.find_by_text, detail: [searchText, context] })
     const searchInShadowDom = (node: Node): T | undefined => {
       if (node.nodeType === Node.TEXT_NODE) {
         const content = node.textContent?.trim()

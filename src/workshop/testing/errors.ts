@@ -1,10 +1,4 @@
-/** Error type identifier for failed assertions within a play function. */
-export const FAILED_ASSERTION = 'failed_assertion'
-/** Error type identifier when required assertiom parameters are missing. */
-export const MISSING_ASSERTION_PARAMETER = 'missing_assertion_parameter'
-/** Error type identifier when timeout error occurs. */
-export const ACCESSIBILITY_VIOLATION = 'accessibility_violation'
-
+import { FIXTURE_EVENTS } from './testing.constants.js'
 /**
  * Custom error for test assertion failures.
  * Thrown when an assertion condition is not met.
@@ -13,7 +7,7 @@ export const ACCESSIBILITY_VIOLATION = 'accessibility_violation'
  * @property name Constant identifier 'FAILED_ASSERTION'
  */
 export class FailedAssertionError extends Error implements Error {
-  override name = FAILED_ASSERTION
+  override name = FIXTURE_EVENTS.failed_assertion
   constructor(message: string) {
     super(message)
   }
@@ -26,7 +20,7 @@ export class FailedAssertionError extends Error implements Error {
  * @property name Constant identifier 'MISSING_ASSERTION_PARAMETER'
  */
 export class MissingAssertionParameterError extends Error implements Error {
-  override name = MISSING_ASSERTION_PARAMETER
+  override name = FIXTURE_EVENTS.missing_assertion_parameter
   constructor(message: string) {
     super(message)
   }
@@ -40,7 +34,7 @@ export class MissingAssertionParameterError extends Error implements Error {
  * @property name Constant identifier 'ACCESSIBILITY_VIOLATION'
  */
 export class AccessibilityError extends Error implements Error {
-  override name = ACCESSIBILITY_VIOLATION
+  override name = FIXTURE_EVENTS.accessibility_violation
   constructor(message: string) {
     super(message)
   }

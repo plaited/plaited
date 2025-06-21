@@ -33,11 +33,11 @@ export type Assert = <T>(param: AssertParams<T>) => void
 
 export type AssertDetails = InstrumentedDetails<Parameters<Assert>>
 
-type CheckA11yArgs = { exclude?: axe.ContextProp; rules?: axe.RuleObject; config?: Omit<axe.Spec, 'reporter'> }
+type AccessibilityCheckArgs = { exclude?: axe.ContextProp; rules?: axe.RuleObject; config?: Omit<axe.Spec, 'reporter'> }
 
-export type CheckA11y = (args: CheckA11yArgs) => Promise<void>
+export type AccessibilityCheck = (args: AccessibilityCheckArgs) => Promise<void>
 
-export type CheckA11yDetails = InstrumentedDetails<Parameters<CheckA11y>>
+export type AccessibilityCheckDetails = InstrumentedDetails<Parameters<AccessibilityCheck>>
 
 /**
  * @description Type definition for a function that asynchronously finds an element

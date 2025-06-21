@@ -1,6 +1,6 @@
 import { z } from 'zod/v4'
 import type { SnapshotMessage } from '../../behavioral/b-program.js'
-import { FIXTURE_EVENTS } from './plaited-fixture.constants.js'
+import { FIXTURE_EVENTS } from './testing.constants.js'
 import type { ValueOf } from '../../utils/value-of.type.js'
 
 type SnapshotMessageBid = SnapshotMessage[number]

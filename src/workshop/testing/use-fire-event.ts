@@ -1,7 +1,6 @@
 import type { Trigger } from '../../behavioral/b-program.js'
 import type { FireEvent, FireEventDetail, FireEventOptions } from './testing.types.js'
-
-export const FIRE_EVENT = 'fire_event'
+import { FIXTURE_EVENTS } from './testing.constants.js'
 
 export const useFireEvent = (trigger: Trigger) => {
   /**
@@ -71,7 +70,7 @@ export const useFireEvent = (trigger: Trigger) => {
       cancelable: true,
     },
   ): Promise<void> => {
-    trigger<FireEventDetail>({ type: FIRE_EVENT, detail: [element, eventName, options] })
+    trigger<FireEventDetail>({ type: FIXTURE_EVENTS.fire_event, detail: [element, eventName, options] })
     const createEvent = (): Event => {
       if (options?.detail) {
         return new CustomEvent(eventName, options)
