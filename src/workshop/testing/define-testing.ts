@@ -32,13 +32,13 @@ export const defineTesting = defineBProgram<
   {
     colorSchemeSupportSignal: Signal<boolean>
     serverURL: URL
-    storyParamSetSignal: SignalWithInitialValue<Set<StoryParams>>
+    storyParamSet: SignalWithInitialValue<Set<StoryParams>>
   }
 >({
-  async bProgram({ trigger, bThreads, bSync, bThread, colorSchemeSupportSignal, serverURL, storyParamSetSignal }) {
+  async bProgram({ trigger, bThreads, bSync, bThread, colorSchemeSupportSignal, serverURL, storyParamSet }) {
     const browser = await chromium.launch()
 
-    storyParamSetSignal.listen(TESTING_EVENTS.run_tests, trigger)
+    storyParamSet.listen(TESTING_EVENTS.run_tests, trigger)
     colorSchemeSupportSignal.listen(TESTING_EVENTS.run_tests, trigger)
 
     const runningSignal = useSignal<Map<string, Set<string>>>(new Map())

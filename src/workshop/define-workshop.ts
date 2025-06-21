@@ -28,10 +28,10 @@ export const PUBLIC_EVENTS = keyMirror(
   'list_routes',
 )
 
-const EVENTS = keyMirror('reload_server')
+const PRIVATE_EVENTS = keyMirror('reload_server')
 
 export type WorkshopDetails = {
-  [EVENTS.reload_server]: void
+  [PRIVATE_EVENTS.reload_server]: void
   [PUBLIC_EVENTS.list_routes]: void
   [PUBLIC_EVENTS.test_all_stories]: void
 } & MCPDetails
@@ -39,19 +39,19 @@ export type WorkshopDetails = {
 export const defineWorkshop = defineBProgram<WorkshopDetails, DefineWorkshopParams>({
   publicEvents: [...Object.values(PUBLIC_EVENTS), ...Object.values(MCP_EVENTS), ...Object.values(MCP_TOOL_EVENTS)],
   async bProgram({ cwd, trigger, bThreads, bSync, bThread }) {
-    const designTokensSignal = useSignal<string>()
+    const designTokens = useSignal<string>()
 
-    const { url, reload, storyParamSetSignal, reloadClients, server } = await useServer({
+    const { reload, storyParamSet, reloadClients, server } = await useServer({
       cwd,
-      designTokensSignal,
+      designTokens,
     })
 
     const colorSchemeSupportSignal = useSignal(false)
 
     await defineTesting({
       colorSchemeSupportSignal,
-      serverURL: url,
-      storyParamSetSignal,
+      serverURL: server.url,
+      storyParamSet,
     })
 
     // Register server cleanup
@@ -152,16 +152,15 @@ export const defineWorkshop = defineBProgram<WorkshopDetails, DefineWorkshopPara
     return {
       // Existing handlers (enhanced to populate data signals)
       async [PUBLIC_EVENTS.test_all_stories]() {
-        storyParamSetSignal.set(new Set(storyParamSetSignal.get()))
+        storyParamSet.set(new Set(storyParamSet.get()))
       },
-      async [EVENTS.reload_server]() {
+      async [PRIVATE_EVENTS.reload_server]() {
         await reload()
       },
       async [PUBLIC_EVENTS.list_routes]() {
-        const storyParamSet = storyParamSetSignal.get()
         const routes: RouteInfo[] = []
-        for (const { route, filePath } of storyParamSet) {
-          const href = new URL(route, url).href
+        for (const { route, filePath } of storyParamSet.get()) {
+          const href = new URL(route, server.url).href
           routes.push({ filePath, href })
           console.log(`${filePath}:\n  ${href}`) // Original behavior preserved
         }

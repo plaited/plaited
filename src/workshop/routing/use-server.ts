@@ -1,18 +1,16 @@
 import { useSignal, type Signal } from '../../behavioral/use-signal.js'
 import type { StoryObj } from '../testing/plaited-fixture.types.js'
 import type { StoryParams } from '../workshop.types.js'
-import { globFiles } from './glob-files.js'
 import { getHTMLRoutes } from './get-html-routes.js'
-import { addStoryParams } from './add-story-params.js'
-import { getEntryRoutes } from './get-entry-routes.js'
+import { addStoryParams, getEntryRoutes, globFiles } from './routing.utils.js'
 import { RELOAD_STORY_PAGE, RUNNER_URL } from '../testing/testing.constants.js'
 
 /** Glob pattern used to find story files within the project. */
 const STORY_GLOB_PATTERN = `**/*.stories.{tsx,ts}`
 
-export const RELOAD_TOPIC = 'RELOAD_TOPIC'
+const RELOAD_TOPIC = 'RELOAD_TOPIC'
 
-export const useServer = async ({ cwd, designTokensSignal }: { cwd: string; designTokensSignal: Signal<string> }) => {
+export const useServer = async ({ cwd, designTokens }: { cwd: string; designTokens: Signal<string> }) => {
   // Get Story Sets
   const entrypoints = await globFiles(cwd, STORY_GLOB_PATTERN)
   const storySets = new Map<string, Record<string, StoryObj>>()
@@ -28,7 +26,7 @@ export const useServer = async ({ cwd, designTokensSignal }: { cwd: string; desi
       }
     }),
   )
-  const storyParamSetSignal = useSignal<Set<StoryParams>>(new Set())
+  const storyParamSet = useSignal<Set<StoryParams>>(new Set())
 
   const getRoutes = async () => {
     const bundledRoutes = {
@@ -37,9 +35,9 @@ export const useServer = async ({ cwd, designTokensSignal }: { cwd: string; desi
     await Promise.all(
       storySets.entries().map(async ([entry, storySet]) => {
         const filePath = entry.replace(new RegExp(`^${cwd}`), '')
-        addStoryParams({ filePath, storySet, storyParamSetSignal })
+        addStoryParams({ filePath, storySet, storyParamSet })
         const routes = await getHTMLRoutes({
-          designTokens: designTokensSignal.get(),
+          designTokens,
           storySet,
           filePath,
         })
@@ -103,17 +101,16 @@ export const useServer = async ({ cwd, designTokensSignal }: { cwd: string; desi
   const reloadClients = () => server.publish(RELOAD_TOPIC, RELOAD_STORY_PAGE)
   const reload = async () => {
     server.publish(RELOAD_TOPIC, RELOAD_STORY_PAGE)
-    storyParamSetSignal.set(new Set())
+    storyParamSet.set(new Set())
     return server.reload({
       routes: await getRoutes(),
     })
   }
 
   return {
-    url: server.url,
     reload,
     reloadClients,
-    storyParamSetSignal,
+    storyParamSet,
     server,
   }
 }

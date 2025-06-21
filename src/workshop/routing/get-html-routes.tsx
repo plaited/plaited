@@ -3,10 +3,10 @@ import path from 'node:path'
 import { PlaitedFixture } from '../testing/plaited-fixture.js'
 import { ssr } from '../../jsx/ssr.js'
 import type { StoryObj } from '../testing/plaited-fixture.types.js'
-import { createStoryRoute } from './create-story-route.js'
+import { createStoryRoute, zip } from './routing.utils.js'
 import type { StorySet } from '../workshop.types.js'
-import { zip } from './zip.js'
 import { WORKSHOP_ROUTE, FIXTURE_EVENTS } from '../testing/testing.constants.js'
+import type { Signal } from '../../behavioral/use-signal.js'
 
 const getEntryPath = (route: string) => {
   const segments = route.split('/')
@@ -35,7 +35,7 @@ const createPageBundle = async ({
   story: StoryObj
   route: string
   exportName: string
-  designTokens?: string
+  designTokens?: Signal<string>
 }) => {
   const args = story?.args ?? {}
   const tpl = story?.template
@@ -49,7 +49,7 @@ const createPageBundle = async ({
           rel='shortcut icon'
           href='#'
         />
-        <style>{designTokens}</style>
+        <style>{designTokens?.get()}</style>
       </head>
       <body {...styles}>
         <PlaitedFixture children={tpl?.(args)} />
@@ -100,7 +100,7 @@ export const getHTMLRoutes = async ({
 }: {
   storySet: StorySet
   filePath: string
-  designTokens?: string
+  designTokens?: Signal<string>
 }) => {
   return await Promise.all(
     Object.entries(storySet).flatMap(async ([exportName, story]) => {
