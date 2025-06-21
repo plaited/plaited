@@ -360,6 +360,6 @@ const parse = <T extends DesignTokenGroup = DesignTokenGroup>({
  * - Can be used with standard JSON Schema validators
  *
  */
-export const getDesignTokensSchema = <T extends DesignTokenGroup = DesignTokenGroup>(tokens: T) => {
+export const getDesignTokensSnapshot = <T extends DesignTokenGroup = DesignTokenGroup>(tokens: T) => {
   return parse<T>({ tokens })
 }

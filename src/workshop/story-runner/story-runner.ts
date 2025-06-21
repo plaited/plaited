@@ -1,9 +1,8 @@
 import { chromium, type BrowserContext } from 'playwright'
 import { useSignal, type Signal, type SignalWithInitialValue } from '../../behavioral/use-signal.js'
-import type { StoryParams } from '../workshop.types.js'
 import { STORY_RUNNER_EVENTS } from './story-runner.constants.js'
 import { FIXTURE_EVENTS } from '../story-fixture/story-fixture.constants.js'
-import type { LogMessageDetail, ColorScheme } from './story-runner.types.js'
+import type { LogMessageDetail, ColorScheme, StoryParams } from './story-runner.types.js'
 import { useVisitStory } from './story-runner.utils.js'
 import { defineBProgram } from '../../behavioral/define-b-program.js'
 

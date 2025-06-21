@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 import { type DesignTokenGroup } from '../design-token-transformer.types.js'
-import { getDesignTokensSchema } from '../design-token-transformer.utils.js'
+import { getDesignTokensSnapshot } from '../design-token-transformer.utils.js'
 
 export const tokens: DesignTokenGroup = {
   size: {
@@ -142,7 +142,7 @@ export const tokens: DesignTokenGroup = {
   },
 }
 
-const actual = getDesignTokensSchema(tokens)
+const actual = getDesignTokensSnapshot(tokens)
 
 test('parse(): snapshot', () => {
   expect(actual).toMatchSnapshot()

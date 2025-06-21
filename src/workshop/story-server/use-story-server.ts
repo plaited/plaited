@@ -1,6 +1,6 @@
 import { useSignal, type Signal } from '../../behavioral/use-signal.js'
 import type { StoryObj } from '../story-fixture/story-fixture.types.js'
-import type { StoryParams } from '../workshop.types.js'
+import type { StoryParams } from '../../../../mcp/workshop.types.js'
 import { getHTMLRoutes } from './get-html-routes.js'
 import { addStoryParams, getEntryRoutes, globFiles } from './story-server.utils.js'
 import { RELOAD_STORY_PAGE, RUNNER_URL } from '../story-fixture/story-fixture.constants.js'

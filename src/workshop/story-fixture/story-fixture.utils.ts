@@ -23,10 +23,6 @@ import type {
   AccessibilityCheckDetails,
 } from './story-fixture.types.js'
 
-// =============================================================================
-// ERROR CLASSES
-// =============================================================================
-
 /**
  * Custom error for test assertion failures.
  * Thrown when an assertion condition is not met.
@@ -68,10 +64,6 @@ export class AccessibilityError extends Error implements Error {
     super(message)
   }
 }
-
-// =============================================================================
-// MATCH UTILITY
-// =============================================================================
 
 /**
  * Function type for string pattern matching utility.
@@ -159,10 +151,6 @@ export const match: Match = (str: string) => (pattern: string | RegExp) => {
   const matched = str.match(RE)
   return matched ? matched[0] : ''
 }
-
-// =============================================================================
-// THROWS UTILITY
-// =============================================================================
 
 /**
  * Type definition for error catching utility function.
@@ -274,10 +262,6 @@ export const throws: Throws = (
     return err?.toString()
   }
 }
-
-// =============================================================================
-// ASSERTION UTILITIES
-// =============================================================================
 
 const PRIMITIVES = new Set(['null', 'undefined', 'number', 'string', 'boolean', 'bigint'])
 
@@ -402,10 +386,6 @@ export const useAssert = (trigger: Trigger) => {
   }
   return assert
 }
-
-// =============================================================================
-// DOM SEARCH UTILITIES
-// =============================================================================
 
 export const useFindByAttribute = (trigger: Trigger) => {
   /**
@@ -580,10 +560,6 @@ export const useFindByText = (trigger: Trigger) => {
   return findByText
 }
 
-// =============================================================================
-// EVENT UTILITIES
-// =============================================================================
-
 export const useFireEvent = (trigger: Trigger) => {
   /**
    * Asynchronously dispatches DOM events with configurable options.
@@ -672,18 +648,10 @@ export const useFireEvent = (trigger: Trigger) => {
   return fireEvent
 }
 
-// =============================================================================
-// TIMING UTILITIES
-// =============================================================================
-
 export const useWait = (trigger: Trigger) => (ms: number) => {
   trigger<WaitDetails>({ type: FIXTURE_EVENTS.wait, detail: [ms] })
   return wait(ms)
 }
-
-// =============================================================================
-// ACCESSIBILITY UTILITIES
-// =============================================================================
 
 export const useAccessibilityCheck = (trigger: Trigger) => {
   const accessibilityCheck: AccessibilityCheck = async ({ exclude, rules, config = {} }) => {
@@ -707,10 +675,6 @@ export const useAccessibilityCheck = (trigger: Trigger) => {
   }
   return accessibilityCheck
 }
-
-// =============================================================================
-// RUNNER UTILITIES
-// =============================================================================
 
 /** @internal Type guard to check if an event is a WebSocket CloseEvent. */
 const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => event.type === 'close'
