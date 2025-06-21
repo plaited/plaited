@@ -2,7 +2,7 @@ import { useSignal, type Signal } from '../../behavioral/use-signal.js'
 import type { StoryObj } from '../plaited-fixture/plaited-fixture.types.js'
 import type { StoryParams } from '../workshop.types.js'
 import { getHTMLRoutes } from './get-html-routes.js'
-import { addStoryParams, getEntryRoutes, globFiles } from './routing.utils.js'
+import { addStoryParams, getEntryRoutes, globFiles } from './story-server.utils.js'
 import { RELOAD_STORY_PAGE, RUNNER_URL } from '../plaited-fixture/plaited-fixture.constants.js'
 
 /** Glob pattern used to find story files within the project. */
@@ -10,7 +10,7 @@ const STORY_GLOB_PATTERN = `**/*.stories.{tsx,ts}`
 
 const RELOAD_TOPIC = 'RELOAD_TOPIC'
 
-export const useServer = async ({ cwd, designTokens }: { cwd: string; designTokens: Signal<string> }) => {
+export const useStoryServer = async ({ cwd, designTokens }: { cwd: string; designTokens: Signal<string> }) => {
   // Get Story Sets
   const entrypoints = await globFiles(cwd, STORY_GLOB_PATTERN)
   const storySets = new Map<string, Record<string, StoryObj>>()

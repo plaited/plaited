@@ -1,6 +1,6 @@
 import { useSignal, useComputed } from '../behavioral/use-signal.js'
 import { keyMirror } from '../utils/key-mirror.js'
-import { useServer } from './routing/use-server.js'
+import { useStoryServer } from './story-server/use-story-server.js'
 import { storyRunner } from './story-runner/story-runner.js'
 import { defineBProgram } from '../behavioral/define-b-program.js'
 import { MCP_EVENTS, MCP_TOOL_EVENTS } from './mcp/mcp.constants.js'
@@ -41,7 +41,7 @@ export const defineWorkshop = defineBProgram<WorkshopDetails, DefineWorkshopPara
   async bProgram({ cwd, trigger, bThreads, bSync, bThread }) {
     const designTokens = useSignal<string>()
 
-    const { reload, storyParamSet, reloadClients, server } = await useServer({
+    const { reload, storyParamSet, reloadClients, server } = await useStoryServer({
       cwd,
       designTokens,
     })
