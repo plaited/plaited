@@ -1,12 +1,12 @@
 import path from 'node:path'
 
-import { PlaitedFixture } from '../plaited-fixture/plaited-fixture.js'
+import { StoryFixture } from '../story-fixture/story-fixture.js'
 import { ssr } from '../../jsx/ssr.js'
-import type { StoryObj } from '../plaited-fixture/plaited-fixture.types.js'
+import type { StoryObj } from '../story-fixture/story-fixture.types.js'
 import { createStoryRoute, zip } from './story-server.utils.js'
 import type { StorySet } from '../workshop.types.js'
 import { WORKSHOP_ROUTE } from '../story-runner/story-runner.constants.js'
-import { FIXTURE_EVENTS } from '../plaited-fixture/plaited-fixture.constants.js'
+import { FIXTURE_EVENTS } from '../story-fixture/story-fixture.constants.js'
 import type { Signal } from '../../behavioral/use-signal.js'
 
 const getEntryPath = (route: string) => {
@@ -19,8 +19,8 @@ const createFixtureLoadScript = ({ importPath, exportName }: { importPath: strin
 import '${WORKSHOP_ROUTE}'
 import { ${exportName} } from '${importPath}'
 
-await customElements.whenDefined("${PlaitedFixture.tag}")
-const fixture = document.querySelector("${PlaitedFixture.tag}");
+await customElements.whenDefined("${StoryFixture.tag}")
+const fixture = document.querySelector("${StoryFixture.tag}");
 fixture?.trigger({
   type: '${FIXTURE_EVENTS.run}',
   detail:  {play: ${exportName}?.play, timeout: ${exportName}?.params?.timeout}
@@ -53,7 +53,7 @@ const createPageBundle = async ({
         <style>{designTokens?.get()}</style>
       </head>
       <body {...styles}>
-        <PlaitedFixture children={tpl?.(args)} />
+        <StoryFixture children={tpl?.(args)} />
         <script
           defer
           type='module'

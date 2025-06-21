@@ -7,7 +7,7 @@ import { isTypeOf } from '../../utils/is-type-of.js'
 import { wait } from '../../utils/wait.js'
 import { noop } from '../../utils/noop.js'
 import { DelegatedListener, delegates } from '../../utils/delegated-listener.js'
-import { FIXTURE_EVENTS, PLAITED_FIXTURE, RELOAD_STORY_PAGE, RUNNER_URL } from './plaited-fixture.constants.js'
+import { FIXTURE_EVENTS, STORY_FIXTURE, RELOAD_STORY_PAGE, RUNNER_URL } from './story-fixture.constants.js'
 import type {
   Assert,
   AssertDetails,
@@ -21,7 +21,7 @@ import type {
   WaitDetails,
   AccessibilityCheck,
   AccessibilityCheckDetails,
-} from './plaited-fixture.types.js'
+} from './story-fixture.types.js'
 
 // =============================================================================
 // ERROR CLASSES
@@ -697,7 +697,7 @@ export const useAccessibilityCheck = (trigger: Trigger) => {
     })
     const { violations } = await axe.run(
       {
-        include: PLAITED_FIXTURE,
+        include: STORY_FIXTURE,
         exclude,
       },
       { reporter: 'no-passes', rules },

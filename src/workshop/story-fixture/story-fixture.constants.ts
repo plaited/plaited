@@ -3,7 +3,7 @@ import { keyMirror } from '../../utils/key-mirror.js'
 /** Default timeout duration (in milliseconds) for story play functions. */
 export const DEFAULT_PLAY_TIMEOUT = 5_000
 
-export const PLAITED_FIXTURE = 'plaited-test-fixture'
+export const STORY_FIXTURE = 'palited-story-fixture'
 
 export const RUNNER_URL = '/.plaited/test-runner'
 

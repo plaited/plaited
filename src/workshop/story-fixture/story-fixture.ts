@@ -3,7 +3,7 @@ import { css } from '../../main/css.js'
 import { defineElement } from '../../main/define-element.js'
 import { h } from '../../jsx/create-template.js'
 import { wait } from '../../utils/wait.js'
-import { PLAITED_FIXTURE, DEFAULT_PLAY_TIMEOUT, FIXTURE_EVENTS } from './plaited-fixture.constants.js'
+import { STORY_FIXTURE, DEFAULT_PLAY_TIMEOUT, FIXTURE_EVENTS } from './story-fixture.constants.js'
 import {
   FailedAssertionError,
   MissingAssertionParameterError,
@@ -17,11 +17,11 @@ import {
   useFireEvent,
   useAccessibilityCheck,
   useRunner,
-} from './plaited-fixture.utils.js'
-import type { InteractionStoryObj, Play, TestFailureEventDetail } from './plaited-fixture.types'
+} from './story-fixture.utils.js'
+import type { InteractionStoryObj, Play, TestFailureEventDetail } from './story-fixture.types.js'
 
 /**
- * @element plaited-test-fixture
+ * @element plaited-story-fixture
  * @description A custom element designed to host and execute a single Plaited story test.
  * It receives test parameters via attributes, connects to the test runner via WebSocket
  * loads the specified story module, executes its `play` function (if defined),
@@ -30,16 +30,16 @@ import type { InteractionStoryObj, Play, TestFailureEventDetail } from './plaite
  *
  * @example
  * ```html
- * <plaited-test-fixture >
+ * <plaited-story-fixture >
  *   <!-- The rendered story component will be placed here by the test runner -->
- * </plaited-test-fixture>
+ * </plaited-story-fixture>
  * ```
  */
-export const PlaitedFixture = defineElement<{
+export const StoryFixture = defineElement<{
   [FIXTURE_EVENTS.run]: { play?: InteractionStoryObj['play']; timeout?: number }
   [FIXTURE_EVENTS.play]: { play: InteractionStoryObj['play']; timeout?: number }
 }>({
-  tag: PLAITED_FIXTURE,
+  tag: STORY_FIXTURE,
   publicEvents: [FIXTURE_EVENTS.run],
   streamAssociated: true,
   shadowDom: h('slot', {
