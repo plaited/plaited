@@ -1,8 +1,8 @@
 import path from 'node:path'
 
-import { PlaitedFixture } from '../testing/plaited-fixture.js'
+import { PlaitedFixture } from '../plaited-fixture/plaited-fixture.js'
 import { ssr } from '../../jsx/ssr.js'
-import type { StoryObj } from '../testing/plaited-fixture.types.js'
+import type { StoryObj } from '../plaited-fixture/plaited-fixture.types.js'
 import { createStoryRoute, zip } from './routing.utils.js'
 import type { StorySet } from '../workshop.types.js'
 import { WORKSHOP_ROUTE, FIXTURE_EVENTS } from '../testing/testing.constants.js'

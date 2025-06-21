@@ -3,18 +3,22 @@ import { css } from '../../main/css.js'
 import { defineElement } from '../../main/define-element.js'
 import { h } from '../../jsx/create-template.js'
 import { wait } from '../../utils/wait.js'
-import { PLAITED_FIXTURE, DEFAULT_PLAY_TIMEOUT, FIXTURE_EVENTS } from './testing.constants.js'
-import { FailedAssertionError, MissingAssertionParameterError, AccessibilityError } from './errors.js'
+import { PLAITED_FIXTURE, DEFAULT_PLAY_TIMEOUT, FIXTURE_EVENTS } from '../testing/testing.constants.js'
+import {
+  FailedAssertionError,
+  MissingAssertionParameterError,
+  AccessibilityError,
+  useWait,
+  useAssert,
+  match,
+  throws,
+  useFindByAttribute,
+  useFindByText,
+  useFireEvent,
+  useAccessibilityCheck,
+  useRunner,
+} from './plaited-fixture.utils.js'
 import type { InteractionStoryObj, Play, TestFailureEventDetail } from './plaited-fixture.types'
-import { useWait } from './use-wait.js'
-import { useAssert } from './use-assert.js'
-import { match } from './match.js'
-import { throws } from './throws.js'
-import { useFindByAttribute } from './use-find-by-attribute.js'
-import { useFindByText } from './use-find-by-text.js'
-import { useFireEvent } from './use-fire-event.js'
-import { useAccessibilityCheck } from './use-accessibility-check.js'
-import { useRunner } from './use-runner.js'
 
 /**
  * @element plaited-test-fixture

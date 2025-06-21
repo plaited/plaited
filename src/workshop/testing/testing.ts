@@ -3,7 +3,7 @@ import { useSignal, type Signal, type SignalWithInitialValue } from '../../behav
 import type { StoryParams } from '../workshop.types.js'
 import { TESTING_EVENTS, FIXTURE_EVENTS } from './testing.constants.js'
 import type { LogMessageDetail, ColorScheme } from './testing.types.js'
-import { useVisitStory } from './use-visit-story.js'
+import { useVisitStory } from './testing.utils.js'
 import { defineBProgram } from '../../behavioral/define-b-program.js'
 
 type FixtureEventDetail = {
@@ -27,7 +27,7 @@ export type RunnerDetails = {
   [FIXTURE_EVENTS.accessibility_violation]: FixtureEventDetail
 }
 
-export const defineTesting = defineBProgram<
+export const testing = defineBProgram<
   RunnerDetails,
   {
     colorSchemeSupportSignal: Signal<boolean>

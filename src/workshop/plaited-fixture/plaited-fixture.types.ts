@@ -2,10 +2,9 @@ import type { BrowserContextOptions } from 'playwright'
 import type { Attrs, FunctionTemplate } from '../../jsx/jsx.types.js'
 import type { StylesObject } from '../../main/css.types.js'
 import type { Wait } from '../../utils/wait.js'
-import type { Match } from './match.js'
-import type { Throws } from './throws.js'
-import type { Assert, FindByAttribute, FindByText, FireEvent, AccessibilityCheck } from './testing.types.js'
-import { FIXTURE_EVENTS } from './testing.constants.js'
+import type { Match, Throws } from './plaited-fixture.utils.js'
+import type { Assert, FindByAttribute, FindByText, FireEvent, AccessibilityCheck } from '../testing/testing.types.js'
+import { FIXTURE_EVENTS } from '../testing/testing.constants.js'
 
 /**
  * @internal Configuration parameters for a specific story test.

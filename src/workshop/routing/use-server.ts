@@ -1,5 +1,5 @@
 import { useSignal, type Signal } from '../../behavioral/use-signal.js'
-import type { StoryObj } from '../testing/plaited-fixture.types.js'
+import type { StoryObj } from '../plaited-fixture/plaited-fixture.types.js'
 import type { StoryParams } from '../workshop.types.js'
 import { getHTMLRoutes } from './get-html-routes.js'
 import { addStoryParams, getEntryRoutes, globFiles } from './routing.utils.js'
