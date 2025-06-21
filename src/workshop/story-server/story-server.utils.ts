@@ -1,6 +1,6 @@
 import { Glob } from 'bun'
 import { basename, dirname } from 'node:path'
-import { WORKSHOP_ROUTE } from '../story-runner/story-runner.constants.js'
+import { WORKSHOP_ROUTE } from './story-server.constants.js'
 import { kebabCase } from '../../utils/case.js'
 import type { SignalWithInitialValue } from '../../behavioral/use-signal.js'
 import type { StorySet, StoryParams } from '../workshop.types.js'

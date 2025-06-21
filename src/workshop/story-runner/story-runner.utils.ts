@@ -3,7 +3,7 @@ import type { Trigger } from '../../behavioral/b-program.js'
 import { type Signal } from '../../behavioral/use-signal.js'
 import type { StoryParams } from '../workshop.types.js'
 import { SnapshotMessageSchema } from './story-runner.schema.js'
-import { TESTING_EVENTS } from './story-runner.constants.js'
+import { STORY_RUNNER_EVENTS } from './story-runner.constants.js'
 import type { LogMessageDetail } from './story-runner.types.js'
 
 // =============================================================================
@@ -33,7 +33,7 @@ export const useHandleConsoleMessage = ({
         const result = SnapshotMessageSchema.safeParse(snapshot)
         if (result.success) {
           trigger<LogMessageDetail>({
-            type: TESTING_EVENTS.log_event,
+            type: STORY_RUNNER_EVENTS.log_event,
             detail: {
               snapshot: result.data,
               colorScheme,

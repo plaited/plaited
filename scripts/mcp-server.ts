@@ -1,4 +1,16 @@
-import { startMCPServer } from '../src/workshop/mcp/mcp-server.js'
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { defineWorkshop, PUBLIC_EVENTS } from '../src/workshop/define-workshop.js'
 
-// Start the MCP server
-startMCPServer().catch(console.error)
+const mcpServer = new McpServer({
+  name: 'plaited-workshop',
+  version: '1.0.0',
+})
+
+const cwd = `${process.cwd()}/src`
+
+const trigger = await defineWorkshop({
+  cwd,
+  mcpServer,
+})
+
+trigger({ type: PUBLIC_EVENTS.test_all_stories })

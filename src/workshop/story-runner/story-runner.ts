@@ -1,7 +1,7 @@
 import { chromium, type BrowserContext } from 'playwright'
 import { useSignal, type Signal, type SignalWithInitialValue } from '../../behavioral/use-signal.js'
 import type { StoryParams } from '../workshop.types.js'
-import { TESTING_EVENTS } from './story-runner.constants.js'
+import { STORY_RUNNER_EVENTS } from './story-runner.constants.js'
 import { FIXTURE_EVENTS } from '../story-fixture/story-fixture.constants.js'
 import type { LogMessageDetail, ColorScheme } from './story-runner.types.js'
 import { useVisitStory } from './story-runner.utils.js'
@@ -17,9 +17,9 @@ type FixtureEventDetail = {
 }
 
 export type RunnerDetails = {
-  [TESTING_EVENTS.run_tests]: Set<StoryParams>
-  [TESTING_EVENTS.log_event]: LogMessageDetail
-  [TESTING_EVENTS.end]: void
+  [STORY_RUNNER_EVENTS.run_tests]: Set<StoryParams>
+  [STORY_RUNNER_EVENTS.log_event]: LogMessageDetail
+  [STORY_RUNNER_EVENTS.end]: void
   [FIXTURE_EVENTS.failed_assertion]: FixtureEventDetail
   [FIXTURE_EVENTS.missing_assertion_parameter]: FixtureEventDetail
   [FIXTURE_EVENTS.test_timeout]: FixtureEventDetail
@@ -36,11 +36,12 @@ export const storyRunner = defineBProgram<
     storyParamSet: SignalWithInitialValue<Set<StoryParams>>
   }
 >({
+  publicEvents: [STORY_RUNNER_EVENTS.run_tests],
   async bProgram({ trigger, bThreads, bSync, bThread, colorSchemeSupportSignal, serverURL, storyParamSet }) {
     const browser = await chromium.launch()
 
-    storyParamSet.listen(TESTING_EVENTS.run_tests, trigger)
-    colorSchemeSupportSignal.listen(TESTING_EVENTS.run_tests, trigger)
+    storyParamSet.listen(STORY_RUNNER_EVENTS.run_tests, trigger)
+    colorSchemeSupportSignal.listen(STORY_RUNNER_EVENTS.run_tests, trigger)
 
     const runningSignal = useSignal<Map<string, Set<string>>>(new Map())
 
@@ -61,7 +62,7 @@ export const storyRunner = defineBProgram<
               return runningSignal.get().size === 1
             },
           }),
-          bSync({ request: { type: TESTING_EVENTS.end } }),
+          bSync({ request: { type: STORY_RUNNER_EVENTS.end } }),
         ],
         true,
       ),
@@ -109,7 +110,7 @@ export const storyRunner = defineBProgram<
       await context.close()
     }
     return {
-      async [TESTING_EVENTS.run_tests](detail) {
+      async [STORY_RUNNER_EVENTS.run_tests](detail) {
         runningSignal.set(
           new Map(
             [...detail].map(({ route }) => {
@@ -128,7 +129,7 @@ export const storyRunner = defineBProgram<
         })
         await Promise.all([...detail].map(visitStory))
       },
-      [TESTING_EVENTS.log_event](detail) {
+      [STORY_RUNNER_EVENTS.log_event](detail) {
         const { snapshot, route, filePath, context, colorScheme, exportName } = detail
         const url = new URL(route, serverURL).href
         const selected = snapshot.find((msg) => msg.selected)
@@ -147,7 +148,7 @@ export const storyRunner = defineBProgram<
           })
         }
       },
-      async [TESTING_EVENTS.end]() {
+      async [STORY_RUNNER_EVENTS.end]() {
         runningSignal.set(new Map())
         if (!process.execArgv.includes('--hot')) {
           console.log('Fail: ', failed)

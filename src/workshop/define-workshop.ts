@@ -1,11 +1,14 @@
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { useSignal } from '../behavioral/use-signal.js'
 import { keyMirror } from '../utils/key-mirror.js'
 import { defineBProgram } from '../behavioral/define-b-program.js'
 import { useStoryServer } from './story-server/use-story-server.js'
 import { storyRunner } from './story-runner/story-runner.js'
+import { STORY_RUNNER_EVENTS } from './story-runner/story-runner.constants.js'
 
 export type DefineWorkshopParams = {
   cwd: string
+  mcpServer?: McpServer
 }
 
 export const PUBLIC_EVENTS = keyMirror(
@@ -44,7 +47,7 @@ export const defineWorkshop = defineBProgram<WorkshopDetails, DefineWorkshopPara
 
     const colorSchemeSupportSignal = useSignal(false)
 
-    await storyRunner({
+    const triggerStoryRunner = await storyRunner({
       colorSchemeSupportSignal,
       serverURL: server.url,
       storyParamSet,
@@ -55,7 +58,7 @@ export const defineWorkshop = defineBProgram<WorkshopDetails, DefineWorkshopPara
     }
     return {
       async [PUBLIC_EVENTS.test_all_stories]() {
-        storyParamSet.set(new Set(storyParamSet.get()))
+        triggerStoryRunner({ type: STORY_RUNNER_EVENTS.run_tests, detail: storyParamSet.get() })
       },
       async [PRIVATE_EVENTS.reload_server]() {
         await reload()

@@ -5,7 +5,7 @@ import { ssr } from '../../jsx/ssr.js'
 import type { StoryObj } from '../story-fixture/story-fixture.types.js'
 import { createStoryRoute, zip } from './story-server.utils.js'
 import type { StorySet } from '../workshop.types.js'
-import { WORKSHOP_ROUTE } from '../story-runner/story-runner.constants.js'
+import { WORKSHOP_ROUTE } from './story-server.constants.js'
 import { FIXTURE_EVENTS } from '../story-fixture/story-fixture.constants.js'
 import type { Signal } from '../../behavioral/use-signal.js'
 

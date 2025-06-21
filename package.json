@@ -75,7 +75,7 @@
     }
   },
   "peerDependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@modelcontextprotocol/sdk": "^1.13.0",
     "@types/bun": "^1.2.15",
     "axe-core": "4.10.3",
     "playwright": "^1.53.0",
@@ -86,6 +86,7 @@
     "@commitlint/cli": "19.8.1",
     "@commitlint/config-conventional": "19.8.1",
     "@eslint/js": "9.29.0",
+    "@modelcontextprotocol/sdk": "1.13.0",
     "@types/beautify": "0.0.3",
     "@types/bun": "1.2.16",
     "@types/node": "24.0.3",
