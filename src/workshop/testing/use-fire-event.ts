@@ -1,7 +1,7 @@
 import type { Trigger } from '../../behavioral/b-program.js'
 import type { FireEvent, FireEventDetail, FireEventOptions } from './testing.types.js'
 
-export const FIRE_EVENT = 'FIRE_EVENT'
+export const FIRE_EVENT = 'fire_event'
 
 export const useFireEvent = (trigger: Trigger) => {
   /**

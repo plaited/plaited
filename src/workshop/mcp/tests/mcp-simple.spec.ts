@@ -4,11 +4,11 @@ import { generateMCPRequestId, resolveMCPRequest } from '../mcp-promise-manager.
 import { ListRoutesSchema, TestAllStoriesSchema, TestStorySetSchema } from '../mcp.types.js'
 
 test('MCP constants are exported correctly', () => {
-  expect(MCP_EVENTS).toHaveProperty('MCP_TOOL_CALL')
-  expect(MCP_EVENTS).toHaveProperty('MCP_RESPONSE')
-  expect(MCP_TOOL_EVENTS).toHaveProperty('MCP_LIST_ROUTES')
-  expect(MCP_TOOL_EVENTS).toHaveProperty('MCP_TEST_ALL_STORIES')
-  expect(MCP_TOOL_EVENTS).toHaveProperty('MCP_TEST_STORY_SET')
+  expect(MCP_EVENTS).toHaveProperty('mcp_tool_call')
+  expect(MCP_EVENTS).toHaveProperty('mcp_response')
+  expect(MCP_TOOL_EVENTS).toHaveProperty('mcp_list_routes')
+  expect(MCP_TOOL_EVENTS).toHaveProperty('mcp_test_all_stories')
+  expect(MCP_TOOL_EVENTS).toHaveProperty('mcp_test_story_set')
 })
 
 test('Request ID generation works', () => {

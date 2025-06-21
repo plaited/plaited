@@ -17,15 +17,15 @@ type FixtureEventDetail = {
 }
 
 export type RunnerDetails = {
-  [TESTING_EVENTS.RUN_TESTS]: Set<StoryParams>
-  [TESTING_EVENTS.LOG_EVENT]: LogMessageDetail
-  [TESTING_EVENTS.END]: void
-  [FIXTURE_EVENTS.FAILED_ASSERTION]: FixtureEventDetail
-  [FIXTURE_EVENTS.MISSING_ASSERTION_PARAMETER]: FixtureEventDetail
-  [FIXTURE_EVENTS.TEST_TIMEOUT]: FixtureEventDetail
-  [FIXTURE_EVENTS.UNKNOWN_ERROR]: FixtureEventDetail
-  [FIXTURE_EVENTS.RUN_COMPLETE]: FixtureEventDetail
-  [FIXTURE_EVENTS.ACCESSIBILITY_VIOLATION]: FixtureEventDetail
+  [TESTING_EVENTS.run_tests]: Set<StoryParams>
+  [TESTING_EVENTS.log_event]: LogMessageDetail
+  [TESTING_EVENTS.end]: void
+  [FIXTURE_EVENTS.failed_assertion]: FixtureEventDetail
+  [FIXTURE_EVENTS.missing_assertion_parameter]: FixtureEventDetail
+  [FIXTURE_EVENTS.test_timeout]: FixtureEventDetail
+  [FIXTURE_EVENTS.unknown_error]: FixtureEventDetail
+  [FIXTURE_EVENTS.run_complete]: FixtureEventDetail
+  [FIXTURE_EVENTS.accessibility_violation]: FixtureEventDetail
 }
 
 export const defineTesting = defineBProgram<
@@ -39,8 +39,8 @@ export const defineTesting = defineBProgram<
   async bProgram({ trigger, bThreads, bSync, bThread, colorSchemeSupportSignal, serverURL, storyParamSetSignal }) {
     const browser = await chromium.launch()
 
-    storyParamSetSignal.listen(TESTING_EVENTS.RUN_TESTS, trigger)
-    colorSchemeSupportSignal.listen(TESTING_EVENTS.RUN_TESTS, trigger)
+    storyParamSetSignal.listen(TESTING_EVENTS.run_tests, trigger)
+    colorSchemeSupportSignal.listen(TESTING_EVENTS.run_tests, trigger)
 
     const runningSignal = useSignal<Map<string, Set<string>>>(new Map())
 
@@ -50,18 +50,18 @@ export const defineTesting = defineBProgram<
           bSync({
             waitFor: ({ type }) => {
               const events = [
-                FIXTURE_EVENTS.FAILED_ASSERTION,
-                FIXTURE_EVENTS.MISSING_ASSERTION_PARAMETER,
-                FIXTURE_EVENTS.TEST_TIMEOUT,
-                FIXTURE_EVENTS.UNKNOWN_ERROR,
-                FIXTURE_EVENTS.RUN_COMPLETE,
-                FIXTURE_EVENTS.ACCESSIBILITY_VIOLATION,
+                FIXTURE_EVENTS.failed_assertion,
+                FIXTURE_EVENTS.missing_assertion_parameter,
+                FIXTURE_EVENTS.test_timeout,
+                FIXTURE_EVENTS.unknown_error,
+                FIXTURE_EVENTS.run_complete,
+                FIXTURE_EVENTS.accessibility_violation,
               ]
               if (!events.includes(type as (typeof events)[number])) return false
               return runningSignal.get().size === 1
             },
           }),
-          bSync({ request: { type: TESTING_EVENTS.END } }),
+          bSync({ request: { type: TESTING_EVENTS.end } }),
         ],
         true,
       ),
@@ -109,7 +109,7 @@ export const defineTesting = defineBProgram<
       await context.close()
     }
     return {
-      async [TESTING_EVENTS.RUN_TESTS](detail) {
+      async [TESTING_EVENTS.run_tests](detail) {
         runningSignal.set(
           new Map(
             [...detail].map(({ route }) => {
@@ -128,7 +128,7 @@ export const defineTesting = defineBProgram<
         })
         await Promise.all([...detail].map(visitStory))
       },
-      [TESTING_EVENTS.LOG_EVENT](detail) {
+      [TESTING_EVENTS.log_event](detail) {
         const { snapshot, route, filePath, context, colorScheme, exportName } = detail
         const url = new URL(route, serverURL).href
         const selected = snapshot.find((msg) => msg.selected)
@@ -147,7 +147,7 @@ export const defineTesting = defineBProgram<
           })
         }
       },
-      async [TESTING_EVENTS.END]() {
+      async [TESTING_EVENTS.end]() {
         runningSignal.set(new Map())
         if (!process.execArgv.includes('--hot')) {
           console.log('Fail: ', failed)
@@ -157,12 +157,12 @@ export const defineTesting = defineBProgram<
           failed = 0
         }
       },
-      [FIXTURE_EVENTS.FAILED_ASSERTION]: handleFailure,
-      [FIXTURE_EVENTS.MISSING_ASSERTION_PARAMETER]: handleFailure,
-      [FIXTURE_EVENTS.TEST_TIMEOUT]: handleFailure,
-      [FIXTURE_EVENTS.UNKNOWN_ERROR]: handleFailure,
-      [FIXTURE_EVENTS.ACCESSIBILITY_VIOLATION]: handleFailure,
-      [FIXTURE_EVENTS.RUN_COMPLETE]: handleSuccess,
+      [FIXTURE_EVENTS.failed_assertion]: handleFailure,
+      [FIXTURE_EVENTS.missing_assertion_parameter]: handleFailure,
+      [FIXTURE_EVENTS.test_timeout]: handleFailure,
+      [FIXTURE_EVENTS.unknown_error]: handleFailure,
+      [FIXTURE_EVENTS.accessibility_violation]: handleFailure,
+      [FIXTURE_EVENTS.run_complete]: handleSuccess,
     }
   },
 })

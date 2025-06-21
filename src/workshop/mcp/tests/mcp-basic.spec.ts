@@ -4,11 +4,11 @@ import { generateMCPRequestId } from '../mcp-promise-manager.js'
 
 // Simple test that doesn't initialize full workshop
 test('MCP constants are properly exported', () => {
-  expect(MCP_EVENTS.MCP_TOOL_CALL).toBe('MCP_TOOL_CALL')
-  expect(MCP_EVENTS.MCP_RESPONSE).toBe('MCP_RESPONSE')
-  expect(MCP_TOOL_EVENTS.MCP_LIST_ROUTES).toBe('MCP_LIST_ROUTES')
-  expect(MCP_TOOL_EVENTS.MCP_TEST_ALL_STORIES).toBe('MCP_TEST_ALL_STORIES')
-  expect(MCP_TOOL_EVENTS.MCP_TEST_STORY_SET).toBe('MCP_TEST_STORY_SET')
+  expect(MCP_EVENTS.mcp_tool_call).toBe('mcp_tool_call')
+  expect(MCP_EVENTS.mcp_response).toBe('mcp_response')
+  expect(MCP_TOOL_EVENTS.mcp_list_routes).toBe('mcp_list_routes')
+  expect(MCP_TOOL_EVENTS.mcp_test_all_stories).toBe('mcp_test_all_stories')
+  expect(MCP_TOOL_EVENTS.mcp_test_story_set).toBe('mcp_test_story_set')
 })
 
 test('Request ID generation is functional', () => {
@@ -27,8 +27,8 @@ test('Workshop module can be imported', async () => {
   expect(defineWorkshop).toBeDefined()
   expect(typeof defineWorkshop).toBe('function')
   expect(PUBLIC_EVENTS).toBeDefined()
-  expect(PUBLIC_EVENTS.LIST_ROUTES).toBe('LIST_ROUTES')
-  expect(PUBLIC_EVENTS.TEST_ALL_STORIES).toBe('TEST_ALL_STORIES')
+  expect(PUBLIC_EVENTS.list_routes).toBe('list_routes')
+  expect(PUBLIC_EVENTS.test_all_stories).toBe('test_all_stories')
 })
 
 // Test MCP types import

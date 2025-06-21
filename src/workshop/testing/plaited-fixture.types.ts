@@ -156,8 +156,8 @@ export type StoryObj<T extends Attrs = Attrs> = InteractionStoryObj<T> | Snapsho
 
 export type TestFailureEventDetail = {
   [K in
-    | typeof FIXTURE_EVENTS.ACCESSIBILITY_VIOLATION
-    | typeof FIXTURE_EVENTS.FAILED_ASSERTION
-    | typeof FIXTURE_EVENTS.MISSING_ASSERTION_PARAMETER
-    | typeof FIXTURE_EVENTS.UNKNOWN_ERROR]?: unknown
+    | typeof FIXTURE_EVENTS.accessibility_violation
+    | typeof FIXTURE_EVENTS.failed_assertion
+    | typeof FIXTURE_EVENTS.missing_assertion_parameter
+    | typeof FIXTURE_EVENTS.unknown_error]?: unknown
 }

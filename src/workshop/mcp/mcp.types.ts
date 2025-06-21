@@ -37,25 +37,25 @@ export type RouteInfo = {
 
 // MCP event details
 export type MCPDetails = {
-  [MCP_EVENTS.MCP_TOOL_CALL]: {
+  [MCP_EVENTS.mcp_tool_call]: {
     toolName: string
     params: unknown
     requestId: string
   }
-  [MCP_EVENTS.MCP_RESPONSE]: Array<{
+  [MCP_EVENTS.mcp_response]: Array<{
     requestId: string
     data?: unknown
     error?: string
   }>
-  [MCP_TOOL_EVENTS.MCP_LIST_ROUTES]: {
+  [MCP_TOOL_EVENTS.mcp_list_routes]: {
     params: ListRoutesParams
     requestId: string
   }
-  [MCP_TOOL_EVENTS.MCP_TEST_ALL_STORIES]: {
+  [MCP_TOOL_EVENTS.mcp_test_all_stories]: {
     params: TestAllStoriesParams
     requestId: string
   }
-  [MCP_TOOL_EVENTS.MCP_TEST_STORY_SET]: {
+  [MCP_TOOL_EVENTS.mcp_test_story_set]: {
     params: TestStorySetParams
     requestId: string
   }

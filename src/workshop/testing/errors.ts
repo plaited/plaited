@@ -1,9 +1,9 @@
 /** Error type identifier for failed assertions within a play function. */
-export const FAILED_ASSERTION = 'FAILED_ASSERTION'
+export const FAILED_ASSERTION = 'failed_assertion'
 /** Error type identifier when required assertiom parameters are missing. */
-export const MISSING_ASSERTION_PARAMETER = 'MISSING_ASSERTION_PARAMETER'
+export const MISSING_ASSERTION_PARAMETER = 'missing_assertion_parameter'
 /** Error type identifier when timeout error occurs. */
-export const ACCESSIBILITY_VIOLATION = 'ACCESSIBILITY_VIOLATION'
+export const ACCESSIBILITY_VIOLATION = 'accessibility_violation'
 
 /**
  * Custom error for test assertion failures.

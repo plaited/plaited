@@ -1,7 +1,7 @@
 import { keyMirror } from '../../utils/key-mirror.js'
 
-export const TESTING_EVENTS = keyMirror('RUN_TESTS', 'LOG_EVENT', 'END')
+export const TESTING_EVENTS = keyMirror('run_tests', 'log_event', 'end')
 
 export const WORKSHOP_ROUTE = '/workshop.js'
 export const RUNNER_URL = '/.plaited/test-runner'
-export const RELOAD_STORY_PAGE = 'RELOAD_STORY_PAGE'
+export const RELOAD_STORY_PAGE = 'reload_story_page'

@@ -22,7 +22,7 @@ import { ${exportName} } from '${importPath}'
 await customElements.whenDefined("${PlaitedFixture.tag}")
 const fixture = document.querySelector("${PlaitedFixture.tag}");
 fixture?.trigger({
-  type: '${FIXTURE_EVENTS.RUN}',
+  type: '${FIXTURE_EVENTS.run}',
   detail:  {play: ${exportName}?.play, timeout: ${exportName}?.params?.timeout}
 });
 `

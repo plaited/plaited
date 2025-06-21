@@ -20,7 +20,7 @@ const replacer = (key: string | number | symbol, value: unknown) => {
   )
 }
 
-export const ASSERT = 'ASSERT'
+export const ASSERT = 'assert'
 
 export const useAssert = (trigger: Trigger) => {
   /**

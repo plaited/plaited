@@ -28,7 +28,7 @@ export const useHandleConsoleMessage = ({
         const result = SnapshotMessageSchema.safeParse(snapshot)
         if (result.success) {
           trigger<LogMessageDetail>({
-            type: TESTING_EVENTS.LOG_EVENT,
+            type: TESTING_EVENTS.log_event,
             detail: {
               snapshot: result.data,
               colorScheme,

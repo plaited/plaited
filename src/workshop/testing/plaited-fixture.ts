@@ -32,11 +32,11 @@ import { useRunner } from './use-runner.js'
  * ```
  */
 export const PlaitedFixture = defineElement<{
-  [FIXTURE_EVENTS.RUN]: { play?: InteractionStoryObj['play']; timeout?: number }
-  [FIXTURE_EVENTS.PLAY]: { play: InteractionStoryObj['play']; timeout?: number }
+  [FIXTURE_EVENTS.run]: { play?: InteractionStoryObj['play']; timeout?: number }
+  [FIXTURE_EVENTS.play]: { play: InteractionStoryObj['play']; timeout?: number }
 }>({
   tag: PLAITED_FIXTURE,
-  publicEvents: [FIXTURE_EVENTS.RUN],
+  publicEvents: [FIXTURE_EVENTS.run],
   streamAssociated: true,
   shadowDom: h('slot', {
     ...css.host({
@@ -49,14 +49,14 @@ export const PlaitedFixture = defineElement<{
         [
           bSync({
             waitFor: [
-              FIXTURE_EVENTS.ACCESSIBILITY_VIOLATION,
-              FIXTURE_EVENTS.FAILED_ASSERTION,
-              FIXTURE_EVENTS.MISSING_ASSERTION_PARAMETER,
-              FIXTURE_EVENTS.UNKNOWN_ERROR,
+              FIXTURE_EVENTS.accessibility_violation,
+              FIXTURE_EVENTS.failed_assertion,
+              FIXTURE_EVENTS.missing_assertion_parameter,
+              FIXTURE_EVENTS.unknown_error,
             ],
           }),
           bSync({
-            block: [FIXTURE_EVENTS.RUN_COMPLETE, FIXTURE_EVENTS.TEST_TIMEOUT],
+            block: [FIXTURE_EVENTS.run_complete, FIXTURE_EVENTS.test_timeout],
           }),
         ],
         true,
@@ -109,24 +109,24 @@ export const PlaitedFixture = defineElement<{
     }
     useRunner()
     return {
-      [FIXTURE_EVENTS.RUN](detail) {
+      [FIXTURE_EVENTS.run](detail) {
         if (detail.play) {
-          trigger({ type: FIXTURE_EVENTS.PLAY, detail })
+          trigger({ type: FIXTURE_EVENTS.play, detail })
         } else {
-          trigger({ type: FIXTURE_EVENTS.RUN_COMPLETE, detail: success() })
+          trigger({ type: FIXTURE_EVENTS.run_complete, detail: success() })
         }
       },
-      async [FIXTURE_EVENTS.PLAY](detail) {
+      async [FIXTURE_EVENTS.play](detail) {
         const timedOut = await Promise.race([interact(detail.play), timeout(detail.timeout ?? DEFAULT_PLAY_TIMEOUT)])
         if (timedOut) {
-          trigger({ type: FIXTURE_EVENTS.TEST_TIMEOUT, detail: failure(FIXTURE_EVENTS.TEST_TIMEOUT) })
+          trigger({ type: FIXTURE_EVENTS.test_timeout, detail: failure(FIXTURE_EVENTS.test_timeout) })
         } else {
-          trigger({ type: FIXTURE_EVENTS.RUN_COMPLETE, detail: success() })
+          trigger({ type: FIXTURE_EVENTS.run_complete, detail: success() })
         }
       },
       onConnected() {
         trigger({
-          type: FIXTURE_EVENTS.FIXTURE_CONNECTED,
+          type: FIXTURE_EVENTS.fixture_connected,
         })
       },
     }

@@ -57,7 +57,7 @@ export async function createMCPWorkshopServer({ cwd }: { cwd: string }) {
       
       // Trigger behavioral program coordination
       workshopTrigger({
-        type: MCP_EVENTS.MCP_TOOL_CALL,
+        type: MCP_EVENTS.mcp_tool_call,
         detail: { toolName, params, requestId }
       })
     })

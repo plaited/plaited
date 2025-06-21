@@ -6,4 +6,4 @@ const trigger = await defineWorkshop({
   cwd,
 })
 
-trigger({ type: PUBLIC_EVENTS.TEST_ALL_STORIES })
+trigger({ type: PUBLIC_EVENTS.test_all_stories })

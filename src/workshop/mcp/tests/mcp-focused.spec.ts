@@ -14,7 +14,7 @@ test('defineWorkshop can be initialized', async () => {
     
     // Test that we can call basic events without errors
     expect(() => {
-      workshopTrigger({ type: 'LIST_ROUTES' })
+      workshopTrigger({ type: 'list_routes' })
     }).not.toThrow()
     
   } catch (error) {

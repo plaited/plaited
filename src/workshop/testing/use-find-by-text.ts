@@ -1,7 +1,7 @@
 import type { Trigger } from '../../behavioral/b-program.js'
 import type { FindByText, FindByTextDetail } from './testing.types.js'
 
-export const FIND_BY_TEXT = 'FIND_BY_TEXT'
+export const FIND_BY_TEXT = 'find_by_text'
 
 export const useFindByText = (trigger: Trigger) => {
   /**

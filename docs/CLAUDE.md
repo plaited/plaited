@@ -171,6 +171,17 @@ const ListRoutesSchema = z.object({
 - **Signal dependencies** - useComputed requires dependency array as second parameter
 - **Type safety** - Maintain strict typing throughout the behavioral event system
 
+### Event Naming Convention
+
+**Important**: All workshop events use **lowercase_underscore** naming convention to align with MCP best practices:
+
+- Workshop events: `test_all_stories`, `list_routes`, `test_story_set`, etc.
+- MCP events: `mcp_tool_call`, `mcp_response`, `mcp_list_routes`, etc.  
+- Testing events: `run_tests`, `log_event`, `end`, `play`, `run_complete`, etc.
+- Fixture events: `failed_assertion`, `accessibility_violation`, etc.
+
+The constant names (like `PUBLIC_EVENTS`, `MCP_EVENTS`) remain ALL_CAPS, but their values use lowercase_underscore.
+
 ### Commands for Future Development
 
 #### Development Workflow
