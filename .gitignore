@@ -24,7 +24,7 @@ yarn.lock
 **/test-results/
 **/playwright-report/
 **/playwright/.cache/
-
+**/.plaited
 
 ## Apple Junk ##
 **/.DS_Store
@@ -37,3 +37,7 @@ yarn.lock
 # VSCODE
 .vscode/extensions.json
 .vscode/settings.json
+
+
+# Claude
+.claude/

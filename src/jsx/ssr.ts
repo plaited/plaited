@@ -41,8 +41,7 @@ import { VALID_PRIMITIVE_CHILDREN, TEMPLATE_OBJECT_IDENTIFIER } from './jsx.cons
  * @example
  * Component with Styles
  * ```ts
- * import { ssr, h } from 'plaited'
- * import { css } from 'plaited/styling'
+ * import { ssr, h, css } from 'plaited'
  *
  * const styles = css.create({
  *   card: {

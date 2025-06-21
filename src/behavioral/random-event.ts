@@ -14,7 +14,7 @@ import type { BPEvent } from './b-thread.js'
  * - Creating varied system responses to enhance user experience
  * - Building probabilistic algorithms within behavioral programs
  *
- * @param events A spread array of `BPEvent` objects, representing the possible events to choose from.
+ * @param events Rest parameter of `BPEvent` objects, representing the possible events to choose from.
  *   Can include any number of events, but at least one should be provided to avoid undefined returns.
  * @returns A randomly selected `BPEvent` object from the provided events.
  * @throws Will not throw errors, but returns `undefined` if called with no arguments.

@@ -38,7 +38,7 @@
  * @example
  * Shadow DOM and Styles
  * ```tsx
- * import { css } from 'plaited/styling'
+ * import { css } from 'plaited'
  *
  * const styles = css.create({
  *   container: {
@@ -176,7 +176,6 @@ type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => TemplateO
  * - Handling standard HTML/SVG tags, custom element tags, and FunctionTemplates
  * - Sanitizing attribute values and child content via HTML escaping (unless the `trusted` attribute is `true`)
  * - Correctly formatting boolean attributes (e.g., `disabled`, `checked`)
- * - Handling special attributes like `className` (maps to `class`), `htmlFor` (maps to `for`)
  * - Processing Plaited-specific attributes:
  *   - `p-trigger`: Serializes event-to-action mappings
  *   - `stylesheet`: Collects stylesheet strings for hoisting
@@ -194,8 +193,10 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     'p-trigger': bpTrigger,
     class: className,
     for: htmlFor,
+    part,
     ...attributes
   } = attrs
+
   const registry: string[] = []
   if (isTypeOf<FunctionTemplate>(_tag, 'function')) {
     return _tag(attrs)
@@ -206,7 +207,6 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   if (tag === 'script' && !trusted) {
     throw new Error("Script tag not allowed unless 'trusted' property set")
   }
-  const isDeclarativeShadowDom = tag === 'template' && Object.hasOwn(attrs, 'shadowrootmode')
   /** Now to create an array to store our node attributes */
   const start = [`<${tag} `]
   /** handle JS reserved words commonly used in html class & for*/
@@ -251,14 +251,18 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     start.push(`${escape(key)}="${trusted ? value : escape(value)}" `)
   }
   /** Create are stylesheet set */
-  let stylesheets = stylesheet ? [...(Array.isArray(stylesheet) ? stylesheet : [stylesheet])] : []
-
+  const stylesheets =
+    stylesheet ? [...(Array.isArray(stylesheet) ? stylesheet : [stylesheet])].map((str) => escape(str)) : []
+  const parts =
+    part ? [...(Array.isArray(part) ? part : part.split(' '))].flatMap((str) => (str ? escape(str) : [])) : []
+  parts.length && start.push(`part="${parts.join(' ')}"`)
   /** Our tag is a void tag so we can return it once we apply attributes */
   if (VOID_TAGS.has(tag)) {
     start.push('/>')
     return {
       html: start,
       stylesheets: [...new Set(stylesheets)],
+      parts: [...new Set(parts)],
       registry,
       $: TEMPLATE_OBJECT_IDENTIFIER,
     }
@@ -276,6 +280,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       end.push(...child.html)
       stylesheets.push(...child.stylesheets)
       registry.push(...child.registry)
+      parts.push(...child.parts)
       continue
     }
     /** P2 typeof child is NOT a valid primitive child then skip and do nothing */
@@ -285,22 +290,10 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     end.push(str)
   }
   end.push(`</${tag}>`)
-  /** Test if the the tag is a template and if it's a declarative shadow dom */
-  stylesheets = [...new Set(stylesheets)]
-  if (isDeclarativeShadowDom) {
-    /** We continue to hoist our stylesheet until we run
-     * into a declarative shadow dom then we push the
-     * stylesheet as the first child of the declarative
-     * shadowDom template array  and clear the stylesheets set
-     */
-    if (stylesheets.length) {
-      start.push(`<style>${escape(stylesheets.join(''))}</style>`)
-      stylesheets = []
-    }
-  }
   return {
     html: [...start, ...end],
-    stylesheets,
+    stylesheets: [...new Set(stylesheets)],
+    parts: [...new Set(parts)],
     registry,
     $: TEMPLATE_OBJECT_IDENTIFIER,
   }
@@ -364,6 +357,7 @@ export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
   const children = Array.isArray(_children) ? _children.flat() : [_children]
   const html: string[] = []
   const stylesheets: string[] = []
+  const parts: string[] = []
   const registry: string[] = []
   const length = children.length
   for (let i = 0; i < length; i++) {
@@ -372,6 +366,7 @@ export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
       html.push(...child.html)
       stylesheets.push(...child.stylesheets)
       registry.push(...child.registry)
+      parts.push(...child.parts)
     }
     if (!VALID_PRIMITIVE_CHILDREN.has(trueTypeOf(child))) continue
     const safeChild = escape(`${child}`)
@@ -380,6 +375,7 @@ export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
   return {
     html,
     stylesheets: [...new Set(stylesheets)],
+    parts: [...new Set(parts)],
     registry,
     $: TEMPLATE_OBJECT_IDENTIFIER,
   }

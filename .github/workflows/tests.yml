@@ -12,17 +12,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GH_PAT }}
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      # - name: Test
-      #   uses: devcontainers/ci@v0.3
       - name: Install dependencies
         run: |
           bun install
-          bunx playwright install --with-deps
+          bunx playwright install chromium --with-deps
       - name: Run tests
         run: |
           bun run test

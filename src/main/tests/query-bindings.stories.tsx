@@ -1,23 +1,4 @@
-/**
- * Test stories for validating Plaited's DOM query and manipulation utilities.
- * Tests various insertion positions, attribute manipulation, and rendering methods.
- *
- * Story Features:
- * - Position-based DOM insertion ('beforebegin', 'afterbegin', etc)
- * - Element replacement
- * - Attribute management
- * - Batch rendering
- * - Multi-attribute operations
- *
- * Test Coverage:
- * - Position-based insertion
- * - Element replacement
- * - Attribute manipulation
- * - Batch operations
- * - Edge cases
- */
-
-import type { StoryObj } from 'plaited/testing'
+import type { StoryObj } from 'plaited/workshop'
 import { type PlaitedElement } from 'plaited'
 import { Fixture } from './query-bindings.js'
 
@@ -229,6 +210,57 @@ export const getAttribute: StoryObj = {
       should: 'root firstChild should be text',
       actual: root?.firstChild instanceof Text,
       expected: true,
+    })
+  },
+}
+export const setAttribute: StoryObj = {
+  description: `This story is used to validate that attr
+  helper on the plaited element's QuerySelector, $. When invoked with an attribute name and a value, it sets the attribute on the target element.`,
+  template: Fixture,
+  play: async ({ assert, findByAttribute }) => {
+    const fixture = document.querySelector(Fixture.tag) as PlaitedElement
+    const root = await findByAttribute<HTMLDivElement>('p-target', 'root')
+    assert({
+      given: 'before calling trigger',
+      should: 'root does not have aria-label',
+      actual: root?.hasAttribute('aria-label'),
+      expected: false,
+    })
+    fixture.trigger({ type: 'setAttribute' })
+    assert({
+      given: 'after calling trigger',
+      should: 'root aria-label is helper fixture',
+      actual: root?.getAttribute('aria-label'),
+      expected: 'helper fixture',
+    })
+  },
+}
+export const setStyle: StoryObj = {
+  description: `This story is used to validate that attr
+  helper on the plaited element's QuerySelector, $. When invoked with an attribute name and a value, it sets the attribute on the target element.`,
+  template: Fixture,
+  play: async ({ assert, findByAttribute }) => {
+    const fixture = document.querySelector(Fixture.tag) as PlaitedElement
+    let root = await findByAttribute<HTMLDivElement>('p-target', 'root')
+    assert({
+      given: 'before calling trigger',
+      should: 'root does not have class attribute',
+      actual: root?.hasAttribute('class'),
+      expected: false,
+    })
+    fixture.trigger({ type: 'setStyle' })
+    root = await findByAttribute<HTMLDivElement>('p-target', 'root')
+    assert({
+      given: 'after calling trigger',
+      should: 'root classList of length 2',
+      actual: root?.classList.length,
+      expected: 2,
+    })
+    assert({
+      given: 'after calling trigger',
+      should: 'root  has computed style textDecorationLine of line-through',
+      actual: getComputedStyle(root as Element).textDecorationLine,
+      expected: 'line-through',
     })
   },
 }

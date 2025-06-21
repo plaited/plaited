@@ -219,7 +219,11 @@ export type BThread = (rules: RulesFunction[], repeat?: Repeat) => RulesFunction
  * }
  */
 export const isBPEvent = (data: unknown): data is BPEvent => {
-  return isTypeOf<{ [key: string]: unknown }>(data, 'object') && 'type' in data && isTypeOf<string>(data.type, 'string')
+  return (
+    isTypeOf<{ [key: string]: unknown }>(data, 'object') &&
+    Object.hasOwn(data, 'type') &&
+    isTypeOf<string>(data.type, 'string')
+  )
 }
 
 /**

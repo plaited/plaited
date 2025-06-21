@@ -1,6 +1,7 @@
 import type { Trigger } from '../behavioral/b-program.js'
 import type { CustomElementTag, FunctionTemplate, TemplateObject } from '../jsx/jsx.types.js'
 import { type PLAITED_TEMPLATE_IDENTIFIER } from './plaited.constants.js'
+import type { StylesObject } from './css.types.js'
 /**
  * Valid insertion positions for DOM elements relative to a reference element.
  * Follows the insertAdjacentElement/HTML specification.
@@ -140,10 +141,13 @@ export type Bindings = {
    *
    * // Set single attribute
    * button.attr('aria-expanded', 'true');
+   *
+   * // Remove single attribute
+   * button.attr('disabled', 'null);
    * ```
    */
-  attr(this: Element, attr: Record<string, string | null | number | boolean>, val?: never): void
-  attr(this: Element, attr: string, val?: string | null | number | boolean): string | null | void
+  attr(this: Element, attr: Record<string, string | null | number | boolean | StylesObject>, val?: never): void
+  attr(this: Element, attr: string, val?: string | null | number | boolean | StylesObject): string | null | void
 }
 
 export type BoundElement<T extends Element = Element> = T & Bindings
@@ -167,8 +171,8 @@ export type SelectorMatch = '=' | '~=' | '|=' | '^=' | '$=' | '*='
  *
  * @interface
  * @extends HTMLElement
- * @property trigger Event triggering function
- * @property publicEvents List of exposed event types
+ * @property trigger public Event triggering function
+ * @property publicEvents List of exposed Event types
  * @property adoptedCallback Called when element is moved to new document
  * @property attributeChangedCallback Called on attribute changes
  * @property connectedCallback Called when element is added to DOM
@@ -198,10 +202,10 @@ export interface PlaitedElement extends HTMLElement {
  * Includes component metadata and identification.
  *
  * @extends FunctionTemplate
- * @property registry Set of registered component identifiers
+ * @property registry Set of registered  web component identifiers
  * @property tag Custom element tag name
  * @property observedAttributes List of attributes to watch
- * @property publicEvents List of exposed event types
+ * @property publicEvents List of exposed public event types
  * @property $ Template identifier
  */
 export type PlaitedTemplate = FunctionTemplate & {
@@ -228,24 +232,3 @@ type JsonObject = {
  * @internal
  */
 type JsonArray = Array<JSONDetail>
-/**
- * Structure for messages in the Plaited system.
- * Includes routing and payload information.
- *
- * @template D Type of detail data, must be JSON-serializable
- * @property address Routing information for the message
- * @property type Message type identifier
- * @property detail Optional payload data
- *
- * @example
- * const message: PlaitedMessage = {
- *   address: 'component-id',
- *   type: 'UPDATE',
- *   detail: { value: 42 }
- * };
- */
-export type PlaitedMessage<D extends JSONDetail = JSONDetail> = {
-  address: string
-  type: string
-  detail?: D
-}
