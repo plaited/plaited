@@ -1,5 +1,5 @@
 import { type ServerResult } from '@modelcontextprotocol/sdk/types.js'
-import { ueid } from '../plaited/src/utils.js'
+import { ueid } from '../../utils.js'
 import type { Trigger } from 'plaited/behavioral'
 
 export const mcpPromisesMap = new Map<

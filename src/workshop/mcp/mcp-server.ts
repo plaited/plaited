@@ -1,16 +1,10 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { defineWorkshop, PUBLIC_EVENTS } from '../plaited/src/workshop/define-workshop.js'
+import { Server } from '@modelcontextprotocol/sdk/server/index.js'
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 
-const mcpServer = new McpServer({
+const server = new Server({
   name: 'plaited-workshop',
   version: '1.0.0',
 })
 
-const cwd = `${process.cwd()}/src`
-
-const trigger = await defineWorkshop({
-  cwd,
-  mcpServer,
-})
-
-trigger({ type: PUBLIC_EVENTS.test_all_stories })
+const transport = new StdioServerTransport()
+await server.connect(transport)

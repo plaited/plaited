@@ -1,10 +1,10 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { useSignal } from '../plaited/src/behavioral/use-signal.js'
-import { keyMirror } from '../plaited/src/utils/key-mirror.js'
-import { defineBProgram } from '../plaited/src/behavioral/define-b-program.js'
-import { useStoryServer } from '../plaited/src/workshop/story-server/use-story-server.js'
-import { storyRunner } from '../plaited/src/workshop/story-runner/story-runner.js'
-import { STORY_RUNNER_EVENTS } from '../plaited/src/workshop/story-runner/story-runner.constants.js'
+import { useSignal } from '../../behavioral/use-signal.js'
+import { keyMirror } from '../../utils/key-mirror.js'
+import { defineBProgram } from '../../behavioral/define-b-program.js'
+import { useStoryServer } from '../../workshop/story-server/use-story-server.js'
+import { storyRunner } from '../../workshop/story-runner/story-runner.js'
+import { STORY_RUNNER_EVENTS } from '../../workshop/story-runner/story-runner.constants.js'
 
 export type DefineWorkshopParams = {
   cwd: string
@@ -45,10 +45,10 @@ export const defineWorkshop = defineBProgram<WorkshopDetails, DefineWorkshopPara
       designTokens,
     })
 
-    const colorSchemeSupportSignal = useSignal(false)
+    const colorSchemeSupport = useSignal(false)
 
     const triggerStoryRunner = await storyRunner({
-      colorSchemeSupportSignal,
+      colorSchemeSupport,
       serverURL: server.url,
       storyParamSet,
     })

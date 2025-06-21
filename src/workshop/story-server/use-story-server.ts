@@ -1,9 +1,9 @@
 import { useSignal, type Signal } from '../../behavioral/use-signal.js'
 import type { StoryObj } from '../story-fixture/story-fixture.types.js'
-import type { StoryParams } from '../../../../mcp/workshop.types.js'
 import { getHTMLRoutes } from './get-html-routes.js'
 import { addStoryParams, getEntryRoutes, globFiles } from './story-server.utils.js'
 import { RELOAD_STORY_PAGE, RUNNER_URL } from '../story-fixture/story-fixture.constants.js'
+import type { StoryParams } from './story-server.types.js'
 
 /** Glob pattern used to find story files within the project. */
 const STORY_GLOB_PATTERN = `**/*.stories.{tsx,ts}`
@@ -46,7 +46,7 @@ export const useStoryServer = async ({ cwd, designTokens }: { cwd: string; desig
     )
     return bundledRoutes
   }
-  const server = Bun.serve({
+  const storyServer = Bun.serve({
     port: 0, // Let system assign available port
     routes: await getRoutes(),
     async fetch(req: Request, server: Bun.Server) {
@@ -84,7 +84,7 @@ export const useStoryServer = async ({ cwd, designTokens }: { cwd: string; desig
   })
 
   process.on('exit', async () => {
-    await server?.stop(true)
+    await storyServer?.stop(true)
     console.log('server stopped')
   })
 
@@ -98,19 +98,19 @@ export const useStoryServer = async ({ cwd, designTokens }: { cwd: string; desig
     process.exit()
   })
 
-  const reloadClients = () => server.publish(RELOAD_TOPIC, RELOAD_STORY_PAGE)
-  const reload = async () => {
-    server.publish(RELOAD_TOPIC, RELOAD_STORY_PAGE)
+  const reloadStoryClient = () => storyServer.publish(RELOAD_TOPIC, RELOAD_STORY_PAGE)
+  const reloadStoryServer = async () => {
+    storyServer.publish(RELOAD_TOPIC, RELOAD_STORY_PAGE)
     storyParamSet.set(new Set())
-    return server.reload({
+    return storyServer.reload({
       routes: await getRoutes(),
     })
   }
 
   return {
-    reload,
-    reloadClients,
+    reloadStoryServer,
+    reloadStoryClient,
     storyParamSet,
-    server,
+    storyServer,
   }
 }
