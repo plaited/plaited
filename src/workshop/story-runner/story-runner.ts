@@ -31,17 +31,17 @@ export type RunnerDetails = {
 export const storyRunner = defineBProgram<
   RunnerDetails,
   {
-    colorSchemeSupportSignal: Signal<boolean>
+    colorSchemeSupport?: Signal<boolean>
     serverURL: URL
     storyParamSet: SignalWithInitialValue<Set<StoryParams>>
   }
 >({
   publicEvents: [STORY_RUNNER_EVENTS.run_tests],
-  async bProgram({ trigger, bThreads, bSync, bThread, colorSchemeSupportSignal, serverURL, storyParamSet }) {
+  async bProgram({ trigger, bThreads, bSync, bThread, colorSchemeSupport, serverURL, storyParamSet }) {
     const browser = await chromium.launch()
 
     storyParamSet.listen(STORY_RUNNER_EVENTS.run_tests, trigger)
-    colorSchemeSupportSignal.listen(STORY_RUNNER_EVENTS.run_tests, trigger)
+    colorSchemeSupport?.listen(STORY_RUNNER_EVENTS.run_tests, trigger)
 
     const runningSignal = useSignal<Map<string, Set<string>>>(new Map())
 
@@ -116,14 +116,14 @@ export const storyRunner = defineBProgram<
             [...detail].map(({ route }) => {
               const url = new URL(route, serverURL).href
               const colorSchemes = ['light']
-              colorSchemeSupportSignal.get() && colorSchemes.push('dark')
+              colorSchemeSupport?.get() && colorSchemes.push('dark')
               return [url, new Set(colorSchemes)]
             }),
           ),
         )
         const visitStory = useVisitStory({
           browser,
-          colorSchemeSupportSignal,
+          colorSchemeSupport,
           serverURL,
           trigger,
         })

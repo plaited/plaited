@@ -78,18 +78,18 @@ const visitStory = ({
 
 export const useVisitStory = ({
   browser,
-  colorSchemeSupportSignal,
+  colorSchemeSupport,
   serverURL,
   trigger,
 }: {
   browser: Browser
-  colorSchemeSupportSignal: Signal<boolean>
+  colorSchemeSupport?: Signal<boolean>
   trigger: Trigger
   serverURL: URL
 }) => {
   const visitations = [
     visitStory({ browser, colorScheme: 'light', trigger, serverURL }),
-    colorSchemeSupportSignal.get() && visitStory({ browser, colorScheme: 'dark', trigger, serverURL }),
+    colorSchemeSupport?.get() && visitStory({ browser, colorScheme: 'dark', trigger, serverURL }),
   ]
   return async (params: StoryParams) =>
     await Promise.all(visitations.flatMap(async (visit) => (visit ? await visit(params) : [])))
