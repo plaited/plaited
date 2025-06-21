@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
-import { type DesignTokenGroup } from 'plaited/workshop'
-import { getDesignTokensSchema } from '../get-design-tokens-schema.js'
+import { type DesignTokenGroup } from '../design-token-transformer.types.js'
+import { getDesignTokensSchema } from '../design-token-transformer.utils.js'
 
 export const tokens: DesignTokenGroup = {
   size: {

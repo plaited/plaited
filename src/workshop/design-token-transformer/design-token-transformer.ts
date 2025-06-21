@@ -13,7 +13,7 @@ import type {
   MediaQueries,
   Alias,
   CompositeToken,
-} from './design-token.types.js'
+} from './design-token-transformer.types.js'
 import {
   colorSchemeMediaQueries,
   convertAliasToCssVar,
@@ -33,7 +33,7 @@ import {
   TS_EXTENSION,
   CSS_EXTENSION,
   PLAITED_PREFIX,
-} from './transform-design-tokens.utils.js'
+} from './design-token-transformer.utils.js'
 
 /**
  * Transforms design tokens into CSS custom properties and TypeScript references.
