@@ -1,9 +1,10 @@
 import { chromium, type BrowserContext } from 'playwright'
 import { useSignal, type Signal, type SignalWithInitialValue } from '../../behavioral/use-signal.js'
 import type { StoryParams } from '../workshop.types.js'
-import { TESTING_EVENTS, FIXTURE_EVENTS } from './testing.constants.js'
-import type { LogMessageDetail, ColorScheme } from './testing.types.js'
-import { useVisitStory } from './testing.utils.js'
+import { TESTING_EVENTS } from './story-runner.constants.js'
+import { FIXTURE_EVENTS } from '../plaited-fixture/plaited-fixture.constants.js'
+import type { LogMessageDetail, ColorScheme } from './story-runner.types.js'
+import { useVisitStory } from './story-runner.utils.js'
 import { defineBProgram } from '../../behavioral/define-b-program.js'
 
 type FixtureEventDetail = {
@@ -27,7 +28,7 @@ export type RunnerDetails = {
   [FIXTURE_EVENTS.accessibility_violation]: FixtureEventDetail
 }
 
-export const testing = defineBProgram<
+export const storyRunner = defineBProgram<
   RunnerDetails,
   {
     colorSchemeSupportSignal: Signal<boolean>

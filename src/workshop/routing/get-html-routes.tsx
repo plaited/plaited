@@ -5,7 +5,8 @@ import { ssr } from '../../jsx/ssr.js'
 import type { StoryObj } from '../plaited-fixture/plaited-fixture.types.js'
 import { createStoryRoute, zip } from './routing.utils.js'
 import type { StorySet } from '../workshop.types.js'
-import { WORKSHOP_ROUTE, FIXTURE_EVENTS } from '../testing/testing.constants.js'
+import { WORKSHOP_ROUTE } from '../story-runner/story-runner.constants.js'
+import { FIXTURE_EVENTS } from '../plaited-fixture/plaited-fixture.constants.js'
 import type { Signal } from '../../behavioral/use-signal.js'
 
 const getEntryPath = (route: string) => {
@@ -65,7 +66,8 @@ const createPageBundle = async ({
   )
   return {
     [route]: zip({
-      content: `<!DOCTYPE html>\n${page}`,
+      content: `<!DOCTYPE html>
+${page}`,
       contentType: 'text/html;charset=utf-8',
       headers: story?.parameters?.headers && (await story?.parameters?.headers(process.env)),
     }),

@@ -2,9 +2,9 @@ import type { Browser, ConsoleMessage, BrowserContext } from 'playwright'
 import type { Trigger } from '../../behavioral/b-program.js'
 import { type Signal } from '../../behavioral/use-signal.js'
 import type { StoryParams } from '../workshop.types.js'
-import { SnapshotMessageSchema } from './testing.schema.js'
-import { TESTING_EVENTS } from './testing.constants.js'
-import type { LogMessageDetail } from './testing.types.js'
+import { SnapshotMessageSchema } from './story-runner.schema.js'
+import { TESTING_EVENTS } from './story-runner.constants.js'
+import type { LogMessageDetail } from './story-runner.types.js'
 
 // =============================================================================
 // CONSOLE MESSAGE HANDLING

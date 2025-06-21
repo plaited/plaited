@@ -3,7 +3,7 @@ import { css } from '../../main/css.js'
 import { defineElement } from '../../main/define-element.js'
 import { h } from '../../jsx/create-template.js'
 import { wait } from '../../utils/wait.js'
-import { PLAITED_FIXTURE, DEFAULT_PLAY_TIMEOUT, FIXTURE_EVENTS } from '../testing/testing.constants.js'
+import { PLAITED_FIXTURE, DEFAULT_PLAY_TIMEOUT, FIXTURE_EVENTS } from './plaited-fixture.constants.js'
 import {
   FailedAssertionError,
   MissingAssertionParameterError,

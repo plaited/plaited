@@ -1,3 +1,3 @@
-import './workshop/testing/plaited-fixture.js'
-export * from './workshop/testing/plaited-fixture.types.js'
+import './workshop/plaited-fixture/plaited-fixture.js'
+export * from './workshop/plaited-fixture/plaited-fixture.types.js'
 export type * from './workshop/styling/design-token.types.js'

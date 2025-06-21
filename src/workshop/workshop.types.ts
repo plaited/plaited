@@ -1,4 +1,4 @@
-import type { StoryObj } from './testing/plaited-fixture.types.js'
+import type { StoryObj } from './plaited-fixture/plaited-fixture.types.js'
 import type { BrowserContextOptions } from 'playwright'
 
 export type StoryParams = {

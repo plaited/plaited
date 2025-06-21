@@ -1,7 +1,7 @@
 import { useSignal, useComputed } from '../behavioral/use-signal.js'
 import { keyMirror } from '../utils/key-mirror.js'
 import { useServer } from './routing/use-server.js'
-import { testing } from './testing/testing.js'
+import { storyRunner } from './story-runner/story-runner.js'
 import { defineBProgram } from '../behavioral/define-b-program.js'
 import { MCP_EVENTS, MCP_TOOL_EVENTS } from './mcp/mcp.constants.js'
 import type { MCPDetails, MCPRequestInfo, RouteInfo } from './mcp/mcp.types.js'
@@ -48,7 +48,7 @@ export const defineWorkshop = defineBProgram<WorkshopDetails, DefineWorkshopPara
 
     const colorSchemeSupportSignal = useSignal(false)
 
-    await testing({
+    await storyRunner({
       colorSchemeSupportSignal,
       serverURL: server.url,
       storyParamSet,

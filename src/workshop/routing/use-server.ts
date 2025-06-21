@@ -3,7 +3,7 @@ import type { StoryObj } from '../plaited-fixture/plaited-fixture.types.js'
 import type { StoryParams } from '../workshop.types.js'
 import { getHTMLRoutes } from './get-html-routes.js'
 import { addStoryParams, getEntryRoutes, globFiles } from './routing.utils.js'
-import { RELOAD_STORY_PAGE, RUNNER_URL } from '../testing/testing.constants.js'
+import { RELOAD_STORY_PAGE, RUNNER_URL } from '../plaited-fixture/plaited-fixture.constants.js'
 
 /** Glob pattern used to find story files within the project. */
 const STORY_GLOB_PATTERN = `**/*.stories.{tsx,ts}`

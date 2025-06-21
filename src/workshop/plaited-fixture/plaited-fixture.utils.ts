@@ -7,7 +7,7 @@ import { isTypeOf } from '../../utils/is-type-of.js'
 import { wait } from '../../utils/wait.js'
 import { noop } from '../../utils/noop.js'
 import { DelegatedListener, delegates } from '../../utils/delegated-listener.js'
-import { FIXTURE_EVENTS, PLAITED_FIXTURE, RELOAD_STORY_PAGE, RUNNER_URL } from '../testing/testing.constants.js'
+import { FIXTURE_EVENTS, PLAITED_FIXTURE, RELOAD_STORY_PAGE, RUNNER_URL } from './plaited-fixture.constants.js'
 import type {
   Assert,
   AssertDetails,
@@ -21,7 +21,7 @@ import type {
   WaitDetails,
   AccessibilityCheck,
   AccessibilityCheckDetails,
-} from '../testing/testing.types.js'
+} from './plaited-fixture.types.js'
 
 // =============================================================================
 // ERROR CLASSES
