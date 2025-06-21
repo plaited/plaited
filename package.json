@@ -13,9 +13,6 @@
     "url": "https://github.com/plaited/plaited/issues"
   },
   "homepage": "https://github.com/plaited/plaited/tree/main#readme",
-  "bin": {
-    "workshop": "./.bin/workshop-mcp-server.ts"
-  },
   "type": "module",
   "main": "./src/main.ts",
   "exports": {
@@ -77,7 +74,7 @@
   "peerDependencies": {
     "@modelcontextprotocol/sdk": "^1.13.0",
     "@types/bun": "^1.2.15",
-    "axe-core": "4.10.3",
+    "axe-core": "^4.10.3",
     "playwright": "^1.53.0",
     "zod": "^3.25.64"
   },

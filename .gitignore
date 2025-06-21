@@ -37,3 +37,7 @@ yarn.lock
 # VSCODE
 .vscode/extensions.json
 .vscode/settings.json
+
+
+# Claude
+.claude/
