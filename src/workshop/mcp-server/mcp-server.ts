@@ -36,6 +36,7 @@ export const mcpServer = defineMCPServer<PublicEventDetails>({
         const structuredContent = {
           href: storyServer.url.href,
         }
+        console.log('...before resolving')
         resolve({
           content: [
             {
@@ -45,8 +46,11 @@ export const mcpServer = defineMCPServer<PublicEventDetails>({
           ],
           structuredContent,
         })
+        console.log('...resolved')
+        mcpPromisesMap.delete(ref)
       },
       async [PUBLIC_EVENTS.get_story_routes]({ ref }) {
+        cosnole.log('hit')
         const { resolve } = mcpPromisesMap.get(ref)!
         const params = storyParamSet?.get()
         const routes = params ? [...params].map(({ route }) => new URL(route, storyServer?.url).href) : []
@@ -62,6 +66,7 @@ export const mcpServer = defineMCPServer<PublicEventDetails>({
           ],
           structuredContent,
         })
+        mcpPromisesMap.delete(ref)
       },
     }
   },

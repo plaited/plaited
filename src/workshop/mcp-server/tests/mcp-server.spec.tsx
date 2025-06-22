@@ -14,11 +14,15 @@ const client = new Client({
 
 await client.connect(transport)
 
-const result = await client.callTool({
+const href = await client.callTool({
   name: PUBLIC_EVENTS.start_workshop,
   arguments: {
     root: `${process.cwd()}/src`,
   },
 })
+console.log(href)
 
-console.log(result)
+const urls = await client.callTool({
+  name: PUBLIC_EVENTS.get_story_routes,
+})
+console.log(urls)
