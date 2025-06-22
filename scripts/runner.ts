@@ -4,17 +4,15 @@ import { useStoryServer } from '../src/workshop/story-server/use-story-server.js
 
 const cwd = `${process.cwd()}/src`
 
-const { server, storyParamSet, reloadClients } = await useStoryServer({
-  cwd,
-})
+const { storyServer, storyParamSet, reloadStoryClients } = await useStoryServer(cwd)
 
 const trigger = await storyRunner({
-  serverURL: server.url,
+  serverURL: storyServer.url,
   storyParamSet,
 })
 
 if (process.execArgv.includes('--hot')) {
-  reloadClients()
+  reloadStoryClients()
 }
 
 trigger({ type: STORY_RUNNER_EVENTS.run_tests, detail: storyParamSet.get() })

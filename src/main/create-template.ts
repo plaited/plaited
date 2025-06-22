@@ -120,6 +120,7 @@
  *   - Group related styles in objects
  */
 
+import { isTypeOf, trueTypeOf, kebabCase, escape } from '../utils.js'
 import type {
   Attrs,
   DetailedHTMLAttributes,
@@ -128,10 +129,6 @@ import type {
   CustomElementTag,
   FunctionTemplate,
 } from './jsx.types.js'
-import { isTypeOf } from '../utils/is-type-of.js'
-import { trueTypeOf } from '../utils/true-type-of.js'
-import { kebabCase } from '../utils/case.js'
-import { escape } from '../utils/escape.js'
 import {
   BOOLEAN_ATTRS,
   PRIMITIVES,

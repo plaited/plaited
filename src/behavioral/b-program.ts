@@ -1,5 +1,5 @@
 import type { BPEvent, BPEventTemplate, BPListener, Idioms, RulesFunction } from './b-thread.js'
-import { isTypeOf } from '../utils/is-type-of.js'
+import { isTypeOf } from '../utils.js'
 
 /**
  * @internal

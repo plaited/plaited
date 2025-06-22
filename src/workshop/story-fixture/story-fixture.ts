@@ -1,8 +1,6 @@
-import type { SnapshotMessage } from '../../behavioral/b-program.js'
-import { css } from '../../main/css.js'
-import { defineElement } from '../../main/define-element.js'
-import { h } from '../../jsx/create-template.js'
-import { wait } from '../../utils/wait.js'
+import type { SnapshotMessage } from '../../behavioral.js'
+import { css, defineElement, h } from '../../main.js'
+import { wait } from '../../utils.js'
 import { STORY_FIXTURE, DEFAULT_PLAY_TIMEOUT, FIXTURE_EVENTS } from './story-fixture.constants.js'
 import {
   FailedAssertionError,

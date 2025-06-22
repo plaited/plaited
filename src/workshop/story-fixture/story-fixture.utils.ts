@@ -1,12 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axe from 'axe-core'
-import type { Trigger } from '../../behavioral/b-program.js'
-import { deepEqual } from '../../utils/deep-equal.js'
-import { trueTypeOf } from '../../utils/true-type-of.js'
-import { isTypeOf } from '../../utils/is-type-of.js'
-import { wait } from '../../utils/wait.js'
-import { noop } from '../../utils/noop.js'
-import { DelegatedListener, delegates } from '../../utils/delegated-listener.js'
+import type { Trigger } from '../../behavioral.js'
+import { deepEqual, trueTypeOf, isTypeOf, wait, noop, DelegatedListener, delegates } from '../../utils.js'
+
 import { FIXTURE_EVENTS, STORY_FIXTURE, RELOAD_STORY_PAGE, RUNNER_URL } from './story-fixture.constants.js'
 import type {
   Assert,

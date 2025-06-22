@@ -1,4 +1,4 @@
-import { type BPEvent } from '../behavioral/b-thread.js'
+import { type BPEvent } from '../behavioral.js'
 import { type PlaitedElement } from './plaited.types.js'
 
 /**

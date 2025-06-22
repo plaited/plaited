@@ -10,9 +10,9 @@ const STORY_GLOB_PATTERN = `**/*.stories.{tsx,ts}`
 
 const RELOAD_TOPIC = 'RELOAD_TOPIC'
 
-export const useStoryServer = async ({ cwd, designTokens }: { cwd: string; designTokens?: Signal<string> }) => {
+export const useStoryServer = async (root: string, designTokens?: Signal<string>) => {
   // Get Story Sets
-  const entrypoints = await globFiles(cwd, STORY_GLOB_PATTERN)
+  const entrypoints = await globFiles(root, STORY_GLOB_PATTERN)
   const storySets = new Map<string, Record<string, StoryObj>>()
   await Promise.all(
     entrypoints.map(async (entry) => {
@@ -30,11 +30,11 @@ export const useStoryServer = async ({ cwd, designTokens }: { cwd: string; desig
 
   const getRoutes = async () => {
     const bundledRoutes = {
-      ...(await getEntryRoutes(cwd, [...storySets.keys()])),
+      ...(await getEntryRoutes(root, [...storySets.keys()])),
     }
     await Promise.all(
       storySets.entries().map(async ([entry, storySet]) => {
-        const filePath = entry.replace(new RegExp(`^${cwd}`), '')
+        const filePath = entry.replace(new RegExp(`^${root}`), '')
         addStoryParams({ filePath, storySet, storyParamSet })
         const routes = await getHTMLRoutes({
           designTokens,
@@ -98,7 +98,7 @@ export const useStoryServer = async ({ cwd, designTokens }: { cwd: string; desig
     process.exit()
   })
 
-  const reloadStoryClient = () => storyServer.publish(RELOAD_TOPIC, RELOAD_STORY_PAGE)
+  const reloadStoryClients = () => storyServer.publish(RELOAD_TOPIC, RELOAD_STORY_PAGE)
   const reloadStoryServer = async () => {
     storyServer.publish(RELOAD_TOPIC, RELOAD_STORY_PAGE)
     storyParamSet.set(new Set())
@@ -109,7 +109,7 @@ export const useStoryServer = async ({ cwd, designTokens }: { cwd: string; desig
 
   return {
     reloadStoryServer,
-    reloadStoryClient,
+    reloadStoryClients,
     storyParamSet,
     storyServer,
   }

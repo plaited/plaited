@@ -1,4 +1,4 @@
-import { isTypeOf } from '../utils/is-type-of.js'
+import { isTypeOf } from '../utils.js'
 
 /**
  * Defines the repetition behavior for a `bThread`.

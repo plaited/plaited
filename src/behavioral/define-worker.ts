@@ -140,7 +140,10 @@ export const defineWorker = async <A extends EventDetails>(args: {
   const { useFeedback, trigger, ...rest } = bProgram()
 
   // Public trigger  to receive events from main thread
-  const publicTrigger = getPublicTrigger({ trigger, publicEvents: args?.publicEvents })
+  const publicTrigger = getPublicTrigger({
+    trigger,
+    publicEvents: args?.publicEvents,
+  })
   // Event handler that for events from main thread
   const eventHandler = ({ data }: { data: BPEvent }) => publicTrigger(data)
 

@@ -1,6 +1,5 @@
 import type { Browser, ConsoleMessage, BrowserContext } from 'playwright'
-import type { Trigger } from '../../behavioral/b-program.js'
-import { type Signal } from '../../behavioral/use-signal.js'
+import type { Trigger, Signal } from '../../behavioral.js'
 import { SnapshotMessageSchema } from './story-runner.schema.js'
 import { STORY_RUNNER_EVENTS } from './story-runner.constants.js'
 import type { LogMessageDetail, StoryParams } from './story-runner.types.js'

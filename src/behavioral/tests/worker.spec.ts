@@ -5,7 +5,8 @@ import { type BPEvent, useWorker } from 'plaited/behavioral'
 
 test('validate userWorker and defineWorker utilities function as expected', async () => {
   const spy = sinon.spy()
-  const send = useWorker((evt: BPEvent) => spy(evt), `${import.meta.dir}/worker.ts`)
+  const worker = new Worker(`${import.meta.dir}/worker.ts`, { type: 'module' })
+  const send = useWorker((evt: BPEvent) => spy(evt), worker)
   send({
     type: 'calculate',
     detail: { a: 9, b: 10, operation: 'multiply' },

@@ -1,4 +1,4 @@
-import type { Trigger, Disconnect } from '../behavioral/b-program.js'
+import type { Trigger, Disconnect } from './b-program.js'
 
 /**
  * An enhanced `Trigger` type specifically for Plaited components or contexts.

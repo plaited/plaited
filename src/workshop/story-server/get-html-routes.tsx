@@ -1,7 +1,7 @@
 import path from 'node:path'
 
 import { StoryFixture } from '../story-fixture/story-fixture.js'
-import { ssr } from '../../jsx/ssr.js'
+import { ssr } from '../../main.js'
 import type { StoryObj } from '../story-fixture/story-fixture.types.js'
 import { createStoryRoute, zip } from './story-server.utils.js'
 import type { StorySet } from './story-server.types.js'

@@ -1,5 +1,5 @@
 import type { Trigger } from '../behavioral/b-program.js'
-import type { CustomElementTag, FunctionTemplate, TemplateObject } from '../jsx/jsx.types.js'
+import type { CustomElementTag, FunctionTemplate, TemplateObject } from './jsx.types.js'
 import { type PLAITED_TEMPLATE_IDENTIFIER } from './plaited.constants.js'
 import type { StylesObject } from './css.types.js'
 /**

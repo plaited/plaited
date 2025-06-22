@@ -1,4 +1,4 @@
-import type { Trigger } from '../behavioral/b-program.js'
+import type { Trigger } from './b-program.js'
 
 /**
  * Creates a wrapped `Trigger` function that filters events based on a whitelist.
@@ -32,11 +32,18 @@ import type { Trigger } from '../behavioral/b-program.js'
  * // This will be ignored, and a warning will be logged.
  * publicTrigger({ type: 'internal/data-update', detail: {} });
  */
-export const getPublicTrigger = (args: { trigger: Trigger; publicEvents?: string[] | ReadonlyArray<string> }) => {
-  const observed = new Set(args?.publicEvents || [])
-  const trigger: Trigger = ({ type, detail }) => {
-    if (observed.has(type)) return args.trigger?.({ type: type, detail: detail })
-    if (type) console.warn(`Not observing trigger [${type}]`)
+export const getPublicTrigger = ({
+  trigger,
+  publicEvents,
+  errorPrefix = `Not a public BPEvent type`,
+}: {
+  trigger: Trigger
+  publicEvents?: string[] | ReadonlyArray<string>
+  errorPrefix?: string
+}): Trigger => {
+  const observed = new Set(publicEvents ?? [])
+  return ({ type, detail }) => {
+    if (observed.has(type)) return trigger({ type: type, detail: detail })
+    throw new Error(`${errorPrefix}: ${type}`)
   }
-  return trigger
 }

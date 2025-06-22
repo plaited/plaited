@@ -1,8 +1,7 @@
 import type { BrowserContextOptions } from 'playwright'
 import type axe from 'axe-core'
-import type { Attrs, FunctionTemplate } from '../../jsx/jsx.types.js'
-import type { StylesObject } from '../../main/css.types.js'
-import type { Wait } from '../../utils/wait.js'
+import type { Attrs, FunctionTemplate, StylesObject } from '../../main.js'
+import type { Wait } from '../../utils.js'
 import type { Match, Throws } from './story-fixture.utils.js'
 import { FIXTURE_EVENTS } from './story-fixture.constants.js'
 
