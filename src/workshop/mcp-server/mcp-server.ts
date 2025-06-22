@@ -1,24 +1,68 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { defineBProgram } from '../../behavioral.js'
+import { type SignalWithInitialValue } from '../../behavioral.js'
 import { PUBLIC_EVENT_SCHEMAS, type PublicEventDetails } from './mcp-server.schemas.js'
 import { PUBLIC_EVENTS } from './mcp-server.constants.js'
-import { useRegisterTool } from './mcp-server.utils.js'
+import { mcpPromisesMap } from './mcp-server.utils.js'
+import { useStoryServer } from '../story-server/use-story-server.js'
+import type { StoryParams } from '../story-server/story-server.types.js'
+import { defineMCPServer } from './define-mcp-server.js'
 
-export const mcpServer = defineBProgram<
-  PublicEventDetails,
-  {
-    server: McpServer
-  }
->({
-  async bProgram({ bThreads, server, trigger }) {
-    bThreads.set({})
-    const registerTool = useRegisterTool({ trigger, publicEvents: Object.values(PUBLIC_EVENTS), server })
+export const mcpServer = defineMCPServer<PublicEventDetails>({
+  name: 'plaited-workshop',
+  version: '0.0.1',
+  publicEvents: Object.values(PUBLIC_EVENTS),
+  async bProgram({ bSync, bThread, bThreads, registerTool }) {
+    let storyServer: Bun.Server | undefined
+    let storyParamSet: SignalWithInitialValue<Set<StoryParams>> | undefined
+    bThreads.set({
+      onGetStoryRoutes: bThread(
+        [
+          bSync({
+            block: ({ type }) => {
+              if (type !== PUBLIC_EVENTS.get_story_routes) return false
+              return !!storyServer
+            },
+          }),
+        ],
+        true,
+      ),
+    })
     for (const [type, config] of Object.entries(PUBLIC_EVENT_SCHEMAS)) {
       registerTool(type, config)
     }
     return {
-      async [PUBLIC_EVENTS.start_workshop]() {},
-      async [PUBLIC_EVENTS.get_story_routes]() {},
+      async [PUBLIC_EVENTS.start_workshop]({ input, ref }) {
+        ;({ storyServer, storyParamSet } = await useStoryServer(input.root))
+        const { resolve } = mcpPromisesMap.get(ref)!
+        const structuredContent = {
+          href: storyServer.url.href,
+        }
+        resolve({
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(structuredContent, null, 2),
+            },
+          ],
+          structuredContent,
+        })
+      },
+      async [PUBLIC_EVENTS.get_story_routes]({ ref }) {
+        const { resolve } = mcpPromisesMap.get(ref)!
+        const params = storyParamSet?.get()
+        const routes = params ? [...params].map(({ route }) => new URL(route, storyServer?.url).href) : []
+        const structuredContent = {
+          routes,
+        }
+        resolve({
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(structuredContent, null, 2),
+            },
+          ],
+          structuredContent,
+        })
+      },
     }
   },
 })

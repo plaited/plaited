@@ -1,12 +1,6 @@
-import type { BrowserContext, BrowserContextOptions } from 'playwright'
+import type { BrowserContext } from 'playwright'
 import type { PlaitedFixtureSnapshotMessage } from './story-runner.schema.js'
-
-export type StoryParams = {
-  exportName: string
-  route: string
-  recordVideo?: BrowserContextOptions['recordVideo']
-  filePath: string
-}
+import type { StoryParams } from '../story-server/story-server.types.js'
 
 export type LogMessageDetail = {
   colorScheme: ColorScheme

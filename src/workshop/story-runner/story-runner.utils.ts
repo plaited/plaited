@@ -2,7 +2,8 @@ import type { Browser, ConsoleMessage, BrowserContext } from 'playwright'
 import type { Trigger, Signal } from '../../behavioral.js'
 import { SnapshotMessageSchema } from './story-runner.schema.js'
 import { STORY_RUNNER_EVENTS } from './story-runner.constants.js'
-import type { LogMessageDetail, StoryParams } from './story-runner.types.js'
+import type { LogMessageDetail } from './story-runner.types.js'
+import type { StoryParams } from '../story-server/story-server.types.js'
 
 export const useHandleConsoleMessage = ({
   trigger,

@@ -2,8 +2,9 @@ import { chromium, type BrowserContext } from 'playwright'
 import { type Signal, type SignalWithInitialValue, defineBProgram } from '../../behavioral.js'
 import { STORY_RUNNER_EVENTS } from './story-runner.constants.js'
 import { FIXTURE_EVENTS } from '../story-fixture/story-fixture.constants.js'
-import type { LogMessageDetail, ColorScheme, StoryParams } from './story-runner.types.js'
+import type { LogMessageDetail, ColorScheme } from './story-runner.types.js'
 import { useVisitStory } from './story-runner.utils.js'
+import type { StoryParams } from '../story-server/story-server.types.js'
 
 type FixtureEventDetail = {
   url: string

@@ -1,10 +1,6 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+import { mcpServer } from '../mcp-server.js'
 
-const server = new McpServer({
-  name: 'plaited-workshop',
-  version: '1.0.0',
-})
-
+const server = await mcpServer
 const transport = new StdioServerTransport()
 await server.connect(transport)
