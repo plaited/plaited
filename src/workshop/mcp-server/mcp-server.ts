@@ -2,17 +2,20 @@ import { type SignalWithInitialValue } from '../../behavioral.js'
 import { PUBLIC_EVENT_SCHEMAS, type PublicEventDetails } from './mcp-server.schemas.js'
 import { PUBLIC_EVENTS } from './mcp-server.constants.js'
 import { mcpPromisesMap } from './mcp-server.utils.js'
-import { useStoryServer } from '../story-server/use-story-server.js'
 import type { StoryParams } from '../story-server/story-server.types.js'
 import { defineMCPServer } from './define-mcp-server.js'
 
-export const mcpServer = defineMCPServer<PublicEventDetails>({
+export const mcpServer = defineMCPServer<
+  PublicEventDetails,
+  {
+    storyServer: Bun.Server
+    storyParamSet: SignalWithInitialValue<Set<StoryParams>>
+  }
+>({
   name: 'plaited-workshop',
   version: '0.0.1',
   publicEvents: Object.values(PUBLIC_EVENTS),
-  async bProgram({ bSync, bThread, bThreads, registerTool }) {
-    let storyServer: Bun.Server | undefined
-    let storyParamSet: SignalWithInitialValue<Set<StoryParams>> | undefined
+  async bProgram({ bSync, bThread, bThreads, registerTool, storyServer, storyParamSet }) {
     bThreads.set({
       onGetStoryRoutes: bThread(
         [
@@ -30,13 +33,11 @@ export const mcpServer = defineMCPServer<PublicEventDetails>({
       registerTool(type, config)
     }
     return {
-      async [PUBLIC_EVENTS.start_workshop]({ input, ref }) {
-        ;({ storyServer, storyParamSet } = await useStoryServer(input.root))
+      async [PUBLIC_EVENTS.start_workshop]({ ref }) {
         const { resolve } = mcpPromisesMap.get(ref)!
         const structuredContent = {
           href: storyServer.url.href,
         }
-        console.log('...before resolving')
         resolve({
           content: [
             {
@@ -46,11 +47,9 @@ export const mcpServer = defineMCPServer<PublicEventDetails>({
           ],
           structuredContent,
         })
-        console.log('...resolved')
         mcpPromisesMap.delete(ref)
       },
       async [PUBLIC_EVENTS.get_story_routes]({ ref }) {
-        cosnole.log('hit')
         const { resolve } = mcpPromisesMap.get(ref)!
         const params = storyParamSet?.get()
         const routes = params ? [...params].map(({ route }) => new URL(route, storyServer?.url).href) : []

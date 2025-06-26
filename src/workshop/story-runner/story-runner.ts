@@ -2,12 +2,13 @@ import { chromium, type BrowserContext } from 'playwright'
 import { type Signal, type SignalWithInitialValue, defineBProgram } from '../../behavioral.js'
 import { STORY_RUNNER_EVENTS } from './story-runner.constants.js'
 import { FIXTURE_EVENTS } from '../story-fixture/story-fixture.constants.js'
-import type { LogMessageDetail, ColorScheme } from './story-runner.types.js'
-import { useVisitStory } from './story-runner.utils.js'
+import type { ColorScheme, RunningMap } from './story-runner.types.js'
+import { useVisitStory, useRunnerID } from './story-runner.utils.js'
 import type { StoryParams } from '../story-server/story-server.types.js'
+import type { RunnerMessage } from '../story-fixture/story-fixture.types.js'
 
 type FixtureEventDetail = {
-  url: string
+  pathname: string
   filePath: string
   exportName: string
   context: BrowserContext
@@ -17,7 +18,8 @@ type FixtureEventDetail = {
 
 export type RunnerDetails = {
   [STORY_RUNNER_EVENTS.run_tests]: Set<StoryParams>
-  [STORY_RUNNER_EVENTS.log_event]: LogMessageDetail
+  [STORY_RUNNER_EVENTS.on_runner_message]: RunnerMessage
+  [STORY_RUNNER_EVENTS.test_end]: string
   [STORY_RUNNER_EVENTS.end]: void
   [FIXTURE_EVENTS.failed_assertion]: FixtureEventDetail
   [FIXTURE_EVENTS.missing_assertion_parameter]: FixtureEventDetail
@@ -30,19 +32,21 @@ export type RunnerDetails = {
 export const storyRunner = defineBProgram<
   RunnerDetails,
   {
-    colorSchemeSupport?: Signal<boolean>
+    colorSchemeSupport: Signal<boolean>
     serverURL: URL
     storyParamSet: SignalWithInitialValue<Set<StoryParams>>
   }
 >({
-  publicEvents: [STORY_RUNNER_EVENTS.run_tests],
+  publicEvents: [STORY_RUNNER_EVENTS.run_tests, STORY_RUNNER_EVENTS.on_runner_message],
   async bProgram({ trigger, bThreads, bSync, bThread, colorSchemeSupport, serverURL, storyParamSet }) {
     const browser = await chromium.launch()
 
+    let failed = 0
+    let passed = 0
+    const running: RunningMap = new Map()
+
     storyParamSet.listen(STORY_RUNNER_EVENTS.run_tests, trigger)
     colorSchemeSupport?.listen(STORY_RUNNER_EVENTS.run_tests, trigger)
-
-    let running: Map<string, Set<string>> = new Map()
 
     bThreads.set({
       onCountChange: bThread(
@@ -66,19 +70,19 @@ export const storyRunner = defineBProgram<
         true,
       ),
     })
-    let failed = 0
-    let passed = 0
-    const handleFailure = async ({ url, filePath, exportName, context, colorScheme, detail }: FixtureEventDetail) => {
-      // Get color schemes for current test url
-      const runningColorSchemes = running.get(url)!
-      // Delete colorScheme from running set
-      runningColorSchemes.delete(colorScheme)
-      // If set is zeroed out delete url from running map
-      !runningColorSchemes.size && running.delete(url)
 
+    const handleFailure = async ({
+      pathname,
+      filePath,
+      exportName,
+      context,
+      colorScheme,
+      detail,
+    }: FixtureEventDetail) => {
+      trigger({ type: STORY_RUNNER_EVENTS.test_end, detail: useRunnerID(pathname, colorScheme) })
       //Print out result
       console.table({
-        url,
+        url: new URL(pathname, serverURL).href,
         filePath: `.${filePath}`,
         exportName,
         colorScheme,
@@ -89,50 +93,58 @@ export const storyRunner = defineBProgram<
       await context.close()
     }
 
-    const handleSuccess = async ({ url, context, colorScheme, detail }: FixtureEventDetail) => {
-      // Get color schemes for current test url
-      const runningColorSchemes = running.get(url)!
-      // Delete colorScheme from running set
-      runningColorSchemes.delete(colorScheme)
-      // If set is zeroed out delete url from running map
-      !runningColorSchemes.size && running.delete(url)
-
+    const handleSuccess = async ({ pathname, context, colorScheme, detail }: FixtureEventDetail) => {
+      trigger({ type: STORY_RUNNER_EVENTS.test_end, detail: useRunnerID(pathname, colorScheme) })
       //Print out result
-      console.log(`${detail}:`, url)
+      console.log(`${detail}:`, new URL(pathname, serverURL).href)
 
       passed++
       // Close context
       await context.close()
     }
     return {
-      async [STORY_RUNNER_EVENTS.run_tests](detail) {
-        running = new Map(
-          [...detail].map(({ route }) => {
-            const url = new URL(route, serverURL).href
-            const colorSchemes = ['light']
-            colorSchemeSupport?.get() && colorSchemes.push('dark')
-            return [url, new Set(colorSchemes)]
-          }),
-        )
-
+      async [STORY_RUNNER_EVENTS.run_tests]() {
+        const storyParams = storyParamSet.get()
+        const schemes = ['light', colorSchemeSupport.get() && 'dark'].filter(Boolean) as string[]
         const visitStory = useVisitStory({
           browser,
           colorSchemeSupport,
           serverURL,
-          trigger,
+          running,
         })
-        await Promise.all([...detail].map(visitStory))
+        await Promise.all(
+          [...storyParams].map(async (params) => {
+            const route = params.route
+            for (const scheme of schemes) {
+              const type = `${route}_${scheme}`
+              bThreads.set({
+                [`on_${type}`]: bThread([
+                  bSync({
+                    waitFor: type,
+                  }),
+                  bSync({
+                    request: {
+                      type: STORY_RUNNER_EVENTS.test_end,
+                      detail: type,
+                    },
+                  }),
+                ]),
+              })
+            }
+            await visitStory(params)
+          }),
+        )
       },
-      [STORY_RUNNER_EVENTS.log_event](detail) {
-        const { snapshot, route, filePath, context, colorScheme, exportName } = detail
-        const url = new URL(route, serverURL).href
+      [STORY_RUNNER_EVENTS.on_runner_message](detail) {
+        const { snapshot, pathname, colorScheme } = detail
+        const { filePath, exportName, context } = running.get(useRunnerID(pathname, colorScheme))!
         const selected = snapshot.find((msg) => msg.selected)
         if (selected) {
           const type = selected.type
           trigger({
             type,
             detail: {
-              url,
+              pathname,
               filePath,
               exportName,
               context,
@@ -142,8 +154,11 @@ export const storyRunner = defineBProgram<
           })
         }
       },
+      [STORY_RUNNER_EVENTS.test_end](detail) {
+        running.delete(detail)
+      },
       async [STORY_RUNNER_EVENTS.end]() {
-        running = new Map()
+        running.clear()
         if (!process.execArgv.includes('--hot')) {
           console.log('Fail: ', failed)
           console.log('Pass: ', passed)

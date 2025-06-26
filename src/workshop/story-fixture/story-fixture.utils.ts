@@ -17,6 +17,7 @@ import type {
   WaitDetails,
   AccessibilityCheck,
   AccessibilityCheckDetails,
+  RunnerMessage,
 } from './story-fixture.types.js'
 
 /**
@@ -721,4 +722,19 @@ export const useRunner = () => {
     },
   }
   ws.connect()
+  const send = (message: RunnerMessage) => {
+    const fallback = () => {
+      send(message)
+      socket?.removeEventListener('open', fallback)
+    }
+    if (socket?.readyState === WebSocket.OPEN) {
+      return socket.send(JSON.stringify(message))
+    }
+    if (!socket) ws.connect()
+    socket?.addEventListener('open', fallback)
+  }
+  send.disconnect = () => {
+    socket?.close()
+  }
+  return send
 }

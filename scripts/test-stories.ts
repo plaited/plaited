@@ -1,18 +1,34 @@
 import { STORY_RUNNER_EVENTS } from '../src/workshop/story-runner/story-runner.constants.js'
 import { storyRunner } from '../src/workshop/story-runner/story-runner.js'
 import { useStoryServer } from '../src/workshop/story-server/use-story-server.js'
+import { bProgram, useSignal } from '../src/behavioral.js'
+import type { RunnerMessage } from '../src/workshop.js'
 
-const cwd = `${process.cwd()}/src`
+const root = `${process.cwd()}/src`
+const { trigger, useFeedback } = bProgram()
+const { storyServer, storyParamSet, reloadStoryClients } = await useStoryServer({
+  root,
+  trigger,
+})
 
-const { storyServer, storyParamSet, reloadStoryClients } = await useStoryServer(cwd)
+const colorSchemeSupport = useSignal(false)
 
-const trigger = await storyRunner({
+const runnerTrigger = await storyRunner({
   serverURL: storyServer.url,
   storyParamSet,
+  colorSchemeSupport,
 })
 
 if (process.execArgv.includes('--hot')) {
   reloadStoryClients()
 }
 
-trigger({ type: STORY_RUNNER_EVENTS.run_tests, detail: storyParamSet.get() })
+useFeedback<{
+  [STORY_RUNNER_EVENTS.on_runner_message]: RunnerMessage
+}>({
+  [STORY_RUNNER_EVENTS.on_runner_message](detail) {
+    runnerTrigger({ type: STORY_RUNNER_EVENTS.on_runner_message, detail })
+  },
+})
+
+runnerTrigger({ type: STORY_RUNNER_EVENTS.run_tests })

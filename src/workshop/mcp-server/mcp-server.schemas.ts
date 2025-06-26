@@ -6,10 +6,6 @@ export const PUBLIC_EVENT_SCHEMAS = {
   [PUBLIC_EVENTS.start_workshop]: {
     title: 'Start UI workshop',
     description: 'Start user interface workshop',
-    inputSchema: {
-      root: z.string().describe('Directory containing stories typically the root of your project, i.e. (src)'),
-      watch: z.optional(z.boolean()).describe('Optionally watch files'),
-    },
     outputSchema: {
       href: z.string(),
     },

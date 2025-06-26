@@ -1,3 +1,9 @@
+declare global {
+  interface Window {
+    __PLAITED_RUNNER__?: boolean
+  }
+}
+
 import type { SnapshotMessage } from '../../behavioral.js'
 import { css, defineElement, h } from '../../main.js'
 import { wait } from '../../utils.js'
@@ -64,9 +70,17 @@ export const StoryFixture = defineElement<{
         true,
       ),
     })
-
+    const send = useRunner()
     useSnapshot((snapshot: SnapshotMessage) => {
       console.table(snapshot)
+      if (window?.__PLAITED_RUNNER__) {
+        const { pathname } = new URL(window.location.href)
+        send({
+          colorScheme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+          snapshot,
+          pathname,
+        })
+      }
     })
 
     const timeout = async (time: number) => {
@@ -109,7 +123,7 @@ export const StoryFixture = defineElement<{
         }
       }
     }
-    useRunner()
+
     return {
       [FIXTURE_EVENTS.run](detail) {
         if (detail.play) {
@@ -130,6 +144,9 @@ export const StoryFixture = defineElement<{
         trigger({
           type: FIXTURE_EVENTS.fixture_connected,
         })
+      },
+      onDisconnected() {
+        send.disconnect()
       },
     }
   },

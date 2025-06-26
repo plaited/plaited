@@ -4,6 +4,7 @@ import type { Attrs, FunctionTemplate, StylesObject } from '../../main.js'
 import type { Wait } from '../../utils.js'
 import type { Match, Throws } from './story-fixture.utils.js'
 import { FIXTURE_EVENTS } from './story-fixture.constants.js'
+import type { SnapshotMessage } from 'plaited/behavioral'
 
 /**
  * Parameters for the assertion function
@@ -306,4 +307,10 @@ export type TestFailureEventDetail = {
     | typeof FIXTURE_EVENTS.failed_assertion
     | typeof FIXTURE_EVENTS.missing_assertion_parameter
     | typeof FIXTURE_EVENTS.unknown_error]?: unknown
+}
+
+export type RunnerMessage = {
+  colorScheme: string
+  snapshot: SnapshotMessage
+  pathname: string
 }

@@ -18,25 +18,32 @@ import {
 
 import { useRegisterTool } from './mcp-server.utils.js'
 
-export const defineMCPServer = async <A extends EventDetails>(args: {
+export const defineMCPServer = <
+  A extends EventDetails,
+  C extends { [key: string]: unknown } = { [key: string]: unknown },
+>(args: {
   name: string
   version: string
   publicEvents: string[]
-  bProgram: (args: {
-    bSync: BSync
-    bThread: BThread
-    bThreads: BThreads
-    disconnect: Disconnect
-    trigger: PlaitedTrigger
-    useSnapshot: UseSnapshot
-    registerTool: ReturnType<typeof useRegisterTool>
-  }) => Promise<Handlers<A>>
+  bProgram: (
+    args: {
+      bSync: BSync
+      bThread: BThread
+      bThreads: BThreads
+      disconnect: Disconnect
+      trigger: PlaitedTrigger
+      useSnapshot: UseSnapshot
+      registerTool: ReturnType<typeof useRegisterTool>
+    } & C,
+  ) => Promise<Handlers<A>>
 }) => {
   const server = new McpServer({
     name: args.name,
     version: args.version,
   })
+
   const { trigger, useFeedback, ...rest } = bProgram()
+
   const disconnectSet = new Set<Disconnect>()
   const disconnect = () => {
     disconnectSet.forEach((disconnect) => disconnect())
@@ -44,15 +51,18 @@ export const defineMCPServer = async <A extends EventDetails>(args: {
 
   const registerTool = useRegisterTool({ trigger, publicEvents: args.publicEvents, server })
 
-  const handlers = await args.bProgram({
-    bSync,
-    bThread,
-    disconnect,
-    trigger: getPlaitedTrigger(trigger, disconnectSet),
-    registerTool,
-    ...rest,
-  })
-  useFeedback(handlers)
-  getPublicTrigger({ trigger, publicEvents: args?.publicEvents })
-  return server
+  return async (ctx: C) => {
+    const handlers = await args.bProgram({
+      ...ctx,
+      bSync,
+      bThread,
+      disconnect,
+      trigger: getPlaitedTrigger(trigger, disconnectSet),
+      registerTool,
+      ...rest,
+    })
+    useFeedback(handlers)
+    getPublicTrigger({ trigger, publicEvents: args?.publicEvents })
+    return server
+  }
 }
