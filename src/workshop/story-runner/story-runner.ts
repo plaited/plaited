@@ -1,5 +1,5 @@
 import { chromium, type BrowserContext } from 'playwright'
-import { type Signal, type SignalWithInitialValue, defineBProgram } from '../../behavioral.js'
+import { defineBProgram } from '../../behavioral.js'
 import { STORY_RUNNER_EVENTS } from './story-runner.constants.js'
 import { FIXTURE_EVENTS } from '../story-fixture/story-fixture.constants.js'
 import type { ColorScheme, RunningMap } from './story-runner.types.js'
@@ -17,7 +17,10 @@ type FixtureEventDetail = {
 }
 
 export type RunnerDetails = {
-  [STORY_RUNNER_EVENTS.run_tests]: Set<StoryParams>
+  [STORY_RUNNER_EVENTS.run_tests]: {
+    storyParams: Set<StoryParams>
+    colorSchemeSupport: boolean
+  }
   [STORY_RUNNER_EVENTS.on_runner_message]: RunnerMessage
   [STORY_RUNNER_EVENTS.test_end]: string
   [STORY_RUNNER_EVENTS.end]: void
@@ -32,21 +35,16 @@ export type RunnerDetails = {
 export const storyRunner = defineBProgram<
   RunnerDetails,
   {
-    colorSchemeSupport: Signal<boolean>
     serverURL: URL
-    storyParamSet: SignalWithInitialValue<Set<StoryParams>>
   }
 >({
   publicEvents: [STORY_RUNNER_EVENTS.run_tests, STORY_RUNNER_EVENTS.on_runner_message],
-  async bProgram({ trigger, bThreads, bSync, bThread, colorSchemeSupport, serverURL, storyParamSet }) {
+  async bProgram({ trigger, bThreads, bSync, bThread, serverURL }) {
     const browser = await chromium.launch()
 
     let failed = 0
     let passed = 0
     const running: RunningMap = new Map()
-
-    storyParamSet.listen(STORY_RUNNER_EVENTS.run_tests, trigger)
-    colorSchemeSupport?.listen(STORY_RUNNER_EVENTS.run_tests, trigger)
 
     bThreads.set({
       onCountChange: bThread(
@@ -103,9 +101,8 @@ export const storyRunner = defineBProgram<
       await context.close()
     }
     return {
-      async [STORY_RUNNER_EVENTS.run_tests]() {
-        const storyParams = storyParamSet.get()
-        const schemes = ['light', colorSchemeSupport.get() && 'dark'].filter(Boolean) as string[]
+      async [STORY_RUNNER_EVENTS.run_tests]({ storyParams, colorSchemeSupport }) {
+        const schemes = ['light', colorSchemeSupport && 'dark'].filter(Boolean) as string[]
         const visitStory = useVisitStory({
           browser,
           colorSchemeSupport,

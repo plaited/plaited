@@ -1,7 +1,7 @@
 import { STORY_RUNNER_EVENTS } from '../src/workshop/story-runner/story-runner.constants.js'
 import { storyRunner } from '../src/workshop/story-runner/story-runner.js'
 import { useStoryServer } from '../src/workshop/story-server/use-story-server.js'
-import { bProgram, useSignal } from '../src/behavioral.js'
+import { bProgram } from '../src/behavioral.js'
 import type { RunnerMessage } from '../src/workshop.js'
 
 const root = `${process.cwd()}/src`
@@ -11,12 +11,8 @@ const { storyServer, storyParamSet, reloadStoryClients } = await useStoryServer(
   trigger,
 })
 
-const colorSchemeSupport = useSignal(false)
-
 const runnerTrigger = await storyRunner({
   serverURL: storyServer.url,
-  storyParamSet,
-  colorSchemeSupport,
 })
 
 if (process.execArgv.includes('--hot')) {
@@ -31,4 +27,7 @@ useFeedback<{
   },
 })
 
-runnerTrigger({ type: STORY_RUNNER_EVENTS.run_tests })
+runnerTrigger({
+  type: STORY_RUNNER_EVENTS.run_tests,
+  detail: { storyParams: storyParamSet.get(), colorSchemeSupport: false },
+})

@@ -72,7 +72,6 @@ export const StoryFixture = defineElement<{
     })
     const send = useRunner()
     useSnapshot((snapshot: SnapshotMessage) => {
-      console.table(snapshot)
       if (window?.__PLAITED_RUNNER__) {
         const { pathname } = new URL(window.location.href)
         send({
@@ -80,6 +79,8 @@ export const StoryFixture = defineElement<{
           snapshot,
           pathname,
         })
+      } else {
+        console.table(snapshot)
       }
     })
 

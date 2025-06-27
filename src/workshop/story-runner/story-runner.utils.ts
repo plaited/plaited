@@ -1,5 +1,4 @@
 import type { Browser, BrowserContext, ConsoleMessage } from 'playwright'
-import type { Signal } from '../../behavioral.js'
 import type { RunningMap } from './story-runner.types.js'
 import type { StoryParams } from '../story-server/story-server.types.js'
 
@@ -45,13 +44,13 @@ export const useVisitStory = ({
   running,
 }: {
   browser: Browser
-  colorSchemeSupport?: Signal<boolean>
+  colorSchemeSupport?: boolean
   serverURL: URL
   running: Map<string, StoryParams & { context: BrowserContext }>
 }) => {
   const visitations = [
     visitStory({ browser, colorScheme: 'light', serverURL, running }),
-    colorSchemeSupport?.get() && visitStory({ browser, colorScheme: 'dark', serverURL, running }),
+    colorSchemeSupport && visitStory({ browser, colorScheme: 'dark', serverURL, running }),
   ]
 
   return async (params: StoryParams) =>
