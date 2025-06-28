@@ -4,7 +4,10 @@ import { PUBLIC_EVENTS } from '../mcp-server.constants'
 
 const transport = new StdioClientTransport({
   command: 'bun',
-  args: [`${import.meta.dir}/test-server.ts`],
+  args: [
+    `${import.meta.dir}/test-server.ts`,
+    // `${import.meta.dir}/test-server-no-define.ts`,
+  ],
 })
 
 const client = new Client({
@@ -15,7 +18,7 @@ const client = new Client({
 await client.connect(transport)
 
 const href = await client.callTool({
-  name: PUBLIC_EVENTS.start_workshop,
+  name: PUBLIC_EVENTS.get_workshop_href,
   arguments: {
     root: `${process.cwd()}/src`,
   },

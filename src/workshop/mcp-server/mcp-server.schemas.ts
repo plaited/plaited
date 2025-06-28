@@ -3,9 +3,9 @@ import type { BPEventTypesToToolConfigs, ToolInputSchemaToEventDetails } from '.
 import { PUBLIC_EVENTS } from './mcp-server.constants.js'
 
 export const PUBLIC_EVENT_SCHEMAS = {
-  [PUBLIC_EVENTS.start_workshop]: {
-    title: 'Start UI workshop',
-    description: 'Start user interface workshop',
+  [PUBLIC_EVENTS.get_workshop_href]: {
+    title: 'Get server href',
+    description: 'Get Workshop root url',
     outputSchema: {
       href: z.string(),
     },
@@ -17,6 +17,6 @@ export const PUBLIC_EVENT_SCHEMAS = {
       routes: z.array(z.string()).describe('List of routes for running stories'),
     },
   },
-} satisfies BPEventTypesToToolConfigs<typeof PUBLIC_EVENTS>
+}
 
 export type PublicEventDetails = ToolInputSchemaToEventDetails<typeof PUBLIC_EVENT_SCHEMAS>

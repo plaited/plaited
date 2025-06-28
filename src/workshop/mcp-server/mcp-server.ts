@@ -1,21 +1,23 @@
-import { type SignalWithInitialValue } from '../../behavioral.js'
 import { PUBLIC_EVENT_SCHEMAS, type PublicEventDetails } from './mcp-server.schemas.js'
 import { PUBLIC_EVENTS } from './mcp-server.constants.js'
 import { mcpPromisesMap } from './mcp-server.utils.js'
-import type { StoryParams } from '../story-server/story-server.types.js'
 import { defineMCPServer } from './define-mcp-server.js'
+import { useStoryServer } from '../story-server/use-story-server.js'
 
 export const mcpServer = defineMCPServer<
   PublicEventDetails,
   {
-    storyServer: Bun.Server
-    storyParamSet: SignalWithInitialValue<Set<StoryParams>>
+    root: string
   }
 >({
   name: 'plaited-workshop',
   version: '0.0.1',
   publicEvents: Object.values(PUBLIC_EVENTS),
-  async bProgram({ bSync, bThread, bThreads, registerTool, storyServer, storyParamSet }) {
+  async bProgram({ bSync, bThread, bThreads, registerTool, trigger }) {
+    const { storyServer, storyParamSet } = await useStoryServer({
+      root: `${process.cwd()}/src`,
+      trigger,
+    })
     bThreads.set({
       onGetStoryRoutes: bThread(
         [
@@ -33,7 +35,7 @@ export const mcpServer = defineMCPServer<
       registerTool(type, config)
     }
     return {
-      async [PUBLIC_EVENTS.start_workshop]({ ref }) {
+      async [PUBLIC_EVENTS.get_workshop_href]({ ref }) {
         const { resolve } = mcpPromisesMap.get(ref)!
         const structuredContent = {
           href: storyServer.url.href,

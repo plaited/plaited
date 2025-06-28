@@ -1,7 +1,7 @@
 import { keyMirror } from '../../utils.js'
 
 export const PUBLIC_EVENTS = keyMirror(
-  'start_workshop',
+  'get_workshop_href',
   'get_story_routes',
   // 'test_story_set',
   // 'test_all_stories',
