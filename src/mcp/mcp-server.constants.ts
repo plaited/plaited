@@ -1,4 +1,4 @@
-import { keyMirror } from '../../utils.js'
+import { keyMirror } from '../utils.js'
 
 export const PUBLIC_EVENTS = keyMirror(
   'get_workshop_href',
