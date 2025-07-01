@@ -157,7 +157,7 @@ export const defineWorker = async <A extends EventDetails>(args: {
   const send = (data: BPEvent) => context.postMessage(data)
   // Disconnect callback can be used to disconnect listeners and close worker
   const disconnect = () => {
-    disconnectSet.forEach((disconnect) => disconnect())
+    disconnectSet.forEach((disconnect) => void disconnect())
     self.close()
   }
 

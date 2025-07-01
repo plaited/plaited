@@ -441,18 +441,14 @@ test('prevent completion of line with two Xs', () => {
   })
   const winner: Winner | Record<string, unknown> = {}
   // Register feedback handlers with specific types for clarity.
-  useFeedback<{
-    X: Square
-    O: Square
-    win: Winner
-  }>({
-    X({ square }) {
+  useFeedback({
+    X({ square }: Square) {
       board.delete(square)
     },
-    O({ square }) {
+    O({ square }: Square) {
       board.delete(square)
     },
-    win(detail) {
+    win(detail: Winner) {
       Object.assign(winner, detail) // Assign the winner details to the winner variable.
     },
   })

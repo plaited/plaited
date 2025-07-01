@@ -11,13 +11,7 @@ import {
 } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { GetPromptResult, ReadResourceResult, CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import { type PlaitedTrigger, type SignalWithoutInitialValue, useSignal } from '../behavioral.js'
-import { z } from 'zod'
-
-type RegistrySignal<R, T> = SignalWithoutInitialValue<{
-  resolve: ReturnType<typeof Promise.withResolvers<R>>['resolve']
-  reject: ReturnType<typeof Promise.withResolvers<R>>['reject']
-  args?: T
-}>
+import type { PromptDetail, ResourceDetail, ToolDetail } from './mcp.types.js'
 
 type PromptArgsRawShape = Exclude<Parameters<McpServer['registerPrompt']>[1]['argsSchema'], undefined>
 
@@ -32,13 +26,13 @@ export const registerPrompt = ({
   config: Parameters<McpServer['registerPrompt']>[1]
   trigger: PlaitedTrigger
 }): RegisteredPrompt => {
-  const signal: RegistrySignal<GetPromptResult, Parameters<McpServer['registerPrompt']>[1]['argsSchema']> = useSignal()
-  const prompt = server.registerPrompt<PromptArgsRawShape>(name, config, async (...args) => {
+  const signal: SignalWithoutInitialValue<PromptDetail<PromptArgsRawShape>> = useSignal()
+  const prompt = server.registerPrompt<PromptArgsRawShape>(name, config, async (args) => {
     const { promise, resolve, reject } = Promise.withResolvers<GetPromptResult>()
     signal.set({
       resolve,
       reject,
-      args: args as unknown as PromptArgsRawShape,
+      args,
     })
     return promise
   })
@@ -60,18 +54,14 @@ export const registerResource = ({
   }
   trigger: PlaitedTrigger
 }): RegisteredResourceTemplate | RegisteredResource => {
-  const signal: RegistrySignal<
-    ReadResourceResult,
-    typeof config.uriOrTemplate extends ResourceTemplate ? Parameters<ReadResourceTemplateCallback>
-    : Parameters<ReadResourceCallback>
-  > = useSignal()
+  const signal: SignalWithoutInitialValue<ResourceDetail<typeof config.uriOrTemplate>> = useSignal()
   const callback: typeof config.uriOrTemplate extends ResourceTemplate ? ReadResourceTemplateCallback
   : ReadResourceCallback = async (...args) => {
     const { promise, resolve, reject } = Promise.withResolvers<ReadResourceResult>()
     signal.set({
       resolve,
       reject,
-      args,
+      args: args as unknown as [URL] | [URL, Record<string, string | string[]>],
     })
     return promise
   }
@@ -91,7 +81,7 @@ export const registerTool = ({
   config: Parameters<McpServer['registerTool']>[1]
   trigger: PlaitedTrigger
 }): RegisteredTool => {
-  const signal: RegistrySignal<CallToolResult, z.ZodRawShape> = useSignal()
+  const signal: SignalWithoutInitialValue<ToolDetail<(typeof config)['inputSchema']>> = useSignal()
   const tool = server.registerTool(name, config, async (args) => {
     const { promise, resolve, reject } = Promise.withResolvers<CallToolResult>()
     signal.set({

@@ -19,10 +19,8 @@ if (process.execArgv.includes('--hot')) {
   reloadStoryClients()
 }
 
-useFeedback<{
-  [STORY_RUNNER_EVENTS.on_runner_message]: RunnerMessage
-}>({
-  [STORY_RUNNER_EVENTS.on_runner_message](detail) {
+useFeedback({
+  [STORY_RUNNER_EVENTS.on_runner_message](detail: RunnerMessage) {
     runnerTrigger({ type: STORY_RUNNER_EVENTS.on_runner_message, detail })
   },
 })

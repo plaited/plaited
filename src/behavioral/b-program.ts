@@ -68,7 +68,7 @@ type CandidateBid = {
  * disconnect();
  * ```
  */
-export type Disconnect = () => void
+export type Disconnect = () => void | Promise<void>
 
 /**
  * Represents a snapshot of the behavioral program's state at a specific step (super-step).

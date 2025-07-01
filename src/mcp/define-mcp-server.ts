@@ -46,9 +46,6 @@ export const defineMCPServer = async <R extends Registry, E extends EventDetails
   const { trigger: _trigger, useFeedback, ...rest } = bProgram()
 
   const disconnectSet = new Set<Disconnect>()
-  const disconnect = () => {
-    disconnectSet.forEach((disconnect) => disconnect())
-  }
   const trigger = getPlaitedTrigger(_trigger, disconnectSet)
   const tools = {} as Tools<R>
   const prompts = {} as Prompts<R>
@@ -58,6 +55,10 @@ export const defineMCPServer = async <R extends Registry, E extends EventDetails
     primitive === 'prompt' && Object.assign(prompts, { [name]: registerPrompt({ server, name, config, trigger }) })
     primitive === 'resource' &&
       Object.assign(resources, { [name]: registerResource({ server, name, trigger, config }) })
+  }
+  const disconnect = async () => {
+    disconnectSet.forEach((disconnect) => void disconnect())
+    await server.close()
   }
   const handlers = await args.bProgram({
     bSync,
