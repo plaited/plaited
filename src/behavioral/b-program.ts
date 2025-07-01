@@ -400,7 +400,7 @@ export type Handlers<Details extends EventDetails = EventDetails> = {
  * // To stop listening later (e.g., component cleanup):
  * // disconnect();
  */
-export type UseFeedback = <T extends EventDetails = EventDetails>(handlers: Handlers<T>) => Disconnect
+export type UseFeedback = (handlers: Handlers) => Disconnect
 
 /**
  * A hook for registering a `SnapshotListener` to monitor the internal state transitions of the b-program.

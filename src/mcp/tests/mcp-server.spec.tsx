@@ -5,7 +5,7 @@ import { PUBLIC_EVENTS } from '../mcp-server.constants'
 const transport = new StdioClientTransport({
   command: 'bun',
   args: [
-    `${import.meta.dir}/test-server.ts`,
+    `${import.meta.dir}/mcp-server.ts`,
     // `${import.meta.dir}/test-server-no-define.ts`,
   ],
 })
