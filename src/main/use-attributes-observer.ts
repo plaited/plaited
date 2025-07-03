@@ -154,7 +154,7 @@ export const useAttributesObserver = (eventType: string, trigger: PlaitedTrigger
         if (mutation.type === 'attributes') {
           const name = mutation.attributeName as string
           const newValue = assignedElement.getAttribute(name)
-          trigger<ObservedAttributesDetail>({
+          trigger<{ type: string; detail: ObservedAttributesDetail }>({
             type: eventType,
             detail: {
               oldValue: mutation.oldValue,

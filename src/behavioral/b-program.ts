@@ -558,7 +558,7 @@ export type BThreads = {
  * });
  *
  */
-export type Trigger = <T>(args: BPEvent<T>) => void
+export type Trigger = <T extends BPEvent>(args: T) => void
 /**
  * Factory function that creates and initializes a new behavioral program instance.
  * It returns an immutable object containing the core API for interacting with the program.
@@ -886,8 +886,7 @@ export const bProgram: BProgram = () => {
           priority,
           trigger,
           thread,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ...(isTypeOf<BPEventTemplate<any>>(request, 'function') ? { template: request, ...request() } : request),
+          ...(isTypeOf<BPEventTemplate>(request, 'function') ? { template: request, ...request() } : request),
         })
     }
     const filteredBids: CandidateBid[] = []

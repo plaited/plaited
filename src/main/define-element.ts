@@ -520,7 +520,10 @@ export const defineElement = <A extends EventDetails>({
           })
         }
         attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
-          this.#trigger<PlaitedElementCallbackParameters['onAttributeChanged']>({
+          this.#trigger<{
+            type: typeof ELEMENT_CALLBACKS.onAttributeChanged
+            detail: PlaitedElementCallbackParameters['onAttributeChanged']
+          }>({
             type: ELEMENT_CALLBACKS.onAttributeChanged,
             detail: { name, oldValue, newValue },
           })
@@ -583,13 +586,19 @@ export const defineElement = <A extends EventDetails>({
           this.#trigger({ type: ELEMENT_CALLBACKS.onDisconnected })
         }
         formAssociatedCallback(form: HTMLFormElement) {
-          this.#trigger<PlaitedElementCallbackParameters['onFormAssociated']>({
+          this.#trigger<{
+            type: typeof ELEMENT_CALLBACKS.onFormAssociated
+            detail: PlaitedElementCallbackParameters['onFormAssociated']
+          }>({
             type: ELEMENT_CALLBACKS.onFormAssociated,
             detail: { form },
           })
         }
         formDisabledCallback(disabled: boolean) {
-          this.#trigger<PlaitedElementCallbackParameters['onFormDisabled']>({
+          this.#trigger<{
+            type: typeof ELEMENT_CALLBACKS.onFormDisabled
+            detail: PlaitedElementCallbackParameters['onFormDisabled']
+          }>({
             type: ELEMENT_CALLBACKS.onFormDisabled,
             detail: { disabled },
           })
@@ -598,7 +607,10 @@ export const defineElement = <A extends EventDetails>({
           this.#trigger({ type: ELEMENT_CALLBACKS.onFormReset })
         }
         formStateRestoreCallback(state: unknown, reason: 'autocomplete' | 'restore') {
-          this.#trigger<PlaitedElementCallbackParameters['onFormStateRestore']>({
+          this.#trigger<{
+            type: typeof ELEMENT_CALLBACKS.onFormStateRestore
+            detail: PlaitedElementCallbackParameters['onFormStateRestore']
+          }>({
             type: ELEMENT_CALLBACKS.onFormStateRestore,
             detail: { state, reason },
           })

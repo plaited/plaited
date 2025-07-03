@@ -107,17 +107,20 @@ export const StoryFixture = defineElement<{
         })
       } catch (error) {
         if (error instanceof FailedAssertionError || error instanceof AccessibilityError) {
-          trigger<TestFailureEventDetail>({
+          trigger<{
+            type: typeof FIXTURE_EVENTS.failed_assertion | typeof FIXTURE_EVENTS.accessibility_violation
+            detail: TestFailureEventDetail
+          }>({
             type: error.name,
             detail: { [failure(error.name)]: JSON.parse(error.message) },
           })
         } else if (error instanceof MissingAssertionParameterError) {
-          trigger<TestFailureEventDetail>({
+          trigger<{ type: typeof FIXTURE_EVENTS.missing_assertion_parameter; detail: TestFailureEventDetail }>({
             type: error.name,
             detail: { [failure(error.name)]: error.message },
           })
         } else if (error instanceof Error) {
-          trigger<TestFailureEventDetail>({
+          trigger<{ type: string; detail: TestFailureEventDetail }>({
             type: error.name,
             detail: { [failure(error.name)]: error.message },
           })

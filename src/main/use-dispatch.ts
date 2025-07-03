@@ -13,8 +13,8 @@ import { type PlaitedElement } from './plaited.types.js'
  *   - cancelable: Whether the event can be canceled (default: true)
  *   - composed: Whether the event crosses shadow DOM boundaries (default: true)
  */
-type Dispatch = <T = unknown>(
-  args: BPEvent<T> & {
+type Dispatch = (
+  args: BPEvent & {
     bubbles?: boolean
     cancelable?: boolean
     composed?: boolean

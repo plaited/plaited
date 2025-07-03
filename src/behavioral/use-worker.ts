@@ -106,7 +106,7 @@ export const useWorker = (trigger: PlaitedTrigger | Trigger, worker: Worker) => 
   }
 
   worker.addEventListener('message', handleMessage)
-  const post = <T>(args: BPEvent<T>) => worker?.postMessage(args)
+  const post = (args: BPEvent) => worker?.postMessage(args)
   const disconnect = () => {
     worker?.removeEventListener('message', handleMessage)
     worker?.terminate()
