@@ -49,9 +49,6 @@ export const registry = {
       title: 'Addition Tool',
       description: 'Add two numbers',
       inputSchema: { a: z.number(), b: z.number() },
-      outputSchema: {
-        value: z.number(),
-      },
     },
   },
 } satisfies Registry

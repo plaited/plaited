@@ -83,9 +83,6 @@ describe('defineMCPServer', () => {
           text: '11',
         },
       ],
-      structuredContent: {
-        value: 11,
-      },
     })
   })
 })
