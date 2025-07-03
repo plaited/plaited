@@ -45,7 +45,10 @@ const server = await defineMCPServer({
       },
       tool({ args, resolve }) {
         resolve({
-          content: [{ type: 'text', text: String(args.a + args.b) }],
+          content: [{ type: 'text', text: `${args.a + args.b}` }],
+          structuredContent: {
+            value: args.a + args.b,
+          },
         })
       },
     }
