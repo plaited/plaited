@@ -7,8 +7,7 @@ import type {
   StyleObjects,
   StylesObject,
 } from './css.types.js'
-import { kebabCase } from '../utils/case.js'
-import { hashString } from '../utils/hash-string.js'
+import { kebabCase, hashString } from '../utils.js'
 
 /**
  * @internal

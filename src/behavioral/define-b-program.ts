@@ -75,7 +75,7 @@ export const defineBProgram = <
   const { trigger, useFeedback, ...rest } = bProgram()
   const disconnectSet = new Set<Disconnect>()
   const disconnect = () => {
-    disconnectSet.forEach((disconnect) => disconnect())
+    disconnectSet.forEach((disconnect) => void disconnect())
   }
   return async (ctx: C) => {
     const handlers = await args.bProgram({

@@ -1,6 +1,6 @@
 import type { BoundElement, SelectorMatch } from './plaited.types'
-import { assignHelpers, getBindings } from './assign-helpers'
-import { P_TARGET } from '../jsx/jsx.constants.js'
+import { assignHelpers, getBindings } from './assign-helpers.js'
+import { P_TARGET } from './jsx.constants.js'
 
 /**
  * Creates a template factory function for efficient dynamic content generation in Plaited components.

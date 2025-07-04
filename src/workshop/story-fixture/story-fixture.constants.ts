@@ -1,4 +1,4 @@
-import { keyMirror } from '../../utils/key-mirror.js'
+import { keyMirror } from '../../utils.js'
 
 /** Default timeout duration (in milliseconds) for story play functions. */
 export const DEFAULT_PLAY_TIMEOUT = 5_000

@@ -1,5 +1,5 @@
-import type { ElementAttributeList } from './jsx/jsx.types.js'
-import { createTemplate, Fragment } from './jsx/create-template.js'
+import type { ElementAttributeList } from './main/jsx.types.js'
+import { createTemplate, Fragment } from './main/create-template.js'
 
 export { createTemplate as h, createTemplate as jsx, createTemplate as jsxDEV, createTemplate as jsxs, Fragment }
 

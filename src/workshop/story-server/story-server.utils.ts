@@ -3,7 +3,7 @@ import { basename, dirname } from 'node:path'
 import { WORKSHOP_ROUTE } from './story-server.constants.js'
 import { kebabCase } from '../../utils/case.js'
 import type { SignalWithInitialValue } from '../../behavioral/use-signal.js'
-import type { StoryParams } from '../story-runner/story-runner.types.js'
+import type { StoryParams } from './story-server.types.js'
 import type { StoryObj } from '../story-fixture/story-fixture.types.js'
 
 export const globFiles = async (cwd: string, pattern: string): Promise<string[]> => {

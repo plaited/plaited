@@ -1,5 +1,4 @@
-import type { Disconnect, Trigger } from '../behavioral/b-program.js'
-import { type PlaitedTrigger, isPlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
+import { type Disconnect, type Trigger, type PlaitedTrigger, isPlaitedTrigger } from '../behavioral.js'
 
 /**
  * Defines the structure of the event detail object dispatched when an observed attribute
@@ -155,7 +154,7 @@ export const useAttributesObserver = (eventType: string, trigger: PlaitedTrigger
         if (mutation.type === 'attributes') {
           const name = mutation.attributeName as string
           const newValue = assignedElement.getAttribute(name)
-          trigger<ObservedAttributesDetail>({
+          trigger<{ type: string; detail: ObservedAttributesDetail }>({
             type: eventType,
             detail: {
               oldValue: mutation.oldValue,

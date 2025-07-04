@@ -1,6 +1,6 @@
 import type { PlaitedElement, PlaitedTemplate } from './plaited.types'
-import { isTypeOf } from '../utils/is-type-of.js'
-import type { FunctionTemplate } from '../jsx/jsx.types.js'
+import { isTypeOf } from '../utils.js'
+import type { FunctionTemplate } from './jsx.types.js'
 import { PLAITED_TEMPLATE_IDENTIFIER } from './plaited.constants.js'
 
 /**

@@ -1,4 +1,4 @@
-import { isTypeOf } from '../utils/is-type-of.js'
+import { isTypeOf } from '../utils.js'
 
 /**
  * Defines the repetition behavior for a `bThread`.
@@ -35,7 +35,8 @@ type Repeat = true | (() => boolean)
  * // Simple event without detail
  * const simpleEvent: BPEvent = { type: 'SYSTEM_START' };
  */
-export type BPEvent<T = unknown> = { type: string; detail?: T }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type BPEvent = { type: string; detail?: any }
 
 /**
  * A factory function that generates a `BPEvent` dynamically.
@@ -58,7 +59,7 @@ export type BPEvent<T = unknown> = { type: string; detail?: T }
  * const createCounterEvent = (): BPEventTemplate<{ count: number }> =>
  *   () => ({ type: 'COUNT', detail: { count: counter++ } });
  */
-export type BPEventTemplate<T = unknown> = () => BPEvent<T>
+export type BPEventTemplate = () => BPEvent
 
 /**
  * Defines how a b-thread listens for or specifies events in `waitFor`, `block`, or `interrupt` idioms.
@@ -86,7 +87,7 @@ export type BPEventTemplate<T = unknown> = () => BPEvent<T>
  *   block: listener3                 // Thread prevents these events from occurring
  * });
  */
-export type BPListener<T = unknown> = string | ((args: { type: string; detail: T }) => boolean)
+export type BPListener = string | ((args: BPEvent) => boolean)
 
 /**
  * Represents a synchronization statement within a b-thread's generator function (`RulesFunction`).
@@ -124,16 +125,15 @@ export type BPListener<T = unknown> = string | ((args: { type: string; detail: T
  *   request: { type: 'INITIALIZE_SESSION' }
  * };
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Idioms<T = any> = {
+export type Idioms = {
   /** Event(s) the thread is waiting for. Execution pauses until a matching event is selected. */
-  waitFor?: BPListener<T> | BPListener<T>[]
+  waitFor?: BPListener | BPListener[]
   /** Event(s) that will interrupt the thread's execution if selected. */
-  interrupt?: BPListener<T> | BPListener<T>[]
+  interrupt?: BPListener | BPListener[]
   /** An event the thread wishes to request. Can be a static event object or a template function. */
-  request?: BPEvent<T> | BPEventTemplate<T>
+  request?: BPEvent | BPEventTemplate
   /** Event(s) the thread wants to prevent from being selected. */
-  block?: BPListener<T> | BPListener<T>[]
+  block?: BPListener | BPListener[]
 }
 
 /**
@@ -184,7 +184,7 @@ export type RulesFunction = () => Generator<Idioms, void, undefined>
  *
  * @see bSync The implementation of this type that creates reusable synchronization steps.
  */
-export type BSync = <T>(arg: Idioms<T>) => () => Generator<Idioms, void, unknown>
+export type BSync = (arg: Idioms) => () => Generator<Idioms, void, unknown>
 
 /**
  * A factory function that constructs a complete b-thread (`RulesFunction`) by composing multiple synchronization steps.

@@ -100,14 +100,13 @@ import { type PlaitedTrigger, isPlaitedTrigger } from './get-plaited-trigger.js'
  * - Consider using publicEvents in worker definition
  * - Clean up workers when component is disconnected
  */
-export const useWorker = (trigger: PlaitedTrigger | Trigger, path: string) => {
+export const useWorker = (trigger: PlaitedTrigger | Trigger, worker: Worker) => {
   const handleMessage = (event: MessageEvent<BPEvent>) => {
     isBPEvent(event.data) && trigger(event.data)
   }
-  const worker = new Worker(path, { type: 'module' })
 
   worker.addEventListener('message', handleMessage)
-  const post = <T>(args: BPEvent<T>) => worker?.postMessage(args)
+  const post = (args: BPEvent) => worker?.postMessage(args)
   const disconnect = () => {
     worker?.removeEventListener('message', handleMessage)
     worker?.terminate()

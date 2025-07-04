@@ -1,4 +1,4 @@
-import { keyMirror } from '../utils/key-mirror.js'
+import { keyMirror } from '../utils.js'
 
 /**
  * @internal Mirrored object of lifecycle and mutation callback names for Plaited elements.

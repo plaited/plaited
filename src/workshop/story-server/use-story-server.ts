@@ -1,18 +1,30 @@
+import { z } from 'zod/v4'
 import { useSignal, type Signal } from '../../behavioral/use-signal.js'
 import type { StoryObj } from '../story-fixture/story-fixture.types.js'
-import type { StoryParams } from '../../../../mcp/workshop.types.js'
 import { getHTMLRoutes } from './get-html-routes.js'
 import { addStoryParams, getEntryRoutes, globFiles } from './story-server.utils.js'
 import { RELOAD_STORY_PAGE, RUNNER_URL } from '../story-fixture/story-fixture.constants.js'
-
+import type { StoryParams } from './story-server.types.js'
+import { isTypeOf } from 'plaited/utils'
+import { RunnerMessageSchema } from '../story-runner/story-runner.schema.js'
+import { STORY_RUNNER_EVENTS } from '../story-runner/story-runner.constants.js'
+import type { Trigger } from 'plaited/behavioral'
 /** Glob pattern used to find story files within the project. */
 const STORY_GLOB_PATTERN = `**/*.stories.{tsx,ts}`
 
 const RELOAD_TOPIC = 'RELOAD_TOPIC'
 
-export const useStoryServer = async ({ cwd, designTokens }: { cwd: string; designTokens?: Signal<string> }) => {
+export const useStoryServer = async ({
+  root,
+  trigger,
+  designTokens,
+}: {
+  root: string
+  trigger: Trigger
+  designTokens?: Signal<string>
+}) => {
   // Get Story Sets
-  const entrypoints = await globFiles(cwd, STORY_GLOB_PATTERN)
+  const entrypoints = await globFiles(root, STORY_GLOB_PATTERN)
   const storySets = new Map<string, Record<string, StoryObj>>()
   await Promise.all(
     entrypoints.map(async (entry) => {
@@ -30,11 +42,11 @@ export const useStoryServer = async ({ cwd, designTokens }: { cwd: string; desig
 
   const getRoutes = async () => {
     const bundledRoutes = {
-      ...(await getEntryRoutes(cwd, [...storySets.keys()])),
+      ...(await getEntryRoutes(root, [...storySets.keys()])),
     }
     await Promise.all(
       storySets.entries().map(async ([entry, storySet]) => {
-        const filePath = entry.replace(new RegExp(`^${cwd}`), '')
+        const filePath = entry.replace(new RegExp(`^${root}`), '')
         addStoryParams({ filePath, storySet, storyParamSet })
         const routes = await getHTMLRoutes({
           designTokens,
@@ -46,7 +58,7 @@ export const useStoryServer = async ({ cwd, designTokens }: { cwd: string; desig
     )
     return bundledRoutes
   }
-  const server = Bun.serve({
+  const storyServer = Bun.serve({
     port: 0, // Let system assign available port
     routes: await getRoutes(),
     async fetch(req: Request, server: Bun.Server) {
@@ -61,7 +73,20 @@ export const useStoryServer = async ({ cwd, designTokens }: { cwd: string; desig
       open(ws) {
         ws.subscribe(RELOAD_TOPIC)
       },
-      message() {},
+      message(ws, message) {
+        if (!isTypeOf<string>(message, 'string')) return
+        try {
+          const json = JSON.parse(message)
+          const detail = RunnerMessageSchema.parse(json)
+          trigger?.({ type: STORY_RUNNER_EVENTS.on_runner_message, detail })
+        } catch (error) {
+          if (error instanceof z.ZodError) {
+            console.error('Validation failed:', error.issues)
+          } else {
+            console.error('JSON parsing or other error:', error)
+          }
+        }
+      },
       close(ws) {
         ws.unsubscribe(RELOAD_TOPIC)
       },
@@ -84,7 +109,7 @@ export const useStoryServer = async ({ cwd, designTokens }: { cwd: string; desig
   })
 
   process.on('exit', async () => {
-    await server?.stop(true)
+    await storyServer?.stop(true)
     console.log('server stopped')
   })
 
@@ -98,19 +123,19 @@ export const useStoryServer = async ({ cwd, designTokens }: { cwd: string; desig
     process.exit()
   })
 
-  const reloadClients = () => server.publish(RELOAD_TOPIC, RELOAD_STORY_PAGE)
-  const reload = async () => {
-    server.publish(RELOAD_TOPIC, RELOAD_STORY_PAGE)
+  const reloadStoryClients = () => storyServer.publish(RELOAD_TOPIC, RELOAD_STORY_PAGE)
+  const reloadStoryServer = async () => {
+    storyServer.publish(RELOAD_TOPIC, RELOAD_STORY_PAGE)
     storyParamSet.set(new Set())
-    return server.reload({
+    return storyServer.reload({
       routes: await getRoutes(),
     })
   }
 
   return {
-    reload,
-    reloadClients,
+    reloadStoryServer,
+    reloadStoryClients,
     storyParamSet,
-    server,
+    storyServer,
   }
 }

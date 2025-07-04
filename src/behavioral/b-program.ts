@@ -1,5 +1,5 @@
 import type { BPEvent, BPEventTemplate, BPListener, Idioms, RulesFunction } from './b-thread.js'
-import { isTypeOf } from '../utils/is-type-of.js'
+import { isTypeOf } from '../utils.js'
 
 /**
  * @internal
@@ -68,7 +68,7 @@ type CandidateBid = {
  * disconnect();
  * ```
  */
-export type Disconnect = () => void
+export type Disconnect = () => void | Promise<void>
 
 /**
  * Represents a snapshot of the behavioral program's state at a specific step (super-step).
@@ -400,7 +400,7 @@ export type Handlers<Details extends EventDetails = EventDetails> = {
  * // To stop listening later (e.g., component cleanup):
  * // disconnect();
  */
-export type UseFeedback = <T extends EventDetails = EventDetails>(handlers: Handlers<T>) => Disconnect
+export type UseFeedback = (handlers: Handlers) => Disconnect
 
 /**
  * A hook for registering a `SnapshotListener` to monitor the internal state transitions of the b-program.
@@ -558,7 +558,7 @@ export type BThreads = {
  * });
  *
  */
-export type Trigger = <T>(args: BPEvent<T>) => void
+export type Trigger = <T extends BPEvent>(args: T) => void
 /**
  * Factory function that creates and initializes a new behavioral program instance.
  * It returns an immutable object containing the core API for interacting with the program.
@@ -886,8 +886,7 @@ export const bProgram: BProgram = () => {
           priority,
           trigger,
           thread,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ...(isTypeOf<BPEventTemplate<any>>(request, 'function') ? { template: request, ...request() } : request),
+          ...(isTypeOf<BPEventTemplate>(request, 'function') ? { template: request, ...request() } : request),
         })
     }
     const filteredBids: CandidateBid[] = []

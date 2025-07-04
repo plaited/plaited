@@ -1,12 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axe from 'axe-core'
-import type { Trigger } from '../../behavioral/b-program.js'
-import { deepEqual } from '../../utils/deep-equal.js'
-import { trueTypeOf } from '../../utils/true-type-of.js'
-import { isTypeOf } from '../../utils/is-type-of.js'
-import { wait } from '../../utils/wait.js'
-import { noop } from '../../utils/noop.js'
-import { DelegatedListener, delegates } from '../../utils/delegated-listener.js'
+import type { Trigger } from '../../behavioral.js'
+import { deepEqual, trueTypeOf, isTypeOf, wait, noop, DelegatedListener, delegates } from '../../utils.js'
+
 import { FIXTURE_EVENTS, STORY_FIXTURE, RELOAD_STORY_PAGE, RUNNER_URL } from './story-fixture.constants.js'
 import type {
   Assert,
@@ -21,6 +17,7 @@ import type {
   WaitDetails,
   AccessibilityCheck,
   AccessibilityCheckDetails,
+  RunnerMessage,
 } from './story-fixture.types.js'
 
 /**
@@ -372,7 +369,10 @@ export const useAssert = (trigger: Trigger) => {
    * @see {Assert} for type definition and examples
    */
   const assert: Assert = (args) => {
-    trigger<AssertDetails>({ type: FIXTURE_EVENTS.assert, detail: [args] })
+    trigger<{ type: typeof FIXTURE_EVENTS.assert; detail: AssertDetails }>({
+      type: FIXTURE_EVENTS.assert,
+      detail: [args],
+    })
     const missing = requiredKeys.filter((k) => !Object.keys(args).includes(k))
     if (missing.length) {
       const msg = [`The following parameters are required by 'assert': (`, `  ${missing.join(', ')}`, ')'].join('\n')
@@ -432,7 +432,7 @@ export const useFindByAttribute = (trigger: Trigger) => {
     attributeValue: string | RegExp,
     context?: HTMLElement | SVGElement,
   ): Promise<T | undefined> => {
-    trigger<FindByAttributeDetails>({
+    trigger<{ type: typeof FIXTURE_EVENTS.find_by_attribute; detail: FindByAttributeDetails }>({
       type: FIXTURE_EVENTS.find_by_attribute,
       detail: [attributeName, attributeValue, context],
     })
@@ -521,7 +521,10 @@ export const useFindByText = (trigger: Trigger) => {
     searchText: string | RegExp,
     context?: HTMLElement,
   ): Promise<T | undefined> => {
-    trigger<FindByTextDetail>({ type: FIXTURE_EVENTS.find_by_text, detail: [searchText, context] })
+    trigger<{ type: typeof FIXTURE_EVENTS.find_by_text; detail: FindByTextDetail }>({
+      type: FIXTURE_EVENTS.find_by_text,
+      detail: [searchText, context],
+    })
     const searchInShadowDom = (node: Node): T | undefined => {
       if (node.nodeType === Node.TEXT_NODE) {
         const content = node.textContent?.trim()
@@ -628,7 +631,10 @@ export const useFireEvent = (trigger: Trigger) => {
       cancelable: true,
     },
   ): Promise<void> => {
-    trigger<FireEventDetail>({ type: FIXTURE_EVENTS.fire_event, detail: [element, eventName, options] })
+    trigger<{ type: typeof FIXTURE_EVENTS.fire_event; detail: FireEventDetail }>({
+      type: FIXTURE_EVENTS.fire_event,
+      detail: [element, eventName, options],
+    })
     const createEvent = (): Event => {
       if (options?.detail) {
         return new CustomEvent(eventName, options)
@@ -649,13 +655,13 @@ export const useFireEvent = (trigger: Trigger) => {
 }
 
 export const useWait = (trigger: Trigger) => (ms: number) => {
-  trigger<WaitDetails>({ type: FIXTURE_EVENTS.wait, detail: [ms] })
+  trigger<{ type: typeof FIXTURE_EVENTS.wait; detail: WaitDetails }>({ type: FIXTURE_EVENTS.wait, detail: [ms] })
   return wait(ms)
 }
 
 export const useAccessibilityCheck = (trigger: Trigger) => {
   const accessibilityCheck: AccessibilityCheck = async ({ exclude, rules, config = {} }) => {
-    trigger<AccessibilityCheckDetails>({
+    trigger<{ type: typeof FIXTURE_EVENTS.accessibility_check; detail: AccessibilityCheckDetails }>({
       type: FIXTURE_EVENTS.accessibility_check,
       detail: [{ exclude, rules, config }],
     })
@@ -725,4 +731,19 @@ export const useRunner = () => {
     },
   }
   ws.connect()
+  const send = (message: RunnerMessage) => {
+    const fallback = () => {
+      send(message)
+      socket?.removeEventListener('open', fallback)
+    }
+    if (socket?.readyState === WebSocket.OPEN) {
+      return socket.send(JSON.stringify(message))
+    }
+    if (!socket) ws.connect()
+    socket?.addEventListener('open', fallback)
+  }
+  send.disconnect = () => {
+    socket?.close()
+  }
+  return send
 }

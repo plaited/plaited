@@ -1,5 +1,5 @@
-import type { TemplateObject } from '../jsx/jsx.types.js'
-import { BOOLEAN_ATTRS } from '../jsx/jsx.constants.js'
+import type { TemplateObject } from './jsx.types.js'
+import { BOOLEAN_ATTRS } from './jsx.constants.js'
 import type { Bindings, BoundElement } from './plaited.types.js'
 import type { StylesObject } from './css.types.js'
 import { isTypeOf } from '../utils/is-type-of.js'

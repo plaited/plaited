@@ -94,7 +94,7 @@ export function useSignal<T>(initialValue: T) {
   }
   // Subscribes a trigger and BPEvent to the publisher.
   const listen = (eventType: string, trigger: Trigger | PlaitedTrigger, getLVC = false) => {
-    const cb = (detail?: T) => trigger<T>({ type: eventType, detail })
+    const cb = (detail?: T) => trigger({ type: eventType, detail })
     getLVC && cb(store)
     listeners.add(cb)
     const disconnect = () => {
@@ -207,7 +207,7 @@ export const useComputed = <T>(
   }
   const listen: Listen = (eventType: string, trigger: Trigger | PlaitedTrigger, getLVC = false) => {
     if (!listeners.size) disconnectDeps.push(...deps.map((dep) => dep.listen('update', update)))
-    const cb = (detail?: T) => trigger<T>({ type: eventType, detail })
+    const cb = (detail?: T) => trigger({ type: eventType, detail })
     getLVC && cb(get())
     listeners.add(cb)
     const disconnect = () => {

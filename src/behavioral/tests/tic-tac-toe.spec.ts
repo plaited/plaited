@@ -107,9 +107,9 @@ const squaresTaken: Record<string, RulesFunction> = {}
 for (const square of squares) {
   squaresTaken[`(${square}) taken`] = bThread([
     // Wait for an event (X or O) targeting this specific square.
-    bSync<{ square: number }>({ waitFor: ({ detail }) => square === detail.square }),
+    bSync({ waitFor: ({ detail }) => square === detail.square }),
     // Once taken, block any future event targeting this square.
-    bSync<{ square: number }>({ block: ({ detail }) => square === detail.square }),
+    bSync({ block: ({ detail }) => square === detail.square }),
   ])
 }
 
@@ -171,19 +171,19 @@ const detectWins = (player: 'X' | 'O') =>
   winConditions.reduce((acc: Record<string, RulesFunction>, squares) => {
     acc[`${player}Wins (${squares})`] = bThread([
       // Wait for the player to take the first square of this winning line.
-      bSync<{ square: number }>({
+      bSync({
         waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
       }),
       // Wait for the player to take the second square of this winning line.
-      bSync<{ square: number }>({
+      bSync({
         waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
       }),
       // Wait for the player to take the third square of this winning line.
-      bSync<{ square: number }>({
+      bSync({
         waitFor: ({ type, detail }) => type === player && squares.includes(detail.square),
       }),
       // Request a 'win' event if all three squares are taken by the player.
-      bSync<Winner>({
+      bSync({
         request: { type: 'win', detail: { squares, player } },
       }),
     ])
@@ -291,7 +291,7 @@ const defaultMoves: Record<string, RulesFunction> = {}
 for (const square of squares) {
   defaultMoves[`defaultMoves(${square})`] = bThread(
     [
-      bSync<Square>({
+      bSync({
         request: {
           type: 'O',
           detail: { square },
@@ -400,15 +400,15 @@ const preventCompletionOfLineWithTwoXs = (board: Set<number>) => {
   for (const win of winConditions) {
     bThreads[`StopXWin(${win})`] = bThread([
       // Wait for X to take the first square in this line.
-      bSync<Square>({
+      bSync({
         waitFor: ({ type, detail }) => type === 'X' && win.includes(detail.square),
       }),
       // Wait for X to take the second square in this line.
-      bSync<Square>({
+      bSync({
         waitFor: ({ type, detail }) => type === 'X' && win.includes(detail.square),
       }),
       // Request an 'O' move to take the remaining square in this line.
-      bSync<Square>({
+      bSync({
         // Dynamically determine the square to request based on the current board state.
         request: () => ({ type: 'O', detail: { square: win.find((num) => board.has(num)) as number } }),
       }),
@@ -441,18 +441,14 @@ test('prevent completion of line with two Xs', () => {
   })
   const winner: Winner | Record<string, unknown> = {}
   // Register feedback handlers with specific types for clarity.
-  useFeedback<{
-    X: Square
-    O: Square
-    win: Winner
-  }>({
-    X({ square }) {
+  useFeedback({
+    X({ square }: Square) {
       board.delete(square)
     },
-    O({ square }) {
+    O({ square }: Square) {
       board.delete(square)
     },
-    win(detail) {
+    win(detail: Winner) {
       Object.assign(winner, detail) // Assign the winner details to the winner variable.
     },
   })

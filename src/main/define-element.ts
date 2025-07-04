@@ -1,5 +1,10 @@
-import { type BSync, type BThread, bThread, bSync } from '../behavioral/b-thread.js'
 import {
+  type BSync,
+  type BThread,
+  bThread,
+  bSync,
+  type PlaitedTrigger,
+  getPlaitedTrigger,
   type Handlers,
   type BThreads,
   type Disconnect,
@@ -8,14 +13,12 @@ import {
   type UseSnapshot,
   type EventDetails,
   bProgram,
-} from '../behavioral/b-program.js'
-import { type PlaitedTrigger, getPlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
-import { getPublicTrigger } from '../behavioral/get-public-trigger.js'
-import { delegates, DelegatedListener } from '../utils/delegated-listener.js'
-import { canUseDOM } from '../utils/can-use-dom.js'
-import type { Attrs, TemplateObject, CustomElementTag } from '../jsx/jsx.types.js'
-import { P_TRIGGER, P_TARGET, BOOLEAN_ATTRS } from '../jsx/jsx.constants.js'
-import { createTemplate } from '../jsx/create-template.js'
+  getPublicTrigger,
+} from '../behavioral.js'
+import { delegates, DelegatedListener, canUseDOM } from '../utils.js'
+import type { Attrs, TemplateObject, CustomElementTag } from './jsx.types.js'
+import { P_TRIGGER, P_TARGET, BOOLEAN_ATTRS } from './jsx.constants.js'
+import { createTemplate } from './create-template.js'
 import { getDocumentFragment, assignHelpers, getBindings } from './assign-helpers.js'
 import { PLAITED_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './plaited.constants.js'
 import type { PlaitedTemplate, PlaitedElement, SelectorMatch, Bindings, BoundElement } from './plaited.types.js'
@@ -517,7 +520,10 @@ export const defineElement = <A extends EventDetails>({
           })
         }
         attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
-          this.#trigger<PlaitedElementCallbackParameters['onAttributeChanged']>({
+          this.#trigger<{
+            type: typeof ELEMENT_CALLBACKS.onAttributeChanged
+            detail: PlaitedElementCallbackParameters['onAttributeChanged']
+          }>({
             type: ELEMENT_CALLBACKS.onAttributeChanged,
             detail: { name, oldValue, newValue },
           })
@@ -580,13 +586,19 @@ export const defineElement = <A extends EventDetails>({
           this.#trigger({ type: ELEMENT_CALLBACKS.onDisconnected })
         }
         formAssociatedCallback(form: HTMLFormElement) {
-          this.#trigger<PlaitedElementCallbackParameters['onFormAssociated']>({
+          this.#trigger<{
+            type: typeof ELEMENT_CALLBACKS.onFormAssociated
+            detail: PlaitedElementCallbackParameters['onFormAssociated']
+          }>({
             type: ELEMENT_CALLBACKS.onFormAssociated,
             detail: { form },
           })
         }
         formDisabledCallback(disabled: boolean) {
-          this.#trigger<PlaitedElementCallbackParameters['onFormDisabled']>({
+          this.#trigger<{
+            type: typeof ELEMENT_CALLBACKS.onFormDisabled
+            detail: PlaitedElementCallbackParameters['onFormDisabled']
+          }>({
             type: ELEMENT_CALLBACKS.onFormDisabled,
             detail: { disabled },
           })
@@ -595,7 +607,10 @@ export const defineElement = <A extends EventDetails>({
           this.#trigger({ type: ELEMENT_CALLBACKS.onFormReset })
         }
         formStateRestoreCallback(state: unknown, reason: 'autocomplete' | 'restore') {
-          this.#trigger<PlaitedElementCallbackParameters['onFormStateRestore']>({
+          this.#trigger<{
+            type: typeof ELEMENT_CALLBACKS.onFormStateRestore
+            detail: PlaitedElementCallbackParameters['onFormStateRestore']
+          }>({
             type: ELEMENT_CALLBACKS.onFormStateRestore,
             detail: { state, reason },
           })

@@ -1,8 +1,12 @@
-import type { SnapshotMessage } from '../../behavioral/b-program.js'
-import { css } from '../../main/css.js'
-import { defineElement } from '../../main/define-element.js'
-import { h } from '../../jsx/create-template.js'
-import { wait } from '../../utils/wait.js'
+declare global {
+  interface Window {
+    __PLAITED_RUNNER__?: boolean
+  }
+}
+
+import type { SnapshotMessage } from '../../behavioral.js'
+import { css, defineElement, h } from '../../main.js'
+import { wait } from '../../utils.js'
 import { STORY_FIXTURE, DEFAULT_PLAY_TIMEOUT, FIXTURE_EVENTS } from './story-fixture.constants.js'
 import {
   FailedAssertionError,
@@ -66,9 +70,18 @@ export const StoryFixture = defineElement<{
         true,
       ),
     })
-
+    const send = useRunner()
     useSnapshot((snapshot: SnapshotMessage) => {
-      console.table(snapshot)
+      if (window?.__PLAITED_RUNNER__) {
+        const { pathname } = new URL(window.location.href)
+        send({
+          colorScheme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+          snapshot,
+          pathname,
+        })
+      } else {
+        console.table(snapshot)
+      }
     })
 
     const timeout = async (time: number) => {
@@ -94,24 +107,27 @@ export const StoryFixture = defineElement<{
         })
       } catch (error) {
         if (error instanceof FailedAssertionError || error instanceof AccessibilityError) {
-          trigger<TestFailureEventDetail>({
+          trigger<{
+            type: typeof FIXTURE_EVENTS.failed_assertion | typeof FIXTURE_EVENTS.accessibility_violation
+            detail: TestFailureEventDetail
+          }>({
             type: error.name,
             detail: { [failure(error.name)]: JSON.parse(error.message) },
           })
         } else if (error instanceof MissingAssertionParameterError) {
-          trigger<TestFailureEventDetail>({
+          trigger<{ type: typeof FIXTURE_EVENTS.missing_assertion_parameter; detail: TestFailureEventDetail }>({
             type: error.name,
             detail: { [failure(error.name)]: error.message },
           })
         } else if (error instanceof Error) {
-          trigger<TestFailureEventDetail>({
+          trigger<{ type: string; detail: TestFailureEventDetail }>({
             type: error.name,
             detail: { [failure(error.name)]: error.message },
           })
         }
       }
     }
-    useRunner()
+
     return {
       [FIXTURE_EVENTS.run](detail) {
         if (detail.play) {
@@ -132,6 +148,9 @@ export const StoryFixture = defineElement<{
         trigger({
           type: FIXTURE_EVENTS.fixture_connected,
         })
+      },
+      onDisconnected() {
+        send.disconnect()
       },
     }
   },
