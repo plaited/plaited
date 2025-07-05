@@ -1,4 +1,39 @@
 /**
+ * @internal
+ * @module key-mirror
+ *
+ * Purpose: Type-safe string constant generation for reducing magic strings
+ * Architecture: Immutable object factory with TypeScript mapped types
+ * Dependencies: None - pure TypeScript/JavaScript
+ * Consumers: Event systems, state management, API constants, CSS class names
+ *
+ * Maintainer Notes:
+ * - This utility prevents typos and enables refactoring of string constants
+ * - Object.freeze ensures true immutability at runtime
+ * - Mapped type preserves literal types for maximum type safety
+ * - Reduce with spread creates new object each iteration (intentional for immutability)
+ * - Common pattern from React/Redux ecosystem adapted for general use
+ *
+ * Common modification scenarios:
+ * - Nested constants: Create hierarchical structure with nested keyMirror calls
+ * - Prefixed keys: Add prefix parameter for namespacing
+ * - Value transformation: Allow custom value mapping function
+ * - Symbol support: Extend to support Symbol keys
+ *
+ * Performance considerations:
+ * - Object spread in reduce creates O(n²) allocations
+ * - For large constant sets, consider Object.fromEntries
+ * - Frozen objects have slight property access overhead
+ * - Type computation happens at compile time only
+ *
+ * Known limitations:
+ * - Only supports string keys and values
+ * - No runtime validation of string types
+ * - Cannot create numeric or symbol constants
+ * - Frozen object prevents runtime modification
+ */
+
+/**
  * Type definition for an object with mirrored key-value pairs.
  * Each key is a string literal that matches its corresponding value.
  *
@@ -22,6 +57,13 @@
  * type Status = 'pending' | 'active' | 'completed';
  * type StatusMap = KeyMirror<[Status]>;
  * ```
+ */
+/**
+ * @internal
+ * Mapped type that creates object type with self-referential key-value pairs.
+ * - Keys[number] extracts union type from tuple
+ * - K in ... iterates each union member
+ * - readonly prevents type-level mutations
  */
 export type KeyMirror<Keys extends string[]> = {
   readonly [K in Keys[number]]: K
@@ -100,7 +142,19 @@ export type KeyMirror<Keys extends string[]> = {
  * @throws {TypeError} When inputs contain non-string values
  */
 export const keyMirror = <Keys extends string[]>(...inputs: Keys) => {
+  /**
+   * @internal
+   * Build object where each key maps to itself using reduce.
+   * - Rest parameter allows clean API: keyMirror('A', 'B', 'C')
+   * - Spread in reducer creates new object each iteration
+   * - Type assertion preserves literal types through reduction
+   */
   const mirrored = inputs.reduce((acc, key) => ({ ...acc, [key]: key }), {} as KeyMirror<Keys>)
 
+  /**
+   * @internal
+   * Freeze the object to prevent runtime mutations.
+   * This ensures constants remain constant throughout application lifecycle.
+   */
   return Object.freeze(mirrored)
 }

@@ -1,4 +1,40 @@
 /**
+ * @internal
+ * @module deep-equal
+ *
+ * Purpose: Comprehensive deep equality comparison for complex data structures
+ * Architecture: Recursive comparison with circular reference detection via WeakMap
+ * Dependencies: None - uses native JavaScript APIs only
+ * Consumers: State management, memoization, test assertions, change detection
+ *
+ * Maintainer Notes:
+ * - This is a critical utility for detecting changes in complex state
+ * - WeakMap prevents infinite recursion with circular references
+ * - Object.is() handles edge cases like NaN === NaN, +0 !== -0
+ * - Special handling for built-in types ensures semantic equality
+ * - Reflect API used for symbol property support
+ * - Order matters for performance - common cases checked first
+ *
+ * Common modification scenarios:
+ * - Adding custom type support: Add instanceof check before generic object
+ * - Performance optimization: Add early exits for common patterns
+ * - Shallow comparison mode: Add depth parameter to limit recursion
+ * - Custom comparator support: Add optional comparison function parameter
+ *
+ * Performance considerations:
+ * - Recursive algorithm - stack depth limited by structure depth
+ * - WeakMap allocation per comparison (cleaned up by GC)
+ * - Array/Set conversion creates temporary arrays
+ * - Reflect.ownKeys includes symbols - more thorough but slower
+ *
+ * Known limitations:
+ * - Function comparison uses reference equality only
+ * - No support for custom equality methods (valueOf, equals)
+ * - Set comparison depends on iteration order
+ * - Prototype chain differences not detected
+ */
+
+/**
  * Performs a deep equality comparison between two values of any type.
  * Handles primitive values, objects, arrays, and built-in JavaScript objects.
  *
@@ -77,10 +113,20 @@
  * comparing objects with custom prototype chains or non-standard object types
  */
 export const deepEqual = (objA: unknown, objB: unknown, map = new WeakMap()) => {
-  //  First-level filtering
+  /**
+   * @internal
+   * First-level filtering using Object.is for primitive equality.
+   * Handles NaN === NaN (true) and +0 !== -0 (false) correctly.
+   */
   if (Object.is(objA, objB)) return true
 
-  //  Special handling is required for Date and RegExp
+  /**
+   * @internal
+   * Special handling for Date and RegExp before generic object check.
+   * These types have internal state that requires specific comparison.
+   * - Date: Compare timestamps for semantic equality
+   * - RegExp: Compare string representation (includes flags)
+   */
   if (objA instanceof Date && objB instanceof Date) {
     return objA.getTime() === objB.getTime()
   }
@@ -88,15 +134,29 @@ export const deepEqual = (objA: unknown, objB: unknown, map = new WeakMap()) => 
     return objA.toString() === objB.toString()
   }
 
-  //  Make sure both are objects and return false if either is not.
+  /**
+   * @internal
+   * Guard clause ensures both values are objects.
+   * After this point, we know both are non-null objects.
+   */
   if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) {
     return false
   }
 
-  // Use WeakMap as a hash table to solve the circular reference problem
+  /**
+   * @internal
+   * Circular reference detection using WeakMap.
+   * If we've already compared objA to objB, assume equal to break cycle.
+   * WeakMap ensures no memory leaks as objects can be GC'd.
+   */
   if (map.get(objA) === objB) return true
   map.set(objA, objB)
 
+  /**
+   * @internal
+   * Array comparison with length check for early exit.
+   * Backwards iteration for potential performance benefit.
+   */
   if (Array.isArray(objA) && Array.isArray(objB)) {
     if (objA.length !== objB.length) return false
     for (let i = objA.length; i-- !== 0; ) {
@@ -105,6 +165,13 @@ export const deepEqual = (objA: unknown, objB: unknown, map = new WeakMap()) => 
     return true
   }
 
+  /**
+   * @internal
+   * Map comparison requires two passes:
+   * 1. Check all keys exist in both maps
+   * 2. Deep compare all values
+   * Size check provides early exit optimization.
+   */
   if (objA instanceof Map && objB instanceof Map) {
     if (objA.size !== objB.size) return false
     for (const i of objA.entries()) {
@@ -116,6 +183,12 @@ export const deepEqual = (objA: unknown, objB: unknown, map = new WeakMap()) => 
     return true
   }
 
+  /**
+   * @internal
+   * Set comparison by converting to arrays.
+   * Note: This assumes iteration order is consistent,
+   * which is true for Sets in ES6+ but may fail for custom equality.
+   */
   if (objA instanceof Set && objB instanceof Set) {
     if (objA.size !== objB.size) return false
     const arrA = [...objA.values()]
@@ -126,6 +199,12 @@ export const deepEqual = (objA: unknown, objB: unknown, map = new WeakMap()) => 
     return true
   }
 
+  /**
+   * @internal
+   * ArrayBuffer and TypedArray comparison at byte level.
+   * Converts to Int8Array for uniform byte-by-byte comparison.
+   * Extra block scope is vestigial but preserved.
+   */
   if (
     (objA instanceof ArrayBuffer && objB instanceof ArrayBuffer) ||
     (ArrayBuffer.isView(objA) && ArrayBuffer.isView(objB))
@@ -141,7 +220,14 @@ export const deepEqual = (objA: unknown, objB: unknown, map = new WeakMap()) => 
     }
   }
 
-  // It's probably an object use reflect to get all keys then loop
+  /**
+   * @internal
+   * Generic object comparison using Reflect API.
+   * - Reflect.ownKeys includes string keys, numeric keys, and symbols
+   * - More thorough than Object.keys which misses symbols
+   * - Length check provides early exit
+   * - Reflect.has checks for key existence before deep comparison
+   */
   const keysA = Reflect.ownKeys(objA)
   const keysB = Reflect.ownKeys(objB)
 
