@@ -18,7 +18,6 @@
  * - Adding more DOM feature checks: Extend the condition chain
  * - Supporting DOM polyfills: Add specific polyfill detection
  * - Worker environment detection: Check for WorkerGlobalScope
- * - React Native detection: Add platform-specific checks
  *
  * Performance considerations:
  * - Function call is extremely lightweight
