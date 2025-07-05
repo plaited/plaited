@@ -1,9 +1,49 @@
+/**
+ * @internal
+ * @module define-worker
+ *
+ * Purpose: Enables behavioral programming within Web Worker contexts for background processing
+ * Architecture: Adapts WorkerGlobalScope to support full bProgram lifecycle and event communication
+ * Dependencies: b-program for core BP, get-public-trigger for security, get-plaited-trigger for lifecycle
+ * Consumers: Worker script files that need behavioral programming capabilities
+ *
+ * Maintainer Notes:
+ * - This is the worker-side counterpart to useWorker for main thread
+ * - Creates a full behavioral program inside the worker thread
+ * - Bidirectional event flow: main thread ↔ worker via postMessage
+ * - Public events filter incoming messages for security
+ * - Automatic cleanup on worker termination via disconnectSet
+ * - Async initialization supports dynamic handler setup
+ *
+ * Common modification scenarios:
+ * - Supporting SharedWorker: Adapt message routing for multiple connections
+ * - Adding initialization data: Pass config through first message
+ * - Error boundaries: Wrap handlers in try-catch for resilience
+ * - Performance monitoring: Track handler execution times
+ *
+ * Performance considerations:
+ * - Worker initialization is async - may delay first message handling
+ * - Message serialization overhead for all events
+ * - DisconnectSet grows with each registered cleanup
+ * - Public event filtering adds minimal overhead
+ *
+ * Known limitations:
+ * - No access to DOM APIs in worker context
+ * - Cannot share memory directly with main thread
+ * - Transferable objects not supported in current implementation
+ * - Worker must be in separate file for proper execution
+ */
 import type { BPEvent } from './b-thread.js'
 import type { Disconnect, Handlers, EventDetails } from './b-program.js'
 import { bProgram, type BProgram } from './b-program.js'
 import { getPublicTrigger } from './get-public-trigger.js'
 import { getPlaitedTrigger } from './get-plaited-trigger.js'
 
+/**
+ * @internal
+ * Extended arguments passed to the worker's bProgram function.
+ * Includes worker-specific capabilities like send() for messaging main thread.
+ */
 type BProgramArgs = {
   send(data: BPEvent): void
   disconnect: Disconnect
@@ -135,33 +175,71 @@ export const defineWorker = async <A extends EventDetails>(args: {
   bProgram: (args: BProgramArgs) => Handlers<A> | Promise<Handlers<A>>
   publicEvents: string[]
 }) => {
+  /**
+   * @internal
+   * Reference to WorkerGlobalScope for event handling.
+   * Using 'self' directly can cause issues in some bundlers.
+   */
   const context = self
-  // Initiate  a Behanvioral Program
+
+  /**
+   * @internal
+   * Initialize a Behavioral Program instance within the worker.
+   * This provides the core BP infrastructure for the worker thread.
+   */
   const { useFeedback, trigger, ...rest } = bProgram()
 
-  // Public trigger  to receive events from main thread
+  /**
+   * @internal
+   * Create filtered trigger that only accepts whitelisted events from main thread.
+   * This prevents arbitrary event injection from compromising worker behavior.
+   */
   const publicTrigger = getPublicTrigger({
     trigger,
     publicEvents: args?.publicEvents,
   })
-  // Event handler that for events from main thread
+
+  /**
+   * @internal
+   * Message handler that forwards valid events from main thread to the behavioral program.
+   * Type safety is enforced by publicTrigger's filtering.
+   */
   const eventHandler = ({ data }: { data: BPEvent }) => publicTrigger(data)
 
+  /**
+   * @internal
+   * Manages cleanup callbacks for proper resource disposal.
+   * Pre-populated with message listener cleanup to prevent leaks.
+   */
   const disconnectSet = new Set<Disconnect>()
   disconnectSet.add(() => {
     context.removeEventListener('message', eventHandler)
     disconnectSet.clear()
   })
 
-  // Callback for sending events to the main window
+  /**
+   * @internal
+   * Send function for communicating back to main thread.
+   * Wraps postMessage for consistent event-based interface.
+   */
   const send = (data: BPEvent) => context.postMessage(data)
-  // Disconnect callback can be used to disconnect listeners and close worker
+
+  /**
+   * @internal
+   * Master disconnect that runs all cleanup callbacks and terminates worker.
+   * Called on worker shutdown or explicit disconnect request.
+   */
   const disconnect = () => {
     disconnectSet.forEach((disconnect) => void disconnect())
     self.close()
   }
 
-  // BProgram callback returning handlers to be passed to useFeedback
+  /**
+   * @internal
+   * Execute user-provided bProgram to get event handlers.
+   * Await supports async initialization (e.g., loading resources).
+   * Enhanced trigger enables automatic cleanup registration.
+   */
   useFeedback(
     await args.bProgram({
       ...rest,
@@ -170,6 +248,11 @@ export const defineWorker = async <A extends EventDetails>(args: {
       trigger: getPlaitedTrigger(trigger, disconnectSet),
     }),
   )
-  // Attach event listeners for events from main thread
+
+  /**
+   * @internal
+   * Start listening for messages from main thread.
+   * This completes the bidirectional communication setup.
+   */
   context.addEventListener('message', eventHandler, false)
 }

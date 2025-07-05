@@ -41,7 +41,18 @@ export const getPublicTrigger = ({
   publicEvents?: string[] | ReadonlyArray<string>
   errorPrefix?: string
 }): Trigger => {
+  /**
+   * @internal
+   * Creates a Set for O(1) lookup performance.
+   * Null coalescing to empty array ensures Set is always valid.
+   */
   const observed = new Set(publicEvents ?? [])
+
+  /**
+   * @internal
+   * The returned trigger function that validates events.
+   * Throws on unauthorized events to fail fast and prevent security issues.
+   */
   return ({ type, detail }) => {
     if (observed.has(type)) return trigger({ type: type, detail: detail })
     throw new Error(`${errorPrefix}: ${type}`)

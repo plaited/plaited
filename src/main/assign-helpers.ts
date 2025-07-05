@@ -203,8 +203,27 @@ const formatFragments = (
 }
 
 /**
- * @internal Creates DOM manipulation helper methods bound to a specific shadow root.
+ * @internal
+ * Creates DOM manipulation helper methods bound to a specific shadow root.
  * These methods are automatically attached to elements with p-target attributes.
+ *
+ * Factory function that creates the Bindings object with methods that close over
+ * the shadowRoot parameter. This allows style adoption and fragment processing
+ * to work correctly within the shadow DOM context.
+ *
+ * @param shadowRoot - The shadow root context for style adoption and scoping
+ * @returns Bindings object with render, insert, replace, and attr methods
+ *
+ * Method behaviors:
+ * - render: Replaces all children (most common operation)
+ * - insert: Adds content at specific positions
+ * - replace: Replaces the element itself
+ * - attr: Gets/sets attributes with special handling for styles
+ *
+ * Integration notes:
+ * - Methods use 'this' binding - must be attached via Object.assign
+ * - All methods handle mixed content types via formatFragments
+ * - Style adoption happens automatically for TemplateObjects
  */
 export const getBindings = (shadowRoot: ShadowRoot): Bindings => ({
   /** Replaces the children of the bound element with the provided fragments. */
@@ -247,8 +266,28 @@ export const getBindings = (shadowRoot: ShadowRoot): Bindings => ({
 })
 
 /**
- * @internal Assigns Plaited helper methods to DOM elements.
+ * @internal
+ * Assigns Plaited helper methods to DOM elements.
  * Used internally to enhance elements with p-target attributes.
+ *
+ * @param bindings - The Bindings object created by getBindings
+ * @param elements - NodeList or array of elements to enhance
+ * @returns Array of BoundElement with helper methods attached
+ *
+ * Implementation details:
+ * - Checks for existing 'attr' property to avoid re-binding
+ * - Uses Object.assign for efficient property copying
+ * - Mutates elements directly for performance
+ * - Type assertion is safe because we just added required properties
+ *
+ * Performance notes:
+ * - One-time binding per element lifecycle
+ * - Property check prevents duplicate work
+ * - Direct mutation avoids wrapper objects
+ *
+ * Called by:
+ * - $ function in defineElement during initialization
+ * - useTemplate for dynamic template elements
  */
 export const assignHelpers = <T extends Element = Element>(bindings: Bindings, elements: NodeListOf<T> | T[]) => {
   const length = elements.length
