@@ -126,14 +126,4 @@ export type Wait = (ms: number) => Promise<unknown>
  * 3. Add timeout handling for critical operations
  * 4. Be mindful of memory in loops
  */
-export const wait: Wait = (ms) => {
-  /**
-   * @internal
-   * Creates Promise that resolves after setTimeout fires.
-   * - No value passed to resolve() - resolves to undefined
-   * - Timer automatically cleaned up after firing
-   * - Promise can't be cancelled once created
-   * - Arrow function preserves lexical this (not needed here)
-   */
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
+export const wait: Wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))

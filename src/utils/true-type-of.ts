@@ -119,17 +119,4 @@
  * - Debug logging
  * - Type-based processing
  */
-export const trueTypeOf = (obj?: unknown): string => {
-  /**
-   * @internal
-   * Uses Object.prototype.toString to get [[Class]] internal property.
-   * - .call(obj) ensures we use Object's toString, not obj's override
-   * - Returns format: "[object Type]"
-   * - .slice(8, -1) extracts "Type" from "[object Type]"
-   * - .toLowerCase() normalizes to lowercase for consistent comparison
-   *
-   * This technique works because Object.prototype.toString accesses
-   * the [[Class]] internal property which cannot be overridden.
-   */
-  return Object.prototype.toString.call(obj).slice(8, -1).toLowerCase()
-}
+export const trueTypeOf = (obj?: unknown): string => Object.prototype.toString.call(obj).slice(8, -1).toLowerCase()

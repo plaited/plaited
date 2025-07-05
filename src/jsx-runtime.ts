@@ -6,33 +6,7 @@
  * Architecture: Re-exports createTemplate with standard JSX runtime names
  * Dependencies: createTemplate factory, Fragment component, JSX type definitions
  * Consumers: TypeScript compiler, Babel transforms, bundlers with JSX support
- *
- * Maintainer Notes:
- * - This file enables automatic JSX transformation in modern toolchains
- * - Multiple exports (h, jsx, jsxDEV, jsxs) support different JSX modes
- * - h: Classic transform (React.createElement style)
- * - jsx/jsxs: Automatic runtime transform (React 17+ style)
- * - jsxDEV: Development mode with additional debug info
- * - Fragment enables <></> syntax for grouping without wrapper elements
- * - JSX namespace declaration provides TypeScript IntelliSense
- *
- * Common modification scenarios:
- * - Custom JSX factories: Add specialized transforms for optimization
- * - Debug information: Enhance jsxDEV with source location tracking
- * - Performance monitoring: Wrap createTemplate with instrumentation
- * - Custom pragma support: Export additional factory variations
- *
- * Performance considerations:
- * - All exports are aliases - no runtime overhead
- * - Tree-shaking removes unused exports
- * - TypeScript compiles JSX at build time
- * - No runtime JSX parsing required
- *
- * Known limitations:
- * - No React compatibility mode
- * - No support for React-specific features (keys, refs)
- * - JSX namespace is global in TypeScript
- * - Development/production builds use same implementation
+
  */
 
 import type { ElementAttributeList } from './main/jsx.types.js'
