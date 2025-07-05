@@ -1,3 +1,38 @@
+/**
+ * @internal
+ * @module shuffle-syncs
+ *
+ * Purpose: Introduces controlled randomness into behavioral thread execution order
+ * Architecture: Implements Fisher-Yates shuffle for BSync arrays with in-place mutation
+ * Dependencies: b-thread for BSync type definition
+ * Consumers: Testing utilities, simulation scenarios, non-deterministic behavioral patterns
+ *
+ * Maintainer Notes:
+ * - This module enables testing of race conditions and non-deterministic scenarios
+ * - Fisher-Yates algorithm guarantees uniform distribution of permutations
+ * - In-place shuffle modifies the input array for performance
+ * - Math.random() is used - not cryptographically secure
+ * - Primarily used in test environments, rarely in production
+ * - The algorithm runs in O(n) time with O(1) extra space
+ *
+ * Common modification scenarios:
+ * - Supporting seeded randomness: Accept RNG function parameter
+ * - Preserving original array: Clone before shuffling
+ * - Partial shuffling: Add range parameters
+ * - Weighted shuffling: Implement bias based on BSync properties
+ *
+ * Performance considerations:
+ * - In-place mutation avoids array allocation
+ * - Single pass through array (O(n) complexity)
+ * - No recursion or extra memory needed
+ * - Math.random() calls are the main overhead
+ *
+ * Known limitations:
+ * - Not suitable for cryptographic purposes
+ * - No seed support for reproducible shuffles
+ * - Modifies input array (side effect)
+ * - Limited to full array shuffle only
+ */
 import type { BSync } from './b-thread.js'
 
 /**
@@ -24,9 +59,31 @@ import type { BSync } from './b-thread.js'
  * // by randomOrderThread will vary each time the thread runs.
  */
 export const shuffleSyncs = (...syncs: BSync[]) => {
+  /**
+   * @internal
+   * Fisher-Yates shuffle implementation working backwards through array.
+   * Each iteration selects random element from unshuffled portion.
+   *
+   * Algorithm invariant: After iteration i, elements at positions > i are randomly shuffled.
+   * Time complexity: O(n) where n is array length
+   * Space complexity: O(1) - in-place swap
+   */
   for (let i = syncs.length - 1; i > 0; i--) {
+    /**
+     * @internal
+     * Generate random index from 0 to i (inclusive).
+     * Math.floor ensures integer result for array indexing.
+     * Distribution is uniform assuming Math.random() quality.
+     */
     const j = Math.floor(Math.random() * (i + 1))
+
+    /**
+     * @internal
+     * ES6 destructuring swap - no temporary variable needed.
+     * Semicolon prefix prevents ASI issues with array destructuring.
+     */
     ;[syncs[i], syncs[j]] = [syncs[j], syncs[i]]
   }
+
   return syncs
 }

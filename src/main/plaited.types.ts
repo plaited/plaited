@@ -143,7 +143,7 @@ export type Bindings = {
    * button.attr('aria-expanded', 'true');
    *
    * // Remove single attribute
-   * button.attr('disabled', 'null);
+   * button.attr('disabled', null);
    * ```
    */
   attr(this: Element, attr: Record<string, string | null | number | boolean | StylesObject>, val?: never): void
@@ -215,20 +215,3 @@ export type PlaitedTemplate = FunctionTemplate & {
   publicEvents: string[]
   $: typeof PLAITED_TEMPLATE_IDENTIFIER
 }
-/**
- * Type for JSON-serializable message details.
- * Supports nested objects and arrays of primitive values.
- */
-export type JSONDetail = string | number | boolean | null | JsonObject | JsonArray
-/**
- * Helper type for JSON objects with string keys and JSONDetail values.
- * @internal
- */
-type JsonObject = {
-  [key: string]: JSONDetail
-}
-/**
- * Helper type for arrays of JSONDetail values.
- * @internal
- */
-type JsonArray = Array<JSONDetail>

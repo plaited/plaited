@@ -6,8 +6,8 @@ import type { Trigger } from './b-program.js'
  * or module, preventing internal events from being triggered externally.
  *
  * If an event type is provided that is not in the `publicEvents` list,
- * it will not be passed to the original trigger function, and a warning
- * will be logged to the console.
+ * it will not be passed to the original trigger function, and an error
+ * will be thrown.
  *
  * @param args Configuration object.
  * @param args.trigger The original `Trigger` function obtained from `bProgram()`.
@@ -29,7 +29,7 @@ import type { Trigger } from './b-program.js'
  * // This will be processed by the internalTrigger.
  * publicTrigger({ type: 'user/login', detail: { username: 'test' } });
  *
- * // This will be ignored, and a warning will be logged.
+ * // This will throw an error.
  * publicTrigger({ type: 'internal/data-update', detail: {} });
  */
 export const getPublicTrigger = ({
@@ -41,7 +41,18 @@ export const getPublicTrigger = ({
   publicEvents?: string[] | ReadonlyArray<string>
   errorPrefix?: string
 }): Trigger => {
+  /**
+   * @internal
+   * Creates a Set for O(1) lookup performance.
+   * Null coalescing to empty array ensures Set is always valid.
+   */
   const observed = new Set(publicEvents ?? [])
+
+  /**
+   * @internal
+   * The returned trigger function that validates events.
+   * Throws on unauthorized events to fail fast and prevent security issues.
+   */
   return ({ type, detail }) => {
     if (observed.has(type)) return trigger({ type: type, detail: detail })
     throw new Error(`${errorPrefix}: ${type}`)

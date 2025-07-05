@@ -1,4 +1,40 @@
 /**
+ * @internal
+ * @module true-type-of
+ *
+ * Purpose: Enhanced JavaScript type detection beyond typeof operator limitations
+ * Architecture: Uses [[Class]] internal property via Object.prototype.toString
+ * Dependencies: None - uses native JavaScript prototype methods
+ * Consumers: Type guards, validation utilities, debugging tools, serialization
+ *
+ * Maintainer Notes:
+ * - Provides accurate type detection where typeof falls short
+ * - toString.call bypasses custom toString overrides on objects
+ * - slice(8, -1) extracts type from "[object Type]" format
+ * - toLowerCase ensures consistent return format
+ * - Handles all ES6+ types including Symbol, BigInt, async functions
+ * - Critical for runtime type checking in dynamic systems
+ *
+ * Common modification scenarios:
+ * - Adding custom type detection: Extend with instanceof checks
+ * - TypeScript integration: Create type predicate overloads
+ * - Performance optimization: Add result caching for repeated checks
+ * - Custom object support: Check for toStringTag symbol
+ *
+ * Performance considerations:
+ * - Function call overhead for each type check
+ * - String operations (slice, toLowerCase) on each call
+ * - No caching - consider memoization for hot paths
+ * - toString.call is slower than typeof but more accurate
+ *
+ * Known limitations:
+ * - Cannot distinguish between different error types
+ * - All typed arrays return their specific type (not generic 'typedarray')
+ * - Custom toStringTag can be spoofed
+ * - Cross-realm objects may have unexpected results
+ */
+
+/**
  * Returns the precise type of any JavaScript value as a lowercase string.
  * Provides more accurate type detection than the typeof operator.
  *

@@ -332,9 +332,9 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
 
  export const ToggleInput = defineElement<{
    click: MouseEvent & { target: HTMLInputElement }
-   checked boolean
-   disabled boolean
-   valueChange string | null
+   checked: boolean
+   disabled: boolean
+   valueChange: string | null
  }>({
    tag: 'toggle-input',
    observedAttributes: ['disabled', 'checked', 'value'],

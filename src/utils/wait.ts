@@ -1,4 +1,40 @@
 /**
+ * @internal
+ * @module wait
+ *
+ * Purpose: Promise-based timing utilities for asynchronous flow control
+ * Architecture: Thin wrapper around setTimeout with Promise interface
+ * Dependencies: None - uses native Promise and setTimeout APIs
+ * Consumers: Animation systems, retry logic, rate limiters, test utilities
+ *
+ * Maintainer Notes:
+ * - Simple abstraction enables async/await syntax for delays
+ * - Returns Promise<unknown> to allow flexible resolution values
+ * - No timer cleanup needed as Promise resolves naturally
+ * - Common pattern in modern JavaScript replacing callback-based timers
+ * - Type exported separately to enable custom implementations
+ * - Critical for flow control in async operations
+ *
+ * Common modification scenarios:
+ * - Cancellable delays: Return object with cancel method using clearTimeout
+ * - High-precision timing: Use performance.now() for sub-millisecond accuracy
+ * - Raf-based timing: Replace setTimeout with requestAnimationFrame
+ * - Progress tracking: Add optional progress callback parameter
+ *
+ * Performance considerations:
+ * - Each call creates new Promise and timer
+ * - No pooling or reuse of Promise objects
+ * - Timer accuracy limited by browser/runtime (~4ms minimum)
+ * - Many concurrent timers can impact performance
+ *
+ * Known limitations:
+ * - No built-in cancellation mechanism
+ * - Minimum delay varies by environment (typically 4ms)
+ * - Not suitable for high-precision timing
+ * - Subject to browser throttling in background tabs
+ */
+
+/**
  * Type definition for a Promise-based delay function.
  * Provides type safety for time-based Promise creation.
  *
