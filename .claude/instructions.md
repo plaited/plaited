@@ -281,3 +281,11 @@ When reviewing documentation:
 3. **Signal/Trigger Patterns**: Explain data flow and dependencies
 4. **Shadow DOM**: Note style scoping and boundary crossing
 5. **Worker Communication**: Document message protocols
+
+## Build Commands
+
+Use the following commands for the Plaited project:
+- **Type checking**: `bun run check` (not `npm run typecheck`)
+- **Linting**: `bun run lint`
+- **Testing**: `bun test`
+- **Building**: `bun run build`
