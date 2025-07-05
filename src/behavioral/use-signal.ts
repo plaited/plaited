@@ -1,3 +1,38 @@
+/**
+ * @internal
+ * @module use-signal
+ *
+ * Purpose: Reactive state management system for cross-component communication in Plaited
+ * Architecture: Implements pub/sub pattern with automatic cleanup and computed values
+ * Dependencies: b-program for triggers, get-plaited-trigger for lifecycle integration
+ * Consumers: Components needing shared state, computed values, or reactive data flow
+ *
+ * Maintainer Notes:
+ * - Signals are the primary state sharing mechanism between Plaited components
+ * - Two signal types: with/without initial value for different use cases
+ * - Computed signals provide lazy evaluation with automatic dependency tracking
+ * - All subscriptions are automatically cleaned up via PlaitedTrigger integration
+ * - getLVC (get Last Value on Connect) enables immediate state synchronization
+ * - Signals are intentionally kept simple - no batching or async updates
+ *
+ * Common modification scenarios:
+ * - Adding signal batching: Wrap set() calls in microtask queue
+ * - Supporting async computeds: Change initialValue to return Promise<T>
+ * - Adding signal middleware: Insert transformation layer in set()
+ * - Performance monitoring: Track listener count and update frequency
+ *
+ * Performance considerations:
+ * - O(n) notification where n is listener count - keep subscriptions minimal
+ * - Computed values are lazy - only calculated when accessed
+ * - No memoization of computed values - recalculated on each dependency change
+ * - Set operations are synchronous - may cause cascading updates
+ *
+ * Known limitations:
+ * - No built-in circular dependency detection
+ * - No transaction support for multiple signal updates
+ * - Computed signals can't be directly set
+ * - No persistence layer integration
+ */
 import type { Trigger, Disconnect } from './b-program.js'
 import { type PlaitedTrigger, isPlaitedTrigger } from './get-plaited-trigger.js'
 
@@ -12,18 +47,33 @@ import { type PlaitedTrigger, isPlaitedTrigger } from './get-plaited-trigger.js'
  */
 export type Listen = (eventType: string, trigger: Trigger | PlaitedTrigger, getLVC?: boolean) => Disconnect
 
+/**
+ * @internal
+ * Signal type for values that must have an initial value.
+ * Guarantees get() never returns undefined.
+ */
 export type SignalWithInitialValue<T> = {
   set(value: T): void
   listen: Listen
   get(): T
 }
 
+/**
+ * @internal
+ * Signal type for optional values that may start undefined.
+ * Useful for async data or optional state.
+ */
 export type SignalWithoutInitialValue<T> = {
   set(value?: T): void
   listen: Listen
   get(): T | undefined
 }
 
+/**
+ * @internal
+ * Union type for all signal variants.
+ * Type system ensures correct usage based on initialization.
+ */
 export type Signal<T> = SignalWithInitialValue<T> | SignalWithoutInitialValue<T>
 
 export function useSignal<T>(initialValue: T): SignalWithInitialValue<T>
@@ -84,25 +134,67 @@ export function useSignal<T>(initialValue?: never): SignalWithoutInitialValue<T>
  * ```
  */
 export function useSignal<T>(initialValue: T) {
+  /**
+   * @internal
+   * Mutable store for the signal's current value.
+   * Direct mutation is intentional for performance.
+   */
   let store: T = initialValue
+
+  /**
+   * @internal
+   * Set of listener callbacks to notify on value changes.
+   * Using Set for O(1) add/remove and automatic deduplication.
+   */
   const listeners = new Set<(value?: T) => void>()
+
+  /**
+   * @internal
+   * Getter provides read access to current value.
+   * No cloning for performance - consumers must not mutate.
+   */
   const get = () => store
-  // The publisher function that notifies all subscribed listeners with optional value.
+
+  /**
+   * @internal
+   * Updates store and synchronously notifies all listeners.
+   * No equality check - all listeners notified even if value unchanged.
+   * This enables force updates and simplifies implementation.
+   */
   const set = (value: T) => {
     store = value
     for (const cb of listeners) cb(value)
   }
-  // Subscribes a trigger and BPEvent to the publisher.
+
+  /**
+   * @internal
+   * Creates subscription between signal and behavioral program trigger.
+   * Wraps trigger in callback that formats signal value as BPEvent.
+   * getLVC enables immediate notification with current value on subscribe.
+   */
   const listen = (eventType: string, trigger: Trigger | PlaitedTrigger, getLVC = false) => {
     const cb = (detail?: T) => trigger({ type: eventType, detail })
     getLVC && cb(store)
     listeners.add(cb)
+
+    /**
+     * @internal
+     * Manual cleanup function removes listener from set.
+     * Also registered with PlaitedTrigger for automatic cleanup.
+     */
     const disconnect = () => {
       listeners.delete(cb)
     }
+
+    /**
+     * @internal
+     * Auto-cleanup integration with component lifecycle.
+     * Ensures subscriptions don't outlive their components.
+     */
     isPlaitedTrigger(trigger) && trigger.addDisconnectCallback(disconnect)
     return disconnect
   }
+
   return {
     get,
     set,
@@ -194,29 +286,80 @@ export const useComputed = <T>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   deps: (SignalWithInitialValue<any> | SignalWithoutInitialValue<any>)[],
 ) => {
+  /**
+   * @internal
+   * Cached computed value, lazily initialized on first access.
+   * Undefined until first get() call for true lazy evaluation.
+   */
   let store: T
+
+  /**
+   * @internal
+   * Listeners for this computed signal's changes.
+   * Only active when there are subscribers to avoid unnecessary computation.
+   */
   const listeners = new Set<(value?: T) => void>()
+
+  /**
+   * @internal
+   * Lazy getter that computes value on first access.
+   * Subsequent calls return cached value until dependencies change.
+   */
   const get = () => {
     if (!store) store = initialValue()
     return store
   }
+
+  /**
+   * @internal
+   * Cleanup functions for dependency subscriptions.
+   * Populated when first listener subscribes, cleared when last unsubscribes.
+   */
   const disconnectDeps: Disconnect[] = []
+
+  /**
+   * @internal
+   * Update trigger called when any dependency changes.
+   * Recomputes value and notifies all listeners synchronously.
+   * Args ignored since we don't care which dependency changed.
+   */
   const update: Trigger = (..._) => {
     store = initialValue()
     for (const cb of listeners) cb(store)
   }
+
+  /**
+   * @internal
+   * Subscribe to computed value changes with lazy dependency tracking.
+   * Dependencies only monitored when at least one listener exists.
+   * This optimization prevents unnecessary computation for unused computeds.
+   */
   const listen: Listen = (eventType: string, trigger: Trigger | PlaitedTrigger, getLVC = false) => {
+    /**
+     * @internal
+     * First listener triggers dependency subscriptions.
+     * Uses internal 'update' event type for dependency tracking.
+     */
     if (!listeners.size) disconnectDeps.push(...deps.map((dep) => dep.listen('update', update)))
+
     const cb = (detail?: T) => trigger({ type: eventType, detail })
     getLVC && cb(get())
     listeners.add(cb)
+
+    /**
+     * @internal
+     * Cleanup unsubscribes from dependencies when last listener removed.
+     * This prevents memory leaks and unnecessary computations.
+     */
     const disconnect = () => {
       listeners.delete(cb)
       if (!listeners.size) for (const dep of disconnectDeps) dep()
     }
+
     isPlaitedTrigger(trigger) && trigger.addDisconnectCallback(disconnect)
     return disconnect
   }
+
   return {
     get,
     listen,

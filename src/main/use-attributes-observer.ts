@@ -1,3 +1,38 @@
+/**
+ * @internal
+ * @module use-attributes-observer
+ *
+ * Purpose: Enables reactive monitoring of attribute changes on slotted elements
+ * Architecture: Wraps MutationObserver API with Plaited's event system for slot content
+ * Dependencies: behavioral module for triggers and lifecycle management
+ * Consumers: Components that need to react to attribute changes on projected content
+ *
+ * Maintainer Notes:
+ * - This module solves the problem of observing external element changes in slots
+ * - Primary use case is monitoring slotted form elements (input, select, etc.)
+ * - MutationObserver is created per observed element, not shared
+ * - Automatic cleanup via PlaitedTrigger prevents observer leaks
+ * - Event detail provides old/new values for change detection
+ * - Designed for slot scenarios where component doesn't control the element
+ *
+ * Common modification scenarios:
+ * - Observing child nodes: Add childList: true to observer config
+ * - Batching mutations: Accumulate changes before triggering
+ * - Performance optimization: Throttle/debounce rapid mutations
+ * - Multiple element observation: Return array of disconnect functions
+ *
+ * Performance considerations:
+ * - MutationObserver is efficient but has overhead per observed element
+ * - attributeFilter is critical - observe only necessary attributes
+ * - Each mutation triggers synchronous event dispatch
+ * - Consider throttling for frequently changing attributes
+ *
+ * Known limitations:
+ * - Only observes attributes, not properties or content
+ * - No built-in filtering of programmatic vs user changes
+ * - Cannot observe shadow DOM content from light DOM
+ * - One observer per element (not optimized for many elements)
+ */
 import { type Disconnect, type Trigger, type PlaitedTrigger, isPlaitedTrigger } from '../behavioral.js'
 
 /**
@@ -25,9 +60,17 @@ import { type Disconnect, type Trigger, type PlaitedTrigger, isPlaitedTrigger } 
  * //   };
  * // }
  */
+/**
+ * @internal
+ * Event detail structure for attribute mutations on observed elements.
+ * Mirrors MutationRecord data but in a cleaner, typed format.
+ */
 export type ObservedAttributesDetail = {
+  /** Previous attribute value, null if newly added */
   oldValue: null | string
+  /** Current attribute value, null if removed */
   newValue: null | string
+  /** Name of the changed attribute */
   name: string
 }
 
@@ -148,12 +191,44 @@ export type ObservedAttributesDetail = {
  *   generally sufficient and simpler for most use cases within Plaited components.
  */
 export const useAttributesObserver = (eventType: string, trigger: PlaitedTrigger | Trigger) => {
+  /**
+   * @internal
+   * Returns a curried function that creates observers for specific elements.
+   * This pattern allows reusing the same event type and trigger for multiple elements.
+   */
   return (assignedElement: Element, attributeFilter: string[]) => {
+    /**
+     * @internal
+     * Create MutationObserver with callback that converts mutations to Plaited events.
+     * Each attribute mutation becomes a separate event for granular handling.
+     */
     const mo = new MutationObserver((mutationsList) => {
       for (const mutation of mutationsList) {
+        /**
+         * @internal
+         * Filter for attribute mutations only (config ensures this).
+         * Type check is defensive programming for future config changes.
+         */
         if (mutation.type === 'attributes') {
+          /**
+           * @internal
+           * attributeName is guaranteed non-null for attribute mutations.
+           * Type assertion is safe based on mutation.type check.
+           */
           const name = mutation.attributeName as string
+
+          /**
+           * @internal
+           * Get current value directly from element.
+           * This ensures we have the latest value even if multiple mutations queued.
+           */
           const newValue = assignedElement.getAttribute(name)
+
+          /**
+           * @internal
+           * Dispatch typed event with mutation details.
+           * Generic type ensures detail structure matches ObservedAttributesDetail.
+           */
           trigger<{ type: string; detail: ObservedAttributesDetail }>({
             type: eventType,
             detail: {
@@ -165,12 +240,25 @@ export const useAttributesObserver = (eventType: string, trigger: PlaitedTrigger
         }
       }
     })
+
+    /**
+     * @internal
+     * Start observation with filtered attributes and old value tracking.
+     * attributeOldValue is required for meaningful change detection.
+     */
     mo.observe(assignedElement, {
       attributeFilter,
       attributeOldValue: true,
     })
+
+    /**
+     * @internal
+     * Extract disconnect method and register for automatic cleanup.
+     * Method reference is bound to observer instance.
+     */
     const disconnect: Disconnect = mo.disconnect
     isPlaitedTrigger(trigger) && trigger.addDisconnectCallback(disconnect)
+
     return disconnect
   }
 }
