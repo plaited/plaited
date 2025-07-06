@@ -84,11 +84,11 @@ export const test: StoryObj = {
 
     fixture?.trigger({ type: TRIGGER_HYDRATING_ELEMENT })
     inner = await findByAttribute<PlaitedElement>('p-target', 'inner')
-
+    await wait(100)
     assert({
       given: 'after triggering update on target',
       should: 'have green color style',
-      actual: window.getComputedStyle(inner!).color,
+      actual: inner?.computedStyleMap().get('color'),
       expected: GREEN,
     })
   },
