@@ -1,7 +1,7 @@
 import { defineElement, type PlaitedElement, useFetch } from 'plaited'
 import type { StoryObj } from 'plaited/workshop'
 
-import { styles, GREEN, RED } from './hydrating-element.css.js'
+import { styles } from './hydrating-element.css.js'
 const TRIGGER_HYDRATING_ELEMENT = 'TRIGGER_HYDRATING_ELEMENT'
 const FIXTURE_ELEMENT_TAG = 'fixture-element'
 const EMPTY_SLOT = 'Empty slot'
@@ -77,9 +77,9 @@ export const test: StoryObj = {
 
     assert({
       given: 'before triggering update on target',
-      should: 'have red color style',
-      actual: inner?.computedStyleMap().get('color'),
-      expected: RED,
+      should: 'be underlined',
+      actual: inner?.computedStyleMap().get('text-decoration-line'),
+      expected: 'underline',
     })
 
     fixture?.trigger({ type: TRIGGER_HYDRATING_ELEMENT })
@@ -87,9 +87,9 @@ export const test: StoryObj = {
     await wait(120)
     assert({
       given: 'after triggering update on target',
-      should: 'have green color style',
-      actual: inner?.computedStyleMap().get('color'),
-      expected: GREEN,
+      should: 'be striked through',
+      actual: inner?.computedStyleMap().get('text-decoration-line'),
+      expected: 'line-through',
     })
   },
 }
