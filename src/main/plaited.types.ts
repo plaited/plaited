@@ -146,8 +146,13 @@ export type Bindings = {
    * button.attr('disabled', null);
    * ```
    */
-  attr(this: Element, attr: Record<string, string | null | number | boolean | StylesObject>, val?: never): void
-  attr(this: Element, attr: string, val?: string | null | number | boolean | StylesObject): string | null | void
+  attr(
+    this: Element,
+    attr: Record<string, string | null | number | boolean> & { class?: StylesObject | string | null },
+    val?: never,
+  ): void
+  attr(this: Element, attr: string, val?: string | null | number | boolean): string | null | void
+  attr(this: Element, attr: 'class', val?: StylesObject | string): string | null | void
 }
 
 export type BoundElement<T extends Element = Element> = T & Bindings

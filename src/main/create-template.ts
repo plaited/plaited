@@ -190,7 +190,6 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     'p-trigger': bpTrigger,
     class: className,
     for: htmlFor,
-    part,
     ...attributes
   } = attrs
 
@@ -250,16 +249,12 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   /** Create are stylesheet set */
   const stylesheets =
     stylesheet ? [...(Array.isArray(stylesheet) ? stylesheet : [stylesheet])].map((str) => escape(str)) : []
-  const parts =
-    part ? [...(Array.isArray(part) ? part : part.split(' '))].flatMap((str) => (str ? escape(str) : [])) : []
-  parts.length && start.push(`part="${parts.join(' ')}"`)
   /** Our tag is a void tag so we can return it once we apply attributes */
   if (VOID_TAGS.has(tag)) {
     start.push('/>')
     return {
       html: start,
       stylesheets: [...new Set(stylesheets)],
-      parts: [...new Set(parts)],
       registry,
       $: TEMPLATE_OBJECT_IDENTIFIER,
     }
@@ -277,7 +272,6 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       end.push(...child.html)
       stylesheets.push(...child.stylesheets)
       registry.push(...child.registry)
-      parts.push(...child.parts)
       continue
     }
     /** P2 typeof child is NOT a valid primitive child then skip and do nothing */
@@ -290,7 +284,6 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   return {
     html: [...start, ...end],
     stylesheets: [...new Set(stylesheets)],
-    parts: [...new Set(parts)],
     registry,
     $: TEMPLATE_OBJECT_IDENTIFIER,
   }
@@ -354,7 +347,6 @@ export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
   const children = Array.isArray(_children) ? _children.flat() : [_children]
   const html: string[] = []
   const stylesheets: string[] = []
-  const parts: string[] = []
   const registry: string[] = []
   const length = children.length
   for (let i = 0; i < length; i++) {
@@ -363,7 +355,6 @@ export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
       html.push(...child.html)
       stylesheets.push(...child.stylesheets)
       registry.push(...child.registry)
-      parts.push(...child.parts)
     }
     if (!VALID_PRIMITIVE_CHILDREN.has(trueTypeOf(child))) continue
     const safeChild = escape(`${child}`)
@@ -372,7 +363,6 @@ export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
   return {
     html,
     stylesheets: [...new Set(stylesheets)],
-    parts: [...new Set(parts)],
     registry,
     $: TEMPLATE_OBJECT_IDENTIFIER,
   }

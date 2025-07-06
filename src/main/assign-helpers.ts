@@ -128,18 +128,18 @@ const updateAttributes = ({
 }) => {
   // Remove the attribute if val is null or undefined, and it currently exists
   if (val === null && element.hasAttribute(attr)) return element.removeAttribute(attr)
+  // If val is null just return
+  if (val === null) return
   // Set the attribute if it is a boolean attribute and it does not exist
   if (BOOLEAN_ATTRS.has(attr)) {
     !element.hasAttribute(attr) && element.toggleAttribute(attr, true)
     return
   }
-  // Set the attribute if the new value is different from the current value
+  // Set the attribute
   if (attr === 'class' && isTypeOf<StylesObject>(val, 'object')) {
-    void updateShadowRootStyles(root, new Set(val.stylesheet))
-    element.setAttribute(attr, `${val.class}`)
-  } else if (attr === 'part') {
-    // TODO: Implement shadow parts API support
-    // This will enable ::part() CSS selectors for styling across shadow boundaries
+    const { class: classes, stylesheet } = val
+    void updateShadowRootStyles(root, new Set(stylesheet))
+    return element.setAttribute(attr, `${(Array.isArray(classes) ? classes : [classes ?? '']).join(' ')}`)
   } else {
     element.setAttribute(attr, `${val}`)
   }

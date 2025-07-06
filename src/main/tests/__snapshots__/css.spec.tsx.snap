@@ -102,7 +102,6 @@ exports[`css.create: works with JSX via spread operator 1`] = `
     ">",
     "</button>",
   ],
-  "parts": [],
   "registry": [],
   "stylesheets": [
     ".p_2dr9p51{color:var(--blue-link);}",

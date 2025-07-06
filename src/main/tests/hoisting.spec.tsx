@@ -28,71 +28,49 @@ const NestedCustomElement = defineElement({
   tag: 'nested-component',
   shadowDom: (
     <>
-      <span
-        {...styles.nestedLabel}
-        part='span'
-      >
-        inside nested template
-      </span>
+      <span {...styles.nestedLabel}>inside nested template</span>
       <slot name='nested' />
     </>
   ),
 })
 
-test('createTemplate: CustomElement hoisting its styles and parts', () => {
+test('createTemplate: CustomElement hoisting its styles', () => {
   const el = <NestedCustomElement />
   expect({
     content: render(el),
     stylesheets: el.stylesheets,
-    parts: el.parts,
   }).toMatchSnapshot()
 })
 
-test('createTemplate: CustomElement with declarative shadow dom & hoist styles and part', () => {
-  const el = (
-    <NestedCustomElement
-      {...styles.nestedComponent}
-      part='nested-component S1'
-    />
-  )
+test('createTemplate: CustomElement with declarative shadow dom & hoist styles', () => {
+  const el = <NestedCustomElement {...styles.nestedComponent} />
   expect({
     content: render(el),
     stylesheets: el.stylesheets,
-    parts: el.parts,
   }).toMatchSnapshot()
 })
 
 test('createTemplate: CustomElement with styled slotted component', () => {
   const el = (
     <NestedCustomElement {...styles.slottedParagraph}>
-      <p
-        slot='nested'
-        part='S2 paragraph'
-      >
-        slotted paragraph
-      </p>
+      <p slot='nested'>slotted paragraph</p>
     </NestedCustomElement>
   )
-  expect({ content: render(el), stylesheets: el.stylesheets, parts: el.parts }).toMatchSnapshot()
+  expect({ content: render(el), stylesheets: el.stylesheets }).toMatchSnapshot()
 })
 
 const TopCustomElement = defineElement({
   tag: 'top-component',
   shadowDom: (
     <NestedCustomElement {...styles.slottedParagraph}>
-      <p
-        slot='nested'
-        part='paragraph S2'
-      >
-        slotted paragraph
-      </p>
+      <p slot='nested'>slotted paragraph</p>
     </NestedCustomElement>
   ),
 })
 
 test('createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom', () => {
-  const el = <TopCustomElement part='S3' />
-  expect({ content: render(el), stylesheets: el.stylesheets, parts: el.parts }).toMatchSnapshot()
+  const el = <TopCustomElement />
+  expect({ content: render(el), stylesheets: el.stylesheets }).toMatchSnapshot()
 })
 
 test('createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles', () => {
@@ -100,7 +78,6 @@ test('createTemplate: CustomElement with declarative shadow dom and nested decla
   expect({
     content: render(el),
     stylesheets: el.stylesheets,
-    parts: el.parts,
   }).toMatchSnapshot()
 })
 
@@ -110,7 +87,7 @@ test('createTemplate: CustomElement with declarative shadow dom and nested decla
       <img {...styles.image} />
     </TopCustomElement>
   )
-  expect({ content: render(el), stylesheets: el.stylesheets, parts: el.parts }).toMatchSnapshot()
+  expect({ content: render(el), stylesheets: el.stylesheets }).toMatchSnapshot()
 })
 
 const hoistStyles = css.create({
@@ -133,8 +110,4 @@ test('ssr: filters out falsey style object', () => {
   expect((<div {...css.assign(hoistStyles.var1, hoistStyles.var2, false, undefined, null)} />).stylesheets.length).toBe(
     1,
   )
-})
-
-test('ssr: Properly deduplicates duplicate part identifiers', () => {
-  expect((<div part='S1 div S1' />).parts.length).toBe(2)
 })
