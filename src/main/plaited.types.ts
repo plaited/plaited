@@ -152,7 +152,7 @@ export type Bindings = {
     val?: never,
   ): void
   attr(this: Element, attr: string, val?: string | null | number | boolean): string | null | void
-  attr(this: Element, attr: 'class', val?: StylesObject | string): string | null | void
+  attr(this: Element, attr: 'class', val?: StylesObject | string | null): string | null | void
 }
 
 export type BoundElement<T extends Element = Element> = T & Bindings
