@@ -1,23 +1,24 @@
-import { defineElement, type PlaitedElement, isPlaitedElement } from 'plaited'
+import { defineElement, type PlaitedElement } from 'plaited'
+import { createDocumentFragment } from 'plaited/utils'
 import type { StoryObj } from 'plaited/workshop'
 
-import { styles, GREEN, RED } from './hydrating-element.css.js'
+import { styles, HYDRATING_ELEMENT_TAG, BEFORE_HYDRATION, AFTER_HYDRATION } from './hydrating-element.constants.js'
 const TRIGGER_HYDRATING_ELEMENT = 'TRIGGER_HYDRATING_ELEMENT'
 const FIXTURE_ELEMENT_TAG = 'fixture-element'
 const EMPTY_SLOT = 'Empty slot'
+const TRIGGER_HYDRATION = 'TRIGGER_HYDRATION'
+const ROUTE = '/main/tests/hydrating-element--target.template'
 
 const HydrationFixture = defineElement({
   tag: FIXTURE_ELEMENT_TAG,
-  publicEvents: [TRIGGER_HYDRATING_ELEMENT],
-  streamAssociated: true,
+  publicEvents: [TRIGGER_HYDRATING_ELEMENT, TRIGGER_HYDRATION],
   shadowDom: <slot p-target='slot'>{EMPTY_SLOT}</slot>,
   bProgram({ $ }) {
     return {
-      [TRIGGER_HYDRATING_ELEMENT]() {
+      async [TRIGGER_HYDRATION](detail: string) {
+        const frag = createDocumentFragment(detail)
         const [slot] = $<HTMLSlotElement>('slot')
-        const [el] = slot.assignedElements()
-        const slotTrigger = isPlaitedElement(el) ? el.trigger : null
-        slotTrigger?.({ type: 'update' })
+        frag && slot.replace(frag)
       },
     }
   },
@@ -26,60 +27,88 @@ const HydrationFixture = defineElement({
 export const test: StoryObj = {
   description: `Element that will be fetched as an include in another story to hydrate, ./main/tests/hydration-fixture.stories.tsx`,
   template: () => <HydrationFixture data-testid='fixture' />,
-  async play({ findByText, assert, findByAttribute }) {
-    const res = await fetch('/main/tests/hydrating-element--target.template')
+  async play({ findByText, assert, findByAttribute, match, wait }) {
+    const res = await fetch(ROUTE)
     const responseText = await res.text() // Get the HTML as a string
 
     const htmlTemplate = document.createElement('template') // Create a <template> element
     htmlTemplate.setHTMLUnsafe(responseText)
+    const contentBeforeHydration = await findByAttribute<HTMLDivElement>(
+      'p-target',
+      'inner',
+      htmlTemplate.content as unknown as HTMLElement,
+    )
+
     const styleElementBeforeHydration = await findByText(
       styles.before.stylesheet.join(' '),
       htmlTemplate.content as unknown as HTMLElement,
     )
     assert({
-      given: 'before streaming target',
-      should: 'have style tag',
+      given: 'before hydrating element is connected',
+      should: 'content should be a DIV',
+      actual: contentBeforeHydration?.tagName,
+      expected: 'DIV',
+    })
+
+    assert({
+      given: 'before hydrating element is connected',
+      should: 'still have before text',
+      actual: contentBeforeHydration?.innerText,
+      expected: BEFORE_HYDRATION,
+    })
+
+    assert({
+      given: 'before hydrating element is connected',
+      should: 'still have style tag',
       actual: styleElementBeforeHydration?.tagName,
       expected: 'STYLE',
     })
 
-    const fixture = await findByAttribute<PlaitedElement>('data-testid', 'fixture')
-
+    const contains = match(styleElementBeforeHydration!.innerText)
+    const pattern = 'text-decoration:underline'
     assert({
-      given: 'before streaming fixture shadowDom',
-      should: 'have text content',
-      actual: fixture?.shadowRoot?.textContent,
-      expected: EMPTY_SLOT,
+      given: 'before hydrating element is connected',
+      should: 'be underlined',
+      actual: contains(pattern),
+      expected: pattern,
     })
 
-    fixture?.trigger({ type: 'replaceChildren', detail: responseText })
+    const fixture = document.querySelector<PlaitedElement>(FIXTURE_ELEMENT_TAG)
 
-    const target = await findByAttribute<PlaitedElement>('data-testid', 'target')
-    const styleElementAfterHydration = await findByText(styles.before.stylesheet.join(' '), target)
+    fixture?.trigger({ type: TRIGGER_HYDRATION, detail: responseText })
+
+    await customElements.whenDefined(HYDRATING_ELEMENT_TAG)
+    await wait(60)
+    const hydratingElement = await findByAttribute<PlaitedElement>('p-target', HYDRATING_ELEMENT_TAG)
+
+    const contentAfterHydration = await findByAttribute<HTMLSpanElement>('p-target', 'inner', hydratingElement)
+    const styleElementAfterHydration = await findByText(styles.before.stylesheet.join(' '), hydratingElement)
 
     assert({
-      given: 'after streaming target',
+      given: 'after hydrating element is connected',
+      should: 'tag should be a span',
+      actual: contentAfterHydration?.tagName,
+      expected: 'SPAN',
+    })
+
+    assert({
+      given: 'after hydrating element is connected',
+      should: 'have after text',
+      actual: contentAfterHydration?.innerText,
+      expected: AFTER_HYDRATION,
+    })
+
+    assert({
+      given: 'after hydrating element is connected',
       should: 'not have style tag',
       actual: styleElementAfterHydration,
       expected: undefined,
     })
-
-    let inner = await findByAttribute<PlaitedElement>('p-target', 'inner')
     assert({
-      given: 'before triggering update on target',
-      should: 'have red color style',
-      actual: window.getComputedStyle(inner!).color,
-      expected: RED,
-    })
-
-    fixture?.trigger({ type: TRIGGER_HYDRATING_ELEMENT })
-    inner = await findByAttribute<PlaitedElement>('p-target', 'inner')
-
-    assert({
-      given: 'after triggering update on target',
-      should: 'have green color style',
-      actual: window.getComputedStyle(inner!).color,
-      expected: GREEN,
+      given: 'after hydrating element is connected',
+      should: 'be striked through',
+      actual: contentAfterHydration?.computedStyleMap().get('text-decoration-line')?.toString(),
+      expected: 'line-through',
     })
   },
 }

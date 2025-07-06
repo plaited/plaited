@@ -10,8 +10,8 @@ export * from './main/ssr.js'
 export * from './main/use-attributes-observer.js'
 export * from './main/use-template.js'
 export * from './main/use-dispatch.js'
+
 //Behavioral
 export * from './behavioral/define-worker.js'
 export * from './behavioral/use-signal.js'
 export * from './behavioral/use-worker.js'
-//JSX

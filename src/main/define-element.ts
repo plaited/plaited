@@ -75,72 +75,26 @@ export type BProgramArgs = {
  * @property {() => void | Promise<void>} [onFormReset] - Called when the associated form is reset. Requires `formAssociated: true`.
  * @property {(args: { state: unknown, reason: 'autocomplete' | 'restore' }) => void | Promise<void>} [onFormStateRestore] - Called when the browser tries to restore the element's state (e.g., during navigation or browser restart). Requires `formAssociated: true`.
  */
-export type PlaitedElementCallbackHandlers = {
-  [ELEMENT_CALLBACKS.onAdopted]?: () => void | Promise<void>
-  [ELEMENT_CALLBACKS.onAttributeChanged]?: (args: {
+export type PlaitedElementCallbackDetails = {
+  [ELEMENT_CALLBACKS.onAdopted]: void
+  [ELEMENT_CALLBACKS.onAttributeChanged]: {
     name: string
     oldValue: string | null
     newValue: string | null
-  }) => void | Promise<void>
-  [ELEMENT_CALLBACKS.onConnected]?: () => void | Promise<void>
-  [ELEMENT_CALLBACKS.onDisconnected]?: () => void | Promise<void>
-  [ELEMENT_CALLBACKS.onFormAssociated]?: (args: { form: HTMLFormElement }) => void | Promise<void>
-  [ELEMENT_CALLBACKS.onFormDisabled]?: (args: { disabled: boolean }) => void | Promise<void>
-  [ELEMENT_CALLBACKS.onFormReset]?: () => void | Promise<void>
-  [ELEMENT_CALLBACKS.onFormStateRestore]?: (args: {
+  }
+  [ELEMENT_CALLBACKS.onConnected]: void
+  [ELEMENT_CALLBACKS.onDisconnected]: void
+  [ELEMENT_CALLBACKS.onFormAssociated]: HTMLFormElement
+  [ELEMENT_CALLBACKS.onFormDisabled]: boolean
+  [ELEMENT_CALLBACKS.onFormReset]: void
+  [ELEMENT_CALLBACKS.onFormStateRestore]: {
     state: unknown
     reason: 'autocomplete' | 'restore'
-  }) => void | Promise<void>
+  }
 }
-
-/**
- * @description Represents the combined type for handlers within a Plaited component's `bProgram`.
- * It merges the base behavioral program `Handlers` type (allowing any event type string as a key)
- * with the specific `PlaitedElementCallbackHandlers` for lifecycle and form events.
- *
- * It explicitly *excludes* `append`, `prepend`, and `replaceChildren` handlers, as these
- * are managed internally when the `streamAssociated` option is enabled in `defineElement`.
- *
- * @template T - Can optionally extend `Handlers` to provide more specific types for custom events.
- * @example
- * ```typescript
- * type MyCustomEvents = {
- *   'user-login': (detail: { userId: string }) => void;
- *   'data-loaded': (detail: { data: Record<string, any> }) => Promise<void>;
- * }
- *
- * type MyComponentHandlers = PlaitedHandlers<MyCustomEvents>;
- *
- * const handlers: MyComponentHandlers = {
- *   // Custom event handlers
- *   'user-login': ({ userId }) => { console.log(`User ${userId} logged in.`); },
- *   'data-loaded': async ({ data }) => { await processData(data); },
- *
- *   // Lifecycle handler
- *   onConnected() { console.log('Component connected.'); },
- *
- *   // Form handler (if formAssociated: true)
- *   onFormReset() { resetComponentState(); },
- *
- *   // Invalid handlers (will cause type errors)
- *   // append: () => {},
- * };
- * ```
- */
-export type PlaitedEventDetails = {
-  [ELEMENT_CALLBACKS.append]?: never
-  [ELEMENT_CALLBACKS.prepend]?: never
-  [ELEMENT_CALLBACKS.replaceChildren]?: never
-} & EventDetails
-
-type RequirePlaitedElementCallbackHandlers = Required<PlaitedElementCallbackHandlers>
-
-type PlaitedElementCallbackParameters = {
-  [K in keyof RequirePlaitedElementCallbackHandlers]: Parameters<RequirePlaitedElementCallbackHandlers[K]> extends (
-    undefined
-  ) ?
-    undefined
-  : Parameters<RequirePlaitedElementCallbackHandlers[K]>[0]
+type Callback<T> = T extends void ? () => void | Promise<void> : (detail: T) => void | Promise<void>
+type PlaitedElementCallbackHandlers = {
+  [K in keyof PlaitedElementCallbackDetails]?: Callback<PlaitedElementCallbackDetails[K]>
 }
 
 /**
@@ -157,10 +111,9 @@ type PlaitedElementCallbackParameters = {
  * @property {string[]} [observedAttributes=[]] - An array of attribute names that the element should observe for changes. Changes trigger the `onAttributeChanged` callback. Also makes these attributes available as properties on the host element instance.
  * @property {string[]} [publicEvents=[]] - An array of event types that the component allows to be triggered on itself(outside its own `bProgram`). Used by `host.trigger`.
  * @property {true} [formAssociated] - If `true`, registers the element as a Form-Associated Custom Element, enabling form-related callbacks (`onFormAssociated`, etc.) and interaction with the `ElementInternals` API.
- * @property {true} [streamAssociated] - If `true`, enables Plaited's stream-based DOM mutation handlers (`append`, `prepend`, `replaceChildren`) within the `bProgram`. These handlers receive HTML strings to update the element's light DOM content.
- * @property {(this: PlaitedElement, args: BProgramArgs) => A & PlaitedElementCallbackHandlers} [bProgram] - The behavioral program function. It receives `BProgramArgs` (containing `$`, `trigger`, `host`, etc.) and should return an object containing event handlers and lifecycle callbacks defined by type `A`. The `this` context inside `bProgram` refers to the custom element instance.
+ * @property {(this: PlaitedElement, args: BProgramArgs) => Handlers<A> & PlaitedElementCallbacks} [bProgram] - The behavioral program function. It receives `BProgramArgs` (containing `$`, `trigger`, `host`, etc.) and should return an object containing event handlers and lifecycle callbacks defined by type `A`. The `this` context inside `bProgram` refers to the custom element instance.
  */
-export type DefineElementArgs<A extends PlaitedEventDetails> = {
+export type DefineElementArgs<A extends EventDetails> = {
   tag: CustomElementTag
   shadowDom: TemplateObject
   delegatesFocus?: boolean
@@ -169,29 +122,9 @@ export type DefineElementArgs<A extends PlaitedEventDetails> = {
   observedAttributes?: string[]
   publicEvents?: string[]
   formAssociated?: true
-  streamAssociated?: true
   bProgram?: {
     (this: PlaitedElement, args: BProgramArgs): Handlers<A> & PlaitedElementCallbackHandlers
   }
-}
-
-const createDocumentFragment = (html: string) => {
-  const tpl = document.createElement('template')
-  tpl.setHTMLUnsafe(html)
-  const clone = tpl.content.cloneNode(true) as DocumentFragment
-  const scripts = clone.querySelectorAll<HTMLScriptElement>('script')
-  for (const script of scripts) {
-    const newScript = document.createElement('script')
-    for (const attr of script.attributes) {
-      newScript.setAttribute(attr.name, attr.value)
-    }
-    if (script.textContent) {
-      newScript.textContent = script.textContent
-    }
-    script.parentNode?.appendChild(newScript)
-    script.parentNode?.removeChild(script)
-  }
-  return clone
 }
 
 const getTriggerMap = (el: Element) =>
@@ -471,18 +404,11 @@ export const defineElement = <A extends EventDetails>({
   mode = 'open',
   delegatesFocus = true,
   slotAssignment = 'named',
-  publicEvents,
+  publicEvents = [],
   observedAttributes = [],
-  streamAssociated,
   formAssociated,
   bProgram: callback,
 }: DefineElementArgs<A>): PlaitedTemplate => {
-  const _publicEvents: string[] = [
-    ...(publicEvents ?? []),
-    ...(streamAssociated ?
-      [ELEMENT_CALLBACKS.append, ELEMENT_CALLBACKS.prepend, ELEMENT_CALLBACKS.replaceChildren]
-    : []),
-  ]
   if (canUseDOM() && !customElements.get(tag)) {
     customElements.define(
       tag,
@@ -490,7 +416,7 @@ export const defineElement = <A extends EventDetails>({
         static observedAttributes = [...observedAttributes]
         static formAssociated = formAssociated
         get publicEvents() {
-          return _publicEvents
+          return publicEvents
         }
         #internals: ElementInternals
         get #root() {
@@ -516,13 +442,13 @@ export const defineElement = <A extends EventDetails>({
           this.#bThreads = bThreads
           this.trigger = getPublicTrigger({
             trigger,
-            publicEvents: _publicEvents,
+            publicEvents,
           })
         }
         attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
           this.#trigger<{
             type: typeof ELEMENT_CALLBACKS.onAttributeChanged
-            detail: PlaitedElementCallbackParameters['onAttributeChanged']
+            detail: PlaitedElementCallbackDetails['onAttributeChanged']
           }>({
             type: ELEMENT_CALLBACKS.onAttributeChanged,
             detail: { name, oldValue, newValue },
@@ -565,17 +491,7 @@ export const defineElement = <A extends EventDetails>({
               bSync,
             })
             // Subscribe feedback handlers to behavioral program and add disconnect callback to disconnect set
-            this.#disconnectSet.add(
-              this.#useFeedback({
-                ...handlers,
-                ...(streamAssociated && {
-                  [ELEMENT_CALLBACKS.append]: (html: string) => this.append(createDocumentFragment(html)),
-                  [ELEMENT_CALLBACKS.prepend]: (html: string) => this.prepend(createDocumentFragment(html)),
-                  [ELEMENT_CALLBACKS.replaceChildren]: (html: string) =>
-                    this.replaceChildren(createDocumentFragment(html)),
-                }),
-              }),
-            )
+            this.#disconnectSet.add(this.#useFeedback(handlers))
           }
           this.#trigger({ type: ELEMENT_CALLBACKS.onConnected })
         }
@@ -588,19 +504,19 @@ export const defineElement = <A extends EventDetails>({
         formAssociatedCallback(form: HTMLFormElement) {
           this.#trigger<{
             type: typeof ELEMENT_CALLBACKS.onFormAssociated
-            detail: PlaitedElementCallbackParameters['onFormAssociated']
+            detail: PlaitedElementCallbackDetails['onFormAssociated']
           }>({
             type: ELEMENT_CALLBACKS.onFormAssociated,
-            detail: { form },
+            detail: form,
           })
         }
         formDisabledCallback(disabled: boolean) {
           this.#trigger<{
             type: typeof ELEMENT_CALLBACKS.onFormDisabled
-            detail: PlaitedElementCallbackParameters['onFormDisabled']
+            detail: PlaitedElementCallbackDetails['onFormDisabled']
           }>({
             type: ELEMENT_CALLBACKS.onFormDisabled,
-            detail: { disabled },
+            detail: disabled,
           })
         }
         formResetCallback() {
@@ -609,7 +525,7 @@ export const defineElement = <A extends EventDetails>({
         formStateRestoreCallback(state: unknown, reason: 'autocomplete' | 'restore') {
           this.#trigger<{
             type: typeof ELEMENT_CALLBACKS.onFormStateRestore
-            detail: PlaitedElementCallbackParameters['onFormStateRestore']
+            detail: PlaitedElementCallbackDetails['onFormStateRestore']
           }>({
             type: ELEMENT_CALLBACKS.onFormStateRestore,
             detail: { state, reason },
@@ -680,14 +596,12 @@ export const defineElement = <A extends EventDetails>({
       },
     )
   }
-  /** We continue to hoist our stylesheet until we  create a custom element then we add it to front of the html array*/
-  shadowDom.html.unshift(`<style>${shadowDom.stylesheets.join('')}</style>`)
   const registry = new Set<string>([...shadowDom.registry, tag])
+  /** We continue to hoist our stylesheet until we  create a custom element then we add it to front of the html array*/
+  shadowDom.stylesheets.length && shadowDom.html.unshift(`<style>${shadowDom.stylesheets.join('')}</style>`)
   const ft = ({ children = [], ...attrs }: Attrs) =>
     createTemplate(tag, {
       ...attrs,
-      /** We continue to hoist our part attributes until we create a custom element then we expose them as scoped to the tag*/
-      exportparts: shadowDom.parts.flatMap((part) => (part ? `${part}:${tag}--${part},` : [])).join(' '),
       children: [
         createTemplate('template', {
           shadowrootmode: mode,
@@ -696,8 +610,6 @@ export const defineElement = <A extends EventDetails>({
             ...shadowDom,
             /** Having hoisted our stylsheets we reset the stylesheet array on the TemplateObject */
             stylesheets: [],
-            /** Having hoisted our parts we reset the parts array on the TemplateObject */
-            parts: [],
           },
         }),
         ...(Array.isArray(children) ? children : [children]),
@@ -706,7 +618,7 @@ export const defineElement = <A extends EventDetails>({
   ft.registry = registry
   ft.tag = tag
   ft.$ = PLAITED_TEMPLATE_IDENTIFIER
-  ft.publicEvents = _publicEvents
+  ft.publicEvents = publicEvents
   ft.observedAttributes = observedAttributes
   return ft
 }
