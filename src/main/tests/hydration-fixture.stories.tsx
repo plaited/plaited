@@ -33,8 +33,9 @@ export const test: StoryObj = {
 
     const htmlTemplate = document.createElement('template') // Create a <template> element
     htmlTemplate.setHTMLUnsafe(responseText)
-    const textContentBeforeHydration = await findByText(
-      BEFORE_HYDRATION,
+    const contentBeforeHydration = await findByAttribute<HTMLDivElement>(
+      'p-target',
+      'inner',
       htmlTemplate.content as unknown as HTMLElement,
     )
 
@@ -43,22 +44,30 @@ export const test: StoryObj = {
       htmlTemplate.content as unknown as HTMLElement,
     )
     assert({
-      given: 'before appending hydrating element',
-      should: 'still have before text',
-      actual: textContentBeforeHydration?.tagName,
+      given: 'before hydrating element is connected',
+      should: 'content should be a DIV',
+      actual: contentBeforeHydration?.tagName,
       expected: 'DIV',
     })
 
     assert({
-      given: 'before appending hydrating element',
+      given: 'before hydrating element is connected',
+      should: 'still have before text',
+      actual: contentBeforeHydration?.innerText,
+      expected: BEFORE_HYDRATION,
+    })
+
+    assert({
+      given: 'before hydrating element is connected',
       should: 'still have style tag',
       actual: styleElementBeforeHydration?.tagName,
       expected: 'STYLE',
     })
+
     const contains = match(styleElementBeforeHydration!.innerText)
     const pattern = 'text-decoration:underline'
     assert({
-      given: 'before hyrdrating',
+      given: 'before hydrating element is connected',
       should: 'be underlined',
       actual: contains(pattern),
       expected: pattern,
@@ -72,26 +81,33 @@ export const test: StoryObj = {
     await wait(60)
     const hydratingElement = await findByAttribute<PlaitedElement>('p-target', HYDRATING_ELEMENT_TAG)
 
-    const textContentAfterHydration = await findByText(AFTER_HYDRATION, hydratingElement)
+    const contentAfterHydration = await findByAttribute<HTMLSpanElement>('p-target', 'inner', hydratingElement)
     const styleElementAfterHydration = await findByText(styles.before.stylesheet.join(' '), hydratingElement)
 
     assert({
-      given: 'after appending hydrating element',
-      should: 'still have after text',
-      actual: textContentAfterHydration?.tagName,
+      given: 'after hydrating element is connected',
+      should: 'tag should be a span',
+      actual: contentAfterHydration?.tagName,
       expected: 'SPAN',
     })
 
     assert({
-      given: 'after appending hyrdrating element',
+      given: 'after hydrating element is connected',
+      should: 'have after text',
+      actual: contentAfterHydration?.innerText,
+      expected: AFTER_HYDRATION,
+    })
+
+    assert({
+      given: 'after hydrating element is connected',
       should: 'not have style tag',
       actual: styleElementAfterHydration,
       expected: undefined,
     })
     assert({
-      given: 'after hyrdrating',
+      given: 'after hydrating element is connected',
       should: 'be striked through',
-      actual: textContentAfterHydration?.computedStyleMap().get('text-decoration-line')?.toString(),
+      actual: contentAfterHydration?.computedStyleMap().get('text-decoration-line')?.toString(),
       expected: 'line-through',
     })
   },
