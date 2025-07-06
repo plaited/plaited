@@ -1,43 +1,22 @@
 import type { PlaitedTrigger, Trigger } from '../behavioral.js'
-import { wait, canUseDOM } from '../utils.js'
-
-const createDocumentFragment = (html: string) => {
-  if (!canUseDOM()) return
-  const tpl = document.createElement('template')
-  tpl.setHTMLUnsafe(html)
-  const clone = tpl.content.cloneNode(true) as DocumentFragment
-  const scripts = clone.querySelectorAll<HTMLScriptElement>('script')
-  for (const script of scripts) {
-    const newScript = document.createElement('script')
-    for (const attr of script.attributes) {
-      newScript.setAttribute(attr.name, attr.value)
-    }
-    if (script.textContent) {
-      newScript.textContent = script.textContent
-    }
-    script.parentNode?.appendChild(newScript)
-    script.parentNode?.removeChild(script)
-  }
-  return clone
-}
+import { wait } from './wait.js'
 
 /**
- * Fetches resources with automatic retry, error handling, and HTML parsing capabilities.
+ * Fetches resources with automatic retry and error handling.
  *
- * This utility extends the standard fetch API with retry logic, error handling, and
- * a special `html()` method that safely parses HTML content with script execution.
- * Designed for use within Plaited's behavioral programming system.
+ * This utility extends the standard fetch API with retry logic and error handling,
+ * designed for use within Plaited's behavioral programming system. Failed requests
+ * trigger the provided trigger function with error details.
  *
  * @param config Configuration object with the following properties:
  *   @param {RequestInfo | URL} config.url - The URL to fetch from (string, Request, or URL object)
  *   @param {string} config.type - Event type to trigger on errors
  *   @param {Trigger | PlaitedTrigger} config.trigger - Trigger function for error events
- *   @param {number} [config.retry=1] - Number of retry attempts (default: 1)
+ *   @param {number} [config.retry=0] - Number of retry attempts (default: 0)
  *   @param {number} [config.retryDelay=1000] - Base delay in ms between retries (default: 1000)
  *   @param {RequestInit} [config.options] - Standard fetch options (headers, method, body, etc.)
  *
- * @returns Promise<Response & { html: () => Promise<DocumentFragment> } | undefined>
- *   Enhanced Response object with `html()` method, or undefined if all retries fail
+ * @returns Promise<Response | undefined> Standard Response object or undefined if all retries fail
  *
  * @example
  * // Basic usage for JSON
@@ -47,14 +26,6 @@ const createDocumentFragment = (html: string) => {
  *   trigger: myTrigger
  * });
  * const userData = await response?.json();
- *
- * // Fetching and parsing HTML with script execution
- * const response = await useFetch({
- *   url: '/components/widget.html',
- *   type: 'WIDGET_ERROR',
- *   trigger: myTrigger
- * });
- * const fragment = await response?.html(); // ⚠️ Scripts will execute!
  *
  * // With retry configuration and custom options
  * const response = await useFetch({
@@ -71,12 +42,11 @@ const createDocumentFragment = (html: string) => {
  * });
  *
  * @remarks
- * - ⚠️ **Security Warning**: The `html()` method uses `setHTMLUnsafe` allowing script execution
- * - Only use `html()` with trusted sources or proper CSP configuration
  * - Errors trigger the provided trigger function with type and error detail
  * - HTTP errors (404, 500, etc.) are caught and retried
- * - Retry delays use exponential backoff with jitter
+ * - Retry delays use exponential backoff with jitter: `Math.random() * min(9999, retryDelay * 2^retry)`
  * - Returns undefined when all retries are exhausted (does not throw)
+ * - The trigger is called for each failed attempt, allowing for error tracking
  *
  * @internal
  */
@@ -94,16 +64,7 @@ export const useFetch = async ({
   retry?: number
   retryDelay?: number
   options?: RequestInit
-}): Promise<
-  | (Response & {
-      /**
-       * ⚠️ **Security Warning**: This method allows JavaScript execution from fetched HTML.
-       * Only use with trusted sources or when you have proper Content Security Policy (CSP) configured.
-       */
-      html: () => Promise<DocumentFragment>
-    })
-  | undefined
-> => {
+}): Promise<Response | undefined> => {
   while (retry > -1) {
     try {
       const response = await fetch(url, options)
@@ -121,11 +82,7 @@ export const useFetch = async ({
       }
 
       retry = 0 // Exit loop on successful fetch
-      const addOn = {
-        html: async () => createDocumentFragment(await response.text()),
-      }
-      Object.assign(response, addOn)
-      return response as Response & { html: () => Promise<DocumentFragment> }
+      return response
     } catch (detail) {
       trigger({ type, detail })
     }
