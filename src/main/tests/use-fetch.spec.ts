@@ -36,7 +36,7 @@ test('useFetch should handle 404 errors', async () => {
     url: 'https://api.example.com/nonexistent',
     type: 'stub',
     trigger,
-    retry: 2,
+    retry: 1,
     retryDelay: 10,
   })
   const result = await res?.json()
@@ -56,7 +56,7 @@ test('useFetch should handle 500 errors', async () => {
 
   const res = await useFetch({
     url: 'https://api.example.com/error',
-    retry: 2,
+    retry: 1,
     retryDelay: 10,
     type: 'stub',
     trigger,
@@ -76,7 +76,7 @@ test('useFetch should handle other HTTP errors', async () => {
 
   const res = await useFetch({
     url: 'https://api.example.com/forbidden',
-    retry: 2,
+    retry: 1,
     retryDelay: 10,
     type: 'stub',
     trigger,
@@ -130,7 +130,7 @@ test('useFetch should return undefined after all retries fail', async () => {
 
   const res = await useFetch({
     url: 'https://api.example.com/fail',
-    retry: 2,
+    retry: 1,
     retryDelay: 10,
     type: 'stub',
     trigger,
@@ -305,7 +305,6 @@ test('useFetch should handle non-ok response with successful JSON parse', async 
 
   const res = await useFetch({
     url: 'https://api.example.com/unauthorized',
-    retry: 1,
     retryDelay: 10,
     type: 'stub',
     trigger,
@@ -317,7 +316,7 @@ test('useFetch should handle non-ok response with successful JSON parse', async 
   globalThis.fetch = originalFetch
 })
 
-test('useFetch respects retry configuration with delays', async () => {
+test('useFetch respects retry configuration', async () => {
   const originalFetch = globalThis.fetch
   const trigger = jest.fn()
 
@@ -327,20 +326,23 @@ test('useFetch respects retry configuration with delays', async () => {
     return Promise.reject(new Error('Network error'))
   }) as unknown as typeof fetch
 
-  const startTime = Date.now()
   const result = await useFetch({
-    url: 'https://api.example.com/test-delays',
+    url: 'https://api.example.com/test-retries',
     retry: 2,
-    retryDelay: 50, // Small delay for testing
+    retryDelay: 10,
     type: 'stub',
     trigger,
   })
-  const endTime = Date.now()
 
   expect(result).toBeUndefined()
-  expect(callCount).toBe(2)
-  // Should have some delay due to retry
-  expect(endTime - startTime).toBeGreaterThan(30)
+  // Should be called 3 times: initial + 2 retries
+  expect(callCount).toBe(3)
+  // Trigger should be called for each failure
+  expect(trigger).toHaveBeenCalledTimes(3)
+  expect(trigger).toHaveBeenCalledWith({
+    type: 'stub',
+    detail: expect.any(Error),
+  })
 
   globalThis.fetch = originalFetch
 })

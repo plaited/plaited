@@ -81,7 +81,7 @@ const createDocumentFragment = (html: string) => {
  */
 export const useFetch = async ({
   url,
-  retry = 1,
+  retry = 0,
   retryDelay = 1_000,
   trigger,
   type,
@@ -103,7 +103,7 @@ export const useFetch = async ({
     })
   | undefined
 > => {
-  while (retry > 0) {
+  while (retry > -1) {
     try {
       const response = await fetch(url, options)
       // Check if the response is successful (status code 200-299)
@@ -129,7 +129,7 @@ export const useFetch = async ({
       trigger({ type, detail })
     }
     retry--
-    if (retry > 0) {
+    if (retry > -1) {
       const max = Math.min(9999, retryDelay * Math.pow(2, retry))
       await wait(Math.floor(Math.random() * max))
     }
