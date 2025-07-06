@@ -94,7 +94,7 @@ External Trigger → bProgram → Event Selection → Thread Notification → Fe
 - **`src/behavioral/`**: BP implementation (bProgram, bThread, signals)
 - **`src/utils/`**: Utility functions (well-documented, pure functions)
 - **`src/workshop/`**: Development tools (story runner, design tokens)
-- **`src/mcp/`**: Model Context Protocol server support
+- **`src/mcp/`**: Model Context Protocol server support (MCP servers and Arazzo workflow runner)
 
 ### Critical Implementation Details
 
@@ -149,3 +149,62 @@ state.set(newValue);
 
 ### Testing Components
 Create a `*.stories.tsx` file and use `storyFixture` for component testing with Playwright integration.
+
+### Creating MCP Servers
+```ts
+import { defineMCPServer } from 'plaited/mcp'
+import { z } from 'zod'
+
+const server = await defineMCPServer({
+  name: 'my-tools',
+  version: '1.0.0',
+  registry: {
+    searchFiles: {
+      primitive: 'tool',
+      config: {
+        description: 'Search for files by pattern',
+        inputSchema: z.object({
+          pattern: z.string(),
+          directory: z.string().optional()
+        })
+      }
+    }
+  },
+  async bProgram({ trigger }) {
+    return {
+      searchFiles: async ({ resolve, args }) => {
+        const files = await findFiles(args.pattern, args.directory)
+        resolve({ content: [{ type: 'text', text: files.join('\n') }] })
+      }
+    }
+  }
+})
+```
+
+### Using the Arazzo Workflow Runner
+```ts
+import { defineArazzoRunner } from 'plaited/mcp'
+
+const runner = await defineArazzoRunner({
+  name: 'workflow-runner',
+  version: '1.0.0',
+  arazzoDocuments: [arazzoDoc], // Arazzo v1.0.1 workflow specifications
+  openApiDocuments: [openApiDoc], // OpenAPI specs referenced by workflows
+  environmentResolver: (key) => process.env[key], // For secure values
+  async bProgram({ runner }) {
+    return {
+      'execute-workflow': async ({ resolve, args }) => {
+        const result = await runner.executeWorkflow(args.workflowId, args.inputs)
+        resolve({ content: [{ type: 'text', text: JSON.stringify(result) }] })
+      }
+    }
+  }
+})
+```
+
+The Arazzo runner implements the Arazzo Specification v1.0.1 for API workflow orchestration, featuring:
+- Runtime expression evaluation (`$inputs`, `$steps`, `$response`, etc.)
+- Control flow (success/failure actions, retry, goto)
+- Nested workflow execution
+- OpenAPI operation resolution
+- Environment-based authentication
