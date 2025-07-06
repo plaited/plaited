@@ -1,7 +1,8 @@
-import type { PlaitedTrigger, Trigger } from 'plaited/behavioral'
-import { wait } from 'plaited/utils'
+import type { PlaitedTrigger, Trigger } from '../behavioral.js'
+import { wait, canUseDOM } from '../utils.js'
 
 const createDocumentFragment = (html: string) => {
+  if (!canUseDOM()) return
   const tpl = document.createElement('template')
   tpl.setHTMLUnsafe(html)
   const clone = tpl.content.cloneNode(true) as DocumentFragment
