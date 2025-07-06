@@ -39,5 +39,5 @@ const HydratingElement = defineElement({
 
 export const target: StoryObj = {
   description: `Element that will be fetched as an include in another story to hydrate`,
-  template: () => <HydratingElement data-testid='target' />,
+  template: () => <HydratingElement p-target={HYDRATING_ELEMENT_TAG} />,
 }

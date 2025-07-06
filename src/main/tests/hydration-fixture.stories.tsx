@@ -1,23 +1,31 @@
-import { defineElement, type PlaitedElement, isPlaitedElement } from 'plaited'
+import { defineElement, type PlaitedElement, useFetch } from 'plaited'
 import type { StoryObj } from 'plaited/workshop'
 
 import { styles, GREEN, RED } from './hydrating-element.css.js'
 const TRIGGER_HYDRATING_ELEMENT = 'TRIGGER_HYDRATING_ELEMENT'
 const FIXTURE_ELEMENT_TAG = 'fixture-element'
 const EMPTY_SLOT = 'Empty slot'
+const FETCH_AND_IMPORT = 'FETCH_AND_IMPORT'
 
 const HydrationFixture = defineElement({
   tag: FIXTURE_ELEMENT_TAG,
-  publicEvents: [TRIGGER_HYDRATING_ELEMENT],
-  streamAssociated: true,
+  publicEvents: [TRIGGER_HYDRATING_ELEMENT, FETCH_AND_IMPORT],
   shadowDom: <slot p-target='slot'>{EMPTY_SLOT}</slot>,
-  bProgram({ $ }) {
+  bProgram({ $, trigger }) {
     return {
-      [TRIGGER_HYDRATING_ELEMENT]() {
+      async [FETCH_AND_IMPORT](detail: string) {
+        const res = await useFetch({
+          type: 'onError',
+          trigger,
+          url: detail,
+        })
+        const frag = await res?.html()
         const [slot] = $<HTMLSlotElement>('slot')
-        const [el] = slot.assignedElements()
-        const slotTrigger = isPlaitedElement(el) ? el.trigger : null
-        slotTrigger?.({ type: 'update' })
+        frag && slot.replace(frag)
+      },
+      async [TRIGGER_HYDRATING_ELEMENT]() {
+        const [target] = $<PlaitedElement>('hydrating-element')
+        target.trigger({ type: 'update' })
       },
     }
   },
@@ -26,8 +34,9 @@ const HydrationFixture = defineElement({
 export const test: StoryObj = {
   description: `Element that will be fetched as an include in another story to hydrate, ./main/tests/hydration-fixture.stories.tsx`,
   template: () => <HydrationFixture data-testid='fixture' />,
-  async play({ findByText, assert, findByAttribute }) {
-    const res = await fetch('/main/tests/hydrating-element--target.template')
+  async play({ findByText, assert, findByAttribute, wait }) {
+    const route = '/main/tests/hydrating-element--target.template'
+    const res = await fetch(route)
     const responseText = await res.text() // Get the HTML as a string
 
     const htmlTemplate = document.createElement('template') // Create a <template> element
@@ -52,7 +61,8 @@ export const test: StoryObj = {
       expected: EMPTY_SLOT,
     })
 
-    fixture?.trigger({ type: 'replaceChildren', detail: responseText })
+    fixture?.trigger({ type: FETCH_AND_IMPORT, detail: route })
+    await wait(60)
 
     const target = await findByAttribute<PlaitedElement>('data-testid', 'target')
     const styleElementAfterHydration = await findByText(styles.before.stylesheet.join(' '), target)

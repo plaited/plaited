@@ -45,7 +45,6 @@ export const StoryFixture = defineElement<{
 }>({
   tag: STORY_FIXTURE,
   publicEvents: [FIXTURE_EVENTS.run],
-  streamAssociated: true,
   shadowDom: h('slot', {
     ...css.host({
       display: 'contents',
@@ -121,7 +120,7 @@ export const StoryFixture = defineElement<{
           })
         } else if (error instanceof Error) {
           trigger<{ type: string; detail: TestFailureEventDetail }>({
-            type: error.name,
+            type: FIXTURE_EVENTS.unknown_error,
             detail: { [failure(error.name)]: error.message },
           })
         }
