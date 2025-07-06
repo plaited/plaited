@@ -93,7 +93,7 @@ export type PlaitedElementCallbackDetails = {
   }
 }
 type Callback<T> = T extends void ? () => void | Promise<void> : (detail: T) => void | Promise<void>
-export type PlaitedElementCallbacks = {
+export type PlaitedElementCallbackHandlers = {
   [K in keyof PlaitedElementCallbackDetails]?: Callback<PlaitedElementCallbackDetails[K]>
 }
 
@@ -123,7 +123,7 @@ export type DefineElementArgs<A extends EventDetails> = {
   publicEvents?: string[]
   formAssociated?: true
   bProgram?: {
-    (this: PlaitedElement, args: BProgramArgs): Handlers<A> & PlaitedElementCallbacks
+    (this: PlaitedElement, args: BProgramArgs): Handlers<A> & PlaitedElementCallbackHandlers
   }
 }
 
