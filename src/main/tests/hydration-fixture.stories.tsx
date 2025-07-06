@@ -62,7 +62,7 @@ export const test: StoryObj = {
     })
 
     fixture?.trigger({ type: FETCH_AND_IMPORT, detail: route })
-    await wait(100)
+    await wait(120)
     const target = await findByAttribute<PlaitedElement>('data-testid', 'target')
     const styleElementAfterHydration = await findByText(styles.before.stylesheet.join(' '), target)
 
@@ -84,7 +84,7 @@ export const test: StoryObj = {
 
     fixture?.trigger({ type: TRIGGER_HYDRATING_ELEMENT })
     inner = await findByAttribute<PlaitedElement>('p-target', 'inner')
-    await wait(100)
+    await wait(120)
     assert({
       given: 'after triggering update on target',
       should: 'have green color style',
