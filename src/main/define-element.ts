@@ -93,7 +93,7 @@ export type PlaitedElementCallbackDetails = {
   }
 }
 type Callback<T> = T extends void ? () => void | Promise<void> : (detail: T) => void | Promise<void>
-export type PlaitedElementCallbackHandlers = {
+type PlaitedElementCallbackHandlers = {
   [K in keyof PlaitedElementCallbackDetails]?: Callback<PlaitedElementCallbackDetails[K]>
 }
 
