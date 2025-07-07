@@ -204,3 +204,119 @@ export type PrimitiveHandlers<Entries extends Registry, E extends EventDetails> 
   : P extends keyof E ? (detail: E[P]) => void | Promise<void>
   : never
 }
+
+/**
+ * @internal
+ * MCP Client types for behavioral integration
+ */
+
+/**
+ * @internal
+ * Transport configuration for MCP client connections.
+ * Supports stdio (subprocess) and SSE (HTTP) transports.
+ */
+export type MCPTransportConfig = 
+  | {
+      type: 'stdio'
+      command: string
+      args?: string[]
+      env?: Record<string, string>
+    }
+  | {
+      type: 'sse'
+      url: string
+      headers?: Record<string, string>
+    }
+
+/**
+ * @internal
+ * Event detail for tool execution requests.
+ * Includes tool name and typed arguments.
+ */
+export type CallToolDetail = {
+  name: string
+  arguments: unknown
+}
+
+/**
+ * @internal
+ * Event detail for resource read requests.
+ * Includes resource URI for fetching.
+ */
+export type ReadResourceDetail = {
+  uri: string
+}
+
+/**
+ * @internal
+ * Event detail for prompt completion requests.
+ * Includes prompt name and typed arguments.
+ */
+export type GetPromptDetail = {
+  name: string
+  arguments: unknown
+}
+
+/**
+ * @internal
+ * Client event details for MCP operations.
+ * Maps event types to their detail payloads.
+ */
+export type MCPClientEventDetails = {
+  // Discovery events
+  TOOLS_DISCOVERED: { tools: Array<{ name: string; description?: string; inputSchema?: unknown }> }
+  RESOURCES_DISCOVERED: { resources: Array<{ uri: string; name?: string; description?: string; mimeType?: string }> }
+  PROMPTS_DISCOVERED: { prompts: Array<{ name: string; description?: string; argsSchema?: unknown }> }
+  
+  // Operation events
+  CALL_TOOL: CallToolDetail
+  READ_RESOURCE: ReadResourceDetail
+  GET_PROMPT: GetPromptDetail
+  
+  // Result events
+  TOOL_RESULT: { name: string; result: CallToolResult }
+  RESOURCE_RESULT: { uri: string; result: ReadResourceResult }
+  PROMPT_RESULT: { name: string; result: GetPromptResult }
+  
+  // Lifecycle events
+  CLIENT_CONNECTED: { capabilities: unknown }
+  CLIENT_DISCONNECTED: { reason?: string }
+  CLIENT_ERROR: { error: Error; operation?: string }
+}
+
+/**
+ * @internal
+ * Configuration for MCP client initialization.
+ * Defines server connection and behavioral program.
+ */
+export type MCPClientConfig<E extends EventDetails = EventDetails> = {
+  name: string
+  version: string
+  transport: MCPTransportConfig
+  publicEvents?: string[]
+  bProgram: (args: MCPClientBProgramArgs) => Promise<Partial<StrictHandlers<MCPClientEventDetails & E>>>
+}
+
+/**
+ * @internal
+ * Arguments provided to MCP client behavioral program.
+ * Includes standard BP utilities and MCP-specific functionality.
+ */
+export type MCPClientBProgramArgs = {
+  // Standard BP utilities
+  bSync: import('../behavioral.js').BSync
+  bThread: import('../behavioral.js').BThread
+  bThreads: import('../behavioral.js').BThreads
+  disconnect: import('../behavioral.js').Disconnect
+  trigger: import('../behavioral.js').PlaitedTrigger
+  useSnapshot: import('../behavioral.js').UseSnapshot
+  
+  // MCP client instance
+  client: import('@modelcontextprotocol/sdk/client/index.js').Client
+  
+  // Reactive state
+  capabilities: import('../behavioral.js').SignalWithInitialValue<unknown>
+  tools: import('../behavioral.js').SignalWithInitialValue<MCPClientEventDetails['TOOLS_DISCOVERED']['tools']>
+  resources: import('../behavioral.js').SignalWithInitialValue<MCPClientEventDetails['RESOURCES_DISCOVERED']['resources']>
+  prompts: import('../behavioral.js').SignalWithInitialValue<MCPClientEventDetails['PROMPTS_DISCOVERED']['prompts']>
+}

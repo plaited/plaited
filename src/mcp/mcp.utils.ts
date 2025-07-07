@@ -267,3 +267,150 @@ export const registerTool = ({
   signal.listen(name, trigger)
   return tool
 }
+
+/**
+ * @internal
+ * Creates reactive signals for MCP client primitive discovery.
+ *
+ * Provides a reactive way to track available tools, resources, and prompts
+ * from an MCP server. Signals update automatically when primitives change.
+ *
+ * @param client - The MCP client instance to monitor
+ * @param trigger - Plaited trigger for dispatching discovery events
+ *
+ * @returns Object containing signals for each primitive type
+ *
+ * Architecture notes:
+ * - Signals start empty and populate after connection
+ * - Each signal triggers a corresponding discovery event
+ * - Signals can be subscribed to for reactive UI updates
+ * - Discovery happens automatically on client connection
+ *
+ * Example usage:
+ * ```ts
+ * const { tools, resources, prompts } = createDiscoverySignals(client, trigger);
+ * 
+ * // React to tool discovery
+ * tools.listen('TOOLS_UPDATED', componentTrigger);
+ * 
+ * // Access current tools
+ * const currentTools = tools.get();
+ * ```
+ */
+export const createDiscoverySignals = (
+  client: import('@modelcontextprotocol/sdk/client/index.js').Client,
+  trigger: PlaitedTrigger
+) => {
+  const tools = useSignal<Array<{ name: string; description?: string; inputSchema?: unknown }>>([])
+  const resources = useSignal<Array<{ uri: string; name?: string; description?: string; mimeType?: string }>>([])
+  const prompts = useSignal<Array<{ name: string; description?: string; argsSchema?: unknown }>>([])
+
+  // Set up discovery listeners
+  tools.listen('TOOLS_DISCOVERED', trigger)
+  resources.listen('RESOURCES_DISCOVERED', trigger)
+  prompts.listen('PROMPTS_DISCOVERED', trigger)
+
+  return { tools, resources, prompts }
+}
+
+/**
+ * @internal
+ * Discovers and caches MCP server primitives.
+ *
+ * Queries the MCP server for available tools, resources, and prompts,
+ * then updates the provided signals with the discovered primitives.
+ *
+ * @param client - The MCP client instance
+ * @param signals - Discovery signals to update
+ * @param trigger - Plaited trigger for error events
+ *
+ * Error handling:
+ * - Failed discovery operations emit CLIENT_ERROR events
+ * - Partial failures don't prevent other discoveries
+ * - Empty results are valid (server may have no primitives)
+ *
+ * Performance notes:
+ * - Discovery operations run in parallel
+ * - Results are cached in signals
+ * - Re-discovery can be triggered by calling again
+ */
+export const discoverPrimitives = async (
+  client: import('@modelcontextprotocol/sdk/client/index.js').Client,
+  signals: ReturnType<typeof createDiscoverySignals>,
+  trigger: PlaitedTrigger
+) => {
+  try {
+    // Discover all primitives in parallel
+    const [toolsResult, resourcesResult, promptsResult] = await Promise.allSettled([
+      client.listTools(),
+      client.listResources(),
+      client.listPrompts()
+    ])
+
+    // Update tools signal
+    if (toolsResult.status === 'fulfilled') {
+      signals.tools.set(toolsResult.value.tools)
+    } else {
+      trigger({ type: 'CLIENT_ERROR', detail: { error: toolsResult.reason, operation: 'listTools' } })
+    }
+
+    // Update resources signal
+    if (resourcesResult.status === 'fulfilled') {
+      signals.resources.set(resourcesResult.value.resources)
+    } else {
+      trigger({ type: 'CLIENT_ERROR', detail: { error: resourcesResult.reason, operation: 'listResources' } })
+    }
+
+    // Update prompts signal
+    if (promptsResult.status === 'fulfilled') {
+      signals.prompts.set(promptsResult.value.prompts)
+    } else {
+      trigger({ type: 'CLIENT_ERROR', detail: { error: promptsResult.reason, operation: 'listPrompts' } })
+    }
+  } catch (error) {
+    trigger({ 
+      type: 'CLIENT_ERROR', 
+      detail: { 
+        error: error instanceof Error ? error : new Error(String(error)), 
+        operation: 'discoverPrimitives' 
+      } 
+    })
+  }
+}
+
+/**
+ * @internal
+ * Creates a transport for MCP client based on configuration.
+ *
+ * Supports both stdio (subprocess) and SSE (HTTP) transports.
+ * Stdio is the most common for local MCP servers.
+ *
+ * @param config - Transport configuration
+ * @returns MCP transport instance
+ *
+ * Transport selection:
+ * - stdio: For local servers (npm packages, executables)
+ * - SSE: For remote HTTP-based servers
+ *
+ * Security notes:
+ * - Validate command paths for stdio to prevent injection
+ * - Use environment variables for sensitive data
+ * - SSE headers may contain auth tokens
+ */
+export const createTransport = async (
+  config: import('./mcp.types.js').MCPTransportConfig
+): Promise<unknown> => {
+  if (config.type === 'stdio') {
+    const { StdioClientTransport } = await import('@modelcontextprotocol/sdk/client/stdio.js')
+    return new StdioClientTransport({
+      command: config.command,
+      args: config.args,
+      env: config.env
+    })
+  } else {
+    const { SSEClientTransport } = await import('@modelcontextprotocol/sdk/client/sse.js')
+    // SSEClientTransport doesn't support headers in constructor
+    // Headers should be set via fetch options or environment
+    return new SSEClientTransport(new URL(config.url))
+  }
+}
