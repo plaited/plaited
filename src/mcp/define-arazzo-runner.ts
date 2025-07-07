@@ -34,7 +34,7 @@
  * - No distributed workflow execution
  */
 
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import {
   type BSync,
@@ -45,13 +45,13 @@ import {
   type UseSnapshot,
   type EventDetails,
   bProgram,
-  getPlaitedTrigger,
   bThread,
+  bSync,
   useSignal,
   type Signal,
 } from '../behavioral.js'
 import { defineMCPServer } from './define-mcp-server.js'
-import type { Registry, PrimitiveHandlers, Tools, Resources, Prompts, ToolEntry, ResourceEntry, PromptEntry } from './mcp.types.js'
+import type { Registry, PrimitiveHandlers, Tools, Resources, Prompts } from './mcp.types.js'
 import { useFetch } from '../utils/use-fetch.js'
 import { wait } from '../utils/wait.js'
 
@@ -251,15 +251,95 @@ export interface ArazzoRunnerConfig {
 
 type ArazzoRunnerRegistry = Registry
 
-// ===== Runtime Expression Evaluator =====
+// ===== Event Definitions =====
 
-class ExpressionEvaluator {
-  constructor(private context: ExecutionContext) {}
+type _ArazzoEvents = 
+  | { type: 'WORKFLOW_START'; detail: { workflowId: string; inputs: Record<string, unknown> } }
+  | { type: 'WORKFLOW_SUCCESS'; detail: { workflowId: string; outputs: Record<string, unknown> } }
+  | { type: 'WORKFLOW_FAILURE'; detail: { workflowId: string; error: Error } }
+  | { type: 'WORKFLOW_END'; detail: { workflowId: string } }
+  | { type: 'WORKFLOW_COMPLETE'; detail: WorkflowResult }
+  | { type: 'STEP_START'; detail: { workflowId: string; stepId: string } }
+  | { type: 'STEP_SUCCESS'; detail: { workflowId: string; stepId: string; outputs: Record<string, unknown> } }
+  | { type: 'STEP_FAILURE'; detail: { workflowId: string; stepId: string; error: Error } }
+  | { type: 'STEP_RETRY'; detail: { workflowId: string; stepId: string; retryCount: number } }
+  | { type: 'EXECUTE_OPERATION'; detail: { operationId?: string; operationPath?: string; parameters: Record<string, unknown>; requestBody?: unknown } }
+  | { type: 'OPERATION_COMPLETE'; detail: OperationResult }
+  | { type: 'EVALUATE_CRITERION'; detail: { criterion: Criterion; context: ExecutionContext } }
+  | { type: 'CRITERION_RESULT'; detail: { criterion: Criterion; matched: boolean } }
+  | { type: 'EVALUATE_CRITERIA'; detail: { result: OperationResult } }
+  | { type: 'CRITERIA_EVALUATED'; detail: { matched: boolean } }
+  | { type: 'EVALUATE_EXPRESSION'; detail: { expression: string | unknown; context: ExecutionContext } }
+  | { type: 'EXPRESSION_RESULT'; detail: { expression: string | unknown; result: unknown } }
+  | { type: 'HANDLE_SUCCESS_ACTION'; detail: { action: SuccessAction; context: ExecutionContext } }
+  | { type: 'HANDLE_FAILURE_ACTION'; detail: { action: FailureAction; context: ExecutionContext } }
+  | { type: 'GOTO_STEP'; detail: { workflowId?: string; stepId?: string } }
+  | { type: 'RETRY_STEP'; detail: { stepId: string; retryAfter: number; retryLimit: number } }
+  | { type: 'EXECUTE_WORKFLOW_STEPS'; detail?: undefined }
+  | { type: 'ACTION_EXECUTED'; detail?: undefined }
 
-  /**
-   * Evaluates a runtime expression according to Arazzo spec
-   */
-  evaluate(expression: string | unknown): unknown {
+// ===== Runtime Expression Evaluation =====
+
+const createExpressionEvaluator = () => {
+  const evaluators = new Map<string, (parts: string[], context: ExecutionContext) => unknown>()
+  
+  // Register evaluators for different expression roots
+  evaluators.set('$url', (_, context) => context.url)
+  evaluators.set('$method', (_, context) => context.method)
+  evaluators.set('$statusCode', (_, context) => context.response?.statusCode)
+  evaluators.set('$request', (parts, context) => {
+    const [, property] = parts
+    if (property === 'header') {
+      const headerName = parts[2]
+      return context.response?.headers[headerName]
+    }
+    return undefined
+  })
+  evaluators.set('$response', (parts, context) => {
+    const [, property] = parts
+    switch (property) {
+      case 'header': {
+        const headerName = parts[2]
+        return context.response?.headers[headerName]
+      }
+      case 'body':
+        return navigateObject(context.response?.body, parts.slice(2))
+      default:
+        return undefined
+    }
+  })
+  evaluators.set('$inputs', (parts, context) => navigateObject(context.inputs, parts.slice(1)))
+  evaluators.set('$outputs', (parts, context) => navigateObject(context.outputs, parts.slice(1)))
+  evaluators.set('$steps', (parts, context) => {
+    const [, stepId, ...rest] = parts
+    const step = context.steps[stepId]
+    if (!step) return undefined
+    return navigateObject(step, rest)
+  })
+  evaluators.set('$workflows', (parts, context) => {
+    const [, workflowId, ...rest] = parts
+    const workflow = context.workflows[workflowId]
+    if (!workflow) return undefined
+    return navigateObject(workflow, rest)
+  })
+  evaluators.set('$sourceDescriptions', (parts, context) => {
+    const [, sourceName, ...rest] = parts
+    const source = context.sourceDescriptions[sourceName]
+    if (!source) return undefined
+    return navigateObject(source, rest)
+  })
+  evaluators.set('$components', (parts, context) => navigateObject(context.components, parts.slice(1)))
+  
+  const navigateObject = (obj: unknown, parts: string[]): unknown => {
+    let current = obj
+    for (const part of parts) {
+      if (current == null || typeof current !== 'object') return undefined
+      current = (current as Record<string, unknown>)[part]
+    }
+    return current
+  }
+  
+  const evaluate = (expression: string | unknown, context: ExecutionContext): unknown => {
     if (typeof expression !== 'string') {
       return expression
     }
@@ -267,244 +347,106 @@ class ExpressionEvaluator {
     // Handle embedded expressions: "text {$expression} more text"
     if (expression.includes('{') && expression.includes('}')) {
       return expression.replace(/\{([^}]+)\}/g, (_, expr) => {
-        const result = this.evaluateExpression(expr.trim())
+        const result = evaluateExpression(expr.trim(), context)
         return String(result ?? '')
       })
     }
 
     // Handle direct expressions starting with $
     if (expression.startsWith('$')) {
-      return this.evaluateExpression(expression)
+      return evaluateExpression(expression, context)
     }
 
     return expression
   }
-
-  private evaluateExpression(expr: string): unknown {
+  
+  const evaluateExpression = (expr: string, context: ExecutionContext): unknown => {
     if (!expr.startsWith('$')) {
       return expr
     }
 
     const parts = expr.split(/[.#/]/)
     const root = parts[0]
-
-    switch (root) {
-      case '$url':
-        return this.context.url
-      case '$method':
-        return this.context.method
-      case '$statusCode':
-        return this.context.response?.statusCode
-      case '$request':
-        return this.evaluateRequest(expr)
-      case '$response':
-        return this.evaluateResponse(expr)
-      case '$inputs':
-        return this.evaluatePath(this.context.inputs, parts.slice(1))
-      case '$outputs':
-        return this.evaluatePath(this.context.outputs, parts.slice(1))
-      case '$steps':
-        return this.evaluateSteps(parts.slice(1))
-      case '$workflows':
-        return this.evaluateWorkflows(parts.slice(1))
-      case '$sourceDescriptions':
-        return this.evaluateSourceDescriptions(parts.slice(1))
-      case '$components':
-        return this.evaluateComponents(parts.slice(1))
-      default:
-        return undefined
+    const evaluator = evaluators.get(root)
+    
+    if (evaluator) {
+      return evaluator(parts, context)
     }
-  }
-
-  private evaluateRequest(expr: string): unknown {
-    // TODO: Implement request evaluation
+    
+    // Handle environment variables
+    if (root === '$env') {
+      const envKey = parts[1]
+      return context.components?.parameters?.[envKey]?.value
+    }
+    
     return undefined
   }
-
-  private evaluateResponse(expr: string): unknown {
-    if (!this.context.response) return undefined
-
-    if (expr.includes('#')) {
-      // JSON Pointer syntax
-      const [base, pointer] = expr.split('#')
-      if (base === '$response.body') {
-        return this.evaluateJsonPointer(this.context.response.body, pointer)
-      }
-    }
-
-    const parts = expr.split('.')
-    if (parts[1] === 'header') {
-      return this.context.response.headers[parts[2]]
-    }
-    if (parts[1] === 'body') {
-      return this.context.response.body
-    }
-
-    return undefined
-  }
-
-  private evaluateSteps(parts: string[]): unknown {
-    const [stepId, ...rest] = parts
-    const step = this.context.steps[stepId]
-    if (!step) return undefined
-
-    if (rest[0] === 'outputs') {
-      return this.evaluatePath(step.outputs || {}, rest.slice(1))
-    }
-
-    return step
-  }
-
-  private evaluateWorkflows(parts: string[]): unknown {
-    const [workflowId, ...rest] = parts
-    const workflow = this.context.workflows[workflowId]
-    if (!workflow) return undefined
-
-    if (rest[0] === 'outputs') {
-      return this.evaluatePath(workflow.outputs || {}, rest.slice(1))
-    }
-
-    return workflow
-  }
-
-  private evaluateSourceDescriptions(parts: string[]): unknown {
-    const [name, ...rest] = parts
-    const source = this.context.sourceDescriptions[name]
-    if (!source) return undefined
-
-    return this.evaluatePath(source, rest)
-  }
-
-  private evaluateComponents(parts: string[]): unknown {
-    return this.evaluatePath(this.context.components || {}, parts)
-  }
-
-  private evaluatePath(obj: unknown, path: string[]): unknown {
-    let current = obj
-    for (const part of path) {
-      if (current === null || current === undefined) return undefined
-      if (typeof current === 'object') {
-        current = (current as Record<string, unknown>)[part]
-      } else {
-        return undefined
-      }
-    }
-    return current
-  }
-
-  private evaluateJsonPointer(obj: unknown, pointer: string): unknown {
-    if (!pointer || pointer === '/') return obj
-
-    const parts = pointer.split('/').slice(1) // Remove empty first element
-    let current = obj
-
-    for (const part of parts) {
-      if (current === null || current === undefined) return undefined
-
-      // Unescape JSON Pointer tokens
-      const key = part.replace(/~1/g, '/').replace(/~0/g, '~')
-
-      if (Array.isArray(current)) {
-        const index = parseInt(key, 10)
-        if (isNaN(index)) return undefined
-        current = current[index]
-      } else if (typeof current === 'object') {
-        current = (current as Record<string, unknown>)[key]
-      } else {
-        return undefined
-      }
-    }
-
-    return current
-  }
+  
+  return { evaluate }
 }
 
-// ===== Criterion Evaluator =====
+// ===== Criterion Evaluation =====
 
-class CriterionEvaluator {
-  constructor(private evaluator: ExpressionEvaluator) {}
-
-  evaluate(criterion: Criterion, context: ExecutionContext): boolean {
-    const { condition, type = 'simple', context: criterionContext } = criterion
-
-    switch (type) {
-      case 'simple':
-        return this.evaluateSimple(condition, context)
-      case 'regex':
-        return this.evaluateRegex(condition, criterionContext || '', context)
-      case 'jsonpath':
-        return this.evaluateJsonPath(condition, criterionContext || '', context)
-      case 'xpath':
-        // TODO: Implement XPath evaluation
-        console.warn('XPath criterion type not yet supported')
-        return false
-      default:
-        if (typeof type === 'object' && type.type) {
-          // Handle CriterionExpressionType
-          console.warn(`Custom criterion type ${type.type} not yet supported`)
-          return false
-        }
-        return false
-    }
-  }
-
-  private evaluateSimple(condition: string, context: ExecutionContext): boolean {
+const createCriterionHandlers = () => {
+  const handlers = new Map<string, (criterion: Criterion, context: ExecutionContext, evaluator: ReturnType<typeof createExpressionEvaluator>) => boolean>()
+  
+  handlers.set('simple', (criterion, context) => {
     // Simple expression evaluation - supports basic operators
-    // This is a simplified implementation - a real one would need proper parsing
-    const evalContext = {
-      $statusCode: context.response?.statusCode,
-      $url: context.url,
-      $method: context.method,
-    }
-
+    const { condition } = criterion
+    
     // Basic equality check for status codes
     const statusMatch = condition.match(/\$statusCode\s*==\s*(\d+)/)
     if (statusMatch) {
-      return evalContext.$statusCode === parseInt(statusMatch[1], 10)
+      return context.response?.statusCode === parseInt(statusMatch[1], 10)
     }
-
+    
     // TODO: Implement full expression parsing
     console.warn(`Complex simple expressions not yet fully supported: ${condition}`)
     return true
-  }
-
-  private evaluateRegex(pattern: string, contextExpr: string, context: ExecutionContext): boolean {
-    const contextValue = this.evaluator.evaluate(contextExpr)
+  })
+  
+  handlers.set('regex', (criterion, context, evaluator) => {
+    const contextValue = evaluator.evaluate(criterion.context || '', context)
     if (typeof contextValue !== 'string') return false
-
+    
     try {
-      const regex = new RegExp(pattern)
+      const regex = new RegExp(criterion.condition)
       return regex.test(contextValue)
     } catch {
       return false
     }
-  }
-
-  private evaluateJsonPath(path: string, contextExpr: string, context: ExecutionContext): boolean {
-    const contextValue = this.evaluator.evaluate(contextExpr)
+  })
+  
+  handlers.set('jsonpath', (criterion, context, evaluator) => {
     // TODO: Implement JSONPath evaluation
     console.warn('JSONPath criterion type not yet implemented')
     return true
-  }
+  })
+  
+  handlers.set('xpath', (_criterion, _context, _evaluator) => {
+    // TODO: Implement XPath evaluation
+    console.warn('XPath criterion type not yet supported')
+    return false
+  })
+  
+  return handlers
 }
 
-// ===== HTTP Operation Executor =====
+// ===== HTTP Operation Execution =====
 
-class OperationExecutor {
-  constructor(
-    private httpClient: typeof useFetch,
-    private environmentResolver: (key: string) => string | undefined,
-    private openApiDocs: Map<string, Record<string, unknown>>
-  ) {}
-
-  async executeOperation(
+const createOperationExecutor = (
+  httpClient: typeof useFetch,
+  _environmentResolver: (key: string) => string | undefined,
+  _openApiDocs: Map<string, Record<string, unknown>>
+) => {
+  return async (
     operationId: string | undefined,
     operationPath: string | undefined,
     parameters: Record<string, unknown>,
     requestBody: unknown,
     context: ExecutionContext,
     trigger: PlaitedTrigger
-  ): Promise<OperationResult> {
+  ): Promise<OperationResult> => {
     // TODO: Implement OpenAPI operation resolution and execution
     // This would:
     // 1. Find the operation in OpenAPI docs
@@ -514,7 +456,7 @@ class OperationExecutor {
     // 5. Return the result
 
     // Placeholder implementation
-    const response = await this.httpClient({
+    const response = await httpClient({
       url: 'https://api.example.com/placeholder',
       type: 'HTTP_ERROR',
       trigger,
@@ -535,424 +477,221 @@ class OperationExecutor {
       }
     }
 
+    const body = await response.json().catch(() => response.text())
+    
+    // Update context with response data
+    context.response = {
+      statusCode: response.status,
+      headers: Object.fromEntries(response.headers.entries()),
+      body,
+    }
+
     return {
       status: 'success',
       statusCode: response.status,
       headers: Object.fromEntries(response.headers.entries()),
-      body: await response.json().catch(() => response.text()),
+      body,
     }
-  }
-}
-
-// ===== Step Executor =====
-
-class StepExecutor {
-  constructor(
-    private operationExecutor: OperationExecutor,
-    private workflowRunner: WorkflowRunner,
-    private evaluator: ExpressionEvaluator,
-    private criterionEvaluator: CriterionEvaluator
-  ) {}
-
-  async executeStep(
-    step: Step,
-    workflow: Workflow,
-    context: ExecutionContext,
-    trigger: PlaitedTrigger
-  ): Promise<StepResult> {
-    context.currentStep = step.stepId
-
-    // Initialize step result
-    context.steps[step.stepId] = {
-      status: 'running',
-    }
-
-    try {
-      // Resolve parameters
-      const resolvedParams = this.resolveParameters(step.parameters || [], context)
-
-      // Execute based on step type
-      let result: OperationResult | WorkflowResult
-
-      if (step.operationId || step.operationPath) {
-        // Execute operation
-        result = await this.operationExecutor.executeOperation(
-          step.operationId,
-          step.operationPath,
-          resolvedParams,
-          step.requestBody ? this.evaluator.evaluate(step.requestBody.payload) : undefined,
-          context,
-          trigger
-        )
-
-        // Update context with response
-        if ('statusCode' in result) {
-          context.response = {
-            statusCode: result.statusCode || 0,
-            headers: result.headers || {},
-            body: result.body,
-          }
-        }
-      } else if (step.workflowId) {
-        // Execute nested workflow
-        const workflowInputs = resolvedParams
-        const workflowResult = await this.workflowRunner.executeWorkflow(step.workflowId, workflowInputs)
-        
-        // Store nested workflow result
-        context.workflows[step.workflowId] = workflowResult
-        result = workflowResult
-      } else {
-        throw new Error('Step must specify operationId, operationPath, or workflowId')
-      }
-
-      // Check success criteria
-      const isSuccess = this.checkSuccessCriteria(step.successCriteria || [], context)
-
-      if (isSuccess) {
-        // Extract outputs
-        const outputs = this.extractOutputs(step.outputs || {}, context)
-        
-        context.steps[step.stepId] = {
-          status: 'success',
-          outputs,
-        }
-
-        return context.steps[step.stepId]
-      } else {
-        context.steps[step.stepId] = {
-          status: 'failure',
-          error: new Error('Success criteria not met'),
-        }
-
-        return context.steps[step.stepId]
-      }
-    } catch (error) {
-      context.steps[step.stepId] = {
-        status: 'failure',
-        error: error instanceof Error ? error : new Error(String(error)),
-      }
-
-      return context.steps[step.stepId]
-    }
-  }
-
-  private resolveParameters(parameters: (Parameter | ReusableObject)[], context: ExecutionContext): Record<string, unknown> {
-    const resolved: Record<string, unknown> = {}
-
-    for (const param of parameters) {
-      if ('reference' in param) {
-        // Handle reusable object
-        const referencedParam = this.evaluator.evaluate(param.reference) as Parameter
-        if (referencedParam) {
-          resolved[referencedParam.name] = param.value !== undefined 
-            ? param.value 
-            : this.evaluator.evaluate(referencedParam.value)
-        }
-      } else {
-        // Handle direct parameter
-        resolved[param.name] = this.evaluator.evaluate(param.value)
-      }
-    }
-
-    return resolved
-  }
-
-  private checkSuccessCriteria(criteria: Criterion[], context: ExecutionContext): boolean {
-    if (criteria.length === 0) {
-      // Default: 2xx status codes are success
-      const statusCode = context.response?.statusCode
-      return statusCode !== undefined && statusCode >= 200 && statusCode < 300
-    }
-
-    // All criteria must pass
-    return criteria.every(criterion => this.criterionEvaluator.evaluate(criterion, context))
-  }
-
-  private extractOutputs(outputs: Record<string, string>, context: ExecutionContext): Record<string, unknown> {
-    const extracted: Record<string, unknown> = {}
-
-    for (const [key, expression] of Object.entries(outputs)) {
-      extracted[key] = this.evaluator.evaluate(expression)
-    }
-
-    return extracted
   }
 }
 
 // ===== Workflow Runner =====
 
-export class WorkflowRunner {
-  private workflows: Map<string, Workflow> = new Map()
-  private sourceDescriptions: Map<string, SourceDescription> = new Map()
-  private components: Components = {}
-  private operationExecutor: OperationExecutor
-  private stepExecutor: StepExecutor
-  private runningWorkflows: Map<string, Signal<WorkflowResult>> = new Map()
+export interface WorkflowRunner {
+  executeWorkflow(workflowId: string, inputs: Record<string, unknown>): Promise<WorkflowResult>
+  listWorkflows(): Array<{ workflowId: string; summary?: string; description?: string }>
+  describeWorkflow(workflowId: string): Workflow | undefined
+  getDocuments(): ArazzoDocument[]
+  getWorkflowState(workflowId: string): WorkflowResult | undefined
+}
 
-  constructor(
-    private arazzoDocuments: ArazzoDocument[],
-    private openApiDocs: Map<string, Record<string, unknown>>,
-    private environmentResolver: (key: string) => string | undefined,
-    private httpClient: typeof useFetch,
-    private trigger: PlaitedTrigger
-  ) {
-    // Initialize documents
-    this.loadDocuments()
-
-    // Create executors
-    this.operationExecutor = new OperationExecutor(httpClient, environmentResolver, openApiDocs)
+const createWorkflowRunner = async ({
+  arazzoDocuments,
+  openApiDocuments,
+  environmentResolver,
+  httpClient,
+  bSync,
+  bThread,
+  bThreads,
+  trigger,
+}: {
+  arazzoDocuments: ArazzoDocument[]
+  openApiDocuments: Map<string, Record<string, unknown>>
+  environmentResolver: (key: string) => string | undefined
+  httpClient: typeof useFetch
+  bSync: BSync
+  bThread: BThread
+  bThreads: BThreads
+  trigger: PlaitedTrigger
+}): Promise<WorkflowRunner> => {
+  // Initialize state with signals
+  const workflows = useSignal(new Map<string, Workflow>())
+  const sourceDescriptions = useSignal(new Map<string, SourceDescription>())
+  const components = useSignal<Components>({})
+  const runningWorkflows = useSignal(new Map<string, Signal<WorkflowResult>>())
+  const executionContexts = useSignal(new Map<string, ExecutionContext>())
+  
+  // Load documents
+  for (const doc of arazzoDocuments) {
+    // Load workflows
+    for (const workflow of doc.workflows) {
+      workflows.get().set(workflow.workflowId, workflow)
+    }
     
-    // Step executor needs reference to workflow runner for nested workflows
-    this.stepExecutor = new StepExecutor(
-      this.operationExecutor,
-      this,
-      new ExpressionEvaluator({} as ExecutionContext), // Will be updated per execution
-      new CriterionEvaluator(new ExpressionEvaluator({} as ExecutionContext))
-    )
-  }
-
-  private loadDocuments() {
-    for (const doc of this.arazzoDocuments) {
-      // Load workflows
-      for (const workflow of doc.workflows) {
-        this.workflows.set(workflow.workflowId, workflow)
-      }
-
-      // Load source descriptions
-      for (const source of doc.sourceDescriptions) {
-        this.sourceDescriptions.set(source.name, source)
-      }
-
-      // Merge components
-      if (doc.components) {
-        this.components = { ...this.components, ...doc.components }
-      }
+    // Load source descriptions
+    for (const source of doc.sourceDescriptions) {
+      sourceDescriptions.get().set(source.name, source)
+    }
+    
+    // Merge components
+    if (doc.components) {
+      components.set({ ...components.get(), ...doc.components })
     }
   }
-
-  async executeWorkflow(workflowId: string, inputs: Record<string, unknown>): Promise<WorkflowResult> {
-    const workflow = this.workflows.get(workflowId)
+  
+  // Create evaluators and executors
+  const _expressionEvaluator = createExpressionEvaluator()
+  const _criterionHandlers = createCriterionHandlers()
+  const operationExecutor = createOperationExecutor(httpClient, environmentResolver, openApiDocuments)
+  
+  // Define behavioral threads
+  
+  // Workflow orchestrator thread
+  const workflowOrchestrator = bThread([
+    bSync({ waitFor: 'WORKFLOW_START' }),
+    bSync({ request: { type: 'EXECUTE_WORKFLOW_STEPS' } }),
+    bSync({ waitFor: ['WORKFLOW_SUCCESS', 'WORKFLOW_FAILURE', 'WORKFLOW_END'] })
+  ], true)
+  
+  // Step executor thread
+  const stepExecutor = bThread([
+    bSync({ waitFor: 'STEP_START' }),
+    bSync({ request: { type: 'EXECUTE_OPERATION' } }),
+    bSync({ waitFor: 'OPERATION_COMPLETE' }),
+    bSync({ request: { type: 'EVALUATE_CRITERIA' } }),
+    bSync({ waitFor: 'CRITERIA_EVALUATED' }),
+    bSync({ waitFor: ['STEP_SUCCESS', 'STEP_FAILURE'] })
+  ], true)
+  
+  // Criterion evaluator thread
+  const criterionEvaluator = bThread([
+    bSync({ waitFor: 'EVALUATE_CRITERION' }),
+    bSync({ request: { type: 'CRITERION_RESULT' } })
+  ], true)
+  
+  // Expression evaluator thread
+  const expressionEvaluatorThread = bThread([
+    bSync({ waitFor: 'EVALUATE_EXPRESSION' }),
+    bSync({ request: { type: 'EXPRESSION_RESULT' } })
+  ], true)
+  
+  // Retry handler thread
+  const retryHandler = bThread([
+    bSync({ waitFor: 'RETRY_STEP' }),
+    bSync({ request: { type: 'STEP_START' } })
+  ], true)
+  
+  // Action dispatcher thread
+  const actionDispatcher = bThread([
+    bSync({ waitFor: ['HANDLE_SUCCESS_ACTION', 'HANDLE_FAILURE_ACTION'] }),
+    bSync({ request: { type: 'ACTION_EXECUTED' } })
+  ], true)
+  
+  // Add threads to bProgram
+  bThreads.set({
+    workflowOrchestrator,
+    stepExecutor,
+    criterionEvaluator,
+    expressionEvaluatorThread,
+    retryHandler,
+    actionDispatcher,
+  })
+  
+  // Implementation methods
+  const executeWorkflow = async (workflowId: string, inputs: Record<string, unknown>): Promise<WorkflowResult> => {
+    const workflow = workflows.get().get(workflowId)
     if (!workflow) {
       throw new Error(`Workflow not found: ${workflowId}`)
     }
-
-    // Check if workflow is already running
-    const existingRun = this.runningWorkflows.get(workflowId)
+    
+    // Check if already running
+    const existingRun = runningWorkflows.get().get(workflowId)
     if (existingRun) {
       const result = existingRun.get()
       if (result) return result
-      // If no result yet, wait for it
+      
+      // Wait for completion
       return new Promise<WorkflowResult>((resolve) => {
-        existingRun.listen('workflow-complete', (finalResult: WorkflowResult) => {
-          resolve(finalResult)
+        existingRun.listen('WORKFLOW_COMPLETE', ({ detail }: { type: string; detail?: WorkflowResult }) => {
+          if (detail) resolve(detail)
         })
       })
     }
-
+    
     // Create execution context
     const context: ExecutionContext = {
       inputs,
       outputs: {},
       steps: {},
       workflows: {},
-      sourceDescriptions: Object.fromEntries(this.sourceDescriptions),
-      components: this.components,
+      sourceDescriptions: Object.fromEntries(sourceDescriptions.get()),
+      components: components.get(),
       currentWorkflow: workflowId,
     }
-
-    // Create evaluators with context
-    const evaluator = new ExpressionEvaluator(context)
-    const criterionEvaluator = new CriterionEvaluator(evaluator)
-
-    // Create step executor with context-aware evaluators
-    const stepExecutor = new StepExecutor(
-      this.operationExecutor,
-      this,
-      evaluator,
-      criterionEvaluator
-    )
-
-    // Track workflow execution
-    const workflowSignal = useSignal<WorkflowResult>({
+    
+    executionContexts.get().set(workflowId, context)
+    
+    // Create workflow result signal
+    const workflowResult = useSignal<WorkflowResult>({
       workflowId,
       status: 'success',
       outputs: {},
       steps: {},
     })
-    this.runningWorkflows.set(workflowId, workflowSignal)
-
-    try {
-      // Execute dependencies first
-      if (workflow.dependsOn) {
-        for (const depWorkflowId of workflow.dependsOn) {
-          const depResult = await this.executeWorkflow(depWorkflowId, inputs)
-          context.workflows[depWorkflowId] = depResult
-        }
-      }
-
-      // Execute steps sequentially
-      for (const step of workflow.steps) {
-        const stepResult = await stepExecutor.executeStep(step, workflow, context, this.trigger)
-
-        if (stepResult.status === 'failure') {
-          // Handle failure actions
-          const action = await this.handleFailureActions(
-            step.onFailure || workflow.failureActions || [],
-            context,
-            criterionEvaluator
-          )
-
-          if (action?.type === 'retry') {
-            // Implement retry logic
-            let retryCount = 0
-            const retryLimit = action.retryLimit || 1
-            const retryAfter = action.retryAfter || 1
-
-            while (retryCount < retryLimit) {
-              await wait(retryAfter * 1000)
-              const retryResult = await stepExecutor.executeStep(step, workflow, context, this.trigger)
-              
-              if (retryResult.status === 'success') {
-                break
-              }
-              
-              retryCount++
-              context.steps[step.stepId].retryCount = retryCount
-            }
-          } else if (action?.type === 'goto') {
-            // Handle goto logic
-            // TODO: Implement goto step/workflow
-          } else if (action?.type === 'end') {
-            // End workflow
-            break
-          }
-        } else {
-          // Handle success actions
-          const action = await this.handleSuccessActions(
-            step.onSuccess || workflow.successActions || [],
-            context,
-            criterionEvaluator
-          )
-
-          if (action?.type === 'goto') {
-            // Handle goto logic
-            // TODO: Implement goto step/workflow
-          } else if (action?.type === 'end') {
-            // End workflow
-            break
-          }
-        }
-      }
-
-      // Extract workflow outputs
-      const outputs = this.extractWorkflowOutputs(workflow.outputs || {}, context, evaluator)
-
-      const result: WorkflowResult = {
-        workflowId,
-        status: 'success',
-        outputs,
-        steps: context.steps,
-      }
-
-      workflowSignal.set(result)
-      return result
-    } catch (error) {
-      const result: WorkflowResult = {
-        workflowId,
-        status: 'error',
-        error: error instanceof Error ? error : new Error(String(error)),
-        steps: context.steps,
-      }
-
-      workflowSignal.set(result)
-      return result
-    } finally {
-      this.runningWorkflows.delete(workflowId)
-    }
+    
+    runningWorkflows.get().set(workflowId, workflowResult)
+    
+    // Start workflow execution
+    trigger({ type: 'WORKFLOW_START', detail: { workflowId, inputs } })
+    
+    // Wait for completion
+    return new Promise<WorkflowResult>((resolve) => {
+      workflowResult.listen('WORKFLOW_COMPLETE', ({ detail }: { type: string; detail?: WorkflowResult }) => {
+        runningWorkflows.get().delete(workflowId)
+        executionContexts.get().delete(workflowId)
+        if (detail) resolve(detail)
+      })
+    })
   }
-
-  private async handleSuccessActions(
-    actions: (SuccessAction | ReusableObject)[],
-    context: ExecutionContext,
-    criterionEvaluator: CriterionEvaluator
-  ): Promise<SuccessAction | undefined> {
-    for (const action of actions) {
-      const resolvedAction = 'reference' in action 
-        ? new ExpressionEvaluator(context).evaluate(action.reference) as SuccessAction
-        : action
-
-      if (!resolvedAction) continue
-
-      // Check criteria
-      if (resolvedAction.criteria) {
-        const allMatch = resolvedAction.criteria.every(c => criterionEvaluator.evaluate(c, context))
-        if (!allMatch) continue
-      }
-
-      return resolvedAction
-    }
-
-    return undefined
-  }
-
-  private async handleFailureActions(
-    actions: (FailureAction | ReusableObject)[],
-    context: ExecutionContext,
-    criterionEvaluator: CriterionEvaluator
-  ): Promise<FailureAction | undefined> {
-    for (const action of actions) {
-      const resolvedAction = 'reference' in action 
-        ? new ExpressionEvaluator(context).evaluate(action.reference) as FailureAction
-        : action
-
-      if (!resolvedAction) continue
-
-      // Check criteria
-      if (resolvedAction.criteria) {
-        const allMatch = resolvedAction.criteria.every(c => criterionEvaluator.evaluate(c, context))
-        if (!allMatch) continue
-      }
-
-      return resolvedAction
-    }
-
-    return undefined
-  }
-
-  private extractWorkflowOutputs(
-    outputs: Record<string, string>,
-    context: ExecutionContext,
-    evaluator: ExpressionEvaluator
-  ): Record<string, unknown> {
-    const extracted: Record<string, unknown> = {}
-
-    for (const [key, expression] of Object.entries(outputs)) {
-      extracted[key] = evaluator.evaluate(expression)
-    }
-
-    return extracted
-  }
-
-  listWorkflows(): Array<{ workflowId: string; summary?: string; description?: string }> {
-    return Array.from(this.workflows.values()).map(w => ({
+  
+  const listWorkflows = (): Array<{ workflowId: string; summary?: string; description?: string }> => {
+    return Array.from(workflows.get().values()).map(w => ({
       workflowId: w.workflowId,
       summary: w.summary,
       description: w.description,
     }))
   }
-
-  describeWorkflow(workflowId: string): Workflow | undefined {
-    return this.workflows.get(workflowId)
+  
+  const describeWorkflow = (workflowId: string): Workflow | undefined => {
+    return workflows.get().get(workflowId)
   }
-
-  getDocuments(): ArazzoDocument[] {
-    return this.arazzoDocuments
+  
+  const getDocuments = (): ArazzoDocument[] => {
+    return arazzoDocuments
   }
-
-  getWorkflowState(workflowId: string): WorkflowResult | undefined {
-    const signal = this.runningWorkflows.get(workflowId)
+  
+  const getWorkflowState = (workflowId: string): WorkflowResult | undefined => {
+    const signal = runningWorkflows.get().get(workflowId)
     if (!signal) return undefined
     return signal.get()
+  }
+  
+  return {
+    executeWorkflow,
+    listWorkflows,
+    describeWorkflow,
+    getDocuments,
+    getWorkflowState,
   }
 }
 
@@ -1025,38 +764,38 @@ export const defineArazzoRunner = async (config: ArazzoRunnerConfig) => {
       primitive: 'tool' as const,
       config: {
         description: 'Execute an Arazzo workflow by ID with inputs',
-        inputSchema: z.object({
+        inputSchema: {
           workflowId: z.string().describe('The workflow ID to execute'),
           inputs: z.record(z.string(), z.any()).describe('Input parameters for the workflow'),
-        }),
+        },
       },
     },
     'execute-operation': {
       primitive: 'tool' as const,
       config: {
         description: 'Execute a single OpenAPI operation',
-        inputSchema: z.object({
+        inputSchema: {
           operationId: z.string().optional().describe('The operation ID from OpenAPI spec'),
           operationPath: z.string().optional().describe('The operation path and method (e.g., "GET /users")'),
           parameters: z.record(z.string(), z.any()).optional().describe('Operation parameters'),
           requestBody: z.any().optional().describe('Request body content'),
-        }),
+        },
       },
     },
     'list-workflows': {
       primitive: 'tool' as const,
       config: {
         description: 'List all available workflows',
-        inputSchema: z.object({}),
+        inputSchema: {},
       },
     },
     'describe-workflow': {
       primitive: 'tool' as const,
       config: {
         description: 'Get details about a specific workflow',
-        inputSchema: z.object({
+        inputSchema: {
           workflowId: z.string().describe('The workflow ID to describe'),
-        }),
+        },
       },
     },
     'arazzo-document': {
@@ -1072,15 +811,7 @@ export const defineArazzoRunner = async (config: ArazzoRunnerConfig) => {
     'workflow-state': {
       primitive: 'resource' as const,
       config: {
-        uriOrTemplate: {
-          template: 'arazzo://workflow/{workflowId}/state',
-          parameters: [
-            {
-              name: 'workflowId',
-              description: 'The workflow ID to get state for',
-            },
-          ],
-        },
+        uriOrTemplate: new ResourceTemplate('arazzo://workflow/{workflowId}/state'),
         metaData: {
           mimeType: 'application/json',
           description: 'Get current execution state of a workflow',
@@ -1091,9 +822,9 @@ export const defineArazzoRunner = async (config: ArazzoRunnerConfig) => {
       primitive: 'prompt' as const,
       config: {
         description: 'Generate example inputs for a workflow',
-        argsSchema: z.object({
+        argsSchema: {
           workflowId: z.string().describe('The workflow ID to generate inputs for'),
-        }),
+        },
       },
     },
   }
@@ -1104,20 +835,277 @@ export const defineArazzoRunner = async (config: ArazzoRunnerConfig) => {
     version,
     registry,
     async bProgram(args) {
-      // Create workflow runner
-      const runner = new WorkflowRunner(
-        loadedArazzoDocs,
-        loadedOpenApiDocs,
+      // Create our own bProgram to set up internal handlers
+      const { useFeedback } = bProgram()
+      // Initialize state with signals
+      const workflows = useSignal(new Map<string, Workflow>())
+      const sourceDescriptions = useSignal(new Map<string, SourceDescription>())
+      const components = useSignal<Components>({})
+      const runningWorkflows = useSignal(new Map<string, Signal<WorkflowResult>>())
+      const executionContexts = useSignal(new Map<string, ExecutionContext>())
+      
+      // Load documents
+      for (const doc of loadedArazzoDocs) {
+        // Load workflows
+        for (const workflow of doc.workflows) {
+          workflows.get().set(workflow.workflowId, workflow)
+        }
+        
+        // Load source descriptions
+        for (const source of doc.sourceDescriptions) {
+          sourceDescriptions.get().set(source.name, source)
+        }
+        
+        // Merge components
+        if (doc.components) {
+          components.set({ ...components.get(), ...doc.components })
+        }
+      }
+      
+      // Create evaluators and executors
+      const _expressionEvaluator = createExpressionEvaluator()
+      const _criterionHandlers = createCriterionHandlers()
+      const operationExecutor = createOperationExecutor(httpClient, environmentResolver, loadedOpenApiDocs)
+      
+      // Create workflow runner with behavioral context
+      const runner = await createWorkflowRunner({
+        arazzoDocuments: loadedArazzoDocs,
+        openApiDocuments: loadedOpenApiDocs,
         environmentResolver,
         httpClient,
-        args.trigger
-      )
+        bSync: args.bSync,
+        bThread: args.bThread,
+        bThreads: args.bThreads,
+        trigger: args.trigger,
+      })
 
+      // Create internal event handlers without conditional logic
+      const internalHandlers = {
+        // Workflow lifecycle handlers
+        WORKFLOW_START: (detail: { workflowId: string; inputs: Record<string, unknown> }) => {
+          const { workflowId, inputs } = detail
+          const workflow = runner.describeWorkflow(workflowId)
+          if (!workflow) {
+            args.trigger({ type: 'WORKFLOW_FAILURE', detail: { workflowId, error: new Error('Workflow not found') } })
+            return
+          }
+          
+          // Execute dependencies first
+          if (workflow.dependsOn?.length) {
+            for (const depId of workflow.dependsOn) {
+              args.trigger({ type: 'WORKFLOW_START', detail: { workflowId: depId, inputs } })
+            }
+          }
+          
+          // Start first step
+          if (workflow.steps.length > 0) {
+            args.trigger({ type: 'STEP_START', detail: { workflowId, stepId: workflow.steps[0].stepId } })
+          } else {
+            args.trigger({ type: 'WORKFLOW_SUCCESS', detail: { workflowId, outputs: {} } })
+          }
+        },
+        
+        EXECUTE_WORKFLOW_STEPS: () => {
+          // This is handled by the orchestrator thread
+        },
+        
+        WORKFLOW_END: (detail: { workflowId: string }) => {
+          args.trigger({ type: 'WORKFLOW_SUCCESS', detail: { workflowId: detail.workflowId, outputs: {} } })
+        },
+        
+        WORKFLOW_COMPLETE: (detail: WorkflowResult) => {
+          // Trigger the signal for waiting promises
+          const signal = runningWorkflows.get().get(detail.workflowId)
+          if (signal) {
+            signal.set(detail)
+          }
+        },
+        
+        WORKFLOW_SUCCESS: (detail: { workflowId: string; outputs: Record<string, unknown> }) => {
+          const signal = runningWorkflows.get().get(detail.workflowId)
+          if (signal) {
+            const result: WorkflowResult = {
+              ...signal.get()!,
+              status: 'success',
+              outputs: detail.outputs
+            }
+            signal.set(result)
+            args.trigger({ type: 'WORKFLOW_COMPLETE', detail: result })
+          }
+        },
+        
+        WORKFLOW_FAILURE: (detail: { workflowId: string; error: Error }) => {
+          const signal = runningWorkflows.get().get(detail.workflowId)
+          if (signal) {
+            const result: WorkflowResult = {
+              ...signal.get()!,
+              status: 'failure',
+              error: detail.error
+            }
+            signal.set(result)
+            args.trigger({ type: 'WORKFLOW_COMPLETE', detail: result })
+          }
+        },
+        
+        // Step execution handlers
+        STEP_START: async (detail: { workflowId: string; stepId: string }) => {
+          const { workflowId, stepId } = detail
+          const workflow = runner.describeWorkflow(workflowId)
+          const step = workflow?.steps.find(s => s.stepId === stepId)
+          
+          if (!step) {
+            args.trigger({ type: 'STEP_FAILURE', detail: { workflowId, stepId, error: new Error('Step not found') } })
+            return
+          }
+          
+          // Determine step type and execute
+          if (step.operationId || step.operationPath) {
+            args.trigger({ 
+              type: 'EXECUTE_OPERATION', 
+              detail: { 
+                operationId: step.operationId,
+                operationPath: step.operationPath,
+                parameters: {}, // TODO: Resolve parameters
+                requestBody: step.requestBody?.payload
+              }
+            })
+          } else if (step.workflowId) {
+            args.trigger({ type: 'WORKFLOW_START', detail: { workflowId: step.workflowId, inputs: {} } })
+          } else {
+            args.trigger({ type: 'STEP_FAILURE', detail: { workflowId, stepId, error: new Error('Invalid step type') } })
+          }
+        },
+        
+        OPERATION_COMPLETE: (detail: OperationResult) => {
+          // Operation completed, now evaluate criteria
+          args.trigger({ type: 'EVALUATE_CRITERIA', detail: { result: detail } })
+        },
+        
+        EVALUATE_CRITERIA: (detail: { result: OperationResult }) => {
+          // TODO: Get current step context and evaluate criteria
+          args.trigger({ type: 'CRITERIA_EVALUATED', detail: { matched: true } })
+        },
+        
+        CRITERIA_EVALUATED: (detail: { matched: boolean }) => {
+          // TODO: Get current workflow/step context
+          const workflowId = 'TODO'
+          const stepId = 'TODO'
+          
+          // Based on criteria result, trigger success or failure
+          if (detail.matched) {
+            args.trigger({ type: 'STEP_SUCCESS', detail: { workflowId, stepId, outputs: {} } })
+          } else {
+            args.trigger({ type: 'STEP_FAILURE', detail: { workflowId, stepId, error: new Error('Criteria not met') } })
+          }
+        },
+        
+        // Expression and criterion handlers
+        EVALUATE_EXPRESSION: (detail: { expression: string | unknown; context: ExecutionContext }) => {
+          const { expression, context } = detail
+          const evaluator = createExpressionEvaluator()
+          const result = evaluator.evaluate(expression, context)
+          args.trigger({ type: 'EXPRESSION_RESULT', detail: { expression, result } })
+        },
+        
+        EVALUATE_CRITERION: (detail: { criterion: Criterion; context: ExecutionContext }) => {
+          const { criterion, context } = detail
+          const handlers = createCriterionHandlers()
+          const evaluator = createExpressionEvaluator()
+          
+          const type = criterion.type || 'simple'
+          const typeKey = typeof type === 'object' ? type.type : type
+          const handler = handlers.get(typeKey)
+          const matched = handler ? handler(criterion, context, evaluator) : false
+          
+          args.trigger({ type: 'CRITERION_RESULT', detail: { criterion, matched } })
+        },
+        
+        // Action handlers
+        HANDLE_SUCCESS_ACTION: (detail: { action: SuccessAction; context: ExecutionContext }) => {
+          const { action } = detail
+          
+          switch (action.type) {
+            case 'goto':
+              args.trigger({ type: 'GOTO_STEP', detail: { workflowId: action.workflowId, stepId: action.stepId } })
+              break
+            case 'end':
+              args.trigger({ type: 'WORKFLOW_END', detail: { workflowId: detail.context.currentWorkflow! } })
+              break
+          }
+        },
+        
+        HANDLE_FAILURE_ACTION: (detail: { action: FailureAction; context: ExecutionContext }) => {
+          const { action } = detail
+          
+          switch (action.type) {
+            case 'retry':
+              args.trigger({ 
+                type: 'RETRY_STEP', 
+                detail: { 
+                  stepId: detail.context.currentStep!,
+                  retryAfter: action.retryAfter || 1,
+                  retryLimit: action.retryLimit || 1
+                }
+              })
+              break
+            case 'goto':
+              args.trigger({ type: 'GOTO_STEP', detail: { workflowId: action.workflowId, stepId: action.stepId } })
+              break
+            case 'end':
+              args.trigger({ type: 'WORKFLOW_END', detail: { workflowId: detail.context.currentWorkflow! } })
+              break
+          }
+        },
+        
+        RETRY_STEP: async (detail: { stepId: string; retryAfter: number; retryLimit: number }) => {
+          const { stepId, retryAfter } = detail
+          await wait(retryAfter * 1000)
+          // TODO: Get workflow context
+          const workflowId = 'TODO'
+          args.trigger({ type: 'STEP_START', detail: { workflowId, stepId } })
+        },
+        
+        STEP_SUCCESS: (_detail: { workflowId: string; stepId: string; outputs: Record<string, unknown> }) => {
+          // TODO: Update step result and continue to next step
+        },
+        
+        STEP_FAILURE: (_detail: { workflowId: string; stepId: string; error: Error }) => {
+          // TODO: Update step result and handle failure actions
+        },
+        
+        GOTO_STEP: (_detail: { workflowId?: string; stepId?: string }) => {
+          // TODO: Jump to specified step or workflow
+        },
+        
+        ACTION_EXECUTED: () => {
+          // Action completed
+        },
+        
+        EXECUTE_OPERATION: async (detail: { operationId?: string; operationPath?: string; parameters: Record<string, unknown>; requestBody?: unknown }) => {
+          // TODO: Get current context
+          const context = executionContexts.get().get('TODO') || {} as ExecutionContext
+          const result = await operationExecutor(
+            detail.operationId,
+            detail.operationPath,
+            detail.parameters,
+            detail.requestBody,
+            context,
+            args.trigger
+          )
+          args.trigger({ type: 'OPERATION_COMPLETE', detail: result })
+        },
+      }
+
+      // Register internal handlers with our own feedback loop
+      useFeedback(internalHandlers as Record<string, (detail: unknown) => void | Promise<void>>)
+      
       // Call user's bProgram with runner
-      return userBProgram({
+      const userHandlers = await userBProgram({
         ...args,
         runner,
       })
+
+      return userHandlers
     },
   })
 }

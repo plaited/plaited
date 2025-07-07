@@ -106,7 +106,7 @@ describe('defineArazzoRunner', () => {
         name: 'test-runner',
         version: '1.0.0',
         arazzoDocuments: [sampleArazzoDoc],
-        async bProgram({ runner, tools }) {
+        async bProgram({ runner }) {
           return {
             'execute-workflow': async ({ resolve, args }: { resolve: any; args: { workflowId: string; inputs: Record<string, any> } }) => {
               const result = await runner.executeWorkflow(args.workflowId, args.inputs)
