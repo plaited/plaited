@@ -1,6 +1,6 @@
 /**
  * @module mcp
- * 
+ *
  * Model Context Protocol integration for Plaited
  * Provides high-level APIs for creating MCP servers and clients
  * with behavioral programming support
@@ -20,13 +20,13 @@ export type {
   ResourceConfig,
   ToolConfig,
   PrimitiveHandlers,
-  
+
   // Client types
-  MCPTransportConfig,
+  ServerTransportConfigs as MCPTransportConfig,
   MCPClientConfig,
   MCPClientEventDetails,
   MCPClientBProgramArgs,
   CallToolDetail,
   ReadResourceDetail,
-  GetPromptDetail
+  GetPromptDetail,
 } from './mcp/mcp.types.js'

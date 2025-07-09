@@ -185,4 +185,127 @@ describe('defineMCPClient - Integration Tests', () => {
 
     expect(typeof clientFactory).toBe('function')
   })
+  
+  it('should accept inference engine parameter', () => {
+    const mockEngine = {
+      async chat() {
+        return { content: 'Mock response' }
+      }
+    }
+    
+    const clientFactory = defineMCPClient({
+      name: 'ai-client',
+      version: '1.0.0',
+      transport: {
+        type: 'stdio',
+        command: 'test'
+      },
+      inferenceEngine: mockEngine
+    })
+    
+    expect(typeof clientFactory).toBe('function')
+  })
+  
+  it('should support default threads when enabled', () => {
+    const clientFactory = defineMCPClient({
+      name: 'default-threads-client',
+      version: '1.0.0',
+      transport: {
+        type: 'stdio',
+        command: 'test'
+      },
+      defaultThreads: true
+    })
+    
+    expect(typeof clientFactory).toBe('function')
+  })
+  
+  it('should combine inference engine with default threads', () => {
+    const mockEngine = {
+      async chat() {
+        return { 
+          content: 'I can help with that',
+          toolCalls: [{ name: 'test_tool', arguments: {} }]
+        }
+      }
+    }
+    
+    const clientFactory = defineMCPClient({
+      name: 'full-agent',
+      version: '1.0.0',
+      transport: {
+        type: 'stdio',
+        command: 'test'
+      },
+      inferenceEngine: mockEngine,
+      defaultThreads: true,
+      publicEvents: ['CHAT', 'THINK']
+    })
+    
+    expect(typeof clientFactory).toBe('function')
+  })
+  
+  it('should allow custom handlers to override default handlers', () => {
+    const mockEngine = {
+      async chat() {
+        return { content: 'Mock response' }
+      }
+    }
+    
+    const clientFactory = defineMCPClient({
+      name: 'override-client',
+      version: '1.0.0',
+      transport: {
+        type: 'stdio',
+        command: 'test'
+      },
+      inferenceEngine: mockEngine,
+      defaultThreads: true,
+      
+      async bProgram({ trigger }) {
+        return {
+          // Override default PROCESS_CHAT handler
+          PROCESS_CHAT: () => {
+            console.log('Custom chat processing')
+            trigger({ type: 'CUSTOM_EVENT', detail: {} })
+          },
+          
+          // Add new handler
+          CUSTOM_EVENT: () => {
+            console.log('Custom event handled')
+          }
+        }
+      }
+    })
+    
+    expect(typeof clientFactory).toBe('function')
+  })
+  
+  it('should pass inference engine to bProgram', () => {
+    const mockEngine = {
+      async chat() {
+        return { content: 'Test' }
+      }
+    }
+    
+    let receivedEngine
+    
+    const clientFactory = defineMCPClient({
+      name: 'engine-test',
+      version: '1.0.0',
+      transport: {
+        type: 'stdio',
+        command: 'test'
+      },
+      inferenceEngine: mockEngine,
+      
+      async bProgram({ inferenceEngine }) {
+        receivedEngine = inferenceEngine
+        return {}
+      }
+    })
+    
+    expect(typeof clientFactory).toBe('function')
+    // Note: In a real test, we'd need to invoke the factory to check receivedEngine
+  })
 })

@@ -41,6 +41,8 @@ import type {
   RegisteredResourceTemplate,
 } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { GetPromptResult, ReadResourceResult, CallToolResult } from '@modelcontextprotocol/sdk/types.js'
+import type { StdioServerParameters } from '@modelcontextprotocol/sdk/client/stdio.js'
+import type { StreamableHTTPClientTransportOptions } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import type { EventDetails } from '../behavioral.js'
 
 /**
@@ -215,18 +217,15 @@ export type PrimitiveHandlers<Entries extends Registry, E extends EventDetails> 
  * Transport configuration for MCP client connections.
  * Supports stdio (subprocess) and SSE (HTTP) transports.
  */
-export type MCPTransportConfig = 
+export type ServerTransportConfigs = Record<
+  string,
+  | ({ type: 'stdio' } & StdioServerParameters)
   | {
-      type: 'stdio'
-      command: string
-      args?: string[]
-      env?: Record<string, string>
-    }
-  | {
-      type: 'sse'
+      type: 'http'
       url: string
-      headers?: Record<string, string>
+      options?: StreamableHTTPClientTransportOptions
     }
+>
 
 /**
  * @internal
@@ -259,6 +258,91 @@ export type GetPromptDetail = {
 
 /**
  * @internal
+ * Inference engine interface for AI model integration.
+ * Provides a standard interface for different LLM providers.
+ */
+export interface InferenceEngine {
+  /**
+   * Generate a chat completion with optional tool calling.
+   * @param params Chat parameters including messages and available tools
+   * @returns Promise resolving to the model's response
+   */
+  chat(params: {
+    messages: Array<{ role: string; content: string }>
+    tools?: Array<{ name: string; description?: string; inputSchema?: unknown }>
+    temperature?: number
+    maxTokens?: number
+    systemPrompt?: string
+  }): Promise<InferenceResponse>
+
+  /**
+   * Optional: Get embedding for text
+   */
+  embed?(text: string): Promise<number[]>
+
+  /**
+   * Optional: Stream chat completion
+   */
+  streamChat?(params: {
+    messages: Array<{ role: string; content: string }>
+    tools?: Array<{ name: string; description?: string; inputSchema?: unknown }>
+    onChunk: (chunk: InferenceStreamChunk) => void
+  }): Promise<void>
+}
+
+/**
+ * @internal
+ * Response from an inference engine.
+ */
+export interface InferenceResponse {
+  content?: string
+  toolCalls?: Array<{
+    id?: string
+    name: string
+    arguments: unknown
+  }>
+  finishReason?: 'stop' | 'tool_calls' | 'length' | 'error'
+  usage?: {
+    promptTokens?: number
+    completionTokens?: number
+    totalTokens?: number
+  }
+}
+
+/**
+ * @internal
+ * Chunk for streaming responses.
+ */
+export interface InferenceStreamChunk {
+  content?: string
+  toolCall?: {
+    id?: string
+    name?: string
+    arguments?: string // Partial JSON string
+  }
+  finishReason?: string
+}
+
+/**
+ * @internal
+ * Built-in agent event types for intelligent behavior.
+ * These events enable agent orchestration patterns.
+ */
+export type AgentEventDetails = {
+  // High-level agent operations
+  CHAT: { messages: Array<{ role: string; content: string }>; temperature?: number }
+  THINK: { prompt: string; context?: unknown }
+  PLAN: { goal: string; constraints?: string[] }
+  EXECUTE_PLAN: { steps: Array<{ tool: string; arguments: unknown; description?: string }> }
+  LEARN: { experience: unknown; outcome?: 'success' | 'failure' }
+
+  // Agent state
+  AGENT_STATE_CHANGED: { state: 'idle' | 'thinking' | 'executing' | 'error' }
+  AGENT_CAPABILITY_ADDED: { capability: string; description?: string }
+}
+
+/**
+ * @internal
  * Client event details for MCP operations.
  * Maps event types to their detail payloads.
  */
@@ -267,17 +351,17 @@ export type MCPClientEventDetails = {
   TOOLS_DISCOVERED: { tools: Array<{ name: string; description?: string; inputSchema?: unknown }> }
   RESOURCES_DISCOVERED: { resources: Array<{ uri: string; name?: string; description?: string; mimeType?: string }> }
   PROMPTS_DISCOVERED: { prompts: Array<{ name: string; description?: string; argsSchema?: unknown }> }
-  
+
   // Operation events
   CALL_TOOL: CallToolDetail
   READ_RESOURCE: ReadResourceDetail
   GET_PROMPT: GetPromptDetail
-  
+
   // Result events
   TOOL_RESULT: { name: string; result: CallToolResult }
   RESOURCE_RESULT: { uri: string; result: ReadResourceResult }
   PROMPT_RESULT: { name: string; result: GetPromptResult }
-  
+
   // Lifecycle events
   CLIENT_CONNECTED: { capabilities: unknown }
   CLIENT_DISCONNECTED: { reason?: string }
@@ -286,23 +370,10 @@ export type MCPClientEventDetails = {
 
 /**
  * @internal
- * Configuration for MCP client initialization.
- * Defines server connection and behavioral program.
- */
-export type MCPClientConfig<E extends EventDetails = EventDetails> = {
-  name: string
-  version: string
-  transport: MCPTransportConfig
-  publicEvents?: string[]
-  bProgram: (args: MCPClientBProgramArgs) => Promise<Partial<StrictHandlers<MCPClientEventDetails & E>>>
-}
-
-/**
- * @internal
  * Arguments provided to MCP client behavioral program.
  * Includes standard BP utilities and MCP-specific functionality.
  */
-export type MCPClientBProgramArgs = {
+export type MCPClientBProgramArgs<_E extends EventDetails = EventDetails> = {
   // Standard BP utilities
   bSync: import('../behavioral.js').BSync
   bThread: import('../behavioral.js').BThread
@@ -310,13 +381,18 @@ export type MCPClientBProgramArgs = {
   disconnect: import('../behavioral.js').Disconnect
   trigger: import('../behavioral.js').PlaitedTrigger
   useSnapshot: import('../behavioral.js').UseSnapshot
-  
+
   // MCP client instance
   client: import('@modelcontextprotocol/sdk/client/index.js').Client
-  
+
+  // Inference engine (if provided)
+  inferenceEngine?: InferenceEngine
+
   // Reactive state
   capabilities: import('../behavioral.js').SignalWithInitialValue<unknown>
   tools: import('../behavioral.js').SignalWithInitialValue<MCPClientEventDetails['TOOLS_DISCOVERED']['tools']>
-  resources: import('../behavioral.js').SignalWithInitialValue<MCPClientEventDetails['RESOURCES_DISCOVERED']['resources']>
+  resources: import('../behavioral.js').SignalWithInitialValue<
+    MCPClientEventDetails['RESOURCES_DISCOVERED']['resources']
+  >
   prompts: import('../behavioral.js').SignalWithInitialValue<MCPClientEventDetails['PROMPTS_DISCOVERED']['prompts']>
 }
