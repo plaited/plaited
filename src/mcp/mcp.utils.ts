@@ -30,9 +30,6 @@
  * - Error propagation depends on handler implementation
  * - Signals must be cleaned up when server is disposed
  */
-import { Client, type ClientOptions } from '@modelcontextprotocol/sdk/client/index.js'
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import {
   McpServer,
   type RegisteredPrompt,
@@ -46,8 +43,8 @@ import {
 } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { GetPromptResult, ReadResourceResult, CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import { type PlaitedTrigger, type SignalWithoutInitialValue, useSignal } from '../behavioral.js'
-import type { ServerTransportConfigs, PromptDetail, ResourceDetail, ToolDetail } from './mcp.types.js'
-import { CLIENT_ERROR_EVENTS } from './mcp.constants.js'
+import type { PromptDetail, ResourceDetail, ToolDetail } from './mcp.types.js'
+
 /**
  * @internal
  * Type helper to extract the raw argument schema shape from MCP's registerPrompt.
@@ -269,48 +266,4 @@ export const registerTool = ({
   })
   signal.listen(name, trigger)
   return tool
-}
-
-const createTransport = (config: ServerTransportConfigs[string]) => {
-  if (config.type === 'stdio') {
-    return new StdioClientTransport({
-      command: config.command,
-      args: config.args,
-      env: config.env,
-    })
-  } else {
-    return new StreamableHTTPClientTransport(new URL(config.url), config.options)
-  }
-}
-
-export const registerClient = async ({
-  name,
-  version,
-  trigger,
-  serverConfig,
-  options,
-  title,
-}: {
-  name: string
-  version: string
-  trigger: PlaitedTrigger
-  serverConfig: ServerTransportConfigs[string]
-  options?: ClientOptions
-  title?: string
-}) => {
-  try {
-    const client = new Client(
-      {
-        name,
-        version,
-        title,
-      },
-      options,
-    )
-    const transport = createTransport(serverConfig)
-    await client.connect(transport)
-    return client
-  } catch (error) {
-    trigger({ type: CLIENT_ERROR_EVENTS.ERROR_REGISTERING_CLIENT, detail: error })
-  }
 }
