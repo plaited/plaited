@@ -57,13 +57,6 @@ export const defineMCPClient = async <E extends EventDetails = EventDetails>({
 
   /**
    * @internal
-   * Create transport for later connection.
-   * Transport handles the actual communication with MCP server.
-   */
-  const transport = (await createTransport(config.transport)) as Parameters<typeof client.connect>[0]
-
-  /**
-   * @internal
    * Register disconnect handler for proper cleanup.
    * Ensures client and transport are properly closed.
    */

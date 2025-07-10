@@ -297,7 +297,10 @@ export const registerServers = async ({
   client: Client
   trigger: PlaitedTrigger
   servers: ServerTransportConfigs
-  registeredServers: Set<string>
+  registeredServers: Map<
+    string,
+    { info: ReturnType<Client['getServerVersion']>; capabilities: ReturnType<Client['getServerCapabilities']> }
+  >
 }) => {
   try {
     await Promise.all(
@@ -307,9 +310,11 @@ export const registerServers = async ({
             type: CLIENT_ERROR_EVENTS.ERROR_ADD_SERVER_TO_REGISTERED_SERVERS,
             detail: `Server with name, ${name}, already registered`,
           })
-        registeredServers.add(name)
         const transport = createTransport(config)
         await client.connect(transport)
+        const info = client.getServerVersion()
+        const capabilities = client.getServerCapabilities()
+        registeredServers.set(name, { info, capabilities })
       }),
     )
   } catch (error) {
