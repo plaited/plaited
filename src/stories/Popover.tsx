@@ -1,7 +1,7 @@
-import { defineElement, useDispatch } from 'plaited'
+import { bElement, useDispatch } from 'plaited'
 import { isTypeOf } from 'plaited/utils'
 
-export const DecoratedPopoverClose = defineElement({
+export const DecoratedPopoverClose = bElement({
   tag: 'decorated-popover-close',
   shadowDom: <slot p-trigger={{ click: 'click' }}></slot>,
   bProgram: ({ host }) => {
@@ -14,7 +14,7 @@ export const DecoratedPopoverClose = defineElement({
   },
 })
 
-export const DecoratedPopover = defineElement({
+export const DecoratedPopover = bElement({
   tag: 'decorated-popover',
   observedAttributes: ['disabled', 'open'],
   publicEvents: ['close'],

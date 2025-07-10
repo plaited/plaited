@@ -1,4 +1,4 @@
-import { type FT, defineElement } from 'plaited'
+import { type FT, bElement } from 'plaited'
 import sinon from 'sinon'
 
 export const defaultSlot = sinon.spy()
@@ -7,7 +7,7 @@ export const namedSlot = sinon.spy()
 export const nestedSlot = sinon.spy()
 export const nestedInShadowSlot = sinon.spy()
 
-const Inner = defineElement({
+const Inner = bElement({
   tag: 'inner-slot',
   shadowDom: (
     <>
@@ -32,7 +32,7 @@ const Inner = defineElement({
   },
 })
 
-const Outer = defineElement({
+const Outer = bElement({
   tag: 'outer-slot',
   shadowDom: (
     <div>

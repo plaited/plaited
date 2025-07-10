@@ -12,7 +12,7 @@ import {
   type UseFeedback,
   type UseSnapshot,
   type EventDetails,
-  bProgram,
+  behavioral,
   getPublicTrigger,
 } from '../behavioral.js'
 import { delegates, DelegatedListener, canUseDOM } from '../utils.js'
@@ -398,7 +398,7 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  * - host: Custom element instance
  * - root: Shadow root reference
  */
-export const defineElement = <A extends EventDetails>({
+export const bElement = <A extends EventDetails>({
   tag,
   shadowDom,
   mode = 'open',
@@ -435,7 +435,7 @@ export const defineElement = <A extends EventDetails>({
           this.attachShadow({ mode, delegatesFocus, slotAssignment })
           const frag = getDocumentFragment(this.#root, shadowDom)
           this.#root.replaceChildren(frag)
-          const { trigger, useFeedback, useSnapshot, bThreads } = bProgram()
+          const { trigger, useFeedback, useSnapshot, bThreads } = behavioral()
           this.#trigger = getPlaitedTrigger(trigger, this.#disconnectSet)
           this.#useFeedback = useFeedback
           this.#useSnapshot = useSnapshot

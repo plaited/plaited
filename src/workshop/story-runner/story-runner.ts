@@ -1,5 +1,5 @@
 import { chromium, type BrowserContext } from 'playwright'
-import { defineBProgram } from '../../behavioral.js'
+import { bProgram } from '../../behavioral.js'
 import { STORY_RUNNER_EVENTS } from './story-runner.constants.js'
 import { FIXTURE_EVENTS } from '../story-fixture/story-fixture.constants.js'
 import type { ColorScheme, RunningMap } from './story-runner.types.js'
@@ -32,7 +32,7 @@ export type RunnerDetails = {
   [FIXTURE_EVENTS.accessibility_violation]: FixtureEventDetail
 }
 
-export const storyRunner = defineBProgram<
+export const storyRunner = bProgram<
   RunnerDetails,
   {
     serverURL: URL

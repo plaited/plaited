@@ -1,4 +1,4 @@
-import { defineElement } from 'plaited'
+import { bElement } from 'plaited'
 import { bThread, bSync, type RulesFunction } from 'plaited/behavioral'
 import { OMarker } from './o-marker.js'
 import { XMarker } from './x-marker.js'
@@ -102,7 +102,7 @@ const preventCompletionOfLineWithTwoXs = (board: Set<number>) => {
   }
   return threads
 }
-export const TicTacToeBoard = defineElement({
+export const TicTacToeBoard = bElement({
   tag: 'tic-tac-toe-board',
   shadowDom: <BoardMarker />,
   bProgram({ $, bThreads, trigger }) {

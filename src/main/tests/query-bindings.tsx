@@ -1,4 +1,4 @@
-import { type Position, defineElement, useTemplate, css } from 'plaited'
+import { type Position, bElement, useTemplate, css } from 'plaited'
 
 const styles = css.create({
   root: {
@@ -69,7 +69,7 @@ const buildData = (count: number): Data => {
   return data
 }
 
-export const Fixture = defineElement({
+export const Fixture = bElement({
   shadowDom: (
     <div p-target='root'>
       <table p-target='table'></table>

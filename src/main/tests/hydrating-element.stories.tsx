@@ -1,9 +1,9 @@
 import type { StoryObj } from 'plaited/workshop'
 
-import { defineElement } from 'plaited'
+import { bElement } from 'plaited'
 import { styles, BEFORE_HYDRATION, AFTER_HYDRATION, HYDRATING_ELEMENT_TAG } from './hydrating-element.constants.js'
 
-const HydratingElement = defineElement({
+const HydratingElement = bElement({
   tag: HYDRATING_ELEMENT_TAG,
   shadowDom: (
     <>

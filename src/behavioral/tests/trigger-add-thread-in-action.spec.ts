@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { bProgram, bThread, bSync } from 'plaited/behavioral'
+import { behavioral, bThread, bSync } from 'plaited/behavioral'
 
 /**
  * Test scenario: Demonstrates the dynamic nature of behavioral programs.
@@ -11,7 +11,7 @@ import { bProgram, bThread, bSync } from 'plaited/behavioral'
 test('firing trigger and adding bThreads in handlers', () => {
   /** Records the sequence of 'hot' and 'cold' events. */
   const actual: string[] = []
-  const { bThreads, trigger, useFeedback } = bProgram()
+  const { bThreads, trigger, useFeedback } = behavioral()
 
   /** Initial setup of b-threads. */
   bThreads.set({

@@ -1,5 +1,5 @@
 import type { StoryObj } from 'plaited/workshop'
-import { defineElement, type PlaitedElement, css } from 'plaited'
+import { bElement, type PlaitedElement, css } from 'plaited'
 
 const { noRepeat, repeat, initial } = css.create({
   initial: {
@@ -15,7 +15,7 @@ const { noRepeat, repeat, initial } = css.create({
   },
 })
 
-const DynamicOnly = defineElement({
+const DynamicOnly = bElement({
   publicEvents: ['render'],
   tag: 'dynamic-only',
   shadowDom: (

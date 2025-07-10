@@ -1,4 +1,4 @@
-import { defineElement, type PlaitedElement } from 'plaited'
+import { bElement, type PlaitedElement } from 'plaited'
 import { createDocumentFragment } from 'plaited/utils'
 import type { StoryObj } from 'plaited/workshop'
 
@@ -9,7 +9,7 @@ const EMPTY_SLOT = 'Empty slot'
 const TRIGGER_HYDRATION = 'TRIGGER_HYDRATION'
 const ROUTE = '/main/tests/hydrating-element--target.template'
 
-const HydrationFixture = defineElement({
+const HydrationFixture = bElement({
   tag: FIXTURE_ELEMENT_TAG,
   publicEvents: [TRIGGER_HYDRATING_ELEMENT, TRIGGER_HYDRATION],
   shadowDom: <slot p-target='slot'>{EMPTY_SLOT}</slot>,

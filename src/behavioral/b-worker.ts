@@ -34,8 +34,8 @@
  * - Worker must be in separate file for proper execution
  */
 import type { BPEvent } from './b-thread.js'
-import type { Disconnect, Handlers, EventDetails } from './b-program.js'
-import { bProgram, type BProgram } from './b-program.js'
+import type { Disconnect, Handlers, EventDetails } from './behavioral.js'
+import { behavioral, type Behavioral } from './behavioral.js'
 import { getPublicTrigger } from './get-public-trigger.js'
 import { getPlaitedTrigger } from './get-plaited-trigger.js'
 
@@ -47,7 +47,7 @@ import { getPlaitedTrigger } from './get-plaited-trigger.js'
 type BProgramArgs = {
   send(data: BPEvent): void
   disconnect: Disconnect
-} & Omit<ReturnType<BProgram>, 'useFeedback'>
+} & Omit<ReturnType<Behavioral>, 'useFeedback'>
 /**
  * Creates a behavioral program worker with type-safe message handling and lifecycle management.
  * Integrates Web Workers with Plaited's behavioral programming system for efficient background processing.
@@ -171,7 +171,7 @@ type BProgramArgs = {
  *    - Consider data transfer costs
  *    - Use appropriate data structures
  */
-export const defineWorker = async <A extends EventDetails>(args: {
+export const bWorker = async <A extends EventDetails>(args: {
   bProgram: (args: BProgramArgs) => Handlers<A> | Promise<Handlers<A>>
   publicEvents: string[]
 }) => {
@@ -187,7 +187,7 @@ export const defineWorker = async <A extends EventDetails>(args: {
    * Initialize a Behavioral Program instance within the worker.
    * This provides the core BP infrastructure for the worker thread.
    */
-  const { useFeedback, trigger, ...rest } = bProgram()
+  const { useFeedback, trigger, ...rest } = behavioral()
 
   /**
    * @internal

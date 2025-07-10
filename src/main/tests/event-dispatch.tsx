@@ -1,6 +1,6 @@
-import { defineElement, useDispatch } from 'plaited'
+import { bElement, useDispatch } from 'plaited'
 
-export const Nested = defineElement({
+export const Nested = bElement({
   tag: 'nested-el',
   shadowDom: (
     <button
@@ -21,7 +21,7 @@ export const Nested = defineElement({
   },
 })
 
-export const Outer = defineElement({
+export const Outer = bElement({
   tag: 'outer-el',
   shadowDom: (
     <div>
@@ -39,7 +39,7 @@ export const Outer = defineElement({
   },
 })
 
-export const Slotted = defineElement({
+export const Slotted = bElement({
   tag: 'parent-el',
   shadowDom: (
     <div>

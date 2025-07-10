@@ -1,8 +1,8 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { defineMCPServer } from '../define-mcp-server.js'
+import { bServer } from '../b-server.js'
 import { registry } from './mcp-server.registry.js'
 
-const server = await defineMCPServer({
+const server = await bServer({
   name: 'test-server',
   version: '0.0.1',
   registry,

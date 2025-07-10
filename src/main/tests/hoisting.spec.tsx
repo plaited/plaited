@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { type TemplateObject, defineElement, css } from 'plaited'
+import { type TemplateObject, bElement, css } from 'plaited'
 import beautify from 'beautify'
 
 const render = (tpl: TemplateObject) => beautify(tpl.html.join(''), { format: 'html' })
@@ -24,7 +24,7 @@ const styles = css.create({
   },
 })
 
-const NestedCustomElement = defineElement({
+const NestedCustomElement = bElement({
   tag: 'nested-component',
   shadowDom: (
     <>
@@ -59,7 +59,7 @@ test('createTemplate: CustomElement with styled slotted component', () => {
   expect({ content: render(el), stylesheets: el.stylesheets }).toMatchSnapshot()
 })
 
-const TopCustomElement = defineElement({
+const TopCustomElement = bElement({
   tag: 'top-component',
   shadowDom: (
     <NestedCustomElement {...styles.slottedParagraph}>

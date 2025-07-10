@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'bun:test'
-import { bProgram, bThread, bSync, type SnapshotMessage } from 'plaited/behavioral'
+import { behavioral, bThread, bSync, type SnapshotMessage } from 'plaited/behavioral'
 
 /**
  * Test suite for demonstrating the 'interrupt' idiom in behavioral programming.
@@ -24,7 +24,7 @@ describe('interrupt', () => {
    */
   it('should not interrupt', () => {
     const actual: string[] = []
-    const { bThreads, trigger, useFeedback } = bProgram()
+    const { bThreads, trigger, useFeedback } = behavioral()
     bThreads.set({ addHot })
     useFeedback({
       hot() {
@@ -57,7 +57,7 @@ describe('interrupt', () => {
   it('should interrupt', () => {
     const snapshots: SnapshotMessage[] = []
     const actual: string[] = []
-    const { bThreads, trigger, useFeedback, useSnapshot } = bProgram()
+    const { bThreads, trigger, useFeedback, useSnapshot } = behavioral()
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })

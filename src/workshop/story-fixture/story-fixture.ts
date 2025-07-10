@@ -5,7 +5,7 @@ declare global {
 }
 
 import type { SnapshotMessage } from '../../behavioral.js'
-import { css, defineElement, h } from '../../main.js'
+import { css, bElement, h } from '../../main.js'
 import { wait } from '../../utils.js'
 import { STORY_FIXTURE, DEFAULT_PLAY_TIMEOUT, FIXTURE_EVENTS } from './story-fixture.constants.js'
 import {
@@ -39,7 +39,7 @@ import type { InteractionStoryObj, Play, TestFailureEventDetail } from './story-
  * </plaited-story-fixture>
  * ```
  */
-export const StoryFixture = defineElement<{
+export const StoryFixture = bElement<{
   [FIXTURE_EVENTS.run]: { play?: InteractionStoryObj['play']; timeout?: number }
   [FIXTURE_EVENTS.play]: { play: InteractionStoryObj['play']; timeout?: number }
 }>({

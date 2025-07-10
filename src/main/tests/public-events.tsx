@@ -1,8 +1,8 @@
-import { type FT, defineElement, useDispatch, isPlaitedElement } from 'plaited'
+import { type FT, bElement, useDispatch, isPlaitedElement } from 'plaited'
 
 const getPlaitedChildren = (slot: HTMLSlotElement) => [...slot.assignedElements()].filter(isPlaitedElement)
 
-const Inner = defineElement({
+const Inner = bElement({
   tag: 'inner-component',
   shadowDom: <h1 p-target='header'>Hello</h1>,
   publicEvents: ['add'],
@@ -23,7 +23,7 @@ const Inner = defineElement({
   },
 })
 
-const Outer = defineElement({
+const Outer = bElement({
   tag: 'outer-component',
   shadowDom: (
     <div>

@@ -1,5 +1,5 @@
 import {
-  defineElement,
+  bElement,
   css,
   useAttributesObserver,
   type ObservedAttributesDetail,
@@ -39,7 +39,7 @@ const hostStyles = css.host({
   },
 })
 
-export const DecorateCheckbox = defineElement<{
+export const DecorateCheckbox = bElement<{
   change: ObservedAttributesDetail
   slotchange: undefined
 }>({

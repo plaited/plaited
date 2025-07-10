@@ -6,7 +6,7 @@
  * with behavioral programming support
  */
 
-export { defineMCPServer } from './mcp/define-mcp-server.js'
+export { bServer as defineMCPServer } from './mcp/b-server.js'
 export { defineMCPClient } from './mcp/define-mcp-client.js'
 
 // Export types for external use

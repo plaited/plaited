@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { bProgram, bSync } from 'plaited/behavioral'
+import { behavioral, bSync } from 'plaited/behavioral'
 import { wait } from 'plaited/utils'
 
 /**
@@ -9,7 +9,7 @@ import { wait } from 'plaited/utils'
 test('async feedback ELEMENT_CALLBACKS', async () => {
   /** Records the order of execution steps. */
   const actual: string[] = []
-  const { bThreads, trigger, useFeedback } = bProgram()
+  const { bThreads, trigger, useFeedback } = behavioral()
 
   /** Define behavioral threads using bSync for simplicity. */
   bThreads.set({

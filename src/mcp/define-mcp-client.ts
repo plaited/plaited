@@ -4,7 +4,7 @@ import {
   bThread,
   bSync,
   type EventDetails,
-  bProgram,
+  behavioral,
   getPlaitedTrigger,
   type PlaitedTrigger,
   getPublicTrigger,
@@ -35,7 +35,7 @@ export const defineMCPClient = async <E extends EventDetails = EventDetails>({
    * Initialize behavioral program infrastructure.
    * Extract trigger and feedback mechanism for event handling.
    */
-  const { trigger: _trigger, useFeedback, ...rest } = bProgram()
+  const { trigger: _trigger, useFeedback, ...rest } = behavioral()
 
   /**
    * @internal

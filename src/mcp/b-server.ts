@@ -42,7 +42,7 @@ import {
   type EventDetails,
   type UseSnapshot,
   type BThreads,
-  bProgram,
+  behavioral,
   type Disconnect,
   getPlaitedTrigger,
   type PlaitedTrigger,
@@ -182,7 +182,7 @@ import { registerPrompt, registerResource, registerTool } from './mcp.utils.js'
  * - Use prompts for templating, tools for actions
  * - Resources should be read-only operations
  */
-export const defineMCPServer = async <R extends Registry, E extends EventDetails>({
+export const bServer = async <R extends Registry, E extends EventDetails>({
   registry,
   name,
   version,
@@ -219,7 +219,7 @@ export const defineMCPServer = async <R extends Registry, E extends EventDetails
    * Initialize behavioral program infrastructure.
    * Extract trigger and feedback mechanism for event handling.
    */
-  const { trigger: _trigger, useFeedback, ...rest } = bProgram()
+  const { trigger: _trigger, useFeedback, ...rest } = behavioral()
 
   /**
    * @internal
