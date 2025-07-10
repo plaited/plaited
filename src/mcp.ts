@@ -6,4 +6,5 @@
  * with behavioral programming support
  */
 
-export { bServer } from './mcp/b-server.js'
+export * from './mcp/b-server.js'
+export * from './mcp/mcp.types.js'
