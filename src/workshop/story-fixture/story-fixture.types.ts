@@ -25,12 +25,21 @@ export type Assert = <T>(param: AssertParams<T>) => void
 
 type InstrumentedDetails<T> = T
 
+/** @internal Represents the detailed parameters captured for an instrumented `Assert` call, used for testing and reporting. */
 export type AssertDetails = InstrumentedDetails<Parameters<Assert>>
 
+/** @internal Represents the detailed parameters captured for an instrumented `Wait` call, used for testing and reporting. */
 export type WaitDetails = InstrumentedDetails<Parameters<Wait>>
 
 type AccessibilityCheckArgs = { exclude?: axe.ContextProp; rules?: axe.RuleObject; config?: Omit<axe.Spec, 'reporter'> }
 
+/**
+ * Defines the signature for a function that performs an accessibility check on the current story fixture.
+ * Typically uses Axe-core for analysis.
+ *
+ * @param args - Configuration for the accessibility check, such as rules to run or elements to exclude.
+ * @returns A promise that resolves when the accessibility check is complete. Violations may be reported or throw errors depending on implementation.
+ */
 export type AccessibilityCheck = (args: AccessibilityCheckArgs) => Promise<void>
 
 export type AccessibilityCheckDetails = InstrumentedDetails<Parameters<AccessibilityCheck>>
@@ -51,6 +60,7 @@ export type FindByAttribute = <T extends HTMLElement | SVGElement = HTMLElement 
   context?: HTMLElement | SVGElement,
 ) => Promise<T | undefined>
 
+/** @internal Represents the detailed parameters captured for an instrumented `FindByAttribute` call, used for testing and reporting. */
 export type FindByAttributeDetails = InstrumentedDetails<Parameters<FindByAttribute>>
 
 /**
@@ -67,17 +77,17 @@ export type FindByText = {
   name: string
 }
 
+/** @internal Represents the detailed parameters captured for an instrumented `FindByText` call, used for testing and reporting. */
 export type FindByTextDetail = InstrumentedDetails<Parameters<FindByText>>
 
 /**
  * Configuration options for DOM event dispatch.
  * Used to customize event behavior and include additional data.
  *
- * @typedef {Object} EventArguments
- * @property {boolean} [bubbles] - Whether the event bubbles up through the DOM tree. Defaults to true
- * @property {boolean} [composed] - Whether the event can cross shadow DOM boundaries. Defaults to true
- * @property {boolean} [cancelable] - Whether the event can be canceled. Defaults to true
- * @property {Record<string, unknown>} [detail] - Custom data to be included with the event. When provided, creates a CustomEvent
+ * @property [bubbles=true] - Whether the event bubbles up through the DOM tree.
+ * @property [composed=true] - Whether the event can cross shadow DOM boundaries.
+ * @property [cancelable=true] - Whether the event can be canceled.
+ * @property detail - Custom data to be included with the event. When provided, creates a CustomEvent.
  *
  * @example
  * ```ts
@@ -152,18 +162,17 @@ export type FireEvent = {
   name: string
 }
 
+/** @internal Represents the detailed parameters captured for an instrumented `FireEvent` call, used for testing and reporting. */
 export type FireEventDetail = InstrumentedDetails<Parameters<FireEvent>>
 
 /**
  * @internal Configuration parameters for a specific story test.
  * These options control the testing environment and behavior for a single story.
  *
- * @property {Record<string, string> | false} [a11y] - Accessibility testing configuration. If set to an object, enables Axe-core checks with the specified rules. If `false`, disables a11y checks for this story.
- * @property {string} [description] - A description of the story's usage or the scenario it tests. Often displayed in test reports.
- * @property {(env: NodeJS.ProcessEnv) => Record<string, string |string[]>} [cookies] - A factory function to create custom HTTP cookies for server-side rendering or fetching within the test environment.
- * @property {Scale} [scale] - The Agentic Card Scale to use when rendering and testing this story. See `Scale` type.
- * @property {StylesObject} [styles] - Additional CSS styles to apply specifically to the context of this story test. Useful for overriding global styles or adding test-specific visual aids.
- * @property {number} [timeout=5000] - The maximum time (in milliseconds) allowed for the story's `play` function to complete. Defaults to `DEFAULT_PLAY_TIMEOUT` (5000ms).
+ * @property headers - An optional factory function to create custom HTTP `Headers` for server-side rendering or network requests within the test. It receives the Node.js process environment.
+ * @property recordVideo - Optional configuration for video recording of the test execution, compatible with Playwright's `BrowserContextOptions['recordVideo']`.
+ * @property styles - Optional `StylesObject` containing additional CSS styles to apply specifically to the context of this story test. Useful for overriding global styles or adding test-specific visual aids.
+ * @property [timeout=5000] - Optional. The maximum time (in milliseconds) allowed for the story's `play` function to complete. Defaults to 5000ms.
  */
 export type Params = {
   headers?: (env: NodeJS.ProcessEnv) => Headers | Promise<Headers>
@@ -301,6 +310,12 @@ export type SnapshotStoryObj<T extends Attrs = Attrs> = {
  */
 export type StoryObj<T extends Attrs = Attrs> = InteractionStoryObj<T> | SnapshotStoryObj<T>
 
+/**
+ * Defines the structure for the detail payload of test failure events.
+ * It's a mapped type where keys are specific failure event types (e.g., accessibility violation, failed assertion)
+ * and values are the associated error details (type `unknown` for flexibility).
+ * Uses constants from `FIXTURE_EVENTS`.
+ */
 export type TestFailureEventDetail = {
   [K in
     | typeof FIXTURE_EVENTS.accessibility_violation
@@ -309,6 +324,14 @@ export type TestFailureEventDetail = {
     | typeof FIXTURE_EVENTS.unknown_error]?: unknown
 }
 
+/**
+ * Represents a message structure used by the story runner, likely for communication
+ * between different parts of the test execution environment (e.g., test runner and reporter, or main thread and worker).
+ *
+ * @property colorScheme - Indicates the color scheme (e.g., 'light', 'dark') active during the test run or for rendering.
+ * @property snapshot - A `SnapshotMessage` from the behavioral program, capturing its state at a relevant point in time for the story.
+ * @property pathname - The path or unique identifier of the story being run or reported on.
+ */
 export type RunnerMessage = {
   colorScheme: string
   snapshot: SnapshotMessage

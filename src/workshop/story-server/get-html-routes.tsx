@@ -95,6 +95,19 @@ const createInclude = async ({ story, route }: { story: StoryObj; route: string 
   }
 }
 
+/**
+ * @internal
+ * Generates HTML routes for a given set of stories.
+ * For each story, it creates a full HTML page (`.html`) that hosts the story in a `StoryFixture`,
+ * and a template include (`.html.template`) containing only the rendered story content.
+ *
+ * @param options - The options for generating HTML routes.
+ * @param options.designTokens - An optional signal containing global design token CSS to be injected into the page.
+ * @param options.storySet - An object where keys are export names and values are `StoryObj` definitions.
+ * @param options.filePath - The original file path of the stories, used to construct import paths.
+ * @returns A Promise that resolves to an array of objects, where each object represents a route
+ *          (either a full page or a template include) with its content, contentType, and headers.
+ */
 export const getHTMLRoutes = async ({
   designTokens,
   storySet,

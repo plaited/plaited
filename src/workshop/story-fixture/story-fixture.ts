@@ -1,5 +1,11 @@
 declare global {
   interface Window {
+    /**
+     * @internal
+     * Global flag indicating if the current context is within the Plaited test runner environment.
+     * This helps conditional logic, like snapshot reporting, to behave differently when running
+     * inside the test runner versus a standard browser environment.
+     */
     __PLAITED_RUNNER__?: boolean
   }
 }

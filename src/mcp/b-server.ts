@@ -1,6 +1,6 @@
 /**
  * @internal
- * @module define-mcp-server
+ * @module b-server
  *
  * Purpose: High-level API for creating Model Context Protocol servers with behavioral programming
  * Architecture: Integrates MCP SDK with Plaited's behavioral system for AI-powered tool execution
@@ -58,13 +58,17 @@ import { registerPrompt, registerResource, registerTool } from './mcp.utils.js'
  * @template R Registry type defining available MCP primitives
  * @template E EventDetails type for custom behavioral events
  *
- * @param config Server configuration object
- * @param config.name MCP server name for identification
- * @param config.version Semantic version of the server
- * @param config.registry Declaration of tools, prompts, and resources to expose
- * @param config.bProgram Async function returning behavioral event handlers
+ * @param options Configuration object for the server.
+ * @param options.name The name of the MCP server, used for identification.
+ * @param options.version The semantic version of the server (e.g., '1.0.0').
+ * @param options.registry An object defining the tools, prompts, and resources to be exposed by this server.
+ *                         The structure should conform to the `Registry` type.
+ * @param options.bProgram An asynchronous function that defines the behavioral program for the server.
+ *                         It receives context (including MCP primitive accessors like `tools`, `prompts`, `resources`,
+ *                         the `McpServer` instance, and Plaited behavioral utilities) and should return an object
+ *                         of `PrimitiveHandlers` that implement the logic for the registered MCP primitives.
  *
- * @returns Configured McpServer instance ready for transport connection
+ * @returns A Promise that resolves to a configured `McpServer` instance, ready to be connected to a transport.
  *
  * @example Creating an MCP server for file operations
  * ```ts

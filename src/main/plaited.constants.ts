@@ -16,10 +16,10 @@ import { keyMirror } from '../utils.js'
  * - onFormReset: Associated form is reset
  * - onFormStateRestore: Form state is restored
  *
- * DOM Mutation Callbacks:
- * - onReplaceChildren: Slotted Children are replaced
- * - onPrepend: Content prepended to slot
- * - onAppend: Content appended to slot
+ * DOM Mutation Callbacks (handlers for native `Element` methods):
+ * - replaceChildren: Element's children are replaced
+ * - prepend: Content prepended to element
+ * - append: Content appended to element
  *
  * @example
  * Using lifecycle callbacks in a component
@@ -95,13 +95,13 @@ import { keyMirror } from '../utils.js'
  *     };
  *
  *     return {
- *       [ELEMENT_CALLBACKS.onAppend]() {
+ *       [ELEMENT_CALLBACKS.append]() {
  *         updateCount();
  *       },
- *       [ELEMENT_CALLBACKS.onPrepend]() {
+ *       [ELEMENT_CALLBACKS.prepend]() {
  *         updateCount();
  *       },
- *       [ELEMENT_CALLBACKS.onReplaceChildren]() {
+ *       [ELEMENT_CALLBACKS.replaceChildren]() {
  *         updateCount();
  *       }
  *     };
@@ -132,8 +132,6 @@ export const ELEMENT_CALLBACKS = keyMirror(
  * - Facilitates safe template composition
  * - Prevents template object spoofing
  * - Used by the rendering system to identify valid templates
- *
- * @type {const} A unique bear emoji as literal type
  *
  * @example
  * Creating a template validator
