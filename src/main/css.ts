@@ -261,8 +261,8 @@ export const css = {
    *   '--internal-padding': '8px', // CSS Variable: :host { --internal-padding: 8px; }
    * });
    *
-   * // Usage within defineElement:
-   * defineElement({
+   * // Usage within bElement:
+   * bElement({
    *   tag: 'my-interactive-element',
    *   shadowDom: <div {...hostStyles}>...</div> // Stylesheet is applied to the shadow root
    * });

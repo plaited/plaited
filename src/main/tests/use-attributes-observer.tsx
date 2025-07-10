@@ -1,6 +1,6 @@
-import { defineElement, useAttributesObserver } from 'plaited'
+import { bElement, useAttributesObserver } from 'plaited'
 
-export const AttributesObserver = defineElement({
+export const AttributesObserver = bElement({
   tag: 'attribute-observer',
   shadowDom: (
     <>

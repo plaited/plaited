@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { bProgram, bSync, bThread, type SnapshotMessage } from 'plaited/behavioral'
+import { behavioral, bSync, bThread, type SnapshotMessage } from 'plaited/behavioral'
 
 /**
  * Test scenario: Demonstrates a basic behavioral program (`bProgram`).
@@ -19,7 +19,7 @@ import { bProgram, bSync, bThread, type SnapshotMessage } from 'plaited/behavior
  */
 test('Add hot water 3 times', () => {
   const actual: string[] = []
-  const { bThreads, trigger, useFeedback } = bProgram()
+  const { bThreads, trigger, useFeedback } = behavioral()
   bThreads.set({
     addHot: bThread([
       bSync({ request: { type: 'hot' } }),
@@ -52,7 +52,7 @@ test('Add hot water 3 times', () => {
  */
 test('Add hot/cold water 3 times', () => {
   const actual: string[] = []
-  const { bThreads, trigger, useFeedback } = bProgram()
+  const { bThreads, trigger, useFeedback } = behavioral()
   bThreads.set({
     addHot: bThread([
       bSync({ request: { type: 'hot' } }),
@@ -85,7 +85,7 @@ test('Add hot/cold water 3 times', () => {
  */
 test('interleave', () => {
   const actual: string[] = []
-  const { bThreads, trigger, useFeedback } = bProgram()
+  const { bThreads, trigger, useFeedback } = behavioral()
   bThreads.set({
     addHot: bThread([
       bSync({ request: { type: 'hot' } }),
@@ -119,7 +119,7 @@ test('interleave', () => {
  */
 test('logging', () => {
   const snapshots: SnapshotMessage[] = []
-  const { bThreads, trigger, useSnapshot } = bProgram()
+  const { bThreads, trigger, useSnapshot } = behavioral()
   useSnapshot((snapshot: SnapshotMessage) => {
     snapshots.push(snapshot)
   })

@@ -5,7 +5,7 @@
  * Purpose: Extends standard triggers with lifecycle management capabilities for Plaited components
  * Architecture: Decorator pattern that augments base triggers with cleanup callback registration
  * Dependencies: b-program for base Trigger and Disconnect types
- * Consumers: defineElement, defineBProgram, and any component needing managed resource cleanup
+ * Consumers: bElement, defineBProgram, and any component needing managed resource cleanup
  *
  * Maintainer Notes:
  * - This module solves the critical problem of resource cleanup in component lifecycles
@@ -29,7 +29,7 @@
  * - Cleanup order is not guaranteed (Set iteration order)
  * - No error handling for failed cleanup callbacks
  */
-import type { Trigger, Disconnect } from './b-program.js'
+import type { Trigger, Disconnect } from './behavioral.js'
 
 /**
  * An enhanced `Trigger` type specifically for Plaited components or contexts.
@@ -63,7 +63,7 @@ export type PlaitedTrigger = Trigger & {
  * - Set is passed by reference, allowing external management
  *
  * Integration notes:
- * - Called by defineElement during component initialization
+ * - Called by bElement during component initialization
  * - Called by defineBProgram for standalone behavioral programs
  * - The disconnectSet is typically managed by the component lifecycle
  * - All callbacks in the set are invoked during component disconnection
@@ -115,7 +115,7 @@ export const getPlaitedTrigger = (trigger: Trigger, disconnectSet: Set<Disconnec
  * };
  *
  * // Usage in a component
- * const MyComponent = defineElement({
+ * const MyComponent = bElement({
  *   tag: 'my-component',
  *   shadowDom: <div p-target="root" />,
  *   bProgram({ trigger }) {

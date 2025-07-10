@@ -3,7 +3,7 @@ import { Template } from './public-events.js'
 
 export const publicEvents: StoryObj = {
   description: `This story is used to validate that the publicEvents parameter
-  of defineElement allows for triggering a public event on a plaited element`,
+  of bElement allows for triggering a public event on a plaited element`,
   template: Template,
   play: async ({ assert, findByAttribute, fireEvent }) => {
     let button = await findByAttribute('p-target', 'button')

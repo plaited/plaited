@@ -16,7 +16,7 @@ Behavioral Programming decomposes complex system logic into discrete, modular un
 
 **Event-Driven Synchronization**: B-threads communicate exclusively through events using four core idioms:
 - **Request**: Propose that an event be triggered (expressing intent)
-- **Wait**: Passively observe for an event (expressing interest)  
+- **Wait**: Passively observe for an event (expressing interest)
 - **Block**: Prevent an event from being triggered (expressing prohibition)
 - **Interrupt**: Be terminated when a specific event occurs (expressing cancellation)
 
@@ -26,8 +26,8 @@ Behavioral Programming decomposes complex system logic into discrete, modular un
 
 Plaited extends BP with **signals** - reactive state primitives that enable pub/sub coordination between behavioral programs executing in different contexts:
 - **Node.js programs** created with `defineBProgram`
-- **Browser main thread programs** using `defineBProgram` and `defineElement`  
-- **Web Worker programs** using `defineBProgram` and `defineWorker`
+- **Browser main thread programs** using `defineBProgram` and `bElement`
+- **Web Worker programs** using `defineBProgram` and `bWorker`
 - **Bun.js runtime programs** using `defineBProgram`
 
 Signals provide actor-like message passing, allowing behavioral programs to coordinate state changes across execution boundaries while maintaining the BP paradigm's modular, event-driven nature.
@@ -162,10 +162,10 @@ const createWorkshop = defineBProgram<WorkshopDetails, DefineWorkshopParams>({
   async bProgram({ cwd, trigger, bThreads, bSync, bThread, disconnect }) {
     // Setup resources
     const server = await useServer({ cwd })
-    
+
     // Register cleanup
     disconnect(() => server.close())
-    
+
     // Define behavioral threads
     bThreads.set({
       reloadThread: bThread([
@@ -173,7 +173,7 @@ const createWorkshop = defineBProgram<WorkshopDetails, DefineWorkshopParams>({
         // ... thread logic
       ])
     })
-    
+
     // Return event handlers
     return {
       async TEST_ALL_STORIES() {
@@ -205,7 +205,7 @@ The `defineBProgram` utility automatically handles:
 
 Plaited facilitates running behavioral programs within Web Workers for background processing.
 
-#### `defineWorker(config)`
+#### `bWorker(config)`
 
 Creates and configures a behavioral program to run inside a Web Worker. This function should be called in the worker's script file.
 
@@ -216,11 +216,11 @@ Creates and configures a behavioral program to run inside a Web Worker. This fun
 }): void
 ```
 - `config.publicEvents`: An array of event type strings that this worker will accept from the main thread via `postMessage`.
-- `config.bProgram`: A function similar to the `bProgram` in `defineElement`. It defines the worker's behavior, including its event handlers. It receives `WorkerBProgramArgs`.
+- `config.bProgram`: A function similar to the `bProgram` in `bElement`. It defines the worker's behavior, including its event handlers. It receives `WorkerBProgramArgs`.
 
 **`WorkerBProgramArgs`** (provided to worker's `bProgram`)
 
-The argument object provided to the `bProgram` function when using `defineWorker`.
+The argument object provided to the `bProgram` function when using `bWorker`.
 
 ```ts
 type WorkerBProgramArgs = {
@@ -231,25 +231,25 @@ type WorkerBProgramArgs = {
   useSnapshot: UseSnapshot;       // For monitoring the worker\'s bProgram state.
   bThread: BThread;               // Utility to create behavioral threads.
   bSync: BSync;                   // Utility to define synchronization points.
-  // Note: `useFeedback` is handled internally by defineWorker.
+  // Note: `useFeedback` is handled internally by bWorker.
 };
 ```
 
 #### `useWorker(trigger, path)`
 
-Creates a communication interface from a Plaited web component's `bProgram` (or any bProgram context) to a Web Worker defined with `defineWorker`.
+Creates a communication interface from a Plaited web component's `bProgram` (or any bProgram context) to a Web Worker defined with `bWorker`.
 
 ```ts
 <T = unknown>(trigger: PlaitedTrigger | Trigger, path: string): ((args: BPEvent<T>) => void) & { disconnect: () => void }
 ```
 
-- `trigger`: The `trigger` function from the calling `bProgram`'s context. This is used to handle messages received *from* the worker. If a `PlaitedTrigger` is provided (as is the case within `defineElement`), the worker connection will automatically be disconnected when the component or module itself is disconnected.
+- `trigger`: The `trigger` function from the calling `bProgram`'s context. This is used to handle messages received *from* the worker. If a `PlaitedTrigger` is provided (as is the case within `bElement`), the worker connection will automatically be disconnected when the component or module itself is disconnected.
 - `path`: The string path to the worker's JavaScript module file.
 - Returns: A function that acts like `worker.postMessage()` to send `BPEvent`s *to* the worker. This returned function is augmented with a `disconnect` method, allowing manual termination of the worker and cleanup of its listeners.
 
 ### State Management Utilities (Signals)
 
-Signals are reactive state primitives that enable actor-like coordination between behavioral programs running in different execution contexts. They provide a pub/sub mechanism for synchronizing values and updates across programs, whether they're created using low-level `bProgram` functions or higher-level utilities like `defineBProgram`, `defineElement`, and `defineWorker`.
+Signals are reactive state primitives that enable actor-like coordination between behavioral programs running in different execution contexts. They provide a pub/sub mechanism for synchronizing values and updates across programs, whether they're created using low-level `bProgram` functions or higher-level utilities like `defineBProgram`, `bElement`, and `bWorker`.
 
 #### `useSignal(initialValue?)`
 
@@ -325,39 +325,32 @@ Runtime type-checking functions to safely identify and work with specific object
 
 The main module providing core functionalities for creating web components, managing their behavior, styling, and JSX-based templating. It re-exports several utilities from other specialized modules.
 
-*Note: While behavioral utilities like `defineWorker`, `useSignal`, and `useWorker` are available when importing from `plaited` (as they are re-exported by this main module), their primary documentation can be found in the [Behavioral Module (`plaited/behavioral`)](#behavioral-module-plaitedbehavioral) section.*
+*Note: While behavioral utilities like `bWorker`, `useSignal`, and `useWorker` are available when importing from `plaited` (as they are re-exported by this main module), their primary documentation can be found in the [Behavioral Module (`plaited/behavioral`)](#behavioral-module-plaitedbehavioral) section.*
 
 ### Web Component APIs
 
-#### `defineElement(config)`
+#### `bElement(config)`
 
 Defines and registers a Plaited custom element.
 
 ```ts
-<A extends PlaitedEventDetails>(config: DefineElementArgs<A>): PlaitedTemplate
+<A extends PlaitedEventDetails>(config: {
+  tag: CustomElementTag
+  shadowDom: TemplateObject
+  delegatesFocus?: boolean
+  mode?: 'open' | 'closed'
+  slotAssignment?: 'named' | 'manual'
+  observedAttributes?: string[]
+  publicEvents?: string[]
+  formAssociated?: true
+  bProgram?: {
+    (this: PlaitedElement, args: BProgramArgs): Handlers<A> & PlaitedElementCallbackHandlers
+  }
+}): PlaitedTemplate
 ```
 
-- `config`: A `DefineElementArgs` object specifying the element's configuration.
+- `config`: An object specifying the element's configuration.
 - Returns: A `PlaitedTemplate` function that can be used to create instances of the custom element in JSX.
-
-**`DefineElementArgs<A extends PlaitedEventDetails>`**
-
-An object with the following properties:
-
-```ts
-type DefineElementArgs<A extends PlaitedEventDetails> = {
-  tag: CustomElementTag // The tag name for the custom element (e.g., 'my-element'). Must contain a hyphen.
-  shadowDom: TemplateObject // The Plaited template object defining the element's shadow DOM structure.
-  delegatesFocus?: boolean // If true (default), focus requests on the host are delegated to its shadow DOM.
-  mode?: 'open' | 'closed' // Shadow DOM encapsulation mode (default: 'open').
-  slotAssignment?: 'named' | 'manual' // Slot assignment mode (default: 'named').
-  observedAttributes?: string[] // Attributes to observe for changes.
-  publicEvents?: string[] // Event types allowed to be triggered externally on the component.
-  formAssociated?: true // If true, registers as a Form-Associated Custom Element.
-  streamAssociated?: true // If true, enables stream-based Light DOM (Slot) mutation handlers.
-  bProgram?: (this: PlaitedElement, args: BProgramArgs) => Handlers<A> & PlaitedElementCallbackHandlers // Behavioral program function.
-}
-```
 
 **`PlaitedElementCallbackHandlers`** (within `bProgram`'s return value)
 
@@ -453,9 +446,9 @@ Utilities for runtime type checking of Plaited-specific objects.
 - **`isPlaitedElement(el: unknown): el is PlaitedElement`**
   Checks if an element is a Plaited custom element (has a `trigger` method).
 - **`isPlaitedTemplateFunction(template: FunctionTemplate): template is PlaitedTemplate`**
-  Checks if a function template was created by `defineElement`.
+  Checks if a function template was created by `bElement`.
 
-### `BProgramArgs` (for `defineElement`\'s `bProgram` callback)
+### `BProgramArgs` (for `bElement`\'s `bProgram` callback)
 
 The argument object passed to the `bProgram` function when defining a Plaited element.
 
@@ -642,7 +635,7 @@ Generates a static HTML string from Plaited template objects.
 Essential types used throughout the Plaited framework.
 
 - **`PlaitedElement`**: Interface extending `HTMLElement` for Plaited custom elements, including `trigger` and lifecycle callbacks.
-- **`PlaitedTemplate`**: The type returned by `defineElement`, a function template that includes metadata like `tag`, `registry`, `observedAttributes`, and `publicEvents`.
+- **`PlaitedTemplate`**: The type returned by `bElement`, a function template that includes metadata like `tag`, `registry`, `observedAttributes`, and `publicEvents`.
 - **`TemplateObject`**: The internal representation of a compiled JSX template (`{ html: string[], stylesheets: string[], registry: string[], parts: string[], $: unique_symbol }`).
 - **`Position`**: DOM insertion positions (`\'beforebegin\' | \'afterbegin\' | \'beforeend\' | \'afterend\'`).
 - **`Bindings`**: Helper methods (`render`, `insert`, `replace`, `attr`) bound to elements queried by `p-target`.
@@ -666,7 +659,7 @@ Types relevant when using JSX with Plaited.
 
 ### Re-exported Behavioral Utilities
 The main `plaited` module also re-exports the following for convenience. See the [Behavioral Module (`plaited/behavioral`)](#behavioral-module-plaitedbehavioral) section for detailed documentation:
-- `defineWorker(config)`
+- `bWorker(config)`
 - `useSignal(initialValue?)`
 - `useWorker(trigger, path)`
 

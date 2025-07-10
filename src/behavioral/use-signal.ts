@@ -33,7 +33,7 @@
  * - Computed signals can't be directly set
  * - No persistence layer integration
  */
-import type { Trigger, Disconnect } from './b-program.js'
+import type { Trigger, Disconnect } from './behavioral.js'
 import { type PlaitedTrigger, isPlaitedTrigger } from './get-plaited-trigger.js'
 
 /**
@@ -91,7 +91,7 @@ export function useSignal<T>(initialValue?: never): SignalWithoutInitialValue<T>
  * // Create a shared cart state
  * const cartState = useSignal<CartItem[]>([]);
  *
- * const AddToCart = defineElement({
+ * const AddToCart = bElement({
  *   tag: 'add-to-cart',
  *   shadowDom: (
  *     <button
@@ -111,7 +111,7 @@ export function useSignal<T>(initialValue?: never): SignalWithoutInitialValue<T>
  *   }
  * });
  *
- * const CartCount = defineElement({
+ * const CartCount = bElement({
  *   tag: 'cart-count',
  *   shadowDom: (
  *     <div>
@@ -212,7 +212,7 @@ export function useSignal<T>(initialValue: T) {
  *
  * @example Price calculator component
  * ```tsx
- * const PriceCalculator = defineElement({
+ * const PriceCalculator = bElement({
  *   tag: 'price-calculator',
  *   shadowDom: (
  *     <div>

@@ -49,7 +49,7 @@ import { P_TARGET } from './jsx.constants.js'
  * @example
  * Dynamic List Component
  * ```tsx
- * const ListComponent = defineElement({
+ * const ListComponent = bElement({
  *   tag: 'list-component',
  *   shadowDom: (
  *     <div>
@@ -106,7 +106,7 @@ import { P_TARGET } from './jsx.constants.js'
  * @example
  * Table Row Template
  * ```tsx
- * const DataTable = defineElement({
+ * const DataTable = bElement({
  *   tag: 'data-table',
  *   shadowDom: (
  *     <div>

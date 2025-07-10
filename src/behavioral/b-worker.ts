@@ -33,9 +33,14 @@
  * - Transferable objects not supported in current implementation
  * - Worker must be in separate file for proper execution
  */
-import type { BPEvent } from './b-thread.js'
-import type { Disconnect, Handlers, EventDetails } from './b-program.js'
-import { bProgram, type BProgram } from './b-program.js'
+import {
+  behavioral,
+  type Behavioral,
+  type Disconnect,
+  type Handlers,
+  type EventDetails,
+  type BPEvent,
+} from './behavioral.js'
 import { getPublicTrigger } from './get-public-trigger.js'
 import { getPlaitedTrigger } from './get-plaited-trigger.js'
 
@@ -47,7 +52,7 @@ import { getPlaitedTrigger } from './get-plaited-trigger.js'
 type BProgramArgs = {
   send(data: BPEvent): void
   disconnect: Disconnect
-} & Omit<ReturnType<BProgram>, 'useFeedback'>
+} & Omit<ReturnType<Behavioral>, 'useFeedback'>
 /**
  * Creates a behavioral program worker with type-safe message handling and lifecycle management.
  * Integrates Web Workers with Plaited's behavioral programming system for efficient background processing.
@@ -61,7 +66,7 @@ type BProgramArgs = {
  * @example Image Processing Worker
  * ```tsx
  * // image-worker.ts
- * defineWorker<{
+ * bWorker<{
  *   processImage: (args: { imageData: ImageData, filters: FilterOptions }) => void
  * }>({
  *   publicEvents: ['processImage'],
@@ -93,7 +98,7 @@ type BProgramArgs = {
  * });
  *
  * // Usage in component:
- * const ImageEditor = defineElement({
+ * const ImageEditor = bElement({
  *   tag: 'image-editor',
  *   shadowDom: (
  *     <div>
@@ -171,7 +176,10 @@ type BProgramArgs = {
  *    - Consider data transfer costs
  *    - Use appropriate data structures
  */
-export const defineWorker = async <A extends EventDetails>(args: {
+export const bWorker = async <A extends EventDetails>({
+  bProgram,
+  publicEvents,
+}: {
   bProgram: (args: BProgramArgs) => Handlers<A> | Promise<Handlers<A>>
   publicEvents: string[]
 }) => {
@@ -187,7 +195,7 @@ export const defineWorker = async <A extends EventDetails>(args: {
    * Initialize a Behavioral Program instance within the worker.
    * This provides the core BP infrastructure for the worker thread.
    */
-  const { useFeedback, trigger, ...rest } = bProgram()
+  const { useFeedback, trigger, ...rest } = behavioral()
 
   /**
    * @internal
@@ -196,7 +204,7 @@ export const defineWorker = async <A extends EventDetails>(args: {
    */
   const publicTrigger = getPublicTrigger({
     trigger,
-    publicEvents: args?.publicEvents,
+    publicEvents,
   })
 
   /**
@@ -241,7 +249,7 @@ export const defineWorker = async <A extends EventDetails>(args: {
    * Enhanced trigger enables automatic cleanup registration.
    */
   useFeedback(
-    await args.bProgram({
+    await bProgram({
       ...rest,
       send,
       disconnect,

@@ -24,7 +24,7 @@ import { keyMirror } from '../utils.js'
  * @example
  * Using lifecycle callbacks in a component
  * ```tsx
- * const MyElement = defineElement({
+ * const MyElement = bElement({
  *   tag: 'my-element',
  *   shadowDom: (
  *     <div>
@@ -50,7 +50,7 @@ import { keyMirror } from '../utils.js'
  * @example
  * Form association callbacks
  * ```tsx
- * const FormField = defineElement({
+ * const FormField = bElement({
  *   tag: 'form-field',
  *   formAssociated: true,
  *   shadowDom: (
@@ -77,7 +77,7 @@ import { keyMirror } from '../utils.js'
  * @example
  * Slot mutation callbacks
  * ```tsx
- * const Container = defineElement({
+ * const Container = bElement({
  *   tag: 'content-container',
  *   shadowDom: (
  *     <div>

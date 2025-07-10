@@ -65,7 +65,7 @@ type Dispatch = (
  *
  * @example Component communication through shadow DOM boundaries
  * ```tsx
- * const ChildComponent = defineElement({
+ * const ChildComponent = bElement({
  *   tag: 'child-component',
  *   shadowDom: (
  *     <button
@@ -91,7 +91,7 @@ type Dispatch = (
  *   }
  * });
  *
- * const ParentComponent = defineElement({
+ * const ParentComponent = bElement({
  *   tag: 'parent-component',
  *   publicEvents: ['update-parent']
  *   shadowDom: (
@@ -114,7 +114,7 @@ type Dispatch = (
  *
  * @example Form validation events
  * ```tsx
- * const FormField = defineElement({
+ * const FormField = bElement({
  *   tag: 'form-field',
  *   shadowDom: (
  *     <div>

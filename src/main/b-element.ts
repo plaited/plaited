@@ -12,7 +12,7 @@ import {
   type UseFeedback,
   type UseSnapshot,
   type EventDetails,
-  bProgram,
+  behavioral,
   getPublicTrigger,
 } from '../behavioral.js'
 import { delegates, DelegatedListener, canUseDOM } from '../utils.js'
@@ -97,36 +97,6 @@ type PlaitedElementCallbackHandlers = {
   [K in keyof PlaitedElementCallbackDetails]?: Callback<PlaitedElementCallbackDetails[K]>
 }
 
-/**
- * @description Configuration object used to define a Plaited custom element.
- * Specifies the element's tag name, shadow DOM structure, behavior, and lifecycle hooks.
- *
- * @template A - A type extending `PlaitedHandlers` that defines the specific event handlers and lifecycle callbacks implemented in the `bProgram`.
- *
- * @property {CustomElementTag} tag - The tag name for the custom element (e.g., 'my-element'). Must contain a hyphen.
- * @property {TemplateObject} shadowDom - The Plaited template object defining the element's shadow DOM structure. Typically created using JSX (`h`).
- * @property {boolean} [delegatesFocus=true] - If `true`, focus requests on the host element are delegated to the first focusable element within its shadow DOM. Corresponds to `attachShadow({ delegatesFocus: ... })`.
- * @property {'open' | 'closed'} [mode='open'] - The encapsulation mode for the shadow DOM ('open' allows external JavaScript access, 'closed' restricts it). Corresponds to `attachShadow({ mode: ... })`.
- * @property {'named' | 'manual'} [slotAssignment='named'] - The slot assignment mode for the shadow DOM. 'named' is the default behavior. Corresponds to `attachShadow({ slotAssignment: ... })`.
- * @property {string[]} [observedAttributes=[]] - An array of attribute names that the element should observe for changes. Changes trigger the `onAttributeChanged` callback. Also makes these attributes available as properties on the host element instance.
- * @property {string[]} [publicEvents=[]] - An array of event types that the component allows to be triggered on itself(outside its own `bProgram`). Used by `host.trigger`.
- * @property {true} [formAssociated] - If `true`, registers the element as a Form-Associated Custom Element, enabling form-related callbacks (`onFormAssociated`, etc.) and interaction with the `ElementInternals` API.
- * @property {(this: PlaitedElement, args: BProgramArgs) => Handlers<A> & PlaitedElementCallbacks} [bProgram] - The behavioral program function. It receives `BProgramArgs` (containing `$`, `trigger`, `host`, etc.) and should return an object containing event handlers and lifecycle callbacks defined by type `A`. The `this` context inside `bProgram` refers to the custom element instance.
- */
-export type DefineElementArgs<A extends EventDetails> = {
-  tag: CustomElementTag
-  shadowDom: TemplateObject
-  delegatesFocus?: boolean
-  mode?: 'open' | 'closed'
-  slotAssignment?: 'named' | 'manual'
-  observedAttributes?: string[]
-  publicEvents?: string[]
-  formAssociated?: true
-  bProgram?: {
-    (this: PlaitedElement, args: BProgramArgs): Handlers<A> & PlaitedElementCallbackHandlers
-  }
-}
-
 const getTriggerMap = (el: Element) =>
   new Map((el.getAttribute(P_TRIGGER) as string).split(' ').map((pair) => pair.split(':')) as [string, string][])
 
@@ -144,7 +114,7 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
 
 /**
  * Creates a reusable Web Component with behavioral programming, event delegation, and shadow DOM support.
- * The `defineElement` function is the core building block of Plaited applications, providing a
+ * The `bElement` function is the core building block of Plaited applications, providing a
  * declarative way to create custom elements with robust state management and DOM interactions.
  *
  * @template A Generic type extending PlaitedHandlers for component-specific events
@@ -154,7 +124,7 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  * @example
  * Basic Counter Component
  * ```tsx
- * const Counter = defineElement({
+ * const Counter = bElement({
  *   tag: 'my-counter',
  *   shadowDom: (
  *     <div>
@@ -189,7 +159,7 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  *   validate: () => void;
  * }
  *
- * const FormField = defineElement<FormFieldEvents>({
+ * const FormField = bElement<FormFieldEvents>({
  *   tag: 'form-field',
  *   formAssociated: true,
  *   observedAttributes: ['label', 'required'],
@@ -263,7 +233,7 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
    },
  })
 
- export const ToggleInput = defineElement<{
+ export const ToggleInput = bElement<{
    click: MouseEvent & { target: HTMLInputElement }
    checked: boolean
    disabled: boolean
@@ -398,7 +368,7 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  * - host: Custom element instance
  * - root: Shadow root reference
  */
-export const defineElement = <A extends EventDetails>({
+export const bElement = <A extends EventDetails>({
   tag,
   shadowDom,
   mode = 'open',
@@ -408,7 +378,19 @@ export const defineElement = <A extends EventDetails>({
   observedAttributes = [],
   formAssociated,
   bProgram: callback,
-}: DefineElementArgs<A>): PlaitedTemplate => {
+}: {
+  tag: CustomElementTag
+  shadowDom: TemplateObject
+  delegatesFocus?: boolean
+  mode?: 'open' | 'closed'
+  slotAssignment?: 'named' | 'manual'
+  observedAttributes?: string[]
+  publicEvents?: string[]
+  formAssociated?: true
+  bProgram?: {
+    (this: PlaitedElement, args: BProgramArgs): Handlers<A> & PlaitedElementCallbackHandlers
+  }
+}): PlaitedTemplate => {
   if (canUseDOM() && !customElements.get(tag)) {
     customElements.define(
       tag,
@@ -435,7 +417,7 @@ export const defineElement = <A extends EventDetails>({
           this.attachShadow({ mode, delegatesFocus, slotAssignment })
           const frag = getDocumentFragment(this.#root, shadowDom)
           this.#root.replaceChildren(frag)
-          const { trigger, useFeedback, useSnapshot, bThreads } = bProgram()
+          const { trigger, useFeedback, useSnapshot, bThreads } = behavioral()
           this.#trigger = getPlaitedTrigger(trigger, this.#disconnectSet)
           this.#useFeedback = useFeedback
           this.#useSnapshot = useSnapshot

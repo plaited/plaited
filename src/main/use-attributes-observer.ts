@@ -105,11 +105,11 @@ export type ObservedAttributesDetail = {
  *
  * @example Observing attributes on a slotted input element
  * ```tsx
- * import { defineElement, useAttributesObserver, ObservedAttributesDetail } from 'plaited';
+ * import { bElement, useAttributesObserver, ObservedAttributesDetail } from 'plaited';
  *
  * // Component that observes attributes of an element slotted into it.
  * // This example is inspired by `plaited/src/main/tests/use-attributes-observer.tsx`.
- * const SlottedAttributeMonitor = defineElement({
+ * const SlottedAttributeMonitor = bElement({
  *   tag: 'slotted-attribute-monitor',
  *   shadowDom: (
  *     <>

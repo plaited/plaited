@@ -1,9 +1,9 @@
-import { defineElement, type FT, useSignal } from 'plaited'
+import { bElement, type FT, useSignal } from 'plaited'
 
 const sendDisable = useSignal()
 const sendAdd = useSignal<{ value: string }>()
 
-export const ElOne = defineElement({
+export const ElOne = bElement({
   tag: 'elemenmt-one',
   publicEvents: ['disable'],
   shadowDom: (
@@ -31,7 +31,7 @@ export const ElOne = defineElement({
   },
 })
 
-export const ElTwo = defineElement({
+export const ElTwo = bElement({
   tag: 'element-two',
   publicEvents: ['add'],
   shadowDom: <h1 p-target='header'>Hello</h1>,

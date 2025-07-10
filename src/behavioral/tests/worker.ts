@@ -1,4 +1,4 @@
-import { defineWorker } from 'plaited'
+import { bWorker } from 'plaited'
 
 const calculator = {
   add(a: number, b: number) {
@@ -15,7 +15,7 @@ const calculator = {
   },
 }
 
-await defineWorker<{
+await bWorker<{
   calculate: { a: number; b: number; operation: 'add' | 'subtract' | 'multiply' | 'divide' }
 }>({
   publicEvents: ['calculate'],

@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { bProgram, bThread, bSync, type RulesFunction } from 'plaited/behavioral'
+import { behavioral, bThread, bSync, type RulesFunction } from 'plaited/behavioral'
 
 /** Represents all possible winning combinations of squares in Tic-Tac-Toe. */
 const winConditions = [
@@ -32,7 +32,7 @@ type Square = { square: number }
  */
 test('taking a square', () => {
   // Create a new bProgram instance.
-  const { useFeedback, trigger } = bProgram()
+  const { useFeedback, trigger } = behavioral()
   // Initialize the board with all squares available for this test.
   board = new Set(squares)
   // Register feedback handlers to react to 'X' and 'O' events.
@@ -70,7 +70,7 @@ const enforceTurns = bThread([bSync({ waitFor: 'X', block: 'O' }), bSync({ waitF
  */
 test('take turns', () => {
   // Create a new bProgram instance.
-  const { useFeedback, trigger, bThreads } = bProgram()
+  const { useFeedback, trigger, bThreads } = behavioral()
   // Initialize the board.
   board = new Set(squares)
   // Add the turn-enforcing thread.
@@ -121,7 +121,7 @@ for (const square of squares) {
  */
 test('squares taken', () => {
   // Create a new bProgram instance.
-  const { useFeedback, trigger, bThreads } = bProgram()
+  const { useFeedback, trigger, bThreads } = behavioral()
   // Initialize the board.
   board = new Set(squares)
   // Add threads for turn enforcement and preventing taking occupied squares.
@@ -197,7 +197,7 @@ const detectWins = (player: 'X' | 'O') =>
  */
 test('detect winner', () => {
   // Create a new bProgram instance.
-  const { useFeedback, trigger, bThreads } = bProgram()
+  const { useFeedback, trigger, bThreads } = behavioral()
   // Initialize the board.
   board = new Set(squares)
   // Add threads for game rules and win detection.
@@ -245,7 +245,7 @@ const stopGame = bThread([bSync({ waitFor: 'win' }), bSync({ block: ['X', 'O'] }
  */
 test('stop game', () => {
   // Create a new bProgram instance.
-  const { useFeedback, trigger, bThreads } = bProgram()
+  const { useFeedback, trigger, bThreads } = behavioral()
   // Initialize the board.
   board = new Set(squares)
   // Add all game rule threads, including the one to stop the game on win.
@@ -310,7 +310,7 @@ for (const square of squares) {
  */
 test('defaultMoves', () => {
   // Create a new bProgram instance.
-  const { useFeedback, trigger, bThreads } = bProgram()
+  const { useFeedback, trigger, bThreads } = behavioral()
   // Initialize the board.
   board = new Set(squares)
   // Add game rules and default moves for O.
@@ -357,7 +357,7 @@ const startAtCenter = bSync({
  */
 test('start at center', () => {
   // Create a new bProgram instance.
-  const { useFeedback, trigger, bThreads } = bProgram()
+  const { useFeedback, trigger, bThreads } = behavioral()
   // Initialize the board.
   board = new Set(squares)
   // Add game rules, the center strategy, and default moves.
@@ -425,7 +425,7 @@ const preventCompletionOfLineWithTwoXs = (board: Set<number>) => {
  */
 test('prevent completion of line with two Xs', () => {
   // Create a new bProgram instance.
-  const { useFeedback, trigger, bThreads } = bProgram()
+  const { useFeedback, trigger, bThreads } = behavioral()
   // Initialize the board.
   board = new Set(squares)
   // Add all game rules, including the blocking strategy for O.

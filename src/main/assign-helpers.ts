@@ -5,7 +5,7 @@
  * Purpose: Core DOM manipulation utilities for Plaited's reactive element system
  * Architecture: Provides the binding layer between elements and reactive updates
  * Dependencies: JSX types, CSS system, type utilities
- * Consumers: defineElement, useTemplate, internal rendering system
+ * Consumers: bElement, useTemplate, internal rendering system
  *
  * Maintainer Notes:
  * - This module implements the core DOM update strategy for Plaited elements
@@ -286,7 +286,7 @@ export const getBindings = (shadowRoot: ShadowRoot): Bindings => ({
  * - Direct mutation avoids wrapper objects
  *
  * Called by:
- * - $ function in defineElement during initialization
+ * - $ function in bElement during initialization
  * - useTemplate for dynamic template elements
  */
 export const assignHelpers = <T extends Element = Element>(bindings: Bindings, elements: NodeListOf<T> | T[]) => {

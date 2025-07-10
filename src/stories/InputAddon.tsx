@@ -1,4 +1,4 @@
-import { defineElement, css, useAttributesObserver, type ObservedAttributesDetail } from 'plaited'
+import { bElement, css, useAttributesObserver, type ObservedAttributesDetail } from 'plaited'
 import { isTypeOf, keyMirror } from 'plaited/utils'
 
 const styles = css.create({
@@ -23,7 +23,7 @@ const hostStyles = css.host({
   },
 })
 
-export const InputAddon = defineElement<{
+export const InputAddon = bElement<{
   updateDisable: ObservedAttributesDetail
   slotchange: undefined
 }>({
