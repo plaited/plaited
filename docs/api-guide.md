@@ -16,7 +16,7 @@ Behavioral Programming decomposes complex system logic into discrete, modular un
 
 **Event-Driven Synchronization**: B-threads communicate exclusively through events using four core idioms:
 - **Request**: Propose that an event be triggered (expressing intent)
-- **Wait**: Passively observe for an event (expressing interest)  
+- **Wait**: Passively observe for an event (expressing interest)
 - **Block**: Prevent an event from being triggered (expressing prohibition)
 - **Interrupt**: Be terminated when a specific event occurs (expressing cancellation)
 
@@ -26,7 +26,7 @@ Behavioral Programming decomposes complex system logic into discrete, modular un
 
 Plaited extends BP with **signals** - reactive state primitives that enable pub/sub coordination between behavioral programs executing in different contexts:
 - **Node.js programs** created with `defineBProgram`
-- **Browser main thread programs** using `defineBProgram` and `defineElement`  
+- **Browser main thread programs** using `defineBProgram` and `defineElement`
 - **Web Worker programs** using `defineBProgram` and `defineWorker`
 - **Bun.js runtime programs** using `defineBProgram`
 
@@ -162,10 +162,10 @@ const createWorkshop = defineBProgram<WorkshopDetails, DefineWorkshopParams>({
   async bProgram({ cwd, trigger, bThreads, bSync, bThread, disconnect }) {
     // Setup resources
     const server = await useServer({ cwd })
-    
+
     // Register cleanup
     disconnect(() => server.close())
-    
+
     // Define behavioral threads
     bThreads.set({
       reloadThread: bThread([
@@ -173,7 +173,7 @@ const createWorkshop = defineBProgram<WorkshopDetails, DefineWorkshopParams>({
         // ... thread logic
       ])
     })
-    
+
     // Return event handlers
     return {
       async TEST_ALL_STORIES() {
@@ -334,18 +334,18 @@ The main module providing core functionalities for creating web components, mana
 Defines and registers a Plaited custom element.
 
 ```ts
-<A extends PlaitedEventDetails>(config: DefineElementArgs<A>): PlaitedTemplate
+<A extends PlaitedEventDetails>(config: BehavioralElementArgs<A>): PlaitedTemplate
 ```
 
-- `config`: A `DefineElementArgs` object specifying the element's configuration.
+- `config`: A `BehavioralElementArgs` object specifying the element's configuration.
 - Returns: A `PlaitedTemplate` function that can be used to create instances of the custom element in JSX.
 
-**`DefineElementArgs<A extends PlaitedEventDetails>`**
+**`BehavioralElementArgs<A extends PlaitedEventDetails>`**
 
 An object with the following properties:
 
 ```ts
-type DefineElementArgs<A extends PlaitedEventDetails> = {
+type BehavioralElementArgs<A extends PlaitedEventDetails> = {
   tag: CustomElementTag // The tag name for the custom element (e.g., 'my-element'). Must contain a hyphen.
   shadowDom: TemplateObject // The Plaited template object defining the element's shadow DOM structure.
   delegatesFocus?: boolean // If true (default), focus requests on the host are delegated to its shadow DOM.

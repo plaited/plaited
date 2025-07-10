@@ -68,7 +68,7 @@ import { registerPrompt, registerResource, registerTool } from './mcp.utils.js'
  *
  * @example Creating an MCP server for file operations
  * ```ts
- * const fileServer = await defineMCPServer({
+ * const fileServer = await bServer({
  *   name: 'file-assistant',
  *   version: '1.0.0',
  *   registry: {

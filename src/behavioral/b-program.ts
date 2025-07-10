@@ -33,7 +33,6 @@
  * - No runtime modification of public events list
  * - Disconnect is synchronous only
  */
-import { type BSync, type BThread, bThread, bSync } from './b-thread.js'
 import {
   type EventDetails,
   type UseSnapshot,
@@ -41,6 +40,10 @@ import {
   behavioral,
   type Disconnect,
   type Handlers,
+  type BSync,
+  type BThread,
+  bThread,
+  bSync,
 } from './behavioral.js'
 import { getPlaitedTrigger, type PlaitedTrigger } from './get-plaited-trigger.js'
 import { getPublicTrigger } from './get-public-trigger.js'
@@ -91,10 +94,10 @@ import { getPublicTrigger } from './get-public-trigger.js'
  * // publicTrigger({ type: 'INTERNAL_EVENT' }); // Disallowed (warning logged)
  */
 
-export const bProgram = <
-  A extends EventDetails,
-  C extends { [key: string]: unknown } = { [key: string]: unknown },
->(args: {
+export const bProgram = <A extends EventDetails, C extends { [key: string]: unknown } = { [key: string]: unknown }>({
+  publicEvents,
+  bProgram,
+}: {
   publicEvents?: string[]
   bProgram: (
     args: {
@@ -143,7 +146,7 @@ export const bProgram = <
      * Merges behavioral primitives, lifecycle, and user context.
      * PlaitedTrigger enables automatic cleanup registration.
      */
-    const handlers = await args.bProgram({
+    const handlers = await bProgram({
       ...ctx,
       bSync,
       bThread,
@@ -164,6 +167,6 @@ export const bProgram = <
      * Return filtered trigger that only accepts public events.
      * This creates the component's public API surface.
      */
-    return getPublicTrigger({ trigger, publicEvents: args?.publicEvents })
+    return getPublicTrigger({ trigger, publicEvents })
   }
 }

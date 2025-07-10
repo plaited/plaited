@@ -33,7 +33,7 @@
  * - Modifies input array (side effect)
  * - Limited to full array shuffle only
  */
-import type { BSync } from './b-thread.js'
+import type { BSync } from './behavioral.js'
 
 /**
  * Randomly shuffles an array of behavioral synchronization points (`BSync`).

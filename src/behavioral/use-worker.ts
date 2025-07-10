@@ -32,8 +32,7 @@
  * - Worker instance must be created externally
  * - No support for transferable objects
  */
-import { type BPEvent, isBPEvent } from './b-thread.js'
-import { type Trigger } from './b-program.js'
+import { type BPEvent, isBPEvent, type Trigger } from './behavioral.js'
 import { type PlaitedTrigger, isPlaitedTrigger } from './get-plaited-trigger.js'
 
 /**

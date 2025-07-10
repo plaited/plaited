@@ -1,4 +1,4 @@
-import type { Trigger } from './b-program.js'
+import type { Trigger } from './behavioral.js'
 
 /**
  * Creates a wrapped `Trigger` function that filters events based on a whitelist.

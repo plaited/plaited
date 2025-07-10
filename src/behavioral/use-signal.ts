@@ -33,7 +33,7 @@
  * - Computed signals can't be directly set
  * - No persistence layer integration
  */
-import type { Trigger, Disconnect } from './b-program.js'
+import type { Trigger, Disconnect } from './behavioral.js'
 import { type PlaitedTrigger, isPlaitedTrigger } from './get-plaited-trigger.js'
 
 /**

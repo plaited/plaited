@@ -29,7 +29,7 @@
  * - Cleanup order is not guaranteed (Set iteration order)
  * - No error handling for failed cleanup callbacks
  */
-import type { Trigger, Disconnect } from './b-program.js'
+import type { Trigger, Disconnect } from './behavioral.js'
 
 /**
  * An enhanced `Trigger` type specifically for Plaited components or contexts.

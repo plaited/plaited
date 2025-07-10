@@ -1,4 +1,4 @@
-import type { BPEvent } from './b-thread.js'
+import type { BPEvent } from './behavioral.js'
 
 /**
  * Selects and returns a single `BPEvent` object randomly from a provided list of events.

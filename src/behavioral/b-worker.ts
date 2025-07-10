@@ -33,9 +33,14 @@
  * - Transferable objects not supported in current implementation
  * - Worker must be in separate file for proper execution
  */
-import type { BPEvent } from './b-thread.js'
-import type { Disconnect, Handlers, EventDetails } from './behavioral.js'
-import { behavioral, type Behavioral } from './behavioral.js'
+import {
+  behavioral,
+  type Behavioral,
+  type Disconnect,
+  type Handlers,
+  type EventDetails,
+  type BPEvent,
+} from './behavioral.js'
 import { getPublicTrigger } from './get-public-trigger.js'
 import { getPlaitedTrigger } from './get-plaited-trigger.js'
 
@@ -171,7 +176,10 @@ type BProgramArgs = {
  *    - Consider data transfer costs
  *    - Use appropriate data structures
  */
-export const bWorker = async <A extends EventDetails>(args: {
+export const bWorker = async <A extends EventDetails>({
+  bProgram,
+  publicEvents,
+}: {
   bProgram: (args: BProgramArgs) => Handlers<A> | Promise<Handlers<A>>
   publicEvents: string[]
 }) => {
@@ -196,7 +204,7 @@ export const bWorker = async <A extends EventDetails>(args: {
    */
   const publicTrigger = getPublicTrigger({
     trigger,
-    publicEvents: args?.publicEvents,
+    publicEvents,
   })
 
   /**
@@ -241,7 +249,7 @@ export const bWorker = async <A extends EventDetails>(args: {
    * Enhanced trigger enables automatic cleanup registration.
    */
   useFeedback(
-    await args.bProgram({
+    await bProgram({
       ...rest,
       send,
       disconnect,

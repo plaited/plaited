@@ -1,5 +1,4 @@
 export * from './behavioral/behavioral.js'
-export * from './behavioral/b-thread.js'
 export * from './behavioral/random-event.js'
 export * from './behavioral/shuffle-syncs.js'
 export * from './behavioral/get-public-trigger.js'
