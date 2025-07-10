@@ -141,7 +141,6 @@ export type StylesObject = {
  * const myComponentStyles = css.create({
  *   button: {
  *     color: 'blue',
- *     padding: '10px',
  *   },
  *   container: {
  *     margin: 'auto',
@@ -151,8 +150,8 @@ export type StylesObject = {
  * // StyleObjects<{ button: { color: string; padding: string; }; container: { margin: string; } }>
  * // And its value would look like:
  * // {
- * //   button: { class: 'plaited-css-xxxxxx', stylesheet: ['.plaited-css-xxxxxx { color: blue; padding: 10px; }'] },
- * //   container: { class: 'plaited-css-yyyyyy', stylesheet: ['.plaited-css-yyyyyy { margin: auto; }'] }
+ * //   button: { class: 'button-xxxxxx p-xxxxxx', stylesheet: ['. p-xxxxxx { color: blue; }'] },
+ * //   container: { class: 'container-yyyyyy  p-yyyyyy', stylesheet: ['.p-yyyyyy { margin: auto; }'] }
  * // }
  *
  * // Usage in a component:
