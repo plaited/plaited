@@ -30,7 +30,7 @@
  * - Error propagation depends on handler implementation
  * - Signals must be cleaned up when server is disposed
  */
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
+import { Client, type ClientOptions } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import {
@@ -45,14 +45,9 @@ import {
   type RegisteredTool,
 } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { GetPromptResult, ReadResourceResult, CallToolResult } from '@modelcontextprotocol/sdk/types.js'
-import {
-  type PlaitedTrigger,
-  type SignalWithInitialValue,
-  type SignalWithoutInitialValue,
-  useSignal,
-} from '../behavioral.js'
+import { type PlaitedTrigger, type SignalWithoutInitialValue, useSignal } from '../behavioral.js'
 import type { ServerTransportConfigs, PromptDetail, ResourceDetail, ToolDetail } from './mcp.types.js'
-import { CLIENT_ERROR_EVENTS, CLIENT_EVENTS } from './mcp.constants.js'
+import { CLIENT_ERROR_EVENTS } from './mcp.constants.js'
 /**
  * @internal
  * Type helper to extract the raw argument schema shape from MCP's registerPrompt.
@@ -288,281 +283,34 @@ const createTransport = (config: ServerTransportConfigs[string]) => {
   }
 }
 
-export const registerServers = async ({
-  client,
+export const registerClient = async ({
+  name,
+  version,
   trigger,
-  servers,
-  registeredServers,
+  serverConfig,
+  options,
+  title,
 }: {
-  client: Client
+  name: string
+  version: string
   trigger: PlaitedTrigger
-  servers: ServerTransportConfigs
-  registeredServers: Map<
-    string,
-    { info: ReturnType<Client['getServerVersion']>; capabilities: ReturnType<Client['getServerCapabilities']> }
-  >
+  serverConfig: ServerTransportConfigs[string]
+  options?: ClientOptions
+  title?: string
 }) => {
   try {
-    await Promise.all(
-      Object.entries(servers).map(async ([name, config]) => {
-        if (registeredServers.has(name))
-          return trigger({
-            type: CLIENT_ERROR_EVENTS.ERROR_ADD_SERVER_TO_REGISTERED_SERVERS,
-            detail: `Server with name, ${name}, already registered`,
-          })
-        const transport = createTransport(config)
-        await client.connect(transport)
-        const info = client.getServerVersion()
-        const capabilities = client.getServerCapabilities()
-        registeredServers.set(name, { info, capabilities })
-      }),
+    const client = new Client(
+      {
+        name,
+        version,
+        title,
+      },
+      options,
     )
+    const transport = createTransport(serverConfig)
+    await client.connect(transport)
+    return client
   } catch (error) {
-    trigger({ type: CLIENT_ERROR_EVENTS.ERROR_REGISTERING_SERVERS, detail: error })
+    trigger({ type: CLIENT_ERROR_EVENTS.ERROR_REGISTERING_CLIENT, detail: error })
   }
-}
-
-export const createDiscoverySignals = (trigger: PlaitedTrigger) => {
-  const prompts = useSignal<Awaited<ReturnType<Client['listPrompts']>>['prompts']>([])
-  const resources = useSignal<Awaited<ReturnType<Client['listResources']>>['resources']>([])
-  const resourceTemplates = useSignal<Awaited<ReturnType<Client['listResourceTemplates']>>['resourceTemplates']>([])
-  const tools = useSignal<Awaited<ReturnType<Client['listTools']>>['tools']>([])
-
-  // Set up discovery listeners
-  prompts.listen(CLIENT_EVENTS.PROMPTS_DISCOVERED, trigger)
-  resources.listen(CLIENT_EVENTS.RESOURCES_DISCOVERED, trigger)
-  resourceTemplates.listen(CLIENT_EVENTS.RESOURCE_TEMPLATES_DISCOVERED, trigger)
-  tools.listen(CLIENT_EVENTS.TOOLS_DISCOVERED, trigger)
-
-  return { tools, resources, prompts, resourceTemplates }
-}
-
-export const discoverPrimitives = async ({
-  client,
-  trigger,
-  prompts,
-  resources,
-  resourceTemplates,
-  tools,
-}: {
-  client: Client
-  trigger: PlaitedTrigger
-  prompts: SignalWithInitialValue<Awaited<ReturnType<Client['listPrompts']>>['prompts']>
-  resources: SignalWithInitialValue<Awaited<ReturnType<Client['listResources']>>['resources']>
-  resourceTemplates: SignalWithInitialValue<Awaited<ReturnType<Client['listResourceTemplates']>>['resourceTemplates']>
-  tools: SignalWithInitialValue<Awaited<ReturnType<Client['listTools']>>['tools']>
-}) => {
-  try {
-    // Discover all primitives in parallel
-    const [promptsResult, resourcesResult, resourceTemplatesResult, toolsResult, ,] = await Promise.allSettled([
-      client.listPrompts(),
-      client.listResources(),
-      client.listResourceTemplates(),
-      client.listTools(),
-    ])
-
-    promptsResult.status === 'fulfilled' ?
-      prompts.set(promptsResult.value.prompts)
-    : trigger({ type: CLIENT_ERROR_EVENTS.ERROR_LIST_PROMPTS, detail: promptsResult.reason })
-    resourcesResult.status === 'fulfilled' ?
-      resources.set(resourcesResult.value.resources)
-    : trigger({
-        type: CLIENT_ERROR_EVENTS.ERROR_LIST_RESOURCES,
-        detail: resourcesResult.reason,
-      })
-    resourceTemplatesResult.status === 'fulfilled' ?
-      resourceTemplates.set(resourceTemplatesResult.value.resourceTemplates)
-    : trigger({
-        type: CLIENT_ERROR_EVENTS.ERROR_LIST_RESOURCE_TEMPLATES,
-        detail: resourceTemplatesResult.reason,
-      })
-
-    toolsResult.status === 'fulfilled' ?
-      tools.set(toolsResult.value.tools)
-    : trigger({
-        type: CLIENT_ERROR_EVENTS.ERROR_LIST_TOOLS,
-        detail: toolsResult.reason,
-      })
-  } catch (error) {
-    trigger({
-      type: CLIENT_ERROR_EVENTS.ERROR_DISCOVER_PRIMITIVES,
-      detail: error instanceof Error ? error : new Error(`${error}`),
-    })
-  }
-}
-
-// /**
-//  * @internal
-//  * Agent-specific utilities for intelligent MCP client behavior.
-//  * These utilities help with tool selection, conversation management, and planning.
-//  */
-
-// /**
-//  * @internal
-//  * Filters tools based on conversation context and user intent.
-//  * Uses simple keyword matching - can be enhanced with embeddings.
-//  *
-//  * @param tools Available tools from MCP server
-//  * @param context Current conversation or task context
-//  * @returns Filtered list of relevant tools
-//  *
-//  * Example:
-//  * ```ts
-//  * const relevantTools = filterToolsByContext(
-//  *   tools.get(),
-//  *   "I need to read and analyze log files"
-//  * );
-//  * // Returns tools related to file reading and text analysis
-//  * ```
-//  */
-export const filterToolsByContext = (tools: Awaited<ReturnType<Client['listTools']>>['tools'], context: string) => {
-  const contextLower = context.toLowerCase()
-
-  // Define relevance scoring based on keywords
-  const scoreRelevance = (tool: (typeof tools)[0]): number => {
-    let score = 0
-    const toolInfo = `${tool.name} ${tool.description || ''}`.toLowerCase()
-
-    // Direct name match
-    if (contextLower.includes(tool.name.toLowerCase())) {
-      score += 10
-    }
-
-    // Keyword matching
-    const keywords = contextLower.split(/\s+/)
-    keywords.forEach((keyword) => {
-      if (keyword.length > 3 && toolInfo.includes(keyword)) {
-        score += 2
-      }
-    })
-
-    // Description relevance
-    if (tool.description) {
-      const descWords = tool.description.toLowerCase().split(/\s+/)
-      const contextWords = new Set(keywords)
-      const overlap = descWords.filter((word) => contextWords.has(word)).length
-      score += overlap
-    }
-
-    return score
-  }
-
-  // Score and sort tools
-  const scoredTools = tools.map((tool) => ({
-    tool,
-    score: scoreRelevance(tool),
-  }))
-
-  // Return tools with score > 0, sorted by relevance
-  return scoredTools
-    .filter(({ score }) => score > 0)
-    .sort((a, b) => b.score - a.score)
-    .map(({ tool }) => tool)
-}
-
-// /**
-//  * @internal
-//  * Formats tool results for LLM consumption.
-//  * Converts MCP tool results into readable text for the inference engine.
-//  *
-//  * @param toolName Name of the tool that was called
-//  * @param result Result from the tool execution
-//  * @returns Formatted string for LLM context
-//  */
-export const formatToolResult = (toolName: string, result: CallToolResult): string => {
-  let formatted = `Tool "${toolName}" result:\n`
-
-  if (result.content) {
-    result.content.forEach((content, index) => {
-      if (content.type === 'text') {
-        formatted += content.text
-        if (index < result.content!.length - 1) {
-          formatted += '\n'
-        }
-      }
-    })
-  }
-
-  if (result.isProgress) {
-    formatted += '\n[In Progress...]'
-  }
-
-  return formatted
-}
-
-// /**
-//  * @internal
-//  * Creates a tool use plan from LLM response.
-//  * Helps structure multi-step tool execution.
-//  *
-//  * @param tools Available tools
-//  * @param goal User's goal or request
-//  * @returns Structured plan for tool execution
-//  */
-export const createToolPlan = (
-  tools: Awaited<ReturnType<Client['listTools']>>['tools'],
-  goal: string,
-): Array<{ tool: string; description: string; arguments?: unknown }> => {
-  // This is a simplified planner - in practice, use LLM for planning
-  const plan: Array<{ tool: string; description: string; arguments?: unknown }> = []
-
-  // Example: If goal mentions "file", plan file operations
-  if (goal.toLowerCase().includes('file')) {
-    const readTool = tools.find((t) => t.name.includes('read'))
-    if (readTool) {
-      plan.push({
-        tool: readTool.name,
-        description: 'Read file contents',
-        arguments: {}, // Would be populated by LLM
-      })
-    }
-  }
-
-  return plan
-}
-
-// /**
-//  * @internal
-//  * Manages conversation history with token limits.
-//  * Ensures conversation doesn't exceed LLM context window.
-//  *
-//  * @param messages Current message history
-//  * @param maxTokens Approximate max tokens (rough estimate: 1 token ≈ 4 chars)
-//  * @returns Trimmed message history
-//  */
-export const trimConversationHistory = (
-  messages: Array<{ role: string; content: string }>,
-  maxTokens: number = 4000,
-): typeof messages => {
-  // Rough token estimation
-  const estimateTokens = (text: string): number => Math.ceil(text.length / 4)
-
-  const totalTokens = messages.reduce((sum, msg) => sum + estimateTokens(msg.content), 0)
-
-  if (totalTokens <= maxTokens) {
-    return messages
-  }
-
-  // Keep system messages and recent messages
-  const systemMessages = messages.filter((m) => m.role === 'system')
-  const otherMessages = messages.filter((m) => m.role !== 'system')
-
-  // Start with system messages
-  const trimmed = [...systemMessages]
-  let currentTokens = systemMessages.reduce((sum, msg) => sum + estimateTokens(msg.content), 0)
-
-  // Add recent messages until we hit the limit
-  for (let i = otherMessages.length - 1; i >= 0; i--) {
-    const msg = otherMessages[i]
-    const msgTokens = estimateTokens(msg.content)
-
-    if (currentTokens + msgTokens <= maxTokens) {
-      trimmed.splice(systemMessages.length, 0, msg)
-      currentTokens += msgTokens
-    } else {
-      break
-    }
-  }
-
-  return trimmed
 }
