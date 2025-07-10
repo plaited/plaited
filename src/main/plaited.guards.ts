@@ -48,7 +48,7 @@ import { PLAITED_TEMPLATE_IDENTIFIER } from './plaited.constants.js'
  *
  * @example Enhancing existing elements conditionally
  * ```tsx
- * const ComponentWrapper = defineElement({
+ * const ComponentWrapper = bElement({
  *   tag: 'component-wrapper',
  *   shadowDom: <slot p-target="content"  p-trigger={{slotchange: 'enhanceChildren'}}/>,
  *   bProgram({ $, trigger }) {

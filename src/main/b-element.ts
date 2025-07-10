@@ -114,7 +114,7 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
 
 /**
  * Creates a reusable Web Component with behavioral programming, event delegation, and shadow DOM support.
- * The `defineElement` function is the core building block of Plaited applications, providing a
+ * The `bElement` function is the core building block of Plaited applications, providing a
  * declarative way to create custom elements with robust state management and DOM interactions.
  *
  * @template A Generic type extending PlaitedHandlers for component-specific events
@@ -124,7 +124,7 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  * @example
  * Basic Counter Component
  * ```tsx
- * const Counter = defineElement({
+ * const Counter = bElement({
  *   tag: 'my-counter',
  *   shadowDom: (
  *     <div>
@@ -159,7 +159,7 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  *   validate: () => void;
  * }
  *
- * const FormField = defineElement<FormFieldEvents>({
+ * const FormField = bElement<FormFieldEvents>({
  *   tag: 'form-field',
  *   formAssociated: true,
  *   observedAttributes: ['label', 'required'],
@@ -233,7 +233,7 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
    },
  })
 
- export const ToggleInput = defineElement<{
+ export const ToggleInput = bElement<{
    click: MouseEvent & { target: HTMLInputElement }
    checked: boolean
    disabled: boolean

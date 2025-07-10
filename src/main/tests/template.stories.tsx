@@ -3,7 +3,7 @@ import { type PlaitedElement } from 'plaited'
 import { ModeOpen, DelegateFalse, ClosedMode } from './template.js'
 
 export const defaultModeAndFocus: StoryObj = {
-  description: `This test is used to validate a plaited element created using defineElement
+  description: `This test is used to validate a plaited element created using bElement
   default to having it's mode open`,
   template: () => <ModeOpen p-target='el' />,
   play: async ({ assert, findByAttribute }) => {
@@ -24,7 +24,7 @@ export const defaultModeAndFocus: StoryObj = {
 }
 
 export const delegatesFocusFalse: StoryObj = {
-  description: `This test is used to validate a plaited element created using defineElement
+  description: `This test is used to validate a plaited element created using bElement
   with the parameter delefateFocus set to false does not allow focus delegation.`,
   template: () => <DelegateFalse p-target='el' />,
   play: async ({ assert, findByAttribute }) => {
@@ -45,7 +45,7 @@ export const delegatesFocusFalse: StoryObj = {
 }
 
 export const closedMode: StoryObj = {
-  description: `This test is used to validate a plaited element created using defineElement
+  description: `This test is used to validate a plaited element created using bElement
   with the parameter mode set to false create a custom element with a closed shadow dom.`,
   template: () => <ClosedMode p-target='el' />,
   play: async ({ assert, findByAttribute }) => {

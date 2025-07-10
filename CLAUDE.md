@@ -56,7 +56,7 @@ Plaited is a behavioral programming framework for building reactive web componen
    - Signals for reactive state management
 
 2. **Web Components with Shadow DOM**
-   - `defineElement` in `src/main/define-element.ts` creates custom elements
+   - `bElement` in `src/main/define-element.ts` creates custom elements
    - Automatic style scoping via Constructable Stylesheets
    - Template system with JSX support
    - Helper methods attached to DOM elements via `p-target` attributes
@@ -76,7 +76,7 @@ External Trigger → bProgram → Event Selection → Thread Notification → Fe
 ```
 
 #### Component Lifecycle
-1. Element defined with `defineElement`
+1. Element defined with `bElement`
 2. Shadow DOM created with template
 3. `bProgram` initialized with threads
 4. Elements bound via `p-target` attributes
@@ -90,7 +90,7 @@ External Trigger → bProgram → Event Selection → Thread Notification → Fe
 
 ### Module Organization
 
-- **`src/main/`**: Core framework (defineElement, css, ssr, templates)
+- **`src/main/`**: Core framework (bElement, css, ssr, templates)
 - **`src/behavioral/`**: BP implementation (bProgram, bThread, signals)
 - **`src/utils/`**: Utility functions (well-documented, pure functions)
 - **`src/workshop/`**: Development tools (story runner, design tokens)
@@ -126,7 +126,7 @@ When documenting code, follow the patterns in `.claude/instructions.md`:
 
 ### Creating a Component
 ```tsx
-export const MyComponent = defineElement({
+export const MyComponent = bElement({
   tag: 'my-component',
   shadowDom: <div p-target="content" />,
   bProgram({ $, trigger }) {

@@ -66,7 +66,7 @@ type BProgramArgs = {
  * @example Image Processing Worker
  * ```tsx
  * // image-worker.ts
- * defineWorker<{
+ * bWorker<{
  *   processImage: (args: { imageData: ImageData, filters: FilterOptions }) => void
  * }>({
  *   publicEvents: ['processImage'],
@@ -98,7 +98,7 @@ type BProgramArgs = {
  * });
  *
  * // Usage in component:
- * const ImageEditor = defineElement({
+ * const ImageEditor = bElement({
  *   tag: 'image-editor',
  *   shadowDom: (
  *     <div>

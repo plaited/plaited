@@ -3,7 +3,7 @@ import { wait } from 'plaited/utils'
 import sinon from 'sinon'
 import { type BPEvent, useWorker } from 'plaited/behavioral'
 
-test('validate userWorker and defineWorker utilities function as expected', async () => {
+test('validate userWorker and bWorker utilities function as expected', async () => {
   const spy = sinon.spy()
   const worker = new Worker(`${import.meta.dir}/worker.ts`, { type: 'module' })
   const send = useWorker((evt: BPEvent) => spy(evt), worker)

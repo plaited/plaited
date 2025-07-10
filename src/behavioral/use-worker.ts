@@ -45,7 +45,7 @@ import { type PlaitedTrigger, isPlaitedTrigger } from './get-plaited-trigger.js'
  *
  * @example Using a worker in a Plaited component
  * ```tsx
- * const DataProcessor = defineElement({
+ * const DataProcessor = bElement({
  *   tag: 'data-processor',
  *   shadowDom: (
  *     <div>
@@ -92,7 +92,7 @@ import { type PlaitedTrigger, isPlaitedTrigger } from './get-plaited-trigger.js'
  * });
  *
  * // In data-worker.ts:
- * defineWorker<{
+ * bWorker<{
  *   process: (args: { dataset: unknown[] }) => void;
  * }>({
  *   publicEvents: ['process'],
