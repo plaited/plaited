@@ -16,11 +16,6 @@ import { keyMirror } from '../utils.js'
  * - onFormReset: Associated form is reset
  * - onFormStateRestore: Form state is restored
  *
- * DOM Mutation Callbacks (handlers for native `Element` methods):
- * - replaceChildren: Element's children are replaced
- * - prepend: Content prepended to element
- * - append: Content appended to element
- *
  * @example
  * Using lifecycle callbacks in a component
  * ```tsx
@@ -73,41 +68,6 @@ import { keyMirror } from '../utils.js'
  *   }
  * });
  * ```
- *
- * @example
- * Slot mutation callbacks
- * ```tsx
- * const Container = bElement({
- *   tag: 'content-container',
- *   shadowDom: (
- *     <div>
- *       <slot p-target="content" />
- *       <p p-target="count">Items: 0</p>
- *     </div>
- *   ),
- *   bProgram({ $ }) {
- *     const [count] = $('count');
- *     const [content] = $('content');
- *
- *     const updateCount = () => {
- *       const items = content.assignedElements().length;
- *       count.render(`Items: ${items}`);
- *     };
- *
- *     return {
- *       [ELEMENT_CALLBACKS.append]() {
- *         updateCount();
- *       },
- *       [ELEMENT_CALLBACKS.prepend]() {
- *         updateCount();
- *       },
- *       [ELEMENT_CALLBACKS.replaceChildren]() {
- *         updateCount();
- *       }
- *     };
- *   }
- * });
- * ```
  */
 export const ELEMENT_CALLBACKS = keyMirror(
   'onAdopted',
@@ -118,9 +78,6 @@ export const ELEMENT_CALLBACKS = keyMirror(
   'onFormDisabled',
   'onFormReset',
   'onFormStateRestore',
-  'replaceChildren',
-  'prepend',
-  'append',
 )
 
 /**
