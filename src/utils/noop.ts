@@ -49,7 +49,7 @@
  * Promise Error Handling:
  * ```ts
  * Promise.resolve()
- *   .then(result => { /* process data */ })
+ *   .then(result => { <process data>})
  *   .catch(noop); // Safely ignore potential errors if no specific handling is needed
  * ```
  *
