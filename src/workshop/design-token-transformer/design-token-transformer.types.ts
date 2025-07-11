@@ -187,19 +187,7 @@ export type CompositeToken = {
   $type: 'composite'
   $value: CompositeValue
 }
-/**
- * @example
- * const shadow: CompositeToken = {
- *   $description: "Standard box shadow",
- *   $type: "composite",
- *   $value: {
- *     offsetX: '{spacing.small}',
- *     offsetY: '{spacing.small}',
- *     blur: '{spacing.medium}',
- *     color: '{colors.shadow}'
- *   }
- * };
- */
+
 /**
  * Union of all possible token types.
  */
