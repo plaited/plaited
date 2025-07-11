@@ -58,14 +58,14 @@
  * type StatusMap = KeyMirror<[Status]>;
  * ```
  */
-/**
- * @internal
- * Mapped type that creates object type with self-referential key-value pairs.
- * - Keys[number] extracts union type from tuple
- * - K in ... iterates each union member
- * - readonly prevents type-level mutations
- */
 export type KeyMirror<Keys extends string[]> = {
+  /**
+   * @internal
+   * Mapped type that creates object type with self-referential key-value pairs.
+   * - Keys[number] extracts union type from tuple
+   * - K in ... iterates each union member
+   * - readonly prevents type-level mutations
+   */
   readonly [K in Keys[number]]: K
 }
 
@@ -139,7 +139,9 @@ export type KeyMirror<Keys extends string[]> = {
  *   - State machine transitions
  *   - API endpoint mappings
  *
- * @throws {TypeError} When inputs contain non-string values
+ * @remarks If non-string inputs are provided in a JavaScript context (bypassing TypeScript),
+ *          the behavior is undefined and may lead to unexpected object keys or runtime errors
+ *          during the reduce operation. TypeScript should prevent this at compile time.
  */
 export const keyMirror = <Keys extends string[]>(...inputs: Keys) => {
   /**

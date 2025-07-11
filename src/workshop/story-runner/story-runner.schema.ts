@@ -1,6 +1,12 @@
 import { z } from 'zod/v4'
 import type { RunnerMessage } from '../story-fixture/story-fixture.types.js'
 
+/**
+ * @internal Zod schema for validating `RunnerMessage` objects.
+ * This schema ensures that messages received from the story fixture conform to the expected structure,
+ * including properties like `colorScheme`, `pathname`, and a `snapshot` array with specific object shapes.
+ * It is used by the story runner to validate incoming data.
+ */
 export const RunnerMessageSchema = z.object({
   colorScheme: z.string(),
   pathname: z.string(),

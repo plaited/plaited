@@ -6,6 +6,13 @@ import type { SignalWithInitialValue } from '../../behavioral/use-signal.js'
 import type { StoryParams } from './story-server.types.js'
 import type { StoryObj } from '../story-fixture/story-fixture.types.js'
 
+/**
+ * @internal Scans for files matching a glob pattern within a specified directory.
+ * Uses Bun's Glob API for efficient file searching.
+ * @param cwd - The current working directory to scan from.
+ * @param pattern - The glob pattern to match files against.
+ * @returns A Promise that resolves to an array of absolute file paths matching the pattern.
+ */
 export const globFiles = async (cwd: string, pattern: string): Promise<string[]> => {
   const glob = new Glob(pattern)
   const paths = await Array.fromAsync(glob.scan({ cwd }))
@@ -31,6 +38,7 @@ const STORIES_FILTERS_REGEX = /\.stories.tsx?$/
  * });
  * // Returns: "/src/components/button--primary-button"
  * ```
+ * @internal
  */
 export const createStoryRoute = ({ filePath, exportName }: { filePath: string; exportName: string }) => {
   const dir = dirname(filePath)

@@ -1,6 +1,6 @@
 /**
  * @internal
- * @module define-worker
+ * @module b-worker
  *
  * Purpose: Enables behavioral programming within Web Worker contexts for background processing
  * Architecture: Adapts WorkerGlobalScope to support full bProgram lifecycle and event communication

@@ -187,6 +187,7 @@ export type CompositeToken = {
   $type: 'composite'
   $value: CompositeValue
 }
+
 /**
  * Union of all possible token types.
  */
@@ -206,6 +207,18 @@ export type DesignTokenGroup = {
   [key: string]: DesignTokenGroup | DesignToken
 }
 /**
+ * @example
+ * const tokens: DesignTokenGroup = {
+ *   colors: {
+ *     primary: { $type: "color", $value: "#ff0000", $description: "Primary color" },
+ *     secondary: { $type: "color", $value: "#00ff00", $description: "Secondary color" }
+ *   },
+ *   spacing: {
+ *     small: { $type: "size", $value: "4px", $description: "Small space" }
+ *   }
+ * };
+ */
+/**
  * Extended token type with resolution and dependency information.
  */
 export type DesignTokenEntry = DesignToken & {
@@ -217,6 +230,14 @@ export type DesignTokenEntry = DesignToken & {
   css?: string
 }
 
+/**
+ * Defines the signature for a callback function used to filter design token entries.
+ *
+ * @param entry - A tuple containing the alias (string) and the `DesignTokenEntry` object.
+ * @param index - The index of the current entry in the array being filtered.
+ * @param arr - The array of `[Alias, DesignTokenEntry]` tuples being filtered.
+ * @returns `true` to keep the entry, `false` otherwise.
+ */
 type FilterCallback = (entry: [Alias, DesignTokenEntry], index: number, arr: [Alias, DesignTokenEntry][]) => boolean
 /**
  * Interface for token transformation and resolution.

@@ -208,7 +208,8 @@ export function useSignal<T>(initialValue: T) {
  * @template T Type of computed value
  * @param initialValue Function that computes the derived value
  * @param deps Array of signals this computation depends on
- * @returns Readonly signal with computed value
+ * @returns A readonly signal-like object with `get` and `listen` methods. The `get` method returns the computed value,
+ *          and `listen` allows subscribing to changes in the computed value. This signal does not have a `set` method.
  *
  * @example Price calculator component
  * ```tsx

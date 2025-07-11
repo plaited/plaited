@@ -16,11 +16,6 @@ import { keyMirror } from '../utils.js'
  * - onFormReset: Associated form is reset
  * - onFormStateRestore: Form state is restored
  *
- * DOM Mutation Callbacks:
- * - onReplaceChildren: Slotted Children are replaced
- * - onPrepend: Content prepended to slot
- * - onAppend: Content appended to slot
- *
  * @example
  * Using lifecycle callbacks in a component
  * ```tsx
@@ -73,41 +68,6 @@ import { keyMirror } from '../utils.js'
  *   }
  * });
  * ```
- *
- * @example
- * Slot mutation callbacks
- * ```tsx
- * const Container = bElement({
- *   tag: 'content-container',
- *   shadowDom: (
- *     <div>
- *       <slot p-target="content" />
- *       <p p-target="count">Items: 0</p>
- *     </div>
- *   ),
- *   bProgram({ $ }) {
- *     const [count] = $('count');
- *     const [content] = $('content');
- *
- *     const updateCount = () => {
- *       const items = content.assignedElements().length;
- *       count.render(`Items: ${items}`);
- *     };
- *
- *     return {
- *       [ELEMENT_CALLBACKS.onAppend]() {
- *         updateCount();
- *       },
- *       [ELEMENT_CALLBACKS.onPrepend]() {
- *         updateCount();
- *       },
- *       [ELEMENT_CALLBACKS.onReplaceChildren]() {
- *         updateCount();
- *       }
- *     };
- *   }
- * });
- * ```
  */
 export const ELEMENT_CALLBACKS = keyMirror(
   'onAdopted',
@@ -118,9 +78,6 @@ export const ELEMENT_CALLBACKS = keyMirror(
   'onFormDisabled',
   'onFormReset',
   'onFormStateRestore',
-  'replaceChildren',
-  'prepend',
-  'append',
 )
 
 /**
@@ -132,8 +89,6 @@ export const ELEMENT_CALLBACKS = keyMirror(
  * - Facilitates safe template composition
  * - Prevents template object spoofing
  * - Used by the rendering system to identify valid templates
- *
- * @type {const} A unique bear emoji as literal type
  *
  * @example
  * Creating a template validator

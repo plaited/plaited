@@ -14,6 +14,7 @@ import type { Trigger } from './behavioral.js'
  * @param args.publicEvents An optional array of event type strings that are allowed
  *   to be dispatched through this restricted trigger. If omitted or empty,
  *   no events will be allowed.
+ * @param [args.errorPrefix='Not a public BPEvent type'] - Optional custom prefix for the error message thrown when an unauthorized event type is triggered.
  * @returns A new `Trigger` function that only allows events specified in `publicEvents`.
  * @example
  * import { bProgram, getPublicTrigger } from 'plaited/behavioral';
