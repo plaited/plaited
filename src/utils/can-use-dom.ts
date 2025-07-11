@@ -31,10 +31,10 @@
  */
 /// <reference lib="dom" />
 /**
- * @description Checks if the current JavaScript environment has access to the standard DOM APIs.
+ * Checks if the current JavaScript environment has access to the standard DOM APIs.
  * This is useful for creating isomorphic (universal) applications that can run on both the server and the client.
  *
- * @returns {boolean} Returns `true` if the code is running in a browser-like environment
+ * @returns Returns `true` if the code is running in a browser-like environment
  * where `window`, `window.document`, and `window.document.createElement` are available.
  * Returns `false` otherwise (e.g., in a Node.js environment without a DOM simulation library).
  *

@@ -6,12 +6,11 @@ import type { StylesObject } from './css.types.js'
  * Valid insertion positions for DOM elements relative to a reference element.
  * Follows the insertAdjacentElement/HTML specification.
  *
- * @type {string}
  * Values:
- * - 'beforebegin': Before the reference element itself
- * - 'afterbegin':  Inside the reference element, before its first child
- * - 'beforeend':   Inside the reference element, after its last child
- * - 'afterend':    After the reference element itself
+ * - 'beforebegin': Before the reference element itself.
+ * - 'afterbegin':  Inside the reference element, before its first child.
+ * - 'beforeend':   Inside the reference element, after its last child.
+ * - 'afterend':    After the reference element itself.
  *
  * @example
  * // Visual representation:
@@ -32,7 +31,6 @@ export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
  * Provides a safe and efficient way to manipulate DOM elements while maintaining
  * style encapsulation and proper event handling.
  *
- * @interface Bindings
  * @example
  * Using bindings in a component:
  * ```tsx
@@ -155,6 +153,13 @@ export type Bindings = {
   attr(this: Element, attr: 'class', val?: StylesObject | string | null): string | null | void
 }
 
+/**
+ * Represents an HTML Element that has been augmented with Plaited's core helper methods (`Bindings`).
+ * This allows for convenient and type-safe DOM manipulation within Plaited components.
+ *
+ * @template T - The specific type of the HTML Element being bound (e.g., `HTMLDivElement`, `HTMLButtonElement`). Defaults to `Element`.
+ * @see Bindings
+ */
 export type BoundElement<T extends Element = Element> = T & Bindings
 /**
  * Type for element matching strategies in attribute selectors.
@@ -172,20 +177,19 @@ export type SelectorMatch = '=' | '~=' | '|=' | '^=' | '$=' | '*='
 
 /**
  * Extended HTMLElement interface for Plaited custom elements.
- * Includes lifecycle callbacks and custom functionality.
+ * Defines the contract for custom elements created with `bElement`, including standard lifecycle callbacks
+ * and Plaited-specific properties like `trigger` and `publicEvents`.
  *
- * @interface
- * @extends HTMLElement
- * @property trigger public Event triggering function
- * @property publicEvents List of exposed Event types
- * @property adoptedCallback Called when element is moved to new document
- * @property attributeChangedCallback Called on attribute changes
- * @property connectedCallback Called when element is added to DOM
- * @property disconnectedCallback Called when element is removed from DOM
- * @property formAssociatedCallback Called when element is associated with a form
- * @property formDisabledCallback Called when associated form is disabled
- * @property formResetCallback Called when associated form is reset
- * @property formStateRestoreCallback Called when form state is restored
+ * @property trigger - A public method to dispatch events into the element's behavioral program.
+ * @property publicEvents - An optional array of event type strings that this element allows to be triggered externally via its `trigger` method.
+ * @property adoptedCallback - Called when the element is adopted into a new document.
+ * @property attributeChangedCallback - Called when one of the element's `observedAttributes` changes.
+ * @property connectedCallback - Called each time the element is added to the document's DOM.
+ * @property disconnectedCallback - Called each time the element is removed from the document's DOM.
+ * @property formAssociatedCallback - If `formAssociated` is true, called when the element becomes associated with a form.
+ * @property formDisabledCallback - If `formAssociated` is true, called when the element's disabled state changes due to a parent `<fieldset>`.
+ * @property formResetCallback - If `formAssociated` is true, called when the form is reset.
+ * @property formStateRestoreCallback - If `formAssociated` is true, called when the browser attempts to restore the element's state.
  */
 export interface PlaitedElement extends HTMLElement {
   // Custom Methods and properties
@@ -203,15 +207,20 @@ export interface PlaitedElement extends HTMLElement {
   formStateRestoreCallback(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
 }
 /**
- * Extended FunctionTemplate type for Plaited component templates.
- * Includes component metadata and identification.
+/**
+ * Represents a Plaited component template function, extending the base `FunctionTemplate`.
+ * This type includes metadata essential for Plaited's custom element registration and rendering system.
+ * It is typically the return type of `bElement`.
  *
- * @extends FunctionTemplate
- * @property registry Set of registered  web component identifiers
- * @property tag Custom element tag name
- * @property observedAttributes List of attributes to watch
- * @property publicEvents List of exposed public event types
- * @property $ Template identifier
+ * @property registry - A set of custom element tag names that are defined by this component or its dependencies,
+ *                      used by Plaited to ensure components are defined before use.
+ * @property tag - The custom element tag name (e.g., 'my-component') associated with this Plaited component.
+ * @property observedAttributes - An array of attribute names that instances of this custom element will observe for changes,
+ *                                triggering `attributeChangedCallback`.
+ * @property publicEvents - An array of event type strings that can be externally dispatched on the component instance
+ *                          using its `trigger` method.
+ * @property $ - A unique symbol (`PLAITED_TEMPLATE_IDENTIFIER`) acting as a type guard to identify
+ *               this object as a Plaited-specific template function.
  */
 export type PlaitedTemplate = FunctionTemplate & {
   registry: Set<string>

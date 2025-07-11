@@ -8,15 +8,15 @@ import { wait } from './wait.js'
  * designed for use within Plaited's behavioral programming system. Failed requests
  * trigger the provided trigger function with error details.
  *
- * @param config Configuration object with the following properties:
- *   @param {RequestInfo | URL} config.url - The URL to fetch from (string, Request, or URL object)
- *   @param {string} config.type - Event type to trigger on errors
- *   @param {Trigger | PlaitedTrigger} config.trigger - Trigger function for error events
- *   @param {number} [config.retry=0] - Number of retry attempts (default: 0)
- *   @param {number} [config.retryDelay=1000] - Base delay in ms between retries (default: 1000)
- *   @param {RequestInit} [config.options] - Standard fetch options (headers, method, body, etc.)
+ * @param config - Configuration object for the fetch operation.
+ * @param config.url - The URL to fetch from (can be a string, `Request` object, or `URL` object).
+ * @param config.type - The event type string to use when an error occurs and is dispatched via the `trigger`.
+ * @param config.trigger - The `Trigger` or `PlaitedTrigger` function to call when an error occurs.
+ * @param [config.retry=0] - The number of retry attempts to make if the fetch fails. Defaults to 0 (no retries).
+ * @param [config.retryDelay=1000] - The base delay in milliseconds between retry attempts. This delay uses exponential backoff with jitter. Defaults to 1000ms.
+ * @param [config.options] - Standard `RequestInit` options for the `fetch` call (e.g., method, headers, body).
  *
- * @returns Promise<Response | undefined> Standard Response object or undefined if all retries fail
+ * @returns A Promise that resolves to a `Response` object if successful, or `undefined` if all retry attempts are exhausted.
  *
  * @example
  * // Basic usage for JSON

@@ -12,8 +12,37 @@ import type { Trigger } from 'plaited/behavioral'
 /** Glob pattern used to find story files within the project. */
 const STORY_GLOB_PATTERN = `**/*.stories.{tsx,ts}`
 
+/** @internal Topic used for WebSocket communication to reload story clients. */
 const RELOAD_TOPIC = 'RELOAD_TOPIC'
 
+/**
+ * @internal
+ * Initializes and manages a Bun server for serving Plaited stories and facilitating communication
+ * with the story runner via WebSockets.
+ *
+ * Responsibilities:
+ * - Scans for story files (`*.stories.tsx?`) within the specified root directory.
+ * - Dynamically imports story modules to build a set of executable stories.
+ * - Generates HTML routes for each story, including full pages and template-only includes.
+ * - Bundles necessary JavaScript assets (workshop client, story entry points) using Bun.build.
+ * - Serves story content and bundled assets.
+ * - Establishes a WebSocket server at `RUNNER_URL` to communicate with story fixtures:
+ *   - Receives messages (like snapshots and test outcomes) from fixtures.
+ *   - Forwards these messages to the provided `trigger` function for processing by a behavioral program (e.g., `storyRunner`).
+ *   - Can publish reload messages to connected clients.
+ * - Handles process signals (SIGINT, SIGTERM, SIGHUP) for graceful server shutdown.
+ * - Manages uncaught exceptions and unhandled rejections to ensure server stability.
+ *
+ * @param options - Configuration options for the story server.
+ * @param options.root - The root directory of the project, used for globbing story files and resolving paths.
+ * @param options.trigger - A Plaited trigger function to dispatch events based on WebSocket messages from fixtures.
+ * @param options.designTokens - An optional signal containing global design token CSS to be injected into story pages.
+ * @returns A Promise that resolves to an object containing:
+ *  - `storyServer`: The Bun server instance.
+ *  - `storyParamSet`: A signal containing a Set of `StoryParams` for all discovered stories.
+ *  - `reloadStoryServer`: An async function to rebuild routes and reload the server.
+ *  - `reloadStoryClients`: A function to publish a reload message to all connected WebSocket clients.
+ */
 export const useStoryServer = async ({
   root,
   trigger,

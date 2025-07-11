@@ -260,8 +260,10 @@ export const throws: Throws = (
   }
 }
 
+/** @internal Set of JavaScript primitive type names used for value serialization in assertions. */
 const PRIMITIVES = new Set(['null', 'undefined', 'number', 'string', 'boolean', 'bigint'])
 
+/** @internal Keys required for the `assert` function's argument object to ensure complete assertions. */
 const requiredKeys = ['given', 'should', 'actual', 'expected']
 
 const replacer = (key: string | number | symbol, value: unknown) => {
@@ -654,11 +656,26 @@ export const useFireEvent = (trigger: Trigger) => {
   return fireEvent
 }
 
+/**
+ * @internal
+ * Creates a `wait` function that also triggers a FIXTURE_EVENTS.wait event.
+ * This is used within story play functions to pause execution and inform the test runner.
+ * @param trigger - The Plaited trigger function to dispatch events.
+ * @returns A function that takes a duration in milliseconds and returns a Promise that resolves after the duration.
+ */
 export const useWait = (trigger: Trigger) => (ms: number) => {
   trigger<{ type: typeof FIXTURE_EVENTS.wait; detail: WaitDetails }>({ type: FIXTURE_EVENTS.wait, detail: [ms] })
   return wait(ms)
 }
 
+/**
+ * @internal
+ * Creates an `accessibilityCheck` function that integrates with Axe-core for accessibility testing
+ * within a story fixture. It triggers events to inform the runner and throws an `AccessibilityError`
+ * if violations are found.
+ * @param trigger - The Plaited trigger function to dispatch events.
+ * @returns An asynchronous function to perform accessibility checks.
+ */
 export const useAccessibilityCheck = (trigger: Trigger) => {
   const accessibilityCheck: AccessibilityCheck = async ({ exclude, rules, config = {} }) => {
     trigger<{ type: typeof FIXTURE_EVENTS.accessibility_check; detail: AccessibilityCheckDetails }>({
@@ -685,6 +702,29 @@ export const useAccessibilityCheck = (trigger: Trigger) => {
 /** @internal Type guard to check if an event is a WebSocket CloseEvent. */
 const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => event.type === 'close'
 
+/**
+ * @internal
+ * Establishes and manages a WebSocket connection to the Plaited test runner server.
+ * This utility is responsible for sending test results, snapshots, and other messages
+ * from the story fixture to the runner. It handles connection retries and message queuing.
+ *
+ * @returns A `send` function to dispatch messages to the runner, and a `disconnect` method on the `send` function to close the WebSocket.
+ *
+ * The `send` function:
+ * - Takes a `RunnerMessage` object.
+ * - Sends the message as a JSON string over the WebSocket.
+ * - If the socket is not open, it queues the message and sends it upon connection.
+ * - If the socket is not connected, it attempts to connect.
+ *
+ * The `send.disconnect` method:
+ * - Closes the WebSocket connection.
+ *
+ * Internal WebSocket handling:
+ * - Connects to the runner URL (`/.plaited/test-runner`).
+ * - Listens for `open`, `message`, `error`, and `close` events.
+ * - Handles page reload requests from the runner.
+ * - Implements an exponential backoff retry mechanism for specific close codes.
+ */
 export const useRunner = () => {
   const retryStatusCodes = new Set([1006, 1012, 1013])
   const maxRetries = 3

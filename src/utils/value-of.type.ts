@@ -3,7 +3,6 @@
  * Creates a union type of all possible value types in an object.
  *
  * @template T Object type to extract values from
- * @returns Union type of all possible value types in T
  *
  * @example
  * // Object with different value types

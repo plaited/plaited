@@ -16,6 +16,11 @@ type FixtureEventDetail = {
   detail: unknown
 }
 
+/**
+ * @internal Defines the shape of event details for the `storyRunner` behavioral program.
+ * This type maps event names (both from `STORY_RUNNER_EVENTS` and `FIXTURE_EVENTS`)
+ * to their respective payload structures.
+ */
 export type RunnerDetails = {
   [STORY_RUNNER_EVENTS.run_tests]: {
     storyParams: Set<StoryParams>
@@ -32,6 +37,30 @@ export type RunnerDetails = {
   [FIXTURE_EVENTS.accessibility_violation]: FixtureEventDetail
 }
 
+/**
+ * @internal Behavioral program for running Plaited stories in a headless browser environment.
+ * It orchestrates the execution of multiple stories, manages browser contexts,
+ * collects results, and reports successes or failures.
+ *
+ * @param options Configuration for the story runner.
+ * @param options.serverURL The base URL of the server hosting the stories.
+ *
+ * Event Handling:
+ * - Listens for `run_tests` to start processing a batch of stories.
+ * - Listens for `on_runner_message` to receive messages (like snapshots or test outcomes) from individual story fixtures.
+ * - Triggers `test_end` when a single story test (including its color scheme variations) completes.
+ * - Triggers `end` when all stories have been processed.
+ * - Handles various `FIXTURE_EVENTS` (e.g., `failed_assertion`, `run_complete`) to process individual test results.
+ *
+ * Responsibilities:
+ * - Launches a Chromium browser instance.
+ * - Manages a map (`running`) of active story tests.
+ * - Iterates through provided story parameters and color schemes.
+ * - Uses Playwright's `BrowserContext` to isolate tests.
+ * - Navigates to story pages using `useVisitStory`.
+ * - Tracks passed and failed test counts.
+ * - Exits the process with appropriate status codes based on test outcomes (unless in `--hot` mode).
+ */
 export const storyRunner = bProgram<
   RunnerDetails,
   {

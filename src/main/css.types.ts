@@ -131,8 +131,38 @@ export type StylesObject = {
 }
 /**
  * Maps CSS class definitions to their compiled representation.
- * Provides both class names and associated stylesheets.
- * @template T The CSS classes configuration
+ * Provides both class names and associated stylesheets. This is typically the
+ * shape of the object returned by `css.create()`.
+ *
+ * @template T - The type of the input `CSSClasses` object.
+ *
+ * @example
+ * ```ts
+ * const myComponentStyles = css.create({
+ *   button: {
+ *     color: 'blue',
+ *   },
+ *   container: {
+ *     margin: 'auto',
+ *   }
+ * });
+ * // myComponentStyles would conform to:
+ * // StyleObjects<{ button: { color: string; padding: string; }; container: { margin: string; } }>
+ * // And its value would look like:
+ * // {
+ * //   button: { class: 'button-xxxxxx p-xxxxxx', stylesheet: ['. p-xxxxxx { color: blue; }'] },
+ * //   container: { class: 'container-yyyyyy  p-yyyyyy', stylesheet: ['.p-yyyyyy { margin: auto; }'] }
+ * // }
+ *
+ * // Usage in a component:
+ * const MyComponent = () => h('div', {
+ *   ...myComponentStyles.container, // Spreads class and stylesheet
+ *   children: h('button', {
+ *     ...myComponentStyles.button,
+ *     children: 'Click me'
+ *   })
+ * });
+ * ```
  */
 export type StyleObjects<T extends CSSClasses> = {
   [key in keyof T]: {

@@ -1,6 +1,6 @@
 /**
  * @internal
- * @module define-b-program
+ * @module b-program
  *
  * Purpose: Factory pattern for creating reusable behavioral program configurations
  * Architecture: Higher-order function that encapsulates bProgram setup with lifecycle management
@@ -91,7 +91,7 @@ import { getPublicTrigger } from './get-public-trigger.js'
  *
  * // Use the public trigger:
  * publicTrigger({ type: 'DO_ACTION', detail: { id: 1 } }); // Allowed
- * // publicTrigger({ type: 'INTERNAL_EVENT' }); // Disallowed (warning logged)
+ * // publicTrigger({ type: 'INTERNAL_EVENT' }); // Disallowed (throws error)
  */
 
 export const bProgram = <A extends EventDetails, C extends { [key: string]: unknown } = { [key: string]: unknown }>({
