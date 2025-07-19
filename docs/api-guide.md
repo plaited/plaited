@@ -36,9 +36,9 @@ Signals provide actor-like message passing, allowing behavioral programs to coor
 
 These are the foundational building blocks for creating behavioral programs. `bProgram` initializes a new program instance, while `bThread` and `bSync` are used to define the individual, synchronized strands of behavior that constitute the program.
 
-#### `bProgram()`
+#### `behavioral()`
 
-Factory function that creates and initializes a new behavioral program instance.
+Factory function that creates and initializes a new behavioral program instance. This is the core factory for creating isolated behavioral programs.
 
 ```ts
 (): Readonly<{
@@ -129,7 +129,7 @@ type Idioms<T = any> = {
 
 These utilities provide higher-level abstractions for creating and managing behavioral programs, particularly suited for integration within frameworks or components that manage lifecycle and cleanup.
 
-#### `defineBProgram(args)`
+#### `bProgram(args)`
 
 A higher-order function factory for creating and configuring behavioral programs. It simplifies setup by encapsulating the creation of the bProgram instance, feedback handler registration, public event filtering, and automatic cleanup management.
 
@@ -146,7 +146,7 @@ A higher-order function factory for creating and configuring behavioral programs
       useSnapshot: UseSnapshot
     } & C
   ) => Handlers<A> | Promise<Handlers<A>>
-}) => (ctx: C) => Promise<Trigger>
+}) => (ctx?: C) => Promise<Trigger>
 ```
 
 - `args.publicEvents`: An optional array of event type strings that define the public API of this bProgram instance. Only these events can be triggered via the returned public trigger.
@@ -157,7 +157,7 @@ A higher-order function factory for creating and configuring behavioral programs
 
 ```ts
 // Define a behavioral program for workshop functionality
-const createWorkshop = defineBProgram<WorkshopDetails, DefineWorkshopParams>({
+const createWorkshop = bProgram<WorkshopDetails, DefineWorkshopParams>({
   publicEvents: ['TEST_ALL_STORIES', 'LIST_ROUTES'],
   async bProgram({ cwd, trigger, bThreads, bSync, bThread, disconnect }) {
     // Setup resources
@@ -194,7 +194,7 @@ workshopTrigger({ type: 'TEST_ALL_STORIES' }) // Allowed
 // workshopTrigger({ type: 'INTERNAL_EVENT' }) // Filtered out (warning logged)
 ```
 
-The `defineBProgram` utility automatically handles:
+The `bProgram` utility automatically handles:
 - Creating and configuring the underlying `bProgram` instance
 - Registering feedback handlers from your returned handlers object
 - Creating a public trigger that filters events based on `publicEvents`
@@ -305,8 +305,8 @@ This collection of utility functions aids in the construction of behavioral prog
 
 - **`randomEvent(...events: BPEvent[]): BPEvent`**
   Selects and returns a single `BPEvent` randomly from a provided list.
-- **`shuffleSyncs(...syncs: BSync[]): BSync[]`**
-  Randomly shuffles an array of `BSync` (synchronization points).
+- **`shuffleSyncs(...syncs: () => Generator<Idioms>[]): (() => Generator<Idioms>)[]`**
+  Randomly shuffles an array of synchronization point generator functions.
 - **`getPublicTrigger(args: { trigger: Trigger; publicEvents?: string[] | ReadonlyArray<string> }): Trigger`**
   Creates a wrapped `Trigger` that filters events based on `publicEvents`. Only events listed in `publicEvents` will be passed to the underlying `trigger`.
 - **`getPlaitedTrigger(trigger: Trigger, disconnectSet: Set<Disconnect>): PlaitedTrigger`**
@@ -314,18 +314,46 @@ This collection of utility functions aids in the construction of behavioral prog
 
 ### Behavioral Type Guards
 
-Runtime type-checking functions to safely identify and work with specific objects and concepts within the behavioral programming module, such as `BPEvent`s and `PlaitedTrigger`s.
+Runtime type-checking functions to safely identify and work with specific objects and concepts within the behavioral programming module.
 
 - **`isBPEvent(data: unknown): data is BPEvent`**
   Checks if a value conforms to the `BPEvent` structure (`{ type: string, detail?: any }`).
 - **`isPlaitedTrigger(trigger: Trigger): trigger is PlaitedTrigger`**
   Checks if a trigger is an enhanced `PlaitedTrigger` (has `addDisconnectCallback` method).
 
+### Additional Types
+
+The behavioral module also exports these important types:
+
+- **`BPEventTemplate<T = any>`**: A factory function type `() => BPEvent<T>` for creating events dynamically
+- **`EventDetails`**: Constraint type for event detail payloads, must be an object
+- **`Handlers<T extends EventDetails>`**: Collection of event handlers keyed by event type
+- **`Behavioral`**: The main factory function type returned by `behavioral()`
+- **`PlaitedTrigger`**: Enhanced trigger with lifecycle management via `addDisconnectCallback`
+- **`Signal<T>`**: Union type of `SignalWithInitialValue<T>` and `SignalWithoutInitialValue<T>`
+- **`Listen`**: Function type for subscribing to signal changes
+
 ## Core Module (`plaited`)
 
 The main module providing core functionalities for creating web components, managing their behavior, styling, and JSX-based templating. It re-exports several utilities from other specialized modules.
 
 *Note: While behavioral utilities like `bWorker`, `useSignal`, and `useWorker` are available when importing from `plaited` (as they are re-exported by this main module), their primary documentation can be found in the [Behavioral Module (`plaited/behavioral`)](#behavioral-module-plaitedbehavioral) section.*
+
+### JSX Factory Functions
+
+#### `createTemplate(tag, attrs)` (also exported as `h`)
+
+The core factory function for creating Plaited template objects from JSX or direct function calls.
+
+```ts
+<T extends Tag>(tag: T, attrs: InferAttrs<T>): TemplateObject
+```
+
+- `tag`: An HTML/SVG tag name (string), a `CustomElementTag`, or a `FunctionTemplate`
+- `attrs`: An object containing attributes/props for the element, including `children`
+- Returns: A `TemplateObject`
+
+This is the primary function used by the JSX runtime to transform JSX into Plaited's internal template format.
 
 ### Web Component APIs
 
@@ -548,24 +576,24 @@ const fadeIn = css.keyframes(\'fadeIn\', {
   from: { opacity: 0 },
   to: { opacity: 1 },
 })
-// Usage: css.create({ animated: { animationName: fadeIn.id } }); ... assign(fadeIn())
+// Usage: css.create({ animated: { animationName: fadeIn.id } }); ... join(fadeIn())
 ```
 
-##### `css.assign(...styles)`
+##### `css.join(...styles)`
 
-Combines and conditionally applies multiple `StylesObject` instances.
+Combines multiple `StylesObject` instances into a single object with merged classes and stylesheets.
 
 ```ts
-(...styles: Array<StylesObject | undefined | false | null>): StylesObject
+(...styleObjects: Array<StylesObject>): { class: string[], stylesheet: string[] }
 ```
 
-- `styles`: A variable number of `StylesObject` instances or falsy values.
-- Returns: A new `StylesObject` with combined `class` and `stylesheet` properties.
+- `styleObjects`: A variable number of `StylesObject` instances. While the implementation handles falsy values by skipping them, the TypeScript type expects `StylesObject` instances.
+- Returns: An object with `class` and `stylesheet` arrays containing all merged values.
 
 Example usage:
 
 ```ts
-const primaryButtonStyles = css.assign(
+const primaryButtonStyles = css.join(
   baseStyles.button,
   themeStyles.primary,
   sizeStyles.large,
@@ -581,17 +609,18 @@ This module exports various TypeScript types used by the CSS-in-JS system, such 
 
 Plaited provides standard JSX factory functions for creating template objects and a server-side rendering utility.
 
-#### `h(tag, attrs)` (alias for `jsx`, `jsxs`, `jsxDEV`)
+#### `jsx`, `jsxs`, `jsxDEV`
 
-The core JSX factory function.
+JSX runtime factory functions automatically used by the JSX transformer.
 
 ```ts
-<T extends Tag>(tag: T, attrs: InferAttrs<T>): TemplateObject
+// All are aliases for createTemplate/h
+jsx: typeof createTemplate
+jsxs: typeof createTemplate  // Optimized for static children
+jsxDEV: typeof createTemplate  // Development mode with extra checks
 ```
 
-- `tag`: An HTML/SVG tag name (string), a `CustomElementTag`, or a `FunctionTemplate`.
-- `attrs`: An object containing attributes/props for the element, including `children`.
-- Returns: A `TemplateObject`.
+These are automatically imported when using `jsxImportSource: "plaited"` in your TypeScript configuration.
 
 **`Tag`** (Type for `h` function's first argument)
 
@@ -634,14 +663,26 @@ Generates a static HTML string from Plaited template objects.
 
 Essential types used throughout the Plaited framework.
 
+#### Component and Template Types
 - **`PlaitedElement`**: Interface extending `HTMLElement` for Plaited custom elements, including `trigger` and lifecycle callbacks.
 - **`PlaitedTemplate`**: The type returned by `bElement`, a function template that includes metadata like `tag`, `registry`, `observedAttributes`, and `publicEvents`.
 - **`TemplateObject`**: The internal representation of a compiled JSX template (`{ html: string[], stylesheets: string[], registry: string[], parts: string[], $: unique_symbol }`).
-- **`Position`**: DOM insertion positions (`\'beforebegin\' | \'afterbegin\' | \'beforeend\' | \'afterend\'`).
+
+#### DOM Manipulation Types
+- **`Position`**: DOM insertion positions (`'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'`).
 - **`Bindings`**: Helper methods (`render`, `insert`, `replace`, `attr`) bound to elements queried by `p-target`.
 - **`BoundElement<T extends Element = Element>`**: An `Element` augmented with `Bindings`.
-- **`SelectorMatch`**: Attribute selector match types (`\'=\' | \'~=\' | \'|=\' | \'^=\' | \'$=\' | \'*=\'`).
-- **`JSONDetail`**: Types allowed in message detail payloads (JSON-serializable primitives, objects, arrays) if custom messaging solutions are built on top of Plaited event systems (e.g. `BPEvent`). Plaited itself does not provide a dedicated `PlaitedMessage` type anymore.
+- **`SelectorMatch`**: Attribute selector match types (`'=' | '~=' | '|=' | '^=' | '$=' | '*='`).
+
+#### Event and Data Types  
+- **`JSONDetail`**: Types allowed in message detail payloads (JSON-serializable primitives, objects, arrays) if custom messaging solutions are built on top of Plaited event systems (e.g. `BPEvent`).
+- **`ObservedAttributesDetail`**: Event detail for attribute change observations.
+
+#### Signal Types (from behavioral module)
+- **`Signal<T>`**: Union of signal types with and without initial values
+- **`SignalWithInitialValue<T>`**: Signal guaranteed to have a value
+- **`SignalWithoutInitialValue<T>`**: Signal that may be undefined
+- **`Listen`**: Function type for subscribing to signal changes
 
 
 ### JSX Types
@@ -657,11 +698,33 @@ Types relevant when using JSX with Plaited.
 - **`CustomElementTag`**: Type for custom element tag names (`\\${string}-\\${string}`).
 - **`Children`**: Valid children in JSX (`number | string | TemplateObject | Child[]`).
 
-### Re-exported Behavioral Utilities
-The main `plaited` module also re-exports the following for convenience. See the [Behavioral Module (`plaited/behavioral`)](#behavioral-module-plaitedbehavioral) section for detailed documentation:
-- `bWorker(config)`
-- `useSignal(initialValue?)`
-- `useWorker(trigger, path)`
+### Behavioral Programming Exports
+
+The main `plaited` module directly exports these behavioral utilities:
+
+- **`bWorker(config)`** - Creates behavioral programs in Web Workers
+- **`useSignal(initialValue?)`** - Creates reactive state signals
+- **`useComputed(computeFn, dependencies)`** - Creates computed signals from dependencies  
+- **`useWorker(trigger, path)`** - Bridges worker communication with behavioral programs
+
+See the [Behavioral Module (`plaited/behavioral`)](#behavioral-module-plaitedbehavioral) section for detailed documentation of these functions.
+
+### Additional Utility Exports
+
+#### `useDispatch(element)`
+
+Creates a typed event dispatcher bound to a PlaitedElement.
+
+```ts
+<T = unknown>(element: PlaitedElement): (args: BPEvent<T> & {
+  bubbles?: boolean;
+  cancelable?: boolean;
+  composed?: boolean;
+}) => void
+```
+
+- `element`: The PlaitedElement to dispatch events from
+- Returns: A dispatch function for sending custom events with proper typing
 
 ## Testing & Workshop Module (`plaited/workshop`)
 
@@ -685,49 +748,74 @@ The core of the testing module is the `PlaitedFixture` custom element and the ty
         - `TEST_PASSED`: Event type for successful test completion.
         - `SCALE`: Object mapping scale symbolic names to values (e.g., `{ \'1\': \'1\', ..., \'rel\': \'rel\' }`).
 
-- **Types (from `plaited/workshop/testing/plaited-fixture.types.js`):**
-    - `StoryObj<T extends Attrs = Attrs>`: The primary type for defining a story, which is a union of `InteractionStoryObj` and `SnapshotStoryObj`.
-        - `args?: T`: Props for the story\'s template.
-        - `description: string`: A mandatory description of the story.
-        - `parameters?: Params`: Optional test environment configuration.
-        - `play?: Play`: Optional asynchronous function for interactions and assertions (required by `InteractionStoryObj`, forbidden in `SnapshotStoryObj`).
-        - `template?: FunctionTemplate<T>`: Optional Plaited template function.
-    - `InteractionStoryObj<T extends Attrs = Attrs>`: A story object where the `play` function is **required**.
-    - `SnapshotStoryObj<T extends Attrs = Attrs>`: A story object where the `play` function is **not allowed**.
-    - `Params`: Defines parameters for a story (e.g., `a11y`, `headers`, `scale`, `styles`, `timeout`).
-        ```ts
-        type Params = {
-          a11y?: Record<string, string> | false;
-          scale?: keyof typeof SCALE; // e.g., \'1\', \'rel\'
-          styles?: StylesObject;
-          timeout?: number; // Default: 5000ms
-          headers?: (env: NodeJS.ProcessEnv) => Headers | Promise<Headers>;
-        };
-        ```
-    - `Args<T extends FunctionTemplate>`: Utility type to extract the props type from a `FunctionTemplate`.
-    - `Play`: The signature for the `play` function provided to `InteractionStoryObj`. It receives an object with testing utilities:
-        ```ts
-        type Play = (args: {
-          assert: Assert;
-          findByAttribute: FindByAttribute;
-          findByText: FindByText;
-          fireEvent: FireEvent;
-          hostElement: Element; // The PlaitedFixture element itself
-          match: Match;
-          throws: Throws;
-          wait: Wait;
-        }) => Promise<void>;
-        ```
-        *(Note: `Assert`, `FindByAttribute`, `FindByText`, `FireEvent`, `Match`, `Throws`, `Wait` are types for the testing utilities available inside `play`.)*
-    - `InteractionTestFailureEvent`, `UnknownTestErrorEvent`: Types for events dispatched by `PlaitedFixture` on test failures.
-    - `InteractionDetail`, `SnapshotDetail`, `StoryDetail`: Types related to the detail payload of the `PLAY_EVENT`.
+- **`StoryObj<T extends Attrs = Attrs>`**: The primary type for defining a story, which is a union of `InteractionStoryObj` and `SnapshotStoryObj`.
+  - `args?: T`: Props for the story's template.
+  - `description: string`: A mandatory description of the story.
+  - `parameters?: Params`: Optional test environment configuration.
+  - `play?: Play`: Optional asynchronous function for interactions and assertions.
+  - `template?: FunctionTemplate<T>`: Optional Plaited template function.
+- **`InteractionStoryObj<T extends Attrs = Attrs>`**: A story object where the `play` function is **required**.
+- **`SnapshotStoryObj<T extends Attrs = Attrs>`**: A story object where the `play` function is **not allowed**.
+- **`Args<T extends FunctionTemplate>`**: Utility type to extract the props type from a `FunctionTemplate`.
+- **`Params`**: Defines parameters for a story:
+  ```ts
+  type Params = {
+    headers?: (env: NodeJS.ProcessEnv) => Headers | Promise<Headers>;
+    recordVideo?: boolean;
+    styles?: StylesObject;
+    timeout?: number; // Default: 5000ms
+  };
+  ```
 
-- **Custom Element:**
-    - `PlaitedFixture`: A custom element (`<plaited-test-fixture>`) that hosts and executes a single Plaited story test. It is configured via attributes by the test runner (`p-socket`, `p-route`, `p-file`, `p-entry`, `p-name`).
+#### Testing Function Types
+- **`Play`**: The play function signature:
+  ```ts
+  type Play = (args: {
+    assert: Assert;
+    findByAttribute: FindByAttribute;
+    findByText: FindByText;
+    fireEvent: FireEvent;
+    hostElement: Element;
+    match: Match;
+    throws: Throws;
+    wait: Wait;
+  }) => Promise<void>;
+  ```
+- **`Assert`**: Assertion function for comparisons
+- **`FindByAttribute`**: Finds elements by attribute value
+- **`FindByText`**: Finds elements by text content
+- **`FireEvent`**: Dispatches DOM events
+- **`Match`**: Pattern matching utility
+- **`Throws`**: Error catching utility
+- **`Wait`**: Async delay utility
 
-- **Design Token Utilities (Exported by Workshop):**
-    - `DesignToken` (and related types like `Alias`, `DesignValue`, `DesignTokenGroup`, `DesignTokenEntry`): Types for defining design tokens.
-    - `getDesignTokensElement(stylesheet, tag?)`: Creates a custom element for injecting design token stylesheets.
+#### Design Token System
+
+The workshop module includes a comprehensive design token system:
+
+##### Design Token Types
+- **`DesignToken`**: Union of all design token types
+- **`DesignTokenGroup`**: Hierarchical structure for organizing tokens
+- **`DesignTokenEntry`**: Extended token with metadata and resolution info
+- **`Alias`**: Token reference format (`{tokenName}`)
+
+##### Specific Token Types
+- **`DefaultToken`**: Basic token with string/number values
+- **`AmountToken`**: Numeric or percentage values
+- **`AngleToken`**: CSS angle measurements
+- **`ColorToken`**: Color definitions
+- **`SizeToken`**: Dimensional measurements  
+- **`FunctionToken`**: CSS function values
+- **`CompositeToken`**: Composite values with multiple properties
+
+##### Value Types
+- **`DesignValue`**: Union of all possible token values
+- **`MediaValue<V>`**: Responsive value definitions
+- **`MediaQueries`**: Media query configurations
+
+##### Utilities
+- **`getDesignTokensElement(stylesheet, tag?)`**: Creates a custom element for injecting design token stylesheets
+- **`transformDesignTokens(tokens, queries?)`**: Transforms design tokens into CSS custom properties
 
 
 ### Testing Utilities (Available within `play` function)
@@ -793,22 +881,53 @@ Utility to pause execution for a specified duration.
 
 ### Error Classes
 
-Custom error classes thrown by the testing utilities:
+Custom error classes used in testing:
 
-- `FailedAssertionError`: Thrown by `assert()` when a condition fails.
-- `MissingAssertionParameterError`: Thrown by `assert()` if required parameters are missing.
-- `TimeoutError`: Thrown by the test runner when a `play` function exceeds its timeout (defined in `Params`).
+- **`FailedAssertionError`**: Thrown by `assert()` when a condition fails.
+- **`MissingAssertionParameterError`**: Thrown by `assert()` if required parameters are missing.
+- **`TimeoutError`**: Thrown by the test runner when a `play` function exceeds its timeout.
+
+### Usage Example
+
+```typescript
+import type { StoryObj, Args } from 'plaited/workshop'
+import { MyComponent } from './my-component'
+
+type MyComponentArgs = Args<typeof MyComponent>
+
+export const Interactive: StoryObj<MyComponentArgs> = {
+  description: "Tests component interactions",
+  args: { title: 'Hello World' },
+  template: MyComponent,
+  play: async ({ assert, findByAttribute, fireEvent }) => {
+    const button = await findByAttribute('p-target', 'submit-btn')
+    await fireEvent(button!, 'click')
+    
+    assert({
+      given: 'user clicks submit button',
+      should: 'update the title',
+      actual: button?.textContent,
+      expected: 'Submitted!'
+    })
+  }
+}
+```
 
 ## Utilities Module (`plaited/utils`)
 
-General-purpose utility functions.
+General-purpose utility functions for common tasks.
 
 ### Type Checking
 
 - **`isTypeOf<T>(obj: unknown, type: string): obj is T`**
-  Checks if `obj` is of the specified `type` (e.g., \'string\', \'array\', \'date\') using precise type detection.
+  Checks if `obj` is of the specified `type` (e.g., 'string', 'array', 'date') using precise type detection.
 - **`trueTypeOf(obj?: unknown): string`**
-  Returns the precise type of `obj` as a lowercase string (e.g., \'array\', \'asyncfunction\').
+  Returns the precise type of `obj` as a lowercase string (e.g., 'array', 'asyncfunction').
+
+### Document Creation
+
+- **`createDocumentFragment(strings: string[]): DocumentFragment`**
+  Creates a DocumentFragment from an array of HTML strings. Useful for building DOM structures efficiently.
 
 ### DOM Utilities
 
@@ -841,10 +960,17 @@ General-purpose utility functions.
 
 - **`DelegatedListener<T extends Event = Event>`** (Class)
   An `EventListener` implementation for robust event delegation.
-  `constructor(callback: (ev: T) => void | Promise<void>)`
-  `handleEvent(evt: T): void`
+  ```ts
+  constructor(callback: (ev: T) => void | Promise<void>)
+  handleEvent(evt: T): void
+  ```
 - **`delegates: WeakMap<EventTarget, DelegatedListener>`**
   A global `WeakMap` used internally for storing event delegation relationships.
+
+### HTTP Utilities
+
+- **`useFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response>`**
+  Enhanced fetch wrapper with automatic JSON parsing for response bodies. Provides better error handling and response processing.
 
 ### Async Utilities
 
@@ -856,26 +982,143 @@ General-purpose utility functions.
 - **`noop<T = never>(..._: T[]): void`**
   A no-operation function that does nothing.
 
+### Type Exports
+
+- **`ValueError<K extends string[]>`**: Type representing the possible values of a key mirror object created by `keyMirror`
+
+## MCP Module (`plaited/mcp`)
+
+The MCP (Model Context Protocol) module provides integration between Plaited's behavioral programming system and the MCP SDK, enabling AI assistants to interact with your applications through tools, prompts, and resources.
+
+### `bServer(config)`
+
+Creates an MCP server with integrated behavioral programming capabilities.
+
+```ts
+<R extends Registry, E extends EventDetails>(config: {
+  name: string;
+  version: string;
+  registry: R;
+  bProgram: (args: {
+    bSync: BSync;
+    bThread: BThread;
+    bThreads: BThreads;
+    disconnect: Disconnect;
+    server: McpServer;
+    trigger: PlaitedTrigger;
+    useSnapshot: UseSnapshot;
+    prompts: Prompts<R>;
+    resources: Resources<R>;
+    tools: Tools<R>;
+  }) => Promise<PrimitiveHandlers<R, E>>;
+}): Promise<McpServer>
+```
+
+- `name`: The name of your MCP server
+- `version`: Server version string
+- `registry`: Type-safe registry defining available MCP primitives
+- `bProgram`: Async function that sets up behavioral threads and returns event handlers
+
+### Registry Pattern
+
+The MCP module uses a declarative registry pattern to define available primitives:
+
+```ts
+type Registry = {
+  [key: string]: {
+    type: 'prompt' | 'resource' | 'tool';
+    description: string;
+    // Additional type-specific properties
+  }
+}
+```
+
+### Example Usage
+
+```ts
+import { bServer } from 'plaited/mcp'
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+
+// Define your MCP registry
+const registry = {
+  listFiles: {
+    type: 'tool' as const,
+    description: 'List files in a directory',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'Directory path' }
+      },
+      required: ['path']
+    }
+  },
+  projectInfo: {
+    type: 'resource' as const,
+    description: 'Project configuration and metadata'
+  }
+} as const
+
+// Create the MCP server
+const server = await bServer({
+  name: 'my-mcp-server',
+  version: '1.0.0',
+  registry,
+  async bProgram({ tools, resources, trigger, bThreads, bThread, bSync }) {
+    // Set up behavioral threads
+    bThreads.set({
+      fileWatcher: bThread([
+        bSync({ waitFor: { type: 'FILE_CHANGED' } }),
+        // Handle file changes
+      ])
+    })
+
+    // Return handlers for MCP primitives
+    return {
+      async listFiles({ path }) {
+        // Implementation
+        return { files: [] }
+      },
+      async projectInfo() {
+        // Return project info
+        return { contents: [{ text: 'Project data' }] }
+      }
+    }
+  }
+})
+
+// Connect to transport
+const transport = new StdioServerTransport()
+await server.connect(transport)
+```
+
+### Key Features
+
+- **Type-Safe Registry**: Define tools, prompts, and resources with full TypeScript support
+- **Behavioral Integration**: Use signals, threads, and triggers within your MCP server
+- **Automatic Event Conversion**: MCP requests are converted to behavioral events
+- **Lifecycle Management**: Automatic cleanup when server shuts down
+- **Async Initialization**: Support for async setup in the bProgram
+
 ## JSX Configuration
 
 To use JSX with Plaited, configure your `tsconfig.json` (or equivalent JavaScript build tool settings):
 
 ```json
 {
-  \"compilerOptions\": {
-    \"jsx\": \"react-jsx\", // or \"react-jsxdev\" for development
-    \"jsxImportSource\": \"plaited\"
+  "compilerOptions": {
+    "jsx": "react-jsx", // or "react-jsxdev" for development
+    "jsxImportSource": "plaited"
   }
 }
 ```
 
 Plaited exports the standard JSX factory functions:
 
-- `jsx` (typically for `h` or `React.createElement`)
+- `jsx` (alias for `createTemplate`/`h`)
 - `jsxs` (optimized for multiple children)
 - `jsxDEV` (development version of `jsx` with more checks)
 - `Fragment` (for grouping elements without a DOM wrapper)
-- `h` (an alias for `jsx`)
+- `h` (an alias for `createTemplate`)
 
-These are available via imports from `plaited/jsx-runtime` or `plaited/jsx-dev-runtime`.
+These are automatically available when using JSX with the proper configuration. They can also be imported directly from `plaited/jsx-runtime` or `plaited/jsx-dev-runtime`.
 ", display_description = "Reorganize API guide based on corrected module exports and added details.", mode = "overwrite", path = "lab/plaited/docs/api-guide.md"))

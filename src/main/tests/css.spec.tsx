@@ -131,7 +131,7 @@ test('css.keyframes', () => {
   expect(keyframes()).toMatchSnapshot()
 })
 
-test('css.assign', () => {
+test('css.join', () => {
   const styles = css.create({
     button: {
       fontFamily: 'Nunito Sans, Helvetica Neue, Helvetica, Arial, sans-serif',
@@ -142,33 +142,13 @@ test('css.assign', () => {
       display: 'inline-block',
       lineHeight: 1,
     },
-    primary: {
-      color: 'white',
-      backgroundColor: '#1ea7fd',
-    },
-    secondary: {
-      color: '#333',
-      backgroundColor: 'transparent',
-      boxShadow: 'rgba(0, 0, 0, 0.15) 0px 0px 0px 1px inset',
-    },
     small: {
       fontSize: '12px',
       padding: '10px 16px',
-    },
-    large: {
-      fontSize: '16px',
-      padding: '12px 24px',
     },
   })
   const host = css.host({
     color: 'red',
   })
-  let primary = true
-  expect(
-    css.assign(styles.button, styles['small'], primary ? styles.primary : styles.secondary, host),
-  ).toMatchSnapshot()
-  primary = false
-  expect(
-    css.assign(styles.button, styles['large'], primary ? styles.primary : styles.secondary, host),
-  ).toMatchSnapshot()
+  expect(css.join(styles.button, styles.small, host)).toMatchSnapshot()
 })

@@ -1,4 +1,4 @@
-import { type Position, bElement, useTemplate, css } from 'plaited'
+import { type Position, bElement, useTemplate, css, type FT } from 'plaited'
 
 const styles = css.create({
   root: {
@@ -69,33 +69,38 @@ const buildData = (count: number): Data => {
   return data
 }
 
+const Root: FT = (attrs) => (
+  <div
+    p-target='root'
+    {...attrs}
+  >
+    <table p-target='table'></table>
+    <template p-target='row-template'>
+      <tr p-target='row'>
+        <td
+          class='col-md-1'
+          p-target='id'
+        ></td>
+        <td class='col-md-4'>
+          <a p-target='label'></a>
+        </td>
+        <td class='col-md-1'>
+          <a>
+            <span
+              class='glyphicon glyphicon-remove'
+              aria-hidden='true'
+              p-target='delete'
+            ></span>
+          </a>
+        </td>
+        <td class='col-md-6'></td>
+      </tr>
+    </template>
+  </div>
+)
+
 export const Fixture = bElement({
-  shadowDom: (
-    <div p-target='root'>
-      <table p-target='table'></table>
-      <template p-target='row-template'>
-        <tr p-target='row'>
-          <td
-            class='col-md-1'
-            p-target='id'
-          ></td>
-          <td class='col-md-4'>
-            <a p-target='label'></a>
-          </td>
-          <td class='col-md-1'>
-            <a>
-              <span
-                class='glyphicon glyphicon-remove'
-                aria-hidden='true'
-                p-target='delete'
-              ></span>
-            </a>
-          </td>
-          <td class='col-md-6'></td>
-        </tr>
-      </template>
-    </div>
-  ),
+  shadowDom: <Root />,
   tag: 'table-fixture',
   publicEvents: [
     'insert',
@@ -142,7 +147,7 @@ export const Fixture = bElement({
       },
       setStyle() {
         const [root] = $('root')
-        root.attr('class', styles.root)
+        root.replace(<Root {...styles.root} />)
       },
       multiSetAttributes() {
         const dels = $('delete')

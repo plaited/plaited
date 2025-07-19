@@ -48,7 +48,7 @@ export const DecorateCheckbox = bElement<{
     <>
       <div
         p-target='symbol'
-        {...css.assign(styles.symbol, hostStyles)}
+        {...css.join(styles.symbol, hostStyles)}
         p-trigger={{ click: 'click' }}
       />
       <slot

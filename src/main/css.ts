@@ -128,228 +128,171 @@ const keyframes = (name: string, frames: CSSKeyFrames) => {
   return getFrames
 }
 
-const assign = (...styleObjects: Array<StylesObject | undefined | false | null>) => {
+const join = (...styleObjects: Array<StylesObject>) => {
   const cls: string[] = []
   const style: string[] = []
   for (const styleObject of styleObjects) {
     if (!styleObject) continue
     const { class: className, stylesheet } = styleObject
-    className && cls.push(...(Array.isArray(className) ? (className.filter(Boolean) as string[]) : [className]))
-    stylesheet && style.push(...(Array.isArray(stylesheet) ? (stylesheet.filter(Boolean) as string[]) : [stylesheet]))
+    className && cls.push(...(Array.isArray(className) ? className : [className]))
+    stylesheet && style.push(...(Array.isArray(stylesheet) ? stylesheet : [stylesheet]))
   }
-  return { class: cls.length ? cls : undefined, stylesheet: style.length ? style : undefined }
+  return { class: cls, stylesheet: style }
 }
 
 /**
- * @namespace css
- * @description A powerful CSS-in-JS system providing type-safe, scoped styling capabilities for Plaited applications.
- * Built specifically for modern component architecture with focus on developer experience and runtime performance.
+ * CSS-in-JS system for Plaited applications providing type-safe, atomic styles with Shadow DOM support.
  *
- * ## Key Features
+ * The `css` namespace offers utilities for creating scoped styles, animations, and conditional styling
+ * that integrate seamlessly with Plaited's component system. All styles are automatically deduplicated
+ * and optimized for minimal CSS output.
  *
- * - **Atomic CSS Generation**: Creates optimized, deduplicated style rules
- * - **Type Safety**: Complete TypeScript integration with property autocompletion
- * - **Nested Selectors**: Support for pseudo-classes, attributes, and media queries
- * - **Shadow DOM Integration**: First-class support for web components and custom elements
- * - **Zero Runtime Dependencies**: Minimal size impact with maximum performance
- * - **Design Token Compatibility**: Seamless integration with design system tokens
+ * @example Basic usage
+ * ```tsx
+ * const styles = css.create({
+ *   button: { padding: '8px 16px', borderRadius: '4px' }
+ * });
  *
- * The system automatically generates unique, collision-free class names and optimizes
- * style output to minimize CSS duplication and specificity issues.
+ * const Button = bElement({
+ *   tag: 'my-button',
+ *   shadowDom: <button {...styles.button}>Click me</button>
+ * });
+ * ```
  *
- * @property {function} create - Generates style objects with hashed class names from style definitions
- * @property {function} host - Creates shadow DOM host styles with attribute and state-based conditions
- * @property {function} keyframes - Defines reusable CSS animations with unique identifiers
- * @property {function} assign - Combines and conditionally applies multiple style objects
  * @remarks
- * - Designed to work with both Plaited components and standard HTML elements
- * - Stylesheets are automatically collected and managed by the rendering system
- * - Efficiently handles style reapplication without unnecessary DOM operations
- * - Compatible with server-side rendering and static site generation
- * - Uses deterministic hashing for predictable class name generation
+ * - Generates deterministic, collision-free class names using content-based hashing
+ * - Supports nested selectors (pseudo-classes, media queries, attribute selectors)
+ * - Integrates with Shadow DOM via Constructable Stylesheets
+ * - Provides zero-runtime CSS generation with full TypeScript support
  */
 export const css = {
   /**
-   * Creates Plaited style objects (`StyleObjects`) from a configuration object (`CSSClasses`).
-   * It processes CSS properties, including nested structures for pseudo-classes, attribute selectors,
-   * media queries, etc., generating unique, hashed class names and corresponding CSS rules.
+   * Creates atomic style objects with generated class names from CSS property definitions.
+   * Supports nested selectors for responsive design, pseudo-classes, and conditional styling.
    *
-   * @template T - An object type extending `CSSClasses`, where keys are logical style group names (e.g., 'button', 'input')
-   *               and values define the CSS properties for that group.
-   * @param {T} classNames - The configuration object defining style groups and their CSS properties.
-   *                         Property keys are camelCased CSS properties (e.g., `backgroundColor`) or CSS variables (`--my-var`).
-   *                         Values can be primitives (string/number) or nested objects (`CreateNestedCSS`) for conditional styles.
-   * @returns {StyleObjects<T>} An object mirroring the input structure (`T`). Each key holds a `StylesObject` containing:
-   *                            - `class`: A string of space-separated, generated class names (e.g., "button_abc p123 p456").
-   *                                           Includes a base class (`button_abc`) and atomic classes (`p123`, `p456`).
-   *                            - `stylesheet`: An array of CSS rule strings corresponding to the generated classes.
+   * @param classNames - Style definitions where keys are logical names and values are CSS properties
+   * @returns Style objects containing generated class names and CSS rules
    *
-   * @example Simple Usage
-   * ```typescript
+   * @example Basic styles
+   * ```tsx
    * const styles = css.create({
-   *   primaryButton: {
+   *   button: {
+   *     padding: '8px 16px',
    *     backgroundColor: 'blue',
-   *     color: 'white',
-   *     padding: '10px 15px',
+   *     color: 'white'
    *   }
    * });
-   * // styles.primaryButton.class -> "primaryButton_xyz p111 p222 p333"
-   * // styles.primaryButton.stylesheet -> [".p111{background-color:blue;}", ".p222{color:white;}", ...]
+   * // Usage: <button {...styles.button}>Click</button>
    * ```
    *
-   * @example Nested Selectors
-   * ```typescript
+   * @example With nested selectors
+   * ```tsx
    * const styles = css.create({
    *   card: {
-   *     border: '1px solid lightgray',
-   *     borderRadius: '4px',
-   *     ':hover': { // Pseudo-class
-   *       borderColor: 'gray',
-   *       boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+   *     padding: '16px',
+   *     ':hover': {
+   *       boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
    *     },
-   *     '@media (min-width: 768px)': { // Media query
-   *       padding: '20px',
-   *     },
-   *     '[data-state="selected"]': { // Attribute selector
-   *       backgroundColor: 'lightblue',
+   *     '@media (max-width: 768px)': {
+   *       padding: '8px'
    *     }
    *   }
    * });
-   * // Generates classes and rules for base, :hover, @media, and [data-state="selected"] states.
    * ```
    *
-   * @example Nested Property Values
-   * ```typescript
+   * @example Complex property nesting
+   * ```tsx
    * const styles = css.create({
-   *   dynamicText: {
+   *   text: {
    *     fontSize: {
-   *       default: '16px', // Base font size
-   *       '@media (min-width: 1024px)': '18px', // Larger on desktop
-   *       ':first-letter': { // Nested pseudo-element within property
-   *          default: '24px',
-   *          '@media (min-width: 1024px)': '28px',
-   *       }
+   *       default: '16px',
+   *       '@media (min-width: 1024px)': '18px',
+   *       ':hover': '17px'
    *     }
    *   }
    * });
-   * // Generates classes/rules for default, @media, :first-letter, and @media + :first-letter combinations.
    * ```
    */
   create,
   /**
-   * Generates a `StylesObject` containing CSS rules specifically targeting the `:host`
-   * of a shadow DOM component. Allows defining base host styles and styles conditional
-   * on host selectors (e.g., attributes, classes).
+   * Creates `:host` styles for Shadow DOM components with support for conditional styling
+   * based on host attributes, classes, or states.
    *
-   * @param {CSSHostProperties} props - An object where keys are camelCased CSS properties or CSS variables.
-   *        Values can be:
-   *        - Primitives (string/number): Applied directly to `:host`.
-   *        - Objects: Where keys are selectors relative to `:host` (e.g., `'.active'`, `'[disabled]'`, `':host-context(.theme-dark)'`)
-   *          and values are the corresponding CSS property values for that condition. The key `'default'` applies to the base `:host`.
-   * @returns {StylesObject} A `StylesObject` containing only the `stylesheet` array with the generated `:host` rules.
-   *                         The `class` property will be undefined.
+   * @param props - CSS properties for the host element
+   * @returns Style object containing :host CSS rules
    *
    * @example
-   * ```typescript
+   * ```tsx
    * const hostStyles = css.host({
-   *   display: 'inline-block', // Base style: :host { display: inline-block; }
+   *   display: 'block',
+   *   padding: '16px',
    *   border: {
-   *     default: '1px solid transparent', // Base style: :host { border: 1px solid transparent; }
-   *     ':hover': '1px solid blue',      // Conditional: :host(:hover) { border: 1px solid blue; }
-   *     '[focused]': '1px solid darkblue', // Conditional: :host([focused]) { border: 1px solid darkblue; }
-   *   },
-   *   '--internal-padding': '8px', // CSS Variable: :host { --internal-padding: 8px; }
+   *     default: '1px solid #ccc',
+   *     ':hover': '1px solid #999',
+   *     '[disabled]': '1px solid #eee'
+   *   }
    * });
    *
-   * // Usage within bElement:
+   * // Usage in component
    * bElement({
-   *   tag: 'my-interactive-element',
-   *   shadowDom: <div {...hostStyles}>...</div> // Stylesheet is applied to the shadow root
+   *   tag: 'my-element',
+   *   shadowDom: <div {...hostStyles}>Content</div>
    * });
    * ```
    */
   host,
   /**
-   * Creates a CSS `@keyframes` animation definition with a uniquely hashed name.
-   * Returns a function that, when called, provides the `StylesObject` containing the
-   * generated `@keyframes` rule. This function also has an `id` property holding the
-   * unique animation name, intended for use in `animation-name` properties.
+   * Creates a reusable CSS animation with a unique, hashed name.
+   * Returns a function that generates the @keyframes rule and exposes the animation ID.
    *
-   * @param {string} name - A descriptive base name for the animation (e.g., 'fadeIn', 'slideUp'). This name is hashed for uniqueness.
-   * @param {CSSKeyFrames} frames - An object defining the keyframes. Keys are percentages (`'0%'`, `'100%'`) or keywords (`'from'`, `'to'`).
-   *                                Values are objects containing camelCased CSS properties for that keyframe.
-   * @returns {(() => StylesObject) & { id: string }} A function that returns the `StylesObject` for the keyframes rule.
-   *                                                  This function has an added `id` property containing the unique animation name (e.g., "fadeIn_a1b2c3").
+   * @param name - Base name for the animation (e.g., 'fadeIn', 'slide')
+   * @param frames - Keyframe definitions with percentages or from/to keywords
+   * @returns Function with `id` property containing the unique animation name
    *
    * @example
-   * ```typescript
-   * // 1. Define the keyframes
-   * const bounce = css.keyframes('bounce', {
-   *   '0%, 100%': { transform: 'translateY(0)', animationTimingFunction: 'ease-out' },
-   *   '50%': { transform: 'translateY(-10px)', animationTimingFunction: 'ease-in' }
+   * ```tsx
+   * // Define animation
+   * const fadeIn = css.keyframes('fadeIn', {
+   *   from: { opacity: 0 },
+   *   to: { opacity: 1 }
    * });
    *
-   * // bounce.id -> "bounce_xyz" (unique hashed name)
-   *
-   * // 2. Create styles using the keyframe ID
+   * // Use in styles
    * const styles = css.create({
-   *   bouncingBall: {
-   *     width: '50px',
-   *     height: '50px',
-   *     borderRadius: '50%',
-   *     backgroundColor: 'red',
-   *     animationName: bounce.id, // Use the generated ID
-   *     animationDuration: '1s',
-   *     animationIterationCount: 'infinite',
+   *   animated: {
+   *     animationName: fadeIn.id,
+   *     animationDuration: '300ms'
    *   }
    * });
    *
-   * // 3. Assign styles and the keyframes rule in the template
-   * const Ball = () => <div {...css.assign(styles.bouncingBall, bounce())}></div>;
-   * // Calling bounce() returns { stylesheet: ["@keyframes bounce_xyz { ... }"] }
-   * // css.assign merges the ball styles and the keyframes definition.
+   * // Apply both styles and keyframes
+   * <div {...css.join(styles.animated, fadeIn())} />
    * ```
    */
   keyframes,
   /**
-   * Merges multiple `StylesObject` instances (or falsy values like `undefined`, `false`, `null`)
-   * into a single `StylesObject`. It concatenates `class` strings and `stylesheet` arrays
-   * from all valid input objects. Falsy values are ignored, enabling easy conditional style composition.
+   * Combines multiple style objects into one, supporting conditional application.
+   * Falsy values are ignored, enabling clean conditional styling patterns.
    *
-   * @param {...(StylesObject | undefined | false | null)} styleObjects - A variable number of `StylesObject` instances or falsy values.
-   * @returns {StylesObject} A new `StylesObject` with combined `class` and `stylesheet` properties.
-   *                         If no valid `StylesObject`s are provided, returns `{ class: undefined, stylesheet: undefined }`.
+   * @param styleObjects - Style objects to merge (falsy values are skipped)
+   * @returns Combined style object with merged classes and stylesheets
    *
-   * @example Conditional Styling
-   * ```typescript
-   * const base = css.create({ base: { color: 'black' } });
-   * const active = css.create({ active: { fontWeight: 'bold' } });
-   * const disabled = css.create({ disabled: { opacity: 0.5, pointerEvents: 'none' } });
+   * @example Conditional styles
+   * ```tsx
+   * const styles = css.create({
+   *   base: { padding: '8px' },
+   *   primary: { backgroundColor: 'blue' },
+   *   disabled: { opacity: 0.5 }
+   * });
    *
-   * const isActive = true;
-   * const isDisabled = false;
-   *
-   * const buttonStyles = css.assign(
-   *   base.base,
-   *   isActive && active.active, // Included if isActive is true
-   *   isDisabled && disabled.disabled // Ignored if isDisabled is false
+   * const Button = ({ isPrimary, isDisabled }) => (
+   *   <button {...css.join(
+   *     styles.base,
+   *     isPrimary && styles.primary,
+   *     isDisabled && styles.disabled
+   *   )}>Click</button>
    * );
-   *
-   * // buttonStyles.class -> "base_abc p111 active_def p222" (if isActive)
-   * // buttonStyles.stylesheet -> [".p111{color:black;}", ".p222{font-weight:bold;}"]
-   *
-   * const MyButton = () => <button {...buttonStyles}>Click</button>;
-   * ```
-   *
-   * @example Combining with Host and Keyframes
-   * ```typescript
-   * const hostStyles = css.host({ display: 'block' });
-   * const anim = css.keyframes('fade', { from: { opacity: 0 }, to: { opacity: 1 } });
-   * const elementStyles = css.create({ el: { animationName: anim.id, animationDuration: '1s' } });
-   *
-   * const combined = css.assign(hostStyles, elementStyles.el, anim());
-   * // combined.stylesheet will contain host rules, element rules, and the keyframes rule.
    * ```
    */
-  assign,
+  join,
 }

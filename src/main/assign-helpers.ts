@@ -29,8 +29,6 @@
 import type { TemplateObject } from './jsx.types.js'
 import { BOOLEAN_ATTRS } from './jsx.constants.js'
 import type { Bindings, BoundElement } from './plaited.types.js'
-import type { StylesObject } from './css.types.js'
-import { isTypeOf } from '../utils/is-type-of.js'
 /**
  * @internal Cache for storing adopted stylesheets per ShadowRoot to prevent duplicate processing.
  * Used internally by the framework to optimize style adoption performance.
@@ -119,11 +117,10 @@ const updateAttributes = ({
   element,
   attr,
   val,
-  root,
 }: {
   element: Element
-  attr: string | 'class'
-  val: string | null | number | boolean | StylesObject
+  attr: string
+  val: string | null | number | boolean
   root: ShadowRoot
 }) => {
   // Remove the attribute if val is null or undefined, and it currently exists
@@ -135,14 +132,8 @@ const updateAttributes = ({
     !element.hasAttribute(attr) && element.toggleAttribute(attr, true)
     return
   }
-  // Set the attribute
-  if (attr === 'class' && isTypeOf<StylesObject>(val, 'object')) {
-    const { class: classes, stylesheet } = val
-    void updateShadowRootStyles(root, new Set(stylesheet))
-    return element.setAttribute(attr, `${(Array.isArray(classes) ? classes : [classes ?? '']).join(' ')}`)
-  } else {
-    element.setAttribute(attr, `${val}`)
-  }
+  // Set the attribute if it doesnot already exist
+  if (element.getAttribute(attr) !== `${val}`) element.setAttribute(attr, `${val}`)
 }
 
 /**

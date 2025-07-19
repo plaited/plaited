@@ -294,7 +294,7 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
    shadowDom: (
      <div
        p-target='symbol'
-       {...css.assign(styles.symbol, hostStyles)}
+       {...css.join(styles.symbol, hostStyles)}
        p-trigger={{ click: 'click' }}
      />
    ),

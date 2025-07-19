@@ -32,7 +32,7 @@ export const InputAddon = bElement<{
     <>
       <slot
         name='prefix'
-        {...css.assign(hostStyles, styles.addOn)}
+        {...css.join(hostStyles, styles.addOn)}
       ></slot>
       <slot
         name='input'

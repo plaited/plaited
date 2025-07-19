@@ -31,7 +31,7 @@ export const ToggleInput = bElement<{
   shadowDom: (
     <div
       p-target='symbol'
-      {...css.assign(styles.symbol, hostStyles)}
+      {...css.join(styles.symbol, hostStyles)}
       p-trigger={{ click: 'click' }}
     />
   ),
