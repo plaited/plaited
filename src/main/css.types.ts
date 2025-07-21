@@ -39,17 +39,21 @@ export type CreateNestedCSS<T extends keyof CSSProperties> = {
   /** Rules applied based on attribute selectors (e.g., [disabled], [data-state="active"]). Can be nested further. */
   [key: `[${string}]`]: CSSProperties[T] | CreateNestedCSS<T>
 }
+
+export type CSSRules = {
+  [key in keyof CSSProperties]: CSSProperties[key] | CreateNestedCSS<key> | string
+}
 /**
  * Defines a collection of CSS class definitions. Each key represents a class name,
  * and its value is an object containing CSS properties. Properties can have simple values,
  * nested rules defined by `CreateNestedCSS`, or string values (useful for CSS variables).
  *
  * @example
- * const myClasses: CSSClasses = {
+ * const myClasses: CSSSelectors = {
  *   button: {
  *     color: 'white',
  *     backgroundColor: {
- *       default: 'blue',
+ *       $default: 'blue',
  *       ':hover': 'darkblue',
  *     },
  *     padding: '10px 20px',
@@ -58,10 +62,8 @@ export type CreateNestedCSS<T extends keyof CSSProperties> = {
  *   // ... other class definitions
  * };
  */
-export type CSSClasses = {
-  [key: string]: {
-    [key in keyof CSSProperties]: CSSProperties[key] | CreateNestedCSS<key> | string
-  }
+export type CSSSelectors = {
+  [key: string]: CSSRules
 }
 
 /**
@@ -86,9 +88,17 @@ type CreateHostCSSWithSelector<T extends keyof CSSProperties> = {
  *   },
  * };
  */
+
+export type CSSParts =
+  | CSSSelectors
+  | {
+      $states: CSSSelectors
+    }
+
 export type CSSHostProperties = {
   [key in keyof CSSProperties]: CSSProperties[key] | CreateHostCSSWithSelector<key>
 }
+
 /**
  * Defines the structure for CSS `@keyframes` animations.
  * Allows specifying styles for different stages ('from', 'to', or percentage offsets) of an animation.
@@ -123,52 +133,33 @@ export type CSSKeyFrames = {
  *   stylesheet: [commonStyles, componentSpecificStyles],
  * };
  */
-export type StylesObject = {
+export type StylesObjectWithClass = {
   /** A single class name or an array of class names. */
-  class?: string | Array<string>
+  class: string
   /** A single CSS stylesheet string or an array of stylesheet strings. */
-  stylesheet?: string | Array<string>
+  stylesheet: Array<string>
 }
-/**
- * Maps CSS class definitions to their compiled representation.
- * Provides both class names and associated stylesheets. This is typically the
- * shape of the object returned by `css.create()`.
- *
- * @template T - The type of the input `CSSClasses` object.
- *
- * @example
- * ```ts
- * const myComponentStyles = css.create({
- *   button: {
- *     color: 'blue',
- *   },
- *   container: {
- *     margin: 'auto',
- *   }
- * });
- * // myComponentStyles would conform to:
- * // StyleObjects<{ button: { color: string; padding: string; }; container: { margin: string; } }>
- * // And its value would look like:
- * // {
- * //   button: { class: 'button-xxxxxx p-xxxxxx', stylesheet: ['. p-xxxxxx { color: blue; }'] },
- * //   container: { class: 'container-yyyyyy  p-yyyyyy', stylesheet: ['.p-yyyyyy { margin: auto; }'] }
- * // }
- *
- * // Usage in a component:
- * const MyComponent = () => h('div', {
- *   ...myComponentStyles.container, // Spreads class and stylesheet
- *   children: h('button', {
- *     ...myComponentStyles.button,
- *     children: 'Click me'
- *   })
- * });
- * ```
- */
-export type StyleObjects<T extends CSSClasses> = {
-  [key in keyof T]: {
-    /** The generated unique class name for the style definition. */
-    class: string
-    /** An array containing the generated CSS stylesheet strings. */
-    stylesheet: string[]
-  }
+
+export type StylesObjectWithoutClass = {
+  class?: never
+  /** A single CSS stylesheet string or an array of stylesheet strings. */
+  stylesheet: Array<string>
 }
+
+export type StylesObject = StylesObjectWithClass | StylesObjectWithoutClass
+
+export type StyleFunctionClass = {
+  (): StylesObjectWithClass
+  id: string
+}
+
+export type StyleFunctionKeyframe = {
+  (): StylesObjectWithoutClass
+  id: string
+}
+
+export type StyleFunctionHost = {
+  (): StylesObjectWithoutClass
+}
+
+export type StyleFunction = StyleFunctionClass | StyleFunctionKeyframe | StyleFunctionHost

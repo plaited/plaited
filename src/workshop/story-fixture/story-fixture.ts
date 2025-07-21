@@ -30,6 +30,9 @@ import {
 } from './story-fixture.utils.js'
 import type { InteractionStoryObj, Play, TestFailureEventDetail } from './story-fixture.types.js'
 
+const styles = css.host({
+  display: 'contents',
+})
 /**
  * @element plaited-story-fixture
  * @description A custom element designed to host and execute a single Plaited story test.
@@ -52,9 +55,7 @@ export const StoryFixture = bElement<{
   tag: STORY_FIXTURE,
   publicEvents: [FIXTURE_EVENTS.run],
   shadowDom: h('slot', {
-    ...css.host({
-      display: 'contents',
-    }),
+    ...styles(),
   }),
   bProgram({ host, trigger, useSnapshot, bThreads, bThread, bSync }) {
     bThreads.set({

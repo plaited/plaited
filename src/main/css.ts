@@ -1,14 +1,16 @@
+import { kebabCase, hashString } from '../utils.js'
 import type {
   CSSProperties,
   CSSHostProperties,
   CSSKeyFrames,
-  CSSClasses,
+  CSSSelectors,
   CreateNestedCSS,
-  StyleObjects,
-  StylesObject,
+  StyleFunctionClass,
+  StyleFunctionHost,
+  StyleFunctionKeyframe,
+  StyleFunction,
 } from './css.types.js'
-import { kebabCase, hashString } from '../utils.js'
-
+import { CSS_RESERVED_KEYS } from './css.constants.js'
 /**
  * @internal
  * Helper function to create a deterministic hash for class names based on style properties and selectors.
@@ -16,8 +18,10 @@ import { kebabCase, hashString } from '../utils.js'
  * @param args - The strings and numbers to hash together
  * @returns A base36 hash string prefixed with underscore if negative
  */
-const createClassHash = (...args: (string | number)[]) =>
-  hashString(args.join(' '))?.toString(36).replace(/^-/g, '_') ?? ''
+const createClassHash = (...args: (string | number)[]) => {
+  const hash = hashString(args.join(' '))?.toString(36)!.replace(/^-/g, '_')
+  return hash?.startsWith('_') ? hash : `_${hash}`
+}
 
 /**
  * @internal
@@ -37,6 +41,36 @@ const isPrimitive = (val: string | number | CreateNestedCSS<string>): val is str
  * @returns The kebab-cased property or unchanged CSS variable
  */
 const caseProp = (prop: string) => (prop.startsWith('--') ? prop : kebabCase(prop))
+
+/**
+ * @internal
+ * Format primitive rule
+ */
+
+const formatRule = ({
+  domToken,
+  map,
+  value,
+  prefix = '',
+  prop,
+  selectors = [],
+  suffix = '',
+}: {
+  domToken: string
+  map: Map<string, string>
+  value: CSSProperties[typeof prop]
+  prefix?: string
+  prop: string
+  selectors?: string[]
+  suffix?: string
+}) => {
+  const hash = createClassHash(prop, value, ...selectors)
+  const hashedToken = domToken + hash
+  const rule = `${caseProp(prop)}:${value};`
+  if (!selectors.length) return map.set(hashedToken, `${prefix}${hashedToken}{${rule}}${suffix}`)
+  const arr = selectors.map((str) => (str.startsWith('@') ? `${str}{` : `&${str}{`))
+  return map.set(hashedToken, `${prefix}${hashedToken}{${arr.join('')}${rule}${'}'.repeat(arr.length)}}${suffix}`)
+}
 
 /**
  * @internal
@@ -60,40 +94,41 @@ const formatStyles = ({
   prop: string
   selectors?: string[]
 }) => {
-  if (isPrimitive(value)) {
-    const hash = createClassHash(prop, value, ...selectors)
-    const className = `p${hash}`
-    const rule = `${caseProp(prop)}:${value};`
-    if (!selectors.length) return map.set(className, `.${className}{${rule}}`)
-    const arr = selectors.map((str) => (str.startsWith('@') ? `${str}{` : `&${str}{`))
-    return map.set(className, `.${className}{${arr.join('')}${rule}${'}'.repeat(arr.length)}}`)
-  }
+  if (isPrimitive(value)) return formatRule({ map, value, prop, selectors, prefix: '.', domToken: 'cls' })
   const arr = Object.entries(value)
   const length = arr.length
   for (let i = 0; i < length; i++) {
     const [context, val] = arr[i]
-    if (context === 'default' || /^(:|\[|(@(container|layer|media|supports)))/.test(context)) {
+    if (context === CSS_RESERVED_KEYS.$default || /^(:|\[|@)/.test(context)) {
       const nextSelectors = [...selectors]
-      context !== 'default' && nextSelectors.push(context)
+      context !== CSS_RESERVED_KEYS.$default && nextSelectors.push(context)
       formatStyles({ map, value: val, prop, selectors: nextSelectors })
     }
   }
 }
 
-const create = <T extends CSSClasses>(classNames: T) =>
-  Object.entries(classNames).reduce((acc, [cls, props]) => {
-    const map = new Map<string, string>()
-    for (const prop in props) formatStyles({ map, prop, value: props[prop] })
-    const classes = [...map.keys()]
-    const hash = createClassHash(...classes)
-    acc[cls as keyof T] = {
-      class: [`${cls}_${hash}`, ...classes].join(' '),
-      stylesheet: [...map.values()],
-    }
-    return acc
-  }, {} as StyleObjects<T>)
+const create = <T extends CSSSelectors>(classNames: T) =>
+  Object.entries(classNames).reduce(
+    (acc, [cls, props]) => {
+      const map = new Map<string, string>()
+      for (const prop in props) formatStyles({ map, prop, value: props[prop] })
+      const classes = [...map.keys()]
+      const hash = createClassHash(...classes)
+      const id = cls + hash
+      const getStyleObj = () => ({
+        class: [id, ...classes].join(' '),
+        stylesheet: [...map.values()],
+      })
+      getStyleObj.id = id
+      acc[cls as keyof T] = getStyleObj
+      return acc
+    },
+    {} as {
+      [key in keyof T]: StyleFunctionClass
+    },
+  )
 
-const host = (props: CSSHostProperties) => {
+const host = (props: CSSHostProperties): StyleFunctionHost => {
   const arr: string[] = []
   for (const prop in props) {
     const value = props[prop]
@@ -102,17 +137,19 @@ const host = (props: CSSHostProperties) => {
       continue
     }
     for (const selector in value) {
-      if (selector === 'default') {
+      if (selector === CSS_RESERVED_KEYS.$default) {
         arr.push(`:host{${caseProp(prop)}:${value[selector]};}`)
         continue
       }
       arr.push(`:host(${selector}){${caseProp(prop)}:${value[selector]};}`)
     }
   }
-  return { stylesheet: [...arr] }
+  return () => ({
+    stylesheet: [...arr],
+  })
 }
 
-const keyframes = (name: string, frames: CSSKeyFrames) => {
+const keyframes = (name: string, frames: CSSKeyFrames): StyleFunctionKeyframe => {
   const arr: string[] = []
   for (const value in frames) {
     const props = frames[value as keyof typeof frames]
@@ -123,19 +160,19 @@ const keyframes = (name: string, frames: CSSKeyFrames) => {
     arr.push(`${value}{${step.join('')}}`)
   }
   const hashedName = `${name}_${createClassHash(...arr)}`
-  const getFrames = () => ({ stylesheet: `@keyframes ${hashedName}{${arr.join('')}}` })
+  const getFrames = () => ({ stylesheet: [`@keyframes ${hashedName}{${arr.join('')}}`] })
   getFrames.id = hashedName
   return getFrames
 }
 
-const join = (...styleObjects: Array<StylesObject>) => {
+const join = (...styleObjects: Array<StyleFunction>) => {
   const cls: string[] = []
   const style: string[] = []
   for (const styleObject of styleObjects) {
     if (!styleObject) continue
-    const { class: className, stylesheet } = styleObject
+    const { class: className, stylesheet } = styleObject()
     className && cls.push(...(Array.isArray(className) ? className : [className]))
-    stylesheet && style.push(...(Array.isArray(stylesheet) ? stylesheet : [stylesheet]))
+    style.push(...(Array.isArray(stylesheet) ? stylesheet : [stylesheet]))
   }
   return { class: cls, stylesheet: style }
 }

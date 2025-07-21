@@ -10,7 +10,7 @@ const styles = css.create({
 
 export const XMarker: FT = () => (
   <svg
-    {...styles.x}
+    {...styles.x()}
     viewBox='0 0 21 21'
     fill='none'
   >

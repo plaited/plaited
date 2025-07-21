@@ -1,6 +1,6 @@
+import { bElement } from 'plaited'
 import type { StoryObj } from 'plaited/workshop'
 
-import { bElement } from 'plaited'
 import { styles, BEFORE_HYDRATION, AFTER_HYDRATION, HYDRATING_ELEMENT_TAG } from './hydrating-element.constants.js'
 
 const HydratingElement = bElement({
@@ -9,7 +9,7 @@ const HydratingElement = bElement({
     <>
       <div
         p-target='inner'
-        {...styles.before}
+        {...styles.before()}
       >
         {BEFORE_HYDRATION}
       </div>
@@ -21,7 +21,7 @@ const HydratingElement = bElement({
         const [inner] = $('inner')
         inner.replace(
           <span
-            {...styles.after}
+            {...styles.after()}
             p-target='inner'
           >
             {AFTER_HYDRATION}

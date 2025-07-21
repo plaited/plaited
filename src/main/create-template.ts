@@ -185,7 +185,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const {
     children: _children,
     trusted,
-    stylesheet,
+    stylesheet = [],
     style,
     'p-trigger': bpTrigger,
     class: className,
@@ -247,8 +247,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     start.push(`${escape(key)}="${trusted ? value : escape(value)}" `)
   }
   /** Create are stylesheet set */
-  const stylesheets =
-    stylesheet ? [...(Array.isArray(stylesheet) ? stylesheet : [stylesheet])].map((str) => escape(str)) : []
+  const stylesheets = Array.isArray(stylesheet) ? stylesheet : [stylesheet]
   /** Our tag is a void tag so we can return it once we apply attributes */
   if (VOID_TAGS.has(tag)) {
     start.push('/>')

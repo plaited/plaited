@@ -33,7 +33,7 @@ const hostStyles = css.host({
   display: 'inline-grid',
   gridTemplate: '"input" 16px / 16px',
   '--fill': {
-    default: 'lightblue',
+    $default: 'lightblue',
     ':state(checked)': 'blue',
     ':state(disabled)': 'grey',
   },
@@ -84,7 +84,7 @@ export const DecoratedCheckbox: FT<ElementAttributeList['input']> = (props) => {
     <DecorateCheckbox>
       <input
         {...props}
-        {...styles.input}
+        {...styles.input()}
         type='checkbox'
       />
     </DecorateCheckbox>

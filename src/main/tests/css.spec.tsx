@@ -2,103 +2,68 @@ import { test, expect } from 'bun:test'
 import { css } from 'plaited'
 
 test('css.create: supports simple rules', () => {
-  const s = css.create({
-    base: {
+  const styles = css.create({
+    simpleRules: {
       fontzSize: `16px`,
       lineHeight: 1.5,
       color: 'rgb(60,60,60)',
     },
-    highlighted: {
-      color: 'rebeccapurple',
-    },
   })
-  expect(s).toMatchSnapshot()
+  expect(styles.simpleRules()).toMatchSnapshot()
 })
 
 test('css.create: supports custom props', () => {
-  const s = css.create({
+  const styles = css.create({
     customProps: {
       '--customColor': 'red',
       '--custom-color': 'red',
     },
   })
-  expect(s).toMatchSnapshot()
+  expect(styles.customProps()).toMatchSnapshot()
 })
 
 test('css.create: supports pseudo-classes', () => {
-  expect(
-    css.create({
-      button: {
-        backgroundColor: 'lightblue',
+  const styles = css.create({
+    pseudoClass: {
+      backgroundColor: {
+        $default: 'lightblue',
+        ':hover': 'blue',
+        ':active': 'darkblue',
       },
-    }),
-  ).toMatchSnapshot()
-  expect(
-    css.create({
-      button: {
-        backgroundColor: {
-          default: 'lightblue',
-          ':hover': 'blue',
-          ':active': 'darkblue',
-        },
-      },
-    }),
-  ).toMatchSnapshot()
+    },
+  })
+  expect(styles.pseudoClass()).toMatchSnapshot()
 })
 
 test('css.create: supports pseudo-elements', () => {
-  expect(
-    css.create({
-      input: {
-        // pseudo-element
-        '::placeholder': {
-          color: '#999',
-        },
-        color: {
-          default: '#333',
-          // pseudo-class
-          ':invalid': 'red',
-        },
+  const styles = css.create({
+    pseudoElement: {
+      '::placeholder': {
+        color: '#999',
       },
-    }),
-  ).toMatchSnapshot()
+    },
+  })
+  expect(styles.pseudoElement()).toMatchSnapshot()
 })
 
 test('css.create: supports media query', () => {
-  expect(
-    css.create({
-      base: {
-        width: {
-          default: 800,
-          '@media (max-width: 800px)': '100%',
-          '@media (min-width: 1540px)': 1366,
-        },
+  const styles = css.create({
+    mediaQuery: {
+      width: {
+        $default: 800,
+        '@media (max-width: 800px)': '100%',
+        '@media (min-width: 1540px)': 1366,
       },
-    }),
-  ).toMatchSnapshot()
+    },
+  })
+  expect(styles.mediaQuery()).toMatchSnapshot()
 })
 
-test('css.create: supports combining conditions', () => {
-  expect(
-    css.create({
-      button: {
-        color: {
-          default: 'var(--blue-link)',
-          ':hover': {
-            '@media (hover: hover)': 'scale(1.1)',
-          },
-          ':active': 'scale(0.9)',
-        },
-      },
-    }),
-  ).toMatchSnapshot()
-})
-
-test('css.create: works with JSX via spread operator', () => {
-  const s = css.create({
+test('css.create: supports complex rules', () => {
+  const styles = css.create({
     button: {
       color: {
-        default: 'var(--blue-link)',
+        $default: 'var(--blue-link)',
         ':hover': {
           '@media (hover: hover)': 'scale(1.1)',
         },
@@ -106,19 +71,33 @@ test('css.create: works with JSX via spread operator', () => {
       },
     },
   })
-  expect(<button {...s.button}></button>).toMatchSnapshot()
+  expect(styles.button()).toMatchSnapshot()
 })
 
-test('css.host', () => {
-  expect(
-    css.host({
+test('css.create: works with JSX via spread operator', () => {
+  const styles = css.create({
+    button: {
       color: {
-        default: 'var(--blue-link)',
-        '.cloud': 'paleturquoise',
+        $default: 'var(--blue-link)',
+        ':hover': {
+          '@media (hover: hover)': 'scale(1.1)',
+        },
+        ':active': 'scale(0.9)',
       },
-      border: '1px solid black',
-    }),
-  ).toMatchSnapshot()
+    },
+  })
+  expect(<button {...styles.button()}></button>).toMatchSnapshot()
+})
+
+test('css.host: simple', () => {
+  const host = css.host({
+    color: {
+      $default: 'var(--blue-link)',
+      '.cloud': 'paleturquoise',
+    },
+    border: '1px solid black',
+  })
+  expect(host()).toMatchSnapshot()
 })
 
 test('css.keyframes', () => {

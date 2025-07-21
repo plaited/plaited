@@ -31,11 +31,11 @@ export const BoardMarker: FT = () => (
   <div
     role='group'
     aria-label='board'
-    {...styles.board}
+    {...styles.board()}
   >
     {Array.from(Array(9).keys()).map((n) => (
       <button
-        {...styles.square}
+        {...styles.square()}
         value={n}
         p-trigger={{ click: 'click' }}
         p-target={`${n}`}

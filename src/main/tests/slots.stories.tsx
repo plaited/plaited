@@ -1,5 +1,73 @@
+import { type FT, bElement } from 'plaited'
 import type { StoryObj } from 'plaited/workshop'
-import { Fixture, defaultSlot, passThroughSlot, namedSlot, nestedSlot, nestedInShadowSlot } from './slots.js'
+import sinon from 'sinon'
+
+const defaultSlot = sinon.spy()
+const passThroughSlot = sinon.spy()
+const namedSlot = sinon.spy()
+const nestedSlot = sinon.spy()
+const nestedInShadowSlot = sinon.spy()
+
+const Inner = bElement({
+  tag: 'inner-slot',
+  shadowDom: (
+    <>
+      <slot p-trigger={{ click: 'nested' }}></slot>
+      <slot
+        p-trigger={{ click: 'nestedInShadow' }}
+        name='shadow'
+      ></slot>
+    </>
+  ),
+  bProgram() {
+    return {
+      nested(e: Event) {
+        e.stopPropagation()
+        nestedSlot()
+      },
+      nestedInShadow(e: Event) {
+        e.stopPropagation()
+        nestedInShadowSlot()
+      },
+    }
+  },
+})
+
+const Outer = bElement({
+  tag: 'outer-slot',
+  shadowDom: (
+    <div>
+      <slot p-trigger={{ click: 'slot' }}></slot>
+      <slot
+        name='named'
+        p-trigger={{ click: 'named' }}
+      ></slot>
+      <Inner p-trigger={{ click: 'passThrough' }}>
+        <slot name='nested'></slot>
+        <button slot='shadow'>Shadow</button>
+      </Inner>
+    </div>
+  ),
+  bProgram: () => ({
+    slot() {
+      defaultSlot()
+    },
+    named() {
+      namedSlot()
+    },
+    passThrough() {
+      passThroughSlot()
+    },
+  }),
+})
+
+const Fixture: FT = () => (
+  <Outer>
+    <button>Slot</button>
+    <button slot='named'>Named</button>
+    <button slot='nested'>Nested</button>
+  </Outer>
+)
 
 export const slots: StoryObj = {
   description: `This story is used to validate that p-trigger attribute on slot elements in a

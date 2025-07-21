@@ -38,11 +38,11 @@ export const InputAddon = bElement<{
         name='input'
         p-target='slot'
         p-trigger={keyMirror('mouseenter', 'mouseleave', 'focusin', 'focusout')}
-        {...styles.input}
+        {...styles.input()}
       ></slot>
       <slot
         name='suffix'
-        {...styles.addOn}
+        {...styles.addOn()}
       ></slot>
     </>
   ),
