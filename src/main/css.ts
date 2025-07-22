@@ -44,9 +44,30 @@ const caseProp = (prop: string) => (prop.startsWith('--') ? prop : kebabCase(pro
 
 /**
  * @internal
+ * Format NestedRule
+ */
+const formatNestedRule = ({
+  token,
+  map,
+  prefix = '',
+  suffix = '',
+  rule,
+  selectors,
+}: {
+  token: string
+  map: Map<string, string>
+  prefix?: string
+  rule: string
+  selectors: string[]
+  suffix?: string
+}) => {
+  const arr = selectors.map((str) => (str.startsWith('@') ? `${str}{` : `&${str}{`))
+  return map.set(token, `${prefix}${token}{${arr.join('')}${rule}${'}'.repeat(arr.length)}}${suffix}`)
+}
+/**
+ * @internal
  * Format primitive rule
  */
-
 const formatRule = ({
   domToken,
   map,
@@ -68,8 +89,7 @@ const formatRule = ({
   const hashedToken = domToken + hash
   const rule = `${caseProp(prop)}:${value};`
   if (!selectors.length) return map.set(hashedToken, `${prefix}${hashedToken}{${rule}}${suffix}`)
-  const arr = selectors.map((str) => (str.startsWith('@') ? `${str}{` : `&${str}{`))
-  return map.set(hashedToken, `${prefix}${hashedToken}{${arr.join('')}${rule}${'}'.repeat(arr.length)}}${suffix}`)
+  return formatNestedRule({ token: hashedToken, prefix, map, rule, suffix, selectors })
 }
 
 /**
@@ -192,7 +212,7 @@ const join = (...styleObjects: Array<StyleFunction>) => {
  *
  * const Button = bElement({
  *   tag: 'my-button',
- *   shadowDom: <button {...styles.button}>Click me</button>
+ *   shadowDom: <button {...styles.button()}>Click me</button>
  * });
  * ```
  *
@@ -273,7 +293,7 @@ export const css = {
    * // Usage in component
    * bElement({
    *   tag: 'my-element',
-   *   shadowDom: <div {...hostStyles}>Content</div>
+   *   shadowDom: <div {...hostStyles()}>Content</div>
    * });
    * ```
    */

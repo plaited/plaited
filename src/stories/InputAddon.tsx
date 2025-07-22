@@ -17,7 +17,7 @@ const styles = css.create({
 const hostStyles = css.host({
   display: 'inline-flex',
   '--icon-stroke': {
-    default: 'lightblue',
+    $default: 'lightblue',
     ':state(focused)': 'blue',
     ':state(disabled)': 'grey',
   },

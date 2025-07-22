@@ -10,10 +10,18 @@ const styles = css.create({
   },
 })
 
+createMise('--fill', {
+  $default: 'lightblue',
+  $states: {
+    checked: 'blue',
+    disabled:
+  }
+})
+
 const hostStyles = css.host({
   display: 'inline-grid',
   '--fill': {
-    default: 'lightblue',
+    $default: 'lightblue',
     ':state(checked)': 'blue',
     ':state(disabled)': 'grey',
   },

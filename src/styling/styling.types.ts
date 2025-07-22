@@ -1,5 +1,5 @@
 import type * as CSS from './types/css.js'
-import { type CSS_RESERVED_KEYS } from './css.constants.js'
+import { type PREFERS_COLOR_SCHEME_QUERIES, type CSS_RESERVED_KEYS } from './styling.constants.js'
 /**
  * Represents CSS properties with string or number values.
  * Extends standard CSS properties to allow for custom properties (e.g., CSS variables).
@@ -29,19 +29,19 @@ export type CSSProperties = CSS.Properties<string | number> & {
  *   '[disabled]': 'gray',
  * };
  */
-export type CreateNestedCSS<T extends keyof CSSProperties> = {
+export type NestedStatements<T extends keyof CSSProperties> = {
   /** The default value for the CSS property. */
-  default?: CSSProperties[T]
+  [CSS_RESERVED_KEYS.$default]?: CSSProperties[T]
   /** Rules applied based on container queries, layers, media queries, or supports queries. */
   [key: `@${'container' | 'layer' | 'media' | 'supports'}${string}`]: CSSProperties[T]
   /** Rules applied based on pseudo-classes (e.g., :hover, :focus). Can be nested further. */
-  [key: `:${string}`]: CSSProperties[T] | CreateNestedCSS<T>
+  [key: `:${string}`]: CSSProperties[T] | NestedStatements<T>
   /** Rules applied based on attribute selectors (e.g., [disabled], [data-state="active"]). Can be nested further. */
-  [key: `[${string}]`]: CSSProperties[T] | CreateNestedCSS<T>
+  [key: `[${string}]`]: CSSProperties[T] | NestedStatements<T>
 }
 
 export type CSSRules = {
-  [key in keyof CSSProperties]: CSSProperties[key] | CreateNestedCSS<key> | string
+  [key in keyof CSSProperties]: CSSProperties[key] | NestedStatements<key> | string
 }
 /**
  * Defines a collection of CSS class definitions. Each key represents a class name,
@@ -62,8 +62,17 @@ export type CSSRules = {
  *   // ... other class definitions
  * };
  */
-export type CSSSelectors = {
+export type CreateParams = {
   [key: string]: CSSRules
+}
+
+export type CSSClasses<T extends CreateParams> = {
+  [key in keyof T]: {
+    /** The generated unique class name for the style definition. */
+    class: string
+    /** An array containing the generated CSS stylesheet strings. */
+    stylesheet: string[]
+  }
 }
 
 /**
@@ -72,8 +81,8 @@ export type CSSSelectors = {
  * @internal
  */
 type CreateHostCSSWithSelector<T extends keyof CSSProperties> = {
-  /** A CSS selector targeting the host or related elements. */
-  [key: string]: CSSProperties[T]
+  [CSS_RESERVED_KEYS.$default]?: CSSProperties[T] | NestedStatements<T> | string
+  [CSS_RESERVED_KEYS.$compoundSelectors]: CreateParams
 }
 /**
  * Type for CSS properties applied to a component's host element (relevant in Shadow DOM).
@@ -89,13 +98,7 @@ type CreateHostCSSWithSelector<T extends keyof CSSProperties> = {
  * };
  */
 
-export type CSSParts =
-  | CSSSelectors
-  | {
-      $states: CSSSelectors
-    }
-
-export type CSSHostProperties = {
+export type CreateHostParams = {
   [key in keyof CSSProperties]: CSSProperties[key] | CreateHostCSSWithSelector<key>
 }
 
@@ -148,18 +151,35 @@ export type StylesObjectWithoutClass = {
 
 export type StylesObject = StylesObjectWithClass | StylesObjectWithoutClass
 
-export type StyleFunctionClass = {
-  (): StylesObjectWithClass
-  id: string
-}
-
 export type StyleFunctionKeyframe = {
   (): StylesObjectWithoutClass
   id: string
 }
 
-export type StyleFunctionHost = {
-  (): StylesObjectWithoutClass
+export type PrefersColorSchemeQueries = typeof PREFERS_COLOR_SCHEME_QUERIES
+
+export type MediaQueries<T extends Record<string, string>> = {
+  [key in keyof T]: `@${T[key]}`
 }
 
-export type StyleFunction = StyleFunctionClass | StyleFunctionKeyframe | StyleFunctionHost
+export type CustomPropertyRegistration = {
+  syntax: string
+  inherits: boolean
+  initialValue?: string
+}
+
+export type CustomPropertyRegistrationGroup = {
+  [key: string]: CustomPropertyRegistration | CustomPropertyRegistrationGroup
+}
+
+export type CreatePropsParams = CustomPropertyRegistrationGroup & {
+  [CSS_RESERVED_KEYS.$mediaQueries]?: Record<string, string>
+}
+
+export type PropGetters<T extends CreatePropsParams> = {
+  [key in keyof T]: string
+}
+
+export type PropSetters<T extends CreatePropsParams> = {
+  [key in keyof T]: (args: string | number) => { [P in key]: string | number }
+}

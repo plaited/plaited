@@ -1,0 +1,129 @@
+// Bun Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`create: supports simple rules 1`] = `
+{
+  "class": "simpleRules_4jdquuc cls_2h8kl40 cls_4c01gd6 cls_10v3vx6",
+  "stylesheet": [
+    ".cls_2h8kl40{fontz-size:16px;}",
+    ".cls_4c01gd6{line-height:1.5;}",
+    ".cls_10v3vx6{color:rgb(60,60,60);}",
+  ],
+}
+`;
+
+exports[`create: supports custom props 1`] = `
+{
+  "class": "customProps_1ztytt8 cls_xn6850 cls_3bm6rq9",
+  "stylesheet": [
+    ".cls_xn6850{--customColor:red;}",
+    ".cls_3bm6rq9{--custom-color:red;}",
+  ],
+}
+`;
+
+exports[`create: supports pseudo-classes 1`] = `
+{
+  "class": "pseudoClass_12pn2n0 cls_2l5cglg cls_1sj0k0a cls_3ni2mzo",
+  "stylesheet": [
+    ".cls_2l5cglg{background-color:lightblue;}",
+    ".cls_1sj0k0a{&:hover{background-color:blue;}}",
+    ".cls_3ni2mzo{&:active{background-color:darkblue;}}",
+  ],
+}
+`;
+
+exports[`create: supports pseudo-elements 1`] = `
+{
+  "class": "pseudoElement_undefined",
+  "stylesheet": [],
+}
+`;
+
+exports[`create: supports media query 1`] = `
+{
+  "class": "mediaQuery_8lw20hz cls_aqr07x cls_3zvevs7 cls_l1op19",
+  "stylesheet": [
+    ".cls_aqr07x{width:800;}",
+    ".cls_3zvevs7{@media (max-width: 800px){width:100%;}}",
+    ".cls_l1op19{@media (min-width: 1540px){width:1366;}}",
+  ],
+}
+`;
+
+exports[`create: supports complex rules 1`] = `
+{
+  "class": "button_5dzc5eb cls_2dr9p51 cls_d33wg2 cls_1bahz5i",
+  "stylesheet": [
+    ".cls_2dr9p51{color:var(--blue-link);}",
+    ".cls_d33wg2{&:hover{@media (hover: hover){color:scale(1.1);}}}",
+    ".cls_1bahz5i{&:active{color:scale(0.9);}}",
+  ],
+}
+`;
+
+exports[`create: works with JSX via spread operator 1`] = `
+{
+  "$": "🦄",
+  "html": [
+    "<button ",
+    "class="button_5dzc5eb cls_2dr9p51 cls_d33wg2 cls_1bahz5i" ",
+    ">",
+    "</button>",
+  ],
+  "registry": [],
+  "stylesheets": [
+    ".cls_2dr9p51{color:var(--blue-link);}",
+    ".cls_d33wg2{&:hover{@media (hover: hover){color:scale(1.1);}}}",
+    ".cls_1bahz5i{&:active{color:scale(0.9);}}",
+  ],
+}
+`;
+
+exports[`host: simple 1`] = `
+{
+  "stylesheet": [
+    ":host{color:var(--blue-link);}",
+    ":host(.cloud){color:paleturquoise;}",
+    ":host{border:1px solid black;}",
+  ],
+}
+`;
+
+exports[`keyframes 1`] = `
+{
+  "stylesheet": [
+    "@keyframes pulse_10z9dla{0%{transform:scale(1);}50%{transform:scale(1.1);}100%{transform:scale(1);}}",
+  ],
+}
+`;
+
+exports[`join 1`] = `
+{
+  "class": [
+    "button_1hgu6r9 cls_30wbosl cls_jz2gbp cls_18s0619 cls_lvo2c0 cls_2bsqz24 cls_1g64ozy cls_4bu535j",
+    "small_26vs5oe cls_lrhn32 cls_17cdq7g",
+  ],
+  "stylesheet": [
+    ".cls_30wbosl{font-family:Nunito Sans, Helvetica Neue, Helvetica, Arial, sans-serif;}",
+    ".cls_jz2gbp{font-weight:700;}",
+    ".cls_18s0619{border:0;}",
+    ".cls_lvo2c0{border-radius:3em;}",
+    ".cls_2bsqz24{cursor:pointer;}",
+    ".cls_1g64ozy{display:inline-block;}",
+    ".cls_4bu535j{line-height:1;}",
+    ".cls_lrhn32{font-size:12px;}",
+    ".cls_17cdq7g{padding:10px 16px;}",
+    ":host{color:red;}",
+  ],
+}
+`;
+
+exports[`createMediaQueries 1`] = `
+{
+  "dark": "@media (prefers-color-scheme: dark)",
+  "desktop": "@screen and (min-width: 1024px)",
+  "light": "@media (prefers-color-scheme: light)",
+  "mobile": "@screen and (max-width: 767px)",
+  "tv": "@screen and (min-width: 1920px)",
+}
+`;
