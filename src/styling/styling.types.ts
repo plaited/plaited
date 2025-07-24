@@ -1,5 +1,6 @@
 import type * as CSS from './types/css.js'
 import { type PREFERS_COLOR_SCHEME_QUERIES, type CSS_RESERVED_KEYS } from './styling.constants.js'
+
 /**
  * Represents CSS properties with string or number values.
  * Extends standard CSS properties to allow for custom properties (e.g., CSS variables).
@@ -11,7 +12,7 @@ import { type PREFERS_COLOR_SCHEME_QUERIES, type CSS_RESERVED_KEYS } from './sty
  *   '--custom-property': 'value',
  * };
  */
-export type CSSProperties = CSS.Properties<string | number> & {
+export type CSSProperties = CSS.Properties & {
   [key: string]: string | number
 }
 /**
@@ -29,19 +30,21 @@ export type CSSProperties = CSS.Properties<string | number> & {
  *   '[disabled]': 'gray',
  * };
  */
-export type NestedStatements<T extends keyof CSSProperties> = {
+export type NestedStatements = {
   /** The default value for the CSS property. */
-  [CSS_RESERVED_KEYS.$default]?: CSSProperties[T]
+  [CSS_RESERVED_KEYS.$default]?: CSSProperties[keyof CSSProperties]
   /** Rules applied based on container queries, layers, media queries, or supports queries. */
-  [key: `@${'container' | 'layer' | 'media' | 'supports'}${string}`]: CSSProperties[T]
+  [key: `@${'container' | 'layer' | 'media' | 'supports'}${string}`]:
+    | CSSProperties[keyof CSSProperties]
+    | NestedStatements
   /** Rules applied based on pseudo-classes (e.g., :hover, :focus). Can be nested further. */
-  [key: `:${string}`]: CSSProperties[T] | NestedStatements<T>
+  [key: `:${string}`]: CSSProperties[keyof CSSProperties] | NestedStatements
   /** Rules applied based on attribute selectors (e.g., [disabled], [data-state="active"]). Can be nested further. */
-  [key: `[${string}]`]: CSSProperties[T] | NestedStatements<T>
+  [key: `[${string}]`]: CSSProperties[keyof CSSProperties] | NestedStatements
 }
 
 export type CSSRules = {
-  [key in keyof CSSProperties]: CSSProperties[key] | NestedStatements<key> | string
+  [key in keyof CSSProperties]: CSSProperties[key] | NestedStatements | string
 }
 /**
  * Defines a collection of CSS class definitions. Each key represents a class name,
@@ -75,45 +78,46 @@ export type CSSClasses<T extends CreateParams> = {
   }
 }
 
-/**
- * Helper type for defining CSS properties specific to a host element selector.
- * @template T The specific CSS property key.
- * @internal
- */
-export type NestedHostStatements<T extends keyof CSSProperties> = {
-  [CSS_RESERVED_KEYS.$default]?: CSSProperties[T]
-  [CSS_RESERVED_KEYS.$parts]?: {
-    [key: string]: CSSProperties[T]
-  }
-  [CSS_RESERVED_KEYS.$compoundSelectors]?: {
-    [key: string]:
-      | CSSProperties[T]
-      | {
-          [CSS_RESERVED_KEYS.$default]?: CSSProperties[T]
-          [CSS_RESERVED_KEYS.$parts]?: {
-            [key: string]: CSSProperties[T]
-          }
-        }
-  }
-}
-/**
- * Type for CSS properties applied to a component's host element (relevant in Shadow DOM).
- * Allows defining styles directly on the host or conditionally based on selectors applied to the host.
- *
- * @example
- * const hostStyles: CSSHostProperties = {
- *   display: 'block',
- *   border: {
- *     ':host([hidden])': 'none', // Style when host has 'hidden' attribute
- *     ':host(.focused)': '1px solid blue', // Style when host has 'focused' class
- *   },
- * };
- */
-
 export type CreateHostParams = {
-  [key in keyof CSSProperties]: CSSProperties[key] | NestedHostStatements<key>
+  [key in keyof CSSProperties]:
+    | CSSProperties[key]
+    | (NestedStatements & {
+        [CSS_RESERVED_KEYS.$compoundSelectors]?: {
+          [key: string]: CSSProperties[keyof CSSProperties] | NestedStatements
+        }
+      })
 }
 
+export type CSSCustomProperty = `--${string}`
+
+export type CSSVariable = `var(${CSSCustomProperty})`
+
+export type NestedPartStatements = {
+  /** The default value for the CSS property. */
+  [CSS_RESERVED_KEYS.$default]?: CSSVariable
+  /** Rules applied based on container queries, layers, media queries, or supports queries. */
+  [key: `@${'container' | 'layer' | 'media' | 'supports'}${string}`]: CSSVariable | NestedPartStatements
+  /** Rules applied based on pseudo-classes (e.g., :hover, :focus). Can be nested further. */
+  [key: `:${string}`]: CSSVariable | NestedPartStatements
+  /** Rules applied based on attribute selectors (e.g., [disabled], [data-state="active"]). Can be nested further. */
+  [key: `[${string}]`]: CSSVariable | NestedPartStatements
+}
+
+export type CreatePartsParams = {
+  [key: string]: {
+    [key in keyof CSSProperties]:
+      | `var(${string})`
+      | (NestedPartStatements & {
+          [CSS_RESERVED_KEYS.$compoundSelectors]?: {
+            [key: string]: `var(${string})` | NestedPartStatements
+          }
+        })
+  }
+}
+
+export type CSSParts<T extends CreatePartsParams> = {
+  [key in keyof T]: StylesObjectWithoutClass
+}
 /**
  * Defines the structure for CSS `@keyframes` animations.
  * Allows specifying styles for different stages ('from', 'to', or percentage offsets) of an animation.
@@ -171,7 +175,7 @@ export type StyleFunctionKeyframe = {
 export type PrefersColorSchemeQueries = typeof PREFERS_COLOR_SCHEME_QUERIES
 
 export type MediaQueries<T extends Record<string, string>> = {
-  [key in keyof T]: `@${T[key]}`
+  [key in keyof T]: T[key]
 }
 
 export type CustomPropertyRegistration = {

@@ -1,11 +1,10 @@
 import { test, expect } from 'bun:test'
 import * as css from 'plaited/styling'
-import { createMediaQueries } from '../create-media-queries'
 
 test('create: supports simple rules', () => {
   const styles = css.create({
     simpleRules: {
-      fontzSize: `16px`,
+      fontSize: `16px`,
       lineHeight: 1.5,
       color: 'rgb(60,60,60)',
     },
@@ -39,8 +38,8 @@ test('create: supports pseudo-classes', () => {
 test('create: supports pseudo-elements', () => {
   const styles = css.create({
     pseudoElement: {
-      '::placeholder': {
-        color: '#999',
+      color: {
+        '::placeholder': '#999',
       },
     },
   })
@@ -92,9 +91,22 @@ test('create: works with JSX via spread operator', () => {
 
 test('host: simple', () => {
   const host = css.createHost({
+    color: 'var(--blue-link)',
+    border: '1px solid black',
+  })
+  expect(host).toMatchSnapshot()
+})
+
+test('host: nested host stles', () => {
+  const host = css.createHost({
     color: {
+      ['@media screen and (width >= 900px)']: 'var(--red-link)',
       $default: 'var(--blue-link)',
-      '.cloud': 'paleturquoise',
+      $compoundSelectors: {
+        ':state(open)': {
+          [`[p-target="part"]`]: 'var(--green-link)',
+        },
+      },
     },
     border: '1px solid black',
   })
@@ -133,11 +145,14 @@ test('join', () => {
   expect(css.join(styles.button, styles.small, host)).toMatchSnapshot()
 })
 
-test('createMediaQueries', () => {
-  const queries = createMediaQueries({
-    mobile: 'screen and (max-width: 767px)',
-    desktop: 'screen and (min-width: 1024px)',
-    tv: 'screen and (min-width: 1920px)',
+test('createParts', () => {
+  const styles = css.createParts({
+    part: {
+      fontSize: {
+        $default: 'var(--variable-2)',
+        '@media (min-width: 1540px)': 'var(--variable-1)',
+      },
+    },
   })
-  expect(queries).toMatchSnapshot()
+  expect(styles).toMatchSnapshot()
 })

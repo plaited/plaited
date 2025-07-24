@@ -2,9 +2,9 @@
 
 exports[`create: supports simple rules 1`] = `
 {
-  "class": "simpleRules_4jdquuc cls_2h8kl40 cls_4c01gd6 cls_10v3vx6",
+  "class": "simpleRules_21gozku cls_lrhjq2 cls_4c01gd6 cls_10v3vx6",
   "stylesheet": [
-    ".cls_2h8kl40{fontz-size:16px;}",
+    ".cls_lrhjq2{font-size:16px;}",
     ".cls_4c01gd6{line-height:1.5;}",
     ".cls_10v3vx6{color:rgb(60,60,60);}",
   ],
@@ -34,8 +34,10 @@ exports[`create: supports pseudo-classes 1`] = `
 
 exports[`create: supports pseudo-elements 1`] = `
 {
-  "class": "pseudoElement_undefined",
-  "stylesheet": [],
+  "class": "pseudoElement_1d6rvdr cls_2t8r8cp",
+  "stylesheet": [
+    ".cls_2t8r8cp{&::placeholder{color:#999;}}",
+  ],
 }
 `;
 
@@ -83,7 +85,17 @@ exports[`host: simple 1`] = `
 {
   "stylesheet": [
     ":host{color:var(--blue-link);}",
-    ":host(.cloud){color:paleturquoise;}",
+    ":host{border:1px solid black;}",
+  ],
+}
+`;
+
+exports[`host: nested host stles 1`] = `
+{
+  "stylesheet": [
+    ":host{@media screen and (width >= 900px){color:var(--red-link);}}",
+    ":host{color:var(--blue-link);}",
+    ":host(:state(open)){[p-target="part"]{color:var(--green-link);}}",
     ":host{border:1px solid black;}",
   ],
 }
@@ -118,12 +130,13 @@ exports[`join 1`] = `
 }
 `;
 
-exports[`createMediaQueries 1`] = `
+exports[`createParts 1`] = `
 {
-  "dark": "@media (prefers-color-scheme: dark)",
-  "desktop": "@screen and (min-width: 1024px)",
-  "light": "@media (prefers-color-scheme: light)",
-  "mobile": "@screen and (max-width: 767px)",
-  "tv": "@screen and (min-width: 1920px)",
+  "part": {
+    "stylesheet": [
+      ":host{[part="part"]{font-size:var(--variable-2);}}",
+      ":host{[part="part"]{@media (min-width: 1540px){font-size:var(--variable-1);}}}",
+    ],
+  },
 }
 `;

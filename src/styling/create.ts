@@ -26,7 +26,7 @@ const formatClasses = ({
   selectors = [],
 }: {
   map: Map<string, string>
-  value: NestedStatements<typeof prop> | CSSProperties[typeof prop]
+  value: NestedStatements | CSSProperties[keyof CSSProperties]
   prop: string
   selectors?: string[]
 }) => {
@@ -37,6 +37,7 @@ const formatClasses = ({
     if (!selectors.length) return map.set(key, `${selector}{${rule}}`)
     return formatNestedRule({ key, selector, map, rule, selectors })
   }
+  if (value === undefined) return
   const arr = Object.entries(value)
   const length = arr.length
   for (let i = 0; i < length; i++) {
@@ -49,16 +50,19 @@ const formatClasses = ({
   }
 }
 
-export const create = <T extends CreateParams>(classNames: T) =>
-  Object.entries(classNames).reduce((acc, [cls, props]) => {
-    const map = new Map<string, string>()
-    for (const prop in props) formatClasses({ map, prop, value: props[prop] })
-    const classes = [...map.keys()]
-    const hash = createHash(...classes)
-    const id = cls + hash
-    acc[cls as keyof T] = {
-      class: [id, ...classes].join(' '),
-      stylesheet: [...map.values()],
-    }
-    return acc
-  }, {} as CSSClasses<T>)
+export const create = (classNames: CreateParams) =>
+  Object.entries(classNames).reduce(
+    (acc, [cls, props]) => {
+      const map = new Map<string, string>()
+      for (const [prop, value] of Object.entries(props)) formatClasses({ map, prop, value })
+      const classes = [...map.keys()]
+      const hash = createHash(...classes)
+      const id = cls + hash
+      acc[cls as keyof typeof classNames] = {
+        class: [id, ...classes].join(' '),
+        stylesheet: [...map.values()],
+      }
+      return acc
+    },
+    {} as CSSClasses<typeof classNames>,
+  )

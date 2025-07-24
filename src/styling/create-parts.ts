@@ -1,5 +1,5 @@
 import { CSS_RESERVED_KEYS } from './styling.constants'
-import type { CreateHostParams, StylesObjectWithoutClass, NestedStatements, CSSProperties } from './styling.types.js'
+import type { CSSParts, CSSProperties, CreatePartsParams, NestedPartStatements } from './styling.types.js'
 import { isPrimitive, getRule } from './styling.utils.js'
 
 const formatNestedStatements = ({
@@ -11,12 +11,13 @@ const formatNestedStatements = ({
 }: {
   set: Set<string>
   prop: string
-  value: CSSProperties[keyof CSSProperties] | NestedStatements
+  value: CSSProperties[keyof CSSProperties] | NestedPartStatements
   selectors?: string[]
   host: string
 }) => {
   if (isPrimitive(value)) {
-    const arr = selectors.map((str) => `${str}{`)
+    const regex = /^(@|\[part=)/
+    const arr = selectors.map((str) => (regex.test(str) ? `${str}{` : `&${str}{`))
     set.add(`${host}{${arr.join('')}${getRule(prop, value)}${'}'.repeat(arr.length)}}`)
     return
   }
@@ -42,14 +43,15 @@ const formatNestedStatements = ({
   }
 }
 
-export const createHost = (props: CreateHostParams): StylesObjectWithoutClass => {
-  const set = new Set<string>()
+const formatParts = ({ props, part, set }: { props: CreatePartsParams[string]; set: Set<string>; part: string }) => {
+  const selectors = [`[part="${part}"]`]
   for (const [prop, value] of Object.entries(props)) {
     if (isPrimitive(value)) {
       formatNestedStatements({
         set,
         prop,
         value,
+        selectors,
         host: ':host',
       })
       continue
@@ -60,6 +62,7 @@ export const createHost = (props: CreateHostParams): StylesObjectWithoutClass =>
       set,
       prop,
       value: rest,
+      selectors,
       host: ':host',
     })
 
@@ -69,12 +72,26 @@ export const createHost = (props: CreateHostParams): StylesObjectWithoutClass =>
           set,
           prop,
           value,
+          selectors,
           host: `:host(${slector})`,
         })
       }
     }
   }
-  return {
-    stylesheet: [...set],
+}
+
+export const createParts = (parts: CreatePartsParams): CSSParts<typeof parts> => {
+  const stylesheets: CSSParts<typeof parts> = {}
+  for (const [part, props] of Object.entries(parts)) {
+    const set = new Set<string>()
+    formatParts({
+      set,
+      part,
+      props,
+    })
+    stylesheets[part] = {
+      stylesheet: [...set],
+    }
   }
+  return stylesheets
 }
