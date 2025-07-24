@@ -1,5 +1,5 @@
 import type { CSSKeyFrames, StyleFunctionKeyframe } from './styling.types.js'
-import { createHash, getProp } from './styling.utils.js'
+import { createHash, getRule } from './styling.utils.js'
 
 export const createKeyframes = (ident: string, frames: CSSKeyFrames): StyleFunctionKeyframe => {
   const arr: string[] = []
@@ -7,7 +7,7 @@ export const createKeyframes = (ident: string, frames: CSSKeyFrames): StyleFunct
     const props = frames[value as keyof typeof frames]
     const step = []
     for (const prop in props) {
-      step.push(getProp(prop, props[prop]))
+      step.push(getRule(prop, props[prop]))
     }
     arr.push(`${value}{${step.join('')}}`)
   }

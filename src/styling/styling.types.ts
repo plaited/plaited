@@ -80,9 +80,21 @@ export type CSSClasses<T extends CreateParams> = {
  * @template T The specific CSS property key.
  * @internal
  */
-type CreateHostCSSWithSelector<T extends keyof CSSProperties> = {
-  [CSS_RESERVED_KEYS.$default]?: CSSProperties[T] | NestedStatements<T> | string
-  [CSS_RESERVED_KEYS.$compoundSelectors]: CreateParams
+export type NestedHostStatements<T extends keyof CSSProperties> = {
+  [CSS_RESERVED_KEYS.$default]?: CSSProperties[T]
+  [CSS_RESERVED_KEYS.$parts]?: {
+    [key: string]: CSSProperties[T]
+  }
+  [CSS_RESERVED_KEYS.$compoundSelectors]?: {
+    [key: string]:
+      | CSSProperties[T]
+      | {
+          [CSS_RESERVED_KEYS.$default]?: CSSProperties[T]
+          [CSS_RESERVED_KEYS.$parts]?: {
+            [key: string]: CSSProperties[T]
+          }
+        }
+  }
 }
 /**
  * Type for CSS properties applied to a component's host element (relevant in Shadow DOM).
@@ -99,7 +111,7 @@ type CreateHostCSSWithSelector<T extends keyof CSSProperties> = {
  */
 
 export type CreateHostParams = {
-  [key in keyof CSSProperties]: CSSProperties[key] | CreateHostCSSWithSelector<key>
+  [key in keyof CSSProperties]: CSSProperties[key] | NestedHostStatements<key>
 }
 
 /**

@@ -1,6 +1,23 @@
 import { CSS_RESERVED_KEYS } from './styling.constants.js'
 import type { CreateParams, CSSClasses, NestedStatements, CSSProperties } from './styling.types.js'
-import { createHash, isPrimitive, formatNestedRule, getProp } from './styling.utils'
+import { createHash, isPrimitive, getRule } from './styling.utils'
+
+const formatNestedRule = ({
+  selector,
+  key,
+  map,
+  rule,
+  selectors,
+}: {
+  selector: string
+  key: string
+  map: Map<string, string>
+  rule: string
+  selectors: string[]
+}) => {
+  const arr = selectors.map((str) => (str.startsWith('@') ? `${str}{` : `&${str}{`))
+  return map.set(key, `${selector}{${arr.join('')}${rule}${'}'.repeat(arr.length)}}`)
+}
 
 const formatClasses = ({
   map,
@@ -16,7 +33,7 @@ const formatClasses = ({
   if (isPrimitive(value)) {
     const key = `cls${createHash(prop, value, ...selectors)}`
     const selector = `.${key}`
-    const rule = getProp(prop, value)
+    const rule = getRule(prop, value)
     if (!selectors.length) return map.set(key, `${selector}{${rule}}`)
     return formatNestedRule({ key, selector, map, rule, selectors })
   }
