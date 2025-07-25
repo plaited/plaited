@@ -81,22 +81,163 @@ exports[`create: works with JSX via spread operator 1`] = `
 }
 `;
 
-exports[`host: simple 1`] = `
+exports[`createHost: supports simple rules 1`] = `
 {
   "stylesheet": [
-    ":host{color:var(--blue-link);}",
-    ":host{border:1px solid black;}",
+    ":host{font-size:16px;}",
+    ":host{line-height:1.5;}",
+    ":host{color:rgb(60,60,60);}",
   ],
 }
 `;
 
-exports[`host: nested host stles 1`] = `
+exports[`createHost: supports custom props 1`] = `
 {
   "stylesheet": [
-    ":host{@media screen and (width >= 900px){color:var(--red-link);}}",
+    ":host{--customColor:red;}",
+    ":host{--custom-color:red;}",
+  ],
+}
+`;
+
+exports[`createHost: supports pseudo-classes 1`] = `
+{
+  "stylesheet": [
+    ":host{background-color:lightblue;}",
+    ":host{:hover{background-color:blue;}}",
+    ":host{:active{background-color:darkblue;}}",
+  ],
+}
+`;
+
+exports[`createHost: supports pseudo-elements 1`] = `
+{
+  "stylesheet": [
+    ":host{::placeholder{color:#999;}}",
+  ],
+}
+`;
+
+exports[`createHost: supports media query 1`] = `
+{
+  "stylesheet": [
+    ":host{width:800;}",
+    ":host{@media (max-width: 800px){width:100%;}}",
+    ":host{@media (min-width: 1540px){width:1366;}}",
+  ],
+}
+`;
+
+exports[`createHost: supports complex rules 1`] = `
+{
+  "stylesheet": [
     ":host{color:var(--blue-link);}",
-    ":host(:state(open)){[p-target="part"]{color:var(--green-link);}}",
-    ":host{border:1px solid black;}",
+    ":host(:hover){@media (hover: hover){color:scale(1.1);}}",
+    ":host(:active){color:scale(0.9);}",
+  ],
+}
+`;
+
+exports[`createHost: works with JSX via spread operator 1`] = `
+{
+  "$": "🦄",
+  "html": [
+    "<button ",
+    ">",
+    "</button>",
+  ],
+  "registry": [],
+  "stylesheets": [
+    ":host($default){color:var(--blue-link);}",
+    ":host(:hover){@media (hover: hover){color:scale(1.1);}}",
+    ":host(:active){color:scale(0.9);}",
+  ],
+}
+`;
+
+exports[`createParts: supports simple rules 1`] = `
+{
+  "stylesheet": [
+    ":host{[part="button"]{font-size:var(--fontSize);}}",
+    ":host{[part="button"]{line-height:var(--lineHeight);}}",
+    ":host{[part="button"]{color:var(--color);}}",
+  ],
+}
+`;
+
+exports[`createParts: supports custom props 1`] = `
+{
+  "stylesheet": [
+    ":host{[part="button"]{--customColor:var(--red);}}",
+    ":host{[part="button"]{--custom-color:var(--red);}}",
+  ],
+}
+`;
+
+exports[`createParts: supports pseudo-classes 1`] = `
+{
+  "stylesheet": [
+    ":host{[part="button"]{background-color:var(--lightblue);}}",
+    ":host(:hover){[part="button"]{background-color:var(--blue);}}",
+    ":host(:active){[part="button"]{background-color:var(--darkblue);}}",
+  ],
+}
+`;
+
+exports[`createParts: works with JSX via spread operator 1`] = `
+{
+  "$": "🦄",
+  "html": [
+    "<button ",
+    ">",
+    "</button>",
+  ],
+  "registry": [],
+  "stylesheets": [
+    ":host{[part="button"]{background-color:var(--lightblue);}}",
+    ":host(:hover){[part="button"]{background-color:var(--blue);}}",
+    ":host(:active){[part="button"]{background-color:var(--darkblue);}}",
+  ],
+}
+`;
+
+exports[`createParts: supports pseudo-elements 1`] = `
+{
+  "stylesheet": [
+    ":host{[part="button"]{&::placeholder{color:var(--placeholder);}}}",
+  ],
+}
+`;
+
+exports[`createParts: supports media query 1`] = `
+{
+  "stylesheet": [
+    ":host{[part="content"]{width:var(--default-width);}}",
+    ":host{[part="content"]{@media (max-width: 800px){width:var(--max-800);}}}",
+    ":host{[part="content"]{@media (min-width: 1540px){width:var(--max-1540);}}}",
+  ],
+}
+`;
+
+exports[`createParts: supports complex rules 1`] = `
+{
+  "stylesheet": [
+    ":host{[part="button"]{color:var(--blue-link);}}",
+    ":host(:hover){[part="button"]{@media (hover: hover){color:var(--hover);}}}",
+    ":host(:active){[part="button"]{color:var(--active);}}",
+  ],
+}
+`;
+
+exports[`createParts: supports multiple parts 1`] = `
+{
+  "stylesheet": [
+    ":host{[part="button"]{font-size:var(--button-fontSize);}}",
+    ":host{[part="button"]{padding:var(--button-padding);}}",
+    ":host{[part="label"]{font-size:var(--label-fontSize);}}",
+    ":host{[part="label"]{color:var(--label-color);}}",
+    ":host{[part="icon"]{width:var(--icon-width);}}",
+    ":host{[part="icon"]{height:var(--icon-height);}}",
   ],
 }
 `;
@@ -127,16 +268,5 @@ exports[`join 1`] = `
     ".cls_17cdq7g{padding:10px 16px;}",
     ":host{color:red;}",
   ],
-}
-`;
-
-exports[`createParts 1`] = `
-{
-  "part": {
-    "stylesheet": [
-      ":host{[part="part"]{font-size:var(--variable-2);}}",
-      ":host{[part="part"]{@media (min-width: 1540px){font-size:var(--variable-1);}}}",
-    ],
-  },
 }
 `;

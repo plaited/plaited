@@ -1,5 +1,10 @@
 import { CSS_RESERVED_KEYS } from './styling.constants'
-import type { CSSParts, CSSProperties, CreatePartsParams, NestedPartStatements } from './styling.types.js'
+import type {
+  StylesObjectWithoutClass,
+  CSSProperties,
+  CreatePartsParams,
+  NestedPartStatements,
+} from './styling.types.js'
 import { isPrimitive, getRule } from './styling.utils.js'
 
 const formatNestedStatements = ({
@@ -80,18 +85,16 @@ const formatParts = ({ props, part, set }: { props: CreatePartsParams[string]; s
   }
 }
 
-export const createParts = (parts: CreatePartsParams): CSSParts<typeof parts> => {
-  const stylesheets: CSSParts<typeof parts> = {}
+export const createParts = (parts: CreatePartsParams): StylesObjectWithoutClass => {
+  const set = new Set<string>()
   for (const [part, props] of Object.entries(parts)) {
-    const set = new Set<string>()
     formatParts({
       set,
       part,
       props,
     })
-    stylesheets[part] = {
-      stylesheet: [...set],
-    }
   }
-  return stylesheets
+  return {
+    stylesheet: [...set],
+  }
 }
