@@ -674,7 +674,7 @@ Essential types used throughout the Plaited framework.
 - **`BoundElement<T extends Element = Element>`**: An `Element` augmented with `Bindings`.
 - **`SelectorMatch`**: Attribute selector match types (`'=' | '~=' | '|=' | '^=' | '$=' | '*='`).
 
-#### Event and Data Types  
+#### Event and Data Types
 - **`JSONDetail`**: Types allowed in message detail payloads (JSON-serializable primitives, objects, arrays) if custom messaging solutions are built on top of Plaited event systems (e.g. `BPEvent`).
 - **`ObservedAttributesDetail`**: Event detail for attribute change observations.
 
@@ -704,7 +704,7 @@ The main `plaited` module directly exports these behavioral utilities:
 
 - **`bWorker(config)`** - Creates behavioral programs in Web Workers
 - **`useSignal(initialValue?)`** - Creates reactive state signals
-- **`useComputed(computeFn, dependencies)`** - Creates computed signals from dependencies  
+- **`useComputed(computeFn, dependencies)`** - Creates computed signals from dependencies
 - **`useWorker(trigger, path)`** - Bridges worker communication with behavioral programs
 
 See the [Behavioral Module (`plaited/behavioral`)](#behavioral-module-plaitedbehavioral) section for detailed documentation of these functions.
@@ -804,7 +804,7 @@ The workshop module includes a comprehensive design token system:
 - **`AmountToken`**: Numeric or percentage values
 - **`AngleToken`**: CSS angle measurements
 - **`ColorToken`**: Color definitions
-- **`SizeToken`**: Dimensional measurements  
+- **`SizeToken`**: Dimensional measurements
 - **`FunctionToken`**: CSS function values
 - **`CompositeToken`**: Composite values with multiple properties
 
@@ -902,7 +902,7 @@ export const Interactive: StoryObj<MyComponentArgs> = {
   play: async ({ assert, findByAttribute, fireEvent }) => {
     const button = await findByAttribute('p-target', 'submit-btn')
     await fireEvent(button!, 'click')
-    
+
     assert({
       given: 'user clicks submit button',
       should: 'update the title',

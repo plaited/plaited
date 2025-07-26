@@ -1,4 +1,4 @@
-import type { CSSProperties } from './css.types.js'
+import type { CSSProperties } from '../css/css.types.js'
 import { P_TARGET, P_TRIGGER, TEMPLATE_OBJECT_IDENTIFIER } from './jsx.constants.js'
 
 type Booleanish = boolean | 'true' | 'false'
@@ -40,11 +40,12 @@ export type Children = Child[] | Child
  * @property style - Accepts a `CSSProperties` object (similar to React) for inline styles.
  */
 export type PlaitedAttributes = {
-  class?: string | string[]
+  class?: string
   children?: Children
   [P_TARGET]?: string | number
   [P_TRIGGER]?: Record<string, string>
   stylesheet?: string | string[]
+  className?: string[]
   /** setting trusted to true will disable all escaping security policy measures for this element template */
   trusted?: boolean
   style?: CSSProperties

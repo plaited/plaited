@@ -1,12 +1,17 @@
-import type { CSSKeyFrames, StyleFunctionKeyframe } from './styling.types.js'
-import { createHash, getRule } from './styling.utils.js'
+import type { CSSKeyFrames, StyleFunctionKeyframe } from './css.types.js'
+import { createHash, getRule, isPrimitive } from './css.utils.js'
 
 export const createKeyframes = (ident: string, frames: CSSKeyFrames): StyleFunctionKeyframe => {
   const arr: string[] = []
   for (const [value, props] of Object.entries(frames)) {
     const step = []
     for (const [prop, val] of Object.entries(props)) {
-      step.push(getRule(prop, val))
+      if (isPrimitive(val)) {
+        step.push(getRule(prop, val))
+        continue
+      }
+      arr.push(val.stylesheet)
+      step.push(getRule(prop, val.variable))
     }
     arr.push(`${value}{${step.join('')}}`)
   }

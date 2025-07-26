@@ -1,4 +1,6 @@
-import { bElement, css } from 'plaited'
+import { bElement } from 'plaited'
+import * as css from 'plaited/css'
+
 import { isTypeOf } from 'plaited/utils'
 
 const styles = css.create({
@@ -10,20 +12,14 @@ const styles = css.create({
   },
 })
 
-createMise('--fill', {
-  $default: 'lightblue',
-  $states: {
-    checked: 'blue',
-    disabled:
-  }
-})
-
-const hostStyles = css.host({
+const hostStyles = css.createHost({
   display: 'inline-grid',
   '--fill': {
     $default: 'lightblue',
-    ':state(checked)': 'blue',
-    ':state(disabled)': 'grey',
+    $compoundSelectors: {
+      ':state(checked)': 'blue',
+      ':state(disabled)': 'grey',
+    },
   },
 })
 

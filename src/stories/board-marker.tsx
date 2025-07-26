@@ -1,4 +1,5 @@
-import { type FT, css } from 'plaited'
+import { type FT } from 'plaited'
+import * as css from 'plaited/css'
 
 const styles = css.create({
   board: {
@@ -31,11 +32,11 @@ export const BoardMarker: FT = () => (
   <div
     role='group'
     aria-label='board'
-    {...styles.board()}
+    {...styles.board}
   >
     {Array.from(Array(9).keys()).map((n) => (
       <button
-        {...styles.square()}
+        {...styles.square}
         value={n}
         p-trigger={{ click: 'click' }}
         p-target={`${n}`}

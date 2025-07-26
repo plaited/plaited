@@ -1,11 +1,11 @@
 import {
   bElement,
-  css,
   useAttributesObserver,
   type ObservedAttributesDetail,
   type FT,
   type ElementAttributeList,
 } from 'plaited'
+import * as css from 'plaited/css'
 import { isTypeOf } from 'plaited/utils'
 
 const styles = css.create({
@@ -29,13 +29,15 @@ const styles = css.create({
   },
 })
 
-const hostStyles = css.host({
+const hostStyles = css.createHost({
   display: 'inline-grid',
   gridTemplate: '"input" 16px / 16px',
   '--fill': {
     $default: 'lightblue',
-    ':state(checked)': 'blue',
-    ':state(disabled)': 'grey',
+    $compoundSelectors: {
+      ':state(checked)': 'blue',
+      ':state(disabled)': 'grey',
+    },
   },
 })
 
@@ -84,7 +86,7 @@ export const DecoratedCheckbox: FT<ElementAttributeList['input']> = (props) => {
     <DecorateCheckbox>
       <input
         {...props}
-        {...styles.input()}
+        {...styles.input}
         type='checkbox'
       />
     </DecorateCheckbox>

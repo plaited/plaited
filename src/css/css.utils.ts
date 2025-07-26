@@ -1,4 +1,6 @@
 import { kebabCase, hashString } from '../utils.js'
+import type { CustomPropertyObject } from './css.types.js'
+import { CUSTOM_PROPERTY_OBJECT_IDENTIFIER } from './css.constants.js'
 /**
  * @internal
  * Helper function to create a deterministic hash for class names based on style properties and selectors.
@@ -31,3 +33,6 @@ export const isPrimitive = (val: string | number | unknown): val is string | num
 export const caseProp = (prop: string) => (prop.startsWith('--') ? prop : kebabCase(prop))
 
 export const getRule = (prop: string, value: string | number) => `${caseProp(prop)}:${value};`
+
+export const isCustomPropertyObject = (prop?: Record<string, unknown>): prop is CustomPropertyObject =>
+  prop?.$ === CUSTOM_PROPERTY_OBJECT_IDENTIFIER

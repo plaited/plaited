@@ -9,7 +9,7 @@ const HydratingElement = bElement({
     <>
       <div
         p-target='inner'
-        {...styles.before()}
+        {...styles.before}
       >
         {BEFORE_HYDRATION}
       </div>
@@ -21,7 +21,7 @@ const HydratingElement = bElement({
         const [inner] = $('inner')
         inner.replace(
           <span
-            {...styles.after()}
+            {...styles.after}
             p-target='inner'
           >
             {AFTER_HYDRATION}

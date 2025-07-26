@@ -1,5 +1,6 @@
 import { test, expect } from 'bun:test'
-import { type TemplateObject, bElement, css } from 'plaited'
+import { type TemplateObject, bElement } from 'plaited'
+import * as css from 'plaited/css'
 import beautify from 'beautify'
 
 const render = (tpl: TemplateObject) => beautify(tpl.html.join(''), { format: 'html' })
@@ -28,7 +29,7 @@ const NestedCustomElement = bElement({
   tag: 'nested-component',
   shadowDom: (
     <>
-      <span {...styles.nestedLabel()}>inside nested template</span>
+      <span {...styles.nestedLabel}>inside nested template</span>
       <slot name='nested' />
     </>
   ),
@@ -43,7 +44,7 @@ test('createTemplate: CustomElement hoisting its styles', () => {
 })
 
 test('createTemplate: CustomElement with declarative shadow dom & hoist styles', () => {
-  const el = <NestedCustomElement {...styles.nestedComponent()} />
+  const el = <NestedCustomElement {...styles.nestedComponent} />
   expect({
     content: render(el),
     stylesheets: el.stylesheets,
@@ -52,7 +53,7 @@ test('createTemplate: CustomElement with declarative shadow dom & hoist styles',
 
 test('createTemplate: CustomElement with styled slotted component', () => {
   const el = (
-    <NestedCustomElement {...styles.slottedParagraph()}>
+    <NestedCustomElement {...styles.slottedParagraph}>
       <p slot='nested'>slotted paragraph</p>
     </NestedCustomElement>
   )
@@ -62,7 +63,7 @@ test('createTemplate: CustomElement with styled slotted component', () => {
 const TopCustomElement = bElement({
   tag: 'top-component',
   shadowDom: (
-    <NestedCustomElement {...styles.slottedParagraph()}>
+    <NestedCustomElement {...styles.slottedParagraph}>
       <p slot='nested'>slotted paragraph</p>
     </NestedCustomElement>
   ),
@@ -74,7 +75,7 @@ test('createTemplate: CustomElement with declarative shadow dom and nested decla
 })
 
 test('createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles', () => {
-  const el = <TopCustomElement {...styles.topComponent()} />
+  const el = <TopCustomElement {...styles.topComponent} />
   expect({
     content: render(el),
     stylesheets: el.stylesheets,
@@ -83,8 +84,8 @@ test('createTemplate: CustomElement with declarative shadow dom and nested decla
 
 test('createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles and child', () => {
   const el = (
-    <TopCustomElement {...styles.topComponent()}>
-      <img {...styles.image()} />
+    <TopCustomElement {...styles.topComponent}>
+      <img {...styles.image} />
     </TopCustomElement>
   )
   expect({ content: render(el), stylesheets: el.stylesheets }).toMatchSnapshot()

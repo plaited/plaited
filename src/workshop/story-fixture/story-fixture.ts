@@ -11,7 +11,8 @@ declare global {
 }
 
 import type { SnapshotMessage } from '../../behavioral.js'
-import { css, bElement, h } from '../../main.js'
+import { bElement, h } from '../../main.js'
+import * as css from '../../css.js'
 import { wait } from '../../utils.js'
 import { STORY_FIXTURE, DEFAULT_PLAY_TIMEOUT, FIXTURE_EVENTS } from './story-fixture.constants.js'
 import {
@@ -30,7 +31,7 @@ import {
 } from './story-fixture.utils.js'
 import type { InteractionStoryObj, Play, TestFailureEventDetail } from './story-fixture.types.js'
 
-const styles = css.host({
+const styles = css.createHost({
   display: 'contents',
 })
 /**
@@ -55,7 +56,7 @@ export const StoryFixture = bElement<{
   tag: STORY_FIXTURE,
   publicEvents: [FIXTURE_EVENTS.run],
   shadowDom: h('slot', {
-    ...styles(),
+    ...styles,
   }),
   bProgram({ host, trigger, useSnapshot, bThreads, bThread, bSync }) {
     bThreads.set({

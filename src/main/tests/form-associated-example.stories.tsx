@@ -1,6 +1,7 @@
-import { bElement, css } from 'plaited'
+import { bElement } from 'plaited'
 import { isTypeOf } from 'plaited/utils'
 import { type StoryObj } from 'plaited/workshop'
+import * as css from 'plaited/css'
 
 const styles = css.create({
   symbol: {
@@ -11,12 +12,14 @@ const styles = css.create({
   },
 })
 
-const hostStyles = css.host({
+const hostStyles = css.createHost({
   display: 'inline-grid',
   '--fill': {
     $default: 'lightblue',
-    ':state(checked)': 'blue',
-    ':state(disabled)': 'grey',
+    $compoundSelectors: {
+      ':state(checked)': 'blue',
+      ':state(disabled)': 'grey',
+    },
   },
 })
 

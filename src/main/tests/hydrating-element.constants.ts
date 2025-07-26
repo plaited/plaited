@@ -1,4 +1,4 @@
-import { css } from 'plaited'
+import * as css from 'plaited/css'
 
 export const styles = css.create({
   before: {

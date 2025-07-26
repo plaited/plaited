@@ -1,11 +1,12 @@
-import { CSS_RESERVED_KEYS } from './styling.constants'
+import { CSS_RESERVED_KEYS } from './css.constants'
 import type {
-  StylesObjectWithoutClass,
+  CreateHostParams,
+  NestedStatements,
   CSSProperties,
-  CreatePartsParams,
-  NestedPartStatements,
-} from './styling.types.js'
-import { isPrimitive, getRule } from './styling.utils.js'
+  CustomPropertyObject,
+  HostStylesObject,
+} from './css.types.js'
+import { isPrimitive, getRule, isCustomPropertyObject } from './css.utils.js'
 
 const formatNestedStatements = ({
   set,
@@ -16,14 +17,19 @@ const formatNestedStatements = ({
 }: {
   set: Set<string>
   prop: string
-  value: CSSProperties[keyof CSSProperties] | NestedPartStatements
+  value: CSSProperties[keyof CSSProperties] | NestedStatements | CustomPropertyObject
   selectors?: string[]
   host: string
 }) => {
   if (isPrimitive(value)) {
-    const regex = /^(@|\[part=)/
-    const arr = selectors.map((str) => (regex.test(str) ? `${str}{` : `&${str}{`))
+    const arr = selectors.map((str) => `${str}{`)
     set.add(`${host}{${arr.join('')}${getRule(prop, value)}${'}'.repeat(arr.length)}}`)
+    return
+  }
+  if (isCustomPropertyObject(value)) {
+    const arr = selectors.map((str) => `${str}{`)
+    set.add(value.stylesheet)
+    set.add(`${host}{${arr.join('')}${getRule(prop, value.variable)}${'}'.repeat(arr.length)}}`)
     return
   }
   if (value === undefined) return
@@ -48,15 +54,14 @@ const formatNestedStatements = ({
   }
 }
 
-const formatParts = ({ props, part, set }: { props: CreatePartsParams[string]; set: Set<string>; part: string }) => {
-  const selectors = [`[part="${part}"]`]
+export const createHost = (props: CreateHostParams): HostStylesObject => {
+  const set = new Set<string>()
   for (const [prop, value] of Object.entries(props)) {
-    if (isPrimitive(value)) {
+    if (isPrimitive(value) || isCustomPropertyObject(value)) {
       formatNestedStatements({
         set,
         prop,
         value,
-        selectors,
         host: ':host',
       })
       continue
@@ -67,7 +72,6 @@ const formatParts = ({ props, part, set }: { props: CreatePartsParams[string]; s
       set,
       prop,
       value: rest,
-      selectors,
       host: ':host',
     })
 
@@ -77,22 +81,10 @@ const formatParts = ({ props, part, set }: { props: CreatePartsParams[string]; s
           set,
           prop,
           value,
-          selectors,
           host: `:host(${slector})`,
         })
       }
     }
-  }
-}
-
-export const createParts = (parts: CreatePartsParams): StylesObjectWithoutClass => {
-  const set = new Set<string>()
-  for (const [part, props] of Object.entries(parts)) {
-    formatParts({
-      set,
-      part,
-      props,
-    })
   }
   return {
     stylesheet: [...set],

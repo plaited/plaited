@@ -1,5 +1,6 @@
-import { type PlaitedElement, type Position, bElement, useTemplate, css, type FT } from 'plaited'
+import { type PlaitedElement, type Position, bElement, useTemplate, type FT } from 'plaited'
 import type { StoryObj } from 'plaited/workshop'
+import * as css from 'plaited/css'
 
 const styles = css.create({
   root: {
@@ -148,7 +149,7 @@ const Fixture = bElement({
       },
       setStyle() {
         const [root] = $('root')
-        root.replace(<Root {...styles.root()} />)
+        root.replace(<Root {...styles.root} />)
       },
       multiSetAttributes() {
         const dels = $('delete')

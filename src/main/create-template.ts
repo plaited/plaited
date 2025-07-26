@@ -188,7 +188,8 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     stylesheet = [],
     style,
     'p-trigger': bpTrigger,
-    class: className,
+    class: cls,
+    className,
     for: htmlFor,
     ...attributes
   } = attrs
@@ -207,7 +208,9 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const start = [`<${tag} `]
   /** handle JS reserved words commonly used in html class & for*/
   if (htmlFor) start.push(`for="${escape(htmlFor)}" `)
-  if (className) start.push(`class="${escape(Array.isArray(className) ? className.join(' ') : className)}" `)
+  const classes = new Set(className)
+  cls && classes.add(escape(cls))
+  if (classes.size) start.push(`class="${[...classes].join(' ')}" `)
   /** if we have bpTrigger attribute wire up formatted correctly*/
   if (bpTrigger) {
     const value = Object.entries(bpTrigger)
