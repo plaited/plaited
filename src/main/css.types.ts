@@ -1,5 +1,5 @@
 import type * as CSS from './types/css.js'
-import { type CSS_RESERVED_KEYS } from './css.constants.js'
+import { type CSS_RESERVED_KEYS, type CUSTOM_PROPERTY_OBJECT_IDENTIFIER } from './css.constants.js'
 
 /**
  * Represents CSS properties with string or number values.
@@ -142,4 +142,78 @@ export type CSSKeyFrames = {
 export type StyleFunctionKeyframe = {
   (): HostStylesObject
   id: string
+}
+
+/**
+ * Valid CSS data types for @property syntax descriptor
+ * @see https://developer.mozilla.org/en-US/docs/Web/CSS/@property/syntax
+ */
+export type DesignTokenSyntaxDataType =
+  | '<angle>'
+  | '<color>'
+  | '<custom-ident>'
+  | '<image>'
+  | '<integer>'
+  | '<length>'
+  | '<length-percentage>'
+  | '<number>'
+  | '<percentage>'
+  | '<resolution>'
+  | '<string>'
+  | '<time>'
+  | '<transform-function>'
+  | '<transform-list>'
+  | '<url>'
+
+/**
+ * Valid syntax values for CSS @property rule
+ * Supports data types, multipliers (+, #), combinators (|), and custom identifiers
+ */
+export type DesignTokenSyntax =
+  | '*' // Universal syntax
+  | DesignTokenSyntaxDataType
+  | `${DesignTokenSyntaxDataType}+` // Space-separated list
+  | `${DesignTokenSyntaxDataType}#` // Comma-separated list
+  | `${DesignTokenSyntaxDataType} | ${DesignTokenSyntaxDataType}`
+  | `${DesignTokenSyntaxDataType} | ${DesignTokenSyntaxDataType} | ${DesignTokenSyntaxDataType}`
+  | `${DesignTokenSyntaxDataType} | ${string}` // Allow custom identifiers like '<length> | auto'
+  | string // Allow custom identifier combinations like 'small | medium | large'
+
+/**
+ * CSS @property registration aligned with W3C specification
+ * @see https://developer.mozilla.org/en-US/docs/Web/CSS/@property
+ */
+export type DesignTokenRegistration =
+  | {
+      syntax: '*'
+      inherits: boolean
+      initialValue?: string | number
+    }
+  | {
+      syntax: Exclude<DesignTokenSyntax, '*'>
+      inherits: boolean
+      initialValue: string | number // Required when syntax is not '*'
+    }
+
+export type DesignTokenRegistrationGroup = {
+  [key: string]: DesignTokenRegistration | DesignTokenRegistrationGroup
+}
+
+export type DesignTokenRegistrationGroupEntries = Array<
+  [string, DesignTokenRegistration | DesignTokenRegistrationGroup]
+>
+
+export type DesignnTokenObject = {
+  $: typeof CUSTOM_PROPERTY_OBJECT_IDENTIFIER
+  variable: CSSVariable
+  /** A single CSS stylesheet string or an array of stylesheet strings. */
+  stylesheet: string
+}
+
+export type DesignTokenGroup = {
+  [key: string]: DesignnTokenObject | DesignTokenGroup
+}
+
+export type DesignTokens<T extends DesignTokenRegistrationGroup> = {
+  [key in keyof T]: T[key] extends DesignTokenRegistrationGroup ? DesignTokens<T[key]> : DesignnTokenObject
 }
