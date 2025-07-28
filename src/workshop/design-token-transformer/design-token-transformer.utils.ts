@@ -4,13 +4,13 @@ import { trueTypeOf } from '../../utils/true-type-of.js'
 import { kebabCase, camelCase } from '../../utils/case.js'
 
 /**
- * Combines duplicate CSS rules (like :host selectors) into a single rule block.
+ * Combines duplicate CSS rules (like :root selectors) into a single rule block.
  * @param css The raw CSS string potentially containing duplicate selectors.
  * @returns A CSS string with combined rules.
  * @internal
  */
 export const combineCSSRules = (css: string) => {
-  const regex = /((?:.*:host|:host\([^)]*\))[^{\n]*)\{(\s*[\s\S]*?\s*)\}/gm
+  const regex = /((?:.*:root|:root\([^)]*\))[^{\n]*)\{(\s*[\s\S]*?\s*)\}/gm
   const map = new Map<string, Set<string>>()
   let match: RegExpExecArray | null
   while ((match = regex.exec(css)) !== null) {
@@ -136,11 +136,11 @@ export const valueIsAlias = (value: unknown): value is Alias => {
  * Formats a non-media query CSS rule for a design token.
  * @param cssVar The full CSS custom property name (e.g., "--pl-color-primary").
  * @param value The CSS value for the property.
- * @returns A formatted CSS rule string targeting :host.
+ * @returns A formatted CSS rule string targeting :root.
  * @internal
  */
 export const formatNonMediaRule = (cssVar: string, value: string | number) =>
-  [`:host{`, `${cssVar}:${value};`, '}'].join('\n')
+  [`:root{`, `${cssVar}:${value};`, '}'].join('\n')
 
 /** Constant identifier for the light color scheme media query key. @internal */
 export const LIGHT_ID = '@light' as const
@@ -179,10 +179,10 @@ export const formatMediaRule = ({
   value: string | number
 }) =>
   [
-    `@media ${query}{:host{`,
+    `@media ${query}{:root{`,
     `${cssVar}:${value};`,
     '}}',
-    `:host([${id === LIGHT_ID || id === DARK_ID ? `${DATA_COLOR_SCHEME}="${id}"` : `${DATA_MEDIA_QUERY}="${id}"`}]){`,
+    `:root([${id === LIGHT_ID || id === DARK_ID ? `${DATA_COLOR_SCHEME}="${id}"` : `${DATA_MEDIA_QUERY}="${id}"`}]){`,
     `${cssVar}:${value};`,
     '}',
   ].join('\n')

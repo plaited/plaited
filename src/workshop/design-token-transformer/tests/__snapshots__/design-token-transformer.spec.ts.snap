@@ -1,7 +1,7 @@
 // Bun Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`Single Token in group 1`] = `
-":host {
+":root {
   --pl-single: 45deg;
 }
 "
@@ -17,7 +17,7 @@ export const single = "var(--pl-single)" as const
 `;
 
 exports[`Nested token group (2 levels) 1`] = `
-":host {
+":root {
   --pl-one-two: 20%;
 }
 "
@@ -33,7 +33,7 @@ export const oneTwo = "var(--pl-one-two)" as const
 `;
 
 exports[`Color hex 1`] = `
-":host {
+":root {
   --pl-colors-white-1: #fff;
 }
 "
@@ -49,31 +49,31 @@ export const colorsWhite1 = "var(--pl-colors-white-1)" as const
 `;
 
 exports[`mediaQueries: screen 1`] = `
-":host {
+":root {
   --pl-size-100: 2rem;
 }
 @media screen and (max-width: 767px) {
-  :host {
+  :root {
     --pl-size-100: 2rem;
   }
 }
-:host([data-media-query="@mobile"]) {
+:root([data-media-query="@mobile"]) {
   --pl-size-100: 2rem;
 }
 @media screen and (min-width: 1024px) {
-  :host {
+  :root {
     --pl-size-100: 3rem;
   }
 }
-:host([data-media-query="@desktop"]) {
+:root([data-media-query="@desktop"]) {
   --pl-size-100: 3rem;
 }
 @media screen and (min-width: 1920px) {
-  :host {
+  :root {
     --pl-size-100: 4rem;
   }
 }
-:host([data-media-query="@tv"]) {
+:root([data-media-query="@tv"]) {
   --pl-size-100: 4rem;
 }
 "
@@ -93,23 +93,23 @@ export const size100 = "var(--pl-size-100)" as const
 `;
 
 exports[`mediaQueries:m colorScheme 1`] = `
-":host {
+":root {
   --pl-gray: oklch(100% 0 0 / 0.5);
 }
 @media (prefers-color-scheme: light) {
-  :host {
+  :root {
     --pl-gray: oklch(100% 0 0 / 0.5);
   }
 }
-:host([data-color-scheme="@light"]) {
+:root([data-color-scheme="@light"]) {
   --pl-gray: oklch(100% 0 0 / 0.5);
 }
 @media (prefers-color-scheme: dark) {
-  :host {
+  :root {
     --pl-gray: oklch(0% 0 0 / 0.5);
   }
 }
-:host([data-color-scheme="@dark"]) {
+:root([data-color-scheme="@dark"]) {
   --pl-gray: oklch(0% 0 0 / 0.5);
 }
 "
@@ -138,48 +138,48 @@ export const gray = "var(--pl-gray)" as const
 `;
 
 exports[`mediaQueries 1`] = `
-":host {
+":root {
   --pl-size-dynamic-100: 2rem;
   --pl-colors-background-primary: oklch(0% 0 0 / 0.5);
 }
 @media screen and (max-width: 767px) {
-  :host {
+  :root {
     --pl-size-dynamic-100: 2rem;
   }
 }
-:host([data-media-query="@mobile"]) {
+:root([data-media-query="@mobile"]) {
   --pl-size-dynamic-100: 2rem;
 }
 @media screen and (min-width: 1024px) {
-  :host {
+  :root {
     --pl-size-dynamic-100: 3rem;
   }
 }
-:host([data-media-query="@desktop"]) {
+:root([data-media-query="@desktop"]) {
   --pl-size-dynamic-100: 3rem;
 }
 @media screen and (min-width: 1920px) {
-  :host {
+  :root {
     --pl-size-dynamic-100: 4rem;
   }
 }
-:host([data-media-query="@tv"]) {
+:root([data-media-query="@tv"]) {
   --pl-size-dynamic-100: 4rem;
 }
 @media (prefers-color-scheme: light) {
-  :host {
+  :root {
     --pl-colors-background-primary: oklch(100% 0 0 / 0.5);
   }
 }
-:host([data-color-scheme="@light"]) {
+:root([data-color-scheme="@light"]) {
   --pl-colors-background-primary: oklch(100% 0 0 / 0.5);
 }
 @media (prefers-color-scheme: dark) {
-  :host {
+  :root {
     --pl-colors-background-primary: oklch(0% 0 0 / 0.5);
   }
 }
-:host([data-color-scheme="@dark"]) {
+:root([data-color-scheme="@dark"]) {
   --pl-colors-background-primary: oklch(0% 0 0 / 0.5);
 }
 "
@@ -217,7 +217,7 @@ export const colorsBackgroundPrimary = "var(--pl-colors-background-primary)" as 
 `;
 
 exports[`alias 1`] = `
-":host {
+":root {
   --pl-colors-gray-100: oklch(98.21% 0 0 / none);
   --pl-surface-secondary-100: var(--pl-colors-gray-100);
 }
@@ -247,25 +247,25 @@ export const surfaceSecondary100 = colorsGray100
 `;
 
 exports[`alias + mediaQueries 1`] = `
-":host {
+":root {
   --pl-colors-white-100: #fff;
   --pl-colors-charcoal-100: oklch(18.31% 0.004 285.99 / none);
   --pl-surface-secondary-100: var(--pl-colors-white-100);
 }
 @media (prefers-color-scheme: light) {
-  :host {
+  :root {
     --pl-surface-secondary-100: var(--pl-colors-white-100);
   }
 }
-:host([data-color-scheme="@light"]) {
+:root([data-color-scheme="@light"]) {
   --pl-surface-secondary-100: var(--pl-colors-white-100);
 }
 @media (prefers-color-scheme: dark) {
-  :host {
+  :root {
     --pl-surface-secondary-100: var(--pl-colors-charcoal-100);
   }
 }
-:host([data-color-scheme="@dark"]) {
+:root([data-color-scheme="@dark"]) {
   --pl-surface-secondary-100: var(--pl-colors-charcoal-100);
 }
 "
@@ -298,7 +298,7 @@ export const surfaceSecondary100 = "var(--pl-surface-secondary-100)" as const
 `;
 
 exports[`function tokens 1`] = `
-":host {
+":root {
   --pl-gradient-color-1: oklch(0% 0 0 / 0.5);
   --pl-gradient-stop-1: var(--pl-gradient-color-1) 20%;
   --pl-gradient-color-2: oklch(100% 0 0 / 0.5);
@@ -378,7 +378,7 @@ exports[`query methods: single gradient token 1`] = `
     "function": "linear-gradient",
   },
   "css": 
-":host{
+":root{
 --pl-gradient-primary:linear-gradient(45deg, var(--pl-gradient-stop-1), var(--pl-gradient-stop-2));
 }"
 ,
@@ -420,7 +420,7 @@ exports[`query methods: color token only 1`] = `
         "l": "0%",
       },
       "css": 
-":host{
+":root{
 --pl-gradient-color-1:oklch(0% 0 0 / 0.5);
 }"
 ,
@@ -456,7 +456,7 @@ export const gradientColor1 = "var(--pl-gradient-color-1)" as const"
         "l": "100%",
       },
       "css": 
-":host{
+":root{
 --pl-gradient-color-2:oklch(100% 0 0 / 0.5);
 }"
 ,
@@ -497,7 +497,7 @@ exports[`query methods: all tokens 1`] = `
         "l": "0%",
       },
       "css": 
-":host{
+":root{
 --pl-gradient-color-1:oklch(0% 0 0 / 0.5);
 }"
 ,
@@ -533,7 +533,7 @@ export const gradientColor1 = "var(--pl-gradient-color-1)" as const"
         "l": "100%",
       },
       "css": 
-":host{
+":root{
 --pl-gradient-color-2:oklch(100% 0 0 / 0.5);
 }"
 ,
@@ -566,7 +566,7 @@ export const gradientColor2 = "var(--pl-gradient-color-2)" as const"
         "20%",
       ],
       "css": 
-":host{
+":root{
 --pl-gradient-stop-1:var(--pl-gradient-color-1) 20%;
 }"
 ,
@@ -599,7 +599,7 @@ export const gradientStop1 = "var(--pl-gradient-stop-1)" as const"
         "80%",
       ],
       "css": 
-":host{
+":root{
 --pl-gradient-stop-2:var(--pl-gradient-color-2) 80%;
 }"
 ,
@@ -638,7 +638,7 @@ export const gradientStop2 = "var(--pl-gradient-stop-2)" as const"
         "function": "linear-gradient",
       },
       "css": 
-":host{
+":root{
 --pl-gradient-primary:linear-gradient(45deg, var(--pl-gradient-stop-1), var(--pl-gradient-stop-2));
 }"
 ,
@@ -669,7 +669,7 @@ export const gradientPrimary = "var(--pl-gradient-primary)" as const"
 `;
 
 exports[`fractional scale 1`] = `
-":host {
+":root {
   --pl-size-0: 0rem;
   --pl-size-1: 0.25rem;
   --pl-size-2: 0.5rem;
@@ -759,7 +759,7 @@ exports[`fractional scale: fractional scale entries 1`] = `
       "$type": "size",
       "$value": "0rem",
       "css": 
-":host{
+":root{
 --pl-size-0:0rem;
 }"
 ,
@@ -783,7 +783,7 @@ export const size0 = "var(--pl-size-0)" as const"
       "$type": "size",
       "$value": "0.25rem",
       "css": 
-":host{
+":root{
 --pl-size-1:0.25rem;
 }"
 ,
@@ -807,7 +807,7 @@ export const size1 = "var(--pl-size-1)" as const"
       "$type": "size",
       "$value": "0.5rem",
       "css": 
-":host{
+":root{
 --pl-size-2:0.5rem;
 }"
 ,
@@ -831,7 +831,7 @@ export const size2 = "var(--pl-size-2)" as const"
       "$type": "size",
       "$value": "0.75rem",
       "css": 
-":host{
+":root{
 --pl-size-3:0.75rem;
 }"
 ,
@@ -855,7 +855,7 @@ export const size3 = "var(--pl-size-3)" as const"
       "$type": "size",
       "$value": "1rem",
       "css": 
-":host{
+":root{
 --pl-size-4:1rem;
 }"
 ,
@@ -881,7 +881,7 @@ export const size4 = "var(--pl-size-4)" as const"
       "$type": "size",
       "$value": "0.125rem",
       "css": 
-":host{
+":root{
 --pl-size-0_5:0.125rem;
 }"
 ,
@@ -907,7 +907,7 @@ export const size0_5 = "var(--pl-size-0_5)" as const"
       "$type": "size",
       "$value": "0.375rem",
       "css": 
-":host{
+":root{
 --pl-size-1_5:0.375rem;
 }"
 ,
@@ -931,7 +931,7 @@ export const size1_5 = "var(--pl-size-1_5)" as const"
       "$type": "size",
       "$value": "0.5rem",
       "css": 
-":host{
+":root{
 --pl-size-2_5:0.5rem;
 }"
 ,
@@ -955,7 +955,7 @@ export const size2_5 = "var(--pl-size-2_5)" as const"
       "$type": "size",
       "$value": "0.875rem",
       "css": 
-":host{
+":root{
 --pl-size-3_5:0.875rem;
 }"
 ,
@@ -981,7 +981,7 @@ export const size3_5 = "var(--pl-size-3_5)" as const"
       "$type": "size",
       "$value": "{size.0_5}",
       "css": 
-":host{
+":root{
 --pl-padding-small:var(--pl-size-0_5);
 }"
 ,
