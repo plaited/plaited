@@ -38,9 +38,7 @@ const formatProps = <T extends CustomPropertyRegistrationGroupEntries>({
 }: {
   props: T
   path?: string[]
-}): CSSProps<{
-  [key: T[0]]: T[1]
-}> => {
+}): CustomProperties => {
   const getters: CustomProperties = {}
   for (const [key, value] of props) {
     const kebabKey = kebabCase(key)
