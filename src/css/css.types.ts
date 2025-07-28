@@ -20,11 +20,56 @@ export type CustomProperty = `--${string}`
 
 export type CSSVariable = `var(${CustomProperty})`
 
-export type CustomPropertyRegistration = {
-  syntax: string
-  inherits: boolean
-  initialValue?: string
-}
+/**
+ * Valid CSS data types for @property syntax descriptor
+ * @see https://developer.mozilla.org/en-US/docs/Web/CSS/@property/syntax
+ */
+export type PropertySyntaxDataType =
+  | '<angle>'
+  | '<color>'
+  | '<custom-ident>'
+  | '<image>'
+  | '<integer>'
+  | '<length>'
+  | '<length-percentage>'
+  | '<number>'
+  | '<percentage>'
+  | '<resolution>'
+  | '<string>'
+  | '<time>'
+  | '<transform-function>'
+  | '<transform-list>'
+  | '<url>'
+
+/**
+ * Valid syntax values for CSS @property rule
+ * Supports data types, multipliers (+, #), combinators (|), and custom identifiers
+ */
+export type PropertySyntax =
+  | '*' // Universal syntax
+  | PropertySyntaxDataType
+  | `${PropertySyntaxDataType}+` // Space-separated list
+  | `${PropertySyntaxDataType}#` // Comma-separated list
+  | `${PropertySyntaxDataType} | ${PropertySyntaxDataType}`
+  | `${PropertySyntaxDataType} | ${PropertySyntaxDataType} | ${PropertySyntaxDataType}`
+  | `${PropertySyntaxDataType} | ${string}` // Allow custom identifiers like '<length> | auto'
+  | string // Allow custom identifier combinations like 'small | medium | large'
+
+/**
+ * CSS @property registration aligned with W3C specification
+ * @see https://developer.mozilla.org/en-US/docs/Web/CSS/@property
+ */
+export type CustomPropertyRegistration =
+  | {
+      syntax: '*'
+      inherits: boolean
+      initialValue?: string | number
+    }
+  | {
+      syntax: Exclude<PropertySyntax, '*'>
+      inherits: boolean
+      initialValue: string | number // Required when syntax is not '*'
+    }
 
 export type CustomPropertyRegistrationGroup = {
   [key: string]: CustomPropertyRegistration | CustomPropertyRegistrationGroup
