@@ -20,7 +20,6 @@
     "./behavioral": "./src/behavioral.ts",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
     "./jsx-runtime": "./src/jsx-runtime.ts",
-    "./css": "./src/css.ts",
     "./utils": "./src/utils.ts",
     "./workshop": "./src/workshop.ts",
     "./mcp": "./src/mcp.ts"

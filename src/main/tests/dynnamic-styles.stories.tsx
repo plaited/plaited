@@ -1,5 +1,5 @@
 import { bElement, type PlaitedElement } from 'plaited'
-import * as css from 'plaited/css'
+import { css } from 'plaited'
 import type { StoryObj } from 'plaited/workshop'
 
 const styles = css.create({

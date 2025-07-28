@@ -1,5 +1,5 @@
 import { bElement } from 'plaited'
-import * as css from 'plaited/css'
+import { css } from 'plaited'
 
 import { isTypeOf } from 'plaited/utils'
 
@@ -12,7 +12,7 @@ const styles = css.create({
   },
 })
 
-const hostStyles = css.createHost({
+const hostStyles = css.host({
   display: 'inline-grid',
   '--fill': {
     $default: 'lightblue',

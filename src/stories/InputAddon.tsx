@@ -1,6 +1,6 @@
 import { bElement, useAttributesObserver, type ObservedAttributesDetail } from 'plaited'
 import { isTypeOf, keyMirror } from 'plaited/utils'
-import * as css from 'plaited/css'
+import { css } from 'plaited'
 
 const styles = css.create({
   addOn: {
@@ -15,7 +15,7 @@ const styles = css.create({
   },
 })
 
-const hostStyles = css.createHost({
+const hostStyles = css.host({
   display: 'inline-flex',
   '--icon-stroke': {
     $default: 'lightblue',
