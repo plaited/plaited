@@ -44,24 +44,21 @@ const formatClasses = ({
   }
 }
 
-export const create = (classNames: CreateParams) =>
-  Object.entries(classNames).reduce(
-    (acc, [cls, props]) => {
-      const set = new Set<string>()
-      const hostSet = new Set<string>()
-      for (const [prop, value] of Object.entries(props)) formatClasses({ set, prop, value, hostSet })
-      const classes: string[] = []
-      const stylesheet = [...hostSet]
-      for (const sheet of set) {
-        const cls = `cls${createHash(sheet)}`
-        classes.push(cls)
-        stylesheet.push(`.${cls}${sheet}`)
-      }
-      acc[cls] = {
-        className: [cls, ...classes],
-        stylesheet,
-      }
-      return acc
-    },
-    {} as CSSClasses<typeof classNames>,
-  )
+export const create = <T extends CreateParams>(classNames: T) =>
+  Object.entries(classNames).reduce((acc, [cls, props]) => {
+    const set = new Set<string>()
+    const hostSet = new Set<string>()
+    for (const [prop, value] of Object.entries(props)) formatClasses({ set, prop, value, hostSet })
+    const classes: string[] = []
+    const stylesheet = [...hostSet]
+    for (const sheet of set) {
+      const cls = `cls${createHash(sheet)}`
+      classes.push(cls)
+      stylesheet.push(`.${cls}${sheet}`)
+    }
+    acc[cls as keyof T] = {
+      className: [cls, ...classes],
+      stylesheet,
+    }
+    return acc
+  }, {} as CSSClasses<T>)

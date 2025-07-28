@@ -7,6 +7,7 @@ import type {
   CustomProperties,
   CustomProperty,
   CustomPropertyObject,
+  CSSProps,
 } from './css.types.js'
 
 const isCustomPropertyRegistration = (
@@ -31,7 +32,15 @@ const formatAtProp = (
   stylesheet: `@property ${property} {syntax:"${syntax}";inherits:${inherits};${initialValue ? `initial-value:${initialValue};` : ''}}`,
 })
 
-const formatProps = ({ props, path = [] }: { props: CustomPropertyRegistrationGroupEntries; path?: string[] }) => {
+const formatProps = <T extends CustomPropertyRegistrationGroupEntries>({
+  props,
+  path = [],
+}: {
+  props: T
+  path?: string[]
+}): CSSProps<{
+  [key: T[0]]: T[1]
+}> => {
   const getters: CustomProperties = {}
   for (const [key, value] of props) {
     const kebabKey = kebabCase(key)
@@ -49,4 +58,5 @@ const formatProps = ({ props, path = [] }: { props: CustomPropertyRegistrationGr
   return getters
 }
 
-export const createProps = (props: CustomPropertyRegistrationGroup) => formatProps({ props: Object.entries(props) })
+export const createProps = <T extends CustomPropertyRegistrationGroup>(props: T) =>
+  formatProps({ props: Object.entries(props) }) as CSSProps<T>

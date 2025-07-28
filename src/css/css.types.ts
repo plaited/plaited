@@ -44,6 +44,10 @@ export type CustomPropertyObject = {
 export type CustomProperties = {
   [key: string]: CustomPropertyObject | CustomProperties
 }
+
+export type CSSProps<T extends CustomPropertyRegistrationGroup> = {
+  [key in keyof T]: T[key] extends CustomPropertyRegistrationGroup ? CSSProps<T[key]> : CustomPropertyObject
+}
 /**
  * Type for defining nested CSS rules within a specific CSS property.
  * Allows specifying different values for a property based on conditions like
