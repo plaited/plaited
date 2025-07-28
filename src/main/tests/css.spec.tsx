@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import * as css from 'plaited/css'
+import { css } from 'plaited'
 
 test('create: supports simple rules', () => {
   const styles = css.create({
@@ -89,9 +89,9 @@ test('create: works with JSX via spread operator', () => {
   expect(<button {...styles.button}></button>).toMatchSnapshot()
 })
 
-// css.createHost tests
-test('createHost: supports simple rules', () => {
-  const host = css.createHost({
+// css.host tests
+test('host: supports simple rules', () => {
+  const host = css.host({
     fontSize: `16px`,
     lineHeight: 1.5,
     color: 'rgb(60,60,60)',
@@ -99,16 +99,16 @@ test('createHost: supports simple rules', () => {
   expect(host).toMatchSnapshot()
 })
 
-test('createHost: supports custom props', () => {
-  const host = css.createHost({
+test('host: supports custom props', () => {
+  const host = css.host({
     '--customColor': 'red',
     '--custom-color': 'red',
   })
   expect(host).toMatchSnapshot()
 })
 
-test('createHost: supports pseudo-classes', () => {
-  const host = css.createHost({
+test('host: supports pseudo-classes', () => {
+  const host = css.host({
     backgroundColor: {
       $default: 'lightblue',
       ':hover': 'blue',
@@ -118,8 +118,8 @@ test('createHost: supports pseudo-classes', () => {
   expect(host).toMatchSnapshot()
 })
 
-test('createHost: supports pseudo-elements', () => {
-  const host = css.createHost({
+test('host: supports pseudo-elements', () => {
+  const host = css.host({
     color: {
       '::placeholder': '#999',
     },
@@ -127,8 +127,8 @@ test('createHost: supports pseudo-elements', () => {
   expect(host).toMatchSnapshot()
 })
 
-test('createHost: supports media query', () => {
-  const host = css.createHost({
+test('host: supports media query', () => {
+  const host = css.host({
     width: {
       $default: 800,
       '@media (max-width: 800px)': '100%',
@@ -138,8 +138,8 @@ test('createHost: supports media query', () => {
   expect(host).toMatchSnapshot()
 })
 
-test('createHost: supports complex rules', () => {
-  const host = css.createHost({
+test('host: supports complex rules', () => {
+  const host = css.host({
     color: {
       $default: 'var(--blue-link)',
       $compoundSelectors: {
@@ -153,9 +153,11 @@ test('createHost: supports complex rules', () => {
   expect(host).toMatchSnapshot()
 })
 
-test('createHost: works with JSX via spread operator', () => {
-  const host = css.createHost({
+test('host: works with JSX via spread operator', () => {
+  const host = css.host({
     color: {
+      $default: 'red',
+      '[part="S1"]': 'blue',
       $compoundSelectors: {
         $default: 'var(--blue-link)',
         ':hover': {
@@ -168,120 +170,9 @@ test('createHost: works with JSX via spread operator', () => {
   expect(<button {...host}></button>).toMatchSnapshot()
 })
 
-// css.createParts tests
-test('createParts: supports simple rules', () => {
-  const styles = css.createParts({
-    button: {
-      fontSize: 'var(--fontSize)',
-      lineHeight: 'var(--lineHeight)',
-      color: 'var(--color)',
-    },
-  })
-  expect(styles).toMatchSnapshot()
-})
-
-test('createParts: supports custom props', () => {
-  const styles = css.createParts({
-    button: {
-      '--customColor': 'var(--red)',
-      '--custom-color': 'var(--red)',
-    },
-  })
-  expect(styles).toMatchSnapshot()
-})
-
-test('createParts: supports pseudo-classes', () => {
-  const styles = css.createParts({
-    button: {
-      backgroundColor: {
-        $default: 'var(--lightblue)',
-        $compoundSelectors: {
-          ':hover': 'var(--blue)',
-          ':active': 'var(--darkblue)',
-        },
-      },
-    },
-  })
-  expect(styles).toMatchSnapshot()
-})
-
-test('createParts: works with JSX via spread operator', () => {
-  const styles = css.createParts({
-    button: {
-      backgroundColor: {
-        $default: 'var(--lightblue)',
-        $compoundSelectors: {
-          ':hover': 'var(--blue)',
-          ':active': 'var(--darkblue)',
-        },
-      },
-    },
-  })
-  expect(<button {...styles}></button>).toMatchSnapshot()
-})
-
-test('createParts: supports pseudo-elements', () => {
-  const styles = css.createParts({
-    button: {
-      color: {
-        '::placeholder': 'var(--placeholder)',
-      },
-    },
-  })
-  expect(styles).toMatchSnapshot()
-})
-
-test('createParts: supports media query', () => {
-  const styles = css.createParts({
-    content: {
-      width: {
-        $default: 'var(--default-width)',
-        '@media (max-width: 800px)': 'var(--max-800)',
-        '@media (min-width: 1540px)': 'var(--max-1540)',
-      },
-    },
-  })
-  expect(styles).toMatchSnapshot()
-})
-
-test('createParts: supports complex rules', () => {
-  const styles = css.createParts({
-    button: {
-      color: {
-        $default: 'var(--blue-link)',
-        $compoundSelectors: {
-          ':hover': {
-            '@media (hover: hover)': 'var(--hover)',
-          },
-          ':active': 'var(--active)',
-        },
-      },
-    },
-  })
-  expect(styles).toMatchSnapshot()
-})
-
-test('createParts: supports multiple parts', () => {
-  const styles = css.createParts({
-    button: {
-      fontSize: 'var(--button-fontSize)',
-      padding: 'var(--button-padding)',
-    },
-    label: {
-      fontSize: 'var(--label-fontSize)',
-      color: 'var(--label-color)',
-    },
-    icon: {
-      width: 'var(--icon-width)',
-      height: 'var(--icon-height)',
-    },
-  })
-  expect(styles).toMatchSnapshot()
-})
-
 // Additional tests
 test('keyframes', () => {
-  const keyframes = css.createKeyframes('pulse', {
+  const keyframes = css.keyframes('pulse', {
     '0%': { transform: 'scale(1)' },
     '50%': { transform: 'scale(1.1)' },
     '100%': { transform: 'scale(1)' },
@@ -306,7 +197,7 @@ test('join', () => {
       padding: '10px 16px',
     },
   })
-  const host = css.createHost({
+  const host = css.host({
     color: 'red',
   })
   expect(css.join(styles.button, styles.small, host)).toMatchSnapshot()

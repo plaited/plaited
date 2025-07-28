@@ -8,6 +8,7 @@ export * from './main/ssr.js'
 export * from './main/use-attributes-observer.js'
 export * from './main/use-template.js'
 export * from './main/use-dispatch.js'
+export { css } from './main/css.js'
 
 //Behavioral
 export * from './behavioral/b-worker.js'
