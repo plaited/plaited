@@ -375,7 +375,7 @@ const keyframes = (ident: string, frames: CSSKeyFrames): StyleFunctionKeyframe =
  * @see {@link create} for creating style objects
  * @see {@link host} for creating host style objects
  */
-const join = (...styleObjects: StylesObject[]) => {
+const join = (...styleObjects: StylesObject[]): StylesObject => {
   const cls: string[] = []
   const style: string[] = []
   for (const styleObject of styleObjects) {
@@ -507,7 +507,7 @@ const formatTokenStatement = ({
  * })
  * ```
  */
-const tokens = <T extends CreateTokens>(tokens: T) =>
+const tokens = <T extends CreateTokens>(tokens: T): DesignTokens<T> =>
   Object.entries(tokens).reduce(
     (acc, [group, props]) => {
       const tokens: { [key: string]: DesignTokenObject } = {}

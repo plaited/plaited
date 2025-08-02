@@ -207,7 +207,3 @@ export type DesignTokens<T extends CreateTokens> = {
     [token in keyof T[key]]: DesignTokenObject
   }
 }
-
-// export type DesignTokens<T extends DesignTokenRegistrationGroup> = {
-//   [key in keyof T]: T[key] extends DesignTokenRegistrationGroup ? DesignTokens<T[key]> : DesignnTokenObject
-// }
