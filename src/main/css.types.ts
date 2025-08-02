@@ -144,76 +144,70 @@ export type StyleFunctionKeyframe = {
   id: string
 }
 
-/**
- * Valid CSS data types for @property syntax descriptor
- * @see https://developer.mozilla.org/en-US/docs/Web/CSS/@property/syntax
- */
-export type DesignTokenSyntaxDataType =
-  | '<angle>'
-  | '<color>'
-  | '<custom-ident>'
-  | '<image>'
-  | '<integer>'
-  | '<length>'
-  | '<length-percentage>'
-  | '<number>'
-  | '<percentage>'
-  | '<resolution>'
-  | '<string>'
-  | '<time>'
-  | '<transform-function>'
-  | '<transform-list>'
-  | '<url>'
-
-/**
- * Valid syntax values for CSS @property rule
- * Supports data types, multipliers (+, #), combinators (|), and custom identifiers
- */
-export type DesignTokenSyntax =
-  | '*' // Universal syntax
-  | DesignTokenSyntaxDataType
-  | `${DesignTokenSyntaxDataType}+` // Space-separated list
-  | `${DesignTokenSyntaxDataType}#` // Comma-separated list
-  | `${DesignTokenSyntaxDataType} | ${DesignTokenSyntaxDataType}`
-  | `${DesignTokenSyntaxDataType} | ${DesignTokenSyntaxDataType} | ${DesignTokenSyntaxDataType}`
-  | `${DesignTokenSyntaxDataType} | ${string}` // Allow custom identifiers like '<length> | auto'
-  | string // Allow custom identifier combinations like 'small | medium | large'
-
-/**
- * CSS @property registration aligned with W3C specification
- * @see https://developer.mozilla.org/en-US/docs/Web/CSS/@property
- */
-export type DesignTokenRegistration =
-  | {
-      syntax: '*'
-      inherits: boolean
-      initialValue?: string | number
-    }
-  | {
-      syntax: Exclude<DesignTokenSyntax, '*'>
-      inherits: boolean
-      initialValue: string | number // Required when syntax is not '*'
-    }
-
-export type DesignTokenRegistrationGroup = {
-  [key: string]: DesignTokenRegistration | DesignTokenRegistrationGroup
+export type DesignTokenValue = {
+  $value: string | number | DesignTokenObject
+  $csv: never
 }
 
-export type DesignTokenRegistrationGroupEntries = Array<
-  [string, DesignTokenRegistration | DesignTokenRegistrationGroup]
->
+export type DesignTokenValueList = {
+  $value: (string | number | DesignTokenObject)[]
+  $csv: boolean
+}
 
-export type DesignnTokenObject = {
-  $: typeof CUSTOM_PROPERTY_OBJECT_IDENTIFIER
-  variable: CSSVariable
-  /** A single CSS stylesheet string or an array of stylesheet strings. */
-  stylesheet: string
+export type DesignTokenValueFunction = {
+  $value: {
+    function: string
+    arguments: string | number | DesignTokenObject
+  }
+  $csv: never
+}
+
+export type DesignTokenValueFunctionList = {
+  $value: {
+    function: string
+    arguments: (string | number | DesignTokenObject)[]
+  }
+  $csv: boolean
+}
+
+export type DesignToken =
+  | DesignTokenValue
+  | DesignTokenValueList
+  | DesignTokenValueFunction
+  | DesignTokenValueFunctionList
+
+export type NestedTokenStatements = {
+  /** The default value for the CSS property. */
+  [CSS_RESERVED_KEYS.$default]?: DesignToken
+  /** Rules applied based on container queries, layers, media queries, or supports queries. */
+  [key: `@${'container' | 'layer' | 'media' | 'supports'}${string}`]: DesignToken | NestedTokenStatements
+  /** Rules applied based on pseudo-classes (e.g., :hover, :focus). Can be nested further. */
+  [key: `:${string}`]: DesignToken | NestedTokenStatements
+  /** Rules applied based on attribute selectors (e.g., [disabled], [data-state="active"]). Can be nested further. */
+  [key: `[${string}]`]: DesignToken | NestedTokenStatements
 }
 
 export type DesignTokenGroup = {
-  [key: string]: DesignnTokenObject | DesignTokenGroup
+  [key: string]: DesignToken | NestedTokenStatements
 }
 
-export type DesignTokens<T extends DesignTokenRegistrationGroup> = {
-  [key in keyof T]: T[key] extends DesignTokenRegistrationGroup ? DesignTokens<T[key]> : DesignnTokenObject
+export type DesignTokenObject = {
+  $: typeof CUSTOM_PROPERTY_OBJECT_IDENTIFIER
+  variable: CSSVariable
+  /** A single CSS stylesheet string or an array of stylesheet strings. */
+  stylesheet: string[]
 }
+
+export type CreateTokens = {
+  [key: string]: DesignTokenGroup
+}
+
+export type DesignTokens<T extends CreateTokens> = {
+  [key in keyof T]: {
+    [token in keyof T[key]]: DesignTokenObject
+  }
+}
+
+// export type DesignTokens<T extends DesignTokenRegistrationGroup> = {
+//   [key in keyof T]: T[key] extends DesignTokenRegistrationGroup ? DesignTokens<T[key]> : DesignnTokenObject
+// }

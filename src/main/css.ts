@@ -46,13 +46,7 @@ const caseProp = (prop: string) => (prop.startsWith('--') ? prop : kebabCase(pro
 
 const getRule = (prop: string, value: string | number) => `${caseProp(prop)}:${value};`
 
-// create function (previously in create.ts)
-const formatNestedRule = ({ set, rule, selectors }: { set: Set<string>; rule: string; selectors: string[] }) => {
-  const arr = selectors.map((str) => (str.startsWith('@') ? `${str}{` : `&${str}{`))
-  return set.add(`{${arr.join('')}${rule}${'}'.repeat(arr.length)}}`)
-}
-
-const formatClasses = ({
+const formatClassStatement = ({
   set,
   hostSet,
   value,
@@ -68,7 +62,8 @@ const formatClasses = ({
   if (isPrimitive(value)) {
     const rule = getRule(prop, value)
     if (!selectors.length) return set.add(`{${rule}}`)
-    return formatNestedRule({ set, rule, selectors })
+    const arr = selectors.map((str) => (str.startsWith('@') ? `${str}{` : `&${str}{`))
+    return set.add(`{${arr.join('')}${rule}${'}'.repeat(arr.length)}}`)
   }
   if (value === undefined) return
   const arr = Object.entries(value)
@@ -78,7 +73,7 @@ const formatClasses = ({
     if (context === CSS_RESERVED_KEYS.$default || /^(:|\[|@)/.test(context)) {
       const nextSelectors = [...selectors]
       context !== CSS_RESERVED_KEYS.$default && nextSelectors.push(context)
-      formatClasses({ set, value: val, prop, selectors: nextSelectors, hostSet })
+      formatClassStatement({ set, value: val, prop, selectors: nextSelectors, hostSet })
     }
   }
 }
@@ -130,7 +125,7 @@ const create = <T extends CreateParams>(classNames: T): CSSClasses<T> =>
   Object.entries(classNames).reduce((acc, [cls, props]) => {
     const set = new Set<string>()
     const hostSet = new Set<string>()
-    for (const [prop, value] of Object.entries(props)) formatClasses({ set, prop, value, hostSet })
+    for (const [prop, value] of Object.entries(props)) formatClassStatement({ set, prop, value, hostSet })
     const classes: string[] = []
     const stylesheet = [...hostSet]
     for (const sheet of set) {
@@ -146,7 +141,7 @@ const create = <T extends CreateParams>(classNames: T): CSSClasses<T> =>
   }, {} as CSSClasses<T>)
 
 // host function (previously createHost in create-host.ts)
-const formatNestedStatements = ({
+const formatHostStatement = ({
   set,
   prop,
   value,
@@ -167,7 +162,7 @@ const formatNestedStatements = ({
   if (value === undefined) return
   for (const [key, val] of Object.entries(value)) {
     if (key === CSS_RESERVED_KEYS.$default) {
-      formatNestedStatements({
+      formatHostStatement({
         set,
         prop,
         value: val,
@@ -176,7 +171,7 @@ const formatNestedStatements = ({
       })
       continue
     }
-    formatNestedStatements({
+    formatHostStatement({
       set,
       prop,
       value: val,
@@ -231,7 +226,7 @@ const host = (props: CreateHostParams): HostStylesObject => {
   const set = new Set<string>()
   for (const [prop, value] of Object.entries(props)) {
     if (isPrimitive(value)) {
-      formatNestedStatements({
+      formatHostStatement({
         set,
         prop,
         value,
@@ -241,7 +236,7 @@ const host = (props: CreateHostParams): HostStylesObject => {
     }
 
     const { $compoundSelectors, ...rest } = value
-    formatNestedStatements({
+    formatHostStatement({
       set,
       prop,
       value: rest,
@@ -250,7 +245,7 @@ const host = (props: CreateHostParams): HostStylesObject => {
 
     if ($compoundSelectors) {
       for (const [slector, value] of Object.entries($compoundSelectors)) {
-        formatNestedStatements({
+        formatHostStatement({
           set,
           prop,
           value,

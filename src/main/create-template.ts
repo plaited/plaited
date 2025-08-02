@@ -272,7 +272,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     /** P1 child IS {@type Template}*/
     if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === TEMPLATE_OBJECT_IDENTIFIER) {
       end.push(...child.html)
-      stylesheets.push(...child.stylesheets)
+      stylesheets.unshift(...child.stylesheets)
       registry.push(...child.registry)
       continue
     }
