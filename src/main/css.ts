@@ -1,4 +1,4 @@
-import { CSS_RESERVED_KEYS } from './css.constants.js'
+import { CSS_RESERVED_KEYS, CUSTOM_PROPERTY_OBJECT_IDENTIFIER } from './css.constants.js'
 import type {
   CreateParams,
   CSSClasses,
@@ -9,8 +9,15 @@ import type {
   CSSKeyFrames,
   StyleFunctionKeyframe,
   StylesObject,
+  DesignToken,
+  CustomProperty,
+  DesignTokenObject,
+  DesignTokens,
+  DesignTokenValueList,
+  NestedTokenStatements,
+  CreateTokens,
 } from './css.types.js'
-import { kebabCase, hashString } from '../utils.js'
+import { kebabCase, hashString, isTypeOf } from '../utils.js'
 
 // Utility functions (previously in css.utils.ts)
 /**
@@ -380,6 +387,150 @@ const join = (...styleObjects: StylesObject[]) => {
   return { className: cls, stylesheet: style }
 }
 
+// Design token utility functions
+const isDesignToken = (prop: DesignToken | NestedTokenStatements): prop is DesignToken => {
+  const length = Object.keys(prop).length
+  if (length === 1) {
+    return Object.hasOwn(prop, '$value')
+  } else if (length === 2) {
+    return Object.hasOwn(prop, '$value') && Object.hasOwn(prop, '$csv')
+  } else {
+    return false
+  }
+}
+
+const isDesigntokenObject = (obj: unknown): obj is DesignTokenObject =>
+  isTypeOf<Record<string, unknown>>(obj, 'object') && obj?.$ === CUSTOM_PROPERTY_OBJECT_IDENTIFIER
+
+const handleTokenArray = ({
+  stylesheet,
+  $value,
+  $csv,
+}: {
+  stylesheet: string[]
+  $value: DesignTokenValueList['$value']
+  $csv: DesignTokenValueList['$csv']
+}) =>
+  $value
+    .map((val) => {
+      if (isDesigntokenObject(val)) {
+        stylesheet.push(...val.stylesheet)
+        return val.variable
+      }
+      return `${val}`
+    })
+    .join($csv ? ',' : ' ')
+
+const handleTokenObject = (obj: DesignTokenObject, stylesheet: string[]) => {
+  stylesheet.push(...obj.stylesheet)
+  return obj.variable
+}
+
+const getFunc = (func: string, value: string | number) => `${func}(${value})`
+
+const formatTokenStatement = ({
+  prop,
+  token,
+  selectors = [],
+  stylesheet,
+}: {
+  prop: CustomProperty
+  token: DesignToken | NestedTokenStatements
+  selectors?: string[]
+  stylesheet: string[]
+}) => {
+  if (isDesignToken(token)) {
+    const { $csv, $value } = token
+    const rule =
+      isTypeOf<string>($value, 'string') || isTypeOf<number>($value, 'number') ? getRule(prop, $value)
+      : isDesigntokenObject($value) ? getRule(prop, handleTokenObject($value, stylesheet))
+      : Array.isArray($value) ? getRule(prop, handleTokenArray({ stylesheet, $value, $csv }))
+      : Array.isArray($value.arguments) ?
+        getRule(prop, getFunc($value.function, handleTokenArray({ stylesheet, $value: $value.arguments, $csv })))
+      : isDesigntokenObject($value.arguments) ?
+        getRule(prop, getFunc($value.function, handleTokenObject($value.arguments, stylesheet)))
+      : getRule(prop, getFunc($value.function, $value.arguments))
+    if (!selectors.length) {
+      stylesheet.push(`:host{${rule}}`)
+    } else {
+      const arr = selectors.map((str) => (str.startsWith('@') ? `${str}{` : `&${str}{`))
+      stylesheet.push(`:host{${arr.join('')}${rule}${'}'.repeat(arr.length)}}`)
+    }
+    return
+  }
+  for (const [key, value] of Object.entries(token)) {
+    formatTokenStatement({
+      prop,
+      token: value,
+      stylesheet,
+      selectors: [...selectors, key],
+    })
+  }
+}
+
+/**
+ * Creates design tokens with CSS custom properties for consistent theming.
+ *
+ * This function generates CSS custom properties (CSS variables) from a structured
+ * token definition, supporting nested selectors, media queries, and contextual values.
+ * Each token group creates scoped custom properties with automatic naming conventions.
+ *
+ * @template T - The type of the token definitions
+ * @param {T} tokens - An object defining token groups and their values
+ * @returns {DesignTokens<T>} An object mapping token paths to their generated custom properties
+ *
+ * @example
+ * ```tsx
+ * const theme = css.tokens({
+ *   colors: {
+ *     primary: { $value: '#007bff' },
+ *     text: {
+ *       $value: {
+ *         $default: '#333',
+ *         '@media (prefers-color-scheme: dark)': '#fff'
+ *       }
+ *     }
+ *   },
+ *   spacing: {
+ *     small: { $value: '8px' },
+ *     medium: { $value: '16px' },
+ *     large: { $value: '24px' }
+ *   }
+ * })
+ *
+ * // Usage in styles
+ * const styles = css.create({
+ *   button: {
+ *     backgroundColor: theme.colors.primary.variable,
+ *     padding: theme.spacing.medium.variable
+ *   }
+ * })
+ * ```
+ */
+const tokens = <T extends CreateTokens>(tokens: T) =>
+  Object.entries(tokens).reduce(
+    (acc, [group, props]) => {
+      const tokens: { [key: string]: DesignTokenObject } = {}
+      for (const [key, token] of Object.entries(props)) {
+        const prop: CustomProperty = `--${[kebabCase(group), kebabCase(key)].join('-')}`
+        const stylesheet: string[] = []
+        formatTokenStatement({
+          prop,
+          stylesheet,
+          token,
+        })
+        tokens[key] = {
+          $: CUSTOM_PROPERTY_OBJECT_IDENTIFIER,
+          stylesheet,
+          variable: `var(${prop})`,
+        }
+      }
+      acc[group] = tokens
+      return acc
+    },
+    {} as Record<string, { [key: string]: DesignTokenObject }>,
+  ) as DesignTokens<T>
+
 /**
  * CSS-in-JS utilities for Plaited framework.
  *
@@ -391,4 +542,5 @@ export const css = {
   host,
   keyframes,
   join,
+  tokens,
 }
