@@ -108,7 +108,7 @@ export type StylesObject = ElementStylesObject | HostStylesObject
  *
  * @template T - The CreateParams type defining the input styles
  */
-export type CSSClasses<T extends CreateParams> = {
+export type ClassNames<T extends CreateParams> = {
   [key in keyof T]: ElementStylesObject
 }
 

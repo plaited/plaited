@@ -44,7 +44,7 @@ export type PlaitedAttributes = {
   children?: Children
   [P_TARGET]?: string | number
   [P_TRIGGER]?: Record<string, string>
-  stylesheet?: string | string[]
+  stylesheet?: string[]
   className?: string[]
   /** setting trusted to true will disable all escaping security policy measures for this element template */
   trusted?: boolean

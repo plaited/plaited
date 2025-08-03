@@ -1,7 +1,7 @@
 import { CSS_RESERVED_KEYS } from './css.constants.js'
 import type {
   CreateParams,
-  CSSClasses,
+  ClassNames,
   NestedStatements,
   CSSProperties,
   CreateHostParams,
@@ -74,7 +74,7 @@ const formatClassStatement = ({
   }
 }
 
-const create = <T extends CreateParams>(classNames: T): CSSClasses<T> =>
+const create = <T extends CreateParams>(classNames: T): ClassNames<T> =>
   Object.entries(classNames).reduce((acc, [cls, props]) => {
     const styles: string[] = []
     for (const [prop, value] of Object.entries(props)) formatClassStatement({ styles, prop, value })
@@ -90,7 +90,7 @@ const create = <T extends CreateParams>(classNames: T): CSSClasses<T> =>
       stylesheet,
     }
     return acc
-  }, {} as CSSClasses<T>)
+  }, {} as ClassNames<T>)
 
 // host function (previously createHost in create-host.ts)
 const formatHostStatement = ({
@@ -218,7 +218,7 @@ export const css = {
    *
    * @template T - The type of the style definitions object
    * @param {T} classNames - An object where keys are style names and values are CSS rule definitions
-   * @returns {CSSClasses<T>} An object mapping each style name to its generated class names and stylesheets
+   * @returns {ClassNames<T>} An object mapping each style name to its generated class names and stylesheets
    *
    * @example
    * ```tsx

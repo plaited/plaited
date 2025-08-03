@@ -249,14 +249,12 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     /** handle the rest of the attributes */
     start.push(`${escape(key)}="${trusted ? value : escape(value)}" `)
   }
-  /** Create are stylesheet set */
-  const stylesheets = Array.isArray(stylesheet) ? stylesheet : [stylesheet]
   /** Our tag is a void tag so we can return it once we apply attributes */
   if (VOID_TAGS.has(tag)) {
     start.push('/>')
     return {
       html: start,
-      stylesheets: [...new Set(stylesheets)],
+      stylesheets: [...new Set(stylesheet)],
       registry,
       $: TEMPLATE_OBJECT_IDENTIFIER,
     }
@@ -272,7 +270,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     /** P1 child IS {@type Template}*/
     if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === TEMPLATE_OBJECT_IDENTIFIER) {
       end.push(...child.html)
-      stylesheets.unshift(...child.stylesheets)
+      stylesheet.unshift(...child.stylesheets)
       registry.push(...child.registry)
       continue
     }
@@ -285,7 +283,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   end.push(`</${tag}>`)
   return {
     html: [...start, ...end],
-    stylesheets: [...new Set(stylesheets)],
+    stylesheets: [...new Set(stylesheet)],
     registry,
     $: TEMPLATE_OBJECT_IDENTIFIER,
   }
