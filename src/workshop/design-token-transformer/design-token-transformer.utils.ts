@@ -366,10 +366,10 @@ export const getDesignTokensSnapshot = <T extends DesignTokenGroup = DesignToken
 export const getDesignTokensElement = (
   stylesheet: string,
   tag: CustomElementTag = 'design-tokens',
-) => `import { bElement, css, h } from 'plaited'
+) => `import { bElement, css, h, type HostStylesObject } from 'plaited'
 
-const tokens = {
-  stylesheet: [${stylesheet}]
+const tokens:HostStylesObject = {
+  stylesheets: [\`${stylesheet}\`]
 }
 
 export const ${pascalCase(tag)} = bElement({
@@ -379,7 +379,7 @@ export const ${pascalCase(tag)} = bElement({
       css.host({
         display: 'contents',
       }),
-      { stylesheet: [stylesheet] },
+      tokens,
     )
   }),
 })
