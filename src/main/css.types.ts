@@ -76,24 +76,24 @@ export type CreateParams = {
 
 /**
  * Represents the output of css.create() for a single style definition.
- * Contains generated class names and their corresponding stylesheets.
+ * Contains generated class names and their corresponding stylesheetss.
  */
 export type ElementStylesObject = {
   /** A single class name or an array of class names. */
-  className: string[]
-  /** A single CSS stylesheet string or an array of stylesheet strings. */
-  stylesheet: string[]
+  classNames: string[]
+  /** A single CSS stylesheets string or an array of stylesheets strings. */
+  stylesheets: string[]
 }
 
 /**
  * Represents the output of css.host() for host element styling.
- * Contains only stylesheets as host elements don't use class names.
+ * Contains only stylesheetss as host elements don't use class names.
  */
 export type HostStylesObject = {
   /** A single class name or an array of class names. */
-  className?: never
-  /** A single CSS stylesheet string or an array of stylesheet strings. */
-  stylesheet: string[]
+  classNames?: never
+  /** A single CSS stylesheets string or an array of stylesheets strings. */
+  stylesheets: string[]
 }
 
 /**
@@ -153,18 +153,18 @@ export type CSSKeyFrames = {
 }
 /**
  * Represents basic style-related properties that can be applied to a component or element.
- * Allows specifying class names and/or raw CSS stylesheets. Undefined, null, or false values in arrays are ignored.
+ * Allows specifying class names and/or raw CSS stylesheetss. Undefined, null, or false values in arrays are ignored.
  *
  * @example
  * const elementStyles: StylesObject = {
  *   class: ['base-class', isActive && 'active-class'],
- *   stylesheet: [commonStyles, componentSpecificStyles],
+ *   stylesheets: [commonStyles, componentSpecificStyles],
  * };
  */
 
 /**
  * Represents a keyframe animation function returned by css.keyframes().
- * The function returns the keyframe stylesheet and has an 'id' property
+ * The function returns the keyframe stylesheets and has an 'id' property
  * for referencing the animation in CSS.
  */
 export type StyleFunctionKeyframe = {

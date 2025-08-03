@@ -40,7 +40,7 @@ export const test: StoryObj = {
     )
 
     const styleElementBeforeHydration = await findByText(
-      styles.before.stylesheet.join(' '),
+      styles.before.stylesheets.join(' '),
       htmlTemplate.content as unknown as HTMLElement,
     )
     assert({
@@ -82,7 +82,7 @@ export const test: StoryObj = {
     const hydratingElement = await findByAttribute<PlaitedElement>('p-target', HYDRATING_ELEMENT_TAG)
 
     const contentAfterHydration = await findByAttribute<HTMLSpanElement>('p-target', 'inner', hydratingElement)
-    const styleElementAfterHydration = await findByText(styles.before.stylesheet.join(' '), hydratingElement)
+    const styleElementAfterHydration = await findByText(styles.before.stylesheets.join(' '), hydratingElement)
 
     assert({
       given: 'after hydrating element is connected',

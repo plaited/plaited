@@ -185,11 +185,11 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const {
     children: _children,
     trusted,
-    stylesheet = [],
+    stylesheets = [],
     style,
     'p-trigger': bpTrigger,
     class: cls,
-    className,
+    classNames,
     for: htmlFor,
     ...attributes
   } = attrs
@@ -208,7 +208,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const start = [`<${tag} `]
   /** handle JS reserved words commonly used in html class & for*/
   if (htmlFor) start.push(`for="${escape(htmlFor)}" `)
-  const classes = new Set(className)
+  const classes = new Set(classNames)
   cls && classes.add(escape(cls))
   if (classes.size) start.push(`class="${[...classes].join(' ')}" `)
   /** if we have bpTrigger attribute wire up formatted correctly*/
@@ -254,7 +254,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     start.push('/>')
     return {
       html: start,
-      stylesheets: [...new Set(stylesheet)],
+      stylesheets: [...new Set(stylesheets)],
       registry,
       $: TEMPLATE_OBJECT_IDENTIFIER,
     }
@@ -270,7 +270,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     /** P1 child IS {@type Template}*/
     if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === TEMPLATE_OBJECT_IDENTIFIER) {
       end.push(...child.html)
-      stylesheet.unshift(...child.stylesheets)
+      stylesheets.unshift(...child.stylesheets)
       registry.push(...child.registry)
       continue
     }
@@ -283,7 +283,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   end.push(`</${tag}>`)
   return {
     html: [...start, ...end],
-    stylesheets: [...new Set(stylesheet)],
+    stylesheets: [...new Set(stylesheets)],
     registry,
     $: TEMPLATE_OBJECT_IDENTIFIER,
   }

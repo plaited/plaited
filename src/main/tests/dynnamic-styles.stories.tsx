@@ -44,12 +44,12 @@ export const dynamicStyles: StoryObj = {
   play: async ({ findByText, assert, findByAttribute, wait }) => {
     const template = document.createElement('template')
     template.setHTMLUnsafe((<DynamicOnly />).html.join(''))
-    const style = await findByText(styles.initial.stylesheet.join(''), template.content as unknown as HTMLElement)
+    const style = await findByText(styles.initial.stylesheets.join(''), template.content as unknown as HTMLElement)
     assert({
       given: 'Render with initial stylesheet, Style tag',
       should: 'have the initial stylesheet only',
       actual: style?.textContent,
-      expected: styles.initial.stylesheet.join(''),
+      expected: styles.initial.stylesheets.join(''),
     })
     let target = await findByAttribute<PlaitedElement>('data-testid', 'element')
     assert({

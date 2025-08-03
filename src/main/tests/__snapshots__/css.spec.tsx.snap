@@ -2,13 +2,13 @@
 
 exports[`create: supports simple rules 1`] = `
 {
-  "className": [
+  "classNames": [
     "simpleRules",
     "cls_25qmty8",
     "cls_19dymlw",
     "cls_2uxvkjr",
   ],
-  "stylesheet": [
+  "stylesheets": [
     ".cls_25qmty8{font-size:16px;}",
     ".cls_19dymlw{line-height:1.5;}",
     ".cls_2uxvkjr{color:rgb(60,60,60);}",
@@ -18,12 +18,12 @@ exports[`create: supports simple rules 1`] = `
 
 exports[`create: supports custom props 1`] = `
 {
-  "className": [
+  "classNames": [
     "customProps",
     "cls_u51u3j",
     "cls_2eax236",
   ],
-  "stylesheet": [
+  "stylesheets": [
     ".cls_u51u3j{--customColor:red;}",
     ".cls_2eax236{--custom-color:red;}",
   ],
@@ -32,13 +32,13 @@ exports[`create: supports custom props 1`] = `
 
 exports[`create: supports pseudo-classes 1`] = `
 {
-  "className": [
+  "classNames": [
     "pseudoClass",
     "cls_2x0itcu",
     "cls_38celjy",
     "cls_hlr7gc",
   ],
-  "stylesheet": [
+  "stylesheets": [
     ".cls_2x0itcu{background-color:lightblue;}",
     ".cls_38celjy{&:hover{background-color:blue;}}",
     ".cls_hlr7gc{&:active{background-color:darkblue;}}",
@@ -48,11 +48,11 @@ exports[`create: supports pseudo-classes 1`] = `
 
 exports[`create: supports pseudo-elements 1`] = `
 {
-  "className": [
+  "classNames": [
     "pseudoElement",
     "cls_2xqoorw",
   ],
-  "stylesheet": [
+  "stylesheets": [
     ".cls_2xqoorw{&::placeholder{color:#999;}}",
   ],
 }
@@ -60,13 +60,13 @@ exports[`create: supports pseudo-elements 1`] = `
 
 exports[`create: supports media query 1`] = `
 {
-  "className": [
+  "classNames": [
     "mediaQuery",
     "cls_1r3xy2y",
     "cls_1w5xhcu",
     "cls_35z1h0o",
   ],
-  "stylesheet": [
+  "stylesheets": [
     ".cls_1r3xy2y{width:800;}",
     ".cls_1w5xhcu{@media (max-width: 800px){width:100%;}}",
     ".cls_35z1h0o{@media (min-width: 1540px){width:1366;}}",
@@ -76,13 +76,13 @@ exports[`create: supports media query 1`] = `
 
 exports[`create: supports complex rules 1`] = `
 {
-  "className": [
+  "classNames": [
     "button",
     "cls_2ix8wso",
     "cls_yf57wf",
     "cls_2164cwl",
   ],
-  "stylesheet": [
+  "stylesheets": [
     ".cls_2ix8wso{color:var(--blue-link);}",
     ".cls_yf57wf{&:hover{@media (hover: hover){color:scale(1.1);}}}",
     ".cls_2164cwl{&:active{color:scale(0.9);}}",
@@ -110,7 +110,7 @@ exports[`create: works with JSX via spread operator 1`] = `
 
 exports[`host: supports simple rules 1`] = `
 {
-  "stylesheet": [
+  "stylesheets": [
     ":host{font-size:16px;}",
     ":host{line-height:1.5;}",
     ":host{color:rgb(60,60,60);}",
@@ -120,7 +120,7 @@ exports[`host: supports simple rules 1`] = `
 
 exports[`host: supports custom props 1`] = `
 {
-  "stylesheet": [
+  "stylesheets": [
     ":host{--customColor:red;}",
     ":host{--custom-color:red;}",
   ],
@@ -129,7 +129,7 @@ exports[`host: supports custom props 1`] = `
 
 exports[`host: supports pseudo-classes 1`] = `
 {
-  "stylesheet": [
+  "stylesheets": [
     ":host{background-color:lightblue;}",
     ":host{:hover{background-color:blue;}}",
     ":host{:active{background-color:darkblue;}}",
@@ -139,7 +139,7 @@ exports[`host: supports pseudo-classes 1`] = `
 
 exports[`host: supports pseudo-elements 1`] = `
 {
-  "stylesheet": [
+  "stylesheets": [
     ":host{::placeholder{color:#999;}}",
   ],
 }
@@ -147,7 +147,7 @@ exports[`host: supports pseudo-elements 1`] = `
 
 exports[`host: supports media query 1`] = `
 {
-  "stylesheet": [
+  "stylesheets": [
     ":host{width:800;}",
     ":host{@media (max-width: 800px){width:100%;}}",
     ":host{@media (min-width: 1540px){width:1366;}}",
@@ -157,7 +157,7 @@ exports[`host: supports media query 1`] = `
 
 exports[`host: supports complex rules 1`] = `
 {
-  "stylesheet": [
+  "stylesheets": [
     ":host{color:var(--blue-link);}",
     ":host(:hover){@media (hover: hover){color:scale(1.1);}}",
     ":host(:active){color:scale(0.9);}",
@@ -186,7 +186,7 @@ exports[`host: works with JSX via spread operator 1`] = `
 
 exports[`keyframes 1`] = `
 {
-  "stylesheet": [
+  "stylesheets": [
     "@keyframes pulse_10z9dla{0%{transform:scale(1);}50%{transform:scale(1.1);}100%{transform:scale(1);}}",
   ],
 }
@@ -194,7 +194,7 @@ exports[`keyframes 1`] = `
 
 exports[`join 1`] = `
 {
-  "className": [
+  "classNames": [
     "button",
     "cls_a92k2iz",
     "cls_2bgwf8r",
@@ -207,7 +207,7 @@ exports[`join 1`] = `
     "cls_25tgi78",
     "cls_3z2f3y7",
   ],
-  "stylesheet": [
+  "stylesheets": [
     ".cls_a92k2iz{font-family:Nunito Sans, Helvetica Neue, Helvetica, Arial, sans-serif;}",
     ".cls_2bgwf8r{font-weight:700;}",
     ".cls_1f3us5c{border:0;}",

@@ -79,15 +79,15 @@ const create = <T extends CreateParams>(classNames: T): ClassNames<T> =>
     const styles: string[] = []
     for (const [prop, value] of Object.entries(props)) formatClassStatement({ styles, prop, value })
     const classes: string[] = []
-    const stylesheet: string[] = []
+    const stylesheets: string[] = []
     for (const sheet of styles) {
       const cls = `cls${createHash(sheet)}`
       classes.push(cls)
-      stylesheet.push(`.${cls}${sheet}`)
+      stylesheets.push(`.${cls}${sheet}`)
     }
     acc[cls as keyof T] = {
-      className: [cls, ...classes],
-      stylesheet,
+      classNames: [cls, ...classes],
+      stylesheets,
     }
     return acc
   }, {} as ClassNames<T>)
@@ -169,7 +169,7 @@ const host = (props: CreateHostParams): HostStylesObject => {
   }
 
   return {
-    stylesheet: styles,
+    stylesheets: styles,
   }
 }
 
@@ -184,7 +184,7 @@ const keyframes = (ident: string, frames: CSSKeyFrames): StyleFunctionKeyframe =
     arr.push(`${value}{${step.join('')}}`)
   }
   const hashedIdent = ident + createHash(...arr)
-  const getFrames = () => ({ stylesheet: [`@keyframes ${hashedIdent}{${arr.join('')}}`] })
+  const getFrames = () => ({ stylesheets: [`@keyframes ${hashedIdent}{${arr.join('')}}`] })
   getFrames.id = hashedIdent
   return getFrames
 }
@@ -195,11 +195,11 @@ const join = (...styleObjects: StylesObject[]): StylesObject => {
   const style: string[] = []
   for (const styleObject of styleObjects) {
     if (!styleObject) continue
-    const { className, stylesheet } = styleObject
-    className && cls.push(...className)
-    style.push(...(Array.isArray(stylesheet) ? stylesheet : [stylesheet]))
+    const { classNames, stylesheets } = styleObject
+    classNames && cls.push(...classNames)
+    style.push(...(Array.isArray(stylesheets) ? stylesheets : [stylesheets]))
   }
-  return { className: cls, stylesheet: style }
+  return { classNames: cls, stylesheets: style }
 }
 
 /**
@@ -213,12 +213,12 @@ export const css = {
    * Creates atomic CSS classes from a style definition object.
    *
    * This function generates unique class names with hashed identifiers and returns
-   * both the class names and their corresponding stylesheet strings. It supports
+   * both the class names and their corresponding stylesheets strings. It supports
    * nested rules, media queries, pseudo-classes, attribute selectors, and CSS custom properties.
    *
    * @template T - The type of the style definitions object
    * @param {T} classNames - An object where keys are style names and values are CSS rule definitions
-   * @returns {ClassNames<T>} An object mapping each style name to its generated class names and stylesheets
+   * @returns {ClassNames<T>} An object mapping each style name to its generated class names and stylesheetss
    *
    * @example
    * ```tsx
@@ -261,7 +261,7 @@ export const css = {
    * selectors for conditional host styling based on element state or attributes.
    *
    * @param {CreateHostParams} props - CSS properties and rules to apply to the host element
-   * @returns {HostStylesObject} An object containing the generated stylesheet array
+   * @returns {HostStylesObject} An object containing the generated stylesheets array
    *
    * @example
    * ```tsx
@@ -300,11 +300,11 @@ export const css = {
    *
    * This function generates a @keyframes rule with a deterministic name based on the
    * animation identifier and its content. The returned function can be called to get
-   * the stylesheet, and includes an `id` property for referencing the animation.
+   * the stylesheets, and includes an `id` property for referencing the animation.
    *
    * @param {string} ident - Base identifier for the animation (will be hashed for uniqueness)
    * @param {CSSKeyFrames} frames - Object defining keyframe steps with CSS properties
-   * @returns {StyleFunctionKeyframe} A function that returns the stylesheet, with an `id` property
+   * @returns {StyleFunctionKeyframe} A function that returns the stylesheets, with an `id` property
    *
    * @example
    * ```tsx
@@ -330,8 +330,8 @@ export const css = {
    *   }
    * })
    *
-   * // Get the keyframes stylesheet
-   * const { stylesheet } = fadeIn()
+   * // Get the keyframes stylesheets
+   * const { stylesheets } = fadeIn()
    * ```
    *
    * @see {@link create} for using animations in styles
@@ -341,12 +341,12 @@ export const css = {
   /**
    * Combines multiple style objects into a single style object.
    *
-   * This utility function merges class names and stylesheets from multiple sources,
+   * This utility function merges class names and stylesheetss from multiple sources,
    * making it easy to compose styles from different style objects. It handles both
    * element styles (with classNames) and host styles (without classNames).
    *
    * @param {...StylesObject[]} styleObjects - Variable number of style objects to combine
-   * @returns {StylesObject} A new style object with merged classNames and stylesheets
+   * @returns {StylesObject} A new style object with merged classNames and stylesheetss
    *
    * @example
    * ```tsx
