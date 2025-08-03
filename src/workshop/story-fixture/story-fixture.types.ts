@@ -1,6 +1,6 @@
 import type { BrowserContextOptions } from 'playwright'
 import type axe from 'axe-core'
-import type { Attrs, FunctionTemplate, StylesObject } from '../../main.js'
+import type { Attrs, FunctionTemplate, HostStylesObject } from '../../main.js'
 import type { Wait } from '../../utils.js'
 import type { Match, Throws } from './story-fixture.utils.js'
 import { FIXTURE_EVENTS } from './story-fixture.constants.js'
@@ -177,7 +177,7 @@ export type FireEventDetail = InstrumentedDetails<Parameters<FireEvent>>
 export type Params = {
   headers?: (env: NodeJS.ProcessEnv) => Headers | Promise<Headers>
   recordVideo?: BrowserContextOptions['recordVideo']
-  styles?: StylesObject
+  styles?: HostStylesObject
   timeout?: number // Defaults to 5_000 ms
 }
 
