@@ -1,6 +1,22 @@
+import { type PlaitedElement, bElement } from 'plaited'
 import type { StoryObj } from 'plaited/workshop'
-import { type PlaitedElement } from 'plaited'
-import { ModeOpen, DelegateFalse, ClosedMode } from './template.js'
+
+const DelegateFalse = bElement({
+  tag: 'delegate-false',
+  delegatesFocus: false,
+  shadowDom: <span>mode open and delegates focus</span>,
+})
+
+const ModeOpen = bElement({
+  tag: 'mode-open',
+  shadowDom: <span>mode open and delegates focus</span>,
+})
+
+const ClosedMode = bElement({
+  tag: 'mode-closed',
+  mode: 'closed',
+  shadowDom: <span>mode open and delegates focus</span>,
+})
 
 export const defaultModeAndFocus: StoryObj = {
   description: `This test is used to validate a plaited element created using bElement

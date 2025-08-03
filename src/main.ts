@@ -1,8 +1,8 @@
 //MAIN
 export * from './main/b-element.js'
 export * from './main/create-template.js'
-export type * from './main/css.types.js'
 export * from './main/css.js'
+export type * from './main/css.types.js'
 export type * from './main/jsx.types.js'
 export type * from './main/plaited.types.js'
 export * from './main/plaited.guards.js'

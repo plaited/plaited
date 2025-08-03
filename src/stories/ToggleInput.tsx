@@ -1,4 +1,6 @@
-import { bElement, css } from 'plaited'
+import { bElement } from 'plaited'
+import { css } from 'plaited'
+
 import { isTypeOf } from 'plaited/utils'
 
 const styles = css.create({
@@ -13,9 +15,11 @@ const styles = css.create({
 const hostStyles = css.host({
   display: 'inline-grid',
   '--fill': {
-    default: 'lightblue',
-    ':state(checked)': 'blue',
-    ':state(disabled)': 'grey',
+    $default: 'lightblue',
+    $compoundSelectors: {
+      ':state(checked)': 'blue',
+      ':state(disabled)': 'grey',
+    },
   },
 })
 
@@ -31,7 +35,7 @@ export const ToggleInput = bElement<{
   shadowDom: (
     <div
       p-target='symbol'
-      {...css.assign(styles.symbol, hostStyles)}
+      {...css.join(styles.symbol, hostStyles)}
       p-trigger={{ click: 'click' }}
     />
   ),

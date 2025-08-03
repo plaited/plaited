@@ -1,7 +1,7 @@
 import path from 'node:path'
 
 import { StoryFixture } from '../story-fixture/story-fixture.js'
-import { ssr } from '../../main.js'
+import { ssr, bElement, css, type HostStylesObject } from '../../main.js'
 import type { StoryObj } from '../story-fixture/story-fixture.types.js'
 import { createStoryRoute, zip } from './story-server.utils.js'
 import type { StorySet } from './story-server.types.js'
@@ -42,6 +42,18 @@ const createPageBundle = async ({
   const tpl = story?.template
   const styles = story?.parameters?.styles
   const importPath = getEntryPath(route)
+  const tokens = designTokens?.get()
+  const styleObjects = [
+    css.host({
+      display: 'contents',
+    }),
+    tokens && { stylesheets: [tokens] },
+    styles,
+  ].filter(Boolean) as HostStylesObject[]
+  const PlaitedStory = bElement({
+    tag: 'plaited-story',
+    shadowDom: <slot {...css.join(...styleObjects)} />,
+  })
   const page = ssr(
     <html>
       <head>
@@ -50,10 +62,15 @@ const createPageBundle = async ({
           rel='shortcut icon'
           href='#'
         />
-        <style>{designTokens?.get()}</style>
       </head>
-      <body {...styles}>
-        <StoryFixture children={tpl?.(args)} />
+      <body
+        {...css.join({
+          stylesheets: [' body { height: 100vh; height: 100dvh; margin: 0'],
+        })}
+      >
+        <PlaitedStory>
+          <StoryFixture children={tpl?.(args)} />
+        </PlaitedStory>
         <script
           defer
           type='module'

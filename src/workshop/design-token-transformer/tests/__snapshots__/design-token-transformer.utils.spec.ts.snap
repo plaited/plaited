@@ -1,6 +1,48 @@
 // Bun Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`parse(): snapshot 1`] = `
+exports[`getDesignTokensElement default 1`] = `
+"import { bElement, css, h, type HostStylesObject } from 'plaited'
+
+const tokens:HostStylesObject = {
+  stylesheets: [\`:host{--blue: blue}\`]
+}
+
+export const DesignTokens = bElement({
+  tag: design-tokens,
+  shadowDom: h('slot', {
+    ...css.join(
+      css.host({
+        display: 'contents',
+      }),
+      tokens,
+    )
+  }),
+})
+"
+`;
+
+exports[`getDesignTokensElement custom tag name 1`] = `
+"import { bElement, css, h, type HostStylesObject } from 'plaited'
+
+const tokens:HostStylesObject = {
+  stylesheets: [\`:host{--blue: blue}\`]
+}
+
+export const PlaitedTokens = bElement({
+  tag: plaited-tokens,
+  shadowDom: h('slot', {
+    ...css.join(
+      css.host({
+        display: 'contents',
+      }),
+      tokens,
+    )
+  }),
+})
+"
+`;
+
+exports[`getDesignTokensSnapshot snapshot 1`] = `
 {
   "properties": {
     "action": {

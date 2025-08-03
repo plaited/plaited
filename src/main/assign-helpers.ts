@@ -29,8 +29,6 @@
 import type { TemplateObject } from './jsx.types.js'
 import { BOOLEAN_ATTRS } from './jsx.constants.js'
 import type { Bindings, BoundElement } from './plaited.types.js'
-import type { StylesObject } from './css.types.js'
-import { isTypeOf } from '../utils/is-type-of.js'
 /**
  * @internal Cache for storing adopted stylesheets per ShadowRoot to prevent duplicate processing.
  * Used internally by the framework to optimize style adoption performance.
@@ -64,12 +62,12 @@ export const cssCache = new WeakMap<ShadowRoot, Set<string>>()
  * - Rendering continues even if some styles fail
  * - Invalid CSS will produce console errors but not crash
  */
-const updateShadowRootStyles = async (root: ShadowRoot, stylesheets: Set<string>) => {
+const updateShadowRootStyles = async (root: ShadowRoot, stylesheets: string[]) => {
   const instanceStyles = cssCache.get(root) ?? cssCache.set(root, new Set()).get(root)
   const newStyleSheets: CSSStyleSheet[] = []
   try {
     await Promise.all(
-      [...stylesheets].map(async (styles) => {
+      stylesheets.map(async (styles) => {
         if (instanceStyles?.has(styles)) return
         const sheet = new CSSStyleSheet()
         instanceStyles?.add(styles)
@@ -119,11 +117,10 @@ const updateAttributes = ({
   element,
   attr,
   val,
-  root,
 }: {
   element: Element
-  attr: string | 'class'
-  val: string | null | number | boolean | StylesObject
+  attr: string
+  val: string | null | number | boolean
   root: ShadowRoot
 }) => {
   // Remove the attribute if val is null or undefined, and it currently exists
@@ -135,14 +132,8 @@ const updateAttributes = ({
     !element.hasAttribute(attr) && element.toggleAttribute(attr, true)
     return
   }
-  // Set the attribute
-  if (attr === 'class' && isTypeOf<StylesObject>(val, 'object')) {
-    const { class: classes, stylesheet } = val
-    void updateShadowRootStyles(root, new Set(stylesheet))
-    return element.setAttribute(attr, `${(Array.isArray(classes) ? classes : [classes ?? '']).join(' ')}`)
-  } else {
-    element.setAttribute(attr, `${val}`)
-  }
+  // Set the attribute if it doesnot already exist
+  if (element.getAttribute(attr) !== `${val}`) element.setAttribute(attr, `${val}`)
 }
 
 /**
@@ -151,7 +142,7 @@ const updateAttributes = ({
  */
 export const getDocumentFragment = (shadowRoot: ShadowRoot, templateObject: TemplateObject) => {
   const { html, stylesheets } = templateObject
-  stylesheets.length && void updateShadowRootStyles(shadowRoot, new Set(stylesheets))
+  stylesheets.length && void updateShadowRootStyles(shadowRoot, stylesheets)
   const template = document.createElement('template')
   template.setHTMLUnsafe(html.join(''))
   return template.content

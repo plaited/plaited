@@ -1,14 +1,18 @@
+import { CSS_RESERVED_KEYS } from './css.constants.js'
 import type {
+  CreateParams,
+  ClassNames,
+  NestedStatements,
   CSSProperties,
-  CSSHostProperties,
+  CreateHostParams,
+  HostStylesObject,
   CSSKeyFrames,
-  CSSClasses,
-  CreateNestedCSS,
-  StyleObjects,
+  StyleFunctionKeyframe,
   StylesObject,
 } from './css.types.js'
 import { kebabCase, hashString } from '../utils.js'
 
+// Utility functions (previously in css.utils.ts)
 /**
  * @internal
  * Helper function to create a deterministic hash for class names based on style properties and selectors.
@@ -16,8 +20,10 @@ import { kebabCase, hashString } from '../utils.js'
  * @param args - The strings and numbers to hash together
  * @returns A base36 hash string prefixed with underscore if negative
  */
-const createClassHash = (...args: (string | number)[]) =>
-  hashString(args.join(' '))?.toString(36).replace(/^-/g, '_') ?? ''
+const createHash = (...args: (string | number)[]) => {
+  const hash = hashString(args.join(' '))?.toString(36)!.replace(/^-/g, '_')
+  return hash?.startsWith('_') ? hash : `_${hash}`
+}
 
 /**
  * @internal
@@ -26,7 +32,7 @@ const createClassHash = (...args: (string | number)[]) =>
  * @param val - The value to test
  * @returns True if the value is a string or number
  */
-const isPrimitive = (val: string | number | CreateNestedCSS<string>): val is string | number =>
+const isPrimitive = (val: string | number | unknown): val is string | number =>
   typeof val === 'string' || typeof val === 'number'
 
 /**
@@ -38,318 +44,349 @@ const isPrimitive = (val: string | number | CreateNestedCSS<string>): val is str
  */
 const caseProp = (prop: string) => (prop.startsWith('--') ? prop : kebabCase(prop))
 
-/**
- * @internal
- * Recursively processes nested CSS rules (like media queries, pseudo-classes)
- * defined in a `CreateNestedCSS` object, generating hashed class names and CSS rules,
- * and populating the provided map.
- *
- * @param map - A Map to store generated class names and their corresponding CSS rules
- * @param value - The CSS property value, which can be a primitive or a nested object
- * @param prop - The CSS property name (e.g., 'color', 'backgroundColor')
- * @param selectors - An array accumulating nested selectors (e.g., [':hover', '@media (...)'])
- */
-const formatStyles = ({
-  map,
+const getRule = (prop: string, value: string | number) => `${caseProp(prop)}:${value};`
+
+const formatClassStatement = ({
+  styles,
   value,
   prop,
   selectors = [],
 }: {
-  map: Map<string, string>
-  value: CreateNestedCSS<typeof prop> | CSSProperties[typeof prop]
+  styles: string[]
+  value: NestedStatements | CSSProperties[keyof CSSProperties]
   prop: string
   selectors?: string[]
 }) => {
   if (isPrimitive(value)) {
-    const hash = createClassHash(prop, value, ...selectors)
-    const className = `p${hash}`
-    const rule = `${caseProp(prop)}:${value};`
-    if (!selectors.length) return map.set(className, `.${className}{${rule}}`)
+    const rule = getRule(prop, value)
     const arr = selectors.map((str) => (str.startsWith('@') ? `${str}{` : `&${str}{`))
-    return map.set(className, `.${className}{${arr.join('')}${rule}${'}'.repeat(arr.length)}}`)
+    return styles.push(`{${arr.join('')}${rule}${'}'.repeat(arr.length)}}`)
   }
   const arr = Object.entries(value)
   const length = arr.length
   for (let i = 0; i < length; i++) {
     const [context, val] = arr[i]
-    if (context === 'default' || /^(:|\[|(@(container|layer|media|supports)))/.test(context)) {
+    if (context === CSS_RESERVED_KEYS.$default || /^(:|\[|@)/.test(context)) {
       const nextSelectors = [...selectors]
-      context !== 'default' && nextSelectors.push(context)
-      formatStyles({ map, value: val, prop, selectors: nextSelectors })
+      context !== CSS_RESERVED_KEYS.$default && nextSelectors.push(context)
+      formatClassStatement({ styles, value: val, prop, selectors: nextSelectors })
     }
   }
 }
 
-const create = <T extends CSSClasses>(classNames: T) =>
+const create = <T extends CreateParams>(classNames: T): ClassNames<T> =>
   Object.entries(classNames).reduce((acc, [cls, props]) => {
-    const map = new Map<string, string>()
-    for (const prop in props) formatStyles({ map, prop, value: props[prop] })
-    const classes = [...map.keys()]
-    const hash = createClassHash(...classes)
+    const styles: string[] = []
+    for (const [prop, value] of Object.entries(props)) formatClassStatement({ styles, prop, value })
+    const classes: string[] = []
+    const stylesheets: string[] = []
+    for (const sheet of styles) {
+      const cls = `cls${createHash(sheet)}`
+      classes.push(cls)
+      stylesheets.push(`.${cls}${sheet}`)
+    }
     acc[cls as keyof T] = {
-      class: [`${cls}_${hash}`, ...classes].join(' '),
-      stylesheet: [...map.values()],
+      classNames: [cls, ...classes],
+      stylesheets,
     }
     return acc
-  }, {} as StyleObjects<T>)
+  }, {} as ClassNames<T>)
 
-const host = (props: CSSHostProperties) => {
-  const arr: string[] = []
-  for (const prop in props) {
-    const value = props[prop]
-    if (isPrimitive(value)) {
-      arr.push(`:host{${caseProp(prop)}:${value};}`)
+// host function (previously createHost in create-host.ts)
+const formatHostStatement = ({
+  styles,
+  prop,
+  value,
+  selectors = [],
+  host,
+}: {
+  styles: string[]
+  prop: string
+  value: CSSProperties[keyof CSSProperties] | NestedStatements
+  selectors?: string[]
+  host: string
+}) => {
+  if (isPrimitive(value)) {
+    const arr = selectors.map((str) => `${str}{`)
+    styles.push(`${host}{${arr.join('')}${getRule(prop, value)}${'}'.repeat(arr.length)}}`)
+    return
+  }
+  for (const [key, val] of Object.entries(value)) {
+    if (key === CSS_RESERVED_KEYS.$default) {
+      formatHostStatement({
+        styles,
+        prop,
+        value: val,
+        selectors,
+        host,
+      })
       continue
     }
-    for (const selector in value) {
-      if (selector === 'default') {
-        arr.push(`:host{${caseProp(prop)}:${value[selector]};}`)
-        continue
-      }
-      arr.push(`:host(${selector}){${caseProp(prop)}:${value[selector]};}`)
-    }
+    formatHostStatement({
+      styles,
+      prop,
+      value: val,
+      selectors: [...selectors, key],
+      host,
+    })
   }
-  return { stylesheet: [...arr] }
 }
 
-const keyframes = (name: string, frames: CSSKeyFrames) => {
+const host = (props: CreateHostParams): HostStylesObject => {
+  const styles: string[] = []
+  for (const [prop, value] of Object.entries(props)) {
+    if (isPrimitive(value)) {
+      formatHostStatement({
+        styles,
+        prop,
+        value,
+        host: ':host',
+      })
+      continue
+    }
+
+    // Check if value is an object and has $compoundSelectors property
+    const { $compoundSelectors, ...rest } = value
+    if (Object.keys(rest).length) {
+      formatHostStatement({
+        styles,
+        prop,
+        value: rest,
+        host: ':host',
+      })
+    }
+
+    if ($compoundSelectors) {
+      for (const [slector, value] of Object.entries($compoundSelectors)) {
+        formatHostStatement({
+          styles,
+          prop,
+          value,
+          host: `:host(${slector})`,
+        })
+      }
+    }
+  }
+
+  return {
+    stylesheets: styles,
+  }
+}
+
+// keyframes function (previously createKeyframes in create-keyframes.ts)
+const keyframes = (ident: string, frames: CSSKeyFrames): StyleFunctionKeyframe => {
   const arr: string[] = []
-  for (const value in frames) {
-    const props = frames[value as keyof typeof frames]
+  for (const [value, props] of Object.entries(frames)) {
     const step = []
-    for (const prop in props) {
-      step.push(`${caseProp(prop)}:${props[prop]};`)
+    for (const [prop, val] of Object.entries(props)) {
+      step.push(getRule(prop, val))
     }
     arr.push(`${value}{${step.join('')}}`)
   }
-  const hashedName = `${name}_${createClassHash(...arr)}`
-  const getFrames = () => ({ stylesheet: `@keyframes ${hashedName}{${arr.join('')}}` })
-  getFrames.id = hashedName
+  const hashedIdent = ident + createHash(...arr)
+  const getFrames = () => ({ stylesheets: [`@keyframes ${hashedIdent}{${arr.join('')}}`] })
+  getFrames.id = hashedIdent
   return getFrames
 }
 
-const assign = (...styleObjects: Array<StylesObject | undefined | false | null>) => {
+// join style objects
+const join = (...styleObjects: StylesObject[]): StylesObject => {
   const cls: string[] = []
   const style: string[] = []
   for (const styleObject of styleObjects) {
     if (!styleObject) continue
-    const { class: className, stylesheet } = styleObject
-    className && cls.push(...(Array.isArray(className) ? (className.filter(Boolean) as string[]) : [className]))
-    stylesheet && style.push(...(Array.isArray(stylesheet) ? (stylesheet.filter(Boolean) as string[]) : [stylesheet]))
+    const { classNames, stylesheets } = styleObject
+    classNames && cls.push(...classNames)
+    style.push(...(Array.isArray(stylesheets) ? stylesheets : [stylesheets]))
   }
-  return { class: cls.length ? cls : undefined, stylesheet: style.length ? style : undefined }
+  return { classNames: cls, stylesheets: style }
 }
 
 /**
- * @namespace css
- * @description A powerful CSS-in-JS system providing type-safe, scoped styling capabilities for Plaited applications.
- * Built specifically for modern component architecture with focus on developer experience and runtime performance.
+ * CSS-in-JS utilities for Plaited framework.
  *
- * ## Key Features
- *
- * - **Atomic CSS Generation**: Creates optimized, deduplicated style rules
- * - **Type Safety**: Complete TypeScript integration with property autocompletion
- * - **Nested Selectors**: Support for pseudo-classes, attributes, and media queries
- * - **Shadow DOM Integration**: First-class support for web components and custom elements
- * - **Zero Runtime Dependencies**: Minimal size impact with maximum performance
- * - **Design Token Compatibility**: Seamless integration with design system tokens
- *
- * The system automatically generates unique, collision-free class names and optimizes
- * style output to minimize CSS duplication and specificity issues.
- *
- * @property {function} create - Generates style objects with hashed class names from style definitions
- * @property {function} host - Creates shadow DOM host styles with attribute and state-based conditions
- * @property {function} keyframes - Defines reusable CSS animations with unique identifiers
- * @property {function} assign - Combines and conditionally applies multiple style objects
- * @remarks
- * - Designed to work with both Plaited components and standard HTML elements
- * - Stylesheets are automatically collected and managed by the rendering system
- * - Efficiently handles style reapplication without unnecessary DOM operations
- * - Compatible with server-side rendering and static site generation
- * - Uses deterministic hashing for predictable class name generation
+ * Provides a comprehensive set of functions for creating and managing styles
+ * in Shadow DOM environments with atomic CSS generation.
  */
 export const css = {
   /**
-   * Creates Plaited style objects (`StyleObjects`) from a configuration object (`CSSClasses`).
-   * It processes CSS properties, including nested structures for pseudo-classes, attribute selectors,
-   * media queries, etc., generating unique, hashed class names and corresponding CSS rules.
+   * Creates atomic CSS classes from a style definition object.
    *
-   * @template T - An object type extending `CSSClasses`, where keys are logical style group names (e.g., 'button', 'input')
-   *               and values define the CSS properties for that group.
-   * @param {T} classNames - The configuration object defining style groups and their CSS properties.
-   *                         Property keys are camelCased CSS properties (e.g., `backgroundColor`) or CSS variables (`--my-var`).
-   *                         Values can be primitives (string/number) or nested objects (`CreateNestedCSS`) for conditional styles.
-   * @returns {StyleObjects<T>} An object mirroring the input structure (`T`). Each key holds a `StylesObject` containing:
-   *                            - `class`: A string of space-separated, generated class names (e.g., "button_abc p123 p456").
-   *                                           Includes a base class (`button_abc`) and atomic classes (`p123`, `p456`).
-   *                            - `stylesheet`: An array of CSS rule strings corresponding to the generated classes.
+   * This function generates unique class names with hashed identifiers and returns
+   * both the class names and their corresponding stylesheets strings. It supports
+   * nested rules, media queries, pseudo-classes, attribute selectors, and CSS custom properties.
    *
-   * @example Simple Usage
-   * ```typescript
+   * @template T - The type of the style definitions object
+   * @param {T} classNames - An object where keys are style names and values are CSS rule definitions
+   * @returns {ClassNames<T>} An object mapping each style name to its generated class names and stylesheetss
+   *
+   * @example
+   * ```tsx
    * const styles = css.create({
-   *   primaryButton: {
+   *   button: {
    *     backgroundColor: 'blue',
    *     color: 'white',
-   *     padding: '10px 15px',
-   *   }
-   * });
-   * // styles.primaryButton.class -> "primaryButton_xyz p111 p222 p333"
-   * // styles.primaryButton.stylesheet -> [".p111{background-color:blue;}", ".p222{color:white;}", ...]
-   * ```
-   *
-   * @example Nested Selectors
-   * ```typescript
-   * const styles = css.create({
-   *   card: {
-   *     border: '1px solid lightgray',
+   *     padding: '10px 20px',
    *     borderRadius: '4px',
-   *     ':hover': { // Pseudo-class
-   *       borderColor: 'gray',
-   *       boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
-   *     },
-   *     '@media (min-width: 768px)': { // Media query
-   *       padding: '20px',
-   *     },
-   *     '[data-state="selected"]': { // Attribute selector
-   *       backgroundColor: 'lightblue',
+   *     // Pseudo-class support
+   *     backgroundColor: {
+   *       $default: 'blue',
+   *       ':hover': 'darkblue',
+   *       ':active': 'navy'
+   *     }
+   *   },
+   *   responsiveText: {
+   *     fontSize: {
+   *       $default: '14px',
+   *       '@media (min-width: 768px)': '16px',
+   *       '@media (min-width: 1024px)': '18px'
    *     }
    *   }
-   * });
-   * // Generates classes and rules for base, :hover, @media, and [data-state="selected"] states.
+   * })
+   *
+   * // Usage in JSX
+   * <button {...styles.button}>Click me</button>
    * ```
    *
-   * @example Nested Property Values
-   * ```typescript
-   * const styles = css.create({
-   *   dynamicText: {
-   *     fontSize: {
-   *       default: '16px', // Base font size
-   *       '@media (min-width: 1024px)': '18px', // Larger on desktop
-   *       ':first-letter': { // Nested pseudo-element within property
-   *          default: '24px',
-   *          '@media (min-width: 1024px)': '28px',
-   *       }
-   *     }
-   *   }
-   * });
-   * // Generates classes/rules for default, @media, :first-letter, and @media + :first-letter combinations.
-   * ```
+   * @see {@link host} for styling Shadow DOM host elements
+   * @see {@link join} for combining multiple style objects
+   *
    */
   create,
   /**
-   * Generates a `StylesObject` containing CSS rules specifically targeting the `:host`
-   * of a shadow DOM component. Allows defining base host styles and styles conditional
-   * on host selectors (e.g., attributes, classes).
+   * Creates styles for Shadow DOM host elements using the :host pseudo-class.
    *
-   * @param {CSSHostProperties} props - An object where keys are camelCased CSS properties or CSS variables.
-   *        Values can be:
-   *        - Primitives (string/number): Applied directly to `:host`.
-   *        - Objects: Where keys are selectors relative to `:host` (e.g., `'.active'`, `'[disabled]'`, `':host-context(.theme-dark)'`)
-   *          and values are the corresponding CSS property values for that condition. The key `'default'` applies to the base `:host`.
-   * @returns {StylesObject} A `StylesObject` containing only the `stylesheet` array with the generated `:host` rules.
-   *                         The `class` property will be undefined.
+   * This function generates CSS rules that target the custom element itself from within
+   * its shadow DOM. It supports nested rules, media queries, pseudo-classes, and compound
+   * selectors for conditional host styling based on element state or attributes.
+   *
+   * @param {CreateHostParams} props - CSS properties and rules to apply to the host element
+   * @returns {HostStylesObject} An object containing the generated stylesheets array
    *
    * @example
-   * ```typescript
+   * ```tsx
    * const hostStyles = css.host({
-   *   display: 'inline-block', // Base style: :host { display: inline-block; }
-   *   border: {
-   *     default: '1px solid transparent', // Base style: :host { border: 1px solid transparent; }
-   *     ':hover': '1px solid blue',      // Conditional: :host(:hover) { border: 1px solid blue; }
-   *     '[focused]': '1px solid darkblue', // Conditional: :host([focused]) { border: 1px solid darkblue; }
+   *   display: 'block',
+   *   padding: '20px',
+   *   backgroundColor: {
+   *     $default: 'white',
+   *     ':hover': 'lightgray',
+   *     '@media (prefers-color-scheme: dark)': 'black'
    *   },
-   *   '--internal-padding': '8px', // CSS Variable: :host { --internal-padding: 8px; }
-   * });
+   *   // Compound selectors for conditional styling
+   *   color: {
+   *     $compoundSelectors: {
+   *       '[disabled]': 'gray',
+   *       '.dark-theme': 'white',
+   *       ':state(expanded)': 'blue'
+   *     }
+   *   }
+   * })
    *
-   * // Usage within bElement:
-   * bElement({
-   *   tag: 'my-interactive-element',
-   *   shadowDom: <div {...hostStyles}>...</div> // Stylesheet is applied to the shadow root
-   * });
+   * // Generated CSS includes:
+   * // :host { display: block; padding: 20px; }
+   * // :host { background-color: white; }
+   * // :host:hover { background-color: lightgray; }
+   * // :host([disabled]) { color: gray; }
+   * // :host(.dark-theme) { color: white; }
    * ```
+   *
+   * @see {@link create} for creating regular CSS classes
+   * @see https://developer.mozilla.org/en-US/docs/Web/CSS/:host
    */
   host,
   /**
-   * Creates a CSS `@keyframes` animation definition with a uniquely hashed name.
-   * Returns a function that, when called, provides the `StylesObject` containing the
-   * generated `@keyframes` rule. This function also has an `id` property holding the
-   * unique animation name, intended for use in `animation-name` properties.
+   * Creates CSS keyframe animations with a unique, hashed identifier.
    *
-   * @param {string} name - A descriptive base name for the animation (e.g., 'fadeIn', 'slideUp'). This name is hashed for uniqueness.
-   * @param {CSSKeyFrames} frames - An object defining the keyframes. Keys are percentages (`'0%'`, `'100%'`) or keywords (`'from'`, `'to'`).
-   *                                Values are objects containing camelCased CSS properties for that keyframe.
-   * @returns {(() => StylesObject) & { id: string }} A function that returns the `StylesObject` for the keyframes rule.
-   *                                                  This function has an added `id` property containing the unique animation name (e.g., "fadeIn_a1b2c3").
+   * This function generates a @keyframes rule with a deterministic name based on the
+   * animation identifier and its content. The returned function can be called to get
+   * the stylesheets, and includes an `id` property for referencing the animation.
+   *
+   * @param {string} ident - Base identifier for the animation (will be hashed for uniqueness)
+   * @param {CSSKeyFrames} frames - Object defining keyframe steps with CSS properties
+   * @returns {StyleFunctionKeyframe} A function that returns the stylesheets, with an `id` property
    *
    * @example
-   * ```typescript
-   * // 1. Define the keyframes
+   * ```tsx
+   * const fadeIn = css.keyframes('fadeIn', {
+   *   from: { opacity: 0 },
+   *   to: { opacity: 1 }
+   * })
+   *
    * const bounce = css.keyframes('bounce', {
-   *   '0%, 100%': { transform: 'translateY(0)', animationTimingFunction: 'ease-out' },
-   *   '50%': { transform: 'translateY(-10px)', animationTimingFunction: 'ease-in' }
-   * });
+   *   '0%': { transform: 'translateY(0)' },
+   *   '50%': { transform: 'translateY(-20px)' },
+   *   '100%': { transform: 'translateY(0)' }
+   * })
    *
-   * // bounce.id -> "bounce_xyz" (unique hashed name)
-   *
-   * // 2. Create styles using the keyframe ID
+   * // Use in styles
    * const styles = css.create({
-   *   bouncingBall: {
-   *     width: '50px',
-   *     height: '50px',
-   *     borderRadius: '50%',
-   *     backgroundColor: 'red',
-   *     animationName: bounce.id, // Use the generated ID
+   *   animated: {
+   *     animation: `${fadeIn.id} 0.3s ease-in`,
+   *     // or
+   *     animationName: bounce.id,
    *     animationDuration: '1s',
-   *     animationIterationCount: 'infinite',
+   *     animationIterationCount: 'infinite'
    *   }
-   * });
+   * })
    *
-   * // 3. Assign styles and the keyframes rule in the template
-   * const Ball = () => <div {...css.assign(styles.bouncingBall, bounce())}></div>;
-   * // Calling bounce() returns { stylesheet: ["@keyframes bounce_xyz { ... }"] }
-   * // css.assign merges the ball styles and the keyframes definition.
+   * // Get the keyframes stylesheets
+   * const { stylesheets } = fadeIn()
    * ```
+   *
+   * @see {@link create} for using animations in styles
+   * @see https://developer.mozilla.org/en-US/docs/Web/CSS/@keyframes
    */
   keyframes,
   /**
-   * Merges multiple `StylesObject` instances (or falsy values like `undefined`, `false`, `null`)
-   * into a single `StylesObject`. It concatenates `class` strings and `stylesheet` arrays
-   * from all valid input objects. Falsy values are ignored, enabling easy conditional style composition.
+   * Combines multiple style objects into a single style object.
    *
-   * @param {...(StylesObject | undefined | false | null)} styleObjects - A variable number of `StylesObject` instances or falsy values.
-   * @returns {StylesObject} A new `StylesObject` with combined `class` and `stylesheet` properties.
-   *                         If no valid `StylesObject`s are provided, returns `{ class: undefined, stylesheet: undefined }`.
+   * This utility function merges class names and stylesheetss from multiple sources,
+   * making it easy to compose styles from different style objects. It handles both
+   * element styles (with classNames) and host styles (without classNames).
    *
-   * @example Conditional Styling
-   * ```typescript
-   * const base = css.create({ base: { color: 'black' } });
-   * const active = css.create({ active: { fontWeight: 'bold' } });
-   * const disabled = css.create({ disabled: { opacity: 0.5, pointerEvents: 'none' } });
+   * @param {...StylesObject[]} styleObjects - Variable number of style objects to combine
+   * @returns {StylesObject} A new style object with merged classNames and stylesheetss
    *
-   * const isActive = true;
-   * const isDisabled = false;
+   * @example
+   * ```tsx
+   * const buttonBase = css.create({
+   *   base: {
+   *     padding: '10px 20px',
+   *     borderRadius: '4px',
+   *     cursor: 'pointer'
+   *   }
+   * })
    *
-   * const buttonStyles = css.assign(
-   *   base.base,
-   *   isActive && active.active, // Included if isActive is true
-   *   isDisabled && disabled.disabled // Ignored if isDisabled is false
-   * );
+   * const buttonVariants = css.create({
+   *   primary: {
+   *     backgroundColor: 'blue',
+   *     color: 'white'
+   *   },
+   *   large: {
+   *     fontSize: '18px',
+   *     padding: '15px 30px'
+   *   }
+   * })
    *
-   * // buttonStyles.class -> "base_abc p111 active_def p222" (if isActive)
-   * // buttonStyles.stylesheet -> [".p111{color:black;}", ".p222{font-weight:bold;}"]
+   * const hostStyles = css.host({
+   *   display: 'inline-block'
+   * })
    *
-   * const MyButton = () => <button {...buttonStyles}>Click</button>;
+   * // Combine multiple styles
+   * const buttonStyles = css.join(
+   *   buttonBase.base,
+   *   buttonVariants.primary,
+   *   buttonVariants.large,
+   *   hostStyles
+   * )
+   *
+   * // Use in JSX
+   * <button {...buttonStyles}>Click me</button>
    * ```
    *
-   * @example Combining with Host and Keyframes
-   * ```typescript
-   * const hostStyles = css.host({ display: 'block' });
-   * const anim = css.keyframes('fade', { from: { opacity: 0 }, to: { opacity: 1 } });
-   * const elementStyles = css.create({ el: { animationName: anim.id, animationDuration: '1s' } });
-   *
-   * const combined = css.assign(hostStyles, elementStyles.el, anim());
-   * // combined.stylesheet will contain host rules, element rules, and the keyframes rule.
-   * ```
+   * @see {@link create} for creating style objects
+   * @see {@link host} for creating host style objects
    */
-  assign,
+  join,
 }

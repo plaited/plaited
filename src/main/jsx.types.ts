@@ -8,7 +8,7 @@ type CrossOrigin = 'anonymous' | 'use-credentials' | ''
  * This object contains the processed HTML strings and associated metadata needed for rendering.
  *
  * @property html - An array of string fragments representing the HTML structure.
- * @property stylesheets - An array of CSS stylesheet strings collected from this template and its children.
+ * @property stylesheetss - An array of CSS stylesheets strings collected from this template and its children.
  * @property registry - An array of custom element tag names encountered within this template
  * @property $ - A unique symbol (`TEMPLATE_OBJECT_IDENTIFIER`) used as a type guard to identify Plaited template objects.
  */
@@ -35,16 +35,17 @@ export type Children = Child[] | Child
  * @property children - Represents the child elements or content.
  * @property p-target - Used to identify elements for targeted updates or interactions (value is usually a string or number).
  * @property p-trigger - Defines declarative event bindings for behavioral programming integration (maps event names to action types).
- * @property stylesheet - Accepts a CSS string or an array of strings to be associated with the element, hoisted, and deduplicated.
+ * @property stylesheets - Accepts a CSS string or an array of strings to be associated with the element, hoisted, and deduplicated.
  * @property trusted - If `true`, disables HTML escaping for the element's attributes and children that are not TemplateObject's. Use with extreme caution, only with sanitized or known-safe content.
  * @property style - Accepts a `CSSProperties` object (similar to React) for inline styles.
  */
 export type PlaitedAttributes = {
-  class?: string | string[]
+  class?: string
   children?: Children
   [P_TARGET]?: string | number
   [P_TRIGGER]?: Record<string, string>
-  stylesheet?: string | string[]
+  stylesheets?: string[]
+  classNames?: string[]
   /** setting trusted to true will disable all escaping security policy measures for this element template */
   trusted?: boolean
   style?: CSSProperties

@@ -1,4 +1,5 @@
-import { css, type FT } from 'plaited'
+import { type FT } from 'plaited'
+import { css } from 'plaited'
 
 const styles = css.create({
   o: {

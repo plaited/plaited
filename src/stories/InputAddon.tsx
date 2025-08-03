@@ -1,5 +1,6 @@
-import { bElement, css, useAttributesObserver, type ObservedAttributesDetail } from 'plaited'
+import { bElement, useAttributesObserver, type ObservedAttributesDetail } from 'plaited'
 import { isTypeOf, keyMirror } from 'plaited/utils'
+import { css } from 'plaited'
 
 const styles = css.create({
   addOn: {
@@ -17,9 +18,11 @@ const styles = css.create({
 const hostStyles = css.host({
   display: 'inline-flex',
   '--icon-stroke': {
-    default: 'lightblue',
-    ':state(focused)': 'blue',
-    ':state(disabled)': 'grey',
+    $default: 'lightblue',
+    $compoundSelectors: {
+      ':state(focused)': 'blue',
+      ':state(disabled)': 'grey',
+    },
   },
 })
 
@@ -32,7 +35,7 @@ export const InputAddon = bElement<{
     <>
       <slot
         name='prefix'
-        {...css.assign(hostStyles, styles.addOn)}
+        {...css.join(hostStyles, styles.addOn)}
       ></slot>
       <slot
         name='input'

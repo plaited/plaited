@@ -185,10 +185,11 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const {
     children: _children,
     trusted,
-    stylesheet,
+    stylesheets = [],
     style,
     'p-trigger': bpTrigger,
-    class: className,
+    class: cls,
+    classNames,
     for: htmlFor,
     ...attributes
   } = attrs
@@ -207,7 +208,9 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const start = [`<${tag} `]
   /** handle JS reserved words commonly used in html class & for*/
   if (htmlFor) start.push(`for="${escape(htmlFor)}" `)
-  if (className) start.push(`class="${escape(Array.isArray(className) ? className.join(' ') : className)}" `)
+  const classes = new Set(classNames)
+  cls && classes.add(escape(cls))
+  if (classes.size) start.push(`class="${[...classes].join(' ')}" `)
   /** if we have bpTrigger attribute wire up formatted correctly*/
   if (bpTrigger) {
     const value = Object.entries(bpTrigger)
@@ -246,9 +249,6 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     /** handle the rest of the attributes */
     start.push(`${escape(key)}="${trusted ? value : escape(value)}" `)
   }
-  /** Create are stylesheet set */
-  const stylesheets =
-    stylesheet ? [...(Array.isArray(stylesheet) ? stylesheet : [stylesheet])].map((str) => escape(str)) : []
   /** Our tag is a void tag so we can return it once we apply attributes */
   if (VOID_TAGS.has(tag)) {
     start.push('/>')
@@ -270,7 +270,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     /** P1 child IS {@type Template}*/
     if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === TEMPLATE_OBJECT_IDENTIFIER) {
       end.push(...child.html)
-      stylesheets.push(...child.stylesheets)
+      stylesheets.unshift(...child.stylesheets)
       registry.push(...child.registry)
       continue
     }

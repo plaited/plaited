@@ -1,4 +1,5 @@
 import type * as CSS from './types/css.js'
+import { type CSS_RESERVED_KEYS } from './css.constants.js'
 
 /**
  * Represents CSS properties with string or number values.
@@ -11,9 +12,10 @@ import type * as CSS from './types/css.js'
  *   '--custom-property': 'value',
  * };
  */
-export type CSSProperties = CSS.Properties<string | number> & {
+export type CSSProperties = CSS.Properties & {
   [key: string]: string | number
 }
+
 /**
  * Type for defining nested CSS rules within a specific CSS property.
  * Allows specifying different values for a property based on conditions like
@@ -22,22 +24,32 @@ export type CSSProperties = CSS.Properties<string | number> & {
  *
  * @template T The specific CSS property key (e.g., 'color', 'fontSize').
  * @example
- * const nestedColor: CreateNestedCSS<'color'> = {
+ * const nestedColor: NestedStatements = {
  *   default: 'black',
  *   '@media (min-width: 768px)': 'darkgray',
  *   ':hover': 'red',
  *   '[disabled]': 'gray',
  * };
  */
-export type CreateNestedCSS<T extends keyof CSSProperties> = {
+export type NestedStatements = {
   /** The default value for the CSS property. */
-  default?: CSSProperties[T]
+  [CSS_RESERVED_KEYS.$default]?: CSSProperties[keyof CSSProperties]
   /** Rules applied based on container queries, layers, media queries, or supports queries. */
-  [key: `@${'container' | 'layer' | 'media' | 'supports'}${string}`]: CSSProperties[T]
+  [key: `@${'container' | 'layer' | 'media' | 'supports'}${string}`]:
+    | CSSProperties[keyof CSSProperties]
+    | NestedStatements
   /** Rules applied based on pseudo-classes (e.g., :hover, :focus). Can be nested further. */
-  [key: `:${string}`]: CSSProperties[T] | CreateNestedCSS<T>
+  [key: `:${string}`]: CSSProperties[keyof CSSProperties] | NestedStatements
   /** Rules applied based on attribute selectors (e.g., [disabled], [data-state="active"]). Can be nested further. */
-  [key: `[${string}]`]: CSSProperties[T] | CreateNestedCSS<T>
+  [key: `[${string}]`]: CSSProperties[keyof CSSProperties] | NestedStatements
+}
+
+/**
+ * Defines CSS rules that can be applied to an element.
+ * Extends CSS properties to support nested statements and custom property objects.
+ */
+export type CSSRules = {
+  [key in keyof CSSProperties]: CSSProperties[key] | NestedStatements | string
 }
 /**
  * Defines a collection of CSS class definitions. Each key represents a class name,
@@ -45,11 +57,11 @@ export type CreateNestedCSS<T extends keyof CSSProperties> = {
  * nested rules defined by `CreateNestedCSS`, or string values (useful for CSS variables).
  *
  * @example
- * const myClasses: CSSClasses = {
+ * const myClasses: CreateParams = {
  *   button: {
  *     color: 'white',
  *     backgroundColor: {
- *       default: 'blue',
+ *       $default: 'blue',
  *       ':hover': 'darkblue',
  *     },
  *     padding: '10px 20px',
@@ -58,37 +70,63 @@ export type CreateNestedCSS<T extends keyof CSSProperties> = {
  *   // ... other class definitions
  * };
  */
-export type CSSClasses = {
-  [key: string]: {
-    [key in keyof CSSProperties]: CSSProperties[key] | CreateNestedCSS<key> | string
-  }
+export type CreateParams = {
+  [key: string]: CSSRules
 }
 
 /**
- * Helper type for defining CSS properties specific to a host element selector.
- * @template T The specific CSS property key.
- * @internal
+ * Represents the output of css.create() for a single style definition.
+ * Contains generated class names and their corresponding stylesheetss.
  */
-type CreateHostCSSWithSelector<T extends keyof CSSProperties> = {
-  /** A CSS selector targeting the host or related elements. */
-  [key: string]: CSSProperties[T]
+export type ElementStylesObject = {
+  /** A single class name or an array of class names. */
+  classNames: string[]
+  /** A single CSS stylesheets string or an array of stylesheets strings. */
+  stylesheets: string[]
 }
+
 /**
- * Type for CSS properties applied to a component's host element (relevant in Shadow DOM).
- * Allows defining styles directly on the host or conditionally based on selectors applied to the host.
- *
- * @example
- * const hostStyles: CSSHostProperties = {
- *   display: 'block',
- *   border: {
- *     ':host([hidden])': 'none', // Style when host has 'hidden' attribute
- *     ':host(.focused)': '1px solid blue', // Style when host has 'focused' class
- *   },
- * };
+ * Represents the output of css.host() for host element styling.
+ * Contains only stylesheetss as host elements don't use class names.
  */
-export type CSSHostProperties = {
-  [key in keyof CSSProperties]: CSSProperties[key] | CreateHostCSSWithSelector<key>
+export type HostStylesObject = {
+  /** A single class name or an array of class names. */
+  classNames?: never
+  /** A single CSS stylesheets string or an array of stylesheets strings. */
+  stylesheets: string[]
 }
+
+/**
+ * Union type representing any style object output from css functions.
+ * Can be either element styles (with classes) or host styles (without classes).
+ */
+export type StylesObject = ElementStylesObject | HostStylesObject
+
+/**
+ * Maps style definition keys to their generated ElementStylesObject.
+ * This is the return type of css.create().
+ *
+ * @template T - The CreateParams type defining the input styles
+ */
+export type ClassNames<T extends CreateParams> = {
+  [key in keyof T]: ElementStylesObject
+}
+
+/**
+ * Defines the parameter structure for css.host().
+ * Extends CSS properties with support for nested statements, custom properties,
+ * and compound selectors for conditional host styling.
+ */
+export type CreateHostParams = {
+  [key in keyof CSSProperties]:
+    | CSSProperties[key]
+    | (NestedStatements & {
+        [CSS_RESERVED_KEYS.$compoundSelectors]?: {
+          [key: string]: CSSProperties[keyof CSSProperties] | NestedStatements
+        }
+      })
+}
+
 /**
  * Defines the structure for CSS `@keyframes` animations.
  * Allows specifying styles for different stages ('from', 'to', or percentage offsets) of an animation.
@@ -115,60 +153,21 @@ export type CSSKeyFrames = {
 }
 /**
  * Represents basic style-related properties that can be applied to a component or element.
- * Allows specifying class names and/or raw CSS stylesheets. Undefined, null, or false values in arrays are ignored.
+ * Allows specifying class names and/or raw CSS stylesheetss. Undefined, null, or false values in arrays are ignored.
  *
  * @example
  * const elementStyles: StylesObject = {
  *   class: ['base-class', isActive && 'active-class'],
- *   stylesheet: [commonStyles, componentSpecificStyles],
+ *   stylesheets: [commonStyles, componentSpecificStyles],
  * };
  */
-export type StylesObject = {
-  /** A single class name or an array of class names. */
-  class?: string | Array<string>
-  /** A single CSS stylesheet string or an array of stylesheet strings. */
-  stylesheet?: string | Array<string>
-}
+
 /**
- * Maps CSS class definitions to their compiled representation.
- * Provides both class names and associated stylesheets. This is typically the
- * shape of the object returned by `css.create()`.
- *
- * @template T - The type of the input `CSSClasses` object.
- *
- * @example
- * ```ts
- * const myComponentStyles = css.create({
- *   button: {
- *     color: 'blue',
- *   },
- *   container: {
- *     margin: 'auto',
- *   }
- * });
- * // myComponentStyles would conform to:
- * // StyleObjects<{ button: { color: string; padding: string; }; container: { margin: string; } }>
- * // And its value would look like:
- * // {
- * //   button: { class: 'button-xxxxxx p-xxxxxx', stylesheet: ['. p-xxxxxx { color: blue; }'] },
- * //   container: { class: 'container-yyyyyy  p-yyyyyy', stylesheet: ['.p-yyyyyy { margin: auto; }'] }
- * // }
- *
- * // Usage in a component:
- * const MyComponent = () => h('div', {
- *   ...myComponentStyles.container, // Spreads class and stylesheet
- *   children: h('button', {
- *     ...myComponentStyles.button,
- *     children: 'Click me'
- *   })
- * });
- * ```
+ * Represents a keyframe animation function returned by css.keyframes().
+ * The function returns the keyframe stylesheets and has an 'id' property
+ * for referencing the animation in CSS.
  */
-export type StyleObjects<T extends CSSClasses> = {
-  [key in keyof T]: {
-    /** The generated unique class name for the style definition. */
-    class: string
-    /** An array containing the generated CSS stylesheet strings. */
-    stylesheet: string[]
-  }
+export type StyleFunctionKeyframe = {
+  (): HostStylesObject
+  id: string
 }

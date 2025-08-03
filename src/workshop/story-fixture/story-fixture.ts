@@ -11,7 +11,7 @@ declare global {
 }
 
 import type { SnapshotMessage } from '../../behavioral.js'
-import { css, bElement, h } from '../../main.js'
+import { bElement, h, css } from '../../main.js'
 import { wait } from '../../utils.js'
 import { STORY_FIXTURE, DEFAULT_PLAY_TIMEOUT, FIXTURE_EVENTS } from './story-fixture.constants.js'
 import {

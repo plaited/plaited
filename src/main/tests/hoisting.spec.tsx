@@ -1,5 +1,6 @@
 import { test, expect } from 'bun:test'
-import { type TemplateObject, bElement, css } from 'plaited'
+import { type TemplateObject, bElement } from 'plaited'
+import { css } from 'plaited'
 import beautify from 'beautify'
 
 const render = (tpl: TemplateObject) => beautify(tpl.html.join(''), { format: 'html' })
@@ -103,11 +104,5 @@ const hoistStyles = css.create({
 })
 
 test('ssr: Properly hoist and deduplicates multiple stylesheets on a single node', () => {
-  expect((<div {...css.assign(hoistStyles.var1, hoistStyles.var2, hoistStyles.var3)} />).stylesheets.length).toBe(2)
-})
-
-test('ssr: filters out falsey style object', () => {
-  expect((<div {...css.assign(hoistStyles.var1, hoistStyles.var2, false, undefined, null)} />).stylesheets.length).toBe(
-    1,
-  )
+  expect((<div {...css.join(hoistStyles.var1, hoistStyles.var2, hoistStyles.var3)} />).stylesheets.length).toBe(2)
 })

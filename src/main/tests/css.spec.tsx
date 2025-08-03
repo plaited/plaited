@@ -1,104 +1,69 @@
 import { test, expect } from 'bun:test'
 import { css } from 'plaited'
 
-test('css.create: supports simple rules', () => {
-  const s = css.create({
-    base: {
-      fontzSize: `16px`,
+test('create: supports simple rules', () => {
+  const styles = css.create({
+    simpleRules: {
+      fontSize: `16px`,
       lineHeight: 1.5,
       color: 'rgb(60,60,60)',
     },
-    highlighted: {
-      color: 'rebeccapurple',
-    },
   })
-  expect(s).toMatchSnapshot()
+  expect(styles.simpleRules).toMatchSnapshot()
 })
 
-test('css.create: supports custom props', () => {
-  const s = css.create({
+test('create: supports custom props', () => {
+  const styles = css.create({
     customProps: {
       '--customColor': 'red',
       '--custom-color': 'red',
     },
   })
-  expect(s).toMatchSnapshot()
+  expect(styles.customProps).toMatchSnapshot()
 })
 
-test('css.create: supports pseudo-classes', () => {
-  expect(
-    css.create({
-      button: {
-        backgroundColor: 'lightblue',
+test('create: supports pseudo-classes', () => {
+  const styles = css.create({
+    pseudoClass: {
+      backgroundColor: {
+        $default: 'lightblue',
+        ':hover': 'blue',
+        ':active': 'darkblue',
       },
-    }),
-  ).toMatchSnapshot()
-  expect(
-    css.create({
-      button: {
-        backgroundColor: {
-          default: 'lightblue',
-          ':hover': 'blue',
-          ':active': 'darkblue',
-        },
-      },
-    }),
-  ).toMatchSnapshot()
+    },
+  })
+  expect(styles.pseudoClass).toMatchSnapshot()
 })
 
-test('css.create: supports pseudo-elements', () => {
-  expect(
-    css.create({
-      input: {
-        // pseudo-element
-        '::placeholder': {
-          color: '#999',
-        },
-        color: {
-          default: '#333',
-          // pseudo-class
-          ':invalid': 'red',
-        },
+test('create: supports pseudo-elements', () => {
+  const styles = css.create({
+    pseudoElement: {
+      color: {
+        '::placeholder': '#999',
       },
-    }),
-  ).toMatchSnapshot()
+    },
+  })
+  expect(styles.pseudoElement).toMatchSnapshot()
 })
 
-test('css.create: supports media query', () => {
-  expect(
-    css.create({
-      base: {
-        width: {
-          default: 800,
-          '@media (max-width: 800px)': '100%',
-          '@media (min-width: 1540px)': 1366,
-        },
+test('create: supports media query', () => {
+  const styles = css.create({
+    mediaQuery: {
+      width: {
+        $default: 800,
+        '@media (max-width: 800px)': '100%',
+        '@media (min-width: 1540px)': 1366,
       },
-    }),
-  ).toMatchSnapshot()
+    },
+  })
+  expect(styles.mediaQuery).toMatchSnapshot()
 })
 
-test('css.create: supports combining conditions', () => {
-  expect(
-    css.create({
-      button: {
-        color: {
-          default: 'var(--blue-link)',
-          ':hover': {
-            '@media (hover: hover)': 'scale(1.1)',
-          },
-          ':active': 'scale(0.9)',
-        },
-      },
-    }),
-  ).toMatchSnapshot()
-})
-
-test('css.create: works with JSX via spread operator', () => {
-  const s = css.create({
+test('create: supports complex rules', () => {
+  const styles = css.create({
     button: {
       color: {
-        default: 'var(--blue-link)',
+        $default: 'var(--blue-link)',
         ':hover': {
           '@media (hover: hover)': 'scale(1.1)',
         },
@@ -106,22 +71,107 @@ test('css.create: works with JSX via spread operator', () => {
       },
     },
   })
-  expect(<button {...s.button}></button>).toMatchSnapshot()
+  expect(styles.button).toMatchSnapshot()
 })
 
-test('css.host', () => {
-  expect(
-    css.host({
+test('create: works with JSX via spread operator', () => {
+  const styles = css.create({
+    button: {
       color: {
-        default: 'var(--blue-link)',
-        '.cloud': 'paleturquoise',
+        $default: 'var(--blue-link)',
+        ':hover': {
+          '@media (hover: hover)': 'scale(1.1)',
+        },
+        ':active': 'scale(0.9)',
       },
-      border: '1px solid black',
-    }),
-  ).toMatchSnapshot()
+    },
+  })
+  expect(<button {...styles.button}></button>).toMatchSnapshot()
 })
 
-test('css.keyframes', () => {
+// css.host tests
+test('host: supports simple rules', () => {
+  const host = css.host({
+    fontSize: `16px`,
+    lineHeight: 1.5,
+    color: 'rgb(60,60,60)',
+  })
+  expect(host).toMatchSnapshot()
+})
+
+test('host: supports custom props', () => {
+  const host = css.host({
+    '--customColor': 'red',
+    '--custom-color': 'red',
+  })
+  expect(host).toMatchSnapshot()
+})
+
+test('host: supports pseudo-classes', () => {
+  const host = css.host({
+    backgroundColor: {
+      $default: 'lightblue',
+      ':hover': 'blue',
+      ':active': 'darkblue',
+    },
+  })
+  expect(host).toMatchSnapshot()
+})
+
+test('host: supports pseudo-elements', () => {
+  const host = css.host({
+    color: {
+      '::placeholder': '#999',
+    },
+  })
+  expect(host).toMatchSnapshot()
+})
+
+test('host: supports media query', () => {
+  const host = css.host({
+    width: {
+      $default: 800,
+      '@media (max-width: 800px)': '100%',
+      '@media (min-width: 1540px)': 1366,
+    },
+  })
+  expect(host).toMatchSnapshot()
+})
+
+test('host: supports complex rules', () => {
+  const host = css.host({
+    color: {
+      $default: 'var(--blue-link)',
+      $compoundSelectors: {
+        ':hover': {
+          '@media (hover: hover)': 'scale(1.1)',
+        },
+        ':active': 'scale(0.9)',
+      },
+    },
+  })
+  expect(host).toMatchSnapshot()
+})
+
+test('host: works with JSX via spread operator', () => {
+  const host = css.host({
+    color: {
+      $default: 'red',
+      '[part="S1"]': 'blue',
+      $compoundSelectors: {
+        $default: 'var(--blue-link)',
+        ':hover': {
+          '@media (hover: hover)': 'scale(1.1)',
+        },
+        ':active': 'scale(0.9)',
+      },
+    },
+  })
+  expect(<button {...host}></button>).toMatchSnapshot()
+})
+
+// Additional tests
+test('keyframes', () => {
   const keyframes = css.keyframes('pulse', {
     '0%': { transform: 'scale(1)' },
     '50%': { transform: 'scale(1.1)' },
@@ -131,7 +181,7 @@ test('css.keyframes', () => {
   expect(keyframes()).toMatchSnapshot()
 })
 
-test('css.assign', () => {
+test('join', () => {
   const styles = css.create({
     button: {
       fontFamily: 'Nunito Sans, Helvetica Neue, Helvetica, Arial, sans-serif',
@@ -142,33 +192,13 @@ test('css.assign', () => {
       display: 'inline-block',
       lineHeight: 1,
     },
-    primary: {
-      color: 'white',
-      backgroundColor: '#1ea7fd',
-    },
-    secondary: {
-      color: '#333',
-      backgroundColor: 'transparent',
-      boxShadow: 'rgba(0, 0, 0, 0.15) 0px 0px 0px 1px inset',
-    },
     small: {
       fontSize: '12px',
       padding: '10px 16px',
-    },
-    large: {
-      fontSize: '16px',
-      padding: '12px 24px',
     },
   })
   const host = css.host({
     color: 'red',
   })
-  let primary = true
-  expect(
-    css.assign(styles.button, styles['small'], primary ? styles.primary : styles.secondary, host),
-  ).toMatchSnapshot()
-  primary = false
-  expect(
-    css.assign(styles.button, styles['large'], primary ? styles.primary : styles.secondary, host),
-  ).toMatchSnapshot()
+  expect(css.join(styles.button, styles.small, host)).toMatchSnapshot()
 })

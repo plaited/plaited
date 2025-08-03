@@ -1,11 +1,11 @@
 import {
   bElement,
-  css,
   useAttributesObserver,
   type ObservedAttributesDetail,
   type FT,
   type ElementAttributeList,
 } from 'plaited'
+import { css } from 'plaited'
 import { isTypeOf } from 'plaited/utils'
 
 const styles = css.create({
@@ -33,9 +33,11 @@ const hostStyles = css.host({
   display: 'inline-grid',
   gridTemplate: '"input" 16px / 16px',
   '--fill': {
-    default: 'lightblue',
-    ':state(checked)': 'blue',
-    ':state(disabled)': 'grey',
+    $default: 'lightblue',
+    $compoundSelectors: {
+      ':state(checked)': 'blue',
+      ':state(disabled)': 'grey',
+    },
   },
 })
 
@@ -48,7 +50,7 @@ export const DecorateCheckbox = bElement<{
     <>
       <div
         p-target='symbol'
-        {...css.assign(styles.symbol, hostStyles)}
+        {...css.join(styles.symbol, hostStyles)}
         p-trigger={{ click: 'click' }}
       />
       <slot
