@@ -171,3 +171,47 @@ export const kebabCase = (str: string) => {
       .toLowerCase()
   )
 }
+
+/**
+ * Converts a string to Pascal case format (e.g., 'HelloWorld').
+ *
+ * @remarks
+ * This function handles strings in various formats and normalizes them to Pascal case:
+ * - Hyphen-separated (kebab-case) → PascalCase
+ *   'my-variable' → 'MyVariable'
+ * - Underscore-separated (snake_case) → PascalCase
+ *   'my_variable' → 'MyVariable'
+ * - Slash-separated → PascalCase
+ *   'my/variable' → 'MyVariable'
+ * - Space-separated → PascalCase
+ *   'my variable' → 'MyVariable'
+ * - CamelCase → PascalCase
+ *   'myVariable' → 'MyVariable'
+ *
+ * @param str - The input string to convert to Pascal case
+ * @returns The converted string in Pascal case format
+ *
+ * @example
+ * Basic Usage
+ * ```ts
+ * pascalCase('hello-world')     // returns 'HelloWorld'
+ * pascalCase('hello_world')     // returns 'HelloWorld'
+ * pascalCase('hello world')     // returns 'HelloWorld'
+ * pascalCase('hello/world')     // returns 'HelloWorld'
+ * pascalCase('helloWorld')      // returns 'HelloWorld'
+ * ```
+ *
+ * @example
+ * Edge Cases
+ * ```ts
+ * pascalCase('hello---world')   // returns 'HelloWorld'
+ * pascalCase('hello_/world')    // returns 'HelloWorld'
+ * pascalCase('HELLO WORLD')     // returns 'HELLOWORLD'
+ * pascalCase('')               // returns ''
+ * pascalCase('h')              // returns 'H'
+ * ```
+ */
+export const pascalCase = (str: string) => {
+  const word = camelCase(str)
+  return word.charAt(0).toUpperCase() + word.slice(1)
+}

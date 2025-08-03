@@ -1,5 +1,5 @@
 import type * as CSS from './types/css.js'
-import { type CSS_RESERVED_KEYS, type CUSTOM_PROPERTY_OBJECT_IDENTIFIER } from './css.constants.js'
+import { type CSS_RESERVED_KEYS } from './css.constants.js'
 
 /**
  * Represents CSS properties with string or number values.
@@ -16,10 +16,6 @@ export type CSSProperties = CSS.Properties & {
   [key: string]: string | number
 }
 
-export type CustomProperty = `--${string}`
-
-export type CSSVariable = `var(${CustomProperty})`
-
 /**
  * Type for defining nested CSS rules within a specific CSS property.
  * Allows specifying different values for a property based on conditions like
@@ -28,7 +24,7 @@ export type CSSVariable = `var(${CustomProperty})`
  *
  * @template T The specific CSS property key (e.g., 'color', 'fontSize').
  * @example
- * const nestedColor: CreateNestedCSS<'color'> = {
+ * const nestedColor: NestedStatements = {
  *   default: 'black',
  *   '@media (min-width: 768px)': 'darkgray',
  *   ':hover': 'red',
@@ -37,20 +33,23 @@ export type CSSVariable = `var(${CustomProperty})`
  */
 export type NestedStatements = {
   /** The default value for the CSS property. */
-  [CSS_RESERVED_KEYS.$default]?: CSSProperties[keyof CSSProperties] | DesignTokenObject
+  [CSS_RESERVED_KEYS.$default]?: CSSProperties[keyof CSSProperties]
   /** Rules applied based on container queries, layers, media queries, or supports queries. */
   [key: `@${'container' | 'layer' | 'media' | 'supports'}${string}`]:
     | CSSProperties[keyof CSSProperties]
     | NestedStatements
-    | DesignTokenObject
   /** Rules applied based on pseudo-classes (e.g., :hover, :focus). Can be nested further. */
-  [key: `:${string}`]: CSSProperties[keyof CSSProperties] | NestedStatements | DesignTokenObject
+  [key: `:${string}`]: CSSProperties[keyof CSSProperties] | NestedStatements
   /** Rules applied based on attribute selectors (e.g., [disabled], [data-state="active"]). Can be nested further. */
-  [key: `[${string}]`]: CSSProperties[keyof CSSProperties] | NestedStatements | DesignTokenObject
+  [key: `[${string}]`]: CSSProperties[keyof CSSProperties] | NestedStatements
 }
 
+/**
+ * Defines CSS rules that can be applied to an element.
+ * Extends CSS properties to support nested statements and custom property objects.
+ */
 export type CSSRules = {
-  [key in keyof CSSProperties]: CSSProperties[key] | NestedStatements | string | DesignTokenObject
+  [key in keyof CSSProperties]: CSSProperties[key] | NestedStatements | string
 }
 /**
  * Defines a collection of CSS class definitions. Each key represents a class name,
@@ -58,7 +57,7 @@ export type CSSRules = {
  * nested rules defined by `CreateNestedCSS`, or string values (useful for CSS variables).
  *
  * @example
- * const myClasses: CSSSelectors = {
+ * const myClasses: CreateParams = {
  *   button: {
  *     color: 'white',
  *     backgroundColor: {
@@ -75,6 +74,10 @@ export type CreateParams = {
   [key: string]: CSSRules
 }
 
+/**
+ * Represents the output of css.create() for a single style definition.
+ * Contains generated class names and their corresponding stylesheets.
+ */
 export type ElementStylesObject = {
   /** A single class name or an array of class names. */
   className: string[]
@@ -82,6 +85,10 @@ export type ElementStylesObject = {
   stylesheet: string[]
 }
 
+/**
+ * Represents the output of css.host() for host element styling.
+ * Contains only stylesheets as host elements don't use class names.
+ */
 export type HostStylesObject = {
   /** A single class name or an array of class names. */
   className?: never
@@ -89,20 +96,35 @@ export type HostStylesObject = {
   stylesheet: string[]
 }
 
+/**
+ * Union type representing any style object output from css functions.
+ * Can be either element styles (with classes) or host styles (without classes).
+ */
 export type StylesObject = ElementStylesObject | HostStylesObject
 
+/**
+ * Maps style definition keys to their generated ElementStylesObject.
+ * This is the return type of css.create().
+ *
+ * @template T - The CreateParams type defining the input styles
+ */
 export type CSSClasses<T extends CreateParams> = {
   [key in keyof T]: ElementStylesObject
 }
 
-type NestedHostStatements = NestedStatements & {
-  [CSS_RESERVED_KEYS.$compoundSelectors]?: {
-    [key: string]: CSSProperties[keyof CSSProperties] | NestedStatements | DesignTokenObject
-  }
-}
-
+/**
+ * Defines the parameter structure for css.host().
+ * Extends CSS properties with support for nested statements, custom properties,
+ * and compound selectors for conditional host styling.
+ */
 export type CreateHostParams = {
-  [key in keyof CSSProperties]: CSSProperties[key] | DesignTokenObject | NestedHostStatements
+  [key in keyof CSSProperties]:
+    | CSSProperties[key]
+    | (NestedStatements & {
+        [CSS_RESERVED_KEYS.$compoundSelectors]?: {
+          [key: string]: CSSProperties[keyof CSSProperties] | NestedStatements
+        }
+      })
 }
 
 /**
@@ -140,74 +162,12 @@ export type CSSKeyFrames = {
  * };
  */
 
+/**
+ * Represents a keyframe animation function returned by css.keyframes().
+ * The function returns the keyframe stylesheet and has an 'id' property
+ * for referencing the animation in CSS.
+ */
 export type StyleFunctionKeyframe = {
   (): HostStylesObject
   id: string
-}
-
-export type DesignTokenValue = {
-  $value: string | number | DesignTokenObject
-  $csv: never
-}
-
-export type DesignTokenValueList = {
-  $value: (string | number | DesignTokenObject)[]
-  $csv: boolean
-}
-
-export type DesignTokenValueFunction = {
-  $value: {
-    function: string
-    arguments: string | number | DesignTokenObject
-  }
-  $csv: never
-}
-
-export type DesignTokenValueFunctionList = {
-  $value: {
-    function: string
-    arguments: (string | number | DesignTokenObject)[]
-  }
-  $csv: boolean
-}
-
-export type DesignToken =
-  | DesignTokenValue
-  | DesignTokenValueList
-  | DesignTokenValueFunction
-  | DesignTokenValueFunctionList
-
-export type NestedTokenStatements = {
-  /** The default value for the CSS property. */
-  [CSS_RESERVED_KEYS.$default]?: DesignToken
-  /** Rules applied based on container queries, layers, media queries, or supports queries. */
-  [key: `@${'container' | 'layer' | 'media' | 'supports'}${string}`]: DesignToken | NestedTokenStatements
-  /** Rules applied based on pseudo-classes (e.g., :hover, :focus). Can be nested further. */
-  [key: `:${string}`]: DesignToken | NestedTokenStatements
-  /** Rules applied based on attribute selectors (e.g., [disabled], [data-state="active"]). Can be nested further. */
-  [key: `[${string}]`]: DesignToken | NestedTokenStatements
-  [CSS_RESERVED_KEYS.$compoundSelectors]?: {
-    [key: string]: NestedTokenStatements | DesignTokenObject
-  }
-}
-
-export type DesignTokenGroup = {
-  [key: string]: DesignToken | NestedTokenStatements
-}
-
-export type DesignTokenObject = {
-  $: typeof CUSTOM_PROPERTY_OBJECT_IDENTIFIER
-  variable: CSSVariable
-  /** A single CSS stylesheet string or an array of stylesheet strings. */
-  stylesheet: string[]
-}
-
-export type CreateTokens = {
-  [key: string]: DesignTokenGroup
-}
-
-export type DesignTokens<T extends CreateTokens> = {
-  [key in keyof T]: {
-    [token in keyof T[key]]: DesignTokenObject
-  }
 }

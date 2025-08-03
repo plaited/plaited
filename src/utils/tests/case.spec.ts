@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { camelCase, kebabCase } from 'plaited/utils'
+import { camelCase, kebabCase, pascalCase } from 'plaited/utils'
 
 test('camelCase should convert hyphenated string to camel case', () => {
   expect(camelCase('hello-world')).toBe('helloWorld')
@@ -53,4 +53,31 @@ test('kebabCase should handle multiple consecutive delimiters', () => {
 
 test('kebabCase should handle strings with start case', () => {
   expect(kebabCase('Hello World')).toBe('hello-world')
+})
+
+test('pascalCase should convert hyphenated string to Pascal case', () => {
+  expect(pascalCase('hello-world')).toBe('HelloWorld')
+})
+
+test('pascalCase should convert underscore separated string to Pascal case', () => {
+  expect(pascalCase('hello_world')).toBe('HelloWorld')
+})
+
+test('pascalCase should convert slash separated string to Pascal case', () => {
+  expect(pascalCase('hello/world')).toBe('HelloWorld')
+})
+
+test('pascalCase should convert spaces separated string to Pascal case', () => {
+  expect(pascalCase('hello world')).toBe('HelloWorld')
+})
+
+test('pascalCase should handle multiple consecutive delimiters', () => {
+  expect(pascalCase('hello---world')).toBe('HelloWorld')
+  expect(pascalCase('hello___world')).toBe('HelloWorld')
+  expect(pascalCase('hello///world')).toBe('HelloWorld')
+  expect(pascalCase('hello   world')).toBe('HelloWorld')
+})
+
+test('pascalCase should handle strings with start case', () => {
+  expect(pascalCase('Hello World')).toBe('HelloWorld')
 })

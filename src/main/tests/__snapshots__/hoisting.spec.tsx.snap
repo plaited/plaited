@@ -132,9 +132,9 @@ exports[`createTemplate: CustomElement with declarative shadow dom and nested de
 </top-component>"
 ,
   "stylesheets": [
-    ".cls_qt6ejx{display:block;}",
     ".cls_2h7uhvs{width:100%;}",
     ".cls_16johir{aspect-ratio:16 / 9;}",
+    ".cls_qt6ejx{display:block;}",
   ],
 }
 `;
