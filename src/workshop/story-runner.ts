@@ -2,9 +2,8 @@ import { chromium, type BrowserContext } from 'playwright'
 import { bProgram } from '../behavioral.js'
 import { STORY_RUNNER_EVENTS } from './story-runner.constants.js'
 import { FIXTURE_EVENTS, type RunnerMessage } from '../testing.js'
-import type { ColorScheme, RunningMap } from './story-runner.types.js'
+import type { ColorScheme, RunningMap, StoryParams } from './workshop.types.js'
 import { useVisitStory, useRunnerID } from './story-runner.utils.js'
-import type { StoryParams } from './story-server.types.js'
 
 type FixtureEventDetail = {
   pathname: string
@@ -73,7 +72,6 @@ export const storyRunner = bProgram<
     let failed = 0
     let passed = 0
     const running: RunningMap = new Map()
-
     bThreads.set({
       onCountChange: bThread(
         [

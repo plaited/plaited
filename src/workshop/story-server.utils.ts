@@ -3,8 +3,8 @@ import { basename, dirname } from 'node:path'
 import { WORKSHOP_ROUTE } from './story-server.constants.js'
 import { kebabCase } from '../utils.js'
 import type { SignalWithInitialValue } from '../behavioral.js'
-import type { StoryParams } from './story-server.types.js'
-import type { StoryObj } from './story-fixture.types.js'
+import type { StoryParams } from './workshop.types.js'
+import type { StoryObj } from '../testing.js'
 
 /**
  * @internal Scans for files matching a glob pattern within a specified directory.
@@ -103,7 +103,7 @@ export const getEntryRoutes = async (cwd: string, entrypoints: string[]) => {
       const content = await artifact.text()
       const { kind } = artifact
       let formattedPath: string = path
-      if (kind === 'entry-point' && path === './workshop.js') {
+      if (kind === 'entry-point' && path === `.${WORKSHOP_ROUTE}`) {
         formattedPath = WORKSHOP_ROUTE
       } else if (kind === 'entry-point') {
         const base = basename(path, '.stories.js')

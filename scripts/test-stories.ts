@@ -1,8 +1,8 @@
-import { STORY_RUNNER_EVENTS } from '../src/workshop/story-runner/story-runner.constants.js'
-import { storyRunner } from '../src/workshop/story-runner/story-runner.js'
+import { behavioral } from 'plaited/behavioral'
+import type { RunnerMessage } from 'plaited/testing'
+import { STORY_RUNNER_EVENTS } from '../src/workshop/story-runner.constants.js'
+import { storyRunner } from '../src/workshop/story-runner.js'
 import { useStoryServer } from '../src/workshop/use-story-server.js'
-import { behavioral } from '../src/behavioral.js'
-import type { RunnerMessage } from '../src/workshop.js'
 
 const root = `${process.cwd()}/src`
 const { trigger, useFeedback } = behavioral()

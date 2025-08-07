@@ -1,5 +1,5 @@
 import type { StoryObj } from './story-fixture.types'
-import type { BrowserContextOptions } from 'playwright'
+import type { BrowserContextOptions, BrowserContext } from 'playwright'
 
 /**
  * @internal Defines the parameters required to identify and run a single story.
@@ -23,3 +23,18 @@ export type StoryParams = {
 export type StorySet = {
   [key: string]: StoryObj
 }
+
+/** @internal Represents the supported color schemes for story rendering and testing. */
+export type ColorScheme = 'light' | 'dark'
+
+/**
+ * @internal A Map used by the story runner to keep track of currently running story tests.
+ * The key is a unique identifier for the test run (typically combining story path and color scheme),
+ * and the value includes the story parameters along with its Playwright `BrowserContext`.
+ */
+export type RunningMap = Map<
+  string,
+  StoryParams & {
+    context: BrowserContext
+  }
+>
