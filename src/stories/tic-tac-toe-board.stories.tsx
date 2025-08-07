@@ -1,4 +1,4 @@
-import { type StoryObj } from 'plaited/workshop'
+import { type StoryObj } from 'plaited/testing'
 import { TicTacToeBoard } from './tic-tac-toe-board.js'
 import { BoardMarker } from './board-marker.js'
 import { OMarker } from './o-marker.js'

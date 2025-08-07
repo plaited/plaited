@@ -1,4 +1,4 @@
-import { type StoryObj, type Args } from 'plaited/workshop'
+import { type StoryObj, type Args } from 'plaited/testing'
 import { DecoratedCheckbox } from './DecoratedCheckbox.js'
 
 export const example: StoryObj<Args<typeof DecoratedCheckbox>> = {

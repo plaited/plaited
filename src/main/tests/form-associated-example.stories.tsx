@@ -1,6 +1,6 @@
 import { bElement } from 'plaited'
 import { isTypeOf } from 'plaited/utils'
-import { type StoryObj } from 'plaited/workshop'
+import { type StoryObj } from 'plaited/testing'
 import { css } from 'plaited'
 
 const styles = css.create({

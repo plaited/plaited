@@ -1,4 +1,4 @@
-import type { StoryObj } from '../story-fixture/story-fixture.types'
+import type { StoryObj } from './story-fixture.types'
 import type { BrowserContextOptions } from 'playwright'
 
 /**

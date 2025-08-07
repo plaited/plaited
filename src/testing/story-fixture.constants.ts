@@ -1,10 +1,10 @@
-import { keyMirror } from '../../utils.js'
+import { keyMirror } from '../utils.js'
 
 /** Default timeout duration (in milliseconds) for story play functions. */
 export const DEFAULT_PLAY_TIMEOUT = 5_000
 
 /** @internal The custom element tag name for the story fixture component. */
-export const STORY_FIXTURE = 'palited-story-fixture'
+export const STORY_FIXTURE = 'plaited-story-fixture'
 
 /** @internal URL path for the test runner iframe. */
 export const RUNNER_URL = '/.plaited/test-runner'

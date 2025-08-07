@@ -1,6 +1,6 @@
 import { STORY_RUNNER_EVENTS } from '../src/workshop/story-runner/story-runner.constants.js'
 import { storyRunner } from '../src/workshop/story-runner/story-runner.js'
-import { useStoryServer } from '../src/workshop/story-server/use-story-server.js'
+import { useStoryServer } from '../src/workshop/use-story-server.js'
 import { behavioral } from '../src/behavioral.js'
 import type { RunnerMessage } from '../src/workshop.js'
 

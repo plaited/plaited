@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 import sinon from 'sinon'
-import { noop, wait } from '../../../utils.js'
+import { noop, wait } from '../../utils.js'
 import { useAssert, match, throws } from '../story-fixture.utils.js'
 
 const assert = useAssert(noop)

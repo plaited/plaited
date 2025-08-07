@@ -1,5 +1,5 @@
 import { bElement, useAttributesObserver } from 'plaited'
-import type { StoryObj } from 'plaited/workshop'
+import type { StoryObj } from 'plaited/testing'
 
 const AttributesObserver = bElement({
   tag: 'attribute-observer',

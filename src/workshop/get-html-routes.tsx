@@ -1,13 +1,13 @@
 import path from 'node:path'
 
-import { StoryFixture } from '../story-fixture/story-fixture.js'
-import { ssr, bElement, css, type HostStylesObject } from '../../main.js'
-import type { StoryObj } from '../story-fixture/story-fixture.types.js'
-import { createStoryRoute, zip } from './story-server.utils.js'
+import { StoryFixture } from './story-fixture.js'
+import { ssr, bElement, css, type HostStylesObject } from '../main.js'
+import type { StoryObj } from './story-fixture.types.js'
+import { createStoryRoute, zip } from './story-server/story-server.utils.js'
 import type { StorySet } from './story-server.types.js'
 import { WORKSHOP_ROUTE } from './story-server.constants.js'
-import { FIXTURE_EVENTS } from '../story-fixture/story-fixture.constants.js'
-import type { Signal } from '../../behavioral/use-signal.js'
+import { FIXTURE_EVENTS } from './story-fixture.constants.js'
+import type { Signal } from '../behavioral/use-signal.js'
 
 const getEntryPath = (route: string) => {
   const segments = route.split('/')

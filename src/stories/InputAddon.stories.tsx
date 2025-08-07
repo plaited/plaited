@@ -1,4 +1,4 @@
-import { type StoryObj } from 'plaited/workshop'
+import { type StoryObj } from 'plaited/testing'
 import { InputAddon } from './InputAddon.js'
 
 export const Example: StoryObj = {

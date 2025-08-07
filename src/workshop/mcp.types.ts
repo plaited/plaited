@@ -41,6 +41,8 @@ import type {
   RegisteredResourceTemplate,
 } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { GetPromptResult, ReadResourceResult, CallToolResult } from '@modelcontextprotocol/sdk/types.js'
+import type { StdioServerParameters } from '@modelcontextprotocol/sdk/client/stdio.js'
+import type { StreamableHTTPClientTransportOptions } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import type { EventDetails } from '../behavioral.js'
 
 /**
@@ -204,3 +206,23 @@ export type PrimitiveHandlers<Entries extends Registry, E extends EventDetails> 
   : P extends keyof E ? (detail: E[P]) => void | Promise<void>
   : never
 }
+
+/**
+ * @internal
+ * MCP Client types for behavioral integration
+ */
+
+/**
+ * @internal
+ * Transport configuration for MCP client connections.
+ * Supports stdio (subprocess) and SSE (HTTP) transports.
+ */
+export type ServerTransportConfigs = Record<
+  string,
+  | ({ type: 'stdio' } & StdioServerParameters)
+  | {
+      type: 'http'
+      url: string
+      options?: StreamableHTTPClientTransportOptions
+    }
+>

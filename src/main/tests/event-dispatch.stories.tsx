@@ -1,5 +1,5 @@
 import { bElement, useDispatch } from 'plaited'
-import type { StoryObj } from 'plaited/workshop'
+import type { StoryObj } from 'plaited/testing'
 
 const Nested = bElement({
   tag: 'nested-el',

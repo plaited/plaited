@@ -1,5 +1,5 @@
 import type { BrowserContext } from 'playwright'
-import type { StoryParams } from '../story-server/story-server.types.js'
+import type { StoryParams } from './story-server.types.js'
 
 /** @internal Represents the supported color schemes for story rendering and testing. */
 export type ColorScheme = 'light' | 'dark'

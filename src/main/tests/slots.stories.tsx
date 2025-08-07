@@ -1,5 +1,5 @@
 import { type FT, bElement } from 'plaited'
-import type { StoryObj } from 'plaited/workshop'
+import type { StoryObj } from 'plaited/testing'
 import sinon from 'sinon'
 
 const defaultSlot = sinon.spy()

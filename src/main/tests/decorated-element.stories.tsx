@@ -7,7 +7,7 @@ import {
 } from 'plaited'
 import { css } from 'plaited'
 import { isTypeOf } from 'plaited/utils'
-import { type StoryObj, type Args } from 'plaited/workshop'
+import { type StoryObj, type Args } from 'plaited/testing'
 
 const styles = css.create({
   grid: {

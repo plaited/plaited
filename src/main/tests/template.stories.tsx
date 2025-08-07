@@ -1,5 +1,5 @@
 import { type PlaitedElement, bElement } from 'plaited'
-import type { StoryObj } from 'plaited/workshop'
+import type { StoryObj } from 'plaited/testing'
 
 const DelegateFalse = bElement({
   tag: 'delegate-false',

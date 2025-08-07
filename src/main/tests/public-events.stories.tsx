@@ -1,5 +1,5 @@
 import { type FT, bElement, useDispatch, isPlaitedElement } from 'plaited'
-import type { StoryObj } from 'plaited/workshop'
+import type { StoryObj } from 'plaited/testing'
 
 const getPlaitedChildren = (slot: HTMLSlotElement) => [...slot.assignedElements()].filter(isPlaitedElement)
 

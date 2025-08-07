@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axe from 'axe-core'
-import type { Trigger } from '../../behavioral.js'
-import { deepEqual, trueTypeOf, isTypeOf, wait, noop, DelegatedListener, delegates } from '../../utils.js'
+import type { Trigger } from '../behavioral.js'
+import { deepEqual, trueTypeOf, isTypeOf, wait, noop, DelegatedListener, delegates } from '../utils.js'
 
 import { FIXTURE_EVENTS, STORY_FIXTURE, RELOAD_STORY_PAGE, RUNNER_URL } from './story-fixture.constants.js'
 import type {
@@ -402,7 +402,7 @@ export const useFindByAttribute = (trigger: Trigger) => {
    *
    * @example Basic Usage
    * ```typescript
-   * import { findByAttribute } from 'plaited/workshop';
+   * import { findByAttribute } from 'plaited/testing';
    *
    * // Find an element with the attribute data-testid="login-button"
    * const loginButton = await findByAttribute('data-testid', 'login-button');
@@ -492,7 +492,7 @@ export const useFindByText = (trigger: Trigger) => {
    *
    * @example Basic Usage
    * ```typescript
-   * import { findByText } from 'plaited/workshop';
+   * import { findByText } from 'plaited/testing';
    *
    * // Find an element containing the exact text "Submit Button"
    * const submitButton = await findByText('Submit Button');

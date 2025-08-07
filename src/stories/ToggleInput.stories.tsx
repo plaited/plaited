@@ -1,4 +1,4 @@
-import { type StoryObj } from 'plaited/workshop'
+import { type StoryObj } from 'plaited/testing'
 import { ToggleInput } from './ToggleInput.js'
 
 export const checkbox: StoryObj = {

@@ -1,10 +1,10 @@
 import { Glob } from 'bun'
 import { basename, dirname } from 'node:path'
 import { WORKSHOP_ROUTE } from './story-server.constants.js'
-import { kebabCase } from '../../utils/case.js'
-import type { SignalWithInitialValue } from '../../behavioral/use-signal.js'
+import { kebabCase } from '../utils.js'
+import type { SignalWithInitialValue } from '../behavioral.js'
 import type { StoryParams } from './story-server.types.js'
-import type { StoryObj } from '../story-fixture/story-fixture.types.js'
+import type { StoryObj } from './story-fixture.types.js'
 
 /**
  * @internal Scans for files matching a glob pattern within a specified directory.
@@ -91,7 +91,7 @@ export const getEntryRoutes = async (cwd: string, entrypoints: string[]) => {
     [key: string]: Response
   } = {}
   const { outputs } = await Bun.build({
-    entrypoints: ['plaited/workshop', ...entrypoints],
+    entrypoints: ['plaited/testing', ...entrypoints],
     splitting: true,
     root: cwd,
     // minify: true,

@@ -726,7 +726,7 @@ Creates a typed event dispatcher bound to a PlaitedElement.
 - `element`: The PlaitedElement to dispatch events from
 - Returns: A dispatch function for sending custom events with proper typing
 
-## Testing & Workshop Module (`plaited/workshop`)
+## Testing & Workshop Module (`plaited/testing`)
 
 This module provides the necessary infrastructure and types for writing and running tests for your Plaited components using "stories".
 
@@ -735,12 +735,12 @@ The core of the testing module is the `PlaitedFixture` custom element and the ty
 ### Core Exports
 
 - **Constants:**
-    - From `plaited/workshop/testing/testing.constants.js`:
+    - From `plaited/testing/testing/testing.constants.js`:
         - `FAILED_ASSERTION`: String identifier for assertion failures.
         - `MISSING_ASSERTION_PARAMETER`: String identifier for errors when `assert` is called with missing parameters.
         - `TIMEOUT_ERROR`: String identifier for play function timeouts.
         - `FIND_BY_ATTRIBUTE`, `FIND_BY_TEXT`, `FIRE_EVENT`, `ASSERT`, `WAIT`: String identifiers for testing actions, mainly for internal use or advanced integration.
-    - From `plaited/workshop/testing/plaited-fixture.constants.js`:
+    - From `plaited/testing/testing/plaited-fixture.constants.js`:
         - `PLAITED_FIXTURE`: Tag name for the test fixture element (`\'plaited-test-fixture\'`).
         - `PLAY_EVENT`: Event type to trigger story execution (`\'play\'`).
         - `FIXTURE_CONNECTED`: Event type indicating fixture connection.
@@ -890,7 +890,7 @@ Custom error classes used in testing:
 ### Usage Example
 
 ```typescript
-import type { StoryObj, Args } from 'plaited/workshop'
+import type { StoryObj, Args } from 'plaited/testing'
 import { MyComponent } from './my-component'
 
 type MyComponentArgs = Args<typeof MyComponent>

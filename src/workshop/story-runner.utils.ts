@@ -28,7 +28,7 @@
  */
 import type { Browser, BrowserContext, ConsoleMessage } from 'playwright'
 import type { RunningMap } from './story-runner.types.js'
-import type { StoryParams } from '../story-server/story-server.types.js'
+import type { StoryParams } from './story-server.types.js'
 
 /**
  * @internal

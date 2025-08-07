@@ -1,4 +1,4 @@
-import { keyMirror } from '../../utils.js'
+import { keyMirror } from '../utils.js'
 
 /**
  * @internal Key-mirrored object of event names used internally by the story runner system.
