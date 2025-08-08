@@ -1,5 +1,5 @@
 // import { z } from 'zod'
-import { bServer } from './b-server.js'
+import { bServer } from '../mcp.js'
 import { registry } from './workshop.registry.js'
 
 export const workshop = bServer({

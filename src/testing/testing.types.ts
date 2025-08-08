@@ -2,8 +2,8 @@ import type { BrowserContextOptions } from 'playwright'
 import type axe from 'axe-core'
 import type { Attrs, FunctionTemplate, HostStylesObject } from '../main.js'
 import type { Wait } from '../utils.js'
-import type { Match, Throws } from './story-fixture.utils.js'
-import { FIXTURE_EVENTS } from './story-fixture.constants.js'
+import type { Match, Throws } from './testing.utils.js'
+import { FIXTURE_EVENTS } from './testing.constants.js'
 import type { SnapshotMessage } from 'plaited/behavioral'
 
 /**

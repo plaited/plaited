@@ -1,8 +1,10 @@
 import { chromium, type BrowserContext } from 'playwright'
-import { bProgram } from '../behavioral.js'
+import { bProgram } from '../../behavioral.js'
 import { STORY_RUNNER_EVENTS } from './story-runner.constants.js'
-import { FIXTURE_EVENTS, type RunnerMessage } from '../testing.js'
-import type { ColorScheme, RunningMap, StoryParams } from './workshop.types.js'
+import { type RunnerMessage } from '../../testing.js'
+import { FIXTURE_EVENTS } from '../../testing/testing.constants.js'
+import type { ColorScheme, RunningMap } from './story-runner.types.js'
+import type { StoryParams } from '../story-server/story-server.types.js'
 import { useVisitStory, useRunnerID } from './story-runner.utils.js'
 
 type FixtureEventDetail = {

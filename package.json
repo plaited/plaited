@@ -22,7 +22,7 @@
     "./jsx-runtime": "./src/jsx-runtime.ts",
     "./utils": "./src/utils.ts",
     "./testing": "./src/testing.ts",
-    "./workshop": "./src/workshop.ts"
+    "./mcp": "./src/mcp.ts"
   },
   "files": [
     "./.bin/**",

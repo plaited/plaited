@@ -1,10 +1,10 @@
 import { Glob } from 'bun'
 import { basename, dirname } from 'node:path'
 import { WORKSHOP_ROUTE } from './story-server.constants.js'
-import { kebabCase } from '../utils.js'
-import type { SignalWithInitialValue } from '../behavioral.js'
-import type { StoryParams } from './workshop.types.js'
-import type { StoryObj } from '../testing.js'
+import { kebabCase } from '../../utils.js'
+import type { SignalWithInitialValue } from '../../behavioral.js'
+import type { StoryParams } from './story-server.types.js'
+import type { StoryObj } from '../../testing.js'
 
 /**
  * @internal Scans for files matching a glob pattern within a specified directory.

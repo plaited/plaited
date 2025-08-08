@@ -1,6 +1,6 @@
 import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
-import type { Registry } from '../mcp.types'
+import type { Registry } from '../mcp.types.js'
 
 export const registry = {
   prompt: {

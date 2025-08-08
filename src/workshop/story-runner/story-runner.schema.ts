@@ -1,5 +1,5 @@
 import { z } from 'zod/v4'
-import type { RunnerMessage } from '../testing.js'
+import type { RunnerMessage } from '../../testing.js'
 
 /**
  * @internal Zod schema for validating `RunnerMessage` objects.

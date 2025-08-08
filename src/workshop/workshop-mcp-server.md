@@ -1,0 +1,9 @@
+- start server probably not a tool cal it starts simply by connecting server
+- get stories for a functional template or a plaited template
+- get a list of functional templates
+- get a list of plaited templates
+- set working root or get permission to read and write files to a root directory
+- create a functional template
+- create a plaited template
+- send links for current template
+- 

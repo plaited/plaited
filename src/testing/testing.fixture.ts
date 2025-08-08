@@ -13,7 +13,7 @@ declare global {
 import type { SnapshotMessage } from '../behavioral.js'
 import { bElement, h, css } from '../main.js'
 import { wait } from '../utils.js'
-import { STORY_FIXTURE, DEFAULT_PLAY_TIMEOUT, FIXTURE_EVENTS } from './story-fixture.constants.js'
+import { STORY_FIXTURE, DEFAULT_PLAY_TIMEOUT, FIXTURE_EVENTS } from './testing.constants.js'
 import {
   FailedAssertionError,
   MissingAssertionParameterError,
@@ -27,8 +27,8 @@ import {
   useFireEvent,
   useAccessibilityCheck,
   useRunner,
-} from './story-fixture.utils.js'
-import type { InteractionStoryObj, Play, TestFailureEventDetail } from './story-fixture.types.js'
+} from './testing.utils.js'
+import type { InteractionStoryObj, Play, TestFailureEventDetail } from './testing.types.js'
 
 /**
  * @element plaited-story-fixture

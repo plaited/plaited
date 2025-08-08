@@ -1,13 +1,14 @@
 import { z } from 'zod/v4'
-import { useSignal, type Signal } from '../behavioral.js'
-import { type StoryObj, RELOAD_STORY_PAGE, RUNNER_URL } from '../testing.js'
+import { useSignal, type Signal } from '../../behavioral.js'
+import { type StoryObj } from '../../testing.js'
+import { RELOAD_STORY_PAGE, RUNNER_URL } from '../../testing/testing.constants.js'
 import { getHTMLRoutes } from './get-html-routes.js'
 import { addStoryParams, getEntryRoutes, globFiles } from './story-server.utils.js'
-import type { StoryParams } from './workshop.types.js'
-import { isTypeOf } from '../utils'
-import { RunnerMessageSchema } from './story-runner.schema.js'
-import { STORY_RUNNER_EVENTS } from './story-runner.constants.js'
-import type { Trigger } from '../behavioral.js'
+import type { StoryParams } from './story-server.types.js'
+import { isTypeOf } from '../../utils.js'
+import { RunnerMessageSchema } from '../story-runner/story-runner.schema.js'
+import { STORY_RUNNER_EVENTS } from '../story-runner/story-runner.constants.js'
+import type { Trigger } from '../../behavioral.js'
 /** Glob pattern used to find story files within the project. */
 const STORY_GLOB_PATTERN = `**/*.stories.{tsx,ts}`
 

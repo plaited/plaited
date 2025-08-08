@@ -3,7 +3,7 @@ import axe from 'axe-core'
 import type { Trigger } from '../behavioral.js'
 import { deepEqual, trueTypeOf, isTypeOf, wait, noop, DelegatedListener, delegates } from '../utils.js'
 
-import { FIXTURE_EVENTS, STORY_FIXTURE, RELOAD_STORY_PAGE, RUNNER_URL } from './story-fixture.constants.js'
+import { FIXTURE_EVENTS, STORY_FIXTURE, RELOAD_STORY_PAGE, RUNNER_URL } from './testing.constants.js'
 import type {
   Assert,
   AssertDetails,
@@ -18,7 +18,7 @@ import type {
   AccessibilityCheck,
   AccessibilityCheckDetails,
   RunnerMessage,
-} from './story-fixture.types.js'
+} from './testing.types.js'
 
 /**
  * Custom error for test assertion failures.

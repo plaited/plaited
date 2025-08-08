@@ -1,4 +1,2 @@
-import './testing/story-fixture.js'
-export * from './testing/story-fixture.js'
-export * from './testing/story-fixture.types.js'
-export * from './testing/story-fixture.constants.js'
+import './testing/testing.fixture.js'
+export * from './testing/testing.types.js'

@@ -1,5 +1,5 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { bServer } from 'plaited/workshop'
+import { bServer } from 'plaited/mcp'
 import { registry } from './mcp-server.registry.js'
 
 const server = await bServer({
