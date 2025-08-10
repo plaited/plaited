@@ -59,8 +59,8 @@ const Slotted = bElement({
 })
 
 export const eventDispatch: StoryObj = {
-  description: `Example of how to use useDispatch to broadcast events between plaited elements nested within
-  another plaited elements shadow dom. When the button in nested-el is clicked the h1 in outer-el shadow dom's
+  description: `Example of how to use useDispatch to broadcast events between Behavioral elements nested within
+  another Behavioral elements shadow dom. When the button in nested-el is clicked the h1 in outer-el shadow dom's
   has a string appended to it`,
   template: Outer,
   play: async ({ assert, findByAttribute, fireEvent }) => {
@@ -83,8 +83,8 @@ export const eventDispatch: StoryObj = {
 }
 
 export const eventDispatchSlot: StoryObj = {
-  description: `Example of how to use useDispatch to broadcast events between plaited elements slotted within
-another plaited elements light dom. When the button in nested-el is clicked the h1 in parent-el shadow dom has a
+  description: `Example of how to use useDispatch to broadcast events between Behavioral elements slotted within
+another Behavioral elements light dom. When the button in nested-el is clicked the h1 in parent-el shadow dom has a
 string appended to it`,
   template: () => (
     <Slotted>

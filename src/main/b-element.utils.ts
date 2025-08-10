@@ -8,7 +8,7 @@
  * Consumers: bElement, useTemplate, internal rendering system
  *
  * Maintainer Notes:
- * - This module implements the core DOM update strategy for Plaited elements
+ * - This module implements the core DOM update strategy for Behavioral elements
  * - Helper methods are attached to DOM elements via Object.assign for performance
  * - Style adoption is async to handle CSS module loading
  * - WeakMap caching prevents memory leaks and duplicate style processing
@@ -26,9 +26,9 @@
  * - Attribute updates are batched when using object syntax
  * - DocumentFragment creation is deferred until needed
  */
-import type { TemplateObject } from './jsx.types.js'
-import { BOOLEAN_ATTRS } from './jsx.constants.js'
-import type { Bindings, BoundElement } from './plaited.types.js'
+import type { TemplateObject } from './create-template.types.js'
+import { BOOLEAN_ATTRS } from './create-template.constants.js'
+import type { Bindings, BoundElement } from './b-element.types.js'
 /**
  * @internal Cache for storing adopted stylesheets per ShadowRoot to prevent duplicate processing.
  * Used internally by the framework to optimize style adoption performance.

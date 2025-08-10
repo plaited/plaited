@@ -1,4 +1,4 @@
-import { bElement, type PlaitedElement } from 'plaited'
+import { bElement, type BehavioralElement } from 'plaited'
 import { css } from 'plaited'
 import type { StoryObj } from 'plaited/testing'
 
@@ -38,7 +38,7 @@ const DynamicOnly = bElement({
 
 export const dynamicStyles: StoryObj = {
   description: `This story is used to validate that when rendering/inserting new JSX with styles
-  into the plaited element shadow dom those styles sheets are applied to the constructed styles
+  into the Behavioral element shadow dom those styles sheets are applied to the constructed styles
   and do not repeat`,
   template: () => <DynamicOnly data-testid='element' />,
   play: async ({ findByText, assert, findByAttribute, wait }) => {
@@ -51,7 +51,7 @@ export const dynamicStyles: StoryObj = {
       actual: style?.textContent,
       expected: styles.initial.stylesheets.join(''),
     })
-    let target = await findByAttribute<PlaitedElement>('data-testid', 'element')
+    let target = await findByAttribute<BehavioralElement>('data-testid', 'element')
     assert({
       given: 'target has not been triggered',
       should: 'have adoptedStyleSheets of length 1',
@@ -60,7 +60,7 @@ export const dynamicStyles: StoryObj = {
     })
     target?.trigger({ type: 'render' })
     await wait(60)
-    target = await findByAttribute<PlaitedElement>('data-testid', 'element')
+    target = await findByAttribute<BehavioralElement>('data-testid', 'element')
     assert({
       given: 'target has been triggered',
       should: 'have adoptedStyleSheets of length 3',

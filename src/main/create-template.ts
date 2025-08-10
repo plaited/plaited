@@ -128,7 +128,7 @@ import type {
   ElementAttributeList,
   CustomElementTag,
   FunctionTemplate,
-} from './jsx.types.js'
+} from './create-template.types.js'
 import {
   BOOLEAN_ATTRS,
   PRIMITIVES,
@@ -136,7 +136,7 @@ import {
   VALID_PRIMITIVE_CHILDREN,
   P_TRIGGER,
   TEMPLATE_OBJECT_IDENTIFIER,
-} from './jsx.constants.js'
+} from './create-template.constants.js'
 
 /** @internal Represents the possible types for a tag in a JSX element: a standard HTML/SVG tag name (string), a custom element tag name (string with hyphen), or a FunctionTemplate component. */
 type Tag = string | CustomElementTag | FunctionTemplate

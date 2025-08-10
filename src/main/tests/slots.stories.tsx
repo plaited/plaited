@@ -71,7 +71,7 @@ const Fixture: FT = () => (
 
 export const slots: StoryObj = {
   description: `This story is used to validate that p-trigger attribute on slot elements in a
-  plaited elements shadow DOM only allow event triggering on named and default slots in
+  Behavioral elements shadow DOM only allow event triggering on named and default slots in
   it's shadow dom but not on pass through slots.`,
   template: Fixture,
   play: async ({ assert, findByText, fireEvent }) => {

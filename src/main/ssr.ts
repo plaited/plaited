@@ -33,8 +33,8 @@
  * - Shadow DOM polyfills not included
  */
 import { escape, isTypeOf } from '../utils.js'
-import type { TemplateObject } from './jsx.types.js'
-import { VALID_PRIMITIVE_CHILDREN, TEMPLATE_OBJECT_IDENTIFIER } from './jsx.constants.js'
+import type { TemplateObject } from './create-template.types.js'
+import { VALID_PRIMITIVE_CHILDREN, TEMPLATE_OBJECT_IDENTIFIER } from './create-template.constants.js'
 
 /**
  * Server-Side Rendering (SSR) for Plaited Templates

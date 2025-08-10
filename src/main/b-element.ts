@@ -16,15 +16,15 @@ import {
   getPublicTrigger,
 } from '../behavioral.js'
 import { delegates, DelegatedListener, canUseDOM } from '../utils.js'
-import type { Attrs, TemplateObject, CustomElementTag } from './jsx.types.js'
-import { P_TRIGGER, P_TARGET, BOOLEAN_ATTRS } from './jsx.constants.js'
+import type { Attrs, TemplateObject, CustomElementTag } from './create-template.types.js'
+import { P_TRIGGER, P_TARGET, BOOLEAN_ATTRS } from './create-template.constants.js'
 import { createTemplate } from './create-template.js'
-import { getDocumentFragment, assignHelpers, getBindings } from './assign-helpers.js'
-import { PLAITED_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './plaited.constants.js'
-import type { PlaitedTemplate, PlaitedElement, SelectorMatch, Bindings, BoundElement } from './plaited.types.js'
+import { getDocumentFragment, assignHelpers, getBindings } from './b-element.utils.js'
+import { BEHAVIORAL_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './b-element.constants.js'
+import type { BehavioralTemplate, BehavioralElement, SelectorMatch, Bindings, BoundElement } from './b-element.types.js'
 
 /**
- * Arguments passed to the `bProgram` function when defining a Plaited element.
+ * Arguments passed to the `bProgram` function when defining a Behavioral element.
  * Provides essential utilities and context for the element's behavior and lifecycle management.
  *
  * @property $ - A query selector function scoped to the component's shadow root.
@@ -80,7 +80,7 @@ export type BProgramArgs = {
     match?: SelectorMatch,
   ) => NodeListOf<BoundElement<E>>
   root: ShadowRoot
-  host: PlaitedElement
+  host: BehavioralElement
   internals: ElementInternals
   trigger: PlaitedTrigger
   bThreads: BThreads
@@ -112,7 +112,7 @@ export type BProgramArgs = {
  *   (e.g., during navigation or browser restart). Requires `formAssociated: true`.
  *   Receives an object with `state` (the restored state) and `reason` ('autocomplete' or 'restore').
  */
-export type PlaitedElementCallbackDetails = {
+export type BehavioralElementCallbackDetails = {
   [ELEMENT_CALLBACKS.onAdopted]: void
   [ELEMENT_CALLBACKS.onAttributeChanged]: {
     name: string
@@ -130,8 +130,8 @@ export type PlaitedElementCallbackDetails = {
   }
 }
 type Callback<T> = T extends void ? () => void | Promise<void> : (detail: T) => void | Promise<void>
-type PlaitedElementCallbackHandlers = {
-  [K in keyof PlaitedElementCallbackDetails]?: Callback<PlaitedElementCallbackDetails[K]>
+type BehavioralElementCallbackHandlers = {
+  [K in keyof BehavioralElementCallbackDetails]?: Callback<BehavioralElementCallbackDetails[K]>
 }
 
 const getTriggerMap = (el: Element) =>
@@ -428,13 +428,13 @@ export const bElement = <A extends EventDetails>({
   publicEvents?: string[]
   formAssociated?: true
   bProgram?: {
-    (this: PlaitedElement, args: BProgramArgs): Handlers<A> & PlaitedElementCallbackHandlers
+    (this: BehavioralElement, args: BProgramArgs): Handlers<A> & BehavioralElementCallbackHandlers
   }
-}): PlaitedTemplate => {
+}): BehavioralTemplate => {
   if (canUseDOM() && !customElements.get(tag)) {
     customElements.define(
       tag,
-      class extends HTMLElement implements PlaitedElement {
+      class extends HTMLElement implements BehavioralElement {
         static observedAttributes = [...observedAttributes]
         static formAssociated = formAssociated
         get publicEvents() {
@@ -470,7 +470,7 @@ export const bElement = <A extends EventDetails>({
         attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
           this.#trigger<{
             type: typeof ELEMENT_CALLBACKS.onAttributeChanged
-            detail: PlaitedElementCallbackDetails['onAttributeChanged']
+            detail: BehavioralElementCallbackDetails['onAttributeChanged']
           }>({
             type: ELEMENT_CALLBACKS.onAttributeChanged,
             detail: { name, oldValue, newValue },
@@ -526,7 +526,7 @@ export const bElement = <A extends EventDetails>({
         formAssociatedCallback(form: HTMLFormElement) {
           this.#trigger<{
             type: typeof ELEMENT_CALLBACKS.onFormAssociated
-            detail: PlaitedElementCallbackDetails['onFormAssociated']
+            detail: BehavioralElementCallbackDetails['onFormAssociated']
           }>({
             type: ELEMENT_CALLBACKS.onFormAssociated,
             detail: form,
@@ -535,7 +535,7 @@ export const bElement = <A extends EventDetails>({
         formDisabledCallback(disabled: boolean) {
           this.#trigger<{
             type: typeof ELEMENT_CALLBACKS.onFormDisabled
-            detail: PlaitedElementCallbackDetails['onFormDisabled']
+            detail: BehavioralElementCallbackDetails['onFormDisabled']
           }>({
             type: ELEMENT_CALLBACKS.onFormDisabled,
             detail: disabled,
@@ -547,7 +547,7 @@ export const bElement = <A extends EventDetails>({
         formStateRestoreCallback(state: unknown, reason: 'autocomplete' | 'restore') {
           this.#trigger<{
             type: typeof ELEMENT_CALLBACKS.onFormStateRestore
-            detail: PlaitedElementCallbackDetails['onFormStateRestore']
+            detail: BehavioralElementCallbackDetails['onFormStateRestore']
           }>({
             type: ELEMENT_CALLBACKS.onFormStateRestore,
             detail: { state, reason },
@@ -639,7 +639,7 @@ export const bElement = <A extends EventDetails>({
     })
   ft.registry = registry
   ft.tag = tag
-  ft.$ = PLAITED_TEMPLATE_IDENTIFIER
+  ft.$ = BEHAVIORAL_TEMPLATE_IDENTIFIER
   ft.publicEvents = publicEvents
   ft.observedAttributes = observedAttributes
   return ft

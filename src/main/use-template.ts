@@ -33,9 +33,9 @@
  * - Cannot update existing elements, only create new
  * - No automatic cleanup of event listeners
  */
-import type { BoundElement, SelectorMatch } from './plaited.types'
-import { assignHelpers, getBindings } from './assign-helpers.js'
-import { P_TARGET } from './jsx.constants.js'
+import type { BoundElement, SelectorMatch } from './b-element.types'
+import { assignHelpers, getBindings } from './b-element.utils.js'
+import { P_TARGET } from './create-template.constants.js'
 
 /**
  * Creates a template factory function for efficient dynamic content generation in Plaited components.

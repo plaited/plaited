@@ -1,4 +1,4 @@
-import { type PlaitedElement, bElement } from 'plaited'
+import { type BehavioralElement, bElement } from 'plaited'
 import type { StoryObj } from 'plaited/testing'
 
 const DelegateFalse = bElement({
@@ -19,11 +19,11 @@ const ClosedMode = bElement({
 })
 
 export const defaultModeAndFocus: StoryObj = {
-  description: `This test is used to validate a plaited element created using bElement
+  description: `This test is used to validate a Behavioral element created using bElement
   default to having it's mode open`,
   template: () => <ModeOpen p-target='el' />,
   play: async ({ assert, findByAttribute }) => {
-    const host = await findByAttribute<PlaitedElement>('p-target', 'el')
+    const host = await findByAttribute<BehavioralElement>('p-target', 'el')
     assert({
       given: 'setHTMLUnsafe',
       should: 'delegate focus',
@@ -40,11 +40,11 @@ export const defaultModeAndFocus: StoryObj = {
 }
 
 export const delegatesFocusFalse: StoryObj = {
-  description: `This test is used to validate a plaited element created using bElement
+  description: `This test is used to validate a Behavioral element created using bElement
   with the parameter delefateFocus set to false does not allow focus delegation.`,
   template: () => <DelegateFalse p-target='el' />,
   play: async ({ assert, findByAttribute }) => {
-    const host = await findByAttribute<PlaitedElement>('p-target', 'el')
+    const host = await findByAttribute<BehavioralElement>('p-target', 'el')
     assert({
       given: 'setHTMLUnsafe',
       should: 'delegate focus',
@@ -61,11 +61,11 @@ export const delegatesFocusFalse: StoryObj = {
 }
 
 export const closedMode: StoryObj = {
-  description: `This test is used to validate a plaited element created using bElement
+  description: `This test is used to validate a Behavioral element created using bElement
   with the parameter mode set to false create a custom element with a closed shadow dom.`,
   template: () => <ClosedMode p-target='el' />,
   play: async ({ assert, findByAttribute }) => {
-    const host = await findByAttribute<PlaitedElement>('p-target', 'el')
+    const host = await findByAttribute<BehavioralElement>('p-target', 'el')
     assert({
       given: 'setHTMLUnsafe',
       should: 'return null',

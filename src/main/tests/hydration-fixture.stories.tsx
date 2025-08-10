@@ -1,4 +1,4 @@
-import { bElement, type PlaitedElement } from 'plaited'
+import { bElement, type BehavioralElement } from 'plaited'
 import { createDocumentFragment } from 'plaited/utils'
 import type { StoryObj } from 'plaited/testing'
 
@@ -73,13 +73,13 @@ export const test: StoryObj = {
       expected: pattern,
     })
 
-    const fixture = document.querySelector<PlaitedElement>(FIXTURE_ELEMENT_TAG)
+    const fixture = document.querySelector<BehavioralElement>(FIXTURE_ELEMENT_TAG)
 
     fixture?.trigger({ type: TRIGGER_HYDRATION, detail: responseText })
 
     await customElements.whenDefined(HYDRATING_ELEMENT_TAG)
     await wait(60)
-    const hydratingElement = await findByAttribute<PlaitedElement>('p-target', HYDRATING_ELEMENT_TAG)
+    const hydratingElement = await findByAttribute<BehavioralElement>('p-target', HYDRATING_ELEMENT_TAG)
 
     const contentAfterHydration = await findByAttribute<HTMLSpanElement>('p-target', 'inner', hydratingElement)
     const styleElementAfterHydration = await findByText(styles.before.stylesheets.join(' '), hydratingElement)

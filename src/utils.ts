@@ -1,6 +1,6 @@
 export * from './utils/can-use-dom.js'
 export * from './utils/case.js'
-export * from './utils/create-dcoument-fragment.js'
+export * from './utils/create-document-fragment.js'
 export * from './utils/deep-equal.js'
 export * from './utils/delegated-listener.js'
 export * from './utils/escape.js'

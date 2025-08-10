@@ -34,11 +34,11 @@
  * - Limited to CustomEvent capabilities
  */
 import { type BPEvent } from '../behavioral.js'
-import { type PlaitedElement } from './plaited.types.js'
+import { type BehavioralElement } from './b-element.types.js'
 
 /**
  * @internal
- * Type definition for the dispatch function that sends custom events from Plaited elements.
+ * Type definition for the dispatch function that sends custom events from Behavioral elements.
  * Extends BPEvent with CustomEvent options for full control over event behavior.
  *
  * Type intersection combines:
@@ -57,10 +57,10 @@ type Dispatch = (
 ) => void
 
 /**
- * Creates an event dispatch function for a Plaited element.
+ * Creates an event dispatch function for a Behavioral element.
  * Enables component-to-component communication through custom events.
  *
- * @param element - PlaitedElement to dispatch events from
+ * @param element - BehavioralElement to dispatch events from
  * @returns A typed dispatch function for creating and sending custom events
  *
  * @example Component communication through shadow DOM boundaries
@@ -167,7 +167,7 @@ type Dispatch = (
  * - Document public events in component API documentation
  */
 export const useDispatch =
-  (element: PlaitedElement): Dispatch =>
+  (element: BehavioralElement): Dispatch =>
   /**
    * @internal
    * Returned dispatch function captures element reference in closure.

@@ -1,7 +1,7 @@
 import { keyMirror } from '../utils.js'
 
 /**
- * @internal Mirrored object of lifecycle and mutation callback names for Plaited elements.
+ * @internal Mirrored object of lifecycle and mutation callback names for Behavioral elements.
  * Provides strongly typed string literals for every supported callback in a Plaited component.
  *
  * Lifecycle Callbacks:
@@ -93,12 +93,12 @@ export const ELEMENT_CALLBACKS = keyMirror(
  * @example
  * Creating a template validator
  * ```tsx
- * const isPlaitedTemplate = (obj: unknown): obj is TemplateObject =>
- *   obj && typeof obj === 'object' && obj.$ === PLAITED_TEMPLATE_IDENTIFIER;
+ * const isBehavioralTemplate = (obj: unknown): obj is TemplateObject =>
+ *   obj && typeof obj === 'object' && obj.$ === BEHAVIORAL_TEMPLATE_IDENTIFIER;
  *
  * const template = <div>Hello World</div>;
- * console.log(isPlaitedTemplate(template)); // true
- * console.log(isPlaitedTemplate({ html: [], $: '🐻' })); // false
+ * console.log(isBehavioralTemplate(template)); // true
+ * console.log(isBehavioralTemplate({ html: [], $: '🐻' })); // false
  * ```
  *
  * @remarks
@@ -107,4 +107,4 @@ export const ELEMENT_CALLBACKS = keyMirror(
  * - The identifier is read-only and cannot be modified
  * - Used internally by the framework's template processing
  */
-export const PLAITED_TEMPLATE_IDENTIFIER = '🐻' as const
+export const BEHAVIORAL_TEMPLATE_IDENTIFIER = '🐻' as const

@@ -9,7 +9,7 @@
 
  */
 
-import type { ElementAttributeList } from './main/jsx.types.js'
+import type { ElementAttributeList } from './main/create-template.types.js'
 import { createTemplate, Fragment } from './main/create-template.js'
 
 /**

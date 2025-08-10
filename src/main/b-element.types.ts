@@ -1,6 +1,6 @@
 import type { Trigger } from '../behavioral.js'
-import type { CustomElementTag, FunctionTemplate, TemplateObject } from './jsx.types.js'
-import { type PLAITED_TEMPLATE_IDENTIFIER } from './plaited.constants.js'
+import type { CustomElementTag, FunctionTemplate, TemplateObject } from './create-template.types.js'
+import { type BEHAVIORAL_TEMPLATE_IDENTIFIER } from './b-element.constants.js'
 /**
  * Valid insertion positions for DOM elements relative to a reference element.
  * Follows the insertAdjacentElement/HTML specification.
@@ -185,20 +185,20 @@ export type SelectorMatch = '=' | '~=' | '|=' | '^=' | '$=' | '*='
  * @property formResetCallback - If `formAssociated` is true, called when the form is reset.
  * @property formStateRestoreCallback - If `formAssociated` is true, called when the browser attempts to restore the element's state.
  */
-export interface PlaitedElement extends HTMLElement {
+export interface BehavioralElement extends HTMLElement {
   // Custom Methods and properties
   trigger: Trigger
   readonly publicEvents?: string[]
-  adoptedCallback?: { (this: PlaitedElement): void }
+  adoptedCallback?: { (this: BehavioralElement): void }
   attributeChangedCallback?: {
-    (this: PlaitedElement, name: string, oldValue: string | null, newValue: string | null): void
+    (this: BehavioralElement, name: string, oldValue: string | null, newValue: string | null): void
   }
-  connectedCallback(this: PlaitedElement): void
-  disconnectedCallback(this: PlaitedElement): void
-  formAssociatedCallback(this: PlaitedElement, form: HTMLFormElement): void
-  formDisabledCallback(this: PlaitedElement, disabled: boolean): void
-  formResetCallback(this: PlaitedElement): void
-  formStateRestoreCallback(this: PlaitedElement, state: unknown, reason: 'autocomplete' | 'restore'): void
+  connectedCallback(this: BehavioralElement): void
+  disconnectedCallback(this: BehavioralElement): void
+  formAssociatedCallback(this: BehavioralElement, form: HTMLFormElement): void
+  formDisabledCallback(this: BehavioralElement, disabled: boolean): void
+  formResetCallback(this: BehavioralElement): void
+  formStateRestoreCallback(this: BehavioralElement, state: unknown, reason: 'autocomplete' | 'restore'): void
 }
 /**
 /**
@@ -213,13 +213,13 @@ export interface PlaitedElement extends HTMLElement {
  *                                triggering `attributeChangedCallback`.
  * @property publicEvents - An array of event type strings that can be externally dispatched on the component instance
  *                          using its `trigger` method.
- * @property $ - A unique symbol (`PLAITED_TEMPLATE_IDENTIFIER`) acting as a type guard to identify
+ * @property $ - A unique symbol (`BEHAVIORAL_TEMPLATE_IDENTIFIER`) acting as a type guard to identify
  *               this object as a Plaited-specific template function.
  */
-export type PlaitedTemplate = FunctionTemplate & {
+export type BehavioralTemplate = FunctionTemplate & {
   registry: Set<string>
   tag: CustomElementTag
   observedAttributes: string[]
   publicEvents: string[]
-  $: typeof PLAITED_TEMPLATE_IDENTIFIER
+  $: typeof BEHAVIORAL_TEMPLATE_IDENTIFIER
 }

@@ -1,7 +1,7 @@
-import { type FT, bElement, useDispatch, isPlaitedElement } from 'plaited'
+import { type FT, bElement, useDispatch, isBehavioralElement } from 'plaited'
 import type { StoryObj } from 'plaited/testing'
 
-const getPlaitedChildren = (slot: HTMLSlotElement) => [...slot.assignedElements()].filter(isPlaitedElement)
+const getPlaitedChildren = (slot: HTMLSlotElement) => [...slot.assignedElements()].filter(isBehavioralElement)
 
 const Inner = bElement({
   tag: 'inner-component',
@@ -63,7 +63,7 @@ const Template: FT = () => (
 
 export const publicEvents: StoryObj = {
   description: `This story is used to validate that the publicEvents parameter
-  of bElement allows for triggering a public event on a plaited element`,
+  of bElement allows for triggering a public event on a Behavioral element`,
   template: Template,
   play: async ({ assert, findByAttribute, fireEvent }) => {
     let button = await findByAttribute('p-target', 'button')

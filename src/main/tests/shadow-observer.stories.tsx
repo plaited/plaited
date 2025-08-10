@@ -154,7 +154,7 @@ const ShadowIsland = bElement({
 
 export const shadowObserver: StoryObj = {
   description: `This story is used to validate that the shadow dom mutation observer
-  of plaited elements created by bElement function properly binds events declared with the
+  of Behavioral elements created by bElement function properly binds events declared with the
   p-trigger attribute on elements in it's shadow dom.`,
   template: ShadowIsland,
   play: async ({ assert, findByAttribute, findByText, fireEvent }) => {

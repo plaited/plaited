@@ -1,5 +1,5 @@
 import type { CSSProperties } from './css.types.js'
-import { P_TARGET, P_TRIGGER, TEMPLATE_OBJECT_IDENTIFIER } from './jsx.constants.js'
+import { P_TARGET, P_TRIGGER, TEMPLATE_OBJECT_IDENTIFIER } from './create-template.constants.js'
 
 type Booleanish = boolean | 'true' | 'false'
 type CrossOrigin = 'anonymous' | 'use-credentials' | ''
