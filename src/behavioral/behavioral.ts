@@ -6,13 +6,23 @@ import { isTypeOf } from '../utils.js'
  * - `function`: A predicate function evaluated before each repetition. The thread repeats if the function returns `true`.
  * - `undefined` or omitted: The thread executes once and terminates.
  *
- * @example
- * // Repeat indefinitely
- * bThread([...rules], true);
+ * @example Repeat indefinitely
+ * ```ts
+ * const infiniteLoop = bThread([
+ *   bSync({ request: { type: 'PING' } }),
+ *   bSync({ waitFor: 'PONG' })
+ * ], true);
+ * ```
  *
- * // Repeat until counter reaches 5
+ * @example Repeat with condition
+ * ```ts
  * let counter = 0;
- * bThread([...rules], () => counter++ < 5);
+ * const limitedLoop = bThread([
+ *   bSync({ request: { type: 'COUNT', detail: { value: counter } } })
+ * ], () => counter++ < 5);
+ * ```
+ *
+ * @see {@link bThread} for creating threads with repetition
  */
 type Repeat = true | (() => boolean)
 
@@ -22,18 +32,35 @@ type Repeat = true | (() => boolean)
  * Events are used for communication between b-threads and are the core mechanism
  * through which the behavioral program coordinates execution.
  *
- * @template T The expected type of the `detail` payload. Defaults to `unknown`.
+ * @template T The expected type of the `detail` payload. Defaults to `any` for flexibility.
  * @property type - The string identifier for the event, used for matching and dispatching.
  * @property detail - Optional data payload associated with the event.
- * @example
- * // Event with typed detail payload
- * const userLoginEvent: BPEvent<{ userId: string; timestamp: number }> = {
- *   type: 'USER_LOGIN',
- *   detail: { userId: 'usr123', timestamp: Date.now() }
- * };
  *
- * // Simple event without detail
- * const simpleEvent: BPEvent = { type: 'SYSTEM_START' };
+ * @example Event with typed detail
+ * ```ts
+ * interface LoginDetails {
+ *   userId: string;
+ *   timestamp: number;
+ *   rememberMe: boolean;
+ * }
+ *
+ * const loginEvent: BPEvent<LoginDetails> = {
+ *   type: 'USER_LOGIN',
+ *   detail: {
+ *     userId: 'usr123',
+ *     timestamp: Date.now(),
+ *     rememberMe: true
+ *   }
+ * };
+ * ```
+ *
+ * @example Simple event without detail
+ * ```ts
+ * const initEvent: BPEvent = { type: 'INITIALIZE' };
+ * ```
+ *
+ * @see {@link BPEventTemplate} for dynamic event generation
+ * @see {@link Trigger} for injecting events into the program
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type BPEvent = { type: string; detail?: any }
@@ -44,20 +71,38 @@ export type BPEvent = { type: string; detail?: any }
  * at the exact moment the synchronization point is reached rather than when the b-thread
  * is initially defined.
  *
- * @template T The expected type of the `detail` payload for the generated event. Defaults to `unknown`.
- * @returns A `BPEvent<T>` object when the function is invoked.
- * @example
- * // Create a factory for timestamped events
- * const createTimestampedEvent = (type: string): BPEventTemplate<{ timestamp: number }> =>
- *   () => ({ type, detail: { timestamp: Date.now() } });
+ * @template T The expected type of the `detail` payload for the generated event.
+ * @returns A `BPEvent` object when the function is invoked.
  *
- * // Used in a bSync to generate a fresh timestamp each time this sync point is reached
- * bSync({ request: createTimestampedEvent('LOG_TIME') });
+ * @example Dynamic timestamp generation
+ * ```ts
+ * const timestampedRequest = bSync({
+ *   request: () => ({
+ *     type: 'LOG_EVENT',
+ *     detail: { timestamp: Date.now() }
+ *   })
+ * });
+ * ```
  *
- * // Useful for dynamic data in requests
- * let counter = 0;
- * const createCounterEvent = (): BPEventTemplate<{ count: number }> =>
- *   () => ({ type: 'COUNT', detail: { count: counter++ } });
+ * @example Stateful event generation
+ * ```ts
+ * let requestCount = 0;
+ * const countedRequest = bSync({
+ *   request: () => ({
+ *     type: 'API_REQUEST',
+ *     detail: {
+ *       requestId: ++requestCount,
+ *       timestamp: Date.now()
+ *     }
+ *   })
+ * });
+ * ```
+ *
+ * @remarks
+ * Event templates are evaluated each time the synchronization point is reached,
+ * ensuring fresh data for each execution cycle.
+ *
+ * @see {@link BPEvent} for static event definitions
  */
 export type BPEventTemplate = () => BPEvent
 
@@ -69,61 +114,94 @@ export type BPEventTemplate = () => BPEvent
  * 1. A simple `string`: Matches events exactly by their `type` property.
  * 2. A predicate function: Takes an event object and returns `true` if the event matches the desired criteria.
  *
- * @template T The expected type of the `detail` payload for events being listened for. Defaults to `unknown`.
- * @example
- * // Simple string match - listens for exactly "USER_ACTION" events
- * const listener1: BPListener = 'USER_ACTION';
+ * @example Simple string matching
+ * ```ts
+ * // Listen for specific event type
+ * const loginListener: BPListener = 'USER_LOGIN';
  *
- * // Pattern matching - listens for any events with types starting with "UI_"
- * const listener2: BPListener = ({ type }) => type.startsWith('UI_');
- *
- * // Content-based filtering - listens for specific data in the event
- * const listener3: BPListener<{ status: string }> = ({ type, detail }) =>
- *   type === 'DATA_LOADED' && detail?.status === 'success';
- *
- * // Used in a synchronization point
  * bSync({
- *   waitFor: [listener1, listener2], // Thread will resume on any matching event
- *   block: listener3                 // Thread prevents these events from occurring
+ *   waitFor: 'USER_LOGIN',
+ *   request: { type: 'SHOW_DASHBOARD' }
  * });
+ * ```
+ *
+ * @example Pattern matching with predicates
+ * ```ts
+ * // Listen for events matching a pattern
+ * const errorListener: BPListener = ({ type }) =>
+ *   type.startsWith('ERROR_');
+ *
+ * // Listen for events with specific detail values
+ * const highPriorityListener: BPListener = ({ detail }) =>
+ *   detail?.priority === 'high';
+ * ```
+ *
+ * @example Complex filtering
+ * ```ts
+ * const complexListener: BPListener = ({ type, detail }) =>
+ *   type === 'DATA_LOADED' &&
+ *   detail?.status === 'success' &&
+ *   detail?.records > 0;
+ *
+ * bSync({
+ *   waitFor: [loginListener, complexListener],
+ *   block: errorListener,
+ *   request: { type: 'PROCEED' }
+ * });
+ * ```
+ *
+ * @see {@link Idioms} for using listeners in synchronization
+ * @see {@link bSync} for creating synchronization points
  */
 export type BPListener = string | ((args: BPEvent) => boolean)
 
 /**
- * Represents a synchronization statement within a b-thread's generator function (`RulesFunction`).
+ * Represents a synchronization statement within a b-thread's generator function.
  * This is the core mechanism through which b-threads communicate their behavioral intentions
  * to the behavioral program scheduler at each step of execution.
  *
- * An `Idioms` object declares what the thread intends to do at a specific synchronization point:
+ * @property request - Propose an event to be selected and triggered. Only one request per sync point.
+ * @property waitFor - Wait for specific events. Thread pauses until a matching event is selected.
+ * @property block - Prevent specific events from being selected. Higher precedence than requests.
+ * @property interrupt - Events that terminate the thread's execution if selected.
  *
- * - `request`: Propose an event to be selected and triggered by the `bProgram`.
- *   Only one request can be active per sync point. A request is not guaranteed to be selected
- *   immediately or at all, as it may be blocked by other threads.
+ * @example Basic synchronization
+ * ```ts
+ * // Simple request-wait pattern
+ * yield {
+ *   request: { type: 'FETCH_DATA' }
+ * };
+ * yield {
+ *   waitFor: ['DATA_LOADED', 'FETCH_ERROR']
+ * };
+ * ```
  *
- * - `waitFor`: Wait for specific events to occur. The thread pauses at this sync point
- *   until a matching event is selected by the program. If multiple events are specified,
- *   the thread will resume when any one of them occurs.
- *
- * - `block`: Prevent specific events from being selected by the `bProgram` while this sync point
- *   is active. This has higher precedence than requests - a blocked event cannot be selected
- *   even if requested by other threads.
- *
- * - `interrupt`: Specify events that, if selected, will cause the thread to terminate
- *   its current execution flow and potentially restart if configured to repeat. This is useful
- *   for cancellation patterns and exceptional workflows.
- *
- * Multiple listeners can be provided for `waitFor`, `block`, and `interrupt` using arrays.
- *
- * @template T The expected type of the `detail` payload for events involved in this synchronization point.
- *   Defaults to `any` for flexibility, but specific types are recommended for type safety.
- *
- * @example
- * // Wait for a user login, block timeouts, and request a session initialization
+ * @example Complex coordination
+ * ```ts
+ * // Multi-thread coordination with blocking
  * yield {
  *   waitFor: 'USER_LOGIN',
  *   block: 'SESSION_TIMEOUT',
  *   request: { type: 'INITIALIZE_SESSION' }
  * };
+ * ```
+ *
+ * @example Interruption handling
+ * ```ts
+ * // Long process with cancellation support
+ * yield {
+ *   request: { type: 'START_UPLOAD' },
+ *   interrupt: 'CANCEL_UPLOAD'
+ * };
+ * ```
+ *
+ * @remarks
+ * - Multiple listeners can be provided as arrays
+ * - Blocked events have precedence over requested events
+ * - Interrupts cause thread termination
+ *
+ * @see {@link RulesFunction} for usage in generator functions
+ * @see {@link bSync} for creating single synchronization points
  */
 export type Idioms = {
   /** Event(s) the thread is waiting for. Execution pauses until a matching event is selected. */
@@ -141,35 +219,53 @@ export type Idioms = {
  * This is the fundamental unit of behavior in the BP (Behavioral Programming) paradigm,
  * representing a sequential process that can synchronize with other b-threads.
  *
- * The generator yields `Idioms` objects, representing synchronization points where the thread
- * interacts with the `bProgram` and other threads. The execution flow works as follows:
+ * @returns A Generator that yields `Idioms` objects at synchronization points.
  *
- * 1. The thread yields an `Idioms` object to declare its intentions
- * 2. The generator pauses, transferring control to the behavioral program scheduler
- * 3. The scheduler selects an event based on all active threads' declarations
- * 4. The thread resumes when:
- *    - An event matching its `waitFor` declaration is selected
- *    - Its `request` is selected by the scheduler
- *    - An event matching its `interrupt` declaration is selected (terminating the thread)
+ * @example Authentication flow
+ * ```ts
+ * function* authenticationFlow(): RulesFunction {
+ *   // Request login UI
+ *   yield { request: { type: 'SHOW_LOGIN' } };
  *
- * @returns A Generator that yields `Idioms` objects at synchronization points and ultimately returns `void`.
- * @example
- * function* loginSequence(): RulesFunction {
- *   // Request a login form to be displayed
- *   yield { request: { type: 'SHOW_LOGIN_FORM' } };
+ *   // Wait for user action
+ *   yield {
+ *     waitFor: ['LOGIN_ATTEMPT', 'CANCEL'],
+ *     block: 'LOGOUT' // Prevent logout during login
+ *   };
  *
- *   // Wait for either a login success or cancellation
- *   yield { waitFor: ['LOGIN_SUCCESS', 'LOGIN_CANCELLED'] };
+ *   // Handle result
+ *   yield { waitFor: ['AUTH_SUCCESS', 'AUTH_FAILURE'] };
+ * }
+ * ```
  *
- *   // Get the selected event to determine which path to take
- *   const event = yield { waitFor: ['LOGIN_SUCCESS', 'LOGIN_CANCELLED'] };
+ * @example Data synchronization
+ * ```ts
+ * function* dataSyncThread(): RulesFunction {
+ *   while (true) {
+ *     // Wait for changes
+ *     yield { waitFor: 'DATA_CHANGED' };
  *
- *   if (event.type === 'LOGIN_SUCCESS') {
- *     yield { request: { type: 'NAVIGATE_TO_DASHBOARD' } };
- *   } else {
- *     yield { request: { type: 'RETURN_TO_HOME' } };
+ *     // Request sync, can be interrupted
+ *     yield {
+ *       request: { type: 'SYNC_DATA' },
+ *       interrupt: 'APP_CLOSING'
+ *     };
+ *
+ *     // Wait for completion
+ *     yield { waitFor: ['SYNC_COMPLETE', 'SYNC_ERROR'] };
  *   }
  * }
+ * ```
+ *
+ * @remarks
+ * The execution flow:
+ * 1. Thread yields an `Idioms` object to declare intentions
+ * 2. Generator pauses, transferring control to scheduler
+ * 3. Scheduler selects an event based on all threads' declarations
+ * 4. Thread resumes when a matching event occurs
+ *
+ * @see {@link bThread} for creating threads from rules
+ * @see {@link Idioms} for synchronization declarations
  */
 export type RulesFunction = () => Generator<Idioms, void, undefined>
 
@@ -206,17 +302,33 @@ export type BThread = (rules: RulesFunction[], repeat?: Repeat) => RulesFunction
  * from external sources or when working with dynamically typed values.
  *
  * @param data The value to check against the `BPEvent` structure.
- * @returns `true` if the value is a valid `BPEvent` (has an object structure with a string `type` property), `false` otherwise.
+ * @returns `true` if the value is a valid `BPEvent`, `false` otherwise.
  *
- * @example
- * function processEvent(possibleEvent: unknown) {
- *   if (isBPEvent(possibleEvent)) {
- *     // TypeScript now knows this is a BPEvent
- *     console.log(`Processing event: ${possibleEvent.type}`);
- *     return true;
+ * @example Validating external data
+ * ```ts
+ * // Handling messages from a WebSocket
+ * websocket.onmessage = (event) => {
+ *   const data = JSON.parse(event.data);
+ *
+ *   if (isBPEvent(data)) {
+ *     trigger(data); // Safe to use as BPEvent
+ *   } else {
+ *     console.error('Invalid event format:', data);
  *   }
- *   return false;
- * }
+ * };
+ * ```
+ *
+ * @example Worker message validation
+ * ```ts
+ * worker.addEventListener('message', (e) => {
+ *   if (isBPEvent(e.data)) {
+ *     // Process valid behavioral event
+ *     handleBPEvent(e.data);
+ *   }
+ * });
+ * ```
+ *
+ * @see {@link BPEvent} for the structure being validated
  */
 export const isBPEvent = (data: unknown): data is BPEvent => {
   return (
@@ -228,43 +340,47 @@ export const isBPEvent = (data: unknown): data is BPEvent => {
 
 /**
  * Creates a behavioral thread (b-thread) by combining a sequence of synchronization rules.
- * A b-thread is a generator function (`RulesFunction`) that defines a strand of behavior
- * within a `bProgram`. It yields synchronization points (`Idioms`) to coordinate with other threads.
+ * A b-thread is a generator function that defines a strand of behavior within a `bProgram`.
  *
- * This function provides a convenient way to compose multiple synchronization steps (`bSync` outputs)
- * into a cohesive behavior unit, with optional repetition capabilities.
+ * @param rules An array of `RulesFunction`s defining the sequential steps of the thread.
+ * @param repeat Controls if and how the thread repeats its sequence.
+ * @returns A `RulesFunction` representing the complete b-thread.
  *
- * @param rules An array of `RulesFunction`s, usually created with `bSync`, defining the sequential steps of the thread.
- * @param repeat Controls if and how the thread repeats its sequence:
- *   - `true`: Repeats the entire sequence indefinitely.
- *   - `function`: Evaluated before each potential repetition; repeats if it returns `true`.
- *   - `undefined` or `false`: Executes the sequence only once.
- * @returns A `RulesFunction` representing the complete b-thread that can be added to a behavioral program.
+ * @example Game loop thread
+ * ```ts
+ * // Continuous game loop
+ * const gameLoop = bThread([
+ *   bSync({ request: { type: 'UPDATE_PHYSICS' } }),
+ *   bSync({ request: { type: 'RENDER_FRAME' } }),
+ *   bSync({ waitFor: 'FRAME_COMPLETE' })
+ * ], true); // Repeat indefinitely
+ * ```
  *
- * @example
- * // Thread that requests 'HOT' then 'COLD', and repeats forever
- * const hotColdLoop = bThread(
- *   [
- *     bSync({ request: { type: 'HOT' } }),
- *     bSync({ request: { type: 'COLD' } })
- *   ],
- *   true // Repeat indefinitely
- * );
+ * @example Conditional repetition
+ * ```ts
+ * let retries = 0;
+ * const retryLogic = bThread([
+ *   bSync({ request: { type: 'ATTEMPT_CONNECTION' } }),
+ *   bSync({ waitFor: ['CONNECTED', 'CONNECTION_FAILED'] })
+ * ], () => retries++ < 3); // Retry up to 3 times
+ * ```
  *
- * // Thread that waits for 'START', then requests 'DONE' once
- * const startThenDone = bThread([
- *   bSync({ waitFor: 'START' }),
- *   bSync({ request: { type: 'DONE' } })
- * ]);
+ * @example State machine thread
+ * ```ts
+ * const stateMachine = bThread([
+ *   bSync({ waitFor: 'INIT', request: { type: 'STATE_IDLE' } }),
+ *   bSync({ waitFor: 'START', request: { type: 'STATE_RUNNING' } }),
+ *   bSync({ waitFor: 'STOP', request: { type: 'STATE_IDLE' } })
+ * ], true); // Cycle through states
+ * ```
  *
- * // Thread that repeats for a fixed number of times
- * let counter = 0;
- * const countToFive = bThread(
- *   [
- *     bSync({ request: { type: 'COUNT', detail: { value: counter } } })
- *   ],
- *   () => counter++ < 5 // Repeat until counter reaches 5
- * );
+ * @remarks
+ * - Rules are executed sequentially
+ * - Repetition is evaluated after completing all rules
+ * - Threads can be interrupted mid-sequence
+ *
+ * @see {@link bSync} for creating individual rules
+ * @see {@link RulesFunction} for the generator type
  */
 export const bThread: BThread = (rules, repeat) => {
   return repeat ?
@@ -285,44 +401,56 @@ export const bThread: BThread = (rules, repeat) => {
 }
 
 /**
- * Creates a single synchronization point (`RulesFunction`) for a b-thread.
- * This is the fundamental building block for constructing b-threads - it creates a reusable,
- * single-step generator that represents one synchronization point in a thread's execution.
+ * Creates a single synchronization point for a b-thread.
+ * This is the fundamental building block for constructing b-threads.
  *
- * The `bSync` function enables a more declarative style of defining b-threads by allowing
- * synchronization points to be defined outside generator functions and composed together.
+ * @param syncPoint The `Idioms` object defining the synchronization behavior.
+ * @returns A `RulesFunction` that yields the `syncPoint` once.
  *
- * @template T The type of the event detail payload relevant to this synchronization point.
- * @param syncPoint The `Idioms<T>` object defining the thread's request, waitFor, block, and interrupt declarations for this step.
- * @returns A `RulesFunction` (a generator that yields the `syncPoint` once).
- *
- * @example
- * // Define reusable synchronization points
- * const requestPing = bSync({ request: { type: 'PING' } });
- * const waitForPong = bSync({ waitFor: 'PONG' });
- * const blockTimeout = bSync({ block: 'TIMEOUT' });
- *
- * // Use directly in a generator function with yield*
- * function* pingPongThread(): RulesFunction {
- *   while (true) {
- *     yield* requestPing();
- *     yield* bSync({ waitFor: 'PONG', block: 'TIMEOUT' }); // Inline usage
- *   }
- * }
- *
- * // Or compose with bThread
- * const simplePingPong = bThread([
- *   requestPing,
- *   waitForPong
- * ], true); // Repeat indefinitely
- *
- * // Combined idioms in a single sync point
- * const complexSync = bSync({
- *   request: { type: 'START_PROCESS', detail: { id: 'proc-123' } },
- *   waitFor: ['PROCESS_STARTED', 'PROCESS_FAILED'],
- *   block: ({ type }) => type.startsWith('INTERRUPT_'),
- *   interrupt: 'EMERGENCY_SHUTDOWN'
+ * @example Basic request-response pattern
+ * ```ts
+ * const requestData = bSync({
+ *   request: { type: 'FETCH_USER_DATA' }
  * });
+ *
+ * const waitForResponse = bSync({
+ *   waitFor: ['DATA_RECEIVED', 'FETCH_ERROR']
+ * });
+ *
+ * // Compose into a thread
+ * const fetchThread = bThread([requestData, waitForResponse]);
+ * ```
+ *
+ * @example Complex synchronization
+ * ```ts
+ * const coordinatedSync = bSync({
+ *   request: { type: 'PROCESS_START', detail: { id: 123 } },
+ *   waitFor: ['READY', 'ABORT'],
+ *   block: 'SYSTEM_SHUTDOWN',
+ *   interrupt: 'EMERGENCY_STOP'
+ * });
+ * ```
+ *
+ * @example Dynamic event generation
+ * ```ts
+ * const dynamicRequest = bSync({
+ *   request: () => ({
+ *     type: 'METRIC',
+ *     detail: {
+ *       timestamp: Date.now(),
+ *       memoryUsage: process.memoryUsage()
+ *     }
+ *   })
+ * });
+ * ```
+ *
+ * @remarks
+ * - Each `bSync` creates a single-yield generator
+ * - Can be composed with `bThread` for sequences
+ * - Supports all idioms: request, waitFor, block, interrupt
+ *
+ * @see {@link bThread} for composing multiple sync points
+ * @see {@link Idioms} for synchronization options
  */
 export const bSync: BSync = (syncPoint) =>
   function* () {
@@ -377,87 +505,101 @@ type CandidateBid = {
   template?: BPEventTemplate
 }
 /**
- * Represents a cleanup function, typically returned by subscription or registration mechanisms
- * like `useFeedback` and `useSnapshot`. This function follows the common disposable pattern
- * in JavaScript/TypeScript for resource management.
+ * Represents a cleanup function for resource management.
+ * Follows the disposable pattern for proper lifecycle management.
  *
- * When called, this function performs all necessary cleanup actions, such as:
- * - Removing event listeners or subscribers
- * - Stopping observation of state changes
- * - Freeing resources to prevent memory leaks
- * - Cancelling pending operations
+ * @returns void or Promise<void> for async cleanup
  *
- * @returns void - Performs the cleanup action when called with no return value.
+ * @example Component cleanup
+ * ```ts
+ * const MyComponent = bElement({
+ *   bProgram({ trigger, useFeedback }) {
+ *     // Set up subscriptions
+ *     const disconnect1 = useFeedback(handlers);
+ *     const disconnect2 = externalService.subscribe();
  *
- * @example
- * ```typescript
- * const disconnect = useFeedback(handlers);
- * // Later, when cleanup is needed:
- * disconnect();
+ *     // Register cleanup
+ *     trigger.addDisconnectCallback(() => {
+ *       disconnect1();
+ *       disconnect2();
+ *     });
+ *   }
+ * });
  * ```
+ *
+ * @example Manual resource management
+ * ```ts
+ * const { useFeedback, useSnapshot } = bProgram();
+ *
+ * const feedbackCleanup = useFeedback(handlers);
+ * const snapshotCleanup = useSnapshot(logger);
+ *
+ * // Later, clean up both
+ * const cleanup = () => {
+ *   feedbackCleanup();
+ *   snapshotCleanup();
+ * };
+ * ```
+ *
+ * @see {@link UseFeedback} for event handler cleanup
+ * @see {@link UseSnapshot} for snapshot listener cleanup
  */
 export type Disconnect = () => void | Promise<void>
 
 /**
- * Represents a snapshot of the behavioral program's state at a specific step (super-step).
- * It's an array where each element describes the status of an active b-thread or event candidate.
+ * Represents a snapshot of the behavioral program's state at a specific super-step.
+ * Each element describes an active b-thread or event candidate.
  *
- * This snapshot provides a comprehensive view of the program's internal state during execution,
- * showing which events were requested, which were blocked, which was selected, and how threads
- * interact with each other. It's particularly valuable for:
+ * @property thread - Thread identifier (stringified if from trigger)
+ * @property trigger - Whether bid originated from external trigger
+ * @property selected - Whether this bid was selected for execution
+ * @property type - Event type being requested or waited for
+ * @property detail - Optional event payload data
+ * @property priority - Priority level (lower = higher priority)
+ * @property blockedBy - ID of blocking thread if blocked
+ * @property interrupts - ID of interrupted thread if interrupting
  *
- * - Debugging complex behavioral systems
- * - Monitoring program execution in real-time
- * - Visualizing thread interactions and dependencies
- * - Understanding race conditions or deadlocks
- * - Creating development tools and debuggers
+ * @example Analyzing program state
+ * ```ts
+ * const { useSnapshot } = bProgram();
  *
- * The array is sorted by priority (lower numbers first), so the highest priority
- * event candidates appear first in the array.
+ * useSnapshot((snapshot) => {
+ *   // Find selected event
+ *   const selected = snapshot.find(s => s.selected);
+ *   console.log(`Selected: ${selected?.type}`);
  *
- * @property thread - The unique identifier of the thread associated with this bid (stringified if from `trigger()`).
- * @property trigger - Indicates if this bid originated from external `trigger()` (true) vs thread's `request` (false).
- * @property selected - Indicates if this bid was selected for execution in the current step.
- * @property type - The event type the thread is currently requesting or waiting for.
- * @property detail - Optional data payload associated with the event.
- * @property priority - The priority level of the thread's bid. Lower numbers = higher priority.
- * @property blockedBy - If this thread's request is blocked, ID of the blocking thread.
- * @property interrupts - If this bid interrupts another thread, ID of the interrupted thread.
- *
- * @example
- * // Example of a snapshot with three event candidates
- * [
- *   {
- *     thread: "loginThread",
- *     trigger: false,
- *     selected: true,  // This event was selected
- *     type: "USER_LOGIN",
- *     detail: { username: "user1", timestamp: 1622756040000 },
- *     priority: 1,     // Highest priority (lowest number)
- *     blockedBy: undefined,
- *     interrupts: "timeoutThread"
- *   },
- *   {
- *     thread: "Symbol(BUTTON_CLICK)",
- *     trigger: true,   // This came from external trigger()
- *     selected: false,
- *     type: "BUTTON_CLICK",
- *     detail: { buttonId: "submit" },
- *     priority: 0,     // Even higher priority, but was blocked
- *     blockedBy: "validationThread",
- *     interrupts: undefined
- *   },
- *   {
- *     thread: "notificationThread",
- *     trigger: false,
- *     selected: false,
- *     type: "SHOW_NOTIFICATION",
- *     detail: { message: "Welcome!" },
- *     priority: 3,     // Lowest priority
- *     blockedBy: undefined,
- *     interrupts: undefined
+ *   // Check for blocked events
+ *   const blocked = snapshot.filter(s => s.blockedBy);
+ *   if (blocked.length > 0) {
+ *     console.log(`${blocked.length} events blocked`);
  *   }
- * ]
+ *
+ *   // Analyze thread priorities
+ *   const byPriority = [...snapshot].sort(
+ *     (a, b) => a.priority - b.priority
+ *   );
+ * });
+ * ```
+ *
+ * @example Deadlock detection
+ * ```ts
+ * useSnapshot((snapshot) => {
+ *   const hasRequests = snapshot.some(s => !s.blockedBy);
+ *   const hasSelected = snapshot.some(s => s.selected);
+ *
+ *   if (!hasSelected && hasRequests) {
+ *     console.warn('Potential deadlock detected');
+ *   }
+ * });
+ * ```
+ *
+ * @remarks
+ * - Array is sorted by priority
+ * - Useful for debugging and visualization
+ * - Shows complete program state per step
+ *
+ * @see {@link UseSnapshot} for subscribing to snapshots
+ * @see {@link SnapshotListener} for handling snapshots
  */
 export type SnapshotMessage = {
   /** The unique identifier of the thread associated with this bid (stringified if this bid originated from an external `trigger()` as they use a Symbol identifier). */
@@ -605,71 +747,64 @@ export type EventDetails = Record<string, any>
 type DefaultHandlers = Record<string, (detail: any) => void | Promise<void>>
 
 /**
- * Represents a collection of callback functions (handlers) keyed by event type,
- * used with `useFeedback` to react to selected events in a behavioral program.
+ * Represents a collection of event handlers for behavioral program feedback.
+ * Maps event types to handler functions that process selected events.
  *
- * When a `bProgram` selects an event during execution, it checks if there's a handler
- * registered for that event type in this collection. If found, the handler is invoked
- * with the event's `detail` payload, allowing external systems to respond to the
- * internal state transitions of the behavioral program.
+ * @template Details Type map for event payloads, enabling type-safe handlers
  *
- * This type supports both synchronous and asynchronous handlers, making it suitable
- * for a wide range of use cases from UI updates to API calls or database operations.
- *
- * @template Details Allows extending the base `DefaultHandlers` with more specific, typed handlers.
- *             This enables strong type checking for event detail payloads.
- *
- * @example
- * // Define typed handlers for specific events in your application
- * type AppHandlers = Handlers<{
- *   // User authentication events
- *   'USER_LOGIN': (credentials: { username: string; timestamp: number }) => void;
- *   'USER_LOGOUT': (data: { reason: 'manual' | 'timeout' | 'forced' }) => void;
- *
- *   // Data operations with async handlers
- *   'DATA_LOAD': (params: { resourceId: string; refresh?: boolean }) => Promise<void>;
- *   'DATA_SAVE': (payload: { data: Record<string, unknown>; options?: SaveOptions }) => Promise<void>;
- *
- *   // UI events
- *   'UI_NAVIGATE': (route: { path: string; params?: Record<string, string> }) => void;
- * }>;
- *
- * // Using the typed handlers
- * const appHandlers: AppHandlers = {
- *   // TypeScript provides full type checking for these handler parameters
- *   'USER_LOGIN': ({ username, timestamp }) => {
- *     console.log(`${username} logged in at ${new Date(timestamp).toLocaleString()}`);
- *     updateAuthState(username);
- *   },
- *
- *   'USER_LOGOUT': ({ reason }) => {
- *     if (reason === 'timeout') {
- *       showTimeoutNotification();
- *     }
- *     clearUserSession();
- *   },
- *
- *   'DATA_LOAD': async ({ resourceId, refresh = false }) => {
- *     setLoadingState(true);
- *     try {
- *       const data = await fetchResource(resourceId, { forceRefresh: refresh });
- *       updateDataStore(data);
- *     } catch (error) {
- *       handleError(error);
- *     } finally {
- *       setLoadingState(false);
- *     }
- *   },
- *
- *   // Can also include generic handlers via DefaultHandlers
- *   'ANALYTICS_EVENT': (detail) => {
- *     trackEvent(detail); // detail is typed as 'any'
- *   }
+ * @example Typed event handlers
+ * ```ts
+ * type AppEvents = {
+ *   'USER_LOGIN': { userId: string; timestamp: number };
+ *   'DATA_UPDATE': { records: any[]; source: string };
+ *   'ERROR': { code: string; message: string };
  * };
  *
- * // Register handlers with the bProgram
- * const { useFeedback } = bProgram();
- * const disconnect = useFeedback(appHandlers);
+ * const handlers: Handlers<AppEvents> = {
+ *   'USER_LOGIN': ({ userId, timestamp }) => {
+ *     console.log(`User ${userId} logged in`);
+ *     updateSession(userId);
+ *   },
+ *
+ *   'DATA_UPDATE': async ({ records, source }) => {
+ *     await database.save(records);
+ *     notifyDataChange(source);
+ *   },
+ *
+ *   'ERROR': ({ code, message }) => {
+ *     logger.error(`Error ${code}: ${message}`);
+ *     showErrorDialog(message);
+ *   }
+ * };
+ * ```
+ *
+ * @example Component integration
+ * ```ts
+ * const MyComponent = bElement({
+ *   bProgram({ useFeedback }) {
+ *     return {
+ *       // Direct handler definition
+ *       'BUTTON_CLICK': () => {
+ *         console.log('Button clicked');
+ *       },
+ *
+ *       // Async handler for API calls
+ *       'SAVE_DATA': async (data) => {
+ *         await api.save(data);
+ *         showSuccessMessage();
+ *       }
+ *     };
+ *   }
+ * });
+ * ```
+ *
+ * @remarks
+ * - Supports both sync and async handlers
+ * - Type-safe when using generics
+ * - Handlers are called when events are selected
+ *
+ * @see {@link UseFeedback} for registering handlers
+ * @see {@link BPEvent} for event structure
  */
 export type Handlers<Details extends EventDetails = EventDetails> = {
   // Create specific handler signatures from the EventPayloadMap
@@ -677,162 +812,206 @@ export type Handlers<Details extends EventDetails = EventDetails> = {
 } & DefaultHandlers
 
 /**
- * A hook for subscribing to the events selected and published by the behavioral program.
- * This is the primary way for external systems (UI components, services, etc.) to react to
- * the internal state changes and events occurring within the behavioral program.
+ * Hook for subscribing to events selected by the behavioral program.
+ * Primary mechanism for external systems to react to program state changes.
  *
- * Unlike direct manipulation of state, this reactive approach maintains proper separation
- * of concerns - the behavioral program handles its internal logic and coordination,
- * while external systems only need to respond to events as they occur.
+ * @param handlers Object mapping event types to handler functions
+ * @returns Disconnect function for cleanup
  *
- * @template T The specific type definition for the `handlers` object, extending `DefaultHandlers`.
- *             Use this to enforce type safety for your event payloads.
+ * @example UI component integration
+ * ```ts
+ * const Component = () => {
+ *   const { useFeedback, trigger } = behavioral();
  *
- * @param handlers An object where keys are event type strings and values are the corresponding handler functions.
- *                 Each handler receives the `detail` payload of the selected event and can perform any
- *                 side effects or state updates needed in response to the event.
+ *   useEffect(() => {
+ *     const disconnect = useFeedback({
+ *       'SHOW_MODAL': ({ title, content }) => {
+ *         modalRef.current?.show(title, content);
+ *       },
  *
- * @returns A `Disconnect` function that, when called, unsubscribes the provided handlers and stops
- *          them from receiving events. This should be called during cleanup (e.g., component unmount).
+ *       'UPDATE_STATUS': (status) => {
+ *         setStatusText(status);
+ *       },
  *
- * @example
- * // Creating a behavioral program and subscribing to its events
- * const { useFeedback } = bProgram();
+ *       'FETCH_DATA': async ({ url }) => {
+ *         const data = await fetch(url).then(r => r.json());
+ *         setData(data);
+ *       }
+ *     });
  *
- * // Subscribe to specific events with appropriate handlers
- * const disconnect = useFeedback({
- *   // UI-related events
- *   'UI_SHOW_MODAL': (config) => {
- *     modalSystem.open(config.modalType, config.modalProps);
- *   },
- *   'UI_HIDE_MODAL': () => {
- *     modalSystem.close();
- *   },
+ *     return disconnect; // Cleanup on unmount
+ *   }, []);
+ * };
+ * ```
  *
- *   // Data-related events
- *   'DATA_UPDATED': (updates) => {
- *     updateUIComponents(updates);
- *     saveToLocalStorage('appData', updates);
- *   },
+ * @example Service integration
+ * ```ts
+ * class DataService {
+ *   constructor(program: ReturnType<typeof behavioral>) {
+ *     this.disconnect = program.useFeedback({
+ *       'SAVE_DATA': async (data) => {
+ *         await this.database.save(data);
+ *         this.emit('saved', data);
+ *       },
  *
- *   // Authentication events with async handling
- *   'AUTH_LOGOUT': async (reason) => {
- *     await apiClient.logout();
- *     router.navigateTo('/login');
- *     if (reason === 'session_expired') {
- *       notifications.show('Your session has expired. Please log in again.');
- *     }
+ *       'DELETE_DATA': async ({ id }) => {
+ *         await this.database.delete(id);
+ *         this.emit('deleted', id);
+ *       }
+ *     });
  *   }
- * });
  *
- * // To stop listening later (e.g., component cleanup):
- * // disconnect();
+ *   destroy() {
+ *     this.disconnect();
+ *   }
+ * }
+ * ```
+ *
+ * @remarks
+ * - Maintains separation of concerns
+ * - Supports sync and async handlers
+ * - Always call disconnect for cleanup
+ *
+ * @see {@link Handlers} for handler types
+ * @see {@link Disconnect} for cleanup
  */
 export type UseFeedback = (handlers: Handlers) => Disconnect
 
 /**
- * A hook for registering a `SnapshotListener` to monitor the internal state transitions of the b-program.
- * This provides a window into the behavioral program's execution, showing which events were requested,
- * which were blocked, which was selected, and how threads interact with each other.
+ * Hook for monitoring internal state transitions of the behavioral program.
+ * Provides debugging, visualization, and analysis capabilities.
  *
- * This hook is primarily intended for:
- * - Debugging complex behavioral systems
- * - Logging execution flow for analysis
- * - Monitoring and observing program behavior
- * - Creating development tools and visualizers
- * - Educational purposes to understand BP concepts
+ * @param listener Callback receiving snapshots after each event selection
+ * @returns Disconnect function for cleanup
  *
- * Note that snapshot listeners are called *before* the selected event is published to feedback handlers,
- * allowing you to observe the internal state just before external side effects occur.
+ * @example Debugging and logging
+ * ```ts
+ * const { useSnapshot } = behavioral();
  *
- * @param listener The `SnapshotListener` callback function that will receive the `SnapshotMessage`
- *                 array after each event selection step (super-step). The listener can process this
- *                 information synchronously or asynchronously without affecting program execution.
- *
- * @returns A `Disconnect` function. Call this function to unregister the snapshot listener and stop
- *          receiving snapshots. This should be called during cleanup to prevent memory leaks.
- *
- * @example
- * // Basic snapshot monitoring for debugging
- * const { useSnapshot } = bProgram();
- *
- * const disconnectSnapshot = useSnapshot((snapshot) => {
- *   // Find the selected event (if any)
+ * const disconnect = useSnapshot(snapshot => {
+ *   // Log selected event
  *   const selected = snapshot.find(s => s.selected);
+ *   console.log(`Step: ${selected?.type || 'none'}`);
  *
- *   // Log complete program state at this step
- *   console.log(`Event selected: ${selected?.type || 'none'}`);
- *   console.table(snapshot);
+ *   // Check for issues
+ *   const blocked = snapshot.filter(s => s.blockedBy);
+ *   if (blocked.length > 0) {
+ *     console.warn(`Blocked: ${blocked.map(s => s.type)}`);
+ *   }
  * });
+ * ```
  *
- * @example
- * // Advanced usage: Creating a visualization of the program's execution
- * const { useSnapshot } = bProgram();
+ * @example Execution visualization
+ * ```ts
+ * const history: SnapshotMessage[] = [];
  *
- * // Track the history of events and state transitions
- * const executionHistory = [];
+ * useSnapshot(snapshot => {
+ *   history.push(snapshot);
  *
- * const disconnectVisualizer = useSnapshot((snapshot) => {
- *   // Record this step in history
- *   const selected = snapshot.find(s => s.selected);
+ *   // Visualize execution flow
+ *   renderExecutionGraph(history);
  *
- *   executionHistory.push({
- *     timestamp: Date.now(),
- *     selectedEvent: selected ? { type: selected.type, detail: selected.detail } : null,
- *     threadCount: new Set(snapshot.map(s => s.thread)).size,
- *     blockedEvents: snapshot.filter(s => s.blockedBy).length,
- *     stateSnapshot: JSON.parse(JSON.stringify(snapshot)) // Deep copy for history
- *   });
- *
- *   // Update visualization with the new history
- *   updateExecutionGraph(executionHistory);
- *   updateEventTimeline(executionHistory);
- *   updateThreadStateTable(snapshot);
+ *   // Detect patterns
+ *   if (history.length > 100) {
+ *     const pattern = detectCycles(history);
+ *     if (pattern) {
+ *       console.log('Detected cycle:', pattern);
+ *     }
+ *   }
  * });
+ * ```
  *
- * // When done monitoring
- * // disconnectVisualizer();
+ * @example Performance monitoring
+ * ```ts
+ * let stepCount = 0;
+ * const startTime = Date.now();
+ *
+ * useSnapshot(snapshot => {
+ *   stepCount++;
+ *
+ *   // Track execution rate
+ *   const elapsed = Date.now() - startTime;
+ *   const stepsPerSecond = stepCount / (elapsed / 1000);
+ *
+ *   if (stepsPerSecond < 100) {
+ *     console.warn('Performance degradation detected');
+ *   }
+ * });
+ * ```
+ *
+ * @remarks
+ * - Called before feedback handlers
+ * - Doesn't affect program execution
+ * - Useful for debugging and tooling
+ *
+ * @see {@link SnapshotMessage} for snapshot structure
+ * @see {@link SnapshotListener} for listener type
  */
 export type UseSnapshot = (listener: SnapshotListener) => Disconnect
 
 /**
- * Provides methods for managing the b-threads within a `bProgram` instance.
- * This interface allows dynamic addition, replacement, and status checking of
- * behavioral threads during program execution.
+ * Interface for managing b-threads within a behavioral program.
+ * Provides dynamic thread addition, replacement, and status monitoring.
  *
- * B-threads represent individual strands of behavior in the program, and this
- * API provides the means to control their lifecycle and monitor their state.
+ * @property has - Check thread existence and status (running/pending)
+ * @property set - Add or replace threads in the program
  *
- * @property has - Checks if a thread with the given identifier exists and reports its status (running or pending).
- *                 - `running`: The thread's generator is currently executing (between yields).
- *                 - `pending`: The thread has yielded and is waiting for the next event selection.
- * @property set - Adds new b-threads to the program or replaces existing ones. Takes an object where keys are thread identifiers
- *                 and values are the corresponding `RulesFunction` (generator functions).
+ * @example Thread lifecycle management
+ * ```ts
+ * const { bThreads } = behavioral();
  *
- * @example
- * const { bThreads } = bProgram();
- *
- * // Add multiple threads to the program
+ * // Add initial threads
  * bThreads.set({
- *   'authenticator': authenticationRules,
- *   'notifier': notificationRules,
- *   'dataSync': dataSyncRules
+ *   'auth': authThread,
+ *   'data': dataThread,
+ *   'ui': uiThread
  * });
  *
- * // Check if a specific thread exists and its status
- * const authStatus = bThreads.has('authenticator');
- * if (authStatus.running) {
- *   console.log('Authentication thread is currently executing');
- * } else if (authStatus.pending) {
- *   console.log('Authentication thread is waiting at a synchronization point');
- * } else {
- *   console.log('Authentication thread is not active');
+ * // Check thread status
+ * const status = bThreads.has('auth');
+ * if (status.running) {
+ *   console.log('Auth thread is executing');
+ * } else if (status.pending) {
+ *   console.log('Auth thread is waiting');
  * }
  *
- * // Replace a thread with a new implementation
- * bThreads.set({
- *   'dataSync': improvedDataSyncRules
- * });
+ * // Dynamically replace thread
+ * if (userLoggedIn) {
+ *   bThreads.set({
+ *     'auth': loggedInAuthThread
+ *   });
+ * }
+ * ```
+ *
+ * @example Conditional thread addition
+ * ```ts
+ * const { bThreads, trigger } = behavioral();
+ *
+ * // Base threads
+ * const baseThreads = {
+ *   'core': coreLogic,
+ *   'monitor': monitoringThread
+ * };
+ *
+ * // Add feature threads based on config
+ * if (features.analytics) {
+ *   baseThreads['analytics'] = analyticsThread;
+ * }
+ *
+ * if (features.realtime) {
+ *   baseThreads['websocket'] = websocketThread;
+ * }
+ *
+ * bThreads.set(baseThreads);
+ * ```
+ *
+ * @remarks
+ * - Thread names must be unique
+ * - Replacing a thread stops the old one
+ * - Status reflects current execution state
+ *
+ * @see {@link RulesFunction} for thread implementation
+ * @see {@link bThread} for creating threads
  */
 export type BThreads = {
   /**
@@ -853,92 +1032,162 @@ export type BThreads = {
   set: (threads: Record<string, RulesFunction>) => void
 }
 /**
- * A function used to inject external events into the behavioral program.
- * Triggering an event initiates a new execution cycle (super-step) starting with this event.
+ * Injects external events into the behavioral program.
+ * Primary interface for external systems to communicate with the program.
  *
- * This is the primary way for external systems (such as UI components, services, or
- * other parts of your application) to communicate with the behavioral program. When an
- * external event is triggered, it's treated as a high-priority request (priority 0)
- * coming from a special thread.
+ * @param args BPEvent to trigger with type and optional detail
  *
- * The triggered event goes through the normal selection process - it can be blocked
- * by any active thread's `block` declarations and must compete with other requested events.
- * If selected, it can cause threads waiting for matching events to resume execution.
+ * @example UI event triggering
+ * ```ts
+ * const { trigger } = behavioral();
  *
- * @template T The type of the `detail` payload for the event being triggered.
- * @param args The `BPEvent<T>` object to trigger, containing a `type` and optional `detail`.
+ * // React component example
+ * function LoginForm() {
+ *   const handleSubmit = (e) => {
+ *     e.preventDefault();
+ *     trigger({
+ *       type: 'LOGIN_ATTEMPT',
+ *       detail: {
+ *         username: e.target.username.value,
+ *         password: e.target.password.value
+ *       }
+ *     });
+ *   };
  *
- * @example
- * // Get the trigger function from a bProgram instance
- * const { trigger } = bProgram();
+ *   return <form onSubmit={handleSubmit}>...</form>;
+ * }
+ * ```
  *
- * // Simple event without detail
- * trigger({ type: 'INITIALIZE_APP' });
+ * @example Service integration
+ * ```ts
+ * class WebSocketService {
+ *   constructor(trigger: Trigger) {
+ *     this.ws = new WebSocket(url);
  *
- * // Event with typed detail payload
- * trigger({
- *   type: 'USER_INPUT',
- *   detail: {
- *     fieldId: 'username',
- *     value: 'johndoe',
- *     timestamp: Date.now()
+ *     this.ws.onmessage = (event) => {
+ *       const data = JSON.parse(event.data);
+ *
+ *       // Forward to behavioral program
+ *       trigger({
+ *         type: 'WS_MESSAGE',
+ *         detail: data
+ *       });
+ *     };
+ *
+ *     this.ws.onerror = () => {
+ *       trigger({ type: 'WS_ERROR' });
+ *     };
  *   }
- * });
+ * }
+ * ```
  *
+ * @example Timer-based triggers
+ * ```ts
+ * const { trigger } = behavioral();
+ *
+ * // Periodic updates
+ * setInterval(() => {
+ *   trigger({ type: 'TICK' });
+ * }, 1000);
+ *
+ * // Delayed action
+ * setTimeout(() => {
+ *   trigger({
+ *     type: 'TIMEOUT',
+ *     detail: { reason: 'inactivity' }
+ *   });
+ * }, 30000);
+ * ```
+ *
+ * @remarks
+ * - Triggered events have highest priority (0)
+ * - Can be blocked by active threads
+ * - Initiates new execution cycle
+ *
+ * @see {@link BPEvent} for event structure
+ * @see {@link PlaitedTrigger} for enhanced trigger
  */
 export type Trigger = <T extends BPEvent>(args: T) => void
 /**
  * Factory function that creates and initializes a new behavioral program instance.
- * It returns an immutable object containing the core API for interacting with the program.
+ * Returns an immutable API for thread management, event handling, and state monitoring.
  *
- * The behavioral program (BP) is the central coordination mechanism in the BP paradigm.
- * It manages the collection of b-threads, orchestrates their execution, and handles
- * event selection and distribution. This function creates a new, independent instance
- * with its own state and execution context.
+ * @returns Readonly object with core behavioral programming API
  *
- * Each behavioral program operates using a "super-step" execution model:
- * 1. Advance all running threads to their next synchronization point
- * 2. Collect all requested events and filter out blocked ones
- * 3. Select the highest priority event from the remaining candidates
- * 4. Notify relevant threads (waiting for the event, interrupted by it, etc.)
- * 5. Publish the selected event to feedback handlers
- * 6. Begin the next super-step
+ * @example Complete behavioral program setup
+ * ```ts
+ * // Create program instance
+ * const { bThreads, trigger, useFeedback, useSnapshot } = behavioral();
  *
- * This cycle continues until there are no more events to select or all threads have completed.
- *
- * @returns A readonly object containing the core API for interacting with the program:
- *  - `bThreads`: For managing threads (`set`, `has`) within the program.
- *  - `trigger`: For injecting external events into the program.
- *  - `useFeedback`: For subscribing to selected events with handler functions.
- *  - `useSnapshot`: For monitoring the internal state during execution.
- *
- * @example
- * // Create a new behavioral program instance
- * const { bThreads, trigger, useFeedback, useSnapshot } = bProgram();
- *
- * // Add behavior threads to the program
+ * // Define and add threads
  * bThreads.set({
- *   'authentication': authenticationRules,
- *   'notifications': notificationRules,
- *   'dataSync': dataSyncRules,
+ *   'userFlow': bThread([
+ *     bSync({ request: { type: 'SHOW_WELCOME' } }),
+ *     bSync({ waitFor: 'USER_ACTION' }),
+ *     bSync({ request: { type: 'PROCESS_ACTION' } })
+ *   ]),
+ *
+ *   'validator': bThread([
+ *     bSync({ waitFor: 'USER_ACTION', block: 'PROCESS_ACTION' }),
+ *     bSync({ request: { type: 'VALIDATE' } }),
+ *     bSync({ request: { type: 'PROCESS_ACTION' } })
+ *   ], true)
  * });
  *
- * // Set up event handlers for program output
+ * // Set up event handlers
  * useFeedback({
- *   'AUTH_SUCCESS': (userData) => updateUserInterface(userData),
- *   'AUTH_FAILURE': (error) => showLoginError(error),
- *   'NOTIFICATION': (message) => displayNotification(message)
+ *   'SHOW_WELCOME': () => showWelcomeScreen(),
+ *   'PROCESS_ACTION': () => processUserAction(),
+ *   'VALIDATE': () => validateInput()
  * });
  *
- * // Add debugging/monitoring if needed
- * if (process.env.NODE_ENV === 'development') {
- *   useSnapshot((snapshot) => {
- *     console.log('Program state:', snapshot);
+ * // Monitor execution (development)
+ * if (DEBUG) {
+ *   useSnapshot(snapshot => {
+ *     console.table(snapshot);
  *   });
  * }
  *
- * // Start the program with an initial event
- * trigger({ type: 'INITIALIZE' });
+ * // Start the program
+ * trigger({ type: 'INIT' });
+ * ```
+ *
+ * @example Game loop with behavioral programming
+ * ```ts
+ * const game = behavioral();
+ *
+ * game.bThreads.set({
+ *   'gameLoop': bThread([
+ *     bSync({ request: { type: 'UPDATE' } }),
+ *     bSync({ request: { type: 'RENDER' } })
+ *   ], true),
+ *
+ *   'inputHandler': bThread([
+ *     bSync({ waitFor: 'KEY_PRESS' }),
+ *     bSync({ request: { type: 'PLAYER_ACTION' } })
+ *   ], true)
+ * });
+ *
+ * game.useFeedback({
+ *   'UPDATE': () => updateGameState(),
+ *   'RENDER': () => renderFrame(),
+ *   'PLAYER_ACTION': () => handlePlayerInput()
+ * });
+ * ```
+ *
+ * @remarks
+ * Super-step execution model:
+ * 1. Advance threads to synchronization points
+ * 2. Collect and filter event requests
+ * 3. Select highest priority event
+ * 4. Notify relevant threads
+ * 5. Publish to feedback handlers
+ * 6. Repeat until no events remain
+ *
+ * @see {@link BThreads} for thread management
+ * @see {@link Trigger} for event injection
+ * @see {@link UseFeedback} for event handling
+ * @see {@link UseSnapshot} for state monitoring
  */
 export type Behavioral = () => Readonly<{
   bThreads: BThreads

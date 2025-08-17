@@ -49,49 +49,137 @@ import { getPlaitedTrigger, type PlaitedTrigger } from './get-plaited-trigger.js
 import { getPublicTrigger } from './get-public-trigger.js'
 
 /**
- * A higher-order function factory for creating and configuring behavioral programs,
- * particularly suited for integration within frameworks or components that manage lifecycle and cleanup.
- * It simplifies the setup by encapsulating the creation of the bProgram instance,
- * feedback handler registration, public event filtering, and disconnect callback management.
+ * Higher-order factory for creating reusable behavioral program configurations.
+ * Encapsulates setup, lifecycle management, and provides a clean component API.
  *
- * @template A The type of the `Handlers` object defining the feedback logic.
- * @template C An optional type for additional context passed to the `bProgram` callback during initialization.
- * @param args Configuration object for the behavioral program definition.
- * @param args.publicEvents An optional array of event type strings that define the public API of this bProgram instance.
- *                          Only these events can be triggered via the returned public trigger.
- * @param args.bProgram The function that defines the threads and feedback handlers.
- * @returns An initialization function (`init`) tailored for this specific bProgram definition.
- *          - The `init` function accepts an optional context object (`C`) which is passed to the `bProgram` callback.
- *          - Calling `init` sets up the b-program, registers feedback handlers, and returns a restricted public `Trigger`.
- *          - Cleanup functions can be registered using the `disconnect` callback provided to the bProgram function.
- * @example
- * const createMyBProgram = defineBProgram<MyHandlers, { service: MyService }>({
- *   publicEvents: ['DO_ACTION', 'CANCEL'],
- *   bProgram: ({ bThreads, trigger, service, bSync, bThread, disconnect }) => {
- *     // Define b-threads using bThreads.set(...)
+ * @template A Type of event handlers for feedback logic
+ * @template C Type of context object passed during initialization
+ *
+ * @param args Configuration for the behavioral program
+ * @param args.publicEvents Whitelist of events accessible via public trigger
+ * @param args.bProgram Function defining threads and returning handlers
+ *
+ * @returns Async initialization function that creates configured program instance
+ *
+ * @example Component with behavioral program
+ * ```tsx
+ * // Define reusable program configuration
+ * const createFormProgram = bProgram<{
+ *   VALIDATION_PASSED: () => void;
+ *   VALIDATION_FAILED: (errors: string[]) => void;
+ *   SUBMIT_SUCCESS: (data: any) => void;
+ * }, {
+ *   api: ApiClient;
+ *   formId: string;
+ * }>({
+ *   publicEvents: ['VALIDATE', 'SUBMIT', 'RESET'],
+ *
+ *   bProgram({ bThreads, trigger, api, formId, bSync, bThread }) {
+ *     // Define validation logic
  *     bThreads.set({
- *       myThread: bThread([...])
+ *       'validator': bThread([
+ *         bSync({ waitFor: 'VALIDATE' }),
+ *         bSync({ request: { type: 'RUN_VALIDATION' } })
+ *       ], true),
+ *
+ *       'submitter': bThread([
+ *         bSync({ waitFor: 'SUBMIT', block: 'VALIDATE' }),
+ *         bSync({ request: { type: 'SUBMIT_FORM' } })
+ *       ], true)
  *     });
  *
- *     // Register cleanup if needed:
- *     const subscription = service.subscribe();
- *     disconnect(() => subscription.unsubscribe());
- *
- *     // Return feedback handlers
+ *     // Return handlers
  *     return {
- *       ACTION_COMPLETE: (detail) => service.handleComplete(detail),
- *       // ... other handlers
+ *       async RUN_VALIDATION() {
+ *         const errors = await validateForm(formId);
+ *         trigger({
+ *           type: errors.length ? 'VALIDATION_FAILED' : 'VALIDATION_PASSED',
+ *           detail: errors
+ *         });
+ *       },
+ *
+ *       async SUBMIT_FORM(data) {
+ *         const result = await api.submit(formId, data);
+ *         trigger({ type: 'SUBMIT_SUCCESS', detail: result });
+ *       },
+ *
+ *       VALIDATION_PASSED: () => enableSubmitButton(),
+ *       VALIDATION_FAILED: (errors) => showErrors(errors),
+ *       SUBMIT_SUCCESS: (data) => showSuccess(data)
  *     };
  *   }
  * });
  *
- * // In component setup:
- * const myServiceInstance = new MyService();
- * const publicTrigger = await createMyBProgram({ service: myServiceInstance });
+ * // Use in component
+ * const MyForm = bElement({
+ *   tag: 'my-form',
+ *   async bProgram({ trigger }) {
+ *     const api = new ApiClient();
+ *     const publicTrigger = await createFormProgram({
+ *       api,
+ *       formId: 'user-form'
+ *     });
  *
- * // Use the public trigger:
- * publicTrigger({ type: 'DO_ACTION', detail: { id: 1 } }); // Allowed
- * // publicTrigger({ type: 'INTERNAL_EVENT' }); // Disallowed (throws error)
+ *     return {
+ *       'form/submit': () => publicTrigger({ type: 'SUBMIT' }),
+ *       'input/change': () => publicTrigger({ type: 'VALIDATE' })
+ *     };
+ *   }
+ * });
+ * ```
+ *
+ * @example Service with behavioral coordination
+ * ```tsx
+ * const createDataSync = bProgram<{
+ *   SYNC_COMPLETE: (stats: SyncStats) => void;
+ *   SYNC_ERROR: (error: Error) => void;
+ * }, {
+ *   database: Database;
+ *   remote: RemoteAPI;
+ * }>({
+ *   publicEvents: ['START_SYNC', 'STOP_SYNC'],
+ *
+ *   bProgram({ bThreads, database, remote, bSync, bThread, disconnect }) {
+ *     const interval = setInterval(() => {
+ *       trigger({ type: 'SYNC_TICK' });
+ *     }, 5000);
+ *
+ *     disconnect(() => clearInterval(interval));
+ *
+ *     bThreads.set({
+ *       'syncLoop': bThread([
+ *         bSync({ waitFor: ['START_SYNC', 'SYNC_TICK'] }),
+ *         bSync({ request: { type: 'PERFORM_SYNC' } })
+ *       ], true)
+ *     });
+ *
+ *     return {
+ *       async PERFORM_SYNC() {
+ *         try {
+ *           const local = await database.getChanges();
+ *           const result = await remote.sync(local);
+ *           await database.applyChanges(result);
+ *
+ *           return { type: 'SYNC_COMPLETE', detail: result.stats };
+ *         } catch (error) {
+ *           return { type: 'SYNC_ERROR', detail: error };
+ *         }
+ *       }
+ *     };
+ *   }
+ * });
+ * ```
+ *
+ * @remarks
+ * - Factory pattern enables reusability across components
+ * - Public events provide API security boundary
+ * - Automatic cleanup via disconnect callbacks
+ * - Async initialization supports dynamic setup
+ * - Context injection enables dependency injection
+ *
+ * @see {@link getPublicTrigger} for event filtering
+ * @see {@link getPlaitedTrigger} for lifecycle management
+ * @since 1.0.0
  */
 
 export const bProgram = <A extends EventDetails, C extends { [key: string]: unknown } = { [key: string]: unknown }>({
