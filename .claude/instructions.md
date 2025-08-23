@@ -3,6 +3,14 @@
 ## Overview
 This document provides guidelines for writing and maintaining TypeScript documentation in the Plaited codebase. Follow these patterns to ensure consistency and clarity across all modules.
 
+### Documentation Style Summary
+- **Concise first line**: One-line summary without redundant phrases
+- **Named examples**: Each `@example` should have a descriptive title
+- **Factory functions only**: Never show raw `yield` statements in behavioral examples
+- **Type over interface**: Always prefer `type` declarations
+- **Cross-references**: Use `@see` tags to connect related APIs
+- **Version tracking**: Include `@since` tags for public APIs
+
 ## Documentation Philosophy
 - Public APIs require comprehensive documentation with examples
 - Internal modules need maintainer-focused documentation
@@ -16,21 +24,17 @@ For publicly exported functions, types, and classes:
 ```typescript
 /**
  * Brief one-line description of what this does.
- * 
  * Extended description providing context and use cases.
- * Explain when and why developers would use this.
  * 
- * @param paramName - Description of parameter purpose and constraints
+ * @param paramName Description of parameter purpose and constraints
  * @returns Description of return value and what it represents
  * 
- * @example
- * Basic Usage
+ * @example Basic Usage
  * ```ts
  * const result = functionName(args);
  * ```
  * 
- * @example
- * Advanced Usage
+ * @example Advanced Usage  
  * ```ts
  * // More complex example with context
  * const config = { ... };
@@ -41,6 +45,9 @@ For publicly exported functions, types, and classes:
  * - Important implementation details
  * - Performance considerations
  * - Common pitfalls or gotchas
+ * 
+ * @see {@link RelatedFunction} for related functionality
+ * @since 1.0.0
  */
 ```
 
@@ -108,9 +115,62 @@ For internal helper functions:
  */
 ```
 
+## Enhanced Documentation Pattern for Complex APIs
+
+For complex types and functions (like those in the behavioral module), use this comprehensive pattern:
+
+```typescript
+/**
+ * Concise one-line summary of functionality.
+ * More detailed explanation if needed.
+ * 
+ * @template T Description of generic type parameter
+ * @param args Parameter with clear description
+ * @returns What is returned and how it's used
+ * 
+ * @example Named example with context
+ * ```ts
+ * // Descriptive comment about what this example shows
+ * const example = functionName({
+ *   param: 'value'
+ * });
+ * ```
+ * 
+ * @example Another practical scenario
+ * ```ts
+ * // Show different use case or pattern
+ * const advanced = functionName({
+ *   complexParam: { nested: 'value' }
+ * });
+ * ```
+ * 
+ * @remarks
+ * Key points about implementation:
+ * - Important behavioral notes
+ * - Performance characteristics
+ * - Common patterns or anti-patterns
+ * 
+ * @see {@link RelatedType} for related concepts
+ * @see {@link OtherFunction} for complementary functionality
+ * @since 1.0.0
+ */
+```
+
+### Key Principles for Enhanced Documentation
+
+1. **Multiple Named Examples**: Each example should have a descriptive title
+2. **Progressive Complexity**: Start with simple examples, build to advanced
+3. **Cross-References**: Use `@see` tags to connect related APIs
+4. **Version Tracking**: Include `@since` tags for API stability
+5. **Template Documentation**: Document generic type parameters clearly
+6. **Practical Focus**: Examples should reflect real-world usage
+
 ## Type Documentation Guidelines
 
+**IMPORTANT**: This project prefers `type` over `interface` in both code and TSDoc comments. Always use `type` declarations unless there's a specific need for interface features like declaration merging.
+
 ### Public Types
+
 ```typescript
 /**
  * Description of what this type represents in the API.
@@ -130,6 +190,7 @@ export type TypeName = {
 ```
 
 ### Internal Types
+
 ```typescript
 /**
  * @internal
@@ -141,31 +202,54 @@ type InternalType = {
 }
 ```
 
+### Type vs Interface
+
+Always use `type` declarations:
+
+```typescript
+// Preferred: Use type
+type UserData = {
+  id: string;
+  name: string;
+}
+
+// Avoid: Don't use interface unless needed
+interface UserData {
+  id: string;
+  name: string;
+}
+```
+
 ## Best Practices
 
 ### 1. Use Consistent Terminology
+
 - `Purpose`: Why something exists
 - `Architecture`: How it fits in the system
 - `Implementation details`: How it works internally
 - `Maintainer Notes`: Critical information for developers
 
 ### 2. Focus on the "Why"
+
 - Don't just describe what code does (that's what the code is for)
 - Explain why it does it that way
 - Document design decisions and trade-offs
 
 ### 3. Examples Should Be Realistic
+
 - Use practical, real-world examples
 - Show both basic and advanced usage
 - Include context and setup when needed
 
 ### 4. Document Edge Cases
+
 - Null/undefined handling
 - Error conditions
 - Performance implications
 - Security considerations
 
 ### 5. Keep Documentation Current
+
 - Update docs when implementation changes
 - Remove outdated information
 - Add notes about breaking changes
@@ -173,6 +257,7 @@ type InternalType = {
 ## Special Annotations
 
 ### Security-Sensitive Code
+
 ```typescript
 /**
  * @internal
@@ -186,6 +271,7 @@ type InternalType = {
 ```
 
 ### Performance-Critical Code
+
 ```typescript
 /**
  * @internal
@@ -199,6 +285,7 @@ type InternalType = {
 ```
 
 ### Deprecated Code
+
 ```typescript
 /**
  * @deprecated Use `newFunction` instead. Will be removed in v8.0.
@@ -209,21 +296,94 @@ type InternalType = {
 ## Module-Specific Patterns
 
 ### Behavioral Programming Modules
+
 - Document event flow and synchronization
 - Explain thread lifecycle and state management
 - Include sequence diagrams for complex interactions
+- **IMPORTANT**: Always use factory functions (`bSync`, `bThread`) in examples, never raw `yield` statements
+- Show practical usage patterns with the behavioral API
+- Use descriptive example titles that explain the scenario
+
+#### Behavioral Documentation Template
+
+```typescript
+/**
+ * Creates a behavioral thread for handling user interactions.
+ * Coordinates multiple async operations with proper synchronization.
+ * 
+ * @param config Thread configuration options
+ * @returns Configured behavioral thread
+ * 
+ * @example Simple request-response pattern
+ * ```ts
+ * const simpleFlow = bThread([
+ *   bSync({ request: { type: 'FETCH_DATA' } }),
+ *   bSync({ waitFor: ['SUCCESS', 'ERROR'] })
+ * ]);
+ * ```
+ * 
+ * @example Complex coordination with blocking
+ * ```ts
+ * const coordinatedFlow = bThread([
+ *   bSync({ 
+ *     waitFor: 'USER_ACTION',
+ *     block: 'SYSTEM_BUSY',
+ *     request: { type: 'PROCESS' }
+ *   }),
+ *   bSync({ waitFor: 'COMPLETE' })
+ * ], true); // Repeat indefinitely
+ * ```
+ * 
+ * @remarks
+ * - Threads execute sequentially through sync points
+ * - Blocking has precedence over requests
+ * - Use repetition for continuous behaviors
+ * 
+ * @see {@link bSync} for creating sync points
+ * @see {@link behavioral} for program setup
+ */
+```
+
+#### Correct Behavioral Examples
+
+```typescript
+// CORRECT: Using factory functions
+const myThread = bThread([
+  bSync({ request: { type: 'START' } }),
+  bSync({ waitFor: 'READY' }),
+  bSync({ request: { type: 'PROCESS' } })
+]);
+
+// WRONG: Using raw yield statements
+function* myThread() {
+  yield { request: { type: 'START' } };
+  yield { waitFor: 'READY' };
+  yield { request: { type: 'PROCESS' } };
+}
+```
+
+#### Common Behavioral Patterns to Document
+
+1. **Event Flow**: Show how events propagate through threads
+2. **Synchronization**: Demonstrate coordination between threads
+3. **Blocking Patterns**: Explain mutual exclusion scenarios
+4. **Interruption**: Document cancellation and cleanup
+5. **Repetition**: Show continuous and conditional loops
 
 ### DOM Manipulation Modules
+
 - Document DOM update strategies
 - Explain performance optimizations
 - Note browser compatibility concerns
 
 ### CSS/Styling Modules
+
 - Document style adoption mechanisms
 - Explain scoping strategies
 - Note performance implications
 
 ### Testing Infrastructure
+
 - Document test setup and teardown
 - Explain mocking strategies
 - Note flaky test mitigation
@@ -231,6 +391,7 @@ type InternalType = {
 ## Common Anti-Patterns to Avoid
 
 1. **Redundant Comments**
+
    ```typescript
    // Bad: States the obvious
    /** Gets the name */
@@ -245,6 +406,7 @@ type InternalType = {
    ```
 
 2. **Missing Context**
+
    ```typescript
    // Bad: No context
    /** Processes data */
@@ -257,6 +419,7 @@ type InternalType = {
    ```
 
 3. **Outdated Examples**
+
    - Always test examples in documentation
    - Update when APIs change
    - Remove examples for deprecated features
@@ -285,6 +448,7 @@ When reviewing documentation:
 ## Build Commands
 
 Use the following commands for the Plaited project:
+
 - **Type checking**: `bun run check` (not `npm run typecheck`)
 - **Linting**: `bun run lint`
 - **Testing**: `bun test`

@@ -179,7 +179,6 @@ import { getPublicTrigger } from './get-public-trigger.js'
  *
  * @see {@link getPublicTrigger} for event filtering
  * @see {@link getPlaitedTrigger} for lifecycle management
- * @since 1.0.0
  */
 
 export const bProgram = <A extends EventDetails, C extends { [key: string]: unknown } = { [key: string]: unknown }>({

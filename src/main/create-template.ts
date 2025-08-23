@@ -1,25 +1,21 @@
 /**
- * Plaited JSX Template Creation System
- *
- * Core module for converting JSX-like calls into Plaited template objects.
- * Provides security-first template creation with automatic style management
- * and declarative shadow DOM support.
- *
+ * JSX Template Creation System for Plaited.
+ * Converts JSX-like calls into template objects with security-first design.
+ * 
+ * @module create-template
  * @packageDocumentation
- *
- * @example
- * Basic Element Creation
+ * 
+ * @example Basic element creation
  * ```tsx
  * import { h } from 'plaited/jsx-runtime'
  *
  * const div = h('div', {
  *   class: 'container',
  *   children: 'Hello World'
- * })
+ * });
  * ```
  *
- * @example
- * Custom Component
+ * @example Component composition  
  * ```tsx
  * const Card = ({ title, children }) => h('div', {
  *   class: 'card',
@@ -27,25 +23,24 @@
  *     h('h2', { children: title }),
  *     h('div', { class: 'content', children })
  *   ]
- * })
+ * });
  *
  * const card = h(Card, {
  *   title: 'Welcome',
  *   children: 'Card content'
- * })
+ * });
  * ```
  *
- * @example
- * Shadow DOM and Styles
+ * @example Shadow DOM with styles
  * ```tsx
- * import { css } from 'plaited'
+ * import { css } from 'plaited';
  *
  * const styles = css.create({
  *   container: {
  *     padding: '1rem',
  *     border: '1px solid #ccc'
  *   }
- * })
+ * });
  *
  * const ShadowComponent = () => h('custom-element', {
  *   children: h('template', {
@@ -55,69 +50,19 @@
  *       children: 'Shadow content'
  *     })
  *   })
- * })
- * ```
- *
- * @example
- * Event Handling
- * ```tsx
- * const Button = () => h('button', {
- *   'p-trigger': {
- *     click: 'BUTTON_CLICKED',
- *     focus: 'BUTTON_FOCUSED'
- *   },
- *   children: 'Click me'
- * })
+ * });
  * ```
  *
  * @remarks
- * Security Features:
- * 1. HTML Escaping
- *    - Automatic escaping of attribute values
- *    - Child content sanitization
- *    - Opt-in trusted content via `trusted` prop
+ * Key features:
+ * - Automatic HTML escaping
+ * - Declarative event system via p-trigger
+ * - Style hoisting and deduplication
+ * - Shadow DOM boundaries
+ * - Script injection protection
  *
- * 2. Event Safety
- *   - No `on*` event handlers allowed
- *   - Uses declarative `p-trigger` system
- *   - Prevents script injection attacks
- *
- * 3. Script Protection
- *   - `<script>` tags require explicit `trusted={true}`
- *   - Inline scripts blocked by default
- *
- * Style Management:
- * 1. Stylesheet Hoisting
- *   - Automatic collection up component tree
- *   - Deduplication via Set
- *   - Shadow DOM boundary awareness
- *
- * 2. Style Attributes
- *   - Object syntax with camelCase props
- *   - CSS variable support
- *   - Auto kebab-case conversion
- *
- * Shadow DOM Support:
- * - Declarative shadow root creation
- * - Automatic style injection
- * - Focus delegation
- * - Slot management
- *
- * Best Practices:
- * 1. Security
- *   - Never use `trusted={true}` with untrusted content
- *   - Validate all dynamic attribute values
- *   - Use `p-trigger` for events, not `on*` attributes
- *
- * 2. Performance
- *   - Keep templates small and focused
- *   - Use Fragment to avoid wrapper elements
- *   - Leverage stylesheet hoisting
- *
- * 3. Styles
- *   - Use CSS modules with `css.create()`
- *   - Leverage shadow DOM for style encapsulation
- *   - Group related styles in objects
+ * @see {@link Fragment} for grouping without wrappers
+ * @see {@link css} for style creation
  */
 
 import { isTypeOf, trueTypeOf, kebabCase, escape } from '../utils.js'
@@ -152,34 +97,53 @@ type InferAttrs<T extends Tag> =
 type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => TemplateObject
 
 /**
- * Core function for creating Plaited template objects from JSX-like calls.
+ * Creates Plaited template objects from JSX-like calls.
+ * Core template factory with security-first design and style management.
  *
- * @param _tag - The tag name (string for HTML/SVG/custom elements) or a FunctionTemplate
- * @param attrs - The attributes/props object for the element, including `children`
- * @returns A `TemplateObject` containing the processed HTML strings (`html`), collected stylesheets (`stylesheets`), registry info (`registry`), and an identifier (`$`)
- * @throws {Error} If an `on*` attribute (e.g., `onclick`) is used. Event handling should use `p-trigger`
- * @throws {Error} If a `<script>` tag is used without the `trusted={true}` attribute
- * @throws {Error} If an attribute value is not a primitive type (string, number, boolean, null, undefined), excluding Plaited-specific object/array types
- *
- * @example
- * ```ts
+ * @param _tag - HTML/SVG tag name, custom element tag, or FunctionTemplate
+ * @param attrs - Element attributes including children
+ * @returns TemplateObject with HTML, stylesheets, registry, and identifier
+ * 
+ * @example Standard element
+ * ```tsx
  * const template = createTemplate('div', {
  *   class: 'container',
  *   children: ['Hello World']
  * });
  * ```
  *
- * Key responsibilities include:
- * - Handling standard HTML/SVG tags, custom element tags, and FunctionTemplates
- * - Sanitizing attribute values and child content via HTML escaping (unless the `trusted` attribute is `true`)
- * - Correctly formatting boolean attributes (e.g., `disabled`, `checked`)
- * - Processing Plaited-specific attributes:
- *   - `p-trigger`: Serializes event-to-action mappings
- *   - `stylesheet`: Collects stylesheet strings for hoisting
- *   - `style`: Converts a style object into an inline style string
- *   - `trusted`: Disables escaping for the element's attributes and children (use with caution)
- * - Hoisting stylesheets up the template tree until a declarative shadow DOM boundary (`<template shadowrootmode="...">`) is encountered
- * - Preventing potentially unsafe constructs like `on*` event handler attributes and `<script>` tags without the `trusted` attribute
+ * @example With event triggers
+ * ```tsx
+ * const button = createTemplate('button', {
+ *   'p-trigger': { click: 'SUBMIT' },
+ *   children: 'Submit'
+ * });
+ * ```
+ *
+ * @example Style object
+ * ```tsx
+ * const styled = createTemplate('div', {
+ *   style: {
+ *     padding: '10px',
+ *     '--custom-var': 'blue'
+ *   },
+ *   children: 'Styled content'
+ * });
+ * ```
+ *
+ * @throws {Error} When `on*` attributes are used (use p-trigger instead)
+ * @throws {Error} When `<script>` tag used without `trusted={true}`
+ * @throws {Error} When non-primitive attribute values provided
+ *
+ * @remarks
+ * Security features:
+ * - Automatic HTML escaping
+ * - No inline event handlers
+ * - Script tag protection
+ * - Trusted content opt-in
+ *
+ * @see {@link h} for JSX factory alias
+ * @see {@link Fragment} for grouping elements
  */
 export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const {
@@ -290,13 +254,11 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
 }
 
 /**
- * Alias for `createTemplate`, commonly used as the JSX factory function (`jsx` or `jsxs` in JSX transform).
- * This follows the convention established by react-jsx and adopted by many JSX frameworks.
+ * JSX factory function alias for createTemplate.
+ * Standard entry point for JSX transformation.
  *
- * @see createTemplate For detailed behavior and parameters
- *
- * @example
- * ```ts
+ * @example JSX usage
+ * ```tsx
  * import { h } from 'plaited/jsx-runtime';
  *
  * const element = h('div', {
@@ -304,44 +266,58 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
  *   class: 'container',
  *   children: 'Hello World'
  * });
- *
- * const templateFunction = h(MyTemplateFunction, {
- *   data: 'some data'
- * });
  * ```
+ *
+ * @see {@link createTemplate} for implementation details
  */
 export { createTemplate as h }
 
 /**
- * Represents a JSX Fragment. Allows grouping multiple children without adding an extra wrapper node
- * to the resulting HTML structure. It processes its children, collecting their HTML fragments
- * and stylesheets into a single `TemplateObject`.
+ * JSX Fragment for grouping elements without wrapper nodes.
+ * Collects child HTML and stylesheets into single template object.
  *
- * @param attrs - An attributes object, primarily used to access the `children` prop (other attributes are ignored)
- * @returns A `TemplateObject` containing the combined HTML and stylesheets of its direct children
+ * @param attrs - Attributes object containing children
+ * @returns TemplateObject with combined HTML and stylesheets
  *
- * @example
+ * @example List items without wrapper
  * ```tsx
- * import { Fragment, h } from 'plaited/jsx-runtime';
- *
  * const listItems = (
  *   <Fragment>
  *     <li>Item 1</li>
  *     <li>Item 2</li>
  *   </Fragment>
  * );
- * // Resulting TemplateObject.html: ['<li>Item 1</li>', '<li>Item 2</li>']
- *
- * const mixedContent = h('div', {
- *   children: (
- *     <Fragment>
- *       <span>Part 1</span>
- *       {' Part 2'}
- *     </Fragment>
- *   )
- * });
- * // Resulting TemplateObject.html: ['<div>', '<span>Part 1</span>', ' Part 2', '</div>']
  * ```
+ *
+ * @example Mixed content
+ * ```tsx
+ * const content = (
+ *   <Fragment>
+ *     <h2>Title</h2>
+ *     <p>Paragraph</p>
+ *     {'Text node'}
+ *   </Fragment>
+ * );
+ * ```
+ *
+ * @example With styles
+ * ```tsx
+ * const styled = (
+ *   <Fragment>
+ *     <div {...styles.box}>Box 1</div>
+ *     <div {...styles.box}>Box 2</div>
+ *   </Fragment>
+ * );
+ * ```
+ *
+ * @remarks
+ * Use cases:
+ * - Avoid wrapper divs
+ * - Return multiple elements
+ * - Conditional rendering
+ * - List mapping
+ *
+ * @see {@link createTemplate} for element creation
  */
 export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
   const children = Array.isArray(_children) ? _children.flat() : [_children]

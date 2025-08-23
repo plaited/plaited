@@ -38,7 +38,7 @@ type Repeat = true | (() => boolean)
  *
  * @example Event with typed detail
  * ```ts
- * interface LoginDetails {
+ * type LoginDetails = {
  *   userId: string;
  *   timestamp: number;
  *   rememberMe: boolean;
@@ -167,32 +167,30 @@ export type BPListener = string | ((args: BPEvent) => boolean)
  *
  * @example Basic synchronization
  * ```ts
- * // Simple request-wait pattern
- * yield {
- *   request: { type: 'FETCH_DATA' }
- * };
- * yield {
- *   waitFor: ['DATA_LOADED', 'FETCH_ERROR']
- * };
+ * // Simple request-wait pattern using bSync
+ * const fetchSequence = bThread([
+ *   bSync({ request: { type: 'FETCH_DATA' } }),
+ *   bSync({ waitFor: ['DATA_LOADED', 'FETCH_ERROR'] })
+ * ]);
  * ```
  *
  * @example Complex coordination
  * ```ts
  * // Multi-thread coordination with blocking
- * yield {
+ * const loginFlow = bSync({
  *   waitFor: 'USER_LOGIN',
  *   block: 'SESSION_TIMEOUT',
  *   request: { type: 'INITIALIZE_SESSION' }
- * };
+ * });
  * ```
  *
  * @example Interruption handling
  * ```ts
  * // Long process with cancellation support
- * yield {
+ * const uploadProcess = bSync({
  *   request: { type: 'START_UPLOAD' },
  *   interrupt: 'CANCEL_UPLOAD'
- * };
+ * });
  * ```
  *
  * @remarks
@@ -223,38 +221,28 @@ export type Idioms = {
  *
  * @example Authentication flow
  * ```ts
- * function* authenticationFlow(): RulesFunction {
- *   // Request login UI
- *   yield { request: { type: 'SHOW_LOGIN' } };
- *
- *   // Wait for user action
- *   yield {
+ * // Using bThread and bSync to create authentication flow
+ * const authenticationFlow = bThread([
+ *   bSync({ request: { type: 'SHOW_LOGIN' } }),
+ *   bSync({
  *     waitFor: ['LOGIN_ATTEMPT', 'CANCEL'],
  *     block: 'LOGOUT' // Prevent logout during login
- *   };
- *
- *   // Handle result
- *   yield { waitFor: ['AUTH_SUCCESS', 'AUTH_FAILURE'] };
- * }
+ *   }),
+ *   bSync({ waitFor: ['AUTH_SUCCESS', 'AUTH_FAILURE'] })
+ * ]);
  * ```
  *
- * @example Data synchronization
+ * @example Data synchronization with repetition
  * ```ts
- * function* dataSyncThread(): RulesFunction {
- *   while (true) {
- *     // Wait for changes
- *     yield { waitFor: 'DATA_CHANGED' };
- *
- *     // Request sync, can be interrupted
- *     yield {
- *       request: { type: 'SYNC_DATA' },
- *       interrupt: 'APP_CLOSING'
- *     };
- *
- *     // Wait for completion
- *     yield { waitFor: ['SYNC_COMPLETE', 'SYNC_ERROR'] };
- *   }
- * }
+ * // Create a repeating sync thread using bThread
+ * const dataSyncThread = bThread([
+ *   bSync({ waitFor: 'DATA_CHANGED' }),
+ *   bSync({
+ *     request: { type: 'SYNC_DATA' },
+ *     interrupt: 'APP_CLOSING'
+ *   }),
+ *   bSync({ waitFor: ['SYNC_COMPLETE', 'SYNC_ERROR'] })
+ * ], true); // true for infinite repetition
  * ```
  *
  * @remarks

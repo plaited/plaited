@@ -24,50 +24,67 @@ import { BEHAVIORAL_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './b-element.c
 import type { BehavioralTemplate, BehavioralElement, SelectorMatch, Bindings, BoundElement } from './b-element.types.js'
 
 /**
- * Arguments passed to the `bProgram` function when defining a Behavioral element.
- * Provides essential utilities and context for the element's behavior and lifecycle management.
+ * Context and utilities provided to the behavioral program of a Plaited component.
+ * Contains DOM access, lifecycle hooks, and behavioral programming primitives.
  *
- * @property $ - A query selector function scoped to the component's shadow root.
- *   Accepts a `p-target` value and an optional `SelectorMatch` modifier (e.g., `*=` for contains).
- *   Returns a `NodeListOf<BoundElement<E>>` containing Plaited-enhanced elements.
- * @property root - A reference to the component's shadow root.
- * @property host - A reference to the custom element instance itself.
- * @property internals - The `ElementInternals` instance associated with the element,
- *   providing access to form association features, ARIA properties, etc. Available when `formAssociated: true`.
- * @property trigger - The trigger function for dispatching events within the component's
- *   behavioral program. Automatically manages disconnect callbacks.
- * @property bThreads - An interface for managing behavioral threads (`bThread` instances).
- * @property useSnapshot - A function to get the current state snapshot of the behavioral program.
- * @property bThread - A utility function for creating behavioral threads.
- * @property bSync - A utility function for defining synchronization points within behavioral threads.
+ * @property $ - Query selector scoped to shadow root using p-target attributes
+ * @property root - Component's shadow root reference
+ * @property host - Custom element instance
+ * @property internals - ElementInternals API for form association and states
+ * @property trigger - Event dispatcher with automatic cleanup
+ * @property bThreads - Behavioral thread management
+ * @property useSnapshot - State snapshot access
+ * @property bThread - Thread creation utility
+ * @property bSync - Synchronization point utility
  *
- * @example
- * How `BProgramArgs` are received in a `bProgram`:
+ * @example Shadow DOM element access
  * ```ts
  * const MyComponent = bElement({
  *   tag: 'my-component',
- *   shadowDom: <div p-target="content">Hello</div>,
- *   bProgram: ({ $, host, root, internals, trigger, bThreads, useSnapshot, bThread, bSync }) => {
- *     // Use $ to query elements
- *     const [contentDiv] = $<HTMLDivElement>('content');
- *     console.log(contentDiv.textContent); // "Hello"
- *
- *     // Access host and root
- *     console.log(host.tagName); // "MY-COMPONENT"
- *     console.log(root.mode); // "open"
- *
- *     // Use trigger to dispatch events
- *     const handleClick = () => trigger({ type: 'my-event', detail: 'clicked' });
- *     contentDiv.addEventListener('click', handleClick);
- *
- *     // Define event handlers
+ *   shadowDom: (
+ *     <div>
+ *       <h1 p-target="title">Title</h1>
+ *       <div p-target="content" />
+ *     </div>
+ *   ),
+ *   bProgram({ $ }) {
+ *     const [title] = $<HTMLHeadingElement>('title');
+ *     const [content] = $('content');
+ *     
  *     return {
- *       'my-event': (detail) => console.log('Event triggered:', detail),
- *       onConnected: () => console.log('Component connected!'),
+ *       updateTitle(text: string) {
+ *         title.render(text);
+ *       },
+ *       addContent(html: string) {
+ *         content.insert('beforeend', <>{html}</>);
+ *       }
  *     };
  *   }
  * });
  * ```
+ *
+ * @example Using behavioral threads
+ * ```ts
+ * bProgram({ bThreads, bThread, bSync, trigger }) {
+ *   bThreads.set({
+ *     'dataSync': bThread([
+ *       bSync({ waitFor: 'FETCH_START' }),
+ *       bSync({ request: { type: 'LOADING' } }),
+ *       bSync({ waitFor: ['SUCCESS', 'ERROR'] }),
+ *       bSync({ request: { type: 'COMPLETE' } })
+ *     ])
+ *   });
+ *   
+ *   return {
+ *     startFetch() {
+ *       trigger({ type: 'FETCH_START' });
+ *     }
+ *   };
+ * }
+ * ```
+ *
+ * @see {@link bElement} for component creation
+ * @see {@link BoundElement} for element helper methods
  */
 export type BProgramArgs = {
   $: <E extends Element = Element>(
@@ -90,27 +107,17 @@ export type BProgramArgs = {
 }
 
 /**
- * Type definition mapping standard Custom Element lifecycle callbacks and
- * Form-Associated Custom Element callbacks to their handler function signatures within Plaited.
- * All handlers are optional and can be synchronous or asynchronous (`async`/`Promise`).
+ * Lifecycle callbacks for Plaited components.
+ * Maps standard Custom Element and Form-Associated callbacks to handlers.
  *
- * @property onAdopted - Called when the element is moved to a new document (e.g., via `document.adoptNode`).
- *   Receives no arguments.
- * @property onAttributeChanged - Called when an attribute listed in `observedAttributes` changes.
- *   Receives an object with `name`, `oldValue`, and `newValue`.
- * @property onConnected - Called when the element is first connected to the document's DOM.
- *   Ideal for setup, initial rendering, and event listeners. Receives no arguments.
- * @property onDisconnected - Called when the element is disconnected from the document's DOM.
- *   Ideal for cleanup (removing listeners, stopping timers/observers). Receives no arguments.
- * @property onFormAssociated - Called when the element becomes associated with a form.
- *   Requires `formAssociated: true`. Receives the associated `HTMLFormElement`.
- * @property onFormDisabled - Called when the element's disabled state changes due to the parent
- *   `<fieldset>`'s disabled state changing. Requires `formAssociated: true`. Receives a boolean indicating the disabled state.
- * @property onFormReset - Called when the associated form is reset.
- *   Requires `formAssociated: true`. Receives no arguments.
- * @property onFormStateRestore - Called when the browser tries to restore the element's state
- *   (e.g., during navigation or browser restart). Requires `formAssociated: true`.
- *   Receives an object with `state` (the restored state) and `reason` ('autocomplete' or 'restore').
+ * @property onAdopted - Called when element is moved to a new document
+ * @property onAttributeChanged - Called when an observed attribute changes (receives name, oldValue, newValue)
+ * @property onConnected - Called when element is added to DOM - ideal for setup
+ * @property onDisconnected - Called when element is removed from DOM - ideal for cleanup
+ * @property onFormAssociated - Called when associated with a form (requires formAssociated: true)
+ * @property onFormDisabled - Called when disabled state changes via fieldset (requires formAssociated: true)
+ * @property onFormReset - Called when associated form is reset (requires formAssociated: true)
+ * @property onFormStateRestore - Called when browser restores element state (requires formAssociated: true)
  */
 export type BehavioralElementCallbackDetails = {
   [ELEMENT_CALLBACKS.onAdopted]: void
@@ -150,22 +157,39 @@ const getTriggerType = (event: Event, context: Element) => {
 const isElement = (node: Node): node is Element => node.nodeType === 1
 
 /**
- * Creates a reusable Web Component with behavioral programming, event delegation, and shadow DOM support.
- * The `bElement` function is the core building block of Plaited applications, providing a
- * declarative way to create custom elements with robust state management and DOM interactions.
+ * Creates a Web Component with behavioral programming and shadow DOM support.
+ * Core building block for Plaited applications with declarative state management.
  *
- * @template A - Generic type extending `EventDetails` for component-specific events and their payload types.
- * @param options - Configuration options for the element.
- * @param options.tag - Custom element tag name (must contain a hyphen, e.g., `my-element`).
- * @param options.shadowDom - The shadow DOM template for the component, typically created using JSX or `createTemplate`.
- * @param [options.mode='open'] - Shadow root mode (`'open'` or `'closed'`). Defaults to `'open'`.
- * @param [options.delegatesFocus=true] - Whether focus should be delegated from the host to the shadow DOM. Defaults to `true`.
- * @param [options.slotAssignment='named'] - The slot assignment mode for the shadow DOM (`'named'` or `'manual'`). Defaults to `'named'`.
- * @param [options.observedAttributes=[]] - An array of attribute names to observe for changes. Changes trigger `onAttributeChanged`.
- * @param [options.formAssociated] - If `true`, the element will be form-associated, enabling features like `ElementInternals`, form lifecycle callbacks, and participation in form submission.
- * @param [options.publicEvents=[]] - An array of event types (strings) that can be triggered externally on the element instance using its `trigger` method.
- * @param [options.bProgram] - The behavioral program function that defines the element's logic, event handlers, and lifecycle callback implementations. It receives `BProgramArgs` as its argument.
- * @returns A PlaitedTemplate function. When called, this function creates an instance of the custom element, returning a `TemplateObject` that can be rendered or used in other templates. The function itself also carries metadata like `tag`, `registry`, `publicEvents`, and `observedAttributes`.
+ * @template A Event details type for component-specific events
+ * @param options Component configuration
+ * @returns PlaitedTemplate function for creating element instances
+ * 
+ * @example Simple counter component
+ * ```tsx
+ * const Counter = bElement({
+ *   tag: 'my-counter',
+ *   shadowDom: (
+ *     <div>
+ *       <button p-target="dec" p-trigger={{ click: 'DEC' }}>-</button>
+ *       <span p-target="count">0</span>
+ *       <button p-target="inc" p-trigger={{ click: 'INC' }}>+</button>
+ *     </div>
+ *   ),
+ *   bProgram({ $ }) {
+ *     const [count] = $('count');
+ *     let value = 0;
+ *     
+ *     return {
+ *       INC() {
+ *         count.render(String(++value));
+ *       },
+ *       DEC() {
+ *         count.render(String(--value));
+ *       }
+ *     };
+ *   }
+ * });
+ * ```
  *
  * @example
  * Basic Counter Component

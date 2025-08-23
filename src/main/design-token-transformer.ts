@@ -37,18 +37,8 @@ import {
  * Transforms design tokens into CSS custom properties and TypeScript references.
  * Handles token resolution, dependency management, and code generation.
  *
- * Features:
- * - Converts design tokens to CSS variables
- * - Generates TypeScript type definitions
- * - Manages token dependencies and circular references
- * - Supports media queries and color schemes
- * - Handles token aliasing and composition
- * - Provides token validation and error checking
- *
- * @class
- * @implements {TransformDesignTokensInterface}
- *
- * @example
+ * @example Basic token transformation
+ * ```ts
  * const transformer = new TransformDesignTokens({
  *   tokens: {
  *     colors: {
@@ -56,67 +46,75 @@ import {
  *         $description: "Primary brand color",
  *         $type: "color",
  *         $value: "#FF0000"
+ *       },
+ *       secondary: {
+ *         $type: "color",
+ *         $value: "{colors.primary}"
  *       }
  *     }
  *   },
- *   tokenPrefix: "brand",
- *   defaultMediaQueries: { colorScheme: "@light" }
+ *   tokenPrefix: "brand"
  * });
  *
- * // Get CSS output
  * console.log(transformer.css);
- * // :hoot { --brand-colors-primary: #FF0000; }
+ * // :host { --brand-colors-primary: #FF0000; --brand-colors-secondary: var(--brand-colors-primary); }
  *
- * // Get TypeScript output
  * console.log(transformer.ts);
  * // export const colorsPrimary = "--brand-colors-primary" as const;
+ * // export const colorsSecondary = colorsPrimary;
+ * ```
  *
- * // Query token entries
- * const allEntries = transformer.entries;  // All token entries
- * const colorTokens = transformer.filter(([alias]) => alias.includes('color'));
- * const primaryToken = transformer.get('{colors.primary}');
- * const hasToken = transformer.has('{colors.primary}');
+ * @example Media query support
+ * ```ts
+ * const transformer = new TransformDesignTokens({
+ *   tokens: {
+ *     spacing: {
+ *       gap: {
+ *         $type: "default",
+ *         $value: {
+ *           "@mobile": "8px",
+ *           "@tablet": "16px",
+ *           "@desktop": "24px"
+ *         }
+ *       }
+ *     }
+ *   },
+ *   mediaQueries: new Map([
+ *     ["@mobile", "(max-width: 640px)"],
+ *     ["@tablet", "(min-width: 641px) and (max-width: 1024px)"],
+ *     ["@desktop", "(min-width: 1025px)"]
+ *   ]),
+ *   defaultMediaQueries: { screen: "@mobile" }
+ * });
+ * ```
  *
- * @property {string} ts - Generated TypeScript definitions
- * @property {string} css - Generated CSS custom properties
- * @property {Array<[Alias, DesignTokenEntry]>} entries - Gets all token entries as [Alias, DesignTokenEntry][]
- * Methods:
- * @method filter Filters token entries using a callback function
- * @method get Retrieves a specific token entry by its alias
- * @method has Checks if a token exists by its alias
- *
- * @example Query Methods
- * // Filter tokens
- * const shadows = transformer.filter(([alias, entry]) =>
- *   entry.$type === 'function' && alias.includes('shadow')
+ * @example Querying tokens
+ * ```ts
+ * // Get all color tokens
+ * const colors = transformer.filter(([alias, entry]) => 
+ *   entry.$type === 'color'
  * );
  *
- * // Get specific token
- * const primary = transformer.get('{colors.primary}');
- * if (primary) {
- *   console.log(primary.$value);
- * }
- *
  * // Check token existence
- * if (transformer.has('{colors.secondary}')) {
- *   // Use secondary color
+ * if (transformer.has('{colors.primary}')) {
+ *   const primary = transformer.get('{colors.primary}');
+ *   console.log(primary?.$value);
  * }
  *
- * @param options Configuration options
- * @param options.tokens Design token group to transform
- * @param options.tokenPrefix Prefix for CSS custom properties (default: 'pl')
- * @param options.mediaQueries Custom media query definitions
- * @param options.defaultMediaQueries Default media query settings
+ * // Get all entries
+ * const all = transformer.entries;
+ * ```
  *
  * @remarks
- * - Handles circular dependency detection
- * - Supports nested token structures
- * - Preserves token documentation
- * - Provides deep cloned copies of entries for safety
- * - Supports filtering and querying token collections
- * - Enables efficient token lookup and validation
+ * Key features:
+ * - Circular dependency detection
+ * - Token aliasing with {path.to.token} syntax
+ * - Media query and color scheme support
+ * - TypeScript const assertions
+ * - Deep cloning for safety
  *
- * @throws {Error} On circular dependencies or invalid token definitions
+ * @see {@link DesignToken} for token structure
+ * @see {@link TransformDesignTokensInterface} for API
  */
 export class TransformDesignTokens implements TransformDesignTokensInterface {
   #db = new Map<Alias, DesignTokenEntry>()
