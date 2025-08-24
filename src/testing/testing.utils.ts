@@ -21,11 +21,8 @@ import type {
 } from './testing.types.js'
 
 /**
- * Custom error for test assertion failures.
- * Thrown when an assertion condition is not met.
- *
- * @extends Error
- * @property name Constant identifier 'failed_assertion'
+ * Error thrown when test assertion fails.
+ * Contains detailed comparison information.
  */
 export class FailedAssertionError extends Error implements Error {
   override name = FIXTURE_EVENTS.failed_assertion
@@ -35,11 +32,8 @@ export class FailedAssertionError extends Error implements Error {
 }
 
 /**
- * Custom error for missing required test parameters.
- * Thrown when required test configuration is not provided.
- *
- * @extends Error
- * @property name Constant identifier 'missing_assertion_parameter'
+ * Error thrown when assertion parameters are missing.
+ * Indicates incomplete test configuration.
  */
 export class MissingAssertionParameterError extends Error implements Error {
   override name = FIXTURE_EVENTS.missing_assertion_parameter
@@ -49,11 +43,8 @@ export class MissingAssertionParameterError extends Error implements Error {
 }
 
 /**
- * Custom error for accessibility violations error
- * Thrown when timeout a11y finds an violation
- *
- * @extends Error
- * @property name Constant identifier 'accessibility_violation'
+ * Error thrown when accessibility violations detected.
+ * Contains axe-core violation details.
  */
 export class AccessibilityError extends Error implements Error {
   override name = FIXTURE_EVENTS.accessibility_violation
@@ -63,28 +54,24 @@ export class AccessibilityError extends Error implements Error {
 }
 
 /**
- * Function type for string pattern matching utility.
- * Creates a curried matcher function for finding patterns in strings.
+ * Creates pattern matcher for string content.
+ * Supports literal strings and RegExp patterns.
  *
- * @param str - Source string to search within for matches
- * @returns A curried function that takes a pattern and returns the first matched substring
+ * @param str - Source string to search
+ * @returns Curried function accepting pattern
  *
- * @example Using with a string pattern
+ * @example String pattern
  * ```ts
- * const matcher: Match = match('Hello world');
- * const result = matcher('world'); // returns 'world'
+ * const matcher = match('Hello world');
+ * matcher('world'); // 'world'
+ * matcher('foo');   // ''
  * ```
  *
- * @example Using with a RegExp pattern
+ * @example RegExp pattern
  * ```ts
- * const matcher: Match = match('Testing 123');
- * const result = matcher(/\d+/); // returns '123'
+ * const matcher = match('Test 123');
+ * matcher(/\d+/); // '123'
  * ```
- *
- * @remarks
- * The returned function is curried, allowing for reuse with different patterns
- * on the same source string. This is particularly useful when you need to search
- * for multiple patterns within the same text.
  */
 export type Match = {
   (str: string): (pattern: string | RegExp) => string
@@ -101,47 +88,31 @@ export type Match = {
 const escapeRegex = (str: string) => str.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
 
 /**
- * Creates a pattern matcher for finding text in strings.
- * Supports both literal string and RegExp patterns with safe escaping.
+ * Pattern matching utility for text content.
+ * Auto-escapes special characters in string patterns.
  *
- * @param str - Source string to search within
- * @returns A function that accepts a pattern (string or RegExp) and returns the first matched substring
+ * @param str - Text to search within
+ * @returns Function accepting pattern to match
  *
- * @example Finding simple text patterns
+ * @example Basic matching
  * ```ts
- * const findInText = match('Hello, world!');
- * findInText('world');  // returns 'world'
- * findInText('foo');    // returns '' (no match)
+ * const find = match('Hello, world!');
+ * find('world');     // 'world'
+ * find(/\w+/);       // 'Hello'
+ * find('missing');   // ''
  * ```
  *
- * @example Using regular expressions
+ * @example Special characters
  * ```ts
- * const text = match('user@example.com');
- * text(/\w+@\w+\.\w+/);  // returns 'user@example.com'
- * text(/\d+/);           // returns '' (no match)
- * ```
- *
- * @example Safe handling of special characters
- * ```ts
- * const text = match('price is $25.00');
- * text('$25.00');  // returns '$25.00' (special chars handled automatically)
- * text(/\$\d+\.\d+/);  // returns '$25.00' (using RegExp)
+ * const text = match('price: $25.00');
+ * text('$25.00');        // '$25.00' (auto-escaped)
+ * text(/\$\d+\.\d+/);   // '$25.00'
  * ```
  *
  * @remarks
- * Key features:
- * - Returns empty string ('') when no match is found
- * - Automatically escapes special RegExp characters in string patterns
- * - Accepts both string literals and RegExp objects as patterns
- * - Returns only the first match found in the string
- * - Thread-safe and immutable - creates new RegExp for each match
- * - Suitable for user-provided patterns due to automatic escaping
- *
- * Common use cases:
- * - Text extraction and validation
- * - Pattern matching in strings
- * - Safe handling of user-provided search terms
- * - Creating reusable text matchers
+ * - Returns empty string when no match
+ * - First match only
+ * - Safe for user input
  */
 export const match: Match = (str: string) => (pattern: string | RegExp) => {
   const RE = new RegExp(typeof pattern === 'string' ? escapeRegex(pattern) : pattern)
@@ -150,44 +121,37 @@ export const match: Match = (str: string) => (pattern: string | RegExp) => {
 }
 
 /**
- * Type definition for error catching utility function.
- * Handles both synchronous and asynchronous functions, capturing their errors
- * and converting them to string representations.
+ * Tests if function throws error.
+ * Handles sync and async functions.
  *
- * @typeParam U - Array of argument types that the tested function accepts
- * @typeParam V - Return type of the tested function, can be any value or Promise
+ * @typeParam U - Function argument types
+ * @typeParam V - Function return type
+ * @param fn - Function to test
+ * @param args - Arguments to pass
+ * @returns Error string or undefined
  *
- * @param fn - Function to test for throws. Should be the function you expect to throw an error
- * @param args - Arguments to pass to the tested function. Must match the parameter types of `fn`
- *
- * @returns For synchronous functions, returns a string containing the error message if an error
- * was thrown, or undefined if no error occurred. For asynchronous functions, returns a Promise
- * that resolves to either the error message string or undefined.
- *
- * @example Testing a synchronous function that throws
+ * @example Sync error
  * ```ts
  * const error = throws(() => {
- *   throw new Error('Invalid input');
+ *   throw new Error('Failed');
  * });
- * // error === 'Error: Invalid input'
+ * // error === 'Error: Failed'
  * ```
  *
- * @example Testing a function with arguments
+ * @example With arguments
  * ```ts
  * const divide = (a: number, b: number) => {
  *   if (b === 0) throw new Error('Division by zero');
  *   return a / b;
  * };
- * const error = throws(divide, 10, 0);
- * // error === 'Error: Division by zero'
+ * throws(divide, 10, 0); // 'Error: Division by zero'
  * ```
  *
- * @example Testing an async function
+ * @example Async function
  * ```ts
- * const error = await throws(async () => {
- *   throw new Error('Async error');
- * });
- * // error === 'Error: Async error'
+ * await throws(async () => {
+ *   throw new Error('Async fail');
+ * }); // 'Error: Async fail'
  * ```
  */
 export type Throws = {
@@ -220,32 +184,21 @@ const catchAndReturn = (x: Promise<unknown>) => x.catch((y) => y)
 const catchPromise = (x: any) => (isPromise(x) ? catchAndReturn(x) : x)
 
 /**
- * Utility function for testing if a function throws an error.
- * Captures both synchronous throws and Promise rejections, converting them to string representations.
+ * Captures function errors as strings.
+ * Works with sync/async functions and Promise rejections.
  *
- * @template U - Array of argument types for the tested function
- * @template V - Return type of the tested function (can be any value or Promise)
- *
- * @param fn - Function to test for throws. Defaults to noop if not provided
- * @param args - Arguments to pass to the tested function
- *
- * @returns A string containing the error message if an error occurred, undefined otherwise.
- * For async functions, returns a Promise that resolves to the error string or undefined.
- *
- * @throws Never - All errors are caught and returned as strings
+ * @template U - Argument types array
+ * @template V - Return type
+ * @param fn - Function to execute (defaults to noop)
+ * @param args - Function arguments
+ * @returns Error string or undefined
  *
  * @remarks
- * This function is particularly useful for:
- * - Unit testing error cases
- * - Verifying error handling behavior
- * - Testing both sync and async error paths
- * - Ensuring consistent error handling across different function types
- *
- * The function will:
- * 1. Execute the provided function with given arguments
- * 2. Catch any thrown errors or Promise rejections
- * 3. Convert errors to strings for consistent handling
- * 4. Return undefined if no error occurs
+ * Use cases:
+ * - Testing error conditions
+ * - Verifying error messages
+ * - Handling async rejections
+ * - Consistent error formatting
  */
 export const throws: Throws = (
   //@ts-ignore: noop
@@ -279,96 +232,48 @@ const replacer = (key: string | number | symbol, value: unknown) => {
 
 export const useAssert = (trigger: Trigger) => {
   /**
-   * A powerful assertion function for testing with detailed error reporting and type safety.
-   * This function compares values and throws detailed errors when assertions fail.
+   * Structured assertion with detailed error reporting.
+   * Compares values using deep equality.
    *
-   * @template T - Type of values being compared. Must be the same type for both actual and expected values
+   * @template T - Type of compared values
+   * @param param - Assertion configuration
+   * @param param.given - Test context description
+   * @param param.should - Expected behavior
+   * @param param.actual - Actual value
+   * @param param.expected - Expected value
    *
-   * @param param - Configuration object for the assertion
-   * @param param.given - Description of the test context or scenario (e.g., "a user login attempt")
-   * @param param.should - Expected behavior written in present tense (e.g., "return true for valid credentials")
-   * @param param.actual - The value or result being tested
-   * @param param.expected - The expected value or result to compare against
+   * @throws {MissingAssertionParameterError} Missing required params
+   * @throws {FailedAssertionError} Values don't match
    *
-   * @throws {MissingAssertionParameterError} When any required parameter (given, should, actual, expected) is missing
-   * @throws {FailedAssertionError} When the assertion fails, providing a detailed comparison of actual vs expected values
-   *
-   * @example
-   * Simple Value Comparison
+   * @example Simple comparison
    * ```ts
    * assert({
-   *   given: 'a number multiplication',
-   *   should: 'return the correct product',
-   *   actual: 2 * 3,
-   *   expected: 6
+   *   given: 'addition',
+   *   should: 'sum correctly',
+   *   actual: 2 + 2,
+   *   expected: 4
    * });
    * ```
    *
-   * @example
-   * Object Comparison
+   * @example Object comparison
    * ```ts
    * assert({
-   *   given: 'a user object',
-   *   should: 'have the correct properties',
-   *   actual: {
-   *     name: 'John',
-   *     age: 30,
-   *     roles: ['admin', 'user']
-   *   },
-   *   expected: {
-   *     name: 'John',
-   *     age: 30,
-   *     roles: ['admin', 'user']
-   *   }
+   *   given: 'user data',
+   *   should: 'match expected',
+   *   actual: { name: 'John', age: 30 },
+   *   expected: { name: 'John', age: 30 }
    * });
    * ```
    *
-   * @example
-   * Collections Comparison
+   * @example Collections
    * ```ts
    * assert({
-   *   given: 'a Set of unique values',
-   *   should: 'contain all expected elements',
+   *   given: 'unique values',
+   *   should: 'match set',
    *   actual: new Set([1, 2, 3]),
    *   expected: new Set([1, 2, 3])
    * });
-   *
-   * assert({
-   *   given: 'a Map of configurations',
-   *   should: 'match the expected key-value pairs',
-   *   actual: new Map([['debug', true], ['mode', 'production']]),
-   *   expected: new Map([['debug', true], ['mode', 'production']])
-   * });
    * ```
-   *
-   * @remarks
-   * Usage Guidelines:
-   * 1. Always provide clear, descriptive contexts in the 'given' parameter
-   * 2. Write 'should' statements that clearly describe the expected behavior
-   * 3. Ensure actual and expected values are of the same type
-   * 4. Use for both simple and complex value comparisons
-   * 5. Review error messages carefully for debugging
-   *
-   * Features:
-   * - TypeScript type safety
-   * - Deep equality comparison
-   * - Built-in support for Set and Map collections
-   * - Detailed error messages with formatted output
-   * - Primitive and complex object handling
-   *
-   * Error Message Format:
-   * ```
-   * {
-   *   "message": "Given [context]: should [behavior]",
-   *   "actual": [formatted actual value],
-   *   "expected": [formatted expected value]
-   * }
-   * ```
-   */
-
-  /**
-   * Main assertion function for testing with detailed error reporting.
-   * @see {Assert} for type definition and examples
    */
   const assert: Assert = (args) => {
     trigger<{ type: typeof FIXTURE_EVENTS.assert; detail: AssertDetails }>({
@@ -391,43 +296,35 @@ export const useAssert = (trigger: Trigger) => {
 
 export const useFindByAttribute = (trigger: Trigger) => {
   /**
-   * @description Asynchronously searches for an element by a specific attribute and its value,
-   * traversing both the light DOM and any nested shadow DOM trees.
+   * Finds element by attribute across shadow DOM.
+   * Searches recursively through all DOM trees.
    *
-   * @template T - The expected element type (HTMLElement or SVGElement) to be returned. Defaults to `HTMLElement | SVGElement`.
-   * @param {string} attributeName - The name of the attribute to query.
-   * @param {string | RegExp} attributeValue - The exact string value or a regular expression to match against the attribute's value.
-   * @param {HTMLElement | SVGElement} [context=document] - An optional element (or the document itself) to serve as the starting point for the search. Defaults to `document`.
-   * @returns {Promise<T | undefined>} A promise that resolves with the first matching element (cast to type T) or `undefined` if no element with the specified attribute and value is found.
+   * @template T - Element type to return
+   * @param attributeName - Attribute to search
+   * @param attributeValue - Value or pattern
+   * @param context - Search scope
+   * @returns Promise with found element
    *
-   * @example Basic Usage
-   * ```typescript
-   * import { findByAttribute } from 'plaited/testing';
-   *
-   * // Find an element with the attribute data-testid="login-button"
-   * const loginButton = await findByAttribute('data-testid', 'login-button');
-   *
-   * // Find an element whose class attribute contains 'icon-' followed by letters
-   * const iconElement = await findByAttribute('class', /icon-\w+/);
+   * @example Basic search
+   * ```ts
+   * const button = await findByAttribute(
+   *   'data-testid', 'submit-btn'
+   * );
    * ```
    *
-   * @example Usage with Context and Specific Type
-   * ```typescript
-   * const container = document.getElementById('user-section');
-   *
-   * // Find an <input> element within the container with name="email"
-   * const emailInput = await findByAttribute<HTMLInputElement>('name', 'email', container);
-   *
-   * if (emailInput) {
-   *   console.log(emailInput.value);
-   * }
+   * @example Pattern matching
+   * ```ts
+   * const icon = await findByAttribute(
+   *   'class', /icon-\w+/
+   * );
    * ```
    *
-   * @remarks
-   * - The search is performed recursively through all child nodes (element nodes) and shadow roots.
-   * - It checks the attribute value using `getAttribute`.
-   * - Handles both exact string matches and regular expression tests.
-   * - The search operation is scheduled using `requestAnimationFrame`, but the core traversal is synchronous within that frame.
+   * @example Scoped search
+   * ```ts
+   * const input = await findByAttribute<HTMLInputElement>(
+   *   'name', 'email', container
+   * );
+   * ```
    */
   const findByAttribute: FindByAttribute = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
     attributeName: string,
@@ -482,42 +379,35 @@ export const useFindByAttribute = (trigger: Trigger) => {
 
 export const useFindByText = (trigger: Trigger) => {
   /**
-   * @description Asynchronously searches for an element by its text content, traversing both the light DOM
-   * and any nested shadow DOM trees. Returns the immediate parent element of the first matching text node found.
+   * Finds element by text content across shadow DOM.
+   * Returns parent of matching text node.
    *
-   * @template T - The expected HTMLElement type to be returned. Defaults to `HTMLElement`.
-   * @param {string | RegExp} searchText - The exact string or a regular expression to match against the trimmed text content of elements.
-   * @param {HTMLElement} [context=document.body] - An optional HTMLElement to serve as the starting point for the search. Defaults to `document.body`.
-   * @returns {Promise<T | undefined>} A promise that resolves with the first matching parent element (cast to type T) or `undefined` if no element contains the specified text.
+   * @template T - HTMLElement type to return
+   * @param searchText - Text or pattern to find
+   * @param context - Search scope
+   * @returns Promise with found element
    *
-   * @example Basic Usage
-   * ```typescript
-   * import { findByText } from 'plaited/testing';
-   *
-   * // Find an element containing the exact text "Submit Button"
-   * const submitButton = await findByText('Submit Button');
-   *
-   * // Find an element containing text that matches the regex /Save|Update/
-   * const saveOrUpdateButton = await findByText(/Save|Update/);
+   * @example Exact text
+   * ```ts
+   * const button = await findByText('Submit');
    * ```
    *
-   * @example Usage with Context and Specific Type
-   * ```typescript
-   * const formElement = document.getElementById('my-form');
+   * @example Pattern search
+   * ```ts
+   * const action = await findByText(/Save|Update/);
+   * ```
    *
-   * // Find a <button> element within the form containing "Login"
-   * const loginButton = await findByText<HTMLButtonElement>('Login', formElement);
-   *
-   * if (loginButton) {
-   *   loginButton.disabled = true;
-   * }
+   * @example Typed search
+   * ```ts
+   * const btn = await findByText<HTMLButtonElement>(
+   *   'Login', formElement
+   * );
    * ```
    *
    * @remarks
-   * - The search is performed recursively through all child nodes and shadow roots.
-   * - Text content is trimmed (`.textContent?.trim()`) before comparison.
-   * - The function returns the `parentElement` of the matching text node.
-   * - The search operation is scheduled using `requestAnimationFrame` but the core traversal is synchronous within that frame.
+   * - Text is trimmed before comparison
+   * - Returns parent of text node
+   * - Searches all shadow roots
    */
   const findByText: FindByText = <T extends HTMLElement = HTMLElement>(
     searchText: string | RegExp,
@@ -567,62 +457,33 @@ export const useFindByText = (trigger: Trigger) => {
 
 export const useFireEvent = (trigger: Trigger) => {
   /**
-   * Asynchronously dispatches DOM events with configurable options.
-   * Supports both native and custom events with detail data.
+   * Dispatches DOM events for testing.
+   * Supports native and custom events.
    *
-   * @template T Element type (defaults to HTMLElement | SVGElement)
-   * @param element Target element for event
-   * @param eventName Event type to dispatch
-   * @param options Event configuration (defaults to bubbling and composed)
-   * @returns Promise<void> Resolves after event dispatch
+   * @template T - Element type
+   * @param element - Target element
+   * @param eventName - Event type
+   * @param options - Event config
+   * @returns Promise after dispatch
    *
-   * @example Basic Event
+   * @example Click event
    * ```ts
-   * // Fire click event
    * await fireEvent(button, 'click');
-   *
-   * // Fire custom event
-   * await fireEvent(element, 'custom-event');
    * ```
    *
-   * @example With Custom Data
+   * @example Custom event
    * ```ts
-   * // Fire event with detail
    * await fireEvent(element, 'update', {
-   *   detail: { value: 42 }
+   *   detail: { value: 42 },
+   *   composed: true
    * });
    * ```
    *
-   * @example Configuration
-   * ```ts
-   * // Configure event behavior
-   * await fireEvent(element, 'change', {
-   *   bubbles: false,
-   *   cancelable: true,
-   *   detail: { data: 'value' }
-   * });
-   * ```
-   *
-   * Default Options:
+   * @remarks
+   * Defaults:
    * - bubbles: true
    * - composed: true
    * - cancelable: true
-   *
-   * Features:
-   * - Support for CustomEvent
-   * - Configurable bubbling
-   * - Shadow DOM composition
-   * - Event cancellation
-   * - Type safety
-   * - Async operation
-   *
-   * @remarks
-   * - Uses requestAnimationFrame for timing
-   * - Automatically selects Event vs CustomEvent
-   * - Maintains event defaults
-   * - Type-safe element handling
-   * - Returns Promise for async operations
-   *
    */
   const fireEvent: FireEvent = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
     element: T,

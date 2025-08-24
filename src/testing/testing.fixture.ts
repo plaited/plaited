@@ -31,19 +31,42 @@ import {
 import type { InteractionStoryObj, Play, TestFailureEventDetail } from './testing.types.js'
 
 /**
- * @element plaited-story-fixture
- * @description A custom element designed to host and execute a single Plaited story test.
- * It receives test parameters via attributes, connects to the test runner via WebSocket
- * loads the specified story module, executes its `play` function (if defined),
- * and reports results or errors back to the runner.
- * @fires play - Dispatched internally to initiate the story's play function execution.
+ * Story test fixture component for Plaited testing framework.
+ * Executes story tests, manages test lifecycle, and reports results.
  *
- * @example
- * ```html
- * <plaited-story-fixture >
- *   <!-- The rendered story component will be placed here by the test runner -->
- * </plaited-story-fixture>
+ * @example Test execution flow
+ * ```tsx
+ * // Story fixture automatically:
+ * // 1. Receives test configuration
+ * // 2. Runs play function with utilities
+ * // 3. Reports results via WebSocket
+ * // 4. Handles timeouts and errors
+ * 
+ * const story: StoryObj = {
+ *   description: 'Button interaction test',
+ *   play: async ({ assert, fireEvent, findByText }) => {
+ *     const button = await findByText('Click me');
+ *     await fireEvent(button, 'click');
+ *     assert({
+ *       given: 'button clicked',
+ *       should: 'update state',
+ *       actual: button.textContent,
+ *       expected: 'Clicked!'
+ *     });
+ *   }
+ * };
  * ```
+ *
+ * @remarks
+ * Features:
+ * - Automatic error handling
+ * - WebSocket communication
+ * - Snapshot reporting
+ * - Timeout management
+ * - Accessibility testing
+ *
+ * @see {@link StoryObj} for story configuration
+ * @see {@link Play} for test utilities
  */
 export const StoryFixture = bElement<{
   [FIXTURE_EVENTS.run]: { play?: InteractionStoryObj['play']; timeout?: number }

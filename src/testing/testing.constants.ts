@@ -1,20 +1,33 @@
 import { keyMirror } from '../utils.js'
 
-/** Default timeout duration (in milliseconds) for story play functions. */
+/**
+ * Default timeout for story play functions.
+ * @default 5000ms (5 seconds)
+ */
 export const DEFAULT_PLAY_TIMEOUT = 5_000
 
-/** @internal The custom element tag name for the story fixture component. */
+/**
+ * @internal
+ * Custom element tag for story test fixtures.
+ */
 export const STORY_FIXTURE = 'plaited-story-fixture'
 
-/** @internal URL path for the test runner iframe. */
+/**
+ * @internal
+ * WebSocket endpoint for test runner communication.
+ */
 export const RUNNER_URL = '/.plaited/test-runner'
 
-/** @internal Event name or command identifier to trigger a reload of the story page. */
+/**
+ * @internal
+ * Command to reload story page during testing.
+ */
 export const RELOAD_STORY_PAGE = 'reload_story_page'
 
 /**
- * @internal Key-mirrored object of event names used for communication
- * between the story fixture and the test runner or other parts of the workshop system.
+ * @internal
+ * Event types for test fixture communication.
+ * Used between story fixture and test runner.
  */
 export const FIXTURE_EVENTS = keyMirror(
   'accessibility_check',

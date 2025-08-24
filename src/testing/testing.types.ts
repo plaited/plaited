@@ -7,8 +7,8 @@ import { FIXTURE_EVENTS } from './testing.constants.js'
 import type { SnapshotMessage } from 'plaited/behavioral'
 
 /**
- * Parameters for the assertion function
- * @template T - The type of values being compared
+ * Parameters for structured test assertions.
+ * @template T - Type of values being compared
  */
 type AssertParams<T> = {
   given: string
@@ -18,8 +18,8 @@ type AssertParams<T> = {
 }
 
 /**
- * Type definition for assertion function that provides structured comparison with detailed error reporting.
- * @template T - Type parameter representing the values being compared
+ * Assertion function for structured testing with detailed error reporting.
+ * @template T - Type of values being compared
  */
 export type Assert = <T>(param: AssertParams<T>) => void
 
@@ -34,25 +34,25 @@ export type WaitDetails = InstrumentedDetails<Parameters<Wait>>
 type AccessibilityCheckArgs = { exclude?: axe.ContextProp; rules?: axe.RuleObject; config?: Omit<axe.Spec, 'reporter'> }
 
 /**
- * Defines the signature for a function that performs an accessibility check on the current story fixture.
- * Typically uses Axe-core for analysis.
+ * Performs accessibility testing using axe-core.
+ * Validates components against WCAG standards.
  *
- * @param args - Configuration for the accessibility check, such as rules to run or elements to exclude.
- * @returns A promise that resolves when the accessibility check is complete. Violations may be reported or throw errors depending on implementation.
+ * @param args - Axe-core configuration options
+ * @returns Promise that resolves if no violations found
+ * @throws {AccessibilityError} When violations detected
  */
 export type AccessibilityCheck = (args: AccessibilityCheckArgs) => Promise<void>
 
 export type AccessibilityCheckDetails = InstrumentedDetails<Parameters<AccessibilityCheck>>
 
 /**
- * @description Type definition for a function that asynchronously finds an element
- * by a specific attribute name and value, searching through light and shadow DOM.
+ * Finds elements by attribute value across shadow DOM boundaries.
  *
- * @template T - The expected element type (HTMLElement or SVGElement) to be returned. Defaults to `HTMLElement | SVGElement`.
- * @param {string} attributeName - The name of the attribute to search for.
- * @param {string | RegExp} attributeValue - The exact string value or a regular expression pattern to match against the attribute's value.
- * @param {HTMLElement | SVGElement} [context=document] - An optional element within which to limit the search scope. Defaults to the entire `document`.
- * @returns {Promise<T | undefined>} A promise that resolves to the first element (of type T) with the matching attribute, or `undefined` if no match is found.
+ * @template T - Element type to return
+ * @param attributeName - Attribute to search for
+ * @param attributeValue - Value or pattern to match
+ * @param context - Search scope (defaults to document)
+ * @returns Promise resolving to found element or undefined
  */
 export type FindByAttribute = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
   attributeName: string,
@@ -64,13 +64,12 @@ export type FindByAttribute = <T extends HTMLElement | SVGElement = HTMLElement 
 export type FindByAttributeDetails = InstrumentedDetails<Parameters<FindByAttribute>>
 
 /**
- * @description Type definition for a function that asynchronously finds an element
- * containing specific text content, searching through light and shadow DOM.
+ * Finds elements by text content across shadow DOM boundaries.
  *
- * @template T - The expected HTMLElement type to be returned. Defaults to `HTMLElement`.
- * @param {string | RegExp} searchText - The exact string or regular expression pattern to match within the text content of elements.
- * @param {HTMLElement} [context=document.body] - An optional element within which to limit the search scope. Defaults to `document.body`.
- * @returns {Promise<T | undefined>} A promise that resolves to the first element (of type T) containing the matching text, or `undefined` if no match is found.
+ * @template T - HTMLElement type to return
+ * @param searchText - Text or pattern to match
+ * @param context - Search scope (defaults to document.body)
+ * @returns Promise resolving to found element or undefined
  */
 export type FindByText = {
   <T extends HTMLElement = HTMLElement>(searchText: string | RegExp, context?: HTMLElement): Promise<T | undefined>
@@ -81,17 +80,16 @@ export type FindByText = {
 export type FindByTextDetail = InstrumentedDetails<Parameters<FindByText>>
 
 /**
- * Configuration options for DOM event dispatch.
- * Used to customize event behavior and include additional data.
+ * Configuration for dispatching DOM events.
  *
- * @property [bubbles=true] - Whether the event bubbles up through the DOM tree.
- * @property [composed=true] - Whether the event can cross shadow DOM boundaries.
- * @property [cancelable=true] - Whether the event can be canceled.
- * @property detail - Custom data to be included with the event. When provided, creates a CustomEvent.
+ * @property bubbles - Event propagates up (default: true)
+ * @property composed - Crosses shadow DOM (default: true)
+ * @property cancelable - Can be prevented (default: true)
+ * @property detail - Custom event data
  *
  * @example
  * ```ts
- * const options: EventArguments = {
+ * const options: FireEventOptions = {
  *   bubbles: true,
  *   composed: true,
  *   detail: { value: 'test' }
@@ -106,52 +104,29 @@ export type FireEventOptions = {
 }
 
 /**
- * Type definition for the event dispatching utility function.
- * Provides a type-safe way to dispatch both standard DOM events and custom events.
+ * Dispatches DOM events for testing interactions.
  *
- * @template T - Element type that will receive the event. Defaults to HTMLElement | SVGElement
+ * @template T - Element type receiving the event
+ * @param element - Target element
+ * @param eventName - Event type to dispatch
+ * @param options - Event configuration
+ * @returns Promise resolving after dispatch
  *
- * @param element - Target DOM element that will receive the event
- * @param eventName - The name/type of the event to dispatch (e.g., 'click', 'custom-event')
- * @param options - Optional configuration for the event {@link EventArguments}
- * @returns Promise that resolves after the event has been dispatched
- *
- * @example Dispatching a standard DOM event
+ * @example Click event
  * ```ts
- * // Fire a click event on a button
- * const button = document.querySelector('button');
+ * const button = await findByText('Submit');
  * await fireEvent(button, 'click');
  * ```
  *
- * @example Dispatching a custom event with data
+ * @example Custom event with data
  * ```ts
- * // Fire a custom event with detail data
- * const element = document.getElementById('target');
- * await fireEvent(element, 'my-custom-event', {
- *   detail: {
- *     value: 42,
- *     name: 'test'
- *   }
+ * await fireEvent(element, 'custom-event', {
+ *   detail: { value: 42 },
+ *   composed: true
  * });
  * ```
  *
- * @example Working with Shadow DOM
- * ```ts
- * // Fire event that crosses shadow DOM boundaries
- * await fireEvent(shadowRoot.querySelector('.btn'), 'change', {
- *   composed: true,  // Allow event to cross shadow DOM boundary
- *   detail: { updated: true }
- * });
- * ```
- *
- * @remarks
- * This type ensures type safety when:
- * - Working with different element types (HTML/SVG)
- * - Configuring event options
- * - Handling custom event data
- *
- * The implementation uses requestAnimationFrame for proper event timing
- * and returns a Promise for async operation handling.
+ * @see {@link FireEventOptions} for configuration
  */
 export type FireEvent = {
   <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
@@ -182,9 +157,13 @@ export type Params = {
 }
 
 /**
- * Utility type to extract the argument/props type from a Plaited FunctionTemplate.
- * @template T - The FunctionTemplate type (e.g., `(props: { title: string }) => Template`).
- * @example type ButtonArgs = Args<typeof ButtonTemplate>; // { title: string }
+ * Extracts props type from a FunctionTemplate.
+ * @template T - FunctionTemplate to extract from
+ * @example
+ * ```ts
+ * type ButtonArgs = Args<typeof ButtonTemplate>;
+ * // Result: { title: string, onClick: () => void }
+ * ```
  */
 export type Args<T extends FunctionTemplate> = Parameters<T>[0]
 
@@ -244,15 +223,26 @@ export type Play = (args: {
 }) => Promise<void>
 
 /**
- * Represents a story object definition where the `play` function is mandatory.
- * Use this type when defining stories that include interaction tests or assertions.
+ * Story with required interaction testing.
  *
- * @template T - The type of attributes/props expected by the story's template. Defaults to `Attrs`.
- * @property {T} [args] - Optional props/attributes passed to the story's template function.
- * @property {string} description - A mandatory description of the story's usage or test scenario.
- * @property {Params} [parameters] - Optional parameters to configure the test environment for this story (e.g., Agentic Card Scale, timeout).
- * @property {Play} play - The required asynchronous function containing test interactions and assertions using the provided testing utilities.
- * @property {FunctionTemplate<T>} [template] - An optional Plaited template function used to render the component for this story. If omitted, a default template might be used based on convention.
+ * @template T - Template props type
+ * @property args - Component props
+ * @property description - Test scenario description
+ * @property parameters - Test configuration
+ * @property play - Required test function
+ * @property template - Component template
+ *
+ * @example
+ * ```ts
+ * export const interactive: InteractionStoryObj = {
+ *   description: 'Tests button interactions',
+ *   play: async ({ assert, fireEvent, findByText }) => {
+ *     const button = await findByText('Click');
+ *     await fireEvent(button, 'click');
+ *     // assertions...
+ *   }
+ * };
+ * ```
  */
 export type InteractionStoryObj<T extends Attrs = Attrs> = {
   args?: Attrs
@@ -262,15 +252,23 @@ export type InteractionStoryObj<T extends Attrs = Attrs> = {
   template?: FunctionTemplate<T>
 }
 /**
- * Represents a story object definition where the `play` function is optional.
- * Use this type for stories primarily focused on visual rendering or when interaction tests are not needed.
+ * Story for visual/snapshot testing without interactions.
  *
- * @template T - The type of attributes/props expected by the story's template. Defaults to `Attrs`.
- * @property {T} [args] - Optional props/attributes passed to the story's template function.
- * @property {string} description - A mandatory description of the story's usage.
- * @property {Params} [parameters] - Optional parameters to configure the test environment for this story.
- * @property {Play} [play] - An optional asynchronous function for test interactions and assertions.
- * @property {FunctionTemplate<T>} [template] - An optional Plaited template function used to render the component for this story.
+ * @template T - Template props type
+ * @property args - Component props
+ * @property description - Visual test description
+ * @property parameters - Test configuration
+ * @property play - Never (enforced as undefined)
+ * @property template - Component template
+ *
+ * @example
+ * ```ts
+ * export const visual: SnapshotStoryObj = {
+ *   description: 'Default component state',
+ *   args: { variant: 'primary' },
+ *   template: ButtonComponent
+ * };
+ * ```
  */
 export type SnapshotStoryObj<T extends Attrs = Attrs> = {
   args?: Attrs
@@ -281,32 +279,38 @@ export type SnapshotStoryObj<T extends Attrs = Attrs> = {
 }
 
 /**
- * Represents a single story definition within a `.stories.ts` or `.stories.tsx` file.
- * It configures how a component is rendered and tested. Can be either a `InteractionStoryObj`
- * (requiring a `play` function) or a `SnapshotStoryObj` (where `play` is optional).
+ * Story definition for component testing.
+ * Can be interaction or snapshot test.
  *
- * @template T - The type of attributes/props expected by the story's template. Defaults to `Attrs`.
+ * @template T - Component props type
  *
- * @example With Play Function
+ * @example Interaction test
  * ```ts
- * export const Interactive: StoryObj<{ label: string }> = {
- *   description: "Tests button click interaction",
- *   args: { label: 'Click Me' },
- *   play: async ({ findByText, fireEvent }) => {
- *     const button = await findByText('Click Me');
- *     await fireEvent.click(button);
- *     // ... assertions
+ * export const clickTest: StoryObj = {
+ *   description: 'Tests click behavior',
+ *   play: async ({ assert, fireEvent, findByText }) => {
+ *     const button = await findByText('Submit');
+ *     await fireEvent(button, 'click');
+ *     assert({
+ *       given: 'button clicked',
+ *       should: 'disable button',
+ *       actual: button.disabled,
+ *       expected: true
+ *     });
  *   }
  * };
  * ```
- * @example Without Play Function (Visual Test)
+ *
+ * @example Visual test
  * ```ts
- * export const DefaultView: StoryObj = {
- *   description: "Displays the component in its default state",
- *   args: { initialValue: 'Some text' },
- *   parameters: { scale: 1 } // Specify Agentic Card scale
+ * export const defaultState: StoryObj = {
+ *   description: 'Default component appearance',
+ *   args: { theme: 'light' }
  * };
  * ```
+ *
+ * @see {@link InteractionStoryObj} for interaction tests
+ * @see {@link SnapshotStoryObj} for visual tests
  */
 export type StoryObj<T extends Attrs = Attrs> = InteractionStoryObj<T> | SnapshotStoryObj<T>
 
