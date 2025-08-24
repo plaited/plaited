@@ -1,56 +1,33 @@
-/**
- * @internal
- * @module can-use-dom
- *
- * Purpose: Runtime detection of DOM availability for isomorphic code execution
- * Architecture: Simple feature detection pattern using window object presence
- * Dependencies: None - pure JavaScript implementation
- * Consumers: SSR components, utility functions, conditional DOM operations
- *
- * Maintainer Notes:
- * - This is a critical utility for SSR/isomorphic applications
- * - Checks three levels: window, document, and createElement for robustness
- * - The !! converts truthy/falsy to explicit boolean
- * - Reference directive ensures DOM types are available in TypeScript
- * - Used to guard DOM-dependent code paths in universal components
- *
- * Common modification scenarios:
- * - Adding more DOM feature checks: Extend the condition chain
- * - Supporting DOM polyfills: Add specific polyfill detection
- * - Worker environment detection: Check for WorkerGlobalScope
- *
- * Performance considerations:
- * - Function call is extremely lightweight
- * - Result could be cached but environment rarely changes
- * - Inlined by most bundlers due to simplicity
- *
- * Known limitations:
- * - Cannot detect partial DOM implementations
- * - Some test environments may provide fake DOM
- * - Does not check for specific DOM features beyond basics
- */
 /// <reference lib="dom" />
 /**
- * Checks if the current JavaScript environment has access to the standard DOM APIs.
- * This is useful for creating isomorphic (universal) applications that can run on both the server and the client.
+ * Detects DOM API availability for isomorphic code.
+ * Essential for SSR and universal JavaScript applications.
  *
- * @returns Returns `true` if the code is running in a browser-like environment
- * where `window`, `window.document`, and `window.document.createElement` are available.
- * Returns `false` otherwise (e.g., in a Node.js environment without a DOM simulation library).
+ * @returns true if DOM APIs are available, false otherwise
  *
- * @example
- * ```typescript
- * import { canUseDOM } from 'plaited/utils';
- *
+ * @example Browser vs Server
+ * ```ts
  * if (canUseDOM()) {
- *   // This code runs only in the browser
- *   const element = document.getElementById('my-element');
- *   element?.addEventListener('click', () => console.log('Clicked!'));
+ *   // Browser-only code
+ *   document.getElementById('app');
  * } else {
- *   // This code runs only on the server (or non-DOM environment)
- *   console.log('DOM APIs are not available.');
+ *   // Server/Node.js code
+ *   console.log('No DOM available');
  * }
  * ```
+ *
+ * @example Conditional imports
+ * ```ts
+ * const handler = canUseDOM() 
+ *   ? () => window.addEventListener('resize', callback)
+ *   : () => {}; // noop on server
+ * ```
+ *
+ * @remarks
+ * Checks for window, document, and createElement.
+ * Used to guard DOM operations in universal code.
+ *
+ * @see {@link createDocumentFragment} for DOM manipulation
  */
 export const canUseDOM = () => {
   /**

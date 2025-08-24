@@ -2,32 +2,31 @@ import type { PlaitedTrigger, Trigger } from '../behavioral.js'
 import { wait } from './wait.js'
 
 /**
- * Fetches resources with automatic retry and error handling.
+ * @internal
+ * Fetch with automatic retry and error handling.
+ * Integrates with Plaited's trigger system.
  *
- * This utility extends the standard fetch API with retry logic and error handling,
- * designed for use within Plaited's behavioral programming system. Failed requests
- * trigger the provided trigger function with error details.
+ * @param config - Fetch configuration
+ * @param config.url - URL to fetch
+ * @param config.type - Error event type
+ * @param config.trigger - Error handler trigger
+ * @param config.retry - Retry attempts (default: 0)
+ * @param config.retryDelay - Base retry delay in ms (default: 1000)
+ * @param config.options - Standard fetch options
+ * @returns Response or undefined if all retries exhausted
  *
- * @param config - Configuration object for the fetch operation.
- * @param config.url - The URL to fetch from (can be a string, `Request` object, or `URL` object).
- * @param config.type - The event type string to use when an error occurs and is dispatched via the `trigger`.
- * @param config.trigger - The `Trigger` or `PlaitedTrigger` function to call when an error occurs.
- * @param [config.retry=0] - The number of retry attempts to make if the fetch fails. Defaults to 0 (no retries).
- * @param [config.retryDelay=1000] - The base delay in milliseconds between retry attempts. This delay uses exponential backoff with jitter. Defaults to 1000ms.
- * @param [config.options] - Standard `RequestInit` options for the `fetch` call (e.g., method, headers, body).
- *
- * @returns A Promise that resolves to a `Response` object if successful, or `undefined` if all retry attempts are exhausted.
- *
- * @example
- * // Basic usage for JSON
+ * @example Basic usage
+ * ```ts
  * const response = await useFetch({
- *   url: '/api/users/1',
+ *   url: '/api/users',
  *   type: 'FETCH_ERROR',
  *   trigger: myTrigger
  * });
- * const userData = await response?.json();
+ * const data = await response?.json();
+ * ```
  *
- * // With retry configuration and custom options
+ * @example With retries
+ * ```ts
  * const response = await useFetch({
  *   url: '/api/data',
  *   type: 'API_ERROR',
@@ -36,19 +35,15 @@ import { wait } from './wait.js'
  *   retryDelay: 2000,
  *   options: {
  *     method: 'POST',
- *     headers: { 'Authorization': 'Bearer token' },
  *     body: JSON.stringify({ name: 'John' })
  *   }
  * });
+ * ```
  *
  * @remarks
- * - Errors trigger the provided trigger function with type and error detail
- * - HTTP errors (404, 500, etc.) are caught and retried
- * - Retry delays use exponential backoff with jitter: `Math.random() * min(9999, retryDelay * 2^retry)`
- * - Returns undefined when all retries are exhausted (does not throw)
- * - The trigger is called for each failed attempt, allowing for error tracking
- *
- * @internal
+ * Uses exponential backoff with jitter.
+ * Triggers error events on failures.
+ * Returns undefined instead of throwing.
  */
 export const useFetch = async ({
   url,

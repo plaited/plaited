@@ -1,52 +1,33 @@
 /**
- * Event listener class that implements the EventListener interface for robust event delegation.
- * Provides type-safe event handling and proper Promise handling for async callbacks.
+ * Type-safe event listener class for DOM event delegation.
+ * Supports sync/async callbacks with proper typing.
  *
- * @template T - Event type to handle, extends the base Event interface (e.g., MouseEvent, KeyboardEvent)
- *
+ * @template T - Event type (MouseEvent, KeyboardEvent, etc.)
  * @implements {EventListener}
  *
- * @remarks
- * Key features:
- * - Type-safe event handling with TypeScript
- * - Support for both sync and async callbacks
- * - Proper 'this' binding in event handlers
- * - Compatible with all standard DOM events
- * - Memory-efficient event delegation
- *
- * @example
- * Basic Usage
+ * @example Click handler
  * ```ts
- * // Simple click handler
- * const clickListener = new DelegatedListener((e: MouseEvent) => {
+ * const listener = new DelegatedListener((e: MouseEvent) => {
  *   console.log('Clicked at:', e.clientX, e.clientY);
  * });
- * element.addEventListener('click', clickListener);
+ * element.addEventListener('click', listener);
  * ```
  *
- * @example
- * Async Event Handling
+ * @example Async handler
  * ```ts
- * // Async form submission handler
- * const submitListener = new DelegatedListener(async (e: SubmitEvent) => {
+ * const submit = new DelegatedListener(async (e: SubmitEvent) => {
  *   e.preventDefault();
  *   await submitForm(e.target as HTMLFormElement);
  * });
- * form.addEventListener('submit', submitListener);
+ * form.addEventListener('submit', submit);
  * ```
  *
- * @example
- * Custom Event Handling
+ * @example Custom events
  * ```ts
- * // Custom event handler with type checking
- * interface CustomEvent extends Event {
- *   detail: { message: string };
- * }
- *
- * const customListener = new DelegatedListener((e: CustomEvent) => {
+ * type CustomEvent = Event & { detail: { message: string } };
+ * const custom = new DelegatedListener((e: CustomEvent) => {
  *   console.log(e.detail.message);
  * });
- * element.addEventListener('custom-event', customListener);
  * ```
  */
 export class DelegatedListener<T extends Event = Event> {
@@ -60,34 +41,8 @@ export class DelegatedListener<T extends Event = Event> {
 }
 
 /**
- * Global WeakMap for storing event delegation relationships between DOM elements.
- * Provides memory-safe storage for event delegation data that automatically
- * cleans up when elements are removed from the DOM.
- *
- * @remarks
- * Implementation details:
- * - Uses WeakMap to prevent memory leaks
- * - Keys are EventTarget instances (elements, documents, windows)
- * - Values can store delegation mappings and handler references
- * - Automatically garbage collects when targets are destroyed
- *
- * @example
- * Internal Usage (for implementation reference)
- * ```ts
- * // Store delegation data
- * delegates.set(element, {
- *   handlers: new Map(),
- *   children: new Set()
- * });
- *
- * // Retrieve delegation data
- * const data = delegates.get(element);
- * if (data) {
- *   // Handle delegation
- * }
- *
- * // Data is automatically cleaned up when element is removed
- * element.remove(); // WeakMap reference is eligible for GC
- * ```
+ * @internal
+ * WeakMap for event delegation data.
+ * Auto-cleans when elements are removed.
  */
 export const delegates = new WeakMap<EventTarget>()

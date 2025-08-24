@@ -1,37 +1,29 @@
 import { canUseDOM } from './can-use-dom.js'
 
 /**
- * Creates a DocumentFragment from HTML string with executable scripts.
+ * @internal
+ * Creates DocumentFragment from HTML with executable scripts.
  *
- * ⚠️ **Security Warning**: This utility allows JavaScript execution from HTML strings.
- * Only use with trusted sources or when you have proper Content Security Policy (CSP) configured.
+ * ⚠️ **Security Warning**: Allows script execution.
+ * Only use with trusted content or proper CSP.
  *
- * This function uses the `setHTMLUnsafe` API to parse HTML, which allows script execution.
- * Scripts in the HTML are reconstructed to ensure they execute when the fragment is
- * appended to the DOM.
+ * @param html - HTML string to parse
+ * @returns DocumentFragment or undefined if no DOM
  *
- * @param html - The HTML string to parse into a DocumentFragment
- * @returns DocumentFragment with executable scripts, or undefined if DOM is not available
- *
- * @example
- * // Basic usage - only with trusted content!
- * const fragment = createDocumentFragment('<div>Hello <script>console.log("World")</script></div>');
- * document.body.appendChild(fragment); // Script executes here
- *
- * @example
- * // Loading a component with scripts
- * const widgetHTML = await fetch('/trusted-widget.html').then(r => r.text());
- * const fragment = createDocumentFragment(widgetHTML);
- * container.appendChild(fragment);
+ * @example Trusted content only
+ * ```ts
+ * const fragment = createDocumentFragment(
+ *   '<div>Hello <script>console.log("World")</script></div>'
+ * );
+ * document.body.appendChild(fragment); // Script executes
+ * ```
  *
  * @remarks
- * - Returns undefined in non-DOM environments (e.g., SSR)
- * - Scripts are cloned and replaced to ensure execution
- * - All script attributes are preserved during reconstruction
- * - Uses `setHTMLUnsafe` which is part of the HTML Sanitizer API
- * - Script execution happens when the fragment is appended to the DOM
+ * Uses setHTMLUnsafe API.
+ * Scripts execute on DOM append.
+ * Returns undefined in SSR.
  *
- * @internal
+ * @see {@link canUseDOM} for environment detection
  */
 export const createDocumentFragment = (html: string) => {
   if (!canUseDOM()) return

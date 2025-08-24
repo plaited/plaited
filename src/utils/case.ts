@@ -1,74 +1,20 @@
 /**
- * @internal
- * @module case
+ * Converts string to camelCase format.
+ * Handles kebab-case, snake_case, spaces, and mixed separators.
  *
- * Purpose: String case transformation utilities for consistent naming conventions
- * Architecture: Regex-based transformations with multi-pass processing
- * Dependencies: None - pure JavaScript string manipulation
- * Consumers: CSS-in-JS system, attribute naming, API data transformation
- *
- * Maintainer Notes:
- * - These utilities ensure consistent naming across different contexts
- * - camelCase is used for JavaScript properties and CSS-in-JS
- * - kebabCase is used for HTML attributes and CSS properties
- * - Both functions handle multiple separator types for flexibility
- * - Regex patterns are optimized for common web development patterns
- *
- * Common modification scenarios:
- * - Adding snake_case: Create similar pattern with underscore separators
- * - Supporting Unicode: Update regex to handle non-ASCII characters
- * - Preserving acronyms: Add special case handling for uppercase sequences
- * - Performance optimization: Consider caching for repeated transformations
- *
- * Performance considerations:
- * - Multiple regex passes have overhead for long strings
- * - No caching - consider memoization for hot paths
- * - Regex compilation happens on each call
- * - String immutability causes allocations
- *
- * Known limitations:
- * - Does not preserve acronyms (API → api, not API)
- * - Limited Unicode support in current implementation
- * - No handling of special characters beyond basic separators
- * - Case detection may fail for all-caps strings
- */
-
-/**
- * Converts a string to camel case format (e.g., 'helloWorld').
- *
- * @remarks
- * This function handles strings in various formats and normalizes them to camel case:
- * - Hyphen-separated (kebab-case) → camelCase
- *   'my-variable' → 'myVariable'
- * - Underscore-separated (snake_case) → camelCase
- *   'my_variable' → 'myVariable'
- * - Slash-separated → camelCase
- *   'my/variable' → 'myVariable'
- * - Space-separated (start case) → camelCase
- *   'my variable' → 'myVariable'
- * - Mixed separators → camelCase
- *   'my--_  variable' → 'myVariable'
- *
- * @param str - The input string to convert to camel case
- * @returns The converted string in camel case format
+ * @param str - String to convert
+ * @returns camelCase string
  *
  * @example
- * Basic Usage
  * ```ts
- * camelCase('hello-world')     // returns 'helloWorld'
- * camelCase('hello_world')     // returns 'helloWorld'
- * camelCase('hello world')     // returns 'helloWorld'
- * camelCase('hello/world')     // returns 'helloWorld'
+ * camelCase('hello-world')  // 'helloWorld'
+ * camelCase('hello_world')  // 'helloWorld'
+ * camelCase('hello world')  // 'helloWorld'
+ * camelCase('HELLO WORLD')  // 'helloWorld'
  * ```
  *
- * @example
- * Edge Cases
- * ```ts
- * camelCase('hello---world')   // returns 'helloWorld'
- * camelCase('hello_/world')    // returns 'helloWorld'
- * camelCase('HELLO WORLD')     // returns 'helloWorld'
- * camelCase('')               // returns ''
- * ```
+ * @see {@link kebabCase} for hyphenated format
+ * @see {@link pascalCase} for PascalCase format
  */
 export const camelCase = (str: string) => {
   return (
@@ -96,49 +42,22 @@ export const camelCase = (str: string) => {
 }
 
 /**
- * Converts a string to kebab case format (e.g., 'hello-world').
+ * Converts string to kebab-case format.
+ * Handles camelCase, snake_case, spaces, and mixed formats.
  *
- * @remarks
- * This function handles strings in various formats and normalizes them to kebab case:
- * - CamelCase → kebab-case
- *   'myVariable' → 'my-variable'
- * - Underscore-separated (snake_case) → kebab-case
- *   'my_variable' → 'my-variable'
- * - Backslash-separated → kebab-case
- *   'my/variable' → 'my-variable'
- * - Space-separated (start case) → kebab-case
- *   'My Variable' → 'my-variable'
- * - Mixed formats → kebab-case
- *   'myBig_VARIABLE' → 'my-big-variable'
- *
- * @param str - The input string to convert to kebab case
- * @returns The converted string in kebab case format
+ * @param str - String to convert
+ * @returns kebab-case string
  *
  * @example
- * Basic Usage
  * ```ts
- * kebabCase('helloWorld')      // returns 'hello-world'
- * kebabCase('hello_world')     // returns 'hello-world'
- * kebabCase('Hello World')     // returns 'hello-world'
- * kebabCase('hello/world')     // returns 'hello-world'
+ * kebabCase('helloWorld')   // 'hello-world'
+ * kebabCase('hello_world')  // 'hello-world'
+ * kebabCase('Hello World')  // 'hello-world'
+ * kebabCase('API_KEY')      // 'api-key'
  * ```
  *
- * @example
- * Complex Cases
- * ```ts
- * kebabCase('myBigVariable')   // returns 'my-big-variable'
- * kebabCase('API_KEY_NAME')    // returns 'api-key-name'
- * kebabCase('hello///world')   // returns 'hello-world'
- * kebabCase('mix_CASE_test')   // returns 'mix-case-test'
- * ```
- *
- * @example
- * Edge Cases
- * ```ts
- * kebabCase('')               // returns ''
- * kebabCase('___')           // returns ''
- * kebabCase('already-kebab') // returns 'already-kebab'
- * ```
+ * @see {@link camelCase} for camelCase format
+ * @see {@link pascalCase} for PascalCase format
  */
 export const kebabCase = (str: string) => {
   return (
@@ -173,43 +92,22 @@ export const kebabCase = (str: string) => {
 }
 
 /**
- * Converts a string to Pascal case format (e.g., 'HelloWorld').
+ * Converts string to PascalCase format.
+ * Capitalizes first letter of camelCase result.
  *
- * @remarks
- * This function handles strings in various formats and normalizes them to Pascal case:
- * - Hyphen-separated (kebab-case) → PascalCase
- *   'my-variable' → 'MyVariable'
- * - Underscore-separated (snake_case) → PascalCase
- *   'my_variable' → 'MyVariable'
- * - Slash-separated → PascalCase
- *   'my/variable' → 'MyVariable'
- * - Space-separated → PascalCase
- *   'my variable' → 'MyVariable'
- * - CamelCase → PascalCase
- *   'myVariable' → 'MyVariable'
- *
- * @param str - The input string to convert to Pascal case
- * @returns The converted string in Pascal case format
+ * @param str - String to convert
+ * @returns PascalCase string
  *
  * @example
- * Basic Usage
  * ```ts
- * pascalCase('hello-world')     // returns 'HelloWorld'
- * pascalCase('hello_world')     // returns 'HelloWorld'
- * pascalCase('hello world')     // returns 'HelloWorld'
- * pascalCase('hello/world')     // returns 'HelloWorld'
- * pascalCase('helloWorld')      // returns 'HelloWorld'
+ * pascalCase('hello-world')  // 'HelloWorld'
+ * pascalCase('hello_world')  // 'HelloWorld'
+ * pascalCase('hello world')  // 'HelloWorld'
+ * pascalCase('helloWorld')   // 'HelloWorld'
  * ```
  *
- * @example
- * Edge Cases
- * ```ts
- * pascalCase('hello---world')   // returns 'HelloWorld'
- * pascalCase('hello_/world')    // returns 'HelloWorld'
- * pascalCase('HELLO WORLD')     // returns 'HELLOWORLD'
- * pascalCase('')               // returns ''
- * pascalCase('h')              // returns 'H'
- * ```
+ * @see {@link camelCase} for camelCase format
+ * @see {@link kebabCase} for kebab-case format
  */
 export const pascalCase = (str: string) => {
   const word = camelCase(str)
