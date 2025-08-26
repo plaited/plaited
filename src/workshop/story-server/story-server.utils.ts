@@ -7,11 +7,11 @@ import type { StoryParams } from './story-server.types.js'
 import type { StoryObj } from '../../testing.js'
 
 /**
- * @internal Scans for files matching a glob pattern within a specified directory.
- * Uses Bun's Glob API for efficient file searching.
- * @param cwd - The current working directory to scan from.
- * @param pattern - The glob pattern to match files against.
- * @returns A Promise that resolves to an array of absolute file paths matching the pattern.
+ * @internal
+ * Scans directory for files matching glob pattern.
+ * @param cwd - Working directory
+ * @param pattern - Glob pattern
+ * @returns Absolute file paths
  */
 export const globFiles = async (cwd: string, pattern: string): Promise<string[]> => {
   const glob = new Glob(pattern)
@@ -21,24 +21,20 @@ export const globFiles = async (cwd: string, pattern: string): Promise<string[]>
 
 const STORIES_FILTERS_REGEX = /\.stories.tsx?$/
 /**
- * Creates a standardized route path for story files in the workshop system.
- * Converts file paths and export names to kebab-case for consistent URL structure.
+ * Creates kebab-case route for story URLs.
  *
- * @param options - Configuration object
- * @param options.relativePath - The relative file path of the story
- * @param options.exportName - The exported story name
- * @returns A formatted route path string in the format "{directory}/{basename}--{storyName}"
+ * @param options - Route configuration
+ * @param options.filePath - Story file path
+ * @param options.exportName - Exported story name
+ * @returns Route like "/components/button--primary"
  *
  * @example
  * ```ts
- * // For a file "/src/components/Button.stories.tsx" with export "PrimaryButton"
  * createStoryRoute({
- *   filePath: "/src/components/Button.stories.tsx",
- *   exportName: "PrimaryButton"
- * });
- * // Returns: "/src/components/button--primary-button"
+ *   filePath: "/src/Button.stories.tsx",
+ *   exportName: "Primary"
+ * }); // "/src/button--primary"
  * ```
- * @internal
  */
 export const createStoryRoute = ({ filePath, exportName }: { filePath: string; exportName: string }) => {
   const dir = dirname(filePath)
