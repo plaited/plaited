@@ -9,15 +9,7 @@ const styles = css.create({
     borderRadius: 'var(--defaultBorderRadius, 5px)',
     display: 'inline-grid',
     minWidth: 'var(--defaultMinWidth, 100px)',
-  }
+  },
 })
 
-export const Card: FT = () => (
-  <div
-    {...styles.card}
-  >
-    <slot name='card-header'></slot>
-    <slot></slot>
-    <slot name='card-footer'></slot>
-  </div>
-)
+export const Card: FT = ({ children }) => <div {...styles.card}>{children}</div>
