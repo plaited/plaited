@@ -1,7 +1,7 @@
 import type { SnapshotMessage, Trigger, UseFeedback } from '../behavioral/behavioral.js'
 import type { PlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
 import { useSignal } from '../behavioral/use-signal.js'
-
+import { SNAPSHOT_UPDATED, SEQUENCE_UPDATED } from './ai.constants.js'
 /**
  * Collects snapshots from behavioral program execution for training ML models.
  * Transforms snapshots into feature vectors and labels for supervised learning.
@@ -61,8 +61,8 @@ export class SnapshotCollector {
   connectToProgram(useFeedback: UseFeedback, trigger?: PlaitedTrigger | Trigger): () => void {
     // Set up signal listeners if trigger provided
     if (trigger) {
-      this.snapshotSignal.listen('SNAPSHOT_UPDATED', trigger)
-      this.sequenceSignal.listen('SEQUENCE_UPDATED', trigger)
+      this.snapshotSignal.listen(SNAPSHOT_UPDATED, trigger)
+      this.sequenceSignal.listen(SEQUENCE_UPDATED, trigger)
     }
 
     // Connect to behavioral program feedback

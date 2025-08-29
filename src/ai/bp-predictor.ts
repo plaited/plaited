@@ -3,62 +3,168 @@ import type { SnapshotMessage } from '../behavioral/behavioral.js'
 import { SnapshotCollector } from './snapshot-collector.js'
 
 /**
+ * Configuration for model training
+ */
+type ActivationIdentifier =
+  | 'elu'
+  | 'hardSigmoid'
+  | 'linear'
+  | 'relu'
+  | 'relu6'
+  | 'selu'
+  | 'sigmoid'
+  | 'softmax'
+  | 'softplus'
+  | 'softsign'
+  | 'tanh'
+  | 'swish'
+  | 'mish'
+  | 'gelu'
+  | 'gelu_new'
+
+type InitializerIdentifier =
+  | 'constant'
+  | 'glorotNormal'
+  | 'glorotUniform'
+  | 'heNormal'
+  | 'heUniform'
+  | 'identity'
+  | 'leCunNormal'
+  | 'leCunUniform'
+  | 'ones'
+  | 'orthogonal'
+  | 'randomNormal'
+  | 'randomUniform'
+  | 'truncatedNormal'
+  | 'varianceScaling'
+  | 'zeros'
+  | string
+
+export type BPTrainingConfig = {
+  architecture?: {
+    hiddenUnits?: number[] | 'auto' // Layer sizes or 'auto' for dynamic sizing
+    dropoutRates?: number[] // Dropout rates for each layer
+    activation?: ActivationIdentifier // Activation function for hidden layers
+    outputActivation?: ActivationIdentifier // Activation for output layer
+    kernelInitializer?: InitializerIdentifier // Weight initialization method
+  }
+  optimizer?: {
+    type?: 'adam' | 'sgd' | 'rmsprop' // Optimizer type
+    learningRate?: number // Learning rate
+  }
+  training?: {
+    batchSize?: number // Batch size for training
+    validationSplit?: number // Fraction of data for validation
+    verbose?: 0 | 1 | 2 // Logging verbosity
+    logFrequency?: number // Log every N epochs
+  }
+}
+
+/**
  * Binary classifier for behavioral program state prediction.
  * Trains on snapshot data and provides synchronous predictions.
  */
 export class BPPredictor {
-  private model: tf.Sequential | null = null
-  private collector = new SnapshotCollector()
-  private featureScaler: { mean: number[]; std: number[] } | null = null
+   #model: tf.Sequential | null = null
+   #collector = new SnapshotCollector()
+   #featureScaler: { mean: number[]; std: number[] } | null = null
 
   /**
    * Train the model on collected snapshot data
    * @param features Feature vectors extracted from snapshots
    * @param labels Binary labels (true/false) for each snapshot
    * @param epochs Number of training epochs
+   * @param config Optional training configuration
    */
   async train(
     features: number[][],
     labels: boolean[],
     epochs: number = 50,
+    config?: BPTrainingConfig,
   ): Promise<{ accuracy: number; loss: number }> {
     if (features.length === 0) {
       throw new Error('No training data provided')
     }
 
     // Calculate feature scaling parameters
-    this.calculateScalingParams(features)
+    this.#calculateScalingParams(features)
 
     // Scale features
-    const scaledFeatures = this.scaleFeatures(features)
+    const scaledFeatures = this.#scaleFeatures(features)
+
+    // Apply default configuration
+    const architecture = config?.architecture ?? {}
+    const optimizer = config?.optimizer ?? {}
+    const training = config?.training ?? {}
+
+    // Set architecture defaults
+    const inputDim = features[0].length
+    const hiddenUnits =
+      architecture.hiddenUnits === 'auto' || !architecture.hiddenUnits
+        ? [Math.ceil(inputDim * 1.5), Math.ceil(inputDim * 0.75)]
+        : architecture.hiddenUnits
+    const dropoutRates = architecture.dropoutRates ?? [0.2, 0.1]
+    const activation = architecture.activation ?? 'relu'
+    const outputActivation = architecture.outputActivation ?? 'sigmoid'
+    const kernelInitializer = architecture.kernelInitializer ?? 'heNormal'
+
+    // Set optimizer defaults
+    const optimizerType = optimizer.type ?? 'adam'
+    const learningRate = optimizer.learningRate ?? 0.001
+
+    // Set training defaults
+    const batchSize = training.batchSize ?? 32
+    const validationSplit = training.validationSplit ?? 0.2
+    const verbose = training.verbose ?? 0
+    const logFrequency = training.logFrequency ?? 10
 
     // Create model if not exists
-    if (!this.model) {
-      const inputDim = features[0].length
-      this.model = tf.sequential({
-        layers: [
-          tf.layers.dense({
-            inputShape: [inputDim],
-            units: Math.ceil(inputDim * 1.5),
-            activation: 'relu',
-            kernelInitializer: 'heNormal',
-          }),
-          tf.layers.dropout({ rate: 0.2 }),
-          tf.layers.dense({
-            units: Math.ceil(inputDim * 0.75),
-            activation: 'relu',
-            kernelInitializer: 'heNormal',
-          }),
-          tf.layers.dropout({ rate: 0.1 }),
-          tf.layers.dense({
-            units: 1,
-            activation: 'sigmoid',
-          }),
-        ],
-      })
+    if (!this.#model) {
+      const layers: tf.layers.Layer[] = []
 
-      this.model.compile({
-        optimizer: tf.train.adam(0.001),
+      // Build layers based on configuration
+      for (let i = 0; i < hiddenUnits.length; i++) {
+        layers.push(
+          tf.layers.dense({
+            inputShape: i === 0 ? [inputDim] : undefined,
+            units: hiddenUnits[i],
+            activation,
+            kernelInitializer,
+          }),
+        )
+
+        // Add dropout if specified
+        if (i < dropoutRates.length && dropoutRates[i] > 0) {
+          layers.push(tf.layers.dropout({ rate: dropoutRates[i] }))
+        }
+      }
+
+      // Add output layer
+      layers.push(
+        tf.layers.dense({
+          units: 1,
+          activation: outputActivation,
+        }),
+      )
+
+      this.#model = tf.sequential({ layers })
+
+      // Create optimizer
+      let tfOptimizer: tf.Optimizer
+      switch (optimizerType) {
+        case 'sgd':
+          tfOptimizer = tf.train.sgd(learningRate)
+          break
+        case 'rmsprop':
+          tfOptimizer = tf.train.rmsprop(learningRate)
+          break
+        case 'adam':
+        default:
+          tfOptimizer = tf.train.adam(learningRate)
+      }
+
+      this.#model.compile({
+        optimizer: tfOptimizer,
         loss: 'binaryCrossentropy',
         metrics: ['accuracy'],
       })
@@ -72,14 +178,14 @@ export class BPPredictor {
     )
 
     // Train
-    const history = await this.model.fit(xs, ys, {
+    const history = await this.#model.fit(xs, ys, {
       epochs,
-      batchSize: 32,
-      validationSplit: 0.2,
-      verbose: 0,
+      batchSize,
+      validationSplit,
+      verbose,
       callbacks: {
         onEpochEnd: (epoch, logs) => {
-          if (epoch % 10 === 0 && logs) {
+          if (epoch % logFrequency === 0 && logs) {
             console.log(`Epoch ${epoch}: loss=${logs.loss?.toFixed(4)}, accuracy=${logs.acc?.toFixed(4)}`)
           }
         },
@@ -106,23 +212,23 @@ export class BPPredictor {
    * @returns Boolean prediction
    */
   predict(snapshot: SnapshotMessage): boolean {
-    if (!this.model) {
+    if (!this.#model) {
       throw new Error('Model not trained yet')
     }
 
-    if (!this.featureScaler) {
+    if (!this.#featureScaler) {
       throw new Error('Feature scaler not initialized')
     }
 
     // Extract and scale features
-    const features = this.collector.extractFeatures(snapshot)
-    const scaledFeatures = this.scaleFeatures([features])[0]
+    const features = this.#collector.extractFeatures(snapshot)
+    const scaledFeatures = this.#scaleFeatures([features])[0]
 
     // Create tensor
     const input = tf.tensor2d([scaledFeatures])
 
     // Predict
-    const prediction = this.model.predict(input) as tf.Tensor
+    const prediction = this.#model.predict(input) as tf.Tensor
     const value = prediction.dataSync()[0]
 
     // Cleanup
@@ -139,23 +245,23 @@ export class BPPredictor {
    * @returns Probability score between 0 and 1
    */
   predictProbability(snapshot: SnapshotMessage): number {
-    if (!this.model) {
+    if (!this.#model) {
       throw new Error('Model not trained yet')
     }
 
-    if (!this.featureScaler) {
+    if (!this.#featureScaler) {
       throw new Error('Feature scaler not initialized')
     }
 
     // Extract and scale features
-    const features = this.collector.extractFeatures(snapshot)
-    const scaledFeatures = this.scaleFeatures([features])[0]
+    const features = this.#collector.extractFeatures(snapshot)
+    const scaledFeatures = this.#scaleFeatures([features])[0]
 
     // Create tensor
     const input = tf.tensor2d([scaledFeatures])
 
     // Predict
-    const prediction = this.model.predict(input) as tf.Tensor
+    const prediction = this.#model.predict(input) as tf.Tensor
     const value = prediction.dataSync()[0]
 
     // Cleanup
@@ -168,7 +274,7 @@ export class BPPredictor {
   /**
    * Calculate mean and standard deviation for feature scaling
    */
-  private calculateScalingParams(features: number[][]): void {
+  #calculateScalingParams(features: number[][]): void {
     const numFeatures = features[0].length
     const mean = new Array(numFeatures).fill(0)
     const std = new Array(numFeatures).fill(0)
@@ -195,19 +301,19 @@ export class BPPredictor {
       if (std[i] === 0) std[i] = 1
     }
 
-    this.featureScaler = { mean, std }
+    this.#featureScaler = { mean, std }
   }
 
   /**
    * Scale features using z-score normalization
    */
-  private scaleFeatures(features: number[][]): number[][] {
-    if (!this.featureScaler) {
+  #scaleFeatures(features: number[][]): number[][] {
+    if (!this.#featureScaler) {
       throw new Error('Feature scaler not initialized')
     }
 
     return features.map((feature) =>
-      feature.map((val, i) => (val - this.featureScaler!.mean[i]) / this.featureScaler!.std[i]),
+      feature.map((val, i) => (val - this.#featureScaler!.mean[i]) / this.#featureScaler!.std[i]),
     )
   }
 
@@ -215,18 +321,18 @@ export class BPPredictor {
    * Save the model to a specified path
    */
   async save(path: string): Promise<void> {
-    if (!this.model) {
+    if (!this.#model) {
       throw new Error('Model not trained yet')
     }
-    await this.model.save(path)
+    await this.#model.save(path)
 
     // Also save the scaler params
-    if (this.featureScaler) {
+    if (this.#featureScaler) {
       const scalerPath = path.endsWith('/') ? path + 'scaler.json' : path + '/scaler.json'
       if (typeof window === 'undefined') {
         // Node.js environment
         const fs = await import('fs')
-        fs.writeFileSync(scalerPath, JSON.stringify(this.featureScaler))
+        fs.writeFileSync(scalerPath, JSON.stringify(this.#featureScaler))
       }
     }
   }
@@ -235,7 +341,7 @@ export class BPPredictor {
    * Load a pre-trained model from a specified path
    */
   async load(path: string): Promise<void> {
-    this.model = (await tf.loadLayersModel(path)) as tf.Sequential
+    this.#model = (await tf.loadLayersModel(path)) as tf.Sequential
 
     // Also load the scaler params
     const scalerPath = path.endsWith('/') ? path + 'scaler.json' : path + '/scaler.json'
@@ -243,7 +349,7 @@ export class BPPredictor {
       // Node.js environment
       const fs = await import('fs')
       const scalerData = fs.readFileSync(scalerPath, 'utf-8')
-      this.featureScaler = JSON.parse(scalerData)
+      this.#featureScaler = JSON.parse(scalerData)
     }
   }
 
@@ -251,10 +357,10 @@ export class BPPredictor {
    * Dispose of the model and free memory
    */
   dispose(): void {
-    if (this.model) {
-      this.model.dispose()
-      this.model = null
+    if (this.#model) {
+      this.#model.dispose()
+      this.#model = null
     }
-    this.featureScaler = null
+    this.#featureScaler = null
   }
 }

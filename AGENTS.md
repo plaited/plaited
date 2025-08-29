@@ -107,6 +107,12 @@ External Trigger → bProgram → Event Selection → Thread Notification → Fe
 
 4. **Memory Management**: Automatic cleanup via PlaitedTrigger and WeakMap for styles
 
+## TypeScript Preferences
+
+- **Prefer `type` over `interface`**: Use type aliases instead of interfaces for better consistency and flexibility
+- Use union types and intersection types effectively
+- Leverage TypeScript's type inference where appropriate
+
 ## TSDoc Comment Standards
 
 When documenting code, follow the patterns in `.claude/instructions.md`:

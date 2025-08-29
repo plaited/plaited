@@ -63,7 +63,7 @@ type Repeat = true | (() => boolean)
  * @see {@link Trigger} for injecting events into the program
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type BPEvent = { type: string; detail?: any }
+export type BPEvent = { type: string | symbol; detail?: any }
 
 /**
  * A factory function that generates a `BPEvent` dynamically.
@@ -484,7 +484,7 @@ type CandidateBid = {
   /** The priority of the thread proposing the event. Lower numbers indicate higher priority in the selection process. */
   priority: number
   /** The type of the requested event, used for matching against waitFor, block, and interrupt declarations. */
-  type: string
+  type: string | symbol
   /** Optional detail payload of the requested event, contains any data associated with this event. */
   detail?: unknown
   /** Internal flag indicating if this bid originated from an external trigger rather than a thread request. */
@@ -719,7 +719,7 @@ export type SnapshotListener = (msg: SnapshotMessage) => void | Promise<void>
  * ```
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type EventDetails = Record<string, any>
+export type EventDetails = Record<string | symbol, any>
 /**
  * @internal
  * Defines the basic structure for event handlers used in `useFeedback`.
@@ -1300,7 +1300,7 @@ const snapshotFormatter: SnapshotFormatter = ({ candidates, selectedEvent, pendi
     const message: SnapshotMessage[number] = {
       thread: isTypeOf<symbol>(thread, 'symbol') ? thread?.toString() : thread,
       trigger: bid.trigger ?? false,
-      type: bid.type,
+      type: isTypeOf<symbol>(bid.type, 'symbol') ? bid.type.toString() : bid.type,
       selected: isPendingRequest(selectedEvent, bid),
       priority: bid.priority,
       detail: bid.detail,
@@ -1524,7 +1524,7 @@ export const behavioral: Behavioral = () => {
         waitFor: [triggerWaitFor],
       }
     }
-    running.set(Symbol(request.type), {
+    running.set(isTypeOf<symbol>(request.type, 'symbol') ? request.type:  Symbol(request.type), {
       priority: 0,
       trigger: true,
       generator: thread(),
