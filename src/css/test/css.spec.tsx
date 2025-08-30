@@ -224,15 +224,15 @@ test('tokens: token with array values', () => {
     margin: {
       $value: ['10px', '20px', '30px', '40px'],
     },
-    padding: {
-      $value: ['5px', '10px'],
+    fontFamily: {
+      $value: ['"Helvetica Neue"', 'Arial', 'sans-serif'],
       $csv: true,
     },
   })
   expect(designTokens.margin()).toBe('var(--spacing-margin)')
   expect(designTokens.margin.styles).toMatchSnapshot()
-  expect(designTokens.padding()).toBe('var(--spacing-padding)')
-  expect(designTokens.padding.styles).toMatchSnapshot()
+  expect(designTokens.fontFamily()).toBe('var(--spacing-font-family)')
+  expect(designTokens.fontFamily.styles).toMatchSnapshot()
 })
 
 test('tokens: function token values', () => {
@@ -312,7 +312,7 @@ test('tokens: token references', () => {
 
   const derivedTokens = css.tokens('derived', {
     buttonBg: {
-      $value: baseTokens.primary,
+      $value: baseTokens.primary, // Pass the reference directly, not invoked
     },
   })
 
@@ -375,4 +375,217 @@ test('tokens: array of function values', () => {
   })
   expect(designTokens.animation()).toBe('var(--transform-animation)')
   expect(designTokens.animation.styles).toMatchSnapshot()
+})
+
+// Integration tests: tokens with other CSS utilities
+test('tokens: integration with css.create', () => {
+  const theme = css.tokens('theme', {
+    primary: {
+      $value: '#007bff',
+    },
+    secondary: {
+      $value: '#6c757d',
+    },
+    fontSize: {
+      $value: '16px',
+    },
+  })
+
+  const styles = css.create({
+    button: {
+      backgroundColor: theme.primary,
+      fontSize: theme.fontSize,
+      color: 'white',
+      ':hover': {
+        backgroundColor: theme.secondary,
+      },
+    },
+  })
+
+  expect(styles.button).toMatchSnapshot()
+})
+
+test('tokens: integration with css.host', () => {
+  const colors = css.tokens('colors', {
+    text: {
+      $value: '#333',
+      $compoundSelectors: {
+        '.dark': {
+          $value: '#fff',
+        },
+      },
+    },
+    background: {
+      $value: '#fff',
+      $compoundSelectors: {
+        '.dark': {
+          $value: '#222',
+        },
+      },
+    },
+  })
+
+  const host = css.host({
+    color: colors.text,
+    backgroundColor: colors.background,
+    padding: '20px',
+  })
+
+  expect(host).toMatchSnapshot()
+})
+
+test('tokens: integration with css.join', () => {
+  const spacing = css.tokens('spacing', {
+    small: {
+      $value: '8px',
+    },
+    medium: {
+      $value: '16px',
+    },
+    large: {
+      $value: '24px',
+    },
+  })
+
+  const typography = css.tokens('typography', {
+    heading: {
+      $value: '2rem',
+    },
+    body: {
+      $value: '1rem',
+    },
+  })
+
+  const baseStyles = css.create({
+    container: {
+      padding: spacing.medium,
+      fontSize: typography.body,
+    },
+  })
+
+  const variantStyles = css.create({
+    large: {
+      padding: spacing.large,
+      fontSize: typography.heading,
+    },
+  })
+
+  const hostStyles = css.host({
+    margin: spacing.small,
+  })
+
+  const combined = css.join(baseStyles.container, variantStyles.large, hostStyles)
+
+  expect(combined).toMatchSnapshot()
+})
+
+test('tokens: multiple token groups combined', () => {
+  const layout = css.tokens('layout', {
+    maxWidth: {
+      $value: '1200px',
+      '@media (max-width: 768px)': {
+        $value: '100%',
+      },
+    },
+    gap: {
+      $value: '20px',
+    },
+  })
+
+  const motion = css.tokens('motion', {
+    duration: {
+      $value: '300ms',
+    },
+    easing: {
+      $value: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    },
+  })
+
+  const transition = css.tokens('transition', {
+    example: {
+      $value: ['all', motion.duration, motion.easing],
+      $csv: false,
+    },
+  })
+
+  const styles = css.create({
+    grid: {
+      maxWidth: layout.maxWidth,
+      gap: layout.gap,
+      transition: transition.example,
+    },
+  })
+
+  expect(styles.grid).toMatchSnapshot()
+
+  // Test that token styles are properly defined
+  expect(layout.maxWidth.styles).toBeDefined()
+  expect(layout.gap.styles).toBeDefined()
+  expect(motion.duration.styles).toBeDefined()
+  expect(motion.easing.styles).toBeDefined()
+})
+
+test('tokens: with keyframes', () => {
+  const animations = css.tokens('animations', {
+    scale: {
+      $value: {
+        $function: 'scale',
+        $arguments: '1.2',
+      },
+    },
+    rotate: {
+      $value: {
+        $function: 'rotate',
+        $arguments: '360deg',
+      },
+    },
+  })
+
+  const spin = css.keyframes('spin', {
+    '0%': { transform: 'rotate(0deg)' },
+    '100%': { transform: animations.rotate },
+  })
+
+  const pulse = css.keyframes('pulse', {
+    '0%': { transform: 'scale(1)' },
+    '50%': { transform: animations.scale },
+    '100%': { transform: 'scale(1)' },
+  })
+
+  expect(spin()).toMatchSnapshot()
+  expect(pulse()).toMatchSnapshot()
+})
+
+test('tokens: used as CSS values in styles', () => {
+  const sizes = css.tokens('sizes', {
+    containerWidth: {
+      $value: '1200px',
+    },
+    headerHeight: {
+      $value: '64px',
+    },
+    sidebarWidth: {
+      $value: '250px',
+    },
+  })
+
+  const styles = css.create({
+    container: {
+      maxWidth: sizes.containerWidth,
+      margin: '0 auto',
+    },
+    header: {
+      height: sizes.headerHeight,
+      position: 'sticky',
+      top: 0,
+    },
+    sidebar: {
+      width: sizes.sidebarWidth,
+      flexShrink: 0,
+    },
+  })
+
+  expect(styles.container).toMatchSnapshot()
+  expect(styles.header).toMatchSnapshot()
+  expect(styles.sidebar).toMatchSnapshot()
 })

@@ -5,11 +5,13 @@ import { isTokenReference, getRule, createHash } from './css.utils.js'
 
 const formatClassStatement = ({
   styles,
+  hostStyles,
   value,
   prop,
   selectors = [],
 }: {
   styles: string[]
+  hostStyles: string[]
   value: NestedStatements | CSSProperties[keyof CSSProperties] | DesignTokenReference
   prop: string
   selectors?: string[]
@@ -22,12 +24,12 @@ const formatClassStatement = ({
       if (context === CSS_RESERVED_KEYS.$default || /^(:|\[|@)/.test(context)) {
         const nextSelectors = [...selectors]
         context !== CSS_RESERVED_KEYS.$default && nextSelectors.push(context)
-        formatClassStatement({ styles, value: val, prop, selectors: nextSelectors })
+        formatClassStatement({ styles, value: val, prop, selectors: nextSelectors, hostStyles })
       }
     }
   } else {
     const isToken = isTokenReference(value)
-    isToken && styles.push(...value.styles)
+    isToken && hostStyles.push(...value.styles)
     const rule = getRule(prop, isToken ? value() : value)
     const arr = selectors.map((str) => (str.startsWith('@') ? `${str}{` : `&${str}{`))
     styles.push(`{${arr.join('')}${rule}${'}'.repeat(arr.length)}}`)
@@ -37,9 +39,10 @@ const formatClassStatement = ({
 export const create = <T extends CreateParams>(classNames: T): ClassNames<T> =>
   Object.entries(classNames).reduce((acc, [cls, props]) => {
     const styles: string[] = []
-    for (const [prop, value] of Object.entries(props)) formatClassStatement({ styles, prop, value })
+    const hostStyles: string[] = []
+    for (const [prop, value] of Object.entries(props)) formatClassStatement({ styles, hostStyles, prop, value })
     const classes: string[] = []
-    const stylesheets: string[] = []
+    const stylesheets: string[] = hostStyles
     for (const sheet of styles) {
       const cls = `cls${createHash(sheet)}`
       classes.push(cls)
