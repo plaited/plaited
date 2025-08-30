@@ -22,7 +22,7 @@
  * function fetchData(options: Options) {
  *   const onSuccess = options.onSuccess ?? noop;
  *   const onError = options.onError ?? noop;
- *   
+ *
  *   fetch(url)
  *     .then(onSuccess)
  *     .catch(onError);

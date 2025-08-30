@@ -18,7 +18,7 @@
  *
  * @example Conditional imports
  * ```ts
- * const handler = canUseDOM() 
+ * const handler = canUseDOM()
  *   ? () => window.addEventListener('resize', callback)
  *   : () => {}; // noop on server
  * ```

@@ -221,3 +221,79 @@ exports[`join 1`] = `
   ],
 }
 `;
+
+exports[`tokens: simple token with $value 1`] = `
+[
+  ":host{--theme-primary-color:#007bff;}",
+]
+`;
+
+exports[`tokens: simple token with $value 2`] = `
+[
+  ":host{--theme-font-size:16px;}",
+]
+`;
+
+exports[`tokens: token with array values 1`] = `
+[
+  ":host{--spacing-margin:10px 20px 30px 40px;}",
+]
+`;
+
+exports[`tokens: token with array values 2`] = `
+[
+  ":host{--spacing-padding:5px,10px;}",
+]
+`;
+
+exports[`tokens: function token values 1`] = `
+[
+  ":host{--effects-shadow:drop-shadow(2px 4px 6px rgba(0,0,0,0.1));}",
+]
+`;
+
+exports[`tokens: function token values 2`] = `
+[
+  ":host{--effects-gradient:linear-gradient(45deg,#ff0000,#00ff00);}",
+]
+`;
+
+exports[`tokens: nested token statements with selectors 1`] = `
+[
+  ":host{--interactive-button-color:blue;}",
+  ":host{:hover{--interactive-button-color:darkblue;}}",
+  ":host{:active{--interactive-button-color:navy;}}",
+  ":host{@media (max-width: 768px){--interactive-button-color:lightblue;}}",
+]
+`;
+
+exports[`tokens: compound selectors 1`] = `
+[
+  ":host{--state-color:black;}",
+  ":host(.dark){--state-color:white;}",
+  ":host([data-theme="blue"]){--state-color:blue;}",
+  ":host(.large){:hover{--state-color:gray;}}",
+]
+`;
+
+exports[`tokens: token references 1`] = `
+[
+  ":host{--base-primary:#007bff;}",
+  ":host{--derived-button-bg:var(--base-primary);}",
+]
+`;
+
+exports[`tokens: complex nested structure 1`] = `
+[
+  ":host{--complex-card:rgba(255,255,255,0.9);}",
+  ":host{[data-variant="dark"]{--complex-card:rgba(0,0,0,0.9);}}",
+  ":host(.elevated){--complex-card:#ffffff;}",
+  ":host(.elevated){:hover{--complex-card:#f0f0f0;}}",
+]
+`;
+
+exports[`tokens: array of function values 1`] = `
+[
+  ":host{--transform-animation:translateX(10px) rotate(45deg) scale(1.2,1.2);}",
+]
+`;

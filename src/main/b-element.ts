@@ -50,7 +50,7 @@ import type { BehavioralTemplate, BehavioralElement, SelectorMatch, Bindings, Bo
  *   bProgram({ $ }) {
  *     const [title] = $<HTMLHeadingElement>('title');
  *     const [content] = $('content');
- *     
+ *
  *     return {
  *       updateTitle(text: string) {
  *         title.render(text);
@@ -74,7 +74,7 @@ import type { BehavioralTemplate, BehavioralElement, SelectorMatch, Bindings, Bo
  *       bSync({ request: { type: 'COMPLETE' } })
  *     ])
  *   });
- *   
+ *
  *   return {
  *     startFetch() {
  *       trigger({ type: 'FETCH_START' });

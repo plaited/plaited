@@ -202,3 +202,177 @@ test('join', () => {
   })
   expect(css.join(styles.button, styles.small, host)).toMatchSnapshot()
 })
+
+// css.tokens tests
+test('tokens: simple token with $value', () => {
+  const designTokens = css.tokens('theme', {
+    primaryColor: {
+      $value: '#007bff',
+    },
+    fontSize: {
+      $value: '16px',
+    },
+  })
+  expect(designTokens.primaryColor()).toBe('var(--theme-primary-color)')
+  expect(designTokens.primaryColor.styles).toMatchSnapshot()
+  expect(designTokens.fontSize()).toBe('var(--theme-font-size)')
+  expect(designTokens.fontSize.styles).toMatchSnapshot()
+})
+
+test('tokens: token with array values', () => {
+  const designTokens = css.tokens('spacing', {
+    margin: {
+      $value: ['10px', '20px', '30px', '40px'],
+    },
+    padding: {
+      $value: ['5px', '10px'],
+      $csv: true,
+    },
+  })
+  expect(designTokens.margin()).toBe('var(--spacing-margin)')
+  expect(designTokens.margin.styles).toMatchSnapshot()
+  expect(designTokens.padding()).toBe('var(--spacing-padding)')
+  expect(designTokens.padding.styles).toMatchSnapshot()
+})
+
+test('tokens: function token values', () => {
+  const designTokens = css.tokens('effects', {
+    shadow: {
+      $value: {
+        $function: 'drop-shadow',
+        $arguments: ['2px', '4px', '6px', 'rgba(0,0,0,0.1)'],
+      },
+    },
+    gradient: {
+      $value: {
+        $function: 'linear-gradient',
+        $arguments: ['45deg', '#ff0000', '#00ff00'],
+        $csv: true,
+      },
+    },
+  })
+  expect(designTokens.shadow()).toBe('var(--effects-shadow)')
+  expect(designTokens.shadow.styles).toMatchSnapshot()
+  expect(designTokens.gradient()).toBe('var(--effects-gradient)')
+  expect(designTokens.gradient.styles).toMatchSnapshot()
+})
+
+test('tokens: nested token statements with selectors', () => {
+  const designTokens = css.tokens('interactive', {
+    buttonColor: {
+      $default: {
+        $value: 'blue',
+      },
+      ':hover': {
+        $value: 'darkblue',
+      },
+      ':active': {
+        $value: 'navy',
+      },
+      '@media (max-width: 768px)': {
+        $value: 'lightblue',
+      },
+    },
+  })
+  expect(designTokens.buttonColor()).toBe('var(--interactive-button-color)')
+  expect(designTokens.buttonColor.styles).toMatchSnapshot()
+})
+
+test('tokens: compound selectors', () => {
+  const designTokens = css.tokens('state', {
+    color: {
+      $default: {
+        $value: 'black',
+      },
+      $compoundSelectors: {
+        '.dark': {
+          $value: 'white',
+        },
+        '[data-theme="blue"]': {
+          $value: 'blue',
+        },
+        '.large': {
+          ':hover': {
+            $value: 'gray',
+          },
+        },
+      },
+    },
+  })
+  expect(designTokens.color()).toBe('var(--state-color)')
+  expect(designTokens.color.styles).toMatchSnapshot()
+})
+
+test('tokens: token references', () => {
+  const baseTokens = css.tokens('base', {
+    primary: {
+      $value: '#007bff',
+    },
+  })
+
+  const derivedTokens = css.tokens('derived', {
+    buttonBg: {
+      $value: baseTokens.primary,
+    },
+  })
+
+  expect(derivedTokens.buttonBg()).toBe('var(--derived-button-bg)')
+  expect(derivedTokens.buttonBg.styles).toMatchSnapshot()
+})
+
+test('tokens: complex nested structure', () => {
+  const designTokens = css.tokens('complex', {
+    card: {
+      $default: {
+        $value: {
+          $function: 'rgba',
+          $arguments: ['255', '255', '255', '0.9'],
+          $csv: true,
+        },
+      },
+      '[data-variant="dark"]': {
+        $value: {
+          $function: 'rgba',
+          $arguments: ['0', '0', '0', '0.9'],
+          $csv: true,
+        },
+      },
+      $compoundSelectors: {
+        '.elevated': {
+          $default: {
+            $value: '#ffffff',
+          },
+          ':hover': {
+            $value: '#f0f0f0',
+          },
+        },
+      },
+    },
+  })
+  expect(designTokens.card()).toBe('var(--complex-card)')
+  expect(designTokens.card.styles).toMatchSnapshot()
+})
+
+test('tokens: array of function values', () => {
+  const designTokens = css.tokens('transform', {
+    animation: {
+      $value: [
+        {
+          $function: 'translateX',
+          $arguments: '10px',
+        },
+        {
+          $function: 'rotate',
+          $arguments: '45deg',
+        },
+        {
+          $function: 'scale',
+          $arguments: ['1.2', '1.2'],
+          $csv: true,
+        },
+      ],
+    },
+  })
+  expect(designTokens.animation()).toBe('var(--transform-animation)')
+  expect(designTokens.animation.styles).toMatchSnapshot()
+})

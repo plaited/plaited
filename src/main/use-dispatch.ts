@@ -123,7 +123,7 @@ type Dispatch = (
  * @example State synchronization
  * ```tsx
  * const dispatch = useDispatch(host);
- * 
+ *
  * // Notify external listeners of state changes
  * dispatch({
  *   type: 'state-changed',

@@ -75,11 +75,11 @@ const visitStory = ({
  *
  * @example
  * ```ts
- * const visit = useVisitStory({ 
- *   browser, 
- *   colorSchemeSupport: true, 
- *   serverURL, 
- *   running 
+ * const visit = useVisitStory({
+ *   browser,
+ *   colorSchemeSupport: true,
+ *   serverURL,
+ *   running
  * });
  * await visit({ route: '/button' });
  * // Tests in both light and dark modes

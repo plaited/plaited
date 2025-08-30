@@ -1,4 +1,3 @@
-
 /**
  * Type definition for an object with mirrored key-value pairs.
  * Each key is a string literal that matches its corresponding value.

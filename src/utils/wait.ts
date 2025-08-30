@@ -1,4 +1,3 @@
-
 /**
  * Type definition for a Promise-based delay function.
  * Provides type safety for time-based Promise creation.

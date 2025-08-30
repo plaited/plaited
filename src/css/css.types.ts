@@ -200,7 +200,7 @@ export type DesignTokenValue = PrimitiveTokenValue | FunctionTokenValue | Design
 export type DesignToken =
   | {
       $value: DesignTokenValue
-      $csv: never
+      $csv?: never
     }
   | {
       $value: DesignTokenValue[]
