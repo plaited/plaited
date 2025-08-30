@@ -1,4 +1,4 @@
-import { camelCase, isTypeOf, trueTypeOf } from '../utils.js'
+import { camelCase, isTypeOf, trueTypeOf } from '../../utils.js'
 import type {
   DesignToken,
   DesignTokenEntry,

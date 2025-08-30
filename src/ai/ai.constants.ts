@@ -42,6 +42,3 @@ export const CLIENT_ERROR_EVENTS = keyMirror(
   'ERROR_REGISTERING_CLIENT',
 )
 
-
-export const SNAPSHOT_UPDATED = Symbol('SNAPSHOT_UPDATED')
-export const SEQUENCE_UPDATED = Symbol('SEQUENCE_UPDATED')

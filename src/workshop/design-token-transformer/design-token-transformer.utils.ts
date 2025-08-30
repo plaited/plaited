@@ -1,6 +1,6 @@
 import type { DesignToken, DesignTokenGroup, DesignValue, MediaValue, Alias } from './design-token-transformer.types.js'
-import { type CustomElementTag } from '../main.js'
-import { isTypeOf, trueTypeOf, kebabCase, camelCase, pascalCase } from '../utils.js'
+import { type CustomElementTag } from '../../main.js'
+import { isTypeOf, trueTypeOf, kebabCase, camelCase, pascalCase } from '../../utils.js'
 
 /**
  * Combines duplicate CSS rules (like :host selectors) into a single rule block.

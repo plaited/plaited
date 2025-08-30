@@ -45,7 +45,7 @@ import { type PlaitedTrigger, isPlaitedTrigger } from './get-plaited-trigger.js'
  * @param getLVC Whether to immediately trigger with current value
  * @returns Cleanup function for removing the subscription
  */
-export type Listen = (eventType: string | symbol, trigger: Trigger | PlaitedTrigger, getLVC?: boolean) => Disconnect
+export type Listen = (eventType: string, trigger: Trigger | PlaitedTrigger, getLVC?: boolean) => Disconnect
 
 /**
  * @internal
@@ -335,7 +335,7 @@ export const useComputed = <T>(
    * Dependencies only monitored when at least one listener exists.
    * This optimization prevents unnecessary computation for unused computeds.
    */
-  const listen: Listen = (eventType: string | symbol, trigger: Trigger | PlaitedTrigger, getLVC = false) => {
+  const listen: Listen = (eventType: string, trigger: Trigger | PlaitedTrigger, getLVC = false) => {
     /**
      * @internal
      * First listener triggers dependency subscriptions.
