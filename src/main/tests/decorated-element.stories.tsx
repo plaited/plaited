@@ -5,7 +5,7 @@ import {
   type FT,
   type ElementAttributeList,
 } from 'plaited'
-import { css } from 'plaited'
+import * as css from 'plaited/css'
 import { isTypeOf } from 'plaited/utils'
 import { type StoryObj, type Args } from 'plaited/testing'
 

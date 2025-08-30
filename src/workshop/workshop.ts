@@ -1,5 +1,5 @@
 // import { z } from 'zod'
-import { bServer } from '../mcp.js'
+import { bServer } from '../ai.js'
 import { registry } from './workshop.registry.js'
 
 /**

@@ -16,6 +16,11 @@ export type CSSProperties = CSS.Properties & {
   [key: string]: string | number
 }
 
+export type DesignTokenReference = {
+  (): `var(--${string})`
+  styles: string[]
+}
+
 /**
  * Type for defining nested CSS rules within a specific CSS property.
  * Allows specifying different values for a property based on conditions like
@@ -33,15 +38,16 @@ export type CSSProperties = CSS.Properties & {
  */
 export type NestedStatements = {
   /** The default value for the CSS property. */
-  [CSS_RESERVED_KEYS.$default]?: CSSProperties[keyof CSSProperties]
+  [CSS_RESERVED_KEYS.$default]?: CSSProperties[keyof CSSProperties] | DesignTokenReference
   /** Rules applied based on container queries, layers, media queries, or supports queries. */
   [key: `@${'container' | 'layer' | 'media' | 'supports'}${string}`]:
     | CSSProperties[keyof CSSProperties]
     | NestedStatements
+    | DesignTokenReference
   /** Rules applied based on pseudo-classes (e.g., :hover, :focus). Can be nested further. */
-  [key: `:${string}`]: CSSProperties[keyof CSSProperties] | NestedStatements
+  [key: `:${string}`]: CSSProperties[keyof CSSProperties] | NestedStatements | DesignTokenReference
   /** Rules applied based on attribute selectors (e.g., [disabled], [data-state="active"]). Can be nested further. */
-  [key: `[${string}]`]: CSSProperties[keyof CSSProperties] | NestedStatements
+  [key: `[${string}]`]: CSSProperties[keyof CSSProperties] | NestedStatements | DesignTokenReference
 }
 
 /**
@@ -49,7 +55,7 @@ export type NestedStatements = {
  * Extends CSS properties to support nested statements and custom property objects.
  */
 export type CSSRules = {
-  [key in keyof CSSProperties]: CSSProperties[key] | NestedStatements | string
+  [key in keyof CSSProperties]: CSSProperties[key] | NestedStatements | string | DesignTokenReference
 }
 /**
  * Defines a collection of CSS class definitions. Each key represents a class name,
@@ -120,9 +126,10 @@ export type ClassNames<T extends CreateParams> = {
 export type CreateHostParams = {
   [key in keyof CSSProperties]:
     | CSSProperties[key]
+    | DesignTokenReference
     | (NestedStatements & {
         [CSS_RESERVED_KEYS.$compoundSelectors]?: {
-          [key: string]: CSSProperties[keyof CSSProperties] | NestedStatements
+          [key: string]: CSSProperties[keyof CSSProperties] | NestedStatements | DesignTokenReference
         }
       })
 }
@@ -145,11 +152,11 @@ export type CreateHostParams = {
  */
 export type CSSKeyFrames = {
   /** Styles applied at the beginning (0%) of the animation. */
-  from?: { [key in keyof CSSProperties]: CSSProperties[key] }
+  from?: { [key in keyof CSSProperties]: CSSProperties[key] | DesignTokenReference }
   /** Styles applied at the end (100%) of the animation. */
-  to?: { [key in keyof CSSProperties]: CSSProperties[key] }
+  to?: { [key in keyof CSSProperties]: CSSProperties[key] | DesignTokenReference }
   /** Styles applied at specific percentage points during the animation. */
-  [key: `${number}%`]: { [key in keyof CSSProperties]: CSSProperties[key] }
+  [key: `${number}%`]: { [key in keyof CSSProperties]: CSSProperties[key] | DesignTokenReference }
 }
 /**
  * Represents basic style-related properties that can be applied to a component or element.
@@ -170,4 +177,57 @@ export type CSSKeyFrames = {
 export type StyleFunctionKeyframe = {
   (): HostStylesObject
   id: string
+}
+
+export type PrimitiveTokenValue = string | number
+
+type FunctionTokenArguments = PrimitiveTokenValue | DesignTokenReference
+
+export type FunctionTokenValue =
+  | {
+      $function: string
+      $arguments: FunctionTokenArguments
+      $csv: never
+    }
+  | {
+      $function: string
+      $arguments: FunctionTokenArguments[]
+      $csv: boolean
+    }
+
+export type DesignTokenValue = PrimitiveTokenValue | FunctionTokenValue | DesignTokenReference
+
+export type DesignToken =
+  | {
+      $value: DesignTokenValue
+      $csv: never
+    }
+  | {
+      $value: DesignTokenValue[]
+      $csv: boolean
+    }
+
+export type NestedDesignTokenStatements = {
+  /** The default value for the CSS property. */
+  [CSS_RESERVED_KEYS.$default]?: DesignToken
+  /** Rules applied based on container queries, layers, media queries, or supports queries. */
+  [key: `@${'container' | 'layer' | 'media' | 'supports'}${string}`]: DesignToken | NestedDesignTokenStatements
+  /** Rules applied based on pseudo-classes (e.g., :hover, :focus). Can be nested further. */
+  [key: `:${string}`]: DesignToken
+  /** Rules applied based on attribute selectors (e.g., [disabled], [data-state="active"]). Can be nested further. */
+  [key: `[${string}]`]: DesignToken
+}
+
+export type DesignTokenGroup = {
+  [key: string]:
+    | DesignToken
+    | (NestedDesignTokenStatements & {
+        [CSS_RESERVED_KEYS.$compoundSelectors]?: {
+          [key: string]: DesignToken | NestedDesignTokenStatements
+        }
+      })
+}
+
+export type DesignTokenReferences<T extends DesignTokenGroup> = {
+  [key in keyof T]: DesignTokenReference
 }

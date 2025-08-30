@@ -34,5 +34,5 @@
       "plaited/utils": ["./src/utils.ts"],
     }
   },
-  "exclude": ["src/main/types/css.d.ts"]
+  "exclude": ["src/css/types/css.d.ts"]
 }

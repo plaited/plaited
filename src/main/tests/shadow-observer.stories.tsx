@@ -1,6 +1,6 @@
 import { bElement, type FT } from 'plaited'
 import type { StoryObj } from 'plaited/testing'
-import { css } from 'plaited'
+import * as css from 'plaited/css'
 
 const styles = css.create({
   button: {

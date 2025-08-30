@@ -32,6 +32,6 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ['src/main/types/*'],
+    ignores: ['src/css/types/*'],
   },
 )

@@ -77,7 +77,7 @@ export const zip = ({ content, contentType, headers }: { content: string; conten
       headers.append(key, defaultHeaders[key])
     }
   }
-  return new Response(compressed, {
+  return new Response(compressed as BodyInit, {
     headers: headers ?? defaultHeaders,
   })
 }

@@ -1,6 +1,6 @@
 import path from 'node:path'
-
-import { ssr, bElement, css, type HostStylesObject } from '../../main.js'
+import * as css from '../../css.js'
+import { ssr, bElement } from '../../main.js'
 import { type StoryObj } from '../../testing.js'
 import { StoryFixture } from '../../testing/testing.fixture.js'
 import { FIXTURE_EVENTS } from '../../testing/testing.constants.js'
@@ -49,7 +49,7 @@ const createPageBundle = async ({
     }),
     tokens && { stylesheets: [tokens] },
     styles,
-  ].filter(Boolean) as HostStylesObject[]
+  ].filter(Boolean) as css.HostStylesObject[]
   const PlaitedStory = bElement({
     tag: 'plaited-story',
     shadowDom: <slot {...css.join(...styleObjects)} />,

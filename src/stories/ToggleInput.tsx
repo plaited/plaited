@@ -1,5 +1,5 @@
 import { bElement } from 'plaited'
-import { css } from 'plaited'
+import * as css from 'plaited/css'
 
 import { isTypeOf } from 'plaited/utils'
 

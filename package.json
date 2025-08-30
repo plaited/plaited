@@ -19,6 +19,7 @@
     ".": "./src/main.ts",
     "./ai": "./src/ai.ts",
     "./behavioral": "./src/behavioral.ts",
+    "./css": "./src/css.ts",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
     "./jsx-runtime": "./src/jsx-runtime.ts",
     "./utils": "./src/utils.ts",
@@ -59,7 +60,7 @@
       "optional": true
     },
     "@tensorflow/tfjs": {
-       "optional": true
+      "optional": true
     },
     "@types/bun": {
       "optional": true

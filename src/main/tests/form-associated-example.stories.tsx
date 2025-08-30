@@ -1,7 +1,7 @@
 import { bElement } from 'plaited'
 import { isTypeOf } from 'plaited/utils'
 import { type StoryObj } from 'plaited/testing'
-import { css } from 'plaited'
+import * as css from 'plaited/css'
 
 const styles = css.create({
   symbol: {

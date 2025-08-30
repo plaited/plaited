@@ -1,10 +1,10 @@
 /**
  * JSX Template Creation System for Plaited.
  * Converts JSX-like calls into template objects with security-first design.
- * 
+ *
  * @module create-template
  * @packageDocumentation
- * 
+ *
  * @example Basic element creation
  * ```tsx
  * import { h } from 'plaited/jsx-runtime'
@@ -15,7 +15,7 @@
  * });
  * ```
  *
- * @example Component composition  
+ * @example Component composition
  * ```tsx
  * const Card = ({ title, children }) => h('div', {
  *   class: 'card',
@@ -33,7 +33,7 @@
  *
  * @example Shadow DOM with styles
  * ```tsx
- * import { css } from 'plaited';
+ * import * as css from 'plaited/css';
  *
  * const styles = css.create({
  *   container: {
@@ -103,7 +103,7 @@ type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => TemplateO
  * @param _tag - HTML/SVG tag name, custom element tag, or FunctionTemplate
  * @param attrs - Element attributes including children
  * @returns TemplateObject with HTML, stylesheets, registry, and identifier
- * 
+ *
  * @example Standard element
  * ```tsx
  * const template = createTemplate('div', {

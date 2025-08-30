@@ -2,7 +2,7 @@
 
 # Define source and target files
 CSS_SRC="node_modules/csstype/index.d.ts"
-CSS_DEST="src/main/types/css.d.ts"
+CSS_DEST="src/css/types/css.d.ts"
 
 # Check if source files exist
 if [ ! -f "$CSS_SRC" ]; then

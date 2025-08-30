@@ -1,6 +1,6 @@
 import { bElement, useAttributesObserver, type ObservedAttributesDetail } from 'plaited'
 import { isTypeOf, keyMirror } from 'plaited/utils'
-import { css } from 'plaited'
+import * as css from 'plaited/css'
 
 const styles = css.create({
   addOn: {

@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { css } from 'plaited'
+import * as css from 'plaited/css'
 
 test('create: supports simple rules', () => {
   const styles = css.create({

@@ -10,8 +10,9 @@ declare global {
   }
 }
 
+import * as css from 'plaited/css'
 import type { SnapshotMessage } from '../behavioral.js'
-import { bElement, h, css } from '../main.js'
+import { bElement, h } from '../main.js'
 import { wait } from '../utils.js'
 import { STORY_FIXTURE, DEFAULT_PLAY_TIMEOUT, FIXTURE_EVENTS } from './testing.constants.js'
 import {
@@ -41,7 +42,7 @@ import type { InteractionStoryObj, Play, TestFailureEventDetail } from './testin
  * // 2. Runs play function with utilities
  * // 3. Reports results via WebSocket
  * // 4. Handles timeouts and errors
- * 
+ *
  * const story: StoryObj = {
  *   description: 'Button interaction test',
  *   play: async ({ assert, fireEvent, findByText }) => {

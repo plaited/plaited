@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 import { type TemplateObject, bElement } from 'plaited'
-import { css } from 'plaited'
+import * as css from 'plaited/css'
 import beautify from 'beautify'
 
 const render = (tpl: TemplateObject) => beautify(tpl.html.join(''), { format: 'html' })
