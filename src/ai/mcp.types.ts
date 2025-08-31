@@ -101,23 +101,25 @@ export type ToolEntry = {
 
 /**
  * @internal
- * Registry type for declaring all MCP primitives in a server.
- * Maps string keys to primitive entries for type-safe configuration.
- */
-export type Registry = {
-  [k: string]: PromptEntry | ResourceEntry | ToolEntry
-}
-
-/**
- * @internal
  * Event detail payload for prompt handlers.
  * Includes Promise resolvers and typed arguments based on schema.
  * Zod schemas are automatically inferred to their runtime types.
  */
-export type PromptDetail<T extends PromptEntry['config']['argsSchema']> = {
+export type PromptDetail<T extends PromptConfig['argsSchema']> = {
   resolve: ReturnType<typeof Promise.withResolvers<GetPromptResult>>['resolve']
   reject: ReturnType<typeof Promise.withResolvers<GetPromptResult>>['reject']
-  args: T extends z.ZodRawShape ? z.infer<z.ZodObject<T>> : T
+  args: T extends undefined ? never : T extends z.ZodRawShape ? z.infer<z.ZodObject<T>> : T
+  server: McpServer
+}
+
+export type PromptHandler<ArgsSchema extends PromptConfig['argsSchema']> = (detail: PromptDetail<ArgsSchema>) => void | Promise<void>
+
+export type UsePrompt = <ArgsSchema extends PromptConfig['argsSchema']>(params: Omit<PromptConfig, 'argsSchema'> & {
+  argsSchema: ArgsSchema
+  handler: PromptHandler<ArgsSchema>
+}) => {
+    entry: PromptEntry;
+    handler: PromptHandler<ArgsSchema>;
 }
 
 /**
@@ -126,10 +128,30 @@ export type PromptDetail<T extends PromptEntry['config']['argsSchema']> = {
  * Args type depends on whether resource uses static URI or template.
  * Static resources receive [URL], templates receive [URL, params].
  */
-export type ResourceDetail<T extends ResourceEntry['config']['uriOrTemplate']> = {
+export type ResourceDetail<T extends ResourceConfig['uriOrTemplate']> = {
   resolve: ReturnType<typeof Promise.withResolvers<ReadResourceResult>>['resolve']
   reject: ReturnType<typeof Promise.withResolvers<ReadResourceResult>>['reject']
   args: T extends string ? [URL] : [URL, Record<string, string | string[]>]
+  server: McpServer
+}
+
+export type ResourceHandler<UriOrTemplate extends ResourceConfig['uriOrTemplate']> = (detail: ResourceDetail<UriOrTemplate>) => void | Promise<void>
+
+export type UseResource = <UriOrTemplate extends ResourceConfig['uriOrTemplate']> (params: Omit<ResourceConfig, 'uriOrTemplate'> & {
+  uriOrTemplate: UriOrTemplate
+  handler: ResourceHandler<UriOrTemplate>
+}) => {
+    entry: ResourceEntry;
+    handler: ResourceHandler<UriOrTemplate>;
+}
+
+/**
+ * @internal
+ * Registry type for declaring all MCP primitives in a server.
+ * Maps string keys to primitive entries for type-safe configuration.
+ */
+export type Registry = {
+  [k: string]: ReturnType<UseResource | UsePrompt | UseTool>
 }
 
 /**
@@ -138,10 +160,21 @@ export type ResourceDetail<T extends ResourceEntry['config']['uriOrTemplate']> =
  * Includes Promise resolvers and typed arguments based on input schema.
  * Supports both Zod schemas and raw JSON schema objects.
  */
-export type ToolDetail<T extends ToolEntry['config']['inputSchema']> = {
+export type ToolDetail<T extends ToolConfig['inputSchema']> = {
   resolve: ReturnType<typeof Promise.withResolvers<CallToolResult>>['resolve']
   reject: ReturnType<typeof Promise.withResolvers<CallToolResult>>['reject']
   args: T extends z.ZodRawShape ? z.infer<z.ZodObject<T>> : T
+  server: McpServer
+}
+
+export type ToolHandler<InputSchema extends ToolConfig['inputSchema']> = (detail: ToolDetail<InputSchema>) => void | Promise<void>
+
+export type UseTool= <InputSchema extends ToolConfig['inputSchema']>(params: Omit<ToolConfig, 'inputSchema'> & {
+  inputSchema: InputSchema
+  handler: ToolHandler<InputSchema>
+}) => {
+    entry: ToolEntry;
+    handler: ToolHandler<InputSchema>;
 }
 
 /**
@@ -150,7 +183,7 @@ export type ToolDetail<T extends ToolEntry['config']['inputSchema']> = {
  * Maps registry keys to RegisteredPrompt instances for lifecycle management.
  */
 export type Prompts<Entries extends Registry = Registry> = {
-  [K in keyof Entries]: Entries[K] extends PromptEntry ? RegisteredPrompt : unknown
+  [K in keyof Entries]: Entries[K]['entry'] extends PromptEntry ? RegisteredPrompt : unknown
 }
 
 /**
@@ -159,9 +192,9 @@ export type Prompts<Entries extends Registry = Registry> = {
  * Conditional types ensure correct registered type based on URI vs template.
  */
 export type Resources<Entries extends Registry = Registry> = {
-  [K in keyof Entries]: Entries[K] extends ResourceEntry ?
-    Entries[K]['config']['uriOrTemplate'] extends ResourceTemplate ? RegisteredResourceTemplate
-    : Entries[K]['config']['uriOrTemplate'] extends string ? RegisteredResource
+  [K in keyof Entries]: Entries[K]['entry'] extends ResourceEntry ?
+    Entries[K]['entry']['config']['uriOrTemplate'] extends ResourceTemplate ? RegisteredResourceTemplate
+    : Entries[K]['entry']['config']['uriOrTemplate'] extends string ? RegisteredResource
     : unknown
   : unknown
 }
@@ -172,19 +205,8 @@ export type Resources<Entries extends Registry = Registry> = {
  * Maps registry keys to RegisteredTool instances for lifecycle management.
  */
 export type Tools<Entries extends Registry = Registry> = {
-  [K in keyof Entries]: Entries[K] extends ToolEntry ? RegisteredTool : unknown
+  [K in keyof Entries]: Entries[K]['entry'] extends ToolEntry ? RegisteredTool : unknown
 }
-
-/**
- * @internal
- * Conditional type that generates correct handler signature based on entry type.
- * Maps primitive entries to their corresponding detail types for type safety.
- */
-type HandlerCallback<Entry extends PromptEntry | ResourceEntry | ToolEntry> =
-  Entry extends PromptEntry ? (detail: PromptDetail<Entry['config']['argsSchema']>) => void | Promise<void>
-  : Entry extends ResourceEntry ? (detail: ResourceDetail<Entry['config']['uriOrTemplate']>) => void | Promise<void>
-  : Entry extends ToolEntry ? (detail: ToolDetail<Entry['config']['inputSchema']>) => void | Promise<void>
-  : (detail: { args: unknown }) => void | Promise<void>
 
 /**
  * @internal
@@ -193,18 +215,6 @@ type HandlerCallback<Entry extends PromptEntry | ResourceEntry | ToolEntry> =
  */
 export type StrictHandlers<Details extends EventDetails = EventDetails> = {
   [K in keyof Details]: (detail: Details[K]) => void | Promise<void>
-}
-
-/**
- * @internal
- * Combined handler type supporting both MCP primitives and custom events.
- * Registry entries become MCP handlers, other keys become standard event handlers.
- * This enables unified event handling for both MCP and application events.
- */
-export type PrimitiveHandlers<Entries extends Registry, E extends EventDetails> = {
-  [P in keyof Entries | keyof E]: P extends keyof Entries ? HandlerCallback<Entries[P]>
-  : P extends keyof E ? (detail: E[P]) => void | Promise<void>
-  : never
 }
 
 /**

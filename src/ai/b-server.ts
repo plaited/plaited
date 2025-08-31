@@ -59,6 +59,7 @@ import {
   type PlaitedTrigger,
   type SignalWithoutInitialValue,
   type UseSnapshot,
+  type Handlers,
 } from '../behavioral.js'
 import type {
   Registry,
@@ -136,6 +137,7 @@ const registerPrompt = ({
       resolve,
       reject,
       args,
+      server,
     })
     return promise
   })
@@ -206,6 +208,7 @@ const registerResource = ({
       resolve,
       reject,
       args: args as unknown as [URL] | [URL, Record<string, string | string[]>],
+      server,
     })
     return promise
   }
@@ -285,6 +288,7 @@ const registerTool = ({
       resolve,
       reject,
       args,
+      server
     })
     return promise
   })
@@ -447,7 +451,7 @@ export const bServer = async <R extends Registry, E extends EventDetails>({
     prompts: Prompts<R>
     resources: Resources<R>
     tools: Tools<R>
-  }) => Promise<PrimitiveHandlers<R, E>>
+  }) => Promise<E | void>
 }) => {
   /**
    * @internal
@@ -489,7 +493,9 @@ export const bServer = async <R extends Registry, E extends EventDetails>({
    * Registration functions return handles that are stored for lifecycle management.
    * Object.assign is used to build up the typed collections incrementally.
    */
-  for (const [name, { primitive, config }] of Object.entries(registry)) {
+  const primitiveHandlers: Handlers = {}
+  for (const [name, {handler, entry: { primitive, config }}] of Object.entries(registry)) {
+    Object.assign(primitiveHandlers, {[name]: handler})
     primitive === 'tool' && Object.assign(tools, { [name]: registerTool({ server, name, config, trigger }) })
     primitive === 'prompt' && Object.assign(prompts, { [name]: registerPrompt({ server, name, config, trigger }) })
     primitive === 'resource' &&
@@ -524,13 +530,15 @@ export const bServer = async <R extends Registry, E extends EventDetails>({
     tools,
     ...rest,
   })
-
   /**
    * @internal
    * Connect handlers to the behavioral program's feedback loop.
    * This completes the event flow: MCP → signals → triggers → handlers.
    */
-  useFeedback(handlers)
+  useFeedback({
+    ...(handlers && handlers),
+    ...primitiveHandlers
+  })
 
   return server
 }
