@@ -7,7 +7,7 @@ let client: Client
 beforeAll(async () => {
   const transport = new StdioClientTransport({
     command: 'bun',
-    args: [`${import.meta.dir}/mcp-server.ts`],
+    args: [`${import.meta.dir}/simple-mcp-server.ts`],
   })
 
   client = new Client({
