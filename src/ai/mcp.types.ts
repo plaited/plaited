@@ -43,7 +43,16 @@ import type {
 import type { GetPromptResult, ReadResourceResult, CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import type { StdioServerParameters } from '@modelcontextprotocol/sdk/client/stdio.js'
 import type { StreamableHTTPClientTransportOptions } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import type { EventDetails } from '../behavioral.js'
+import type {
+  EventDetails,
+  BSync,
+  BThreads,
+  BThread,
+  Disconnect,
+  PlaitedTrigger,
+  UseSnapshot,
+  Handlers,
+} from '../behavioral.js'
 
 /**
  * @internal
@@ -108,18 +117,24 @@ export type ToolEntry = {
 export type PromptDetail<T extends PromptConfig['argsSchema']> = {
   resolve: ReturnType<typeof Promise.withResolvers<GetPromptResult>>['resolve']
   reject: ReturnType<typeof Promise.withResolvers<GetPromptResult>>['reject']
-  args: T extends undefined ? never : T extends z.ZodRawShape ? z.infer<z.ZodObject<T>> : T
+  args: T extends undefined ? never
+  : T extends z.ZodRawShape ? z.infer<z.ZodObject<T>>
+  : T
   server: McpServer
 }
 
-export type PromptHandler<ArgsSchema extends PromptConfig['argsSchema']> = (detail: PromptDetail<ArgsSchema>) => void | Promise<void>
+export type PromptHandler<ArgsSchema extends PromptConfig['argsSchema']> = (
+  detail: PromptDetail<ArgsSchema>,
+) => void | Promise<void>
 
-export type UsePrompt = <ArgsSchema extends PromptConfig['argsSchema']>(params: Omit<PromptConfig, 'argsSchema'> & {
-  argsSchema: ArgsSchema
+export type UsePrompt = <ArgsSchema extends PromptConfig['argsSchema']>(
+  params: Omit<PromptConfig, 'argsSchema'> & {
+    argsSchema: ArgsSchema
+    handler: PromptHandler<ArgsSchema>
+  },
+) => {
+  entry: PromptEntry
   handler: PromptHandler<ArgsSchema>
-}) => {
-    entry: PromptEntry;
-    handler: PromptHandler<ArgsSchema>;
 }
 
 /**
@@ -135,23 +150,18 @@ export type ResourceDetail<T extends ResourceConfig['uriOrTemplate']> = {
   server: McpServer
 }
 
-export type ResourceHandler<UriOrTemplate extends ResourceConfig['uriOrTemplate']> = (detail: ResourceDetail<UriOrTemplate>) => void | Promise<void>
+export type ResourceHandler<UriOrTemplate extends ResourceConfig['uriOrTemplate']> = (
+  detail: ResourceDetail<UriOrTemplate>,
+) => void | Promise<void>
 
-export type UseResource = <UriOrTemplate extends ResourceConfig['uriOrTemplate']> (params: Omit<ResourceConfig, 'uriOrTemplate'> & {
-  uriOrTemplate: UriOrTemplate
+export type UseResource = <UriOrTemplate extends ResourceConfig['uriOrTemplate']>(
+  params: Omit<ResourceConfig, 'uriOrTemplate'> & {
+    uriOrTemplate: UriOrTemplate
+    handler: ResourceHandler<UriOrTemplate>
+  },
+) => {
+  entry: ResourceEntry
   handler: ResourceHandler<UriOrTemplate>
-}) => {
-    entry: ResourceEntry;
-    handler: ResourceHandler<UriOrTemplate>;
-}
-
-/**
- * @internal
- * Registry type for declaring all MCP primitives in a server.
- * Maps string keys to primitive entries for type-safe configuration.
- */
-export type Registry = {
-  [k: string]: ReturnType<UseResource | UsePrompt | UseTool>
 }
 
 /**
@@ -167,14 +177,32 @@ export type ToolDetail<T extends ToolConfig['inputSchema']> = {
   server: McpServer
 }
 
-export type ToolHandler<InputSchema extends ToolConfig['inputSchema']> = (detail: ToolDetail<InputSchema>) => void | Promise<void>
+export type ToolHandler<InputSchema extends ToolConfig['inputSchema']> = (
+  detail: ToolDetail<InputSchema>,
+) => void | Promise<void>
 
-export type UseTool= <InputSchema extends ToolConfig['inputSchema']>(params: Omit<ToolConfig, 'inputSchema'> & {
-  inputSchema: InputSchema
+export type UseTool = <InputSchema extends ToolConfig['inputSchema']>(
+  params: Omit<ToolConfig, 'inputSchema'> & {
+    inputSchema: InputSchema
+    handler: ToolHandler<InputSchema>
+  },
+) => {
+  entry: ToolEntry
   handler: ToolHandler<InputSchema>
-}) => {
-    entry: ToolEntry;
-    handler: ToolHandler<InputSchema>;
+}
+
+/**
+ * @internal
+ * Registry type for declaring all MCP primitives in a server.
+ * Maps string keys to primitive entries for type-safe configuration.
+ */
+export type Registry = {
+  [k: string]: // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  | { entry: PromptEntry; handler: PromptHandler<any> }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    | { entry: ResourceEntry; handler: ResourceHandler<any> }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    | { entry: ToolEntry; handler: ToolHandler<any> }
 }
 
 /**
@@ -183,7 +211,7 @@ export type UseTool= <InputSchema extends ToolConfig['inputSchema']>(params: Omi
  * Maps registry keys to RegisteredPrompt instances for lifecycle management.
  */
 export type Prompts<Entries extends Registry = Registry> = {
-  [K in keyof Entries]: Entries[K]['entry'] extends PromptEntry ? RegisteredPrompt : unknown
+  [K in keyof Entries as Entries[K]['entry'] extends PromptEntry ? K : never]: RegisteredPrompt
 }
 
 /**
@@ -192,11 +220,13 @@ export type Prompts<Entries extends Registry = Registry> = {
  * Conditional types ensure correct registered type based on URI vs template.
  */
 export type Resources<Entries extends Registry = Registry> = {
-  [K in keyof Entries]: Entries[K]['entry'] extends ResourceEntry ?
-    Entries[K]['entry']['config']['uriOrTemplate'] extends ResourceTemplate ? RegisteredResourceTemplate
-    : Entries[K]['entry']['config']['uriOrTemplate'] extends string ? RegisteredResource
-    : unknown
-  : unknown
+  [K in keyof Entries as Entries[K]['entry'] extends ResourceEntry ? K : never]: Entries[K]['entry'] extends (
+    ResourceEntry
+  ) ?
+    Entries[K]['entry']['config']['uriOrTemplate'] extends ResourceTemplate ?
+      RegisteredResourceTemplate
+    : RegisteredResource
+  : never
 }
 
 /**
@@ -204,19 +234,35 @@ export type Resources<Entries extends Registry = Registry> = {
  * Type-safe collection of registered tools extracted from registry.
  * Maps registry keys to RegisteredTool instances for lifecycle management.
  */
-export type Tools<Entries extends Registry = Registry> = {
-  [K in keyof Entries]: Entries[K]['entry'] extends ToolEntry ? RegisteredTool : unknown
+export type Tools<Entries extends Registry> = {
+  [K in keyof Entries as Entries[K]['entry'] extends ToolEntry ? K : never]: RegisteredTool
 }
 
-/**
- * @internal
- * Type for behavioral event handlers without MCP primitives.
- * Used when only custom events are needed without MCP integration.
- */
-export type StrictHandlers<Details extends EventDetails = EventDetails> = {
-  [K in keyof Details]: (detail: Details[K]) => void | Promise<void>
-}
-
+export type BServerParams<R extends Registry, E extends Exclude<EventDetails, keyof R> | undefined> =
+  E extends Exclude<EventDetails, keyof R> ?
+    {
+      name: string
+      version: string
+      registry: R
+      bProgram: (args: {
+        bSync: BSync
+        bThread: BThread
+        bThreads: BThreads
+        disconnect: Disconnect
+        server: McpServer
+        trigger: PlaitedTrigger
+        useSnapshot: UseSnapshot
+        prompts: Prompts<R>
+        resources: Resources<R>
+        tools: Tools<R>
+      }) => Promise<Handlers<E>>
+    }
+  : {
+      name: string
+      version: string
+      registry: R
+      bProgram?: never
+    }
 /**
  * @internal
  * MCP Client types for behavioral integration

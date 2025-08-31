@@ -51,25 +51,21 @@ import {
   bThread,
   getPlaitedTrigger,
   useSignal,
-  type BSync,
-  type BThreads,
-  type BThread,
   type Disconnect,
   type EventDetails,
   type PlaitedTrigger,
   type SignalWithoutInitialValue,
-  type UseSnapshot,
   type Handlers,
 } from '../behavioral.js'
 import type {
   Registry,
-  PrimitiveHandlers,
   Resources,
   Prompts,
   Tools,
   PromptDetail,
   ResourceDetail,
   ToolDetail,
+  BServerParams,
 } from './mcp.types.js'
 
 /**
@@ -288,7 +284,7 @@ const registerTool = ({
       resolve,
       reject,
       args,
-      server
+      server,
     })
     return promise
   })
@@ -431,28 +427,13 @@ const registerTool = ({
  * - Use prompts for templating, tools for actions
  * - Resources should be read-only operations
  */
-export const bServer = async <R extends Registry, E extends EventDetails>({
+
+export const bServer = async <R extends Registry, E extends Exclude<EventDetails, keyof R> | undefined = undefined>({
   name,
   version,
   registry,
   bProgram,
-}: {
-  name: string
-  version: string
-  registry: R
-  bProgram: (args: {
-    bSync: BSync
-    bThread: BThread
-    bThreads: BThreads
-    disconnect: Disconnect
-    server: McpServer
-    trigger: PlaitedTrigger
-    useSnapshot: UseSnapshot
-    prompts: Prompts<R>
-    resources: Resources<R>
-    tools: Tools<R>
-  }) => Promise<E | void>
-}) => {
+}: BServerParams<R, E>) => {
   /**
    * @internal
    * Create the MCP server instance with provided metadata.
@@ -494,8 +475,14 @@ export const bServer = async <R extends Registry, E extends EventDetails>({
    * Object.assign is used to build up the typed collections incrementally.
    */
   const primitiveHandlers: Handlers = {}
-  for (const [name, {handler, entry: { primitive, config }}] of Object.entries(registry)) {
-    Object.assign(primitiveHandlers, {[name]: handler})
+  for (const [
+    name,
+    {
+      handler,
+      entry: { primitive, config },
+    },
+  ] of Object.entries(registry)) {
+    Object.assign(primitiveHandlers, { [name]: handler })
     primitive === 'tool' && Object.assign(tools, { [name]: registerTool({ server, name, config, trigger }) })
     primitive === 'prompt' && Object.assign(prompts, { [name]: registerPrompt({ server, name, config, trigger }) })
     primitive === 'resource' &&
@@ -519,25 +506,27 @@ export const bServer = async <R extends Registry, E extends EventDetails>({
    * Provides full behavioral programming context plus MCP-specific utilities.
    * Await supports async initialization (e.g., database connections).
    */
-  const handlers = await bProgram({
-    bSync,
-    bThread,
-    disconnect,
-    server,
-    trigger,
-    prompts,
-    resources,
-    tools,
-    ...rest,
-  })
+  const handlers =
+    bProgram &&
+    (await bProgram({
+      bSync,
+      bThread,
+      disconnect,
+      server,
+      trigger,
+      prompts,
+      resources,
+      tools,
+      ...rest,
+    }))
   /**
    * @internal
    * Connect handlers to the behavioral program's feedback loop.
    * This completes the event flow: MCP → signals → triggers → handlers.
    */
   useFeedback({
-    ...(handlers && handlers),
-    ...primitiveHandlers
+    ...(handlers || {}),
+    ...primitiveHandlers,
   })
 
   return server

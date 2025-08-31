@@ -1,38 +1,38 @@
-import type {  PromptEntry, UsePrompt,  ResourceEntry, UseResource, ToolEntry, UseTool } from "./mcp.types"
+import type { PromptEntry, UsePrompt, ResourceEntry, UseResource, ToolEntry, UseTool } from './mcp.types'
 
-export const usePrompt:UsePrompt = ({title, description, argsSchema, handler }) => {
+export const usePrompt: UsePrompt = ({ title, description, argsSchema, handler }) => {
   const entry: PromptEntry = {
-    primitive: "prompt",
+    primitive: 'prompt',
     config: {
       title,
       description,
       argsSchema,
     },
   }
-  return { entry, handler }
+  return { entry, handler } as const
 }
 
-export const useResource: UseResource = ({metaData, uriOrTemplate, handler }) => {
+export const useResource: UseResource = ({ metaData, uriOrTemplate, handler }) => {
   const entry: ResourceEntry = {
-    primitive: "resource",
+    primitive: 'resource',
     config: {
       metaData,
-      uriOrTemplate
+      uriOrTemplate,
     },
   }
-  return { entry, handler}
+  return { entry, handler } as const
 }
 
-export const useTool: UseTool = ({title, description, inputSchema, outputSchema, annotations, handler }) => {
+export const useTool: UseTool = ({ title, description, inputSchema, outputSchema, annotations, handler }) => {
   const entry: ToolEntry = {
-    primitive: "tool",
+    primitive: 'tool',
     config: {
-     title,
-     description,
-     inputSchema,
-     outputSchema,
-     annotations
+      title,
+      description,
+      inputSchema,
+      outputSchema,
+      annotations,
     },
   }
-  return { entry, handler}
+  return { entry, handler } as const
 }
