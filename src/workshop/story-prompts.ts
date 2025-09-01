@@ -3,18 +3,18 @@ import { z } from 'zod'
 
 /**
  * Prompt definitions for generating Plaited component stories
- * 
+ *
  * These prompts guide AI assistants in creating proper StoryObj definitions
  * that follow Plaited's testing patterns and best practices.
  */
 
 /**
  * Generate Visual/Snapshot Stories Prompt with context-aware completion
- * 
+ *
  * Creates stories for pure rendering scenarios without interactions.
  * These stories test how components appear with different prop combinations
  * and are ideal for visual regression testing.
- * 
+ *
  * Key characteristics of generated stories:
  * - No play function (snapshot testing only)
  * - Focus on prop permutations and visual states
@@ -24,7 +24,8 @@ import { z } from 'zod'
  */
 export const generateVisualStories = usePrompt({
   title: 'Generate Visual Stories',
-  description: 'Generate comprehensive visual/snapshot stories for Plaited components covering all prop combinations and states',
+  description:
+    'Generate comprehensive visual/snapshot stories for Plaited components covering all prop combinations and states',
   argsSchema: {
     componentName: z.string().describe('Name of the component (e.g., "DecoratedCheckbox")'),
     componentPath: z
@@ -34,16 +35,13 @@ export const generateVisualStories = usePrompt({
       .string()
       .optional()
       .describe('Generate stories with ARIA attributes (true/false, default: true)'),
-    includeDataTestIds: z
-      .string()
-      .optional()
-      .describe('Include data-testid attributes (true/false, default: true)'),
+    includeDataTestIds: z.string().optional().describe('Include data-testid attributes (true/false, default: true)'),
   },
   handler: async ({ resolve, args }) => {
     // Parse optional boolean string parameters
     const includeAccessibility = args.includeAccessibility !== 'false' // defaults to true
     const includeDataTestIds = args.includeDataTestIds !== 'false' // defaults to true
-    
+
     // Build the prompt messages for generating visual stories
     const promptText = `Generate comprehensive visual/snapshot stories for the ${args.componentName} component located at ${args.componentPath}.
 
@@ -85,11 +83,11 @@ Generate stories that thoroughly test the component's visual states.`
 
 /**
  * Generate Interaction Stories Prompt with context-aware completion
- * 
+ *
  * Creates stories with play functions for testing component behavior.
  * These stories validate functionality, state changes, and user interactions
  * using Plaited's instrumented testing utilities.
- * 
+ *
  * Key characteristics of generated stories:
  * - Include play function with testing logic
  * - Use ONLY instrumented methods (findByAttribute, findByText, fireEvent)
@@ -100,51 +98,52 @@ Generate stories that thoroughly test the component's visual states.`
  */
 export const generateInteractionStories = usePrompt({
   title: 'Generate Interaction Stories',
-  description: 'Generate interaction stories with play functions for testing Plaited component behavior and user interactions',
+  description:
+    'Generate interaction stories with play functions for testing Plaited component behavior and user interactions',
   argsSchema: {
     componentName: z.string().describe('Name of the component (e.g., "DecoratedCheckbox")'),
     componentPath: z.string().describe('Path to component file relative to project root'),
     testScenarios: z
       .string()
       .optional()
-      .describe('Comma-separated list of scenarios: state-changes, user-clicks, keyboard-navigation, form-interaction, validation, accessibility-features, async-behavior, error-handling (default: state-changes,user-clicks)'),
-    existingStoryPath: z
-      .string()
-      .optional()
-      .describe('Path to existing story file for reference patterns'),
+      .describe(
+        'Comma-separated list of scenarios: state-changes, user-clicks, keyboard-navigation, form-interaction, validation, accessibility-features, async-behavior, error-handling (default: state-changes,user-clicks)',
+      ),
+    existingStoryPath: z.string().optional().describe('Path to existing story file for reference patterns'),
   },
   handler: async ({ resolve, args }) => {
     // Parse test scenarios from comma-separated string
     const scenarios = args.testScenarios?.split(',').map((s: string) => s.trim()) || ['state-changes', 'user-clicks']
-    
+
     // Build scenario-specific requirements
-    const scenarioRequirements = scenarios.map(scenario => {
-      switch(scenario) {
-        case 'state-changes':
-          return '- Test component state transitions (checked/unchecked, enabled/disabled, etc.)'
-        case 'user-clicks':
-          return '- Test click interactions and their effects on component state'
-        case 'keyboard-navigation':
-          return '- Test keyboard interactions (Space, Enter, Tab navigation)'
-        case 'form-interaction':
-          return '- Test form submission, validation, and value changes'
-        case 'validation':
-          return '- Test required fields, input validation, and error states'
-        case 'accessibility-features':
-          return '- Test ARIA attributes, screen reader announcements, and focus management'
-        case 'async-behavior':
-          return '- Test loading states, async operations, and promises'
-        case 'error-handling':
-          return '- Test error states, invalid inputs, and edge cases'
-        default:
-          return `- Test ${scenario}`
-      }
-    }).join('\n')
-    
-    const existingStoryNote = args.existingStoryPath 
-      ? `\nReference the patterns used in: ${args.existingStoryPath}` 
-      : ''
-    
+    const scenarioRequirements = scenarios
+      .map((scenario) => {
+        switch (scenario) {
+          case 'state-changes':
+            return '- Test component state transitions (checked/unchecked, enabled/disabled, etc.)'
+          case 'user-clicks':
+            return '- Test click interactions and their effects on component state'
+          case 'keyboard-navigation':
+            return '- Test keyboard interactions (Space, Enter, Tab navigation)'
+          case 'form-interaction':
+            return '- Test form submission, validation, and value changes'
+          case 'validation':
+            return '- Test required fields, input validation, and error states'
+          case 'accessibility-features':
+            return '- Test ARIA attributes, screen reader announcements, and focus management'
+          case 'async-behavior':
+            return '- Test loading states, async operations, and promises'
+          case 'error-handling':
+            return '- Test error states, invalid inputs, and edge cases'
+          default:
+            return `- Test ${scenario}`
+        }
+      })
+      .join('\n')
+
+    const existingStoryNote =
+      args.existingStoryPath ? `\nReference the patterns used in: ${args.existingStoryPath}` : ''
+
     // Build the prompt messages for generating interaction stories
     const promptText = `Generate interaction stories with play functions for the ${args.componentName} component located at ${args.componentPath}.
 

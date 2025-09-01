@@ -28,6 +28,8 @@ import {
   useFireEvent,
   useAccessibilityCheck,
   useRunner,
+  useFindByTarget,
+  useFindByTestId,
 } from './testing.utils.js'
 import type { InteractionStoryObj, Play, TestFailureEventDetail } from './testing.types.js'
 
@@ -128,6 +130,8 @@ export const StoryFixture = bElement<{
           findByAttribute: useFindByAttribute(trigger),
           findByText: useFindByText(trigger),
           fireEvent: useFireEvent(trigger),
+          findByTarget: useFindByTarget(trigger),
+          findByTestId: useFindByTestId(trigger),
           hostElement: host,
           match,
           throws,

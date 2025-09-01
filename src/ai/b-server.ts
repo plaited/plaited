@@ -66,7 +66,7 @@ import type {
   ResourceDetail,
   ToolDetail,
   BServerParams,
-} from './mcp.types.js'
+} from './ai.types.js'
 
 /**
  * @internal

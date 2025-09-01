@@ -24,6 +24,8 @@ export const RUNNER_URL = '/.plaited/test-runner'
  */
 export const RELOAD_STORY_PAGE = 'reload_story_page'
 
+export const DATA_TESTID = 'data-testid'
+
 /**
  * @internal
  * Event types for test fixture communication.
@@ -36,6 +38,8 @@ export const FIXTURE_EVENTS = keyMirror(
   'failed_assertion',
   'find_by_attribute',
   'find_by_text',
+  'find_by_testid',
+  'find_by_target',
   'fire_event',
   'fixture_connected',
   'missing_assertion_parameter',

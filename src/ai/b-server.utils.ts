@@ -1,4 +1,4 @@
-import type { PromptEntry, UsePrompt, ResourceEntry, UseResource, ToolEntry, UseTool } from './mcp.types'
+import type { PromptEntry, UsePrompt, ResourceEntry, UseResource, ToolEntry, UseTool } from './ai.types'
 
 export const usePrompt: UsePrompt = ({ title, description, argsSchema, handler }) => {
   const entry: PromptEntry = {

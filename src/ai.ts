@@ -1,3 +1,3 @@
 export * from './ai/b-server.js'
 export * from './ai/b-server.utils.js'
-export * from './ai/mcp.types.js'
+export * from './ai/ai.types.js'

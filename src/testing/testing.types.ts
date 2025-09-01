@@ -64,6 +64,24 @@ export type FindByAttribute = <T extends HTMLElement | SVGElement = HTMLElement 
 /** @internal Represents the detailed parameters captured for an instrumented `FindByAttribute` call, used for testing and reporting. */
 export type FindByAttributeDetails = InstrumentedDetails<Parameters<FindByAttribute>>
 
+
+export type FindByTestId = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+  testId: string | RegExp,
+  context?: HTMLElement | SVGElement,
+) => Promise<T | undefined>
+
+/** @internal Represents the detailed parameters captured for an instrumented `FindByAttribute` call, used for testing and reporting. */
+export type FindByTestIdDetails = InstrumentedDetails<Parameters<FindByTestId>>
+
+export type FindByTarget = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+  target: string | RegExp,
+  context?: HTMLElement | SVGElement,
+) => Promise<T | undefined>
+
+/** @internal Represents the detailed parameters captured for an instrumented `FindByAttribute` call, used for testing and reporting. */
+export type FindByTargetDetails = InstrumentedDetails<Parameters<FindByTarget>>
+
+
 /**
  * Finds elements by text content across shadow DOM boundaries.
  *
@@ -214,7 +232,9 @@ export type Args<T extends FunctionTemplate> = Parameters<T>[0]
 export type Play = (args: {
   assert: Assert
   findByAttribute: FindByAttribute
+  findByTarget: FindByTarget
   findByText: FindByText
+  findByTestId: FindByTestId,
   fireEvent: FireEvent
   hostElement: Element
   match: Match

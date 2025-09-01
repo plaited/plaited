@@ -1,6 +1,6 @@
 /**
  * @internal
- * @module mcp.types
+ * @module ai.types
  *
  * Purpose: Type definitions for Model Context Protocol integration with Plaited
  * Architecture: Provides type-safe interfaces between MCP SDK and behavioral programming

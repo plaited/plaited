@@ -16,7 +16,7 @@ import {
   // type SignalWithoutInitialValue,
   type UseSnapshot,
 } from '../behavioral.js'
-import type { ServerTransportConfigs } from './mcp.types.js'
+import type { ServerTransportConfigs } from './ai.types.js'
 // import { CLIENT_ERROR_EVENTS } from './mcp.constants.js'
 
 // const createTransport = (config: ServerTransportConfigs[string]) => {
