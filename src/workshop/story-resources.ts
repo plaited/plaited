@@ -34,7 +34,7 @@ export const plaitedTestingResource = useResource({
       'Complete Plaited testing module with StoryObj types, Args utility, and Play function signature for writing component tests',
     mimeType: 'text/x-typescript',
   },
-  uriOrTemplate: 'file://node_modules/plaited/src/testing.ts',
+  uriOrTemplate: 'file://node_modules/plaited/src/testing/testing.types.ts',
   handler: async ({ resolve, reject, args: [url] }) => {
     try {
       // Read the testing module file

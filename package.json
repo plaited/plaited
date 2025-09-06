@@ -75,6 +75,9 @@
       "optional": true
     }
   },
+  "dependencies": {
+    "@tensorflow/tfjs-node": "^4.22.0"
+  },
   "peerDependencies": {
     "@modelcontextprotocol/sdk": "^1.13.0",
     "@tensorflow/tfjs": "^4.22.0",
@@ -108,6 +111,6 @@
     "sinon": "21.0.0",
     "typescript": "5.9.2",
     "typescript-eslint": "8.41.0",
-    "zod": "4.1.5"
+    "zod": "^3.25.64"
   }
 }
