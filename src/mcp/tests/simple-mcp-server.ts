@@ -3,7 +3,7 @@ import { bServer } from 'plaited/mcp'
 import { registry } from './simple-mcp-server.registry.js'
 
 const transport = new StdioServerTransport()
-const server = await bServer({
+const init = bServer({
   serverInfo: {
     name: 'test-server',
     version: '0.0.1',
@@ -11,4 +11,4 @@ const server = await bServer({
   registry,
 })
 
-await server.connect(transport)
+await init(transport)

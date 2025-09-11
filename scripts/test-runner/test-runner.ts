@@ -1,11 +1,11 @@
 import { chromium, type BrowserContext } from 'playwright'
-import { bProgram } from '../../behavioral.js'
-import { STORY_RUNNER_EVENTS } from './story-runner.constants.js'
-import { type RunnerMessage } from '../../testing.js'
-import { FIXTURE_EVENTS } from '../../testing/testing.constants.js'
-import type { ColorScheme, RunningMap } from './story-runner.types.js'
-import type { StoryParams } from '../story-server/story-server.types.js'
-import { useVisitStory, useRunnerID } from './story-runner.utils.js'
+import { bProgram } from '../../src/behavioral.js'
+import { TEST_RUNNER_EVENTS } from './test-runner.constants.js'
+import { type RunnerMessage } from '../../src/testing.js'
+import { FIXTURE_EVENTS } from '../../src/testing/testing.constants.js'
+import type { ColorScheme, RunningMap } from './test-runner.types.js'
+import type { StoryParams } from './test-server.types.js'
+import { useVisitStory, useRunnerID } from './test-runner.utils.js'
 
 type FixtureEventDetail = {
   pathname: string
@@ -21,13 +21,13 @@ type FixtureEventDetail = {
  * Maps event names to their payload structures.
  */
 export type RunnerDetails = {
-  [STORY_RUNNER_EVENTS.run_tests]: {
+  [TEST_RUNNER_EVENTS.run_tests]: {
     storyParams: Set<StoryParams>
     colorSchemeSupport: boolean
   }
-  [STORY_RUNNER_EVENTS.on_runner_message]: RunnerMessage
-  [STORY_RUNNER_EVENTS.test_end]: string
-  [STORY_RUNNER_EVENTS.end]: void
+  [TEST_RUNNER_EVENTS.on_runner_message]: RunnerMessage
+  [TEST_RUNNER_EVENTS.test_end]: string
+  [TEST_RUNNER_EVENTS.end]: void
   [FIXTURE_EVENTS.failed_assertion]: FixtureEventDetail
   [FIXTURE_EVENTS.missing_assertion_parameter]: FixtureEventDetail
   [FIXTURE_EVENTS.test_timeout]: FixtureEventDetail
@@ -58,16 +58,16 @@ export type RunnerDetails = {
  * - Triggers: test_end, end
  * - Handles: assertion failures, timeouts, completions
  *
- * @see {@link STORY_RUNNER_EVENTS} for event types
+ * @see {@link TEST_RUNNER_EVENTS} for event types
  * @see {@link useVisitStory} for navigation
  */
-export const storyRunner = bProgram<
+export const testRunner = bProgram<
   RunnerDetails,
   {
     serverURL: URL
   }
 >({
-  publicEvents: [STORY_RUNNER_EVENTS.run_tests, STORY_RUNNER_EVENTS.on_runner_message],
+  publicEvents: [TEST_RUNNER_EVENTS.run_tests, TEST_RUNNER_EVENTS.on_runner_message],
   async bProgram({ trigger, bThreads, bSync, bThread, serverURL }) {
     const browser = await chromium.launch()
 
@@ -91,7 +91,7 @@ export const storyRunner = bProgram<
               return running.size === 1
             },
           }),
-          bSync({ request: { type: STORY_RUNNER_EVENTS.end } }),
+          bSync({ request: { type: TEST_RUNNER_EVENTS.end } }),
         ],
         true,
       ),
@@ -105,7 +105,7 @@ export const storyRunner = bProgram<
       colorScheme,
       detail,
     }: FixtureEventDetail) => {
-      trigger({ type: STORY_RUNNER_EVENTS.test_end, detail: useRunnerID(pathname, colorScheme) })
+      trigger({ type: TEST_RUNNER_EVENTS.test_end, detail: useRunnerID(pathname, colorScheme) })
       //Print out result
       console.table({
         url: new URL(pathname, serverURL).href,
@@ -120,7 +120,7 @@ export const storyRunner = bProgram<
     }
 
     const handleSuccess = async ({ pathname, context, colorScheme, detail }: FixtureEventDetail) => {
-      trigger({ type: STORY_RUNNER_EVENTS.test_end, detail: useRunnerID(pathname, colorScheme) })
+      trigger({ type: TEST_RUNNER_EVENTS.test_end, detail: useRunnerID(pathname, colorScheme) })
       //Print out result
       console.log(`${detail}:`, new URL(pathname, serverURL).href)
 
@@ -129,7 +129,7 @@ export const storyRunner = bProgram<
       await context.close()
     }
     return {
-      async [STORY_RUNNER_EVENTS.run_tests]({ storyParams, colorSchemeSupport }) {
+      async [TEST_RUNNER_EVENTS.run_tests]({ storyParams, colorSchemeSupport }) {
         const schemes = ['light', colorSchemeSupport && 'dark'].filter(Boolean) as string[]
         const visitStory = useVisitStory({
           browser,
@@ -149,7 +149,7 @@ export const storyRunner = bProgram<
                   }),
                   bSync({
                     request: {
-                      type: STORY_RUNNER_EVENTS.test_end,
+                      type: TEST_RUNNER_EVENTS.test_end,
                       detail: type,
                     },
                   }),
@@ -160,7 +160,7 @@ export const storyRunner = bProgram<
           }),
         )
       },
-      [STORY_RUNNER_EVENTS.on_runner_message](detail) {
+      [TEST_RUNNER_EVENTS.on_runner_message](detail) {
         const { snapshot, pathname, colorScheme } = detail
         const { filePath, exportName, context } = running.get(useRunnerID(pathname, colorScheme))!
         const selected = snapshot.find((msg) => msg.selected)
@@ -179,10 +179,10 @@ export const storyRunner = bProgram<
           })
         }
       },
-      [STORY_RUNNER_EVENTS.test_end](detail) {
+      [TEST_RUNNER_EVENTS.test_end](detail) {
         running.delete(detail)
       },
-      async [STORY_RUNNER_EVENTS.end]() {
+      async [TEST_RUNNER_EVENTS.end]() {
         running.clear()
         if (!process.execArgv.includes('--hot')) {
           console.log('Fail: ', failed)

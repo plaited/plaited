@@ -44,6 +44,7 @@ import {
   type ResourceMetadata,
   type RegisteredTool,
 } from '@modelcontextprotocol/sdk/server/mcp.js'
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 import type { GetPromptResult, ReadResourceResult, CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import {
   behavioral,
@@ -428,108 +429,110 @@ const registerTool = ({
  * - Resources should be read-only operations
  */
 
-export const bServer = async <R extends Registry, E extends Exclude<EventDetails, keyof R> | undefined = undefined>({
-  registry,
-  bProgram,
-  serverInfo,
-  options,
-}: BServerParams<R, E>) => {
-  /**
-   * @internal
-   * Create the MCP server instance with provided metadata.
-   * This server will handle all MCP protocol communication.
-   */
-  const server = new McpServer(serverInfo, options)
+export const bServer =
+  <R extends Registry, E extends Exclude<EventDetails, keyof R> | undefined = undefined>({
+    registry,
+    bProgram,
+    serverInfo,
+    options,
+  }: BServerParams<R, E>) =>
+  async (transport: Transport) => {
+    /**
+     * @internal
+     * Create the MCP server instance with provided metadata.
+     * This server will handle all MCP protocol communication.
+     */
+    const server = new McpServer(serverInfo, options)
 
-  /**
-   * @internal
-   * Initialize behavioral program infrastructure.
-   * Extract trigger and feedback mechanism for event handling.
-   */
-  const { trigger: _trigger, useFeedback, ...rest } = behavioral()
+    /**
+     * @internal
+     * Initialize behavioral program infrastructure.
+     * Extract trigger and feedback mechanism for event handling.
+     */
+    const { trigger: _trigger, useFeedback, ...rest } = behavioral()
 
-  /**
-   * @internal
-   * Set up lifecycle management for proper resource cleanup.
-   * DisconnectSet accumulates all cleanup callbacks from registered primitives.
-   */
-  const disconnectSet = new Set<Disconnect>()
-  const trigger = getPlaitedTrigger(_trigger, disconnectSet)
+    /**
+     * @internal
+     * Set up lifecycle management for proper resource cleanup.
+     * DisconnectSet accumulates all cleanup callbacks from registered primitives.
+     */
+    const disconnectSet = new Set<Disconnect>()
+    const trigger = getPlaitedTrigger(_trigger, disconnectSet)
 
-  /**
-   * @internal
-   * Initialize typed collections for registered MCP primitives.
-   * These objects will be populated during registry processing.
-   */
-  const tools = {} as Tools<R>
-  const prompts = {} as Prompts<R>
-  const resources = {} as Resources<R>
+    /**
+     * @internal
+     * Initialize typed collections for registered MCP primitives.
+     * These objects will be populated during registry processing.
+     */
+    const tools = {} as Tools<R>
+    const prompts = {} as Prompts<R>
+    const resources = {} as Resources<R>
 
-  /**
-   * @internal
-   * Process registry entries and register each primitive with the MCP server.
-   * Registration functions return handles that are stored for lifecycle management.
-   * Object.assign is used to build up the typed collections incrementally.
-   */
-  const primitiveHandlers: Handlers = {}
-  for (const [
-    name,
-    {
-      handler,
-      entry: { primitive, config },
-    },
-  ] of Object.entries(registry)) {
-    Object.assign(primitiveHandlers, { [name]: handler })
-    primitive === 'tool' && Object.assign(tools, { [name]: registerTool({ server, name, config, trigger }) })
-    primitive === 'prompt' && Object.assign(prompts, { [name]: registerPrompt({ server, name, config, trigger }) })
-    primitive === 'resource' &&
-      Object.assign(resources, { [name]: registerResource({ server, name, trigger, config }) })
+    /**
+     * @internal
+     * Process registry entries and register each primitive with the MCP server.
+     * Registration functions return handles that are stored for lifecycle management.
+     * Object.assign is used to build up the typed collections incrementally.
+     */
+    const primitiveHandlers: Handlers = {}
+    for (const [
+      name,
+      {
+        handler,
+        entry: { primitive, config },
+      },
+    ] of Object.entries(registry)) {
+      Object.assign(primitiveHandlers, { [name]: handler })
+      primitive === 'tool' && Object.assign(tools, { [name]: registerTool({ server, name, config, trigger }) })
+      primitive === 'prompt' && Object.assign(prompts, { [name]: registerPrompt({ server, name, config, trigger }) })
+      primitive === 'resource' &&
+        Object.assign(resources, { [name]: registerResource({ server, name, trigger, config }) })
+    }
+
+    /**
+     * @internal
+     * Master disconnect function that cleans up all resources.
+     * Runs all accumulated cleanup callbacks then closes the MCP server.
+     * Note: server.close() is async but disconnect callbacks are sync.
+     */
+    const disconnect = async () => {
+      disconnectSet.forEach((disconnect) => void disconnect())
+      await server.close()
+    }
+
+    /**
+     * @internal
+     * Execute user's bProgram to get event handlers.
+     * Provides full behavioral programming context plus MCP-specific utilities.
+     * Await supports async initialization (e.g., database connections).
+     */
+    const handlers =
+      bProgram &&
+      (await bProgram({
+        bSync,
+        bThread,
+        disconnect,
+        server,
+        trigger,
+        prompts,
+        resources,
+        tools,
+        ...rest,
+      }))
+    /**
+     * @internal
+     * Connect handlers to the behavioral program's feedback loop.
+     * This completes the event flow: MCP → signals → triggers → handlers.
+     */
+    useFeedback({
+      ...(handlers || {}),
+      ...primitiveHandlers,
+    })
+
+    /**
+     * @internal
+     * Set up roots support after client initialization completes.
+     * Checks client capabilities and sets up notification handler if supported.
+     */
+    return await server.connect(transport)
   }
-
-  /**
-   * @internal
-   * Master disconnect function that cleans up all resources.
-   * Runs all accumulated cleanup callbacks then closes the MCP server.
-   * Note: server.close() is async but disconnect callbacks are sync.
-   */
-  const disconnect = async () => {
-    disconnectSet.forEach((disconnect) => void disconnect())
-    await server.close()
-  }
-
-  /**
-   * @internal
-   * Execute user's bProgram to get event handlers.
-   * Provides full behavioral programming context plus MCP-specific utilities.
-   * Await supports async initialization (e.g., database connections).
-   */
-  const handlers =
-    bProgram &&
-    (await bProgram({
-      bSync,
-      bThread,
-      disconnect,
-      server,
-      trigger,
-      prompts,
-      resources,
-      tools,
-      ...rest,
-    }))
-  /**
-   * @internal
-   * Connect handlers to the behavioral program's feedback loop.
-   * This completes the event flow: MCP → signals → triggers → handlers.
-   */
-  useFeedback({
-    ...(handlers || {}),
-    ...primitiveHandlers,
-  })
-
-  /**
-   * @internal
-   * Set up roots support after client initialization completes.
-   * Checks client capabilities and sets up notification handler if supported.
-   */
-  return server
-}

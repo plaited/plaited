@@ -1,10 +1,10 @@
 import { Glob } from 'bun'
 import { basename, dirname } from 'node:path'
-import { WORKSHOP_ROUTE } from './story-server.constants.js'
-import { kebabCase } from '../../utils.js'
-import type { SignalWithInitialValue } from '../../behavioral.js'
-import type { StoryParams } from './story-server.types.js'
-import type { StoryObj } from '../../testing.js'
+import type { SignalWithInitialValue } from '../../src/behavioral.js'
+import { kebabCase } from '../../src/utils.js'
+import type { StoryObj } from '../../src/testing.js'
+import { WORKSHOP_ROUTE } from './test-server.constants.js'
+import type { StoryParams } from './test-server.types.js'
 
 /**
  * @internal

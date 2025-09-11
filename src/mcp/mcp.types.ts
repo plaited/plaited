@@ -48,7 +48,6 @@ import type {
   CallToolResult,
   Implementation,
 } from '@modelcontextprotocol/sdk/types.js'
-import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 import type {
   EventDetails,
   BSync,
@@ -58,6 +57,7 @@ import type {
   PlaitedTrigger,
   UseSnapshot,
   Handlers,
+  Signal,
 } from '../behavioral.js'
 
 /**
@@ -270,11 +270,15 @@ export type BServerParams<R extends Registry, E extends Exclude<EventDetails, ke
       bProgram?: never
     }
 
-export type BClientParams<E extends EventDetails> = {
-  transport: Transport
+export type Signals = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: Signal<any>
+}
+
+export type BClientParams<I, E extends EventDetails> = {
+  clientInfo: Implementation
   options?: ClientOptions
   publicEvents?: string[]
-  clientInfo: Implementation
   bProgram: (args: {
     bSync: BSync
     bThread: BThread
@@ -283,5 +287,6 @@ export type BClientParams<E extends EventDetails> = {
     disconnect: Disconnect
     trigger: PlaitedTrigger
     useSnapshot: UseSnapshot
+    engine: I
   }) => Promise<Handlers<E>>
 }

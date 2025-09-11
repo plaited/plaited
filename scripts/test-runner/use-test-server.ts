@@ -1,14 +1,13 @@
 import { z } from 'zod/v4'
-import { useSignal, type Signal } from '../../behavioral.js'
-import { type StoryObj } from '../../testing.js'
-import { RELOAD_STORY_PAGE, RUNNER_URL } from '../../testing/testing.constants.js'
+import { useSignal, type Signal, type Trigger } from '../../src/behavioral.js'
+import { type StoryObj } from '../../src/testing.js'
+import { RELOAD_STORY_PAGE, RUNNER_URL } from '../../src/testing/testing.constants.js'
 import { getHTMLRoutes } from './get-html-routes.js'
-import { addStoryParams, getEntryRoutes, globFiles } from './story-server.utils.js'
-import type { StoryParams } from './story-server.types.js'
-import { isTypeOf } from '../../utils.js'
-import { RunnerMessageSchema } from '../story-runner/story-runner.schema.js'
-import { STORY_RUNNER_EVENTS } from '../story-runner/story-runner.constants.js'
-import type { Trigger } from '../../behavioral.js'
+import { addStoryParams, getEntryRoutes, globFiles } from './test-server.utils.js'
+import type { StoryParams } from './test-server.types.js'
+import { isTypeOf } from '../../src/utils.js'
+import { RunnerMessageSchema } from './test-runner.schema.js'
+import { TEST_RUNNER_EVENTS } from './test-runner.constants.js'
 /** Glob pattern for story files */
 const STORY_GLOB_PATTERN = `**/*.stories.{tsx,ts}`
 
@@ -37,7 +36,7 @@ const RELOAD_TOPIC = 'RELOAD_TOPIC'
  * // WebSocket at RUNNER_URL handles test communication
  * ```
  */
-export const useStoryServer = async ({
+export const useTestServer = async ({
   root,
   trigger,
   designTokens,
@@ -101,7 +100,7 @@ export const useStoryServer = async ({
         try {
           const json = JSON.parse(message)
           const detail = RunnerMessageSchema.parse(json)
-          trigger?.({ type: STORY_RUNNER_EVENTS.on_runner_message, detail })
+          trigger?.({ type: TEST_RUNNER_EVENTS.on_runner_message, detail })
         } catch (error) {
           if (error instanceof z.ZodError) {
             console.error('Validation failed:', error.issues)

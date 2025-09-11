@@ -1,4 +1,4 @@
-import type { StoryObj } from '../../testing.js'
+import type { StoryObj } from '../../src/testing.js'
 import type { BrowserContextOptions } from 'playwright'
 
 /**

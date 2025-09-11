@@ -4,8 +4,8 @@
  * Manages Playwright contexts and parallel test runs.
  */
 import type { Browser, BrowserContext, ConsoleMessage } from 'playwright'
-import type { RunningMap } from './story-runner.types.js'
-import type { StoryParams } from '../story-server/story-server.types.js'
+import type { RunningMap } from './test-runner.types.js'
+import type { StoryParams } from './test-server.types.js'
 
 /**
  * @internal

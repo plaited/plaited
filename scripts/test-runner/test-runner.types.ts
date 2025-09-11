@@ -1,5 +1,5 @@
 import type { BrowserContext } from 'playwright'
-import type { StoryParams } from '../story-server/story-server.types.js'
+import type { StoryParams } from './test-server.types.js'
 
 /**
  * @internal
