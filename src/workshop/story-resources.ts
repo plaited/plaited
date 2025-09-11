@@ -1,4 +1,4 @@
-import { useResource } from '../ai.js'
+import { useResource } from '../mcp.js'
 import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { promises as fs } from 'fs'
 import path from 'path'

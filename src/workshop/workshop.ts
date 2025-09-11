@@ -1,5 +1,5 @@
 // import { z } from 'zod'
-import { bServer } from '../ai.js'
+import { bServer } from '../mcp.js'
 import { registry } from './workshop.registry.js'
 
 /**
@@ -23,10 +23,9 @@ import { registry } from './workshop.registry.js'
  * @see {@link bServer} for MCP server pattern
  */
 export const workshop = bServer({
-  name: 'plaited-workshop',
-  version: '0.0.1',
-  registry,
-  async bProgram() {
-    return {}
+  serverInfo: {
+    name: 'plaited-workshop',
+    version: '0.0.1',
   },
+  registry,
 })

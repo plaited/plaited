@@ -1,4 +1,4 @@
-import { usePrompt } from '../ai.js'
+import { usePrompt } from '../mcp.js'
 import { z } from 'zod'
 
 /**
@@ -173,7 +173,7 @@ Example play function structure:
 async play({ findByAttribute, findByText, fireEvent, assert, wait }) {
   const element = await findByAttribute<HTMLInputElement>('type', 'checkbox')
   await fireEvent(element!, 'click')
-  
+
   assert({
     given: 'user clicks checkbox',
     should: 'toggle checked state',
