@@ -94,8 +94,8 @@ External Trigger → bProgram → Event Selection → Thread Notification → Fe
 - **`src/behavioral/`**: BP implementation (bProgram, bThread, signals)
 - **`src/utils/`**: Utility functions (well-documented, pure functions)
 - **`src/workshop/`**: Development tools (story runner, design tokens)
-- **`src/mcp/`**: Model Context Protocol server support
-  - **`tests/`**: Test files for MCP modules
+- **`src/ai/`**: AI integration modules (MCP server support)
+  - **`tests/`**: Test files for AI/MCP modules
 
 ### Critical Implementation Details
 
@@ -110,6 +110,7 @@ External Trigger → bProgram → Event Selection → Thread Notification → Fe
 ## TypeScript Preferences
 
 - **Prefer `type` over `interface`**: Use type aliases instead of interfaces for better consistency and flexibility
+- **No `any` types**: Always use proper types; use `unknown` if type is truly unknown and add type guards
 - Use union types and intersection types effectively
 - Leverage TypeScript's type inference where appropriate
 

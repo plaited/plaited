@@ -36,11 +36,9 @@ import type { Trigger } from './behavioral.js'
 export const getPublicTrigger = ({
   trigger,
   publicEvents,
-  errorPrefix = `Not a public BPEvent type`,
 }: {
   trigger: Trigger
-  publicEvents?: string[] | ReadonlyArray<string>
-  errorPrefix?: string
+  publicEvents?: (string | symbol)[] | ReadonlyArray<string | symbol>
 }): Trigger => {
   /**
    * @internal
@@ -56,6 +54,10 @@ export const getPublicTrigger = ({
    */
   return ({ type, detail }) => {
     if (observed.has(type)) return trigger({ type: type, detail: detail })
-    throw new Error(`${errorPrefix}: ${type}`)
+    throw new Error(
+      `Event type "${type}" is not allowed. Only public event types can be triggered: [${Array.from(observed)
+        .map((t) => t)
+        .join(', ')}]`,
+    )
   }
 }

@@ -31,6 +31,8 @@
  * - No support for streaming responses in current types
  */
 import { z } from 'zod'
+import type { Client, ClientOptions } from '@modelcontextprotocol/sdk/client/index.js'
+import type { ServerOptions } from '@modelcontextprotocol/sdk/server/index.js'
 import type {
   McpServer,
   ResourceMetadata,
@@ -40,9 +42,13 @@ import type {
   RegisteredResource,
   RegisteredResourceTemplate,
 } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { GetPromptResult, ReadResourceResult, CallToolResult } from '@modelcontextprotocol/sdk/types.js'
-import type { StdioServerParameters } from '@modelcontextprotocol/sdk/client/stdio.js'
-import type { StreamableHTTPClientTransportOptions } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
+import type {
+  GetPromptResult,
+  ReadResourceResult,
+  CallToolResult,
+  Implementation,
+} from '@modelcontextprotocol/sdk/types.js'
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 import type {
   EventDetails,
   BSync,
@@ -241,8 +247,8 @@ export type Tools<Entries extends Registry> = {
 export type BServerParams<R extends Registry, E extends Exclude<EventDetails, keyof R> | undefined> =
   E extends Exclude<EventDetails, keyof R> ?
     {
-      name: string
-      version: string
+      serverInfo: Implementation
+      options?: ServerOptions
       registry: R
       bProgram: (args: {
         bSync: BSync
@@ -258,27 +264,24 @@ export type BServerParams<R extends Registry, E extends Exclude<EventDetails, ke
       }) => Promise<Handlers<E>>
     }
   : {
-      name: string
-      version: string
+      serverInfo: Implementation
+      options?: ServerOptions
       registry: R
       bProgram?: never
     }
-/**
- * @internal
- * MCP Client types for behavioral integration
- */
 
-/**
- * @internal
- * Transport configuration for MCP client connections.
- * Supports stdio (subprocess) and SSE (HTTP) transports.
- */
-export type ServerTransportConfigs = Record<
-  string,
-  | ({ type: 'stdio' } & StdioServerParameters)
-  | {
-      type: 'http'
-      url: string
-      options?: StreamableHTTPClientTransportOptions
-    }
->
+export type BClientParams<E extends EventDetails> = {
+  transport: Transport
+  options?: ClientOptions
+  publicEvents?: string[]
+  clientInfo: Implementation
+  bProgram: (args: {
+    bSync: BSync
+    bThread: BThread
+    bThreads: BThreads
+    client: Client
+    disconnect: Disconnect
+    trigger: PlaitedTrigger
+    useSnapshot: UseSnapshot
+  }) => Promise<Handlers<E>>
+}

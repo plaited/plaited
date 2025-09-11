@@ -66,7 +66,7 @@ import type {
   ResourceDetail,
   ToolDetail,
   BServerParams,
-} from './ai.types.js'
+} from './mcp.types.js'
 
 /**
  * @internal
@@ -429,20 +429,17 @@ const registerTool = ({
  */
 
 export const bServer = async <R extends Registry, E extends Exclude<EventDetails, keyof R> | undefined = undefined>({
-  name,
-  version,
   registry,
   bProgram,
+  serverInfo,
+  options,
 }: BServerParams<R, E>) => {
   /**
    * @internal
    * Create the MCP server instance with provided metadata.
    * This server will handle all MCP protocol communication.
    */
-  const server = new McpServer({
-    name,
-    version,
-  })
+  const server = new McpServer(serverInfo, options)
 
   /**
    * @internal
@@ -529,5 +526,10 @@ export const bServer = async <R extends Registry, E extends Exclude<EventDetails
     ...primitiveHandlers,
   })
 
+  /**
+   * @internal
+   * Set up roots support after client initialization completes.
+   * Checks client capabilities and sets up notification handler if supported.
+   */
   return server
 }

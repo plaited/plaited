@@ -25,8 +25,8 @@
 
     "jsxImportSource": "plaited",
     "paths": {
-      "plaited": ["./src/index.ts"],
-      "plaited/ai": ["./src/ai.ts"],
+      "plaited": ["./src/main.ts"],
+      "plaited/mcp": ["./src/mcp.ts"],
       "plaited/jsx-runtime": ["./src/jsx-runtime.ts"],
       "plaited/jsx-dev-runtime": ["./src/jsx-dev-runtime.ts"],
       "plaited/testing": ["/src/workshop.ts"],

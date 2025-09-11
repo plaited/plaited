@@ -17,7 +17,7 @@
   "main": "./src/main.ts",
   "exports": {
     ".": "./src/main.ts",
-    "./ai": "./src/ai.ts",
+    "./mcp": "./src/mcp.ts",
     "./behavioral": "./src/behavioral.ts",
     "./css": "./src/css.ts",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
