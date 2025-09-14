@@ -40,9 +40,9 @@ import {
   type Handlers,
   type EventDetails,
   type BPEvent,
-} from './behavioral.js'
-import { getPublicTrigger } from './get-public-trigger.js'
-import { getPlaitedTrigger } from './get-plaited-trigger.js'
+} from '../behavioral/behavioral.js'
+import { getPublicTrigger } from '../behavioral/get-public-trigger.js'
+import { getPlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
 
 /**
  * @internal

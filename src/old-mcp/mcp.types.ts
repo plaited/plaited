@@ -290,3 +290,20 @@ export type BClientParams<I, E extends EventDetails> = {
     engine: I
   }) => Promise<Handlers<E>>
 }
+
+// START NEW TYPES
+
+/**
+ * Zod schema for zip function parameters.
+ * Validates content compression requirements for HTTP responses.
+ */
+export const zipParamsSchema = z.object({
+  content: z.string(),
+  contentType: z.string(),
+  headers: z.instanceof(Headers).optional(),
+})
+
+/**
+ * Type for zip function parameters inferred from Zod schema.
+ */
+export type ZipParams = z.infer<typeof zipParamsSchema>

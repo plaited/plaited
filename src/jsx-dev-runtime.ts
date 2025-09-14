@@ -8,7 +8,7 @@
  * Consumers: TypeScript compiler, Babel transforms, bundlers with JSX support (in development mode).
  */
 
-import type { ElementAttributeList } from './main/create-template.types.js'
+import type { ElementAttributeList, TemplateObject } from './main/create-template.types.js'
 import { createTemplate, Fragment } from './main/create-template.js'
 
 /**
@@ -33,4 +33,5 @@ export { createTemplate as h, createTemplate as jsx, createTemplate as jsxDEV, c
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export declare namespace JSX {
   interface IntrinsicElements extends ElementAttributeList {}
+  type Element = TemplateObject
 }

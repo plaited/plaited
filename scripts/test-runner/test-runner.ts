@@ -1,5 +1,5 @@
 import { chromium, type BrowserContext } from 'playwright'
-import { bProgram } from '../../src/behavioral.js'
+import { useBehavioral } from '../../src/behavioral.js'
 import { TEST_RUNNER_EVENTS } from './test-runner.constants.js'
 import { type RunnerMessage } from '../../src/testing.js'
 import { FIXTURE_EVENTS } from '../../src/testing/testing.constants.js'
@@ -61,7 +61,7 @@ export type RunnerDetails = {
  * @see {@link TEST_RUNNER_EVENTS} for event types
  * @see {@link useVisitStory} for navigation
  */
-export const testRunner = bProgram<
+export const testRunner = useBehavioral<
   RunnerDetails,
   {
     serverURL: URL

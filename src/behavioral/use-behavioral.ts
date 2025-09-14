@@ -181,7 +181,10 @@ import { getPublicTrigger } from './get-public-trigger.js'
  * @see {@link getPlaitedTrigger} for lifecycle management
  */
 
-export const bProgram = <A extends EventDetails, C extends { [key: string]: unknown } = { [key: string]: unknown }>({
+export const useBehavioral = <
+  A extends EventDetails,
+  C extends { [key: string]: unknown } = { [key: string]: unknown },
+>({
   publicEvents,
   bProgram,
 }: {
