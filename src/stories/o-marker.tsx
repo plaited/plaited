@@ -1,7 +1,7 @@
 import { type FT } from 'plaited'
-import * as css from 'plaited/css'
+import { createStyles } from 'plaited'
 
-const styles = css.styles({
+const markerStyles = createStyles({
   o: {
     width: '20px',
     height: '20px',
@@ -11,7 +11,7 @@ const styles = css.styles({
 
 export const OMarker: FT = () => (
   <svg
-    {...styles.o}
+    {...markerStyles.o}
     viewBox='0 0 20 20'
     fill='none'
     xmlns='http://www.w3.org/2000/svg'

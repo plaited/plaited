@@ -221,3 +221,220 @@ exports[`join 1`] = `
   ],
 }
 `;
+
+exports[`tokens: simple token with $value 1`] = `
+[
+  ":host{--theme-primary-color:#007bff;}",
+]
+`;
+
+exports[`tokens: simple token with $value 2`] = `
+[
+  ":host{--theme-font-size:16px;}",
+]
+`;
+
+exports[`tokens: token with array values 1`] = `
+[
+  ":host{--spacing-margin:10px 20px 30px 40px;}",
+]
+`;
+
+exports[`tokens: token with array values 2`] = `
+[
+  ":host{--spacing-font-family:"Helvetica Neue",Arial,sans-serif;}",
+]
+`;
+
+exports[`tokens: function token values 1`] = `
+[
+  ":host{--effects-shadow:drop-shadow(2px 4px 6px rgba(0,0,0,0.1));}",
+]
+`;
+
+exports[`tokens: function token values 2`] = `
+[
+  ":host{--effects-gradient:linear-gradient(45deg,#ff0000,#00ff00);}",
+]
+`;
+
+exports[`tokens: nested token statements with selectors 1`] = `
+[
+  ":host{--interactive-button-color:blue;}",
+  ":host{:hover{--interactive-button-color:darkblue;}}",
+  ":host{:active{--interactive-button-color:navy;}}",
+  ":host{@media (max-width: 768px){--interactive-button-color:lightblue;}}",
+]
+`;
+
+exports[`tokens: compound selectors 1`] = `
+[
+  ":host{--state-color:black;}",
+  ":host(.dark){--state-color:white;}",
+  ":host([data-theme="blue"]){--state-color:blue;}",
+  ":host(.large){:hover{--state-color:gray;}}",
+]
+`;
+
+exports[`tokens: token references 1`] = `
+[
+  ":host{--base-primary:#007bff;}",
+  ":host{--derived-button-bg:var(--base-primary);}",
+]
+`;
+
+exports[`tokens: complex nested structure 1`] = `
+[
+  ":host{--complex-card:rgba(255,255,255,0.9);}",
+  ":host{[data-variant="dark"]{--complex-card:rgba(0,0,0,0.9);}}",
+  ":host(.elevated){--complex-card:#ffffff;}",
+  ":host(.elevated){:hover{--complex-card:#f0f0f0;}}",
+]
+`;
+
+exports[`tokens: array of function values 1`] = `
+[
+  ":host{--transform-animation:translateX(10px) rotate(45deg) scale(1.2,1.2);}",
+]
+`;
+
+exports[`tokens: integration with create 1`] = `
+{
+  "classNames": [
+    "button",
+    "cls_3p4lpue",
+    "cls_17ys344",
+    "cls_17bpvqq",
+  ],
+  "stylesheets": [
+    ":host{--theme-primary:#007bff;}",
+    ":host{--theme-font-size:16px;}",
+    ".cls_3p4lpue{background-color:var(--theme-primary);}",
+    ".cls_17ys344{font-size:var(--theme-font-size);}",
+    ".cls_17bpvqq{color:white;}",
+  ],
+}
+`;
+
+exports[`tokens: integration with host 1`] = `
+{
+  "stylesheets": [
+    ":host{--colors-text:#333;}",
+    ":host{color:var(--colors-text);}",
+    ":host{--colors-background:#fff;}",
+    ":host{background-color:var(--colors-background);}",
+    ":host{padding:20px;}",
+  ],
+}
+`;
+
+exports[`tokens: integration with join 1`] = `
+{
+  "classNames": [
+    "container",
+    "cls_3ybe8ds",
+    "cls_1eddm3b",
+    "large",
+    "cls_3iwzlpi",
+    "cls_1l9nkm1",
+  ],
+  "stylesheets": [
+    ":host{--spacing-medium:16px;}",
+    ":host{--typography-body:1rem;}",
+    ".cls_3ybe8ds{padding:var(--spacing-medium);}",
+    ".cls_1eddm3b{font-size:var(--typography-body);}",
+    ":host{--spacing-large:24px;}",
+    ":host{--typography-heading:2rem;}",
+    ".cls_3iwzlpi{padding:var(--spacing-large);}",
+    ".cls_1l9nkm1{font-size:var(--typography-heading);}",
+    ":host{--spacing-small:8px;}",
+    ":host{margin:var(--spacing-small);}",
+  ],
+}
+`;
+
+exports[`tokens: multiple token groups combined 1`] = `
+{
+  "classNames": [
+    "grid",
+    "cls_4k3jpah",
+    "cls_hfvdep",
+    "cls_wrjoa3",
+  ],
+  "stylesheets": [
+    ":host{--layout-max-width:1200px;}",
+    ":host{--layout-gap:20px;}",
+    ":host{--motion-duration:300ms;}",
+    ":host{--motion-easing:cubic-bezier(0.4, 0, 0.2, 1);}",
+    ":host{--transition-example:all var(--motion-duration) var(--motion-easing);}",
+    ".cls_4k3jpah{max-width:var(--layout-max-width);}",
+    ".cls_hfvdep{gap:var(--layout-gap);}",
+    ".cls_wrjoa3{transition:var(--transition-example);}",
+  ],
+}
+`;
+
+exports[`tokens: with keyframes 1`] = `
+{
+  "stylesheets": [
+    ":host{--animations-rotate:rotate(360deg);}",
+    "@keyframes spin_i81i8lh{0%{transform:rotate(0deg);}100%{transform:var(--animations-rotate);}}",
+  ],
+}
+`;
+
+exports[`tokens: with keyframes 2`] = `
+{
+  "stylesheets": [
+    ":host{--animations-scale:scale(1.2);}",
+    "@keyframes pulse_3iu93ln{0%{transform:scale(1);}50%{transform:var(--animations-scale);}100%{transform:scale(1);}}",
+  ],
+}
+`;
+
+exports[`tokens: used as CSS values in styles 1`] = `
+{
+  "classNames": [
+    "container",
+    "cls_151xo9w",
+    "cls_1ex0cyv",
+  ],
+  "stylesheets": [
+    ":host{--sizes-container-width:1200px;}",
+    ".cls_151xo9w{max-width:var(--sizes-container-width);}",
+    ".cls_1ex0cyv{margin:0 auto;}",
+  ],
+}
+`;
+
+exports[`tokens: used as CSS values in styles 2`] = `
+{
+  "classNames": [
+    "header",
+    "cls_20ho9iv",
+    "cls_3vloqq",
+    "cls_5mw5ij",
+  ],
+  "stylesheets": [
+    ":host{--sizes-header-height:64px;}",
+    ".cls_20ho9iv{height:var(--sizes-header-height);}",
+    ".cls_3vloqq{position:sticky;}",
+    ".cls_5mw5ij{top:0;}",
+  ],
+}
+`;
+
+exports[`tokens: used as CSS values in styles 3`] = `
+{
+  "classNames": [
+    "sidebar",
+    "cls_16fzoeg",
+    "cls_3bs89jn",
+  ],
+  "stylesheets": [
+    ":host{--sizes-sidebar-width:250px;}",
+    ".cls_16fzoeg{width:var(--sizes-sidebar-width);}",
+    ".cls_3bs89jn{flex-shrink:0;}",
+  ],
+}
+`;

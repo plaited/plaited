@@ -1,6 +1,6 @@
 import path from 'node:path'
 import type { Signal } from '../../src/behavioral.js'
-import * as css from '../../src/css.js'
+import { createHostStyles, joinStyles, type HostStylesObject } from '../../src/main.js'
 import { ssr, bElement } from '../../src/main.js'
 import { type StoryObj } from '../../src/testing.js'
 import { StoryFixture } from '../../src/testing/testing.fixture.js'
@@ -44,15 +44,15 @@ const createPageBundle = async ({
   const importPath = getEntryPath(route)
   const tokens = designTokens?.get()
   const styleObjects = [
-    css.hostStyles({
+    createHostStyles({
       display: 'contents',
     }),
     tokens && { stylesheets: [tokens] },
     styles,
-  ].filter(Boolean) as css.HostStylesObject[]
+  ].filter(Boolean) as HostStylesObject[]
   const PlaitedStory = bElement({
     tag: 'plaited-story',
-    shadowDom: <slot {...css.joinStyles(...styleObjects)} />,
+    shadowDom: <slot {...joinStyles(...styleObjects)} />,
   })
   const page = ssr(
     <html>
@@ -64,7 +64,7 @@ const createPageBundle = async ({
         />
       </head>
       <body
-        {...css.joinStyles({
+        {...joinStyles({
           stylesheets: [' body { height: 100vh; height: 100dvh; margin: 0'],
         })}
       >

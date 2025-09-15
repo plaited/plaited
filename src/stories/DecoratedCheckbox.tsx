@@ -5,10 +5,10 @@ import {
   type FT,
   type ElementAttributeList,
 } from 'plaited'
-import * as css from 'plaited/css'
+import { createStyles, createHostStyles, joinStyles } from 'plaited'
 import { isTypeOf } from 'plaited/utils'
 
-const styles = css.styles({
+const componentStyles = createStyles({
   grid: {
     display: 'inline-grid',
     gridTemplate: '"input" 16px / 16px',
@@ -29,7 +29,7 @@ const styles = css.styles({
   },
 })
 
-const hostStyles = css.hostStyles({
+const componentHostStyles = createHostStyles({
   display: 'inline-grid',
   gridTemplate: '"input" 16px / 16px',
   '--fill': {
@@ -50,7 +50,7 @@ export const DecorateCheckbox = bElement<{
     <>
       <div
         p-target='symbol'
-        {...css.joinStyles(styles.symbol, hostStyles)}
+        {...joinStyles(componentStyles.symbol, componentHostStyles)}
         p-trigger={{ click: 'click' }}
       />
       <slot
@@ -86,7 +86,7 @@ export const DecoratedCheckbox: FT<ElementAttributeList['input']> = (props) => {
     <DecorateCheckbox>
       <input
         {...props}
-        {...styles.input}
+        {...componentStyles.input}
         type='checkbox'
       />
     </DecorateCheckbox>

@@ -1,9 +1,9 @@
 import { bElement } from 'plaited'
 import { isTypeOf } from 'plaited/utils'
 import { type StoryObj } from 'plaited/testing'
-import * as css from 'plaited/css'
+import { createStyles, createHostStyles, joinStyles } from 'plaited'
 
-const styles = css.styles({
+const componentStyles = createStyles({
   symbol: {
     height: '16px',
     width: '16px',
@@ -12,7 +12,7 @@ const styles = css.styles({
   },
 })
 
-const hostStyles = css.hostStyles({
+const componentHostStyles = createHostStyles({
   display: 'inline-grid',
   '--fill': {
     $default: 'lightblue',
@@ -35,7 +35,7 @@ const ToggleInput = bElement<{
   shadowDom: (
     <div
       p-target='symbol'
-      {...css.joinStyles(styles.symbol, hostStyles)}
+      {...joinStyles(componentStyles.symbol, componentHostStyles)}
       p-trigger={{ click: 'click' }}
     />
   ),

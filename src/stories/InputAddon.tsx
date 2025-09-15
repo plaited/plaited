@@ -1,8 +1,8 @@
 import { bElement, useAttributesObserver, type ObservedAttributesDetail } from 'plaited'
 import { isTypeOf, keyMirror } from 'plaited/utils'
-import * as css from 'plaited/css'
+import { createStyles, createHostStyles, joinStyles } from 'plaited'
 
-const styles = css.styles({
+const componentStyles = createStyles({
   addOn: {
     flex: {
       '::slotted(*)': 'none',
@@ -15,7 +15,7 @@ const styles = css.styles({
   },
 })
 
-const hostStyles = css.hostStyles({
+const componentHostStyles = createHostStyles({
   display: 'inline-flex',
   '--icon-stroke': {
     $default: 'lightblue',
@@ -35,17 +35,17 @@ export const InputAddon = bElement<{
     <>
       <slot
         name='prefix'
-        {...css.joinStyles(hostStyles, styles.addOn)}
+        {...joinStyles(componentHostStyles, componentStyles.addOn)}
       ></slot>
       <slot
         name='input'
         p-target='slot'
         p-trigger={keyMirror('mouseenter', 'mouseleave', 'focusin', 'focusout')}
-        {...styles.input}
+        {...componentStyles.input}
       ></slot>
       <slot
         name='suffix'
-        {...styles.addOn}
+        {...componentStyles.addOn}
       ></slot>
     </>
   ),

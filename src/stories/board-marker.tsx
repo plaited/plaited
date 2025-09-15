@@ -1,7 +1,7 @@
 import { type FT } from 'plaited'
-import * as css from 'plaited/css'
+import { createStyles } from 'plaited'
 
-const styles = css.styles({
+const componentStyles = createStyles({
   board: {
     display: 'inline-grid',
     gridTemplateColumns: 'repeat(3, 1fr)',
@@ -32,11 +32,11 @@ export const BoardMarker: FT = () => (
   <div
     role='group'
     aria-label='board'
-    {...styles.board}
+    {...componentStyles.board}
   >
     {Array.from(Array(9).keys()).map((n) => (
       <button
-        {...styles.square}
+        {...componentStyles.square}
         value={n}
         p-trigger={{ click: 'click' }}
         p-target={`${n}`}

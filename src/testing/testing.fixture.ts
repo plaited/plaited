@@ -10,7 +10,7 @@ declare global {
   }
 }
 
-import * as css from 'plaited/css'
+import { createHostStyles } from 'plaited'
 import type { SnapshotMessage } from '../behavioral/behavioral.types.js'
 import { bElement, h } from '../main.js'
 import { wait } from '../utils.js'
@@ -78,7 +78,7 @@ export const StoryFixture = bElement<{
   tag: STORY_FIXTURE,
   publicEvents: [FIXTURE_EVENTS.run],
   shadowDom: h('slot', {
-    ...css.hostStyles({
+    ...createHostStyles({
       display: 'contents',
     }),
   }),

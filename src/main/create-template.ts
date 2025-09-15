@@ -33,9 +33,9 @@
  *
  * @example Shadow DOM with styles
  * ```tsx
- * import * as css from 'plaited/css';
+ * import { styles } from 'plaited';
  *
- * const styles = css.create({
+ * const componentStyles = styles({
  *   container: {
  *     padding: '1rem',
  *     border: '1px solid #ccc'
@@ -46,7 +46,7 @@
  *   children: h('template', {
  *     shadowrootmode: 'open',
  *     children: h('div', {
- *       ...styles.container,
+ *       ...componentStyles.container,
  *       children: 'Shadow content'
  *     })
  *   })
@@ -62,7 +62,7 @@
  * - Script injection protection
  *
  * @see {@link Fragment} for grouping without wrappers
- * @see {@link css} for style creation
+ * @see {@link styles} for style creation
  */
 
 import { isTypeOf, trueTypeOf, kebabCase, escape } from '../utils.js'

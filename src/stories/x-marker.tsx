@@ -1,7 +1,7 @@
 import { type FT } from 'plaited'
-import * as css from 'plaited/css'
+import { createStyles } from 'plaited'
 
-const styles = css.styles({
+const markerStyles = createStyles({
   x: {
     width: '20px',
     height: '20px',
@@ -11,7 +11,7 @@ const styles = css.styles({
 
 export const XMarker: FT = () => (
   <svg
-    {...styles.x}
+    {...markerStyles.x}
     viewBox='0 0 21 21'
     fill='none'
   >

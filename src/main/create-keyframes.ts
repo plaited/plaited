@@ -2,7 +2,7 @@ import type { CSSKeyFrames, StyleFunctionKeyframe } from './css.types.js'
 import { isTokenReference, getRule, createHash } from './css.utils.js'
 
 // keyframes function (previously createKeyframes in create-keyframes.ts)
-export const keyframes = (ident: string, frames: CSSKeyFrames): StyleFunctionKeyframe => {
+export const createKeyframes = (ident: string, frames: CSSKeyFrames): StyleFunctionKeyframe => {
   const stylesheets: string[] = []
   const arr: string[] = []
   for (const [value, props] of Object.entries(frames)) {

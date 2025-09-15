@@ -1,8 +1,8 @@
 import { bElement, type BehavioralElement } from 'plaited'
-import * as css from 'plaited/css'
+import { createStyles } from 'plaited'
 import type { StoryObj } from 'plaited/testing'
 
-const styles = css.styles({
+const componentStyles = createStyles({
   initial: {
     border: '1px solid black',
   },
@@ -22,15 +22,15 @@ const DynamicOnly = bElement({
   shadowDom: (
     <div
       p-target='target'
-      {...styles.initial}
+      {...componentStyles.initial}
     ></div>
   ),
   bProgram({ $ }) {
     return {
       render() {
         const [target] = $<HTMLDivElement>('target')
-        target.insert('beforeend', <div {...styles.noRepeat}>construable stylesheet applied once</div>)
-        target.insert('beforeend', <div {...styles.repeat}>not applied</div>)
+        target.insert('beforeend', <div {...componentStyles.noRepeat}>construable stylesheet applied once</div>)
+        target.insert('beforeend', <div {...componentStyles.repeat}>not applied</div>)
       },
     }
   },
@@ -44,12 +44,15 @@ export const dynamicStyles: StoryObj = {
   play: async ({ findByText, assert, findByAttribute, wait }) => {
     const template = document.createElement('template')
     template.setHTMLUnsafe((<DynamicOnly />).html.join(''))
-    const style = await findByText(styles.initial.stylesheets.join(''), template.content as unknown as HTMLElement)
+    const style = await findByText(
+      componentStyles.initial.stylesheets.join(''),
+      template.content as unknown as HTMLElement,
+    )
     assert({
       given: 'Render with initial stylesheet, Style tag',
       should: 'have the initial stylesheet only',
       actual: style?.textContent,
-      expected: styles.initial.stylesheets.join(''),
+      expected: componentStyles.initial.stylesheets.join(''),
     })
     let target = await findByAttribute<BehavioralElement>('data-testid', 'element')
     assert({
