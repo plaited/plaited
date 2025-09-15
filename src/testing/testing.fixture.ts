@@ -11,7 +11,7 @@ declare global {
 }
 
 import { createHostStyles } from 'plaited'
-import type { SnapshotMessage } from '../behavioral/behavioral.types.js'
+import type { SnapshotMessage } from '../main/behavioral.types.js'
 import { bElement, h } from '../main.js'
 import { wait } from '../utils.js'
 import { STORY_FIXTURE, DEFAULT_PLAY_TIMEOUT, FIXTURE_EVENTS } from './testing.constants.js'

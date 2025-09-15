@@ -1,5 +1,5 @@
 import { test, expect, mock, jest } from 'bun:test'
-import { useFetch } from '../use-fetch.js'
+import { httpRequest } from '../http-request.js'
 
 test('useFetch should successfully fetch and parse JSON data', async () => {
   const mockData = { id: 1, name: 'Test User' }
@@ -14,7 +14,7 @@ test('useFetch should successfully fetch and parse JSON data', async () => {
     ),
   ) as unknown as typeof fetch
 
-  const res = await useFetch({
+  const res = await httpRequest({
     url: 'https://api.example.com/user/1',
     type: 'stub',
     trigger,
@@ -32,7 +32,7 @@ test('useFetch should handle 404 errors', async () => {
 
   globalThis.fetch = mock(() => Promise.resolve(new Response('Not Found', { status: 404 }))) as unknown as typeof fetch
 
-  const res = await useFetch({
+  const res = await httpRequest({
     url: 'https://api.example.com/nonexistent',
     type: 'stub',
     trigger,
@@ -54,7 +54,7 @@ test('useFetch should handle 500 errors', async () => {
     Promise.resolve(new Response('Server Error', { status: 500 })),
   ) as unknown as typeof fetch
 
-  const res = await useFetch({
+  const res = await httpRequest({
     url: 'https://api.example.com/error',
     retry: 1,
     retryDelay: 10,
@@ -74,7 +74,7 @@ test('useFetch should handle other HTTP errors', async () => {
 
   globalThis.fetch = mock(() => Promise.resolve(new Response('Forbidden', { status: 403 }))) as unknown as typeof fetch
 
-  const res = await useFetch({
+  const res = await httpRequest({
     url: 'https://api.example.com/forbidden',
     retry: 1,
     retryDelay: 10,
@@ -108,7 +108,7 @@ test('useFetch should retry on network failure', async () => {
     )
   }) as unknown as typeof fetch
 
-  const res = await useFetch({
+  const res = await httpRequest({
     url: 'https://api.example.com/retry',
     retry: 3,
     retryDelay: 10,
@@ -128,7 +128,7 @@ test('useFetch should return undefined after all retries fail', async () => {
 
   globalThis.fetch = mock(() => Promise.reject(new Error('Network error'))) as unknown as typeof fetch
 
-  const res = await useFetch({
+  const res = await httpRequest({
     url: 'https://api.example.com/fail',
     retry: 1,
     retryDelay: 10,
@@ -158,7 +158,7 @@ test('useFetch should accept custom headers and options', async () => {
     )
   }) as unknown as typeof fetch
 
-  const res = await useFetch({
+  const res = await httpRequest({
     url: 'https://api.example.com/create',
     retry: 3,
     retryDelay: 1000,
@@ -204,7 +204,7 @@ test('useFetch should handle JSON parsing errors', async () => {
   }) as unknown as typeof fetch
   let result: unknown
   try {
-    const res = await useFetch({
+    const res = await httpRequest({
       url: 'https://api.example.com/invalid-json',
       retry: 2,
       retryDelay: 10,
@@ -242,7 +242,7 @@ test('useFetch should accept URL object', async () => {
   ) as unknown as typeof fetch
 
   const url = new URL('https://api.example.com/url-object')
-  const res = await useFetch({
+  const res = await httpRequest({
     url,
     type: 'stub',
     trigger,
@@ -276,7 +276,7 @@ test('useFetch should handle mixed success/failure retries', async () => {
     )
   }) as unknown as typeof fetch
 
-  const res = await useFetch({
+  const res = await httpRequest({
     url: 'https://api.example.com/retry-once',
     retry: 3,
     retryDelay: 10,
@@ -303,7 +303,7 @@ test('useFetch should handle non-ok response with successful JSON parse', async 
     ),
   ) as unknown as typeof fetch
 
-  const res = await useFetch({
+  const res = await httpRequest({
     url: 'https://api.example.com/unauthorized',
     retryDelay: 10,
     type: 'stub',
@@ -326,7 +326,7 @@ test('useFetch respects retry configuration', async () => {
     return Promise.reject(new Error('Network error'))
   }) as unknown as typeof fetch
 
-  const result = await useFetch({
+  const result = await httpRequest({
     url: 'https://api.example.com/test-retries',
     retry: 2,
     retryDelay: 10,

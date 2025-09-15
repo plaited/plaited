@@ -1,7 +1,0 @@
-export * from './behavioral/behavioral.js'
-export * from './behavioral/behavioral.types.js'
-export * from './behavioral/behavioral.utils.js'
-export * from './behavioral/use-public-trigger.js'
-export * from './behavioral/use-plaited-trigger.js'
-export * from './behavioral/use-behavioral.js'
-export * from './behavioral/use-signal.js'

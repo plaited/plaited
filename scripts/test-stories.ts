@@ -1,4 +1,4 @@
-import { behavioral } from 'plaited/behavioral'
+import { behavioral } from 'plaited'
 import type { RunnerMessage } from 'plaited/testing'
 import { TEST_RUNNER_EVENTS } from './test-runner/test-runner.constants.js'
 import { testRunner } from './test-runner/test-runner.js'

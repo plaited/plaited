@@ -1,5 +1,5 @@
 import { bElement } from 'plaited'
-import { bThread, bSync, type RulesFunction } from 'plaited/behavioral'
+import { bThread, bSync, type RulesFunction } from 'plaited'
 import { OMarker } from './o-marker.js'
 import { XMarker } from './x-marker.js'
 import { BoardMarker } from './board-marker.js'

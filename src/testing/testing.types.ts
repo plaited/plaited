@@ -5,7 +5,7 @@ import type { Attrs, FunctionTemplate } from '../main.js'
 import type { Wait } from '../utils.js'
 import type { Match, Throws } from './testing.utils.js'
 import { FIXTURE_EVENTS } from './testing.constants.js'
-import type { SnapshotMessage } from 'plaited/behavioral'
+import type { SnapshotMessage } from 'plaited'
 
 /**
  * Parameters for structured test assertions.

@@ -1,5 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { useBehavioral } from '../behavioral.js'
+import { useBehavioral } from '../main.js'
 import { useRoots } from './hooks/use-roots.js'
 import { BP_EVENTS } from './mcp.constants.js'
 

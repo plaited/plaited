@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 import sinon from 'sinon'
-import { useSignal, useComputed } from 'plaited/behavioral'
+import { useSignal, useComputed } from 'plaited'
 
 test('useSignal:calling listen before setting store then disconnecting', () => {
   const store = useSignal<{ value: number }>({ value: 0 })

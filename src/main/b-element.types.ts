@@ -1,4 +1,4 @@
-import type { PlaitedTrigger, BThreads, Trigger, UseSnapshot, BThread, BSync } from '../behavioral/behavioral.types.js'
+import type { PlaitedTrigger, BThreads, Trigger, UseSnapshot, BThread, BSync } from './behavioral.types.js'
 import type { CustomElementTag, FunctionTemplate, TemplateObject } from './create-template.types.js'
 import { type BEHAVIORAL_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './b-element.constants.js'
 /**

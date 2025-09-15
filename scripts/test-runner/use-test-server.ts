@@ -1,5 +1,5 @@
 import { z } from 'zod/v4'
-import { useSignal, type Signal, type Trigger } from '../../src/behavioral.js'
+import { useSignal, type Signal, type Trigger } from '../../src/main.js'
 import { type StoryObj } from '../../src/testing.js'
 import { RELOAD_STORY_PAGE, RUNNER_URL } from '../../src/testing/testing.constants.js'
 import { getHTMLRoutes } from './get-html-routes.js'

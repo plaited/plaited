@@ -1,6 +1,6 @@
 import { Glob } from 'bun'
 import { basename, dirname } from 'node:path'
-import type { SignalWithInitialValue } from '../../src/behavioral.js'
+import type { SignalWithInitialValue } from '../../src/main.js'
 import { kebabCase } from '../../src/utils.js'
 import type { StoryObj } from '../../src/testing.js'
 import { WORKSHOP_ROUTE } from './test-server.constants.js'

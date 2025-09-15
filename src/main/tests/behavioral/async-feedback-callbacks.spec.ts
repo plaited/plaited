@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { behavioral, bSync } from 'plaited/behavioral'
+import { behavioral, bSync } from 'plaited'
 import { wait } from 'plaited/utils'
 
 /**

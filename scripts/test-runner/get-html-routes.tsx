@@ -1,5 +1,5 @@
 import path from 'node:path'
-import type { Signal } from '../../src/behavioral.js'
+import type { Signal } from '../../src/main.js'
 import { createHostStyles, joinStyles, type HostStylesObject } from '../../src/main.js'
 import { ssr, bElement } from '../../src/main.js'
 import { type StoryObj } from '../../src/testing.js'

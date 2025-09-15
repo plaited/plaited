@@ -1,5 +1,5 @@
 import { chromium, type BrowserContext } from 'playwright'
-import { useBehavioral } from '../../src/behavioral.js'
+import { useBehavioral } from '../../src/main.js'
 import { TEST_RUNNER_EVENTS } from './test-runner.constants.js'
 import { type RunnerMessage } from '../../src/testing.js'
 import { FIXTURE_EVENTS } from '../../src/testing/testing.constants.js'

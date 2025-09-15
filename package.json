@@ -18,7 +18,6 @@
   "exports": {
     ".": "./src/main.ts",
     "./mcp": "./src/mcp.ts",
-    "./behavioral": "./src/behavioral.ts",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
     "./jsx-runtime": "./src/jsx-runtime.ts",
     "./utils": "./src/utils.ts",

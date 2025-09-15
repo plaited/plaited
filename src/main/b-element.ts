@@ -7,8 +7,8 @@ import type {
   UseFeedback,
   UseSnapshot,
   EventDetails,
-} from '../behavioral/behavioral.types.js'
-import { bThread, bSync, usePlaitedTrigger, behavioral, usePublicTrigger } from '../behavioral.js'
+} from './behavioral.types.js'
+import { bThread, bSync, usePlaitedTrigger, behavioral, usePublicTrigger } from '../main.js'
 import { delegates, DelegatedListener, canUseDOM } from '../utils.js'
 import type { Attrs, TemplateObject, CustomElementTag } from './create-template.types.js'
 import { P_TRIGGER, P_TARGET, BOOLEAN_ATTRS } from './create-template.constants.js'

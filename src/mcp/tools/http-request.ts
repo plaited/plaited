@@ -1,5 +1,5 @@
-import type { PlaitedTrigger, Trigger } from '../behavioral/behavioral.types.js'
-import { wait } from './wait.js'
+import type { PlaitedTrigger, Trigger } from '../../main.js'
+import { wait } from '../../utils/wait.js'
 
 /**
  * @internal
@@ -45,7 +45,7 @@ import { wait } from './wait.js'
  * Triggers error events on failures.
  * Returns undefined instead of throwing.
  */
-export const useFetch = async ({
+export const httpRequest = async ({
   url,
   retry = 0,
   retryDelay = 1_000,
