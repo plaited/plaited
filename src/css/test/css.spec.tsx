@@ -2,7 +2,7 @@ import { test, expect } from 'bun:test'
 import * as css from 'plaited/css'
 
 test('create: supports simple rules', () => {
-  const styles = css.create({
+  const styles = css.styles({
     simpleRules: {
       fontSize: `16px`,
       lineHeight: 1.5,
@@ -13,7 +13,7 @@ test('create: supports simple rules', () => {
 })
 
 test('create: supports custom props', () => {
-  const styles = css.create({
+  const styles = css.styles({
     customProps: {
       '--customColor': 'red',
       '--custom-color': 'red',
@@ -23,7 +23,7 @@ test('create: supports custom props', () => {
 })
 
 test('create: supports pseudo-classes', () => {
-  const styles = css.create({
+  const styles = css.styles({
     pseudoClass: {
       backgroundColor: {
         $default: 'lightblue',
@@ -36,7 +36,7 @@ test('create: supports pseudo-classes', () => {
 })
 
 test('create: supports pseudo-elements', () => {
-  const styles = css.create({
+  const styles = css.styles({
     pseudoElement: {
       color: {
         '::placeholder': '#999',
@@ -47,7 +47,7 @@ test('create: supports pseudo-elements', () => {
 })
 
 test('create: supports media query', () => {
-  const styles = css.create({
+  const styles = css.styles({
     mediaQuery: {
       width: {
         $default: 800,
@@ -60,7 +60,7 @@ test('create: supports media query', () => {
 })
 
 test('create: supports complex rules', () => {
-  const styles = css.create({
+  const styles = css.styles({
     button: {
       color: {
         $default: 'var(--blue-link)',
@@ -75,7 +75,7 @@ test('create: supports complex rules', () => {
 })
 
 test('create: works with JSX via spread operator', () => {
-  const styles = css.create({
+  const styles = css.styles({
     button: {
       color: {
         $default: 'var(--blue-link)',
@@ -91,7 +91,7 @@ test('create: works with JSX via spread operator', () => {
 
 // css.host tests
 test('host: supports simple rules', () => {
-  const host = css.host({
+  const host = css.hostStyles({
     fontSize: `16px`,
     lineHeight: 1.5,
     color: 'rgb(60,60,60)',
@@ -100,7 +100,7 @@ test('host: supports simple rules', () => {
 })
 
 test('host: supports custom props', () => {
-  const host = css.host({
+  const host = css.hostStyles({
     '--customColor': 'red',
     '--custom-color': 'red',
   })
@@ -108,7 +108,7 @@ test('host: supports custom props', () => {
 })
 
 test('host: supports pseudo-classes', () => {
-  const host = css.host({
+  const host = css.hostStyles({
     backgroundColor: {
       $default: 'lightblue',
       ':hover': 'blue',
@@ -119,7 +119,7 @@ test('host: supports pseudo-classes', () => {
 })
 
 test('host: supports pseudo-elements', () => {
-  const host = css.host({
+  const host = css.hostStyles({
     color: {
       '::placeholder': '#999',
     },
@@ -128,7 +128,7 @@ test('host: supports pseudo-elements', () => {
 })
 
 test('host: supports media query', () => {
-  const host = css.host({
+  const host = css.hostStyles({
     width: {
       $default: 800,
       '@media (max-width: 800px)': '100%',
@@ -139,7 +139,7 @@ test('host: supports media query', () => {
 })
 
 test('host: supports complex rules', () => {
-  const host = css.host({
+  const host = css.hostStyles({
     color: {
       $default: 'var(--blue-link)',
       $compoundSelectors: {
@@ -154,7 +154,7 @@ test('host: supports complex rules', () => {
 })
 
 test('host: works with JSX via spread operator', () => {
-  const host = css.host({
+  const host = css.hostStyles({
     color: {
       $default: 'red',
       '[part="S1"]': 'blue',
@@ -182,7 +182,7 @@ test('keyframes', () => {
 })
 
 test('join', () => {
-  const styles = css.create({
+  const styles = css.styles({
     button: {
       fontFamily: 'Nunito Sans, Helvetica Neue, Helvetica, Arial, sans-serif',
       fontWeight: 700,
@@ -197,15 +197,15 @@ test('join', () => {
       padding: '10px 16px',
     },
   })
-  const host = css.host({
+  const host = css.hostStyles({
     color: 'red',
   })
-  expect(css.join(styles.button, styles.small, host)).toMatchSnapshot()
+  expect(css.joinStyles(styles.button, styles.small, host)).toMatchSnapshot()
 })
 
 // css.tokens tests
 test('tokens: simple token with $value', () => {
-  const designTokens = css.tokens('theme', {
+  const designTokens = css.designTokens('theme', {
     primaryColor: {
       $value: '#007bff',
     },
@@ -220,7 +220,7 @@ test('tokens: simple token with $value', () => {
 })
 
 test('tokens: token with array values', () => {
-  const designTokens = css.tokens('spacing', {
+  const designTokens = css.designTokens('spacing', {
     margin: {
       $value: ['10px', '20px', '30px', '40px'],
     },
@@ -236,7 +236,7 @@ test('tokens: token with array values', () => {
 })
 
 test('tokens: function token values', () => {
-  const designTokens = css.tokens('effects', {
+  const designTokens = css.designTokens('effects', {
     shadow: {
       $value: {
         $function: 'drop-shadow',
@@ -258,7 +258,7 @@ test('tokens: function token values', () => {
 })
 
 test('tokens: nested token statements with selectors', () => {
-  const designTokens = css.tokens('interactive', {
+  const designTokens = css.designTokens('interactive', {
     buttonColor: {
       $default: {
         $value: 'blue',
@@ -279,7 +279,7 @@ test('tokens: nested token statements with selectors', () => {
 })
 
 test('tokens: compound selectors', () => {
-  const designTokens = css.tokens('state', {
+  const designTokens = css.designTokens('state', {
     color: {
       $default: {
         $value: 'black',
@@ -304,13 +304,13 @@ test('tokens: compound selectors', () => {
 })
 
 test('tokens: token references', () => {
-  const baseTokens = css.tokens('base', {
+  const baseTokens = css.designTokens('base', {
     primary: {
       $value: '#007bff',
     },
   })
 
-  const derivedTokens = css.tokens('derived', {
+  const derivedTokens = css.designTokens('derived', {
     buttonBg: {
       $value: baseTokens.primary, // Pass the reference directly, not invoked
     },
@@ -321,7 +321,7 @@ test('tokens: token references', () => {
 })
 
 test('tokens: complex nested structure', () => {
-  const designTokens = css.tokens('complex', {
+  const designTokens = css.designTokens('complex', {
     card: {
       $default: {
         $value: {
@@ -354,7 +354,7 @@ test('tokens: complex nested structure', () => {
 })
 
 test('tokens: array of function values', () => {
-  const designTokens = css.tokens('transform', {
+  const designTokens = css.designTokens('transform', {
     animation: {
       $value: [
         {
@@ -379,7 +379,7 @@ test('tokens: array of function values', () => {
 
 // Integration tests: tokens with other CSS utilities
 test('tokens: integration with css.create', () => {
-  const theme = css.tokens('theme', {
+  const theme = css.designTokens('theme', {
     primary: {
       $value: '#007bff',
     },
@@ -391,7 +391,7 @@ test('tokens: integration with css.create', () => {
     },
   })
 
-  const styles = css.create({
+  const styles = css.styles({
     button: {
       backgroundColor: theme.primary,
       fontSize: theme.fontSize,
@@ -406,7 +406,7 @@ test('tokens: integration with css.create', () => {
 })
 
 test('tokens: integration with css.host', () => {
-  const colors = css.tokens('colors', {
+  const colors = css.designTokens('colors', {
     text: {
       $value: '#333',
       $compoundSelectors: {
@@ -425,7 +425,7 @@ test('tokens: integration with css.host', () => {
     },
   })
 
-  const host = css.host({
+  const host = css.hostStyles({
     color: colors.text,
     backgroundColor: colors.background,
     padding: '20px',
@@ -435,7 +435,7 @@ test('tokens: integration with css.host', () => {
 })
 
 test('tokens: integration with css.join', () => {
-  const spacing = css.tokens('spacing', {
+  const spacing = css.designTokens('spacing', {
     small: {
       $value: '8px',
     },
@@ -447,7 +447,7 @@ test('tokens: integration with css.join', () => {
     },
   })
 
-  const typography = css.tokens('typography', {
+  const typography = css.designTokens('typography', {
     heading: {
       $value: '2rem',
     },
@@ -456,31 +456,31 @@ test('tokens: integration with css.join', () => {
     },
   })
 
-  const baseStyles = css.create({
+  const baseStyles = css.styles({
     container: {
       padding: spacing.medium,
       fontSize: typography.body,
     },
   })
 
-  const variantStyles = css.create({
+  const variantStyles = css.styles({
     large: {
       padding: spacing.large,
       fontSize: typography.heading,
     },
   })
 
-  const hostStyles = css.host({
+  const hostStyles = css.hostStyles({
     margin: spacing.small,
   })
 
-  const combined = css.join(baseStyles.container, variantStyles.large, hostStyles)
+  const combined = css.joinStyles(baseStyles.container, variantStyles.large, hostStyles)
 
   expect(combined).toMatchSnapshot()
 })
 
 test('tokens: multiple token groups combined', () => {
-  const layout = css.tokens('layout', {
+  const layout = css.designTokens('layout', {
     maxWidth: {
       $value: '1200px',
       '@media (max-width: 768px)': {
@@ -492,7 +492,7 @@ test('tokens: multiple token groups combined', () => {
     },
   })
 
-  const motion = css.tokens('motion', {
+  const motion = css.designTokens('motion', {
     duration: {
       $value: '300ms',
     },
@@ -501,14 +501,14 @@ test('tokens: multiple token groups combined', () => {
     },
   })
 
-  const transition = css.tokens('transition', {
+  const transition = css.designTokens('transition', {
     example: {
       $value: ['all', motion.duration, motion.easing],
       $csv: false,
     },
   })
 
-  const styles = css.create({
+  const styles = css.styles({
     grid: {
       maxWidth: layout.maxWidth,
       gap: layout.gap,
@@ -526,7 +526,7 @@ test('tokens: multiple token groups combined', () => {
 })
 
 test('tokens: with keyframes', () => {
-  const animations = css.tokens('animations', {
+  const animations = css.designTokens('animations', {
     scale: {
       $value: {
         $function: 'scale',
@@ -557,7 +557,7 @@ test('tokens: with keyframes', () => {
 })
 
 test('tokens: used as CSS values in styles', () => {
-  const sizes = css.tokens('sizes', {
+  const sizes = css.designTokens('sizes', {
     containerWidth: {
       $value: '1200px',
     },
@@ -569,7 +569,7 @@ test('tokens: used as CSS values in styles', () => {
     },
   })
 
-  const styles = css.create({
+  const styles = css.styles({
     container: {
       maxWidth: sizes.containerWidth,
       margin: '0 auto',

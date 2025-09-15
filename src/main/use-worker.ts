@@ -32,8 +32,9 @@
  * - Worker instance must be created externally
  * - No support for transferable objects
  */
-import { type BPEvent, isBPEvent, type Trigger } from '../behavioral/behavioral.js'
-import { type PlaitedTrigger, isPlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
+import type { BPEvent, Trigger, PlaitedTrigger } from '../behavioral/behavioral.types.js'
+import { isBPEvent } from '../behavioral.js'
+import { isPlaitedTrigger } from '../behavioral.js'
 
 /**
  * Creates a type-safe interface for Web Worker communication within Plaited components.

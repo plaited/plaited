@@ -2,7 +2,7 @@ import { bElement, type FT } from 'plaited'
 import type { StoryObj } from 'plaited/testing'
 import * as css from 'plaited/css'
 
-const styles = css.create({
+const styles = css.styles({
   button: {
     border: '1px solid black',
     padding: '4px 8px',

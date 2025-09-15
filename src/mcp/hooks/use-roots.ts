@@ -1,7 +1,8 @@
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { ClientCapabilitiesSchema, RootsListChangedNotificationSchema } from '@modelcontextprotocol/sdk/types.js'
-import { bSync, bThread, type Trigger, type BThreads } from '../../behavioral.js'
+import type { Trigger, BThreads } from '../../behavioral/behavioral.types.js'
+import { bSync, bThread } from '../../behavioral.js'
 import { BP_EVENTS, BP_THREADS } from '../mcp.constants.js'
 
 export const useRoots = ({

@@ -2,7 +2,7 @@ import { type BehavioralElement, type Position, bElement, useTemplate, type FT }
 import type { StoryObj } from 'plaited/testing'
 import * as css from 'plaited/css'
 
-const styles = css.create({
+const styles = css.styles({
   root: {
     textDecorationLine: 'line-through',
   },

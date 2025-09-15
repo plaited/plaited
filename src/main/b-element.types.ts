@@ -1,6 +1,6 @@
-import type { Trigger } from '../behavioral.js'
+import type { PlaitedTrigger, BThreads, Trigger, UseSnapshot, BThread, BSync } from '../behavioral/behavioral.types.js'
 import type { CustomElementTag, FunctionTemplate, TemplateObject } from './create-template.types.js'
-import { type BEHAVIORAL_TEMPLATE_IDENTIFIER } from './b-element.constants.js'
+import { type BEHAVIORAL_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './b-element.constants.js'
 /**
  * Valid insertion positions for DOM elements relative to a reference element.
  * Follows the insertAdjacentElement/HTML specification.
@@ -222,4 +222,118 @@ export type BehavioralTemplate = FunctionTemplate & {
   observedAttributes: string[]
   publicEvents: string[]
   $: typeof BEHAVIORAL_TEMPLATE_IDENTIFIER
+}
+
+/**
+ * Context and utilities provided to the behavioral program of a Plaited component.
+ * Contains DOM access, lifecycle hooks, and behavioral programming primitives.
+ *
+ * @property $ - Query selector scoped to shadow root using p-target attributes
+ * @property root - Component's shadow root reference
+ * @property host - Custom element instance
+ * @property internals - ElementInternals API for form association and states
+ * @property trigger - Event dispatcher with automatic cleanup
+ * @property bThreads - Behavioral thread management
+ * @property useSnapshot - State snapshot access
+ * @property bThread - Thread creation utility
+ * @property bSync - Synchronization point utility
+ *
+ * @example Shadow DOM element access
+ * ```ts
+ * const MyComponent = bElement({
+ *   tag: 'my-component',
+ *   shadowDom: (
+ *     <div>
+ *       <h1 p-target="title">Title</h1>
+ *       <div p-target="content" />
+ *     </div>
+ *   ),
+ *   bProgram({ $ }) {
+ *     const [title] = $<HTMLHeadingElement>('title');
+ *     const [content] = $('content');
+ *
+ *     return {
+ *       updateTitle(text: string) {
+ *         title.render(text);
+ *       },
+ *       addContent(html: string) {
+ *         content.insert('beforeend', <>{html}</>);
+ *       }
+ *     };
+ *   }
+ * });
+ * ```
+ *
+ * @example Using behavioral threads
+ * ```ts
+ * bProgram({ bThreads, bThread, bSync, trigger }) {
+ *   bThreads.set({
+ *     'dataSync': bThread([
+ *       bSync({ waitFor: 'FETCH_START' }),
+ *       bSync({ request: { type: 'LOADING' } }),
+ *       bSync({ waitFor: ['SUCCESS', 'ERROR'] }),
+ *       bSync({ request: { type: 'COMPLETE' } })
+ *     ])
+ *   });
+ *
+ *   return {
+ *     startFetch() {
+ *       trigger({ type: 'FETCH_START' });
+ *     }
+ *   };
+ * }
+ * ```
+ *
+ * @see {@link bElement} for component creation
+ * @see {@link BoundElement} for element helper methods
+ */
+export type BProgramArgs = {
+  $: <E extends Element = Element>(
+    target: string,
+    /**
+     * This option enables querySelectorAll and modifies the attribute selector for p-target
+     * @default {all: false, mod: "="}
+     * @see {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}
+     */
+    match?: SelectorMatch,
+  ) => NodeListOf<BoundElement<E>>
+  root: ShadowRoot
+  host: BehavioralElement
+  internals: ElementInternals
+  trigger: PlaitedTrigger
+  bThreads: BThreads
+  useSnapshot: UseSnapshot
+  bThread: BThread
+  bSync: BSync
+}
+
+/**
+ * Lifecycle callbacks for Plaited components.
+ * Maps standard Custom Element and Form-Associated callbacks to handlers.
+ *
+ * @property onAdopted - Called when element is moved to a new document
+ * @property onAttributeChanged - Called when an observed attribute changes (receives name, oldValue, newValue)
+ * @property onConnected - Called when element is added to DOM - ideal for setup
+ * @property onDisconnected - Called when element is removed from DOM - ideal for cleanup
+ * @property onFormAssociated - Called when associated with a form (requires formAssociated: true)
+ * @property onFormDisabled - Called when disabled state changes via fieldset (requires formAssociated: true)
+ * @property onFormReset - Called when associated form is reset (requires formAssociated: true)
+ * @property onFormStateRestore - Called when browser restores element state (requires formAssociated: true)
+ */
+export type BehavioralElementCallbackDetails = {
+  [ELEMENT_CALLBACKS.onAdopted]: void
+  [ELEMENT_CALLBACKS.onAttributeChanged]: {
+    name: string
+    oldValue: string | null
+    newValue: string | null
+  }
+  [ELEMENT_CALLBACKS.onConnected]: void
+  [ELEMENT_CALLBACKS.onDisconnected]: void
+  [ELEMENT_CALLBACKS.onFormAssociated]: HTMLFormElement
+  [ELEMENT_CALLBACKS.onFormDisabled]: boolean
+  [ELEMENT_CALLBACKS.onFormReset]: void
+  [ELEMENT_CALLBACKS.onFormStateRestore]: {
+    state: unknown
+    reason: 'autocomplete' | 'restore'
+  }
 }

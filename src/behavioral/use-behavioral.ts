@@ -33,20 +33,21 @@
  * - No runtime modification of public events list
  * - Disconnect is synchronous only
  */
-import {
-  type EventDetails,
-  type UseSnapshot,
-  type BThreads,
-  behavioral,
-  type Disconnect,
-  type Handlers,
-  type BSync,
-  type BThread,
-  bThread,
-  bSync,
-} from './behavioral.js'
-import { getPlaitedTrigger, type PlaitedTrigger } from './get-plaited-trigger.js'
-import { getPublicTrigger } from './get-public-trigger.js'
+import { behavioral } from './behavioral.js'
+import { bThread, bSync } from './behavioral.utils.js'
+import type {
+  EventDetails,
+  UseSnapshot,
+  BThreads,
+  Disconnect,
+  Handlers,
+  BSync,
+  BThread,
+  PlaitedTrigger,
+} from './behavioral.types.js'
+
+import { usePlaitedTrigger } from './use-plaited-trigger.js'
+import { usePublicTrigger } from './use-public-trigger.js'
 
 /**
  * Higher-order factory for creating reusable behavioral program configurations.
@@ -177,8 +178,8 @@ import { getPublicTrigger } from './get-public-trigger.js'
  * - Async initialization supports dynamic setup
  * - Context injection enables dependency injection
  *
- * @see {@link getPublicTrigger} for event filtering
- * @see {@link getPlaitedTrigger} for lifecycle management
+ * @see {@link usePublicTrigger} for event filtering
+ * @see {@link usePlaitedTrigger} for lifecycle management
  */
 
 export const useBehavioral = <
@@ -241,7 +242,7 @@ export const useBehavioral = <
       bSync,
       bThread,
       disconnect,
-      trigger: getPlaitedTrigger(trigger, disconnectSet),
+      trigger: usePlaitedTrigger(trigger, disconnectSet),
       ...rest,
     })
 
@@ -257,6 +258,6 @@ export const useBehavioral = <
      * Return filtered trigger that only accepts public events.
      * This creates the component's public API surface.
      */
-    return getPublicTrigger({ trigger, publicEvents })
+    return usePublicTrigger({ trigger, publicEvents })
   }
 }

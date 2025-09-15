@@ -1,4 +1,4 @@
-import type { Trigger } from './behavioral.js'
+import type { Trigger } from './behavioral.types.js'
 
 /**
  * Creates a wrapped `Trigger` function that filters events based on a whitelist.
@@ -33,7 +33,7 @@ import type { Trigger } from './behavioral.js'
  * // This will throw an error.
  * publicTrigger({ type: 'internal/data-update', detail: {} });
  */
-export const getPublicTrigger = ({
+export const usePublicTrigger = ({
   trigger,
   publicEvents,
 }: {

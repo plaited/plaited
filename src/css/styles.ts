@@ -36,7 +36,7 @@ const formatClassStatement = ({
   }
 }
 
-export const create = <T extends CreateParams>(classNames: T): ClassNames<T> =>
+export const styles = <T extends CreateParams>(classNames: T): ClassNames<T> =>
   Object.entries(classNames).reduce((acc, [cls, props]) => {
     const styles: string[] = []
     const hostStyles: string[] = []

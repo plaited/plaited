@@ -29,21 +29,8 @@
  * - Cleanup order is not guaranteed (Set iteration order)
  * - No error handling for failed cleanup callbacks
  */
-import type { Trigger, Disconnect } from './behavioral.js'
+import type { Trigger, Disconnect, PlaitedTrigger } from './behavioral.types.js'
 
-/**
- * An enhanced `Trigger` type specifically for Plaited components or contexts.
- * It extends the standard `Trigger` by adding a method (`addDisconnectCallback`)
- * to associate cleanup functions (`Disconnect`) with the trigger's lifecycle.
- * This allows resources or subscriptions initiated via the trigger's context
- * to be properly cleaned up when the context is destroyed.
- *
- * @property addDisconnectCallback - A function to register a cleanup callback that should be
- *   executed when the component or context associated with this trigger is disconnected
- */
-export type PlaitedTrigger = Trigger & {
-  addDisconnectCallback: (disconnect: Disconnect) => void
-}
 /**
  * Augments a standard `Trigger` function with the ability to register disconnect callbacks.
  * This function takes a base `Trigger` and a `Set` intended to hold `Disconnect` functions.
@@ -84,48 +71,9 @@ export type PlaitedTrigger = Trigger & {
  * // cleanupCallbacks.forEach(cb => cb());
  * ```
  */
-export const getPlaitedTrigger = (trigger: Trigger, disconnectSet: Set<Disconnect>) => {
+export const usePlaitedTrigger = (trigger: Trigger, disconnectSet: Set<Disconnect>) => {
   Object.assign(trigger, {
     addDisconnectCallback: (cb: Disconnect) => disconnectSet.add(cb),
   })
   return trigger as PlaitedTrigger
 }
-
-/**
- * Type guard to identify enhanced Plaited triggers with disconnect capability.
- * Used internally by the framework to ensure proper cleanup of component resources.
- *
- * @internal
- * @param trigger - The trigger function to check
- * @returns True if the trigger includes disconnect callback support
- *
- * Implementation notes:
- * - Uses Object.hasOwn for robust property checking (not affected by prototype)
- * - Critical for conditional cleanup registration in utilities
- * - Allows graceful handling of both trigger types in the codebase
- *
- * @example Using in a custom effect implementation
- * ```tsx
- * const useCustomEffect = (trigger: Trigger | PlaitedTrigger, callback: () => () => void) => {
- *   if (isPlaitedTrigger(trigger)) {
- *     const cleanup = callback();
- *     // Register cleanup function to run on component disconnect
- *     trigger.addDisconnectCallback(cleanup);
- *   }
- * };
- *
- * // Usage in a component
- * const MyComponent = bElement({
- *   tag: 'my-component',
- *   shadowDom: <div p-target="root" />,
- *   bProgram({ trigger }) {
- *     useCustomEffect(trigger, () => {
- *       const interval = setInterval(() => console.log('tick'), 1000);
- *       return () => clearInterval(interval);
- *     });
- *   }
- * });
- * ```
- */
-export const isPlaitedTrigger = (trigger: Trigger): trigger is PlaitedTrigger =>
-  Object.hasOwn(trigger, 'addDisconnectCallback')

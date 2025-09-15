@@ -1,7 +1,7 @@
 import { type FT } from 'plaited'
 import * as css from 'plaited/css'
 
-const styles = css.create({
+const styles = css.styles({
   o: {
     width: '20px',
     height: '20px',

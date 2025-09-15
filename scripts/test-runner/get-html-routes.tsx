@@ -44,7 +44,7 @@ const createPageBundle = async ({
   const importPath = getEntryPath(route)
   const tokens = designTokens?.get()
   const styleObjects = [
-    css.host({
+    css.hostStyles({
       display: 'contents',
     }),
     tokens && { stylesheets: [tokens] },
@@ -52,7 +52,7 @@ const createPageBundle = async ({
   ].filter(Boolean) as css.HostStylesObject[]
   const PlaitedStory = bElement({
     tag: 'plaited-story',
-    shadowDom: <slot {...css.join(...styleObjects)} />,
+    shadowDom: <slot {...css.joinStyles(...styleObjects)} />,
   })
   const page = ssr(
     <html>
@@ -64,7 +64,7 @@ const createPageBundle = async ({
         />
       </head>
       <body
-        {...css.join({
+        {...css.joinStyles({
           stylesheets: [' body { height: 100vh; height: 100dvh; margin: 0'],
         })}
       >

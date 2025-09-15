@@ -8,7 +8,7 @@ import {
 import * as css from 'plaited/css'
 import { isTypeOf } from 'plaited/utils'
 
-const styles = css.create({
+const styles = css.styles({
   grid: {
     display: 'inline-grid',
     gridTemplate: '"input" 16px / 16px',
@@ -29,7 +29,7 @@ const styles = css.create({
   },
 })
 
-const hostStyles = css.host({
+const hostStyles = css.hostStyles({
   display: 'inline-grid',
   gridTemplate: '"input" 16px / 16px',
   '--fill': {
@@ -50,7 +50,7 @@ export const DecorateCheckbox = bElement<{
     <>
       <div
         p-target='symbol'
-        {...css.join(styles.symbol, hostStyles)}
+        {...css.joinStyles(styles.symbol, hostStyles)}
         p-trigger={{ click: 'click' }}
       />
       <slot

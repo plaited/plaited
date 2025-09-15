@@ -93,7 +93,7 @@ const formatTokenStatement = ({
   }
 }
 
-export const tokens = <T extends DesignTokenGroup>(ident: string, group: T) =>
+export const designTokens = <T extends DesignTokenGroup>(ident: string, group: T) =>
   Object.entries(group).reduce((acc, [prop, value]) => {
     const cssVar: `--${string}` = `--${kebabCase(ident)}-${kebabCase(prop)}`
     const styles: string[] = []

@@ -54,7 +54,7 @@ const formatHostStatement = ({
   }
 }
 
-export const host = (props: CreateHostParams): HostStylesObject => {
+export const hostStyles = (props: CreateHostParams): HostStylesObject => {
   const styles: string[] = []
   for (const [prop, value] of Object.entries(props)) {
     if (isPrimitive(value) || isTokenReference(value)) {

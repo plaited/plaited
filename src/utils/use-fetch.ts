@@ -1,4 +1,4 @@
-import type { PlaitedTrigger, Trigger } from '../behavioral.js'
+import type { PlaitedTrigger, Trigger } from '../behavioral/behavioral.types.js'
 import { wait } from './wait.js'
 
 /**

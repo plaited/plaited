@@ -1,141 +1,30 @@
-import {
-  type BSync,
-  type BThread,
-  bThread,
-  bSync,
-  type PlaitedTrigger,
-  getPlaitedTrigger,
-  type Handlers,
-  type BThreads,
-  type Disconnect,
-  type Trigger,
-  type UseFeedback,
-  type UseSnapshot,
-  type EventDetails,
-  behavioral,
-  getPublicTrigger,
-} from '../behavioral.js'
+import type {
+  PlaitedTrigger,
+  Handlers,
+  BThreads,
+  Disconnect,
+  Trigger,
+  UseFeedback,
+  UseSnapshot,
+  EventDetails,
+} from '../behavioral/behavioral.types.js'
+import { bThread, bSync, usePlaitedTrigger, behavioral, usePublicTrigger } from '../behavioral.js'
 import { delegates, DelegatedListener, canUseDOM } from '../utils.js'
 import type { Attrs, TemplateObject, CustomElementTag } from './create-template.types.js'
 import { P_TRIGGER, P_TARGET, BOOLEAN_ATTRS } from './create-template.constants.js'
 import { createTemplate } from './create-template.js'
 import { getDocumentFragment, assignHelpers, getBindings } from './b-element.utils.js'
 import { BEHAVIORAL_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './b-element.constants.js'
-import type { BehavioralTemplate, BehavioralElement, SelectorMatch, Bindings, BoundElement } from './b-element.types.js'
+import type {
+  BehavioralTemplate,
+  BehavioralElement,
+  SelectorMatch,
+  Bindings,
+  BoundElement,
+  BehavioralElementCallbackDetails,
+  BProgramArgs,
+} from './b-element.types.js'
 
-/**
- * Context and utilities provided to the behavioral program of a Plaited component.
- * Contains DOM access, lifecycle hooks, and behavioral programming primitives.
- *
- * @property $ - Query selector scoped to shadow root using p-target attributes
- * @property root - Component's shadow root reference
- * @property host - Custom element instance
- * @property internals - ElementInternals API for form association and states
- * @property trigger - Event dispatcher with automatic cleanup
- * @property bThreads - Behavioral thread management
- * @property useSnapshot - State snapshot access
- * @property bThread - Thread creation utility
- * @property bSync - Synchronization point utility
- *
- * @example Shadow DOM element access
- * ```ts
- * const MyComponent = bElement({
- *   tag: 'my-component',
- *   shadowDom: (
- *     <div>
- *       <h1 p-target="title">Title</h1>
- *       <div p-target="content" />
- *     </div>
- *   ),
- *   bProgram({ $ }) {
- *     const [title] = $<HTMLHeadingElement>('title');
- *     const [content] = $('content');
- *
- *     return {
- *       updateTitle(text: string) {
- *         title.render(text);
- *       },
- *       addContent(html: string) {
- *         content.insert('beforeend', <>{html}</>);
- *       }
- *     };
- *   }
- * });
- * ```
- *
- * @example Using behavioral threads
- * ```ts
- * bProgram({ bThreads, bThread, bSync, trigger }) {
- *   bThreads.set({
- *     'dataSync': bThread([
- *       bSync({ waitFor: 'FETCH_START' }),
- *       bSync({ request: { type: 'LOADING' } }),
- *       bSync({ waitFor: ['SUCCESS', 'ERROR'] }),
- *       bSync({ request: { type: 'COMPLETE' } })
- *     ])
- *   });
- *
- *   return {
- *     startFetch() {
- *       trigger({ type: 'FETCH_START' });
- *     }
- *   };
- * }
- * ```
- *
- * @see {@link bElement} for component creation
- * @see {@link BoundElement} for element helper methods
- */
-export type BProgramArgs = {
-  $: <E extends Element = Element>(
-    target: string,
-    /**
-     * This option enables querySelectorAll and modifies the attribute selector for p-target
-     * @default {all: false, mod: "="}
-     * @see {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}
-     */
-    match?: SelectorMatch,
-  ) => NodeListOf<BoundElement<E>>
-  root: ShadowRoot
-  host: BehavioralElement
-  internals: ElementInternals
-  trigger: PlaitedTrigger
-  bThreads: BThreads
-  useSnapshot: UseSnapshot
-  bThread: BThread
-  bSync: BSync
-}
-
-/**
- * Lifecycle callbacks for Plaited components.
- * Maps standard Custom Element and Form-Associated callbacks to handlers.
- *
- * @property onAdopted - Called when element is moved to a new document
- * @property onAttributeChanged - Called when an observed attribute changes (receives name, oldValue, newValue)
- * @property onConnected - Called when element is added to DOM - ideal for setup
- * @property onDisconnected - Called when element is removed from DOM - ideal for cleanup
- * @property onFormAssociated - Called when associated with a form (requires formAssociated: true)
- * @property onFormDisabled - Called when disabled state changes via fieldset (requires formAssociated: true)
- * @property onFormReset - Called when associated form is reset (requires formAssociated: true)
- * @property onFormStateRestore - Called when browser restores element state (requires formAssociated: true)
- */
-export type BehavioralElementCallbackDetails = {
-  [ELEMENT_CALLBACKS.onAdopted]: void
-  [ELEMENT_CALLBACKS.onAttributeChanged]: {
-    name: string
-    oldValue: string | null
-    newValue: string | null
-  }
-  [ELEMENT_CALLBACKS.onConnected]: void
-  [ELEMENT_CALLBACKS.onDisconnected]: void
-  [ELEMENT_CALLBACKS.onFormAssociated]: HTMLFormElement
-  [ELEMENT_CALLBACKS.onFormDisabled]: boolean
-  [ELEMENT_CALLBACKS.onFormReset]: void
-  [ELEMENT_CALLBACKS.onFormStateRestore]: {
-    state: unknown
-    reason: 'autocomplete' | 'restore'
-  }
-}
 type Callback<T> = T extends void ? () => void | Promise<void> : (detail: T) => void | Promise<void>
 type BehavioralElementCallbackHandlers = {
   [K in keyof BehavioralElementCallbackDetails]?: Callback<BehavioralElementCallbackDetails[K]>
@@ -163,7 +52,7 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  * @template A Event details type for component-specific events
  * @param options Component configuration
  * @returns PlaitedTemplate function for creating element instances
- * 
+ *
  * @example Simple counter component
  * ```tsx
  * const Counter = bElement({
@@ -178,7 +67,7 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  *   bProgram({ $ }) {
  *     const [count] = $('count');
  *     let value = 0;
- *     
+ *
  *     return {
  *       INC() {
  *         count.render(String(++value));
@@ -482,11 +371,11 @@ export const bElement = <A extends EventDetails>({
           const frag = getDocumentFragment(this.#root, shadowDom)
           this.#root.replaceChildren(frag)
           const { trigger, useFeedback, useSnapshot, bThreads } = behavioral()
-          this.#trigger = getPlaitedTrigger(trigger, this.#disconnectSet)
+          this.#trigger = usePlaitedTrigger(trigger, this.#disconnectSet)
           this.#useFeedback = useFeedback
           this.#useSnapshot = useSnapshot
           this.#bThreads = bThreads
-          this.trigger = getPublicTrigger({
+          this.trigger = usePublicTrigger({
             trigger,
             publicEvents,
           })

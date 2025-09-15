@@ -2,7 +2,7 @@ import { bElement, type BehavioralElement } from 'plaited'
 import * as css from 'plaited/css'
 import type { StoryObj } from 'plaited/testing'
 
-const styles = css.create({
+const styles = css.styles({
   initial: {
     border: '1px solid black',
   },

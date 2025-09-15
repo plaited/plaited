@@ -5,7 +5,7 @@ import beautify from 'beautify'
 
 const render = (tpl: TemplateObject) => beautify(tpl.html.join(''), { format: 'html' })
 
-const styles = css.create({
+const styles = css.styles({
   nestedLabel: {
     fontWeight: 'bold',
   },
@@ -91,7 +91,7 @@ test('createTemplate: CustomElement with declarative shadow dom and nested decla
   expect({ content: render(el), stylesheets: el.stylesheets }).toMatchSnapshot()
 })
 
-const hoistStyles = css.create({
+const hoistStyles = css.styles({
   var1: {
     width: '100%',
   },
@@ -104,5 +104,5 @@ const hoistStyles = css.create({
 })
 
 test('ssr: Properly hoist and deduplicates multiple stylesheets on a single node', () => {
-  expect((<div {...css.join(hoistStyles.var1, hoistStyles.var2, hoistStyles.var3)} />).stylesheets.length).toBe(2)
+  expect((<div {...css.joinStyles(hoistStyles.var1, hoistStyles.var2, hoistStyles.var3)} />).stylesheets.length).toBe(2)
 })

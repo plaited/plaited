@@ -11,7 +11,7 @@ declare global {
 }
 
 import * as css from 'plaited/css'
-import type { SnapshotMessage } from '../behavioral.js'
+import type { SnapshotMessage } from '../behavioral/behavioral.types.js'
 import { bElement, h } from '../main.js'
 import { wait } from '../utils.js'
 import { STORY_FIXTURE, DEFAULT_PLAY_TIMEOUT, FIXTURE_EVENTS } from './testing.constants.js'
@@ -78,7 +78,7 @@ export const StoryFixture = bElement<{
   tag: STORY_FIXTURE,
   publicEvents: [FIXTURE_EVENTS.run],
   shadowDom: h('slot', {
-    ...css.host({
+    ...css.hostStyles({
       display: 'contents',
     }),
   }),

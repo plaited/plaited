@@ -33,48 +33,15 @@
  * - Computed signals can't be directly set
  * - No persistence layer integration
  */
-import type { Trigger, Disconnect } from './behavioral.js'
-import { type PlaitedTrigger, isPlaitedTrigger } from './get-plaited-trigger.js'
-
-/**
- * Type definition for signal subscription function.
- * Enables event-based monitoring of signal value changes.
- *
- * @param eventType Event type identifier for the triggered event
- * @param trigger Component's trigger function for handling value changes
- * @param getLVC Whether to immediately trigger with current value
- * @returns Cleanup function for removing the subscription
- */
-export type Listen = (eventType: string, trigger: Trigger | PlaitedTrigger, getLVC?: boolean) => Disconnect
-
-/**
- * @internal
- * Signal type for values that must have an initial value.
- * Guarantees get() never returns undefined.
- */
-export type SignalWithInitialValue<T> = {
-  set(value: T): void
-  listen: Listen
-  get(): T
-}
-
-/**
- * @internal
- * Signal type for optional values that may start undefined.
- * Useful for async data or optional state.
- */
-export type SignalWithoutInitialValue<T> = {
-  set(value?: T): void
-  listen: Listen
-  get(): T | undefined
-}
-
-/**
- * @internal
- * Union type for all signal variants.
- * Type system ensures correct usage based on initialization.
- */
-export type Signal<T> = SignalWithInitialValue<T> | SignalWithoutInitialValue<T>
+import type {
+  Trigger,
+  Disconnect,
+  PlaitedTrigger,
+  Listen,
+  SignalWithInitialValue,
+  SignalWithoutInitialValue,
+} from './behavioral.types.js'
+import { isPlaitedTrigger } from './behavioral.utils.js'
 
 export function useSignal<T>(initialValue: T): SignalWithInitialValue<T>
 export function useSignal<T>(initialValue?: never): SignalWithoutInitialValue<T>

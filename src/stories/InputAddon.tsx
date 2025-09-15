@@ -2,7 +2,7 @@ import { bElement, useAttributesObserver, type ObservedAttributesDetail } from '
 import { isTypeOf, keyMirror } from 'plaited/utils'
 import * as css from 'plaited/css'
 
-const styles = css.create({
+const styles = css.styles({
   addOn: {
     flex: {
       '::slotted(*)': 'none',
@@ -15,7 +15,7 @@ const styles = css.create({
   },
 })
 
-const hostStyles = css.host({
+const hostStyles = css.hostStyles({
   display: 'inline-flex',
   '--icon-stroke': {
     $default: 'lightblue',
@@ -35,7 +35,7 @@ export const InputAddon = bElement<{
     <>
       <slot
         name='prefix'
-        {...css.join(hostStyles, styles.addOn)}
+        {...css.joinStyles(hostStyles, styles.addOn)}
       ></slot>
       <slot
         name='input'

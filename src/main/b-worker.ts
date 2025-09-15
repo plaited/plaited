@@ -33,16 +33,10 @@
  * - Transferable objects not supported in current implementation
  * - Worker must be in separate file for proper execution
  */
-import {
-  behavioral,
-  type Behavioral,
-  type Disconnect,
-  type Handlers,
-  type EventDetails,
-  type BPEvent,
-} from '../behavioral/behavioral.js'
-import { getPublicTrigger } from '../behavioral/get-public-trigger.js'
-import { getPlaitedTrigger } from '../behavioral/get-plaited-trigger.js'
+import type { Behavioral, Disconnect, Handlers, EventDetails, BPEvent } from '../behavioral/behavioral.types.js'
+import { behavioral } from '../behavioral/behavioral.js'
+import { usePublicTrigger } from '../behavioral/use-public-trigger.js'
+import { usePlaitedTrigger } from '../behavioral/use-plaited-trigger.js'
 
 /**
  * @internal
@@ -202,7 +196,7 @@ export const bWorker = async <A extends EventDetails>({
    * Create filtered trigger that only accepts whitelisted events from main thread.
    * This prevents arbitrary event injection from compromising worker behavior.
    */
-  const publicTrigger = getPublicTrigger({
+  const publicTrigger = usePublicTrigger({
     trigger,
     publicEvents,
   })
@@ -253,7 +247,7 @@ export const bWorker = async <A extends EventDetails>({
       ...rest,
       send,
       disconnect,
-      trigger: getPlaitedTrigger(trigger, disconnectSet),
+      trigger: usePlaitedTrigger(trigger, disconnectSet),
     }),
   )
 

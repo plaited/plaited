@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axe from 'axe-core'
-import type { Trigger } from '../behavioral.js'
+import type { Trigger } from '../behavioral/behavioral.types.js'
 import { deepEqual, trueTypeOf, isTypeOf, wait, noop, DelegatedListener, delegates } from '../utils.js'
 
 import { FIXTURE_EVENTS, STORY_FIXTURE, RELOAD_STORY_PAGE, RUNNER_URL, DATA_TESTID } from './testing.constants.js'
