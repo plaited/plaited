@@ -1,7 +1,7 @@
 import { posix } from 'node:path'
-import type { CreateStoryDirParams } from '../mcp.schemas.js'
+import type { GetStoryDirParams } from '../mcp.schemas.js'
 
-export const createStoryDir = ({ filePath }: CreateStoryDirParams) => {
+export const getStoryDir = ({ filePath }: GetStoryDirParams) => {
   // Normalize path separators to forward slashes for consistent cross-platform behavior
   let normalizedPath = filePath.replace(/\\/g, '/')
 

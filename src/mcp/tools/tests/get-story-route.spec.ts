@@ -1,9 +1,9 @@
 import { describe, test, expect } from 'bun:test'
-import { createStoryRoute } from '../create-story-route.js'
+import { getStoryRoute } from '../get-story-route.js'
 
-describe('createStoryRoute', () => {
+describe('getStoryRoute', () => {
   test('should create route from basic inputs', () => {
-    const result = createStoryRoute({
+    const result = getStoryRoute({
       filePath: '/src/components/Button.tsx',
       exportName: 'Button',
       storyName: 'Default',
@@ -13,7 +13,7 @@ describe('createStoryRoute', () => {
   })
 
   test('should handle camelCase export names', () => {
-    const result = createStoryRoute({
+    const result = getStoryRoute({
       filePath: '/src/components/MyComponent.tsx',
       exportName: 'mySpecialComponent',
       storyName: 'PrimaryVariant',
@@ -23,7 +23,7 @@ describe('createStoryRoute', () => {
   })
 
   test('should handle PascalCase names', () => {
-    const result = createStoryRoute({
+    const result = getStoryRoute({
       filePath: '/src/ui/NavigationBar.tsx',
       exportName: 'NavigationBar',
       storyName: 'WithDropdown',
@@ -33,7 +33,7 @@ describe('createStoryRoute', () => {
   })
 
   test('should handle names with numbers', () => {
-    const result = createStoryRoute({
+    const result = getStoryRoute({
       filePath: '/components/Form2FA.tsx',
       exportName: 'Form2FA',
       storyName: 'Step1',
@@ -43,7 +43,7 @@ describe('createStoryRoute', () => {
   })
 
   test('should handle single word names', () => {
-    const result = createStoryRoute({
+    const result = getStoryRoute({
       filePath: '/src/card.tsx',
       exportName: 'card',
       storyName: 'basic',
@@ -53,7 +53,7 @@ describe('createStoryRoute', () => {
   })
 
   test('should handle names with spaces (converted to kebab-case)', () => {
-    const result = createStoryRoute({
+    const result = getStoryRoute({
       filePath: '/src/components/DataTable.tsx',
       exportName: 'DataTable',
       storyName: 'With Loading State',
@@ -63,7 +63,7 @@ describe('createStoryRoute', () => {
   })
 
   test('should handle names with special characters', () => {
-    const result = createStoryRoute({
+    const result = getStoryRoute({
       filePath: '/src/components/Form_Input.tsx',
       exportName: 'FormInput',
       storyName: 'Error-State',
@@ -73,7 +73,7 @@ describe('createStoryRoute', () => {
   })
 
   test('should handle deeply nested file paths', () => {
-    const result = createStoryRoute({
+    const result = getStoryRoute({
       filePath: '/src/components/ui/forms/inputs/TextInput.tsx',
       exportName: 'TextInput',
       storyName: 'Disabled',
@@ -83,7 +83,7 @@ describe('createStoryRoute', () => {
   })
 
   test('should handle relative file paths', () => {
-    const result = createStoryRoute({
+    const result = getStoryRoute({
       filePath: './components/Button.tsx',
       exportName: 'Button',
       storyName: 'Primary',
@@ -93,7 +93,7 @@ describe('createStoryRoute', () => {
   })
 
   test('should handle file paths without leading slash', () => {
-    const result = createStoryRoute({
+    const result = getStoryRoute({
       filePath: 'src/components/Modal.tsx',
       exportName: 'Modal',
       storyName: 'Large',
@@ -103,7 +103,7 @@ describe('createStoryRoute', () => {
   })
 
   test('should handle Windows-style paths', () => {
-    const result = createStoryRoute({
+    const result = getStoryRoute({
       filePath: 'C:\\src\\components\\Button.tsx',
       exportName: 'Button',
       storyName: 'Default',
@@ -114,7 +114,7 @@ describe('createStoryRoute', () => {
   })
 
   test('should handle complex story names with multiple words and punctuation', () => {
-    const result = createStoryRoute({
+    const result = getStoryRoute({
       filePath: '/src/components/AlertDialog.tsx',
       exportName: 'AlertDialog',
       storyName: 'Critical Alert With Actions',
@@ -124,7 +124,7 @@ describe('createStoryRoute', () => {
   })
 
   test('should handle export names with underscores', () => {
-    const result = createStoryRoute({
+    const result = getStoryRoute({
       filePath: '/src/components/data_grid.tsx',
       exportName: 'data_grid_component',
       storyName: 'with_pagination',
@@ -134,7 +134,7 @@ describe('createStoryRoute', () => {
   })
 
   test('should handle edge case with very long names', () => {
-    const result = createStoryRoute({
+    const result = getStoryRoute({
       filePath: '/src/VeryLongComponentNameThatExceedsNormalLength.tsx',
       exportName: 'VeryLongComponentNameThatExceedsNormalLength',
       storyName: 'AnotherVeryLongStoryNameForTesting',
@@ -152,15 +152,15 @@ describe('createStoryRoute', () => {
       storyName: 'Primary',
     }
 
-    const result1 = createStoryRoute(input)
-    const result2 = createStoryRoute(input)
+    const result1 = getStoryRoute(input)
+    const result2 = getStoryRoute(input)
 
     expect(result1).toBe(result2)
     expect(result1).toBe('/src/components/Button/button--primary')
   })
 
   test('should handle empty directory paths', () => {
-    const result = createStoryRoute({
+    const result = getStoryRoute({
       filePath: 'Component.tsx',
       exportName: 'Component',
       storyName: 'Story',
@@ -175,9 +175,9 @@ describe('createStoryRoute', () => {
       exportName: 'Button',
     }
 
-    const primary = createStoryRoute({ ...baseInput, storyName: 'Primary' })
-    const secondary = createStoryRoute({ ...baseInput, storyName: 'Secondary' })
-    const disabled = createStoryRoute({ ...baseInput, storyName: 'Disabled' })
+    const primary = getStoryRoute({ ...baseInput, storyName: 'Primary' })
+    const secondary = getStoryRoute({ ...baseInput, storyName: 'Secondary' })
+    const disabled = getStoryRoute({ ...baseInput, storyName: 'Disabled' })
 
     expect(primary).toBe('/src/Button/button--primary')
     expect(secondary).toBe('/src/Button/button--secondary')
@@ -193,9 +193,9 @@ describe('createStoryRoute', () => {
       storyName: 'Default',
     }
 
-    const textInput = createStoryRoute({ ...baseInput, exportName: 'TextInput' })
-    const selectInput = createStoryRoute({ ...baseInput, exportName: 'SelectInput' })
-    const checkboxInput = createStoryRoute({ ...baseInput, exportName: 'CheckboxInput' })
+    const textInput = getStoryRoute({ ...baseInput, exportName: 'TextInput' })
+    const selectInput = getStoryRoute({ ...baseInput, exportName: 'SelectInput' })
+    const checkboxInput = getStoryRoute({ ...baseInput, exportName: 'CheckboxInput' })
 
     expect(textInput).toBe('/src/components/Forms/text-input--default')
     expect(selectInput).toBe('/src/components/Forms/select-input--default')

@@ -19,20 +19,20 @@ export type ZipParams = z.infer<typeof ZipParamsSchema>
  * Zod schema for create-story-dir function parameters.
  * Validates file path string for story directory creation.
  */
-export const CreateStoryDirParamsSchema = z.object({
+export const GetStoryDirParamsSchema = z.object({
   filePath: z.string(),
 })
 
 /**
  * Type for create-story-dir function parameters inferred from Zod schema.
  */
-export type CreateStoryDirParams = z.infer<typeof CreateStoryDirParamsSchema>
+export type GetStoryDirParams = z.infer<typeof GetStoryDirParamsSchema>
 
 /**
  * Zod schema for create-story-id function parameters.
  * Validates export name and story name for story ID generation.
  */
-export const CreateStoryIdParamsSchema = z.object({
+export const GetStoryIdParamsSchema = z.object({
   exportName: z.string(),
   storyName: z.string(),
 })
@@ -40,13 +40,13 @@ export const CreateStoryIdParamsSchema = z.object({
 /**
  * Type for create-story-id function parameters inferred from Zod schema.
  */
-export type CreateStoryIdParams = z.infer<typeof CreateStoryIdParamsSchema>
+export type GetStoryIdParams = z.infer<typeof GetStoryIdParamsSchema>
 
 /**
  * Zod schema for create-story-route function parameters.
  * Validates story route generation parameters.
  */
-export const CreateStoryRouteParamsSchema = z.object({
+export const GetStoryRouteParamsSchema = z.object({
   filePath: z.string(),
   exportName: z.string(),
   storyName: z.string(),
@@ -55,7 +55,7 @@ export const CreateStoryRouteParamsSchema = z.object({
 /**
  * Type for create-story-route function parameters inferred from Zod schema.
  */
-export type CreateStoryRouteParams = z.infer<typeof CreateStoryRouteParamsSchema>
+export type GetStoryRouteParams = z.infer<typeof GetStoryRouteParamsSchema>
 
 /**
  * Zod schema for get-template-exports function parameters.
