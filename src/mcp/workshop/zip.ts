@@ -1,6 +1,4 @@
-import type { ZipParams } from '../mcp.schemas.js'
-
-export const zip = ({ content, contentType, headers }: ZipParams) => {
+export const zip = ({ content, contentType, headers }: { content: string; contentType: string; headers?: Headers }) => {
   const compressed = Bun.gzipSync(content)
   const defaultHeaders: Record<string, string> = {
     'content-type': contentType,
