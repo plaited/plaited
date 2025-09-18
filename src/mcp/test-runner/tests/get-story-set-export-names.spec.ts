@@ -5,7 +5,7 @@ const getFixturePath = (filename: string) => Bun.resolveSync(`./fixtures/${filen
 
 test('getStorySetExportNames: detects all StoryObj exports', () => {
   const filePath = getFixturePath('story-exports.stories.tsx')
-  const exports = getStorySetExportNames({ filePath })
+  const exports = getStorySetExportNames(filePath)
 
   // Should detect all story exports including default
   expect(exports).toContain('basicStory')
@@ -25,7 +25,7 @@ test('getStorySetExportNames: detects all StoryObj exports', () => {
 
 test('getStorySetExportNames: detects stories in mixed export file', () => {
   const filePath = getFixturePath('mixed-story-exports.tsx')
-  const exports = getStorySetExportNames({ filePath })
+  const exports = getStorySetExportNames(filePath)
 
   // Should detect story exports
   expect(exports).toContain('firstStory')
@@ -50,7 +50,7 @@ test('getStorySetExportNames: detects stories in mixed export file', () => {
 
 test('getStorySetExportNames: returns empty array for file with no stories', () => {
   const filePath = getFixturePath('no-stories.tsx')
-  const exports = getStorySetExportNames({ filePath })
+  const exports = getStorySetExportNames(filePath)
 
   // Should return empty array
   expect(exports).toEqual([])
@@ -58,14 +58,14 @@ test('getStorySetExportNames: returns empty array for file with no stories', () 
 
 test('getStorySetExportNames: throws error for non-existent file', () => {
   const filePath = '/path/to/non-existent-file.tsx'
-  
+
   // Should throw an error for non-existent files
-  expect(() => getStorySetExportNames({ filePath })).toThrow('Failed to load file:')
+  expect(() => getStorySetExportNames(filePath)).toThrow('Failed to load file:')
 })
 
 test('getStorySetExportNames: detects StoryObj with play function (interaction story)', () => {
   const filePath = getFixturePath('story-exports.stories.tsx')
-  const exports = getStorySetExportNames({ filePath })
+  const exports = getStorySetExportNames(filePath)
 
   // StoryObj with play function should be detected
   expect(exports).toContain('interactionStory')
@@ -73,7 +73,7 @@ test('getStorySetExportNames: detects StoryObj with play function (interaction s
 
 test('getStorySetExportNames: detects StoryObj without play function (snapshot story)', () => {
   const filePath = getFixturePath('story-exports.stories.tsx')
-  const exports = getStorySetExportNames({ filePath })
+  const exports = getStorySetExportNames(filePath)
 
   // StoryObj without play function should be detected
   expect(exports).toContain('snapshotStory')
@@ -81,7 +81,7 @@ test('getStorySetExportNames: detects StoryObj without play function (snapshot s
 
 test('getStorySetExportNames: detects StoryObj with generic type parameter', () => {
   const filePath = getFixturePath('story-exports.stories.tsx')
-  const exports = getStorySetExportNames({ filePath })
+  const exports = getStorySetExportNames(filePath)
 
   // StoryObj<T> should be detected
   expect(exports).toContain('typedStory')
@@ -89,7 +89,7 @@ test('getStorySetExportNames: detects StoryObj with generic type parameter', () 
 
 test('getStorySetExportNames: returns unique export names', () => {
   const filePath = getFixturePath('story-exports.stories.tsx')
-  const exports = getStorySetExportNames({ filePath })
+  const exports = getStorySetExportNames(filePath)
 
   // Check for no duplicates
   const uniqueExports = [...new Set(exports)]
@@ -98,7 +98,7 @@ test('getStorySetExportNames: returns unique export names', () => {
 
 test('getStorySetExportNames: detects all StoryObj types regardless of play function', () => {
   const filePath = getFixturePath('story-exports.stories.tsx')
-  const exports = getStorySetExportNames({ filePath })
+  const exports = getStorySetExportNames(filePath)
 
   // All stories typed as StoryObj should be detected
   // Whether they have play function (interaction) or not (snapshot)

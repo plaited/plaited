@@ -2,10 +2,10 @@ import { posix } from 'node:path'
 
 import { kebabCase } from '../../utils'
 import { getNormalizedPath } from './get-normalized-path.js'
-import { WORKSHOP_ROUTE } from './wokrkshop.constants.js'
+import { TEST_RUNNER_ROUTE } from './test-runner.constants.js'
 import { zip } from './zip.js'
 
-export const getEntryResponses = async ({ cwd, entrypoints }: { cwd: string; entrypoints: string[] }) => {
+export const getEntryResponses = async (cwd: string, entrypoints: string[]) => {
   const responses: {
     [key: string]: Response
   } = {}
@@ -22,8 +22,8 @@ export const getEntryResponses = async ({ cwd, entrypoints }: { cwd: string; ent
       const content = await artifact.text()
       const { kind } = artifact
       let formattedPath: string = path
-      if (kind === 'entry-point' && path === `.${WORKSHOP_ROUTE}`) {
-        formattedPath = WORKSHOP_ROUTE
+      if (kind === 'entry-point' && path === `.${TEST_RUNNER_ROUTE}`) {
+        formattedPath = TEST_RUNNER_ROUTE
       } else if (kind === 'entry-point') {
         const normalizedPath = getNormalizedPath(path)
         formattedPath = `/${posix.dirname(normalizedPath)}/${kebabCase(posix.basename(normalizedPath, '.stories.js'))}--index.js`

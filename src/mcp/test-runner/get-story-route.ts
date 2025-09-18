@@ -2,7 +2,7 @@ import { posix } from 'node:path'
 
 import { kebabCase } from '../../utils'
 import { getNormalizedPath } from './get-normalized-path.js'
-import type { GetStoryRouteParams } from './workshop.schemas.js'
+import type { GetStoryRouteParams } from './test-runner.schemas.js'
 
 const STORIES_FILTERS_REGEX = /\.stories.tsx?$/
 /**

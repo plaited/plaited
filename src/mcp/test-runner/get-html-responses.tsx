@@ -5,8 +5,9 @@ import { type StoryObj } from '../../testing.js'
 import { StoryFixture } from '../../testing/testing.fixture.js'
 import { FIXTURE_EVENTS } from '../../testing/testing.constants.js'
 import { zip } from './zip.js'
-import { WORKSHOP_ROUTE } from './wokrkshop.constants.js'
+import { TEST_RUNNER_ROUTE } from './test-runner.constants.js'
 import { getStoryRoute } from './get-story-route.js'
+import { getStorySetExportNames } from './get-story-set-export-names.js'
 
 const getEntryPath = (route: string) => {
   const segments = route.split('/')
@@ -15,7 +16,7 @@ const getEntryPath = (route: string) => {
 }
 
 const createFixtureLoadScript = ({ importPath, exportName }: { importPath: string; exportName: string }) => `
-import '${WORKSHOP_ROUTE}'
+import '${TEST_RUNNER_ROUTE}'
 import { ${exportName} } from '${importPath}'
 
 await customElements.whenDefined("${StoryFixture.tag}")
@@ -119,7 +120,7 @@ const createInclude = async ({ story, route }: { story: StoryObj; route: string 
  * @returns Route objects with compressed HTML responses
  */
 export const getHTMLResponses = async (filePath: string) => {
-  const exports = (await getStorySetExports(filePath)) as string[]
+  const exports = getStorySetExportNames(filePath)
   const modules = await import(filePath)
   return await Promise.all(
     exports.map(async (exportName) => {

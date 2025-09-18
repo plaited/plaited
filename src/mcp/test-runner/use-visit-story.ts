@@ -4,7 +4,8 @@
  * Manages Playwright contexts and parallel test runs.
  */
 import type { Browser, BrowserContext, ConsoleMessage } from 'playwright'
-import type { StoryParams, RunningMap } from './workshop.types.js'
+import type { StoryParams, RunningMap } from './test-runner.types.js'
+import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 
 /**
  * @internal
@@ -23,20 +24,22 @@ export const useRunnerID = (route: string, colorScheme: string) => `${route}_${c
  * @param options - Visitor configuration
  * @param options.browser - Playwright browser
  * @param options.colorScheme - Test color scheme
- * @param options.serverURL - Story server URL
+ * @param options.url - Story server URL
  * @param options.running - Active test map
  * @returns Story visitor function
  */
 const visitStory = ({
   browser,
   colorScheme,
-  serverURL,
+  url,
   running,
+  server,
 }: {
   browser: Browser
   colorScheme: 'light' | 'dark'
-  serverURL: URL
+  url: URL
   running: RunningMap
+  server?: Server
 }) => {
   return async (params: StoryParams) => {
     const context = await browser.newContext({ recordVideo: params?.recordVideo, colorScheme })
@@ -49,13 +52,28 @@ const visitStory = ({
       context,
     })
     page.on('console', (msg: ConsoleMessage) => {
-      if (msg.type() === 'error') console.error(msg)
+      if (msg.type() === 'error')
+        server?.sendLoggingMessage({
+          level: 'error',
+          data: {
+            error: `Test server visit story error message receeved`,
+            detail: {
+              message: msg,
+            },
+          },
+        })
     })
-    const { href } = new URL(params.route, serverURL)
+    const { href } = new URL(params.route, url)
     try {
       await page.goto(href)
     } catch (error) {
-      console.log(error)
+      server?.sendLoggingMessage({
+        level: 'error',
+        data: {
+          error: `Test server error occurred visiting story`,
+          detail: error,
+        },
+      })
     }
   }
 }
@@ -68,7 +86,7 @@ const visitStory = ({
  * @param options - Visitor configuration
  * @param options.browser - Playwright browser
  * @param options.colorSchemeSupport - Enable dark mode testing
- * @param options.serverURL - Story server URL
+ * @param options.url - Story server URL
  * @param options.running - Active test tracking
  * @returns Visitor for all color schemes
  *
@@ -77,7 +95,7 @@ const visitStory = ({
  * const visit = useVisitStory({
  *   browser,
  *   colorSchemeSupport: true,
- *   serverURL,
+ *   url,
  *   running
  * });
  * await visit({ route: '/button' });
@@ -87,17 +105,19 @@ const visitStory = ({
 export const useVisitStory = ({
   browser,
   colorSchemeSupport,
-  serverURL,
+  url,
   running,
+  server,
 }: {
   browser: Browser
   colorSchemeSupport?: boolean
-  serverURL: URL
+  url: URL
   running: Map<string, StoryParams & { context: BrowserContext }>
+  server?: Server
 }) => {
   const visitations = [
-    visitStory({ browser, colorScheme: 'light', serverURL, running }),
-    colorSchemeSupport && visitStory({ browser, colorScheme: 'dark', serverURL, running }),
+    visitStory({ browser, colorScheme: 'light', url, running, server }),
+    colorSchemeSupport && visitStory({ browser, colorScheme: 'dark', url, running, server }),
   ]
 
   return async (params: StoryParams) =>

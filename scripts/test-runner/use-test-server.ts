@@ -1,4 +1,4 @@
-import { z } from 'zod/v4'
+import { z } from 'zod'
 import { useSignal, type Signal, type Trigger } from '../../src/main.js'
 import { type StoryObj } from '../../src/testing.js'
 import { RELOAD_STORY_PAGE, RUNNER_URL } from '../../src/testing/testing.constants.js'

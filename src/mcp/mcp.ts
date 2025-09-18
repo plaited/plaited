@@ -12,7 +12,7 @@ const BP_EVENTS = keyMirror(
 )
 const BP_THREADS = keyMirror('on_root_detection', 'block_list_roots')
 
-export const bServer = useBehavioral<
+export const mcpBehavioral = useBehavioral<
   {
     [BP_EVENTS.roots_list]: void
     [BP_EVENTS.scan_components]: void
@@ -23,7 +23,6 @@ export const bServer = useBehavioral<
     const { server } = mcp
     const rootsSignal = useSignal()
     rootsSignal.listen(BP_EVENTS.scan_components, trigger)
-
     bThreads.set({
       [BP_THREADS.block_list_roots]: bThread(
         [bSync({ block: BP_EVENTS.roots_list, interrupt: BP_EVENTS.root_support_detected })],
