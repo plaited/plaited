@@ -1,7 +1,7 @@
 import * as z from 'zod'
 
 export const GetFilePathsInputSchema = z.object({
-  dir: z.string().optional().describe('Directory that must be a child of the project root'),
+  dir: z.string().optional().describe('Absolute path to a directory that must be within the project root'),
 })
 
 export const GetStorySetPathsOutputSchema = z.object({

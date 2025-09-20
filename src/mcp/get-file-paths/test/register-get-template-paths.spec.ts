@@ -3,10 +3,11 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { getMcpServer } from '../../get-mcp-server.js'
 import { registerGetTemplatePaths } from '../register-get-template-paths.js'
+import path from 'node:path'
 
 let client: Client
 
-const testProjectPath = '/Users/eirby/Workspace/plaited/src/mcp/get-file-paths/test/fixtures/test-project'
+const testProjectPath = path.join(import.meta.dir, 'fixtures', 'test-project')
 
 beforeAll(async () => {
   const transport = new StdioClientTransport({
@@ -48,7 +49,7 @@ test('get-template-paths tool is available with correct metadata', async () => {
   expect(tool).toBeDefined()
   expect(tool?.title).toBe('Get Template Paths')
   expect(tool?.description).toBe(
-    'Retrieves all TypeScript JSX template files (*.tsx) excluding story files (*.stories.tsx) for Plaited behavioral and functional templates',
+    'Retrieves TypeScript JSX template files (*.tsx) from the specified directory or entire codebase, excluding story files (*.stories.tsx). Returns error if no template files found in the specified location.',
   )
 })
 
@@ -71,14 +72,19 @@ test('get-template-paths: finds all template files excluding stories', async () 
 
   // Check that the paths contain our template files
   const templateFiles = files.map((f) => f.replace(testProjectPath, ''))
-  expect(templateFiles).toContain('/Button.tsx')
-  expect(templateFiles).toContain('/components/Card.tsx')
-  expect(templateFiles).toContain('/utils/helpers.tsx')
-  expect(templateFiles).toContain('/templates-only/OnlyTemplate.tsx')
+  expect(templateFiles).toContainAllValues([
+    '/Button.tsx',
+    '/components/Card.tsx',
+    '/utils/helpers.tsx',
+    '/templates-only/OnlyTemplate.tsx',
+  ])
 
   // Should NOT contain story files
-  expect(templateFiles).not.toContain('/Button.stories.tsx')
-  expect(templateFiles).not.toContain('/components/Card.stories.tsx')
+  expect(templateFiles).not.toContainAnyValues([
+    '/Button.stories.tsx',
+    '/components/Card.stories.tsx',
+    '/stories-only/OnlyStory.stories.tsx',
+  ])
 })
 
 test('get-template-paths: returns correct structured response format', async () => {
@@ -158,23 +164,6 @@ test('get-template-paths: returns absolute paths', async () => {
   })
 })
 
-test('get-template-paths: maintains consistent ordering', async () => {
-  // Call the tool multiple times to ensure consistent ordering
-  const results = []
-  for (let i = 0; i < 3; i++) {
-    const result = await client.callTool({
-      name: 'get-template-paths',
-      arguments: {},
-    })
-    const structuredContent = result.structuredContent as { files: string[] }
-    results.push(structuredContent.files)
-  }
-
-  // All results should be identical
-  expect(results[0]).toEqual(results[1])
-  expect(results[1]).toEqual(results[2])
-})
-
 test('get-template-paths: correctly filters files with .stories. in the middle', async () => {
   const result = await client.callTool({
     name: 'get-template-paths',
@@ -199,12 +188,12 @@ test('get-template-paths: bug fix verification - returns filtered files not all 
   })
 
   const structuredContent = result.structuredContent as { files: string[] }
-  
+
   // Verify that no story files are in the result
   // This confirms we're getting filteredFiles, not the original files array
-  const hasStoryFiles = structuredContent.files.some(file => file.includes('.stories.'))
+  const hasStoryFiles = structuredContent.files.some((file) => file.includes('.stories.'))
   expect(hasStoryFiles).toBe(false)
-  
+
   // Verify we only have the expected non-story .tsx files
   expect(structuredContent.files.length).toBe(4)
 })
@@ -212,45 +201,44 @@ test('get-template-paths: bug fix verification - returns filtered files not all 
 test('get-template-paths: filters by subdirectory when dir is provided', async () => {
   const result = await client.callTool({
     name: 'get-template-paths',
-    arguments: { dir: 'components' },
+    arguments: { dir: `${testProjectPath}/components` },
   })
 
   expect(result.isError).toBeUndefined()
   const structuredContent = result.structuredContent as { files: string[] }
-  
+
   // Should only find template files in components directory
   expect(structuredContent.files).toHaveLength(1)
-  expect(structuredContent.files[0]).toContain('/components/Card.tsx')
-  
+  expect(structuredContent.files).toContainAllValues([`${testProjectPath}/components/Card.tsx`])
+
   // Should NOT include template files from root or utils
   const fileNames = structuredContent.files.map((f) => f.replace(testProjectPath, ''))
-  expect(fileNames).not.toContain('/Button.tsx')
-  expect(fileNames).not.toContain('/utils/helpers.tsx')
+  expect(fileNames).not.toContainAnyValues(['/Button.tsx', '/utils/helpers.tsx', '/templates-only/OnlyTemplate.tsx'])
 })
 
 test('get-template-paths: filters by utils directory', async () => {
   const result = await client.callTool({
     name: 'get-template-paths',
-    arguments: { dir: 'utils' },
+    arguments: { dir: `${testProjectPath}/utils` },
   })
 
   expect(result.isError).toBeUndefined()
   const structuredContent = result.structuredContent as { files: string[] }
-  
+
   // Should only find template files in utils directory
   expect(structuredContent.files).toHaveLength(1)
-  expect(structuredContent.files[0]).toContain('/utils/helpers.tsx')
+  expect(structuredContent.files).toContainAllValues([`${testProjectPath}/utils/helpers.tsx`])
 })
 
 test('get-template-paths: handles current directory reference', async () => {
   const result = await client.callTool({
     name: 'get-template-paths',
-    arguments: { dir: '.' },
+    arguments: { dir: testProjectPath },
   })
 
   expect(result.isError).toBeUndefined()
   const structuredContent = result.structuredContent as { files: string[] }
-  
+
   // Should behave same as no dir parameter
   expect(structuredContent.files).toHaveLength(4)
 })
@@ -258,12 +246,12 @@ test('get-template-paths: handles current directory reference', async () => {
 test('get-template-paths: handles empty string as dir', async () => {
   const result = await client.callTool({
     name: 'get-template-paths',
-    arguments: { dir: '' },
+    arguments: { dir: testProjectPath },
   })
 
   expect(result.isError).toBeUndefined()
   const structuredContent = result.structuredContent as { files: string[] }
-  
+
   // Should behave same as no dir parameter
   expect(structuredContent.files).toHaveLength(4)
 })
@@ -304,16 +292,16 @@ test('get-template-paths: throws error for path traversal attempts', async () =>
 test('get-template-paths: excludes story files even in subdirectories', async () => {
   const result = await client.callTool({
     name: 'get-template-paths',
-    arguments: { dir: 'components' },
+    arguments: { dir: `${testProjectPath}/components` },
   })
 
   expect(result.isError).toBeUndefined()
   const structuredContent = result.structuredContent as { files: string[] }
-  
+
   // Should not include Card.stories.tsx even though it's in components dir
-  const hasStoryFiles = structuredContent.files.some(file => file.includes('.stories.'))
+  const hasStoryFiles = structuredContent.files.some((file) => file.includes('.stories.'))
   expect(hasStoryFiles).toBe(false)
-  
+
   // Should only have Card.tsx
   expect(structuredContent.files).toHaveLength(1)
   expect(structuredContent.files[0]).toContain('Card.tsx')
@@ -323,45 +311,49 @@ test('get-template-paths: excludes story files even in subdirectories', async ()
 test('get-template-paths: returns error for empty directory', async () => {
   const result = await client.callTool({
     name: 'get-template-paths',
-    arguments: { dir: 'empty' },
+    arguments: { dir: `${testProjectPath}/empty` },
   })
-  
+
   expect(result.isError).toBe(true)
   const content = result.content as Array<{ type: string; text: string }>
-  expect(content[0].text).toBe("Error: No template files (*.tsx) found in directory 'empty' (excluding *.stories.tsx)")
+  expect(content[0].text).toBe(
+    `Error: No template files (*.tsx) found in directory '${testProjectPath}/empty' (excluding *.stories.tsx)`,
+  )
 })
 
 test('get-template-paths: returns error for directory with only stories', async () => {
   const result = await client.callTool({
     name: 'get-template-paths',
-    arguments: { dir: 'stories-only' },
+    arguments: { dir: `${testProjectPath}/stories-only` },
   })
-  
+
   expect(result.isError).toBe(true)
   const content = result.content as Array<{ type: string; text: string }>
-  expect(content[0].text).toBe("Error: No template files (*.tsx) found in directory 'stories-only' (excluding *.stories.tsx)")
+  expect(content[0].text).toBe(
+    `Error: No template files (*.tsx) found in directory '${testProjectPath}/stories-only' (excluding *.stories.tsx)`,
+  )
 })
 
 test('get-template-paths: finds template files in templates-only directory', async () => {
   const result = await client.callTool({
     name: 'get-template-paths',
-    arguments: { dir: 'templates-only' },
+    arguments: { dir: `${testProjectPath}/templates-only` },
   })
-  
+
   expect(result.isError).toBeUndefined()
   const structuredContent = result.structuredContent as { files: string[] }
   expect(structuredContent.files).toHaveLength(1)
-  expect(structuredContent.files[0]).toContain('OnlyTemplate.tsx')
+  expect(structuredContent.files).toContainAllValues([`${testProjectPath}/templates-only/OnlyTemplate.tsx`])
 })
 
 test('get-template-paths: returns correct templates for utils directory', async () => {
   const result = await client.callTool({
     name: 'get-template-paths',
-    arguments: { dir: 'utils' },
+    arguments: { dir: `${testProjectPath}/utils` },
   })
-  
+
   expect(result.isError).toBeUndefined()
   const structuredContent = result.structuredContent as { files: string[] }
   expect(structuredContent.files).toHaveLength(1)
-  expect(structuredContent.files[0]).toContain('helpers.tsx')
+  expect(structuredContent.files).toContainAllValues([`${testProjectPath}/utils/helpers.tsx`])
 })

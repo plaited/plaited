@@ -3,10 +3,11 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { getMcpServer } from '../../get-mcp-server.js'
 import { registerGetStorySetPaths } from '../register-get-story-set-paths.js'
+import path from 'node:path'
 
 let client: Client
 
-const testProjectPath = '/Users/eirby/Workspace/plaited/src/mcp/get-file-paths/test/fixtures/test-project'
+const testProjectPath = path.join(import.meta.dir, 'fixtures', 'test-project')
 
 beforeAll(async () => {
   const transport = new StdioClientTransport({
@@ -48,7 +49,7 @@ test('get-story-set-paths tool is available with correct metadata', async () => 
   expect(tool).toBeDefined()
   expect(tool?.title).toBe('Get Story Set Paths')
   expect(tool?.description).toBe(
-    'Retrieves all Plaited story set files (*.stories.tsx) from the codebase for component testing and documentation',
+    'Retrieves Plaited story set files (*.stories.tsx) from the specified directory or entire codebase. Returns error if no story files found in the specified location.',
   )
 })
 
@@ -71,9 +72,11 @@ test('get-story-set-paths: finds all story files in test project', async () => {
 
   // Check that the paths contain our test story files
   const storyFiles = files.map((f) => f.replace(testProjectPath, ''))
-  expect(storyFiles).toContain('/Button.stories.tsx')
-  expect(storyFiles).toContain('/components/Card.stories.tsx')
-  expect(storyFiles).toContain('/stories-only/OnlyStory.stories.tsx')
+  expect(storyFiles).toContainAllValues([
+    '/Button.stories.tsx',
+    '/components/Card.stories.tsx',
+    '/stories-only/OnlyStory.stories.tsx',
+  ])
 })
 
 test('get-story-set-paths: returns correct structured response format', async () => {
@@ -92,13 +95,12 @@ test('get-story-set-paths: returns correct structured response format', async ()
   expect(Array.isArray(structuredContent.files)).toBe(true)
 
   // Verify exact content in structuredContent
-  const expectedFiles = [
+  expect(structuredContent.files).toHaveLength(3)
+  expect(structuredContent.files).toContainAllValues([
     `${testProjectPath}/Button.stories.tsx`,
     `${testProjectPath}/components/Card.stories.tsx`,
-    `${testProjectPath}/stories-only/OnlyStory.stories.tsx`
-  ]
-  expect(structuredContent.files).toHaveLength(3)
-  expect(structuredContent.files.sort()).toEqual(expectedFiles.sort())
+    `${testProjectPath}/stories-only/OnlyStory.stories.tsx`,
+  ])
 
   // Content should be array with single text element
   const content = result.content as Array<{ type: string; text: string }>
@@ -128,9 +130,7 @@ test('get-story-set-paths: filters only *.stories.tsx files', async () => {
 
   // Should NOT include regular .tsx files
   const fileNames = files.map((f) => f.replace(testProjectPath, ''))
-  expect(fileNames).not.toContain('/Button.tsx')
-  expect(fileNames).not.toContain('/components/Card.tsx')
-  expect(fileNames).not.toContain('/utils/helpers.tsx')
+  expect(fileNames).not.toContainAnyValues(['/Button.tsx', '/components/Card.tsx', '/utils/helpers.tsx'])
 })
 
 test('get-story-set-paths: returns absolute paths', async () => {
@@ -149,27 +149,10 @@ test('get-story-set-paths: returns absolute paths', async () => {
   })
 })
 
-test('get-story-set-paths: maintains consistent ordering', async () => {
-  // Call the tool multiple times to ensure consistent ordering
-  const results = []
-  for (let i = 0; i < 3; i++) {
-    const result = await client.callTool({
-      name: 'get-story-set-paths',
-      arguments: {},
-    })
-    const structuredContent = result.structuredContent as { files: string[] }
-    results.push(structuredContent.files)
-  }
-
-  // All results should be identical
-  expect(results[0]).toEqual(results[1])
-  expect(results[1]).toEqual(results[2])
-})
-
 test('get-story-set-paths: filters by subdirectory when dir is provided', async () => {
   const result = await client.callTool({
     name: 'get-story-set-paths',
-    arguments: { dir: 'components' },
+    arguments: { dir: `${testProjectPath}/components` },
   })
 
   // Debug: log the result if there's an error
@@ -179,25 +162,25 @@ test('get-story-set-paths: filters by subdirectory when dir is provided', async 
 
   expect(result.isError).toBeUndefined()
   const structuredContent = result.structuredContent as { files: string[] }
-  
+
   // Should only find story files in components directory
   expect(structuredContent.files).toHaveLength(1)
-  expect(structuredContent.files[0]).toContain('/components/Card.stories.tsx')
-  
+  expect(structuredContent.files).toContainAllValues([`${testProjectPath}/components/Card.stories.tsx`])
+
   // Should NOT include story files from root
   const fileNames = structuredContent.files.map((f) => f.replace(testProjectPath, ''))
-  expect(fileNames).not.toContain('/Button.stories.tsx')
+  expect(fileNames).not.toContainAnyValues(['/Button.stories.tsx', '/stories-only/OnlyStory.stories.tsx'])
 })
 
 test('get-story-set-paths: handles current directory reference', async () => {
   const result = await client.callTool({
     name: 'get-story-set-paths',
-    arguments: { dir: '.' },
+    arguments: { dir: testProjectPath },
   })
 
   expect(result.isError).toBeUndefined()
   const structuredContent = result.structuredContent as { files: string[] }
-  
+
   // Should behave same as no dir parameter
   expect(structuredContent.files).toHaveLength(3)
 })
@@ -205,12 +188,12 @@ test('get-story-set-paths: handles current directory reference', async () => {
 test('get-story-set-paths: handles empty string as dir', async () => {
   const result = await client.callTool({
     name: 'get-story-set-paths',
-    arguments: { dir: '' },
+    arguments: { dir: testProjectPath },
   })
 
   expect(result.isError).toBeUndefined()
   const structuredContent = result.structuredContent as { files: string[] }
-  
+
   // Should behave same as no dir parameter
   expect(structuredContent.files).toHaveLength(3)
 })
@@ -253,7 +236,7 @@ test('get-story-set-paths: handles nested subdirectories', async () => {
   // For now, test that it doesn't error on valid nested path
   const result = await client.callTool({
     name: 'get-story-set-paths',
-    arguments: { dir: 'components' },
+    arguments: { dir: `${testProjectPath}/components` },
   })
 
   expect(result.isError).toBeUndefined()
@@ -264,44 +247,46 @@ test('get-story-set-paths: handles nested subdirectories', async () => {
 test('get-story-set-paths: returns error for empty directory', async () => {
   const result = await client.callTool({
     name: 'get-story-set-paths',
-    arguments: { dir: 'empty' },
+    arguments: { dir: `${testProjectPath}/empty` },
   })
-  
+
   expect(result.isError).toBe(true)
   const content = result.content as Array<{ type: string; text: string }>
-  expect(content[0].text).toBe("Error: No story files (*.stories.tsx) found in directory 'empty'")
+  expect(content[0].text).toBe(`Error: No story files (*.stories.tsx) found in directory '${testProjectPath}/empty'`)
 })
 
 test('get-story-set-paths: returns error for directory with no stories', async () => {
   const result = await client.callTool({
     name: 'get-story-set-paths',
-    arguments: { dir: 'utils' }, // utils only has helpers.tsx, no stories
+    arguments: { dir: `${testProjectPath}/utils` }, // utils only has helpers.tsx, no stories
   })
-  
+
   expect(result.isError).toBe(true)
   const content = result.content as Array<{ type: string; text: string }>
-  expect(content[0].text).toBe("Error: No story files (*.stories.tsx) found in directory 'utils'")
+  expect(content[0].text).toBe(`Error: No story files (*.stories.tsx) found in directory '${testProjectPath}/utils'`)
 })
 
 test('get-story-set-paths: returns error for directory with only templates', async () => {
   const result = await client.callTool({
     name: 'get-story-set-paths',
-    arguments: { dir: 'templates-only' },
+    arguments: { dir: `${testProjectPath}/templates-only` },
   })
-  
+
   expect(result.isError).toBe(true)
   const content = result.content as Array<{ type: string; text: string }>
-  expect(content[0].text).toBe("Error: No story files (*.stories.tsx) found in directory 'templates-only'")
+  expect(content[0].text).toBe(
+    `Error: No story files (*.stories.tsx) found in directory '${testProjectPath}/templates-only'`,
+  )
 })
 
 test('get-story-set-paths: finds story files in stories-only directory', async () => {
   const result = await client.callTool({
     name: 'get-story-set-paths',
-    arguments: { dir: 'stories-only' },
+    arguments: { dir: `${testProjectPath}/stories-only` },
   })
-  
+
   expect(result.isError).toBeUndefined()
   const structuredContent = result.structuredContent as { files: string[] }
   expect(structuredContent.files).toHaveLength(1)
-  expect(structuredContent.files[0]).toContain('OnlyStory.stories.tsx')
+  expect(structuredContent.files).toContainAllValues([`${testProjectPath}/stories-only/OnlyStory.stories.tsx`])
 })

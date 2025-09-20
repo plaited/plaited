@@ -10,7 +10,7 @@ export const registerGetStorySetPaths = (server: McpServer, cwd: string) => {
     {
       title: 'Get Story Set Paths',
       description:
-        'Retrieves all Plaited story set files (*.stories.tsx) from the codebase for component testing and documentation',
+        'Retrieves Plaited story set files (*.stories.tsx) from the specified directory or entire codebase. Returns error if no story files found in the specified location.',
       inputSchema: GetFilePathsInputSchema.shape,
       outputSchema: GetStorySetPathsOutputSchema.shape,
     },
@@ -18,18 +18,19 @@ export const registerGetStorySetPaths = (server: McpServer, cwd: string) => {
       try {
         const searchPath = validateChildPath(cwd, dir)
         const files = await globFiles(searchPath, STORY_GLOB_PATTERN)
-        
+
         // Check if no files were found
         if (files.length === 0) {
-          const errorMessage = dir 
-            ? `No story files (*.stories.tsx) found in directory '${dir}'`
+          const errorMessage =
+            dir ?
+              `No story files (*.stories.tsx) found in directory '${dir}'`
             : 'No story files (*.stories.tsx) found in the project'
-          
+
           await server.server.sendLoggingMessage({
             level: 'error',
             data: errorMessage,
           })
-          
+
           return {
             content: [
               {
@@ -40,7 +41,7 @@ export const registerGetStorySetPaths = (server: McpServer, cwd: string) => {
             isError: true,
           }
         }
-        
+
         return {
           content: [
             {

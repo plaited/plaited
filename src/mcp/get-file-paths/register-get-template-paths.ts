@@ -9,7 +9,7 @@ export const registerGetTemplatePaths = (server: McpServer, cwd: string) => {
     {
       title: 'Get Template Paths',
       description:
-        'Retrieves all TypeScript JSX template files (*.tsx) excluding story files (*.stories.tsx) for Plaited behavioral and functional templates',
+        'Retrieves TypeScript JSX template files (*.tsx) from the specified directory or entire codebase, excluding story files (*.stories.tsx). Returns error if no template files found in the specified location.',
       inputSchema: GetFilePathsInputSchema.shape,
       outputSchema: GetTemplatePathsOutputSchema.shape,
     },
@@ -18,18 +18,19 @@ export const registerGetTemplatePaths = (server: McpServer, cwd: string) => {
         const searchPath = validateChildPath(cwd, dir)
         const files = await globFiles(searchPath, '**/*.tsx')
         const filteredFiles = files.filter((file) => !file.includes('.stories.'))
-        
+
         // Check if no files were found after filtering
         if (filteredFiles.length === 0) {
-          const errorMessage = dir 
-            ? `No template files (*.tsx) found in directory '${dir}' (excluding *.stories.tsx)`
+          const errorMessage =
+            dir ?
+              `No template files (*.tsx) found in directory '${dir}' (excluding *.stories.tsx)`
             : 'No template files (*.tsx) found in the project (excluding *.stories.tsx)'
-          
+
           await server.server.sendLoggingMessage({
             level: 'error',
             data: errorMessage,
           })
-          
+
           return {
             content: [
               {
@@ -40,7 +41,7 @@ export const registerGetTemplatePaths = (server: McpServer, cwd: string) => {
             isError: true,
           }
         }
-        
+
         return {
           content: [
             {
