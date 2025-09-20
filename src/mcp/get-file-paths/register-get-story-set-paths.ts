@@ -18,6 +18,29 @@ export const registerGetStorySetPaths = (server: McpServer, cwd: string) => {
       try {
         const searchPath = validateChildPath(cwd, dir)
         const files = await globFiles(searchPath, STORY_GLOB_PATTERN)
+        
+        // Check if no files were found
+        if (files.length === 0) {
+          const errorMessage = dir 
+            ? `No story files (*.stories.tsx) found in directory '${dir}'`
+            : 'No story files (*.stories.tsx) found in the project'
+          
+          await server.server.sendLoggingMessage({
+            level: 'error',
+            data: errorMessage,
+          })
+          
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error: ${errorMessage}`,
+              },
+            ],
+            isError: true,
+          }
+        }
+        
         return {
           content: [
             {

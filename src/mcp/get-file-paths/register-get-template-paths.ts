@@ -18,6 +18,29 @@ export const registerGetTemplatePaths = (server: McpServer, cwd: string) => {
         const searchPath = validateChildPath(cwd, dir)
         const files = await globFiles(searchPath, '**/*.tsx')
         const filteredFiles = files.filter((file) => !file.includes('.stories.'))
+        
+        // Check if no files were found after filtering
+        if (filteredFiles.length === 0) {
+          const errorMessage = dir 
+            ? `No template files (*.tsx) found in directory '${dir}' (excluding *.stories.tsx)`
+            : 'No template files (*.tsx) found in the project (excluding *.stories.tsx)'
+          
+          await server.server.sendLoggingMessage({
+            level: 'error',
+            data: errorMessage,
+          })
+          
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error: ${errorMessage}`,
+              },
+            ],
+            isError: true,
+          }
+        }
+        
         return {
           content: [
             {

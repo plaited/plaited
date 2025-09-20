@@ -67,12 +67,13 @@ test('get-story-set-paths: finds all story files in test project', async () => {
 
   // Should find our test story files
   const files = structuredContent.files
-  expect(files.length).toBe(2)
+  expect(files.length).toBe(3) // Button.stories.tsx, Card.stories.tsx, OnlyStory.stories.tsx
 
   // Check that the paths contain our test story files
   const storyFiles = files.map((f) => f.replace(testProjectPath, ''))
   expect(storyFiles).toContain('/Button.stories.tsx')
   expect(storyFiles).toContain('/components/Card.stories.tsx')
+  expect(storyFiles).toContain('/stories-only/OnlyStory.stories.tsx')
 })
 
 test('get-story-set-paths: returns correct structured response format', async () => {
@@ -91,8 +92,12 @@ test('get-story-set-paths: returns correct structured response format', async ()
   expect(Array.isArray(structuredContent.files)).toBe(true)
 
   // Verify exact content in structuredContent
-  const expectedFiles = [`${testProjectPath}/Button.stories.tsx`, `${testProjectPath}/components/Card.stories.tsx`]
-  expect(structuredContent.files).toHaveLength(2)
+  const expectedFiles = [
+    `${testProjectPath}/Button.stories.tsx`,
+    `${testProjectPath}/components/Card.stories.tsx`,
+    `${testProjectPath}/stories-only/OnlyStory.stories.tsx`
+  ]
+  expect(structuredContent.files).toHaveLength(3)
   expect(structuredContent.files.sort()).toEqual(expectedFiles.sort())
 
   // Content should be array with single text element
@@ -194,7 +199,7 @@ test('get-story-set-paths: handles current directory reference', async () => {
   const structuredContent = result.structuredContent as { files: string[] }
   
   // Should behave same as no dir parameter
-  expect(structuredContent.files).toHaveLength(2)
+  expect(structuredContent.files).toHaveLength(3)
 })
 
 test('get-story-set-paths: handles empty string as dir', async () => {
@@ -207,7 +212,7 @@ test('get-story-set-paths: handles empty string as dir', async () => {
   const structuredContent = result.structuredContent as { files: string[] }
   
   // Should behave same as no dir parameter
-  expect(structuredContent.files).toHaveLength(2)
+  expect(structuredContent.files).toHaveLength(3)
 })
 
 test('get-story-set-paths: throws error for parent directory traversal', async () => {
@@ -254,4 +259,49 @@ test('get-story-set-paths: handles nested subdirectories', async () => {
   expect(result.isError).toBeUndefined()
   const structuredContent = result.structuredContent as { files: string[] }
   expect(Array.isArray(structuredContent.files)).toBe(true)
+})
+
+test('get-story-set-paths: returns error for empty directory', async () => {
+  const result = await client.callTool({
+    name: 'get-story-set-paths',
+    arguments: { dir: 'empty' },
+  })
+  
+  expect(result.isError).toBe(true)
+  const content = result.content as Array<{ type: string; text: string }>
+  expect(content[0].text).toBe("Error: No story files (*.stories.tsx) found in directory 'empty'")
+})
+
+test('get-story-set-paths: returns error for directory with no stories', async () => {
+  const result = await client.callTool({
+    name: 'get-story-set-paths',
+    arguments: { dir: 'utils' }, // utils only has helpers.tsx, no stories
+  })
+  
+  expect(result.isError).toBe(true)
+  const content = result.content as Array<{ type: string; text: string }>
+  expect(content[0].text).toBe("Error: No story files (*.stories.tsx) found in directory 'utils'")
+})
+
+test('get-story-set-paths: returns error for directory with only templates', async () => {
+  const result = await client.callTool({
+    name: 'get-story-set-paths',
+    arguments: { dir: 'templates-only' },
+  })
+  
+  expect(result.isError).toBe(true)
+  const content = result.content as Array<{ type: string; text: string }>
+  expect(content[0].text).toBe("Error: No story files (*.stories.tsx) found in directory 'templates-only'")
+})
+
+test('get-story-set-paths: finds story files in stories-only directory', async () => {
+  const result = await client.callTool({
+    name: 'get-story-set-paths',
+    arguments: { dir: 'stories-only' },
+  })
+  
+  expect(result.isError).toBeUndefined()
+  const structuredContent = result.structuredContent as { files: string[] }
+  expect(structuredContent.files).toHaveLength(1)
+  expect(structuredContent.files[0]).toContain('OnlyStory.stories.tsx')
 })
