@@ -38,7 +38,7 @@ test('registerGetStoryUrl registers tool correctly', () => {
 test('get-story-url tool is available', async () => {
   const tools = await client.listTools()
   const tool = tools.tools.find((t) => t.name === 'get-story-url')
-  
+
   expect(tool).toBeDefined()
   expect(tool?.title).toBe('Get story path')
   expect(tool?.description).toBe('get the url for the story exportName from the story set file passed to tool input')
@@ -314,23 +314,23 @@ test('get-story-url: verifies complete structured response format', async () => 
   expect(result).toHaveProperty('content')
   expect(result).toHaveProperty('structuredContent')
   expect(result.isError).toBeUndefined()
-  
+
   const structuredContent = result.structuredContent as { url: string }
   expect(structuredContent).toHaveProperty('url')
   expect(typeof structuredContent.url).toBe('string')
-  
+
   // Verify exact structured content
   expect(structuredContent).toEqual({
     url: 'http://localhost:3000/src/components/button--primary-button',
   })
-  
+
   // Content should be array with single text element
   const content = result.content as Array<{ type: string; text: string }>
   expect(Array.isArray(content)).toBe(true)
   expect(content).toHaveLength(1)
   expect(content?.[0]).toHaveProperty('type', 'text')
   expect(content?.[0]).toHaveProperty('text')
-  
+
   // Content text should match the URL
   expect(content?.[0]?.text).toBe(structuredContent.url)
 })
@@ -374,7 +374,7 @@ test('get-story-url: handles absolute paths correctly', async () => {
   expect(structuredContent).toEqual({
     url: 'http://localhost:3000//src/components/atoms/button--primary',
   })
-  
+
   // Verify content
   const content = result.content as Array<{ type: string; text: string }>
   expect(content?.[0]?.text).toBe(structuredContent.url)

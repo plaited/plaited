@@ -40,7 +40,7 @@ test('registerGetStorySetMetadata registers tool correctly', () => {
 test('get-story-set-metadata tool is available', async () => {
   const tools = await client.listTools()
   const tool = tools.tools.find((t) => t.name === 'get-story-set-metadata')
-  
+
   expect(tool).toBeDefined()
   expect(tool?.title).toBe('Get story set metadata')
   expect(tool?.description).toBe('Performs an AST parse of a .stories.tsx file to grab metadata for exported stories')
@@ -48,17 +48,17 @@ test('get-story-set-metadata tool is available', async () => {
 
 test('get-story-set-metadata: detects interaction vs snapshot stories', async () => {
   const filePath = getFixturePath('story-exports.stories.tsx')
-  const result = await client.callTool({ 
-    name: 'get-story-set-metadata', 
-    arguments: { filePath } 
+  const result = await client.callTool({
+    name: 'get-story-set-metadata',
+    arguments: { filePath },
   })
 
   const structuredContent = result.structuredContent as { metadata: StoryMetadata[] }
   expect(structuredContent).toBeDefined()
   expect(structuredContent.metadata).toBeDefined()
-  
+
   const { metadata } = structuredContent
-  
+
   // Test exact structured content for each story
   const interactionStory = metadata.find((d) => d.name === 'interactionStory')
   expect(interactionStory).toEqual({
@@ -109,7 +109,7 @@ test('get-story-set-metadata: detects interaction vs snapshot stories', async ()
     hasTemplate: true,
     hasParameters: false,
   })
-  
+
   // Verify the complete metadata array has exact content
   expect(metadata).toEqual([
     {
@@ -153,7 +153,7 @@ test('get-story-set-metadata: detects interaction vs snapshot stories', async ()
       hasParameters: false,
     },
   ])
-  
+
   // Verify content matches structured content
   const content = result.content as Array<{ type: string; text: string }>
   expect(content).toBeDefined()
@@ -164,9 +164,9 @@ test('get-story-set-metadata: detects interaction vs snapshot stories', async ()
 
 test('get-story-set-metadata: correctly identifies all StoryObj in mixed exports', async () => {
   const filePath = getFixturePath('mixed-story-exports.tsx')
-  const result = await client.callTool({ 
-    name: 'get-story-set-metadata', 
-    arguments: { filePath } 
+  const result = await client.callTool({
+    name: 'get-story-set-metadata',
+    arguments: { filePath },
   })
 
   const structuredContent = result.structuredContent as { metadata: StoryMetadata[] }
@@ -236,10 +236,10 @@ test('get-story-set-metadata: correctly identifies all StoryObj in mixed exports
   // Verify non-story exports are filtered out
   const regularComponent = metadata.find((d) => d.name === 'regularComponent')
   expect(regularComponent).toBeUndefined()
-  
+
   const notAStory = metadata.find((d) => d.name === 'notAStory')
   expect(notAStory).toBeUndefined()
-  
+
   const utilityFunction = metadata.find((d) => d.name === 'utilityFunction')
   expect(utilityFunction).toBeUndefined()
 
@@ -249,14 +249,14 @@ test('get-story-set-metadata: correctly identifies all StoryObj in mixed exports
 
 test('get-story-set-metadata: returns empty array for no stories', async () => {
   const filePath = getFixturePath('no-stories.tsx')
-  const result = await client.callTool({ 
-    name: 'get-story-set-metadata', 
-    arguments: { filePath } 
+  const result = await client.callTool({
+    name: 'get-story-set-metadata',
+    arguments: { filePath },
   })
 
   const structuredContent = result.structuredContent as { metadata: StoryMetadata[] }
   const { metadata } = structuredContent
-  
+
   // Test exact empty array
   expect(metadata).toEqual([])
   expect(metadata).toHaveLength(0)
@@ -269,17 +269,17 @@ test('get-story-set-metadata: returns empty array for no stories', async () => {
 
 test('get-story-set-metadata: handles error for non-existent file', async () => {
   const filePath = '/path/to/non-existent-file.tsx'
-  const result = await client.callTool({ 
-    name: 'get-story-set-metadata', 
-    arguments: { filePath } 
+  const result = await client.callTool({
+    name: 'get-story-set-metadata',
+    arguments: { filePath },
   })
 
   // Error responses should have isError flag
   expect(result.isError).toBe(true)
-  
+
   // Should not have structured content on error
   expect(result.structuredContent).toBeUndefined()
-  
+
   // Error message in content
   const content = result.content as Array<{ type: string; text: string }>
   expect(content).toBeDefined()
@@ -290,9 +290,9 @@ test('get-story-set-metadata: handles error for non-existent file', async () => 
 
 test('get-story-set-metadata: validates exact metadata properties', async () => {
   const filePath = getFixturePath('story-exports.stories.tsx')
-  const result = await client.callTool({ 
-    name: 'get-story-set-metadata', 
-    arguments: { filePath } 
+  const result = await client.callTool({
+    name: 'get-story-set-metadata',
+    arguments: { filePath },
   })
 
   const structuredContent = result.structuredContent as { metadata: StoryMetadata[] }
@@ -301,15 +301,8 @@ test('get-story-set-metadata: validates exact metadata properties', async () => 
   // Validate exact structure of all metadata entries
   metadata.forEach((story) => {
     // Every story must have these exact properties
-    expect(Object.keys(story).sort()).toEqual([
-      'hasArgs',
-      'hasParameters',
-      'hasPlay',
-      'hasTemplate',
-      'name',
-      'type',
-    ])
-    
+    expect(Object.keys(story).sort()).toEqual(['hasArgs', 'hasParameters', 'hasPlay', 'hasTemplate', 'name', 'type'])
+
     // Type validation
     expect(typeof story.name).toBe('string')
     expect(['interaction', 'snapshot', 'unknown']).toContain(story.type)
@@ -368,9 +361,9 @@ test('get-story-set-metadata: validates exact metadata properties', async () => 
 
 test('get-story-set-metadata: exact story count and type breakdown', async () => {
   const filePath = getFixturePath('story-exports.stories.tsx')
-  const result = await client.callTool({ 
-    name: 'get-story-set-metadata', 
-    arguments: { filePath } 
+  const result = await client.callTool({
+    name: 'get-story-set-metadata',
+    arguments: { filePath },
   })
 
   const structuredContent = result.structuredContent as { metadata: StoryMetadata[] }
@@ -378,15 +371,15 @@ test('get-story-set-metadata: exact story count and type breakdown', async () =>
 
   // Exact counts
   expect(metadata).toHaveLength(5)
-  
+
   const interactionStories = metadata.filter((d) => d.type === 'interaction')
   const snapshotStories = metadata.filter((d) => d.type === 'snapshot')
   const unknownStories = metadata.filter((d) => d.type === 'unknown')
-  
+
   expect(interactionStories).toHaveLength(1)
   expect(snapshotStories).toHaveLength(4)
   expect(unknownStories).toHaveLength(0)
-  
+
   // Exact story objects for each type
   expect(interactionStories).toEqual([
     {
@@ -437,20 +430,20 @@ test('get-story-set-metadata: exact story count and type breakdown', async () =>
 
 test('get-story-set-metadata: verifies complete structured response format', async () => {
   const filePath = getFixturePath('mixed-story-exports.tsx')
-  const result = await client.callTool({ 
-    name: 'get-story-set-metadata', 
-    arguments: { filePath } 
+  const result = await client.callTool({
+    name: 'get-story-set-metadata',
+    arguments: { filePath },
   })
 
   // Test the complete response structure
   expect(result).toHaveProperty('content')
   expect(result).toHaveProperty('structuredContent')
   expect(result.isError).toBeUndefined()
-  
+
   const structuredContent = result.structuredContent as { metadata: StoryMetadata[] }
   expect(structuredContent).toHaveProperty('metadata')
   expect(Array.isArray(structuredContent.metadata)).toBe(true)
-  
+
   // Verify exact structured content
   expect(structuredContent).toEqual({
     metadata: [
@@ -480,14 +473,14 @@ test('get-story-set-metadata: verifies complete structured response format', asy
       },
     ],
   })
-  
+
   // Content should be array with single text element
   const content = result.content as Array<{ type: string; text: string }>
   expect(Array.isArray(content)).toBe(true)
   expect(content).toHaveLength(1)
   expect(content?.[0]).toHaveProperty('type', 'text')
   expect(content?.[0]).toHaveProperty('text')
-  
+
   // Content text should be valid JSON matching structured content
   const parsedContent = JSON.parse(content?.[0]?.text || '[]')
   expect(parsedContent).toEqual(structuredContent.metadata)

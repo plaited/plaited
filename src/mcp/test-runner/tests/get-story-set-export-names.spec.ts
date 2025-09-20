@@ -105,8 +105,4 @@ test('getStorySetExportNames: detects all StoryObj types regardless of play func
   expect(exports).toContain('basicStory')
   expect(exports).toContain('interactionStory') // has play
   expect(exports).toContain('snapshotStory') // no play
-
-  // This demonstrates that using StoryObj type captures both
-  // interaction and snapshot stories, since StoryObj is a union type
-  console.log('Detected StoryObj exports:', exports)
 })

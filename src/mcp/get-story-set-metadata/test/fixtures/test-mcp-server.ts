@@ -6,7 +6,7 @@ import { registerGetStorySetMetadata } from '../../register-get-story-set-metada
 try {
   // Create the MCP server
   const mcpServer = getMcpServer()
-  
+
   // Register the get-story-set-metadata tool
   registerGetStorySetMetadata(mcpServer)
 
