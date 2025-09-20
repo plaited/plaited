@@ -1,0 +1,50 @@
+import { globFiles } from '../test-runner/glob-files.js'
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { GetTemplatePathsOutputSchema, GetFilePathsInputSchema } from './get-file-paths.schemas.js'
+import { validateChildPath } from './validate-child-path.js'
+
+export const registerGetTemplatePaths = (server: McpServer, cwd: string) => {
+  server.registerTool(
+    'get-template-paths',
+    {
+      title: 'Get Template Paths',
+      description:
+        'Retrieves all TypeScript JSX template files (*.tsx) excluding story files (*.stories.tsx) for Plaited behavioral and functional templates',
+      inputSchema: GetFilePathsInputSchema.shape,
+      outputSchema: GetTemplatePathsOutputSchema.shape,
+    },
+    async ({ dir }) => {
+      try {
+        const searchPath = validateChildPath(cwd, dir)
+        const files = await globFiles(searchPath, '**/*.tsx')
+        const filteredFiles = files.filter((file) => !file.includes('.stories.'))
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(filteredFiles, null, 2),
+            },
+          ],
+          structuredContent: {
+            files: filteredFiles,
+          },
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        await server.server.sendLoggingMessage({
+          level: 'error',
+          data: `Failed to get template paths: ${errorMessage}`,
+        })
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Error: ${errorMessage}`,
+            },
+          ],
+          isError: true,
+        }
+      }
+    },
+  )
+}

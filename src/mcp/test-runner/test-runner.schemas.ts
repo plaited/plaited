@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import * as z from 'zod'
 
 /**
  * Zod schema for create-story-dir function parameters.
@@ -57,7 +57,7 @@ export const RunnerMessageSchema = z.object({
  * Zod schema for create-story-route function parameters.
  * Validates story route generation parameters.
  */
-export const GetStoryRouteParamsSchema = z.object({
+export const GetStoryRouteParamsInputSchema = z.object({
   filePath: z.string(),
   exportName: z.string(),
 })
@@ -65,4 +65,4 @@ export const GetStoryRouteParamsSchema = z.object({
 /**
  * Type for create-story-route function parameters inferred from Zod schema.
  */
-export type GetStoryRouteParams = z.infer<typeof GetStoryRouteParamsSchema>
+export type GetStoryRouteParams = z.infer<typeof GetStoryRouteParamsInputSchema>

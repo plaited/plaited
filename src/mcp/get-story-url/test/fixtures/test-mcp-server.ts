@@ -1,14 +1,14 @@
 #!/usr/bin/env bun
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { getMcpServer } from '../../../get-mcp-server.js'
-import { registerGetStorySetMetadata } from '../../register-get-story-set-metadata.js'
+import { registerGetStoryUrl } from '../../register-get-story-url.js'
 
 try {
   // Create the MCP server
   const mcpServer = getMcpServer()
-  
+
   // Register the get-story-set-metadata tool
-  registerGetStorySetMetadata(mcpServer)
+  registerGetStoryUrl(mcpServer, 'http://localhost:3000/')
 
   // Create stdio transport for communication
   const transport = new StdioServerTransport()

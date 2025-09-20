@@ -12,4 +12,4 @@ export const TEST_RUNNER_EVENTS = keyMirror('run_tests', 'log_event', 'end', 'on
  */
 export const TEST_RUNNER_ROUTE = '/testing.js'
 
-export const STORY_GLOB_PATTERN = `**/*.stories.{tsx,ts}`
+export const STORY_GLOB_PATTERN = `**/*.stories.tsx`
