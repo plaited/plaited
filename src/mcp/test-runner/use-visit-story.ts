@@ -5,7 +5,7 @@
  */
 import type { Browser, BrowserContext, ConsoleMessage } from 'playwright'
 import type { StoryParams, RunningMap } from './test-runner.types.js'
-import { Server } from '@modelcontextprotocol/sdk/server/index.js'
+import { type Server } from '@modelcontextprotocol/sdk/server/index.js'
 
 /**
  * @internal
@@ -31,13 +31,13 @@ export const useRunnerID = (route: string, colorScheme: string) => `${route}_${c
 const visitStory = ({
   browser,
   colorScheme,
-  url,
+  testServerUrl,
   running,
   server,
 }: {
   browser: Browser
   colorScheme: 'light' | 'dark'
-  url: URL
+  testServerUrl: URL
   running: RunningMap
   server?: Server
 }) => {
@@ -63,7 +63,7 @@ const visitStory = ({
           },
         })
     })
-    const { href } = new URL(params.route, url)
+    const { href } = new URL(params.route, testServerUrl)
     try {
       await page.goto(href)
     } catch (error) {
@@ -105,19 +105,19 @@ const visitStory = ({
 export const useVisitStory = ({
   browser,
   colorSchemeSupport,
-  url,
+  testServerUrl,
   running,
   server,
 }: {
   browser: Browser
   colorSchemeSupport?: boolean
-  url: URL
+  testServerUrl: URL
   running: Map<string, StoryParams & { context: BrowserContext }>
   server?: Server
 }) => {
   const visitations = [
-    visitStory({ browser, colorScheme: 'light', url, running, server }),
-    colorSchemeSupport && visitStory({ browser, colorScheme: 'dark', url, running, server }),
+    visitStory({ browser, colorScheme: 'light', testServerUrl, running, server }),
+    colorSchemeSupport && visitStory({ browser, colorScheme: 'dark', testServerUrl, running, server }),
   ]
 
   return async (params: StoryParams) =>

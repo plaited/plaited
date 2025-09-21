@@ -9,8 +9,7 @@ export type StoryParams = {
   exportName: string
   /** Generated URL route */
   route: string
-  /** Playwright video recording config */
-  recordVideo?: BrowserContextOptions['recordVideo']
+
   /** Source file path */
   filePath: string
 }
@@ -26,3 +25,9 @@ export type RunningMap = Map<
     context: BrowserContext
   }
 >
+
+/**
+ * @internal
+ * Supported color schemes for story testing.
+ */
+export type ColorScheme = 'light' | 'dark'
