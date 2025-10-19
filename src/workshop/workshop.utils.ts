@@ -2,8 +2,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { globFiles } from './get-file-paths.js'
 import { getStorySetMetadata } from './get-story-set-metadata.js'
-import { STORY_GLOB_PATTERN } from './test-stories.constants.js'
-import type { TestStoriesOutput, TestStoriesInput } from './test-stories.types.js'
+import { STORY_GLOB_PATTERN, type TestStoriesOutput, type TestStoriesInput } from './test-stories.js'
 import type { StoryMetadata } from './workshop.types.js'
 
 /**

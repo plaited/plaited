@@ -1,11 +1,93 @@
 import { type Browser, type BrowserContextOptions } from 'playwright'
 import { useBehavioral, type SignalWithoutInitialValue } from '../main.js'
 import { type RunnerMessage } from '../testing.js'
-import { TEST_RUNNER_EVENTS, __PLAITED_RUNNER__, __CLOSE_PLAITED_CONTEXT__ } from './test-stories.constants.js'
 import { FIXTURE_EVENTS } from '../testing/testing.constants.js'
 import { type StoryMetadata } from './workshop.types.js'
 import { getStoryUrl } from './get-story-url.js'
-import { type TestStoriesInput, type TestResult, type TestStoriesOutput } from './test-stories.types.js'
+import { keyMirror } from '../utils.js'
+
+/**
+ * @internal
+ * Story runner event types for test orchestration.
+ */
+export const TEST_RUNNER_EVENTS = keyMirror('run_tests', 'log_event', 'end', 'on_runner_message', 'test_end')
+
+export const STORY_GLOB_PATTERN = `**/*.stories.tsx`
+
+export const __PLAITED_RUNNER__ = '__PLAITED_RUNNER__'
+export const __CLOSE_PLAITED_CONTEXT__ = '__CLOSE_PLAITED_CONTEXT__'
+
+/**
+ * Default timeout for story play functions.
+ * @default 5000ms (5 seconds)
+ */
+export const DEFAULT_PLAY_TIMEOUT = 5_000
+
+/**
+ * @internal
+ * Custom element tag for story test fixtures.
+ */
+export const STORY_FIXTURE = 'plaited-story-fixture'
+
+/**
+ * @internal
+ * WebSocket endpoint for test runner communication.
+ */
+export const RUNNER_URL = '/.plaited/test-runner'
+
+/**
+ * @internal
+ * Command to reload story page during testing.
+ */
+export const RELOAD_STORY_PAGE = 'reload_story_page'
+
+export const DATA_TESTID = 'data-testid'
+
+/**
+ * Input configuration for testing stories.
+ */
+export type TestStoriesInput = {
+  /** Array of story parameters to test */
+  storiesMetaData: StoryMetadata[]
+  /** Whether to test in both light and dark color schemes */
+  colorSchemeSupport?: boolean
+  /** Host name of the currently running test server */
+  hostName: string | URL
+}
+
+/**
+ * Metadata for a test result.
+ */
+export type TestResultMeta = {
+  /** Full URL to the story */
+  url: string
+  /** File path to the story file */
+  filePath: string
+  /** Name of the exported story */
+  exportName: string
+  /** Color scheme used for testing */
+  colorScheme: 'light' | 'dark'
+}
+
+/**
+ * Result from testing a single story.
+ */
+export type TestResult = {
+  /** Test result details */
+  detail: unknown
+  /** Test metadata */
+  meta: TestResultMeta
+}
+
+/**
+ * Output from running story tests.
+ */
+export type TestStoriesOutput = {
+  /** Array of passed test results */
+  passed: TestResult[]
+  /** Array of failed test results */
+  failed: TestResult[]
+}
 
 type FixtureEventDetail = {
   pathname: string

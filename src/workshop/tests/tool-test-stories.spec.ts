@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { testStories } from '../tool-test-stories.js'
+import { testStories } from '../test-stories.js'
 
 test('testStories: behavioral function exists', () => {
   expect(testStories).toBeDefined()

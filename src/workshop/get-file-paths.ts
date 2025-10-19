@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { Glob } from 'bun'
-import { STORY_GLOB_PATTERN } from './test-stories.constants.js'
+import { STORY_GLOB_PATTERN } from './test-stories.js'
 
 /**
  * @internal
