@@ -8,8 +8,12 @@ import type {
   UseSnapshot,
   EventDetails,
 } from './behavioral.types.js'
-import { bThread, bSync, usePlaitedTrigger, behavioral, usePublicTrigger } from '../main.js'
-import { delegates, DelegatedListener, canUseDOM } from '../utils.js'
+import { behavioral } from './behavioral.js'
+import { bThread, bSync } from './behavioral.utils.js'
+import { usePlaitedTrigger } from './use-plaited-trigger.js'
+import { usePublicTrigger } from './use-public-trigger.js'
+import { canUseDOM } from '../utils.js'
+import { delegates, DelegatedListener } from './delegated-listener.js'
 import type { Attrs, TemplateObject, CustomElementTag } from './create-template.types.js'
 import { P_TRIGGER, P_TARGET, BOOLEAN_ATTRS } from './create-template.constants.js'
 import { createTemplate } from './create-template.js'

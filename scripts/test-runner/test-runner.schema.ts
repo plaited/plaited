@@ -8,7 +8,7 @@ import type { RunnerMessage } from '../../src/testing.js'
  * It is used by the story runner to validate incoming data.
  */
 export const RunnerMessageSchema = z.object({
-  colorScheme: z.string(),
+  colorScheme: z.enum(['light', 'dark']),
   pathname: z.string(),
   snapshot: z.array(
     z.object({

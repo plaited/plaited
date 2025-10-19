@@ -61,7 +61,6 @@ export const addStoryParams = ({
       route,
       exportName,
       filePath,
-      recordVideo: storySet[exportName]?.parameters?.recordVideo,
     })
   }
 }

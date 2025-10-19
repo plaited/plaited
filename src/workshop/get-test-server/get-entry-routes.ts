@@ -1,0 +1,43 @@
+import { posix } from 'node:path'
+
+import { kebabCase } from '../../utils'
+import { getNormalizedPath } from '../tool-get-story-url/tool-get-story-url.js'
+
+import { TEST_RUNNER_ROUTE } from '../workshop.constants.js'
+import { zip } from './zip.js'
+
+export const getEntryRoutes = async (cwd: string, entrypoints: string[]) => {
+  const responses: {
+    [key: string]: Response
+  } = {}
+  const { outputs } = await Bun.build({
+    entrypoints: ['plaited/testing', ...entrypoints],
+    splitting: true,
+    root: cwd,
+    // minify: true,
+    sourcemap: 'inline',
+  })
+  await Promise.all(
+    outputs.map(async (artifact) => {
+      const path = artifact.path
+      const content = await artifact.text()
+      const { kind } = artifact
+      let formattedPath: string = path
+      if (kind === 'entry-point' && path === `.${TEST_RUNNER_ROUTE}`) {
+        formattedPath = TEST_RUNNER_ROUTE
+      } else if (kind === 'entry-point') {
+        const normalizedPath = getNormalizedPath(path)
+        formattedPath = `/${posix.dirname(normalizedPath)}/${kebabCase(posix.basename(normalizedPath, '.stories.js'))}--index.js`
+      } else if (path.startsWith('.')) {
+        formattedPath = path.replace(/^\./, '')
+      }
+      Object.assign(responses, {
+        [formattedPath]: zip({
+          content,
+          contentType: artifact.type,
+        }),
+      })
+    }),
+  )
+  return responses
+}

@@ -1,4 +1,15 @@
-import { keyMirror } from '../utils.js'
+import { keyMirror } from '../../utils.js'
+
+/**
+ * @internal
+ * Story runner event types for test orchestration.
+ */
+export const TEST_RUNNER_EVENTS = keyMirror('run_tests', 'log_event', 'end', 'on_runner_message', 'test_end')
+
+export const STORY_GLOB_PATTERN = `**/*.stories.tsx`
+
+export const __PLAITED_RUNNER__ = '__PLAITED_RUNNER__'
+export const __CLOSE_PLAITED_CONTEXT__ = '__CLOSE_PLAITED_CONTEXT__'
 
 /**
  * Default timeout for story play functions.
@@ -51,6 +62,3 @@ export const FIXTURE_EVENTS = keyMirror(
   'wait',
   'close',
 )
-
-export const __PLAITED_RUNNER__ = '__PLAITED_RUNNER__'
-export const __CLOSE_PLAITED_CONTEXT__ = '__CLOSE_PLAITED_CONTEXT__'

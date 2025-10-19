@@ -1,11 +1,8 @@
-import type { BrowserContextOptions } from 'playwright'
 import type axe from 'axe-core'
-import { type HostStylesObject } from '../main/css.types.js'
-import type { Attrs, FunctionTemplate } from '../main.js'
+import type { Attrs, FunctionTemplate, HostStylesObject } from '../main.js'
 import type { Wait } from '../utils.js'
 import type { Match, Throws } from './testing.utils.js'
 import { FIXTURE_EVENTS } from './testing.constants.js'
-import type { SnapshotMessage } from 'plaited'
 
 /**
  * Parameters for structured test assertions.
@@ -162,13 +159,11 @@ export type FireEventDetail = InstrumentedDetails<Parameters<FireEvent>>
  * These options control the testing environment and behavior for a single story.
  *
  * @property headers - An optional factory function to create custom HTTP `Headers` for server-side rendering or network requests within the test. It receives the Node.js process environment.
- * @property recordVideo - Optional configuration for video recording of the test execution, compatible with Playwright's `BrowserContextOptions['recordVideo']`.
  * @property styles - Optional `StylesObject` containing additional CSS styles to apply specifically to the context of this story test. Useful for overriding global styles or adding test-specific visual aids.
  * @property [timeout=5000] - Optional. The maximum time (in milliseconds) allowed for the story's `play` function to complete. Defaults to 5000ms.
  */
 export type Params = {
   headers?: (env: NodeJS.ProcessEnv) => Headers | Promise<Headers>
-  recordVideo?: BrowserContextOptions['recordVideo']
   styles?: HostStylesObject
   timeout?: number // Defaults to 5_000 ms
 }
@@ -345,18 +340,4 @@ export type TestFailureEventDetail = {
     | typeof FIXTURE_EVENTS.failed_assertion
     | typeof FIXTURE_EVENTS.missing_assertion_parameter
     | typeof FIXTURE_EVENTS.unknown_error]?: unknown
-}
-
-/**
- * Represents a message structure used by the story runner, likely for communication
- * between different parts of the test execution environment (e.g., test runner and reporter, or main thread and worker).
- *
- * @property colorScheme - Indicates the color scheme (e.g., 'light', 'dark') active during the test run or for rendering.
- * @property snapshot - A `SnapshotMessage` from the behavioral program, capturing its state at a relevant point in time for the story.
- * @property pathname - The path or unique identifier of the story being run or reported on.
- */
-export type RunnerMessage = {
-  colorScheme: string
-  snapshot: SnapshotMessage
-  pathname: string
 }

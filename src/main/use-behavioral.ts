@@ -45,7 +45,6 @@ import type {
   BThread,
   PlaitedTrigger,
 } from './behavioral.types.js'
-
 import { usePlaitedTrigger } from './use-plaited-trigger.js'
 import { usePublicTrigger } from './use-public-trigger.js'
 

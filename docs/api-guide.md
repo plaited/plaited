@@ -761,7 +761,6 @@ The core of the testing module is the `PlaitedFixture` custom element and the ty
   ```ts
   type Params = {
     headers?: (env: NodeJS.ProcessEnv) => Headers | Promise<Headers>;
-    recordVideo?: boolean;
     styles?: StylesObject;
     timeout?: number; // Default: 5000ms
   };

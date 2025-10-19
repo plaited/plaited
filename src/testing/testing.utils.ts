@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axe from 'axe-core'
-import type { Trigger } from '../main/behavioral.types.js'
-import { deepEqual, trueTypeOf, isTypeOf, wait, noop, DelegatedListener, delegates } from '../utils.js'
+import type { Trigger } from '../main.js'
+import { deepEqual, trueTypeOf, isTypeOf, wait, noop } from '../utils.js'
+import { DelegatedListener, delegates } from '../main/delegated-listener.js'
 
 import { FIXTURE_EVENTS, STORY_FIXTURE, RELOAD_STORY_PAGE, RUNNER_URL, DATA_TESTID } from './testing.constants.js'
 import type {
@@ -17,11 +18,11 @@ import type {
   WaitDetails,
   AccessibilityCheck,
   AccessibilityCheckDetails,
-  RunnerMessage,
   FindByTestId,
   FindByTarget,
   FindByTestIdDetails,
 } from './testing.types.js'
+import { type RunnerMessage } from './testing.schemas.js'
 import { P_TARGET } from '../main/create-template.constants.js'
 
 /**

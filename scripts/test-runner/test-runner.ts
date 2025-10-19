@@ -162,6 +162,10 @@ export const testRunner = useBehavioral<
       },
       [TEST_RUNNER_EVENTS.on_runner_message](detail) {
         const { snapshot, pathname, colorScheme } = detail
+        console.error({
+          name: useRunnerID(pathname, colorScheme),
+          obj: Boolean(running.get(useRunnerID(pathname, colorScheme))),
+        })
         const { filePath, exportName, context } = running.get(useRunnerID(pathname, colorScheme))!
         const selected = snapshot.find((msg) => msg.selected)
         if (selected) {

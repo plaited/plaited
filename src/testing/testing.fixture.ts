@@ -1,20 +1,6 @@
-declare global {
-  interface Window {
-    /**
-     * @internal
-     * Global flag indicating if the current context is within the Plaited test runner environment.
-     * This helps conditional logic, like snapshot reporting, to behave differently when running
-     * inside the test runner versus a standard browser environment.
-     */
-    __PLAITED_RUNNER__?: boolean
-  }
-}
-
 import { createHostStyles } from 'plaited'
-import type { SnapshotMessage } from '../main/behavioral.types.js'
-import { bElement, h } from '../main.js'
+import { bElement, h, type SnapshotMessage } from '../main.js'
 import { wait } from '../utils.js'
-import { STORY_FIXTURE, DEFAULT_PLAY_TIMEOUT, FIXTURE_EVENTS } from './testing.constants.js'
 import {
   FailedAssertionError,
   MissingAssertionParameterError,
@@ -32,6 +18,26 @@ import {
   useFindByTestId,
 } from './testing.utils.js'
 import type { InteractionStoryObj, Play, TestFailureEventDetail } from './testing.types.js'
+import {
+  __PLAITED_RUNNER__,
+  __CLOSE_PLAITED_CONTEXT__,
+  STORY_FIXTURE,
+  DEFAULT_PLAY_TIMEOUT,
+  FIXTURE_EVENTS,
+} from './testing.constants.js'
+
+declare global {
+  interface Window {
+    /**
+     * @internal
+     * Global flag indicating if the current context is within the Plaited test runner environment.
+     * This helps conditional logic, like snapshot reporting, to behave differently when running
+     * inside the test runner versus a standard browser environment.
+     */
+    [__PLAITED_RUNNER__]?: boolean
+    [__CLOSE_PLAITED_CONTEXT__]?: () => void
+  }
+}
 
 /**
  * Story test fixture component for Plaited testing framework.
@@ -74,6 +80,7 @@ import type { InteractionStoryObj, Play, TestFailureEventDetail } from './testin
 export const StoryFixture = bElement<{
   [FIXTURE_EVENTS.run]: { play?: InteractionStoryObj['play']; timeout?: number }
   [FIXTURE_EVENTS.play]: { play: InteractionStoryObj['play']; timeout?: number }
+  [FIXTURE_EVENTS.close]: void
 }>({
   tag: STORY_FIXTURE,
   publicEvents: [FIXTURE_EVENTS.run],
@@ -96,6 +103,18 @@ export const StoryFixture = bElement<{
           }),
           bSync({
             block: [FIXTURE_EVENTS.run_complete, FIXTURE_EVENTS.test_timeout],
+            request: { type: FIXTURE_EVENTS.close },
+          }),
+        ],
+        true,
+      ),
+      onSuccess: bThread(
+        [
+          bSync({
+            waitFor: FIXTURE_EVENTS.run_complete,
+          }),
+          bSync({
+            request: { type: FIXTURE_EVENTS.close },
           }),
         ],
         true,
@@ -176,6 +195,9 @@ export const StoryFixture = bElement<{
         } else {
           trigger({ type: FIXTURE_EVENTS.run_complete, detail: success() })
         }
+      },
+      [FIXTURE_EVENTS.close]() {
+        window.__CLOSE_PLAITED_CONTEXT__ && window.__CLOSE_PLAITED_CONTEXT__()
       },
       onConnected() {
         trigger({

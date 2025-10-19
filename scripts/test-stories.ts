@@ -1,31 +1,14 @@
-import { behavioral } from 'plaited'
-import type { RunnerMessage } from 'plaited/testing'
-import { TEST_RUNNER_EVENTS } from './test-runner/test-runner.constants.js'
-import { testRunner } from './test-runner/test-runner.js'
-import { useTestServer } from './test-runner/use-test-server.js'
+import { runTestsViaMcp } from '../src/workshop/workshop.utils.js'
 
-const root = `${process.cwd()}/src`
-const { trigger, useFeedback } = behavioral()
-const { storyServer, storyParamSet, reloadStoryClients } = await useTestServer({
-  root,
-  trigger,
-})
+const cwd = `${process.cwd()}/src`
+const serverCommand = 'bun'
+const serverArgs = [Bun.resolveSync('../src/workshop/tool-test-stories/test-mcp-server.ts', import.meta.dir)]
 
-const runnerTrigger = await testRunner({
-  serverURL: storyServer.url,
-})
-
-if (process.execArgv.includes('--hot')) {
-  reloadStoryClients()
-}
-
-useFeedback({
-  [TEST_RUNNER_EVENTS.on_runner_message](detail: RunnerMessage) {
-    runnerTrigger({ type: TEST_RUNNER_EVENTS.on_runner_message, detail })
-  },
-})
-
-runnerTrigger({
-  type: TEST_RUNNER_EVENTS.run_tests,
-  detail: { storyParams: storyParamSet.get(), colorSchemeSupport: false },
+// Run tests via MCP
+await runTestsViaMcp({
+  cwd,
+  serverCommand,
+  serverArgs,
+  colorSchemeSupport: false,
+  hostName: 'http://localhost:3456',
 })

@@ -17,7 +17,7 @@
   "main": "./src/main.ts",
   "exports": {
     ".": "./src/main.ts",
-    "./mcp": "./src/mcp.ts",
+    "./workshop": "./src/workshop.ts",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
     "./jsx-runtime": "./src/jsx-runtime.ts",
     "./utils": "./src/utils.ts",
