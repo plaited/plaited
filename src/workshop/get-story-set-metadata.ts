@@ -1,18 +1,5 @@
-import * as z from 'zod'
 import * as ts from 'typescript'
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { StorySetMetadataSchema, type StoryMetadata } from '../workshop.schemas.js'
-/**
- * Zod schema for create-story-dir function parameters.
- * Validates file path string for story directory creation.
- */
-export const GetStorySetMetaDataInputSchema = z.object({
-  filePath: z.string().describe('path from root to .stories.tsx file containing story set'),
-})
-
-export const GetStorySetMetaDataOutputSchema = z.object({
-  metadata: z.array(StorySetMetadataSchema),
-})
+import type { StoryMetadata } from './workshop.types.js'
 
 /**
  * Enhanced version that detects StoryObj exports and analyzes their properties
@@ -232,48 +219,4 @@ export const getStorySetMetadata = (filePath: string): StoryMetadata[] => {
 
   visit(sourceFile)
   return storyExportDetails
-}
-
-export const toolGetStorySetMetadata = (server: McpServer) => {
-  server.registerTool(
-    'get-story-set-metadata',
-    {
-      title: 'Get story set metadata',
-      description: 'Performs an AST parse of a .stories.tsx file to grab metadata for exported stories',
-      inputSchema: GetStorySetMetaDataInputSchema.shape,
-      outputSchema: GetStorySetMetaDataOutputSchema.shape,
-    },
-    async (args) => {
-      const { filePath } = GetStorySetMetaDataInputSchema.parse(args)
-      try {
-        const metadata = getStorySetMetadata(filePath)
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(metadata, null, 2),
-            },
-          ],
-          structuredContent: {
-            metadata,
-          },
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        await server.server.sendLoggingMessage({
-          level: 'error',
-          data: `Getting StorySet Metadata for ${filePath} failed, \n${errorMessage}`,
-        })
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error: ${errorMessage}`,
-            },
-          ],
-          isError: true,
-        }
-      }
-    },
-  )
 }

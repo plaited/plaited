@@ -22,5 +22,5 @@ export const secondStory: StoryObj = {
 export const thirdStory: StoryObj = {
   description: 'Third story with args',
   args: { count: 3 },
-  template: ({ count }: { count: number }) => <p>Count: {count}</p>,
+  template: ({ count = 0 }) => <p>Count: {count}</p>,
 }

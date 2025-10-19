@@ -6,5 +6,5 @@ export const styledStory: StoryObj = {
   parameters: {
     timeout: 10000,
   },
-  template: ({ color }: { color: string }) => <div style={`color: ${color}`}>Styled content</div>,
+  template: ({ color = 'black' }) => <div style={{ color }}>Styled content</div>,
 }

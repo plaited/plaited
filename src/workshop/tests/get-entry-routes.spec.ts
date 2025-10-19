@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 import { getEntryRoutes } from '../get-entry-routes.js'
-import { TEST_RUNNER_ROUTE } from '../../workshop.constants.js'
+import { TEST_RUNNER_ROUTE } from '../workshop.constants.js'
 
 const getFixturePath = (filename: string) => Bun.resolveSync(`./fixtures/${filename}`, import.meta.dir)
 
@@ -84,7 +84,7 @@ test('getEntryRoutes: creates valid Response objects with gzip compression', asy
 
   const routes = await getEntryRoutes(cwd, entrypoints)
 
-  for (const [path, response] of Object.entries(routes)) {
+  for (const [_, response] of Object.entries(routes)) {
     expect(response).toBeInstanceOf(Response)
 
     // Check headers
@@ -161,7 +161,7 @@ test('getEntryRoutes: sets correct content-type for JavaScript', async () => {
 
   const routes = await getEntryRoutes(cwd, entrypoints)
 
-  for (const [path, response] of Object.entries(routes)) {
+  for (const [_, response] of Object.entries(routes)) {
     const contentType = response.headers.get('content-type')
 
     // All routes should be JavaScript

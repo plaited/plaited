@@ -1,13 +1,13 @@
 import path from 'node:path'
-import { createHostStyles, joinStyles, type HostStylesObject } from '../../main.js'
-import { ssr, bElement } from '../../main.js'
-import { type StoryObj } from '../../testing.js'
-import { StoryFixture } from '../../testing/testing.fixture.js'
-import { FIXTURE_EVENTS } from '../../testing/testing.constants.js'
+import { createHostStyles, joinStyles, type HostStylesObject } from '../main.js'
+import { ssr, bElement } from '../main.js'
+import { type StoryObj } from '../testing.js'
+import { StoryFixture } from '../testing/testing.fixture.js'
+import { FIXTURE_EVENTS } from '../testing/testing.constants.js'
 import { zip } from './zip.js'
-import { TEST_RUNNER_ROUTE } from '../workshop.constants.js'
-import { getStoryUrl } from '../tool-get-story-url/tool-get-story-url.js'
-import { type StoryMetadata } from '../workshop.schemas.js'
+import { TEST_RUNNER_ROUTE } from './workshop.constants.js'
+import { getStoryUrl } from './get-story-url.js'
+import { type StoryMetadata } from './workshop.types.js'
 
 const getEntryPath = (route: string) => {
   const segments = route.split('/')

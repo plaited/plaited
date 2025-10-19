@@ -1,10 +1,10 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
-import { globFiles } from './tool-get-file-paths/glob.js'
-import { getStorySetMetadata } from './tool-get-story-set-metadata/tool-get-story-set-metadata.js'
-import { STORY_GLOB_PATTERN } from './tool-test-stories/tool-test-stories.constants.js'
-import type { TestStoriesOutput, TestStoriesInput } from './tool-test-stories/tool-test-stories.schemas.js'
-import type { StoryMetadata } from './workshop.schemas.js'
+import { globFiles } from './get-file-paths.js'
+import { getStorySetMetadata } from './get-story-set-metadata.js'
+import { STORY_GLOB_PATTERN } from './test-stories.constants.js'
+import type { TestStoriesOutput, TestStoriesInput } from './test-stories.types.js'
+import type { StoryMetadata } from './workshop.types.js'
 
 /**
  * Prints test results to console with formatted output.

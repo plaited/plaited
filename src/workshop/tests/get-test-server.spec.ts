@@ -1,9 +1,9 @@
 import { test, expect, afterEach } from 'bun:test'
 import { resolve } from 'node:path'
 import { getTestServer } from '../get-test-server.js'
-import { getStorySetMetadata } from '../../tool-get-story-set-metadata/tool-get-story-set-metadata.js'
-import { RUNNER_URL } from '../../../testing/testing.constants.js'
-import { type RunnerMessage } from '../../../testing.js'
+import { getStorySetMetadata } from '../get-story-set-metadata.js'
+import { RUNNER_URL } from '../../testing/testing.constants.js'
+import { type RunnerMessage } from '../../testing.js'
 import { useSignal } from 'plaited'
 
 const getFixturePath = (filename: string) => Bun.resolveSync(`./fixtures/${filename}`, import.meta.dir)

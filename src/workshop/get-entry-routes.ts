@@ -1,9 +1,9 @@
 import { posix } from 'node:path'
 
-import { kebabCase } from '../../utils'
-import { getNormalizedPath } from '../tool-get-story-url/tool-get-story-url.js'
+import { kebabCase } from '../utils'
+import { getNormalizedPath } from './get-story-url.js'
 
-import { TEST_RUNNER_ROUTE } from '../workshop.constants.js'
+import { TEST_RUNNER_ROUTE } from './workshop.constants.js'
 import { zip } from './zip.js'
 
 export const getEntryRoutes = async (cwd: string, entrypoints: string[]) => {

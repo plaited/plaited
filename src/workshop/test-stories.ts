@@ -1,18 +1,11 @@
 import { type Browser, type BrowserContextOptions } from 'playwright'
-import { useBehavioral } from '../../main.js'
-import { type RunnerMessage } from '../../testing.js'
-import { TEST_RUNNER_EVENTS, __PLAITED_RUNNER__, __CLOSE_PLAITED_CONTEXT__ } from './tool-test-stories.constants.js'
-import { FIXTURE_EVENTS } from '../../testing/testing.constants.js'
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
-import { type StoryMetadata } from '../workshop.schemas.js'
-import { getStoryUrl } from '../tool-get-story-url/tool-get-story-url.js'
-import {
-  TestStoriesInputSchema,
-  type TestStoriesInput,
-  TestStoriesOutputSchema,
-  type TestResult,
-} from './tool-test-stories.schemas.js'
+import { useBehavioral, type SignalWithoutInitialValue } from '../main.js'
+import { type RunnerMessage } from '../testing.js'
+import { TEST_RUNNER_EVENTS, __PLAITED_RUNNER__, __CLOSE_PLAITED_CONTEXT__ } from './test-stories.constants.js'
+import { FIXTURE_EVENTS } from '../testing/testing.constants.js'
+import { type StoryMetadata } from './workshop.types.js'
+import { getStoryUrl } from './get-story-url.js'
+import { type TestStoriesInput, type TestResult, type TestStoriesOutput } from './test-stories.types.js'
 
 type FixtureEventDetail = {
   pathname: string
@@ -30,7 +23,7 @@ type ColorScheme = 'light' | 'dark'
 
 const useRunnerID = (colorScheme: ColorScheme, route: string): RunID => `${colorScheme}:://${route}`
 
-export const toolTestStories = useBehavioral<
+export const testStories = useBehavioral<
   {
     [TEST_RUNNER_EVENTS.run_tests]: TestStoriesInput
     [TEST_RUNNER_EVENTS.on_runner_message]: RunnerMessage
@@ -45,36 +38,17 @@ export const toolTestStories = useBehavioral<
   },
   {
     serverURL: string
-    server: McpServer
     browser: Browser
     recordVideo: BrowserContextOptions['recordVideo']
+    reporter: SignalWithoutInitialValue<TestStoriesOutput>
   }
 >({
   publicEvents: [TEST_RUNNER_EVENTS.run_tests, TEST_RUNNER_EVENTS.on_runner_message],
-  async bProgram({ bSync, bThread, bThreads, trigger, serverURL, server, browser, recordVideo }) {
+  async bProgram({ bSync, bThread, bThreads, trigger, serverURL, browser, recordVideo, reporter }) {
     const failed: TestResult[] = []
     const passed: TestResult[] = []
 
     const running: RunningMap = new Map()
-
-    let reporter: ReturnType<typeof Promise.withResolvers<CallToolResult>>['resolve']
-
-    server.registerTool(
-      'test-stories',
-      {
-        title: 'Test stories',
-        description:
-          'Runs automated tests on multiple story components using Playwright, evaluating them in the specified color scheme and returning detailed pass/fail results',
-        inputSchema: TestStoriesInputSchema.shape,
-        outputSchema: TestStoriesOutputSchema.shape,
-      },
-      async (args) => {
-        const { promise, resolve } = Promise.withResolvers<CallToolResult>()
-        reporter = resolve
-        trigger({ type: TEST_RUNNER_EVENTS.run_tests, detail: args })
-        return promise
-      },
-    )
 
     bThreads.set({
       onCountChange: bThread(
@@ -187,19 +161,11 @@ export const toolTestStories = useBehavioral<
         running.delete(detail)
       },
       async [TEST_RUNNER_EVENTS.end]() {
-        const report = {
+        const report: TestStoriesOutput = {
           passed,
           failed,
         }
-        reporter({
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(report),
-            },
-          ],
-          structuredContent: report,
-        })
+        reporter.set(report)
         running.clear()
         failed.length = 0
         passed.length = 0

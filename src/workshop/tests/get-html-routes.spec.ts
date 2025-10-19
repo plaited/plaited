@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
-import { resolve, dirname } from 'node:path'
+import { resolve } from 'node:path'
 import { getHtmlRoutes } from '../get-html-routes.js'
-import { getStorySetMetadata } from '../../tool-get-story-set-metadata/tool-get-story-set-metadata.js'
+import { getStorySetMetadata } from '../get-story-set-metadata.js'
 
 const getFixturePath = (filename: string) => Bun.resolveSync(`./fixtures/${filename}`, import.meta.dir)
 
@@ -210,7 +210,7 @@ test('getHtmlRoutes: creates responses with correct content-type', async () => {
 
   const routes = await getHtmlRoutes(cwd, entries)
 
-  for (const [path, response] of Object.entries(routes)) {
+  for (const [_, response] of Object.entries(routes)) {
     expect(response.headers.get('content-type')).toBe('text/html;charset=utf-8')
   }
 })
@@ -243,7 +243,7 @@ test('getHtmlRoutes: all responses are gzip compressed', async () => {
 
   const routes = await getHtmlRoutes(cwd, entries)
 
-  for (const [path, response] of Object.entries(routes)) {
+  for (const [_, response] of Object.entries(routes)) {
     expect(response.headers.get('content-encoding')).toBe('gzip')
 
     // Verify content can be decompressed
