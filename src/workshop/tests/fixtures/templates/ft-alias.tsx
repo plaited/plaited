@@ -2,7 +2,10 @@ import type { FT } from '../../../../main.js'
 
 export const FTSimple: FT = () => <div>FT Alias Simple</div>
 
-export const FTWithProps: FT = (props) => (
+export const FTWithProps: FT<{
+  title: string
+  content: string
+}> = (props) => (
   <article>
     <h2>{props?.title || 'Default Title'}</h2>
     <p>{props?.content || 'Default content'}</p>

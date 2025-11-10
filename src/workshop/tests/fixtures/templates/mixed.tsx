@@ -18,4 +18,6 @@ export function regularHelper() {
 }
 
 // Another template
-export const AnotherTemplate: FT = (props) => <p>{props?.message || 'Mixed file message'}</p>
+export const AnotherTemplate: FT<{
+  message?: string
+}> = (props) => <p>{props?.message || 'Mixed file message'}</p>
