@@ -7,10 +7,18 @@ const createMockRequest = (attrs?: Record<string, unknown>) => {
   if (!attrs) {
     return new Request('http://localhost:3456/test', { method: 'GET' })
   }
+  const formData = new FormData()
+  for (const [key, value] of Object.entries(attrs)) {
+    // JSON-encode arrays and objects for FormData
+    if (Array.isArray(value) || (typeof value === 'object' && value !== null)) {
+      formData.append(key, JSON.stringify(value))
+    } else {
+      formData.append(key, String(value))
+    }
+  }
   return new Request('http://localhost:3456/test', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(attrs),
+    body: formData,
   })
 }
 
@@ -354,33 +362,6 @@ test('getHTMLRoutes: body has height styles applied', async () => {
   expect(html).toContain('body { height: 100vh; height: 100dvh; margin: 0; }')
 })
 
-test('getHTMLRoutes: custom headers are merged from Request', async () => {
-  const cwd = fixturesDir
-  const filePath = join(fixturesDir, 'templates/function-templates.tsx')
-
-  const routes = await getHTMLRoutes({
-    exportName: 'SimpleTemplate',
-    filePath,
-    cwd,
-  })
-
-  const pageRoute = Object.keys(routes).find((k) => !k.endsWith('.include'))!
-  const pageHandler = routes[pageRoute]
-
-  const req = new Request('http://localhost:3456/test', {
-    method: 'GET',
-    headers: {
-      'Accept-Encoding': 'gzip, deflate',
-    },
-  })
-
-  const response = await pageHandler.POST(req)
-
-  // Standard headers should be present
-  expect(response.headers.get('content-type')).toBe('text/html;charset=utf-8')
-  expect(response.headers.get('content-encoding')).toBe('gzip')
-})
-
 // Validation tests
 test('getHTMLRoutes: page handler accepts empty request body (no attrs)', async () => {
   const cwd = fixturesDir
@@ -477,9 +458,12 @@ test('getHTMLRoutes: page handler returns 400 for invalid attrs structure', asyn
   const pageRoute = Object.keys(routes).find((k) => !k.endsWith('.include'))!
   const pageHandler = routes[pageRoute]
 
-  // Invalid: class should be string, not number
-  const req = createMockRequest({
-    class: 12345,
+  // Create FormData directly with malformed JSON
+  const formData = new FormData()
+  formData.append('stylesheets', '[invalid json}') // Malformed JSON that won't parse
+  const req = new Request('http://localhost:3456/test', {
+    method: 'POST',
+    body: formData,
   })
   const response = await pageHandler.POST(req)
 
@@ -504,9 +488,12 @@ test('getHTMLRoutes: include handler returns 400 for invalid attrs structure', a
   const includeRoute = Object.keys(routes).find((k) => k.endsWith('.include'))!
   const includeHandler = routes[includeRoute]
 
-  // Invalid: stylesheets should be array of strings, not array of numbers
-  const req = createMockRequest({
-    stylesheets: [123, 456],
+  // Create FormData directly with malformed JSON
+  const formData = new FormData()
+  formData.append('classNames', '{not an array}') // Malformed JSON that won't parse to array
+  const req = new Request('http://localhost:3456/test', {
+    method: 'POST',
+    body: formData,
   })
   const response = await includeHandler.POST(req)
 

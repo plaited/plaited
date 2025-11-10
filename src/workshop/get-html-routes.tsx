@@ -36,7 +36,25 @@ const PlaitedAttributesSchema = z
  */
 const validateRequestAttrs = async (req: Request): Promise<{ attrs: Attrs } | { error: Response }> => {
   try {
-    const rawBody = await req.json()
+    const formData = await req.formData()
+    const rawBody: Record<string, unknown> = {}
+
+    // Parse FormData entries, attempting to JSON-decode values that look like JSON
+    for (const [key, value] of formData.entries()) {
+      const stringValue = String(value)
+      // Try to parse as JSON for arrays/objects
+      if (stringValue.startsWith('[') || stringValue.startsWith('{')) {
+        try {
+          rawBody[key] = JSON.parse(stringValue)
+        } catch {
+          // Not valid JSON, use as string
+          rawBody[key] = stringValue
+        }
+      } else {
+        rawBody[key] = stringValue
+      }
+    }
+
     const validated = PlaitedAttributesSchema.parse(rawBody)
     return { attrs: validated || {} }
   } catch (error) {
@@ -55,7 +73,7 @@ const validateRequestAttrs = async (req: Request): Promise<{ attrs: Attrs } | { 
         ),
       }
     }
-    // JSON parse error or no body - use empty object
+    // FormData parse error or no body - use empty object
     return { attrs: {} }
   }
 }
@@ -138,7 +156,6 @@ const useInclude = ({
       return zip({
         content,
         contentType: 'text/html;charset=utf-8',
-        headers: req.headers,
       })
     },
   }
@@ -196,7 +213,6 @@ const usePage = ({
       return zip({
         content: `<!DOCTYPE html>\n${content}`,
         contentType: 'text/html;charset=utf-8',
-        headers: req.headers,
       })
     },
   }
