@@ -2,6 +2,10 @@ import { test, expect } from 'bun:test'
 import { getRoutes } from '../get-server.js'
 import { join } from 'node:path'
 
+type RouteHandler = {
+  POST: (req: Request) => Promise<Response>
+}
+
 const fixturesDir = join(import.meta.dir, 'fixtures/templates')
 
 test('getRoutes: returns object with HTML and entry routes', async () => {
@@ -39,14 +43,16 @@ test('getRoutes: entry routes are static Response objects', async () => {
   })
 })
 
-test('getRoutes: HTML routes are async handler functions', async () => {
+test('getRoutes: HTML routes are handler objects with POST method', async () => {
   const routes = await getRoutes(fixturesDir, '**/*.tpl.spec.{ts,tsx}')
 
   const htmlRoutes = Object.entries(routes).filter(([k]) => !k.endsWith('.js'))
 
-  // HTML routes should be handler functions (dynamic)
+  // HTML routes should be handler objects with POST method (dynamic)
   htmlRoutes.forEach(([_path, value]) => {
-    expect(typeof value).toBe('function')
+    expect(typeof value).toBe('object')
+    expect(value).toHaveProperty('POST')
+    expect(typeof (value as RouteHandler).POST).toBe('function')
   })
 })
 
@@ -58,7 +64,7 @@ test('getRoutes: HTML handlers return Response when called', async () => {
   if (firstHtmlRoute) {
     const [_path, handler] = firstHtmlRoute
     const mockRequest = new Request('http://localhost:3456/test')
-    const response = await (handler as (req: Request) => Promise<Response>)(mockRequest)
+    const response = await (handler as RouteHandler).POST(mockRequest)
 
     expect(response).toBeInstanceOf(Response)
   }
@@ -90,9 +96,12 @@ test('getRoutes: is compatible with Bun.serve routes parameter', async () => {
   expect(typeof routes).toBe('object')
   expect(routes).not.toBeNull()
 
-  // All values must be Response or Function (per Bun docs)
+  // All values must be Response, Function, or Object with HTTP method handlers (per Bun docs)
   Object.values(routes).forEach((value) => {
-    const isValid = value instanceof Response || typeof value === 'function'
+    const isResponse = value instanceof Response
+    const isFunction = typeof value === 'function'
+    const isHandlerObject = typeof value === 'object' && value !== null && 'POST' in value
+    const isValid = isResponse || isFunction || isHandlerObject
     expect(isValid).toBe(true)
   })
 })

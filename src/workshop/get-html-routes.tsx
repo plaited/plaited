@@ -117,28 +117,30 @@ const useInclude = ({
   template: FunctionTemplate | BehavioralTemplate
   entryPath: string
 }) => {
-  return async (req: Request) => {
-    const result = await validateRequestAttrs(req)
+  return {
+    POST: async (req: Request) => {
+      const result = await validateRequestAttrs(req)
 
-    // Early return if validation error
-    if ('error' in result) {
-      return result.error
-    }
+      // Early return if validation error
+      if ('error' in result) {
+        return result.error
+      }
 
-    // Happy path - render with validated attrs
-    const content = ssr(
-      template(result.attrs),
-      <script
-        type='module'
-        trusted
-        src={entryPath}
-      />,
-    )
-    return zip({
-      content,
-      contentType: 'text/html;charset=utf-8',
-      headers: req.headers,
-    })
+      // Happy path - render with validated attrs
+      const content = ssr(
+        template(result.attrs),
+        <script
+          type='module'
+          trusted
+          src={entryPath}
+        />,
+      )
+      return zip({
+        content,
+        contentType: 'text/html;charset=utf-8',
+        headers: req.headers,
+      })
+    },
   }
 }
 
@@ -151,50 +153,52 @@ const usePage = ({
   entryPath: string
   exportName: string
 }) => {
-  return async (req: Request) => {
-    const result = await validateRequestAttrs(req)
+  return {
+    POST: async (req: Request) => {
+      const result = await validateRequestAttrs(req)
 
-    // Early return if validation error
-    if ('error' in result) {
-      return result.error
-    }
+      // Early return if validation error
+      if ('error' in result) {
+        return result.error
+      }
 
-    // Happy path - render with validated attrs
-    const content = ssr(
-      <html>
-        <head>
-          <title>{exportName}</title>
-          <link
-            rel='shortcut icon'
-            href='#'
-          />
-        </head>
-        <body
-          {...joinStyles({
-            stylesheets: ['body { height: 100vh; height: 100dvh; margin: 0; }'],
-          })}
-        >
-          {template(result.attrs)}
-          <script
-            type='module'
-            trusted
-            src={entryPath}
-          />
-          <script
-            defer
-            type='module'
-            trusted
+      // Happy path - render with validated attrs
+      const content = ssr(
+        <html>
+          <head>
+            <title>{exportName}</title>
+            <link
+              rel='shortcut icon'
+              href='#'
+            />
+          </head>
+          <body
+            {...joinStyles({
+              stylesheets: ['body { height: 100vh; height: 100dvh; margin: 0; }'],
+            })}
           >
-            {createReloadClient()}
-          </script>
-        </body>
-      </html>,
-    )
-    return zip({
-      content: `<!DOCTYPE html>\n${content}`,
-      contentType: 'text/html;charset=utf-8',
-      headers: req.headers,
-    })
+            {template(result.attrs)}
+            <script
+              type='module'
+              trusted
+              src={entryPath}
+            />
+            <script
+              defer
+              type='module'
+              trusted
+            >
+              {createReloadClient()}
+            </script>
+          </body>
+        </html>,
+      )
+      return zip({
+        content: `<!DOCTYPE html>\n${content}`,
+        contentType: 'text/html;charset=utf-8',
+        headers: req.headers,
+      })
+    },
   }
 }
 
