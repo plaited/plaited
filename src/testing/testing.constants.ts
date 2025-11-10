@@ -16,13 +16,13 @@ export const STORY_FIXTURE = 'plaited-story-fixture'
  * @internal
  * WebSocket endpoint for test runner communication.
  */
-export const RUNNER_URL = '/.plaited/test-runner'
+export const RELOAD_URL = '/.plaited/reload'
 
 /**
  * @internal
  * Command to reload story page during testing.
  */
-export const RELOAD_STORY_PAGE = 'reload_story_page'
+export const RELOAD_PAGE = 'reload_page'
 
 export const DATA_TESTID = 'data-testid'
 

@@ -1,5 +1,4 @@
-import { createHostStyles } from 'plaited'
-import { bElement, h, type SnapshotMessage } from '../main.js'
+import { bElement, h, type SnapshotMessage, createHostStyles } from '../main.js'
 import { wait } from '../utils.js'
 import {
   FailedAssertionError,

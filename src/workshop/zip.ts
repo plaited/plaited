@@ -6,7 +6,7 @@ export const zip = ({ content, contentType, headers }: { content: string; conten
   }
   if (headers) {
     for (const key in defaultHeaders) {
-      headers.append(key, defaultHeaders[key])
+      headers.set(key, defaultHeaders[key])
     }
   }
   return new Response(compressed as BodyInit, {

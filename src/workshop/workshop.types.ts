@@ -1,25 +1,19 @@
 /**
- * Story type classification based on available properties.
+ * Template type classification for Plaited templates and functions.
+ * - FunctionTemplate: Functions that return TemplateObject/JSX
+ * - BehavioralTemplate: Templates created with bElement
  */
-export type StoryType = 'interaction' | 'snapshot' | 'unknown'
+export type TemplateType = 'FunctionTemplate' | 'BehavioralTemplate'
 
 /**
- * Metadata for a story set export.
- * Contains information about story properties and capabilities.
+ * Metadata for a template export.
+ * Contains information about exported templates in a TypeScript file.
  */
-export type StoryMetadata = {
-  /** Name of the exported story */
+export type TemplateExport = {
+  /** Name of the exported template */
   exportName: string
-  /** File path to the story file */
+  /** File path to the template file */
   filePath: string
-  /** Story type classification */
-  type: StoryType
-  /** Whether the story has a play function */
-  hasPlay: boolean
-  /** Whether the story has args defined */
-  hasArgs: boolean
-  /** Whether the story has a template */
-  hasTemplate: boolean
-  /** Whether the story has parameters */
-  hasParameters: boolean
+  /** Template type classification */
+  type: TemplateType
 }

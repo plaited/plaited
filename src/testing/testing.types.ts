@@ -341,3 +341,26 @@ export type TestFailureEventDetail = {
     | typeof FIXTURE_EVENTS.missing_assertion_parameter
     | typeof FIXTURE_EVENTS.unknown_error]?: unknown
 }
+
+/**
+ * Represents a message structure used by the story runner, likely for communication
+ * between different parts of the test execution environment (e.g., test runner and reporter, or main thread and worker).
+ *
+ * @property colorScheme - Indicates the color scheme (e.g., 'light', 'dark') active during the test run or for rendering.
+ * @property snapshot - A `SnapshotMessage` from the behavioral program, capturing its state at a relevant point in time for the story.
+ * @property pathname - The path or unique identifier of the story being run or reported on.
+ */
+export type RunnerMessage = {
+  colorScheme: 'light' | 'dark'
+  pathname: string
+  snapshot: Array<{
+    thread: string
+    trigger: boolean
+    selected: boolean
+    type: string
+    detail?: unknown
+    priority: number
+    blockedBy?: string
+    interrupts?: string
+  }>
+}

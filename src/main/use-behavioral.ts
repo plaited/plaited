@@ -202,34 +202,35 @@ export const useBehavioral = <
 }) => {
   /**
    * @internal
-   * Create base behavioral program instance that will be reused.
-   * Extract core functionality that doesn't depend on context.
-   */
-  const { trigger, useFeedback, ...rest } = behavioral()
-
-  /**
-   * @internal
-   * Shared disconnect callback registry for lifecycle management.
-   * Populated during init, cleared on disconnect.
-   */
-  const disconnectSet = new Set<Disconnect>()
-
-  /**
-   * @internal
-   * Master cleanup function that runs all registered callbacks.
-   * Called during component unmount or explicit cleanup.
-   */
-  const disconnect = () => {
-    disconnectSet.forEach((disconnect) => void disconnect())
-  }
-
-  /**
-   * @internal
    * Returned init function captures definition args in closure.
    * Each invocation creates isolated bProgram instance with context.
    * Async to support initialization that requires I/O or setup.
+   * Creates a fresh behavioral program for complete isolation.
    */
   return async (ctx: C) => {
+    /**
+     * @internal
+     * Create a NEW behavioral program instance for each call.
+     * This ensures complete isolation between instances.
+     */
+    const { trigger, useFeedback, ...rest } = behavioral()
+
+    /**
+     * @internal
+     * Instance-specific disconnect callback registry for lifecycle management.
+     * Populated during init, cleared on disconnect.
+     */
+    const disconnectSet = new Set<Disconnect>()
+
+    /**
+     * @internal
+     * Instance-specific cleanup function that runs all registered callbacks.
+     * Called during component unmount or explicit cleanup.
+     */
+    const disconnect = () => {
+      disconnectSet.forEach((disconnect) => void disconnect())
+    }
+
     /**
      * @internal
      * Execute user's bProgram function with full context.
@@ -249,8 +250,9 @@ export const useBehavioral = <
      * @internal
      * Connect handlers to behavioral program feedback loop.
      * Enables request/waitFor/block event handling.
+     * Register the disconnect function for proper cleanup.
      */
-    useFeedback(handlers)
+    disconnectSet.add(useFeedback(handlers))
 
     /**
      * @internal

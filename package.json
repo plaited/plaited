@@ -13,6 +13,9 @@
     "url": "https://github.com/plaited/plaited/issues"
   },
   "homepage": "https://github.com/plaited/plaited/tree/main#readme",
+  "bin": {
+    "plaited": "./src/workshop/cli.ts"
+  },
   "type": "module",
   "main": "./src/main.ts",
   "exports": {
@@ -28,7 +31,7 @@
     "./.plaited.ts",
     "./src/**",
     "!./src/**/tests/*",
-    "!./src/**/*.spec.@(tsx|ts)",
+    "!./src/**/*.test.@(tsx|ts)",
     "!./src/**/*.stories.@(tsx|ts)"
   ],
   "publishConfig": {
@@ -42,7 +45,7 @@
     "lint-fix": "bun run lint --fix --quiet --ignore-pattern \"**/dist/*\"",
     "prepare": "git config core.hooksPath .hooks",
     "prettier": "prettier . --write",
-    "test": "bun scripts/test-stories.ts && bun test"
+    "test": "bun scripts/test-stories.ts && bun test '**/*.test.{ts,tsx}'"
   },
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [
@@ -81,6 +84,7 @@
     "@commitlint/cli": "19.8.1",
     "@commitlint/config-conventional": "19.8.1",
     "@eslint/js": "9.34.0",
+    "@playwright/test": "^1.56.1",
     "@types/beautify": "0.0.3",
     "@types/node": "24.3.0",
     "@types/sinon": "17.0.4",

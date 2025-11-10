@@ -1,168 +1,219 @@
-import path from 'node:path'
-import { createHostStyles, joinStyles, type HostStylesObject } from '../main.js'
-import { ssr, bElement } from '../main.js'
-import { type StoryObj } from '../testing.js'
-import { StoryFixture } from '../testing/testing.fixture.js'
-import { FIXTURE_EVENTS } from '../testing/testing.constants.js'
+import { joinStyles, type FunctionTemplate, type BehavioralTemplate, type Attrs } from '../main.js'
+import { ssr } from '../main.js'
 import { zip } from './zip.js'
-import { TEST_RUNNER_ROUTE } from './workshop.constants.js'
-import { getStoryUrl } from './get-story-url.js'
-import { type StoryMetadata } from './workshop.types.js'
-
-const getEntryPath = (route: string) => {
-  const segments = route.split('/')
-  const last = segments.pop()!
-  return `${segments.join('/')}/${last.split('--')[0]}--index.js`
-}
-
-const createFixtureLoadScript = ({ importPath, exportName }: { importPath: string; exportName: string }) => `
-import '${TEST_RUNNER_ROUTE}'
-import { ${exportName} } from '${importPath}'
-
-await customElements.whenDefined("${StoryFixture.tag}")
-const fixture = document.querySelector("${StoryFixture.tag}");
-fixture?.trigger({
-  type: '${FIXTURE_EVENTS.run}',
-  detail:  {play: ${exportName}?.play, timeout: ${exportName}?.params?.timeout}
-});
-`
-
-const createPageBundle = async ({
-  story,
-  route,
-  exportName,
-}: {
-  story: StoryObj
-  route: string
-  exportName: string
-}) => {
-  const args = story?.args ?? {}
-  const tpl = story?.template
-  const styles = story?.parameters?.styles
-  const importPath = getEntryPath(route)
-  const styleObjects = [
-    createHostStyles({
-      display: 'contents',
-    }),
-    styles,
-  ].filter(Boolean) as HostStylesObject[]
-  const PlaitedStory = bElement({
-    tag: 'plaited-story',
-    shadowDom: <slot {...joinStyles(...styleObjects)} />,
-  })
-  const page = ssr(
-    <html>
-      <head>
-        <title>Story:{path.basename(route)}</title>
-        <link
-          rel='shortcut icon'
-          href='#'
-        />
-      </head>
-      <body
-        {...joinStyles({
-          stylesheets: [' body { height: 100vh; height: 100dvh; margin: 0'],
-        })}
-      >
-        <PlaitedStory>
-          <StoryFixture children={tpl?.(args)} />
-        </PlaitedStory>
-        <script
-          defer
-          type='module'
-          trusted
-        >
-          {createFixtureLoadScript({ importPath, exportName })}
-        </script>
-      </body>
-    </html>,
-  )
-  return {
-    [route]: zip({
-      content: `<!DOCTYPE html>
-${page}`,
-      contentType: 'text/html;charset=utf-8',
-      headers: story?.parameters?.headers && (await story?.parameters?.headers(process.env)),
-    }),
-  }
-}
-
-const createInclude = async ({ story, route }: { story: StoryObj; route: string }) => {
-  const args = story?.args ?? {}
-  const Template = story?.template
-  if (!Template) return {}
-  const importPath = getEntryPath(route)
-  const content = ssr(
-    <Template {...args} />,
-    <script
-      type='module'
-      trusted
-      src={importPath}
-    />,
-  )
-  return {
-    [`${route}.template`]: zip({
-      content,
-      contentType: 'text/html;charset=utf-8',
-    }),
-  }
-}
+import { RELOAD_URL, RELOAD_PAGE } from '../testing/testing.constants.js'
+import { getEntryPath } from './get-entry-path.js'
+import { kebabCase } from '../utils.js'
+import { z } from 'zod'
 
 /**
- * @internal
- * Generates HTML routes for story rendering.
- * Creates full pages with fixtures and template-only includes.
- *
- * @param options - Route generation config
- * @param options.designTokens - Global CSS tokens signal
- * @param options.storySet - Story definitions by export name
- * @param options.filePath - Source file for import paths
- * @returns Route objects with compressed HTML responses
+ * Zod schema for validating PlaitedAttributes structure.
+ * Based on PlaitedAttributes from create-template.types.ts
+ * Uses .passthrough() to allow additional HTML/ARIA attributes.
  */
-const createHtmlRoutes = async ({
-  filePath,
-  fullPath,
-  entrypointsMetadata,
-  routes,
-}: {
-  filePath: string
-  fullPath: string
-  entrypointsMetadata: StoryMetadata[]
-  routes: {
-    [key: string]: Response
+const PlaitedAttributesSchema = z
+  .object({
+    class: z.string().optional(),
+    children: z.union([z.string(), z.number(), z.array(z.union([z.string(), z.number(), z.any()]))]).optional(),
+    'p-target': z.union([z.string(), z.number()]).optional(),
+    'p-trigger': z.record(z.string()).optional(),
+    stylesheets: z.array(z.string()).optional(),
+    classNames: z.array(z.string()).optional(),
+    trusted: z.boolean().optional(),
+    style: z.record(z.union([z.string(), z.number()])).optional(),
+  })
+  .passthrough()
+  .optional()
+
+/**
+ * Validates request body as PlaitedAttributes.
+ * Returns validated attrs or error response.
+ *
+ * @param req - Request object to validate
+ * @returns Object with either validated attrs or error Response
+ *
+ * @internal
+ */
+const validateRequestAttrs = async (req: Request): Promise<{ attrs: Attrs } | { error: Response }> => {
+  try {
+    const rawBody = await req.json()
+    const validated = PlaitedAttributesSchema.parse(rawBody)
+    return { attrs: validated || {} }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      // Invalid attrs structure - return error response
+      return {
+        error: new Response(
+          JSON.stringify({
+            error: 'Invalid request body',
+            details: error.errors,
+          }),
+          {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        ),
+      }
+    }
+    // JSON parse error or no body - use empty object
+    return { attrs: {} }
   }
-}) => {
-  const modules = await import(fullPath)
-  await Promise.all(
-    entrypointsMetadata.map(async ({ exportName }) => {
-      const route = getStoryUrl({ filePath, exportName })
-      const story = modules[exportName] as StoryObj
-      const page = await createPageBundle({
-        story,
-        route,
-        exportName,
-      })
-      const include = await createInclude({
-        story,
-        route,
-      })
-      Object.assign(routes, {
-        ...page,
-        ...include,
-      })
-    }),
-  )
 }
 
-export const getHtmlRoutes = async (cwd: string, entries: [string, StoryMetadata[]][]) => {
-  const routes: {
-    [key: string]: Response
-  } = {}
-  await Promise.all(
-    entries.map(async ([entry, entrypointsMetadata]) => {
-      const filePath = entry.replace(new RegExp(`^${cwd}`), '')
-      await createHtmlRoutes({ filePath, fullPath: entry, entrypointsMetadata, routes })
-    }),
-  )
-  return routes
+const getRoutePath = ({ filePath, cwd, exportName }: { filePath: string; cwd: string; exportName: string }): string => {
+  // Make path relative to cwd
+  const relativePath = filePath.startsWith(cwd) ? filePath.slice(cwd.length) : filePath
+  // Replace .tsx extension with .js for bundled output
+  return getEntryPath(relativePath, '.tsx').replace(/index\.js$/, kebabCase(exportName))
+}
+
+const createReloadClient = () => `
+// WebSocket hot reload client
+(function() {
+  const RUNNER_URL = '${RELOAD_URL}';
+  const RELOAD_MESSAGE = '${RELOAD_PAGE}';
+  const RETRY_CODES = [1006, 1012, 1013];
+  const MAX_RETRIES = 3;
+
+  let socket;
+  let retryCount = 0;
+
+  function connect() {
+    const wsUrl = location.origin.replace(/^http/, 'ws') + RUNNER_URL;
+    socket = new WebSocket(wsUrl);
+
+    socket.addEventListener('open', () => {
+      retryCount = 0;
+    });
+
+    socket.addEventListener('message', (evt) => {
+      if (evt.data === RELOAD_MESSAGE) {
+        window.location.reload();
+      }
+    });
+
+    socket.addEventListener('error', (evt) => {
+      console.error('[Plaited] WebSocket error:', evt);
+    });
+
+    socket.addEventListener('close', (evt) => {
+      if (RETRY_CODES.includes(evt.code) && retryCount < MAX_RETRIES) {
+        const delay = Math.min(9999, 1000 * Math.pow(2, retryCount));
+        const jitter = Math.floor(Math.random() * delay);
+        setTimeout(connect, jitter);
+        retryCount++;
+      }
+    });
+  }
+
+  connect();
+})();
+`
+
+const useInclude = ({
+  template,
+  entryPath,
+}: {
+  template: FunctionTemplate | BehavioralTemplate
+  entryPath: string
+}) => {
+  return async (req: Request) => {
+    const result = await validateRequestAttrs(req)
+
+    // Early return if validation error
+    if ('error' in result) {
+      return result.error
+    }
+
+    // Happy path - render with validated attrs
+    const content = ssr(
+      template(result.attrs),
+      <script
+        type='module'
+        trusted
+        src={entryPath}
+      />,
+    )
+    return zip({
+      content,
+      contentType: 'text/html;charset=utf-8',
+      headers: req.headers,
+    })
+  }
+}
+
+const usePage = ({
+  template,
+  entryPath,
+  exportName,
+}: {
+  template: FunctionTemplate | BehavioralTemplate
+  entryPath: string
+  exportName: string
+}) => {
+  return async (req: Request) => {
+    const result = await validateRequestAttrs(req)
+
+    // Early return if validation error
+    if ('error' in result) {
+      return result.error
+    }
+
+    // Happy path - render with validated attrs
+    const content = ssr(
+      <html>
+        <head>
+          <title>{exportName}</title>
+          <link
+            rel='shortcut icon'
+            href='#'
+          />
+        </head>
+        <body
+          {...joinStyles({
+            stylesheets: ['body { height: 100vh; height: 100dvh; margin: 0; }'],
+          })}
+        >
+          {template(result.attrs)}
+          <script
+            type='module'
+            trusted
+            src={entryPath}
+          />
+          <script
+            defer
+            type='module'
+            trusted
+          >
+            {createReloadClient()}
+          </script>
+        </body>
+      </html>,
+    )
+    return zip({
+      content: `<!DOCTYPE html>\n${content}`,
+      contentType: 'text/html;charset=utf-8',
+      headers: req.headers,
+    })
+  }
+}
+
+export const getHTMLRoutes = async ({
+  exportName,
+  filePath,
+  cwd,
+}: {
+  exportName: string
+  filePath: string
+  cwd: string
+}) => {
+  const route = getRoutePath({ exportName, cwd, filePath })
+  const { [exportName]: template } = await import(filePath)
+  // Make path relative to cwd and convert to entry path
+  const relativePath = filePath.startsWith(cwd) ? filePath.slice(cwd.length) : filePath
+  const entryPath = getEntryPath(relativePath, '.tsx')
+  return {
+    [route]: usePage({ template, entryPath, exportName }),
+    [`${route}.include`]: useInclude({ template, entryPath }),
+  }
 }

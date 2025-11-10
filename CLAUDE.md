@@ -12,7 +12,7 @@ bun install
 # Run all tests
 bun test
 
-# Run story tests (visual component tests)
+# Run story tests (visual template tests)
 bun scripts/test-stories.ts
 
 # Run hot-reload story tests during development
@@ -37,11 +37,17 @@ bun run prettier
 ### Testing Single Files
 ```bash
 # Run a specific test file
-bun test path/to/file.spec.ts
+bun test path/to/file.test.ts
 
 # Run tests matching a pattern
 bun test --preload ./test/setup.ts pattern
 ```
+
+### Test File Naming Conventions
+- **Regular test files**: Use `.test.ts` or `.test.tsx` extensions
+- **Template test files**: Use `.tpl.spec.ts` or `.tpl.spec.tsx` extensions
+  - Template tests are used for testing templates during development
+  - These files are excluded from template discovery by default (`discoverTemplateMetadata`)
 
 ## Architecture Overview
 
@@ -50,13 +56,14 @@ bun test --preload ./test/setup.ts pattern
 Plaited is a behavioral programming framework for building reactive web components with these key architectural pillars:
 
 1. **Behavioral Programming (BP) Paradigm**
-   - Located in `src/behavioral/`
-   - Central coordination through `bProgram` which manages b-threads
+   - Located in `src/main/behavioral.ts` and related files
+   - Central coordination through `behavioral()` factory which manages b-threads
+   - Higher-level `useBehavioral()` for reusable program configurations
    - Event-driven architecture with request/waitFor/block idioms
-   - Signals for reactive state management
+   - Signals for reactive state management (`useSignal`, `useComputed`)
 
 2. **Web Components with Shadow DOM**
-   - `bElement` in `src/main/define-element.ts` creates custom elements
+   - `bElement` in `src/main/b-element.ts` creates custom elements
    - Automatic style scoping via Constructable Stylesheets
    - Template system with JSX support
    - Helper methods attached to DOM elements via `p-target` attributes
@@ -75,7 +82,7 @@ External Trigger → bProgram → Event Selection → Thread Notification → Fe
                   b-threads ←─────────────────── State Updates
 ```
 
-#### Component Lifecycle
+#### Template Lifecycle
 1. Element defined with `bElement`
 2. Shadow DOM created with template
 3. `bProgram` initialized with threads
@@ -90,12 +97,21 @@ External Trigger → bProgram → Event Selection → Thread Notification → Fe
 
 ### Module Organization
 
-- **`src/main/`**: Core framework (bElement, css, ssr, templates)
-- **`src/behavioral/`**: BP implementation (bProgram, bThread, signals)
-- **`src/utils/`**: Utility functions (well-documented, pure functions)
-- **`src/workshop/`**: Development tools (story runner, design tokens)
-- **`src/ai/`**: AI integration modules (MCP server support)
-  - **`tests/`**: Test files for AI/MCP modules
+- **`src/main/`**: Core framework including:
+  - Web Components: `bElement`, `b-worker`, template lifecycle
+  - Behavioral Programming: `behavioral`, `bThread`, `bSync`, `useBehavioral`
+  - State Management: `useSignal`, `useComputed`, reactive signals
+  - Styling: `css` utilities, `create-styles`, `create-host-styles`, `create-keyframes`
+  - Templates: JSX factory functions, `create-template`, `ssr`
+  - Utilities: `useDispatch`, `useTemplate`, `useAttributesObserver`, `useWorker`
+- **`src/utils/`**: Pure utility functions (type checking, string manipulation, DOM utilities, etc.)
+- **`src/workshop/`**: Development and testing tools:
+  - Test infrastructure: `useTestServer`, `useTestRunner`, `get-test-server`
+  - Story management: `get-story-set-metadata`, `get-story-url`, `get-file-paths`
+  - Routing: `get-html-routes`, `get-entry-routes`
+  - MCP integration: `use-mcp`, workshop behavioral program
+- **`src/testing/`**: Testing fixtures, types, and constants for story-based testing
+- **`src/stories/`**: Example story files demonstrating framework usage
 
 ### Critical Implementation Details
 
@@ -118,6 +134,21 @@ External Trigger → bProgram → Event Selection → Thread Notification → Fe
 - **PascalCase for types and schemas**: All type names and Zod schema names should use PascalCase (e.g., `UserConfigSchema`, `ApiResponseType`)
 - Use union types and intersection types effectively
 - Leverage TypeScript's type inference where appropriate
+
+## Terminology: Templates Not Components
+
+**IMPORTANT**: Plaited is a **template-based** framework, not a component-based framework.
+
+- ✅ Use: template, templates, FunctionTemplate, BehavioralTemplate
+- ❌ Avoid: component, components (except when referring to Web Components API)
+
+**Exception**: The term "Web Components" refers to the browser's Custom Elements API and should remain unchanged. This is the standard term for custom HTML elements created with `customElements.define()`.
+
+**In documentation and code:**
+- Plaited templates (created with `bElement` or as functions)
+- Template exports, template metadata, template discovery
+- Template tests (not component tests)
+- Template lifecycle (not component lifecycle)
 
 ## TSDoc Comment Standards
 
@@ -338,7 +369,7 @@ type InternalType = {
 
 ## Common Development Patterns
 
-### Creating a Component
+### Creating a Template
 ```tsx
 export const MyComponent = bElement({
   tag: 'my-component',
@@ -361,5 +392,5 @@ state.listen('STATE_CHANGED', trigger);
 state.set(newValue);
 ```
 
-### Testing Components
-Create a `*.stories.tsx` file and use `storyFixture` for component testing with Playwright integration.
+### Testing Templates
+Create a `*.stories.tsx` file and use `storyFixture` for template testing with Playwright integration.
