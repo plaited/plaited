@@ -237,13 +237,13 @@ const getTemplateExports = (filePath: string): TemplateExport[] => {
 }
 
 /**
- * Discovers all template files and their exports in a directory.
+ * Discovers all BehavioralTemplate files and their exports in a directory.
  * Combines file discovery with TypeScript compiler analysis to extract
- * metadata about FunctionTemplate and BehavioralTemplate exports.
+ * metadata about BehavioralTemplate exports only.
  *
  * @param cwd - Current working directory (project root)
  * @param exclude - Pattern to exclude from discovery (defaults to test spec files)
- * @returns Array of template export metadata
+ * @returns Array of BehavioralTemplate export metadata
  *
  * @example
  * ```ts
@@ -275,8 +275,12 @@ export const discoverTemplateMetadata = async (
   console.log(`📄 Found ${files.length} template files`)
 
   // Map through files to extract template exports
-  const metadata = files.flatMap((file) => getTemplateExports(file))
-  console.log(`✅ Discovered ${metadata.length} template exports`)
+  const allMetadata = files.flatMap((file) => getTemplateExports(file))
+
+  // Filter to only BehavioralTemplate exports
+  const metadata = allMetadata.filter((templateExport) => templateExport.type === 'BehavioralTemplate')
+
+  console.log(`✅ Discovered ${metadata.length} BehavioralTemplate exports`)
 
   return metadata
 }

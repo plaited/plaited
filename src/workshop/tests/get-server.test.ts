@@ -2,34 +2,34 @@ import { test, expect } from 'bun:test'
 import { getRoutes } from '../get-server.js'
 import { join } from 'node:path'
 
-type RouteHandler = {
-  POST: (req: Request) => Promise<Response>
-}
-
 const fixturesDir = join(import.meta.dir, 'fixtures/templates')
 
-test('getRoutes: returns object with HTML and entry routes', async () => {
+test('getRoutes: returns object with tag routes and entry routes', async () => {
   const routes = await getRoutes(fixturesDir, '**/*.tpl.spec.{ts,tsx}')
 
   const keys = Object.keys(routes)
 
-  // Should have both HTML routes and JS entry routes
-  const htmlRoutes = keys.filter((k) => !k.endsWith('.js'))
+  // Should have both tag routes (/{custom-element-tag}) and entry routes (/{path}--index.js)
+  const tagRoutes = keys.filter((k) => !k.endsWith('.js'))
   const entryRoutes = keys.filter((k) => k.endsWith('.js'))
 
-  expect(htmlRoutes.length).toBeGreaterThan(0)
+  expect(tagRoutes.length).toBeGreaterThan(0)
   expect(entryRoutes.length).toBeGreaterThan(0)
 })
 
-test('getRoutes: HTML routes include both page and include variants', async () => {
+test('getRoutes: tag routes map custom element tags', async () => {
   const routes = await getRoutes(fixturesDir, '**/*.tpl.spec.{ts,tsx}')
 
   const keys = Object.keys(routes)
-  const pageRoutes = keys.filter((k) => !k.endsWith('.include') && !k.endsWith('.js'))
-  const includeRoutes = keys.filter((k) => k.endsWith('.include'))
+  const tagRoutes = keys.filter((k) => !k.endsWith('.js'))
 
-  expect(includeRoutes.length).toBeGreaterThan(0)
-  expect(pageRoutes.length).toBeGreaterThan(0)
+  // Tag routes should start with / and be custom element tag names
+  tagRoutes.forEach((route) => {
+    expect(route.startsWith('/')).toBe(true)
+    expect(route.endsWith('.js')).toBe(false)
+    // Custom element tags contain hyphens
+    expect(route.includes('-')).toBe(true)
+  })
 })
 
 test('getRoutes: entry routes are static Response objects', async () => {
@@ -43,31 +43,15 @@ test('getRoutes: entry routes are static Response objects', async () => {
   })
 })
 
-test('getRoutes: HTML routes are handler objects with POST method', async () => {
+test('getRoutes: tag routes are static Response objects', async () => {
   const routes = await getRoutes(fixturesDir, '**/*.tpl.spec.{ts,tsx}')
 
-  const htmlRoutes = Object.entries(routes).filter(([k]) => !k.endsWith('.js'))
+  const tagRoutes = Object.entries(routes).filter(([k]) => !k.endsWith('.js'))
 
-  // HTML routes should be handler objects with POST method (dynamic)
-  htmlRoutes.forEach(([_path, value]) => {
-    expect(typeof value).toBe('object')
-    expect(value).toHaveProperty('POST')
-    expect(typeof (value as RouteHandler).POST).toBe('function')
+  // Tag routes should be static Response objects mapped to bundles
+  tagRoutes.forEach(([_path, value]) => {
+    expect(value).toBeInstanceOf(Response)
   })
-})
-
-test('getRoutes: HTML handlers return Response when called', async () => {
-  const routes = await getRoutes(fixturesDir, '**/*.tpl.spec.{ts,tsx}')
-
-  const firstHtmlRoute = Object.entries(routes).find(([k]) => !k.endsWith('.js') && !k.endsWith('.include'))
-
-  if (firstHtmlRoute) {
-    const [_path, handler] = firstHtmlRoute
-    const mockRequest = new Request('http://localhost:3456/test')
-    const response = await (handler as RouteHandler).POST(mockRequest)
-
-    expect(response).toBeInstanceOf(Response)
-  }
 })
 
 test('getRoutes: excludes files matching exclude pattern', async () => {
@@ -96,23 +80,20 @@ test('getRoutes: is compatible with Bun.serve routes parameter', async () => {
   expect(typeof routes).toBe('object')
   expect(routes).not.toBeNull()
 
-  // All values must be Response, Function, or Object with HTTP method handlers (per Bun docs)
+  // All values must be Response objects (per Bun docs)
   Object.values(routes).forEach((value) => {
-    const isResponse = value instanceof Response
-    const isFunction = typeof value === 'function'
-    const isHandlerObject = typeof value === 'object' && value !== null && 'POST' in value
-    const isValid = isResponse || isFunction || isHandlerObject
-    expect(isValid).toBe(true)
+    expect(value).toBeInstanceOf(Response)
   })
 })
 
-test('getRoutes: routes count matches discovered templates', async () => {
+test('getRoutes: entry-point routes follow correct naming pattern', async () => {
   const routes = await getRoutes(fixturesDir, '**/*.tpl.spec.{ts,tsx}')
 
-  const htmlRoutes = Object.keys(routes).filter((k) => !k.endsWith('.js'))
-  const pageRoutes = htmlRoutes.filter((k) => !k.endsWith('.include'))
-  const includeRoutes = htmlRoutes.filter((k) => k.endsWith('.include'))
+  const entryPointRoutes = Object.keys(routes).filter((k) => k.endsWith('--index.js'))
 
-  // Each template should have exactly 2 HTML routes (page + include)
-  expect(pageRoutes.length).toBe(includeRoutes.length)
+  // Entry-point routes should follow pattern: /path/to/kebab-case--index.js
+  expect(entryPointRoutes.length).toBeGreaterThan(0)
+  entryPointRoutes.forEach((route) => {
+    expect(route.endsWith('--index.js')).toBe(true)
+  })
 })

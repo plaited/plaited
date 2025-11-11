@@ -1,5 +1,5 @@
 import { RELOAD_URL, RELOAD_PAGE } from '../testing/testing.constants.js'
-import { getHTMLRoutes } from './get-html-routes.js'
+import { getTagRoutes } from './get-tag-routes.js'
 import { discoverTemplateMetadata } from './discover-template-metadata.js'
 import { getEntryRoutes } from './get-entry-routes.js'
 
@@ -7,8 +7,8 @@ import { getEntryRoutes } from './get-entry-routes.js'
 const RELOAD_TOPIC = 'RELOAD_TOPIC'
 
 /**
- * Generates routes for all discovered templates.
- * Combines HTML routes (handler functions) and entry routes (static JS bundles).
+ * Generates routes for all discovered BehavioralTemplate exports.
+ * Combines tag routes (mapping custom element tags to bundles) and entry routes (static JS bundles).
  *
  * @param cwd - Current working directory (template discovery root)
  * @param exclude - Glob pattern to exclude from template discovery
@@ -16,55 +16,38 @@ const RELOAD_TOPIC = 'RELOAD_TOPIC'
  *
  * @internal
  */
-export const getRoutes = async (
-  cwd: string,
-  exclude: string,
-): Promise<{
-  [path: string]: Response | ((req: Request) => Response | Promise<Response>)
-}> => {
+export const getRoutes = async (cwd: string, exclude: string): Promise<Record<string, Response>> => {
   console.log(`🔍 Discovering templates in: ${cwd}`)
   console.log(`📋 Excluding pattern: ${exclude}`)
 
-  // Step 1: Discover all templates
+  // Step 1: Discover all BehavioralTemplate exports
   const templates = await discoverTemplateMetadata(cwd, exclude)
 
   if (templates.length === 0) {
-    console.warn('⚠️  No templates found')
+    console.warn('⚠️  No BehavioralTemplate exports found')
     return {}
   }
 
-  console.log(`📄 Found ${templates.length} template exports`)
+  console.log(`📄 Found ${templates.length} BehavioralTemplate exports`)
 
-  // Step 2: Generate HTML routes for each template (returns handler functions)
-  const htmlRoutesPromises = templates.map(async (template) => {
-    return await getHTMLRoutes({
-      exportName: template.exportName,
-      filePath: template.filePath,
-      cwd,
-    })
-  })
-
-  const htmlRoutesArray = await Promise.all(htmlRoutesPromises)
-
-  // Step 3: Collect unique file paths for bundling
+  // Step 2: Collect unique file paths for bundling
   const uniqueFilePaths = [...new Set(templates.map((t) => t.filePath))]
 
-  // Step 4: Bundle all templates and get entry routes (returns static Responses)
+  // Step 3: Bundle all templates and get entry routes (returns static Responses)
   const entryRoutes = await getEntryRoutes(cwd, uniqueFilePaths)
+
+  // Step 4: Generate tag routes that map custom element tags to bundles
+  const tagRoutes = await getTagRoutes(templates, entryRoutes, cwd)
 
   // Step 5: Merge all routes together
   const allRoutes = {
-    ...entryRoutes, // Static Response objects for JS bundles
-  }
-
-  // Merge HTML handler functions
-  for (const htmlRoutes of htmlRoutesArray) {
-    Object.assign(allRoutes, htmlRoutes)
+    ...entryRoutes, // Static Response objects for JS bundles (/path/to/file--index.js)
+    ...tagRoutes, // Static Response objects mapped by tag (/{custom-element-tag})
   }
 
   console.log(`✅ Registered ${Object.keys(allRoutes).length} total routes`)
-  console.log(`   - ${htmlRoutesArray.length * 2} HTML routes (handlers)`)
-  console.log(`   - ${Object.keys(entryRoutes).length} entry routes (static)`)
+  console.log(`   - ${Object.keys(tagRoutes).length} tag routes (/{custom-element-tag})`)
+  console.log(`   - ${Object.keys(entryRoutes).length} entry routes (/path/to/file--index.js)`)
 
   return allRoutes
 }
