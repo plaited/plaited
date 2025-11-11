@@ -1,8 +1,8 @@
 import type axe from 'axe-core'
-import type { Attrs, FunctionTemplate, HostStylesObject } from '../main.js'
+import type { FunctionTemplate, HostStylesObject, TemplateObject } from '../main.js'
 import type { Wait } from '../utils.js'
 import type { Match, Throws } from './testing.utils.js'
-import { FIXTURE_EVENTS } from './testing.constants.js'
+import { FIXTURE_EVENTS, STORY_TYPES } from './testing.constants.js'
 
 /**
  * Parameters for structured test assertions.
@@ -258,12 +258,12 @@ export type Play = (args: {
  * };
  * ```
  */
-export type InteractionStoryObj<T extends Attrs = Attrs> = {
-  args?: Attrs
+export type InteractionStoryObj<T extends FunctionTemplate = FunctionTemplate> = {
+  args?: Args<T>
   description: string
   parameters?: Params
   play: Play
-  template?: FunctionTemplate<T>
+  template?: T
 }
 /**
  * Story for visual/snapshot testing without interactions.
@@ -284,12 +284,12 @@ export type InteractionStoryObj<T extends Attrs = Attrs> = {
  * };
  * ```
  */
-export type SnapshotStoryObj<T extends Attrs = Attrs> = {
-  args?: Attrs
+export type SnapshotStoryObj<T extends FunctionTemplate = FunctionTemplate> = {
+  args?: Args<T>
   description: string
   parameters?: Params
   play?: never
-  template?: FunctionTemplate<T>
+  template?: T
 }
 
 /**
@@ -326,7 +326,7 @@ export type SnapshotStoryObj<T extends Attrs = Attrs> = {
  * @see {@link InteractionStoryObj} for interaction tests
  * @see {@link SnapshotStoryObj} for visual tests
  */
-export type StoryObj<T extends Attrs = Attrs> = InteractionStoryObj<T> | SnapshotStoryObj<T>
+export type StoryObj<T extends FunctionTemplate = FunctionTemplate> = InteractionStoryObj<T> | SnapshotStoryObj<T>
 
 /**
  * Defines the structure for the detail payload of test failure events.
@@ -364,3 +364,20 @@ export type RunnerMessage = {
     interrupts?: string
   }>
 }
+
+export type InteractionExport = {
+  fixture: TemplateObject
+  description: string
+  type: typeof STORY_TYPES.interaction
+  parameters?: Params
+  play: Play
+}
+export type SnapshotExport = {
+  fixture: TemplateObject
+  description: string
+  type: typeof STORY_TYPES.snapshot
+  parameters?: Params
+  play?: never
+}
+
+export type StoryExport = InteractionExport | SnapshotExport

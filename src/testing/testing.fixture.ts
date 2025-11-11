@@ -1,4 +1,4 @@
-import { bElement, h, type SnapshotMessage, createHostStyles } from '../main.js'
+import { bElement, h, type SnapshotMessage, createHostStyles, type FunctionTemplate } from '../main.js'
 import { wait } from '../utils.js'
 import {
   FailedAssertionError,
@@ -16,13 +16,23 @@ import {
   useFindByTarget,
   useFindByTestId,
 } from './testing.utils.js'
-import type { InteractionStoryObj, Play, TestFailureEventDetail } from './testing.types.js'
+import type {
+  Play,
+  TestFailureEventDetail,
+  StoryObj,
+  InteractionStoryObj,
+  SnapshotStoryObj,
+  InteractionExport,
+  SnapshotExport,
+  StoryExport,
+} from './testing.types.js'
 import {
   __PLAITED_RUNNER__,
   __CLOSE_PLAITED_CONTEXT__,
   STORY_FIXTURE,
   DEFAULT_PLAY_TIMEOUT,
   FIXTURE_EVENTS,
+  STORY_TYPES,
 } from './testing.constants.js'
 
 declare global {
@@ -76,7 +86,7 @@ declare global {
  * @see {@link StoryObj} for story configuration
  * @see {@link Play} for test utilities
  */
-export const StoryFixture = bElement<{
+const StoryFixture = bElement<{
   [FIXTURE_EVENTS.run]: { play?: InteractionStoryObj['play']; timeout?: number }
   [FIXTURE_EVENTS.play]: { play: InteractionStoryObj['play']; timeout?: number }
   [FIXTURE_EVENTS.close]: void
@@ -209,3 +219,26 @@ export const StoryFixture = bElement<{
     }
   },
 })
+
+function story<T extends FunctionTemplate>(args: InteractionStoryObj<T>): InteractionExport
+function story<T extends FunctionTemplate>(args: SnapshotStoryObj<T>): SnapshotExport
+function story<T extends FunctionTemplate>({ args, template, ...rest }: StoryObj<T>): StoryExport {
+  const tpl = template?.(args || {})
+  const fixture = StoryFixture({ children: tpl })
+  if (rest.play) {
+    return {
+      ...rest,
+      type: STORY_TYPES.interaction,
+      fixture,
+      play: rest.play,
+    }
+  }
+  return {
+    description: rest.description,
+    parameters: rest.parameters,
+    type: STORY_TYPES.snapshot,
+    fixture,
+  }
+}
+
+export { story }
