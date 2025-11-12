@@ -1,5 +1,5 @@
 import { type FT, bElement } from 'plaited'
-import type { StoryObj } from 'plaited/testing'
+import { story } from 'plaited/testing'
 import sinon from 'sinon'
 
 const defaultSlot = sinon.spy()
@@ -69,7 +69,7 @@ const Fixture: FT = () => (
   </Outer>
 )
 
-export const slots: StoryObj = {
+export const slots = story<typeof Fixture>({
   description: `This story is used to validate that p-trigger attribute on slot elements in a
   Behavioral elements shadow DOM only allow event triggering on named and default slots in
   it's shadow dom but not on pass through slots.`,
@@ -120,4 +120,4 @@ export const slots: StoryObj = {
       expected: true,
     })
   },
-}
+})

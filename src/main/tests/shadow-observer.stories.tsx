@@ -1,5 +1,5 @@
 import { bElement, type FT } from 'plaited'
-import type { StoryObj } from 'plaited/testing'
+import { story } from 'plaited/testing'
 import { createStyles } from 'plaited'
 
 const componentStyles = createStyles({
@@ -152,7 +152,7 @@ const ShadowIsland = bElement({
   },
 })
 
-export const shadowObserver: StoryObj = {
+export const shadowObserver = story<typeof ShadowIsland>({
   description: `This story is used to validate that the shadow dom mutation observer
   of Behavioral elements created by bElement function properly binds events declared with the
   p-trigger attribute on elements in it's shadow dom.`,
@@ -230,4 +230,4 @@ export const shadowObserver: StoryObj = {
       expected: 'H3',
     })
   },
-}
+})

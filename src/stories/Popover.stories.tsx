@@ -1,7 +1,7 @@
-import { type StoryObj } from 'plaited/testing'
+import { story } from 'plaited/testing'
 import { DecoratedPopover, DecoratedPopoverClose } from './Popover.js'
 
-export const Example: StoryObj = {
+export const Example = story({
   description: `A basic popover example with a trigger button and a close button within the popover target content.`,
   template: () => (
     <DecoratedPopover>
@@ -15,4 +15,4 @@ export const Example: StoryObj = {
       </div>
     </DecoratedPopover>
   ),
-}
+})

@@ -1,5 +1,5 @@
 import { bElement, useDispatch } from 'plaited'
-import type { StoryObj } from 'plaited/testing'
+import { story } from 'plaited/testing'
 
 const Nested = bElement({
   tag: 'nested-el',
@@ -58,7 +58,7 @@ const Slotted = bElement({
   },
 })
 
-export const eventDispatch: StoryObj = {
+export const eventDispatch = story<typeof Outer>({
   description: `Example of how to use useDispatch to broadcast events between Behavioral elements nested within
   another Behavioral elements shadow dom. When the button in nested-el is clicked the h1 in outer-el shadow dom's
   has a string appended to it`,
@@ -80,9 +80,9 @@ export const eventDispatch: StoryObj = {
       expected: 'Hello World!',
     })
   },
-}
+})
 
-export const eventDispatchSlot: StoryObj = {
+export const eventDispatchSlot = story({
   description: `Example of how to use useDispatch to broadcast events between Behavioral elements slotted within
 another Behavioral elements light dom. When the button in nested-el is clicked the h1 in parent-el shadow dom has a
 string appended to it`,
@@ -110,4 +110,4 @@ string appended to it`,
       expected: 'Hello World!',
     })
   },
-}
+})

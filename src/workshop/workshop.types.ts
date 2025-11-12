@@ -17,3 +17,38 @@ export type TemplateExport = {
   /** Template type classification */
   type: TemplateType
 }
+
+/**
+ * Metadata extracted from story files during discovery.
+ * Used for generating test routes and entry points.
+ *
+ * @property exportName - Named export identifier from the story file
+ * @property filePath - Absolute path to the .stories.tsx file
+ * @property type - Story type based on presence of play function
+ * @property hasPlay - true if story has a play function
+ * @property hasArgs - true if story has an args property
+ * @property hasTemplate - true if story has a template property
+ * @property hasParameters - true if story has a parameters property
+ *
+ * @example
+ * ```ts
+ * const metadata: StoryMetadata = {
+ *   exportName: 'interactiveTest',
+ *   filePath: '/project/src/Button.stories.tsx',
+ *   type: 'interaction',
+ *   hasPlay: true,
+ *   hasArgs: true,
+ *   hasTemplate: true,
+ *   hasParameters: false
+ * };
+ * ```
+ */
+export type StoryMetadata = {
+  exportName: string
+  filePath: string
+  type: 'interaction' | 'snapshot'
+  hasPlay: boolean
+  hasArgs: boolean
+  hasTemplate: boolean
+  hasParameters: boolean
+}

@@ -1,5 +1,5 @@
 import { type FT, bElement, useDispatch, isBehavioralElement } from 'plaited'
-import type { StoryObj } from 'plaited/testing'
+import { story } from 'plaited/testing'
 
 const getPlaitedChildren = (slot: HTMLSlotElement) => [...slot.assignedElements()].filter(isBehavioralElement)
 
@@ -61,7 +61,7 @@ const Template: FT = () => (
   </Outer>
 )
 
-export const publicEvents: StoryObj = {
+export const publicEvents = story<typeof Template>({
   description: `This story is used to validate that the publicEvents parameter
   of bElement allows for triggering a public event on a Behavioral element`,
   template: Template,
@@ -89,4 +89,4 @@ export const publicEvents: StoryObj = {
       expected: true,
     })
   },
-}
+})

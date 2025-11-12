@@ -1,5 +1,5 @@
 import { bElement } from 'plaited'
-import type { StoryObj } from 'plaited/testing'
+import { story } from 'plaited/testing'
 
 import { styles, BEFORE_HYDRATION, AFTER_HYDRATION, HYDRATING_ELEMENT_TAG } from './hydrating-element.constants.js'
 
@@ -32,7 +32,7 @@ const HydratingElement = bElement({
   },
 })
 
-export const target: StoryObj = {
+export const target = story({
   description: `Element that will be fetched as an include in another story to hydrate`,
   template: () => <HydratingElement p-target={HYDRATING_ELEMENT_TAG} />,
-}
+})

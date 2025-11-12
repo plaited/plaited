@@ -1,6 +1,6 @@
 import { bElement, type BehavioralElement } from 'plaited'
 import { createStyles } from 'plaited'
-import type { StoryObj } from 'plaited/testing'
+import { story } from 'plaited/testing'
 
 const componentStyles = createStyles({
   initial: {
@@ -36,7 +36,7 @@ const DynamicOnly = bElement({
   },
 })
 
-export const dynamicStyles: StoryObj = {
+export const dynamicStyles = story({
   description: `This story is used to validate that when rendering/inserting new JSX with styles
   into the Behavioral element shadow dom those styles sheets are applied to the constructed styles
   and do not repeat`,
@@ -71,4 +71,4 @@ export const dynamicStyles: StoryObj = {
       expected: 4,
     })
   },
-}
+})

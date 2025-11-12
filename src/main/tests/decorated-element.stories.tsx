@@ -7,7 +7,7 @@ import {
 } from 'plaited'
 import { createStyles, createHostStyles, joinStyles } from 'plaited'
 import { isTypeOf } from 'plaited/utils'
-import { type StoryObj, type Args } from 'plaited/testing'
+import { story } from 'plaited/testing'
 
 const componentStyles = createStyles({
   grid: {
@@ -94,7 +94,7 @@ const DecoratedCheckbox: FT<ElementAttributeList['input']> = (props) => {
   )
 }
 
-export const example: StoryObj<Args<typeof DecoratedCheckbox>> = {
+export const example = story<typeof DecoratedCheckbox>({
   description: `
     DecoratedCheckbox template uses a plaited template
     to decorate an input element
@@ -121,29 +121,29 @@ export const example: StoryObj<Args<typeof DecoratedCheckbox>> = {
       actual: backgroundColor,
     })
   },
-}
+})
 
-export const checked: StoryObj = {
+export const checked = story<typeof DecoratedCheckbox>({
   description: `renders decorated checkbox checked`,
   template: DecoratedCheckbox,
   args: {
     checked: true,
   },
-}
+})
 
-export const disabled: StoryObj = {
+export const disabled = story<typeof DecoratedCheckbox>({
   description: `renders decorated checkbox disabled`,
   template: DecoratedCheckbox,
   args: {
     disabled: true,
   },
-}
+})
 
-export const disabledAndChecked: StoryObj = {
+export const disabledAndChecked = story<typeof DecoratedCheckbox>({
   description: `renders decorated checkbox disabled and checked`,
   template: DecoratedCheckbox,
   args: {
     disabled: true,
     checked: true,
   },
-}
+})

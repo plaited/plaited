@@ -7,5 +7,8 @@
 // Template discovery
 export { discoverTemplateMetadata } from './workshop/discover-template-metadata.js'
 
+// Story discovery
+export { discoverStoryMetadata } from './workshop/discover-story-metadata.js'
+
 // Types
-export type { TemplateExport, TemplateType } from './workshop/workshop.types.js'
+export * from './workshop/workshop.types.js'

@@ -1,7 +1,7 @@
-import { type StoryObj } from 'plaited/testing'
+import { story } from 'plaited/testing'
 import { DelegatedListener, delegates } from '../delegated-listener.js'
 
-export const test: StoryObj = {
+export const test = story({
   description: `Validates that the delegated event listener function ensures bound events are
   propeerly delegated and only called once event if a listener is attached twice`,
   template: () => <button data-testid='button'>click me</button>,
@@ -24,4 +24,4 @@ export const test: StoryObj = {
       expected: 1,
     })
   },
-}
+})

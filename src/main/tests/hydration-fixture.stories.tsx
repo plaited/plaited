@@ -1,6 +1,6 @@
 import { bElement, type BehavioralElement } from 'plaited'
 import { createDocumentFragment } from 'plaited/utils'
-import type { StoryObj } from 'plaited/testing'
+import { story } from 'plaited/testing'
 
 import { styles, HYDRATING_ELEMENT_TAG, BEFORE_HYDRATION, AFTER_HYDRATION } from './hydrating-element.constants.js'
 const TRIGGER_HYDRATING_ELEMENT = 'TRIGGER_HYDRATING_ELEMENT'
@@ -24,7 +24,7 @@ const HydrationFixture = bElement({
   },
 })
 
-export const test: StoryObj = {
+export const test = story({
   description: `Element that will be fetched as an include in another story to hydrate, ./main/tests/hydration-fixture.stories.tsx`,
   template: () => <HydrationFixture data-testid='fixture' />,
   async play({ findByText, assert, findByAttribute, match, wait }) {
@@ -111,4 +111,4 @@ export const test: StoryObj = {
       expected: 'line-through',
     })
   },
-}
+})

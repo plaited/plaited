@@ -1,5 +1,5 @@
 import { bElement, useAttributesObserver } from 'plaited'
-import type { StoryObj } from 'plaited/testing'
+import { story } from 'plaited/testing'
 
 const AttributesObserver = bElement({
   tag: 'attribute-observer',
@@ -29,7 +29,7 @@ const AttributesObserver = bElement({
   },
 })
 
-export const Example: StoryObj = {
+export const Example = story({
   description: `Example of how to use useAttributesObserver to observe attributes changes and trigger
   events in a Behavioral elements. This story is used to validate that when a slotted element such as input
   has a change event `,
@@ -113,4 +113,4 @@ export const Example: StoryObj = {
       expected: 'hello world',
     })
   },
-}
+})

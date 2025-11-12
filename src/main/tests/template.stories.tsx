@@ -1,5 +1,5 @@
 import { type BehavioralElement, bElement } from 'plaited'
-import type { StoryObj } from 'plaited/testing'
+import { story } from 'plaited/testing'
 
 const DelegateFalse = bElement({
   tag: 'delegate-false',
@@ -18,7 +18,7 @@ const ClosedMode = bElement({
   shadowDom: <span>mode open and delegates focus</span>,
 })
 
-export const defaultModeAndFocus: StoryObj = {
+export const defaultModeAndFocus = story({
   description: `This test is used to validate a Behavioral element created using bElement
   default to having it's mode open`,
   template: () => <ModeOpen p-target='el' />,
@@ -37,9 +37,9 @@ export const defaultModeAndFocus: StoryObj = {
       expected: 'open',
     })
   },
-}
+})
 
-export const delegatesFocusFalse: StoryObj = {
+export const delegatesFocusFalse = story({
   description: `This test is used to validate a Behavioral element created using bElement
   with the parameter delefateFocus set to false does not allow focus delegation.`,
   template: () => <DelegateFalse p-target='el' />,
@@ -58,9 +58,9 @@ export const delegatesFocusFalse: StoryObj = {
       expected: 'open',
     })
   },
-}
+})
 
-export const closedMode: StoryObj = {
+export const closedMode = story({
   description: `This test is used to validate a Behavioral element created using bElement
   with the parameter mode set to false create a custom element with a closed shadow dom.`,
   template: () => <ClosedMode p-target='el' />,
@@ -73,4 +73,4 @@ export const closedMode: StoryObj = {
       expected: null,
     })
   },
-}
+})

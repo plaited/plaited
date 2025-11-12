@@ -1,6 +1,6 @@
 import { bElement } from 'plaited'
 import { isTypeOf } from 'plaited/utils'
-import { type StoryObj } from 'plaited/testing'
+import { story } from 'plaited/testing'
 import { createStyles, createHostStyles, joinStyles } from 'plaited'
 
 const componentStyles = createStyles({
@@ -100,36 +100,36 @@ const ToggleInput = bElement<{
   },
 })
 
-export const checkbox: StoryObj = {
+export const checkbox = story<typeof ToggleInput>({
   description: `renders toggle input and validates we can set attribute on it and it chenges`,
   template: ToggleInput,
   async play() {
     const checkbox = document.querySelector(ToggleInput.tag)
     checkbox?.setAttribute('checked', '')
   },
-}
+})
 
-export const checked: StoryObj = {
+export const checked = story<typeof ToggleInput>({
   description: `renders toggle input checked`,
   template: ToggleInput,
   args: {
     checked: true,
   },
-}
+})
 
-export const disabled: StoryObj = {
+export const disabled = story<typeof ToggleInput>({
   description: `renders toggle input disabled`,
   template: ToggleInput,
   args: {
     disabled: true,
   },
-}
+})
 
-export const disabledAndChecked: StoryObj = {
+export const disabledAndChecked = story<typeof ToggleInput>({
   description: `renders toggle input disabled and checked`,
   template: ToggleInput,
   args: {
     disabled: true,
     checked: true,
   },
-}
+})

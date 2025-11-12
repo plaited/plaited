@@ -1,5 +1,5 @@
 import { bElement, type FT, useSignal } from 'plaited'
-import { type StoryObj } from 'plaited/testing'
+import { story } from 'plaited/testing'
 
 const sendDisable = useSignal()
 const sendAdd = useSignal<{ value: string }>()
@@ -62,7 +62,7 @@ const ComponentComms: FT = () => {
   )
 }
 
-export const componentComms: StoryObj = {
+export const componentComms = story<typeof ComponentComms>({
   template: ComponentComms,
   description: `Example of how to use useSignal to enable communication between
   Behavioral elements. This story is used to validate that when the button in element-one
@@ -91,4 +91,4 @@ export const componentComms: StoryObj = {
       expected: true,
     })
   },
-}
+})
