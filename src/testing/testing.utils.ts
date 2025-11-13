@@ -4,7 +4,7 @@ import type { Trigger } from '../main.js'
 import { deepEqual, trueTypeOf, isTypeOf, wait, noop } from '../utils.js'
 import { DelegatedListener, delegates } from '../main/delegated-listener.js'
 
-import { FIXTURE_EVENTS, STORY_FIXTURE, RELOAD_PAGE, RELOAD_URL, DATA_TESTID } from './testing.constants.js'
+import { FIXTURE_EVENTS, STORY_FIXTURE, RELOAD_PAGE, RUNNER_URL, DATA_TESTID } from './testing.constants.js'
 import type {
   Assert,
   AssertDetails,
@@ -666,7 +666,7 @@ export const useRunner = () => {
       }
     },
     connect() {
-      socket = new WebSocket(`${self?.location?.origin.replace(/^http/, 'ws')}${RELOAD_URL}`)
+      socket = new WebSocket(`${self?.location?.origin.replace(/^http/, 'ws')}${RUNNER_URL}`)
       delegates.set(socket, new DelegatedListener(ws.callback))
       // WebSocket connection opened
       socket.addEventListener('open', delegates.get(socket))

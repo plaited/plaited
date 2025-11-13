@@ -365,14 +365,18 @@ export type RunnerMessage = {
   }>
 }
 
-export type InteractionExport = {
+export type InteractionExport<T extends FunctionTemplate = FunctionTemplate> = {
+  template?: T
+  args?: Args<T>
   fixture: TemplateObject
   description: string
   type: typeof STORY_TYPES.interaction
   parameters?: Params
   play: Play
 }
-export type SnapshotExport = {
+export type SnapshotExport<T extends FunctionTemplate = FunctionTemplate> = {
+  template?: T
+  args?: Args<T>
   fixture: TemplateObject
   description: string
   type: typeof STORY_TYPES.snapshot
@@ -380,4 +384,4 @@ export type SnapshotExport = {
   play?: never
 }
 
-export type StoryExport = InteractionExport | SnapshotExport
+export type StoryExport<T extends FunctionTemplate = FunctionTemplate> = InteractionExport<T> | SnapshotExport<T>

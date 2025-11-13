@@ -255,21 +255,17 @@ const getTemplateExports = (filePath: string): TemplateExport[] => {
  * const templates = await discoverTemplateMetadata('/project/root', '*.stories.tsx');
  * ```
  */
-export const discoverTemplateMetadata = async (
-  cwd: string,
-  exclude: string = '**/*.tpl.spec.{ts,tsx}',
-): Promise<TemplateExport[]> => {
+export const discoverTemplateMetadata = async (cwd: string): Promise<TemplateExport[]> => {
   console.log(`🔍 Discovering template metadata in: ${cwd}`)
-  console.log(`📋 Excluding pattern: ${exclude}`)
 
   // Get all .tsx files
   const allFiles = await globFiles(cwd, '**/*.tsx')
   // Filter out exclude pattern using glob matching
-  const excludeGlob = new Glob(exclude)
+  const excludeGlob = new Glob('**/*.stories.{ts,tsx}')
   const files = allFiles.filter((file) => !excludeGlob.match(file))
 
   if (files.length === 0) {
-    throw new Error(`No template files (*.tsx) found in directory '${cwd}' (excluding ${exclude})`)
+    throw new Error(`No template files (*.tsx) found in directory '${cwd}' (excluding **/*.stories.{ts,tsx})`)
   }
 
   console.log(`📄 Found ${files.length} template files`)

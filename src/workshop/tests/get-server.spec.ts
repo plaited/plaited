@@ -2,38 +2,44 @@ import { test, expect } from 'bun:test'
 import { getRoutes } from '../get-server.js'
 import { join } from 'node:path'
 
-const fixturesDir = join(import.meta.dir, 'fixtures/templates')
+const fixturesDir = join(import.meta.dir, 'fixtures/stories')
 
-test('getRoutes: returns object with tag routes and entry routes', async () => {
-  const routes = await getRoutes(fixturesDir, '**/*.tpl.spec.{ts,tsx}')
+test('getRoutes: returns object with HTML routes and entry routes', async () => {
+  const routes = await getRoutes(fixturesDir)
 
   const keys = Object.keys(routes)
 
-  // Should have both tag routes (/{custom-element-tag}) and entry routes (/{path}--index.js)
-  const tagRoutes = keys.filter((k) => !k.endsWith('.js'))
+  // Should have both HTML routes (story handlers) and entry routes (*.js bundles)
+  const htmlRoutes = keys.filter((k) => !k.endsWith('.js'))
   const entryRoutes = keys.filter((k) => k.endsWith('.js'))
 
-  expect(tagRoutes.length).toBeGreaterThan(0)
+  expect(htmlRoutes.length).toBeGreaterThan(0)
   expect(entryRoutes.length).toBeGreaterThan(0)
 })
 
-test('getRoutes: tag routes map custom element tags', async () => {
-  const routes = await getRoutes(fixturesDir, '**/*.tpl.spec.{ts,tsx}')
+test('getRoutes: HTML routes map story exports', async () => {
+  const routes = await getRoutes(fixturesDir)
 
   const keys = Object.keys(routes)
-  const tagRoutes = keys.filter((k) => !k.endsWith('.js'))
+  const htmlRoutes = keys.filter((k) => !k.endsWith('.js'))
 
-  // Tag routes should start with / and be custom element tag names
-  tagRoutes.forEach((route) => {
+  // HTML routes should start with / and map to story exports
+  htmlRoutes.forEach((route) => {
     expect(route.startsWith('/')).toBe(true)
     expect(route.endsWith('.js')).toBe(false)
-    // Custom element tags contain hyphens
-    expect(route.includes('-')).toBe(true)
   })
+
+  // Should have both main routes and .include routes
+  const mainRoutes = htmlRoutes.filter((k) => !k.endsWith('.include'))
+  const includeRoutes = htmlRoutes.filter((k) => k.endsWith('.include'))
+
+  expect(mainRoutes.length).toBeGreaterThan(0)
+  expect(includeRoutes.length).toBeGreaterThan(0)
+  expect(mainRoutes.length).toBe(includeRoutes.length)
 })
 
 test('getRoutes: entry routes are static Response objects', async () => {
-  const routes = await getRoutes(fixturesDir, '**/*.tpl.spec.{ts,tsx}')
+  const routes = await getRoutes(fixturesDir)
 
   const entryRoutes = Object.entries(routes).filter(([k]) => k.endsWith('.js'))
 
@@ -43,29 +49,34 @@ test('getRoutes: entry routes are static Response objects', async () => {
   })
 })
 
-test('getRoutes: tag routes are static Response objects', async () => {
-  const routes = await getRoutes(fixturesDir, '**/*.tpl.spec.{ts,tsx}')
+test('getRoutes: HTML routes are static Response objects', async () => {
+  const routes = await getRoutes(fixturesDir)
 
-  const tagRoutes = Object.entries(routes).filter(([k]) => !k.endsWith('.js'))
+  const htmlRoutes = Object.entries(routes).filter(([k]) => !k.endsWith('.js'))
 
-  // Tag routes should be static Response objects mapped to bundles
-  tagRoutes.forEach(([_path, value]) => {
+  // HTML routes should be static Response objects
+  htmlRoutes.forEach(([_path, value]) => {
     expect(value).toBeInstanceOf(Response)
   })
 })
 
-test('getRoutes: excludes files matching exclude pattern', async () => {
-  const routes = await getRoutes(fixturesDir, '**/*.tpl.spec.{ts,tsx}')
+test('getRoutes: excludes non-story files automatically', async () => {
+  const routes = await getRoutes(fixturesDir)
 
   const keys = Object.keys(routes)
 
-  // Should not include routes for excluded test files
-  const hasExcludedFiles = keys.some((k) => k.includes('tpl.spec'))
-  expect(hasExcludedFiles).toBe(false)
+  // Should only have routes for .stories.tsx files
+  // No routes for regular .tsx files
+  const allKeysAreForStories = keys.every((k) => {
+    // Entry routes end with -stories--index.js
+    // HTML routes come from .stories.tsx files
+    return k.endsWith('.js') || k.includes('stories')
+  })
+  expect(allKeysAreForStories).toBe(true)
 })
 
 test('getRoutes: all route paths are absolute (start with /)', async () => {
-  const routes = await getRoutes(fixturesDir, '**/*.tpl.spec.{ts,tsx}')
+  const routes = await getRoutes(fixturesDir)
 
   const keys = Object.keys(routes)
 
@@ -75,7 +86,7 @@ test('getRoutes: all route paths are absolute (start with /)', async () => {
 })
 
 test('getRoutes: is compatible with Bun.serve routes parameter', async () => {
-  const routes = await getRoutes(fixturesDir, '**/*.tpl.spec.{ts,tsx}')
+  const routes = await getRoutes(fixturesDir)
 
   expect(typeof routes).toBe('object')
   expect(routes).not.toBeNull()
@@ -86,14 +97,16 @@ test('getRoutes: is compatible with Bun.serve routes parameter', async () => {
   })
 })
 
-test('getRoutes: entry-point routes follow correct naming pattern', async () => {
-  const routes = await getRoutes(fixturesDir, '**/*.tpl.spec.{ts,tsx}')
+test('getRoutes: entry routes follow correct naming pattern', async () => {
+  const routes = await getRoutes(fixturesDir)
 
-  const entryPointRoutes = Object.keys(routes).filter((k) => k.endsWith('--index.js'))
+  const entryRoutes = Object.keys(routes).filter((k) => k.endsWith('--index.js'))
 
-  // Entry-point routes should follow pattern: /path/to/kebab-case--index.js
-  expect(entryPointRoutes.length).toBeGreaterThan(0)
-  entryPointRoutes.forEach((route) => {
+  // Entry routes should follow pattern: /path/to/kebab-case-stories--index.js
+  expect(entryRoutes.length).toBeGreaterThan(0)
+  entryRoutes.forEach((route) => {
     expect(route.endsWith('--index.js')).toBe(true)
+    // Story entry routes should have -stories in the name
+    expect(route.includes('-stories')).toBe(true)
   })
 })

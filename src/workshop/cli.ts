@@ -150,31 +150,12 @@ if (isNaN(port) || port < 1 || port > 65535) {
   throw new Error(`ERROR: Invalid port number: ${port}. Must be between 1-65535`)
 }
 
-// Extract and validate testMatch pattern
-const testMatch = playwrightConfig.testMatch
-if (!testMatch) {
-  throw new Error(
-    `ERROR: testMatch must be configured in ${configPath}\n` + 'Example:\n' + '  testMatch: "**/*.tpl.spec.{ts,tsx}"',
-  )
-}
-
-// Ensure testMatch is a string, not RegExp or array
-if (typeof testMatch !== 'string') {
-  throw new Error(
-    `ERROR: testMatch must be a string pattern in ${configPath}\n` +
-      'RegExp and array patterns are not supported\n' +
-      'Example:\n' +
-      '  testMatch: "**/*.tpl.spec.{ts,tsx}"',
-  )
-}
-
 // Determine root directory from testDir (default to current directory)
 const root = playwrightConfig.testDir ? resolve(process.cwd(), playwrightConfig.testDir) : process.cwd()
 
 console.log(`📋 Configuration loaded from ${absoluteConfigPath}`)
 console.log(`📂 Root: ${root}`)
 console.log(`🌐 Port: ${port}`)
-console.log(`🔍 Test Match: ${testMatch}`)
 
 // Detect Bun --hot mode
 // When running with --hot flag, Bun automatically reloads modules when files change
@@ -184,7 +165,6 @@ const isHotMode = process.execArgv.includes('--hot')
 const reloadClients = await getServer({
   cwd: root,
   port,
-  testMatch,
 })
 
 console.log('📋 Ready to serve requests')

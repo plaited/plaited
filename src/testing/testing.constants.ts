@@ -16,7 +16,7 @@ export const STORY_FIXTURE = 'plaited-story-fixture'
  * @internal
  * WebSocket endpoint for test runner communication.
  */
-export const RELOAD_URL = '/.plaited/reload'
+export const RUNNER_URL = '/.plaited/runner'
 
 /**
  * @internal

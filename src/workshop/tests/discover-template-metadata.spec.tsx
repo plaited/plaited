@@ -7,7 +7,7 @@ import type { TemplateExport } from '../workshop.types.js'
 const fixturesPath = join(import.meta.dir, 'fixtures', 'templates')
 
 test('discoverTemplateMetadata: only returns BehavioralTemplate exports', async () => {
-  const metadata = await discoverTemplateMetadata(fixturesPath, '**/*.tpl.spec.{ts,tsx}')
+  const metadata = await discoverTemplateMetadata(fixturesPath)
 
   // All returned templates should be BehavioralTemplate
   metadata.forEach((template) => {
@@ -27,7 +27,7 @@ test('discoverTemplateMetadata: only returns BehavioralTemplate exports', async 
 })
 
 test('discoverTemplateMetadata: discovers BehavioralTemplate exports', async () => {
-  const metadata = await discoverTemplateMetadata(fixturesPath, '**/*.tpl.spec.{ts,tsx}')
+  const metadata = await discoverTemplateMetadata(fixturesPath)
 
   const simpleTemplate = metadata.find((m) => m.exportName === 'SimpleBehavioralTemplate')
   expect(simpleTemplate).toBeDefined()
@@ -40,7 +40,7 @@ test('discoverTemplateMetadata: discovers BehavioralTemplate exports', async () 
 })
 
 test('discoverTemplateMetadata: filters out FunctionTemplate exports', async () => {
-  const metadata = await discoverTemplateMetadata(fixturesPath, '**/*.tpl.spec.{ts,tsx}')
+  const metadata = await discoverTemplateMetadata(fixturesPath)
 
   // Should NOT find FunctionTemplate function declarations
   const functionDeclaration = metadata.find((m) => m.exportName === 'FunctionDeclarationTemplate')
@@ -52,7 +52,7 @@ test('discoverTemplateMetadata: filters out FunctionTemplate exports', async () 
 })
 
 test('discoverTemplateMetadata: filters mixed template types in one file', async () => {
-  const metadata = await discoverTemplateMetadata(fixturesPath, '**/*.tpl.spec.{ts,tsx}')
+  const metadata = await discoverTemplateMetadata(fixturesPath)
 
   const mixedFile = metadata.filter((m) => m.filePath.includes('mixed.tsx'))
 
@@ -77,7 +77,7 @@ test('discoverTemplateMetadata: filters mixed template types in one file', async
 })
 
 test('discoverTemplateMetadata: ignores non-template exports', async () => {
-  const metadata = await discoverTemplateMetadata(fixturesPath, '**/*.tpl.spec.{ts,tsx}')
+  const metadata = await discoverTemplateMetadata(fixturesPath)
 
   // None of these should be found
   expect(metadata.find((m) => m.exportName === 'regularFunction')).toBeUndefined()
@@ -87,20 +87,20 @@ test('discoverTemplateMetadata: ignores non-template exports', async () => {
   expect(metadata.find((m) => m.exportName === 'arrowFunction')).toBeUndefined()
 })
 
-test('discoverTemplateMetadata: excludes files matching pattern', async () => {
-  const metadata = await discoverTemplateMetadata(fixturesPath, '**/*.tpl.spec.{ts,tsx}')
+test('discoverTemplateMetadata: excludes .stories.tsx files', async () => {
+  const metadata = await discoverTemplateMetadata(fixturesPath)
 
-  // Should NOT find templates from the excluded file
-  expect(metadata.find((m) => m.exportName === 'ExcludedTemplate')).toBeUndefined()
-  expect(metadata.find((m) => m.exportName === 'AnotherExcluded')).toBeUndefined()
+  // Should NOT find templates from .stories.tsx files (hardcoded exclusion)
+  const storyFiles = metadata.filter((m) => m.filePath.includes('.stories.'))
+  expect(storyFiles.length).toBe(0)
 
-  // Verify the excluded file exists (just to make sure the test is valid)
-  const excludedFilePath = join(import.meta.dir, 'fixtures', 'templates', 'should-be-excluded.tpl.spec.tsx')
-  expect(Bun.file(excludedFilePath).size).toBeGreaterThan(0)
+  // Should only find templates from regular .tsx files
+  const allFilesEndWithTsx = metadata.every((m) => m.filePath.endsWith('.tsx'))
+  expect(allFilesEndWithTsx).toBe(true)
 })
 
 test('discoverTemplateMetadata: returns array of BehavioralTemplate export objects', async () => {
-  const metadata = await discoverTemplateMetadata(fixturesPath, '**/*.tpl.spec.{ts,tsx}')
+  const metadata = await discoverTemplateMetadata(fixturesPath)
 
   expect(Array.isArray(metadata)).toBe(true)
   expect(metadata.length).toBeGreaterThan(0)
@@ -117,7 +117,7 @@ test('discoverTemplateMetadata: returns array of BehavioralTemplate export objec
 })
 
 test('discoverTemplateMetadata: all filePaths are absolute paths', async () => {
-  const metadata = await discoverTemplateMetadata(fixturesPath, '**/*.tpl.spec.{ts,tsx}')
+  const metadata = await discoverTemplateMetadata(fixturesPath)
 
   metadata.forEach((item) => {
     expect(item.filePath.startsWith('/')).toBe(true)
@@ -126,7 +126,7 @@ test('discoverTemplateMetadata: all filePaths are absolute paths', async () => {
 })
 
 test('discoverTemplateMetadata: discovers BehavioralTemplates from multiple files', async () => {
-  const metadata = await discoverTemplateMetadata(fixturesPath, '**/*.tpl.spec.{ts,tsx}')
+  const metadata = await discoverTemplateMetadata(fixturesPath)
 
   const uniqueFiles = new Set(metadata.map((m) => m.filePath))
 
@@ -145,9 +145,10 @@ test('discoverTemplateMetadata: discovers BehavioralTemplates from multiple file
 })
 
 test('discoverTemplateMetadata: throws error when no files found', async () => {
-  // This should throw because all files will be excluded
+  // This should throw when directory has no .tsx files
+  const emptyDir = join(import.meta.dir, 'fixtures', 'empty-dir')
   try {
-    await discoverTemplateMetadata(fixturesPath, '**/*.tsx')
+    await discoverTemplateMetadata(emptyDir)
     expect(true).toBe(false) // Should not reach here
   } catch (error) {
     expect(error).toBeInstanceOf(Error)
@@ -156,7 +157,7 @@ test('discoverTemplateMetadata: throws error when no files found', async () => {
 })
 
 test('discoverTemplateMetadata: counts BehavioralTemplate exports correctly', async () => {
-  const metadata = await discoverTemplateMetadata(fixturesPath, '**/*.tpl.spec.{ts,tsx}')
+  const metadata = await discoverTemplateMetadata(fixturesPath)
 
   // Should NOT find FunctionTemplate files
   const functionTemplatesCount = metadata.filter((m) => m.filePath.includes('function-templates.tsx')).length
@@ -170,7 +171,7 @@ test('discoverTemplateMetadata: counts BehavioralTemplate exports correctly', as
 })
 
 test('discoverTemplateMetadata: only returns BehavioralTemplate type', async () => {
-  const metadata = await discoverTemplateMetadata(fixturesPath, '**/*.tpl.spec.{ts,tsx}')
+  const metadata = await discoverTemplateMetadata(fixturesPath)
 
   const functionTemplates = metadata.filter((m) => m.type === 'FunctionTemplate')
   const behavioralTemplates = metadata.filter((m) => m.type === 'BehavioralTemplate')

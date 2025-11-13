@@ -1,77 +1,87 @@
-import { RELOAD_URL, RELOAD_PAGE } from '../testing/testing.constants.js'
-import { getTagRoutes } from './get-tag-routes.js'
-import { discoverTemplateMetadata } from './discover-template-metadata.js'
+import { RUNNER_URL, RELOAD_PAGE } from '../testing/testing.constants.js'
+import { getHTMLRoutes } from './get-html-routes.js'
+import { discoverStoryMetadata } from './discover-story-metadata.js'
 import { getEntryRoutes } from './get-entry-routes.js'
+import type { Trigger } from '../main.js'
 
-/** @internal WebSocket reload topic */
-const RELOAD_TOPIC = 'RELOAD_TOPIC'
+/** @internal WebSocket topic */
+const RUNNER_TOPIC = 'RUNNER_TOPIC'
 
 /**
- * Generates routes for all discovered BehavioralTemplate exports.
- * Combines tag routes (mapping custom element tags to bundles) and entry routes (static JS bundles).
+ * Generates routes for all discovered story exports.
+ * Combines HTML routes (static story pages) and entry routes (static JS bundles).
  *
- * @param cwd - Current working directory (template discovery root)
- * @param exclude - Glob pattern to exclude from template discovery
+ * @param cwd - Current working directory (story discovery root)
  * @returns Routes object compatible with Bun.serve()
  *
  * @internal
  */
-export const getRoutes = async (cwd: string, exclude: string): Promise<Record<string, Response>> => {
-  console.log(`🔍 Discovering templates in: ${cwd}`)
-  console.log(`📋 Excluding pattern: ${exclude}`)
+export const getRoutes = async (cwd: string): Promise<Record<string, Response>> => {
+  console.log(`🔍 Discovering stories in: ${cwd}`)
 
-  // Step 1: Discover all BehavioralTemplate exports
-  const templates = await discoverTemplateMetadata(cwd, exclude)
+  // Step 1: Discover all story exports
+  const stories = await discoverStoryMetadata(cwd)
 
-  if (templates.length === 0) {
-    console.warn('⚠️  No BehavioralTemplate exports found')
+  if (stories.length === 0) {
+    console.warn('⚠️  No story exports found')
     return {}
   }
 
-  console.log(`📄 Found ${templates.length} BehavioralTemplate exports`)
+  console.log(`📄 Found ${stories.length} story exports`)
 
-  // Step 2: Collect unique file paths for bundling
-  const uniqueFilePaths = [...new Set(templates.map((t) => t.filePath))]
+  // Step 2: Generate HTML routes for each story (returns handler functions)
+  const htmlRoutesPromises = stories.map(async (story) => {
+    return await getHTMLRoutes({
+      exportName: story.exportName,
+      filePath: story.filePath,
+      cwd,
+    })
+  })
 
-  // Step 3: Bundle all templates and get entry routes (returns static Responses)
+  const htmlRoutesArray = await Promise.all(htmlRoutesPromises)
+
+  // Step 3: Collect unique story file paths for bundling
+  const uniqueFilePaths = [...new Set(stories.map((s) => s.filePath))]
+
+  // Step 4: Bundle all story files and get entry routes (returns static Responses)
   const entryRoutes = await getEntryRoutes(cwd, uniqueFilePaths)
 
-  // Step 4: Generate tag routes that map custom element tags to bundles
-  const tagRoutes = await getTagRoutes(templates, entryRoutes, cwd)
-
   // Step 5: Merge all routes together
-  const allRoutes = {
-    ...entryRoutes, // Static Response objects for JS bundles (/path/to/file--index.js)
-    ...tagRoutes, // Static Response objects mapped by tag (/{custom-element-tag})
+  const allRoutes: Record<string, Response> = {
+    ...entryRoutes, // Static Response objects for JS bundles
+  }
+
+  // Merge HTML static Responses
+  for (const htmlRoutes of htmlRoutesArray) {
+    Object.assign(allRoutes, htmlRoutes)
   }
 
   console.log(`✅ Registered ${Object.keys(allRoutes).length} total routes`)
-  console.log(`   - ${Object.keys(tagRoutes).length} tag routes (/{custom-element-tag})`)
-  console.log(`   - ${Object.keys(entryRoutes).length} entry routes (/path/to/file--index.js)`)
+  console.log(`   - ${htmlRoutesArray.length * 2} HTML routes (static)`)
+  console.log(`   - ${Object.keys(entryRoutes).length} entry routes (static)`)
 
   return allRoutes
 }
 
 /**
- * Creates a server for Playwright template testing with hot reload.
- * Serves templates dynamically with WebSocket-based live reload support.
+ * Creates a server for Playwright story testing with hot reload and test runner communication.
+ * Serves stories dynamically with WebSocket-based live reload and test execution support.
  *
  * @param options - Server configuration options
- * @param options.cwd - Current working directory (template discovery root)
+ * @param options.cwd - Current working directory (story discovery root)
  * @param options.port - Server port number
- * @param options.testMatch - Pattern to exclude from template discovery (e.g., '*.spec.ts')
+ * @param options.trigger - Optional trigger function for test runner events
  * @returns Reload callback function to notify connected clients
  */
 
-export const getServer = async ({ cwd, port, testMatch }: { cwd: string; port: number; testMatch: string }) => {
+export const getServer = async ({ cwd, port, trigger }: { cwd: string; port: number; trigger?: Trigger }) => {
   console.log(`🔍 Starting Plaited server`)
   console.log(`📂 Root: ${cwd}`)
   console.log(`🌐 Port: ${port}`)
-  console.log(`📋 Test Match: ${testMatch}`)
 
   const testServer = Bun.serve({
     port,
-    routes: await getRoutes(cwd, testMatch),
+    routes: await getRoutes(cwd),
     async fetch(req: Request, server: Bun.Server) {
       const { pathname } = new URL(req.url)
 
@@ -83,8 +93,8 @@ export const getServer = async ({ cwd, port, testMatch }: { cwd: string; port: n
         })
       }
 
-      // Handle WebSocket upgrade for hot reload
-      if (pathname === RELOAD_URL) {
+      // Handle WebSocket upgrade for runner communication
+      if (pathname === RUNNER_URL) {
         const success = server.upgrade(req)
         return success ? undefined : new Response('WebSocket upgrade error', { status: 400 })
       }
@@ -94,15 +104,25 @@ export const getServer = async ({ cwd, port, testMatch }: { cwd: string; port: n
     },
     websocket: {
       open(ws) {
-        ws.subscribe(RELOAD_TOPIC)
+        ws.subscribe(RUNNER_TOPIC)
         console.log(`WebSocket client connected`)
       },
       message(ws, message) {
-        // Echo messages for test communication if needed
         console.log(`WebSocket message:`, message)
+
+        // Handle runner messages if trigger is provided
+        if (trigger && typeof message === 'string') {
+          try {
+            const data = JSON.parse(message)
+            // Trigger the event with the parsed data
+            trigger(data)
+          } catch (error) {
+            console.error('Failed to parse WebSocket message:', error)
+          }
+        }
       },
       close(ws) {
-        ws.unsubscribe(RELOAD_TOPIC)
+        ws.unsubscribe(RUNNER_TOPIC)
         console.log(`WebSocket client disconnected`)
       },
     },
@@ -140,13 +160,13 @@ export const getServer = async ({ cwd, port, testMatch }: { cwd: string; port: n
   })
 
   // Hot reload: Broadcast to all connected clients
-  const reloadClients = () => {
-    testServer.publish(RELOAD_TOPIC, RELOAD_PAGE)
+  const reload = () => {
+    testServer.publish(RUNNER_TOPIC, RELOAD_PAGE)
     console.log('🔄 Reloading all clients...')
   }
 
   console.log(`✅ Server ready at http://localhost:${port}`)
   console.log(`🔥 Hot reload enabled via WebSocket`)
 
-  return reloadClients
+  return reload
 }

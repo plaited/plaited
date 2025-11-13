@@ -228,12 +228,16 @@ function story<T extends FunctionTemplate>({ args, template, ...rest }: StoryObj
   if (rest.play) {
     return {
       ...rest,
+      template,
+      args,
       type: STORY_TYPES.interaction,
       fixture,
       play: rest.play,
     }
   }
   return {
+    template,
+    args,
     description: rest.description,
     parameters: rest.parameters,
     type: STORY_TYPES.snapshot,
