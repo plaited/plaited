@@ -29,22 +29,24 @@ export const getRoutes = async (cwd: string): Promise<Record<string, Response>> 
 
   console.log(`📄 Found ${stories.length} story exports`)
 
-  // Step 2: Generate HTML routes for each story (returns handler functions)
-  const htmlRoutesPromises = stories.map(async (story) => {
-    return await getHTMLRoutes({
-      exportName: story.exportName,
-      filePath: story.filePath,
-      cwd,
-    })
-  })
-
-  const htmlRoutesArray = await Promise.all(htmlRoutesPromises)
-
-  // Step 3: Collect unique story file paths for bundling
+  // Collect unique story file paths for bundling
   const uniqueFilePaths = [...new Set(stories.map((s) => s.filePath))]
 
-  // Step 4: Bundle all story files and get entry routes (returns static Responses)
-  const entryRoutes = await getEntryRoutes(cwd, uniqueFilePaths)
+  // Steps 2-4: Run HTML route generation and bundling in parallel for maximum performance
+  const [htmlRoutesArray, entryRoutes] = await Promise.all([
+    // Step 2: Generate HTML routes for each story
+    Promise.all(
+      stories.map((story) =>
+        getHTMLRoutes({
+          exportName: story.exportName,
+          filePath: story.filePath,
+          cwd,
+        }),
+      ),
+    ),
+    // Step 3: Bundle all story files and get entry routes (runs in parallel with HTML generation)
+    getEntryRoutes(cwd, uniqueFilePaths),
+  ])
 
   // Step 5: Merge all routes together
   const allRoutes: Record<string, Response> = {

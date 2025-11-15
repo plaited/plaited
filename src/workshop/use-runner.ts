@@ -47,6 +47,13 @@ export const TEST_RUNNER_EVENTS = keyMirror('run_tests', 'reload', 'end')
 
 /**
  * @internal
+ * Maximum number of stories to run concurrently.
+ * Helps balance performance with resource usage.
+ */
+const CONCURRENCY = 3
+
+/**
+ * @internal
  * Test result structure for individual story tests.
  */
 export type TestResult = {
@@ -158,34 +165,47 @@ export const useRunner = useBehavioral<
         const context = await browser.newContext({ recordVideo })
 
         try {
-          // Run each story test
-          for (const story of stories) {
-            const page = await context.newPage()
+          // Split stories into batches for parallel execution
+          const batches: StoryMetadata[][] = []
+          for (let i = 0; i < stories.length; i += CONCURRENCY) {
+            batches.push(stories.slice(i, i + CONCURRENCY))
+          }
 
-            try {
-              const storyURL = `${serverURL}/${story.exportName}`
-              await page.goto(storyURL)
+          // Run batches sequentially, but stories within each batch in parallel
+          for (const batch of batches) {
+            const batchResults = await Promise.all(
+              batch.map(async (story) => {
+                const page = await context.newPage()
+                try {
+                  const storyURL = `${serverURL}/${story.exportName}`
+                  await page.goto(storyURL)
+                  await page.waitForLoadState('networkidle')
 
-              // Wait for story to complete (implement based on your test protocol)
-              // This is a placeholder - actual implementation depends on how stories signal completion
-              await page.waitForLoadState('networkidle')
+                  console.log(`✓ ${story.exportName}`)
+                  return {
+                    story,
+                    passed: true as const,
+                  }
+                } catch (error) {
+                  console.error(`✗ ${story.exportName}`, error)
+                  return {
+                    story,
+                    passed: false as const,
+                    error,
+                  }
+                } finally {
+                  await page.close()
+                }
+              }),
+            )
 
-              passed.push({
-                story,
-                passed: true,
-              })
-
-              console.log(`✓ ${story.exportName}`)
-            } catch (error) {
-              failed.push({
-                story,
-                passed: false,
-                error,
-              })
-
-              console.error(`✗ ${story.exportName}`, error)
-            } finally {
-              await page.close()
+            // Aggregate results from this batch
+            for (const result of batchResults) {
+              if (result.passed) {
+                passed.push(result)
+              } else {
+                failed.push(result)
+              }
             }
           }
         } finally {

@@ -1,9 +1,28 @@
 import { Glob } from 'bun'
 import * as ts from 'typescript'
+import { statSync } from 'node:fs'
 import { keyMirror } from '../utils.js'
 import type { StoryMetadata } from './workshop.types.js'
 
 const STORY_TYPES = keyMirror('StoryExport', 'InteractionExport', 'SnapshotExport')
+
+/**
+ * @internal
+ * Cache entry for discovered story metadata.
+ * Includes file modification times to detect changes.
+ */
+type DiscoveryCacheEntry = {
+  metadata: StoryMetadata[]
+  files: Map<string, number> // filePath -> mtime in milliseconds
+  timestamp: number
+}
+
+/**
+ * @internal
+ * Module-level cache for story discovery results.
+ * Maps directory paths to their cached metadata.
+ */
+const discoveryCache = new Map<string, DiscoveryCacheEntry>()
 
 /**
  * @internal
@@ -67,44 +86,36 @@ const analyzeStoryObject = (
 }
 
 /**
- * Analyzes a TypeScript file to find and extract story metadata.
- * Detects exports of type StoryExport, InteractionExport, or SnapshotExport
- * (stories created with the story() function wrapper).
- *
- * Uses TypeScript compiler API to:
- * - Type checking for explicit type annotations
- * - Structural analysis of object literals
- * - Property detection (play, args, template, parameters)
- *
- * @param filePath - Absolute path to the TypeScript/TSX file to analyze
- * @returns Array of story metadata
- *
- * @example Extract stories from a specific file
- * ```ts
- * const stories = getStoryMetadata('/path/to/Button.stories.tsx');
- * // Returns: [{ exportName: 'primary', filePath: '...', type: 'snapshot', ... }]
- * ```
+ * @internal
+ * TypeScript compiler options for story metadata analysis.
  */
-export const getStoryMetadata = (filePath: string): StoryMetadata[] => {
-  const program = ts.createProgram([filePath], {
-    target: ts.ScriptTarget.ES2020,
-    module: ts.ModuleKind.ESNext,
-    strict: true,
-    skipLibCheck: true,
-    moduleResolution: ts.ModuleResolutionKind.NodeNext,
-    jsx: ts.JsxEmit.ReactJSX,
-    jsxImportSource: 'plaited',
-    allowSyntheticDefaultImports: true,
-    esModuleInterop: true,
-    resolveJsonModule: true,
-  })
+const TS_COMPILER_OPTIONS: ts.CompilerOptions = {
+  target: ts.ScriptTarget.ES2020,
+  module: ts.ModuleKind.ESNext,
+  strict: true,
+  skipLibCheck: true,
+  moduleResolution: ts.ModuleResolutionKind.NodeNext,
+  jsx: ts.JsxEmit.ReactJSX,
+  jsxImportSource: 'plaited',
+  allowSyntheticDefaultImports: true,
+  esModuleInterop: true,
+  resolveJsonModule: true,
+}
 
-  const sourceFile = program.getSourceFile(filePath)
-  if (!sourceFile) {
-    throw new Error(`Failed to load file: ${filePath}`)
-  }
-
-  const typeChecker = program.getTypeChecker()
+/**
+ * @internal
+ * Analyzes a TypeScript source file to extract story metadata.
+ *
+ * @param sourceFile - TypeScript source file to analyze
+ * @param typeChecker - TypeScript type checker instance
+ * @param filePath - Absolute path to the file (for metadata)
+ * @returns Array of story metadata
+ */
+const analyzeSourceFile = (
+  sourceFile: ts.SourceFile,
+  typeChecker: ts.TypeChecker,
+  filePath: string,
+): StoryMetadata[] => {
   const storyMetadata: StoryMetadata[] = []
 
   /**
@@ -242,6 +253,69 @@ export const getStoryMetadata = (filePath: string): StoryMetadata[] => {
 }
 
 /**
+ * @internal
+ * Batch analyzes multiple TypeScript files to extract story metadata.
+ * Creates a single TypeScript program for all files, which is significantly
+ * faster than creating separate programs for each file.
+ *
+ * @param filePaths - Array of absolute file paths to analyze
+ * @returns Map of file paths to their story metadata arrays
+ */
+const getBatchStoryMetadata = (filePaths: string[]): Map<string, StoryMetadata[]> => {
+  if (filePaths.length === 0) {
+    return new Map()
+  }
+
+  // Create single TypeScript program for all files
+  const program = ts.createProgram(filePaths, TS_COMPILER_OPTIONS)
+  const typeChecker = program.getTypeChecker()
+  const results = new Map<string, StoryMetadata[]>()
+
+  for (const filePath of filePaths) {
+    const sourceFile = program.getSourceFile(filePath)
+    if (sourceFile) {
+      results.set(filePath, analyzeSourceFile(sourceFile, typeChecker, filePath))
+    } else {
+      // File couldn't be loaded, return empty array
+      results.set(filePath, [])
+    }
+  }
+
+  return results
+}
+
+/**
+ * Analyzes a TypeScript file to find and extract story metadata.
+ * Detects exports of type StoryExport, InteractionExport, or SnapshotExport
+ * (stories created with the story() function wrapper).
+ *
+ * Uses TypeScript compiler API to:
+ * - Type checking for explicit type annotations
+ * - Structural analysis of object literals
+ * - Property detection (play, args, template, parameters)
+ *
+ * @param filePath - Absolute path to the TypeScript/TSX file to analyze
+ * @returns Array of story metadata
+ *
+ * @example Extract stories from a specific file
+ * ```ts
+ * const stories = getStoryMetadata('/path/to/Button.stories.tsx');
+ * // Returns: [{ exportName: 'primary', filePath: '...', type: 'snapshot', ... }]
+ * ```
+ */
+export const getStoryMetadata = (filePath: string): StoryMetadata[] => {
+  const program = ts.createProgram([filePath], TS_COMPILER_OPTIONS)
+
+  const sourceFile = program.getSourceFile(filePath)
+  if (!sourceFile) {
+    throw new Error(`Failed to load file: ${filePath}`)
+  }
+
+  const typeChecker = program.getTypeChecker()
+  return analyzeSourceFile(sourceFile, typeChecker, filePath)
+}
+
+/**
  * Discovers all story files and their metadata in a directory.
  * Combines file discovery with TypeScript compiler analysis to extract
  * metadata about story exports.
@@ -278,8 +352,54 @@ export const discoverStoryMetadata = async (cwd: string, exclude?: string): Prom
 
   console.log(`📄 Found ${files.length} story files`)
 
-  // Map through files to extract story metadata
-  const metadata = files.flatMap((file) => getStoryMetadata(file))
+  // Check cache for this directory
+  const cacheKey = `${cwd}:${exclude ?? ''}`
+  const cached = discoveryCache.get(cacheKey)
+
+  if (cached) {
+    // Verify all files are unchanged
+    let allUnchanged = true
+    for (const [filePath, cachedMtime] of cached.files) {
+      try {
+        const stats = statSync(filePath)
+        if (stats.mtimeMs !== cachedMtime) {
+          allUnchanged = false
+          break
+        }
+      } catch {
+        // File was deleted or inaccessible
+        allUnchanged = false
+        break
+      }
+    }
+
+    // Check if any new files were added
+    if (allUnchanged && files.length === cached.files.size) {
+      console.log(`✅ Using cached metadata (${cached.metadata.length} story exports)`)
+      return cached.metadata
+    }
+  }
+
+  // Batch analyze all files with a single TypeScript program (major performance improvement)
+  const batchResults = getBatchStoryMetadata(files)
+  const metadata = Array.from(batchResults.values()).flat()
+
+  // Cache the results with file mtimes
+  const fileMtimes = new Map<string, number>()
+  for (const file of files) {
+    try {
+      const stats = statSync(file)
+      fileMtimes.set(file, stats.mtimeMs)
+    } catch {
+      // Skip files that can't be stat'd
+    }
+  }
+
+  discoveryCache.set(cacheKey, {
+    metadata,
+    files: fileMtimes,
+    timestamp: Date.now(),
+  })
 
   console.log(`✅ Discovered ${metadata.length} story exports`)
 

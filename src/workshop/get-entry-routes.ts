@@ -7,7 +7,8 @@ export const getEntryRoutes = async (root: string, entrypoints: string[]) => {
   } = {}
   const { outputs } = await Bun.build({
     entrypoints,
-    splitting: true,
+    splitting: false, // Disabled for faster test builds
+    minify: false, // Disabled for faster test builds
     root,
     sourcemap: 'inline',
   })

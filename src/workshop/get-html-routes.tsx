@@ -8,6 +8,26 @@ import { z } from 'zod'
 import type { StoryExport } from '../testing/testing.types.js'
 
 /**
+ * Module-level cache for dynamic imports to avoid redundant loading.
+ * Maps file paths to imported modules.
+ */
+const importCache = new Map<string, Record<string, StoryExport>>()
+
+/**
+ * Cached dynamic import for story files.
+ * Reuses previously imported modules to improve performance.
+ *
+ * @param filePath - Absolute path to the story file
+ * @returns The imported module
+ */
+const cachedImport = async (filePath: string): Promise<Record<string, StoryExport>> => {
+  if (!importCache.has(filePath)) {
+    importCache.set(filePath, (await import(filePath)) as Record<string, StoryExport>)
+  }
+  return importCache.get(filePath)!
+}
+
+/**
  * Zod schema for validating PlaitedAttributes structure.
  * Based on PlaitedAttributes from create-template.types.ts
  * Uses z.looseObject() to allow additional HTML/ARIA attributes.
@@ -164,7 +184,8 @@ export const getHTMLRoutes = async ({
   cwd: string
 }): Promise<Record<string, Response>> => {
   const route = getRoutePath({ exportName, cwd, filePath })
-  const { [exportName]: storyExport } = (await import(filePath)) as Record<string, StoryExport>
+  const module = await cachedImport(filePath)
+  const storyExport = module[exportName]
 
   // Extract fixture and parameters from story export
   const { fixture, parameters, args } = storyExport
