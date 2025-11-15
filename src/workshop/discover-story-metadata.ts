@@ -67,7 +67,6 @@ const analyzeStoryObject = (
 }
 
 /**
- * @internal
  * Analyzes a TypeScript file to find and extract story metadata.
  * Detects exports of type StoryExport, InteractionExport, or SnapshotExport
  * (stories created with the story() function wrapper).
@@ -79,8 +78,14 @@ const analyzeStoryObject = (
  *
  * @param filePath - Absolute path to the TypeScript/TSX file to analyze
  * @returns Array of story metadata
+ *
+ * @example Extract stories from a specific file
+ * ```ts
+ * const stories = getStoryMetadata('/path/to/Button.stories.tsx');
+ * // Returns: [{ exportName: 'primary', filePath: '...', type: 'snapshot', ... }]
+ * ```
  */
-const getStoryMetadata = (filePath: string): StoryMetadata[] => {
+export const getStoryMetadata = (filePath: string): StoryMetadata[] => {
   const program = ts.createProgram([filePath], {
     target: ts.ScriptTarget.ES2020,
     module: ts.ModuleKind.ESNext,
@@ -256,18 +261,15 @@ const getStoryMetadata = (filePath: string): StoryMetadata[] => {
  * const stories = await discoverStoryMetadata('/project/root', '**\/*.tpl.spec.{ts,tsx}');
  * ```
  */
-export const discoverStoryMetadata = async (
-  cwd: string,
-  exclude: string = '**/*.tpl.spec.{ts,tsx}',
-): Promise<StoryMetadata[]> => {
+export const discoverStoryMetadata = async (cwd: string, exclude?: string): Promise<StoryMetadata[]> => {
   console.log(`🔍 Discovering story metadata in: ${cwd}`)
   console.log(`📋 Excluding pattern: ${exclude}`)
 
   // Get all .stories.tsx files
   const allFiles = await globFiles(cwd, '**/*.stories.tsx')
   // Filter out exclude pattern using glob matching
-  const excludeGlob = new Glob(exclude)
-  const files = allFiles.filter((file) => !excludeGlob.match(file))
+  const excludeGlob = exclude && new Glob(exclude)
+  const files = exclude ? allFiles.filter((file) => !excludeGlob?.match(file)) : allFiles
 
   if (files.length === 0) {
     console.log(`⚠️  No story files (*.stories.tsx) found in directory '${cwd}' (excluding ${exclude})`)

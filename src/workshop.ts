@@ -5,10 +5,12 @@
  */
 
 // Template discovery
-export { discoverTemplateMetadata } from './workshop/discover-template-metadata.js'
+export * from './workshop/discover-template-metadata.js'
 
 // Story discovery
-export { discoverStoryMetadata } from './workshop/discover-story-metadata.js'
+export * from './workshop/discover-story-metadata.js'
+
+export * from './workshop/use-runner.js'
 
 // Types
 export * from './workshop/workshop.types.js'

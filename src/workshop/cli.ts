@@ -3,31 +3,42 @@
  * @internal
  * @module cli
  *
- * Purpose: CLI entry point for Plaited workshop
- * Provides subcommands for running the workshop server and other utilities.
+ * Purpose: CLI entry point for Plaited workshop test runner
+ * Provides test command for running story tests with Playwright.
  * Supports Bun's --hot flag for automatic module hot reload.
  *
  * Usage:
- *   bun plaited server                              # Start server with default config
- *   bun plaited server -c custom.config.ts          # Start server with custom config
- *   bun --hot plaited server                        # Start server in hot mode
- *   bun --hot plaited server -c path/to/config.ts   # Custom config with hot reload
+ *   bun plaited test                                    # Run all stories in cwd
+ *   bun plaited test src/components                     # Run stories from directory
+ *   bun plaited test src/Button.stories.tsx             # Run stories from file
+ *   bun plaited test -p 3500                            # Custom port
+ *   bun plaited test -d ./my-project                    # Custom working directory
+ *   bun --hot plaited test                              # Enable hot reload
  */
 
-import { getServer } from './get-server.js'
+import { chromium } from '@playwright/test'
+import { useRunner, type TestStoriesOutput } from './use-runner.js'
+import { useSignal } from '../main.js'
+import { discoverStoryMetadata, getStoryMetadata } from './discover-story-metadata.js'
 import { parseArgs } from 'node:util'
 import { resolve } from 'node:path'
-import { type PlaywrightTestConfig } from '@playwright/test'
+import { statSync } from 'node:fs'
+import type { StoryMetadata } from './workshop.types.js'
 
-console.log('🎭 Starting Plaited workshop...')
+console.log('🎭 Starting Plaited workshop test runner...')
 
 // Parse CLI arguments
 const { values, positionals } = parseArgs({
   args: Bun.argv,
   options: {
-    config: {
+    port: {
       type: 'string',
-      short: 'c',
+      short: 'p',
+      default: '3456',
+    },
+    dir: {
+      type: 'string',
+      short: 'd',
     },
   },
   strict: true,
@@ -40,151 +51,170 @@ const subcommand = positionals[2]
 // Validate subcommand
 if (!subcommand) {
   console.error('❌ Error: Missing subcommand\n')
-  console.log('Usage: plaited <command> [options]\n')
+  console.log('Usage: plaited <command> [options] [paths...]\n')
   console.log('Commands:')
-  console.log('  server    Start the workshop server\n')
+  console.log('  test      Run story tests\n')
   console.log('Options:')
-  console.log('  -c, --config <path>    Path to playwright config file (default: ./playwright.config.ts)\n')
+  console.log('  -p, --port <number>    Port for test server (default: 3456)')
+  console.log('  -d, --dir <path>       Working directory (default: process.cwd())\n')
   console.log('Examples:')
-  console.log('  bun plaited server')
-  console.log('  bun --hot plaited server')
-  console.log('  bun plaited server -c custom.config.ts')
+  console.log('  bun plaited test')
+  console.log('  bun plaited test src/components')
+  console.log('  bun plaited test src/Button.stories.tsx src/Card.stories.tsx')
+  console.log('  bun --hot plaited test -p 3500')
   process.exit(1)
 }
 
-if (subcommand !== 'server') {
+if (subcommand !== 'test') {
   console.error(`❌ Error: Unknown subcommand '${subcommand}'\n`)
   console.log('Available commands:')
-  console.log('  server    Start the workshop server')
+  console.log('  test      Run story tests')
   process.exit(1)
 }
 
-// Resolve config path (default to playwright.config.ts in cwd)
-const configPath = values.config ?? './playwright.config.ts'
-let absoluteConfigPath: string
-try {
-  absoluteConfigPath = Bun.resolveSync(configPath, process.cwd())
-} catch (_) {
-  throw new Error(
-    `ERROR: Could not find config file: ${configPath}\n` +
-      'Specify a valid path with -c or --config flag\n' +
-      'Example: bun plaited server -c path/to/playwright.config.ts',
-  )
-}
-
-// Load Playwright config dynamically
-const configModule = await import(absoluteConfigPath)
-const playwrightConfig = configModule.default as PlaywrightTestConfig
-
-// Validate webServer configuration exists
-if (!playwrightConfig.webServer) {
-  throw new Error(
-    `ERROR: webServer must be configured in ${configPath}\n` +
-      'Example:\n' +
-      '  webServer: {\n' +
-      '    url: "http://localhost:3456",\n' +
-      '    command: "bun --hot plaited server"\n' +
-      '  }',
-  )
-}
-
-// Ensure webServer is a single object, not an array
-if (Array.isArray(playwrightConfig.webServer)) {
-  throw new Error(
-    `ERROR: Multiple webServers not supported in ${configPath}\n` +
-      'Use a single webServer configuration\n' +
-      'Example:\n' +
-      '  webServer: {\n' +
-      '    url: "http://localhost:3456",\n' +
-      '    command: "bun --hot plaited server"\n' +
-      '  }',
-  )
-}
-
-// Now TypeScript knows webServer is a single TestConfigWebServer object
-if (!playwrightConfig.webServer.url) {
-  throw new Error(
-    `ERROR: webServer.url must be configured in ${configPath}\n` +
-      'Example:\n' +
-      '  webServer: {\n' +
-      '    url: "http://localhost:3456",\n' +
-      '    command: "bun --hot plaited server"\n' +
-      '  }',
-  )
-}
-
-// Validate baseURL exists
-if (!playwrightConfig.use?.baseURL) {
-  throw new Error(
-    `ERROR: use.baseURL must be configured in ${configPath}\n` +
-      'Example:\n' +
-      '  use: {\n' +
-      '    baseURL: "http://localhost:3456"\n' +
-      '  }',
-  )
-}
-
-// webServer.url and baseURL must be identical
-const webServerUrl = playwrightConfig.webServer.url
-const baseURL = playwrightConfig.use.baseURL
-
-if (webServerUrl !== baseURL) {
-  throw new Error(
-    `ERROR: webServer.url must match use.baseURL in ${configPath}\n` +
-      `  webServer.url: ${webServerUrl}\n` +
-      `  use.baseURL:   ${baseURL}\n` +
-      'Both must be exactly the same',
-  )
-}
-
-// Extract port from validated URL
-const urlObj = new URL(webServerUrl)
-const portString = urlObj.port
-
-if (!portString) {
-  throw new Error(`ERROR: URL must include explicit port: ${webServerUrl}\n` + 'Example: "http://localhost:3456"')
-}
-
-const port = parseInt(portString, 10)
+// Parse and validate port
+const port = parseInt(values.port!, 10)
 if (isNaN(port) || port < 1 || port > 65535) {
-  throw new Error(`ERROR: Invalid port number: ${port}. Must be between 1-65535`)
+  throw new Error(`ERROR: Invalid port number: ${values.port}. Must be between 1-65535`)
 }
 
-// Determine root directory from testDir (default to current directory)
-const root = playwrightConfig.testDir ? resolve(process.cwd(), playwrightConfig.testDir) : process.cwd()
+// Determine working directory
+const cwd = values.dir ? resolve(process.cwd(), values.dir) : process.cwd()
 
-console.log(`📋 Configuration loaded from ${absoluteConfigPath}`)
-console.log(`📂 Root: ${root}`)
-console.log(`🌐 Port: ${port}`)
+// Extract paths from positionals (skip bun, script path, and subcommand)
+const paths = positionals.slice(3)
 
-// Detect Bun --hot mode
-// When running with --hot flag, Bun automatically reloads modules when files change
-const isHotMode = process.execArgv.includes('--hot')
+console.log(`📋 Configuration:`)
+console.log(`   Working directory: ${cwd}`)
+console.log(`   Port: ${port}`)
+if (paths.length > 0) {
+  console.log(`   Paths: ${paths.join(', ')}`)
+}
 
-// Start server
-const reloadClients = await getServer({
-  cwd: root,
-  port,
+// Discover stories based on provided paths
+let metadata: StoryMetadata[] | undefined = undefined
+
+if (paths.length > 0) {
+  console.log('\n🔍 Discovering stories from provided paths...')
+  const allMetadata: StoryMetadata[] = []
+
+  for (const pathArg of paths) {
+    const absolutePath = resolve(cwd, pathArg)
+
+    try {
+      const stats = statSync(absolutePath)
+
+      if (stats.isDirectory()) {
+        console.log(`📂 Scanning directory: ${absolutePath}`)
+        const dirMetadata = await discoverStoryMetadata(absolutePath)
+        allMetadata.push(...dirMetadata)
+      } else if (stats.isFile()) {
+        console.log(`📄 Analyzing file: ${absolutePath}`)
+        const fileMetadata = getStoryMetadata(absolutePath)
+        allMetadata.push(...fileMetadata)
+      } else {
+        console.error(`❌ Error: Path is neither file nor directory: ${absolutePath}`)
+        process.exit(1)
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        console.error(`❌ Error: Path does not exist: ${absolutePath}`)
+      } else {
+        console.error(`❌ Error processing path ${absolutePath}:`, error)
+      }
+      process.exit(1)
+    }
+  }
+
+  if (allMetadata.length === 0) {
+    console.warn('\n⚠️  No story exports found in provided paths')
+    process.exit(0)
+  }
+
+  metadata = allMetadata
+  console.log(`✅ Discovered ${metadata.length} story exports from ${paths.length} path(s)\n`)
+} else {
+  console.log('\n🔍 No paths provided - will discover all stories in working directory\n')
+}
+
+// Launch browser
+console.log('🌐 Launching browser...')
+const browser = await chromium.launch()
+
+// Create reporter signal
+const reporter = useSignal<TestStoriesOutput>()
+
+const resultsPromise = new Promise<TestStoriesOutput>((resolve) => {
+  reporter.listen('_', ({ detail }) => {
+    resolve(detail)
+  })
 })
 
-console.log('📋 Ready to serve requests')
+// Initialize test runner
+console.log('🔧 Initializing test runner...')
+const trigger = await useRunner({ browser, port, reporter, cwd })
+
+// Cleanup handler
+const cleanup = async () => {
+  console.log('\n🧹 Cleaning up...')
+  trigger({ type: 'end' })
+  await browser.close()
+}
+
+// Handle SIGINT (Ctrl+C)
+process.on('SIGINT', async () => {
+  console.log('\n⚠️  Interrupted by user')
+  await cleanup()
+  process.exit(130) // Standard exit code for SIGINT
+})
+
+// Detect Bun --hot mode
+const isHotMode = process.execArgv.includes('--hot')
 
 // Set up Bun hot reload integration
 if (isHotMode) {
   console.log('🔥 Hot reload mode active')
 
-  // Use Bun's module hot reload API to detect when files change
   if (import.meta.hot) {
     import.meta.hot.accept(() => {
-      console.log('🔄 Module reloaded, notifying clients...')
-      reloadClients()
+      console.log('\n🔄 Module reloaded, notifying clients...')
+      trigger({ type: 'reload' })
     })
   }
 
   console.log('💡 Server will auto-reload when files change\n')
 } else {
-  console.log('💡 Run with "bun --hot plaited server" to enable hot reload\n')
+  console.log('💡 Run with "bun --hot plaited test" to enable hot reload\n')
 }
 
-// Keep process alive
-process.stdin.resume()
+// Run tests
+console.log('🚀 Running tests...\n')
+if (metadata) {
+  trigger({ type: 'run_tests', detail: metadata })
+} else {
+  trigger({ type: 'run_tests' })
+}
+
+// Wait for results
+const results = await resultsPromise
+
+// Print summary
+console.log('\n' + '='.repeat(50))
+console.log('📊 Test Summary')
+console.log('='.repeat(50))
+console.log(`Total:  ${results.total}`)
+console.log(`Passed: ${results.passed} ✅`)
+console.log(`Failed: ${results.failed} ❌`)
+console.log('='.repeat(50))
+
+// Cleanup and exit
+await cleanup()
+
+// Exit with appropriate code
+if (results.failed > 0) {
+  console.log('\n❌ Tests failed')
+  process.exit(1)
+} else {
+  console.log('\n✅ All tests passed')
+  process.exit(0)
+}
