@@ -10,20 +10,19 @@ import type { StoryExport } from '../testing/testing.types.js'
 /**
  * Zod schema for validating PlaitedAttributes structure.
  * Based on PlaitedAttributes from create-template.types.ts
- * Uses .passthrough() to allow additional HTML/ARIA attributes.
+ * Uses z.looseObject() to allow additional HTML/ARIA attributes.
  */
 const PlaitedAttributesSchema = z
-  .object({
+  .looseObject({
     class: z.string().optional(),
     children: z.union([z.string(), z.number(), z.array(z.union([z.string(), z.number(), z.any()]))]).optional(),
     'p-target': z.union([z.string(), z.number()]).optional(),
-    'p-trigger': z.record(z.string()).optional(),
+    'p-trigger': z.record(z.string(), z.string()).optional(),
     stylesheets: z.array(z.string()).optional(),
     classNames: z.array(z.string()).optional(),
     trusted: z.boolean().optional(),
-    style: z.record(z.union([z.string(), z.number()])).optional(),
+    style: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
   })
-  .passthrough()
   .optional()
 
 const getRoutePath = ({ filePath, cwd, exportName }: { filePath: string; cwd: string; exportName: string }): string => {
@@ -179,7 +178,7 @@ export const getHTMLRoutes = async ({
         const errorResponse = new Response(
           JSON.stringify({
             error: 'Invalid story args',
-            details: error.errors,
+            details: error.issues,
           }),
           {
             status: 400,
