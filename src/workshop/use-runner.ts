@@ -33,7 +33,7 @@
 
 import { useBehavioral } from '../main.js'
 import { keyMirror } from '../utils.js'
-import type { Trigger, SignalWithoutInitialValue } from '../main.js'
+import type { SignalWithoutInitialValue } from '../main.js'
 import type { Browser, BrowserContextOptions } from '@playwright/test'
 import { getServer } from './get-server.js'
 import { discoverStoryMetadata } from './discover-story-metadata.js'
@@ -109,37 +109,39 @@ export type TestStoriesOutput = {
  */
 export const useRunner = useBehavioral<
   {
-    run_tests: () => void
-    reload: () => void
-    end: () => void
+    run_tests?: StoryMetadata[]
+    reload: void
+    end: void
   },
   {
     browser: Browser
     port: number
     recordVideo?: BrowserContextOptions['recordVideo']
     reporter: SignalWithoutInitialValue<TestStoriesOutput>
+    cwd: string
   }
 >({
   publicEvents: ['run_tests', 'reload', 'end'],
 
-  async bProgram({ browser, port, recordVideo, reporter, trigger, bThreads, bThread, bSync }) {
-    const cwd = process.cwd()
+  async bProgram({ browser, port, recordVideo, reporter, trigger, cwd, disconnect }) {
     const serverURL = `http://localhost:${port}`
 
     // Create server at program initialization
-    const reload = await getServer({ cwd, port, trigger })
-
-    const failed: TestResult[] = []
-    const passed: TestResult[] = []
+    const { reload, server } = await getServer({ cwd, port, trigger })
 
     return {
-      async run_tests() {
+      async run_tests(metadata) {
+        // Clear results for this test run
+        const failed: TestResult[] = []
+        const passed: TestResult[] = []
+
         console.log(`🔍 Discovering stories in: ${cwd}`)
 
-        // Discover stories
-        const stories = await discoverStoryMetadata(cwd)
+        // Discover stories - handle undefined/empty metadata parameter
+        // Behavioral programs pass {} as detail when no detail is provided
+        const stories = Array.isArray(metadata) && metadata.length > 0 ? metadata : await discoverStoryMetadata(cwd)
 
-        if (stories.length === 0) {
+        if (!stories || stories.length === 0) {
           console.warn('⚠️  No story exports found')
           reporter.set({
             passed: 0,
@@ -201,14 +203,11 @@ export const useRunner = useBehavioral<
 
         console.log(`\n✅ Tests complete: ${passed.length} passed, ${failed.length} failed`)
       },
-
-      reload() {
-        reload()
-      },
-
-      end() {
+      reload,
+      async end() {
         console.log('🛑 Shutting down test runner')
-        // Additional cleanup can be added here if needed
+        disconnect()
+        await server.stop()
       },
     }
   },

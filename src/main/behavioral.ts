@@ -373,7 +373,7 @@ export const behavioral: Behavioral = () => {
    */
   const useFeedback: UseFeedback = (handlers) => {
     const disconnect = actionPublisher.subscribe((data: BPEvent) => {
-      const { type, detail = {} } = data
+      const { type, detail } = data
       if (Object.hasOwn(handlers, type)) {
         void handlers[type](detail)
       }

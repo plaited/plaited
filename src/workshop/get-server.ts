@@ -79,7 +79,7 @@ export const getServer = async ({ cwd, port, trigger }: { cwd: string; port: num
   console.log(`📂 Root: ${cwd}`)
   console.log(`🌐 Port: ${port}`)
 
-  const testServer = Bun.serve({
+  const server = Bun.serve({
     port,
     routes: await getRoutes(cwd),
     async fetch(req: Request, server: Bun.Server) {
@@ -155,18 +155,18 @@ export const getServer = async ({ cwd, port, trigger }: { cwd: string; port: num
   })
 
   process.on('exit', async () => {
-    await testServer?.stop(true)
+    await server?.stop(true)
     console.log('Server stopped')
   })
 
   // Hot reload: Broadcast to all connected clients
   const reload = () => {
-    testServer.publish(RUNNER_TOPIC, RELOAD_PAGE)
+    server.publish(RUNNER_TOPIC, RELOAD_PAGE)
     console.log('🔄 Reloading all clients...')
   }
 
   console.log(`✅ Server ready at http://localhost:${port}`)
   console.log(`🔥 Hot reload enabled via WebSocket`)
 
-  return reload
+  return { reload, server }
 }

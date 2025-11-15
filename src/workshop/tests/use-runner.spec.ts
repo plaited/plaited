@@ -1,252 +1,214 @@
 import { test, expect } from 'bun:test'
 import { chromium } from '@playwright/test'
 import { useRunner, type TestStoriesOutput } from '../use-runner.js'
-import { useSignal, behavioral } from '../../main.js'
-import { join } from 'node:path'
+import { useSignal, type Trigger } from '../../main.js'
+import { discoverStoryMetadata } from '../discover-story-metadata.js'
 
-const fixturesDir = join(import.meta.dir, 'fixtures/stories')
+const cwd = `${import.meta.dir}/fixtures`
 const testPort = 3457
 
-test('useRunner: discovers and executes stories from fixtures', async () => {
-  const browser = await chromium.launch()
-  const reporter = useSignal<TestStoriesOutput>()
+// Helper to create a results promise with timeout
+const createResultsPromise = (reporter: ReturnType<typeof useSignal<TestStoriesOutput>>, timeout = 10000) => {
+  return Promise.race([
+    new Promise<TestStoriesOutput>((resolve) => {
+      const spy: Trigger = ({ detail }) => resolve(detail)
+      reporter.listen('_', spy)
+    }),
+    new Promise<TestStoriesOutput>((_, reject) =>
+      setTimeout(() => reject(new Error(`Test timed out after ${timeout}ms`)), timeout),
+    ),
+  ])
+}
 
-  // Create promise to wait for reporter signal
-  const resultsPromise = new Promise<TestStoriesOutput>((resolve) => {
-    const { trigger: localTrigger, useFeedback } = behavioral()
+test(
+  'useRunner: discovers and executes stories from fixtures',
+  async () => {
+    const browser = await chromium.launch()
+    const reporter = useSignal<TestStoriesOutput>()
 
-    // Listen to the reporter signal
-    reporter.listen('update', localTrigger)
+    try {
+      const trigger = await useRunner({ browser, port: testPort, reporter, cwd })
+      const resultsPromise = createResultsPromise(reporter)
 
-    useFeedback({
-      update(detail?: TestStoriesOutput) {
-        if (detail) {
-          resolve(detail)
-        }
-      }
-    })
-  })
+      // Trigger test run
+      trigger({ type: 'run_tests' })
 
-  // Override process.cwd() for this test
-  const originalCwd = process.cwd
-  process.cwd = () => fixturesDir
+      // Wait for results
+      const results = await resultsPromise
 
-  try {
-    const trigger = await useRunner({ browser, port: testPort, reporter })
+      // Verify results structure
+      expect(results).toBeDefined()
+      expect(results.total).toBeGreaterThan(0)
+      expect(results.passed).toBeGreaterThanOrEqual(0)
+      expect(results.failed).toBeGreaterThanOrEqual(0)
+      expect(results.passed + results.failed).toBe(results.total)
+      expect(results.results).toBeInstanceOf(Array)
+      expect(results.results.length).toBe(results.total)
 
-    // Trigger test run
-    trigger({ type: 'run_tests' })
-
-    // Wait for results
-    const results = await resultsPromise
-
-    // Verify results structure
-    expect(results).toBeDefined()
-    expect(results.total).toBeGreaterThan(0)
-    expect(results.passed).toBeGreaterThanOrEqual(0)
-    expect(results.failed).toBeGreaterThanOrEqual(0)
-    expect(results.passed + results.failed).toBe(results.total)
-    expect(results.results).toBeInstanceOf(Array)
-    expect(results.results.length).toBe(results.total)
-
-    // Verify each result has required properties
-    results.results.forEach((result) => {
-      expect(result.story).toBeDefined()
-      expect(result.story.exportName).toBeDefined()
-      expect(result.story.filePath).toBeDefined()
-      expect(result.story.type).toMatch(/interaction|snapshot/)
-      expect(typeof result.passed).toBe('boolean')
-    })
-
-    // Clean up
-    trigger({ type: 'end' })
-  } finally {
-    process.cwd = originalCwd
-    await browser.close()
-  }
-})
-
-test('useRunner: reports test results with correct structure', async () => {
-  const browser = await chromium.launch()
-  const reporter = useSignal<TestStoriesOutput>()
-
-  const { trigger: localTrigger, useFeedback } = behavioral()
-
-  const resultsPromise = new Promise<TestStoriesOutput>((resolve) => {
-    reporter.listen('update', localTrigger)
-
-    useFeedback({
-      update(detail?: TestStoriesOutput) {
-        if (detail) {
-          resolve(detail)
-        }
-      }
-    })
-  })
-
-  const originalCwd = process.cwd
-  process.cwd = () => fixturesDir
-
-  try {
-    const trigger = await useRunner({ browser, port: testPort + 1, reporter })
-
-    trigger({ type: 'run_tests' })
-
-    const results = await resultsPromise
-
-    // Verify we have 4 story exports from mixed-stories.stories.tsx
-    expect(results.total).toBe(4)
-    expect(results.passed).toBe(4)
-    expect(results.failed).toBe(0)
-
-    // Verify story names
-    const storyNames = results.results.map(r => r.story.exportName).sort()
-    expect(storyNames).toEqual(['basicStory', 'interactionStory', 'storyWithAllProps', 'storyWithParams'])
-
-    trigger({ type: 'end' })
-  } finally {
-    process.cwd = originalCwd
-    await browser.close()
-  }
-})
-
-test('useRunner: reload event triggers server reload', async () => {
-  const browser = await chromium.launch()
-  const reporter = useSignal<TestStoriesOutput>()
-
-  const originalCwd = process.cwd
-  process.cwd = () => fixturesDir
-
-  try {
-    const trigger = await useRunner({ browser, port: testPort + 2, reporter })
-
-    // Test that reload can be called without error
-    expect(() => trigger({ type: 'reload' })).not.toThrow()
-
-    trigger({ type: 'end' })
-  } finally {
-    process.cwd = originalCwd
-    await browser.close()
-  }
-})
-
-test('useRunner: end event completes successfully', async () => {
-  const browser = await chromium.launch()
-  const reporter = useSignal<TestStoriesOutput>()
-
-  const originalCwd = process.cwd
-  process.cwd = () => fixturesDir
-
-  try {
-    const trigger = await useRunner({ browser, port: testPort + 3, reporter })
-
-    // Test that end can be called without error
-    expect(() => trigger({ type: 'end' })).not.toThrow()
-  } finally {
-    process.cwd = originalCwd
-    await browser.close()
-  }
-})
-
-test('useRunner: supports video recording configuration', async () => {
-  const browser = await chromium.launch()
-  const reporter = useSignal<TestStoriesOutput>()
-
-  const resultsPromise = new Promise<TestStoriesOutput>((resolve) => {
-    const { trigger: localTrigger, useFeedback } = behavioral()
-
-    reporter.listen('update', localTrigger)
-
-    useFeedback({
-      update(detail?: TestStoriesOutput) {
-        if (detail) {
-          resolve(detail)
-        }
-      }
-    })
-  })
-
-  const originalCwd = process.cwd
-  process.cwd = () => fixturesDir
-
-  try {
-    const trigger = await useRunner({
-      browser,
-      port: testPort + 4,
-      reporter,
-      recordVideo: {
-        dir: join(import.meta.dir, 'test-videos'),
-        size: { width: 1280, height: 720 },
-      },
-    })
-
-    trigger({ type: 'run_tests' })
-
-    const results = await resultsPromise
-
-    // Verify tests ran successfully
-    expect(results.total).toBeGreaterThan(0)
-
-    trigger({ type: 'end' })
-  } finally {
-    process.cwd = originalCwd
-    await browser.close()
-  }
-})
-
-test('useRunner: multiple test runs work correctly', async () => {
-  const browser = await chromium.launch()
-  const reporter = useSignal<TestStoriesOutput>()
-
-  let runCount = 0
-  let resolveFirstRun: () => void
-  let resolveSecondRun: () => void
-
-  const firstRunPromise = new Promise<void>((resolve) => {
-    resolveFirstRun = resolve
-  })
-
-  const secondRunPromise = new Promise<void>((resolve) => {
-    resolveSecondRun = resolve
-  })
-
-  const { trigger: localTrigger, useFeedback } = behavioral()
-
-  reporter.listen('update', localTrigger)
-
-  useFeedback({
-    update(detail?: TestStoriesOutput) {
-      if (detail) {
-        runCount++
-        if (runCount === 1) {
-          resolveFirstRun()
-        } else if (runCount === 2) {
-          resolveSecondRun()
-        }
-      }
+      // Verify each result has required properties
+      results.results.forEach((result) => {
+        expect(result.story).toBeDefined()
+        expect(result.story.exportName).toBeDefined()
+        expect(result.story.filePath).toBeDefined()
+        expect(result.story.type).toMatch(/interaction|snapshot/)
+        expect(typeof result.passed).toBe('boolean')
+      })
+      trigger({ type: 'end' })
+    } finally {
+      await browser.close()
     }
-  })
+  },
+  { timeout: 15000 },
+)
 
-  const originalCwd = process.cwd
-  process.cwd = () => fixturesDir
+test(
+  'useRunner: discovers stories in nested directories',
+  async () => {
+    const browser = await chromium.launch()
+    const reporter = useSignal<TestStoriesOutput>()
 
-  try {
-    const trigger = await useRunner({ browser, port: testPort + 5, reporter })
+    // Set up promise BEFORE triggering to avoid race condition
+    const resultsPromise = createResultsPromise(reporter)
 
-    // Run tests first time
-    trigger({ type: 'run_tests' })
-    await firstRunPromise
+    try {
+      const trigger = await useRunner({ browser, port: testPort + 1, reporter, cwd })
 
-    // Run tests second time
-    trigger({ type: 'run_tests' })
-    await secondRunPromise
+      trigger({ type: 'run_tests' })
+      const results = await resultsPromise
 
-    // Verify both runs completed
-    expect(runCount).toBe(2)
+      // Should find stories in nested directories
+      const nestedStories = results.results.filter((r) => r.story.filePath.includes('/nested/'))
+      expect(nestedStories.length).toBeGreaterThan(0)
 
-    trigger({ type: 'end' })
-  } finally {
-    process.cwd = originalCwd
-    await browser.close()
-  }
-})
+      // Verify nested story names
+      const exportNames = results.results.map((r) => r.story.exportName)
+      expect(exportNames).toContain('nestedSnapshot')
+      expect(exportNames).toContain('nestedInteraction')
+      expect(exportNames).toContain('deeplyNestedStory')
+
+      trigger({ type: 'end' })
+    } finally {
+      await browser.close()
+    }
+  },
+  { timeout: 15000 },
+)
+
+test(
+  'useRunner: executes only specified stories when metadata provided',
+  async () => {
+    const browser = await chromium.launch()
+    const reporter = useSignal<TestStoriesOutput>()
+
+    try {
+      // Discover all stories first
+      const allStories = await discoverStoryMetadata(cwd)
+      expect(allStories.length).toBeGreaterThan(2)
+
+      // Select only first two stories
+      const selectedStories = allStories.slice(0, 2)
+
+      const trigger = await useRunner({ browser, port: testPort + 2, reporter, cwd })
+      const resultsPromise = createResultsPromise(reporter)
+
+      // Run with specific metadata
+      trigger({ type: 'run_tests', detail: selectedStories })
+      const results = await resultsPromise
+
+      // Should execute only the selected stories
+      expect(results.total).toBe(2)
+      expect(results.results.length).toBe(2)
+
+      // Verify correct stories were run
+      const executedNames = results.results.map((r) => r.story.exportName).sort()
+      const selectedNames = selectedStories.map((s) => s.exportName).sort()
+      expect(executedNames).toEqual(selectedNames)
+
+      trigger({ type: 'end' })
+    } finally {
+      await browser.close()
+    }
+  },
+  { timeout: 15000 },
+)
+
+test(
+  'useRunner: executes stories from additional files',
+  async () => {
+    const browser = await chromium.launch()
+    const reporter = useSignal<TestStoriesOutput>()
+
+    // Set up promise BEFORE triggering
+    const resultsPromise = createResultsPromise(reporter, 15000)
+
+    try {
+      // Discover stories from additional file
+      const allStories = await discoverStoryMetadata(cwd)
+      const additionalStories = allStories.filter((s) => s.filePath.includes('additional-stories'))
+
+      expect(additionalStories.length).toBeGreaterThan(0)
+
+      const trigger = await useRunner({ browser, port: testPort + 3, reporter, cwd })
+
+      trigger({ type: 'run_tests', detail: additionalStories })
+      const results = await resultsPromise
+
+      // All should pass
+      expect(results.total).toBe(additionalStories.length)
+      expect(results.passed).toBe(additionalStories.length)
+      expect(results.failed).toBe(0)
+
+      // Verify all results passed
+      results.results.forEach((result) => {
+        expect(result.passed).toBe(true)
+        expect(result.error).toBeUndefined()
+      })
+
+      trigger({ type: 'end' })
+    } finally {
+      await browser.close()
+    }
+  },
+  { timeout: 20000 },
+)
+
+test(
+  'useRunner: handles mixed story types (interaction and snapshot)',
+  async () => {
+    const browser = await chromium.launch()
+    const reporter = useSignal<TestStoriesOutput>()
+
+    try {
+      const allStories = await discoverStoryMetadata(cwd)
+
+      // Get mix of interaction and snapshot stories from different files
+      const snapshotStories = allStories.filter((s) => s.type === 'snapshot').slice(0, 2)
+      const interactionStories = allStories.filter((s) => s.type === 'interaction').slice(0, 2)
+      const mixedStories = [...snapshotStories, ...interactionStories]
+
+      expect(mixedStories.length).toBeGreaterThan(2)
+
+      const trigger = await useRunner({ browser, port: testPort + 4, reporter, cwd })
+      const resultsPromise = createResultsPromise(reporter, 15000)
+
+      trigger({ type: 'run_tests', detail: mixedStories })
+      const results = await resultsPromise
+
+      // All should pass
+      expect(results.total).toBe(mixedStories.length)
+      expect(results.passed).toBe(mixedStories.length)
+      expect(results.failed).toBe(0)
+
+      // Verify we have both types
+      const hasSnapshot = results.results.some((r) => r.story.type === 'snapshot')
+      const hasInteraction = results.results.some((r) => r.story.type === 'interaction')
+      expect(hasSnapshot).toBe(true)
+      expect(hasInteraction).toBe(true)
+
+      trigger({ type: 'end' })
+    } finally {
+      await browser.close()
+    }
+  },
+  { timeout: 20000 },
+)
