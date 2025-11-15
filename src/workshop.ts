@@ -4,11 +4,11 @@
  * Development and testing tools for the Plaited framework.
  */
 
-// Template discovery
-export * from './workshop/discover-template-metadata.js'
+// Template discovery (runtime-based for performance)
+export * from './workshop/collect-templates.js'
 
-// Story discovery
-export * from './workshop/discover-story-metadata.js'
+// Story discovery (runtime-based for performance)
+export * from './workshop/collect-stories.js'
 
 export * from './workshop/use-runner.js'
 

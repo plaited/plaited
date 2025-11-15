@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 import { join } from 'node:path'
-import { discoverTemplateMetadata } from '../discover-template-metadata.js'
+import { discoverTemplateMetadata } from '../collect-templates.js'
 import type { TemplateExport } from '../workshop.types.js'
 
 // Get absolute path to fixtures

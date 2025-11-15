@@ -34,9 +34,9 @@
 import { useBehavioral } from '../main.js'
 import { keyMirror } from '../utils.js'
 import type { SignalWithoutInitialValue } from '../main.js'
-import type { Browser, BrowserContextOptions } from '@playwright/test'
+import type { Browser, BrowserContextOptions } from 'playwright'
 import { getServer } from './get-server.js'
-import { discoverStoryMetadata } from './discover-story-metadata.js'
+import { discoverStoryMetadata } from './collect-stories.js'
 import type { StoryMetadata } from './workshop.types.js'
 
 /**
@@ -44,13 +44,6 @@ import type { StoryMetadata } from './workshop.types.js'
  * Event types for test runner communication.
  */
 export const TEST_RUNNER_EVENTS = keyMirror('run_tests', 'reload', 'end')
-
-/**
- * @internal
- * Maximum number of stories to run concurrently.
- * Helps balance performance with resource usage.
- */
-const CONCURRENCY = 3
 
 /**
  * @internal
@@ -118,7 +111,7 @@ export const useRunner = useBehavioral<
   {
     run_tests?: StoryMetadata[]
     reload: void
-    end: void
+    end: () => void
   },
   {
     browser: Browser
@@ -131,8 +124,6 @@ export const useRunner = useBehavioral<
   publicEvents: ['run_tests', 'reload', 'end'],
 
   async bProgram({ browser, port, recordVideo, reporter, trigger, cwd, disconnect }) {
-    const serverURL = `http://localhost:${port}`
-
     // Create server at program initialization
     const { reload, server } = await getServer({ cwd, port, trigger })
 
@@ -165,47 +156,39 @@ export const useRunner = useBehavioral<
         const context = await browser.newContext({ recordVideo })
 
         try {
-          // Split stories into batches for parallel execution
-          const batches: StoryMetadata[][] = []
-          for (let i = 0; i < stories.length; i += CONCURRENCY) {
-            batches.push(stories.slice(i, i + CONCURRENCY))
-          }
+          // Run all stories in parallel - let Playwright manage resources
+          const results = await Promise.all(
+            stories.map(async (story) => {
+              const page = await context.newPage()
+              try {
+                const storyURL = `${server.url.href}/${story.exportName}`
+                await page.goto(storyURL)
+                await page.waitForLoadState('networkidle')
 
-          // Run batches sequentially, but stories within each batch in parallel
-          for (const batch of batches) {
-            const batchResults = await Promise.all(
-              batch.map(async (story) => {
-                const page = await context.newPage()
-                try {
-                  const storyURL = `${serverURL}/${story.exportName}`
-                  await page.goto(storyURL)
-                  await page.waitForLoadState('networkidle')
-
-                  console.log(`✓ ${story.exportName}`)
-                  return {
-                    story,
-                    passed: true as const,
-                  }
-                } catch (error) {
-                  console.error(`✗ ${story.exportName}`, error)
-                  return {
-                    story,
-                    passed: false as const,
-                    error,
-                  }
-                } finally {
-                  await page.close()
+                console.log(`✓ ${story.exportName}`)
+                return {
+                  story,
+                  passed: true as const,
                 }
-              }),
-            )
-
-            // Aggregate results from this batch
-            for (const result of batchResults) {
-              if (result.passed) {
-                passed.push(result)
-              } else {
-                failed.push(result)
+              } catch (error) {
+                console.error(`✗ ${story.exportName}`, error)
+                return {
+                  story,
+                  passed: false as const,
+                  error,
+                }
+              } finally {
+                await page.close()
               }
+            }),
+          )
+
+          // Aggregate results
+          for (const result of results) {
+            if (result.passed) {
+              passed.push(result)
+            } else {
+              failed.push(result)
             }
           }
         } finally {
@@ -224,10 +207,17 @@ export const useRunner = useBehavioral<
         console.log(`\n✅ Tests complete: ${passed.length} passed, ${failed.length} failed`)
       },
       reload,
-      async end() {
-        console.log('🛑 Shutting down test runner')
-        disconnect()
-        await server.stop()
+      async end(resolve?: () => void) {
+        try {
+          console.log('🛑 Shutting down test runner')
+          await server.stop(true)
+          disconnect()
+        } catch (error) {
+          console.error('Error during cleanup:', error)
+        } finally {
+          // Resolve the promise to signal cleanup is complete
+          resolve?.()
+        }
       },
     }
   },

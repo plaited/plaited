@@ -1,7 +1,7 @@
 import { test, expect, describe } from 'bun:test'
 import { resolve } from 'node:path'
 import { statSync } from 'node:fs'
-import { discoverStoryMetadata, getStoryMetadata } from '../discover-story-metadata.js'
+import { discoverStoryMetadata, getStoryMetadata } from '../collect-stories.js'
 
 const fixturesDir = `${import.meta.dir}/fixtures`
 
@@ -146,19 +146,19 @@ describe('CLI Logic Tests', () => {
       expect(exportNames).toContain('deeplyNestedStory')
     })
 
-    test('file path: should extract stories from single file', () => {
+    test('file path: should extract stories from single file', async () => {
       const filePath = resolve(fixturesDir, 'additional-stories.stories.tsx')
-      const metadata = getStoryMetadata(filePath)
+      const metadata = await getStoryMetadata(filePath)
 
       expect(metadata).toBeInstanceOf(Array)
       expect(metadata.length).toBeGreaterThan(0)
       expect(metadata[0].filePath).toBe(filePath)
     })
 
-    test('file path: should handle file with no story exports', () => {
+    test('file path: should handle file with no story exports', async () => {
       // Create a test by checking if a file returns empty metadata
       const filePath = resolve(fixturesDir, 'additional-stories.stories.tsx')
-      const metadata = getStoryMetadata(filePath)
+      const metadata = await getStoryMetadata(filePath)
 
       // This file should have stories, let's verify the structure
       expect(metadata).toBeInstanceOf(Array)
@@ -168,12 +168,12 @@ describe('CLI Logic Tests', () => {
       })
     })
 
-    test('multiple files: should combine stories from multiple files', () => {
+    test('multiple files: should combine stories from multiple files', async () => {
       const file1 = resolve(fixturesDir, 'additional-stories.stories.tsx')
       const file2 = resolve(fixturesDir, 'stories/mixed-stories.stories.tsx')
 
-      const metadata1 = getStoryMetadata(file1)
-      const metadata2 = getStoryMetadata(file2)
+      const metadata1 = await getStoryMetadata(file1)
+      const metadata2 = await getStoryMetadata(file2)
       const combined = [...metadata1, ...metadata2]
 
       expect(combined.length).toBe(metadata1.length + metadata2.length)
@@ -184,7 +184,7 @@ describe('CLI Logic Tests', () => {
       const filePath = resolve(fixturesDir, 'additional-stories.stories.tsx')
       const dirPath = resolve(fixturesDir, 'nested')
 
-      const fileMetadata = getStoryMetadata(filePath)
+      const fileMetadata = await getStoryMetadata(filePath)
       const dirMetadata = await discoverStoryMetadata(dirPath)
       const combined = [...fileMetadata, ...dirMetadata]
 
@@ -290,8 +290,8 @@ describe('CLI Logic Tests', () => {
       const path1 = resolve(fixturesDir, 'additional-stories.stories.tsx')
       const path2 = resolve(fixturesDir, 'stories/mixed-stories.stories.tsx')
 
-      const metadata1 = getStoryMetadata(path1)
-      const metadata2 = getStoryMetadata(path2)
+      const metadata1 = await getStoryMetadata(path1)
+      const metadata2 = await getStoryMetadata(path2)
       const combined = [...metadata1, ...metadata2]
 
       // Check no duplicates by export name + file path combination
@@ -303,7 +303,7 @@ describe('CLI Logic Tests', () => {
       const file1 = resolve(fixturesDir, 'additional-stories.stories.tsx')
       const dir1 = resolve(fixturesDir, 'nested')
 
-      const fileMetadata = getStoryMetadata(file1)
+      const fileMetadata = await getStoryMetadata(file1)
       const dirMetadata = await discoverStoryMetadata(dir1)
       const combined = [...fileMetadata, ...dirMetadata]
 

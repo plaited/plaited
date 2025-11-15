@@ -16,10 +16,10 @@
  *   bun --hot plaited test                              # Enable hot reload
  */
 
-import { chromium } from '@playwright/test'
+import { chromium } from 'playwright'
 import { useRunner, type TestStoriesOutput } from './use-runner.js'
 import { useSignal } from '../main.js'
-import { discoverStoryMetadata, getStoryMetadata } from './discover-story-metadata.js'
+import { discoverStoryMetadata, getStoryMetadata } from './collect-stories.js'
 import { parseArgs } from 'node:util'
 import { resolve } from 'node:path'
 import { statSync } from 'node:fs'
@@ -34,7 +34,6 @@ const { values, positionals } = parseArgs({
     port: {
       type: 'string',
       short: 'p',
-      default: '3456',
     },
     dir: {
       type: 'string',
@@ -55,13 +54,14 @@ if (!subcommand) {
   console.log('Commands:')
   console.log('  test      Run story tests\n')
   console.log('Options:')
-  console.log('  -p, --port <number>    Port for test server (default: 3456)')
+  console.log('  -p, --port <number>    Port for test server (default: 0 - auto-assign)')
   console.log('  -d, --dir <path>       Working directory (default: process.cwd())\n')
   console.log('Examples:')
   console.log('  bun plaited test')
   console.log('  bun plaited test src/components')
   console.log('  bun plaited test src/Button.stories.tsx src/Card.stories.tsx')
-  console.log('  bun --hot plaited test -p 3500')
+  console.log('  bun plaited test -p 3500')
+  console.log('  bun --hot plaited test')
   process.exit(1)
 }
 
@@ -72,10 +72,10 @@ if (subcommand !== 'test') {
   process.exit(1)
 }
 
-// Parse and validate port
-const port = parseInt(values.port!, 10)
-if (isNaN(port) || port < 1 || port > 65535) {
-  throw new Error(`ERROR: Invalid port number: ${values.port}. Must be between 1-65535`)
+// Parse and validate port (default to 0 for auto-assignment)
+const port = values.port ? parseInt(values.port, 10) : 0
+if (values.port && (isNaN(port) || port < 0 || port > 65535)) {
+  throw new Error(`ERROR: Invalid port number: ${values.port}. Must be between 0-65535`)
 }
 
 // Determine working directory
@@ -86,7 +86,7 @@ const paths = positionals.slice(3)
 
 console.log(`📋 Configuration:`)
 console.log(`   Working directory: ${cwd}`)
-console.log(`   Port: ${port}`)
+console.log(`   Port: ${port === 0 ? '0 (auto-assign)' : port}`)
 if (paths.length > 0) {
   console.log(`   Paths: ${paths.join(', ')}`)
 }
@@ -110,7 +110,7 @@ if (paths.length > 0) {
         allMetadata.push(...dirMetadata)
       } else if (stats.isFile()) {
         console.log(`📄 Analyzing file: ${absolutePath}`)
-        const fileMetadata = getStoryMetadata(absolutePath)
+        const fileMetadata = await getStoryMetadata(absolutePath)
         allMetadata.push(...fileMetadata)
       } else {
         console.error(`❌ Error: Path is neither file nor directory: ${absolutePath}`)
@@ -150,7 +150,7 @@ const resultsPromise = new Promise<TestStoriesOutput>((resolve) => {
   })
 })
 
-// Initialize test runner
+// Initialize test runner (this creates and starts the server)
 console.log('🔧 Initializing test runner...')
 const trigger = await useRunner({ browser, port, reporter, cwd })
 

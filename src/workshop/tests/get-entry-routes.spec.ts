@@ -3,13 +3,11 @@ import { getEntryRoutes } from '../get-entry-routes.js'
 import { join } from 'node:path'
 
 /**
- * Helper function to decompress gzipped response content.
- * Follows the same pattern as get-html-routes.test.tsx
+ * Helper function to get response content as text.
+ * Responses are no longer gzipped by default for better test performance.
  */
-const decompressResponse = async (response: Response): Promise<string> => {
-  const buffer = await response.arrayBuffer()
-  const decompressed = Bun.gunzipSync(new Uint8Array(buffer))
-  return new TextDecoder().decode(decompressed)
+const getResponseText = async (response: Response): Promise<string> => {
+  return await response.text()
 }
 
 // Path to test fixtures with nested directory structure
@@ -78,19 +76,19 @@ test('getEntryRoutes: creates code-split chunks when splitting enabled', async (
   })
 })
 
-test('getEntryRoutes: responses are properly gzipped', async () => {
+test('getEntryRoutes: responses are not compressed by default', async () => {
   const entrypoint = join(fixturesRoot, 'RootTemplate.tsx')
   const responses = await getEntryRoutes(fixturesRoot, [entrypoint])
 
   const response = responses['/root-template--index.js']
 
-  // Should have gzip content-encoding header
-  expect(response.headers.get('content-encoding')).toBe('gzip')
+  // Should NOT have gzip content-encoding header (compression disabled for performance)
+  expect(response.headers.get('content-encoding')).toBeNull()
 
-  // Should be able to decompress successfully
-  const decompressed = await decompressResponse(response)
-  expect(typeof decompressed).toBe('string')
-  expect(decompressed.length).toBeGreaterThan(0)
+  // Should be able to read content as text
+  const content = await getResponseText(response)
+  expect(typeof content).toBe('string')
+  expect(content.length).toBeGreaterThan(0)
 })
 
 test('getEntryRoutes: responses have correct content-type', async () => {
@@ -110,7 +108,7 @@ test('getEntryRoutes: bundled content is valid JavaScript', async () => {
   const responses = await getEntryRoutes(fixturesRoot, [entrypoint])
 
   const response = responses['/root-template--index.js']
-  const content = await decompressResponse(response)
+  const content = await getResponseText(response)
 
   // Should contain typical bundled JavaScript patterns
   // Bun bundles should contain some identifiable markers
@@ -182,19 +180,19 @@ test('getEntryRoutes: handles PascalCase to kebab-case conversion', async () => 
   expect(responses['/RootTemplate--index.js']).toBeUndefined()
 })
 
-test('getEntryRoutes: all responses can be decompressed without errors', async () => {
+test('getEntryRoutes: all responses can be read without errors', async () => {
   const entrypoints = [join(fixturesRoot, 'RootTemplate.tsx'), join(fixturesRoot, 'TemplateA.tsx')]
   const responses = await getEntryRoutes(fixturesRoot, entrypoints)
 
-  // Try to decompress all responses
-  const decompressionPromises = Object.values(responses).map(async (response) => {
-    const content = await decompressResponse(response)
+  // Try to read all responses
+  const readPromises = Object.values(responses).map(async (response) => {
+    const content = await getResponseText(response)
     expect(typeof content).toBe('string')
     expect(content.length).toBeGreaterThan(0)
   })
 
-  // Should all decompress successfully
-  await Promise.all(decompressionPromises)
+  // Should all read successfully
+  await Promise.all(readPromises)
 })
 
 test('getEntryRoutes: chunk artifacts have different path format than entry-points', async () => {

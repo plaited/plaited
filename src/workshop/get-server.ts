@@ -1,6 +1,6 @@
 import { RUNNER_URL, RELOAD_PAGE } from '../testing/testing.constants.js'
 import { getHTMLRoutes } from './get-html-routes.js'
-import { discoverStoryMetadata } from './discover-story-metadata.js'
+import { discoverStoryMetadata } from './collect-stories.js'
 import { getEntryRoutes } from './get-entry-routes.js'
 import type { Trigger } from '../main.js'
 
@@ -71,9 +71,9 @@ export const getRoutes = async (cwd: string): Promise<Record<string, Response>> 
  *
  * @param options - Server configuration options
  * @param options.cwd - Current working directory (story discovery root)
- * @param options.port - Server port number
+ * @param options.port - Server port number (0 for auto-assignment)
  * @param options.trigger - Optional trigger function for test runner events
- * @returns Reload callback function to notify connected clients
+ * @returns Object with reload callback, server instance, and actual port number
  */
 
 export const getServer = async ({ cwd, port, trigger }: { cwd: string; port: number; trigger?: Trigger }) => {
@@ -167,8 +167,11 @@ export const getServer = async ({ cwd, port, trigger }: { cwd: string; port: num
     console.log('🔄 Reloading all clients...')
   }
 
-  console.log(`✅ Server ready at http://localhost:${port}`)
+  // Get actual port (important when port 0 is used for auto-assignment)
+  const actualPort = server.port
+
+  console.log(`✅ Server ready at http://localhost:${actualPort}`)
   console.log(`🔥 Hot reload enabled via WebSocket`)
 
-  return { reload, server }
+  return { reload, server, port: actualPort }
 }
