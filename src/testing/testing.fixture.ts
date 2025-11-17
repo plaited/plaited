@@ -33,6 +33,7 @@ import {
   DEFAULT_PLAY_TIMEOUT,
   FIXTURE_EVENTS,
   STORY_TYPES,
+  STORY_IDENTIFIER,
 } from './testing.constants.js'
 
 declare global {
@@ -233,6 +234,7 @@ function story<T extends FunctionTemplate>({ args, template, ...rest }: StoryObj
       type: STORY_TYPES.interaction,
       fixture,
       play: rest.play,
+      $: STORY_IDENTIFIER,
     }
   }
   return {
@@ -242,6 +244,7 @@ function story<T extends FunctionTemplate>({ args, template, ...rest }: StoryObj
     parameters: rest.parameters,
     type: STORY_TYPES.snapshot,
     fixture,
+    $: STORY_IDENTIFIER,
   }
 }
 

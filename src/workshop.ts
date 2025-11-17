@@ -5,7 +5,7 @@
  */
 
 // Template discovery (runtime-based for performance)
-export * from './workshop/collect-templates.js'
+export * from './workshop/collect-behavioral-templates.js'
 
 // Story discovery (runtime-based for performance)
 export * from './workshop/collect-stories.js'

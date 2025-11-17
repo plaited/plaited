@@ -2,7 +2,7 @@ import type axe from 'axe-core'
 import type { FunctionTemplate, HostStylesObject, TemplateObject } from '../main.js'
 import type { Wait } from '../utils.js'
 import type { Match, Throws } from './testing.utils.js'
-import { FIXTURE_EVENTS, STORY_TYPES } from './testing.constants.js'
+import { FIXTURE_EVENTS, STORY_TYPES, STORY_IDENTIFIER } from './testing.constants.js'
 
 /**
  * Parameters for structured test assertions.
@@ -373,6 +373,7 @@ export type InteractionExport<T extends FunctionTemplate = FunctionTemplate> = {
   type: typeof STORY_TYPES.interaction
   parameters?: Params
   play: Play
+  $: typeof STORY_IDENTIFIER
 }
 export type SnapshotExport<T extends FunctionTemplate = FunctionTemplate> = {
   template?: T
@@ -382,6 +383,7 @@ export type SnapshotExport<T extends FunctionTemplate = FunctionTemplate> = {
   type: typeof STORY_TYPES.snapshot
   parameters?: Params
   play?: never
+  $: typeof STORY_IDENTIFIER
 }
 
 export type StoryExport<T extends FunctionTemplate = FunctionTemplate> = InteractionExport<T> | SnapshotExport<T>

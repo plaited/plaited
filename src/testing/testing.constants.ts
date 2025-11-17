@@ -56,3 +56,5 @@ export const __PLAITED_RUNNER__ = '__PLAITED_RUNNER__'
 export const __CLOSE_PLAITED_CONTEXT__ = '__CLOSE_PLAITED_CONTEXT__'
 
 export const STORY_TYPES = keyMirror('snapshot', 'interaction')
+
+export const STORY_IDENTIFIER = '🍬'

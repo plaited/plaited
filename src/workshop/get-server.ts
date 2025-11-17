@@ -84,7 +84,7 @@ export const getServer = async ({ cwd, port, trigger }: { cwd: string; port: num
   const server = Bun.serve({
     port,
     routes: await getRoutes(cwd),
-    async fetch(req: Request, server: Bun.Server) {
+    async fetch(req, server) {
       const { pathname } = new URL(req.url)
 
       // Health check endpoint for Playwright webServer

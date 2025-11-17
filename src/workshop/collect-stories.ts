@@ -21,51 +21,9 @@
  */
 
 import { Glob } from 'bun'
-import { STORY_TYPES } from '../testing/testing.constants.js'
+import { isStoryExport } from '../testing/testing.utils.js'
 import type { StoryMetadata } from './workshop.types.js'
 import type { StoryExport } from '../testing/testing.types.js'
-
-/**
- * @internal
- * Type guard to check if an object is a StoryExport.
- * Validates presence of required properties at runtime.
- *
- * @param value - Object to check
- * @returns true if value is a valid StoryExport
- */
-const isStoryExport = (value: unknown): value is StoryExport => {
-  if (!value || typeof value !== 'object') {
-    return false
-  }
-
-  const obj = value as Record<string, unknown>
-
-  // Required properties
-  if (!obj.fixture || typeof obj.fixture !== 'object') {
-    return false
-  }
-
-  if (typeof obj.description !== 'string') {
-    return false
-  }
-
-  if (obj.type !== STORY_TYPES.interaction && obj.type !== STORY_TYPES.snapshot) {
-    return false
-  }
-
-  // Validate play function based on type
-  if (obj.type === STORY_TYPES.interaction) {
-    if (typeof obj.play !== 'function') {
-      return false
-    }
-  } else if (obj.type === STORY_TYPES.snapshot) {
-    if (obj.play !== undefined) {
-      return false
-    }
-  }
-
-  return true
-}
 
 /**
  * @internal
@@ -80,7 +38,7 @@ const toStoryMetadata = (exportName: string, filePath: string, storyExport: Stor
   return {
     exportName,
     filePath,
-    type: storyExport.type === STORY_TYPES.interaction ? 'interaction' : 'snapshot',
+    type: storyExport.type,
     hasPlay: !!storyExport.play,
     hasArgs: storyExport.args !== undefined,
     hasTemplate: storyExport.template !== undefined,

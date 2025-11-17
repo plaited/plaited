@@ -4,7 +4,14 @@ import type { Trigger } from '../main.js'
 import { deepEqual, trueTypeOf, isTypeOf, wait, noop } from '../utils.js'
 import { DelegatedListener, delegates } from '../main/delegated-listener.js'
 
-import { FIXTURE_EVENTS, STORY_FIXTURE, RELOAD_PAGE, RUNNER_URL, DATA_TESTID } from './testing.constants.js'
+import {
+  FIXTURE_EVENTS,
+  STORY_FIXTURE,
+  RELOAD_PAGE,
+  RUNNER_URL,
+  DATA_TESTID,
+  STORY_IDENTIFIER,
+} from './testing.constants.js'
 import type {
   Assert,
   AssertDetails,
@@ -22,6 +29,7 @@ import type {
   FindByTarget,
   FindByTestIdDetails,
   RunnerMessage,
+  StoryExport,
 } from './testing.types.js'
 import { P_TARGET } from '../main/create-template.constants.js'
 
@@ -704,4 +712,8 @@ export const useRunner = () => {
     socket?.close()
   }
   return send
+}
+
+export const isStoryExport = (obj: unknown): obj is StoryExport => {
+  return isTypeOf<StoryExport>(obj, 'object') && obj.$ === STORY_IDENTIFIER
 }

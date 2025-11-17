@@ -143,5 +143,5 @@ export const isBehavioralTemplate = (template: FunctionTemplate): template is Be
    * The identifier is a unique symbol preventing external template spoofing.
    * This guard is critical for security in template rendering.
    */
-  return isTypeOf<BehavioralTemplate>(template, 'object') && template.$ === BEHAVIORAL_TEMPLATE_IDENTIFIER
+  return isTypeOf<BehavioralTemplate>(template, 'function') && template.$ === BEHAVIORAL_TEMPLATE_IDENTIFIER
 }

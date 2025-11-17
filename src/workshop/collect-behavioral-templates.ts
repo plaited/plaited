@@ -21,51 +21,8 @@
  */
 
 import { Glob } from 'bun'
-import { BEHAVIORAL_TEMPLATE_IDENTIFIER } from '../main/b-element.constants.js'
+import { isBehavioralTemplate, type FunctionTemplate } from '../main.js'
 import type { TemplateExport } from './workshop.types.js'
-
-/**
- * @internal
- * Type guard to check if a value is a BehavioralTemplate.
- * Validates presence of required properties at runtime.
- *
- * BehavioralTemplates are functions with properties attached to them.
- *
- * @param value - Value to check (can be function or object)
- * @returns true if value is a valid BehavioralTemplate
- */
-const isBehavioralTemplate = (value: unknown): boolean => {
-  // BehavioralTemplates are functions with properties, so accept both 'function' and 'object'
-  if (!value || (typeof value !== 'object' && typeof value !== 'function')) {
-    return false
-  }
-
-  const obj = value as Record<string, unknown>
-
-  // Check for BehavioralTemplate identifier
-  if (obj.$ !== BEHAVIORAL_TEMPLATE_IDENTIFIER) {
-    return false
-  }
-
-  // Check for required BehavioralTemplate properties
-  if (typeof obj.tag !== 'string') {
-    return false
-  }
-
-  if (!(obj.registry instanceof Set)) {
-    return false
-  }
-
-  if (!Array.isArray(obj.observedAttributes)) {
-    return false
-  }
-
-  if (!Array.isArray(obj.publicEvents)) {
-    return false
-  }
-
-  return true
-}
 
 /**
  * @internal
@@ -102,9 +59,9 @@ const globFiles = async (cwd: string, pattern: string): Promise<string[]> => {
  * - Requires template files to be valid executable TypeScript/TSX
  * - Only returns BehavioralTemplate exports (not FunctionTemplates)
  *
- * @see {@link discoverTemplateMetadata} for directory-based discovery
+ * @see {@link discoverBehavioralTemplateMetadata} for directory-based discovery
  */
-export const getTemplateMetadata = async (filePath: string): Promise<TemplateExport[]> => {
+export const getBehavioralTemplateMetadata = async (filePath: string): Promise<TemplateExport[]> => {
   const metadata: TemplateExport[] = []
 
   try {
@@ -119,7 +76,7 @@ export const getTemplateMetadata = async (filePath: string): Promise<TemplateExp
       }
 
       // Check if this export is a BehavioralTemplate
-      if (isBehavioralTemplate(exportValue)) {
+      if (isBehavioralTemplate(exportValue as FunctionTemplate)) {
         metadata.push({
           exportName,
           filePath,
@@ -155,9 +112,9 @@ export const getTemplateMetadata = async (filePath: string): Promise<TemplateExp
  * - Automatically excludes *.stories.{ts,tsx} files
  * - Only returns BehavioralTemplate exports (not FunctionTemplates)
  *
- * @see {@link getTemplateMetadata} for single file collection
+ * @see {@link getBehavioralTemplateMetadata} for single file collection
  */
-export const discoverTemplateMetadata = async (cwd: string): Promise<TemplateExport[]> => {
+export const discoverBehavioralTemplateMetadata = async (cwd: string): Promise<TemplateExport[]> => {
   console.log(`🔍 Discovering template metadata in: ${cwd}`)
 
   // Get all .tsx files
@@ -174,7 +131,7 @@ export const discoverTemplateMetadata = async (cwd: string): Promise<TemplateExp
   console.log(`📄 Found ${files.length} template files`)
 
   // Collect metadata from all files in parallel
-  const metadataArrays = await Promise.all(files.map((file) => getTemplateMetadata(file)))
+  const metadataArrays = await Promise.all(files.map((file) => getBehavioralTemplateMetadata(file)))
   const metadata = metadataArrays.flat()
 
   console.log(`✅ Discovered ${metadata.length} BehavioralTemplate exports`)
