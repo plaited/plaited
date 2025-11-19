@@ -18,6 +18,7 @@ yarn.lock
 
 # Build  artifacts
 **/dist
+**/.bin
 
 # Test  artifacts
 **/coverage

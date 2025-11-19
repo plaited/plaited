@@ -14,7 +14,7 @@
   },
   "homepage": "https://github.com/plaited/plaited/tree/main#readme",
   "bin": {
-    "plaited": "./src/workshop/cli.ts"
+    "plaited": "./.bin/plaited.js"
   },
   "type": "module",
   "main": "./src/main.ts",

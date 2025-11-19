@@ -23,21 +23,7 @@
 import { Glob } from 'bun'
 import { isBehavioralTemplate, type FunctionTemplate } from '../main.js'
 import type { TemplateExport } from './workshop.types.js'
-
-/**
- * @internal
- * Discovers files matching a glob pattern within a directory.
- * Uses Bun's Glob API for efficient file discovery.
- *
- * @param cwd - The directory to search in
- * @param pattern - Glob pattern to match files against
- * @returns Array of absolute file paths matching the pattern
- */
-const globFiles = async (cwd: string, pattern: string): Promise<string[]> => {
-  const glob = new Glob(pattern)
-  const paths = await Array.fromAsync(glob.scan({ cwd }))
-  return paths.map((path) => Bun.resolveSync(`./${path}`, cwd))
-}
+import { globFiles } from './workshop.utils.js'
 
 /**
  * Collects template metadata from a single file using direct module import.

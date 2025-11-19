@@ -7,9 +7,9 @@
  * - **Web Components**: {@link bElement}, {@link bWorker} - Custom element creation with behavioral programming integration
  * - **Behavioral Programming**: {@link behavioral}, {@link bThread}, {@link bSync}, {@link useBehavioral} - Event coordination and synchronization
  * - **State Management**: {@link useSignal}, {@link useComputed} - Reactive state containers
- * - **Styling**: {@link css} namespace, {@link createStyles}, {@link createHostStyles}, {@link createKeyframes}, {@link createTokens}, {@link joinStyles} - CSS-in-JS utilities
- * - **Templates**: {@link createTemplate}, {@link ssr}, {@link useTemplate} - JSX template creation and server-side rendering
- * - **Utilities**: {@link useDispatch}, {@link useAttributesObserver}, {@link useWorker}, {@link usePlaitedTrigger}, {@link usePublicTrigger} - Framework utilities
+ * - **Styling**: {@link createStyles}, {@link createHostStyles}, {@link createKeyframes}, {@link createTokens}, {@link joinStyles} - CSS-in-JS utilities
+ * - **Templates**: {@link ssr}, {@link useTemplate} - Server-side rendering and template utilities
+ * - **Utilities**: {@link useDispatch}, {@link useAttributesObserver}, {@link useWorker} - Framework utilities
  *
  * @see {@link https://github.com/plaited/plaited} for framework documentation
  * @since 1.0.0
@@ -22,7 +22,6 @@ export * from './main/b-worker.js'
 export * from './main/create-styles.js'
 export * from './main/create-host-styles.js'
 export * from './main/create-keyframes.js'
-export * from './main/create-template.js'
 export * from './main/create-tokens.js'
 export type * from './main/create-template.types.js'
 export type * from './main/css.types.js'
@@ -38,6 +37,4 @@ export * from './main/behavioral.js'
 export type * from './main/behavioral.types.js'
 export * from './main/behavioral.utils.js'
 export * from './main/use-behavioral.js'
-export * from './main/use-plaited-trigger.js'
-export * from './main/use-public-trigger.js'
 export * from './main/use-signal.js'

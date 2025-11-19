@@ -1,6 +1,37 @@
+/**
+ * @internal
+ * @module use-public-trigger
+ *
+ * Purpose: Provides event filtering for secure component public APIs
+ * Architecture: Wrapper pattern that validates events against a whitelist before triggering
+ * Dependencies: Trigger type from behavioral.types
+ * Consumers: bElement for exposing controlled component APIs
+ *
+ * Maintainer Notes:
+ * - This module implements security-by-whitelist for event triggering
+ * - Set-based lookup provides O(1) event validation
+ * - Fail-fast pattern throws immediately on unauthorized events
+ * - Used internally by bElement when publicEvents option is specified
+ *
+ * Common modification scenarios:
+ * - Changing error messages: Update throw statement formatting
+ * - Adding event logging: Insert before trigger call
+ * - Supporting wildcards: Modify Set lookup logic
+ *
+ * Performance considerations:
+ * - Set initialization: O(n) where n = publicEvents length
+ * - Event validation: O(1) lookup per trigger call
+ * - No memory overhead beyond the Set instance
+ *
+ * Known limitations:
+ * - No support for event patterns or wildcards
+ * - Error messages list all allowed events (could be verbose)
+ * - No event transformation or remapping support
+ */
 import type { Trigger } from './behavioral.types.js'
 
 /**
+ * @internal
  * Creates a wrapped `Trigger` function that filters events based on a whitelist.
  * This is useful for exposing a limited set of events as a public API for a component
  * or module, preventing internal events from being triggered externally.
@@ -22,7 +53,7 @@ import type { Trigger } from './behavioral.types.js'
  * - Uses Set for O(1) event lookup performance
  * - Throws immediately on unauthorized events to fail fast
  * - Prevents accidental triggering of internal events from external code
- * - Common pattern in bElement for exposing component public APIs
+ * - Used internally by bElement when publicEvents are specified
  *
  * @see {@link Trigger} for the base trigger type
  * @see {@link bElement} for usage in components

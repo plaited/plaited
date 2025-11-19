@@ -42,7 +42,7 @@ Plaited uses Bun's built-in test runner for unit and integration tests, and a cu
 - Use `*.stories.tsx` extension
 - Run with the workshop CLI at `src/workshop/cli.ts`
 - Test visual templates, user interactions, and accessibility
-- Powered by `storyFixture` helper from `plaited/testing`
+- Powered by `story` helper from `plaited/testing`
 
 ### Running Tests
 
@@ -89,9 +89,6 @@ bun test pattern
 
 - **`*.spec.ts` or `*.spec.tsx`**: Unit/integration tests run with Bun
 - **`*.stories.tsx`**: Template/browser tests run with workshop CLI
-- **`*.tpl.spec.ts` or `*.tpl.spec.tsx`**: Internal template tests excluded from discovery
-
-Note: Files with `.tpl.spec.{ts,tsx}` extensions are excluded from template discovery by default when using `discoverStoryMetadata`.
 
 ## Architecture Overview
 
@@ -102,20 +99,31 @@ Plaited is a behavioral programming framework for building reactive web componen
 1. **Behavioral Programming (BP) Paradigm**
    - Located in `src/main/behavioral.ts` and related files
    - Central coordination through `behavioral()` factory which manages b-threads
+   - Thread composition with `bThread()` and `bSync()` utilities
    - Higher-level `useBehavioral()` for reusable program configurations
-   - Event-driven architecture with request/waitFor/block idioms
+   - Event-driven architecture with request/waitFor/block/interrupt idioms
    - Signals for reactive state management (`useSignal`, `useComputed`)
+   - Type guards (`isBPEvent`, `isPlaitedTrigger`) for runtime validation
 
 2. **Web Components with Shadow DOM**
    - `bElement` in `src/main/b-element.ts` creates custom elements
    - Automatic style scoping via Constructable Stylesheets
    - Template system with JSX support
    - Helper methods attached to DOM elements via `p-target` attributes
+   - Declarative event binding via `p-trigger` attributes
+   - MutationObserver for dynamic content monitoring
+   - Form-associated custom elements support via ElementInternals
+   - Type guards (`isBehavioralElement`, `isBehavioralTemplate`) for validation
 
 3. **CSS-in-JS System**
-   - `css` namespace in `src/main/css.ts` for atomic CSS generation
-   - Automatic style adoption in Shadow DOM
+   - `createStyles()` for atomic CSS class generation with hash-based naming
+   - `createHostStyles()` for styling custom element host (`:host` selector)
+   - `createKeyframes()` for CSS animation definitions
+   - `createTokens()` for design token system with CSS custom properties
+   - `joinStyles()` for composing multiple style objects
+   - Automatic style adoption in Shadow DOM via Constructable Stylesheets
    - Style deduplication and caching per ShadowRoot
+   - Support for nested rules (media queries, pseudo-classes, attribute selectors)
 
 ### Key Architectural Patterns
 
@@ -142,42 +150,97 @@ External Trigger → bProgram → Event Selection → Thread Notification → Fe
 ### Module Organization
 
 - **`src/main/`**: Core framework including:
-  - Web Components: `bElement`, `b-worker`, template lifecycle
-  - Behavioral Programming: `behavioral`, `bThread`, `bSync`, `useBehavioral`
+  - Web Components: `bElement`, `bWorker`, type guards (`isBehavioralElement`, `isBehavioralTemplate`)
+  - Behavioral Programming: `behavioral`, `bThread`, `bSync`, `useBehavioral`, behavioral type guards
   - State Management: `useSignal`, `useComputed`, reactive signals
-  - Styling: `css` utilities, `create-styles`, `create-host-styles`, `create-keyframes`
-  - Templates: JSX factory functions, `create-template`, `ssr`
-  - Utilities: `useDispatch`, `useTemplate`, `useAttributesObserver`, `useWorker`
+  - Styling: `createStyles`, `createHostStyles`, `createKeyframes`, `createTokens`, `joinStyles`
+  - Templates: `ssr`, `useTemplate`, template types
+  - Utilities: `useDispatch`, `useAttributesObserver`, `useWorker`
 - **`src/utils/`**: Pure utility functions (type checking, string manipulation, DOM utilities, etc.)
 - **`src/workshop/`**: Development and testing tools:
-  - Test infrastructure: `useTestServer`, `useTestRunner`, `get-test-server`
-  - Story management: `get-story-set-metadata`, `get-story-url`, `get-file-paths`
-  - Routing: `get-html-routes`, `get-entry-routes`
-  - MCP integration: `use-mcp`, workshop behavioral program
-- **`src/testing/`**: Testing fixtures, types, and constants for story-based testing
+  - Template discovery: `getBehavioralTemplateMetadata`, `discoverBehavioralTemplateMetadata`
+  - Story discovery: `getStoryMetadata`, `discoverStoryMetadata`
+  - Test infrastructure: `useRunner`, `TEST_RUNNER_EVENTS`
+  - Types: `TemplateType`, `TemplateExport`, `StoryMetadata`, `TestResult`, `TestStoriesOutput`
+- **`src/testing/`**: Story factory function (`story`) and type definitions for template-based testing
 - **`src/stories/`**: Example story files demonstrating framework usage
 
 ### Critical Implementation Details
 
-1. **DOM Updates**: Helper methods (`render`, `insert`, `attr`) are attached once per element via `Object.assign` for performance
+1. **DOM Updates**: Helper methods (`render`, `insert`, `attr`, `replace`) are attached once per element via `Object.assign` for performance
 
-2. **Style Management**: Uses WeakMap caching to prevent duplicate style adoption per ShadowRoot
+2. **Style Management**: Uses WeakMap caching to prevent duplicate style adoption per ShadowRoot; hash-based class names for deduplication
 
-3. **Event Scheduling**: Priority-based event selection with blocking capabilities
+3. **Event Scheduling**: Priority-based event selection with blocking capabilities in super-step execution model
 
-4. **Memory Management**: Automatic cleanup via PlaitedTrigger and WeakMap for styles
+4. **Memory Management**: Automatic cleanup via internal PlaitedTrigger system and WeakMap for styles; disconnect callbacks invoked on component removal
+
+5. **Type Safety**: Runtime type guards (`isBehavioralElement`, `isBehavioralTemplate`, `isBPEvent`, `isPlaitedTrigger`) ensure type correctness
+
+6. **Form Integration**: ElementInternals API support for form-associated custom elements with full lifecycle callbacks
+
+7. **Security**: Public event filtering prevents unauthorized internal event triggering; automatic HTML escaping in templates
 
 ## Code Style Preferences
 
 - Prefer arrow functions over function declarations
 - Avoid using `any` type - use proper TypeScript types
 - Use `test` instead of `it` in test files
-- Prefer `Bun.resolveSync()` over path.join() for resolving file paths in Bun environments
+- Prefer Bun native APIs over Node.js equivalents (see Bun API Preferences below)
 - **Prefer `type` over `interface`**: Use type aliases instead of interfaces for better consistency and flexibility
 - **No `any` types**: Always use proper types; use `unknown` if type is truly unknown and add type guards
 - **PascalCase for types and schemas**: All type names and Zod schema names should use PascalCase (e.g., `UserConfigSchema`, `ApiResponseType`)
 - Use union types and intersection types effectively
 - Leverage TypeScript's type inference where appropriate
+
+### Template Creation
+
+**IMPORTANT**: Always use JSX syntax for creating templates in tests, examples, and application code.
+
+- ✅ Use JSX syntax: `<div className="foo">Hello</div>`
+- ❌ Avoid `h()` or `createTemplate()` direct calls (these are internal transformation functions)
+- JSX is automatically transformed to `createTemplate()` calls by TypeScript/Bun
+- JSX provides better type safety, readability, and IDE support
+
+**Rationale:** `h()` and `createTemplate()` are internal JSX transformation functions exported only through jsx-runtime modules. They are not part of the public API and should not be used directly.
+
+### Bun API Preferences
+
+**IMPORTANT**: Prefer Bun's native APIs over Node.js equivalents when running in Bun environment.
+
+**File System Operations:**
+- ✅ Use `Bun.file(path).exists()` instead of `fs.existsSync()`
+- ✅ Use `Bun.file(path)` API for reading/writing files
+- ✅ Use `Bun.write()` for efficient file writes
+
+**Shell Commands:**
+- ✅ Use `Bun.$` template literal for shell commands
+- ❌ Avoid `child_process.spawn()` or `child_process.exec()`
+- Example: `await Bun.$\`npm install\`` instead of spawn('npm', ['install'])
+
+**Path Resolution:**
+- ✅ Use `Bun.resolveSync()` for module resolution
+- ✅ Use `import.meta.dir` for current directory
+- ⚠️ Keep `node:path` utilities for path manipulation (join, resolve, dirname)
+
+**Package Management:**
+- ✅ Use `Bun.which(cmd)` to check for executables
+- ⚠️ No programmatic package manager API yet - use CLI commands via `Bun.$`
+
+**Environment Detection:**
+- ✅ Check `typeof Bun !== 'undefined'` for Bun runtime
+- ✅ Use `Bun.which('bun')` to verify bun executable exists
+
+**When to Use Node.js APIs:**
+- Interactive input (readline)
+- Complex path manipulation (prefer node:path utilities)
+- APIs without Bun equivalents
+
+**Bun Documentation:**
+- Main docs: https://bun.sh/docs
+- Shell API: https://bun.sh/docs/runtime/shell
+- File I/O: https://bun.sh/docs/api/file-io
+- Runtime APIs: https://bun.sh/docs/runtime/bun-apis
 
 ## Terminology: Templates Not Components
 
@@ -724,3 +787,4 @@ When types have associated Zod schemas:
 2. **Bun Required**: Development requires bun >= v1.2.9
 3. **ES2024 Features**: Uses Promise.withResolvers() and other modern APIs
 4. **Shadow DOM Focus**: Framework assumes Shadow DOM usage
+- add this insturction

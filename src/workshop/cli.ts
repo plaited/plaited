@@ -16,16 +16,24 @@
  *   bun --hot plaited test                              # Enable hot reload
  */
 
-import { chromium } from 'playwright'
 import { useRunner, type TestStoriesOutput } from './use-runner.js'
 import { useSignal } from '../main.js'
 import { discoverStoryMetadata, getStoryMetadata } from './collect-stories.js'
+import { checkPlaywright } from './check-playwright.js'
 import { parseArgs } from 'node:util'
 import { resolve } from 'node:path'
 import { statSync } from 'node:fs'
 import type { StoryMetadata } from './workshop.types.js'
 
 console.log('🎭 Starting Plaited workshop test runner...')
+
+// Verify Bun runtime
+if (typeof Bun === 'undefined') {
+  console.error('❌ Error: Plaited CLI requires Bun runtime')
+  console.error('   Install Bun: https://bun.sh')
+  console.error('   Then run: bun plaited test')
+  process.exit(1)
+}
 
 // Parse CLI arguments
 const { values, positionals } = parseArgs({
@@ -80,6 +88,17 @@ if (values.port && (isNaN(port) || port < 0 || port > 65535)) {
 
 // Determine working directory
 const cwd = values.dir ? resolve(process.cwd(), values.dir) : process.cwd()
+
+// Check for Playwright installation before proceeding
+console.log('🔍 Checking Playwright installation...')
+const playwrightReady = await checkPlaywright(cwd)
+
+if (!playwrightReady) {
+  console.error('\n❌ Cannot run tests without Playwright')
+  process.exit(1)
+}
+
+console.log('✅ Playwright is ready\n')
 
 // Extract paths from positionals (skip bun, script path, and subcommand)
 const paths = positionals.slice(3)
@@ -139,6 +158,7 @@ if (paths.length > 0) {
 
 // Launch browser
 console.log('🌐 Launching browser...')
+const { chromium } = await import('playwright')
 const browser = await chromium.launch()
 
 // Create reporter signal

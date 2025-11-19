@@ -1,6 +1,6 @@
 import { joinStyles, type TemplateObject } from '../main.js'
 import { ssr } from '../main.js'
-import { zip } from './zip.js'
+import { zip } from './workshop.utils.js'
 import { RUNNER_URL, RELOAD_PAGE } from '../testing/testing.constants.js'
 import { getEntryPath } from './get-entry-path.js'
 import { kebabCase } from '../utils.js'

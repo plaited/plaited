@@ -24,6 +24,7 @@ import { Glob } from 'bun'
 import { isStoryExport } from '../testing/testing.utils.js'
 import type { StoryMetadata } from './workshop.types.js'
 import type { StoryExport } from '../testing/testing.types.js'
+import { globFiles } from './workshop.utils.js'
 
 /**
  * @internal
@@ -43,22 +44,9 @@ const toStoryMetadata = (exportName: string, filePath: string, storyExport: Stor
     hasArgs: storyExport.args !== undefined,
     hasTemplate: storyExport.template !== undefined,
     hasParameters: storyExport.parameters !== undefined,
+    only: storyExport.only,
+    skip: storyExport.skip,
   }
-}
-
-/**
- * @internal
- * Discovers files matching a glob pattern within a directory.
- * Uses Bun's Glob API for efficient file discovery.
- *
- * @param cwd - The directory to search in
- * @param pattern - Glob pattern to match files against
- * @returns Array of absolute file paths matching the pattern
- */
-const globFiles = async (cwd: string, pattern: string): Promise<string[]> => {
-  const glob = new Glob(pattern)
-  const paths = await Array.fromAsync(glob.scan({ cwd }))
-  return paths.map((path) => Bun.resolveSync(`./${path}`, cwd))
 }
 
 /**
@@ -66,15 +54,17 @@ const globFiles = async (cwd: string, pattern: string): Promise<string[]> => {
  * Fast alternative to TypeScript compilation for runtime story discovery.
  *
  * @param filePath - Absolute path to the story file
- * @returns Array of story metadata
+ * @returns Array of story metadata (filtered by .only() and .skip())
  *
  * @remarks
  * - Uses dynamic import instead of TypeScript compiler
  * - Analyzes runtime objects instead of AST
  * - ~30x faster than TypeScript compilation approach
  * - Requires story files to be valid executable TypeScript/TSX
+ * - Applies .only() and .skip() filtering per-file
  *
  * @see {@link discoverStoryMetadata} for directory-based discovery
+ * @see {@link filterStoryMetadata} for filtering logic
  */
 export const getStoryMetadata = async (filePath: string): Promise<StoryMetadata[]> => {
   const metadata: StoryMetadata[] = []
@@ -100,7 +90,47 @@ export const getStoryMetadata = async (filePath: string): Promise<StoryMetadata[
     throw error
   }
 
-  return metadata
+  // Apply .only() and .skip() filtering per-file
+  return filterStoryMetadata(metadata)
+}
+
+/**
+ * @internal
+ * Filters story metadata based on .only() and .skip() flags.
+ * Implements Jest/Vitest-style focused test execution.
+ *
+ * @param metadata - Array of story metadata to filter
+ * @returns Filtered array of story metadata
+ *
+ * @remarks
+ * Filtering rules (applied in order):
+ * 1. If any story has only: true, return ONLY those stories
+ * 2. Otherwise, exclude stories with skip: true
+ * 3. Preserves original order of stories
+ *
+ * @see {@link StoryMetadata} for metadata structure
+ */
+export const filterStoryMetadata = (metadata: StoryMetadata[]): StoryMetadata[] => {
+  // Check if any story has .only()
+  const onlyStories = metadata.filter((story) => story.only)
+
+  if (onlyStories.length > 0) {
+    const skippedCount = metadata.length - onlyStories.length
+    if (skippedCount > 0) {
+      console.log(`⚡ Running ${onlyStories.length} .only() stories (${skippedCount} skipped)`)
+    }
+    return onlyStories
+  }
+
+  // Otherwise filter out .skip()
+  const activeStories = metadata.filter((story) => !story.skip)
+  const skippedCount = metadata.length - activeStories.length
+
+  if (skippedCount > 0) {
+    console.log(`⏭️  Skipping ${skippedCount} stories`)
+  }
+
+  return activeStories
 }
 
 /**
@@ -115,8 +145,10 @@ export const getStoryMetadata = async (filePath: string): Promise<StoryMetadata[
  * - Uses direct imports for ~30x faster discovery than TypeScript compilation
  * - Files must be executable TypeScript/TSX
  * - Errors in story files will cause discovery to fail
+ * - Applies .only() and .skip() filtering
  *
  * @see {@link getStoryMetadata} for single file collection
+ * @see {@link filterStoryMetadata} for filtering logic
  */
 export const discoverStoryMetadata = async (cwd: string, exclude?: string): Promise<StoryMetadata[]> => {
   console.log(`🔍 Discovering story metadata in: ${cwd}`)
@@ -146,5 +178,6 @@ export const discoverStoryMetadata = async (cwd: string, exclude?: string): Prom
 
   console.log(`✅ Discovered ${metadata.length} story exports`)
 
-  return metadata
+  // Apply .only() and .skip() filtering
+  return filterStoryMetadata(metadata)
 }
