@@ -46,39 +46,6 @@ import { BEHAVIORAL_TEMPLATE_IDENTIFIER } from './b-element.constants.js'
  * @param el - Element to check
  * @returns True if element is a Plaited custom element
  *
- * @example Enhancing existing elements conditionally
- * ```tsx
- * const ComponentWrapper = bElement({
- *   tag: 'component-wrapper',
- *   shadowDom: <slot p-target="content"  p-trigger={{slotchange: 'enhanceChildren'}}/>,
- *   bProgram({ $, trigger }) {
- *     const [content] = $<HTMLSlotElement>('content');
- *
- *     return {
- *       enhanceChildren: () => {
- *         const children = content.assignedElements();
- *         children.forEach(child => {
- *           if (isBehavioralElement(child)) {
- *           // Can safely use Plaited features
- *           child.trigger({
- *             type: 'PARENT_CONNECTED',
- *             detail: { parentId: 'wrapper' }
- *           });
- *         } else {
- *           console.log('Regular element:', child.tagName);
- *         }
- *       });
- *     }
- *   }
- * });
- *
- * // Usage
- * <ComponentWrapper>
- *   <my-plaited-element />
- *   <div>Regular element</div>
- * </ComponentWrapper>
- * ```
- *
  * @remarks
  * - Returns true only for elements that inherit from HTMLElement and implement the Plaited interface
  * - Type guard ensures TypeScript correctly narrows the type for trigger and other Plaited features
@@ -102,31 +69,6 @@ export const isBehavioralElement = (el: unknown): el is BehavioralElement => {
  *
  * @param template - The function template to check
  * @returns True if the template is a valid Plaited template function
- *
- * @example
- * ```ts
- * import { h, Fragment } from 'plaited/jsx-runtime';
- * import { isBehavioralTemplateFunction } from 'plaited'; // Assuming direct export for example
- * import { MyComponent } from './my-component'; // A Plaited component
- *
- * const plaitedTemplate = MyComponent({ id: 'test' });
- * const regularFunction = () => ({ html: ['<div></div>'], stylesheets: [], registry: [], $: Symbol() });
- *
- * console.log(isBehavioralTemplateFunction(plaitedTemplate)); // true
- * // console.log(isBehavioralTemplateFunction(regularFunction)); // Error: Argument of type '...' is not assignable to parameter of type 'FunctionTemplate'.
- *                                                       // This demonstrates it expects a FunctionTemplate structure first.
- *
- * // A more direct example with a raw PlaitedTemplate-like object:
- * const rawPlaited = { $: BEHAVIORAL_TEMPLATE_IDENTIFIER, tag: 'div', registry: new Set(), publicEvents: [], observedAttributes: [] };
- * // console.log(isBehavioralTemplateFunction(rawPlaited)); // true if function-like, but guard expects FunctionTemplate
- *
- * // Example with a function that returns a TemplateObject but isn't a PlaitedTemplate itself
- * const simpleTemplateFunc = (props) => h('div', props);
- * // console.log(isBehavioralTemplateFunction(simpleTemplateFunc)); // true, because h returns a PlaitedTemplate
- *
- * const nonPlaitedFunc = (props) => ({ ...h('div', props), $: 'not-plaited' });
- * // console.log(isBehavioralTemplateFunction(nonPlaitedFunc)); // false
- * ```
  *
  * @remarks
  * - Checks both type structure (expects an object that could be a `FunctionTemplate` with specific properties) and the presence of Plaited's unique identifier (`BEHAVIORAL_TEMPLATE_IDENTIFIER`) on the `$` property.

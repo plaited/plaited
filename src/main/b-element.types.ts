@@ -11,16 +11,6 @@ import { type BEHAVIORAL_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './b-elem
  * - 'beforeend':   Inside the reference element, after its last child.
  * - 'afterend':    After the reference element itself.
  *
- * @example
- * // Visual representation:
- * // <!-- beforebegin -->
- * // <div>           // reference element
- * //   <!-- afterbegin -->
- * //   content
- * //   <!-- beforeend -->
- * // </div>
- * // <!-- afterend -->
- *
  * @see https://developer.mozilla.org/en-US/docs/Web/API/Element/insertAdjacentElement
  */
 export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
@@ -29,23 +19,6 @@ export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
  * Core helper methods bound to elements within Plaited components.
  * Provides a safe and efficient way to manipulate DOM elements while maintaining
  * style encapsulation and proper event handling.
- *
- * @example
- * Using bindings in a component:
- * ```tsx
- * bProgram: ({ $ }) => {
- *   const [content] = $('content');
- *
- *   return {
- *     UPDATE_CONTENT: ({ text }) => {
- *       content.render(<p>{text}</p>);
- *     },
- *     INSERT_HEADER: ({ title }) => {
- *       content.insert('beforebegin', <h1>{title}</h1>);
- *     }
- *   };
- * }
- * ```
  */
 export type Bindings = {
   /**
@@ -53,21 +26,6 @@ export type Bindings = {
    * Handles style adoption and template processing automatically.
    *
    * @param template Content to render (JSX elements, strings, numbers, or fragments)
-   * @example
-   * ```tsx
-   * const [container] = $('main');
-   *
-   * // Replace with JSX content
-   * container.render(
-   *   <div class="content">
-   *     <h1>New Content</h1>
-   *     <p>Some text</p>
-   *   </div>
-   * );
-   *
-   * // Replace with text
-   * container.render('Simple text');
-   * ```
    */
   render(this: Element, ...template: (TemplateObject | string | number | DocumentFragment)[]): void
 
@@ -80,20 +38,6 @@ export type Bindings = {
    *   - 'beforeend': Inside the element, after its last child
    *   - 'afterend': After the element
    * @param template Content to insert
-   * @example
-   * ```tsx
-   * const [list] = $('todo-list');
-   *
-   * // Add new item at the end
-   * list.insert('beforeend',
-   *   <li class="todo-item">New task</li>
-   * );
-   *
-   * // Add header before the list
-   * list.insert('beforebegin',
-   *   <h2>Todo Items:</h2>
-   * );
-   * ```
    */
   insert(this: Element, position: Position, ...template: (TemplateObject | string | number | DocumentFragment)[]): void
 
@@ -101,18 +45,6 @@ export type Bindings = {
    * Replaces the element itself with new content.
    *
    * @param template Content to replace the element with
-   * @example
-   * ```tsx
-   * const [oldMessage] = $('message');
-   *
-   * // Replace with new element
-   * oldMessage.replace(
-   *   <div class="new-message">
-   *     <strong>Updated!</strong>
-   *     <p>New content here</p>
-   *   </div>
-   * );
-   * ```
    */
   replace(this: Element, ...template: (TemplateObject | string | number | DocumentFragment)[]): void
 
@@ -122,26 +54,6 @@ export type Bindings = {
    * @param attr Attribute name or object containing multiple attributes
    * @param val Value to set (when using string attr name)
    * @returns Current attribute value when getting a single attribute
-   * @example
-   * ```tsx
-   * const [button] = $('submit-btn');
-   *
-   * // Set multiple attributes
-   * button.attr({
-   *   'aria-label': 'Submit form',
-   *   'data-state': 'ready',
-   *   disabled: false
-   * });
-   *
-   * // Get single attribute
-   * const state = button.attr('data-state');
-   *
-   * // Set single attribute
-   * button.attr('aria-expanded', 'true');
-   *
-   * // Remove single attribute
-   * button.attr('disabled', null);
-   * ```
    */
   attr(this: Element, attr: Record<string, string | null | number | boolean>, val?: never): void
   attr(this: Element, attr: string, val?: string | null | number | boolean): string | null | void
@@ -237,52 +149,6 @@ export type BehavioralTemplate = FunctionTemplate & {
  * @property useSnapshot - State snapshot access
  * @property bThread - Thread creation utility
  * @property bSync - Synchronization point utility
- *
- * @example Shadow DOM element access
- * ```ts
- * const MyComponent = bElement({
- *   tag: 'my-component',
- *   shadowDom: (
- *     <div>
- *       <h1 p-target="title">Title</h1>
- *       <div p-target="content" />
- *     </div>
- *   ),
- *   bProgram({ $ }) {
- *     const [title] = $<HTMLHeadingElement>('title');
- *     const [content] = $('content');
- *
- *     return {
- *       updateTitle(text: string) {
- *         title.render(text);
- *       },
- *       addContent(html: string) {
- *         content.insert('beforeend', <>{html}</>);
- *       }
- *     };
- *   }
- * });
- * ```
- *
- * @example Using behavioral threads
- * ```ts
- * bProgram({ bThreads, bThread, bSync, trigger }) {
- *   bThreads.set({
- *     'dataSync': bThread([
- *       bSync({ waitFor: 'FETCH_START' }),
- *       bSync({ request: { type: 'LOADING' } }),
- *       bSync({ waitFor: ['SUCCESS', 'ERROR'] }),
- *       bSync({ request: { type: 'COMPLETE' } })
- *     ])
- *   });
- *
- *   return {
- *     startFetch() {
- *       trigger({ type: 'FETCH_START' });
- *     }
- *   };
- * }
- * ```
  *
  * @see {@link bElement} for component creation
  * @see {@link BoundElement} for element helper methods

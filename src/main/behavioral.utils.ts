@@ -54,49 +54,6 @@ import type { BPEvent, BSync, BThread, Trigger, PlaitedTrigger } from './behavio
  * @returns A randomly selected `BPEvent` object from the provided events.
  * @throws Will not throw errors, but returns `undefined` if called with no arguments.
  *
- * @example Basic coin flip
- * ```ts
- * import { bSync, bThread, randomEvent } from 'plaited/behavioral';
- *
- * // Basic usage - randomly choose between two events
- * const flipCoin = bSync({
- *   request: randomEvent(
- *     { type: 'COIN', detail: 'heads' },
- *     { type: 'COIN', detail: 'tails' }
- *   )
- * });
- * ```
- *
- * @example Simulating user actions
- * ```ts
- * // More complex example - simulate random user actions
- * const randomUserAction = bSync({
- *   request: randomEvent(
- *     { type: 'USER_ACTION', detail: { action: 'click', target: 'button' } },
- *     { type: 'USER_ACTION', detail: { action: 'scroll', distance: 100 } },
- *     { type: 'USER_ACTION', detail: { action: 'type', text: 'Hello' } },
- *     { type: 'USER_ACTION', detail: { action: 'navigate', to: '/home' } }
- *   )
- * });
- *
- * // Using in a full b-thread with repetition
- * const randomActionSimulator = bThread(
- *   [randomUserAction],
- *   true // Repeat indefinitely
- * );
- * ```
- *
- * @example Weighted random selection
- * ```ts
- * // Can also be used for weighted random choices by duplicating events
- * // Here "success" has a 2/3 probability, "failure" has 1/3
- * const weightedOutcome = randomEvent(
- *   { type: 'OUTCOME', detail: 'success' },
- *   { type: 'OUTCOME', detail: 'success' }, // Duplicated to increase probability
- *   { type: 'OUTCOME', detail: 'failure' }
- * );
- * ```
- *
  * @see {@link shuffleSyncs} for randomizing sync order
  * @see {@link bSync} for creating synchronization points
  */
@@ -111,38 +68,6 @@ export const randomEvent = (...events: BPEvent[]) => events[Math.floor(Math.rand
  *
  * @param syncs Rest parameter of `BSync` objects representing the synchronization points to shuffle.
  * @returns A new array containing the same `BSync` objects but in a randomized order.
- *
- * @example Randomizing execution order
- * ```ts
- * import { bSync, bThread, shuffleSyncs } from 'plaited/behavioral';
- *
- * const randomOrderThread = bThread(
- *   shuffleSyncs(
- *     bSync({ request: { type: 'stepA' } }),
- *     bSync({ request: { type: 'stepB' } }),
- *     bSync({ request: { type: 'stepC' } })
- *   )
- * );
- *
- * // The order in which 'stepA', 'stepB', and 'stepC' are requested
- * // by randomOrderThread will vary each time the thread runs.
- * ```
- *
- * @example Testing race conditions
- * ```ts
- * // Test different initialization orders
- * const initThread = bThread(
- *   shuffleSyncs(
- *     bSync({ request: { type: 'LOAD_CONFIG' } }),
- *     bSync({ request: { type: 'CONNECT_DB' } }),
- *     bSync({ request: { type: 'INIT_CACHE' } }),
- *     bSync({ request: { type: 'START_SERVER' } })
- *   )
- * );
- *
- * // Each test run will try a different initialization order
- * // helping identify order-dependent bugs
- * ```
  *
  * @remarks
  * - Uses Fisher-Yates shuffle for uniform distribution
@@ -192,30 +117,6 @@ export const shuffleSyncs = (...syncs: BSync[]) => {
  * @param data The value to check against the `BPEvent` structure.
  * @returns `true` if the value is a valid `BPEvent`, `false` otherwise.
  *
- * @example Validating external data
- * ```ts
- * // Handling messages from a WebSocket
- * websocket.onmessage = (event) => {
- *   const data = JSON.parse(event.data);
- *
- *   if (isBPEvent(data)) {
- *     trigger(data); // Safe to use as BPEvent
- *   } else {
- *     console.error('Invalid event format:', data);
- *   }
- * };
- * ```
- *
- * @example Worker message validation
- * ```ts
- * worker.addEventListener('message', (e) => {
- *   if (isBPEvent(e.data)) {
- *     // Process valid behavioral event
- *     handleBPEvent(e.data);
- *   }
- * });
- * ```
- *
  * @see {@link BPEvent} for the structure being validated
  */
 export const isBPEvent = (data: unknown): data is BPEvent => {
@@ -233,34 +134,6 @@ export const isBPEvent = (data: unknown): data is BPEvent => {
  * @param rules An array of `RulesFunction`s defining the sequential steps of the thread.
  * @param repeat Controls if and how the thread repeats its sequence.
  * @returns A `RulesFunction` representing the complete b-thread.
- *
- * @example Game loop thread
- * ```ts
- * // Continuous game loop
- * const gameLoop = bThread([
- *   bSync({ request: { type: 'UPDATE_PHYSICS' } }),
- *   bSync({ request: { type: 'RENDER_FRAME' } }),
- *   bSync({ waitFor: 'FRAME_COMPLETE' })
- * ], true); // Repeat indefinitely
- * ```
- *
- * @example Conditional repetition
- * ```ts
- * let retries = 0;
- * const retryLogic = bThread([
- *   bSync({ request: { type: 'ATTEMPT_CONNECTION' } }),
- *   bSync({ waitFor: ['CONNECTED', 'CONNECTION_FAILED'] })
- * ], () => retries++ < 3); // Retry up to 3 times
- * ```
- *
- * @example State machine thread
- * ```ts
- * const stateMachine = bThread([
- *   bSync({ waitFor: 'INIT', request: { type: 'STATE_IDLE' } }),
- *   bSync({ waitFor: 'START', request: { type: 'STATE_RUNNING' } }),
- *   bSync({ waitFor: 'STOP', request: { type: 'STATE_IDLE' } })
- * ], true); // Cycle through states
- * ```
  *
  * @remarks
  * - Rules are executed sequentially
@@ -295,43 +168,6 @@ export const bThread: BThread = (rules, repeat) => {
  * @param syncPoint The `Idioms` object defining the synchronization behavior.
  * @returns A `RulesFunction` that yields the `syncPoint` once.
  *
- * @example Basic request-response pattern
- * ```ts
- * const requestData = bSync({
- *   request: { type: 'FETCH_USER_DATA' }
- * });
- *
- * const waitForResponse = bSync({
- *   waitFor: ['DATA_RECEIVED', 'FETCH_ERROR']
- * });
- *
- * // Compose into a thread
- * const fetchThread = bThread([requestData, waitForResponse]);
- * ```
- *
- * @example Complex synchronization
- * ```ts
- * const coordinatedSync = bSync({
- *   request: { type: 'PROCESS_START', detail: { id: 123 } },
- *   waitFor: ['READY', 'ABORT'],
- *   block: 'SYSTEM_SHUTDOWN',
- *   interrupt: 'EMERGENCY_STOP'
- * });
- * ```
- *
- * @example Dynamic event generation
- * ```ts
- * const dynamicRequest = bSync({
- *   request: () => ({
- *     type: 'METRIC',
- *     detail: {
- *       timestamp: Date.now(),
- *       memoryUsage: process.memoryUsage()
- *     }
- *   })
- * });
- * ```
- *
  * @remarks
  * - Each `bSync` creates a single-yield generator
  * - Can be composed with `bThread` for sequences
@@ -357,29 +193,6 @@ export const bSync: BSync = (syncPoint) =>
  * - Uses Object.hasOwn for robust property checking (not affected by prototype)
  * - Critical for conditional cleanup registration in utilities
  * - Allows graceful handling of both trigger types in the codebase
- *
- * @example Using in a custom effect implementation
- * ```tsx
- * const useCustomEffect = (trigger: Trigger | PlaitedTrigger, callback: () => () => void) => {
- *   if (isPlaitedTrigger(trigger)) {
- *     const cleanup = callback();
- *     // Register cleanup function to run on component disconnect
- *     trigger.addDisconnectCallback(cleanup);
- *   }
- * };
- *
- * // Usage in a component
- * const MyComponent = bElement({
- *   tag: 'my-component',
- *   shadowDom: <div p-target="root" />,
- *   bProgram({ trigger }) {
- *     useCustomEffect(trigger, () => {
- *       const interval = setInterval(() => console.log('tick'), 1000);
- *       return () => clearInterval(interval);
- *     });
- *   }
- * });
- * ```
  */
 export const isPlaitedTrigger = (trigger: Trigger): trigger is PlaitedTrigger =>
   Object.hasOwn(trigger, 'addDisconnectCallback')
