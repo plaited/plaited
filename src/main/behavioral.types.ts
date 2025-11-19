@@ -848,7 +848,7 @@ export type BThreads = {
    * @param thread - The string identifier of the thread to check.
    * @returns An object with boolean flags indicating if the thread is `running` and/or `pending`.
    */
-  has: (thread: string) => { running: boolean; pending: boolean }
+  has: (thread: string | symbol) => { running: boolean; pending: boolean }
 
   /**
    * Adds or replaces threads in the program.
@@ -857,7 +857,7 @@ export type BThreads = {
    * @param threads - An object mapping thread identifiers (string keys) to their implementation
    *                 as `RulesFunction` generator functions.
    */
-  set: (threads: Record<string, RulesFunction>) => void
+  set: (threads: Record<string | symbol, RulesFunction>) => void
 }
 
 /**
