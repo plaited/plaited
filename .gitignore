@@ -42,3 +42,7 @@ yarn.lock
 
 # Zed
 .zed
+
+
+# Claude
+.claude/settings.local.json
