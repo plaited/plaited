@@ -9,10 +9,18 @@ import type {
 import { isTypeOf } from '../utils.js'
 import { isTokenReference, getRule } from './css.utils.js'
 
+/**
+ * @internal
+ * Type guard for primitive CSS values (string or number).
+ */
 const isPrimitive = (val: string | number | unknown): val is string | number =>
   typeof val === 'string' || typeof val === 'number'
 
-// host function (previously createHost in create-host.ts)
+/**
+ * @internal
+ * Recursively processes host element CSS properties to generate :host selector rules.
+ * Handles nested statements, compound selectors, and design token references.
+ */
 const formatHostStatement = ({
   styles,
   prop,
@@ -54,6 +62,72 @@ const formatHostStatement = ({
   }
 }
 
+/**
+ * Creates CSS styles for the Shadow DOM host element using the `:host` selector.
+ * Supports nested rules, compound selectors, and design token references.
+ * Unlike `createStyles`, this function generates styles for the host element itself rather than children.
+ *
+ * @param props - CSS properties to apply to the host element
+ * @returns Object containing only stylesheets (no classNames, as host styles don't use classes)
+ *
+ * @example Basic host styling
+ * ```ts
+ * const hostStyles = createHostStyles({
+ *   display: 'block',
+ *   width: '100%',
+ *   padding: '16px'
+ * });
+ * ```
+ *
+ * @example Host styling with pseudo-classes
+ * ```ts
+ * const interactive = createHostStyles({
+ *   cursor: {
+ *     $default: 'pointer',
+ *     ':hover': 'grab',
+ *     ':active': 'grabbing'
+ *   }
+ * });
+ * ```
+ *
+ * @example Compound selectors for conditional styling
+ * ```ts
+ * const conditionalHost = createHostStyles({
+ *   opacity: {
+ *     $default: 1,
+ *     $compoundSelectors: {
+ *       '.disabled': 0.5,
+ *       '[aria-hidden="true"]': 0
+ *     }
+ *   }
+ * });
+ * // Generates: :host(.disabled) { opacity: 0.5; }
+ * //            :host([aria-hidden="true"]) { opacity: 0; }
+ * ```
+ *
+ * @example Using design tokens
+ * ```ts
+ * const tokens = createTokens('spacing', {
+ *   large: { $value: '24px' }
+ * });
+ *
+ * const tokenized = createHostStyles({
+ *   padding: tokens.large
+ * });
+ * ```
+ *
+ * @remarks
+ * - Host styles apply to the custom element itself, not its Shadow DOM children
+ * - Use `$compoundSelectors` to apply styles based on host element classes or attributes
+ * - Supports all nested statement features (media queries, pseudo-classes, etc.)
+ * - Design token references are automatically resolved
+ * - Returns only `stylesheets` array (no `classNames` property)
+ *
+ * @see {@link CreateHostParams} for the input type structure
+ * @see {@link HostStylesObject} for the return type
+ * @see {@link createStyles} for styling Shadow DOM children
+ * @see {@link createTokens} for design token creation
+ */
 export const createHostStyles = (props: CreateHostParams): HostStylesObject => {
   const styles: string[] = []
   for (const [prop, value] of Object.entries(props)) {

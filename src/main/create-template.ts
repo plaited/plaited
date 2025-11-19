@@ -1,9 +1,27 @@
 /**
- * JSX Template Creation System for Plaited.
- * Converts JSX-like calls into template objects with security-first design.
- *
+ * @internal
  * @module create-template
- * @packageDocumentation
+ *
+ * Purpose: Implements the JSX template creation system for Plaited.
+ * Converts JSX-like calls into template objects with security-first design.
+ * Handles HTML escaping, event binding, style management, and Shadow DOM boundaries.
+ *
+ * Architecture:
+ * - Core factory function for JSX runtime integration
+ * - Recursive template object generation with nested children support
+ * - Automatic HTML escaping for security
+ * - Style hoisting and deduplication
+ * - Script injection protection
+ *
+ * Dependencies:
+ * - utils.js: Type checking, kebab-case conversion, HTML escaping
+ * - create-template.types.js: Type definitions for attributes and templates
+ * - create-template.constants.js: HTML constants and valid tags
+ *
+ * Consumers:
+ * - JSX transpiler output (h function calls)
+ * - bElement for Shadow DOM template creation
+ * - Application code using JSX syntax
  *
  * @example Basic element creation
  * ```tsx

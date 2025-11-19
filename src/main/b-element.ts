@@ -1,3 +1,26 @@
+/**
+ * @internal
+ * @module b-element
+ *
+ * Purpose: Implements the BehavioralTemplate system that bridges Web Components and behavioral programming.
+ * Creates custom elements with Shadow DOM, event handling, and behavioral program integration.
+ *
+ * Architecture:
+ * - Extends HTMLElement with behavioral programming capabilities
+ * - Manages Shadow DOM lifecycle and element bindings via p-target attributes
+ * - Integrates event delegation system with p-trigger attributes
+ * - Coordinates behavioral threads with DOM element lifecycle
+ *
+ * Dependencies:
+ * - behavioral.ts: Core behavioral programming engine
+ * - create-template.ts: JSX template creation
+ * - use-plaited-trigger.ts: Internal trigger system
+ * - use-public-trigger.ts: Public event trigger
+ * - delegated-listener.ts: Event delegation
+ *
+ * Consumers: Application code creating custom elements with behavioral programming
+ */
+
 import type {
   PlaitedTrigger,
   Handlers,
@@ -29,15 +52,31 @@ import type {
   BProgramArgs,
 } from './b-element.types.js'
 
+/**
+ * @internal
+ * Type for lifecycle callback functions with optional detail payload.
+ */
 type Callback<T> = T extends void ? () => void | Promise<void> : (detail: T) => void | Promise<void>
+
+/**
+ * @internal
+ * Type mapping for behavioral element lifecycle callbacks.
+ */
 type BehavioralElementCallbackHandlers = {
   [K in keyof BehavioralElementCallbackDetails]?: Callback<BehavioralElementCallbackDetails[K]>
 }
 
+/**
+ * @internal
+ * Parses the p-trigger attribute into a Map of event types to trigger names.
+ */
 const getTriggerMap = (el: Element) =>
   new Map((el.getAttribute(P_TRIGGER) as string).split(' ').map((pair) => pair.split(':')) as [string, string][])
 
-/** get trigger for elements respective event from triggerTypeMap */
+/**
+ * @internal
+ * Determines the trigger type for an event by traversing the composed path and checking p-trigger attributes.
+ */
 const getTriggerType = (event: Event, context: Element) => {
   const el =
     context.tagName !== 'SLOT' && event.currentTarget === context ? context
@@ -47,15 +86,20 @@ const getTriggerType = (event: Event, context: Element) => {
   return getTriggerMap(el).get(event.type)
 }
 
+/**
+ * @internal
+ * Type guard to check if a Node is an Element.
+ */
 const isElement = (node: Node): node is Element => node.nodeType === 1
 
 /**
- * Creates a Web Component with behavioral programming and shadow DOM support.
- * Core building block for Plaited applications with declarative state management.
+ * Creates a Web Component with behavioral programming and Shadow DOM support.
+ * Core building block for Plaited applications enabling declarative event handling,
+ * reactive state management, and behavioral thread coordination.
  *
  * @template A Event details type for component-specific events
- * @param options Component configuration
- * @returns PlaitedTemplate function for creating element instances
+ * @param options Component configuration including tag name, Shadow DOM template, and behavioral program
+ * @returns BehavioralTemplate function for creating and rendering element instances
  *
  * @example Simple counter component
  * ```tsx
@@ -84,38 +128,7 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  * });
  * ```
  *
- * @example
- * Basic Counter Component
- * ```tsx
- * const Counter = bElement({
- *   tag: 'my-counter',
- *   shadowDom: (
- *     <div>
- *       <button p-target="decBtn" p-trigger={{ click: 'DECREMENT' }}>-</button>
- *       <span p-target="count">0</span>
- *       <button p-target="incBtn" p-trigger={{ click: 'INCREMENT' }}>+</button>
- *     </div>
- *   ),
- *   bProgram({ $ }) {
- *     const [countEl] = $('count');
- *     let count = 0;
- *
- *     return {
- *       INCREMENT() {
- *         count++;
- *         countEl.render(`${count}`);
- *       },
- *       DECREMENT() {
- *         count--;
- *         countEl.render(`${count}`);
- *       }
- *     };
- *   }
- * });
- * ```
- *
- * @example
- * Form-Associated Component
+ * @example Form-associated component with validation
  * ```tsx
  * interface FormFieldEvents {
  *   'value-change': (evt: ChangeEvent & { target: HTMLInputElement }) => void;
@@ -324,6 +337,14 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  * *   **Component Lifecycle**: Utilize `onConnected`, `onDisconnected`, `onAttributeChanged`, etc., for managing component lifecycle logic.
  * *   **Signal/Trigger Patterns**: Understand that `trigger` (from `BProgramArgs`) is used to send events/data into the behavioral program.
  * *   **Shadow DOM**: Be mindful of style scoping and how to cross shadow boundaries if necessary (e.g., CSS custom properties, `::part`).
+ *
+ * @see {@link BehavioralTemplate} for the return type structure
+ * @see {@link BProgramArgs} for behavioral program arguments
+ * @see {@link behavioral} for the behavioral programming engine
+ * @see {@link bThread} for creating behavioral threads
+ * @see {@link bSync} for synchronization points
+ * @see {@link createStyles} for styling Shadow DOM children
+ * @see {@link createHostStyles} for styling the host element
  */
 export const bElement = <A extends EventDetails>({
   tag,

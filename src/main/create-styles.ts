@@ -3,6 +3,12 @@ import type { CreateParams, ClassNames, NestedStatements, CSSProperties, DesignT
 import { isTypeOf } from '../utils.js'
 import { isTokenReference, getRule, createHash } from './css.utils.js'
 
+/**
+ * @internal
+ * Recursively processes CSS property values to generate atomic CSS class rules.
+ * Handles nested statements (media queries, pseudo-classes, attribute selectors) and design token references.
+ * Accumulates styles into flat arrays for stylesheet generation.
+ */
 const formatClassStatement = ({
   styles,
   hostStyles,
@@ -36,6 +42,78 @@ const formatClassStatement = ({
   }
 }
 
+/**
+ * Creates atomic CSS classes from style definitions with automatic hash-based class name generation.
+ * Generates scoped CSS rules that can be adopted into Shadow DOM via Constructable Stylesheets.
+ * Supports nested rules for responsive design, pseudo-classes, and attribute selectors.
+ *
+ * @template T - The type of the class definitions object
+ * @param classNames - Object mapping logical class names to CSS property definitions
+ * @returns Object mapping each logical name to generated class names and stylesheets
+ *
+ * @example Basic styling
+ * ```ts
+ * const button = createStyles({
+ *   primary: {
+ *     backgroundColor: 'blue',
+ *     color: 'white',
+ *     padding: '10px 20px',
+ *     borderRadius: '4px'
+ *   }
+ * });
+ * // Result: { primary: { classNames: ['primary', 'cls123', 'cls456', ...], stylesheets: [...] } }
+ * ```
+ *
+ * @example Nested rules with pseudo-classes
+ * ```ts
+ * const interactive = createStyles({
+ *   button: {
+ *     color: {
+ *       $default: 'black',
+ *       ':hover': 'blue',
+ *       ':active': 'darkblue'
+ *     }
+ *   }
+ * });
+ * ```
+ *
+ * @example Responsive design with media queries
+ * ```ts
+ * const responsive = createStyles({
+ *   container: {
+ *     width: {
+ *       $default: '100%',
+ *       '@media (min-width: 768px)': '750px',
+ *       '@media (min-width: 1024px)': '960px'
+ *     }
+ *   }
+ * });
+ * ```
+ *
+ * @example Using design tokens
+ * ```ts
+ * const tokens = createTokens('theme', {
+ *   primary: { $value: '#007bff' }
+ * });
+ *
+ * const themed = createStyles({
+ *   button: {
+ *     backgroundColor: tokens.primary
+ *   }
+ * });
+ * ```
+ *
+ * @remarks
+ * - Class names are automatically hashed based on their CSS content for deduplication
+ * - Each atomic property generates its own class for maximum reusability
+ * - Design token references are resolved and their styles are included
+ * - Supports Shadow DOM adoption via the `stylesheets` array
+ *
+ * @see {@link CreateParams} for the input type structure
+ * @see {@link ClassNames} for the return type structure
+ * @see {@link createTokens} for design token creation
+ * @see {@link joinStyles} for combining multiple style objects
+ */
 export const createStyles = <T extends CreateParams>(classNames: T): ClassNames<T> =>
   Object.entries(classNames).reduce((acc, [cls, props]) => {
     const styles: string[] = []

@@ -10,9 +10,18 @@ import type {
 import { kebabCase, isTypeOf } from '../utils.js'
 import { isTokenReference, getRule } from './css.utils.js'
 
+/**
+ * @internal
+ * Type guard to check if a value is a DesignToken object.
+ */
 const isToken = (token: unknown): token is DesignToken =>
   isTypeOf<Record<string, unknown>>(token, 'object') && Object.hasOwn(token, '$value')
 
+/**
+ * @internal
+ * Resolves a token value, handling both primitive values and token references.
+ * Accumulates referenced token styles into the provided array.
+ */
 const getTokenValue = ($value: string | number | DesignTokenReference, styles: string[]) => {
   if (isTokenReference($value)) {
     styles.push(...$value.styles)
@@ -21,11 +30,20 @@ const getTokenValue = ($value: string | number | DesignTokenReference, styles: s
   return $value
 }
 
+/**
+ * @internal
+ * Type guard to check if a value is a function-based token value (e.g., calc(), rgb()).
+ */
 const isFunctionTokenValue = (value: unknown): value is FunctionTokenValue =>
   isTypeOf<Record<string, unknown>>(value, 'object') &&
   Object.hasOwn(value, '$function') &&
   Object.hasOwn(value, '$arguments')
 
+/**
+ * @internal
+ * Generates a CSS function call string from a function token value.
+ * Handles both single arguments and arrays of arguments with optional CSV formatting.
+ */
 const getFunctionValue = ({ $function, $arguments, $csv }: FunctionTokenValue, styles: string[]) => {
   if (Array.isArray($arguments)) {
     return `${$function}(${$arguments.map((val) => getTokenValue(val, styles)).join($csv ? ',' : ' ')})`
@@ -33,6 +51,11 @@ const getFunctionValue = ({ $function, $arguments, $csv }: FunctionTokenValue, s
   return `${$function}(${getTokenValue($arguments, styles)})`
 }
 
+/**
+ * @internal
+ * Generates a CSS custom property declaration from a design token.
+ * Handles single values, arrays, and function-based values.
+ */
 const getToken = ({
   cssVar,
   token,
@@ -53,7 +76,11 @@ const getToken = ({
     : getRule(cssVar, isFunctionTokenValue($value) ? getFunctionValue($value, styles) : getTokenValue($value, styles))
 }
 
-// host function (previously createHost in create-host.ts)
+/**
+ * @internal
+ * Recursively processes design tokens to generate :host selector rules with CSS custom properties.
+ * Handles nested statements and compound selectors for conditional token values.
+ */
 const formatTokenStatement = ({
   styles,
   cssVar,
@@ -93,6 +120,120 @@ const formatTokenStatement = ({
   }
 }
 
+/**
+ * Creates a design token system using CSS custom properties.
+ * Generates CSS variables scoped to the Shadow DOM host element and returns type-safe reference functions.
+ * Supports primitive values, arrays, CSS functions (calc, rgb, etc.), nested rules, and token composition.
+ *
+ * @template T - The type of the design token group
+ * @param ident - Base identifier for the token group (converted to kebab-case for CSS variable naming)
+ * @param group - Object defining design tokens with their values and conditions
+ * @returns Object mapping token names to reference functions that return CSS var() expressions
+ *
+ * @example Basic color tokens
+ * ```ts
+ * const colors = createTokens('color', {
+ *   primary: { $value: '#007bff' },
+ *   secondary: { $value: '#6c757d' },
+ *   success: { $value: '#28a745' }
+ * });
+ *
+ * // Use in styles:
+ * const button = createStyles({
+ *   primary: {
+ *     backgroundColor: colors.primary,  // var(--color-primary)
+ *     color: 'white'
+ *   }
+ * });
+ * ```
+ *
+ * @example Spacing tokens with arrays
+ * ```ts
+ * const spacing = createTokens('spacing', {
+ *   padding: {
+ *     $value: [16, 24, 16, 24],
+ *     $csv: false  // Join with spaces, not commas
+ *   }
+ * });
+ * // Generates: --spacing-padding: 16 24 16 24;
+ * ```
+ *
+ * @example Function-based tokens (calc, rgb, etc.)
+ * ```ts
+ * const computed = createTokens('computed', {
+ *   doubleSpace: {
+ *     $value: {
+ *       $function: 'calc',
+ *       $arguments: ['16px * 2']
+ *     }
+ *   },
+ *   rgbColor: {
+ *     $value: {
+ *       $function: 'rgb',
+ *       $arguments: [0, 123, 255],
+ *       $csv: true  // Join with commas
+ *     }
+ *   }
+ * });
+ * ```
+ *
+ * @example Nested tokens with responsive values
+ * ```ts
+ * const responsive = createTokens('font', {
+ *   size: {
+ *     $default: { $value: '16px' },
+ *     '@media (min-width: 768px)': { $value: '18px' },
+ *     '@media (min-width: 1024px)': { $value: '20px' }
+ *   }
+ * });
+ * ```
+ *
+ * @example Compound selectors for conditional tokens
+ * ```ts
+ * const themed = createTokens('theme', {
+ *   background: {
+ *     $default: { $value: 'white' },
+ *     $compoundSelectors: {
+ *       '.dark-mode': { $value: '#1a1a1a' },
+ *       '[data-theme="high-contrast"]': { $value: 'black' }
+ *     }
+ *   }
+ * });
+ * // Generates:
+ * // :host { --theme-background: white; }
+ * // :host(.dark-mode) { --theme-background: #1a1a1a; }
+ * // :host([data-theme="high-contrast"]) { --theme-background: black; }
+ * ```
+ *
+ * @example Token composition (referencing other tokens)
+ * ```ts
+ * const base = createTokens('base', {
+ *   spacing: { $value: '8px' }
+ * });
+ *
+ * const derived = createTokens('derived', {
+ *   doublePadding: {
+ *     $value: {
+ *       $function: 'calc',
+ *       $arguments: [base.spacing, '* 2']
+ *     }
+ *   }
+ * });
+ * ```
+ *
+ * @remarks
+ * - Token names are converted to kebab-case CSS variable names (e.g., `primaryColor` → `--ident-primary-color`)
+ * - Each token returns a function that outputs `var(--css-variable-name)`
+ * - The returned function has a `styles` property containing all required CSS declarations
+ * - Supports nested rules for responsive design, pseudo-classes, and attribute selectors
+ * - Token references can be composed to build complex design systems
+ * - CSS custom properties are scoped to the `:host` selector for Shadow DOM encapsulation
+ *
+ * @see {@link DesignTokenGroup} for the input type structure
+ * @see {@link DesignTokenReferences} for the return type structure
+ * @see {@link createStyles} for using tokens in style definitions
+ * @see {@link createHostStyles} for using tokens in host styles
+ */
 export const createTokens = <T extends DesignTokenGroup>(ident: string, group: T) =>
   Object.entries(group).reduce((acc, [prop, value]) => {
     const cssVar: `--${string}` = `--${kebabCase(ident)}-${kebabCase(prop)}`
