@@ -58,6 +58,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
 
+      - name: Build CLI
+        run: bash scripts/build-cli.sh
+
       - name: Publish
         run: |
           echo "@plaited:registry=https://registry.npmjs.org/" > .npmrc

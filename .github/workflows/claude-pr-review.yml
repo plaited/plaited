@@ -41,6 +41,7 @@ jobs:
             - ✅ PascalCase for types and Zod schema names
             - ✅ Use `test` instead of `it` in test files
             - ✅ Prefer `Bun.resolveSync()` over `path.join()` in Bun environments
+            - ✅ Use JSX syntax - avoid `h()` or `createTemplate()` direct calls (internal functions)
             - ⚠️ Correct terminology: "templates" not "components" (except for Web Components API references)
 
             ### Test Files
