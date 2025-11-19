@@ -43,65 +43,6 @@ import { VALID_PRIMITIVE_CHILDREN, TEMPLATE_OBJECT_IDENTIFIER } from './create-t
  * @param templates - One or more Plaited template objects to render
  * @returns Complete HTML string with injected styles
  *
- * @example Basic page rendering
- * ```tsx
- * import { ssr, h } from 'plaited';
- *
- * const page = h('html', {
- *   children: [
- *     h('head', {
- *       children: h('title', { children: 'My Page' })
- *     }),
- *     h('body', {
- *       children: h('h1', { children: 'Hello World' })
- *     })
- *   ]
- * });
- *
- * const html = ssr(page);
- * // <!DOCTYPE html><html><head><title>My Page</title></head>...
- * ```
- *
- * @example With styled components
- * ```tsx
- * import { ssr, h, css } from 'plaited';
- *
- * const styles = css.create({
- *   card: {
- *     padding: '1rem',
- *     borderRadius: '4px',
- *     boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
- *   }
- * });
- *
- * const Card = ({ children }) => h('div', {
- *   ...styles.card,
- *   children
- * });
- *
- * const html = ssr(
- *   h(Card, { children: 'Styled content' })
- * );
- * // Styles automatically injected in <head>
- * ```
- *
- * @example Shadow DOM SSR
- * ```tsx
- * const CustomElement = () => h('my-element', {
- *   children: h('template', {
- *     shadowrootmode: 'open',
- *     shadowrootdelegatesfocus: true,
- *     children: [
- *       h('style', { children: ':host { display: block; }' }),
- *       h('slot')
- *     ]
- *   })
- * });
- *
- * const html = ssr(h(CustomElement));
- * // Declarative shadow DOM preserved in output
- * ```
- *
  * @remarks
  * Style injection:
  * - Collects all stylesheets

@@ -15,59 +15,6 @@ import { keyMirror } from '../utils.js'
  * - onFormDisabled: Associated form is disabled
  * - onFormReset: Associated form is reset
  * - onFormStateRestore: Form state is restored
- *
- * @example
- * Using lifecycle callbacks in a component
- * ```tsx
- * const MyElement = bElement({
- *   tag: 'my-element',
- *   shadowDom: (
- *     <div>
- *       <slot p-target="content" />
- *       <p p-target="status">Status: Waiting</p>
- *     </div>
- *   ),
- *   bProgram({ $, trigger }) {
- *     const [status] = $('status');
- *
- *     return {
- *       [ELEMENT_CALLBACKS.onConnected]() {
- *         status.render('Status: Connected');
- *       },
- *       [ELEMENT_CALLBACKS.onDisconnected]() {
- *         console.log('Cleanup tasks');
- *       }
- *     };
- *   }
- * });
- * ```
- *
- * @example
- * Form association callbacks
- * ```tsx
- * const FormField = bElement({
- *   tag: 'form-field',
- *   formAssociated: true,
- *   shadowDom: (
- *     <div>
- *       <input p-target="input" type="text" />
- *       <span p-target="state" />
- *     </div>
- *   ),
- *   bProgram({ $, internals }) {
- *     const [state] = $('state');
- *
- *     return {
- *       [ELEMENT_CALLBACKS.onFormAssociated]({ form }) {
- *         state.render(`Associated with: ${form.id}`);
- *       },
- *       [ELEMENT_CALLBACKS.onFormDisabled]({ disabled }) {
- *         state.render(`Field ${disabled ? 'disabled' : 'enabled'}`);
- *       }
- *     };
- *   }
- * });
- * ```
  */
 export const ELEMENT_CALLBACKS = keyMirror(
   'onAdopted',
@@ -89,17 +36,6 @@ export const ELEMENT_CALLBACKS = keyMirror(
  * - Facilitates safe template composition
  * - Prevents template object spoofing
  * - Used by the rendering system to identify valid templates
- *
- * @example
- * Creating a template validator
- * ```tsx
- * const isBehavioralTemplate = (obj: unknown): obj is TemplateObject =>
- *   obj && typeof obj === 'object' && obj.$ === BEHAVIORAL_TEMPLATE_IDENTIFIER;
- *
- * const template = <div>Hello World</div>;
- * console.log(isBehavioralTemplate(template)); // true
- * console.log(isBehavioralTemplate({ html: [], $: '🐻' })); // false
- * ```
  *
  * @remarks
  * - Do not attempt to create template objects manually
