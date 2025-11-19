@@ -10,44 +10,6 @@ import { isTokenReference, getRule, createHash } from './css.utils.js'
  * @param frames - Object defining animation keyframes using 'from', 'to', or percentage offsets
  * @returns Function that returns stylesheets object, with an `id` property containing the unique animation name
  *
- * @example Simple fade-in animation
- * ```ts
- * const fadeIn = createKeyframes('fade-in', {
- *   from: { opacity: 0 },
- *   to: { opacity: 1 }
- * });
- *
- * // Use in styles:
- * const animated = createStyles({
- *   element: {
- *     animation: `${fadeIn.id} 300ms ease-in`
- *   }
- * });
- * ```
- *
- * @example Multi-step animation with percentages
- * ```ts
- * const bounce = createKeyframes('bounce', {
- *   '0%': { transform: 'translateY(0)' },
- *   '50%': { transform: 'translateY(-20px)' },
- *   '100%': { transform: 'translateY(0)' }
- * });
- * ```
- *
- * @example Using design tokens in animations
- * ```ts
- * const tokens = createTokens('colors', {
- *   primary: { $value: 'blue' },
- *   secondary: { $value: 'lightblue' }
- * });
- *
- * const pulse = createKeyframes('pulse', {
- *   '0%': { backgroundColor: tokens.primary },
- *   '50%': { backgroundColor: tokens.secondary },
- *   '100%': { backgroundColor: tokens.primary }
- * });
- * ```
- *
  * @remarks
  * - The animation identifier is automatically hashed to prevent naming collisions
  * - Design token styles are included in the returned stylesheets array

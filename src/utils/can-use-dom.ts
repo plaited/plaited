@@ -5,24 +5,6 @@
  *
  * @returns true if DOM APIs are available, false otherwise
  *
- * @example Browser vs Server
- * ```ts
- * if (canUseDOM()) {
- *   // Browser-only code
- *   document.getElementById('app');
- * } else {
- *   // Server/Node.js code
- *   console.log('No DOM available');
- * }
- * ```
- *
- * @example Conditional imports
- * ```ts
- * const handler = canUseDOM()
- *   ? () => window.addEventListener('resize', callback)
- *   : () => {}; // noop on server
- * ```
- *
  * @remarks
  * Checks for window, document, and createElement.
  * Used to guard DOM operations in universal code.

@@ -7,29 +7,6 @@
  * @param map - Internal WeakMap for circular reference detection
  * @returns true if values are deeply equal
  *
- * @example Primitives and objects
- * ```ts
- * deepEqual(42, 42);                      // true
- * deepEqual([1, 2, 3], [1, 2, 3]);       // true
- * deepEqual({a: 1, b: 2}, {a: 1, b: 2}); // true
- * ```
- *
- * @example Complex types
- * ```ts
- * deepEqual(new Date('2023'), new Date('2023'));     // true
- * deepEqual(new Set([1, 2]), new Set([1, 2]));       // true
- * deepEqual(/test/gi, /test/gi);                     // true
- * ```
- *
- * @example Circular references
- * ```ts
- * const obj1 = { a: 1 };
- * obj1.self = obj1;
- * const obj2 = { a: 1 };
- * obj2.self = obj2;
- * deepEqual(obj1, obj2); // true
- * ```
- *
  * @remarks
  * Supports: primitives, objects, arrays, Date, RegExp, Map, Set, TypedArrays.
  * Uses Object.is() for NaN and +0/-0 handling.

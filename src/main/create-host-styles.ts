@@ -70,52 +70,6 @@ const formatHostStatement = ({
  * @param props - CSS properties to apply to the host element
  * @returns Object containing only stylesheets (no classNames, as host styles don't use classes)
  *
- * @example Basic host styling
- * ```ts
- * const hostStyles = createHostStyles({
- *   display: 'block',
- *   width: '100%',
- *   padding: '16px'
- * });
- * ```
- *
- * @example Host styling with pseudo-classes
- * ```ts
- * const interactive = createHostStyles({
- *   cursor: {
- *     $default: 'pointer',
- *     ':hover': 'grab',
- *     ':active': 'grabbing'
- *   }
- * });
- * ```
- *
- * @example Compound selectors for conditional styling
- * ```ts
- * const conditionalHost = createHostStyles({
- *   opacity: {
- *     $default: 1,
- *     $compoundSelectors: {
- *       '.disabled': 0.5,
- *       '[aria-hidden="true"]': 0
- *     }
- *   }
- * });
- * // Generates: :host(.disabled) { opacity: 0.5; }
- * //            :host([aria-hidden="true"]) { opacity: 0; }
- * ```
- *
- * @example Using design tokens
- * ```ts
- * const tokens = createTokens('spacing', {
- *   large: { $value: '24px' }
- * });
- *
- * const tokenized = createHostStyles({
- *   padding: tokens.large
- * });
- * ```
- *
  * @remarks
  * - Host styles apply to the custom element itself, not its Shadow DOM children
  * - Use `$compoundSelectors` to apply styles based on host element classes or attributes

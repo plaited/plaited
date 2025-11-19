@@ -3,25 +3,6 @@
  * Each key is a string literal that matches its corresponding value.
  *
  * @template Keys - Array of string literals defining the allowed keys
- *
- * @example
- * Type Definition
- * ```ts
- * type Actions = KeyMirror<['CREATE', 'UPDATE', 'DELETE']>;
- * // Results in:
- * // {
- * //   readonly CREATE: 'CREATE'
- * //   readonly UPDATE: 'UPDATE'
- * //   readonly DELETE: 'DELETE'
- * // }
- * ```
- *
- * @example
- * With Union Types
- * ```ts
- * type Status = 'pending' | 'active' | 'completed';
- * type StatusMap = KeyMirror<[Status]>;
- * ```
  */
 export type KeyMirror<Keys extends string[]> = {
   /**
@@ -41,30 +22,6 @@ export type KeyMirror<Keys extends string[]> = {
  * @template Keys - String literal tuple
  * @param inputs - Strings to use as keys and values
  * @returns Frozen object where each key equals its value
- *
- * @example Action types
- * ```ts
- * const Actions = keyMirror('CREATE', 'UPDATE', 'DELETE');
- * Actions.CREATE; // 'CREATE'
- * Actions.UPDATE; // 'UPDATE'
- * ```
- *
- * @example Event constants
- * ```ts
- * const Events = keyMirror('click', 'focus', 'blur');
- * element.addEventListener(Events.click, handler);
- * ```
- *
- * @example Type-safe switching
- * ```ts
- * function handle(type: keyof typeof Actions) {
- *   switch (type) {
- *     case Actions.CREATE: return create();
- *     case Actions.UPDATE: return update();
- *     case Actions.DELETE: return delete();
- *   }
- * }
- * ```
  *
  * @remarks
  * Prevents typos, enables autocompletion.

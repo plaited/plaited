@@ -46,20 +46,6 @@ import { isPlaitedTrigger } from './behavioral.utils.js'
  * @property newValue - The new value of the attribute. It will be `null` if the
  * attribute was removed.
  * @property name - The name of the attribute that changed.
- *
- * @example
- * // In your bProgram, when handling an event triggered by useAttributesObserver:
- * //
- * // bProgram({ $, trigger }) {
- * //   // ... setup for observing a slotted element ...
- * //   return {
- * //     attributeChangedOnSlottedElement(detail: ObservedAttributesDetail) {
- * //       console.log(`Attribute '${detail.name}' changed on slotted element.`);
- * //       console.log(`Old value: ${detail.oldValue ?? 'null'}`);
- * //       console.log(`New value: ${detail.newValue ?? 'null'}`);
- * //     }
- * //   };
- * // }
  */
 /**
  * @internal
@@ -103,74 +89,6 @@ export type ObservedAttributesDetail = {
  * The function itself returns a `Disconnect` function, which can be called to
  * manually stop the observation. However, manual disconnection is often unnecessary
  * if `PlaitedTrigger` is used, as it handles cleanup automatically.
- *
- * @example Observing attributes on a slotted input element
- * ```tsx
- * import { bElement, useAttributesObserver, ObservedAttributesDetail } from 'plaited';
- *
- * // Component that observes attributes of an element slotted into it.
- * // This example is inspired by `plaited/src/main/tests/use-attributes-observer.tsx`.
- * const SlottedAttributeMonitor = bElement({
- *   tag: 'slotted-attribute-monitor',
- *   shadowDom: (
- *     <>
- *       <slot p-target='contentSlot'></slot>
- *       <p>Last change for '<span p-target='attrName'></span>':</p>
- *       <p>Old: <span p-target='attrOldValue'></span></p>
- *       <p>New: <span p-target='attrNewValue'></span></p>
- *     </>
- *   ),
- *   bProgram({ $, trigger }) {
- *     const [contentSlot] = $<HTMLSlotElement>('contentSlot');
- *     const [attrNameEl] = $<HTMLSpanElement>('attrName');
- *     const [attrOldValueEl] = $<HTMLSpanElement>('attrOldValue');
- *     const [attrNewValueEl] = $<HTMLSpanElement>('attrNewValue');
- *
- *     // Initialize the observer function. It will dispatch 'slottedAttrUpdate' events.
- *     const observeSlottedAttributes = useAttributesObserver('slottedAttrUpdate', trigger);
- *
- *     // It's best practice to setup observation when slot content changes.
- *     contentSlot.addEventListener('slotchange', () => {
- *       // Get the first element assigned to the slot.
- *       // Real-world scenarios might involve checking element types or multiple elements.
- *       const [slottedElement] = contentSlot.assignedElements();
- *
- *       if (slottedElement) {
- *         // Start observing 'disabled' and 'value' attributes on the slotted element.
- *         // The returned `disconnect` function can be stored for manual cleanup,
- *         // but PlaitedTrigger handles this automatically if used.
- *         const disconnect = observeSlottedAttributes(slottedElement, ['disabled', 'value']);
- *         // For explicit cleanup if needed before component disconnect:
- *         // trigger.addDisconnectCallback(disconnect);
- *         // Or, call disconnect() directly if observation needs to stop early.
- *       } else {
- *         // Handle the case where no element is slotted or it's removed.
- *         console.warn('SlottedAttributeMonitor: No element found in slot to observe.');
- *         attrNameEl.textContent = 'N/A';
- *         attrOldValueEl.textContent = 'N/A';
- *         attrNewValueEl.textContent = 'N/A';
- *       }
- *     });
- *
- *     return {
- *       slottedAttrUpdate(detail: ObservedAttributesDetail) {
- *         attrNameEl.textContent = detail.name;
- *         attrOldValueEl.textContent = detail.oldValue ?? 'null';
- *         attrNewValueEl.textContent = detail.newValue ?? 'null';
- *       }
- *     };
- *   }
- * });
- *
- * // How to use this component:
- * // <slotted-attribute-monitor>
- * //   <input type="text" value="initial" />
- * // </slotted-attribute-monitor>
- * //
- * // If the input's 'value' or 'disabled' attribute is changed programmatically
- * // (e.g., inputElement.setAttribute('value', 'new'); inputElement.toggleAttribute('disabled')),
- * // the SlottedAttributeMonitor component will update its display.
- * ```
  *
  * @remarks
  * - This utility internally uses a `MutationObserver` to efficiently track attribute changes.

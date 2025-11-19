@@ -14,24 +14,18 @@ import type { Trigger } from './behavioral.types.js'
  * @param args.publicEvents An optional array of event type strings that are allowed
  *   to be dispatched through this restricted trigger. If omitted or empty,
  *   no events will be allowed.
- * @param [args.errorPrefix='Not a public BPEvent type'] - Optional custom prefix for the error message thrown when an unauthorized event type is triggered.
  * @returns A new `Trigger` function that only allows events specified in `publicEvents`.
- * @example
- * import { bProgram, getPublicTrigger } from 'plaited/behavioral';
  *
- * const { trigger: internalTrigger } = bProgram();
+ * @throws {Error} When attempting to trigger an event type not in publicEvents list
  *
- * // Create a trigger that only allows 'user/login' and 'ui/button-click' events.
- * const publicTrigger = getPublicTrigger({
- *   trigger: internalTrigger,
- *   publicEvents: ['user/login', 'ui/button-click']
- * });
+ * @remarks
+ * - Uses Set for O(1) event lookup performance
+ * - Throws immediately on unauthorized events to fail fast
+ * - Prevents accidental triggering of internal events from external code
+ * - Common pattern in bElement for exposing component public APIs
  *
- * // This will be processed by the internalTrigger.
- * publicTrigger({ type: 'user/login', detail: { username: 'test' } });
- *
- * // This will throw an error.
- * publicTrigger({ type: 'internal/data-update', detail: {} });
+ * @see {@link Trigger} for the base trigger type
+ * @see {@link bElement} for usage in components
  */
 export const usePublicTrigger = ({
   trigger,

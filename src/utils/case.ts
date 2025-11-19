@@ -5,14 +5,6 @@
  * @param str - String to convert
  * @returns camelCase string
  *
- * @example
- * ```ts
- * camelCase('hello-world')  // 'helloWorld'
- * camelCase('hello_world')  // 'helloWorld'
- * camelCase('hello world')  // 'helloWorld'
- * camelCase('HELLO WORLD')  // 'helloWorld'
- * ```
- *
  * @see {@link kebabCase} for hyphenated format
  * @see {@link pascalCase} for PascalCase format
  */
@@ -47,14 +39,6 @@ export const camelCase = (str: string) => {
  *
  * @param str - String to convert
  * @returns kebab-case string
- *
- * @example
- * ```ts
- * kebabCase('helloWorld')   // 'hello-world'
- * kebabCase('hello_world')  // 'hello-world'
- * kebabCase('Hello World')  // 'hello-world'
- * kebabCase('API_KEY')      // 'api-key'
- * ```
  *
  * @see {@link camelCase} for camelCase format
  * @see {@link pascalCase} for PascalCase format
@@ -97,14 +81,6 @@ export const kebabCase = (str: string) => {
  *
  * @param str - String to convert
  * @returns PascalCase string
- *
- * @example
- * ```ts
- * pascalCase('hello-world')  // 'HelloWorld'
- * pascalCase('hello_world')  // 'HelloWorld'
- * pascalCase('hello world')  // 'HelloWorld'
- * pascalCase('helloWorld')   // 'HelloWorld'
- * ```
  *
  * @see {@link camelCase} for camelCase format
  * @see {@link kebabCase} for kebab-case format

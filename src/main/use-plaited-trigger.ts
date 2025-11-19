@@ -55,21 +55,9 @@ import type { Trigger, Disconnect, PlaitedTrigger } from './behavioral.types.js'
  * - The disconnectSet is typically managed by the component lifecycle
  * - All callbacks in the set are invoked during component disconnection
  *
- * @example
- * ```ts
- * const baseTrigger = bProgram().trigger;
- * const cleanupCallbacks = new Set<Disconnect>();
- *
- * // Create the enhanced trigger
- * const plaitedTrigger = getPlaitedTrigger(baseTrigger, cleanupCallbacks);
- *
- * // Somewhere else, a listener is set up, and its cleanup is registered
- * const listenerCleanup = someEventEmitter.subscribe(() => {});
- * plaitedTrigger.addDisconnectCallback(listenerCleanup);
- *
- * // Later, during component teardown:
- * // cleanupCallbacks.forEach(cb => cb());
- * ```
+ * @see {@link PlaitedTrigger} for the enhanced trigger type
+ * @see {@link Disconnect} for cleanup function signature
+ * @see {@link bElement} for primary usage in components
  */
 export const usePlaitedTrigger = (trigger: Trigger, disconnectSet: Set<Disconnect>) => {
   Object.assign(trigger, {

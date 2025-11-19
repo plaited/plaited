@@ -51,58 +51,6 @@ const formatClassStatement = ({
  * @param classNames - Object mapping logical class names to CSS property definitions
  * @returns Object mapping each logical name to generated class names and stylesheets
  *
- * @example Basic styling
- * ```ts
- * const button = createStyles({
- *   primary: {
- *     backgroundColor: 'blue',
- *     color: 'white',
- *     padding: '10px 20px',
- *     borderRadius: '4px'
- *   }
- * });
- * // Result: { primary: { classNames: ['primary', 'cls123', 'cls456', ...], stylesheets: [...] } }
- * ```
- *
- * @example Nested rules with pseudo-classes
- * ```ts
- * const interactive = createStyles({
- *   button: {
- *     color: {
- *       $default: 'black',
- *       ':hover': 'blue',
- *       ':active': 'darkblue'
- *     }
- *   }
- * });
- * ```
- *
- * @example Responsive design with media queries
- * ```ts
- * const responsive = createStyles({
- *   container: {
- *     width: {
- *       $default: '100%',
- *       '@media (min-width: 768px)': '750px',
- *       '@media (min-width: 1024px)': '960px'
- *     }
- *   }
- * });
- * ```
- *
- * @example Using design tokens
- * ```ts
- * const tokens = createTokens('theme', {
- *   primary: { $value: '#007bff' }
- * });
- *
- * const themed = createStyles({
- *   button: {
- *     backgroundColor: tokens.primary
- *   }
- * });
- * ```
- *
  * @remarks
  * - Class names are automatically hashed based on their CSS content for deduplication
  * - Each atomic property generates its own class for maximum reusability

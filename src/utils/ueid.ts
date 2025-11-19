@@ -7,25 +7,6 @@
  * @param prefix - Optional prefix string
  * @returns ~11 character ID with optional prefix
  *
- * @example Basic usage
- * ```ts
- * ueid();           // "lpf98qw2"
- * ueid('user_');    // "user_lpf98qw2"
- * ueid('temp-');    // "temp-lpf98qw2"
- * ```
- *
- * @example DOM elements
- * ```ts
- * element.id = ueid('input-');  // "input-lpf98qw2"
- * ```
- *
- * @example React keys
- * ```ts
- * items.map(item => (
- *   <li key={ueid('item-')}>{item.name}</li>
- * ));
- * ```
- *
  * @remarks
  * Best for: DOM IDs, cache keys, test data.
  * Not for: Security tokens, database IDs.

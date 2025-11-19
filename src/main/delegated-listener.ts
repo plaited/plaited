@@ -5,30 +5,13 @@
  * @template T - Event type (MouseEvent, KeyboardEvent, etc.)
  * @implements {EventListener}
  *
- * @example Click handler
- * ```ts
- * const listener = new DelegatedListener((e: MouseEvent) => {
- *   console.log('Clicked at:', e.clientX, e.clientY);
- * });
- * element.addEventListener('click', listener);
- * ```
+ * @remarks
+ * - Implements EventListener interface for native DOM compatibility
+ * - Supports both synchronous and asynchronous event handlers
+ * - Type-safe event handling with TypeScript generics
+ * - Used internally by bElement for p-trigger event delegation
  *
- * @example Async handler
- * ```ts
- * const submit = new DelegatedListener(async (e: SubmitEvent) => {
- *   e.preventDefault();
- *   await submitForm(e.target as HTMLFormElement);
- * });
- * form.addEventListener('submit', submit);
- * ```
- *
- * @example Custom events
- * ```ts
- * type CustomEvent = Event & { detail: { message: string } };
- * const custom = new DelegatedListener((e: CustomEvent) => {
- *   console.log(e.detail.message);
- * });
- * ```
+ * @see {@link delegates} for the WeakMap storage
  */
 export class DelegatedListener<T extends Event = Event> {
   callback: (ev: T) => void | Promise<void>
