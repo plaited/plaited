@@ -9,15 +9,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Install dependencies (requires bun >= v1.2.9)
 bun install
 
-# Run all tests
-bun test
-
-# Run story tests (visual template tests)
-bun scripts/test-stories.ts
-
-# Run hot-reload story tests during development
-bun --hot scripts/test-stories.ts
-
 # Type checking
 bun run check
 
@@ -34,20 +25,73 @@ bun run lint-fix
 bun run prettier
 ```
 
-### Testing Single Files
+## Testing
+
+Plaited uses Bun's built-in test runner for unit and integration tests, and a custom workshop CLI for browser-based template tests.
+
+### Test Types
+
+#### Unit/Integration Tests (`*.spec.{ts,tsx}`)
+- Standard Bun tests using `*.spec.ts` or `*.spec.tsx` extensions
+- Run with `bun test` command
+- Used for testing business logic, utilities, behavioral programs, and non-visual functionality
+- No browser or DOM dependencies required
+
+#### Template/Browser Tests (`*.stories.tsx`)
+- Browser-based tests using Playwright integration via the workshop CLI
+- Use `*.stories.tsx` extension
+- Run with the workshop CLI at `src/workshop/cli.ts`
+- Test visual templates, user interactions, and accessibility
+- Powered by `storyFixture` helper from `plaited/testing`
+
+### Running Tests
+
 ```bash
-# Run a specific test file
-bun test path/to/file.test.ts
+# Run all tests (both spec tests and story tests)
+bun run test
+
+# Run only unit/integration tests
+bun test
+
+# Run only template/browser tests (via package.json script)
+bun run test-stories
+
+# Run template tests directly with CLI
+bun src/workshop/cli.ts test
+
+# Run template tests from specific directory
+bun src/workshop/cli.ts test src/components
+
+# Run template tests from specific file(s)
+bun src/workshop/cli.ts test src/Button.stories.tsx
+
+# Run template tests with custom port
+bun src/workshop/cli.ts test -p 3500
+
+# Run template tests with custom working directory
+bun src/workshop/cli.ts test -d ./my-project
+
+# Run template tests with hot reload (auto-rerun on file changes)
+bun --hot src/workshop/cli.ts test
+```
+
+### Running Specific Test Files
+
+```bash
+# Run a specific spec test file
+bun test path/to/file.spec.ts
 
 # Run tests matching a pattern
-bun test --preload ./test/setup.ts pattern
+bun test pattern
 ```
 
 ### Test File Naming Conventions
-- **Regular test files**: Use `.test.ts` or `.test.tsx` extensions
-- **Template test files**: Use `.tpl.spec.ts` or `.tpl.spec.tsx` extensions
-  - Template tests are used for testing templates during development
-  - These files are excluded from template discovery by default (`discoverTemplateMetadata`)
+
+- **`*.spec.ts` or `*.spec.tsx`**: Unit/integration tests run with Bun
+- **`*.stories.tsx`**: Template/browser tests run with workshop CLI
+- **`*.tpl.spec.ts` or `*.tpl.spec.tsx`**: Internal template tests excluded from discovery
+
+Note: Files with `.tpl.spec.{ts,tsx}` extensions are excluded from template discovery by default when using `discoverStoryMetadata`.
 
 ## Architecture Overview
 
@@ -152,82 +196,118 @@ External Trigger → bProgram → Event Selection → Thread Notification → Fe
 
 ## TSDoc Comment Standards
 
-### Documentation Style Summary
-- **Concise first line**: One-line summary without redundant phrases
-- **Named examples**: Each `@example` should have a descriptive title
-- **Factory functions only**: Never show raw `yield` statements in behavioral examples
-- **Type over interface**: Always prefer `type` declarations
-- **Cross-references**: Use `@see` tags to connect related APIs
-- **Version tracking**: Include `@since` tags for public APIs
-
 ### Documentation Philosophy
-- Public APIs require comprehensive documentation with examples
+- Public APIs require comprehensive documentation without code examples (tests/stories serve as living examples)
 - Internal modules need maintainer-focused documentation
 - All documentation should be practical and actionable
 - Avoid redundant or obvious comments
 - Use `@internal` marker for non-public APIs
 - Document the "why" not just the "what"
+- **No `@example` sections in TSDoc** - Tests and stories provide living examples
+- **Type over interface**: Always prefer `type` declarations
+- **Factory functions only**: Never show raw `yield` statements in behavioral documentation
+- **Cross-references**: Use `@see` tags to connect related APIs
 
-### Public API Documentation Pattern
+### Agent TSDoc Generation Workflow
+
+When creating or updating TSDoc comments, follow this systematic exploration process:
+
+#### Phase 1: Type & Interface Analysis
+1. **Identify the target** (function, type, class, or module)
+2. **Analyze type signatures:**
+   - Parameter types and constraints
+   - Return types
+   - Generic type parameters
+   - Type relationships and dependencies
+3. **Trace type dependencies:**
+   - What types does this depend on?
+   - What types depend on this?
+   - Are there related utility types?
+
+#### Phase 2: Usage Reference Discovery
+1. **Find all usage locations:**
+   - Search codebase for imports and references
+   - Identify calling patterns
+   - Note common usage contexts
+2. **Analyze integration points:**
+   - How is this used in the architecture?
+   - What modules consume this?
+   - What are the typical call chains?
+
+#### Phase 3: Test & Story Analysis
+1. **Review test files** (`.test.ts`, `.spec.ts`):
+   - What behaviors are tested?
+   - What edge cases are covered?
+   - What scenarios are validated?
+2. **Review story files** (`.stories.tsx`):
+   - How is this used in practice?
+   - What real-world scenarios exist?
+   - What configurations are demonstrated?
+
+#### Phase 4: Documentation Generation
+1. **Synthesize findings** from phases 1-3
+2. **Apply appropriate TSDoc template** (see TSDoc Format Guidelines below)
+3. **Cross-reference related APIs** using `@see` tags
+4. **Document discovered constraints** in `@remarks`
+5. **Note performance characteristics** if evident from usage
+6. **Identify limitations** found in tests or usage patterns
+
+### TSDoc Format Guidelines
+
+#### Public API Functions
 
 ```typescript
 /**
- * Brief one-line description of what this does.
- * Extended description providing context and use cases.
- * 
- * @param paramName Description of parameter purpose and constraints
- * @returns Description of return value and what it represents
- * 
- * @example Basic Usage
- * ```ts
- * const result = functionName(args);
- * ```
- * 
- * @example Advanced Usage  
- * ```ts
- * // More complex example with context
- * const config = { ... };
- * const result = functionName(config);
- * ```
- * 
+ * Concise one-line description of functionality.
+ * Extended explanation providing context, use cases, and when to use this.
+ *
+ * @template T - Description of generic type parameter and constraints
+ * @param paramName - Parameter purpose, constraints, and expected values
+ * @returns Description of return value, what it represents, and guarantees
+ *
  * @remarks
- * - Important implementation details
- * - Performance considerations
+ * - Key behavioral characteristics
+ * - Important execution details
+ * - Performance considerations (with Big-O if relevant)
  * - Common pitfalls or gotchas
- * 
+ * - Threading/async behavior if applicable
+ *
+ * @throws {ErrorType} When and why this error occurs
+ *
  * @see {@link RelatedFunction} for related functionality
+ * @see {@link RelatedType} for type details
  * @since 1.0.0
  */
 ```
 
-### Internal Module Documentation Pattern
+#### Internal Module Documentation
 
 ```typescript
 /**
  * @internal
  * @module module-name
- * 
+ *
  * Purpose: Why this module exists in the codebase
  * Architecture: How it fits into the overall system design
- * Dependencies: What this module depends on
+ * Dependencies: What this module depends on (be specific)
  * Consumers: What parts of the system use this module
- * 
+ *
  * Maintainer Notes:
  * - Key implementation details and design decisions
  * - Important invariants that must be maintained
  * - Tricky aspects of the implementation
- * - Performance-critical sections
- * 
+ * - Performance-critical sections with complexity analysis
+ *
  * Common modification scenarios:
  * - When you might need to modify this module
  * - How to extend functionality safely
  * - What to watch out for when making changes
- * 
+ *
  * Performance considerations:
  * - Optimization strategies used
  * - Memory management concerns
- * - Computational complexity notes
- * 
+ * - Computational complexity (Big-O notation)
+ *
  * Known limitations:
  * - Current constraints or technical debt
  * - Planned improvements
@@ -235,27 +315,28 @@ External Trigger → bProgram → Event Selection → Thread Notification → Fe
  */
 ```
 
-### Type Documentation Guidelines
-
-**IMPORTANT**: This project prefers `type` over `interface` in both code and TSDoc comments. Always use `type` declarations unless there's a specific need for interface features like declaration merging.
-
 #### Public Types
 
 ```typescript
 /**
  * Description of what this type represents in the API.
- * 
+ * When and why to use this type.
+ *
+ * @template T - Generic parameter description and constraints
  * @property propName - What this property controls or represents
- * 
- * @example
- * ```ts
- * const config: TypeName = {
- *   propName: 'value'
- * };
- * ```
+ * @property optionalProp - Purpose and when to include this property
+ *
+ * @remarks
+ * - Type constraints and relationships
+ * - Common usage patterns
+ * - Integration with other types
+ *
+ * @see {@link RelatedType} for related type definitions
+ * @since 1.0.0
  */
-export type TypeName = {
+export type TypeName<T> = {
   propName: string;
+  optionalProp?: number;
 }
 ```
 
@@ -266,97 +347,374 @@ export type TypeName = {
  * @internal
  * What this type represents internally and why it exists.
  * How it's used in the implementation.
+ *
+ * @property propName - Internal property purpose
+ *
+ * @remarks
+ * - Implementation-specific constraints
+ * - Why this structure was chosen
  */
 type InternalType = {
   // Implementation-specific properties
 }
 ```
 
-### Behavioral Programming Documentation
-
-- Document event flow and synchronization
-- Explain thread lifecycle and state management
-- Include sequence diagrams for complex interactions
-- **IMPORTANT**: Always use factory functions (`bSync`, `bThread`) in examples, never raw `yield` statements
-- Show practical usage patterns with the behavioral API
-- Use descriptive example titles that explain the scenario
-
-#### Behavioral Documentation Template
+#### Internal Helper Functions
 
 ```typescript
 /**
- * Creates a behavioral thread for handling user interactions.
- * Coordinates multiple async operations with proper synchronization.
- * 
- * @param config Thread configuration options
- * @returns Configured behavioral thread
- * 
- * @example Simple request-response pattern
- * ```ts
- * const simpleFlow = bThread([
- *   bSync({ request: { type: 'FETCH_DATA' } }),
- *   bSync({ waitFor: ['SUCCESS', 'ERROR'] })
- * ]);
- * ```
- * 
- * @example Complex coordination with blocking
- * ```ts
- * const coordinatedFlow = bThread([
- *   bSync({ 
- *     waitFor: 'USER_ACTION',
- *     block: 'SYSTEM_BUSY',
- *     request: { type: 'PROCESS' }
- *   }),
- *   bSync({ waitFor: 'COMPLETE' })
- * ], true); // Repeat indefinitely
- * ```
- * 
+ * @internal
+ * Brief description of what this internal function does.
+ * Why it exists and how it's used within the module.
+ *
+ * @param paramName - Parameter purpose
+ * @returns Return value meaning
+ *
  * @remarks
- * - Threads execute sequentially through sync points
- * - Blocking has precedence over requests
- * - Use repetition for continuous behaviors
- * 
+ * - Algorithm details (e.g., "Fisher-Yates shuffle")
+ * - Complexity: O(n) where n is...
+ * - Why this approach was chosen
+ */
+const internalHelper = () => { ... }
+```
+
+#### Behavioral Programming Functions
+
+**CRITICAL:** For behavioral programming APIs (bSync, bThread, behavioral, useBehavioral), always use factory functions in documentation - never raw `yield` statements.
+
+```typescript
+/**
+ * Creates a behavioral thread for coordinating async operations.
+ * Explain the coordination pattern and synchronization approach.
+ *
+ * @param config - Thread configuration options
+ * @returns Configured behavioral thread
+ *
+ * @remarks
+ * - Thread execution model (sequential through sync points)
+ * - Event coordination semantics
+ * - Blocking precedence rules
+ * - Repetition behavior
+ * - Integration with trigger/feedback mechanisms
+ *
  * @see {@link bSync} for creating sync points
  * @see {@link behavioral} for program setup
+ * @see {@link Idioms} for synchronization options
+ * @since 1.0.0
  */
 ```
 
-### Special Annotations
+#### Special Annotations
 
-#### Security-Sensitive Code
-
+**Security-Sensitive Code:**
 ```typescript
 /**
  * @internal
- * SECURITY: This function handles user input validation.
- * 
+ * SECURITY: This function handles [sensitive operation].
+ *
  * Security considerations:
  * - Input sanitization approach
- * - XSS prevention measures
- * - Authentication/authorization checks
+ * - XSS/injection prevention measures
+ * - Authentication/authorization requirements
  */
 ```
 
-#### Performance-Critical Code
+**Performance-Critical Code:**
+```typescript
+/**
+ * @internal
+ * PERFORMANCE: Hot path - called [frequency/context].
+ *
+ * Performance notes:
+ * - Optimization strategy (e.g., "minimal allocations")
+ * - Caching approach (e.g., "WeakMap cache")
+ * - Complexity: O(1) lookup after initial computation
+ */
+```
+
+**Deprecated Code:**
+```typescript
+/**
+ * @deprecated Use {@link NewFunction} instead. Will be removed in v8.0.
+ *
+ * Migration path: [Brief guidance on how to migrate]
+ *
+ * @see {@link NewFunction}
+ */
+```
+
+#### Required Elements by Context
+
+**All Public APIs Must Include:**
+- One-line description + extended context
+- `@param` for all parameters
+- `@returns` for return values
+- `@remarks` section with behavioral notes
+- `@see` tags to related APIs
+
+**All Internal Modules Must Include:**
+- Purpose and architecture context
+- Dependencies and consumers
+- Maintainer notes
+- Modification scenarios
+- Performance considerations
+- Known limitations
+
+**All Types Must Include:**
+- Description of what it represents
+- `@property` documentation for all properties
+- `@template` for generic parameters
+- `@remarks` for constraints and patterns
+
+### Type Documentation Guidelines
+
+**IMPORTANT**: This project prefers `type` over `interface` in both code and TSDoc comments. Always use `type` declarations unless there's a specific need for interface features like declaration merging.
+
+#### Type Analysis Process
+
+When documenting types, follow this discovery process:
+
+1. **Analyze type structure:**
+   - Identify all properties and their types
+   - Find optional vs required properties
+   - Trace generic type parameters
+   - Identify union and intersection types
+
+2. **Find type relationships:**
+   - What types does this extend or implement?
+   - What types reference this type?
+   - What utility types are derived from this?
+   - Are there branded/nominal types involved?
+
+3. **Discover usage patterns:**
+   - How is this type constructed?
+   - What validation occurs?
+   - Are there Zod schemas associated?
+   - What are the common configurations?
+
+4. **Document from analysis:**
+   - Property purposes from usage context
+   - Constraints from validation/tests
+   - Relationships from type dependencies
+   - Patterns from real usage
+
+#### Complex Object Types
+
+```typescript
+/**
+ * Configuration for [purpose].
+ * Used by [consumers] to [achieve goal].
+ *
+ * @template T - [Constraint and purpose of generic]
+ * @property propName - [Purpose discovered from usage]
+ * @property optionalProp - [When to include, discovered from tests]
+ *
+ * @remarks
+ * - Validation: [Zod schema or validation rules if present]
+ * - Defaults: [Default values if any]
+ * - Constraints: [Type constraints or invariants]
+ * - Common patterns: [Patterns found in usage]
+ *
+ * @see {@link RelatedType} for [relationship]
+ * @since 1.0.0
+ */
+export type ConfigType<T> = {
+  propName: string;
+  optionalProp?: T;
+}
+```
+
+#### Union Types
+
+```typescript
+/**
+ * Represents [different states/variants].
+ * Each variant is used when [context].
+ *
+ * @remarks
+ * - Discriminant property: [if discriminated union]
+ * - Type guards: {@link isVariantA}, {@link isVariantB}
+ * - Selection logic: [how variants are chosen]
+ *
+ * @see {@link TypeGuard} for runtime type checking
+ */
+export type UnionType = VariantA | VariantB | VariantC;
+```
+
+#### Function Types
+
+```typescript
+/**
+ * Callback invoked when [event/condition].
+ * Implementation should [expectations].
+ *
+ * @param paramName - [Purpose from calling context]
+ * @returns [What return value controls]
+ *
+ * @remarks
+ * - Called: [When/how often this is invoked]
+ * - Context: [What 'this' refers to if relevant]
+ * - Timing: [Sync/async behavior]
+ *
+ * @see {@link RegisterFunction} for registration
+ */
+export type CallbackType = (param: Type) => ReturnType;
+```
+
+#### Utility Types
 
 ```typescript
 /**
  * @internal
- * PERFORMANCE: Hot path - called frequently during render.
- * 
- * Performance notes:
- * - Optimized for minimal allocations
- * - Caches results in WeakMap
- * - O(1) lookup after initial computation
+ * Utility type for [transformation purpose].
+ * Maps [source] to [result] by [mechanism].
+ *
+ * @template T - Input type constraints
+ *
+ * @remarks
+ * - Usage: Found in [locations]
+ * - Preserves: [what type properties are maintained]
+ * - Transforms: [what changes occur]
  */
+type UtilityType<T> = { [K in keyof T]: Transform<T[K]> };
 ```
 
-#### Deprecated Code
+#### Branded/Nominal Types
 
 ```typescript
 /**
- * @deprecated Use `newFunction` instead. Will be removed in v8.0.
- * @see {@link newFunction}
+ * Branded type ensuring [guarantee].
+ * Created via {@link createBrand} to enforce [invariant].
+ *
+ * @remarks
+ * - Brand purpose: [why nominal typing is used]
+ * - Validation: [what makes a value valid]
+ * - Construction: Must use factory function
+ *
+ * @see {@link createBrand} for creating valid instances
+ */
+export type BrandedType = string & { readonly brand: unique symbol };
+```
+
+#### Discriminated Unions
+
+```typescript
+/**
+ * Discriminated union for [variants].
+ * Discriminant: 'type' property
+ *
+ * @remarks
+ * Variants:
+ * - type: 'a' - [When this variant is used]
+ * - type: 'b' - [When this variant is used]
+ * - type: 'c' - [When this variant is used]
+ *
+ * Type narrowing: Use switch on 'type' property
+ *
+ * @see {@link isVariant} for type guards
+ */
+```
+
+#### Mapped Types
+
+```typescript
+/**
+ * @internal
+ * Maps [source] properties to [result] structure.
+ *
+ * @template T - Source object type
+ *
+ * @remarks
+ * Transformation:
+ * - [What happens to keys]
+ * - [What happens to values]
+ * - [What properties are added/removed]
+ *
+ * Usage: [Where this mapped type is applied]
+ */
+```
+
+#### Recursive Types
+
+```typescript
+/**
+ * Recursive type representing [tree/nested structure].
+ *
+ * @remarks
+ * Recursion:
+ * - Base case: [When recursion stops]
+ * - Recursive case: [How nesting continues]
+ * - Depth limits: [Any constraints on depth]
+ *
+ * Traversal: {@link traverseFunction}
+ */
+```
+
+#### Zod Schema Integration
+
+When types have associated Zod schemas:
+
+```typescript
+/**
+ * Configuration validated by {@link ConfigSchema}.
+ *
+ * @property prop - [Purpose] (validated: [Zod validation rules])
+ *
+ * @remarks
+ * Validation:
+ * - Schema: {@link ConfigSchema}
+ * - Required fields: [list]
+ * - Optional fields: [list]
+ * - Default values: [from schema defaults]
+ * - Validation errors: {@link ConfigError}
+ *
+ * @see {@link ConfigSchema} for validation rules
+ */
+```
+
+#### Property Documentation
+
+**Required for each property:**
+```typescript
+@property propName - [Purpose] [Constraints] [When to use]
+```
+
+**Discovery sources:**
+1. From usage: How the property is accessed/used
+2. From tests: What values are tested, edge cases
+3. From validation: Zod schemas, type guards
+4. From defaults: Default values in code
+
+#### Generic Type Parameters
+
+**Always document with:**
+```typescript
+@template T - [Constraint] [Purpose] [Where it flows]
+```
+
+**Discovery process:**
+1. Find where T is used in type body
+2. Identify constraints (extends clauses)
+3. Trace how T flows through type
+4. Note variance (in/out if relevant)
+
+#### Cross-Referencing Types
+
+**Always link:**
+- Related types (subtypes, supertypes)
+- Factory functions that create instances
+- Type guards that check instances
+- Validation schemas
+- Consumer functions/classes
+
+**Format:**
+```typescript
+/**
+ * @see {@link ParentType} for base type definition
+ * @see {@link createInstance} for creating valid instances
+ * @see {@link isInstanceOf} for runtime type checking
+ * @see {@link InstanceSchema} for validation schema
+ * @see {@link Consumer} for primary consumer
  */
 ```
 
@@ -366,31 +724,3 @@ type InternalType = {
 2. **Bun Required**: Development requires bun >= v1.2.9
 3. **ES2024 Features**: Uses Promise.withResolvers() and other modern APIs
 4. **Shadow DOM Focus**: Framework assumes Shadow DOM usage
-
-## Common Development Patterns
-
-### Creating a Template
-```tsx
-export const MyComponent = bElement({
-  tag: 'my-component',
-  shadowDom: <div p-target="content" />,
-  bProgram({ $, trigger }) {
-    const [content] = $('content');
-    return {
-      UPDATE_CONTENT(text: string) {
-        content.render(text);
-      }
-    };
-  }
-});
-```
-
-### Using Signals
-```ts
-const state = useSignal(initialValue);
-state.listen('STATE_CHANGED', trigger);
-state.set(newValue);
-```
-
-### Testing Templates
-Create a `*.stories.tsx` file and use `storyFixture` for template testing with Playwright integration.
