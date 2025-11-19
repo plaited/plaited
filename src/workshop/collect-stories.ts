@@ -68,12 +68,6 @@ const globFiles = async (cwd: string, pattern: string): Promise<string[]> => {
  * @param filePath - Absolute path to the story file
  * @returns Array of story metadata
  *
- * @example Extract stories from a specific file
- * ```ts
- * const stories = await getStoryMetadata('/path/to/Button.stories.tsx');
- * // Returns: [{ exportName: 'primary', filePath: '...', type: 'snapshot', ... }]
- * ```
- *
  * @remarks
  * - Uses dynamic import instead of TypeScript compiler
  * - Analyzes runtime objects instead of AST
@@ -116,17 +110,6 @@ export const getStoryMetadata = async (filePath: string): Promise<StoryMetadata[
  * @param cwd - Current working directory (project root)
  * @param exclude - Pattern to exclude from discovery (defaults to test spec files)
  * @returns Array of story metadata
- *
- * @example
- * ```ts
- * const stories = await discoverStoryMetadata('/project/root');
- * // Returns metadata for all stories in *.stories.tsx files
- * ```
- *
- * @example
- * ```ts
- * const stories = await discoverStoryMetadata('/project/root', '**\/*.tpl.spec.{ts,tsx}');
- * ```
  *
  * @remarks
  * - Uses direct imports for ~30x faster discovery than TypeScript compilation

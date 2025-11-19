@@ -77,27 +77,6 @@ export type TestStoriesOutput = {
  *
  * @returns Public trigger function for controlling test execution
  *
- * @example Basic usage
- * ```ts
- * const browser = await chromium.launch();
- * const reporter = useSignal<TestStoriesOutput>();
- *
- * const trigger = await useRunner({
- *   browser,
- *   port: 3456,
- *   reporter
- * });
- *
- * // Run tests
- * trigger({ type: 'run_tests' });
- *
- * // Reload server
- * trigger({ type: 'reload' });
- *
- * // Clean up
- * trigger({ type: 'end' });
- * ```
- *
  * @remarks
  * - Server is created at initialization and reused
  * - Test discovery happens on each run_tests event

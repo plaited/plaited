@@ -53,29 +53,6 @@ declare global {
  * Story test fixture component for Plaited testing framework.
  * Executes story tests, manages test lifecycle, and reports results.
  *
- * @example Test execution flow
- * ```tsx
- * // Story fixture automatically:
- * // 1. Receives test configuration
- * // 2. Runs play function with utilities
- * // 3. Reports results via WebSocket
- * // 4. Handles timeouts and errors
- *
- * const story: StoryObj = {
- *   description: 'Button interaction test',
- *   play: async ({ assert, fireEvent, findByText }) => {
- *     const button = await findByText('Click me');
- *     await fireEvent(button, 'click');
- *     assert({
- *       given: 'button clicked',
- *       should: 'update state',
- *       actual: button.textContent,
- *       expected: 'Clicked!'
- *     });
- *   }
- * };
- * ```
- *
  * @remarks
  * Features:
  * - Automatic error handling

@@ -100,15 +100,6 @@ export type FindByTextDetail = InstrumentedDetails<Parameters<FindByText>>
  * @property composed - Crosses shadow DOM (default: true)
  * @property cancelable - Can be prevented (default: true)
  * @property detail - Custom event data
- *
- * @example
- * ```ts
- * const options: FireEventOptions = {
- *   bubbles: true,
- *   composed: true,
- *   detail: { value: 'test' }
- * };
- * ```
  */
 export type FireEventOptions = {
   bubbles?: boolean
@@ -125,20 +116,6 @@ export type FireEventOptions = {
  * @param eventName - Event type to dispatch
  * @param options - Event configuration
  * @returns Promise resolving after dispatch
- *
- * @example Click event
- * ```ts
- * const button = await findByText('Submit');
- * await fireEvent(button, 'click');
- * ```
- *
- * @example Custom event with data
- * ```ts
- * await fireEvent(element, 'custom-event', {
- *   detail: { value: 42 },
- *   composed: true
- * });
- * ```
  *
  * @see {@link FireEventOptions} for configuration
  */
@@ -171,11 +148,6 @@ export type Params = {
 /**
  * Extracts props type from a FunctionTemplate.
  * @template T - FunctionTemplate to extract from
- * @example
- * ```ts
- * type ButtonArgs = Args<typeof ButtonTemplate>;
- * // Result: { title: string, onClick: () => void }
- * ```
  */
 export type Args<T extends FunctionTemplate> = Parameters<T>[0]
 
@@ -193,34 +165,6 @@ export type Args<T extends FunctionTemplate> = Parameters<T>[0]
  * @param {typeof throws} args.throws - Utility for asserting that a function throws an error.
  * @param {typeof wait} args.wait - Utility to pause execution for a specified duration.
  * @returns {Promise<void>} A promise that resolves when the play function completes.
- *
- * @example
- * ```ts
- * const play: Play = async ({ assert, findByText, fireEvent, hostElement }) => {
- let button = await findByAttribute('p-target', 'button')
- const header = await findByAttribute('p-target', 'header')
- assert({
-   given: 'render',
-   should: 'header should contain string',
-   actual: header?.textContent,
-   expected: 'Hello',
- })
- button && (await fireEvent(button, 'click'))
- assert({
-   given: 'clicking button',
-   should: 'append string to header',
-   actual: header?.innerHTML,
-   expected: 'Hello World!',
- })
- button = await findByAttribute('p-target', 'button')
- assert({
-   given: 'clicking button',
-   should: 'be disabled',
-   actual: (button as HTMLButtonElement)?.disabled,
-   expected: true,
- })
- * };
- * ```
  */
 export type Play = (args: {
   assert: Assert
@@ -245,18 +189,6 @@ export type Play = (args: {
  * @property parameters - Test configuration
  * @property play - Required test function
  * @property template - Component template
- *
- * @example
- * ```ts
- * export const interactive: InteractionStoryObj = {
- *   description: 'Tests button interactions',
- *   play: async ({ assert, fireEvent, findByText }) => {
- *     const button = await findByText('Click');
- *     await fireEvent(button, 'click');
- *     // assertions...
- *   }
- * };
- * ```
  */
 export type InteractionStoryObj<T extends FunctionTemplate = FunctionTemplate> = {
   args?: Args<T>
@@ -274,15 +206,6 @@ export type InteractionStoryObj<T extends FunctionTemplate = FunctionTemplate> =
  * @property parameters - Test configuration
  * @property play - Never (enforced as undefined)
  * @property template - Component template
- *
- * @example
- * ```ts
- * export const visual: SnapshotStoryObj = {
- *   description: 'Default component state',
- *   args: { variant: 'primary' },
- *   template: ButtonComponent
- * };
- * ```
  */
 export type SnapshotStoryObj<T extends FunctionTemplate = FunctionTemplate> = {
   args?: Args<T>
@@ -297,31 +220,6 @@ export type SnapshotStoryObj<T extends FunctionTemplate = FunctionTemplate> = {
  * Can be interaction or snapshot test.
  *
  * @template T - Component props type
- *
- * @example Interaction test
- * ```ts
- * export const clickTest: StoryObj = {
- *   description: 'Tests click behavior',
- *   play: async ({ assert, fireEvent, findByText }) => {
- *     const button = await findByText('Submit');
- *     await fireEvent(button, 'click');
- *     assert({
- *       given: 'button clicked',
- *       should: 'disable button',
- *       actual: button.disabled,
- *       expected: true
- *     });
- *   }
- * };
- * ```
- *
- * @example Visual test
- * ```ts
- * export const defaultState: StoryObj = {
- *   description: 'Default component appearance',
- *   args: { theme: 'light' }
- * };
- * ```
  *
  * @see {@link InteractionStoryObj} for interaction tests
  * @see {@link SnapshotStoryObj} for visual tests

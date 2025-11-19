@@ -29,19 +29,6 @@ export type TemplateExport = {
  * @property hasArgs - true if story has an args property
  * @property hasTemplate - true if story has a template property
  * @property hasParameters - true if story has a parameters property
- *
- * @example
- * ```ts
- * const metadata: StoryMetadata = {
- *   exportName: 'interactiveTest',
- *   filePath: '/project/src/Button.stories.tsx',
- *   type: 'interaction',
- *   hasPlay: true,
- *   hasArgs: true,
- *   hasTemplate: true,
- *   hasParameters: false
- * };
- * ```
  */
 export type StoryMetadata = {
   exportName: string

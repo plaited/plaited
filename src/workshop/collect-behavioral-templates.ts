@@ -46,12 +46,6 @@ const globFiles = async (cwd: string, pattern: string): Promise<string[]> => {
  * @param filePath - Absolute path to the template file
  * @returns Array of template metadata (only BehavioralTemplates)
  *
- * @example Extract templates from a specific file
- * ```ts
- * const templates = await getTemplateMetadata('/path/to/Button.tsx');
- * // Returns: [{ exportName: 'Button', filePath: '...', type: 'BehavioralTemplate' }]
- * ```
- *
  * @remarks
  * - Uses dynamic import instead of TypeScript compiler
  * - Analyzes runtime objects instead of AST
@@ -98,12 +92,6 @@ export const getBehavioralTemplateMetadata = async (filePath: string): Promise<T
  *
  * @param cwd - Current working directory (project root)
  * @returns Array of BehavioralTemplate export metadata
- *
- * @example
- * ```ts
- * const templates = await discoverTemplateMetadata('/project/root');
- * // Returns metadata for all BehavioralTemplates in *.tsx files
- * ```
  *
  * @remarks
  * - Uses direct imports for ~30x faster discovery than TypeScript compilation

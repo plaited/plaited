@@ -72,19 +72,6 @@ export class AccessibilityError extends Error implements Error {
  *
  * @param str - Source string to search
  * @returns Curried function accepting pattern
- *
- * @example String pattern
- * ```ts
- * const matcher = match('Hello world');
- * matcher('world'); // 'world'
- * matcher('foo');   // ''
- * ```
- *
- * @example RegExp pattern
- * ```ts
- * const matcher = match('Test 123');
- * matcher(/\d+/); // '123'
- * ```
  */
 export type Match = {
   (str: string): (pattern: string | RegExp) => string
@@ -107,21 +94,6 @@ const escapeRegex = (str: string) => str.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'
  * @param str - Text to search within
  * @returns Function accepting pattern to match
  *
- * @example Basic matching
- * ```ts
- * const find = match('Hello, world!');
- * find('world');     // 'world'
- * find(/\w+/);       // 'Hello'
- * find('missing');   // ''
- * ```
- *
- * @example Special characters
- * ```ts
- * const text = match('price: $25.00');
- * text('$25.00');        // '$25.00' (auto-escaped)
- * text(/\$\d+\.\d+/);   // '$25.00'
- * ```
- *
  * @remarks
  * - Returns empty string when no match
  * - First match only
@@ -142,30 +114,6 @@ export const match: Match = (str: string) => (pattern: string | RegExp) => {
  * @param fn - Function to test
  * @param args - Arguments to pass
  * @returns Error string or undefined
- *
- * @example Sync error
- * ```ts
- * const error = throws(() => {
- *   throw new Error('Failed');
- * });
- * // error === 'Error: Failed'
- * ```
- *
- * @example With arguments
- * ```ts
- * const divide = (a: number, b: number) => {
- *   if (b === 0) throw new Error('Division by zero');
- *   return a / b;
- * };
- * throws(divide, 10, 0); // 'Error: Division by zero'
- * ```
- *
- * @example Async function
- * ```ts
- * await throws(async () => {
- *   throw new Error('Async fail');
- * }); // 'Error: Async fail'
- * ```
  */
 export type Throws = {
   <U extends unknown[], V>(fn: (...args: U) => V, ...args: U): string | undefined | Promise<string | undefined>
@@ -257,36 +205,6 @@ export const useAssert = (trigger: Trigger) => {
    *
    * @throws {MissingAssertionParameterError} Missing required params
    * @throws {FailedAssertionError} Values don't match
-   *
-   * @example Simple comparison
-   * ```ts
-   * assert({
-   *   given: 'addition',
-   *   should: 'sum correctly',
-   *   actual: 2 + 2,
-   *   expected: 4
-   * });
-   * ```
-   *
-   * @example Object comparison
-   * ```ts
-   * assert({
-   *   given: 'user data',
-   *   should: 'match expected',
-   *   actual: { name: 'John', age: 30 },
-   *   expected: { name: 'John', age: 30 }
-   * });
-   * ```
-   *
-   * @example Collections
-   * ```ts
-   * assert({
-   *   given: 'unique values',
-   *   should: 'match set',
-   *   actual: new Set([1, 2, 3]),
-   *   expected: new Set([1, 2, 3])
-   * });
-   * ```
    */
   const assert: Assert = (args) => {
     trigger<{ type: typeof FIXTURE_EVENTS.assert; detail: AssertDetails }>({
@@ -366,27 +284,6 @@ export const useFindByAttribute = (trigger: Trigger) => {
    * @param attributeValue - Value or pattern
    * @param context - Search scope
    * @returns Promise with found element
-   *
-   * @example Basic search
-   * ```ts
-   * const button = await findByAttribute(
-   *   'data-testid', 'submit-btn'
-   * );
-   * ```
-   *
-   * @example Pattern matching
-   * ```ts
-   * const icon = await findByAttribute(
-   *   'class', /icon-\w+/
-   * );
-   * ```
-   *
-   * @example Scoped search
-   * ```ts
-   * const input = await findByAttribute<HTMLInputElement>(
-   *   'name', 'email', container
-   * );
-   * ```
    */
   const findByAttribute: FindByAttribute = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
     attributeName: string,
@@ -452,23 +349,6 @@ export const useFindByText = (trigger: Trigger) => {
    * @param context - Search scope
    * @returns Promise with found element
    *
-   * @example Exact text
-   * ```ts
-   * const button = await findByText('Submit');
-   * ```
-   *
-   * @example Pattern search
-   * ```ts
-   * const action = await findByText(/Save|Update/);
-   * ```
-   *
-   * @example Typed search
-   * ```ts
-   * const btn = await findByText<HTMLButtonElement>(
-   *   'Login', formElement
-   * );
-   * ```
-   *
    * @remarks
    * - Text is trimmed before comparison
    * - Returns parent of text node
@@ -530,19 +410,6 @@ export const useFireEvent = (trigger: Trigger) => {
    * @param eventName - Event type
    * @param options - Event config
    * @returns Promise after dispatch
-   *
-   * @example Click event
-   * ```ts
-   * await fireEvent(button, 'click');
-   * ```
-   *
-   * @example Custom event
-   * ```ts
-   * await fireEvent(element, 'update', {
-   *   detail: { value: 42 },
-   *   composed: true
-   * });
-   * ```
    *
    * @remarks
    * Defaults:
