@@ -272,6 +272,8 @@ export type InteractionExport<T extends FunctionTemplate = FunctionTemplate> = {
   parameters?: Params
   play: Play
   $: typeof STORY_IDENTIFIER
+  only?: boolean
+  skip?: boolean
 }
 export type SnapshotExport<T extends FunctionTemplate = FunctionTemplate> = {
   template?: T
@@ -282,6 +284,26 @@ export type SnapshotExport<T extends FunctionTemplate = FunctionTemplate> = {
   parameters?: Params
   play?: never
   $: typeof STORY_IDENTIFIER
+  only?: boolean
+  skip?: boolean
 }
 
 export type StoryExport<T extends FunctionTemplate = FunctionTemplate> = InteractionExport<T> | SnapshotExport<T>
+
+/**
+ * Story export with chainable .only() and .skip() methods.
+ * Allows focused test execution similar to Jest/Vitest.
+ *
+ * @template T - Story export type
+ *
+ * @remarks
+ * - `.only()`: Marks story for exclusive execution
+ * - `.skip()`: Excludes story from execution
+ * - Methods return new story objects with flags set
+ *
+ * @see {@link StoryExport} for base story type
+ */
+export type StoryWithMethods<T extends StoryExport> = T & {
+  only: () => T
+  skip: () => T
+}
