@@ -62,9 +62,11 @@ const subcommand = positionals[2]
 // Validate subcommand
 if (!subcommand) {
   console.error('❌ Error: Missing subcommand\n')
-  console.log('Usage: plaited <command> [options] [paths...]\n')
+  console.log('Usage: plaited <command> [options] [args...]\n')
   console.log('Commands:')
-  console.log('  test      Run story tests\n')
+  console.log('  test      Run story tests')
+  console.log('  query     Query documentation database')
+  console.log('  changelog Generate release changelog\n')
   console.log('Options:')
   console.log('  -p, --port <number>       Port for test server (default: 0 - auto-assign)')
   console.log('  -d, --dir <path>          Working directory (default: process.cwd())')
@@ -72,18 +74,214 @@ if (!subcommand) {
   console.log('Examples:')
   console.log('  bun plaited test')
   console.log('  bun plaited test src/components')
-  console.log('  bun plaited test src/Button.stories.tsx src/Card.stories.tsx')
-  console.log('  bun plaited test -p 3500')
-  console.log('  bun plaited test --color-scheme dark')
-  console.log('  bun --hot plaited test')
+  console.log('  bun plaited query --help')
+  console.log('  bun plaited changelog --version 7.3.0')
   process.exit(1)
 }
 
-if (subcommand !== 'test') {
+const validCommands = ['test', 'query', 'changelog']
+if (!validCommands.includes(subcommand)) {
   console.error(`❌ Error: Unknown subcommand '${subcommand}'\n`)
   console.log('Available commands:')
   console.log('  test      Run story tests')
+  console.log('  query     Query documentation database')
+  console.log('  changelog Generate release changelog')
   process.exit(1)
+}
+
+// Handle query command
+if (subcommand === 'query') {
+  const { parseArgs: parseQueryArgs } = await import('node:util')
+  const queryArgs = parseQueryArgs({
+    args: Bun.argv.slice(3),
+    options: {
+      action: { type: 'string' },
+      file: { type: 'string' },
+      query: { type: 'string' },
+      export: { type: 'string' },
+      name: { type: 'string' },
+      limit: { type: 'string' },
+      module: { type: 'string' },
+      category: { type: 'string' },
+      complexity: { type: 'string' },
+      help: { type: 'boolean' },
+    },
+    allowPositionals: true,
+  })
+
+  if (queryArgs.values.help) {
+    console.log('Usage: plaited query --action <action> [options]\n')
+    console.log('Actions:')
+    console.log('  insert-example       Insert a new example (requires --file or stdin JSON)')
+    console.log('  insert-pattern       Insert a new pattern (requires --file or stdin JSON)')
+    console.log('  search-examples      Search examples (requires --query)')
+    console.log('  search-patterns      Search patterns (requires --query)')
+    console.log('  get-examples         Get examples by export (requires --export)')
+    console.log('  get-pattern          Get pattern by name (requires --name)')
+    console.log('  list-examples        List all examples (optional filters)')
+    console.log('  list-patterns        List all patterns (optional filters)\n')
+    console.log('Options:')
+    console.log('  --file <path>        JSON file path')
+    console.log('  --query <text>       Search query')
+    console.log('  --export <name>      Export name')
+    console.log('  --name <name>        Pattern name')
+    console.log('  --limit <number>     Result limit (default: 10)')
+    console.log('  --module <name>      Filter by module')
+    console.log('  --category <name>    Filter by category')
+    console.log('  --complexity <level> Filter by complexity (basic|intermediate|advanced)')
+    process.exit(0)
+  }
+
+  const action = queryArgs.values.action
+  if (!action) {
+    console.error('❌ Error: --action required\n')
+    console.log('Run: plaited query --help')
+    process.exit(1)
+  }
+
+  const queries = await import('./queries.js')
+
+  try {
+    if (action === 'insert-example') {
+      const input = queryArgs.values.file
+        ? await Bun.file(queryArgs.values.file).json()
+        : JSON.parse(await new Response(Bun.stdin).text())
+      const id = queries.insertExample(input)
+      console.log(JSON.stringify({ id, success: true }))
+    } else if (action === 'insert-pattern') {
+      const input = queryArgs.values.file
+        ? await Bun.file(queryArgs.values.file).json()
+        : JSON.parse(await new Response(Bun.stdin).text())
+      const id = queries.insertPattern(input)
+      console.log(JSON.stringify({ id, success: true }))
+    } else if (action === 'search-examples') {
+      if (!queryArgs.values.query) {
+        console.error('❌ Error: --query required for search-examples')
+        process.exit(1)
+      }
+      const limit = queryArgs.values.limit ? parseInt(queryArgs.values.limit, 10) : 10
+      const results = queries.searchExamples(queryArgs.values.query, limit)
+      console.log(JSON.stringify(results, null, 2))
+    } else if (action === 'search-patterns') {
+      if (!queryArgs.values.query) {
+        console.error('❌ Error: --query required for search-patterns')
+        process.exit(1)
+      }
+      const limit = queryArgs.values.limit ? parseInt(queryArgs.values.limit, 10) : 10
+      const results = queries.searchPatterns(queryArgs.values.query, limit)
+      console.log(JSON.stringify(results, null, 2))
+    } else if (action === 'get-examples') {
+      if (!queryArgs.values.export) {
+        console.error('❌ Error: --export required for get-examples')
+        process.exit(1)
+      }
+      const results = queries.getExamplesByExport(queryArgs.values.export)
+      console.log(JSON.stringify(results, null, 2))
+    } else if (action === 'get-pattern') {
+      if (!queryArgs.values.name) {
+        console.error('❌ Error: --name required for get-pattern')
+        process.exit(1)
+      }
+      const result = queries.getPattern(queryArgs.values.name)
+      console.log(JSON.stringify(result, null, 2))
+    } else if (action === 'list-examples') {
+      const options: {
+        module?: 'main' | 'testing' | 'utils' | 'workshop'
+        category?: string
+        complexity?: 'basic' | 'intermediate' | 'advanced'
+      } = {}
+      if (queryArgs.values.module) options.module = queryArgs.values.module as 'main' | 'testing' | 'utils' | 'workshop'
+      if (queryArgs.values.category) options.category = queryArgs.values.category
+      if (queryArgs.values.complexity)
+        options.complexity = queryArgs.values.complexity as 'basic' | 'intermediate' | 'advanced'
+      const results = queries.listExamples(options)
+      console.log(JSON.stringify(results, null, 2))
+    } else if (action === 'list-patterns') {
+      const options: {
+        category?: string
+        complexity?: 'basic' | 'intermediate' | 'advanced'
+      } = {}
+      if (queryArgs.values.category) options.category = queryArgs.values.category
+      if (queryArgs.values.complexity)
+        options.complexity = queryArgs.values.complexity as 'basic' | 'intermediate' | 'advanced'
+      const results = queries.listPatterns(options)
+      console.log(JSON.stringify(results, null, 2))
+    } else {
+      console.error(`❌ Error: Unknown action '${action}'`)
+      process.exit(1)
+    }
+  } catch (error) {
+    console.error('❌ Error:', error)
+    process.exit(1)
+  }
+
+  process.exit(0)
+}
+
+// Handle changelog command
+if (subcommand === 'changelog') {
+  const { parseArgs: parseChangelogArgs } = await import('node:util')
+  const changelogArgs = parseChangelogArgs({
+    args: Bun.argv.slice(3),
+    options: {
+      version: { type: 'string' },
+      action: { type: 'string' },
+      output: { type: 'string' },
+      help: { type: 'boolean' },
+    },
+    allowPositionals: true,
+  })
+
+  if (changelogArgs.values.help) {
+    console.log('Usage: plaited changelog [options]\n')
+    console.log('Options:')
+    console.log('  --version <version>  Release version (default: current package.json version)')
+    console.log('  --action <action>    Action to perform (generate|list-versions|clear)')
+    console.log('  --output <path>      Write output to file instead of stdout\n')
+    console.log('Actions:')
+    console.log('  generate         Generate markdown changelog (default)')
+    console.log('  list-versions    List all versions with changes')
+    console.log('  clear            Clear changes for a version (destructive!)\n')
+    console.log('Examples:')
+    console.log('  plaited changelog --version 7.3.0')
+    console.log('  plaited changelog --action list-versions')
+    console.log('  plaited changelog --version 7.3.0 --output CHANGELOG.md')
+    process.exit(0)
+  }
+
+  const packageJson = await import('../../package.json', { with: { type: 'json' } })
+  const version = changelogArgs.values.version || packageJson.default.version
+  const action = changelogArgs.values.action || 'generate'
+
+  const changelog = await import('./changelog.js')
+
+  try {
+    if (action === 'generate') {
+      const changes = changelog.generateChangelog(version)
+      const markdown = changelog.formatChangelog(version, changes)
+
+      if (changelogArgs.values.output) {
+        await Bun.write(changelogArgs.values.output, markdown)
+        console.log(`✅ Changelog written to ${changelogArgs.values.output}`)
+      } else {
+        console.log(markdown)
+      }
+    } else if (action === 'list-versions') {
+      const versions = changelog.getVersionsWithChanges()
+      console.log(JSON.stringify(versions, null, 2))
+    } else if (action === 'clear') {
+      const count = changelog.clearChanges(version)
+      console.log(`✅ Cleared ${count} changes for version ${version}`)
+    } else {
+      console.error(`❌ Error: Unknown action '${action}'`)
+      process.exit(1)
+    }
+  } catch (error) {
+    console.error('❌ Error:', error)
+    process.exit(1)
+  }
+
+  process.exit(0)
 }
 
 // Parse and validate port (default to 0 for auto-assignment)

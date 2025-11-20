@@ -352,6 +352,128 @@ The following standards are not automatically enforced by Biome but should be ch
 - File I/O: https://bun.sh/docs/api/file-io
 - Runtime APIs: https://bun.sh/docs/runtime/bun-apis
 
+### SQLite with Bun
+
+**IMPORTANT**: Use Bun's native SQLite API (`bun:sqlite`) for all database operations in Plaited.
+
+**Database Management:**
+- ✅ Production database: `src/databases/examples.db`
+- ✅ Use `bun:sqlite` for all database operations
+- ✅ Enable WAL mode for better concurrency
+- ✅ Use prepared statements for performance
+- ❌ Do NOT use better-sqlite3 or other third-party SQLite libraries
+
+**Basic Usage:**
+
+```typescript
+import { Database } from 'bun:sqlite'
+
+// Open database with WAL mode
+const db = new Database('path/to/db.sqlite', {
+  create: true,
+  readwrite: true,
+})
+db.exec('PRAGMA journal_mode = WAL')
+
+// Prepared statements (reusable, faster)
+const insert = db.prepare('INSERT INTO users (name, age) VALUES (?, ?)')
+insert.run('Alice', 25)
+
+// Queries
+const select = db.prepare('SELECT * FROM users WHERE age > ?')
+const users = select.all(18)
+
+// Transactions for bulk operations
+db.transaction(() => {
+  for (const user of users) {
+    insert.run(user.name, user.age)
+  }
+})()
+
+// Always close when done
+db.close()
+```
+
+**Best Practices:**
+
+1. **Use Prepared Statements**
+   - Create once, reuse many times
+   - Automatic SQL injection prevention
+   - Significant performance improvement
+
+2. **Enable WAL Mode**
+   - `PRAGMA journal_mode = WAL`
+   - Better concurrency (readers don't block writers)
+   - Required for production databases
+
+3. **Use Transactions for Bulk Operations**
+   - Wrap multiple inserts/updates in `db.transaction()`
+   - Much faster than individual commits
+   - Atomic all-or-nothing execution
+
+4. **Query Methods**
+   - `.run()` - Execute statement, return changes/last row ID
+   - `.get()` - Return first row or undefined
+   - `.all()` - Return all rows as array
+   - `.values()` - Return rows as arrays instead of objects
+
+5. **Schema Initialization**
+   - Load schema from `.sql` file using `Bun.file()`
+   - Use `CREATE IF NOT EXISTS` for idempotency
+   - Execute with `db.exec()` for multi-statement SQL
+
+**Plaited Database Structure:**
+
+```typescript
+// Internal connection (src/databases/db.ts)
+import { Database } from 'bun:sqlite'
+
+export const db = new Database(`${import.meta.dir}/examples.db`, {
+  create: true,
+  readwrite: true,
+})
+
+db.exec('PRAGMA journal_mode = WAL')
+
+export const initDB = async () => {
+  const schema = await Bun.file(`${import.meta.dir}/schema.sql`).text()
+  db.exec(schema)
+}
+
+// Public API (src/workshop/queries.ts)
+import { db } from '../databases/db.js'
+
+export const insertExample = (data: ExampleData): number => {
+  const stmt = db.prepare('INSERT INTO examples (...) VALUES (?...)')
+  const result = stmt.run(...values)
+  return result.lastInsertRowid as number
+}
+```
+
+**CLI Integration:**
+
+The Plaited CLI exposes database operations via commands:
+
+```bash
+# Query examples and patterns
+bun plaited query --action search-examples --query "bElement"
+bun plaited query --action insert-pattern --file pattern.json
+
+# Generate release changelog
+bun plaited changelog --version 7.3.0
+```
+
+**Future MCP Integration:**
+
+Database query functions in `src/workshop/queries.ts` are designed to become MCP tools:
+- JSON input/output for Claude Code Action compatibility
+- Executable via CLI commands today
+- Will be exposed as MCP tools in future plugin release
+
+**Bun SQLite Documentation:**
+- SQLite API: https://bun.sh/docs/api/sqlite
+- Guide: https://bun.sh/guides/read-write/sqlite
+
 ## Terminology: Templates Not Components
 
 **IMPORTANT**: Plaited is a **template-based** framework, not a component-based framework.
