@@ -303,7 +303,3 @@ export type StoryExport<T extends FunctionTemplate = FunctionTemplate> = Interac
  *
  * @see {@link StoryExport} for base story type
  */
-export type StoryWithMethods<T extends StoryExport> = T & {
-  only: () => T
-  skip: () => T
-}

@@ -29,8 +29,7 @@ export type TemplateExport = {
  * @property hasArgs - true if story has an args property
  * @property hasTemplate - true if story has a template property
  * @property hasParameters - true if story has a parameters property
- * @property only - true if story should run exclusively (filters all other stories)
- * @property skip - true if story should be skipped
+ * @property flag - Test filtering flag: 'only' to run exclusively, 'skip' to skip, undefined for normal execution
  */
 export type StoryMetadata = {
   exportName: string
@@ -40,6 +39,5 @@ export type StoryMetadata = {
   hasArgs: boolean
   hasTemplate: boolean
   hasParameters: boolean
-  only?: boolean
-  skip?: boolean
+  flag?: 'only' | 'skip'
 }

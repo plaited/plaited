@@ -35,7 +35,15 @@ import { globFiles } from './workshop.utils.js'
  * @param storyExport - Runtime story export object
  * @returns StoryMetadata object
  */
-const toStoryMetadata = (exportName: string, filePath: string, storyExport: StoryExport): StoryMetadata => {
+const toStoryMetadata = ({
+  exportName,
+  filePath,
+  storyExport,
+}: {
+  exportName: string
+  filePath: string
+  storyExport: StoryExport
+}): StoryMetadata => {
   return {
     exportName,
     filePath,
@@ -44,8 +52,10 @@ const toStoryMetadata = (exportName: string, filePath: string, storyExport: Stor
     hasArgs: storyExport.args !== undefined,
     hasTemplate: storyExport.template !== undefined,
     hasParameters: storyExport.parameters !== undefined,
-    only: storyExport.only,
-    skip: storyExport.skip,
+    flag:
+      storyExport.only === true ? 'only'
+      : storyExport.skip === true ? 'skip'
+      : undefined,
   }
 }
 
@@ -74,15 +84,15 @@ export const getStoryMetadata = async (filePath: string): Promise<StoryMetadata[
     const module = (await import(filePath)) as Record<string, unknown>
 
     // Check each export
-    for (const [exportName, exportValue] of Object.entries(module)) {
+    for (const [exportName, storyExport] of Object.entries(module)) {
       // Skip default exports and non-story exports
       if (exportName === 'default') {
         continue
       }
 
       // Check if this export is a StoryExport
-      if (isStoryExport(exportValue)) {
-        metadata.push(toStoryMetadata(exportName, filePath, exportValue))
+      if (isStoryExport(storyExport)) {
+        metadata.push(toStoryMetadata({ exportName, filePath, storyExport }))
       }
     }
   } catch (error) {
@@ -104,15 +114,15 @@ export const getStoryMetadata = async (filePath: string): Promise<StoryMetadata[
  *
  * @remarks
  * Filtering rules (applied in order):
- * 1. If any story has only: true, return ONLY those stories
- * 2. Otherwise, exclude stories with skip: true
+ * 1. If any story has flag: 'only', return ONLY those stories
+ * 2. Otherwise, exclude stories with flag: 'skip'
  * 3. Preserves original order of stories
  *
  * @see {@link StoryMetadata} for metadata structure
  */
 export const filterStoryMetadata = (metadata: StoryMetadata[]): StoryMetadata[] => {
   // Check if any story has .only()
-  const onlyStories = metadata.filter((story) => story.only)
+  const onlyStories = metadata.filter((story) => story.flag === 'only')
 
   if (onlyStories.length > 0) {
     const skippedCount = metadata.length - onlyStories.length
@@ -123,7 +133,7 @@ export const filterStoryMetadata = (metadata: StoryMetadata[]): StoryMetadata[] 
   }
 
   // Otherwise filter out .skip()
-  const activeStories = metadata.filter((story) => !story.skip)
+  const activeStories = metadata.filter((story) => story.flag !== 'skip')
   const skippedCount = metadata.length - activeStories.length
 
   if (skippedCount > 0) {

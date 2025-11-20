@@ -25,7 +25,6 @@ import type {
   InteractionExport,
   SnapshotExport,
   StoryExport,
-  StoryWithMethods,
 } from './testing.types.js'
 import {
   __PLAITED_RUNNER__,
@@ -201,43 +200,57 @@ const StoryFixture = bElement<{
   },
 })
 
-function story<T extends FunctionTemplate>(args: InteractionStoryObj<T>): StoryWithMethods<InteractionExport<T>>
-function story<T extends FunctionTemplate>(args: SnapshotStoryObj<T>): StoryWithMethods<SnapshotExport<T>>
-function story<T extends FunctionTemplate>({ args, template, ...rest }: StoryObj<T>): StoryWithMethods<StoryExport<T>> {
-  const createStoryExport = (flags: { only?: boolean; skip?: boolean } = {}): StoryExport<T> => {
-    const tpl = template?.(args || {})
-    const fixture = StoryFixture({ children: tpl })
-    if (rest.play) {
-      return {
-        ...rest,
-        template,
-        args,
-        type: STORY_TYPES.interaction,
-        fixture,
-        play: rest.play,
-        $: STORY_IDENTIFIER,
-        ...flags,
-      } as InteractionExport<T>
-    }
+const createStoryExport = <T extends FunctionTemplate>(
+  { args, template, ...rest }: StoryObj<T>,
+  flags: { only?: boolean; skip?: boolean } = {},
+): StoryExport<T> => {
+  const tpl = template?.(args || {})
+  const fixture = StoryFixture({ children: tpl })
+  if (rest.play) {
     return {
+      ...rest,
       template,
       args,
-      description: rest.description,
-      parameters: rest.parameters,
-      type: STORY_TYPES.snapshot,
+      type: STORY_TYPES.interaction,
       fixture,
+      play: rest.play,
       $: STORY_IDENTIFIER,
       ...flags,
-    } as SnapshotExport<T>
+    } as InteractionExport<T>
   }
-
-  const storyExport = createStoryExport()
-
   return {
-    ...storyExport,
-    only: () => createStoryExport({ only: true }) as typeof storyExport,
-    skip: () => createStoryExport({ skip: true }) as typeof storyExport,
-  } as StoryWithMethods<StoryExport<T>>
+    template,
+    args,
+    description: rest.description,
+    parameters: rest.parameters,
+    type: STORY_TYPES.snapshot,
+    fixture,
+    $: STORY_IDENTIFIER,
+    ...flags,
+  } as SnapshotExport<T>
 }
+
+function storyBase<T extends FunctionTemplate>(args: InteractionStoryObj<T>): InteractionExport<T>
+function storyBase<T extends FunctionTemplate>(args: SnapshotStoryObj<T>): SnapshotExport<T>
+function storyBase<T extends FunctionTemplate>(args: StoryObj<T>): StoryExport<T> {
+  return createStoryExport(args)
+}
+
+function storyOnly<T extends FunctionTemplate>(args: InteractionStoryObj<T>): InteractionExport<T>
+function storyOnly<T extends FunctionTemplate>(args: SnapshotStoryObj<T>): SnapshotExport<T>
+function storyOnly<T extends FunctionTemplate>(args: StoryObj<T>): StoryExport<T> {
+  return createStoryExport(args, { only: true })
+}
+
+function storySkip<T extends FunctionTemplate>(args: InteractionStoryObj<T>): InteractionExport<T>
+function storySkip<T extends FunctionTemplate>(args: SnapshotStoryObj<T>): SnapshotExport<T>
+function storySkip<T extends FunctionTemplate>(args: StoryObj<T>): StoryExport<T> {
+  return createStoryExport(args, { skip: true })
+}
+
+const story = Object.assign(storyBase, {
+  only: storyOnly,
+  skip: storySkip,
+})
 
 export { story }
