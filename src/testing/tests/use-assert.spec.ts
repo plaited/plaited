@@ -1,5 +1,4 @@
-import { expect, test } from 'bun:test'
-import sinon from 'sinon'
+import { expect, mock, test } from 'bun:test'
 import { noop, wait } from '../../utils.js'
 import { match, throws, useAssert } from '../testing.utils.js'
 
@@ -132,7 +131,7 @@ test('match()', () => {
 test('assert: required params', async () => {
   //@ts-expect-error: testing error message
   const noParams = async () => await assert({})
-  let spy = sinon.spy(noParams)
+  let spy = mock(noParams)
   try {
     await spy()
   } catch (err) {
@@ -141,17 +140,17 @@ test('assert: required params', async () => {
       "The following parameters are required by 'assert': (\n  given, should, actual, expected\n)",
     )
   }
-  expect(spy.calledOnce).toBe(true)
+  expect(spy).toHaveBeenCalledTimes(1)
   //@ts-expect-error: testing error message
   const partialParam = async () => await assert({ given: 'some keys', should: 'find the missing keys' })
-  spy = sinon.spy(partialParam)
+  spy = mock(partialParam)
   try {
     await spy()
   } catch (err) {
     //@ts-expect-error: testing error message
     expect(err.message).toBe("The following parameters are required by 'assert': (\n  actual, expected\n)")
   }
-  expect(spy.calledOnce).toBe(true)
+  expect(spy).toHaveBeenCalledTimes(1)
 })
 
 test.only('assert: throws on failure', () => {

@@ -1,7 +1,6 @@
-import { expect, test } from 'bun:test'
+import { expect, mock, test } from 'bun:test'
 import { useBehavioral } from 'plaited'
 import { wait } from 'plaited/utils'
-import sinon from 'sinon'
 
 /**
  * Test suite for useBehavioral factory pattern.
@@ -42,8 +41,8 @@ test('useBehavioral: basic initialization and event handling', async () => {
 })
 
 test('useBehavioral: public events filtering allows only whitelisted events', async () => {
-  const processedSpy = sinon.spy()
-  const blockedSpy = sinon.spy()
+  const processedSpy = mock()
+  const blockedSpy = mock()
 
   const createProgram = useBehavioral<
     {
@@ -74,7 +73,7 @@ test('useBehavioral: public events filtering allows only whitelisted events', as
 
   // Allowed event should work
   publicTrigger({ type: 'ALLOWED' })
-  expect(processedSpy.calledOnce).toBeTrue()
+  expect(processedSpy).toHaveBeenCalledTimes(1)
 
   // Blocked event should throw an error (filtered out by public events)
   expect(() => {
@@ -82,7 +81,7 @@ test('useBehavioral: public events filtering allows only whitelisted events', as
   }).toThrow('Event type "BLOCKED" is not allowed')
 
   // Internal handler should never be called since BLOCKED can't be triggered
-  expect(blockedSpy.called).toBeFalse()
+  expect(blockedSpy).not.toHaveBeenCalled()
 })
 
 test('useBehavioral: context injection works correctly', async () => {
@@ -91,7 +90,7 @@ test('useBehavioral: context injection works correctly', async () => {
     apiKey: string
   }
 
-  const saveSpy = sinon.spy()
+  const saveSpy = mock()
 
   const createProgram = useBehavioral<
     {
@@ -113,7 +112,7 @@ test('useBehavioral: context injection works correctly', async () => {
     },
   })
 
-  const mockDb = { save: sinon.spy() }
+  const mockDb = { save: mock() }
   const publicTrigger = await createProgram({
     database: mockDb,
     apiKey: 'secret123',
@@ -121,12 +120,12 @@ test('useBehavioral: context injection works correctly', async () => {
 
   publicTrigger({ type: 'SAVE', detail: 'data' })
 
-  expect(mockDb.save.calledWith('secret123:data')).toBeTrue()
-  expect(saveSpy.calledOnce).toBeTrue()
+  expect(mockDb.save).toHaveBeenCalledWith('secret123:data')
+  expect(saveSpy).toHaveBeenCalledTimes(1)
 })
 
 test('useBehavioral: async initialization works correctly', async () => {
-  const initSpy = sinon.spy()
+  const initSpy = mock()
 
   const createProgram = useBehavioral<
     {
@@ -157,11 +156,11 @@ test('useBehavioral: async initialization works correctly', async () => {
 
   // Initialization should have waited for delay
   expect(elapsed).toBeGreaterThanOrEqual(50)
-  expect(initSpy.calledOnce).toBeTrue()
+  expect(initSpy).toHaveBeenCalledTimes(1)
 })
 
 test('useBehavioral: no public events means all events are filtered', async () => {
-  const spy = sinon.spy()
+  const spy = mock()
 
   const createProgram = useBehavioral<Record<string, never>, Record<string, never>>({
     // No publicEvents specified
@@ -184,5 +183,5 @@ test('useBehavioral: no public events means all events are filtered', async () =
   }).toThrow('Event type "ANY_EVENT" is not allowed. Only public event types can be triggered: []')
 
   // The handler should not be called
-  expect(spy.called).toBeFalse()
+  expect(spy).not.toHaveBeenCalled()
 })
