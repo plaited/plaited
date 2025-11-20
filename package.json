@@ -90,10 +90,10 @@
     "@types/node": "24.10.1",
     "axe-core": "4.11.0",
     "beautify": "0.0.8",
-    "csstype": "3.2.1",
+    "csstype": "3.2.3",
     "cz-conventional-changelog": "3.3.0",
     "format-package": "7.0.0",
-    "lint-staged": "16.2.6",
+    "lint-staged": "16.2.7",
     "playwright": "^1.56.1",
     "typescript": "5.9.3",
     "zod": "4.1.12"
