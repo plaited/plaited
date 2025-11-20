@@ -210,6 +210,56 @@ External Trigger → bProgram → Event Selection → Thread Notification → Fe
   ): StoryMetadata => { ... }
   ```
 
+### Signal Usage Best Practices
+
+**Use `useSignal` for the Actor Pattern** - when you need bidirectional communication with BOTH reading and writing:
+
+```typescript
+// ✅ Good: Actor pattern - multiple actors reading AND writing shared state
+const store = useSignal<{ count: number }>({ count: 0 })
+
+// Actor 1: Reads and writes
+const currentCount = store.get()  // READ
+store.set({ count: currentCount + 1 })  // WRITE
+
+// Actor 2: Listens and reads
+store.listen('update', () => {
+  console.log(store.get())  // READ
+})
+```
+
+**DON'T use `useSignal` for one-way callbacks** - use `Promise.withResolvers()` instead:
+
+```typescript
+// ❌ Avoid: Using signal as one-time callback (no .get(), single listener)
+const reporter = useSignal<Results>()
+const promise = new Promise(resolve => reporter.listen('_', ({ detail }) => resolve(detail)))
+await someFunction({ reporter })  // calls reporter.set() once
+
+// ✅ Good: Use Promise.withResolvers for one-time callbacks
+const { promise, resolve } = Promise.withResolvers<Results>()
+await someFunction({ onComplete: resolve })  // calls resolve() once
+```
+
+**About `Promise.withResolvers()`:**
+- ES2024 standard feature supported by Bun and modern browsers
+- Returns an object with `{ promise, resolve, reject }` for external promise control
+- Cleaner alternative to wrapping `new Promise((resolve, reject) => { ... })`
+- Perfect for callback-based APIs where you need to await a future result
+- Use when you need to pass `resolve`/`reject` functions to other code
+
+**When to use `useSignal`:**
+- Multiple listeners need to react to state changes
+- Actors need to query current state via `.get()`
+- Bidirectional communication between components
+- Shared state management with both read and write access
+
+**When to use `Promise.withResolvers()` or callbacks:**
+- One-time notifications or results
+- Single listener waiting for completion
+- Unidirectional data flow
+- No need to query current state
+
 ### Code Review Standards
 
 The following standards are not automatically enforced by Biome but should be checked during code review:

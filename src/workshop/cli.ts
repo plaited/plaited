@@ -20,7 +20,6 @@
 import { statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
-import { useSignal } from '../main.js'
 import { checkPlaywright } from './check-playwright.js'
 import { discoverStoryMetadata, getStoryMetadata } from './collect-stories.js'
 import { type TestStoriesOutput, useRunner } from './use-runner.js'
@@ -48,6 +47,10 @@ const { values, positionals } = parseArgs({
       type: 'string',
       short: 'd',
     },
+    'color-scheme': {
+      type: 'string',
+      short: 'c',
+    },
   },
   strict: true,
   allowPositionals: true,
@@ -63,13 +66,15 @@ if (!subcommand) {
   console.log('Commands:')
   console.log('  test      Run story tests\n')
   console.log('Options:')
-  console.log('  -p, --port <number>    Port for test server (default: 0 - auto-assign)')
-  console.log('  -d, --dir <path>       Working directory (default: process.cwd())\n')
+  console.log('  -p, --port <number>       Port for test server (default: 0 - auto-assign)')
+  console.log('  -d, --dir <path>          Working directory (default: process.cwd())')
+  console.log('  -c, --color-scheme <mode> Color scheme for browser (light|dark, default: light)\n')
   console.log('Examples:')
   console.log('  bun plaited test')
   console.log('  bun plaited test src/components')
   console.log('  bun plaited test src/Button.stories.tsx src/Card.stories.tsx')
   console.log('  bun plaited test -p 3500')
+  console.log('  bun plaited test --color-scheme dark')
   console.log('  bun --hot plaited test')
   process.exit(1)
 }
@@ -85,6 +90,14 @@ if (subcommand !== 'test') {
 const port = values.port ? parseInt(values.port, 10) : 0
 if (values.port && (Number.isNaN(port) || port < 0 || port > 65535)) {
   throw new Error(`ERROR: Invalid port number: ${values.port}. Must be between 0-65535`)
+}
+
+// Parse and validate color scheme (default to 'light')
+const colorScheme = (values['color-scheme'] as 'light' | 'dark' | undefined) ?? 'light'
+if (values['color-scheme'] && colorScheme !== 'light' && colorScheme !== 'dark') {
+  console.error(`❌ Error: Invalid color-scheme '${values['color-scheme']}'\n`)
+  console.log('Valid values: light, dark')
+  process.exit(1)
 }
 
 // Determine working directory
@@ -162,18 +175,12 @@ console.log('🌐 Launching browser...')
 const { chromium } = await import('playwright')
 const browser = await chromium.launch()
 
-// Create reporter signal
-const reporter = useSignal<TestStoriesOutput>()
-
-const resultsPromise = new Promise<TestStoriesOutput>((resolve) => {
-  reporter.listen('_', ({ detail }) => {
-    resolve(detail)
-  })
-})
+// Create results promise with resolver
+const { promise: resultsPromise, resolve: reportResults } = Promise.withResolvers<TestStoriesOutput>()
 
 // Initialize test runner (this creates and starts the server)
 console.log('🔧 Initializing test runner...')
-const trigger = await useRunner({ browser, port, reporter, cwd })
+const trigger = await useRunner({ browser, port, reporter: reportResults, cwd })
 
 // Cleanup handler
 const cleanup = async () => {
@@ -210,11 +217,13 @@ if (isHotMode) {
 
 // Run tests
 console.log('🚀 Running tests...\n')
-if (metadata) {
-  trigger({ type: 'run_tests', detail: metadata })
-} else {
-  trigger({ type: 'run_tests' })
-}
+trigger({
+  type: 'run_tests',
+  detail: {
+    metadata,
+    colorScheme,
+  },
+})
 
 // Wait for results
 const results = await resultsPromise

@@ -29,7 +29,11 @@ export type AssertDetails = InstrumentedDetails<Parameters<Assert>>
 /** @internal Represents the detailed parameters captured for an instrumented `Wait` call, used for testing and reporting. */
 export type WaitDetails = InstrumentedDetails<Parameters<Wait>>
 
-type AccessibilityCheckArgs = { exclude?: axe.ContextProp; rules?: axe.RuleObject; config?: Omit<axe.Spec, 'reporter'> }
+type AccessibilityCheckArgs = {
+  exclude?: axe.ContextProp
+  rules?: axe.RuleObject
+  config?: Omit<axe.Spec, 'reporter'>
+}
 
 /**
  * Performs accessibility testing using axe-core.
@@ -244,12 +248,10 @@ export type TestFailureEventDetail = {
  * Represents a message structure used by the story runner, likely for communication
  * between different parts of the test execution environment (e.g., test runner and reporter, or main thread and worker).
  *
- * @property colorScheme - Indicates the color scheme (e.g., 'light', 'dark') active during the test run or for rendering.
  * @property snapshot - A `SnapshotMessage` from the behavioral program, capturing its state at a relevant point in time for the story.
  * @property pathname - The path or unique identifier of the story being run or reported on.
  */
 export type RunnerMessage = {
-  colorScheme: 'light' | 'dark'
   pathname: string
   snapshot: Array<{
     thread: string

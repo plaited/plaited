@@ -65,8 +65,14 @@ declare global {
  * @see {@link Play} for test utilities
  */
 const StoryFixture = bElement<{
-  [FIXTURE_EVENTS.run]: { play?: InteractionStoryObj['play']; timeout?: number }
-  [FIXTURE_EVENTS.play]: { play: InteractionStoryObj['play']; timeout?: number }
+  [FIXTURE_EVENTS.run]: {
+    play?: InteractionStoryObj['play']
+    timeout?: number
+  }
+  [FIXTURE_EVENTS.play]: {
+    play: InteractionStoryObj['play']
+    timeout?: number
+  }
   [FIXTURE_EVENTS.close]: undefined
 }>({
   tag: STORY_FIXTURE,
@@ -114,7 +120,6 @@ const StoryFixture = bElement<{
       if (window?.__PLAITED_RUNNER__) {
         const { pathname } = new URL(window.location.href)
         send({
-          colorScheme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
           snapshot,
           pathname,
         })
@@ -156,7 +161,10 @@ const StoryFixture = bElement<{
             detail: { [failure(error.name)]: JSON.parse(error.message) },
           })
         } else if (error instanceof MissingAssertionParameterError) {
-          trigger<{ type: typeof FIXTURE_EVENTS.missing_assertion_parameter; detail: TestFailureEventDetail }>({
+          trigger<{
+            type: typeof FIXTURE_EVENTS.missing_assertion_parameter
+            detail: TestFailureEventDetail
+          }>({
             type: error.name,
             detail: { [failure(error.name)]: error.message },
           })
@@ -180,7 +188,10 @@ const StoryFixture = bElement<{
       async [FIXTURE_EVENTS.play](detail) {
         const timedOut = await Promise.race([interact(detail.play), timeout(detail.timeout ?? DEFAULT_PLAY_TIMEOUT)])
         if (timedOut) {
-          trigger({ type: FIXTURE_EVENTS.test_timeout, detail: failure(FIXTURE_EVENTS.test_timeout) })
+          trigger({
+            type: FIXTURE_EVENTS.test_timeout,
+            detail: failure(FIXTURE_EVENTS.test_timeout),
+          })
         } else {
           trigger({ type: FIXTURE_EVENTS.run_complete, detail: success() })
         }

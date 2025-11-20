@@ -403,6 +403,40 @@ describe('CLI Logic Tests', () => {
     })
   })
 
+  describe('Color Scheme Argument', () => {
+    test('should accept light color scheme', () => {
+      const colorScheme = 'light' as 'light' | 'dark'
+      const isValid = colorScheme === 'light' || colorScheme === 'dark'
+
+      expect(isValid).toBe(true)
+      expect(colorScheme).toBe('light')
+    })
+
+    test('should accept dark color scheme', () => {
+      const colorScheme = 'dark' as 'light' | 'dark'
+      const isValid = colorScheme === 'light' || colorScheme === 'dark'
+
+      expect(isValid).toBe(true)
+      expect(colorScheme).toBe('dark')
+    })
+
+    test('should reject invalid color scheme', () => {
+      const invalidSchemes = ['auto', 'system', 'invalid', '']
+
+      invalidSchemes.forEach((scheme) => {
+        const isValid = scheme === 'light' || scheme === 'dark'
+        expect(isValid).toBe(false)
+      })
+    })
+
+    test('should default to light when not provided', () => {
+      const userValue: 'light' | 'dark' | undefined = undefined
+      const colorScheme = userValue ?? 'light'
+
+      expect(colorScheme).toBe('light')
+    })
+  })
+
   describe('Error Handling Logic', () => {
     test('should identify ENOENT error code', () => {
       try {

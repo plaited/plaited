@@ -42,10 +42,11 @@
     "check:watch": "bun run check --watch",
     "copy-css-types": "bash scripts/copy-css-types.sh",
     "lint": "bunx @biomejs/biome check .",
-    "lint-fix": "bunx @biomejs/biome check --write .",
+    "lint:fix": "bunx @biomejs/biome check --write .",
     "prepare": "git config core.hooksPath .hooks",
     "test": "bun run test-stories && bun test",
-    "test-stories": "bun src/workshop/cli.ts test src/main"
+    "test-stories": "bun src/workshop/cli.ts test src/main",
+    "test-stories:watch": "bun --hot src/workshop/cli.ts test src/main"
   },
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [

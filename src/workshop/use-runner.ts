@@ -32,12 +32,11 @@
  */
 
 import type { Browser, BrowserContextOptions } from 'playwright'
-import type { SignalWithoutInitialValue } from '../main.js'
 import { useBehavioral } from '../main.js'
 import { keyMirror } from '../utils.js'
 import { discoverStoryMetadata } from './collect-stories.js'
 import { getServer } from './get-server.js'
-import type { StoryMetadata } from './workshop.types.js'
+import type { RunTestsDetail, StoryMetadata } from './workshop.types.js'
 
 /**
  * @internal
@@ -73,14 +72,14 @@ export type TestStoriesOutput = {
  * @param browser - Playwright browser instance
  * @param port - Port number for the test server
  * @param recordVideo - Optional video recording configuration
- * @param reporter - Signal for reporting test results
+ * @param reporter - Callback function to report test results
  *
  * @returns Public trigger function for controlling test execution
  *
  * @remarks
  * - Server is created at initialization and reused
  * - Test discovery happens on each run_tests event
- * - Results are reported via the reporter signal
+ * - Results are reported via the reporter callback
  * - Cleanup happens on end event
  *
  * @see {@link getServer} for server creation
@@ -88,15 +87,15 @@ export type TestStoriesOutput = {
  */
 export const useRunner = useBehavioral<
   {
-    run_tests?: StoryMetadata[]
+    run_tests?: RunTestsDetail
     reload: undefined
-    end: () => void
+    end?: () => void
   },
   {
     browser: Browser
     port: number
     recordVideo?: BrowserContextOptions['recordVideo']
-    reporter: SignalWithoutInitialValue<TestStoriesOutput>
+    reporter: (results: TestStoriesOutput) => void
     cwd: string
   }
 >({
@@ -107,10 +106,14 @@ export const useRunner = useBehavioral<
     const { reload, server } = await getServer({ cwd, port, trigger })
 
     return {
-      async run_tests(metadata) {
+      async run_tests(detail) {
         // Clear results for this test run
         const failed: TestResult[] = []
         const passed: TestResult[] = []
+
+        // Extract metadata and colorScheme from detail, with defaults
+        const metadata = detail?.metadata
+        const colorScheme = detail?.colorScheme ?? 'light'
 
         console.log(`🔍 Discovering stories in: ${cwd}`)
 
@@ -123,7 +126,7 @@ export const useRunner = useBehavioral<
 
         if (!stories || stories.length === 0) {
           console.warn('⚠️  No story exports found')
-          reporter.set({
+          reporter({
             passed: 0,
             failed: 0,
             total: 0,
@@ -134,8 +137,19 @@ export const useRunner = useBehavioral<
 
         console.log(`📄 Found ${stories.length} story exports`)
 
-        // Create browser context
-        const context = await browser.newContext({ recordVideo })
+        // Create browser context with colorScheme
+        // Modify recordVideo directory to include colorScheme subdirectory
+        const videoConfig = recordVideo
+          ? {
+              ...recordVideo,
+              dir: `${recordVideo.dir}/${colorScheme}`,
+            }
+          : undefined
+
+        const context = await browser.newContext({
+          recordVideo: videoConfig,
+          colorScheme,
+        })
 
         try {
           // Run all stories in parallel - let Playwright manage resources
@@ -179,7 +193,7 @@ export const useRunner = useBehavioral<
 
         // Report results
         const results = [...passed, ...failed]
-        reporter.set({
+        reporter({
           passed: passed.length,
           failed: failed.length,
           total: results.length,
@@ -189,7 +203,7 @@ export const useRunner = useBehavioral<
         console.log(`\n✅ Tests complete: ${passed.length} passed, ${failed.length} failed`)
       },
       reload,
-      async end(resolve?: () => void) {
+      async end(resolve) {
         try {
           console.log('🛑 Shutting down test runner')
           await server.stop(true)

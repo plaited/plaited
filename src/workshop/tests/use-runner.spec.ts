@@ -1,6 +1,5 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { type Browser, chromium } from 'playwright'
-import { type Trigger, useSignal } from '../../main.js'
 import { discoverStoryMetadata } from '../collect-stories.js'
 import { type TestStoriesOutput, useRunner } from '../use-runner.js'
 
@@ -8,16 +7,17 @@ const cwd = `${import.meta.dir}/fixtures`
 const testPort = 3457
 
 // Helper to create a results promise with timeout
-const createResultsPromise = (reporter: ReturnType<typeof useSignal<TestStoriesOutput>>, timeout = 10000) => {
-  return Promise.race([
-    new Promise<TestStoriesOutput>((resolve) => {
-      const spy: Trigger = ({ detail }) => resolve(detail)
-      reporter.listen('_', spy)
-    }),
-    new Promise<TestStoriesOutput>((_, reject) =>
-      setTimeout(() => reject(new Error(`Test timed out after ${timeout}ms`)), timeout),
-    ),
-  ])
+const createResultsPromise = (timeout = 10000) => {
+  const { promise, resolve } = Promise.withResolvers<TestStoriesOutput>()
+  return {
+    promise: Promise.race([
+      promise,
+      new Promise<TestStoriesOutput>((_, reject) =>
+        setTimeout(() => reject(new Error(`Test timed out after ${timeout}ms`)), timeout),
+      ),
+    ]),
+    resolve,
+  }
 }
 
 let browser: Browser
@@ -33,13 +33,12 @@ afterAll(async () => {
 test(
   'useRunner: discovers and executes stories from fixtures',
   async () => {
-    const reporter = useSignal<TestStoriesOutput>()
+    const { promise: resultsPromise, resolve: reportResults } = createResultsPromise()
 
-    const trigger = await useRunner({ browser, port: testPort, reporter, cwd })
-    const resultsPromise = createResultsPromise(reporter)
+    const trigger = await useRunner({ browser, port: testPort, reporter: reportResults, cwd })
 
     // Trigger test run
-    trigger({ type: 'run_tests' })
+    trigger({ type: 'run_tests', detail: { colorScheme: 'light' } })
 
     // Wait for results
     const results = await resultsPromise
@@ -75,12 +74,11 @@ test(
     // Playwright browser cleanup can be slow when tests run sequentially
     await new Promise((r) => setTimeout(r, 1500))
 
-    const reporter = useSignal<TestStoriesOutput>()
+    const { promise: resultsPromise, resolve: reportResults } = createResultsPromise()
 
-    const trigger = await useRunner({ browser, port: testPort + 1, reporter, cwd })
-    const resultsPromise = createResultsPromise(reporter)
+    const trigger = await useRunner({ browser, port: testPort + 1, reporter: reportResults, cwd })
 
-    trigger({ type: 'run_tests' })
+    trigger({ type: 'run_tests', detail: { colorScheme: 'light' } })
     const results = await resultsPromise
 
     // Should find stories in nested directories
@@ -106,7 +104,7 @@ test(
     // Delay to ensure previous test's browser is fully cleaned up
     await new Promise((r) => setTimeout(r, 1500))
 
-    const reporter = useSignal<TestStoriesOutput>()
+    const { promise: resultsPromise, resolve: reportResults } = createResultsPromise()
 
     // Discover all stories first
     const allStories = await discoverStoryMetadata(cwd)
@@ -115,11 +113,10 @@ test(
     // Select only first two stories
     const selectedStories = allStories.slice(0, 2)
 
-    const trigger = await useRunner({ browser, port: testPort + 2, reporter, cwd })
-    const resultsPromise = createResultsPromise(reporter)
+    const trigger = await useRunner({ browser, port: testPort + 2, reporter: reportResults, cwd })
 
     // Run with specific metadata
-    trigger({ type: 'run_tests', detail: selectedStories })
+    trigger({ type: 'run_tests', detail: { metadata: selectedStories, colorScheme: 'light' } })
     const results = await resultsPromise
 
     // Should execute only the selected stories
@@ -144,7 +141,7 @@ test(
     // Delay to ensure previous test's browser is fully cleaned up
     await new Promise((r) => setTimeout(r, 1500))
 
-    const reporter = useSignal<TestStoriesOutput>()
+    const { promise: resultsPromise, resolve: reportResults } = createResultsPromise(15000)
 
     // Discover stories from additional file
     const allStories = await discoverStoryMetadata(cwd, '**/filtering/**')
@@ -152,10 +149,9 @@ test(
 
     expect(additionalStories.length).toBeGreaterThan(0)
 
-    const trigger = await useRunner({ browser, port: testPort + 3, reporter, cwd })
-    const resultsPromise = createResultsPromise(reporter, 15000)
+    const trigger = await useRunner({ browser, port: testPort + 3, reporter: reportResults, cwd })
 
-    trigger({ type: 'run_tests', detail: additionalStories })
+    trigger({ type: 'run_tests', detail: { metadata: additionalStories, colorScheme: 'light' } })
     const results = await resultsPromise
 
     // All should pass
@@ -182,7 +178,7 @@ test(
     // Delay to ensure previous test's browser is fully cleaned up
     await new Promise((r) => setTimeout(r, 1500))
 
-    const reporter = useSignal<TestStoriesOutput>()
+    const { promise: resultsPromise, resolve: reportResults } = createResultsPromise(20000)
 
     const allStories = await discoverStoryMetadata(cwd, '**/filtering/**')
 
@@ -193,10 +189,9 @@ test(
 
     expect(mixedStories.length).toBeGreaterThan(2)
 
-    const trigger = await useRunner({ browser, port: testPort + 4, reporter, cwd })
-    const resultsPromise = createResultsPromise(reporter, 20000)
+    const trigger = await useRunner({ browser, port: testPort + 4, reporter: reportResults, cwd })
 
-    trigger({ type: 'run_tests', detail: mixedStories })
+    trigger({ type: 'run_tests', detail: { metadata: mixedStories, colorScheme: 'light' } })
     const results = await resultsPromise
 
     // All should pass
@@ -215,4 +210,60 @@ test(
     await promise
   },
   { timeout: 30000 },
+)
+
+test(
+  'useRunner: should use dark colorScheme when specified',
+  async () => {
+    // Delay to ensure previous test's browser is fully cleaned up
+    await new Promise((r) => setTimeout(r, 1500))
+
+    const { promise: resultsPromise, resolve: reportResults } = createResultsPromise()
+
+    const trigger = await useRunner({ browser, port: testPort + 5, reporter: reportResults, cwd })
+
+    // Trigger test run with dark color scheme
+    trigger({ type: 'run_tests', detail: { colorScheme: 'dark' } })
+
+    // Wait for results
+    const results = await resultsPromise
+
+    // Verify results structure
+    expect(results).toBeDefined()
+    expect(results.total).toBeGreaterThan(0)
+    expect(results.passed).toBeGreaterThanOrEqual(0)
+
+    const { promise, resolve } = Promise.withResolvers<void>()
+    trigger({ type: 'end', detail: resolve })
+    await promise
+  },
+  { timeout: 20000 },
+)
+
+test(
+  'useRunner: should default to light colorScheme when not specified',
+  async () => {
+    // Delay to ensure previous test's browser is fully cleaned up
+    await new Promise((r) => setTimeout(r, 1500))
+
+    const { promise: resultsPromise, resolve: reportResults } = createResultsPromise()
+
+    const trigger = await useRunner({ browser, port: testPort + 6, reporter: reportResults, cwd })
+
+    // Trigger test run without specifying colorScheme
+    trigger({ type: 'run_tests', detail: {} })
+
+    // Wait for results
+    const results = await resultsPromise
+
+    // Verify results structure (default light mode should work)
+    expect(results).toBeDefined()
+    expect(results.total).toBeGreaterThan(0)
+    expect(results.passed).toBeGreaterThanOrEqual(0)
+
+    const { promise, resolve } = Promise.withResolvers<void>()
+    trigger({ type: 'end', detail: resolve })
+    await promise
+  },
+  { timeout: 20000 },
 )

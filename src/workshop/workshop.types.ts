@@ -41,3 +41,15 @@ export type StoryMetadata = {
   hasParameters: boolean
   flag?: 'only' | 'skip'
 }
+
+/**
+ * Detail object for run_tests event.
+ * Allows specifying which stories to run and the color scheme for testing.
+ *
+ * @property metadata - Optional array of story metadata to run. If undefined, all stories will be discovered and run.
+ * @property colorScheme - Color scheme preference for browser context. Defaults to 'light' if not specified.
+ */
+export type RunTestsDetail = {
+  metadata?: StoryMetadata[]
+  colorScheme?: 'light' | 'dark'
+}

@@ -27,7 +27,7 @@ yarn.lock
 **/playwright/.cache/
 **/.plaited
 **/test-videos
-
+**/playwright-report
 
 ## Apple Junk ##
 **/.DS_Store
