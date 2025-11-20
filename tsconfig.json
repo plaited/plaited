@@ -31,6 +31,7 @@
       "plaited/jsx-dev-runtime": ["./src/jsx-dev-runtime.ts"],
       "plaited/testing": ["/src/testing.ts"],
       "plaited/utils": ["./src/utils.ts"],
+      "plaited/workshop": ["./src/workshop.ts"]
     }
   },
   "exclude": ["src/main/types/css.d.ts"]

@@ -20,18 +20,18 @@
   "main": "./src/main.ts",
   "exports": {
     ".": "./src/main.ts",
-    "./workshop": "./src/workshop.ts",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
     "./jsx-runtime": "./src/jsx-runtime.ts",
+    "./testing": "./src/testing.ts",
     "./utils": "./src/utils.ts",
-    "./testing": "./src/testing.ts"
+    "./workshop": "./src/workshop.ts"
   },
   "files": [
     "./.bin/**",
     "./.plaited.ts",
     "./src/**",
     "!./src/**/tests/*",
-    "!./src/**/*.test.@(tsx|ts)",
+    "!./src/**/*.spec.@(tsx|ts)",
     "!./src/**/*.stories.@(tsx|ts)"
   ],
   "publishConfig": {
