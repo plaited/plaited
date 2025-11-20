@@ -14,15 +14,17 @@ The preferred way to ask questions or make comments about Plaited or to report b
 
 ## Requirements
 
-- bun >= v1.2.9 (preferred)
+### Core Package
 - node >= v22.6.0 (through the --experimental-strip-types flag)
+- bun >= v1.2.9 (preferred)
+
+### CLI and Workshop
+- bun >= v1.2.9 (required)
+
+The main Plaited package can be used with Node.js, but the CLI and workshop test runner utilities require [bun](https://bun.sh/).
 
 ## Download
 
 ```bash
 bun install -d plaited
 ```
-
-### Test Runner
-
-To make use of the workshop test runner utilities and setup script, [bun](https://bun.sh/) is required.
