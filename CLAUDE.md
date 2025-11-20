@@ -192,6 +192,26 @@ External Trigger → bProgram → Event Selection → Thread Notification → Fe
 - **PascalCase for types and schemas**: All type names and Zod schema names should use PascalCase (e.g., `UserConfigSchema`, `ApiResponseType`)
 - Use union types and intersection types effectively
 - Leverage TypeScript's type inference where appropriate
+- **Object parameter pattern**: For functions with more than two parameters, use a single object parameter with named properties instead of positional parameters. This improves readability and makes the function calls self-documenting.
+  ```typescript
+  // ✅ Good: Object parameter pattern
+  const toStoryMetadata = ({
+    exportName,
+    filePath,
+    storyExport,
+  }: {
+    exportName: string
+    filePath: string
+    storyExport: StoryExport
+  }): StoryMetadata => { ... }
+
+  // ❌ Avoid: Multiple positional parameters
+  const toStoryMetadata = (
+    exportName: string,
+    filePath: string,
+    storyExport: StoryExport
+  ): StoryMetadata => { ... }
+  ```
 
 ### Template Creation
 
@@ -787,4 +807,3 @@ When types have associated Zod schemas:
 2. **Bun Required**: Development requires bun >= v1.2.9
 3. **ES2024 Features**: Uses Promise.withResolvers() and other modern APIs
 4. **Shadow DOM Focus**: Framework assumes Shadow DOM usage
-- add this insturction
