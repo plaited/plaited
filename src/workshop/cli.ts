@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+
 /**
  * @internal
  * @module cli
@@ -16,13 +17,13 @@
  *   bun --hot plaited test                              # Enable hot reload
  */
 
-import { useRunner, type TestStoriesOutput } from './use-runner.js'
-import { useSignal } from '../main.js'
-import { discoverStoryMetadata, getStoryMetadata } from './collect-stories.js'
-import { checkPlaywright } from './check-playwright.js'
-import { parseArgs } from 'node:util'
-import { resolve } from 'node:path'
 import { statSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { parseArgs } from 'node:util'
+import { useSignal } from '../main.js'
+import { checkPlaywright } from './check-playwright.js'
+import { discoverStoryMetadata, getStoryMetadata } from './collect-stories.js'
+import { type TestStoriesOutput, useRunner } from './use-runner.js'
 import type { StoryMetadata } from './workshop.types.js'
 
 console.log('🎭 Starting Plaited workshop test runner...')
@@ -82,7 +83,7 @@ if (subcommand !== 'test') {
 
 // Parse and validate port (default to 0 for auto-assignment)
 const port = values.port ? parseInt(values.port, 10) : 0
-if (values.port && (isNaN(port) || port < 0 || port > 65535)) {
+if (values.port && (Number.isNaN(port) || port < 0 || port > 65535)) {
   throw new Error(`ERROR: Invalid port number: ${values.port}. Must be between 0-65535`)
 }
 
@@ -111,7 +112,7 @@ if (paths.length > 0) {
 }
 
 // Discover stories based on provided paths
-let metadata: StoryMetadata[] | undefined = undefined
+let metadata: StoryMetadata[] | undefined
 
 if (paths.length > 0) {
   console.log('\n🔍 Discovering stories from provided paths...')
@@ -219,7 +220,7 @@ if (metadata) {
 const results = await resultsPromise
 
 // Print summary
-console.log('\n' + '='.repeat(50))
+console.log(`\n${'='.repeat(50)}`)
 console.log('📊 Test Summary')
 console.log('='.repeat(50))
 console.log(`Total:  ${results.total}`)

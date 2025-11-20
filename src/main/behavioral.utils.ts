@@ -33,7 +33,7 @@
  * - No built-in support for weighted probabilities
  */
 import { isTypeOf } from '../utils.js'
-import type { BPEvent, BSync, BThread, Trigger, PlaitedTrigger } from './behavioral.types.js'
+import type { BPEvent, BSync, BThread, PlaitedTrigger, Trigger } from './behavioral.types.js'
 
 /**
  * Selects and returns a single `BPEvent` object randomly from a provided list of events.
@@ -144,8 +144,8 @@ export const isBPEvent = (data: unknown): data is BPEvent => {
  * @see {@link RulesFunction} for the generator type
  */
 export const bThread: BThread = (rules, repeat) => {
-  return repeat ?
-      function* () {
+  return repeat
+    ? function* () {
         while (isTypeOf<boolean>(repeat, 'boolean') ? repeat : repeat()) {
           const length = rules.length
           for (let i = 0; i < length; i++) {

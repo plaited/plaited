@@ -1,4 +1,4 @@
-import { type FT, bElement, useDispatch, isBehavioralElement } from 'plaited'
+import { bElement, type FT, isBehavioralElement, useDispatch } from 'plaited'
 import { story } from 'plaited/testing'
 
 const getPlaitedChildren = (slot: HTMLSlotElement) => [...slot.assignedElements()].filter(isBehavioralElement)
@@ -18,7 +18,7 @@ const Inner = bElement({
       },
       add(detail: string) {
         const [header] = $('header')
-        header.insert('beforeend', <>{detail}</>)
+        header.insert('beforeend', detail)
       },
     }
   },
@@ -33,6 +33,7 @@ const Outer = bElement({
         p-trigger={{ disable: 'disable' }}
       ></slot>
       <button
+        type='button'
         p-target='button'
         p-trigger={{ click: 'click' }}
       >
@@ -44,7 +45,7 @@ const Outer = bElement({
     return {
       disable() {
         const [button] = $<HTMLButtonElement>('button')
-        button && (button.disabled = true)
+        if (button) button.disabled = true
       },
       click() {
         const [slot] = $<HTMLSlotElement>('slot')

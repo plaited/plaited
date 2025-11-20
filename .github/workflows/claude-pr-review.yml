@@ -37,12 +37,17 @@ jobs:
             ### Code Style & Patterns (from CLAUDE.md)
             - ✅ Prefer arrow functions over function declarations
             - ✅ Use `type` over `interface` for type definitions
-            - ✅ No `any` types - use proper TypeScript types or `unknown` with type guards
+            - ✅ Avoid unnecessary `any` types - prefer proper TypeScript types or `unknown` with type guards (some intentional `any` usage is acceptable)
             - ✅ PascalCase for types and Zod schema names
             - ✅ Use `test` instead of `it` in test files
             - ✅ Prefer `Bun.resolveSync()` over `path.join()` in Bun environments
             - ✅ Use JSX syntax - avoid `h()` or `createTemplate()` direct calls (internal functions)
             - ⚠️ Correct terminology: "templates" not "components" (except for Web Components API references)
+
+            ### Manual Review Standards (Not Enforced by Biome)
+            - ✅ `@ts-ignore` requires description: When using `@ts-ignore`, include a comment explaining why
+            - ✅ Short-circuit and ternary expressions are acceptable: `condition && doSomething()` and `condition ? a : b` are idiomatic
+            - ✅ Empty object types when extending single interface: `interface Foo extends Bar {}` is acceptable for branded types
 
             ### Test Files
             - `*.spec.{ts,tsx}` - Unit/integration tests (Bun test runner)

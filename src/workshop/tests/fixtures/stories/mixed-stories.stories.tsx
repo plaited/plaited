@@ -10,7 +10,7 @@ export const basicStory = story({
 // Interaction story with play function
 export const interactionStory = story({
   description: 'An interaction story with play function',
-  template: () => <button>Click me</button>,
+  template: () => <button type='button'>Click me</button>,
   async play({ assert, findByText }) {
     const button = await findByText('Click me')
     assert({

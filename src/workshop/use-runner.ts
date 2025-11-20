@@ -31,12 +31,12 @@
  * - Server lifecycle tied to runner lifecycle
  */
 
+import type { Browser, BrowserContextOptions } from 'playwright'
+import type { SignalWithoutInitialValue } from '../main.js'
 import { useBehavioral } from '../main.js'
 import { keyMirror } from '../utils.js'
-import type { SignalWithoutInitialValue } from '../main.js'
-import type { Browser, BrowserContextOptions } from 'playwright'
-import { getServer } from './get-server.js'
 import { discoverStoryMetadata } from './collect-stories.js'
+import { getServer } from './get-server.js'
 import type { StoryMetadata } from './workshop.types.js'
 
 /**
@@ -89,7 +89,7 @@ export type TestStoriesOutput = {
 export const useRunner = useBehavioral<
   {
     run_tests?: StoryMetadata[]
-    reload: void
+    reload: undefined
     end: () => void
   },
   {
@@ -116,7 +116,10 @@ export const useRunner = useBehavioral<
 
         // Discover stories - handle undefined/empty metadata parameter
         // Behavioral programs pass {} as detail when no detail is provided
-        const stories = Array.isArray(metadata) && metadata.length > 0 ? metadata : await discoverStoryMetadata(cwd)
+        const stories =
+          Array.isArray(metadata) && metadata.length > 0
+            ? metadata
+            : await discoverStoryMetadata(cwd, '**/filtering/**')
 
         if (!stories || stories.length === 0) {
           console.warn('⚠️  No story exports found')

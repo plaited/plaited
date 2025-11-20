@@ -1,4 +1,4 @@
-import { type FT, bElement } from 'plaited'
+import { bElement, type FT } from 'plaited'
 import { story } from 'plaited/testing'
 import sinon from 'sinon'
 
@@ -44,7 +44,12 @@ const Outer = bElement({
       ></slot>
       <Inner p-trigger={{ click: 'passThrough' }}>
         <slot name='nested'></slot>
-        <button slot='shadow'>Shadow</button>
+        <button
+          type='button'
+          slot='shadow'
+        >
+          Shadow
+        </button>
       </Inner>
     </div>
   ),
@@ -63,9 +68,19 @@ const Outer = bElement({
 
 const Fixture: FT = () => (
   <Outer>
-    <button>Slot</button>
-    <button slot='named'>Named</button>
-    <button slot='nested'>Nested</button>
+    <button type='button'>Slot</button>
+    <button
+      type='button'
+      slot='named'
+    >
+      Named
+    </button>
+    <button
+      type='button'
+      slot='nested'
+    >
+      Nested
+    </button>
   </Outer>
 )
 

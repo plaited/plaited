@@ -1,5 +1,4 @@
-import { bElement } from 'plaited'
-import { createStyles, createHostStyles, joinStyles } from 'plaited'
+import { bElement, createHostStyles, createStyles, joinStyles } from 'plaited'
 
 import { isTypeOf } from 'plaited/utils'
 

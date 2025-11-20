@@ -1,5 +1,5 @@
-import { test, expect } from 'bun:test'
-import { createStyles, createHostStyles, createKeyframes, createTokens, joinStyles } from 'plaited'
+import { expect, test } from 'bun:test'
+import { createHostStyles, createKeyframes, createStyles, createTokens, joinStyles } from 'plaited'
 
 test('create: supports simple rules', () => {
   const testStyles = createStyles({

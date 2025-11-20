@@ -33,8 +33,9 @@
  * - No replay or event sourcing support
  * - Limited to CustomEvent capabilities
  */
+
+import type { BehavioralElement } from './b-element.types.js'
 import type { BPEvent } from './behavioral.types.js'
-import { type BehavioralElement } from './b-element.types.js'
 
 /**
  * @internal

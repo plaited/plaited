@@ -34,17 +34,17 @@
  * - Disconnect is synchronous only
  */
 import { behavioral } from './behavioral.js'
-import { bThread, bSync } from './behavioral.utils.js'
 import type {
-  EventDetails,
-  UseSnapshot,
-  BThreads,
-  Disconnect,
-  Handlers,
   BSync,
   BThread,
+  BThreads,
+  Disconnect,
+  EventDetails,
+  Handlers,
   PlaitedTrigger,
+  UseSnapshot,
 } from './behavioral.types.js'
+import { bSync, bThread } from './behavioral.utils.js'
 import { usePlaitedTrigger } from './use-plaited-trigger.js'
 import { usePublicTrigger } from './use-public-trigger.js'
 

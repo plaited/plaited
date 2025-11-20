@@ -33,10 +33,11 @@
  * - Transferable objects not supported in current implementation
  * - Worker must be in separate file for proper execution
  */
-import type { Behavioral, Disconnect, Handlers, EventDetails, BPEvent } from './behavioral.types.js'
+
 import { behavioral } from './behavioral.js'
-import { usePublicTrigger } from './use-public-trigger.js'
+import type { Behavioral, BPEvent, Disconnect, EventDetails, Handlers } from './behavioral.types.js'
 import { usePlaitedTrigger } from './use-plaited-trigger.js'
+import { usePublicTrigger } from './use-public-trigger.js'
 
 /**
  * @internal

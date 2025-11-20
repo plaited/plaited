@@ -1,7 +1,7 @@
-import { test, expect } from 'bun:test'
-import sinon from 'sinon'
+import { expect, test } from 'bun:test'
 import { useBehavioral } from 'plaited'
 import { wait } from 'plaited/utils'
+import sinon from 'sinon'
 
 /**
  * Test suite for useBehavioral factory pattern.

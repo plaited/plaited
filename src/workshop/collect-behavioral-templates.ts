@@ -21,7 +21,7 @@
  */
 
 import { Glob } from 'bun'
-import { isBehavioralTemplate, type FunctionTemplate } from '../main.js'
+import { type FunctionTemplate, isBehavioralTemplate } from '../main.js'
 import type { TemplateExport } from './workshop.types.js'
 import { globFiles } from './workshop.utils.js'
 

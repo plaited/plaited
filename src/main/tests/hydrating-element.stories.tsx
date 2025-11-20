@@ -1,7 +1,7 @@
 import { bElement } from 'plaited'
 import { story } from 'plaited/testing'
 
-import { styles, BEFORE_HYDRATION, AFTER_HYDRATION, HYDRATING_ELEMENT_TAG } from './hydrating-element.constants.js'
+import { AFTER_HYDRATION, BEFORE_HYDRATION, HYDRATING_ELEMENT_TAG, styles } from './hydrating-element.constants.js'
 
 const HydratingElement = bElement({
   tag: HYDRATING_ELEMENT_TAG,

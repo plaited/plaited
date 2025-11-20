@@ -1,5 +1,5 @@
+import { P_TARGET, P_TRIGGER, type TEMPLATE_OBJECT_IDENTIFIER } from './create-template.constants.js'
 import type { CSSProperties } from './css.types.js'
-import { P_TARGET, P_TRIGGER, TEMPLATE_OBJECT_IDENTIFIER } from './create-template.constants.js'
 
 type Booleanish = boolean | 'true' | 'false'
 type CrossOrigin = 'anonymous' | 'use-credentials' | ''
@@ -401,7 +401,7 @@ type HTMLAttributes = AriaAttributes &
  * and allowing for any custom `data-*` or other attributes via `Record<string, any>`.
  * This is the base type often extended for specific HTML elements.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: Allows custom data-* and other arbitrary HTML attributes
 export type DetailedHTMLAttributes = HTMLAttributes & Record<string, any>
 
 /** HTML attribute type for the `referrerpolicy` attribute. */

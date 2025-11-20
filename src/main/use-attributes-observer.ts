@@ -33,7 +33,7 @@
  * - Cannot observe shadow DOM content from light DOM
  * - One observer per element (not optimized for many elements)
  */
-import type { Disconnect, Trigger, PlaitedTrigger } from './behavioral.types.js'
+import type { Disconnect, PlaitedTrigger, Trigger } from './behavioral.types.js'
 import { isPlaitedTrigger } from './behavioral.utils.js'
 
 /**

@@ -1,5 +1,5 @@
-import { zip } from './workshop.utils.js'
 import { getEntryPath } from './get-entry-path.js'
+import { zip } from './workshop.utils.js'
 
 export const getEntryRoutes = async (root: string, entrypoints: string[]) => {
   const responses: {

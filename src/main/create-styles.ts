@@ -1,7 +1,7 @@
-import { CSS_RESERVED_KEYS } from './css.constants.js'
-import type { CreateParams, ClassNames, NestedStatements, CSSProperties, DesignTokenReference } from './css.types.js'
 import { isTypeOf } from '../utils.js'
-import { isTokenReference, getRule, createHash } from './css.utils.js'
+import { CSS_RESERVED_KEYS } from './css.constants.js'
+import type { ClassNames, CreateParams, CSSProperties, DesignTokenReference, NestedStatements } from './css.types.js'
+import { createHash, getRule, isTokenReference } from './css.utils.js'
 
 /**
  * @internal
@@ -63,20 +63,23 @@ const formatClassStatement = ({
  * @see {@link joinStyles} for combining multiple style objects
  */
 export const createStyles = <T extends CreateParams>(classNames: T): ClassNames<T> =>
-  Object.entries(classNames).reduce((acc, [cls, props]) => {
-    const styles: string[] = []
-    const hostStyles: string[] = []
-    for (const [prop, value] of Object.entries(props)) formatClassStatement({ styles, hostStyles, prop, value })
-    const classes: string[] = []
-    const stylesheets: string[] = hostStyles
-    for (const sheet of styles) {
-      const cls = `cls${createHash(sheet)}`
-      classes.push(cls)
-      stylesheets.push(`.${cls}${sheet}`)
-    }
-    acc[cls as keyof T] = {
-      classNames: [cls, ...classes],
-      stylesheets,
-    }
-    return acc
-  }, {} as ClassNames<T>)
+  Object.entries(classNames).reduce(
+    (acc, [cls, props]) => {
+      const styles: string[] = []
+      const hostStyles: string[] = []
+      for (const [prop, value] of Object.entries(props)) formatClassStatement({ styles, hostStyles, prop, value })
+      const classes: string[] = []
+      const stylesheets: string[] = hostStyles
+      for (const sheet of styles) {
+        const cls = `cls${createHash(sheet)}`
+        classes.push(cls)
+        stylesheets.push(`.${cls}${sheet}`)
+      }
+      acc[cls as keyof T] = {
+        classNames: [cls, ...classes],
+        stylesheets,
+      }
+      return acc
+    },
+    {} as ClassNames<T>,
+  )

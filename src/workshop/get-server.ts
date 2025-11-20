@@ -1,8 +1,8 @@
-import { RUNNER_URL, RELOAD_PAGE } from '../testing/testing.constants.js'
-import { getHTMLRoutes } from './get-html-routes.js'
+import type { Trigger } from '../main.js'
+import { RELOAD_PAGE, RUNNER_URL } from '../testing/testing.constants.js'
 import { discoverStoryMetadata } from './collect-stories.js'
 import { getEntryRoutes } from './get-entry-routes.js'
-import type { Trigger } from '../main.js'
+import { getHTMLRoutes } from './get-html-routes.js'
 
 /** @internal WebSocket topic */
 const RUNNER_TOPIC = 'RUNNER_TOPIC'
@@ -109,7 +109,7 @@ export const getServer = async ({ cwd, port, trigger }: { cwd: string; port: num
         ws.subscribe(RUNNER_TOPIC)
         console.log(`WebSocket client connected`)
       },
-      message(ws, message) {
+      message(_ws, message) {
         console.log(`WebSocket message:`, message)
 
         // Handle runner messages if trigger is provided

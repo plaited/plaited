@@ -1,5 +1,5 @@
 import type { CSSKeyFrames, StyleFunctionKeyframe } from './css.types.js'
-import { isTokenReference, getRule, createHash } from './css.utils.js'
+import { createHash, getRule, isTokenReference } from './css.utils.js'
 
 /**
  * Creates a CSS `@keyframes` animation with automatic hash-based identifier generation.

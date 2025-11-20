@@ -1,40 +1,40 @@
-import { bElement, type SnapshotMessage, createHostStyles, type FunctionTemplate } from '../main.js'
+import { bElement, createHostStyles, type FunctionTemplate, type SnapshotMessage } from '../main.js'
 import { wait } from '../utils.js'
 import {
-  FailedAssertionError,
-  MissingAssertionParameterError,
-  AccessibilityError,
-  useWait,
-  useAssert,
-  match,
-  throws,
-  useFindByAttribute,
-  useFindByText,
-  useFireEvent,
-  useAccessibilityCheck,
-  useRunner,
-  useFindByTarget,
-  useFindByTestId,
-} from './testing.utils.js'
-import type {
-  Play,
-  TestFailureEventDetail,
-  StoryObj,
-  InteractionStoryObj,
-  SnapshotStoryObj,
-  InteractionExport,
-  SnapshotExport,
-  StoryExport,
-} from './testing.types.js'
-import {
-  __PLAITED_RUNNER__,
   __CLOSE_PLAITED_CONTEXT__,
-  STORY_FIXTURE,
+  __PLAITED_RUNNER__,
   DEFAULT_PLAY_TIMEOUT,
   FIXTURE_EVENTS,
-  STORY_TYPES,
+  STORY_FIXTURE,
   STORY_IDENTIFIER,
+  STORY_TYPES,
 } from './testing.constants.js'
+import type {
+  InteractionExport,
+  InteractionStoryObj,
+  Play,
+  SnapshotExport,
+  SnapshotStoryObj,
+  StoryExport,
+  StoryObj,
+  TestFailureEventDetail,
+} from './testing.types.js'
+import {
+  AccessibilityError,
+  FailedAssertionError,
+  MissingAssertionParameterError,
+  match,
+  throws,
+  useAccessibilityCheck,
+  useAssert,
+  useFindByAttribute,
+  useFindByTarget,
+  useFindByTestId,
+  useFindByText,
+  useFireEvent,
+  useRunner,
+  useWait,
+} from './testing.utils.js'
 
 declare global {
   interface Window {
@@ -67,7 +67,7 @@ declare global {
 const StoryFixture = bElement<{
   [FIXTURE_EVENTS.run]: { play?: InteractionStoryObj['play']; timeout?: number }
   [FIXTURE_EVENTS.play]: { play: InteractionStoryObj['play']; timeout?: number }
-  [FIXTURE_EVENTS.close]: void
+  [FIXTURE_EVENTS.close]: undefined
 }>({
   tag: STORY_FIXTURE,
   publicEvents: [FIXTURE_EVENTS.run],
@@ -186,7 +186,7 @@ const StoryFixture = bElement<{
         }
       },
       [FIXTURE_EVENTS.close]() {
-        window.__CLOSE_PLAITED_CONTEXT__ && window.__CLOSE_PLAITED_CONTEXT__()
+        window.__CLOSE_PLAITED_CONTEXT__?.()
       },
       onConnected() {
         trigger({

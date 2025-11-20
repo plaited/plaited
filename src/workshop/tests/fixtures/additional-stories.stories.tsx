@@ -9,7 +9,7 @@ export const additionalSnapshot = story({
 // Simple interaction story for testing
 export const additionalInteraction = story({
   description: 'An additional interaction story for filtering tests',
-  template: () => <button>Additional Button</button>,
+  template: () => <button type='button'>Additional Button</button>,
   async play({ assert, findByText }) {
     const button = await findByText('Additional Button')
     assert({

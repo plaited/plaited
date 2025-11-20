@@ -1,14 +1,14 @@
+import { isTypeOf, kebabCase } from '../utils.js'
 import { CSS_RESERVED_KEYS } from './css.constants.js'
 import type {
-  DesignTokenGroup,
   DesignToken,
-  NestedDesignTokenStatements,
-  DesignTokenReferences,
+  DesignTokenGroup,
   DesignTokenReference,
+  DesignTokenReferences,
   FunctionTokenValue,
+  NestedDesignTokenStatements,
 } from './css.types.js'
-import { kebabCase, isTypeOf } from '../utils.js'
-import { isTokenReference, getRule } from './css.utils.js'
+import { getRule, isTokenReference } from './css.utils.js'
 
 /**
  * @internal
@@ -66,8 +66,8 @@ const getToken = ({
   styles: string[]
 }): string => {
   const { $csv, $value } = token
-  return Array.isArray($value) ?
-      getRule(
+  return Array.isArray($value)
+    ? getRule(
         cssVar,
         $value
           .map((val) => (isFunctionTokenValue(val) ? getFunctionValue(val, styles) : getTokenValue(val, styles)))
@@ -144,41 +144,44 @@ const formatTokenStatement = ({
  * @see {@link createHostStyles} for using tokens in host styles
  */
 export const createTokens = <T extends DesignTokenGroup>(ident: string, group: T) =>
-  Object.entries(group).reduce((acc, [prop, value]) => {
-    const cssVar: `--${string}` = `--${kebabCase(ident)}-${kebabCase(prop)}`
-    const styles: string[] = []
-    if (isToken(value)) {
-      formatTokenStatement({
-        styles,
-        cssVar,
-        token: value,
-        host: ':host',
-      })
-    } else {
-      // Check if value is an object and has $compoundSelectors property
-      const { $compoundSelectors, ...rest } = value
-      if (Object.keys(rest).length) {
+  Object.entries(group).reduce(
+    (acc, [prop, value]) => {
+      const cssVar: `--${string}` = `--${kebabCase(ident)}-${kebabCase(prop)}`
+      const styles: string[] = []
+      if (isToken(value)) {
         formatTokenStatement({
           styles,
           cssVar,
-          token: rest,
+          token: value,
           host: ':host',
         })
-      }
-
-      if ($compoundSelectors) {
-        for (const [selector, value] of Object.entries($compoundSelectors)) {
+      } else {
+        // Check if value is an object and has $compoundSelectors property
+        const { $compoundSelectors, ...rest } = value
+        if (Object.keys(rest).length) {
           formatTokenStatement({
             styles,
             cssVar,
-            token: value,
-            host: `:host(${selector})`,
+            token: rest,
+            host: ':host',
           })
         }
+
+        if ($compoundSelectors) {
+          for (const [selector, value] of Object.entries($compoundSelectors)) {
+            formatTokenStatement({
+              styles,
+              cssVar,
+              token: value,
+              host: `:host(${selector})`,
+            })
+          }
+        }
       }
-    }
-    const getRef = (): `var(--${string})` => `var(${cssVar})`
-    getRef.styles = styles
-    acc[prop as keyof T] = getRef
-    return acc
-  }, {} as DesignTokenReferences<T>)
+      const getRef = (): `var(--${string})` => `var(${cssVar})`
+      getRef.styles = styles
+      acc[prop as keyof T] = getRef
+      return acc
+    },
+    {} as DesignTokenReferences<T>,
+  )

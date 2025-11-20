@@ -26,9 +26,10 @@
  * - Attribute updates are batched when using object syntax
  * - DocumentFragment creation is deferred until needed
  */
-import type { TemplateObject } from './create-template.types.js'
-import { BOOLEAN_ATTRS } from './create-template.constants.js'
+
 import type { Bindings, BoundElement } from './b-element.types.js'
+import { BOOLEAN_ATTRS } from './create-template.constants.js'
+import type { TemplateObject } from './create-template.types.js'
 /**
  * @internal Cache for storing adopted stylesheets per ShadowRoot to prevent duplicate processing.
  * Used internally by the framework to optimize style adoption performance.
@@ -185,9 +186,11 @@ const formatFragments = (
   for (let i = 0; i < length; i++) {
     const frag = fragments[i]
     toRet.push(
-      frag instanceof DocumentFragment || typeof frag === 'string' ? frag
-      : typeof frag === 'number' ? `${frag}`
-      : getDocumentFragment(shadowRoot, frag),
+      frag instanceof DocumentFragment || typeof frag === 'string'
+        ? frag
+        : typeof frag === 'number'
+          ? `${frag}`
+          : getDocumentFragment(shadowRoot, frag),
     )
   }
   return toRet
@@ -224,26 +227,33 @@ export const getBindings = (shadowRoot: ShadowRoot): Bindings => ({
   /** Inserts fragments at the specified position relative to the bound element. */
   insert(position, ...fragments) {
     const content = formatFragments(shadowRoot, fragments)
-    position === 'beforebegin' ? this.before(...content)
-    : position === 'afterbegin' ? this.prepend(...content)
-    : position === 'beforeend' ? this.append(...content)
-    : this.after(...content)
+    position === 'beforebegin'
+      ? this.before(...content)
+      : position === 'afterbegin'
+        ? this.prepend(...content)
+        : position === 'beforeend'
+          ? this.append(...content)
+          : this.after(...content)
   },
   /** Replaces the bound element itself with the provided fragments. */
   replace(...fragments) {
     this.replaceWith(...formatFragments(shadowRoot, fragments))
   },
   /** Gets or sets attributes on the bound element. Can accept a single attribute name (to get) or name/value pair (to set), or an object of attributes to set. */
-  attr(attr, val) {
+  attr(
+    attr: string | Record<string, string | null | number | boolean>,
+    val?: string | null | number | boolean,
+  ): string | null | undefined {
     if (typeof attr === 'string') {
       // Return the attribute value if val is not provided
       if (val === undefined) return this.getAttribute(attr)
-      return updateAttributes({
+      updateAttributes({
         root: shadowRoot,
         element: this,
         attr,
         val,
       })
+      return
     }
     for (const key in attr) {
       updateAttributes({

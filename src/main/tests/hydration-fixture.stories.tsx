@@ -1,8 +1,9 @@
-import { bElement, type BehavioralElement } from 'plaited'
-import { createDocumentFragment } from 'plaited/utils'
+import { type BehavioralElement, bElement } from 'plaited'
 import { story } from 'plaited/testing'
+import { createDocumentFragment } from 'plaited/utils'
 
-import { styles, HYDRATING_ELEMENT_TAG, BEFORE_HYDRATION, AFTER_HYDRATION } from './hydrating-element.constants.js'
+import { AFTER_HYDRATION, BEFORE_HYDRATION, HYDRATING_ELEMENT_TAG, styles } from './hydrating-element.constants.js'
+
 const TRIGGER_HYDRATING_ELEMENT = 'TRIGGER_HYDRATING_ELEMENT'
 const FIXTURE_ELEMENT_TAG = 'fixture-element'
 const EMPTY_SLOT = 'Empty slot'
@@ -64,7 +65,7 @@ export const test = story({
       expected: 'STYLE',
     })
 
-    const contains = match(styleElementBeforeHydration!.innerText)
+    const contains = match(styleElementBeforeHydration?.innerText ?? '')
     const pattern = 'text-decoration:underline'
     assert({
       given: 'before hydrating element is connected',

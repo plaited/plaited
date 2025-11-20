@@ -1,5 +1,5 @@
 import type { FunctionTemplate } from '../../../../main.js'
-import { sharedFunction, sharedConstant } from './SharedDependency.js'
+import { sharedConstant, sharedFunction } from './SharedDependency.js'
 
 /**
  * Template that imports shared dependency for code splitting test.

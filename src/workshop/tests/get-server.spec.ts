@@ -1,6 +1,6 @@
-import { test, expect } from 'bun:test'
-import { getRoutes } from '../get-server.js'
+import { expect, test } from 'bun:test'
 import { join } from 'node:path'
+import { getRoutes } from '../get-server.js'
 
 const fixturesDir = join(import.meta.dir, 'fixtures/stories')
 

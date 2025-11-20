@@ -111,11 +111,11 @@ export const deepEqual = (objA: unknown, objB: unknown, map = new WeakMap()) => 
     (ArrayBuffer.isView(objA) && ArrayBuffer.isView(objB))
   ) {
     {
-      if (objA.byteLength != objB.byteLength) return false
+      if (objA.byteLength !== objB.byteLength) return false
       const dv1 = new Int8Array(objA as ArrayBuffer)
       const dv2 = new Int8Array(objB as ArrayBuffer)
-      for (let i = 0; i != objA.byteLength; i++) {
-        if (dv1[i] != dv2[i]) return false
+      for (let i = 0; i !== objA.byteLength; i++) {
+        if (dv1[i] !== dv2[i]) return false
       }
       return true
     }

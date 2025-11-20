@@ -1,6 +1,12 @@
-import { bElement, useAttributesObserver, type ObservedAttributesDetail } from 'plaited'
+import {
+  bElement,
+  createHostStyles,
+  createStyles,
+  joinStyles,
+  type ObservedAttributesDetail,
+  useAttributesObserver,
+} from 'plaited'
 import { isTypeOf, keyMirror } from 'plaited/utils'
-import { createStyles, createHostStyles, joinStyles } from 'plaited'
 
 const componentStyles = createStyles({
   addOn: {

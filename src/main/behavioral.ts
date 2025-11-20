@@ -1,18 +1,18 @@
 import { isTypeOf } from '../utils.js'
 import type {
+  Behavioral,
   BPEvent,
   BPEventTemplate,
   BPListener,
-  RunningBid,
-  PendingBid,
+  BThreads,
   CandidateBid,
-  SnapshotMessage,
+  PendingBid,
+  RunningBid,
   SnapshotFormatter,
+  SnapshotMessage,
+  Trigger,
   UseFeedback,
   UseSnapshot,
-  BThreads,
-  Trigger,
-  Behavioral,
 } from './behavioral.types.js'
 
 /**
@@ -73,12 +73,12 @@ const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj : [obj])
  */
 const isListeningFor = ({ type, detail }: CandidateBid) => {
   return (listener: BPListener): boolean =>
-    isTypeOf<string>(listener, 'string') ?
-      listener === type
-    : listener({
-        detail,
-        type,
-      })
+    isTypeOf<string>(listener, 'string')
+      ? listener === type
+      : listener({
+          detail,
+          type,
+        })
 }
 
 /**
@@ -92,7 +92,7 @@ const isListeningFor = ({ type, detail }: CandidateBid) => {
  * @returns True if the request matches the selected event, false otherwise.
  */
 const isPendingRequest = (selectedEvent: CandidateBid, event: BPEvent | BPEventTemplate) =>
-  isTypeOf<BPEventTemplate>(event, 'function') ? event === selectedEvent?.template : event.type == selectedEvent.type
+  isTypeOf<BPEventTemplate>(event, 'function') ? event === selectedEvent?.template : event.type === selectedEvent.type
 
 /**
  * @internal
@@ -104,14 +104,18 @@ const isPendingRequest = (selectedEvent: CandidateBid, event: BPEvent | BPEventT
  */
 const snapshotFormatter: SnapshotFormatter = ({ candidates, selectedEvent, pending }) => {
   const blockingThreads = [...pending].flatMap(([thread, { block }]) =>
-    block && Array.isArray(block) ? block.map((listener) => ({ block: listener, thread }))
-    : block ? [{ block, thread }]
-    : [],
+    block && Array.isArray(block)
+      ? block.map((listener) => ({ block: listener, thread }))
+      : block
+        ? [{ block, thread }]
+        : [],
   )
   const interruptedThreads = [...pending].flatMap(([thread, { interrupt }]) =>
-    interrupt && Array.isArray(interrupt) ? interrupt.map((listener) => ({ interrupt: listener, thread }))
-    : interrupt ? [{ interrupt, thread }]
-    : [],
+    interrupt && Array.isArray(interrupt)
+      ? interrupt.map((listener) => ({ interrupt: listener, thread }))
+      : interrupt
+        ? [{ interrupt, thread }]
+        : [],
   )
 
   const ruleSets: {
@@ -298,7 +302,7 @@ export const behavioral: Behavioral = () => {
       ({ priority: priorityA }, { priority: priorityB }) => priorityA - priorityB,
     )[0]
     if (selectedEvent) {
-      snapshotPublisher && snapshotPublisher(snapshotFormatter({ candidates, selectedEvent, pending }))
+      snapshotPublisher?.(snapshotFormatter({ candidates, selectedEvent, pending }))
       nextStep(selectedEvent)
     }
   }

@@ -1,6 +1,6 @@
-import type { PlaitedTrigger, BThreads, Trigger, UseSnapshot, BThread, BSync } from './behavioral.types.js'
-import type { CustomElementTag, FunctionTemplate, TemplateObject } from './create-template.types.js'
 import { type BEHAVIORAL_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './b-element.constants.js'
+import type { BSync, BThread, BThreads, PlaitedTrigger, Trigger, UseSnapshot } from './behavioral.types.js'
+import type { CustomElementTag, FunctionTemplate, TemplateObject } from './create-template.types.js'
 /**
  * Valid insertion positions for DOM elements relative to a reference element.
  * Follows the insertAdjacentElement/HTML specification.
@@ -53,10 +53,13 @@ export type Bindings = {
    *
    * @param attr Attribute name or object containing multiple attributes
    * @param val Value to set (when using string attr name)
-   * @returns Current attribute value when getting a single attribute
+   * @returns Current attribute value when getting a single attribute, undefined when setting
    */
-  attr(this: Element, attr: Record<string, string | null | number | boolean>, val?: never): void
-  attr(this: Element, attr: string, val?: string | null | number | boolean): string | null | void
+  attr(
+    this: Element,
+    attr: string | Record<string, string | null | number | boolean>,
+    val?: string | null | number | boolean,
+  ): string | null | undefined
 }
 
 /**
@@ -101,10 +104,13 @@ export interface BehavioralElement extends HTMLElement {
   // Custom Methods and properties
   trigger: Trigger
   readonly publicEvents?: string[]
-  adoptedCallback?: { (this: BehavioralElement): void }
-  attributeChangedCallback?: {
-    (this: BehavioralElement, name: string, oldValue: string | null, newValue: string | null): void
-  }
+  adoptedCallback?: (this: BehavioralElement) => void
+  attributeChangedCallback?: (
+    this: BehavioralElement,
+    name: string,
+    oldValue: string | null,
+    newValue: string | null,
+  ) => void
   connectedCallback(this: BehavioralElement): void
   disconnectedCallback(this: BehavioralElement): void
   formAssociatedCallback(this: BehavioralElement, form: HTMLFormElement): void
@@ -187,17 +193,17 @@ export type BProgramArgs = {
  * @property onFormStateRestore - Called when browser restores element state (requires formAssociated: true)
  */
 export type BehavioralElementCallbackDetails = {
-  [ELEMENT_CALLBACKS.onAdopted]: void
+  [ELEMENT_CALLBACKS.onAdopted]: undefined
   [ELEMENT_CALLBACKS.onAttributeChanged]: {
     name: string
     oldValue: string | null
     newValue: string | null
   }
-  [ELEMENT_CALLBACKS.onConnected]: void
-  [ELEMENT_CALLBACKS.onDisconnected]: void
+  [ELEMENT_CALLBACKS.onConnected]: undefined
+  [ELEMENT_CALLBACKS.onDisconnected]: undefined
   [ELEMENT_CALLBACKS.onFormAssociated]: HTMLFormElement
   [ELEMENT_CALLBACKS.onFormDisabled]: boolean
-  [ELEMENT_CALLBACKS.onFormReset]: void
+  [ELEMENT_CALLBACKS.onFormReset]: undefined
   [ELEMENT_CALLBACKS.onFormStateRestore]: {
     state: unknown
     reason: 'autocomplete' | 'restore'

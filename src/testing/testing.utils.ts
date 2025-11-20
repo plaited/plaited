@@ -1,37 +1,36 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axe from 'axe-core'
-import type { Trigger } from '../main.js'
-import { deepEqual, trueTypeOf, isTypeOf, wait, noop } from '../utils.js'
+import { P_TARGET } from '../main/create-template.constants.js'
 import { DelegatedListener, delegates } from '../main/delegated-listener.js'
-
+import type { Trigger } from '../main.js'
+import { deepEqual, isTypeOf, noop, trueTypeOf, wait } from '../utils.js'
 import {
+  DATA_TESTID,
   FIXTURE_EVENTS,
-  STORY_FIXTURE,
   RELOAD_PAGE,
   RUNNER_URL,
-  DATA_TESTID,
+  STORY_FIXTURE,
   STORY_IDENTIFIER,
 } from './testing.constants.js'
 import type {
+  AccessibilityCheck,
+  AccessibilityCheckDetails,
   Assert,
   AssertDetails,
   FindByAttribute,
   FindByAttributeDetails,
+  FindByTarget,
+  FindByTestId,
+  FindByTestIdDetails,
   FindByText,
   FindByTextDetail,
   FireEvent,
   FireEventDetail,
   FireEventOptions,
-  WaitDetails,
-  AccessibilityCheck,
-  AccessibilityCheckDetails,
-  FindByTestId,
-  FindByTarget,
-  FindByTestIdDetails,
   RunnerMessage,
   StoryExport,
+  WaitDetails,
 } from './testing.types.js'
-import { P_TARGET } from '../main/create-template.constants.js'
 
 /**
  * Error thrown when test assertion fails.
@@ -39,9 +38,6 @@ import { P_TARGET } from '../main/create-template.constants.js'
  */
 export class FailedAssertionError extends Error implements Error {
   override name = FIXTURE_EVENTS.failed_assertion
-  constructor(message: string) {
-    super(message)
-  }
 }
 
 /**
@@ -50,9 +46,6 @@ export class FailedAssertionError extends Error implements Error {
  */
 export class MissingAssertionParameterError extends Error implements Error {
   override name = FIXTURE_EVENTS.missing_assertion_parameter
-  constructor(message: string) {
-    super(message)
-  }
 }
 
 /**
@@ -61,9 +54,6 @@ export class MissingAssertionParameterError extends Error implements Error {
  */
 export class AccessibilityError extends Error implements Error {
   override name = FIXTURE_EVENTS.accessibility_violation
-  constructor(message: string) {
-    super(message)
-  }
 }
 
 /**
@@ -126,6 +116,7 @@ export type Throws = {
  * @param x - Value to check
  * @returns True if the value is Promise-like
  */
+// biome-ignore lint/suspicious/noExplicitAny: Type guard needs to accept any value to check if it's a Promise
 const isPromise = (x: any) => x && typeof x.then === 'function'
 
 /**
@@ -142,6 +133,7 @@ const catchAndReturn = (x: Promise<unknown>) => x.catch((y) => y)
  * @param x - Value or Promise to process
  * @returns Original value or a Promise that resolves with either the value or error
  */
+// biome-ignore lint/suspicious/noExplicitAny: Needs to handle both Promises and non-Promises of unknown types
 const catchPromise = (x: any) => (isPromise(x) ? catchAndReturn(x) : x)
 
 /**
@@ -162,7 +154,7 @@ const catchPromise = (x: any) => (isPromise(x) ? catchAndReturn(x) : x)
  * - Consistent error formatting
  */
 export const throws: Throws = (
-  //@ts-ignore: noop
+  //@ts-expect-error: noop
   fn = noop,
   ...args
 ) => {
@@ -182,13 +174,15 @@ const requiredKeys = ['given', 'should', 'actual', 'expected']
 
 const replacer = (key: string | number | symbol, value: unknown) => {
   if (!key) return value
-  return (
-    isTypeOf<Record<string, unknown>>(value, 'object') || isTypeOf<unknown[]>(value, 'array') ? value
-    : value instanceof Set ? `Set <${JSON.stringify(Array.from(value))}>`
-    : value instanceof Map ? `Map <${JSON.stringify(Object.fromEntries(value))}>`
-    : PRIMITIVES.has(trueTypeOf(value)) ? value
-    : (value?.toString?.() ?? value)
-  )
+  return isTypeOf<Record<string, unknown>>(value, 'object') || isTypeOf<unknown[]>(value, 'array')
+    ? value
+    : value instanceof Set
+      ? `Set <${JSON.stringify(Array.from(value))}>`
+      : value instanceof Map
+        ? `Map <${JSON.stringify(Object.fromEntries(value))}>`
+        : PRIMITIVES.has(trueTypeOf(value))
+          ? value
+          : (value?.toString?.() ?? value)
 }
 
 export const useAssert = (trigger: Trigger) => {
@@ -555,7 +549,7 @@ export const useRunner = () => {
     retry() {
       if (retryCount < maxRetries) {
         // To get max we use a cap: 9999ms base: 1000ms
-        const max = Math.min(9999, 1000 * Math.pow(2, retryCount))
+        const max = Math.min(9999, 1000 * 2 ** retryCount)
         // We then select a random value between 0 and max
         setTimeout(ws.connect, Math.floor(Math.random() * max))
         retryCount++

@@ -1,4 +1,4 @@
-import type { StylesObject, DesignTokenReference } from './css.types.js'
+import type { DesignTokenReference, StylesObject } from './css.types.js'
 import { isTokenReference } from './css.utils.js'
 
 /**

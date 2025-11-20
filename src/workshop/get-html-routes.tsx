@@ -1,11 +1,10 @@
-import { joinStyles, type TemplateObject } from '../main.js'
-import { ssr } from '../main.js'
-import { zip } from './workshop.utils.js'
-import { RUNNER_URL, RELOAD_PAGE } from '../testing/testing.constants.js'
-import { getEntryPath } from './get-entry-path.js'
-import { kebabCase } from '../utils.js'
 import { z } from 'zod'
+import { joinStyles, ssr, type TemplateObject } from '../main.js'
+import { RELOAD_PAGE, RUNNER_URL } from '../testing/testing.constants.js'
 import type { StoryExport } from '../testing/testing.types.js'
+import { kebabCase } from '../utils.js'
+import { getEntryPath } from './get-entry-path.js'
+import { zip } from './workshop.utils.js'
 
 /**
  * Module-level cache for dynamic imports to avoid redundant loading.
@@ -126,7 +125,7 @@ const usePage = ({
   const additionalStyles = parameters?.styles ? Object.entries(parameters.styles).map(([k, v]) => `${k}: ${v}`) : []
 
   const content = ssr(
-    <html>
+    <html lang='en'>
       <head>
         <title>{exportName}</title>
         <link

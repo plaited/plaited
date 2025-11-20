@@ -1,5 +1,4 @@
-import { type FT } from 'plaited'
-import { createStyles } from 'plaited'
+import { createStyles, type FT } from 'plaited'
 
 const componentStyles = createStyles({
   board: {
@@ -29,6 +28,7 @@ const componentStyles = createStyles({
 })
 
 export const BoardMarker: FT = () => (
+  // biome-ignore lint/a11y/useSemanticElements: Game board is not a form fieldset, role='group' is appropriate
   <div
     role='group'
     aria-label='board'

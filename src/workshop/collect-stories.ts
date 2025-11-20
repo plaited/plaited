@@ -21,9 +21,9 @@
  */
 
 import { Glob } from 'bun'
+import type { StoryExport } from '../testing/testing.types.js'
 import { isStoryExport } from '../testing/testing.utils.js'
 import type { StoryMetadata } from './workshop.types.js'
-import type { StoryExport } from '../testing/testing.types.js'
 import { globFiles } from './workshop.utils.js'
 
 /**
@@ -52,10 +52,7 @@ const toStoryMetadata = ({
     hasArgs: storyExport.args !== undefined,
     hasTemplate: storyExport.template !== undefined,
     hasParameters: storyExport.parameters !== undefined,
-    flag:
-      storyExport.only === true ? 'only'
-      : storyExport.skip === true ? 'skip'
-      : undefined,
+    flag: storyExport.only === true ? 'only' : storyExport.skip === true ? 'skip' : undefined,
   }
 }
 

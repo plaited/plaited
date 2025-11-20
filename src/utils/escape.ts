@@ -89,14 +89,14 @@ const getUnescapeValue = (key: string) => unescapeKeyValues[key as keyof typeof 
  *
  * @example
  * ```ts
- * escape('<div class="test">'); // '&lt;div class=&quot;test&quot;&gt;'
- * escape('Hello & Goodbye');     // 'Hello &amp; Goodbye'
- * escape("It's < than >");      // 'It&#39;s &lt; than &gt;'
+ * htmlEscape('<div class="test">'); // '&lt;div class=&quot;test&quot;&gt;'
+ * htmlEscape('Hello & Goodbye');     // 'Hello &amp; Goodbye'
+ * htmlEscape("It's < than >");      // 'It&#39;s &lt; than &gt;'
  * ```
  *
- * @see {@link unescape} for reverse operation
+ * @see {@link htmlUnescape} for reverse operation
  */
-export const escape = (sub: string) => replace.call(sub, escapeRegex, getEscapeValue)
+export const htmlEscape = (sub: string) => replace.call(sub, escapeRegex, getEscapeValue)
 
 /**
  * Converts HTML entities back to original characters.
@@ -106,11 +106,11 @@ export const escape = (sub: string) => replace.call(sub, escapeRegex, getEscapeV
  *
  * @example
  * ```ts
- * unescape('&lt;div&gt;');              // '<div>'
- * unescape('&quot;Hello&quot;');        // '"Hello"'
- * unescape('&#39;Single Quote&#39;');   // "'Single Quote'"
+ * htmlUnescape('&lt;div&gt;');              // '<div>'
+ * htmlUnescape('&quot;Hello&quot;');        // '"Hello"'
+ * htmlUnescape('&#39;Single Quote&#39;');   // "'Single Quote'"
  * ```
  *
- * @see {@link escape} for escaping HTML
+ * @see {@link htmlEscape} for escaping HTML
  */
-export const unescape = (sub: string) => replace.call(sub, unescapeRegex, getUnescapeValue)
+export const htmlUnescape = (sub: string) => replace.call(sub, unescapeRegex, getUnescapeValue)

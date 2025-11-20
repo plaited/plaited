@@ -1,6 +1,5 @@
-import { type BehavioralElement, type Position, bElement, useTemplate, type FT } from 'plaited'
+import { type BehavioralElement, bElement, createStyles, type FT, type Position, useTemplate } from 'plaited'
 import { story } from 'plaited/testing'
-import { createStyles } from 'plaited'
 
 const componentStyles = createStyles({
   root: {
@@ -84,10 +83,13 @@ const Root: FT = (attrs) => (
           p-target='id'
         ></td>
         <td class='col-md-4'>
-          <a p-target='label'></a>
+          <a
+            p-target='label'
+            href='#'
+          ></a>
         </td>
         <td class='col-md-1'>
-          <a>
+          <a href='#'>
             <span
               class='glyphicon glyphicon-remove'
               aria-hidden='true'
@@ -137,11 +139,13 @@ const Fixture = bElement({
       },
       getAttribute() {
         const attr = $('root')[0].attr('p-target')
-        $('root')[0].render(<>{attr}</>)
+        $('root')[0].render(attr ?? '')
       },
       removeAttributes() {
         const labels = $('label')
-        labels.forEach((label) => label.attr('p-target', null))
+        labels.forEach((label) => {
+          label.attr('p-target', null)
+        })
       },
       setAttribute() {
         const [root] = $('root')
@@ -153,13 +157,13 @@ const Fixture = bElement({
       },
       multiSetAttributes() {
         const dels = $('delete')
-        dels.forEach((del) =>
+        dels.forEach((del) => {
           del.attr({
             'p-target': 'cancel',
             'aria-hidden': 'false',
             class: null,
-          }),
-        )
+          })
+        })
       },
     }
   },

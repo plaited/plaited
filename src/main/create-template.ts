@@ -83,33 +83,35 @@
  * @see {@link styles} for style creation
  */
 
-import { isTypeOf, trueTypeOf, kebabCase, escape } from '../utils.js'
-import type {
-  Attrs,
-  DetailedHTMLAttributes,
-  TemplateObject,
-  ElementAttributeList,
-  CustomElementTag,
-  FunctionTemplate,
-} from './create-template.types.js'
+import { htmlEscape, isTypeOf, kebabCase, trueTypeOf } from '../utils.js'
 import {
   BOOLEAN_ATTRS,
-  PRIMITIVES,
-  VOID_TAGS,
-  VALID_PRIMITIVE_CHILDREN,
   P_TRIGGER,
+  PRIMITIVES,
   TEMPLATE_OBJECT_IDENTIFIER,
+  VALID_PRIMITIVE_CHILDREN,
+  VOID_TAGS,
 } from './create-template.constants.js'
+import type {
+  Attrs,
+  CustomElementTag,
+  DetailedHTMLAttributes,
+  ElementAttributeList,
+  FunctionTemplate,
+  TemplateObject,
+} from './create-template.types.js'
 
 /** @internal Represents the possible types for a tag in a JSX element: a standard HTML/SVG tag name (string), a custom element tag name (string with hyphen), or a FunctionTemplate component. */
 type Tag = string | CustomElementTag | FunctionTemplate
 
 /** @internal Utility type to infer the correct attribute type (`Attrs`) based on the provided tag type (`Tag`). It maps standard tags to their detailed attributes, FunctionTemplates to their parameter types, and custom elements/other strings to default detailed attributes. */
-type InferAttrs<T extends Tag> =
-  T extends keyof ElementAttributeList ? ElementAttributeList[T]
-  : T extends FunctionTemplate ? Parameters<T>[0]
-  : T extends CustomElementTag ? DetailedHTMLAttributes
-  : Attrs
+type InferAttrs<T extends Tag> = T extends keyof ElementAttributeList
+  ? ElementAttributeList[T]
+  : T extends FunctionTemplate
+    ? Parameters<T>[0]
+    : T extends CustomElementTag
+      ? DetailedHTMLAttributes
+      : Attrs
 
 /** @internal The signature for the core template creation function (`createTemplate`). Ensures type safety between the tag and its attributes. */
 type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => TemplateObject
@@ -180,7 +182,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   if (isTypeOf<FunctionTemplate>(_tag, 'function')) {
     return _tag(attrs)
   }
-  const tag = escape(_tag.toLowerCase().trim())
+  const tag = htmlEscape(_tag.toLowerCase().trim())
 
   /** If the tag is script we must explicitly pass trusted */
   if (tag === 'script' && !trusted) {
@@ -189,16 +191,16 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   /** Now to create an array to store our node attributes */
   const start = [`<${tag} `]
   /** handle JS reserved words commonly used in html class & for*/
-  if (htmlFor) start.push(`for="${escape(htmlFor)}" `)
+  if (htmlFor) start.push(`for="${htmlEscape(htmlFor)}" `)
   const classes = new Set(classNames)
-  cls && classes.add(escape(cls))
+  cls && classes.add(htmlEscape(cls))
   if (classes.size) start.push(`class="${[...classes].join(' ')}" `)
   /** if we have bpTrigger attribute wire up formatted correctly*/
   if (bpTrigger) {
     const value = Object.entries(bpTrigger)
       .map<string>(([ev, req]) => `${ev}:${req}`)
       .join(' ')
-    start.push(`${P_TRIGGER}="${escape(value)}" `)
+    start.push(`${P_TRIGGER}="${htmlEscape(value)}" `)
   }
   /** if we have style add it to element */
   if (style) {
@@ -206,7 +208,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       /** convert camelCase style prop into dash-case ones so long as not cssVar */
       .map<string>(([prop, val]) => `${prop.startsWith('--') ? prop : kebabCase(prop)}:${val};`)
       .join(' ')
-    start.push(`style="${escape(value)}" `)
+    start.push(`style="${htmlEscape(value)}" `)
   }
   /** next we want to loops through our attributes */
   for (const key in attributes) {
@@ -229,7 +231,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       throw new Error(`Attributes not declared in PlaitedAttributes must be of type Primitive: ${key} is not primitive`)
     }
     /** handle the rest of the attributes */
-    start.push(`${escape(key)}="${trusted ? value : escape(value)}" `)
+    start.push(`${htmlEscape(key)}="${trusted ? value : htmlEscape(value)}" `)
   }
   /** Our tag is a void tag so we can return it once we apply attributes */
   if (VOID_TAGS.has(tag)) {
@@ -259,7 +261,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     /** P2 typeof child is NOT a valid primitive child then skip and do nothing */
     if (!VALID_PRIMITIVE_CHILDREN.has(trueTypeOf(child))) continue
     /** P3 child IS {@type Primitive} */
-    const str = trusted ? `${child}` : escape(`${child}`)
+    const str = trusted ? `${child}` : htmlEscape(`${child}`)
     end.push(str)
   }
   end.push(`</${tag}>`)
@@ -351,7 +353,7 @@ export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
       registry.push(...child.registry)
     }
     if (!VALID_PRIMITIVE_CHILDREN.has(trueTypeOf(child))) continue
-    const safeChild = escape(`${child}`)
+    const safeChild = htmlEscape(`${child}`)
     html.push(safeChild)
   }
   return {

@@ -5,7 +5,7 @@
  * @remarks
  * This module provides access to:
  * - **Type Checking**: {@link isTypeOf}, {@link trueTypeOf} - Runtime type validation and detection
- * - **String Utilities**: {@link case} functions, {@link escape}, {@link hashString} - String manipulation and formatting
+ * - **String Utilities**: {@link case} functions, {@link htmlEscape}, {@link htmlUnescape}, {@link hashString} - String manipulation and formatting
  * - **DOM Utilities**: {@link canUseDOM}, {@link createDocumentFragment} - Browser environment detection and DOM helpers
  * - **Data Utilities**: {@link deepEqual}, {@link keyMirror}, {@link valueOf} - Object comparison and manipulation
  * - **ID Generation**: {@link ueid} - Unique identifier creation

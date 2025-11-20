@@ -1,8 +1,8 @@
-import { test, expect, beforeAll, afterAll } from 'bun:test'
-import { chromium, type Browser } from 'playwright'
-import { useRunner, type TestStoriesOutput } from '../use-runner.js'
-import { useSignal, type Trigger } from '../../main.js'
+import { afterAll, beforeAll, expect, test } from 'bun:test'
+import { type Browser, chromium } from 'playwright'
+import { type Trigger, useSignal } from '../../main.js'
 import { discoverStoryMetadata } from '../collect-stories.js'
+import { type TestStoriesOutput, useRunner } from '../use-runner.js'
 
 const cwd = `${import.meta.dir}/fixtures`
 const testPort = 3457
@@ -147,7 +147,7 @@ test(
     const reporter = useSignal<TestStoriesOutput>()
 
     // Discover stories from additional file
-    const allStories = await discoverStoryMetadata(cwd)
+    const allStories = await discoverStoryMetadata(cwd, '**/filtering/**')
     const additionalStories = allStories.filter((s) => s.filePath.includes('additional-stories'))
 
     expect(additionalStories.length).toBeGreaterThan(0)
@@ -184,7 +184,7 @@ test(
 
     const reporter = useSignal<TestStoriesOutput>()
 
-    const allStories = await discoverStoryMetadata(cwd)
+    const allStories = await discoverStoryMetadata(cwd, '**/filtering/**')
 
     // Get mix of interaction and snapshot stories from different files
     const snapshotStories = allStories.filter((s) => s.type === 'snapshot').slice(0, 2)

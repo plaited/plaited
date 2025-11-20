@@ -21,36 +21,36 @@
  * Consumers: Application code creating custom elements with behavioral programming
  */
 
+import { canUseDOM } from '../utils.js'
+import { BEHAVIORAL_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './b-element.constants.js'
 import type {
-  PlaitedTrigger,
-  Handlers,
+  BehavioralElement,
+  BehavioralElementCallbackDetails,
+  BehavioralTemplate,
+  Bindings,
+  BoundElement,
+  BProgramArgs,
+  SelectorMatch,
+} from './b-element.types.js'
+import { assignHelpers, getBindings, getDocumentFragment } from './b-element.utils.js'
+import { behavioral } from './behavioral.js'
+import type {
   BThreads,
   Disconnect,
+  EventDetails,
+  Handlers,
+  PlaitedTrigger,
   Trigger,
   UseFeedback,
   UseSnapshot,
-  EventDetails,
 } from './behavioral.types.js'
-import { behavioral } from './behavioral.js'
-import { bThread, bSync } from './behavioral.utils.js'
+import { bSync, bThread } from './behavioral.utils.js'
+import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from './create-template.constants.js'
+import { createTemplate } from './create-template.js'
+import type { Attrs, CustomElementTag, TemplateObject } from './create-template.types.js'
+import { DelegatedListener, delegates } from './delegated-listener.js'
 import { usePlaitedTrigger } from './use-plaited-trigger.js'
 import { usePublicTrigger } from './use-public-trigger.js'
-import { canUseDOM } from '../utils.js'
-import { delegates, DelegatedListener } from './delegated-listener.js'
-import type { Attrs, TemplateObject, CustomElementTag } from './create-template.types.js'
-import { P_TRIGGER, P_TARGET, BOOLEAN_ATTRS } from './create-template.constants.js'
-import { createTemplate } from './create-template.js'
-import { getDocumentFragment, assignHelpers, getBindings } from './b-element.utils.js'
-import { BEHAVIORAL_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './b-element.constants.js'
-import type {
-  BehavioralTemplate,
-  BehavioralElement,
-  SelectorMatch,
-  Bindings,
-  BoundElement,
-  BehavioralElementCallbackDetails,
-  BProgramArgs,
-} from './b-element.types.js'
 
 /**
  * @internal
@@ -79,9 +79,11 @@ const getTriggerMap = (el: Element) =>
  */
 const getTriggerType = (event: Event, context: Element) => {
   const el =
-    context.tagName !== 'SLOT' && event.currentTarget === context ? context
-    : event.composedPath().find((el) => el instanceof ShadowRoot) === context.getRootNode() ? context
-    : undefined
+    context.tagName !== 'SLOT' && event.currentTarget === context
+      ? context
+      : event.composedPath().find((el) => el instanceof ShadowRoot) === context.getRootNode()
+        ? context
+        : undefined
   if (!el) return
   return getTriggerMap(el).get(event.type)
 }
@@ -168,9 +170,7 @@ export const bElement = <A extends EventDetails>({
   observedAttributes?: string[]
   publicEvents?: string[]
   formAssociated?: true
-  bProgram?: {
-    (this: BehavioralElement, args: BProgramArgs): Handlers<A> & BehavioralElementCallbackHandlers
-  }
+  bProgram?: (this: BehavioralElement, args: BProgramArgs) => Handlers<A> & BehavioralElementCallbackHandlers
 }): BehavioralTemplate => {
   if (canUseDOM() && !customElements.get(tag)) {
     customElements.define(
@@ -304,11 +304,11 @@ export const bElement = <A extends EventDetails>({
                 el,
                 new DelegatedListener((event) => {
                   const type = el.getAttribute(P_TRIGGER) && getTriggerType(event, el)
-                  type ?
-                    /** if key is present in `p-trigger` trigger event on instance's bProgram */
-                    this.#trigger?.({ type, detail: event })
-                  : /** if key is not present in `p-trigger` remove event listener for this event on Element */
-                    el.removeEventListener(event.type, delegates.get(el))
+                  type
+                    ? /** if key is present in `p-trigger` trigger event on instance's bProgram */
+                      this.#trigger?.({ type, detail: event })
+                    : /** if key is not present in `p-trigger` remove event listener for this event on Element */
+                      el.removeEventListener(event.type, delegates.get(el))
                 }),
               )
             for (const [event] of getTriggerMap(el)) {
@@ -333,16 +333,16 @@ export const bElement = <A extends EventDetails>({
                   const node = mutation.addedNodes[i]
                   if (isElement(node)) {
                     this.#addListeners(
-                      node.hasAttribute(P_TRIGGER) ?
-                        [node, ...node.querySelectorAll(`[${P_TRIGGER}]`)]
-                      : node.querySelectorAll(`[${P_TRIGGER}]`),
+                      node.hasAttribute(P_TRIGGER)
+                        ? [node, ...node.querySelectorAll(`[${P_TRIGGER}]`)]
+                        : node.querySelectorAll(`[${P_TRIGGER}]`),
                     )
 
                     assignHelpers(
                       bindings,
-                      node.hasAttribute(P_TARGET) ?
-                        [node, ...node.querySelectorAll(`[${P_TARGET}]`)]
-                      : node.querySelectorAll(`[${P_TARGET}]`),
+                      node.hasAttribute(P_TARGET)
+                        ? [node, ...node.querySelectorAll(`[${P_TARGET}]`)]
+                        : node.querySelectorAll(`[${P_TARGET}]`),
                     )
                   }
                 }

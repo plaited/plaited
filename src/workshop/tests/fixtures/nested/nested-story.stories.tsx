@@ -9,7 +9,7 @@ export const nestedSnapshot = story({
 // Interaction story in nested directory
 export const nestedInteraction = story({
   description: 'An interaction story in nested directory',
-  template: () => <button>Nested Button</button>,
+  template: () => <button type='button'>Nested Button</button>,
   async play({ assert, findByText }) {
     const button = await findByText('Nested Button')
     assert({

@@ -1,5 +1,5 @@
+import type { CSS_RESERVED_KEYS } from './css.constants.js'
 import type * as CSS from './types/css.js'
-import { type CSS_RESERVED_KEYS } from './css.constants.js'
 
 /**
  * Represents CSS properties with string or number values.

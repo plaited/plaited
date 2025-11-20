@@ -1,11 +1,13 @@
 import {
   bElement,
-  useAttributesObserver,
-  type ObservedAttributesDetail,
-  type FT,
+  createHostStyles,
+  createStyles,
   type ElementAttributeList,
+  type FT,
+  joinStyles,
+  type ObservedAttributesDetail,
+  useAttributesObserver,
 } from 'plaited'
-import { createStyles, createHostStyles, joinStyles } from 'plaited'
 import { isTypeOf } from 'plaited/utils'
 
 const componentStyles = createStyles({

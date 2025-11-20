@@ -1,5 +1,5 @@
-import { test, expect } from 'bun:test'
-import path from 'path'
+import { expect, test } from 'bun:test'
+import path from 'node:path'
 
 test('bElement export footprint < 5kb', async () => {
   const plaitedResults = await Bun.build({

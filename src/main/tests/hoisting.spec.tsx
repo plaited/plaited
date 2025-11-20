@@ -1,7 +1,6 @@
-import { test, expect } from 'bun:test'
-import { type TemplateObject, bElement } from 'plaited'
-import { createStyles, joinStyles } from 'plaited'
+import { expect, test } from 'bun:test'
 import beautify from 'beautify'
+import { bElement, createStyles, joinStyles, type TemplateObject } from 'plaited'
 
 const render = (tpl: TemplateObject) => beautify(tpl.html.join(''), { format: 'html' })
 
@@ -85,6 +84,7 @@ test('createTemplate: CustomElement with declarative shadow dom and nested decla
 test('createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles and child', () => {
   const el = (
     <TopCustomElement {...componentStyles.topComponent}>
+      {/* biome-ignore lint/a11y/useAltText: Test fixture doesn't need alt text */}
       <img {...componentStyles.image} />
     </TopCustomElement>
   )

@@ -32,9 +32,9 @@
  * - No source maps for debugging generated HTML
  * - Shadow DOM polyfills not included
  */
-import { escape, isTypeOf } from '../utils.js'
+import { htmlEscape, isTypeOf } from '../utils.js'
+import { TEMPLATE_OBJECT_IDENTIFIER, VALID_PRIMITIVE_CHILDREN } from './create-template.constants.js'
 import type { TemplateObject } from './create-template.types.js'
-import { VALID_PRIMITIVE_CHILDREN, TEMPLATE_OBJECT_IDENTIFIER } from './create-template.constants.js'
 
 /**
  * Server-side renders Plaited templates to static HTML.
@@ -85,7 +85,7 @@ export const ssr = (...templates: TemplateObject[]) => {
       continue
     }
     if (!VALID_PRIMITIVE_CHILDREN.has(typeof child)) continue
-    const safeChild = escape(`${child}`)
+    const safeChild = htmlEscape(`${child}`)
     arr.push(safeChild)
   }
 

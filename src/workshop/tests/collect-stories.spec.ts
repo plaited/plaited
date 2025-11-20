@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { expect, test } from 'bun:test'
 import { join } from 'node:path'
 import { discoverStoryMetadata, getStoryMetadata } from '../collect-stories.js'
 import type { StoryMetadata } from '../workshop.types.js'

@@ -22,7 +22,7 @@ export type Repeat = true | (() => boolean)
  * @see {@link BPEventTemplate} for dynamic event generation
  * @see {@link Trigger} for injecting events into the program
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: Event payloads can be of any type, typed at usage site
 export type BPEvent = { type: string; detail?: any }
 
 /**
@@ -277,7 +277,7 @@ export type SnapshotListener = (msg: SnapshotMessage) => void | Promise<void>
  * meaning if no specific event map is provided, handlers will expect `EventDetails` for
  * their payloads.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: Default event map allows any detail type, constrained by Handlers<T>
 export type EventDetails = Record<string, any>
 
 /**
@@ -291,7 +291,7 @@ export type EventDetails = Record<string, any>
  * through the more specialized `Handlers<T>` type. Both synchronous and asynchronous
  * handler functions are supported.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: Default handlers accept any detail type, refined by Handlers<T> generic
 export type DefaultHandlers = Record<string, (detail: any) => void | Promise<void>>
 
 /**

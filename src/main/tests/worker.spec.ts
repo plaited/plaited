@@ -1,7 +1,7 @@
-import { test, expect } from 'bun:test'
+import { expect, test } from 'bun:test'
+import { useWorker } from 'plaited'
 import { wait } from 'plaited/utils'
 import sinon from 'sinon'
-import { useWorker } from 'plaited'
 
 test('validate userWorker and bWorker utilities function as expected', async () => {
   const spy = sinon.spy()

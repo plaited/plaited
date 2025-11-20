@@ -1,6 +1,6 @@
-import { test, expect, describe } from 'bun:test'
-import { resolve } from 'node:path'
+import { describe, expect, test } from 'bun:test'
 import { statSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { discoverStoryMetadata, getStoryMetadata } from '../collect-stories.js'
 
 const fixturesDir = `${import.meta.dir}/fixtures`
@@ -21,7 +21,7 @@ describe('CLI Logic Tests', () => {
       const invalidPorts = [0, -1, 65536, 70000, NaN]
 
       invalidPorts.forEach((port) => {
-        const isValid = !isNaN(port) && port >= 1 && port <= 65535
+        const isValid = !Number.isNaN(port) && port >= 1 && port <= 65535
         expect(isValid).toBe(false)
       })
     })
@@ -39,7 +39,7 @@ describe('CLI Logic Tests', () => {
 
       invalidPortStrings.forEach((portString) => {
         const port = parseInt(portString, 10)
-        const isValid = !isNaN(port) && port >= 1 && port <= 65535
+        const isValid = !Number.isNaN(port) && port >= 1 && port <= 65535
         expect(isValid).toBe(false)
       })
     })
@@ -134,7 +134,7 @@ describe('CLI Logic Tests', () => {
     })
 
     test('directory path: should discover stories from nested directories', async () => {
-      const metadata = await discoverStoryMetadata(fixturesDir)
+      const metadata = await discoverStoryMetadata(fixturesDir, '**/filtering/**')
       const nestedStories = metadata.filter((m) => m.filePath.includes('/nested/'))
 
       expect(nestedStories.length).toBeGreaterThan(0)
@@ -239,7 +239,7 @@ describe('CLI Logic Tests', () => {
     })
 
     test('should correctly identify interaction stories', async () => {
-      const metadata = await discoverStoryMetadata(fixturesDir)
+      const metadata = await discoverStoryMetadata(fixturesDir, '**/filtering/**')
       const interactionStories = metadata.filter((m) => m.type === 'interaction')
 
       expect(interactionStories.length).toBeGreaterThan(0)

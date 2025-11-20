@@ -1,8 +1,8 @@
 import type axe from 'axe-core'
 import type { FunctionTemplate, HostStylesObject, TemplateObject } from '../main.js'
 import type { Wait } from '../utils.js'
+import type { FIXTURE_EVENTS, STORY_IDENTIFIER, STORY_TYPES } from './testing.constants.js'
 import type { Match, Throws } from './testing.utils.js'
-import { FIXTURE_EVENTS, STORY_TYPES, STORY_IDENTIFIER } from './testing.constants.js'
 
 /**
  * Parameters for structured test assertions.

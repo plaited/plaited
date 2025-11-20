@@ -1,7 +1,7 @@
 import { story } from 'plaited/testing'
-import { TicTacToeBoard } from './tic-tac-toe-board.js'
 import { BoardMarker } from './board-marker.js'
 import { OMarker } from './o-marker.js'
+import { TicTacToeBoard } from './tic-tac-toe-board.js'
 import { XMarker } from './x-marker.js'
 
 export const BoardMarkerRender = story<typeof BoardMarker>({

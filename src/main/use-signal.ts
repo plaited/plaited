@@ -34,12 +34,12 @@
  * - No persistence layer integration
  */
 import type {
-  Trigger,
   Disconnect,
-  PlaitedTrigger,
   Listen,
+  PlaitedTrigger,
   SignalWithInitialValue,
   SignalWithoutInitialValue,
+  Trigger,
 } from './behavioral.types.js'
 import { isPlaitedTrigger } from './behavioral.utils.js'
 
@@ -251,7 +251,7 @@ export function useSignal<T>(initialValue: T) {
  */
 export const useComputed = <T>(
   initialValue: () => T,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: Dependency signals can have any value type
   deps: (SignalWithInitialValue<any> | SignalWithoutInitialValue<any>)[],
 ) => {
   /**

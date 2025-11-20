@@ -1,7 +1,7 @@
-import { test, expect } from 'bun:test'
+import { expect, test } from 'bun:test'
 import sinon from 'sinon'
 import { noop, wait } from '../../utils.js'
-import { useAssert, match, throws } from '../testing.utils.js'
+import { match, throws, useAssert } from '../testing.utils.js'
 
 const assert = useAssert(noop)
 
@@ -130,7 +130,7 @@ test('match()', () => {
 })
 
 test('assert: required params', async () => {
-  //@ts-ignore: testing error message
+  //@ts-expect-error: testing error message
   const noParams = async () => await assert({})
   let spy = sinon.spy(noParams)
   try {
@@ -142,7 +142,7 @@ test('assert: required params', async () => {
     )
   }
   expect(spy.calledOnce).toBe(true)
-  //@ts-ignore: testing error message
+  //@ts-expect-error: testing error message
   const partialParam = async () => await assert({ given: 'some keys', should: 'find the missing keys' })
   spy = sinon.spy(partialParam)
   try {

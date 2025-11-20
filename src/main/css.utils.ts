@@ -1,5 +1,5 @@
+import { hashString, isTypeOf, kebabCase } from '../utils.js'
 import type { DesignTokenReference } from './css.types.js'
-import { kebabCase, hashString, isTypeOf } from '../utils.js'
 
 // Utility functions (previously in css.utils.ts)
 /**
@@ -10,7 +10,7 @@ import { kebabCase, hashString, isTypeOf } from '../utils.js'
  * @returns A base36 hash string prefixed with underscore if negative
  */
 export const createHash = (...args: (string | number)[]) => {
-  const hash = hashString(args.join(' '))?.toString(36)!.replace(/^-/g, '_')
+  const hash = hashString(args.join(' '))?.toString(36)?.replace(/^-/g, '_')
   return hash?.startsWith('_') ? hash : `_${hash}`
 }
 

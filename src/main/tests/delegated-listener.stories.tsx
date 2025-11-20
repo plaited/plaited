@@ -4,7 +4,14 @@ import { DelegatedListener, delegates } from '../delegated-listener.js'
 export const test = story({
   description: `Validates that the delegated event listener function ensures bound events are
   propeerly delegated and only called once event if a listener is attached twice`,
-  template: () => <button data-testid='button'>click me</button>,
+  template: () => (
+    <button
+      type='button'
+      data-testid='button'
+    >
+      click me
+    </button>
+  ),
   play: async ({ findByAttribute, fireEvent, assert }) => {
     const btn = await findByAttribute<HTMLButtonElement>('data-testid', 'button')
     let count = 0

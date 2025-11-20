@@ -1,4 +1,4 @@
-import { createStyles as createStyles } from 'plaited'
+import { createStyles } from 'plaited'
 
 export const styles = createStyles({
   before: {

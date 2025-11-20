@@ -110,6 +110,24 @@ Both workflows enforce Plaited's coding standards from CLAUDE.md:
 - No OWASP top 10 vulnerabilities
 - No security risks (XSS, injection, etc.)
 
+### Manual Review Standards (Not Enforced by Biome)
+
+The following standards are not automatically enforced by the linter and require manual review:
+
+#### TypeScript Comment Directives
+- **`@ts-ignore` requires description**: When using `@ts-ignore`, always include a description explaining why the type error is being suppressed
+- This helps future maintainers understand the reasoning
+
+#### Expression Statements
+- **Allow short-circuit and ternary expressions**: Short-circuit evaluation (`condition && doSomething()`) and ternary expressions (`condition ? doThis() : doThat()`) are acceptable
+- These patterns are idiomatic and improve code readability
+
+#### Empty Object Types
+- **Allow empty object types when extending a single interface**: Empty object types are acceptable when they extend exactly one other interface
+- This pattern is useful for creating branded types or extending third-party interfaces
+
+**Rationale**: These standards were enforced by TypeScript-ESLint rules that have no equivalent in Biome (`ban-ts-comment`, `no-unused-expressions`, `no-empty-object-type`)
+
 ## Troubleshooting
 
 ### Workflow not running

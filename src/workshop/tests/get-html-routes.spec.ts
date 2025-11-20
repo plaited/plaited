@@ -1,6 +1,6 @@
-import { test, expect } from 'bun:test'
-import { getHTMLRoutes } from '../get-html-routes.js'
+import { expect, test } from 'bun:test'
 import { join } from 'node:path'
+import { getHTMLRoutes } from '../get-html-routes.js'
 
 // Path to test fixtures
 const fixturesRoot = join(import.meta.dir, 'fixtures')

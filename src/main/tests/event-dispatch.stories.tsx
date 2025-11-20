@@ -5,6 +5,7 @@ const Nested = bElement({
   tag: 'nested-el',
   shadowDom: (
     <button
+      type='button'
       p-target='button'
       p-trigger={{ click: 'click' }}
     >

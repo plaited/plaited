@@ -10,6 +10,7 @@ const ElOne = bElement({
   shadowDom: (
     <div>
       <button
+        type='button'
         p-target='button'
         p-trigger={{ click: 'click' }}
       >
@@ -22,7 +23,7 @@ const ElOne = bElement({
     return {
       disable() {
         const [button] = $<HTMLButtonElement>('button')
-        button && button.attr('disabled', true)
+        button?.attr('disabled', true)
         disconnect()
       },
       click() {
@@ -47,7 +48,7 @@ const ElTwo = bElement({
       },
       add(detail: { value: string }) {
         const [header] = $('header')
-        header.insert('beforeend', <>{detail.value}</>)
+        header.insert('beforeend', detail.value)
       },
     }
   },

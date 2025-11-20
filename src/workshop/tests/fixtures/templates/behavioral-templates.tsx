@@ -7,7 +7,14 @@ export const SimpleBehavioralTemplate = bElement({
 
 export const BehavioralTemplateWithProgram = bElement({
   tag: 'interactive-component',
-  shadowDom: <button p-target='btn'>Click me</button>,
+  shadowDom: (
+    <button
+      type='button'
+      p-target='btn'
+    >
+      Click me
+    </button>
+  ),
   bProgram({ $ }) {
     const [btn] = $('btn')
     return {

@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { expect, test } from 'bun:test'
 import { join } from 'node:path'
 import { discoverBehavioralTemplateMetadata } from '../collect-behavioral-templates.js'
 import type { TemplateExport } from '../workshop.types.js'

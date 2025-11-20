@@ -1,7 +1,6 @@
-import { bElement } from 'plaited'
-import { isTypeOf } from 'plaited/utils'
+import { bElement, createHostStyles, createStyles, joinStyles } from 'plaited'
 import { story } from 'plaited/testing'
-import { createStyles, createHostStyles, joinStyles } from 'plaited'
+import { isTypeOf } from 'plaited/utils'
 
 const componentStyles = createStyles({
   symbol: {

@@ -1,6 +1,5 @@
-import { bElement, type FT } from 'plaited'
+import { bElement, createStyles, type FT } from 'plaited'
 import { story } from 'plaited/testing'
-import { createStyles } from 'plaited'
 
 const componentStyles = createStyles({
   button: {
@@ -69,8 +68,10 @@ const SVG: FT = (props) => (
     class={'svg'}
     p-trigger={{ click: 'removeSvg' }}
     p-target='svg'
+    aria-label='Test SVG'
     {...props}
   >
+    <title>Test SVG</title>
     <circle
       cx='50'
       cy='50'
@@ -144,7 +145,7 @@ const ShadowIsland = bElement({
         const [svg] = $('svg')
         svg?.remove()
       },
-      ['add-svg']() {
+      'add-svg'() {
         const [zone] = $('zone')
         zone?.insert('beforeend', <SVG {...componentStyles.svg} />)
       },

@@ -1,5 +1,4 @@
-import { bElement, type BehavioralElement } from 'plaited'
-import { createStyles } from 'plaited'
+import { type BehavioralElement, bElement, createStyles } from 'plaited'
 import { story } from 'plaited/testing'
 
 const componentStyles = createStyles({
