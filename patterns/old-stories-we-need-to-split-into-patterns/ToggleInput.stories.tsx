@@ -1,5 +1,5 @@
-import { story } from 'plaited/testing'
-import { ToggleInput } from './ToggleInput.js'
+import { story } from 'plaited/testing.ts'
+import { ToggleInput } from './ToggleInput.tsx'
 
 export const checkbox = story<typeof ToggleInput>({
   description: 'Default checkbox state',

@@ -33,8 +33,8 @@
  * - Cannot observe shadow DOM content from light DOM
  * - One observer per element (not optimized for many elements)
  */
-import type { Disconnect, PlaitedTrigger, Trigger } from './behavioral.types.js'
-import { isPlaitedTrigger } from './behavioral.utils.js'
+import type { Disconnect, PlaitedTrigger, Trigger } from './behavioral.types.ts'
+import { isPlaitedTrigger } from './behavioral.utils.ts'
 
 /**
  * Defines the structure of the event detail object dispatched when an observed attribute

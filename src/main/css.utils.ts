@@ -1,5 +1,5 @@
-import { hashString, isTypeOf, kebabCase } from '../utils.js'
-import type { DesignTokenReference } from './css.types.js'
+import { hashString, isTypeOf, kebabCase } from '../utils.ts'
+import type { DesignTokenReference } from './css.types.ts'
 
 // Utility functions (previously in css.utils.ts)
 /**

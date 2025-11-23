@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
-import { behavioral, bSync } from 'plaited'
-import { wait } from 'plaited/utils'
+import { wait } from 'plaited/utils.ts'
+import { behavioral, bSync } from 'plaited.ts'
 
 /**
  * Test suite for verifying the behavior of asynchronous feedback callbacks

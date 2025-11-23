@@ -1,5 +1,5 @@
 import { beforeEach, expect, test } from 'bun:test'
-import type { ExampleData, PatternData } from '../queries.js'
+import type { ExampleData, PatternData } from '../queries.ts'
 import {
   getExamplesByExport,
   getPattern,
@@ -9,11 +9,11 @@ import {
   listPatterns,
   searchExamples,
   searchPatterns,
-} from '../queries.js'
+} from '../queries.ts'
 
 // Clean database between tests
 beforeEach(async () => {
-  const { db, initDB } = await import('../../databases/db.js')
+  const { db, initDB } = await import('../../databases/db.ts')
   await initDB()
 
   // Clear all tables

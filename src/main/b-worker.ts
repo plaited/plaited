@@ -34,10 +34,10 @@
  * - Worker must be in separate file for proper execution
  */
 
-import { behavioral } from './behavioral.js'
-import type { Behavioral, BPEvent, Disconnect, EventDetails, Handlers } from './behavioral.types.js'
-import { usePlaitedTrigger } from './use-plaited-trigger.js'
-import { usePublicTrigger } from './use-public-trigger.js'
+import { behavioral } from './behavioral.ts'
+import type { Behavioral, BPEvent, Disconnect, EventDetails, Handlers } from './behavioral.types.ts'
+import { usePlaitedTrigger } from './use-plaited-trigger.ts'
+import { usePublicTrigger } from './use-public-trigger.ts'
 
 /**
  * @internal

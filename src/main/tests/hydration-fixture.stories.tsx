@@ -1,8 +1,8 @@
-import { type BehavioralElement, bElement } from 'plaited'
-import { story } from 'plaited/testing'
-import { createDocumentFragment } from 'plaited/utils'
+import { story } from 'plaited/testing.ts'
+import { createDocumentFragment } from 'plaited/utils.ts'
+import { type BehavioralElement, bElement } from 'plaited.ts'
 
-import { AFTER_HYDRATION, BEFORE_HYDRATION, HYDRATING_ELEMENT_TAG, styles } from './hydrating-element.constants.js'
+import { AFTER_HYDRATION, BEFORE_HYDRATION, HYDRATING_ELEMENT_TAG, styles } from './hydrating-element.constants.ts'
 
 const TRIGGER_HYDRATING_ELEMENT = 'TRIGGER_HYDRATING_ELEMENT'
 const FIXTURE_ELEMENT_TAG = 'fixture-element'

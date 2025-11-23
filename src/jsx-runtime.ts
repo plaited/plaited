@@ -9,8 +9,8 @@
 
  */
 
-import { createTemplate, Fragment } from './main/create-template.js'
-import type { ElementAttributeList, TemplateObject } from './main/create-template.types.js'
+import { createTemplate, Fragment } from './main/create-template.ts'
+import type { ElementAttributeList, TemplateObject } from './main/create-template.types.ts'
 
 /**
  * @internal

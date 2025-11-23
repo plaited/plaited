@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axe from 'axe-core'
-import { P_TARGET } from '../main/create-template.constants.js'
-import { DelegatedListener, delegates } from '../main/delegated-listener.js'
-import type { Trigger } from '../main.js'
-import { deepEqual, isTypeOf, noop, trueTypeOf, wait } from '../utils.js'
+import { P_TARGET } from '../main/create-template.constants.ts'
+import { DelegatedListener, delegates } from '../main/delegated-listener.ts'
+import type { Trigger } from '../main.ts'
+import { deepEqual, isTypeOf, noop, trueTypeOf, wait } from '../utils.ts'
 import {
   DATA_TESTID,
   FIXTURE_EVENTS,
@@ -11,7 +11,7 @@ import {
   RUNNER_URL,
   STORY_FIXTURE,
   STORY_IDENTIFIER,
-} from './testing.constants.js'
+} from './testing.constants.ts'
 import type {
   AccessibilityCheck,
   AccessibilityCheckDetails,
@@ -30,7 +30,7 @@ import type {
   RunnerMessage,
   StoryExport,
   WaitDetails,
-} from './testing.types.js'
+} from './testing.types.ts'
 
 /**
  * Error thrown when test assertion fails.
@@ -284,7 +284,10 @@ export const useFindByAttribute = (trigger: Trigger) => {
     attributeValue: string | RegExp,
     context?: HTMLElement | SVGElement,
   ): Promise<T | undefined> => {
-    trigger<{ type: typeof FIXTURE_EVENTS.find_by_attribute; detail: FindByAttributeDetails }>({
+    trigger<{
+      type: typeof FIXTURE_EVENTS.find_by_attribute
+      detail: FindByAttributeDetails
+    }>({
       type: FIXTURE_EVENTS.find_by_attribute,
       detail: [attributeName, attributeValue, context],
     })
@@ -302,7 +305,10 @@ export const useFindByTestId = (trigger: Trigger) => {
     testId: string | RegExp,
     context?: HTMLElement | SVGElement,
   ): Promise<T | undefined> => {
-    trigger<{ type: typeof FIXTURE_EVENTS.find_by_testid; detail: FindByTestIdDetails }>({
+    trigger<{
+      type: typeof FIXTURE_EVENTS.find_by_testid
+      detail: FindByTestIdDetails
+    }>({
       type: FIXTURE_EVENTS.find_by_testid,
       detail: [testId, context],
     })
@@ -320,7 +326,10 @@ export const useFindByTarget = (trigger: Trigger) => {
     pTarget: string | RegExp,
     context?: HTMLElement | SVGElement,
   ): Promise<T | undefined> => {
-    trigger<{ type: typeof FIXTURE_EVENTS.find_by_target; detail: FindByTestIdDetails }>({
+    trigger<{
+      type: typeof FIXTURE_EVENTS.find_by_target
+      detail: FindByTestIdDetails
+    }>({
       type: FIXTURE_EVENTS.find_by_target,
       detail: [pTarget, context],
     })
@@ -352,7 +361,10 @@ export const useFindByText = (trigger: Trigger) => {
     searchText: string | RegExp,
     context?: HTMLElement,
   ): Promise<T | undefined> => {
-    trigger<{ type: typeof FIXTURE_EVENTS.find_by_text; detail: FindByTextDetail }>({
+    trigger<{
+      type: typeof FIXTURE_EVENTS.find_by_text
+      detail: FindByTextDetail
+    }>({
       type: FIXTURE_EVENTS.find_by_text,
       detail: [searchText, context],
     })
@@ -420,7 +432,10 @@ export const useFireEvent = (trigger: Trigger) => {
       cancelable: true,
     },
   ): Promise<void> => {
-    trigger<{ type: typeof FIXTURE_EVENTS.fire_event; detail: FireEventDetail }>({
+    trigger<{
+      type: typeof FIXTURE_EVENTS.fire_event
+      detail: FireEventDetail
+    }>({
       type: FIXTURE_EVENTS.fire_event,
       detail: [element, eventName, options],
     })
@@ -451,7 +466,10 @@ export const useFireEvent = (trigger: Trigger) => {
  * @returns A function that takes a duration in milliseconds and returns a Promise that resolves after the duration.
  */
 export const useWait = (trigger: Trigger) => (ms: number) => {
-  trigger<{ type: typeof FIXTURE_EVENTS.wait; detail: WaitDetails }>({ type: FIXTURE_EVENTS.wait, detail: [ms] })
+  trigger<{ type: typeof FIXTURE_EVENTS.wait; detail: WaitDetails }>({
+    type: FIXTURE_EVENTS.wait,
+    detail: [ms],
+  })
   return wait(ms)
 }
 
@@ -465,7 +483,10 @@ export const useWait = (trigger: Trigger) => (ms: number) => {
  */
 export const useAccessibilityCheck = (trigger: Trigger) => {
   const accessibilityCheck: AccessibilityCheck = async ({ exclude, rules, config = {} }) => {
-    trigger<{ type: typeof FIXTURE_EVENTS.accessibility_check; detail: AccessibilityCheckDetails }>({
+    trigger<{
+      type: typeof FIXTURE_EVENTS.accessibility_check
+      detail: AccessibilityCheckDetails
+    }>({
       type: FIXTURE_EVENTS.accessibility_check,
       detail: [{ exclude, rules, config }],
     })

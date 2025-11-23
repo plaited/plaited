@@ -1,4 +1,4 @@
-import { bWorker } from 'plaited'
+import { bWorker } from 'plaited.ts'
 
 const calculator = {
   add(a: number, b: number) {

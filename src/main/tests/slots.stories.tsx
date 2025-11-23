@@ -1,6 +1,6 @@
 import { mock } from 'bun:test'
-import { bElement, type FT } from 'plaited'
-import { story } from 'plaited/testing'
+import { story } from 'plaited/testing.ts'
+import { bElement, type FT } from 'plaited.ts'
 
 const defaultSlot = mock()
 const passThroughSlot = mock()

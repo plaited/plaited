@@ -14,7 +14,7 @@
  * @since 1.0.0
  */
 
-import { db, initDB } from '../databases/db.js'
+import { db, initDB } from '../databases/db.ts'
 
 /**
  * Example data structure for storing API code examples.

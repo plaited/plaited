@@ -1,7 +1,7 @@
-import { bElement, bSync, bThread, type RulesFunction } from 'plaited'
-import { BoardMarker } from './board-marker.js'
-import { OMarker } from './o-marker.js'
-import { XMarker } from './x-marker.js'
+import { bElement, bSync, bThread, type RulesFunction } from 'plaited.ts'
+import { BoardMarker } from './board-marker.tsx'
+import { OMarker } from './o-marker.tsx'
+import { XMarker } from './x-marker.tsx'
 
 const winConditions = [
   //rows

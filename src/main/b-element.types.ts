@@ -1,6 +1,6 @@
-import { type BEHAVIORAL_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './b-element.constants.js'
-import type { BSync, BThread, BThreads, PlaitedTrigger, Trigger, UseSnapshot } from './behavioral.types.js'
-import type { CustomElementTag, FunctionTemplate, TemplateObject } from './create-template.types.js'
+import { type BEHAVIORAL_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './b-element.constants.ts'
+import type { BSync, BThread, BThreads, PlaitedTrigger, Trigger, UseSnapshot } from './behavioral.types.ts'
+import type { CustomElementTag, FunctionTemplate, TemplateObject } from './create-template.types.ts'
 /**
  * Valid insertion positions for DOM elements relative to a reference element.
  * Follows the insertAdjacentElement/HTML specification.

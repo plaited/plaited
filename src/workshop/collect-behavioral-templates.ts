@@ -21,9 +21,9 @@
  */
 
 import { Glob } from 'bun'
-import { type FunctionTemplate, isBehavioralTemplate } from '../main.js'
-import type { TemplateExport } from './workshop.types.js'
-import { globFiles } from './workshop.utils.js'
+import { type FunctionTemplate, isBehavioralTemplate } from '../main.ts'
+import type { TemplateExport } from './workshop.types.ts'
+import { globFiles } from './workshop.utils.ts'
 
 /**
  * Collects template metadata from a single file using direct module import.

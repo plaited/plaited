@@ -20,10 +20,10 @@
 import { statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
-import { checkPlaywright } from './check-playwright.js'
-import { discoverStoryMetadata, getStoryMetadata } from './collect-stories.js'
-import { type TestStoriesOutput, useRunner } from './use-runner.js'
-import type { StoryMetadata } from './workshop.types.js'
+import { checkPlaywright } from './check-playwright.ts'
+import { discoverStoryMetadata, getStoryMetadata } from './collect-stories.ts'
+import { type TestStoriesOutput, useRunner } from './use-runner.ts'
+import type { StoryMetadata } from './workshop.types.ts'
 
 console.log('🎭 Starting Plaited workshop test runner...')
 
@@ -139,7 +139,7 @@ if (subcommand === 'query') {
     process.exit(1)
   }
 
-  const queries = await import('./queries.js')
+  const queries = await import('./queries.ts')
 
   try {
     if (action === 'insert-example') {
@@ -249,11 +249,13 @@ if (subcommand === 'changelog') {
     process.exit(0)
   }
 
-  const packageJson = await import('../../package.json', { with: { type: 'json' } })
+  const packageJson = await import('../../package.json', {
+    with: { type: 'json' },
+  })
   const version = changelogArgs.values.version || packageJson.default.version
   const action = changelogArgs.values.action || 'generate'
 
-  const changelog = await import('./changelog.js')
+  const changelog = await import('./changelog.ts')
 
   try {
     if (action === 'generate') {
@@ -378,7 +380,12 @@ const { promise: resultsPromise, resolve: reportResults } = Promise.withResolver
 
 // Initialize test runner (this creates and starts the server)
 console.log('🔧 Initializing test runner...')
-const trigger = await useRunner({ browser, port, reporter: reportResults, cwd })
+const trigger = await useRunner({
+  browser,
+  port,
+  reporter: reportResults,
+  cwd,
+})
 
 // Cleanup handler
 const cleanup = async () => {

@@ -1,4 +1,4 @@
-import { createStyles } from 'plaited'
+import { createStyles } from 'plaited.ts'
 
 export const styles = createStyles({
   before: {

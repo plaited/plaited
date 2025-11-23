@@ -33,7 +33,7 @@
  * - No runtime modification of public events list
  * - Disconnect is synchronous only
  */
-import { behavioral } from './behavioral.js'
+import { behavioral } from './behavioral.ts'
 import type {
   BSync,
   BThread,
@@ -43,10 +43,10 @@ import type {
   Handlers,
   PlaitedTrigger,
   UseSnapshot,
-} from './behavioral.types.js'
-import { bSync, bThread } from './behavioral.utils.js'
-import { usePlaitedTrigger } from './use-plaited-trigger.js'
-import { usePublicTrigger } from './use-public-trigger.js'
+} from './behavioral.types.ts'
+import { bSync, bThread } from './behavioral.utils.ts'
+import { usePlaitedTrigger } from './use-plaited-trigger.ts'
+import { usePublicTrigger } from './use-public-trigger.ts'
 
 /**
  * Higher-order factory for creating reusable behavioral program configurations.

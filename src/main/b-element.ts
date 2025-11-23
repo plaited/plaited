@@ -21,8 +21,8 @@
  * Consumers: Application code creating custom elements with behavioral programming
  */
 
-import { canUseDOM } from '../utils.js'
-import { BEHAVIORAL_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './b-element.constants.js'
+import { canUseDOM } from '../utils.ts'
+import { BEHAVIORAL_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './b-element.constants.ts'
 import type {
   BehavioralElement,
   BehavioralElementCallbackDetails,
@@ -31,9 +31,9 @@ import type {
   BoundElement,
   BProgramArgs,
   SelectorMatch,
-} from './b-element.types.js'
-import { assignHelpers, getBindings, getDocumentFragment } from './b-element.utils.js'
-import { behavioral } from './behavioral.js'
+} from './b-element.types.ts'
+import { assignHelpers, getBindings, getDocumentFragment } from './b-element.utils.ts'
+import { behavioral } from './behavioral.ts'
 import type {
   BThreads,
   Disconnect,
@@ -43,14 +43,14 @@ import type {
   Trigger,
   UseFeedback,
   UseSnapshot,
-} from './behavioral.types.js'
-import { bSync, bThread } from './behavioral.utils.js'
-import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from './create-template.constants.js'
-import { createTemplate } from './create-template.js'
-import type { Attrs, CustomElementTag, TemplateObject } from './create-template.types.js'
-import { DelegatedListener, delegates } from './delegated-listener.js'
-import { usePlaitedTrigger } from './use-plaited-trigger.js'
-import { usePublicTrigger } from './use-public-trigger.js'
+} from './behavioral.types.ts'
+import { bSync, bThread } from './behavioral.utils.ts'
+import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from './create-template.constants.ts'
+import { createTemplate } from './create-template.ts'
+import type { Attrs, CustomElementTag, TemplateObject } from './create-template.types.ts'
+import { DelegatedListener, delegates } from './delegated-listener.ts'
+import { usePlaitedTrigger } from './use-plaited-trigger.ts'
+import { usePublicTrigger } from './use-public-trigger.ts'
 
 /**
  * @internal

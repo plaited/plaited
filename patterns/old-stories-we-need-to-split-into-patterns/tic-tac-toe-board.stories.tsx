@@ -1,8 +1,8 @@
-import { story } from 'plaited/testing'
-import { BoardMarker } from './board-marker.js'
-import { OMarker } from './o-marker.js'
-import { TicTacToeBoard } from './tic-tac-toe-board.js'
-import { XMarker } from './x-marker.js'
+import { story } from 'plaited/testing.ts'
+import { BoardMarker } from './board-marker.tsx'
+import { OMarker } from './o-marker.tsx'
+import { TicTacToeBoard } from './tic-tac-toe-board.tsx'
+import { XMarker } from './x-marker.tsx'
 
 export const BoardMarkerRender = story<typeof BoardMarker>({
   description: '',

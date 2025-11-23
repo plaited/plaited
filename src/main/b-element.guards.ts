@@ -34,10 +34,10 @@
  * - Spoofable by adding trigger method to regular elements
  */
 
-import { isTypeOf } from '../utils.js'
-import { BEHAVIORAL_TEMPLATE_IDENTIFIER } from './b-element.constants.js'
-import type { BehavioralElement, BehavioralTemplate } from './b-element.types'
-import type { FunctionTemplate } from './create-template.types.js'
+import { isTypeOf } from '../utils.ts'
+import { BEHAVIORAL_TEMPLATE_IDENTIFIER } from './b-element.constants.ts'
+import type { BehavioralElement, BehavioralTemplate } from './b-element.types.ts'
+import type { FunctionTemplate } from './create-template.types.ts'
 
 /**
  * Type guard to identify Plaited custom elements.

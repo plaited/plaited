@@ -1,5 +1,5 @@
-import { type BehavioralElement, bElement, createStyles, type FT, type Position, useTemplate } from 'plaited'
-import { story } from 'plaited/testing'
+import { story } from 'plaited/testing.ts'
+import { type BehavioralElement, bElement, createStyles, type FT, type Position, useTemplate } from 'plaited.ts'
 
 const componentStyles = createStyles({
   root: {

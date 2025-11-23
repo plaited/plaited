@@ -1,3 +1,5 @@
+import { story } from 'plaited/testing.ts'
+import { isTypeOf } from 'plaited/utils.ts'
 import {
   bElement,
   createHostStyles,
@@ -7,9 +9,7 @@ import {
   joinStyles,
   type ObservedAttributesDetail,
   useAttributesObserver,
-} from 'plaited'
-import { story } from 'plaited/testing'
-import { isTypeOf } from 'plaited/utils'
+} from 'plaited.ts'
 
 const componentStyles = createStyles({
   grid: {

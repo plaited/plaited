@@ -40,8 +40,8 @@ import type {
   SignalWithInitialValue,
   SignalWithoutInitialValue,
   Trigger,
-} from './behavioral.types.js'
-import { isPlaitedTrigger } from './behavioral.utils.js'
+} from './behavioral.types.ts'
+import { isPlaitedTrigger } from './behavioral.utils.ts'
 
 export function useSignal<T>(initialValue: T): SignalWithInitialValue<T>
 export function useSignal<T>(initialValue?: never): SignalWithoutInitialValue<T>

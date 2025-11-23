@@ -1,5 +1,5 @@
 import { expect, mock, test } from 'bun:test'
-import { useComputed, useSignal } from 'plaited'
+import { useComputed, useSignal } from 'plaited.ts'
 
 test('useSignal:calling listen before setting store then disconnecting', () => {
   const store = useSignal<{ value: number }>({ value: 0 })

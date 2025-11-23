@@ -1,4 +1,4 @@
-import type { FT } from '../../../../main.js'
+import type { FT } from '../../../../main.ts'
 
 export const FTSimple: FT = () => <div>FT Alias Simple</div>
 

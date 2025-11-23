@@ -1,4 +1,4 @@
-import type { FunctionTemplate } from '../../../../../../main.js'
+import type { FunctionTemplate } from '../../../../../../main.ts'
 
 /**
  * Nested template for testing get-entry-routes path transformation.

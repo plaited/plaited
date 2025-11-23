@@ -1,6 +1,6 @@
 import { expect, mock, test } from 'bun:test'
-import { useWorker } from 'plaited'
-import { wait } from 'plaited/utils'
+import { wait } from 'plaited/utils.ts'
+import { useWorker } from 'plaited.ts'
 
 test('validate userWorker and bWorker utilities function as expected', async () => {
   const spy = mock()

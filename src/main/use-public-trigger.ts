@@ -28,7 +28,7 @@
  * - Error messages list all allowed events (could be verbose)
  * - No event transformation or remapping support
  */
-import type { Trigger } from './behavioral.types.js'
+import type { Trigger } from './behavioral.types.ts'
 
 /**
  * @internal

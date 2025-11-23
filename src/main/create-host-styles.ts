@@ -1,13 +1,13 @@
-import { isTypeOf } from '../utils.js'
-import { CSS_RESERVED_KEYS } from './css.constants.js'
+import { isTypeOf } from '../utils.ts'
+import { CSS_RESERVED_KEYS } from './css.constants.ts'
 import type {
   CreateHostParams,
   CSSProperties,
   DesignTokenReference,
   HostStylesObject,
   NestedStatements,
-} from './css.types.js'
-import { getRule, isTokenReference } from './css.utils.js'
+} from './css.types.ts'
+import { getRule, isTokenReference } from './css.utils.ts'
 
 /**
  * @internal

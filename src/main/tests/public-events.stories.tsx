@@ -1,5 +1,5 @@
-import { bElement, type FT, isBehavioralElement, useDispatch } from 'plaited'
-import { story } from 'plaited/testing'
+import { story } from 'plaited/testing.ts'
+import { bElement, type FT, isBehavioralElement, useDispatch } from 'plaited.ts'
 
 const getPlaitedChildren = (slot: HTMLSlotElement) => [...slot.assignedElements()].filter(isBehavioralElement)
 

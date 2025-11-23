@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { behavioral, bSync, bThread } from 'plaited'
+import { behavioral, bSync, bThread } from 'plaited.ts'
 
 /**
  * Test scenario: Demonstrates the dynamic nature of behavioral programs.

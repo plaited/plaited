@@ -14,7 +14,7 @@
  * @since 1.0.0
  */
 
-import { db } from '../databases/db.js'
+import { db } from '../databases/db.ts'
 
 /**
  * Release change record structure.

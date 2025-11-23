@@ -1,5 +1,5 @@
-import type { DesignTokenReference, StylesObject } from './css.types.js'
-import { isTokenReference } from './css.utils.js'
+import type { DesignTokenReference, StylesObject } from './css.types.ts'
+import { isTokenReference } from './css.utils.ts'
 
 /**
  * Combines multiple style objects or design token references into a single unified style object.

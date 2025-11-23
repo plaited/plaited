@@ -32,9 +32,9 @@
  * - No source maps for debugging generated HTML
  * - Shadow DOM polyfills not included
  */
-import { htmlEscape, isTypeOf } from '../utils.js'
-import { TEMPLATE_OBJECT_IDENTIFIER, VALID_PRIMITIVE_CHILDREN } from './create-template.constants.js'
-import type { TemplateObject } from './create-template.types.js'
+import { htmlEscape, isTypeOf } from '../utils.ts'
+import { TEMPLATE_OBJECT_IDENTIFIER, VALID_PRIMITIVE_CHILDREN } from './create-template.constants.ts'
+import type { TemplateObject } from './create-template.types.ts'
 
 /**
  * Server-side renders Plaited templates to static HTML.

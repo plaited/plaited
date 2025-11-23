@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 import { join } from 'node:path'
-import { discoverStoryMetadata, getStoryMetadata } from '../collect-stories.js'
-import type { StoryMetadata } from '../workshop.types.js'
+import { discoverStoryMetadata, getStoryMetadata } from '../collect-stories.ts'
+import type { StoryMetadata } from '../workshop.types.ts'
 
 const FIXTURES_DIR = join(import.meta.dir, 'fixtures')
 const STORIES_DIR = join(FIXTURES_DIR, 'stories')

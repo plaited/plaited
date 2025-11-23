@@ -3,7 +3,7 @@
  * Used to test that when multiple .only() exist, all .only() stories run
  */
 
-import { story } from '../../../../../testing/testing.fixture.js'
+import { story } from '../../../../../testing/testing.fixture.tsx'
 
 export const firstOnlyStory = story.only({
   template: () => <div>First only story</div>,

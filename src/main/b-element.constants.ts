@@ -1,4 +1,4 @@
-import { keyMirror } from '../utils.js'
+import { keyMirror } from '../utils.ts'
 
 /**
  * @internal Mirrored object of lifecycle and mutation callback names for Behavioral elements.

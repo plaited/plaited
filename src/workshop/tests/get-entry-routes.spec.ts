@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { join } from 'node:path'
-import { getEntryRoutes } from '../get-entry-routes.js'
+import { getEntryRoutes } from '../get-entry-routes.ts'
 
 /**
  * Helper function to get response content as text.

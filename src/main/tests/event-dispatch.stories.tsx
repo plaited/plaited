@@ -1,5 +1,5 @@
-import { bElement, useDispatch } from 'plaited'
-import { story } from 'plaited/testing'
+import { story } from 'plaited/testing.ts'
+import { bElement, useDispatch } from 'plaited.ts'
 
 const Nested = bElement({
   tag: 'nested-el',

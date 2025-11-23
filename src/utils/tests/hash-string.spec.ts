@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { hashString } from 'plaited/utils'
+import { hashString } from 'plaited/utils.ts'
 
 test('hashString(): Given a string, return a hash', () => {
   expect(hashString('test')).toBe(2090756197)

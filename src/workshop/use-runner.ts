@@ -32,11 +32,11 @@
  */
 
 import type { Browser, BrowserContextOptions } from 'playwright'
-import { useBehavioral } from '../main.js'
-import { keyMirror } from '../utils.js'
-import { discoverStoryMetadata } from './collect-stories.js'
-import { getServer } from './get-server.js'
-import type { RunTestsDetail, StoryMetadata } from './workshop.types.js'
+import { useBehavioral } from '../main.ts'
+import { keyMirror } from '../utils.ts'
+import { discoverStoryMetadata } from './collect-stories.ts'
+import { getServer } from './get-server.ts'
+import type { RunTestsDetail, StoryMetadata } from './workshop.types.ts'
 
 /**
  * @internal

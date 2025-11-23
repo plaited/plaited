@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { type Browser, chromium } from 'playwright'
-import { discoverStoryMetadata } from '../collect-stories.js'
-import { type TestStoriesOutput, useRunner } from '../use-runner.js'
+import { discoverStoryMetadata } from '../collect-stories.ts'
+import { type TestStoriesOutput, useRunner } from '../use-runner.ts'
 
 const cwd = `${import.meta.dir}/fixtures`
 const testPort = 3457

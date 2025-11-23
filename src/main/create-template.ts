@@ -83,7 +83,7 @@
  * @see {@link styles} for style creation
  */
 
-import { htmlEscape, isTypeOf, kebabCase, trueTypeOf } from '../utils.js'
+import { htmlEscape, isTypeOf, kebabCase, trueTypeOf } from '../utils.ts'
 import {
   BOOLEAN_ATTRS,
   P_TRIGGER,
@@ -91,7 +91,7 @@ import {
   TEMPLATE_OBJECT_IDENTIFIER,
   VALID_PRIMITIVE_CHILDREN,
   VOID_TAGS,
-} from './create-template.constants.js'
+} from './create-template.constants.ts'
 import type {
   Attrs,
   CustomElementTag,
@@ -99,7 +99,7 @@ import type {
   ElementAttributeList,
   FunctionTemplate,
   TemplateObject,
-} from './create-template.types.js'
+} from './create-template.types.ts'
 
 /** @internal Represents the possible types for a tag in a JSX element: a standard HTML/SVG tag name (string), a custom element tag name (string with hyphen), or a FunctionTemplate component. */
 type Tag = string | CustomElementTag | FunctionTemplate

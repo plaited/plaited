@@ -1,5 +1,5 @@
-import type { FunctionTemplate } from '../../../../main.js'
-import { sharedFunction } from './SharedDependency.js'
+import type { FunctionTemplate } from '../../../../main.ts'
+import { sharedFunction } from './SharedDependency.tsx'
 
 /**
  * Template that imports shared dependency for code splitting test.

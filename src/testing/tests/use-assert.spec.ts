@@ -1,6 +1,6 @@
 import { expect, mock, test } from 'bun:test'
-import { noop, wait } from '../../utils.js'
-import { match, throws, useAssert } from '../testing.utils.js'
+import { noop, wait } from '../../utils.ts'
+import { match, throws, useAssert } from '../testing.utils.ts'
 
 const assert = useAssert(noop)
 

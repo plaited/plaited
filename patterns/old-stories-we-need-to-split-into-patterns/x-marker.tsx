@@ -1,4 +1,4 @@
-import { createStyles, type FT } from 'plaited'
+import { createStyles, type FT } from 'plaited.ts'
 
 const markerStyles = createStyles({
   x: {

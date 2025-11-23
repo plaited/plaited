@@ -1,6 +1,6 @@
 import { Database } from 'bun:sqlite'
 import { expect, test } from 'bun:test'
-import { db, initDB } from '../db.js'
+import { db, initDB } from '../db.ts'
 
 test('db: database connection is created with WAL mode', () => {
   const journalMode = db.prepare('PRAGMA journal_mode').get() as { journal_mode: string }

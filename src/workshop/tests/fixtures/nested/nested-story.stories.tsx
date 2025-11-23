@@ -1,4 +1,4 @@
-import { story } from 'plaited/testing'
+import { story } from 'plaited/testing.ts'
 
 // Snapshot story in nested directory
 export const nestedSnapshot = story({

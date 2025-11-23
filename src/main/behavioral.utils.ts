@@ -32,8 +32,8 @@
  * - shuffleSyncs modifies input array (side effect)
  * - No built-in support for weighted probabilities
  */
-import { isTypeOf } from '../utils.js'
-import type { BPEvent, BSync, BThread, PlaitedTrigger, Trigger } from './behavioral.types.js'
+import { isTypeOf } from '../utils.ts'
+import type { BPEvent, BSync, BThread, PlaitedTrigger, Trigger } from './behavioral.types.ts'
 
 /**
  * Selects and returns a single `BPEvent` object randomly from a provided list of events.

@@ -1,4 +1,4 @@
-import { canUseDOM } from './can-use-dom.js'
+import { canUseDOM } from './can-use-dom.ts'
 
 /**
  * @internal

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { statSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { discoverStoryMetadata, getStoryMetadata } from '../collect-stories.js'
+import { discoverStoryMetadata, getStoryMetadata } from '../collect-stories.ts'
 
 const fixturesDir = `${import.meta.dir}/fixtures`
 

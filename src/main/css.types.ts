@@ -1,4 +1,4 @@
-import type { CSS_RESERVED_KEYS } from './css.constants.js'
+import type { CSS_RESERVED_KEYS } from './css.constants.ts'
 import type * as CSS from './types/css.js'
 
 /**
@@ -112,11 +112,17 @@ export type CreateHostParams = {
  */
 export type CSSKeyFrames = {
   /** Styles applied at the beginning (0%) of the animation. */
-  from?: { [key in keyof CSSProperties]: CSSProperties[key] | DesignTokenReference }
+  from?: {
+    [key in keyof CSSProperties]: CSSProperties[key] | DesignTokenReference
+  }
   /** Styles applied at the end (100%) of the animation. */
-  to?: { [key in keyof CSSProperties]: CSSProperties[key] | DesignTokenReference }
+  to?: {
+    [key in keyof CSSProperties]: CSSProperties[key] | DesignTokenReference
+  }
   /** Styles applied at specific percentage points during the animation. */
-  [key: `${number}%`]: { [key in keyof CSSProperties]: CSSProperties[key] | DesignTokenReference }
+  [key: `${number}%`]: {
+    [key in keyof CSSProperties]: CSSProperties[key] | DesignTokenReference
+  }
 }
 /**
  * Represents basic style-related properties that can be applied to a component or element.

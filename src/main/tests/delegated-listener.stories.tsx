@@ -1,5 +1,5 @@
-import { story } from 'plaited/testing'
-import { DelegatedListener, delegates } from '../delegated-listener.js'
+import { story } from 'plaited/testing.ts'
+import { DelegatedListener, delegates } from '../delegated-listener.ts'
 
 export const test = story({
   description: `Validates that the delegated event listener function ensures bound events are

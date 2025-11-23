@@ -1,4 +1,4 @@
-import { story } from 'plaited/testing'
+import { story } from 'plaited/testing.ts'
 
 // Snapshot story with args and template
 export const basicStory = story({

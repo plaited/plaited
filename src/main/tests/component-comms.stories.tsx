@@ -1,5 +1,5 @@
-import { bElement, type FT, useSignal } from 'plaited'
-import { story } from 'plaited/testing'
+import { story } from 'plaited/testing.ts'
+import { bElement, type FT, useSignal } from 'plaited.ts'
 
 const sendDisable = useSignal()
 const sendAdd = useSignal<{ value: string }>()

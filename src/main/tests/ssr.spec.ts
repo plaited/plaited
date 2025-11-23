@@ -1,8 +1,8 @@
 /* eslint-disable no-constant-binary-expression */
 import { expect, test } from 'bun:test'
 import beautify from 'beautify'
-import { type FunctionTemplate, ssr, type TemplateObject } from 'plaited'
-import { Fragment, h } from 'plaited/jsx-runtime'
+import { Fragment, h } from 'plaited/jsx-runtime.ts'
+import { type FunctionTemplate, ssr, type TemplateObject } from 'plaited.ts'
 
 const render = (template: TemplateObject) => {
   return beautify(ssr(template), { format: 'html' })

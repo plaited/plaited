@@ -1,4 +1,4 @@
-import { trueTypeOf } from './true-type-of.js'
+import { trueTypeOf } from './true-type-of.ts'
 
 /**
  * Type guard for precise type checking with TypeScript narrowing.

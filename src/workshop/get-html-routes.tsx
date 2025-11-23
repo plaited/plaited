@@ -1,10 +1,10 @@
 import { z } from 'zod'
-import { joinStyles, ssr, type TemplateObject } from '../main.js'
-import { RELOAD_PAGE, RUNNER_URL } from '../testing/testing.constants.js'
-import type { StoryExport } from '../testing/testing.types.js'
-import { kebabCase } from '../utils.js'
-import { getEntryPath } from './get-entry-path.js'
-import { zip } from './workshop.utils.js'
+import { joinStyles, ssr, type TemplateObject } from '../main.ts'
+import { RELOAD_PAGE, RUNNER_URL } from '../testing/testing.constants.ts'
+import type { StoryExport } from '../testing/testing.types.ts'
+import { kebabCase } from '../utils.ts'
+import { getEntryPath } from './get-entry-path.ts'
+import { zip } from './workshop.utils.ts'
 
 /**
  * Module-level cache for dynamic imports to avoid redundant loading.

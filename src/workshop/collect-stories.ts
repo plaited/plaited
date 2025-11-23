@@ -21,10 +21,10 @@
  */
 
 import { Glob } from 'bun'
-import type { StoryExport } from '../testing/testing.types.js'
-import { isStoryExport } from '../testing/testing.utils.js'
-import type { StoryMetadata } from './workshop.types.js'
-import { globFiles } from './workshop.utils.js'
+import type { StoryExport } from '../testing/testing.types.ts'
+import { isStoryExport } from '../testing/testing.utils.ts'
+import type { StoryMetadata } from './workshop.types.ts'
+import { globFiles } from './workshop.utils.ts'
 
 /**
  * @internal

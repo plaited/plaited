@@ -1,5 +1,5 @@
-import { bElement, createHostStyles, type FunctionTemplate, type SnapshotMessage } from '../main.js'
-import { wait } from '../utils.js'
+import { bElement, createHostStyles, type FunctionTemplate, type SnapshotMessage } from '../main.ts'
+import { wait } from '../utils.ts'
 import {
   __CLOSE_PLAITED_CONTEXT__,
   __PLAITED_RUNNER__,
@@ -8,7 +8,7 @@ import {
   STORY_FIXTURE,
   STORY_IDENTIFIER,
   STORY_TYPES,
-} from './testing.constants.js'
+} from './testing.constants.ts'
 import type {
   InteractionExport,
   InteractionStoryObj,
@@ -18,7 +18,7 @@ import type {
   StoryExport,
   StoryObj,
   TestFailureEventDetail,
-} from './testing.types.js'
+} from './testing.types.ts'
 import {
   AccessibilityError,
   FailedAssertionError,
@@ -34,7 +34,7 @@ import {
   useFireEvent,
   useRunner,
   useWait,
-} from './testing.utils.js'
+} from './testing.utils.ts'
 
 declare global {
   interface Window {

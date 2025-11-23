@@ -1,8 +1,8 @@
-import type { Trigger } from '../main.js'
-import { RELOAD_PAGE, RUNNER_URL } from '../testing/testing.constants.js'
-import { discoverStoryMetadata } from './collect-stories.js'
-import { getEntryRoutes } from './get-entry-routes.js'
-import { getHTMLRoutes } from './get-html-routes.js'
+import type { Trigger } from '../main.ts'
+import { RELOAD_PAGE, RUNNER_URL } from '../testing/testing.constants.ts'
+import { discoverStoryMetadata } from './collect-stories.ts'
+import { getEntryRoutes } from './get-entry-routes.ts'
+import { getHTMLRoutes } from './get-html-routes.tsx'
 
 /** @internal WebSocket topic */
 const RUNNER_TOPIC = 'RUNNER_TOPIC'

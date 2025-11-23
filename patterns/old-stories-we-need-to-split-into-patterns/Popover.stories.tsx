@@ -1,5 +1,5 @@
-import { story } from 'plaited/testing'
-import { DecoratedPopover, DecoratedPopoverClose } from './Popover.js'
+import { story } from 'plaited/testing.ts'
+import { DecoratedPopover, DecoratedPopoverClose } from './Popover.tsx'
 
 export const Example = story({
   description: `A basic popover example with a trigger button and a close button within the popover target content.`,

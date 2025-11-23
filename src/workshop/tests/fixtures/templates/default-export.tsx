@@ -1,4 +1,4 @@
-import type { FunctionTemplate } from '../../../../main.js'
+import type { FunctionTemplate } from '../../../../main.ts'
 
 const DefaultTemplate: FunctionTemplate = () => (
   <div>

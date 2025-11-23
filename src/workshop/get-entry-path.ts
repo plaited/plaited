@@ -1,5 +1,5 @@
 import { basename, dirname } from 'node:path'
-import { kebabCase } from '../utils.js'
+import { kebabCase } from '../utils.ts'
 
 export const getEntryPath = (path: string, ext: string) => {
   // Remove leading slash if present

@@ -1,5 +1,5 @@
-import { bElement, useDispatch } from 'plaited'
-import { isTypeOf } from 'plaited/utils'
+import { isTypeOf } from 'plaited/utils.ts'
+import { bElement, useDispatch } from 'plaited.ts'
 
 export const DecoratedPopoverClose = bElement({
   tag: 'decorated-popover-close',

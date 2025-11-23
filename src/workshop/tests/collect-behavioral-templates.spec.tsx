@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 import { join } from 'node:path'
-import { discoverBehavioralTemplateMetadata } from '../collect-behavioral-templates.js'
-import type { TemplateExport } from '../workshop.types.js'
+import { discoverBehavioralTemplateMetadata } from '../collect-behavioral-templates.ts'
+import type { TemplateExport } from '../workshop.types.ts'
 
 // Get absolute path to fixtures
 const fixturesPath = join(import.meta.dir, 'fixtures', 'templates')

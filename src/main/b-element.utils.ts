@@ -27,9 +27,9 @@
  * - DocumentFragment creation is deferred until needed
  */
 
-import type { Bindings, BoundElement } from './b-element.types.js'
-import { BOOLEAN_ATTRS } from './create-template.constants.js'
-import type { TemplateObject } from './create-template.types.js'
+import type { Bindings, BoundElement } from './b-element.types.ts'
+import { BOOLEAN_ATTRS } from './create-template.constants.ts'
+import type { TemplateObject } from './create-template.types.ts'
 /**
  * @internal Cache for storing adopted stylesheets per ShadowRoot to prevent duplicate processing.
  * Used internally by the framework to optimize style adoption performance.

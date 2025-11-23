@@ -1,10 +1,10 @@
 import { beforeEach, expect, test } from 'bun:test'
-import type { ReleaseChange } from '../changelog.js'
-import { clearChanges, formatChangelog, generateChangelog, getVersionsWithChanges, recordChange } from '../changelog.js'
+import type { ReleaseChange } from '../changelog.ts'
+import { clearChanges, formatChangelog, generateChangelog, getVersionsWithChanges, recordChange } from '../changelog.ts'
 
 // Clean database between tests
 beforeEach(async () => {
-  const { db, initDB } = await import('../../databases/db.js')
+  const { db, initDB } = await import('../../databases/db.ts')
   await initDB()
 
   // Clear all tables

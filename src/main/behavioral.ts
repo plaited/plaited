@@ -1,4 +1,4 @@
-import { isTypeOf } from '../utils.js'
+import { isTypeOf } from '../utils.ts'
 import type {
   Behavioral,
   BPEvent,
@@ -13,7 +13,7 @@ import type {
   Trigger,
   UseFeedback,
   UseSnapshot,
-} from './behavioral.types.js'
+} from './behavioral.types.ts'
 
 /**
  * @internal
@@ -401,7 +401,10 @@ export const behavioral: Behavioral = () => {
         })
       }
     },
-    has: (thread) => ({ running: running.has(thread), pending: pending.has(thread) }),
+    has: (thread) => ({
+      running: running.has(thread),
+      pending: pending.has(thread),
+    }),
   }
 
   /**

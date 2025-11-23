@@ -1,5 +1,5 @@
-import { P_TARGET, P_TRIGGER, type TEMPLATE_OBJECT_IDENTIFIER } from './create-template.constants.js'
-import type { CSSProperties } from './css.types.js'
+import { P_TARGET, P_TRIGGER, type TEMPLATE_OBJECT_IDENTIFIER } from './create-template.constants.ts'
+import type { CSSProperties } from './css.types.ts'
 
 type Booleanish = boolean | 'true' | 'false'
 type CrossOrigin = 'anonymous' | 'use-credentials' | ''
