@@ -184,7 +184,7 @@ const formatFragments = (
   const length = fragments.length
   const toRet: (string | DocumentFragment)[] = []
   for (let i = 0; i < length; i++) {
-    const frag = fragments[i]
+    const frag = fragments[i]!
     toRet.push(
       frag instanceof DocumentFragment || typeof frag === 'string'
         ? frag
@@ -260,7 +260,7 @@ export const getBindings = (shadowRoot: ShadowRoot): Bindings => ({
         root: shadowRoot,
         element: this,
         attr: key,
-        val: attr[key],
+        val: attr[key]!,
       })
     }
   },
@@ -292,6 +292,6 @@ export const getBindings = (shadowRoot: ShadowRoot): Bindings => ({
  */
 export const assignHelpers = <T extends Element = Element>(bindings: Bindings, elements: NodeListOf<T> | T[]) => {
   const length = elements.length
-  for (let i = 0; i < length; i++) !Object.hasOwn(elements[i], 'attr') && Object.assign(elements[i], bindings)
+  for (let i = 0; i < length; i++) !Object.hasOwn(elements[i]!, 'attr') && Object.assign(elements[i]!, bindings)
   return elements as BoundElement<T>[]
 }

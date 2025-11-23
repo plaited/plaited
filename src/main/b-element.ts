@@ -297,7 +297,7 @@ export const bElement = <A extends EventDetails>({
         #addListeners(elements: NodeListOf<Element> | Element[]) {
           const length = elements.length
           for (let i = 0; i < length; i++) {
-            const el = elements[i]
+            const el = elements[i]!
             if (el.tagName === 'SLOT' && Boolean(el.assignedSlot)) continue // skip nested slots
             !delegates.has(el) &&
               delegates.set(
@@ -330,7 +330,7 @@ export const bElement = <A extends EventDetails>({
               } else if (mutation.addedNodes.length) {
                 const length = mutation.addedNodes.length
                 for (let i = 0; i < length; i++) {
-                  const node = mutation.addedNodes[i]
+                  const node = mutation.addedNodes[i]!
                   if (isElement(node)) {
                     this.#addListeners(
                       node.hasAttribute(P_TRIGGER)

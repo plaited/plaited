@@ -101,8 +101,9 @@ export const shuffleSyncs = (...syncs: BSync[]) => {
      * @internal
      * ES6 destructuring swap - no temporary variable needed.
      * Semicolon prefix prevents ASI issues with array destructuring.
+     * Non-null assertions safe: loop bounds guarantee valid indices.
      */
-    ;[syncs[i], syncs[j]] = [syncs[j], syncs[i]]
+    ;[syncs[i], syncs[j]] = [syncs[j]!, syncs[i]!]
   }
 
   return syncs
@@ -149,14 +150,14 @@ export const bThread: BThread = (rules, repeat) => {
         while (isTypeOf<boolean>(repeat, 'boolean') ? repeat : repeat()) {
           const length = rules.length
           for (let i = 0; i < length; i++) {
-            yield* rules[i]()
+            yield* rules[i]!()
           }
         }
       }
     : function* () {
         const length = rules.length
         for (let i = 0; i < length; i++) {
-          yield* rules[i]()
+          yield* rules[i]!()
         }
       }
 }

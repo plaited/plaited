@@ -138,7 +138,7 @@ export const deepEqual = (objA: unknown, objB: unknown, map = new WeakMap()) => 
 
   for (let i = 0; i < keysA.length; i++) {
     if (
-      !Reflect.has(objB, keysA[i]) ||
+      !Reflect.has(objB, keysA[i]!) ||
       !deepEqual(objA[keysA[i] as keyof typeof objA], objB[keysA[i] as keyof typeof objB], map)
     ) {
       return false

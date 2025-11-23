@@ -26,7 +26,7 @@ const formatClassStatement = ({
     const arr = Object.entries(value)
     const length = arr.length
     for (let i = 0; i < length; i++) {
-      const [context, val] = arr[i]
+      const [context, val] = arr[i]!
       if (context === CSS_RESERVED_KEYS.$default || /^(:|\[|@)/.test(context)) {
         const nextSelectors = [...selectors]
         context !== CSS_RESERVED_KEYS.$default && nextSelectors.push(context)

@@ -292,7 +292,7 @@ export const behavioral: Behavioral = () => {
     const filteredBids: CandidateBid[] = []
     const length = candidates.length
     for (let i = 0; i < length; i++) {
-      const candidate = candidates[i]
+      const candidate = candidates[i]!
       if (!blocked.some(isListeningFor(candidate))) {
         filteredBids.push(candidate)
       }
@@ -379,7 +379,7 @@ export const behavioral: Behavioral = () => {
     const disconnect = actionPublisher.subscribe((data: BPEvent) => {
       const { type, detail } = data
       if (Object.hasOwn(handlers, type)) {
-        void handlers[type](detail)
+        void handlers[type]!(detail)
       }
     })
     return disconnect
@@ -397,7 +397,7 @@ export const behavioral: Behavioral = () => {
       for (const thread in threads) {
         running.set(thread, {
           priority: running.size + 1,
-          generator: threads[thread](),
+          generator: threads[thread]!(),
         })
       }
     },
