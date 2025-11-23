@@ -24,13 +24,32 @@
         "useAnchorContent": "off",
         "useValidAnchor": "off"
       },
+      "correctness": {
+        "noUnusedVariables": "error",
+        "noUnusedImports": "error"
+      },
       "performance": {
         "noAccumulatingSpread": "off"
       },
       "style": {
         "noNestedTernary": "off",
         "noNonNullAssertion": "off",
-        "useBlockStatements": "off"
+        "useBlockStatements": "off",
+        "useTemplate": "error",
+        "useImportType": "error",
+        "noNegationElse": "warn"
+      },
+      "suspicious": {
+        "noExplicitAny": "error",
+        "noConsole": {
+          "level": "warn",
+          "options": {
+            "allow": ["error", "table"]
+          }
+        }
+      },
+      "complexity": {
+        "useLiteralKeys": "warn"
       }
     },
     "includes": ["**", "!src/main/types/*", "!.bin/*"]
@@ -61,6 +80,17 @@
         "rules": {
           "complexity": { "noArguments": "error" },
           "style": { "useConst": "error" }
+        }
+      }
+    },
+    {
+      "includes": ["patterns/**/*", "src/workshop/**/*", "**/tests/**/*"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "warn",
+            "noConsole": "off"
+          }
         }
       }
     }
