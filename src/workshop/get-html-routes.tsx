@@ -187,7 +187,7 @@ export const getHTMLRoutes = async ({
   const storyExport = module[exportName]
 
   // Extract fixture and parameters from story export
-  const { fixture, parameters, args } = storyExport
+  const { fixture, parameters, args } = storyExport!
 
   // Validate args if they exist
   if (args !== undefined) {
