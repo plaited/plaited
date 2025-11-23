@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { behavioral, bSync, bThread, type SnapshotMessage } from 'plaited.ts'
+import { behavioral, bSync, bThread, type SnapshotMessage } from 'plaited'
 
 /**
  * Test scenario: Demonstrates a basic behavioral program (`bProgram`).

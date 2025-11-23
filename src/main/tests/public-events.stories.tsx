@@ -1,5 +1,5 @@
-import { story } from 'plaited/testing.ts'
-import { bElement, type FT, isBehavioralElement, useDispatch } from 'plaited.ts'
+import { bElement, type FT, isBehavioralElement, useDispatch } from 'plaited'
+import { story } from 'plaited/testing'
 
 const getPlaitedChildren = (slot: HTMLSlotElement) => [...slot.assignedElements()].filter(isBehavioralElement)
 
@@ -18,7 +18,7 @@ const Inner = bElement({
       },
       add(detail: string) {
         const [header] = $('header')
-        header.insert('beforeend', detail)
+        header?.insert('beforeend', detail)
       },
     }
   },
@@ -49,8 +49,8 @@ const Outer = bElement({
       },
       click() {
         const [slot] = $<HTMLSlotElement>('slot')
-        const [el] = getPlaitedChildren(slot)
-        el.trigger({ type: 'add', detail: ' World!' })
+        const [el] = getPlaitedChildren(slot ?? ({} as HTMLSlotElement))
+        el?.trigger({ type: 'add', detail: ' World!' })
       },
     }
   },

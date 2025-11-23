@@ -1,5 +1,5 @@
-import { story } from 'plaited/testing.ts'
-import { bElement, createStyles, type FT } from 'plaited.ts'
+import { bElement, createStyles, type FT } from 'plaited'
+import { story } from 'plaited/testing'
 
 const componentStyles = createStyles({
   button: {

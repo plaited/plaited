@@ -1,5 +1,5 @@
-import { isTypeOf } from 'plaited/utils.ts'
-import { bElement, createHostStyles, createStyles, joinStyles } from 'plaited.ts'
+import { bElement, createHostStyles, createStyles, joinStyles } from 'plaited'
+import { isTypeOf } from 'plaited/utils'
 
 const componentStyles = createStyles({
   symbol: {
@@ -81,8 +81,16 @@ export const ToggleInput = bElement<{
         }
       },
       onAttributeChanged({ name, newValue }) {
-        name === 'checked' && trigger({ type: 'checked', detail: isTypeOf<string>(newValue, 'string') })
-        name === 'disabled' && trigger({ type: 'disabled', detail: isTypeOf<string>(newValue, 'string') })
+        name === 'checked' &&
+          trigger({
+            type: 'checked',
+            detail: isTypeOf<string>(newValue, 'string'),
+          })
+        name === 'disabled' &&
+          trigger({
+            type: 'disabled',
+            detail: isTypeOf<string>(newValue, 'string'),
+          })
         name === 'value' && trigger({ type: 'valueChange', detail: newValue })
       },
       onConnected() {

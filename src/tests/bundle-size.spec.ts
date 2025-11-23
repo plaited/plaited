@@ -3,7 +3,7 @@ import path from 'node:path'
 
 test('bElement export footprint < 5kb', async () => {
   const plaitedResults = await Bun.build({
-    entrypoints: [path.resolve(import.meta.dir, './main/b-element.ts')],
+    entrypoints: [path.resolve(import.meta.dir, '../main/b-element.ts')],
     minify: true,
   })
 

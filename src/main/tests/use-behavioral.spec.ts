@@ -1,6 +1,6 @@
 import { expect, mock, test } from 'bun:test'
-import { wait } from 'plaited/utils.ts'
-import { useBehavioral } from 'plaited.ts'
+import { useBehavioral } from 'plaited'
+import { wait } from 'plaited/utils'
 
 /**
  * Test suite for useBehavioral factory pattern.

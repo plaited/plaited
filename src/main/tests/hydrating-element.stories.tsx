@@ -1,5 +1,5 @@
-import { story } from 'plaited/testing.ts'
-import { bElement } from 'plaited.ts'
+import { bElement } from 'plaited'
+import { story } from 'plaited/testing'
 
 import { AFTER_HYDRATION, BEFORE_HYDRATION, HYDRATING_ELEMENT_TAG, styles } from './hydrating-element.constants.ts'
 
@@ -19,7 +19,7 @@ const HydratingElement = bElement({
     return {
       onConnected() {
         const [inner] = $('inner')
-        inner.replace(
+        inner?.replace(
           <span
             {...styles.after}
             p-target='inner'

@@ -1,8 +1,8 @@
 /* eslint-disable no-constant-binary-expression */
 import { expect, test } from 'bun:test'
 import beautify from 'beautify'
-import { Fragment, h } from 'plaited/jsx-runtime.ts'
-import { type FunctionTemplate, ssr, type TemplateObject } from 'plaited.ts'
+import { type FunctionTemplate, ssr, type TemplateObject } from 'plaited'
+import { Fragment, h } from 'plaited/jsx-runtime'
 
 const render = (template: TemplateObject) => {
   return beautify(ssr(template), { format: 'html' })
@@ -21,12 +21,12 @@ test('ssr: Falsey - undefined', () => {
 })
 
 test('ssr: Falsey - null', () => {
-  //@ts-expect-error: children is null
+  //@ts-expect-error: testing falsey value
   expect(render(h('div', { children: null }))).toMatchSnapshot()
 })
 
 test('ssr: Falsey - false', () => {
-  // @ts-expect-error: testing false
+  //@ts-expect-error: testing falsey value
   expect(render(h('div', { children: false }))).toMatchSnapshot()
 })
 
@@ -43,8 +43,10 @@ test('ssr: Not really Falsey - NaN', () => {
 })
 
 test('ssr: Bad template - NaN', () => {
-  // @ts-expect-error: testing bad object
-  expect(render(h('div', { children: { string: 'string' } }))).toMatchSnapshot()
+  expect(
+    //@ts-expect-error: testing error
+    render(h('div', { children: { string: 'string' } })),
+  ).toMatchSnapshot()
 })
 
 test('ssr: Conditional', () => {
@@ -146,7 +148,7 @@ test('ssr: Non declarative shadow DOM template', () => {
     h('ul', {
       children: [
         Template({ children: h('span', { children: 'I am a span!!!' }) }),
-        //@ts-expect-error: children is not undefined
+        //@ts-expect-error: testing error
         ...(Array.isArray(children) ? children : [children]),
       ],
     })

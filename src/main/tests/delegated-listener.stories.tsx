@@ -1,4 +1,4 @@
-import { story } from 'plaited/testing.ts'
+import { story } from 'plaited/testing'
 import { DelegatedListener, delegates } from '../delegated-listener.ts'
 
 export const test = story({

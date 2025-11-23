@@ -152,7 +152,7 @@ describe('CLI Logic Tests', () => {
 
       expect(metadata).toBeInstanceOf(Array)
       expect(metadata.length).toBeGreaterThan(0)
-      expect(metadata[0].filePath).toBe(filePath)
+      expect(metadata[0]?.filePath).toBe(filePath)
     })
 
     test('file path: should handle file with no story exports', async () => {

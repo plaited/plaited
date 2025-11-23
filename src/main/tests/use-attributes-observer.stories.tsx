@@ -1,5 +1,5 @@
-import { story } from 'plaited/testing.ts'
-import { bElement, useAttributesObserver } from 'plaited.ts'
+import { bElement, useAttributesObserver } from 'plaited'
+import { story } from 'plaited/testing'
 
 const AttributesObserver = bElement({
   tag: 'attribute-observer',
@@ -16,14 +16,14 @@ const AttributesObserver = bElement({
     const [name] = $<HTMLSpanElement>('name')
     const [oldValue] = $<HTMLSpanElement>('oldValue')
     const [newValue] = $<HTMLSpanElement>('newValue')
-    const [el] = slot.assignedElements()
+    const [el] = slot?.assignedElements() ?? []
     const observe = useAttributesObserver('change', trigger)
-    observe(el, ['disabled', 'value'])
+    el && observe(el, ['disabled', 'value'])
     return {
       change(detail: { name: string; oldValue: string | null; newValue: string | null }) {
-        name.render(detail.name)
-        oldValue.render(detail.oldValue ?? 'null')
-        newValue.render(detail.newValue ?? 'null')
+        name?.render(detail.name)
+        oldValue?.render(detail.oldValue ?? 'null')
+        newValue?.render(detail.newValue ?? 'null')
       },
     }
   },

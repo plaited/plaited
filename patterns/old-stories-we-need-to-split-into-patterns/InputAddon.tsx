@@ -1,4 +1,3 @@
-import { isTypeOf, keyMirror } from 'plaited/utils.ts'
 import {
   bElement,
   createHostStyles,
@@ -6,7 +5,8 @@ import {
   joinStyles,
   type ObservedAttributesDetail,
   useAttributesObserver,
-} from 'plaited.ts'
+} from 'plaited'
+import { isTypeOf, keyMirror } from 'plaited/utils'
 
 const componentStyles = createStyles({
   addOn: {
@@ -57,12 +57,12 @@ export const InputAddon = bElement<{
   ),
   bProgram({ $, internals, trigger }) {
     let [slot] = $<HTMLSlotElement>('slot')
-    let [input] = slot.assignedElements()
+    let input = slot?.assignedElements()[0]
     let inputObserver = useAttributesObserver('updateDisable', trigger)
     return {
       slotchange() {
         ;[slot] = $<HTMLSlotElement>('slot')
-        ;[input] = slot.assignedElements()
+        input = slot?.assignedElements()[0]
         inputObserver = useAttributesObserver('updateDisable', trigger)
       },
       updateDisable({ name, newValue }) {
@@ -83,8 +83,8 @@ export const InputAddon = bElement<{
         console.log('mouseleave')
       },
       onConnected() {
-        input.hasAttribute('disabled') && internals.states.add('disabled')
-        inputObserver(input, ['disabled'])
+        input?.hasAttribute('disabled') && internals.states.add('disabled')
+        input && inputObserver(input, ['disabled'])
       },
     }
   },

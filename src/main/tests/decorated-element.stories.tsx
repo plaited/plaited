@@ -1,5 +1,3 @@
-import { story } from 'plaited/testing.ts'
-import { isTypeOf } from 'plaited/utils.ts'
 import {
   bElement,
   createHostStyles,
@@ -9,7 +7,9 @@ import {
   joinStyles,
   type ObservedAttributesDetail,
   useAttributesObserver,
-} from 'plaited.ts'
+} from 'plaited'
+import { story } from 'plaited/testing'
+import { isTypeOf } from 'plaited/utils'
 
 const componentStyles = createStyles({
   grid: {
@@ -64,21 +64,21 @@ const DecorateCheckbox = bElement<{
   ),
   bProgram({ $, internals, trigger }) {
     let [slot] = $<HTMLSlotElement>('slot')
-    let [input] = slot.assignedElements()
+    let [input] = slot?.assignedElements() ?? []
     let inputObserver = useAttributesObserver('change', trigger)
     return {
       slotchange() {
         ;[slot] = $<HTMLSlotElement>('slot')
-        ;[input] = slot.assignedElements()
+        ;[input] = slot?.assignedElements() ?? []
         inputObserver = useAttributesObserver('change', trigger)
       },
       change({ name, newValue }) {
         isTypeOf<string>(newValue, 'string') ? internals.states.add(name) : internals.states.delete(name)
       },
       onConnected() {
-        input.hasAttribute('checked') && internals.states.add('checked')
-        input.hasAttribute('disabled') && internals.states.add('disabled')
-        inputObserver(input, ['checked', 'disabled'])
+        input?.hasAttribute('checked') && internals.states.add('checked')
+        input?.hasAttribute('disabled') && internals.states.add('disabled')
+        input && inputObserver(input, ['checked', 'disabled'])
       },
     }
   },

@@ -83,10 +83,10 @@ test('getEntryRoutes: responses are not compressed by default', async () => {
   const response = responses['/root-template--index.js']
 
   // Should NOT have gzip content-encoding header (compression disabled for performance)
-  expect(response.headers.get('content-encoding')).toBeNull()
+  expect(response?.headers.get('content-encoding')).toBeNull()
 
   // Should be able to read content as text
-  const content = await getResponseText(response)
+  const content = response ? await getResponseText(response) : ''
   expect(typeof content).toBe('string')
   expect(content.length).toBeGreaterThan(0)
 })
@@ -98,7 +98,7 @@ test('getEntryRoutes: responses have correct content-type', async () => {
   const response = responses['/root-template--index.js']
 
   // Should have JavaScript content-type (from Bun.build artifact.type)
-  const contentType = response.headers.get('content-type')
+  const contentType = response?.headers.get('content-type')
   expect(contentType).toBeTruthy()
   expect(contentType).toContain('javascript')
 })
@@ -108,7 +108,7 @@ test('getEntryRoutes: bundled content is valid JavaScript', async () => {
   const responses = await getEntryRoutes(fixturesRoot, [entrypoint])
 
   const response = responses['/root-template--index.js']
-  const content = await getResponseText(response)
+  const content = response ? await getResponseText(response) : ''
 
   // Should contain typical bundled JavaScript patterns
   // Bun bundles should contain some identifiable markers

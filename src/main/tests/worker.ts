@@ -1,4 +1,4 @@
-import { bWorker } from 'plaited.ts'
+import { bWorker } from 'plaited'
 
 const calculator = {
   add(a: number, b: number) {
@@ -16,7 +16,11 @@ const calculator = {
 }
 
 await bWorker<{
-  calculate: { a: number; b: number; operation: 'add' | 'subtract' | 'multiply' | 'divide' }
+  calculate: {
+    a: number
+    b: number
+    operation: 'add' | 'subtract' | 'multiply' | 'divide'
+  }
 }>({
   publicEvents: ['calculate'],
   bProgram({ send }) {

@@ -26,16 +26,7 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
 
-    "jsxImportSource": "plaited",
-    "paths": {
-      "plaited": ["./src/main.ts"],
-      "plaited/mcp": ["./src/mcp.ts"],
-      "plaited/jsx-runtime": ["./src/jsx-runtime.ts"],
-      "plaited/jsx-dev-runtime": ["./src/jsx-dev-runtime.ts"],
-      "plaited/testing": ["/src/testing.ts"],
-      "plaited/utils": ["./src/utils.ts"],
-      "plaited/workshop": ["./src/workshop.ts"]
-    }
+    "jsxImportSource": "plaited"
   },
   "exclude": ["src/main/types/css.d.ts"]
 }

@@ -1,5 +1,5 @@
-import { story } from 'plaited/testing.ts'
-import { bElement, useDispatch } from 'plaited.ts'
+import { bElement, useDispatch } from 'plaited'
+import { story } from 'plaited/testing'
 
 const Nested = bElement({
   tag: 'nested-el',
@@ -35,7 +35,7 @@ const Outer = bElement({
     return {
       append() {
         const [header] = $('header')
-        header.insert('beforeend', <> World!</>)
+        header?.insert('beforeend', <> World!</>)
       },
     }
   },
@@ -53,7 +53,7 @@ const Slotted = bElement({
     return {
       append() {
         const [header] = $('header')
-        header.insert('beforeend', <> World!</>)
+        header?.insert('beforeend', <> World!</>)
       },
     }
   },

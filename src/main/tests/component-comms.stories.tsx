@@ -1,5 +1,5 @@
-import { story } from 'plaited/testing.ts'
-import { bElement, type FT, useSignal } from 'plaited.ts'
+import { bElement, type FT, useSignal } from 'plaited'
+import { story } from 'plaited/testing'
 
 const sendDisable = useSignal()
 const sendAdd = useSignal<{ value: string }>()
@@ -48,7 +48,7 @@ const ElTwo = bElement({
       },
       add(detail: { value: string }) {
         const [header] = $('header')
-        header.insert('beforeend', detail.value)
+        header?.insert('beforeend', detail.value)
       },
     }
   },

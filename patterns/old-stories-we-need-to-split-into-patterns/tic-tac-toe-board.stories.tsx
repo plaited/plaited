@@ -1,4 +1,4 @@
-import { story } from 'plaited/testing.ts'
+import { story } from 'plaited/testing'
 import { BoardMarker } from './board-marker.tsx'
 import { OMarker } from './o-marker.tsx'
 import { TicTacToeBoard } from './tic-tac-toe-board.tsx'

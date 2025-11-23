@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { behavioral, bSync, bThread, type SnapshotMessage } from 'plaited.ts'
+import { behavioral, bSync, bThread, type SnapshotMessage } from 'plaited'
 
 /**
  * Test suite for demonstrating the 'interrupt' idiom in behavioral programming.

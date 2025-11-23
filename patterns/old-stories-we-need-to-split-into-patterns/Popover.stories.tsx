@@ -1,4 +1,4 @@
-import { story } from 'plaited/testing.ts'
+import { story } from 'plaited/testing'
 import { DecoratedPopover, DecoratedPopoverClose } from './Popover.tsx'
 
 export const Example = story({

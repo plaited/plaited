@@ -39,11 +39,11 @@ test('recordChange: stores all change fields correctly', () => {
   expect(changes.length).toBe(1)
 
   const stored = changes[0]
-  expect(stored.changeType).toBe('modified')
-  expect(stored.tableName).toBe('patterns')
-  expect(stored.recordId).toBe(5)
-  expect(stored.exportName).toBe('story')
-  expect(stored.description).toBe('Updated story pattern with new assertions')
+  expect(stored?.changeType).toBe('modified')
+  expect(stored?.tableName).toBe('patterns')
+  expect(stored?.recordId).toBe(5)
+  expect(stored?.exportName).toBe('story')
+  expect(stored?.description).toBe('Updated story pattern with new assertions')
 })
 
 test('generateChangelog: returns all changes for a version', () => {
@@ -262,8 +262,8 @@ test('recordChange: supports changes without recordId or exportName', () => {
   const changes = generateChangelog('7.3.0')
   expect(changes.length).toBe(1)
   // SQLite returns null for NULL values
-  expect(changes[0].recordId).toBeNull()
-  expect(changes[0].exportName).toBeNull()
+  expect(changes[0]?.recordId).toBeNull()
+  expect(changes[0]?.exportName).toBeNull()
 })
 
 test('formatChangelog: generates valid markdown table structure', () => {

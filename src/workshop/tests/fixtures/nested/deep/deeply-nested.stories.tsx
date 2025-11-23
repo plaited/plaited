@@ -1,4 +1,4 @@
-import { story } from 'plaited/testing.ts'
+import { story } from 'plaited/testing'
 
 // Story in deeply nested directory
 export const deeplyNestedStory = story({

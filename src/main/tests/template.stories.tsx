@@ -1,5 +1,5 @@
-import { story } from 'plaited/testing.ts'
-import { type BehavioralElement, bElement } from 'plaited.ts'
+import { type BehavioralElement, bElement } from 'plaited'
+import { story } from 'plaited/testing'
 
 const DelegateFalse = bElement({
   tag: 'delegate-false',

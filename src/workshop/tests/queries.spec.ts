@@ -61,14 +61,14 @@ test('insertExample: stores all fields correctly', () => {
   expect(results.length).toBe(1)
 
   const stored = results[0]
-  expect(stored.module).toBe('testing')
-  expect(stored.export_name).toBe('story')
-  expect(stored.category).toBe('testing')
-  expect(stored.dependencies).toEqual(['bun:test', 'plaited/testing'])
-  expect(stored.runtime_context).toBe('node')
-  expect(stored.mcp_tool_compatible).toBe(true)
-  expect(stored.tags).toEqual(['jsx', 'testing'])
-  expect(stored.complexity).toBe('intermediate')
+  expect(stored?.module).toBe('testing')
+  expect(stored?.export_name).toBe('story')
+  expect(stored?.category).toBe('testing')
+  expect(stored?.dependencies).toEqual(['bun:test', 'plaited/testing'])
+  expect(stored?.runtime_context).toBe('node')
+  expect(stored?.mcp_tool_compatible).toBe(true)
+  expect(stored?.tags).toEqual(['jsx', 'testing'])
+  expect(stored?.complexity).toBe('intermediate')
 })
 
 test('insertPattern: inserts pattern and returns ID', () => {
@@ -164,7 +164,7 @@ test('searchExamples: finds examples using full-text search', () => {
 
   const results = searchExamples('shadow')
   expect(results.length).toBeGreaterThan(0)
-  expect(results[0].title).toContain('Shadow')
+  expect(results[0]?.title).toContain('Shadow')
 })
 
 test('searchExamples: respects limit parameter', () => {
@@ -207,7 +207,7 @@ test('searchPatterns: finds patterns using full-text search', () => {
 
   const results = searchPatterns('coordination')
   expect(results.length).toBeGreaterThan(0)
-  expect(results[0].name).toBe('event-coordination')
+  expect(results[0]?.name).toBe('event-coordination')
 })
 
 test('getExamplesByExport: returns all examples for an export', () => {
@@ -312,11 +312,11 @@ test('listExamples: filters by module', () => {
 
   const mainExamples = listExamples({ module: 'main' })
   expect(mainExamples.length).toBe(1)
-  expect(mainExamples[0].module).toBe('main')
+  expect(mainExamples[0]?.module).toBe('main')
 
   const testingExamples = listExamples({ module: 'testing' })
   expect(testingExamples.length).toBe(1)
-  expect(testingExamples[0].module).toBe('testing')
+  expect(testingExamples[0]?.module).toBe('testing')
 })
 
 test('listExamples: filters by complexity', () => {
@@ -342,7 +342,7 @@ test('listExamples: filters by complexity', () => {
 
   const basicExamples = listExamples({ complexity: 'basic' })
   expect(basicExamples.length).toBe(1)
-  expect(basicExamples[0].complexity).toBe('basic')
+  expect(basicExamples[0]?.complexity).toBe('basic')
 })
 
 test('listPatterns: returns all patterns when no filters', () => {
@@ -393,7 +393,7 @@ test('listPatterns: filters by category', () => {
 
   const webComponentPatterns = listPatterns({ category: 'web-components' })
   expect(webComponentPatterns.length).toBe(1)
-  expect(webComponentPatterns[0].category).toBe('web-components')
+  expect(webComponentPatterns[0]?.category).toBe('web-components')
 })
 
 test('FTS index: automatically updates on insert', () => {

@@ -1,5 +1,5 @@
-import { story } from 'plaited/testing.ts'
-import { type BehavioralElement, bElement, createStyles, type FT, type Position, useTemplate } from 'plaited.ts'
+import { type BehavioralElement, bElement, createStyles, type FT, type Position, useTemplate } from 'plaited'
+import { story } from 'plaited/testing'
 
 const componentStyles = createStyles({
   root: {
@@ -119,46 +119,57 @@ const Fixture = bElement({
   ],
   bProgram({ $ }) {
     const [template] = $<HTMLTemplateElement>('row-template')
-    const cb = useTemplate<DataItem>(template, ($, data) => {
-      $('row')[0].attr('p-target', data.id)
-      $('id')[0].render(data.id)
-      $('label')[0].render(data.label)
-    })
+    const cb = template
+      ? useTemplate<DataItem>(template, ($, data) => {
+          $('row')[0]?.attr('p-target', data.id)
+          $('id')[0]?.render(data.id)
+          $('label')[0]?.render(data.label)
+        })
+      : () => null
     return {
       replace() {
-        $('table')[0].replace(<span>I'm just a span</span>)
+        $('table')[0]?.replace(<span>I'm just a span</span>)
       },
       render() {
-        $('table')[0].render(...buildData(100).map(cb))
+        $('table')[0]?.render(
+          ...buildData(100)
+            .map(cb)
+            .filter((x): x is DocumentFragment => x !== null),
+        )
       },
       insert(position: Position) {
-        $('table')[0].insert(position, ...buildData(100).map(cb))
+        $('table')[0]?.insert(
+          position,
+          ...buildData(100)
+            .map(cb)
+            .filter((x): x is DocumentFragment => x !== null),
+        )
       },
       remove() {
-        $('table')[0].replaceChildren()
+        $('table')[0]?.replaceChildren()
       },
       getAttribute() {
-        const attr = $('root')[0].attr('p-target')
-        $('root')[0].render(attr ?? '')
+        const attr = $('root')[0]?.attr('p-target')
+        $('root')[0]?.render(attr ?? '')
       },
       removeAttributes() {
         const labels = $('label')
         labels.forEach((label) => {
-          label.attr('p-target', null)
+          label?.attr('p-target', null)
         })
       },
       setAttribute() {
         const [root] = $('root')
-        root.attr('aria-label', 'helper fixture')
+        root?.attr('aria-label', 'helper fixture')
       },
       setStyle() {
         const [root] = $('root')
-        root.replace(<Root {...componentStyles.root} />)
+        root?.replace(<Root {...componentStyles.root} />)
       },
       multiSetAttributes() {
         const dels = $('delete')
         dels.forEach((del) => {
-          del.attr({
+          del?.attr({
             'p-target': 'cancel',
             'aria-hidden': 'false',
             class: null,

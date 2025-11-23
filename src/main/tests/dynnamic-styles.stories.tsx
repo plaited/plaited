@@ -1,5 +1,5 @@
-import { story } from 'plaited/testing.ts'
-import { type BehavioralElement, bElement, createStyles } from 'plaited.ts'
+import { type BehavioralElement, bElement, createStyles } from 'plaited'
+import { story } from 'plaited/testing'
 
 const componentStyles = createStyles({
   initial: {
@@ -28,8 +28,8 @@ const DynamicOnly = bElement({
     return {
       render() {
         const [target] = $<HTMLDivElement>('target')
-        target.insert('beforeend', <div {...componentStyles.noRepeat}>construable stylesheet applied once</div>)
-        target.insert('beforeend', <div {...componentStyles.repeat}>not applied</div>)
+        target?.insert('beforeend', <div {...componentStyles.noRepeat}>construable stylesheet applied once</div>)
+        target?.insert('beforeend', <div {...componentStyles.repeat}>not applied</div>)
       },
     }
   },

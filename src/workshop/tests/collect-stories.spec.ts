@@ -258,8 +258,8 @@ test('getStoryMetadata: filters stories with .only() flag', async () => {
 
   // Should only return the story with .only() flag
   expect(metadata.length).toBe(1)
-  expect(metadata[0].exportName).toBe('onlyStory')
-  expect(metadata[0].flag).toBe('only')
+  expect(metadata[0]?.exportName).toBe('onlyStory')
+  expect(metadata[0]?.flag).toBe('only')
 })
 
 test('getStoryMetadata: filters out stories with .skip() flag', async () => {
@@ -268,8 +268,8 @@ test('getStoryMetadata: filters out stories with .skip() flag', async () => {
 
   // Should return only the active story (2 skipped, 1 active = 1 result)
   expect(metadata.length).toBe(1)
-  expect(metadata[0].exportName).toBe('activeStory')
-  expect(metadata[0].flag).toBe(undefined)
+  expect(metadata[0]?.exportName).toBe('activeStory')
+  expect(metadata[0]?.flag).toBe(undefined)
 })
 
 test('getStoryMetadata: returns all .only() stories when multiple exist', async () => {
@@ -333,7 +333,7 @@ test('filterStoryMetadata: returns only stories when .only() flag exists', async
 
   // Metadata should already be filtered
   expect(metadata.length).toBe(1)
-  expect(metadata[0].flag).toBe('only')
+  expect(metadata[0]?.flag).toBe('only')
 })
 
 test('filterStoryMetadata: filters out .skip() stories when no .only() exists', async () => {
@@ -342,7 +342,7 @@ test('filterStoryMetadata: filters out .skip() stories when no .only() exists', 
 
   // Should only have the active story
   expect(metadata.length).toBe(1)
-  expect(metadata[0].flag).toBe(undefined)
+  expect(metadata[0]?.flag).toBe(undefined)
 
   // Skipped stories should not be present
   const exportNames = metadata.map((s) => s.exportName)

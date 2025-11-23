@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import beautify from 'beautify'
-import { bElement, createStyles, joinStyles, type TemplateObject } from 'plaited.ts'
+import { bElement, createStyles, joinStyles, type TemplateObject } from 'plaited'
 
 const render = (tpl: TemplateObject) => beautify(tpl.html.join(''), { format: 'html' })
 
@@ -56,7 +56,10 @@ test('createTemplate: CustomElement with styled slotted component', () => {
       <p slot='nested'>slotted paragraph</p>
     </NestedCustomElement>
   )
-  expect({ content: render(el), stylesheets: el.stylesheets }).toMatchSnapshot()
+  expect({
+    content: render(el),
+    stylesheets: el.stylesheets,
+  }).toMatchSnapshot()
 })
 
 const TopCustomElement = bElement({
@@ -70,7 +73,10 @@ const TopCustomElement = bElement({
 
 test('createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom', () => {
   const el = <TopCustomElement />
-  expect({ content: render(el), stylesheets: el.stylesheets }).toMatchSnapshot()
+  expect({
+    content: render(el),
+    stylesheets: el.stylesheets,
+  }).toMatchSnapshot()
 })
 
 test('createTemplate: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles', () => {
@@ -88,7 +94,10 @@ test('createTemplate: CustomElement with declarative shadow dom and nested decla
       <img {...componentStyles.image} />
     </TopCustomElement>
   )
-  expect({ content: render(el), stylesheets: el.stylesheets }).toMatchSnapshot()
+  expect({
+    content: render(el),
+    stylesheets: el.stylesheets,
+  }).toMatchSnapshot()
 })
 
 const hoistStyles = createStyles({

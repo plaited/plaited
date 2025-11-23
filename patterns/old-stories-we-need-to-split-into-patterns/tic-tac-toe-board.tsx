@@ -1,4 +1,4 @@
-import { bElement, bSync, bThread, type RulesFunction } from 'plaited.ts'
+import { bElement, bSync, bThread, type RulesFunction } from 'plaited'
 import { BoardMarker } from './board-marker.tsx'
 import { OMarker } from './o-marker.tsx'
 import { XMarker } from './x-marker.tsx'
@@ -95,7 +95,10 @@ const preventCompletionOfLineWithTwoXs = (board: Set<number>) => {
         waitFor: ({ type, detail }) => type === 'X' && win.includes(detail.square),
       }),
       bSync({
-        request: () => ({ type: 'O', detail: { square: win.find((num) => board.has(num)) || 0 } }),
+        request: () => ({
+          type: 'O',
+          detail: { square: win.find((num) => board.has(num)) || 0 },
+        }),
       }),
     ])
   }

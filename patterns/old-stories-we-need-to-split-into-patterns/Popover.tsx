@@ -1,5 +1,5 @@
-import { isTypeOf } from 'plaited/utils.ts'
-import { bElement, useDispatch } from 'plaited.ts'
+import { bElement, useDispatch } from 'plaited'
+import { isTypeOf } from 'plaited/utils'
 
 export const DecoratedPopoverClose = bElement({
   tag: 'decorated-popover-close',
@@ -41,7 +41,7 @@ export const DecoratedPopover = bElement({
     return {
       close() {
         internals.states.delete('open')
-        popover.hidePopover()
+        popover?.hidePopover()
       },
       toggle(e) {
         console.table(e.target.getBoundingClientRect())
@@ -50,12 +50,20 @@ export const DecoratedPopover = bElement({
         } else {
           internals.states.add('open')
         }
-        popover.togglePopover()
+        popover?.togglePopover()
       },
       slotchange() {},
       onAttributeChanged({ name, newValue }) {
-        name === 'open' && trigger({ type: 'open', detail: isTypeOf<string>(newValue, 'string') })
-        name === 'disabled' && trigger({ type: 'disabled', detail: isTypeOf<string>(newValue, 'string') })
+        name === 'open' &&
+          trigger({
+            type: 'open',
+            detail: isTypeOf<string>(newValue, 'string'),
+          })
+        name === 'disabled' &&
+          trigger({
+            type: 'disabled',
+            detail: isTypeOf<string>(newValue, 'string'),
+          })
       },
       onConnected() {
         if (host.hasAttribute('open')) {

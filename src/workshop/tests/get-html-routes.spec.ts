@@ -68,7 +68,7 @@ test('getHTMLRoutes: main route includes DOCTYPE declaration', async () => {
   })
 
   const mainRoute = routes['/stories/mixed-stories--basic-story']
-  const content = await mainRoute.text()
+  const content = mainRoute ? await mainRoute.text() : ''
 
   expect(content).toContain('<!DOCTYPE html>')
 })
@@ -81,7 +81,7 @@ test('getHTMLRoutes: main route has proper HTML structure', async () => {
   })
 
   const mainRoute = routes['/stories/mixed-stories--basic-story']
-  const content = await mainRoute.text()
+  const content = mainRoute ? await mainRoute.text() : ''
 
   expect(content).toContain('<html')
   expect(content).toContain('<head')
@@ -98,7 +98,7 @@ test('getHTMLRoutes: main route includes title with export name', async () => {
   })
 
   const mainRoute = routes['/stories/mixed-stories--basic-story']
-  const content = await mainRoute.text()
+  const content = mainRoute ? await mainRoute.text() : ''
 
   expect(content).toContain('<title')
   expect(content).toContain('>basicStory</title>')
@@ -112,7 +112,7 @@ test('getHTMLRoutes: main route includes entry script tag', async () => {
   })
 
   const mainRoute = routes['/stories/mixed-stories--basic-story']
-  const content = await mainRoute.text()
+  const content = mainRoute ? await mainRoute.text() : ''
 
   expect(content).toContain('<script')
   expect(content).toContain('type="module"')
@@ -127,7 +127,7 @@ test('getHTMLRoutes: main route includes reload client script', async () => {
   })
 
   const mainRoute = routes['/stories/mixed-stories--basic-story']
-  const content = await mainRoute.text()
+  const content = mainRoute ? await mainRoute.text() : ''
 
   // Should contain WebSocket reload client code
   expect(content).toContain('WebSocket')
@@ -142,7 +142,7 @@ test('getHTMLRoutes: include route contains only fixture and entry script', asyn
   })
 
   const includeRoute = routes['/stories/mixed-stories--basic-story.include']
-  const content = await includeRoute.text()
+  const content = await includeRoute?.text()
 
   // Should NOT have DOCTYPE or full HTML structure
   expect(content).not.toContain('<!DOCTYPE html>')
@@ -162,7 +162,7 @@ test('getHTMLRoutes: default body styles include height and margin', async () =>
   })
 
   const mainRoute = routes['/stories/mixed-stories--basic-story']
-  const content = await mainRoute.text()
+  const content = await mainRoute?.text()
 
   // Should have default body styles
   expect(content).toContain('height: 100vh')
@@ -179,7 +179,7 @@ test('getHTMLRoutes: merges parameters.styles with default body styles', async (
   })
 
   const mainRoute = routes['/stories/mixed-stories--story-with-params']
-  const content = await mainRoute.text()
+  const content = mainRoute ? await mainRoute.text() : ''
 
   // Should still have default body styles
   expect(content).toContain('height: 100vh')
@@ -211,7 +211,7 @@ test('getHTMLRoutes: accepts story with valid args', async () => {
   // Routes should be valid Response objects
   const mainRoute = routes['/stories/mixed-stories--basic-story']
   expect(mainRoute).toBeInstanceOf(Response)
-  expect(mainRoute.status).toBe(200)
+  expect(mainRoute?.status).toBe(200)
 })
 
 test('getHTMLRoutes: accepts story with no args', async () => {
@@ -233,7 +233,7 @@ test('getHTMLRoutes: main route has correct content-type', async () => {
   })
 
   const mainRoute = routes['/stories/mixed-stories--basic-story']
-  const contentType = mainRoute.headers.get('content-type')
+  const contentType = mainRoute?.headers.get('content-type')
 
   expect(contentType).toBeTruthy()
   expect(contentType).toContain('text/html')
@@ -247,7 +247,7 @@ test('getHTMLRoutes: include route has correct content-type', async () => {
   })
 
   const includeRoute = routes['/stories/mixed-stories--basic-story.include']
-  const contentType = includeRoute.headers.get('content-type')
+  const contentType = includeRoute?.headers.get('content-type')
 
   expect(contentType).toBeTruthy()
   expect(contentType).toContain('text/html')
@@ -264,8 +264,8 @@ test('getHTMLRoutes: responses are not compressed by default', async () => {
   const includeRoute = routes['/stories/mixed-stories--basic-story.include']
 
   // Should NOT have gzip content-encoding header
-  expect(mainRoute.headers.get('content-encoding')).toBeNull()
-  expect(includeRoute.headers.get('content-encoding')).toBeNull()
+  expect(mainRoute?.headers.get('content-encoding')).toBeNull()
+  expect(includeRoute?.headers.get('content-encoding')).toBeNull()
 })
 
 test('getHTMLRoutes: responses can be read as text', async () => {
@@ -278,8 +278,8 @@ test('getHTMLRoutes: responses can be read as text', async () => {
   const mainRoute = routes['/stories/mixed-stories--basic-story']
   const includeRoute = routes['/stories/mixed-stories--basic-story.include']
 
-  const mainContent = await mainRoute.text()
-  const includeContent = await includeRoute.text()
+  const mainContent = mainRoute ? await mainRoute.text() : ''
+  const includeContent = includeRoute ? await includeRoute.text() : ''
 
   expect(typeof mainContent).toBe('string')
   expect(typeof includeContent).toBe('string')
@@ -387,7 +387,7 @@ test('getHTMLRoutes: entry script path is correct', async () => {
   })
 
   const mainRoute = routes['/stories/mixed-stories--basic-story']
-  const content = await mainRoute.text()
+  const content = mainRoute ? await mainRoute.text() : ''
 
   // Entry path should replace .stories.tsx with --index.js
   expect(content).toContain('src="/stories/mixed-stories--index.js"')

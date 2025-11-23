@@ -1,4 +1,4 @@
-import { createStyles, type FT } from 'plaited.ts'
+import { createStyles, type FT } from 'plaited'
 
 const componentStyles = createStyles({
   board: {

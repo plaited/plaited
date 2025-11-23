@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { behavioral, bSync, bThread, type RulesFunction } from 'plaited.ts'
+import { behavioral, bSync, bThread, type RulesFunction } from 'plaited'
 
 /** Represents all possible winning combinations of squares in Tic-Tac-Toe. */
 const winConditions = [
@@ -410,7 +410,10 @@ const preventCompletionOfLineWithTwoXs = (board: Set<number>) => {
       // Request an 'O' move to take the remaining square in this line.
       bSync({
         // Dynamically determine the square to request based on the current board state.
-        request: () => ({ type: 'O', detail: { square: win.find((num) => board.has(num)) as number } }),
+        request: () => ({
+          type: 'O',
+          detail: { square: win.find((num) => board.has(num)) as number },
+        }),
       }),
     ])
   }

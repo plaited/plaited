@@ -1,4 +1,4 @@
-import { story } from 'plaited/testing.ts'
+import { story } from 'plaited/testing'
 import { DecoratedCheckbox } from './DecoratedCheckbox.tsx'
 
 export const example = story<typeof DecoratedCheckbox>({

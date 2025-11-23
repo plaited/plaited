@@ -19,7 +19,7 @@ export const BehavioralTemplateWithProgram = bElement({
     const [btn] = $('btn')
     return {
       CLICK() {
-        btn.render('Clicked!')
+        btn?.render('Clicked!')
       },
     }
   },

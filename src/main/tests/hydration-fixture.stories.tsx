@@ -1,6 +1,6 @@
-import { story } from 'plaited/testing.ts'
-import { createDocumentFragment } from 'plaited/utils.ts'
-import { type BehavioralElement, bElement } from 'plaited.ts'
+import { type BehavioralElement, bElement } from 'plaited'
+import { story } from 'plaited/testing'
+import { createDocumentFragment } from 'plaited/utils'
 
 import { AFTER_HYDRATION, BEFORE_HYDRATION, HYDRATING_ELEMENT_TAG, styles } from './hydrating-element.constants.ts'
 
@@ -19,7 +19,7 @@ const HydrationFixture = bElement({
       async [TRIGGER_HYDRATION](detail: string) {
         const frag = createDocumentFragment(detail)
         const [slot] = $<HTMLSlotElement>('slot')
-        frag && slot.replace(frag)
+        frag && slot?.replace(frag)
       },
     }
   },
