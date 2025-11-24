@@ -27,9 +27,7 @@
       "correctness": {
         "noUnusedVariables": "error",
         "noUnusedImports": "error",
-        "useImportExtensions": {
-          "level": "error"
-        }
+        "useImportExtensions": "error"
       },
       "performance": {
         "noAccumulatingSpread": "off"

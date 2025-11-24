@@ -1,5 +1,5 @@
 import { expect, mock, test } from 'bun:test'
-import { noop, wait } from '../../utils.ts'
+import { noop, wait } from 'plaited/utils'
 import { match, throws, useAssert } from '../testing.utils.ts'
 
 const assert = useAssert(noop)

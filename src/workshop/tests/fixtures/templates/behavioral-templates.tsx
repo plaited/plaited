@@ -1,4 +1,4 @@
-import { bElement } from '../../../../main.ts'
+import { bElement } from 'plaited'
 
 export const SimpleBehavioralTemplate = bElement({
   tag: 'simple-component',

@@ -1,4 +1,4 @@
-import { bElement, type FT, type FunctionTemplate } from '../../../../main.ts'
+import { bElement, type FT, type FunctionTemplate } from 'plaited'
 
 // FunctionTemplate with explicit type
 export const MixedFunctionTemplate: FunctionTemplate = () => <div>Function Template in Mixed File</div>

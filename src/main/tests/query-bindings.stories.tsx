@@ -118,14 +118,13 @@ const Fixture = bElement({
     'setAttribute',
   ],
   bProgram({ $ }) {
-    const [template] = $<HTMLTemplateElement>('row-template')
-    const cb = template
-      ? useTemplate<DataItem>(template, ($, data) => {
-          $('row')[0]?.attr('p-target', data.id)
-          $('id')[0]?.render(data.id)
-          $('label')[0]?.render(data.label)
-        })
-      : () => null
+    const template = $<HTMLTemplateElement>('row-template')[0]!
+    const cb = useTemplate<DataItem>(template, ($, data) => {
+      $('row')[0]?.attr('p-target', data.id)
+      $('id')[0]?.render(data.id)
+      $('label')[0]?.render(data.label)
+    })
+
     return {
       replace() {
         $('table')[0]?.replace(<span>I'm just a span</span>)

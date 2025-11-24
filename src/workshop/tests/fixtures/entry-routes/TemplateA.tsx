@@ -1,4 +1,4 @@
-import type { FunctionTemplate } from '../../../../main.ts'
+import type { FunctionTemplate } from 'plaited'
 import { sharedFunction } from './SharedDependency.tsx'
 
 /**

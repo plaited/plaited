@@ -210,6 +210,97 @@ External Trigger → bProgram → Event Selection → Thread Notification → Fe
   ): StoryMetadata => { ... }
   ```
 
+### Import Path Standards
+
+**IMPORTANT**: Use package imports instead of relative paths in test files and fixtures for better maintainability.
+
+**In test files and fixtures:**
+- ✅ Use `'plaited'` for main module imports
+- ✅ Use `'plaited/testing'` for testing utilities
+- ✅ Use `'plaited/utils'` for utility functions
+- ❌ Avoid relative paths like `'../../../../main.ts'` or `'../../utils.ts'`
+
+**Examples:**
+
+```typescript
+// ✅ Good: Package imports in test files
+import { bElement, type FT } from 'plaited'
+import { story } from 'plaited/testing'
+import { wait, noop } from 'plaited/utils'
+
+// ❌ Avoid: Relative paths in test files
+import { bElement, type FT } from '../../../../main.ts'
+import { story } from '../../../../../testing/testing.fixture.tsx'
+import { wait, noop } from '../../utils.ts'
+```
+
+**When to use relative imports:**
+- Within the same module/directory for local dependencies
+- Test fixtures importing other fixtures in the same test directory
+- Shared test utilities within the test directory
+
+**Rationale:** Package imports are cleaner, resilient to directory restructuring, and match how consumers will import from the published package.
+
+### Null Handling and Type Assertions
+
+**Use non-null assertions (`!`) when elements are guaranteed to exist** by the framework or component structure. Use optional chaining (`?.`) for defensive programming when existence is uncertain.
+
+#### DOM Element Query Patterns
+
+**In `bProgram` where elements are defined in `shadowDom`:**
+
+```typescript
+// ✅ Good: Non-null assertion for guaranteed elements
+bProgram({ $ }) {
+  const template = $<HTMLTemplateElement>('row-template')[0]!
+  const slot = $<HTMLSlotElement>('slot')[0]
+
+  return {
+    someHandler() {
+      // Use optional chaining for runtime safety
+      const table = $('table')[0]
+      table?.render('content')
+    }
+  }
+}
+```
+
+**Array destructuring vs indexed access:**
+
+```typescript
+// ✅ Preferred: Direct indexed access with optional chaining
+let slot = $<HTMLSlotElement>('slot')[0]
+let input = slot?.assignedElements()[0]
+
+// ❌ Avoid: Destructuring with fallback arrays (verbose)
+let [slot] = $<HTMLSlotElement>('slot')
+let [input] = slot?.assignedElements() ?? []
+```
+
+**When to use each pattern:**
+
+1. **Non-null assertion (`!`)**: Element defined in template, guaranteed to exist
+   ```typescript
+   const template = $<HTMLTemplateElement>('my-template')[0]!
+   ```
+
+2. **Optional chaining (`?.`)**: Element may not exist, dynamic content, or runtime queries
+   ```typescript
+   const dynamicEl = $('dynamic-target')[0]
+   dynamicEl?.attr('class', 'active')
+   ```
+
+3. **Indexed access over destructuring**: Cleaner for single element queries
+   ```typescript
+   // ✅ Good
+   const slot = $<HTMLSlotElement>('slot')[0]
+
+   // ❌ Verbose
+   const [slot] = $<HTMLSlotElement>('slot')
+   ```
+
+**Rationale:** Non-null assertions express confidence in element presence when structurally guaranteed. Optional chaining provides runtime safety for uncertain cases. Indexed access is cleaner than destructuring for single elements.
+
 ### Signal Usage Best Practices
 
 **Use `useSignal` for the Actor Pattern** - when you need bidirectional communication with BOTH reading and writing:

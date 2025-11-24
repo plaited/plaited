@@ -3,7 +3,7 @@
  * Used to test filtering behavior in collect-stories.spec.ts
  */
 
-import { story } from '../../../../../testing/testing.fixture.tsx'
+import { story } from 'plaited/testing'
 
 export const onlyStory = story.only({
   template: () => <div>Only story</div>,

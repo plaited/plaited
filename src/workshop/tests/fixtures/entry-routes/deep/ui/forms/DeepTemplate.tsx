@@ -1,4 +1,4 @@
-import type { FunctionTemplate } from '../../../../../../../main.ts'
+import type { FunctionTemplate } from 'plaited'
 
 /**
  * Deeply nested template for testing get-entry-routes path transformation.

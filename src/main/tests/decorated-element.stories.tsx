@@ -63,13 +63,13 @@ const DecorateCheckbox = bElement<{
     </>
   ),
   bProgram({ $, internals, trigger }) {
-    let [slot] = $<HTMLSlotElement>('slot')
-    let [input] = slot?.assignedElements() ?? []
+    let slot = $<HTMLSlotElement>('slot')[0]
+    let input = slot?.assignedElements()[0]
     let inputObserver = useAttributesObserver('change', trigger)
     return {
       slotchange() {
-        ;[slot] = $<HTMLSlotElement>('slot')
-        ;[input] = slot?.assignedElements() ?? []
+        slot = $<HTMLSlotElement>('slot')[0]
+        input = slot?.assignedElements()[0]
         inputObserver = useAttributesObserver('change', trigger)
       },
       change({ name, newValue }) {
