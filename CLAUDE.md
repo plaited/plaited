@@ -247,7 +247,7 @@ import { wait, noop } from '../../utils.ts'
 
 #### DOM Element Query Patterns
 
-**In `bProgram` where elements are defined in `shadowDom`:**
+**In the `bProgram` callback of `bElement` where elements are defined in `shadowDom`:**
 
 ```typescript
 // ✅ Good: Non-null assertion for guaranteed elements
