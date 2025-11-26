@@ -1,4 +1,3 @@
-import { getEntryPath } from './get-entry-path.ts'
 import { zip } from './workshop.utils.ts'
 
 export const getEntryRoutes = async (root: string, entrypoints: string[]) => {
@@ -19,7 +18,7 @@ export const getEntryRoutes = async (root: string, entrypoints: string[]) => {
       const { kind } = artifact
       let formattedPath: string = path
       if (kind === 'entry-point') {
-        formattedPath = getEntryPath(path, '.js')
+        formattedPath = path.startsWith('/') ? path : `/${path}`
       } else {
         formattedPath = path.replace(/^\./, '')
       }

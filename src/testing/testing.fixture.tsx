@@ -1,9 +1,10 @@
 import { bElement, createHostStyles, type FunctionTemplate, type SnapshotMessage } from '../main.ts'
 import { wait } from '../utils.ts'
 import {
-  __CLOSE_PLAITED_CONTEXT__,
+  __PLAITED__,
   __PLAITED_RUNNER__,
   DEFAULT_PLAY_TIMEOUT,
+  ERROR_TYPES,
   FIXTURE_EVENTS,
   STORY_FIXTURE,
   STORY_IDENTIFIER,
@@ -13,27 +14,25 @@ import type {
   InteractionExport,
   InteractionStoryObj,
   Play,
+  RunnerMessage,
   SnapshotExport,
   SnapshotStoryObj,
   StoryExport,
   StoryObj,
-  TestFailureEventDetail,
 } from './testing.types.ts'
 import {
   AccessibilityError,
+  accessibilityCheck,
+  assert,
   FailedAssertionError,
+  findByAttribute,
+  findByTarget,
+  findByTestId,
+  findByText,
+  fireEvent,
   MissingAssertionParameterError,
   match,
   throws,
-  useAccessibilityCheck,
-  useAssert,
-  useFindByAttribute,
-  useFindByTarget,
-  useFindByTestId,
-  useFindByText,
-  useFireEvent,
-  useRunner,
-  useWait,
 } from './testing.utils.ts'
 
 declare global {
@@ -45,7 +44,9 @@ declare global {
      * inside the test runner versus a standard browser environment.
      */
     [__PLAITED_RUNNER__]?: boolean
-    [__CLOSE_PLAITED_CONTEXT__]?: () => void
+    [__PLAITED__]: {
+      reporter: () => Promise<RunnerMessage>
+    }
   }
 }
 
@@ -73,7 +74,16 @@ const StoryFixture = bElement<{
     play: InteractionStoryObj['play']
     timeout?: number
   }
-  [FIXTURE_EVENTS.close]: undefined
+  [FIXTURE_EVENTS.test_fail]: {
+    errorType:
+      | typeof ERROR_TYPES.failed_assertion
+      | typeof ERROR_TYPES.accessibility_violation
+      | typeof ERROR_TYPES.missing_assertion_parameter
+      | typeof ERROR_TYPES.unknown_error
+      | typeof ERROR_TYPES.test_timeout
+    error: string
+  }
+  [FIXTURE_EVENTS.test_pass]: string
 }>({
   tag: STORY_FIXTURE,
   publicEvents: [FIXTURE_EVENTS.run],
@@ -86,126 +96,123 @@ const StoryFixture = bElement<{
   ),
   bProgram({ host, trigger, useSnapshot, bThreads, bThread, bSync }) {
     bThreads.set({
-      onError: bThread(
+      onRun: bThread(
         [
           bSync({
-            waitFor: [
-              FIXTURE_EVENTS.accessibility_violation,
-              FIXTURE_EVENTS.failed_assertion,
-              FIXTURE_EVENTS.missing_assertion_parameter,
-              FIXTURE_EVENTS.unknown_error,
-            ],
+            waitFor: [FIXTURE_EVENTS.test_fail, FIXTURE_EVENTS.test_pass],
           }),
           bSync({
-            block: [FIXTURE_EVENTS.run_complete, FIXTURE_EVENTS.test_timeout],
-            request: { type: FIXTURE_EVENTS.close },
-          }),
-        ],
-        true,
-      ),
-      onSuccess: bThread(
-        [
-          bSync({
-            waitFor: FIXTURE_EVENTS.run_complete,
-          }),
-          bSync({
-            request: { type: FIXTURE_EVENTS.close },
+            block: [FIXTURE_EVENTS.test_pass, FIXTURE_EVENTS.test_fail],
           }),
         ],
         true,
       ),
     })
-    const send = useRunner()
-    useSnapshot((snapshot: SnapshotMessage) => {
-      if (window?.__PLAITED_RUNNER__) {
-        const { pathname } = new URL(window.location.href)
-        send({
-          snapshot,
-          pathname,
-        })
-      } else {
+    !window?.__PLAITED_RUNNER__ &&
+      useSnapshot((snapshot: SnapshotMessage) => {
         console.table(snapshot)
-      }
-    })
+      })
 
     const timeout = async (time: number) => {
       await wait(time)
       return true
     }
 
-    const success = () => '\x1b[32m ✓ \x1b[0m' + 'Success'
-    const failure = (label: string) => `\x1b[31m ${label} \x1b[0m`
-
     const interact = async (play: Play) => {
       try {
         await play?.({
-          assert: useAssert(trigger),
-          findByAttribute: useFindByAttribute(trigger),
-          findByText: useFindByText(trigger),
-          fireEvent: useFireEvent(trigger),
-          findByTarget: useFindByTarget(trigger),
-          findByTestId: useFindByTestId(trigger),
+          assert,
+          findByAttribute,
+          findByText,
+          fireEvent,
+          findByTarget,
+          findByTestId,
           hostElement: host,
           match,
           throws,
-          wait: useWait(trigger),
-          accessibilityCheck: useAccessibilityCheck(trigger),
+          wait,
+          accessibilityCheck,
         })
       } catch (error) {
-        if (error instanceof FailedAssertionError || error instanceof AccessibilityError) {
-          trigger<{
-            type: typeof FIXTURE_EVENTS.failed_assertion | typeof FIXTURE_EVENTS.accessibility_violation
-            detail: TestFailureEventDetail
-          }>({
-            type: error.name,
-            detail: { [failure(error.name)]: JSON.parse(error.message) },
+        if (error instanceof FailedAssertionError) {
+          trigger({
+            type: FIXTURE_EVENTS.test_fail,
+            detail: {
+              errorType: ERROR_TYPES.failed_assertion,
+              error: error.toString(),
+            },
+          })
+        } else if (error instanceof AccessibilityError) {
+          trigger({
+            type: FIXTURE_EVENTS.test_fail,
+            detail: {
+              errorType: ERROR_TYPES.accessibility_violation,
+              error: error.toString(),
+            },
           })
         } else if (error instanceof MissingAssertionParameterError) {
-          trigger<{
-            type: typeof FIXTURE_EVENTS.missing_assertion_parameter
-            detail: TestFailureEventDetail
-          }>({
-            type: error.name,
-            detail: { [failure(error.name)]: error.message },
+          trigger({
+            type: FIXTURE_EVENTS.test_fail,
+            detail: {
+              errorType: ERROR_TYPES.missing_assertion_parameter,
+              error: error.toString(),
+            },
           })
         } else if (error instanceof Error) {
-          trigger<{ type: string; detail: TestFailureEventDetail }>({
-            type: FIXTURE_EVENTS.unknown_error,
-            detail: { [failure(error.name)]: error.message },
+          trigger({
+            type: FIXTURE_EVENTS.test_fail,
+            detail: {
+              errorType: ERROR_TYPES.unknown_error,
+              error: error.toString(),
+            },
           })
         }
       }
     }
-
+    const { resolve, promise } = Promise.withResolvers<RunnerMessage>()
+    window.__PLAITED__ = {
+      reporter: async () => promise,
+    }
     return {
       [FIXTURE_EVENTS.run](detail) {
         if (detail.play) {
           trigger({ type: FIXTURE_EVENTS.play, detail })
         } else {
-          trigger({ type: FIXTURE_EVENTS.run_complete, detail: success() })
+          trigger({ type: FIXTURE_EVENTS.test_pass, detail: '✅ Success' })
         }
       },
       async [FIXTURE_EVENTS.play](detail) {
         const timedOut = await Promise.race([interact(detail.play), timeout(detail.timeout ?? DEFAULT_PLAY_TIMEOUT)])
         if (timedOut) {
           trigger({
-            type: FIXTURE_EVENTS.test_timeout,
-            detail: failure(FIXTURE_EVENTS.test_timeout),
+            type: FIXTURE_EVENTS.test_fail,
+            detail: {
+              errorType: ERROR_TYPES.test_timeout,
+              error: `⏱️ ${ERROR_TYPES.test_timeout}`,
+            },
           })
         } else {
-          trigger({ type: FIXTURE_EVENTS.run_complete, detail: success() })
+          trigger({ type: FIXTURE_EVENTS.test_pass, detail: '✅ Success' })
         }
       },
-      [FIXTURE_EVENTS.close]() {
-        window.__CLOSE_PLAITED_CONTEXT__?.()
-      },
-      onConnected() {
-        trigger({
-          type: FIXTURE_EVENTS.fixture_connected,
+      [FIXTURE_EVENTS.test_pass]() {
+        const { pathname } = new URL(window.location.href)
+        resolve({
+          type: FIXTURE_EVENTS.test_pass,
+          detail: {
+            pathname,
+          },
         })
       },
-      onDisconnected() {
-        send.disconnect()
+      [FIXTURE_EVENTS.test_fail](detail) {
+        const { pathname } = new URL(window.location.href)
+        resolve({
+          type: FIXTURE_EVENTS.test_fail,
+          detail: {
+            pathname,
+            ...detail,
+          },
+        })
       },
     }
   },

@@ -1,12 +1,12 @@
-import { mock } from 'bun:test'
 import { bElement, type FT } from 'plaited'
 import { story } from 'plaited/testing'
+import sinon from 'sinon'
 
-const defaultSlot = mock()
-const passThroughSlot = mock()
-const namedSlot = mock()
-const nestedSlot = mock()
-const nestedInShadowSlot = mock()
+const defaultSlot = sinon.spy()
+const passThroughSlot = sinon.spy()
+const namedSlot = sinon.spy()
+const nestedSlot = sinon.spy()
+const nestedInShadowSlot = sinon.spy()
 
 const Inner = bElement({
   tag: 'inner-slot',
@@ -95,7 +95,7 @@ export const slots = story<typeof Fixture>({
     assert({
       given: `button in default slot`,
       should: 'trigger Outer feedback action',
-      actual: defaultSlot.mock.calls.length > 0,
+      actual: defaultSlot.called,
       expected: true,
     })
     button = await findByText('Named')
@@ -103,7 +103,7 @@ export const slots = story<typeof Fixture>({
     assert({
       given: `button in named slot`,
       should: 'trigger Outer feedback action',
-      actual: namedSlot.mock.calls.length > 0,
+      actual: namedSlot.called,
       expected: true,
     })
     button = await findByText('Nested')
@@ -111,13 +111,13 @@ export const slots = story<typeof Fixture>({
     assert({
       given: `click nested & slotted button in Outer light dom`,
       should: 'not trigger Outer feedback action',
-      actual: passThroughSlot.mock.calls.length > 0,
+      actual: passThroughSlot.called,
       expected: false,
     })
     assert({
       given: `click nested & slotted button in Outer light dom`,
       should: 'trigger Outer feedback action',
-      actual: nestedSlot.mock.calls.length > 0,
+      actual: nestedSlot.called,
       expected: true,
     })
     button = await findByText('Shadow')
@@ -125,13 +125,13 @@ export const slots = story<typeof Fixture>({
     assert({
       given: `click slotted button in Outer shadow dom`,
       should: 'not trigger Outer feedback action',
-      actual: passThroughSlot.mock.calls.length > 0,
+      actual: passThroughSlot.called,
       expected: false,
     })
     assert({
       given: `click slotted button in Outer shadow dom`,
       should: 'trigger Inner feedback action',
-      actual: nestedInShadowSlot.mock.calls.length > 0,
+      actual: nestedInShadowSlot.called,
       expected: true,
     })
   },

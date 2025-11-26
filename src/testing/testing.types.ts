@@ -1,7 +1,7 @@
 import type axe from 'axe-core'
 import type { FunctionTemplate, HostStylesObject, TemplateObject } from '../main.ts'
 import type { Wait } from '../utils.ts'
-import type { FIXTURE_EVENTS, STORY_IDENTIFIER, STORY_TYPES } from './testing.constants.ts'
+import type { ERROR_TYPES, FIXTURE_EVENTS, STORY_IDENTIFIER, STORY_TYPES } from './testing.constants.ts'
 import type { Match, Throws } from './testing.utils.ts'
 
 /**
@@ -21,14 +21,6 @@ type AssertParams<T> = {
  */
 export type Assert = <T>(param: AssertParams<T>) => void
 
-type InstrumentedDetails<T> = T
-
-/** @internal Represents the detailed parameters captured for an instrumented `Assert` call, used for testing and reporting. */
-export type AssertDetails = InstrumentedDetails<Parameters<Assert>>
-
-/** @internal Represents the detailed parameters captured for an instrumented `Wait` call, used for testing and reporting. */
-export type WaitDetails = InstrumentedDetails<Parameters<Wait>>
-
 type AccessibilityCheckArgs = {
   exclude?: axe.ContextProp
   rules?: axe.RuleObject
@@ -45,8 +37,6 @@ type AccessibilityCheckArgs = {
  */
 export type AccessibilityCheck = (args: AccessibilityCheckArgs) => Promise<void>
 
-export type AccessibilityCheckDetails = InstrumentedDetails<Parameters<AccessibilityCheck>>
-
 /**
  * Finds elements by attribute value across shadow DOM boundaries.
  *
@@ -62,24 +52,15 @@ export type FindByAttribute = <T extends HTMLElement | SVGElement = HTMLElement 
   context?: HTMLElement | SVGElement,
 ) => Promise<T | undefined>
 
-/** @internal Represents the detailed parameters captured for an instrumented `FindByAttribute` call, used for testing and reporting. */
-export type FindByAttributeDetails = InstrumentedDetails<Parameters<FindByAttribute>>
-
 export type FindByTestId = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
   testId: string | RegExp,
   context?: HTMLElement | SVGElement,
 ) => Promise<T | undefined>
 
-/** @internal Represents the detailed parameters captured for an instrumented `FindByAttribute` call, used for testing and reporting. */
-export type FindByTestIdDetails = InstrumentedDetails<Parameters<FindByTestId>>
-
 export type FindByTarget = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
   target: string | RegExp,
   context?: HTMLElement | SVGElement,
 ) => Promise<T | undefined>
-
-/** @internal Represents the detailed parameters captured for an instrumented `FindByAttribute` call, used for testing and reporting. */
-export type FindByTargetDetails = InstrumentedDetails<Parameters<FindByTarget>>
 
 /**
  * Finds elements by text content across shadow DOM boundaries.
@@ -93,9 +74,6 @@ export type FindByText = {
   <T extends HTMLElement = HTMLElement>(searchText: string | RegExp, context?: HTMLElement): Promise<T | undefined>
   name: string
 }
-
-/** @internal Represents the detailed parameters captured for an instrumented `FindByText` call, used for testing and reporting. */
-export type FindByTextDetail = InstrumentedDetails<Parameters<FindByText>>
 
 /**
  * Configuration for dispatching DOM events.
@@ -131,9 +109,6 @@ export type FireEvent = {
   ): Promise<void>
   name: string
 }
-
-/** @internal Represents the detailed parameters captured for an instrumented `FireEvent` call, used for testing and reporting. */
-export type FireEventDetail = InstrumentedDetails<Parameters<FireEvent>>
 
 /**
  * @internal Configuration parameters for a specific story test.
@@ -229,21 +204,6 @@ export type SnapshotStoryObj<T extends FunctionTemplate = FunctionTemplate> = {
  * @see {@link SnapshotStoryObj} for visual tests
  */
 export type StoryObj<T extends FunctionTemplate = FunctionTemplate> = InteractionStoryObj<T> | SnapshotStoryObj<T>
-
-/**
- * Defines the structure for the detail payload of test failure events.
- * It's a mapped type where keys are specific failure event types (e.g., accessibility violation, failed assertion)
- * and values are the associated error details (type `unknown` for flexibility).
- * Uses constants from `FIXTURE_EVENTS`.
- */
-export type TestFailureEventDetail = {
-  [K in
-    | typeof FIXTURE_EVENTS.accessibility_violation
-    | typeof FIXTURE_EVENTS.failed_assertion
-    | typeof FIXTURE_EVENTS.missing_assertion_parameter
-    | typeof FIXTURE_EVENTS.unknown_error]?: unknown
-}
-
 /**
  * Represents a message structure used by the story runner, likely for communication
  * between different parts of the test execution environment (e.g., test runner and reporter, or main thread and worker).
@@ -251,19 +211,26 @@ export type TestFailureEventDetail = {
  * @property snapshot - A `SnapshotMessage` from the behavioral program, capturing its state at a relevant point in time for the story.
  * @property pathname - The path or unique identifier of the story being run or reported on.
  */
-export type RunnerMessage = {
-  pathname: string
-  snapshot: Array<{
-    thread: string
-    trigger: boolean
-    selected: boolean
-    type: string
-    detail?: unknown
-    priority: number
-    blockedBy?: string
-    interrupts?: string
-  }>
-}
+export type RunnerMessage =
+  | {
+      type: typeof FIXTURE_EVENTS.test_pass
+      detail: {
+        pathname: string
+      }
+    }
+  | {
+      type: typeof FIXTURE_EVENTS.test_fail
+      detail: {
+        pathname: string
+        error: string
+        errorType:
+          | typeof ERROR_TYPES.failed_assertion
+          | typeof ERROR_TYPES.accessibility_violation
+          | typeof ERROR_TYPES.missing_assertion_parameter
+          | typeof ERROR_TYPES.unknown_error
+          | typeof ERROR_TYPES.test_timeout
+      }
+    }
 
 export type InteractionExport<T extends FunctionTemplate = FunctionTemplate> = {
   template?: T

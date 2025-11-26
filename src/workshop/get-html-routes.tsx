@@ -1,9 +1,8 @@
 import { z } from 'zod'
 import { joinStyles, ssr, type TemplateObject } from '../main.ts'
-import { RELOAD_PAGE, RUNNER_URL } from '../testing/testing.constants.ts'
-import type { StoryExport } from '../testing/testing.types.ts'
-import { kebabCase } from '../utils.ts'
-import { getEntryPath } from './get-entry-path.ts'
+import { FIXTURE_EVENTS, RELOAD_PAGE, RUNNER_URL, STORY_FIXTURE } from '../testing/testing.constants.ts'
+import type { StoryExport } from '../testing.ts'
+import { getPaths } from './get-paths.ts'
 import { zip } from './workshop.utils.ts'
 
 /**
@@ -43,13 +42,6 @@ const PlaitedAttributesSchema = z
     style: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
   })
   .optional()
-
-const getRoutePath = ({ filePath, cwd, exportName }: { filePath: string; cwd: string; exportName: string }): string => {
-  // Make path relative to cwd
-  const relativePath = filePath.startsWith(cwd) ? filePath.slice(cwd.length) : filePath
-  // Replace .stories.tsx extension with .js for bundled output
-  return getEntryPath(relativePath, '.stories.tsx').replace(/index\.js$/, kebabCase(exportName))
-}
 
 const createReloadClient = () => `
 // WebSocket hot reload client
@@ -92,6 +84,17 @@ const createReloadClient = () => `
 
   connect();
 })();
+`
+
+const createFixtureLoadScript = ({ entryPath, exportName }: { entryPath: string; exportName: string }) => `\n
+import { ${exportName} } from '${entryPath}'
+
+await customElements.whenDefined("${STORY_FIXTURE}")
+const fixture = document.querySelector("${STORY_FIXTURE}");
+fixture?.trigger({
+  type: '${FIXTURE_EVENTS.run}',
+  detail:  {play: ${exportName}?.play, timeout: ${exportName}?.params?.timeout}
+});
 `
 
 const useInclude = ({ fixture, entryPath }: { fixture: TemplateObject; entryPath: string }): Response => {
@@ -150,6 +153,10 @@ const usePage = ({
           trusted
         >
           {createReloadClient()}
+          {createFixtureLoadScript({
+            exportName,
+            entryPath,
+          })}
         </script>
       </body>
     </html>,
@@ -182,7 +189,8 @@ export const getHTMLRoutes = async ({
   filePath: string
   cwd: string
 }): Promise<Record<string, Response>> => {
-  const route = getRoutePath({ exportName, cwd, filePath })
+  // Make path relative to cwd and convert to entry path
+  const { route, entryPath } = getPaths({ cwd, filePath, exportName })
   const module = await cachedImport(filePath)
   const storyExport = module[exportName]
 
@@ -212,10 +220,6 @@ export const getHTMLRoutes = async ({
       }
     }
   }
-
-  // Make path relative to cwd and convert to entry path
-  const relativePath = filePath.startsWith(cwd) ? filePath.slice(cwd.length) : filePath
-  const entryPath = getEntryPath(relativePath, '.stories.tsx')
 
   return {
     [route]: usePage({ fixture, entryPath, exportName, parameters }),

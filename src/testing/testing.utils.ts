@@ -2,11 +2,10 @@
 import axe from 'axe-core'
 import { P_TARGET } from '../main/create-template.constants.ts'
 import { DelegatedListener, delegates } from '../main/delegated-listener.ts'
-import type { Trigger } from '../main.ts'
-import { deepEqual, isTypeOf, noop, trueTypeOf, wait } from '../utils.ts'
+import { deepEqual, isTypeOf, noop, trueTypeOf } from '../utils.ts'
 import {
   DATA_TESTID,
-  FIXTURE_EVENTS,
+  ERROR_TYPES,
   RELOAD_PAGE,
   RUNNER_URL,
   STORY_FIXTURE,
@@ -14,22 +13,15 @@ import {
 } from './testing.constants.ts'
 import type {
   AccessibilityCheck,
-  AccessibilityCheckDetails,
   Assert,
-  AssertDetails,
   FindByAttribute,
-  FindByAttributeDetails,
   FindByTarget,
   FindByTestId,
-  FindByTestIdDetails,
   FindByText,
-  FindByTextDetail,
   FireEvent,
-  FireEventDetail,
   FireEventOptions,
   RunnerMessage,
   StoryExport,
-  WaitDetails,
 } from './testing.types.ts'
 
 /**
@@ -37,7 +29,7 @@ import type {
  * Contains detailed comparison information.
  */
 export class FailedAssertionError extends Error implements Error {
-  override name = FIXTURE_EVENTS.failed_assertion
+  override name = ERROR_TYPES.failed_assertion
 }
 
 /**
@@ -45,7 +37,7 @@ export class FailedAssertionError extends Error implements Error {
  * Indicates incomplete test configuration.
  */
 export class MissingAssertionParameterError extends Error implements Error {
-  override name = FIXTURE_EVENTS.missing_assertion_parameter
+  override name = ERROR_TYPES.missing_assertion_parameter
 }
 
 /**
@@ -53,7 +45,7 @@ export class MissingAssertionParameterError extends Error implements Error {
  * Contains axe-core violation details.
  */
 export class AccessibilityError extends Error implements Error {
-  override name = FIXTURE_EVENTS.accessibility_violation
+  override name = ERROR_TYPES.accessibility_violation
 }
 
 /**
@@ -185,38 +177,31 @@ const replacer = (key: string | number | symbol, value: unknown) => {
           : (value?.toString?.() ?? value)
 }
 
-export const useAssert = (trigger: Trigger) => {
-  /**
-   * Structured assertion with detailed error reporting.
-   * Compares values using deep equality.
-   *
-   * @template T - Type of compared values
-   * @param param - Assertion configuration
-   * @param param.given - Test context description
-   * @param param.should - Expected behavior
-   * @param param.actual - Actual value
-   * @param param.expected - Expected value
-   *
-   * @throws {MissingAssertionParameterError} Missing required params
-   * @throws {FailedAssertionError} Values don't match
-   */
-  const assert: Assert = (args) => {
-    trigger<{ type: typeof FIXTURE_EVENTS.assert; detail: AssertDetails }>({
-      type: FIXTURE_EVENTS.assert,
-      detail: [args],
-    })
-    const missing = requiredKeys.filter((k) => !Object.keys(args).includes(k))
-    if (missing.length) {
-      const msg = [`The following parameters are required by 'assert': (`, `  ${missing.join(', ')}`, ')'].join('\n')
-      throw new MissingAssertionParameterError(msg)
-    }
-    const { given = undefined, should = '', actual = undefined, expected = undefined } = args
-    if (!deepEqual(actual, expected)) {
-      const message = `Given ${given}: should ${should}`
-      throw new FailedAssertionError(JSON.stringify({ message, actual: actual ?? 'undefined', expected }, replacer, 2))
-    }
+/**
+ * Structured assertion with detailed error reporting.
+ * Compares values using deep equality.
+ *
+ * @template T - Type of compared values
+ * @param param - Assertion configuration
+ * @param param.given - Test context description
+ * @param param.should - Expected behavior
+ * @param param.actual - Actual value
+ * @param param.expected - Expected value
+ *
+ * @throws {MissingAssertionParameterError} Missing required params
+ * @throws {FailedAssertionError} Values don't match
+ */
+export const assert: Assert = (args) => {
+  const missing = requiredKeys.filter((k) => !Object.keys(args).includes(k))
+  if (missing.length) {
+    const msg = [`The following parameters are required by 'assert': (`, `  ${missing.join(', ')}`, ')'].join('\n')
+    throw new MissingAssertionParameterError(msg)
   }
-  return assert
+  const { given = undefined, should = '', actual = undefined, expected = undefined } = args
+  if (!deepEqual(actual, expected)) {
+    const message = `Given ${given}: should ${should}`
+    throw new FailedAssertionError(JSON.stringify({ message, actual: actual ?? 'undefined', expected }, replacer, 2))
+  }
 }
 
 const searchByAttribute = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>({
@@ -268,126 +253,80 @@ const searchByAttribute = <T extends HTMLElement | SVGElement = HTMLElement | SV
   })
 }
 
-export const useFindByAttribute = (trigger: Trigger) => {
-  /**
-   * Finds element by attribute across shadow DOM.
-   * Searches recursively through all DOM trees.
-   *
-   * @template T - Element type to return
-   * @param attributeName - Attribute to search
-   * @param attributeValue - Value or pattern
-   * @param context - Search scope
-   * @returns Promise with found element
-   */
-  const findByAttribute: FindByAttribute = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
-    attributeName: string,
-    attributeValue: string | RegExp,
-    context?: HTMLElement | SVGElement,
-  ): Promise<T | undefined> => {
-    trigger<{
-      type: typeof FIXTURE_EVENTS.find_by_attribute
-      detail: FindByAttributeDetails
-    }>({
-      type: FIXTURE_EVENTS.find_by_attribute,
-      detail: [attributeName, attributeValue, context],
-    })
-    return searchByAttribute<T>({
-      context,
-      attributeName,
-      attributeValue,
-    })
-  }
-  return findByAttribute
+/**
+ * Finds element by attribute across shadow DOM.
+ * Searches recursively through all DOM trees.
+ *
+ * @template T - Element type to return
+ * @param attributeName - Attribute to search
+ * @param attributeValue - Value or pattern
+ * @param context - Search scope
+ * @returns Promise with found element
+ */
+export const findByAttribute: FindByAttribute = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+  attributeName: string,
+  attributeValue: string | RegExp,
+  context?: HTMLElement | SVGElement,
+): Promise<T | undefined> => {
+  return searchByAttribute<T>({
+    context,
+    attributeName,
+    attributeValue,
+  })
 }
 
-export const useFindByTestId = (trigger: Trigger) => {
-  const findByTestid: FindByTestId = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
-    testId: string | RegExp,
-    context?: HTMLElement | SVGElement,
-  ): Promise<T | undefined> => {
-    trigger<{
-      type: typeof FIXTURE_EVENTS.find_by_testid
-      detail: FindByTestIdDetails
-    }>({
-      type: FIXTURE_EVENTS.find_by_testid,
-      detail: [testId, context],
-    })
-    return searchByAttribute<T>({
-      context,
-      attributeName: DATA_TESTID,
-      attributeValue: testId,
-    })
-  }
-  return findByTestid
+export const findByTestId: FindByTestId = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+  testId: string | RegExp,
+  context?: HTMLElement | SVGElement,
+): Promise<T | undefined> => {
+  return searchByAttribute<T>({
+    context,
+    attributeName: DATA_TESTID,
+    attributeValue: testId,
+  })
 }
 
-export const useFindByTarget = (trigger: Trigger) => {
-  const findByTarget: FindByTarget = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
-    pTarget: string | RegExp,
-    context?: HTMLElement | SVGElement,
-  ): Promise<T | undefined> => {
-    trigger<{
-      type: typeof FIXTURE_EVENTS.find_by_target
-      detail: FindByTestIdDetails
-    }>({
-      type: FIXTURE_EVENTS.find_by_target,
-      detail: [pTarget, context],
-    })
-    return searchByAttribute<T>({
-      context,
-      attributeName: P_TARGET,
-      attributeValue: pTarget,
-    })
-  }
-  return findByTarget
+export const findByTarget: FindByTarget = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+  pTarget: string | RegExp,
+  context?: HTMLElement | SVGElement,
+): Promise<T | undefined> => {
+  return searchByAttribute<T>({
+    context,
+    attributeName: P_TARGET,
+    attributeValue: pTarget,
+  })
 }
 
-export const useFindByText = (trigger: Trigger) => {
-  /**
-   * Finds element by text content across shadow DOM.
-   * Returns parent of matching text node.
-   *
-   * @template T - HTMLElement type to return
-   * @param searchText - Text or pattern to find
-   * @param context - Search scope
-   * @returns Promise with found element
-   *
-   * @remarks
-   * - Text is trimmed before comparison
-   * - Returns parent of text node
-   * - Searches all shadow roots
-   */
-  const findByText: FindByText = <T extends HTMLElement = HTMLElement>(
-    searchText: string | RegExp,
-    context?: HTMLElement,
-  ): Promise<T | undefined> => {
-    trigger<{
-      type: typeof FIXTURE_EVENTS.find_by_text
-      detail: FindByTextDetail
-    }>({
-      type: FIXTURE_EVENTS.find_by_text,
-      detail: [searchText, context],
-    })
-    const searchInShadowDom = (node: Node): T | undefined => {
-      if (node.nodeType === Node.TEXT_NODE) {
-        const content = node.textContent?.trim()
-        if (typeof searchText === 'string' && content === searchText) {
-          return (node.parentElement as T) ?? undefined
-        } else if (searchText instanceof RegExp && content && searchText.test(content)) {
-          return (node.parentElement as T) ?? undefined
-        }
+/**
+ * Finds element by text content across shadow DOM.
+ * Returns parent of matching text node.
+ *
+ * @template T - HTMLElement type to return
+ * @param searchText - Text or pattern to find
+ * @param context - Search scope
+ * @returns Promise with found element
+ *
+ * @remarks
+ * - Text is trimmed before comparison
+ * - Returns parent of text node
+ * - Searches all shadow roots
+ */
+export const findByText: FindByText = <T extends HTMLElement = HTMLElement>(
+  searchText: string | RegExp,
+  context?: HTMLElement,
+): Promise<T | undefined> => {
+  const searchInShadowDom = (node: Node): T | undefined => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const content = node.textContent?.trim()
+      if (typeof searchText === 'string' && content === searchText) {
+        return (node.parentElement as T) ?? undefined
+      } else if (searchText instanceof RegExp && content && searchText.test(content)) {
+        return (node.parentElement as T) ?? undefined
       }
+    }
 
-      if (node instanceof HTMLElement && node.shadowRoot) {
-        for (const child of node.shadowRoot.children) {
-          const result = searchInShadowDom(child)
-          if (result) {
-            return result
-          }
-        }
-      }
-
-      for (const child of node.childNodes) {
+    if (node instanceof HTMLElement && node.shadowRoot) {
+      for (const child of node.shadowRoot.children) {
         const result = searchInShadowDom(child)
         if (result) {
           return result
@@ -395,82 +334,63 @@ export const useFindByText = (trigger: Trigger) => {
       }
     }
 
-    return new Promise((resolve) => {
-      requestAnimationFrame(() => {
-        const rootNode = context ?? document.body
-        const foundNode = searchInShadowDom(rootNode)
-        resolve(foundNode)
-      })
-    })
-  }
-  return findByText
-}
-
-export const useFireEvent = (trigger: Trigger) => {
-  /**
-   * Dispatches DOM events for testing.
-   * Supports native and custom events.
-   *
-   * @template T - Element type
-   * @param element - Target element
-   * @param eventName - Event type
-   * @param options - Event config
-   * @returns Promise after dispatch
-   *
-   * @remarks
-   * Defaults:
-   * - bubbles: true
-   * - composed: true
-   * - cancelable: true
-   */
-  const fireEvent: FireEvent = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
-    element: T,
-    eventName: string,
-    options: FireEventOptions = {
-      bubbles: true,
-      composed: true,
-      cancelable: true,
-    },
-  ): Promise<void> => {
-    trigger<{
-      type: typeof FIXTURE_EVENTS.fire_event
-      detail: FireEventDetail
-    }>({
-      type: FIXTURE_EVENTS.fire_event,
-      detail: [element, eventName, options],
-    })
-    const createEvent = (): Event => {
-      if (options?.detail) {
-        return new CustomEvent(eventName, options)
-      } else {
-        return new Event(eventName, options)
+    for (const child of node.childNodes) {
+      const result = searchInShadowDom(child)
+      if (result) {
+        return result
       }
     }
-
-    return new Promise((resolve) => {
-      requestAnimationFrame(() => {
-        const event = createEvent()
-        element.dispatchEvent(event)
-        resolve()
-      })
-    })
   }
-  return fireEvent
+
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      const rootNode = context ?? document.body
+      const foundNode = searchInShadowDom(rootNode)
+      resolve(foundNode)
+    })
+  })
 }
 
 /**
- * @internal
- * Creates a `wait` function that also triggers a FIXTURE_EVENTS.wait event.
- * This is used within story play functions to pause execution and inform the test runner.
- * @param trigger - The Plaited trigger function to dispatch events.
- * @returns A function that takes a duration in milliseconds and returns a Promise that resolves after the duration.
+ * Dispatches DOM events for testing.
+ * Supports native and custom events.
+ *
+ * @template T - Element type
+ * @param element - Target element
+ * @param eventName - Event type
+ * @param options - Event config
+ * @returns Promise after dispatch
+ *
+ * @remarks
+ * Defaults:
+ * - bubbles: true
+ * - composed: true
+ * - cancelable: true
  */
-export const useWait = (trigger: Trigger) => (ms: number) => {
-  trigger<{ type: typeof FIXTURE_EVENTS.wait; detail: WaitDetails }>({
-    type: FIXTURE_EVENTS.wait,
-    detail: [ms],
+export const fireEvent: FireEvent = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+  element: T,
+  eventName: string,
+  options: FireEventOptions = {
+    bubbles: true,
+    composed: true,
+    cancelable: true,
+  },
+): Promise<void> => {
+  const createEvent = (): Event => {
+    if (options?.detail) {
+      return new CustomEvent(eventName, options)
+    } else {
+      return new Event(eventName, options)
+    }
+  }
+
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      const event = createEvent()
+      element.dispatchEvent(event)
+      resolve()
+    })
   })
-  return wait(ms)
 }
 
 /**
@@ -481,30 +401,20 @@ export const useWait = (trigger: Trigger) => (ms: number) => {
  * @param trigger - The Plaited trigger function to dispatch events.
  * @returns An asynchronous function to perform accessibility checks.
  */
-export const useAccessibilityCheck = (trigger: Trigger) => {
-  const accessibilityCheck: AccessibilityCheck = async ({ exclude, rules, config = {} }) => {
-    trigger<{
-      type: typeof FIXTURE_EVENTS.accessibility_check
-      detail: AccessibilityCheckDetails
-    }>({
-      type: FIXTURE_EVENTS.accessibility_check,
-      detail: [{ exclude, rules, config }],
-    })
-    axe.configure({
-      reporter: 'no-passes',
-      ...config,
-    })
-    const { violations } = await axe.run(
-      {
-        include: STORY_FIXTURE,
-        exclude,
-      },
-      { reporter: 'no-passes', rules },
-    )
-    axe.reset()
-    if (violations.length) throw new AccessibilityError(JSON.stringify(violations))
-  }
-  return accessibilityCheck
+export const accessibilityCheck: AccessibilityCheck = async ({ exclude, rules, config = {} }) => {
+  axe.configure({
+    reporter: 'no-passes',
+    ...config,
+  })
+  const { violations } = await axe.run(
+    {
+      include: STORY_FIXTURE,
+      exclude,
+    },
+    { reporter: 'no-passes', rules },
+  )
+  axe.reset()
+  if (violations.length) throw new AccessibilityError(JSON.stringify(violations))
 }
 
 /** @internal Type guard to check if an event is a WebSocket CloseEvent. */
