@@ -25,20 +25,48 @@
 
 import { Database } from 'bun:sqlite'
 
-const dbPath = `${import.meta.dir}/examples.db`
+/**
+ * @internal
+ * Determines database path based on environment.
+ * Returns :memory: for tests, examples.db for production.
+ *
+ * @returns Database path string
+ *
+ * @remarks
+ * - Test environment: Returns ':memory:' for isolated in-memory database
+ * - Production: Returns path to examples.db in databases directory
+ * - Environment detected via NODE_ENV === 'test'
+ */
+const getDbPath = (): string => {
+  // Test environment: use in-memory database
+  if (process.env.NODE_ENV === 'test') {
+    return ':memory:'
+  }
+
+  // Production: use committed database file
+  return `${import.meta.dir}/examples.db`
+}
 
 /**
  * @internal
  * SQLite database connection for documentation storage.
- * Configured with WAL mode for better concurrency.
+ * Configured with WAL mode for better concurrency (production only).
+ *
+ * @remarks
+ * - Test mode: Uses in-memory database (:memory:)
+ * - Production: Uses examples.db with WAL journaling
+ * - WAL mode not applied to in-memory databases
  */
-export const db = new Database(dbPath, {
+export const db = new Database(getDbPath(), {
   create: true,
   readwrite: true,
 })
 
-// Enable Write-Ahead Logging for better concurrency
-db.exec('PRAGMA journal_mode = WAL')
+// Enable Write-Ahead Logging for better concurrency (production only)
+// Note: WAL mode may not apply to in-memory databases
+if (process.env.NODE_ENV !== 'test') {
+  db.exec('PRAGMA journal_mode = WAL')
+}
 
 /**
  * @internal

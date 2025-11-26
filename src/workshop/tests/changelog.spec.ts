@@ -2,13 +2,23 @@ import { beforeEach, expect, test } from 'bun:test'
 import type { ReleaseChange } from '../changelog.ts'
 import { clearChanges, formatChangelog, generateChangelog, getVersionsWithChanges, recordChange } from '../changelog.ts'
 
+// Set test environment for in-memory database isolation
+process.env.NODE_ENV = 'test'
+
 // Clean database between tests
 beforeEach(async () => {
   const { db, initDB } = await import('../../databases/db.ts')
-  await initDB()
 
-  // Clear all tables
-  db.exec('DELETE FROM release_changes')
+  // Drop all tables to reset in-memory database
+  // Note: In-memory database persists across tests in same process due to module caching
+  db.exec('DROP TABLE IF EXISTS examples')
+  db.exec('DROP TABLE IF EXISTS patterns')
+  db.exec('DROP TABLE IF EXISTS release_changes')
+  db.exec('DROP TABLE IF EXISTS examples_fts')
+  db.exec('DROP TABLE IF EXISTS patterns_fts')
+
+  // Recreate schema
+  await initDB()
 })
 
 test('recordChange: inserts change record and returns ID', () => {
