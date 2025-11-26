@@ -152,7 +152,8 @@ export const filterStoryMetadata = (metadata: StoryMetadata[]): StoryMetadata[] 
  * - Uses direct imports for ~30x faster discovery than TypeScript compilation
  * - Files must be executable TypeScript/TSX
  * - Errors in story files will cause discovery to fail
- * - Applies .only() and .skip() filtering
+ * - Applies .only() and .skip() filtering PER-FILE (not globally)
+ * - Each file's .only()/.skip() only affects stories within that file
  *
  * @see {@link getStoryMetadata} for single file collection
  * @see {@link filterStoryMetadata} for filtering logic
@@ -183,8 +184,7 @@ export const discoverStoryMetadata = async (cwd: string, exclude?: string): Prom
   const metadataArrays = await Promise.all(files.map((file) => getStoryMetadata(file)))
   const metadata = metadataArrays.flat()
 
-  console.log(`✅ Discovered ${metadata.length} story exports`)
+  console.log(`✅ Discovered ${metadata.length} story exports (after per-file .only()/.skip() filtering)`)
 
-  // Apply .only() and .skip() filtering
-  return filterStoryMetadata(metadata)
+  return metadata
 }

@@ -33,11 +33,12 @@
 
 import type { Browser, BrowserContextOptions } from 'playwright'
 import { useBehavioral } from '../main.ts'
+import { FIXTURE_EVENTS } from '../testing/testing.constants.ts'
 import { keyMirror } from '../utils.ts'
 import { discoverStoryMetadata } from './collect-stories.ts'
+import { getPaths } from './get-paths.ts'
 import { getServer } from './get-server.ts'
 import type { RunTestsDetail, StoryMetadata } from './workshop.types.ts'
-
 /**
  * @internal
  * Event types for test runner communication.
@@ -146,49 +147,61 @@ export const useRunner = useBehavioral<
             }
           : undefined
 
-        const context = await browser.newContext({
-          recordVideo: videoConfig,
-          colorScheme,
-        })
-
         try {
           // Run all stories in parallel - let Playwright manage resources
-          const results = await Promise.all(
+          await Promise.all(
             stories.map(async (story) => {
+              const context = await browser.newContext({
+                recordVideo: videoConfig,
+                colorScheme,
+                baseURL: server.url.href,
+              })
               const page = await context.newPage()
-              try {
-                const storyURL = `${server.url.href}/${story.exportName}`
-                await page.goto(storyURL)
-                await page.waitForLoadState('networkidle')
+              await page.addInitScript(() => {
+                window.__PLAITED_RUNNER__ = true
+              })
+              const { route } = getPaths({
+                cwd,
+                exportName: story.exportName,
+                filePath: story.filePath,
+              })
 
-                console.log(`✓ ${story.exportName}`)
-                return {
+              await page.goto(route)
+              await page.waitForLoadState('networkidle')
+
+              const { type, detail } = await page.evaluate(() => {
+                console.log(window.__PLAITED_RUNNER__, window.__PLAITED__)
+                return window.__PLAITED__.reporter()
+              })
+
+              if (type === FIXTURE_EVENTS.test_pass) {
+                console.log(`${story.exportName}:`, route)
+                passed.push({
                   story,
-                  passed: true as const,
-                }
-              } catch (error) {
-                console.error(`✗ ${story.exportName}`, error)
-                return {
+                  passed: true,
+                })
+              } else {
+                console.table({
+                  url: route,
+                  filePath: `.${story.filePath.replace(cwd, '')}`,
+                  exportName: story.exportName,
+                  colorScheme,
+                })
+                console.table({
+                  errorType: detail.errorType,
+                  error: detail.error,
+                })
+                failed.push({
                   story,
-                  passed: false as const,
-                  error,
-                }
-              } finally {
-                await page.close()
+                  passed: false,
+                  error: detail,
+                })
               }
+              await context.close()
             }),
           )
-
-          // Aggregate results
-          for (const result of results) {
-            if (result.passed) {
-              passed.push(result)
-            } else {
-              failed.push(result)
-            }
-          }
-        } finally {
-          await context.close()
+        } catch (error) {
+          console.error('Error during test execution:', error)
         }
 
         // Report results
@@ -200,7 +213,8 @@ export const useRunner = useBehavioral<
           results,
         })
 
-        console.log(`\n✅ Tests complete: ${passed.length} passed, ${failed.length} failed`)
+        console.log('Pass:', passed.length)
+        console.log('Fail:', failed.length)
       },
       reload,
       async end(resolve) {
