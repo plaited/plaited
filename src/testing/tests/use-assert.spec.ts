@@ -1,8 +1,6 @@
 import { expect, mock, test } from 'bun:test'
-import { noop, wait } from 'plaited/utils'
-import { match, throws, useAssert } from '../testing.utils.ts'
-
-const assert = useAssert(noop)
+import { wait } from 'plaited/utils'
+import { assert, match, throws } from '../testing.utils.ts'
 
 const sum = (...args: number[]) => {
   if (args.some((v) => Number.isNaN(v))) throw new TypeError('NaN')

@@ -35,10 +35,10 @@ test(
   async () => {
     const { promise: resultsPromise, resolve: reportResults } = createResultsPromise()
 
-    const trigger = await useRunner({ browser, port: testPort, reporter: reportResults, cwd })
+    const runner = await useRunner({ browser, port: testPort, reporter: reportResults, cwd })
 
-    // Trigger test run
-    trigger({ type: 'run_tests', detail: { colorScheme: 'light' } })
+    // Run tests
+    await runner.run({ colorScheme: 'light' })
 
     // Wait for results
     const results = await resultsPromise
@@ -60,9 +60,8 @@ test(
       expect(result.story.type).toMatch(/interaction|snapshot/)
       expect(typeof result.passed).toBe('boolean')
     })
-    const { promise, resolve } = Promise.withResolvers<void>()
-    trigger({ type: 'end', detail: resolve })
-    await promise
+
+    await runner.end()
   },
   { timeout: 20000 },
 )
@@ -76,9 +75,9 @@ test(
 
     const { promise: resultsPromise, resolve: reportResults } = createResultsPromise()
 
-    const trigger = await useRunner({ browser, port: testPort + 1, reporter: reportResults, cwd })
+    const runner = await useRunner({ browser, port: testPort + 1, reporter: reportResults, cwd })
 
-    trigger({ type: 'run_tests', detail: { colorScheme: 'light' } })
+    await runner.run({ colorScheme: 'light' })
     const results = await resultsPromise
 
     // Should find stories in nested directories
@@ -91,9 +90,7 @@ test(
     expect(exportNames).toContain('nestedInteraction')
     expect(exportNames).toContain('deeplyNestedStory')
 
-    const { promise, resolve } = Promise.withResolvers<void>()
-    trigger({ type: 'end', detail: resolve })
-    await promise
+    await runner.end()
   },
   { timeout: 20000 },
 )
@@ -113,10 +110,10 @@ test(
     // Select only first two stories
     const selectedStories = allStories.slice(0, 2)
 
-    const trigger = await useRunner({ browser, port: testPort + 2, reporter: reportResults, cwd })
+    const runner = await useRunner({ browser, port: testPort + 2, reporter: reportResults, cwd })
 
     // Run with specific metadata
-    trigger({ type: 'run_tests', detail: { metadata: selectedStories, colorScheme: 'light' } })
+    await runner.run({ metadata: selectedStories, colorScheme: 'light' })
     const results = await resultsPromise
 
     // Should execute only the selected stories
@@ -128,9 +125,7 @@ test(
     const selectedNames = selectedStories.map((s) => s.exportName).sort()
     expect(executedNames).toEqual(selectedNames)
 
-    const { promise, resolve } = Promise.withResolvers<void>()
-    trigger({ type: 'end', detail: resolve })
-    await promise
+    await runner.end()
   },
   { timeout: 20000 },
 )
@@ -149,9 +144,9 @@ test(
 
     expect(additionalStories.length).toBeGreaterThan(0)
 
-    const trigger = await useRunner({ browser, port: testPort + 3, reporter: reportResults, cwd })
+    const runner = await useRunner({ browser, port: testPort + 3, reporter: reportResults, cwd })
 
-    trigger({ type: 'run_tests', detail: { metadata: additionalStories, colorScheme: 'light' } })
+    await runner.run({ metadata: additionalStories, colorScheme: 'light' })
     const results = await resultsPromise
 
     // All should pass
@@ -165,9 +160,7 @@ test(
       expect(result.error).toBeUndefined()
     })
 
-    const { promise, resolve } = Promise.withResolvers<void>()
-    trigger({ type: 'end', detail: resolve })
-    await promise
+    await runner.end()
   },
   { timeout: 20000 },
 )
@@ -189,9 +182,9 @@ test(
 
     expect(mixedStories.length).toBeGreaterThan(2)
 
-    const trigger = await useRunner({ browser, port: testPort + 4, reporter: reportResults, cwd })
+    const runner = await useRunner({ browser, port: testPort + 4, reporter: reportResults, cwd })
 
-    trigger({ type: 'run_tests', detail: { metadata: mixedStories, colorScheme: 'light' } })
+    await runner.run({ metadata: mixedStories, colorScheme: 'light' })
     const results = await resultsPromise
 
     // All should pass
@@ -205,9 +198,7 @@ test(
     expect(hasSnapshot).toBe(true)
     expect(hasInteraction).toBe(true)
 
-    const { promise, resolve } = Promise.withResolvers<void>()
-    trigger({ type: 'end', detail: resolve })
-    await promise
+    await runner.end()
   },
   { timeout: 30000 },
 )
@@ -220,10 +211,10 @@ test(
 
     const { promise: resultsPromise, resolve: reportResults } = createResultsPromise()
 
-    const trigger = await useRunner({ browser, port: testPort + 5, reporter: reportResults, cwd })
+    const runner = await useRunner({ browser, port: testPort + 5, reporter: reportResults, cwd })
 
-    // Trigger test run with dark color scheme
-    trigger({ type: 'run_tests', detail: { colorScheme: 'dark' } })
+    // Run test with dark color scheme
+    await runner.run({ colorScheme: 'dark' })
 
     // Wait for results
     const results = await resultsPromise
@@ -233,9 +224,7 @@ test(
     expect(results.total).toBeGreaterThan(0)
     expect(results.passed).toBeGreaterThanOrEqual(0)
 
-    const { promise, resolve } = Promise.withResolvers<void>()
-    trigger({ type: 'end', detail: resolve })
-    await promise
+    await runner.end()
   },
   { timeout: 20000 },
 )
@@ -248,10 +237,10 @@ test(
 
     const { promise: resultsPromise, resolve: reportResults } = createResultsPromise()
 
-    const trigger = await useRunner({ browser, port: testPort + 6, reporter: reportResults, cwd })
+    const runner = await useRunner({ browser, port: testPort + 6, reporter: reportResults, cwd })
 
-    // Trigger test run without specifying colorScheme
-    trigger({ type: 'run_tests', detail: {} })
+    // Run test without specifying colorScheme
+    await runner.run({})
 
     // Wait for results
     const results = await resultsPromise
@@ -261,9 +250,7 @@ test(
     expect(results.total).toBeGreaterThan(0)
     expect(results.passed).toBeGreaterThanOrEqual(0)
 
-    const { promise, resolve } = Promise.withResolvers<void>()
-    trigger({ type: 'end', detail: resolve })
-    await promise
+    await runner.end()
   },
   { timeout: 20000 },
 )

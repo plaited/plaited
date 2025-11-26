@@ -79,7 +79,6 @@ export const getServer = async ({ cwd, port }: { cwd: string; port: number }) =>
   console.log(`🔍 Starting Plaited server`)
   console.log(`📂 Root: ${cwd}`)
   console.log(`🌐 Port: ${port}`)
-
   const server = Bun.serve({
     port,
     routes: await getRoutes(cwd),

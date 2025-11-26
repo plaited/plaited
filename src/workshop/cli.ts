@@ -287,7 +287,7 @@ if (subcommand === 'changelog') {
 }
 
 // Parse and validate port (default to 0 for auto-assignment)
-const port = values.port ? parseInt(values.port, 10) : 0
+const port = values.port ? parseInt(values.port, 10) : 3000
 if (values.port && (Number.isNaN(port) || port < 0 || port > 65535)) {
   throw new Error(`ERROR: Invalid port number: ${values.port}. Must be between 0-65535`)
 }
@@ -380,7 +380,7 @@ const { promise: resultsPromise, resolve: reportResults } = Promise.withResolver
 
 // Initialize test runner (this creates and starts the server)
 console.log('🔧 Initializing test runner...')
-const trigger = await useRunner({
+const runner = await useRunner({
   browser,
   port,
   reporter: reportResults,
@@ -390,7 +390,7 @@ const trigger = await useRunner({
 // Cleanup handler
 const cleanup = async () => {
   console.log('\n🧹 Cleaning up...')
-  trigger({ type: 'end' })
+  await runner.end()
   await browser.close()
 }
 
@@ -411,7 +411,7 @@ if (isHotMode) {
   if (import.meta.hot) {
     import.meta.hot.accept(() => {
       console.log('\n🔄 Module reloaded, notifying clients...')
-      trigger({ type: 'reload' })
+      runner.reload()
     })
   }
 
@@ -422,12 +422,9 @@ if (isHotMode) {
 
 // Run tests
 console.log('🚀 Running tests...\n')
-trigger({
-  type: 'run_tests',
-  detail: {
-    metadata,
-    colorScheme,
-  },
+await runner.run({
+  metadata,
+  colorScheme,
 })
 
 // Wait for results
