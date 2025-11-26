@@ -312,19 +312,23 @@ test('discoverStoryMetadata: discovers .only() stories from mixed files', async 
   expect(exportNames).toContain('onlyStory')
 })
 
-test('discoverStoryMetadata: applies filtering across all discovered files', async () => {
+test('discoverStoryMetadata: applies filtering per-file (not globally)', async () => {
   const metadata = await discoverStoryMetadata(FILTERING_STORIES_DIR)
 
-  // When .only() exists in any file, only those stories should be returned
-  const hasOnlyStories = metadata.some((s) => s.flag === 'only')
+  // Per-file filtering means each file applies .only()/.skip() independently
+  // Result: Mix of stories with different flags from different files
 
-  if (hasOnlyStories) {
-    // All returned stories should have flag === 'only'
-    expect(metadata.every((s) => s.flag === 'only')).toBe(true)
-  } else {
-    // No .skip() stories should be present
-    expect(metadata.every((s) => s.flag !== 'skip')).toBe(true)
-  }
+  // Should have .only() stories from files that have .only()
+  const onlyStories = metadata.filter((s) => s.flag === 'only')
+  expect(onlyStories.length).toBeGreaterThan(0)
+
+  // Should have regular stories (no flag) from files without .only() but with .skip()
+  const regularStories = metadata.filter((s) => !s.flag)
+  expect(regularStories.length).toBeGreaterThan(0)
+
+  // Should NOT have any .skip() stories (filtered out per-file)
+  const skippedStories = metadata.filter((s) => s.flag === 'skip')
+  expect(skippedStories.length).toBe(0)
 })
 
 test('filterStoryMetadata: returns only stories when .only() flag exists', async () => {

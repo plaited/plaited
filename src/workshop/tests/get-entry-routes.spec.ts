@@ -17,27 +17,27 @@ test('getEntryRoutes: transforms root-level template path correctly', async () =
   const entrypoint = join(fixturesRoot, 'RootTemplate.tsx')
   const responses = await getEntryRoutes(fixturesRoot, [entrypoint])
 
-  // Should have entry for the root template with kebab-case name
-  expect(responses['/root-template--index.js']).toBeDefined()
+  // Should have entry for the root template (preserves original filename)
+  expect(responses['/RootTemplate.js']).toBeDefined()
 
   // Should be a Response object
-  expect(responses['/root-template--index.js']).toBeInstanceOf(Response)
+  expect(responses['/RootTemplate.js']).toBeInstanceOf(Response)
 })
 
 test('getEntryRoutes: transforms nested template path correctly', async () => {
   const entrypoint = join(fixturesRoot, 'nested', 'component', 'NestedTemplate.tsx')
   const responses = await getEntryRoutes(fixturesRoot, [entrypoint])
 
-  // Should preserve directory structure and kebab-case the filename
-  expect(responses['/nested/component/nested-template--index.js']).toBeDefined()
+  // Should preserve directory structure and original filename
+  expect(responses['/nested/component/NestedTemplate.js']).toBeDefined()
 })
 
 test('getEntryRoutes: transforms deeply nested template path correctly', async () => {
   const entrypoint = join(fixturesRoot, 'deep', 'ui', 'forms', 'DeepTemplate.tsx')
   const responses = await getEntryRoutes(fixturesRoot, [entrypoint])
 
-  // Should preserve full directory path and kebab-case the filename
-  expect(responses['/deep/ui/forms/deep-template--index.js']).toBeDefined()
+  // Should preserve full directory path and original filename
+  expect(responses['/deep/ui/forms/DeepTemplate.js']).toBeDefined()
 })
 
 test('getEntryRoutes: handles multiple entrypoints', async () => {
@@ -49,9 +49,9 @@ test('getEntryRoutes: handles multiple entrypoints', async () => {
   const responses = await getEntryRoutes(fixturesRoot, entrypoints)
 
   // Should have all entry-points
-  expect(responses['/root-template--index.js']).toBeDefined()
-  expect(responses['/nested/component/nested-template--index.js']).toBeDefined()
-  expect(responses['/deep/ui/forms/deep-template--index.js']).toBeDefined()
+  expect(responses['/RootTemplate.js']).toBeDefined()
+  expect(responses['/nested/component/NestedTemplate.js']).toBeDefined()
+  expect(responses['/deep/ui/forms/DeepTemplate.js']).toBeDefined()
 
   // Should have at least 3 responses (entry-points, possibly chunks)
   expect(Object.keys(responses).length).toBeGreaterThanOrEqual(3)
@@ -63,8 +63,8 @@ test('getEntryRoutes: creates code-split chunks when splitting enabled', async (
   const responses = await getEntryRoutes(fixturesRoot, entrypoints)
 
   // Should have both entry-points
-  expect(responses['/template-a--index.js']).toBeDefined()
-  expect(responses['/template-b--index.js']).toBeDefined()
+  expect(responses['/TemplateA.js']).toBeDefined()
+  expect(responses['/TemplateB.js']).toBeDefined()
 
   // May have additional chunk files (Bun decides if code-splitting happens)
   const responseKeys = Object.keys(responses)
@@ -80,7 +80,7 @@ test('getEntryRoutes: responses are not compressed by default', async () => {
   const entrypoint = join(fixturesRoot, 'RootTemplate.tsx')
   const responses = await getEntryRoutes(fixturesRoot, [entrypoint])
 
-  const response = responses['/root-template--index.js']
+  const response = responses['/RootTemplate.js']
 
   // Should NOT have gzip content-encoding header (compression disabled for performance)
   expect(response?.headers.get('content-encoding')).toBeNull()
@@ -95,7 +95,7 @@ test('getEntryRoutes: responses have correct content-type', async () => {
   const entrypoint = join(fixturesRoot, 'RootTemplate.tsx')
   const responses = await getEntryRoutes(fixturesRoot, [entrypoint])
 
-  const response = responses['/root-template--index.js']
+  const response = responses['/RootTemplate.js']
 
   // Should have JavaScript content-type (from Bun.build artifact.type)
   const contentType = response?.headers.get('content-type')
@@ -107,7 +107,7 @@ test('getEntryRoutes: bundled content is valid JavaScript', async () => {
   const entrypoint = join(fixturesRoot, 'RootTemplate.tsx')
   const responses = await getEntryRoutes(fixturesRoot, [entrypoint])
 
-  const response = responses['/root-template--index.js']
+  const response = responses['/RootTemplate.js']
   const content = response ? await getResponseText(response) : ''
 
   // Should contain typical bundled JavaScript patterns
@@ -163,21 +163,21 @@ test('getEntryRoutes: preserves directory structure in paths', async () => {
   const responses = await getEntryRoutes(fixturesRoot, [entrypoint])
 
   const keys = Object.keys(responses)
-  const entryKey = keys.find((k) => k.includes('deep-template'))
+  const entryKey = keys.find((k) => k.includes('DeepTemplate'))
 
   expect(entryKey).toBeDefined()
   // Should preserve the directory structure: /deep/ui/forms/...
   expect(entryKey).toContain('/deep/ui/forms/')
 })
 
-test('getEntryRoutes: handles PascalCase to kebab-case conversion', async () => {
+test('getEntryRoutes: preserves original filename casing', async () => {
   const entrypoint = join(fixturesRoot, 'RootTemplate.tsx')
   const responses = await getEntryRoutes(fixturesRoot, [entrypoint])
 
-  // RootTemplate.tsx should become root-template--index.js
-  expect(responses['/root-template--index.js']).toBeDefined()
-  // Should NOT have the PascalCase version
-  expect(responses['/RootTemplate--index.js']).toBeUndefined()
+  // RootTemplate.tsx should become /RootTemplate.js (preserves PascalCase)
+  expect(responses['/RootTemplate.js']).toBeDefined()
+  // Should NOT have kebab-case version
+  expect(responses['/root-template.js']).toBeUndefined()
 })
 
 test('getEntryRoutes: all responses can be read without errors', async () => {
@@ -195,19 +195,19 @@ test('getEntryRoutes: all responses can be read without errors', async () => {
   await Promise.all(readPromises)
 })
 
-test('getEntryRoutes: chunk artifacts have different path format than entry-points', async () => {
+test('getEntryRoutes: chunk artifacts have different naming than entry-points', async () => {
   // Use templates that might trigger chunking
   const entrypoints = [join(fixturesRoot, 'TemplateA.tsx'), join(fixturesRoot, 'TemplateB.tsx')]
   const responses = await getEntryRoutes(fixturesRoot, entrypoints)
 
   const keys = Object.keys(responses)
 
-  // Entry-points should follow the --index.js pattern
-  const entryPoints = keys.filter((k) => k.includes('--index.js'))
+  // Entry-points should match the template filenames
+  const entryPoints = keys.filter((k) => k.includes('TemplateA') || k.includes('TemplateB'))
   expect(entryPoints.length).toBeGreaterThanOrEqual(2)
 
-  // If there are chunk files, they should NOT have --index.js pattern
-  const chunks = keys.filter((k) => !k.includes('--index.js'))
+  // If there are chunk files, they should have chunk-* naming pattern
+  const chunks = keys.filter((k) => k.includes('chunk-'))
   chunks.forEach((chunk) => {
     // Chunks should still start with /
     expect(chunk.startsWith('/')).toBe(true)

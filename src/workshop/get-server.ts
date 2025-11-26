@@ -4,7 +4,7 @@ import { getEntryRoutes } from './get-entry-routes.ts'
 import { getHTMLRoutes } from './get-html-routes.tsx'
 
 /** @internal WebSocket topic */
-const RUNNER_TOPIC = 'RUNNER_TOPIC'
+const RELOAD_TOPIC = 'RELOAD_TOPIC'
 
 /**
  * Generates routes for all discovered story exports.
@@ -104,11 +104,11 @@ export const getServer = async ({ cwd, port }: { cwd: string; port: number }) =>
     },
     websocket: {
       open(ws) {
-        ws.subscribe(RUNNER_TOPIC)
+        ws.subscribe(RELOAD_TOPIC)
       },
-      message(_ws, message) {},
+      message() {},
       close(ws) {
-        ws.unsubscribe(RUNNER_TOPIC)
+        ws.unsubscribe(RELOAD_TOPIC)
       },
     },
   })
@@ -146,15 +146,12 @@ export const getServer = async ({ cwd, port }: { cwd: string; port: number }) =>
 
   // Hot reload: Broadcast to all connected clients
   const reload = () => {
-    server.publish(RUNNER_TOPIC, RELOAD_PAGE)
+    server.publish(RELOAD_TOPIC, RELOAD_PAGE)
     console.log('🔄 Reloading all clients...')
   }
 
-  // Get actual port (important when port 0 is used for auto-assignment)
-  const actualPort = server.port
-
-  console.log(`✅ Server ready at http://localhost:${actualPort}`)
+  console.log(`✅ Server ready at http://localhost:${server.port}`)
   console.log(`🔥 Hot reload enabled via WebSocket`)
 
-  return { reload, server, port: actualPort }
+  return { reload, server }
 }

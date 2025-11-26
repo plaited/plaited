@@ -68,7 +68,7 @@ test('getRoutes: excludes non-story files automatically', async () => {
   // Should only have routes for .stories.tsx files
   // No routes for regular .tsx files
   const allKeysAreForStories = keys.every((k) => {
-    // Entry routes end with -stories--index.js
+    // Entry routes end with .stories.js
     // HTML routes come from .stories.tsx files
     return k.endsWith('.js') || k.includes('stories')
   })
@@ -100,13 +100,12 @@ test('getRoutes: is compatible with Bun.serve routes parameter', async () => {
 test('getRoutes: entry routes follow correct naming pattern', async () => {
   const routes = await getRoutes(fixturesDir)
 
-  const entryRoutes = Object.keys(routes).filter((k) => k.endsWith('--index.js'))
+  const entryRoutes = Object.keys(routes).filter((k) => k.endsWith('.stories.js'))
 
-  // Entry routes should follow pattern: /path/to/kebab-case-stories--index.js
+  // Entry routes should follow pattern: /path/to/file-name.stories.js
   expect(entryRoutes.length).toBeGreaterThan(0)
   entryRoutes.forEach((route) => {
-    expect(route.endsWith('--index.js')).toBe(true)
-    // Story entry routes should have -stories in the name
-    expect(route.includes('-stories')).toBe(true)
+    expect(route.endsWith('.stories.js')).toBe(true)
+    expect(route.startsWith('/')).toBe(true)
   })
 })

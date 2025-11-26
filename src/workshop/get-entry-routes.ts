@@ -15,13 +15,13 @@ export const getEntryRoutes = async (root: string, entrypoints: string[]) => {
     outputs.map(async (artifact) => {
       const path = artifact.path
       const content = await artifact.text()
-      const { kind } = artifact
-      let formattedPath: string = path
-      if (kind === 'entry-point') {
-        formattedPath = path.startsWith('/') ? path : `/${path}`
-      } else {
-        formattedPath = path.replace(/^\./, '')
+
+      // Normalize path: remove leading ./ and ensure starts with /
+      let formattedPath = path.replace(/^\.\//, '/')
+      if (!formattedPath.startsWith('/')) {
+        formattedPath = `/${formattedPath}`
       }
+
       Object.assign(responses, {
         [formattedPath]: zip({
           content,
