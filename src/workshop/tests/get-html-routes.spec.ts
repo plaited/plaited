@@ -116,7 +116,8 @@ test('getHTMLRoutes: main route includes entry script tag', async () => {
 
   expect(content).toContain('<script')
   expect(content).toContain('type="module"')
-  expect(content).toContain('src="/stories/mixed-stories.stories.js"')
+  // Script now uses inline import statement instead of src attribute
+  expect(content).toContain("import { basicStory } from '/stories/mixed-stories.stories.js'")
 })
 
 test('getHTMLRoutes: main route includes reload client script', async () => {
@@ -389,8 +390,8 @@ test('getHTMLRoutes: entry script path is correct', async () => {
   const mainRoute = routes['/stories/mixed-stories--basic-story']
   const content = mainRoute ? await mainRoute.text() : ''
 
-  // Entry path should replace .stories.tsx with .stories.js
-  expect(content).toContain('src="/stories/mixed-stories.stories.js"')
+  // Entry path should replace .stories.tsx with .stories.js in inline import
+  expect(content).toContain("import { basicStory } from '/stories/mixed-stories.stories.js'")
 })
 
 test('getHTMLRoutes: returns exactly two routes per story', async () => {

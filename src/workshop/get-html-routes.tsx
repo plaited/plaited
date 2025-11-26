@@ -143,11 +143,6 @@ const usePage = ({
       >
         {fixture}
         <script
-          type='module'
-          trusted
-          src={entryPath}
-        />
-        <script
           defer
           type='module'
           trusted
