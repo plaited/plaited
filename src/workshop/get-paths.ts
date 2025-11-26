@@ -2,7 +2,7 @@ import { basename, dirname } from 'node:path'
 import { kebabCase } from '../utils.ts'
 
 const getStoryPath = ({ entryPath, exportName }: { entryPath: string; exportName: string }) => {
-  return `${dirname(entryPath)}${kebabCase(basename(entryPath, '.stories.js'))}--${kebabCase(exportName)}`
+  return `${dirname(entryPath)}/${kebabCase(basename(entryPath, '.stories.js'))}--${kebabCase(exportName)}`
 }
 
 const getEntryPath = (path: string) => {
@@ -19,5 +19,6 @@ export const getPaths = ({ filePath, cwd, exportName }: { filePath: string; cwd:
   const relativePath = filePath.startsWith(cwd) ? filePath.slice(cwd.length) : filePath
   const entryPath = getEntryPath(relativePath)
   const route = getStoryPath({ exportName, entryPath })
+  console.log({ route, entryPath })
   return { route, entryPath }
 }

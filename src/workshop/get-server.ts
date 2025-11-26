@@ -1,4 +1,3 @@
-import type { Trigger } from '../main.ts'
 import { RELOAD_PAGE, RUNNER_URL } from '../testing/testing.constants.ts'
 import { discoverStoryMetadata } from './collect-stories.ts'
 import { getEntryRoutes } from './get-entry-routes.ts'
@@ -76,7 +75,7 @@ export const getRoutes = async (cwd: string): Promise<Record<string, Response>> 
  * @returns Object with reload callback, server instance, and actual port number
  */
 
-export const getServer = async ({ cwd, port, trigger }: { cwd: string; port: number; trigger?: Trigger }) => {
+export const getServer = async ({ cwd, port }: { cwd: string; port: number }) => {
   console.log(`🔍 Starting Plaited server`)
   console.log(`📂 Root: ${cwd}`)
   console.log(`🌐 Port: ${port}`)
@@ -107,25 +106,10 @@ export const getServer = async ({ cwd, port, trigger }: { cwd: string; port: num
     websocket: {
       open(ws) {
         ws.subscribe(RUNNER_TOPIC)
-        console.log(`WebSocket client connected`)
       },
-      message(_ws, message) {
-        console.log(`WebSocket message:`, message)
-
-        // Handle runner messages if trigger is provided
-        if (trigger && typeof message === 'string') {
-          try {
-            const data = JSON.parse(message)
-            // Trigger the event with the parsed data
-            trigger(data)
-          } catch (error) {
-            console.error('Failed to parse WebSocket message:', error)
-          }
-        }
-      },
+      message(_ws, message) {},
       close(ws) {
         ws.unsubscribe(RUNNER_TOPIC)
-        console.log(`WebSocket client disconnected`)
       },
     },
   })
