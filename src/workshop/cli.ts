@@ -29,7 +29,7 @@ console.log('🎭 Starting Plaited workshop test runner...')
 
 // Verify Bun runtime
 if (typeof Bun === 'undefined') {
-  console.error('❌ Error: Plaited CLI requires Bun runtime')
+  console.error('🚩 Error: Plaited CLI requires Bun runtime')
   console.error('   Install Bun: https://bun.sh')
   console.error('   Then run: bun plaited test')
   process.exit(1)
@@ -61,7 +61,7 @@ const subcommand = positionals[2]
 
 // Validate subcommand
 if (!subcommand) {
-  console.error('❌ Error: Missing subcommand\n')
+  console.error('🚩 Error: Missing subcommand\n')
   console.log('Usage: plaited <command> [options] [args...]\n')
   console.log('Commands:')
   console.log('  test      Run story tests')
@@ -81,7 +81,7 @@ if (!subcommand) {
 
 const validCommands = ['test', 'query', 'changelog']
 if (!validCommands.includes(subcommand)) {
-  console.error(`❌ Error: Unknown subcommand '${subcommand}'\n`)
+  console.error(`🚩 Error: Unknown subcommand '${subcommand}'\n`)
   console.log('Available commands:')
   console.log('  test      Run story tests')
   console.log('  query     Query documentation database')
@@ -134,7 +134,7 @@ if (subcommand === 'query') {
 
   const action = queryArgs.values.action
   if (!action) {
-    console.error('❌ Error: --action required\n')
+    console.error('🚩 Error: --action required\n')
     console.log('Run: plaited query --help')
     process.exit(1)
   }
@@ -156,7 +156,7 @@ if (subcommand === 'query') {
       console.log(JSON.stringify({ id, success: true }))
     } else if (action === 'search-examples') {
       if (!queryArgs.values.query) {
-        console.error('❌ Error: --query required for search-examples')
+        console.error('🚩 Error: --query required for search-examples')
         process.exit(1)
       }
       const limit = queryArgs.values.limit ? parseInt(queryArgs.values.limit, 10) : 10
@@ -164,7 +164,7 @@ if (subcommand === 'query') {
       console.log(JSON.stringify(results, null, 2))
     } else if (action === 'search-patterns') {
       if (!queryArgs.values.query) {
-        console.error('❌ Error: --query required for search-patterns')
+        console.error('🚩 Error: --query required for search-patterns')
         process.exit(1)
       }
       const limit = queryArgs.values.limit ? parseInt(queryArgs.values.limit, 10) : 10
@@ -172,14 +172,14 @@ if (subcommand === 'query') {
       console.log(JSON.stringify(results, null, 2))
     } else if (action === 'get-examples') {
       if (!queryArgs.values.export) {
-        console.error('❌ Error: --export required for get-examples')
+        console.error('🚩 Error: --export required for get-examples')
         process.exit(1)
       }
       const results = queries.getExamplesByExport(queryArgs.values.export)
       console.log(JSON.stringify(results, null, 2))
     } else if (action === 'get-pattern') {
       if (!queryArgs.values.name) {
-        console.error('❌ Error: --name required for get-pattern')
+        console.error('🚩 Error: --name required for get-pattern')
         process.exit(1)
       }
       const result = queries.getPattern(queryArgs.values.name)
@@ -207,11 +207,11 @@ if (subcommand === 'query') {
       const results = queries.listPatterns(options)
       console.log(JSON.stringify(results, null, 2))
     } else {
-      console.error(`❌ Error: Unknown action '${action}'`)
+      console.error(`🚩 Error: Unknown action '${action}'`)
       process.exit(1)
     }
   } catch (error) {
-    console.error('❌ Error:', error)
+    console.error('🚩 Error:', error)
     process.exit(1)
   }
 
@@ -275,11 +275,11 @@ if (subcommand === 'changelog') {
       const count = changelog.clearChanges(version)
       console.log(`✅ Cleared ${count} changes for version ${version}`)
     } else {
-      console.error(`❌ Error: Unknown action '${action}'`)
+      console.error(`🚩 Error: Unknown action '${action}'`)
       process.exit(1)
     }
   } catch (error) {
-    console.error('❌ Error:', error)
+    console.error('🚩 Error:', error)
     process.exit(1)
   }
 
@@ -295,7 +295,7 @@ if (values.port && (Number.isNaN(port) || port < 0 || port > 65535)) {
 // Parse and validate color scheme (default to 'light')
 const colorScheme = (values['color-scheme'] as 'light' | 'dark' | undefined) ?? 'light'
 if (values['color-scheme'] && colorScheme !== 'light' && colorScheme !== 'dark') {
-  console.error(`❌ Error: Invalid color-scheme '${values['color-scheme']}'\n`)
+  console.error(`🚩 Error: Invalid color-scheme '${values['color-scheme']}'\n`)
   console.log('Valid values: light, dark')
   process.exit(1)
 }
@@ -308,7 +308,7 @@ console.log('🔍 Checking Playwright installation...')
 const playwrightReady = await checkPlaywright(cwd)
 
 if (!playwrightReady) {
-  console.error('\n❌ Cannot run tests without Playwright')
+  console.error('\n🚩 Cannot run tests without Playwright')
   process.exit(1)
 }
 
@@ -346,14 +346,14 @@ if (paths.length > 0) {
         const fileMetadata = await getStoryMetadata(absolutePath)
         allMetadata.push(...fileMetadata)
       } else {
-        console.error(`❌ Error: Path is neither file nor directory: ${absolutePath}`)
+        console.error(`🚩 Error: Path is neither file nor directory: ${absolutePath}`)
         process.exit(1)
       }
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        console.error(`❌ Error: Path does not exist: ${absolutePath}`)
+        console.error(`🚩 Error: Path does not exist: ${absolutePath}`)
       } else {
-        console.error(`❌ Error processing path ${absolutePath}:`, error)
+        console.error(`🚩 Error processing path ${absolutePath}:`, error)
       }
       process.exit(1)
     }
@@ -436,7 +436,7 @@ console.log('📊 Test Summary')
 console.log('='.repeat(50))
 console.log(`Total:  ${results.total}`)
 console.log(`Passed: ${results.passed} ✅`)
-console.log(`Failed: ${results.failed} ❌`)
+console.log(`Failed: ${results.failed} 🚩`)
 console.log('='.repeat(50))
 
 // Cleanup and exit
@@ -444,7 +444,7 @@ await cleanup()
 
 // Exit with appropriate code
 if (results.failed > 0) {
-  console.log('\n❌ Tests failed')
+  console.log('\n🚩 Tests failed')
   process.exit(1)
 } else {
   console.log('\n✅ All tests passed')

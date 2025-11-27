@@ -47,7 +47,7 @@
     "test": "bun run test-stories src/main && bun test",
     "test-stories": "bun src/workshop/cli.ts test",
     "test-stories:all": "bun run test-stories src/main",
-    "test-stories:watch": "bun --hot run test-stories"
+    "test-stories:watch": "bun --hot run test-stories src/main"
   },
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [

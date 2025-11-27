@@ -31,6 +31,7 @@
  * - Server lifecycle tied to runner lifecycle
  */
 
+import { basename } from 'node:path'
 import type { Browser, BrowserContextOptions } from 'playwright'
 import { FIXTURE_EVENTS } from '../testing/testing.constants.ts'
 import { discoverStoryMetadata } from './collect-stories.ts'
@@ -95,7 +96,11 @@ export const useRunner = async ({
 }) => {
   // Create server at initialization
   const { reload, server } = await getServer({ cwd, port })
-
+  const formatErrorType = (errorType: string) =>
+    `🚩 ${errorType
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')}`
   return {
     async run(detail?: RunTestsDetail) {
       // Clear results for this test run
@@ -155,7 +160,6 @@ export const useRunner = async ({
             })
 
             await page.goto(route)
-            await page.waitForLoadState('networkidle')
 
             const { type, detail } = await page.evaluate(() => {
               console.log(window.__PLAITED_RUNNER__, window.__PLAITED__)
@@ -163,22 +167,13 @@ export const useRunner = async ({
             })
 
             if (type === FIXTURE_EVENTS.test_pass) {
-              console.log(`${story.exportName}:`, route)
+              console.log(`${story.exportName}:`, `${server.url.href.replace(/\/$/, '')}${route}`)
               passed.push({
                 story,
                 passed: true,
               })
             } else {
-              console.table({
-                url: route,
-                filePath: `.${story.filePath.replace(cwd, '')}`,
-                exportName: story.exportName,
-                colorScheme,
-              })
-              console.table({
-                errorType: detail.errorType,
-                error: detail.error,
-              })
+              console.log(`🚩 ${basename(route)} (${formatErrorType(detail.errorType)})`)
               failed.push({
                 story,
                 passed: false,
@@ -201,7 +196,39 @@ export const useRunner = async ({
         results,
       })
 
-      console.log('Pass:', passed.length)
+      // Print summary with detailed failures
+      if (failed.length > 0) {
+        console.log(`\n ${'='.repeat(50)}`)
+        console.log(`\n${failed.length} Failed Test${failed.length > 1 ? 's' : ''}:\n`)
+
+        failed.forEach(({ story, error }, index, arr) => {
+          const detail = error as { errorType: string; error: string }
+          const { route } = getPaths({
+            cwd,
+            exportName: story.exportName,
+            filePath: story.filePath,
+          })
+
+          const formattedErrorType = formatErrorType(detail.errorType)
+
+          console.log(`ExportName: ${story.exportName}`)
+          console.log(`File: ${`.${story.filePath.replace(cwd, '')}`}`)
+          console.log('')
+          console.log(`${detail.error.replace(`${detail.errorType}`, formattedErrorType)}`)
+          console.log('')
+          console.log(`Route: http://localhost${route}`)
+          console.log(`ColorScheme: ${colorScheme}`)
+          console.log('')
+          const length = arr.length
+          if (length > 1 && index + 1 < length) {
+            console.log('-'.repeat(50))
+            console.log('')
+          }
+        })
+        console.log('='.repeat(50))
+      }
+
+      console.log('\nPass:', passed.length)
       console.log('Fail:', failed.length)
     },
     reload,
