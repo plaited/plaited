@@ -66,19 +66,15 @@ export const cssCache = new WeakMap<ShadowRoot, Set<string>>()
 const updateShadowRootStyles = async (root: ShadowRoot, stylesheets: string[]) => {
   const instanceStyles = cssCache.get(root) ?? cssCache.set(root, new Set()).get(root)
   const newStyleSheets: CSSStyleSheet[] = []
-  try {
-    await Promise.all(
-      stylesheets.map(async (styles) => {
-        if (instanceStyles?.has(styles)) return
-        const sheet = new CSSStyleSheet()
-        instanceStyles?.add(styles)
-        const nextSheet = await sheet.replace(styles)
-        newStyleSheets.push(nextSheet)
-      }),
-    )
-  } catch (error) {
-    console.error(error)
-  }
+  await Promise.all(
+    stylesheets.map(async (styles) => {
+      if (instanceStyles?.has(styles)) return
+      const sheet = new CSSStyleSheet()
+      instanceStyles?.add(styles)
+      const nextSheet = await sheet.replace(styles)
+      newStyleSheets.push(nextSheet)
+    }),
+  )
   if (newStyleSheets.length) root.adoptedStyleSheets = [...root.adoptedStyleSheets, ...newStyleSheets]
 }
 

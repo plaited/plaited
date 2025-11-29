@@ -1,14 +1,13 @@
-import { bElement, useDispatch } from 'plaited'
+import { bElement } from 'plaited'
 import { isTypeOf } from 'plaited/utils'
 
 export const DecoratedPopoverClose = bElement({
   tag: 'decorated-popover-close',
   shadowDom: <slot p-trigger={{ click: 'click' }}></slot>,
-  bProgram: ({ host }) => {
-    const dispatch = useDispatch(host)
+  bProgram: ({ emit }) => {
     return {
       click() {
-        dispatch({ type: 'close', bubbles: true, composed: true })
+        emit({ type: 'close', bubbles: true, composed: true })
       },
     }
   },

@@ -1,6 +1,7 @@
 import { type BEHAVIORAL_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './b-element.constants.ts'
-import type { BSync, BThread, BThreads, PlaitedTrigger, Trigger, UseSnapshot } from './behavioral.types.ts'
+import type { BSync, BThread, BThreads, PlaitedTrigger, SnapshotMessage, Trigger } from './behavioral.types.ts'
 import type { CustomElementTag, FunctionTemplate, TemplateObject } from './create-template.types.ts'
+import type { Emit } from './use-emit.ts'
 /**
  * Valid insertion positions for DOM elements relative to a reference element.
  * Follows the insertAdjacentElement/HTML specification.
@@ -142,6 +143,14 @@ export type BehavioralTemplate = FunctionTemplate & {
   $: typeof BEHAVIORAL_TEMPLATE_IDENTIFIER
 }
 
+export type InspectorCallback = (arg: SnapshotMessage) => void
+export type Inspector = {
+  assign: (func: InspectorCallback) => void
+  reset: () => void
+  on: () => void
+  off: () => void
+}
+
 /**
  * Context and utilities provided to the behavioral program of a Plaited component.
  * Contains DOM access, lifecycle hooks, and behavioral programming primitives.
@@ -174,7 +183,8 @@ export type BProgramArgs = {
   internals: ElementInternals
   trigger: PlaitedTrigger
   bThreads: BThreads
-  useSnapshot: UseSnapshot
+  inspector: Inspector
+  emit: Emit
   bThread: BThread
   bSync: BSync
 }

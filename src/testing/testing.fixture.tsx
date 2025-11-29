@@ -1,4 +1,4 @@
-import { bElement, createHostStyles, type FunctionTemplate, type SnapshotMessage } from '../main.ts'
+import { bElement, createHostStyles, type FunctionTemplate } from '../main.ts'
 import { wait } from '../utils.ts'
 import {
   __PLAITED__,
@@ -9,8 +9,16 @@ import {
   STORY_FIXTURE,
   STORY_IDENTIFIER,
   STORY_TYPES,
+  SUCCESS_TYPES,
 } from './testing.constants.ts'
 import type {
+  AccessibilityCheckParams,
+  AssertParams,
+  FindByAttributeArgs,
+  FindByTargetArgs,
+  FindByTestIdArgs,
+  FindByTextArgs,
+  FireEventArgs,
   InteractionExport,
   InteractionStoryObj,
   Play,
@@ -21,18 +29,14 @@ import type {
   StoryObj,
 } from './testing.types.ts'
 import {
-  AccessibilityError,
   accessibilityCheck,
   assert,
-  FailedAssertionError,
   findByAttribute,
   findByTarget,
   findByTestId,
   findByText,
   fireEvent,
-  MissingAssertionParameterError,
-  match,
-  throws,
+  useInteract,
 } from './testing.utils.ts'
 
 declare global {
@@ -65,25 +69,66 @@ declare global {
  * @see {@link StoryObj} for story configuration
  * @see {@link Play} for test utilities
  */
+
+type FindElementReturn = HTMLElement | SVGElement | undefined
+
+type RejectParams = {
+  errorType: string
+  error: string
+}
+type Reject = (value: RejectParams | PromiseLike<RejectParams>) => void
+
 const StoryFixture = bElement<{
-  [FIXTURE_EVENTS.run]: {
-    play?: InteractionStoryObj['play']
-    timeout?: number
+  [FIXTURE_EVENTS.accessibility_check]: {
+    args: AccessibilityCheckParams
+    resolve: () => void
+    reject: Reject
+  }
+  [FIXTURE_EVENTS.assertion]: AssertParams
+  [FIXTURE_EVENTS.find_by_attribute]: {
+    args: FindByAttributeArgs
+    resolve: (value: FindElementReturn | PromiseLike<FindElementReturn>) => void
+    reject: Reject
+  }
+  [FIXTURE_EVENTS.find_by_target]: {
+    args: FindByTargetArgs
+    resolve: (value: FindElementReturn | PromiseLike<FindElementReturn>) => void
+    reject: Reject
+  }
+  [FIXTURE_EVENTS.find_by_test_id]: {
+    args: FindByTestIdArgs
+    resolve: (value: FindElementReturn | PromiseLike<FindElementReturn>) => void
+    reject: Reject
+  }
+  [FIXTURE_EVENTS.find_by_text]: {
+    args: FindByTextArgs
+    resolve: (value: FindElementReturn | PromiseLike<FindElementReturn>) => void
+    reject: Reject
+  }
+  [FIXTURE_EVENTS.fire_event]: {
+    args: FireEventArgs
+    resolve: () => void
+    reject: Reject
   }
   [FIXTURE_EVENTS.play]: {
     play: InteractionStoryObj['play']
     timeout?: number
   }
+  [FIXTURE_EVENTS.run]: {
+    play?: InteractionStoryObj['play']
+    timeout?: number
+  }
   [FIXTURE_EVENTS.test_fail]: {
-    errorType:
-      | typeof ERROR_TYPES.failed_assertion
-      | typeof ERROR_TYPES.accessibility_violation
-      | typeof ERROR_TYPES.missing_assertion_parameter
-      | typeof ERROR_TYPES.unknown_error
-      | typeof ERROR_TYPES.test_timeout
+    errorType: string
     error: string
+    stack?: string
   }
   [FIXTURE_EVENTS.test_pass]: string
+  [FIXTURE_EVENTS.wait]: {
+    args: number
+    resolve: () => void
+    reject: Reject
+  }
 }>({
   tag: STORY_FIXTURE,
   publicEvents: [FIXTURE_EVENTS.run],
@@ -94,7 +139,7 @@ const StoryFixture = bElement<{
       })}
     />
   ),
-  bProgram({ host, trigger, useSnapshot, bThreads, bThread, bSync }) {
+  bProgram({ trigger, inspector, bThreads, bThread, bSync, emit }) {
     bThreads.set({
       onRun: bThread(
         [
@@ -108,77 +153,99 @@ const StoryFixture = bElement<{
         true,
       ),
     })
-    !window?.__PLAITED_RUNNER__ &&
-      useSnapshot((snapshot: SnapshotMessage) => {
-        console.table(snapshot)
-      })
+
+    !window?.__PLAITED_RUNNER__ && inspector.on()
 
     const timeout = async (time: number) => {
       await wait(time)
       return true
     }
 
-    const interact = async (play: Play) => {
-      try {
-        await play?.({
-          assert,
-          findByAttribute,
-          findByText,
-          fireEvent,
-          findByTarget,
-          findByTestId,
-          hostElement: host,
-          match,
-          throws,
-          wait,
-          accessibilityCheck,
-        })
-      } catch (error) {
-        if (error instanceof FailedAssertionError) {
-          trigger({
-            type: FIXTURE_EVENTS.test_fail,
-            detail: {
-              errorType: ERROR_TYPES.failed_assertion,
-              error: error.toString(),
-            },
-          })
-        } else if (error instanceof AccessibilityError) {
-          trigger({
-            type: FIXTURE_EVENTS.test_fail,
-            detail: {
-              errorType: ERROR_TYPES.accessibility_violation,
-              error: error.toString(),
-            },
-          })
-        } else if (error instanceof MissingAssertionParameterError) {
-          trigger({
-            type: FIXTURE_EVENTS.test_fail,
-            detail: {
-              errorType: ERROR_TYPES.missing_assertion_parameter,
-              error: error.toString(),
-            },
-          })
-        } else if (error instanceof Error) {
-          trigger({
-            type: FIXTURE_EVENTS.test_fail,
-            detail: {
-              errorType: ERROR_TYPES.unknown_error,
-              error: error.toString(),
-            },
-          })
-        }
-      }
-    }
     const { resolve, promise } = Promise.withResolvers<RunnerMessage>()
     window.__PLAITED__ = {
       reporter: async () => promise,
     }
+    const handleError = (error: unknown, reject?: Reject) => {
+      if (error instanceof Error) {
+        const detail = {
+          errorType: error.name,
+          error: error.toString(),
+          stack: error.stack,
+        }
+        trigger({
+          type: FIXTURE_EVENTS.test_fail,
+          detail,
+        })
+        reject?.(detail)
+      } else {
+        const detail = {
+          errorType: ERROR_TYPES.unknown_error,
+          error: `${error}`,
+        }
+        trigger({
+          type: FIXTURE_EVENTS.test_fail,
+          detail,
+        })
+        reject?.(detail)
+      }
+    }
+    const interact = useInteract(trigger)
     return {
-      [FIXTURE_EVENTS.run](detail) {
-        if (detail.play) {
-          trigger({ type: FIXTURE_EVENTS.play, detail })
-        } else {
-          trigger({ type: FIXTURE_EVENTS.test_pass, detail: '✅ Success' })
+      async [FIXTURE_EVENTS.accessibility_check]({ args, resolve, reject }) {
+        try {
+          await accessibilityCheck(args)
+          trigger({ type: SUCCESS_TYPES.passed_accessibility_check })
+          resolve()
+        } catch (error) {
+          handleError(error, reject)
+        }
+      },
+      [FIXTURE_EVENTS.assertion](detail) {
+        try {
+          assert(detail)
+          trigger({ type: SUCCESS_TYPES.passed_assertion })
+        } catch (error) {
+          handleError(error)
+        }
+      },
+      async [FIXTURE_EVENTS.find_by_attribute]({ args, resolve, reject }) {
+        try {
+          const result = await findByAttribute(...args)
+          resolve(result)
+        } catch (error) {
+          handleError(error, reject)
+        }
+      },
+      async [FIXTURE_EVENTS.find_by_target]({ args, resolve, reject }) {
+        try {
+          const result = await findByTarget(...args)
+          resolve(result)
+        } catch (error) {
+          handleError(error, reject)
+        }
+      },
+      async [FIXTURE_EVENTS.find_by_test_id]({ args, resolve, reject }) {
+        try {
+          const result = await findByTestId(...args)
+          resolve(result)
+        } catch (error) {
+          handleError(error, reject)
+        }
+      },
+      async [FIXTURE_EVENTS.find_by_text]({ args, resolve, reject }) {
+        try {
+          const result = await findByText(...args)
+          resolve(result)
+        } catch (error) {
+          handleError(error, reject)
+        }
+      },
+      async [FIXTURE_EVENTS.fire_event]({ args, resolve, reject }) {
+        try {
+          await fireEvent(...args)
+          resolve()
+        } catch (error) {
+          handleError(error, reject)
         }
       },
       async [FIXTURE_EVENTS.play](detail) {
@@ -195,8 +262,28 @@ const StoryFixture = bElement<{
           trigger({ type: FIXTURE_EVENTS.test_pass, detail: '✅ Success' })
         }
       },
-      [FIXTURE_EVENTS.test_pass]() {
+      [FIXTURE_EVENTS.run](detail) {
+        if (detail.play) {
+          trigger({ type: FIXTURE_EVENTS.play, detail })
+        } else {
+          trigger({ type: FIXTURE_EVENTS.test_pass, detail: '✅ Success' })
+        }
+      },
+      [FIXTURE_EVENTS.test_fail](detail) {
         const { pathname } = new URL(window.location.href)
+        emit({ type: FIXTURE_EVENTS.test_fail, detail })
+        resolve({
+          type: FIXTURE_EVENTS.test_fail,
+          detail: {
+            pathname,
+            errorType: detail.errorType,
+            error: detail.error,
+          },
+        })
+      },
+      [FIXTURE_EVENTS.test_pass](detail) {
+        const { pathname } = new URL(window.location.href)
+        emit({ type: FIXTURE_EVENTS.test_pass, detail })
         resolve({
           type: FIXTURE_EVENTS.test_pass,
           detail: {
@@ -204,15 +291,13 @@ const StoryFixture = bElement<{
           },
         })
       },
-      [FIXTURE_EVENTS.test_fail](detail) {
-        const { pathname } = new URL(window.location.href)
-        resolve({
-          type: FIXTURE_EVENTS.test_fail,
-          detail: {
-            pathname,
-            ...detail,
-          },
-        })
+      async [FIXTURE_EVENTS.wait]({ args, resolve, reject }) {
+        try {
+          await wait(args)
+          resolve()
+        } catch (error) {
+          handleError(error, reject)
+        }
       },
     }
   },

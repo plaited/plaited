@@ -30,6 +30,7 @@ import type {
   Bindings,
   BoundElement,
   BProgramArgs,
+  InspectorCallback,
   SelectorMatch,
 } from './b-element.types.ts'
 import { assignHelpers, getBindings, getDocumentFragment } from './b-element.utils.ts'
@@ -40,6 +41,7 @@ import type {
   EventDetails,
   Handlers,
   PlaitedTrigger,
+  SnapshotMessage,
   Trigger,
   UseFeedback,
   UseSnapshot,
@@ -49,6 +51,7 @@ import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from './create-template.constants.
 import { createTemplate } from './create-template.ts'
 import type { Attrs, CustomElementTag, TemplateObject } from './create-template.types.ts'
 import { DelegatedListener, delegates } from './delegated-listener.ts'
+import { type Emit, useEmit } from './use-emit.ts'
 import { usePlaitedTrigger } from './use-plaited-trigger.ts'
 import { usePublicTrigger } from './use-public-trigger.ts'
 
@@ -191,7 +194,9 @@ export const bElement = <A extends EventDetails>({
         #useSnapshot: UseSnapshot
         #bThreads: BThreads
         #disconnectSet = new Set<Disconnect>()
+        #emit: Emit
         trigger: Trigger
+
         constructor() {
           super()
           this.#internals = this.attachInternals()
@@ -207,6 +212,7 @@ export const bElement = <A extends EventDetails>({
             trigger,
             publicEvents,
           })
+          this.#emit = useEmit(this)
         }
         attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
           this.#trigger<{
@@ -240,6 +246,34 @@ export const bElement = <A extends EventDetails>({
             assignHelpers(bindings, this.#root.querySelectorAll<Element>(`[${P_TARGET}]`))
             // Create a shadow observer to watch for modification & addition of nodes with p-this.#trigger directive
             this.#shadowObserver = this.#getShadowObserver(bindings)
+            //Create inspector on tool that captures state snapshots of behavioral program execution
+            const inspectorDefaultCallback: InspectorCallback = (arg: SnapshotMessage) => {
+              console.group()
+              console.info(tag)
+              console.table(arg)
+              console.groupEnd()
+            }
+            let inspectorCallback = inspectorDefaultCallback
+            let inspectorDisconnect: Disconnect | undefined
+            const inspector = {
+              assign: (func: InspectorCallback) => {
+                inspectorCallback = func
+              },
+              reset: () => {
+                inspectorCallback = inspectorDefaultCallback
+              },
+              on: () => {
+                inspectorDisconnect = this.#useSnapshot(inspectorCallback)
+                this.#disconnectSet.add(inspectorDisconnect)
+              },
+              off: () => {
+                if (inspectorDisconnect) {
+                  void inspectorDisconnect()
+                  this.#disconnectSet.delete(inspectorDisconnect)
+                  inspectorDisconnect = undefined
+                }
+              },
+            }
             // bind connectedCallback to the custom element with the following arguments
             const handlers = callback.bind(this)({
               $: <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
@@ -248,7 +282,8 @@ export const bElement = <A extends EventDetails>({
               root: this.#root,
               internals: this.#internals,
               trigger: this.#trigger,
-              useSnapshot: this.#useSnapshot,
+              inspector,
+              emit: this.#emit,
               bThreads: this.#bThreads,
               bThread,
               bSync,
@@ -260,7 +295,7 @@ export const bElement = <A extends EventDetails>({
         }
         disconnectedCallback() {
           this.#shadowObserver?.disconnect()
-          for (const cb of this.#disconnectSet) cb()
+          for (const cb of this.#disconnectSet) void cb()
           this.#disconnectSet.clear()
           this.#trigger({ type: ELEMENT_CALLBACKS.onDisconnected })
         }

@@ -1,6 +1,6 @@
 /**
  * @internal
- * @module use-dispatch
+ * @module use-emit
  *
  * Purpose: Type-safe custom event dispatching for cross-component communication
  * Architecture: Wraps native CustomEvent API with sensible defaults for shadow DOM
@@ -46,7 +46,7 @@ import type { BPEvent } from './behavioral.types.ts'
  * - BPEvent: Provides type and detail properties
  * - CustomEvent options: Controls propagation behavior
  */
-type Dispatch = (
+export type Emit = (
   args: BPEvent & {
     /** Whether event bubbles up through ancestors (default: false for contained events) */
     bubbles?: boolean
@@ -55,14 +55,18 @@ type Dispatch = (
     /** Whether event crosses shadow DOM boundaries (default: true for component communication) */
     composed?: boolean
   },
-) => void
+) => boolean
+
+export class EmitTypeError extends Error implements Error {
+  override name = 'emit_type'
+}
 
 /**
  * Creates a custom event dispatcher for component communication.
  * Enables type-safe event emission across shadow DOM boundaries.
  *
  * @param element - BehavioralElement to dispatch events from
- * @returns Dispatch function for sending custom events
+ * @returns Emit function for sending custom events
  *
  * @remarks
  * Default options:
@@ -73,8 +77,8 @@ type Dispatch = (
  * @see {@link BehavioralElement} for element context
  * @see {@link BPEvent} for event structure
  */
-export const useDispatch =
-  (element: BehavioralElement): Dispatch =>
+export const useEmit =
+  (element: BehavioralElement): Emit =>
   /**
    * @internal
    * Returned dispatch function captures element reference in closure.
@@ -86,7 +90,7 @@ export const useDispatch =
      * Guard against missing event type to prevent runtime errors.
      * Silently returns rather than throwing for resilience.
      */
-    if (!type) return
+    if (!type) throw new EmitTypeError('Event type is required')
 
     /**
      * @internal
@@ -107,5 +111,5 @@ export const useDispatch =
      * Dispatch event synchronously on the element.
      * Event will propagate according to bubbles/composed settings.
      */
-    element.dispatchEvent(event)
+    return element.dispatchEvent(event)
   }

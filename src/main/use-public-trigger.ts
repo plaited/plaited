@@ -32,6 +32,14 @@ import type { Trigger } from './behavioral.types.ts'
 
 /**
  * @internal
+ * Error thrown when attempting to trigger an event not in the public events whitelist.
+ */
+class UnauthorizedEventError extends Error implements Error {
+  override name = 'unauthorized_event'
+}
+
+/**
+ * @internal
  * Creates a wrapped `Trigger` function that filters events based on a whitelist.
  * This is useful for exposing a limited set of events as a public API for a component
  * or module, preventing internal events from being triggered externally.
@@ -79,9 +87,9 @@ export const usePublicTrigger = ({
    */
   return ({ type, detail }) => {
     if (observed.has(type)) return trigger({ type: type, detail: detail })
-    throw new Error(
-      `Event type "${type}" is not allowed. Only public event types can be triggered: [${Array.from(observed)
-        .map((t) => t)
+    throw new UnauthorizedEventError(
+      `Event type "${String(type)}" is not allowed. Only public event types can be triggered: [${Array.from(observed)
+        .map((t) => String(t))
         .join(', ')}]`,
     )
   }

@@ -321,7 +321,7 @@ export const useComputed = <T>(
      */
     const disconnect = () => {
       listeners.delete(cb)
-      if (!listeners.size) for (const dep of disconnectDeps) dep()
+      if (!listeners.size) for (const dep of disconnectDeps) void dep()
     }
 
     isPlaitedTrigger(trigger) && trigger.addDisconnectCallback(disconnect)

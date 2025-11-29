@@ -2,10 +2,12 @@
 import axe from 'axe-core'
 import { P_TARGET } from '../main/create-template.constants.ts'
 import { DelegatedListener, delegates } from '../main/delegated-listener.ts'
+import type { Trigger } from '../main.ts'
 import { deepEqual, isTypeOf, noop, trueTypeOf } from '../utils.ts'
 import {
   DATA_TESTID,
   ERROR_TYPES,
+  FIXTURE_EVENTS,
   RELOAD_PAGE,
   RUNNER_URL,
   STORY_FIXTURE,
@@ -13,13 +15,20 @@ import {
 } from './testing.constants.ts'
 import type {
   AccessibilityCheck,
+  AccessibilityCheckParams,
   Assert,
   FindByAttribute,
+  FindByAttributeArgs,
   FindByTarget,
+  FindByTargetArgs,
   FindByTestId,
+  FindByTestIdArgs,
   FindByText,
+  FindByTextArgs,
   FireEvent,
+  FireEventArgs,
   FireEventOptions,
+  Play,
   RunnerMessage,
   StoryExport,
 } from './testing.types.ts'
@@ -47,7 +56,6 @@ export class MissingAssertionParameterError extends Error implements Error {
 export class AccessibilityError extends Error implements Error {
   override name = ERROR_TYPES.accessibility_violation
 }
-
 /**
  * Creates pattern matcher for string content.
  * Supports literal strings and RegExp patterns.
@@ -198,9 +206,10 @@ export const assert: Assert = (args) => {
     throw new MissingAssertionParameterError(msg)
   }
   const { given = undefined, should = '', actual = undefined, expected = undefined } = args
+  const message = `Given ${given}: should ${should}`
+  const detail = { message, actual: actual ?? 'undefined', expected }
   if (!deepEqual(actual, expected)) {
-    const message = `Given ${given}: should ${should}`
-    throw new FailedAssertionError(JSON.stringify({ message, actual: actual ?? 'undefined', expected }, replacer, 2))
+    throw new FailedAssertionError(JSON.stringify(detail, replacer, 2))
   }
 }
 
@@ -263,38 +272,41 @@ const searchByAttribute = <T extends HTMLElement | SVGElement = HTMLElement | SV
  * @param context - Search scope
  * @returns Promise with found element
  */
-export const findByAttribute: FindByAttribute = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+export const findByAttribute: FindByAttribute = async <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
   attributeName: string,
   attributeValue: string | RegExp,
   context?: HTMLElement | SVGElement,
 ): Promise<T | undefined> => {
-  return searchByAttribute<T>({
+  const result = await searchByAttribute<T>({
     context,
     attributeName,
     attributeValue,
   })
+  return result
 }
 
-export const findByTestId: FindByTestId = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+export const findByTestId: FindByTestId = async <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
   testId: string | RegExp,
   context?: HTMLElement | SVGElement,
 ): Promise<T | undefined> => {
-  return searchByAttribute<T>({
+  const result = await searchByAttribute<T>({
     context,
     attributeName: DATA_TESTID,
     attributeValue: testId,
   })
+  return result
 }
 
-export const findByTarget: FindByTarget = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+export const findByTarget: FindByTarget = async <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
   pTarget: string | RegExp,
   context?: HTMLElement | SVGElement,
 ): Promise<T | undefined> => {
-  return searchByAttribute<T>({
+  const result = await searchByAttribute<T>({
     context,
     attributeName: P_TARGET,
     attributeValue: pTarget,
   })
+  return result
 }
 
 /**
@@ -311,7 +323,7 @@ export const findByTarget: FindByTarget = <T extends HTMLElement | SVGElement = 
  * - Returns parent of text node
  * - Searches all shadow roots
  */
-export const findByText: FindByText = <T extends HTMLElement = HTMLElement>(
+const searchForText: FindByText = <T extends HTMLElement = HTMLElement>(
   searchText: string | RegExp,
   context?: HTMLElement,
 ): Promise<T | undefined> => {
@@ -351,6 +363,14 @@ export const findByText: FindByText = <T extends HTMLElement = HTMLElement>(
   })
 }
 
+export const findByText: FindByText = async <T extends HTMLElement = HTMLElement>(
+  searchText: string | RegExp,
+  context?: HTMLElement,
+) => {
+  const result = await searchForText<T>(searchText, context)
+  return result
+}
+
 /**
  * Dispatches DOM events for testing.
  * Supports native and custom events.
@@ -367,7 +387,7 @@ export const findByText: FindByText = <T extends HTMLElement = HTMLElement>(
  * - composed: true
  * - cancelable: true
  */
-export const fireEvent: FireEvent = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+export const fireEvent: FireEvent = async <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
   element: T,
   eventName: string,
   options: FireEventOptions = {
@@ -383,7 +403,6 @@ export const fireEvent: FireEvent = <T extends HTMLElement | SVGElement = HTMLEl
       return new Event(eventName, options)
     }
   }
-
   return new Promise((resolve) => {
     requestAnimationFrame(() => {
       const event = createEvent()
@@ -414,7 +433,119 @@ export const accessibilityCheck: AccessibilityCheck = async ({ exclude, rules, c
     { reporter: 'no-passes', rules },
   )
   axe.reset()
-  if (violations.length) throw new AccessibilityError(JSON.stringify(violations))
+  if (violations.length) {
+    throw new AccessibilityError(JSON.stringify(violations))
+  }
+}
+
+export const useInteract = (trigger: Trigger) => {
+  const assert: Assert = (detail) => trigger({ type: FIXTURE_EVENTS.assertion, detail })
+  const accessibilityCheck: AccessibilityCheck = async (args: AccessibilityCheckParams) => {
+    const { promise, resolve, reject } = Promise.withResolvers<void>()
+    trigger({
+      type: FIXTURE_EVENTS.find_by_attribute,
+      detail: {
+        args,
+        resolve,
+        reject,
+      },
+    })
+    return await promise
+  }
+  const findByAttribute: FindByAttribute = async <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+    ...args: FindByAttributeArgs
+  ) => {
+    const { promise, resolve, reject } = Promise.withResolvers<T | undefined>()
+    trigger({
+      type: FIXTURE_EVENTS.find_by_attribute,
+      detail: {
+        args,
+        resolve,
+        reject,
+      },
+    })
+    return await promise
+  }
+  const findByText: FindByText = async <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+    ...args: FindByTextArgs
+  ) => {
+    const { promise, resolve, reject } = Promise.withResolvers<T | undefined>()
+    trigger({
+      type: FIXTURE_EVENTS.find_by_text,
+      detail: {
+        args,
+        resolve,
+        reject,
+      },
+    })
+    return await promise
+  }
+  const findByTarget: FindByTarget = async <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+    ...args: FindByTargetArgs
+  ) => {
+    const { promise, resolve, reject } = Promise.withResolvers<T | undefined>()
+    trigger({
+      type: FIXTURE_EVENTS.find_by_text,
+      detail: {
+        args,
+        resolve,
+        reject,
+      },
+    })
+    return await promise
+  }
+  const findByTestId: FindByTestId = async <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
+    ...args: FindByTestIdArgs
+  ) => {
+    const { promise, resolve, reject } = Promise.withResolvers<T | undefined>()
+    trigger({
+      type: FIXTURE_EVENTS.find_by_text,
+      detail: {
+        args,
+        resolve,
+        reject,
+      },
+    })
+    return await promise
+  }
+  const fireEvent: FireEvent = async (...args: FireEventArgs) => {
+    const { promise, resolve, reject } = Promise.withResolvers<void>()
+    trigger({
+      type: FIXTURE_EVENTS.find_by_text,
+      detail: {
+        args,
+        resolve,
+        reject,
+      },
+    })
+    return await promise
+  }
+  const wait = async (args: number) => {
+    const { promise, resolve, reject } = Promise.withResolvers<void>()
+    trigger({
+      type: FIXTURE_EVENTS.find_by_text,
+      detail: {
+        args,
+        resolve,
+        reject,
+      },
+    })
+    return await promise
+  }
+  return async (play: Play) => {
+    await play?.({
+      assert,
+      accessibilityCheck,
+      findByAttribute,
+      findByText,
+      findByTarget,
+      findByTestId,
+      fireEvent,
+      match,
+      throws,
+      wait,
+    })
+  }
 }
 
 /** @internal Type guard to check if an event is a WebSocket CloseEvent. */

@@ -31,7 +31,20 @@ export const DATA_TESTID = 'data-testid'
  * Event types for test fixture communication.
  * Used between story fixture and test runner.
  */
-export const FIXTURE_EVENTS = keyMirror('play', 'run', 'test_fail', 'test_pass')
+export const FIXTURE_EVENTS = keyMirror(
+  'accessibility_check',
+  'assertion',
+  'find_by_attribute',
+  'find_by_target',
+  'find_by_test_id',
+  'find_by_text',
+  'fire_event',
+  'play',
+  'run',
+  'test_fail',
+  'test_pass',
+  'wait',
+)
 
 export const ERROR_TYPES = keyMirror(
   'accessibility_violation',
@@ -40,6 +53,8 @@ export const ERROR_TYPES = keyMirror(
   'test_timeout',
   'unknown_error',
 )
+
+export const SUCCESS_TYPES = keyMirror('passed_assertion', 'passed_accessibility_check')
 
 export const __PLAITED_RUNNER__ = '__PLAITED_RUNNER__'
 export const __PLAITED__ = '__PLAITED__'

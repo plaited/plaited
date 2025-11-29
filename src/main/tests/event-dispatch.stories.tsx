@@ -1,4 +1,4 @@
-import { bElement, useDispatch } from 'plaited'
+import { bElement } from 'plaited'
 import { story } from 'plaited/testing'
 
 const Nested = bElement({
@@ -13,11 +13,10 @@ const Nested = bElement({
     </button>
   ),
   publicEvents: ['add'],
-  bProgram({ host }) {
-    const dispatch = useDispatch(host)
+  bProgram({ emit }) {
     return {
       click() {
-        dispatch({ type: 'append', bubbles: true, composed: true })
+        emit({ type: 'append', bubbles: true, composed: true })
       },
     }
   },

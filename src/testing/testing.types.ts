@@ -1,14 +1,14 @@
 import type axe from 'axe-core'
 import type { FunctionTemplate, HostStylesObject, TemplateObject } from '../main.ts'
 import type { Wait } from '../utils.ts'
-import type { ERROR_TYPES, FIXTURE_EVENTS, STORY_IDENTIFIER, STORY_TYPES } from './testing.constants.ts'
+import type { FIXTURE_EVENTS, STORY_IDENTIFIER, STORY_TYPES } from './testing.constants.ts'
 import type { Match, Throws } from './testing.utils.ts'
 
 /**
  * Parameters for structured test assertions.
  * @template T - Type of values being compared
  */
-type AssertParams<T> = {
+export type AssertParams<T = unknown> = {
   given: string
   should: string
   actual: T
@@ -21,7 +21,7 @@ type AssertParams<T> = {
  */
 export type Assert = <T>(param: AssertParams<T>) => void
 
-type AccessibilityCheckArgs = {
+export type AccessibilityCheckParams = {
   exclude?: axe.ContextProp
   rules?: axe.RuleObject
   config?: Omit<axe.Spec, 'reporter'>
@@ -35,8 +35,13 @@ type AccessibilityCheckArgs = {
  * @returns Promise that resolves if no violations found
  * @throws {AccessibilityError} When violations detected
  */
-export type AccessibilityCheck = (args: AccessibilityCheckArgs) => Promise<void>
+export type AccessibilityCheck = (param: AccessibilityCheckParams) => Promise<void>
 
+export type FindByAttributeArgs = [
+  attributeName: string,
+  attributeValue: string | RegExp,
+  context?: HTMLElement | SVGElement,
+]
 /**
  * Finds elements by attribute value across shadow DOM boundaries.
  *
@@ -47,21 +52,22 @@ export type AccessibilityCheck = (args: AccessibilityCheckArgs) => Promise<void>
  * @returns Promise resolving to found element or undefined
  */
 export type FindByAttribute = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
-  attributeName: string,
-  attributeValue: string | RegExp,
-  context?: HTMLElement | SVGElement,
+  ...args: FindByAttributeArgs
 ) => Promise<T | undefined>
+
+export type FindByTestIdArgs = [testId: string | RegExp, context?: HTMLElement | SVGElement]
 
 export type FindByTestId = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
-  testId: string | RegExp,
-  context?: HTMLElement | SVGElement,
+  ...args: FindByTestIdArgs
 ) => Promise<T | undefined>
+
+export type FindByTargetArgs = [testId: string | RegExp, context?: HTMLElement | SVGElement]
 
 export type FindByTarget = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
-  target: string | RegExp,
-  context?: HTMLElement | SVGElement,
+  ...args: FindByTargetArgs
 ) => Promise<T | undefined>
 
+export type FindByTextArgs = [searchText: string | RegExp, context?: HTMLElement]
 /**
  * Finds elements by text content across shadow DOM boundaries.
  *
@@ -71,7 +77,7 @@ export type FindByTarget = <T extends HTMLElement | SVGElement = HTMLElement | S
  * @returns Promise resolving to found element or undefined
  */
 export type FindByText = {
-  <T extends HTMLElement = HTMLElement>(searchText: string | RegExp, context?: HTMLElement): Promise<T | undefined>
+  <T extends HTMLElement = HTMLElement>(...args: FindByTextArgs): Promise<T | undefined>
   name: string
 }
 
@@ -90,6 +96,11 @@ export type FireEventOptions = {
   detail?: Record<string, unknown>
 }
 
+export type FireEventArgs<T extends HTMLElement | SVGElement = HTMLElement | SVGElement> = [
+  element: T,
+  eventName: string,
+  options?: FireEventOptions,
+]
 /**
  * Dispatches DOM events for testing interactions.
  *
@@ -102,11 +113,7 @@ export type FireEventOptions = {
  * @see {@link FireEventOptions} for configuration
  */
 export type FireEvent = {
-  <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
-    element: T,
-    eventName: string,
-    options?: FireEventOptions,
-  ): Promise<void>
+  <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(...args: FireEventArgs<T>): Promise<void>
   name: string
 }
 
@@ -152,7 +159,6 @@ export type Play = (args: {
   findByText: FindByText
   findByTestId: FindByTestId
   fireEvent: FireEvent
-  hostElement: Element
   match: Match
   throws: Throws
   wait: Wait
@@ -223,12 +229,7 @@ export type RunnerMessage =
       detail: {
         pathname: string
         error: string
-        errorType:
-          | typeof ERROR_TYPES.failed_assertion
-          | typeof ERROR_TYPES.accessibility_violation
-          | typeof ERROR_TYPES.missing_assertion_parameter
-          | typeof ERROR_TYPES.unknown_error
-          | typeof ERROR_TYPES.test_timeout
+        errorType: string
       }
     }
 

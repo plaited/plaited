@@ -101,6 +101,31 @@ import type {
   TemplateObject,
 } from './create-template.types.ts'
 
+/**
+ * @internal
+ * Error thrown when a script tag is used without the 'trusted' property.
+ */
+class UntrustedScriptError extends Error implements Error {
+  override name = 'untrusted_script'
+}
+
+/**
+ * @internal
+ * Error thrown when on* event handler attributes are used.
+ * All events must use the p-trigger declarative event system.
+ */
+class EventHandlerAttributeError extends Error implements Error {
+  override name = 'event_handler_attribute'
+}
+
+/**
+ * @internal
+ * Error thrown when a non-primitive attribute value is provided.
+ */
+class InvalidAttributeTypeError extends Error implements Error {
+  override name = 'invalid_attribute_type'
+}
+
 /** @internal Represents the possible types for a tag in a JSX element: a standard HTML/SVG tag name (string), a custom element tag name (string with hyphen), or a FunctionTemplate component. */
 type Tag = string | CustomElementTag | FunctionTemplate
 
@@ -186,7 +211,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
 
   /** If the tag is script we must explicitly pass trusted */
   if (tag === 'script' && !trusted) {
-    throw new Error("Script tag not allowed unless 'trusted' property set")
+    throw new UntrustedScriptError("Script tag requires 'trusted' property to be set")
   }
   /** Now to create an array to store our node attributes */
   const start = [`<${tag} `]
@@ -216,7 +241,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
      * skip on attempts to provide `on` attributes
      */
     if (key.startsWith('on')) {
-      throw new Error(`Event handler attributes are not allowed:  [${key}]`)
+      throw new EventHandlerAttributeError(`Event handler attributes are not allowed: [${key}]`)
     }
     /** Grab the value from the attribute */
     const value = attributes[key]
@@ -228,7 +253,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     if (value == null || value === '') continue
     if (!PRIMITIVES.has(trueTypeOf(value))) {
       /** P2 typeof attribute is NOT {@type Primitive} then skip and do nothing */
-      throw new Error(`Attributes not declared in PlaitedAttributes must be of type Primitive: ${key} is not primitive`)
+      throw new InvalidAttributeTypeError(`Attribute '${key}' must be a primitive type (string, number, boolean)`)
     }
     /** handle the rest of the attributes */
     start.push(`${htmlEscape(key)}="${trusted ? value : htmlEscape(value)}" `)
