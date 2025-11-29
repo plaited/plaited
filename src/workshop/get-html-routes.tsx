@@ -97,7 +97,7 @@ fixture?.trigger({
 });
 `
 
-const useInclude = ({ fixture, entryPath }: { fixture: TemplateObject; entryPath: string }): Response => {
+const useTemplateInclude = ({ fixture, entryPath }: { fixture: TemplateObject; entryPath: string }): Response => {
   const content = ssr(
     fixture,
     <script
@@ -210,7 +210,7 @@ export const getHTMLRoutes = async ({
         )
         return {
           [route]: errorResponse,
-          [`${route}.include`]: errorResponse,
+          [`${route}.template`]: errorResponse,
         }
       }
     }
@@ -218,6 +218,6 @@ export const getHTMLRoutes = async ({
 
   return {
     [route]: usePage({ fixture, entryPath, exportName, parameters }),
-    [`${route}.include`]: useInclude({ fixture, entryPath }),
+    [`${route}.template`]: useTemplateInclude({ fixture, entryPath }),
   }
 }

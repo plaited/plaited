@@ -3,7 +3,7 @@ import axe from 'axe-core'
 import { P_TARGET } from '../main/create-template.constants.ts'
 import { DelegatedListener, delegates } from '../main/delegated-listener.ts'
 import type { Trigger } from '../main.ts'
-import { deepEqual, isTypeOf, noop, trueTypeOf } from '../utils.ts'
+import { deepEqual, isTypeOf, noop, trueTypeOf, type Wait } from '../utils.ts'
 import {
   DATA_TESTID,
   ERROR_TYPES,
@@ -443,7 +443,7 @@ export const useInteract = (trigger: Trigger) => {
   const accessibilityCheck: AccessibilityCheck = async (args: AccessibilityCheckParams) => {
     const { promise, resolve, reject } = Promise.withResolvers<void>()
     trigger({
-      type: FIXTURE_EVENTS.find_by_attribute,
+      type: FIXTURE_EVENTS.accessibility_check,
       detail: {
         args,
         resolve,
@@ -485,7 +485,7 @@ export const useInteract = (trigger: Trigger) => {
   ) => {
     const { promise, resolve, reject } = Promise.withResolvers<T | undefined>()
     trigger({
-      type: FIXTURE_EVENTS.find_by_text,
+      type: FIXTURE_EVENTS.find_by_target,
       detail: {
         args,
         resolve,
@@ -499,7 +499,7 @@ export const useInteract = (trigger: Trigger) => {
   ) => {
     const { promise, resolve, reject } = Promise.withResolvers<T | undefined>()
     trigger({
-      type: FIXTURE_EVENTS.find_by_text,
+      type: FIXTURE_EVENTS.find_by_test_id,
       detail: {
         args,
         resolve,
@@ -511,7 +511,7 @@ export const useInteract = (trigger: Trigger) => {
   const fireEvent: FireEvent = async (...args: FireEventArgs) => {
     const { promise, resolve, reject } = Promise.withResolvers<void>()
     trigger({
-      type: FIXTURE_EVENTS.find_by_text,
+      type: FIXTURE_EVENTS.fire_event,
       detail: {
         args,
         resolve,
@@ -520,10 +520,10 @@ export const useInteract = (trigger: Trigger) => {
     })
     return await promise
   }
-  const wait = async (args: number) => {
+  const wait: Wait = async (args: number) => {
     const { promise, resolve, reject } = Promise.withResolvers<void>()
     trigger({
-      type: FIXTURE_EVENTS.find_by_text,
+      type: FIXTURE_EVENTS.wait,
       detail: {
         args,
         resolve,

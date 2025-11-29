@@ -82,7 +82,7 @@ export const componentComms = story<typeof ComponentComms>({
       given: 'clicking button',
       should: 'append string to header',
       actual: header?.innerHTML,
-      expected: 'Hello World',
+      expected: 'Hello World!',
     })
     button = await findByAttribute('p-target', 'button')
     assert({
