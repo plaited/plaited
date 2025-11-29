@@ -22,5 +22,5 @@
  * @since 1.0.0
  */
 
-export * from './testing/testing.fixture.tsx'
+export * from './testing/story.ts'
 export * from './testing/testing.types.ts'

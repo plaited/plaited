@@ -21,6 +21,7 @@
  */
 
 import { Glob } from 'bun'
+import { DEFAULT_PLAY_TIMEOUT } from '../testing/testing.constants.ts'
 import type { StoryExport } from '../testing/testing.types.ts'
 import { isStoryExport } from '../testing/testing.utils.ts'
 import type { StoryMetadata } from './workshop.types.ts'
@@ -52,6 +53,7 @@ const toStoryMetadata = ({
     hasArgs: storyExport.args !== undefined,
     hasTemplate: storyExport.template !== undefined,
     hasParameters: storyExport.parameters !== undefined,
+    timeout: storyExport.parameters?.timeout || DEFAULT_PLAY_TIMEOUT,
     flag: storyExport.only === true ? 'only' : storyExport.skip === true ? 'skip' : undefined,
   }
 }

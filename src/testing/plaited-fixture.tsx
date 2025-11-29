@@ -1,4 +1,4 @@
-import { bElement, createHostStyles, type FunctionTemplate } from '../main.ts'
+import { bElement, createHostStyles } from '../main.ts'
 import { wait } from '../utils.ts'
 import {
   __PLAITED__,
@@ -7,8 +7,6 @@ import {
   ERROR_TYPES,
   FIXTURE_EVENTS,
   STORY_FIXTURE,
-  STORY_IDENTIFIER,
-  STORY_TYPES,
   SUCCESS_TYPES,
 } from './testing.constants.ts'
 import type {
@@ -19,13 +17,9 @@ import type {
   FindByTestIdArgs,
   FindByTextArgs,
   FireEventArgs,
-  InteractionExport,
   InteractionStoryObj,
   Play,
   RunnerMessage,
-  SnapshotExport,
-  SnapshotStoryObj,
-  StoryExport,
   StoryObj,
 } from './testing.types.ts'
 import {
@@ -37,6 +31,7 @@ import {
   findByText,
   fireEvent,
   useInteract,
+  useReload,
 } from './testing.utils.ts'
 
 declare global {
@@ -78,7 +73,7 @@ type RejectParams = {
 }
 type Reject = (value: RejectParams | PromiseLike<RejectParams>) => void
 
-const StoryFixture = bElement<{
+export const PlaitedFixture = bElement<{
   [FIXTURE_EVENTS.accessibility_check]: {
     args: AccessibilityCheckParams
     resolve: () => void
@@ -154,7 +149,11 @@ const StoryFixture = bElement<{
       ),
     })
 
-    !window?.__PLAITED_RUNNER__ && inspector.on()
+    if (!window?.__PLAITED_RUNNER__) {
+      inspector.on()
+      const disconnectReload = useReload()
+      trigger.addDisconnectCallback(disconnectReload)
+    }
 
     const timeout = async (time: number) => {
       await wait(time)
@@ -302,58 +301,3 @@ const StoryFixture = bElement<{
     }
   },
 })
-
-const createStoryExport = <T extends FunctionTemplate>(
-  { args, template, ...rest }: StoryObj<T>,
-  flags: { only?: boolean; skip?: boolean } = {},
-): StoryExport<T> => {
-  const tpl = template?.(args || {})
-  const fixture = StoryFixture({ children: tpl })
-  if (rest.play) {
-    return {
-      ...rest,
-      template,
-      args,
-      type: STORY_TYPES.interaction,
-      fixture,
-      play: rest.play,
-      $: STORY_IDENTIFIER,
-      ...flags,
-    } as InteractionExport<T>
-  }
-  return {
-    template,
-    args,
-    description: rest.description,
-    parameters: rest.parameters,
-    type: STORY_TYPES.snapshot,
-    fixture,
-    $: STORY_IDENTIFIER,
-    ...flags,
-  } as SnapshotExport<T>
-}
-
-function storyBase<T extends FunctionTemplate>(args: InteractionStoryObj<T>): InteractionExport<T>
-function storyBase<T extends FunctionTemplate>(args: SnapshotStoryObj<T>): SnapshotExport<T>
-function storyBase<T extends FunctionTemplate>(args: StoryObj<T>): StoryExport<T> {
-  return createStoryExport(args)
-}
-
-function storyOnly<T extends FunctionTemplate>(args: InteractionStoryObj<T>): InteractionExport<T>
-function storyOnly<T extends FunctionTemplate>(args: SnapshotStoryObj<T>): SnapshotExport<T>
-function storyOnly<T extends FunctionTemplate>(args: StoryObj<T>): StoryExport<T> {
-  return createStoryExport(args, { only: true })
-}
-
-function storySkip<T extends FunctionTemplate>(args: InteractionStoryObj<T>): InteractionExport<T>
-function storySkip<T extends FunctionTemplate>(args: SnapshotStoryObj<T>): SnapshotExport<T>
-function storySkip<T extends FunctionTemplate>(args: StoryObj<T>): StoryExport<T> {
-  return createStoryExport(args, { skip: true })
-}
-
-const story = Object.assign(storyBase, {
-  only: storyOnly,
-  skip: storySkip,
-})
-
-export { story }

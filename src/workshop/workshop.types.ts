@@ -40,6 +40,7 @@ export type StoryMetadata = {
   hasTemplate: boolean
   hasParameters: boolean
   flag?: 'only' | 'skip'
+  timeout: number
 }
 
 /**

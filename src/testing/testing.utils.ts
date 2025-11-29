@@ -29,7 +29,6 @@ import type {
   FireEventArgs,
   FireEventOptions,
   Play,
-  RunnerMessage,
   StoryExport,
 } from './testing.types.ts'
 
@@ -574,7 +573,7 @@ const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => 
  * - Handles page reload requests from the runner.
  * - Implements an exponential backoff retry mechanism for specific close codes.
  */
-export const useRunner = () => {
+export const useReload = () => {
   const retryStatusCodes = new Set([1006, 1012, 1013])
   const maxRetries = 3
   let socket: WebSocket | undefined
@@ -620,21 +619,7 @@ export const useRunner = () => {
     },
   }
   ws.connect()
-  const send = (message: RunnerMessage) => {
-    const fallback = () => {
-      send(message)
-      socket?.removeEventListener('open', fallback)
-    }
-    if (socket?.readyState === WebSocket.OPEN) {
-      return socket.send(JSON.stringify(message))
-    }
-    if (!socket) ws.connect()
-    socket?.addEventListener('open', fallback)
-  }
-  send.disconnect = () => {
-    socket?.close()
-  }
-  return send
+  return () => socket?.close()
 }
 
 export const isStoryExport = (obj: unknown): obj is StoryExport => {

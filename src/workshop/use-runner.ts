@@ -160,9 +160,9 @@ export const useRunner = async ({
             })
 
             await page.goto(route)
+            await page.waitForLoadState('networkidle')
 
             const { type, detail } = await page.evaluate(() => {
-              console.log(window.__PLAITED_RUNNER__, window.__PLAITED__)
               return window.__PLAITED__.reporter()
             })
 

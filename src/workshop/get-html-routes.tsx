@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { joinStyles, ssr, type TemplateObject } from '../main.ts'
-import { FIXTURE_EVENTS, RELOAD_PAGE, RUNNER_URL, STORY_FIXTURE } from '../testing/testing.constants.ts'
+import { FIXTURE_EVENTS, STORY_FIXTURE } from '../testing/testing.constants.ts'
 import type { StoryExport } from '../testing.ts'
 import { getPaths } from './get-paths.ts'
 import { zip } from './workshop.utils.ts'
@@ -42,49 +42,6 @@ const PlaitedAttributesSchema = z
     style: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
   })
   .optional()
-
-const createReloadClient = () => `
-// WebSocket hot reload client
-(function() {
-  const WS_URL = '${RUNNER_URL}';
-  const RELOAD_MESSAGE = '${RELOAD_PAGE}';
-  const RETRY_CODES = [1006, 1012, 1013];
-  const MAX_RETRIES = 3;
-
-  let socket;
-  let retryCount = 0;
-
-  function connect() {
-    const wsUrl = location.origin.replace(/^http/, 'ws') + WS_URL;
-    socket = new WebSocket(wsUrl);
-
-    socket.addEventListener('open', () => {
-      retryCount = 0;
-    });
-
-    socket.addEventListener('message', (evt) => {
-      if (evt.data === RELOAD_MESSAGE) {
-        window.location.reload();
-      }
-    });
-
-    socket.addEventListener('error', (evt) => {
-      console.error('[Plaited] WebSocket error:', evt);
-    });
-
-    socket.addEventListener('close', (evt) => {
-      if (RETRY_CODES.includes(evt.code) && retryCount < MAX_RETRIES) {
-        const delay = Math.min(9999, 1000 * Math.pow(2, retryCount));
-        const jitter = Math.floor(Math.random() * delay);
-        setTimeout(connect, jitter);
-        retryCount++;
-      }
-    });
-  }
-
-  connect();
-})();
-`
 
 const createFixtureLoadScript = ({ entryPath, exportName }: { entryPath: string; exportName: string }) => `\n
 import { ${exportName} } from '${entryPath}'
@@ -147,7 +104,6 @@ const usePage = ({
           type='module'
           trusted
         >
-          {createReloadClient()}
           {createFixtureLoadScript({
             exportName,
             entryPath,
