@@ -10,12 +10,15 @@
  * - Manages Shadow DOM lifecycle and element bindings via p-target attributes
  * - Integrates event delegation system with p-trigger attributes
  * - Coordinates behavioral threads with DOM element lifecycle
+ * - Provides emit function for cross-shadow-DOM communication
+ * - Includes inspector for debugging behavioral program state
  *
  * Dependencies:
  * - behavioral.ts: Core behavioral programming engine
  * - create-template.ts: JSX template creation
  * - use-plaited-trigger.ts: Internal trigger system
  * - use-public-trigger.ts: Public event trigger
+ * - use-emit.ts: Custom event emission
  * - delegated-listener.ts: Event delegation
  *
  * Consumers: Application code creating custom elements with behavioral programming

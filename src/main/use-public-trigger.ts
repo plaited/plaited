@@ -33,6 +33,15 @@ import type { Trigger } from './behavioral.types.ts'
 /**
  * @internal
  * Error thrown when attempting to trigger an event not in the public events whitelist.
+ * Thrown by usePublicTrigger when external code attempts to trigger internal events.
+ *
+ * @remarks
+ * - Security error to prevent unauthorized event access
+ * - Error message lists all allowed public events for debugging
+ * - Part of the public event filtering system
+ * - Thrown immediately when validation fails (fail-fast pattern)
+ *
+ * @see {@link usePublicTrigger} for the filtering mechanism
  */
 class UnauthorizedEventError extends Error implements Error {
   override name = 'unauthorized_event'

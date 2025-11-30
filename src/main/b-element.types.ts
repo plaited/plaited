@@ -143,7 +143,37 @@ export type BehavioralTemplate = FunctionTemplate & {
   $: typeof BEHAVIORAL_TEMPLATE_IDENTIFIER
 }
 
+/**
+ * @internal
+ * Callback function for receiving behavioral program state snapshots.
+ * Invoked on each state update when inspector is active.
+ *
+ * @param arg - Snapshot message containing current program state
+ *
+ * @see {@link Inspector} for inspector lifecycle
+ * @see {@link SnapshotMessage} for snapshot structure
+ */
 export type InspectorCallback = (arg: SnapshotMessage) => void
+
+/**
+ * @internal
+ * Debugging inspector for observing behavioral program state.
+ * Provides callbacks to monitor state snapshots during program execution.
+ *
+ * @property assign - Register a callback to receive state snapshots
+ * @property reset - Reset callback back to the default console.table logger
+ * @property on - Start sending snapshots to the assigned callback
+ * @property off - Stop sending snapshots to the assigned callback
+ *
+ * @remarks
+ * - Used for debugging and development tools
+ * - Callbacks receive full program state on each update
+ * - Must call `off()` to prevent unnecessary snapshot generation
+ * - Use `reset()` to restore default console.table logging behavior
+ *
+ * @see {@link BProgramArgs} for usage in bProgram
+ * @see {@link InspectorCallback} for callback signature
+ */
 export type Inspector = {
   assign: (func: InspectorCallback) => void
   reset: () => void
@@ -161,12 +191,15 @@ export type Inspector = {
  * @property internals - ElementInternals API for form association and states
  * @property trigger - Event dispatcher with automatic cleanup
  * @property bThreads - Behavioral thread management
- * @property useSnapshot - State snapshot access
+ * @property inspector - Debugging inspector for observing program state
+ * @property emit - Custom event dispatcher for component communication across shadow DOM
  * @property bThread - Thread creation utility
  * @property bSync - Synchronization point utility
  *
  * @see {@link bElement} for component creation
  * @see {@link BoundElement} for element helper methods
+ * @see {@link useEmit} for emit function details
+ * @see {@link Inspector} for inspector usage
  */
 export type BProgramArgs = {
   $: <E extends Element = Element>(
