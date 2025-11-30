@@ -65,6 +65,7 @@ if (!subcommand) {
   console.log('Usage: plaited <command> [options] [args...]\n')
   console.log('Commands:')
   console.log('  test      Run story tests')
+  console.log('  dev       Start development server with hot reload')
   console.log('  query     Query documentation database')
   console.log('  changelog Generate release changelog\n')
   console.log('Options:')
@@ -74,16 +75,18 @@ if (!subcommand) {
   console.log('Examples:')
   console.log('  bun plaited test')
   console.log('  bun plaited test src/components')
+  console.log('  bun --hot plaited dev')
   console.log('  bun plaited query --help')
   console.log('  bun plaited changelog --version 7.3.0')
   process.exit(1)
 }
 
-const validCommands = ['test', 'query', 'changelog']
+const validCommands = ['test', 'dev', 'query', 'changelog']
 if (!validCommands.includes(subcommand)) {
   console.error(`🚩 Error: Unknown subcommand '${subcommand}'\n`)
   console.log('Available commands:')
   console.log('  test      Run story tests')
+  console.log('  dev       Start development server with hot reload')
   console.log('  query     Query documentation database')
   console.log('  changelog Generate release changelog')
   process.exit(1)
@@ -286,167 +289,276 @@ if (subcommand === 'changelog') {
   process.exit(0)
 }
 
-// Parse and validate port (default to 0 for auto-assignment)
-const port = values.port ? parseInt(values.port, 10) : 3000
-if (values.port && (Number.isNaN(port) || port < 0 || port > 65535)) {
-  throw new Error(`ERROR: Invalid port number: ${values.port}. Must be between 0-65535`)
-}
+// Handle dev command
+if (subcommand === 'dev') {
+  // Parse dev-specific args (port, dir, color-scheme)
+  const port = values.port ? parseInt(values.port, 10) : 3000
+  if (values.port && (Number.isNaN(port) || port < 0 || port > 65535)) {
+    throw new Error(`ERROR: Invalid port number: ${values.port}. Must be between 0-65535`)
+  }
 
-// Parse and validate color scheme (default to 'light')
-const colorScheme = (values['color-scheme'] as 'light' | 'dark' | undefined) ?? 'light'
-if (values['color-scheme'] && colorScheme !== 'light' && colorScheme !== 'dark') {
-  console.error(`🚩 Error: Invalid color-scheme '${values['color-scheme']}'\n`)
-  console.log('Valid values: light, dark')
-  process.exit(1)
-}
+  const cwd = values.dir ? resolve(process.cwd(), values.dir) : process.cwd()
 
-// Determine working directory
-const cwd = values.dir ? resolve(process.cwd(), values.dir) : process.cwd()
+  const colorScheme = (values['color-scheme'] as 'light' | 'dark' | undefined) ?? 'light'
+  if (values['color-scheme'] && colorScheme !== 'light' && colorScheme !== 'dark') {
+    console.error(`🚩 Error: Invalid color-scheme '${values['color-scheme']}'\n`)
+    console.log('Valid values: light, dark')
+    process.exit(1)
+  }
 
-// Check for Playwright installation before proceeding
-console.log('🔍 Checking Playwright installation...')
-const playwrightReady = await checkPlaywright(cwd)
+  // Get paths from positionals
+  const paths = positionals.slice(3)
 
-if (!playwrightReady) {
-  console.error('\n🚩 Cannot run tests without Playwright')
-  process.exit(1)
-}
+  console.log('📋 Configuration:')
+  console.log(`   Working directory: ${cwd}`)
+  console.log(`   Port: ${port}`)
+  if (paths.length > 0) {
+    console.log(`   Paths: ${paths.join(', ')}`)
+  }
 
-console.log('✅ Playwright is ready\n')
+  // Discover story metadata
+  let metadata: StoryMetadata[] | undefined
 
-// Extract paths from positionals (skip bun, script path, and subcommand)
-const paths = positionals.slice(3)
+  if (paths.length > 0) {
+    console.log('\n🔍 Discovering stories from provided paths...')
+    const allMetadata: StoryMetadata[] = []
 
-console.log(`📋 Configuration:`)
-console.log(`   Working directory: ${cwd}`)
-console.log(`   Port: ${port === 0 ? '0 (auto-assign)' : port}`)
-if (paths.length > 0) {
-  console.log(`   Paths: ${paths.join(', ')}`)
-}
+    for (const pathArg of paths) {
+      const absolutePath = resolve(cwd, pathArg)
 
-// Discover stories based on provided paths
-let metadata: StoryMetadata[] | undefined
+      try {
+        const stats = statSync(absolutePath)
 
-if (paths.length > 0) {
-  console.log('\n🔍 Discovering stories from provided paths...')
-  const allMetadata: StoryMetadata[] = []
-
-  for (const pathArg of paths) {
-    const absolutePath = resolve(cwd, pathArg)
-
-    try {
-      const stats = statSync(absolutePath)
-
-      if (stats.isDirectory()) {
-        console.log(`📂 Scanning directory: ${absolutePath}`)
-        const dirMetadata = await discoverStoryMetadata(absolutePath)
-        allMetadata.push(...dirMetadata)
-      } else if (stats.isFile()) {
-        console.log(`📄 Analyzing file: ${absolutePath}`)
-        const fileMetadata = await getStoryMetadata(absolutePath)
-        allMetadata.push(...fileMetadata)
-      } else {
-        console.error(`🚩 Error: Path is neither file nor directory: ${absolutePath}`)
+        if (stats.isDirectory()) {
+          console.log(`📂 Scanning directory: ${absolutePath}`)
+          const dirMetadata = await discoverStoryMetadata(absolutePath)
+          allMetadata.push(...dirMetadata)
+        } else if (stats.isFile()) {
+          console.log(`📄 Analyzing file: ${absolutePath}`)
+          const fileMetadata = await getStoryMetadata(absolutePath)
+          allMetadata.push(...fileMetadata)
+        } else {
+          console.error(`🚩 Error: Path is neither file nor directory: ${absolutePath}`)
+          process.exit(1)
+        }
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+          console.error(`🚩 Error: Path does not exist: ${absolutePath}`)
+        } else {
+          console.error(`🚩 Error processing path ${absolutePath}:`, error)
+        }
         process.exit(1)
       }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        console.error(`🚩 Error: Path does not exist: ${absolutePath}`)
-      } else {
-        console.error(`🚩 Error processing path ${absolutePath}:`, error)
-      }
-      process.exit(1)
     }
+
+    if (allMetadata.length === 0) {
+      console.warn('\n⚠️  No story exports found in provided paths')
+      process.exit(0)
+    }
+
+    metadata = allMetadata
+    console.log(`✅ Discovered ${metadata.length} story exports from ${paths.length} path(s)\n`)
+  } else {
+    console.log('\n🔍 No paths provided - will discover all stories in working directory\n')
   }
 
-  if (allMetadata.length === 0) {
-    console.warn('\n⚠️  No story exports found in provided paths')
+  // Start server with getServer (no Playwright)
+  console.log('🌐 Starting development server...')
+  const { getServer } = await import('./get-server.ts')
+  const { reload, server } = await getServer({ port, cwd })
+
+  const serverUrl = `http://localhost:${server.port}`
+  console.log(`\n🌐 Development server running at ${serverUrl}`)
+  console.log('💡 Open this URL in your browser to view stories\n')
+
+  // Log all story routes by discovering metadata if needed
+  const discoveredMetadata = metadata || (await discoverStoryMetadata(cwd))
+  if (discoveredMetadata.length > 0) {
+    const { getPaths } = await import('./get-paths.ts')
+    for (const story of discoveredMetadata) {
+      const { route } = getPaths({ cwd, filePath: story.filePath, exportName: story.exportName })
+      console.log(`${story.exportName}:`, `${serverUrl}${route}`)
+    }
+    console.log('')
+  }
+
+  // Hot reload setup
+  const isHotMode = process.execArgv.includes('--hot')
+  if (isHotMode) {
+    console.log('🔥 Hot reload mode active - changes will auto-refresh browser')
+    if (import.meta.hot) {
+      import.meta.hot.accept(() => {
+        console.log('🔄 Files changed, reloading browser clients...')
+        reload()
+      })
+    }
+  } else {
+    console.log('💡 Run with "bun --hot plaited dev" to enable hot reload')
+  }
+
+  console.log('   Press Ctrl+C to exit\n')
+
+  // Keep-alive timer (prevents process exit)
+  const keepAlive = setInterval(() => {}, 1000)
+
+  // SIGINT handler for graceful shutdown
+  process.on('SIGINT', async () => {
+    console.log('\n⚠️  Shutting down development server...')
+    clearInterval(keepAlive)
+    await server.stop(true)
+    console.log('✅ Server stopped')
+    process.exit(0)
+  })
+
+  // Keep process alive (no exit - wait for SIGINT or hot reload)
+  // The setInterval keeps the event loop running
+}
+
+// Handle test command
+if (subcommand === 'test') {
+  // Parse and validate port (default to 0 for auto-assignment)
+  const port = values.port ? parseInt(values.port, 10) : 3000
+  if (values.port && (Number.isNaN(port) || port < 0 || port > 65535)) {
+    throw new Error(`ERROR: Invalid port number: ${values.port}. Must be between 0-65535`)
+  }
+
+  // Parse and validate color scheme (default to 'light')
+  const colorScheme = (values['color-scheme'] as 'light' | 'dark' | undefined) ?? 'light'
+  if (values['color-scheme'] && colorScheme !== 'light' && colorScheme !== 'dark') {
+    console.error(`🚩 Error: Invalid color-scheme '${values['color-scheme']}'\n`)
+    console.log('Valid values: light, dark')
+    process.exit(1)
+  }
+
+  // Determine working directory
+  const cwd = values.dir ? resolve(process.cwd(), values.dir) : process.cwd()
+
+  // Check for Playwright installation before proceeding
+  console.log('🔍 Checking Playwright installation...')
+  const playwrightReady = await checkPlaywright(cwd)
+
+  if (!playwrightReady) {
+    console.error('\n🚩 Cannot run tests without Playwright')
+    process.exit(1)
+  }
+
+  console.log('✅ Playwright is ready\n')
+
+  // Extract paths from positionals (skip bun, script path, and subcommand)
+  const paths = positionals.slice(3)
+
+  console.log(`📋 Configuration:`)
+  console.log(`   Working directory: ${cwd}`)
+  console.log(`   Port: ${port === 0 ? '0 (auto-assign)' : port}`)
+  if (paths.length > 0) {
+    console.log(`   Paths: ${paths.join(', ')}`)
+  }
+
+  // Discover stories based on provided paths
+  let metadata: StoryMetadata[] | undefined
+
+  if (paths.length > 0) {
+    console.log('\n🔍 Discovering stories from provided paths...')
+    const allMetadata: StoryMetadata[] = []
+
+    for (const pathArg of paths) {
+      const absolutePath = resolve(cwd, pathArg)
+
+      try {
+        const stats = statSync(absolutePath)
+
+        if (stats.isDirectory()) {
+          console.log(`📂 Scanning directory: ${absolutePath}`)
+          const dirMetadata = await discoverStoryMetadata(absolutePath)
+          allMetadata.push(...dirMetadata)
+        } else if (stats.isFile()) {
+          console.log(`📄 Analyzing file: ${absolutePath}`)
+          const fileMetadata = await getStoryMetadata(absolutePath)
+          allMetadata.push(...fileMetadata)
+        } else {
+          console.error(`🚩 Error: Path is neither file nor directory: ${absolutePath}`)
+          process.exit(1)
+        }
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+          console.error(`🚩 Error: Path does not exist: ${absolutePath}`)
+        } else {
+          console.error(`🚩 Error processing path ${absolutePath}:`, error)
+        }
+        process.exit(1)
+      }
+    }
+
+    if (allMetadata.length === 0) {
+      console.warn('\n⚠️  No story exports found in provided paths')
+      process.exit(0)
+    }
+
+    metadata = allMetadata
+    console.log(`✅ Discovered ${metadata.length} story exports from ${paths.length} path(s)\n`)
+  } else {
+    console.log('\n🔍 No paths provided - will discover all stories in working directory\n')
+  }
+
+  // Launch browser
+  console.log('🌐 Launching browser...')
+  const { chromium } = await import('playwright')
+  const browser = await chromium.launch()
+
+  // Create results promise with resolver
+  const { promise: resultsPromise, resolve: reportResults } = Promise.withResolvers<TestStoriesOutput>()
+
+  // Initialize test runner (this creates and starts the server)
+  console.log('🔧 Initializing test runner...')
+  const runner = await useRunner({
+    browser,
+    port,
+    reporter: reportResults,
+    cwd,
+  })
+
+  // Cleanup handler
+  const cleanup = async () => {
+    console.log('\n🧹 Cleaning up...')
+    await runner.end()
+    await browser.close()
+  }
+
+  // Handle SIGINT (Ctrl+C)
+  process.on('SIGINT', async () => {
+    console.log('\n⚠️  Interrupted by user')
+    await cleanup()
+    process.exit(130) // Standard exit code for SIGINT
+  })
+
+  // Run tests
+  console.log('🚀 Running tests...\n')
+  await runner.run({
+    metadata,
+    colorScheme,
+  })
+
+  // Wait for results
+  const results = await resultsPromise
+
+  // Print summary
+  console.log(`\n${'='.repeat(50)}`)
+  console.log('📊 Test Summary')
+  console.log('='.repeat(50))
+  console.log(`Total:  ${results.total}`)
+  console.log(`Passed: ${results.passed} ✅`)
+  console.log(`Failed: ${results.failed} 🚩`)
+  console.log('='.repeat(50))
+
+  // Cleanup and exit
+  await cleanup()
+
+  // Exit with appropriate code
+  if (results.failed > 0) {
+    console.log('\n🚩 Tests failed')
+    process.exit(1)
+  } else {
+    console.log('\n✅ All tests passed')
     process.exit(0)
   }
-
-  metadata = allMetadata
-  console.log(`✅ Discovered ${metadata.length} story exports from ${paths.length} path(s)\n`)
-} else {
-  console.log('\n🔍 No paths provided - will discover all stories in working directory\n')
-}
-
-// Launch browser
-console.log('🌐 Launching browser...')
-const { chromium } = await import('playwright')
-const browser = await chromium.launch()
-
-// Create results promise with resolver
-const { promise: resultsPromise, resolve: reportResults } = Promise.withResolvers<TestStoriesOutput>()
-
-// Initialize test runner (this creates and starts the server)
-console.log('🔧 Initializing test runner...')
-const runner = await useRunner({
-  browser,
-  port,
-  reporter: reportResults,
-  cwd,
-})
-
-// Cleanup handler
-const cleanup = async () => {
-  console.log('\n🧹 Cleaning up...')
-  await runner.end()
-  await browser.close()
-}
-
-// Handle SIGINT (Ctrl+C)
-process.on('SIGINT', async () => {
-  console.log('\n⚠️  Interrupted by user')
-  await cleanup()
-  process.exit(130) // Standard exit code for SIGINT
-})
-
-// Detect Bun --hot mode
-const isHotMode = process.execArgv.includes('--hot')
-
-// Set up Bun hot reload integration
-if (isHotMode) {
-  console.log('🔥 Hot reload mode active')
-
-  if (import.meta.hot) {
-    import.meta.hot.accept(() => {
-      console.log('\n🔄 Module reloaded, notifying clients...')
-      runner.reload()
-    })
-  }
-
-  console.log('💡 Server will auto-reload when files change\n')
-} else {
-  console.log('💡 Run with "bun --hot plaited test" to enable hot reload\n')
-}
-
-// Run tests
-console.log('🚀 Running tests...\n')
-await runner.run({
-  metadata,
-  colorScheme,
-})
-
-// Wait for results
-const results = await resultsPromise
-
-// Print summary
-console.log(`\n${'='.repeat(50)}`)
-console.log('📊 Test Summary')
-console.log('='.repeat(50))
-console.log(`Total:  ${results.total}`)
-console.log(`Passed: ${results.passed} ✅`)
-console.log(`Failed: ${results.failed} 🚩`)
-console.log('='.repeat(50))
-
-// Cleanup and exit
-await cleanup()
-
-// Exit with appropriate code
-if (results.failed > 0) {
-  console.log('\n🚩 Tests failed')
-  process.exit(1)
-} else {
-  console.log('\n✅ All tests passed')
-  process.exit(0)
 }

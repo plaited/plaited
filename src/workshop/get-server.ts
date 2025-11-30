@@ -113,37 +113,6 @@ export const getServer = async ({ cwd, port }: { cwd: string; port: number }) =>
     },
   })
 
-  // Graceful shutdown handlers
-  process.on('SIGINT', async () => {
-    console.log('\n...stopping server')
-    process.exit()
-  })
-
-  process.on('SIGTERM', async () => {
-    console.log('\n...stopping server')
-    process.exit()
-  })
-
-  process.on('SIGHUP', async () => {
-    console.log('\n...stopping server')
-    process.exit()
-  })
-
-  process.on('uncaughtException', (error) => {
-    console.error('Server uncaughtException:', error)
-    process.exit(1)
-  })
-
-  process.on('unhandledRejection', (reason, promise) => {
-    console.error('Server unhandled rejection:', { promise, reason })
-    process.exit(1)
-  })
-
-  process.on('exit', async () => {
-    await server?.stop(true)
-    console.log('Server stopped')
-  })
-
   // Hot reload: Broadcast to all connected clients
   const reload = () => {
     server.publish(RELOAD_TOPIC, RELOAD_PAGE)
