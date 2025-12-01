@@ -29,13 +29,13 @@ test('getRoutes: HTML routes map story exports', async () => {
     expect(route.endsWith('.js')).toBe(false)
   })
 
-  // Should have both main routes and .include routes
-  const mainRoutes = htmlRoutes.filter((k) => !k.endsWith('.include'))
-  const includeRoutes = htmlRoutes.filter((k) => k.endsWith('.include'))
+  // Should have both main routes and .template routes
+  const mainRoutes = htmlRoutes.filter((k) => !k.endsWith('.template'))
+  const templateRoutes = htmlRoutes.filter((k) => k.endsWith('.template'))
 
   expect(mainRoutes.length).toBeGreaterThan(0)
-  expect(includeRoutes.length).toBeGreaterThan(0)
-  expect(mainRoutes.length).toBe(includeRoutes.length)
+  expect(templateRoutes.length).toBeGreaterThan(0)
+  expect(mainRoutes.length).toBe(templateRoutes.length)
 })
 
 test('getRoutes: entry routes are static Response objects', async () => {

@@ -13,10 +13,10 @@ test('discoverStoryMetadata: discovers and classifies stories correctly', async 
   // Should find 4 stories (filtering out default export and non-story exports)
   expect(metadata.length).toBe(4)
 
-  // Each metadata object should have exactly 8 properties
+  // Each metadata object should have exactly 9 properties
   for (const story of metadata) {
     const keys = Object.keys(story)
-    expect(keys.length).toBe(8)
+    expect(keys.length).toBe(9)
     expect(keys).toEqual([
       'exportName',
       'filePath',
@@ -25,6 +25,7 @@ test('discoverStoryMetadata: discovers and classifies stories correctly', async 
       'hasArgs',
       'hasTemplate',
       'hasParameters',
+      'timeout',
       'flag',
     ])
   }
@@ -43,6 +44,7 @@ test('discoverStoryMetadata: discovers and classifies stories correctly', async 
     hasArgs: true,
     hasTemplate: true,
     hasParameters: false,
+    timeout: 5000,
     flag: undefined,
   } satisfies StoryMetadata)
 
@@ -55,6 +57,7 @@ test('discoverStoryMetadata: discovers and classifies stories correctly', async 
     hasArgs: false,
     hasTemplate: true,
     hasParameters: false,
+    timeout: 5000,
     flag: undefined,
   } satisfies StoryMetadata)
 
@@ -67,6 +70,7 @@ test('discoverStoryMetadata: discovers and classifies stories correctly', async 
     hasArgs: true,
     hasTemplate: true,
     hasParameters: true,
+    timeout: 5000,
     flag: undefined,
   } satisfies StoryMetadata)
 
@@ -79,6 +83,7 @@ test('discoverStoryMetadata: discovers and classifies stories correctly', async 
     hasArgs: false,
     hasTemplate: true,
     hasParameters: true,
+    timeout: 10000,
     flag: undefined,
   } satisfies StoryMetadata)
 })

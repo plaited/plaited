@@ -5,20 +5,20 @@ import { getHTMLRoutes } from '../get-html-routes.tsx'
 // Path to test fixtures
 const fixturesRoot = join(import.meta.dir, 'fixtures')
 
-test('getHTMLRoutes: returns object with main route and include route', async () => {
+test('getHTMLRoutes: returns object with main route and template route', async () => {
   const routes = await getHTMLRoutes({
     exportName: 'basicStory',
     filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
     cwd: fixturesRoot,
   })
 
-  // Should have both main route and include route
+  // Should have both main route and template route
   expect(routes['/stories/mixed-stories--basic-story']).toBeDefined()
-  expect(routes['/stories/mixed-stories--basic-story.include']).toBeDefined()
+  expect(routes['/stories/mixed-stories--basic-story.template']).toBeDefined()
 
   // Both should be Response objects
   expect(routes['/stories/mixed-stories--basic-story']).toBeInstanceOf(Response)
-  expect(routes['/stories/mixed-stories--basic-story.include']).toBeInstanceOf(Response)
+  expect(routes['/stories/mixed-stories--basic-story.template']).toBeInstanceOf(Response)
 })
 
 test('getHTMLRoutes: converts PascalCase export names to kebab-case', async () => {
@@ -41,23 +41,23 @@ test('getHTMLRoutes: main route path follows correct pattern', async () => {
   })
 
   const keys = Object.keys(routes)
-  const mainRoute = keys.find((k) => !k.includes('.include'))
+  const mainRoute = keys.find((k) => !k.includes('.template'))
 
   expect(mainRoute).toBeDefined()
   expect(mainRoute?.startsWith('/')).toBe(true)
   expect(mainRoute).toContain('basic-story')
 })
 
-test('getHTMLRoutes: include route has .include suffix', async () => {
+test('getHTMLRoutes: template route has .template suffix', async () => {
   const routes = await getHTMLRoutes({
     exportName: 'basicStory',
     filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
     cwd: fixturesRoot,
   })
 
-  const includeRoute = Object.keys(routes).find((k) => k.includes('.include'))
-  expect(includeRoute).toBeDefined()
-  expect(includeRoute?.endsWith('.include')).toBe(true)
+  const templateRoute = Object.keys(routes).find((k) => k.includes('.template'))
+  expect(templateRoute).toBeDefined()
+  expect(templateRoute?.endsWith('.template')).toBe(true)
 })
 
 test('getHTMLRoutes: main route includes DOCTYPE declaration', async () => {
@@ -120,7 +120,7 @@ test('getHTMLRoutes: main route includes entry script tag', async () => {
   expect(content).toContain("import { basicStory } from '/stories/mixed-stories.stories.js'")
 })
 
-test('getHTMLRoutes: main route includes reload client script', async () => {
+test('getHTMLRoutes: main route includes fixture load script', async () => {
   const routes = await getHTMLRoutes({
     exportName: 'basicStory',
     filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
@@ -130,20 +130,20 @@ test('getHTMLRoutes: main route includes reload client script', async () => {
   const mainRoute = routes['/stories/mixed-stories--basic-story']
   const content = mainRoute ? await mainRoute.text() : ''
 
-  // Should contain WebSocket reload client code
-  expect(content).toContain('WebSocket')
-  expect(content).toContain('RELOAD_MESSAGE')
+  // Should contain fixture load script that triggers run event
+  expect(content).toContain('customElements.whenDefined')
+  expect(content).toContain("type: 'run'")
 })
 
-test('getHTMLRoutes: include route contains only fixture and entry script', async () => {
+test('getHTMLRoutes: template route contains only fixture and entry script', async () => {
   const routes = await getHTMLRoutes({
     exportName: 'basicStory',
     filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
     cwd: fixturesRoot,
   })
 
-  const includeRoute = routes['/stories/mixed-stories--basic-story.include']
-  const content = await includeRoute?.text()
+  const templateRoute = routes['/stories/mixed-stories--basic-story.template']
+  const content = await templateRoute?.text()
 
   // Should NOT have DOCTYPE or full HTML structure
   expect(content).not.toContain('<!DOCTYPE html>')
@@ -195,7 +195,7 @@ test('getHTMLRoutes: works when no parameters provided', async () => {
   })
 
   expect(routes['/stories/mixed-stories--basic-story']).toBeDefined()
-  expect(routes['/stories/mixed-stories--basic-story.include']).toBeDefined()
+  expect(routes['/stories/mixed-stories--basic-story.template']).toBeDefined()
 })
 
 test('getHTMLRoutes: accepts story with valid args', async () => {
@@ -207,7 +207,7 @@ test('getHTMLRoutes: accepts story with valid args', async () => {
 
   // Should successfully create routes
   expect(routes['/stories/mixed-stories--basic-story']).toBeDefined()
-  expect(routes['/stories/mixed-stories--basic-story.include']).toBeDefined()
+  expect(routes['/stories/mixed-stories--basic-story.template']).toBeDefined()
 
   // Routes should be valid Response objects
   const mainRoute = routes['/stories/mixed-stories--basic-story']
@@ -223,7 +223,7 @@ test('getHTMLRoutes: accepts story with no args', async () => {
   })
 
   expect(routes['/stories/mixed-stories--story-with-params']).toBeDefined()
-  expect(routes['/stories/mixed-stories--story-with-params.include']).toBeDefined()
+  expect(routes['/stories/mixed-stories--story-with-params.template']).toBeDefined()
 })
 
 test('getHTMLRoutes: main route has correct content-type', async () => {
@@ -240,15 +240,15 @@ test('getHTMLRoutes: main route has correct content-type', async () => {
   expect(contentType).toContain('text/html')
 })
 
-test('getHTMLRoutes: include route has correct content-type', async () => {
+test('getHTMLRoutes: template route has correct content-type', async () => {
   const routes = await getHTMLRoutes({
     exportName: 'basicStory',
     filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
     cwd: fixturesRoot,
   })
 
-  const includeRoute = routes['/stories/mixed-stories--basic-story.include']
-  const contentType = includeRoute?.headers.get('content-type')
+  const templateRoute = routes['/stories/mixed-stories--basic-story.template']
+  const contentType = templateRoute?.headers.get('content-type')
 
   expect(contentType).toBeTruthy()
   expect(contentType).toContain('text/html')
@@ -262,11 +262,11 @@ test('getHTMLRoutes: responses are not compressed by default', async () => {
   })
 
   const mainRoute = routes['/stories/mixed-stories--basic-story']
-  const includeRoute = routes['/stories/mixed-stories--basic-story.include']
+  const templateRoute = routes['/stories/mixed-stories--basic-story.template']
 
   // Should NOT have gzip content-encoding header
   expect(mainRoute?.headers.get('content-encoding')).toBeNull()
-  expect(includeRoute?.headers.get('content-encoding')).toBeNull()
+  expect(templateRoute?.headers.get('content-encoding')).toBeNull()
 })
 
 test('getHTMLRoutes: responses can be read as text', async () => {
@@ -277,10 +277,10 @@ test('getHTMLRoutes: responses can be read as text', async () => {
   })
 
   const mainRoute = routes['/stories/mixed-stories--basic-story']
-  const includeRoute = routes['/stories/mixed-stories--basic-story.include']
+  const templateRoute = routes['/stories/mixed-stories--basic-story.template']
 
   const mainContent = mainRoute ? await mainRoute.text() : ''
-  const includeContent = includeRoute ? await includeRoute.text() : ''
+  const includeContent = templateRoute ? await templateRoute.text() : ''
 
   expect(typeof mainContent).toBe('string')
   expect(typeof includeContent).toBe('string')
@@ -297,7 +297,7 @@ test('getHTMLRoutes: handles nested directory story files', async () => {
 
   // Should preserve directory structure
   expect(routes['/nested/nested-story--nested-snapshot']).toBeDefined()
-  expect(routes['/nested/nested-story--nested-snapshot.include']).toBeDefined()
+  expect(routes['/nested/nested-story--nested-snapshot.template']).toBeDefined()
 })
 
 test('getHTMLRoutes: handles deeply nested story files', async () => {
@@ -309,7 +309,7 @@ test('getHTMLRoutes: handles deeply nested story files', async () => {
 
   // Should preserve full directory path
   expect(routes['/nested/deep/deeply-nested--deeply-nested-story']).toBeDefined()
-  expect(routes['/nested/deep/deeply-nested--deeply-nested-story.include']).toBeDefined()
+  expect(routes['/nested/deep/deeply-nested--deeply-nested-story.template']).toBeDefined()
 })
 
 test('getHTMLRoutes: all paths start with forward slash', async () => {
@@ -333,7 +333,7 @@ test('getHTMLRoutes: works with interaction story type', async () => {
   })
 
   expect(routes['/stories/mixed-stories--interaction-story']).toBeDefined()
-  expect(routes['/stories/mixed-stories--interaction-story.include']).toBeDefined()
+  expect(routes['/stories/mixed-stories--interaction-story.template']).toBeDefined()
 })
 
 test('getHTMLRoutes: works with snapshot story type', async () => {
@@ -344,7 +344,7 @@ test('getHTMLRoutes: works with snapshot story type', async () => {
   })
 
   expect(routes['/stories/mixed-stories--basic-story']).toBeDefined()
-  expect(routes['/stories/mixed-stories--basic-story.include']).toBeDefined()
+  expect(routes['/stories/mixed-stories--basic-story.template']).toBeDefined()
 })
 
 test('getHTMLRoutes: handles export names with multiple capital letters', async () => {
@@ -356,7 +356,7 @@ test('getHTMLRoutes: handles export names with multiple capital letters', async 
 
   // Should convert to kebab-case correctly
   expect(routes['/stories/mixed-stories--story-with-all-props']).toBeDefined()
-  expect(routes['/stories/mixed-stories--story-with-all-props.include']).toBeDefined()
+  expect(routes['/stories/mixed-stories--story-with-all-props.template']).toBeDefined()
 })
 
 test('getHTMLRoutes: caches imported modules', async () => {
@@ -413,10 +413,10 @@ test('getHTMLRoutes: route paths match between main and include', async () => {
   })
 
   const keys = Object.keys(routes)
-  const mainRoute = keys.find((k) => !k.includes('.include'))
-  const includeRoute = keys.find((k) => k.includes('.include'))
+  const mainRoute = keys.find((k) => !k.includes('.template'))
+  const templateRoute = keys.find((k) => k.includes('.template'))
 
   expect(mainRoute).toBeDefined()
-  expect(includeRoute).toBeDefined()
-  expect(includeRoute).toBe(`${mainRoute}.include`)
+  expect(templateRoute).toBeDefined()
+  expect(templateRoute).toBe(`${mainRoute}.template`)
 })

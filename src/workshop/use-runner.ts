@@ -31,6 +31,7 @@
  * - Server lifecycle tied to runner lifecycle
  */
 
+import { availableParallelism, totalmem } from 'node:os'
 import { basename } from 'node:path'
 import type { Browser, BrowserContextOptions } from 'playwright'
 import { FIXTURE_EVENTS } from '../testing/testing.constants.ts'
@@ -60,6 +61,117 @@ export type TestStoriesOutput = {
   results: TestResult[]
 }
 
+const getAvailableMemory = () => {
+  const memoryBytes = totalmem()
+  const MEGABYTE = 1024 * 1024
+  const memoryMB = memoryBytes / MEGABYTE
+  return Math.round(memoryMB)
+}
+
+const formatErrorType = (errorType: string) =>
+  `🚩 ${errorType
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')}`
+
+const splitIntoBatches = <T>(items: T[], batchCount: number): T[][] => {
+  const batches: T[][] = Array.from({ length: batchCount }, () => [])
+
+  items.forEach((item, index) => {
+    const batchIndex = index % batchCount
+    batches[batchIndex]!.push(item)
+  })
+
+  return batches
+}
+
+const runBatchedStories = async ({
+  stories,
+  browser,
+  videoConfig,
+  colorScheme,
+  server,
+  cwd,
+  failed,
+  passed,
+  batchCount,
+}: {
+  stories: StoryMetadata[]
+  browser: Browser
+  videoConfig: BrowserContextOptions['recordVideo']
+  colorScheme: 'light' | 'dark'
+  server: Bun.Server<undefined>
+  cwd: string
+  failed: TestResult[]
+  passed: TestResult[]
+  batchCount: number
+}) => {
+  const batches = splitIntoBatches(stories, batchCount)
+  return Promise.all(
+    batches.map(async (stories) => {
+      for (const story of stories) {
+        const context = await browser.newContext({
+          recordVideo: videoConfig,
+          colorScheme,
+          baseURL: server.url.href,
+        })
+        const page = await context.newPage()
+
+        try {
+          await page.addInitScript(() => {
+            window.__PLAITED_RUNNER__ = true
+          })
+          const { route } = getPaths({
+            cwd,
+            exportName: story.exportName,
+            filePath: story.filePath,
+          })
+
+          const storyTimeout = story.timeout
+          const pageLoadTimeout = Math.max(30000, storyTimeout * 3)
+          // Fixture should initialize quickly - use fixed 10 second timeout
+          const fixtureInitTimeout = 10000
+
+          await page.goto(route, { timeout: pageLoadTimeout })
+
+          await page.waitForFunction(() => window.__PLAITED__ !== undefined, { timeout: fixtureInitTimeout })
+
+          const { type, detail } = await page.evaluate(() => {
+            return window.__PLAITED__.reporter()
+          })
+
+          if (type === FIXTURE_EVENTS.test_pass) {
+            console.log(`🟢 ${basename(route)}`)
+            passed.push({
+              story,
+              passed: true,
+            })
+          } else {
+            console.log(`🔴 ${basename(route)} (${formatErrorType(detail.errorType)})`)
+            failed.push({
+              story,
+              passed: false,
+              error: detail,
+            })
+          }
+        } catch (error) {
+          console.error(`Error executing story ${story.exportName}:`, error)
+          failed.push({
+            story,
+            passed: false,
+            error: {
+              errorType: 'TEST_EXECUTION_ERROR',
+              error: error instanceof Error ? error.message : String(error),
+            },
+          })
+        } finally {
+          await context.close()
+        }
+      }
+    }),
+  )
+}
+
 /**
  * Creates a test runner for running Plaited story tests.
  * Manages server lifecycle, test execution, and result reporting.
@@ -85,22 +197,16 @@ export const useRunner = async ({
   browser,
   port,
   recordVideo,
-  reporter,
   cwd,
 }: {
   browser: Browser
   port: number
   recordVideo?: BrowserContextOptions['recordVideo']
-  reporter: (results: TestStoriesOutput) => void
   cwd: string
 }) => {
   // Create server at initialization
   const { reload, server } = await getServer({ cwd, port })
-  const formatErrorType = (errorType: string) =>
-    `🚩 ${errorType
-      .split('_')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ')}`
+
   return {
     async run(detail?: RunTestsDetail) {
       // Clear results for this test run
@@ -120,13 +226,12 @@ export const useRunner = async ({
 
       if (!stories || stories.length === 0) {
         console.warn('⚠️  No story exports found')
-        reporter({
+        return {
           passed: 0,
           failed: 0,
           total: 0,
           results: [],
-        })
-        return
+        }
       }
 
       console.log(`📄 Found ${stories.length} story exports`)
@@ -141,60 +246,27 @@ export const useRunner = async ({
         : undefined
 
       try {
-        // Run all stories in parallel - let Playwright manage resources
-        await Promise.all(
-          stories.map(async (story) => {
-            const context = await browser.newContext({
-              recordVideo: videoConfig,
-              colorScheme,
-              baseURL: server.url.href,
-            })
-            const page = await context.newPage()
-            await page.addInitScript(() => {
-              window.__PLAITED_RUNNER__ = true
-            })
-            const { route } = getPaths({
-              cwd,
-              exportName: story.exportName,
-              filePath: story.filePath,
-            })
+        const availableMemory = getAvailableMemory()
+        const batchCount = Math.floor(availableMemory / 100)
+        const batches = splitIntoBatches(stories, availableParallelism())
 
-            await page.goto(route)
-            await page.waitForLoadState('networkidle')
-
-            const { type, detail } = await page.evaluate(() => {
-              return window.__PLAITED__.reporter()
-            })
-
-            if (type === FIXTURE_EVENTS.test_pass) {
-              console.log(`${story.exportName}:`, `${server.url.href.replace(/\/$/, '')}${route}`)
-              passed.push({
-                story,
-                passed: true,
-              })
-            } else {
-              console.log(`🚩 ${basename(route)} (${formatErrorType(detail.errorType)})`)
-              failed.push({
-                story,
-                passed: false,
-                error: detail,
-              })
-            }
-            await context.close()
-          }),
-        )
+        // Run batches sequentially to avoid resource contention
+        for (const batchStories of batches) {
+          await runBatchedStories({
+            stories: batchStories,
+            browser,
+            videoConfig,
+            colorScheme,
+            server,
+            cwd,
+            failed,
+            passed,
+            batchCount,
+          })
+        }
       } catch (error) {
         console.error('Error during test execution:', error)
       }
-
-      // Report results
-      const results = [...passed, ...failed]
-      reporter({
-        passed: passed.length,
-        failed: failed.length,
-        total: results.length,
-        results,
-      })
 
       // Print summary with detailed failures
       if (failed.length > 0) {
@@ -230,6 +302,15 @@ export const useRunner = async ({
 
       console.log('\nPass:', passed.length)
       console.log('Fail:', failed.length)
+
+      // Report results
+      const results = [...passed, ...failed]
+      return {
+        passed: passed.length,
+        failed: failed.length,
+        total: results.length,
+        results,
+      }
     },
     reload,
     async end() {

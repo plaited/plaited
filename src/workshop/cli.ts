@@ -22,7 +22,7 @@ import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 import { checkPlaywright } from './check-playwright.ts'
 import { discoverStoryMetadata, getStoryMetadata } from './collect-stories.ts'
-import { type TestStoriesOutput, useRunner } from './use-runner.ts'
+import { useRunner } from './use-runner.ts'
 import type { StoryMetadata } from './workshop.types.ts'
 
 console.log('🎭 Starting Plaited workshop test runner...')
@@ -417,7 +417,7 @@ if (subcommand === 'dev') {
 // Handle test command
 if (subcommand === 'test') {
   // Parse and validate port (default to 0 for auto-assignment)
-  const port = values.port ? parseInt(values.port, 10) : 3000
+  const port = values.port ? parseInt(values.port, 10) : 4000
   if (values.port && (Number.isNaN(port) || port < 0 || port > 65535)) {
     throw new Error(`ERROR: Invalid port number: ${values.port}. Must be between 0-65535`)
   }
@@ -505,15 +505,11 @@ if (subcommand === 'test') {
   const { chromium } = await import('playwright')
   const browser = await chromium.launch()
 
-  // Create results promise with resolver
-  const { promise: resultsPromise, resolve: reportResults } = Promise.withResolvers<TestStoriesOutput>()
-
   // Initialize test runner (this creates and starts the server)
   console.log('🔧 Initializing test runner...')
   const runner = await useRunner({
     browser,
     port,
-    reporter: reportResults,
     cwd,
   })
 
@@ -533,13 +529,12 @@ if (subcommand === 'test') {
 
   // Run tests
   console.log('🚀 Running tests...\n')
-  await runner.run({
+
+  // Wait for results
+  const results = await runner.run({
     metadata,
     colorScheme,
   })
-
-  // Wait for results
-  const results = await resultsPromise
 
   // Print summary
   console.log(`\n${'='.repeat(50)}`)
