@@ -273,3 +273,29 @@ export type StoryExport<T extends FunctionTemplate = FunctionTemplate> = Interac
  *
  * @see {@link StoryExport} for base story type
  */
+
+/**
+ * Detailed information about an element clicked through the mask overlay.
+ * Used for debugging and element inspection during interactive testing.
+ *
+ * @property x - Horizontal click coordinate (clientX)
+ * @property y - Vertical click coordinate (clientY)
+ * @property tagName - HTML tag name of the clicked element
+ * @property id - Element ID or null if not present
+ * @property className - Element class attribute or null if not present
+ * @property attributes - Array of all element attributes
+ * @property textContent - Element text content or null
+ * @property shadowPath - Array of elements traversed through shadow DOM boundaries
+ *
+ * @see {@link MASK_EVENTS.click} for the event that carries this detail
+ */
+export type MaskClickDetail = {
+  x: number
+  y: number
+  tagName: string
+  id: string | null
+  className: string | null
+  attributes: Array<{ name: string; value: string }>
+  textContent: string | null
+  shadowPath: Element[]
+}

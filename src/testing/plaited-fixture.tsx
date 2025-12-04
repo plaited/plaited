@@ -130,7 +130,9 @@ export const PlaitedFixture = bElement<{
   shadowDom: (
     <slot
       {...createHostStyles({
-        display: 'contents',
+        display: 'block',
+        width: '100%',
+        height: '100%',
       })}
     />
   ),

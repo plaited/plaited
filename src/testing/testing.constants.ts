@@ -62,3 +62,11 @@ export const __PLAITED__ = '__PLAITED__'
 export const STORY_TYPES = keyMirror('snapshot', 'interaction')
 
 export const STORY_IDENTIFIER = '🍬'
+
+/**
+ * @internal
+ * Event types for mask and header communication.
+ */
+export const MASK_EVENTS = keyMirror('click', 'toggle')
+
+export const HEADER_EVENTS = keyMirror('toggle_mask')
