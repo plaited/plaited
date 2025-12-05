@@ -18,20 +18,16 @@ const headerStyles = createStyles({
     borderRadius: '4px',
     cursor: 'pointer',
     transition: 'background-color 0.2s',
-    backgroundColor: 'white',
-    color: 'black',
-
-    ':hover': {
-      backgroundColor: '#f3f4f6',
+    backgroundColor: {
+      $default: 'white',
+      ':hover': 'rgb(0, 123, 255)',
+      ':active': 'rgb(0, 123, 255)',
+      '[data-active="true"]': 'rgb(0, 123, 255)',
     },
-    ':active': {
-      backgroundColor: 'rgb(0, 123, 255)',
-      color: 'white',
-    },
-  },
-  buttonActive: {
-    backgroundColor: 'rgb(0, 123, 255)',
-    color: 'white',
+    color: {
+      $default: 'black',
+      ':active': 'white',
+    }
   },
 })
 
@@ -63,40 +59,31 @@ const headerHostStyles = createHostStyles({
  */
 export const PlaitedHeader: FT = bElement({
   tag: 'plaited-header',
+  hostStyles: headerHostStyles,
   shadowDom: (
     <>
       <div {...headerStyles.container}>
         <button
           type='button'
           p-target='toggle-button'
-          p-trigger={{ click: 'toggle' }}
+          p-trigger={{ click: 'toggle_mask' }}
           {...headerStyles.button}
         >
           Toggle Mask
         </button>
         <slot />
       </div>
-      {headerHostStyles}
     </>
   ),
-  bProgram({ $, trigger }) {
-    const active = useSignal(false)
-
+  bProgram({ $, trigger, emit }) {
+    const [button] = $<HTMLButtonElement>('toggle-button')
+    let active = button?.getAttribute('data-active') === 'true'
+  
     return {
       toggle_mask() {
-        const isActive = !active.get()
-        active.set(isActive)
-        const button = $('toggle-button')[0]
-        if (button) {
-          if (isActive) {
-            button.attr('class', `${headerStyles.button} ${headerStyles.buttonActive}`)
-          } else {
-            button.attr('class', `${headerStyles.button}`)
-          }
-        }
-
-        // Trigger public event
-        trigger({ type: HEADER_EVENTS.toggle_mask, detail: isActive })
+        active = button?.getAttribute('data-active') === 'true'
+        
+        emit({ type: HEADER_EVENTS.emit_toggle, detail: active })
       },
     }
   },

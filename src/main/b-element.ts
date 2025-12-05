@@ -53,6 +53,7 @@ import { bSync, bThread } from './behavioral.utils.ts'
 import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from './create-template.constants.ts'
 import { createTemplate } from './create-template.ts'
 import type { Attrs, CustomElementTag, TemplateObject } from './create-template.types.ts'
+import type { HostStylesObject } from './css.types.ts'
 import { DelegatedListener, delegates } from './delegated-listener.ts'
 import { type Emit, useEmit } from './use-emit.ts'
 import { usePlaitedTrigger } from './use-plaited-trigger.ts'
@@ -164,6 +165,7 @@ export const bElement = <A extends EventDetails>({
   delegatesFocus = true,
   slotAssignment = 'named',
   publicEvents = [],
+  hostStyles,
   observedAttributes = [],
   formAssociated,
   bProgram: callback,
@@ -175,6 +177,7 @@ export const bElement = <A extends EventDetails>({
   slotAssignment?: 'named' | 'manual'
   observedAttributes?: string[]
   publicEvents?: string[]
+  hostStyles?: HostStylesObject
   formAssociated?: true
   bProgram?: (this: BehavioralElement, args: BProgramArgs) => Handlers<A> & BehavioralElementCallbackHandlers
 }): BehavioralTemplate => {
@@ -204,8 +207,9 @@ export const bElement = <A extends EventDetails>({
           super()
           this.#internals = this.attachInternals()
           this.attachShadow({ mode, delegatesFocus, slotAssignment })
-          const frag = getDocumentFragment(this.#root, shadowDom)
+          const frag = getDocumentFragment({ hostStyles, shadowRoot: this.#root, templateObject: shadowDom})
           this.#root.replaceChildren(frag)
+      
           const { trigger, useFeedback, useSnapshot, bThreads } = behavioral()
           this.#trigger = usePlaitedTrigger(trigger, this.#disconnectSet)
           this.#useFeedback = useFeedback

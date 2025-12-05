@@ -1,6 +1,7 @@
 import { type BEHAVIORAL_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './b-element.constants.ts'
 import type { BSync, BThread, BThreads, PlaitedTrigger, SnapshotMessage, Trigger } from './behavioral.types.ts'
 import type { CustomElementTag, FunctionTemplate, TemplateObject } from './create-template.types.ts'
+import type { HostStylesObject } from './css.types.ts'
 import type { Emit } from './use-emit.ts'
 /**
  * Valid insertion positions for DOM elements relative to a reference element.
@@ -140,6 +141,7 @@ export type BehavioralTemplate = FunctionTemplate & {
   tag: CustomElementTag
   observedAttributes: string[]
   publicEvents: string[]
+  hostStyles: HostStylesObject
   $: typeof BEHAVIORAL_TEMPLATE_IDENTIFIER
 }
 

@@ -1,11 +1,16 @@
-import { bElement, createHostStyles, createStyles, type FT } from 'plaited'
+import { bElement, createHostStyles, createStyles, joinStyles, type BehavioralElement, type FT } from 'plaited'
 import { HEADER_EVENTS, MASK_EVENTS } from './testing.constants.ts'
 import type { MaskClickDetail } from './testing.types.ts'
+import { PlaitedHeader } from './plaited-header.tsx'
+import { PlaitedMask } from './plaited-mask.tsx'
+import { PlaitedFixture } from './plaited-fixture.tsx'
+import { useReload } from './testing.utils.ts'
+import { $ } from 'bun'
 
 /**
  * Host styles for grid layout container.
  */
-const _orchestratorHostStyles = createHostStyles({
+const orchestratorHostStyles = createHostStyles({
   display: 'grid',
   gridTemplateRows: 'auto 1fr',
   gridTemplateAreas: '"header" "content"',
@@ -56,43 +61,42 @@ export const PlaitedOrchestrator: FT = bElement({
   tag: 'plaited-orchestrator',
   shadowDom: (
     <>
-      <slot
-        name='header'
-        p-target='header-slot'
-        {...orchestratorStyles.headerSlot}
-      />
-      <slot
-        name='fixture'
-        p-target='fixture-slot'
-        {...orchestratorStyles.fixtureSlot}
-      />
-      <slot
-        name='mask'
-        p-target='mask-slot'
+      <PlaitedHeader p-trigger={{[HEADER_EVENTS.emit_toggle]: MASK_EVENTS.toggle}} {...joinStyles(orchestratorHostStyles, orchestratorStyles.headerSlot)} />
+      <PlaitedFixture {...orchestratorStyles.fixtureSlot}>
+        <slot />
+      </PlaitedFixture>
+      <PlaitedMask
+        p-target="mask"
+        p-trigger={{ click: MASK_EVENTS.click }}
         {...orchestratorStyles.maskSlot}
       />
+      
     </>
   ),
-  bProgram({ bThread, bThreads, bSync, trigger }) {
+  bProgram({ bThread, bThreads, bSync, trigger, inspector, $ }) {
+    if (!window?.__PLAITED_RUNNER__) {
+          inspector.on()
+          const disconnectReload =useReload()
+          trigger.addDisconnectCallback(disconnectReload)
+        }
     // Set up b-threads for event coordination
     bThreads.set({
-      forwardToggle: bThread([
-        bSync({ waitFor: HEADER_EVENTS.toggle_mask }),
-        bSync({ request: { type: MASK_EVENTS.toggle } }),
-      ]),
       logMaskClicks: bThread([
         bSync({ waitFor: MASK_EVENTS.click }),
         // Console logging handled in feedback method
       ]),
     })
-
+   const mask = $<BehavioralElement>('mask')[0]!
     return {
       // Forward toggle event from header to mask
-      [HEADER_EVENTS.toggle_mask](detail: boolean) {
-        trigger({ type: MASK_EVENTS.toggle, detail })
+      [MASK_EVENTS.toggle](detail: boolean) {
+       mask.trigger({type: MASK_EVENTS.toggle, detail})
       },
       // Log mask click details
-      [MASK_EVENTS.click](_detail: MaskClickDetail) {},
+      click (detail: MaskClickDetail) {
+       console.log('Mask clicked at:', detail)
+      },
     }
   },
 })
+ 

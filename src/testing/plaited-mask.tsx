@@ -6,7 +6,7 @@ import { getShadowPath } from './testing.utils.ts'
 /**
  * Host styles for grid positioning and z-index layering.
  */
-const _maskHostStyles = createHostStyles({
+const maskHostStyles = createHostStyles({
   display: 'none', // Initially hidden
   width: '100%',
   height: '100%',
@@ -47,13 +47,14 @@ const _maskHostStyles = createHostStyles({
  * @see {@link MaskClickDetail} for event detail structure
  * @see {@link getShadowPath} for shadow DOM traversal
  */
-export const PlaitedMask: FT = bElement({
+export const PlaitedMask = bElement({
   tag: 'plaited-mask',
   publicEvents: [MASK_EVENTS.toggle],
   shadowDom: (
     <div
       p-target='overlay'
       p-trigger={{ click: 'mask_click' }}
+      {...maskHostStyles}
     />
   ),
   bProgram({ $, emit }) {

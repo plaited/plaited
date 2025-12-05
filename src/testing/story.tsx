@@ -20,9 +20,7 @@ const createStoryExport = <T extends FunctionTemplate>(
   const tpl = template?.(args || {})
   const fixture = (
     <PlaitedOrchestrator>
-      <PlaitedHeader slot='header' />
-      <PlaitedFixture slot='fixture'>{tpl}</PlaitedFixture>
-      <PlaitedMask slot='mask' />
+      {tpl}
     </PlaitedOrchestrator>
   )
   if (rest.play) {

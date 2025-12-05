@@ -151,12 +151,6 @@ export const PlaitedFixture = bElement<{
       ),
     })
 
-    if (!window?.__PLAITED_RUNNER__) {
-      inspector.on()
-      const disconnectReload = useReload()
-      trigger.addDisconnectCallback(disconnectReload)
-    }
-
     const timeout = async (time: number) => {
       await wait(time)
       return true
