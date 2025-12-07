@@ -251,10 +251,14 @@ export const bElement = <A extends EventDetails>({
             this.#shadowObserver = this.#getShadowObserver(bindings)
             //Create inspector on tool that captures state snapshots of behavioral program execution
             const inspectorDefaultCallback: InspectorCallback = (arg: SnapshotMessage) => {
-              console.group()
-              console.info(tag)
-              console.table(arg)
-              console.groupEnd()
+              // queueMicrotask prevents Safari's console.table from creating synchronous feedback loops
+              // JSON clone prevents property getter side effects during console inspection
+              queueMicrotask(() => {
+                console.group()
+                console.info(tag)
+                console.table(JSON.parse(JSON.stringify(arg)))
+                console.groupEnd()
+              })
             }
             let inspectorCallback = inspectorDefaultCallback
             let inspectorDisconnect: Disconnect | undefined
