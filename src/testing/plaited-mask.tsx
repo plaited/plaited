@@ -1,4 +1,4 @@
-import { bElement, createHostStyles, type FT } from '../main.ts'
+import { bElement, bSync, bThread, createStyles, type BPEvent, type FT } from '../main.ts'
 import { MASK_EVENTS } from './testing.constants.ts'
 import type { MaskClickDetail } from './testing.types.ts'
 import { getShadowPath } from './testing.utils.ts'
@@ -6,12 +6,20 @@ import { getShadowPath } from './testing.utils.ts'
 /**
  * Host styles for grid positioning and z-index layering.
  */
-const maskHostStyles = createHostStyles({
-  display: 'none', // Initially hidden
-  width: '100%',
-  height: '100%',
-  backgroundColor: 'rgba(0, 0, 0, 0.05)',
-  cursor: 'crosshair',
+const maskStyles = createStyles({
+  overlay: {
+    display: {
+      $default: 'none',
+      ['data-visible="true"']: 'block',
+    }, // Initially hidden
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    cursor: {
+      $default: 'none',
+      ['data-visible="true"']: 'crosshair',
+    },
+  }
 })
 
 /**
@@ -49,39 +57,48 @@ const maskHostStyles = createHostStyles({
  */
 export const PlaitedMask = bElement({
   tag: 'plaited-mask',
-  publicEvents: [MASK_EVENTS.toggle],
+  publicEvents: [MASK_EVENTS.emit_click],
   shadowDom: (
     <div
       p-target='overlay'
-      p-trigger={{ click: 'mask_click' }}
-      {...maskHostStyles}
+      p-trigger={{ click: 'internal_click' }}
+      {...maskStyles.overlay}
     />
   ),
-  bProgram({ $, emit }) {
-    const _isVisible = false
+  bProgram({ $, trigger }) {
+    const overlay = $('overlay')[0]
+    let _isVisible = false
+
+    bThread([
+      bSync({ waitFor: MASK_EVENTS.toggle }),
+      bSync({
+        request: ({ detail }: { detail: boolean }) => ({
+          type: 'handle_toggle',
+          detail,
+        }),
+      })
+    ], true)
 
     return {
-      // Toggle visibility handler - receives boolean directly
-      [MASK_EVENTS.toggle](visible: boolean) {
-        const overlay = $('overlay')[0]
-        overlay?.attr('style', `display: ${visible ? 'block' : 'none'}`)
+      // Handle visibility toggle from orchestrator
+      handle_toggle(visible: boolean) {
+        _isVisible = visible
+        overlay?.attr('data-visible', String(_isVisible))
       },
-      // Click handler using p-trigger pattern
-      mask_click(event: Event) {
+
+      // Handle click detection and emit click event
+      internal_click(event: Event) {
         const mouseEvent = event as MouseEvent
         const { clientX, clientY } = mouseEvent
-        const overlay = $('overlay')[0]
-
-        if (!overlay) return
 
         // Temporarily disable pointer-events for accurate detection
-        overlay.attr('style', 'pointer-events: none')
+        overlay?.attr('style', 'pointer-events: none')
         const target = document.elementFromPoint(clientX, clientY)
-        overlay.attr('style', 'pointer-events: auto')
+        overlay?.attr('style', 'pointer-events: auto')
 
         if (!target) return
 
-        const detail: MaskClickDetail = {
+        const clickDetail: MaskClickDetail = {
           x: clientX,
           y: clientY,
           tagName: target.tagName,
@@ -95,7 +112,8 @@ export const PlaitedMask = bElement({
           shadowPath: getShadowPath(target),
         }
 
-        emit({ type: MASK_EVENTS.click, detail, bubbles: true })
+        // Trigger bProgram event (not DOM event)
+        trigger({ type: MASK_EVENTS.emit_click, detail: clickDetail })
       },
     }
   },

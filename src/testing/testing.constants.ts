@@ -67,7 +67,7 @@ export const STORY_IDENTIFIER = '🍬'
  * @internal
  * Event types for mask and header communication.
  */
-export const MASK_EVENTS = keyMirror('click', 'toggle')
+export const MASK_EVENTS = keyMirror('emit_click', 'toggle')
 
-export const HEADER_EVENTS = keyMirror('toggle_mask', 'emit_toggle')
+export const HEADER_EVENTS = keyMirror('emit_toggle', 'toggle')
 

@@ -60,6 +60,7 @@ const headerHostStyles = createHostStyles({
 export const PlaitedHeader: FT = bElement({
   tag: 'plaited-header',
   hostStyles: headerHostStyles,
+  publicEvents: [HEADER_EVENTS.emit_toggle],
   shadowDom: (
     <>
       <div {...headerStyles.container}>
@@ -75,15 +76,20 @@ export const PlaitedHeader: FT = bElement({
       </div>
     </>
   ),
-  bProgram({ $, trigger, emit }) {
-    const [button] = $<HTMLButtonElement>('toggle-button')
-    let active = button?.getAttribute('data-active') === 'true'
-  
+  bProgram({ $, trigger }) {
+    const button = $<HTMLButtonElement>('toggle-button')[0]
+    let active = false
+
     return {
       toggle_mask() {
-        active = button?.getAttribute('data-active') === 'true'
-        
-        emit({ type: HEADER_EVENTS.emit_toggle, detail: active })
+        // Toggle the state
+        active = !active
+
+        // Update button's visual state
+        button?.attr('data-active', String(active))
+
+        // Trigger the new state via bProgram event (not DOM event)
+        trigger({ type: HEADER_EVENTS.emit_toggle, detail: active })
       },
     }
   },
