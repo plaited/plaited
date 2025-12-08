@@ -1,4 +1,4 @@
-import { bElement, createHostStyles, createStyles, type FT, useSignal } from '../main.ts'
+import { bElement, createHostStyles, createStyles } from '../main.ts'
 import { HEADER_EVENTS } from './testing.constants.ts'
 
 /**
@@ -27,7 +27,7 @@ const headerStyles = createStyles({
     color: {
       $default: 'black',
       ':active': 'white',
-    }
+    },
   },
 })
 
@@ -57,10 +57,9 @@ const headerHostStyles = createHostStyles({
  *
  * @see {@link HEADER_EVENTS.toggle_mask} for emitted event
  */
-export const PlaitedHeader: FT = bElement({
+export const PlaitedHeader = bElement({
   tag: 'plaited-header',
   hostStyles: headerHostStyles,
-  publicEvents: [HEADER_EVENTS.emit_toggle],
   shadowDom: (
     <>
       <div {...headerStyles.container}>
@@ -76,12 +75,15 @@ export const PlaitedHeader: FT = bElement({
       </div>
     </>
   ),
-  bProgram({ $, trigger }) {
+  bProgram({ $, emit, inspector }) {
+    if (!window?.__PLAITED_RUNNER__) {
+      inspector.on()
+    }
     const button = $<HTMLButtonElement>('toggle-button')[0]
     let active = false
 
     return {
-      toggle_mask() {
+      toggle_mask(detail) {
         // Toggle the state
         active = !active
 
@@ -89,7 +91,7 @@ export const PlaitedHeader: FT = bElement({
         button?.attr('data-active', String(active))
 
         // Trigger the new state via bProgram event (not DOM event)
-        trigger({ type: HEADER_EVENTS.emit_toggle, detail: active })
+        emit({ type: HEADER_EVENTS.emit_toggle, detail: active })
       },
     }
   },

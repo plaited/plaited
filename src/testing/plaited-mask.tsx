@@ -1,4 +1,4 @@
-import { bElement, bSync, bThread, createStyles, type BPEvent, type FT } from '../main.ts'
+import { bElement, createStyles } from '../main.ts'
 import { MASK_EVENTS } from './testing.constants.ts'
 import type { MaskClickDetail } from './testing.types.ts'
 import { getShadowPath } from './testing.utils.ts'
@@ -19,7 +19,7 @@ const maskStyles = createStyles({
       $default: 'none',
       ['data-visible="true"']: 'crosshair',
     },
-  }
+  },
 })
 
 /**
@@ -57,37 +57,28 @@ const maskStyles = createStyles({
  */
 export const PlaitedMask = bElement({
   tag: 'plaited-mask',
-  publicEvents: [MASK_EVENTS.emit_click],
+  publicEvents: [MASK_EVENTS.toggle],
   shadowDom: (
     <div
       p-target='overlay'
-      p-trigger={{ click: 'internal_click' }}
+      p-trigger={{ click: 'emit_click' }}
       {...maskStyles.overlay}
     />
   ),
-  bProgram({ $, trigger }) {
+  bProgram({ $, emit, inspector }) {
+    if (!window?.__PLAITED_RUNNER__) {
+      inspector.on()
+    }
     const overlay = $('overlay')[0]
-    let _isVisible = false
-
-    bThread([
-      bSync({ waitFor: MASK_EVENTS.toggle }),
-      bSync({
-        request: ({ detail }: { detail: boolean }) => ({
-          type: 'handle_toggle',
-          detail,
-        }),
-      })
-    ], true)
+    const _isVisible = false
 
     return {
-      // Handle visibility toggle from orchestrator
-      handle_toggle(visible: boolean) {
-        _isVisible = visible
-        overlay?.attr('data-visible', String(_isVisible))
+      [MASK_EVENTS.toggle](detail: boolean) {
+        console.log('Mask received toggle:', detail)
       },
 
       // Handle click detection and emit click event
-      internal_click(event: Event) {
+      emit_click(event: Event) {
         const mouseEvent = event as MouseEvent
         const { clientX, clientY } = mouseEvent
 
@@ -113,7 +104,7 @@ export const PlaitedMask = bElement({
         }
 
         // Trigger bProgram event (not DOM event)
-        trigger({ type: MASK_EVENTS.emit_click, detail: clickDetail })
+        emit({ type: MASK_EVENTS.emit_click, detail: clickDetail })
       },
     }
   },

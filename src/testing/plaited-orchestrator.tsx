@@ -1,9 +1,8 @@
-import { bElement, bSync, bThread, createHostStyles, createStyles, joinStyles, type BehavioralElement, type FT } from 'plaited'
-import { HEADER_EVENTS, MASK_EVENTS } from './testing.constants.ts'
-import type { MaskClickDetail } from './testing.types.ts'
+import { type BehavioralElement, bElement, createHostStyles, createStyles } from 'plaited'
+import { PlaitedFixture } from './plaited-fixture.tsx'
 import { PlaitedHeader } from './plaited-header.tsx'
 import { PlaitedMask } from './plaited-mask.tsx'
-import { PlaitedFixture } from './plaited-fixture.tsx'
+import { HEADER_EVENTS, MASK_EVENTS } from './testing.constants.ts'
 import { useReload } from './testing.utils.ts'
 
 /**
@@ -56,47 +55,44 @@ const orchestratorStyles = createStyles({
  * @see {@link HEADER_EVENTS.toggle_mask} for header toggle event
  * @see {@link MASK_EVENTS.toggle} for mask visibility control
  */
-export const PlaitedOrchestrator: FT = bElement({
+export const PlaitedOrchestrator = bElement({
   tag: 'plaited-orchestrator',
   shadowDom: (
     <>
-      <PlaitedHeader {...orchestratorStyles.headerSlot} />
+      <PlaitedHeader
+        p-trigger={{ [HEADER_EVENTS.emit_toggle]: 'mask_toggle' }}
+        {...orchestratorStyles.headerSlot}
+      />
       <PlaitedFixture {...orchestratorStyles.fixtureSlot}>
         <slot />
       </PlaitedFixture>
       <PlaitedMask
+        p-target='mask'
+        p-trigger={{ [MASK_EVENTS.emit_click]: 'emit_click' }}
         {...orchestratorStyles.maskSlot}
       />
+      {orchestratorHostStyles}
     </>
   ),
-  bProgram({ trigger, inspector, $ }) {
+  bProgram({ $, trigger, inspector }) {
+    const mask = $<BehavioralElement>('mask')[0]!
     if (!window?.__PLAITED_RUNNER__) {
       inspector.on()
       const disconnectReload = useReload()
       trigger.addDisconnectCallback(disconnectReload)
     }
 
-    bThread([
-      bSync({ waitFor: HEADER_EVENTS.emit_toggle }),
-      bSync({
-        request: { type: MASK_EVENTS.toggle },
-      })
-    ], true)
-
-    const mask = $<BehavioralElement>('mask')[0]!
-
     return {
-      // // Forward toggle event from header to mask
-      // [HEADER_EVENTS.emit_toggle](detail: boolean) {
-      //   console.log('Orchestrator received toggle:', detail)
-      //   mask.trigger({ type: MASK_EVENTS.toggle, detail })
-      // },
+      // Forward toggle event from header to mask
+      mask_toggle(detail: boolean) {
+        console.log('Orchestrator received toggle:', detail)
+        mask.trigger({ type: MASK_EVENTS.toggle, detail })
+      },
 
-      // // Log mask click events
-      // [MASK_EVENTS.emit_click](detail: MaskClickDetail) {
-      //   console.log('Mask clicked at:', detail)
-      // },
+      // Log mask click events
+      emit_click: (detail: unknown) => {
+        console.log('Mask clicked at:', detail)
+      },
     }
   },
 })
- 
