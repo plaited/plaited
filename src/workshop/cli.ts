@@ -386,12 +386,8 @@ if (subcommand === 'dev') {
   const isHotMode = process.execArgv.includes('--hot')
   if (isHotMode) {
     console.log('🔥 Hot reload mode active - changes will auto-refresh browser')
-    if (import.meta.hot) {
-      import.meta.hot.accept(() => {
-        console.log('🔄 Files changed, reloading browser clients...')
-        reload()
-      })
-    }
+    // When Bun's --hot restarts the process, broadcast reload to connected clients
+    reload()
   } else {
     console.log('💡 Run with "bun --hot plaited dev" to enable hot reload')
   }

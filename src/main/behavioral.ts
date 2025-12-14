@@ -229,16 +229,6 @@ export const behavioral: Behavioral = () => {
 
   /**
    * @internal
-   * Initiates a super-step if there are running threads.
-   * This is the entry point for the behavioral program's execution cycle.
-   * It checks if there are any threads ready to run, and if so, advances them.
-   */
-  function run() {
-    running.size && step()
-  }
-
-  /**
-   * @internal
    * Executes one part of the super-step: advancing running threads to their next yield.
    *
    * This function:
@@ -332,13 +322,8 @@ export const behavioral: Behavioral = () => {
         pending.delete(thread)
       }
     }
-    /**
-     * @internal
-     * To avoid infinite loop with calling trigger from feedback always publish select event
-     * after checking if request(s) is waitList and before our next run
-     */
     actionPublisher({ type: selectedEvent.type, detail: selectedEvent.detail })
-    run()
+    running.size && step()
   }
 
   /**
@@ -351,6 +336,10 @@ export const behavioral: Behavioral = () => {
    * 3. Terminates after the event is processed
    *
    * The thread is identified by a Symbol based on the event type for uniqueness.
+   * Uses queueMicrotask to break synchronous recursion when trigger() is called
+   * from within useFeedback handlers, preventing stack overflow.
+   *
+   * @returns Promise that resolves when the triggered event's super-step completes
    */
   const trigger: Trigger = (request) => {
     const thread = function* () {
@@ -364,7 +353,7 @@ export const behavioral: Behavioral = () => {
       trigger: true,
       generator: thread(),
     })
-    run()
+    running.size && step()
   }
 
   /**
