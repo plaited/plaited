@@ -1,4 +1,4 @@
-import { bElement, createStyles } from '../main.ts'
+import { bElement, createHostStyles, createStyles } from '../main.ts'
 import { MASK_EVENTS } from './testing.constants.ts'
 import type { MaskClickDetail } from './testing.types.ts'
 import { getShadowPath } from './testing.utils.ts'
@@ -6,18 +6,29 @@ import { getShadowPath } from './testing.utils.ts'
 /**
  * Host styles for grid positioning and z-index layering.
  */
+const maskHostStyles = createHostStyles({
+  top: '0',
+  left: '0',
+  width: '100%',
+  height: '100%',
+})
+
 const maskStyles = createStyles({
   overlay: {
     display: {
       $default: 'none',
-      ['data-visible="true"']: 'block',
-    }, // Initially hidden
+      '[data-visible="true"]': 'block',
+    },
     width: '100%',
     height: '100%',
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
     cursor: {
       $default: 'none',
-      ['data-visible="true"']: 'crosshair',
+      '[data-visible="true"]': 'crosshair',
+    },
+    pointerEvents: {
+      $default: 'none',
+      '[data-visible="true"]': 'auto',
     },
   },
 })
@@ -58,6 +69,7 @@ const maskStyles = createStyles({
 export const PlaitedMask = bElement({
   tag: 'plaited-mask',
   publicEvents: [MASK_EVENTS.toggle],
+  hostStyles: maskHostStyles,
   shadowDom: (
     <div
       p-target='overlay'
@@ -70,41 +82,47 @@ export const PlaitedMask = bElement({
       inspector.on()
     }
     const overlay = $('overlay')[0]
-    const _isVisible = false
+
+    let _isVisible = false
+
+    overlay?.attr('data-visible', String(_isVisible))
 
     return {
-      [MASK_EVENTS.toggle](detail: boolean) {
-        console.log('Mask received toggle:', detail)
+      [MASK_EVENTS.toggle](event) {
+        _isVisible = event.detail
+        overlay?.attr('data-visible', String(_isVisible))
       },
 
       // Handle click detection and emit click event
       emit_click(event: Event) {
-        const mouseEvent = event as MouseEvent
-        const { clientX, clientY } = mouseEvent
+        if (_isVisible) {
+          const mouseEvent = event as MouseEvent
+          const { clientX, clientY } = mouseEvent
 
-        // Temporarily disable pointer-events for accurate detection
-        overlay?.attr('style', 'pointer-events: none')
-        const target = document.elementFromPoint(clientX, clientY)
-        overlay?.attr('style', 'pointer-events: auto')
+          // Temporarily disable pointer-events for accurate detection
+          overlay?.attr('style', 'pointer-events: none')
+          const target = document.elementFromPoint(clientX, clientY)
+          overlay?.attr('style', 'pointer-events: auto')
 
-        if (!target) return
+          if (!target) return
 
-        const clickDetail: MaskClickDetail = {
-          x: clientX,
-          y: clientY,
-          tagName: target.tagName,
-          id: target.id || null,
-          className: target.className || null,
-          attributes: Array.from(target.attributes).map((attr) => ({
-            name: attr.name,
-            value: attr.value,
-          })),
-          textContent: target.textContent,
-          shadowPath: getShadowPath(target),
+          const clickDetail: MaskClickDetail = {
+            x: clientX,
+            y: clientY,
+            tagName: target.tagName,
+            id: target.id || null,
+            className: target.className || null,
+            attributes: Array.from(target.attributes).map((attr) => ({
+              name: attr.name,
+              value: attr.value,
+            })),
+            textContent: target.textContent,
+            shadowPath: getShadowPath(target),
+          }
+
+          // Trigger bProgram event (not DOM event)
+          emit({ type: MASK_EVENTS.emit_click, detail: clickDetail })
         }
-
-        // Trigger bProgram event (not DOM event)
-        emit({ type: MASK_EVENTS.emit_click, detail: clickDetail })
       },
     }
   },

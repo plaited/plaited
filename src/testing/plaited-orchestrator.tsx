@@ -57,6 +57,7 @@ const orchestratorStyles = createStyles({
  */
 export const PlaitedOrchestrator = bElement({
   tag: 'plaited-orchestrator',
+  hostStyles: orchestratorHostStyles,
   shadowDom: (
     <>
       <PlaitedHeader
@@ -71,7 +72,6 @@ export const PlaitedOrchestrator = bElement({
         p-trigger={{ [MASK_EVENTS.emit_click]: 'emit_click' }}
         {...orchestratorStyles.maskSlot}
       />
-      {orchestratorHostStyles}
     </>
   ),
   bProgram({ $, trigger, inspector }) {
