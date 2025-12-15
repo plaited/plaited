@@ -28,5 +28,5 @@
 
     "jsxImportSource": "plaited"
   },
-  "exclude": ["src/main/types/css.d.ts"]
+  "exclude": ["src/main/types/css.d.ts", "playwright.config.ts", "**/*.playwright.ts"]
 }
