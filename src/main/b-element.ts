@@ -207,9 +207,9 @@ export const bElement = <A extends EventDetails>({
           super()
           this.#internals = this.attachInternals()
           this.attachShadow({ mode, delegatesFocus, slotAssignment })
-          const frag = getDocumentFragment({ hostStyles, shadowRoot: this.#root, templateObject: shadowDom})
+          const frag = getDocumentFragment({ hostStyles, shadowRoot: this.#root, templateObject: shadowDom })
           this.#root.replaceChildren(frag)
-      
+
           const { trigger, useFeedback, useSnapshot, bThreads } = behavioral()
           this.#trigger = usePlaitedTrigger(trigger, this.#disconnectSet)
           this.#useFeedback = useFeedback
@@ -429,5 +429,6 @@ export const bElement = <A extends EventDetails>({
   ft.$ = BEHAVIORAL_TEMPLATE_IDENTIFIER
   ft.publicEvents = publicEvents
   ft.observedAttributes = observedAttributes
+  ft.hostStyles = hostStyles ?? { stylesheets: [] }
   return ft
 }

@@ -139,12 +139,20 @@ const updateAttributes = ({
  * @internal Creates a DocumentFragment from a Plaited template object, handling both content and styles.
  * Used internally when rendering templates within components.
  */
-export const getDocumentFragment = ({hostStyles, shadowRoot, templateObject}: {hostStyles?: HostStylesObject, shadowRoot: ShadowRoot, templateObject: TemplateObject}) => {
+export const getDocumentFragment = ({
+  hostStyles,
+  shadowRoot,
+  templateObject,
+}: {
+  hostStyles?: HostStylesObject
+  shadowRoot: ShadowRoot
+  templateObject: TemplateObject
+}) => {
   const { html, stylesheets } = templateObject
   if (stylesheets.length || hostStyles) {
     const styles = joinStyles(hostStyles, { stylesheets: templateObject.stylesheets }).stylesheets
     void updateShadowRootStyles(shadowRoot, styles)
-  } 
+  }
   const template = document.createElement('template')
   template.setHTMLUnsafe(html.join(''))
   return template.content
@@ -191,7 +199,7 @@ const formatFragments = (
         ? frag
         : typeof frag === 'number'
           ? `${frag}`
-          : getDocumentFragment({shadowRoot, templateObject: frag}),
+          : getDocumentFragment({ shadowRoot, templateObject: frag }),
     )
   }
   return toRet

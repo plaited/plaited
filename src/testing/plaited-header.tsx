@@ -83,7 +83,7 @@ export const PlaitedHeader = bElement({
     let active = false
 
     return {
-      toggle_mask(detail) {
+      toggle_mask() {
         // Toggle the state
         active = !active
 

@@ -85,13 +85,12 @@ export const PlaitedOrchestrator = bElement({
     return {
       // Forward toggle event from header to mask
       mask_toggle(detail: boolean) {
-        console.log('Orchestrator received toggle:', detail)
         mask.trigger({ type: MASK_EVENTS.toggle, detail })
       },
 
       // Log mask click events
       emit_click: (detail: unknown) => {
-        console.log('Mask clicked at:', detail)
+        // Do something with mask click detail as needed
       },
     }
   },

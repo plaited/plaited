@@ -70,4 +70,3 @@ export const STORY_IDENTIFIER = '🍬'
 export const MASK_EVENTS = keyMirror('emit_click', 'toggle')
 
 export const HEADER_EVENTS = keyMirror('emit_toggle', 'toggle')
-

@@ -31,7 +31,6 @@ import {
   findByText,
   fireEvent,
   useInteract,
-  useReload,
 } from './testing.utils.ts'
 
 declare global {
@@ -136,7 +135,7 @@ export const PlaitedFixture = bElement<{
       })}
     />
   ),
-  bProgram({ trigger, inspector, bThreads, bThread, bSync, emit }) {
+  bProgram({ trigger, bThreads, bThread, bSync, emit }) {
     bThreads.set({
       onRun: bThread(
         [
