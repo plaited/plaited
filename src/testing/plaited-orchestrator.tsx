@@ -89,7 +89,7 @@ export const PlaitedOrchestrator = bElement({
       },
 
       // Log mask click events
-      emit_click: (detail: unknown) => {
+      emit_click: () => {
         // Do something with mask click detail as needed
       },
     }
