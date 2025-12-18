@@ -2,7 +2,8 @@ import { type BehavioralElement, bElement, createHostStyles, createStyles } from
 import { PlaitedFixture } from './plaited-fixture.tsx'
 import { PlaitedHeader } from './plaited-header.tsx'
 import { PlaitedMask } from './plaited-mask.tsx'
-import { HEADER_EVENTS, MASK_EVENTS } from './testing.constants.ts'
+import { FIXTURE_EVENTS, HEADER_EVENTS, MASK_EVENTS, STORY_ORCHESTRATOR } from './testing.constants.ts'
+import type { InteractionStoryObj } from './testing.types.ts'
 import { useReload } from './testing.utils.ts'
 
 /**
@@ -55,8 +56,13 @@ const orchestratorStyles = createStyles({
  * @see {@link HEADER_EVENTS.toggle_mask} for header toggle event
  * @see {@link MASK_EVENTS.toggle} for mask visibility control
  */
-export const PlaitedOrchestrator = bElement({
-  tag: 'plaited-orchestrator',
+export const PlaitedOrchestrator = bElement<{
+  [FIXTURE_EVENTS.run]: {
+    play?: InteractionStoryObj['play']
+    timeout?: number
+  }
+}>({
+  tag: STORY_ORCHESTRATOR,
   hostStyles: orchestratorHostStyles,
   shadowDom: (
     <>
@@ -64,7 +70,10 @@ export const PlaitedOrchestrator = bElement({
         p-trigger={{ [HEADER_EVENTS.emit_toggle]: 'mask_toggle' }}
         {...orchestratorStyles.headerSlot}
       />
-      <PlaitedFixture {...orchestratorStyles.fixtureSlot}>
+      <PlaitedFixture
+        {...orchestratorStyles.fixtureSlot}
+        p-target='fixture'
+      >
         <slot />
       </PlaitedFixture>
       <PlaitedMask
@@ -74,6 +83,7 @@ export const PlaitedOrchestrator = bElement({
       />
     </>
   ),
+  publicEvents: [FIXTURE_EVENTS.run],
   bProgram({ $, trigger, inspector }) {
     const mask = $<BehavioralElement>('mask')[0]!
     if (!window?.__PLAITED_RUNNER__) {
@@ -81,7 +91,7 @@ export const PlaitedOrchestrator = bElement({
       const disconnectReload = useReload()
       trigger.addDisconnectCallback(disconnectReload)
     }
-
+    const fixture = $<BehavioralElement>('fixture')[0]!
     return {
       // Forward toggle event from header to mask
       mask_toggle(detail: boolean) {
@@ -91,6 +101,9 @@ export const PlaitedOrchestrator = bElement({
       // Log mask click events
       emit_click: () => {
         // Do something with mask click detail as needed
+      },
+      run(detail) {
+        fixture.trigger({ type: FIXTURE_EVENTS.run, detail })
       },
     }
   },

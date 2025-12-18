@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { joinStyles, ssr, type TemplateObject } from '../main.ts'
-import { FIXTURE_EVENTS, STORY_FIXTURE } from '../testing/testing.constants.ts'
+import { FIXTURE_EVENTS, STORY_ORCHESTRATOR } from '../testing/testing.constants.ts'
 import type { StoryExport } from '../testing.ts'
 import { getPaths } from './get-paths.ts'
 import { zip } from './workshop.utils.ts'
@@ -46,9 +46,9 @@ const PlaitedAttributesSchema = z
 const createFixtureLoadScript = ({ entryPath, exportName }: { entryPath: string; exportName: string }) => `\n
 import { ${exportName} } from '${entryPath}'
 
-await customElements.whenDefined("${STORY_FIXTURE}")
-const fixture = document.querySelector("${STORY_FIXTURE}");
-fixture?.trigger({
+await customElements.whenDefined("${STORY_ORCHESTRATOR}")
+const orchestrator = document.querySelector("${STORY_ORCHESTRATOR}");
+orchestrator?.trigger({
   type: '${FIXTURE_EVENTS.run}',
   detail:  {play: ${exportName}?.play, timeout: ${exportName}?.params?.timeout}
 });

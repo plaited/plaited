@@ -14,6 +14,12 @@ export const STORY_FIXTURE = 'plaited-story-fixture'
 
 /**
  * @internal
+ * Custom element tag for story test orchestrator.
+ */
+export const STORY_ORCHESTRATOR = 'plaited-orchestrator'
+
+/**
+ * @internal
  * WebSocket endpoint for test runner communication.
  */
 export const RUNNER_URL = '/.plaited/runner'
