@@ -499,7 +499,7 @@ if (subcommand === 'test') {
   // Launch browser
   console.log('🌐 Launching browser...')
   const { chromium } = await import('playwright')
-  const browser = await chromium.launch()
+  const browser = await chromium.launch({ headless: true })
 
   // Initialize test runner (this creates and starts the server)
   console.log('🔧 Initializing test runner...')
