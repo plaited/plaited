@@ -151,7 +151,7 @@ test('assert: required params', async () => {
   expect(spy).toHaveBeenCalledTimes(1)
 })
 
-test.only('assert: throws on failure', () => {
+test('assert: throws on failure', () => {
   expect(() =>
     assert({
       given: 'number',
