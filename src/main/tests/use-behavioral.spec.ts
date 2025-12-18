@@ -154,8 +154,8 @@ test('useBehavioral: async initialization works correctly', async () => {
   await createProgram({ delay: 50 })
   const elapsed = Date.now() - startTime
 
-  // Initialization should have waited for delay
-  expect(elapsed).toBeGreaterThanOrEqual(50)
+  // Initialization should have waited for delay (with small tolerance for timer imprecision)
+  expect(elapsed).toBeGreaterThanOrEqual(45)
   expect(initSpy).toHaveBeenCalledTimes(1)
 })
 

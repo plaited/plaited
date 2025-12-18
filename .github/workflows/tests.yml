@@ -28,6 +28,6 @@ jobs:
       - name: Run bun test
         run: |
           bun test
-      - name: Run story test
+      - name: Run storybu test
         run: |
           bun run test-stories:all
