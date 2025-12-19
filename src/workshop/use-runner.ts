@@ -31,7 +31,7 @@
  * - Server lifecycle tied to runner lifecycle
  */
 
-import { availableParallelism, totalmem } from 'node:os'
+import { availableParallelism } from 'node:os'
 import { basename } from 'node:path'
 import type { Browser, BrowserContextOptions } from 'playwright'
 import { FIXTURE_EVENTS } from '../testing/testing.constants.ts'
@@ -61,115 +61,41 @@ export type TestStoriesOutput = {
   results: TestResult[]
 }
 
-const getAvailableMemory = () => {
-  const memoryBytes = totalmem()
-  const MEGABYTE = 1024 * 1024
-  const memoryMB = memoryBytes / MEGABYTE
-  return Math.round(memoryMB)
-}
-
 const formatErrorType = (errorType: string) =>
   `🚩 ${errorType
     .split('_')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ')}`
 
-const splitIntoBatches = <T>(items: T[], batchCount: number): T[][] => {
-  const batches: T[][] = Array.from({ length: batchCount }, () => [])
+/**
+ * @internal
+ * Splits an array of items into batches with a specified number of items per batch.
+ *
+ * @template T - Type of items in the array
+ * @param items - Array of items to split into batches
+ * @param itemsPerBatch - Number of items to include in each batch
+ * @returns Array of batches, where each batch contains up to itemsPerBatch items
+ *
+ * @remarks
+ * - Creates n batches based on total items / itemsPerBatch
+ * - Last batch may contain fewer items if total doesn't divide evenly
+ * - Returns empty array if items array is empty
+ * - Complexity: O(n) where n is the number of items
+ *
+ * @example
+ * ```typescript
+ * splitIntoBatches([1, 2, 3, 4, 5], 2) // [[1, 2], [3, 4], [5]]
+ * splitIntoBatches([1, 2, 3, 4, 5, 6], 3) // [[1, 2, 3], [4, 5, 6]]
+ * ```
+ */
+const splitIntoBatches = <T>(items: T[], itemsPerBatch: number): T[][] => {
+  const batches: T[][] = []
 
-  items.forEach((item, index) => {
-    const batchIndex = index % batchCount
-    batches[batchIndex]!.push(item)
-  })
+  for (let i = 0; i < items.length; i += itemsPerBatch) {
+    batches.push(items.slice(i, i + itemsPerBatch))
+  }
 
   return batches
-}
-
-const runBatchedStories = async ({
-  stories,
-  browser,
-  videoConfig,
-  colorScheme,
-  server,
-  cwd,
-  failed,
-  passed,
-  batchCount,
-}: {
-  stories: StoryMetadata[]
-  browser: Browser
-  videoConfig: BrowserContextOptions['recordVideo']
-  colorScheme: 'light' | 'dark'
-  server: Bun.Server<undefined>
-  cwd: string
-  failed: TestResult[]
-  passed: TestResult[]
-  batchCount: number
-}) => {
-  const batches = splitIntoBatches(stories, batchCount)
-  return Promise.all(
-    batches.map(async (stories) => {
-      for (const story of stories) {
-        const context = await browser.newContext({
-          recordVideo: videoConfig,
-          colorScheme,
-          baseURL: server.url.href,
-        })
-        const page = await context.newPage()
-
-        try {
-          await page.addInitScript(() => {
-            window.__PLAITED_RUNNER__ = true
-          })
-          const { route } = getPaths({
-            cwd,
-            exportName: story.exportName,
-            filePath: story.filePath,
-          })
-
-          const storyTimeout = story.timeout
-          const pageLoadTimeout = Math.max(30000, storyTimeout * 3)
-          // Fixture should initialize quickly - use fixed 10 second timeout
-          const fixtureInitTimeout = 10000
-
-          await page.goto(route, { timeout: pageLoadTimeout })
-
-          await page.waitForFunction(() => window.__PLAITED__ !== undefined, { timeout: fixtureInitTimeout })
-
-          const { type, detail } = await page.evaluate(() => {
-            return window.__PLAITED__.reporter()
-          })
-
-          if (type === FIXTURE_EVENTS.test_pass) {
-            console.log(`🟢 ${basename(route)}`)
-            passed.push({
-              story,
-              passed: true,
-            })
-          } else {
-            console.log(`🔴 ${basename(route)} (${formatErrorType(detail.errorType)})`)
-            failed.push({
-              story,
-              passed: false,
-              error: detail,
-            })
-          }
-        } catch (error) {
-          console.error(`Error executing story ${story.exportName}:`, error)
-          failed.push({
-            story,
-            passed: false,
-            error: {
-              errorType: 'TEST_EXECUTION_ERROR',
-              error: error instanceof Error ? error.message : String(error),
-            },
-          })
-        } finally {
-          await context.close()
-        }
-      }
-    }),
-  )
 }
 
 /**
@@ -246,23 +172,70 @@ export const useRunner = async ({
         : undefined
 
       try {
-        const availableMemory = getAvailableMemory()
-        const batchCount = Math.floor(availableMemory / 100)
-        const batches = splitIntoBatches(stories, availableParallelism())
+        const batchCount = Math.floor(availableParallelism() * 0.5)
+        const batches = splitIntoBatches(stories, batchCount)
+        for (const stories of batches) {
+          await Promise.all(
+            stories.map(async (story) => {
+              const context = await browser.newContext({
+                recordVideo: videoConfig,
+                colorScheme,
+                baseURL: server.url.href,
+              })
+              const page = await context.newPage()
 
-        // Run batches sequentially to avoid resource contention
-        for (const batchStories of batches) {
-          await runBatchedStories({
-            stories: batchStories,
-            browser,
-            videoConfig,
-            colorScheme,
-            server,
-            cwd,
-            failed,
-            passed,
-            batchCount,
-          })
+              try {
+                await page.addInitScript(() => {
+                  window.__PLAITED_RUNNER__ = true
+                })
+                const { route } = getPaths({
+                  cwd,
+                  exportName: story.exportName,
+                  filePath: story.filePath,
+                })
+
+                const storyTimeout = story.timeout
+                const pageLoadTimeout = Math.max(30000, storyTimeout * 3)
+                // Fixture should initialize quickly - use fixed 10 second timeout
+                const fixtureInitTimeout = 10000
+
+                await page.goto(route, { timeout: pageLoadTimeout })
+
+                await page.waitForFunction(() => window.__PLAITED__ !== undefined, { timeout: fixtureInitTimeout })
+
+                const { type, detail } = await page.evaluate(() => {
+                  return window.__PLAITED__.reporter()
+                })
+
+                if (type === FIXTURE_EVENTS.test_pass) {
+                  console.log(`🟢 ${basename(route)}`)
+                  passed.push({
+                    story,
+                    passed: true,
+                  })
+                } else {
+                  console.log(`🔴 ${basename(route)} (${formatErrorType(detail.errorType)})`)
+                  failed.push({
+                    story,
+                    passed: false,
+                    error: detail,
+                  })
+                }
+              } catch (error) {
+                console.error(`Error executing story ${story.exportName}:`, error)
+                failed.push({
+                  story,
+                  passed: false,
+                  error: {
+                    errorType: 'TEST_EXECUTION_ERROR',
+                    error: error instanceof Error ? error.message : String(error),
+                  },
+                })
+              } finally {
+                await context.close()
+              }
+            }),
+          )
         }
       } catch (error) {
         console.error('Error during test execution:', error)
