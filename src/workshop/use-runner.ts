@@ -30,8 +30,8 @@
  * - No built-in test retry mechanism
  * - Server lifecycle tied to runner lifecycle
  */
-import { heapStats } from 'bun:jsc'
-import { availableParallelism } from 'node:os'
+// import { heapStats } from 'bun:jsc'
+// import { availableParallelism } from 'node:os'
 import { basename } from 'node:path'
 import type { Browser, BrowserContextOptions } from 'playwright'
 import { FIXTURE_EVENTS } from '../testing/testing.constants.ts'
@@ -88,15 +88,15 @@ const formatErrorType = (errorType: string) =>
  * splitIntoBatches([1, 2, 3, 4, 5, 6], 3) // [[1, 2, 3], [4, 5, 6]]
  * ```
  */
-const splitIntoBatches = <T>(items: T[], itemsPerBatch: number): T[][] => {
-  const batches: T[][] = []
+// const splitIntoBatches = <T>(items: T[], itemsPerBatch: number): T[][] => {
+//   const batches: T[][] = []
 
-  for (let i = 0; i < items.length; i += itemsPerBatch) {
-    batches.push(items.slice(i, i + itemsPerBatch))
-  }
+//   for (let i = 0; i < items.length; i += itemsPerBatch) {
+//     batches.push(items.slice(i, i + itemsPerBatch))
+//   }
 
-  return batches
-}
+//   return batches
+// }
 
 /**
  * Creates a test runner for running Plaited story tests.
@@ -172,76 +172,70 @@ export const useRunner = async ({
         : undefined
 
       try {
-        const itemsPerBatch = Math.floor(availableParallelism() * 0.25)
-        const batches = splitIntoBatches(stories, itemsPerBatch)
-        console.log({
-          batchesLength: batches.length,
-          itemsPerBatch,
-          heapBefore: heapStats().heapSize,
-        })
-        for (const stories of batches) {
-          await Promise.all(
-            stories.map(async (story) => {
-              const context = await browser.newContext({
-                recordVideo: videoConfig,
-                colorScheme,
-                baseURL: server.url.href,
+        // const itemsPerBatch = Math.floor(availableParallelism() * 0.25)
+        // const batches = splitIntoBatches(stories, itemsPerBatch)
+        for (const story of stories) {
+          // await Promise.all(
+          //   stories.map(async (story) => {
+          const context = await browser.newContext({
+            recordVideo: videoConfig,
+            colorScheme,
+            baseURL: server.url.href,
+          })
+          const page = await context.newPage()
+
+          try {
+            await page.addInitScript(() => {
+              window.__PLAITED_RUNNER__ = true
+            })
+            const { route } = getPaths({
+              cwd,
+              exportName: story.exportName,
+              filePath: story.filePath,
+            })
+
+            const storyTimeout = story.timeout
+            const pageLoadTimeout = Math.max(30000, storyTimeout * 3)
+            // Fixture should initialize quickly - use fixed 10 second timeout
+            const fixtureInitTimeout = 10000
+
+            await page.goto(route, { timeout: pageLoadTimeout })
+
+            await page.waitForFunction(() => window.__PLAITED__ !== undefined, { timeout: fixtureInitTimeout })
+
+            const { type, detail } = await page.evaluate(() => {
+              return window.__PLAITED__.reporter()
+            })
+
+            if (type === FIXTURE_EVENTS.test_pass) {
+              console.log(`🟢 ${basename(route)}`)
+              passed.push({
+                story,
+                passed: true,
               })
-              const page = await context.newPage()
-
-              try {
-                await page.addInitScript(() => {
-                  window.__PLAITED_RUNNER__ = true
-                })
-                const { route } = getPaths({
-                  cwd,
-                  exportName: story.exportName,
-                  filePath: story.filePath,
-                })
-
-                const storyTimeout = story.timeout
-                const pageLoadTimeout = Math.max(30000, storyTimeout * 3)
-                // Fixture should initialize quickly - use fixed 10 second timeout
-                const fixtureInitTimeout = 10000
-
-                await page.goto(route, { timeout: pageLoadTimeout })
-
-                await page.waitForFunction(() => window.__PLAITED__ !== undefined, { timeout: fixtureInitTimeout })
-
-                const { type, detail } = await page.evaluate(() => {
-                  return window.__PLAITED__.reporter()
-                })
-
-                if (type === FIXTURE_EVENTS.test_pass) {
-                  console.log(`🟢 ${basename(route)}`)
-                  passed.push({
-                    story,
-                    passed: true,
-                  })
-                } else {
-                  console.log(`🔴 ${basename(route)} (${formatErrorType(detail.errorType)})`)
-                  failed.push({
-                    story,
-                    passed: false,
-                    error: detail,
-                  })
-                }
-                console.log('heapAfter', heapStats().heapSize)
-              } catch (error) {
-                console.error(`Error executing story ${story.exportName}:`, error)
-                failed.push({
-                  story,
-                  passed: false,
-                  error: {
-                    errorType: 'TEST_EXECUTION_ERROR',
-                    error: error instanceof Error ? error.message : String(error),
-                  },
-                })
-              } finally {
-                await context.close()
-              }
-            }),
-          )
+            } else {
+              console.log(`🔴 ${basename(route)} (${formatErrorType(detail.errorType)})`)
+              failed.push({
+                story,
+                passed: false,
+                error: detail,
+              })
+            }
+          } catch (error) {
+            console.error(`Error executing story ${story.exportName}:`, error)
+            failed.push({
+              story,
+              passed: false,
+              error: {
+                errorType: 'TEST_EXECUTION_ERROR',
+                error: error instanceof Error ? error.message : String(error),
+              },
+            })
+          } finally {
+            await context.close()
+          }
+          //   }),
+          // )
         }
       } catch (error) {
         console.error('Error during test execution:', error)
