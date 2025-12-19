@@ -172,7 +172,7 @@ export const useRunner = async ({
         : undefined
 
       try {
-        const batchCount = Math.floor(availableParallelism() * 0.5)
+        const batchCount = Math.floor(availableParallelism() * 0.25)
         const batches = splitIntoBatches(stories, batchCount)
         for (const stories of batches) {
           await Promise.all(
