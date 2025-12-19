@@ -30,7 +30,7 @@
  * - No built-in test retry mechanism
  * - Server lifecycle tied to runner lifecycle
  */
-
+import { heapStats } from 'bun:jsc'
 import { availableParallelism } from 'node:os'
 import { basename } from 'node:path'
 import type { Browser, BrowserContextOptions } from 'playwright'
@@ -172,8 +172,13 @@ export const useRunner = async ({
         : undefined
 
       try {
-        const batchCount = Math.floor(availableParallelism() * 0.25)
-        const batches = splitIntoBatches(stories, batchCount)
+        const itemsPerBatch = Math.floor(availableParallelism() * 0.25)
+        const batches = splitIntoBatches(stories, itemsPerBatch)
+        console.log({
+          batchesLength: batches.length,
+          itemsPerBatch,
+          heapBefore: heapStats().heapSize,
+        })
         for (const stories of batches) {
           await Promise.all(
             stories.map(async (story) => {
@@ -221,6 +226,7 @@ export const useRunner = async ({
                     error: detail,
                   })
                 }
+                console.log('heapAfter', heapStats().heapSize)
               } catch (error) {
                 console.error(`Error executing story ${story.exportName}:`, error)
                 failed.push({
