@@ -1,7 +1,46 @@
 import { bElement, createHostStyles, createStyles } from '../main.ts'
 import { MASK_EVENTS } from './testing.constants.ts'
 import type { MaskClickDetail } from './testing.types.ts'
-import { getShadowPath } from './testing.utils.ts'
+
+/**
+ * Traverses from an element up through shadow DOM boundaries.
+ * Returns the path of elements crossed including shadow hosts.
+ *
+ * @param element - Starting element to traverse from
+ * @returns Array of elements in the shadow path (child to ancestor order)
+ *
+ * @remarks
+ * - Used by mask click handler to capture shadow DOM structure
+ * - Walks up through shadowRoot.host to cross shadow boundaries
+ * - Returns empty array if element is null/undefined
+ * - Array ordered from clicked element to topmost host
+ */
+export const getShadowPath = (element: Element | null): Element[] => {
+  if (!element) return []
+
+  const path: Element[] = [element]
+  let current: Node | null = element
+
+  while (current) {
+    // Check if we're at a shadow root boundary
+    const root: Node = (current as Element).getRootNode()
+    if (root && root !== document && 'host' in root) {
+      const host: Element = (root as ShadowRoot).host
+      path.push(host)
+      current = host
+    } else {
+      // Move up the regular DOM tree
+      current = current.parentElement
+      if (current && current !== document.documentElement) {
+        path.push(current as Element)
+      } else {
+        break
+      }
+    }
+  }
+
+  return path
+}
 
 /**
  * Host styles for grid positioning and z-index layering.

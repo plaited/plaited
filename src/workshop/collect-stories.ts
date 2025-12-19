@@ -21,11 +21,15 @@
  */
 
 import { Glob } from 'bun'
-import { DEFAULT_PLAY_TIMEOUT } from '../testing/testing.constants.ts'
+import { DEFAULT_PLAY_TIMEOUT, STORY_IDENTIFIER } from '../testing/testing.constants.ts'
 import type { StoryExport } from '../testing/testing.types.ts'
-import { isStoryExport } from '../testing/testing.utils.ts'
+import { isTypeOf } from '../utils.ts'
 import type { StoryMetadata } from './workshop.types.ts'
 import { globFiles } from './workshop.utils.ts'
+
+export const isStoryExport = (obj: unknown): obj is StoryExport => {
+  return isTypeOf<StoryExport>(obj, 'object') && obj.$ === STORY_IDENTIFIER
+}
 
 /**
  * @internal

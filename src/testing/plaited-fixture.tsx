@@ -18,9 +18,7 @@ import type {
   FindByTextArgs,
   FireEventArgs,
   InteractionStoryObj,
-  Play,
   RunnerMessage,
-  StoryObj,
 } from './testing.types.ts'
 import {
   accessibilityCheck,
@@ -30,8 +28,8 @@ import {
   findByTestId,
   findByText,
   fireEvent,
-  useInteract,
 } from './testing.utils.ts'
+import { useInteract } from './use-interact.ts'
 
 declare global {
   interface Window {
