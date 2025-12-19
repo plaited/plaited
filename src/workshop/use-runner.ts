@@ -249,7 +249,6 @@ export const useRunner = async ({
         const availableMemory = getAvailableMemory()
         const batchCount = Math.floor(availableMemory / 100)
         const batches = splitIntoBatches(stories, availableParallelism())
-
         // Run batches sequentially to avoid resource contention
         for (const batchStories of batches) {
           await runBatchedStories({
