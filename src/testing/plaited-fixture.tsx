@@ -1,14 +1,6 @@
 import { bElement, createHostStyles } from '../main.ts'
 import { wait } from '../utils.ts'
-import {
-  __PLAITED__,
-  __PLAITED_RUNNER__,
-  DEFAULT_PLAY_TIMEOUT,
-  ERROR_TYPES,
-  FIXTURE_EVENTS,
-  STORY_FIXTURE,
-  SUCCESS_TYPES,
-} from './testing.constants.ts'
+import { DEFAULT_PLAY_TIMEOUT, ERROR_TYPES, FIXTURE_EVENTS, STORY_FIXTURE, SUCCESS_TYPES } from './testing.constants.ts'
 import type {
   AccessibilityCheckParams,
   AssertParams,
@@ -18,7 +10,6 @@ import type {
   FindByTextArgs,
   FireEventArgs,
   InteractionStoryObj,
-  RunnerMessage,
 } from './testing.types.ts'
 import {
   accessibilityCheck,
@@ -30,21 +21,7 @@ import {
   fireEvent,
 } from './testing.utils.ts'
 import { useInteract } from './use-interact.ts'
-
-declare global {
-  interface Window {
-    /**
-     * @internal
-     * Global flag indicating if the current context is within the Plaited test runner environment.
-     * This helps conditional logic, like snapshot reporting, to behave differently when running
-     * inside the test runner versus a standard browser environment.
-     */
-    [__PLAITED_RUNNER__]?: boolean
-    [__PLAITED__]: {
-      reporter: () => Promise<RunnerMessage>
-    }
-  }
-}
+import { useWebSocket } from './use-web-socket.ts'
 
 /**
  * Story test fixture component for Plaited testing framework.
@@ -133,7 +110,12 @@ export const PlaitedFixture = bElement<{
       })}
     />
   ),
-  bProgram({ trigger, bThreads, bThread, bSync, emit }) {
+  bProgram({ trigger, bThreads, bThread, bSync, emit, inspector }) {
+    const send = useWebSocket()
+    trigger.addDisconnectCallback(send.disconnect)
+    if (!window?.__PLAITED_RUNNER__) {
+      inspector.on()
+    }
     bThreads.set({
       onRun: bThread(
         [
@@ -153,10 +135,6 @@ export const PlaitedFixture = bElement<{
       return true
     }
 
-    const { resolve, promise } = Promise.withResolvers<RunnerMessage>()
-    window.__PLAITED__ = {
-      reporter: async () => promise,
-    }
     const handleError = (error: unknown, reject?: Reject) => {
       if (error instanceof Error) {
         const detail = {
@@ -264,7 +242,7 @@ export const PlaitedFixture = bElement<{
       [FIXTURE_EVENTS.test_fail](detail) {
         const { pathname } = new URL(window.location.href)
         emit({ type: FIXTURE_EVENTS.test_fail, detail })
-        resolve({
+        send({
           type: FIXTURE_EVENTS.test_fail,
           detail: {
             pathname,
@@ -276,7 +254,7 @@ export const PlaitedFixture = bElement<{
       [FIXTURE_EVENTS.test_pass](detail) {
         const { pathname } = new URL(window.location.href)
         emit({ type: FIXTURE_EVENTS.test_pass, detail })
-        resolve({
+        send({
           type: FIXTURE_EVENTS.test_pass,
           detail: {
             pathname,

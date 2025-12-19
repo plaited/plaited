@@ -4,7 +4,6 @@ import { PlaitedHeader } from './plaited-header.tsx'
 import { PlaitedMask } from './plaited-mask.tsx'
 import { FIXTURE_EVENTS, HEADER_EVENTS, MASK_EVENTS, STORY_ORCHESTRATOR } from './testing.constants.ts'
 import type { InteractionStoryObj } from './testing.types.ts'
-import { useReload } from './use-reload.ts'
 
 /**
  * Host styles for grid layout container.
@@ -84,12 +83,10 @@ export const PlaitedOrchestrator = bElement<{
     </>
   ),
   publicEvents: [FIXTURE_EVENTS.run],
-  bProgram({ $, trigger, inspector }) {
+  bProgram({ $, inspector }) {
     const mask = $<BehavioralElement>('mask')[0]!
     if (!window?.__PLAITED_RUNNER__) {
       inspector.on()
-      const disconnectReload = useReload()
-      trigger.addDisconnectCallback(disconnectReload)
     }
     const fixture = $<BehavioralElement>('fixture')[0]!
     return {

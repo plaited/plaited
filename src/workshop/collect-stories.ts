@@ -20,10 +20,13 @@
  * - Consider discover-story-metadata.ts for static analysis tools
  */
 
+import { statSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
 import { Glob } from 'bun'
 import { DEFAULT_PLAY_TIMEOUT, STORY_IDENTIFIER } from '../testing/testing.constants.ts'
 import type { StoryExport } from '../testing/testing.types.ts'
 import { isTypeOf } from '../utils.ts'
+import { getPaths } from './get-paths.ts'
 import type { StoryMetadata } from './workshop.types.ts'
 import { globFiles } from './workshop.utils.ts'
 
@@ -41,17 +44,23 @@ export const isStoryExport = (obj: unknown): obj is StoryExport => {
  * @returns StoryMetadata object
  */
 const toStoryMetadata = ({
+  route,
   exportName,
   filePath,
   storyExport,
+  entryPath,
 }: {
+  route: string
   exportName: string
   filePath: string
   storyExport: StoryExport
+  entryPath: string
 }): StoryMetadata => {
   return {
+    route,
     exportName,
     filePath,
+    entryPath,
     type: storyExport.type,
     hasPlay: !!storyExport.play,
     hasArgs: storyExport.args !== undefined,
@@ -79,13 +88,13 @@ const toStoryMetadata = ({
  * @see {@link discoverStoryMetadata} for directory-based discovery
  * @see {@link filterStoryMetadata} for filtering logic
  */
-export const getStoryMetadata = async (filePath: string): Promise<StoryMetadata[]> => {
-  const metadata: StoryMetadata[] = []
-
+export const getStoryMetadata = async (cwd: string, filePath: string) => {
+  const metadata = new Map<string, StoryMetadata>()
+  let hasOnlyStories = false
+  let storyCount = 0
   try {
     // Dynamic import to load the module
     const module = (await import(filePath)) as Record<string, unknown>
-
     // Check each export
     for (const [exportName, storyExport] of Object.entries(module)) {
       // Skip default exports and non-story exports
@@ -95,55 +104,34 @@ export const getStoryMetadata = async (filePath: string): Promise<StoryMetadata[
 
       // Check if this export is a StoryExport
       if (isStoryExport(storyExport)) {
-        metadata.push(toStoryMetadata({ exportName, filePath, storyExport }))
+        storyCount++
+        if (!hasOnlyStories && storyExport.only) {
+          metadata.clear()
+          hasOnlyStories = true
+        }
+        if (hasOnlyStories && !storyExport.only) continue
+        if (storyExport.skip) continue
+        const { route, entryPath } = getPaths({
+          cwd,
+          filePath,
+          exportName,
+        })
+        metadata.set(route, toStoryMetadata({ exportName, filePath, storyExport, route, entryPath }))
       }
     }
   } catch (error) {
     console.error(`Failed to import story file: ${filePath}`, error)
     throw error
   }
-
-  // Apply .only() and .skip() filtering per-file
-  return filterStoryMetadata(metadata)
-}
-
-/**
- * @internal
- * Filters story metadata based on .only() and .skip() flags.
- * Implements Jest/Vitest-style focused test execution.
- *
- * @param metadata - Array of story metadata to filter
- * @returns Filtered array of story metadata
- *
- * @remarks
- * Filtering rules (applied in order):
- * 1. If any story has flag: 'only', return ONLY those stories
- * 2. Otherwise, exclude stories with flag: 'skip'
- * 3. Preserves original order of stories
- *
- * @see {@link StoryMetadata} for metadata structure
- */
-export const filterStoryMetadata = (metadata: StoryMetadata[]): StoryMetadata[] => {
-  // Check if any story has .only()
-  const onlyStories = metadata.filter((story) => story.flag === 'only')
-
-  if (onlyStories.length > 0) {
-    const skippedCount = metadata.length - onlyStories.length
-    if (skippedCount > 0) {
-      console.log(`⚡ Running ${onlyStories.length} .only() stories (${skippedCount} skipped)`)
+  const skippedCount = storyCount - metadata.size
+  if (skippedCount) {
+    if (hasOnlyStories) {
+      console.log(`⚡ Running ${metadata.size} .only() stories (${skippedCount} skipped)`)
+    } else {
+      console.log(`⏭️  Skipping ${skippedCount} stories`)
     }
-    return onlyStories
   }
-
-  // Otherwise filter out .skip()
-  const activeStories = metadata.filter((story) => story.flag !== 'skip')
-  const skippedCount = metadata.length - activeStories.length
-
-  if (skippedCount > 0) {
-    console.log(`⏭️  Skipping ${skippedCount} stories`)
-  }
-
-  return activeStories
+  return metadata
 }
 
 /**
@@ -164,7 +152,7 @@ export const filterStoryMetadata = (metadata: StoryMetadata[]): StoryMetadata[] 
  * @see {@link getStoryMetadata} for single file collection
  * @see {@link filterStoryMetadata} for filtering logic
  */
-export const discoverStoryMetadata = async (cwd: string, exclude?: string): Promise<StoryMetadata[]> => {
+export const discoverStoryMetadata = async (cwd: string, exclude?: string) => {
   console.log(`🔍 Discovering story metadata in: ${cwd}`)
   if (exclude) {
     console.log(`📋 Excluding pattern: ${exclude}`)
@@ -186,11 +174,49 @@ export const discoverStoryMetadata = async (cwd: string, exclude?: string): Prom
 
   console.log(`📄 Found ${files.length} story files`)
 
-  // Collect metadata from all files in parallel
-  const metadataArrays = await Promise.all(files.map((file) => getStoryMetadata(file)))
-  const metadata = metadataArrays.flat()
+  const maps = await Promise.all(files.map((file) => getStoryMetadata(cwd, file)))
 
-  console.log(`✅ Discovered ${metadata.length} story exports (after per-file .only()/.skip() filtering)`)
+  return maps
+}
 
+export const collectStories = async (cwd: string, paths: string[]) => {
+  console.log(`   Paths: ${paths.join(', ')}`)
+
+  console.log('\n🔍 Discovering stories from provided paths...')
+
+  const maps: Map<string, StoryMetadata>[] = []
+
+  for (const pathArg of paths) {
+    const absolutePath = resolve(cwd, pathArg)
+
+    try {
+      const stats = statSync(absolutePath)
+
+      if (stats.isDirectory()) {
+        console.log(`📂 Scanning directory: ${absolutePath}`)
+        const data = await discoverStoryMetadata(absolutePath)
+        maps.push(...data.flat())
+      } else if (stats.isFile()) {
+        console.log(`📄 Analyzing file: ${absolutePath}`)
+        const data = await getStoryMetadata(dirname(absolutePath), absolutePath)
+        maps.push(data)
+      } else {
+        console.error(`🚩 Error: Path is neither file nor directory: ${absolutePath}`)
+        process.exit(1)
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        console.error(`🚩 Error: Path does not exist: ${absolutePath}`)
+      } else {
+        console.error(`🚩 Error processing path ${absolutePath}:`, error)
+      }
+      process.exit(1)
+    }
+  }
+  const metadata = new Map<string, StoryMetadata>(maps.flatMap((m) => [...m]))
+  if (metadata.size === 0) {
+    console.warn('\n⚠️  No story exports found in provided paths')
+  }
+  console.log(`✅ Discovered ${metadata.size} story exports`)
   return metadata
 }

@@ -1,7 +1,7 @@
 import type axe from 'axe-core'
 import type { FunctionTemplate, HostStylesObject, TemplateObject } from '../main.ts'
 import type { Wait } from '../utils.ts'
-import type { FIXTURE_EVENTS, STORY_IDENTIFIER, STORY_TYPES } from './testing.constants.ts'
+import type { __PLAITED_RUNNER__, STORY_IDENTIFIER, STORY_TYPES } from './testing.constants.ts'
 import type { Match, Throws } from './testing.utils.ts'
 
 /**
@@ -210,28 +210,6 @@ export type SnapshotStoryObj<T extends FunctionTemplate = FunctionTemplate> = {
  * @see {@link SnapshotStoryObj} for visual tests
  */
 export type StoryObj<T extends FunctionTemplate = FunctionTemplate> = InteractionStoryObj<T> | SnapshotStoryObj<T>
-/**
- * Represents a message structure used by the story runner, likely for communication
- * between different parts of the test execution environment (e.g., test runner and reporter, or main thread and worker).
- *
- * @property snapshot - A `SnapshotMessage` from the behavioral program, capturing its state at a relevant point in time for the story.
- * @property pathname - The path or unique identifier of the story being run or reported on.
- */
-export type RunnerMessage =
-  | {
-      type: typeof FIXTURE_EVENTS.test_pass
-      detail: {
-        pathname: string
-      }
-    }
-  | {
-      type: typeof FIXTURE_EVENTS.test_fail
-      detail: {
-        pathname: string
-        error: string
-        errorType: string
-      }
-    }
 
 export type InteractionExport<T extends FunctionTemplate = FunctionTemplate> = {
   template?: T
@@ -298,4 +276,16 @@ export type MaskClickDetail = {
   attributes: Array<{ name: string; value: string }>
   textContent: string | null
   shadowPath: Element[]
+}
+
+declare global {
+  interface Window {
+    /**
+     * @internal
+     * Global flag indicating if the current context is within the Plaited test runner environment.
+     * This helps conditional logic, like snapshot reporting, to behave differently when running
+     * inside the test runner versus a standard browser environment.
+     */
+    [__PLAITED_RUNNER__]?: boolean
+  }
 }

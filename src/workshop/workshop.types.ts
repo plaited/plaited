@@ -41,6 +41,8 @@ export type StoryMetadata = {
   hasParameters: boolean
   flag?: 'only' | 'skip'
   timeout: number
+  route: string
+  entryPath: string
 }
 
 /**
@@ -51,6 +53,6 @@ export type StoryMetadata = {
  * @property colorScheme - Color scheme preference for browser context. Defaults to 'light' if not specified.
  */
 export type RunTestsDetail = {
-  metadata?: StoryMetadata[]
+  metadata?: Map<string, StoryMetadata>
   colorScheme?: 'light' | 'dark'
 }

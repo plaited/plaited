@@ -30,15 +30,15 @@
  * - No built-in test retry mechanism
  * - Server lifecycle tied to runner lifecycle
  */
-// import { heapStats } from 'bun:jsc'
-// import { availableParallelism } from 'node:os'
+import { availableParallelism } from 'node:os'
 import { basename } from 'node:path'
-import type { Browser, BrowserContextOptions } from 'playwright'
-import { FIXTURE_EVENTS } from '../testing/testing.constants.ts'
+import { type BrowserContext, type BrowserContextOptions, chromium } from 'playwright'
+import { useBehavioral } from '../main.ts'
+import { ERROR_TYPES, FIXTURE_EVENTS } from '../testing/testing.constants.ts'
+import type { FailMessage, PassMessage } from '../testing.ts'
 import { discoverStoryMetadata } from './collect-stories.ts'
-import { getPaths } from './get-paths.ts'
 import { getServer } from './get-server.ts'
-import type { RunTestsDetail, StoryMetadata } from './workshop.types.ts'
+import type { StoryMetadata } from './workshop.types.ts'
 
 /**
  * @internal
@@ -88,16 +88,26 @@ const formatErrorType = (errorType: string) =>
  * splitIntoBatches([1, 2, 3, 4, 5, 6], 3) // [[1, 2, 3], [4, 5, 6]]
  * ```
  */
-// const splitIntoBatches = <T>(items: T[], itemsPerBatch: number): T[][] => {
-//   const batches: T[][] = []
+const splitIntoBatches = <T>(items: T[], itemsPerBatch: number): T[][] => {
+  const batches: T[][] = []
 
-//   for (let i = 0; i < items.length; i += itemsPerBatch) {
-//     batches.push(items.slice(i, i + itemsPerBatch))
-//   }
+  for (let i = 0; i < items.length; i += itemsPerBatch) {
+    batches.push(items.slice(i, i + itemsPerBatch))
+  }
 
-//   return batches
-// }
+  return batches
+}
 
+const logResults = (results: { total: number; passed: number; failed: number }) => {
+  // Print summary
+  console.log(`\n${'='.repeat(50)}`)
+  console.log('📊 Test Summary')
+  console.log('='.repeat(50))
+  console.log(`Total:  ${results.total}`)
+  console.log(`Passed: ${results.passed} ✅`)
+  console.log(`Failed: ${results.failed} 🚩`)
+  console.log('='.repeat(50))
+}
 /**
  * Creates a test runner for running Plaited story tests.
  * Manages server lifecycle, test execution, and result reporting.
@@ -119,180 +129,202 @@ const formatErrorType = (errorType: string) =>
  * @see {@link getServer} for server creation
  * @see {@link discoverStoryMetadata} for story discovery
  */
-export const useRunner = async ({
-  browser,
-  port,
-  recordVideo,
-  cwd,
-}: {
-  browser: Browser
-  port: number
-  recordVideo?: BrowserContextOptions['recordVideo']
-  cwd: string
-}) => {
-  // Create server at initialization
-  const { reload, server } = await getServer({ cwd, port })
+export const useRunner = useBehavioral<
+  {
+    [FIXTURE_EVENTS.test_pass]: PassMessage['detail']
+    [FIXTURE_EVENTS.test_fail]: FailMessage['detail']
+  },
+  {
+    port: number
+    recordVideo?: BrowserContextOptions['recordVideo']
+    cwd: string
+    colorScheme?: 'light' | 'dark'
+    paths: string[]
+  }
+>({
+  publicEvents: ['run'],
+  async bProgram({ port, recordVideo, cwd, trigger, colorScheme = 'light', paths, bThreads, bThread, bSync }) {
+    let failed: TestResult[] = []
+    let passed: TestResult[] = []
+    const contextRefs = new Map<string, BrowserContext>()
+    // Create server at initialization
+    const { server, stories } = await getServer({ cwd, port, paths, trigger, colorScheme })
+    // Launch browser
+    console.log('🌐 Launching browser...')
+    const browser = await chromium.launch()
 
-  return {
-    async run(detail?: RunTestsDetail) {
-      // Clear results for this test run
-      const failed: TestResult[] = []
-      const passed: TestResult[] = []
+    bThreads.set({
+      onCountChange: bThread(
+        [
+          bSync({
+            waitFor: ({ type }) => {
+              const events = [FIXTURE_EVENTS.test_fail, FIXTURE_EVENTS.test_pass]
+              if (!events.includes(type as (typeof events)[number])) return false
+              const completedRuns = failed.length + passed.length
+              const runsLeft = stories.size - completedRuns
+              return runsLeft === 1
+            },
+          }),
+          bSync({ request: { type: 'report' } }),
+          bSync({ request: { type: 'end' } }),
+        ],
+        true,
+      ),
+    })
 
-      // Extract metadata and colorScheme from detail, with defaults
-      const metadata = detail?.metadata
-      const colorScheme = detail?.colorScheme ?? 'light'
+    // Handle SIGINT (Ctrl+C)
+    process.on('SIGINT', () => {
+      console.log('\n⚠️  Interrupted by user')
+      trigger({ type: 'interrupt' })
+    })
 
-      console.log(`🔍 Discovering stories in: ${cwd}`)
-
-      // Discover stories - handle undefined/empty metadata parameter
-      // Behavioral programs pass {} as detail when no detail is provided
-      const stories =
-        Array.isArray(metadata) && metadata.length > 0 ? metadata : await discoverStoryMetadata(cwd, '**/filtering/**')
-
-      if (!stories || stories.length === 0) {
-        console.warn('⚠️  No story exports found')
-        return {
-          passed: 0,
-          failed: 0,
-          total: 0,
-          results: [],
-        }
-      }
-
-      console.log(`📄 Found ${stories.length} story exports`)
-
-      // Create browser context with colorScheme
-      // Modify recordVideo directory to include colorScheme subdirectory
-      const videoConfig = recordVideo
-        ? {
-            ...recordVideo,
-            dir: `${recordVideo.dir}/${colorScheme}`,
-          }
-        : undefined
-
+    const cleanup = async () => {
+      passed = []
+      failed = []
       try {
-        // const itemsPerBatch = Math.floor(availableParallelism() * 0.25)
-        // const batches = splitIntoBatches(stories, itemsPerBatch)
-        for (const story of stories) {
-          // await Promise.all(
-          //   stories.map(async (story) => {
-          const context = await browser.newContext({
-            recordVideo: videoConfig,
-            colorScheme,
-            baseURL: server.url.href,
-          })
-          const page = await context.newPage()
-
-          try {
-            await page.addInitScript(() => {
-              window.__PLAITED_RUNNER__ = true
-            })
-            const { route } = getPaths({
-              cwd,
-              exportName: story.exportName,
-              filePath: story.filePath,
-            })
-
-            const storyTimeout = story.timeout
-            const pageLoadTimeout = Math.max(30000, storyTimeout * 3)
-            // Fixture should initialize quickly - use fixed 10 second timeout
-            const fixtureInitTimeout = 10000
-
-            await page.goto(route, { timeout: pageLoadTimeout })
-
-            await page.waitForFunction(() => window.__PLAITED__ !== undefined, { timeout: fixtureInitTimeout })
-
-            const { type, detail } = await page.evaluate(() => {
-              return window.__PLAITED__.reporter()
-            })
-
-            if (type === FIXTURE_EVENTS.test_pass) {
-              console.log(`🟢 ${basename(route)}`)
-              passed.push({
-                story,
-                passed: true,
-              })
-            } else {
-              console.log(`🔴 ${basename(route)} (${formatErrorType(detail.errorType)})`)
-              failed.push({
-                story,
-                passed: false,
-                error: detail,
-              })
-            }
-          } catch (error) {
-            console.error(`Error executing story ${story.exportName}:`, error)
-            failed.push({
-              story,
-              passed: false,
-              error: {
-                errorType: 'TEST_EXECUTION_ERROR',
-                error: error instanceof Error ? error.message : String(error),
-              },
-            })
-          } finally {
-            await context.close()
-          }
-          //   }),
-          // )
-        }
-      } catch (error) {
-        console.error('Error during test execution:', error)
-      }
-
-      // Print summary with detailed failures
-      if (failed.length > 0) {
-        console.log(`\n ${'='.repeat(50)}`)
-        console.log(`\n${failed.length} Failed Test${failed.length > 1 ? 's' : ''}:\n`)
-
-        failed.forEach(({ story, error }, index, arr) => {
-          const detail = error as { errorType: string; error: string }
-          const { route } = getPaths({
-            cwd,
-            exportName: story.exportName,
-            filePath: story.filePath,
-          })
-
-          const formattedErrorType = formatErrorType(detail.errorType)
-
-          console.log(`ExportName: ${story.exportName}`)
-          console.log(`File: ${`.${story.filePath.replace(cwd, '')}`}`)
-          console.log('')
-          console.log(`${detail.error.replace(`${detail.errorType}`, formattedErrorType)}`)
-          console.log('')
-          console.log(`Route: http://localhost${route}`)
-          console.log(`ColorScheme: ${colorScheme}`)
-          console.log('')
-          const length = arr.length
-          if (length > 1 && index + 1 < length) {
-            console.log('-'.repeat(50))
-            console.log('')
-          }
-        })
-        console.log('='.repeat(50))
-      }
-
-      console.log('\nPass:', passed.length)
-      console.log('Fail:', failed.length)
-
-      // Report results
-      const results = [...passed, ...failed]
-      return {
-        passed: passed.length,
-        failed: failed.length,
-        total: results.length,
-        results,
-      }
-    },
-    reload,
-    async end() {
-      try {
+        console.log('\n🧹 Cleaning up...')
         console.log('🛑 Shutting down test runner')
         await server.stop(true)
+        await browser.close()
+        contextRefs.clear()
+        stories.clear()
       } catch (error) {
         console.error('Error during cleanup:', error)
       }
-    },
-  }
-}
+    }
+    return {
+      async end() {
+        await cleanup()
+        if (failed.length > 0) {
+          process.exit(1)
+        } else {
+          process.exit(0)
+        }
+      },
+      async interrupt() {
+        await cleanup()
+        process.exit(130)
+      },
+      async [FIXTURE_EVENTS.test_pass]({ pathname }) {
+        if (stories.has(pathname)) {
+          console.log(`🟢 ${basename(pathname)}`)
+          passed.push({
+            story: stories.get(pathname)!,
+            passed: true,
+          })
+        }
+        contextRefs.delete(pathname)
+      },
+      async [FIXTURE_EVENTS.test_fail](detail) {
+        const { pathname } = detail
+        if (stories.has(pathname)) {
+          console.log(`🔴 ${basename(pathname)} (${formatErrorType(detail.errorType)})`)
+          failed.push({
+            story: stories.get(pathname)!,
+            passed: false,
+            error: detail,
+          })
+        }
+        contextRefs.delete(detail.pathname)
+      },
+      report() {
+        const passedCount = passed.length
+        const failedCount = failed.length
+        // Print summary with detailed failures
+        if (failedCount > 0) {
+          console.log(`\n ${'='.repeat(50)}`)
+          console.log(`\n${failed.length} Failed Test${failed.length > 1 ? 's' : ''}:\n`)
+
+          failed.forEach(({ story, error }, index, arr) => {
+            const detail = error as { errorType: string; error: string }
+
+            const formattedErrorType = formatErrorType(detail.errorType)
+
+            console.log(`ExportName: ${story.exportName}`)
+            console.log(`File: ${`.${story.filePath.replace(cwd, '')}`}`)
+            console.log('')
+            console.log(`${detail.error.replace(`${detail.errorType}`, formattedErrorType)}`)
+            console.log('')
+            console.log(`Route: http://localhost${story.route}`)
+            console.log(`ColorScheme: ${colorScheme}`)
+            console.log('')
+            const length = arr.length
+            if (length > 1 && index + 1 < length) {
+              console.log('-'.repeat(50))
+              console.log('')
+            }
+          })
+          console.log('='.repeat(50))
+        }
+
+        // Print summary
+        console.log(`\n${'='.repeat(50)}`)
+        console.log('📊 Test Summary')
+        console.log('='.repeat(50))
+        console.log(`Total:  ${passedCount + failedCount}`)
+        console.log(`Passed: ${passedCount} ✅`)
+        console.log(`Failed: ${failedCount} 🚩`)
+        console.log('='.repeat(50))
+      },
+      async run() {
+        if (stories.size === 0) {
+          logResults({
+            passed: 0,
+            failed: 0,
+            total: 0,
+          })
+        }
+
+        // Create browser context with colorScheme
+        // Modify recordVideo directory to include colorScheme subdirectory
+        const videoConfig = recordVideo
+          ? {
+              ...recordVideo,
+              dir: `${recordVideo.dir}/${colorScheme}`,
+            }
+          : undefined
+
+        try {
+          const batches = splitIntoBatches([...stories.values()], availableParallelism())
+          console.log('🚀 Running tests...\n')
+          for (const stories of batches) {
+            await Promise.all(
+              stories.map(async (story) => {
+                const context = await browser.newContext({
+                  recordVideo: videoConfig,
+                  colorScheme,
+                  baseURL: server.url.href,
+                })
+
+                const page = await context.newPage()
+
+                try {
+                  await page.addInitScript(() => {
+                    window.__PLAITED_RUNNER__ = true
+                  })
+
+                  await page.goto(story.route)
+
+                  contextRefs.set(story.route, context)
+                } catch (error) {
+                  console.error(`Error executing story ${story.exportName}:`, error)
+
+                  trigger({
+                    type: FIXTURE_EVENTS.test_fail,
+                    detail: {
+                      pathname: story.route,
+                      errorType: ERROR_TYPES.unknown_error,
+                      error: error instanceof Error ? error.message : String(error),
+                    },
+                  })
+                }
+              }),
+            )
+          }
+        } catch (error) {
+          console.error('Error during test execution:', error)
+        }
+      },
+    }
+  },
+})

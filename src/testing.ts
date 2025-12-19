@@ -24,4 +24,5 @@
 
 export * from './testing/story.tsx'
 export * from './testing/testing.errors.ts'
+export * from './testing/testing.schemas.ts'
 export * from './testing/testing.types.ts'

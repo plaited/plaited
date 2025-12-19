@@ -1,6 +1,7 @@
 import { DelegatedListener, delegates } from '../main/delegated-listener.ts'
 import { isTypeOf } from '../utils.ts'
 import { RELOAD_PAGE, RUNNER_URL } from './testing.constants.ts'
+import type { RunnerMessage } from './testing.schemas.ts'
 
 /** @internal Type guard to check if an event is a WebSocket CloseEvent. */
 const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => event.type === 'close'
@@ -28,7 +29,7 @@ const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => 
  * - Handles page reload requests from the runner.
  * - Implements an exponential backoff retry mechanism for specific close codes.
  */
-export const useReload = () => {
+export const useWebSocket = () => {
   const retryStatusCodes = new Set([1006, 1012, 1013])
   const maxRetries = 3
   let socket: WebSocket | undefined
@@ -74,5 +75,19 @@ export const useReload = () => {
     },
   }
   ws.connect()
-  return () => socket?.close()
+  const send = (message: RunnerMessage) => {
+    const fallback = () => {
+      send(message)
+      socket?.removeEventListener('open', fallback)
+    }
+    if (socket?.readyState === WebSocket.OPEN) {
+      return socket.send(JSON.stringify(message))
+    }
+    if (!socket) ws.connect()
+    socket?.addEventListener('open', fallback)
+  }
+  send.disconnect = () => {
+    socket?.close()
+  }
+  return send
 }

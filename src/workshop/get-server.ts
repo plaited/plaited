@@ -1,7 +1,13 @@
+import { z } from 'zod/v4'
+import type { Trigger } from '../main.ts'
 import { RELOAD_PAGE, RUNNER_URL } from '../testing/testing.constants.ts'
-import { discoverStoryMetadata } from './collect-stories.ts'
+import { RunnerMessageSchema } from '../testing/testing.schemas.ts'
+import { isTypeOf } from '../utils.ts'
+import { collectStories } from './collect-stories.ts'
 import { getEntryRoutes } from './get-entry-routes.ts'
 import { getHTMLRoutes } from './get-html-routes.tsx'
+import { getRoot } from './get-root.ts'
+import type { StoryMetadata } from './workshop.types.ts'
 
 /** @internal WebSocket topic */
 const RELOAD_TOPIC = 'RELOAD_TOPIC'
@@ -15,36 +21,49 @@ const RELOAD_TOPIC = 'RELOAD_TOPIC'
  *
  * @internal
  */
-export const getRoutes = async (cwd: string): Promise<Record<string, Response>> => {
-  console.log(`🔍 Discovering stories in: ${cwd}`)
-
-  // Step 1: Discover all story exports
-  const stories = await discoverStoryMetadata(cwd)
-
-  if (stories.length === 0) {
+export const getRoutes = async ({
+  paths,
+  stories,
+  colorScheme,
+}: {
+  paths: string[]
+  stories: Map<string, StoryMetadata>
+  colorScheme: 'light' | 'dark'
+}): Promise<Record<string, Response>> => {
+  if (stories.size === 0) {
     console.warn('⚠️  No story exports found')
     return {}
   }
 
-  console.log(`📄 Found ${stories.length} story exports`)
+  console.log(`📄 Found ${stories.size} story exports`)
 
   // Collect unique story file paths for bundling
-  const uniqueFilePaths = [...new Set(stories.map((s) => s.filePath))]
-
+  const uniqueFilePaths = new Set<string>()
+  let root: string
+  try {
+    root = getRoot(paths)
+  } catch (error) {
+    console.error(`🚩 Error: Failed to determine common root folder: ${error}`)
+    process.exit(1)
+  }
   // Steps 2-4: Run HTML route generation and bundling in parallel for maximum performance
   const [htmlRoutesArray, entryRoutes] = await Promise.all([
     // Step 2: Generate HTML routes for each story
     Promise.all(
-      stories.map((story) =>
-        getHTMLRoutes({
+      stories.values().map((story) => {
+        const filePath = story.filePath
+        !uniqueFilePaths.has(filePath) && uniqueFilePaths.add(filePath)
+        return getHTMLRoutes({
+          colorScheme,
+          route: story.route,
           exportName: story.exportName,
           filePath: story.filePath,
-          cwd,
-        }),
-      ),
+          entryPath: story.entryPath,
+        })
+      }),
     ),
     // Step 3: Bundle all story files and get entry routes (runs in parallel with HTML generation)
-    getEntryRoutes(cwd, uniqueFilePaths),
+    getEntryRoutes(root, [...uniqueFilePaths]),
   ])
 
   // Step 5: Merge all routes together
@@ -75,13 +94,31 @@ export const getRoutes = async (cwd: string): Promise<Record<string, Response>> 
  * @returns Object with reload callback, server instance, and actual port number
  */
 
-export const getServer = async ({ cwd, port }: { cwd: string; port: number }) => {
+export const getServer = async ({
+  cwd,
+  port,
+  paths,
+  colorScheme,
+  trigger,
+}: {
+  cwd: string
+  port: number
+  paths: string[]
+  colorScheme: 'light' | 'dark'
+  trigger?: Trigger
+}) => {
+  console.log(`🔍 Discovering stories in: ${cwd}`)
+
+  // Step 1: Discover all story exports
+  const stories = await collectStories(cwd, paths)
+
   console.log(`🔍 Starting Plaited server`)
   console.log(`📂 Root: ${cwd}`)
-  console.log(`🌐 Port: ${port}`)
+  console.log(`🌐 Port: ${port === 0 ? '0 (auto-assign)' : port}`)
+
   const server = Bun.serve({
     port,
-    routes: await getRoutes(cwd),
+    routes: await getRoutes({ paths, stories, colorScheme }),
     async fetch(req, server) {
       const { pathname } = new URL(req.url)
 
@@ -106,7 +143,22 @@ export const getServer = async ({ cwd, port }: { cwd: string; port: number }) =>
       open(ws) {
         ws.subscribe(RELOAD_TOPIC)
       },
-      message() {},
+      message(_, message) {
+        if (!isTypeOf<string>(message, 'string')) return
+        try {
+          if (trigger) {
+            const json = JSON.parse(message)
+            const event = RunnerMessageSchema.parse(json)
+            trigger(event)
+          }
+        } catch (error) {
+          if (error instanceof z.ZodError) {
+            console.error('Validation failed:', error.issues)
+          } else {
+            console.error('JSON parsing or other error:', error)
+          }
+        }
+      },
       close(ws) {
         ws.unsubscribe(RELOAD_TOPIC)
       },
@@ -122,5 +174,5 @@ export const getServer = async ({ cwd, port }: { cwd: string; port: number }) =>
   console.log(`✅ Server ready at http://localhost:${server.port}`)
   console.log(`🔥 Hot reload enabled via WebSocket`)
 
-  return { reload, server }
+  return { reload, server, stories }
 }

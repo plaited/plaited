@@ -2,7 +2,6 @@ import { z } from 'zod'
 import { joinStyles, ssr, type TemplateObject } from '../main.ts'
 import { FIXTURE_EVENTS, STORY_FIXTURE, STORY_ORCHESTRATOR } from '../testing/testing.constants.ts'
 import type { StoryExport } from '../testing.ts'
-import { getPaths } from './get-paths.ts'
 import { zip } from './workshop.utils.ts'
 
 /**
@@ -75,18 +74,23 @@ const usePage = ({
   entryPath,
   exportName,
   parameters,
+  colorScheme,
 }: {
   fixture: TemplateObject
   entryPath: string
   exportName: string
   parameters?: StoryExport['parameters']
+  colorScheme: 'light' | 'dark'
 }): Response => {
   // Merge default body styles with parameters.styles if provided
   const bodyStyles = ['body { height: 100vh; height: 100dvh; margin: 0; }']
   const additionalStyles = parameters?.styles ? Object.entries(parameters.styles).map(([k, v]) => `${k}: ${v}`) : []
 
   const content = ssr(
-    <html lang='en'>
+    <html
+      lang='en'
+      style={{ 'color-scheme': colorScheme }}
+    >
       <head>
         <title>{exportName}</title>
         <link
@@ -135,14 +139,16 @@ const usePage = ({
 export const getHTMLRoutes = async ({
   exportName,
   filePath,
-  cwd,
+  route,
+  entryPath,
+  colorScheme,
 }: {
   exportName: string
   filePath: string
-  cwd: string
+  route: string
+  entryPath: string
+  colorScheme: 'light' | 'dark'
 }): Promise<Record<string, Response>> => {
-  // Make path relative to cwd and convert to entry path
-  const { route, entryPath } = getPaths({ cwd, filePath, exportName })
   const module = await cachedImport(filePath)
   const storyExport = module[exportName]
 
@@ -174,7 +180,7 @@ export const getHTMLRoutes = async ({
   }
 
   return {
-    [route]: usePage({ fixture, entryPath, exportName, parameters }),
+    [route]: usePage({ fixture, entryPath, exportName, parameters, colorScheme }),
     [`${route}.template`]: useTemplateInclude({ fixture, entryPath }),
   }
 }

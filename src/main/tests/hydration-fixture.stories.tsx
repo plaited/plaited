@@ -8,7 +8,7 @@ const TRIGGER_HYDRATING_ELEMENT = 'TRIGGER_HYDRATING_ELEMENT'
 const FIXTURE_ELEMENT_TAG = 'fixture-element'
 const EMPTY_SLOT = 'Empty slot'
 const TRIGGER_HYDRATION = 'TRIGGER_HYDRATION'
-const ROUTE = '/src/main/tests/hydrating-element--target.template'
+const ROUTE = '/tests/hydrating-element--target.template'
 
 const HydrationFixture = bElement({
   tag: FIXTURE_ELEMENT_TAG,
