@@ -101,12 +101,12 @@ if (port && (Number.isNaN(port) || port < 0 || port > 65535)) {
 const { 'color-scheme': colorScheme } = values
 
 // Get paths from positionals
-const paths = positionals.slice(3)
+let paths = positionals.slice(3)
 //Get Common Root Folder
 
 if (paths.length === 0) {
   console.log('\n🔍 No paths provided - will discover all stories in working directory\n')
-  process.exit(2)
+  paths = [process.cwd()]
 }
 
 const cwd = values.dir ? resolve(process.cwd(), values.dir) : process.cwd()
