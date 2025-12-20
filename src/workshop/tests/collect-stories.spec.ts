@@ -8,18 +8,22 @@ const STORIES_DIR = join(FIXTURES_DIR, 'stories')
 const FILTERING_STORIES_DIR = join(STORIES_DIR, 'filtering')
 
 test('discoverStoryMetadata: discovers and classifies stories correctly', async () => {
-  const metadata = await discoverStoryMetadata(STORIES_DIR, '**/filtering/**')
+  const metadataMaps = await discoverStoryMetadata(STORIES_DIR, '**/filtering/**')
+  // Flatten array of Maps to single array
+  const metadata = metadataMaps.flatMap((map) => [...map.values()])
 
   // Should find 4 stories (filtering out default export and non-story exports)
   expect(metadata.length).toBe(4)
 
-  // Each metadata object should have exactly 9 properties
+  // Each metadata object should have exactly 11 properties (added route and entryPath)
   for (const story of metadata) {
     const keys = Object.keys(story)
-    expect(keys.length).toBe(9)
+    expect(keys.length).toBe(11)
     expect(keys).toEqual([
+      'route',
       'exportName',
       'filePath',
+      'entryPath',
       'type',
       'hasPlay',
       'hasArgs',
@@ -36,7 +40,7 @@ test('discoverStoryMetadata: discovers and classifies stories correctly', async 
   // Verify basicStory (snapshot with args and template)
   const mixedStoriesPath = join(STORIES_DIR, 'mixed-stories.stories.tsx')
 
-  expect(sorted[0]).toEqual({
+  expect(sorted[0]).toMatchObject({
     exportName: 'basicStory',
     filePath: mixedStoriesPath,
     type: 'snapshot',
@@ -46,10 +50,13 @@ test('discoverStoryMetadata: discovers and classifies stories correctly', async 
     hasParameters: false,
     timeout: 5000,
     flag: undefined,
-  } satisfies StoryMetadata)
+  })
+  // Verify route and entryPath exist
+  expect(sorted[0]?.route).toBeDefined()
+  expect(sorted[0]?.entryPath).toBeDefined()
 
   // Verify interactionStory (interaction with play)
-  expect(sorted[1]).toEqual({
+  expect(sorted[1]).toMatchObject({
     exportName: 'interactionStory',
     filePath: mixedStoriesPath,
     type: 'interaction',
@@ -59,10 +66,12 @@ test('discoverStoryMetadata: discovers and classifies stories correctly', async 
     hasParameters: false,
     timeout: 5000,
     flag: undefined,
-  } satisfies StoryMetadata)
+  })
+  expect(sorted[1]?.route).toBeDefined()
+  expect(sorted[1]?.entryPath).toBeDefined()
 
   // Verify storyWithAllProps (snapshot with all properties)
-  expect(sorted[2]).toEqual({
+  expect(sorted[2]).toMatchObject({
     exportName: 'storyWithAllProps',
     filePath: mixedStoriesPath,
     type: 'snapshot',
@@ -72,10 +81,12 @@ test('discoverStoryMetadata: discovers and classifies stories correctly', async 
     hasParameters: true,
     timeout: 5000,
     flag: undefined,
-  } satisfies StoryMetadata)
+  })
+  expect(sorted[2]?.route).toBeDefined()
+  expect(sorted[2]?.entryPath).toBeDefined()
 
   // Verify storyWithParams (snapshot with parameters)
-  expect(sorted[3]).toEqual({
+  expect(sorted[3]).toMatchObject({
     exportName: 'storyWithParams',
     filePath: mixedStoriesPath,
     type: 'snapshot',
@@ -85,11 +96,14 @@ test('discoverStoryMetadata: discovers and classifies stories correctly', async 
     hasParameters: true,
     timeout: 10000,
     flag: undefined,
-  } satisfies StoryMetadata)
+  })
+  expect(sorted[3]?.route).toBeDefined()
+  expect(sorted[3]?.entryPath).toBeDefined()
 })
 
 test('discoverStoryMetadata: counts interaction vs snapshot stories correctly', async () => {
-  const metadata = await discoverStoryMetadata(STORIES_DIR, '**/filtering/**')
+  const metadataMaps = await discoverStoryMetadata(STORIES_DIR, '**/filtering/**')
+  const metadata = metadataMaps.flatMap((map) => [...map.values()])
 
   const interactionCount = metadata.filter((s) => s.type === 'interaction').length
   const snapshotCount = metadata.filter((s) => s.type === 'snapshot').length
@@ -99,7 +113,8 @@ test('discoverStoryMetadata: counts interaction vs snapshot stories correctly', 
 })
 
 test('discoverStoryMetadata: filters out non-story exports', async () => {
-  const metadata = await discoverStoryMetadata(STORIES_DIR, '**/filtering/**')
+  const metadataMaps = await discoverStoryMetadata(STORIES_DIR, '**/filtering/**')
+  const metadata = metadataMaps.flatMap((map) => [...map.values()])
 
   // Should not include 'MyComponent', 'helperFunction', or default export
   const exportNames = metadata.map((s) => s.exportName)
@@ -109,7 +124,8 @@ test('discoverStoryMetadata: filters out non-story exports', async () => {
 })
 
 test('discoverStoryMetadata: handles empty story files', async () => {
-  const metadata = await discoverStoryMetadata(STORIES_DIR, '**/filtering/**')
+  const metadataMaps = await discoverStoryMetadata(STORIES_DIR, '**/filtering/**')
+  const metadata = metadataMaps.flatMap((map) => [...map.values()])
 
   // The empty.stories.tsx file should contribute 0 stories
   const emptyFileStories = metadata.filter((s) => s.filePath.includes('empty.stories.tsx'))
@@ -119,14 +135,15 @@ test('discoverStoryMetadata: handles empty story files', async () => {
 test('discoverStoryMetadata: returns empty array when no story files found', async () => {
   // Use a directory with no .stories.tsx files
   const tempDir = join(FIXTURES_DIR, 'entry-routes')
-  const metadata = await discoverStoryMetadata(tempDir)
+  const metadataMaps = await discoverStoryMetadata(tempDir)
 
-  expect(Array.isArray(metadata)).toBe(true)
-  expect(metadata.length).toBe(0)
+  expect(Array.isArray(metadataMaps)).toBe(true)
+  expect(metadataMaps.length).toBe(0)
 })
 
 test('discoverStoryMetadata: detects all property flags correctly', async () => {
-  const metadata = await discoverStoryMetadata(STORIES_DIR, '**/filtering/**')
+  const metadataMaps = await discoverStoryMetadata(STORIES_DIR, '**/filtering/**')
+  const metadata = metadataMaps.flatMap((map) => [...map.values()])
 
   // Find the story with all properties
   const allPropsStory = metadata.find((s) => s.exportName === 'storyWithAllProps')
@@ -153,7 +170,8 @@ test('discoverStoryMetadata: detects all property flags correctly', async () => 
 
 test('getStoryMetadata: extracts stories from single file', async () => {
   const filePath = join(STORIES_DIR, 'mixed-stories.stories.tsx')
-  const metadata = await getStoryMetadata(filePath)
+  const metadataMap = await getStoryMetadata(STORIES_DIR, filePath)
+  const metadata = [...metadataMap.values()]
 
   // Should find 4 stories in the file
   expect(metadata.length).toBe(4)
@@ -168,7 +186,8 @@ test('getStoryMetadata: extracts stories from single file', async () => {
 
 test('getStoryMetadata: filters out default exports', async () => {
   const filePath = join(STORIES_DIR, 'mixed-stories.stories.tsx')
-  const metadata = await getStoryMetadata(filePath)
+  const metadataMap = await getStoryMetadata(STORIES_DIR, filePath)
+  const metadata = [...metadataMap.values()]
 
   // Should not include default export
   const exportNames = metadata.map((s) => s.exportName)
@@ -177,7 +196,8 @@ test('getStoryMetadata: filters out default exports', async () => {
 
 test('getStoryMetadata: filters out non-story exports', async () => {
   const filePath = join(STORIES_DIR, 'mixed-stories.stories.tsx')
-  const metadata = await getStoryMetadata(filePath)
+  const metadataMap = await getStoryMetadata(STORIES_DIR, filePath)
+  const metadata = [...metadataMap.values()]
 
   // Should not include helper functions or components
   const exportNames = metadata.map((s) => s.exportName)
@@ -187,14 +207,15 @@ test('getStoryMetadata: filters out non-story exports', async () => {
 
 test('getStoryMetadata: handles file with no story exports', async () => {
   const filePath = join(STORIES_DIR, 'empty.stories.tsx')
-  const metadata = await getStoryMetadata(filePath)
+  const metadataMap = await getStoryMetadata(STORIES_DIR, filePath)
 
-  expect(Array.isArray(metadata)).toBe(true)
-  expect(metadata.length).toBe(0)
+  expect(metadataMap instanceof Map).toBe(true)
+  expect(metadataMap.size).toBe(0)
 })
 
 test('discoverStoryMetadata: discovers stories in nested directories', async () => {
-  const metadata = await discoverStoryMetadata(FIXTURES_DIR, '**/filtering/**')
+  const metadataMaps = await discoverStoryMetadata(FIXTURES_DIR, '**/filtering/**')
+  const metadata = metadataMaps.flatMap((map) => [...map.values()])
 
   // Should find stories from nested directories
   const nestedStories = metadata.filter((s) => s.filePath.includes('/nested/'))
@@ -206,38 +227,43 @@ test('discoverStoryMetadata: discovers stories in nested directories', async () 
   expect(exportNames).toContain('nestedInteraction')
 })
 
-test('discoverStoryMetadata: returns array of StoryMetadata objects', async () => {
-  const metadata = await discoverStoryMetadata(STORIES_DIR, '**/filtering/**')
+test('discoverStoryMetadata: returns array of Maps', async () => {
+  const metadataMaps = await discoverStoryMetadata(STORIES_DIR, '**/filtering/**')
 
-  expect(Array.isArray(metadata)).toBe(true)
-  expect(metadata.length).toBeGreaterThan(0)
+  expect(Array.isArray(metadataMaps)).toBe(true)
+  expect(metadataMaps.length).toBeGreaterThan(0)
+
+  const metadata = metadataMaps.flatMap((map) => [...map.values()])
 
   // Check structure of each metadata object
   metadata.forEach((item: StoryMetadata) => {
+    expect(item).toHaveProperty('route')
     expect(item).toHaveProperty('exportName')
     expect(item).toHaveProperty('filePath')
+    expect(item).toHaveProperty('entryPath')
     expect(item).toHaveProperty('type')
     expect(item).toHaveProperty('hasPlay')
     expect(item).toHaveProperty('hasArgs')
     expect(item).toHaveProperty('hasTemplate')
     expect(item).toHaveProperty('hasParameters')
     expect(item).toHaveProperty('flag')
+    expect(typeof item.route).toBe('string')
     expect(typeof item.exportName).toBe('string')
     expect(typeof item.filePath).toBe('string')
+    expect(typeof item.entryPath).toBe('string')
     expect(['interaction', 'snapshot']).toContain(item.type)
     expect(typeof item.hasPlay).toBe('boolean')
     expect(typeof item.hasArgs).toBe('boolean')
     expect(typeof item.hasTemplate).toBe('boolean')
     expect(typeof item.hasParameters).toBe('boolean')
     expect(['string', 'undefined']).toContain(typeof item.flag)
-    if (item.flag !== undefined) {
-      expect(['only', 'skip']).toContain(item.flag)
-    }
+    expect(typeof item.flag).toBe('undefined')
   })
 })
 
 test('discoverStoryMetadata: all filePaths are absolute paths', async () => {
-  const metadata = await discoverStoryMetadata(STORIES_DIR, '**/filtering/**')
+  const metadataMaps = await discoverStoryMetadata(STORIES_DIR, '**/filtering/**')
+  const metadata = metadataMaps.flatMap((map) => [...map.values()])
 
   metadata.forEach((item) => {
     expect(item.filePath.startsWith('/')).toBe(true)
@@ -246,7 +272,8 @@ test('discoverStoryMetadata: all filePaths are absolute paths', async () => {
 })
 
 test('discoverStoryMetadata: type matches hasPlay flag', async () => {
-  const metadata = await discoverStoryMetadata(STORIES_DIR, '**/filtering/**')
+  const metadataMaps = await discoverStoryMetadata(STORIES_DIR, '**/filtering/**')
+  const metadata = metadataMaps.flatMap((map) => [...map.values()])
 
   metadata.forEach((item) => {
     if (item.type === 'interaction') {
@@ -259,7 +286,8 @@ test('discoverStoryMetadata: type matches hasPlay flag', async () => {
 
 test('getStoryMetadata: filters stories with .only() flag', async () => {
   const filePath = join(FILTERING_STORIES_DIR, 'only-stories.stories.tsx')
-  const metadata = await getStoryMetadata(filePath)
+  const metadataMap = await getStoryMetadata(FILTERING_STORIES_DIR, filePath)
+  const metadata = [...metadataMap.values()]
 
   // Should only return the story with .only() flag
   expect(metadata.length).toBe(1)
@@ -269,7 +297,8 @@ test('getStoryMetadata: filters stories with .only() flag', async () => {
 
 test('getStoryMetadata: filters out stories with .skip() flag', async () => {
   const filePath = join(FILTERING_STORIES_DIR, 'skip-stories.stories.tsx')
-  const metadata = await getStoryMetadata(filePath)
+  const metadataMap = await getStoryMetadata(FILTERING_STORIES_DIR, filePath)
+  const metadata = [...metadataMap.values()]
 
   // Should return only the active story (2 skipped, 1 active = 1 result)
   expect(metadata.length).toBe(1)
@@ -279,7 +308,8 @@ test('getStoryMetadata: filters out stories with .skip() flag', async () => {
 
 test('getStoryMetadata: returns all .only() stories when multiple exist', async () => {
   const filePath = join(FILTERING_STORIES_DIR, 'multiple-only-stories.stories.tsx')
-  const metadata = await getStoryMetadata(filePath)
+  const metadataMap = await getStoryMetadata(FILTERING_STORIES_DIR, filePath)
+  const metadata = [...metadataMap.values()]
 
   // Should return both .only() stories (skipping regular and .skip() stories)
   expect(metadata.length).toBe(2)
@@ -294,7 +324,8 @@ test('getStoryMetadata: returns all .only() stories when multiple exist', async 
 
 test('getStoryMetadata: .only() takes precedence over .skip()', async () => {
   const filePath = join(FILTERING_STORIES_DIR, 'multiple-only-stories.stories.tsx')
-  const metadata = await getStoryMetadata(filePath)
+  const metadataMap = await getStoryMetadata(FILTERING_STORIES_DIR, filePath)
+  const metadata = [...metadataMap.values()]
 
   // File has .only() stories and a .skip() story
   // .only() should take precedence, .skip() should be filtered out
@@ -307,7 +338,8 @@ test('getStoryMetadata: .only() takes precedence over .skip()', async () => {
 })
 
 test('discoverStoryMetadata: discovers .only() stories from mixed files', async () => {
-  const metadata = await discoverStoryMetadata(FILTERING_STORIES_DIR)
+  const metadataMaps = await discoverStoryMetadata(FILTERING_STORIES_DIR)
+  const metadata = metadataMaps.flatMap((map) => [...map.values()])
 
   // Check that .only() stories are present in discovery
   const onlyStories = metadata.filter((s) => s.flag === 'only')
@@ -318,7 +350,8 @@ test('discoverStoryMetadata: discovers .only() stories from mixed files', async 
 })
 
 test('discoverStoryMetadata: applies filtering per-file (not globally)', async () => {
-  const metadata = await discoverStoryMetadata(FILTERING_STORIES_DIR)
+  const metadataMaps = await discoverStoryMetadata(FILTERING_STORIES_DIR)
+  const metadata = metadataMaps.flatMap((map) => [...map.values()])
 
   // Per-file filtering means each file applies .only()/.skip() independently
   // Result: Mix of stories with different flags from different files
@@ -338,7 +371,8 @@ test('discoverStoryMetadata: applies filtering per-file (not globally)', async (
 
 test('filterStoryMetadata: returns only stories when .only() flag exists', async () => {
   const filePath = join(FILTERING_STORIES_DIR, 'only-stories.stories.tsx')
-  const metadata = await getStoryMetadata(filePath)
+  const metadataMap = await getStoryMetadata(FILTERING_STORIES_DIR, filePath)
+  const metadata = [...metadataMap.values()]
 
   // Metadata should already be filtered
   expect(metadata.length).toBe(1)
@@ -347,7 +381,8 @@ test('filterStoryMetadata: returns only stories when .only() flag exists', async
 
 test('filterStoryMetadata: filters out .skip() stories when no .only() exists', async () => {
   const filePath = join(FILTERING_STORIES_DIR, 'skip-stories.stories.tsx')
-  const metadata = await getStoryMetadata(filePath)
+  const metadataMap = await getStoryMetadata(FILTERING_STORIES_DIR, filePath)
+  const metadata = [...metadataMap.values()]
 
   // Should only have the active story
   expect(metadata.length).toBe(1)

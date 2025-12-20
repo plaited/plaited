@@ -115,6 +115,7 @@ export const getServer = async ({
   console.log(`🔍 Starting Plaited server`)
   console.log(`📂 Root: ${cwd}`)
   console.log(`🌐 Port: ${port === 0 ? '0 (auto-assign)' : port}`)
+  console.log(`🎨 Color scheme: ${colorScheme}`)
 
   const server = Bun.serve({
     port,

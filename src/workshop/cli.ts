@@ -83,7 +83,7 @@ if (!['test', 'dev'].includes(subcommand)) {
 
 const hasValidColorScheme = (colorScheme?: string): colorScheme is 'light' | 'dark' | undefined => {
   if (colorScheme === undefined) return true
-  return colorScheme !== 'light' && colorScheme !== 'dark'
+  return colorScheme === 'light' || colorScheme === 'dark'
 }
 
 if (!hasValidColorScheme(values['color-scheme'])) {

@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: './src/workshop/tests',
-  testMatch: '**/*.playwright.ts', // Custom extension to avoid clash with bun test
+  testMatch: '**/*.e2e.ts', // Custom extension to avoid clash with bun test
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -19,7 +19,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'bun run dev',
+    command: 'bun run dev -p 3456',
     url: 'http://localhost:3456',
     reuseExistingServer: !process.env.CI,
   },

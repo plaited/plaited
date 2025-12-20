@@ -1,16 +1,19 @@
 import { expect, test } from 'bun:test'
 import { join } from 'node:path'
 import { getHTMLRoutes } from '../get-html-routes.tsx'
+import { getPaths } from '../get-paths.ts'
 
 // Path to test fixtures
 const fixturesRoot = join(import.meta.dir, 'fixtures')
 
+// Helper function to get routes with proper parameters
+const getRoutesForStory = async (exportName: string, filePath: string, colorScheme: 'light' | 'dark' = 'light') => {
+  const { route, entryPath } = getPaths({ filePath, cwd: fixturesRoot, exportName })
+  return getHTMLRoutes({ exportName, filePath, route, entryPath, colorScheme })
+}
+
 test('getHTMLRoutes: returns object with main route and template route', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'basicStory',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('basicStory', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   // Should have both main route and template route
   expect(routes['/stories/mixed-stories--basic-story']).toBeDefined()
@@ -22,11 +25,7 @@ test('getHTMLRoutes: returns object with main route and template route', async (
 })
 
 test('getHTMLRoutes: converts PascalCase export names to kebab-case', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'basicStory',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('basicStory', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   // Route should be in kebab-case
   expect(routes['/stories/mixed-stories--basic-story']).toBeDefined()
@@ -34,11 +33,7 @@ test('getHTMLRoutes: converts PascalCase export names to kebab-case', async () =
 })
 
 test('getHTMLRoutes: main route path follows correct pattern', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'basicStory',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('basicStory', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   const keys = Object.keys(routes)
   const mainRoute = keys.find((k) => !k.includes('.template'))
@@ -49,11 +44,7 @@ test('getHTMLRoutes: main route path follows correct pattern', async () => {
 })
 
 test('getHTMLRoutes: template route has .template suffix', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'basicStory',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('basicStory', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   const templateRoute = Object.keys(routes).find((k) => k.includes('.template'))
   expect(templateRoute).toBeDefined()
@@ -61,11 +52,7 @@ test('getHTMLRoutes: template route has .template suffix', async () => {
 })
 
 test('getHTMLRoutes: main route includes DOCTYPE declaration', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'basicStory',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('basicStory', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   const mainRoute = routes['/stories/mixed-stories--basic-story']
   const content = mainRoute ? await mainRoute.text() : ''
@@ -74,11 +61,7 @@ test('getHTMLRoutes: main route includes DOCTYPE declaration', async () => {
 })
 
 test('getHTMLRoutes: main route has proper HTML structure', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'basicStory',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('basicStory', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   const mainRoute = routes['/stories/mixed-stories--basic-story']
   const content = mainRoute ? await mainRoute.text() : ''
@@ -91,11 +74,7 @@ test('getHTMLRoutes: main route has proper HTML structure', async () => {
 })
 
 test('getHTMLRoutes: main route includes title with export name', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'basicStory',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('basicStory', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   const mainRoute = routes['/stories/mixed-stories--basic-story']
   const content = mainRoute ? await mainRoute.text() : ''
@@ -105,11 +84,7 @@ test('getHTMLRoutes: main route includes title with export name', async () => {
 })
 
 test('getHTMLRoutes: main route includes entry script tag', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'basicStory',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('basicStory', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   const mainRoute = routes['/stories/mixed-stories--basic-story']
   const content = mainRoute ? await mainRoute.text() : ''
@@ -121,11 +96,7 @@ test('getHTMLRoutes: main route includes entry script tag', async () => {
 })
 
 test('getHTMLRoutes: main route includes fixture load script', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'basicStory',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('basicStory', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   const mainRoute = routes['/stories/mixed-stories--basic-story']
   const content = mainRoute ? await mainRoute.text() : ''
@@ -136,11 +107,7 @@ test('getHTMLRoutes: main route includes fixture load script', async () => {
 })
 
 test('getHTMLRoutes: template route contains only fixture and entry script', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'basicStory',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('basicStory', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   const templateRoute = routes['/stories/mixed-stories--basic-story.template']
   const content = await templateRoute?.text()
@@ -156,11 +123,7 @@ test('getHTMLRoutes: template route contains only fixture and entry script', asy
 })
 
 test('getHTMLRoutes: default body styles include height and margin', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'basicStory',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('basicStory', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   const mainRoute = routes['/stories/mixed-stories--basic-story']
   const content = await mainRoute?.text()
@@ -173,11 +136,7 @@ test('getHTMLRoutes: default body styles include height and margin', async () =>
 test('getHTMLRoutes: merges parameters.styles with default body styles', async () => {
   // First, let me create a story with parameters.styles in a test fixture
   // For now, test with a story that has parameters (even without styles)
-  const routes = await getHTMLRoutes({
-    exportName: 'storyWithParams',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('storyWithParams', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   const mainRoute = routes['/stories/mixed-stories--story-with-params']
   const content = mainRoute ? await mainRoute.text() : ''
@@ -188,22 +147,14 @@ test('getHTMLRoutes: merges parameters.styles with default body styles', async (
 })
 
 test('getHTMLRoutes: works when no parameters provided', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'basicStory',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('basicStory', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   expect(routes['/stories/mixed-stories--basic-story']).toBeDefined()
   expect(routes['/stories/mixed-stories--basic-story.template']).toBeDefined()
 })
 
 test('getHTMLRoutes: accepts story with valid args', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'basicStory',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('basicStory', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   // Should successfully create routes
   expect(routes['/stories/mixed-stories--basic-story']).toBeDefined()
@@ -216,22 +167,14 @@ test('getHTMLRoutes: accepts story with valid args', async () => {
 })
 
 test('getHTMLRoutes: accepts story with no args', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'storyWithParams',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('storyWithParams', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   expect(routes['/stories/mixed-stories--story-with-params']).toBeDefined()
   expect(routes['/stories/mixed-stories--story-with-params.template']).toBeDefined()
 })
 
 test('getHTMLRoutes: main route has correct content-type', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'basicStory',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('basicStory', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   const mainRoute = routes['/stories/mixed-stories--basic-story']
   const contentType = mainRoute?.headers.get('content-type')
@@ -241,11 +184,7 @@ test('getHTMLRoutes: main route has correct content-type', async () => {
 })
 
 test('getHTMLRoutes: template route has correct content-type', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'basicStory',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('basicStory', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   const templateRoute = routes['/stories/mixed-stories--basic-story.template']
   const contentType = templateRoute?.headers.get('content-type')
@@ -255,11 +194,7 @@ test('getHTMLRoutes: template route has correct content-type', async () => {
 })
 
 test('getHTMLRoutes: responses are not compressed by default', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'basicStory',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('basicStory', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   const mainRoute = routes['/stories/mixed-stories--basic-story']
   const templateRoute = routes['/stories/mixed-stories--basic-story.template']
@@ -270,11 +205,7 @@ test('getHTMLRoutes: responses are not compressed by default', async () => {
 })
 
 test('getHTMLRoutes: responses can be read as text', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'basicStory',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('basicStory', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   const mainRoute = routes['/stories/mixed-stories--basic-story']
   const templateRoute = routes['/stories/mixed-stories--basic-story.template']
@@ -289,11 +220,7 @@ test('getHTMLRoutes: responses can be read as text', async () => {
 })
 
 test('getHTMLRoutes: handles nested directory story files', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'nestedSnapshot',
-    filePath: join(fixturesRoot, 'nested/nested-story.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('nestedSnapshot', join(fixturesRoot, 'nested/nested-story.stories.tsx'))
 
   // Should preserve directory structure
   expect(routes['/nested/nested-story--nested-snapshot']).toBeDefined()
@@ -301,11 +228,10 @@ test('getHTMLRoutes: handles nested directory story files', async () => {
 })
 
 test('getHTMLRoutes: handles deeply nested story files', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'deeplyNestedStory',
-    filePath: join(fixturesRoot, 'nested/deep/deeply-nested.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory(
+    'deeplyNestedStory',
+    join(fixturesRoot, 'nested/deep/deeply-nested.stories.tsx'),
+  )
 
   // Should preserve full directory path
   expect(routes['/nested/deep/deeply-nested--deeply-nested-story']).toBeDefined()
@@ -313,11 +239,7 @@ test('getHTMLRoutes: handles deeply nested story files', async () => {
 })
 
 test('getHTMLRoutes: all paths start with forward slash', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'basicStory',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('basicStory', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   const keys = Object.keys(routes)
   keys.forEach((key) => {
@@ -326,33 +248,21 @@ test('getHTMLRoutes: all paths start with forward slash', async () => {
 })
 
 test('getHTMLRoutes: works with interaction story type', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'interactionStory',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('interactionStory', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   expect(routes['/stories/mixed-stories--interaction-story']).toBeDefined()
   expect(routes['/stories/mixed-stories--interaction-story.template']).toBeDefined()
 })
 
 test('getHTMLRoutes: works with snapshot story type', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'basicStory',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('basicStory', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   expect(routes['/stories/mixed-stories--basic-story']).toBeDefined()
   expect(routes['/stories/mixed-stories--basic-story.template']).toBeDefined()
 })
 
 test('getHTMLRoutes: handles export names with multiple capital letters', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'storyWithAllProps',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('storyWithAllProps', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   // Should convert to kebab-case correctly
   expect(routes['/stories/mixed-stories--story-with-all-props']).toBeDefined()
@@ -363,17 +273,8 @@ test('getHTMLRoutes: caches imported modules', async () => {
   const filePath = join(fixturesRoot, 'stories/mixed-stories.stories.tsx')
 
   // Import the same file multiple times with different exports
-  const routes1 = await getHTMLRoutes({
-    exportName: 'basicStory',
-    filePath,
-    cwd: fixturesRoot,
-  })
-
-  const routes2 = await getHTMLRoutes({
-    exportName: 'interactionStory',
-    filePath,
-    cwd: fixturesRoot,
-  })
+  const routes1 = await getRoutesForStory('basicStory', filePath)
+  const routes2 = await getRoutesForStory('interactionStory', filePath)
 
   // Both should succeed
   expect(routes1['/stories/mixed-stories--basic-story']).toBeDefined()
@@ -381,11 +282,7 @@ test('getHTMLRoutes: caches imported modules', async () => {
 })
 
 test('getHTMLRoutes: entry script path is correct', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'basicStory',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('basicStory', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   const mainRoute = routes['/stories/mixed-stories--basic-story']
   const content = mainRoute ? await mainRoute.text() : ''
@@ -395,22 +292,14 @@ test('getHTMLRoutes: entry script path is correct', async () => {
 })
 
 test('getHTMLRoutes: returns exactly two routes per story', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'basicStory',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('basicStory', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   const keys = Object.keys(routes)
   expect(keys.length).toBe(2)
 })
 
 test('getHTMLRoutes: route paths match between main and include', async () => {
-  const routes = await getHTMLRoutes({
-    exportName: 'basicStory',
-    filePath: join(fixturesRoot, 'stories/mixed-stories.stories.tsx'),
-    cwd: fixturesRoot,
-  })
+  const routes = await getRoutesForStory('basicStory', join(fixturesRoot, 'stories/mixed-stories.stories.tsx'))
 
   const keys = Object.keys(routes)
   const mainRoute = keys.find((k) => !k.includes('.template'))
@@ -419,4 +308,44 @@ test('getHTMLRoutes: route paths match between main and include', async () => {
   expect(mainRoute).toBeDefined()
   expect(templateRoute).toBeDefined()
   expect(templateRoute).toBe(`${mainRoute}.template`)
+})
+
+test('getHTMLRoutes: applies light colorScheme to html tag', async () => {
+  const filePath = join(fixturesRoot, 'stories/mixed-stories.stories.tsx')
+  const exportName = 'basicStory'
+  const { route, entryPath } = getPaths({ filePath, cwd: fixturesRoot, exportName })
+
+  const routes = await getHTMLRoutes({
+    exportName,
+    filePath,
+    route,
+    entryPath,
+    colorScheme: 'light',
+  })
+
+  const mainRoute = routes[route]
+  const content = mainRoute ? await mainRoute.text() : ''
+
+  // Check for color-scheme: light in html tag style attribute
+  expect(content).toMatch(/<html[^>]*style="[^"]*color-scheme:\s*light[^"]*"/)
+})
+
+test('getHTMLRoutes: applies dark colorScheme to html tag', async () => {
+  const filePath = join(fixturesRoot, 'stories/mixed-stories.stories.tsx')
+  const exportName = 'basicStory'
+  const { route, entryPath } = getPaths({ filePath, cwd: fixturesRoot, exportName })
+
+  const routes = await getHTMLRoutes({
+    exportName,
+    filePath,
+    route,
+    entryPath,
+    colorScheme: 'dark',
+  })
+
+  const mainRoute = routes[route]
+  const content = mainRoute ? await mainRoute.text() : ''
+
+  // Check for color-scheme: dark in html tag style attribute
+  expect(content).toMatch(/<html[^>]*style="[^"]*color-scheme:\s*dark[^"]*"/)
 })

@@ -33,12 +33,13 @@
 import { availableParallelism } from 'node:os'
 import { basename } from 'node:path'
 import { type BrowserContext, type BrowserContextOptions, chromium } from 'playwright'
-import { useBehavioral } from '../main.ts'
+import { type SnapshotListener, useBehavioral } from '../main.ts'
 import { ERROR_TYPES, FIXTURE_EVENTS } from '../testing/testing.constants.ts'
 import type { FailMessage, PassMessage } from '../testing.ts'
 import { discoverStoryMetadata } from './collect-stories.ts'
 import { getServer } from './get-server.ts'
 import type { StoryMetadata } from './workshop.types.ts'
+import { formatErrorType, splitIntoBatches } from './workshop.utils.ts'
 
 /**
  * @internal
@@ -59,43 +60,6 @@ export type TestStoriesOutput = {
   failed: number
   total: number
   results: TestResult[]
-}
-
-const formatErrorType = (errorType: string) =>
-  `🚩 ${errorType
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')}`
-
-/**
- * @internal
- * Splits an array of items into batches with a specified number of items per batch.
- *
- * @template T - Type of items in the array
- * @param items - Array of items to split into batches
- * @param itemsPerBatch - Number of items to include in each batch
- * @returns Array of batches, where each batch contains up to itemsPerBatch items
- *
- * @remarks
- * - Creates n batches based on total items / itemsPerBatch
- * - Last batch may contain fewer items if total doesn't divide evenly
- * - Returns empty array if items array is empty
- * - Complexity: O(n) where n is the number of items
- *
- * @example
- * ```typescript
- * splitIntoBatches([1, 2, 3, 4, 5], 2) // [[1, 2], [3, 4], [5]]
- * splitIntoBatches([1, 2, 3, 4, 5, 6], 3) // [[1, 2, 3], [4, 5, 6]]
- * ```
- */
-const splitIntoBatches = <T>(items: T[], itemsPerBatch: number): T[][] => {
-  const batches: T[][] = []
-
-  for (let i = 0; i < items.length; i += itemsPerBatch) {
-    batches.push(items.slice(i, i + itemsPerBatch))
-  }
-
-  return batches
 }
 
 const logResults = (results: { total: number; passed: number; failed: number }) => {
@@ -140,10 +104,25 @@ export const useRunner = useBehavioral<
     cwd: string
     colorScheme?: 'light' | 'dark'
     paths: string[]
+    reporter?: (args: { passed: TestResult[]; failed: TestResult[] }) => void
+    observer?: SnapshotListener
   }
 >({
   publicEvents: ['run'],
-  async bProgram({ port, recordVideo, cwd, trigger, colorScheme = 'light', paths, bThreads, bThread, bSync }) {
+  async bProgram({
+    port,
+    recordVideo,
+    cwd,
+    trigger,
+    colorScheme = 'light',
+    paths,
+    bThreads,
+    bThread,
+    bSync,
+    useSnapshot,
+    reporter,
+    observer,
+  }) {
     let failed: TestResult[] = []
     let passed: TestResult[] = []
     const contextRefs = new Map<string, BrowserContext>()
@@ -152,7 +131,7 @@ export const useRunner = useBehavioral<
     // Launch browser
     console.log('🌐 Launching browser...')
     const browser = await chromium.launch()
-
+    observer && useSnapshot(observer)
     bThreads.set({
       onCountChange: bThread(
         [
@@ -230,6 +209,12 @@ export const useRunner = useBehavioral<
       report() {
         const passedCount = passed.length
         const failedCount = failed.length
+
+        reporter?.({
+          passed,
+          failed,
+        })
+
         // Print summary with detailed failures
         if (failedCount > 0) {
           console.log(`\n ${'='.repeat(50)}`)

@@ -45,7 +45,7 @@ export const getRoot = (paths: string[]): string => {
   if (firstPath) {
     for (let i = 0; i < minLength; i++) {
       const part = firstPath[i]
-      if (part && parts.every((p) => p[i] === part)) {
+      if (part !== undefined && parts.every((p) => p[i] === part)) {
         commonParts.push(part)
       } else {
         break

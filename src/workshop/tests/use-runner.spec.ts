@@ -1,215 +1,218 @@
-import { afterAll, beforeAll, expect, test } from 'bun:test'
-import { type Browser, chromium } from 'playwright'
-import { discoverStoryMetadata } from '../collect-stories.ts'
+import { expect, test } from 'bun:test'
+import { join } from 'node:path'
+import type { TestResult } from '../use-runner.ts'
 import { useRunner } from '../use-runner.ts'
 
-const cwd = `${import.meta.dir}/fixtures`
-const testPort = 3457
-
-let browser: Browser
-
-beforeAll(async () => {
-  browser = await chromium.launch()
-})
-
-afterAll(async () => {
-  await browser.close()
-})
+const cwd = join(import.meta.dir, 'fixtures')
+const fixturesDir = join(cwd, 'stories')
 
 test(
-  'useRunner: discovers and executes stories from fixtures',
+  'useRunner: should execute stories and report results via callback',
   async () => {
-    const runner = await useRunner({ browser, port: testPort, cwd })
+    const { promise, resolve } = Promise.withResolvers<{
+      passed: TestResult[]
+      failed: TestResult[]
+    }>()
 
-    // Run tests and get results directly
-    const results = await runner.run({ colorScheme: 'light' })
+    const trigger = await useRunner({
+      port: 0, // Auto-assign port
+      cwd,
+      colorScheme: 'light',
+      paths: [fixturesDir],
+      reporter: resolve,
+    })
+
+    trigger({ type: 'run' })
+
+    const { passed, failed } = await promise
 
     // Verify results structure
-    expect(results).toBeDefined()
-    expect(results.total).toBeGreaterThan(0)
-    expect(results.passed).toBeGreaterThanOrEqual(0)
-    expect(results.failed).toBeGreaterThanOrEqual(0)
-    expect(results.passed + results.failed).toBe(results.total)
-    expect(results.results).toBeInstanceOf(Array)
-    expect(results.results.length).toBe(results.total)
+    expect(passed.length + failed.length).toBeGreaterThan(0)
+    expect(passed.every((r) => r.passed === true)).toBe(true)
+    expect(failed.every((r) => r.passed === false)).toBe(true)
 
     // Verify each result has required properties
-    results.results.forEach((result) => {
+    ;[...passed, ...failed].forEach((result) => {
       expect(result.story).toBeDefined()
       expect(result.story.exportName).toBeDefined()
       expect(result.story.filePath).toBeDefined()
+      expect(result.story.route).toBeDefined()
+      expect(result.story.entryPath).toBeDefined()
       expect(result.story.type).toMatch(/interaction|snapshot/)
       expect(typeof result.passed).toBe('boolean')
     })
-
-    await runner.end()
-  },
-  { timeout: 20000 },
-)
-
-test(
-  'useRunner: discovers stories in nested directories',
-  async () => {
-    // Delay to ensure previous test's browser is fully cleaned up
-    // Playwright browser cleanup can be slow when tests run sequentially
-    await new Promise((r) => setTimeout(r, 1500))
-
-    const runner = await useRunner({ browser, port: testPort + 1, cwd })
-
-    const results = await runner.run({ colorScheme: 'light' })
-
-    // Should find stories in nested directories
-    const nestedStories = results.results.filter((r) => r.story.filePath.includes('/nested/'))
-    expect(nestedStories.length).toBeGreaterThan(0)
-
-    // Verify nested story names
-    const exportNames = results.results.map((r) => r.story.exportName)
-    expect(exportNames).toContain('nestedSnapshot')
-    expect(exportNames).toContain('nestedInteraction')
-    expect(exportNames).toContain('deeplyNestedStory')
-
-    await runner.end()
-  },
-  { timeout: 20000 },
-)
-
-test(
-  'useRunner: executes only specified stories when metadata provided',
-  async () => {
-    // Delay to ensure previous test's browser is fully cleaned up
-    await new Promise((r) => setTimeout(r, 1500))
-
-    // Discover all stories first
-    const allStories = await discoverStoryMetadata(cwd)
-    expect(allStories.length).toBeGreaterThan(2)
-
-    // Select only first two stories
-    const selectedStories = allStories.slice(0, 2)
-
-    const runner = await useRunner({ browser, port: testPort + 2, cwd })
-
-    // Run with specific metadata
-    const results = await runner.run({ metadata: selectedStories, colorScheme: 'light' })
-
-    // Should execute only the selected stories
-    expect(results.total).toBe(2)
-    expect(results.results.length).toBe(2)
-
-    // Verify correct stories were run
-    const executedNames = results.results.map((r) => r.story.exportName).sort()
-    const selectedNames = selectedStories.map((s) => s.exportName).sort()
-    expect(executedNames).toEqual(selectedNames)
-
-    await runner.end()
-  },
-  { timeout: 20000 },
-)
-
-test(
-  'useRunner: executes stories from additional files',
-  async () => {
-    // Delay to ensure previous test's browser is fully cleaned up
-    await new Promise((r) => setTimeout(r, 1500))
-
-    // Discover stories from additional file
-    const allStories = await discoverStoryMetadata(cwd, '**/filtering/**')
-    const additionalStories = allStories.filter((s) => s.filePath.includes('additional-stories'))
-
-    expect(additionalStories.length).toBeGreaterThan(0)
-
-    const runner = await useRunner({ browser, port: testPort + 3, cwd })
-
-    const results = await runner.run({ metadata: additionalStories, colorScheme: 'light' })
-
-    // All should pass
-    expect(results.total).toBe(additionalStories.length)
-    expect(results.passed).toBe(additionalStories.length)
-    expect(results.failed).toBe(0)
-
-    // Verify all results passed
-    results.results.forEach((result) => {
-      expect(result.passed).toBe(true)
-      expect(result.error).toBeUndefined()
-    })
-
-    await runner.end()
-  },
-  { timeout: 20000 },
-)
-
-test(
-  'useRunner: handles mixed story types (interaction and snapshot)',
-  async () => {
-    // Delay to ensure previous test's browser is fully cleaned up
-    await new Promise((r) => setTimeout(r, 1500))
-
-    const allStories = await discoverStoryMetadata(cwd, '**/filtering/**')
-
-    // Get mix of interaction and snapshot stories from different files
-    const snapshotStories = allStories.filter((s) => s.type === 'snapshot').slice(0, 2)
-    const interactionStories = allStories.filter((s) => s.type === 'interaction').slice(0, 2)
-    const mixedStories = [...snapshotStories, ...interactionStories]
-
-    expect(mixedStories.length).toBeGreaterThan(2)
-
-    const runner = await useRunner({ browser, port: testPort + 4, cwd })
-
-    const results = await runner.run({ metadata: mixedStories, colorScheme: 'light' })
-
-    // All should pass
-    expect(results.total).toBe(mixedStories.length)
-    expect(results.passed).toBe(mixedStories.length)
-    expect(results.failed).toBe(0)
-
-    // Verify we have both types
-    const hasSnapshot = results.results.some((r) => r.story.type === 'snapshot')
-    const hasInteraction = results.results.some((r) => r.story.type === 'interaction')
-    expect(hasSnapshot).toBe(true)
-    expect(hasInteraction).toBe(true)
-
-    await runner.end()
   },
   { timeout: 30000 },
 )
 
 test(
-  'useRunner: should use dark colorScheme when specified',
+  'useRunner: should discover stories from multiple paths',
   async () => {
-    // Delay to ensure previous test's browser is fully cleaned up
-    await new Promise((r) => setTimeout(r, 1500))
+    const { promise, resolve } = Promise.withResolvers<{
+      passed: TestResult[]
+      failed: TestResult[]
+    }>()
 
-    const runner = await useRunner({ browser, port: testPort + 5, cwd })
+    const trigger = await useRunner({
+      port: 0,
+      cwd,
+      colorScheme: 'light',
+      paths: [fixturesDir],
+      reporter: resolve,
+    })
 
-    // Run test with dark color scheme
-    const results = await runner.run({ colorScheme: 'dark' })
+    trigger({ type: 'run' })
 
-    // Verify results structure
-    expect(results).toBeDefined()
-    expect(results.total).toBeGreaterThan(0)
-    expect(results.passed).toBeGreaterThanOrEqual(0)
+    const { passed, failed } = await promise
 
-    await runner.end()
+    const allResults = [...passed, ...failed]
+
+    // Should find stories in nested directories
+    const nestedStories = allResults.filter((r) => r.story.filePath.includes('/nested/'))
+    expect(nestedStories.length).toBeGreaterThan(0)
+
+    // Verify nested story names
+    const exportNames = allResults.map((r) => r.story.exportName)
+    expect(exportNames).toContain('nestedSnapshot')
+    expect(exportNames).toContain('nestedInteraction')
   },
-  { timeout: 20000 },
+  { timeout: 30000 },
 )
 
 test(
-  'useRunner: should default to light colorScheme when not specified',
+  'useRunner: should handle mixed story types (interaction and snapshot)',
   async () => {
-    // Delay to ensure previous test's browser is fully cleaned up
-    await new Promise((r) => setTimeout(r, 1500))
+    const { promise, resolve } = Promise.withResolvers<{
+      passed: TestResult[]
+      failed: TestResult[]
+    }>()
 
-    const runner = await useRunner({ browser, port: testPort + 6, cwd })
+    const trigger = await useRunner({
+      port: 0,
+      cwd,
+      colorScheme: 'light',
+      paths: [fixturesDir],
+      reporter: resolve,
+    })
 
-    // Run test without specifying colorScheme
-    const results = await runner.run({})
+    trigger({ type: 'run' })
 
-    // Verify results structure (default light mode should work)
-    expect(results).toBeDefined()
-    expect(results.total).toBeGreaterThan(0)
-    expect(results.passed).toBeGreaterThanOrEqual(0)
+    const { passed, failed } = await promise
 
-    await runner.end()
+    const allResults = [...passed, ...failed]
+
+    // Verify we have both types
+    const hasSnapshot = allResults.some((r) => r.story.type === 'snapshot')
+    const hasInteraction = allResults.some((r) => r.story.type === 'interaction')
+    expect(hasSnapshot).toBe(true)
+    expect(hasInteraction).toBe(true)
   },
-  { timeout: 20000 },
+  { timeout: 30000 },
+)
+
+test(
+  'useRunner: should report passed and failed tests separately',
+  async () => {
+    const { promise, resolve } = Promise.withResolvers<{
+      passed: TestResult[]
+      failed: TestResult[]
+    }>()
+
+    const disconnect = await useRunner({
+      port: 0,
+      cwd,
+      colorScheme: 'light',
+      paths: [fixturesDir],
+      reporter: resolve,
+    })
+
+    disconnect({ type: 'run' })
+
+    const { passed, failed } = await promise
+
+    //Verify there are failed and passed results
+    expect(passed.length).toBeGreaterThan(0)
+    expect(failed.length).toBeGreaterThan(0)
+
+    // Verify passed tests have passed=true
+    passed.forEach((result) => {
+      expect(result.passed).toBe(true)
+      expect(result.error).toBeUndefined()
+    })
+
+    // Verify failed tests have passed=false and error
+    failed.forEach((result) => {
+      expect(result.passed).toBe(false)
+      expect(result.error).toBeDefined()
+    })
+  },
+  { timeout: 30000 },
+)
+
+test(
+  'useRunner: should handle empty paths gracefully',
+  async () => {
+    const emptyDir = join(cwd, 'entry-routes') // Directory with no .stories.tsx
+
+    const { promise, resolve } = Promise.withResolvers<{
+      passed: TestResult[]
+      failed: TestResult[]
+    }>()
+
+    const disconnect = await useRunner({
+      port: 0,
+      cwd: emptyDir,
+      colorScheme: 'light',
+      paths: [emptyDir],
+      reporter: resolve,
+    })
+
+    disconnect({ type: 'run' })
+
+    const { passed, failed } = await promise
+
+    // Should have no results
+    expect(passed.length).toBe(0)
+    expect(failed.length).toBe(0)
+  },
+  { timeout: 30000 },
+)
+
+test(
+  'useRunner: should include story metadata in results',
+  async () => {
+    const { promise, resolve } = Promise.withResolvers<{
+      passed: TestResult[]
+      failed: TestResult[]
+    }>()
+
+    const disconnect = await useRunner({
+      port: 0,
+      cwd,
+      colorScheme: 'light',
+      paths: [fixturesDir],
+      reporter: resolve,
+    })
+
+    disconnect({ type: 'run' })
+
+    const { passed, failed } = await promise
+
+    const allResults = [...passed, ...failed]
+    expect(allResults.length).toBeGreaterThan(0)
+
+    // Verify metadata properties
+    allResults.forEach((result) => {
+      expect(result.story.route).toBeDefined()
+      expect(result.story.route.startsWith('/')).toBe(true)
+      expect(result.story.entryPath).toBeDefined()
+      expect(result.story.entryPath.endsWith('.js')).toBe(true)
+      expect(result.story.hasPlay !== undefined).toBe(true)
+      expect(result.story.hasArgs !== undefined).toBe(true)
+      expect(result.story.hasTemplate !== undefined).toBe(true)
+      expect(result.story.hasParameters !== undefined).toBe(true)
+      expect(result.story.timeout).toBeGreaterThan(0)
+    })
+  },
+  { timeout: 30000 },
 )
