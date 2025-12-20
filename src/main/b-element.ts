@@ -1,372 +1,114 @@
-import {
-  type BSync,
-  type BThread,
-  bThread,
-  bSync,
-  type PlaitedTrigger,
-  getPlaitedTrigger,
-  type Handlers,
-  type BThreads,
-  type Disconnect,
-  type Trigger,
-  type UseFeedback,
-  type UseSnapshot,
-  type EventDetails,
-  behavioral,
-  getPublicTrigger,
-} from '../behavioral.js'
-import { delegates, DelegatedListener, canUseDOM } from '../utils.js'
-import type { Attrs, TemplateObject, CustomElementTag } from './jsx.types.js'
-import { P_TRIGGER, P_TARGET, BOOLEAN_ATTRS } from './jsx.constants.js'
-import { createTemplate } from './create-template.js'
-import { getDocumentFragment, assignHelpers, getBindings } from './assign-helpers.js'
-import { PLAITED_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './plaited.constants.js'
-import type { PlaitedTemplate, PlaitedElement, SelectorMatch, Bindings, BoundElement } from './plaited.types.js'
+/**
+ * @internal
+ * @module b-element
+ *
+ * Purpose: Implements the BehavioralTemplate system that bridges Web Components and behavioral programming.
+ * Creates custom elements with Shadow DOM, event handling, and behavioral program integration.
+ *
+ * Architecture:
+ * - Extends HTMLElement with behavioral programming capabilities
+ * - Manages Shadow DOM lifecycle and element bindings via p-target attributes
+ * - Integrates event delegation system with p-trigger attributes
+ * - Coordinates behavioral threads with DOM element lifecycle
+ * - Provides emit function for cross-shadow-DOM communication
+ * - Includes inspector for debugging behavioral program state
+ *
+ * Dependencies:
+ * - behavioral.ts: Core behavioral programming engine
+ * - create-template.ts: JSX template creation
+ * - use-plaited-trigger.ts: Internal trigger system
+ * - use-public-trigger.ts: Public event trigger
+ * - use-emit.ts: Custom event emission
+ * - delegated-listener.ts: Event delegation
+ *
+ * Consumers: Application code creating custom elements with behavioral programming
+ */
+
+import { canUseDOM } from '../utils.ts'
+import { BEHAVIORAL_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './b-element.constants.ts'
+import type {
+  BehavioralElement,
+  BehavioralElementCallbackDetails,
+  BehavioralTemplate,
+  Bindings,
+  BoundElement,
+  BProgramArgs,
+  InspectorCallback,
+  SelectorMatch,
+} from './b-element.types.ts'
+import { assignHelpers, getBindings, getDocumentFragment } from './b-element.utils.ts'
+import { behavioral } from './behavioral.ts'
+import type {
+  BThreads,
+  Disconnect,
+  EventDetails,
+  Handlers,
+  PlaitedTrigger,
+  SnapshotMessage,
+  Trigger,
+  UseFeedback,
+  UseSnapshot,
+} from './behavioral.types.ts'
+import { bSync, bThread } from './behavioral.utils.ts'
+import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from './create-template.constants.ts'
+import { createTemplate } from './create-template.ts'
+import type { Attrs, CustomElementTag, TemplateObject } from './create-template.types.ts'
+import type { HostStylesObject } from './css.types.ts'
+import { DelegatedListener, delegates } from './delegated-listener.ts'
+import { type Emit, useEmit } from './use-emit.ts'
+import { usePlaitedTrigger } from './use-plaited-trigger.ts'
+import { usePublicTrigger } from './use-public-trigger.ts'
 
 /**
- * Arguments passed to the `bProgram` function when defining a Plaited element.
- * Provides essential utilities and context for the element's behavior and lifecycle management.
- *
- * @property $ - A query selector function scoped to the component's shadow root.
- *   Accepts a `p-target` value and an optional `SelectorMatch` modifier (e.g., `*=` for contains).
- *   Returns a `NodeListOf<BoundElement<E>>` containing Plaited-enhanced elements.
- * @property root - A reference to the component's shadow root.
- * @property host - A reference to the custom element instance itself.
- * @property internals - The `ElementInternals` instance associated with the element,
- *   providing access to form association features, ARIA properties, etc. Available when `formAssociated: true`.
- * @property trigger - The trigger function for dispatching events within the component's
- *   behavioral program. Automatically manages disconnect callbacks.
- * @property bThreads - An interface for managing behavioral threads (`bThread` instances).
- * @property useSnapshot - A function to get the current state snapshot of the behavioral program.
- * @property bThread - A utility function for creating behavioral threads.
- * @property bSync - A utility function for defining synchronization points within behavioral threads.
- *
- * @example
- * How `BProgramArgs` are received in a `bProgram`:
- * ```ts
- * const MyComponent = bElement({
- *   tag: 'my-component',
- *   shadowDom: <div p-target="content">Hello</div>,
- *   bProgram: ({ $, host, root, internals, trigger, bThreads, useSnapshot, bThread, bSync }) => {
- *     // Use $ to query elements
- *     const [contentDiv] = $<HTMLDivElement>('content');
- *     console.log(contentDiv.textContent); // "Hello"
- *
- *     // Access host and root
- *     console.log(host.tagName); // "MY-COMPONENT"
- *     console.log(root.mode); // "open"
- *
- *     // Use trigger to dispatch events
- *     const handleClick = () => trigger({ type: 'my-event', detail: 'clicked' });
- *     contentDiv.addEventListener('click', handleClick);
- *
- *     // Define event handlers
- *     return {
- *       'my-event': (detail) => console.log('Event triggered:', detail),
- *       onConnected: () => console.log('Component connected!'),
- *     };
- *   }
- * });
- * ```
+ * @internal
+ * Type for lifecycle callback functions with optional detail payload.
  */
-export type BProgramArgs = {
-  $: <E extends Element = Element>(
-    target: string,
-    /**
-     * This option enables querySelectorAll and modifies the attribute selector for p-target
-     * @default {all: false, mod: "="}
-     * @see {@link https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax}
-     */
-    match?: SelectorMatch,
-  ) => NodeListOf<BoundElement<E>>
-  root: ShadowRoot
-  host: PlaitedElement
-  internals: ElementInternals
-  trigger: PlaitedTrigger
-  bThreads: BThreads
-  useSnapshot: UseSnapshot
-  bThread: BThread
-  bSync: BSync
-}
-
-/**
- * Type definition mapping standard Custom Element lifecycle callbacks and
- * Form-Associated Custom Element callbacks to their handler function signatures within Plaited.
- * All handlers are optional and can be synchronous or asynchronous (`async`/`Promise`).
- *
- * @property onAdopted - Called when the element is moved to a new document (e.g., via `document.adoptNode`).
- *   Receives no arguments.
- * @property onAttributeChanged - Called when an attribute listed in `observedAttributes` changes.
- *   Receives an object with `name`, `oldValue`, and `newValue`.
- * @property onConnected - Called when the element is first connected to the document's DOM.
- *   Ideal for setup, initial rendering, and event listeners. Receives no arguments.
- * @property onDisconnected - Called when the element is disconnected from the document's DOM.
- *   Ideal for cleanup (removing listeners, stopping timers/observers). Receives no arguments.
- * @property onFormAssociated - Called when the element becomes associated with a form.
- *   Requires `formAssociated: true`. Receives the associated `HTMLFormElement`.
- * @property onFormDisabled - Called when the element's disabled state changes due to the parent
- *   `<fieldset>`'s disabled state changing. Requires `formAssociated: true`. Receives a boolean indicating the disabled state.
- * @property onFormReset - Called when the associated form is reset.
- *   Requires `formAssociated: true`. Receives no arguments.
- * @property onFormStateRestore - Called when the browser tries to restore the element's state
- *   (e.g., during navigation or browser restart). Requires `formAssociated: true`.
- *   Receives an object with `state` (the restored state) and `reason` ('autocomplete' or 'restore').
- */
-export type PlaitedElementCallbackDetails = {
-  [ELEMENT_CALLBACKS.onAdopted]: void
-  [ELEMENT_CALLBACKS.onAttributeChanged]: {
-    name: string
-    oldValue: string | null
-    newValue: string | null
-  }
-  [ELEMENT_CALLBACKS.onConnected]: void
-  [ELEMENT_CALLBACKS.onDisconnected]: void
-  [ELEMENT_CALLBACKS.onFormAssociated]: HTMLFormElement
-  [ELEMENT_CALLBACKS.onFormDisabled]: boolean
-  [ELEMENT_CALLBACKS.onFormReset]: void
-  [ELEMENT_CALLBACKS.onFormStateRestore]: {
-    state: unknown
-    reason: 'autocomplete' | 'restore'
-  }
-}
 type Callback<T> = T extends void ? () => void | Promise<void> : (detail: T) => void | Promise<void>
-type PlaitedElementCallbackHandlers = {
-  [K in keyof PlaitedElementCallbackDetails]?: Callback<PlaitedElementCallbackDetails[K]>
+
+/**
+ * @internal
+ * Type mapping for behavioral element lifecycle callbacks.
+ */
+type BehavioralElementCallbackHandlers = {
+  [K in keyof BehavioralElementCallbackDetails]?: Callback<BehavioralElementCallbackDetails[K]>
 }
 
+/**
+ * @internal
+ * Parses the p-trigger attribute into a Map of event types to trigger names.
+ */
 const getTriggerMap = (el: Element) =>
   new Map((el.getAttribute(P_TRIGGER) as string).split(' ').map((pair) => pair.split(':')) as [string, string][])
 
-/** get trigger for elements respective event from triggerTypeMap */
+/**
+ * @internal
+ * Determines the trigger type for an event by traversing the composed path and checking p-trigger attributes.
+ */
 const getTriggerType = (event: Event, context: Element) => {
   const el =
-    context.tagName !== 'SLOT' && event.currentTarget === context ? context
-    : event.composedPath().find((el) => el instanceof ShadowRoot) === context.getRootNode() ? context
-    : undefined
+    context.tagName !== 'SLOT' && event.currentTarget === context
+      ? context
+      : event.composedPath().find((el) => el instanceof ShadowRoot) === context.getRootNode()
+        ? context
+        : undefined
   if (!el) return
   return getTriggerMap(el).get(event.type)
 }
 
+/**
+ * @internal
+ * Type guard to check if a Node is an Element.
+ */
 const isElement = (node: Node): node is Element => node.nodeType === 1
 
 /**
- * Creates a reusable Web Component with behavioral programming, event delegation, and shadow DOM support.
- * The `bElement` function is the core building block of Plaited applications, providing a
- * declarative way to create custom elements with robust state management and DOM interactions.
+ * Creates a Web Component with behavioral programming and Shadow DOM support.
+ * Core building block for Plaited applications enabling declarative event handling,
+ * reactive state management, and behavioral thread coordination.
  *
- * @template A - Generic type extending `EventDetails` for component-specific events and their payload types.
- * @param options - Configuration options for the element.
- * @param options.tag - Custom element tag name (must contain a hyphen, e.g., `my-element`).
- * @param options.shadowDom - The shadow DOM template for the component, typically created using JSX or `createTemplate`.
- * @param [options.mode='open'] - Shadow root mode (`'open'` or `'closed'`). Defaults to `'open'`.
- * @param [options.delegatesFocus=true] - Whether focus should be delegated from the host to the shadow DOM. Defaults to `true`.
- * @param [options.slotAssignment='named'] - The slot assignment mode for the shadow DOM (`'named'` or `'manual'`). Defaults to `'named'`.
- * @param [options.observedAttributes=[]] - An array of attribute names to observe for changes. Changes trigger `onAttributeChanged`.
- * @param [options.formAssociated] - If `true`, the element will be form-associated, enabling features like `ElementInternals`, form lifecycle callbacks, and participation in form submission.
- * @param [options.publicEvents=[]] - An array of event types (strings) that can be triggered externally on the element instance using its `trigger` method.
- * @param [options.bProgram] - The behavioral program function that defines the element's logic, event handlers, and lifecycle callback implementations. It receives `BProgramArgs` as its argument.
- * @returns A PlaitedTemplate function. When called, this function creates an instance of the custom element, returning a `TemplateObject` that can be rendered or used in other templates. The function itself also carries metadata like `tag`, `registry`, `publicEvents`, and `observedAttributes`.
- *
- * @example
- * Basic Counter Component
- * ```tsx
- * const Counter = bElement({
- *   tag: 'my-counter',
- *   shadowDom: (
- *     <div>
- *       <button p-target="decBtn" p-trigger={{ click: 'DECREMENT' }}>-</button>
- *       <span p-target="count">0</span>
- *       <button p-target="incBtn" p-trigger={{ click: 'INCREMENT' }}>+</button>
- *     </div>
- *   ),
- *   bProgram({ $ }) {
- *     const [countEl] = $('count');
- *     let count = 0;
- *
- *     return {
- *       INCREMENT() {
- *         count++;
- *         countEl.render(`${count}`);
- *       },
- *       DECREMENT() {
- *         count--;
- *         countEl.render(`${count}`);
- *       }
- *     };
- *   }
- * });
- * ```
- *
- * @example
- * Form-Associated Component
- * ```tsx
- * interface FormFieldEvents {
- *   'value-change': (evt: ChangeEvent & { target: HTMLInputElement }) => void;
- *   validate: () => void;
- * }
- *
- * const FormField = bElement<FormFieldEvents>({
- *   tag: 'form-field',
- *   formAssociated: true,
- *   observedAttributes: ['label', 'required'],
- *   shadowDom: (
- *     <div>
- *       <label p-target="label" />
- *       <input
- *         p-target="input"
- *         p-trigger={{
- *           change: 'value-change',
- *           blur: 'validate'
- *         }}
- *       />
- *       <span p-target="error" />
- *     </div>
- *   ),
- *   bProgram({ $, host, internals }) {
- *     const [label] = $('label');
- *     const [input] = $<HTMLInputElement>('input');
- *     const [error] = $('error');
- *
- *     return {
- *       onConnected() {
- *         label.render(host.label || '');
- *         input.attr({ required: host.required });
- *       },
- *       onAttributeChanged({ name, newValue }) {
- *         if (name === 'label') {
- *           label.render(newValue || '');
- *         }
- *       },
- *       'value-change'({ target }) {
- *         const value = target.value
- *         internals.setFormValue(value);
- *       },
- *       validate() {
- *         const isValid = input.checkValidity();
- *         if (!isValid) {
- *           error.render('This field is required');
- *           internals.setValidity({
- *             valueMissing: true
- *           }, 'This field is required');
- *         } else {
- *           error.render('');
- *           internals.setValidity({});
- *         }
- *       }
- *     };
- *   }
- * });
- * ```
- *
- * @example
- * Component with Behavioral Threads
- * ```tsx
- * const styles = css.create({
-  symbol: {
-     height: '16px',
-     width: '16px',
-     backgroundColor: 'var(--fill)',
-     gridArea: 'input',
-   },
- })
-
- const hostStyles = css.host({
-   display: 'inline-grid',
-   '--fill': {
-     default: 'lightblue',
-     ':state(checked)': 'blue',
-     ':state(disabled)': 'grey',
-   },
- })
-
- // Type for events specific to ToggleInput
- interface ToggleInputEvents extends EventDetails {
-   click: MouseEvent & { target: HTMLInputElement };
-   checked: boolean;
-   disabled: boolean;
-   valueChange: string | null;
- }
-
- export const ToggleInput = bElement<ToggleInputEvents>({
-   tag: 'toggle-input',
-   observedAttributes: ['disabled', 'checked', 'value'],
-   formAssociated: true,
-   shadowDom: (
-     <div
-       p-target='symbol'
-       {...css.join(styles.symbol, hostStyles)}
-       p-trigger={{ click: 'click' }}
-     />
-   ),
-   bProgram({ trigger, internals, root, bThreads, bSync, bThread }) {
-     bThreads.set({
-       onDisabled: bThread(
-         [
-           bSync({
-             block: [
-               // Block 'checked' and 'valueChange' events if the component is disabled
-               ({ type }) => type === 'checked' && internals.states.has('disabled'),
-               ({ type }) => type === 'valueChange' && internals.states.has('disabled'),
-             ],
-           }),
-         ],
-         true, // `true` indicates this thread should be active on initialization
-       ),
-     })
-     return {
-       click() {
-         // Toggle the 'checked' state
-         trigger({ type: 'checked', detail: !internals.states.has('checked') });
-       },
-       checked(val) {
-         root.host.toggleAttribute('checked', val); // Reflect state to attribute
-         if (val) {
-           internals.states.add('checked');
-           // Set form value, using 'value' attribute if present, otherwise default to 'checked'
-           internals.setFormValue('on', root.host.getAttribute('value') ?? 'checked');
-         } else {
-           internals.states.delete('checked');
-           internals.setFormValue('off'); // Or null, depending on desired form data
-         }
-       },
-       disabled(val) {
-         // Reflect 'disabled' state to ElementInternals
-         if (val) {
-           internals.states.add('disabled');
-         } else {
-           internals.states.delete('disabled');
-         }
-       },
-       valueChange(val) {
-         // Update form value if 'value' attribute changes and component is checked
-         const isChecked = internals.states.has('checked');
-         if (val && isChecked) {
-           internals.setFormValue('on', val);
-         } else if (isChecked) {
-           // Fallback to default 'on' value if 'value' is removed but still checked
-           internals.setFormValue('on', 'checked');
-         }
-       },
-       onAttributeChanged({ name, newValue }) {
-         // Trigger internal events based on attribute changes
-         if (name === 'checked') trigger({ type: 'checked', detail: typeof newValue === 'string' });
-         if (name === 'disabled') trigger({ type: 'disabled', detail: typeof newValue === 'string' });
-         if (name === 'value') trigger({ type: 'valueChange', detail: newValue });
-       },
-       onConnected() {
-         // Initialize states from attributes when connected
-         if (root.host.hasAttribute('checked')) {
-           internals.states.add('checked');
-           internals.setFormValue('on', root.host.getAttribute('value') ?? 'checked');
-         }
-         if (root.host.hasAttribute('disabled')) {
-           internals.states.add('disabled');
-         }
-       },
-     }
-   },
- })
- * ```
+ * @template A Event details type for component-specific events
+ * @param options Component configuration including tag name, Shadow DOM template, and behavioral program
+ * @returns BehavioralTemplate function for creating and rendering element instances
  *
  * @remarks
  * **Key Concepts:**
@@ -407,6 +149,14 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  * *   **Component Lifecycle**: Utilize `onConnected`, `onDisconnected`, `onAttributeChanged`, etc., for managing component lifecycle logic.
  * *   **Signal/Trigger Patterns**: Understand that `trigger` (from `BProgramArgs`) is used to send events/data into the behavioral program.
  * *   **Shadow DOM**: Be mindful of style scoping and how to cross shadow boundaries if necessary (e.g., CSS custom properties, `::part`).
+ *
+ * @see {@link BehavioralTemplate} for the return type structure
+ * @see {@link BProgramArgs} for behavioral program arguments
+ * @see {@link behavioral} for the behavioral programming engine
+ * @see {@link bThread} for creating behavioral threads
+ * @see {@link bSync} for synchronization points
+ * @see {@link createStyles} for styling Shadow DOM children
+ * @see {@link createHostStyles} for styling the host element
  */
 export const bElement = <A extends EventDetails>({
   tag,
@@ -415,6 +165,7 @@ export const bElement = <A extends EventDetails>({
   delegatesFocus = true,
   slotAssignment = 'named',
   publicEvents = [],
+  hostStyles,
   observedAttributes = [],
   formAssociated,
   bProgram: callback,
@@ -426,15 +177,14 @@ export const bElement = <A extends EventDetails>({
   slotAssignment?: 'named' | 'manual'
   observedAttributes?: string[]
   publicEvents?: string[]
+  hostStyles?: HostStylesObject
   formAssociated?: true
-  bProgram?: {
-    (this: PlaitedElement, args: BProgramArgs): Handlers<A> & PlaitedElementCallbackHandlers
-  }
-}): PlaitedTemplate => {
+  bProgram?: (this: BehavioralElement, args: BProgramArgs) => Handlers<A> & BehavioralElementCallbackHandlers
+}): BehavioralTemplate => {
   if (canUseDOM() && !customElements.get(tag)) {
     customElements.define(
       tag,
-      class extends HTMLElement implements PlaitedElement {
+      class extends HTMLElement implements BehavioralElement {
         static observedAttributes = [...observedAttributes]
         static formAssociated = formAssociated
         get publicEvents() {
@@ -450,27 +200,31 @@ export const bElement = <A extends EventDetails>({
         #useSnapshot: UseSnapshot
         #bThreads: BThreads
         #disconnectSet = new Set<Disconnect>()
+        #emit: Emit
         trigger: Trigger
+
         constructor() {
           super()
           this.#internals = this.attachInternals()
           this.attachShadow({ mode, delegatesFocus, slotAssignment })
-          const frag = getDocumentFragment(this.#root, shadowDom)
+          const frag = getDocumentFragment({ hostStyles, shadowRoot: this.#root, templateObject: shadowDom })
           this.#root.replaceChildren(frag)
+
           const { trigger, useFeedback, useSnapshot, bThreads } = behavioral()
-          this.#trigger = getPlaitedTrigger(trigger, this.#disconnectSet)
+          this.#trigger = usePlaitedTrigger(trigger, this.#disconnectSet)
           this.#useFeedback = useFeedback
           this.#useSnapshot = useSnapshot
           this.#bThreads = bThreads
-          this.trigger = getPublicTrigger({
+          this.trigger = usePublicTrigger({
             trigger,
             publicEvents,
           })
+          this.#emit = useEmit(this)
         }
         attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
           this.#trigger<{
             type: typeof ELEMENT_CALLBACKS.onAttributeChanged
-            detail: PlaitedElementCallbackDetails['onAttributeChanged']
+            detail: BehavioralElementCallbackDetails['onAttributeChanged']
           }>({
             type: ELEMENT_CALLBACKS.onAttributeChanged,
             detail: { name, oldValue, newValue },
@@ -499,6 +253,38 @@ export const bElement = <A extends EventDetails>({
             assignHelpers(bindings, this.#root.querySelectorAll<Element>(`[${P_TARGET}]`))
             // Create a shadow observer to watch for modification & addition of nodes with p-this.#trigger directive
             this.#shadowObserver = this.#getShadowObserver(bindings)
+            //Create inspector on tool that captures state snapshots of behavioral program execution
+            const inspectorDefaultCallback: InspectorCallback = (arg: SnapshotMessage) => {
+              // queueMicrotask prevents Safari's console.table from creating synchronous feedback loops
+              // JSON clone prevents property getter side effects during console inspection
+              queueMicrotask(() => {
+                console.group()
+                console.info(tag)
+                console.table(JSON.parse(JSON.stringify(arg)))
+                console.groupEnd()
+              })
+            }
+            let inspectorCallback = inspectorDefaultCallback
+            let inspectorDisconnect: Disconnect | undefined
+            const inspector = {
+              assign: (func: InspectorCallback) => {
+                inspectorCallback = func
+              },
+              reset: () => {
+                inspectorCallback = inspectorDefaultCallback
+              },
+              on: () => {
+                inspectorDisconnect = this.#useSnapshot(inspectorCallback)
+                this.#disconnectSet.add(inspectorDisconnect)
+              },
+              off: () => {
+                if (inspectorDisconnect) {
+                  void inspectorDisconnect()
+                  this.#disconnectSet.delete(inspectorDisconnect)
+                  inspectorDisconnect = undefined
+                }
+              },
+            }
             // bind connectedCallback to the custom element with the following arguments
             const handlers = callback.bind(this)({
               $: <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
@@ -507,7 +293,8 @@ export const bElement = <A extends EventDetails>({
               root: this.#root,
               internals: this.#internals,
               trigger: this.#trigger,
-              useSnapshot: this.#useSnapshot,
+              inspector,
+              emit: this.#emit,
               bThreads: this.#bThreads,
               bThread,
               bSync,
@@ -519,14 +306,14 @@ export const bElement = <A extends EventDetails>({
         }
         disconnectedCallback() {
           this.#shadowObserver?.disconnect()
-          for (const cb of this.#disconnectSet) cb()
+          for (const cb of this.#disconnectSet) void cb()
           this.#disconnectSet.clear()
           this.#trigger({ type: ELEMENT_CALLBACKS.onDisconnected })
         }
         formAssociatedCallback(form: HTMLFormElement) {
           this.#trigger<{
             type: typeof ELEMENT_CALLBACKS.onFormAssociated
-            detail: PlaitedElementCallbackDetails['onFormAssociated']
+            detail: BehavioralElementCallbackDetails['onFormAssociated']
           }>({
             type: ELEMENT_CALLBACKS.onFormAssociated,
             detail: form,
@@ -535,7 +322,7 @@ export const bElement = <A extends EventDetails>({
         formDisabledCallback(disabled: boolean) {
           this.#trigger<{
             type: typeof ELEMENT_CALLBACKS.onFormDisabled
-            detail: PlaitedElementCallbackDetails['onFormDisabled']
+            detail: BehavioralElementCallbackDetails['onFormDisabled']
           }>({
             type: ELEMENT_CALLBACKS.onFormDisabled,
             detail: disabled,
@@ -547,7 +334,7 @@ export const bElement = <A extends EventDetails>({
         formStateRestoreCallback(state: unknown, reason: 'autocomplete' | 'restore') {
           this.#trigger<{
             type: typeof ELEMENT_CALLBACKS.onFormStateRestore
-            detail: PlaitedElementCallbackDetails['onFormStateRestore']
+            detail: BehavioralElementCallbackDetails['onFormStateRestore']
           }>({
             type: ELEMENT_CALLBACKS.onFormStateRestore,
             detail: { state, reason },
@@ -556,18 +343,18 @@ export const bElement = <A extends EventDetails>({
         #addListeners(elements: NodeListOf<Element> | Element[]) {
           const length = elements.length
           for (let i = 0; i < length; i++) {
-            const el = elements[i]
+            const el = elements[i]!
             if (el.tagName === 'SLOT' && Boolean(el.assignedSlot)) continue // skip nested slots
             !delegates.has(el) &&
               delegates.set(
                 el,
                 new DelegatedListener((event) => {
                   const type = el.getAttribute(P_TRIGGER) && getTriggerType(event, el)
-                  type ?
-                    /** if key is present in `p-trigger` trigger event on instance's bProgram */
-                    this.#trigger?.({ type, detail: event })
-                  : /** if key is not present in `p-trigger` remove event listener for this event on Element */
-                    el.removeEventListener(event.type, delegates.get(el))
+                  type
+                    ? /** if key is present in `p-trigger` trigger event on instance's bProgram */
+                      this.#trigger?.({ type, detail: event })
+                    : /** if key is not present in `p-trigger` remove event listener for this event on Element */
+                      el.removeEventListener(event.type, delegates.get(el))
                 }),
               )
             for (const [event] of getTriggerMap(el)) {
@@ -589,19 +376,19 @@ export const bElement = <A extends EventDetails>({
               } else if (mutation.addedNodes.length) {
                 const length = mutation.addedNodes.length
                 for (let i = 0; i < length; i++) {
-                  const node = mutation.addedNodes[i]
+                  const node = mutation.addedNodes[i]!
                   if (isElement(node)) {
                     this.#addListeners(
-                      node.hasAttribute(P_TRIGGER) ?
-                        [node, ...node.querySelectorAll(`[${P_TRIGGER}]`)]
-                      : node.querySelectorAll(`[${P_TRIGGER}]`),
+                      node.hasAttribute(P_TRIGGER)
+                        ? [node, ...node.querySelectorAll(`[${P_TRIGGER}]`)]
+                        : node.querySelectorAll(`[${P_TRIGGER}]`),
                     )
 
                     assignHelpers(
                       bindings,
-                      node.hasAttribute(P_TARGET) ?
-                        [node, ...node.querySelectorAll(`[${P_TARGET}]`)]
-                      : node.querySelectorAll(`[${P_TARGET}]`),
+                      node.hasAttribute(P_TARGET)
+                        ? [node, ...node.querySelectorAll(`[${P_TARGET}]`)]
+                        : node.querySelectorAll(`[${P_TARGET}]`),
                     )
                   }
                 }
@@ -639,8 +426,9 @@ export const bElement = <A extends EventDetails>({
     })
   ft.registry = registry
   ft.tag = tag
-  ft.$ = PLAITED_TEMPLATE_IDENTIFIER
+  ft.$ = BEHAVIORAL_TEMPLATE_IDENTIFIER
   ft.publicEvents = publicEvents
   ft.observedAttributes = observedAttributes
+  ft.hostStyles = hostStyles ?? { stylesheets: [] }
   return ft
 }

@@ -13,16 +13,18 @@
     "url": "https://github.com/plaited/plaited/issues"
   },
   "homepage": "https://github.com/plaited/plaited/tree/main#readme",
+  "bin": {
+    "plaited": "./.bin/plaited.js"
+  },
   "type": "module",
   "main": "./src/main.ts",
   "exports": {
     ".": "./src/main.ts",
-    "./behavioral": "./src/behavioral.ts",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
     "./jsx-runtime": "./src/jsx-runtime.ts",
+    "./testing": "./src/testing.ts",
     "./utils": "./src/utils.ts",
-    "./workshop": "./src/workshop.ts",
-    "./mcp": "./src/mcp.ts"
+    "./workshop": "./src/workshop.ts"
   },
   "files": [
     "./.bin/**",
@@ -36,19 +38,25 @@
     "access": "public"
   },
   "scripts": {
-    "check": "tsc --project tsconfig.json",
-    "check:watch": "bun run check --watch",
+    "check": "bun run check:biome && bun run check:types && bun run check:package",
+    "check:biome": "biome check",
+    "check:package": "format-package --check",
+    "check:types": "tsc --noEmit",
     "copy-css-types": "bash scripts/copy-css-types.sh",
-    "lint": "eslint . --ignore-pattern \"**/dist/*\"",
-    "lint-fix": "bun run lint --fix --quiet --ignore-pattern \"**/dist/*\"",
+    "dev": "bun --hot src/workshop/cli.ts dev",
+    "format": "biome format --write",
+    "format:check": "biome format",
+    "format:package": "format-package --write",
+    "lint": "biome lint",
+    "lint:fix": "biome lint --write",
     "prepare": "git config core.hooksPath .hooks",
-    "prettier": "prettier . --write",
-    "test": "bun scripts/test-stories.ts && bun test"
+    "test": "bun run test-stories:all && bun test",
+    "test-stories": "bun src/workshop/cli.ts test",
+    "test-stories:all": "bun run test-stories src/main"
   },
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [
-      "bun run lint-fix",
-      "bun run prettier"
+      "bunx @biomejs/biome check --write"
     ],
     "package.json": [
       "format-package -w"
@@ -72,36 +80,32 @@
     }
   },
   "peerDependencies": {
-    "@modelcontextprotocol/sdk": "^1.13.0",
-    "@types/bun": "^1.2.15",
-    "axe-core": "^4.10.3",
-    "playwright": "^1.53.0",
-    "zod": "^3.25.64"
+    "@types/bun": "^1.3.2",
+    "axe-core": "^4.11.0",
+    "@modelcontextprotocol/sdk": "^1.22.0",
+    "playwright": "^1.56.1",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
-    "axe-core": "4.10.3",
-    "@commitlint/cli": "19.8.1",
-    "@commitlint/config-conventional": "19.8.1",
-    "@eslint/js": "9.29.0",
-    "@modelcontextprotocol/sdk": "1.13.0",
+    "@biomejs/biome": "2.3.6",
+    "@commitlint/cli": "20.2.0",
+    "@commitlint/config-conventional": "20.2.0",
+    "@modelcontextprotocol/sdk": "1.25.1",
+    "@playwright/mcp": "0.0.52",
+    "@playwright/test": "1.57.0",
     "@types/beautify": "0.0.3",
-    "@types/bun": "1.2.16",
-    "@types/node": "24.0.3",
-    "@types/sinon": "17.0.4",
+    "@types/bun": "1.3.5",
+    "@types/node": "25.0.3",
+    "@types/sinon": "21.0.0",
+    "axe-core": "4.11.0",
     "beautify": "0.0.8",
-    "bun-types": "1.2.16",
-    "csstype": "3.1.3",
+    "csstype": "3.2.3",
     "cz-conventional-changelog": "3.3.0",
-    "eslint": "9.29.0",
-    "eslint-config-prettier": "10.1.5",
     "format-package": "7.0.0",
-    "globals": "16.2.0",
-    "lint-staged": "16.1.2",
-    "playwright": "1.53.1",
-    "prettier": "3.5.3",
+    "lint-staged": "16.2.7",
+    "playwright": "1.57.0",
     "sinon": "21.0.0",
-    "typescript": "5.8.3",
-    "typescript-eslint": "8.34.1",
-    "zod": "3.25.67"
+    "typescript": "5.9.3",
+    "zod": "4.2.1"
   }
 }

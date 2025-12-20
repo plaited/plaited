@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { expect, test } from 'bun:test'
 import { keyMirror } from 'plaited/utils'
 
 test('keyMirror(): return an object of mirrored keys as values', () => {

@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { expect, test } from 'bun:test'
 import { hashString } from 'plaited/utils'
 
 test('hashString(): Given a string, return a hash', () => {

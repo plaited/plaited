@@ -1,49 +1,8 @@
 /**
- * @internal
- * @module escape
+ * HTML escaping utilities for XSS prevention.
+ * Based on html-escaper library patterns.
  *
- * Purpose: HTML escaping utilities for XSS prevention in string-based content
- * Architecture: Optimized regex-based escaping using cached function references
- * Dependencies: None - pure JavaScript implementation
- * Consumers: Components handling user input, template rendering, dynamic content
- *
- * Maintainer Notes:
- * - This module provides critical XSS protection for string-based HTML generation
- * - Based on battle-tested html-escaper library patterns
- * - Uses numeric entities for quotes to ensure compatibility
- * - Function reference caching (`const { replace } = ''`) improves performance
- * - Regex patterns are precompiled for efficiency
- * - Handles both named and numeric HTML entities
- *
- * Common modification scenarios:
- * - Adding more entities: Update regex patterns and key-value maps
- * - Supporting Unicode: Consider full entity encoding
- * - Performance tuning: Consider state machine for very long strings
- * - Framework integration: Add framework-specific wrappers
- *
- * Performance considerations:
- * - Regex replace is O(n) where n is string length
- * - Function reference avoids prototype lookup on each call
- * - Object lookups are O(1) for entity mapping
- * - No string concatenation - single pass replacement
- *
- * Known limitations:
- * - Only escapes the 5 critical HTML characters
- * - Does not handle Unicode or extended entities
- * - Not suitable for escaping within script/style tags
- * - Cannot be used for attribute name escaping
- *
- * Security notes:
- * - Always escape user input before rendering
- * - This prevents XSS but not other injection types
- * - Use with setHTMLUnsafe or innerHTML only
- * - For attributes, ensure quotes are properly handled
- */
-
-/**
- * HTML string escaping utilities based on html-escaper.
- * Provides functions to safely escape and unescape HTML special characters.
- *
+ * ⚠️ **Security**: Always escape user input before rendering HTML.
  *
  * @remarks
  * Character mappings:
@@ -52,13 +11,6 @@
  * - > → &gt;
  * - ' → &#39;
  * - " → &quot;
- *
- * Also handles numeric character references:
- * - &#38; → &
- * - &#60; → <
- * - &#62; → >
- * - &#39; → '
- * - &#34; → "
  */
 
 /**
@@ -130,52 +82,35 @@ const getEscapeValue = (key: string) => escapeKeyValues[key as keyof typeof esca
 const getUnescapeValue = (key: string) => unescapeKeyValues[key as keyof typeof unescapeKeyValues]
 
 /**
- * Escapes special HTML characters in a string to prevent XSS attacks.
+ * Escapes HTML special characters to prevent XSS.
  *
- * @param sub - The string to escape
- * @returns The escaped string with HTML entities
- *
- * @example
- * Basic Usage
- * ```ts
- * escape('<div class="test">')
- * // Returns: '&lt;div class=&quot;test&quot;&gt;'
- * ```
+ * @param sub - String to escape
+ * @returns Escaped string with HTML entities
  *
  * @example
- * Multiple Characters
  * ```ts
- * escape('Hello & Goodbye')
- * // Returns: 'Hello &amp; Goodbye'
+ * htmlEscape('<div class="test">'); // '&lt;div class=&quot;test&quot;&gt;'
+ * htmlEscape('Hello & Goodbye');     // 'Hello &amp; Goodbye'
+ * htmlEscape("It's < than >");      // 'It&#39;s &lt; than &gt;'
  * ```
+ *
+ * @see {@link htmlUnescape} for reverse operation
  */
-export const escape = (sub: string) => replace.call(sub, escapeRegex, getEscapeValue)
+export const htmlEscape = (sub: string) => replace.call(sub, escapeRegex, getEscapeValue)
 
 /**
- * Converts HTML entities back to their original characters.
+ * Converts HTML entities back to original characters.
  *
- * @param sub - The string containing HTML entities to unescape
- * @returns The unescaped string with original characters
- *
- * @example
- * Basic Usage
- * ```ts
- * unescape('&lt;div&gt;')
- * // Returns: '<div>'
- * ```
+ * @param sub - String with HTML entities
+ * @returns Unescaped string
  *
  * @example
- * Mixed Entities
  * ```ts
- * unescape('&amp;quot;Hello&amp;quot;')
- * // Returns: '"Hello"'
+ * htmlUnescape('&lt;div&gt;');              // '<div>'
+ * htmlUnescape('&quot;Hello&quot;');        // '"Hello"'
+ * htmlUnescape('&#39;Single Quote&#39;');   // "'Single Quote'"
  * ```
  *
- * @example
- * Numeric References
- * ```ts
- * unescape('&#39;Single Quote&#39;')
- * // Returns: "'Single Quote'"
- * ```
+ * @see {@link htmlEscape} for escaping HTML
  */
-export const unescape = (sub: string) => replace.call(sub, unescapeRegex, getUnescapeValue)
+export const htmlUnescape = (sub: string) => replace.call(sub, unescapeRegex, getUnescapeValue)

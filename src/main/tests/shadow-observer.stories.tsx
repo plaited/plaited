@@ -1,8 +1,7 @@
-import { bElement, type FT } from 'plaited'
-import type { StoryObj } from 'plaited/workshop'
-import { css } from 'plaited'
+import { bElement, createStyles, type FT } from 'plaited'
+import { story } from 'plaited/testing'
 
-const styles = css.create({
+const componentStyles = createStyles({
   button: {
     border: '1px solid black',
     padding: '4px 8px',
@@ -69,8 +68,10 @@ const SVG: FT = (props) => (
     class={'svg'}
     p-trigger={{ click: 'removeSvg' }}
     p-target='svg'
+    aria-label='Test SVG'
     {...props}
   >
+    <title>Test SVG</title>
     <circle
       cx='50'
       cy='50'
@@ -87,22 +88,22 @@ const ShadowIsland = bElement({
   shadowDom: (
     <div p-target='wrapper'>
       <div
-        {...styles.zone}
+        {...componentStyles.zone}
         p-target='zone'
       ></div>
       <div
-        {...styles.row}
+        {...componentStyles.row}
         p-target='button-row'
       >
         <button
           p-trigger={{ click: 'start' }}
-          {...styles.button}
+          {...componentStyles.button}
         >
           start
         </button>
         <button
           p-trigger={{ click: 'addButton' }}
-          {...styles.button}
+          {...componentStyles.button}
         >
           addButton
         </button>
@@ -119,7 +120,7 @@ const ShadowIsland = bElement({
       addSubIsland() {
         const [zone] = $('zone')
         /** render dynamic island to zone */
-        zone?.insert('beforeend', <SubIsland {...styles['sub-island']} />)
+        zone?.insert('beforeend', <SubIsland {...componentStyles['sub-island']} />)
       },
       addButton() {
         root.host.insertAdjacentHTML('beforeend', `<button slot='button'>add svg</button>`)
@@ -136,7 +137,7 @@ const ShadowIsland = bElement({
             name='button'
             p-target='add-svg-slot'
             p-trigger={{ click: 'add-svg' }}
-            {...styles.slot}
+            {...componentStyles.slot}
           ></slot>,
         )
       },
@@ -144,17 +145,17 @@ const ShadowIsland = bElement({
         const [svg] = $('svg')
         svg?.remove()
       },
-      ['add-svg']() {
+      'add-svg'() {
         const [zone] = $('zone')
-        zone?.insert('beforeend', <SVG {...styles.svg} />)
+        zone?.insert('beforeend', <SVG {...componentStyles.svg} />)
       },
     }
   },
 })
 
-export const shadowObserver: StoryObj = {
+export const shadowObserver = story<typeof ShadowIsland>({
   description: `This story is used to validate that the shadow dom mutation observer
-  of plaited elements created by bElement function properly binds events declared with the
+  of Behavioral elements created by bElement function properly binds events declared with the
   p-trigger attribute on elements in it's shadow dom.`,
   template: ShadowIsland,
   play: async ({ assert, findByAttribute, findByText, fireEvent }) => {
@@ -230,4 +231,4 @@ export const shadowObserver: StoryObj = {
       expected: 'H3',
     })
   },
-}
+})

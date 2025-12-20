@@ -1,0 +1,213 @@
+name: Create Release PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 7.3.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-release-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Get last release tag
+        id: last_tag
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            echo "No previous tags found, comparing from initial commit"
+            LAST_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+          echo "last_tag=$LAST_TAG" >> $GITHUB_OUTPUT
+          echo "Last release: $LAST_TAG"
+
+      - name: Get changed public API files since last release
+        id: changed_files
+        run: |
+          LAST_TAG="${{ steps.last_tag.outputs.last_tag }}"
+          echo "Comparing changes since: $LAST_TAG"
+
+          # Get changed files in public API directories, excluding tests and stories
+          CHANGED=$(git diff --name-only $LAST_TAG HEAD -- \
+            'src/main/*.ts' \
+            'src/testing/*.ts' \
+            'src/utils/*.ts' \
+            'src/workshop/*.ts' \
+            ':!*.spec.ts' \
+            ':!*.spec.tsx' \
+            ':!*.stories.tsx' \
+            ':!src/**/tests/*' || echo "")
+
+          if [ -z "$CHANGED" ]; then
+            echo "No public API files changed"
+            echo "files=[]" >> $GITHUB_OUTPUT
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changed files:"
+            echo "$CHANGED"
+
+            # Convert to JSON array
+            FILES=$(echo "$CHANGED" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+            echo "files=$FILES" >> $GITHUB_OUTPUT
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create release branch
+        if: steps.changed_files.outputs.has_changes == 'true'
+        run: |
+          BRANCH_NAME="release/v${{ inputs.version }}"
+          git checkout -b "$BRANCH_NAME"
+          echo "Created branch: $BRANCH_NAME"
+
+      - name: Update TSDoc with Claude Code Action
+        if: steps.changed_files.outputs.has_changes == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          model: claude-sonnet-4-5-20250929
+          max_iterations: 20
+          instructions: |
+            You are preparing a release for Plaited v${{ inputs.version }}.
+
+            The following public API files have changed since the last release:
+            ${{ steps.changed_files.outputs.files }}
+
+            Your task is to review and update TSDoc comments in these files according to the standards in CLAUDE.md.
+
+            Requirements from CLAUDE.md:
+            1. All public exports MUST have comprehensive TSDoc with:
+               - One-line description + extended context
+               - @param for all parameters
+               - @returns for return values
+               - @remarks section with behavioral notes
+               - @see tags to related APIs
+               - @since tag with version number
+
+            2. Internal functions marked with @internal need maintainer-focused documentation
+
+            3. NO @example sections allowed (examples stored in SQLite database)
+
+            4. Follow the TSDoc Format Guidelines in CLAUDE.md exactly
+
+            5. For types, use @property documentation for all properties
+
+            6. For behavioral programming functions, always use factory function examples, never raw yield statements
+
+            Process:
+            1. Read each changed file
+            2. Identify public exports (not marked @internal)
+            3. Check if TSDoc meets CLAUDE.md standards
+            4. Update TSDoc comments where needed
+            5. Ensure cross-references are accurate
+
+            Do NOT modify code logic, only TSDoc comments.
+
+      - name: Generate database changelog
+        if: steps.changed_files.outputs.has_changes == 'true'
+        run: |
+          # Generate changelog for database changes (if any)
+          bun plaited changelog --version ${{ inputs.version }} --output .github/DB_CHANGELOG.md || echo "No database changes"
+
+      - name: Commit changes
+        if: steps.changed_files.outputs.has_changes == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "docs: update TSDoc for v${{ inputs.version }} release
+
+            - Updated TSDoc comments for changed public API files
+            - Ensured compliance with CLAUDE.md standards
+            - Generated database changelog
+
+            🤖 Generated with Claude Code Action"
+          fi
+
+      - name: Push release branch
+        if: steps.changed_files.outputs.has_changes == 'true'
+        run: |
+          BRANCH_NAME="release/v${{ inputs.version }}"
+          git push origin "$BRANCH_NAME"
+
+      - name: Create Pull Request
+        if: steps.changed_files.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: release/v${{ inputs.version }}
+          title: "Release v${{ inputs.version }}"
+          body: |
+            ## Release Preparation for v${{ inputs.version }}
+
+            This PR prepares the codebase for release v${{ inputs.version }}.
+
+            ### Changes
+
+            - ✅ TSDoc comments updated for changed public API files
+            - ✅ Documentation compliance verified against CLAUDE.md standards
+            - ✅ Database changelog generated (if applicable)
+
+            ### Changed Files
+
+            ${{ steps.changed_files.outputs.files }}
+
+            ### Review Checklist
+
+            - [ ] TSDoc comments are accurate and complete
+            - [ ] No @example sections present (examples in database)
+            - [ ] Cross-references (@see tags) are valid
+            - [ ] @since tags use correct version number
+            - [ ] Internal functions properly marked with @internal
+            - [ ] No code logic changes (TSDoc only)
+
+            ### Database Changes
+
+            See `.github/DB_CHANGELOG.md` for database documentation changes (if present).
+
+            ### Next Steps
+
+            After merging this PR:
+            1. Tag the release: `git tag v${{ inputs.version }}`
+            2. Push the tag: `git push origin v${{ inputs.version }}`
+            3. The publish workflow will automatically run
+
+            🤖 Generated by Release PR Workflow
+          labels: |
+            release
+            documentation
+          assignees: ${{ github.actor }}
+
+      - name: No changes detected
+        if: steps.changed_files.outputs.has_changes == 'false'
+        run: |
+          echo "No public API files changed since last release."
+          echo "Skipping release PR creation."
+          echo ""
+          echo "If you still want to create a release, you can manually create a tag:"
+          echo "  git tag v${{ inputs.version }}"
+          echo "  git push origin v${{ inputs.version }}"

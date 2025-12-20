@@ -32,111 +32,30 @@
  * - No source maps for debugging generated HTML
  * - Shadow DOM polyfills not included
  */
-import { escape, isTypeOf } from '../utils.js'
-import type { TemplateObject } from './jsx.types.js'
-import { VALID_PRIMITIVE_CHILDREN, TEMPLATE_OBJECT_IDENTIFIER } from './jsx.constants.js'
+import { htmlEscape, isTypeOf } from '../utils.ts'
+import { TEMPLATE_OBJECT_IDENTIFIER, VALID_PRIMITIVE_CHILDREN } from './create-template.constants.ts'
+import type { TemplateObject } from './create-template.types.ts'
 
 /**
- * Server-Side Rendering (SSR) for Plaited Templates
- *
- * Generates static HTML strings from Plaited template objects with automatic style injection
- * and security measures. Optimized for server-side environments and static generation.
+ * Server-side renders Plaited templates to static HTML.
+ * Collects styles, escapes content, and produces optimized HTML strings.
  *
  * @param templates - One or more Plaited template objects to render
- * @returns HTML string with injected styles and processed content
- *
- * Key Features:
- * - Automatic style collection and deduplication
- * - Security-first content escaping
- * - Shadow DOM support
- * - Intelligent style injection
- * - Custom element registration tracking
- *
- * @example
- * Basic Page Rendering
- * ```ts
- * import { ssr, h } from 'plaited'
- *
- * const page = h('html', {
- *   children: [
- *     h('head', {
- *       children: h('title', { children: 'My Page' })
- *     }),
- *     h('body', {
- *       children: h('h1', { children: 'Hello World' })
- *     })
- *   ]
- * })
- *
- * const html = ssr(page)
- * ```
- *
- * @example
- * Component with Styles
- * ```ts
- * import { ssr, h, css } from 'plaited'
- *
- * const styles = css.create({
- *   card: {
- *     padding: '1rem',
- *     borderRadius: '4px',
- *     boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
- *   }
- * })
- *
- * const Card = ({ children }) => h('div', {
- *   ...styles.card,
- *   children
- * })
- *
- * const html = ssr(
- *   h(Card, { children: 'Styled content' })
- * )
- * ```
- *
- * @example
- * Shadow DOM Components
- * ```ts
- * import { ssr, h } from 'plaited'
- *
- * const CustomElement = () => h('my-element', {
- *   children: h('template', {
- *     shadowrootmode: 'open',
- *     children: h('p', { children: 'Shadow content' })
- *   })
- * })
- *
- * const html = ssr(h(CustomElement))
- * ```
+ * @returns Complete HTML string with injected styles
  *
  * @remarks
- * Style Injection Strategy:
- * 1. Collects styles from all template objects
- * 2. Deduplicates styles using Set
- * 3. Injects combined styles in optimal location:
- *    - Before </head> (preferred)
- *    - After <body> (fallback)
- *    - At start of document (last resort)
+ * Style injection:
+ * - Collects all stylesheets
+ * - Deduplicates via Set
+ * - Injects before </head> or after <body>
  *
- * Security Features:
- * - Automatic HTML escaping for primitive values
- * - XSS prevention through content sanitization
- * - Opt-in trusted content with `trusted` prop
+ * Security:
+ * - Auto-escapes all content
+ * - Prevents XSS attacks
+ * - Trusted content requires explicit flag
  *
- * Processing Details:
- * 1. Templates are recursively processed
- * 2. Stylesheets are collected and deduplicated
- * 3. Content is escaped unless marked as trusted
- * 4. Custom element tags are registered
- * 5. Shadow DOM templates are preserved
- * 6. Final HTML string is assembled with injected styles
- *
- * Best Practices:
- * - Keep templates modular and composable
- * - Use CSS modules for style scoping
- * - Leverage shadow DOM for encapsulation
- * - Avoid inline scripts unless trusted
- * - Structure HTML with proper head/body tags
+ * @see {@link h} for creating templates
+ * @see {@link css} for styling
  */
 export const ssr = (...templates: TemplateObject[]) => {
   /**
@@ -166,7 +85,7 @@ export const ssr = (...templates: TemplateObject[]) => {
       continue
     }
     if (!VALID_PRIMITIVE_CHILDREN.has(typeof child)) continue
-    const safeChild = escape(`${child}`)
+    const safeChild = htmlEscape(`${child}`)
     arr.push(safeChild)
   }
 

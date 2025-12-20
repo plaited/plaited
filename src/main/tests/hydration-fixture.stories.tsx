@@ -1,13 +1,14 @@
-import { bElement, type PlaitedElement } from 'plaited'
+import { type BehavioralElement, bElement } from 'plaited'
+import { story } from 'plaited/testing'
 import { createDocumentFragment } from 'plaited/utils'
-import type { StoryObj } from 'plaited/workshop'
 
-import { styles, HYDRATING_ELEMENT_TAG, BEFORE_HYDRATION, AFTER_HYDRATION } from './hydrating-element.constants.js'
+import { AFTER_HYDRATION, BEFORE_HYDRATION, HYDRATING_ELEMENT_TAG, styles } from './hydrating-element.constants.ts'
+
 const TRIGGER_HYDRATING_ELEMENT = 'TRIGGER_HYDRATING_ELEMENT'
 const FIXTURE_ELEMENT_TAG = 'fixture-element'
 const EMPTY_SLOT = 'Empty slot'
 const TRIGGER_HYDRATION = 'TRIGGER_HYDRATION'
-const ROUTE = '/main/tests/hydrating-element--target.template'
+const ROUTE = '/tests/hydrating-element--target.template'
 
 const HydrationFixture = bElement({
   tag: FIXTURE_ELEMENT_TAG,
@@ -18,13 +19,13 @@ const HydrationFixture = bElement({
       async [TRIGGER_HYDRATION](detail: string) {
         const frag = createDocumentFragment(detail)
         const [slot] = $<HTMLSlotElement>('slot')
-        frag && slot.replace(frag)
+        frag && slot?.replace(frag)
       },
     }
   },
 })
 
-export const test: StoryObj = {
+export const test = story({
   description: `Element that will be fetched as an include in another story to hydrate, ./main/tests/hydration-fixture.stories.tsx`,
   template: () => <HydrationFixture data-testid='fixture' />,
   async play({ findByText, assert, findByAttribute, match, wait }) {
@@ -64,7 +65,7 @@ export const test: StoryObj = {
       expected: 'STYLE',
     })
 
-    const contains = match(styleElementBeforeHydration!.innerText)
+    const contains = match(styleElementBeforeHydration?.innerText ?? '')
     const pattern = 'text-decoration:underline'
     assert({
       given: 'before hydrating element is connected',
@@ -73,13 +74,13 @@ export const test: StoryObj = {
       expected: pattern,
     })
 
-    const fixture = document.querySelector<PlaitedElement>(FIXTURE_ELEMENT_TAG)
+    const fixture = document.querySelector<BehavioralElement>(FIXTURE_ELEMENT_TAG)
 
     fixture?.trigger({ type: TRIGGER_HYDRATION, detail: responseText })
 
     await customElements.whenDefined(HYDRATING_ELEMENT_TAG)
     await wait(60)
-    const hydratingElement = await findByAttribute<PlaitedElement>('p-target', HYDRATING_ELEMENT_TAG)
+    const hydratingElement = await findByAttribute<BehavioralElement>('p-target', HYDRATING_ELEMENT_TAG)
 
     const contentAfterHydration = await findByAttribute<HTMLSpanElement>('p-target', 'inner', hydratingElement)
     const styleElementAfterHydration = await findByText(styles.before.stylesheets.join(' '), hydratingElement)
@@ -111,4 +112,4 @@ export const test: StoryObj = {
       expected: 'line-through',
     })
   },
-}
+})

@@ -1,6 +1,6 @@
-import { css } from 'plaited'
+import { createStyles } from 'plaited'
 
-export const styles = css.create({
+export const styles = createStyles({
   before: {
     textDecoration: 'underline',
   },

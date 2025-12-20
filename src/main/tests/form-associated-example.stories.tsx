@@ -1,9 +1,8 @@
-import { bElement } from 'plaited'
+import { bElement, createHostStyles, createStyles, joinStyles } from 'plaited'
+import { story } from 'plaited/testing'
 import { isTypeOf } from 'plaited/utils'
-import { type StoryObj } from 'plaited/workshop'
-import { css } from 'plaited'
 
-const styles = css.create({
+const componentStyles = createStyles({
   symbol: {
     height: '16px',
     width: '16px',
@@ -12,7 +11,7 @@ const styles = css.create({
   },
 })
 
-const hostStyles = css.host({
+const componentHostStyles = createHostStyles({
   display: 'inline-grid',
   '--fill': {
     $default: 'lightblue',
@@ -35,7 +34,7 @@ const ToggleInput = bElement<{
   shadowDom: (
     <div
       p-target='symbol'
-      {...css.join(styles.symbol, hostStyles)}
+      {...joinStyles(componentStyles.symbol, componentHostStyles)}
       p-trigger={{ click: 'click' }}
     />
   ),
@@ -83,8 +82,16 @@ const ToggleInput = bElement<{
         }
       },
       onAttributeChanged({ name, newValue }) {
-        name === 'checked' && trigger({ type: 'checked', detail: isTypeOf<string>(newValue, 'string') })
-        name === 'disabled' && trigger({ type: 'disabled', detail: isTypeOf<string>(newValue, 'string') })
+        name === 'checked' &&
+          trigger({
+            type: 'checked',
+            detail: isTypeOf<string>(newValue, 'string'),
+          })
+        name === 'disabled' &&
+          trigger({
+            type: 'disabled',
+            detail: isTypeOf<string>(newValue, 'string'),
+          })
         name === 'value' && trigger({ type: 'valueChange', detail: newValue })
       },
       onConnected() {
@@ -100,36 +107,36 @@ const ToggleInput = bElement<{
   },
 })
 
-export const checkbox: StoryObj = {
+export const checkbox = story<typeof ToggleInput>({
   description: `renders toggle input and validates we can set attribute on it and it chenges`,
   template: ToggleInput,
   async play() {
     const checkbox = document.querySelector(ToggleInput.tag)
     checkbox?.setAttribute('checked', '')
   },
-}
+})
 
-export const checked: StoryObj = {
+export const checked = story<typeof ToggleInput>({
   description: `renders toggle input checked`,
   template: ToggleInput,
   args: {
     checked: true,
   },
-}
+})
 
-export const disabled: StoryObj = {
+export const disabled = story<typeof ToggleInput>({
   description: `renders toggle input disabled`,
   template: ToggleInput,
   args: {
     disabled: true,
   },
-}
+})
 
-export const disabledAndChecked: StoryObj = {
+export const disabledAndChecked = story<typeof ToggleInput>({
   description: `renders toggle input disabled and checked`,
   template: ToggleInput,
   args: {
     disabled: true,
     checked: true,
   },
-}
+})

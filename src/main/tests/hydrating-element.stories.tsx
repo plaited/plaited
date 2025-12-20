@@ -1,7 +1,7 @@
 import { bElement } from 'plaited'
-import type { StoryObj } from 'plaited/workshop'
+import { story } from 'plaited/testing'
 
-import { styles, BEFORE_HYDRATION, AFTER_HYDRATION, HYDRATING_ELEMENT_TAG } from './hydrating-element.constants.js'
+import { AFTER_HYDRATION, BEFORE_HYDRATION, HYDRATING_ELEMENT_TAG, styles } from './hydrating-element.constants.ts'
 
 const HydratingElement = bElement({
   tag: HYDRATING_ELEMENT_TAG,
@@ -19,7 +19,7 @@ const HydratingElement = bElement({
     return {
       onConnected() {
         const [inner] = $('inner')
-        inner.replace(
+        inner?.replace(
           <span
             {...styles.after}
             p-target='inner'
@@ -32,7 +32,7 @@ const HydratingElement = bElement({
   },
 })
 
-export const target: StoryObj = {
+export const target = story({
   description: `Element that will be fetched as an include in another story to hydrate`,
   template: () => <HydratingElement p-target={HYDRATING_ELEMENT_TAG} />,
-}
+})

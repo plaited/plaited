@@ -1,5 +1,5 @@
 import { bElement, useAttributesObserver } from 'plaited'
-import type { StoryObj } from 'plaited/workshop'
+import { story } from 'plaited/testing'
 
 const AttributesObserver = bElement({
   tag: 'attribute-observer',
@@ -16,22 +16,22 @@ const AttributesObserver = bElement({
     const [name] = $<HTMLSpanElement>('name')
     const [oldValue] = $<HTMLSpanElement>('oldValue')
     const [newValue] = $<HTMLSpanElement>('newValue')
-    const [el] = slot.assignedElements()
+    const [el] = slot?.assignedElements() ?? []
     const observe = useAttributesObserver('change', trigger)
-    observe(el, ['disabled', 'value'])
+    el && observe(el, ['disabled', 'value'])
     return {
       change(detail: { name: string; oldValue: string | null; newValue: string | null }) {
-        name.render(detail.name)
-        oldValue.render(detail.oldValue ?? 'null')
-        newValue.render(detail.newValue ?? 'null')
+        name?.render(detail.name)
+        oldValue?.render(detail.oldValue ?? 'null')
+        newValue?.render(detail.newValue ?? 'null')
       },
     }
   },
 })
 
-export const Example: StoryObj = {
+export const Example = story({
   description: `Example of how to use useAttributesObserver to observe attributes changes and trigger
-  events in a plaited elements. This story is used to validate that when a slotted element such as input
+  events in a Behavioral elements. This story is used to validate that when a slotted element such as input
   has a change event `,
   template: () => (
     <AttributesObserver>
@@ -113,4 +113,4 @@ export const Example: StoryObj = {
       expected: 'hello world',
     })
   },
-}
+})

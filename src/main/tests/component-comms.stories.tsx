@@ -1,5 +1,5 @@
 import { bElement, type FT, useSignal } from 'plaited'
-import { type StoryObj } from 'plaited/workshop'
+import { story } from 'plaited/testing'
 
 const sendDisable = useSignal()
 const sendAdd = useSignal<{ value: string }>()
@@ -10,6 +10,7 @@ const ElOne = bElement({
   shadowDom: (
     <div>
       <button
+        type='button'
         p-target='button'
         p-trigger={{ click: 'click' }}
       >
@@ -22,7 +23,7 @@ const ElOne = bElement({
     return {
       disable() {
         const [button] = $<HTMLButtonElement>('button')
-        button && button.attr('disabled', true)
+        button?.attr('disabled', true)
         disconnect()
       },
       click() {
@@ -47,7 +48,7 @@ const ElTwo = bElement({
       },
       add(detail: { value: string }) {
         const [header] = $('header')
-        header.insert('beforeend', <>{detail.value}</>)
+        header?.insert('beforeend', detail.value)
       },
     }
   },
@@ -62,10 +63,10 @@ const ComponentComms: FT = () => {
   )
 }
 
-export const componentComms: StoryObj = {
+export const componentComms = story<typeof ComponentComms>({
   template: ComponentComms,
   description: `Example of how to use useSignal to enable communication between
-  plaited elements. This story is used to validate that when the button in element-one
+  Behavioral elements. This story is used to validate that when the button in element-one
   is clicked it leads to an appending a string to the h1 in element-two`,
   play: async ({ findByAttribute, assert, fireEvent }) => {
     let button = await findByAttribute('p-target', 'button')
@@ -91,4 +92,4 @@ export const componentComms: StoryObj = {
       expected: true,
     })
   },
-}
+})

@@ -1,15 +1,17 @@
 import {
   bElement,
-  useAttributesObserver,
-  type ObservedAttributesDetail,
-  type FT,
+  createHostStyles,
+  createStyles,
   type ElementAttributeList,
+  type FT,
+  joinStyles,
+  type ObservedAttributesDetail,
+  useAttributesObserver,
 } from 'plaited'
-import { css } from 'plaited'
+import { story } from 'plaited/testing'
 import { isTypeOf } from 'plaited/utils'
-import { type StoryObj, type Args } from 'plaited/workshop'
 
-const styles = css.create({
+const componentStyles = createStyles({
   grid: {
     display: 'inline-grid',
     gridTemplate: '"input" 16px / 16px',
@@ -30,7 +32,7 @@ const styles = css.create({
   },
 })
 
-const hostStyles = css.host({
+const componentHostStyles = createHostStyles({
   display: 'inline-grid',
   gridTemplate: '"input" 16px / 16px',
   '--fill': {
@@ -44,14 +46,14 @@ const hostStyles = css.host({
 
 const DecorateCheckbox = bElement<{
   change: ObservedAttributesDetail
-  slotchange: void
+  slotchange: undefined
 }>({
   tag: 'decorate-checkbox',
   shadowDom: (
     <>
       <div
         p-target='symbol'
-        {...css.join(styles.symbol, hostStyles)}
+        {...joinStyles(componentStyles.symbol, componentHostStyles)}
         p-trigger={{ click: 'click' }}
       />
       <slot
@@ -61,22 +63,22 @@ const DecorateCheckbox = bElement<{
     </>
   ),
   bProgram({ $, internals, trigger }) {
-    let [slot] = $<HTMLSlotElement>('slot')
-    let [input] = slot.assignedElements()
+    let slot = $<HTMLSlotElement>('slot')[0]
+    let input = slot?.assignedElements()[0]
     let inputObserver = useAttributesObserver('change', trigger)
     return {
       slotchange() {
-        ;[slot] = $<HTMLSlotElement>('slot')
-        ;[input] = slot.assignedElements()
+        slot = $<HTMLSlotElement>('slot')[0]
+        input = slot?.assignedElements()[0]
         inputObserver = useAttributesObserver('change', trigger)
       },
       change({ name, newValue }) {
         isTypeOf<string>(newValue, 'string') ? internals.states.add(name) : internals.states.delete(name)
       },
       onConnected() {
-        input.hasAttribute('checked') && internals.states.add('checked')
-        input.hasAttribute('disabled') && internals.states.add('disabled')
-        inputObserver(input, ['checked', 'disabled'])
+        input?.hasAttribute('checked') && internals.states.add('checked')
+        input?.hasAttribute('disabled') && internals.states.add('disabled')
+        input && inputObserver(input, ['checked', 'disabled'])
       },
     }
   },
@@ -87,14 +89,14 @@ const DecoratedCheckbox: FT<ElementAttributeList['input']> = (props) => {
     <DecorateCheckbox>
       <input
         {...props}
-        {...styles.input}
+        {...componentStyles.input}
         type='checkbox'
       />
     </DecorateCheckbox>
   )
 }
 
-export const example: StoryObj<Args<typeof DecoratedCheckbox>> = {
+export const example = story<typeof DecoratedCheckbox>({
   description: `
     DecoratedCheckbox template uses a plaited template
     to decorate an input element
@@ -121,29 +123,29 @@ export const example: StoryObj<Args<typeof DecoratedCheckbox>> = {
       actual: backgroundColor,
     })
   },
-}
+})
 
-export const checked: StoryObj = {
+export const checked = story<typeof DecoratedCheckbox>({
   description: `renders decorated checkbox checked`,
   template: DecoratedCheckbox,
   args: {
     checked: true,
   },
-}
+})
 
-export const disabled: StoryObj = {
+export const disabled = story<typeof DecoratedCheckbox>({
   description: `renders decorated checkbox disabled`,
   template: DecoratedCheckbox,
   args: {
     disabled: true,
   },
-}
+})
 
-export const disabledAndChecked: StoryObj = {
+export const disabledAndChecked = story<typeof DecoratedCheckbox>({
   description: `renders decorated checkbox disabled and checked`,
   template: DecoratedCheckbox,
   args: {
     disabled: true,
     checked: true,
   },
-}
+})

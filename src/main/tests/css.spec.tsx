@@ -1,29 +1,29 @@
-import { test, expect } from 'bun:test'
-import { css } from 'plaited'
+import { expect, test } from 'bun:test'
+import { createHostStyles, createKeyframes, createStyles, createTokens, joinStyles } from 'plaited'
 
 test('create: supports simple rules', () => {
-  const styles = css.create({
+  const testStyles = createStyles({
     simpleRules: {
       fontSize: `16px`,
       lineHeight: 1.5,
       color: 'rgb(60,60,60)',
     },
   })
-  expect(styles.simpleRules).toMatchSnapshot()
+  expect(testStyles.simpleRules).toMatchSnapshot()
 })
 
 test('create: supports custom props', () => {
-  const styles = css.create({
+  const testStyles = createStyles({
     customProps: {
       '--customColor': 'red',
       '--custom-color': 'red',
     },
   })
-  expect(styles.customProps).toMatchSnapshot()
+  expect(testStyles.customProps).toMatchSnapshot()
 })
 
 test('create: supports pseudo-classes', () => {
-  const styles = css.create({
+  const testStyles = createStyles({
     pseudoClass: {
       backgroundColor: {
         $default: 'lightblue',
@@ -32,22 +32,22 @@ test('create: supports pseudo-classes', () => {
       },
     },
   })
-  expect(styles.pseudoClass).toMatchSnapshot()
+  expect(testStyles.pseudoClass).toMatchSnapshot()
 })
 
 test('create: supports pseudo-elements', () => {
-  const styles = css.create({
+  const testStyles = createStyles({
     pseudoElement: {
       color: {
         '::placeholder': '#999',
       },
     },
   })
-  expect(styles.pseudoElement).toMatchSnapshot()
+  expect(testStyles.pseudoElement).toMatchSnapshot()
 })
 
 test('create: supports media query', () => {
-  const styles = css.create({
+  const testStyles = createStyles({
     mediaQuery: {
       width: {
         $default: 800,
@@ -56,11 +56,11 @@ test('create: supports media query', () => {
       },
     },
   })
-  expect(styles.mediaQuery).toMatchSnapshot()
+  expect(testStyles.mediaQuery).toMatchSnapshot()
 })
 
 test('create: supports complex rules', () => {
-  const styles = css.create({
+  const testStyles = createStyles({
     button: {
       color: {
         $default: 'var(--blue-link)',
@@ -71,11 +71,11 @@ test('create: supports complex rules', () => {
       },
     },
   })
-  expect(styles.button).toMatchSnapshot()
+  expect(testStyles.button).toMatchSnapshot()
 })
 
 test('create: works with JSX via spread operator', () => {
-  const styles = css.create({
+  const testStyles = createStyles({
     button: {
       color: {
         $default: 'var(--blue-link)',
@@ -86,12 +86,12 @@ test('create: works with JSX via spread operator', () => {
       },
     },
   })
-  expect(<button {...styles.button}></button>).toMatchSnapshot()
+  expect(<button {...testStyles.button}></button>).toMatchSnapshot()
 })
 
-// css.host tests
+// host tests
 test('host: supports simple rules', () => {
-  const host = css.host({
+  const host = createHostStyles({
     fontSize: `16px`,
     lineHeight: 1.5,
     color: 'rgb(60,60,60)',
@@ -100,7 +100,7 @@ test('host: supports simple rules', () => {
 })
 
 test('host: supports custom props', () => {
-  const host = css.host({
+  const host = createHostStyles({
     '--customColor': 'red',
     '--custom-color': 'red',
   })
@@ -108,7 +108,7 @@ test('host: supports custom props', () => {
 })
 
 test('host: supports pseudo-classes', () => {
-  const host = css.host({
+  const host = createHostStyles({
     backgroundColor: {
       $default: 'lightblue',
       ':hover': 'blue',
@@ -119,7 +119,7 @@ test('host: supports pseudo-classes', () => {
 })
 
 test('host: supports pseudo-elements', () => {
-  const host = css.host({
+  const host = createHostStyles({
     color: {
       '::placeholder': '#999',
     },
@@ -128,7 +128,7 @@ test('host: supports pseudo-elements', () => {
 })
 
 test('host: supports media query', () => {
-  const host = css.host({
+  const host = createHostStyles({
     width: {
       $default: 800,
       '@media (max-width: 800px)': '100%',
@@ -139,7 +139,7 @@ test('host: supports media query', () => {
 })
 
 test('host: supports complex rules', () => {
-  const host = css.host({
+  const host = createHostStyles({
     color: {
       $default: 'var(--blue-link)',
       $compoundSelectors: {
@@ -154,7 +154,7 @@ test('host: supports complex rules', () => {
 })
 
 test('host: works with JSX via spread operator', () => {
-  const host = css.host({
+  const host = createHostStyles({
     color: {
       $default: 'red',
       '[part="S1"]': 'blue',
@@ -172,17 +172,17 @@ test('host: works with JSX via spread operator', () => {
 
 // Additional tests
 test('keyframes', () => {
-  const keyframes = css.keyframes('pulse', {
+  const testKeyframes = createKeyframes('pulse', {
     '0%': { transform: 'scale(1)' },
     '50%': { transform: 'scale(1.1)' },
     '100%': { transform: 'scale(1)' },
   })
-  expect(keyframes.id.startsWith('pulse_')).toBeTruthy()
-  expect(keyframes()).toMatchSnapshot()
+  expect(testKeyframes.id.startsWith('pulse_')).toBeTruthy()
+  expect(testKeyframes()).toMatchSnapshot()
 })
 
 test('join', () => {
-  const styles = css.create({
+  const testStyles = createStyles({
     button: {
       fontFamily: 'Nunito Sans, Helvetica Neue, Helvetica, Arial, sans-serif',
       fontWeight: 700,
@@ -197,8 +197,395 @@ test('join', () => {
       padding: '10px 16px',
     },
   })
-  const host = css.host({
+  const host = createHostStyles({
     color: 'red',
   })
-  expect(css.join(styles.button, styles.small, host)).toMatchSnapshot()
+  expect(joinStyles(testStyles.button, testStyles.small, host)).toMatchSnapshot()
+})
+
+// tokens tests
+test('tokens: simple token with $value', () => {
+  const testTokens = createTokens('theme', {
+    primaryColor: {
+      $value: '#007bff',
+    },
+    fontSize: {
+      $value: '16px',
+    },
+  })
+  expect(testTokens.primaryColor()).toBe('var(--theme-primary-color)')
+  expect(testTokens.primaryColor.styles).toMatchSnapshot()
+  expect(testTokens.fontSize()).toBe('var(--theme-font-size)')
+  expect(testTokens.fontSize.styles).toMatchSnapshot()
+})
+
+test('tokens: token with array values', () => {
+  const testTokens = createTokens('spacing', {
+    margin: {
+      $value: ['10px', '20px', '30px', '40px'],
+    },
+    fontFamily: {
+      $value: ['"Helvetica Neue"', 'Arial', 'sans-serif'],
+      $csv: true,
+    },
+  })
+  expect(testTokens.margin()).toBe('var(--spacing-margin)')
+  expect(testTokens.margin.styles).toMatchSnapshot()
+  expect(testTokens.fontFamily()).toBe('var(--spacing-font-family)')
+  expect(testTokens.fontFamily.styles).toMatchSnapshot()
+})
+
+test('tokens: function token values', () => {
+  const testTokens = createTokens('effects', {
+    shadow: {
+      $value: {
+        $function: 'drop-shadow',
+        $arguments: ['2px', '4px', '6px', 'rgba(0,0,0,0.1)'],
+      },
+    },
+    gradient: {
+      $value: {
+        $function: 'linear-gradient',
+        $arguments: ['45deg', '#ff0000', '#00ff00'],
+        $csv: true,
+      },
+    },
+  })
+  expect(testTokens.shadow()).toBe('var(--effects-shadow)')
+  expect(testTokens.shadow.styles).toMatchSnapshot()
+  expect(testTokens.gradient()).toBe('var(--effects-gradient)')
+  expect(testTokens.gradient.styles).toMatchSnapshot()
+})
+
+test('tokens: nested token statements with selectors', () => {
+  const testTokens = createTokens('interactive', {
+    buttonColor: {
+      $default: {
+        $value: 'blue',
+      },
+      ':hover': {
+        $value: 'darkblue',
+      },
+      ':active': {
+        $value: 'navy',
+      },
+      '@media (max-width: 768px)': {
+        $value: 'lightblue',
+      },
+    },
+  })
+  expect(testTokens.buttonColor()).toBe('var(--interactive-button-color)')
+  expect(testTokens.buttonColor.styles).toMatchSnapshot()
+})
+
+test('tokens: compound selectors', () => {
+  const testTokens = createTokens('state', {
+    color: {
+      $default: {
+        $value: 'black',
+      },
+      $compoundSelectors: {
+        '.dark': {
+          $value: 'white',
+        },
+        '[data-theme="blue"]': {
+          $value: 'blue',
+        },
+        '.large': {
+          ':hover': {
+            $value: 'gray',
+          },
+        },
+      },
+    },
+  })
+  expect(testTokens.color()).toBe('var(--state-color)')
+  expect(testTokens.color.styles).toMatchSnapshot()
+})
+
+test('tokens: token references', () => {
+  const baseTokens = createTokens('base', {
+    primary: {
+      $value: '#007bff',
+    },
+  })
+
+  const derivedTokens = createTokens('derived', {
+    buttonBg: {
+      $value: baseTokens.primary, // Pass the reference directly, not invoked
+    },
+  })
+
+  expect(derivedTokens.buttonBg()).toBe('var(--derived-button-bg)')
+  expect(derivedTokens.buttonBg.styles).toMatchSnapshot()
+})
+
+test('tokens: complex nested structure', () => {
+  const testTokens = createTokens('complex', {
+    card: {
+      $default: {
+        $value: {
+          $function: 'rgba',
+          $arguments: ['255', '255', '255', '0.9'],
+          $csv: true,
+        },
+      },
+      '[data-variant="dark"]': {
+        $value: {
+          $function: 'rgba',
+          $arguments: ['0', '0', '0', '0.9'],
+          $csv: true,
+        },
+      },
+      $compoundSelectors: {
+        '.elevated': {
+          $default: {
+            $value: '#ffffff',
+          },
+          ':hover': {
+            $value: '#f0f0f0',
+          },
+        },
+      },
+    },
+  })
+  expect(testTokens.card()).toBe('var(--complex-card)')
+  expect(testTokens.card.styles).toMatchSnapshot()
+})
+
+test('tokens: array of function values', () => {
+  const testTokens = createTokens('transform', {
+    animation: {
+      $value: [
+        {
+          $function: 'translateX',
+          $arguments: '10px',
+        },
+        {
+          $function: 'rotate',
+          $arguments: '45deg',
+        },
+        {
+          $function: 'scale',
+          $arguments: ['1.2', '1.2'],
+          $csv: true,
+        },
+      ],
+    },
+  })
+  expect(testTokens.animation()).toBe('var(--transform-animation)')
+  expect(testTokens.animation.styles).toMatchSnapshot()
+})
+
+// Integration tests: tokens with other CSS utilities
+test('tokens: integration with create', () => {
+  const theme = createTokens('theme', {
+    primary: {
+      $value: '#007bff',
+    },
+    secondary: {
+      $value: '#6c757d',
+    },
+    fontSize: {
+      $value: '16px',
+    },
+  })
+
+  const testStyles = createStyles({
+    button: {
+      backgroundColor: theme.primary,
+      fontSize: theme.fontSize,
+      color: 'white',
+      ':hover': {
+        backgroundColor: theme.secondary,
+      },
+    },
+  })
+
+  expect(testStyles.button).toMatchSnapshot()
+})
+
+test('tokens: integration with host', () => {
+  const colors = createTokens('colors', {
+    text: {
+      $value: '#333',
+      $compoundSelectors: {
+        '.dark': {
+          $value: '#fff',
+        },
+      },
+    },
+    background: {
+      $value: '#fff',
+      $compoundSelectors: {
+        '.dark': {
+          $value: '#222',
+        },
+      },
+    },
+  })
+
+  const host = createHostStyles({
+    color: colors.text,
+    backgroundColor: colors.background,
+    padding: '20px',
+  })
+
+  expect(host).toMatchSnapshot()
+})
+
+test('tokens: integration with join', () => {
+  const spacing = createTokens('spacing', {
+    small: {
+      $value: '8px',
+    },
+    medium: {
+      $value: '16px',
+    },
+    large: {
+      $value: '24px',
+    },
+  })
+
+  const typography = createTokens('typography', {
+    heading: {
+      $value: '2rem',
+    },
+    body: {
+      $value: '1rem',
+    },
+  })
+
+  const baseStyles = createStyles({
+    container: {
+      padding: spacing.medium,
+      fontSize: typography.body,
+    },
+  })
+
+  const variantStyles = createStyles({
+    large: {
+      padding: spacing.large,
+      fontSize: typography.heading,
+    },
+  })
+
+  const hostStylesVariant = createHostStyles({
+    margin: spacing.small,
+  })
+
+  const combined = joinStyles(baseStyles.container, variantStyles.large, hostStylesVariant)
+
+  expect(combined).toMatchSnapshot()
+})
+
+test('tokens: multiple token groups combined', () => {
+  const layout = createTokens('layout', {
+    maxWidth: {
+      $value: '1200px',
+      '@media (max-width: 768px)': {
+        $value: '100%',
+      },
+    },
+    gap: {
+      $value: '20px',
+    },
+  })
+
+  const motion = createTokens('motion', {
+    duration: {
+      $value: '300ms',
+    },
+    easing: {
+      $value: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    },
+  })
+
+  const transition = createTokens('transition', {
+    example: {
+      $value: ['all', motion.duration, motion.easing],
+      $csv: false,
+    },
+  })
+
+  const testStyles = createStyles({
+    grid: {
+      maxWidth: layout.maxWidth,
+      gap: layout.gap,
+      transition: transition.example,
+    },
+  })
+
+  expect(testStyles.grid).toMatchSnapshot()
+
+  // Test that token styles are properly defined
+  expect(layout.maxWidth.styles).toBeDefined()
+  expect(layout.gap.styles).toBeDefined()
+  expect(motion.duration.styles).toBeDefined()
+  expect(motion.easing.styles).toBeDefined()
+})
+
+test('tokens: with keyframes', () => {
+  const animations = createTokens('animations', {
+    scale: {
+      $value: {
+        $function: 'scale',
+        $arguments: '1.2',
+      },
+    },
+    rotate: {
+      $value: {
+        $function: 'rotate',
+        $arguments: '360deg',
+      },
+    },
+  })
+
+  const spin = createKeyframes('spin', {
+    '0%': { transform: 'rotate(0deg)' },
+    '100%': { transform: animations.rotate },
+  })
+
+  const pulse = createKeyframes('pulse', {
+    '0%': { transform: 'scale(1)' },
+    '50%': { transform: animations.scale },
+    '100%': { transform: 'scale(1)' },
+  })
+
+  expect(spin()).toMatchSnapshot()
+  expect(pulse()).toMatchSnapshot()
+})
+
+test('tokens: used as CSS values in styles', () => {
+  const sizes = createTokens('sizes', {
+    containerWidth: {
+      $value: '1200px',
+    },
+    headerHeight: {
+      $value: '64px',
+    },
+    sidebarWidth: {
+      $value: '250px',
+    },
+  })
+
+  const testStyles = createStyles({
+    container: {
+      maxWidth: sizes.containerWidth,
+      margin: '0 auto',
+    },
+    header: {
+      height: sizes.headerHeight,
+      position: 'sticky',
+      top: 0,
+    },
+    sidebar: {
+      width: sizes.sidebarWidth,
+      flexShrink: 0,
+    },
+  })
+
+  expect(testStyles.container).toMatchSnapshot()
+  expect(testStyles.header).toMatchSnapshot()
+  expect(testStyles.sidebar).toMatchSnapshot()
 })

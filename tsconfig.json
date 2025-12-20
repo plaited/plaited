@@ -3,13 +3,14 @@
     // Enable latest features
     "lib": ["ESNext", "DOM", "dom.iterable"],
     "target": "ESNext",
-    "module": "ESNext",
+    "module": "Preserve",
     "moduleDetection": "force",
     "jsx": "react-jsx",
     "allowJs": true,
 
     // Bundler mode
     "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
 
@@ -17,21 +18,15 @@
     "strict": true,
     "skipLibCheck": true,
     "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
 
     // Some stricter flags (disabled by default)
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
 
-    "jsxImportSource": "plaited",
-    "paths": {
-      "plaited": ["./src/index.ts"],
-      "plaited/jsx-runtime": ["./src/jsx-runtime.ts"],
-      "plaited/jsx-dev-runtime": ["./src/jsx-dev-runtime.ts"],
-      "plaited/workshop": ["/src/workshop.ts"],
-      "plaited/behavioral": ["./src/behavioral.ts"],
-      "plaited/utils": ["./src/utils.ts"]
-    }
+    "jsxImportSource": "plaited"
   },
-  "exclude": ["src/main/types/css.d.ts"]
+  "exclude": ["src/main/types/css.d.ts", "playwright.config.ts", "**/*.playwright.ts"]
 }

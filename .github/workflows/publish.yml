@@ -10,8 +10,63 @@ on:
         description: 'Experimental number (optional, will create a version like x.y.z-experimental-N)'
         required: false
 jobs:
+  check-release-pr:
+    runs-on: ubuntu-22.04
+    outputs:
+      release_pr_merged: ${{ steps.check_pr.outputs.merged }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for merged release PR
+        id: check_pr
+        run: |
+          version="${{ github.event.inputs.version }}"
+          experimental="${{ github.event.inputs.experimental }}"
+
+          # Construct expected version
+          if [[ -n "$experimental" ]]; then
+            expected_version="${version}-experimental-${experimental}"
+          else
+            expected_version="${version}"
+          fi
+
+          echo "Checking for merged release PR for version: $expected_version"
+
+          # Look for merged PR with title matching release version
+          # Check last 10 merged PRs
+          MERGED_PR=$(gh pr list \
+            --state merged \
+            --limit 10 \
+            --search "Release v${expected_version} in:title" \
+            --json number,title,mergedAt \
+            --jq '.[0]' || echo "")
+
+          if [ -z "$MERGED_PR" ] || [ "$MERGED_PR" = "null" ]; then
+            echo "❌ No merged release PR found for v${expected_version}"
+            echo ""
+            echo "Before publishing, you must:"
+            echo "1. Create a release PR: Run the 'Create Release PR' workflow"
+            echo "2. Review and merge the release PR"
+            echo "3. Then run this publish workflow"
+            echo ""
+            echo "This ensures TSDoc is up-to-date before publishing."
+            echo "merged=false" >> $GITHUB_OUTPUT
+            exit 1
+          else
+            echo "✅ Found merged release PR:"
+            echo "$MERGED_PR" | jq '.'
+            echo "merged=true" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   publish:
     runs-on: ubuntu-22.04
+    needs: check-release-pr
+    if: needs.check-release-pr.outputs.release_pr_merged == 'true'
 
     steps:
       - name: Set version
@@ -57,6 +112,9 @@ jobs:
           gh release create ${{ steps.set_version.outputs.version }} --generate-notes
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
+
+      - name: Build CLI
+        run: bash scripts/build-cli.sh
 
       - name: Publish
         run: |

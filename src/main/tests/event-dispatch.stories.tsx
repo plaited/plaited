@@ -1,10 +1,11 @@
-import { bElement, useDispatch } from 'plaited'
-import type { StoryObj } from 'plaited/workshop'
+import { bElement } from 'plaited'
+import { story } from 'plaited/testing'
 
 const Nested = bElement({
   tag: 'nested-el',
   shadowDom: (
     <button
+      type='button'
       p-target='button'
       p-trigger={{ click: 'click' }}
     >
@@ -12,11 +13,10 @@ const Nested = bElement({
     </button>
   ),
   publicEvents: ['add'],
-  bProgram({ host }) {
-    const dispatch = useDispatch(host)
+  bProgram({ emit }) {
     return {
       click() {
-        dispatch({ type: 'append', bubbles: true, composed: true })
+        emit({ type: 'append', bubbles: true, composed: true })
       },
     }
   },
@@ -34,7 +34,7 @@ const Outer = bElement({
     return {
       append() {
         const [header] = $('header')
-        header.insert('beforeend', <> World!</>)
+        header?.insert('beforeend', <> World!</>)
       },
     }
   },
@@ -52,15 +52,15 @@ const Slotted = bElement({
     return {
       append() {
         const [header] = $('header')
-        header.insert('beforeend', <> World!</>)
+        header?.insert('beforeend', <> World!</>)
       },
     }
   },
 })
 
-export const eventDispatch: StoryObj = {
-  description: `Example of how to use useDispatch to broadcast events between plaited elements nested within
-  another plaited elements shadow dom. When the button in nested-el is clicked the h1 in outer-el shadow dom's
+export const eventDispatch = story<typeof Outer>({
+  description: `Example of how to use useDispatch to broadcast events between Behavioral elements nested within
+  another Behavioral elements shadow dom. When the button in nested-el is clicked the h1 in outer-el shadow dom's
   has a string appended to it`,
   template: Outer,
   play: async ({ assert, findByAttribute, fireEvent }) => {
@@ -80,11 +80,11 @@ export const eventDispatch: StoryObj = {
       expected: 'Hello World!',
     })
   },
-}
+})
 
-export const eventDispatchSlot: StoryObj = {
-  description: `Example of how to use useDispatch to broadcast events between plaited elements slotted within
-another plaited elements light dom. When the button in nested-el is clicked the h1 in parent-el shadow dom has a
+export const eventDispatchSlot = story({
+  description: `Example of how to use useDispatch to broadcast events between Behavioral elements slotted within
+another Behavioral elements light dom. When the button in nested-el is clicked the h1 in parent-el shadow dom has a
 string appended to it`,
   template: () => (
     <Slotted>
@@ -110,4 +110,4 @@ string appended to it`,
       expected: 'Hello World!',
     })
   },
-}
+})

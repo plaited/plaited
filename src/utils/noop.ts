@@ -1,70 +1,43 @@
 /**
- * No-operation (no-op) function that does nothing and returns nothing.
- * Provides a type-safe way to handle optional callbacks or placeholder functions.
+ * No-operation function for optional callbacks.
+ * Does nothing, returns nothing.
  *
- * @template T - The common type of the arguments passed to `noop`. This is typically inferred by TypeScript
- *               based on the arguments provided at the call site. If no arguments are given, or if
- *               explicitly set to `never` (the default), it signifies no specific argument types are expected.
- * @param _args - Accepts any number of arguments. These arguments are ignored by the function.
- *                Their types are captured by `T[]`.
- * @returns void - Always returns `undefined`.
+ * @template T - Argument types (inferred)
+ * @param _args - Any arguments (ignored)
+ * @returns void
  *
- * Features:
- * - Zero memory/performance impact
- * - Type-safe parameter handling
- * - Accepts any number of arguments
- * - Consistent void return type
- *
- *
- * @example
- * Basic Usage:
+ * @example Basic usage
  * ```ts
- * noop(); // Does nothing
- * noop('hello', 42, true); // Arguments are accepted but ignored
+ * noop();                    // Does nothing
+ * noop('hello', 42, true);   // Ignores arguments
  * ```
  *
- * @example
- * Optional Callbacks:
+ * @example Optional callbacks
  * ```ts
- * interface Options {
+ * type Options = {
  *   onSuccess?: (data: unknown) => void;
  *   onError?: (error: Error) => void;
- * }
+ * };
  *
  * function fetchData(options: Options) {
  *   const onSuccess = options.onSuccess ?? noop;
  *   const onError = options.onError ?? noop;
  *
- *   fetch('/api/data')
- *     .then(res => res.json())
+ *   fetch(url)
  *     .then(onSuccess)
  *     .catch(onError);
  * }
- *
- * fetchData({ onSuccess: data => console.log('Data:', data) });
- * fetchData({}); // Uses noop for missing callbacks
  * ```
  *
- * @example
- * Promise Error Handling:
+ * @example Promise chains
  * ```ts
- * Promise.resolve()
- *   .then(result => { <process data>})
- *   .catch(noop); // Safely ignore potential errors if no specific handling is needed
+ * promise
+ *   .then(processData)
+ *   .catch(noop); // Ignore errors
  * ```
  *
  * @remarks
- * Best Practices:
- * - Use instead of empty arrow functions
- * - Prefer over undefined checks
- * - Ideal for optional callback props
- * - Perfect for event handler placeholders
- * - Useful in promise chains
- *
- * Performance Benefits:
- * - Single function instance
- * - No memory allocation per call
- * - No conditional checks needed
- * - Optimized by JS engines
+ * Single instance, zero allocation.
+ * Use for: optional callbacks, placeholders, promise chains.
  */
 export const noop = <T = never>(..._: T[]) => {}

@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { expect, test } from 'bun:test'
 import { deepEqual } from 'plaited/utils'
 
 test('deepEqual()', () => {
@@ -10,8 +10,8 @@ test('deepEqual()', () => {
   expect(deepEqual(1, 0)).toBe(false)
   expect(deepEqual(/test/i, /test/i)).toBe(true)
   expect(deepEqual(/test/i, /test/)).toBe(false)
-  expect(deepEqual(RegExp('foo*'), RegExp('foo*'))).toBe(true)
-  expect(deepEqual(RegExp('foo*'), RegExp('foo*', 'g'))).toBe(false)
+  expect(deepEqual(/foo*/, /foo*/)).toBe(true)
+  expect(deepEqual(/foo*/, /foo*/g)).toBe(false)
 
   /** handles falsey */
   expect(deepEqual(false, false)).toBe(true)
@@ -46,7 +46,7 @@ test('deepEqual()', () => {
     arr: [0, 1, 2],
     func,
     date: new Date(0),
-    reg: new RegExp('/regexp/ig'),
+    reg: /\/regexp\/ig/,
     [symbolKey]: 'symbol',
   }
 
@@ -60,7 +60,7 @@ test('deepEqual()', () => {
     arr: [0, 1, 2],
     func,
     date: new Date(0),
-    reg: new RegExp('/regexp/ig'),
+    reg: /\/regexp\/ig/,
     [symbolKey]: 'symbol',
   }
   expect(deepEqual(original, clone)).toBe(true)

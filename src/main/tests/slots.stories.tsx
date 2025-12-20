@@ -1,5 +1,5 @@
-import { type FT, bElement } from 'plaited'
-import type { StoryObj } from 'plaited/workshop'
+import { bElement, type FT } from 'plaited'
+import { story } from 'plaited/testing'
 import sinon from 'sinon'
 
 const defaultSlot = sinon.spy()
@@ -44,7 +44,12 @@ const Outer = bElement({
       ></slot>
       <Inner p-trigger={{ click: 'passThrough' }}>
         <slot name='nested'></slot>
-        <button slot='shadow'>Shadow</button>
+        <button
+          type='button'
+          slot='shadow'
+        >
+          Shadow
+        </button>
       </Inner>
     </div>
   ),
@@ -63,15 +68,25 @@ const Outer = bElement({
 
 const Fixture: FT = () => (
   <Outer>
-    <button>Slot</button>
-    <button slot='named'>Named</button>
-    <button slot='nested'>Nested</button>
+    <button type='button'>Slot</button>
+    <button
+      type='button'
+      slot='named'
+    >
+      Named
+    </button>
+    <button
+      type='button'
+      slot='nested'
+    >
+      Nested
+    </button>
   </Outer>
 )
 
-export const slots: StoryObj = {
+export const slots = story<typeof Fixture>({
   description: `This story is used to validate that p-trigger attribute on slot elements in a
-  plaited elements shadow DOM only allow event triggering on named and default slots in
+  Behavioral elements shadow DOM only allow event triggering on named and default slots in
   it's shadow dom but not on pass through slots.`,
   template: Fixture,
   play: async ({ assert, findByText, fireEvent }) => {
@@ -120,4 +135,4 @@ export const slots: StoryObj = {
       expected: true,
     })
   },
-}
+})
