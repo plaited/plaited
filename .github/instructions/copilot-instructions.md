@@ -1,1 +1,5 @@
+---
+applyTo: "**"
+---
+
 @CLAUDE.md
