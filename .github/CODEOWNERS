@@ -1,0 +1,6 @@
+# Code owners for plaited repository
+# These users will be automatically requested for review when someone opens a pull request.
+# See https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Organization admins own all files
+* @EdwardIrby @alisonailea
