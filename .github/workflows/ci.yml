@@ -28,6 +28,7 @@ jobs:
       - name: Run bun test
         run: |
           bun test
+      # TODO this will be implemented later
       # - name: Run playwright test
       #   run: |
       #     bun run test:playwright
