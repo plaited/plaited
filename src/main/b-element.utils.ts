@@ -31,7 +31,6 @@ import type { Bindings, BoundElement } from './b-element.types.ts'
 import { BOOLEAN_ATTRS } from './create-template.constants.ts'
 import type { TemplateObject } from './create-template.types.ts'
 import type { HostStylesObject } from './css.types.ts'
-import { joinStyles } from './join-styles.ts'
 /**
  * @internal Cache for storing adopted stylesheets per ShadowRoot to prevent duplicate processing.
  * Used internally by the framework to optimize style adoption performance.
@@ -150,8 +149,7 @@ export const getDocumentFragment = ({
 }) => {
   const { html, stylesheets } = templateObject
   if (stylesheets.length || hostStyles) {
-    const styles = joinStyles(hostStyles, { stylesheets: templateObject.stylesheets }).stylesheets
-    void updateShadowRootStyles(shadowRoot, styles)
+    void updateShadowRootStyles(shadowRoot, hostStyles ? hostStyles.stylesheets.concat(stylesheets) : stylesheets)
   }
   const template = document.createElement('template')
   template.setHTMLUnsafe(html.join(''))
