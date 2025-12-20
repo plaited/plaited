@@ -1,37 +1,7 @@
 /**
  * @internal
- * @module use-signal
- *
- * Purpose: Reactive state management system for cross-component communication in Plaited
- * Architecture: Implements pub/sub pattern with automatic cleanup and computed values
- * Dependencies: b-program for triggers, get-plaited-trigger for lifecycle integration
- * Consumers: Components needing shared state, computed values, or reactive data flow
- *
- * Maintainer Notes:
- * - Signals are the primary state sharing mechanism between Plaited components
- * - Two signal types: with/without initial value for different use cases
- * - Computed signals provide lazy evaluation with automatic dependency tracking
- * - All subscriptions are automatically cleaned up via PlaitedTrigger integration
- * - getLVC (get Last Value on Connect) enables immediate state synchronization
- * - Signals are intentionally kept simple - no batching or async updates
- *
- * Common modification scenarios:
- * - Adding signal batching: Wrap set() calls in microtask queue
- * - Supporting async computeds: Change initialValue to return Promise<T>
- * - Adding signal middleware: Insert transformation layer in set()
- * - Performance monitoring: Track listener count and update frequency
- *
- * Performance considerations:
- * - O(n) notification where n is listener count - keep subscriptions minimal
- * - Computed values are lazy - only calculated when accessed
- * - No memoization of computed values - recalculated on each dependency change
- * - Set operations are synchronous - may cause cascading updates
- *
- * Known limitations:
- * - No built-in circular dependency detection
- * - No transaction support for multiple signal updates
- * - Computed signals can't be directly set
- * - No persistence layer integration
+ * Reactive state management for cross-island communication in Plaited.
+ * Provides signals with pub/sub pattern and automatic cleanup integration.
  */
 import type {
   Disconnect,
@@ -53,52 +23,23 @@ export function useSignal<T>(initialValue?: never): SignalWithoutInitialValue<T>
  * @param initialValue Optional initial value for the signal
  * @returns Signal management object with get/set/listen methods
  *
- * @example Shared state between components
- * ```tsx
- * // Create a shared cart state
- * const cartState = useSignal<CartItem[]>([]);
+ * @remarks
+ * **Cross-Island Communication:**
+ * - Signals enable communication between islands not in a direct parent-child relationship
+ * - Use normal event flow (trigger/emit) for parent-child communication within shadowDOM
+ * - Supports both reading and writing shared state across disconnected template hierarchies
  *
- * const AddToCart = bElement({
- *   tag: 'add-to-cart',
- *   shadowDom: (
- *     <button
- *       p-target="addBtn"
- *       p-trigger={{ click: 'ADD_ITEM' }}
- *     >
- *       Add to Cart
- *     </button>
- *   ),
- *   bProgram({ trigger }) {
- *     return {
- *       ADD_ITEM() {
- *         const currentCart = cartState.get();
- *         cartState.set([...currentCart, { id: 'new-item', qty: 1 }]);
- *       }
- *     };
- *   }
- * });
+ * **Signal Methods:**
+ * - `get()`: Returns current signal value
+ * - `set(value)`: Updates signal and notifies all listeners synchronously
+ * - `listen(eventType, trigger, getLVC?)`: Subscribes to changes; getLVC=true sends current value immediately
  *
- * const CartCount = bElement({
- *   tag: 'cart-count',
- *   shadowDom: (
- *     <div>
- *       <span p-target="count">0</span> items
- *     </div>
- *   ),
- *   bProgram({ $, trigger }) {
- *     const [count] = $('count');
+ * **Automatic Cleanup:**
+ * - Subscriptions auto-cleanup when component disconnects via PlaitedTrigger integration
+ * - Manual cleanup via returned disconnect function if needed
  *
- *     // Subscribe to cart changes with immediate value
- *     cartState.listen('CART_UPDATED', trigger, true);
- *
- *     return {
- *       CART_UPDATED(items: CartItem[]) {
- *         count.render(items.length.toString());
- *       }
- *     };
- *   }
- * });
- * ```
+ * @see {@link useComputed} for derived state based on signal dependencies
+ * @see {@link usePlaitedTrigger} for automatic cleanup integration
  */
 export function useSignal<T>(initialValue: T) {
   /**
@@ -178,76 +119,30 @@ export function useSignal<T>(initialValue: T) {
  * @returns A readonly signal-like object with `get` and `listen` methods. The `get` method returns the computed value,
  *          and `listen` allows subscribing to changes in the computed value. This signal does not have a `set` method.
  *
- * @example Price calculator component
- * ```tsx
- * const PriceCalculator = bElement({
- *   tag: 'price-calculator',
- *   shadowDom: (
- *     <div>
- *       <div>
- *         Quantity:
- *         <input
- *           type="number"
- *           p-target="qty"
- *           p-trigger={{ input: 'UPDATE_QTY' }}
- *           value="1"
- *         />
- *       </div>
- *       <div>
- *         Unit Price:
- *         <input
- *           type="number"
- *           p-target="price"
- *           p-trigger={{ input: 'UPDATE_PRICE' }}
- *           value="10.00"
- *         />
- *       </div>
- *       <div>Total: <span p-target="total">$10.00</span></div>
- *     </div>
- *   ),
- *   bProgram({ $, trigger }) {
- *     const [qtyInput] = $<HTMLInputElement>('qty');
- *     const [priceInput] = $<HTMLInputElement>('price');
- *     const [total] = $('total');
- *
- *     const quantity = useSignal(1);
- *     const unitPrice = useSignal(10.00);
- *
- *     // Computed total that updates when quantity or price changes
- *     const totalPrice = useComputed(
- *       () => quantity.get() * unitPrice.get(),
- *       [quantity, unitPrice]
- *     );
- *
- *     // Listen for total changes
- *     totalPrice.listen('TOTAL_CHANGED', trigger, true);
- *
- *     return {
- *       UPDATE_QTY() {
- *         quantity.set(Number(qtyInput.value) || 0);
- *       },
- *
- *       UPDATE_PRICE() {
- *         unitPrice.set(Number(priceInput.value) || 0);
- *       },
- *
- *       TOTAL_CHANGED(value: number) {
- *         total.render(`$${value.toFixed(2)}`);
- *       }
- *     };
- *   }
- * });
- * ```
- *
  * @remarks
- * - Computed values are lazy - only calculated when needed
- * - Dependencies are tracked automatically
- * - Clean up is handled automatically
- * - Perfect for derived state like:
- *   - Filtered lists
- *   - Total calculations
- *   - Form validation
- *   - Data transformations
+ * **Lazy Evaluation:**
+ * - Computed values are only calculated when accessed via `get()`
+ * - Recalculated synchronously when any dependency changes
+ * - No memoization between dependency changes
+ *
+ * **Dependency Tracking:**
+ * - Dependencies only monitored when at least one listener exists
+ * - Automatically subscribes to all dependency signals
+ * - Cleanup happens when last listener unsubscribes
+ *
+ * **Common Use Cases:**
+ * - Filtered lists based on search/filter signals
+ * - Calculated totals from multiple numeric signals
+ * - Form validation states derived from field signals
+ * - Data transformations combining multiple sources
+ *
+ * **Performance:**
+ * - O(n) notification where n is listener count
+ * - Synchronous updates may cause cascading computations
+ * - Unused computeds have zero overhead (no active subscriptions)
+ *
+ * @see {@link useSignal} for creating source signals
+ * @see {@link usePlaitedTrigger} for automatic cleanup
  */
 export const useComputed = <T>(
   initialValue: () => T,

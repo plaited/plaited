@@ -2,29 +2,15 @@
  * @internal
  * @module assign-helpers
  *
- * Purpose: Core DOM manipulation utilities for Plaited's reactive element system
- * Architecture: Provides the binding layer between elements and reactive updates
- * Dependencies: JSX types, CSS system, type utilities
- * Consumers: bElement, useTemplate, internal rendering system
+ * Core DOM manipulation utilities for Plaited's reactive element system.
+ * Provides binding layer between elements and reactive updates.
  *
- * Maintainer Notes:
- * - This module implements the core DOM update strategy for Behavioral elements
- * - Helper methods are attached to DOM elements via Object.assign for performance
- * - Style adoption is async to handle CSS module loading
+ * @remarks
+ * Implementation details:
+ * - Helper methods attached to DOM elements via Object.assign for performance
+ * - Style adoption uses async for CSS module loading
  * - WeakMap caching prevents memory leaks and duplicate style processing
- * - Boolean attributes require special handling per HTML spec
- *
- * Common modification scenarios:
- * - Adding new helper methods: Update Bindings interface and getBindings
- * - Changing style adoption: Modify updateShadowRootStyles and cache strategy
- * - Supporting new attribute types: Extend updateAttributes logic
- * - Optimizing renders: Adjust formatFragments or DocumentFragment creation
- *
- * Performance considerations:
- * - Object.assign is used once per element, not per update
- * - Style sheets are cached per ShadowRoot to avoid duplication
- * - Attribute updates are batched when using object syntax
- * - DocumentFragment creation is deferred until needed
+ * - Boolean attributes handled per HTML spec
  */
 
 import type { Bindings, BoundElement } from './b-element.types.ts'

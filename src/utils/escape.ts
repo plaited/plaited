@@ -87,12 +87,15 @@ const getUnescapeValue = (key: string) => unescapeKeyValues[key as keyof typeof 
  * @param sub - String to escape
  * @returns Escaped string with HTML entities
  *
- * @example
- * ```ts
- * htmlEscape('<div class="test">'); // '&lt;div class=&quot;test&quot;&gt;'
- * htmlEscape('Hello & Goodbye');     // 'Hello &amp; Goodbye'
- * htmlEscape("It's < than >");      // 'It&#39;s &lt; than &gt;'
- * ```
+ * @remarks
+ * Converts special characters to their HTML entity equivalents:
+ * - `&` → `&amp;`
+ * - `<` → `&lt;`
+ * - `>` → `&gt;`
+ * - `'` → `&#39;` (numeric for compatibility)
+ * - `"` → `&quot;`
+ *
+ * Always escape user input before rendering to prevent XSS attacks.
  *
  * @see {@link htmlUnescape} for reverse operation
  */
@@ -104,12 +107,13 @@ export const htmlEscape = (sub: string) => replace.call(sub, escapeRegex, getEsc
  * @param sub - String with HTML entities
  * @returns Unescaped string
  *
- * @example
- * ```ts
- * htmlUnescape('&lt;div&gt;');              // '<div>'
- * htmlUnescape('&quot;Hello&quot;');        // '"Hello"'
- * htmlUnescape('&#39;Single Quote&#39;');   // "'Single Quote'"
- * ```
+ * @remarks
+ * Handles both named and numeric entity forms:
+ * - `&amp;` or `&#38;` → `&`
+ * - `&lt;` or `&#60;` → `<`
+ * - `&gt;` or `&#62;` → `>`
+ * - `&apos;` or `&#39;` → `'` (apos for XHTML compatibility)
+ * - `&quot;` or `&#34;` → `"`
  *
  * @see {@link htmlEscape} for escaping HTML
  */

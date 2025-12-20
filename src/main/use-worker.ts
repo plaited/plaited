@@ -2,32 +2,15 @@
  * @internal
  * @module use-worker
  *
- * Purpose: Bridges Web Worker communication with Plaited's behavioral event system
- * Architecture: Adapter pattern connecting Worker postMessage API to trigger-based events
- * Dependencies: b-thread for event types, b-program for trigger, get-plaited-trigger for cleanup
- * Consumers: Components that need background processing via Web Workers
+ * Bridges Web Worker communication with Plaited's behavioral event system.
+ * Adapter pattern connecting Worker postMessage API to trigger-based events.
  *
- * Maintainer Notes:
- * - This module enables behavioral programming across thread boundaries
- * - Worker messages must conform to BPEvent structure for type safety
- * - Automatic cleanup prevents memory leaks from orphaned workers
- * - The returned function has a disconnect property for manual cleanup
- * - Message validation via isBPEvent prevents non-conforming messages
- *
- * Common modification scenarios:
- * - Supporting SharedWorker: Add conditional logic for different worker types
- * - Adding error handling: Listen to worker 'error' event
- * - Message queuing: Buffer messages if worker not ready
- * - Performance monitoring: Track message latency and throughput
- *
- * Performance considerations:
- * - Message passing has serialization overhead - avoid large payloads
- * - Worker termination is immediate - ensure graceful shutdown in worker
- * - Event listener is attached once, not per message
- * - Type guard prevents unnecessary trigger calls
- *
- * Known limitations:
- * - No built-in error handling for worker crashes
+ * @remarks
+ * Implementation details:
+ * - Enables behavioral programming across thread boundaries
+ * - Worker messages must conform to BPEvent structure
+ * - Automatic cleanup via disconnect prevents memory leaks
+ * - Message validation via isBPEvent type guard
  * - No message acknowledgment or retry mechanism
  * - Worker instance must be created externally
  * - No support for transferable objects

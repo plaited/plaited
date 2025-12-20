@@ -54,20 +54,14 @@ export const useWebSocket = () => {
     connect() {
       socket = new WebSocket(`${self?.location?.origin.replace(/^http/, 'ws')}${RUNNER_URL}`)
       delegates.set(socket, new DelegatedListener(ws.callback))
-      // WebSocket connection opened
       socket.addEventListener('open', delegates.get(socket))
-      // Handle incoming messages
       socket.addEventListener('message', delegates.get(socket))
-      // Handle WebSocket errors
       socket.addEventListener('error', delegates.get(socket))
-      // WebSocket connection closed
       socket.addEventListener('close', delegates.get(socket))
     },
     retry() {
       if (retryCount < maxRetries) {
-        // To get max we use a cap: 9999ms base: 1000ms
         const max = Math.min(9999, 1000 * 2 ** retryCount)
-        // We then select a random value between 0 and max
         setTimeout(ws.connect, Math.floor(Math.random() * max))
         retryCount++
       }

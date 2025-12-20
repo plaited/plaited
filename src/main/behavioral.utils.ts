@@ -1,36 +1,7 @@
 /**
  * @internal
- * @module behavioral.utils
- *
- * Purpose: Utility functions for introducing randomness and non-determinism in behavioral programs
- * Architecture: Pure functions that operate on behavioral types without side effects
- * Dependencies: behavioral.types for BPEvent and BSync type definitions
- * Consumers: Testing utilities, simulation scenarios, non-deterministic behavioral patterns
- *
- * Maintainer Notes:
- * - This module provides tools for testing race conditions and non-deterministic scenarios
- * - Both functions use Math.random() - not cryptographically secure
- * - Primarily used in test environments, rarely in production
- * - Fisher-Yates algorithm in shuffleSyncs guarantees uniform distribution
- * - randomEvent provides uniform selection from provided options
- *
- * Common modification scenarios:
- * - Supporting seeded randomness: Accept RNG function parameter
- * - Weighted selection: Add probability weights to randomEvent
- * - Partial shuffling: Add range parameters to shuffleSyncs
- * - Cryptographic randomness: Replace Math.random with crypto API
- *
- * Performance considerations:
- * - Both functions are O(n) where n is input size
- * - In-place mutation in shuffleSyncs avoids allocation
- * - No recursion or significant memory overhead
- * - Math.random() calls are the main performance cost
- *
- * Known limitations:
- * - Not suitable for cryptographic purposes
- * - No seed support for reproducible randomness
- * - shuffleSyncs modifies input array (side effect)
- * - No built-in support for weighted probabilities
+ * Utilities for behavioral programming: randomness, type guards, and thread composition.
+ * Provides bThread, bSync factories and helpers for non-deterministic scenarios.
  */
 import { isTypeOf } from '../utils.ts'
 import type { BPEvent, BSync, BThread, PlaitedTrigger, Trigger } from './behavioral.types.ts'

@@ -2,9 +2,8 @@
  * @internal
  * @module check-playwright
  *
- * Purpose: Detect and install Playwright if needed for CLI test runner
- * Provides interactive installation prompts using Bun runtime
- * Requires Bun runtime to function
+ * Detects and installs Playwright for CLI test runner.
+ * Provides interactive installation prompts using Bun runtime.
  */
 
 import { createInterface } from 'node:readline'

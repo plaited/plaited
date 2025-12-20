@@ -1,37 +1,7 @@
 /**
  * @internal
- * @module b-program
- *
- * Purpose: Factory pattern for creating reusable behavioral program configurations
- * Architecture: Higher-order function that encapsulates bProgram setup with lifecycle management
- * Dependencies: b-thread for BP primitives, b-program for core, get-plaited-trigger for cleanup
- * Consumers: Component frameworks, standalone BP applications, testing utilities
- *
- * Maintainer Notes:
- * - This module enables the "define once, use many times" pattern for behavioral programs
- * - Key benefit is separating BP definition from instantiation context
- * - Public events filtering prevents internal event exposure in component APIs
- * - Disconnect callbacks are managed centrally for proper cleanup
- * - The returned init function is async to support async handler setup
- * - Context injection allows external dependencies without global state
- *
- * Common modification scenarios:
- * - Adding middleware: Intercept in the returned init function
- * - Supporting multiple instances: Already supported via factory pattern
- * - Adding event validation: Extend getPublicTrigger usage
- * - Resource pooling: Add instance tracking in outer scope
- *
- * Performance considerations:
- * - Each init() call creates new bProgram instance - no sharing
- * - DisconnectSet grows with registered callbacks - clean up properly
- * - Public trigger adds minimal overhead with Set lookup
- * - Async init may delay component readiness
- *
- * Known limitations:
- * - No built-in instance limiting or pooling
- * - Context type must be known at definition time
- * - No runtime modification of public events list
- * - Disconnect is synchronous only
+ * Factory for creating reusable behavioral program configurations.
+ * Encapsulates setup, lifecycle management, and public event filtering.
  */
 import { behavioral } from './behavioral.ts'
 import type {
@@ -61,124 +31,40 @@ import { usePublicTrigger } from './use-public-trigger.ts'
  *
  * @returns Async initialization function that creates configured program instance
  *
- * @example Component with behavioral program
- * ```tsx
- * // Define reusable program configuration
- * const createFormProgram = bProgram<{
- *   VALIDATION_PASSED: () => void;
- *   VALIDATION_FAILED: (errors: string[]) => void;
- *   SUBMIT_SUCCESS: (data: any) => void;
- * }, {
- *   api: ApiClient;
- *   formId: string;
- * }>({
- *   publicEvents: ['VALIDATE', 'SUBMIT', 'RESET'],
- *
- *   bProgram({ bThreads, trigger, api, formId, bSync, bThread }) {
- *     // Define validation logic
- *     bThreads.set({
- *       'validator': bThread([
- *         bSync({ waitFor: 'VALIDATE' }),
- *         bSync({ request: { type: 'RUN_VALIDATION' } })
- *       ], true),
- *
- *       'submitter': bThread([
- *         bSync({ waitFor: 'SUBMIT', block: 'VALIDATE' }),
- *         bSync({ request: { type: 'SUBMIT_FORM' } })
- *       ], true)
- *     });
- *
- *     // Return handlers
- *     return {
- *       async RUN_VALIDATION() {
- *         const errors = await validateForm(formId);
- *         trigger({
- *           type: errors.length ? 'VALIDATION_FAILED' : 'VALIDATION_PASSED',
- *           detail: errors
- *         });
- *       },
- *
- *       async SUBMIT_FORM(data) {
- *         const result = await api.submit(formId, data);
- *         trigger({ type: 'SUBMIT_SUCCESS', detail: result });
- *       },
- *
- *       VALIDATION_PASSED: () => enableSubmitButton(),
- *       VALIDATION_FAILED: (errors) => showErrors(errors),
- *       SUBMIT_SUCCESS: (data) => showSuccess(data)
- *     };
- *   }
- * });
- *
- * // Use in component
- * const MyForm = bElement({
- *   tag: 'my-form',
- *   async bProgram({ trigger }) {
- *     const api = new ApiClient();
- *     const publicTrigger = await createFormProgram({
- *       api,
- *       formId: 'user-form'
- *     });
- *
- *     return {
- *       'form/submit': () => publicTrigger({ type: 'SUBMIT' }),
- *       'input/change': () => publicTrigger({ type: 'VALIDATE' })
- *     };
- *   }
- * });
- * ```
- *
- * @example Service with behavioral coordination
- * ```tsx
- * const createDataSync = bProgram<{
- *   SYNC_COMPLETE: (stats: SyncStats) => void;
- *   SYNC_ERROR: (error: Error) => void;
- * }, {
- *   database: Database;
- *   remote: RemoteAPI;
- * }>({
- *   publicEvents: ['START_SYNC', 'STOP_SYNC'],
- *
- *   bProgram({ bThreads, database, remote, bSync, bThread, disconnect }) {
- *     const interval = setInterval(() => {
- *       trigger({ type: 'SYNC_TICK' });
- *     }, 5000);
- *
- *     disconnect(() => clearInterval(interval));
- *
- *     bThreads.set({
- *       'syncLoop': bThread([
- *         bSync({ waitFor: ['START_SYNC', 'SYNC_TICK'] }),
- *         bSync({ request: { type: 'PERFORM_SYNC' } })
- *       ], true)
- *     });
- *
- *     return {
- *       async PERFORM_SYNC() {
- *         try {
- *           const local = await database.getChanges();
- *           const result = await remote.sync(local);
- *           await database.applyChanges(result);
- *
- *           return { type: 'SYNC_COMPLETE', detail: result.stats };
- *         } catch (error) {
- *           return { type: 'SYNC_ERROR', detail: error };
- *         }
- *       }
- *     };
- *   }
- * });
- * ```
- *
  * @remarks
- * - Factory pattern enables reusability across components
- * - Public events provide API security boundary
+ * **Factory Pattern Benefits:**
+ * - Define behavioral program logic once, instantiate multiple times
+ * - Separates BP definition from execution context
+ * - Enables dependency injection via context parameter
+ * - Each init() call creates isolated behavioral program instance
+ *
+ * **Public Events Security:**
+ * - publicEvents array acts as API whitelist
+ * - Only listed events can be triggered externally
+ * - Prevents exposure of internal coordination events
+ * - Returns filtered trigger function as public API
+ *
+ * **Lifecycle Management:**
  * - Automatic cleanup via disconnect callbacks
- * - Async initialization supports dynamic setup
- * - Context injection enables dependency injection
+ * - Disconnect callbacks cleared when program instance ends
+ * - Async initialization supports I/O and setup operations
+ * - PlaitedTrigger integration for automatic resource cleanup
+ *
+ * **Context Injection:**
+ * - Generic C type allows typed context objects
+ * - Context merged with behavioral primitives (bThread, bSync, trigger)
+ * - Enables external dependencies without global state
+ * - Supports services, APIs, configuration objects
+ *
+ * **Performance:**
+ * - Each init() creates new bProgram instance (no sharing)
+ * - DisconnectSet grows with registered callbacks
+ * - Public trigger adds minimal Set lookup overhead
+ * - Async init may delay component readiness
  *
  * @see {@link usePublicTrigger} for event filtering
  * @see {@link usePlaitedTrigger} for lifecycle management
+ * @see {@link behavioral} for core behavioral programming engine
  */
 
 export const useBehavioral = <

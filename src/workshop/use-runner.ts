@@ -1,34 +1,7 @@
 /**
  * @internal
- * @module use-runner
- *
- * Purpose: Test runner for running Plaited story tests with Playwright
- * Architecture: Manages test execution, browser contexts, and result reporting
- * Dependencies: Playwright for browser automation, getServer for story serving
- * Consumers: Test CLI, CI/CD pipelines, development workflows
- *
- * Maintainer Notes:
- * - Server is created once at runner initialization
- * - Reload method enables hot reload during development
- * - Direct method invocation (run, reload, end) for controlling execution
- * - Test results are reported via callback for flexible consumption
- * - Browser contexts created per story for isolation
- *
- * Common modification scenarios:
- * - Adding test filtering: Extend RunTestsDetail type
- * - Supporting parallel execution: Modify story processing logic in run method
- * - Adding custom reporters: Extend reporter callback interface
- * - Implementing test retry: Add retry logic in error handlers
- *
- * Performance considerations:
- * - Server created once and reused across runs
- * - Stories execute in parallel via Promise.all
- * - Story discovery happens per run call
- *
- * Known limitations:
- * - Stories run in parallel but each gets its own browser context
- * - No built-in test retry mechanism
- * - Server lifecycle tied to runner lifecycle
+ * Test runner for Plaited story tests with Playwright.
+ * Manages browser contexts, test execution, and result reporting.
  */
 import { availableParallelism } from 'node:os'
 import { basename } from 'node:path'

@@ -2,30 +2,17 @@
  * @internal
  * @module use-attributes-observer
  *
- * Purpose: Enables reactive monitoring of attribute changes on slotted elements
- * Architecture: Wraps MutationObserver API with Plaited's event system for slot content
- * Dependencies: behavioral module for triggers and lifecycle management
- * Consumers: Components that need to react to attribute changes on projected content
+ * Reactive monitoring of attribute changes on slotted elements.
+ * Wraps MutationObserver API with Plaited's event system for slot content.
  *
- * Maintainer Notes:
- * - This module solves the problem of observing external element changes in slots
- * - Primary use case is monitoring slotted form elements (input, select, etc.)
- * - MutationObserver is created per observed element, not shared
+ * @remarks
+ * Implementation details:
+ * - Primary use case is monitoring slotted form elements
+ * - MutationObserver created per observed element, not shared
  * - Automatic cleanup via PlaitedTrigger prevents observer leaks
  * - Event detail provides old/new values for change detection
- * - Designed for slot scenarios where component doesn't control the element
  *
- * Common modification scenarios:
- * - Observing child nodes: Add childList: true to observer config
- * - Batching mutations: Accumulate changes before triggering
- * - Performance optimization: Throttle/debounce rapid mutations
- * - Multiple element observation: Return array of disconnect functions
- *
- * Performance considerations:
- * - MutationObserver is efficient but has overhead per observed element
- * - attributeFilter is critical - observe only necessary attributes
- * - Each mutation triggers synchronous event dispatch
- * - Consider throttling for frequently changing attributes
+ * Performance: attributeFilter is critical - observe only necessary attributes.
  *
  * Known limitations:
  * - Only observes attributes, not properties or content

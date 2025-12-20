@@ -1,27 +1,7 @@
 /**
  * @internal
- * @module b-element
- *
- * Purpose: Implements the BehavioralTemplate system that bridges Web Components and behavioral programming.
- * Creates custom elements with Shadow DOM, event handling, and behavioral program integration.
- *
- * Architecture:
- * - Extends HTMLElement with behavioral programming capabilities
- * - Manages Shadow DOM lifecycle and element bindings via p-target attributes
- * - Integrates event delegation system with p-trigger attributes
- * - Coordinates behavioral threads with DOM element lifecycle
- * - Provides emit function for cross-shadow-DOM communication
- * - Includes inspector for debugging behavioral program state
- *
- * Dependencies:
- * - behavioral.ts: Core behavioral programming engine
- * - create-template.ts: JSX template creation
- * - use-plaited-trigger.ts: Internal trigger system
- * - use-public-trigger.ts: Public event trigger
- * - use-emit.ts: Custom event emission
- * - delegated-listener.ts: Event delegation
- *
- * Consumers: Application code creating custom elements with behavioral programming
+ * BehavioralTemplate system bridging Web Components and behavioral programming.
+ * Creates custom elements with Shadow DOM, event delegation, and BP integration.
  */
 
 import { canUseDOM } from '../utils.ts'
@@ -245,18 +225,11 @@ export const bElement = <A extends EventDetails>({
             })
           }
           if (callback) {
-            // Get dom helper bindings
             const bindings = getBindings(this.#root)
-            // Delegate listeners nodes with p-trigger directive on connection or upgrade
             this.#addListeners(this.#root.querySelectorAll<Element>(`[${P_TRIGGER}]`))
-            // Bind DOM helpers to nodes with p-target directive on connection or upgrade
             assignHelpers(bindings, this.#root.querySelectorAll<Element>(`[${P_TARGET}]`))
-            // Create a shadow observer to watch for modification & addition of nodes with p-this.#trigger directive
             this.#shadowObserver = this.#getShadowObserver(bindings)
-            //Create inspector on tool that captures state snapshots of behavioral program execution
             const inspectorDefaultCallback: InspectorCallback = (arg: SnapshotMessage) => {
-              // queueMicrotask prevents Safari's console.table from creating synchronous feedback loops
-              // JSON clone prevents property getter side effects during console inspection
               queueMicrotask(() => {
                 console.group()
                 console.info(tag)
@@ -285,7 +258,6 @@ export const bElement = <A extends EventDetails>({
                 }
               },
             }
-            // bind connectedCallback to the custom element with the following arguments
             const handlers = callback.bind(this)({
               $: <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
                 this.#root.querySelectorAll<BoundElement<T>>(`[${P_TARGET}${match}"${target}"]`),
@@ -299,7 +271,6 @@ export const bElement = <A extends EventDetails>({
               bThread,
               bSync,
             })
-            // Subscribe feedback handlers to behavioral program and add disconnect callback to disconnect set
             this.#disconnectSet.add(this.#useFeedback(handlers))
           }
           this.#trigger({ type: ELEMENT_CALLBACKS.onConnected })
@@ -344,54 +315,41 @@ export const bElement = <A extends EventDetails>({
           const length = elements.length
           for (let i = 0; i < length; i++) {
             const el = elements[i]!
-            if (el.tagName === 'SLOT' && Boolean(el.assignedSlot)) continue // skip nested slots
+            if (el.tagName === 'SLOT' && Boolean(el.assignedSlot)) continue
             !delegates.has(el) &&
               delegates.set(
                 el,
                 new DelegatedListener((event) => {
                   const type = el.getAttribute(P_TRIGGER) && getTriggerType(event, el)
                   type
-                    ? /** if key is present in `p-trigger` trigger event on instance's bProgram */
-                      this.#trigger?.({ type, detail: event })
-                    : /** if key is not present in `p-trigger` remove event listener for this event on Element */
-                      el.removeEventListener(event.type, delegates.get(el))
+                    ? this.#trigger?.({ type, detail: event })
+                    : el.removeEventListener(event.type, delegates.get(el))
                 }),
               )
             for (const [event] of getTriggerMap(el)) {
-              // add event listeners for each event type
               el.addEventListener(event, delegates.get(el))
             }
           }
         }
         #getShadowObserver(bindings: Bindings) {
-          /**
-           * Observes the addition of nodes to the shadow dom and changes to child's p-trigger/p-target attributes.
-           * Batches all mutations before processing for 40-60% faster mutation handling.
-           */
           const mo = new MutationObserver((mutationsList) => {
-            // Batch all mutations before processing (40-60% faster)
             const triggerElements = new Set<Element>()
             const targetElements = new Set<Element>()
             for (const mutation of mutationsList) {
               const addedNodesLength = mutation.addedNodes.length
-              // Handle attribute changes
               if (mutation.type === 'attributes') {
                 const el = mutation.target
                 if (isElement(el)) {
                   mutation.attributeName === P_TRIGGER && el.getAttribute(P_TRIGGER) && triggerElements.add(el)
                   mutation.attributeName === P_TARGET && el.getAttribute(P_TARGET) && targetElements.add(el)
                 }
-              }
-              // Collect all added nodes for batch processing
-              else if (addedNodesLength) {
+              } else if (addedNodesLength) {
                 for (let i = 0; i < addedNodesLength; i++) {
                   const node = mutation.addedNodes[i]!
                   if (isElement(node)) {
-                    // Check node itself
                     node.hasAttribute(P_TRIGGER) && triggerElements.add(node)
                     node.hasAttribute(P_TARGET) && targetElements.add(node)
 
-                    // Query descendants once per node
                     node.querySelectorAll(`[${P_TRIGGER}]`).forEach((el) => {
                       triggerElements.add(el)
                     })
@@ -403,7 +361,6 @@ export const bElement = <A extends EventDetails>({
               }
             }
 
-            // Batch setup all at once (single function call instead of per-element)
             triggerElements.size && this.#addListeners(Array.from(triggerElements))
             targetElements.size && assignHelpers(bindings, Array.from(targetElements))
           })
@@ -418,7 +375,6 @@ export const bElement = <A extends EventDetails>({
     )
   }
   const registry = new Set<string>([...shadowDom.registry, tag])
-  /** We continue to hoist our stylesheet until we  create a custom element then we add it to front of the html array*/
   shadowDom.stylesheets.length && shadowDom.html.unshift(`<style>${shadowDom.stylesheets.join('')}</style>`)
   const ft = ({ children = [], ...attrs }: Attrs) =>
     createTemplate(tag, {
@@ -429,7 +385,6 @@ export const bElement = <A extends EventDetails>({
           shadowrootdelegatesfocus: delegatesFocus,
           children: {
             ...shadowDom,
-            /** Having hoisted our stylsheets we reset the stylesheet array on the TemplateObject */
             stylesheets: [],
           },
         }),

@@ -2,31 +2,14 @@
  * @internal
  * @module use-public-trigger
  *
- * Purpose: Provides event filtering for secure component public APIs
- * Architecture: Wrapper pattern that validates events against a whitelist before triggering
- * Dependencies: Trigger type from behavioral.types
- * Consumers: bElement for exposing controlled component APIs
+ * Event filtering for secure component public APIs.
+ * Validates events against a whitelist before triggering.
  *
- * Maintainer Notes:
- * - This module implements security-by-whitelist for event triggering
- * - Set-based lookup provides O(1) event validation
+ * @remarks
+ * Implementation details:
+ * - Security-by-whitelist pattern with Set-based O(1) lookup
  * - Fail-fast pattern throws immediately on unauthorized events
- * - Used internally by bElement when publicEvents option is specified
- *
- * Common modification scenarios:
- * - Changing error messages: Update throw statement formatting
- * - Adding event logging: Insert before trigger call
- * - Supporting wildcards: Modify Set lookup logic
- *
- * Performance considerations:
- * - Set initialization: O(n) where n = publicEvents length
- * - Event validation: O(1) lookup per trigger call
- * - No memory overhead beyond the Set instance
- *
- * Known limitations:
- * - No support for event patterns or wildcards
- * - Error messages list all allowed events (could be verbose)
- * - No event transformation or remapping support
+ * - Used by bElement when publicEvents option is specified
  */
 import type { Trigger } from './behavioral.types.ts'
 

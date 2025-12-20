@@ -95,7 +95,6 @@ export const createHostStyles = (props: CreateHostParams): HostStylesObject => {
       continue
     }
 
-    // Check if value is an object and has $compoundSelectors property
     const { $compoundSelectors, ...rest } = value
     if (Object.keys(rest).length) {
       formatHostStatement({

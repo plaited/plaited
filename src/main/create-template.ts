@@ -2,74 +2,8 @@
  * @internal
  * @module create-template
  *
- * Purpose: Implements the JSX template creation system for Plaited.
- * Converts JSX-like calls into template objects with security-first design.
- * Handles HTML escaping, event binding, style management, and Shadow DOM boundaries.
- *
- * Architecture:
- * - Core factory function for JSX runtime integration
- * - Recursive template object generation with nested children support
- * - Automatic HTML escaping for security
- * - Style hoisting and deduplication
- * - Script injection protection
- *
- * Dependencies:
- * - utils.js: Type checking, kebab-case conversion, HTML escaping
- * - create-template.types.js: Type definitions for attributes and templates
- * - create-template.constants.js: HTML constants and valid tags
- *
- * Consumers:
- * - JSX transpiler output (h function calls)
- * - bElement for Shadow DOM template creation
- * - Application code using JSX syntax
- *
- * @example Basic element creation
- * ```tsx
- * import { h } from 'plaited/jsx-runtime'
- *
- * const div = h('div', {
- *   class: 'container',
- *   children: 'Hello World'
- * });
- * ```
- *
- * @example Component composition
- * ```tsx
- * const Card = ({ title, children }) => h('div', {
- *   class: 'card',
- *   children: [
- *     h('h2', { children: title }),
- *     h('div', { class: 'content', children })
- *   ]
- * });
- *
- * const card = h(Card, {
- *   title: 'Welcome',
- *   children: 'Card content'
- * });
- * ```
- *
- * @example Shadow DOM with styles
- * ```tsx
- * import { styles } from 'plaited';
- *
- * const componentStyles = styles({
- *   container: {
- *     padding: '1rem',
- *     border: '1px solid #ccc'
- *   }
- * });
- *
- * const ShadowComponent = () => h('custom-element', {
- *   children: h('template', {
- *     shadowrootmode: 'open',
- *     children: h('div', {
- *       ...componentStyles.container,
- *       children: 'Shadow content'
- *     })
- *   })
- * });
- * ```
+ * Purpose: JSX template creation system for Plaited with security-first design.
+ * Converts JSX calls into template objects with HTML escaping, event binding, and style management.
  *
  * @remarks
  * Key features:
@@ -80,7 +14,7 @@
  * - Script injection protection
  *
  * @see {@link Fragment} for grouping without wrappers
- * @see {@link styles} for style creation
+ * @see {@link createStyles} for style creation
  */
 
 import { htmlEscape, isTypeOf, kebabCase, trueTypeOf } from '../utils.ts'
@@ -142,6 +76,7 @@ type InferAttrs<T extends Tag> = T extends keyof ElementAttributeList
 type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => TemplateObject
 
 /**
+ * @internal
  * Creates Plaited template objects from JSX-like calls.
  * Core template factory with security-first design and style management.
  *
@@ -149,36 +84,9 @@ type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => TemplateO
  * @param attrs - Element attributes including children
  * @returns TemplateObject with HTML, stylesheets, registry, and identifier
  *
- * @example Standard element
- * ```tsx
- * const template = createTemplate('div', {
- *   class: 'container',
- *   children: ['Hello World']
- * });
- * ```
- *
- * @example With event triggers
- * ```tsx
- * const button = createTemplate('button', {
- *   'p-trigger': { click: 'SUBMIT' },
- *   children: 'Submit'
- * });
- * ```
- *
- * @example Style object
- * ```tsx
- * const styled = createTemplate('div', {
- *   style: {
- *     padding: '10px',
- *     '--custom-var': 'blue'
- *   },
- *   children: 'Styled content'
- * });
- * ```
- *
- * @throws {Error} When `on*` attributes are used (use p-trigger instead)
- * @throws {Error} When `<script>` tag used without `trusted={true}`
- * @throws {Error} When non-primitive attribute values provided
+ * @throws {UntrustedScriptError} When `<script>` tag used without `trusted={true}`
+ * @throws {EventHandlerAttributeError} When `on*` attributes are used (use p-trigger instead)
+ * @throws {InvalidAttributeTypeError} When non-primitive attribute values provided
  *
  * @remarks
  * Security features:
@@ -299,19 +207,9 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
 }
 
 /**
+ * @internal
  * JSX factory function alias for createTemplate.
  * Standard entry point for JSX transformation.
- *
- * @example JSX usage
- * ```tsx
- * import { h } from 'plaited/jsx-runtime';
- *
- * const element = h('div', {
- *   id: 'example',
- *   class: 'container',
- *   children: 'Hello World'
- * });
- * ```
  *
  * @see {@link createTemplate} for implementation details
  */
@@ -323,37 +221,6 @@ export { createTemplate as h }
  *
  * @param attrs - Attributes object containing children
  * @returns TemplateObject with combined HTML and stylesheets
- *
- * @example List items without wrapper
- * ```tsx
- * const listItems = (
- *   <Fragment>
- *     <li>Item 1</li>
- *     <li>Item 2</li>
- *   </Fragment>
- * );
- * ```
- *
- * @example Mixed content
- * ```tsx
- * const content = (
- *   <Fragment>
- *     <h2>Title</h2>
- *     <p>Paragraph</p>
- *     {'Text node'}
- *   </Fragment>
- * );
- * ```
- *
- * @example With styles
- * ```tsx
- * const styled = (
- *   <Fragment>
- *     <div {...styles.box}>Box 1</div>
- *     <div {...styles.box}>Box 2</div>
- *   </Fragment>
- * );
- * ```
  *
  * @remarks
  * Use cases:

@@ -4,24 +4,12 @@ import { canUseDOM } from './can-use-dom.ts'
  * @internal
  * Creates DocumentFragment from HTML with executable scripts.
  *
- * ⚠️ **Security Warning**: Allows script execution.
- * Only use with trusted content or proper CSP.
- *
  * @param html - HTML string to parse
  * @returns DocumentFragment or undefined if no DOM
  *
- * @example Trusted content only
- * ```ts
- * const fragment = createDocumentFragment(
- *   '<div>Hello <script>console.log("World")</script></div>'
- * );
- * document.body.appendChild(fragment); // Script executes
- * ```
- *
  * @remarks
- * Uses setHTMLUnsafe API.
- * Scripts execute on DOM append.
- * Returns undefined in SSR.
+ * Security Warning: Allows script execution. Only use with trusted content or proper CSP.
+ * Uses setHTMLUnsafe API. Scripts execute on DOM append. Returns undefined in SSR.
  *
  * @see {@link canUseDOM} for environment detection
  */
