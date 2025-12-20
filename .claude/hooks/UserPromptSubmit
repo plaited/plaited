@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # UserPromptSubmit hook that forces explicit skill evaluation
 #
 # This hook requires Claude to explicitly evaluate each available skill
