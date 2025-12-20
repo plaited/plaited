@@ -97,16 +97,14 @@ const getTriggerMap = (el: Element) =>
  * 20-30% faster event handling by avoiding composedPath() in 80%+ of cases
  */
 const getTriggerType = (event: Event, context: Element) => {
-  // Fast path 1: event.target is the context element (direct event)
-  // Most common case: user clicks directly on element with p-trigger
-  if (event.target === context) {
-    return getTriggerMap(context).get(event.type)
-  }
+  // Fast path: Handle direct events (target === context) OR
+  // delegated events from children (currentTarget === context).
+  // SLOT elements are excluded - they need composedPath validation
+  // to distinguish legitimate slot events from pass-through slots.
+  const isDirectOrDelegated =
+    event.target === context || (context.tagName !== 'SLOT' && event.currentTarget === context)
 
-  // Fast path 2: currentTarget is the context element (delegated event)
-  // Common case: event bubbled from child to element with p-trigger
-  // Skip for SLOT elements as they have special composed path handling
-  if (context.tagName !== 'SLOT' && event.currentTarget === context) {
+  if (isDirectOrDelegated) {
     return getTriggerMap(context).get(event.type)
   }
 

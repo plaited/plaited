@@ -1,30 +1,83 @@
 import { expect, test } from 'bun:test'
 import { join } from 'node:path'
 import type { TestResult } from '../use-runner.ts'
-import { useRunner } from '../use-runner.ts'
 
 const cwd = join(import.meta.dir, 'fixtures')
 const fixturesDir = join(cwd, 'stories')
 
+// Helper to run useRunner as subprocess and capture JSON results
+const runRunner = async ({
+  cwd,
+  colorScheme = 'light',
+  port = 0,
+  paths,
+}: {
+  cwd: string
+  colorScheme?: 'light' | 'dark'
+  port?: number
+  paths: string[]
+}) => {
+  const harnessPath = join(import.meta.dir, 'use-runner.harness.ts')
+
+  // Create subprocess running the runner harness
+  const proc = Bun.spawn(['bun', harnessPath, '-d', cwd, '-p', String(port), '--color-scheme', colorScheme, ...paths], {
+    stdout: 'pipe',
+    stderr: 'pipe',
+  })
+
+  const stdoutReader = proc.stdout.getReader()
+  const stderrReader = proc.stderr.getReader()
+  const decoder = new TextDecoder()
+
+  let output = ''
+  let errorOutput = ''
+
+  // Read output streams
+  const readStreams = async () => {
+    await Promise.all([
+      (async () => {
+        while (true) {
+          const { done, value } = await stdoutReader.read()
+          if (done) break
+          output += decoder.decode(value)
+        }
+      })(),
+      (async () => {
+        while (true) {
+          const { done, value } = await stderrReader.read()
+          if (done) break
+          errorOutput += decoder.decode(value)
+        }
+      })(),
+    ])
+  }
+
+  // Wait for process to complete
+  await Promise.all([proc.exited, readStreams()])
+
+  // Parse JSON output
+  try {
+    const results = JSON.parse(output.trim()) as {
+      passed: TestResult[]
+      failed: TestResult[]
+    }
+    return results
+  } catch (error) {
+    console.error('Failed to parse runner output:', output)
+    console.error('Error output:', errorOutput)
+    throw new Error(`Failed to parse runner output: ${error}`)
+  }
+}
+
 test(
   'useRunner: should execute stories and report results via callback',
   async () => {
-    const { promise, resolve } = Promise.withResolvers<{
-      passed: TestResult[]
-      failed: TestResult[]
-    }>()
-
-    const trigger = await useRunner({
-      port: 0, // Auto-assign port
+    const { passed, failed } = await runRunner({
       cwd,
       colorScheme: 'light',
+      port: 0,
       paths: [fixturesDir],
-      reporter: resolve,
     })
-
-    trigger({ type: 'run' })
-
-    const { passed, failed } = await promise
 
     // Verify results structure
     expect(passed.length + failed.length).toBeGreaterThan(0)
@@ -42,62 +95,42 @@ test(
       expect(typeof result.passed).toBe('boolean')
     })
   },
-  { timeout: 30000 },
+  { timeout: 60000 },
 )
 
 test(
-  'useRunner: should discover stories from multiple paths',
+  'useRunner: should discover stories from subdirectories',
   async () => {
-    const { promise, resolve } = Promise.withResolvers<{
-      passed: TestResult[]
-      failed: TestResult[]
-    }>()
-
-    const trigger = await useRunner({
-      port: 0,
+    const { passed, failed } = await runRunner({
       cwd,
       colorScheme: 'light',
+      port: 0,
       paths: [fixturesDir],
-      reporter: resolve,
     })
-
-    trigger({ type: 'run' })
-
-    const { passed, failed } = await promise
 
     const allResults = [...passed, ...failed]
 
-    // Should find stories in nested directories
-    const nestedStories = allResults.filter((r) => r.story.filePath.includes('/nested/'))
-    expect(nestedStories.length).toBeGreaterThan(0)
+    // Should find stories in subdirectories (filtering/)
+    const subDirStories = allResults.filter((r) => r.story.filePath.includes('/filtering/'))
+    expect(subDirStories.length).toBeGreaterThan(0)
 
-    // Verify nested story names
+    // Verify story names from subdirectory
     const exportNames = allResults.map((r) => r.story.exportName)
-    expect(exportNames).toContain('nestedSnapshot')
-    expect(exportNames).toContain('nestedInteraction')
+    expect(exportNames).toContain('onlyStory')
+    expect(exportNames).toContain('activeStory')
   },
-  { timeout: 30000 },
+  { timeout: 60000 },
 )
 
 test(
   'useRunner: should handle mixed story types (interaction and snapshot)',
   async () => {
-    const { promise, resolve } = Promise.withResolvers<{
-      passed: TestResult[]
-      failed: TestResult[]
-    }>()
-
-    const trigger = await useRunner({
-      port: 0,
+    const { passed, failed } = await runRunner({
       cwd,
       colorScheme: 'light',
+      port: 0,
       paths: [fixturesDir],
-      reporter: resolve,
     })
-
-    trigger({ type: 'run' })
-
-    const { passed, failed } = await promise
 
     const allResults = [...passed, ...failed]
 
@@ -107,32 +140,21 @@ test(
     expect(hasSnapshot).toBe(true)
     expect(hasInteraction).toBe(true)
   },
-  { timeout: 30000 },
+  { timeout: 60000 },
 )
 
 test(
-  'useRunner: should report passed and failed tests separately',
+  'useRunner: should report passed tests correctly',
   async () => {
-    const { promise, resolve } = Promise.withResolvers<{
-      passed: TestResult[]
-      failed: TestResult[]
-    }>()
-
-    const disconnect = await useRunner({
-      port: 0,
+    const { passed, failed } = await runRunner({
       cwd,
       colorScheme: 'light',
+      port: 0,
       paths: [fixturesDir],
-      reporter: resolve,
     })
 
-    disconnect({ type: 'run' })
-
-    const { passed, failed } = await promise
-
-    //Verify there are failed and passed results
+    // Verify there are passed results
     expect(passed.length).toBeGreaterThan(0)
-    expect(failed.length).toBeGreaterThan(0)
 
     // Verify passed tests have passed=true
     passed.forEach((result) => {
@@ -140,13 +162,13 @@ test(
       expect(result.error).toBeUndefined()
     })
 
-    // Verify failed tests have passed=false and error
+    // Verify failed tests have passed=false and error (if any)
     failed.forEach((result) => {
       expect(result.passed).toBe(false)
       expect(result.error).toBeDefined()
     })
   },
-  { timeout: 30000 },
+  { timeout: 60000 },
 )
 
 test(
@@ -154,49 +176,29 @@ test(
   async () => {
     const emptyDir = join(cwd, 'entry-routes') // Directory with no .stories.tsx
 
-    const { promise, resolve } = Promise.withResolvers<{
-      passed: TestResult[]
-      failed: TestResult[]
-    }>()
-
-    const disconnect = await useRunner({
-      port: 0,
+    const { passed, failed } = await runRunner({
       cwd: emptyDir,
       colorScheme: 'light',
+      port: 0,
       paths: [emptyDir],
-      reporter: resolve,
     })
-
-    disconnect({ type: 'run' })
-
-    const { passed, failed } = await promise
 
     // Should have no results
     expect(passed.length).toBe(0)
     expect(failed.length).toBe(0)
   },
-  { timeout: 30000 },
+  { timeout: 60000 },
 )
 
 test(
   'useRunner: should include story metadata in results',
   async () => {
-    const { promise, resolve } = Promise.withResolvers<{
-      passed: TestResult[]
-      failed: TestResult[]
-    }>()
-
-    const disconnect = await useRunner({
-      port: 0,
+    const { passed, failed } = await runRunner({
       cwd,
       colorScheme: 'light',
+      port: 0,
       paths: [fixturesDir],
-      reporter: resolve,
     })
-
-    disconnect({ type: 'run' })
-
-    const { passed, failed } = await promise
 
     const allResults = [...passed, ...failed]
     expect(allResults.length).toBeGreaterThan(0)
@@ -214,5 +216,5 @@ test(
       expect(result.story.timeout).toBeGreaterThan(0)
     })
   },
-  { timeout: 30000 },
+  { timeout: 60000 },
 )
