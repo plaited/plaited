@@ -16,7 +16,7 @@ bunx playwright install chromium
 bun run check
 
 # Lint and format fix (auto-fix issues)
-bun run fix
+bun run check:write
 ```
 
 ## Project Organization
