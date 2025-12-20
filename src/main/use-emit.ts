@@ -2,30 +2,16 @@
  * @internal
  * @module use-emit
  *
- * Purpose: Type-safe custom event dispatching for cross-component communication
- * Architecture: Wraps native CustomEvent API with sensible defaults for shadow DOM
- * Dependencies: behavioral for BPEvent type, plaited.types for element interface
- * Consumers: Components needing to emit events to parents or external listeners
+ * Type-safe custom event dispatching for cross-component communication.
+ * Wraps native CustomEvent API with sensible defaults for shadow DOM.
  *
- * Maintainer Notes:
- * - This module provides the primary outbound communication mechanism for components
- * - Default composed: true is critical for shadow DOM event propagation
- * - Type safety ensures event detail structure matches consumer expectations
- * - No automatic cleanup needed - events are fire-and-forget
- * - Early return on missing type prevents runtime errors
- * - Curried function pattern enables reuse across multiple dispatches
- *
- * Common modification scenarios:
- * - Adding event metadata: Extend BPEvent type or wrap detail
- * - Event logging: Add console.log or telemetry before dispatch
- * - Validation: Check detail structure before creating event
- * - Rate limiting: Add throttling for high-frequency events
- *
- * Performance considerations:
- * - CustomEvent creation is lightweight but has allocation cost
- * - Event propagation through shadow DOM has traversal overhead
- * - No event pooling - each dispatch creates new event object
- * - Consider batching for high-frequency updates
+ * @remarks
+ * Implementation details:
+ * - Primary outbound communication mechanism for components
+ * - Default composed: true is critical for shadow DOM propagation
+ * - Type safety ensures event detail structure matches expectations
+ * - Fire-and-forget pattern with no automatic cleanup
+ * - Curried function pattern enables reuse
  *
  * Known limitations:
  * - No built-in event deduplication

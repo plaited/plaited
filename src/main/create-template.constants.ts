@@ -2,30 +2,15 @@
  * @internal
  * @module jsx.constants
  *
- * Purpose: Central constants for JSX runtime, template creation, and DOM serialization
- * Architecture: Exported constants and Sets for validation and special handling
- * Dependencies: None - pure JavaScript constants
- * Consumers: JSX runtime, template factory, server-side rendering, DOM utilities
+ * Central constants for JSX runtime, template creation, and DOM serialization.
+ * Defines Plaited's special attributes and DOM behavior.
  *
- * Maintainer Notes:
- * - These constants define Plaited's special attributes and DOM behavior
- * - VOID_TAGS and BOOLEAN_ATTRS align with HTML5 and SVG specifications
- * - P_TARGET and P_TRIGGER enable Plaited's behavioral programming model
- * - Sets provide O(1) lookup performance for validation checks
- * - TEMPLATE_OBJECT_IDENTIFIER uses emoji for uniqueness and debugging clarity
- * - Critical for maintaining HTML spec compliance and framework behavior
- *
- * Common modification scenarios:
- * - Adding new void elements: Update VOID_TAGS when new HTML elements are added
- * - Supporting custom boolean attrs: Extend BOOLEAN_ATTRS for framework-specific needs
- * - New primitive types: Update PRIMITIVES/VALID_PRIMITIVE_CHILDREN for BigInt, Symbol
- * - Custom prefixes: Add new P_* constants for additional framework attributes
- *
- * Performance considerations:
- * - Sets are created once at module load time
- * - Set.has() provides constant-time lookups
- * - Constants are inlined by bundlers
- * - No runtime computation needed
+ * @remarks
+ * Implementation details:
+ * - VOID_TAGS and BOOLEAN_ATTRS align with HTML5 and SVG specs
+ * - P_TARGET and P_TRIGGER enable behavioral programming model
+ * - Sets provide O(1) lookup performance for validation
+ * - TEMPLATE_OBJECT_IDENTIFIER uses emoji for uniqueness
  *
  * Known limitations:
  * - Static lists may become outdated with HTML spec changes

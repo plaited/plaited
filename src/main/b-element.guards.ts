@@ -2,30 +2,17 @@
  * @internal
  * @module plaited.guards
  *
- * Purpose: Runtime type guards for safe identification of Plaited components and templates
- * Architecture: Type predicate functions using structural checking and unique identifiers
- * Dependencies: isTypeOf utility, Plaited type definitions, constants
- * Consumers: Component factories, template renderers, DOM utilities, event systems
+ * Runtime type guards for safe identification of Plaited templates and elements.
+ * Type predicate functions using structural checking and unique identifiers.
  *
- * Maintainer Notes:
- * - Type guards provide runtime safety for dynamic component handling
+ * @remarks
+ * Implementation details:
  * - isBehavioralElement checks for trigger method (unique to Behavioral elements)
- * - isBehavioralTemplateFunction uses unique identifier to prevent spoofing
- * - Both guards narrow TypeScript types for better type inference
+ * - isBehavioralTemplate uses unique identifier to prevent spoofing
+ * - Guards narrow TypeScript types for better type inference
  * - Critical for safe interop between Plaited and regular DOM elements
- * - Used extensively in mixed component environments
  *
- * Common modification scenarios:
- * - Adding new element capabilities: Update isBehavioralElement checks
- * - Supporting element versioning: Add version property checks
- * - Custom element detection: Create specialized guards for element types
- * - Performance optimization: Cache guard results for repeated checks
- *
- * Performance considerations:
- * - Object.hasOwn is faster than 'in' operator
- * - Type checks are performed at runtime on each call
- * - No caching of results - guards are stateless
- * - Minimal overhead but called frequently in DOM operations
+ * Performance: Object.hasOwn is faster than 'in' operator.
  *
  * Known limitations:
  * - Cannot detect Behavioral elements before upgrade

@@ -2,30 +2,15 @@
  * @internal
  * @module use-template
  *
- * Purpose: Efficient template cloning and data binding for dynamic content generation
- * Architecture: Factory pattern that creates pre-bound template instances with helper methods
- * Dependencies: assign-helpers for DOM manipulation, jsx.constants for attribute names
- * Consumers: Components needing to render lists, tables, or repeated UI patterns
+ * Efficient template cloning and data binding for dynamic content.
+ * Factory pattern creating pre-bound template instances with helper methods.
  *
- * Maintainer Notes:
- * - This module enables efficient rendering of repeated content without JSX overhead
- * - Template cloning is much faster than creating elements from scratch
- * - Bindings are cached at shadow root level for performance
- * - The $ function provides scoped querying within the cloned fragment
- * - Helper methods are assigned lazily only to queried elements
- * - Templates must be <template> elements with content property
- *
- * Common modification scenarios:
- * - Adding template validation: Check for required p-target attributes
- * - Supporting async data loading: Make callback async
- * - Template caching: Store compiled templates for reuse
- * - Batch rendering: Accept array of data items
- *
- * Performance considerations:
- * - Template cloning is O(n) where n is node count
- * - Bindings lookup is O(1) via shadow root reference
- * - querySelector is scoped to fragment, not entire DOM
- * - Helper assignment happens only for accessed elements
+ * @remarks
+ * Implementation details:
+ * - Template cloning is faster than creating elements from scratch
+ * - Bindings cached at shadow root level for performance
+ * - $ function provides scoped querying within cloned fragment
+ * - Helper methods assigned lazily only to queried elements
  *
  * Known limitations:
  * - No built-in diffing or reconciliation

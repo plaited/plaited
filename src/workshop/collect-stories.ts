@@ -2,22 +2,13 @@
  * @internal
  * @module collect-stories
  *
- * Purpose: Fast story collection using direct module imports (runtime analysis)
- * Architecture: Alternative to TypeScript compilation-based discovery
- * Performance: ~30x faster than TypeScript compilation approach
+ * Fast story collection using direct module imports (runtime analysis).
+ * Alternative to TypeScript compilation-based discovery.
  *
- * Key differences from discover-story-metadata.ts:
- * - Uses dynamic imports instead of TypeScript compiler
- * - Analyzes runtime objects instead of AST
- * - ~50ms vs ~1500ms for typical project
- *
- * Trade-offs:
- * - Pros: Much faster, simpler code, no TypeScript dependency
- * - Cons: Requires story files to be executable, runtime errors if invalid
- *
- * Usage:
- * - Use for test execution (performance critical)
- * - Consider discover-story-metadata.ts for static analysis tools
+ * @remarks
+ * Performance: ~30x faster than compilation approach (~50ms vs ~1500ms).
+ * Trade-offs: Faster and simpler, but requires executable story files.
+ * Use for test execution where performance is critical.
  */
 
 import { statSync } from 'node:fs'

@@ -4,8 +4,10 @@
  * @internal
  * @module cli
  *
- * Purpose: CLI entry point for Plaited workshop test runner
- * Provides test command for running story tests with Playwright.
+ * CLI entry point for Plaited workshop test runner.
+ * Provides test and dev commands with Playwright integration.
+ *
+ * @remarks
  * Supports Bun's --hot flag for automatic module hot reload.
  *
  * Usage:

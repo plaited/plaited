@@ -37,7 +37,6 @@ export const getRoutes = async ({
 
   console.log(`📄 Found ${stories.size} story exports`)
 
-  // Collect unique story file paths for bundling
   const uniqueFilePaths = new Set<string>()
   let root: string
   try {
@@ -46,9 +45,7 @@ export const getRoutes = async ({
     console.error(`🚩 Error: Failed to determine common root folder: ${error}`)
     process.exit(1)
   }
-  // Steps 2-4: Run HTML route generation and bundling in parallel for maximum performance
   const [htmlRoutesArray, entryRoutes] = await Promise.all([
-    // Step 2: Generate HTML routes for each story
     Promise.all(
       stories.values().map((story) => {
         const filePath = story.filePath
@@ -62,16 +59,13 @@ export const getRoutes = async ({
         })
       }),
     ),
-    // Step 3: Bundle all story files and get entry routes (runs in parallel with HTML generation)
     getEntryRoutes(root, [...uniqueFilePaths]),
   ])
 
-  // Step 5: Merge all routes together
   const allRoutes: Record<string, Response> = {
-    ...entryRoutes, // Static Response objects for JS bundles
+    ...entryRoutes,
   }
 
-  // Merge HTML static Responses
   for (const htmlRoutes of htmlRoutesArray) {
     Object.assign(allRoutes, htmlRoutes)
   }

@@ -5,31 +5,24 @@
  * @param str - String to hash
  * @returns 32-bit hash or null for empty string
  *
- * @example Basic usage
- * ```ts
- * hashString('hello');  // Consistent number
- * hashString('');       // null
- * ```
- *
- * @example Change detection
- * ```ts
- * const original = hashString(content);
- * const updated = hashString(newContent);
- * if (original !== updated) {
- *   // Content changed
- * }
- * ```
- *
- * @example Cache keys
- * ```ts
- * const key = hashString(JSON.stringify(data));
- * cache.set(key, processedResult);
- * ```
- *
  * @remarks
- * Algorithm: djb2 (hash = ((hash << 5) + hash) + char)
- * Not cryptographically secure.
- * Deterministic and fast.
+ * **Algorithm Details:**
+ * - Uses djb2: `hash = ((hash << 5) + hash) + char`
+ * - Seed value: 5381 (djb2 magic constant)
+ * - Returns null for empty strings to differentiate from valid hashes
+ *
+ * **Characteristics:**
+ * - Deterministic: same input always produces same output
+ * - Fast: O(n) where n is string length
+ * - Not cryptographically secure
+ *
+ * **Common Use Cases:**
+ * - CSS class name generation
+ * - Cache key generation
+ * - Content change detection
+ * - Quick equality checks for large strings
+ *
+ * @see {@link createStyles} for CSS hash usage
  */
 export const hashString = (str: string) => {
   /**

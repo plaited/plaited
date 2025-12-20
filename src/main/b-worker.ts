@@ -2,30 +2,16 @@
  * @internal
  * @module b-worker
  *
- * Purpose: Enables behavioral programming within Web Worker contexts for background processing
- * Architecture: Adapts WorkerGlobalScope to support full bProgram lifecycle and event communication
- * Dependencies: b-program for core BP, get-public-trigger for security, get-plaited-trigger for lifecycle
- * Consumers: Worker script files that need behavioral programming capabilities
+ * Enables behavioral programming within Web Worker contexts.
+ * Adapts WorkerGlobalScope to support full bProgram lifecycle and event communication.
  *
- * Maintainer Notes:
- * - This is the worker-side counterpart to useWorker for main thread
- * - Creates a full behavioral program inside the worker thread
+ * @remarks
+ * Implementation details:
+ * - Worker-side counterpart to useWorker for main thread
+ * - Creates full behavioral program inside worker thread
  * - Bidirectional event flow: main thread ↔ worker via postMessage
  * - Public events filter incoming messages for security
- * - Automatic cleanup on worker termination via disconnectSet
- * - Async initialization supports dynamic handler setup
- *
- * Common modification scenarios:
- * - Supporting SharedWorker: Adapt message routing for multiple connections
- * - Adding initialization data: Pass config through first message
- * - Error boundaries: Wrap handlers in try-catch for resilience
- * - Performance monitoring: Track handler execution times
- *
- * Performance considerations:
- * - Worker initialization is async - may delay first message handling
- * - Message serialization overhead for all events
- * - DisconnectSet grows with each registered cleanup
- * - Public event filtering adds minimal overhead
+ * - Automatic cleanup on worker termination
  *
  * Known limitations:
  * - No access to DOM APIs in worker context

@@ -2,27 +2,7 @@
  * Extracts the type of values from an object type.
  * Creates a union type of all possible value types in an object.
  *
- * @template T Object type to extract values from
- *
- * @example
- * // Object with different value types
- * type Config = {
- *   name: string;
- *   age: number;
- *   active: boolean;
- * }
- *
- * type ConfigValue = ValueOf<Config>
- * // Results in: string | number | boolean
- *
- * // With constant objects
- * const COLORS = {
- *   red: '#ff0000',
- *   blue: '#0000ff'
- * } as const
- *
- * type ColorValue = ValueOf<typeof COLORS>
- * // Results in: '#ff0000' | '#0000ff'
+ * @template T - Object type to extract values from
  *
  * @remarks
  * - Useful for working with object values in generic contexts

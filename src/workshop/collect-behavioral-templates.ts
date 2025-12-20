@@ -2,22 +2,13 @@
  * @internal
  * @module collect-templates
  *
- * Purpose: Fast template collection using direct module imports (runtime analysis)
- * Architecture: Alternative to TypeScript compilation-based discovery
- * Performance: ~30x faster than TypeScript compilation approach
+ * Fast template collection using direct module imports (runtime analysis).
+ * Alternative to TypeScript compilation-based discovery.
  *
- * Key differences from discover-template-metadata.ts:
- * - Uses dynamic imports instead of TypeScript compiler
- * - Analyzes runtime objects instead of AST
- * - ~50ms vs ~1500ms for typical project
- *
- * Trade-offs:
- * - Pros: Much faster, simpler code, no TypeScript dependency
- * - Cons: Requires template files to be executable, runtime errors if invalid
- *
- * Usage:
- * - Use for build tools and MCP (performance critical)
- * - Consider discover-template-metadata.ts for static analysis tools if needed
+ * @remarks
+ * Performance: ~30x faster than compilation approach (~50ms vs ~1500ms).
+ * Trade-offs: Faster and simpler, but requires executable template files.
+ * Use for build tools and MCP where performance is critical.
  */
 
 import { Glob } from 'bun'

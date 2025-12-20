@@ -2,31 +2,19 @@
  * @internal
  * @module get-plaited-trigger
  *
- * Purpose: Extends standard triggers with lifecycle management capabilities for Plaited components
- * Architecture: Decorator pattern that augments base triggers with cleanup callback registration
- * Dependencies: b-program for base Trigger and Disconnect types
- * Consumers: bElement, defineBProgram, and any component needing managed resource cleanup
+ * Extends standard triggers with lifecycle management for Plaited components.
+ * Decorator pattern augmenting base triggers with cleanup callback registration.
  *
- * Maintainer Notes:
- * - This module solves the critical problem of resource cleanup in component lifecycles
- * - PlaitedTrigger is the primary trigger type used throughout Plaited components
- * - The Set<Disconnect> pattern allows multiple cleanup callbacks without array management
- * - Object.assign is used to mutate the trigger object for performance (single allocation)
- * - Type guard enables conditional cleanup registration in utilities
- *
- * Common modification scenarios:
- * - Adding new lifecycle methods: Extend PlaitedTrigger type and getPlaitedTrigger
- * - Changing cleanup strategy: Modify how disconnectSet is managed
- * - Supporting async cleanup: Update Disconnect type in b-program.js
- *
- * Performance considerations:
- * - Object.assign mutation is intentional - avoids wrapper function overhead
- * - Set operations are O(1) for add/delete
- * - No memory leaks as Set is managed by component lifecycle
+ * @remarks
+ * Implementation details:
+ * - PlaitedTrigger is the primary trigger type used throughout Plaited
+ * - Set pattern for multiple cleanup callbacks without array management
+ * - Object.assign mutates trigger for performance (single allocation)
+ * - Type guard enables conditional cleanup registration
  *
  * Known limitations:
- * - Cannot remove individual callbacks once added (by design for simplicity)
- * - Cleanup order is not guaranteed (Set iteration order)
+ * - Cannot remove individual callbacks once added (by design)
+ * - Cleanup order not guaranteed (Set iteration order)
  * - No error handling for failed cleanup callbacks
  */
 import type { Disconnect, PlaitedTrigger, Trigger } from './behavioral.types.ts'

@@ -156,7 +156,6 @@ export const createTokens = <T extends DesignTokenGroup>(ident: string, group: T
           host: ':host',
         })
       } else {
-        // Check if value is an object and has $compoundSelectors property
         const { $compoundSelectors, ...rest } = value
         if (Object.keys(rest).length) {
           formatTokenStatement({

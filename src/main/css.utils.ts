@@ -1,13 +1,12 @@
 import { hashString, isTypeOf, kebabCase } from '../utils.ts'
 import type { DesignTokenReference } from './css.types.ts'
 
-// Utility functions (previously in css.utils.ts)
 /**
  * @internal
- * Helper function to create a deterministic hash for class names based on style properties and selectors.
+ * Creates deterministic hash for CSS class names from style properties and selectors.
  *
- * @param args - The strings and numbers to hash together
- * @returns A base36 hash string prefixed with underscore if negative
+ * @param args - Strings and numbers to hash together
+ * @returns Base36 hash string prefixed with underscore if negative
  */
 export const createHash = (...args: (string | number)[]) => {
   const hash = hashString(args.join(' '))?.toString(36)?.replace(/^-/g, '_')

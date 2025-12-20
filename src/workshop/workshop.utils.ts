@@ -2,13 +2,8 @@
  * @internal
  * @module workshop-utils
  *
- * Purpose: Shared utility functions for workshop tooling
- * Contains reusable functions used across workshop modules
- *
- * Maintainer Notes:
- * - Pure utility functions extracted for testability
- * - No dependencies on behavioral programming or external state
- * - Functions used by test runner, server, and CLI
+ * Shared utility functions for workshop tooling.
+ * Pure utilities used by test runner, server, and CLI.
  */
 
 import { Glob } from 'bun'
@@ -91,12 +86,6 @@ export const zip = ({
  * - Last batch may contain fewer items if total doesn't divide evenly
  * - Returns empty array if items array is empty
  * - Complexity: O(n) where n is the number of items
- *
- * @example
- * ```typescript
- * splitIntoBatches([1, 2, 3, 4, 5], 2) // [[1, 2], [3, 4], [5]]
- * splitIntoBatches([1, 2, 3, 4, 5, 6], 3) // [[1, 2, 3], [4, 5, 6]]
- * ```
  */
 export const splitIntoBatches = <T>(items: T[], itemsPerBatch: number): T[][] => {
   const batches: T[][] = []
@@ -120,12 +109,6 @@ export const splitIntoBatches = <T>(items: T[], itemsPerBatch: number): T[][] =>
  * - Splits on underscore, capitalizes each word
  * - Adds 🚩 emoji prefix for visual distinction
  * - Used in test failure reporting
- *
- * @example
- * ```typescript
- * formatErrorType('timeout_error') // '🚩 Timeout Error'
- * formatErrorType('unknown_error') // '🚩 Unknown Error'
- * ```
  */
 export const formatErrorType = (errorType: string): string =>
   `🚩 ${errorType

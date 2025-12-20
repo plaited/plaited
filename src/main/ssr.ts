@@ -2,32 +2,15 @@
  * @internal
  * @module ssr
  *
- * Purpose: Server-side rendering engine for Plaited templates, converting JSX to static HTML
- * Architecture: Single-pass template processor with style collection and injection
- * Dependencies: Utils for escaping and type checking, JSX types and constants
- * Consumers: Server applications, static site generators, build tools
+ * Server-side rendering engine for Plaited templates.
+ * Converts JSX to static HTML with style collection and injection.
  *
- * Maintainer Notes:
- * - This module is critical for SEO and initial page load performance
- * - No DOM APIs are used - must work in Node.js and edge environments
- * - Style injection strategy affects CSS loading order and specificity
- * - Escaping is mandatory for security - never bypass for user content
- * - Template processing is synchronous for predictable server behavior
- *
- * Common modification scenarios:
- * - Supporting streaming: Would require major refactor to iterative approach
- * - Custom style injection: Modify the index calculation logic
- * - Supporting CSS-in-JS libraries: Extend style collection mechanism
- * - Adding hydration markers: Insert data attributes during rendering
- *
- * Performance considerations:
- * - Single pass through templates minimizes memory usage
- * - Set deduplication prevents duplicate styles
- * - String concatenation is optimized by V8 for array joins
- * - No async operations for predictable performance
- *
- * Known limitations:
- * - No streaming support - entire HTML must fit in memory
+ * @remarks
+ * Implementation details:
+ * - Single-pass template processor with style deduplication
+ * - No DOM APIs - works in Node.js and edge environments
+ * - Automatic HTML escaping for security
+ * - Synchronous processing for predictable server behavior
  * - Style injection location is heuristic-based
  * - No source maps for debugging generated HTML
  * - Shadow DOM polyfills not included
