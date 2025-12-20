@@ -19,15 +19,12 @@ jobs:
         run: |
           bun install
           bunx playwright install chromium --with-deps
-      - name: Run type check
+      - name: Run check
         run: |
           bun run check
-      - name: Run story test
+      - name: Run test
         run: |
-          bun run test:stories src/main
-      - name: Run bun test
-        run: |
-          bun test
+          bun run test
       # TODO this will be implemented later
       # - name: Run playwright test
       #   run: |
