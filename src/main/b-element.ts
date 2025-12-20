@@ -83,39 +83,16 @@ const getTriggerMap = (el: Element) =>
 /**
  * @internal
  * Determines the trigger type for an event by traversing the composed path and checking p-trigger attributes.
- * Uses fast-path checks to avoid expensive composedPath() calls in common cases.
- *
- * @param event - DOM event to process
- * @param context - Element with p-trigger attribute
- * @returns Trigger type string if event matches, undefined otherwise
- *
- * Performance optimization:
- * Fast path 1: event.target === context (direct click on element)
- * Fast path 2: event.currentTarget === context (delegated event)
- * Slow path: composedPath() for shadow DOM boundary crossing
- *
- * 20-30% faster event handling by avoiding composedPath() in 80%+ of cases
  */
 const getTriggerType = (event: Event, context: Element) => {
-  // Fast path: Handle direct events (target === context) OR
-  // delegated events from children (currentTarget === context).
-  // SLOT elements are excluded - they need composedPath validation
-  // to distinguish legitimate slot events from pass-through slots.
-  const isDirectOrDelegated =
-    event.target === context || (context.tagName !== 'SLOT' && event.currentTarget === context)
-
-  if (isDirectOrDelegated) {
-    return getTriggerMap(context).get(event.type)
-  }
-
-  // Slow path: check if event crossed shadow boundary into this context
-  // Only needed for events that traverse shadow DOM boundaries
-  const shadowRoot = event.composedPath().find((el) => el instanceof ShadowRoot)
-  if (shadowRoot === context.getRootNode()) {
-    return getTriggerMap(context).get(event.type)
-  }
-
-  return undefined
+  const el =
+    context.tagName !== 'SLOT' && event.currentTarget === context
+      ? context
+      : event.composedPath().find((el) => el instanceof ShadowRoot) === context.getRootNode()
+        ? context
+        : undefined
+  if (!el) return
+  return getTriggerMap(el).get(event.type)
 }
 
 /**

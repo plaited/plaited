@@ -173,10 +173,11 @@ export const useRunner = useBehavioral<
     }
     return {
       async end() {
-        await cleanup()
         if (failed.length > 0) {
+          await cleanup()
           process.exit(1)
         } else {
+          await cleanup()
           process.exit(0)
         }
       },
