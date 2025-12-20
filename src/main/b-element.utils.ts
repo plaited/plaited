@@ -32,11 +32,12 @@ import { BOOLEAN_ATTRS } from './create-template.constants.ts'
 import type { TemplateObject } from './create-template.types.ts'
 import type { HostStylesObject } from './css.types.ts'
 import { joinStyles } from './join-styles.ts'
+
 /**
  * @internal Cache for storing adopted stylesheets per ShadowRoot to prevent duplicate processing.
  * Used internally by the framework to optimize style adoption performance.
  */
-export const cssCache = new WeakMap<ShadowRoot, Set<string>>()
+const cssCache = new WeakMap<ShadowRoot, Set<string>>()
 
 /**
  * @internal

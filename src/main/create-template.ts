@@ -263,7 +263,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     start.push('/>')
     return {
       html: start,
-      stylesheets: [...new Set(stylesheets)],
+      stylesheets,
       registry,
       $: TEMPLATE_OBJECT_IDENTIFIER,
     }
@@ -292,7 +292,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   end.push(`</${tag}>`)
   return {
     html: [...start, ...end],
-    stylesheets: [...new Set(stylesheets)],
+    stylesheets,
     registry,
     $: TEMPLATE_OBJECT_IDENTIFIER,
   }
@@ -383,7 +383,7 @@ export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
   }
   return {
     html,
-    stylesheets: [...new Set(stylesheets)],
+    stylesheets,
     registry,
     $: TEMPLATE_OBJECT_IDENTIFIER,
   }
