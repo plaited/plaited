@@ -42,17 +42,14 @@
     "check:biome": "biome check",
     "check:package": "format-package --check",
     "check:types": "tsc --noEmit",
+    "check:write": "biome check --write && format-package --write",
     "copy-css-types": "bash scripts/copy-css-types.sh",
     "dev": "bun --hot src/workshop/cli.ts dev",
-    "format": "biome format --write",
-    "format:check": "biome format",
-    "format:package": "format-package --write",
-    "lint": "biome lint",
-    "lint:fix": "biome lint --write",
     "prepare": "git config core.hooksPath .hooks",
-    "test": "bun run test-stories:all && bun test",
-    "test-stories": "bun src/workshop/cli.ts test",
-    "test-stories:all": "bun run test-stories src/main"
+    "test": "bun run test:stories && bun test",
+    "test:playwright": "bunx playwright test",
+    "test:stories": "bun src/workshop/cli.ts test src/main",
+    "test:story": "bun src/workshop/cli.ts test"
   },
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [
