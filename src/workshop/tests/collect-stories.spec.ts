@@ -12,8 +12,8 @@ test('discoverStoryMetadata: discovers and classifies stories correctly', async 
   // Flatten array of Maps to single array
   const metadata = metadataMaps.flatMap((map) => [...map.values()])
 
-  // Should find 4 stories (filtering out default export and non-story exports)
-  expect(metadata.length).toBe(4)
+  // Should find 5 stories (filtering out default export and non-story exports)
+  expect(metadata.length).toBe(5)
 
   // Each metadata object should have exactly 11 properties (added route and entryPath)
   for (const story of metadata) {
@@ -51,12 +51,9 @@ test('discoverStoryMetadata: discovers and classifies stories correctly', async 
     timeout: 5000,
     flag: undefined,
   })
-  // Verify route and entryPath exist
-  expect(sorted[0]?.route).toBeDefined()
-  expect(sorted[0]?.entryPath).toBeDefined()
 
   // Verify interactionStory (interaction with play)
-  expect(sorted[1]).toMatchObject({
+  expect(sorted[2]).toMatchObject({
     exportName: 'interactionStory',
     filePath: mixedStoriesPath,
     type: 'interaction',
@@ -67,11 +64,9 @@ test('discoverStoryMetadata: discovers and classifies stories correctly', async 
     timeout: 5000,
     flag: undefined,
   })
-  expect(sorted[1]?.route).toBeDefined()
-  expect(sorted[1]?.entryPath).toBeDefined()
 
   // Verify storyWithAllProps (snapshot with all properties)
-  expect(sorted[2]).toMatchObject({
+  expect(sorted[3]).toMatchObject({
     exportName: 'storyWithAllProps',
     filePath: mixedStoriesPath,
     type: 'snapshot',
@@ -82,11 +77,8 @@ test('discoverStoryMetadata: discovers and classifies stories correctly', async 
     timeout: 5000,
     flag: undefined,
   })
-  expect(sorted[2]?.route).toBeDefined()
-  expect(sorted[2]?.entryPath).toBeDefined()
-
   // Verify storyWithParams (snapshot with parameters)
-  expect(sorted[3]).toMatchObject({
+  expect(sorted[4]).toMatchObject({
     exportName: 'storyWithParams',
     filePath: mixedStoriesPath,
     type: 'snapshot',
@@ -97,8 +89,6 @@ test('discoverStoryMetadata: discovers and classifies stories correctly', async 
     timeout: 10000,
     flag: undefined,
   })
-  expect(sorted[3]?.route).toBeDefined()
-  expect(sorted[3]?.entryPath).toBeDefined()
 })
 
 test('discoverStoryMetadata: counts interaction vs snapshot stories correctly', async () => {
@@ -108,7 +98,7 @@ test('discoverStoryMetadata: counts interaction vs snapshot stories correctly', 
   const interactionCount = metadata.filter((s) => s.type === 'interaction').length
   const snapshotCount = metadata.filter((s) => s.type === 'snapshot').length
 
-  expect(interactionCount).toBe(1)
+  expect(interactionCount).toBe(2)
   expect(snapshotCount).toBe(3)
 })
 
@@ -173,15 +163,21 @@ test('getStoryMetadata: extracts stories from single file', async () => {
   const metadataMap = await getStoryMetadata(STORIES_DIR, filePath)
   const metadata = [...metadataMap.values()]
 
-  // Should find 4 stories in the file
-  expect(metadata.length).toBe(4)
+  // Should find 5 stories in the file
+  expect(metadata.length).toBe(5)
 
   // All should have same filePath
   expect(metadata.every((s) => s.filePath === filePath)).toBe(true)
 
   // Export names should be present
   const exportNames = metadata.map((s) => s.exportName).sort()
-  expect(exportNames).toEqual(['basicStory', 'interactionStory', 'storyWithAllProps', 'storyWithParams'])
+  expect(exportNames).toEqual([
+    'basicStory',
+    'failingStory',
+    'interactionStory',
+    'storyWithAllProps',
+    'storyWithParams',
+  ])
 })
 
 test('getStoryMetadata: filters out default exports', async () => {

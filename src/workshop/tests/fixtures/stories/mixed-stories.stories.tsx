@@ -41,6 +41,21 @@ export const storyWithAllProps = story({
   },
 })
 
+// Failing interaction story for testing error reporting
+export const failingStory = story({
+  description: 'A story that intentionally fails',
+  template: () => <div>This will fail</div>,
+  async play({ assert, findByText }) {
+    const element = await findByText('This will fail')
+    assert({
+      given: 'element rendered',
+      should: 'have wrong text',
+      actual: element?.textContent,
+      expected: 'This is not the text', // Intentionally wrong
+    })
+  },
+})
+
 // Regular function (not a story - should be filtered out)
 export const helperFunction = () => {
   return 'helper'

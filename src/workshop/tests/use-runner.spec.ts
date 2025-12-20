@@ -110,7 +110,7 @@ test(
 
     const allResults = [...passed, ...failed]
 
-    // Should find stories in subdirectories (filtering/)
+    // Should find stories in subdirectories (nested/)
     const subDirStories = allResults.filter((r) => r.story.filePath.includes('/filtering/'))
     expect(subDirStories.length).toBeGreaterThan(0)
 
@@ -155,6 +155,7 @@ test(
 
     // Verify there are passed results
     expect(passed.length).toBeGreaterThan(0)
+    expect(failed.length).toBeGreaterThan(0)
 
     // Verify passed tests have passed=true
     passed.forEach((result) => {
