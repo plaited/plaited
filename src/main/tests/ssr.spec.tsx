@@ -1,7 +1,7 @@
 /* eslint-disable no-constant-binary-expression */
 import { expect, test } from 'bun:test'
 import beautify from 'beautify'
-import { type FunctionTemplate, ssr, type TemplateObject } from 'plaited'
+import { bElement, createStyles, type FunctionTemplate, joinStyles, ssr, type TemplateObject } from 'plaited'
 import { Fragment, h } from 'plaited/jsx-runtime'
 
 const render = (template: TemplateObject) => {
@@ -182,4 +182,120 @@ test('createTemplate: Trims whitespace', () => {
       }),
     ),
   ).toMatchSnapshot()
+})
+
+// Hoisting and Declarative Shadow DOM Tests
+
+const componentStyles = createStyles({
+  nestedLabel: {
+    fontWeight: 'bold',
+  },
+  nestedComponent: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  slottedParagraph: {
+    color: 'rebeccapurple',
+  },
+  topComponent: {
+    display: 'block',
+  },
+  image: {
+    width: '100%',
+    aspectRatio: '16 / 9',
+  },
+})
+
+const NestedCustomElement = bElement({
+  tag: 'nested-component',
+  shadowDom: (
+    <>
+      <span {...componentStyles.nestedLabel}>inside nested template</span>
+      <slot name='nested' />
+    </>
+  ),
+})
+
+test('ssr: CustomElement hoisting its styles', () => {
+  const el = <NestedCustomElement />
+  expect({
+    content: render(el),
+    stylesheets: el.stylesheets,
+  }).toMatchSnapshot()
+})
+
+test('ssr: CustomElement with declarative shadow dom & hoist styles', () => {
+  const el = <NestedCustomElement {...componentStyles.nestedComponent} />
+  expect({
+    content: render(el),
+    stylesheets: el.stylesheets,
+  }).toMatchSnapshot()
+})
+
+test('ssr: CustomElement with styled slotted component', () => {
+  const el = (
+    <NestedCustomElement {...componentStyles.slottedParagraph}>
+      <p slot='nested'>slotted paragraph</p>
+    </NestedCustomElement>
+  )
+  expect({
+    content: render(el),
+    stylesheets: el.stylesheets,
+  }).toMatchSnapshot()
+})
+
+const TopCustomElement = bElement({
+  tag: 'top-component',
+  shadowDom: (
+    <NestedCustomElement {...componentStyles.slottedParagraph}>
+      <p slot='nested'>slotted paragraph</p>
+    </NestedCustomElement>
+  ),
+})
+
+test('ssr: CustomElement with declarative shadow dom and nested declarative shadow dom', () => {
+  const el = <TopCustomElement />
+  expect({
+    content: render(el),
+    stylesheets: el.stylesheets,
+  }).toMatchSnapshot()
+})
+
+test('ssr: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles', () => {
+  const el = <TopCustomElement {...componentStyles.topComponent} />
+  expect({
+    content: render(el),
+    stylesheets: el.stylesheets,
+  }).toMatchSnapshot()
+})
+
+test('ssr: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles and child', () => {
+  const el = (
+    <TopCustomElement {...componentStyles.topComponent}>
+      {/* biome-ignore lint/a11y/useAltText: Test fixture doesn't need alt text */}
+      <img {...componentStyles.image} />
+    </TopCustomElement>
+  )
+  expect({
+    content: render(el),
+    stylesheets: el.stylesheets,
+  }).toMatchSnapshot()
+})
+
+const hoistStyles = createStyles({
+  var1: {
+    width: '100%',
+  },
+  var2: {
+    width: '100%',
+  },
+  var3: {
+    color: 'blue',
+  },
+})
+
+test('ssr: Properly hoists multiple stylesheets on a single node (deduplication happens at consumption)', () => {
+  // Intermediate template has 3 stylesheets (var1, var2, var3 - var1 and var2 have same CSS)
+  // Deduplication happens later in ssr() via Set.add() or in updateShadowRootStyles via cssCache
+  expect((<div {...joinStyles(hoistStyles.var1, hoistStyles.var2, hoistStyles.var3)} />).stylesheets.length).toBe(3)
 })

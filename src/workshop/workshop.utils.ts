@@ -100,8 +100,8 @@ export const zip = ({
  */
 export const splitIntoBatches = <T>(items: T[], itemsPerBatch: number): T[][] => {
   const batches: T[][] = []
-
-  for (let i = 0; i < items.length; i += itemsPerBatch) {
+  const length = items.length
+  for (let i = 0; i < length; i += itemsPerBatch) {
     batches.push(items.slice(i, i + itemsPerBatch))
   }
 

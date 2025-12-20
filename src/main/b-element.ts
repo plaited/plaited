@@ -397,8 +397,8 @@ export const bElement = <A extends EventDetails>({
             // Batch all mutations before processing (40-60% faster)
             const triggerElements: Element[] = []
             const targetElements: Element[] = []
-
             for (const mutation of mutationsList) {
+              const addedNodesLength = mutation.addedNodes.length
               // Handle attribute changes
               if (mutation.type === 'attributes') {
                 const el = mutation.target
@@ -408,8 +408,8 @@ export const bElement = <A extends EventDetails>({
                 }
               }
               // Collect all added nodes for batch processing
-              else if (mutation.addedNodes.length) {
-                for (let i = 0; i < mutation.addedNodes.length; i++) {
+              else if (addedNodesLength) {
+                for (let i = 0; i < addedNodesLength; i++) {
                   const node = mutation.addedNodes[i]!
                   if (isElement(node)) {
                     // Check node itself
