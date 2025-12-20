@@ -370,16 +370,16 @@ export const bElement = <A extends EventDetails>({
            */
           const mo = new MutationObserver((mutationsList) => {
             // Batch all mutations before processing (40-60% faster)
-            const triggerElements: Element[] = []
-            const targetElements: Element[] = []
+            const triggerElements = new Set<Element>()
+            const targetElements = new Set<Element>()
             for (const mutation of mutationsList) {
               const addedNodesLength = mutation.addedNodes.length
               // Handle attribute changes
               if (mutation.type === 'attributes') {
                 const el = mutation.target
                 if (isElement(el)) {
-                  mutation.attributeName === P_TRIGGER && el.getAttribute(P_TRIGGER) && triggerElements.push(el)
-                  mutation.attributeName === P_TARGET && el.getAttribute(P_TARGET) && targetElements.push(el)
+                  mutation.attributeName === P_TRIGGER && el.getAttribute(P_TRIGGER) && triggerElements.add(el)
+                  mutation.attributeName === P_TARGET && el.getAttribute(P_TARGET) && targetElements.add(el)
                 }
               }
               // Collect all added nodes for batch processing
@@ -388,15 +388,15 @@ export const bElement = <A extends EventDetails>({
                   const node = mutation.addedNodes[i]!
                   if (isElement(node)) {
                     // Check node itself
-                    node.hasAttribute(P_TRIGGER) && triggerElements.push(node)
-                    node.hasAttribute(P_TARGET) && targetElements.push(node)
+                    node.hasAttribute(P_TRIGGER) && triggerElements.add(node)
+                    node.hasAttribute(P_TARGET) && targetElements.add(node)
 
                     // Query descendants once per node
                     node.querySelectorAll(`[${P_TRIGGER}]`).forEach((el) => {
-                      triggerElements.push(el)
+                      triggerElements.add(el)
                     })
                     node.querySelectorAll(`[${P_TARGET}]`).forEach((el) => {
-                      targetElements.push(el)
+                      targetElements.add(el)
                     })
                   }
                 }
@@ -404,8 +404,8 @@ export const bElement = <A extends EventDetails>({
             }
 
             // Batch setup all at once (single function call instead of per-element)
-            triggerElements.length && this.#addListeners(triggerElements)
-            targetElements.length && assignHelpers(bindings, targetElements)
+            triggerElements.size && this.#addListeners(Array.from(triggerElements))
+            targetElements.size && assignHelpers(bindings, Array.from(targetElements))
           })
           mo.observe(this.#root, {
             attributeFilter: [P_TRIGGER, P_TARGET],
