@@ -28,11 +28,11 @@ bun run test
 # Run only unit/integration tests
 bun test
 
-# Run only template/browser tests (via package.json script)
+# Run only template/browser tests (via package.json script) for entire project
 bun run test:stories
 
 # Run test for specific file(s)/paths(s)
-bun run test:story src/main/tests/component-comms.stories.tsx
+bun run test:stories src/main
 
 # Start story server in dev mode for manual live preview debugging
 bun run dev

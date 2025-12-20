@@ -46,10 +46,9 @@
     "copy-css-types": "bash scripts/copy-css-types.sh",
     "dev": "bun --hot src/workshop/cli.ts dev",
     "prepare": "git config core.hooksPath .hooks",
-    "test": "bun run test:stories && bun test",
+    "test": "bun run test:stories src/main && bun test",
     "test:playwright": "bunx playwright test",
-    "test:stories": "bun src/workshop/cli.ts test src/main",
-    "test:story": "bun src/workshop/cli.ts test"
+    "test:stories": "bun src/workshop/cli.ts test"
   },
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [

@@ -24,7 +24,7 @@ jobs:
           bun run check
       - name: Run story test
         run: |
-          bun run test:stories
+          bun run test:stories src/main
       - name: Run bun test
         run: |
           bun test
