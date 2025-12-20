@@ -15,8 +15,8 @@ bunx playwright install chromium
 # Type, lint, and format check (check only, no fixes)
 bun run check
 
-# Lint and format (auto-fix issues)
-bun run check:write
+# Lint and format fix (auto-fix issues)
+bun run fix
 ```
 
 ## Project Organization
