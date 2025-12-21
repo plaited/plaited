@@ -1,5 +1,0 @@
----
-applyTo: "**"
----
-
-@CLAUDE.md
