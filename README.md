@@ -1,4 +1,4 @@
-[![Build/Tests](https://github.com/plaited/plaited/actions/workflows/tests.yml/badge.svg)](https://github.com/plaited/plaited/actions/workflows/ci.yml)
+[![Build/Tests](https://github.com/plaited/plaited/actions/workflows/ci.yml/badge.svg)](https://github.com/plaited/plaited/actions/workflows/ci.yml)
 
 Plaited is a design system first framework for rapidly designing and developing interfaces as requirements change and evolve.
 
