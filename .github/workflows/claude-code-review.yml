@@ -3,20 +3,9 @@ name: Claude Code Review
 on:
   pull_request:
     types: [opened, synchronize]
-    # Optional: Only run on specific file changes
-    # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
-    #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
 
 jobs:
   claude-review:
-    # Only run for internal contributors (org members and repo owner)
-    if: |
-      github.event.pull_request.author_association == 'OWNER' ||
-      github.event.pull_request.author_association == 'MEMBER'
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -25,6 +14,23 @@ jobs:
       id-token: write
 
     steps:
+      - name: Check author permission
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Check repository permission (works for both public and private org members)
+          RESPONSE=$(gh api repos/${{ github.repository }}/collaborators/${{ github.event.pull_request.user.login }}/permission 2>/dev/null || echo '{"permission":"none"}')
+          PERMISSION=$(echo "$RESPONSE" | jq -r '.permission')
+          echo "Author permission: $PERMISSION"
+
+          if [[ "$PERMISSION" != "admin" && "$PERMISSION" != "maintain" && "$PERMISSION" != "write" ]]; then
+            echo "Skipping review: Only users with admin, maintain, or write permissions can trigger Claude Code Review"
+            echo "Current permission level: $PERMISSION"
+            exit 0
+          fi
+
+          echo "Author is authorized, proceeding with review"
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -35,6 +41,21 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          settings: |
+            {
+              "hooks": {
+                "UserPromptSubmit": [
+                  {
+                    "hooks": [
+                      {
+                        "type": "command",
+                        "command": ".claude/hooks/UserPromptSubmit"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}

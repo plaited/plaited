@@ -9,7 +9,6 @@ import { type BrowserContext, type BrowserContextOptions, chromium } from 'playw
 import { type SnapshotListener, useBehavioral } from '../main.ts'
 import { ERROR_TYPES, FIXTURE_EVENTS } from '../testing/testing.constants.ts'
 import type { FailMessage, PassMessage } from '../testing.ts'
-import { discoverStoryMetadata } from './collect-stories.ts'
 import { getServer } from './get-server.ts'
 import type { StoryMetadata } from './workshop.types.ts'
 import { formatErrorType, splitIntoBatches } from './workshop.utils.ts'
