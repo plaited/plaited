@@ -3,20 +3,9 @@ name: Claude Code Review
 on:
   pull_request:
     types: [opened, synchronize]
-    # Optional: Only run on specific file changes
-    # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
-    #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
 
 jobs:
   claude-review:
-    # Only run for internal contributors (org members and repo owner)
-    if: |
-      github.event.pull_request.author_association == 'OWNER' ||
-      github.event.pull_request.author_association == 'MEMBER'
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -25,6 +14,19 @@ jobs:
       id-token: write
 
     steps:
+      - name: Check author association
+        run: |
+          AUTHOR_ASSOCIATION="${{ github.event.pull_request.author_association }}"
+          echo "Author association: $AUTHOR_ASSOCIATION"
+
+          if [[ "$AUTHOR_ASSOCIATION" != "OWNER" && "$AUTHOR_ASSOCIATION" != "MEMBER" ]]; then
+            echo "Skipping review: Only OWNER and MEMBER can trigger Claude Code Review"
+            echo "Current author_association: $AUTHOR_ASSOCIATION"
+            exit 0
+          fi
+
+          echo "Author is authorized, proceeding with review"
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -35,6 +37,21 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          settings: |
+            {
+              "hooks": {
+                "UserPromptSubmit": [
+                  {
+                    "hooks": [
+                      {
+                        "type": "command",
+                        "command": ".claude/hooks/UserPromptSubmit"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
