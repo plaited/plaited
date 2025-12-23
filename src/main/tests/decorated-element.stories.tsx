@@ -4,7 +4,6 @@ import {
   createStyles,
   type ElementAttributeList,
   type FT,
-  joinStyles,
   type ObservedAttributesDetail,
   useAttributesObserver,
 } from 'plaited'
@@ -49,11 +48,12 @@ const DecorateCheckbox = bElement<{
   slotchange: undefined
 }>({
   tag: 'decorate-checkbox',
+  hostStyles: componentHostStyles,
   shadowDom: (
     <>
       <div
         p-target='symbol'
-        {...joinStyles(componentStyles.symbol, componentHostStyles)}
+        {...componentStyles.symbol}
         p-trigger={{ click: 'click' }}
       />
       <slot

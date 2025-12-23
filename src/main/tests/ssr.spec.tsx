@@ -1,7 +1,15 @@
 /* eslint-disable no-constant-binary-expression */
 import { expect, test } from 'bun:test'
 import beautify from 'beautify'
-import { bElement, createStyles, type FunctionTemplate, joinStyles, ssr, type TemplateObject } from 'plaited'
+import {
+  bElement,
+  createHostStyles,
+  createStyles,
+  type FunctionTemplate,
+  joinStyles,
+  ssr,
+  type TemplateObject,
+} from 'plaited'
 import { Fragment, h } from 'plaited/jsx-runtime'
 
 const render = (template: TemplateObject) => {
@@ -298,4 +306,43 @@ test('ssr: Properly hoists multiple stylesheets on a single node (deduplication 
   // Intermediate template has 3 stylesheets (var1, var2, var3 - var1 and var2 have same CSS)
   // Deduplication happens later in ssr() via Set.add() or in updateShadowRootStyles via cssCache
   expect((<div {...joinStyles(hoistStyles.var1, hoistStyles.var2, hoistStyles.var3)} />).stylesheets.length).toBe(3)
+})
+
+test('ssr: Replaces :host{ with :root{ for SSR', () => {
+  const hostStyles = createHostStyles({
+    color: 'blue',
+    padding: '20px',
+  })
+
+  const rendered = ssr(<div {...hostStyles}>Host styles test</div>)
+
+  // Verify :host{ is replaced with :root{
+  expect(rendered).not.toContain(':host{')
+  expect(rendered).toContain(':root{')
+})
+
+test('ssr: Replaces :host(<selector>) with :root<selector> for SSR', () => {
+  const hostStyles = createHostStyles({
+    color: {
+      $default: 'blue',
+      $compoundSelectors: {
+        '.dark': 'white',
+        '[disabled]': 'gray',
+        ':hover': 'lightblue',
+      },
+    },
+  })
+
+  const rendered = ssr(<div {...hostStyles}>Host selector styles test</div>)
+
+  // Verify :host(<selector>) is replaced with :root<selector>
+  expect(rendered).not.toContain(':host(')
+  expect(rendered).not.toContain(':host.')
+  expect(rendered).not.toContain(':host[')
+  expect(rendered).not.toContain(':host:')
+
+  // Verify :root variants are present
+  expect(rendered).toContain(':root.dark')
+  expect(rendered).toContain(':root[disabled]')
+  expect(rendered).toContain(':root:hover')
 })

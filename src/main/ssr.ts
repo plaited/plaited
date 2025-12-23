@@ -76,12 +76,20 @@ export const ssr = (...templates: TemplateObject[]) => {
    * @internal
    * Style injection strategy:
    * 1. Combine all unique styles into single <style> tag
-   * 2. Find optimal injection point (head > body > start)
-   * 3. Insert styles at calculated position
+   * 2. Replace :host selectors with :root for SSR compatibility
+   * 3. Find optimal injection point (head > body > start)
+   * 4. Insert styles at calculated position
    *
    * Note: This approach ensures styles load before content renders
+   * :host is replaced with :root because Shadow DOM doesn't exist in SSR
+   * :host(<selector>) becomes :root<selector>
    */
-  const style = stylesheets.size ? `<style>${[...stylesheets].join('')}</style>` : ''
+  const style = stylesheets.size
+    ? `<style>${[...stylesheets]
+        .join('')
+        .replaceAll(/:host\{/g, ':root{')
+        .replaceAll(/:host\(([^)]+)\)/g, ':root$1')}</style>`
+    : ''
   const str = arr.join('')
 
   /**

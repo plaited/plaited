@@ -1,4 +1,5 @@
-{"permissions": {
+{
+  "permissions": {
     "allow": [
       "WebFetch(domain:bun.sh)",
       "WebFetch(domain:bun.com)",
@@ -16,22 +17,34 @@
       "Bash(docker run:*)",
       "Bash(docker logs:*)",
       "Bash(docker stop:*)",
-      "mcp__playwright__browser_evaluate"
+      "mcp__playwright__*"
     ]
   },
   "enabledMcpjsonServers": [
     "playwright"
   ],
   "hooks": {
-      "UserPromptSubmit": [
-        {
-          "hooks": [
-            {
-              "type": "command",
-              "command": ".claude/hooks/UserPromptSubmit"
-            }
-          ]
-        }
-      ]
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/UserPromptSubmit"
+          }
+        ]
+      }
+    ]
+  },
+  "extraKnownMarketplaces": {
+    "plaited": {
+      "source": {
+        "source": "directory",
+        "path": "."
+      }
     }
+  },
+  "enabledPlugins": {
+    "typescript-lsp@claude-plugins-official": true,
+    "studio@plaited": true
+  }
 }

@@ -375,7 +375,8 @@ export const bElement = <A extends EventDetails>({
     )
   }
   const registry = new Set<string>([...shadowDom.registry, tag])
-  shadowDom.stylesheets.length && shadowDom.html.unshift(`<style>${shadowDom.stylesheets.join('')}</style>`)
+  shadowDom.stylesheets.length &&
+    shadowDom.html.unshift(`<style>${[...new Set(shadowDom.stylesheets)].join('')}</style>`)
   const ft = ({ children = [], ...attrs }: Attrs) =>
     createTemplate(tag, {
       ...attrs,

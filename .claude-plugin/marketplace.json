@@ -1,0 +1,22 @@
+{
+  "name": "plaited",
+  "owner": {
+    "name": "Plaited Labs"
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "description": "Plaited framework plugins for building reactive web components with behavioral programming"
+  },
+  "plugins": [
+    {
+      "name": "studio",
+      "description": "AI design studio for Plaited templates. Creates outcome-based UI patterns for MCP (Model Context Protocol) Apps and A2UI agent-driven interfaces using generative design principles. Requires typescript-lsp@claude-plugins-official to be enabled.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Plaited Labs"
+      },
+      "source": "./plugins/studio",
+      "category": "development"
+    }
+  ]
+}
