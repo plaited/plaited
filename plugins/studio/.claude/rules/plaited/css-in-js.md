@@ -777,19 +777,18 @@ bProgram({ $ }) {
 
 ```mermaid
 sequenceDiagram
-    participant HostStyles as createHostStyles()
     participant Child as Child Template
     participant Parent as Parent Template
     participant BElement as bElement (Shadow Boundary)
     participant ShadowRoot as ShadowRoot
     participant Browser as Browser (Constructable Stylesheets)
 
-    HostStyles->>HostStyles: Generate :host CSS rules<br/>{stylesheets}
+    Child->>Child: createHostStyles() generate :host CSS rules<br/>{stylesheets}
     Child->>Child: createStyles() generates<br/>{classNames, stylesheets}
     Child->>Parent: Template composition<br/>stylesheets.unshift(...child.stylesheets)
     Note over Parent: Child styles hoist up template tree
     Parent->>BElement: Hoisting stops at shadow boundary
-    HostStyles->>BElement: Passed via hostStyles property
+    Child->>BElement: Passed via hostStyles property
     BElement->>BElement: Merge hostStyles.stylesheets<br/>with shadowDom.stylesheets
     BElement->>BElement: new Set([...all stylesheets])<br/>Deduplicate at shadow boundary
     BElement->>ShadowRoot: getDocumentFragment() called
