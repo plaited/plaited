@@ -120,16 +120,16 @@ export const PlaitedMask = bElement({
     if (!window?.__PLAITED_RUNNER__) {
       inspector.on()
     }
-    const overlay = $('overlay')[0]
+    const overlay = $('overlay')[0]!
 
     let _isVisible = false
 
-    overlay?.attr('data-visible', String(_isVisible))
+    overlay.attr('data-visible', String(_isVisible))
 
     return {
       [MASK_EVENTS.toggle](event) {
         _isVisible = event.detail
-        overlay?.attr('data-visible', String(_isVisible))
+        overlay.attr('data-visible', String(_isVisible))
       },
 
       // Handle click detection and emit click event
@@ -139,9 +139,9 @@ export const PlaitedMask = bElement({
           const { clientX, clientY } = mouseEvent
 
           // Temporarily disable pointer-events for accurate detection
-          overlay?.attr('style', 'pointer-events: none')
+          overlay.attr('style', 'pointer-events: none')
           const target = document.elementFromPoint(clientX, clientY)
-          overlay?.attr('style', 'pointer-events: auto')
+          overlay.attr('style', 'pointer-events: auto')
 
           if (!target) return
 
