@@ -251,19 +251,21 @@ This is a powerful feature of `createHostStyles`, allowing the host's context to
 ```typescript
 import { createHostStyles, bElement } from 'plaited'
 
+const hostStyles = createHostStyles({
+  display: 'block',
+  padding: '20px',
+  backgroundColor: {
+    $default: 'white',
+    $compoundSelectors: {
+      '.dark': 'black',
+      '[data-theme="blue"]': 'lightblue',
+    }
+  }
+})
+
 const MyElement = bElement({
   tag: 'my-element',
-  hostStyles: createHostStyles({
-    display: 'block',
-    padding: '20px',
-    backgroundColor: {
-      $default: 'white',
-      $compoundSelectors: {
-        '.dark': 'black',
-        '[data-theme="blue"]': 'lightblue',
-      }
-    }
-  }),
+  hostStyles,
   shadowDom: <slot></slot>
 })
 ```
@@ -297,14 +299,16 @@ const fadeIn = createKeyframes('fadeIn', {
   to: { opacity: '1' }
 })
 
+const hostStyles = joinStyles(
+  createHostStyles({
+    animation: `${fadeIn.id} 0.3s ease-in`,
+  }),
+  fadeIn()  // Combine keyframe styles with host styles
+)
+
 const AnimatedElement = bElement({
   tag: 'animated-element',
-  hostStyles: joinStyles(
-    createHostStyles({
-      animation: `${fadeIn.id} 0.3s ease-in`,
-    }),
-    fadeIn()  // Combine keyframe styles with host styles
-  ),
+  hostStyles,
   shadowDom: <slot></slot>
 })
 ```
@@ -515,20 +519,22 @@ export const Grid = ({ children }) => (
 ```typescript
 import { createHostStyles, bElement } from 'plaited'
 
+const hostStyles = createHostStyles({
+  display: 'block',
+  padding: '20px',
+  borderRadius: '8px',
+  backgroundColor: {
+    $default: 'white',
+    $compoundSelectors: {
+      '.highlighted': 'yellow',
+      '[data-variant="primary"]': 'lightblue',
+    }
+  }
+})
+
 const MyCard = bElement({
   tag: 'my-card',
-  hostStyles: createHostStyles({
-    display: 'block',
-    padding: '20px',
-    borderRadius: '8px',
-    backgroundColor: {
-      $default: 'white',
-      $compoundSelectors: {
-        '.highlighted': 'yellow',
-        '[data-variant="primary"]': 'lightblue',
-      }
-    }
-  }),
+  hostStyles,
   shadowDom: <slot></slot>
 })
 ```
@@ -558,13 +564,15 @@ const buttonStyles = createStyles({
   }
 })
 
+const hostStyles = createHostStyles({
+  display: 'inline-block',
+  margin: tokens.spacing,  // Token .styles auto-pushed
+})
+
 // ✅ Token styles automatically included in createHostStyles
 const MyButton = bElement({
   tag: 'my-button',
-  hostStyles: createHostStyles({
-    display: 'inline-block',
-    margin: tokens.spacing,  // Token .styles auto-pushed
-  }),
+  hostStyles,
   shadowDom: <button {...buttonStyles.button}><slot></slot></button>
 })
 
@@ -597,16 +605,18 @@ const pulse = createKeyframes('pulse', {
   }
 })
 
+const hostStyles = joinStyles(
+  createHostStyles({
+    display: 'block',
+    padding: '20px',
+    animation: `${pulse.id} 2s infinite`,
+  }),
+  pulse()  // Combine keyframe styles with host styles
+)
+
 const AnimatedCard = bElement({
   tag: 'animated-card',
-  hostStyles: joinStyles(
-    createHostStyles({
-      display: 'block',
-      padding: '20px',
-      animation: `${pulse.id} 2s infinite`,
-    }),
-    pulse()  // Combine keyframe styles with host styles
-  ),
+  hostStyles,
   shadowDom: <slot></slot>
 })
 ```
@@ -705,12 +715,14 @@ Host styles are specified via the `hostStyles` parameter:
 ```typescript
 import { bElement, createHostStyles } from 'plaited'
 
+const hostStyles = createHostStyles({
+  display: 'block',
+  padding: '20px',
+})
+
 const MyElement = bElement({
   tag: 'my-element',
-  hostStyles: createHostStyles({
-    display: 'block',
-    padding: '20px',
-  }),
+  hostStyles,
   shadowDom: <slot></slot>
 })
 ```
@@ -930,17 +942,19 @@ const fadeIn = createKeyframes('fadeIn', {
   to: { opacity: '1' }
 })
 
+const hostStyles = joinStyles(
+  createHostStyles({
+    display: 'block',
+    padding: tokens.spacing,  // NOT tokens.spacing() - token .styles auto-pushed
+    color: tokens.primary,
+    animation: `${fadeIn.id} 0.3s ease-in`,
+  }),
+  fadeIn()  // Combine keyframe styles with host styles
+)
+
 const AnimatedCard = bElement({
   tag: 'animated-card',
-  hostStyles: joinStyles(
-    createHostStyles({
-      display: 'block',
-      padding: tokens.spacing,  // NOT tokens.spacing() - token .styles auto-pushed
-      color: tokens.primary,
-      animation: `${fadeIn.id} 0.3s ease-in`,
-    }),
-    fadeIn()  // Combine keyframe styles with host styles
-  ),
+  hostStyles,
   shadowDom: <slot></slot>
 })
 ```
