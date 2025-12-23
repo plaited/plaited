@@ -2,11 +2,11 @@
 
 ## Overview
 
-Plaited's CSS-in-JS system provides two main utilities: `createStyles` for generating atomic, hash-based CSS classes for use inside templates, and `createHostStyles` for applying non-atomic styles directly to a component's host element. It offers type-safe styling, automatic Shadow DOM adoption, design tokens, keyframes, and server-side rendering support.
+Plaited's CSS-in-JS system provides two main utilities: `createStyles` for generating atomic, hash-based CSS classes for use inside templates, and `createHostStyles` for creating non-atomic styles for a component's host element (applied via `bElement`'s `hostStyles` property). It offers type-safe styling, automatic Shadow DOM adoption, design tokens, keyframes, and server-side rendering support.
 
 **Key Features:**
 - **Atomic CSS (`createStyles`)**: Generates utility classes with deterministic hashes for styling elements inside a template.
-- **Host Styling (`createHostStyles`)**: Applies non-atomic styles directly to a Shadow DOM component's host element.
+- **Host Styling (`createHostStyles`)**: Creates non-atomic styles for a Shadow DOM component's host element (pass to `bElement` via `hostStyles` property).
 - **Nested Selectors**: Support for media queries, pseudo-classes, pseudo-elements, and attribute selectors
 - **Shadow DOM Integration**: Automatic style adoption using Constructable Stylesheets with WeakMap caching
 - **Style Hoisting**: Child template styles automatically bubble up to parent until Shadow DOM boundary
@@ -137,14 +137,40 @@ export const Button = () => (
 
 ### `createHostStyles(props)`
 
-Creates non-atomic CSS styles scoped to a custom element's Shadow DOM. The structure of the object you provide determines how styles are applied to the host element itself versus elements within its shadow root.
-
-The top-level keys of the `props` object are always CSS properties (e.g., `color`, `backgroundColor`). The value of each property can be a string or a nested object to define more complex styling rules.
+Creates non-atomic CSS styles for a custom element's `:host` selector and Shadow DOM. Unlike `createStyles` which generates atomic classes, `createHostStyles` generates non-atomic CSS rules scoped to the host element.
 
 **Type Signature:**
 ```typescript
 function createHostStyles(props: CreateHostParams): HostStylesObject
 ```
+
+**How to Apply:**
+
+1. **Create the styles** using `createHostStyles()`
+2. **Pass to `bElement`** via the `hostStyles` property
+3. **Automatic adoption** - Styles are then automatically adopted into the Shadow DOM
+
+```typescript
+import { bElement, createHostStyles } from 'plaited'
+
+// Step 1: Create host styles
+const hostStyles = createHostStyles({
+  display: 'block',
+  padding: '1rem',
+})
+
+// Step 2: Pass to bElement via hostStyles property
+const MyElement = bElement({
+  tag: 'my-element',
+  hostStyles: hostStyles, // ← Apply here
+  shadowDom: <slot></slot>
+})
+// Step 3: Styles automatically adopted into Shadow DOM
+```
+
+**Parameters:**
+
+The top-level keys of the `props` object are always CSS properties (e.g., `color`, `backgroundColor`). The value of each property can be a string or a nested object to define more complex styling rules.
 
 #### Rule 1: Simple Host Styling
 
@@ -751,17 +777,21 @@ bProgram({ $ }) {
 
 ```mermaid
 sequenceDiagram
+    participant HostStyles as createHostStyles()
     participant Child as Child Template
     participant Parent as Parent Template
     participant BElement as bElement (Shadow Boundary)
     participant ShadowRoot as ShadowRoot
     participant Browser as Browser (Constructable Stylesheets)
 
+    HostStyles->>HostStyles: Generate :host CSS rules<br/>{stylesheets}
     Child->>Child: createStyles() generates<br/>{classNames, stylesheets}
     Child->>Parent: Template composition<br/>stylesheets.unshift(...child.stylesheets)
-    Note over Parent: Styles hoist up template tree
+    Note over Parent: Child styles hoist up template tree
     Parent->>BElement: Hoisting stops at shadow boundary
-    BElement->>BElement: new Set(shadowDom.stylesheets)<br/>Deduplicate at shadow boundary
+    HostStyles->>BElement: Passed via hostStyles property
+    BElement->>BElement: Merge hostStyles.stylesheets<br/>with shadowDom.stylesheets
+    BElement->>BElement: new Set([...all stylesheets])<br/>Deduplicate at shadow boundary
     BElement->>ShadowRoot: getDocumentFragment() called
     ShadowRoot->>Browser: updateShadowRootStyles(root, stylesheets)
     Browser->>Browser: WeakMap check:<br/>Already adopted?
@@ -772,7 +802,7 @@ sequenceDiagram
     else Cached
         Browser->>ShadowRoot: Reuse cached stylesheets
     end
-    Note over ShadowRoot,Browser: Styles active in Shadow DOM
+    Note over ShadowRoot,Browser: All styles active in Shadow DOM<br/>(host styles + hoisted child styles)
 ```
 
 ## Common Patterns
