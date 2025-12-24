@@ -220,39 +220,34 @@ Plaited encourages an **islands-based architecture** where interactive regions (
 
 For direct hierarchical relationships:
 
-```
-┌─────────────────────────┐
-│   Parent Island         │
-│  ┌──────────────────┐   │
-│  │                  │   │
-│  │  Child Island    │   │
-│  │                  │   │
-│  └──────────────────┘   │
-│                         │
-│  Parent → Child:        │
-│  child.trigger()        │
-│                         │
-│  Child → Parent:        │
-│  emit() + p-trigger     │
-└─────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph Parent["Parent Island"]
+        direction TB
+        Child["Child Island"]
+        P2C["Parent → Child:<br/>child.trigger()"]
+        C2P["Child → Parent:<br/>emit() + p-trigger"]
+    end
 ```
 
 ### Cross-Island: useSignal
 
 For islands NOT in direct hierarchy:
 
-```
-┌──────────────┐           ┌──────────────┐
-│  Island 1    │           │  Island 2    │
-│              │           │              │
-│  sendData    │◄─────────►│  sendData    │
-│  .set()      │  Signal   │  .listen()   │
-│  .listen()   │  Bridge   │  .get()      │
-│              │           │  .set()      │
-└──────────────┘           └──────────────┘
-        ▲                         ▲
-        │                         │
-        └────── Shared Signal ────┘
+```mermaid
+flowchart LR
+    subgraph Island1["Island 1"]
+        I1A["sendData<br/>.set()<br/>.listen()"]
+    end
+
+    subgraph Island2["Island 2"]
+        I2A["sendData<br/>.listen()<br/>.get()<br/>.set()"]
+    end
+
+    Signal["Shared Signal<br/>Bridge"]
+
+    Island1 <--> Signal
+    Island2 <--> Signal
 ```
 
 ## Actor Pattern with Signals

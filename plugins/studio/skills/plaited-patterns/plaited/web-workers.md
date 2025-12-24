@@ -282,29 +282,21 @@ bProgram({ send, disconnect }) {
 
 ### Bidirectional Communication
 
-```
-┌─────────────────────┐           ┌─────────────────────┐
-│   Main Thread       │           │   Worker Thread     │
-│   (bElement)        │           │   (bWorker)         │
-├─────────────────────┤           ├─────────────────────┤
-│                     │           │                     │
-│  useWorker()        │           │  bWorker()          │
-│                     │           │                     │
-│  post() ────────────┼──────────►│  publicEvents       │
-│           BPEvent   │           │  filter             │
-│                     │           │     │               │
-│                     │           │     ▼               │
-│                     │           │  trigger()          │
-│                     │           │     │               │
-│                     │           │     ▼               │
-│                     │           │  handler()          │
-│                     │           │     │               │
-│                     │           │     ▼               │
-│  trigger()◄─────────┼───────────┤  send()             │
-│     │      BPEvent  │           │                     │
-│     ▼               │           │                     │
-│  handler()          │           │                     │
-└─────────────────────┘           └─────────────────────┘
+```mermaid
+sequenceDiagram
+    participant Main as Main Thread<br/>(bElement)
+    participant Worker as Worker Thread<br/>(bWorker)
+
+    Note over Main: useWorker()
+    Note over Worker: bWorker()
+
+    Main->>Worker: post(BPEvent)
+    Note over Worker: publicEvents<br/>filter
+    Worker->>Worker: trigger()
+    Worker->>Worker: handler()
+    Worker->>Main: send(BPEvent)
+    Main->>Main: trigger()
+    Main->>Main: handler()
 ```
 
 ### Type-Safe Message Passing

@@ -15,36 +15,20 @@ Behavioral Programming enables declarative coordination of concurrent behaviors 
 
 The BP engine operates in a continuous cycle called the **super-step**:
 
-```
-┌─────────────────────────────────────────┐
-│         SUPER-STEP EXECUTION            │
-├─────────────────────────────────────────┤
-│                                         │
-│  1. RUN                                 │
-│     └─ Resume all running threads       │
-│        until next `yield`               │
-│                                         │
-│  2. COLLECT                             │
-│     └─ Gather synchronization idioms:   │
-│        • Requests (events to propose)   │
-│        • WaitFor (events to wait for)   │
-│        • Block (events to prevent)      │
-│        • Interrupt (terminate thread)   │
-│                                         │
-│  3. SELECT                              │
-│     └─ Choose next event:               │
-│        • Apply blocking               │
-│        • Select by priority             │
-│        • External triggers = priority 0 │
-│                                         │
-│  4. NOTIFY                              │
-│     └─ Resume threads waiting for       │
-│        selected event                   │
-│                                         │
-└────────────┬────────────────────────────┘
-             │
-             ▼
-        (Repeat cycle)
+```mermaid
+flowchart TD
+    Start([Super-Step Execution]) --> Run[1. RUN]
+    Run --> RunDetail["Resume all running threads<br/>until next yield"]
+    RunDetail --> Collect[2. COLLECT]
+    Collect --> CollectDetail["Gather synchronization idioms:<br/>• Requests (events to propose)<br/>• WaitFor (events to wait for)<br/>• Block (events to prevent)<br/>• Interrupt (terminate thread)"]
+    CollectDetail --> Select[3. SELECT]
+    Select --> SelectDetail["Choose next event:<br/>• Apply blocking<br/>• Select by priority<br/>• External triggers = priority 0"]
+    SelectDetail --> Notify[4. NOTIFY]
+    Notify --> NotifyDetail["Resume threads waiting for<br/>selected event"]
+    NotifyDetail --> Check{Event<br/>selected?}
+    Check -->|Yes| Start
+    Check -->|No| Wait[Wait for<br/>external trigger]
+    Wait --> Start
 ```
 
 ### Event-Driven Coordination vs Direct Calls
@@ -640,7 +624,7 @@ type ThreadState = 'running' | 'pending'
 - **Running**: Currently executing (between resume and next yield)
 - **Pending**: Waiting at a sync point (after yield, before resume)
 
-### `bThreads.set()` - Add/Replace Threads
+### `bThreads.set()` - Add Threads
 
 Add threads dynamically during execution:
 
@@ -658,15 +642,19 @@ bThreads.set({
   thread3: bThread([bSync({ request: { type: 'event3' } })])
 })
 
-// Replace thread (same key)
+// Attempting to add with existing key triggers a warning and is ignored
 bThreads.set({
   thread1: bThread([bSync({ request: { type: 'event1_updated' } })])
-  // Old thread1 is terminated, new one starts
+  // Console warning: Thread "thread1" already exists and cannot be replaced.
+  // Use the 'interrupt' idiom to terminate threads explicitly.
+  // The existing thread1 continues running unchanged
 })
 ```
 
 **Key behavior**:
-- Adding with existing key terminates old thread and starts new one
+- Attempting to add a thread with an existing key triggers a console warning and is ignored
+- This prevents accidental thread replacement, which violates BP's additive composition principle
+- To terminate a thread, use the `interrupt` idiom or wait for it to complete
 - Adding with new key adds thread to running set
 - Threads start immediately (enter running state)
 
@@ -684,26 +672,27 @@ bThreads.set({
   ])
 })
 
-// Check if thread exists and is running
-if (bThreads.has('myThread') === 'running') {
-  console.log('Thread is executing')
+// Check thread status
+const status = bThreads.has('myThread')
+
+if (status.running) {
+  console.log('Thread is currently executing')
 }
 
-// Check if thread exists and is pending
-if (bThreads.has('myThread') === 'pending') {
+if (status.pending) {
   console.log('Thread is waiting at sync point')
 }
 
-// Check if thread doesn't exist
-if (!bThreads.has('myThread')) {
+if (!status.running && !status.pending) {
   console.log('Thread not found or completed')
 }
 ```
 
-**Possible return values**:
-- `'running'`: Thread exists and is currently executing
-- `'pending'`: Thread exists and is waiting at yield
-- `false`: Thread doesn't exist (never added or already completed)
+**Return value**:
+- Returns an object: `{ running: boolean; pending: boolean }`
+- `running: true` - Thread exists and is currently executing
+- `pending: true` - Thread exists and is waiting at a sync point
+- Both `false` - Thread doesn't exist (never added or already completed)
 
 ### Runtime Rule Addition Pattern
 
@@ -725,30 +714,27 @@ useFeedback({
   switchToAdvanced() {
     currentMode = 'advanced'
 
-    // Add advanced rules at runtime
+    // Add advanced rules at runtime with interrupt capability
     bThreads.set({
       advancedValidation: bThread([
         bSync({ block: ({ type }) => type === 'submit' && !hasComplexValidation() })
-      ], true),
+      ], true, {
+        interrupt: 'switchToBasic'  // Terminates when mode switches
+      }),
 
       autoSave: bThread([
         bSync({ request: { type: 'save' } }),
         bSync({ waitFor: 'saved' })
-      ], true)
+      ], true, {
+        interrupt: 'switchToBasic'  // Terminates when mode switches
+      })
     })
   },
 
   switchToBasic() {
     currentMode = 'basic'
-
-    // Check if advanced threads exist before removing
-    if (bThreads.has('advancedValidation')) {
-      // Terminate by replacing with no-op thread that immediately completes
-      bThreads.set({
-        advancedValidation: bThread([]),
-        autoSave: bThread([])
-      })
-    }
+    // Trigger interrupt event to terminate advanced threads
+    trigger({ type: 'switchToBasic' })
   }
 })
 ```
