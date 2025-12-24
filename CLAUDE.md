@@ -24,7 +24,7 @@ bun run check:write
 This project uses `.claude/rules/` for modular guidance:
 
 - **Architecture**: @.claude/rules/architecture/ - Core concepts, patterns, implementation details
-- **Development**: @.claude/rules/development/ - Code style, testing, imports, null handling, signals
+- **Development**: @.claude/rules/development/ - Code style, testing, imports, null handling, plugin development
 - **Documentation**: @.claude/rules/documentation/ - TSDoc philosophy and workflow
 - **Platform**: @.claude/rules/platform/ - Bun APIs
 - **Standards**: @.claude/rules/standards/ - Terminology, code review guidelines, accuracy standards
@@ -56,6 +56,15 @@ See @.claude/rules/architecture/ for detailed architectural documentation.
 - Prefer Bun native APIs over Node.js equivalents
 
 See @.claude/rules/development/code-style.md for complete style guide.
+
+### Plugin Development
+
+When working on plugins in `plugins/`:
+- Clear cache after changes: `rm -rf ~/.claude/plugins-cache`
+- Restart Claude Code to see updates
+- Skills are auto-invoked (won't show in `/plugins` UI)
+
+See @.claude/rules/development/plugin-development.md for complete guide.
 
 ### Documentation
 

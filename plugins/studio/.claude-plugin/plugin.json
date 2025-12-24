@@ -5,15 +5,6 @@
   "author": {
     "name": "Plaited Labs"
   },
-  "hooks": {
-    "SessionStart": {
-      "command": "hooks/SessionStart"
-    }
-  },
-  "skills": {
-    "plaited-patterns": {
-      "description": "Comprehensive Plaited framework patterns for AI-assisted design. Covers templates, styling, behavioral programming, custom elements, forms, cross-island communication, testing, and web workers.",
-      "auto_invoke": true
-    }
-  }
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json"
 }
