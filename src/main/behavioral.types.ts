@@ -349,14 +349,16 @@ export type UseSnapshot = (listener: SnapshotListener) => Disconnect
 
 /**
  * Interface for managing b-threads within a behavioral program.
- * Provides dynamic thread addition, replacement, and status monitoring.
+ * Provides dynamic thread addition and status monitoring.
  *
  * @property has - Check thread existence and status (running/pending)
- * @property set - Add or replace threads in the program
+ * @property set - Add threads to the program
  *
  * @remarks
  * - Thread names must be unique
- * - Replacing a thread stops the old one
+ * - Attempting to add a thread with an existing identifier triggers a console warning and is ignored
+ * - Thread replacement is prevented to maintain BP's additive composition principle
+ * - Use the `interrupt` idiom to explicitly terminate threads
  * - Status reflects current execution state
  *
  * @see {@link RulesFunction} for thread implementation
@@ -369,16 +371,20 @@ export type BThreads = {
    * @param thread - The string identifier of the thread to check.
    * @returns An object with boolean flags indicating if the thread is `running` and/or `pending`.
    */
-  has: (thread: string | symbol) => { running: boolean; pending: boolean }
+  has: (thread: string) => { running: boolean; pending: boolean }
 
   /**
-   * Adds or replaces threads in the program.
-   * If a thread with the given identifier already exists, it will be replaced.
+   * Adds threads to the program.
+   * If a thread with the given identifier already exists, a console warning is issued and the new thread is ignored.
+   * This prevents accidental thread replacement, which violates behavioral programming's additive composition principle.
    *
    * @param threads - An object mapping thread identifiers (string keys) to their implementation
    *                 as `RulesFunction` generator functions.
+   *
+   * @remarks
+   * To terminate a thread, use the `interrupt` idiom in the thread's configuration, or wait for the thread to complete naturally.
    */
-  set: (threads: Record<string | symbol, RulesFunction>) => void
+  set: (threads: Record<string, RulesFunction>) => void
 }
 
 /**

@@ -384,6 +384,12 @@ export const behavioral: Behavioral = () => {
   const bThreads: BThreads = {
     set: (threads) => {
       for (const thread in threads) {
+        if (running.has(thread) || pending.has(thread)) {
+          console.warn(
+            `Thread "${thread}" already exists and cannot be replaced.  \nUse the 'interrupt' idiom to terminate threads explicitly.`,
+          )
+          continue
+        }
         running.set(thread, {
           priority: running.size + 1,
           generator: threads[thread]!(),
