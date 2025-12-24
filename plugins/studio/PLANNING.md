@@ -2,279 +2,263 @@
 
 ## Overview
 
-A Claude Code plugin for AI-assisted design of Plaited templates for MCP ext-apps and agent-driven interfaces (A2UI). Uses outcome-based design patterns following Nielsen Norman Group's generative UI principles.
+A Claude Code plugin providing comprehensive Plaited framework knowledge for AI-assisted development. Delivers behavioral programming patterns, template creation guidance, and web pattern extraction through an auto-invoked skill system.
 
-## Key Decisions
+**Current Status:** Knowledge & Documentation Plugin (v0.1.0)
 
-### 1. **Vanilla JS Over React**
-- ✅ No React dependency for MCP ext-apps wrapper
-- ✅ Aligns with Plaited's Web Components foundation
-- ✅ Lighter bundle, faster startup
-- ✅ Direct postMessage communication
+**Future Vision:** Outcome-based design studio with pattern extraction and MCP integration
 
-### 2. **Bun as Required Runtime**
-- ✅ Required for entire plugin (not a limitation, it's a feature)
-- ✅ Bun HTTP server for serving stories
-- ✅ `bun --hot` for module hot reload
-- ✅ Workshop CLI integration
+## What's Implemented (v0.1.0)
 
-### 3. **Outcome-Based Design Over Components**
-- ✅ Commands and skills focus on user outcomes (auth-flow, data-table, etc.)
-- ✅ Define constraints and guardrails, not specific UI components
-- ✅ Must-show / should-show / never-show categorization
+### ✅ Plaited Patterns Skill
 
-### 4. **Shared Knowledge Base**
-- ✅ `.claude/rules/` contains patterns both skills and commands reference
-- ✅ CLAUDE.md as integration hub
-- ✅ Single source of truth for outcome patterns
+**Auto-invoked** when working with Plaited templates, behavioral programs, or web platform patterns.
 
-## Plugin Structure
+**Knowledge base covers:**
+- **Behavioral Programming**: Super-step execution, thread composition, event selection, rule composition patterns
+- **Templates & Styling**: JSX syntax, FunctionalTemplate, CSS-in-JS (createStyles, createHostStyles, tokens, keyframes)
+- **Custom Elements**: bElement decorator pattern, islands architecture, form-associated elements
+- **Cross-Island Communication**: Parent-child patterns, signals, actor model
+- **Testing**: Story-based testing with Playwright integration, workshop CLI
+- **Web Workers**: bWorker pattern, message passing, lifecycle management
+
+**Documentation files (with mermaid diagrams):**
+- `skills/plaited-patterns/plaited/behavioral-programs.md` - BP foundations
+- `skills/plaited-patterns/plaited/b-element.md` - Custom element patterns
+- `skills/plaited-patterns/plaited/styling.md` - Templates and CSS-in-JS
+- `skills/plaited-patterns/plaited/stories.md` - Testing workflows
+- `skills/plaited-patterns/plaited/form-associated-elements.md` - Form integration
+- `skills/plaited-patterns/plaited/cross-island-communication.md` - Signal patterns
+- `skills/plaited-patterns/plaited/web-workers.md` - Web Worker patterns
+
+### ✅ Extract Web Pattern Skill
+
+**User-invoked** to extract modern HTML/Web API patterns from articles and add to project knowledge.
+
+**Purpose:** Help users build their own pattern library from web articles about:
+- Modern HTML features (dialog, popover, invokers, etc.)
+- Web APIs (Intersection Observer, Priority Hints, etc.)
+- Performance optimization (preconnect, dns-prefetch, fetchpriority)
+- Accessibility improvements
+- Shadow DOM / Web Templates compatible patterns
+
+**Output:** Creates skill in user's project with extracted pattern knowledge.
+
+**Usage:** User provides URL → Skill extracts pattern → Creates project-local skill
+
+### ✅ SessionStart Hook
+
+**Runs once per session** to provide setup guidance:
+- Checks for `typescript-lsp@claude-plugins-official` plugin (recommended for type inference)
+- Verifies Bun runtime installation
+- Displays workshop CLI command reference
+
+**Workshop CLI commands:**
+```bash
+bun plaited test                 # Run all story tests
+bun plaited test <path>          # Run tests from directory/file
+bun plaited test -p 3500         # Custom port
+bun plaited test -c dark         # Dark mode
+bun plaited dev                  # Start dev server
+bun --hot plaited dev            # Dev server with hot reload
+```
+
+## Plugin Structure (Current)
 
 ```
 plugins/studio/
 ├── .claude-plugin/
-│   └── plugin.json                          # Plugin manifest
-├── CLAUDE.md                                 # Plugin-level instructions
-├── .claude/
-│   ├── rules/                                # SHARED KNOWLEDGE BASE
-│   │   ├── outcomes/                         # Outcome patterns
-│   │   │   ├── auth-flow.md
-│   │   │   ├── data-table.md
-│   │   │   ├── form-validation.md
-│   │   │   ├── modal-dialog.md
-│   │   │   └── navigation.md
-│   │   ├── constraints/                      # Design constraints
-│   │   │   ├── behavioral-programs.md        # BP requirements
-│   │   │   ├── signal-patterns.md            # Signal usage rules
-│   │   │   ├── accessibility.md              # A11y standards
-│   │   │   └── web-components.md             # Shadow DOM patterns
-│   │   ├── templates/                        # Template structures
-│   │   │   ├── component-scaffold.md
-│   │   │   ├── story-template.md
-│   │   │   └── bp-thread-template.md
-│   │   └── patterns/                         # Web API patterns
-│   │       ├── web-apis/
-│   │       ├── performance/
-│   │       ├── accessibility/
-│   │       └── html-features/
-│   ├── skills/
-│   │   └── outcome-designer/
-│   │       ├── SKILL.md                      # References .claude/rules/
-│   │       └── helpers/
-│   └── commands/
-│       ├── auth-flow.md                      # References outcomes/auth-flow.md
-│       ├── data-table.md
-│       ├── form-validation.md
-│       └── modal-dialog.md
+│   └── plugin.json              # Plugin manifest
 ├── hooks/
-│   ├── hooks.json
-│   ├── check-bun.sh                          # SessionStart: verify Bun installed
-│   └── auto-preview.sh                       # PostToolUse: launch workshop
-├── mcp-server/
-│   ├── server.ts                             # Bun HTTP + MCP protocol
-│   ├── tools/
-│   │   ├── generate-template.ts
-│   │   ├── preview-template.ts
-│   │   └── validate-bp-pattern.ts
-│   └── ui/
-│       ├── plaited-mcp-bridge.ts             # Vanilla JS wrapper
-│       ├── iframe-sandbox.html
-│       └── render-story.ts                   # Reuses workshop discovery
-├── .mcp.json                                 # MCP server configuration
-└── README.md
+│   ├── hooks.json               # Hook configuration
+│   └── SessionStart             # Dependency check + CLI help
+├── skills/
+│   ├── plaited-patterns/        # Plaited framework knowledge (auto-invoked)
+│   │   ├── SKILL.md
+│   │   └── plaited/
+│   │       ├── behavioral-programs.md
+│   │       ├── b-element.md
+│   │       ├── styling.md
+│   │       ├── stories.md
+│   │       ├── form-associated-elements.md
+│   │       ├── cross-island-communication.md
+│   │       └── web-workers.md
+│   └── extract-web-pattern/     # Web pattern extraction (user-invoked)
+│       └── SKILL.md
+├── PLANNING.md                  # This file
+└── README.md                    # User documentation
 ```
 
-## Component Breakdown
+## Design Decisions
 
-### 1. Hooks
+### 1. Skills Over Rules for Progressive Disclosure ✅
 
-#### SessionStart: check-bun.sh
-```bash
-#!/usr/bin/env bash
-# Verify Bun >= 1.2.9 installed
-# Guide installation if missing
-```
+**Why skills are default:**
+- **Token efficiency**: Only ~100 token metadata loads initially
+- **Full content loads on-demand**: ~5k tokens only when Claude determines relevance
+- **Bundled resources lazy-load**: Only when actually used
 
-#### PostToolUse: auto-preview.sh
-```bash
-#!/usr/bin/env bash
-# Triggered when *.stories.tsx created
-# Starts: bun --hot plaited dev
-# User sees live preview immediately
-```
+**Why rules are for always-on guidance:**
+- **Loaded at session start**: Always in context, full token cost paid upfront
+- **Best for project-wide standards**: Code style, architecture patterns that apply everywhere
 
-### 2. MCP Server (Bun-based)
+**Decision:** Extract patterns to skills (default), not rules.
 
-**server.ts**: Dual-purpose
+### 2. Documentation-First Approach ✅
+
+- **Rationale**: Build comprehensive knowledge base before automation
+- **Benefit**: AI has accurate patterns to work from
+- **Status**: Complete for core framework patterns
+
+### 3. Mermaid Diagrams Only ✅
+
+- **Rationale**: Token-efficient, better structured context for AI
+- **Benefit**: Lower token usage, clearer semantics than ASCII art
+- **Standard**: All diagrams use mermaid syntax (flowcharts, sequence diagrams)
+- **Status**: All diagrams converted to mermaid format
+
+### 4. TypeScript LSP Integration ✅
+
+- **Rationale**: Accurate type inference from imports
+- **Benefit**: Better code generation with real type signatures
+- **Status**: Recommended in SessionStart hook, optional dependency
+
+### 5. Bun as Required Runtime ✅
+
+- **Rationale**: Required for entire Plaited framework (not a plugin limitation)
+- **Benefit**: Fast test execution, built-in TypeScript, hot reload
+- **Status**: Verified in SessionStart hook
+
+### 6. User-Owned Pattern Extraction ✅
+
+- **Rationale**: Patterns should live in user's project, not baked into plugin
+- **Benefit**: Project-specific knowledge, user maintains their own library
+- **Mechanism**: `extract-web-pattern` skill creates skills in user's `.claude/skills/`
+- **Status**: Skill definition complete, ready for use
+
+## Future Roadmap
+
+### Phase 2: Outcome-Based Patterns (Not Started)
+
+**Goal:** Define UI outcome patterns (auth-flow, data-table, form-validation, etc.)
+
+**Approach:** Create skills for common UI patterns that:
+- Define user goals and required elements
+- Provide BP thread patterns
+- Include template scaffolds
+- Reference accessibility and web platform constraints
+
+**Example outcomes:**
+- Authentication flows (OAuth, magic link, etc.)
+- Data tables (sorting, filtering, pagination)
+- Form validation (multi-step, real-time feedback)
+- Modal dialogs (focus trapping, escape handling)
+
+### Phase 3: Outcome Designer Skill (Not Started)
+
+**Goal:** Auto-generate templates from outcome descriptions
+
+**Flow:**
+1. User describes need (e.g., "I need authentication with OAuth")
+2. Skill reads outcome pattern knowledge
+3. Applies Plaited constraints (BP, signals, Shadow DOM)
+4. Generates template + story + behavioral program
+5. Validates against framework standards
+
+### Phase 4: MCP Server Integration (Not Started)
+
+**Goal:** Live preview with MCP protocol
+
+**Components:**
+- Bun HTTP server serving stories (port 3500)
 - MCP protocol handler (StdioServerTransport)
-- Bun HTTP server serving stories on port 3500
-- Development mode with hot reload
+- Workshop discovery integration
+- postMessage bridge for interactive preview
 
-**Tools provided:**
-- `generate_template`: Creates Plaited template from outcome description
-- `preview_template`: Returns MCP ext-app UI for live preview
-- `validate_bp_pattern`: Checks behavioral programming correctness
+**Tools:**
+- `generate_template`: Creates template from outcome
+- `preview_template`: Returns live preview UI
+- `validate_bp_pattern`: Checks BP correctness
 
-**UI wrapper (vanilla JS):**
-- `plaited-mcp-bridge.ts`: postMessage bridge between MCP client and story
-- `iframe-sandbox.html`: Entry point for MCP ext-apps
-- `render-story.ts`: Reuses existing workshop discovery infrastructure
+**Auto-preview hook:** PostToolUse triggers `bun --hot plaited dev` when `*.stories.tsx` created
 
-### 3. Skills
+### Phase 5: Advanced Features (Future)
 
-**outcome-designer/SKILL.md**:
-- Model-invoked (automatic when user describes needs)
-- Reads `.claude/rules/outcomes/` patterns
-- Applies `.claude/rules/constraints/`
-- Generates template + story + BP program
-- Validates against Plaited standards
+- Constraint catalog expansion
+- Design system integration
+- Multi-pattern composition
 
-### 4. Commands
+## Pattern Extraction Workflow
 
-**Outcome-based shortcuts:**
-- `/plaited-design:auth-flow [args]`
-- `/plaited-design:data-table [args]`
-- `/plaited-design:form-validation [args]`
-- `/plaited-design:modal-dialog [args]`
+### User Finds Useful Article
 
-Each command:
-- References same `.claude/rules/outcomes/` file as skill
-- User-invoked (explicit)
-- Accepts arguments to customize outcome
+Example: Modern HTML features article with dialog, popover, invokers
 
-### 5. Shared Rules
+### User Invokes Extraction
 
-**`.claude/rules/outcomes/[pattern].md` template:**
-```markdown
-# [Outcome Name]
+Skill uses Playwright MCP to:
+1. Navigate to URL and extract article content
+2. Identify relevant patterns
+3. Extract pattern details (use case, implementation, benefits)
+4. Format as structured markdown
+5. Create skill in user's project
 
-## User Goal
-[What user needs to accomplish]
+### Output: Project-Local Skill
 
-## Required Elements
-[UI elements needed]
-
-## Behavioral Program Pattern
-\`\`\`typescript
-// BP threads, signals, event handling
-\`\`\`
-
-## Constraints
-- See @.claude/rules/constraints/behavioral-programs.md
-- See @.claude/rules/constraints/accessibility.md
-
-## Template Structure
-[Shadow DOM, p-target bindings, etc.]
+```
+user-project/
+└── .claude/
+    └── skills/
+        └── html-dialog-pattern/
+            └── SKILL.md             # Auto-invoked when working with dialogs
 ```
 
-**`.claude/rules/patterns/` categories:**
-- `web-apis/`: Modern Web APIs (Intersection Observer, Priority Hints, etc.)
-- `performance/`: Resource hints, loading strategies
-- `accessibility/`: ARIA, semantic HTML, keyboard nav
-- `html-features/`: Dialog, Popover, Invokers API, etc.
+### Progressive Disclosure Benefits
 
-## Integration Workflow
-
-### User Flow
-1. User: "I need authentication with OAuth"
-2. Skill `outcome-designer` auto-invokes OR user types `/plaited-design:auth-flow`
-3. Both read `.claude/rules/outcomes/auth-flow.md`
-4. Generate template following Plaited patterns
-5. PostToolUse hook triggers `auto-preview.sh`
-6. Workshop starts with `bun --hot plaited dev`
-7. MCP server serves preview as ext-app UI
-8. User sees live preview, iterates via chat
-9. Hot reload updates instantly
-
-### MCP Ext-Apps Integration
-```
-MCP client conversation
-         ↓
-    MCP server tool: generate_template
-         ↓
-    Returns ext-app UI resource
-         ↓
-    Bun HTTP server (localhost:3500)
-         ↓
-    iframe-sandbox.html
-         ↓
-    Vanilla JS bridge (postMessage)
-         ↓
-    Plaited story renders (Web Components)
-```
-
-## Local Research Helper
-
-**Location:** `.claude/commands/extract-web-pattern.md`
-
-**Purpose:** Extract Web API patterns from articles to populate plugin knowledge base
-
-**Usage:**
-```bash
-/extract-web-pattern [URL]
-```
-
-**Articles to extract:**
-1. https://javascript.plainenglish.io/make-any-app-load-faster-with-just-6-lines-of-html-fe091cb9fdf6
-2. https://javascript.plainenglish.io/one-line-of-html-that-makes-external-links-safer-95fe4ba6ff28
-3. https://javascript.plainenglish.io/how-frontend-developers-can-handle-millions-of-api-requests-without-crashing-everything-dc464a82c46d
-4. https://pixicstudio.medium.com/9-underused-html-features-thatll-make-your-web-apps-faster-and-more-accessible-c23d30e92a26
-5. https://pixicstudio.medium.com/html-invokers-the-coolest-api-you-arent-using-yet-e78c3ddee927
-
-**Note:** Uses Playwright MCP with `--extension` flag for login-protected articles
-
-**Output:** Formatted markdown for `.claude/rules/patterns/[category]/`
-
-## Implementation Phases
-
-### Phase 1: Core Hook + Workshop ✅ Created
-- [x] PostToolUse hook invoking `bun --hot plaited dev`
-- [x] Bun detection on SessionStart
-- [x] Auto-story generation script
-- [x] Plugin directory structure
-- [x] Local `/extract-web-pattern` command
-
-### Phase 2: MCP Server (Bun-based)
-- [ ] Basic MCP server with `generate_template` tool
-- [ ] Bun HTTP server serving stories
-- [ ] Template validation tools
-- [ ] File watching integration
-
-### Phase 3: MCP UI Conversion
-- [ ] Convert `PlaitedFixture` to vanilla JS MCP ext-app wrapper
-- [ ] Bridge `story()` format to MCP resource format
-- [ ] Interactive preview with postMessage
-- [ ] Reuse workshop discovery
-
-### Phase 4: Outcome Patterns
-- [ ] Define initial outcome patterns (auth, forms, tables, modals)
-- [ ] Create constraint rules (BP, signals, a11y, web components)
-- [ ] Build outcome-designer skill
-- [ ] Create outcome-based commands
-
-### Phase 5: Web API Patterns
-- [ ] Extract patterns from articles using `/extract-web-pattern`
-- [ ] Populate `.claude/rules/patterns/`
-- [ ] Integrate into skill/command knowledge
-
-### Phase 6: Advanced Features
-- [ ] A2UI integration (agent-driven refinement loops)
-- [ ] Constraint catalog expansion
-- [ ] Design system integration
-
-## Next Steps After Session Restart
-
-1. **Restart Claude session** to enable Playwright MCP tools
-2. **Run `/extract-web-pattern` with Playwright** on article #2
-3. **Build first outcome pattern** (auth-flow.md) as template
-4. **Implement MCP server** with Bun
-5. **Create outcome-designer skill**
+- **Initial load**: ~100 tokens (skill metadata)
+- **Full pattern**: Loads only when Claude detects dialog work
+- **Token savings**: Massive compared to always-loaded rules
 
 ## Key References
 
-- **MCP ext-apps**: https://modelcontextprotocol.github.io/ext-apps/api/
-- **A2UI**: https://developers.googleblog.com/introducing-a2ui-an-open-project-for-agent-driven-interfaces/
-- **Generative UI principles**: https://www.nngroup.com/articles/generative-ui/
-- **Bun hot reload**: https://bun.sh/docs/guides/http/hot
-- **Plaited workshop**: `src/workshop/cli.ts`
-- **Plaited testing**: `src/testing/`
+- **Plaited Workshop**: `src/workshop/cli.ts` - Story discovery and test execution
+- **Plaited Testing**: `src/testing/` - Story-based testing utilities
+- **Bun Hot Reload**: https://bun.sh/docs/guides/http/hot
+- **MCP Protocol**: https://modelcontextprotocol.io/
+- **Skills Explained**: https://www.claude.com/blog/skills-explained
+- **Claude Code Skills**: https://code.claude.com/docs/en/skills
+- **Claude Code Rules**: https://code.claude.com/docs/en/memory#modular-rules-with-claude-rules
+- **Mermaid Diagrams**: https://mermaid.js.org/
+
+## Version History
+
+### 0.1.0 (2025-12-24)
+
+**Implemented:**
+- ✅ Plaited Patterns skill with comprehensive framework documentation
+- ✅ Extract Web Pattern skill for user-driven pattern extraction
+- ✅ SessionStart hook for dependency checking and CLI help
+- ✅ Mermaid diagram conversion for token efficiency
+- ✅ Behavioral programming foundations
+- ✅ Template and styling patterns
+- ✅ Testing workflow documentation
+- ✅ Thread replacement prevention (BP anti-pattern fix)
+
+**Design Decisions:**
+- ✅ Skills over rules for progressive disclosure
+- ✅ User-owned pattern extraction (not plugin-bundled)
+- ✅ No internal rule promotion (unnecessary with skill-first approach)
+
+**Not Implemented:**
+- ❌ Outcome patterns
+- ❌ MCP server integration
+- ❌ Outcome designer skill
+- ❌ Auto-preview hook
+
+## Next Steps
+
+1. **Test extract-web-pattern skill** with real article
+2. **Define first outcome pattern** (auth-flow) as example
+3. **Implement auto-preview PostToolUse hook** for `*.stories.tsx`
+4. **Build MCP server** with Bun for live preview
+5. **Create outcome designer skill** that generates templates
