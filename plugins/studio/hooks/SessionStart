@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+
+# Hook: Check if typescript-lsp plugin is enabled and Bun runtime is available
+# Runs once at session start to verify recommended dependencies
+
+# Function to check if plugin is enabled in a settings file
+check_plugin_enabled() {
+  local settings_file="$1"
+
+  if [ ! -f "$settings_file" ]; then
+    return 1
+  fi
+
+  # Check for typescript-lsp plugin enabled (supports both true and "true")
+  grep -q '"typescript-lsp@claude-plugins-official"[[:space:]]*:[[:space:]]*true' "$settings_file"
+  return $?
+}
+
+# Check settings in order of precedence (local > project > user)
+if check_plugin_enabled ".claude/settings.local.json" || \
+   check_plugin_enabled ".claude/settings.json" || \
+   check_plugin_enabled "$HOME/.claude/settings.json"; then
+  # Plugin is enabled, nothing to warn about
+  :
+else
+  # Plugin not found in any settings - show warning
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "⚠️  RECOMMENDATION: Enable typescript-lsp for better TypeScript support"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+  echo "The design-studio plugin works best with TypeScript LSP enabled."
+  echo ""
+  echo "To enable it, run:"
+  echo ""
+  echo "  /plugin install typescript-lsp@claude-plugins-official"
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+fi
+
+# Check for Bun runtime
+if ! command -v bun &> /dev/null; then
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "⚠️  WARNING: Plaited requires Bun runtime"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+  echo "Install Bun: https://bun.sh"
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+fi
+
+# Show workshop CLI usage
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "📚 Plaited Workshop CLI"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "Testing Commands:"
+echo "  bun plaited test                 # Run all story tests"
+echo "  bun plaited test <path>          # Run tests from directory/file"
+echo "  bun plaited test -p 3500         # Custom port"
+echo "  bun plaited test -c dark         # Dark mode"
+echo ""
+echo "Development Commands:"
+echo "  bun plaited dev                  # Start dev server"
+echo "  bun --hot plaited dev            # Dev server with hot reload"
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+# Always allow session to continue
+exit 0

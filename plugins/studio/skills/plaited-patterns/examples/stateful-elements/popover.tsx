@@ -1,6 +1,12 @@
 import { bElement } from 'plaited'
 import { isTypeOf } from 'plaited/utils'
 
+/**
+ * DecoratedPopoverClose - Close button for popover
+ *
+ * Emits 'close' event that bubbles to parent DecoratedPopover.
+ * Demonstrates child-to-parent communication via emit().
+ */
 export const DecoratedPopoverClose = bElement({
   tag: 'decorated-popover-close',
   shadowDom: <slot p-trigger={{ click: 'click' }}></slot>,
@@ -13,6 +19,13 @@ export const DecoratedPopoverClose = bElement({
   },
 })
 
+/**
+ * DecoratedPopover - Wrapper for native popover API
+ *
+ * Demonstrates stateful element pattern with custom states.
+ * Syncs custom states with native popover visibility.
+ * Uses slots for flexible content composition.
+ */
 export const DecoratedPopover = bElement({
   tag: 'decorated-popover',
   observedAttributes: ['disabled', 'open'],
@@ -36,14 +49,15 @@ export const DecoratedPopover = bElement({
     </>
   ),
   bProgram({ $, host, internals, trigger }) {
-    const [popover] = $<HTMLSlotElement>('popover')
+    const popover = $<HTMLDivElement>('popover')[0]
+
     return {
       close() {
         internals.states.delete('open')
         popover?.hidePopover()
       },
-      toggle(e) {
-        console.table(e.target.getBoundingClientRect())
+
+      toggle() {
         if (internals.states.has('open')) {
           internals.states.delete('open')
         } else {
@@ -51,7 +65,9 @@ export const DecoratedPopover = bElement({
         }
         popover?.togglePopover()
       },
+
       slotchange() {},
+
       onAttributeChanged({ name, newValue }) {
         name === 'open' &&
           trigger({
@@ -64,7 +80,9 @@ export const DecoratedPopover = bElement({
             detail: isTypeOf<string>(newValue, 'string'),
           })
       },
+
       onConnected() {
+        // Initialize states from attributes
         if (host.hasAttribute('open')) {
           internals.states.add('open')
         }

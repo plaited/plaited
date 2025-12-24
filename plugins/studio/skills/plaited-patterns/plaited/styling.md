@@ -1,12 +1,301 @@
-# CSS-in-JS
+# Styling & Templates
 
-## Overview
+Plaited's styling system combines JSX templates with CSS-in-JS for type-safe, scoped styling in web components. This guide covers both template creation and styling patterns.
 
-Plaited's CSS-in-JS system provides two main utilities: `createStyles` for generating atomic, hash-based CSS classes for use inside templates, and `createHostStyles` for creating non-atomic styles for a component's host element (applied via `bElement`'s `hostStyles` property). It offers type-safe styling, automatic Shadow DOM adoption, design tokens, keyframes, and server-side rendering support.
+## Templates Overview
+
+Plaited uses JSX syntax to create template objects that contain HTML, stylesheets, and metadata. Templates are the foundation for both simple presentational elements (FunctionalTemplate) and complex interactive components (bElement).
+
+### JSX Transformation
+
+JSX is automatically transformed into `createTemplate()` calls by TypeScript/Bun:
+
+```typescript
+// JSX syntax (what you write)
+<div className="container">Hello</div>
+
+// Transforms to (internal)
+createTemplate('div', { className: 'container', children: 'Hello' })
+```
+
+**IMPORTANT**: Always use JSX syntax in your code. Never call `createTemplate()` or `h()` directly - these are internal transformation functions.
+
+### TemplateObject Structure
+
+Every template produces a `TemplateObject` with these properties:
+
+```typescript
+type TemplateObject = {
+  html: string[]           // HTML fragments
+  stylesheets: string[]    // CSS rules from createStyles/createHostStyles
+  registry: string[]       // Custom element registrations
+  $: typeof TEMPLATE_OBJECT_IDENTIFIER  // Identifier for type checking
+}
+```
+
+### Fragment for Grouping
+
+Use `Fragment` (or `<>...</>`) to group elements without adding wrapper nodes:
+
+```typescript
+import { type FT } from 'plaited'
+
+const List: FT = () => (
+  <>
+    <li>Item 1</li>
+    <li>Item 2</li>
+    <li>Item 3</li>
+  </>
+)
+
+// Renders three <li> elements without wrapping div
+```
+
+**Use Cases**:
+- Avoid unnecessary wrapper divs
+- Return multiple elements from a component
+- Conditional rendering
+- List mapping
+
+### FunctionalTemplate Pattern
+
+FunctionalTemplate (FT) is for simple, presentational elements that don't require behavioral programs:
+
+```typescript
+import { type FT } from 'plaited'
+import { cardStyles } from './card.css.ts'
+
+const Card: FT<{ title: string }> = ({ title, children }) => (
+  <div {...cardStyles.card}>
+    <h2>{title}</h2>
+    {children}
+  </div>
+)
+
+// Use in other templates or bElements
+const app = <Card title="Welcome">Content here</Card>
+```
+
+**When to use FT**:
+- Buttons, cards, links, layouts
+- No state management needed
+- Purely presentational
+- Easy to style with CSS
+
+**Where to define**:
+- Typically in `*.stories.tsx` files for examples
+- Can be in separate files for reusability
+
+### Template Security
+
+Plaited provides security-first template design with automatic protections:
+
+#### Automatic HTML Escaping
+
+All content is automatically escaped to prevent XSS attacks:
+
+```typescript
+const userInput = '<script>alert("xss")</script>'
+const safe = <div>{userInput}</div>
+// Renders: <div>&lt;script&gt;alert("xss")&lt;/script&gt;</div>
+```
+
+#### Script Protection
+
+Script tags require explicit `trusted` flag:
+
+```typescript
+// ❌ Error: Script tag requires 'trusted' property
+<script>console.log('hello')</script>
+
+// ✅ Explicit opt-in for trusted content
+<script trusted={true}>console.log('hello')</script>
+```
+
+#### Event Handler Protection
+
+Inline event handlers (`on*` attributes) are forbidden. Use `p-trigger` instead:
+
+```typescript
+// ❌ Error: Event handler attributes not allowed
+<button onClick={handler}>Click</button>
+
+// ✅ Use p-trigger declarative event system
+<button p-trigger={{ click: 'handleClick' }}>Click</button>
+```
+
+#### Trusted Content
+
+For rare cases where you need unescaped HTML:
+
+```typescript
+const trustedHTML = '<strong>Bold</strong>'
+
+// Trusted content bypasses HTML escaping
+<div trusted={true}>{trustedHTML}</div>
+// Renders: <div><strong>Bold</strong></div>
+```
+
+**WARNING**: Only use `trusted={true}` for content you control. Never use with user input.
+
+### useTemplate() for Dynamic Content
+
+`useTemplate()` creates a factory function for efficiently cloning and populating template instances:
+
+```typescript
+import { bElement, type FT } from 'plaited'
+
+const RowTemplate: FT<{ name: string; value: string }> = ({ name, value }) => (
+  <tr>
+    <td p-target="name">{name}</td>
+    <td p-target="value">{value}</td>
+  </tr>
+)
+
+const DataTable = bElement({
+  tag: 'data-table',
+  shadowDom: (
+    <>
+      <table>
+        <tbody p-target="tbody"></tbody>
+      </table>
+      <template p-target="row">
+        <RowTemplate name="" value="" />
+      </template>
+    </>
+  ),
+  bProgram({ $ }) {
+    const tbody = $<HTMLElement>('tbody')[0]
+    const rowTemplate = $<HTMLTemplateElement>('row')[0]!
+
+    // Create template factory
+    const createRow = useTemplate(rowTemplate, ($, data) => {
+      const name = $('name')[0]
+      const value = $('value')[0]
+      name?.render(data.name)
+      value?.render(data.value)
+    })
+
+    return {
+      onConnected() {
+        // Efficiently create multiple rows
+        const rows = [
+          { name: 'Alice', value: '100' },
+          { name: 'Bob', value: '200' },
+        ]
+
+        rows.forEach(data => {
+          tbody?.insert('beforeend', createRow(data))
+        })
+      }
+    }
+  }
+})
+```
+
+**Key Benefits**:
+- Template cloning is faster than creating from scratch
+- Type-safe data binding via generics
+- Scoped querying with `$` function
+- Helper methods (render, insert, attr) available
+
+**When to use**:
+- Dynamic lists
+- Repeating content
+- Data-driven UI
+- Performance-critical rendering
+
+### SSR Integration
+
+Plaited's `ssr()` function renders templates to static HTML with style collection:
+
+```typescript
+import { ssr } from 'plaited'
+
+const html = ssr(<MyTemplate />)
+// Returns complete HTML string with injected styles
+```
+
+#### Style Collection
+
+During SSR, styles are:
+1. Collected from all templates
+2. Deduplicated via `Set`
+3. `:host` selectors converted to `:root`
+4. Injected before `</head>`, after `<body>`, or at document start
+
+```typescript
+// Component with hostStyles
+const MyElement = bElement({
+  tag: 'my-element',
+  hostStyles: createHostStyles({
+    display: 'block',
+    padding: '1rem',
+  }),
+  shadowDom: <slot></slot>
+})
+
+// SSR output
+const html = ssr(<MyElement />)
+// Includes: <style>:root { display: block; padding: 1rem; }</style>
+```
+
+#### Shadow DOM Styles
+
+Styles for components with Shadow DOM are embedded in Declarative Shadow DOM `<template>` tags:
+
+```typescript
+// Custom element with shadow DOM
+<my-element>
+  <template shadowrootmode="open">
+    <style>:host { display: block; }</style>
+    <slot></slot>
+  </template>
+</my-element>
+```
+
+### Integration Point: Templates ↔ Styles
+
+The `stylesheets` property connects templates to CSS-in-JS:
+
+```typescript
+import { createStyles } from 'plaited'
+
+const styles = createStyles({
+  card: {
+    padding: '20px',
+    backgroundColor: 'white',
+  }
+})
+
+// Spread operator adds classNames AND stylesheets to template
+const Card = () => <div {...styles.card}>Content</div>
+
+// Template structure:
+// {
+//   html: ['<div class="padding_abc123 background-color_def456">Content</div>'],
+//   stylesheets: ['.padding_abc123{padding:20px}', '.background-color_def456{...}'],
+//   registry: [],
+//   $: TEMPLATE_OBJECT_IDENTIFIER
+// }
+```
+
+**Style Hoisting Flow**:
+1. `createStyles()` generates `{ classNames, stylesheets }`
+2. Spread operator `{...styles.card}` adds both to element
+3. Stylesheets hoist up through template tree
+4. Hoisting stops at Shadow DOM boundary (bElement)
+5. Shadow DOM adopts collected styles via Constructable Stylesheets
+
+---
+
+## CSS-in-JS System
+
+Plaited's CSS-in-JS system provides two main utilities: `createStyles` for generating atomic, hash-based CSS classes for use inside templates, and `createHostStyles` for creating non-atomic styles for a custom element's host (applied via `bElement`'s `hostStyles` property). It offers type-safe styling, automatic Shadow DOM adoption, design tokens, keyframes, and server-side rendering support.
 
 **Key Features:**
 - **Atomic CSS (`createStyles`)**: Generates utility classes with deterministic hashes for styling elements inside a template.
-- **Host Styling (`createHostStyles`)**: Creates non-atomic styles for a Shadow DOM component's host element (pass to `bElement` via `hostStyles` property).
+- **Host Styling (`createHostStyles`)**: Creates non-atomic styles for a Shadow DOM custom element's host (pass to `bElement` via `hostStyles` property).
 - **Nested Selectors**: Support for media queries, pseudo-classes, pseudo-elements, and attribute selectors
 - **Shadow DOM Integration**: Automatic style adoption using Constructable Stylesheets with WeakMap caching
 - **Style Hoisting**: Child template styles automatically bubble up to parent until Shadow DOM boundary
@@ -79,7 +368,7 @@ During SSR:
 - Styles are collected from all templates and deduplicated.
 - **Global Styles**: Styles not adopted by a Shadow DOM are injected into a `<style>` tag. The injection point is prioritized as follows: before `</head>`, after the opening `<body>` tag, and finally at the start of the document.
   - In this process, `:host` selectors are converted to `:root` to apply them globally.
-- **Shadow DOM Styles**: Styles adopted by a component with Shadow DOM are embedded within its Declarative Shadow DOM template.
+- **Shadow DOM Styles**: Styles adopted by a custom element with Shadow DOM are embedded within its Declarative Shadow DOM template.
 
 ### 6. Browser Hydration
 
@@ -94,6 +383,155 @@ When custom element is defined in browser:
 - **SSR Level**: `Set` deduplication in `ssr()` function
 - **Shadow Boundary**: `new Set(shadowDom.stylesheets)` when creating shadow root
 - **Adoption Level**: WeakMap caching in `updateShadowRootStyles()`
+
+## File Organization
+
+Plaited follows a consistent file organization pattern for styles and templates:
+
+### Pattern 1: Styles and Tokens in Separate Files
+
+**Always define styles in `*.css.ts` files** and **tokens in `*.tokens.ts` files**, separate from template and element definitions.
+
+**File Naming:**
+- **Styles**: Use `*.css.ts` extension (e.g., `button.css.ts`, `toggle-input.css.ts`)
+- **Tokens**: Use `*.tokens.ts` extension (e.g., `theme.tokens.ts`, `fills.tokens.ts`, `colors.tokens.ts`)
+
+**Naming Convention for Exports:**
+- **bElement-specific styles**: Export as `styles` and `hostStyles` (filename provides context)
+  - Example: `toggle-input.css.ts` exports `styles` and `hostStyles`
+- **Reusable pattern styles**: Export with descriptive names (can be imported into multiple places)
+  - Example: `button.css.ts` exports `buttonStyles`
+  - Example: `link.css.ts` exports `linkStyles`
+  - Example: `card.css.ts` exports `cardStyles`
+
+**File: `button.css.ts`**
+```typescript
+import { createStyles } from 'plaited'
+
+export const buttonStyles = createStyles({
+  btn: {
+    padding: '10px 20px',
+    backgroundColor: {
+      $default: 'blue',
+      ':hover': 'darkblue',
+    },
+  }
+})
+```
+
+### Pattern 2: FunctionalTemplate for Simple Elements
+
+Use FunctionalTemplate (FT) for easily stylable, presentational elements like buttons, cards, and layouts. These are typically defined in `*.stories.tsx` files to demonstrate DOM structure and styling patterns.
+
+**File: `button.stories.tsx`**
+```typescript
+import { type FT } from 'plaited'
+import { story } from 'plaited/testing'
+import { buttonStyles } from './button.css.ts'
+
+const Button: FT<{ variant?: string }> = ({ variant, children, ...attrs }) => (
+  <button {...attrs} {...buttonStyles.btn} data-variant={variant}>
+    {children}
+  </button>
+)
+
+export const primaryButton = story({
+  description: 'Button with primary variant styling',
+  template: () => <Button variant="primary">Click Me</Button>,
+})
+```
+
+**Purpose**: FunctionalTemplate examples teach agents how to apply styles from `*.css.ts` files to specific DOM structures.
+
+### Pattern 3: bElement for Complex Elements
+
+Use bElement for:
+- **Islands architecture**: Interactive islands with behavioral programs
+- **Decorator pattern**: Wrapping hard-to-style native elements (inputs, checkboxes)
+- **Stateful elements**: Complex state management (popovers, dialogs)
+- **Form-associated elements**: Custom form controls (toggle inputs, rating inputs)
+- **Non-existent native elements**: Elements that don't exist natively
+
+**Always define bElement in a separate file** (not in `*.stories.tsx`). Stories import the element for testing.
+
+**File: `fills.tokens.ts`**
+```typescript
+import { createTokens } from 'plaited'
+
+export const fills = createTokens('fills', {
+  default: { $value: 'lightblue' },
+  checked: { $value: 'blue' },
+  disabled: { $value: 'grey' },
+})
+```
+
+**File: `toggle-input.css.ts`**
+```typescript
+import { createStyles, createHostStyles } from 'plaited'
+import { fills } from './fills.tokens.ts'
+
+export const styles = createStyles({
+  symbol: {
+    height: '16px',
+    width: '16px',
+    backgroundColor: fills.default,
+  }
+})
+
+export const hostStyles = createHostStyles({
+  display: 'inline-grid',
+  backgroundColor: {
+    $default: fills.default,
+    $compoundSelectors: {
+      ':state(checked)': fills.checked,
+      ':state(disabled)': fills.disabled,
+    },
+  },
+})
+```
+
+**File: `toggle-input.ts`**
+```typescript
+import { bElement } from 'plaited'
+import { styles, hostStyles } from './toggle-input.css.ts'
+
+export const ToggleInput = bElement({
+  tag: 'toggle-input',
+  formAssociated: true,
+  hostStyles,
+  shadowDom: (
+    <div
+      p-target='symbol'
+      {...styles.symbol}
+      p-trigger={{ click: 'click' }}
+    />
+  ),
+  bProgram({ trigger, internals }) {
+    return {
+      click() {
+        trigger({ type: 'checked', detail: !internals.states.has('checked') })
+      },
+      // ... other handlers
+    }
+  },
+})
+```
+
+**File: `toggle-input.stories.tsx`**
+```typescript
+import { story } from 'plaited/testing'
+import { ToggleInput } from './toggle-input.ts'
+
+export const basicToggle = story({
+  description: 'Toggle input with form association',
+  template: () => <ToggleInput checked />,
+  // ... play function
+})
+```
+
+**Key Difference**:
+- ✅ Simple button → FunctionalTemplate (defined in `*.stories.tsx`)
+- ✅ Custom input → bElement (defined in separate file, imported by `*.stories.tsx`)
 
 ## API Reference
 
@@ -114,10 +552,12 @@ function createStyles<T extends CreateParams>(classNames: T): ClassNames<T>
 - `stylesheets`: Array of CSS rule strings
 
 **Example:**
+
+**File: `button.css.ts`**
 ```typescript
 import { createStyles } from 'plaited'
 
-const buttonStyles = createStyles({
+export const buttonStyles = createStyles({
   btn: {
     padding: '10px 20px',
     backgroundColor: {
@@ -128,11 +568,22 @@ const buttonStyles = createStyles({
     fontSize: '16px',
   }
 })
+```
 
-// Use in template
-export const Button = () => (
-  <button {...buttonStyles.btn}>Click Me</button>
+**File: `button.stories.tsx`**
+```typescript
+import { type FT } from 'plaited'
+import { story } from 'plaited/testing'
+import { buttonStyles } from './button.css.ts'
+
+const Button: FT = ({ children }) => (
+  <button {...buttonStyles.btn}>{children}</button>
 )
+
+export const basicButton = story({
+  description: 'Button with hover and disabled states',
+  template: () => <Button>Click Me</Button>,
+})
 ```
 
 ### `createHostStyles(props)`
@@ -146,26 +597,30 @@ function createHostStyles(props: CreateHostParams): HostStylesObject
 
 **How to Apply:**
 
-1. **Create the styles** using `createHostStyles()`
+1. **Create the styles** in `*.css.ts` file using `createHostStyles()`
 2. **Pass to `bElement`** via the `hostStyles` property
 3. **Automatic adoption** - Styles are then automatically adopted into the Shadow DOM
 
+**File: `my-element.css.ts`**
 ```typescript
-import { bElement, createHostStyles } from 'plaited'
+import { createHostStyles } from 'plaited'
 
-// Step 1: Create host styles
-const hostStyles = createHostStyles({
+export const hostStyles = createHostStyles({
   display: 'block',
   padding: '1rem',
 })
+```
 
-// Step 2: Pass to bElement via hostStyles property
-const MyElement = bElement({
+**File: `my-element.ts`**
+```typescript
+import { bElement } from 'plaited'
+import { hostStyles } from './my-element.css.ts'
+
+export const MyElement = bElement({
   tag: 'my-element',
-  hostStyles: hostStyles, // ← Apply here
+  hostStyles,
   shadowDom: <slot></slot>
 })
-// Step 3: Styles automatically adopted into Shadow DOM
 ```
 
 **Parameters:**
@@ -248,10 +703,12 @@ const hostStyles = createHostStyles({
 This is a powerful feature of `createHostStyles`, allowing the host's context to cascade styles into its private Shadow DOM.
 
 **Example:**
-```typescript
-import { createHostStyles, bElement } from 'plaited'
 
-const hostStyles = createHostStyles({
+**File: `my-element.css.ts`**
+```typescript
+import { createHostStyles } from 'plaited'
+
+export const hostStyles = createHostStyles({
   display: 'block',
   padding: '20px',
   backgroundColor: {
@@ -262,8 +719,14 @@ const hostStyles = createHostStyles({
     }
   }
 })
+```
 
-const MyElement = bElement({
+**File: `my-element.ts`**
+```typescript
+import { bElement } from 'plaited'
+import { hostStyles } from './my-element.css.ts'
+
+export const MyElement = bElement({
   tag: 'my-element',
   hostStyles,
   shadowDom: <slot></slot>
@@ -291,22 +754,30 @@ function createKeyframes(
 - Access `.id` to reference animation name in CSS
 
 **Example:**
+
+**File: `animated-element.css.ts`**
 ```typescript
-import { createKeyframes, createHostStyles, joinStyles, bElement } from 'plaited'
+import { createKeyframes, createHostStyles, joinStyles } from 'plaited'
 
 const fadeIn = createKeyframes('fadeIn', {
   from: { opacity: '0' },
   to: { opacity: '1' }
 })
 
-const hostStyles = joinStyles(
+export const hostStyles = joinStyles(
   createHostStyles({
     animation: `${fadeIn.id} 0.3s ease-in`,
   }),
   fadeIn()  // Combine keyframe styles with host styles
 )
+```
 
-const AnimatedElement = bElement({
+**File: `animated-element.ts`**
+```typescript
+import { bElement } from 'plaited'
+import { hostStyles } from './animated-element.css.ts'
+
+export const AnimatedElement = bElement({
   tag: 'animated-element',
   hostStyles,
   shadowDom: <slot></slot>
@@ -336,34 +807,73 @@ function createTokens<T extends TokenDefinitions>(
 - **Invoke `token()`** only when you need the CSS variable string reference
 
 **Example:**
-```typescript
-import { createTokens, createStyles, createHostStyles, createKeyframes } from 'plaited'
 
-const tokens = createTokens('theme', {
+**File: `theme.css.ts`**
+```typescript
+import { createTokens } from 'plaited'
+
+export const tokens = createTokens('theme', {
   primary: { $value: '#007bff' },
   spacing: { $value: '16px' },
 })
+```
 
-// ✅ Correct: Pass token reference directly (not invoked)
-const styles = createStyles({
-  button: {
-    backgroundColor: tokens.primary,  // NOT tokens.primary()
-    padding: tokens.spacing,
+**File: `toggle-input.css.ts`**
+```typescript
+import { createStyles, createHostStyles } from 'plaited'
+import { tokens } from './theme.css.ts'
+import { fills } from './fills.tokens.ts'
+
+export const styles = createStyles({
+  symbol: {
+    height: '16px',
+    width: '16px',
+    backgroundColor: fills.default,
   }
 })
 
-const hostStyles = createHostStyles({
-  color: tokens.primary,  // NOT tokens.primary()
-  padding: tokens.spacing,
+export const hostStyles = createHostStyles({
+  display: 'inline-grid',
+  padding: tokens.spacing,  // Token reference, not invoked
+  backgroundColor: {
+    $default: fills.default,
+    $compoundSelectors: {
+      ':state(checked)': fills.checked,
+      ':state(disabled)': fills.disabled,
+    },
+  },
 })
+```
 
-// Use in bElement - token .styles auto-included
-export const MyElement = bElement({
-  tag: 'my-element',
+**File: `toggle-input.ts`**
+```typescript
+import { bElement } from 'plaited'
+import { styles, hostStyles } from './toggle-input.css.ts'
+
+export const ToggleInput = bElement({
+  tag: 'toggle-input',
+  formAssociated: true,
   hostStyles,
-  shadowDom: <div {...styles.button}>Click</div>
+  shadowDom: (
+    <div
+      p-target='symbol'
+      {...styles.symbol}
+      p-trigger={{ click: 'click' }}
+    />
+  ),
+  bProgram({ trigger, internals }) {
+    return {
+      click() {
+        trigger({ type: 'checked', detail: !internals.states.has('checked') })
+      },
+      // ... other handlers
+    }
+  },
 })
+```
 
+**Using token() function:**
+```typescript
 // Only invoke token() when you need the CSS variable string
 console.log(tokens.primary())  // 'var(--theme-primary)'
 ```
@@ -400,50 +910,36 @@ A new `StylesObject` with `classNames` and `stylesheets` arrays containing the m
 - **Conditional Logic**: Because it filters falsy values, you can use short-circuiting for conditional styling.
 
 **Example:**
+
+**File: `animated-card.css.ts`**
 ```typescript
-import { bElement, createStyles, joinStyles } from 'plaited'
+import { createKeyframes, createHostStyles, joinStyles } from 'plaited'
 
-// Base styles for all buttons
-const baseStyles = createStyles({
-  btn: {
-    padding: '8px 16px',
-    border: '1px solid black',
-    cursor: 'pointer',
-  },
+const pulse = createKeyframes('pulse', {
+  '0%': { transform: 'scale(1)' },
+  '50%': { transform: 'scale(1.05)' },
+  '100%': { transform: 'scale(1)' }
 })
 
-// Styles for the 'primary' variant
-const primaryStyles = createStyles({
-  btn: {
-    backgroundColor: 'blue',
-    color: 'white',
-    borderColor: 'blue',
-  },
-})
+export const hostStyles = joinStyles(
+  createHostStyles({
+    display: 'block',
+    padding: '20px',
+    animation: `${pulse.id} 2s infinite`,
+  }),
+  pulse()  // Combine keyframe styles with host styles
+)
+```
 
-// Styles for the 'disabled' state
-const disabledStyles = createStyles({
-  btn: {
-    opacity: '0.5',
-    cursor: 'not-allowed',
-  },
-})
+**File: `animated-card.ts`**
+```typescript
+import { bElement } from 'plaited'
+import { hostStyles } from './animated-card.css.ts'
 
-export const MyButton = bElement({
-  tag: 'my-button',
-  observedAttributes: [ 'variant', 'disabled' ],
-  bProgram() {
-    const { variant, disabled } = this.attrs
-
-    // Dynamically join styles based on attributes
-    const styles = joinStyles(
-      baseStyles.btn,
-      variant === 'primary' && primaryStyles.btn,
-      disabled !== undefined && disabledStyles.btn,
-    )
-
-    this.render(<button {...styles}><slot /></button>)
-  },
+export const AnimatedCard = bElement({
+  tag: 'animated-card',
+  hostStyles,
+  shadowDom: <slot></slot>
 })
 ```
 
@@ -451,10 +947,11 @@ export const MyButton = bElement({
 
 ### 1. Basic Styling
 
+**File: `card.css.ts`**
 ```typescript
 import { createStyles } from 'plaited'
 
-const cardStyles = createStyles({
+export const cardStyles = createStyles({
   card: {
     padding: '20px',
     borderRadius: '8px',
@@ -462,18 +959,31 @@ const cardStyles = createStyles({
     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
   }
 })
+```
 
-export const Card = ({ children }) => (
+**File: `card.stories.tsx`**
+```typescript
+import { type FT } from 'plaited'
+import { story } from 'plaited/testing'
+import { cardStyles } from './card.css.ts'
+
+const Card: FT = ({ children }) => (
   <div {...cardStyles.card}>{children}</div>
 )
+
+export const basicCard = story({
+  description: 'Card with basic styling',
+  template: () => <Card>Card content</Card>,
+})
 ```
 
 ### 2. Nested Selectors
 
+**File: `link.css.ts`**
 ```typescript
 import { createStyles } from 'plaited'
 
-const linkStyles = createStyles({
+export const linkStyles = createStyles({
   link: {
     color: {
       $default: 'blue',
@@ -486,18 +996,31 @@ const linkStyles = createStyles({
     }
   }
 })
+```
 
-export const Link = ({ href, children }) => (
+**File: `link.stories.tsx`**
+```typescript
+import { type FT } from 'plaited'
+import { story } from 'plaited/testing'
+import { linkStyles } from './link.css.ts'
+
+const Link: FT<{ href: string }> = ({ href, children }) => (
   <a href={href} {...linkStyles.link}>{children}</a>
 )
+
+export const basicLink = story({
+  description: 'Basic link with nested selector styles',
+  template: () => <Link href="#/">Click me</Link>,
+})
 ```
 
 ### 3. Responsive Design
 
+**File: `grid.css.ts`**
 ```typescript
 import { createStyles } from 'plaited'
 
-const gridStyles = createStyles({
+export const gridStyles = createStyles({
   container: {
     display: 'grid',
     gridTemplateColumns: {
@@ -508,52 +1031,56 @@ const gridStyles = createStyles({
     gap: '20px',
   }
 })
+```
 
-export const Grid = ({ children }) => (
+**File: `grid.stories.tsx`**
+```typescript
+import { type FT } from 'plaited'
+import { story } from 'plaited/testing'
+import { gridStyles } from './grid.css.ts'
+
+const Grid: FT = ({ children }) => (
   <div {...gridStyles.container}>{children}</div>
 )
-```
 
-### 4. Host Element Styling
-
-```typescript
-import { createHostStyles, bElement } from 'plaited'
-
-const hostStyles = createHostStyles({
-  display: 'block',
-  padding: '20px',
-  borderRadius: '8px',
-  backgroundColor: {
-    $default: 'white',
-    $compoundSelectors: {
-      '.highlighted': 'yellow',
-      '[data-variant="primary"]': 'lightblue',
-    }
-  }
-})
-
-const MyCard = bElement({
-  tag: 'my-card',
-  hostStyles,
-  shadowDom: <slot></slot>
+export const responsiveGrid = story({
+  description: 'Responsive grid with media query breakpoints',
+  template: () => (
+    <Grid>
+      <div>Item 1</div>
+      <div>Item 2</div>
+      <div>Item 3</div>
+    </Grid>
+  ),
 })
 ```
+
+### 4. Host Element Styling (bElement)
+
+This section demonstrates using `createHostStyles` with a bElement. See the File Organization section for the complete ToggleInput example with tokens.
 
 ### 5. Design Tokens
 
+**File: `theme.tokens.ts`**
 ```typescript
-import { createTokens, createStyles, createHostStyles } from 'plaited'
+import { createTokens } from 'plaited'
 
-const tokens = createTokens('theme', {
+export const tokens = createTokens('theme', {
   primary: { $value: '#007bff' },
   secondary: { $value: '#6c757d' },
   spacing: { $value: '16px' },
   fontSize: { $value: '1rem' },
 })
+```
+
+**File: `button.css.ts`**
+```typescript
+import { createStyles } from 'plaited'
+import { tokens } from './theme.tokens.ts'
 
 // ✅ Pass token references directly (not invoked) as CSS values
-const buttonStyles = createStyles({
-  button: {
+export const buttonStyles = createStyles({
+  btn: {
     backgroundColor: tokens.primary,  // NOT tokens.primary()
     color: 'white',
     padding: tokens.spacing,
@@ -563,32 +1090,42 @@ const buttonStyles = createStyles({
     }
   }
 })
-
-const hostStyles = createHostStyles({
-  display: 'inline-block',
-  margin: tokens.spacing,  // Token .styles auto-pushed
-})
-
-// ✅ Token styles automatically included in createHostStyles
-const MyButton = bElement({
-  tag: 'my-button',
-  hostStyles,
-  shadowDom: <button {...buttonStyles.button}><slot></slot></button>
-})
-
-// Only invoke token() when you need the CSS variable string reference
-console.log(tokens.primary())  // 'var(--theme-primary)'
 ```
+
+**File: `button.stories.tsx`**
+```typescript
+import { type FT } from 'plaited'
+import { story } from 'plaited/testing'
+import { buttonStyles } from './button.css.ts'
+
+const Button: FT = ({ children }) => (
+  <button {...buttonStyles.btn}>{children}</button>
+)
+
+export const themedButton = story({
+  description: 'Button using design tokens for theming',
+  template: () => <Button>Click Me</Button>,
+})
+```
+
+**For bElement usage with tokens**, see the ToggleInput example in Pattern 3 above.
 
 ### 6. Animations with Keyframes and Tokens
 
+**File: `colors.tokens.ts`**
 ```typescript
-import { createTokens, createKeyframes, createHostStyles, joinStyles, bElement } from 'plaited'
+import { createTokens } from 'plaited'
 
-const colors = createTokens('colors', {
+export const colors = createTokens('colors', {
   primary: { $value: '#007bff' },
   accent: { $value: '#ff6b6b' },
 })
+```
+
+**File: `status-indicator.css.ts`**
+```typescript
+import { createKeyframes, createHostStyles, joinStyles } from 'plaited'
+import { colors } from './colors.tokens.ts'
 
 const pulse = createKeyframes('pulse', {
   '0%': {
@@ -605,7 +1142,7 @@ const pulse = createKeyframes('pulse', {
   }
 })
 
-const hostStyles = joinStyles(
+export const hostStyles = joinStyles(
   createHostStyles({
     display: 'block',
     padding: '20px',
@@ -613,9 +1150,15 @@ const hostStyles = joinStyles(
   }),
   pulse()  // Combine keyframe styles with host styles
 )
+```
 
-const AnimatedCard = bElement({
-  tag: 'animated-card',
+**File: `status-indicator.ts`**
+```typescript
+import { bElement } from 'plaited'
+import { hostStyles } from './status-indicator.css.ts'
+
+export const StatusIndicator = bElement({
+  tag: 'status-indicator',
   hostStyles,
   shadowDom: <slot></slot>
 })
@@ -1041,7 +1584,45 @@ Only invoke `token()` when you need the CSS variable string reference:
 console.log(tokens.primary())  // 'var(--theme-primary)'
 ```
 
-### 4. createHostStyles Single Parameter
+### 4. Never Use String CSS Custom Properties
+
+❌ **Wrong:** Using string CSS custom properties like `'var(--name)'`
+```typescript
+export const toggleStyles = createStyles({
+  symbol: {
+    backgroundColor: 'var(--fill)',  // WRONG - don't use strings
+  }
+})
+```
+
+✅ **Correct:** Use `createTokens` and token references
+
+**File: `fills.tokens.ts`**
+```typescript
+import { createTokens } from 'plaited'
+
+export const fills = createTokens('fills', {
+  default: { $value: 'lightblue' },
+  checked: { $value: 'blue' },
+  disabled: { $value: 'gray' },
+})
+```
+
+**File: `toggle-input.css.ts`**
+```typescript
+import { createStyles } from 'plaited'
+import { fills } from './fills.tokens.ts'
+
+export const toggleStyles = createStyles({
+  symbol: {
+    backgroundColor: fills.default,  // Correct - use token reference
+  }
+})
+```
+
+**Rationale:** Tokens provide type safety, automatic CSS variable generation, and centralized design system management. String CSS custom properties bypass these benefits and make refactoring harder.
+
+### 5. createHostStyles Single Parameter
 
 ❌ **Wrong:** Passing second array parameter
 ```typescript

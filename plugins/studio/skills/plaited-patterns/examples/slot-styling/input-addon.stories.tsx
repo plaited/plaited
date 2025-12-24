@@ -1,5 +1,5 @@
 import { story } from 'plaited/testing'
-import { InputAddon } from './InputAddon.tsx'
+import { InputAddon } from './input-addon.ts'
 
 export const Example = story({
   description: 'Basic example of the InputAddon.',
