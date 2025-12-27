@@ -1,6 +1,6 @@
 ---
 name: plaited-patterns
-description: Comprehensive Plaited framework patterns for AI-assisted design of MCP/A2UI outcome-based interfaces. Covers templates, styling, behavioral programming, custom elements, forms, cross-island communication, testing, and web workers. Automatically invoked when designing or implementing Plaited templates and BehavioralElements.
+description: Comprehensive Plaited framework patterns for AI-assisted design of MCP/A2UI outcome-based interfaces. Covers templates, styling, behavioral programming, custom elements, forms, cross-island communication, testing, web workers, and code quality verification. Automatically invoked when designing or implementing Plaited templates and BehavioralElements.
 ---
 
 # Plaited Patterns Skill
@@ -15,16 +15,17 @@ This skill provides comprehensive documentation for building Plaited application
 - Writing stories for testing
 - Styling elements with CSS-in-JS
 - Offloading computation to web workers
+- Verifying code quality and ensuring accurate Plaited patterns
 
 ## Quick Reference
 
 **TypeScript LSP**: This plugin works with `typescript-lsp@claude-plugins-official` for type inference from imports. Use LSP for accurate type signatures from source code.
 
-**Main Rules**: See @.claude/rules/ for:
-- Code style standards (@.claude/rules/development/code-style.md)
-- Testing with Bun (@.claude/rules/development/testing.md)
-- TSDoc documentation (@.claude/rules/documentation/)
-- Platform-specific APIs (@.claude/rules/platform/bun-apis.md)
+**Essential Standards**:
+- **Code Conventions**: [code-conventions.md](plaited/code-conventions.md) - Type system, function style, templates, imports, null handling
+- **Testing**: [stories.md](plaited/stories.md) - Story-based testing with Playwright, workshop CLI
+- **Standards**: [standards.md](plaited/standards.md) - 95% confidence threshold, documentation guidelines, Bun APIs
+- **Verification**: [verification-workflow.md](plaited/verification-workflow.md) - Complete code generation workflow
 
 ## Pattern Categories
 
@@ -63,6 +64,26 @@ This skill provides comprehensive documentation for building Plaited application
 - **[web-workers.md](plaited/web-workers.md)** - Offloading computation to background threads
   - Use for: CPU-intensive calculations, data processing, complex algorithms
   - APIs: `useWorker()` (main thread), `bWorker()` (worker thread)
+
+### Code Quality & Verification
+- **[verification-workflow.md](plaited/verification-workflow.md)** - Complete code generation workflow
+  - Use for: Systematic approach to generating accurate Plaited code
+  - Phases: API verification (check bElement first), code generation (apply patterns), post-generation validation
+  - 95% confidence threshold before presenting code
+- **[lsp-verification.md](plaited/lsp-verification.md)** - LSP-based type verification
+  - Use for: Verifying Plaited framework types before and after code generation
+  - Operations: hover, goToDefinition, findReferences, documentSymbol
+  - Critical files to check: BProgramArgs, BehavioralElementCallbackDetails, CSS types
+- **[web-api-adaptation.md](plaited/web-api-adaptation.md)** - Framework-first web API adaptation
+  - Use for: Understanding what bElement provides before reaching for web APIs
+  - Three phases: Check bElement built-ins, verify web API behavior, adapt to Plaited patterns
+  - Critical: p-trigger (events), p-target (queries), internals (forms), lifecycle callbacks
+- **[code-conventions.md](plaited/code-conventions.md)** - Plaited code style and conventions
+  - Use for: Type system preferences, function style, template creation, import paths, null handling
+  - Key patterns: type over interface, JSX syntax only, package imports in tests, object parameters for 2+ params
+- **[standards.md](plaited/standards.md)** - Development standards and best practices
+  - Use for: 95% confidence threshold, documentation guidelines, Bun platform APIs
+  - Verification protocol: framework-first, LSP verification, WebFetch for web APIs
 
 ## Decision Trees
 
@@ -132,12 +153,12 @@ element/
 - LSP provides accurate signatures, reducing need for type documentation in rules
 - Hover for TSDoc, goToDefinition for source, findReferences for usage
 
-### With Main Rules:
-- **Code Style**: Follow @.claude/rules/development/code-style.md
-- **Testing**: Use Bun test runner (@.claude/rules/development/testing.md) for unit tests; stories for browser tests
-- **Documentation**: TSDoc standards from @.claude/rules/documentation/
-- **Imports**: Package imports from @.claude/rules/development/imports.md
-- **Platform**: Bun-specific APIs from @.claude/rules/platform/bun-apis.md
+### With Plaited Standards:
+- **Code Conventions**: Follow [code-conventions.md](plaited/code-conventions.md) for type system, function style, and patterns
+- **Testing**: Use Bun test runner for unit tests (`.spec.ts`); [stories.md](plaited/stories.md) for browser tests (`.stories.tsx`)
+- **Documentation**: TSDoc standards from [standards.md#documentation-guidelines](plaited/standards.md#documentation-guidelines)
+- **Imports**: Package imports from [code-conventions.md#import-path-standards](plaited/code-conventions.md#import-path-standards)
+- **Platform**: Bun-specific APIs from [standards.md#bun-platform-apis](plaited/standards.md#bun-platform-apis)
 
 ## Best Practices
 
@@ -200,6 +221,19 @@ Complete working examples demonstrating Plaited patterns:
     - `input-addon.ts` - bElement definition
     - `input-addon.stories.tsx` - Story tests
 
+### Form-Associated Elements
+- **[ToggleInput](examples/form-associated/)** - Custom form control with ElementInternals
+  - Form-associated custom element pattern
+  - Uses `formAssociated: true` to enable ElementInternals API
+  - Custom states (`:state()`) for styling based on form state
+  - Demonstrates `internals.setFormValue()` for form integration
+  - Follows styling.md patterns: separate tokens, styles, and element files
+  - Files:
+    - `surfaces.tokens.ts` - Design tokens for toggle states
+    - `toggle-input.css.ts` - Styles and hostStyles
+    - `toggle-input.tsx` - bElement definition with formAssociated
+    - `toggle-input.stories.tsx` - Story tests
+
 ### Stateful Elements
 - **[Popover](examples/stateful-elements/)** - Native popover API wrapper
   - Stateful element pattern with custom states
@@ -225,6 +259,7 @@ Complete working examples demonstrating Plaited patterns:
 
 ## Navigation Summary
 
+### Core Patterns
 - [styling.md](plaited/styling.md) - Templates + CSS-in-JS system
 - [stories.md](plaited/stories.md) - Testing patterns with workshop CLI
 - [behavioral-programs.md](plaited/behavioral-programs.md) - BP foundations (4 key capabilities)
@@ -232,3 +267,10 @@ Complete working examples demonstrating Plaited patterns:
 - [form-associated-elements.md](plaited/form-associated-elements.md) - Form integration
 - [cross-island-communication.md](plaited/cross-island-communication.md) - 3 communication patterns
 - [web-workers.md](plaited/web-workers.md) - Performance optimization
+
+### Code Quality & Verification
+- [verification-workflow.md](plaited/verification-workflow.md) - Complete code generation workflow
+- [lsp-verification.md](plaited/lsp-verification.md) - LSP-based type verification
+- [web-api-adaptation.md](plaited/web-api-adaptation.md) - Framework-first web API adaptation
+- [code-conventions.md](plaited/code-conventions.md) - Code style and conventions
+- [standards.md](plaited/standards.md) - Development standards and best practices

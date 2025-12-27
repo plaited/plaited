@@ -673,4 +673,3 @@ const CartDisplay = bElement({
 **Next steps**:
 - See `b-element.md` for bElement fundamentals
 - See `behavioral-programs.md` for BP coordination
-- See `.claude/rules/development/signals.md` for detailed signal guidelines
