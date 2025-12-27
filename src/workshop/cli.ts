@@ -10,11 +10,7 @@
  * @remarks
  * Supports Bun's --hot flag for automatic module hot reload.
  *
- * Usage:
- *   bun plaited test                                    # Run all stories in cwd
- *   bun plaited test src/components                     # Run stories from directory
- *   bun plaited test src/Button.stories.tsx             # Run stories from file
- *   bun plaited test -p 3500                            # Custom port
+
  *   bun plaited test -d ./my-project                    # Custom working directory
  *   bun --hot plaited test                              # Enable hot reload
  */
@@ -68,11 +64,6 @@ if (!subcommand) {
   console.log('  -p, --port <number>       Port for test server (default: 0 - auto-assign)')
   console.log('  -d, --dir <path>          Working directory (default: process.cwd())')
   console.log('  -c, --color-scheme <mode> Color scheme for test browser (light|dark, default: light)\n')
-  console.log('Examples:')
-  console.log('  bun plaited test')
-  console.log('  bun plaited test src/components')
-  console.log('  bun --hot plaited dev')
-  process.exit(1)
 }
 
 if (!['test', 'dev'].includes(subcommand)) {
