@@ -41,9 +41,9 @@ See @.claude/rules/development/testing.md for complete testing guide.
 
 ### Architecture Highlights
 
-Plaited is a behavioral programming framework for reactive web components. Key pillars:
+Plaited is a behavioral programming framework for reactive custom elements. Key pillars:
 1. Behavioral Programming (BP) Paradigm
-2. Web Components with Shadow DOM
+2. Custom Elements with Shadow DOM
 3. CSS-in-JS System
 
 See @.claude/rules/architecture/ for detailed architectural documentation.

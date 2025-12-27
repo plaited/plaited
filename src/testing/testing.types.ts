@@ -29,7 +29,7 @@ export type AccessibilityCheckParams = {
 
 /**
  * Performs accessibility testing using axe-core.
- * Validates components against WCAG standards.
+ * Validates elements against WCAG standards.
  *
  * @param args - Axe-core configuration options
  * @returns Promise that resolves if no violations found
@@ -139,14 +139,14 @@ export type Args<T extends FunctionTemplate> = Parameters<T>[0]
 
 /**
  * @internal Defines the signature for a story's `play` function, which encapsulates test interactions
- * and assertions for a component story. It receives a set of testing utilities as an argument.
+ * and assertions for a plaited story. It receives a set of testing utilities as an argument.
  *
  * @param {object} args - An object containing testing utilities.
  * @param {typeof assert} args.assert - Function for making assertions within the test.
  * @param {typeof findByAttribute} args.findByAttribute - Utility to find elements by attribute value within the story's host element.
  * @param {typeof findByText} args.findByText - Utility to find elements by their text content within the story's host element.
  * @param {typeof fireEvent} args.fireEvent - Utilities for dispatching DOM events (e.g., click, input).
- * @param {Element} args.hostElement - The root DOM element where the story component is rendered.
+ * @param {Element} args.hostElement - The root DOM element where the story is rendered.
  * @param {typeof match} args.match - Utility for flexible matching of strings or regular expressions.
  * @param {typeof throws} args.throws - Utility for asserting that a function throws an error.
  * @param {typeof wait} args.wait - Utility to pause execution for a specified duration.
@@ -169,11 +169,11 @@ export type Play = (args: {
  * Story with required interaction testing.
  *
  * @template T - Template props type
- * @property args - Component props
+ * @property args - Story props
  * @property description - Test scenario description
  * @property parameters - Test configuration
  * @property play - Required test function
- * @property template - Component template
+ * @property template - Story template
  */
 export type InteractionStoryObj<T extends FunctionTemplate = FunctionTemplate> = {
   args?: Args<T>
@@ -186,11 +186,11 @@ export type InteractionStoryObj<T extends FunctionTemplate = FunctionTemplate> =
  * Story for visual/snapshot testing without interactions.
  *
  * @template T - Template props type
- * @property args - Component props
+ * @property args - Story props
  * @property description - Visual test description
  * @property parameters - Test configuration
  * @property play - Never (enforced as undefined)
- * @property template - Component template
+ * @property template - Story template
  */
 export type SnapshotStoryObj<T extends FunctionTemplate = FunctionTemplate> = {
   args?: Args<T>
@@ -201,10 +201,10 @@ export type SnapshotStoryObj<T extends FunctionTemplate = FunctionTemplate> = {
 }
 
 /**
- * Story definition for component testing.
+ * Story definition for template testing.
  * Can be interaction or snapshot test.
  *
- * @template T - Component props type
+ * @template T - Template attributes type
  *
  * @see {@link InteractionStoryObj} for interaction tests
  * @see {@link SnapshotStoryObj} for visual tests

@@ -1,10 +1,10 @@
 /**
  * Main entry point for the Plaited framework.
- * Exports the complete public API for building reactive web components using behavioral programming.
+ * Exports the complete public API for building reactive custom elements using behavioral programming.
  *
  * @remarks
  * This module provides access to:
- * - **Web Components**: {@link bElement}, {@link bWorker} - Custom element creation with behavioral programming integration
+ * - **BehavioralElement**: {@link bElement}, {@link bWorker} - Custom element creation with behavioral programming integration
  * - **Behavioral Programming**: {@link behavioral}, {@link bThread}, {@link bSync}, {@link useBehavioral} - Event coordination and synchronization
  * - **State Management**: {@link useSignal}, {@link useComputed} - Reactive state containers
  * - **Styling**: {@link createStyles}, {@link createHostStyles}, {@link createKeyframes}, {@link createTokens}, {@link joinStyles} - CSS-in-JS utilities

@@ -48,13 +48,13 @@ test('getPaths: should strip cwd from file path', () => {
 
 test('getPaths: should handle root-level files', () => {
   const cwd = '/Users/test/project'
-  const filePath = '/Users/test/project/Component.stories.tsx'
+  const filePath = '/Users/test/project/Template.stories.tsx'
   const exportName = 'story'
 
   const result = getPaths({ filePath, cwd, exportName })
 
-  expect(result.route).toBe('/component--story')
-  expect(result.entryPath).toBe('/Component.stories.js')
+  expect(result.route).toBe('/template--story')
+  expect(result.entryPath).toBe('/Template.stories.js')
 })
 
 test('getPaths: should convert .tsx to .js in entry path', () => {
@@ -70,13 +70,13 @@ test('getPaths: should convert .tsx to .js in entry path', () => {
 
 test('getPaths: should preserve directory structure in entry path', () => {
   const cwd = '/Users/test/project'
-  const filePath = '/Users/test/project/deep/nested/path/Component.stories.tsx'
+  const filePath = '/Users/test/project/deep/nested/path/Template.stories.tsx'
   const exportName = 'story'
 
   const result = getPaths({ filePath, cwd, exportName })
 
-  expect(result.entryPath).toBe('/deep/nested/path/Component.stories.js')
-  expect(result.route).toBe('/deep/nested/path/component--story')
+  expect(result.entryPath).toBe('/deep/nested/path/Template.stories.js')
+  expect(result.route).toBe('/deep/nested/path/template--story')
 })
 
 test('getPaths: should add leading slash to paths', () => {
@@ -127,13 +127,13 @@ test('getPaths: should handle deeply nested paths', () => {
 
 test('getPaths: should handle special characters in names via kebabCase', () => {
   const cwd = '/Users/test/project'
-  const filePath = '/Users/test/project/MySpecialComponent.stories.tsx'
+  const filePath = '/Users/test/project/MySpecialTemplate.stories.tsx'
   const exportName = 'MySpecialStory'
 
   const result = getPaths({ filePath, cwd, exportName })
 
   // PascalCase should be converted to kebab-case
-  expect(result.route).toBe('/my-special-component--my-special-story')
+  expect(result.route).toBe('/my-special-template--my-special-story')
 })
 
 test('getPaths: route should match pattern /dir/file-name--export-name', () => {
@@ -162,14 +162,14 @@ test('getPaths: entryPath should match pattern /dir/file-name.js', () => {
 
 test('getPaths: should handle file path that does not start with cwd', () => {
   const cwd = '/Users/test/project'
-  const filePath = '/different/path/Component.stories.tsx'
+  const filePath = '/different/path/Template.stories.tsx'
   const exportName = 'story'
 
   const result = getPaths({ filePath, cwd, exportName })
 
   // Should use the full path when it doesn't start with cwd
-  expect(result.route).toBe('/different/path/component--story')
-  expect(result.entryPath).toBe('/different/path/Component.stories.js')
+  expect(result.route).toBe('/different/path/template--story')
+  expect(result.entryPath).toBe('/different/path/Template.stories.js')
 })
 
 test('getPaths: should handle relative-like paths starting with /', () => {

@@ -119,7 +119,7 @@ Test configuration for headers, styles, and timeout:
 ```typescript
 export const customTimeout = story({
   description: 'Story with custom timeout',
-  template: SlowComponent,
+  template: SlowElement,
   parameters: {
     timeout: 10000, // 10 seconds (default is 5000)
     styles: createHostStyles({ /* test-specific styles */ }),
@@ -139,13 +139,13 @@ Use `.only()` and `.skip()` to control test execution:
 // Run ONLY this story (skip all others)
 export const focusedTest = story.only({
   description: 'Focused test - only this runs',
-  template: MyComponent
+  template: MyElement
 })
 
 // Skip this story
 export const skippedTest = story.skip({
   description: 'Skipped test - will not run',
-  template: BrokenComponent
+  template: BrokenElement
 })
 ```
 
@@ -160,7 +160,7 @@ The Plaited workshop CLI provides commands for running stories and development.
 bun plaited test
 
 # Run stories from specific directory
-bun plaited test src/components
+bun plaited test src/elements
 
 # Run stories from specific file
 bun plaited test src/Button.stories.tsx
@@ -883,7 +883,7 @@ play: async ({ throws }) => {
 
 ```
 src/
-  components/
+  elements/
     button/
       button.css.ts          # Styles (createStyles)
       button.tokens.ts       # Design tokens (createTokens)

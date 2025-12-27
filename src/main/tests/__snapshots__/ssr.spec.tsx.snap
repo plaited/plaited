@@ -116,7 +116,7 @@ exports[`ssr: CustomElement with declarative shadow dom & hoist styles 1`] = `
 "<style>
     .cls_dqiix{display:flex;}.cls_13vh1nn{flex-direction:column;}
 </style>
-<nested-element class="nestedComponent cls_dqiix cls_13vh1nn">
+<nested-element class="nestedElement cls_dqiix cls_13vh1nn">
     <template shadowrootmode="open" shadowrootdelegatesfocus>
         <style>
             .cls_2p8uqox{font-weight:bold;}
@@ -133,7 +133,7 @@ exports[`ssr: CustomElement with declarative shadow dom & hoist styles 1`] = `
 }
 `;
 
-exports[`ssr: CustomElement with styled slotted component 1`] = `
+exports[`ssr: CustomElement with styled slotted element 1`] = `
 {
   "content": 
 "<style>
@@ -159,7 +159,7 @@ exports[`ssr: CustomElement with styled slotted component 1`] = `
 exports[`ssr: CustomElement with declarative shadow dom and nested declarative shadow dom 1`] = `
 {
   "content": 
-"<top-component>
+"<top-element>
     <template shadowrootmode="open" shadowrootdelegatesfocus>
         <style>
             .cls_1v0nksu{color:rebeccapurple;}
@@ -175,7 +175,7 @@ exports[`ssr: CustomElement with declarative shadow dom and nested declarative s
             <p slot="nested">slotted paragraph</p>
         </nested-element>
     </template>
-</top-component>"
+</top-element>"
 ,
   "stylesheets": [],
 }
@@ -187,7 +187,7 @@ exports[`ssr: CustomElement with declarative shadow dom and nested declarative s
 "<style>
     .cls_qt6ejx{display:block;}
 </style>
-<top-component class="topComponent cls_qt6ejx">
+<top-element class="topElement cls_qt6ejx">
     <template shadowrootmode="open" shadowrootdelegatesfocus>
         <style>
             .cls_1v0nksu{color:rebeccapurple;}
@@ -203,7 +203,7 @@ exports[`ssr: CustomElement with declarative shadow dom and nested declarative s
             <p slot="nested">slotted paragraph</p>
         </nested-element>
     </template>
-</top-component>"
+</top-element>"
 ,
   "stylesheets": [
     ".cls_qt6ejx{display:block;}",
@@ -217,7 +217,7 @@ exports[`ssr: CustomElement with declarative shadow dom and nested declarative s
 "<style>
     .cls_2h7uhvs{width:100%;}.cls_16johir{aspect-ratio:16 / 9;}.cls_qt6ejx{display:block;}
 </style>
-<top-component class="topComponent cls_qt6ejx">
+<top-element class="topElement cls_qt6ejx">
     <template shadowrootmode="open" shadowrootdelegatesfocus>
         <style>
             .cls_1v0nksu{color:rebeccapurple;}
@@ -234,7 +234,7 @@ exports[`ssr: CustomElement with declarative shadow dom and nested declarative s
         </nested-element>
     </template>
     <img class="image cls_2h7uhvs cls_16johir" />
-</top-component>"
+</top-element>"
 ,
   "stylesheets": [
     ".cls_2h7uhvs{width:100%;}",

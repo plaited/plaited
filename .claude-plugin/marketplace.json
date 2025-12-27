@@ -5,7 +5,7 @@
   },
   "metadata": {
     "version": "1.0.0",
-    "description": "Plaited framework plugins for building reactive web components with behavioral programming"
+    "description": "Plaited framework plugins for building reactive custom elements with behavioral programming"
   },
   "plugins": [
     {

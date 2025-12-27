@@ -46,7 +46,7 @@ When reviewing code, validate:
 - **Multiple listeners**: Confirm multiple islands need reactivity
 - **NOT for parent-child**: Flag useSignal used between parent and child in shadowDOM (should use trigger/emit)
 
-### 3. Web Component Patterns
+### 3. BehavioralElement Patterns
 
 - **bElement structure**: Proper shadowDom template and bProgram setup
 - **p-target usage**: Elements correctly bound via p-target attributes

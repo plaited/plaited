@@ -198,14 +198,14 @@ const styles = createStyles({
   nestedLabel: {
     fontWeight: 'bold',
   },
-  nestedComponent: {
+  nestedElement: {
     display: 'flex',
     flexDirection: 'column',
   },
   slottedParagraph: {
     color: 'rebeccapurple',
   },
-  topComponent: {
+  topElement: {
     display: 'block',
   },
   image: {
@@ -233,14 +233,14 @@ test('ssr: CustomElement hoisting its styles', () => {
 })
 
 test('ssr: CustomElement with declarative shadow dom & hoist styles', () => {
-  const el = <NestedCustomElement {...styles.nestedComponent} />
+  const el = <NestedCustomElement {...styles.nestedElement} />
   expect({
     content: render(el),
     stylesheets: el.stylesheets,
   }).toMatchSnapshot()
 })
 
-test('ssr: CustomElement with styled slotted component', () => {
+test('ssr: CustomElement with styled slotted element', () => {
   const el = (
     <NestedCustomElement {...styles.slottedParagraph}>
       <p slot='nested'>slotted paragraph</p>
@@ -253,7 +253,7 @@ test('ssr: CustomElement with styled slotted component', () => {
 })
 
 const TopCustomElement = bElement({
-  tag: 'top-component',
+  tag: 'top-element',
   shadowDom: (
     <NestedCustomElement {...styles.slottedParagraph}>
       <p slot='nested'>slotted paragraph</p>
@@ -270,7 +270,7 @@ test('ssr: CustomElement with declarative shadow dom and nested declarative shad
 })
 
 test('ssr: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles', () => {
-  const el = <TopCustomElement {...styles.topComponent} />
+  const el = <TopCustomElement {...styles.topElement} />
   expect({
     content: render(el),
     stylesheets: el.stylesheets,
@@ -279,7 +279,7 @@ test('ssr: CustomElement with declarative shadow dom and nested declarative shad
 
 test('ssr: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles and child', () => {
   const el = (
-    <TopCustomElement {...styles.topComponent}>
+    <TopCustomElement {...styles.topElement}>
       {/* biome-ignore lint/a11y/useAltText: Test fixture doesn't need alt text */}
       <img {...styles.image} />
     </TopCustomElement>

@@ -52,10 +52,10 @@ test('getRoot: should return / as fallback when no common ancestor', () => {
 })
 
 test('getRoot: should resolve relative paths to absolute', () => {
-  const paths = ['./src/components', '../other/components']
+  const paths = ['./src/templates', '../other/templates']
   const result = getRoot(paths)
-  // './src/components' -> /abs/path/to/cwd/src/components
-  // '../other/components' -> /abs/path/to/parent/other/components
+  // './src/templates' -> /abs/path/to/cwd/src/templates
+  // '../other/templates' -> /abs/path/to/parent/other/templates
   // Common ancestor is parent of cwd
   expect(result).toBe(resolve(process.cwd(), '..'))
 })
@@ -73,14 +73,14 @@ test('getRoot: should handle single file at root level', () => {
 })
 
 test('getRoot: should handle paths with multiple dots', () => {
-  const paths = ['src/foo.bar.stories.tsx', 'src/baz.component.tsx']
+  const paths = ['src/foo.bar.stories.tsx', 'src/baz.template.tsx']
   const result = getRoot(paths)
   // Files detected by extensions, parent directory extracted
   expect(result).toBe(resolve(process.cwd(), 'src'))
 })
 
 test('getRoot: should return single directory when all paths resolve to same location', () => {
-  const paths = ['src/elements', './src/components', 'src/templates/']
+  const paths = ['src/elements', './src/core', 'src/templates/']
   const result = getRoot(paths)
   expect(result).toBe(resolve(process.cwd(), 'src'))
 })

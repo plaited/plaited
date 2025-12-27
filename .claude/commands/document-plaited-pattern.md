@@ -115,7 +115,7 @@ Propose documentation outline based on pattern type:
 ## Key Architectural Principles
 [Core ideas that guide usage]
 
-## Component Lifecycle
+## Behavioral Element Lifecycle
 [How it works from creation to cleanup]
 
 ## API Reference

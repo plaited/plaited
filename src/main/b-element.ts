@@ -1,6 +1,6 @@
 /**
  * @internal
- * BehavioralTemplate system bridging Web Components and behavioral programming.
+ * BehavioralTemplate system bridging Custom Elements and behavioral programming.
  * Creates custom elements with Shadow DOM, event delegation, and BP integration.
  */
 
@@ -82,7 +82,7 @@ const getTriggerType = (event: Event, context: Element) => {
 const isElement = (node: Node): node is Element => node.nodeType === 1
 
 /**
- * Creates a Web Component with behavioral programming and Shadow DOM support.
+ * Creates Custom Elements with behavioral programming and Shadow DOM support.
  * Core building block for Plaited applications enabling declarative event handling,
  * reactive state management, and behavioral thread coordination.
  *

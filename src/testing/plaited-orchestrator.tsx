@@ -23,8 +23,8 @@ const orchestratorStyles = createStyles({
 })
 
 /**
- * Orchestrator component for interactive testing.
- * Provides grid-based layout and event coordination between header, fixture, and mask components.
+ * Orchestrator element for interactive testing.
+ * Provides grid-based layout and event coordination between header, fixture, and mask elements.
  *
  * @remarks
  * Layout structure:
@@ -43,14 +43,9 @@ const orchestratorStyles = createStyles({
  *
  * Event coordination via bThreads:
  * - Listens for HEADER_EVENTS.toggle_mask from header
- * - Coordinates MASK_EVENTS.toggle to mask component
+ * - Coordinates MASK_EVENTS.toggle to mask element
  * - bThread pattern: waitFor header event � request mask event
  * - Repeats indefinitely for continuous coordination
- *
- * Components communicate through light DOM:
- * - Pure slot-based composition
- * - No component instances in shadow DOM
- * - Event flow: header � orchestrator � mask
  *
  * @see {@link HEADER_EVENTS.toggle_mask} for header toggle event
  * @see {@link MASK_EVENTS.toggle} for mask visibility control

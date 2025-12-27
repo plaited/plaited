@@ -4,7 +4,7 @@
  *
  * Purpose: JSX development runtime entry point for TypeScript/Babel JSX transformation.
  * Architecture: Re-exports createTemplate with standard JSX runtime names, similar to production runtime.
- * Dependencies: createTemplate factory, Fragment component, JSX type definitions.
+ * Dependencies: createTemplate factory, Fragment, JSX type definitions.
  * Consumers: TypeScript compiler, Babel transforms, bundlers with JSX support (in development mode).
  */
 

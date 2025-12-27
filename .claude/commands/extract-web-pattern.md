@@ -17,13 +17,13 @@ Extract modern HTML/Web API patterns from the provided URL and add to the studio
    - Web APIs (Intersection Observer, Priority Hints, etc.)
    - Performance optimization (preconnect, dns-prefetch, fetchpriority)
    - Accessibility improvements
-   - Shadow DOM / Web Components compatible patterns
+   - Shadow DOM / Custom Element compatible patterns
 
 3. Extract:
    - **Pattern name**: Clear, descriptive title
    - **Use case**: When to use this pattern
    - **Implementation**: Code examples
-   - **Plaited integration**: How it fits with behavioral programming, signals, or Web Components
+   - **Plaited integration**: How it fits with behavioral programming, signals, or Behavioral Elements
    - **Benefits**: Performance, accessibility, or DX improvements
    - **Browser support**: Compatibility considerations
 
@@ -44,7 +44,7 @@ Extract modern HTML/Web API patterns from the provided URL and add to the studio
 ## Implementation
 \`\`\`typescript
 // Plaited template example
-const MyComponent = bElement({
+const MyElement = bElement({
   // Pattern integration here
 })
 \`\`\`

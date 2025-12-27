@@ -7,13 +7,13 @@ description: Comprehensive Plaited framework patterns for AI-assisted design of 
 
 ## Purpose
 
-This skill provides comprehensive documentation for building Plaited applications using behavioral programming, web components, and islands architecture. Use this when:
+This skill provides comprehensive documentation for building Plaited applications using behavioral programming, custom elements, and islands architecture. Use this when:
 - Designing or implementing Plaited templates and BehavioralElements (bElement or FunctionalTemplate)
 - Creating interactive islands with behavioral programs
 - Building form-associated custom elements
 - Coordinating cross-island communication
 - Writing stories for testing
-- Styling components with CSS-in-JS
+- Styling elements with CSS-in-JS
 - Offloading computation to web workers
 
 ## Quick Reference
@@ -105,7 +105,7 @@ Is computation CPU-intensive?
 
 ### For Simple Elements (FunctionalTemplate):
 ```
-component/
+element/
   button.css.ts          # Styles (createStyles)
   button.tokens.ts       # Design tokens (optional)
   button.stories.tsx     # FT defined + stories
@@ -113,7 +113,7 @@ component/
 
 ### For Complex Elements (bElement):
 ```
-component/
+element/
   toggle-input.css.ts         # Styles + hostStyles
   fills.tokens.ts             # Tokens (optional)
   toggle-input.ts             # bElement definition

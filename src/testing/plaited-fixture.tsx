@@ -24,7 +24,7 @@ import { useInteract } from './use-interact.ts'
 import { useWebSocket } from './use-web-socket.ts'
 
 /**
- * Story test fixture component for Plaited testing framework.
+ * Story test fixture element for Plaited testing framework.
  * Executes story tests, manages test lifecycle, and reports results.
  *
  * @remarks

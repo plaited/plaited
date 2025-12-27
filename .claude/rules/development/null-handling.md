@@ -1,6 +1,6 @@
 # Null Handling and Type Assertions
 
-**Use non-null assertions (`!`) when elements are guaranteed to exist** by the framework or component structure. Use optional chaining (`?.`) for defensive programming when existence is uncertain.
+**Use non-null assertions (`!`) when elements are guaranteed to exist** by the framework or element structure. Use optional chaining (`?.`) for defensive programming when existence is uncertain.
 
 ## DOM Element Query Patterns
 
