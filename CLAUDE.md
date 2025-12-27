@@ -21,13 +21,13 @@ bun run check:write
 
 ## Project Organization
 
-This project uses `.claude/rules/` for modular guidance:
+This project uses `.claude/rules/` for project-specific guidance:
 
-- **Architecture**: @.claude/rules/architecture/ - Core concepts, patterns, implementation details
-- **Development**: @.claude/rules/development/ - Code style, testing, imports, null handling, plugin development
-- **Documentation**: @.claude/rules/documentation/ - TSDoc philosophy and workflow
-- **Platform**: @.claude/rules/platform/ - Bun APIs
+- **Development**: @.claude/rules/development/ - Testing commands, plugin development workflow
+- **Documentation**: @.claude/rules/documentation/ - TSDoc generation workflow
 - **Standards**: @.claude/rules/standards/ - Terminology, code review guidelines, accuracy standards
+
+For comprehensive Plaited patterns, code conventions, and standards, see the **studio plugin** (`plugins/studio/skills/plaited-patterns/`).
 
 For detailed TSDoc templates, see the code-documentation skill.
 
@@ -46,7 +46,10 @@ Plaited is a behavioral programming framework for reactive custom elements. Key 
 2. Custom Elements with Shadow DOM
 3. CSS-in-JS System
 
-See @.claude/rules/architecture/ for detailed architectural documentation.
+For architectural patterns and implementation details, see the studio plugin:
+- `plugins/studio/skills/plaited-patterns/plaited/behavioral-programs.md`
+- `plugins/studio/skills/plaited-patterns/plaited/b-element.md`
+- `plugins/studio/skills/plaited-patterns/plaited/styling.md`
 
 ### Code Style Essentials
 
@@ -54,8 +57,10 @@ See @.claude/rules/architecture/ for detailed architectural documentation.
 - Use package imports in tests (`'plaited'`, `'plaited/testing'`, `'plaited/utils'`)
 - Use `test` instead of `it` in test files
 - Prefer Bun native APIs over Node.js equivalents
+- JSX syntax only (not `h()` or `createTemplate()`)
+- Object parameters for functions with 2+ parameters
 
-See @.claude/rules/development/code-style.md for complete style guide.
+For complete conventions, see the studio plugin: `plugins/studio/skills/plaited-patterns/plaited/code-conventions.md`
 
 ### Plugin Development
 
@@ -72,8 +77,9 @@ See @.claude/rules/development/plugin-development.md for complete guide.
 - No `@example` sections - tests/stories are living examples
 - Use `@internal` marker for non-public APIs
 - Always use `type` over `interface`
+- Use Mermaid diagrams only (not ASCII art)
 
-See @.claude/rules/documentation/ and the code-documentation skill for complete guidelines.
+See the studio plugin (`plugins/studio/skills/plaited-patterns/plaited/standards.md`) and the code-documentation skill for complete guidelines.
 
 ## Important Constraints
 
@@ -84,12 +90,18 @@ See @.claude/rules/documentation/ and the code-documentation skill for complete 
 
 ## Additional Resources
 
-All detailed guidance is organized in `.claude/rules/` by topic. Files are automatically loaded and provide comprehensive context for:
+**Studio Plugin** (`plugins/studio/skills/plaited-patterns/`):
+- Comprehensive Plaited patterns, examples, and best practices
+- Code conventions and standards
+- Verification workflows for accurate code generation
+- Self-contained and publishable to marketplace
 
-- Architecture patterns and implementation details
-- Development standards and best practices
-- Platform-specific guidelines (Bun)
-- Code review and documentation standards
+**Project-Specific Rules** (`.claude/rules/`):
+- Testing commands and workflow
+- Plugin development guidelines
+- TSDoc generation workflow
+- Code review standards
+- Project terminology
 
 Use the code-documentation skill for TSDoc template reference.
 
