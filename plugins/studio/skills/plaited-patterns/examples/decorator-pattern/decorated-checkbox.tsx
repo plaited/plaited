@@ -1,4 +1,4 @@
-import { bElement, type ElementAttributeList, type FT, useAttributesObserver } from 'plaited'
+import { bElement, useAttributesObserver } from 'plaited'
 import { hostStyles, styles } from './decorated-checkbox.css.ts'
 
 /**
@@ -20,6 +20,7 @@ export const DecorateCheckbox = bElement({
       <slot
         p-target='slot'
         p-trigger={{ slotchange: 'slotchange' }}
+        {...styles.input}
       ></slot>
     </>
   ),
@@ -52,20 +53,3 @@ export const DecorateCheckbox = bElement({
     }
   },
 })
-
-/**
- * DecoratedCheckbox - FunctionalTemplate wrapper for DecorateCheckbox
- *
- * Provides convenient API for creating decorated checkboxes.
- */
-export const DecoratedCheckbox: FT<ElementAttributeList['input']> = (props) => {
-  return (
-    <DecorateCheckbox>
-      <input
-        {...props}
-        {...styles.input}
-        type='checkbox'
-      />
-    </DecorateCheckbox>
-  )
-}

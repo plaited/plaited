@@ -1,8 +1,5 @@
 # Cross-Island Communication
 
-Plaited provides three patterns for communication between interactive islands. Choose the pattern based on the relationship between components.
-
-**For bElement basics**, see `b-element.md`
 **For BP foundations**, see `behavioral-programs.md`
 **For form integration**, see `form-associated-elements.md`
 
@@ -156,7 +153,9 @@ const ReaderIsland = bElement({
     sendData.listen('receive', trigger)
 
     return {
-      receive({ value }) {
+      receive(detail?: { value: string }) {
+        if (!detail) return
+        const { value } = detail
         const display = $('display')[0]
         display?.render(`Received: ${value}`)
       }
@@ -346,20 +345,28 @@ const Counter2 = bElement({
 Signals support synchronous state queries:
 
 ```typescript
-bProgram({ trigger }) {
-  const userSettings = useSignal<{ theme: 'light' | 'dark' }>({ theme: 'light' })
+import { bElement, useSignal } from 'plaited'
 
-  return {
-    toggleTheme() {
-      // Query current state
-      const current = userSettings.get()
+// Create shared signal (outside bProgram for cross-island sharing)
+const userSettings = useSignal<{ theme: 'light' | 'dark' }>({ theme: 'light' })
 
-      // Update based on current state
-      const newTheme = current.theme === 'light' ? 'dark' : 'light'
-      userSettings.set({ theme: newTheme })
+const ThemeToggle = bElement({
+  tag: 'theme-toggle',
+  publicEvents: ['toggle'],
+  shadowDom: <button p-target="btn" p-trigger={{ click: 'toggle' }}>Toggle Theme</button>,
+  bProgram({ trigger }) {
+    return {
+      toggle() {
+        // Query current state
+        const current = userSettings.get()
+
+        // Update based on current state
+        const newTheme = current.theme === 'light' ? 'dark' : 'light'
+        userSettings.set({ theme: newTheme })
+      }
     }
   }
-}
+})
 ```
 
 ### Get Last Value on Connection (getLVC)
@@ -462,11 +469,7 @@ dataSignal.listen('data', trigger)
 
 // ✅ Use trigger/emit for direct parent-child
 // OR event delegation if appropriate
-```
 
-#### ❌ Communication Following Component Tree
-
-```typescript
 // ❌ Don't use signal for parent-child
 const parentToChildSignal = useSignal()
 

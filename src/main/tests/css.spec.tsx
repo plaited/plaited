@@ -215,9 +215,9 @@ test('tokens: simple token with $value', () => {
     },
   })
   expect(testTokens.primaryColor()).toBe('var(--theme-primary-color)')
-  expect(testTokens.primaryColor.styles).toMatchSnapshot()
+  expect(testTokens.primaryColor.stylesheets).toMatchSnapshot()
   expect(testTokens.fontSize()).toBe('var(--theme-font-size)')
-  expect(testTokens.fontSize.styles).toMatchSnapshot()
+  expect(testTokens.fontSize.stylesheets).toMatchSnapshot()
 })
 
 test('tokens: token with array values', () => {
@@ -231,9 +231,9 @@ test('tokens: token with array values', () => {
     },
   })
   expect(testTokens.margin()).toBe('var(--spacing-margin)')
-  expect(testTokens.margin.styles).toMatchSnapshot()
+  expect(testTokens.margin.stylesheets).toMatchSnapshot()
   expect(testTokens.fontFamily()).toBe('var(--spacing-font-family)')
-  expect(testTokens.fontFamily.styles).toMatchSnapshot()
+  expect(testTokens.fontFamily.stylesheets).toMatchSnapshot()
 })
 
 test('tokens: function token values', () => {
@@ -253,9 +253,9 @@ test('tokens: function token values', () => {
     },
   })
   expect(testTokens.shadow()).toBe('var(--effects-shadow)')
-  expect(testTokens.shadow.styles).toMatchSnapshot()
+  expect(testTokens.shadow.stylesheets).toMatchSnapshot()
   expect(testTokens.gradient()).toBe('var(--effects-gradient)')
-  expect(testTokens.gradient.styles).toMatchSnapshot()
+  expect(testTokens.gradient.stylesheets).toMatchSnapshot()
 })
 
 test('tokens: nested token statements with selectors', () => {
@@ -276,7 +276,7 @@ test('tokens: nested token statements with selectors', () => {
     },
   })
   expect(testTokens.buttonColor()).toBe('var(--interactive-button-color)')
-  expect(testTokens.buttonColor.styles).toMatchSnapshot()
+  expect(testTokens.buttonColor.stylesheets).toMatchSnapshot()
 })
 
 test('tokens: compound selectors', () => {
@@ -301,7 +301,7 @@ test('tokens: compound selectors', () => {
     },
   })
   expect(testTokens.color()).toBe('var(--state-color)')
-  expect(testTokens.color.styles).toMatchSnapshot()
+  expect(testTokens.color.stylesheets).toMatchSnapshot()
 })
 
 test('tokens: token references', () => {
@@ -318,7 +318,7 @@ test('tokens: token references', () => {
   })
 
   expect(derivedTokens.buttonBg()).toBe('var(--derived-button-bg)')
-  expect(derivedTokens.buttonBg.styles).toMatchSnapshot()
+  expect(derivedTokens.buttonBg.stylesheets).toMatchSnapshot()
 })
 
 test('tokens: complex nested structure', () => {
@@ -351,7 +351,7 @@ test('tokens: complex nested structure', () => {
     },
   })
   expect(testTokens.card()).toBe('var(--complex-card)')
-  expect(testTokens.card.styles).toMatchSnapshot()
+  expect(testTokens.card.stylesheets).toMatchSnapshot()
 })
 
 test('tokens: array of function values', () => {
@@ -375,7 +375,7 @@ test('tokens: array of function values', () => {
     },
   })
   expect(testTokens.animation()).toBe('var(--transform-animation)')
-  expect(testTokens.animation.styles).toMatchSnapshot()
+  expect(testTokens.animation.stylesheets).toMatchSnapshot()
 })
 
 // Integration tests: tokens with other CSS utilities
@@ -520,10 +520,10 @@ test('tokens: multiple token groups combined', () => {
   expect(testStyles.grid).toMatchSnapshot()
 
   // Test that token styles are properly defined
-  expect(layout.maxWidth.styles).toBeDefined()
-  expect(layout.gap.styles).toBeDefined()
-  expect(motion.duration.styles).toBeDefined()
-  expect(motion.easing.styles).toBeDefined()
+  expect(layout.maxWidth.stylesheets).toBeDefined()
+  expect(layout.gap.stylesheets).toBeDefined()
+  expect(motion.duration.stylesheets).toBeDefined()
+  expect(motion.easing.stylesheets).toBeDefined()
 })
 
 test('tokens: with keyframes', () => {

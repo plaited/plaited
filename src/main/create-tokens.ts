@@ -24,7 +24,7 @@ const isToken = (token: unknown): token is DesignToken =>
  */
 const getTokenValue = ($value: string | number | DesignTokenReference, styles: string[]) => {
   if (isTokenReference($value)) {
-    styles.push(...$value.styles)
+    styles.push(...$value.stylesheets)
     return $value()
   }
   return $value
@@ -178,7 +178,7 @@ export const createTokens = <T extends DesignTokenGroup>(ident: string, group: T
         }
       }
       const getRef = (): `var(--${string})` => `var(${cssVar})`
-      getRef.styles = styles
+      getRef.stylesheets = styles
       acc[prop as keyof T] = getRef
       return acc
     },

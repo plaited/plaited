@@ -27,7 +27,7 @@ export const createKeyframes = (ident: string, frames: CSSKeyFrames): StyleFunct
     const step = []
     for (const [prop, val] of Object.entries(props)) {
       const isToken = isTokenReference(val)
-      isToken && stylesheets.push(...val.styles)
+      isToken && stylesheets.push(...val.stylesheets)
       step.push(getRule(prop, isToken ? val() : val))
     }
     arr.push(`${value}{${step.join('')}}`)

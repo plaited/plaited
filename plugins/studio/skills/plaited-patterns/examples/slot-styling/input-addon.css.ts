@@ -1,5 +1,5 @@
-import { createHostStyles, createStyles } from 'plaited'
-import { strokes } from './input-addon.tokens.ts'
+import { createHostStyles, createStyles, joinStyles } from 'plaited'
+import { strokes } from './borders.tokens.ts'
 
 export const styles = createStyles({
   addOn: {
@@ -14,13 +14,9 @@ export const styles = createStyles({
   },
 })
 
-export const hostStyles = createHostStyles({
-  display: 'inline-flex',
-  '--icon-stroke': {
-    $default: strokes.default,
-    $compoundSelectors: {
-      ':state(focused)': strokes.focused,
-      ':state(disabled)': strokes.disabled,
-    },
-  },
-})
+export const hostStyles = joinStyles(
+  strokes.inputAddOn,
+  createHostStyles({
+    display: 'inline-flex',
+  }),
+)

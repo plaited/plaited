@@ -6,11 +6,7 @@ Web Workers enable offloading heavy computation from interactive islands to back
 **For BP foundations**, see `behavioral-programs.md`
 **For cross-island communication**, see `cross-island-communication.md`
 
-## useWorker() - Main Thread
 
-Creates a type-safe interface for Web Worker communication within Plaited components.
-
-### Basic Usage
 
 ```typescript
 import { bElement, useWorker } from 'plaited'
@@ -86,10 +82,6 @@ When using `PlaitedTrigger` (from `bProgram`), cleanup is automatic:
 ```typescript
 bProgram({ trigger }) {
   const worker = new Worker(/* ... */)
-  const post = useWorker(trigger, worker)
-
-  // PlaitedTrigger automatically terminates worker on component disconnect
-  // No manual cleanup needed
 
   return {
     processData({ data }) {
@@ -101,7 +93,7 @@ bProgram({ trigger }) {
 
 ### Manual Cleanup
 
-If needed, manually disconnect worker:
+**NOT needed** when using `PlaitedTrigger` (default from `bProgram`) - worker auto-terminates on disconnect.
 
 ```typescript
 bProgram({ trigger }) {
@@ -109,10 +101,15 @@ bProgram({ trigger }) {
   const post = useWorker(trigger, worker)
 
   return {
-    onDisconnected() {
-      // Manual cleanup
+    timeout() {
+      // ✅ Early termination - valid use case
       post.disconnect()
     }
+
+    // ❌ NOT needed - PlaitedTrigger auto-cleans
+    // onDisconnected() {
+    //   post.disconnect()
+    // }
   }
 }
 ```
@@ -627,20 +624,17 @@ post({ type: 'process', detail: { buffer } })
 
 ### 4. Clean Up Resources
 
-Always clean up worker resources:
+**No manual cleanup needed** - `PlaitedTrigger` (from `bProgram`) auto-terminates workers:
 
 ```typescript
 bProgram({ trigger }) {
   const worker = new Worker(/* ... */)
   const post = useWorker(trigger, worker)
 
+  // ✅ No onDisconnected needed - auto-cleanup via PlaitedTrigger
+
   return {
-    onDisconnected() {
-      // Cleanup handled automatically by PlaitedTrigger
-      // Or manually:
-      post.disconnect()
-    }
-  }
+
 }
 ```
 

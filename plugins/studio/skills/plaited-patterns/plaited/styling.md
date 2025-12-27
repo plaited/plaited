@@ -1,12 +1,4 @@
-# Styling & Templates
-
-Plaited's styling system combines JSX templates with CSS-in-JS for type-safe, scoped styling in web components. This guide covers both template creation and styling patterns.
-
-## Templates Overview
-
-Plaited uses JSX syntax to create template objects that contain HTML, stylesheets, and metadata. Templates are the foundation for both simple presentational elements (FunctionalTemplate) and complex interactive components (bElement).
-
-### JSX Transformation
+# Styling: Templates and CSS-in-JS
 
 JSX is automatically transformed into `createTemplate()` calls by TypeScript/Bun:
 
@@ -51,11 +43,7 @@ const List: FT = () => (
 // Renders three <li> elements without wrapping div
 ```
 
-**Use Cases**:
-- Avoid unnecessary wrapper divs
-- Return multiple elements from a component
-- Conditional rendering
-- List mapping
+
 
 ### FunctionalTemplate Pattern
 
@@ -224,10 +212,6 @@ During SSR, styles are:
 3. `:host` selectors converted to `:root`
 4. Injected before `</head>`, after `<body>`, or at document start
 
-```typescript
-// Component with hostStyles
-const MyElement = bElement({
-  tag: 'my-element',
   hostStyles: createHostStyles({
     display: 'block',
     padding: '1rem',
@@ -240,11 +224,7 @@ const html = ssr(<MyElement />)
 // Includes: <style>:root { display: block; padding: 1rem; }</style>
 ```
 
-#### Shadow DOM Styles
 
-Styles for components with Shadow DOM are embedded in Declarative Shadow DOM `<template>` tags:
-
-```typescript
 // Custom element with shadow DOM
 <my-element>
   <template shadowrootmode="open">
@@ -459,35 +439,35 @@ Use bElement for:
 import { createTokens } from 'plaited'
 
 export const fills = createTokens('fills', {
-  default: { $value: 'lightblue' },
-  checked: { $value: 'blue' },
-  disabled: { $value: 'grey' },
+  fill: {
+    $default: { $value: 'lightblue' },
+    $compoundSelectors: {
+      ':state(checked)': { $value: 'blue' },
+      ':state(disabled)': { $value: 'grey' },
+    },
+  },
 })
 ```
 
 **File: `toggle-input.css.ts`**
 ```typescript
-import { createStyles, createHostStyles } from 'plaited'
+import { createStyles, createHostStyles, joinStyles } from 'plaited'
 import { fills } from './fills.tokens.ts'
 
 export const styles = createStyles({
   symbol: {
     height: '16px',
     width: '16px',
-    backgroundColor: fills.default,
+    backgroundColor: fills.fill,
   }
 })
 
-export const hostStyles = createHostStyles({
-  display: 'inline-grid',
-  backgroundColor: {
-    $default: fills.default,
-    $compoundSelectors: {
-      ':state(checked)': fills.checked,
-      ':state(disabled)': fills.disabled,
-    },
-  },
-})
+export const hostStyles = joinStyles(
+  fills,
+  createHostStyles({
+    display: 'inline-grid',
+  })
+)
 ```
 
 **File: `toggle-input.ts`**
@@ -808,7 +788,7 @@ function createTokens<T extends TokenDefinitions>(
 
 **Example:**
 
-**File: `theme.css.ts`**
+**File: `theme.tokens.ts`**
 ```typescript
 import { createTokens } from 'plaited'
 
@@ -818,31 +798,42 @@ export const tokens = createTokens('theme', {
 })
 ```
 
+**File: `fills.tokens.ts`**
+```typescript
+import { createTokens } from 'plaited'
+
+export const fills = createTokens('fills', {
+  fill: {
+    $default: { $value: 'lightblue' },
+    $compoundSelectors: {
+      ':state(checked)': { $value: 'blue' },
+      ':state(disabled)': { $value: 'grey' },
+    },
+  },
+})
+```
+
 **File: `toggle-input.css.ts`**
 ```typescript
-import { createStyles, createHostStyles } from 'plaited'
-import { tokens } from './theme.css.ts'
+import { createStyles, createHostStyles, joinStyles } from 'plaited'
+import { tokens } from './theme.tokens.ts'
 import { fills } from './fills.tokens.ts'
 
 export const styles = createStyles({
   symbol: {
     height: '16px',
     width: '16px',
-    backgroundColor: fills.default,
+    backgroundColor: fills.fill,
   }
 })
 
-export const hostStyles = createHostStyles({
-  display: 'inline-grid',
-  padding: tokens.spacing,  // Token reference, not invoked
-  backgroundColor: {
-    $default: fills.default,
-    $compoundSelectors: {
-      ':state(checked)': fills.checked,
-      ':state(disabled)': fills.disabled,
-    },
-  },
-})
+export const hostStyles = joinStyles(
+  fills,
+  createHostStyles({
+    display: 'inline-grid',
+    padding: tokens.spacing,  // Token reference, not invoked
+  })
+)
 ```
 
 **File: `toggle-input.ts`**
@@ -941,6 +932,39 @@ export const AnimatedCard = bElement({
   hostStyles,
   shadowDom: <slot></slot>
 })
+```
+
+**Common Pattern: Tokens with Selectors**
+
+When tokens include selector variations (using `$default` and `$compoundSelectors`), pass the token reference to `joinStyles()` to include all CSS variable definitions:
+
+**File: `fills.tokens.ts`**
+```typescript
+import { createTokens } from 'plaited'
+
+export const fills = createTokens('fills', {
+  fill: {
+    $default: { $value: 'lightblue' },
+    $compoundSelectors: {
+      ':state(checked)': { $value: 'blue' },
+      ':state(disabled)': { $value: 'gray' }
+    }
+  }
+})
+```
+
+**File: `toggle.css.ts`**
+```typescript
+import { createHostStyles, joinStyles } from 'plaited'
+import { fills } from './fills.tokens.ts'
+
+// joinStyles merges token CSS variables with host styles
+export const hostStyles = joinStyles(
+  fills,  // Includes :host{--fills-fill:lightblue;}, :host:state(checked){--fills-fill:blue;}, etc.
+  createHostStyles({
+    display: 'inline-grid'
+  })
+)
 ```
 
 ## Usage Patterns
@@ -1602,9 +1626,13 @@ export const toggleStyles = createStyles({
 import { createTokens } from 'plaited'
 
 export const fills = createTokens('fills', {
-  default: { $value: 'lightblue' },
-  checked: { $value: 'blue' },
-  disabled: { $value: 'gray' },
+  fill: {
+    $default: { $value: 'lightblue' },
+    $compoundSelectors: {
+      ':state(checked)': { $value: 'blue' },
+      ':state(disabled)': { $value: 'gray' },
+    },
+  },
 })
 ```
 
@@ -1615,7 +1643,7 @@ import { fills } from './fills.tokens.ts'
 
 export const toggleStyles = createStyles({
   symbol: {
-    backgroundColor: fills.default,  // Correct - use token reference
+    backgroundColor: fills.fill,  // Correct - use token reference
   }
 })
 ```

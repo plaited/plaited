@@ -41,7 +41,7 @@ const formatClassStatement = ({
     }
   } else {
     const isToken = isTokenReference(value)
-    isToken && hostStyles.push(...value.styles)
+    isToken && hostStyles.push(...value.stylesheets)
     const rule = getRule(prop, isToken ? value() : value)
     const arr = selectors.map((str) => (str.startsWith('@') ? `${str}{` : `&${str}{`))
     styles.push(`{${arr.join('')}${rule}${'}'.repeat(arr.length)}}`)

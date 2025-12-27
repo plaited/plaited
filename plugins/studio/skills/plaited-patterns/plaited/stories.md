@@ -526,9 +526,11 @@ const TextDisplay = bElement({
   bProgram({ $, trigger }) {
     sendAdd.listen('add', trigger)
     return {
-      add(detail: { value: string }) {
+      add(detail?: { value: string }) {
+        if (!detail) return
+        const { value } = detail
         const header = $('header')[0]
-        header?.insert('beforeend', detail.value)
+        header?.insert('beforeend', value)
       }
     }
   }

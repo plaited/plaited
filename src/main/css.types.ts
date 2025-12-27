@@ -11,7 +11,7 @@ export type CSSProperties = CSS.Properties & {
 
 export type DesignTokenReference = {
   (): `var(--${string})`
-  styles: string[]
+  stylesheets: string[]
 }
 
 /**

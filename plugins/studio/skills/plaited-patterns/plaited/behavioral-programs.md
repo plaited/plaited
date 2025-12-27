@@ -609,9 +609,44 @@ let isValid = false
 bSync({ waitFor: ({ type }) => type === 'submit' && isValid })
 ```
 
+**Tip for async/expensive predicates**: If a predicate needs async data or computationally expensive operations, create a feedback handler that performs the work and triggers an event with the result:
+
+```typescript
+const { trigger, bThreads, useFeedback } = behavioral()
+
+let validationResult: { isValid: boolean; errors: string[] } | null = null
+
+bThreads.set({
+  submitWorkflow: bThread([
+    // Trigger validation request
+    bSync({ request: { type: 'validateData' } }),
+
+    // Wait for validation complete with result in stateful variable
+    bSync({
+      waitFor: ({ type }) => type === 'validationComplete' && validationResult?.isValid === true
+    }),
+
+    bSync({ request: { type: 'submit' } })
+  ])
+})
+
+useFeedback({
+  async validateData() {
+    // Expensive async operation in handler, not predicate
+    const result = await complexValidationService(currentData)
+    validationResult = result
+
+    // Trigger event to resume threads
+    trigger({ type: 'validationComplete' })
+  }
+})
+```
+
+This pattern keeps predicates fast (simple property check on `validationResult`) while enabling async operations in the right place (feedback handlers).
+
 ## ⭐ Thread Lifecycle & Runtime Management (KEY CAPABILITY 4)
 
-Threads can be added, removed, and inspected at runtime, enabling dynamic rule composition.
+Threads can be added and inspected at runtime, enabling dynamic rule composition. **To terminate a thread, use the `interrupt` idiom or wait for it to complete**—there is no direct "remove" API.
 
 ### Thread States
 
@@ -820,47 +855,73 @@ BP threads coordinate events, but **side effects** (DOM updates, API calls, stat
 
 ### Separation of Coordination from Effects
 
+**IMPORTANT**: Data can flow through event details using **event template functions** (`() => BPEvent`). Template functions are evaluated when the sync point is reached, allowing threads to pass current data values.
+
 ```typescript
 const { trigger, bThreads, useFeedback } = behavioral()
 
-// Threads: COORDINATION ONLY (no side effects)
+// Stateful variables hold data between handler calls
+let currentData: unknown = null
+let processedData: unknown = null
+
+// Threads: COORDINATION ONLY (event sequencing, no side effects)
 bThreads.set({
   workflow: bThread([
-    bSync({ request: { type: 'loadData' } }),
     bSync({ waitFor: 'dataLoaded' }),
-    bSync({ request: { type: 'processData' } }),
+    // Use event template function to pass current data value
+    bSync({ request: () => ({ type: 'processData', detail: currentData }) }),
     bSync({ waitFor: 'processed' }),
-    bSync({ request: { type: 'saveData' } })
+    // Use event template function to pass processed data value
+    bSync({ request: () => ({ type: 'saveData', detail: processedData }) })
   ])
 })
 
-// Feedback handlers: SIDE EFFECTS ONLY
+// Feedback handlers: SIDE EFFECTS ONLY (async operations, state mutation)
 useFeedback({
   async loadData() {
-    const data = await fetch('/api/data')
-    trigger({ type: 'dataLoaded', detail: await data.json() })
+    const response = await fetch('/api/data')
+    // Update stateful variable
+    currentData = await response.json()
+    // Trigger completion event
+    trigger({ type: 'dataLoaded' })
   },
 
-  processData({ data }) {
-    const processed = transform(data)
-    trigger({ type: 'processed', detail: processed })
+  processData(data) {
+    // Receives data from request detail: { type: 'processData', detail: currentData }
+    processedData = transform(data)
+    trigger({ type: 'processed' })
   },
 
-  async saveData({ data }) {
-    await fetch('/api/save', { method: 'POST', body: JSON.stringify(data) })
+  async saveData(data) {
+    // Receives data from request detail: { type: 'saveData', detail: processedData }
+    await fetch('/api/save', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
     trigger({ type: 'saved' })
   }
 })
 
-// Start the workflow
+// Start the workflow with external trigger
 trigger({ type: 'loadData' })
 ```
 
-**Why separate?**
-- Threads remain pure and testable
-- Side effects are isolated and explicit
+**Why event template functions?**
+
+1. **Dynamic detail evaluation**: `() => ({ type: 'processData', detail: currentData })` is evaluated when the sync point is reached, capturing the current value of `currentData`
+2. **Handlers receive detail**: When the event is selected, the handler receives the `detail` as its parameter
+3. **Data flow through events**: Instead of only using stateful variables, data can flow through event details
+4. **Type safety**: Event templates enable type-safe data passing when using TypeScript generics
+
+**Two patterns for data flow:**
+- **Pattern A (event templates)**: Pass data through request details using template functions
+- **Pattern B (stateful variables)**: Store data in variables, use completion events to trigger progression
+
+**Why separate coordination from effects?**
+- Threads remain pure and testable (no async operations, no API calls)
+- Side effects are isolated and explicit in handlers
 - Easy to mock feedback handlers in tests
-- Clear separation of concerns
+- Clear separation: threads coordinate timing and data flow, handlers execute operations
 
 ### Type-Safe Handler Mapping
 
@@ -895,27 +956,60 @@ useFeedback({
 
 ### Async Handler Support
 
-Feedback handlers can be async:
+Feedback handlers can be async. The BP engine doesn't wait for async handlers—handlers must trigger completion events to resume thread coordination.
 
 ```typescript
+const { trigger, bThreads, useFeedback } = behavioral()
+
+let currentUserId: string | null = null
+let currentUser: User | null = null
+
+bThreads.set({
+  userWorkflow: bThread([
+    bSync({ waitFor: 'requestUser' }),
+    // Use event template to pass userId
+    bSync({ request: () => ({ type: 'fetchUser', detail: { userId: currentUserId } }) }),
+    bSync({ waitFor: 'userLoaded' }),
+    // Use event template to pass user data
+    bSync({ request: () => ({ type: 'saveUser', detail: { user: currentUser } }) }),
+    bSync({ waitFor: 'userSaved' })
+  ])
+})
+
 useFeedback({
+  requestUser(userId: string) {
+    currentUserId = userId
+    trigger({ type: 'requestUser' })
+  },
+
   async fetchUser({ userId }) {
+    // Async operation in handler
     const response = await fetch(`/api/users/${userId}`)
-    const user = await response.json()
-    trigger({ type: 'userLoaded', detail: user })
+    currentUser = await response.json()
+    // Trigger completion event to resume thread
+    trigger({ type: 'userLoaded' })
   },
 
   async saveUser({ user }) {
+    // Async operation in handler
     await fetch('/api/users', {
       method: 'POST',
       body: JSON.stringify(user)
     })
+    // Trigger completion event to resume thread
     trigger({ type: 'userSaved' })
   }
 })
+
+// Start workflow
+trigger({ type: 'requestUser', detail: 'user-123' })
 ```
 
-**IMPORTANT**: The BP engine doesn't wait for async handlers. If coordination depends on async results, handlers must trigger events when complete.
+**Key points:**
+- **Async handlers don't block**: The BP engine continues immediately after calling async handlers
+- **Trigger completion events**: Handlers must call `trigger()` when async work completes to resume thread coordination
+- **Data flow**: Use stateful variables + event template functions to pass data through the workflow
+- **Thread waits**: Use `waitFor` to pause threads until async operations complete
 
 ### Cleanup via Disconnect
 
@@ -942,21 +1036,27 @@ disconnect()
 
 ### SnapshotMessage Structure
 
+`SnapshotMessage` is an **array** of candidate bids, sorted by priority. Each element represents one thread's request:
+
 ```typescript
-type SnapshotMessage = {
-  candidates: Array<{
-    type: string
-    detail?: unknown
-    priority: number
-  }>
-  blocking: string[]
-  selected: {
-    type: string
-    detail?: unknown
-    priority: number
-  } | null
-}
+type SnapshotMessage = Array<{
+  thread: string          // Thread identifier (stringified if from trigger())
+  trigger: boolean        // Whether bid originated from external trigger
+  selected: boolean       // Whether this bid was selected for execution
+  type: string           // Event type being requested
+  detail?: unknown       // Optional event payload
+  priority: number       // Priority level (lower = higher priority)
+  blockedBy?: string     // ID of blocking thread (if blocked)
+  interrupts?: string    // ID of interrupted thread (if interrupting)
+}>
 ```
+
+**Key characteristics:**
+- Array is sorted by priority (lower numbers first = higher priority)
+- Each element shows one thread's candidate request
+- `selected: true` marks the winning bid
+- `blockedBy` indicates which thread blocked this candidate
+- External triggers have `trigger: true` and `priority: 0`
 
 ### Observing Program State
 
@@ -967,11 +1067,17 @@ const { trigger, bThreads, useSnapshot } = behavioral()
 
 // Register snapshot observer
 useSnapshot((snapshot) => {
-  console.table({
-    'Candidates': snapshot.candidates.map(c => c.type).join(', '),
-    'Blocking': snapshot.blocking.join(', '),
-    'Selected': snapshot.selected?.type ?? 'none'
-  })
+  // snapshot is an array of candidate bids
+  console.log('=== Super-Step Snapshot ===')
+
+  for (const bid of snapshot) {
+    const status = bid.selected ? '✓ SELECTED' : bid.blockedBy ? '✗ BLOCKED' : '  CANDIDATE'
+    console.log(`${status} | ${bid.type} | thread: ${bid.thread} | priority: ${bid.priority}`)
+
+    if (bid.blockedBy) {
+      console.log(`         → Blocked by: ${bid.blockedBy}`)
+    }
+  }
 })
 
 bThreads.set({
@@ -980,23 +1086,545 @@ bThreads.set({
   blocker: bThread([bSync({ block: 'event2' })])
 })
 
-// Snapshot after this super-step:
-// {
-//   candidates: [
-//     { type: 'event1', priority: 1 },
-//     { type: 'event2', priority: 2 }
-//   ],
-//   blocking: ['event2'],
-//   selected: { type: 'event1', priority: 1 }
-// }
+// Snapshot after this super-step (array of 2 bids):
+// [
+//   {
+//     thread: 'thread1',
+//     trigger: false,
+//     selected: true,         // ← This one was selected
+//     type: 'event1',
+//     priority: 1,
+//     blockedBy: undefined
+//   },
+//   {
+//     thread: 'thread2',
+//     trigger: false,
+//     selected: false,
+//     type: 'event2',
+//     priority: 2,
+//     blockedBy: 'blocker'    // ← Blocked by blocker thread
+//   }
+// ]
 ```
 
 ### Use Cases for Snapshot Observation
 
-1. **Debugging**: Understand why events are blocked or selected
-2. **Visualization**: Display program state in dev tools
-3. **Testing**: Verify thread coordination logic
-4. **Learning**: Observe how threads interact
+1. **Debugging**: Understand why events are blocked or selected by inspecting `blockedBy` and `selected` fields
+2. **Visualization**: Display program state in dev tools using thread/priority/selected data
+3. **Testing**: Verify thread coordination logic by asserting on snapshot structure
+4. **Learning**: Observe how threads interact by watching snapshot changes over super-steps
+
+## Reusable Behavioral Programs with useBehavioral
+
+`useBehavioral` is a factory pattern for creating reusable behavioral program configurations. It encapsulates BP setup, lifecycle management, and provides a clean public API with event filtering.
+
+### Why Use useBehavioral?
+
+**Factory Pattern Benefits:**
+- Define behavioral program logic once, instantiate multiple times
+- Each init() call creates an isolated behavioral program instance
+- Separates BP definition from execution context
+- Enables dependency injection via context parameter
+
+**Security & Encapsulation:**
+- Public events whitelist prevents external triggering of internal events
+- Only specified events exposed as public API
+- Internal coordination events remain private
+
+**Lifecycle Management:**
+- Provides `disconnect()` function for manual cleanup
+- PlaitedTrigger integration via `trigger.addDisconnectCallback()`
+- All disconnect callbacks invoked when `disconnect()` is called
+
+**Context Injection:**
+- Pass external dependencies without global state
+- Supports services, APIs, configuration objects
+- Typed context for compile-time safety
+
+### Basic Usage
+
+```typescript
+import { useBehavioral } from 'plaited'
+
+// Define events interface for type safety
+type Events = {
+  PROCESS: string
+  PROCESSED: string
+}
+
+// Define context type
+type Context = {
+  prefix: string
+}
+
+// Create reusable program factory
+const createProgram = useBehavioral<Events, Context>({
+  // Whitelist public events
+  publicEvents: ['PROCESS'],
+
+  // Define behavioral program logic
+  bProgram({ trigger, prefix }) {
+    return {
+      PROCESS(data) {
+        const result = `${prefix}:${data}`
+        console.log(result)
+        trigger({ type: 'PROCESSED', detail: result })
+      },
+      PROCESSED(value) {
+        console.log(`Processed: ${value}`)
+      }
+    }
+  }
+})
+
+// Initialize program instance with context
+const publicTrigger = await createProgram({ prefix: 'worker-1' })
+
+// Use public API (only PROCESS is allowed)
+publicTrigger({ type: 'PROCESS', detail: 'data' })
+// ✓ Allowed: triggers PROCESS → PROCESSED
+
+// Attempting to trigger internal events throws error
+publicTrigger({ type: 'PROCESSED', detail: 'value' })
+// ✗ Throws: "Event type 'PROCESSED' is not allowed"
+```
+
+### Public Events Filtering
+
+The `publicEvents` array acts as an API whitelist, providing security by preventing external code from triggering internal coordination events:
+
+```typescript
+const createSecureProgram = useBehavioral<
+  {
+    START: undefined
+    INTERNAL_STEP: undefined
+    FINISH: undefined
+  },
+  Record<string, never>
+>({
+  // Only START is public
+  publicEvents: ['START'],
+
+  bProgram({ trigger, bThreads, bThread, bSync }) {
+    bThreads.set({
+      workflow: bThread([
+        bSync({ waitFor: 'START' }),
+        bSync({ request: { type: 'INTERNAL_STEP' } }),
+        bSync({ waitFor: 'INTERNAL_STEP' }),
+        bSync({ request: { type: 'FINISH' } })
+      ])
+    })
+
+    return {
+      START() {
+        trigger({ type: 'INTERNAL_STEP' })
+      },
+      INTERNAL_STEP() {
+        console.log('Internal coordination')
+        trigger({ type: 'FINISH' })
+      },
+      FINISH() {
+        console.log('Workflow complete')
+      }
+    }
+  }
+})
+
+const publicTrigger = await createSecureProgram({})
+
+// ✓ Allowed: START is in publicEvents
+publicTrigger({ type: 'START' })
+
+// ✗ Blocked: INTERNAL_STEP and FINISH are internal
+publicTrigger({ type: 'INTERNAL_STEP' })  // Throws error
+publicTrigger({ type: 'FINISH' })         // Throws error
+```
+
+### Context Injection
+
+Pass external dependencies through the context parameter for dependency injection without global state:
+
+```typescript
+type DatabaseService = {
+  save: (data: string) => Promise<void>
+  load: (id: string) => Promise<string>
+}
+
+type AppContext = {
+  database: DatabaseService
+  apiKey: string
+  logger: Console
+}
+
+const createDataProgram = useBehavioral<
+  {
+    SAVE: string
+    LOAD: string
+    SAVED: undefined
+    LOADED: string
+  },
+  AppContext
+>({
+  publicEvents: ['SAVE', 'LOAD'],
+
+  bProgram({ trigger, database, apiKey, logger }) {
+    return {
+      async SAVE(data) {
+        logger.log('Saving data...')
+        await database.save(`${apiKey}:${data}`)
+        trigger({ type: 'SAVED' })
+      },
+
+      async LOAD(id) {
+        logger.log('Loading data...')
+        const data = await database.load(`${apiKey}:${id}`)
+        trigger({ type: 'LOADED', detail: data })
+      },
+
+      SAVED() {
+        logger.log('Data saved successfully')
+      },
+
+      LOADED(data) {
+        logger.log('Data loaded:', data)
+      }
+    }
+  }
+})
+
+// Initialize with actual services
+const publicTrigger = await createDataProgram({
+  database: myDatabaseService,
+  apiKey: 'secret-key-123',
+  logger: console
+})
+
+publicTrigger({ type: 'SAVE', detail: 'important-data' })
+```
+
+### Async Initialization
+
+The `bProgram` function can be async to support initialization that requires I/O or setup operations:
+
+```typescript
+const createAsyncProgram = useBehavioral<
+  {
+    READY: undefined
+    PROCESS: string
+  },
+  { configUrl: string }
+>({
+  publicEvents: ['PROCESS'],
+
+  async bProgram({ trigger, bThreads, bSync, configUrl }) {
+    // Async setup: fetch configuration
+    const response = await fetch(configUrl)
+    const config = await response.json()
+
+    // Set up threads based on loaded config
+    bThreads.set({
+      processor: bSync({
+        waitFor: 'PROCESS',
+        request: { type: 'READY' }
+      })
+    })
+
+    return {
+      PROCESS(data) {
+        console.log('Processing with config:', config)
+        trigger({ type: 'READY' })
+      },
+
+      READY() {
+        console.log('Ready for next operation')
+      }
+    }
+  }
+})
+
+// Initialization waits for async setup
+const publicTrigger = await createAsyncProgram({
+  configUrl: '/api/config'
+})
+```
+
+### Manual Lifecycle Management
+
+The `disconnect` function passed to `bProgram` must be called manually when you want to clean up the behavioral program instance:
+
+```typescript
+const createManagedProgram = useBehavioral<
+  {
+    START: undefined
+    STOP: undefined
+  },
+  { interval: number }
+>({
+  publicEvents: ['START', 'STOP'],
+
+  bProgram({ trigger, disconnect, interval }) {
+    let timerId: Timer | null = null
+
+    // Register cleanup callback via PlaitedTrigger
+    trigger.addDisconnectCallback(() => {
+      if (timerId) {
+        clearInterval(timerId)
+        console.log('Timer cleaned up')
+      }
+    })
+
+    return {
+      START() {
+        timerId = setInterval(() => {
+          console.log('Tick')
+        }, interval)
+      },
+
+      STOP() {
+        // Manual cleanup when stopping
+        if (timerId) {
+          clearInterval(timerId)
+          timerId = null
+        }
+        // Call disconnect to run all cleanup callbacks
+        disconnect()
+      }
+    }
+  }
+})
+
+const publicTrigger = await createManagedProgram({ interval: 1000 })
+
+publicTrigger({ type: 'START' })  // Starts interval
+// ... time passes ...
+publicTrigger({ type: 'STOP' })   // Stops interval and runs disconnect callbacks
+```
+
+**Important:** The `disconnect()` function is NOT called automatically. You must call it yourself when you want to clean up. In `bElement`, this is handled automatically via `disconnectedCallback()` when the element is removed from the DOM.
+
+### Creating Multiple Isolated Instances
+
+Each init() call creates a completely isolated behavioral program instance with independent state:
+
+```typescript
+const createCounter = useBehavioral<
+  {
+    INCREMENT: undefined
+    DECREMENT: undefined
+    RESET: undefined
+  },
+  { initialValue: number }
+>({
+  publicEvents: ['INCREMENT', 'DECREMENT', 'RESET'],
+
+  bProgram({ initialValue }) {
+    let count = initialValue
+
+    return {
+      INCREMENT() {
+        count++
+        console.log('Count:', count)
+      },
+
+      DECREMENT() {
+        count--
+        console.log('Count:', count)
+      },
+
+      RESET() {
+        count = initialValue
+        console.log('Count reset to:', count)
+      }
+    }
+  }
+})
+
+// Create multiple independent counters
+const counter1 = await createCounter({ initialValue: 0 })
+const counter2 = await createCounter({ initialValue: 100 })
+
+counter1({ type: 'INCREMENT' })  // Count: 1
+counter2({ type: 'INCREMENT' })  // Count: 101
+
+// Each instance maintains independent state
+counter1({ type: 'INCREMENT' })  // Count: 2
+counter2({ type: 'DECREMENT' })  // Count: 100
+```
+
+
+- **Automatic lifecycle management** (cleanup on `disconnectedCallback()`)
+- **PlaitedTrigger** for resource management
+- **Context injection** (element methods, properties, DOM selectors, etc.)
+
+The key difference: In `bElement`, the `disconnect()` function is called automatically when the element is removed from the DOM via the `disconnectedCallback()` lifecycle method. In standalone `useBehavioral`, you must call `disconnect()` yourself.
+
+## Behavioral Utilities
+
+Plaited provides utility functions for randomness, runtime validation, and advanced patterns beyond the core `bThread`/`bSync` composition.
+
+### useRandomEvent: Non-Deterministic Event Selection
+
+Creates an event template function that randomly selects from provided events with uniform probability. The template function is evaluated each time the sync point is reached, ensuring fresh random selection on every iteration.
+
+```typescript
+import { behavioral, bThread, bSync, useRandomEvent } from 'plaited'
+
+const { trigger, bThreads, useFeedback } = behavioral()
+
+const leftEvent = { type: 'moveLeft' }
+const rightEvent = { type: 'moveRight' }
+const upEvent = { type: 'moveUp' }
+const downEvent = { type: 'moveDown' }
+
+bThreads.set({
+  // useRandomEvent returns a template function
+  randomWalker: bThread([
+    bSync({ waitFor: 'step' }),
+    bSync({ request: useRandomEvent(leftEvent, rightEvent, upEvent, downEvent) })
+  ], true)
+})
+
+useFeedback({
+  step() {
+    trigger({ type: 'step' })
+  },
+  moveLeft() {
+    console.log('← Moving left')
+  },
+  moveRight() {
+    console.log('→ Moving right')
+  },
+  moveUp() {
+    console.log('↑ Moving up')
+  },
+  moveDown() {
+    console.log('↓ Moving down')
+  }
+})
+
+// Each 'step' event triggers a different random move
+trigger({ type: 'step' }) // Maybe moveLeft
+trigger({ type: 'step' }) // Maybe moveUp
+trigger({ type: 'step' }) // Maybe moveRight
+```
+
+**Why template function?**
+- `useRandomEvent(e1, e2)` returns a template function `() => BPEvent`
+- Template evaluated when sync point is reached → fresh random selection each time
+- Essential for repeating threads to get different random events per iteration
+
+**Use Cases:**
+- **Game mechanics**: Random enemy behavior, loot drops, procedural generation
+- **Testing**: Simulating varied user actions, fuzzing event sequences
+- **Probabilistic algorithms**: Monte Carlo simulations, randomized decision trees
+- **UI variety**: Randomize animation sequences, tips, or examples
+
+### shuffleSyncs: Randomized Execution Order
+
+Randomize the order of synchronization points using Fisher-Yates shuffle:
+
+```typescript
+import { behavioral, bThread, bSync, shuffleSyncs } from 'plaited'
+
+const { trigger, bThreads, useFeedback } = behavioral()
+
+const task1 = bSync({ request: { type: 'task1' } })
+const task2 = bSync({ request: { type: 'task2' } })
+const task3 = bSync({ request: { type: 'task3' } })
+
+// Shuffle executed once when bThread is created
+bThreads.set({
+  randomizedWorkflow: bThread(shuffleSyncs(task1, task2, task3))
+})
+
+useFeedback({
+  task1() {
+    console.log('Executing task 1')
+  },
+  task2() {
+    console.log('Executing task 2')
+  },
+  task3() {
+    console.log('Executing task 3')
+  }
+})
+
+// Tasks execute in the shuffled order
+// Example output: task3 → task1 → task2
+```
+
+**Use Cases:**
+- **Load balancing**: Randomize task distribution to avoid patterns
+- **Testing**: Verify order-independence of operations
+- **UI variety**: Randomize onboarding step order, tutorial sequences
+- **Performance testing**: Shuffle request order to find race conditions
+
+**Algorithm**: Uses Fisher-Yates shuffle for uniform distribution with O(n) time complexity and O(1) space (in-place shuffle).
+
+### isBPEvent: Runtime Event Validation
+
+Type guard for validating unknown values as BPEvents:
+
+```typescript
+import { isBPEvent } from 'plaited'
+
+function handleMessage(data: unknown) {
+  if (isBPEvent(data)) {
+    // TypeScript knows data is BPEvent
+    console.log('Event type:', data.type)
+    if (data.detail) {
+      console.log('Event detail:', data.detail)
+    }
+  } else {
+    console.warn('Invalid event:', data)
+  }
+}
+
+// ✓ Valid
+handleMessage({ type: 'click' })
+handleMessage({ type: 'submit', detail: { value: 42 } })
+
+// ✗ Invalid
+handleMessage('not-an-event')
+handleMessage({ detail: 'missing type' })
+handleMessage({ type: 123 }) // type must be string
+```
+
+**Use Cases:**
+- **External data validation**: API responses, WebSocket messages, postMessage
+- **Type-safe event handling**: Validate events from untyped sources (message queues, IPC)
+- **Runtime assertion**: Debug event flow, ensure event shape correctness
+- **Integration testing**: Validate events from external systems
+
+**Validation Logic**: Checks that value is an object with a `type` property that is a string.
+
+### isPlaitedTrigger: Trigger Type Guard
+
+Type guard for identifying enhanced triggers with cleanup support:
+
+```typescript
+import { isPlaitedTrigger } from 'plaited'
+import type { Trigger, PlaitedTrigger } from 'plaited'
+
+function setupCleanup(trigger: Trigger) {
+  if (isPlaitedTrigger(trigger)) {
+    // TypeScript knows trigger has addDisconnectCallback
+    trigger.addDisconnectCallback(() => {
+      console.log('Cleaning up resources...')
+    })
+  } else {
+    console.warn('Trigger does not support cleanup callbacks')
+  }
+}
+```
+
+**Use Cases:**
+- **Conditional cleanup registration**: Register cleanup only when supported
+- **Framework integration**: Detect Plaited vs. vanilla triggers in libraries
+- **Utility functions**: Write code that works with both trigger types
+- **Type narrowing**: Leverage TypeScript's type system for safe access
+
+**Detection Logic**: Uses `Object.hasOwn` to check for `addDisconnectCallback` as an own property (not inherited).
 
 ## Non-UI Use Cases
 
@@ -1064,26 +1692,31 @@ Tic-Tac-Toe (see Rule Composition Patterns section above).
 
 ### Workflow Coordination
 
-Multi-step business process:
+Multi-step business process with data flow through event templates:
 
 ```typescript
 const { trigger, bThreads, useFeedback } = behavioral()
 
+let currentOrder: Order | null = null
+let isFraudulent = false
+
 bThreads.set({
   orderWorkflow: bThread([
-    bSync({ request: { type: 'validateOrder' } }),
+    bSync({ waitFor: 'orderReceived' }),
+    // Use event template to pass order data
+    bSync({ request: () => ({ type: 'validateOrder', detail: currentOrder }) }),
     bSync({ waitFor: 'orderValid' }),
-    bSync({ request: { type: 'processPayment' } }),
+    bSync({ request: () => ({ type: 'processPayment', detail: currentOrder }) }),
     bSync({ waitFor: 'paymentProcessed' }),
-    bSync({ request: { type: 'shipOrder' } }),
+    bSync({ request: () => ({ type: 'shipOrder', detail: currentOrder }) }),
     bSync({ waitFor: 'orderShipped' }),
-    bSync({ request: { type: 'notifyCustomer' } })
+    bSync({ request: () => ({ type: 'notifyCustomer', detail: currentOrder }) })
   ]),
 
   // Concurrent fraud detection
   fraudCheck: bThread([
     bSync({ waitFor: 'processPayment' }),
-    bSync({ request: { type: 'checkFraud' } }),
+    bSync({ request: () => ({ type: 'checkFraud', detail: currentOrder }) }),
     bSync({ waitFor: 'fraudChecked' }),
     bSync({
       block: ({ type }) => type === 'shipOrder' && isFraudulent
@@ -1092,31 +1725,40 @@ bThreads.set({
 })
 
 useFeedback({
-  validateOrder({ order }) {
+  orderReceived(order: Order) {
+    // Store order in stateful variable
+    currentOrder = order
+    trigger({ type: 'orderReceived' })
+  },
+
+  validateOrder(order: Order) {
     const isValid = validateOrderData(order)
     trigger({ type: 'orderValid', detail: { isValid } })
   },
 
-  async processPayment({ order }) {
+  async processPayment(order: Order) {
     await paymentGateway.charge(order.total)
     trigger({ type: 'paymentProcessed' })
   },
 
-  async checkFraud({ order }) {
+  async checkFraud(order: Order) {
     const result = await fraudService.check(order)
     isFraudulent = result.isFraudulent
     trigger({ type: 'fraudChecked', detail: result })
   },
 
-  shipOrder({ order }) {
+  shipOrder(order: Order) {
     shippingService.createShipment(order)
     trigger({ type: 'orderShipped' })
   },
 
-  notifyCustomer({ order }) {
+  notifyCustomer(order: Order) {
     emailService.send(order.email, 'Order confirmed!')
   }
 })
+
+// Start workflow with external order
+trigger({ type: 'orderReceived', detail: { id: '123', total: 99.99, email: 'user@example.com' } })
 ```
 
 ### Resource Management
@@ -1200,14 +1842,410 @@ useFeedback({
 })
 ```
 
-## Summary: BP for Neuro-Symbolic AI
+### Scaling with Actor Model Orchestration
 
-The four key capabilities make BP ideal for Neuro-symbolic AI rule composition:
+**Reference**: ["Scaling-Up Behavioral Programming: Steps from Basic Principles to Application Architectures"](https://soft.vub.ac.be/AGERE14/papers/ageresplash2014_submission_1.pdf) describes architectural patterns for scaling BP beyond monolithic programs.
 
-1. **⭐ Event Selection Strategy**: Priority-based selection with blocking precedence enables hierarchical rule systems
-2. **⭐ Rule Composition Patterns**: Additive composition allows AI to add rules without modifying existing behavior
-3. **⭐ Predicate-Based Event Matching**: Dynamic, state-dependent matching enables context-aware rules
-4. **⭐ Thread Lifecycle & Runtime Management**: Runtime rule addition/removal enables adaptive behavior
+For large systems, avoid monolithic behavioral programs by composing multiple dedicated programs through an actor model. An orchestrator bProgram coordinates specialized worker bPrograms using `useBehavioral`, with bidirectional communication via public triggers and signals.
+
+**Architecture Benefits**:
+- **Performance**: Isolated programs reduce coordination overhead
+- **Modularity**: Each worker has focused responsibility
+- **Scalability**: Add/remove workers without affecting orchestrator
+- **Bidirectional Communication**: Orchestrator controls workers (triggers), workers notify orchestrator (signals)
+- **Neuro-Symbolic AI**: Separate symbolic reasoning from neural processing
+
+```typescript
+import { behavioral, bThread, bSync, useBehavioral, useSignal } from 'plaited'
+
+// ============================================================================
+// Shared Signals for Actor Communication
+// ============================================================================
+
+type TaskData = { id: string; type: 'analysis' | 'validation'; data: unknown }
+type ResultData = { id: string; status: 'success' | 'error'; result?: unknown }
+
+const taskSignal = useSignal<TaskData>()
+const resultSignal = useSignal<ResultData>()
+
+// ============================================================================
+// Analysis Worker: Neural processing layer
+// ============================================================================
+
+type WorkerContext = {
+  taskSignal: ReturnType<typeof useSignal<TaskData>>
+  resultSignal: ReturnType<typeof useSignal<ResultData>>
+}
+
+const createAnalysisWorker = useBehavioral<
+  {
+    TASK_ASSIGNED: TaskData
+    PERFORM_ANALYSIS: undefined
+    ANALYSIS_COMPLETE: unknown
+    PUBLISH_RESULT: unknown
+  },
+  WorkerContext
+>({
+  publicEvents: ['TASK_ASSIGNED'], // Orchestrator can trigger this directly
+
+  bProgram({ trigger, taskSignal, resultSignal, bThreads, bThread, bSync }) {
+    let currentTask: TaskData | null = null
+
+    // Worker listens to task signal (actor model pub/sub)
+    taskSignal.listen('taskAvailable', trigger)
+
+    bThreads.set({
+      analysisWorkflow: bThread([
+        bSync({
+          waitFor: ({ type, detail }) =>
+            type === 'taskAvailable' && detail?.type === 'analysis'
+        }),
+        bSync({ request: { type: 'TASK_ASSIGNED' } }),
+        bSync({ request: { type: 'PERFORM_ANALYSIS' } }),
+        bSync({ waitFor: 'ANALYSIS_COMPLETE' }),
+        bSync({ request: { type: 'PUBLISH_RESULT' } })
+      ], true)
+    })
+
+    return {
+      TASK_ASSIGNED(task) {
+        currentTask = task
+      },
+
+      async PERFORM_ANALYSIS() {
+        if (!currentTask) return
+
+        // Simulate neural network inference
+        const result = await runNeuralAnalysis(currentTask.data)
+        trigger({ type: 'ANALYSIS_COMPLETE', detail: result })
+      },
+
+      PUBLISH_RESULT(result) {
+        if (!currentTask) return
+
+        // Worker → Orchestrator communication via signal
+        resultSignal.set({
+          id: currentTask.id,
+          status: 'success',
+          result
+        })
+
+        currentTask = null
+      }
+    }
+  }
+})
+
+// ============================================================================
+// Validation Worker: Symbolic reasoning layer
+// ============================================================================
+
+const createValidationWorker = useBehavioral<
+  {
+    TASK_ASSIGNED: TaskData
+    CHECK_RULES: undefined
+    RULES_CHECKED: { isValid: boolean }
+    PUBLISH_RESULT: { isValid: boolean; data?: unknown }
+  },
+  WorkerContext
+>({
+  publicEvents: ['TASK_ASSIGNED'],
+
+  bProgram({ trigger, taskSignal, resultSignal, bThreads, bThread, bSync }) {
+    let currentTask: TaskData | null = null
+
+    // Worker listens to task signal
+    taskSignal.listen('taskAvailable', trigger)
+
+    bThreads.set({
+      validationWorkflow: bThread([
+        bSync({
+          waitFor: ({ type, detail }) =>
+            type === 'taskAvailable' && detail?.type === 'validation'
+        }),
+        bSync({ request: { type: 'TASK_ASSIGNED' } }),
+        bSync({ request: { type: 'CHECK_RULES' } }),
+        bSync({ waitFor: 'RULES_CHECKED' }),
+        bSync({
+          // Block progression if rules fail
+          block: ({ type, detail }) =>
+            type === 'PUBLISH_RESULT' && !detail?.isValid
+        }),
+        bSync({ request: { type: 'PUBLISH_RESULT' } })
+      ], true)
+    })
+
+    return {
+      TASK_ASSIGNED(task) {
+        currentTask = task
+      },
+
+      CHECK_RULES() {
+        if (!currentTask) return
+
+        // Symbolic reasoning: apply constraints and business rules
+        const isValid = applyBusinessRules(currentTask.data)
+        trigger({ type: 'RULES_CHECKED', detail: { isValid } })
+      },
+
+      PUBLISH_RESULT({ isValid, data }) {
+        if (!currentTask) return
+
+        resultSignal.set({
+          id: currentTask.id,
+          status: isValid ? 'success' : 'error',
+          result: isValid ? data : null
+        })
+
+        currentTask = null
+      }
+    }
+  }
+})
+
+// ============================================================================
+// Orchestrator: Coordinates workflow across workers
+// ============================================================================
+
+const createOrchestrator = useBehavioral<
+  {
+    TASK_RECEIVED: TaskData
+    ROUTE_TASK: undefined
+    TASK_ROUTED: undefined
+    WAIT_FOR_RESULT: undefined
+    RESULT_RECEIVED: ResultData
+    COMPLETE_TASK: undefined
+  },
+  Record<string, never>
+>({
+  publicEvents: ['TASK_RECEIVED'],
+
+  async bProgram({ trigger, bThreads, bThread, bSync }) {
+    const pendingTasks = new Map<string, TaskData>()
+
+    // Initialize workers and get their public triggers
+    const analysisWorker = await createAnalysisWorker({
+      taskSignal,
+      resultSignal
+    })
+
+    const validationWorker = await createValidationWorker({
+      taskSignal,
+      resultSignal
+    })
+
+    // Orchestrator listens to result signal from workers
+    resultSignal.listen('result', trigger)
+
+    bThreads.set({
+      workflowCoordinator: bThread([
+        bSync({ waitFor: 'TASK_RECEIVED' }),
+        bSync({ request: { type: 'ROUTE_TASK' } }),
+        bSync({ waitFor: 'TASK_ROUTED' }),
+        bSync({ request: { type: 'WAIT_FOR_RESULT' } }),
+        bSync({
+          waitFor: ({ type, detail }) =>
+            type === 'result' && detail && pendingTasks.has(detail.id)
+        }),
+        bSync({ request: { type: 'RESULT_RECEIVED' } }),
+        bSync({ request: { type: 'COMPLETE_TASK' } })
+      ], true)
+    })
+
+    return {
+      TASK_RECEIVED(task) {
+        pendingTasks.set(task.id, task)
+      },
+
+      ROUTE_TASK() {
+        const [id, task] = pendingTasks.entries().next().value
+
+        // Option 1: Direct worker control via public trigger
+        if (task.type === 'analysis') {
+          analysisWorker({ type: 'TASK_ASSIGNED', detail: task })
+        } else {
+          validationWorker({ type: 'TASK_ASSIGNED', detail: task })
+        }
+
+        // Option 2: Broadcast via signal (both workers listen, filter by type)
+        // taskSignal.set(task)
+
+        trigger({ type: 'TASK_ROUTED' })
+      },
+
+      WAIT_FOR_RESULT() {
+        console.log('Waiting for worker to complete...')
+      },
+
+      RESULT_RECEIVED(result) {
+        console.log('Result received from worker:', result)
+      },
+
+      COMPLETE_TASK() {
+        const [id] = pendingTasks.entries().next().value
+        pendingTasks.delete(id)
+        console.log(`Task ${id} completed`)
+      }
+    }
+  }
+})
+
+// Initialize and use orchestrator
+const orchestrator = await createOrchestrator({})
+
+// Start processing
+orchestrator({
+  type: 'TASK_RECEIVED',
+  detail: { id: '1', type: 'analysis', data: { values: [1, 2, 3] } }
+})
+
+orchestrator({
+  type: 'TASK_RECEIVED',
+  detail: { id: '2', type: 'validation', data: { email: 'user@example.com' } }
+})
+```
+
+**Communication Patterns**:
+
+1. **Orchestrator → Worker** (Direct Control):
+   ```typescript
+   // Via public trigger (type-safe, filtered)
+   analysisWorker({ type: 'TASK_ASSIGNED', detail: task })
+   ```
+
+2. **Orchestrator → Workers** (Broadcast):
+   ```typescript
+   // Via signal (all workers receive, filter by predicate)
+   taskSignal.set(task)
+   // Workers filter: waitFor: ({ detail }) => detail.type === 'analysis'
+   ```
+
+3. **Worker → Orchestrator** (Async Notification):
+   ```typescript
+   // Worker publishes to signal:
+   resultSignal.set({ id, status: 'success', result })
+
+   // Orchestrator receives via listen:
+   resultSignal.listen('result', trigger)
+   // Creates event: { type: 'result', detail: { id, status, result } }
+   ```
+
+4. **Worker → Worker** (Peer Communication):
+   ```typescript
+   // Both workers subscribe to same signal
+   taskSignal.listen('taskAvailable', trigger)
+   // Enables parallel processing and coordination
+   ```
+
+**Key Implementation Details**:
+
+- **Worker Initialization**: Orchestrator calls `await createWorker({ taskSignal, resultSignal })` in `bProgram` callback
+- **Signal Injection**: Signals passed via context to enable cross-program communication
+- **Public Event Security**: Workers expose only `TASK_ASSIGNED`, protecting internal workflow
+- **Bidirectional Flow**:
+  - Control: Orchestrator → Workers (public triggers or signal broadcast)
+  - Feedback: Workers → Orchestrator (result signal)
+- **Signal.listen API**: `signal.listen(eventType, trigger)` creates event `{ type: eventType, detail: signalValue }`
+- **Predicate Filtering**: Workers use `waitFor` predicates to filter signal events by task type
+
+**Scaling Principles** (from the paper):
+
+- **Decompose by Concern**: Analysis worker (neural), validation worker (symbolic)
+- **Coordinate, Don't Centralize**: Orchestrator routes, workers execute independently
+- **Signal for Async Communication**: `useSignal` provides actor model pub/sub between programs
+- **Public Triggers for Direct Control**: Orchestrator can directly command specific workers
+- **Maintain Thread Simplicity**: Each worker has focused, simple thread structure
+- **Layer Abstractions**: Orchestrator manages workflow, workers implement domain logic
+
+**When to Use This Pattern**:
+- **Large-scale systems** with hundreds of behavioral threads
+- **Neuro-symbolic AI** separating neural inference from symbolic validation
+- **Microservice architectures** within single application
+- **Performance-critical** systems avoiding monolithic program overhead
+- **Dynamic workflows** where workers can be added/removed at runtime
+
+## Summary: BP as Symbolic Reasoning Layer
+
+Behavioral programs function **as the symbolic reasoning layer** in neuro-symbolic AI architectures. BP threads provide logical reasoning, constraint validation, and rule composition on top of neural network outputs.
+
+```mermaid
+flowchart TB
+    subgraph Neural["Neural/Subsymbolic Layer"]
+        direction LR
+        Perception["Pattern Recognition<br/>(Vision, NLP, Audio)"]
+        Learning["Statistical Learning<br/>(Training, Inference)"]
+        Output["Neural Outputs<br/>(Probabilities, Embeddings)"]
+        Perception --> Learning --> Output
+    end
+
+    subgraph Symbolic["Symbolic Layer (BP Threads)"]
+        direction TB
+        Rules["Rule Composition<br/>(Priority, Blocking)"]
+        Constraints["Constraint Validation<br/>(Predicates, Guards)"]
+        Reasoning["Logical Reasoning<br/>(Event Selection)"]
+        Rules --> Constraints --> Reasoning
+    end
+
+    Output -->|"Events with<br/>confidence scores"| Rules
+    Reasoning -->|"Validated Actions"| Actions["System Actions"]
+
+    style Neural fill:#e1f5ff
+    style Symbolic fill:#fff4e1
+```
+
+### How BP Enables Symbolic Reasoning
+
+The four key capabilities make BP function as the symbolic layer:
+
+1. **⭐ Event Selection Strategy**: Enforces logical constraints over neural outputs
+   - Neural layer proposes actions with confidence scores (priority)
+   - BP threads block invalid combinations
+   - Example: Block high-confidence "submit" if form validation rules fail
+
+2. **⭐ Rule Composition Patterns**: Additive rules without modifying neural models
+   - Add new constraints without retraining
+   - Compose domain rules independently
+   - Example: Add "prevent duplicate submission" rule to existing workflow
+
+3. **⭐ Predicate-Based Event Matching**: Context-aware symbolic validation
+   - Dynamic guards based on current state
+   - Conditional rule activation
+   - Example: Different validation rules for different form states
+
+4. **⭐ Thread Lifecycle & Runtime Management**: Adaptive reasoning
+   - Add/remove rules at runtime based on context
+   - Enable/disable constraints dynamically
+   - Example: Activate specialized rules when entering expert mode
+
+### Neural → Symbolic Flow Example
+
+```typescript
+// Neural layer outputs events with confidence scores
+trigger({
+  type: 'predictedAction',
+  detail: { action: 'submit', confidence: 0.95 },
+  priority: 95  // Confidence → Priority
+})
+
+// Symbolic layer (BP threads) validates and constrains
+bThreads.set({
+  // Rule 1: Block submission if form invalid
+  validateForm: bThread([
+    bSync({
+      block: ({ type }) => type === 'predictedAction' && !isFormValid()
+    })
+  ], true),
+
+  // Rule 2: Prevent duplicate submissions
+  preventDuplicate: bThread([
+    bSync({
+      block: ({ type }) => type === 'predictedAction' && isSubmitting
+    })
+  ], true)
+})
+
+// Only valid actions pass through symbolic layer
+```
 
 **Next Steps**:
 - See `b-element.md` for UI integration

@@ -1,5 +1,22 @@
+import type { ElementAttributeList, FT } from 'plaited'
 import { story } from 'plaited/testing'
-import { DecoratedCheckbox } from './decorated-checkbox.ts'
+import { DecorateCheckbox } from './decorated-checkbox.ts'
+
+/**
+ * DecoratedCheckbox - FunctionalTemplate wrapper for DecorateCheckbox
+ *
+ * Provides convenient API for creating decorated checkboxes.
+ */
+export const DecoratedCheckbox: FT<ElementAttributeList['input']> = (props) => {
+  return (
+    <DecorateCheckbox>
+      <input
+        {...props}
+        type='checkbox'
+      />
+    </DecorateCheckbox>
+  )
+}
 
 export const example = story<typeof DecoratedCheckbox>({
   template: DecoratedCheckbox,

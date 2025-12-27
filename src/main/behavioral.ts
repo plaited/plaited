@@ -6,6 +6,7 @@ import type {
   BPListener,
   BThreads,
   CandidateBid,
+  EventDetails,
   PendingBid,
   RunningBid,
   SnapshotFormatter,
@@ -155,6 +156,7 @@ const snapshotFormatter: SnapshotFormatter = ({ candidates, selectedEvent, pendi
  * the BP paradigm. It maintains the state of all active threads, processes their synchronization
  * statements, selects events, and handles the publication of events to external subscribers.
  *
+ * @template Details Type map for event payloads, enabling type-safe handlers. Maps event types to their detail payload types.
  * @returns An immutable object (`BProgramAPI`) containing functions to interact with the program.
  *
  * @remarks
@@ -185,9 +187,8 @@ const snapshotFormatter: SnapshotFormatter = ({ candidates, selectedEvent, pendi
  * externally. It will continue executing super-steps as long as there are events to select
  * and threads to run. If no events can be selected (either because all requests are blocked
  * or there are no requests), the program will pause until an external event is triggered.
- *
  */
-export const behavioral: Behavioral = () => {
+export const behavioral: Behavioral = <Details extends EventDetails = EventDetails>() => {
   /**
    * @internal
    * Map of threads that have yielded and are waiting for event selection.
@@ -363,8 +364,11 @@ export const behavioral: Behavioral = () => {
    * This subscribes the provided handlers to the action publisher, which will
    * invoke the appropriate handler whenever a matching event is selected.
    * It returns a disconnect function that removes the subscription when called.
+   *
+   * The generic type parameter `Details` enables type-safe handler mapping,
+   * where each handler receives its correctly-typed detail payload.
    */
-  const useFeedback: UseFeedback = (handlers) => {
+  const useFeedback: UseFeedback<Details> = (handlers) => {
     const disconnect = actionPublisher.subscribe((data: BPEvent) => {
       const { type, detail } = data
       if (Object.hasOwn(handlers, type)) {

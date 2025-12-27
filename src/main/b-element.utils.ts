@@ -16,8 +16,7 @@
 import type { Bindings, BoundElement } from './b-element.types.ts'
 import { BOOLEAN_ATTRS } from './create-template.constants.ts'
 import type { TemplateObject } from './create-template.types.ts'
-import type { HostStylesObject } from './css.types.ts'
-import { joinStyles } from './join-styles.ts'
+import type { DesignTokenReference, HostStylesObject } from './css.types.ts'
 
 /**
  * @internal Cache for storing adopted stylesheets per ShadowRoot to prevent duplicate processing.
@@ -124,22 +123,22 @@ const updateAttributes = ({
 
 /**
  * @internal Creates a DocumentFragment from a Plaited template object, handling both content and styles.
- * Used internally when rendering templates within components.
+ * Used internally when rendering templates within a BehavioralElement.
  */
 export const getDocumentFragment = ({
   hostStyles,
   shadowRoot,
   templateObject,
 }: {
-  hostStyles?: HostStylesObject
+  hostStyles?: HostStylesObject | DesignTokenReference
   shadowRoot: ShadowRoot
   templateObject: TemplateObject
 }) => {
+  hostStyles && void updateShadowRootStyles(shadowRoot, hostStyles.stylesheets)
+
   const { html, stylesheets } = templateObject
-  if (stylesheets.length || hostStyles) {
-    const styles = joinStyles(hostStyles, { stylesheets: templateObject.stylesheets }).stylesheets
-    void updateShadowRootStyles(shadowRoot, styles)
-  }
+  stylesheets.length && void updateShadowRootStyles(shadowRoot, stylesheets)
+
   const template = document.createElement('template')
   template.setHTMLUnsafe(html.join(''))
   return template.content

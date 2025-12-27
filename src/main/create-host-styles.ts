@@ -56,7 +56,7 @@ const formatHostStatement = ({
     }
   } else {
     const isToken = isTokenReference(value)
-    isToken && styles.push(...value.styles)
+    isToken && styles.push(...value.stylesheets)
     const arr = selectors.map((str) => `${str}{`)
     styles.push(`${host}{${arr.join('')}${getRule(prop, isToken ? value() : value)}${'}'.repeat(arr.length)}}`)
   }

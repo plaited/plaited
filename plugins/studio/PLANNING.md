@@ -167,11 +167,7 @@ plugins/studio/
 
 ### Phase 4: MCP Server Integration (Not Started)
 
-**Goal:** Live preview with MCP protocol
 
-**Components:**
-- Bun HTTP server serving stories (port 3500)
-- MCP protocol handler (StdioServerTransport)
 - Workshop discovery integration
 - postMessage bridge for interactive preview
 

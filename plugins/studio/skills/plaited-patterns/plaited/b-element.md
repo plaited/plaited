@@ -1,6 +1,6 @@
 # bElement: Custom Elements API
 
-`bElement` creates Web Components with Shadow DOM, behavioral programming, and declarative event handling. It's the fundamental building block for interactive islands in Plaited applications.
+`bElement` creates Custom Element with Shadow DOM, behavioral programming, and declarative event handling. It's the fundamental building block for interactive islands in Plaited applications.
 
 **For foundational BP concepts**, see `behavioral-programs.md`
 **For cross-island coordination**, see `cross-island-communication.md`
@@ -15,7 +15,9 @@ Use `bElement` when you need any of these capabilities:
 Interactive regions with behavioral programs coordinating complex state:
 
 ```typescript
-const TodoList = bElement({
+const TodoList = bElement<{
+  inputChange: InputEvent & { target: HTMLInputElement }
+}>({
   tag: 'todo-list',
   shadowDom: (
     <>
@@ -35,7 +37,7 @@ const TodoList = bElement({
 
     return {
       inputChange(e) {
-        currentInput = (e.target as HTMLInputElement).value
+        currentInput = e.target.value
       },
       add() {
         const list = $('list')[0]
@@ -49,71 +51,130 @@ const TodoList = bElement({
 })
 ```
 
+**Handler Type Inference**: Use the generic type parameter to declare event types for handlers that need typed parameters. The event type is inferred from the `p-trigger` key (e.g., `input` → `InputEvent`, `click` → `MouseEvent`). Use intersection types to narrow the `target` property (e.g., `InputEvent & { target: HTMLInputElement }`). TypeScript automatically infers handler parameter types from the generic, eliminating type casts. For non-standard events, use `CustomEvent<YourType>`. Handlers that don't use parameters (like `add` above) don't need to be included in the generic.
+
 ### 2. Decorator Pattern
 
 Wrapping hard-to-style native elements (inputs, checkboxes, selects):
 
+**File: `surfaces.tokens.ts`**
 ```typescript
-import { createHostStyles, createStyles } from 'plaited'
+import { createTokens } from 'plaited'
 
-const styles = createStyles({
-  symbol: {
-    height: '16px',
-    width: '16px',
-    backgroundColor: 'var(--fill)'
-  },
-  input: {
-    opacity: 0,
-    position: 'absolute'
-  }
-})
-
-const hostStyles = createHostStyles({
-  display: 'inline-grid',
-  '--fill': {
-    $default: 'lightblue',
+export const surfaces = createTokens('surfaces', {
+  fill: {
+    $default: { $value: 'lightblue' },
     $compoundSelectors: {
-      ':state(checked)': 'blue',
-      ':state(disabled)': 'gray'
+      ':state(checked)': { $value: 'blue' },
+      ':state(disabled)': { $value: 'gray' }
     }
   }
 })
+```
 
-const DecorateCheckbox = bElement({
+**File: `decorated-checkbox.css.ts`**
+```typescript
+import { createStyles, createHostStyles, joinStyles } from 'plaited'
+import { surfaces } from './surfaces.tokens.ts'
+
+export const styles = createStyles({
+  symbol: {
+    height: '16px',
+    width: '16px',
+    backgroundColor: surfaces.fill,
+    gridArea: 'input'
+  },
+  input: {
+    gridArea: 'input',
+    height: '16px',
+    width: '16px',
+    opacity: '0',
+    margin: '0',
+    padding: '0'
+  }
+})
+
+export const hostStyles = joinStyles(
+  surfaces.fill,
+  createHostStyles({
+    display: 'inline-grid',
+    gridTemplate: '"input" 16px / 16px'
+  })
+)
+```
+
+**File: `decorated-checkbox.tsx`**
+```typescript
+import { bElement, useAttributesObserver } from 'plaited'
+import { styles, hostStyles } from './decorated-checkbox.css.ts'
+
+/**
+ * DecorateCheckbox - Wraps native checkbox with custom styling
+ *
+ * Demonstrates decorator pattern for hard-to-style native elements.
+ * Uses useAttributesObserver to sync slotted checkbox state with custom states.
+ */
+export const DecorateCheckbox = bElement({
   tag: 'decorate-checkbox',
   hostStyles,
   shadowDom: (
     <>
-      <div p-target="symbol" {...styles.symbol} p-trigger={{ click: 'click' }} />
-      <slot p-target="slot" p-trigger={{ slotchange: 'slotchange' }}></slot>
+      <div
+        p-target="symbol"
+        {...styles.symbol}
+        p-trigger={{ click: 'click' }}
+      />
+      <slot
+        p-target="slot"
+        p-trigger={{ slotchange: 'slotchange' }}
+        {...styles.input}
+      ></slot>
     </>
   ),
   bProgram({ $, internals, trigger }) {
-    const slot = $<HTMLSlotElement>('slot')[0]
+    let slot = $<HTMLSlotElement>('slot')[0]
     let input = slot?.assignedElements()[0]
-    const inputObserver = useAttributesObserver('change', trigger)
+    let inputObserver = useAttributesObserver('change', trigger)
 
     return {
       slotchange() {
+        // Re-query after slot content changes
+        slot = $<HTMLSlotElement>('slot')[0]
         input = slot?.assignedElements()[0]
+        inputObserver = useAttributesObserver('change', trigger)
       },
+
       change({ name, newValue }) {
+        // Sync slotted input attributes with custom states
         newValue ? internals.states.add(name) : internals.states.delete(name)
       },
+
       onConnected() {
+        // Initialize states from slotted input
         input?.hasAttribute('checked') && internals.states.add('checked')
         input?.hasAttribute('disabled') && internals.states.add('disabled')
+
+        // Start observing slotted input attributes
         input && inputObserver(input, ['checked', 'disabled'])
       }
     }
   }
 })
+```
 
-// Usage: wraps native checkbox
+**Usage:**
+```typescript
 <DecorateCheckbox>
   <input type="checkbox" checked />
 </DecorateCheckbox>
 ```
+
+**Pattern Notes**:
+- **Grid Positioning**: Uses CSS Grid to overlay the custom symbol exactly over the hidden native checkbox
+- **Slot Styling**: Applies styles directly to `<slot>` to position the slotted input
+- **Variable Reassignment**: Uses `let` for slot, input, and observer to handle dynamic slot content changes
+- **useAttributesObserver**: Observes attribute changes on the slotted input and syncs them with custom states
+- **Token Reference**: Pass `surfaces.fill` (the token property) to `joinStyles()` to include CSS variable definitions
 
 ### 3. Stateful Elements
 
@@ -155,15 +216,79 @@ const Popover = bElement({
 
 ### 4. Form-Associated Elements
 
-Custom form controls using ElementInternals:
+Custom form controls using ElementInternals - both wrapping native elements and creating new controls that don't exist natively:
 
+**File: `surfaces.tokens.ts`**
 ```typescript
-const ToggleInput = bElement({
+import { createTokens } from 'plaited'
+
+export const surfaces = createTokens('surfaces', {
+  fill: {
+    $default: { $value: 'lightblue' },
+    $compoundSelectors: {
+      ':state(checked)': { $value: 'blue' },
+      ':state(disabled)': { $value: 'gray' }
+    }
+  }
+})
+```
+
+**File: `toggle-input.css.ts`**
+```typescript
+import { createStyles, createHostStyles, joinStyles } from 'plaited'
+import { surfaces } from './surfaces.tokens.ts'
+
+export const styles = createStyles({
+  symbol: {
+    height: '16px',
+    width: '16px',
+    backgroundColor: surfaces.fill,
+  }
+})
+
+export const hostStyles = joinStyles(
+  surfaces.fill,
+  createHostStyles({
+    display: 'inline-grid'
+  })
+)
+```
+
+**File: `toggle-input.ts`**
+```typescript
+import { bElement } from 'plaited'
+import { isTypeOf } from 'plaited/utils'
+import { styles, hostStyles } from './toggle-input.css.ts'
+
+export const ToggleInput = bElement<{
+  click: MouseEvent & { target: HTMLInputElement }
+  checked: boolean
+  disabled: boolean
+  valueChange: string | null
+}>({
   tag: 'toggle-input',
+  observedAttributes: ['disabled', 'checked', 'value'],
   formAssociated: true,
-  observedAttributes: ['checked', 'disabled'],
-  shadowDom: <div p-target="symbol" p-trigger={{ click: 'click' }} />,
-  bProgram({ trigger, internals, root }) {
+  hostStyles,
+  shadowDom: (
+    <div
+      p-target="symbol"
+      {...styles.symbol}
+      p-trigger={{ click: 'click' }}
+    />
+  ),
+  bProgram({ trigger, internals, root, bThreads, bSync, bThread }) {
+    bThreads.set({
+      onDisabled: bThread([
+        bSync({
+          block: [
+            ({ type }) => type === 'checked' && internals.states.has('disabled'),
+            ({ type }) => type === 'valueChange' && internals.states.has('disabled')
+          ]
+        })
+      ], true)
+    })
+
     return {
       click() {
         trigger({ type: 'checked', detail: !internals.states.has('checked') })
@@ -172,10 +297,45 @@ const ToggleInput = bElement({
         root.host.toggleAttribute('checked', val)
         if (val) {
           internals.states.add('checked')
-          internals.setFormValue('on', 'checked')
+          internals.setFormValue('on', root.host.getAttribute('value') ?? 'checked')
         } else {
           internals.states.delete('checked')
           internals.setFormValue('off')
+        }
+      },
+      disabled(val) {
+        if (val) {
+          internals.states.add('disabled')
+        } else {
+          internals.states.delete('disabled')
+        }
+      },
+      valueChange(val) {
+        const isChecked = internals.states.has('checked')
+        if (val && isChecked) {
+          internals.setFormValue('on', val)
+        } else if (isChecked) {
+          internals.setFormValue('on', 'checked')
+        }
+      },
+      onAttributeChanged({ name, newValue }) {
+        name === 'checked' && trigger({
+          type: 'checked',
+          detail: isTypeOf<string>(newValue, 'string')
+        })
+        name === 'disabled' && trigger({
+          type: 'disabled',
+          detail: isTypeOf<string>(newValue, 'string')
+        })
+        name === 'value' && trigger({ type: 'valueChange', detail: newValue })
+      },
+      onConnected() {
+        if (root.host.hasAttribute('checked')) {
+          internals.states.add('checked')
+          internals.setFormValue('on', root.host.getAttribute('value') ?? 'checked')
+        }
+        if (root.host.hasAttribute('disabled')) {
+          internals.states.add('disabled')
         }
       }
     }
@@ -183,54 +343,33 @@ const ToggleInput = bElement({
 })
 ```
 
+**Pattern Notes**:
+- Uses behavioral threads to block `checked` and `valueChange` events when disabled
+- Syncs attributes with custom states (`:state(checked)`, `:state(disabled)`)
+- Integrates with forms via `internals.setFormValue()`
+- Token references passed to `joinStyles()` for CSS variable definitions
+
 **See `form-associated-elements.md` for complete form integration patterns.**
-
-### 5. Non-Existent Native Elements
-
-Elements that don't exist in HTML but should:
-
-```typescript
-const RatingInput = bElement({
-  tag: 'rating-input',
-  formAssociated: true,
-  shadowDom: (
-    <div p-target="stars">
-      <button p-target="star" data-value="1" p-trigger={{ click: 'rate' }}>★</button>
-      <button p-target="star" data-value="2" p-trigger={{ click: 'rate' }}>★</button>
-      <button p-target="star" data-value="3" p-trigger={{ click: 'rate' }}>★</button>
-      <button p-target="star" data-value="4" p-trigger={{ click: 'rate' }}>★</button>
-      <button p-target="star" data-value="5" p-trigger={{ click: 'rate' }}>★</button>
-    </div>
-  ),
-  bProgram({ internals }) {
-    return {
-      rate(e) {
-        const value = (e.target as HTMLElement).dataset.value
-        internals.setFormValue(value ?? '0')
-      }
-    }
-  }
-})
-```
 
 ## bElement API Overview
 
 ```typescript
 import { bElement } from 'plaited'
+import { hostStyles } from './my-element.css.ts'
 
 const MyElement = bElement<{
   eventType1: DetailType1
   eventType2: DetailType2
 }>({
-  tag: 'my-element',               // Required: Custom element tag (must have hyphen)
-  shadowDom: <slot></slot>,        // Required: Shadow DOM template
-  mode: 'open',                    // Optional: Shadow mode (default: 'open')
-  delegatesFocus: true,            // Optional: Focus delegation (default: true)
-  slotAssignment: 'named',         // Optional: Slot assignment (default: 'named')
-  observedAttributes: [],          // Optional: Attributes to watch
-  publicEvents: [],                // Optional: Events for cross-island communication
-  hostStyles: createHostStyles({}), // Optional: Host element styles
-  formAssociated: true,            // Optional: Enable form association
+  tag: 'my-element',          // Required: Custom element tag (must have hyphen)
+  shadowDom: <slot></slot>,   // Required: Shadow DOM template
+  mode: 'open',               // Optional: Shadow mode (default: 'open')
+  delegatesFocus: true,       // Optional: Focus delegation (default: true)
+  slotAssignment: 'named',    // Optional: Slot assignment (default: 'named')
+  observedAttributes: [],     // Optional: Attributes to watch
+  publicEvents: [],           // Optional: Events for cross-island communication
+  hostStyles,                 // Optional: Import from *.css.ts file
+  formAssociated: true,       // Optional: Enable form association
   bProgram({ $, trigger, ... }) {  // Optional: Behavioral program
     return {
       // Event handlers
@@ -242,11 +381,7 @@ const MyElement = bElement<{
 
 ### Core Properties
 
-#### `tag` (Required)
 
-Custom element tag name. **Must contain a hyphen** per Web Components spec:
-
-```typescript
 // ✅ Valid
 tag: 'my-element'
 tag: 'todo-list'
@@ -278,22 +413,31 @@ shadowDom: (
 
 Styles for the `:host` element (the custom element itself):
 
+**File: `my-element.css.ts`**
 ```typescript
 import { createHostStyles } from 'plaited'
 
+export const hostStyles = createHostStyles({
+  display: 'block',
+  padding: '1rem',
+  backgroundColor: {
+    $default: 'white',
+    $compoundSelectors: {
+      ':state(active)': 'blue',
+      '[disabled]': 'gray'
+    }
+  }
+})
+```
+
+**File: `my-element.tsx`**
+```typescript
+import { bElement } from 'plaited'
+import { hostStyles } from './my-element.css.ts'
+
 const MyElement = bElement({
   tag: 'my-element',
-  hostStyles: createHostStyles({
-    display: 'block',
-    padding: '1rem',
-    backgroundColor: {
-      $default: 'white',
-      $compoundSelectors: {
-        ':state(active)': 'blue',
-        '[disabled]': 'gray'
-      }
-    }
-  }),
+  hostStyles,
   shadowDom: <slot></slot>
 })
 ```
@@ -351,15 +495,16 @@ const MyElement = bElement({
 Enables form integration via ElementInternals API:
 
 ```typescript
-const MyInput = bElement({
+const MyInput = bElement<{
+  inputChange: InputEvent & { target: HTMLInputElement }
+}>({
   tag: 'my-input',
   formAssociated: true,  // Enables internals.setFormValue()
   shadowDom: <input p-target="input" p-trigger={{ input: 'inputChange' }} />,
   bProgram({ internals }) {
     return {
       inputChange(e) {
-        const value = (e.target as HTMLInputElement).value
-        internals.setFormValue(value)
+        internals.setFormValue(e.target.value)
       }
     }
   }
@@ -378,15 +523,19 @@ Query elements by `p-target` attribute:
 
 ```typescript
 bProgram({ $ }) {
-  // Single element
+  // Query elements at setup if they're in shadowDom template
   const button = $<HTMLButtonElement>('myButton')[0]
-
-  // Multiple elements
   const items = $<HTMLLIElement>('item')
-  items.forEach(item => item.render('Updated'))
 
   // With attribute selector match
   const partial = $('name', '^=')  // Matches p-target starts with "name"
+
+  return {
+    updateItems() {
+      // DOM manipulations happen in handlers
+      items.forEach(item => item.render('Updated'))
+    }
+  }
 }
 ```
 
@@ -405,19 +554,31 @@ All elements returned by `$()` have these methods:
 Replace element's content:
 
 ```typescript
-const header = $('header')[0]
+bProgram({ $ }) {
+  const header = $('header')[0]
 
-// String
-header?.render('New text')
+  return {
+    updateHeader(content: string) {
+      // String
+      header?.render(content)
+    },
 
-// Number
-header?.render(42)
+    updateCount(count: number) {
+      // Number
+      header?.render(count)
+    },
 
-// Template
-header?.render(<strong>Bold text</strong>)
+    updateBold() {
+      // Template
+      header?.render(<strong>Bold text</strong>)
+    },
 
-// Multiple fragments
-header?.render('Text ', <em>italic</em>, ' more text')
+    updateMixed() {
+      // Multiple fragments
+      header?.render('Text ', <em>italic</em>, ' more text')
+    }
+  }
+}
 ```
 
 #### `.insert(position, content)` - Insert Content
@@ -425,11 +586,20 @@ header?.render('Text ', <em>italic</em>, ' more text')
 Insert content at specific position:
 
 ```typescript
-const list = $('list')[0]
+bProgram({ $ }) {
+  const list = $('list')[0]
 
-// Positions: 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
-list?.insert('beforeend', <li>New item</li>)
-list?.insert('afterbegin', 'First item')
+  return {
+    addItem(text: string) {
+      // Positions: 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
+      list?.insert('beforeend', <li>{text}</li>)
+    },
+
+    prependItem(text: string) {
+      list?.insert('afterbegin', <li>{text}</li>)
+    }
+  }
+}
 ```
 
 #### `.attr(name, value)` - Set/Remove Attribute
@@ -437,20 +607,32 @@ list?.insert('afterbegin', 'First item')
 Update or remove attributes:
 
 ```typescript
-const button = $<HTMLButtonElement>('btn')[0]
+bProgram({ $ }) {
+  const button = $<HTMLButtonElement>('btn')[0]
 
-// Set attribute
-button?.attr('disabled', true)
-button?.attr('data-count', 5)
-button?.attr('aria-label', 'Submit form')
+  return {
+    disableButton() {
+      button?.attr('disabled', true)
+    },
 
-// Remove attribute (pass null)
-button?.attr('disabled', null)
+    updateCount(count: number) {
+      button?.attr('data-count', count)
+    },
+
+    setLabel(label: string) {
+      button?.attr('aria-label', label)
+    },
+
+    enableButton() {
+      // Remove attribute (pass null)
+      button?.attr('disabled', null)
+    }
+  }
+}
 ```
 
 **Boolean attributes** (disabled, checked, etc.) are handled correctly:
 ```typescript
-// Boolean attributes use presence
 button?.attr('disabled', true)   // Adds attribute
 button?.attr('disabled', null)   // Removes attribute
 ```
@@ -460,14 +642,20 @@ button?.attr('disabled', null)   // Removes attribute
 Replace element with new template:
 
 ```typescript
-const card = $('card')[0]
+bProgram({ $ }) {
+  return {
+    updateCard(title: string, content: string) {
+      const card = $('card')[0]
 
-card?.replace(
-  <div p-target="card">
-    <h2>Updated Card</h2>
-    <p>New content</p>
-  </div>
-)
+      card?.replace(
+        <div p-target="card">
+          <h2>{title}</h2>
+          <p>{content}</p>
+        </div>
+      )
+    }
+  }
+}
 ```
 
 ### `trigger()` - Parent-to-Child Communication
@@ -568,9 +756,8 @@ const DataTable = bElement({
           { name: 'Bob', value: '200' },
         ]
 
-        rows.forEach(data => {
-          tbody?.insert('beforeend', createRow(data))
-        })
+        // Single DOM operation - more efficient than forEach
+        tbody?.insert('beforeend', ...rows.map(createRow))
       }
     }
   }
@@ -627,15 +814,16 @@ const DecorateCheckbox = bElement({
       },
 
       change({ name, newValue }) {
-        // React to attribute changes on slotted input
+        // Sync slotted input attributes with custom states
         newValue ? internals.states.add(name) : internals.states.delete(name)
       },
 
       onConnected() {
+        // Initialize states from slotted input
         input?.hasAttribute('checked') && internals.states.add('checked')
         input?.hasAttribute('disabled') && internals.states.add('disabled')
 
-        // Start observing slotted input's attributes
+        // Start observing slotted input attributes
         input && inputObserver(input, ['checked', 'disabled'])
       }
     }
@@ -699,7 +887,17 @@ const MyElement = bElement({
 
 ## Lifecycle Callbacks
 
-Lifecycle callbacks are returned from `bProgram` alongside event handlers:
+Lifecycle callbacks are returned from `bProgram` alongside event handlers.
+
+**IMPORTANT - Execution Order:**
+1. **`bProgram` function** runs synchronously during `connectedCallback`
+2. **`onConnected` callback** triggers AFTER `bProgram` completes
+3. **`onDisconnected` callback** triggers AFTER automatic cleanup
+
+**IMPORTANT - Automatic Cleanup:**
+- Plaited helpers (`useSignal`, `useWorker`, `useAttributesObserver`) auto-cleanup via `trigger.addDisconnectCallback`
+- These are automatically cleaned up BEFORE `onDisconnected` is called
+- **Use `onDisconnected` ONLY for manual cleanup of external resources**
 
 ```typescript
 bProgram({ $, trigger, internals }) {
@@ -709,40 +907,38 @@ bProgram({ $, trigger, internals }) {
 
     // Lifecycle callbacks
     onConnected() {
-      // Element inserted into DOM
-      // Initialize state, start observers
+      // Triggered AFTER bProgram setup
+      // Use for async initialization
     },
 
     onDisconnected() {
-      // Element removed from DOM
-      // Cleanup resources, stop observers
+      // Triggered AFTER auto-cleanup
+      // Use ONLY for external resource cleanup
     },
 
     onAttributeChanged({ name, newValue, oldValue }) {
       // Observed attribute changed
-      // Trigger events, update state
     },
 
     onAdopted() {
       // Element moved to new document
-      // Re-initialize if needed
     },
 
     // Form-associated callbacks (if formAssociated: true)
-    formAssociatedCallback({ form }) {
+    onFormAssociated(form) {
       // Associated with form
     },
 
-    formDisabledCallback({ disabled }) {
+    onFormDisabled(disabled) {
       // Form disabled state changed
     },
 
-    formResetCallback() {
+    onFormReset() {
       // Form reset
     },
 
-    formStateRestoreCallback({ state, mode }) {
-      // Form state restored (browser autocomplete)
+    onFormStateRestore({ state, reason }) {
+      // Form state restored
     }
   }
 }
@@ -750,50 +946,72 @@ bProgram({ $, trigger, internals }) {
 
 ### `onConnected()`
 
-Called when element is inserted into DOM:
+Triggered **after** `bProgram` setup completes. Use for async initialization.
 
 ```typescript
-return {
-  onConnected() {
-    // Initialize state
-    if (root.host.hasAttribute('checked')) {
-      internals.states.add('checked')
+bProgram({ trigger }) {
+  return {
+    async onConnected() {
+      // Async work that doesn't block setup
+      // Events can be coordinated by bThreads set up in bProgram
+      const data = await fetch('/api/user')
+      trigger({ type: 'dataLoaded', detail: await data.json() })
     }
-
-    // Start observers
-    const observer = new MutationObserver(/* ... */)
-    observer.observe(root, { childList: true })
-
-    // Trigger initialization events
-    trigger({ type: 'initialize' })
-
-    // Set up external listeners (remember to clean up in onDisconnected)
   }
 }
 ```
 
 ### `onDisconnected()`
 
-Called when element is removed from DOM:
+Triggered **after** automatic cleanup of Plaited helpers. Use **ONLY** for manual cleanup of external resources.
 
+**What auto-cleans** (no manual cleanup needed):
+- `useSignal()`, `useComputed()`, `useWorker()`, `useAttributesObserver()` - auto-disconnect
+- `p-trigger` event bindings - auto-cleanup
+- Internal observers for `p-target` attribute changes - auto-disconnect
+- Any resource registered via `trigger.addDisconnectCallback()`
+
+**IMPORTANT - Use `p-trigger` for DOM events:**
 ```typescript
-return {
-  onDisconnected() {
-    // Clean up observers
-    observer?.disconnect()
+// ❌ Don't use manual addEventListener - requires cleanup
+window.addEventListener('resize', handleResize)
 
-    // Clean up timers
-    clearInterval(intervalId)
+// ✅ Use p-trigger - auto-cleanup
+shadowDom: <div p-trigger={{ resize: 'handleResize' }}></div>
+```
 
-    // Clean up external listeners
-    window.removeEventListener('resize', handler)
+**What needs manual cleanup:**
+```typescript
+bProgram({ trigger, host }) {
+  let intervalId: number
+  let intersectionObserver: IntersectionObserver
 
-    // PlaitedTrigger callbacks are auto-cleaned, but manual cleanup available
+  return {
+    onConnected() {
+      // Timers - need manual cleanup
+      intervalId = setInterval(() => trigger({ type: 'tick' }), 1000)
+
+      // Observers not covered by Plaited - need manual cleanup
+      intersectionObserver = new IntersectionObserver((entries) => {
+        trigger({ type: 'visibility', detail: entries[0]?.isIntersecting })
+      })
+      intersectionObserver.observe(host)
+    },
+
+    onDisconnected() {
+      // ✅ Manual cleanup required
+      clearInterval(intervalId)
+      intersectionObserver?.disconnect()
+    }
   }
 }
 ```
 
-**IMPORTANT**: Always clean up resources to prevent memory leaks.
+**Rule of thumb:**
+- **DOM events** → Use `p-trigger` (auto-cleanup)
+- **Timers/Intervals** → Manual cleanup in `onDisconnected`
+- **IntersectionObserver/ResizeObserver** → Manual cleanup in `onDisconnected`
+- **External connections** (WebSocket, MediaStream) → Manual cleanup in `onDisconnected`
 
 ### `onAttributeChanged({ name, newValue, oldValue })`
 
@@ -834,11 +1052,7 @@ return {
 }
 ```
 
-## bProgram Integration
 
-The `bProgram` function is where behavioral programming meets Web Components.
-
-### BProgramArgs Structure
 
 ```typescript
 type BProgramArgs = {
@@ -932,11 +1146,7 @@ bProgram({ trigger, $, bThreads, bSync, bThread }) {
 **Handler types**:
 - Event handlers: Match types from `p-trigger`, `trigger()`, and thread requests
 - Lifecycle callbacks: `onConnected`, `onDisconnected`, `onAttributeChanged`, etc.
-- Form callbacks: `formAssociatedCallback`, `formResetCallback`, etc. (if `formAssociated: true`)
 
-### Thread Management Within Components
-
-Threads can be added/removed at runtime:
 
 ```typescript
 bProgram({ bThreads, bThread, bSync }) {
@@ -971,10 +1181,11 @@ bProgram({ bThreads, bThread, bSync }) {
 
 ## Complete Example: Todo List Island
 
+**File: `todo-list.css.ts`**
 ```typescript
-import { bElement, createHostStyles, createStyles } from 'plaited'
+import { createStyles, createHostStyles } from 'plaited'
 
-const styles = createStyles({
+export const styles = createStyles({
   input: {
     padding: '8px',
     border: '1px solid #ccc'
@@ -995,12 +1206,20 @@ const styles = createStyles({
   }
 })
 
-const hostStyles = createHostStyles({
+export const hostStyles = createHostStyles({
   display: 'block',
   padding: '1rem'
 })
+```
 
-const TodoList = bElement({
+**File: `todo-list.tsx`**
+```typescript
+import { bElement } from 'plaited'
+import { styles, hostStyles } from './todo-list.css.ts'
+
+const TodoList = bElement<{
+  inputChange: InputEvent & { target: HTMLInputElement }
+}>({
   tag: 'todo-list',
   hostStyles,
   shadowDom: (
@@ -1025,6 +1244,11 @@ const TodoList = bElement({
     let currentInput = ''
     let todoCount = 0
 
+    // Query elements at setup - they're in shadowDom template
+    const button = $('add')[0]
+    const list = $('list')[0]
+    const input = $<HTMLInputElement>('input')[0]
+
     // Behavioral thread: prevent adding empty todos
     bThreads.set({
       preventEmptyAdd: bThread([
@@ -1036,17 +1260,13 @@ const TodoList = bElement({
 
     return {
       inputChange(e) {
-        currentInput = (e.target as HTMLInputElement).value
-
+        currentInput = e.target.value
         // Enable/disable button based on input
-        const button = $('add')[0]
         button?.attr('disabled', !currentInput.trim())
       },
 
       add() {
         todoCount++
-        const list = $('list')[0]
-
         list?.insert(
           'beforeend',
           <li {...styles.item}>
@@ -1056,16 +1276,14 @@ const TodoList = bElement({
 
         // Clear input
         currentInput = ''
-        const input = $<HTMLInputElement>('input')[0]
         input?.attr('value', '')
 
         // Trigger button update
-        trigger({ type: 'inputChange', detail: { value: '' } })
+        trigger({ type: 'inputChange', detail: new InputEvent('input', { target: input }) })
       },
 
       onConnected() {
         // Initialize button state
-        const button = $('add')[0]
         button?.attr('disabled', true)
       }
     }

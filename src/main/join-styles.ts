@@ -20,13 +20,15 @@ import { isTokenReference } from './css.utils.ts'
  * @see {@link createStyles} for creating style objects
  * @see {@link createTokens} for creating design token references
  */
-export const joinStyles = (...styleObjects: (StylesObject | DesignTokenReference | undefined)[]): StylesObject => {
+export const joinStyles = <T extends (StylesObject | DesignTokenReference | undefined)[]>(
+  ...styleObjects: T
+): T[number] => {
   const cls: string[] = []
   const style: string[] = []
   for (const styleObject of styleObjects) {
     if (!styleObject) continue
     if (isTokenReference(styleObject)) {
-      style.push(...styleObject.styles)
+      style.push(...styleObject.stylesheets)
       continue
     }
     const { classNames, stylesheets } = styleObject

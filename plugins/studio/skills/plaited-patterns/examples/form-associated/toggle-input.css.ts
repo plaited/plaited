@@ -8,20 +8,11 @@ export const styles = createStyles({
     backgroundColor: surfaces.fill,
     gridArea: 'input',
   },
-  input: {
-    gridArea: 'input',
-    height: '16px',
-    width: '16px',
-    opacity: '0',
-    margin: '0',
-    padding: '0',
-  },
 })
 
 export const hostStyles = joinStyles(
   surfaces.fill,
   createHostStyles({
     display: 'inline-grid',
-    gridTemplate: '"input" 16px / 16px',
   }),
 )

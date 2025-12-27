@@ -7,28 +7,38 @@ import { isTypeOf } from '../utils.ts'
 import type { BPEvent, BSync, BThread, PlaitedTrigger, Trigger } from './behavioral.types.ts'
 
 /**
- * Selects and returns a single `BPEvent` object randomly from a provided list of events.
- * This utility is useful for introducing non-determinism into behavioral programs,
- * allowing a b-thread to request one of several possible events unpredictably.
+ * Creates an event template function that randomly selects from provided events.
+ * Returns a template function (`() => BPEvent`) that selects a random event with equal
+ * probability each time it's evaluated. This is useful for introducing non-determinism
+ * into behavioral programs with repeating threads.
  *
- * The function uses JavaScript's built-in `Math.random()` to select an event with equal
- * probability for each option. This creates a uniform distribution across all provided events.
- *
- * Common use cases include:
- * - Simulating random user behavior in testing scenarios
- * - Implementing game mechanics with randomized outcomes
- * - Creating varied system responses to enhance user experience
- * - Building probabilistic algorithms within behavioral programs
+ * The template function uses JavaScript's built-in `Math.random()` to select an event
+ * with uniform distribution across all provided options.
  *
  * @param events Rest parameter of `BPEvent` objects, representing the possible events to choose from.
  *   Can include any number of events, but at least one should be provided to avoid undefined returns.
- * @returns A randomly selected `BPEvent` object from the provided events.
- * @throws Will not throw errors, but returns `undefined` if called with no arguments.
+ * @returns An event template function that randomly selects one of the provided events when called.
+ * @throws Will not throw errors, but template function returns `undefined` if no events provided.
+ *
+ * @remarks
+ * **Why template function?**
+ * - Direct call `useRandomEvent(e1, e2)` returns a template function
+ * - Template evaluated when sync point is reached → fresh random selection each time
+ * - Essential for repeating threads to get different random events per iteration
+ *
+ * **Use Cases:**
+ * - Game mechanics (random enemy behavior, loot drops, procedural generation)
+ * - Testing (simulating varied user actions, fuzzing event sequences)
+ * - Probabilistic algorithms (Monte Carlo simulations, randomized decision trees)
+ * - UI variety (randomize animation sequences, tips, examples)
  *
  * @see {@link shuffleSyncs} for randomizing sync order
  * @see {@link bSync} for creating synchronization points
  */
-export const randomEvent = (...events: BPEvent[]) => events[Math.floor(Math.random() * Math.floor(events.length))]
+export const useRandomEvent =
+  (...events: BPEvent[]) =>
+  () =>
+    events[Math.floor(Math.random() * Math.floor(events.length))]
 
 /**
  * Randomly shuffles an array of behavioral synchronization points (`BSync`).
@@ -46,7 +56,7 @@ export const randomEvent = (...events: BPEvent[]) => events[Math.floor(Math.rand
  * - O(n) time complexity with O(1) extra space
  * - Not cryptographically secure (uses Math.random)
  *
- * @see {@link randomEvent} for selecting random events
+ * @see {@link useRandomEvent} for selecting random events
  * @see {@link bThread} for creating behavioral threads
  */
 export const shuffleSyncs = (...syncs: BSync[]) => {
@@ -153,12 +163,7 @@ export const bSync: BSync = (syncPoint) =>
     yield syncPoint
   }
 
-/**
- * Type guard to identify enhanced Plaited triggers with disconnect capability.
- * Used internally by the framework to ensure proper cleanup of component resources.
- *
- * @internal
- * @param trigger - The trigger function to check
+/* @param trigger - The trigger function to check
  * @returns True if the trigger includes disconnect callback support
  *
  * Implementation notes:
