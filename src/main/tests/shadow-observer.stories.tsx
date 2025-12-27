@@ -1,7 +1,7 @@
 import { bElement, createStyles, type FT } from 'plaited'
 import { story } from 'plaited/testing'
 
-const componentStyles = createStyles({
+const styles = createStyles({
   button: {
     border: '1px solid black',
     padding: '4px 8px',
@@ -88,22 +88,22 @@ const ShadowIsland = bElement({
   shadowDom: (
     <div p-target='wrapper'>
       <div
-        {...componentStyles.zone}
+        {...styles.zone}
         p-target='zone'
       ></div>
       <div
-        {...componentStyles.row}
+        {...styles.row}
         p-target='button-row'
       >
         <button
           p-trigger={{ click: 'start' }}
-          {...componentStyles.button}
+          {...styles.button}
         >
           start
         </button>
         <button
           p-trigger={{ click: 'addButton' }}
-          {...componentStyles.button}
+          {...styles.button}
         >
           addButton
         </button>
@@ -120,7 +120,7 @@ const ShadowIsland = bElement({
       addSubIsland() {
         const [zone] = $('zone')
         /** render dynamic island to zone */
-        zone?.insert('beforeend', <SubIsland {...componentStyles['sub-island']} />)
+        zone?.insert('beforeend', <SubIsland {...styles['sub-island']} />)
       },
       addButton() {
         root.host.insertAdjacentHTML('beforeend', `<button slot='button'>add svg</button>`)
@@ -137,7 +137,7 @@ const ShadowIsland = bElement({
             name='button'
             p-target='add-svg-slot'
             p-trigger={{ click: 'add-svg' }}
-            {...componentStyles.slot}
+            {...styles.slot}
           ></slot>,
         )
       },
@@ -147,7 +147,7 @@ const ShadowIsland = bElement({
       },
       'add-svg'() {
         const [zone] = $('zone')
-        zone?.insert('beforeend', <SVG {...componentStyles.svg} />)
+        zone?.insert('beforeend', <SVG {...styles.svg} />)
       },
     }
   },

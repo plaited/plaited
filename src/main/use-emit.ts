@@ -2,12 +2,12 @@
  * @internal
  * @module use-emit
  *
- * Type-safe custom event dispatching for cross-component communication.
+ * Type-safe custom event dispatching for BehavioralElement communication.
  * Wraps native CustomEvent API with sensible defaults for shadow DOM.
  *
  * @remarks
  * Implementation details:
- * - Primary outbound communication mechanism for components
+ * - Primary outbound communication mechanism for BehavioralElements
  * - Default composed: true is critical for shadow DOM propagation
  * - Type safety ensures event detail structure matches expectations
  * - Fire-and-forget pattern with no automatic cleanup
@@ -38,7 +38,7 @@ export type Emit = (
     bubbles?: boolean
     /** Whether event.preventDefault() can cancel default behavior (default: true) */
     cancelable?: boolean
-    /** Whether event crosses shadow DOM boundaries (default: true for component communication) */
+    /** Whether event crosses shadow DOM boundaries (default: true for BehavioralElement communication) */
     composed?: boolean
   },
 ) => boolean
@@ -48,7 +48,7 @@ export class EmitTypeError extends Error implements Error {
 }
 
 /**
- * Creates a custom event dispatcher for component communication.
+ * Creates a custom event dispatcher for BehavioralElement communication.
  * Enables type-safe event emission across shadow DOM boundaries.
  *
  * @param element - BehavioralElement to dispatch events from
@@ -68,7 +68,7 @@ export const useEmit =
   /**
    * @internal
    * Returned dispatch function captures element reference in closure.
-   * Default parameters optimized for shadow DOM component communication.
+   * Default parameters optimized for BehavioralElement communication.
    */
   ({ type, detail, bubbles = false, cancelable = true, composed = true }) => {
     /**

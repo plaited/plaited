@@ -1,12 +1,12 @@
 import { bElement } from 'plaited'
 
 export const SimpleBehavioralTemplate = bElement({
-  tag: 'simple-component',
-  shadowDom: <div>Simple Component</div>,
+  tag: 'simple-element',
+  shadowDom: <div>Simple Element</div>,
 })
 
 export const BehavioralTemplateWithProgram = bElement({
-  tag: 'interactive-component',
+  tag: 'interactive-element',
   shadowDom: (
     <button
       type='button'

@@ -2,7 +2,7 @@ import { keyMirror } from '../utils.ts'
 
 /**
  * @internal Mirrored object of lifecycle and mutation callback names for Behavioral elements.
- * Provides strongly typed string literals for every supported callback in a Plaited component.
+ * Provides strongly typed string literals for every supported callback in a BehavioralElement.
  *
  * Lifecycle Callbacks:
  * - onAdopted: Element is moved to new document

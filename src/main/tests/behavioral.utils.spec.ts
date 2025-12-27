@@ -20,7 +20,8 @@ test('useRandomEvent: returns template function that selects one of the provided
   const template = useRandomEvent(...events)
   const selected = template()
 
-  expect(events).toContain(selected)
+  expect(selected).toBeDefined()
+  expect(events).toContain(selected!)
 })
 
 test('useRandomEvent: template function returns the only event when given one', () => {
@@ -51,7 +52,7 @@ test('useRandomEvent: template function distributes selection across all events 
   // Run enough times to statistically hit all events
   for (let i = 0; i < iterations; i++) {
     const selected = template()
-    selections.add(selected)
+    if (selected) selections.add(selected)
   }
 
   // With 100 iterations, we should see all 3 events
@@ -68,8 +69,9 @@ test('useRandomEvent: template function preserves event detail property', () => 
   const template = useRandomEvent(event1, event2)
   const selected = template()
 
-  expect(selected.detail).toBeDefined()
-  expect([42, 99]).toContain(selected.detail.value)
+  expect(selected).toBeDefined()
+  expect(selected!.detail).toBeDefined()
+  expect([42, 99]).toContain(selected!.detail.value)
 })
 
 test('useRandomEvent: each call to template function returns fresh random selection', () => {
@@ -84,7 +86,8 @@ test('useRandomEvent: each call to template function returns fresh random select
 
   // Multiple calls should eventually select different events
   for (let i = 0; i < iterations; i++) {
-    selections.add(template())
+    const selected = template()
+    if (selected) selections.add(selected)
   }
 
   // Should see variety in selections
@@ -246,13 +249,19 @@ test('bThread: executes rules sequentially', () => {
   const gen = thread()
 
   const { value: value1 } = gen.next()
-  results.push(value1.request.type)
+  if (value1 && 'request' in value1 && value1.request && typeof value1.request !== 'function') {
+    results.push(value1.request.type)
+  }
 
   const { value: value2 } = gen.next()
-  results.push(value2.request.type)
+  if (value2 && 'request' in value2 && value2.request && typeof value2.request !== 'function') {
+    results.push(value2.request.type)
+  }
 
   const { value: value3 } = gen.next()
-  results.push(value3.request.type)
+  if (value3 && 'request' in value3 && value3.request && typeof value3.request !== 'function') {
+    results.push(value3.request.type)
+  }
 
   expect(results).toEqual(['event1', 'event2', 'event3'])
 })
@@ -261,7 +270,7 @@ test('bThread: completes after all rules when repeat is false', () => {
   const rule1 = bSync({ request: { type: 'event1' } })
   const rule2 = bSync({ request: { type: 'event2' } })
 
-  const thread = bThread([rule1, rule2], false)
+  const thread = bThread([rule1, rule2])
   const gen = thread()
 
   gen.next() // event1
@@ -280,21 +289,36 @@ test('bThread: repeats when repeat is true', () => {
 
   // First iteration
   const { value: value1 } = gen.next()
-  expect(value1.request.type).toBe('event1')
+  expect(value1).toBeDefined()
+  expect(value1).toHaveProperty('request')
+  expect(typeof value1!.request).not.toBe('function')
+  expect((value1!.request as BPEvent).type).toBe('event1')
 
   const { value: value2 } = gen.next()
-  expect(value2.request.type).toBe('event2')
+  expect(value2).toBeDefined()
+  expect(value2).toHaveProperty('request')
+  expect(typeof value2!.request).not.toBe('function')
+  expect((value2!.request as BPEvent).type).toBe('event2')
 
   // Second iteration (repeat)
   const { value: value3 } = gen.next()
-  expect(value3.request.type).toBe('event1')
+  expect(value3).toBeDefined()
+  expect(value3).toHaveProperty('request')
+  expect(typeof value3!.request).not.toBe('function')
+  expect((value3!.request as BPEvent).type).toBe('event1')
 
   const { value: value4 } = gen.next()
-  expect(value4.request.type).toBe('event2')
+  expect(value4).toBeDefined()
+  expect(value4).toHaveProperty('request')
+  expect(typeof value4!.request).not.toBe('function')
+  expect((value4!.request as BPEvent).type).toBe('event2')
 
   // Third iteration (still going)
   const { value: value5, done } = gen.next()
-  expect(value5.request.type).toBe('event1')
+  expect(value5).toBeDefined()
+  expect(value5).toHaveProperty('request')
+  expect(typeof value5!.request).not.toBe('function')
+  expect((value5!.request as BPEvent).type).toBe('event1')
   expect(done).toBe(false)
 })
 
@@ -344,7 +368,10 @@ test('bThread: handles single rule', () => {
   const gen = thread()
 
   const { value } = gen.next()
-  expect(value.request.type).toBe('event1')
+  expect(value).toBeDefined()
+  expect(value).toHaveProperty('request')
+  expect(typeof value!.request).not.toBe('function')
+  expect((value!.request as BPEvent).type).toBe('event1')
 
   const { done } = gen.next()
   expect(done).toBe(true)
@@ -363,10 +390,16 @@ test('bThread: supports all idioms in rules', () => {
 
   const { value } = gen.next()
 
-  expect(value.request.type).toBe('event1')
-  expect(value.waitFor).toBe('event2')
-  expect(value.block).toBe('event3')
-  expect(value.interrupt).toBe('event4')
+  expect(value).toBeDefined()
+  expect(value).toHaveProperty('request')
+  expect(typeof value!.request).not.toBe('function')
+  expect((value!.request as BPEvent).type).toBe('event1')
+  expect(value).toHaveProperty('waitFor')
+  expect(value!.waitFor).toBe('event2')
+  expect(value).toHaveProperty('block')
+  expect(value!.block).toBe('event3')
+  expect(value).toHaveProperty('interrupt')
+  expect(value!.interrupt).toBe('event4')
 })
 
 test('bThread: supports event template functions for dynamic data', () => {
@@ -382,13 +415,13 @@ test('bThread: supports event template functions for dynamic data', () => {
 
   // First iteration - template should NOT be called yet
   const { value: value1 } = gen.next()
-  expect(value1.request).toBe(template)
-  expect(typeof value1.request).toBe('function')
+  expect(value1 && 'request' in value1 && value1.request).toBe(template)
+  expect(value1 && 'request' in value1 && typeof value1.request).toBe('function')
 
   // Second iteration (repeat) - should still yield the template function
   const { value: value2 } = gen.next()
-  expect(value2.request).toBe(template)
-  expect(typeof value2.request).toBe('function')
+  expect(value2 && 'request' in value2 && value2.request).toBe(template)
+  expect(value2 && 'request' in value2 && typeof value2.request).toBe('function')
 
   // The template function itself should be yielded, not its result
   // BP engine will call the template when needed during event selection
@@ -418,7 +451,7 @@ test('bSync: supports request idiom', () => {
 
   const { value } = gen.next()
 
-  expect(value.request).toEqual({ type: 'event' })
+  expect(value && 'request' in value && value.request).toEqual({ type: 'event' })
 })
 
 test('bSync: supports waitFor idiom', () => {
@@ -427,7 +460,7 @@ test('bSync: supports waitFor idiom', () => {
 
   const { value } = gen.next()
 
-  expect(value.waitFor).toBe('event')
+  expect(value && 'waitFor' in value && value.waitFor).toBe('event')
 })
 
 test('bSync: supports block idiom', () => {
@@ -436,7 +469,7 @@ test('bSync: supports block idiom', () => {
 
   const { value } = gen.next()
 
-  expect(value.block).toBe('event')
+  expect(value && 'block' in value && value.block).toBe('event')
 })
 
 test('bSync: supports interrupt idiom', () => {
@@ -445,7 +478,7 @@ test('bSync: supports interrupt idiom', () => {
 
   const { value } = gen.next()
 
-  expect(value.interrupt).toBe('event')
+  expect(value && 'interrupt' in value && value.interrupt).toBe('event')
 })
 
 test('bSync: supports multiple idioms together', () => {
@@ -458,9 +491,9 @@ test('bSync: supports multiple idioms together', () => {
 
   const { value } = gen.next()
 
-  expect(value.request).toEqual({ type: 'event1' })
-  expect(value.waitFor).toBe('event2')
-  expect(value.block).toBe('event3')
+  expect(value && 'request' in value && value.request).toEqual({ type: 'event1' })
+  expect(value && 'waitFor' in value && value.waitFor).toBe('event2')
+  expect(value && 'block' in value && value.block).toBe('event3')
 })
 
 test('bSync: supports predicate functions for waitFor', () => {
@@ -470,7 +503,7 @@ test('bSync: supports predicate functions for waitFor', () => {
 
   const { value } = gen.next()
 
-  expect(value.waitFor).toBe(predicate)
+  expect(value && 'waitFor' in value && value.waitFor).toBe(predicate)
 })
 
 test('bSync: supports arrays of listeners', () => {
@@ -482,8 +515,8 @@ test('bSync: supports arrays of listeners', () => {
 
   const { value } = gen.next()
 
-  expect(value.waitFor).toEqual(['event1', 'event2'])
-  expect(value.block).toEqual(['event3', 'event4'])
+  expect(value && 'waitFor' in value && value.waitFor).toEqual(['event1', 'event2'])
+  expect(value && 'block' in value && value.block).toEqual(['event3', 'event4'])
 })
 
 test('bSync: supports event template functions', () => {
@@ -494,8 +527,8 @@ test('bSync: supports event template functions', () => {
   const { value } = gen.next()
 
   // Template function is yielded as-is, not called
-  expect(value.request).toBe(template)
-  expect(typeof value.request).toBe('function')
+  expect(value && 'request' in value && value.request).toBe(template)
+  expect(value && 'request' in value && typeof value.request).toBe('function')
 })
 
 test('bSync: event template function preserves closure state', () => {
@@ -510,18 +543,20 @@ test('bSync: event template function preserves closure state', () => {
   const { value } = gen.next()
 
   // Verify template function is yielded
-  expect(typeof value.request).toBe('function')
+  expect(value && 'request' in value && typeof value.request).toBe('function')
 
   // When BP engine calls the template, it should use current closure value
-  const result = value.request()
-  expect(result).toEqual({ type: 'process', detail: 42 })
+  if (value && 'request' in value && typeof value.request === 'function') {
+    const result = value.request()
+    expect(result).toEqual({ type: 'process', detail: 42 })
 
-  // Update closure value
-  capturedValue = 99
+    // Update closure value
+    capturedValue = 99
 
-  // Template should now return updated value
-  const result2 = value.request()
-  expect(result2).toEqual({ type: 'process', detail: 99 })
+    // Template should now return updated value
+    const result2 = value.request()
+    expect(result2).toEqual({ type: 'process', detail: 99 })
+  }
 })
 
 // ============================================================================

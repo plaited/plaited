@@ -54,7 +54,7 @@ const ElTwo = bElement({
   },
 })
 
-const ComponentComms: FT = () => {
+const ElementComms: FT = () => {
   return (
     <>
       <ElOne />
@@ -63,8 +63,8 @@ const ComponentComms: FT = () => {
   )
 }
 
-export const componentComms = story<typeof ComponentComms>({
-  template: ComponentComms,
+export const elementComms = story<typeof ElementComms>({
+  template: ElementComms,
   description: `Example of how to use useSignal to enable communication between
   Behavioral elements. This story is used to validate that when the button in element-one
   is clicked it leads to an appending a string to the h1 in element-two`,

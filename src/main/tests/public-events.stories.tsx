@@ -4,7 +4,7 @@ import { story } from 'plaited/testing'
 const getPlaitedChildren = (slot: HTMLSlotElement) => [...slot.assignedElements()].filter(isBehavioralElement)
 
 const Inner = bElement({
-  tag: 'inner-component',
+  tag: 'inner-element',
   shadowDom: <h1 p-target='header'>Hello</h1>,
   publicEvents: ['add'],
   bProgram({ $, bThreads, bThread, bSync, emit }) {
@@ -24,7 +24,7 @@ const Inner = bElement({
 })
 
 const Outer = bElement({
-  tag: 'outer-component',
+  tag: 'outer-element',
   shadowDom: (
     <div>
       <slot

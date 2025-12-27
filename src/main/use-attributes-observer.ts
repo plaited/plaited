@@ -50,14 +50,14 @@ export type ObservedAttributesDetail = {
 
 /**
  * Creates a utility to observe attribute changes on a specified element, which is
- * **primarily intended to be a slotted element** passed into a Plaited component.
+ * **primarily intended to be a slotted element** passed into a BehavioralElement.
  * When any of the designated attributes on the observed slotted element change,
  * a custom event is dispatched via the provided `trigger` function. This event can
- * then be handled within the component's `bProgram`.
+ * then be handled within the BehavioralElement's `bProgram`.
  *
- * This utility is particularly useful for components that need to react to changes
+ * This utility is particularly useful for BehavioralElements that need to react to changes
  * in the state or properties of content projected into them via slots. For example,
- * a custom wrapper component might observe attributes of a native `<input>` or
+ * a custom wrapper element might observe attributes of a native `<input>` or
  * another custom element slotted into it. It is specifically designed for scenarios
  * involving elements passed through `<slot>`.
  *
@@ -66,7 +66,7 @@ export type ObservedAttributesDetail = {
  * event in the `bProgram`.
  * @param trigger - The `trigger` function obtained from the `bProgram`'s arguments.
  * Using a `PlaitedTrigger` (the default from `bProgram`) is highly recommended as it
- * handles automatic cleanup of the underlying `MutationObserver` when the component
+ * handles automatic cleanup of the underlying `MutationObserver` when the custom element
  * is disconnected from the DOM, preventing memory leaks.
  * @returns A function that, when called, configures and starts the attribute observation
  * on a specific element. This returned function takes two arguments:
@@ -84,7 +84,7 @@ export type ObservedAttributesDetail = {
  *   This is often best done within a `slotchange` event listener to handle dynamically added or
  *   removed slotted content.
  * - When a `PlaitedTrigger` is used (the default trigger obtained from `bProgram`), the
- *   `MutationObserver` is automatically disconnected when the Plaited component is removed
+ *   `MutationObserver` is automatically disconnected when the BehavioralElement is removed
  *   from the DOM, preventing memory leaks.
  * - The `attributeFilter` option is used with the `MutationObserver`, meaning only changes
  *   to the attributes explicitly listed in this array will trigger an event. This is important
@@ -94,7 +94,7 @@ export type ObservedAttributesDetail = {
  *   its `oldValue`, and its `newValue`.
  * - While the function returned by `useAttributesObserver` also returns a `disconnect`
  *   function for manual cleanup, relying on `PlaitedTrigger` for automatic cleanup is
- *   generally sufficient and simpler for most use cases within Plaited components.
+ *   generally sufficient and simpler for most use cases within BehavioralElements.
  */
 export const useAttributesObserver = (eventType: string, trigger: PlaitedTrigger | Trigger) => {
   /**

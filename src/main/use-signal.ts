@@ -16,8 +16,8 @@ import { isPlaitedTrigger } from './behavioral.utils.ts'
 export function useSignal<T>(initialValue: T): SignalWithInitialValue<T>
 export function useSignal<T>(initialValue?: never): SignalWithoutInitialValue<T>
 /**
- * Creates a reactive signal for state management in Plaited components.
- * Provides a pub/sub pattern for sharing state between components with automatic cleanup.
+ * Creates a reactive signal for state management in BehavioralElements.
+ * Provides a pub/sub pattern for sharing state between BehavioralElements with automatic cleanup.
  *
  * @template T Type of signal value
  * @param initialValue Optional initial value for the signal
@@ -35,7 +35,7 @@ export function useSignal<T>(initialValue?: never): SignalWithoutInitialValue<T>
  * - `listen(eventType, trigger, getLVC?)`: Subscribes to changes; getLVC=true sends current value immediately
  *
  * **Automatic Cleanup:**
- * - Subscriptions auto-cleanup when component disconnects via PlaitedTrigger integration
+ * - Subscriptions auto-cleanup when custom element disconnects via PlaitedTrigger integration
  * - Manual cleanup via returned disconnect function if needed
  *
  * @see {@link useComputed} for derived state based on signal dependencies
@@ -96,8 +96,8 @@ export function useSignal<T>(initialValue: T) {
 
     /**
      * @internal
-     * Auto-cleanup integration with component lifecycle.
-     * Ensures subscriptions don't outlive their components.
+     * Auto-cleanup integration with custom element lifecycle.
+     * Ensures subscriptions don't outlive their elements.
      */
     isPlaitedTrigger(trigger) && trigger.addDisconnectCallback(disconnect)
     return disconnect
@@ -111,7 +111,7 @@ export function useSignal<T>(initialValue: T) {
 }
 /**
  * Creates a computed signal that automatically updates based on dependencies.
- * Perfect for derived state in Plaited components.
+ * Perfect for derived state in BehavioralElements.
  *
  * @template T Type of computed value
  * @param initialValue Function that computes the derived value

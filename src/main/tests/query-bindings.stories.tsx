@@ -1,7 +1,7 @@
 import { type BehavioralElement, bElement, createStyles, type FT, type Position, useTemplate } from 'plaited'
 import { story } from 'plaited/testing'
 
-const componentStyles = createStyles({
+const styles = createStyles({
   root: {
     textDecorationLine: 'line-through',
   },
@@ -163,7 +163,7 @@ const Fixture = bElement({
       },
       setStyle() {
         const [root] = $('root')
-        root?.replace(<Root {...componentStyles.root} />)
+        root?.replace(<Root {...styles.root} />)
       },
       multiSetAttributes() {
         const dels = $('delete')

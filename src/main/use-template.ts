@@ -23,7 +23,7 @@ import { assignHelpers, getBindings } from './b-element.utils.ts'
 import { P_TARGET } from './create-template.constants.ts'
 
 /**
- * Creates a template factory function for efficient dynamic content generation in Plaited components.
+ * Creates a template factory function for efficient dynamic content generation in BehavioralElements.
  * Enables reusable template patterns with dynamic data binding and automatic style management.
  *
  * @template T - Type of data used to populate each template instance
@@ -81,7 +81,7 @@ export const useTemplate = <T>(
   /**
    * @internal
    * Get bindings from shadow root for helper method attachment.
-   * Cached at shadow root level for all templates in component.
+   * Cached at shadow root level for all templates in element.
    */
   const bindings = getBindings(el.getRootNode() as ShadowRoot)
 

@@ -8,7 +8,7 @@ test('getRoot: should return cwd when paths array is empty', () => {
 })
 
 test('getRoot: should return directory for single directory path', () => {
-  const dirPath = 'src/components'
+  const dirPath = 'src/elements'
   const result = getRoot([dirPath])
   expect(result).toBe(resolve(process.cwd(), dirPath))
 })
@@ -21,21 +21,21 @@ test('getRoot: should return parent directory for single file path', () => {
 })
 
 test('getRoot: should return common ancestor for multiple paths in same directory', () => {
-  const paths = ['src/components/Button.tsx', 'src/components/Input.tsx']
+  const paths = ['src/elements/Button.tsx', 'src/elements/Input.tsx']
   const result = getRoot(paths)
-  expect(result).toBe(resolve(process.cwd(), 'src/components'))
+  expect(result).toBe(resolve(process.cwd(), 'src/elements'))
 })
 
 test('getRoot: should find common ancestor for paths in different directories', () => {
-  const paths = ['src/components/Button.tsx', 'src/utils/helpers.ts']
+  const paths = ['src/elements/Button.tsx', 'src/utils/helpers.ts']
   const result = getRoot(paths)
   expect(result).toBe(resolve(process.cwd(), 'src'))
 })
 
 test('getRoot: should handle deeply nested paths', () => {
-  const paths = ['src/components/atoms/buttons/PrimaryButton.tsx', 'src/components/atoms/inputs/TextInput.tsx']
+  const paths = ['src/elements/atoms/buttons/PrimaryButton.tsx', 'src/elements/atoms/inputs/TextInput.tsx']
   const result = getRoot(paths)
-  expect(result).toBe(resolve(process.cwd(), 'src/components/atoms'))
+  expect(result).toBe(resolve(process.cwd(), 'src/elements/atoms'))
 })
 
 test('getRoot: should detect files by presence of extension', () => {
@@ -61,7 +61,7 @@ test('getRoot: should resolve relative paths to absolute', () => {
 })
 
 test('getRoot: should handle mix of file and directory paths', () => {
-  const paths = ['src/components', 'src/utils/helpers.ts', 'src/types/index.d.ts']
+  const paths = ['src/elements', 'src/utils/helpers.ts', 'src/types/index.d.ts']
   const result = getRoot(paths)
   expect(result).toBe(resolve(process.cwd(), 'src'))
 })
@@ -80,9 +80,9 @@ test('getRoot: should handle paths with multiple dots', () => {
 })
 
 test('getRoot: should return single directory when all paths resolve to same location', () => {
-  const paths = ['src/components', './src/components', 'src/components/']
+  const paths = ['src/elements', './src/components', 'src/templates/']
   const result = getRoot(paths)
-  expect(result).toBe(resolve(process.cwd(), 'src/components'))
+  expect(result).toBe(resolve(process.cwd(), 'src'))
 })
 
 test('getRoot: should handle very short common path', () => {

@@ -125,7 +125,7 @@ export type CSSKeyFrames = {
   }
 }
 /**
- * Represents basic style-related properties that can be applied to a component or element.
+ * Represents basic style-related properties that can be applied to an element.
  * Allows specifying class names and/or raw CSS stylesheetss. Undefined, null, or false values in arrays are ignored.
  */
 

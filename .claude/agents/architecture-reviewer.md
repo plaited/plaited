@@ -75,7 +75,7 @@ Verify code is in correct module based on purpose.
 
 - **Cleanup patterns**: Automatic via PlaitedTrigger system
 - **WeakMap usage**: Styles cached per ShadowRoot
-- **Disconnect callbacks**: Invoked on component removal
+- **Disconnect callbacks**: Invoked on custom element disconnection
 - **Signal cleanup**: Signals integrate with PlaitedTrigger
 
 ### 7. Security

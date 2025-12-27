@@ -60,7 +60,7 @@ class InvalidAttributeTypeError extends Error implements Error {
   override name = 'invalid_attribute_type'
 }
 
-/** @internal Represents the possible types for a tag in a JSX element: a standard HTML/SVG tag name (string), a custom element tag name (string with hyphen), or a FunctionTemplate component. */
+/** @internal Represents the possible types for a tag in a JSX element: a standard HTML/SVG tag name (string), a custom element tag name (string with hyphen), or a FunctionTemplate. */
 type Tag = string | CustomElementTag | FunctionTemplate
 
 /** @internal Utility type to infer the correct attribute type (`Attrs`) based on the provided tag type (`Tag`). It maps standard tags to their detailed attributes, FunctionTemplates to their parameter types, and custom elements/other strings to default detailed attributes. */

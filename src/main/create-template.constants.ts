@@ -21,7 +21,7 @@
 
 /**
  * Constant representing the attribute name (`p-target`) used to identify specific elements
- * within a template. This is primarily utilized by client-side logic (e.g., Plaited's web components)
+ * within a template. This is primarily utilized by client-side logic (e.g., Custom Elements API)
  * to target elements for updates or interactions based on their assigned identifier.
  */
 export const P_TARGET = 'p-target'

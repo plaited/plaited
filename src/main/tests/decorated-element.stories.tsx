@@ -10,7 +10,7 @@ import {
 import { story } from 'plaited/testing'
 import { isTypeOf } from 'plaited/utils'
 
-const componentStyles = createStyles({
+const styles = createStyles({
   grid: {
     display: 'inline-grid',
     gridTemplate: '"input" 16px / 16px',
@@ -31,7 +31,7 @@ const componentStyles = createStyles({
   },
 })
 
-const componentHostStyles = createHostStyles({
+const hostStyles = createHostStyles({
   display: 'inline-grid',
   gridTemplate: '"input" 16px / 16px',
   '--fill': {
@@ -48,12 +48,12 @@ const DecorateCheckbox = bElement<{
   slotchange: undefined
 }>({
   tag: 'decorate-checkbox',
-  hostStyles: componentHostStyles,
+  hostStyles: hostStyles,
   shadowDom: (
     <>
       <div
         p-target='symbol'
-        {...componentStyles.symbol}
+        {...styles.symbol}
         p-trigger={{ click: 'click' }}
       />
       <slot
@@ -89,7 +89,7 @@ const DecoratedCheckbox: FT<ElementAttributeList['input']> = (props) => {
     <DecorateCheckbox>
       <input
         {...props}
-        {...componentStyles.input}
+        {...styles.input}
         type='checkbox'
       />
     </DecorateCheckbox>

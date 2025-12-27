@@ -1,6 +1,6 @@
 # Stories: Testing Patterns for Plaited
 
-Plaited uses a story-based testing system for browser-based template validation. Stories test both visual templates (FunctionalTemplate) and interactive components (bElement) using Playwright integration.
+Plaited uses a story-based testing system for browser-based template validation. Stories test both visual templates (FunctionalTemplate) and interactive templates (bElement) using Playwright integration.
 
 ## Story Format & Structure
 
@@ -29,7 +29,7 @@ Clear description of what the story demonstrates or tests:
 
 ```typescript
 export const basicCard = story({
-  description: 'Card component with title and content',
+  description: 'Card template with title and content',
   template: Card,
   args: { title: 'Welcome' }
 })
@@ -492,7 +492,7 @@ export const toggleInteraction = story({
 ### Pattern: Cross-Island Communication
 
 ```typescript
-// File: component-comms.stories.tsx
+// File: element-comms.stories.tsx
 import { bElement, type FT, useSignal } from 'plaited'
 import { story } from 'plaited/testing'
 

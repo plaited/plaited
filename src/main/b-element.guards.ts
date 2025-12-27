@@ -28,7 +28,7 @@ import type { FunctionTemplate } from './create-template.types.ts'
 
 /**
  * Type guard to identify Plaited custom elements.
- * Useful when working with DOM elements that might be Plaited components.
+ * Useful when working with DOM elements that might be BehavioralElements.
  *
  * @param el - Element to check
  * @returns True if element is a Plaited custom element

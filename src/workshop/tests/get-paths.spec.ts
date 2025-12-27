@@ -14,24 +14,24 @@ test('getPaths: should generate route from file path and export name', () => {
 
 test('getPaths: should convert PascalCase to kebab-case', () => {
   const cwd = '/Users/test/project'
-  const filePath = '/Users/test/project/MyComponent.stories.tsx'
+  const filePath = '/Users/test/project/MyElement.stories.tsx'
   const exportName = 'MyStoryName'
 
   const result = getPaths({ filePath, cwd, exportName })
 
-  expect(result.route).toBe('/my-component--my-story-name')
-  expect(result.entryPath).toBe('/MyComponent.stories.js')
+  expect(result.route).toBe('/my-element--my-story-name')
+  expect(result.entryPath).toBe('/MyElement.stories.js')
 })
 
 test('getPaths: should handle nested directories', () => {
   const cwd = '/Users/test/project'
-  const filePath = '/Users/test/project/src/components/atoms/Button.stories.tsx'
+  const filePath = '/Users/test/project/src/elements/atoms/Button.stories.tsx'
   const exportName = 'default'
 
   const result = getPaths({ filePath, cwd, exportName })
 
-  expect(result.route).toBe('/src/components/atoms/button--default')
-  expect(result.entryPath).toBe('/src/components/atoms/Button.stories.js')
+  expect(result.route).toBe('/src/elements/atoms/button--default')
+  expect(result.entryPath).toBe('/src/elements/atoms/Button.stories.js')
 })
 
 test('getPaths: should strip cwd from file path', () => {
@@ -59,7 +59,7 @@ test('getPaths: should handle root-level files', () => {
 
 test('getPaths: should convert .tsx to .js in entry path', () => {
   const cwd = '/Users/test/project'
-  const filePath = '/Users/test/project/src/MyComponent.stories.tsx'
+  const filePath = '/Users/test/project/src/MyElement.stories.tsx'
   const exportName = 'test'
 
   const result = getPaths({ filePath, cwd, exportName })
@@ -116,13 +116,13 @@ test('getPaths: should handle files with multiple dots', () => {
 
 test('getPaths: should handle deeply nested paths', () => {
   const cwd = '/Users/test/project'
-  const filePath = '/Users/test/project/src/components/atoms/buttons/PrimaryButton.stories.tsx'
+  const filePath = '/Users/test/project/src/elements/atoms/buttons/PrimaryButton.stories.tsx'
   const exportName = 'large'
 
   const result = getPaths({ filePath, cwd, exportName })
 
-  expect(result.entryPath).toBe('/src/components/atoms/buttons/PrimaryButton.stories.js')
-  expect(result.route).toBe('/src/components/atoms/buttons/primary-button--large')
+  expect(result.entryPath).toBe('/src/elements/atoms/buttons/PrimaryButton.stories.js')
+  expect(result.route).toBe('/src/elements/atoms/buttons/primary-button--large')
 })
 
 test('getPaths: should handle special characters in names via kebabCase', () => {
@@ -138,26 +138,26 @@ test('getPaths: should handle special characters in names via kebabCase', () => 
 
 test('getPaths: route should match pattern /dir/file-name--export-name', () => {
   const cwd = '/Users/test/project'
-  const filePath = '/Users/test/project/src/components/Button.stories.tsx'
+  const filePath = '/Users/test/project/src/elements/Button.stories.tsx'
   const exportName = 'primary'
 
   const result = getPaths({ filePath, cwd, exportName })
 
   // Route pattern: /optional-dirs/file-name--export-name
   expect(result.route).toMatch(/^\/[\w-/]+--[\w-]+$/)
-  expect(result.route).toBe('/src/components/button--primary')
+  expect(result.route).toBe('/src/elements/button--primary')
 })
 
 test('getPaths: entryPath should match pattern /dir/file-name.js', () => {
   const cwd = '/Users/test/project'
-  const filePath = '/Users/test/project/src/components/Button.stories.tsx'
+  const filePath = '/Users/test/project/src/elements/Button.stories.tsx'
   const exportName = 'primary'
 
   const result = getPaths({ filePath, cwd, exportName })
 
   // Entry path pattern: /optional-dirs/FileName.stories.js
   expect(result.entryPath).toMatch(/^\/[\w-/.]+\.js$/)
-  expect(result.entryPath).toBe('/src/components/Button.stories.js')
+  expect(result.entryPath).toBe('/src/elements/Button.stories.js')
 })
 
 test('getPaths: should handle file path that does not start with cwd', () => {

@@ -96,7 +96,7 @@ exports[`createTemplate: Trims whitespace 1`] = `"<div>trims white-space</div>"`
 exports[`ssr: CustomElement hoisting its styles 1`] = `
 {
   "content": 
-"<nested-component>
+"<nested-element>
     <template shadowrootmode="open" shadowrootdelegatesfocus>
         <style>
             .cls_2p8uqox{font-weight:bold;}
@@ -104,7 +104,7 @@ exports[`ssr: CustomElement hoisting its styles 1`] = `
         <slot
         name="nested"></slot>
     </template>
-</nested-component>"
+</nested-element>"
 ,
   "stylesheets": [],
 }
@@ -116,7 +116,7 @@ exports[`ssr: CustomElement with declarative shadow dom & hoist styles 1`] = `
 "<style>
     .cls_dqiix{display:flex;}.cls_13vh1nn{flex-direction:column;}
 </style>
-<nested-component class="nestedComponent cls_dqiix cls_13vh1nn">
+<nested-element class="nestedComponent cls_dqiix cls_13vh1nn">
     <template shadowrootmode="open" shadowrootdelegatesfocus>
         <style>
             .cls_2p8uqox{font-weight:bold;}
@@ -124,7 +124,7 @@ exports[`ssr: CustomElement with declarative shadow dom & hoist styles 1`] = `
         <slot
         name="nested"></slot>
     </template>
-</nested-component>"
+</nested-element>"
 ,
   "stylesheets": [
     ".cls_dqiix{display:flex;}",
@@ -139,7 +139,7 @@ exports[`ssr: CustomElement with styled slotted component 1`] = `
 "<style>
     .cls_1v0nksu{color:rebeccapurple;}
 </style>
-<nested-component class="slottedParagraph cls_1v0nksu">
+<nested-element class="slottedParagraph cls_1v0nksu">
     <template shadowrootmode="open" shadowrootdelegatesfocus>
         <style>
             .cls_2p8uqox{font-weight:bold;}
@@ -148,7 +148,7 @@ exports[`ssr: CustomElement with styled slotted component 1`] = `
         name="nested"></slot>
     </template>
     <p slot="nested">slotted paragraph</p>
-</nested-component>"
+</nested-element>"
 ,
   "stylesheets": [
     ".cls_1v0nksu{color:rebeccapurple;}",
@@ -164,7 +164,7 @@ exports[`ssr: CustomElement with declarative shadow dom and nested declarative s
         <style>
             .cls_1v0nksu{color:rebeccapurple;}
         </style>
-        <nested-component class="slottedParagraph cls_1v0nksu">
+        <nested-element class="slottedParagraph cls_1v0nksu">
             <template shadowrootmode="open" shadowrootdelegatesfocus>
                 <style>
                     .cls_2p8uqox{font-weight:bold;}
@@ -173,7 +173,7 @@ exports[`ssr: CustomElement with declarative shadow dom and nested declarative s
                 name="nested"></slot>
             </template>
             <p slot="nested">slotted paragraph</p>
-        </nested-component>
+        </nested-element>
     </template>
 </top-component>"
 ,
@@ -192,7 +192,7 @@ exports[`ssr: CustomElement with declarative shadow dom and nested declarative s
         <style>
             .cls_1v0nksu{color:rebeccapurple;}
         </style>
-        <nested-component class="slottedParagraph cls_1v0nksu">
+        <nested-element class="slottedParagraph cls_1v0nksu">
             <template shadowrootmode="open" shadowrootdelegatesfocus>
                 <style>
                     .cls_2p8uqox{font-weight:bold;}
@@ -201,7 +201,7 @@ exports[`ssr: CustomElement with declarative shadow dom and nested declarative s
                 name="nested"></slot>
             </template>
             <p slot="nested">slotted paragraph</p>
-        </nested-component>
+        </nested-element>
     </template>
 </top-component>"
 ,
@@ -222,7 +222,7 @@ exports[`ssr: CustomElement with declarative shadow dom and nested declarative s
         <style>
             .cls_1v0nksu{color:rebeccapurple;}
         </style>
-        <nested-component class="slottedParagraph cls_1v0nksu">
+        <nested-element class="slottedParagraph cls_1v0nksu">
             <template shadowrootmode="open" shadowrootdelegatesfocus>
                 <style>
                     .cls_2p8uqox{font-weight:bold;}
@@ -231,7 +231,7 @@ exports[`ssr: CustomElement with declarative shadow dom and nested declarative s
                 name="nested"></slot>
             </template>
             <p slot="nested">slotted paragraph</p>
-        </nested-component>
+        </nested-element>
     </template>
     <img class="image cls_2h7uhvs cls_16johir" />
 </top-component>"

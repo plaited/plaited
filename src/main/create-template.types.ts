@@ -1318,21 +1318,21 @@ export type ElementAttributeList = {
   [key: string]: DetailedHTMLAttributes // Allows custom element tags
 }
 /**
- * Generic type for component attributes/props.
+ * Generic type for template attributes.
  * It combines the base `DetailedHTMLAttributes` (providing standard HTML/ARIA/Plaited attributes)
- * with an optional generic type `T` for component-specific properties.
+ * with an optional generic type `T` for template-specific attributes.
  *
- * @template T An optional type extending `DetailedHTMLAttributes` to include custom props for a component. Defaults to `DetailedHTMLAttributes`.
+ * @template T An optional type extending `DetailedHTMLAttributes` to include custom attributes for a template. Defaults to `DetailedHTMLAttributes`.
  */
 export type Attrs<T extends DetailedHTMLAttributes = DetailedHTMLAttributes> = DetailedHTMLAttributes & T
 /**
- * Defines the signature for a Plaited functional component template.
- * A functional component is a function that accepts an `Attrs` object (props)
+ * Defines the signature for a Plaited functional template.
+ * A functional template is a function that accepts an `Attrs` object (attributes)
  * and returns a `TemplateObject`.
  *
- * @template T The type of the props object accepted by the component, extending `Attrs`. Defaults to `Attrs`.
- * @param attrs The props object passed to the component during rendering. Includes standard attributes, Plaited attributes, and custom props defined by `T`.
- * @returns A `TemplateObject` representing the component's rendered output.
+ * @template T The type of the attributes object accepted by the template, extending `Attrs`. Defaults to `Attrs`.
+ * @param attrs The attributes object passed to the template during rendering. Includes standard attributes, Plaited attributes, and custom attributes defined by `T`.
+ * @returns A `TemplateObject` representing the template's rendered output.
  */
 export type FunctionTemplate<T extends Attrs = Attrs> = (attrs: T & PlaitedAttributes) => TemplateObject
 /**

@@ -106,9 +106,9 @@ test('discoverStoryMetadata: filters out non-story exports', async () => {
   const metadataMaps = await discoverStoryMetadata(STORIES_DIR, '**/filtering/**')
   const metadata = metadataMaps.flatMap((map) => [...map.values()])
 
-  // Should not include 'MyComponent', 'helperFunction', or default export
+  // Should not include 'MyElement', 'helperFunction', or default export
   const exportNames = metadata.map((s) => s.exportName)
-  expect(exportNames).not.toContain('MyComponent')
+  expect(exportNames).not.toContain('MyElement')
   expect(exportNames).not.toContain('helperFunction')
   expect(exportNames).not.toContain('default')
 })
@@ -195,9 +195,9 @@ test('getStoryMetadata: filters out non-story exports', async () => {
   const metadataMap = await getStoryMetadata(STORIES_DIR, filePath)
   const metadata = [...metadataMap.values()]
 
-  // Should not include helper functions or components
+  // Should not include helper functions or elements
   const exportNames = metadata.map((s) => s.exportName)
-  expect(exportNames).not.toContain('MyComponent')
+  expect(exportNames).not.toContain('MyElement')
   expect(exportNames).not.toContain('helperFunction')
 })
 

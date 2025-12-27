@@ -1,6 +1,6 @@
 ---
 name: plaited-patterns
-description: Comprehensive Plaited framework patterns for AI-assisted design of MCP/A2UI outcome-based interfaces. Covers templates, styling, behavioral programming, custom elements, forms, cross-island communication, testing, and web workers. Automatically invoked when designing or implementing Plaited components.
+description: Comprehensive Plaited framework patterns for AI-assisted design of MCP/A2UI outcome-based interfaces. Covers templates, styling, behavioral programming, custom elements, forms, cross-island communication, testing, and web workers. Automatically invoked when designing or implementing Plaited templates and BehavioralElements.
 ---
 
 # Plaited Patterns Skill
@@ -8,7 +8,7 @@ description: Comprehensive Plaited framework patterns for AI-assisted design of 
 ## Purpose
 
 This skill provides comprehensive documentation for building Plaited applications using behavioral programming, web components, and islands architecture. Use this when:
-- Designing or implementing Plaited components (bElement or FunctionalTemplate)
+- Designing or implementing Plaited templates and BehavioralElements (bElement or FunctionalTemplate)
 - Creating interactive islands with behavioral programs
 - Building form-associated custom elements
 - Coordinating cross-island communication

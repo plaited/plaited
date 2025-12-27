@@ -18,7 +18,7 @@ import type { Emit } from './use-emit.ts'
 export type Position = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
 
 /**
- * Core helper methods bound to elements within Plaited components.
+ * Core helper methods bound to elements within BehavioralElements.
  * Provides a safe and efficient way to manipulate DOM elements while maintaining
  * style encapsulation and proper event handling.
  */
@@ -66,7 +66,7 @@ export type Bindings = {
 
 /**
  * Represents an HTML Element that has been augmented with Plaited's core helper methods (`Bindings`).
- * This allows for convenient and type-safe DOM manipulation within Plaited components.
+ * This allows for convenient and type-safe DOM manipulation within BehavioralElements.
  *
  * @template T - The specific type of the HTML Element being bound (e.g., `HTMLDivElement`, `HTMLButtonElement`). Defaults to `Element`.
  * @see Bindings
@@ -122,16 +122,16 @@ export interface BehavioralElement extends HTMLElement {
 }
 /**
 /**
- * Represents a Plaited component template function, extending the base `FunctionTemplate`.
+ * Represents a BehavioralElement template function, extending the base `FunctionTemplate`.
  * This type includes metadata essential for Plaited's custom element registration and rendering system.
  * It is typically the return type of `bElement`.
  *
- * @property registry - A set of custom element tag names that are defined by this component or its dependencies,
- *                      used by Plaited to ensure components are defined before use.
- * @property tag - The custom element tag name (e.g., 'my-component') associated with this Plaited component.
+ * @property registry - A set of custom element tag names that are defined by this template or its dependencies,
+ *                      used by Plaited to ensure custom elements are defined before use.
+ * @property tag - The custom element tag name (e.g., 'my-element') associated with this BehavioralElement.
  * @property observedAttributes - An array of attribute names that instances of this custom element will observe for changes,
  *                                triggering `attributeChangedCallback`.
- * @property publicEvents - An array of event type strings that can be externally dispatched on the component instance
+ * @property publicEvents - An array of event type strings that can be externally dispatched on the element instance
  *                          using its `trigger` method.
  * @property $ - A unique symbol (`BEHAVIORAL_TEMPLATE_IDENTIFIER`) acting as a type guard to identify
  *               this object as a Plaited-specific template function.
@@ -184,21 +184,21 @@ export type Inspector = {
 }
 
 /**
- * Context and utilities provided to the behavioral program of a Plaited component.
+ * Context and utilities provided to the behavioral program of a BehavioralElement.
  * Contains DOM access, lifecycle hooks, and behavioral programming primitives.
  *
  * @property $ - Query selector scoped to shadow root using p-target attributes
- * @property root - Component's shadow root reference
+ * @property root - BehavioralElement's shadowRoot reference
  * @property host - Custom element instance
  * @property internals - ElementInternals API for form association and states
  * @property trigger - Event dispatcher with automatic cleanup
  * @property bThreads - Behavioral thread management
  * @property inspector - Debugging inspector for observing program state
- * @property emit - Custom event dispatcher for component communication across shadow DOM
+ * @property emit - Custom event dispatcher for BehavioralElement communication
  * @property bThread - Thread creation utility
  * @property bSync - Synchronization point utility
  *
- * @see {@link bElement} for component creation
+ * @see {@link bElement} for BehavioralElement creation
  * @see {@link BoundElement} for element helper methods
  * @see {@link useEmit} for emit function details
  * @see {@link Inspector} for inspector usage
@@ -225,7 +225,7 @@ export type BProgramArgs = {
 }
 
 /**
- * Lifecycle callbacks for Plaited components.
+ * Lifecycle callbacks for BehavioralElements.
  * Maps standard Custom Element and Form-Associated callbacks to handlers.
  *
  * @property onAdopted - Called when element is moved to a new document

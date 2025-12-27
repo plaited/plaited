@@ -8,7 +8,7 @@ export const MixedFTTemplate: FT = () => <span>FT Alias in Mixed File</span>
 
 // BehavioralTemplate
 export const MixedBehavioralTemplate = bElement({
-  tag: 'mixed-component',
+  tag: 'mixed-element',
   shadowDom: <div>Behavioral Template in Mixed File</div>,
 })
 

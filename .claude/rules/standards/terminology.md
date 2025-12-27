@@ -5,18 +5,18 @@
 ## Use This Terminology
 
 - ✅ Use: template, templates, FunctionTemplate, BehavioralTemplate
-- ❌ Avoid: component, components (except when referring to Web Components API)
+- ❌ Avoid: component, components
 
-## Exception: Web Components API
+## Browser Platform APIs
 
-The term "Web Components" refers to the browser's [Web Components API set](https://developer.mozilla.org/en-US/docs/Web/API/Web_components) and should remain unchanged. This includes:
+When referring to browser platform APIs, use their specific names directly:
 
-- **Custom Elements**: `customElements.define()` for registering custom HTML elements
-- **Shadow DOM**: Encapsulated DOM and styling
+- **Custom Elements API**: `customElements.define()` for registering custom HTML elements
+- **Shadow DOM API**: Encapsulated DOM and styling
 - **HTML Templates**: `<template>` element including [Declarative Shadow DOM](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/template#declarative_shadow_dom)
 - **Related APIs**: [`Element.setHTMLUnsafe`](https://developer.mozilla.org/en-US/docs/Web/API/Element/setHTMLUnsafe) and other web platform APIs
 
-This is the standard browser platform terminology, not framework-specific.
+❌ Avoid the umbrella term "Web Components" - refer to specific APIs instead (Custom Elements, Shadow DOM, etc.)
 
 ## In Documentation and Code
 

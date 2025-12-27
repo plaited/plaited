@@ -4,7 +4,7 @@
  * Provides bThread, bSync factories and helpers for non-deterministic scenarios.
  */
 import { isTypeOf } from '../utils.ts'
-import type { BPEvent, BSync, BThread, PlaitedTrigger, Trigger } from './behavioral.types.ts'
+import type { BPEvent, BSync, BThread, PlaitedTrigger, RulesFunction, Trigger } from './behavioral.types.ts'
 
 /**
  * Creates an event template function that randomly selects from provided events.
@@ -47,8 +47,8 @@ export const useRandomEvent =
  * into b-threads, often for testing or simulating scenarios where the exact order
  * of operations is not fixed or needs to be varied.
  *
- * @param syncs Rest parameter of `BSync` objects representing the synchronization points to shuffle.
- * @returns A new array containing the same `BSync` objects but in a randomized order.
+ * @param syncs Rest parameter of `RulesFunction` objects representing the synchronization points to shuffle.
+ * @returns A new array containing the same `RulesFunction` objects but in a randomized order.
  *
  * @remarks
  * - Uses Fisher-Yates shuffle for uniform distribution
@@ -59,7 +59,7 @@ export const useRandomEvent =
  * @see {@link useRandomEvent} for selecting random events
  * @see {@link bThread} for creating behavioral threads
  */
-export const shuffleSyncs = (...syncs: BSync[]) => {
+export const shuffleSyncs = (...syncs: RulesFunction[]) => {
   /**
    * @internal
    * Fisher-Yates shuffle implementation working backwards through array.

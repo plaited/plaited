@@ -2,7 +2,7 @@
  * @internal
  * @module use-public-trigger
  *
- * Event filtering for secure component public APIs.
+ * Event filtering for secure element public APIs.
  * Validates events against a whitelist before triggering.
  *
  * @remarks
@@ -33,7 +33,7 @@ class UnauthorizedEventError extends Error implements Error {
 /**
  * @internal
  * Creates a wrapped `Trigger` function that filters events based on a whitelist.
- * This is useful for exposing a limited set of events as a public API for a component
+ * This is useful for exposing a limited set of events as a public API for a BehavioralElement
  * or module, preventing internal events from being triggered externally.
  *
  * If an event type is provided that is not in the `publicEvents` list,
@@ -56,7 +56,7 @@ class UnauthorizedEventError extends Error implements Error {
  * - Used internally by bElement when publicEvents are specified
  *
  * @see {@link Trigger} for the base trigger type
- * @see {@link bElement} for usage in components
+ * @see {@link bElement} for usage in BehavioralElements
  */
 export const usePublicTrigger = ({
   trigger,

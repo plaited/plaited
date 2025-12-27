@@ -66,7 +66,7 @@ if (!subcommand) {
   console.log('  -c, --color-scheme <mode> Color scheme for test browser (light|dark, default: light)\n')
 }
 
-if (!['test', 'dev'].includes(subcommand)) {
+if (!['test', 'dev'].includes(subcommand ?? '')) {
   console.error(`🚩 Error: Unknown subcommand '${subcommand}'\n`)
   console.log('Available commands:')
   console.log('  test      Run story tests')

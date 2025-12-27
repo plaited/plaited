@@ -86,20 +86,20 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  * Core building block for Plaited applications enabling declarative event handling,
  * reactive state management, and behavioral thread coordination.
  *
- * @template A Event details type for component-specific events
- * @param options Component configuration including tag name, Shadow DOM template, and behavioral program
+ * @template A Event details type for element-specific events
+ * @param options BehavioralElement configuration including tag name, Shadow DOM template, and behavioral program
  * @returns BehavioralTemplate function for creating and rendering element instances
  *
  * @remarks
  * **Key Concepts:**
- * 1.  **Component Definition:**
+ * 1.  **BehavioralElement Definition:**
  *     *   Define custom element tags with a required hyphen (e.g., `my-element`).
  *     *   Utilize Shadow DOM for style and content encapsulation.
  *     *   Observe attributes for changes and reflect properties to attributes if needed.
  *     *   Enable form association for elements that should interact with HTML forms.
  * 2.  **Event & State Management:**
  *     *   Use `p-trigger` attribute for declarative event bindings in templates, mapping DOM events to behavioral program event types.
- *     *   Implement component logic within the `bProgram` function, which leverages behavioral programming principles.
+ *     *   Implement element logic within the `bProgram` function, which leverages behavioral programming principles.
  *     *   Manage complex state interactions and asynchronous flows using behavioral threads (`bThread`, `bSync`).
  *     *   Benefit from automatic event delegation for `p-trigger`'d events, enhancing performance.
  * 3.  **DOM Interactions:**
@@ -108,11 +108,11 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  *     *   Interact with the Shadow DOM using standard APIs and manage content distribution with `<slot>` elements.
  *
  * **Best Practices:**
- * 1.  **Component Design:**
- *     *   Design components with a clear, single purpose to promote reusability and maintainability.
- *     *   Use TypeScript to define types for component properties, events, and event payloads for better type safety and developer experience.
+ * 1.  **Template Design:**
+ *     *   Design templates with a clear, single purpose to promote reusability and maintainability.
+ *     *   Use TypeScript to define types for template attributes, events, and event payloads for better type safety and developer experience.
  *     *   Leverage Shadow DOM for strong encapsulation of styles and markup.
- *     *   Adhere to Web Components standards and conventions.
+ *     *   Adhere to Custom Elements API standards and conventions.
  * 2.  **State Management:**
  *     *   Employ behavioral threads for managing intricate state logic, especially involving asynchronous operations or multiple event dependencies.
  *     *   Strive for immutable state patterns where possible within event handlers to simplify reasoning about state changes.
@@ -126,7 +126,7 @@ const isElement = (node: Node): node is Element => node.nodeType === 1
  *
  * **Plaited-Specific Conventions:**
  * *   **Event Documentation**: Always document event types and payloads for `bProgram` handlers and `publicEvents`.
- * *   **Component Lifecycle**: Utilize `onConnected`, `onDisconnected`, `onAttributeChanged`, etc., for managing component lifecycle logic.
+ * *   **Custom Element Lifecycle**: Utilize `onConnected`, `onDisconnected`, `onAttributeChanged`, etc., for managing custom element lifecycle logic.
  * *   **Signal/Trigger Patterns**: Understand that `trigger` (from `BProgramArgs`) is used to send events/data into the behavioral program.
  * *   **Shadow DOM**: Be mindful of style scoping and how to cross shadow boundaries if necessary (e.g., CSS custom properties, `::part`).
  *

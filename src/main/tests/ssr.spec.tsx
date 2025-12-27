@@ -194,7 +194,7 @@ test('createTemplate: Trims whitespace', () => {
 
 // Hoisting and Declarative Shadow DOM Tests
 
-const componentStyles = createStyles({
+const styles = createStyles({
   nestedLabel: {
     fontWeight: 'bold',
   },
@@ -215,10 +215,10 @@ const componentStyles = createStyles({
 })
 
 const NestedCustomElement = bElement({
-  tag: 'nested-component',
+  tag: 'nested-element',
   shadowDom: (
     <>
-      <span {...componentStyles.nestedLabel}>inside nested template</span>
+      <span {...styles.nestedLabel}>inside nested template</span>
       <slot name='nested' />
     </>
   ),
@@ -233,7 +233,7 @@ test('ssr: CustomElement hoisting its styles', () => {
 })
 
 test('ssr: CustomElement with declarative shadow dom & hoist styles', () => {
-  const el = <NestedCustomElement {...componentStyles.nestedComponent} />
+  const el = <NestedCustomElement {...styles.nestedComponent} />
   expect({
     content: render(el),
     stylesheets: el.stylesheets,
@@ -242,7 +242,7 @@ test('ssr: CustomElement with declarative shadow dom & hoist styles', () => {
 
 test('ssr: CustomElement with styled slotted component', () => {
   const el = (
-    <NestedCustomElement {...componentStyles.slottedParagraph}>
+    <NestedCustomElement {...styles.slottedParagraph}>
       <p slot='nested'>slotted paragraph</p>
     </NestedCustomElement>
   )
@@ -255,7 +255,7 @@ test('ssr: CustomElement with styled slotted component', () => {
 const TopCustomElement = bElement({
   tag: 'top-component',
   shadowDom: (
-    <NestedCustomElement {...componentStyles.slottedParagraph}>
+    <NestedCustomElement {...styles.slottedParagraph}>
       <p slot='nested'>slotted paragraph</p>
     </NestedCustomElement>
   ),
@@ -270,7 +270,7 @@ test('ssr: CustomElement with declarative shadow dom and nested declarative shad
 })
 
 test('ssr: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles', () => {
-  const el = <TopCustomElement {...componentStyles.topComponent} />
+  const el = <TopCustomElement {...styles.topComponent} />
   expect({
     content: render(el),
     stylesheets: el.stylesheets,
@@ -279,9 +279,9 @@ test('ssr: CustomElement with declarative shadow dom and nested declarative shad
 
 test('ssr: CustomElement with declarative shadow dom and nested declarative shadow dom plus host styles and child', () => {
   const el = (
-    <TopCustomElement {...componentStyles.topComponent}>
+    <TopCustomElement {...styles.topComponent}>
       {/* biome-ignore lint/a11y/useAltText: Test fixture doesn't need alt text */}
-      <img {...componentStyles.image} />
+      <img {...styles.image} />
     </TopCustomElement>
   )
   expect({
