@@ -9,13 +9,13 @@ Extract and document Plaited framework patterns through interactive Q&A with the
 
 **Target Pattern:** $ARGUMENTS (e.g., "css-in-js", "signals", "behavioral-programs", "b-element")
 
-**Output File:** `plugins/studio/.claude/rules/plaited/[pattern-name].md`
+**Output File:** `plugins/workshop/.claude/rules/plaited/[pattern-name].md`
 
 ## Instructions
 
 This command helps Claude accurately document Plaited framework patterns by working interactively with the framework author to refine understanding.
 
-All documentation sections will be written to: `plugins/studio/.claude/rules/plaited/$ARGUMENTS.md`
+All documentation sections will be written to: `plugins/workshop/.claude/rules/plaited/$ARGUMENTS.md`
 
 ### Process
 
@@ -159,11 +159,11 @@ If user agreed diagram would help:
 1. Present complete documentation
 2. Ask: "Any final corrections, additions, or refinements?"
 3. Incorporate final feedback
-4. Write to `plugins/studio/.claude/rules/plaited/[pattern-name].md`
+4. Write to `plugins/workshop/.claude/rules/plaited/[pattern-name].md`
 
 ## Output Location
 
-Documentation saved to: `plugins/studio/.claude/rules/plaited/[pattern-name].md`
+Documentation saved to: `plugins/workshop/.claude/rules/plaited/[pattern-name].md`
 
 ## Example Usage
 

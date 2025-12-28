@@ -4,14 +4,14 @@ Guidelines for developing Claude Code plugins in the `plugins/` directory.
 
 ## Cache Management
 
-**IMPORTANT**: When developing plugins locally, Claude Code caches plugins in `~/.claude/plugins-cache/`. Changes to plugin files will NOT be reflected until the cache is cleared.
+**IMPORTANT**: When developing plugins locally, Claude Code caches plugins in `~/.claude/plugins/cache`. Changes to plugin files will NOT be reflected until the cache is cleared.
 
 ### Workflow for Plugin Changes
 
 ```bash
 # After making changes to any plugin files
-rm -rf ~/.claude/plugins-cache
-
+rm -rf ~/.claude/plugins/cache
+rm -rf  ~/.claude/pluginsinstalled_plugins.json
 # Then restart Claude Code
 claude
 ```
@@ -29,7 +29,7 @@ Plugins in this project follow the local marketplace pattern:
 
 ```
 plugins/
-├── studio/
+├── workshop/
 │   ├── .claude-plugin/
 │   │   └── plugin.json       # Plugin manifest
 │   ├── skills/
@@ -48,8 +48,8 @@ Plugins are registered via `.claude-plugin/marketplace.json` at the project root
 {
   "plugins": [
     {
-      "name": "studio",
-      "source": "./plugins/studio",
+      "name": "workshop",
+      "source": "./plugins/workshop",
       "category": "development"
     }
   ]
@@ -69,7 +69,7 @@ And enabled in `.claude/settings.json`:
     }
   },
   "enabledPlugins": {
-    "studio@plaited": true
+    "workshop@plaited": true
   }
 }
 ```
@@ -105,7 +105,7 @@ Understanding what appears in the `/plugins` UI:
 
 ### Hook script not executing
 **Cause**: Script may not be executable
-**Solution**: `chmod +x plugins/studio/hooks/ScriptName`
+**Solution**: `chmod +x plugins/workshop/hooks/ScriptName`
 
 ## References
 

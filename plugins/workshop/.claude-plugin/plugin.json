@@ -1,0 +1,9 @@
+{
+  "name": "workshop",
+  "description": "AI design workshop for Plaited templates. Creates outcome-based UI patterns for MCP (Model Context Protocol) Apps and A2UI agent-driven interfaces using AI-assisted design principles.",
+  "version": "0.1.1",
+  "author": {
+    "name": "Plaited Labs"
+  },
+  "skills": "./skills/"
+}

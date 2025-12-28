@@ -5,7 +5,7 @@ allowed-tools: mcp__playwright__browser_navigate, mcp__playwright__browser_evalu
 
 # Extract Web Pattern
 
-Extract modern HTML/Web API patterns from the provided URL and add to the studio plugin knowledge base.
+Extract modern HTML/Web API patterns from the provided URL and add to the workshop plugin knowledge base.
 
 **Target URL:** $ARGUMENTS
 
@@ -27,9 +27,9 @@ Extract modern HTML/Web API patterns from the provided URL and add to the studio
    - **Benefits**: Performance, accessibility, or DX improvements
    - **Browser support**: Compatibility considerations
 
-4. Format as markdown suitable for `plugins/studio/.claude/rules/patterns/web-apis/`
+4. Format as markdown suitable for `plugins/workshop/.claude/rules/patterns/web-apis/`
 
-5. Save to appropriate location in studio plugin knowledge base
+5. Save to appropriate location in workshop plugin knowledge base
 
 6. Ask user for confirmation before writing
 
