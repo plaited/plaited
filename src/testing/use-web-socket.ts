@@ -1,7 +1,8 @@
 import { DelegatedListener, delegates } from '../main/delegated-listener.ts'
+import type { PlaitedTrigger } from '../main.ts'
 import { isTypeOf } from '../utils.ts'
 import { RELOAD_PAGE, RUNNER_URL } from './testing.constants.ts'
-import type { RunnerMessage } from './testing.schemas.ts'
+import type { Send } from './testing.types.ts'
 
 /** @internal Type guard to check if an event is a WebSocket CloseEvent. */
 const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => event.type === 'close'
@@ -29,7 +30,7 @@ const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => 
  * - Handles page reload requests from the runner.
  * - Implements an exponential backoff retry mechanism for specific close codes.
  */
-export const useWebSocket = () => {
+export const useWebSocket = (trigger: PlaitedTrigger) => {
   const retryStatusCodes = new Set([1006, 1012, 1013])
   const maxRetries = 3
   let socket: WebSocket | undefined
@@ -69,7 +70,7 @@ export const useWebSocket = () => {
     },
   }
   ws.connect()
-  const send = (message: RunnerMessage) => {
+  const send: Send = (message) => {
     const fallback = () => {
       send(message)
       socket?.removeEventListener('open', fallback)
@@ -80,8 +81,9 @@ export const useWebSocket = () => {
     if (!socket) ws.connect()
     socket?.addEventListener('open', fallback)
   }
-  send.disconnect = () => {
+  const disconnect = () => {
     socket?.close()
   }
+  trigger.addDisconnectCallback(disconnect)
   return send
 }

@@ -17,8 +17,8 @@
 
 import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
-import { useDevCommand } from './use-dev-command.ts'
-import { useTestCommand } from './use-test-command.ts'
+import { useDevCommand } from './workshop/use-dev-command.ts'
+import { useTestCommand } from './workshop/use-test-command.ts'
 
 console.log('🎭 Starting Plaited workshop')
 

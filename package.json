@@ -14,7 +14,7 @@
   },
   "homepage": "https://github.com/plaited/plaited/tree/main#readme",
   "bin": {
-    "plaited": "./.bin/plaited.js"
+    "plaited": "./src/cli.ts"
   },
   "type": "module",
   "main": "./src/main.ts",
@@ -44,11 +44,12 @@
     "check:types": "tsc --noEmit",
     "check:write": "biome check --write && format-package --write",
     "copy-css-types": "bash scripts/copy-css-types.sh",
-    "dev": "bun --hot src/workshop/cli.ts dev",
+    "dev": "bun --hot src/cli.ts dev src/main",
     "prepare": "git config core.hooksPath .hooks",
     "test": "bun run test:stories src/main && bun test",
     "test:playwright": "bunx playwright test",
-    "test:stories": "bun src/workshop/cli.ts test"
+    "test:stories": "bun src/cli.ts test",
+    "test:stories-all": "bun run test:stories src/main"
   },
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [

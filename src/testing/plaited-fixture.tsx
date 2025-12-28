@@ -1,6 +1,14 @@
 import { bElement, createHostStyles } from '../main.ts'
 import { wait } from '../utils.ts'
-import { DEFAULT_PLAY_TIMEOUT, ERROR_TYPES, FIXTURE_EVENTS, STORY_FIXTURE, SUCCESS_TYPES } from './testing.constants.ts'
+import {
+  DEFAULT_PLAY_TIMEOUT,
+  ERROR_TYPES,
+  FIXTURE_EVENTS,
+  ORCHESTRATOR_EVENTS,
+  STORY_FIXTURE,
+  SUCCESS_TYPES,
+  UI_SNAPSHOT_EVENTS,
+} from './testing.constants.ts'
 import type {
   AccessibilityCheckParams,
   AssertParams,
@@ -10,6 +18,7 @@ import type {
   FindByTextArgs,
   FireEventArgs,
   InteractionStoryObj,
+  Send,
 } from './testing.types.ts'
 import {
   accessibilityCheck,
@@ -20,8 +29,8 @@ import {
   findByText,
   fireEvent,
 } from './testing.utils.ts'
+import { uiInspector } from './ui-inspector.ts'
 import { useInteract } from './use-interact.ts'
-import { useWebSocket } from './use-web-socket.ts'
 
 /**
  * Story test fixture element for Plaited testing framework.
@@ -98,9 +107,10 @@ export const PlaitedFixture = bElement<{
     resolve: () => void
     reject: Reject
   }
+  [ORCHESTRATOR_EVENTS.connect_inspector]: Send
 }>({
   tag: STORY_FIXTURE,
-  publicEvents: [FIXTURE_EVENTS.run],
+  publicEvents: [FIXTURE_EVENTS.run, ORCHESTRATOR_EVENTS.connect_inspector],
   shadowDom: (
     <slot
       {...createHostStyles({
@@ -111,11 +121,7 @@ export const PlaitedFixture = bElement<{
     />
   ),
   bProgram({ trigger, bThreads, bThread, bSync, emit, inspector }) {
-    const send = useWebSocket()
-    trigger.addDisconnectCallback(send.disconnect)
-    if (!window?.__PLAITED_RUNNER__) {
-      inspector.on()
-    }
+    let send: Send
     bThreads.set({
       onRun: bThread(
         [
@@ -268,6 +274,15 @@ export const PlaitedFixture = bElement<{
         } catch (error) {
           handleError(error, reject)
         }
+      },
+      [ORCHESTRATOR_EVENTS.connect_inspector](detail) {
+        uiInspector({
+          tag: STORY_FIXTURE,
+          inspector,
+          type: UI_SNAPSHOT_EVENTS.fixture_snapshot,
+          send: detail,
+        })
+        send = detail
       },
     }
   },

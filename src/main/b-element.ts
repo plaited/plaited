@@ -24,7 +24,6 @@ import type {
   EventDetails,
   Handlers,
   PlaitedTrigger,
-  SnapshotMessage,
   Trigger,
   UseFeedback,
   UseSnapshot,
@@ -36,6 +35,7 @@ import type { Attrs, CustomElementTag, TemplateObject } from './create-template.
 import type { HostStylesObject } from './css.types.ts'
 import { DelegatedListener, delegates } from './delegated-listener.ts'
 import { type Emit, useEmit } from './use-emit.ts'
+import { useInspectorCallback } from './use-inspector-callback.ts'
 import { usePlaitedTrigger } from './use-plaited-trigger.ts'
 import { usePublicTrigger } from './use-public-trigger.ts'
 
@@ -229,14 +229,7 @@ export const bElement = <A extends EventDetails>({
             this.#addListeners(this.#root.querySelectorAll<Element>(`[${P_TRIGGER}]`))
             assignHelpers(bindings, this.#root.querySelectorAll<Element>(`[${P_TARGET}]`))
             this.#shadowObserver = this.#getShadowObserver(bindings)
-            const inspectorDefaultCallback: InspectorCallback = (arg: SnapshotMessage) => {
-              queueMicrotask(() => {
-                console.group()
-                console.info(tag)
-                console.table(JSON.parse(JSON.stringify(arg)))
-                console.groupEnd()
-              })
-            }
+            const inspectorDefaultCallback = useInspectorCallback(tag)
             let inspectorCallback = inspectorDefaultCallback
             let inspectorDisconnect: Disconnect | undefined
             const inspector = {

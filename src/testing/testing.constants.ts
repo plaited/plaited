@@ -16,7 +16,19 @@ export const STORY_FIXTURE = 'plaited-story-fixture'
  * @internal
  * Custom element tag for story test orchestrator.
  */
-export const STORY_ORCHESTRATOR = 'plaited-orchestrator'
+export const STORY_ORCHESTRATOR = 'plaited-story-orchestrator'
+
+/**
+ * @internal
+ * Custom element tag for story test orchestrator.
+ */
+export const STORY_MASK = 'plaited-story-mask'
+
+/**
+ * @internal
+ * Custom element tag for story test orchestrator.
+ */
+export const STORY_HEADER = 'plaited-story-header'
 
 /**
  * @internal
@@ -52,6 +64,13 @@ export const FIXTURE_EVENTS = keyMirror(
   'wait',
 )
 
+/**
+ * @internal
+ * Event types for test fixture communication.
+ * Used between story fixture and test runner.
+ */
+export const ORCHESTRATOR_EVENTS = keyMirror('init', 'connect_inspector')
+
 export const ERROR_TYPES = keyMirror(
   'accessibility_violation',
   'failed_assertion',
@@ -63,6 +82,7 @@ export const ERROR_TYPES = keyMirror(
 export const SUCCESS_TYPES = keyMirror('passed_assertion', 'passed_accessibility_check')
 
 export const __PLAITED_RUNNER__ = '__PLAITED_RUNNER__'
+export const __PLAITED_MCP__ = '__PLAITED_MCP__'
 
 export const STORY_TYPES = keyMirror('snapshot', 'interaction')
 
@@ -75,3 +95,10 @@ export const STORY_IDENTIFIER = '🍬'
 export const MASK_EVENTS = keyMirror('emit_click', 'toggle')
 
 export const HEADER_EVENTS = keyMirror('emit_toggle', 'toggle')
+
+export const UI_SNAPSHOT_EVENTS = keyMirror(
+  'fixture_snapshot',
+  'orchestrator_snapshot',
+  'mask_snapshot',
+  'header_snapshot',
+)
