@@ -1,4 +1,4 @@
-# Studio Plugin
+# Workshop Plugin
 
 AI-assisted development plugin for the Plaited framework. Provides comprehensive knowledge of behavioral programming patterns, template creation, and web platform best practices through auto-invoked skills.
 
