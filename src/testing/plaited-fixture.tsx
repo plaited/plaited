@@ -7,7 +7,6 @@ import {
   ORCHESTRATOR_EVENTS,
   STORY_FIXTURE,
   SUCCESS_TYPES,
-  UI_SNAPSHOT_EVENTS,
 } from './testing.constants.ts'
 import type {
   AccessibilityCheckParams,
@@ -29,7 +28,6 @@ import {
   findByText,
   fireEvent,
 } from './testing.utils.ts'
-import { uiInspector } from './ui-inspector.ts'
 import { useInteract } from './use-interact.ts'
 
 /**
@@ -107,10 +105,10 @@ export const PlaitedFixture = bElement<{
     resolve: () => void
     reject: Reject
   }
-  [ORCHESTRATOR_EVENTS.connect_inspector]: Send
+  [ORCHESTRATOR_EVENTS.connect_messenger]: Send
 }>({
   tag: STORY_FIXTURE,
-  publicEvents: [FIXTURE_EVENTS.run, ORCHESTRATOR_EVENTS.connect_inspector],
+  publicEvents: [FIXTURE_EVENTS.run, ORCHESTRATOR_EVENTS.connect_messenger],
   shadowDom: (
     <slot
       {...createHostStyles({
@@ -121,6 +119,9 @@ export const PlaitedFixture = bElement<{
     />
   ),
   bProgram({ trigger, bThreads, bThread, bSync, emit, inspector }) {
+    if (!window?.__PLAITED_RUNNER__) {
+      inspector.on()
+    }
     let send: Send
     bThreads.set({
       onRun: bThread(
@@ -275,13 +276,7 @@ export const PlaitedFixture = bElement<{
           handleError(error, reject)
         }
       },
-      [ORCHESTRATOR_EVENTS.connect_inspector](detail) {
-        uiInspector({
-          tag: STORY_FIXTURE,
-          inspector,
-          type: UI_SNAPSHOT_EVENTS.fixture_snapshot,
-          send: detail,
-        })
+      [ORCHESTRATOR_EVENTS.connect_messenger](detail) {
         send = detail
       },
     }

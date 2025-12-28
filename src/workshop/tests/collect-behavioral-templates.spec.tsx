@@ -6,24 +6,60 @@ import type { TemplateExport } from '../workshop.types.ts'
 // Get absolute path to fixtures
 const fixturesPath = join(import.meta.dir, 'fixtures', 'templates')
 
-test('discoverTemplateMetadata: only returns BehavioralTemplate exports', async () => {
+test('discoverTemplateMetadata: only returns BehavioralTemplate exports and filters all other types', async () => {
   const metadata = await discoverBehavioralTemplateMetadata(fixturesPath)
 
   // All returned templates should be BehavioralTemplate
   metadata.forEach((template) => {
     expect(template.type).toBe('BehavioralTemplate')
   })
+  expect(metadata.length).toBeGreaterThan(0)
 
-  // Should NOT find FunctionTemplate exports
-  const simpleTemplate = metadata.find((m) => m.exportName === 'SimpleTemplate')
-  expect(simpleTemplate).toBeUndefined()
+  // Verify only expected BehavioralTemplate exports are present
+  const exportNames = metadata.map((m) => m.exportName)
+  expect(exportNames).toContain('SimpleBehavioralTemplate')
+  expect(exportNames).toContain('BehavioralTemplateWithProgram')
+  expect(exportNames).toContain('MixedBehavioralTemplate')
 
-  const templateWithProps = metadata.find((m) => m.exportName === 'TemplateWithProps')
-  expect(templateWithProps).toBeUndefined()
+  // Should NOT find FunctionTemplate exports (explicit types)
+  expect(metadata.find((m) => m.exportName === 'SimpleTemplate')).toBeUndefined()
+  expect(metadata.find((m) => m.exportName === 'TemplateWithProps')).toBeUndefined()
+  expect(metadata.find((m) => m.exportName === 'FunctionDeclarationTemplate')).toBeUndefined()
+  expect(metadata.find((m) => m.exportName === 'ArrowTemplate')).toBeUndefined()
 
   // Should NOT find FT alias exports
-  const ftSimple = metadata.find((m) => m.exportName === 'FTSimple')
-  expect(ftSimple).toBeUndefined()
+  expect(metadata.find((m) => m.exportName === 'FTSimple')).toBeUndefined()
+  expect(metadata.find((m) => m.exportName === 'FTWithProps')).toBeUndefined()
+  expect(metadata.find((m) => m.exportName === 'FTComplex')).toBeUndefined()
+
+  // Should NOT find mixed file FunctionTemplates
+  expect(metadata.find((m) => m.exportName === 'MixedFunctionTemplate')).toBeUndefined()
+  expect(metadata.find((m) => m.exportName === 'MixedFTTemplate')).toBeUndefined()
+  expect(metadata.find((m) => m.exportName === 'AnotherTemplate')).toBeUndefined()
+
+  // Should NOT find default exports
+  expect(metadata.find((m) => m.exportName === 'default')).toBeUndefined()
+
+  // Should NOT find non-template exports
+  expect(metadata.find((m) => m.exportName === 'regularFunction')).toBeUndefined()
+  expect(metadata.find((m) => m.exportName === 'regularConst')).toBeUndefined()
+  expect(metadata.find((m) => m.exportName === 'objectLiteral')).toBeUndefined()
+  expect(metadata.find((m) => m.exportName === 'RegularClass')).toBeUndefined()
+  expect(metadata.find((m) => m.exportName === 'arrowFunction')).toBeUndefined()
+  expect(metadata.find((m) => m.exportName === 'regularHelper')).toBeUndefined()
+
+  // Verify file exclusions - only BehavioralTemplate files present
+  const uniqueFiles = new Set(metadata.map((m) => m.filePath))
+  const fileNames = Array.from(uniqueFiles).map((path) => path.split('/').pop())
+  expect(fileNames).toContain('behavioral-templates.tsx')
+  expect(fileNames).toContain('mixed.tsx')
+  expect(fileNames).not.toContain('function-templates.tsx')
+  expect(fileNames).not.toContain('ft-alias.tsx')
+  expect(fileNames).not.toContain('default-export.tsx')
+  expect(fileNames).not.toContain('non-templates.tsx')
+
+  // Should NOT contain .stories.tsx files
+  expect(metadata.every((m) => !m.filePath.includes('.stories.'))).toBe(true)
 })
 
 test('discoverTemplateMetadata: discovers BehavioralTemplate exports', async () => {
@@ -39,64 +75,14 @@ test('discoverTemplateMetadata: discovers BehavioralTemplate exports', async () 
   expect(templateWithProgram?.type).toBe('BehavioralTemplate')
 })
 
-test('discoverTemplateMetadata: filters out FunctionTemplate exports', async () => {
+test('discoverTemplateMetadata: handles mixed template file correctly', async () => {
   const metadata = await discoverBehavioralTemplateMetadata(fixturesPath)
-
-  // Should NOT find FunctionTemplate function declarations
-  const functionDeclaration = metadata.find((m) => m.exportName === 'FunctionDeclarationTemplate')
-  expect(functionDeclaration).toBeUndefined()
-
-  // Should NOT find FunctionTemplate default exports
-  const defaultExport = metadata.find((m) => m.exportName === 'default')
-  expect(defaultExport).toBeUndefined()
-})
-
-test('discoverTemplateMetadata: filters mixed template types in one file', async () => {
-  const metadata = await discoverBehavioralTemplateMetadata(fixturesPath)
-
   const mixedFile = metadata.filter((m) => m.filePath.includes('mixed.tsx'))
 
   // Should ONLY find BehavioralTemplate from mixed file
-  const mixedBehavioralTemplate = mixedFile.find((m) => m.exportName === 'MixedBehavioralTemplate')
-  expect(mixedBehavioralTemplate).toBeDefined()
-  expect(mixedBehavioralTemplate?.type).toBe('BehavioralTemplate')
-
-  // Should NOT find FunctionTemplate exports from mixed file
-  const mixedFunctionTemplate = mixedFile.find((m) => m.exportName === 'MixedFunctionTemplate')
-  expect(mixedFunctionTemplate).toBeUndefined()
-
-  const mixedFTTemplate = mixedFile.find((m) => m.exportName === 'MixedFTTemplate')
-  expect(mixedFTTemplate).toBeUndefined()
-
-  const anotherTemplate = mixedFile.find((m) => m.exportName === 'AnotherTemplate')
-  expect(anotherTemplate).toBeUndefined()
-
-  // Should NOT find the regular helper function
-  const regularHelper = mixedFile.find((m) => m.exportName === 'regularHelper')
-  expect(regularHelper).toBeUndefined()
-})
-
-test('discoverTemplateMetadata: ignores non-template exports', async () => {
-  const metadata = await discoverBehavioralTemplateMetadata(fixturesPath)
-
-  // None of these should be found
-  expect(metadata.find((m) => m.exportName === 'regularFunction')).toBeUndefined()
-  expect(metadata.find((m) => m.exportName === 'regularConst')).toBeUndefined()
-  expect(metadata.find((m) => m.exportName === 'objectLiteral')).toBeUndefined()
-  expect(metadata.find((m) => m.exportName === 'RegularClass')).toBeUndefined()
-  expect(metadata.find((m) => m.exportName === 'arrowFunction')).toBeUndefined()
-})
-
-test('discoverTemplateMetadata: excludes .stories.tsx files', async () => {
-  const metadata = await discoverBehavioralTemplateMetadata(fixturesPath)
-
-  // Should NOT find templates from .stories.tsx files (hardcoded exclusion)
-  const storyFiles = metadata.filter((m) => m.filePath.includes('.stories.'))
-  expect(storyFiles.length).toBe(0)
-
-  // Should only find templates from regular .tsx files
-  const allFilesEndWithTsx = metadata.every((m) => m.filePath.endsWith('.tsx'))
-  expect(allFilesEndWithTsx).toBe(true)
+  expect(mixedFile.length).toBe(1)
+  expect(mixedFile[0]?.exportName).toBe('MixedBehavioralTemplate')
+  expect(mixedFile[0]?.type).toBe('BehavioralTemplate')
 })
 
 test('discoverTemplateMetadata: returns array of BehavioralTemplate export objects', async () => {
@@ -116,32 +102,13 @@ test('discoverTemplateMetadata: returns array of BehavioralTemplate export objec
   })
 })
 
-test('discoverTemplateMetadata: all filePaths are absolute paths', async () => {
+test('discoverTemplateMetadata: returns absolute file paths', async () => {
   const metadata = await discoverBehavioralTemplateMetadata(fixturesPath)
 
   metadata.forEach((item) => {
     expect(item.filePath.startsWith('/')).toBe(true)
     expect(item.filePath).toContain(fixturesPath)
   })
-})
-
-test('discoverTemplateMetadata: discovers BehavioralTemplates from multiple files', async () => {
-  const metadata = await discoverBehavioralTemplateMetadata(fixturesPath)
-
-  const uniqueFiles = new Set(metadata.map((m) => m.filePath))
-
-  // Should have BehavioralTemplates from multiple files (only 2 files have them)
-  expect(uniqueFiles.size).toBeGreaterThanOrEqual(2)
-
-  // Verify we have files with BehavioralTemplates
-  const fileNames = Array.from(uniqueFiles).map((path) => path.split('/').pop())
-  expect(fileNames).toContain('behavioral-templates.tsx')
-  expect(fileNames).toContain('mixed.tsx')
-
-  // Should NOT contain files with only FunctionTemplates
-  expect(fileNames).not.toContain('function-templates.tsx')
-  expect(fileNames).not.toContain('ft-alias.tsx')
-  expect(fileNames).not.toContain('default-export.tsx')
 })
 
 test('discoverTemplateMetadata: throws error when no files found', async () => {
@@ -156,33 +123,21 @@ test('discoverTemplateMetadata: throws error when no files found', async () => {
   }
 })
 
-test('discoverTemplateMetadata: counts BehavioralTemplate exports correctly', async () => {
+test('discoverTemplateMetadata: finds exactly 3 BehavioralTemplate exports', async () => {
   const metadata = await discoverBehavioralTemplateMetadata(fixturesPath)
 
-  // Should NOT find FunctionTemplate files
-  const functionTemplatesCount = metadata.filter((m) => m.filePath.includes('function-templates.tsx')).length
-  const ftAliasCount = metadata.filter((m) => m.filePath.includes('ft-alias.tsx')).length
-  expect(functionTemplatesCount).toBe(0)
-  expect(ftAliasCount).toBe(0)
+  // Should find exactly 3 BehavioralTemplate exports
+  expect(metadata.length).toBe(3)
 
-  // Should find BehavioralTemplate exports
-  const behavioralCount = metadata.filter((m) => m.filePath.includes('behavioral-templates.tsx')).length
-  expect(behavioralCount).toBeGreaterThanOrEqual(2) // SimpleBehavioralTemplate, BehavioralTemplateWithProgram
-})
+  const exportNames = metadata.map((m) => m.exportName)
+  expect(exportNames).toEqual(
+    expect.arrayContaining(['SimpleBehavioralTemplate', 'BehavioralTemplateWithProgram', 'MixedBehavioralTemplate']),
+  )
 
-test('discoverTemplateMetadata: only returns BehavioralTemplate type', async () => {
-  const metadata = await discoverBehavioralTemplateMetadata(fixturesPath)
+  // Count by file
+  const behavioralTemplatesFile = metadata.filter((m) => m.filePath.includes('behavioral-templates.tsx'))
+  const mixedFile = metadata.filter((m) => m.filePath.includes('mixed.tsx'))
 
-  const functionTemplates = metadata.filter((m) => m.type === 'FunctionTemplate')
-  const behavioralTemplates = metadata.filter((m) => m.type === 'BehavioralTemplate')
-
-  expect(functionTemplates.length).toBe(0)
-  expect(behavioralTemplates.length).toBeGreaterThan(0)
-
-  // Verify all BehavioralTemplates are correct
-  behavioralTemplates.forEach((bt) => {
-    expect(['SimpleBehavioralTemplate', 'BehavioralTemplateWithProgram', 'MixedBehavioralTemplate']).toContain(
-      bt.exportName,
-    )
-  })
+  expect(behavioralTemplatesFile.length).toBe(2) // SimpleBehavioralTemplate, BehavioralTemplateWithProgram
+  expect(mixedFile.length).toBe(1) // MixedBehavioralTemplate
 })

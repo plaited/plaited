@@ -21,7 +21,7 @@ const runDevCommand = async ({
     [
       'bun',
       ...execArgv,
-      join(import.meta.dir, '../cli.ts'),
+      join(import.meta.dir, '../../cli.ts'),
       'dev',
       '-d',
       cwd,

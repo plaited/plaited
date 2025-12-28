@@ -1,7 +1,5 @@
 import { bElement, createHostStyles, createStyles } from '../main.ts'
-import { HEADER_EVENTS, ORCHESTRATOR_EVENTS, STORY_HEADER, UI_SNAPSHOT_EVENTS } from './testing.constants.ts'
-import type { Send } from './testing.types.ts'
-import { uiInspector } from './ui-inspector.ts'
+import { HEADER_EVENTS, STORY_HEADER } from './testing.constants.ts'
 
 /**
  * Button styles for the toggle button.
@@ -59,12 +57,9 @@ const headerHostStyles = createHostStyles({
  *
  * @see {@link HEADER_EVENTS.toggle_mask} for emitted event
  */
-export const PlaitedHeader = bElement<{
-  [ORCHESTRATOR_EVENTS.connect_inspector]: Send
-}>({
+export const PlaitedHeader = bElement({
   tag: STORY_HEADER,
   hostStyles: headerHostStyles,
-  publicEvents: [ORCHESTRATOR_EVENTS.connect_inspector],
   shadowDom: (
     <>
       <div {...headerStyles.container}>
@@ -81,6 +76,10 @@ export const PlaitedHeader = bElement<{
     </>
   ),
   bProgram({ $, emit, inspector }) {
+    if (!window?.__PLAITED_RUNNER__) {
+      inspector.on()
+    }
+
     const button = $<HTMLButtonElement>('toggle-button')[0]
     let active = false
 
@@ -94,14 +93,6 @@ export const PlaitedHeader = bElement<{
 
         // Trigger the new state via bProgram event (not DOM event)
         emit({ type: HEADER_EVENTS.emit_toggle, detail: active })
-      },
-      [ORCHESTRATOR_EVENTS.connect_inspector](send) {
-        uiInspector({
-          tag: STORY_HEADER,
-          inspector,
-          send,
-          type: UI_SNAPSHOT_EVENTS.header_snapshot,
-        })
       },
     }
   },

@@ -2,6 +2,7 @@ import { type BEHAVIORAL_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './b-elem
 import type { BSync, BThread, BThreads, PlaitedTrigger, SnapshotMessage, Trigger } from './behavioral.types.ts'
 import type { CustomElementTag, FunctionTemplate, TemplateObject } from './create-template.types.ts'
 import type { DesignTokenReference, HostStylesObject } from './css.types.ts'
+import type { INSPECTOR_MESSAGE } from './inspector.ts'
 import type { Emit } from './use-emit.ts'
 /**
  * Valid insertion positions for DOM elements relative to a reference element.
@@ -145,6 +146,16 @@ export type BehavioralTemplate = FunctionTemplate & {
   $: typeof BEHAVIORAL_TEMPLATE_IDENTIFIER
 }
 
+export type InspectorMessageDetail = {
+  element: CustomElementTag
+  message: SnapshotMessage
+}
+
+export type InspectorMessage = {
+  type: typeof INSPECTOR_MESSAGE
+  detail: InspectorMessageDetail
+}
+
 /**
  * @internal
  * Callback function for receiving behavioral program state snapshots.
@@ -155,7 +166,7 @@ export type BehavioralTemplate = FunctionTemplate & {
  * @see {@link Inspector} for inspector lifecycle
  * @see {@link SnapshotMessage} for snapshot structure
  */
-export type InspectorCallback = (arg: SnapshotMessage) => void
+export type InspectorCallback = (args: InspectorMessage) => void | Promise<void>
 
 /**
  * @internal
@@ -177,8 +188,6 @@ export type InspectorCallback = (arg: SnapshotMessage) => void
  * @see {@link InspectorCallback} for callback signature
  */
 export type Inspector = {
-  assign: (func: InspectorCallback) => void
-  reset: () => void
   on: () => void
   off: () => void
 }

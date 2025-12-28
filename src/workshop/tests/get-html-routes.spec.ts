@@ -103,7 +103,7 @@ test('getHTMLRoutes: main route includes fixture load script', async () => {
 
   // Should contain fixture load script that triggers run event
   expect(content).toContain('customElements.whenDefined')
-  expect(content).toContain("type: 'run'")
+  expect(content).toContain("type: 'init'")
 })
 
 test('getHTMLRoutes: template route contains only fixture and entry script', async () => {

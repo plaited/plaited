@@ -11,11 +11,9 @@ import {
   STORY_HEADER,
   STORY_MASK,
   STORY_ORCHESTRATOR,
-  UI_SNAPSHOT_EVENTS,
 } from './testing.constants.ts'
 import type { InitDetail } from './testing.types.ts'
-import { uiInspector } from './ui-inspector.ts'
-import { useWebSocket } from './use-web-socket.ts'
+import { useMessenger } from './use-messenger.ts'
 
 /**
  * Host styles for grid layout container.
@@ -89,9 +87,13 @@ export const PlaitedOrchestrator = bElement<{
   ),
   publicEvents: [ORCHESTRATOR_EVENTS.init],
   bProgram({ $, inspector, trigger }) {
+    if (!window?.__PLAITED_RUNNER__) {
+      inspector.on()
+    }
+
     const fixture = $<BehavioralElement>(STORY_FIXTURE)[0]!
-    const header = $<BehavioralElement>(STORY_HEADER)[0]!
     const mask = $<BehavioralElement>(STORY_MASK)[0]!
+
     return {
       // Forward toggle event from header to mask
       mask_toggle(detail: boolean) {
@@ -102,17 +104,9 @@ export const PlaitedOrchestrator = bElement<{
       emit_click: () => {
         // Do something with mask click detail as needed
       },
-      [ORCHESTRATOR_EVENTS.init](detail) {
-        const send = useWebSocket(trigger)
-        uiInspector({
-          tag: STORY_ORCHESTRATOR,
-          inspector,
-          send,
-          type: UI_SNAPSHOT_EVENTS.orchestrator_snapshot,
-        })
-        for (const el of [fixture, header, mask]) {
-          el.trigger({ type: ORCHESTRATOR_EVENTS.connect_inspector, detail: send })
-        }
+      async [ORCHESTRATOR_EVENTS.init](detail) {
+        const messenger = useMessenger(trigger)
+        fixture.trigger({ type: ORCHESTRATOR_EVENTS.connect_messenger, detail: messenger })
         fixture.trigger({ type: FIXTURE_EVENTS.run, detail })
       },
     }

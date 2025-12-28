@@ -13,7 +13,7 @@ import type {
   Bindings,
   BoundElement,
   BProgramArgs,
-  InspectorCallback,
+  Inspector,
   SelectorMatch,
 } from './b-element.types.ts'
 import { assignHelpers, getBindings, getDocumentFragment } from './b-element.utils.ts'
@@ -26,7 +26,6 @@ import type {
   PlaitedTrigger,
   Trigger,
   UseFeedback,
-  UseSnapshot,
 } from './behavioral.types.ts'
 import { bSync, bThread } from './behavioral.utils.ts'
 import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from './create-template.constants.ts'
@@ -34,8 +33,8 @@ import { createTemplate } from './create-template.ts'
 import type { Attrs, CustomElementTag, TemplateObject } from './create-template.types.ts'
 import type { HostStylesObject } from './css.types.ts'
 import { DelegatedListener, delegates } from './delegated-listener.ts'
+import { getInspector } from './inspector.ts'
 import { type Emit, useEmit } from './use-emit.ts'
-import { useInspectorCallback } from './use-inspector-callback.ts'
 import { usePlaitedTrigger } from './use-plaited-trigger.ts'
 import { usePublicTrigger } from './use-public-trigger.ts'
 
@@ -177,10 +176,10 @@ export const bElement = <A extends EventDetails>({
         #shadowObserver?: MutationObserver
         #trigger: PlaitedTrigger
         #useFeedback: UseFeedback
-        #useSnapshot: UseSnapshot
         #bThreads: BThreads
         #disconnectSet = new Set<Disconnect>()
         #emit: Emit
+        #inspector: Inspector
         trigger: Trigger
 
         constructor() {
@@ -189,11 +188,10 @@ export const bElement = <A extends EventDetails>({
           this.attachShadow({ mode, delegatesFocus, slotAssignment })
           const frag = getDocumentFragment({ hostStyles, shadowRoot: this.#root, templateObject: shadowDom })
           this.#root.replaceChildren(frag)
-
           const { trigger, useFeedback, useSnapshot, bThreads } = behavioral()
+          this.#inspector = getInspector({ useSnapshot, disconnectSet: this.#disconnectSet, element: tag })
           this.#trigger = usePlaitedTrigger(trigger, this.#disconnectSet)
           this.#useFeedback = useFeedback
-          this.#useSnapshot = useSnapshot
           this.#bThreads = bThreads
           this.trigger = usePublicTrigger({
             trigger,
@@ -229,28 +227,7 @@ export const bElement = <A extends EventDetails>({
             this.#addListeners(this.#root.querySelectorAll<Element>(`[${P_TRIGGER}]`))
             assignHelpers(bindings, this.#root.querySelectorAll<Element>(`[${P_TARGET}]`))
             this.#shadowObserver = this.#getShadowObserver(bindings)
-            const inspectorDefaultCallback = useInspectorCallback(tag)
-            let inspectorCallback = inspectorDefaultCallback
-            let inspectorDisconnect: Disconnect | undefined
-            const inspector = {
-              assign: (func: InspectorCallback) => {
-                inspectorCallback = func
-              },
-              reset: () => {
-                inspectorCallback = inspectorDefaultCallback
-              },
-              on: () => {
-                inspectorDisconnect = this.#useSnapshot(inspectorCallback)
-                this.#disconnectSet.add(inspectorDisconnect)
-              },
-              off: () => {
-                if (inspectorDisconnect) {
-                  void inspectorDisconnect()
-                  this.#disconnectSet.delete(inspectorDisconnect)
-                  inspectorDisconnect = undefined
-                }
-              },
-            }
+
             const handlers = callback.bind(this)({
               $: <T extends Element = Element>(target: string, match: SelectorMatch = '=') =>
                 this.#root.querySelectorAll<BoundElement<T>>(`[${P_TARGET}${match}"${target}"]`),
@@ -258,7 +235,7 @@ export const bElement = <A extends EventDetails>({
               root: this.#root,
               internals: this.#internals,
               trigger: this.#trigger,
-              inspector,
+              inspector: this.#inspector,
               emit: this.#emit,
               bThreads: this.#bThreads,
               bThread,

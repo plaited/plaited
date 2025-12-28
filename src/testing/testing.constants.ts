@@ -69,7 +69,7 @@ export const FIXTURE_EVENTS = keyMirror(
  * Event types for test fixture communication.
  * Used between story fixture and test runner.
  */
-export const ORCHESTRATOR_EVENTS = keyMirror('init', 'connect_inspector')
+export const ORCHESTRATOR_EVENTS = keyMirror('init', 'connect_messenger')
 
 export const ERROR_TYPES = keyMirror(
   'accessibility_violation',
@@ -95,10 +95,3 @@ export const STORY_IDENTIFIER = '🍬'
 export const MASK_EVENTS = keyMirror('emit_click', 'toggle')
 
 export const HEADER_EVENTS = keyMirror('emit_toggle', 'toggle')
-
-export const UI_SNAPSHOT_EVENTS = keyMirror(
-  'fixture_snapshot',
-  'orchestrator_snapshot',
-  'mask_snapshot',
-  'header_snapshot',
-)

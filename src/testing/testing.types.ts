@@ -1,3 +1,4 @@
+import type { App } from '@modelcontextprotocol/ext-apps'
 import type axe from 'axe-core'
 import type { FunctionTemplate, HostStylesObject, TemplateObject } from '../main.ts'
 import type { Wait } from '../utils.ts'
@@ -284,6 +285,11 @@ export type Send = (message: RunnerMessage) => void
 export type InitDetail = {
   play?: InteractionStoryObj['play']
   timeout?: number
+}
+
+export type ConnectMessengerDetail = {
+  send: Send
+  app: App | undefined
 }
 
 declare global {
