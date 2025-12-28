@@ -28,7 +28,7 @@ else
   echo "⚠️  RECOMMENDATION: Enable typescript-lsp for better TypeScript support"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo ""
-  echo "The design-studio plugin works best with TypeScript LSP enabled."
+  echo "The design-workshop plugin works best with TypeScript LSP enabled."
   echo ""
   echo "To enable it, run:"
   echo ""

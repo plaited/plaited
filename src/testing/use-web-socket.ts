@@ -1,7 +1,8 @@
 import { DelegatedListener, delegates } from '../main/delegated-listener.ts'
 import type { PlaitedTrigger } from '../main.ts'
 import { isTypeOf } from '../utils.ts'
-import { RELOAD_PAGE, RUNNER_URL } from './testing.constants.ts'
+import { AGENT_EVENTS, RELOAD_PAGE, RUNNER_URL } from './testing.constants.ts'
+import { AgentMessageSchema } from './testing.schemas.ts'
 import type { Send } from './testing.types.ts'
 
 /** @internal Type guard to check if an event is a WebSocket CloseEvent. */
@@ -12,6 +13,7 @@ const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => 
  * Establishes and manages a WebSocket connection to the Plaited test runner server.
  * This utility is responsible for sending test results, snapshots, and other messages
  * from the story fixture to the runner. It handles connection retries and message queuing.
+ * Supports bidirectional communication for agent-to-client messaging.
  *
  * @returns A `send` function to dispatch messages to the runner, and a `disconnect` method on the `send` function to close the WebSocket.
  *
@@ -25,9 +27,10 @@ const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => 
  * - Closes the WebSocket connection.
  *
  * Internal WebSocket handling:
- * - Connects to the runner URL (`/.plaited/test-runner`).
+ * - Connects to the runner URL (`/.plaited/runner`).
  * - Listens for `open`, `message`, `error`, and `close` events.
  * - Handles page reload requests from the runner.
+ * - Handles agent messages (logs to console and dispatches custom events).
  * - Implements an exponential backoff retry mechanism for specific close codes.
  */
 export const useWebSocket = (trigger: PlaitedTrigger) => {
@@ -39,9 +42,32 @@ export const useWebSocket = (trigger: PlaitedTrigger) => {
     async callback(evt: MessageEvent) {
       if (evt.type === 'message') {
         const { data } = evt
-        const message = isTypeOf<string>(data, 'string') && data === RELOAD_PAGE
-        if (message) {
+        // Handle reload page message
+        if (isTypeOf<string>(data, 'string') && data === RELOAD_PAGE) {
           window.location.reload()
+          return
+        }
+        // Handle agent messages
+        if (isTypeOf<string>(data, 'string')) {
+          try {
+            const json = JSON.parse(data)
+            const parsed = AgentMessageSchema.safeParse(json)
+            if (parsed.success) {
+              // Log agent message to console
+              const { content, agentId, timestamp } = parsed.data.detail
+              const time = new Date(timestamp).toLocaleTimeString()
+              // biome-ignore lint/suspicious/noConsole: Agent messages should be logged to browser console for debugging
+              console.log(`[Agent${agentId ? ` ${agentId}` : ''}] ${time}: ${content}`)
+              // Dispatch custom event for UI components to handle
+              window.dispatchEvent(
+                new CustomEvent(AGENT_EVENTS.agent_message, {
+                  detail: parsed.data.detail,
+                }),
+              )
+            }
+          } catch {
+            // Not a JSON message, ignore
+          }
         }
       }
       if (isCloseEvent(evt) && retryStatusCodes.has(evt.code)) ws.retry()

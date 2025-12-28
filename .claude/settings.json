@@ -45,6 +45,6 @@
   },
   "enabledPlugins": {
     "typescript-lsp@claude-plugins-official": true,
-    "studio@plaited": true
+    "workshop@plaited": true
   }
 }

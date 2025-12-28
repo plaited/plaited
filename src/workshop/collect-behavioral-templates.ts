@@ -103,3 +103,34 @@ export const discoverBehavioralTemplateMetadata = async (cwd: string): Promise<T
 
   return metadata
 }
+
+/**
+ * Custom tool for Claude Agent SDK to discover behavioral element exports in the codebase.
+ *
+ * @remarks
+ * This tool enables AI agents to discover all bElement (behavioral template) exports in a directory,
+ * returning metadata with export names and file paths.
+ *
+ * Uses direct module imports for fast discovery (~30x faster than TypeScript compilation).
+ * Automatically excludes story files (*.stories.tsx) from discovery.
+ *
+ * @see {@link discoverBehavioralTemplateMetadata} for the underlying implementation
+ *
+ * @public
+ */
+export const discoverBehavioralElementsTool = {
+  name: 'discover_behavioral_elements',
+  description:
+    'Discover all bElement (behavioral template) exports in directory. Returns template metadata with export names and file paths.',
+  parameters: {
+    type: 'object',
+    properties: {
+      cwd: { type: 'string', description: 'Current working directory to search' },
+    },
+    required: ['cwd'],
+  },
+  execute: async ({ cwd }: { cwd: string }) => {
+    const elements = await discoverBehavioralTemplateMetadata(cwd)
+    return { elements }
+  },
+}

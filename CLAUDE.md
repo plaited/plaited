@@ -27,7 +27,7 @@ This project uses `.claude/rules/` for project-specific guidance:
 - **Documentation**: @.claude/rules/documentation/ - TSDoc generation workflow
 - **Standards**: @.claude/rules/standards/ - Terminology, code review guidelines, accuracy standards
 
-For comprehensive Plaited patterns, code conventions, and standards, see the **studio plugin** (`plugins/studio/skills/plaited-patterns/`).
+For comprehensive Plaited patterns, code conventions, and standards, see the **workshop plugin** (`plugins/workshop/skills/plaited-patterns/`).
 
 For detailed TSDoc templates, see the code-documentation skill.
 
@@ -46,10 +46,10 @@ Plaited is a behavioral programming framework for reactive custom elements. Key 
 2. Custom Elements with Shadow DOM
 3. CSS-in-JS System
 
-For architectural patterns and implementation details, see the studio plugin:
-- `plugins/studio/skills/plaited-patterns/plaited/behavioral-programs.md`
-- `plugins/studio/skills/plaited-patterns/plaited/b-element.md`
-- `plugins/studio/skills/plaited-patterns/plaited/styling.md`
+For architectural patterns and implementation details, see the workshop plugin:
+- `plugins/workshop/skills/plaited-patterns/plaited/behavioral-programs.md`
+- `plugins/workshop/skills/plaited-patterns/plaited/b-element.md`
+- `plugins/workshop/skills/plaited-patterns/plaited/styling.md`
 
 ### Code Style Essentials
 
@@ -60,7 +60,7 @@ For architectural patterns and implementation details, see the studio plugin:
 - JSX syntax only (not `h()` or `createTemplate()`)
 - Object parameters for functions with 2+ parameters
 
-For complete conventions, see the studio plugin: `plugins/studio/skills/plaited-patterns/plaited/code-conventions.md`
+For complete conventions, see the workshop plugin: `plugins/workshop/skills/plaited-patterns/plaited/code-conventions.md`
 
 ### Plugin Development
 
@@ -79,7 +79,7 @@ See @.claude/rules/development/plugin-development.md for complete guide.
 - Always use `type` over `interface`
 - Use Mermaid diagrams only (not ASCII art)
 
-See the studio plugin (`plugins/studio/skills/plaited-patterns/plaited/standards.md`) and the code-documentation skill for complete guidelines.
+See the workshop plugin (`plugins/workshop/skills/plaited-patterns/plaited/standards.md`) and the code-documentation skill for complete guidelines.
 
 ## Important Constraints
 
@@ -90,7 +90,7 @@ See the studio plugin (`plugins/studio/skills/plaited-patterns/plaited/standards
 
 ## Additional Resources
 
-**Studio Plugin** (`plugins/studio/skills/plaited-patterns/`):
+**Workshop Plugin** (`plugins/workshop/skills/plaited-patterns/`):
 - Comprehensive Plaited patterns, examples, and best practices
 - Code conventions and standards
 - Verification workflows for accurate code generation
