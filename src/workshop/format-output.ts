@@ -1,5 +1,5 @@
 /**
- * @module built-in-tools
+ * @module format-output
  *
  * Formatting utilities for MCP tool unstructured text output.
  *
