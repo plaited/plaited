@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { INSPECTOR_MESSAGE, type InspectorMessageDetail } from '../main.ts'
 import { isTypeOf } from '../utils/is-type-of.ts'
-import { AGENT_EVENTS, FIXTURE_EVENTS } from './testing.constants.ts'
+import { FIXTURE_EVENTS } from './testing.constants.ts'
 /**
  * Zod schema for test pass message structure.
  * Represents successful test execution result.
@@ -59,24 +59,6 @@ export const InspectorMessageSchema = z.object({
 })
 
 /**
- * Zod schema for agent message structure.
- * Represents messages sent from AI agents to the client UI.
- *
- * @remarks
- * Used for bidirectional communication in the Workshop Agent system,
- * allowing AI agents to send real-time updates, insights, or instructions
- * to the client during test execution or story development.
- */
-export const AgentMessageSchema = z.object({
-  type: z.literal(AGENT_EVENTS.agent_message),
-  detail: z.object({
-    content: z.string(),
-    timestamp: z.number(),
-    agentId: z.string().optional(),
-  }),
-})
-
-/**
  * Zod schema for runner message union type.
  * Discriminated union of test result and UI snapshot messages.
  *
@@ -89,7 +71,6 @@ export const RunnerMessageSchema = z.discriminatedUnion('type', [
   PassMessageSchema,
   FailMessageSchema,
   InspectorMessageSchema,
-  AgentMessageSchema,
 ])
 
 /**
@@ -103,12 +84,6 @@ export type PassMessage = z.infer<typeof PassMessageSchema>
  * Represents failed test execution result with error details.
  */
 export type FailMessage = z.infer<typeof FailMessageSchema>
-
-/**
- * Inferred type for agent message.
- * Represents messages sent from AI agents to the client UI.
- */
-export type AgentMessage = z.infer<typeof AgentMessageSchema>
 
 /**
  * Inferred type for runner message union.

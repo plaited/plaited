@@ -152,42 +152,6 @@ const byDir = elements.reduce((acc, el) => {
 }, {} as Record<string, typeof elements>)
 ```
 
-## Integration with MCP Tools
-
-The workshop provides MCP tools that wrap these utilities for Agent SDK integration:
-
-### Via Custom Tools (Direct Usage)
-
-```typescript
-import { discoverStoriesTool, discoverBehavioralElementsTool, getStoryUrlTool } from 'plaited/workshop'
-
-// These tools follow the Custom Tool pattern:
-// - name: Tool identifier
-// - description: What the tool does
-// - parameters: Input schema (object with properties)
-// - execute: Async function that returns results
-```
-
-### Via MCP Server (Agent SDK)
-
-```typescript
-import { createWorkshopMcpServer } from 'plaited/workshop'
-import { query } from '@anthropic-ai/claude-agent-sdk'
-
-// Create MCP server with built-in discovery tools
-const workshopServer = createWorkshopMcpServer()
-
-// Use with Agent SDK
-const result = await query({
-  prompt: 'Discover all stories in src/components',
-  options: {
-    mcpServers: {
-      workshop: workshopServer
-    }
-  }
-})
-```
-
 ## Performance Characteristics
 
 **Runtime-based discovery** (~30x faster than TypeScript compilation):
@@ -280,7 +244,6 @@ function processStory(story: StoryMetadata) {
 ## Related Skills
 
 - **plaited-patterns** - Understanding Plaited framework patterns and examples
-- **agent-generator** - Generating agents that use these discovery tools
 - **code-documentation** - Writing TSDoc for workshop utilities
 
 ## File Locations

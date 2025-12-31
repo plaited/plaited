@@ -58,34 +58,3 @@ export const getStoryUrl = ({
     templateUrl: `http://localhost:${port}${route}.template`,
   }
 }
-
-/**
- * Custom tool for Claude Agent SDK to generate story preview URLs.
- *
- * @remarks
- * This tool enables AI agents to generate URLs for viewing stories in the browser,
- * returning both the interactive story URL and template-only URL for visual inspection.
- *
- * The dev server must be running for these URLs to be accessible.
- *
- * @see {@link getStoryUrl} for the underlying implementation
- *
- * @public
- */
-export const getStoryUrlTool = {
-  name: 'get_story_url',
-  description: 'Get URL to render a story in the browser. Returns both interactive story URL and template-only URL.',
-  parameters: {
-    type: 'object',
-    properties: {
-      cwd: { type: 'string', description: 'Current working directory (project root)' },
-      filePath: { type: 'string', description: 'Absolute path to story file' },
-      exportName: { type: 'string', description: 'Story export name' },
-      port: { type: 'number', description: 'Dev server port (default: 3000)' },
-    },
-    required: ['cwd', 'filePath', 'exportName'],
-  },
-  execute: async (params: { cwd: string; filePath: string; exportName: string; port?: number }) => {
-    return getStoryUrl(params)
-  },
-}

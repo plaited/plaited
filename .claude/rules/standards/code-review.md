@@ -43,3 +43,35 @@ The following standards are not automatically enforced by Biome but should be ch
   ```
 
 **Rationale:** Lost TypeScript-ESLint rule `no-empty-object-type` with `allowInterfaces: 'with-single-extends'` option during Biome migration
+
+## Modern JavaScript Standards
+
+### Prefer Private Fields Over `private` Keyword
+
+Use JavaScript private fields (`#field`) instead of TypeScript's `private` keyword:
+
+```typescript
+// ✅ Good: JavaScript private fields (ES2022+)
+class EventBus {
+  #listeners = new Map<string, Set<Function>>()
+  #count = 0
+
+  #emit(event: string) {
+    this.#count++
+    this.#listeners.get(event)?.forEach(fn => fn())
+  }
+}
+
+// ❌ Avoid: TypeScript private keyword
+class EventBus {
+  private listeners = new Map<string, Set<Function>>()
+  private count = 0
+
+  private emit(event: string) {
+    this.count++
+    this.listeners.get(event)?.forEach(fn => fn())
+  }
+}
+```
+
+**Rationale:** JavaScript private fields are a runtime feature (ES2022) providing true encapsulation. TypeScript's `private` is erased at compile time and can be bypassed. Prefer platform standards over TypeScript-only features

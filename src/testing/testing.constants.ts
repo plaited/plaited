@@ -95,10 +95,3 @@ export const STORY_IDENTIFIER = '🍬'
 export const MASK_EVENTS = keyMirror('emit_click', 'toggle')
 
 export const HEADER_EVENTS = keyMirror('emit_toggle', 'toggle')
-
-/**
- * @internal
- * Event types for agent-to-client communication.
- * Used for real-time messages from AI agents to the client UI.
- */
-export const AGENT_EVENTS = keyMirror('agent_message')

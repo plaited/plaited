@@ -23,7 +23,7 @@ bun run check:write
 
 This project uses `.claude/rules/` for project-specific guidance:
 
-- **Development**: @.claude/rules/development/ - Testing commands, plugin development workflow
+- **Development**: @.claude/rules/development/ - Testing commands, plugin development, LSP verification
 - **Documentation**: @.claude/rules/documentation/ - TSDoc generation workflow
 - **Standards**: @.claude/rules/standards/ - Terminology, code review guidelines, accuracy standards
 

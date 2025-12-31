@@ -12,9 +12,6 @@ import type { StoryMetadata } from './workshop.types.ts'
 /** @internal WebSocket topic for page reloads */
 const RELOAD_TOPIC = 'RELOAD_TOPIC'
 
-/** @internal WebSocket topic for agent-to-client messages */
-const AGENT_TO_CLIENT_TOPIC = 'AGENT_TO_CLIENT_TOPIC'
-
 /**
  * Generates routes for all discovered story exports.
  * Combines HTML routes (static story pages) and entry routes (static JS bundles).
@@ -88,9 +85,8 @@ export const getRoutes = async ({
  * @param options.cwd - Current working directory (story discovery root)
  * @param options.port - Server port number (0 for auto-assignment)
  * @param options.trigger - Optional trigger function for test runner events
- * @returns Object with reload callback, sendToClient method, server instance, and stories map
+ * @returns Object with reload callback, server instance, and stories map
  * @returns reload - Function to trigger page reload for all connected clients
- * @returns sendToClient - Function to send agent messages to all connected clients
  * @returns server - Bun server instance
  * @returns stories - Map of discovered story metadata
  */
@@ -144,7 +140,6 @@ export const getServer = async ({
     websocket: {
       open(ws) {
         ws.subscribe(RELOAD_TOPIC)
-        ws.subscribe(AGENT_TO_CLIENT_TOPIC)
       },
       message(_, message) {
         if (!isTypeOf<string>(message, 'string')) return
@@ -164,7 +159,6 @@ export const getServer = async ({
       },
       close(ws) {
         ws.unsubscribe(RELOAD_TOPIC)
-        ws.unsubscribe(AGENT_TO_CLIENT_TOPIC)
       },
     },
   })
@@ -175,14 +169,8 @@ export const getServer = async ({
     console.log('🔄 Reloading all clients...')
   }
 
-  // Send message from agent to all connected clients
-  const sendToClient = (message: string) => {
-    server.publish(AGENT_TO_CLIENT_TOPIC, message)
-  }
-
   console.log(`✅ Server ready at http://localhost:${server.port}`)
   console.log(`🔥 Hot reload enabled via WebSocket`)
-  console.log(`🤖 Agent-to-client communication enabled`)
 
-  return { reload, sendToClient, server, stories }
+  return { reload, server, stories }
 }

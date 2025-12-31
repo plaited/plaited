@@ -35,6 +35,9 @@
       }
     ]
   },
+  "enabledPlugins": {
+    "workshop@plaited": true
+  },
   "extraKnownMarketplaces": {
     "plaited": {
       "source": {
@@ -42,9 +45,5 @@
         "path": "."
       }
     }
-  },
-  "enabledPlugins": {
-    "typescript-lsp@claude-plugins-official": true,
-    "workshop@plaited": true
   }
 }

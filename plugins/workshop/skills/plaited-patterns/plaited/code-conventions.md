@@ -8,6 +8,37 @@ Essential code style and conventions for writing idiomatic Plaited code.
 - Avoid using `any` type - use proper TypeScript types
 - Use `test` instead of `it` in test files
 - Prefer Bun native APIs over Node.js equivalents (see standards.md#bun-platform-apis)
+- Prefer JavaScript private fields (`#field`) over TypeScript `private` keyword
+
+## Private Fields (ES2022+)
+
+Use JavaScript private fields instead of TypeScript's `private` keyword for true runtime encapsulation:
+
+```typescript
+// ✅ Good: JavaScript private fields
+class EventBus {
+  #listeners = new Map<string, Set<Function>>()
+  #count = 0
+
+  #emit(event: string) {
+    this.#count++
+    this.#listeners.get(event)?.forEach(fn => fn())
+  }
+}
+
+// ❌ Avoid: TypeScript private keyword
+class EventBus {
+  private listeners = new Map<string, Set<Function>>()
+  private count = 0
+
+  private emit(event: string) {
+    this.count++
+    this.listeners.get(event)?.forEach(fn => fn())
+  }
+}
+```
+
+**Rationale:** JavaScript private fields (`#`) are a runtime feature (ES2022) providing true encapsulation. TypeScript's `private` is erased at compile time and can be bypassed at runtime. Prefer platform standards over TypeScript-only features
 
 ## Type System
 

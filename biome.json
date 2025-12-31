@@ -88,7 +88,7 @@
       }
     },
     {
-      "includes": ["patterns/**/*", "src/workshop/**/*", "**/tests/**/*", "src/cli.ts"],
+      "includes": ["patterns/**/*", "src/workshop/**/*", "**/tests/**/*", "src/cli.ts", "src/tmp-mcp/**/*"],
       "linter": {
         "rules": {
           "suspicious": {
