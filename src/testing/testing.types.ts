@@ -1,8 +1,7 @@
-import type { App } from '@modelcontextprotocol/ext-apps'
 import type axe from 'axe-core'
 import type { FunctionTemplate, HostStylesObject, TemplateObject } from '../main.ts'
 import type { Wait } from '../utils.ts'
-import type { __PLAITED_MCP__, __PLAITED_RUNNER__, STORY_IDENTIFIER, STORY_TYPES } from './testing.constants.ts'
+import type { __PLAITED_RUNNER__, STORY_IDENTIFIER, STORY_TYPES } from './testing.constants.ts'
 import type { RunnerMessage } from './testing.schemas.ts'
 import type { Match, Throws } from './testing.utils.ts'
 
@@ -287,11 +286,6 @@ export type InitDetail = {
   timeout?: number
 }
 
-export type ConnectMessengerDetail = {
-  send: Send
-  app: App | undefined
-}
-
 declare global {
   interface Window {
     /**
@@ -301,6 +295,5 @@ declare global {
      * inside the test runner versus a standard browser environment.
      */
     [__PLAITED_RUNNER__]?: boolean
-    [__PLAITED_MCP__]?: boolean
   }
 }

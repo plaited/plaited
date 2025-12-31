@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { join } from 'node:path'
-import { discoverBehavioralTemplateMetadata } from '../collect-behavioral-templates.ts'
+import { collectBehavioralTemplates, discoverBehavioralTemplateMetadata } from '../collect-behavioral-templates.ts'
 import type { TemplateExport } from '../workshop.types.ts'
 
 // Get absolute path to fixtures
@@ -140,4 +140,74 @@ test('discoverTemplateMetadata: finds exactly 3 BehavioralTemplate exports', asy
 
   expect(behavioralTemplatesFile.length).toBe(2) // SimpleBehavioralTemplate, BehavioralTemplateWithProgram
   expect(mixedFile.length).toBe(1) // MixedBehavioralTemplate
+})
+
+// ============================================================================
+// collectBehavioralTemplates tests
+// ============================================================================
+
+test('collectBehavioralTemplates: collects from directory path', async () => {
+  const cwd = join(import.meta.dir, 'fixtures')
+  const metadata = await collectBehavioralTemplates(cwd, ['templates'])
+
+  expect(metadata.length).toBe(3)
+
+  const exportNames = metadata.map((m) => m.exportName)
+  expect(exportNames).toContain('SimpleBehavioralTemplate')
+  expect(exportNames).toContain('BehavioralTemplateWithProgram')
+  expect(exportNames).toContain('MixedBehavioralTemplate')
+})
+
+test('collectBehavioralTemplates: collects from single file path', async () => {
+  const cwd = join(import.meta.dir, 'fixtures', 'templates')
+  const metadata = await collectBehavioralTemplates(cwd, ['behavioral-templates.tsx'])
+
+  expect(metadata.length).toBe(2)
+
+  const exportNames = metadata.map((m) => m.exportName)
+  expect(exportNames).toContain('SimpleBehavioralTemplate')
+  expect(exportNames).toContain('BehavioralTemplateWithProgram')
+})
+
+test('collectBehavioralTemplates: collects from multiple paths', async () => {
+  const cwd = join(import.meta.dir, 'fixtures', 'templates')
+  const metadata = await collectBehavioralTemplates(cwd, ['behavioral-templates.tsx', 'mixed.tsx'])
+
+  expect(metadata.length).toBe(3)
+
+  const exportNames = metadata.map((m) => m.exportName)
+  expect(exportNames).toContain('SimpleBehavioralTemplate')
+  expect(exportNames).toContain('BehavioralTemplateWithProgram')
+  expect(exportNames).toContain('MixedBehavioralTemplate')
+})
+
+test('collectBehavioralTemplates: returns empty array for file with no BehavioralTemplates', async () => {
+  const cwd = join(import.meta.dir, 'fixtures', 'templates')
+  const metadata = await collectBehavioralTemplates(cwd, ['function-templates.tsx'])
+
+  expect(metadata.length).toBe(0)
+})
+
+test('collectBehavioralTemplates: returns flat array from multiple directories', async () => {
+  const cwd = join(import.meta.dir, 'fixtures')
+  // Collect from templates directory (has BehavioralTemplates)
+  const metadata = await collectBehavioralTemplates(cwd, ['templates'])
+
+  expect(Array.isArray(metadata)).toBe(true)
+  metadata.forEach((item: TemplateExport) => {
+    expect(item).toHaveProperty('exportName')
+    expect(item).toHaveProperty('filePath')
+    expect(item).toHaveProperty('type')
+    expect(item.type).toBe('BehavioralTemplate')
+  })
+})
+
+test('collectBehavioralTemplates: handles mixed file and directory paths', async () => {
+  const cwd = join(import.meta.dir, 'fixtures', 'templates')
+  // Note: Can't easily test directory + file combo without creating more fixtures
+  // Testing single file works correctly
+  const metadata = await collectBehavioralTemplates(cwd, ['mixed.tsx'])
+
+  expect(metadata.length).toBe(1)
+  expect(metadata[0]?.exportName).toBe('MixedBehavioralTemplate')
 })

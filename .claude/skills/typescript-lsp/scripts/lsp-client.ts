@@ -33,59 +33,63 @@ type JsonRpcNotification = {
 type PendingRequest = {
   resolve: (value: unknown) => void
   reject: (error: Error) => void
+  timer?: ReturnType<typeof setTimeout>
 }
 
 /**
  * LSP Client that manages a typescript-language-server subprocess
  */
 export class LspClient {
-  private process: Subprocess | null = null
-  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: Used via ++this.requestId in request()
-  private requestId = 0
-  private pendingRequests = new Map<number, PendingRequest>()
-  private buffer = ''
-  private contentLength = -1
-  private initialized = false
-  private rootUri: string
-  private serverCommand: string[]
+  #process: Subprocess | null = null
+  #requestId = 0
+  #pendingRequests = new Map<number, PendingRequest>()
+  #buffer = new Uint8Array(0)
+  #contentLength = -1
+  #initialized = false
+  #rootUri: string
+  #serverCommand: string[]
+  #requestTimeout: number
 
   constructor({
     rootUri,
     command = ['bun', 'typescript-language-server', '--stdio'],
+    requestTimeout = 30000,
   }: {
     rootUri: string
     command?: string[]
+    requestTimeout?: number
   }) {
-    this.rootUri = rootUri
-    this.serverCommand = command
+    this.#rootUri = rootUri
+    this.#serverCommand = command
+    this.#requestTimeout = requestTimeout
   }
 
   /**
    * Start the LSP server subprocess
    */
   async start(): Promise<void> {
-    if (this.process) {
+    if (this.#process) {
       throw new Error('LSP server already running')
     }
 
-    this.process = Bun.spawn(this.serverCommand, {
+    this.#process = Bun.spawn(this.#serverCommand, {
       stdin: 'pipe',
       stdout: 'pipe',
       stderr: 'pipe',
     })
 
     // Start reading stdout
-    this.readOutput()
+    this.#readOutput()
 
     // Initialize the LSP connection
-    await this.initialize()
+    await this.#initialize()
   }
 
   /**
    * Stop the LSP server subprocess
    */
   async stop(): Promise<void> {
-    if (!this.process) return
+    if (!this.#process) return
 
     // Send shutdown request
     try {
@@ -95,27 +99,27 @@ export class LspClient {
       // Ignore errors during shutdown
     }
 
-    this.process.kill()
-    this.process = null
-    this.initialized = false
+    this.#process.kill()
+    this.#process = null
+    this.#initialized = false
   }
 
   /**
    * Check if the LSP server is running
    */
   isRunning(): boolean {
-    return this.process !== null && this.initialized
+    return this.#process !== null && this.#initialized
   }
 
   /**
    * Send a request to the LSP server and wait for response
    */
   async request<T = unknown>(method: string, params: unknown): Promise<T> {
-    if (!this.process) {
+    if (!this.#process) {
       throw new Error('LSP server not running')
     }
 
-    const id = ++this.requestId
+    const id = ++this.#requestId
     const request: JsonRpcRequest = {
       jsonrpc: '2.0',
       id,
@@ -124,8 +128,17 @@ export class LspClient {
     }
 
     return new Promise((resolve, reject) => {
-      this.pendingRequests.set(id, { resolve: resolve as (value: unknown) => void, reject })
-      this.send(request)
+      const timer = setTimeout(() => {
+        this.#pendingRequests.delete(id)
+        reject(new Error(`LSP request timeout: ${method} (id=${id})`))
+      }, this.#requestTimeout)
+
+      this.#pendingRequests.set(id, {
+        resolve: resolve as (value: unknown) => void,
+        reject,
+        timer,
+      })
+      this.#send(request)
     })
   }
 
@@ -133,7 +146,7 @@ export class LspClient {
    * Send a notification to the LSP server (no response expected)
    */
   notify(method: string, params?: unknown): void {
-    if (!this.process) {
+    if (!this.#process) {
       throw new Error('LSP server not running')
     }
 
@@ -143,7 +156,7 @@ export class LspClient {
       params,
     }
 
-    this.send(notification)
+    this.#send(notification)
   }
 
   // LSP Methods
@@ -238,12 +251,10 @@ export class LspClient {
     })
   }
 
-  // Private methods
-
-  private async initialize(): Promise<void> {
+  async #initialize(): Promise<void> {
     const result = await this.request('initialize', {
       processId: process.pid,
-      rootUri: this.rootUri,
+      rootUri: this.#rootUri,
       capabilities: {
         textDocument: {
           hover: { contentFormat: ['markdown', 'plaintext'] },
@@ -271,13 +282,13 @@ export class LspClient {
     })
 
     this.notify('initialized', {})
-    this.initialized = true
+    this.#initialized = true
 
     return result as Promise<void>
   }
 
-  private send(message: JsonRpcRequest | JsonRpcNotification): void {
-    const stdin = this.process?.stdin
+  #send(message: JsonRpcRequest | JsonRpcNotification): void {
+    const stdin = this.#process?.stdin
     if (!stdin || typeof stdin === 'number') {
       throw new Error('LSP server stdin not available')
     }
@@ -288,66 +299,94 @@ export class LspClient {
     stdin.write(header + content)
   }
 
-  private async readOutput(): Promise<void> {
-    const stdout = this.process?.stdout
+  async #readOutput(): Promise<void> {
+    const stdout = this.#process?.stdout
     if (!stdout || typeof stdout === 'number') return
 
     const reader = stdout.getReader()
-    const decoder = new TextDecoder()
 
     try {
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
 
-        this.buffer += decoder.decode(value, { stream: true })
-        this.processBuffer()
+        // Append new bytes to buffer
+        const newBuffer = new Uint8Array(this.#buffer.length + value.length)
+        newBuffer.set(this.#buffer)
+        newBuffer.set(value, this.#buffer.length)
+        this.#buffer = newBuffer
+
+        this.#processBuffer()
       }
     } catch {
       // Stream closed
     }
   }
 
-  private processBuffer(): void {
+  #processBuffer(): void {
+    const decoder = new TextDecoder()
+
     while (true) {
       // Parse header if we don't have content length yet
-      if (this.contentLength === -1) {
-        const headerEnd = this.buffer.indexOf('\r\n\r\n')
-        if (headerEnd === -1) break
+      if (this.#contentLength === -1) {
+        // Look for header end sequence: \r\n\r\n
+        const headerEndIndex = this.#findHeaderEnd()
+        if (headerEndIndex === -1) break
 
-        const header = this.buffer.substring(0, headerEnd)
+        const headerBytes = this.#buffer.slice(0, headerEndIndex)
+        const header = decoder.decode(headerBytes)
         const match = header.match(/Content-Length: (\d+)/)
         if (!match?.[1]) {
           // Skip invalid header
-          this.buffer = this.buffer.substring(headerEnd + 4)
+          this.#buffer = this.#buffer.slice(headerEndIndex + 4)
           continue
         }
 
-        this.contentLength = parseInt(match[1], 10)
-        this.buffer = this.buffer.substring(headerEnd + 4)
+        this.#contentLength = parseInt(match[1], 10)
+        this.#buffer = this.#buffer.slice(headerEndIndex + 4)
       }
 
-      // Check if we have enough content
-      if (this.buffer.length < this.contentLength) break
+      // Check if we have enough content (now comparing bytes to bytes)
+      if (this.#buffer.length < this.#contentLength) break
 
-      const content = this.buffer.substring(0, this.contentLength)
-      this.buffer = this.buffer.substring(this.contentLength)
-      this.contentLength = -1
+      const contentBytes = this.#buffer.slice(0, this.#contentLength)
+      const content = decoder.decode(contentBytes)
+      this.#buffer = this.#buffer.slice(this.#contentLength)
+      this.#contentLength = -1
 
       try {
         const message = JSON.parse(content) as JsonRpcResponse
-        this.handleMessage(message)
+        this.#handleMessage(message)
       } catch {
         // Skip invalid JSON
       }
     }
   }
 
-  private handleMessage(message: JsonRpcResponse): void {
+  #findHeaderEnd(): number {
+    // Look for \r\n\r\n sequence in buffer
+    const CRLF = [13, 10, 13, 10] // \r\n\r\n
+    for (let i = 0; i <= this.#buffer.length - 4; i++) {
+      if (
+        this.#buffer[i] === CRLF[0] &&
+        this.#buffer[i + 1] === CRLF[1] &&
+        this.#buffer[i + 2] === CRLF[2] &&
+        this.#buffer[i + 3] === CRLF[3]
+      ) {
+        return i
+      }
+    }
+    return -1
+  }
+
+  #handleMessage(message: JsonRpcResponse): void {
     if ('id' in message && message.id !== undefined) {
-      const pending = this.pendingRequests.get(message.id)
+      const pending = this.#pendingRequests.get(message.id)
       if (pending) {
-        this.pendingRequests.delete(message.id)
+        if (pending.timer) {
+          clearTimeout(pending.timer)
+        }
+        this.#pendingRequests.delete(message.id)
         if (message.error) {
           pending.reject(new Error(`LSP Error: ${message.error.message}`))
         } else {

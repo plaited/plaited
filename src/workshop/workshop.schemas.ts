@@ -12,6 +12,15 @@
  */
 
 import { z } from 'zod'
+import { type BPEvent, isBPEvent } from '../main.ts'
+
+/**
+ * Schema for validating BPEvent objects.
+ * Uses the framework's `isBPEvent` type guard for runtime validation.
+ *
+ * @public
+ */
+export const BPEventSchema = z.custom<BPEvent>(isBPEvent)
 
 /**
  * Input schema for story discovery.

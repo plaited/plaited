@@ -3,40 +3,40 @@
 # Hook: Check if typescript-lsp plugin is enabled and Bun runtime is available
 # Runs once at session start to verify recommended dependencies
 
-# Function to check if plugin is enabled in a settings file
-check_plugin_enabled() {
-  local settings_file="$1"
+# # Function to check if plugin is enabled in a settings file
+# check_plugin_enabled() {
+#   local settings_file="$1"
 
-  if [ ! -f "$settings_file" ]; then
-    return 1
-  fi
+#   if [ ! -f "$settings_file" ]; then
+#     return 1
+#   fi
 
-  # Check for typescript-lsp plugin enabled (supports both true and "true")
-  grep -q '"typescript-lsp@claude-plugins-official"[[:space:]]*:[[:space:]]*true' "$settings_file"
-  return $?
-}
+#   # Check for typescript-lsp plugin enabled (supports both true and "true")
+#   grep -q '"typescript-lsp@claude-plugins-official"[[:space:]]*:[[:space:]]*true' "$settings_file"
+#   return $?
+# }
 
-# Check settings in order of precedence (local > project > user)
-if check_plugin_enabled ".claude/settings.local.json" || \
-   check_plugin_enabled ".claude/settings.json" || \
-   check_plugin_enabled "$HOME/.claude/settings.json"; then
-  # Plugin is enabled, nothing to warn about
-  :
-else
-  # Plugin not found in any settings - show warning
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "⚠️  RECOMMENDATION: Enable typescript-lsp for better TypeScript support"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo ""
-  echo "The design-workshop plugin works best with TypeScript LSP enabled."
-  echo ""
-  echo "To enable it, run:"
-  echo ""
-  echo "  /plugin install typescript-lsp@claude-plugins-official"
-  echo ""
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo ""
-fi
+# # Check settings in order of precedence (local > project > user)
+# if check_plugin_enabled ".claude/settings.local.json" || \
+#    check_plugin_enabled ".claude/settings.json" || \
+#    check_plugin_enabled "$HOME/.claude/settings.json"; then
+#   # Plugin is enabled, nothing to warn about
+#   :
+# else
+#   # Plugin not found in any settings - show warning
+#   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+#   echo "⚠️  RECOMMENDATION: Enable typescript-lsp for better TypeScript support"
+#   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+#   echo ""
+#   echo "The design-workshop plugin works best with TypeScript LSP enabled."
+#   echo ""
+#   echo "To enable it, run:"
+#   echo ""
+#   echo "  /plugin install typescript-lsp@claude-plugins-official"
+#   echo ""
+#   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+#   echo ""
+# fi
 
 # Check for Bun runtime
 if ! command -v bun &> /dev/null; then

@@ -7,10 +7,17 @@ import { collectStories } from './collect-stories.ts'
 import { getEntryRoutes } from './get-entry-routes.ts'
 import { getHTMLRoutes } from './get-html-routes.tsx'
 import { getRoot } from './get-root.ts'
+import { BPEventSchema } from './workshop.schemas.ts'
 import type { StoryMetadata } from './workshop.types.ts'
 
 /** @internal WebSocket topic for page reloads */
 const RELOAD_TOPIC = 'RELOAD_TOPIC'
+
+/** @internal WebSocket topic for agent → browser communication */
+const AGENT_TO_CLIENT = 'AGENT_TO_CLIENT'
+
+/** @internal Check if IPC is available (spawned with ipc option) */
+const hasIpc = typeof process.send === 'function'
 
 /**
  * Generates routes for all discovered story exports.
@@ -81,16 +88,17 @@ export const getRoutes = async ({
  * Creates a server for Playwright story testing with hot reload and test runner communication.
  * Serves stories dynamically with WebSocket-based live reload and test execution support.
  *
+ * @remarks
+ * When spawned with IPC (via `Bun.spawn` with `ipc` option), the server:
+ * - Listens for BPEvents from parent process and broadcasts to browser clients
+ * - Sends BPEvents from browser clients to parent process via `process.send`
+ *
  * @param options - Server configuration options
  * @param options.cwd - Current working directory (story discovery root)
  * @param options.port - Server port number (0 for auto-assignment)
  * @param options.trigger - Optional trigger function for test runner events
  * @returns Object with reload callback, server instance, and stories map
- * @returns reload - Function to trigger page reload for all connected clients
- * @returns server - Bun server instance
- * @returns stories - Map of discovered story metadata
  */
-
 export const getServer = async ({
   cwd,
   port,
@@ -140,14 +148,28 @@ export const getServer = async ({
     websocket: {
       open(ws) {
         ws.subscribe(RELOAD_TOPIC)
+        ws.subscribe(AGENT_TO_CLIENT)
       },
       message(_, message) {
         if (!isTypeOf<string>(message, 'string')) return
         try {
+          const json = JSON.parse(message)
+
+          // Try to parse as runner message for test runner
           if (trigger) {
-            const json = JSON.parse(message)
-            const event = RunnerMessageSchema.parse(json)
-            trigger(event)
+            const runnerResult = RunnerMessageSchema.safeParse(json)
+            if (runnerResult.success) {
+              trigger(runnerResult.data)
+              return
+            }
+          }
+
+          // Validate as BPEvent and send to parent process via IPC
+          if (hasIpc) {
+            const eventResult = BPEventSchema.safeParse(json)
+            if (eventResult.success) {
+              process.send!(eventResult.data)
+            }
           }
         } catch (error) {
           if (error instanceof z.ZodError) {
@@ -159,6 +181,7 @@ export const getServer = async ({
       },
       close(ws) {
         ws.unsubscribe(RELOAD_TOPIC)
+        ws.unsubscribe(AGENT_TO_CLIENT)
       },
     },
   })
@@ -167,6 +190,16 @@ export const getServer = async ({
   const reload = () => {
     server.publish(RELOAD_TOPIC, RELOAD_PAGE)
     console.log('🔄 Reloading all clients...')
+  }
+
+  // Listen for BPEvents from parent process and broadcast to browser clients
+  if (hasIpc) {
+    process.on('message', (message: unknown) => {
+      const eventResult = BPEventSchema.safeParse(message)
+      if (eventResult.success) {
+        server.publish(AGENT_TO_CLIENT, JSON.stringify(eventResult.data))
+      }
+    })
   }
 
   console.log(`✅ Server ready at http://localhost:${server.port}`)

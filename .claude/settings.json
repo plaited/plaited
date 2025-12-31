@@ -16,13 +16,9 @@
       "Bash(docker build:*)",
       "Bash(docker run:*)",
       "Bash(docker logs:*)",
-      "Bash(docker stop:*)",
-      "mcp__playwright__*"
+      "Bash(docker stop:*)"
     ]
   },
-  "enabledMcpjsonServers": [
-    "playwright"
-  ],
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -34,16 +30,5 @@
         ]
       }
     ]
-  },
-  "enabledPlugins": {
-    "workshop@plaited": true
-  },
-  "extraKnownMarketplaces": {
-    "plaited": {
-      "source": {
-        "source": "directory",
-        "path": "."
-      }
-    }
   }
 }

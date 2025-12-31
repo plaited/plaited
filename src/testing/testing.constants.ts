@@ -82,7 +82,6 @@ export const ERROR_TYPES = keyMirror(
 export const SUCCESS_TYPES = keyMirror('passed_assertion', 'passed_accessibility_check')
 
 export const __PLAITED_RUNNER__ = '__PLAITED_RUNNER__'
-export const __PLAITED_MCP__ = '__PLAITED_MCP__'
 
 export const STORY_TYPES = keyMirror('snapshot', 'interaction')
 

@@ -1,3 +1,5 @@
+import type { BPEvent } from '../main/behavioral.types.ts'
+
 /**
  * Template type classification for Plaited templates and functions.
  * - FunctionTemplate: Functions that return TemplateObject/JSX
@@ -56,3 +58,54 @@ export type RunTestsDetail = {
   metadata?: Map<string, StoryMetadata>
   colorScheme?: 'light' | 'dark'
 }
+
+// ============================================================================
+// IPC Message Types for Agent ↔ Dev Server communication
+// ============================================================================
+
+/**
+ * Message sent from dev server to agent when server is ready.
+ */
+export type ServerReadyMessage = {
+  type: 'server-ready'
+  detail: { port: number }
+}
+
+/**
+ * Message sent from dev server to agent when hot reload occurs.
+ */
+export type HotReloadMessage = {
+  type: 'hot-reload'
+  detail: { stories: StoryMetadata[] }
+}
+
+/**
+ * Message sent from dev server to agent when a browser client sends a BPEvent.
+ */
+export type ClientEventMessage = {
+  type: 'client-event'
+  detail: BPEvent
+}
+
+/**
+ * Message sent from agent to dev server to request the current story list.
+ */
+export type GetStoriesMessage = {
+  type: 'get-stories'
+}
+
+/**
+ * Message sent from dev server to agent with the current story list.
+ */
+export type StoriesMessage = {
+  type: 'stories'
+  detail: StoryMetadata[]
+}
+
+/**
+ * Union of all messages that can be sent from agent to dev server.
+ *
+ * @remarks
+ * BPEvents are sent directly to broadcast to browser clients (validated via BPEventSchema).
+ */
+export type AgentToServerMessage = GetStoriesMessage

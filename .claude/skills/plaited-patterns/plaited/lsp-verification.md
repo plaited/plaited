@@ -1,6 +1,8 @@
 # LSP-Based Type Verification
 
-**CRITICAL**: Use LSP hover to verify Plaited framework types before generating code.
+**CRITICAL**: Use LSP to verify Plaited framework types before generating code.
+
+Use the **typescript-lsp** skill for LSP tools. This document focuses on Plaited-specific verification patterns.
 
 ## When to Use LSP
 
@@ -12,7 +14,24 @@
 
 ## LSP Operations
 
-Use the LSP tool with these operations:
+Use the typescript-lsp skill scripts:
+
+```bash
+# Get type info at position (0-indexed line:char)
+bun .claude/skills/typescript-lsp/scripts/lsp-hover.ts <file> <line> <char>
+
+# List all symbols in a file
+bun .claude/skills/typescript-lsp/scripts/lsp-symbols.ts <file>
+
+# Find all references
+bun .claude/skills/typescript-lsp/scripts/lsp-references.ts <file> <line> <char>
+
+# Search workspace for symbols
+bun .claude/skills/typescript-lsp/scripts/lsp-find.ts <query>
+
+# Batch analysis
+bun .claude/skills/typescript-lsp/scripts/lsp-analyze.ts <file> --exports
+```
 
 ### `hover`
 Get type information for Plaited imports at a specific line:character position:
@@ -23,19 +42,19 @@ import { bElement } from 'plaited'
 // Returns: function signature, parameters, JSDoc
 ```
 
-### `goToDefinition`
+### `definition`
 Navigate to Plaited API source to understand implementation:
 - See actual parameter types in source
 - Understand return type structure
 - Read implementation TSDoc
 
-### `findReferences`
+### `references`
 See usage patterns in real code:
 - How is this API used elsewhere?
 - What patterns exist in the codebase?
 - Common parameter values?
 
-### `documentSymbol`
+### `symbols`
 Explore available APIs in modules:
 - What exports are available from 'plaited'?
 - What methods exist on a type?
@@ -45,27 +64,24 @@ Explore available APIs in modules:
 ### Scenario: User asks to create bElement with form association
 
 **Step 1: Verify bElement signature**
-```typescript
-// LSP hover on line 1, character 10 of this import:
-import { bElement } from 'plaited'
-
-// Confirms parameters: tag, shadowDom, formAssociated, bProgram, etc.
+```bash
+# Find bElement export and check its type
+bun .claude/skills/typescript-lsp/scripts/lsp-analyze.ts src/main/b-element.ts --exports
+bun .claude/skills/typescript-lsp/scripts/lsp-hover.ts src/main/b-element.ts 139 13
 ```
 
 **Step 2: Verify BProgramArgs**
-```typescript
-// LSP hover on 'BProgramArgs' type to see available properties:
-import type { BProgramArgs } from 'plaited'
-
-// Shows: $, root, host, internals, trigger, emit, bThreads, etc.
+```bash
+# Check BProgramArgs type to see available properties
+bun .claude/skills/typescript-lsp/scripts/lsp-find.ts BProgramArgs
+# Then hover on the result to see: $, root, host, internals, trigger, emit, etc.
 ```
 
 **Step 3: Verify callback types**
-```typescript
-// LSP hover on 'BehavioralElementCallbackDetails':
-import type { BehavioralElementCallbackDetails } from 'plaited'
-
-// Shows all lifecycle callback signatures
+```bash
+# Find BehavioralElementCallbackDetails
+bun .claude/skills/typescript-lsp/scripts/lsp-find.ts BehavioralElementCallbackDetails
+# Shows all lifecycle callback signatures
 ```
 
 **Step 4: Generate code with confidence**
@@ -85,11 +101,10 @@ export const MyInput = bElement({
 ```
 
 **Step 5: Verify generated code**
-```typescript
-// LSP hover on 'setFormValue' to confirm signature matches
-internals.setFormValue('initial')
-//        ^
-// Confirms: setFormValue(value: File | string | FormData | null)
+```bash
+# After writing the file, verify the setFormValue call
+bun .claude/skills/typescript-lsp/scripts/lsp-hover.ts path/to/my-input.ts <line> <char>
+# Confirms: setFormValue(value: File | string | FormData | null)
 ```
 
 ## Critical Files to Verify
