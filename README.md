@@ -1,6 +1,6 @@
 # Plaited
 
-A template-based framework for building reactive custom elements with AI-assisted development.
+A behavioral programming framework for reactive systems and AI-assisted development.
 
 [![Build/Tests](https://github.com/plaited/plaited/actions/workflows/ci.yml/badge.svg)](https://github.com/plaited/plaited/actions/workflows/ci.yml)
 ![Bundle Size](https://img.shields.io/badge/gzip-<7.5kb-brightgreen)
@@ -9,9 +9,10 @@ A template-based framework for building reactive custom elements with AI-assiste
 
 ## Features
 
-- **Template-based architecture** - Build UIs with composable templates, not components
-- **Behavioral programming** - Coordinate complex interactions with simple, declarative threads
-- **Shadow DOM & Custom Elements** - Native browser APIs for encapsulation and reusability
+- **Behavioral programming** - Coordinate complex interactions with simple, declarative threads using `useBehavioral`
+- **Reactive custom elements** - Build UIs with `bElement` combining behavioral programs and Shadow DOM
+- **Template-based architecture** - Composable templates with CSS-in-JS styling
+- **Beyond UI** - Use behavioral programming for neuro-symbolic agents and reactive systems
 - **AI-assisted development** - Optional plugin provides intelligent code assistance
 
 ## Quick Start
@@ -78,7 +79,7 @@ Open the URL shown in your terminal to see your button. That's it!
 
 | Export | Description |
 |--------|-------------|
-| `plaited` | Core framework - templates, behavioral elements, styling |
+| `plaited` | Core framework - behavioral programming, templates, custom elements, styling |
 | `plaited/utils` | Utility functions - type guards, helpers |
 | `plaited/testing` | Test utilities - story factory, test helpers |
 | `plaited/workshop` | Discovery utilities - template and story collection (requires Bun) |
@@ -101,7 +102,7 @@ import { story } from 'plaited/testing'
 The Plaited AI plugin supercharges your development with intelligent assistance:
 
 **Skills** (auto-activated based on context):
-- **plaited-framework-patterns** - Templates, styling, behavioral programming, custom elements
+- **plaited-framework-patterns** - Behavioral programming, templates, styling, custom elements
 - **typescript-lsp** - Type verification, symbol discovery, code navigation
 - **code-documentation** - TSDoc templates and workflow
 - **code-query** - Story and template discovery

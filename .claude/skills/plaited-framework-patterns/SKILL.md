@@ -1,6 +1,6 @@
 ---
 name: plaited-framework-patterns
-description: Comprehensive Plaited framework patterns for AI-assisted design of MCP/A2UI outcome-based interfaces. Covers templates, styling, behavioral programming, custom elements, forms, cross-island communication, testing, web workers, and code quality verification. Automatically invoked when designing or implementing Plaited templates and BehavioralElements.
+description: Plaited framework patterns for behavioral programming, templates, and styling. Use when implementing behavioral programs with useBehavioral, creating bElements or FunctionalTemplates, writing stories for testing, using createStyles, building form controls, or coordinating cross-island communication.
 license: ISC
 compatibility: Requires bun
 ---
