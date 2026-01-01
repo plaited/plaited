@@ -287,7 +287,8 @@ flowchart TD
 ## Related Resources
 
 - **[lsp-verification.md](lsp-verification.md)**: Detailed LSP usage guide
-- **[web-api-adaptation.md](web-api-adaptation.md)**: Framework-first approach, bElement capabilities
+- **[b-element.md](b-element.md)**: bElement capabilities and framework-first approach
 - **[standards.md#confidence-threshold](standards.md#confidence-threshold)**: 95% confidence threshold requirements
+- Use `/create-web-pattern-skill` command to create skills for documenting web API patterns
 - **[code-conventions.md](code-conventions.md)**: Plaited code conventions and style
 - **[stories.md](stories.md)**: Test file patterns and story-based testing
