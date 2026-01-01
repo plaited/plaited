@@ -1,6 +1,8 @@
 ---
 name: code-query
 description: Discover and query project codebase structure using workshop tools. Find stories, behavioral elements, and generate preview URLs. Automatically invoked when exploring the codebase for patterns, examples, or testing artifacts. (project)
+license: ISC
+compatibility: Requires bun
 allowed-tools: Bash
 ---
 

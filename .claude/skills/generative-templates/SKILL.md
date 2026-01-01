@@ -1,6 +1,8 @@
 ---
 name: generative-templates
 description: Teach agents to generate new behavioral elements using project patterns. Use when creating new bElements based on existing project stories, tokens, and styles.
+license: ISC
+compatibility: Requires bun
 allowed-tools: Read, Glob, Grep
 ---
 

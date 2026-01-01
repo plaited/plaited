@@ -1,6 +1,8 @@
 ---
 name: live-preview
 description: Start dev server and interact with stories for visual feedback. Use when previewing templates, taking screenshots, or testing visual changes.
+license: ISC
+compatibility: Requires bun
 allowed-tools: Bash, mcp__playwright__*
 ---
 

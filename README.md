@@ -106,13 +106,20 @@ The Plaited AI plugin supercharges your development with intelligent assistance:
 - **code-documentation** - TSDoc templates and workflow
 - **code-query** - Story and template discovery
 - **plaited-web-patterns** - Web API patterns adapted for Plaited
+- **design-tokens-library** - Design token patterns for colors, spacing, typography
+- **design-system-scaffolding** - Generate design system files (tokens, styles, stories)
+- **generative-templates** - Create new elements from project patterns
+- **live-preview** - Dev server and visual feedback via Playwright
+- **design-iteration** - Multi-modal design refinement with video/screenshots
 
 **Agents** (specialized reviewers):
 - **architecture-reviewer** - Validates behavioral programming patterns
 - **documentation-cleanup** - Enforces documentation standards
 
 **Commands**:
-- `/create-web-patterns-skill` - Extract Web API patterns from online articles and adapt them for Plaited
+- `/create-web-patterns-skill` - Extract Web API patterns from online articles
+- `/create-design-system-skill` - Create a new design system extraction skill
+- `/validate-skill` - Validate skill directories against AgentSkills spec
 
 </details>
 

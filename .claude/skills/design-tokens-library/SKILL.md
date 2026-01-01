@@ -1,6 +1,8 @@
 ---
 name: design-tokens-library
 description: Reference documentation for createTokens patterns including color systems, spacing scales, typography, and animations. Automatically invoked when designing design tokens or working with Plaited's CSS-in-JS token system.
+license: ISC
+compatibility: Requires bun
 ---
 
 # Design Tokens Library

@@ -1,6 +1,8 @@
 ---
 name: code-documentation
 description: Comprehensive TypeScript documentation standards including TSDoc format templates, public API documentation, internal module docs, and type documentation guidelines. Automatically invoked when writing or reviewing code documentation, TSDoc comments, or API documentation.
+license: ISC
+compatibility: Requires bun
 ---
 
 # Code Documentation Skill

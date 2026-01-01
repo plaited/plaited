@@ -1,6 +1,8 @@
 ---
 name: design-iteration
 description: Multi-modal design refinement with visual feedback. Use when iterating on template designs with test videos, headless browser, or browser extension.
+license: ISC
+compatibility: Requires bun
 allowed-tools: Bash, Read, Edit, Write, Glob, mcp__playwright__*
 ---
 

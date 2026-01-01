@@ -1,6 +1,8 @@
 ---
 name: design-system-scaffolding
 description: Generate Plaited design system assets including bElements, stories, tokens, and styles. Use when scaffolding new templates or design system files.
+license: ISC
+compatibility: Requires bun
 allowed-tools: Write, Read, Glob
 ---
 
