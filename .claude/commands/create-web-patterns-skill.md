@@ -17,10 +17,16 @@ If no skill name provided in $ARGUMENTS, use `web-patterns` as default.
 ### Step 2: Ask About Tool Restrictions
 Use AskUserQuestion to ask:
 
-**Question:** "What tool access should this skill have?"
+**Question 1:** "What tool access should this skill have?"
 **Options:**
-1. **Restricted (Recommended)** - `WebFetch, Write, Read, Glob` - Essential tools for pattern extraction
+1. **Restricted (Recommended)** - Limit to specific tools
 2. **Unrestricted** - No `allowed-tools` field, skill can use any available tools
+
+**If user chose Restricted, ask Question 2:**
+"Which tools should this skill have access to?"
+**Options:**
+1. **Default** - `WebFetch, Write, Read, Glob` (essential for pattern extraction)
+2. **Add tools** - Default plus additional tools (user provides comma-separated list, e.g., `mcp__playwright__*`)
 
 ### Step 3: Create Skill Files
 1. Create the skill directory: `.claude/skills/[skill-name]/`
@@ -41,16 +47,19 @@ Tell the user:
 
 Create `.claude/skills/[skill-name]/SKILL.md` with this content:
 
-**If user chose Restricted:**
+**Frontmatter (if Restricted):**
 ```yaml
 ---
 name: [skill-name]
 description: Extract Web API patterns from articles and adapt them for Plaited. Use when extracting patterns from URLs, analyzing web API documentation, or adapting web APIs to bElement patterns.
-allowed-tools: WebFetch, Write, Read, Glob
+allowed-tools: [tool-list]
 ---
 ```
+Where `[tool-list]` is:
+- Default: `WebFetch, Write, Read, Glob`
+- Add tools: `WebFetch, Write, Read, Glob, [user-provided-tools]`
 
-**If user chose Unrestricted:**
+**Frontmatter (if Unrestricted):**
 ```yaml
 ---
 name: [skill-name]
@@ -58,7 +67,7 @@ description: Extract Web API patterns from articles and adapt them for Plaited. 
 ---
 ```
 
-**Then continue with:**
+**Then the skill content:**
 ```markdown
 # [Skill Name Title]
 
