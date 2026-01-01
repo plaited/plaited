@@ -26,7 +26,7 @@ This project uses `.claude/rules/` for project-specific guidance:
 - **Development**: @.claude/rules/development/ - Testing commands, plugin development
 - **Standards**: @.claude/rules/standards/ - Terminology, code review guidelines, accuracy standards
 
-For comprehensive Plaited patterns, code conventions, and standards, see the **plaited-patterns** skill (`.claude/skills/plaited-patterns/`).
+For comprehensive Plaited patterns, code conventions, and standards, see the **plaited-framework-patterns** skill (`.claude/skills/plaited-framework-patterns/`).
 
 For TSDoc workflow and templates, see the **code-documentation** skill (`.claude/skills/code-documentation/`).
 
@@ -45,10 +45,10 @@ Plaited is a behavioral programming framework for reactive custom elements. Key 
 2. Custom Elements with Shadow DOM
 3. CSS-in-JS System
 
-For architectural patterns and implementation details, see the plaited-patterns skill:
-- `.claude/skills/plaited-patterns/references/behavioral-programs.md`
-- `.claude/skills/plaited-patterns/references/b-element.md`
-- `.claude/skills/plaited-patterns/references/styling.md`
+For architectural patterns and implementation details, see the plaited-framework-patterns skill:
+- `.claude/skills/plaited-framework-patterns/references/behavioral-programs.md`
+- `.claude/skills/plaited-framework-patterns/references/b-element.md`
+- `.claude/skills/plaited-framework-patterns/references/styling.md`
 
 ### Code Style Essentials
 
@@ -59,7 +59,7 @@ For architectural patterns and implementation details, see the plaited-patterns 
 - JSX syntax only (not `h()` or `createTemplate()`)
 - Object parameters for functions with 2+ parameters
 
-For complete conventions, see the plaited-patterns skill: `.claude/skills/plaited-patterns/references/code-conventions.md`
+For complete conventions, see the plaited-framework-patterns skill: `.claude/skills/plaited-framework-patterns/references/code-conventions.md`
 
 ### Plugin Development
 
@@ -79,7 +79,7 @@ See @.claude/rules/development/plugin-development.md for complete guide.
 - Use Mermaid diagrams only (not ASCII art)
 - In SKILL.md files, use markdown links `[name](path)` not `@path` references
 
-See the plaited-patterns skill (`.claude/skills/plaited-patterns/references/standards.md`) and the code-documentation skill for complete guidelines.
+See the plaited-framework-patterns skill (`.claude/skills/plaited-framework-patterns/references/standards.md`) and the code-documentation skill for complete guidelines.
 
 ## Important Constraints
 
@@ -91,7 +91,7 @@ See the plaited-patterns skill (`.claude/skills/plaited-patterns/references/stan
 ## Additional Resources
 
 **Skills** (`.claude/skills/`):
-- **plaited-patterns**: Comprehensive Plaited patterns, examples, and best practices
+- **plaited-framework-patterns**: Comprehensive Plaited patterns, examples, and best practices
 - **code-documentation**: TSDoc workflow and templates
 - **typescript-lsp**: Type verification and symbol discovery
 - **code-query**: Story and template discovery

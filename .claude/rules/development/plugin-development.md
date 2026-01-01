@@ -33,7 +33,7 @@ plugins/
 │   ├── .claude-plugin/
 │   │   └── plugin.json       # Plugin manifest
 │   ├── skills/
-│   │   └── plaited-patterns/
+│   │   └── plaited-framework-patterns/
 │   │       └── SKILL.md      # Skill definition
 │   └── hooks/
 │       ├── hooks.json        # Hook configuration

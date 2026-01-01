@@ -110,7 +110,7 @@ bun plaited dev
 
 ## Related Skills
 
-- **plaited-patterns** - Plaited framework patterns and examples
+- **plaited-framework-patterns** - Plaited framework patterns and examples
 - **typescript-lsp** - Type verification and code navigation
 - **code-documentation** - TSDoc standards
 

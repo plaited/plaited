@@ -4,7 +4,7 @@ AI-assisted development skills for the Plaited framework. Provides comprehensive
 
 ## Available Skills
 
-### 🎯 plaited-patterns (Auto-Invoked)
+### 🎯 plaited-framework-patterns (Auto-Invoked)
 
 Automatically activates when working with Plaited templates, behavioral programs, or web platform patterns. Provides deep knowledge of:
 
@@ -70,7 +70,7 @@ bun --hot plaited dev            # Dev server with hot reload
 ```
 .claude/
 ├── skills/
-│   ├── plaited-patterns/         # Framework knowledge
+│   ├── plaited-framework-patterns/         # Framework knowledge
 │   │   ├── SKILL.md
 │   │   ├── references/           # Pattern documentation
 │   │   │   ├── behavioral-programs.md

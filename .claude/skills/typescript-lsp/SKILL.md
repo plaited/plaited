@@ -204,5 +204,5 @@ For multiple queries on the same file, use `lsp-analyze` to batch operations in 
 
 ## Related Skills
 
-- **plaited-patterns**: Plaited framework patterns (includes Plaited-specific type verification examples)
+- **plaited-framework-patterns**: Plaited framework patterns (includes Plaited-specific type verification examples)
 - **code-documentation**: TSDoc standards for documentation

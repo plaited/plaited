@@ -1,9 +1,9 @@
 ---
-name: plaited-patterns
+name: plaited-framework-patterns
 description: Comprehensive Plaited framework patterns for AI-assisted design of MCP/A2UI outcome-based interfaces. Covers templates, styling, behavioral programming, custom elements, forms, cross-island communication, testing, web workers, and code quality verification. Automatically invoked when designing or implementing Plaited templates and BehavioralElements.
 ---
 
-# Plaited Patterns Skill
+# Plaited Framework Patterns
 
 ## Purpose
 

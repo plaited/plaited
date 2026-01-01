@@ -7,11 +7,11 @@ allowed-tools: Write, Bash, AskUserQuestion
 
 Create a new skill for extracting and documenting Web API patterns with Plaited integration.
 
-**Skill Name:** $ARGUMENTS (default: `extract-web-pattern`)
+**Skill Name:** $ARGUMENTS (default: `web-patterns`)
 
 ## Instructions
 
-1. If no skill name provided, use `extract-web-pattern` as default
+1. If no skill name provided, use `web-patterns` as default
 2. Create the skill directory: `.claude/skills/[skill-name]/`
 3. Create the `SKILL.md` file with the template below
 4. Create the `references/` directory with a `.gitkeep` placeholder
@@ -186,7 +186,7 @@ export const Example = bElement({
 \`\`\`
 
 ## Related Skills
-- plaited-patterns - Framework patterns and conventions
+- plaited-framework-patterns - Framework patterns and conventions
 - typescript-lsp - Type verification for bElement APIs
 ```
 
