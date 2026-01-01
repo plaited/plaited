@@ -11,22 +11,52 @@ Create a new skill for extracting and documenting Web API patterns with Plaited 
 
 ## Instructions
 
-1. If no skill name provided, use `web-patterns` as default
-2. Create the skill directory: `.claude/skills/[skill-name]/`
-3. Create the `SKILL.md` file with the template below
-4. Create the `references/` directory with a `.gitkeep` placeholder
-5. Confirm creation to user
+### Step 1: Get Skill Name
+If no skill name provided in $ARGUMENTS, use `web-patterns` as default.
+
+### Step 2: Ask About Tool Restrictions
+Use AskUserQuestion to ask:
+
+**Question:** "What tool access should this skill have?"
+**Options:**
+1. **Restricted (Recommended)** - `WebFetch, Write, Read, Glob` - Essential tools for pattern extraction
+2. **Unrestricted** - No `allowed-tools` field, skill can use any available tools
+
+### Step 3: Create Skill Files
+1. Create the skill directory: `.claude/skills/[skill-name]/`
+2. Create the `SKILL.md` file with the template below (include `allowed-tools` if user chose Restricted)
+3. Create the `references/` directory with a `.gitkeep` placeholder
+
+### Step 4: Confirm Creation
+Tell the user:
+1. Skill created at `.claude/skills/[skill-name]/`
+2. Tool access: [restricted/unrestricted]
+3. Extract patterns by asking Claude to fetch URLs
+4. Patterns will be saved to `references/` directory
 
 ## Skill Template
 
 Create `.claude/skills/[skill-name]/SKILL.md` with this content:
 
-```markdown
+**If user chose Restricted:**
+```yaml
+---
+name: [skill-name]
+description: Extract Web API patterns from articles and adapt them for Plaited. Use when extracting patterns from URLs, analyzing web API documentation, or adapting web APIs to bElement patterns.
+allowed-tools: WebFetch, Write, Read, Glob
+---
+```
+
+**If user chose Unrestricted:**
+```yaml
 ---
 name: [skill-name]
 description: Extract Web API patterns from articles and adapt them for Plaited. Use when extracting patterns from URLs, analyzing web API documentation, or adapting web APIs to bElement patterns.
 ---
+```
 
+**Then continue with:**
+```markdown
 # [Skill Name Title]
 
 Extract modern HTML and Web API patterns from external sources and adapt them for Plaited's bElement architecture.
@@ -189,11 +219,3 @@ export const Example = bElement({
 - plaited-framework-patterns - Framework patterns and conventions
 - typescript-lsp - Type verification for bElement APIs
 ```
-
-## After Creation
-
-Tell the user:
-1. Skill created at `.claude/skills/[skill-name]/`
-2. Extract patterns by asking Claude to fetch URLs
-3. Patterns will be saved to `references/` directory
-4. Skill auto-activates based on description matching
