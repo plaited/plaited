@@ -16,7 +16,13 @@
       },
       "source": "./.claude",
       "category": "development",
-      "strict": false
+      "strict": false,
+      "mcpServers": {
+        "playwright": {
+          "command": "bunx",
+          "args": ["@playwright/mcp"]
+        }
+      }
     }
   ]
 }
