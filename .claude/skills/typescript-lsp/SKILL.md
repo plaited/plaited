@@ -1,6 +1,7 @@
 ---
 name: typescript-lsp
 description: TypeScript Language Server integration for type verification, symbol discovery, and code navigation. Use before reading, editing, or writing TypeScript/JavaScript code to understand types, find references, and verify signatures.
+allowed-tools: Bash
 ---
 
 # TypeScript LSP Skill
