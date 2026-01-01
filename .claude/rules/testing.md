@@ -56,6 +56,58 @@ bun test pattern
 - **`*.spec.ts` or `*.spec.tsx`**: Unit/integration tests run with Bun
 - **`*.stories.tsx`**: Template/browser tests run with workshop CLI
 
+## Skill Script Tests
+
+Claude Code skills in `.claude/skills/` may include executable scripts. Tests for these scripts follow a specific structure:
+
+### Directory Structure
+
+```
+.claude/skills/<skill-name>/
+├── SKILL.md
+├── scripts/
+│   ├── script-name.ts        # Executable script
+│   └── tests/
+│       └── script-name.spec.ts  # Tests for the script
+```
+
+### Running Skill Script Tests
+
+```bash
+# Run tests for a specific skill's scripts (use absolute path)
+bun test /path/to/.claude/skills/<skill-name>/scripts/tests/
+
+# Example
+bun test /Users/eirby/Workspace/plaited/.claude/skills/design-system-scaffolding/scripts/tests/
+```
+
+### Test Pattern
+
+Scripts that output JSON can be tested using Bun's shell API:
+
+```typescript
+import { describe, test, expect } from 'bun:test'
+import { join } from 'node:path'
+import { $ } from 'bun'
+
+const scriptsDir = join(import.meta.dir, '..')
+
+describe('script-name', () => {
+  test('outputs expected JSON', async () => {
+    const result = await $`bun ${scriptsDir}/script-name.ts arg1 arg2`.json()
+    expect(result.filePath).toEndWith('expected.ts')
+  })
+
+  test('exits with error on invalid input', async () => {
+    const proc = Bun.spawn(['bun', `${scriptsDir}/script-name.ts`], {
+      stderr: 'pipe',
+    })
+    const exitCode = await proc.exited
+    expect(exitCode).toBe(1)
+  })
+})
+```
+
 ## Anti-Patterns
 
 ### No Conditionals Around Assertions
