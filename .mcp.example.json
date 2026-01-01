@@ -6,6 +6,10 @@
         "@playwright/mcp",
         "--extension"
       ]
+    },
+    "agent-skills-spec": {
+      "type": "http",
+      "url": "https://agentskills.io/mcp"
     }
   }
 }
