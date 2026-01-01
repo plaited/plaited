@@ -55,3 +55,32 @@ bun test pattern
 
 - **`*.spec.ts` or `*.spec.tsx`**: Unit/integration tests run with Bun
 - **`*.stories.tsx`**: Template/browser tests run with workshop CLI
+
+## Anti-Patterns
+
+### No Conditionals Around Assertions
+
+Never wrap assertions in conditionals. Tests should fail explicitly, not silently skip assertions.
+
+```typescript
+// ❌ WRONG: Conditional assertion
+if (result) {
+  expect(result.value).toBe(expected)
+}
+
+// ❌ WRONG: Optional chaining with assertion
+result?.value && expect(result.value).toBe(expected)
+
+// ✅ CORRECT: Assert the condition, then assert the value
+expect(result).toBeDefined()
+expect(result.value).toBe(expected)
+
+// ✅ CORRECT: Use type narrowing assertion
+expect(result).not.toBeNull()
+expect(result!.value).toBe(expected)
+```
+
+If a value might not exist, the test should either:
+1. Assert that it exists first, then check its value
+2. Assert that it doesn't exist (if that's the expected behavior)
+3. Restructure the test to ensure the value is always present
