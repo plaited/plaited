@@ -186,29 +186,26 @@ const ReaderIsland = bElement({
 
 ## Decision Tree: When to Use Each Pattern
 
-```
-START: Need to communicate between elements?
-│
-├─ Are they in a PARENT-CHILD relationship?
-│  │
-│  ├─ YES: Is PARENT sending to CHILD?
-│  │  └─ Use Pattern A: trigger()
-│  │     - Parent calls child.trigger()
-│  │     - Direct method invocation
-│  │     - Child exposes via publicEvents
-│  │
-│  └─ YES: Is CHILD sending to PARENT?
-│     └─ Use Pattern B: emit()
-│        - Child uses emit()
-│        - Parent listens via p-trigger
-│        - Event bubbling pattern
-│
-└─ NO: Are they CROSS-ISLAND (not parent-child)?
-   └─ Use Pattern C: useSignal()
-      - Create shared signal
-      - Islands .listen() and .set()
-      - Pub/sub pattern
-      - Actor model (bidirectional)
+```mermaid
+flowchart TD
+    A{Parent-Child<br/>relationship?} -->|YES| B{Direction?}
+    A -->|NO| C[Cross-island]
+
+    B -->|Parent → Child| D[Pattern A: trigger]
+    D --> D1[Parent calls child.trigger]
+    D --> D2[Direct method invocation]
+    D --> D3[Child exposes via publicEvents]
+
+    B -->|Child → Parent| E[Pattern B: emit]
+    E --> E1[Child uses emit]
+    E --> E2[Parent listens via p-trigger]
+    E --> E3[Event bubbling pattern]
+
+    C --> F[Pattern C: useSignal]
+    F --> F1[Create shared signal]
+    F --> F2[Islands .listen and .set]
+    F --> F3[Pub/sub pattern]
+    F --> F4[Actor model bidirectional]
 ```
 
 ## Islands Architecture Context

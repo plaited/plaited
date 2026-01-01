@@ -23,13 +23,12 @@ bun run check:write
 
 This project uses `.claude/rules/` for project-specific guidance:
 
-- **Development**: @.claude/rules/development/ - Testing commands, plugin development, LSP verification
-- **Documentation**: @.claude/rules/documentation/ - TSDoc generation workflow
+- **Development**: @.claude/rules/development/ - Testing commands, plugin development
 - **Standards**: @.claude/rules/standards/ - Terminology, code review guidelines, accuracy standards
 
-For comprehensive Plaited patterns, code conventions, and standards, see the **workshop plugin** (`plugins/workshop/skills/plaited-patterns/`).
+For comprehensive Plaited patterns, code conventions, and standards, see the **plaited-patterns** skill (`.claude/skills/plaited-patterns/`).
 
-For detailed TSDoc templates, see the code-documentation skill.
+For TSDoc workflow and templates, see the **code-documentation** skill (`.claude/skills/code-documentation/`).
 
 ## Quick Reference
 
@@ -46,10 +45,10 @@ Plaited is a behavioral programming framework for reactive custom elements. Key 
 2. Custom Elements with Shadow DOM
 3. CSS-in-JS System
 
-For architectural patterns and implementation details, see the workshop plugin:
-- `plugins/workshop/skills/plaited-patterns/plaited/behavioral-programs.md`
-- `plugins/workshop/skills/plaited-patterns/plaited/b-element.md`
-- `plugins/workshop/skills/plaited-patterns/plaited/styling.md`
+For architectural patterns and implementation details, see the plaited-patterns skill:
+- `.claude/skills/plaited-patterns/references/behavioral-programs.md`
+- `.claude/skills/plaited-patterns/references/b-element.md`
+- `.claude/skills/plaited-patterns/references/styling.md`
 
 ### Code Style Essentials
 
@@ -60,7 +59,7 @@ For architectural patterns and implementation details, see the workshop plugin:
 - JSX syntax only (not `h()` or `createTemplate()`)
 - Object parameters for functions with 2+ parameters
 
-For complete conventions, see the workshop plugin: `plugins/workshop/skills/plaited-patterns/plaited/code-conventions.md`
+For complete conventions, see the plaited-patterns skill: `.claude/skills/plaited-patterns/references/code-conventions.md`
 
 ### Plugin Development
 
@@ -78,8 +77,9 @@ See @.claude/rules/development/plugin-development.md for complete guide.
 - Use `@internal` marker for non-public APIs
 - Always use `type` over `interface`
 - Use Mermaid diagrams only (not ASCII art)
+- In SKILL.md files, use markdown links `[name](path)` not `@path` references
 
-See the workshop plugin (`plugins/workshop/skills/plaited-patterns/plaited/standards.md`) and the code-documentation skill for complete guidelines.
+See the plaited-patterns skill (`.claude/skills/plaited-patterns/references/standards.md`) and the code-documentation skill for complete guidelines.
 
 ## Important Constraints
 
@@ -90,20 +90,17 @@ See the workshop plugin (`plugins/workshop/skills/plaited-patterns/plaited/stand
 
 ## Additional Resources
 
-**Workshop Plugin** (`plugins/workshop/skills/plaited-patterns/`):
-- Comprehensive Plaited patterns, examples, and best practices
-- Code conventions and standards
-- Verification workflows for accurate code generation
-- Self-contained and publishable to marketplace
+**Skills** (`.claude/skills/`):
+- **plaited-patterns**: Comprehensive Plaited patterns, examples, and best practices
+- **code-documentation**: TSDoc workflow and templates
+- **typescript-lsp**: Type verification and symbol discovery
+- **code-query**: Story and template discovery
 
 **Project-Specific Rules** (`.claude/rules/`):
 - Testing commands and workflow
 - Plugin development guidelines
-- TSDoc generation workflow
 - Code review standards
 - Project terminology
-
-Use the code-documentation skill for TSDoc template reference.
 
 ## Specialized Agents
 

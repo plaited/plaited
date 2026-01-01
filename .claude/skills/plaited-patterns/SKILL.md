@@ -22,66 +22,66 @@ This skill provides comprehensive documentation for building Plaited application
 **TypeScript LSP**: This plugin works with `typescript-lsp@claude-plugins-official` for type inference from imports. Use LSP for accurate type signatures from source code.
 
 **Essential Standards**:
-- **Code Conventions**: [code-conventions.md](plaited/code-conventions.md) - Type system, function style, templates, imports, null handling
-- **Testing**: [stories.md](plaited/stories.md) - Story-based testing with Playwright, workshop CLI
-- **Standards**: [standards.md](plaited/standards.md) - 95% confidence threshold, documentation guidelines, Bun APIs
-- **Verification**: [verification-workflow.md](plaited/verification-workflow.md) - Complete code generation workflow
+- **Code Conventions**: [code-conventions.md](references/code-conventions.md) - Type system, function style, templates, imports, null handling
+- **Testing**: [stories.md](references/stories.md) - Story-based testing with Playwright, workshop CLI
+- **Standards**: [standards.md](references/standards.md) - 95% confidence threshold, documentation guidelines, Bun APIs
+- **Verification**: [verification-workflow.md](references/verification-workflow.md) - Complete code generation workflow
 
 ## Pattern Categories
 
 ### Templates & Styling
-- **[styling.md](plaited/styling.md)** - Templates (JSX, FT, useTemplate, SSR) + CSS-in-JS (createStyles, createHostStyles, tokens, keyframes)
+- **[styling.md](references/styling.md)** - Templates (JSX, FT, useTemplate, SSR) + CSS-in-JS (createStyles, createHostStyles, tokens, keyframes)
   - Use for: JSX syntax, template security, FunctionalTemplate pattern, atomic CSS, host styling, design tokens
 
 ### Testing
-- **[stories.md](plaited/stories.md)** - Story-based testing with Playwright integration
+- **[stories.md](references/stories.md)** - Story-based testing with Playwright integration
   - Use for: Writing stories for templates and bElements, workshop CLI usage, accessibility testing, inspector debugging
   - Workshop commands: `bun plaited test`, `bun plaited dev`
 
 ### Behavioral Programming Foundations
-- **[behavioral-programs.md](plaited/behavioral-programs.md)** - BP paradigm, super-step execution, thread composition
+- **[behavioral-programs.md](references/behavioral-programs.md)** - BP paradigm, super-step execution, thread composition
   - Use for: Understanding BP coordination, event selection, rule composition, predicates, thread lifecycle
   - Key capabilities: Event Selection Strategy, Rule Composition Patterns, Predicate-Based Matching, Thread Lifecycle
 
 ### Custom Elements
-- **[b-element.md](plaited/b-element.md)** - Creating custom elements with bElement
+- **[b-element.md](references/b-element.md)** - Creating custom elements with bElement
   - Use for: Islands architecture, decorator pattern, stateful elements, form controls
   - When to use: Interactive islands, wrapping native elements, complex state, form integration
 
 ### Form Integration
-- **[form-associated-elements.md](plaited/form-associated-elements.md)** - Capturing user intent through forms
+- **[form-associated-elements.md](references/form-associated-elements.md)** - Capturing user intent through forms
   - Use for: Custom form controls, ElementInternals API, custom states (`:state()`), validation, type-driven form generation
   - Integration: Works with MCP schemas for outcome-based interfaces
 
 ### Cross-Island Communication
-- **[cross-island-communication.md](plaited/cross-island-communication.md)** - Three communication patterns
+- **[cross-island-communication.md](references/cross-island-communication.md)** - Three communication patterns
   - Pattern A: `trigger()` - Parent-to-child (direct method call)
   - Pattern B: `emit()` - Child-to-parent (event bubbling)
   - Pattern C: `useSignal()` - Cross-island pub/sub (actor pattern)
   - Use for: Coordinating islands NOT in parent-child relationship
 
 ### Performance
-- **[web-workers.md](plaited/web-workers.md)** - Offloading computation to background threads
+- **[web-workers.md](references/web-workers.md)** - Offloading computation to background threads
   - Use for: CPU-intensive calculations, data processing, complex algorithms
   - APIs: `useWorker()` (main thread), `bWorker()` (worker thread)
 
 ### Code Quality & Verification
-- **[verification-workflow.md](plaited/verification-workflow.md)** - Complete code generation workflow
+- **[verification-workflow.md](references/verification-workflow.md)** - Complete code generation workflow
   - Use for: Systematic approach to generating accurate Plaited code
   - Phases: API verification (check bElement first), code generation (apply patterns), post-generation validation
   - 95% confidence threshold before presenting code
-- **[lsp-verification.md](plaited/lsp-verification.md)** - LSP-based type verification
+- **[lsp-verification.md](references/lsp-verification.md)** - LSP-based type verification
   - Use for: Verifying Plaited framework types before and after code generation
   - Operations: hover, goToDefinition, findReferences, documentSymbol
   - Critical files to check: BProgramArgs, BehavioralElementCallbackDetails, CSS types
-- **[web-api-adaptation.md](plaited/web-api-adaptation.md)** - Framework-first web API adaptation
+- **[web-api-adaptation.md](references/web-api-adaptation.md)** - Framework-first web API adaptation
   - Use for: Understanding what bElement provides before reaching for web APIs
   - Three phases: Check bElement built-ins, verify web API behavior, adapt to Plaited patterns
   - Critical: p-trigger (events), p-target (queries), internals (forms), lifecycle callbacks
-- **[code-conventions.md](plaited/code-conventions.md)** - Plaited code style and conventions
+- **[code-conventions.md](references/code-conventions.md)** - Plaited code style and conventions
   - Use for: Type system preferences, function style, template creation, import paths, null handling
   - Key patterns: type over interface, JSX syntax only, package imports in tests, object parameters for 2+ params
-- **[standards.md](plaited/standards.md)** - Development standards and best practices
+- **[standards.md](references/standards.md)** - Development standards and best practices
   - Use for: 95% confidence threshold, documentation guidelines, Bun platform APIs
   - Verification protocol: framework-first, LSP verification, WebFetch for web APIs
 
@@ -90,36 +90,40 @@ This skill provides comprehensive documentation for building Plaited application
 ### When to Use Which Pattern?
 
 **Creating UI Elements:**
-```
-Is it simple and presentational?
-├─ YES → Use FunctionalTemplate (FT) in *.stories.tsx
-│         (See plaited/styling.md for patterns)
-└─ NO  → Need interactivity?
-          └─ YES → Use bElement (See plaited/b-element.md)
-                   - Islands architecture
-                   - Decorator pattern
-                   - Stateful elements
-                   - Form controls
+```mermaid
+flowchart TD
+    A[Is it simple and<br/>presentational?] -->|YES| B[Use FunctionalTemplate<br/>in *.stories.tsx]
+    A -->|NO| C{Need interactivity?}
+    C -->|YES| D[Use bElement]
+    D --> D1[Islands architecture]
+    D --> D2[Decorator pattern]
+    D --> D3[Stateful elements]
+    D --> D4[Form controls]
+    B -.-> S1[See references/styling.md]
+    D -.-> S2[See references/b-element.md]
 ```
 
 **Communication Between Elements:**
-```
-Are they in PARENT-CHILD relationship?
-├─ YES → Parent → Child?
-│        └─ Use Pattern A: trigger() (See plaited/cross-island-communication.md)
-├─ YES → Child → Parent?
-│        └─ Use Pattern B: emit() (See plaited/cross-island-communication.md)
-└─ NO  → Cross-island?
-         └─ Use Pattern C: useSignal() (See plaited/cross-island-communication.md)
+```mermaid
+flowchart TD
+    A{Parent-Child<br/>relationship?} -->|YES| B{Direction?}
+    A -->|NO| C[Cross-island]
+    B -->|Parent → Child| D[Pattern A: trigger]
+    B -->|Child → Parent| E[Pattern B: emit]
+    C --> F[Pattern C: useSignal]
+    D -.-> S[See references/cross-island-communication.md]
+    E -.-> S
+    F -.-> S
 ```
 
 **Performance Optimization:**
-```
-Is computation CPU-intensive?
-├─ YES → Use Web Workers (See plaited/web-workers.md)
-│        - useWorker() in main thread
-│        - bWorker() in worker thread
-└─ NO  → Keep in main thread
+```mermaid
+flowchart TD
+    A{Is computation<br/>CPU-intensive?} -->|YES| B[Use Web Workers]
+    A -->|NO| C[Keep in main thread]
+    B --> B1[useWorker in main thread]
+    B --> B2[bWorker in worker thread]
+    B -.-> S[See references/web-workers.md]
 ```
 
 ## File Organization
@@ -154,11 +158,11 @@ element/
 - Hover for TSDoc, goToDefinition for source, findReferences for usage
 
 ### With Plaited Standards:
-- **Code Conventions**: Follow [code-conventions.md](plaited/code-conventions.md) for type system, function style, and patterns
-- **Testing**: Use Bun test runner for unit tests (`.spec.ts`); [stories.md](plaited/stories.md) for browser tests (`.stories.tsx`)
-- **Documentation**: TSDoc standards from [standards.md#documentation-guidelines](plaited/standards.md#documentation-guidelines)
-- **Imports**: Package imports from [code-conventions.md#import-path-standards](plaited/code-conventions.md#import-path-standards)
-- **Platform**: Bun-specific APIs from [standards.md#bun-platform-apis](plaited/standards.md#bun-platform-apis)
+- **Code Conventions**: Follow [code-conventions.md](references/code-conventions.md) for type system, function style, and patterns
+- **Testing**: Use Bun test runner for unit tests (`.spec.ts`); [stories.md](references/stories.md) for browser tests (`.stories.tsx`)
+- **Documentation**: TSDoc standards from [standards.md#documentation-guidelines](references/standards.md#documentation-guidelines)
+- **Imports**: Package imports from [code-conventions.md#import-path-standards](references/code-conventions.md#import-path-standards)
+- **Platform**: Bun-specific APIs from [standards.md#bun-platform-apis](references/standards.md#bun-platform-apis)
 
 ## Best Practices
 
@@ -260,17 +264,17 @@ Complete working examples demonstrating Plaited patterns:
 ## Navigation Summary
 
 ### Core Patterns
-- [styling.md](plaited/styling.md) - Templates + CSS-in-JS system
-- [stories.md](plaited/stories.md) - Testing patterns with workshop CLI
-- [behavioral-programs.md](plaited/behavioral-programs.md) - BP foundations (4 key capabilities)
-- [b-element.md](plaited/b-element.md) - Custom elements API
-- [form-associated-elements.md](plaited/form-associated-elements.md) - Form integration
-- [cross-island-communication.md](plaited/cross-island-communication.md) - 3 communication patterns
-- [web-workers.md](plaited/web-workers.md) - Performance optimization
+- [styling.md](references/styling.md) - Templates + CSS-in-JS system
+- [stories.md](references/stories.md) - Testing patterns with workshop CLI
+- [behavioral-programs.md](references/behavioral-programs.md) - BP foundations (4 key capabilities)
+- [b-element.md](references/b-element.md) - Custom elements API
+- [form-associated-elements.md](references/form-associated-elements.md) - Form integration
+- [cross-island-communication.md](references/cross-island-communication.md) - 3 communication patterns
+- [web-workers.md](references/web-workers.md) - Performance optimization
 
 ### Code Quality & Verification
-- [verification-workflow.md](plaited/verification-workflow.md) - Complete code generation workflow
-- [lsp-verification.md](plaited/lsp-verification.md) - LSP-based type verification
-- [web-api-adaptation.md](plaited/web-api-adaptation.md) - Framework-first web API adaptation
-- [code-conventions.md](plaited/code-conventions.md) - Code style and conventions
-- [standards.md](plaited/standards.md) - Development standards and best practices
+- [verification-workflow.md](references/verification-workflow.md) - Complete code generation workflow
+- [lsp-verification.md](references/lsp-verification.md) - LSP-based type verification
+- [web-api-adaptation.md](references/web-api-adaptation.md) - Framework-first web API adaptation
+- [code-conventions.md](references/code-conventions.md) - Code style and conventions
+- [standards.md](references/standards.md) - Development standards and best practices

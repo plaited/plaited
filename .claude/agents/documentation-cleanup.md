@@ -2,6 +2,9 @@
 name: documentation-cleanup
 description: Automated documentation hygiene agent that updates TSDoc comments to match current code, removes non-compliant comments (performance notes, update timestamps, inline explanations), and enforces Plaited documentation standards. Only allows TODO comments and TSDoc blocks.
 tools: Read, Grep, Glob, Edit
+skills:
+  - typescript-lsp
+  - code-documentation
 ---
 
 # Documentation Cleanup Agent
@@ -16,7 +19,7 @@ Follow @.claude/rules/standards/accuracy.md for all recommendations and changes.
 - Only update TSDoc if parameter names/types match current code with 95%+ confidence
 - Verify functions/types still exist before updating their documentation
 - Report discrepancies when TSDoc references deleted or moved code
-- DO NOT update documentation based on assumptions - verify with Read tool first
+- Use typescript-lsp skill to verify type signatures and symbol existence before updates
 
 ## Purpose
 
@@ -65,51 +68,12 @@ Valuable information from inline comments should be moved to TSDoc `@remarks`:
 
 ## Documentation Standards
 
-### TSDoc Requirements
+Use the **code-documentation** skill for TSDoc workflow and templates. Use **typescript-lsp** skill to verify type signatures before updating documentation.
 
-Reference the code-documentation skill for complete templates:
-- @.claude/skills/code-documentation/SKILL.md
-- @.claude/skills/code-documentation/public-api-templates.md
-- @.claude/skills/code-documentation/internal-templates.md
-- @.claude/skills/code-documentation/type-documentation.md (Plaited-specific conventions only)
-
-Also reference documentation philosophy:
-- @.claude/rules/documentation/philosophy-workflow.md
-- @.claude/rules/documentation/tsdoc-overview.md
-
-**Note**: Type documentation focuses on Plaited-specific requirements. Standard TypeScript patterns are assumed knowledge.
-
-**Plaited-Specific Rule**: No `@example` sections in TSDoc - tests and stories serve as living examples.
-
-### Public API Functions
-
-Must include:
-- One-line description + extended context
-- `@param` for all parameters
-- `@returns` for return values
-- `@remarks` section with behavioral notes
-- `@see` tags to related APIs
-- `@since` version tag
-
-Must NOT include:
-- `@example` sections (use tests/stories instead)
-
-### Internal Functions
-
-Must include:
-- `@internal` marker
-- Brief description and purpose
-- `@param` and `@returns` as needed
-- `@remarks` for complexity, algorithms, design decisions
-
-### Types
-
-Must include:
-- Description of what type represents
-- `@property` for all properties
-- `@template` for generic parameters
-- `@remarks` for constraints and patterns
-- `@see` tags to related types
+**Plaited-Specific Rules**:
+- No `@example` sections in TSDoc - tests and stories serve as living examples
+- Use `@internal` marker for non-public APIs
+- Standard TypeScript patterns are assumed knowledge
 
 ## Synchronization Tasks
 

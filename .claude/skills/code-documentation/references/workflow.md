@@ -1,4 +1,4 @@
-# Agent TSDoc Generation Workflow
+# TSDoc Generation Workflow
 
 When creating or updating TSDoc comments, follow this systematic exploration process:
 
@@ -40,16 +40,15 @@ When creating or updating TSDoc comments, follow this systematic exploration pro
 ## Phase 4: Documentation Generation
 
 1. **Synthesize findings** from phases 1-3
-2. **Apply appropriate TSDoc template** (see TSDoc Format Guidelines below)
+2. **Apply appropriate TSDoc template** from this skill
 3. **Cross-reference related APIs** using `@see` tags
 4. **Document discovered constraints** in `@remarks`
 5. **Note performance characteristics** if evident from usage
 6. **Identify limitations** found in tests or usage patterns
 
-## Detailed Templates
+## Templates
 
-For detailed TSDoc format templates, see the code-documentation skill:
-- @.claude/skills/code-documentation/SKILL.md
-- @.claude/skills/code-documentation/public-api-templates.md
-- @.claude/skills/code-documentation/internal-templates.md
-- @.claude/skills/code-documentation/type-documentation.md
+After completing the workflow phases, apply the appropriate template:
+- @public-api-templates.md - Public-facing APIs
+- @internal-templates.md - Internal code and modules
+- @type-documentation.md - Type documentation

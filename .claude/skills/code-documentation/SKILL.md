@@ -15,7 +15,7 @@ This skill provides detailed TSDoc format templates and type documentation guide
 
 ## Quick Reference
 
-For basic documentation philosophy and workflow, see @.claude/rules/documentation/
+For the documentation generation workflow, see [workflow.md](references/workflow.md)
 
 This skill contains detailed templates for:
 - Public API Functions
@@ -28,6 +28,7 @@ This skill contains detailed templates for:
 
 ## Navigation
 
-- @public-api-templates.md - Templates for public-facing APIs
-- @internal-templates.md - Templates for internal code and modules
-- @type-documentation.md - Comprehensive type documentation templates
+- [workflow.md](references/workflow.md) - TSDoc generation workflow (4 phases)
+- [public-api-templates.md](references/public-api-templates.md) - Templates for public-facing APIs
+- [internal-templates.md](references/internal-templates.md) - Templates for internal code and modules
+- [type-documentation.md](references/type-documentation.md) - Comprehensive type documentation templates

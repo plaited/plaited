@@ -254,21 +254,19 @@ Event selection is the core mechanism determining which event executes next. Und
 
 ### Selection Algorithm
 
-```
-1. COLLECT candidate events from all pending threads
-   └─ Requested events become candidates
-
-2. APPLY BLOCKING
-   └─ Remove any candidate that ANY thread blocks
-   └─ Blocking takes precedence over requests
-
-3. SELECT by PRIORITY
-   └─ External triggers: priority 0 (highest)
-   └─ Thread requests: priority based on registration order
-   └─ Lower number = higher priority
-
-4. NO SELECTION if all candidates blocked or none exist
-   └─ Execution waits for external trigger
+```mermaid
+flowchart TD
+    A[1. COLLECT candidates] --> B[Requested events<br/>become candidates]
+    B --> C[2. APPLY BLOCKING]
+    C --> D[Remove blocked candidates]
+    D --> E[Blocking takes precedence]
+    E --> F[3. SELECT by PRIORITY]
+    F --> G[External triggers: priority 0]
+    G --> H[Thread requests: by registration order]
+    H --> I[Lower number = higher priority]
+    I --> J{Candidates<br/>available?}
+    J -->|YES| K[Execute selected event]
+    J -->|NO| L[Wait for external trigger]
 ```
 
 ### Priority-Based Selection
