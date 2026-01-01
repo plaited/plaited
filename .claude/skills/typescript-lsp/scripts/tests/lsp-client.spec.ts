@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { LspClient } from '../scripts/lsp-client.ts'
+import { LspClient } from '../lsp-client.ts'
 
 const rootUri = `file://${process.cwd()}`
 const testFile = `${process.cwd()}/src/main/b-element.ts`

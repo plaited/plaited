@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
 
-const scriptsDir = join(import.meta.dir, '../scripts')
+const scriptsDir = join(import.meta.dir, '..')
 const cwd = process.cwd()
 
 // Helper to run a script as subprocess and capture output

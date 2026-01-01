@@ -200,7 +200,7 @@ signal.listen('evt', trigger)  // Subscribe
 Complete working examples demonstrating Plaited patterns:
 
 ### Decorator Pattern
-- **[DecoratedCheckbox](examples/decorator-pattern/)** - Wraps native checkbox with custom styling
+- **[DecoratedCheckbox](assets/decorator-pattern/)** - Wraps native checkbox with custom styling
   - Shows decorator pattern for hard-to-style native elements
   - Uses `useAttributesObserver` to sync slotted element state with custom states
   - Demonstrates `createTokens` for state-based styling
@@ -212,7 +212,7 @@ Complete working examples demonstrating Plaited patterns:
     - `decorated-checkbox.stories.tsx` - Story tests
 
 ### Slot Styling
-- **[InputAddon](examples/slot-styling/)** - Input decorator with prefix/suffix slots
+- **[InputAddon](assets/slot-styling/)** - Input decorator with prefix/suffix slots
   - Demonstrates `::slotted()` CSS for styling light DOM elements
   - Shows attribute observation on slotted elements
   - Custom state management with `internals.states`
@@ -224,7 +224,7 @@ Complete working examples demonstrating Plaited patterns:
     - `input-addon.stories.tsx` - Story tests
 
 ### Form-Associated Elements
-- **[ToggleInput](examples/form-associated/)** - Custom form control with ElementInternals
+- **[ToggleInput](assets/form-associated/)** - Custom form control with ElementInternals
   - Form-associated custom element pattern
   - Uses `formAssociated: true` to enable ElementInternals API
   - Custom states (`:state()`) for styling based on form state
@@ -237,7 +237,7 @@ Complete working examples demonstrating Plaited patterns:
     - `toggle-input.stories.tsx` - Story tests
 
 ### Stateful Elements
-- **[Popover](examples/stateful-elements/)** - Native popover API wrapper
+- **[Popover](assets/stateful-elements/)** - Native popover API wrapper
   - Stateful element pattern with custom states
   - Syncs custom states with native popover visibility
   - Shows child-to-parent communication via `emit()`
@@ -246,7 +246,7 @@ Complete working examples demonstrating Plaited patterns:
     - `popover.stories.tsx` - Story tests
 
 ### BP Coordination
-- **[Tic-Tac-Toe](examples/bp-coordination/)** - Interactive game with BP
+- **[Tic-Tac-Toe](assets/bp-coordination/)** - Interactive game with BP
   - Complex behavioral program coordination
   - Multiple b-threads working together (turn enforcement, square occupancy, win detection, AI strategy)
   - Demonstrates rule composition and event selection
