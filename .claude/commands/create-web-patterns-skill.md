@@ -31,8 +31,11 @@ Use AskUserQuestion to ask:
 Tell the user:
 1. Skill created at `.claude/skills/[skill-name]/`
 2. Tool access: [restricted/unrestricted]
-3. Extract patterns by asking Claude to fetch URLs
-4. Patterns will be saved to `references/` directory
+3. **Restart Claude Code** to activate the new skill
+4. Resume this session with: `claude -r`
+5. Extract patterns by asking Claude to fetch URLs
+6. Patterns will be saved to `references/` directory
+7. After adding patterns, ask Claude to re-read the skill to update context
 
 ## Skill Template
 
@@ -214,6 +217,12 @@ export const Example = bElement({
 - Source: [Article URL]
 - MDN: [MDN link]
 \`\`\`
+
+## Adding New Patterns
+
+When you add a new pattern to the `references/` directory, tell Claude to re-read the skill:
+- "Re-read the [skill-name] skill to see the new pattern"
+- Claude will use the Read tool to load the updated content
 
 ## Related Skills
 - plaited-framework-patterns - Framework patterns and conventions
