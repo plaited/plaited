@@ -1,6 +1,6 @@
 ---
 description: Validate skill directories against AgentSkills spec
-allowed-tools: Bash, WebFetch
+allowed-tools: Bash, mcp__agent-skills-spec__*
 ---
 
 # Validate Skills
@@ -23,8 +23,4 @@ Show the CLI output to the user. If there are errors, explain how to fix them ba
 
 ### Step 3: Check Spec (if needed)
 
-If the user needs clarification on validation rules:
-
-```
-WebFetch https://agentskills.io/specification
-```
+If the user needs clarification on validation rules, use the agent-skills-spec MCP server to query the latest specification.
