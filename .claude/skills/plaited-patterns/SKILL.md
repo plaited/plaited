@@ -258,8 +258,7 @@ Complete working examples demonstrating Plaited patterns:
 ## Related Skills
 
 - **code-documentation** - For writing TSDoc comments and API documentation
-- **document-plaited-pattern** - For extracting new patterns from codebase (internal use)
-- **extract-web-pattern** - For extracting Web API patterns from articles (internal use)
+- **typescript-lsp** - For type verification, symbol discovery, and code navigation
 
 ## Navigation Summary
 

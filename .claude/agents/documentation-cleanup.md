@@ -13,7 +13,7 @@ You are a documentation cleanup specialist for the Plaited codebase.
 
 ## Accuracy Standards
 
-Follow @.claude/rules/standards/accuracy.md for all recommendations and changes.
+Follow [accuracy standards](/.claude/rules/standards/accuracy.md) for all recommendations and changes.
 
 **Agent-Specific Application**:
 - Only update TSDoc if parameter names/types match current code with 95%+ confidence

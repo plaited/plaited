@@ -1,239 +1,105 @@
-# Workshop Plugin
+# Plaited Skills
 
-AI-assisted development plugin for the Plaited framework. Provides comprehensive knowledge of behavioral programming patterns, template creation, and web platform best practices through auto-invoked skills.
+AI-assisted development skills for the Plaited framework. Provides comprehensive knowledge of behavioral programming patterns, template creation, type verification, and documentation standards.
 
-## Features
+## Available Skills
 
-### 🎯 Plaited Patterns Skill (Auto-Invoked)
+### 🎯 plaited-patterns (Auto-Invoked)
 
-Automatically activates when you're working with Plaited templates, behavioral programs, or web platform patterns. Provides deep knowledge of:
+Automatically activates when working with Plaited templates, behavioral programs, or web platform patterns. Provides deep knowledge of:
 
-- **Behavioral Programming**: Super-step execution model, thread composition, event selection strategies, rule composition patterns
-- **Templates & Styling**: JSX syntax, FunctionalTemplate pattern, CSS-in-JS (atomic styles, host styles, design tokens, keyframes)
+- **Behavioral Programming**: Super-step execution model, thread composition, event selection strategies
+- **Templates & Styling**: JSX syntax, FunctionalTemplate pattern, CSS-in-JS (atomic styles, design tokens)
 - **Custom Elements**: bElement decorator, islands architecture, Shadow DOM, form-associated elements
 - **Cross-Island Communication**: Parent-child patterns, signals, actor model, pub/sub coordination
-- **Testing**: Story-based testing with Playwright, workshop CLI workflows, accessibility testing
+- **Testing**: Story-based testing with Playwright, workshop CLI workflows
 - **Web Workers**: bWorker pattern, message passing, thread lifecycle management
 
-All documentation uses **mermaid diagrams** for token-efficient, structured visual context.
+### 🔧 typescript-lsp (Auto-Invoked)
 
-### 🔍 Extract Web Pattern Skill (User-Invoked)
+TypeScript Language Server integration for type verification and code navigation:
 
-Extract modern HTML and Web API patterns from articles to build your own project-specific knowledge base.
+- **Hover**: Get type signatures and TSDoc at any position
+- **Symbols**: Find exports and document structure
+- **References**: Find all usages of a symbol
+- **Analyze**: Batch analysis with multiple operations
 
-**What it extracts:**
-- Modern HTML features (dialog, popover, invokers, form validation)
-- Web APIs (Intersection Observer, Priority Hints, Mutation Observer)
-- Performance optimizations (resource hints, fetchpriority, loading strategies)
-- Accessibility improvements (ARIA, semantic HTML, keyboard navigation)
-- Shadow DOM compatible patterns
+### 📝 code-documentation (Auto-Invoked)
 
-**Output:** Creates auto-invoked skills in your project's `.claude/skills/` directory for progressive disclosure (token-efficient, loads only when relevant).
+TSDoc workflow and templates for documentation:
 
-### ⚙️ SessionStart Hook
+- Public API templates
+- Internal module documentation
+- Type documentation patterns
+- 4-phase documentation workflow
 
-Runs once at session start to verify dependencies and display helpful commands:
+### 🔍 code-query (Auto-Invoked)
 
-- Checks for TypeScript LSP plugin (recommended for type inference)
-- Verifies Bun runtime installation
-- Shows workshop CLI command reference
+Story and template discovery for the workshop:
 
-## Installation
-
-### Prerequisites
-
-- **Bun >= 1.2.9** (required by Plaited framework)
-- **TypeScript LSP plugin** (recommended): `typescript-lsp@claude-plugins-official`
-
-### Option 1: Install from Marketplace (Recommended)
-
-Add the Plaited marketplace to your Claude Code settings (`.claude/settings.json`):
-
-```json
-{
-  "extraKnownMarketplaces": {
-    "plaited": "https://raw.githubusercontent.com/plaited/plaited/main/.claude-plugin/marketplace.json"
-  },
-  "enabledPlugins": {
-    "workshop@plaited": true,
-    "typescript-lsp@claude-plugins-official": true
-  }
-}
-```
-
-Restart Claude Code to activate.
-
-### Option 2: Local Development
-
-Clone the repository and enable locally:
-
-```bash
-git clone https://github.com/plaited/plaited.git
-cd plaited
-```
-
-Add to your project's `.claude/settings.json`:
-
-```json
-{
-  "extraKnownMarketplaces": {
-    "plaited": {
-      "source": {
-        "source": "directory",
-        "path": "."
-      }
-    }
-  },
-  "enabledPlugins": {
-    "workshop@plaited": true,
-    "typescript-lsp@claude-plugins-official": true
-  }
-}
-```
-
-Restart Claude Code.
+- Find stories by pattern or component
+- Generate preview URLs
+- Discover behavioral elements
 
 ## Usage
 
-### Plaited Patterns (Automatic)
+Skills activate automatically based on context. Claude uses them when:
 
-The `plaited-patterns` skill activates automatically when you're:
+- Working with Plaited templates, behavioral programs, or custom elements
+- Checking type signatures or finding symbol references
+- Writing or reviewing TSDoc documentation
+- Discovering stories or testing patterns
 
-- Creating or modifying Plaited templates
-- Working with behavioral programs (bThread, bSync, behavioral)
-- Implementing islands architecture
-- Writing story tests
-- Using CSS-in-JS (createStyles, createHostStyles)
-- Coordinating cross-island communication with signals
-- Setting up web workers
-
-**No commands needed** - Claude automatically uses the knowledge when relevant.
-
-### Extract Web Patterns (On-Demand)
-
-When you find a useful article about modern web patterns:
-
-1. **Invoke the skill**: Describe what you want to extract
-2. **Provide the URL**: Article link with the pattern
-3. **Review extraction**: Skill formats pattern for Plaited integration
-4. **Skill created**: Auto-invoked skill added to your project
-
-**Example:**
-```
-User: Extract the HTML dialog pattern from this article: https://web.dev/building-a-dialog-component
-
-Claude: [Extracts pattern, formats for Plaited, creates skill]
-
-Output: .claude/skills/html-dialog-pattern/SKILL.md
-```
+**No commands needed** - Claude automatically uses the relevant skill knowledge.
 
 ### Workshop CLI Commands
-
-The SessionStart hook displays these helpful commands at session start:
 
 ```bash
 # Testing
 bun plaited test                 # Run all story tests
 bun plaited test <path>          # Run tests from directory/file
 bun plaited test -p 3500         # Custom port
-bun plaited test -c dark         # Dark mode
 
 # Development
 bun plaited dev                  # Start dev server
 bun --hot plaited dev            # Dev server with hot reload
 ```
 
-## Why Skills Over Rules?
-
-The workshop plugin uses **skills** for pattern knowledge instead of **rules** for token efficiency:
-
-### Skills (Progressive Disclosure)
-- ✅ ~100 tokens loaded initially (just metadata)
-- ✅ Full content (~5k tokens) loads only when relevant
-- ✅ Massive token savings for large knowledge bases
-
-### Rules (Always Loaded)
-- ⚠️ Full token cost paid at session start
-- Best for project-wide standards that always apply
-
-**Result:** You get comprehensive pattern knowledge without bloating your context window.
-
-## Documentation Structure
+## Directory Structure
 
 ```
-plugins/workshop/
+.claude/
 ├── skills/
-│   ├── plaited-patterns/        # Framework knowledge (auto-invoked)
+│   ├── plaited-patterns/         # Framework knowledge
 │   │   ├── SKILL.md
-│   │   └── plaited/
-│   │       ├── behavioral-programs.md    # BP foundations
-│   │       ├── b-element.md              # Custom elements
-│   │       ├── styling.md                # Templates + CSS-in-JS
-│   │       ├── stories.md                # Testing
-│   │       ├── form-associated-elements.md
-│   │       ├── cross-island-communication.md
-│   │       └── web-workers.md
-│   └── extract-web-pattern/     # Pattern extraction (user-invoked)
+│   │   ├── references/           # Pattern documentation
+│   │   │   ├── behavioral-programs.md
+│   │   │   ├── b-element.md
+│   │   │   ├── styling.md
+│   │   │   ├── stories.md
+│   │   │   └── ...
+│   │   └── examples/             # Working code examples
+│   ├── typescript-lsp/           # Type verification
+│   │   ├── SKILL.md
+│   │   └── scripts/              # LSP client scripts
+│   ├── code-documentation/       # TSDoc templates
+│   │   ├── SKILL.md
+│   │   └── references/
+│   └── code-query/               # Story discovery
 │       └── SKILL.md
-└── hooks/
-    └── SessionStart             # Dependency check + CLI help
+├── agents/                       # Specialized agents
+│   ├── architecture-reviewer.md
+│   └── documentation-cleanup.md
+├── rules/                        # Project-specific rules
+│   ├── development/
+│   ├── documentation/
+│   └── standards/
+└── hooks/                        # User prompt hooks
 ```
 
-## Diagram Format
+## Why Skills?
 
-All diagrams in the plugin use **mermaid** syntax for token efficiency and better structured context:
-
-```mermaid
-flowchart TD
-    A[Start] --> B[Process]
-    B --> C[End]
-```
-
-**Benefits:**
-- Significantly fewer tokens than ASCII art
-- Clearer semantic meaning for AI
-- Easier to maintain and update
-
-## Contributing
-
-This plugin is part of the [Plaited](https://github.com/plaited/plaited) framework. For issues or contributions, please visit the main repository.
-
-## License
-
-Same license as the Plaited framework.
-
-## Version
-
-- **Current Version**: 0.1.0
-- **Requires**: Bun >= 1.2.9
-- **Recommends**: TypeScript LSP plugin
-
-## Support
-
-- **GitHub Issues**: https://github.com/plaited/plaited/issues
-- **Documentation**: https://github.com/plaited/plaited
-- **Skills Guide**: https://www.claude.com/blog/skills-explained
-
-## Changelog
-
-### 0.1.0 (2025-12-24)
-
-**Features:**
-- Plaited Patterns skill with comprehensive framework documentation
-- Extract Web Pattern skill for building project-specific pattern libraries
-- SessionStart hook for dependency checking and CLI command reference
-- Mermaid diagram format for token efficiency
-- Behavioral programming anti-pattern fix (thread replacement prevention)
-
-**Documentation:**
-- Complete behavioral programming foundations
-- Template and styling patterns
-- Testing workflows
-- Islands architecture and cross-island communication
-- Web Worker patterns
-- Form-associated elements
-
-**Design:**
-- Skills-first approach for progressive disclosure
-- User-owned pattern extraction (not plugin-bundled)
-- Auto-invoked skills reduce token costs while maintaining comprehensive knowledge
+Skills use **progressive disclosure** for token efficiency:
+- ~100 tokens loaded initially (just metadata)
+- Full content (~5k tokens) loads only when relevant
+- Comprehensive knowledge without bloating context window

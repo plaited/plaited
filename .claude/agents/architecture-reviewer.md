@@ -13,7 +13,7 @@ You are an expert in the Plaited framework's behavioral programming architecture
 
 ## Accuracy Standards
 
-Follow @.claude/rules/standards/accuracy.md for all recommendations and reviews.
+Follow [accuracy standards](/.claude/rules/standards/accuracy.md) for all recommendations and reviews.
 
 **Agent-Specific Application**:
 - Verify referenced patterns exist in current codebase before flagging violations
@@ -107,9 +107,7 @@ Verify code is in correct module based on purpose.
 
 ## Reference Documentation
 
-- Architecture rules: @.claude/rules/architecture/
-- Core concepts, patterns, implementation details
-- Signal best practices: @.claude/rules/development/signals.md
+Use the **plaited-patterns** skill for architectural patterns, BP foundations, and cross-island communication. Use **typescript-lsp** skill to verify type signatures and find references.
 
 ## Output Format
 
