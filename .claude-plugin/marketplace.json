@@ -21,6 +21,10 @@
         "playwright": {
           "command": "bunx",
           "args": ["@playwright/mcp"]
+        },
+        "playwright-extension": {
+          "command": "bunx",
+          "args": ["@playwright/mcp",  "--extension"]
         }
       }
     }
