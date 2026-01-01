@@ -1,6 +1,6 @@
 ---
 name: plaited-web-patterns
-description: Extract Web API patterns from articles and adapt them for Plaited. Use when extracting patterns from URLs, analyzing web API documentation, or adapting web APIs to bElement patterns.
+description: Default Web API patterns for bElement architecture, including modern HTML features, performance optimizations, and Shadow DOM compatible patterns. Use create-web-patterns-skill command to add additional pattern skills.
 allowed-tools: WebFetch, Write, Read, Glob, mcp__playwright__*
 ---
 

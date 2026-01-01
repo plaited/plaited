@@ -1,6 +1,6 @@
 ---
 name: documentation-cleanup
-description: Automated documentation hygiene agent that updates TSDoc comments to match current code, removes non-compliant comments (performance notes, update timestamps, inline explanations), and enforces Plaited documentation standards. Only allows TODO comments and TSDoc blocks.
+description: Automated documentation hygiene agent that updates TSDoc comments to match current code, removes non-compliant comments (performance notes, update timestamps, inline explanations), and enforces Plaited documentation standards. Only allows TODO comments and TSDoc blocks. (Tools: Read, Grep, Glob, Edit)
 tools: Read, Grep, Glob, Edit
 skills:
   - typescript-lsp

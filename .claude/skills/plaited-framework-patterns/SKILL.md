@@ -19,6 +19,8 @@ This skill provides comprehensive documentation for building Plaited application
 
 ## Quick Reference
 
+**Terminology**: Plaited is a **template-based** framework. Use "template" not "component". Refer to browser APIs by specific names (Custom Elements, Shadow DOM) not "Web Components". See [code-conventions.md#terminology](references/code-conventions.md#terminology).
+
 **TypeScript LSP**: This plugin works with `typescript-lsp@claude-plugins-official` for type inference from imports. Use LSP for accurate type signatures from source code.
 
 **Essential Standards**:

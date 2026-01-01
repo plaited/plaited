@@ -23,8 +23,9 @@ bun run check:write
 
 This project uses `.claude/rules/` for project-specific guidance:
 
-- **Development**: @.claude/rules/development/ - Testing commands, plugin development
-- **Standards**: @.claude/rules/standards/ - Terminology, code review guidelines, accuracy standards
+- **Testing**: @.claude/rules/testing.md - Test commands and workflow
+- **Code Review**: @.claude/rules/code-review.md - Review standards
+- **Accuracy**: @.claude/rules/accuracy.md - Confidence thresholds
 
 For comprehensive Plaited patterns, code conventions, and standards, see the **plaited-framework-patterns** skill (`.claude/skills/plaited-framework-patterns/`).
 
@@ -36,7 +37,7 @@ For TSDoc workflow and templates, see the **code-documentation** skill (`.claude
 
 Plaited uses Bun's test runner for unit/integration tests (`*.spec.{ts,tsx}`) and a custom workshop CLI for browser-based template tests (`*.stories.tsx`).
 
-See @.claude/rules/development/testing.md for complete testing guide.
+See @.claude/rules/testing.md for complete testing guide.
 
 ### Architecture Highlights
 
@@ -63,12 +64,10 @@ For complete conventions, see the plaited-framework-patterns skill: `.claude/ski
 
 ### Plugin Development
 
-When working on plugins in `plugins/`:
+When working on plugins in `.claude/`:
 - Clear cache after changes: `rm -rf ~/.claude/plugins-cache`
 - Restart Claude Code to see updates
 - Skills are auto-invoked (won't show in `/plugins` UI)
-
-See @.claude/rules/development/plugin-development.md for complete guide.
 
 ### Documentation
 
@@ -98,9 +97,8 @@ See the plaited-framework-patterns skill (`.claude/skills/plaited-framework-patt
 
 **Project-Specific Rules** (`.claude/rules/`):
 - Testing commands and workflow
-- Plugin development guidelines
 - Code review standards
-- Project terminology
+- Accuracy and confidence thresholds
 
 ## Specialized Agents
 

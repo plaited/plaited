@@ -2,6 +2,29 @@
 
 Essential code style and conventions for writing idiomatic Plaited code.
 
+## Terminology
+
+**IMPORTANT**: Plaited is a **template-based** framework, not a component-based framework.
+
+### Use This Terminology
+- ✅ Use: template, templates, FunctionTemplate, BehavioralTemplate
+- ❌ Avoid: component, components
+
+### Browser Platform APIs
+
+Refer to browser platform APIs by their specific names:
+- **Custom Elements API**: `customElements.define()` for registering custom HTML elements
+- **Shadow DOM API**: Encapsulated DOM and styling
+- **HTML Templates**: `<template>` element including Declarative Shadow DOM
+
+❌ Avoid the umbrella term "Web Components" - refer to specific APIs instead (Custom Elements, Shadow DOM, etc.)
+
+### In Documentation and Code
+- Plaited templates (created with `bElement` or as functions)
+- Template exports, template metadata, template discovery
+- Template tests (not component tests)
+- Template lifecycle (not component lifecycle)
+
 ## General Preferences
 
 - Prefer arrow functions over function declarations

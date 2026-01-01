@@ -1,6 +1,6 @@
 ---
 name: architecture-reviewer
-description: Expert in Plaited behavioral programming patterns, event-driven architecture, and framework design. Use for architectural reviews, design validation, BP pattern verification, and ensuring new code aligns with framework principles.
+description: Expert in Plaited behavioral programming patterns, event-driven architecture, and framework design. Use for architectural reviews, design validation, BP pattern verification, and ensuring new code aligns with framework principles. (Tools: Read, Grep, Glob)
 tools: Read, Grep, Glob
 skills:
   - typescript-lsp
