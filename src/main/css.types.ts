@@ -147,7 +147,7 @@ export type FunctionTokenValue =
   | {
       $function: string
       $arguments: FunctionTokenArguments
-      $csv: never
+      $csv?: never
     }
   | {
       $function: string
@@ -157,6 +157,9 @@ export type FunctionTokenValue =
 
 export type DesignTokenValue = PrimitiveTokenValue | FunctionTokenValue | DesignTokenReference
 
+/**
+ * A design token with a single value or array of values.
+ */
 export type DesignToken =
   | {
       $value: DesignTokenValue
@@ -167,27 +170,31 @@ export type DesignToken =
       $csv: boolean
     }
 
-export type NestedDesignTokenStatements = {
-  /** The default value for the CSS property. */
-  [CSS_RESERVED_KEYS.$default]?: DesignToken
-  /** Rules applied based on container queries, layers, media queries, or supports queries. */
-  [key: `@${'container' | 'layer' | 'media' | 'supports'}${string}`]: DesignToken | NestedDesignTokenStatements
-  /** Rules applied based on pseudo-classes (e.g., :hover, :focus). Can be nested further. */
-  [key: `:${string}`]: DesignToken
-  /** Rules applied based on attribute selectors (e.g., [disabled], [data-state="active"]). Can be nested further. */
-  [key: `[${string}]`]: DesignToken
+/**
+ * A nested group of tokens for creating scales (e.g., sizes, colors).
+ * Supports one level of nesting.
+ */
+export type DesignTokenScale = {
+  [key: string]: DesignToken
 }
 
+/**
+ * Defines a group of design tokens.
+ * Tokens can be simple values or nested scales for organizing related values.
+ */
 export type DesignTokenGroup = {
-  [key: string]:
-    | DesignToken
-    | (NestedDesignTokenStatements & {
-        [CSS_RESERVED_KEYS.$compoundSelectors]?: {
-          [key: string]: DesignToken | NestedDesignTokenStatements
-        }
-      })
+  [key: string]: DesignToken | DesignTokenScale
 }
 
+/**
+ * Maps a token group to reference functions.
+ * For simple tokens, returns a DesignTokenReference.
+ * For nested scales, returns an object mapping each key to a DesignTokenReference.
+ */
 export type DesignTokenReferences<T extends DesignTokenGroup> = {
-  [key in keyof T]: DesignTokenReference
+  [K in keyof T]: T[K] extends DesignToken
+    ? DesignTokenReference
+    : T[K] extends DesignTokenScale
+      ? { [SK in keyof T[K]]: DesignTokenReference }
+      : never
 }

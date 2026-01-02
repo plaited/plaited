@@ -18,13 +18,12 @@
       "category": "development",
       "strict": false,
       "mcpServers": {
-        "playwright": {
+        "chrome-devtools": {
           "command": "bunx",
-          "args": ["@playwright/mcp"]
-        },
-        "playwright-extension": {
-          "command": "bunx",
-          "args": ["@playwright/mcp",  "--extension"]
+          "args": [
+            "-y",
+            "chrome-devtools-mcp@latest"
+          ]
         },
         "agent-skills-spec": {
           "type": "http",

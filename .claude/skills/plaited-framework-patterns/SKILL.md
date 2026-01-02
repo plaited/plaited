@@ -27,7 +27,7 @@ This skill provides comprehensive documentation for building Plaited application
 
 **Essential Standards**:
 - **Code Conventions**: [code-conventions.md](references/code-conventions.md) - Type system, function style, templates, imports, null handling
-- **Testing**: [stories.md](references/stories.md) - Story-based testing with Playwright, workshop CLI
+- **Testing**: [stories.md](references/stories.md) - Story-based testing with browser automation, workshop CLI
 - **Standards**: [standards.md](references/standards.md) - 95% confidence threshold, documentation guidelines, Bun APIs
 - **Verification**: [verification-workflow.md](references/verification-workflow.md) - Complete code generation workflow
 
@@ -38,7 +38,7 @@ This skill provides comprehensive documentation for building Plaited application
   - Use for: JSX syntax, template security, FunctionalTemplate pattern, atomic CSS, host styling, design tokens
 
 ### Testing
-- **[stories.md](references/stories.md)** - Story-based testing with Playwright integration
+- **[stories.md](references/stories.md)** - Story-based testing with browser automation
   - Use for: Writing stories for templates and bElements, workshop CLI usage, accessibility testing, inspector debugging
   - Workshop commands: `bun plaited test`, `bun plaited dev`
 

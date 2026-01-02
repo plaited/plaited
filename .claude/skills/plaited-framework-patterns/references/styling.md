@@ -440,11 +440,9 @@ import { createTokens } from 'plaited'
 
 export const { fills } = createTokens('fills', {
   fill: {
-    $default: { $value: 'lightblue' },
-    $compoundSelectors: {
-      ':state(checked)': { $value: 'blue' },
-      ':state(disabled)': { $value: 'grey' },
-    },
+    default: { $value: 'lightblue' },
+    checked: { $value: 'blue' },
+    disabled: { $value: 'grey' },
   },
 })
 ```
@@ -458,12 +456,18 @@ export const styles = createStyles({
   symbol: {
     height: '16px',
     width: '16px',
-    backgroundColor: fills.fill,
+    backgroundColor: {
+      $default: fills.fill.default,
+      ':host(:state(checked))': fills.fill.checked,
+      ':host(:state(disabled))': fills.fill.disabled,
+    },
   }
 })
 
 export const hostStyles = joinStyles(
-  fills,
+  fills.fill.default,
+  fills.fill.checked,
+  fills.fill.disabled,
   createHostStyles({
     display: 'inline-grid',
   })
@@ -719,19 +723,20 @@ Creates CSS `@keyframes` animation with hash-based identifier.
 
 **Type Signature:**
 ```typescript
-function createKeyframes(
-  name: string,
+function createKeyframes<I extends string>(
+  name: I,
   frames: CSSKeyFrames
-): StyleFunctionKeyframe
+): Record<I, StyleFunctionKeyframe>
 ```
 
 **Parameters:**
 - `name`: Base animation name (hash will be appended)
 - `frames`: Object with `from`, `to`, or percentage keys defining animation stages
 
-**Returns:** Function with `.id` property:
-- Invoke `()` to get `HostStylesObject` with animation CSS
-- Access `.id` to reference animation name in CSS
+**Returns:** Object mapping the animation name to a `StyleFunctionKeyframe`:
+- Destructure to extract the keyframe function: `const { fadeIn } = createKeyframes('fadeIn', ...)`
+- Invoke `keyframe()` to get `HostStylesObject` with animation CSS
+- Access `keyframe.id` to reference animation name in CSS
 
 **Example:**
 
@@ -739,7 +744,7 @@ function createKeyframes(
 ```typescript
 import { createKeyframes, createHostStyles, joinStyles } from 'plaited'
 
-const fadeIn = createKeyframes('fadeIn', {
+const { fadeIn } = createKeyframes('fadeIn', {
   from: { opacity: '0' },
   to: { opacity: '1' }
 })
@@ -804,11 +809,9 @@ import { createTokens } from 'plaited'
 
 export const { fills } = createTokens('fills', {
   fill: {
-    $default: { $value: 'lightblue' },
-    $compoundSelectors: {
-      ':state(checked)': { $value: 'blue' },
-      ':state(disabled)': { $value: 'grey' },
-    },
+    default: { $value: 'lightblue' },
+    checked: { $value: 'blue' },
+    disabled: { $value: 'grey' },
   },
 })
 ```
@@ -823,12 +826,18 @@ export const styles = createStyles({
   symbol: {
     height: '16px',
     width: '16px',
-    backgroundColor: fills.fill,
+    backgroundColor: {
+      $default: fills.fill.default,
+      ':host(:state(checked))': fills.fill.checked,
+      ':host(:state(disabled))': fills.fill.disabled,
+    },
   }
 })
 
 export const hostStyles = joinStyles(
-  fills,
+  fills.fill.default,
+  fills.fill.checked,
+  fills.fill.disabled,
   createHostStyles({
     display: 'inline-grid',
     padding: theme.spacing,  // Token reference, not invoked
@@ -873,7 +882,7 @@ console.log(theme.primary())  // 'var(--theme-primary)'
 - Simple values: `{ $value: 'string' | number }`
 - Arrays: `{ $value: ['value1', 'value2'], $csv?: boolean }`
 - Functions: `{ $value: { $function: 'name', $arguments: [...], $csv?: boolean } }`
-- Nested selectors: `{ $default: { $value }, ':hover': { $value } }`
+- Scales (one level nesting): `{ default: { $value }, checked: { $value } }`
 - Token references: `{ $value: otherToken }` (pass reference, don't invoke)
 
 ### `joinStyles(...styles)`
@@ -906,7 +915,7 @@ A new `StylesObject` with `classNames` and `stylesheets` arrays containing the m
 ```typescript
 import { createKeyframes, createHostStyles, joinStyles } from 'plaited'
 
-const pulse = createKeyframes('pulse', {
+const { pulse } = createKeyframes('pulse', {
   '0%': { transform: 'scale(1)' },
   '50%': { transform: 'scale(1.05)' },
   '100%': { transform: 'scale(1)' }
@@ -934,9 +943,9 @@ export const AnimatedCard = bElement({
 })
 ```
 
-**Common Pattern: Tokens with Selectors**
+**Common Pattern: Token Scales with State Variations**
 
-When tokens include selector variations (using `$default` and `$compoundSelectors`), pass the token reference to `joinStyles()` to include all CSS variable definitions:
+When tokens use scales for state variations, pass each token reference you use to `joinStyles()` to include all CSS variable definitions:
 
 **File: `fills.tokens.ts`**
 ```typescript
@@ -944,23 +953,33 @@ import { createTokens } from 'plaited'
 
 export const { fills } = createTokens('fills', {
   fill: {
-    $default: { $value: 'lightblue' },
-    $compoundSelectors: {
-      ':state(checked)': { $value: 'blue' },
-      ':state(disabled)': { $value: 'gray' }
-    }
+    default: { $value: 'lightblue' },
+    checked: { $value: 'blue' },
+    disabled: { $value: 'gray' },
   }
 })
 ```
 
 **File: `toggle.css.ts`**
 ```typescript
-import { createHostStyles, joinStyles } from 'plaited'
+import { createStyles, createHostStyles, joinStyles } from 'plaited'
 import { fills } from './fills.tokens.ts'
+
+export const styles = createStyles({
+  symbol: {
+    backgroundColor: {
+      $default: fills.fill.default,
+      ':host(:state(checked))': fills.fill.checked,
+      ':host(:state(disabled))': fills.fill.disabled,
+    },
+  }
+})
 
 // joinStyles merges token CSS variables with host styles
 export const hostStyles = joinStyles(
-  fills,  // Includes :host{--fills-fill:lightblue;}, :host:state(checked){--fills-fill:blue;}, etc.
+  fills.fill.default,  // Includes :host{--fills-fill-default:lightblue;}
+  fills.fill.checked,  // Includes :host{--fills-fill-checked:blue;}
+  fills.fill.disabled, // Includes :host{--fills-fill-disabled:gray;}
   createHostStyles({
     display: 'inline-grid'
   })
@@ -1151,7 +1170,7 @@ export const { colors } = createTokens('colors', {
 import { createKeyframes, createHostStyles, joinStyles } from 'plaited'
 import { colors } from './colors.tokens.ts'
 
-const pulse = createKeyframes('pulse', {
+const { pulse } = createKeyframes('pulse', {
   '0%': {
     transform: 'scale(1)',
     backgroundColor: colors.primary  // NOT colors.primary()
@@ -1504,7 +1523,7 @@ const { theme } = createTokens('theme', {
   spacing: { $value: '16px' },
 })
 
-const fadeIn = createKeyframes('fadeIn', {
+const { fadeIn } = createKeyframes('fadeIn', {
   from: { opacity: '0' },
   to: { opacity: '1' }
 })
@@ -1627,11 +1646,9 @@ import { createTokens } from 'plaited'
 
 export const { fills } = createTokens('fills', {
   fill: {
-    $default: { $value: 'lightblue' },
-    $compoundSelectors: {
-      ':state(checked)': { $value: 'blue' },
-      ':state(disabled)': { $value: 'gray' },
-    },
+    default: { $value: 'lightblue' },
+    checked: { $value: 'blue' },
+    disabled: { $value: 'gray' },
   },
 })
 ```
@@ -1643,7 +1660,11 @@ import { fills } from './fills.tokens.ts'
 
 export const toggleStyles = createStyles({
   symbol: {
-    backgroundColor: fills.fill,  // Correct - use token reference
+    backgroundColor: {
+      $default: fills.fill.default,  // Correct - use token reference
+      ':host(:state(checked))': fills.fill.checked,
+      ':host(:state(disabled))': fills.fill.disabled,
+    },
   }
 })
 ```

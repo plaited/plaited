@@ -60,11 +60,9 @@ const tokensFile = {
 
 export const { ${name.replace(/-/g, '')}Tokens } = createTokens('${name.replace(/-/g, '')}Tokens', {
   fill: {
-    $default: { $value: 'lightblue' },
-    $compoundSelectors: {
-      ':state(checked)': { $value: 'blue' },
-      ':state(disabled)': { $value: 'gray' },
-    },
+    default: { $value: 'lightblue' },
+    checked: { $value: 'blue' },
+    disabled: { $value: 'gray' },
   },
 })
 `,
@@ -81,11 +79,18 @@ export const styles = createStyles({
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
+    backgroundColor: {
+      $default: ${name.replace(/-/g, '')}Tokens.fill.default,
+      ':host(:state(checked))': ${name.replace(/-/g, '')}Tokens.fill.checked,
+      ':host(:state(disabled))': ${name.replace(/-/g, '')}Tokens.fill.disabled,
+    },
   },
 })
 
 export const hostStyles = joinStyles(
-  ${name.replace(/-/g, '')}Tokens,
+  ${name.replace(/-/g, '')}Tokens.fill.default,
+  ${name.replace(/-/g, '')}Tokens.fill.checked,
+  ${name.replace(/-/g, '')}Tokens.fill.disabled,
   createHostStyles({
     display: 'inline-block',
   })

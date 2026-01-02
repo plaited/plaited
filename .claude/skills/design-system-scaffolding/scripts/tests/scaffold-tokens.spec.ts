@@ -20,13 +20,13 @@ describe('scaffold-tokens', () => {
     expect(result.filePath).toContain('src/tokens/colors.tokens.ts')
   })
 
-  test('includes compound selectors example', async () => {
+  test('includes scale pattern example', async () => {
     const result = await $`bun ${scriptsDir}/scaffold-tokens.ts test test`.json()
 
-    expect(result.content).toContain('$default')
-    expect(result.content).toContain('$compoundSelectors')
-    expect(result.content).toContain(':state(checked)')
-    expect(result.content).toContain(':hover')
+    expect(result.content).toContain('fill: {')
+    expect(result.content).toContain('default: { $value:')
+    expect(result.content).toContain('checked: { $value:')
+    expect(result.content).toContain('hover: { $value:')
   })
 
   test('exits with error when name is missing', async () => {

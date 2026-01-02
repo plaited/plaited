@@ -26,7 +26,7 @@ Use AskUserQuestion to ask:
 "Which tools should this skill have access to?"
 **Options:**
 1. **Default** - `WebFetch, Write, Read, Glob` (essential for pattern extraction)
-2. **Add tools** - Default plus additional tools (user provides comma-separated list, e.g., `mcp__playwright__*`)
+2. **Add tools** - Default plus additional tools (user provides comma-separated list, e.g., `mcp__chrome-devtools__*`)
 
 ### Step 3: Create Skill Files
 1. Create the skill directory: `.claude/skills/[skill-name]/`

@@ -1,10 +1,10 @@
 {
   "mcpServers": {
-    "playwright": {
+    "chrome-devtools": {
       "command": "bunx",
       "args": [
-        "@playwright/mcp",
-        "--extension"
+        "-y",
+        "chrome-devtools-mcp@latest"
       ]
     },
     "agent-skills-spec": {

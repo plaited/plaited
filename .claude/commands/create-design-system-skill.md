@@ -26,7 +26,7 @@ Use AskUserQuestion to ask:
 "Which tools should this skill have access to?"
 **Options:**
 1. **Default** - `WebFetch, Write, Read, Glob` (essential for pattern extraction)
-2. **With Playwright** - Default plus `mcp__playwright__*` (for visual inspection with headless browser)
+2. **With Chrome DevTools** - Default plus `mcp__chrome-devtools__*` (for visual inspection with browser)
 3. **Add tools** - Default plus additional tools (user provides comma-separated list)
 
 ### Step 3: Create Skill Files
@@ -42,7 +42,7 @@ Tell the user:
 4. Resume this session with: `claude -r`
 5. Extract tokens by:
    - Asking Claude to fetch design system URLs
-   - Using Playwright to visually inspect pages (if enabled)
+   - Using Chrome DevTools to visually inspect pages (if enabled)
    - Describing tokens in conversation for refinement
 6. Patterns will be saved to `references/` directory
 7. After adding patterns, ask Claude to re-read the skill to update context
@@ -61,7 +61,7 @@ allowed-tools: [tool-list]
 ```
 Where `[tool-list]` is:
 - Default: `WebFetch, Write, Read, Glob`
-- With Playwright: `WebFetch, Write, Read, Glob, mcp__playwright__*`
+- With Chrome DevTools: `WebFetch, Write, Read, Glob, mcp__chrome-devtools__*`
 - Add tools: `WebFetch, Write, Read, Glob, [user-provided-tools]`
 
 **Frontmatter (if Unrestricted):**
@@ -106,11 +106,11 @@ Fetch design system documentation and extract token values:
 - Spacing guidelines
 - Component documentation
 
-#### From Visual Inspection (Playwright - if enabled)
+#### From Visual Inspection (Chrome DevTools - if enabled)
 Use browser automation to inspect live pages:
 - Take screenshots for visual reference
-- Use accessibility snapshots for semantic structure
-- Extract computed styles from elements
+- Use `take_snapshot` for a11y tree structure
+- Extract computed styles via `evaluate_script`
 
 #### From Conversation
 Describe tokens in natural language for refinement:

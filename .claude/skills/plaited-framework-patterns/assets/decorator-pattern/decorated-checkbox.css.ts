@@ -5,7 +5,11 @@ export const styles = createStyles({
   symbol: {
     height: '16px',
     width: '16px',
-    backgroundColor: surfaces.fill,
+    backgroundColor: {
+      $default: surfaces.fill.default,
+      ':host(:state(checked))': surfaces.fill.checked,
+      ':host(:state(disabled))': surfaces.fill.disabled,
+    },
     gridArea: 'input',
   },
   input: {
@@ -19,7 +23,9 @@ export const styles = createStyles({
 })
 
 export const hostStyles = joinStyles(
-  surfaces.fill,
+  surfaces.fill.default,
+  surfaces.fill.checked,
+  surfaces.fill.disabled,
   createHostStyles({
     display: 'inline-grid',
     gridTemplate: '"input" 16px / 16px',

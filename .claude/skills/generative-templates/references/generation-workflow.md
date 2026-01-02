@@ -53,10 +53,8 @@ import { createTokens } from 'plaited'
 
 export const { newElementTokens } = createTokens('newElementTokens', {
   fill: {
-    $default: { $value: 'lightblue' },
-    $compoundSelectors: {
-      ':state(active)': { $value: 'blue' },
-    },
+    default: { $value: 'lightblue' },
+    active: { $value: 'blue' },
   },
 })
 ```
@@ -70,12 +68,16 @@ import { newElementTokens } from './new-element.tokens.ts'
 
 export const styles = createStyles({
   root: {
-    backgroundColor: newElementTokens.fill,
+    backgroundColor: {
+      $default: newElementTokens.fill.default,
+      ':host(:state(active))': newElementTokens.fill.active,
+    },
   }
 })
 
 export const hostStyles = joinStyles(
-  newElementTokens,
+  newElementTokens.fill.default,
+  newElementTokens.fill.active,
   createHostStyles({ display: 'inline-block' })
 )
 ```

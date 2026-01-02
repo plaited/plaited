@@ -19,26 +19,33 @@ This skill provides structural patterns for design tokens. Use this when:
 
 ## Quick Reference
 
-**Token Structure:**
+**Simple Token:**
 ```typescript
 import { createTokens } from 'plaited'
 
-export const { namespace } = createTokens('namespace', {
-  tokenName: {
-    $default: { $value: 'defaultValue' },
-    $compoundSelectors: {
-      ':state(checked)': { $value: 'checkedValue' },
-      ':hover': { $value: 'hoverValue' },
-    },
+export const { theme } = createTokens('theme', {
+  primary: { $value: '#007bff' },
+  spacing: { $value: '16px' },
+})
+```
+
+**Token Scale (for state variations):**
+```typescript
+export const { fills } = createTokens('fills', {
+  fill: {
+    default: { $value: 'lightblue' },
+    checked: { $value: 'blue' },
+    disabled: { $value: 'gray' },
   },
 })
+// Access: fills.fill.default, fills.fill.checked, etc.
 ```
 
 **Key Patterns:**
 - `$value` - The token value (string, number, array, or function)
-- `$default` - Base value when using compound selectors
-- `$compoundSelectors` - State-based variations (`:state()`, `:hover`, `[disabled]`)
+- Scales - One level of nesting for related tokens (states, sizes, colors)
 - Token references - Pass tokens directly (not invoked) as CSS values
+- State styling - Apply in `createStyles`/`createHostStyles` with selectors
 
 ## References
 
@@ -72,16 +79,21 @@ import { fills } from './fills.tokens.ts'
 import { spacing } from './spacing.tokens.ts'
 
 // In createStyles - pass token reference directly
+// For scales with state variations, use nested selectors
 export const styles = createStyles({
   element: {
-    backgroundColor: fills.surface,  // NOT fills.surface()
+    backgroundColor: {
+      $default: fills.fill.default,
+      ':host(:state(checked))': fills.fill.checked,
+    },
     padding: spacing.md,
   }
 })
 
 // In hostStyles - use joinStyles to include token CSS variables
 export const hostStyles = joinStyles(
-  fills,  // Includes all token CSS variable definitions
+  fills.fill.default,   // Include each token you use
+  fills.fill.checked,
   createHostStyles({
     display: 'block',
     padding: spacing.lg,
@@ -95,7 +107,7 @@ export const hostStyles = joinStyles(
 2. **Separate token files** - Use `*.tokens.ts` extension
 3. **Pass references directly** - Never invoke tokens when using as CSS values
 4. **Use joinStyles for hostStyles** - Include token definitions in host styles
-5. **State-based variations** - Use `$compoundSelectors` for interactive states
+5. **Scales for related values** - Group related tokens (states, sizes) in scales
 
 ## Related Skills
 

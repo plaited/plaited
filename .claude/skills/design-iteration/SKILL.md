@@ -3,7 +3,7 @@ name: design-iteration
 description: Multi-modal design refinement with visual feedback. Use when iterating on template designs with test videos, headless browser, or browser extension.
 license: ISC
 compatibility: Requires bun
-allowed-tools: Bash, Read, Edit, Write, Glob, mcp__playwright__*
+allowed-tools: Bash, Read, Edit, Write, Glob, mcp__chrome-devtools__*
 ---
 
 # Design Iteration
@@ -12,18 +12,16 @@ Multi-modal design refinement with visual feedback.
 
 ## Purpose
 
-This skill provides three modes for iterating on template designs:
+This skill provides two primary modes for iterating on template designs:
 1. **Test Video** - Run story tests with video recording
-2. **Playwright** - Headless browser automation
-3. **Browser Extension** - Use existing browser with extensions
+2. **Chrome DevTools** - Browser automation via Chrome DevTools Protocol
 
 ## Quick Reference
 
 | Mode | Use Case | Tool | Requirements |
 |------|----------|------|--------------|
 | Test Video | Interaction stories with play functions | `bun plaited test --record-video` | None |
-| Playwright | Headless browser automation | `playwright` MCP | None |
-| Browser Extension | Use existing browser with extensions | `playwright-extension` MCP | Browser extension bridge |
+| Chrome DevTools | Browser automation, screenshots, inspection | `chrome-devtools` MCP | Chrome browser |
 
 ## References
 
@@ -36,17 +34,11 @@ This skill provides three modes for iterating on template designs:
   - Videos for light and dark color schemes
   - Best for stories with play functions
 
-### Playwright Mode
-- **[playwright-mode.md](references/playwright-mode.md)** - Headless browser
-  - Screenshots and accessibility snapshots
+### Chrome DevTools Mode
+- **[chrome-devtools-mode.md](references/chrome-devtools-mode.md)** - Browser automation
+  - Screenshots and accessibility tree snapshots
   - Navigate and interact programmatically
   - Best for visual inspection
-
-### Extension Mode
-- **[extension-mode.md](references/extension-mode.md)** - Browser extension bridge
-  - Use your existing browser
-  - Access extensions and auth state
-  - Requires setup (see reference)
 
 ## Iteration Workflow
 
@@ -65,7 +57,7 @@ bun plaited test src/components/button --record-video ./videos --color-scheme bo
 6. Re-run test to generate new videos
 7. Repeat until satisfied
 
-### Playwright Workflow
+### Chrome DevTools Workflow
 
 1. Start dev server (via live-preview)
 2. Navigate to story URL
@@ -75,13 +67,6 @@ bun plaited test src/components/button --record-video ./videos --color-scheme bo
 6. Hot reload refreshes browser
 7. Take new screenshot
 8. Repeat until satisfied
-
-### Browser Extension Workflow
-
-Same as Playwright but uses your existing browser:
-- Useful when testing with browser extensions
-- Maintains auth state from your session
-- Requires browser extension bridge setup
 
 ## Related Skills
 

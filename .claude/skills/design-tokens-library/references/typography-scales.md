@@ -72,16 +72,33 @@ export const { fontFamily } = createTokens('fontFamily', {
 
 ## Responsive Typography
 
+Use scales for breakpoint-based typography:
+
 ```typescript
 import { createTokens } from 'plaited'
 
 export const { heading } = createTokens('heading', {
   h1: {
-    $default: { $value: '2rem' },
-    $compoundSelectors: {
-      '@media (min-width: 768px)': { $value: '3rem' },
-    },
+    base: { $value: '2rem' },
+    md: { $value: '2.5rem' },
+    lg: { $value: '3rem' },
   },
+})
+```
+
+**Usage with media queries in styles:**
+```typescript
+import { createStyles, joinStyles } from 'plaited'
+import { heading } from './heading.tokens.ts'
+
+export const styles = createStyles({
+  title: {
+    fontSize: {
+      $default: heading.h1.base,
+      '@media (min-width: 768px)': heading.h1.md,
+      '@media (min-width: 1024px)': heading.h1.lg,
+    },
+  }
 })
 ```
 

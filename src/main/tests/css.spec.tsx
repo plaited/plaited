@@ -173,13 +173,13 @@ test('host: works with JSX via spread operator', () => {
 
 // Additional tests
 test('keyframes', () => {
-  const testKeyframes = createKeyframes('pulse', {
+  const { pulse } = createKeyframes('pulse', {
     '0%': { transform: 'scale(1)' },
     '50%': { transform: 'scale(1.1)' },
     '100%': { transform: 'scale(1)' },
   })
-  expect(testKeyframes.id.startsWith('pulse_')).toBeTruthy()
-  expect(testKeyframes()).toMatchSnapshot()
+  expect(pulse.id.startsWith('pulse_')).toBeTruthy()
+  expect(pulse()).toMatchSnapshot()
 })
 
 test('join', () => {
@@ -221,19 +221,20 @@ test('tokens: simple token with $value', () => {
 })
 
 test('tokens: token with array values', () => {
-  const { spacing } = createTokens('spacing', {
+  const { typography } = createTokens('typography', {
     margin: {
       $value: ['10px', '20px', '30px', '40px'],
+      $csv: false,
     },
     fontFamily: {
       $value: ['"Helvetica Neue"', 'Arial', 'sans-serif'],
       $csv: true,
     },
   })
-  expect(spacing.margin()).toBe('var(--spacing-margin)')
-  expect(spacing.margin.stylesheets).toMatchSnapshot()
-  expect(spacing.fontFamily()).toBe('var(--spacing-font-family)')
-  expect(spacing.fontFamily.stylesheets).toMatchSnapshot()
+  expect(typography.margin()).toBe('var(--typography-margin)')
+  expect(typography.margin.stylesheets).toMatchSnapshot()
+  expect(typography.fontFamily()).toBe('var(--typography-font-family)')
+  expect(typography.fontFamily.stylesheets).toMatchSnapshot()
 })
 
 test('tokens: function token values', () => {
@@ -242,6 +243,7 @@ test('tokens: function token values', () => {
       $value: {
         $function: 'drop-shadow',
         $arguments: ['2px', '4px', '6px', 'rgba(0,0,0,0.1)'],
+        $csv: false,
       },
     },
     gradient: {
@@ -258,50 +260,38 @@ test('tokens: function token values', () => {
   expect(effects.gradient.stylesheets).toMatchSnapshot()
 })
 
-test('tokens: nested token statements with selectors', () => {
-  const { interactive } = createTokens('interactive', {
-    buttonColor: {
-      $default: {
-        $value: 'blue',
-      },
-      ':hover': {
-        $value: 'darkblue',
-      },
-      ':active': {
-        $value: 'navy',
-      },
-      '@media (max-width: 768px)': {
-        $value: 'lightblue',
-      },
+test('tokens: nested scales for size tokens', () => {
+  const { sizes } = createTokens('sizes', {
+    icon: {
+      sm: { $value: '16px' },
+      md: { $value: '24px' },
+      lg: { $value: '32px' },
+    },
+    button: {
+      sm: { $value: '32px' },
+      md: { $value: '40px' },
+      lg: { $value: '48px' },
     },
   })
-  expect(interactive.buttonColor()).toBe('var(--interactive-button-color)')
-  expect(interactive.buttonColor.stylesheets).toMatchSnapshot()
+  expect(sizes.icon.sm()).toBe('var(--sizes-icon-sm)')
+  expect(sizes.icon.md()).toBe('var(--sizes-icon-md)')
+  expect(sizes.icon.lg()).toBe('var(--sizes-icon-lg)')
+  expect(sizes.button.sm()).toBe('var(--sizes-button-sm)')
+  expect(sizes.icon.sm.stylesheets).toMatchSnapshot()
+  expect(sizes.button.lg.stylesheets).toMatchSnapshot()
 })
 
-test('tokens: compound selectors', () => {
-  const { state } = createTokens('state', {
-    color: {
-      $default: {
-        $value: 'black',
-      },
-      $compoundSelectors: {
-        '.dark': {
-          $value: 'white',
-        },
-        '[data-theme="blue"]': {
-          $value: 'blue',
-        },
-        '.large': {
-          ':hover': {
-            $value: 'gray',
-          },
-        },
-      },
-    },
+test('tokens: nested scales for color palette', () => {
+  const { gray } = createTokens('gray', {
+    50: { $value: '#fafafa' },
+    100: { $value: '#f5f5f5' },
+    200: { $value: '#eeeeee' },
+    900: { $value: '#212121' },
   })
-  expect(state.color()).toBe('var(--state-color)')
-  expect(state.color.stylesheets).toMatchSnapshot()
+  expect(gray[50]()).toBe('var(--gray-50)')
+  expect(gray[100]()).toBe('var(--gray-100)')
+  expect(gray[900]()).toBe('var(--gray-900)')
+  expect(gray[50].stylesheets).toMatchSnapshot()
 })
 
 test('tokens: token references', () => {
@@ -321,50 +311,19 @@ test('tokens: token references', () => {
   expect(derived.buttonBg.stylesheets).toMatchSnapshot()
 })
 
-test('tokens: complex nested structure', () => {
-  const { complex } = createTokens('complex', {
-    card: {
-      $default: {
-        $value: {
-          $function: 'rgba',
-          $arguments: ['255', '255', '255', '0.9'],
-          $csv: true,
-        },
-      },
-      '[data-variant="dark"]': {
-        $value: {
-          $function: 'rgba',
-          $arguments: ['0', '0', '0', '0.9'],
-          $csv: true,
-        },
-      },
-      $compoundSelectors: {
-        '.elevated': {
-          $default: {
-            $value: '#ffffff',
-          },
-          ':hover': {
-            $value: '#f0f0f0',
-          },
-        },
-      },
-    },
-  })
-  expect(complex.card()).toBe('var(--complex-card)')
-  expect(complex.card.stylesheets).toMatchSnapshot()
-})
-
 test('tokens: array of function values', () => {
   const { transform } = createTokens('transform', {
     animation: {
       $value: [
         {
           $function: 'translateX',
-          $arguments: '10px',
+          $arguments: ['10px'],
+          $csv: false,
         },
         {
           $function: 'rotate',
-          $arguments: '45deg',
+          $arguments: ['45deg'],
+          $csv: false,
         },
         {
           $function: 'scale',
@@ -372,6 +331,7 @@ test('tokens: array of function values', () => {
           $csv: true,
         },
       ],
+      $csv: false,
     },
   })
   expect(transform.animation()).toBe('var(--transform-animation)')
@@ -410,19 +370,9 @@ test('tokens: integration with host', () => {
   const { colors } = createTokens('colors', {
     text: {
       $value: '#333',
-      $compoundSelectors: {
-        '.dark': {
-          $value: '#fff',
-        },
-      },
     },
     background: {
       $value: '#fff',
-      $compoundSelectors: {
-        '.dark': {
-          $value: '#222',
-        },
-      },
     },
   })
 
@@ -484,9 +434,6 @@ test('tokens: multiple token groups combined', () => {
   const { layout } = createTokens('layout', {
     maxWidth: {
       $value: '1200px',
-      '@media (max-width: 768px)': {
-        $value: '100%',
-      },
     },
     gap: {
       $value: '20px',
@@ -542,12 +489,12 @@ test('tokens: with keyframes', () => {
     },
   })
 
-  const spin = createKeyframes('spin', {
+  const { spin } = createKeyframes('spin', {
     '0%': { transform: 'rotate(0deg)' },
     '100%': { transform: animations.rotate },
   })
 
-  const pulse = createKeyframes('pulse', {
+  const { pulse } = createKeyframes('pulse', {
     '0%': { transform: 'scale(1)' },
     '50%': { transform: animations.scale },
     '100%': { transform: 'scale(1)' },

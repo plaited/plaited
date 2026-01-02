@@ -22,22 +22,22 @@ Plaited uses Bun's built-in test runner for unit and integration tests, and a cu
 ## Running Tests
 
 ```bash
-# Run all tests (both spec tests and story tests)
+# Run all tests (story tests on src/main + unit tests) - used in CI
 bun run test
 
 # Run only unit/integration tests
 bun test
 
-# Run only template/browser tests (via package.json script) for entire project
-bun run test:stories
-
-# Run test for specific file(s)/paths(s)
+# Run story tests for specific path(s)
 bun run test:stories src/main
 
-# Start story server in dev mode for manual live preview debugging
+# Run story tests for entire project
+bun run test:stories
+
+# Start dev server with hot reload for manual testing
 bun run dev
 
-# Run template tests with custom port
+# Run story tests with custom port
 bun run test:stories -p 3500
 ```
 
@@ -49,6 +49,9 @@ bun test path/to/file.spec.ts
 
 # Run tests matching a pattern
 bun test pattern
+
+# Run story tests for a specific directory
+bun run test:stories path/to/directory
 ```
 
 ## Test File Naming Conventions

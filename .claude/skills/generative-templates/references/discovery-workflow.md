@@ -50,17 +50,31 @@ When reading bElement files, note:
 Identify how tokens are used:
 
 ```typescript
-// Token definition
-export const { fills } = createTokens('fills', { ... })
-
-// Usage in styles
-import { fills } from './fills.tokens.ts'
-export const styles = createStyles({
-  element: { backgroundColor: fills.fill }
+// Token definition with scales
+export const { fills } = createTokens('fills', {
+  fill: {
+    default: { $value: 'lightblue' },
+    checked: { $value: 'blue' },
+  }
 })
 
-// Usage in hostStyles
-export const hostStyles = joinStyles(fills, createHostStyles({ ... }))
+// Usage in styles with state selectors
+import { fills } from './fills.tokens.ts'
+export const styles = createStyles({
+  element: {
+    backgroundColor: {
+      $default: fills.fill.default,
+      ':host(:state(checked))': fills.fill.checked,
+    }
+  }
+})
+
+// Usage in hostStyles - include each token used
+export const hostStyles = joinStyles(
+  fills.fill.default,
+  fills.fill.checked,
+  createHostStyles({ ... })
+)
 ```
 
 ## Step 5: Document Findings
@@ -83,7 +97,8 @@ src/components/
     toggle-input.stories.tsx # Story tests
 
 Patterns Found:
-- Uses createTokens with $compoundSelectors for states
+- Uses createTokens with scales for state variations
+- State styling applied in createStyles with selectors
 - hostStyles uses joinStyles to include token CSS
 - Form-associated pattern for form integration
 - Play functions test accessibility

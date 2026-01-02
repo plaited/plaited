@@ -3,7 +3,7 @@ name: live-preview
 description: Start dev server and interact with stories for visual feedback. Use when previewing templates, taking screenshots, or testing visual changes.
 license: ISC
 compatibility: Requires bun
-allowed-tools: Bash, mcp__playwright__*
+allowed-tools: Bash, mcp__chrome-devtools__*
 ---
 
 # Live Preview
@@ -13,92 +13,67 @@ Start dev server and interact with stories for visual feedback.
 ## Purpose
 
 This skill provides:
-- Dev server management via useServerManager
-- Story URL generation via code-query
-- Browser automation via Playwright MCP
+- Dev server with hot reload via CLI
+- Story URL generation via code-query skill
+- Browser automation via Chrome DevTools MCP
 
-## Scripts
-
-### preview-start.ts
-
-Start the dev server and return story URLs.
+## Start Dev Server
 
 ```bash
-bun preview-start.ts [paths...] [--port <port>]
+bun --hot plaited dev [paths...] [-p <port>]
 ```
 
 **Arguments:**
 - `paths`: Directories to discover stories (default: current directory)
-- `--port, -p`: Server port (default: 3000)
+- `-p, --port`: Server port (default: 3000)
 
-**Returns:**
-```json
-{
-  "serverUrl": "http://localhost:3000",
-  "stories": [
-    { "exportName": "basicButton", "route": "/@story/..." }
-  ]
-}
+**Console Output:**
+```
+🔍 Discovering stories in: /path/to/project
+📄 Found 5 story exports
+✅ Server ready at http://localhost:3000
+🔥 Hot reload enabled via WebSocket
+
+BasicButton: http://localhost:3000/@story/...
+PrimaryButton: http://localhost:3000/@story/...
 ```
 
-### preview-story.ts
+The server outputs story URLs directly - parse stdout for programmatic access.
 
-Get URL for a specific story (uses code-query).
+## Get Story URLs
+
+Use the code-query skill for story discovery and URL generation:
 
 ```bash
-bun preview-story.ts <file> <exportName> [--port <port>]
+# Discover all stories
+bun .claude/skills/code-query/scripts/query-stories.ts src/
+
+# Get URL for specific story
+bun .claude/skills/code-query/scripts/query-story-url.ts src/button.stories.tsx PrimaryButton
 ```
 
-**Arguments:**
-- `file`: Story file path
-- `exportName`: Story export name
-- `--port, -p`: Server port (default: 3000)
+## Chrome DevTools MCP
 
-**Returns:**
-```json
-{
-  "url": "http://localhost:3000/@story/...",
-  "storyFile": "src/button.stories.tsx",
-  "exportName": "basicButton"
-}
-```
-
-## Usage with Playwright MCP
-
-After starting the server, use Playwright MCP for browser automation:
+After starting the server, use Chrome DevTools MCP for browser automation:
 
 ```typescript
 // Navigate to story
-await mcp__playwright__browser_navigate({ url: storyUrl })
+mcp__chrome-devtools__navigate_page({ url: storyUrl })
 
 // Take screenshot
-await mcp__playwright__browser_take_screenshot({ filename: 'preview.png' })
+mcp__chrome-devtools__take_screenshot({ filename: 'preview.png' })
 
-// Get accessibility snapshot
-await mcp__playwright__browser_snapshot({})
+// Get accessibility tree snapshot
+mcp__chrome-devtools__take_snapshot({})
 ```
 
 ## Workflow
 
-1. Start server with `preview-start.ts`
-2. Get story URL with `preview-story.ts` or code-query
-3. Navigate with Playwright MCP
+1. Start server: `bun --hot plaited dev src/`
+2. Get story URL from stdout or via code-query
+3. Navigate with Chrome DevTools MCP
 4. Interact, screenshot, or snapshot as needed
 5. Hot reload reflects code changes automatically
-
-## Integration
-
-### With code-query
-
-Use code-query for story discovery:
-```bash
-bun query-stories.ts src/
-bun query-story-url.ts src/button.stories.tsx PrimaryButton
-```
-
-### With design-iteration
-
-The design-iteration skill uses live-preview for visual feedback during iterative design work.
 
 ## Related Skills
 

@@ -5,7 +5,7 @@ allowed-tools: Bash, mcp__agent-skills-spec__*
 
 # Validate Skills
 
-Validate skill directories against the [AgentSkills specification](https://agentskills.io/specification).
+Validate skill directories against the AgentSkills specification using the `agent-skills-spec` MCP server.
 
 **Paths to validate:** $ARGUMENTS (default: `.claude/skills/`)
 
@@ -19,8 +19,8 @@ bun plaited validate-skill $ARGUMENTS
 
 ### Step 2: Report Results
 
-Show the CLI output to the user. If there are errors, explain how to fix them based on the validation rules.
+Show the CLI output to the user. If there are errors, use the `agent-skills-spec` MCP server to get the latest specification and explain how to fix them.
 
-### Step 3: Check Spec (if needed)
+### Step 3: Query Spec (if needed)
 
-If the user needs clarification on validation rules, use the agent-skills-spec MCP server to query the latest specification.
+For clarification on validation rules, query the `agent-skills-spec` MCP server for the current specification.

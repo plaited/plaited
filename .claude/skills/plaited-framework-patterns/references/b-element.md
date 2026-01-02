@@ -63,11 +63,9 @@ import { createTokens } from 'plaited'
 
 export const { surfaces } = createTokens('surfaces', {
   fill: {
-    $default: { $value: 'lightblue' },
-    $compoundSelectors: {
-      ':state(checked)': { $value: 'blue' },
-      ':state(disabled)': { $value: 'gray' }
-    }
+    default: { $value: 'lightblue' },
+    checked: { $value: 'blue' },
+    disabled: { $value: 'gray' },
   }
 })
 ```
@@ -81,7 +79,11 @@ export const styles = createStyles({
   symbol: {
     height: '16px',
     width: '16px',
-    backgroundColor: surfaces.fill,
+    backgroundColor: {
+      $default: surfaces.fill.default,
+      ':host(:state(checked))': surfaces.fill.checked,
+      ':host(:state(disabled))': surfaces.fill.disabled,
+    },
     gridArea: 'input'
   },
   input: {
@@ -95,7 +97,9 @@ export const styles = createStyles({
 })
 
 export const hostStyles = joinStyles(
-  surfaces.fill,
+  surfaces.fill.default,
+  surfaces.fill.checked,
+  surfaces.fill.disabled,
   createHostStyles({
     display: 'inline-grid',
     gridTemplate: '"input" 16px / 16px'
@@ -224,11 +228,9 @@ import { createTokens } from 'plaited'
 
 export const { surfaces } = createTokens('surfaces', {
   fill: {
-    $default: { $value: 'lightblue' },
-    $compoundSelectors: {
-      ':state(checked)': { $value: 'blue' },
-      ':state(disabled)': { $value: 'gray' }
-    }
+    default: { $value: 'lightblue' },
+    checked: { $value: 'blue' },
+    disabled: { $value: 'gray' },
   }
 })
 ```
@@ -242,12 +244,18 @@ export const styles = createStyles({
   symbol: {
     height: '16px',
     width: '16px',
-    backgroundColor: surfaces.fill,
+    backgroundColor: {
+      $default: surfaces.fill.default,
+      ':host(:state(checked))': surfaces.fill.checked,
+      ':host(:state(disabled))': surfaces.fill.disabled,
+    },
   }
 })
 
 export const hostStyles = joinStyles(
-  surfaces.fill,
+  surfaces.fill.default,
+  surfaces.fill.checked,
+  surfaces.fill.disabled,
   createHostStyles({
     display: 'inline-grid'
   })

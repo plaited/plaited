@@ -1,12 +1,11 @@
 import { isTypeOf, kebabCase } from '../utils.ts'
-import { CSS_RESERVED_KEYS } from './css.constants.ts'
 import type {
   DesignToken,
   DesignTokenGroup,
   DesignTokenReference,
   DesignTokenReferences,
+  DesignTokenScale,
   FunctionTokenValue,
-  NestedDesignTokenStatements,
 } from './css.types.ts'
 import { getRule, isTokenReference } from './css.utils.ts'
 
@@ -56,7 +55,7 @@ const getFunctionValue = ({ $function, $arguments, $csv }: FunctionTokenValue, s
  * Generates a CSS custom property declaration from a design token.
  * Handles single values, arrays, and function-based values.
  */
-const getToken = ({
+const getTokenRule = ({
   cssVar,
   token,
   styles,
@@ -78,63 +77,52 @@ const getToken = ({
 
 /**
  * @internal
- * Recursively processes design tokens to generate :host selector rules with CSS custom properties.
- * Handles nested statements and compound selectors for conditional token values.
+ * Creates a token reference function for a single token.
  */
-const formatTokenStatement = ({
-  styles,
-  cssVar,
-  token,
-  selectors = [],
-  host,
-}: {
-  styles: string[]
-  cssVar: `--${string}`
-  token: DesignToken | NestedDesignTokenStatements
-  selectors?: string[]
-  host: string
-}) => {
-  if (isToken(token)) {
-    const arr = selectors.map((str) => `${str}{`)
-    styles.push(`${host}{${arr.join('')}${getToken({ cssVar, token, styles })}${'}'.repeat(arr.length)}}`)
-    return
-  }
-  for (const [key, val] of Object.entries(token)) {
-    if (key === CSS_RESERVED_KEYS.$default) {
-      formatTokenStatement({
-        styles,
-        cssVar,
-        token: val,
-        selectors,
-        host,
-      })
-      continue
-    }
-    formatTokenStatement({
-      styles,
-      cssVar,
-      token: val,
-      selectors: [...selectors, key],
-      host,
-    })
-  }
+const createTokenRef = (cssVar: `--${string}`, token: DesignToken): DesignTokenReference => {
+  const styles: string[] = []
+  styles.push(`:host{${getTokenRule({ cssVar, token, styles })}}`)
+  const getRef = (): `var(--${string})` => `var(${cssVar})`
+  getRef.stylesheets = styles
+  return getRef
 }
 
 /**
  * Creates a design token system using CSS custom properties.
  * Generates CSS variables scoped to the Shadow DOM host element and returns type-safe reference functions.
- * Supports primitive values, arrays, CSS functions (calc, rgb, etc.), nested rules, and token composition.
+ * Supports primitive values, arrays, CSS functions (calc, rgb, etc.), and nested scales for organizing tokens.
  *
+ * @template I - The identifier string type
  * @template T - The type of the design token group
  * @param ident - Base identifier for the token group (converted to kebab-case for CSS variable naming)
- * @param group - Object defining design tokens with their values and conditions
- * @returns Object mapping token names to reference functions that return CSS var() expressions
+ * @param group - Object defining design tokens with their values
+ * @returns Object mapping the identifier to token reference functions. Destructure to extract:
+ *   `const { colors } = createTokens('colors', {...})`. Each token is a function returning CSS var() expressions.
+ *
+ * @example
+ * ```typescript
+ * // Simple tokens
+ * const { colors } = createTokens('colors', {
+ *   primary: { $value: '#007bff' },
+ *   secondary: { $value: '#6c757d' },
+ * })
+ * colors.primary()  // 'var(--colors-primary)'
+ *
+ * // Nested scales
+ * const { sizes } = createTokens('sizes', {
+ *   icon: {
+ *     sm: { $value: '16px' },
+ *     md: { $value: '24px' },
+ *     lg: { $value: '32px' },
+ *   },
+ * })
+ * sizes.icon.sm()  // 'var(--sizes-icon-sm)'
+ * ```
  *
  * @remarks
  * - Token names are converted to kebab-case CSS variable names (e.g., `primaryColor` → `--ident-primary-color`)
  * - Each token returns a function that outputs `var(--css-variable-name)`
- * - The returned function has a `styles` property containing all required CSS declarations
- * - Supports nested rules for responsive design, pseudo-classes, and attribute selectors
+ * - The returned function has a `stylesheets` property containing all required CSS declarations
  * - Token references can be composed to build complex design systems
  * - CSS custom properties are scoped to the `:host` selector for Shadow DOM encapsulation
  *
@@ -147,46 +135,35 @@ export const createTokens = <I extends string, T extends DesignTokenGroup>(
   ident: I,
   group: T,
 ): Record<I, DesignTokenReferences<T>> => {
-  return {
-    [ident]: Object.entries(group).reduce(
-      (acc, [prop, value]) => {
-        const cssVar: `--${string}` = `--${kebabCase(ident)}-${kebabCase(prop)}`
-        const styles: string[] = []
-        if (isToken(value)) {
-          formatTokenStatement({
-            styles,
-            cssVar,
-            token: value,
-            host: ':host',
-          })
-        } else {
-          const { $compoundSelectors, ...rest } = value
-          if (Object.keys(rest).length) {
-            formatTokenStatement({
-              styles,
-              cssVar,
-              token: rest,
-              host: ':host',
-            })
-          }
+  const identKebab = kebabCase(ident)
 
-          if ($compoundSelectors) {
-            for (const [selector, value] of Object.entries($compoundSelectors)) {
-              formatTokenStatement({
-                styles,
-                cssVar,
-                token: value,
-                host: `:host(${selector})`,
-              })
-            }
-          }
-        }
-        const getRef = (): `var(--${string})` => `var(${cssVar})`
-        getRef.stylesheets = styles
-        acc[prop as keyof T] = getRef
-        return acc
-      },
-      {} as DesignTokenReferences<T>,
-    ),
-  } as Record<I, DesignTokenReferences<T>>
+  const result = Object.entries(group).reduce(
+    (acc, [prop, value]) => {
+      const propKebab = kebabCase(prop)
+
+      if (isToken(value)) {
+        // Simple token
+        const cssVar: `--${string}` = `--${identKebab}-${propKebab}`
+        acc[prop as keyof T] = createTokenRef(cssVar, value) as DesignTokenReferences<T>[keyof T]
+      } else {
+        // Nested scale
+        const scale = value as DesignTokenScale
+        const scaleRefs = Object.entries(scale).reduce(
+          (scaleAcc, [scaleKey, scaleToken]) => {
+            const scaleKeyKebab = kebabCase(scaleKey)
+            const cssVar: `--${string}` = `--${identKebab}-${propKebab}-${scaleKeyKebab}`
+            scaleAcc[scaleKey] = createTokenRef(cssVar, scaleToken)
+            return scaleAcc
+          },
+          {} as Record<string, DesignTokenReference>,
+        )
+        acc[prop as keyof T] = scaleRefs as DesignTokenReferences<T>[keyof T]
+      }
+
+      return acc
+    },
+    {} as DesignTokenReferences<T>,
+  )
+
+  return { [ident]: result } as Record<I, DesignTokenReferences<T>>
 }

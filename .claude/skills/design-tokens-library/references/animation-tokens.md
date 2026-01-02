@@ -33,12 +33,12 @@ export const { easing } = createTokens('easing', {
 ```typescript
 import { createKeyframes, createHostStyles, joinStyles } from 'plaited'
 
-export const fadeIn = createKeyframes('fadeIn', {
+export const { fadeIn } = createKeyframes('fadeIn', {
   from: { opacity: '0' },
   to: { opacity: '1' },
 })
 
-export const pulse = createKeyframes('pulse', {
+export const { pulse } = createKeyframes('pulse', {
   '0%': { transform: 'scale(1)' },
   '50%': { transform: 'scale(1.05)' },
   '100%': { transform: 'scale(1)' },
@@ -55,16 +55,31 @@ export const hostStyles = joinStyles(
 
 ## Reduced Motion Support
 
+Use scales for motion preferences:
+
 ```typescript
 import { createTokens } from 'plaited'
 
 export const { motion } = createTokens('motion', {
   duration: {
-    $default: { $value: '200ms' },
-    $compoundSelectors: {
-      '@media (prefers-reduced-motion: reduce)': { $value: '0ms' },
-    },
+    normal: { $value: '200ms' },
+    reduced: { $value: '0ms' },
   },
+})
+```
+
+**Usage with media queries in styles:**
+```typescript
+import { createStyles, joinStyles } from 'plaited'
+import { motion } from './motion.tokens.ts'
+
+export const styles = createStyles({
+  animated: {
+    transitionDuration: {
+      $default: motion.duration.normal,
+      '@media (prefers-reduced-motion: reduce)': motion.duration.reduced,
+    },
+  }
 })
 ```
 

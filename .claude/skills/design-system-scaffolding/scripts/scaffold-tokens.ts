@@ -49,14 +49,12 @@ export const { ${namespace} } = createTokens('${namespace}', {
   // Simple token
   primary: { $value: '#007bff' },
 
-  // Token with state variations
+  // Token scale for state variations
   fill: {
-    $default: { $value: 'lightblue' },
-    $compoundSelectors: {
-      ':state(checked)': { $value: 'blue' },
-      ':state(disabled)': { $value: 'gray' },
-      ':hover': { $value: 'skyblue' },
-    },
+    default: { $value: 'lightblue' },
+    checked: { $value: 'blue' },
+    disabled: { $value: 'gray' },
+    hover: { $value: 'skyblue' },
   },
 })
 `
