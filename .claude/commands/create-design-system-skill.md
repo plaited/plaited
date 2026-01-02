@@ -254,7 +254,7 @@ When you add a new pattern to the \`references/\` directory, tell Claude to re-r
 
 ## Related Skills
 
-- **design-tokens-library** - Reference patterns for createTokens
+- **design-system** - Reference patterns for createTokens
 - **plaited-framework-patterns** - Framework patterns and conventions
-- **design-iteration** - Visual feedback workflows
+- **workbench** - Visual feedback workflows
 ```

@@ -77,11 +77,8 @@ Claude Code skills in `.claude/skills/` may include executable scripts. Tests fo
 ### Running Skill Script Tests
 
 ```bash
-# Run tests for a specific skill's scripts (use absolute path)
-bun test /path/to/.claude/skills/<skill-name>/scripts/tests/
-
-# Example
-bun test /Users/eirby/Workspace/plaited/.claude/skills/design-system-scaffolding/scripts/tests/
+# From skill directory
+bun test scripts/tests/
 ```
 
 ### Test Pattern

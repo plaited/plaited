@@ -232,7 +232,7 @@ bun --hot plaited dev src/main
 ## Related Skills
 
 - **plaited-framework-patterns** - Plaited framework patterns and examples
-- **design-tokens-library** - Token patterns
+- **design-system** - Token patterns and scaffolding
 - **typescript-lsp** - Type verification and code navigation
 - **code-documentation** - TSDoc standards
 
