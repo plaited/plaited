@@ -1630,7 +1630,7 @@ BP is a general coordination mechanism, not limited to UI:
 
 ### Test Orchestration
 
-From `src/workshop/use-runner.ts`:
+From `plaited/workshop/use-runner.ts`:
 
 ```typescript
 import { behavioral, bThread, bSync } from 'plaited'

@@ -3,9 +3,6 @@
  * Get route and entry path for a story export
  *
  * Usage: bun query-paths.ts <file> <exportName>
- *
- * @example
- * bun query-paths.ts src/button.stories.tsx PrimaryButton
  */
 
 import { parseArgs } from 'node:util'

@@ -1,6 +1,6 @@
 ---
 name: typescript-lsp
-description: TypeScript Language Server integration for type verification, symbol discovery, and code navigation. Use before reading, editing, or writing TypeScript/JavaScript code to understand types, find references, and verify signatures. (project)
+description: TypeScript Language Server integration for type verification, symbol discovery, and code navigation. Use before reading, editing, or writing TypeScript/JavaScript code to understand types, find references, and verify signatures. Includes Plaited framework verification workflows. (project)
 license: ISC
 compatibility: Requires bun
 allowed-tools: Bash
@@ -31,6 +31,15 @@ This skill provides TypeScript Language Server Protocol integration for enhanced
 - Run `lsp-find` to search for similar patterns or related symbols
 - Run `lsp-hover` on APIs you plan to use
 
+## Path Resolution
+
+All scripts accept three types of file paths:
+- **Absolute paths**: `/Users/name/project/src/file.ts`
+- **Relative paths**: `./src/file.ts` or `../other/file.ts`
+- **Package export paths**: `plaited/main/b-element.ts` (resolved via `Bun.resolve()`)
+
+Package export paths are recommended for portability and consistency with the package's exports field.
+
 ## Scripts
 
 ### Individual Scripts
@@ -39,7 +48,7 @@ This skill provides TypeScript Language Server Protocol integration for enhanced
 Get type information at a specific position.
 
 ```bash
-bun .claude/skills/typescript-lsp/scripts/lsp-hover.ts <file> <line> <char>
+bun scripts/lsp-hover.ts <file> <line> <char>
 ```
 
 **Arguments:**
@@ -49,38 +58,38 @@ bun .claude/skills/typescript-lsp/scripts/lsp-hover.ts <file> <line> <char>
 
 **Example:**
 ```bash
-bun .claude/skills/typescript-lsp/scripts/lsp-hover.ts src/main/b-element.ts 139 13
+bun scripts/lsp-hover.ts plaited/main/b-element.ts 139 13
 ```
 
 #### lsp-symbols
 List all symbols in a file.
 
 ```bash
-bun .claude/skills/typescript-lsp/scripts/lsp-symbols.ts <file>
+bun scripts/lsp-symbols.ts <file>
 ```
 
 **Example:**
 ```bash
-bun .claude/skills/typescript-lsp/scripts/lsp-symbols.ts src/main/b-element.ts
+bun scripts/lsp-symbols.ts plaited/main/b-element.ts
 ```
 
 #### lsp-references
 Find all references to a symbol.
 
 ```bash
-bun .claude/skills/typescript-lsp/scripts/lsp-references.ts <file> <line> <char>
+bun scripts/lsp-references.ts <file> <line> <char>
 ```
 
 **Example:**
 ```bash
-bun .claude/skills/typescript-lsp/scripts/lsp-references.ts src/main/b-element.ts 139 13
+bun scripts/lsp-references.ts plaited/main/b-element.ts 139 13
 ```
 
 #### lsp-find
 Search for symbols across the workspace.
 
 ```bash
-bun .claude/skills/typescript-lsp/scripts/lsp-find.ts <query> [context-file]
+bun scripts/lsp-find.ts <query> [context-file]
 ```
 
 **Arguments:**
@@ -89,8 +98,8 @@ bun .claude/skills/typescript-lsp/scripts/lsp-find.ts <query> [context-file]
 
 **Example:**
 ```bash
-bun .claude/skills/typescript-lsp/scripts/lsp-find.ts bElement
-bun .claude/skills/typescript-lsp/scripts/lsp-find.ts useTemplate src/main/use-template.ts
+bun scripts/lsp-find.ts bElement
+bun scripts/lsp-find.ts useTemplate plaited/main/use-template.ts
 ```
 
 ### Batch Script
@@ -99,7 +108,7 @@ bun .claude/skills/typescript-lsp/scripts/lsp-find.ts useTemplate src/main/use-t
 Perform multiple analyses in a single session for efficiency.
 
 ```bash
-bun .claude/skills/typescript-lsp/scripts/lsp-analyze.ts <file> [options]
+bun scripts/lsp-analyze.ts <file> [options]
 ```
 
 **Options:**
@@ -112,13 +121,13 @@ bun .claude/skills/typescript-lsp/scripts/lsp-analyze.ts <file> [options]
 **Examples:**
 ```bash
 # Get file overview
-bun .claude/skills/typescript-lsp/scripts/lsp-analyze.ts src/main/b-element.ts --all
+bun scripts/lsp-analyze.ts plaited/main/b-element.ts --all
 
 # Check multiple positions
-bun .claude/skills/typescript-lsp/scripts/lsp-analyze.ts src/main/b-element.ts --hover 50:10 --hover 139:13
+bun scripts/lsp-analyze.ts plaited/main/b-element.ts --hover 50:10 --hover 139:13
 
 # Before refactoring: find all references
-bun .claude/skills/typescript-lsp/scripts/lsp-analyze.ts src/main/b-element.ts --refs 139:13
+bun scripts/lsp-analyze.ts plaited/main/b-element.ts --refs 139:13
 ```
 
 ## Common Workflows
@@ -127,17 +136,17 @@ bun .claude/skills/typescript-lsp/scripts/lsp-analyze.ts src/main/b-element.ts -
 
 ```bash
 # 1. Get exports overview
-bun .claude/skills/typescript-lsp/scripts/lsp-analyze.ts path/to/file.ts --exports
+bun scripts/lsp-analyze.ts path/to/file.ts --exports
 
 # 2. For specific type info, hover on interesting symbols
-bun .claude/skills/typescript-lsp/scripts/lsp-hover.ts path/to/file.ts <line> <char>
+bun scripts/lsp-hover.ts path/to/file.ts <line> <char>
 ```
 
 ### Before Modifying an Export
 
 ```bash
 # 1. Find all references first
-bun .claude/skills/typescript-lsp/scripts/lsp-references.ts path/to/file.ts <line> <char>
+bun scripts/lsp-references.ts path/to/file.ts <line> <char>
 
 # 2. Check what depends on it
 # Review the output to understand impact
@@ -147,15 +156,15 @@ bun .claude/skills/typescript-lsp/scripts/lsp-references.ts path/to/file.ts <lin
 
 ```bash
 # Search for similar implementations
-bun .claude/skills/typescript-lsp/scripts/lsp-find.ts createStyles
-bun .claude/skills/typescript-lsp/scripts/lsp-find.ts bElement
+bun scripts/lsp-find.ts createStyles
+bun scripts/lsp-find.ts bElement
 ```
 
 ### Pre-Implementation Verification
 
 ```bash
 # Before writing code that uses an API, verify its signature
-bun .claude/skills/typescript-lsp/scripts/lsp-hover.ts path/to/api.ts <line> <char>
+bun scripts/lsp-hover.ts path/to/api.ts <line> <char>
 ```
 
 ## Output Format
@@ -205,7 +214,15 @@ Each script invocation:
 
 For multiple queries on the same file, use `lsp-analyze` to batch operations in a single session.
 
+## Plaited-Specific Verification
+
+See [lsp-verification.md](references/lsp-verification.md) for Plaited framework type verification patterns:
+- When to use LSP for Plaited APIs (bElement, createStyles, bProgram)
+- Example workflow for verifying BProgramArgs, callbacks, and helper methods
+- Critical files to verify (b-element.types.ts, css.types.ts, behavioral.types.ts)
+- Integration with code generation workflow
+
 ## Related Skills
 
-- **plaited-framework-patterns**: Plaited framework patterns (includes Plaited-specific type verification examples)
+- **plaited-framework-patterns**: Plaited framework patterns and best practices
 - **code-documentation**: TSDoc standards for documentation

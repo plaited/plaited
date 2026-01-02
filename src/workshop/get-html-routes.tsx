@@ -60,21 +60,6 @@ orchestrator?.trigger({
 });
 `
 
-const useTemplateInclude = ({ fixture, entryPath }: { fixture: TemplateObject; entryPath: string }): Response => {
-  const content = ssr(
-    fixture,
-    <script
-      type='module'
-      trusted
-      src={entryPath}
-    />,
-  )
-  return zip({
-    content,
-    contentType: 'text/html;charset=utf-8',
-  })
-}
-
 const usePage = ({
   fixture,
   entryPath,
@@ -130,31 +115,28 @@ const usePage = ({
 }
 
 /**
- * Generates HTML routes for a story export.
- * Creates two routes per story:
- * - Main route: Full HTML page with hot reload
- * - Include route: Just the story fixture HTML fragment
+ * Generates HTML route for a story export.
+ * Creates a full HTML page with the story fixture.
  *
  * @param exportName - Named export from the story file
  * @param filePath - Absolute path to the .stories.tsx file
- * @param cwd - Current working directory
- * @returns Object with static Response objects
+ * @param entryPath - Path to the story's JS entry file
+ * @param colorScheme - Color scheme for the page ('light' or 'dark')
+ * @returns Static Response object for the route
  *
  * @internal
  */
-export const getHTMLRoutes = async ({
+export const getHTMLRoute = async ({
   exportName,
   filePath,
-  route,
   entryPath,
   colorScheme,
 }: {
   exportName: string
   filePath: string
-  route: string
   entryPath: string
   colorScheme: 'light' | 'dark'
-}): Promise<Record<string, Response>> => {
+}): Promise<Response> => {
   const module = await cachedImport(filePath)
   const storyExport = module[exportName]
 
@@ -167,7 +149,7 @@ export const getHTMLRoutes = async ({
       PlaitedAttributesSchema.parse(args)
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errorResponse = new Response(
+        return new Response(
           JSON.stringify({
             error: 'Invalid story args',
             details: error.issues,
@@ -177,16 +159,9 @@ export const getHTMLRoutes = async ({
             headers: { 'Content-Type': 'application/json' },
           },
         )
-        return {
-          [route]: errorResponse,
-          [`${route}.template`]: errorResponse,
-        }
       }
     }
   }
 
-  return {
-    [route]: usePage({ fixture, entryPath, exportName, parameters, colorScheme }),
-    [`${route}.template`]: useTemplateInclude({ fixture, entryPath }),
-  }
+  return usePage({ fixture, entryPath, exportName, parameters, colorScheme })
 }

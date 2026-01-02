@@ -101,7 +101,7 @@ bProgram({ host }) {
 
 Save extracted patterns to:
 ```
-.claude/skills/plaited-web-patterns/references/[pattern-name].md
+/references/[pattern-name].md
 ```
 
 ## Pattern Output Template

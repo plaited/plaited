@@ -13,15 +13,11 @@
  *   --hover <line:char> Get type info at position (can be repeated)
  *   --refs <line:char>  Find references at position (can be repeated)
  *   --all               Run all analyses (symbols + exports)
- *
- * @example
- * bun lsp-analyze.ts src/main/b-element.ts --all
- * bun lsp-analyze.ts src/main/b-element.ts --symbols --hover 50:15
- * bun lsp-analyze.ts src/main/b-element.ts --refs 10:8 --refs 20:12
  */
 
 import { parseArgs } from 'node:util'
 import { LspClient } from './lsp-client.ts'
+import { resolveFilePath } from './resolve-file-path.ts'
 
 type SymbolInfo = {
   name: string
@@ -87,16 +83,16 @@ Options:
   --help, -h          Show this help
 
 Examples:
-  bun lsp-analyze.ts src/main/b-element.ts --all
-  bun lsp-analyze.ts src/main/b-element.ts --symbols
-  bun lsp-analyze.ts src/main/b-element.ts --hover 50:15 --hover 60:20
-  bun lsp-analyze.ts src/main/b-element.ts --refs 10:8
+  bun lsp-analyze.ts plaited/main/b-element.ts --all
+  bun lsp-analyze.ts plaited/main/b-element.ts --symbols
+  bun lsp-analyze.ts plaited/main/b-element.ts --hover 50:15 --hover 60:20
+  bun lsp-analyze.ts plaited/main/b-element.ts --refs 10:8
 `)
   process.exit(0)
 }
 
 const [filePath] = positionals
-const absolutePath = filePath.startsWith('/') ? filePath : `${process.cwd()}/${filePath}`
+const absolutePath = await resolveFilePath(filePath)
 const uri = `file://${absolutePath}`
 const rootUri = `file://${process.cwd()}`
 

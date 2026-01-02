@@ -32,12 +32,7 @@ export const getPaths = ({ filePath, cwd, exportName }: { filePath: string; cwd:
  * @param filePath - Absolute path to story file
  * @param exportName - Story export name
  * @param port - Dev server port (defaults to 3000)
- * @returns Object containing interactive story URL and template-only URL
- *
- * @remarks
- * Returns two URLs:
- * - `url`: Full interactive story with play functions and UI
- * - `templateUrl`: Template-only render for visual inspection
+ * @returns Story URL string for browser access
  *
  * @public
  */
@@ -53,8 +48,5 @@ export const getStoryUrl = ({
   port?: number
 }) => {
   const { route } = getPaths({ cwd, filePath, exportName })
-  return {
-    url: `http://localhost:${port}${route}`,
-    templateUrl: `http://localhost:${port}${route}.template`,
-  }
+  return `http://localhost:${port}${route}`
 }

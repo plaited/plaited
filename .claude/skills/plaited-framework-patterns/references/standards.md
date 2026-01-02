@@ -17,7 +17,7 @@ Essential standards for generating accurate, idiomatic Plaited code.
 3. **Dynamic Exploration**: Use Glob/Grep to find files and Read to verify current implementations. Always prioritize live code over instructions.
 
 4. **Tool-Assisted Verification**:
-   - **Framework-First**: Before consulting external sources, verify what the Plaited framework already provides by reading relevant type definition files (e.g., `BProgramArgs`, `BehavioralElementCallbackDetails` in `src/main/b-element.types.ts`).
+   - **Framework-First**: Before consulting external sources, verify what the Plaited framework already provides by reading relevant type definition files (e.g., `BProgramArgs`, `BehavioralElementCallbackDetails` in `plaited/main/b-element.types.ts`).
    - **LSP (Language Server Protocol)**: Use hover, goToDefinition, and findReferences to verify Plaited framework type signatures in real-time before generating code.
    - **WebFetch**: Only after confirming the feature isn't built into the framework, retrieve current documentation from authoritative sources (MDN Web Docs, WHATWG specs) when using web platform APIs.
    - These tools complement (but do not replace) reading live code - always verify tool outputs against actual implementation.

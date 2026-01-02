@@ -8,9 +8,9 @@ Follow this sequence when generating Plaited code to ensure 95% confidence (per 
 **Most Important**: Understand what the framework already provides before reaching for web APIs.
 
 **Read type definitions** to understand available context:
-- `src/main/b-element.types.ts` - BProgramArgs, BehavioralElementCallbackDetails
-- `src/main/css.types.ts` - CSS-in-JS signatures
-- `src/main/behavioral.types.ts` - Behavioral programming types
+- `plaited/main/b-element.types.ts` - BProgramArgs, BehavioralElementCallbackDetails
+- `plaited/main/css.types.ts` - CSS-in-JS signatures
+- `plaited/main/behavioral.types.ts` - Behavioral programming types
 
 **Verify framework capabilities:**
 ```typescript

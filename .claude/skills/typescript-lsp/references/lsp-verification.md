@@ -18,19 +18,19 @@ Use the typescript-lsp skill scripts:
 
 ```bash
 # Get type info at position (0-indexed line:char)
-bun .claude/skills/typescript-lsp/scripts/lsp-hover.ts <file> <line> <char>
+bun scripts/lsp-hover.ts <file> <line> <char>
 
 # List all symbols in a file
-bun .claude/skills/typescript-lsp/scripts/lsp-symbols.ts <file>
+bun scripts/lsp-symbols.ts <file>
 
 # Find all references
-bun .claude/skills/typescript-lsp/scripts/lsp-references.ts <file> <line> <char>
+bun scripts/lsp-references.ts <file> <line> <char>
 
 # Search workspace for symbols
-bun .claude/skills/typescript-lsp/scripts/lsp-find.ts <query>
+bun scripts/lsp-find.ts <query>
 
 # Batch analysis
-bun .claude/skills/typescript-lsp/scripts/lsp-analyze.ts <file> --exports
+bun scripts/lsp-analyze.ts <file> --exports
 ```
 
 ### `hover`
@@ -66,21 +66,21 @@ Explore available APIs in modules:
 **Step 1: Verify bElement signature**
 ```bash
 # Find bElement export and check its type
-bun .claude/skills/typescript-lsp/scripts/lsp-analyze.ts src/main/b-element.ts --exports
-bun .claude/skills/typescript-lsp/scripts/lsp-hover.ts src/main/b-element.ts 139 13
+bun scripts/lsp-analyze.ts plaited/main/b-element.ts --exports
+bun scripts/lsp-hover.ts plaited/main/b-element.ts 139 13
 ```
 
 **Step 2: Verify BProgramArgs**
 ```bash
 # Check BProgramArgs type to see available properties
-bun .claude/skills/typescript-lsp/scripts/lsp-find.ts BProgramArgs
+bun scripts/lsp-find.ts BProgramArgs
 # Then hover on the result to see: $, root, host, internals, trigger, emit, etc.
 ```
 
 **Step 3: Verify callback types**
 ```bash
 # Find BehavioralElementCallbackDetails
-bun .claude/skills/typescript-lsp/scripts/lsp-find.ts BehavioralElementCallbackDetails
+bun scripts/lsp-find.ts BehavioralElementCallbackDetails
 # Shows all lifecycle callback signatures
 ```
 
@@ -103,17 +103,17 @@ export const MyInput = bElement({
 **Step 5: Verify generated code**
 ```bash
 # After writing the file, verify the setFormValue call
-bun .claude/skills/typescript-lsp/scripts/lsp-hover.ts path/to/my-input.ts <line> <char>
+bun scripts/lsp-hover.ts path/to/my-input.ts <line> <char>
 # Confirms: setFormValue(value: File | string | FormData | null)
 ```
 
 ## Critical Files to Verify
 
 ### Core Types
-- `src/main/b-element.types.ts` - BehavioralElement, BProgramArgs, callback types
-- `src/main/css.types.ts` - CSS-in-JS type signatures
-- `src/main/behavioral.types.ts` - Behavioral programming types
-- `src/main/create-template.types.ts` - Template types
+- `plaited/main/b-element.types.ts` - BehavioralElement, BProgramArgs, callback types
+- `plaited/main/css.types.ts` - CSS-in-JS type signatures
+- `plaited/main/behavioral.types.ts` - Behavioral programming types
+- `plaited/main/create-template.types.ts` - Template types
 
 ### Common Verifications
 
@@ -196,10 +196,17 @@ bProgram({ internals }) {
 
 ## Confidence Threshold
 
-Use LSP to achieve **95% confidence** (per accuracy.md):
+**95% confidence required** - Report uncertainty rather than guess.
+
+Before generating Plaited code, LSP verification must confirm:
 - Types match current implementation ✓
 - Function signatures are accurate ✓
 - Parameter names match source ✓
 - Return types are correct ✓
+
+**When uncertain:**
+- State what couldn't be verified
+- Present the issue for manual resolution
+- Do NOT invent solutions or infer changes
 
 Only generate code after LSP verification confirms accuracy.

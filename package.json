@@ -20,11 +20,19 @@
   "main": "./src/main.ts",
   "exports": {
     ".": "./src/main.ts",
+    "./*.ts": "./src/*.ts",
+    "./*.tsx": "./src/*.tsx",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
     "./jsx-runtime": "./src/jsx-runtime.ts",
     "./testing": "./src/testing.ts",
+    "./testing/*.ts": "./src/testing/*.ts",
+    "./testing/*.tsx": "./src/testing/*.tsx",
     "./utils": "./src/utils.ts",
-    "./workshop": "./src/workshop.ts"
+    "./utils/*.ts": "./src/utils/*.ts",
+    "./utils/*.tsx": "./src/utils/*.tsx",
+    "./workshop": "./src/workshop.ts",
+    "./workshop/*.ts": "./src/workshop/*.ts",
+    "./workshop/*.tsx": "./src/workshop/*.tsx"
   },
   "files": [
     "./.bin/**",

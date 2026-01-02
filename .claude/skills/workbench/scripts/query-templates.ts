@@ -3,10 +3,6 @@
  * Discover and list all BehavioralTemplate exports in specified paths
  *
  * Usage: bun query-templates.ts <paths...>
- *
- * @example
- * bun query-templates.ts src/main
- * bun query-templates.ts src/components src/features
  */
 
 import { parseArgs } from 'node:util'

@@ -3,10 +3,6 @@
  * Discover and list all stories in specified paths
  *
  * Usage: bun query-stories.ts <paths...>
- *
- * @example
- * bun query-stories.ts src/main
- * bun query-stories.ts src/components src/features
  */
 
 import { parseArgs } from 'node:util'

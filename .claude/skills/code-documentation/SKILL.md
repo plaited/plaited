@@ -1,6 +1,6 @@
 ---
 name: code-documentation
-description: Comprehensive TypeScript documentation standards including TSDoc format templates, public API documentation, internal module docs, and type documentation guidelines. Automatically invoked when writing or reviewing code documentation, TSDoc comments, or API documentation.
+description: TSDoc standards for TypeScript/JavaScript code. Automatically invoked when writing, reviewing, or editing any TSDoc comments, code documentation, or API documentation. (project)
 license: ISC
 compatibility: Requires bun
 ---
@@ -9,11 +9,13 @@ compatibility: Requires bun
 
 ## Purpose
 
-This skill provides detailed TSDoc format templates and type documentation guidelines for the Plaited framework. Use this when:
-- Writing TSDoc comments for functions, types, or modules
+This skill provides TSDoc format templates and type documentation guidelines. Use this when:
+- Writing or editing TSDoc comments for any function, type, or module
 - Reviewing documentation quality
 - Creating comprehensive API documentation
 - Documenting complex type structures
+
+**Key Standard**: No `@example` sections - tests and stories serve as living examples.
 
 ## Quick Reference
 

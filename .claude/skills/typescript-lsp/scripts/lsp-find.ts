@@ -3,14 +3,11 @@
  * Search for symbols across the workspace by name
  *
  * Usage: bun lsp-find.ts <query> [file]
- *
- * @example
- * bun lsp-find.ts bElement
- * bun lsp-find.ts useTemplate src/main/use-template.ts
  */
 
 import { parseArgs } from 'node:util'
 import { LspClient } from './lsp-client.ts'
+import { resolveFilePath } from './resolve-file-path.ts'
 
 const { positionals } = parseArgs({
   args: Bun.argv.slice(2),
@@ -33,11 +30,7 @@ try {
   await client.start()
 
   // Open a file to establish project context if provided, otherwise use a default
-  const contextFile = filePath
-    ? filePath.startsWith('/')
-      ? filePath
-      : `${process.cwd()}/${filePath}`
-    : `${process.cwd()}/src/main/b-element.ts`
+  const contextFile = filePath ? await resolveFilePath(filePath) : await resolveFilePath('plaited')
 
   const file = Bun.file(contextFile)
   if (await file.exists()) {

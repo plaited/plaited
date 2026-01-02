@@ -10,11 +10,6 @@
  *   --urls, -u        Generate URLs for discovered stories
  *   --all             Run all analyses
  *   --port <port>     Dev server port for URLs (default: 3000)
- *
- * @example
- * bun query-analyze.ts src/main --all
- * bun query-analyze.ts src/main --stories --urls
- * bun query-analyze.ts src/components --templates
  */
 
 import { parseArgs } from 'node:util'
@@ -76,7 +71,6 @@ type AnalysisResult = {
   urls?: Array<{
     exportName: string
     url: string
-    templateUrl: string
   }>
 }
 
@@ -98,7 +92,7 @@ try {
     if (values.urls || values.all) {
       result.urls = [...storiesMap.values()].map((story) => ({
         exportName: story.exportName,
-        ...getStoryUrl({
+        url: getStoryUrl({
           cwd,
           filePath: story.filePath,
           exportName: story.exportName,

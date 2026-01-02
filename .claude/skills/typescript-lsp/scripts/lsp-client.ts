@@ -119,7 +119,8 @@ export class LspClient {
       throw new Error('LSP server not running')
     }
 
-    const id = ++this.#requestId
+    this.#requestId += 1
+    const id = this.#requestId
     const request: JsonRpcRequest = {
       jsonrpc: '2.0',
       id,

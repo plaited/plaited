@@ -1,12 +1,8 @@
 #!/usr/bin/env bun
 /**
- * Generate preview URLs for a story
+ * Generate preview URL for a story
  *
  * Usage: bun query-story-url.ts <file> <exportName> [--port <port>]
- *
- * @example
- * bun query-story-url.ts src/button.stories.tsx PrimaryButton
- * bun query-story-url.ts src/button.stories.tsx PrimaryButton --port 3500
  */
 
 import { parseArgs } from 'node:util'
@@ -43,14 +39,14 @@ const absolutePath = filePath.startsWith('/') ? filePath : `${cwd}/${filePath}`
 const port = parseInt(values.port ?? '3000', 10)
 
 try {
-  const result = getStoryUrl({
+  const url = getStoryUrl({
     cwd,
     filePath: absolutePath,
     exportName,
     port,
   })
 
-  console.log(JSON.stringify(result, null, 2))
+  console.log(url)
 } catch (error) {
   console.error(`Error: ${error}`)
   process.exit(1)

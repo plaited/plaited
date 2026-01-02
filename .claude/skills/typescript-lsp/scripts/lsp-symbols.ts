@@ -3,13 +3,11 @@
  * Get all symbols (functions, classes, types, etc.) in a TypeScript/JavaScript file
  *
  * Usage: bun lsp-symbols.ts <file>
- *
- * @example
- * bun lsp-symbols.ts src/main/b-element.ts
  */
 
 import { parseArgs } from 'node:util'
 import { LspClient } from './lsp-client.ts'
+import { resolveFilePath } from './resolve-file-path.ts'
 
 const { positionals } = parseArgs({
   args: Bun.argv.slice(2),
@@ -24,7 +22,7 @@ if (!filePath) {
   process.exit(1)
 }
 
-const absolutePath = filePath.startsWith('/') ? filePath : `${process.cwd()}/${filePath}`
+const absolutePath = await resolveFilePath(filePath)
 const uri = `file://${absolutePath}`
 const rootUri = `file://${process.cwd()}`
 

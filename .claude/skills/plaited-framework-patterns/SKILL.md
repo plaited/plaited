@@ -74,10 +74,6 @@ This skill provides comprehensive documentation for building Plaited application
   - Use for: Systematic approach to generating accurate Plaited code
   - Phases: API verification (check bElement first), code generation (apply patterns), post-generation validation
   - 95% confidence threshold before presenting code
-- **[lsp-verification.md](references/lsp-verification.md)** - LSP-based type verification
-  - Use for: Verifying Plaited framework types before and after code generation
-  - Operations: hover, goToDefinition, findReferences, documentSymbol
-  - Critical files to check: BProgramArgs, BehavioralElementCallbackDetails, CSS types
 - **[code-conventions.md](references/code-conventions.md)** - Plaited code style and conventions
   - Use for: Type system preferences, function style, template creation, import paths, null handling
   - Key patterns: type over interface, JSX syntax only, package imports in tests, object parameters for 2+ params
@@ -273,6 +269,5 @@ Complete working examples demonstrating Plaited patterns:
 
 ### Code Quality & Verification
 - [verification-workflow.md](references/verification-workflow.md) - Complete code generation workflow
-- [lsp-verification.md](references/lsp-verification.md) - LSP-based type verification
 - [code-conventions.md](references/code-conventions.md) - Code style and conventions
 - [standards.md](references/standards.md) - Development standards and best practices

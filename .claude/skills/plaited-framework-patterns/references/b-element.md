@@ -6,6 +6,42 @@
 **For cross-island coordination**, see `cross-island-communication.md`
 **For form integration**, see `form-associated-elements.md`
 
+## Auto-Registration in DOM Environments
+
+`bElement` automatically registers the custom element when the module is imported **in DOM environments** (browser, story tests). Registration is skipped during SSR or when no DOM is available (`canUseDOM()` check).
+
+```typescript
+// In a browser: when this module is imported, 'my-element' is registered
+const MyElement = bElement({
+  tag: 'my-element',
+  shadowDom: <slot></slot>
+})
+
+// customElements.get('my-element') !== undefined (in browser)
+// customElements.get('my-element') === undefined (during SSR)
+```
+
+**Implications for hydration testing**:
+- Importing any export from a file containing a bElement will register that element in the browser
+- For hydration tests, keep bElement definitions in separate files from constants/styles
+- Use dynamic imports (`await import('./element.ts')`) to control registration timing
+
+**Example: Hydration Test Structure**
+```typescript
+// constants.ts - Safe to import, no bElement
+export const TAG = 'my-element'
+export const styles = createStyles({ ... })
+
+// element.ts - Importing in browser registers the element
+import { TAG, styles } from './constants.ts'
+export const MyElement = bElement({ tag: TAG, ... })
+
+// test.stories.tsx
+import { TAG, styles } from './constants.ts'  // Safe - no registration
+// ... render pre-hydration state with declarative shadow DOM ...
+await import('./element.ts')  // Now register element to trigger hydration
+```
+
 ## When to Use bElement
 
 Use `bElement` when you need any of these capabilities:

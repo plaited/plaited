@@ -5,7 +5,7 @@ import { RunnerMessageSchema } from '../testing/testing.schemas.ts'
 import { isTypeOf } from '../utils.ts'
 import { collectStories } from './collect-stories.ts'
 import { getEntryRoutes } from './get-entry-routes.ts'
-import { getHTMLRoutes } from './get-html-routes.tsx'
+import { getHTMLRoute } from './get-html-routes.tsx'
 import { getRoot } from './get-root.ts'
 import { BPEventSchema } from './workshop.schemas.ts'
 import type { StoryMetadata } from './workshop.types.ts'
@@ -23,7 +23,9 @@ const hasIpc = typeof process.send === 'function'
  * Generates routes for all discovered story exports.
  * Combines HTML routes (static story pages) and entry routes (static JS bundles).
  *
- * @param cwd - Current working directory (story discovery root)
+ * @param paths - Directories to search for stories
+ * @param stories - Map of story metadata from collectStories
+ * @param colorScheme - Color scheme for HTML pages ('light' or 'dark')
  * @returns Routes object compatible with Bun.serve()
  *
  * @internal
@@ -52,19 +54,19 @@ export const getRoutes = async ({
     console.error(`🚩 Error: Failed to determine common root folder: ${error}`)
     process.exit(1)
   }
+  const storyList = [...stories.values()]
+  for (const story of storyList) uniqueFilePaths.add(story.filePath)
+
   const [htmlRoutesArray, entryRoutes] = await Promise.all([
     Promise.all(
-      stories.values().map((story) => {
-        const filePath = story.filePath
-        !uniqueFilePaths.has(filePath) && uniqueFilePaths.add(filePath)
-        return getHTMLRoutes({
+      storyList.map(async (story) => ({
+        [story.route]: await getHTMLRoute({
           colorScheme,
-          route: story.route,
           exportName: story.exportName,
           filePath: story.filePath,
           entryPath: story.entryPath,
-        })
-      }),
+        }),
+      })),
     ),
     getEntryRoutes(root, [...uniqueFilePaths]),
   ])
@@ -78,7 +80,7 @@ export const getRoutes = async ({
   }
 
   console.log(`✅ Registered ${Object.keys(allRoutes).length} total routes`)
-  console.log(`   - ${htmlRoutesArray.length * 2} HTML routes (static)`)
+  console.log(`   - ${storyList.length} HTML routes (static)`)
   console.log(`   - ${Object.keys(entryRoutes).length} entry routes (static)`)
 
   return allRoutes

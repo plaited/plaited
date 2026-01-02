@@ -39,14 +39,11 @@ describe('query-paths.ts', () => {
 })
 
 describe('query-story-url.ts', () => {
-  test('outputs JSON with url and templateUrl', async () => {
+  test('outputs story URL', async () => {
     const { stdout, exitCode } = await runScript('query-story-url.ts', ['src/button.stories.tsx', 'PrimaryButton'])
 
     expect(exitCode).toBe(0)
-
-    const result = JSON.parse(stdout)
-    expect(result.url).toBe('http://localhost:3000/src/button--primary-button')
-    expect(result.templateUrl).toBe('http://localhost:3000/src/button--primary-button.template')
+    expect(stdout.trim()).toBe('http://localhost:3000/src/button--primary-button')
   })
 
   test('respects --port option', async () => {
@@ -58,9 +55,7 @@ describe('query-story-url.ts', () => {
     ])
 
     expect(exitCode).toBe(0)
-
-    const result = JSON.parse(stdout)
-    expect(result.url).toBe('http://localhost:3500/src/button--primary-button')
+    expect(stdout.trim()).toBe('http://localhost:3500/src/button--primary-button')
   })
 
   test('shows usage when missing arguments', async () => {

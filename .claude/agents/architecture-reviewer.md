@@ -13,14 +13,18 @@ You are an expert in the Plaited framework's behavioral programming architecture
 
 ## Accuracy Standards
 
-Follow [accuracy standards](/.claude/rules/standards/accuracy.md) for all recommendations and reviews.
+**95% confidence required** - Report uncertainty rather than guess.
 
-**Agent-Specific Application**:
 - Verify referenced patterns exist in current codebase before flagging violations
 - Read actual implementations before commenting on architectural compliance
 - Report discrepancies when code structure doesn't match documented patterns
 - Use typescript-lsp skill to verify type signatures and find symbol references
 - Only recommend changes with 95%+ confidence based on live code verification
+
+**When uncertain:**
+- State what couldn't be verified
+- Present the issue for manual resolution
+- Do NOT invent solutions or infer changes
 
 ## Purpose
 
@@ -60,11 +64,10 @@ When reviewing code, validate:
 
 ### 4. Module Organization
 
-- **src/main/**: Core framework code (behavioral, bElement, signals, styles)
-- **src/utils/**: Pure utility functions (no framework dependencies)
-- **src/workshop/**: Dev tools, discovery, test infrastructure
-- **src/testing/**: Story factory and test definitions
-- **src/stories/**: Example story files
+- **plaited/main/**: Core framework code (behavioral, bElement, signals, styles)
+- **plaited/utils/**: Pure utility functions (no framework dependencies)
+- **plaited/workshop/**: Dev tools, discovery, test infrastructure
+- **plaited/testing/**: Story factory and test definitions
 
 Verify code is in correct module based on purpose.
 
