@@ -7,7 +7,7 @@ Patterns for creating spacing and sizing tokens with `createTokens`.
 ```typescript
 import { createTokens } from 'plaited'
 
-export const spacing = createTokens('spacing', {
+export const { spacing } = createTokens('spacing', {
   px: { $value: '1px' },
   '0': { $value: '0' },
   '1': { $value: '4px' },
@@ -26,7 +26,7 @@ export const spacing = createTokens('spacing', {
 ```typescript
 import { createTokens } from 'plaited'
 
-export const space = createTokens('space', {
+export const { space } = createTokens('space', {
   none: { $value: '0' },
   xs: { $value: '4px' },
   sm: { $value: '8px' },
@@ -42,7 +42,7 @@ export const space = createTokens('space', {
 ```typescript
 import { createTokens } from 'plaited'
 
-export const sizes = createTokens('sizes', {
+export const { sizes } = createTokens('sizes', {
   icon: {
     sm: { $value: '16px' },
     md: { $value: '24px' },
@@ -61,7 +61,7 @@ export const sizes = createTokens('sizes', {
 ```typescript
 import { createTokens } from 'plaited'
 
-export const radii = createTokens('radii', {
+export const { radii } = createTokens('radii', {
   none: { $value: '0' },
   sm: { $value: '2px' },
   md: { $value: '4px' },

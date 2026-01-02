@@ -23,7 +23,7 @@ This skill provides structural patterns for design tokens. Use this when:
 ```typescript
 import { createTokens } from 'plaited'
 
-export const tokens = createTokens('namespace', {
+export const { namespace } = createTokens('namespace', {
   tokenName: {
     $default: { $value: 'defaultValue' },
     $compoundSelectors: {

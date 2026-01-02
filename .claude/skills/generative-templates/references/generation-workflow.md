@@ -51,7 +51,7 @@ Generate files in order:
 // new-element.tokens.ts
 import { createTokens } from 'plaited'
 
-export const newElementTokens = createTokens('new-element', {
+export const { newElementTokens } = createTokens('newElementTokens', {
   fill: {
     $default: { $value: 'lightblue' },
     $compoundSelectors: {

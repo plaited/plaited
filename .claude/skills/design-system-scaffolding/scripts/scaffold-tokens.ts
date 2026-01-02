@@ -45,7 +45,7 @@ const filePath = join(outputDir, fileName)
 
 const content = `import { createTokens } from 'plaited'
 
-export const ${name} = createTokens('${namespace}', {
+export const { ${namespace} } = createTokens('${namespace}', {
   // Simple token
   primary: { $value: '#007bff' },
 

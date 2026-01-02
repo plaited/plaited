@@ -710,7 +710,7 @@ Complete toggle input with custom styling:
 import { bElement, createHostStyles, createStyles, createTokens } from 'plaited'
 import { isTypeOf } from 'plaited/utils'
 
-const fills = createTokens('fills', {
+const { fills } = createTokens('fills', {
   default: { $value: 'lightblue' },
   checked: { $value: 'blue' },
   disabled: { $value: 'gray' }

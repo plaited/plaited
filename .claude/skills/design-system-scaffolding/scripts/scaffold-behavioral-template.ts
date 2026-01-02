@@ -58,7 +58,7 @@ const tokensFile = {
   path: join(outputDir, `${name}.tokens.ts`),
   content: `import { createTokens } from 'plaited'
 
-export const ${name.replace(/-/g, '')}Tokens = createTokens('${name}', {
+export const { ${name.replace(/-/g, '')}Tokens } = createTokens('${name.replace(/-/g, '')}Tokens', {
   fill: {
     $default: { $value: 'lightblue' },
     $compoundSelectors: {

@@ -438,7 +438,7 @@ Use bElement for:
 ```typescript
 import { createTokens } from 'plaited'
 
-export const fills = createTokens('fills', {
+export const { fills } = createTokens('fills', {
   fill: {
     $default: { $value: 'lightblue' },
     $compoundSelectors: {
@@ -792,7 +792,7 @@ function createTokens<T extends TokenDefinitions>(
 ```typescript
 import { createTokens } from 'plaited'
 
-export const tokens = createTokens('theme', {
+export const { theme } = createTokens('theme', {
   primary: { $value: '#007bff' },
   spacing: { $value: '16px' },
 })
@@ -802,7 +802,7 @@ export const tokens = createTokens('theme', {
 ```typescript
 import { createTokens } from 'plaited'
 
-export const fills = createTokens('fills', {
+export const { fills } = createTokens('fills', {
   fill: {
     $default: { $value: 'lightblue' },
     $compoundSelectors: {
@@ -816,7 +816,7 @@ export const fills = createTokens('fills', {
 **File: `toggle-input.css.ts`**
 ```typescript
 import { createStyles, createHostStyles, joinStyles } from 'plaited'
-import { tokens } from './theme.tokens.ts'
+import { theme } from './theme.tokens.ts'
 import { fills } from './fills.tokens.ts'
 
 export const styles = createStyles({
@@ -831,7 +831,7 @@ export const hostStyles = joinStyles(
   fills,
   createHostStyles({
     display: 'inline-grid',
-    padding: tokens.spacing,  // Token reference, not invoked
+    padding: theme.spacing,  // Token reference, not invoked
   })
 )
 ```
@@ -866,7 +866,7 @@ export const ToggleInput = bElement({
 **Using token() function:**
 ```typescript
 // Only invoke token() when you need the CSS variable string
-console.log(tokens.primary())  // 'var(--theme-primary)'
+console.log(theme.primary())  // 'var(--theme-primary)'
 ```
 
 **Supports:**
@@ -942,7 +942,7 @@ When tokens include selector variations (using `$default` and `$compoundSelector
 ```typescript
 import { createTokens } from 'plaited'
 
-export const fills = createTokens('fills', {
+export const { fills } = createTokens('fills', {
   fill: {
     $default: { $value: 'lightblue' },
     $compoundSelectors: {
@@ -1089,7 +1089,7 @@ This section demonstrates using `createHostStyles` with a bElement. See the File
 ```typescript
 import { createTokens } from 'plaited'
 
-export const tokens = createTokens('theme', {
+export const { theme } = createTokens('theme', {
   primary: { $value: '#007bff' },
   secondary: { $value: '#6c757d' },
   spacing: { $value: '16px' },
@@ -1100,17 +1100,17 @@ export const tokens = createTokens('theme', {
 **File: `button.css.ts`**
 ```typescript
 import { createStyles } from 'plaited'
-import { tokens } from './theme.tokens.ts'
+import { theme } from './theme.tokens.ts'
 
 // ✅ Pass token references directly (not invoked) as CSS values
 export const buttonStyles = createStyles({
   btn: {
-    backgroundColor: tokens.primary,  // NOT tokens.primary()
+    backgroundColor: theme.primary,  // NOT theme.primary()
     color: 'white',
-    padding: tokens.spacing,
-    fontSize: tokens.fontSize,
+    padding: theme.spacing,
+    fontSize: theme.fontSize,
     ':hover': {
-      backgroundColor: tokens.secondary,
+      backgroundColor: theme.secondary,
     }
   }
 })
@@ -1140,7 +1140,7 @@ export const themedButton = story({
 ```typescript
 import { createTokens } from 'plaited'
 
-export const colors = createTokens('colors', {
+export const { colors } = createTokens('colors', {
   primary: { $value: '#007bff' },
   accent: { $value: '#ff6b6b' },
 })
@@ -1499,7 +1499,7 @@ export const Card = ({ children }) => (
 ```typescript
 import { createTokens, createKeyframes, createHostStyles, joinStyles, bElement } from 'plaited'
 
-const tokens = createTokens('theme', {
+const { theme } = createTokens('theme', {
   primary: { $value: '#007bff' },
   spacing: { $value: '16px' },
 })
@@ -1512,8 +1512,8 @@ const fadeIn = createKeyframes('fadeIn', {
 const hostStyles = joinStyles(
   createHostStyles({
     display: 'block',
-    padding: tokens.spacing,  // NOT tokens.spacing() - token .styles auto-pushed
-    color: tokens.primary,
+    padding: theme.spacing,  // NOT theme.spacing() - token .styles auto-pushed
+    color: theme.primary,
     animation: `${fadeIn.id} 0.3s ease-in`,
   }),
   fadeIn()  // Combine keyframe styles with host styles
@@ -1589,7 +1589,7 @@ const combined = joinStyles(styles.a, styles.b, styles.a)
 ```typescript
 const styles = createStyles({
   button: {
-    backgroundColor: tokens.primary(),  // WRONG - don't invoke
+    backgroundColor: theme.primary(),  // WRONG - don't invoke
   }
 })
 ```
@@ -1598,14 +1598,14 @@ const styles = createStyles({
 ```typescript
 const styles = createStyles({
   button: {
-    backgroundColor: tokens.primary,  // Correct - pass reference
+    backgroundColor: theme.primary,  // Correct - pass reference
   }
 })
 ```
 
 Only invoke `token()` when you need the CSS variable string reference:
 ```typescript
-console.log(tokens.primary())  // 'var(--theme-primary)'
+console.log(theme.primary())  // 'var(--theme-primary)'
 ```
 
 ### 4. Never Use String CSS Custom Properties
@@ -1625,7 +1625,7 @@ export const toggleStyles = createStyles({
 ```typescript
 import { createTokens } from 'plaited'
 
-export const fills = createTokens('fills', {
+export const { fills } = createTokens('fills', {
   fill: {
     $default: { $value: 'lightblue' },
     $compoundSelectors: {
@@ -1663,7 +1663,7 @@ const hostStyles = createHostStyles(
 ✅ **Correct:** Token styles automatically included
 ```typescript
 const hostStyles = createHostStyles({
-  color: tokens.primary  // Token .styles auto-pushed
+  color: theme.primary  // Token .styles auto-pushed
 })
 ```
 

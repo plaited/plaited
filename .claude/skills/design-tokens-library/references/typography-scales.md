@@ -9,7 +9,7 @@ Major third (1.25) type scale:
 ```typescript
 import { createTokens } from 'plaited'
 
-export const fontSize = createTokens('fontSize', {
+export const { fontSize } = createTokens('fontSize', {
   xs: { $value: '0.64rem' },
   sm: { $value: '0.8rem' },
   base: { $value: '1rem' },
@@ -25,7 +25,7 @@ export const fontSize = createTokens('fontSize', {
 ```typescript
 import { createTokens } from 'plaited'
 
-export const lineHeight = createTokens('lineHeight', {
+export const { lineHeight } = createTokens('lineHeight', {
   none: { $value: '1' },
   tight: { $value: '1.25' },
   normal: { $value: '1.5' },
@@ -39,7 +39,7 @@ export const lineHeight = createTokens('lineHeight', {
 ```typescript
 import { createTokens } from 'plaited'
 
-export const fontWeight = createTokens('fontWeight', {
+export const { fontWeight } = createTokens('fontWeight', {
   normal: { $value: '400' },
   medium: { $value: '500' },
   semibold: { $value: '600' },
@@ -52,7 +52,7 @@ export const fontWeight = createTokens('fontWeight', {
 ```typescript
 import { createTokens } from 'plaited'
 
-export const fontFamily = createTokens('fontFamily', {
+export const { fontFamily } = createTokens('fontFamily', {
   sans: {
     $value: {
       $function: 'font-family',
@@ -75,7 +75,7 @@ export const fontFamily = createTokens('fontFamily', {
 ```typescript
 import { createTokens } from 'plaited'
 
-export const heading = createTokens('heading', {
+export const { heading } = createTokens('heading', {
   h1: {
     $default: { $value: '2rem' },
     $compoundSelectors: {

@@ -143,44 +143,50 @@ const formatTokenStatement = ({
  * @see {@link createStyles} for using tokens in style definitions
  * @see {@link createHostStyles} for using tokens in host styles
  */
-export const createTokens = <T extends DesignTokenGroup>(ident: string, group: T) =>
-  Object.entries(group).reduce(
-    (acc, [prop, value]) => {
-      const cssVar: `--${string}` = `--${kebabCase(ident)}-${kebabCase(prop)}`
-      const styles: string[] = []
-      if (isToken(value)) {
-        formatTokenStatement({
-          styles,
-          cssVar,
-          token: value,
-          host: ':host',
-        })
-      } else {
-        const { $compoundSelectors, ...rest } = value
-        if (Object.keys(rest).length) {
+export const createTokens = <I extends string, T extends DesignTokenGroup>(
+  ident: I,
+  group: T,
+): Record<I, DesignTokenReferences<T>> => {
+  return {
+    [ident]: Object.entries(group).reduce(
+      (acc, [prop, value]) => {
+        const cssVar: `--${string}` = `--${kebabCase(ident)}-${kebabCase(prop)}`
+        const styles: string[] = []
+        if (isToken(value)) {
           formatTokenStatement({
             styles,
             cssVar,
-            token: rest,
+            token: value,
             host: ':host',
           })
-        }
-
-        if ($compoundSelectors) {
-          for (const [selector, value] of Object.entries($compoundSelectors)) {
+        } else {
+          const { $compoundSelectors, ...rest } = value
+          if (Object.keys(rest).length) {
             formatTokenStatement({
               styles,
               cssVar,
-              token: value,
-              host: `:host(${selector})`,
+              token: rest,
+              host: ':host',
             })
           }
+
+          if ($compoundSelectors) {
+            for (const [selector, value] of Object.entries($compoundSelectors)) {
+              formatTokenStatement({
+                styles,
+                cssVar,
+                token: value,
+                host: `:host(${selector})`,
+              })
+            }
+          }
         }
-      }
-      const getRef = (): `var(--${string})` => `var(${cssVar})`
-      getRef.stylesheets = styles
-      acc[prop as keyof T] = getRef
-      return acc
-    },
-    {} as DesignTokenReferences<T>,
-  )
+        const getRef = (): `var(--${string})` => `var(${cssVar})`
+        getRef.stylesheets = styles
+        acc[prop as keyof T] = getRef
+        return acc
+      },
+      {} as DesignTokenReferences<T>,
+    ),
+  } as Record<I, DesignTokenReferences<T>>
+}

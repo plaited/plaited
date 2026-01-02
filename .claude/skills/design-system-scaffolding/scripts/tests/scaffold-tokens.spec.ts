@@ -10,7 +10,7 @@ describe('scaffold-tokens', () => {
 
     expect(result.filePath).toEndWith('fills.tokens.ts')
     expect(result.content).toContain("import { createTokens } from 'plaited'")
-    expect(result.content).toContain("export const fills = createTokens('fills'")
+    expect(result.content).toContain("export const { fills } = createTokens('fills'")
     expect(result.message).toContain('fills.tokens.ts')
   })
 

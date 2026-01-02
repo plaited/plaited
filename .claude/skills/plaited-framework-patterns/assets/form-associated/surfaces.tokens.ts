@@ -1,6 +1,6 @@
 import { createTokens } from 'plaited'
 
-export const surfaces = createTokens('surfaces', {
+export const { surfaces } = createTokens('surfaces', {
   fill: {
     $default: { $value: 'lightblue' },
     $compoundSelectors: {

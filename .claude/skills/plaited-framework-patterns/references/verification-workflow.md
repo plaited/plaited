@@ -106,10 +106,10 @@ export const styles = createStyles({ /* ... */ })
 export const hostStyles = createHostStyles({ /* ... */ })
 
 // File: element.tokens.ts
-export const tokens = createTokens('namespace', { /* ... */ })
+export const { namespace } = createTokens('namespace', { /* ... */ })
 
 // ✅ Pass token references, don't invoke
-backgroundColor: tokens.primary  // NOT tokens.primary()
+backgroundColor: namespace.primary  // NOT namespace.primary()
 ```
 
 ## Phase 3: Post-Generation Validation

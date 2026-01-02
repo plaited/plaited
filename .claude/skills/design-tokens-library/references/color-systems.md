@@ -9,7 +9,7 @@ Basic color palette tokens:
 ```typescript
 import { createTokens } from 'plaited'
 
-export const colors = createTokens('colors', {
+export const { colors } = createTokens('colors', {
   primary: { $value: '#007bff' },
   secondary: { $value: '#6c757d' },
   accent: { $value: '#ff6b6b' },
@@ -26,7 +26,7 @@ Surface tokens with state-based variations:
 ```typescript
 import { createTokens } from 'plaited'
 
-export const surfaces = createTokens('surfaces', {
+export const { surfaces } = createTokens('surfaces', {
   background: {
     $default: { $value: '#ffffff' },
     $compoundSelectors: {
@@ -49,7 +49,7 @@ Fills with custom element states (`:state()`):
 ```typescript
 import { createTokens } from 'plaited'
 
-export const fills = createTokens('fills', {
+export const { fills } = createTokens('fills', {
   fill: {
     $default: { $value: 'lightblue' },
     $compoundSelectors: {
@@ -68,7 +68,7 @@ Border and outline tokens:
 ```typescript
 import { createTokens } from 'plaited'
 
-export const strokes = createTokens('strokes', {
+export const { strokes } = createTokens('strokes', {
   border: {
     $default: { $value: '#e0e0e0' },
     $compoundSelectors: {
@@ -85,7 +85,7 @@ export const strokes = createTokens('strokes', {
 ```typescript
 import { createTokens } from 'plaited'
 
-export const gray = createTokens('gray', {
+export const { gray } = createTokens('gray', {
   50: { $value: '#fafafa' },
   100: { $value: '#f5f5f5' },
   200: { $value: '#eeeeee' },

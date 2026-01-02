@@ -61,7 +61,7 @@ Wrapping hard-to-style native elements (inputs, checkboxes, selects):
 ```typescript
 import { createTokens } from 'plaited'
 
-export const surfaces = createTokens('surfaces', {
+export const { surfaces } = createTokens('surfaces', {
   fill: {
     $default: { $value: 'lightblue' },
     $compoundSelectors: {
@@ -222,7 +222,7 @@ Custom form controls using ElementInternals - both wrapping native elements and 
 ```typescript
 import { createTokens } from 'plaited'
 
-export const surfaces = createTokens('surfaces', {
+export const { surfaces } = createTokens('surfaces', {
   fill: {
     $default: { $value: 'lightblue' },
     $compoundSelectors: {

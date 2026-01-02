@@ -7,7 +7,7 @@ Patterns for creating animation tokens with `createTokens` and `createKeyframes`
 ```typescript
 import { createTokens } from 'plaited'
 
-export const duration = createTokens('duration', {
+export const { duration } = createTokens('duration', {
   fast: { $value: '100ms' },
   normal: { $value: '200ms' },
   slow: { $value: '300ms' },
@@ -19,7 +19,7 @@ export const duration = createTokens('duration', {
 ```typescript
 import { createTokens } from 'plaited'
 
-export const easing = createTokens('easing', {
+export const { easing } = createTokens('easing', {
   linear: { $value: 'linear' },
   ease: { $value: 'ease' },
   easeIn: { $value: 'ease-in' },
@@ -58,7 +58,7 @@ export const hostStyles = joinStyles(
 ```typescript
 import { createTokens } from 'plaited'
 
-export const motion = createTokens('motion', {
+export const { motion } = createTokens('motion', {
   duration: {
     $default: { $value: '200ms' },
     $compoundSelectors: {

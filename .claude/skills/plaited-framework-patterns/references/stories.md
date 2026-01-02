@@ -352,14 +352,18 @@ BehavioralElement stories test interactive islands with behavioral programs.
 ### Pattern: Toggle Input
 
 ```typescript
-// File: toggle-input.css.ts
-import { createStyles, createHostStyles, createTokens } from 'plaited'
+// File: fills.tokens.ts
+import { createTokens } from 'plaited'
 
-const fills = createTokens('fills', {
+export const { fills } = createTokens('fills', {
   default: { $value: 'lightblue' },
   checked: { $value: 'blue' },
   disabled: { $value: 'gray' },
 })
+
+// File: toggle-input.css.ts
+import { createStyles, createHostStyles } from 'plaited'
+import { fills } from './fills.tokens.ts'
 
 export const styles = createStyles({
   symbol: {
@@ -611,7 +615,7 @@ export const accessibleButton = story({
 ## Inspector Helper for Debugging
 
 The inspector helper enables observation of behavioral program state during execution. It's useful for:
-- Agent debugging with Playwright MCP
+- Agent debugging with Chrome DevTools MCP
 - Understanding what's happening in behavioral elements
 - Developer debugging during development
 
@@ -663,9 +667,9 @@ const MyElement = bElement({
 
 ### Inspector Use Cases
 
-#### 1. Agent Debugging with Playwright MCP
+#### 1. Agent Debugging with Chrome DevTools MCP
 
-Agents using Playwright MCP can inspect behavioral program state:
+Agents using Chrome DevTools MCP can inspect behavioral program state:
 
 ```typescript
 export const debuggableElement = story({
@@ -751,7 +755,7 @@ type SnapshotMessage = {
 2. **Use in dev mode**: Automatically enabled in development, disabled in tests
 3. **Custom callbacks**: Assign custom processing for integration with logging tools
 4. **Understand snapshots**: Learn to read candidate/blocking/selected patterns
-5. **Agent integration**: Leverage with Playwright MCP for AI-assisted debugging
+5. **Agent integration**: Leverage with Chrome DevTools MCP for AI-assisted debugging
 
 ## Play Function Utilities
 

@@ -51,7 +51,7 @@ Identify how tokens are used:
 
 ```typescript
 // Token definition
-export const fills = createTokens('fills', { ... })
+export const { fills } = createTokens('fills', { ... })
 
 // Usage in styles
 import { fills } from './fills.tokens.ts'
