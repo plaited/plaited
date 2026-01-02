@@ -25,7 +25,7 @@ This skill provides:
 | Discover templates | `query-templates.ts` | Find all bElement exports |
 | Generate URLs | `query-story-url.ts` | Get preview URL for a story |
 | Batch analysis | `query-analyze.ts` | Combined discovery + URLs |
-| Dev server | `bun plaited dev` | Hot reload preview |
+| Dev server | `bun --hot plaited dev` | Hot reload preview (background) |
 | Test with video | `bun plaited test --record-video` | Visual test feedback |
 | Browser automation | Chrome DevTools MCP | Screenshots, interaction |
 
@@ -114,17 +114,42 @@ bun scripts/query-analyze.ts src/components --templates
 
 ## Dev Server
 
-Start the dev server with hot reload:
+Start the dev server with hot reload. **Always use `--hot` flag** for proper hot reload support.
+
+### Running as Background Task
+
+**IMPORTANT:** Run the dev server directly with `run_in_background: true` - do NOT use wrapper scripts.
 
 ```bash
-bun --hot plaited dev [paths...] [-p <port>]
+# Basic - discovers stories in current directory
+bun --hot plaited dev
+
+# With specific path
+bun --hot plaited dev src/main
+
+# With custom port
+bun --hot plaited dev src/main -p 3500
+
+# With color scheme
+bun --hot plaited dev src/components -p 3500 -c dark
 ```
 
 **Arguments:**
 - `paths`: Directories to discover stories (default: current directory)
 - `-p, --port`: Server port (default: 3000)
+- `-c, --color-scheme`: Color scheme (light | dark)
 
-**Console Output:**
+### Process Management
+
+Running directly (not via wrapper script) allows Claude to:
+1. **Track** the task ID for later reference
+2. **Monitor** output with `/bashes` command
+3. **Kill** the server with `KillShell` when done
+
+**Cleanup:** SessionEnd hook automatically kills orphaned dev servers when session ends.
+
+### Console Output
+
 ```
 Discovering stories in: /path/to/project
 Found 5 story exports
@@ -194,14 +219,14 @@ mcp__chrome-devtools__take_snapshot({})
 
 ## Workshop CLI
 
-The workshop CLI provides direct test execution:
+The workshop CLI provides test execution and dev server:
 
 ```bash
-# Discover and run all stories in paths
+# Discover and run all story tests
 bun plaited test src/main
 
-# Start dev server for manual testing
-bun plaited dev
+# Start dev server with hot reload (use run_in_background)
+bun --hot plaited dev src/main
 ```
 
 ## Related Skills

@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 
-# Hook: Check if typescript-lsp plugin is enabled and Bun runtime is available
-# Runs once at session start to verify recommended dependencies
+# Hook: Session startup tasks
+# - Cleans up stale dev servers from previous sessions
+# - Verifies Bun runtime is available
+# - Shows workshop CLI usage
+
+# Clean up any stale dev servers from previous sessions
+pkill -f 'bun --hot plaited dev' 2>/dev/null || true
 
 # Check for Bun runtime
 if ! command -v bun &> /dev/null; then
@@ -27,7 +32,6 @@ echo "  bun plaited test -p 3500         # Custom port"
 echo "  bun plaited test -c dark         # Dark mode"
 echo ""
 echo "Development Commands:"
-echo "  bun plaited dev                  # Start dev server"
 echo "  bun --hot plaited dev            # Dev server with hot reload"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

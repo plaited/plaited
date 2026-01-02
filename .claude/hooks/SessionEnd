@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# Hook: Session cleanup tasks
+# - Kills any running dev servers started during the session
+
+# Kill dev servers
+pkill -f 'bun --hot plaited dev' 2>/dev/null || true
+
+# Always exit successfully
+exit 0
