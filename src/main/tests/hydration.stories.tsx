@@ -1,16 +1,11 @@
 import { story } from 'plaited/testing'
-
-import {
-  AFTER_HYDRATION,
-  BEFORE_HYDRATION,
-  HYDRATING_ELEMENT_TAG,
-  ShadowDom,
-  styles,
-} from './fixtures/hydrating-element.constants.tsx'
+import { AFTER_HYDRATION, BEFORE_HYDRATION, HYDRATING_ELEMENT_TAG } from './fixtures/hydrating-element.constants.ts'
+import { styles } from './fixtures/hydrating-element.css.ts'
+import { ShadowDom } from './fixtures/hydrating-element-shadow-dom.tsx'
 
 const { stylesheets, classNames } = styles.before
 
-export const hyrdration = story({
+export const hydration = story({
   description: 'Validates hydration of declarative shadow DOM when element definition is dynamically imported',
   template: () => (
     // Pre-hydration state: custom element with declarative shadow DOM

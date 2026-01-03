@@ -1,191 +1,15 @@
-import { type BehavioralElement, bElement, createStyles, type FT, type Position, useTemplate } from 'plaited'
+import type { BehavioralElement } from 'plaited'
 import { story } from 'plaited/testing'
 
-const styles = createStyles({
-  root: {
-    textDecorationLine: 'line-through',
-  },
-})
-
-let did = 1
-const adjectives = [
-    'pretty',
-    'large',
-    'big',
-    'small',
-    'tall',
-    'short',
-    'long',
-    'handsome',
-    'plain',
-    'quaint',
-    'clean',
-    'elegant',
-    'easy',
-    'angry',
-    'crazy',
-    'helpful',
-    'mushy',
-    'odd',
-    'unsightly',
-    'adorable',
-    'important',
-    'inexpensive',
-    'cheap',
-    'expensive',
-    'fancy',
-  ],
-  colours = ['red', 'yellow', 'blue', 'green', 'pink', 'brown', 'purple', 'brown', 'white', 'black', 'orange'],
-  nouns = [
-    'table',
-    'chair',
-    'house',
-    'bbq',
-    'desk',
-    'car',
-    'pony',
-    'cookie',
-    'sandwich',
-    'burger',
-    'pizza',
-    'mouse',
-    'keyboard',
-  ]
-
-const random = (max: number) => Math.round(Math.random() * 1000) % max
-
-type DataItem = { id: number; label: string }
-type Data = DataItem[]
-
-const buildData = (count: number): Data => {
-  const data = []
-  for (let i = 0; i < count; i++) {
-    data.push({
-      id: did++,
-      label: `${adjectives[random(adjectives.length)]} ${colours[random(colours.length)]} ${
-        nouns[random(nouns.length)]
-      }`,
-    })
-  }
-  return data
-}
-
-const Root: FT = (attrs) => (
-  <div
-    p-target='root'
-    {...attrs}
-  >
-    <table p-target='table'></table>
-    <template p-target='row-template'>
-      <tr p-target='row'>
-        <td
-          class='col-md-1'
-          p-target='id'
-        ></td>
-        <td class='col-md-4'>
-          <a
-            p-target='label'
-            href='#'
-          ></a>
-        </td>
-        <td class='col-md-1'>
-          <a href='#'>
-            <span
-              class='glyphicon glyphicon-remove'
-              aria-hidden='true'
-              p-target='delete'
-            ></span>
-          </a>
-        </td>
-        <td class='col-md-6'></td>
-      </tr>
-    </template>
-  </div>
-)
-
-const Fixture = bElement({
-  shadowDom: <Root />,
-  tag: 'table-fixture',
-  publicEvents: [
-    'insert',
-    'render',
-    'replace',
-    'remove',
-    'removeAttributes',
-    'getAttribute',
-    'multiSetAttributes',
-    'setStyle',
-    'setAttribute',
-  ],
-  bProgram({ $ }) {
-    const template = $<HTMLTemplateElement>('row-template')[0]!
-    const cb = useTemplate<DataItem>(template, ($, data) => {
-      $('row')[0]?.attr('p-target', data.id)
-      $('id')[0]?.render(data.id)
-      $('label')[0]?.render(data.label)
-    })
-
-    return {
-      replace() {
-        $('table')[0]?.replace(<span>I'm just a span</span>)
-      },
-      render() {
-        $('table')[0]?.render(
-          ...buildData(100)
-            .map(cb)
-            .filter((x): x is DocumentFragment => x !== null),
-        )
-      },
-      insert(position: Position) {
-        $('table')[0]?.insert(
-          position,
-          ...buildData(100)
-            .map(cb)
-            .filter((x): x is DocumentFragment => x !== null),
-        )
-      },
-      remove() {
-        $('table')[0]?.replaceChildren()
-      },
-      getAttribute() {
-        const attr = $('root')[0]?.attr('p-target')
-        $('root')[0]?.render(attr ?? '')
-      },
-      removeAttributes() {
-        const labels = $('label')
-        labels.forEach((label) => {
-          label?.attr('p-target', null)
-        })
-      },
-      setAttribute() {
-        const [root] = $('root')
-        root?.attr('aria-label', 'helper fixture')
-      },
-      setStyle() {
-        const [root] = $('root')
-        root?.replace(<Root {...styles.root} />)
-      },
-      multiSetAttributes() {
-        const dels = $('delete')
-        dels.forEach((del) => {
-          del?.attr({
-            'p-target': 'cancel',
-            'aria-hidden': 'false',
-            class: null,
-          })
-        })
-      },
-    }
-  },
-})
+import { QueryFixture } from './fixtures/query-bindings.tsx'
 
 export const beforebegin = story({
   description: `This story is used to validate that insert
   helper on the Behavioral element's QuerySelector, $. When passed the beforebegin as the first argument, it
   inserts content passed as the subsequent arguments before target element.`,
-  template: Fixture,
+  template: QueryFixture,
   play: async ({ findByAttribute, assert }) => {
-    const fixture = document.querySelector(Fixture.tag) as BehavioralElement
+    const fixture = document.querySelector(QueryFixture.tag) as BehavioralElement
     let root = await findByAttribute<HTMLDivElement>('p-target', 'root')
     assert({
       given: 'before calling trigger',
@@ -214,9 +38,9 @@ export const afterbegin = story({
   description: `This story is used to validate that insert
   helper on the Behavioral element's QuerySelector, $. When passed the afterbegin as the first argument, it
   prepends content passed as the subsequent arguments to the target element.`,
-  template: Fixture,
+  template: QueryFixture,
   play: async ({ findByAttribute, assert }) => {
-    const fixture = document.querySelector(Fixture.tag) as BehavioralElement
+    const fixture = document.querySelector(QueryFixture.tag) as BehavioralElement
     const table = await findByAttribute<HTMLTableElement>('p-target', 'table')
     assert({
       given: 'before calling trigger',
@@ -254,9 +78,9 @@ export const beforeend = story({
   description: `This story is used to validate that insert
   helper on the Behavioral element's QuerySelector, $. When passed the beforeend as the first argument, it
   appends content passed as the subsequent arguments to the target element.`,
-  template: Fixture,
+  template: QueryFixture,
   play: async ({ assert, findByAttribute }) => {
-    const fixture = document.querySelector(Fixture.tag) as BehavioralElement
+    const fixture = document.querySelector(QueryFixture.tag) as BehavioralElement
     const table = await findByAttribute<HTMLTableElement>('p-target', 'table')
     assert({
       given: 'before calling trigger',
@@ -294,9 +118,9 @@ export const afterend = story({
   description: `This story is used to validate that insert
   helper on the Behavioral element's QuerySelector, $. When passed the afterend as the first argument, it
   inserts content passed as the subsequent arguments after the target element.`,
-  template: Fixture,
+  template: QueryFixture,
   play: async ({ assert, findByAttribute }) => {
-    const fixture = document.querySelector(Fixture.tag) as BehavioralElement
+    const fixture = document.querySelector(QueryFixture.tag) as BehavioralElement
     let root = await findByAttribute<HTMLDivElement>('p-target', 'root')
     assert({
       given: 'before calling trigger',
@@ -325,9 +149,9 @@ export const render = story({
   description: `This story is used to validate that render helper on
   the Behavioral element's QuerySelector, $. When invoked it replaces all the children
   of the target element with the content passed to it as arguments.`,
-  template: Fixture,
+  template: QueryFixture,
   play: async ({ findByAttribute, assert }) => {
-    const fixture = document.querySelector(Fixture.tag) as BehavioralElement
+    const fixture = document.querySelector(QueryFixture.tag) as BehavioralElement
     const table = await findByAttribute<HTMLTableElement>('p-target', 'table')
     assert({
       given: 'before calling trigger',
@@ -348,9 +172,9 @@ export const replace = story({
   description: `This story is used to validate that replace
   helper on the Behavioral element's QuerySelector, $. When invoked it replaces the
   target element with content passed to it as arguments.`,
-  template: Fixture,
+  template: QueryFixture,
   play: async ({ assert, findByAttribute }) => {
-    const fixture = document.querySelector(Fixture.tag) as BehavioralElement
+    const fixture = document.querySelector(QueryFixture.tag) as BehavioralElement
     const root = await findByAttribute<HTMLDivElement>('p-target', 'root')
     assert({
       given: 'before calling trigger',
@@ -371,9 +195,9 @@ export const getAttribute = story({
   description: `This story is used to validate that attr
   helper on the Behavioral element's QuerySelector, $. When invoked with only a attribute name it returns
   the attribute value if it the attribute exist on the target element.`,
-  template: Fixture,
+  template: QueryFixture,
   play: async ({ assert, findByAttribute }) => {
-    const fixture = document.querySelector(Fixture.tag) as BehavioralElement
+    const fixture = document.querySelector(QueryFixture.tag) as BehavioralElement
     const root = await findByAttribute<HTMLDivElement>('p-target', 'root')
     assert({
       given: 'before calling trigger',
@@ -393,9 +217,9 @@ export const getAttribute = story({
 export const setAttribute = story({
   description: `This story is used to validate that attr
   helper on the Behavioral element's QuerySelector, $. When invoked with an attribute name and a value, it sets the attribute on the target element.`,
-  template: Fixture,
+  template: QueryFixture,
   play: async ({ assert, findByAttribute }) => {
-    const fixture = document.querySelector(Fixture.tag) as BehavioralElement
+    const fixture = document.querySelector(QueryFixture.tag) as BehavioralElement
     const root = await findByAttribute<HTMLDivElement>('p-target', 'root')
     assert({
       given: 'before calling trigger',
@@ -415,9 +239,9 @@ export const setAttribute = story({
 export const setStyle = story({
   description: `This story is used to validate that attr
   helper on the Behavioral element's QuerySelector, $. When invoked with an attribute name and a value, it sets the attribute on the target element.`,
-  template: Fixture,
+  template: QueryFixture,
   play: async ({ assert, findByAttribute }) => {
-    const fixture = document.querySelector(Fixture.tag) as BehavioralElement
+    const fixture = document.querySelector(QueryFixture.tag) as BehavioralElement
     let root = await findByAttribute<HTMLDivElement>('p-target', 'root')
     assert({
       given: 'before calling trigger',
@@ -445,9 +269,9 @@ export const removeAttributes = story({
   description: `This story is used to validate that attr
   helper on the Behavioral element's QuerySelector, $. When invoked with the attribute name and null
   it removes the the attribute from the element.`,
-  template: Fixture,
+  template: QueryFixture,
   play: async ({ assert, findByAttribute }) => {
-    const fixture = document.querySelector(Fixture.tag) as BehavioralElement
+    const fixture = document.querySelector(QueryFixture.tag) as BehavioralElement
     fixture.trigger({ type: 'render' })
     let label = await findByAttribute<HTMLDivElement>('p-target', 'label')
     assert({
@@ -472,9 +296,9 @@ export const multiSetAttributes = story({
   helper on the Behavioral element's QuerySelector, $. When invoked with an object of key value pairs
   it resets or adds the attributes to the element if the value is not null for a given key. If the value is
   null it deletes the attribute from the element.`,
-  template: Fixture,
+  template: QueryFixture,
   play: async ({ assert, findByAttribute }) => {
-    const fixture = document.querySelector(Fixture.tag) as BehavioralElement
+    const fixture = document.querySelector(QueryFixture.tag) as BehavioralElement
     fixture.trigger({ type: 'render' })
     let el = await findByAttribute<HTMLDivElement>('p-target', 'delete')
     const can = await findByAttribute<HTMLSpanElement>('p-target', 'cancel')

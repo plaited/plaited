@@ -1,6 +1,6 @@
 ---
 name: typescript-lsp
-description: TypeScript Language Server integration for type verification, symbol discovery, and code navigation. Use before reading, editing, or writing TypeScript/JavaScript code to understand types, find references, and verify signatures. Includes Plaited framework verification workflows. (project)
+description: TypeScript Language Server integration for type verification, symbol discovery, and code navigation. Use before reading, editing, or writing TypeScript/JavaScript (*.js, *.jsx, *.ts, *.tsx) files to understand types, find references, and verify signatures. Includes Plaited framework verification workflows. (project)
 license: ISC
 compatibility: Requires bun
 allowed-tools: Bash

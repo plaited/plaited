@@ -1,24 +1,26 @@
 import { story } from 'plaited/testing'
 
-import { EventEmitter, EventListener } from './fixtures/public-events.tsx'
+import { SignalReceiver, SignalSender } from './fixtures/signal-communication.tsx'
 
-const PublicEventsFixture = () => (
-  <EventListener>
-    <EventEmitter />
-  </EventListener>
+const SignalCommunicationFixture = () => (
+  <>
+    <SignalSender />
+    <SignalReceiver />
+  </>
 )
 
-export const publicEventTrigger = story<typeof PublicEventsFixture>({
-  description: `This story is used to validate that the publicEvents parameter
-  of bElement allows for triggering a public event on a Behavioral element`,
-  template: PublicEventsFixture,
-  play: async ({ assert, findByAttribute, fireEvent }) => {
+export const signalCommunication = story<typeof SignalCommunicationFixture>({
+  template: SignalCommunicationFixture,
+  description: `Example of how to use useSignal to enable communication between
+  Behavioral elements. This story is used to validate that when the button in element-one
+  is clicked it leads to an appending a string to the h1 in element-two`,
+  play: async ({ findByAttribute, assert, fireEvent }) => {
     let button = await findByAttribute('p-target', 'button')
     const header = await findByAttribute('p-target', 'header')
     assert({
       given: 'render',
       should: 'header should contain string',
-      actual: header?.innerHTML,
+      actual: header?.textContent,
       expected: 'Hello',
     })
     button && (await fireEvent(button, 'click'))

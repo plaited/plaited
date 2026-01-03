@@ -1,6 +1,8 @@
 import { bElement } from 'plaited'
 
-import { AFTER_HYDRATION, HYDRATING_ELEMENT_TAG, ShadowDom, styles } from './hydrating-element.constants.tsx'
+import { AFTER_HYDRATION, HYDRATING_ELEMENT_TAG } from './hydrating-element.constants.ts'
+import { styles } from './hydrating-element.css.ts'
+import { ShadowDom } from './hydrating-element-shadow-dom.tsx'
 
 export const HydratingElement = bElement({
   tag: HYDRATING_ELEMENT_TAG,

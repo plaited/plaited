@@ -1,68 +1,12 @@
-import { bElement } from 'plaited'
 import { story } from 'plaited/testing'
 
-const Nested = bElement({
-  tag: 'nested-el',
-  shadowDom: (
-    <button
-      type='button'
-      p-target='button'
-      p-trigger={{ click: 'click' }}
-    >
-      Add
-    </button>
-  ),
-  publicEvents: ['add'],
-  bProgram({ emit }) {
-    return {
-      click() {
-        emit({ type: 'append', bubbles: true, composed: true })
-      },
-    }
-  },
-})
+import { EmitButton, ShadowHost, SlotHost } from './fixtures/event-dispatch.tsx'
 
-const Outer = bElement({
-  tag: 'outer-el',
-  shadowDom: (
-    <div>
-      <h1 p-target='header'>Hello</h1>
-      <Nested p-trigger={{ append: 'append' }}></Nested>
-    </div>
-  ),
-  bProgram({ $ }) {
-    return {
-      append() {
-        const [header] = $('header')
-        header?.insert('beforeend', <> World!</>)
-      },
-    }
-  },
-})
-
-const Slotted = bElement({
-  tag: 'parent-el',
-  shadowDom: (
-    <div>
-      <h1 p-target='header'>Hello</h1>
-      <slot p-trigger={{ append: 'append' }}></slot>
-    </div>
-  ),
-  bProgram({ $ }) {
-    return {
-      append() {
-        const [header] = $('header')
-        header?.insert('beforeend', <> World!</>)
-      },
-    }
-  },
-})
-
-export const eventDispatch = story<typeof Outer>({
+export const eventDispatch = story<typeof ShadowHost>({
   description: `Example of how to use useDispatch to broadcast events between Behavioral elements nested within
   another Behavioral elements shadow dom. When the button in nested-el is clicked the h1 in outer-el shadow dom's
   has a string appended to it`,
-  template: Outer,
+  template: ShadowHost,
   play: async ({ assert, findByAttribute, fireEvent }) => {
     const button = await findByAttribute('p-target', 'button')
     const header = await findByAttribute('p-target', 'header')
@@ -87,11 +31,11 @@ export const eventDispatchSlot = story({
 another Behavioral elements light dom. When the button in nested-el is clicked the h1 in parent-el shadow dom has a
 string appended to it`,
   template: () => (
-    <Slotted>
+    <SlotHost>
       <div>
-        <Nested />
+        <EmitButton />
       </div>
-    </Slotted>
+    </SlotHost>
   ),
   play: async ({ assert, findByAttribute, fireEvent }) => {
     const button = await findByAttribute('p-target', 'button')

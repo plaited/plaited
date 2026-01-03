@@ -1,6 +1,7 @@
-import { bElement, type FT } from 'plaited'
 import { story } from 'plaited/testing'
 import sinon from 'sinon'
+
+import { createNestedSlotHost, createSlotContainer, createSlotEventsFixture } from './fixtures/slot-events.tsx'
 
 const defaultSlot = sinon.spy()
 const passThroughSlot = sinon.spy()
@@ -8,87 +9,36 @@ const namedSlot = sinon.spy()
 const nestedSlot = sinon.spy()
 const nestedInShadowSlot = sinon.spy()
 
-const Inner = bElement({
-  tag: 'inner-slot',
-  shadowDom: (
-    <>
-      <slot p-trigger={{ click: 'nested' }}></slot>
-      <slot
-        p-trigger={{ click: 'nestedInShadow' }}
-        name='shadow'
-      ></slot>
-    </>
-  ),
-  bProgram() {
-    return {
-      nested(e: Event) {
-        e.stopPropagation()
-        nestedSlot()
-      },
-      nestedInShadow(e: Event) {
-        e.stopPropagation()
-        nestedInShadowSlot()
-      },
-    }
+const NestedSlotHost = createNestedSlotHost(() => ({
+  nested(e: Event) {
+    e.stopPropagation()
+    nestedSlot()
   },
-})
+  nestedInShadow(e: Event) {
+    e.stopPropagation()
+    nestedInShadowSlot()
+  },
+}))
 
-const Outer = bElement({
-  tag: 'outer-slot',
-  shadowDom: (
-    <div>
-      <slot p-trigger={{ click: 'slot' }}></slot>
-      <slot
-        name='named'
-        p-trigger={{ click: 'named' }}
-      ></slot>
-      <Inner p-trigger={{ click: 'passThrough' }}>
-        <slot name='nested'></slot>
-        <button
-          type='button'
-          slot='shadow'
-        >
-          Shadow
-        </button>
-      </Inner>
-    </div>
-  ),
-  bProgram: () => ({
-    slot() {
-      defaultSlot()
-    },
-    named() {
-      namedSlot()
-    },
-    passThrough() {
-      passThroughSlot()
-    },
-  }),
-})
+const SlotContainer = createSlotContainer(NestedSlotHost, () => ({
+  slot() {
+    defaultSlot()
+  },
+  named() {
+    namedSlot()
+  },
+  passThrough() {
+    passThroughSlot()
+  },
+}))
 
-const Fixture: FT = () => (
-  <Outer>
-    <button type='button'>Slot</button>
-    <button
-      type='button'
-      slot='named'
-    >
-      Named
-    </button>
-    <button
-      type='button'
-      slot='nested'
-    >
-      Nested
-    </button>
-  </Outer>
-)
+const SlotEventsFixture = createSlotEventsFixture(SlotContainer)
 
-export const slots = story<typeof Fixture>({
+export const slotEventDelegation = story<typeof SlotEventsFixture>({
   description: `This story is used to validate that p-trigger attribute on slot elements in a
   Behavioral elements shadow DOM only allow event triggering on named and default slots in
   it's shadow dom but not on pass through slots.`,
-  template: Fixture,
+  template: SlotEventsFixture,
   play: async ({ assert, findByText, fireEvent }) => {
     let button = await findByText('Slot')
     button && (await fireEvent(button, 'click'))

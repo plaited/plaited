@@ -1,27 +1,12 @@
-import { type BehavioralElement, bElement } from 'plaited'
+import type { BehavioralElement } from 'plaited'
 import { story } from 'plaited/testing'
 
-const DelegateFalse = bElement({
-  tag: 'delegate-false',
-  delegatesFocus: false,
-  shadowDom: <span>mode open and delegates focus</span>,
-})
-
-const ModeOpen = bElement({
-  tag: 'mode-open',
-  shadowDom: <span>mode open and delegates focus</span>,
-})
-
-const ClosedMode = bElement({
-  tag: 'mode-closed',
-  mode: 'closed',
-  shadowDom: <span>mode open and delegates focus</span>,
-})
+import { ClosedShadow, NoFocusDelegation, OpenShadow } from './fixtures/shadow-dom-options.tsx'
 
 export const defaultModeAndFocus = story({
   description: `This test is used to validate a Behavioral element created using bElement
   default to having it's mode open`,
-  template: () => <ModeOpen p-target='el' />,
+  template: () => <OpenShadow p-target='el' />,
   play: async ({ assert, findByAttribute }) => {
     const host = await findByAttribute<BehavioralElement>('p-target', 'el')
     assert({
@@ -42,7 +27,7 @@ export const defaultModeAndFocus = story({
 export const delegatesFocusFalse = story({
   description: `This test is used to validate a Behavioral element created using bElement
   with the parameter delefateFocus set to false does not allow focus delegation.`,
-  template: () => <DelegateFalse p-target='el' />,
+  template: () => <NoFocusDelegation p-target='el' />,
   play: async ({ assert, findByAttribute }) => {
     const host = await findByAttribute<BehavioralElement>('p-target', 'el')
     assert({
@@ -63,7 +48,7 @@ export const delegatesFocusFalse = story({
 export const closedMode = story({
   description: `This test is used to validate a Behavioral element created using bElement
   with the parameter mode set to false create a custom element with a closed shadow dom.`,
-  template: () => <ClosedMode p-target='el' />,
+  template: () => <ClosedShadow p-target='el' />,
   play: async ({ assert, findByAttribute }) => {
     const host = await findByAttribute<BehavioralElement>('p-target', 'el')
     assert({

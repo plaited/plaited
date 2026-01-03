@@ -1,48 +1,16 @@
-import { type BehavioralElement, bElement, createStyles } from 'plaited'
+import type { BehavioralElement } from 'plaited'
 import { story } from 'plaited/testing'
 
-const styles = createStyles({
-  initial: {
-    border: '1px solid black',
-  },
-  noRepeat: {
-    color: 'blue',
-    textDecoration: 'underline',
-  },
-  repeat: {
-    color: 'purple',
-    textDecoration: 'underline',
-  },
-})
-
-const DynamicOnly = bElement({
-  publicEvents: ['render'],
-  tag: 'dynamic-only',
-  shadowDom: (
-    <div
-      p-target='target'
-      {...styles.initial}
-    ></div>
-  ),
-  bProgram({ $ }) {
-    return {
-      render() {
-        const [target] = $<HTMLDivElement>('target')
-        target?.insert('beforeend', <div {...styles.noRepeat}>construable stylesheet applied once</div>)
-        target?.insert('beforeend', <div {...styles.repeat}>not applied</div>)
-      },
-    }
-  },
-})
+import { DynamicStyleHost, styles } from './fixtures/dynamic-styles.tsx'
 
 export const dynamicStyles = story({
   description: `This story is used to validate that when rendering/inserting new JSX with styles
   into the Behavioral element shadow dom those styles sheets are applied to the constructed styles
   and do not repeat`,
-  template: () => <DynamicOnly data-testid='element' />,
+  template: () => <DynamicStyleHost data-testid='element' />,
   play: async ({ findByText, assert, findByAttribute, wait }) => {
     const template = document.createElement('template')
-    template.setHTMLUnsafe((<DynamicOnly />).html.join(''))
+    template.setHTMLUnsafe((<DynamicStyleHost />).html.join(''))
     const style = await findByText(styles.initial.stylesheets.join(''), template.content as unknown as HTMLElement)
     assert({
       given: 'Render with initial stylesheet, Style tag',

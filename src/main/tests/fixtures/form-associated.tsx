@@ -1,28 +1,9 @@
-import { bElement, createHostStyles, createStyles, joinStyles } from 'plaited'
-import { story } from 'plaited/testing'
+import { bElement, joinStyles } from 'plaited'
 import { isTypeOf } from 'plaited/utils'
 
-const styles = createStyles({
-  symbol: {
-    height: '16px',
-    width: '16px',
-    backgroundColor: 'var(--fill)',
-    gridArea: 'input',
-  },
-})
+import { hostStyles, styles } from './form-associated.css.ts'
 
-const hostStyles = createHostStyles({
-  display: 'inline-grid',
-  '--fill': {
-    $default: 'lightblue',
-    $compoundSelectors: {
-      ':state(checked)': 'blue',
-      ':state(disabled)': 'grey',
-    },
-  },
-})
-
-const ToggleInput = bElement<{
+export const ToggleInput = bElement<{
   click: MouseEvent & { target: HTMLInputElement }
   checked: boolean
   disabled: boolean
@@ -104,39 +85,5 @@ const ToggleInput = bElement<{
         }
       },
     }
-  },
-})
-
-export const checkbox = story<typeof ToggleInput>({
-  description: `renders toggle input and validates we can set attribute on it and it chenges`,
-  template: ToggleInput,
-  async play() {
-    const checkbox = document.querySelector(ToggleInput.tag)
-    checkbox?.setAttribute('checked', '')
-  },
-})
-
-export const checked = story<typeof ToggleInput>({
-  description: `renders toggle input checked`,
-  template: ToggleInput,
-  args: {
-    checked: true,
-  },
-})
-
-export const disabled = story<typeof ToggleInput>({
-  description: `renders toggle input disabled`,
-  template: ToggleInput,
-  args: {
-    disabled: true,
-  },
-})
-
-export const disabledAndChecked = story<typeof ToggleInput>({
-  description: `renders toggle input disabled and checked`,
-  template: ToggleInput,
-  args: {
-    disabled: true,
-    checked: true,
   },
 })
