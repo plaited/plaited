@@ -10,7 +10,7 @@ import {
 
 const { stylesheets, classNames } = styles.before
 
-export const test = story({
+export const hyrdration = story({
   description: 'Validates hydration of declarative shadow DOM when element definition is dynamically imported',
   template: () => (
     // Pre-hydration state: custom element with declarative shadow DOM
