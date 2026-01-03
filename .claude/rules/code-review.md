@@ -75,3 +75,21 @@ class EventBus {
 ```
 
 **Rationale:** JavaScript private fields are a runtime feature (ES2022) providing true encapsulation. TypeScript's `private` is erased at compile time and can be bypassed. Prefer platform standards over TypeScript-only features
+
+## Terminology
+
+### Use "Template" Not "Component"
+
+Plaited is a template-driven framework. Always use "template" or "templates" instead of "component" or "components" in all documents, examples, comments, and code.
+
+```typescript
+// ✅ Good: Template terminology
+const ButtonTemplate = () => <button>Click me</button>
+// src/templates/button.tsx
+
+// ❌ Avoid: Component terminology
+const ButtonComponent = () => <button>Click me</button>
+// src/components/button.tsx
+```
+
+**Rationale:** Plaited's architecture is fundamentally template-driven, not component-driven. Consistent terminology reinforces the framework's design philosophy
