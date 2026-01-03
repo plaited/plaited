@@ -4,7 +4,8 @@ description: Expert in Plaited behavioral programming patterns, event-driven arc
 tools: Read, Grep, Glob
 skills:
   - typescript-lsp
-  - plaited-framework-patterns
+  - plaited-behavioral-core
+  - plaited-ui-patterns
 ---
 
 # Architecture Reviewer Agent
@@ -110,7 +111,7 @@ Verify code is in correct module based on purpose.
 
 ## Reference Documentation
 
-Use the **plaited-framework-patterns** skill for architectural patterns, BP foundations, and cross-island communication. Use **typescript-lsp** skill to verify type signatures and find references.
+Use the **plaited-behavioral-core** skill for BP foundations and **plaited-ui-patterns** skill for bElement patterns and cross-island communication. Use **typescript-lsp** skill to verify type signatures and find references.
 
 ## Output Format
 

@@ -234,6 +234,7 @@ When you add a new pattern to the `references/` directory, tell Claude to re-rea
 - Claude will use the Read tool to load the updated content
 
 ## Related Skills
-- plaited-framework-patterns - Framework patterns and conventions
+- plaited-ui-patterns - bElement patterns and styling
+- plaited-standards - Code conventions
 - typescript-lsp - Type verification for bElement APIs
 ```

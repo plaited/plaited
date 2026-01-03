@@ -8,10 +8,23 @@ AI-assisted development for Plaited templates. This plugin provides comprehensiv
 
 ## Available Skills
 
-### plaited-framework-patterns
-Comprehensive Plaited patterns for templates and behavioral elements:
+### plaited-standards
+Code conventions and development standards:
+- Type system preferences (type over interface)
+- Function style (arrow functions, object params)
+- Import path standards
+- 95% confidence threshold
+
+### plaited-behavioral-core
+Behavioral programming patterns and neuro-symbolic reasoning:
+- Event selection, blocking, priority
+- Rule composition with bThread/bSync
+- useBehavioral factory pattern
+- Workflow coordination
+
+### plaited-ui-patterns
+Templates, bElements, and styling:
 - Templates & Styling (JSX, CSS-in-JS, design tokens)
-- Behavioral Programming (threads, events, coordination)
 - Custom Elements (bElement, Shadow DOM, form controls)
 - Cross-Island Communication (trigger, emit, signals)
 - Testing (story-based tests with Playwright)
@@ -84,5 +97,7 @@ element/
 ## Learn More
 
 See the skills directory for detailed pattern documentation:
-- `skills/plaited-framework-patterns/references/` - Framework patterns
+- `skills/plaited-standards/references/` - Code conventions and standards
+- `skills/plaited-behavioral-core/references/` - BP patterns
+- `skills/plaited-ui-patterns/references/` - Templates and bElements
 - `skills/code-documentation/references/` - TSDoc templates

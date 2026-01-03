@@ -36,3 +36,7 @@ This skill contains detailed templates for:
 - [public-api-templates.md](references/public-api-templates.md) - Templates for public-facing APIs
 - [internal-templates.md](references/internal-templates.md) - Templates for internal code and modules
 - [type-documentation.md](references/type-documentation.md) - Comprehensive type documentation templates
+
+## Related Skills
+
+- **typescript-lsp**: Use for type verification and discovery during documentation workflow. Essential for Phase 1 (type analysis) and Phase 2 (usage discovery) of the TSDoc generation process. Run `lsp-hover` to verify signatures, `lsp-references` to find usages, and `lsp-symbols` to understand file structure.

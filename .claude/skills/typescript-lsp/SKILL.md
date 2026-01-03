@@ -1,6 +1,6 @@
 ---
 name: typescript-lsp
-description: TypeScript Language Server integration for type verification, symbol discovery, and code navigation. Use before reading, editing, or writing TypeScript/JavaScript (*.js, *.jsx, *.ts, *.tsx) files to understand types, find references, and verify signatures. Includes Plaited framework verification workflows. (project)
+description: TypeScript Language Server for exploring and understanding TypeScript/JavaScript codebases. PREFER OVER Grep/Glob for *.ts/*.tsx files - provides type-aware symbol search, reference finding, and code navigation. Use for exploring code structure, finding implementations, understanding type relationships, and verifying signatures before editing. (project)
 license: ISC
 compatibility: Requires bun
 allowed-tools: Bash
@@ -10,16 +10,33 @@ allowed-tools: Bash
 
 ## Purpose
 
-This skill provides TypeScript Language Server Protocol integration for enhanced code understanding. Use these tools to:
-- Verify type signatures before writing code
-- Find all references before modifying or deleting exports
-- Understand file structure and exports
-- Navigate to definitions
-- Search for symbols across the workspace
+This skill provides TypeScript Language Server Protocol integration for **exploring and understanding** TypeScript/JavaScript codebases. 
+
+**IMPORTANT**: Prefer LSP tools over Grep/Glob when working with `*.ts`, `*.tsx`, `*.js`, `*.jsx` files. LSP provides type-aware results that understand imports, exports, and symbol relationships.
+
+Use these tools to:
+- **Explore codebases** - Find symbols, understand module structure, discover implementations
+- **Find references** - Type-aware search across the entire codebase (better than grep for symbols)
+- **Understand types** - Get full type signatures, generics, and documentation
+- **Verify before editing** - Check all usages before modifying or deleting exports
+- **Navigate code** - Jump to definitions, find implementations
+
+## When to Use LSP vs Grep/Glob
+
+| Task | Use LSP | Use Grep/Glob |
+|------|---------|---------------|
+| Find all usages of a function/type | ✅ `lsp-references` | ❌ Misses re-exports, aliases |
+| Search for a symbol by name | ✅ `lsp-find` | ❌ Matches strings, comments |
+| Understand file exports | ✅ `lsp-analyze --exports` | ❌ Doesn't resolve re-exports |
+| Get type signature | ✅ `lsp-hover` | ❌ Not possible |
+| Find files by pattern | ❌ | ✅ `Glob` |
+| Search non-TS files (md, json) | ❌ | ✅ `Grep` |
+| Search for text in comments/strings | ❌ | ✅ `Grep` |
 
 ## When to Use
 
-**Before reading code:**
+**Exploring code (prefer LSP):**
+- Run `lsp-find` to search for symbols across the workspace
 - Run `lsp-symbols` to get an overview of file structure
 - Run `lsp-analyze --exports` to see what a module provides
 
@@ -224,5 +241,7 @@ See [lsp-verification.md](references/lsp-verification.md) for Plaited framework 
 
 ## Related Skills
 
-- **plaited-framework-patterns**: Plaited framework patterns and best practices
+- **plaited-standards**: Code conventions and development standards
+- **plaited-behavioral-core**: Behavioral programming patterns
+- **plaited-ui-patterns**: Templates, bElements, and styling
 - **code-documentation**: TSDoc standards for documentation

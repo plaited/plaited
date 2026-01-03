@@ -27,9 +27,12 @@ This project uses `.claude/rules/` for project-specific guidance:
 - **Code Review**: @.claude/rules/code-review.md - Review standards
 - **Accuracy**: @.claude/rules/accuracy.md - Confidence thresholds
 
-For comprehensive Plaited patterns, code conventions, and standards, see the **plaited-framework-patterns** skill (`.claude/skills/plaited-framework-patterns/`).
+For Plaited patterns, see these skills in `.claude/skills/`:
+- **plaited-standards** - Code conventions, development standards, verification workflow
+- **plaited-behavioral-core** - Behavioral programming patterns, neuro-symbolic reasoning
+- **plaited-ui-patterns** - Templates, bElements, styling, forms, stories
 
-For TSDoc workflow and templates, see the **code-documentation** skill (`.claude/skills/code-documentation/`).
+For TSDoc workflow and templates, see the **code-documentation** skill.
 
 ## Quick Reference
 
@@ -46,10 +49,9 @@ Plaited is a behavioral programming framework for reactive custom elements. Key 
 2. Custom Elements with Shadow DOM
 3. CSS-in-JS System
 
-For architectural patterns and implementation details, see the plaited-framework-patterns skill:
-- `.claude/skills/plaited-framework-patterns/references/behavioral-programs.md`
-- `.claude/skills/plaited-framework-patterns/references/b-element.md`
-- `.claude/skills/plaited-framework-patterns/references/styling.md`
+For architectural patterns and implementation details:
+- **plaited-behavioral-core** - `.claude/skills/plaited-behavioral-core/references/behavioral-programs.md`
+- **plaited-ui-patterns** - `.claude/skills/plaited-ui-patterns/references/b-element.md`, `styling.md`
 
 ### Code Style Essentials
 
@@ -60,7 +62,7 @@ For architectural patterns and implementation details, see the plaited-framework
 - JSX syntax only (not `h()` or `createTemplate()`)
 - Object parameters for functions with 2+ parameters
 
-For complete conventions, see the plaited-framework-patterns skill: `.claude/skills/plaited-framework-patterns/references/code-conventions.md`
+For complete conventions, see the **plaited-standards** skill: `.claude/skills/plaited-standards/references/code-conventions.md`
 
 ### Plugin Development
 
@@ -78,7 +80,7 @@ When working on plugins in `.claude/`:
 - Use Mermaid diagrams only (not ASCII art)
 - In SKILL.md files, use markdown links `[name](path)` not `@path` references
 
-See the plaited-framework-patterns skill (`.claude/skills/plaited-framework-patterns/references/standards.md`) and the code-documentation skill for complete guidelines.
+See the **plaited-standards** skill (`.claude/skills/plaited-standards/references/standards.md`) and the **code-documentation** skill for complete guidelines.
 
 ## Important Constraints
 
@@ -91,10 +93,13 @@ See the plaited-framework-patterns skill (`.claude/skills/plaited-framework-patt
 ## Additional Resources
 
 **Skills** (`.claude/skills/`):
-- **plaited-framework-patterns**: Comprehensive Plaited patterns, examples, and best practices
+- **plaited-standards**: Code conventions, development standards, verification workflow
+- **plaited-behavioral-core**: Behavioral programming patterns, neuro-symbolic reasoning
+- **plaited-ui-patterns**: Templates, bElements, styling, forms, stories
 - **code-documentation**: TSDoc workflow and templates
 - **typescript-lsp**: Type verification and symbol discovery
-- **code-query**: Story and template discovery
+- **workbench**: Story discovery and preview
+- **design-system**: Design tokens and scaffolding scripts
 
 **Project-Specific Rules** (`.claude/rules/`):
 - Testing commands and workflow

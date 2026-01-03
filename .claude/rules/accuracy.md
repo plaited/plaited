@@ -14,7 +14,7 @@
 
 4. **Tool-Assisted Verification**: Use these skills to enhance verification accuracy:
    - **`typescript-lsp` skill**: Use `lsp-hover` to verify type signatures, `lsp-references` to find all usages before modifying, `lsp-symbols` for file structure, and `lsp-find` to search for patterns across the workspace.
-   - **`plaited-framework-patterns` skill**: Check what the Plaited framework provides before consulting external sources. Verify patterns for behavioral programming, templates, styling, and custom elements.
+   - **Plaited skills**: Check what the Plaited framework provides before consulting external sources. Use `plaited-behavioral-core` for BP patterns, `plaited-ui-patterns` for templates and custom elements, and `plaited-standards` for code conventions.
    - **WebFetch**: Only after confirming the feature isn't built into the framework, retrieve current documentation from authoritative sources (MDN Web Docs, WHATWG specs) when using web platform APIs.
    - These skills complement (but do not replace) reading live code - always verify outputs against actual implementation.
 

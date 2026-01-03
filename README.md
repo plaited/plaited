@@ -102,16 +102,14 @@ import { story } from 'plaited/testing'
 The Plaited AI plugin supercharges your development with intelligent assistance:
 
 **Skills** (auto-activated based on context):
-- **plaited-framework-patterns** - Behavioral programming, templates, styling, custom elements
+- **plaited-standards** - Code conventions, development standards, verification workflow
+- **plaited-behavioral-core** - Behavioral programming patterns, neuro-symbolic reasoning
+- **plaited-ui-patterns** - Templates, bElements, styling, forms, stories
 - **typescript-lsp** - Type verification, symbol discovery, code navigation
 - **code-documentation** - TSDoc templates and workflow
-- **code-query** - Story and template discovery
+- **workbench** - Story discovery, dev server, visual feedback via Playwright
 - **plaited-web-patterns** - Web API patterns adapted for Plaited
-- **design-tokens-library** - Design token patterns for colors, spacing, typography
-- **design-system-scaffolding** - Generate design system files (tokens, styles, stories)
-- **generative-templates** - Create new elements from project patterns
-- **live-preview** - Dev server and visual feedback via Playwright
-- **design-iteration** - Multi-modal design refinement with video/screenshots
+- **design-system** - Design token patterns and scaffolding scripts
 
 **Agents** (specialized reviewers):
 - **architecture-reviewer** - Validates behavioral programming patterns

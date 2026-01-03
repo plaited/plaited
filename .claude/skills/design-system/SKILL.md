@@ -219,6 +219,7 @@ component/
 
 ## Related Skills
 
-- **plaited-framework-patterns** - Complete framework documentation
+- **plaited-ui-patterns** - Templates, bElements, and styling
+- **plaited-standards** - Code conventions
 - **workbench** - Story discovery and preview
 - **typescript-lsp** - Type verification and code navigation

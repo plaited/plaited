@@ -4,15 +4,19 @@
 
 ## Type Analysis Process
 
-When documenting types, follow this discovery process:
+When documenting types, use the **typescript-lsp** skill for accurate type discovery:
 
-1. **Analyze type structure:**
+1. **Analyze type structure** using typescript-lsp:
+   - Run `lsp-symbols` to list all type definitions in a file
+   - Run `lsp-hover` on the type to get the full signature
    - Identify all properties and their types
    - Find optional vs required properties
    - Trace generic type parameters
    - Identify union and intersection types
 
-2. **Find type relationships:**
+2. **Find type relationships** using typescript-lsp:
+   - Run `lsp-references` to find all usages of the type
+   - Run `lsp-find` to search for related types by name pattern
    - What types does this extend or implement?
    - What types reference this type?
    - What utility types are derived from this?

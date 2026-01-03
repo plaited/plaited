@@ -231,7 +231,8 @@ bun --hot plaited dev src/main
 
 ## Related Skills
 
-- **plaited-framework-patterns** - Plaited framework patterns and examples
+- **plaited-ui-patterns** - Templates, bElements, and styling
+- **plaited-behavioral-core** - Behavioral programming patterns
 - **design-system** - Token patterns and scaffolding
 - **typescript-lsp** - Type verification and code navigation
 - **code-documentation** - TSDoc standards
