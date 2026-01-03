@@ -86,7 +86,7 @@ See the plaited-framework-patterns skill (`.claude/skills/plaited-framework-patt
 2. **Bun Required**: Development requires bun >= v1.2.9
 3. **ES2024 Features**: Uses Promise.withResolvers() and other modern APIs
 4. **Shadow DOM Focus**: Framework assumes Shadow DOM usage
-5. **Template Terminology**: Never use "component" or "components" - Plaited is a template-driven framework. Use "template" or "templates" in all documents, examples, and comments
+5. **Template Terminology**: Never use "component" or "components" - Plaited is a template-driven framework. Use "template", "templates", "elements", "elements", "behavioral element", or "behavioral elements" in all documents, examples, and comments
 
 ## Additional Resources
 

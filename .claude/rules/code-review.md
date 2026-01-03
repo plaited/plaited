@@ -80,7 +80,7 @@ class EventBus {
 
 ### Use "Template" Not "Component"
 
-Plaited is a template-driven framework. Always use "template" or "templates" instead of "component" or "components" in all documents, examples, comments, and code.
+Plaited is a template-driven framework. Always use "template", "templates", "elements", "elements", "behavioral element", or "behavioral elements" instead of "component" or "components" in all documents, examples, comments, and code.
 
 ```typescript
 // ✅ Good: Template terminology
