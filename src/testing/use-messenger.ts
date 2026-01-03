@@ -1,5 +1,5 @@
 import type { PlaitedTrigger } from '../main.ts'
-import { setInspectorCallback } from '../main.ts'
+import { setInspectorCallback } from '../ui/inspector.ts'
 import type { Send } from './testing.types.ts'
 import { useWebSocket } from './use-web-socket.ts'
 

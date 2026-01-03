@@ -1,4 +1,4 @@
-import { type BehavioralElement, bElement, createHostStyles, createStyles } from 'plaited'
+import { type BehavioralElement, bElement, createHostStyles, createStyles } from 'plaited/ui'
 import { PlaitedFixture } from './plaited-fixture.tsx'
 import { PlaitedHeader } from './plaited-header.tsx'
 import { PlaitedMask } from './plaited-mask.tsx'

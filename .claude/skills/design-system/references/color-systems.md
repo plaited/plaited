@@ -7,7 +7,7 @@ Patterns for creating color tokens with `createTokens`.
 Basic color palette tokens:
 
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { colors } = createTokens('colors', {
   primary: { $value: '#007bff' },
@@ -24,7 +24,7 @@ export const { colors } = createTokens('colors', {
 Surface tokens with light/dark variations using scales:
 
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { surfaces } = createTokens('surfaces', {
   background: {
@@ -40,7 +40,7 @@ export const { surfaces } = createTokens('surfaces', {
 
 **Usage with media queries in styles:**
 ```typescript
-import { createHostStyles, joinStyles } from 'plaited'
+import { createHostStyles, joinStyles } from 'plaited/ui'
 import { surfaces } from './surfaces.tokens.ts'
 
 export const hostStyles = joinStyles(
@@ -60,7 +60,7 @@ export const hostStyles = joinStyles(
 Fills with state-based variations using scales:
 
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { fills } = createTokens('fills', {
   fill: {
@@ -74,7 +74,7 @@ export const { fills } = createTokens('fills', {
 
 **Usage with state selectors in styles:**
 ```typescript
-import { createStyles, createHostStyles, joinStyles } from 'plaited'
+import { createStyles, createHostStyles, joinStyles } from 'plaited/ui'
 import { fills } from './fills.tokens.ts'
 
 export const styles = createStyles({
@@ -102,7 +102,7 @@ export const hostStyles = joinStyles(
 Border and outline tokens with state variations:
 
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { strokes } = createTokens('strokes', {
   border: {
@@ -119,7 +119,7 @@ export const { strokes } = createTokens('strokes', {
 For color palettes with numeric scales, use scale nesting:
 
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { gray } = createTokens('gray', {
   shade: {

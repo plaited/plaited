@@ -1,4 +1,4 @@
-import { bElement, createHostStyles, createStyles } from '../main.ts'
+import { bElement, createHostStyles, createStyles } from '../ui.ts'
 import { HEADER_EVENTS, STORY_HEADER } from './testing.constants.ts'
 
 /**

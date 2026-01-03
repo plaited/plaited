@@ -56,7 +56,7 @@ For architectural patterns and implementation details:
 ### Code Style Essentials
 
 - Prefer arrow functions and `type` over `interface`
-- Use package imports in tests (`'plaited'`, `'plaited/testing'`, `'plaited/utils'`)
+- Use package imports in tests (`'plaited'`, `'plaited/ui'`, `'plaited/testing'`, `'plaited/utils'`)
 - Use `test` instead of `it` in test files
 - Prefer Bun native APIs over Node.js equivalents
 - JSX syntax only (not `h()` or `createTemplate()`)

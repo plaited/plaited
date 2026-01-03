@@ -14,7 +14,7 @@
 import { statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { Glob } from 'bun'
-import { type FunctionTemplate, isBehavioralTemplate } from '../main.ts'
+import { type FunctionTemplate, isBehavioralTemplate } from '../ui.ts'
 import type { TemplateExport } from './workshop.types.ts'
 import { globFiles } from './workshop.utils.ts'
 

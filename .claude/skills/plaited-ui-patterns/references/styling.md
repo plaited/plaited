@@ -30,7 +30,7 @@ type TemplateObject = {
 Use `Fragment` (or `<>...</>`) to group elements without adding wrapper nodes:
 
 ```typescript
-import { type FT } from 'plaited'
+import { type FT } from 'plaited/ui'
 
 const List: FT = () => (
   <>
@@ -50,7 +50,7 @@ const List: FT = () => (
 FunctionalTemplate (FT) is for simple, presentational elements that don't require behavioral programs:
 
 ```typescript
-import { type FT } from 'plaited'
+import { type FT } from 'plaited/ui'
 import { cardStyles } from './card.css.ts'
 
 const Card: FT<{ title: string }> = ({ title, children }) => (
@@ -198,7 +198,7 @@ const DataTable = bElement({
 Plaited's `ssr()` function renders templates to static HTML with style collection:
 
 ```typescript
-import { ssr } from 'plaited'
+import { ssr } from 'plaited/ui'
 
 const html = ssr(<MyTemplate />)
 // Returns complete HTML string with injected styles
@@ -239,7 +239,7 @@ const html = ssr(<MyElement />)
 The `stylesheets` property connects templates to CSS-in-JS:
 
 ```typescript
-import { createStyles } from 'plaited'
+import { createStyles } from 'plaited/ui'
 
 const styles = createStyles({
   card: {
@@ -386,7 +386,7 @@ Plaited follows a consistent file organization pattern for styles and templates:
 
 **File: `button.css.ts`**
 ```typescript
-import { createStyles } from 'plaited'
+import { createStyles } from 'plaited/ui'
 
 export const buttonStyles = createStyles({
   btn: {
@@ -405,7 +405,7 @@ Use FunctionalTemplate (FT) for easily stylable, presentational elements like bu
 
 **File: `button.stories.tsx`**
 ```typescript
-import { type FT } from 'plaited'
+import { type FT } from 'plaited/ui'
 import { story } from 'plaited/testing'
 import { buttonStyles } from './button.css.ts'
 
@@ -436,7 +436,7 @@ Use bElement for:
 
 **File: `fills.tokens.ts`**
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { fills } = createTokens('fills', {
   fill: {
@@ -449,7 +449,7 @@ export const { fills } = createTokens('fills', {
 
 **File: `toggle-input.css.ts`**
 ```typescript
-import { createStyles, createHostStyles, joinStyles } from 'plaited'
+import { createStyles, createHostStyles, joinStyles } from 'plaited/ui'
 import { fills } from './fills.tokens.ts'
 
 export const styles = createStyles({
@@ -476,7 +476,7 @@ export const hostStyles = joinStyles(
 
 **File: `toggle-input.ts`**
 ```typescript
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 import { styles, hostStyles } from './toggle-input.css.ts'
 
 export const ToggleInput = bElement({
@@ -539,7 +539,7 @@ function createStyles<T extends CreateParams>(classNames: T): ClassNames<T>
 
 **File: `button.css.ts`**
 ```typescript
-import { createStyles } from 'plaited'
+import { createStyles } from 'plaited/ui'
 
 export const buttonStyles = createStyles({
   btn: {
@@ -556,7 +556,7 @@ export const buttonStyles = createStyles({
 
 **File: `button.stories.tsx`**
 ```typescript
-import { type FT } from 'plaited'
+import { type FT } from 'plaited/ui'
 import { story } from 'plaited/testing'
 import { buttonStyles } from './button.css.ts'
 
@@ -587,7 +587,7 @@ function createHostStyles(props: CreateHostParams): HostStylesObject
 
 **File: `my-element.css.ts`**
 ```typescript
-import { createHostStyles } from 'plaited'
+import { createHostStyles } from 'plaited/ui'
 
 export const hostStyles = createHostStyles({
   display: 'block',
@@ -597,7 +597,7 @@ export const hostStyles = createHostStyles({
 
 **File: `my-element.ts`**
 ```typescript
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 import { hostStyles } from './my-element.css.ts'
 
 export const MyElement = bElement({
@@ -690,7 +690,7 @@ This is a powerful feature of `createHostStyles`, allowing the host's context to
 
 **File: `my-element.css.ts`**
 ```typescript
-import { createHostStyles } from 'plaited'
+import { createHostStyles } from 'plaited/ui'
 
 export const hostStyles = createHostStyles({
   display: 'block',
@@ -707,7 +707,7 @@ export const hostStyles = createHostStyles({
 
 **File: `my-element.ts`**
 ```typescript
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 import { hostStyles } from './my-element.css.ts'
 
 export const MyElement = bElement({
@@ -742,7 +742,7 @@ function createKeyframes<I extends string>(
 
 **File: `animated-element.css.ts`**
 ```typescript
-import { createKeyframes, createHostStyles, joinStyles } from 'plaited'
+import { createKeyframes, createHostStyles, joinStyles } from 'plaited/ui'
 
 const { fadeIn } = createKeyframes('fadeIn', {
   from: { opacity: '0' },
@@ -759,7 +759,7 @@ export const hostStyles = joinStyles(
 
 **File: `animated-element.ts`**
 ```typescript
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 import { hostStyles } from './animated-element.css.ts'
 
 export const AnimatedElement = bElement({
@@ -795,7 +795,7 @@ function createTokens<T extends TokenDefinitions>(
 
 **File: `theme.tokens.ts`**
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { theme } = createTokens('theme', {
   primary: { $value: '#007bff' },
@@ -805,7 +805,7 @@ export const { theme } = createTokens('theme', {
 
 **File: `fills.tokens.ts`**
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { fills } = createTokens('fills', {
   fill: {
@@ -818,7 +818,7 @@ export const { fills } = createTokens('fills', {
 
 **File: `toggle-input.css.ts`**
 ```typescript
-import { createStyles, createHostStyles, joinStyles } from 'plaited'
+import { createStyles, createHostStyles, joinStyles } from 'plaited/ui'
 import { theme } from './theme.tokens.ts'
 import { fills } from './fills.tokens.ts'
 
@@ -847,7 +847,7 @@ export const hostStyles = joinStyles(
 
 **File: `toggle-input.ts`**
 ```typescript
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 import { styles, hostStyles } from './toggle-input.css.ts'
 
 export const ToggleInput = bElement({
@@ -913,7 +913,7 @@ A new `StylesObject` with `classNames` and `stylesheets` arrays containing the m
 
 **File: `animated-card.css.ts`**
 ```typescript
-import { createKeyframes, createHostStyles, joinStyles } from 'plaited'
+import { createKeyframes, createHostStyles, joinStyles } from 'plaited/ui'
 
 const { pulse } = createKeyframes('pulse', {
   '0%': { transform: 'scale(1)' },
@@ -933,7 +933,7 @@ export const hostStyles = joinStyles(
 
 **File: `animated-card.ts`**
 ```typescript
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 import { hostStyles } from './animated-card.css.ts'
 
 export const AnimatedCard = bElement({
@@ -949,7 +949,7 @@ When tokens use scales for state variations, pass each token reference you use t
 
 **File: `fills.tokens.ts`**
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { fills } = createTokens('fills', {
   fill: {
@@ -962,7 +962,7 @@ export const { fills } = createTokens('fills', {
 
 **File: `toggle.css.ts`**
 ```typescript
-import { createStyles, createHostStyles, joinStyles } from 'plaited'
+import { createStyles, createHostStyles, joinStyles } from 'plaited/ui'
 import { fills } from './fills.tokens.ts'
 
 export const styles = createStyles({
@@ -992,7 +992,7 @@ export const hostStyles = joinStyles(
 
 **File: `card.css.ts`**
 ```typescript
-import { createStyles } from 'plaited'
+import { createStyles } from 'plaited/ui'
 
 export const cardStyles = createStyles({
   card: {
@@ -1006,7 +1006,7 @@ export const cardStyles = createStyles({
 
 **File: `card.stories.tsx`**
 ```typescript
-import { type FT } from 'plaited'
+import { type FT } from 'plaited/ui'
 import { story } from 'plaited/testing'
 import { cardStyles } from './card.css.ts'
 
@@ -1024,7 +1024,7 @@ export const basicCard = story({
 
 **File: `link.css.ts`**
 ```typescript
-import { createStyles } from 'plaited'
+import { createStyles } from 'plaited/ui'
 
 export const linkStyles = createStyles({
   link: {
@@ -1043,7 +1043,7 @@ export const linkStyles = createStyles({
 
 **File: `link.stories.tsx`**
 ```typescript
-import { type FT } from 'plaited'
+import { type FT } from 'plaited/ui'
 import { story } from 'plaited/testing'
 import { linkStyles } from './link.css.ts'
 
@@ -1061,7 +1061,7 @@ export const basicLink = story({
 
 **File: `grid.css.ts`**
 ```typescript
-import { createStyles } from 'plaited'
+import { createStyles } from 'plaited/ui'
 
 export const gridStyles = createStyles({
   container: {
@@ -1078,7 +1078,7 @@ export const gridStyles = createStyles({
 
 **File: `grid.stories.tsx`**
 ```typescript
-import { type FT } from 'plaited'
+import { type FT } from 'plaited/ui'
 import { story } from 'plaited/testing'
 import { gridStyles } from './grid.css.ts'
 
@@ -1106,7 +1106,7 @@ This section demonstrates using `createHostStyles` with a bElement. See the File
 
 **File: `theme.tokens.ts`**
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { theme } = createTokens('theme', {
   primary: { $value: '#007bff' },
@@ -1118,7 +1118,7 @@ export const { theme } = createTokens('theme', {
 
 **File: `button.css.ts`**
 ```typescript
-import { createStyles } from 'plaited'
+import { createStyles } from 'plaited/ui'
 import { theme } from './theme.tokens.ts'
 
 // ✅ Pass token references directly (not invoked) as CSS values
@@ -1137,7 +1137,7 @@ export const buttonStyles = createStyles({
 
 **File: `button.stories.tsx`**
 ```typescript
-import { type FT } from 'plaited'
+import { type FT } from 'plaited/ui'
 import { story } from 'plaited/testing'
 import { buttonStyles } from './button.css.ts'
 
@@ -1157,7 +1157,7 @@ export const themedButton = story({
 
 **File: `colors.tokens.ts`**
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { colors } = createTokens('colors', {
   primary: { $value: '#007bff' },
@@ -1167,7 +1167,7 @@ export const { colors } = createTokens('colors', {
 
 **File: `status-indicator.css.ts`**
 ```typescript
-import { createKeyframes, createHostStyles, joinStyles } from 'plaited'
+import { createKeyframes, createHostStyles, joinStyles } from 'plaited/ui'
 import { colors } from './colors.tokens.ts'
 
 const { pulse } = createKeyframes('pulse', {
@@ -1197,7 +1197,7 @@ export const hostStyles = joinStyles(
 
 **File: `status-indicator.ts`**
 ```typescript
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 import { hostStyles } from './status-indicator.css.ts'
 
 export const StatusIndicator = bElement({
@@ -1210,7 +1210,7 @@ export const StatusIndicator = bElement({
 ### 7. Composing Styles with joinStyles
 
 ```typescript
-import { createStyles, joinStyles } from 'plaited'
+import { createStyles, joinStyles } from 'plaited/ui'
 
 const baseButton = createStyles({
   btn: {
@@ -1244,7 +1244,7 @@ export const SmallButton = ({ children }) => (
 ### 8. Attribute-Based Styling
 
 ```typescript
-import { bElement, createStyles } from 'plaited'
+import { bElement, createStyles } from 'plaited/ui'
 
 const inputStyles = createStyles({
   field: {
@@ -1299,7 +1299,7 @@ The spread operator adds `classNames` and `stylesheets` properties to the elemen
 Host styles are specified via the `hostStyles` parameter:
 
 ```typescript
-import { bElement, createHostStyles } from 'plaited'
+import { bElement, createHostStyles } from 'plaited/ui'
 
 const hostStyles = createHostStyles({
   display: 'block',
@@ -1323,7 +1323,7 @@ Plaited's `ssr()` function distinguishes between global styles and styles meant 
 - **Shadow DOM Styles**: Stylesheets associated with a custom element using Shadow DOM are embedded directly within its Declarative Shadow DOM `<template>` tag. This ensures they are scoped correctly when the element hydrates on the client.
 
 ```typescript
-import { ssr } from 'plaited'
+import { ssr } from 'plaited/ui'
 
 const html = ssr(<MyTemplate />)
 // Styles injected with :root selectors
@@ -1407,7 +1407,7 @@ sequenceDiagram
 ### 1. Responsive Typography with Container Queries
 
 ```typescript
-import { createStyles } from 'plaited'
+import { createStyles } from 'plaited/ui'
 
 const typography = createStyles({
   heading: {
@@ -1428,7 +1428,7 @@ export const ResponsiveHeading = () => (
 ### 2. Button with Dynamic Variant Switching
 
 ```typescript
-import { bElement, createStyles, type FT } from 'plaited'
+import { bElement, createStyles, type FT } from 'plaited/ui'
 
 const buttonStyles = createStyles({
   btn: {
@@ -1492,7 +1492,7 @@ export const MyCard = bElement({
 ### 3. Dark Mode with Prefers Color Scheme
 
 ```typescript
-import { createStyles } from 'plaited'
+import { createStyles } from 'plaited/ui'
 
 const cardStyles = createStyles({
   card: {
@@ -1516,7 +1516,7 @@ export const Card = ({ children }) => (
 ### 4. Design Tokens with Keyframe Animations
 
 ```typescript
-import { createTokens, createKeyframes, createHostStyles, joinStyles, bElement } from 'plaited'
+import { createTokens, createKeyframes, createHostStyles, joinStyles, bElement } from 'plaited/ui'
 
 const { theme } = createTokens('theme', {
   primary: { $value: '#007bff' },
@@ -1548,7 +1548,7 @@ const AnimatedCard = bElement({
 ### 5. Pseudo-Elements for Decorative Effects
 
 ```typescript
-import { createStyles } from 'plaited'
+import { createStyles } from 'plaited/ui'
 
 const decoratedStyles = createStyles({
   badge: {
@@ -1642,7 +1642,7 @@ export const toggleStyles = createStyles({
 
 **File: `fills.tokens.ts`**
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { fills } = createTokens('fills', {
   fill: {
@@ -1655,7 +1655,7 @@ export const { fills } = createTokens('fills', {
 
 **File: `toggle-input.css.ts`**
 ```typescript
-import { createStyles } from 'plaited'
+import { createStyles } from 'plaited/ui'
 import { fills } from './fills.tokens.ts'
 
 export const toggleStyles = createStyles({

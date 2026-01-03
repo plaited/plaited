@@ -1,4 +1,4 @@
-import { bElement, createHostStyles, createStyles } from '../main.ts'
+import { bElement, createHostStyles, createStyles } from '../ui.ts'
 import { MASK_EVENTS, STORY_MASK } from './testing.constants.ts'
 import type { MaskClickDetail } from './testing.types.ts'
 

@@ -11,7 +11,7 @@ Form-associated custom elements enable capturing user intent through the Element
 Enable form association by setting `formAssociated: true` in the bElement config:
 
 ```typescript
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 
 const CustomInput = bElement({
   tag: 'custom-input',
@@ -586,7 +586,7 @@ Use TypeScript types or Zod schemas to generate form-associated elements:
 
 ```typescript
 import { z } from 'zod'
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 
 // Define schema
 const UserSchema = z.object({
@@ -707,7 +707,7 @@ const generateFormFromMCPTool = (tool: MCPTool) => {
 Complete toggle input with custom styling:
 
 ```typescript
-import { bElement, createHostStyles, createStyles, createTokens } from 'plaited'
+import { bElement, createHostStyles, createStyles, createTokens } from 'plaited/ui'
 import { isTypeOf } from 'plaited/utils'
 
 const { fills } = createTokens('fills', {

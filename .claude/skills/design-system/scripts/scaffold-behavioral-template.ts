@@ -56,7 +56,7 @@ const pascalName = toPascalCase(name)
 // Generate tokens file
 const tokensFile = {
   path: join(outputDir, `${name}.tokens.ts`),
-  content: `import { createTokens } from 'plaited'
+  content: `import { createTokens } from 'plaited/ui'
 
 export const { ${name.replace(/-/g, '')}Tokens } = createTokens('${name.replace(/-/g, '')}Tokens', {
   fill: {
@@ -71,7 +71,7 @@ export const { ${name.replace(/-/g, '')}Tokens } = createTokens('${name.replace(
 // Generate styles file
 const stylesFile = {
   path: join(outputDir, `${name}.css.ts`),
-  content: `import { createStyles, createHostStyles, joinStyles } from 'plaited'
+  content: `import { createStyles, createHostStyles, joinStyles } from 'plaited/ui'
 import { ${name.replace(/-/g, '')}Tokens } from './${name}.tokens.ts'
 
 export const styles = createStyles({
@@ -100,7 +100,7 @@ export const hostStyles = joinStyles(
 
 // Generate element file
 const elementContent = formAssociated
-  ? `import { bElement } from 'plaited'
+  ? `import { bElement } from 'plaited/ui'
 import { styles, hostStyles } from './${name}.css.ts'
 
 export const ${pascalName} = bElement({
@@ -128,7 +128,7 @@ export const ${pascalName} = bElement({
   },
 })
 `
-  : `import { bElement } from 'plaited'
+  : `import { bElement } from 'plaited/ui'
 import { styles, hostStyles } from './${name}.css.ts'
 
 export const ${pascalName} = bElement({

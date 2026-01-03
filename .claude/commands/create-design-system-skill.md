@@ -122,7 +122,7 @@ Describe tokens in natural language for refinement:
 
 ### Color System
 \`\`\`typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const [colorTokens, colorVars] = createTokens({
   // Primitives with light/dark defaults
@@ -210,7 +210,7 @@ Brief description of these tokens.
 
 ### [Group Name]
 \`\`\`typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const [tokenName, varName] = createTokens({
   // Token definitions
@@ -221,7 +221,7 @@ export const [tokenName, varName] = createTokens({
 
 ### In Styles
 \`\`\`typescript
-import { css } from 'plaited'
+import { css } from 'plaited/ui'
 import { varName } from './tokens'
 
 const styles = css`

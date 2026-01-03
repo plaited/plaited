@@ -1,4 +1,4 @@
-import type { BPEvent } from '../main/behavioral.types.ts'
+import type { BPEvent } from '../main.ts'
 
 /**
  * Template type classification for Plaited templates and functions.

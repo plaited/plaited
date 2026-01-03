@@ -1,4 +1,4 @@
-import type { FunctionTemplate } from '../main.ts'
+import type { FunctionTemplate } from '../ui.ts'
 import { PlaitedOrchestrator } from './plaited-orchestrator.tsx'
 import { STORY_IDENTIFIER, STORY_TYPES } from './testing.constants.ts'
 import type {

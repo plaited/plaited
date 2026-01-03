@@ -22,6 +22,9 @@
     ".": "./src/main.ts",
     "./*.ts": "./src/*.ts",
     "./*.tsx": "./src/*.tsx",
+    "./ui": "./src/ui.ts",
+    "./ui/*.ts": "./src/ui/*.ts",
+    "./ui/*.tsx": "./src/ui/*.tsx",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
     "./jsx-runtime": "./src/jsx-runtime.ts",
     "./testing": "./src/testing.ts",
@@ -52,12 +55,12 @@
     "check:types": "tsc --noEmit",
     "check:write": "biome check --write && format-package --write",
     "copy-css-types": "bash scripts/copy-css-types.sh",
-    "dev": "bun --hot src/cli.ts dev src/main",
+    "dev": "bun --hot src/cli.ts dev src/ui",
     "prepare": "git config core.hooksPath .hooks",
-    "test": "bun run test:stories src/main && bun test",
+    "test": "bun run test:stories src/ui && bun test",
     "test:playwright": "bunx playwright test",
     "test:stories": "bun src/cli.ts test",
-    "test:stories-all": "bun run test:stories src/main"
+    "test:stories-all": "bun run test:stories src/ui"
   },
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [
@@ -101,6 +104,7 @@
     "@commitlint/cli": "20.2.0",
     "@commitlint/config-conventional": "20.2.0",
     "@modelcontextprotocol/sdk": "1.25.1",
+    "@playwright/mcp": "0.0.54",
     "@playwright/test": "1.57.0",
     "@types/beautify": "0.0.3",
     "@types/bun": "1.3.5",

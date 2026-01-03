@@ -1,4 +1,4 @@
-import { bElement, createHostStyles } from '../main.ts'
+import { bElement, createHostStyles } from '../ui.ts'
 import { wait } from '../utils.ts'
 import {
   DEFAULT_PLAY_TIMEOUT,

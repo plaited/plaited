@@ -121,7 +121,7 @@ bun scripts/scaffold-behavioral-template.ts toggle-input --form-associated --out
 
 **Simple Token:**
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { theme } = createTokens('theme', {
   primary: { $value: '#007bff' },
@@ -151,7 +151,7 @@ export const { fills } = createTokens('fills', {
 ### Usage with Styles
 
 ```typescript
-import { createStyles, createHostStyles, joinStyles } from 'plaited'
+import { createStyles, createHostStyles, joinStyles } from 'plaited/ui'
 import { fills } from './fills.tokens.ts'
 import { spacing } from './spacing.tokens.ts'
 

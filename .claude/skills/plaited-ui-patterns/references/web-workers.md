@@ -9,7 +9,8 @@ Web Workers enable offloading heavy computation from interactive islands to back
 
 
 ```typescript
-import { bElement, useWorker } from 'plaited'
+import { useWorker } from 'plaited'
+import { bElement } from 'plaited/ui'
 
 const CalculatorElement = bElement({
   tag: 'calculator-element',
@@ -486,7 +487,8 @@ post({ type: 'processBatch', detail: items })
 Workers integrate seamlessly with bElement islands:
 
 ```typescript
-import { bElement, useWorker } from 'plaited'
+import { useWorker } from 'plaited'
+import { bElement } from 'plaited/ui'
 
 const DataProcessor = bElement({
   tag: 'data-processor',
@@ -738,7 +740,8 @@ await bWorker<{
 })
 
 // File: image-editor.ts
-import { bElement, useWorker } from 'plaited'
+import { useWorker } from 'plaited'
+import { bElement } from 'plaited/ui'
 
 const ImageEditor = bElement({
   tag: 'image-editor',

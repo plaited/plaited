@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import { joinStyles, ssr, type TemplateObject } from '../main.ts'
 import {
   ORCHESTRATOR_EVENTS,
   STORY_FIXTURE,
@@ -8,6 +7,7 @@ import {
   STORY_ORCHESTRATOR,
 } from '../testing/testing.constants.ts'
 import type { StoryExport } from '../testing.ts'
+import { joinStyles, ssr, type TemplateObject } from '../ui.ts'
 import { zip } from './workshop.utils.ts'
 
 /**

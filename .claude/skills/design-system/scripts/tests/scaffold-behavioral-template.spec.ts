@@ -15,7 +15,7 @@ describe('scaffold-behavioral-template', () => {
 
     // Tokens file
     expect(tokensFile.path).toEndWith('toggle-input.tokens.ts')
-    expect(tokensFile.content).toContain("import { createTokens } from 'plaited'")
+    expect(tokensFile.content).toContain("import { createTokens } from 'plaited/ui'")
 
     // Styles file
     expect(stylesFile.path).toEndWith('toggle-input.css.ts')
@@ -24,7 +24,7 @@ describe('scaffold-behavioral-template', () => {
 
     // Element file
     expect(elementFile.path).toEndWith('toggle-input.ts')
-    expect(elementFile.content).toContain("import { bElement } from 'plaited'")
+    expect(elementFile.content).toContain("import { bElement } from 'plaited/ui'")
     expect(elementFile.content).toContain("tag: 'toggle-input'")
 
     // Story file

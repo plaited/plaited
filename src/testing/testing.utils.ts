@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axe from 'axe-core'
-import { P_TARGET } from '../main/create-template.constants.ts'
+import { P_TARGET } from '../ui/create-template.constants.ts'
 import { deepEqual, isTypeOf, noop, trueTypeOf } from '../utils.ts'
 import { DATA_TESTID, STORY_FIXTURE } from './testing.constants.ts'
 import { AccessibilityError, FailedAssertionError, MissingAssertionParameterError } from './testing.errors.ts'

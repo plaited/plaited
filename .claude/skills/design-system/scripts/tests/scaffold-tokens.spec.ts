@@ -9,7 +9,7 @@ describe('scaffold-tokens', () => {
     const result = await $`bun ${scriptsDir}/scaffold-tokens.ts fills fills`.json()
 
     expect(result.filePath).toEndWith('fills.tokens.ts')
-    expect(result.content).toContain("import { createTokens } from 'plaited'")
+    expect(result.content).toContain("import { createTokens } from 'plaited/ui'")
     expect(result.content).toContain("export const { fills } = createTokens('fills'")
     expect(result.message).toContain('fills.tokens.ts')
   })

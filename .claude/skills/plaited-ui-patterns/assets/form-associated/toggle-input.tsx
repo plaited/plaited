@@ -1,4 +1,4 @@
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 import { isTypeOf } from 'plaited/utils'
 import { hostStyles, styles } from './toggle-input.css.ts'
 

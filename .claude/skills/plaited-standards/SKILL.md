@@ -46,7 +46,9 @@ This skill provides code conventions and development standards that apply to **a
 - Use "template" not "component"
 
 ### Imports
-- Package imports in tests: `'plaited'`, `'plaited/testing'`
+- Package imports in tests: `'plaited'`, `'plaited/ui'`, `'plaited/testing'`
+- `plaited` for behavioral programming (useBehavioral, useSignal, useWorker)
+- `plaited/ui` for templates and custom elements (bElement, createStyles, FT)
 - Relative imports within packages
 
 ### Null Handling

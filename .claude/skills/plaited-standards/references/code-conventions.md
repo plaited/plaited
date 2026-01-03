@@ -176,15 +176,25 @@ createTemplate('div', { className: 'foo', children: 'Hello' })
 
 ```typescript
 // ✅ Good: Package imports in test files
-import { bElement, type FT } from 'plaited'
+import { useBehavioral, useSignal } from 'plaited'
+import { bElement, type FT, createStyles } from 'plaited/ui'
 import { story } from 'plaited/testing'
 import { wait, noop } from 'plaited/utils'
 
 // ❌ Avoid: Relative paths in test files
-import { bElement, type FT } from '../../../../main.ts'
+import { bElement, type FT } from '../../../../ui.ts'
 import { story } from '../../../../../testing/testing.fixture.tsx'
 import { wait, noop } from '../../utils.ts'
 ```
+
+### Package Import Guidelines
+
+| Package | Exports |
+|---------|---------|
+| `plaited` | Behavioral programming: useBehavioral, useSignal, useWorker, bWorker |
+| `plaited/ui` | UI framework: bElement, createStyles, createHostStyles, FT, ssr, joinStyles |
+| `plaited/testing` | Test utilities: story, findByAttribute |
+| `plaited/utils` | Utilities: wait, noop, isTypeOf |
 
 ### When to Use Relative Imports
 

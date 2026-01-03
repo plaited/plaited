@@ -1,4 +1,4 @@
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 
 export const SimpleBehavioralTemplate = bElement({
   tag: 'simple-element',

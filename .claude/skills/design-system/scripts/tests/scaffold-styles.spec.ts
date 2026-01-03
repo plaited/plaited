@@ -9,7 +9,7 @@ describe('scaffold-styles', () => {
     const result = await $`bun ${scriptsDir}/scaffold-styles.ts button`.json()
 
     expect(result.filePath).toEndWith('button.css.ts')
-    expect(result.content).toContain("import { createStyles } from 'plaited'")
+    expect(result.content).toContain("import { createStyles } from 'plaited/ui'")
     expect(result.content).toContain('buttonStyles')
     expect(result.message).toContain('button.css.ts')
   })

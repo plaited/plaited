@@ -41,7 +41,7 @@ In Claude Code:
 Create `src/button.stories.tsx`:
 
 ```tsx
-import { type FT, createStyles } from 'plaited'
+import { type FT, createStyles } from 'plaited/ui'
 import { story } from 'plaited/testing'
 
 const styles = createStyles({
@@ -79,7 +79,8 @@ Open the URL shown in your terminal to see your button. That's it!
 
 | Export | Description |
 |--------|-------------|
-| `plaited` | Core framework - behavioral programming, templates, custom elements, styling |
+| `plaited` | Core framework - behavioral programming, signals, workers |
+| `plaited/ui` | UI framework - templates, custom elements (bElement), styling |
 | `plaited/utils` | Utility functions - type guards, helpers |
 | `plaited/testing` | Test utilities - story factory, test helpers |
 | `plaited/workshop` | Discovery utilities - template and story collection (requires Bun) |
@@ -89,7 +90,8 @@ Open the URL shown in your terminal to see your button. That's it!
 - `bun plaited test` - Run story-based tests with Playwright
 
 ```typescript
-import { bElement, createStyles } from 'plaited'
+import { useBehavioral, useSignal } from 'plaited'
+import { bElement, createStyles } from 'plaited/ui'
 import { wait, noop } from 'plaited/utils'
 import { story } from 'plaited/testing'
 ```

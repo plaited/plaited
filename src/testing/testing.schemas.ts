@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { INSPECTOR_MESSAGE, type InspectorMessageDetail } from '../main.ts'
+import type { InspectorMessageDetail } from '../ui/b-element.types.ts'
+import { INSPECTOR_MESSAGE } from '../ui/inspector.ts'
 import { isTypeOf } from '../utils/is-type-of.ts'
 import { FIXTURE_EVENTS } from './testing.constants.ts'
 /**

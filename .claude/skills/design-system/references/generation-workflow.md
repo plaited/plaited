@@ -49,7 +49,7 @@ Generate files in order:
 
 ```typescript
 // new-element.tokens.ts
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { newElementTokens } = createTokens('newElementTokens', {
   fill: {
@@ -63,7 +63,7 @@ export const { newElementTokens } = createTokens('newElementTokens', {
 
 ```typescript
 // new-element.css.ts
-import { createStyles, createHostStyles, joinStyles } from 'plaited'
+import { createStyles, createHostStyles, joinStyles } from 'plaited/ui'
 import { newElementTokens } from './new-element.tokens.ts'
 
 export const styles = createStyles({
@@ -86,7 +86,7 @@ export const hostStyles = joinStyles(
 
 ```typescript
 // new-element.ts
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 import { styles, hostStyles } from './new-element.css.ts'
 
 export const NewElement = bElement({

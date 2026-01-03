@@ -75,7 +75,7 @@ export const basic${pascalName} = story({
   },
 })
 `
-  : `import { type FT } from 'plaited'
+  : `import { type FT } from 'plaited/ui'
 import { story } from 'plaited/testing'
 import { ${name}Styles } from './${name}.css.ts'
 

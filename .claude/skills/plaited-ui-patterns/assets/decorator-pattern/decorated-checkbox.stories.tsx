@@ -1,5 +1,5 @@
-import type { ElementAttributeList, FT } from 'plaited'
 import { story } from 'plaited/testing'
+import type { ElementAttributeList, FT } from 'plaited/ui'
 import { DecorateCheckbox } from './decorated-checkbox.ts'
 
 /**

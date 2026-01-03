@@ -1,5 +1,5 @@
 import type axe from 'axe-core'
-import type { FunctionTemplate, HostStylesObject, TemplateObject } from '../main.ts'
+import type { FunctionTemplate, HostStylesObject, TemplateObject } from '../ui.ts'
 import type { Wait } from '../utils.ts'
 import type { __PLAITED_RUNNER__, STORY_IDENTIFIER, STORY_TYPES } from './testing.constants.ts'
 import type { RunnerMessage } from './testing.schemas.ts'

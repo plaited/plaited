@@ -7,7 +7,7 @@ Patterns for creating typography tokens with `createTokens`.
 Major third (1.25) type scale:
 
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { fontSize } = createTokens('fontSize', {
   xs: { $value: '0.64rem' },
@@ -23,7 +23,7 @@ export const { fontSize } = createTokens('fontSize', {
 ## Line Heights
 
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { lineHeight } = createTokens('lineHeight', {
   none: { $value: '1' },
@@ -37,7 +37,7 @@ export const { lineHeight } = createTokens('lineHeight', {
 ## Font Weights
 
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { fontWeight } = createTokens('fontWeight', {
   normal: { $value: '400' },
@@ -50,7 +50,7 @@ export const { fontWeight } = createTokens('fontWeight', {
 ## Font Families
 
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { fontFamily } = createTokens('fontFamily', {
   sans: {
@@ -75,7 +75,7 @@ export const { fontFamily } = createTokens('fontFamily', {
 Use scales for breakpoint-based typography:
 
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { heading } = createTokens('heading', {
   h1: {
@@ -88,7 +88,7 @@ export const { heading } = createTokens('heading', {
 
 **Usage with media queries in styles:**
 ```typescript
-import { createStyles, joinStyles } from 'plaited'
+import { createStyles, joinStyles } from 'plaited/ui'
 import { heading } from './heading.tokens.ts'
 
 export const styles = createStyles({
@@ -105,7 +105,7 @@ export const styles = createStyles({
 ## Usage in Styles
 
 ```typescript
-import { createStyles } from 'plaited'
+import { createStyles } from 'plaited/ui'
 import { fontSize } from './font-size.tokens.ts'
 import { fontWeight } from './font-weight.tokens.ts'
 

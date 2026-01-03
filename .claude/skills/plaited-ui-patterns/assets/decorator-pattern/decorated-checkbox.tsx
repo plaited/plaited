@@ -1,4 +1,4 @@
-import { bElement, useAttributesObserver } from 'plaited'
+import { bElement, useAttributesObserver } from 'plaited/ui'
 import { hostStyles, styles } from './decorated-checkbox.css.ts'
 
 /**

@@ -1,4 +1,4 @@
-import type { FunctionTemplate } from 'plaited'
+import type { FunctionTemplate } from 'plaited/ui'
 
 const DefaultTemplate: FunctionTemplate = () => (
   <div>

@@ -25,7 +25,7 @@ export const styles = createStyles({
 Build on existing style patterns:
 
 ```typescript
-import { createStyles, joinStyles } from 'plaited'
+import { createStyles, joinStyles } from 'plaited/ui'
 import { baseButtonStyles } from '../shared/button.css.ts'
 
 // Create variant-specific additions
@@ -51,7 +51,7 @@ const PrimaryButton: FT = ({ children }) => (
 Wrap existing elements with additional behavior:
 
 ```typescript
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 import { ExistingElement } from '../existing-element.ts'
 
 export const EnhancedElement = bElement({

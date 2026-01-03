@@ -118,9 +118,6 @@ jobs:
             gh release create "v$VERSION" --generate-notes
           fi
 
-      - name: Build CLI
-        run: bash scripts/build-cli.sh
-
       - name: Publish
         env:
           NPM_TOKEN: ${{ secrets.NPM_PAT }}

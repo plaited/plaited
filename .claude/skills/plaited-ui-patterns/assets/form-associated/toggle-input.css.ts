@@ -1,4 +1,4 @@
-import { createHostStyles, createStyles, joinStyles } from 'plaited'
+import { createHostStyles, createStyles, joinStyles } from 'plaited/ui'
 import { surfaces } from './surfaces.tokens.ts'
 
 export const styles = createStyles({

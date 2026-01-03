@@ -1,5 +1,5 @@
-import { DelegatedListener, delegates } from '../main/delegated-listener.ts'
 import type { PlaitedTrigger } from '../main.ts'
+import { DelegatedListener, delegates } from '../ui/delegated-listener.ts'
 import { isTypeOf } from '../utils.ts'
 import { RELOAD_PAGE, RUNNER_URL } from './testing.constants.ts'
 import type { Send } from './testing.types.ts'

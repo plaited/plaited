@@ -1,4 +1,4 @@
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { surfaces } = createTokens('surfaces', {
   fill: {

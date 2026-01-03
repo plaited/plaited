@@ -5,7 +5,7 @@ Patterns for creating animation tokens with `createTokens` and `createKeyframes`
 ## Duration Tokens
 
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { duration } = createTokens('duration', {
   fast: { $value: '100ms' },
@@ -17,7 +17,7 @@ export const { duration } = createTokens('duration', {
 ## Easing Tokens
 
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { easing } = createTokens('easing', {
   linear: { $value: 'linear' },
@@ -31,7 +31,7 @@ export const { easing } = createTokens('easing', {
 ## Keyframe Animations
 
 ```typescript
-import { createKeyframes, createHostStyles, joinStyles } from 'plaited'
+import { createKeyframes, createHostStyles, joinStyles } from 'plaited/ui'
 
 export const { fadeIn } = createKeyframes('fadeIn', {
   from: { opacity: '0' },
@@ -58,7 +58,7 @@ export const hostStyles = joinStyles(
 Use scales for motion preferences:
 
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { motion } = createTokens('motion', {
   duration: {
@@ -70,7 +70,7 @@ export const { motion } = createTokens('motion', {
 
 **Usage with media queries in styles:**
 ```typescript
-import { createStyles, joinStyles } from 'plaited'
+import { createStyles, joinStyles } from 'plaited/ui'
 import { motion } from './motion.tokens.ts'
 
 export const styles = createStyles({
@@ -86,7 +86,7 @@ export const styles = createStyles({
 ## Usage in Styles
 
 ```typescript
-import { createStyles } from 'plaited'
+import { createStyles } from 'plaited/ui'
 import { duration } from './duration.tokens.ts'
 import { easing } from './easing.tokens.ts'
 

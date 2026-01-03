@@ -1,4 +1,4 @@
-import type { FunctionTemplate } from 'plaited'
+import type { FunctionTemplate } from 'plaited/ui'
 
 /**
  * Root-level template for testing get-entry-routes path transformation.

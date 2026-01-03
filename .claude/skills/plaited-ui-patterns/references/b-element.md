@@ -95,7 +95,7 @@ Wrapping hard-to-style native elements (inputs, checkboxes, selects):
 
 **File: `surfaces.tokens.ts`**
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { surfaces } = createTokens('surfaces', {
   fill: {
@@ -108,7 +108,7 @@ export const { surfaces } = createTokens('surfaces', {
 
 **File: `decorated-checkbox.css.ts`**
 ```typescript
-import { createStyles, createHostStyles, joinStyles } from 'plaited'
+import { createStyles, createHostStyles, joinStyles } from 'plaited/ui'
 import { surfaces } from './surfaces.tokens.ts'
 
 export const styles = createStyles({
@@ -145,7 +145,7 @@ export const hostStyles = joinStyles(
 
 **File: `decorated-checkbox.tsx`**
 ```typescript
-import { bElement, useAttributesObserver } from 'plaited'
+import { bElement, useAttributesObserver } from 'plaited/ui'
 import { styles, hostStyles } from './decorated-checkbox.css.ts'
 
 /**
@@ -260,7 +260,7 @@ Custom form controls using ElementInternals - both wrapping native elements and 
 
 **File: `surfaces.tokens.ts`**
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { surfaces } = createTokens('surfaces', {
   fill: {
@@ -273,7 +273,7 @@ export const { surfaces } = createTokens('surfaces', {
 
 **File: `toggle-input.css.ts`**
 ```typescript
-import { createStyles, createHostStyles, joinStyles } from 'plaited'
+import { createStyles, createHostStyles, joinStyles } from 'plaited/ui'
 import { surfaces } from './surfaces.tokens.ts'
 
 export const styles = createStyles({
@@ -300,7 +300,7 @@ export const hostStyles = joinStyles(
 
 **File: `toggle-input.ts`**
 ```typescript
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 import { isTypeOf } from 'plaited/utils'
 import { styles, hostStyles } from './toggle-input.css.ts'
 
@@ -398,7 +398,7 @@ export const ToggleInput = bElement<{
 ## bElement API Overview
 
 ```typescript
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 import { hostStyles } from './my-element.css.ts'
 
 const MyElement = bElement<{
@@ -459,7 +459,7 @@ Styles for the `:host` element (the custom element itself):
 
 **File: `my-element.css.ts`**
 ```typescript
-import { createHostStyles } from 'plaited'
+import { createHostStyles } from 'plaited/ui'
 
 export const hostStyles = createHostStyles({
   display: 'block',
@@ -476,7 +476,7 @@ export const hostStyles = createHostStyles({
 
 **File: `my-element.tsx`**
 ```typescript
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 import { hostStyles } from './my-element.css.ts'
 
 const MyElement = bElement({
@@ -759,7 +759,7 @@ bProgram({ emit }) {
 `useTemplate()` creates a factory function for efficiently cloning and populating template instances:
 
 ```typescript
-import { bElement, type FT, useTemplate } from 'plaited'
+import { bElement, type FT, useTemplate } from 'plaited/ui'
 
 const RowTemplate: FT<{ name: string; value: string }> = ({ name, value }) => (
   <tr>
@@ -837,7 +837,7 @@ Use ONLY when:
 
 **Example: Decorator Pattern**
 ```typescript
-import { useAttributesObserver } from 'plaited'
+import { useAttributesObserver } from 'plaited/ui'
 
 const DecorateCheckbox = bElement({
   tag: 'decorate-checkbox',
@@ -1227,7 +1227,7 @@ bProgram({ bThreads, bThread, bSync }) {
 
 **File: `todo-list.css.ts`**
 ```typescript
-import { createStyles, createHostStyles } from 'plaited'
+import { createStyles, createHostStyles } from 'plaited/ui'
 
 export const styles = createStyles({
   input: {
@@ -1258,7 +1258,7 @@ export const hostStyles = createHostStyles({
 
 **File: `todo-list.tsx`**
 ```typescript
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 import { styles, hostStyles } from './todo-list.css.ts'
 
 const TodoList = bElement<{

@@ -1,4 +1,4 @@
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { strokes } = createTokens('strokes', {
   inputAddOn: {

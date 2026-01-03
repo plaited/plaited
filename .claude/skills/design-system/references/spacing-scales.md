@@ -5,7 +5,7 @@ Patterns for creating spacing and sizing tokens with `createTokens`.
 ## Base Unit Scale (4px)
 
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { spacing } = createTokens('spacing', {
   px: { $value: '1px' },
@@ -24,7 +24,7 @@ export const { spacing } = createTokens('spacing', {
 ## Semantic Spacing
 
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { space } = createTokens('space', {
   none: { $value: '0' },
@@ -40,7 +40,7 @@ export const { space } = createTokens('space', {
 ## Component Sizing
 
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { sizes } = createTokens('sizes', {
   icon: {
@@ -59,7 +59,7 @@ export const { sizes } = createTokens('sizes', {
 ## Border Radius
 
 ```typescript
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { radii } = createTokens('radii', {
   none: { $value: '0' },
@@ -73,7 +73,7 @@ export const { radii } = createTokens('radii', {
 ## Usage in Styles
 
 ```typescript
-import { createStyles } from 'plaited'
+import { createStyles } from 'plaited/ui'
 import { space } from './spacing.tokens.ts'
 import { radii } from './radii.tokens.ts'
 

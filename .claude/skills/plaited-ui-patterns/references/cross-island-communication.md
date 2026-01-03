@@ -10,7 +10,7 @@
 Parent calls `trigger()` on child element in shadowDOM. This is **direct method invocation** on the child element.
 
 ```typescript
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 
 // Child element
 const ChildElement = bElement({
@@ -65,7 +65,7 @@ const ParentElement = bElement({
 Child broadcasts events up to parent using `emit()`. Parent listens via `p-trigger`.
 
 ```typescript
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 
 // Child element
 const ChildElement = bElement({
@@ -121,7 +121,8 @@ const ParentElement = bElement({
 Communication between islands **NOT in a parent-child relationship**. Uses actor pattern with multiple readers AND writers.
 
 ```typescript
-import { bElement, useSignal } from 'plaited'
+import { useSignal } from 'plaited'
+import { bElement } from 'plaited/ui'
 
 // Create shared signal
 const sendData = useSignal<{ value: string }>()
@@ -271,7 +272,8 @@ const disconnect = signal.listen(eventType, trigger, getLVC?)
 Multiple islands can both read AND write:
 
 ```typescript
-import { bElement, useSignal } from 'plaited'
+import { useSignal } from 'plaited'
+import { bElement } from 'plaited/ui'
 
 const sharedState = useSignal<{ count: number }>({ count: 0 })
 
@@ -342,7 +344,8 @@ const Counter2 = bElement({
 Signals support synchronous state queries:
 
 ```typescript
-import { bElement, useSignal } from 'plaited'
+import { useSignal } from 'plaited'
+import { bElement } from 'plaited/ui'
 
 // Create shared signal (outside bProgram for cross-island sharing)
 const userSettings = useSignal<{ theme: 'light' | 'dark' }>({ theme: 'light' })
@@ -520,7 +523,8 @@ const currentTheme = userPrefs.get()
 Three islands coordinating via signals:
 
 ```typescript
-import { bElement, useSignal, useComputed } from 'plaited'
+import { useSignal, useComputed } from 'plaited'
+import { bElement } from 'plaited/ui'
 
 // Shared signals
 const cart = useSignal<{ id: string; name: string; price: number }[]>([])

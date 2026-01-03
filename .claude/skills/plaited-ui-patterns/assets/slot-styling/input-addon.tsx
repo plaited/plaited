@@ -1,4 +1,4 @@
-import { bElement, useAttributesObserver } from 'plaited'
+import { bElement, useAttributesObserver } from 'plaited/ui'
 import { keyMirror } from 'plaited/utils'
 import { hostStyles, styles } from './input-addon.css.ts'
 

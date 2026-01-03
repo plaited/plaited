@@ -50,7 +50,7 @@ const filePath = join(outputDir, fileName)
 const includeHost = values.host
 
 const content = includeHost
-  ? `import { createStyles, createHostStyles, joinStyles } from 'plaited'
+  ? `import { createStyles, createHostStyles, joinStyles } from 'plaited/ui'
 // import { tokens } from './${name}.tokens.ts'
 
 export const styles = createStyles({
@@ -70,7 +70,7 @@ export const hostStyles = joinStyles(
   })
 )
 `
-  : `import { createStyles } from 'plaited'
+  : `import { createStyles } from 'plaited/ui'
 
 export const ${name}Styles = createStyles({
   ${name}: {

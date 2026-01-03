@@ -185,7 +185,7 @@ Brief description of what this pattern does.
 // Standard web API usage
 
 ### Plaited Adaptation
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 
 export const Example = bElement({
   tag: 'example-element',

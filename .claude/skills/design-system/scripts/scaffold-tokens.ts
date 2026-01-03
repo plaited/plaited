@@ -43,7 +43,7 @@ const outputDir = resolve(process.cwd(), values.output ?? '.')
 const fileName = `${name}.tokens.ts`
 const filePath = join(outputDir, fileName)
 
-const content = `import { createTokens } from 'plaited'
+const content = `import { createTokens } from 'plaited/ui'
 
 export const { ${namespace} } = createTokens('${namespace}', {
   // Simple token

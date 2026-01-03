@@ -37,7 +37,7 @@ bun scripts/lsp-analyze.ts <file> --exports
 Get type information for Plaited imports at a specific line:character position:
 ```typescript
 // Hover on 'bElement' at line 1, character 10
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 //         ^
 // Returns: function signature, parameters, JSDoc
 ```
@@ -56,7 +56,7 @@ See usage patterns in real code:
 
 ### `symbols`
 Explore available APIs in modules:
-- What exports are available from 'plaited'?
+- What exports are available from 'plaited' and 'plaited/ui'?
 - What methods exist on a type?
 
 ## Example Workflow

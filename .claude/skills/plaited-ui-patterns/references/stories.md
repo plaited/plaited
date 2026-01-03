@@ -7,7 +7,7 @@ Plaited uses a story-based testing system for browser-based template validation.
 Stories are created using the `story()` function from `plaited/testing`:
 
 ```typescript
-import { type FT } from 'plaited'
+import { type FT } from 'plaited/ui'
 import { story } from 'plaited/testing'
 
 const Button: FT<{ variant?: string }> = ({ variant, children }) => (
@@ -246,7 +246,7 @@ FunctionalTemplate stories demonstrate DOM structure and styling patterns. These
 
 ```typescript
 // File: button.css.ts
-import { createStyles } from 'plaited'
+import { createStyles } from 'plaited/ui'
 
 export const buttonStyles = createStyles({
   btn: {
@@ -264,7 +264,7 @@ export const buttonStyles = createStyles({
 })
 
 // File: button.stories.tsx
-import { type FT } from 'plaited'
+import { type FT } from 'plaited/ui'
 import { story } from 'plaited/testing'
 import { buttonStyles } from './button.css.ts'
 
@@ -290,7 +290,7 @@ export const disabledButton = story({
 
 ```typescript
 // File: card.css.ts
-import { createStyles } from 'plaited'
+import { createStyles } from 'plaited/ui'
 
 export const cardStyles = createStyles({
   card: {
@@ -311,7 +311,7 @@ export const cardStyles = createStyles({
 })
 
 // File: card.stories.tsx
-import { type FT } from 'plaited'
+import { type FT } from 'plaited/ui'
 import { story } from 'plaited/testing'
 import { cardStyles } from './card.css.ts'
 
@@ -336,7 +336,7 @@ export const basicCard = story({
 
 ```typescript
 // File: grid.css.ts
-import { createStyles } from 'plaited'
+import { createStyles } from 'plaited/ui'
 
 export const gridStyles = createStyles({
   container: {
@@ -352,7 +352,7 @@ export const gridStyles = createStyles({
 })
 
 // File: grid.stories.tsx
-import { type FT } from 'plaited'
+import { type FT } from 'plaited/ui'
 import { story } from 'plaited/testing'
 import { gridStyles } from './grid.css.ts'
 
@@ -389,7 +389,7 @@ BehavioralElement stories test interactive islands with behavioral programs.
 
 ```typescript
 // File: fills.tokens.ts
-import { createTokens } from 'plaited'
+import { createTokens } from 'plaited/ui'
 
 export const { fills } = createTokens('fills', {
   default: { $value: 'lightblue' },
@@ -398,7 +398,7 @@ export const { fills } = createTokens('fills', {
 })
 
 // File: toggle-input.css.ts
-import { createStyles, createHostStyles } from 'plaited'
+import { createStyles, createHostStyles } from 'plaited/ui'
 import { fills } from './fills.tokens.ts'
 
 export const styles = createStyles({
@@ -421,7 +421,7 @@ export const hostStyles = createHostStyles({
 })
 
 // File: toggle-input.ts
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 import { isTypeOf } from 'plaited/utils'
 import { styles, hostStyles } from './toggle-input.css.ts'
 
@@ -533,7 +533,8 @@ export const toggleInteraction = story({
 
 ```typescript
 // File: element-comms.stories.tsx
-import { bElement, type FT, useSignal } from 'plaited'
+import { useSignal } from 'plaited'
+import { bElement, type FT } from 'plaited/ui'
 import { story } from 'plaited/testing'
 
 const sendAdd = useSignal<{ value: string }>()
@@ -686,7 +687,7 @@ bElement({
 Inspector is automatically enabled in dev mode (when not running in test runner):
 
 ```typescript
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 
 const MyElement = bElement({
   bProgram({ inspector }) {

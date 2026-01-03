@@ -39,9 +39,9 @@ bProgram({ $, root, host, internals, trigger, emit, bThreads, bThread, bSync, in
 
 ```typescript
 // Hover on these imports to verify current signatures:
-import { bElement } from 'plaited'  // Line X, character Y
-import { createStyles, createHostStyles } from 'plaited'
-import type { BProgramArgs, BehavioralElementCallbackDetails } from 'plaited'
+import { bElement } from 'plaited/ui'  // Line X, character Y
+import { createStyles, createHostStyles } from 'plaited/ui'
+import type { BProgramArgs, BehavioralElementCallbackDetails } from 'plaited/ui'
 ```
 
 **Common LSP checks:**
@@ -96,7 +96,7 @@ bProgram({ internals }) {
   - JSX syntax for templates
   - Arrow functions preferred
   - Null handling: assertions (`!`) vs optional chaining (`?.`)
-- Use package imports (`'plaited'`, `'plaited/testing'`)
+- Use package imports (`'plaited'`, `'plaited/ui'`, `'plaited/testing'`, `'plaited/utils'`, `'plaited/workshop'`)
 
 ### 2.3 Apply CSS-in-JS Patterns
 ```typescript
@@ -176,11 +176,11 @@ Only proceed if you achieve **95% confidence** (per [standards.md#confidence-thr
 **1.2 LSP hover verification:**
 ```typescript
 // LSP hover on line 1, char 10:
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 // Confirms: bElement accepts formAssociated parameter
 
 // LSP hover on BProgramArgs:
-import type { BProgramArgs } from 'plaited'
+import type { BProgramArgs } from 'plaited/ui'
 // Confirms: internals property available
 ```
 
@@ -193,7 +193,7 @@ Confirms: setFormValue(value: File | string | FormData | null)
 ### Phase 2: Generation
 
 ```typescript
-import { bElement } from 'plaited'
+import { bElement } from 'plaited/ui'
 import { styles, hostStyles } from './my-input.css.ts'
 
 export const MyInput = bElement({

@@ -1,4 +1,5 @@
-import { bElement, bSync, bThread, type RulesFunction } from 'plaited'
+import { bSync, bThread, type RulesFunction } from 'plaited'
+import { bElement } from 'plaited/ui'
 import { BoardMarker } from './board-marker.tsx'
 import { OMarker } from './o-marker.tsx'
 import { XMarker } from './x-marker.tsx'
