@@ -45,7 +45,7 @@ Options:
 Examples:
   bun query-analyze.ts src/main --all
   bun query-analyze.ts src/main --stories
-  bun query-analyze.ts src/components --templates
+  bun query-analyze.ts src/templates --templates
   bun query-analyze.ts src/main --stories --urls --port 3500
 `)
   process.exit(0)

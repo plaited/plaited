@@ -42,7 +42,7 @@ bun scripts/query-stories.ts <paths...>
 **Example:**
 ```bash
 bun scripts/query-stories.ts src/main
-bun scripts/query-stories.ts src/components src/features
+bun scripts/query-stories.ts src/templates src/features
 ```
 
 ### query-templates
@@ -109,7 +109,7 @@ bun scripts/query-analyze.ts src/main --all
 bun scripts/query-analyze.ts src/main --stories --urls
 
 # Just templates
-bun scripts/query-analyze.ts src/components --templates
+bun scripts/query-analyze.ts src/templates --templates
 ```
 
 ## Dev Server
@@ -131,7 +131,7 @@ bun --hot plaited dev src/main
 bun --hot plaited dev src/main -p 3500
 
 # With color scheme
-bun --hot plaited dev src/components -p 3500 -c dark
+bun --hot plaited dev src/templates -p 3500 -c dark
 ```
 
 **Arguments:**
@@ -181,7 +181,7 @@ Two primary modes for iterating on template designs:
 
 ```bash
 # Run tests with video recording (both color schemes)
-bun plaited test src/components/button --record-video ./videos --color-scheme both
+bun plaited test src/templates/button --record-video ./videos --color-scheme both
 ```
 
 1. Run story test with `--record-video --color-scheme both`

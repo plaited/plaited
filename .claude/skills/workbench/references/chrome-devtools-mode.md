@@ -17,7 +17,7 @@ The `chrome-devtools` MCP server should be configured in your Claude settings. I
 Use live-preview or start manually:
 
 ```bash
-bun plaited dev src/components --port 3000
+bun plaited dev src/templates --port 3000
 ```
 
 ### Step 2: Get Story URL

@@ -19,7 +19,7 @@ if (positionals.length === 0) {
   console.error('')
   console.error('Examples:')
   console.error('  bun query-stories.ts src/main')
-  console.error('  bun query-stories.ts src/components src/features')
+  console.error('  bun query-stories.ts src/templates src/features')
   process.exit(1)
 }
 
@@ -29,10 +29,7 @@ try {
   const storiesMap = await collectStories(cwd, positionals)
 
   // Convert Map to array of [route, metadata] entries
-  const stories = [...storiesMap.entries()].map(([route, metadata]) => ({
-    route,
-    ...metadata,
-  }))
+  const stories = [...storiesMap.values()]
 
   console.log(JSON.stringify(stories, null, 2))
 } catch (error) {

@@ -19,7 +19,7 @@ if (positionals.length === 0) {
   console.error('')
   console.error('Examples:')
   console.error('  bun query-templates.ts src/main')
-  console.error('  bun query-templates.ts src/components src/features')
+  console.error('  bun query-templates.ts src/templates src/features')
   process.exit(1)
 }
 

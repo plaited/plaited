@@ -13,7 +13,7 @@ Test Video mode runs story tests and records videos of the interactions. This is
 bun plaited test <paths...> --record-video <dir>
 
 # With both color schemes
-bun plaited test src/components/button --record-video ./videos --color-scheme both
+bun plaited test  src/button.stories.tsx --record-video ./videos --color-scheme both
 
 # With custom video dimensions
 bun plaited test src/button.stories.tsx --record-video ./videos --width 1920 --height 1080
@@ -47,7 +47,7 @@ videos/
 ### Step 1: Run Initial Test
 
 ```bash
-bun plaited test src/components/toggle-input --record-video ./videos --color-scheme both
+bun plaited test src/templates/toggle-input --record-video ./videos --color-scheme both
 ```
 
 ### Step 2: Review Results
@@ -67,7 +67,7 @@ Edit the relevant files:
 ### Step 4: Re-run Test
 
 ```bash
-bun plaited test src/components/toggle-input --record-video ./videos --color-scheme both
+bun plaited test src/templates/toggle-input --record-video ./videos --color-scheme both
 ```
 
 ### Step 5: Compare Videos
