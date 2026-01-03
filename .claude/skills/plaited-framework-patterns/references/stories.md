@@ -21,6 +21,42 @@ export const primaryButton = story({
 })
 ```
 
+### Naming Story Exports
+
+Story export names should be descriptive titles that clearly communicate **what the story demonstrates**. Think of them as test case names - they should be readable and self-documenting.
+
+**Naming Patterns**:
+
+| Pattern | Example | Use When |
+|---------|---------|----------|
+| `{variant}{Template}` | `primaryButton`, `disabledInput` | Demonstrating a specific variant or state |
+| `{template}With{Feature}` | `cardWithSubtitle`, `inputWithError` | Showing optional features or configurations |
+| `{action}{Template}` | `clickableButton`, `draggableCard` | Testing specific interactions |
+| `{state}{Template}` | `loadingSpinner`, `emptyList` | Showing loading/empty/error states |
+| `{feature}Interaction` | `toggleInteraction`, `formSubmission` | Testing user interactions |
+| `{template}{Behavior}` | `crossIslandCommunication` | Testing behavioral patterns |
+
+**Naming Guidelines**:
+
+1. **Use camelCase**: Export names must be valid JavaScript identifiers
+2. **Be specific**: `primaryButton` is better than `button1`
+3. **Describe the variant/state**: `disabledButton` tells you what makes this story different
+4. **Include the action for interaction tests**: `clickableButton` indicates the test involves clicking
+5. **Keep names concise but descriptive**: Balance brevity with clarity
+
+```typescript
+// ✅ Good: Descriptive, clear purpose
+export const primaryButton = story({ ... })
+export const buttonWithIcon = story({ ... })
+export const disabledSubmitButton = story({ ... })
+export const formValidationErrors = story({ ... })
+
+// ❌ Avoid: Vague or numbered names
+export const button1 = story({ ... })
+export const test = story({ ... })
+export const example = story({ ... })
+```
+
 ### Core Story Properties
 
 #### `description` (Required)
