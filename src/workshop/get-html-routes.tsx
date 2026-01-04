@@ -1,11 +1,5 @@
 import { z } from 'zod'
-import {
-  ORCHESTRATOR_EVENTS,
-  STORY_FIXTURE,
-  STORY_HEADER,
-  STORY_MASK,
-  STORY_ORCHESTRATOR,
-} from '../testing/testing.constants.ts'
+import { FIXTURE_EVENTS, STORY_FIXTURE } from '../testing/testing.constants.ts'
 import type { StoryExport } from '../testing.ts'
 import { joinStyles, ssr, type TemplateObject } from '../ui.ts'
 import { zip } from './workshop.utils.ts'
@@ -48,14 +42,12 @@ const PlaitedAttributesSchema = z
   })
   .optional()
 
-const PLAITED_STORY_ELEMENTS = `["${STORY_FIXTURE}", "${STORY_ORCHESTRATOR}", "${STORY_HEADER}", "${STORY_MASK}"]`
-
 const createFixtureLoadScript = ({ entryPath, exportName }: { entryPath: string; exportName: string }) => `\n
 import { ${exportName} } from '${entryPath}'
-await Promise.all(${PLAITED_STORY_ELEMENTS}.map(async (tag) => await customElements.whenDefined(tag)))
-const orchestrator = document.querySelector("${STORY_ORCHESTRATOR}")
+await customElements.whenDefined('${STORY_FIXTURE}')
+const orchestrator = document.querySelector("${STORY_FIXTURE}")
 orchestrator?.trigger({
-  type: '${ORCHESTRATOR_EVENTS.init}',
+  type: '${FIXTURE_EVENTS.run}',
   detail:  {play: ${exportName}?.play, timeout: ${exportName}?.params?.timeout}
 });
 `

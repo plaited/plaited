@@ -1,13 +1,6 @@
 import { bElement, createHostStyles } from '../ui.ts'
 import { wait } from '../utils.ts'
-import {
-  DEFAULT_PLAY_TIMEOUT,
-  ERROR_TYPES,
-  FIXTURE_EVENTS,
-  ORCHESTRATOR_EVENTS,
-  STORY_FIXTURE,
-  SUCCESS_TYPES,
-} from './testing.constants.ts'
+import { DEFAULT_PLAY_TIMEOUT, ERROR_TYPES, FIXTURE_EVENTS, STORY_FIXTURE, SUCCESS_TYPES } from './testing.constants.ts'
 import type {
   AccessibilityCheckParams,
   AssertParams,
@@ -17,7 +10,6 @@ import type {
   FindByTextArgs,
   FireEventArgs,
   InteractionStoryObj,
-  Send,
 } from './testing.types.ts'
 import {
   accessibilityCheck,
@@ -29,6 +21,7 @@ import {
   fireEvent,
 } from './testing.utils.ts'
 import { useInteract } from './use-interact.ts'
+import { useMessenger } from './use-messenger.ts'
 
 /**
  * Story test fixture element for Plaited testing framework.
@@ -105,10 +98,9 @@ export const PlaitedFixture = bElement<{
     resolve: () => void
     reject: Reject
   }
-  [ORCHESTRATOR_EVENTS.connect_messenger]: Send
 }>({
   tag: STORY_FIXTURE,
-  publicEvents: [FIXTURE_EVENTS.run, ORCHESTRATOR_EVENTS.connect_messenger],
+  publicEvents: [FIXTURE_EVENTS.run],
   shadowDom: (
     <slot
       {...createHostStyles({
@@ -122,7 +114,7 @@ export const PlaitedFixture = bElement<{
     if (!window?.__PLAITED_RUNNER__) {
       inspector.on()
     }
-    let send: Send
+    const send = useMessenger(trigger)
     bThreads.set({
       onRun: bThread(
         [
@@ -275,9 +267,6 @@ export const PlaitedFixture = bElement<{
         } catch (error) {
           handleError(error, reject)
         }
-      },
-      [ORCHESTRATOR_EVENTS.connect_messenger](detail) {
-        send = detail
       },
     }
   },

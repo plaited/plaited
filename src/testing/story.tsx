@@ -1,5 +1,5 @@
 import type { FunctionTemplate } from '../ui.ts'
-import { PlaitedOrchestrator } from './plaited-orchestrator.tsx'
+import { PlaitedFixture } from './plaited-fixture.tsx'
 import { STORY_IDENTIFIER, STORY_TYPES } from './testing.constants.ts'
 import type {
   InteractionExport,
@@ -15,7 +15,7 @@ const createStoryExport = <T extends FunctionTemplate>(
   flags: { only?: boolean; skip?: boolean } = {},
 ): StoryExport<T> => {
   const tpl = template?.(args || {})
-  const fixture = <PlaitedOrchestrator>{tpl}</PlaitedOrchestrator>
+  const fixture = <PlaitedFixture>{tpl}</PlaitedFixture>
   if (rest.play) {
     return {
       ...rest,
