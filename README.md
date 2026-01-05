@@ -1,15 +1,21 @@
 ![Plaited a Neuro-Symbolic Agentic Framework: AI-Assisted Design Systems, Generative UI Agents, Personalized Knowledge Worker Screens](assets/banner.svg)
 
-**A behavioral programming framework for generative UI**
+**Build design systems that AI can generate from**
 
 [![Build/Tests](https://github.com/plaited/plaited/actions/workflows/ci.yml/badge.svg)](https://github.com/plaited/plaited/actions/workflows/ci.yml)
 ![Bundle Size](https://img.shields.io/badge/gzip-<7.5kb-brightgreen)
 
 ---
 
-Plaited is a vertically integrated stack—from behavioral programming core to UI rendering to workshop tooling—designed so that design system developers can leverage AI without becoming ML engineers.
+Plaited is a design system toolkit with AI built in. Define your tokens, templates, and stories—the Workshop plugin handles the rest. No ML expertise required.
 
-The framework's behavioral programming model aligns naturally with reinforcement learning, making stories serve as both tests and ground truth for what "correct UI" means. This enables continuous, human-in-the-loop improvement rather than one-shot generation.
+## What You Can Build
+
+**AI-Assisted Design Systems** — Your design tokens and patterns become the vocabulary AI uses to generate consistent UI.
+
+**Generative UI Agents** — Train agents that compose templates from your design system, not from scratch.
+
+**Personalized Knowledge Worker Screens** — Generate role-specific interfaces that follow your design guidelines.
 
 ## Get Started
 
@@ -63,9 +69,14 @@ bun plaited test
 
 </details>
 
-## Why Behavioral Programming?
+## Performance
 
-Behavioral programming was chosen intentionally—it aligns with how reinforcement learning agents reason about the world:
+Plaited is fast. See the [js-framework-benchmark results](https://krausest.github.io/js-framework-benchmark/2025/table_chrome_143.0.7499.41.html).
+
+<details>
+<summary><strong>How It Works (Behavioral Programming)</strong></summary>
+
+Behavioral programming aligns with how reinforcement learning agents reason about the world:
 
 - **Stories as world model** — Stories define valid UI states and transitions, serving as ground truth for both testing and agent training
 - **Runtime constraints** — bThreads block invalid actions before they execute, providing symbolic guardrails for neural generation
@@ -73,7 +84,7 @@ Behavioral programming was chosen intentionally—it aligns with how reinforceme
 
 This architecture enables the [World Agent](training/README.md)—a neuro-symbolic system where a neural policy proposes actions and behavioral constraints ensure correctness.
 
-**Performance:** Plaited is also fast. See the [js-framework-benchmark results](https://krausest.github.io/js-framework-benchmark/2025/table_chrome_143.0.7499.41.html).
+</details>
 
 <details>
 <summary><strong>Package Exports</strong></summary>
@@ -104,26 +115,24 @@ import { story } from 'plaited/testing'
 <details>
 <summary><strong>Workshop Plugin Features</strong></summary>
 
-The Workshop plugin provides intelligent assistance for Plaited development:
+The Workshop plugin teaches your AI coding agent how to build with Plaited:
 
-**Skills** (auto-activated based on context):
-- **plaited-standards** — Code conventions, development standards, verification workflow
-- **plaited-behavioral-core** — Behavioral programming patterns, neuro-symbolic reasoning
-- **plaited-ui-patterns** — Templates, bElements, styling, forms, stories
-- **typescript-lsp** — Type verification, symbol discovery, code navigation
-- **code-documentation** — TSDoc templates and workflow
-- **workbench** — Story discovery, dev server, visual feedback via Playwright
-- **design-system** — Design token patterns and scaffolding scripts
-- **world-agent** — Agent training, trajectory generation, evaluation, A2A integration
+**What it enables:**
+- Generate templates, styles, and stories from descriptions
+- Scaffold design tokens and behavioral elements
+- Run tests with visual feedback (screenshots, videos)
+- Validate accessibility automatically
+- Train custom UI generation agents
 
-**Agents** (specialized reviewers):
-- **architecture-reviewer** — Validates behavioral programming patterns
-- **documentation-cleanup** — Enforces documentation standards
+**How it works:**
+- Skills auto-activate based on what you're doing
+- AI learns your project's patterns from existing code
+- Type verification catches errors before you run
 
-**Commands**:
-- `/validate-skill` — Validate skill directories against AgentSkills spec
-- `/create-web-patterns-skill` — Extract Web API patterns from articles
-- `/create-design-system-skill` — Create design system extraction skill
+**Commands:**
+- `/validate-skill` — Validate skill directories
+- `/create-web-patterns-skill` — Extract patterns from articles
+- `/create-design-system-skill` — Document your design system
 
 </details>
 
