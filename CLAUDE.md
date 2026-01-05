@@ -120,7 +120,6 @@ See the **plaited-standards** skill (`.claude/skills/plaited-standards/reference
 - **code-documentation**: TSDoc workflow and templates
 - **typescript-lsp**: Type verification and symbol discovery
 - **workbench**: Story discovery and preview
-- **design-system**: Design tokens and scaffolding scripts
 
 **Project-Specific Rules** (`.claude/rules/`):
 - Testing commands and workflow

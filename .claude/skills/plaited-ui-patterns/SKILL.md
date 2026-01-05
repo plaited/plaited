@@ -214,6 +214,5 @@ For code conventions, standards, and verification workflow, see the **plaited-st
 
 - **plaited-standards** - Code conventions, development standards, verification workflow
 - **plaited-behavioral-core** - Core BP patterns (foundation)
-- **design-system** - Design tokens and asset generation
 - **typescript-lsp** - Type verification and symbol discovery
 - **workbench** - Story discovery and preview

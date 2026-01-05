@@ -263,4 +263,3 @@ const createOrchestrator = useBehavioral({
 - **plaited-standards** - Code conventions, development standards, verification workflow
 - **plaited-ui-patterns** - UI application of BP (bElements, templates, styling)
 - **typescript-lsp** - Type verification and symbol discovery
-- **design-system** - Design tokens and asset generation
