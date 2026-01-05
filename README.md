@@ -1,7 +1,5 @@
 ![Plaited a Neuro-Symbolic Agentic Framework: AI-Assisted Design Systems, Generative UI Agents, Personalized Knowledge Worker Screens](assets/banner.svg)
 
-A behavioral programming framework for reactive systems and AI-assisted development.
-
 [![Build/Tests](https://github.com/plaited/plaited/actions/workflows/ci.yml/badge.svg)](https://github.com/plaited/plaited/actions/workflows/ci.yml)
 ![Bundle Size](https://img.shields.io/badge/gzip-<7.5kb-brightgreen)
 
