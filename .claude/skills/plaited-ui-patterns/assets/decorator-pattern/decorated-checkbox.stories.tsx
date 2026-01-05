@@ -20,7 +20,7 @@ export const DecoratedCheckbox: FT<ElementAttributeList['input']> = (props) => {
 
 export const example = story<typeof DecoratedCheckbox>({
   template: DecoratedCheckbox,
-  description: `
+  intent: `
     DecoratedCheckbox template uses a plaited template
     to decorate an input element
     of the type checkbox.
@@ -49,7 +49,7 @@ export const example = story<typeof DecoratedCheckbox>({
 
 export const checked = story<typeof DecoratedCheckbox>({
   template: DecoratedCheckbox,
-  description: `DecoratedCheckbox rendered with the checked prop set to true.`,
+  intent: `DecoratedCheckbox rendered with the checked prop set to true.`,
   args: {
     checked: true,
   },
@@ -57,7 +57,7 @@ export const checked = story<typeof DecoratedCheckbox>({
 
 export const disabled = story<typeof DecoratedCheckbox>({
   template: DecoratedCheckbox,
-  description: `DecoratedCheckbox rendered with the disabled prop set to true.`,
+  intent: `DecoratedCheckbox rendered with the disabled prop set to true.`,
   args: {
     disabled: true,
   },
@@ -65,7 +65,7 @@ export const disabled = story<typeof DecoratedCheckbox>({
 
 export const disabledAndChecked = story<typeof DecoratedCheckbox>({
   template: DecoratedCheckbox,
-  description: `DecoratedCheckbox rendered with the disabled and checked props set to true.`,
+  intent: `DecoratedCheckbox rendered with the disabled and checked props set to true.`,
   args: {
     disabled: true,
     checked: true,

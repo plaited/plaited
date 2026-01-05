@@ -3,7 +3,7 @@ import { story } from 'plaited/testing'
 import { EmitButton, ShadowHost, SlotHost } from './fixtures/event-dispatch.tsx'
 
 export const eventDispatch = story<typeof ShadowHost>({
-  description: `Example of how to use useDispatch to broadcast events between Behavioral elements nested within
+  intent: `Example of how to use useDispatch to broadcast events between Behavioral elements nested within
   another Behavioral elements shadow dom. When the button in nested-el is clicked the h1 in outer-el shadow dom's
   has a string appended to it`,
   template: ShadowHost,
@@ -27,7 +27,7 @@ export const eventDispatch = story<typeof ShadowHost>({
 })
 
 export const eventDispatchSlot = story({
-  description: `Example of how to use useDispatch to broadcast events between Behavioral elements slotted within
+  intent: `Example of how to use useDispatch to broadcast events between Behavioral elements slotted within
 another Behavioral elements light dom. When the button in nested-el is clicked the h1 in parent-el shadow dom has a
 string appended to it`,
   template: () => (

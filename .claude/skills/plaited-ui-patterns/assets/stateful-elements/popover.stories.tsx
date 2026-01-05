@@ -2,7 +2,7 @@ import { story } from 'plaited/testing'
 import { DecoratedPopover, DecoratedPopoverClose } from './popover.ts'
 
 export const Example = story({
-  description: `A basic popover example with a trigger button and a close button within the popover target content.`,
+  intent: `A basic popover example with a trigger button and a close button within the popover target content.`,
   template: () => (
     <DecoratedPopover>
       <button

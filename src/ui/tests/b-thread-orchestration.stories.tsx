@@ -8,6 +8,6 @@ const TestFixture: FT = () => (
 )
 
 export const bThreadOrchestration = story({
-  description: 'Validate plaited-orchestrator with header, fixture, and mask',
+  intent: 'Validate plaited-orchestrator with header, fixture, and mask',
   template: TestFixture,
 })

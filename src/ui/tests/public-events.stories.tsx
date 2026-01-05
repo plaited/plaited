@@ -9,7 +9,7 @@ const PublicEventsFixture = () => (
 )
 
 export const publicEventTrigger = story<typeof PublicEventsFixture>({
-  description: `This story is used to validate that the publicEvents parameter
+  intent: `This story is used to validate that the publicEvents parameter
   of bElement allows for triggering a public event on a Behavioral element`,
   template: PublicEventsFixture,
   play: async ({ assert, findByAttribute, fireEvent }) => {

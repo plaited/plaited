@@ -71,6 +71,27 @@ When working on plugins in `.claude/`:
 - Restart Claude Code to see updates
 - Skills are auto-invoked (won't show in `/plugins` UI)
 
+### Training Directory
+
+The `training/` directory contains world agent training assets:
+
+```
+training/
+  plaited-world-agent-training.ipynb  # Colab notebook (SFT + DPO)
+  trajectories.jsonl                   # Generated training data
+  stories/                             # Training stories with intents
+    button.stories.tsx
+    card.stories.tsx
+    ...
+```
+
+**Workflow:**
+1. Create stories in `training/stories/` with `intent` field
+2. Generate trajectories: `bun scripts/generate-trajectories.ts training/stories -o training/trajectories.jsonl`
+3. Upload to Google Colab and run notebook
+
+See the **world-agent** skill for complete training workflow.
+
 ### Documentation
 
 - Public APIs require comprehensive TSDoc documentation

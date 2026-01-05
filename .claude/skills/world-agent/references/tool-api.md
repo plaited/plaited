@@ -367,4 +367,50 @@ type ToolRegistry = {
   execute: (call: FunctionCall) => Promise<ToolResult>
   schemas: ToolSchema[]
 }
+
+// Tool Discovery types
+type ToolSource = 'local' | 'mcp' | 'a2a'
+
+type IndexedTool = {
+  name: string
+  description: string
+  keywords: string[]
+  source: ToolSource
+  sourceUrl?: string
+  schema: ToolSchema
+}
+
+type ToolMatch = {
+  tool: IndexedTool
+  score: number        // Combined RRF score (0-1)
+  ftsRank?: number     // FTS5 rank if keyword matched
+  vectorDistance?: number  // Vector distance if semantically matched
+}
+
+type SearchOptions = {
+  limit?: number       // Max results (default: 5)
+  minScore?: number    // Score threshold (default: 0.001)
+  source?: ToolSource  // Filter by provenance
+  ftsWeight?: number   // Keyword search weight (default: 0.5)
+  vectorWeight?: number // Vector search weight (default: 0.5)
+}
+
+type ToolDiscoveryConfig = {
+  dbPath?: string      // SQLite path (default: ':memory:')
+  enableVectorSearch?: boolean
+  embedder?: (text: string) => Promise<Float32Array>
+  vectorDimensions?: number  // Default: 384
+}
+
+type ToolDiscovery = {
+  index: (tool: IndexedTool) => Promise<void>
+  indexBatch: (tools: IndexedTool[]) => Promise<void>
+  search: (intent: string, options?: SearchOptions) => Promise<ToolMatch[]>
+  all: () => IndexedTool[]
+  bySource: (source: ToolSource) => IndexedTool[]
+  remove: (name: string) => void
+  clearSource: (source: ToolSource) => void
+  stats: () => ToolDiscoveryStats
+  close: () => void
+}
 ```

@@ -11,7 +11,7 @@ const SignalCommunicationFixture = () => (
 
 export const signalCommunication = story<typeof SignalCommunicationFixture>({
   template: SignalCommunicationFixture,
-  description: `Example of how to use useSignal to enable communication between
+  intent: `Example of how to use useSignal to enable communication between
   Behavioral elements. This story is used to validate that when the button in element-one
   is clicked it leads to an appending a string to the h1 in element-two`,
   play: async ({ findByAttribute, assert, fireEvent }) => {

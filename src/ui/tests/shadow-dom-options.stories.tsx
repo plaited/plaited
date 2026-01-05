@@ -4,7 +4,7 @@ import type { BehavioralElement } from 'plaited/ui'
 import { ClosedShadow, NoFocusDelegation, OpenShadow } from './fixtures/shadow-dom-options.tsx'
 
 export const defaultModeAndFocus = story({
-  description: `This test is used to validate a Behavioral element created using bElement
+  intent: `This test is used to validate a Behavioral element created using bElement
   default to having it's mode open`,
   template: () => <OpenShadow p-target='el' />,
   play: async ({ assert, findByAttribute }) => {
@@ -25,7 +25,7 @@ export const defaultModeAndFocus = story({
 })
 
 export const delegatesFocusFalse = story({
-  description: `This test is used to validate a Behavioral element created using bElement
+  intent: `This test is used to validate a Behavioral element created using bElement
   with the parameter delefateFocus set to false does not allow focus delegation.`,
   template: () => <NoFocusDelegation p-target='el' />,
   play: async ({ assert, findByAttribute }) => {
@@ -46,7 +46,7 @@ export const delegatesFocusFalse = story({
 })
 
 export const closedMode = story({
-  description: `This test is used to validate a Behavioral element created using bElement
+  intent: `This test is used to validate a Behavioral element created using bElement
   with the parameter mode set to false create a custom element with a closed shadow dom.`,
   template: () => <ClosedShadow p-target='el' />,
   play: async ({ assert, findByAttribute }) => {

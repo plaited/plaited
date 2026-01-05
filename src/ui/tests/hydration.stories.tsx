@@ -6,7 +6,7 @@ import { ShadowDom } from './fixtures/hydrating-element-shadow-dom.tsx'
 const { stylesheets, classNames } = styles.before
 
 export const hydration = story({
-  description: 'Validates hydration of declarative shadow DOM when element definition is dynamically imported',
+  intent: 'Validates hydration of declarative shadow DOM when element definition is dynamically imported',
   template: () => (
     // Pre-hydration state: custom element with declarative shadow DOM
     // The bElement is NOT imported yet, so this is just inert HTML

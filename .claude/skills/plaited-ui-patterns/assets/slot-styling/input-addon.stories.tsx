@@ -2,7 +2,7 @@ import { story } from 'plaited/testing'
 import { InputAddon } from './input-addon.ts'
 
 export const Example = story({
-  description: 'Basic example of the InputAddon.',
+  intent: 'Basic example of the InputAddon.',
   template: () => (
     <InputAddon>
       <input slot='input' />

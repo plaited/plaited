@@ -28,7 +28,7 @@ describe('createToolRegistry', () => {
     expect(registry.schemas[0]!.name).toBe('testTool')
   })
 
-  test('prevents duplicate registration', () => {
+  test('silently skips duplicate registration', () => {
     const registry = createToolRegistry()
     const schema: ToolSchema = {
       name: 'testTool',
@@ -36,17 +36,11 @@ describe('createToolRegistry', () => {
       parameters: { type: 'object', properties: {} },
     }
 
-    const warnMock = mock(() => {})
-    const originalWarn = console.warn
-    console.warn = warnMock
-
     registry.register('testTool', async () => ({ success: true }), schema)
     registry.register('testTool', async () => ({ success: false }), schema)
 
-    console.warn = originalWarn
-
+    // Duplicate silently skipped - only one schema registered
     expect(registry.schemas).toHaveLength(1)
-    expect(warnMock).toHaveBeenCalled()
   })
 
   test('executes registered tool', async () => {

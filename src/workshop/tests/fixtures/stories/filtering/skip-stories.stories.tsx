@@ -7,15 +7,15 @@ import { story } from 'plaited/testing'
 
 export const skippedStory = story.skip({
   template: () => <div>Skipped story</div>,
-  description: 'Story marked with .skip()',
+  intent: 'Story marked with .skip()',
 })
 
 export const activeStory = story({
   template: () => <div>Active story</div>,
-  description: 'Active story without .skip()',
+  intent: 'Active story without .skip()',
 })
 
 export const anotherSkippedStory = story.skip({
   template: () => <div>Another skipped story</div>,
-  description: 'Another skipped story',
+  intent: 'Another skipped story',
 })

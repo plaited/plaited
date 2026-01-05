@@ -171,14 +171,14 @@ export type Play = (args: {
  *
  * @template T - Template props type
  * @property args - Story props
- * @property description - Test scenario description
+ * @property intent - Natural language description of what the story demonstrates or tests
  * @property parameters - Test configuration
  * @property play - Required test function
  * @property template - Story template
  */
 export type InteractionStoryObj<T extends FunctionTemplate = FunctionTemplate> = {
   args?: Args<T>
-  description: string
+  intent: string
   parameters?: Params
   play: Play
   template?: T
@@ -188,14 +188,14 @@ export type InteractionStoryObj<T extends FunctionTemplate = FunctionTemplate> =
  *
  * @template T - Template props type
  * @property args - Story props
- * @property description - Visual test description
+ * @property intent - Natural language description of what the story demonstrates or tests
  * @property parameters - Test configuration
  * @property play - Never (enforced as undefined)
  * @property template - Story template
  */
 export type SnapshotStoryObj<T extends FunctionTemplate = FunctionTemplate> = {
   args?: Args<T>
-  description: string
+  intent: string
   parameters?: Params
   play?: never
   template?: T
@@ -216,7 +216,7 @@ export type InteractionExport<T extends FunctionTemplate = FunctionTemplate> = {
   template?: T
   args?: Args<T>
   fixture: TemplateObject
-  description: string
+  intent: string
   type: typeof STORY_TYPES.interaction
   parameters?: Params
   play: Play
@@ -228,7 +228,7 @@ export type SnapshotExport<T extends FunctionTemplate = FunctionTemplate> = {
   template?: T
   args?: Args<T>
   fixture: TemplateObject
-  description: string
+  intent: string
   type: typeof STORY_TYPES.snapshot
   parameters?: Params
   play?: never

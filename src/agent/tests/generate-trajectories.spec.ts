@@ -5,6 +5,7 @@ import {
   type ExecutionTrace,
   extractIntent,
   generateTrajectoryFromTrace,
+  parseFunctionGemmaOutput,
   type StoryInfo,
   type ToolExecution,
 } from '../generate-trajectories.ts'
@@ -213,5 +214,175 @@ describe('generateTrajectoryFromTrace', () => {
     const assistantContent = trajectory.messages[2]!.content
     expect(assistantContent).toContain('modern')
     expect(assistantContent).not.toContain('legacy')
+  })
+})
+
+describe('parseFunctionGemmaOutput', () => {
+  test('parses single function call with string argument', () => {
+    const output = '<start_function_call>call:writeTemplate{path:<escape>button.tsx<escape>}<end_function_call>'
+
+    const calls = parseFunctionGemmaOutput(output)
+
+    expect(calls).toHaveLength(1)
+    expect(calls[0]!.name).toBe('writeTemplate')
+    expect(JSON.parse(calls[0]!.arguments)).toEqual({ path: 'button.tsx' })
+  })
+
+  test('parses multiple arguments', () => {
+    const output =
+      '<start_function_call>call:writeTemplate{path:<escape>button.tsx<escape>,content:<escape>export const Button = () => <button>Click</button><escape>}<end_function_call>'
+
+    const calls = parseFunctionGemmaOutput(output)
+
+    expect(calls).toHaveLength(1)
+    const args = JSON.parse(calls[0]!.arguments)
+    expect(args.path).toBe('button.tsx')
+    expect(args.content).toBe('export const Button = () => <button>Click</button>')
+  })
+
+  test('parses multiple consecutive function calls', () => {
+    const output =
+      '<start_function_call>call:writeTemplate{path:<escape>button.tsx<escape>}<end_function_call>' +
+      '<start_function_call>call:writeStyles{path:<escape>button.css.ts<escape>}<end_function_call>'
+
+    const calls = parseFunctionGemmaOutput(output)
+
+    expect(calls).toHaveLength(2)
+    expect(calls[0]!.name).toBe('writeTemplate')
+    expect(calls[1]!.name).toBe('writeStyles')
+  })
+
+  test('parses numeric values as numbers', () => {
+    const output =
+      '<start_function_call>call:test{count:<escape>42<escape>,rate:<escape>3.14<escape>}<end_function_call>'
+
+    const calls = parseFunctionGemmaOutput(output)
+
+    const args = JSON.parse(calls[0]!.arguments)
+    expect(args.count).toBe(42)
+    expect(args.rate).toBe(3.14)
+  })
+
+  test('parses boolean values', () => {
+    const output =
+      '<start_function_call>call:test{enabled:<escape>true<escape>,disabled:<escape>false<escape>}<end_function_call>'
+
+    const calls = parseFunctionGemmaOutput(output)
+
+    const args = JSON.parse(calls[0]!.arguments)
+    expect(args.enabled).toBe(true)
+    expect(args.disabled).toBe(false)
+  })
+
+  test('parses array values', () => {
+    const output = '<start_function_call>call:test{items:<escape>["a","b","c"]<escape>}<end_function_call>'
+
+    const calls = parseFunctionGemmaOutput(output)
+
+    const args = JSON.parse(calls[0]!.arguments)
+    expect(args.items).toEqual(['a', 'b', 'c'])
+  })
+
+  test('returns empty array for no matches', () => {
+    const output = 'This is just regular text with no function calls'
+
+    const calls = parseFunctionGemmaOutput(output)
+
+    expect(calls).toHaveLength(0)
+  })
+
+  test('returns empty array for empty string', () => {
+    const calls = parseFunctionGemmaOutput('')
+
+    expect(calls).toHaveLength(0)
+  })
+
+  test('handles function calls mixed with other text', () => {
+    const output =
+      'Some preamble text\n<start_function_call>call:writeTemplate{path:<escape>test.tsx<escape>}<end_function_call>\nSome trailing text'
+
+    const calls = parseFunctionGemmaOutput(output)
+
+    expect(calls).toHaveLength(1)
+    expect(calls[0]!.name).toBe('writeTemplate')
+  })
+
+  test('preserves newlines in escaped values', () => {
+    const content = 'line1\nline2\nline3'
+    const output = `<start_function_call>call:writeTemplate{content:<escape>${content}<escape>}<end_function_call>`
+
+    const calls = parseFunctionGemmaOutput(output)
+
+    const args = JSON.parse(calls[0]!.arguments)
+    expect(args.content).toBe(content)
+  })
+
+  test('handles empty arguments', () => {
+    const output = '<start_function_call>call:noArgs{}<end_function_call>'
+
+    const calls = parseFunctionGemmaOutput(output)
+
+    expect(calls).toHaveLength(1)
+    expect(calls[0]!.name).toBe('noArgs')
+    expect(JSON.parse(calls[0]!.arguments)).toEqual({})
+  })
+
+  test('handles JSON object values with braces', () => {
+    const jsonValue = { type: 'object', nested: { key: 'value' } }
+    const output = `<start_function_call>call:test{config:<escape>${JSON.stringify(jsonValue)}<escape>}<end_function_call>`
+
+    const calls = parseFunctionGemmaOutput(output)
+
+    expect(calls).toHaveLength(1)
+    const args = JSON.parse(calls[0]!.arguments)
+    expect(args.config).toEqual(jsonValue)
+  })
+
+  test('roundtrip: format then parse recovers original calls', () => {
+    // This tests that the format/parse are true inverses
+    const originalCalls: FunctionCall[] = [
+      {
+        name: 'writeTemplate',
+        arguments: JSON.stringify({
+          path: 'src/button.tsx',
+          content: 'export const Button = () => <button className="btn">Click</button>',
+        }),
+      },
+      {
+        name: 'writeStyles',
+        arguments: JSON.stringify({
+          path: 'src/button.css.ts',
+          content: 'export const styles = createStyles({ btn: { color: "blue" } })',
+        }),
+      },
+    ]
+
+    // We need to access the internal formatFunctionCalls, so test via trajectory generation
+    const trace: ExecutionTrace = {
+      intent: 'Test roundtrip',
+      toolSchemas: [],
+      functionCalls: originalCalls,
+      storyResult: {
+        passed: true,
+        totalAssertions: 1,
+        passedAssertions: 1,
+        a11yPassed: true,
+        errors: [],
+      },
+    }
+
+    const trajectory = generateTrajectoryFromTrace(trace)
+    const assistantContent = trajectory.messages[2]!.content
+
+    // Parse the formatted output back
+    const parsedCalls = parseFunctionGemmaOutput(assistantContent)
+
+    expect(parsedCalls).toHaveLength(2)
+    expect(parsedCalls[0]!.name).toBe('writeTemplate')
+    expect(parsedCalls[1]!.name).toBe('writeStyles')
+
+    // Verify the parsed arguments match the originals
+    expect(JSON.parse(parsedCalls[0]!.arguments)).toEqual(JSON.parse(originalCalls[0]!.arguments))
+    expect(JSON.parse(parsedCalls[1]!.arguments)).toEqual(JSON.parse(originalCalls[1]!.arguments))
   })
 })

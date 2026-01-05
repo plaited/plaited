@@ -31,7 +31,7 @@ const createStoryExport = <T extends FunctionTemplate>(
   return {
     template,
     args,
-    description: rest.description,
+    intent: rest.intent,
     parameters: rest.parameters,
     type: STORY_TYPES.snapshot,
     fixture,

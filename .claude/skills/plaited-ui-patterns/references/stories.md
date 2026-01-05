@@ -17,7 +17,7 @@ const Button: FT<{ variant?: string }> = ({ variant, children }) => (
 export const primaryButton = story({
   template: Button,
   args: { variant: 'primary', children: 'Click Me' },
-  description: 'Primary button with variant styling',
+  intent: 'Primary button with variant styling',
 })
 ```
 
@@ -59,22 +59,25 @@ export const example = story({ ... })
 
 ### Core Story Properties
 
-#### `description` (Required)
+#### `intent` (Required)
 
-Clear description of what the story demonstrates or tests:
+Natural language description of what the story demonstrates or tests. This field serves dual purposes:
+1. **Test documentation** - Describes the scenario being tested
+2. **Training data** - Provides intent for world agent training (see `world-agent` skill)
 
 ```typescript
 export const basicCard = story({
-  description: 'Card template with title and content',
+  intent: 'Create a card template with title and content',
   template: Card,
   args: { title: 'Welcome' }
 })
 ```
 
 **Best Practices**:
-- Match the template's intent
+- Use action-oriented language: "Create a...", "Build a...", "Add a..."
 - Be specific about variant or state
 - Describe expected behavior for interaction tests
+- Write as a user request, not a test label
 
 #### `template` (Optional)
 
@@ -83,14 +86,14 @@ The FunctionTemplate to render. If omitted, provide JSX directly:
 ```typescript
 // With template reference
 export const withTemplate = story({
-  description: 'Button with template',
+  intent: 'Button with template',
   template: Button,
   args: { children: 'Click' }
 })
 
 // Without template (inline JSX)
 export const withoutTemplate = story({
-  description: 'Inline button',
+  intent: 'Inline button',
   template: () => <button>Click</button>
 })
 ```
@@ -108,7 +111,7 @@ const Card: FT<{ title: string; subtitle?: string }> = ({ title, subtitle }) => 
 )
 
 export const cardWithSubtitle = story({
-  description: 'Card with optional subtitle',
+  intent: 'Card with optional subtitle',
   template: Card,
   args: {
     title: 'Main Title',
@@ -123,7 +126,7 @@ Function for interaction testing. When provided, the story becomes an interactio
 
 ```typescript
 export const clickableButton = story({
-  description: 'Button click increments counter',
+  intent: 'Button click increments counter',
   template: CounterButton,
   play: async ({ findByTestId, fireEvent, assert }) => {
     const button = await findByTestId('counter-btn')
@@ -154,7 +157,7 @@ Test configuration for headers, styles, and timeout:
 
 ```typescript
 export const customTimeout = story({
-  description: 'Story with custom timeout',
+  intent: 'Story with custom timeout',
   template: SlowElement,
   parameters: {
     timeout: 10000, // 10 seconds (default is 5000)
@@ -174,13 +177,13 @@ Use `.only()` and `.skip()` to control test execution:
 ```typescript
 // Run ONLY this story (skip all others)
 export const focusedTest = story.only({
-  description: 'Focused test - only this runs',
+  intent: 'Focused test - only this runs',
   template: MyElement
 })
 
 // Skip this story
 export const skippedTest = story.skip({
-  description: 'Skipped test - will not run',
+  intent: 'Skipped test - will not run',
   template: BrokenElement
 })
 ```
@@ -275,13 +278,13 @@ const Button: FT<{ variant?: string }> = ({ variant, children, ...attrs }) => (
 )
 
 export const primaryButton = story({
-  description: 'Primary button with blue background',
+  intent: 'Primary button with blue background',
   template: Button,
   args: { variant: 'primary', children: 'Click Me' }
 })
 
 export const disabledButton = story({
-  description: 'Disabled button with gray background',
+  intent: 'Disabled button with gray background',
   template: () => <Button disabled>Disabled</Button>
 })
 ```
@@ -323,7 +326,7 @@ const Card: FT<{ title: string }> = ({ title, children }) => (
 )
 
 export const basicCard = story({
-  description: 'Card with title and content',
+  intent: 'Card with title and content',
   template: Card,
   args: {
     title: 'Welcome',
@@ -361,7 +364,7 @@ const Grid: FT = ({ children }) => (
 )
 
 export const responsiveGrid = story({
-  description: 'Responsive grid with 1/2/3 column breakpoints',
+  intent: 'Responsive grid with 1/2/3 column breakpoints',
   template: () => (
     <Grid>
       <div>Item 1</div>
@@ -494,17 +497,17 @@ import { story } from 'plaited/testing'
 import { ToggleInput } from './toggle-input.ts'
 
 export const uncheckedToggle = story({
-  description: 'Toggle input in unchecked state',
+  intent: 'Toggle input in unchecked state',
   template: () => <ToggleInput />
 })
 
 export const checkedToggle = story({
-  description: 'Toggle input in checked state',
+  intent: 'Toggle input in checked state',
   template: () => <ToggleInput checked />
 })
 
 export const toggleInteraction = story({
-  description: 'Toggle input click changes state',
+  intent: 'Toggle input click changes state',
   template: () => <ToggleInput data-testid="toggle" />,
   play: async ({ findByTestId, fireEvent, assert }) => {
     const toggle = await findByTestId('toggle')
@@ -585,7 +588,7 @@ const CrossIslandDemo: FT = () => (
 )
 
 export const crossIslandCommunication = story({
-  description: 'Button click in one island triggers update in another',
+  intent: 'Button click in one island triggers update in another',
   template: CrossIslandDemo,
   play: async ({ findByAttribute, fireEvent, assert }) => {
     const button = await findByAttribute('p-target', 'button')
@@ -619,7 +622,7 @@ import { story } from 'plaited/testing'
 import { Button } from './button.ts'
 
 export const accessibleButton = story({
-  description: 'Button passes accessibility checks',
+  intent: 'Button passes accessibility checks',
   template: () => <Button>Accessible Button</Button>,
   play: async ({ accessibilityCheck }) => {
     // Check for any WCAG violations
@@ -710,7 +713,7 @@ Agents using Chrome DevTools MCP can inspect behavioral program state:
 
 ```typescript
 export const debuggableElement = story({
-  description: 'Element with inspector for agent debugging',
+  intent: 'Element with inspector for agent debugging',
   template: () => <MyBehavioralElement data-testid="inspectable" />,
   play: async ({ findByTestId }) => {
     const element = await findByTestId('inspectable')

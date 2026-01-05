@@ -22,29 +22,31 @@ Connect InferenceClient ◄─ Deploy Endpoint ◄─ push_to_hub()
 
 ## Step 1: Generate Trajectories (Local)
 
-Run the trajectory generation script on your existing stories:
+Run the trajectory generation script on your training stories:
 
 ```bash
-# Generate trajectories from story tests
+# Generate trajectories from training stories
 bun .claude/skills/world-agent/scripts/generate-trajectories.ts \
-  src/templates \
-  --output trajectories.jsonl
+  training/stories \
+  --output training/trajectories.jsonl
 
 # Filter to high-quality examples (reward >= 0.7)
 bun .claude/skills/world-agent/scripts/compute-rewards.ts \
-  trajectories.jsonl \
+  training/trajectories.jsonl \
   --min-reward 0.7 \
-  --output training-data.jsonl
+  --output training/trajectories.jsonl
 ```
 
 ### Trajectory Format
+
+Trajectories use **FunctionGemma format** for function calls (not JSON):
 
 ```json
 {
   "messages": [
     {"role": "system", "content": "You are a UI generation agent..."},
     {"role": "user", "content": "Create a primary button"},
-    {"role": "assistant", "content": "[{\"function\": \"writeTemplate\", ...}]"}
+    {"role": "assistant", "content": "<start_function_call>call:writeTemplate{path:<escape>button.tsx<escape>,content:<escape>export const Button = ...<escape>}<end_function_call>"}
   ],
   "reward": 0.85,
   "storyResult": {
@@ -54,6 +56,14 @@ bun .claude/skills/world-agent/scripts/compute-rewards.ts \
     "passedAssertions": 5
   }
 }
+```
+
+**Parsing model responses:**
+```typescript
+import { parseFunctionGemmaOutput } from 'plaited/agent'
+
+const calls = parseFunctionGemmaOutput(response.content)
+// Returns: [{ name: 'writeTemplate', arguments: '{"path":"button.tsx",...}' }]
 ```
 
 ## Step 2: Colab Notebook Setup
@@ -79,8 +89,9 @@ login(token="hf_your_token_here")  # Or use Colab secrets
 ```python
 from unsloth import FastLanguageModel
 
+# FunctionGemma 270M - optimized for function calling
 model, tokenizer = FastLanguageModel.from_pretrained(
-    model_name="google/gemma-2b-it",  # Or gemma-function-calling when available
+    model_name="google/functiongemma-270m-it",
     max_seq_length=2048,
     dtype=None,  # Auto-detect
     load_in_4bit=True,  # Use 4-bit quantization for memory efficiency
@@ -105,8 +116,8 @@ model = FastLanguageModel.get_peft_model(
 ```python
 from datasets import load_dataset
 
-# Upload your trajectories.jsonl to Colab or load from HuggingFace
-dataset = load_dataset("json", data_files="training-data.jsonl", split="train")
+# Upload training/trajectories.jsonl to Colab or load from HuggingFace
+dataset = load_dataset("json", data_files="trajectories.jsonl", split="train")
 
 def format_for_training(example):
     """Format trajectory for GRPO training."""

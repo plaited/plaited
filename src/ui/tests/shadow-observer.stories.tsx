@@ -3,7 +3,7 @@ import { story } from 'plaited/testing'
 import { MutationHost } from './fixtures/shadow-observer.tsx'
 
 export const shadowMutationBinding = story<typeof MutationHost>({
-  description: `This story is used to validate that the shadow dom mutation observer
+  intent: `This story is used to validate that the shadow dom mutation observer
   of Behavioral elements created by bElement function properly binds events declared with the
   p-trigger attribute on elements in it's shadow dom.`,
   template: MutationHost,

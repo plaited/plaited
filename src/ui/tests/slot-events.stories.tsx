@@ -35,7 +35,7 @@ const SlotContainer = createSlotContainer(NestedSlotHost, () => ({
 const SlotEventsFixture = createSlotEventsFixture(SlotContainer)
 
 export const slotEventDelegation = story<typeof SlotEventsFixture>({
-  description: `This story is used to validate that p-trigger attribute on slot elements in a
+  intent: `This story is used to validate that p-trigger attribute on slot elements in a
   Behavioral elements shadow DOM only allow event triggering on named and default slots in
   it's shadow dom but not on pass through slots.`,
   template: SlotEventsFixture,

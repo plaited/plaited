@@ -3,7 +3,7 @@ import { story } from 'plaited/testing'
 import { AttributeObserver } from './fixtures/attribute-observer.tsx'
 
 export const attributeSync = story({
-  description: `Example of how to use useAttributesObserver to observe attributes changes and trigger
+  intent: `Example of how to use useAttributesObserver to observe attributes changes and trigger
   events in a Behavioral elements. This story is used to validate that when a slotted element such as input
   has a change event `,
   template: () => (

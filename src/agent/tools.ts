@@ -16,26 +16,7 @@ import type { FunctionCall, ToolHandler, ToolRegistry, ToolResult, ToolSchema } 
  * The schema is provided to the model for function calling.
  * Execution parses the JSON arguments and invokes the handler.
  *
- * @example
- * ```typescript
- * const registry = createToolRegistry()
- *
- * registry.register('writeTemplate', async (args) => {
- *   await Bun.write(args.path, args.content)
- *   return { success: true }
- * }, {
- *   name: 'writeTemplate',
- *   description: 'Write a template file',
- *   parameters: {
- *     type: 'object',
- *     properties: {
- *       path: { type: 'string', description: 'File path' },
- *       content: { type: 'string', description: 'Template content' }
- *     },
- *     required: ['path', 'content']
- *   }
- * })
- * ```
+ * See `src/agent/tests/tools.spec.ts` for usage patterns.
  */
 export const createToolRegistry = (): ToolRegistry => {
   const handlers = new Map<string, ToolHandler>()
@@ -44,7 +25,7 @@ export const createToolRegistry = (): ToolRegistry => {
   return {
     register(name, handler, schema) {
       if (handlers.has(name)) {
-        console.warn(`Tool "${name}" already registered, skipping`)
+        // Skip duplicate registrations silently - this is expected behavior
         return
       }
       handlers.set(name, handler)

@@ -4,7 +4,7 @@ import type { BehavioralElement } from 'plaited/ui'
 import { DynamicStyleHost, styles } from './fixtures/dynamic-styles.tsx'
 
 export const dynamicStyles = story({
-  description: `This story is used to validate that when rendering/inserting new JSX with styles
+  intent: `This story is used to validate that when rendering/inserting new JSX with styles
   into the Behavioral element shadow dom those styles sheets are applied to the constructed styles
   and do not repeat`,
   template: () => <DynamicStyleHost data-testid='element' />,

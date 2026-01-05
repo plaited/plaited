@@ -4,7 +4,7 @@ import type { BehavioralElement } from 'plaited/ui'
 import { QueryFixture } from './fixtures/query-bindings.tsx'
 
 export const beforebegin = story({
-  description: `This story is used to validate that insert
+  intent: `This story is used to validate that insert
   helper on the Behavioral element's QuerySelector, $. When passed the beforebegin as the first argument, it
   inserts content passed as the subsequent arguments before target element.`,
   template: QueryFixture,
@@ -35,7 +35,7 @@ export const beforebegin = story({
   },
 })
 export const afterbegin = story({
-  description: `This story is used to validate that insert
+  intent: `This story is used to validate that insert
   helper on the Behavioral element's QuerySelector, $. When passed the afterbegin as the first argument, it
   prepends content passed as the subsequent arguments to the target element.`,
   template: QueryFixture,
@@ -75,7 +75,7 @@ export const afterbegin = story({
   },
 })
 export const beforeend = story({
-  description: `This story is used to validate that insert
+  intent: `This story is used to validate that insert
   helper on the Behavioral element's QuerySelector, $. When passed the beforeend as the first argument, it
   appends content passed as the subsequent arguments to the target element.`,
   template: QueryFixture,
@@ -115,7 +115,7 @@ export const beforeend = story({
   },
 })
 export const afterend = story({
-  description: `This story is used to validate that insert
+  intent: `This story is used to validate that insert
   helper on the Behavioral element's QuerySelector, $. When passed the afterend as the first argument, it
   inserts content passed as the subsequent arguments after the target element.`,
   template: QueryFixture,
@@ -146,7 +146,7 @@ export const afterend = story({
   },
 })
 export const render = story({
-  description: `This story is used to validate that render helper on
+  intent: `This story is used to validate that render helper on
   the Behavioral element's QuerySelector, $. When invoked it replaces all the children
   of the target element with the content passed to it as arguments.`,
   template: QueryFixture,
@@ -169,7 +169,7 @@ export const render = story({
   },
 })
 export const replace = story({
-  description: `This story is used to validate that replace
+  intent: `This story is used to validate that replace
   helper on the Behavioral element's QuerySelector, $. When invoked it replaces the
   target element with content passed to it as arguments.`,
   template: QueryFixture,
@@ -192,7 +192,7 @@ export const replace = story({
   },
 })
 export const getAttribute = story({
-  description: `This story is used to validate that attr
+  intent: `This story is used to validate that attr
   helper on the Behavioral element's QuerySelector, $. When invoked with only a attribute name it returns
   the attribute value if it the attribute exist on the target element.`,
   template: QueryFixture,
@@ -215,7 +215,7 @@ export const getAttribute = story({
   },
 })
 export const setAttribute = story({
-  description: `This story is used to validate that attr
+  intent: `This story is used to validate that attr
   helper on the Behavioral element's QuerySelector, $. When invoked with an attribute name and a value, it sets the attribute on the target element.`,
   template: QueryFixture,
   play: async ({ assert, findByAttribute }) => {
@@ -237,7 +237,7 @@ export const setAttribute = story({
   },
 })
 export const setStyle = story({
-  description: `This story is used to validate that attr
+  intent: `This story is used to validate that attr
   helper on the Behavioral element's QuerySelector, $. When invoked with an attribute name and a value, it sets the attribute on the target element.`,
   template: QueryFixture,
   play: async ({ assert, findByAttribute }) => {
@@ -266,7 +266,7 @@ export const setStyle = story({
   },
 })
 export const removeAttributes = story({
-  description: `This story is used to validate that attr
+  intent: `This story is used to validate that attr
   helper on the Behavioral element's QuerySelector, $. When invoked with the attribute name and null
   it removes the the attribute from the element.`,
   template: QueryFixture,
@@ -292,7 +292,7 @@ export const removeAttributes = story({
 })
 
 export const multiSetAttributes = story({
-  description: `This story is used to validate that attr
+  intent: `This story is used to validate that attr
   helper on the Behavioral element's QuerySelector, $. When invoked with an object of key value pairs
   it resets or adds the attributes to the element if the value is not null for a given key. If the value is
   null it deletes the attribute from the element.`,

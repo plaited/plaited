@@ -5,21 +5,21 @@ import { TicTacToeBoard } from './tic-tac-toe-board.tsx'
 import { XMarker } from './x-marker.tsx'
 
 export const BoardMarkerRender = story<typeof BoardMarker>({
-  description: '',
+  intent: '',
   template: BoardMarker,
 })
 
 export const TicTacToeBoardRender = story<typeof TicTacToeBoard>({
-  description: '',
+  intent: '',
   template: TicTacToeBoard,
 })
 
 export const OMarkerRender = story<typeof OMarker>({
-  description: '',
+  intent: '',
   template: OMarker,
 })
 
 export const XMarkerRender = story<typeof XMarker>({
-  description: '',
+  intent: '',
   template: XMarker,
 })

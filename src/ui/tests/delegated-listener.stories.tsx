@@ -2,7 +2,7 @@ import { story } from 'plaited/testing'
 import { DelegatedListener, delegates } from '../delegated-listener.ts'
 
 export const delegatedListenerBinding = story({
-  description: `Validates that the delegated event listener function ensures bound events are
+  intent: `Validates that the delegated event listener function ensures bound events are
   propeerly delegated and only called once event if a listener is attached twice`,
   template: () => (
     <button

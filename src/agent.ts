@@ -30,6 +30,22 @@ export {
 // A2A Protocol - Server
 export { createAgentCard, useA2AServer } from './agent/a2a-server.ts'
 export type * from './agent/agent.types.ts'
+// Code Sandbox (Phase 7)
+export {
+  createCodeExecutor,
+  createCodeValidator,
+  type ExecutionOptions,
+  type ExecutionResult,
+  executeSandboxed,
+  hasUnsafePatterns,
+  initializeSandbox,
+  resetSandbox,
+  type SandboxConfig,
+  SandboxManager,
+  type SandboxRuntimeConfig,
+  type ValidationResult,
+  validateCode,
+} from './agent/code-sandbox.ts'
 // Reward computation
 export {
   computeReward,
@@ -56,6 +72,7 @@ export {
   generateTrajectories,
   generateTrajectoriesFromStories,
   generateTrajectoryFromTrace,
+  parseFunctionGemmaOutput,
   type StoryInfo,
   type ToolExecution,
 } from './agent/generate-trajectories.ts'
@@ -63,9 +80,37 @@ export {
 export {
   createPatternRegistry,
   type Pattern,
+  type PatternIndexConfig,
   type PatternMatch,
   type PatternRegistry,
 } from './agent/pattern-registry.ts'
+// Skill Scripts
+export {
+  type DiscoverOptions,
+  discoverSkillScripts,
+  discoverSkills,
+  type ExecuteOptions,
+  formatSkillsContext,
+  loadSkillScripts,
+  registerSkillScripts,
+  type SkillMetadata,
+  type SkillScript,
+  scriptsToToolSchemas,
+} from './agent/skill-scripts.ts'
+// Tool Discovery (Phase 8)
+export {
+  createToolDiscovery,
+  extractKeywords,
+  filterToolsByIntent,
+  type IndexedTool,
+  type SearchOptions,
+  schemaToIndexedTool,
+  type ToolDiscovery,
+  type ToolDiscoveryConfig,
+  type ToolDiscoveryStats,
+  type ToolMatch,
+  type ToolSource,
+} from './agent/tool-discovery.ts'
 // Tool infrastructure
 export { createCoreTools, createToolRegistry } from './agent/tools.ts'
 // Agent factory

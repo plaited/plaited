@@ -2,7 +2,7 @@ import { story } from 'plaited/testing'
 import { ToggleInput } from './toggle-input.tsx'
 
 export const checkbox = story<typeof ToggleInput>({
-  description: 'Default checkbox state',
+  intent: 'Default checkbox state',
   template: ToggleInput,
   async play() {
     const checkbox = document.querySelector(ToggleInput.tag)
@@ -11,7 +11,7 @@ export const checkbox = story<typeof ToggleInput>({
 })
 
 export const checked = story<typeof ToggleInput>({
-  description: 'Checked state',
+  intent: 'Checked state',
   template: ToggleInput,
   args: {
     checked: true,
@@ -19,7 +19,7 @@ export const checked = story<typeof ToggleInput>({
 })
 
 export const disabled = story<typeof ToggleInput>({
-  description: 'Disabled state',
+  intent: 'Disabled state',
   template: ToggleInput,
   args: {
     disabled: true,
@@ -27,7 +27,7 @@ export const disabled = story<typeof ToggleInput>({
 })
 
 export const disabledAndChecked = story<typeof ToggleInput>({
-  description: 'Disabled and checked state',
+  intent: 'Disabled and checked state',
   template: ToggleInput,
   args: {
     disabled: true,

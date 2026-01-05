@@ -103,17 +103,66 @@ ${toolDescriptions}`
 }
 
 /**
- * Formats function calls as assistant message content.
+ * Escapes a value for FunctionGemma format.
+ */
+const escapeGemmaValue = (value: unknown): string => {
+  const str = typeof value === 'string' ? value : JSON.stringify(value)
+  return `<escape>${str}<escape>`
+}
+
+/**
+ * Formats function calls in FunctionGemma format.
+ * Uses the model's native format: <start_function_call>call:name{args}<end_function_call>
  */
 const formatFunctionCalls = (calls: FunctionCall[]): string => {
-  return JSON.stringify(
-    calls.map((c) => ({
-      function: c.name,
-      arguments: JSON.parse(c.arguments),
-    })),
-    null,
-    2,
-  )
+  return calls
+    .map((c) => {
+      const args = JSON.parse(c.arguments) as Record<string, unknown>
+      const argPairs = Object.entries(args)
+        .map(([key, value]) => `${key}:${escapeGemmaValue(value)}`)
+        .join(',')
+      return `<start_function_call>call:${c.name}{${argPairs}}<end_function_call>`
+    })
+    .join('')
+}
+
+/**
+ * Parses FunctionGemma format back to FunctionCall array.
+ * Inverse of formatFunctionCalls for model response parsing.
+ */
+export const parseFunctionGemmaOutput = (output: string): FunctionCall[] => {
+  const calls: FunctionCall[] = []
+  // Match function calls - use non-greedy match up to end marker
+  const regex = /<start_function_call>call:(\w+)\{([\s\S]*?)\}<end_function_call>/g
+
+  for (const match of output.matchAll(regex)) {
+    const name = match[1]!
+    const argsStr = match[2]!
+
+    // Parse arguments from key:<escape>value<escape> format
+    // Use [\s\S]*? to match any character including newlines
+    const args: Record<string, unknown> = {}
+    const argRegex = /(\w+):<escape>([\s\S]*?)<escape>/g
+
+    for (const argMatch of argsStr.matchAll(argRegex)) {
+      const key = argMatch[1]!
+      let value: unknown = argMatch[2]!
+      // Try to parse JSON values (objects, arrays, numbers, booleans)
+      try {
+        value = JSON.parse(value as string)
+      } catch {
+        // Keep as string if not valid JSON
+      }
+      args[key] = value
+    }
+
+    calls.push({
+      name,
+      arguments: JSON.stringify(args),
+    })
+  }
+
+  return calls
 }
 
 /**
@@ -140,23 +189,13 @@ export const generateTrajectoryFromTrace = (trace: ExecutionTrace): Trajectory =
     { role: 'user', content: trace.intent },
   ]
 
-  // Multi-turn format with tool results
+  // Multi-turn format with tool results (using FunctionGemma format)
   if (trace.toolExecutions && trace.toolExecutions.length > 0) {
     for (const execution of trace.toolExecutions) {
-      // Assistant's tool call
+      // Assistant's tool call in FunctionGemma format
       messages.push({
         role: 'assistant',
-        content: JSON.stringify({
-          tool_calls: [
-            {
-              id: execution.id,
-              function: {
-                name: execution.call.name,
-                arguments: execution.call.arguments,
-              },
-            },
-          ],
-        }),
+        content: formatFunctionCalls([execution.call]),
       })
 
       // Tool result

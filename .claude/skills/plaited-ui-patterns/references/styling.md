@@ -416,7 +416,7 @@ const Button: FT<{ variant?: string }> = ({ variant, children, ...attrs }) => (
 )
 
 export const primaryButton = story({
-  description: 'Button with primary variant styling',
+  intent: 'Button with primary variant styling',
   template: () => <Button variant="primary">Click Me</Button>,
 })
 ```
@@ -507,7 +507,7 @@ import { story } from 'plaited/testing'
 import { ToggleInput } from './toggle-input.ts'
 
 export const basicToggle = story({
-  description: 'Toggle input with form association',
+  intent: 'Toggle input with form association',
   template: () => <ToggleInput checked />,
   // ... play function
 })
@@ -565,7 +565,7 @@ const Button: FT = ({ children }) => (
 )
 
 export const basicButton = story({
-  description: 'Button with hover and disabled states',
+  intent: 'Button with hover and disabled states',
   template: () => <Button>Click Me</Button>,
 })
 ```
@@ -1015,7 +1015,7 @@ const Card: FT = ({ children }) => (
 )
 
 export const basicCard = story({
-  description: 'Card with basic styling',
+  intent: 'Card with basic styling',
   template: () => <Card>Card content</Card>,
 })
 ```
@@ -1052,7 +1052,7 @@ const Link: FT<{ href: string }> = ({ href, children }) => (
 )
 
 export const basicLink = story({
-  description: 'Basic link with nested selector styles',
+  intent: 'Basic link with nested selector styles',
   template: () => <Link href="#/">Click me</Link>,
 })
 ```
@@ -1087,7 +1087,7 @@ const Grid: FT = ({ children }) => (
 )
 
 export const responsiveGrid = story({
-  description: 'Responsive grid with media query breakpoints',
+  intent: 'Responsive grid with media query breakpoints',
   template: () => (
     <Grid>
       <div>Item 1</div>
@@ -1146,7 +1146,7 @@ const Button: FT = ({ children }) => (
 )
 
 export const themedButton = story({
-  description: 'Button using design tokens for theming',
+  intent: 'Button using design tokens for theming',
   template: () => <Button>Click Me</Button>,
 })
 ```

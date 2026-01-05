@@ -149,6 +149,10 @@ export type AgentEventTypes = {
   toolCall: { calls: FunctionCall[] }
   /** Result of tool execution */
   toolResult: { name: string; result: ToolResult }
+  /** Code execution request (Phase 7: Code Sandbox) */
+  executeCode: { code: string; context?: Record<string, unknown> }
+  /** Code execution result */
+  codeResult: { success: boolean; result?: unknown; error?: string }
   /** Story execution completed */
   storyResult: StoryResult
   /** Validation request */
@@ -163,6 +167,30 @@ export type AgentEventTypes = {
 export type AgentEvents = EventDetails & AgentEventTypes
 
 /**
+ * Logger interface for agent operations.
+ */
+export type AgentLogger = {
+  /** Log informational messages */
+  info: (message: string) => void
+  /** Log warning messages */
+  warn: (message: string) => void
+  /** Log error messages */
+  error: (message: string) => void
+}
+
+/**
+ * Options for skill script discovery and execution.
+ */
+export type SkillOptions = {
+  /** Root directory to scan for skills (default: .claude/skills) */
+  skillsRoot?: string
+  /** Script file extensions to include */
+  extensions?: string[]
+  /** Timeout in milliseconds for script execution (default: 30000) */
+  timeout?: number
+}
+
+/**
  * Context passed to the world agent bProgram.
  */
 export type AgentContext = {
@@ -175,6 +203,12 @@ export type AgentContext = {
       tools?: ToolSchema[]
     }) => Promise<{ tool_calls?: FunctionCall[] }>
   }
+  /** Optional logger for agent operations */
+  logger?: AgentLogger
+  /** Optional skill discovery configuration */
+  skills?: SkillOptions
+  /** Optional system prompt to prepend to model calls */
+  systemPrompt?: string
 }
 
 /**

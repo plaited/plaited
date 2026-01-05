@@ -8,11 +8,25 @@
  * from class-based agents (like HuggingFace tiny-agents) is that
  * bThreads act as runtime constraints that block invalid generations
  * BEFORE execution, not after.
+ *
+ * **Skill Script Integration:**
+ * When `skills` option is provided, the agent discovers scripts in
+ * skill directories and registers them as callable tools. This enables
+ * FunctionGemma to invoke user-defined skills via the standard tool
+ * calling mechanism.
  */
 
 import { useBehavioral } from '../main/use-behavioral.ts'
-import type { AgentContext, AgentEvents, AgentHandlers } from './agent.types.ts'
+import type { AgentContext, AgentEvents, AgentHandlers, AgentLogger, TrajectoryMessage } from './agent.types.ts'
 import { registerBaseConstraints } from './constraints.ts'
+import { discoverSkillScripts, discoverSkills, formatSkillsContext, loadSkillScripts } from './skill-scripts.ts'
+
+/** Default no-op logger */
+const noopLogger: AgentLogger = {
+  info: () => {},
+  warn: () => {},
+  error: () => {},
+}
 
 /**
  * Creates a world agent behavioral program factory.
@@ -33,17 +47,7 @@ import { registerBaseConstraints } from './constraints.ts'
  * 4. Constraint bThreads may block invalid results
  * 5. `storyResult` provides validation feedback
  *
- * @example
- * ```typescript
- * const initAgent = useWorldAgent()
- *
- * const trigger = await initAgent({
- *   tools: createCoreTools({ outputDir: './generated' }),
- *   model: new InferenceClient(process.env.HF_TOKEN)
- * })
- *
- * trigger({ type: 'generate', detail: { intent: 'Create a button' } })
- * ```
+ * See `src/agent/tests/use-world-agent.spec.ts` for usage patterns.
  */
 export const useWorldAgent = useBehavioral<AgentEvents, AgentContext>({
   /**
@@ -56,9 +60,32 @@ export const useWorldAgent = useBehavioral<AgentEvents, AgentContext>({
    * The behavioral program that coordinates agent execution.
    * Returns event handlers that respond to selected events.
    */
-  async bProgram({ trigger, bThreads, bSync, bThread, tools, model }) {
+  async bProgram({ trigger, bThreads, bSync, bThread, tools, model, logger = noopLogger, skills, systemPrompt }) {
     // Register base constraint bThreads
     registerBaseConstraints(bThreads, bSync, bThread)
+
+    // Discover and register skill scripts if configured
+    let skillContext = ''
+    if (skills) {
+      const { skillsRoot = '.claude/skills', extensions, timeout } = skills
+      const discoveredSkills = await discoverSkills(skillsRoot)
+      const discoveredScripts = await discoverSkillScripts({ skillsRoot, extensions })
+
+      // Register scripts as tools
+      await loadSkillScripts(tools, { skillsRoot, extensions, timeout })
+
+      // Generate context for system prompt
+      skillContext = formatSkillsContext(discoveredScripts, discoveredSkills)
+      logger.info(`Discovered ${discoveredScripts.length} skill scripts from ${discoveredSkills.length} skills`)
+    }
+
+    // Build system prompt with skill context
+    const buildSystemPrompt = (): string => {
+      const parts: string[] = []
+      if (systemPrompt) parts.push(systemPrompt)
+      if (skillContext) parts.push(skillContext)
+      return parts.join('\n\n') || 'You are a UI generation agent. Generate templates using the available tools.'
+    }
 
     // Return event handlers
     const handlers: AgentHandlers = {
@@ -68,9 +95,15 @@ export const useWorldAgent = useBehavioral<AgentEvents, AgentContext>({
        */
       async generate({ intent }) {
         try {
+          // Build messages with system prompt
+          const messages: TrajectoryMessage[] = [
+            { role: 'system', content: buildSystemPrompt() },
+            { role: 'user', content: intent },
+          ]
+
           // Call model with tools
           const response = await model.chatCompletion({
-            messages: [{ role: 'user', content: intent }],
+            messages,
             tools: tools.schemas,
           })
 
@@ -82,7 +115,7 @@ export const useWorldAgent = useBehavioral<AgentEvents, AgentContext>({
             })
           }
         } catch (error) {
-          console.error('Generation failed:', error)
+          logger.error(`Generation failed: ${error instanceof Error ? error.message : String(error)}`)
         }
       },
 
@@ -106,7 +139,7 @@ export const useWorldAgent = useBehavioral<AgentEvents, AgentContext>({
        */
       toolResult({ name, result }) {
         if (!result.success) {
-          console.warn(`Tool ${name} failed:`, result.error)
+          logger.warn(`Tool ${name} failed: ${result.error}`)
         }
       },
 
@@ -116,10 +149,10 @@ export const useWorldAgent = useBehavioral<AgentEvents, AgentContext>({
        */
       storyResult(result) {
         if (!result.passed) {
-          console.warn('Story failed:', result.errors)
+          logger.warn(`Story failed: ${result.errors.join(', ')}`)
         }
         if (!result.a11yPassed) {
-          console.warn('Accessibility check failed')
+          logger.warn('Accessibility check failed')
         }
       },
 
@@ -140,7 +173,26 @@ export const useWorldAgent = useBehavioral<AgentEvents, AgentContext>({
        */
       validated({ valid, errors }) {
         if (!valid) {
-          console.warn('Validation failed:', errors)
+          logger.warn(`Validation failed: ${errors.join(', ')}`)
+        }
+      },
+
+      /**
+       * Handle code execution requests.
+       * Executes sandboxed code with tool access.
+       */
+      executeCode({ code }) {
+        // Code execution is handled by the sandbox module
+        // This handler logs the event for trajectory generation
+        logger.info(`Executing code: ${code.slice(0, 100)}${code.length > 100 ? '...' : ''}`)
+      },
+
+      /**
+       * Handle code execution results.
+       */
+      codeResult({ success, error }) {
+        if (!success) {
+          logger.warn(`Code execution failed: ${error}`)
         }
       },
     }

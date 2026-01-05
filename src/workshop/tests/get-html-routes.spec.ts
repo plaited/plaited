@@ -61,7 +61,7 @@ test('getHTMLRoute: includes fixture load script', async () => {
 
   // Should contain fixture load script that triggers run event
   expect(content).toContain('customElements.whenDefined')
-  expect(content).toContain("type: 'init'")
+  expect(content).toContain("type: 'run'")
 })
 
 test('getHTMLRoute: default body styles include height and margin', async () => {

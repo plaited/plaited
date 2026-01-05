@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+
 /**
  * Generate training trajectories from story files.
  *
@@ -16,12 +17,14 @@
  *   bun scripts/generate-trajectories.ts src/ui src/features -o data.jsonl
  */
 
+import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 import {
   computeTrajectoryStats,
   type ExecutionTrace,
   formatTrajectoriesJsonl,
-  generateTrajectoriesFromStories,
+  generateTrajectoryFromTrace,
+  type Trajectory,
 } from 'plaited/agent'
 
 const { values, positionals } = parseArgs({
@@ -56,28 +59,91 @@ Examples:
 const paths = positionals
 
 /**
- * Mock story runner for demonstration.
+ * Story export with intent field.
+ *
+ * @remarks
+ * The `intent` field is now unified with Plaited's story types.
+ * It serves both as test documentation and training data.
+ */
+type StoryExport = {
+  exportName: string
+  filePath: string
+  intent: string
+}
+
+/**
+ * Extracts story exports with intents from a story file.
+ *
+ * @remarks
+ * Stories now use a unified `intent` field that serves both as
+ * test documentation and training data for the world agent.
+ */
+const extractStoryExports = async (filePath: string): Promise<StoryExport[]> => {
+  const absolutePath = resolve(process.cwd(), filePath)
+  const module = await import(absolutePath)
+  const exports: StoryExport[] = []
+
+  for (const [name, value] of Object.entries(module)) {
+    // Skip meta and non-object exports
+    if (name === 'meta' || typeof value !== 'object' || value === null) continue
+
+    const story = value as Record<string, unknown>
+
+    // Only include stories with intent field
+    if (typeof story.intent === 'string') {
+      exports.push({
+        exportName: name,
+        filePath,
+        intent: story.intent,
+      })
+    }
+  }
+
+  return exports
+}
+
+/**
+ * Generate mock execution trace for a story export.
  * In production, this would connect to the actual workshop test runner.
  */
-const mockRunStory = async (path: string): Promise<ExecutionTrace> => {
-  // This is a placeholder - in real usage, this would:
-  // 1. Run the story via workshop CLI
-  // 2. Capture the tool calls made during generation
-  // 3. Collect the story result
-
-  console.error(`[mock] Running story: ${path}`)
+const generateMockTrace = (story: StoryExport): ExecutionTrace => {
+  console.error(`[mock] Processing story: ${story.exportName} (${story.filePath})`)
 
   return {
-    intent: `Generate UI from ${path}`,
+    intent: story.intent,
     toolSchemas: [
       {
         name: 'writeTemplate',
-        description: 'Write a JSX template file',
+        description: 'Write a JSX template file with FunctionalTemplate components',
         parameters: {
           type: 'object',
           properties: {
-            path: { type: 'string' },
-            content: { type: 'string' },
+            path: { type: 'string', description: 'Output file path (e.g., src/button.tsx)' },
+            content: { type: 'string', description: 'JSX template content with imports' },
+          },
+          required: ['path', 'content'],
+        },
+      },
+      {
+        name: 'writeStyles',
+        description: 'Write a CSS-in-JS styles file using createStyles',
+        parameters: {
+          type: 'object',
+          properties: {
+            path: { type: 'string', description: 'Output file path (e.g., src/button.css.ts)' },
+            content: { type: 'string', description: 'Styles file with createStyles' },
+          },
+          required: ['path', 'content'],
+        },
+      },
+      {
+        name: 'writeStory',
+        description: 'Write a story file for testing templates with browser automation',
+        parameters: {
+          type: 'object',
+          properties: {
+            path: { type: 'string', description: 'Output file path (e.g., src/button.stories.tsx)' },
+            content: { type: 'string', description: 'Story file with story() exports' },
           },
           required: ['path', 'content'],
         },
@@ -87,8 +153,8 @@ const mockRunStory = async (path: string): Promise<ExecutionTrace> => {
       {
         name: 'writeTemplate',
         arguments: JSON.stringify({
-          path: path.replace('.stories.tsx', '.tsx'),
-          content: '// Generated template',
+          path: story.filePath.replace('.stories.tsx', '.tsx'),
+          content: `// Generated template for ${story.exportName}`,
         }),
       },
     ],
@@ -103,18 +169,35 @@ const mockRunStory = async (path: string): Promise<ExecutionTrace> => {
 }
 
 const main = async () => {
-  const storyPattern = paths.map((p) => `${p}/**/*.stories.tsx`).join(',')
+  const patterns = paths.map((p) => `${p}/**/*.stories.tsx`)
+  // Only wrap in braces for multiple patterns - single patterns don't need braces
+  const storyPattern = patterns.length > 1 ? `{${patterns.join(',')}}` : patterns[0]
 
   console.error(`Generating trajectories from: ${paths.join(', ')}`)
   console.error(`Pattern: ${storyPattern}`)
 
-  const trajectories = await generateTrajectoriesFromStories({
-    storyPattern: `{${storyPattern}}`,
-    runStory: mockRunStory,
-  })
+  const glob = new Bun.Glob(storyPattern)
+  const trajectories: Trajectory[] = []
+  let totalStories = 0
+
+  for await (const filePath of glob.scan()) {
+    try {
+      const storyExports = await extractStoryExports(filePath)
+      totalStories += storyExports.length
+
+      for (const story of storyExports) {
+        const trace = generateMockTrace(story)
+        const trajectory = generateTrajectoryFromTrace(trace)
+        trajectories.push(trajectory)
+      }
+    } catch (error) {
+      console.warn(`Failed to process ${filePath}:`, error)
+    }
+  }
 
   const stats = computeTrajectoryStats(trajectories)
-  console.error(`\nGenerated ${stats.count} trajectories`)
+  console.error(`\nFound ${totalStories} stories with intents`)
+  console.error(`Generated ${stats.count} trajectories`)
   console.error(`Mean reward: ${stats.meanReward.toFixed(3)}`)
   console.error(`Pass rate: ${(stats.passRate * 100).toFixed(1)}%`)
   console.error(`A11y pass rate: ${(stats.a11yPassRate * 100).toFixed(1)}%`)
