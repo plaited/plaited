@@ -1,4 +1,4 @@
-# Plaited
+![Plaited a Neuro-Symbolic Agentic Framework: AI-Assisted Design Systems, Generative UI Agents, Personalized Knowledge Worker Screens](assets/header.png)
 
 A behavioral programming framework for reactive systems and AI-assisted development.
 
