@@ -1,4 +1,4 @@
-![Plaited a Neuro-Symbolic Agentic Framework: AI-Assisted Design Systems, Generative UI Agents, Personalized Knowledge Worker Screens](assets/header.svg)
+![Plaited a Neuro-Symbolic Agentic Framework: AI-Assisted Design Systems, Generative UI Agents, Personalized Knowledge Worker Screens](assets/banner.svg)
 
 A behavioral programming framework for reactive systems and AI-assisted development.
 
