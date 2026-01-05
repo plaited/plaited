@@ -10,5 +10,7 @@ export * from './workshop/collect-behavioral-templates.ts'
 export * from './workshop/collect-stories.ts'
 // Story URL generation
 export * from './workshop/get-paths.ts'
+// Agent server for workshop integration
+export { useAgentServer } from './workshop/use-agent-server.ts'
 // Types
 export * from './workshop/workshop.types.ts'
