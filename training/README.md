@@ -78,7 +78,7 @@ flowchart LR
 
 ```bash
 # Generate trajectories from stories
-bun scripts/generate-trajectories.ts training/stories --output training/trajectories.jsonl
+bun .claude/skills/world-agent/scripts/generate-trajectories.ts training/stories --output training/trajectories.jsonl
 ```
 
 **Trajectory format:**
@@ -134,9 +134,9 @@ flowchart LR
 - Inline styles instead of createStyles
 - Hardcoded values instead of tokens
 
-### Phase 3: GRPO (Future)
+### Phase 3: GRPO (Future Session)
 
-Group Relative Policy Optimization for reinforcement learning from story test feedback.
+Group Relative Policy Optimization for reinforcement learning from story test feedback. Unlike SFT (learn from examples) and DPO (learn from preferences), GRPO learns by **generating multiple candidates and ranking them by actual story test results**.
 
 ```mermaid
 flowchart LR
@@ -146,6 +146,30 @@ flowchart LR
     D --> E[GRPO Update]
     E --> F[Improved Policy]
 ```
+
+**Prerequisites (complete Phases 1-2 first):**
+- Trained SFT+DPO model pushed to `plaited/plaited-world-agent-lora`
+- Workshop running with story test infrastructure
+- Reward computation working (`compute-rewards.ts`)
+
+**GRPO Implementation Steps:**
+1. Set up workshop agent server (`use-agent-server.ts`) for real-time generation
+2. Create GRPO training loop that:
+   - Takes an intent, generates N candidates (N=4-8)
+   - Runs each candidate through story tests
+   - Computes reward for each (accessibility, assertions, code quality)
+   - Updates policy using GRPO loss (group-relative ranking)
+3. Add GRPO cells to Colab notebook (or use Modal for longer training)
+4. Implement online training pipeline (generate → test → update → repeat)
+
+**Key Differences from SFT/DPO:**
+| Aspect | SFT | DPO | GRPO |
+|--------|-----|-----|------|
+| Data | Gold examples | Preference pairs | Generated candidates |
+| Feedback | Implicit (correct = good) | Binary (chosen > rejected) | Scalar reward (0-1) |
+| Learning | Imitation | Preference ranking | RL from feedback |
+
+See `.claude/skills/world-agent/references/training-workflow.md` for GRPO Colab cell templates.
 
 ## CI Integration (Planned)
 
@@ -215,9 +239,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v1
       - run: bun install
-      - run: bun scripts/generate-trajectories.ts training/stories -o training/trajectories.jsonl
-      - run: bun scripts/upload-training-data.ts
-      - run: bun scripts/trigger-training.ts
+      - run: bun .claude/skills/world-agent/scripts/generate-trajectories.ts training/stories -o training/trajectories.jsonl
+      # TODO: Add upload and trigger scripts when CI is implemented
 ```
 
 ## Running Locally
@@ -232,11 +255,10 @@ jobs:
 
 ```bash
 # Generate SFT trajectories
-bun scripts/generate-trajectories.ts training/stories --output training/trajectories.jsonl
-
-# Generate DPO preferences (after creating good/bad pairs)
-bun scripts/generate-dpo-preferences.ts training/stories --output training/dpo-preferences.jsonl
+bun .claude/skills/world-agent/scripts/generate-trajectories.ts training/stories --output training/trajectories.jsonl
 ```
+
+**Note:** DPO preference pairs are created manually as part of the training workflow. See issue #213 for guidance on creating good/bad pairs for the same intent.
 
 ### Run Training on Colab
 
@@ -252,13 +274,13 @@ After training, evaluate the model:
 
 ```bash
 # Run eval suite
-bun scripts/run-eval-suite.ts --model plaited/plaited-world-agent-lora
+bun .claude/skills/world-agent/scripts/run-eval-suite.ts --model plaited/plaited-world-agent-lora
 
 # Compare to baseline (Claude Code one-shots)
-bun scripts/compare-baseline.ts --results eval-results.json
+bun .claude/skills/world-agent/scripts/compare-baseline.ts --results eval-results.json
 
 # Generate human-readable report
-bun scripts/generate-report.ts --results eval-results.json --output report.md
+bun .claude/skills/world-agent/scripts/generate-report.ts --results eval-results.json --output report.md
 ```
 
 See `.claude/skills/world-agent/references/eval-guide.md` for metrics and interpretation.

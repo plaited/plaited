@@ -87,7 +87,7 @@ training/
 
 **Workflow:**
 1. Create stories in `training/stories/` with `intent` field
-2. Generate trajectories: `bun scripts/generate-trajectories.ts training/stories -o training/trajectories.jsonl`
+2. Generate trajectories: `bun .claude/skills/world-agent/scripts/generate-trajectories.ts training/stories -o training/trajectories.jsonl`
 3. Upload to Google Colab and run notebook
 
 See the **world-agent** skill for complete training workflow.
