@@ -35,7 +35,9 @@
     "./utils/*.tsx": "./src/utils/*.tsx",
     "./workshop": "./src/workshop.ts",
     "./workshop/*.ts": "./src/workshop/*.ts",
-    "./workshop/*.tsx": "./src/workshop/*.tsx"
+    "./workshop/*.tsx": "./src/workshop/*.tsx",
+    "./agent": "./src/agent.ts",
+    "./agent/*.ts": "./src/agent/*.ts"
   },
   "files": [
     "./.bin/**",
@@ -89,6 +91,9 @@
     "zod": {
       "optional": true
     }
+  },
+  "dependencies": {
+    "@huggingface/inference": "^4.13.5"
   },
   "peerDependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.1.76",
