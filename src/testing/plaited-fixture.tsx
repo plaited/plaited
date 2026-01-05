@@ -21,7 +21,7 @@ import {
   fireEvent,
 } from './testing.utils.ts'
 import { useInteract } from './use-interact.ts'
-import { useWebSocket } from './use-web-socket.ts'
+import { useMessenger } from './use-messenger.ts'
 
 /**
  * Story test fixture element for Plaited testing framework.
@@ -114,7 +114,7 @@ export const PlaitedFixture = bElement<{
     if (!window?.__PLAITED_RUNNER__) {
       inspector.on()
     }
-    const send = useWebSocket(trigger)
+    const send = useMessenger(trigger)
     bThreads.set({
       onRun: bThread(
         [

@@ -6,7 +6,7 @@
 import { availableParallelism } from 'node:os'
 import { basename } from 'node:path'
 import { type BrowserContext, type BrowserContextOptions, chromium } from 'playwright'
-import { type SnapshotListener, useBehavioral } from '../main.ts'
+import { useBehavioral } from '../main.ts'
 import { ERROR_TYPES, FIXTURE_EVENTS } from '../testing/testing.constants.ts'
 import type { FailMessage, PassMessage } from '../testing.ts'
 import { getServer } from './get-server.ts'
@@ -77,7 +77,6 @@ export const useRunner = useBehavioral<
     colorScheme?: 'light' | 'dark'
     paths: string[]
     reporter?: (args: { passed: TestResult[]; failed: TestResult[] }) => void
-    observer?: SnapshotListener
   }
 >({
   publicEvents: ['run'],
@@ -91,9 +90,7 @@ export const useRunner = useBehavioral<
     bThreads,
     bThread,
     bSync,
-    useSnapshot,
     reporter,
-    observer,
   }) {
     let failed: TestResult[] = []
     let passed: TestResult[] = []
@@ -103,7 +100,6 @@ export const useRunner = useBehavioral<
     // Launch browser
     console.log('🌐 Launching browser...')
     const browser = await chromium.launch()
-    observer && useSnapshot(observer)
     bThreads.set({
       onCountChange: bThread(
         [
