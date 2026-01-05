@@ -48,15 +48,20 @@ The installer detects your agent or lets you choose:
 
 ### Step 3: Start building
 
+Describe what you want to build. The Workshop plugin handles the rest—discovering stories, starting the dev server, running tests, and iterating with visual feedback.
+
+<details>
+<summary>Manual CLI (without plugin)</summary>
+
 ```bash
-# Start the dev server
-bun plaited dev
+# Start the dev server with hot reload
+bun --hot plaited dev
 
 # Run story tests
 bun plaited test
 ```
 
-Describe what you want, let the AI generate templates and stories, then iterate with test feedback.
+</details>
 
 ## Why Behavioral Programming?
 
