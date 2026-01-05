@@ -48,10 +48,14 @@ export {
 // Trajectory generation
 export {
   type BatchConfig,
+  createToolExecutions,
   type ExecutionTrace,
+  extractIntent,
   generateTrajectories,
   generateTrajectoriesFromStories,
   generateTrajectoryFromTrace,
+  type StoryInfo,
+  type ToolExecution,
 } from './agent/generate-trajectories.ts'
 // Tool infrastructure
 export { createCoreTools, createToolRegistry } from './agent/tools.ts'

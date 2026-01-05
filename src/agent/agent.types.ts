@@ -83,12 +83,37 @@ export type StoryResult = {
 }
 
 /**
- * A single message in a training trajectory.
+ * Base message structure for training trajectories.
  */
-export type TrajectoryMessage = {
-  role: 'system' | 'user' | 'assistant'
+type BaseMessage = {
+  /** Message content */
   content: string
 }
+
+/**
+ * System, user, or assistant message in a trajectory.
+ */
+export type TextMessage = BaseMessage & {
+  role: 'system' | 'user' | 'assistant'
+}
+
+/**
+ * Tool result message in a trajectory.
+ * Represents the output of a function call execution.
+ */
+export type ToolMessage = BaseMessage & {
+  role: 'tool'
+  /** ID of the tool call this result corresponds to */
+  tool_call_id: string
+  /** Name of the tool that was executed */
+  name: string
+}
+
+/**
+ * A single message in a training trajectory.
+ * Supports multi-turn conversations with tool results.
+ */
+export type TrajectoryMessage = TextMessage | ToolMessage
 
 /**
  * A complete trajectory for training, includes messages and reward.

@@ -3,19 +3,80 @@
  * Converts agent execution traces into training trajectories.
  */
 
-import type { FunctionCall, StoryResult, ToolSchema, Trajectory, TrajectoryMessage } from './agent.types.ts'
+import type { FunctionCall, StoryResult, ToolResult, ToolSchema, Trajectory, TrajectoryMessage } from './agent.types.ts'
 import { createTrajectory } from './compute-rewards.ts'
 
 /**
+ * Minimal story metadata needed for intent extraction.
+ */
+export type StoryInfo = {
+  /** Export name from the story file (e.g., "PrimaryButton") */
+  exportName: string
+  /** File path to the story */
+  filePath: string
+  /** Optional description from TSDoc or meta */
+  description?: string
+}
+
+/**
+ * Extracts a natural language intent from story metadata.
+ * Converts PascalCase/camelCase export names to readable phrases.
+ *
+ * @param story Story metadata
+ * @returns Natural language intent string
+ *
+ * @remarks
+ * Priority order:
+ * 1. Explicit description if provided
+ * 2. Parsed export name (PascalCase → words)
+ * 3. File path as fallback
+ */
+export const extractIntent = (story: StoryInfo): string => {
+  // Use explicit description if available
+  if (story.description) {
+    return story.description
+  }
+
+  // Parse PascalCase/camelCase to words, keeping acronyms together
+  // "PrimaryButton" → "primary button"
+  // "UIButton" → "ui button"
+  // "IconButtonWithTooltip" → "icon button with tooltip"
+  const words = story.exportName
+    // Insert space before uppercase that follows lowercase
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    // Insert space before last capital of consecutive capitals followed by lowercase
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .toLowerCase()
+
+  // Construct intent phrase
+  return `Create a ${words}`
+}
+
+/**
+ * A tool call with its corresponding result.
+ */
+export type ToolExecution = {
+  /** The function call made by the model */
+  call: FunctionCall
+  /** The result of executing the tool */
+  result: ToolResult
+  /** Unique identifier for this tool call */
+  id: string
+}
+
+/**
  * Represents a recorded agent execution for trajectory generation.
+ * Supports multi-turn conversations with tool results.
  */
 export type ExecutionTrace = {
   /** The user's original intent */
   intent: string
   /** Tool schemas provided to the model */
   toolSchemas: ToolSchema[]
-  /** Function calls made by the model */
-  functionCalls: FunctionCall[]
+  /** Function calls made by the model (legacy single-turn format) */
+  functionCalls?: FunctionCall[]
+  /** Tool executions with results (multi-turn format) */
+  toolExecutions?: ToolExecution[]
   /** Story execution result */
   storyResult: StoryResult
   /** Optional system prompt used */
@@ -56,22 +117,20 @@ const formatFunctionCalls = (calls: FunctionCall[]): string => {
 }
 
 /**
+ * Generates a unique tool call ID.
+ */
+const generateToolCallId = (index: number): string => `call_${index.toString().padStart(4, '0')}`
+
+/**
  * Generates a trajectory from an execution trace.
+ * Supports both legacy single-turn and multi-turn formats.
  *
  * @param trace The recorded execution trace
  * @returns A trajectory ready for training
  *
- * @example
- * ```typescript
- * const trace: ExecutionTrace = {
- *   intent: 'Create a primary button',
- *   toolSchemas: [...],
- *   functionCalls: [{ name: 'writeTemplate', arguments: '...' }],
- *   storyResult: { passed: true, ... }
- * }
- *
- * const trajectory = generateTrajectoryFromTrace(trace)
- * ```
+ * @remarks
+ * If `toolExecutions` is provided, generates multi-turn format with tool results.
+ * Otherwise falls back to legacy single-turn format using `functionCalls`.
  */
 export const generateTrajectoryFromTrace = (trace: ExecutionTrace): Trajectory => {
   const systemContent = trace.systemPrompt ?? formatToolContext(trace.toolSchemas)
@@ -79,10 +138,64 @@ export const generateTrajectoryFromTrace = (trace: ExecutionTrace): Trajectory =
   const messages: TrajectoryMessage[] = [
     { role: 'system', content: systemContent },
     { role: 'user', content: trace.intent },
-    { role: 'assistant', content: formatFunctionCalls(trace.functionCalls) },
   ]
 
+  // Multi-turn format with tool results
+  if (trace.toolExecutions && trace.toolExecutions.length > 0) {
+    for (const execution of trace.toolExecutions) {
+      // Assistant's tool call
+      messages.push({
+        role: 'assistant',
+        content: JSON.stringify({
+          tool_calls: [
+            {
+              id: execution.id,
+              function: {
+                name: execution.call.name,
+                arguments: execution.call.arguments,
+              },
+            },
+          ],
+        }),
+      })
+
+      // Tool result
+      messages.push({
+        role: 'tool',
+        tool_call_id: execution.id,
+        name: execution.call.name,
+        content: JSON.stringify(execution.result),
+      })
+    }
+  } else if (trace.functionCalls && trace.functionCalls.length > 0) {
+    // Legacy single-turn format
+    messages.push({
+      role: 'assistant',
+      content: formatFunctionCalls(trace.functionCalls),
+    })
+  }
+
   return createTrajectory(messages, trace.storyResult)
+}
+
+/**
+ * Creates tool executions from function calls and results.
+ * Utility for converting separate arrays into ToolExecution format.
+ *
+ * @param calls Array of function calls
+ * @param results Array of tool results (must match calls length)
+ * @returns Array of ToolExecution objects with generated IDs
+ */
+export const createToolExecutions = (calls: FunctionCall[], results: ToolResult[]): ToolExecution[] => {
+  if (calls.length !== results.length) {
+    throw new Error(`Mismatched calls (${calls.length}) and results (${results.length})`)
+  }
+
+  return calls.map((call, index) => ({
+    call,
+    result: results[index]!,
+    id: generateToolCallId(index),
+  }))
 }
 
 /**
