@@ -129,27 +129,57 @@ const formatFunctionCalls = (calls: FunctionCall[]): string => {
 /**
  * Parses FunctionGemma format back to FunctionCall array.
  * Inverse of formatFunctionCalls for model response parsing.
+ *
+ * @remarks
+ * Uses string splitting instead of regex to avoid ReDoS vulnerabilities.
+ * The escape delimiters are fixed strings, making split-based parsing safe.
  */
 export const parseFunctionGemmaOutput = (output: string): FunctionCall[] => {
   const calls: FunctionCall[] = []
-  // Match function calls - use non-greedy match up to end marker
-  const regex = /<start_function_call>call:(\w+)\{([\s\S]*?)\}<end_function_call>/g
+  const START_MARKER = '<start_function_call>call:'
+  const END_MARKER = '<end_function_call>'
+  const ESCAPE_MARKER = '<escape>'
 
-  for (const match of output.matchAll(regex)) {
-    const name = match[1]!
-    const argsStr = match[2]!
+  // Split by start markers and process each function call
+  const parts = output.split(START_MARKER)
 
-    // Parse arguments from key:<escape>value<escape> format
-    // Use [\s\S]*? to match any character including newlines
+  for (const part of parts.slice(1)) {
+    // Find the end marker
+    const endIndex = part.indexOf(END_MARKER)
+    if (endIndex === -1) continue
+
+    const callContent = part.slice(0, endIndex)
+
+    // Extract function name (up to first '{')
+    const braceIndex = callContent.indexOf('{')
+    if (braceIndex === -1) continue
+
+    const name = callContent.slice(0, braceIndex)
+    if (!/^\w+$/.test(name)) continue // Validate name is alphanumeric
+
+    // Extract arguments string (between '{' and '}')
+    const argsStr = callContent.slice(braceIndex + 1, -1) // Remove trailing '}'
+
+    // Parse arguments using string splitting instead of regex
     const args: Record<string, unknown> = {}
-    const argRegex = /(\w+):<escape>([\s\S]*?)<escape>/g
+    const argParts = argsStr.split(ESCAPE_MARKER)
 
-    for (const argMatch of argsStr.matchAll(argRegex)) {
-      const key = argMatch[1]!
-      let value: unknown = argMatch[2]!
-      // Try to parse JSON values (objects, arrays, numbers, booleans)
+    // Arguments are in format: key1:<escape>value1<escape>,key2:<escape>value2<escape>
+    // After splitting by <escape>: ["key1:", "value1", ",key2:", "value2", ""]
+    for (let i = 0; i < argParts.length - 1; i += 2) {
+      const keyPart = argParts[i]!
+      const valuePart = argParts[i + 1]
+
+      if (valuePart === undefined) break
+
+      // Extract key (remove trailing ':' and leading ',')
+      const key = keyPart.replace(/^,/, '').replace(/:$/, '').trim()
+      if (!key || !/^\w+$/.test(key)) continue
+
+      // Parse value
+      let value: unknown = valuePart
       try {
-        value = JSON.parse(value as string)
+        value = JSON.parse(valuePart)
       } catch {
         // Keep as string if not valid JSON
       }

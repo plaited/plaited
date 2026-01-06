@@ -338,6 +338,36 @@ describe('parseFunctionGemmaOutput', () => {
     expect(args.config).toEqual(jsonValue)
   })
 
+  test('handles malformed input without hanging (ReDoS regression)', () => {
+    // This test verifies the fix for the ReDoS vulnerability.
+    // Malicious input with unclosed escape markers should complete quickly,
+    // not cause exponential backtracking.
+    const maliciousInputs = [
+      // Unclosed escape marker
+      '<start_function_call>call:test{key:<escape>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}<end_function_call>',
+      // Nested/repeated escape-like patterns
+      '<start_function_call>call:test{key:<escape><escape><escape>value}<end_function_call>',
+      // Very long value without closing escape
+      `<start_function_call>call:test{key:<escape>${'a'.repeat(10000)}}<end_function_call>`,
+      // Multiple unclosed escapes
+      '<start_function_call>call:test{a:<escape>x,b:<escape>y,c:<escape>z}<end_function_call>',
+    ]
+
+    const startTime = performance.now()
+
+    for (const input of maliciousInputs) {
+      // Should complete without hanging - if ReDoS exists, this would timeout
+      const result = parseFunctionGemmaOutput(input)
+      // May or may not parse successfully, but must not hang
+      expect(Array.isArray(result)).toBe(true)
+    }
+
+    const elapsed = performance.now() - startTime
+    // All inputs should process in under 100ms total (generous limit)
+    // With ReDoS, even one input could take seconds or minutes
+    expect(elapsed).toBeLessThan(100)
+  })
+
   test('roundtrip: format then parse recovers original calls', () => {
     // This tests that the format/parse are true inverses
     const originalCalls: FunctionCall[] = [

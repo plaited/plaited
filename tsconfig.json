@@ -8,6 +8,9 @@
     "jsx": "react-jsx",
     "allowJs": true,
 
+    // IDE may need this to properly show type errors
+    "rootDir": ".",
+
     // Bundler mode
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,

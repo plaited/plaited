@@ -246,11 +246,11 @@ export const useA2AServer = ({ card, port = 3001, basePath = '', logger = noopLo
         const { id, message } = params
 
         // Get or create task
-        let task = taskStore.get(id)
+        const task = taskStore.get(id)
         if (task) {
           task.messages.push(message)
         } else {
-          task = taskStore.create(id, message)
+          taskStore.create(id, message)
           trigger({ type: 'taskReceived', detail: { taskId: id, message } })
         }
 

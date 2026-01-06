@@ -5,6 +5,22 @@ Guidelines for developing Claude Code plugin assets:
 - `.claude/commands/` - User-invocable slash commands
 - `.claude/agents/` - Specialized agent definitions
 
+## Hooks Configuration
+
+There are two hook configuration locations with different purposes:
+
+| File | Purpose | Path Format |
+|------|---------|-------------|
+| `.claude/settings.json` | Local development | Relative: `.claude/hooks/...` |
+| `.claude/hooks/hooks.json` | Published plugins | Portable: `${CLAUDE_PLUGIN_ROOT}/hooks/...` |
+
+**Key distinction:**
+- `settings.json` hooks are **project-specific** and not published
+- `hooks.json` hooks are **plugin assets** and get published
+- A hook in `settings.json` only (like `UserPromptSubmit`) stays local to this project
+
+This intentional separation allows project-specific hooks (like forced skill evaluation) without affecting published plugin behavior.
+
 ## Plugin Compatibility
 
 Plugin assets are published together. Follow these rules for compatibility:
