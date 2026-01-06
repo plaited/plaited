@@ -1,6 +1,23 @@
 # Code Review Standards
 
-The following standards are not automatically enforced by Biome but should be checked during code review:
+The following standards are not automatically enforced by Biome but should be checked during code review.
+
+## Automated Validation
+
+Before completing a code review, run these validation scripts:
+
+### Plugin Skills Validation
+
+When changes touch `.claude/skills/`, validate against the AgentSkills spec by running:
+
+```
+/validate-skill
+```
+
+This checks:
+- SKILL.md exists and has required frontmatter
+- Scripts have proper structure
+- References are valid markdown files
 
 ## TypeScript Comment Directives
 
