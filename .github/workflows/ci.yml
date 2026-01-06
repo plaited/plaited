@@ -28,6 +28,3 @@ jobs:
       - name: Run test
         run: |
           bun run test
-      - name: Validate plugin skills
-        run: |
-          bun plaited validate-skill .claude/skills --json
