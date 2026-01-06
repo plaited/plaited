@@ -1,54 +1,33 @@
 import { story } from 'plaited/testing'
 import type { FT } from 'plaited/ui'
+import { joinStyles } from 'plaited/ui'
 import { badgeStyles } from './badge.css.ts'
 
 /**
  * Primary badge for general labels.
  */
 const PrimaryBadge: FT = ({ children }) => (
-  <span
-    {...badgeStyles.badge}
-    {...badgeStyles.primary}
-  >
-    {children}
-  </span>
+  <span {...joinStyles(badgeStyles.badge, badgeStyles.primary)}>{children}</span>
 )
 
 /**
  * Success badge for positive states.
  */
 const SuccessBadge: FT = ({ children }) => (
-  <span
-    {...badgeStyles.badge}
-    {...badgeStyles.success}
-  >
-    {children}
-  </span>
+  <span {...joinStyles(badgeStyles.badge, badgeStyles.success)}>{children}</span>
 )
 
 /**
  * Warning badge for caution states.
  */
 const WarningBadge: FT = ({ children }) => (
-  <span
-    {...badgeStyles.badge}
-    {...badgeStyles.warning}
-  >
-    {children}
-  </span>
+  <span {...joinStyles(badgeStyles.badge, badgeStyles.warning)}>{children}</span>
 )
 
 /**
  * Danger badge for error states.
  */
-const DangerBadge: FT = ({ children }) => (
-  <span
-    {...badgeStyles.badge}
-    {...badgeStyles.danger}
-  >
-    {children}
-  </span>
-)
+const DangerBadge: FT = ({ children }) => <span {...joinStyles(badgeStyles.badge, badgeStyles.danger)}>{children}</span>
 
 /**
  * Pill-shaped badge with rounded ends.
@@ -56,15 +35,7 @@ const DangerBadge: FT = ({ children }) => (
 const PillBadge: FT<{ variant?: 'primary' | 'success' | 'warning' | 'danger' }> = ({
   variant = 'primary',
   children,
-}) => (
-  <span
-    {...badgeStyles.badge}
-    {...badgeStyles[variant]}
-    {...badgeStyles.pill}
-  >
-    {children}
-  </span>
-)
+}) => <span {...joinStyles(badgeStyles.badge, badgeStyles[variant], badgeStyles.pill)}>{children}</span>
 
 export const meta = {
   title: 'Training/Badge',

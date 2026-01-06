@@ -20,7 +20,7 @@ import { isTokenReference } from './css.utils.ts'
  * @see {@link createStyles} for creating style objects
  * @see {@link createTokens} for creating design token references
  */
-export const joinStyles = <T extends (StylesObject | DesignTokenReference | undefined)[]>(
+export const joinStyles = <T extends (StylesObject | DesignTokenReference | undefined | false)[]>(
   ...styleObjects: T
 ): T[number] => {
   const cls: string[] = []

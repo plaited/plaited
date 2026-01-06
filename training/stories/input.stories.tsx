@@ -1,5 +1,6 @@
 import { story } from 'plaited/testing'
 import type { FT } from 'plaited/ui'
+import { joinStyles } from 'plaited/ui'
 import { inputStyles } from './input.css.ts'
 
 /**
@@ -12,9 +13,11 @@ const TextInput: FT<{
 }> = ({ placeholder, disabled, 'data-state': state, ...attrs }) => (
   <input
     type='text'
-    {...inputStyles.input}
-    {...(state === 'error' ? inputStyles.error : {})}
-    {...(state === 'success' ? inputStyles.success : {})}
+    {...joinStyles(
+      inputStyles.input,
+      state === 'error' && inputStyles.error,
+      state === 'success' && inputStyles.success,
+    )}
     placeholder={placeholder}
     disabled={disabled}
     {...attrs}

@@ -1,5 +1,6 @@
 import { story } from 'plaited/testing'
 import type { FT } from 'plaited/ui'
+import { joinStyles } from 'plaited/ui'
 import { buttonStyles } from './button.css.ts'
 
 /**
@@ -7,8 +8,7 @@ import { buttonStyles } from './button.css.ts'
  */
 const PrimaryButton: FT<{ disabled?: boolean }> = ({ disabled, children }) => (
   <button
-    {...buttonStyles.btn}
-    {...buttonStyles.primary}
+    {...joinStyles(buttonStyles.btn, buttonStyles.primary)}
     disabled={disabled}
   >
     {children}
@@ -20,8 +20,7 @@ const PrimaryButton: FT<{ disabled?: boolean }> = ({ disabled, children }) => (
  */
 const SecondaryButton: FT<{ disabled?: boolean }> = ({ disabled, children }) => (
   <button
-    {...buttonStyles.btn}
-    {...buttonStyles.secondary}
+    {...joinStyles(buttonStyles.btn, buttonStyles.secondary)}
     disabled={disabled}
   >
     {children}
@@ -32,12 +31,7 @@ const SecondaryButton: FT<{ disabled?: boolean }> = ({ disabled, children }) => 
  * Outline button with transparent background.
  */
 const OutlineButton: FT = ({ children }) => (
-  <button
-    {...buttonStyles.btn}
-    {...buttonStyles.outline}
-  >
-    {children}
-  </button>
+  <button {...joinStyles(buttonStyles.btn, buttonStyles.outline)}>{children}</button>
 )
 
 export const meta = {
