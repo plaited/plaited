@@ -1,4 +1,4 @@
-import type { FT } from 'plaited'
+import type { FT } from 'plaited/ui'
 
 export const FTSimple: FT = () => <div>FT Alias Simple</div>
 

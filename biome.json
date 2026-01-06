@@ -3,7 +3,7 @@
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!!src/main/types/css.d.ts", "!!.bin/*"]
+    "includes": ["**", "!!src/ui/types/css.d.ts", "!!.bin/*"]
   },
   "formatter": {
     "enabled": true,
@@ -17,7 +17,7 @@
     "bracketSpacing": true,
     "expand": "auto",
     "useEditorconfig": true,
-    "includes": ["**", "!!**/dist/**/*", "!!**/*.json", "!!**/*.md", "!!src/main/types/css.d.ts"]
+    "includes": ["**", "!!**/dist/**/*", "!!**/*.json", "!!**/*.md", "!!src/ui/types/css.d.ts"]
   },
   "linter": {
     "enabled": true,
@@ -48,7 +48,7 @@
         "noConsole": {
           "level": "warn",
           "options": {
-            "allow": ["error", "table", "info", "group", "groupEnd"]
+            "allow": ["error", "warn", "table", "info", "group", "groupEnd"]
           }
         }
       },
@@ -56,7 +56,7 @@
         "useLiteralKeys": "warn"
       }
     },
-    "includes": ["**", "!!src/main/types/css.d.ts", "!!.bin/*"]
+    "includes": ["**", "!!src/ui/types/css.d.ts", "!!.bin/*"]
   },
   "javascript": {
     "formatter": {
@@ -88,7 +88,7 @@
       }
     },
     {
-      "includes": ["patterns/**/*", "src/workshop/**/*", "**/tests/**/*"],
+      "includes": ["src/workshop/**/*", "**/tests/**/*", "src/cli.ts", ".claude/**/*"],
       "linter": {
         "rules": {
           "suspicious": {

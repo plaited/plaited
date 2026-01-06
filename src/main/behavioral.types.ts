@@ -328,7 +328,7 @@ export type Handlers<Details extends EventDetails = EventDetails> = {
  * @see {@link Handlers} for handler types
  * @see {@link Disconnect} for cleanup
  */
-export type UseFeedback = (handlers: Handlers) => Disconnect
+export type UseFeedback<Details extends EventDetails = EventDetails> = (handlers: Handlers<Details>) => Disconnect
 
 /**
  * Hook for monitoring internal state transitions of the behavioral program.
@@ -349,14 +349,16 @@ export type UseSnapshot = (listener: SnapshotListener) => Disconnect
 
 /**
  * Interface for managing b-threads within a behavioral program.
- * Provides dynamic thread addition, replacement, and status monitoring.
+ * Provides dynamic thread addition and status monitoring.
  *
  * @property has - Check thread existence and status (running/pending)
- * @property set - Add or replace threads in the program
+ * @property set - Add threads to the program
  *
  * @remarks
  * - Thread names must be unique
- * - Replacing a thread stops the old one
+ * - Attempting to add a thread with an existing identifier triggers a console warning and is ignored
+ * - Thread replacement is prevented to maintain BP's additive composition principle
+ * - Use the `interrupt` idiom to explicitly terminate threads
  * - Status reflects current execution state
  *
  * @see {@link RulesFunction} for thread implementation
@@ -369,16 +371,20 @@ export type BThreads = {
    * @param thread - The string identifier of the thread to check.
    * @returns An object with boolean flags indicating if the thread is `running` and/or `pending`.
    */
-  has: (thread: string | symbol) => { running: boolean; pending: boolean }
+  has: (thread: string) => { running: boolean; pending: boolean }
 
   /**
-   * Adds or replaces threads in the program.
-   * If a thread with the given identifier already exists, it will be replaced.
+   * Adds threads to the program.
+   * If a thread with the given identifier already exists, a console warning is issued and the new thread is ignored.
+   * This prevents accidental thread replacement, which violates behavioral programming's additive composition principle.
    *
    * @param threads - An object mapping thread identifiers (string keys) to their implementation
    *                 as `RulesFunction` generator functions.
+   *
+   * @remarks
+   * To terminate a thread, use the `interrupt` idiom in the thread's configuration, or wait for the thread to complete naturally.
    */
-  set: (threads: Record<string | symbol, RulesFunction>) => void
+  set: (threads: Record<string, RulesFunction>) => void
 }
 
 /**
@@ -417,23 +423,16 @@ export type Trigger = <T extends BPEvent>(args: T) => void
  * @see {@link UseFeedback} for event handling
  * @see {@link UseSnapshot} for state monitoring
  */
-export type Behavioral = () => Readonly<{
+export type Behavioral = <Details extends EventDetails = EventDetails>() => Readonly<{
   bThreads: BThreads
   trigger: Trigger
-  useFeedback: UseFeedback
+  useFeedback: UseFeedback<Details>
   useSnapshot: UseSnapshot
 }>
 
-/**
- * An enhanced `Trigger` type specifically for Plaited components or contexts.
- * It extends the standard `Trigger` by adding a method (`addDisconnectCallback`)
- * to associate cleanup functions (`Disconnect`) with the trigger's lifecycle.
- * This allows resources or subscriptions initiated via the trigger's context
+/* This allows resources or subscriptions initiated via the trigger's context
  * to be properly cleaned up when the context is destroyed.
- *
- * @property addDisconnectCallback - A function to register a cleanup callback that should be
- *   executed when the component or context associated with this trigger is disconnected
- */
+ **/
 export type PlaitedTrigger = Trigger & {
   addDisconnectCallback: (disconnect: Disconnect) => void
 }
@@ -441,11 +440,7 @@ export type PlaitedTrigger = Trigger & {
 /**
  * Type definition for signal subscription function.
  * Enables event-based monitoring of signal value changes.
- *
- * @param eventType Event type identifier for the triggered event
- * @param trigger Component's trigger function for handling value changes
- * @param getLVC Whether to immediately trigger with current value
- * @returns Cleanup function for removing the subscription
+
  */
 export type Listen = (eventType: string, trigger: Trigger | PlaitedTrigger, getLVC?: boolean) => Disconnect
 

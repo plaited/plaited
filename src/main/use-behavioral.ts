@@ -20,7 +20,7 @@ import { usePublicTrigger } from './use-public-trigger.ts'
 
 /**
  * Higher-order factory for creating reusable behavioral program configurations.
- * Encapsulates setup, lifecycle management, and provides a clean component API.
+ * Encapsulates setup, lifecycle management, and provides a clean element API.
  *
  * @template A Type of event handlers for feedback logic
  * @template C Type of context object passed during initialization
@@ -60,7 +60,7 @@ import { usePublicTrigger } from './use-public-trigger.ts'
  * - Each init() creates new bProgram instance (no sharing)
  * - DisconnectSet grows with registered callbacks
  * - Public trigger adds minimal Set lookup overhead
- * - Async init may delay component readiness
+ * - Async init may delay element readiness
  *
  * @see {@link usePublicTrigger} for event filtering
  * @see {@link usePlaitedTrigger} for lifecycle management
@@ -111,7 +111,7 @@ export const useBehavioral = <
     /**
      * @internal
      * Instance-specific cleanup function that runs all registered callbacks.
-     * Called during component unmount or explicit cleanup.
+     * Called during custom element disconnection or explicit cleanup.
      */
     const disconnect = () => {
       disconnectSet.forEach((disconnect) => void disconnect())
@@ -143,7 +143,7 @@ export const useBehavioral = <
     /**
      * @internal
      * Return filtered trigger that only accepts public events.
-     * This creates the component's public API surface.
+     * This creates the element's public API surface.
      */
     return usePublicTrigger({ trigger, publicEvents })
   }

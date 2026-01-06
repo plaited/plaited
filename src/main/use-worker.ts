@@ -19,7 +19,7 @@ import type { BPEvent, PlaitedTrigger, Trigger } from './behavioral.types.ts'
 import { isBPEvent, isPlaitedTrigger } from './behavioral.utils.ts'
 
 /**
- * Creates a type-safe interface for Web Worker communication within Plaited components.
+ * Creates a type-safe interface for Web Worker communication within BehavioralElements.
  * Seamlessly integrates workers with Plaited's event system and handles lifecycle management.
  *
  * @param trigger - Event trigger function for handling worker responses
@@ -29,7 +29,7 @@ import { isBPEvent, isPlaitedTrigger } from './behavioral.utils.ts'
  * @remarks
  * Key Features:
  * - Automatic cleanup when using PlaitedTrigger
- * - Type-safe message passing between component and worker
+ * - Type-safe message passing between BehavioralElement and worker
  * - Module worker support for better code organization
  * - Seamless integration with Plaited's event system
  * - Built-in error handling and message validation
@@ -39,7 +39,7 @@ import { isBPEvent, isPlaitedTrigger } from './behavioral.utils.ts'
  * - Use TypeScript for type-safe message passing
  * - Handle worker errors appropriately
  * - Consider using publicEvents in worker definition
- * - Clean up workers when component is disconnected
+ * - Clean up workers when custom element is disconnected
  */
 export const useWorker = (trigger: PlaitedTrigger | Trigger, worker: Worker) => {
   /**
@@ -68,14 +68,14 @@ export const useWorker = (trigger: PlaitedTrigger | Trigger, worker: Worker) => 
   /**
    * @internal
    * Register automatic cleanup if using PlaitedTrigger.
-   * This ensures worker termination when component unmounts.
+   * This ensures worker termination when custom element disconnects.
    */
   isPlaitedTrigger(trigger) && trigger.addDisconnectCallback(disconnect)
 
   /**
    * @internal
    * Attach disconnect method to returned function for manual cleanup option.
-   * This allows explicit cleanup before component unmount if needed.
+   * This allows explicit cleanup before custom element disconnection if needed.
    */
   post.disconnect = disconnect
   return post

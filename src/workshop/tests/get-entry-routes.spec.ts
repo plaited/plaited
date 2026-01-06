@@ -25,11 +25,11 @@ test('getEntryRoutes: transforms root-level template path correctly', async () =
 })
 
 test('getEntryRoutes: transforms nested template path correctly', async () => {
-  const entrypoint = join(fixturesRoot, 'nested', 'component', 'NestedTemplate.tsx')
+  const entrypoint = join(fixturesRoot, 'nested', 'element', 'NestedTemplate.tsx')
   const responses = await getEntryRoutes(fixturesRoot, [entrypoint])
 
   // Should preserve directory structure and original filename
-  expect(responses['/nested/component/NestedTemplate.js']).toBeDefined()
+  expect(responses['/nested/element/NestedTemplate.js']).toBeDefined()
 })
 
 test('getEntryRoutes: transforms deeply nested template path correctly', async () => {
@@ -43,14 +43,14 @@ test('getEntryRoutes: transforms deeply nested template path correctly', async (
 test('getEntryRoutes: handles multiple entrypoints', async () => {
   const entrypoints = [
     join(fixturesRoot, 'RootTemplate.tsx'),
-    join(fixturesRoot, 'nested', 'component', 'NestedTemplate.tsx'),
+    join(fixturesRoot, 'nested', 'element', 'NestedTemplate.tsx'),
     join(fixturesRoot, 'deep', 'ui', 'forms', 'DeepTemplate.tsx'),
   ]
   const responses = await getEntryRoutes(fixturesRoot, entrypoints)
 
   // Should have all entry-points
   expect(responses['/RootTemplate.js']).toBeDefined()
-  expect(responses['/nested/component/NestedTemplate.js']).toBeDefined()
+  expect(responses['/nested/element/NestedTemplate.js']).toBeDefined()
   expect(responses['/deep/ui/forms/DeepTemplate.js']).toBeDefined()
 
   // Should have at least 3 responses (entry-points, possibly chunks)
@@ -146,7 +146,7 @@ test('getEntryRoutes: returns object with string keys and Response values', asyn
 test('getEntryRoutes: all response paths start with forward slash', async () => {
   const entrypoints = [
     join(fixturesRoot, 'RootTemplate.tsx'),
-    join(fixturesRoot, 'nested', 'component', 'NestedTemplate.tsx'),
+    join(fixturesRoot, 'nested', 'element', 'NestedTemplate.tsx'),
   ]
   const responses = await getEntryRoutes(fixturesRoot, entrypoints)
 

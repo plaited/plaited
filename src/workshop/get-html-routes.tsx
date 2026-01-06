@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { joinStyles, ssr, type TemplateObject } from '../main.ts'
-import { FIXTURE_EVENTS, STORY_FIXTURE, STORY_ORCHESTRATOR } from '../testing/testing.constants.ts'
+import { FIXTURE_EVENTS, STORY_FIXTURE } from '../testing/testing.constants.ts'
 import type { StoryExport } from '../testing.ts'
+import { joinStyles, ssr, type TemplateObject } from '../ui.ts'
 import { zip } from './workshop.utils.ts'
 
 /**
@@ -44,30 +44,13 @@ const PlaitedAttributesSchema = z
 
 const createFixtureLoadScript = ({ entryPath, exportName }: { entryPath: string; exportName: string }) => `\n
 import { ${exportName} } from '${entryPath}'
-
-await customElements.whenDefined("${STORY_FIXTURE}")
-await customElements.whenDefined("${STORY_ORCHESTRATOR}")
-const orchestrator = document.querySelector("${STORY_ORCHESTRATOR}");
+await customElements.whenDefined('${STORY_FIXTURE}')
+const orchestrator = document.querySelector("${STORY_FIXTURE}")
 orchestrator?.trigger({
   type: '${FIXTURE_EVENTS.run}',
   detail:  {play: ${exportName}?.play, timeout: ${exportName}?.params?.timeout}
 });
 `
-
-const useTemplateInclude = ({ fixture, entryPath }: { fixture: TemplateObject; entryPath: string }): Response => {
-  const content = ssr(
-    fixture,
-    <script
-      type='module'
-      trusted
-      src={entryPath}
-    />,
-  )
-  return zip({
-    content,
-    contentType: 'text/html;charset=utf-8',
-  })
-}
 
 const usePage = ({
   fixture,
@@ -124,31 +107,28 @@ const usePage = ({
 }
 
 /**
- * Generates HTML routes for a story export.
- * Creates two routes per story:
- * - Main route: Full HTML page with hot reload
- * - Include route: Just the story fixture HTML fragment
+ * Generates HTML route for a story export.
+ * Creates a full HTML page with the story fixture.
  *
  * @param exportName - Named export from the story file
  * @param filePath - Absolute path to the .stories.tsx file
- * @param cwd - Current working directory
- * @returns Object with static Response objects
+ * @param entryPath - Path to the story's JS entry file
+ * @param colorScheme - Color scheme for the page ('light' or 'dark')
+ * @returns Static Response object for the route
  *
  * @internal
  */
-export const getHTMLRoutes = async ({
+export const getHTMLRoute = async ({
   exportName,
   filePath,
-  route,
   entryPath,
   colorScheme,
 }: {
   exportName: string
   filePath: string
-  route: string
   entryPath: string
   colorScheme: 'light' | 'dark'
-}): Promise<Record<string, Response>> => {
+}): Promise<Response> => {
   const module = await cachedImport(filePath)
   const storyExport = module[exportName]
 
@@ -161,7 +141,7 @@ export const getHTMLRoutes = async ({
       PlaitedAttributesSchema.parse(args)
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errorResponse = new Response(
+        return new Response(
           JSON.stringify({
             error: 'Invalid story args',
             details: error.issues,
@@ -171,16 +151,9 @@ export const getHTMLRoutes = async ({
             headers: { 'Content-Type': 'application/json' },
           },
         )
-        return {
-          [route]: errorResponse,
-          [`${route}.template`]: errorResponse,
-        }
       }
     }
   }
 
-  return {
-    [route]: usePage({ fixture, entryPath, exportName, parameters, colorScheme }),
-    [`${route}.template`]: useTemplateInclude({ fixture, entryPath }),
-  }
+  return usePage({ fixture, entryPath, exportName, parameters, colorScheme })
 }

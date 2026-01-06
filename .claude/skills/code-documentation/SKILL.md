@@ -1,21 +1,25 @@
 ---
 name: code-documentation
-description: Comprehensive TypeScript documentation standards including TSDoc format templates, public API documentation, internal module docs, and type documentation guidelines. Automatically invoked when writing or reviewing code documentation, TSDoc comments, or API documentation.
+description: TSDoc standards for TypeScript/JavaScript code. Automatically invoked when writing, reviewing, or editing any TSDoc comments, code documentation, or API documentation. (project)
+license: ISC
+compatibility: Requires bun
 ---
 
 # Code Documentation Skill
 
 ## Purpose
 
-This skill provides detailed TSDoc format templates and type documentation guidelines for the Plaited framework. Use this when:
-- Writing TSDoc comments for functions, types, or modules
+This skill provides TSDoc format templates and type documentation guidelines. Use this when:
+- Writing or editing TSDoc comments for any function, type, or module
 - Reviewing documentation quality
 - Creating comprehensive API documentation
 - Documenting complex type structures
 
+**Key Standard**: No `@example` sections - tests and stories serve as living examples.
+
 ## Quick Reference
 
-For basic documentation philosophy and workflow, see @.claude/rules/documentation/
+For the documentation generation workflow, see [workflow.md](references/workflow.md)
 
 This skill contains detailed templates for:
 - Public API Functions
@@ -28,6 +32,11 @@ This skill contains detailed templates for:
 
 ## Navigation
 
-- @public-api-templates.md - Templates for public-facing APIs
-- @internal-templates.md - Templates for internal code and modules
-- @type-documentation.md - Comprehensive type documentation templates
+- [workflow.md](references/workflow.md) - TSDoc generation workflow (4 phases)
+- [public-api-templates.md](references/public-api-templates.md) - Templates for public-facing APIs
+- [internal-templates.md](references/internal-templates.md) - Templates for internal code and modules
+- [type-documentation.md](references/type-documentation.md) - Comprehensive type documentation templates
+
+## Related Skills
+
+- **typescript-lsp**: Use for type verification and discovery during documentation workflow. Essential for Phase 1 (type analysis) and Phase 2 (usage discovery) of the TSDoc generation process. Run `lsp-hover` to verify signatures, `lsp-references` to find usages, and `lsp-symbols` to understand file structure.

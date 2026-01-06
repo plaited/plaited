@@ -1,5 +1,5 @@
-import { bElement, createHostStyles, createStyles } from '../main.ts'
-import { MASK_EVENTS } from './testing.constants.ts'
+import { bElement, createHostStyles, createStyles } from '../ui.ts'
+import { MASK_EVENTS, STORY_MASK } from './testing.constants.ts'
 import type { MaskClickDetail } from './testing.types.ts'
 
 /**
@@ -106,7 +106,7 @@ const maskStyles = createStyles({
  * @see {@link getShadowPath} for shadow DOM traversal
  */
 export const PlaitedMask = bElement({
-  tag: 'plaited-mask',
+  tag: STORY_MASK,
   publicEvents: [MASK_EVENTS.toggle],
   hostStyles: maskHostStyles,
   shadowDom: (
@@ -120,6 +120,7 @@ export const PlaitedMask = bElement({
     if (!window?.__PLAITED_RUNNER__) {
       inspector.on()
     }
+    // let send: Send
     const overlay = $('overlay')[0]
 
     let _isVisible = false
@@ -131,7 +132,6 @@ export const PlaitedMask = bElement({
         _isVisible = event.detail
         overlay?.attr('data-visible', String(_isVisible))
       },
-
       // Handle click detection and emit click event
       emit_click(event: Event) {
         if (_isVisible) {

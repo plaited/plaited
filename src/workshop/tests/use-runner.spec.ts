@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test'
 import { join } from 'node:path'
 import type { TestResult } from '../use-runner.ts'
+import { getTestPort } from './test-ports.ts'
 
 const cwd = join(import.meta.dir, 'fixtures')
 const fixturesDir = join(cwd, 'stories')
@@ -9,12 +10,12 @@ const fixturesDir = join(cwd, 'stories')
 const runRunner = async ({
   cwd,
   colorScheme = 'light',
-  port = 0,
+  port,
   paths,
 }: {
   cwd: string
   colorScheme?: 'light' | 'dark'
-  port?: number
+  port: number
   paths: string[]
 }) => {
   const harnessPath = join(import.meta.dir, 'use-runner.harness.ts')
@@ -75,7 +76,7 @@ test(
     const { passed, failed } = await runRunner({
       cwd,
       colorScheme: 'light',
-      port: 0,
+      port: getTestPort(),
       paths: [fixturesDir],
     })
 
@@ -104,7 +105,7 @@ test(
     const { passed, failed } = await runRunner({
       cwd,
       colorScheme: 'light',
-      port: 0,
+      port: getTestPort(),
       paths: [fixturesDir],
     })
 
@@ -128,7 +129,7 @@ test(
     const { passed, failed } = await runRunner({
       cwd,
       colorScheme: 'light',
-      port: 0,
+      port: getTestPort(),
       paths: [fixturesDir],
     })
 
@@ -149,7 +150,7 @@ test(
     const { passed, failed } = await runRunner({
       cwd,
       colorScheme: 'light',
-      port: 0,
+      port: getTestPort(),
       paths: [fixturesDir],
     })
 
@@ -180,7 +181,7 @@ test(
     const { passed, failed } = await runRunner({
       cwd: emptyDir,
       colorScheme: 'light',
-      port: 0,
+      port: getTestPort(),
       paths: [emptyDir],
     })
 
@@ -197,7 +198,7 @@ test(
     const { passed, failed } = await runRunner({
       cwd,
       colorScheme: 'light',
-      port: 0,
+      port: getTestPort(),
       paths: [fixturesDir],
     })
 

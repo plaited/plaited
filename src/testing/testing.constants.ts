@@ -16,7 +16,19 @@ export const STORY_FIXTURE = 'plaited-story-fixture'
  * @internal
  * Custom element tag for story test orchestrator.
  */
-export const STORY_ORCHESTRATOR = 'plaited-orchestrator'
+export const STORY_ORCHESTRATOR = 'plaited-story-orchestrator'
+
+/**
+ * @internal
+ * Custom element tag for story test orchestrator.
+ */
+export const STORY_MASK = 'plaited-story-mask'
+
+/**
+ * @internal
+ * Custom element tag for story test orchestrator.
+ */
+export const STORY_HEADER = 'plaited-story-header'
 
 /**
  * @internal
@@ -51,6 +63,13 @@ export const FIXTURE_EVENTS = keyMirror(
   'test_pass',
   'wait',
 )
+
+/**
+ * @internal
+ * Event types for test fixture communication.
+ * Used between story fixture and test runner.
+ */
+export const ORCHESTRATOR_EVENTS = keyMirror('init', 'connect_messenger')
 
 export const ERROR_TYPES = keyMirror(
   'accessibility_violation',

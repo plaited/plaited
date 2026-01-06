@@ -1,5 +1,5 @@
-import { bElement, createHostStyles, createStyles } from '../main.ts'
-import { HEADER_EVENTS } from './testing.constants.ts'
+import { bElement, createHostStyles, createStyles } from '../ui.ts'
+import { HEADER_EVENTS, STORY_HEADER } from './testing.constants.ts'
 
 /**
  * Button styles for the toggle button.
@@ -58,7 +58,7 @@ const headerHostStyles = createHostStyles({
  * @see {@link HEADER_EVENTS.toggle_mask} for emitted event
  */
 export const PlaitedHeader = bElement({
-  tag: 'plaited-header',
+  tag: STORY_HEADER,
   hostStyles: headerHostStyles,
   shadowDom: (
     <>
@@ -79,6 +79,7 @@ export const PlaitedHeader = bElement({
     if (!window?.__PLAITED_RUNNER__) {
       inspector.on()
     }
+
     const button = $<HTMLButtonElement>('toggle-button')[0]
     let active = false
 

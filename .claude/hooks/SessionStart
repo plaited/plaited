@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+# Hook: Session startup tasks
+# 1. Ensures Bun runtime is available (auto-installs in web, exits in local)
+# 2. Installs dependencies in web environment
+# 3. Cleans up stale dev servers
+# 4. Shows workshop CLI usage
+
+# 1. Check for Bun runtime
+if ! command -v bun &> /dev/null; then
+  if [ "$CLAUDE_CODE_REMOTE" = "true" ]; then
+    echo "🌐 Installing Bun runtime..."
+    curl -fsSL https://bun.sh/install | bash
+    export BUN_INSTALL="$HOME/.bun"
+    export PATH="$BUN_INSTALL/bin:$PATH"
+  else
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "⚠️  ERROR: Plaited requires Bun runtime (>= 1.2.9)"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Install: curl -fsSL https://bun.sh/install | bash"
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    exit 1
+  fi
+fi
+
+# 2. Web environment: Install dependencies
+if [ "$CLAUDE_CODE_REMOTE" = "true" ]; then
+  echo "🌐 Claude Code Web Environment"
+  echo "Installing dependencies..."
+  bun install
+  echo ""
+fi
+
+# 3. Clean up stale dev servers
+pkill -f 'bun --hot plaited dev' 2>/dev/null || true
+
+# 4. Show workshop CLI usage
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "📚 Plaited Workshop CLI"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "Testing Commands:"
+echo "  bun plaited test                 # Run all story tests"
+echo "  bun plaited test <path>          # Run tests from directory/file"
+echo "  bun plaited test -p 3500         # Custom port"
+echo "  bun plaited test -c dark         # Dark mode"
+echo ""
+echo "Development Commands:"
+echo "  bun --hot plaited dev            # Dev server with hot reload"
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+# Always allow session to continue
+exit 0

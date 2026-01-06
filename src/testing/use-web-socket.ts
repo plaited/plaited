@@ -1,7 +1,8 @@
-import { DelegatedListener, delegates } from '../main/delegated-listener.ts'
+import type { PlaitedTrigger } from '../main.ts'
+import { DelegatedListener, delegates } from '../ui/delegated-listener.ts'
 import { isTypeOf } from '../utils.ts'
 import { RELOAD_PAGE, RUNNER_URL } from './testing.constants.ts'
-import type { RunnerMessage } from './testing.schemas.ts'
+import type { Send } from './testing.types.ts'
 
 /** @internal Type guard to check if an event is a WebSocket CloseEvent. */
 const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => event.type === 'close'
@@ -24,12 +25,12 @@ const isCloseEvent = (event: CloseEvent | MessageEvent): event is CloseEvent => 
  * - Closes the WebSocket connection.
  *
  * Internal WebSocket handling:
- * - Connects to the runner URL (`/.plaited/test-runner`).
+ * - Connects to the runner URL (`/.plaited/runner`).
  * - Listens for `open`, `message`, `error`, and `close` events.
  * - Handles page reload requests from the runner.
  * - Implements an exponential backoff retry mechanism for specific close codes.
  */
-export const useWebSocket = () => {
+export const useWebSocket = (trigger: PlaitedTrigger) => {
   const retryStatusCodes = new Set([1006, 1012, 1013])
   const maxRetries = 3
   let socket: WebSocket | undefined
@@ -38,9 +39,10 @@ export const useWebSocket = () => {
     async callback(evt: MessageEvent) {
       if (evt.type === 'message') {
         const { data } = evt
-        const message = isTypeOf<string>(data, 'string') && data === RELOAD_PAGE
-        if (message) {
+        // Handle reload page message
+        if (isTypeOf<string>(data, 'string') && data === RELOAD_PAGE) {
           window.location.reload()
+          return
         }
       }
       if (isCloseEvent(evt) && retryStatusCodes.has(evt.code)) ws.retry()
@@ -69,7 +71,7 @@ export const useWebSocket = () => {
     },
   }
   ws.connect()
-  const send = (message: RunnerMessage) => {
+  const send: Send = (message) => {
     const fallback = () => {
       send(message)
       socket?.removeEventListener('open', fallback)
@@ -80,8 +82,9 @@ export const useWebSocket = () => {
     if (!socket) ws.connect()
     socket?.addEventListener('open', fallback)
   }
-  send.disconnect = () => {
+  const disconnect = () => {
     socket?.close()
   }
+  trigger.addDisconnectCallback(disconnect)
   return send
 }

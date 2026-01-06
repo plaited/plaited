@@ -4,13 +4,13 @@
  *
  * Purpose: JSX runtime entry point for TypeScript/Babel JSX transformation
  * Architecture: Re-exports createTemplate with standard JSX runtime names
- * Dependencies: createTemplate factory, Fragment component, JSX type definitions
+ * Dependencies: createTemplate factory, Fragment template, JSX type definitions
  * Consumers: TypeScript compiler, Babel transforms, bundlers with JSX support
 
  */
 
-import { createTemplate, Fragment } from './main/create-template.ts'
-import type { ElementAttributeList, TemplateObject } from './main/create-template.types.ts'
+import { createTemplate, Fragment } from './ui/create-template.ts'
+import type { ElementAttributeList, TemplateObject } from './ui/create-template.types.ts'
 
 /**
  * @internal

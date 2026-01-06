@@ -18,7 +18,7 @@ const runTestCommand = async ({
   const proc = Bun.spawn(
     [
       'bun',
-      join(import.meta.dir, '../cli.ts'),
+      join(import.meta.dir, '../../cli.ts'),
       'test',
       '-d',
       cwd,

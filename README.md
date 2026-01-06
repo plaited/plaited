@@ -1,30 +1,162 @@
+![Plaited a Neuro-Symbolic Agentic Framework: AI-Assisted Design Systems, Generative UI Agents, Personalized Knowledge Worker Screens](assets/banner.svg)
+
+**Build design systems that AI can generate from**
+
 [![Build/Tests](https://github.com/plaited/plaited/actions/workflows/ci.yml/badge.svg)](https://github.com/plaited/plaited/actions/workflows/ci.yml)
+![Bundle Size](https://img.shields.io/badge/gzip-<7.5kb-brightgreen)
 
-Plaited is a design system first framework for rapidly designing and developing interfaces as requirements change and evolve.
+---
 
-This repository contains the complete source code for Plaited, including many test scripts. However, other test scripts and most of the documentation are managed separately.
+Plaited is a design system toolkit with AI built in. Define your tokens, templates, and stories—the Workshop plugin handles the rest. No ML expertise required.
 
-**Plaited is open-source, not open-contribution.** If you are reading this on GitHub or some other Git repository or service, then you are looking at a mirror. While the Plaited source code is managed using Git, it is done as a submodule of our Plaited Pro offering.
+## What You Can Build
 
-See our ~~on-line documentation~~ for more information about what Plaited is and how it works.
+**AI-Assisted Design Systems** — Your design tokens and patterns become the vocabulary AI uses to generate consistent UI.
 
-## Contacting The Plaited Devs
+**Generative UI Agents** — Train agents that compose templates from your design system, not from scratch.
 
-The preferred way to ask questions or make comments about Plaited or to report bugs is to visit [Plaited Discussions](https://github.com/orgs/plaited/discussions).
+**Personalized Knowledge Worker Screens** — Generate role-specific interfaces that follow your design guidelines.
 
-## Requirements
+## Get Started
 
-### Core Package
-- node >= v22.6.0 (through the --experimental-strip-types flag)
-- bun >= v1.2.9 (preferred)
-
-### CLI and Workshop
-- bun >= v1.2.9 (required)
-
-The main Plaited package can be used with Node.js, but the CLI and workshop test runner utilities require [bun](https://bun.sh/).
-
-## Download
+### Step 1: Install the package
 
 ```bash
-bun install -d plaited
+bun install plaited
 ```
+
+### Step 2: Add the Workshop plugin
+
+**Claude Code:**
+```
+/plugin marketplace add plaited/plaited
+```
+
+**Other AI coding agents:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/plaited/plaited/main/scripts/install-workshop.sh | bash
+```
+
+The installer detects your agent or lets you choose:
+
+```
+┌─────────────┬──────────────────┬─────────────────────────────────────┐
+│ Agent       │ Directory        │ Supported Features                  │
+├─────────────┼──────────────────┼─────────────────────────────────────┤
+│ claude      │ .claude/         │ skills, commands, agents, hooks     │
+│ cursor      │ .claude/         │ skills                              │
+│ opencode    │ .opencode/       │ skills, commands, agents            │
+│ amp         │ .agents/         │ skills, commands                    │
+│ goose       │ .claude/         │ skills                              │
+│ factory     │ .factory/        │ skills                              │
+└─────────────┴──────────────────┴─────────────────────────────────────┘
+```
+
+### Step 3: Start building
+
+Describe what you want to build. The Workshop plugin handles the rest—discovering stories, starting the dev server, running tests, and iterating with visual feedback.
+
+<details>
+<summary>Manual CLI (without plugin)</summary>
+
+```bash
+# Start the dev server with hot reload
+bun --hot plaited dev
+
+# Run story tests
+bun plaited test
+```
+
+</details>
+
+## Performance
+
+Plaited is fast. See the [js-framework-benchmark results](https://krausest.github.io/js-framework-benchmark/2025/table_chrome_143.0.7499.41.html).
+
+<details>
+<summary><strong>How It Works (Behavioral Programming)</strong></summary>
+
+Behavioral programming aligns with how reinforcement learning agents reason about the world:
+
+- **Stories as world model** — Stories define valid UI states and transitions, serving as ground truth for both testing and agent training
+- **Runtime constraints** — bThreads block invalid actions before they execute, providing symbolic guardrails for neural generation
+- **Natural reward signals** — Story pass/fail + accessibility checks = clear training signal
+
+This architecture enables the [World Agent](training/README.md)—a neuro-symbolic system where a neural policy proposes actions and behavioral constraints ensure correctness.
+
+</details>
+
+<details>
+<summary><strong>Package Exports</strong></summary>
+
+The vertical integration is reflected in the package structure:
+
+| Export | Description |
+|--------|-------------|
+| `plaited` | Core behavioral programming — `useBehavioral`, `useSignal`, `useWorker` |
+| `plaited/ui` | UI framework — templates, `bElement`, `createStyles` |
+| `plaited/utils` | Utility functions — type guards, helpers |
+| `plaited/testing` | Test utilities — `story` factory, Playwright integration |
+| `plaited/workshop` | Discovery utilities — template and story collection |
+| `plaited/agent` | Agent utilities — world agent, tool definitions |
+
+```typescript
+import { useBehavioral, useSignal } from 'plaited'
+import { bElement, createStyles } from 'plaited/ui'
+import { story } from 'plaited/testing'
+```
+
+**CLI** (requires Bun):
+- `bun plaited dev` — Start dev server with story browser
+- `bun plaited test` — Run story-based tests with Playwright
+
+</details>
+
+<details>
+<summary><strong>Workshop Plugin Features</strong></summary>
+
+The Workshop plugin teaches your AI coding agent how to build with Plaited:
+
+**What it enables:**
+- Generate templates, styles, and stories from descriptions
+- Scaffold design tokens and behavioral elements
+- Run tests with visual feedback (screenshots, videos)
+- Validate accessibility automatically
+- Train custom UI generation agents
+
+**How it works:**
+- Skills auto-activate based on what you're doing
+- AI learns your project's patterns from existing code
+- Type verification catches errors before you run
+
+**Commands:**
+- `/validate-skill` — Validate skill directories
+- `/create-web-patterns-skill` — Extract patterns from articles
+- `/create-design-system-skill` — Document your design system
+
+</details>
+
+<details>
+<summary><strong>Requirements</strong></summary>
+
+**For full development (CLI, workshop, testing):**
+- [Bun](https://bun.sh/) >= v1.2.9
+
+**For core package only:**
+- Node.js >= v22.6.0 (with `--experimental-strip-types`)
+- Or Bun >= v1.2.9
+
+</details>
+
+## Getting Help
+
+- **Questions & Discussions**: [Plaited Discussions](https://github.com/orgs/plaited/discussions)
+- **Bug Reports**: [GitHub Issues](https://github.com/plaited/plaited/issues)
+
+## License
+
+ISC
+
+---
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.

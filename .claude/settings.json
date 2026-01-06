@@ -1,4 +1,5 @@
-{"permissions": {
+{
+  "permissions": {
     "allow": [
       "WebFetch(domain:bun.sh)",
       "WebFetch(domain:bun.com)",
@@ -15,23 +16,46 @@
       "Bash(docker build:*)",
       "Bash(docker run:*)",
       "Bash(docker logs:*)",
-      "Bash(docker stop:*)",
-      "mcp__playwright__browser_evaluate"
+      "Bash(docker stop:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/SessionStart"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/SessionEnd"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/UserPromptSubmit"
+          }
+        ]
+      }
     ]
   },
   "enabledMcpjsonServers": [
-    "playwright"
+    "chrome-devtools"
   ],
-  "hooks": {
-      "UserPromptSubmit": [
-        {
-          "hooks": [
-            {
-              "type": "command",
-              "command": ".claude/hooks/UserPromptSubmit"
-            }
-          ]
-        }
-      ]
-    }
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  }
 }

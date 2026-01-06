@@ -1,4 +1,4 @@
-import { bElement, type FT, type FunctionTemplate } from 'plaited'
+import { bElement, type FT, type FunctionTemplate } from 'plaited/ui'
 
 // FunctionTemplate with explicit type
 export const MixedFunctionTemplate: FunctionTemplate = () => <div>Function Template in Mixed File</div>
@@ -8,7 +8,7 @@ export const MixedFTTemplate: FT = () => <span>FT Alias in Mixed File</span>
 
 // BehavioralTemplate
 export const MixedBehavioralTemplate = bElement({
-  tag: 'mixed-component',
+  tag: 'mixed-element',
   shadowDom: <div>Behavioral Template in Mixed File</div>,
 })
 

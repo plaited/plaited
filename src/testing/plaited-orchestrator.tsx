@@ -1,9 +1,19 @@
-import { type BehavioralElement, bElement, createHostStyles, createStyles } from 'plaited'
+import { type BehavioralElement, bElement, createHostStyles, createStyles } from 'plaited/ui'
 import { PlaitedFixture } from './plaited-fixture.tsx'
 import { PlaitedHeader } from './plaited-header.tsx'
 import { PlaitedMask } from './plaited-mask.tsx'
-import { FIXTURE_EVENTS, HEADER_EVENTS, MASK_EVENTS, STORY_ORCHESTRATOR } from './testing.constants.ts'
-import type { InteractionStoryObj } from './testing.types.ts'
+import {
+  FIXTURE_EVENTS,
+  HEADER_EVENTS,
+  MASK_EVENTS,
+  ORCHESTRATOR_EVENTS,
+  STORY_FIXTURE,
+  STORY_HEADER,
+  STORY_MASK,
+  STORY_ORCHESTRATOR,
+} from './testing.constants.ts'
+import type { InitDetail } from './testing.types.ts'
+import { useMessenger } from './use-messenger.ts'
 
 /**
  * Host styles for grid layout container.
@@ -23,8 +33,8 @@ const orchestratorStyles = createStyles({
 })
 
 /**
- * Orchestrator component for interactive testing.
- * Provides grid-based layout and event coordination between header, fixture, and mask components.
+ * Orchestrator element for interactive testing.
+ * Provides grid-based layout and event coordination between header, fixture, and mask elements.
  *
  * @remarks
  * Layout structure:
@@ -43,23 +53,15 @@ const orchestratorStyles = createStyles({
  *
  * Event coordination via bThreads:
  * - Listens for HEADER_EVENTS.toggle_mask from header
- * - Coordinates MASK_EVENTS.toggle to mask component
+ * - Coordinates MASK_EVENTS.toggle to mask element
  * - bThread pattern: waitFor header event � request mask event
  * - Repeats indefinitely for continuous coordination
- *
- * Components communicate through light DOM:
- * - Pure slot-based composition
- * - No component instances in shadow DOM
- * - Event flow: header � orchestrator � mask
  *
  * @see {@link HEADER_EVENTS.toggle_mask} for header toggle event
  * @see {@link MASK_EVENTS.toggle} for mask visibility control
  */
 export const PlaitedOrchestrator = bElement<{
-  [FIXTURE_EVENTS.run]: {
-    play?: InteractionStoryObj['play']
-    timeout?: number
-  }
+  [ORCHESTRATOR_EVENTS.init]: InitDetail
 }>({
   tag: STORY_ORCHESTRATOR,
   hostStyles: orchestratorHostStyles,
@@ -67,28 +69,31 @@ export const PlaitedOrchestrator = bElement<{
     <>
       <PlaitedHeader
         p-trigger={{ [HEADER_EVENTS.emit_toggle]: 'mask_toggle' }}
+        p-target={STORY_HEADER}
         {...orchestratorStyles.headerSlot}
       />
       <PlaitedFixture
         {...orchestratorStyles.fixtureSlot}
-        p-target='fixture'
+        p-target={STORY_FIXTURE}
       >
         <slot />
       </PlaitedFixture>
       <PlaitedMask
-        p-target='mask'
+        p-target={STORY_MASK}
         p-trigger={{ [MASK_EVENTS.emit_click]: 'emit_click' }}
         {...orchestratorStyles.maskSlot}
       />
     </>
   ),
-  publicEvents: [FIXTURE_EVENTS.run],
-  bProgram({ $, inspector }) {
-    const mask = $<BehavioralElement>('mask')[0]!
+  publicEvents: [ORCHESTRATOR_EVENTS.init],
+  bProgram({ $, inspector, trigger }) {
     if (!window?.__PLAITED_RUNNER__) {
       inspector.on()
     }
-    const fixture = $<BehavioralElement>('fixture')[0]!
+
+    const fixture = $<BehavioralElement>(STORY_FIXTURE)[0]!
+    const mask = $<BehavioralElement>(STORY_MASK)[0]!
+
     return {
       // Forward toggle event from header to mask
       mask_toggle(detail: boolean) {
@@ -99,7 +104,9 @@ export const PlaitedOrchestrator = bElement<{
       emit_click: () => {
         // Do something with mask click detail as needed
       },
-      run(detail) {
+      async [ORCHESTRATOR_EVENTS.init](detail) {
+        const messenger = useMessenger(trigger)
+        fixture.trigger({ type: ORCHESTRATOR_EVENTS.connect_messenger, detail: messenger })
         fixture.trigger({ type: FIXTURE_EVENTS.run, detail })
       },
     }

@@ -7,15 +7,15 @@ import { story } from 'plaited/testing'
 
 export const onlyStory = story.only({
   template: () => <div>Only story</div>,
-  description: 'Story marked with .only()',
+  intent: 'Story marked with .only()',
 })
 
 export const regularStory = story({
   template: () => <div>Regular story</div>,
-  description: 'Regular story without .only()',
+  intent: 'Regular story without .only()',
 })
 
 export const anotherRegularStory = story({
   template: () => <div>Another regular story</div>,
-  description: 'Another regular story',
+  intent: 'Another regular story',
 })

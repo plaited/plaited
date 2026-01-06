@@ -2,7 +2,7 @@
  * @internal
  * @module get-plaited-trigger
  *
- * Extends standard triggers with lifecycle management for Plaited components.
+ * Extends standard triggers with lifecycle management for BehavioralElements.
  * Decorator pattern augmenting base triggers with cleanup callback registration.
  *
  * @remarks
@@ -38,14 +38,14 @@ import type { Disconnect, PlaitedTrigger, Trigger } from './behavioral.types.ts'
  * - Set is passed by reference, allowing external management
  *
  * Integration notes:
- * - Called by bElement during component initialization
+ * - Called by bElement during custom element initialization
  * - Called by defineBProgram for standalone behavioral programs
- * - The disconnectSet is typically managed by the component lifecycle
- * - All callbacks in the set are invoked during component disconnection
+ * - The disconnectSet is typically managed by the custom element lifecycle
+ * - All callbacks in the set are invoked during custom element disconnection
  *
  * @see {@link PlaitedTrigger} for the enhanced trigger type
  * @see {@link Disconnect} for cleanup function signature
- * @see {@link bElement} for primary usage in components
+ * @see {@link bElement} for primary usage in BehavioralElements
  */
 export const usePlaitedTrigger = (trigger: Trigger, disconnectSet: Set<Disconnect>) => {
   Object.assign(trigger, {

@@ -1,4 +1,4 @@
-import { bElement, createHostStyles } from '../main.ts'
+import { bElement, createHostStyles } from '../ui.ts'
 import { wait } from '../utils.ts'
 import { DEFAULT_PLAY_TIMEOUT, ERROR_TYPES, FIXTURE_EVENTS, STORY_FIXTURE, SUCCESS_TYPES } from './testing.constants.ts'
 import type {
@@ -21,10 +21,10 @@ import {
   fireEvent,
 } from './testing.utils.ts'
 import { useInteract } from './use-interact.ts'
-import { useWebSocket } from './use-web-socket.ts'
+import { useMessenger } from './use-messenger.ts'
 
 /**
- * Story test fixture component for Plaited testing framework.
+ * Story test fixture element for Plaited testing framework.
  * Executes story tests, manages test lifecycle, and reports results.
  *
  * @remarks
@@ -111,11 +111,10 @@ export const PlaitedFixture = bElement<{
     />
   ),
   bProgram({ trigger, bThreads, bThread, bSync, emit, inspector }) {
-    const send = useWebSocket()
-    trigger.addDisconnectCallback(send.disconnect)
     if (!window?.__PLAITED_RUNNER__) {
       inspector.on()
     }
+    const send = useMessenger(trigger)
     bThreads.set({
       onRun: bThread(
         [
