@@ -59,6 +59,24 @@ bun run test:stories path/to/directory
 - **`*.spec.ts` or `*.spec.tsx`**: Unit/integration tests run with Bun
 - **`*.stories.tsx`**: Template/browser tests run with workshop CLI
 
+## Test Style Conventions
+
+### Use `test` Instead of `it`
+
+Use `test` instead of `it` in test files for consistency:
+
+```typescript
+// ✅ Good
+test('should render button correctly', () => {
+  // ...
+})
+
+// ❌ Avoid
+it('should render button correctly', () => {
+  // ...
+})
+```
+
 ## Skill Script Tests
 
 Claude Code skills in `.claude/skills/` may include executable scripts. Tests for these scripts follow a specific structure:

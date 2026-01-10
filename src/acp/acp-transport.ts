@@ -7,11 +7,11 @@
  * and notification streaming.
  *
  * The transport spawns the agent as a subprocess and communicates using
- * newline-delimited JSON messages.
+ * newline-delimited JSON messages with Zod runtime validation.
  */
 
+import { JSON_RPC_ERRORS } from './acp.constants.ts'
 import type {
-  CancelRequestParams,
   JsonRpcError,
   JsonRpcErrorResponse,
   JsonRpcMessage,
@@ -19,8 +19,8 @@ import type {
   JsonRpcRequest,
   JsonRpcResponse,
   JsonRpcSuccessResponse,
-} from './acp.types.ts'
-import { ACP_METHODS, JSON_RPC_ERRORS } from './acp.types.ts'
+} from './acp.schemas.ts'
+import { JsonRpcMessageSchema } from './acp.schemas.ts'
 
 // ============================================================================
 // Types
@@ -53,9 +53,16 @@ type PendingRequest = {
   timer: Timer
 }
 
-/** Subprocess type with piped stdio */
+/** Bun FileSink for subprocess stdin */
+type FileSink = {
+  write: (data: string | ArrayBufferView | ArrayBuffer) => number
+  flush: () => void
+  end: () => void
+}
+
+/** Subprocess type with piped stdio (Bun.spawn return type) */
 type PipedSubprocess = {
-  stdin: WritableStream<Uint8Array>
+  stdin: FileSink
   stdout: ReadableStream<Uint8Array>
   stderr: ReadableStream<Uint8Array>
   exited: Promise<number>
@@ -97,6 +104,7 @@ export class ACPTransportError extends Error {
  * - Request/response correlation with timeouts
  * - Notification and request routing
  * - Graceful shutdown
+ * - Runtime validation of incoming messages via Zod
  */
 export const createACPTransport = (config: ACPTransportConfig) => {
   const { command, cwd, env, timeout = 30000, onNotification, onRequest, onError, onClose } = config
@@ -108,7 +116,7 @@ export const createACPTransport = (config: ACPTransportConfig) => {
   let isClosing = false
 
   // --------------------------------------------------------------------------
-  // Message Parsing
+  // Message Parsing (with Zod validation)
   // --------------------------------------------------------------------------
 
   const parseMessages = (data: string): JsonRpcMessage[] => {
@@ -123,11 +131,22 @@ export const createACPTransport = (config: ACPTransportConfig) => {
       const trimmed = line.trim()
       if (!trimmed) continue
 
+      // Skip lines that don't look like JSON objects (debug output from adapters)
+      if (!trimmed.startsWith('{')) continue
+
       try {
-        const parsed = JSON.parse(trimmed) as JsonRpcMessage
-        messages.push(parsed)
+        const json = JSON.parse(trimmed)
+        const result = JsonRpcMessageSchema.safeParse(json)
+
+        if (!result.success) {
+          // Only log if it looked like valid JSON but failed schema validation
+          onError?.(new Error(`Invalid JSON-RPC message: ${result.error.message}`))
+          continue
+        }
+
+        messages.push(result.data as JsonRpcMessage)
       } catch {
-        onError?.(new Error(`Failed to parse JSON-RPC message: ${trimmed.slice(0, 100)}`))
+        // Silently skip non-JSON lines (common with debug output)
       }
     }
 
@@ -192,18 +211,14 @@ export const createACPTransport = (config: ACPTransportConfig) => {
   // Sending Messages
   // --------------------------------------------------------------------------
 
-  const sendRaw = async (message: JsonRpcMessage): Promise<void> => {
+  const sendRaw = (message: JsonRpcMessage): void => {
     if (!subprocess || isClosing) {
       throw new ACPTransportError('Transport is not connected')
     }
 
     const json = `${JSON.stringify(message)}\n`
-    const writer = subprocess.stdin.getWriter()
-    try {
-      await writer.write(new TextEncoder().encode(json))
-    } finally {
-      writer.releaseLock()
-    }
+    subprocess.stdin.write(json)
+    subprocess.stdin.flush()
   }
 
   const sendResponse = async (id: string | number, result: unknown): Promise<void> => {
@@ -212,7 +227,7 @@ export const createACPTransport = (config: ACPTransportConfig) => {
       id,
       result,
     }
-    await sendRaw(response)
+    sendRaw(response)
   }
 
   const sendErrorResponse = async (id: string | number, code: number, message: string): Promise<void> => {
@@ -221,7 +236,7 @@ export const createACPTransport = (config: ACPTransportConfig) => {
       id,
       error: { code, message },
     }
-    await sendRaw(response)
+    sendRaw(response)
   }
 
   // --------------------------------------------------------------------------
@@ -342,7 +357,7 @@ export const createACPTransport = (config: ACPTransportConfig) => {
     pendingRequests.set(id, { resolve, reject, timer })
 
     try {
-      await sendRaw(rpcRequest)
+      sendRaw(rpcRequest)
     } catch (err) {
       pendingRequests.delete(id)
       clearTimeout(timer)
@@ -364,17 +379,17 @@ export const createACPTransport = (config: ACPTransportConfig) => {
       method,
       ...(params !== undefined && { params }),
     }
-    await sendRaw(notification)
+    sendRaw(notification)
   }
 
   /**
-   * Cancels a pending request.
+   * Cancels a pending request using the ACP cancel notification.
    *
    * @param requestId - The ID of the request to cancel
    */
   const cancelRequest = async (requestId: string | number): Promise<void> => {
-    const params: CancelRequestParams = { id: requestId }
-    await notify(ACP_METHODS.CANCEL_REQUEST, params)
+    // Use SDK's CancelRequestNotification format
+    await notify('$/cancel_request', { requestId })
   }
 
   /**
@@ -395,8 +410,8 @@ export const createACPTransport = (config: ACPTransportConfig) => {
 
     try {
       if (graceful) {
-        // Try graceful shutdown
-        await request(ACP_METHODS.SHUTDOWN).catch(() => {})
+        // Try graceful shutdown - not in SDK, use string literal
+        await request('shutdown').catch(() => {})
       }
     } finally {
       subprocess.kill()

@@ -11,18 +11,25 @@
  * - `terminal/create` - Execute commands with network/fs restrictions
  */
 
-import { spawn } from 'node:child_process'
-import { readFile, writeFile } from 'node:fs/promises'
 import type { SandboxConfig } from './acp.types.ts'
 
 // ============================================================================
 // Types
 // ============================================================================
 
+/** Subprocess type with piped stdio */
+type PipedSubprocess = {
+  stdout: ReadableStream<Uint8Array>
+  stderr: ReadableStream<Uint8Array>
+  exited: Promise<number>
+  kill: (signal?: number) => void
+  pid: number
+}
+
 /** Terminal process state */
 type TerminalProcess = {
   id: string
-  process: ReturnType<typeof spawn>
+  process: PipedSubprocess
   output: string[]
   exitCode?: number
 }
@@ -143,14 +150,14 @@ export const createSandboxHandler = (config: SandboxConfig) => {
    */
   const readTextFile = async (path: string): Promise<string> => {
     if (!config.enabled) {
-      return readFile(path, 'utf-8')
+      return Bun.file(path).text()
     }
 
     if (!isReadAllowed(path)) {
       throw new Error(`Read access denied for path: ${path}`)
     }
 
-    return readFile(path, 'utf-8')
+    return Bun.file(path).text()
   }
 
   /**
@@ -158,7 +165,7 @@ export const createSandboxHandler = (config: SandboxConfig) => {
    */
   const writeTextFile = async (path: string, content: string): Promise<void> => {
     if (!config.enabled) {
-      await writeFile(path, content, 'utf-8')
+      await Bun.write(path, content)
       return
     }
 
@@ -166,7 +173,7 @@ export const createSandboxHandler = (config: SandboxConfig) => {
       throw new Error(`Write access denied for path: ${path}`)
     }
 
-    await writeFile(path, content, 'utf-8')
+    await Bun.write(path, content)
   }
 
   /**
@@ -187,28 +194,42 @@ export const createSandboxHandler = (config: SandboxConfig) => {
 
     const terminalId = `terminal-${++terminalIdCounter}`
 
-    const process = spawn(finalCommand, {
-      shell: true,
+    // Use Bun.spawn with shell execution
+    const proc = Bun.spawn(['sh', '-c', finalCommand], {
       cwd: options?.cwd,
-      env: { ...globalThis.process.env, ...options?.env },
-    })
+      env: { ...Bun.env, ...options?.env },
+      stdout: 'pipe',
+      stderr: 'pipe',
+    }) as unknown as PipedSubprocess
 
     const terminal: TerminalProcess = {
       id: terminalId,
-      process,
+      process: proc,
       output: [],
     }
 
-    process.stdout?.on('data', (data: Buffer) => {
-      terminal.output.push(data.toString())
-    })
+    // Read stdout asynchronously
+    const readStream = async (stream: ReadableStream<Uint8Array>) => {
+      const reader = stream.getReader()
+      const decoder = new TextDecoder()
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          terminal.output.push(decoder.decode(value, { stream: true }))
+        }
+      } catch {
+        // Stream closed
+      }
+    }
 
-    process.stderr?.on('data', (data: Buffer) => {
-      terminal.output.push(data.toString())
-    })
+    // Start reading both streams
+    readStream(proc.stdout)
+    readStream(proc.stderr)
 
-    process.on('exit', (code) => {
-      terminal.exitCode = code ?? 0
+    // Track exit code
+    proc.exited.then((code) => {
+      terminal.exitCode = code
     })
 
     terminals.set(terminalId, terminal)
@@ -244,11 +265,10 @@ export const createSandboxHandler = (config: SandboxConfig) => {
       return terminal.exitCode
     }
 
-    return new Promise((resolve) => {
-      terminal.process.on('exit', (code) => {
-        resolve(code ?? 0)
-      })
-    })
+    // Use Bun's exited promise
+    const code = await terminal.process.exited
+    terminal.exitCode = code
+    return code
   }
 
   /**

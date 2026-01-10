@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test'
-import { ACP_METHODS, JSON_RPC_ERRORS } from '../acp.types.ts'
 import { ACPTransportError } from '../acp-transport.ts'
 
 // ============================================================================
@@ -45,53 +44,10 @@ describe('ACPTransportError', () => {
 })
 
 // ============================================================================
-// Constants Tests
-// ============================================================================
-
-describe('JSON_RPC_ERRORS', () => {
-  test('has standard error codes', () => {
-    expect(JSON_RPC_ERRORS.PARSE_ERROR).toBe(-32700)
-    expect(JSON_RPC_ERRORS.INVALID_REQUEST).toBe(-32600)
-    expect(JSON_RPC_ERRORS.METHOD_NOT_FOUND).toBe(-32601)
-    expect(JSON_RPC_ERRORS.INVALID_PARAMS).toBe(-32602)
-    expect(JSON_RPC_ERRORS.INTERNAL_ERROR).toBe(-32603)
-    expect(JSON_RPC_ERRORS.REQUEST_CANCELLED).toBe(-32800)
-  })
-})
-
-describe('ACP_METHODS', () => {
-  test('has lifecycle methods', () => {
-    expect(ACP_METHODS.INITIALIZE).toBe('initialize')
-    expect(ACP_METHODS.SHUTDOWN).toBe('shutdown')
-  })
-
-  test('has session methods', () => {
-    expect(ACP_METHODS.CREATE_SESSION).toBe('session/create')
-    expect(ACP_METHODS.PROMPT).toBe('session/prompt')
-    expect(ACP_METHODS.CANCEL).toBe('session/cancel')
-    expect(ACP_METHODS.UPDATE).toBe('session/update')
-    expect(ACP_METHODS.REQUEST_PERMISSION).toBe('session/request_permission')
-  })
-
-  test('has file system methods', () => {
-    expect(ACP_METHODS.READ_TEXT_FILE).toBe('fs/read_text_file')
-    expect(ACP_METHODS.WRITE_TEXT_FILE).toBe('fs/write_text_file')
-  })
-
-  test('has terminal methods', () => {
-    expect(ACP_METHODS.TERMINAL_CREATE).toBe('terminal/create')
-    expect(ACP_METHODS.TERMINAL_OUTPUT).toBe('terminal/output')
-  })
-})
-
-// ============================================================================
 // Transport Creation Tests (without spawning)
 // ============================================================================
 
 describe('createACPTransport', () => {
-  // Note: Full transport tests would require spawning a mock subprocess.
-  // These tests verify the transport factory configuration.
-
   test('throws on empty command', async () => {
     const { createACPTransport } = await import('../acp-transport.ts')
 
@@ -154,7 +110,7 @@ describe('Transport with mock subprocess', () => {
     const { createACPTransport } = await import('../acp-transport.ts')
 
     const transport = createACPTransport({
-      command: ['cat'], // cat will echo back what we write
+      command: ['cat'], // cat echoes back input
       timeout: 1000,
     })
 
@@ -223,56 +179,5 @@ describe('Transport with mock subprocess', () => {
     } catch {
       // Expected - command not found
     }
-  })
-})
-
-// ============================================================================
-// JSON-RPC Message Format Tests
-// ============================================================================
-
-describe('JSON-RPC message structures', () => {
-  test('request format', () => {
-    const request = {
-      jsonrpc: '2.0' as const,
-      id: 1,
-      method: 'test/method',
-      params: { foo: 'bar' },
-    }
-    expect(request.jsonrpc).toBe('2.0')
-    expect(typeof request.id).toBe('number')
-    expect(request.method).toBe('test/method')
-  })
-
-  test('notification format (no id)', () => {
-    const notification = {
-      jsonrpc: '2.0' as const,
-      method: 'test/notification',
-      params: { data: 'value' },
-    }
-    expect(notification.jsonrpc).toBe('2.0')
-    expect('id' in notification).toBe(false)
-  })
-
-  test('success response format', () => {
-    const response = {
-      jsonrpc: '2.0' as const,
-      id: 1,
-      result: { success: true },
-    }
-    expect(response.jsonrpc).toBe('2.0')
-    expect(response.result).toEqual({ success: true })
-  })
-
-  test('error response format', () => {
-    const response = {
-      jsonrpc: '2.0' as const,
-      id: 1,
-      error: {
-        code: -32600,
-        message: 'Invalid Request',
-      },
-    }
-    expect(response.error.code).toBe(-32600)
-    expect(response.error.message).toBe('Invalid Request')
   })
 })

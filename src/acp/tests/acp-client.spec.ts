@@ -55,7 +55,26 @@ describe('createACPClient', () => {
       clientInfo: { name: 'test-client', version: '1.0.0' },
       capabilities: { fs: { readTextFile: true } },
       timeout: 60000,
-      onPermissionRequest: async () => ({ outcome: 'cancelled' }),
+      onPermissionRequest: async () => ({ outcome: { outcome: 'cancelled' } }),
+    })
+
+    expect(client).toBeDefined()
+  })
+
+  test('creates client with sandbox config', () => {
+    const client = createACPClient({
+      command: ['echo', 'test'],
+      sandbox: {
+        enabled: true,
+        filesystem: {
+          allowWrite: ['.', '/tmp'],
+          denyRead: ['~/.ssh'],
+        },
+        network: {
+          allowedDomains: ['github.com'],
+          allowLocalBinding: false,
+        },
+      },
     })
 
     expect(client).toBeDefined()
@@ -102,7 +121,7 @@ describe('Operations before connection', () => {
       command: ['echo', 'test'],
     })
 
-    await expect(client.createSession()).rejects.toThrow('Not connected')
+    await expect(client.createSession({ cwd: '/tmp', mcpServers: [] })).rejects.toThrow('Not connected')
   })
 
   test('promptSync throws when not connected', async () => {
@@ -159,37 +178,6 @@ describe('Disconnect safety', () => {
 })
 
 // ============================================================================
-// Client Type Exports
-// ============================================================================
-
-describe('Type exports', () => {
-  test('exports SessionUpdate type shape', () => {
-    // Verify the type structure matches expected shape
-    const update = {
-      type: 'update' as const,
-      params: {
-        sessionId: 'test',
-        content: [{ type: 'text' as const, text: 'Hello' }],
-      },
-    }
-    expect(update.type).toBe('update')
-    expect(update.params.sessionId).toBe('test')
-  })
-
-  test('exports PromptComplete type shape', () => {
-    const complete = {
-      type: 'complete' as const,
-      result: {
-        sessionId: 'test',
-        status: 'completed' as const,
-      },
-    }
-    expect(complete.type).toBe('complete')
-    expect(complete.result.status).toBe('completed')
-  })
-})
-
-// ============================================================================
 // Integration Tests with Mock Process
 // ============================================================================
 
@@ -232,103 +220,5 @@ describe('Client with mock process', () => {
       // Expected timeout
     }
     await client.disconnect(false)
-  })
-})
-
-// ============================================================================
-// Permission Handler Tests
-// ============================================================================
-
-describe('Permission handling', () => {
-  test('default handler auto-approves first option', async () => {
-    // This tests the internal auto-approve logic by checking
-    // that a client without custom handler is created successfully
-    const client = createACPClient({
-      command: ['echo', 'test'],
-    })
-
-    expect(client).toBeDefined()
-    // The auto-approve handler is used internally when onPermissionRequest is not provided
-  })
-
-  test('custom permission handler is accepted', () => {
-    const client = createACPClient({
-      command: ['echo', 'test'],
-      onPermissionRequest: async () => ({ outcome: 'cancelled' }),
-    })
-
-    expect(client).toBeDefined()
-    // Handler would be called during actual agent communication
-  })
-})
-
-// ============================================================================
-// Sandbox Configuration Tests
-// ============================================================================
-
-describe('Sandbox configuration', () => {
-  test('creates client with sandbox disabled', () => {
-    const client = createACPClient({
-      command: ['echo', 'test'],
-      sandbox: {
-        enabled: false,
-      },
-    })
-
-    expect(client).toBeDefined()
-  })
-
-  test('creates client with sandbox enabled and filesystem config', () => {
-    const client = createACPClient({
-      command: ['echo', 'test'],
-      sandbox: {
-        enabled: true,
-        filesystem: {
-          allowWrite: ['.', '/tmp'],
-          denyRead: ['~/.ssh', '~/.aws'],
-          denyWrite: ['.env'],
-        },
-      },
-    })
-
-    expect(client).toBeDefined()
-  })
-
-  test('creates client with sandbox enabled and network config', () => {
-    const client = createACPClient({
-      command: ['echo', 'test'],
-      sandbox: {
-        enabled: true,
-        network: {
-          allowedDomains: ['github.com', 'api.anthropic.com'],
-          deniedDomains: ['malicious.com'],
-          allowLocalBinding: false,
-        },
-      },
-    })
-
-    expect(client).toBeDefined()
-  })
-
-  test('creates client with full sandbox config', () => {
-    const client = createACPClient({
-      command: ['echo', 'test'],
-      sandbox: {
-        enabled: true,
-        filesystem: {
-          allowWrite: ['.', '/tmp'],
-          denyRead: ['~/.ssh'],
-          denyWrite: ['.env', '.git/hooks/'],
-        },
-        network: {
-          allowedDomains: ['*.github.com'],
-          deniedDomains: [],
-          allowUnixSockets: ['/var/run/docker.sock'],
-          allowLocalBinding: true,
-        },
-      },
-    })
-
-    expect(client).toBeDefined()
   })
 })

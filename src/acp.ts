@@ -6,6 +6,10 @@
  * ACP-compatible agents like Claude Code, Droid, Gemini CLI, and others.
  * Designed for automated testing and evaluation workflows.
  *
+ * **Important:** For SDK types (ToolCall, ContentBlock, SessionNotification, etc.),
+ * import directly from `@agentclientprotocol/sdk`. This module only exports
+ * Plaited-specific client utilities.
+ *
  * **Core exports:**
  * - {@link createACPClient} - Factory for creating client instances
  * - {@link ACPClient} - Client type for type annotations
@@ -15,61 +19,12 @@
  * - Extractors: {@link extractText}, {@link extractToolCalls}, etc.
  * - Analysis: {@link summarizeResponse}
  *
- * **Example usage:**
- * ```typescript
- * import { createACPClient, createPrompt, summarizeResponse } from 'plaited/acp'
- *
- * const client = createACPClient({
- *   command: ['claude', 'code'],
- *   cwd: '/path/to/project'
- * })
- *
- * await client.connect()
- * const session = await client.createSession()
- * const { result, updates } = await client.promptSync(
- *   session.id,
- *   createPrompt('List all TypeScript files')
- * )
- *
- * const summary = summarizeResponse(updates)
- * console.log('Response:', summary.text)
- * console.log('Tool calls:', summary.toolCallCount)
- *
- * await client.disconnect()
- * ```
+ * See tests in `src/acp/tests/` for usage patterns.
  */
 
-// Types
+export * from './acp/acp.constants.ts'
+export * from './acp/acp.schemas.ts'
 export type * from './acp/acp.types.ts'
-
-// Client
-export { type ACPClient, type ACPClientConfig, ACPClientError, createACPClient } from './acp/acp-client.ts'
-// Helpers - Content builders
-// Helpers - Extractors
-// Helpers - Utilities
-export {
-  createAudioContent,
-  createBlobResource,
-  createImageContent,
-  createPrompt,
-  createPromptWithFiles,
-  createPromptWithImage,
-  createResourceLink,
-  createTextContent,
-  createTextResource,
-  extractLatestToolCalls,
-  extractPlan,
-  extractText,
-  extractTextFromUpdates,
-  extractToolCalls,
-  filterPlanByStatus,
-  filterToolCallsByName,
-  filterToolCallsByStatus,
-  getCompletedToolCallsWithContent,
-  getPlanProgress,
-  hasToolCallErrors,
-  type PromptResponseSummary,
-  summarizeResponse,
-} from './acp/acp-helpers.ts'
-// Transport (for advanced use cases)
-export { type ACPTransport, ACPTransportError, createACPTransport } from './acp/acp-transport.ts'
+export * from './acp/acp-client.ts'
+export * from './acp/acp-helpers.ts'
+export * from './acp/acp-transport.ts'

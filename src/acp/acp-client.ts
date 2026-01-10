@@ -16,29 +16,32 @@
 
 import type {
   AgentCapabilities,
+  CancelNotification,
   ClientCapabilities,
-  ClientInfo,
   ContentBlock,
-  CreateSessionParams,
-  InitializeParams,
-  InitializeResult,
-  PromptParams,
-  PromptResult,
-  ReadTextFileParams,
-  RequestPermissionParams,
-  RequestPermissionResult,
-  SandboxConfig,
-  Session,
-  SessionCancelParams,
-  SessionUpdateParams,
-  TerminalCreateParams,
-  TerminalOutputParams,
-  WriteTextFileParams,
-} from './acp.types.ts'
-import { ACP_METHODS, ACP_PROTOCOL_VERSION } from './acp.types.ts'
+  Implementation,
+  InitializeRequest,
+  InitializeResponse,
+  NewSessionRequest,
+  PromptRequest,
+  PromptResponse,
+  RequestPermissionRequest,
+  RequestPermissionResponse,
+  SessionNotification,
+} from '@agentclientprotocol/sdk'
+import { version } from '../../package.json' with { type: 'json' }
+import { ACP_METHODS, ACP_PROTOCOL_VERSION, DEFAULT_ACP_CLIENT_NAME } from './acp.constants.ts'
+import {
+  CreateTerminalRequestSchema,
+  ReadTextFileRequestSchema,
+  RequestPermissionRequestSchema,
+  SessionNotificationSchema,
+  TerminalOutputRequestSchema,
+  WriteTextFileRequestSchema,
+} from './acp.schemas.ts'
+import type { SandboxConfig, Session } from './acp.types.ts'
 import { createSandboxHandler, type SandboxHandler } from './acp-sandbox.ts'
 import { type ACPTransport, ACPTransportError, createACPTransport } from './acp-transport.ts'
-
 // ============================================================================
 // Types
 // ============================================================================
@@ -52,7 +55,7 @@ export type ACPClientConfig = {
   /** Environment variables for agent process */
   env?: Record<string, string>
   /** Client info for initialization */
-  clientInfo?: ClientInfo
+  clientInfo?: Implementation
   /** Client capabilities to advertise */
   capabilities?: ClientCapabilities
   /** Timeout for operations in milliseconds (default: 30000) */
@@ -61,7 +64,7 @@ export type ACPClientConfig = {
    * Permission handler for agent requests.
    * Default: auto-approve all permissions (headless mode)
    */
-  onPermissionRequest?: (params: RequestPermissionParams) => Promise<RequestPermissionResult>
+  onPermissionRequest?: (params: RequestPermissionRequest) => Promise<RequestPermissionResponse>
   /**
    * Sandbox configuration for file and terminal operations.
    * Uses @anthropic-ai/sandbox-runtime for OS-level restrictions.
@@ -73,13 +76,13 @@ export type ACPClientConfig = {
 /** Session update emitted during prompt streaming */
 export type SessionUpdate = {
   type: 'update'
-  params: SessionUpdateParams
+  params: SessionNotification
 }
 
 /** Prompt completion emitted when prompt finishes */
 export type PromptComplete = {
   type: 'complete'
-  result: PromptResult
+  result: PromptResponse
 }
 
 /** Events emitted during prompt streaming */
@@ -103,7 +106,7 @@ export class ACPClientError extends Error {
 /**
  * Creates a headless ACP client for agent evaluation.
  *
- * @param config - Client configuration
+ * @param config - Client configuration including command, cwd, and sandbox options
  * @returns Client object with lifecycle, session, and prompt methods
  *
  * @remarks
@@ -114,27 +117,15 @@ export class ACPClientError extends Error {
  * - Prompt streaming with real-time updates
  * - Automatic permission approval for headless evaluation
  *
- * Basic usage:
- * ```typescript
- * const client = createACPClient({
- *   command: ['claude', 'code'],
- *   cwd: '/path/to/project'
- * })
- *
- * await client.connect()
- * const session = await client.createSession()
- * const result = await client.promptSync(session.id, [
- *   { type: 'text', text: 'List all TypeScript files' }
- * ])
- * await client.disconnect()
- * ```
+ * See module-level documentation in `src/acp.ts` for usage guidance.
+ * See client tests for usage patterns.
  */
 export const createACPClient = (config: ACPClientConfig) => {
   const {
     command,
     cwd,
     env,
-    clientInfo = { name: 'plaited-acp-client', version: '1.0.0' },
+    clientInfo = { name: DEFAULT_ACP_CLIENT_NAME, version },
     capabilities = { fs: { readTextFile: true, writeTextFile: true }, terminal: true },
     timeout = 30000,
     onPermissionRequest,
@@ -143,7 +134,7 @@ export const createACPClient = (config: ACPClientConfig) => {
 
   let transport: ACPTransport | undefined
   let agentCapabilities: AgentCapabilities | undefined
-  let initializeResult: InitializeResult | undefined
+  let initializeResult: InitializeResponse | undefined
 
   // Create sandbox handler if enabled
   const sandboxHandler: SandboxHandler | undefined = sandbox?.enabled ? createSandboxHandler(sandbox) : undefined
@@ -152,8 +143,8 @@ export const createACPClient = (config: ACPClientConfig) => {
   const activePrompts = new Map<
     string,
     {
-      updates: SessionUpdateParams[]
-      resolve: (result: PromptResult) => void
+      updates: SessionNotification[]
+      resolve: (result: PromptResponse) => void
       reject: (error: Error) => void
     }
   >()
@@ -165,15 +156,35 @@ export const createACPClient = (config: ACPClientConfig) => {
   /**
    * Default permission handler: auto-approve all requests.
    * For headless evaluation in trusted environments.
+   *
+   * @remarks
+   * Validates params with Zod before processing.
+   * Prioritizes `allow_always` for faster headless evaluation with fewer
+   * permission round-trips. Sandbox restrictions provide the safety net.
+   * Cancels if validation fails or no allow option is available.
    */
-  const autoApprovePermission = async (params: RequestPermissionParams): Promise<RequestPermissionResult> => {
-    // Select the first option (typically "allow" or "approve")
-    const firstOption = params.options[0]
-    if (firstOption) {
-      return { outcome: 'selected', optionId: firstOption.id }
+  const autoApprovePermission = async (params: RequestPermissionRequest): Promise<RequestPermissionResponse> => {
+    const result = RequestPermissionRequestSchema.safeParse(params)
+    if (!result.success) {
+      return { outcome: { outcome: 'cancelled' } }
     }
-    // Fallback: cancel if no options
-    return { outcome: 'cancelled' }
+
+    const { options } = result.data
+
+    // Priority: allow_always (fewer round-trips) > allow_once
+    // Sandbox restrictions are the safety net, not permissions
+    const allowAlways = options.find((opt) => opt.kind === 'allow_always')
+    if (allowAlways) {
+      return { outcome: { outcome: 'selected', optionId: allowAlways.optionId } }
+    }
+
+    const allowOnce = options.find((opt) => opt.kind === 'allow_once')
+    if (allowOnce) {
+      return { outcome: { outcome: 'selected', optionId: allowOnce.optionId } }
+    }
+
+    // No allow option available - cancel
+    return { outcome: { outcome: 'cancelled' } }
   }
 
   const handlePermissionRequest = onPermissionRequest ?? autoApprovePermission
@@ -184,7 +195,7 @@ export const createACPClient = (config: ACPClientConfig) => {
 
   const handleNotification = (method: string, params: unknown) => {
     if (method === ACP_METHODS.UPDATE) {
-      const updateParams = params as SessionUpdateParams
+      const updateParams = SessionNotificationSchema.parse(params)
       const activePrompt = activePrompts.get(updateParams.sessionId)
       if (activePrompt) {
         activePrompt.updates.push(updateParams)
@@ -194,7 +205,7 @@ export const createACPClient = (config: ACPClientConfig) => {
 
   const handleRequest = async (method: string, params: unknown): Promise<unknown> => {
     if (method === ACP_METHODS.REQUEST_PERMISSION) {
-      return handlePermissionRequest(params as RequestPermissionParams)
+      return handlePermissionRequest(RequestPermissionRequestSchema.parse(params))
     }
 
     // File system: read
@@ -202,7 +213,7 @@ export const createACPClient = (config: ACPClientConfig) => {
       if (!sandboxHandler) {
         throw new ACPClientError('File system requests require sandbox to be enabled')
       }
-      const { path } = params as ReadTextFileParams
+      const { path } = ReadTextFileRequestSchema.parse(params)
       const content = await sandboxHandler.readTextFile(path)
       return { content }
     }
@@ -212,7 +223,7 @@ export const createACPClient = (config: ACPClientConfig) => {
       if (!sandboxHandler) {
         throw new ACPClientError('File system requests require sandbox to be enabled')
       }
-      const { path, content } = params as WriteTextFileParams
+      const { path, content } = WriteTextFileRequestSchema.parse(params)
       await sandboxHandler.writeTextFile(path, content)
       return {}
     }
@@ -222,8 +233,15 @@ export const createACPClient = (config: ACPClientConfig) => {
       if (!sandboxHandler) {
         throw new ACPClientError('Terminal requests require sandbox to be enabled')
       }
-      const { command, cwd: termCwd, env: termEnv } = params as TerminalCreateParams
-      const terminalId = await sandboxHandler.createTerminal(command, { cwd: termCwd, env: termEnv })
+      const { command: cmd, cwd: termCwd, env: termEnv } = CreateTerminalRequestSchema.parse(params)
+      // SDK uses command as string + args array, convert env from EnvVariable[]
+      const envRecord: Record<string, string> = {}
+      if (termEnv) {
+        for (const v of termEnv) {
+          envRecord[v.name] = v.value
+        }
+      }
+      const terminalId = await sandboxHandler.createTerminal(cmd, { cwd: termCwd ?? undefined, env: envRecord })
       return { terminalId }
     }
 
@@ -232,7 +250,7 @@ export const createACPClient = (config: ACPClientConfig) => {
       if (!sandboxHandler) {
         throw new ACPClientError('Terminal requests require sandbox to be enabled')
       }
-      const { terminalId } = params as TerminalOutputParams
+      const { terminalId } = TerminalOutputRequestSchema.parse(params)
       const { output, exitCode } = sandboxHandler.getTerminalOutput(terminalId)
       return { output, exitCode }
     }
@@ -242,7 +260,7 @@ export const createACPClient = (config: ACPClientConfig) => {
       if (!sandboxHandler) {
         throw new ACPClientError('Terminal requests require sandbox to be enabled')
       }
-      const { terminalId } = params as TerminalOutputParams
+      const { terminalId } = TerminalOutputRequestSchema.parse(params)
       const exitCode = await sandboxHandler.waitForExit(terminalId)
       return { exitCode }
     }
@@ -252,7 +270,7 @@ export const createACPClient = (config: ACPClientConfig) => {
       if (!sandboxHandler) {
         throw new ACPClientError('Terminal requests require sandbox to be enabled')
       }
-      const { terminalId } = params as TerminalOutputParams
+      const { terminalId } = TerminalOutputRequestSchema.parse(params)
       sandboxHandler.killTerminal(terminalId)
       return {}
     }
@@ -262,7 +280,7 @@ export const createACPClient = (config: ACPClientConfig) => {
       if (!sandboxHandler) {
         throw new ACPClientError('Terminal requests require sandbox to be enabled')
       }
-      const { terminalId } = params as TerminalOutputParams
+      const { terminalId } = TerminalOutputRequestSchema.parse(params)
       sandboxHandler.releaseTerminal(terminalId)
       return {}
     }
@@ -280,7 +298,7 @@ export const createACPClient = (config: ACPClientConfig) => {
    * @returns Initialize result with agent capabilities
    * @throws {ACPClientError} If already connected or connection fails
    */
-  const connect = async (): Promise<InitializeResult> => {
+  const connect = async (): Promise<InitializeResponse> => {
     if (transport?.isConnected()) {
       throw new ACPClientError('Already connected')
     }
@@ -307,15 +325,15 @@ export const createACPClient = (config: ACPClientConfig) => {
     await transport.start()
 
     // Initialize protocol
-    const initParams: InitializeParams = {
+    const initParams: InitializeRequest = {
       protocolVersion: ACP_PROTOCOL_VERSION,
       clientInfo,
       clientCapabilities: capabilities,
     }
 
-    initializeResult = await transport.request<InitializeResult>(ACP_METHODS.INITIALIZE, initParams)
+    initializeResult = await transport.request<InitializeResponse>(ACP_METHODS.INITIALIZE, initParams)
 
-    agentCapabilities = initializeResult.agentCapabilities
+    agentCapabilities = initializeResult?.agentCapabilities
 
     return initializeResult
   }
@@ -352,16 +370,17 @@ export const createACPClient = (config: ACPClientConfig) => {
   /**
    * Creates a new conversation session.
    *
-   * @param params - Optional session parameters
+   * @param params - Session parameters (cwd and mcpServers are required by SDK)
    * @returns The created session
    * @throws {ACPClientError} If not connected
    */
-  const createSession = async (params?: CreateSessionParams): Promise<Session> => {
+  const createSession = async (params: NewSessionRequest): Promise<Session> => {
     if (!transport?.isConnected()) {
       throw new ACPClientError('Not connected')
     }
 
-    return transport.request<Session>(ACP_METHODS.CREATE_SESSION, params ?? {})
+    const response = await transport.request<{ sessionId: string }>(ACP_METHODS.CREATE_SESSION, params)
+    return { id: response.sessionId }
   }
 
   // --------------------------------------------------------------------------
@@ -385,10 +404,10 @@ export const createACPClient = (config: ACPClientConfig) => {
       throw new ACPClientError('Not connected')
     }
 
-    const { promise, resolve, reject } = Promise.withResolvers<PromptResult>()
+    const { promise, resolve, reject } = Promise.withResolvers<PromptResponse>()
 
     const promptState = {
-      updates: [] as SessionUpdateParams[],
+      updates: [] as SessionNotification[],
       resolve,
       reject,
     }
@@ -396,13 +415,16 @@ export const createACPClient = (config: ACPClientConfig) => {
     activePrompts.set(sessionId, promptState)
 
     // Send prompt request
-    const promptParams: PromptParams = {
+    const promptParams: PromptRequest = {
       sessionId,
       prompt: content,
     }
 
     // Start the prompt request (don't await - we'll poll for updates)
-    const promptPromise = transport.request<PromptResult>(ACP_METHODS.PROMPT, promptParams).then(resolve).catch(reject)
+    const promptPromise = transport
+      .request<PromptResponse>(ACP_METHODS.PROMPT, promptParams)
+      .then(resolve)
+      .catch(reject)
 
     try {
       // Poll for updates until prompt completes
@@ -466,11 +488,11 @@ export const createACPClient = (config: ACPClientConfig) => {
     sessionId: string,
     content: ContentBlock[],
   ): Promise<{
-    result: PromptResult
-    updates: SessionUpdateParams[]
+    result: PromptResponse
+    updates: SessionNotification[]
   }> => {
-    const updates: SessionUpdateParams[] = []
-    let result: PromptResult | undefined
+    const updates: SessionNotification[] = []
+    let result: PromptResponse | undefined
 
     for await (const event of prompt(sessionId, content)) {
       if (event.type === 'update') {
@@ -498,7 +520,7 @@ export const createACPClient = (config: ACPClientConfig) => {
       throw new ACPClientError('Not connected')
     }
 
-    const cancelParams: SessionCancelParams = { sessionId }
+    const cancelParams: CancelNotification = { sessionId }
     await transport.notify(ACP_METHODS.CANCEL, cancelParams)
   }
 
@@ -520,7 +542,7 @@ export const createACPClient = (config: ACPClientConfig) => {
    *
    * @returns Initialize result or undefined if not connected
    */
-  const getInitializeResult = (): InitializeResult | undefined => {
+  const getInitializeResult = (): InitializeResponse | undefined => {
     return initializeResult
   }
 

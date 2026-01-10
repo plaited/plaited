@@ -9,18 +9,16 @@
  */
 
 import type {
-  AudioContent,
-  BlobResource,
+  BlobResourceContents,
   ContentBlock,
-  ImageContent,
   PlanEntry,
-  ResourceContent,
-  ResourceLinkContent,
-  SessionUpdateParams,
+  SessionNotification,
+  SessionUpdate,
   TextContent,
-  TextResource,
+  TextResourceContents,
   ToolCall,
-} from './acp.types.ts'
+  ToolCallContent,
+} from '@agentclientprotocol/sdk'
 
 // ============================================================================
 // Content Block Builders
@@ -32,7 +30,7 @@ import type {
  * @param text - The text content
  * @returns Text content block
  */
-export const createTextContent = (text: string): TextContent => ({
+export const createTextContent = (text: string): ContentBlock => ({
   type: 'text',
   text,
 })
@@ -42,14 +40,12 @@ export const createTextContent = (text: string): TextContent => ({
  *
  * @param data - Base64-encoded image data
  * @param mimeType - MIME type (e.g., 'image/png', 'image/jpeg')
- * @param uri - Optional URI reference
  * @returns Image content block
  */
-export const createImageContent = (data: string, mimeType: string, uri?: string): ImageContent => ({
+export const createImageContent = (data: string, mimeType: string): ContentBlock => ({
   type: 'image',
   data,
   mimeType,
-  ...(uri && { uri }),
 })
 
 /**
@@ -59,57 +55,83 @@ export const createImageContent = (data: string, mimeType: string, uri?: string)
  * @param mimeType - MIME type (e.g., 'audio/wav', 'audio/mp3')
  * @returns Audio content block
  */
-export const createAudioContent = (data: string, mimeType: string): AudioContent => ({
+export const createAudioContent = (data: string, mimeType: string): ContentBlock => ({
   type: 'audio',
   data,
   mimeType,
 })
 
+/** Parameters for creating a resource link */
+export type CreateResourceLinkParams = {
+  /** URI to the resource */
+  uri: string
+  /** Resource name (required by SDK) */
+  name: string
+  /** Optional MIME type */
+  mimeType?: string
+}
+
 /**
  * Creates a resource link content block.
  *
- * @param uri - URI to the resource
- * @param mimeType - Optional MIME type
+ * @param params - Resource link parameters
  * @returns Resource link content block
  */
-export const createResourceLink = (uri: string, mimeType?: string): ResourceLinkContent => ({
+export const createResourceLink = ({ uri, name, mimeType }: CreateResourceLinkParams): ContentBlock => ({
   type: 'resource_link',
   uri,
+  name,
   ...(mimeType && { mimeType }),
 })
+
+/** Parameters for creating an embedded text resource */
+export type CreateTextResourceParams = {
+  /** URI identifying the resource */
+  uri: string
+  /** Text content of the resource */
+  text: string
+  /** Optional MIME type */
+  mimeType?: string
+}
 
 /**
  * Creates an embedded text resource content block.
  *
- * @param uri - URI identifying the resource
- * @param text - Text content of the resource
- * @param mimeType - Optional MIME type
+ * @param params - Text resource parameters
  * @returns Resource content block
  */
-export const createTextResource = (uri: string, text: string, mimeType?: string): ResourceContent => ({
+export const createTextResource = ({ uri, text, mimeType }: CreateTextResourceParams): ContentBlock => ({
   type: 'resource',
   resource: {
     uri,
     text,
     ...(mimeType && { mimeType }),
-  } as TextResource,
+  } as TextResourceContents,
 })
+
+/** Parameters for creating an embedded blob resource */
+export type CreateBlobResourceParams = {
+  /** URI identifying the resource */
+  uri: string
+  /** Base64-encoded binary data */
+  blob: string
+  /** Optional MIME type */
+  mimeType?: string
+}
 
 /**
  * Creates an embedded blob resource content block.
  *
- * @param uri - URI identifying the resource
- * @param blob - Base64-encoded binary data
- * @param mimeType - Optional MIME type
+ * @param params - Blob resource parameters
  * @returns Resource content block
  */
-export const createBlobResource = (uri: string, blob: string, mimeType?: string): ResourceContent => ({
+export const createBlobResource = ({ uri, blob, mimeType }: CreateBlobResourceParams): ContentBlock => ({
   type: 'resource',
   resource: {
     uri,
     blob,
     ...(mimeType && { mimeType }),
-  } as BlobResource,
+  } as BlobResourceContents,
 })
 
 // ============================================================================
@@ -124,71 +146,111 @@ export const createBlobResource = (uri: string, blob: string, mimeType?: string)
  */
 export const extractText = (content: ContentBlock[]): string => {
   return content
-    .filter((block): block is TextContent => block.type === 'text')
+    .filter((block): block is TextContent & { type: 'text' } => block.type === 'text')
     .map((block) => block.text)
     .join('\n')
 }
 
 /**
- * Extracts text from session updates.
- *
- * @param updates - Array of session update parameters
- * @returns Concatenated text from all updates
+ * Helper to extract content from SessionUpdate (discriminated union)
  */
-export const extractTextFromUpdates = (updates: SessionUpdateParams[]): string => {
-  return updates
-    .filter((update) => update.content)
-    .map((update) => extractText(update.content!))
-    .filter(Boolean)
-    .join('\n')
+const getUpdateContent = (update: SessionUpdate): ContentBlock | undefined => {
+  if (
+    update.sessionUpdate === 'user_message_chunk' ||
+    update.sessionUpdate === 'agent_message_chunk' ||
+    update.sessionUpdate === 'agent_thought_chunk'
+  ) {
+    return update.content
+  }
+  return undefined
 }
 
 /**
- * Extracts all tool calls from session updates.
+ * Helper to extract tool call from SessionUpdate
+ */
+const getUpdateToolCall = (update: SessionUpdate): ToolCall | undefined => {
+  if (update.sessionUpdate === 'tool_call') {
+    return update
+  }
+  return undefined
+}
+
+/**
+ * Helper to extract plan from SessionUpdate
+ */
+const getUpdatePlan = (update: SessionUpdate): PlanEntry[] | undefined => {
+  if (update.sessionUpdate === 'plan') {
+    return update.entries
+  }
+  return undefined
+}
+
+/**
+ * Extracts text from session notifications.
  *
- * @param updates - Array of session update parameters
+ * @param notifications - Array of session notifications
+ * @returns Concatenated text from all updates
+ */
+export const extractTextFromUpdates = (notifications: SessionNotification[]): string => {
+  const texts: string[] = []
+  for (const notification of notifications) {
+    const content = getUpdateContent(notification.update)
+    if (content && content.type === 'text') {
+      texts.push(content.text)
+    }
+  }
+  return texts.join('\n')
+}
+
+/**
+ * Extracts all tool calls from session notifications.
+ *
+ * @param notifications - Array of session notifications
  * @returns Array of all tool calls
  */
-export const extractToolCalls = (updates: SessionUpdateParams[]): ToolCall[] => {
+export const extractToolCalls = (notifications: SessionNotification[]): ToolCall[] => {
   const calls: ToolCall[] = []
-  for (const update of updates) {
-    if (update.toolCalls) {
-      calls.push(...update.toolCalls)
+  for (const notification of notifications) {
+    const toolCall = getUpdateToolCall(notification.update)
+    if (toolCall) {
+      calls.push(toolCall)
     }
   }
   return calls
 }
 
 /**
- * Extracts the latest state of each tool call (deduplicated by ID).
+ * Extracts the latest state of each tool call (deduplicated by toolCallId).
  *
- * @param updates - Array of session update parameters
+ * @param notifications - Array of session notifications
  * @returns Map of tool call ID to latest tool call state
  */
-export const extractLatestToolCalls = (updates: SessionUpdateParams[]): Map<string, ToolCall> => {
+export const extractLatestToolCalls = (notifications: SessionNotification[]): Map<string, ToolCall> => {
   const latest = new Map<string, ToolCall>()
-  for (const update of updates) {
-    if (update.toolCalls) {
-      for (const call of update.toolCalls) {
-        latest.set(call.id, call)
-      }
+  for (const notification of notifications) {
+    const toolCall = getUpdateToolCall(notification.update)
+    if (toolCall) {
+      latest.set(toolCall.toolCallId, toolCall)
     }
   }
   return latest
 }
 
 /**
- * Extracts the latest plan from session updates.
+ * Extracts the latest plan from session notifications.
  *
- * @param updates - Array of session update parameters
+ * @param notifications - Array of session notifications
  * @returns Latest plan entries or undefined if no plan
  */
-export const extractPlan = (updates: SessionUpdateParams[]): PlanEntry[] | undefined => {
+export const extractPlan = (notifications: SessionNotification[]): PlanEntry[] | undefined => {
   // Plans are replaced entirely, so find the last one
-  for (let i = updates.length - 1; i >= 0; i--) {
-    const update = updates[i]
-    if (update?.plan) {
-      return update.plan
+  for (let i = notifications.length - 1; i >= 0; i--) {
+    const notification = notifications[i]
+    if (notification) {
+      const plan = getUpdatePlan(notification.update)
+      if (plan) {
+        return plan
+      }
     }
   }
   return undefined
@@ -210,24 +272,24 @@ export const filterToolCallsByStatus = (toolCalls: ToolCall[], status: ToolCall[
 }
 
 /**
- * Filters tool calls by name.
+ * Filters tool calls by title.
  *
  * @param toolCalls - Array of tool calls
- * @param name - Tool name to filter by
+ * @param title - Tool title to filter by
  * @returns Filtered tool calls
  */
-export const filterToolCallsByName = (toolCalls: ToolCall[], name: string): ToolCall[] => {
-  return toolCalls.filter((call) => call.name === name)
+export const filterToolCallsByTitle = (toolCalls: ToolCall[], title: string): ToolCall[] => {
+  return toolCalls.filter((call) => call.title === title)
 }
 
 /**
- * Checks if any tool calls have errors.
+ * Checks if any tool calls have failed.
  *
  * @param toolCalls - Array of tool calls
- * @returns True if any tool call has error status
+ * @returns True if any tool call has 'failed' status
  */
 export const hasToolCallErrors = (toolCalls: ToolCall[]): boolean => {
-  return toolCalls.some((call) => call.status === 'error')
+  return toolCalls.some((call) => call.status === 'failed')
 }
 
 /**
@@ -238,9 +300,9 @@ export const hasToolCallErrors = (toolCalls: ToolCall[]): boolean => {
  */
 export const getCompletedToolCallsWithContent = (
   toolCalls: ToolCall[],
-): Array<ToolCall & { content: ContentBlock[] }> => {
+): Array<ToolCall & { content: ToolCallContent[] }> => {
   return toolCalls.filter(
-    (call): call is ToolCall & { content: ContentBlock[] } =>
+    (call): call is ToolCall & { content: ToolCallContent[] } =>
       call.status === 'completed' && call.content !== undefined && call.content.length > 0,
   )
 }
@@ -300,21 +362,29 @@ export const createPromptWithFiles = (
   const blocks: ContentBlock[] = [createTextContent(text)]
 
   for (const file of files) {
-    blocks.push(createTextResource(`file://${file.path}`, file.content, 'text/plain'))
+    blocks.push(createTextResource({ uri: `file://${file.path}`, text: file.content, mimeType: 'text/plain' }))
   }
 
   return blocks
 }
 
+/** Parameters for creating a prompt with image */
+export type CreatePromptWithImageParams = {
+  /** The prompt text */
+  text: string
+  /** Base64-encoded image data */
+  imageData: string
+  /** Image MIME type */
+  mimeType: string
+}
+
 /**
  * Creates a prompt with text and image.
  *
- * @param text - The prompt text
- * @param imageData - Base64-encoded image data
- * @param mimeType - Image MIME type
+ * @param params - Prompt with image parameters
  * @returns Array of content blocks
  */
-export const createPromptWithImage = (text: string, imageData: string, mimeType: string): ContentBlock[] => {
+export const createPromptWithImage = ({ text, imageData, mimeType }: CreatePromptWithImageParams): ContentBlock[] => {
   return [createTextContent(text), createImageContent(imageData, mimeType)]
 }
 
@@ -330,8 +400,8 @@ export type PromptResponseSummary = {
   toolCallCount: number
   /** Tool calls that completed */
   completedToolCalls: ToolCall[]
-  /** Tool calls that errored */
-  erroredToolCalls: ToolCall[]
+  /** Tool calls that failed */
+  failedToolCalls: ToolCall[]
   /** Final plan state */
   plan?: PlanEntry[]
   /** Plan completion percentage */
@@ -343,19 +413,19 @@ export type PromptResponseSummary = {
 /**
  * Creates a summary of a prompt response for evaluation.
  *
- * @param updates - Session updates from the prompt
+ * @param notifications - Session notifications from the prompt
  * @returns Response summary
  */
-export const summarizeResponse = (updates: SessionUpdateParams[]): PromptResponseSummary => {
-  const text = extractTextFromUpdates(updates)
-  const toolCalls = [...extractLatestToolCalls(updates).values()]
-  const plan = extractPlan(updates)
+export const summarizeResponse = (notifications: SessionNotification[]): PromptResponseSummary => {
+  const text = extractTextFromUpdates(notifications)
+  const toolCalls = [...extractLatestToolCalls(notifications).values()]
+  const plan = extractPlan(notifications)
 
   return {
     text,
     toolCallCount: toolCalls.length,
     completedToolCalls: filterToolCallsByStatus(toolCalls, 'completed'),
-    erroredToolCalls: filterToolCallsByStatus(toolCalls, 'error'),
+    failedToolCalls: filterToolCallsByStatus(toolCalls, 'failed'),
     plan,
     planProgress: plan ? getPlanProgress(plan) : undefined,
     hasErrors: hasToolCallErrors(toolCalls),

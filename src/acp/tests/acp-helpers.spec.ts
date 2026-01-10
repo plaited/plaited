@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { ContentBlock, PlanEntry, SessionUpdateParams, ToolCall } from '../acp.types.ts'
+import type { ContentBlock, PlanEntry, SessionNotification, ToolCall } from '@agentclientprotocol/sdk'
 import {
   createAudioContent,
   createBlobResource,
@@ -16,8 +16,8 @@ import {
   extractTextFromUpdates,
   extractToolCalls,
   filterPlanByStatus,
-  filterToolCallsByName,
   filterToolCallsByStatus,
+  filterToolCallsByTitle,
   getCompletedToolCallsWithContent,
   getPlanProgress,
   hasToolCallErrors,
@@ -32,7 +32,10 @@ describe('createTextContent', () => {
   test('creates text content block', () => {
     const content = createTextContent('Hello world')
     expect(content.type).toBe('text')
-    expect(content.text).toBe('Hello world')
+    // Type narrowing to access text property
+    if (content.type === 'text') {
+      expect(content.text).toBe('Hello world')
+    }
   })
 })
 
@@ -40,14 +43,10 @@ describe('createImageContent', () => {
   test('creates image content with required fields', () => {
     const content = createImageContent('base64data', 'image/png')
     expect(content.type).toBe('image')
-    expect(content.data).toBe('base64data')
-    expect(content.mimeType).toBe('image/png')
-    expect(content.uri).toBeUndefined()
-  })
-
-  test('includes optional uri', () => {
-    const content = createImageContent('base64data', 'image/jpeg', 'https://example.com/img.jpg')
-    expect(content.uri).toBe('https://example.com/img.jpg')
+    if (content.type === 'image') {
+      expect(content.data).toBe('base64data')
+      expect(content.mimeType).toBe('image/png')
+    }
   })
 })
 
@@ -55,53 +54,61 @@ describe('createAudioContent', () => {
   test('creates audio content block', () => {
     const content = createAudioContent('audiodata', 'audio/wav')
     expect(content.type).toBe('audio')
-    expect(content.data).toBe('audiodata')
-    expect(content.mimeType).toBe('audio/wav')
+    if (content.type === 'audio') {
+      expect(content.data).toBe('audiodata')
+      expect(content.mimeType).toBe('audio/wav')
+    }
   })
 })
 
 describe('createResourceLink', () => {
-  test('creates resource link with uri only', () => {
-    const content = createResourceLink('file:///path/to/file.ts')
+  test('creates resource link with uri and name', () => {
+    const content = createResourceLink({ uri: 'file:///path/to/file.ts', name: 'file.ts' })
     expect(content.type).toBe('resource_link')
-    expect(content.uri).toBe('file:///path/to/file.ts')
-    expect(content.mimeType).toBeUndefined()
+    if (content.type === 'resource_link') {
+      expect(content.uri).toBe('file:///path/to/file.ts')
+      expect(content.name).toBe('file.ts')
+    }
   })
 
   test('includes optional mimeType', () => {
-    const content = createResourceLink('file:///path/to/file.ts', 'text/typescript')
-    expect(content.mimeType).toBe('text/typescript')
+    const content = createResourceLink({ uri: 'file:///path/to/file.ts', name: 'file.ts', mimeType: 'text/typescript' })
+    if (content.type === 'resource_link') {
+      expect(content.mimeType).toBe('text/typescript')
+    }
   })
 })
 
 describe('createTextResource', () => {
   test('creates embedded text resource', () => {
-    const content = createTextResource('file:///src/main.ts', 'const x = 1;')
+    const content = createTextResource({ uri: 'file:///src/main.ts', text: 'const x = 1;' })
     expect(content.type).toBe('resource')
-    expect(content.resource).toEqual({
-      uri: 'file:///src/main.ts',
-      text: 'const x = 1;',
-    })
+    if (content.type === 'resource') {
+      expect(content.resource.uri).toBe('file:///src/main.ts')
+      expect('text' in content.resource && content.resource.text).toBe('const x = 1;')
+    }
   })
 
   test('includes optional mimeType', () => {
-    const content = createTextResource('file:///src/main.ts', 'const x = 1;', 'text/typescript')
-    expect(content.resource).toEqual({
+    const content = createTextResource({
       uri: 'file:///src/main.ts',
       text: 'const x = 1;',
       mimeType: 'text/typescript',
     })
+    if (content.type === 'resource' && 'text' in content.resource) {
+      expect(content.resource.mimeType).toBe('text/typescript')
+    }
   })
 })
 
 describe('createBlobResource', () => {
   test('creates embedded blob resource', () => {
-    const content = createBlobResource('file:///image.png', 'base64blobdata')
+    const content = createBlobResource({ uri: 'file:///image.png', blob: 'base64blobdata' })
     expect(content.type).toBe('resource')
-    expect(content.resource).toEqual({
-      uri: 'file:///image.png',
-      blob: 'base64blobdata',
-    })
+    if (content.type === 'resource' && 'blob' in content.resource) {
+      expect(content.resource.uri).toBe('file:///image.png')
+      expect(content.resource.blob).toBe('base64blobdata')
+    }
   })
 })
 
@@ -138,80 +145,101 @@ describe('extractText', () => {
 })
 
 describe('extractTextFromUpdates', () => {
-  test('extracts text from all updates', () => {
-    const updates: SessionUpdateParams[] = [
-      { sessionId: 's1', content: [{ type: 'text', text: 'First' }] },
-      { sessionId: 's1', content: [{ type: 'text', text: 'Second' }] },
+  test('extracts text from agent message chunks', () => {
+    const notifications: SessionNotification[] = [
+      {
+        sessionId: 's1',
+        update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'First' } },
+      },
+      {
+        sessionId: 's1',
+        update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'Second' } },
+      },
     ]
-    expect(extractTextFromUpdates(updates)).toBe('First\nSecond')
+    expect(extractTextFromUpdates(notifications)).toBe('First\nSecond')
   })
 
-  test('skips updates without content', () => {
-    const updates: SessionUpdateParams[] = [
-      { sessionId: 's1', content: [{ type: 'text', text: 'Hello' }] },
-      { sessionId: 's1', toolCalls: [] },
-      { sessionId: 's1', content: [{ type: 'text', text: 'World' }] },
+  test('skips non-text content updates', () => {
+    const notifications: SessionNotification[] = [
+      {
+        sessionId: 's1',
+        update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'Hello' } },
+      },
+      {
+        sessionId: 's1',
+        update: { sessionUpdate: 'tool_call', toolCallId: 't1', title: 'read_file', status: 'pending' },
+      },
+      {
+        sessionId: 's1',
+        update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'World' } },
+      },
     ]
-    expect(extractTextFromUpdates(updates)).toBe('Hello\nWorld')
+    expect(extractTextFromUpdates(notifications)).toBe('Hello\nWorld')
   })
 })
 
 describe('extractToolCalls', () => {
-  test('extracts all tool calls from updates', () => {
-    const updates: SessionUpdateParams[] = [
+  test('extracts all tool calls from notifications', () => {
+    const notifications: SessionNotification[] = [
       {
         sessionId: 's1',
-        toolCalls: [{ id: 't1', name: 'read_file', status: 'completed' }],
+        update: { sessionUpdate: 'tool_call', toolCallId: 't1', title: 'read_file', status: 'completed' },
       },
       {
         sessionId: 's1',
-        toolCalls: [{ id: 't2', name: 'write_file', status: 'in_progress' }],
+        update: { sessionUpdate: 'tool_call', toolCallId: 't2', title: 'write_file', status: 'in_progress' },
       },
     ]
-    const calls = extractToolCalls(updates)
+    const calls = extractToolCalls(notifications)
     expect(calls).toHaveLength(2)
-    expect(calls[0]?.name).toBe('read_file')
-    expect(calls[1]?.name).toBe('write_file')
+    expect(calls[0]?.title).toBe('read_file')
+    expect(calls[1]?.title).toBe('write_file')
   })
 
   test('returns empty array when no tool calls', () => {
-    const updates: SessionUpdateParams[] = [{ sessionId: 's1', content: [{ type: 'text', text: 'Hello' }] }]
-    expect(extractToolCalls(updates)).toEqual([])
+    const notifications: SessionNotification[] = [
+      {
+        sessionId: 's1',
+        update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'Hello' } },
+      },
+    ]
+    expect(extractToolCalls(notifications)).toEqual([])
   })
 })
 
 describe('extractLatestToolCalls', () => {
   test('returns latest state of each tool call', () => {
-    const updates: SessionUpdateParams[] = [
+    const notifications: SessionNotification[] = [
       {
         sessionId: 's1',
-        toolCalls: [{ id: 't1', name: 'read_file', status: 'pending' }],
+        update: { sessionUpdate: 'tool_call', toolCallId: 't1', title: 'read_file', status: 'pending' },
       },
       {
         sessionId: 's1',
-        toolCalls: [{ id: 't1', name: 'read_file', status: 'in_progress' }],
+        update: { sessionUpdate: 'tool_call', toolCallId: 't1', title: 'read_file', status: 'in_progress' },
       },
       {
         sessionId: 's1',
-        toolCalls: [{ id: 't1', name: 'read_file', status: 'completed' }],
+        update: { sessionUpdate: 'tool_call', toolCallId: 't1', title: 'read_file', status: 'completed' },
       },
     ]
-    const latest = extractLatestToolCalls(updates)
+    const latest = extractLatestToolCalls(notifications)
     expect(latest.size).toBe(1)
     expect(latest.get('t1')?.status).toBe('completed')
   })
 
   test('tracks multiple tool calls independently', () => {
-    const updates: SessionUpdateParams[] = [
+    const notifications: SessionNotification[] = [
       {
         sessionId: 's1',
-        toolCalls: [
-          { id: 't1', name: 'read_file', status: 'completed' },
-          { id: 't2', name: 'write_file', status: 'in_progress' },
-        ],
+        update: { sessionUpdate: 'tool_call', toolCallId: 't1', title: 'read_file', status: 'completed' },
+      },
+      {
+        sessionId: 's1',
+        update: { sessionUpdate: 'tool_call', toolCallId: 't2', title: 'write_file', status: 'in_progress' },
       },
     ]
-    const latest = extractLatestToolCalls(updates)
+    const latest = extractLatestToolCalls(notifications)
     expect(latest.size).toBe(2)
     expect(latest.get('t1')?.status).toBe('completed')
     expect(latest.get('t2')?.status).toBe('in_progress')
@@ -219,28 +247,39 @@ describe('extractLatestToolCalls', () => {
 })
 
 describe('extractPlan', () => {
-  test('returns latest plan from updates', () => {
-    const updates: SessionUpdateParams[] = [
+  test('returns latest plan from notifications', () => {
+    const notifications: SessionNotification[] = [
       {
         sessionId: 's1',
-        plan: [{ content: 'Step 1', status: 'pending' }],
+        update: {
+          sessionUpdate: 'plan',
+          entries: [{ content: 'Step 1', status: 'pending', priority: 'medium' }],
+        },
       },
       {
         sessionId: 's1',
-        plan: [
-          { content: 'Step 1', status: 'completed' },
-          { content: 'Step 2', status: 'in_progress' },
-        ],
+        update: {
+          sessionUpdate: 'plan',
+          entries: [
+            { content: 'Step 1', status: 'completed', priority: 'medium' },
+            { content: 'Step 2', status: 'in_progress', priority: 'medium' },
+          ],
+        },
       },
     ]
-    const plan = extractPlan(updates)
+    const plan = extractPlan(notifications)
     expect(plan).toHaveLength(2)
     expect(plan?.[0]?.status).toBe('completed')
   })
 
   test('returns undefined when no plan in updates', () => {
-    const updates: SessionUpdateParams[] = [{ sessionId: 's1', content: [{ type: 'text', text: 'Hi' }] }]
-    expect(extractPlan(updates)).toBeUndefined()
+    const notifications: SessionNotification[] = [
+      {
+        sessionId: 's1',
+        update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'Hi' } },
+      },
+    ]
+    expect(extractPlan(notifications)).toBeUndefined()
   })
 })
 
@@ -250,9 +289,9 @@ describe('extractPlan', () => {
 
 describe('filterToolCallsByStatus', () => {
   const toolCalls: ToolCall[] = [
-    { id: 't1', name: 'a', status: 'completed' },
-    { id: 't2', name: 'b', status: 'error' },
-    { id: 't3', name: 'c', status: 'completed' },
+    { toolCallId: 't1', title: 'a', status: 'completed' },
+    { toolCallId: 't2', title: 'b', status: 'failed' },
+    { toolCallId: 't3', title: 'c', status: 'completed' },
   ]
 
   test('filters by completed status', () => {
@@ -261,39 +300,39 @@ describe('filterToolCallsByStatus', () => {
     expect(result.every((c) => c.status === 'completed')).toBe(true)
   })
 
-  test('filters by error status', () => {
-    const result = filterToolCallsByStatus(toolCalls, 'error')
+  test('filters by failed status', () => {
+    const result = filterToolCallsByStatus(toolCalls, 'failed')
     expect(result).toHaveLength(1)
-    expect(result[0]?.name).toBe('b')
+    expect(result[0]?.title).toBe('b')
   })
 })
 
-describe('filterToolCallsByName', () => {
+describe('filterToolCallsByTitle', () => {
   const toolCalls: ToolCall[] = [
-    { id: 't1', name: 'read_file', status: 'completed' },
-    { id: 't2', name: 'write_file', status: 'completed' },
-    { id: 't3', name: 'read_file', status: 'completed' },
+    { toolCallId: 't1', title: 'read_file', status: 'completed' },
+    { toolCallId: 't2', title: 'write_file', status: 'completed' },
+    { toolCallId: 't3', title: 'read_file', status: 'completed' },
   ]
 
-  test('filters by tool name', () => {
-    const result = filterToolCallsByName(toolCalls, 'read_file')
+  test('filters by tool title', () => {
+    const result = filterToolCallsByTitle(toolCalls, 'read_file')
     expect(result).toHaveLength(2)
   })
 })
 
 describe('hasToolCallErrors', () => {
-  test('returns true when errors exist', () => {
+  test('returns true when failed tool calls exist', () => {
     const toolCalls: ToolCall[] = [
-      { id: 't1', name: 'a', status: 'completed' },
-      { id: 't2', name: 'b', status: 'error' },
+      { toolCallId: 't1', title: 'a', status: 'completed' },
+      { toolCallId: 't2', title: 'b', status: 'failed' },
     ]
     expect(hasToolCallErrors(toolCalls)).toBe(true)
   })
 
-  test('returns false when no errors', () => {
+  test('returns false when no failed tool calls', () => {
     const toolCalls: ToolCall[] = [
-      { id: 't1', name: 'a', status: 'completed' },
-      { id: 't2', name: 'b', status: 'completed' },
+      { toolCallId: 't1', title: 'a', status: 'completed' },
+      { toolCallId: 't2', title: 'b', status: 'completed' },
     ]
     expect(hasToolCallErrors(toolCalls)).toBe(false)
   })
@@ -303,17 +342,17 @@ describe('getCompletedToolCallsWithContent', () => {
   test('returns completed calls with content', () => {
     const toolCalls: ToolCall[] = [
       {
-        id: 't1',
-        name: 'read',
+        toolCallId: 't1',
+        title: 'read',
         status: 'completed',
-        content: [{ type: 'text', text: 'file content' }],
+        content: [{ type: 'content', content: { type: 'text', text: 'file content' } }],
       },
-      { id: 't2', name: 'write', status: 'completed' },
-      { id: 't3', name: 'fetch', status: 'in_progress' },
+      { toolCallId: 't2', title: 'write', status: 'completed' },
+      { toolCallId: 't3', title: 'fetch', status: 'in_progress' },
     ]
     const result = getCompletedToolCallsWithContent(toolCalls)
     expect(result).toHaveLength(1)
-    expect(result[0]?.name).toBe('read')
+    expect(result[0]?.title).toBe('read')
   })
 })
 
@@ -323,9 +362,9 @@ describe('getCompletedToolCallsWithContent', () => {
 
 describe('filterPlanByStatus', () => {
   const plan: PlanEntry[] = [
-    { content: 'Step 1', status: 'completed' },
-    { content: 'Step 2', status: 'in_progress' },
-    { content: 'Step 3', status: 'pending' },
+    { content: 'Step 1', status: 'completed', priority: 'high' },
+    { content: 'Step 2', status: 'in_progress', priority: 'medium' },
+    { content: 'Step 3', status: 'pending', priority: 'low' },
   ]
 
   test('filters by status', () => {
@@ -337,10 +376,10 @@ describe('filterPlanByStatus', () => {
 describe('getPlanProgress', () => {
   test('calculates completion percentage', () => {
     const plan: PlanEntry[] = [
-      { content: 'Step 1', status: 'completed' },
-      { content: 'Step 2', status: 'completed' },
-      { content: 'Step 3', status: 'pending' },
-      { content: 'Step 4', status: 'pending' },
+      { content: 'Step 1', status: 'completed', priority: 'high' },
+      { content: 'Step 2', status: 'completed', priority: 'high' },
+      { content: 'Step 3', status: 'pending', priority: 'medium' },
+      { content: 'Step 4', status: 'pending', priority: 'low' },
     ]
     expect(getPlanProgress(plan)).toBe(50)
   })
@@ -351,8 +390,8 @@ describe('getPlanProgress', () => {
 
   test('returns 100 for all completed', () => {
     const plan: PlanEntry[] = [
-      { content: 'Step 1', status: 'completed' },
-      { content: 'Step 2', status: 'completed' },
+      { content: 'Step 1', status: 'completed', priority: 'high' },
+      { content: 'Step 2', status: 'completed', priority: 'medium' },
     ]
     expect(getPlanProgress(plan)).toBe(100)
   })
@@ -385,7 +424,7 @@ describe('createPromptWithFiles', () => {
 
 describe('createPromptWithImage', () => {
   test('creates prompt with image', () => {
-    const prompt = createPromptWithImage('Describe this', 'base64img', 'image/png')
+    const prompt = createPromptWithImage({ text: 'Describe this', imageData: 'base64img', mimeType: 'image/png' })
     expect(prompt).toHaveLength(2)
     expect(prompt[0]).toEqual({ type: 'text', text: 'Describe this' })
     expect(prompt[1]).toEqual({
@@ -402,42 +441,60 @@ describe('createPromptWithImage', () => {
 
 describe('summarizeResponse', () => {
   test('creates comprehensive summary', () => {
-    const updates: SessionUpdateParams[] = [
+    const notifications: SessionNotification[] = [
       {
         sessionId: 's1',
-        content: [{ type: 'text', text: 'Processing...' }],
-        toolCalls: [{ id: 't1', name: 'read', status: 'in_progress' }],
-        plan: [{ content: 'Step 1', status: 'in_progress' }],
+        update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'Processing...' } },
       },
       {
         sessionId: 's1',
-        content: [{ type: 'text', text: 'Done!' }],
-        toolCalls: [{ id: 't1', name: 'read', status: 'completed' }],
-        plan: [{ content: 'Step 1', status: 'completed' }],
+        update: { sessionUpdate: 'tool_call', toolCallId: 't1', title: 'read', status: 'in_progress' },
+      },
+      {
+        sessionId: 's1',
+        update: {
+          sessionUpdate: 'plan',
+          entries: [{ content: 'Step 1', status: 'in_progress', priority: 'high' }],
+        },
+      },
+      {
+        sessionId: 's1',
+        update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'Done!' } },
+      },
+      {
+        sessionId: 's1',
+        update: { sessionUpdate: 'tool_call', toolCallId: 't1', title: 'read', status: 'completed' },
+      },
+      {
+        sessionId: 's1',
+        update: {
+          sessionUpdate: 'plan',
+          entries: [{ content: 'Step 1', status: 'completed', priority: 'high' }],
+        },
       },
     ]
 
-    const summary = summarizeResponse(updates)
+    const summary = summarizeResponse(notifications)
 
     expect(summary.text).toBe('Processing...\nDone!')
     expect(summary.toolCallCount).toBe(1)
     expect(summary.completedToolCalls).toHaveLength(1)
-    expect(summary.erroredToolCalls).toHaveLength(0)
+    expect(summary.failedToolCalls).toHaveLength(0)
     expect(summary.plan).toHaveLength(1)
     expect(summary.planProgress).toBe(100)
     expect(summary.hasErrors).toBe(false)
   })
 
   test('detects errors in summary', () => {
-    const updates: SessionUpdateParams[] = [
+    const notifications: SessionNotification[] = [
       {
         sessionId: 's1',
-        toolCalls: [{ id: 't1', name: 'read', status: 'error' }],
+        update: { sessionUpdate: 'tool_call', toolCallId: 't1', title: 'read', status: 'failed' },
       },
     ]
 
-    const summary = summarizeResponse(updates)
+    const summary = summarizeResponse(notifications)
     expect(summary.hasErrors).toBe(true)
-    expect(summary.erroredToolCalls).toHaveLength(1)
+    expect(summary.failedToolCalls).toHaveLength(1)
   })
 })

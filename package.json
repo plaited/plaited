@@ -125,6 +125,7 @@
     "@types/sinon": "21.0.0",
     "axe-core": "4.11.0",
     "beautify": "0.0.8",
+    "claude-code-acp": "^0.1.1",
     "csstype": "3.2.3",
     "cz-conventional-changelog": "3.3.0",
     "format-package": "7.0.0",
