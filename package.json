@@ -60,7 +60,7 @@
     "check:write": "biome check --write && format-package --write",
     "copy-css-types": "bash scripts/copy-css-types.sh",
     "dev": "bun --hot src/cli.ts dev src/ui",
-    "prepare": "git config core.hooksPath .hooks",
+    "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .hooks || true",
     "test": "bun run test:stories src/ui && bun test",
     "test:acp": "docker compose -f docker-compose.test.yml run --rm acp-integration",
     "test:acp:build": "docker compose -f docker-compose.test.yml build",

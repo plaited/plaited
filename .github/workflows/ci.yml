@@ -59,12 +59,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install git
-        run: apt-get update && apt-get install -y git
-
-      - name: Configure git safe directory
-        run: git config --global --add safe.directory '*'
-
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
