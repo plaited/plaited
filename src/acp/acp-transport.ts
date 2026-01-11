@@ -115,6 +115,10 @@ export const createACPTransport = (config: ACPTransportConfig) => {
   let buffer = ''
   let isClosing = false
 
+  // Stream readers for explicit cleanup
+  let stdoutReader: ReadableStreamDefaultReader<Uint8Array> | undefined
+  let stderrReader: ReadableStreamDefaultReader<Uint8Array> | undefined
+
   // --------------------------------------------------------------------------
   // Message Parsing (with Zod validation)
   // --------------------------------------------------------------------------
@@ -270,12 +274,12 @@ export const createACPTransport = (config: ACPTransportConfig) => {
 
     // Read stdout for JSON-RPC messages
     const readStdout = async () => {
-      const reader = subprocess!.stdout.getReader()
+      stdoutReader = subprocess!.stdout.getReader()
       const decoder = new TextDecoder()
 
       try {
         while (true) {
-          const { done, value } = await reader.read()
+          const { done, value } = await stdoutReader.read()
           if (done) break
 
           const text = decoder.decode(value, { stream: true })
@@ -288,17 +292,19 @@ export const createACPTransport = (config: ACPTransportConfig) => {
         if (!isClosing) {
           onError?.(err instanceof Error ? err : new Error(String(err)))
         }
+      } finally {
+        stdoutReader = undefined
       }
     }
 
     // Read stderr for debugging
     const readStderr = async () => {
-      const reader = subprocess!.stderr.getReader()
+      stderrReader = subprocess!.stderr.getReader()
       const decoder = new TextDecoder()
 
       try {
         while (true) {
-          const { done, value } = await reader.read()
+          const { done, value } = await stderrReader.read()
           if (done) break
           // Log stderr for debugging but don't treat as error
           const text = decoder.decode(value, { stream: true })
@@ -308,6 +314,8 @@ export const createACPTransport = (config: ACPTransportConfig) => {
         }
       } catch {
         // Ignore stderr read errors
+      } finally {
+        stderrReader = undefined
       }
     }
 
@@ -414,6 +422,9 @@ export const createACPTransport = (config: ACPTransportConfig) => {
         await request('shutdown').catch(() => {})
       }
     } finally {
+      // Release stream readers to allow clean subprocess termination
+      await Promise.all([stdoutReader?.cancel().catch(() => {}), stderrReader?.cancel().catch(() => {})])
+
       subprocess.kill()
       subprocess = undefined
     }

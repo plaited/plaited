@@ -53,6 +53,12 @@ export type ACPClientConfig = {
   /** Timeout for operations in milliseconds (default: 30000) */
   timeout?: number
   /**
+   * Polling interval for streaming updates in milliseconds (default: 50).
+   * Lower values provide more responsive updates but increase CPU usage.
+   * Consider increasing for testing to reduce timing-related flakiness.
+   */
+  pollingInterval?: number
+  /**
    * Permission handler for agent requests.
    * Default: auto-approve all permissions (headless mode)
    */
@@ -114,6 +120,7 @@ export const createACPClient = (config: ACPClientConfig) => {
     clientInfo = { name: DEFAULT_ACP_CLIENT_NAME, version },
     capabilities = {},
     timeout = 30000,
+    pollingInterval = 50,
     onPermissionRequest,
   } = config
 
@@ -362,7 +369,7 @@ export const createACPClient = (config: ACPClientConfig) => {
         // Check if prompt completed
         const raceResult = await Promise.race([
           promise.then((result) => ({ done: true as const, result })),
-          new Promise<{ done: false }>((res) => setTimeout(() => res({ done: false }), 50)),
+          new Promise<{ done: false }>((res) => setTimeout(() => res({ done: false }), pollingInterval)),
         ])
 
         if (raceResult.done) {
