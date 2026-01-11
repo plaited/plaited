@@ -19,7 +19,7 @@ jobs:
       acp: ${{ steps.filter.outputs.acp }}
     steps:
       - uses: actions/checkout@v4
-      - uses: step-security/paths-filter@v3
+      - uses: dorny/paths-filter
         id: filter
         with:
           filters: |
