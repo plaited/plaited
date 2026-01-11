@@ -19,7 +19,7 @@ jobs:
       acp: ${{ steps.filter.outputs.acp }}
     steps:
       - uses: actions/checkout@v4
-      - uses: dorny/paths-filter
+      - uses: dorny/paths-filter@v3
         id: filter
         with:
           filters: |
@@ -39,8 +39,6 @@ jobs:
         run: |
           bun install
           bunx playwright install chromium --with-deps
-      - name: Install Claude Code
-        run: curl -fsSL https://claude.ai/install.sh | bash
       - name: Run check
         run: |
           bun run check
