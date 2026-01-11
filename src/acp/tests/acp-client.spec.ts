@@ -60,25 +60,6 @@ describe('createACPClient', () => {
 
     expect(client).toBeDefined()
   })
-
-  test('creates client with sandbox config', () => {
-    const client = createACPClient({
-      command: ['echo', 'test'],
-      sandbox: {
-        enabled: true,
-        filesystem: {
-          allowWrite: ['.', '/tmp'],
-          denyRead: ['~/.ssh'],
-        },
-        network: {
-          allowedDomains: ['github.com'],
-          allowLocalBinding: false,
-        },
-      },
-    })
-
-    expect(client).toBeDefined()
-  })
 })
 
 // ============================================================================

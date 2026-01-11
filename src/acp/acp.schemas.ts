@@ -13,16 +13,9 @@
  * - Responses have `id` and either `result` or `error`
  */
 
-import type {
-  CreateTerminalRequest,
-  ReadTextFileRequest,
-  RequestPermissionRequest,
-  SessionNotification,
-  TerminalOutputRequest,
-  WriteTextFileRequest,
-} from '@agentclientprotocol/sdk'
+import type { RequestPermissionRequest, SessionNotification } from '@agentclientprotocol/sdk'
 import { z } from 'zod'
-import { isTypeOf } from '../utils/is-type-of.ts'
+import { isTypeOf } from '../utils.ts'
 
 // ============================================================================
 // JSON-RPC Base Schemas
@@ -156,49 +149,4 @@ export const SessionNotificationSchema = z.custom<SessionNotification>(
  */
 export const RequestPermissionRequestSchema = z.custom<RequestPermissionRequest>(
   (val): val is RequestPermissionRequest => isRecord(val) && 'options' in val && Array.isArray(val.options),
-)
-
-/**
- * Schema for file read requests.
- *
- * @remarks
- * Validates `path` field used in sandbox file operations.
- */
-export const ReadTextFileRequestSchema = z.custom<ReadTextFileRequest>(
-  (val): val is ReadTextFileRequest => isRecord(val) && 'path' in val && typeof val.path === 'string',
-)
-
-/**
- * Schema for file write requests.
- *
- * @remarks
- * Validates `path` and `content` fields used in sandbox file operations.
- */
-export const WriteTextFileRequestSchema = z.custom<WriteTextFileRequest>(
-  (val): val is WriteTextFileRequest =>
-    isRecord(val) &&
-    'path' in val &&
-    typeof val.path === 'string' &&
-    'content' in val &&
-    typeof val.content === 'string',
-)
-
-/**
- * Schema for terminal creation requests.
- *
- * @remarks
- * Validates `command` field; `cwd` and `env` are optional.
- */
-export const CreateTerminalRequestSchema = z.custom<CreateTerminalRequest>(
-  (val): val is CreateTerminalRequest => isRecord(val) && 'command' in val && typeof val.command === 'string',
-)
-
-/**
- * Schema for terminal operation requests (output, wait, kill, release).
- *
- * @remarks
- * Validates `terminalId` field used across terminal operations.
- */
-export const TerminalOutputRequestSchema = z.custom<TerminalOutputRequest>(
-  (val): val is TerminalOutputRequest => isRecord(val) && 'terminalId' in val && typeof val.terminalId === 'string',
 )

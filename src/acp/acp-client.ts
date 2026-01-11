@@ -31,16 +31,8 @@ import type {
 } from '@agentclientprotocol/sdk'
 import { version } from '../../package.json' with { type: 'json' }
 import { ACP_METHODS, ACP_PROTOCOL_VERSION, DEFAULT_ACP_CLIENT_NAME } from './acp.constants.ts'
-import {
-  CreateTerminalRequestSchema,
-  ReadTextFileRequestSchema,
-  RequestPermissionRequestSchema,
-  SessionNotificationSchema,
-  TerminalOutputRequestSchema,
-  WriteTextFileRequestSchema,
-} from './acp.schemas.ts'
-import type { SandboxConfig, Session } from './acp.types.ts'
-import { createSandboxHandler, type SandboxHandler } from './acp-sandbox.ts'
+import { RequestPermissionRequestSchema, SessionNotificationSchema } from './acp.schemas.ts'
+import type { Session } from './acp.types.ts'
 import { type ACPTransport, ACPTransportError, createACPTransport } from './acp-transport.ts'
 // ============================================================================
 // Types
@@ -65,12 +57,6 @@ export type ACPClientConfig = {
    * Default: auto-approve all permissions (headless mode)
    */
   onPermissionRequest?: (params: RequestPermissionRequest) => Promise<RequestPermissionResponse>
-  /**
-   * Sandbox configuration for file and terminal operations.
-   * Uses @anthropic-ai/sandbox-runtime for OS-level restrictions.
-   * When enabled, the client handles fs/terminal requests from the agent.
-   */
-  sandbox?: SandboxConfig
 }
 
 /** Session update emitted during prompt streaming */
@@ -126,18 +112,14 @@ export const createACPClient = (config: ACPClientConfig) => {
     cwd,
     env,
     clientInfo = { name: DEFAULT_ACP_CLIENT_NAME, version },
-    capabilities = { fs: { readTextFile: true, writeTextFile: true }, terminal: true },
+    capabilities = {},
     timeout = 30000,
     onPermissionRequest,
-    sandbox,
   } = config
 
   let transport: ACPTransport | undefined
   let agentCapabilities: AgentCapabilities | undefined
   let initializeResult: InitializeResponse | undefined
-
-  // Create sandbox handler if enabled
-  const sandboxHandler: SandboxHandler | undefined = sandbox?.enabled ? createSandboxHandler(sandbox) : undefined
 
   // Track active prompt sessions for update routing
   const activePrompts = new Map<
@@ -208,83 +190,6 @@ export const createACPClient = (config: ACPClientConfig) => {
       return handlePermissionRequest(RequestPermissionRequestSchema.parse(params))
     }
 
-    // File system: read
-    if (method === ACP_METHODS.READ_TEXT_FILE) {
-      if (!sandboxHandler) {
-        throw new ACPClientError('File system requests require sandbox to be enabled')
-      }
-      const { path } = ReadTextFileRequestSchema.parse(params)
-      const content = await sandboxHandler.readTextFile(path)
-      return { content }
-    }
-
-    // File system: write
-    if (method === ACP_METHODS.WRITE_TEXT_FILE) {
-      if (!sandboxHandler) {
-        throw new ACPClientError('File system requests require sandbox to be enabled')
-      }
-      const { path, content } = WriteTextFileRequestSchema.parse(params)
-      await sandboxHandler.writeTextFile(path, content)
-      return {}
-    }
-
-    // Terminal: create
-    if (method === ACP_METHODS.TERMINAL_CREATE) {
-      if (!sandboxHandler) {
-        throw new ACPClientError('Terminal requests require sandbox to be enabled')
-      }
-      const { command: cmd, cwd: termCwd, env: termEnv } = CreateTerminalRequestSchema.parse(params)
-      // SDK uses command as string + args array, convert env from EnvVariable[]
-      const envRecord: Record<string, string> = {}
-      if (termEnv) {
-        for (const v of termEnv) {
-          envRecord[v.name] = v.value
-        }
-      }
-      const terminalId = await sandboxHandler.createTerminal(cmd, { cwd: termCwd ?? undefined, env: envRecord })
-      return { terminalId }
-    }
-
-    // Terminal: output
-    if (method === ACP_METHODS.TERMINAL_OUTPUT) {
-      if (!sandboxHandler) {
-        throw new ACPClientError('Terminal requests require sandbox to be enabled')
-      }
-      const { terminalId } = TerminalOutputRequestSchema.parse(params)
-      const { output, exitCode } = sandboxHandler.getTerminalOutput(terminalId)
-      return { output, exitCode }
-    }
-
-    // Terminal: wait for exit
-    if (method === ACP_METHODS.TERMINAL_WAIT_FOR_EXIT) {
-      if (!sandboxHandler) {
-        throw new ACPClientError('Terminal requests require sandbox to be enabled')
-      }
-      const { terminalId } = TerminalOutputRequestSchema.parse(params)
-      const exitCode = await sandboxHandler.waitForExit(terminalId)
-      return { exitCode }
-    }
-
-    // Terminal: kill
-    if (method === ACP_METHODS.TERMINAL_KILL) {
-      if (!sandboxHandler) {
-        throw new ACPClientError('Terminal requests require sandbox to be enabled')
-      }
-      const { terminalId } = TerminalOutputRequestSchema.parse(params)
-      sandboxHandler.killTerminal(terminalId)
-      return {}
-    }
-
-    // Terminal: release
-    if (method === ACP_METHODS.TERMINAL_RELEASE) {
-      if (!sandboxHandler) {
-        throw new ACPClientError('Terminal requests require sandbox to be enabled')
-      }
-      const { terminalId } = TerminalOutputRequestSchema.parse(params)
-      sandboxHandler.releaseTerminal(terminalId)
-      return {}
-    }
-
     throw new ACPClientError(`Unknown request method: ${method}`)
   }
 
@@ -352,11 +257,6 @@ export const createACPClient = (config: ACPClientConfig) => {
       activePrompts.delete(sessionId)
     }
 
-    // Cleanup sandbox resources
-    if (sandboxHandler) {
-      await sandboxHandler.cleanup()
-    }
-
     await transport.close(graceful)
     transport = undefined
     agentCapabilities = undefined
@@ -381,6 +281,22 @@ export const createACPClient = (config: ACPClientConfig) => {
 
     const response = await transport.request<{ sessionId: string }>(ACP_METHODS.CREATE_SESSION, params)
     return { id: response.sessionId }
+  }
+
+  /**
+   * Sets the model for a session.
+   *
+   * @experimental This is an unstable ACP feature and may change.
+   * @param sessionId - The session ID to set the model for
+   * @param modelId - The model ID (e.g., 'claude-3-5-haiku-20241022', 'claude-sonnet-4-20250514')
+   * @throws {ACPClientError} If not connected
+   */
+  const setModel = async (sessionId: string, modelId: string): Promise<void> => {
+    if (!transport?.isConnected()) {
+      throw new ACPClientError('Not connected')
+    }
+
+    await transport.request(ACP_METHODS.SET_MODEL, { sessionId, modelId })
   }
 
   // --------------------------------------------------------------------------
@@ -560,6 +476,7 @@ export const createACPClient = (config: ACPClientConfig) => {
 
     // Sessions
     createSession,
+    setModel,
 
     // Prompts
     prompt,

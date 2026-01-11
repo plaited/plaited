@@ -62,6 +62,8 @@
     "dev": "bun --hot src/cli.ts dev src/ui",
     "prepare": "git config core.hooksPath .hooks",
     "test": "bun run test:stories src/ui && bun test",
+    "test:acp": "docker compose -f docker-compose.test.yml run --rm acp-integration",
+    "test:acp:build": "docker compose -f docker-compose.test.yml build",
     "test:playwright": "bunx playwright test",
     "test:stories": "bun src/cli.ts test",
     "test:stories-all": "bun run test:stories src/ui"
@@ -125,7 +127,7 @@
     "@types/sinon": "21.0.0",
     "axe-core": "4.11.0",
     "beautify": "0.0.8",
-    "claude-code-acp": "^0.1.1",
+    "@zed-industries/claude-code-acp": "0.12.6",
     "csstype": "3.2.3",
     "cz-conventional-changelog": "3.3.0",
     "format-package": "7.0.0",

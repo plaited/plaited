@@ -5,38 +5,41 @@
  * These tests verify the ACP client works against real Claude Code
  * via the `claude-code-acp` adapter.
  *
- * Prerequisites:
- * 1. Claude Code installed and authenticated: `claude --print "hi"`
- * 2. ACP adapter in devDependencies: `claude-code-acp`
- * 3. API key: `CLAUDE_API_KEY` environment variable
+ * **Run in Docker only** for consistent environment:
+ * ```bash
+ * ANTHROPIC_API_KEY=sk-... bun run test:acp
+ * ```
  *
- * Run with: `bun test src/acp/tests/acp-integration.spec.ts`
+ * Prerequisites:
+ * 1. Docker installed
+ * 2. API key: `ANTHROPIC_API_KEY` environment variable
  *
  * These tests make real API calls and consume credits.
  */
 
 import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from 'bun:test'
-import { join } from 'node:path'
 import { type ACPClient, createACPClient } from '../acp-client.ts'
 import { createPrompt, summarizeResponse } from '../acp-helpers.ts'
 
 // Long timeout for real agent interactions (2 minutes)
 setDefaultTimeout(120000)
 
-// Skip integration tests if prerequisites aren't met
-const SKIP_INTEGRATION = !process.env.CLAUDE_API_KEY || process.env.SKIP_INTEGRATION === 'true'
-const describeIntegration = SKIP_INTEGRATION ? describe.skip : describe
+// Fixtures directory with .claude/skills and .mcp.json
+const FIXTURES_DIR = `${import.meta.dir}/fixtures`
 
-describeIntegration('ACP Client Integration', () => {
+// Use haiku for all tests to reduce costs
+const TEST_MODEL = 'claude-haiku-4-5-20251001'
+
+describe('ACP Client Integration', () => {
   let client: ACPClient
 
   beforeAll(async () => {
-    // cc-acp adapter uses CLAUDE_API_KEY
+    // cc-acp adapter expects ANTHROPIC_API_KEY
     client = createACPClient({
-      command: ['bunx', 'cc-acp'],
+      command: ['bunx', 'claude-code-acp'],
       timeout: 120000, // 2 min timeout for initialization
       env: {
-        CLAUDE_API_KEY: process.env.CLAUDE_API_KEY ?? '',
+        ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ?? '',
       },
     })
 
@@ -62,7 +65,7 @@ describeIntegration('ACP Client Integration', () => {
 
   test('creates session', async () => {
     const session = await client.createSession({
-      cwd: process.cwd(),
+      cwd: FIXTURES_DIR,
       mcpServers: [],
     })
 
@@ -73,9 +76,12 @@ describeIntegration('ACP Client Integration', () => {
 
   test('sends prompt and receives response', async () => {
     const session = await client.createSession({
-      cwd: process.cwd(),
+      cwd: FIXTURES_DIR,
       mcpServers: [],
     })
+
+    // Use haiku for faster/cheaper test runs
+    await client.setModel(session.id, TEST_MODEL)
 
     // Simple prompt that doesn't require tools
     const { result, updates } = await client.promptSync(
@@ -94,9 +100,12 @@ describeIntegration('ACP Client Integration', () => {
 
   test('streaming prompt yields updates', async () => {
     const session = await client.createSession({
-      cwd: process.cwd(),
+      cwd: FIXTURES_DIR,
       mcpServers: [],
     })
+
+    // Use haiku for faster/cheaper test runs
+    await client.setModel(session.id, TEST_MODEL)
 
     const events: string[] = []
 
@@ -112,78 +121,94 @@ describeIntegration('ACP Client Integration', () => {
 
   test('handles tool usage prompt', async () => {
     const session = await client.createSession({
-      cwd: process.cwd(),
+      cwd: FIXTURES_DIR,
       mcpServers: [],
     })
+
+    // Use haiku for faster/cheaper test runs
+    await client.setModel(session.id, TEST_MODEL)
 
     // Prompt that should trigger tool usage - reading a specific file
     const { updates } = await client.promptSync(
       session.id,
-      createPrompt('Use the Read tool to read biome.json and tell me what linter is configured.'),
+      createPrompt('Use the Read tool to read calculator-mcp.ts and tell me what tools the MCP server provides.'),
     )
 
     const summary = summarizeResponse(updates)
 
-    // Verify response mentions Biome (the linter configured)
-    // Note: Agent may or may not use Read tool depending on context window
+    // Verify response mentions calculator tools
     expect(summary.text.length).toBeGreaterThan(0)
-    // If tools were used, verify structure
-    if (summary.toolCallCount > 0) {
-      expect(summary.completedToolCalls.length).toBeGreaterThan(0)
-    }
+    // Response should mention the calculator tools (add, subtract, etc.)
+    expect(summary.text.toLowerCase()).toMatch(/add|subtract|multiply|divide|calculator/)
   })
 
-  // Skip skill test - changing cwd breaks Claude Code auth context
-  // The greeting skill fixture is available at: fixtures/.claude/skills/greeting/
-  // This test would work if Claude Code supported skill loading via session config
-  test.skip('uses skill from cwd', async () => {
-    // Set cwd to fixtures directory which has .claude/skills/greeting
-    const fixturesDir = join(import.meta.dir, 'fixtures')
-
+  test('uses skill from cwd', async () => {
     const session = await client.createSession({
-      cwd: fixturesDir,
+      cwd: FIXTURES_DIR,
       mcpServers: [],
     })
+
+    // Use haiku for faster/cheaper test runs
+    await client.setModel(session.id, TEST_MODEL)
 
     // Ask Claude to use the greeting skill
     const { updates } = await client.promptSync(session.id, createPrompt('Please greet me using the greeting skill.'))
 
     const summary = summarizeResponse(updates)
 
-    // The greeting skill instructs Claude to include "skill-test-marker"
+    // The greeting skill instructs Claude to include specific phrases
     expect(summary.text.length).toBeGreaterThan(0)
     expect(summary.text.toLowerCase()).toMatch(/hello|greet|welcome/)
   })
 
-  // Skip MCP test - cc-acp adapter doesn't fully support MCP servers yet
-  // The calculator fixture is available at: fixtures/calculator-mcp.ts
-  test.skip('uses MCP server tools', async () => {
+  test('uses MCP server tools', async () => {
     // Path to calculator MCP server fixture (must be absolute per ACP spec)
-    const calculatorPath = join(import.meta.dir, 'fixtures', 'calculator-mcp.ts')
+    const calculatorPath = `${FIXTURES_DIR}/calculator-mcp.ts`
     const bunPath = Bun.which('bun') ?? 'bun'
 
-    const session = await client.createSession({
-      cwd: process.cwd(),
-      mcpServers: [
-        {
-          name: 'calculator',
-          command: bunPath,
-          args: [calculatorPath],
-          env: [],
-        },
-      ],
-    })
+    // Retry helper for flaky MCP server startup
+    const maxRetries = 3
+    let lastError: Error | undefined
 
-    // Ask Claude to use the calculator MCP server
-    const { updates } = await client.promptSync(
-      session.id,
-      createPrompt('Use the calculator MCP server add tool to compute 15 + 27. Reply with just the number.'),
-    )
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      const session = await client.createSession({
+        cwd: FIXTURES_DIR,
+        mcpServers: [
+          {
+            name: 'calculator',
+            command: bunPath,
+            args: [calculatorPath],
+            env: [],
+          },
+        ],
+      })
 
-    const summary = summarizeResponse(updates)
+      // Set model to haiku for faster/cheaper test runs
+      await client.setModel(session.id, TEST_MODEL)
 
-    // Should have a response mentioning the result (42)
-    expect(summary.text.length).toBeGreaterThan(0)
-    expect(summary.text).toMatch(/42/)
+      // Ask Claude to use the calculator MCP server
+      const { updates } = await client.promptSync(
+        session.id,
+        createPrompt('Use the calculator MCP server add tool to compute 15 + 27. Reply with just the number.'),
+      )
+
+      const summary = summarizeResponse(updates)
+
+      // Check if we got 42 in the response
+      if (summary.text.match(/42/)) {
+        expect(summary.text.length).toBeGreaterThan(0)
+        expect(summary.text).toMatch(/42/)
+        return // Success!
+      }
+
+      // MCP server might not have been ready, retry
+      lastError = new Error(`Attempt ${attempt}: Response did not contain 42. Got: ${summary.text.slice(0, 100)}...`)
+      if (attempt < maxRetries) {
+        console.log(`MCP test attempt ${attempt} failed, retrying...`)
+      }
+    }
+
+    // All retries exhausted
+    throw lastError ?? new Error('MCP test failed after all retries')
   })
 })

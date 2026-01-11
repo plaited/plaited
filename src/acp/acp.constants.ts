@@ -25,17 +25,7 @@ export const ACP_METHODS = {
   CANCEL: 'session/cancel',
   UPDATE: 'session/update',
   REQUEST_PERMISSION: 'session/request_permission',
-
-  // File system
-  READ_TEXT_FILE: 'fs/read_text_file',
-  WRITE_TEXT_FILE: 'fs/write_text_file',
-
-  // Terminal
-  TERMINAL_CREATE: 'terminal/create',
-  TERMINAL_OUTPUT: 'terminal/output',
-  TERMINAL_WAIT_FOR_EXIT: 'terminal/wait_for_exit',
-  TERMINAL_KILL: 'terminal/kill',
-  TERMINAL_RELEASE: 'terminal/release',
+  SET_MODEL: 'session/set_model',
 
   // Protocol-level
   CANCEL_REQUEST: '$/cancel_request',

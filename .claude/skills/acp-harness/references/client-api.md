@@ -27,7 +27,6 @@ const client = createACPClient({
   command: ['claude-code-acp'],
   cwd: '/path/to/project',
   timeout: 60000,
-  sandbox: { enabled: true }
 })
 ```
 
@@ -39,7 +38,6 @@ const client = createACPClient({
 | `cwd` | `string` | No | Working directory for agent process |
 | `env` | `Record<string, string>` | No | Environment variables |
 | `timeout` | `number` | No | Request timeout in ms (default: 30000) |
-| `sandbox` | `SandboxConfig` | No | OS-level restrictions |
 | `clientInfo` | `{ name, version }` | No | Client identification |
 | `capabilities` | `ClientCapabilities` | No | Advertised capabilities |
 | `onPermissionRequest` | `function` | No | Custom permission handler |
@@ -101,36 +99,58 @@ Closes connection to the agent.
 await client.disconnect()
 ```
 
-## Sandbox Configuration
+#### setModel(sessionId, modelId)
 
-OS-level restrictions using `@anthropic-ai/sandbox-runtime`.
+Sets the model for a session. This is an experimental ACP feature.
 
 ```typescript
-const client = createACPClient({
-  command: ['claude-code-acp'],
-  sandbox: {
-    enabled: true,
-    network: {
-      allowedDomains: ['github.com', 'api.anthropic.com'],
-      deniedDomains: [],
-      allowUnixSockets: [],
-      allowLocalBinding: false
-    },
-    filesystem: {
-      denyRead: ['/etc/passwd', '/etc/shadow'],
-      allowWrite: ['/tmp', './output'],
-      denyWrite: []
-    }
-  }
-})
+await client.setModel(session.id, 'claude-haiku-4-5-20251001')
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `network.allowedDomains` | `string[]` | Permitted domains (wildcards: `*.github.com`) |
-| `network.deniedDomains` | `string[]` | Blocked domains (takes precedence) |
-| `filesystem.denyRead` | `string[]` | Paths to deny read access |
-| `filesystem.allowWrite` | `string[]` | Paths to allow write access |
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | `string` | Session identifier |
+| `modelId` | `string` | Model ID (e.g., `'claude-haiku-4-5-20251001'`, `'claude-sonnet-4-20250514'`) |
+
+**Note:** This is an experimental ACP feature and may change.
+
+#### cancelPrompt(sessionId)
+
+Cancels an ongoing prompt request.
+
+```typescript
+await client.cancelPrompt(session.id)
+```
+
+### State Methods
+
+#### getCapabilities()
+
+Returns the agent's advertised capabilities from initialization.
+
+```typescript
+const capabilities = client.getCapabilities()
+// capabilities.experimental, capabilities.sampling, etc.
+```
+
+#### getInitializeResult()
+
+Returns the full initialization response from the agent.
+
+```typescript
+const initResult = client.getInitializeResult()
+// initResult.protocolVersion, initResult.agentCapabilities, etc.
+```
+
+#### isConnected()
+
+Checks if the client is currently connected.
+
+```typescript
+if (client.isConnected()) {
+  // Safe to make requests
+}
+```
 
 ## Permission Handling
 
@@ -207,18 +227,39 @@ import {
 
 ```typescript
 import {
-  summarizeResponse,        // Full response summary
-  extractTextFromUpdates,   // Extract text from notifications
-  extractToolCalls,         // Extract all tool calls
-  extractLatestToolCalls,   // Deduplicated by toolCallId
-  extractPlan,              // Extract plan entries
-  filterToolCallsByStatus,  // Filter by status
-  filterToolCallsByTitle,   // Filter by title
-  hasToolCallErrors         // Check for failures
+  summarizeResponse,               // Full response summary
+  extractTextFromUpdates,          // Extract text from notifications
+  extractToolCalls,                // Extract all tool calls
+  extractLatestToolCalls,          // Deduplicated by toolCallId
+  extractPlan,                     // Extract plan entries
+  filterToolCallsByStatus,         // Filter by status
+  filterToolCallsByTitle,          // Filter by title
+  hasToolCallErrors,               // Check for failures
+  getCompletedToolCallsWithContent,// Get completed calls with content
+  filterPlanByStatus,              // Filter plan by entry status
+  getPlanProgress                  // Get plan progress stats
 } from 'plaited/acp'
 
 const summary = summarizeResponse(updates)
 // summary.text, summary.completedToolCalls, summary.failedToolCalls, etc.
+
+// Plan analysis
+const plan = extractPlan(updates)
+const completed = filterPlanByStatus(plan, 'completed')
+const progress = getPlanProgress(plan)
+// progress.total, progress.completed, progress.pending, progress.inProgress
+```
+
+### Audio Content
+
+```typescript
+import { createAudioContent } from 'plaited/acp'
+
+// Create audio content block
+const audioBlock = createAudioContent({
+  data: base64AudioData,
+  mimeType: 'audio/mp3'
+})
 ```
 
 ## MCP Server Configuration

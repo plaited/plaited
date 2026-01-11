@@ -14,11 +14,82 @@ This skill provides a **unified toolkit for ACP client usage and agent evaluatio
 2. **Evaluation Harness** - Run prompts against agents and capture full trajectories
 
 **Use this when:**
-- Connecting to ACP agents programmatically (via adapters like `@zed-industries/claude-code-acp`)
-- Running automated evaluations against agents
-- Capturing agent trajectories (tool calls, thoughts, plans) for analysis
-- Testing skills, MCP servers, or behavioral programs
-- Piping results to downstream tools (Braintrust, LLM-as-judge, Gemini)
+- Comparing skills across different agents (Claude Code, Cursor, OpenCode, Amp, Goose, Factory)
+- Evaluating built-in tools vs MCP servers vs skills for the same task
+- Generating training data with full trajectory capture
+- Running regression tests in CI/CD pipelines
+- Building multi-agent applications on a headless transport layer
+
+## Foundation Use Cases
+
+The harness is a **foundation layer** - it captures trajectories; scoring happens downstream.
+
+```mermaid
+flowchart LR
+    Harness["ACP Harness"] -->|"trajectories"| Scoring["Braintrust / Custom Script"]
+    Scoring -->|"scores"| Decision["Informed Choices"]
+```
+
+| Use Case | Harness Provides | You Build |
+|----------|------------------|-----------|
+| **Cross-agent skill eval** | Same prompts → multiple agents → trajectories | Scoring pipeline (Braintrust, custom) |
+| **Tool comparison** | Trajectory with tool/skill attribution | Diff analysis, preference data |
+| **Training data** | Structured I/O with tool calls, plans, thoughts | SFT/DPO formatting for world-agent |
+| **Regression testing** | Deterministic prompt → trajectory capture | CI integration, golden file comparison |
+| **Multi-agent apps** | `createACPClient` transport layer | Session management, UI, agent switching |
+
+### Agents Supporting Skills
+
+Skills can be installed across multiple agents, enabling cross-agent comparison:
+
+| Agent | Skills Directory | Install Command |
+|-------|------------------|-----------------|
+| Claude Code | `.claude/skills/` | `./install-workshop.sh --agent claude` |
+| Cursor | `.claude/skills/` | `./install-workshop.sh --agent cursor` |
+| OpenCode | `.opencode/skill/` | `./install-workshop.sh --agent opencode` |
+| Amp | `.agents/skills/` | `./install-workshop.sh --agent amp` |
+| Goose | `.claude/skills/` | `./install-workshop.sh --agent goose` |
+| Factory | `.factory/skills/` | `./install-workshop.sh --agent factory` |
+
+### Example: Comparing Built-in vs Skill
+
+```bash
+# Run same prompt with built-in tool
+bun scripts/run-harness.ts prompts.jsonl \
+  --agent claude-code-acp \
+  -o results-builtin.jsonl
+
+# Run same prompt with custom skill installed
+bun scripts/run-harness.ts prompts.jsonl \
+  --agent claude-code-acp \
+  --cwd /project/with/typescript-lsp-skill \
+  -o results-skill.jsonl
+
+# Compare trajectories - which used better tools? faster? more accurate?
+diff <(jq '.toolCalls' results-builtin.jsonl) <(jq '.toolCalls' results-skill.jsonl)
+```
+
+## Execution Environment
+
+**Recommendation:** Run evaluations in Docker containers for consistent, isolated execution.
+
+```bash
+# Build and run with Docker Compose
+docker compose -f docker-compose.acp.yml run --rm acp-harness
+
+# Or build directly
+docker build -f Dockerfile.acp -t acp-harness .
+docker run --rm -e ANTHROPIC_API_KEY acp-harness
+```
+
+Docker provides:
+- Consistent environment across local and CI
+- Filesystem isolation without app-level sandboxing
+- Reproducible results for training data generation
+
+See [assets/](assets/) for example container configurations:
+- `Dockerfile.acp` - Base container with Bun and git
+- `docker-compose.acp.yml` - Compose file with volume mounts for results
 
 ## Non-Goals
 
@@ -34,7 +105,7 @@ This harness is optimized for TypeScript/JavaScript projects using Bun. It is **
 | Resource | Description |
 |----------|-------------|
 | `scripts/run-harness.ts` | Execute prompts against agent, capture trajectories |
-| [client-api.md](references/client-api.md) | `createACPClient` configuration, sandbox, helpers |
+| [client-api.md](references/client-api.md) | `createACPClient` configuration, helpers |
 | [output-formats.md](references/output-formats.md) | JSONL schemas, format options |
 | [downstream.md](references/downstream.md) | Integration patterns (Braintrust, jq, LLM-as-judge) |
 | [llm-judge-templates.md](references/llm-judge-templates.md) | Evaluation prompt templates |
@@ -190,7 +261,6 @@ import { createACPClient, createPrompt, summarizeResponse } from 'plaited/acp'
 const client = createACPClient({
   command: ['claude-code-acp'],
   cwd: '/path/to/project',
-  sandbox: { enabled: true }
 })
 
 await client.connect()

@@ -147,20 +147,47 @@ const handleRequest = (request: JsonRpcRequest): JsonRpcResponse => {
   }
 }
 
-// Stdio transport
+// MCP stdio transport with Content-Length framing (like LSP)
 const decoder = new TextDecoder()
+const encoder = new TextEncoder()
 let buffer = ''
 
-const processLine = (line: string) => {
-  const trimmed = line.trim()
-  if (!trimmed) return
+/** Send a JSON-RPC response with Content-Length framing */
+const sendResponse = (response: JsonRpcResponse) => {
+  const json = JSON.stringify(response)
+  const message = `Content-Length: ${encoder.encode(json).length}\r\n\r\n${json}`
+  process.stdout.write(message)
+}
+
+/** Parse Content-Length header and extract message */
+const parseMessage = (): JsonRpcRequest | null => {
+  // Look for Content-Length header
+  const headerEnd = buffer.indexOf('\r\n\r\n')
+  if (headerEnd === -1) return null
+
+  const header = buffer.slice(0, headerEnd)
+  const match = header.match(/Content-Length:\s*(\d+)/i)
+  if (!match) {
+    // Invalid header, skip to next potential header
+    buffer = buffer.slice(headerEnd + 4)
+    return null
+  }
+
+  // match[1] is guaranteed to be the captured group from the regex
+  const contentLength = parseInt(match[1] as string, 10)
+  const messageStart = headerEnd + 4
+  const messageEnd = messageStart + contentLength
+
+  // Check if we have the full message
+  if (buffer.length < messageEnd) return null
+
+  const json = buffer.slice(messageStart, messageEnd)
+  buffer = buffer.slice(messageEnd)
 
   try {
-    const request = JSON.parse(trimmed) as JsonRpcRequest
-    const response = handleRequest(request)
-    console.log(JSON.stringify(response))
+    return JSON.parse(json) as JsonRpcRequest
   } catch {
-    // Ignore parse errors
+    return null
   }
 }
 
@@ -174,11 +201,13 @@ const read = async () => {
     if (done) break
 
     buffer += decoder.decode(value, { stream: true })
-    const lines = buffer.split('\n')
-    buffer = lines.pop() ?? ''
 
-    for (const line of lines) {
-      processLine(line)
+    // Process all complete messages in buffer
+    let request = parseMessage()
+    while (request !== null) {
+      const response = handleRequest(request)
+      sendResponse(response)
+      request = parseMessage()
     }
   }
 }

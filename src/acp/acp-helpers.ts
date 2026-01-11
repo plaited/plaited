@@ -188,6 +188,10 @@ const getUpdatePlan = (update: SessionUpdate): PlanEntry[] | undefined => {
 /**
  * Extracts text from session notifications.
  *
+ * @remarks
+ * Streaming produces partial tokens that should be concatenated directly.
+ * Uses empty string join to preserve the original text structure.
+ *
  * @param notifications - Array of session notifications
  * @returns Concatenated text from all updates
  */
@@ -199,7 +203,8 @@ export const extractTextFromUpdates = (notifications: SessionNotification[]): st
       texts.push(content.text)
     }
   }
-  return texts.join('\n')
+  // Join without separator - streaming chunks should be concatenated directly
+  return texts.join('')
 }
 
 /**
