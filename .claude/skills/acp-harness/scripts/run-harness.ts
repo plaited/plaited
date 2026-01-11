@@ -18,24 +18,41 @@ import { createACPClient, createPrompt } from 'plaited/acp'
 import { z } from 'zod'
 
 // ============================================================================
-// Schemas
+// Schemas (SDK-compatible MCP server format)
 // ============================================================================
 
-const McpServerConfigSchema = z.object({
-  type: z.enum(['stdio', 'http']),
+const EnvVariableSchema = z.object({
   name: z.string(),
-  command: z.array(z.string()).optional(),
-  url: z.string().optional(),
-  env: z.record(z.string(), z.string()).optional(),
-  cwd: z.string().optional(),
-  headers: z.record(z.string(), z.string()).optional(),
+  value: z.string(),
 })
+
+const HttpHeaderSchema = z.object({
+  name: z.string(),
+  value: z.string(),
+})
+
+const McpServerStdioSchema = z.object({
+  type: z.literal('stdio').optional(),
+  name: z.string(),
+  command: z.string(),
+  args: z.array(z.string()),
+  env: z.array(EnvVariableSchema),
+})
+
+const McpServerHttpSchema = z.object({
+  type: z.literal('http'),
+  name: z.string(),
+  url: z.string(),
+  headers: z.array(HttpHeaderSchema),
+})
+
+const McpServerSchema = z.union([McpServerStdioSchema, McpServerHttpSchema])
 
 const PromptCaseSchema = z.object({
   id: z.string(),
   input: z.string(),
   expected: z.string().optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   timeout: z.number().optional(),
 })
 
@@ -52,7 +69,7 @@ const ToolInputSchema = z
 // Types
 // ============================================================================
 
-type McpServerConfig = z.infer<typeof McpServerConfigSchema>
+type McpServerConfig = z.infer<typeof McpServerSchema>
 type PromptCase = z.infer<typeof PromptCaseSchema>
 
 /** Trajectory step types */
@@ -200,37 +217,9 @@ const parseAgentCommand = (agent: string): string[] => {
   return agent.split(/\s+/).filter(Boolean)
 }
 
-/** Parse MCP server config from JSON string */
+/** Parse MCP server config from JSON string (SDK-compatible format) */
 const parseMcpServerConfig = (json: string): McpServerConfig => {
-  const config = McpServerConfigSchema.parse(JSON.parse(json))
-
-  if (config.type === 'stdio' && !config.command) {
-    throw new Error('stdio MCP server must have "command" field')
-  }
-  if (config.type === 'http' && !config.url) {
-    throw new Error('http MCP server must have "url" field')
-  }
-  return config
-}
-
-/** Convert internal MCP config to ACP protocol format */
-const toAcpMcpServer = (config: McpServerConfig) => {
-  if (config.type === 'stdio') {
-    return {
-      type: 'stdio' as const,
-      name: config.name,
-      command: config.command ?? [],
-      env: config.env,
-      cwd: config.cwd,
-    }
-  }
-  // HTTP transport
-  return {
-    type: 'http' as const,
-    name: config.name,
-    url: config.url ?? '',
-    headers: config.headers,
-  }
+  return McpServerSchema.parse(JSON.parse(json))
 }
 
 /** Load prompts from JSONL file */
@@ -520,9 +509,8 @@ const main = async () => {
     process.exit(1)
   }
 
-  // Parse MCP server configurations
-  const mcpServerConfigs = (values['mcp-server'] ?? []).map(parseMcpServerConfig)
-  const mcpServers = mcpServerConfigs.map(toAcpMcpServer)
+  // Parse MCP server configurations (already SDK-compatible format)
+  const mcpServers = (values['mcp-server'] ?? []).map(parseMcpServerConfig)
 
   // Load prompts
   const prompts = await loadPrompts(promptsPath)
@@ -566,8 +554,8 @@ const main = async () => {
 
   // Session params with MCP servers
   const sessionParams = {
-    ...(cwd && { cwd }),
-    ...(mcpServers.length > 0 && { mcpServers }),
+    cwd: cwd ?? process.cwd(),
+    mcpServers,
   }
 
   let isFirstOutput = true

@@ -449,7 +449,7 @@ describe('downstream patterns: advanced filtering', () => {
     const deduped = Array.from(byId.values())
 
     expect(deduped).toHaveLength(3) // test-001, test-002, test-003
-    const test001 = deduped.find((r: { id: string }) => r.id === 'test-001') as { input: string }
+    const test001 = deduped.find((r) => (r as { id: string }).id === 'test-001') as { input: string }
     expect(test001?.input).toBe('Create a button v2')
   })
 

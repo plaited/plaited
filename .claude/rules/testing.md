@@ -126,6 +126,57 @@ describe('script-name', () => {
 })
 ```
 
+## Docker Integration Tests (`*.docker.ts`)
+
+Tests that require external services or API keys run in Docker containers for consistent, isolated execution.
+
+### ACP Integration Tests
+
+The ACP client integration tests require the Anthropic API and run in a Docker container:
+
+```bash
+# Run locally with Docker (requires ANTHROPIC_API_KEY)
+ANTHROPIC_API_KEY=sk-... docker compose -f docker-compose.test.yml run --rm acp-test
+
+# Or using the npm script (still requires Docker)
+ANTHROPIC_API_KEY=sk-... bun run test:acp
+```
+
+### File Naming
+
+- **`*.docker.ts`**: Tests that run in Docker containers
+- These are excluded from `bun test` and run separately in CI
+
+### CI Workflow
+
+Docker tests use path filtering to reduce API costs:
+
+```yaml
+# .github/workflows/ci.yml
+jobs:
+  changes:
+    # Detects which paths changed
+    steps:
+      - uses: step-security/paths-filter@v3
+        with:
+          filters: |
+            acp:
+              - 'src/acp/**'
+              - 'src/acp.ts'
+
+  test-acp-integration:
+    needs: changes
+    if: ${{ needs.changes.outputs.acp == 'true' }}
+    # Only runs when src/acp/ files change
+```
+
+### Adding New Docker Tests
+
+1. Name the test file with `.docker.ts` suffix
+2. Add path filter in `.github/workflows/ci.yml` if needed
+3. Update `docker-compose.test.yml` with new service
+4. Document the required environment variables
+
 ## Anti-Patterns
 
 ### No Conditionals Around Assertions

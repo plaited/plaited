@@ -171,7 +171,7 @@ const generateMockTrace = (story: StoryExport): ExecutionTrace => {
 const main = async () => {
   const patterns = paths.map((p) => `${p}/**/*.stories.tsx`)
   // Only wrap in braces for multiple patterns - single patterns don't need braces
-  const storyPattern = patterns.length > 1 ? `{${patterns.join(',')}}` : patterns[0]
+  const storyPattern = patterns.length > 1 ? `{${patterns.join(',')}}` : patterns[0]!
 
   console.error(`Generating trajectories from: ${paths.join(', ')}`)
   console.error(`Pattern: ${storyPattern}`)

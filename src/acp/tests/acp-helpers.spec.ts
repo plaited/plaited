@@ -156,7 +156,7 @@ describe('extractTextFromUpdates', () => {
         update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'Second' } },
       },
     ]
-    expect(extractTextFromUpdates(notifications)).toBe('First\nSecond')
+    expect(extractTextFromUpdates(notifications)).toBe('FirstSecond')
   })
 
   test('skips non-text content updates', () => {
@@ -174,7 +174,7 @@ describe('extractTextFromUpdates', () => {
         update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'World' } },
       },
     ]
-    expect(extractTextFromUpdates(notifications)).toBe('Hello\nWorld')
+    expect(extractTextFromUpdates(notifications)).toBe('HelloWorld')
   })
 })
 
@@ -476,7 +476,7 @@ describe('summarizeResponse', () => {
 
     const summary = summarizeResponse(notifications)
 
-    expect(summary.text).toBe('Processing...\nDone!')
+    expect(summary.text).toBe('Processing...Done!')
     expect(summary.toolCallCount).toBe(1)
     expect(summary.completedToolCalls).toHaveLength(1)
     expect(summary.failedToolCalls).toHaveLength(0)

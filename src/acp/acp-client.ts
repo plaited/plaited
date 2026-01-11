@@ -22,7 +22,7 @@ import type {
   Implementation,
   InitializeRequest,
   InitializeResponse,
-  NewSessionRequest,
+  McpServer,
   PromptRequest,
   PromptResponse,
   RequestPermissionRequest,
@@ -270,16 +270,19 @@ export const createACPClient = (config: ACPClientConfig) => {
   /**
    * Creates a new conversation session.
    *
-   * @param params - Session parameters (cwd and mcpServers are required by SDK)
+   * @param params - Session parameters with working directory and optional MCP servers
    * @returns The created session
    * @throws {ACPClientError} If not connected
    */
-  const createSession = async (params: NewSessionRequest): Promise<Session> => {
+  const createSession = async (params: { cwd: string; mcpServers?: McpServer[] }): Promise<Session> => {
     if (!transport?.isConnected()) {
       throw new ACPClientError('Not connected')
     }
 
-    const response = await transport.request<{ sessionId: string }>(ACP_METHODS.CREATE_SESSION, params)
+    const response = await transport.request<{ sessionId: string }>(ACP_METHODS.CREATE_SESSION, {
+      cwd: params.cwd,
+      mcpServers: params.mcpServers ?? [],
+    })
     return { id: response.sessionId }
   }
 
