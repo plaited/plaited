@@ -67,7 +67,7 @@ Intent Format:
   process.exit(values.help ? 0 : 1)
 }
 
-const name = positionals[0]
+const name = positionals[0]!
 const category = values.category ?? name.charAt(0).toUpperCase() + name.slice(1)
 const outputDir = values.output ?? '.'
 

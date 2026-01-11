@@ -72,7 +72,7 @@ describe('LspClient', () => {
       let line = 0
       let char = 0
       for (let i = 0; i < lines.length; i++) {
-        if (lines[i].startsWith('export')) {
+        if (lines[i]?.startsWith('export')) {
           line = i
           char = 0
           break
@@ -121,10 +121,12 @@ describe('LspClient', () => {
       let line = 0
       let char = 0
       for (let i = 0; i < lines.length; i++) {
-        const match = lines[i].match(/export\s+const\s+(\w+)/)
-        if (match) {
+        const currentLine = lines[i]
+        if (!currentLine) continue
+        const match = currentLine.match(/export\s+const\s+(\w+)/)
+        if (match?.[1]) {
           line = i
-          char = lines[i].indexOf(match[1])
+          char = currentLine.indexOf(match[1])
           break
         }
       }
@@ -145,10 +147,12 @@ describe('LspClient', () => {
       let line = 0
       let char = 0
       for (let i = 0; i < lines.length; i++) {
-        const match = lines[i].match(/import\s+.*{\s*(\w+)/)
-        if (match) {
+        const currentLine = lines[i]
+        if (!currentLine) continue
+        const match = currentLine.match(/import\s+.*{\s*(\w+)/)
+        if (match?.[1]) {
           line = i
-          char = lines[i].indexOf(match[1])
+          char = currentLine.indexOf(match[1])
           break
         }
       }

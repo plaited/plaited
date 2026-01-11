@@ -1,0 +1,17 @@
+# Docker Compose for ACP integration tests
+#
+# Usage:
+#   Local:  ANTHROPIC_API_KEY=sk-... bun run test:acp
+#   CI:     Uses ANTHROPIC_API_KEY from GitHub Actions secrets
+
+services:
+  acp-integration:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    environment:
+      # Passes through from host environment (works in CI and local)
+      - ANTHROPIC_API_KEY
+    # Optional: mount src for live code debugging
+    # volumes:
+    #   - ./src:/app/src:ro

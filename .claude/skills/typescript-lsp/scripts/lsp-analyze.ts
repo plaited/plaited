@@ -91,7 +91,7 @@ Examples:
   process.exit(0)
 }
 
-const [filePath] = positionals
+const filePath = positionals[0]!
 const absolutePath = await resolveFilePath(filePath)
 const uri = `file://${absolutePath}`
 const rootUri = `file://${process.cwd()}`
@@ -166,7 +166,9 @@ try {
   if (values.hover?.length) {
     result.hovers = []
     for (const pos of values.hover) {
-      const [lineStr, charStr] = pos.split(':')
+      const parts = pos.split(':')
+      const lineStr = parts[0] ?? ''
+      const charStr = parts[1] ?? ''
       const line = parseInt(lineStr, 10)
       const char = parseInt(charStr, 10)
 
@@ -181,7 +183,9 @@ try {
   if (values.refs?.length) {
     result.references = []
     for (const pos of values.refs) {
-      const [lineStr, charStr] = pos.split(':')
+      const parts = pos.split(':')
+      const lineStr = parts[0] ?? ''
+      const charStr = parts[1] ?? ''
       const line = parseInt(lineStr, 10)
       const char = parseInt(charStr, 10)
 
