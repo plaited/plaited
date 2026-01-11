@@ -1,6 +1,6 @@
 import { bSync, bThread, type RulesFunction } from 'plaited'
 import { bElement, joinStyles } from 'plaited/ui'
-import { styles, hostStyles } from './wizard.css.ts'
+import { hostStyles, styles } from './wizard.css.ts'
 
 type StepState = {
   current: number
@@ -52,31 +52,28 @@ const requireAllValidated = (getState: () => StepState, totalSteps: number): Rul
  * Sequence: goto event triggers render.
  * This ensures UI updates after navigation.
  */
-const renderOnNavigate = bThread(
-  [bSync({ waitFor: 'goto' }), bSync({ request: { type: 'render' } })],
-  true,
-)
+const renderOnNavigate = bThread([bSync({ waitFor: 'goto' }), bSync({ request: { type: 'render' } })], true)
 
 export const Wizard = bElement({
   tag: 'ui-wizard',
   shadowDom: (
     <div {...styles.container}>
       <nav
-        p-target="nav"
-        role="navigation"
-        aria-label="Wizard steps"
+        p-target='nav'
+        role='navigation'
+        aria-label='Wizard steps'
         {...styles.nav}
       ></nav>
       <main
-        p-target="content"
-        role="region"
-        aria-live="polite"
+        p-target='content'
+        role='region'
+        aria-live='polite'
         {...styles.content}
       ></main>
       <footer {...styles.footer}>
         <button
-          type="button"
-          p-target="prev"
+          type='button'
+          p-target='prev'
           p-trigger={{ click: 'prev' }}
           {...joinStyles(styles.button, styles.buttonSecondary)}
         >
@@ -84,16 +81,16 @@ export const Wizard = bElement({
         </button>
         <div>
           <button
-            type="button"
-            p-target="next"
+            type='button'
+            p-target='next'
             p-trigger={{ click: 'next' }}
             {...styles.button}
           >
             Next
           </button>
           <button
-            type="button"
-            p-target="finish"
+            type='button'
+            p-target='finish'
             p-trigger={{ click: 'finish' }}
             {...joinStyles(styles.button, styles.buttonSuccess)}
           >
@@ -135,7 +132,7 @@ export const Wizard = bElement({
         <>
           {steps.map((name, i) => (
             <button
-              type="button"
+              type='button'
               p-trigger={{ click: 'navClick' }}
               data-step={String(i)}
               aria-current={i === state.current ? 'step' : undefined}

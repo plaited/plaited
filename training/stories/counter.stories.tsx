@@ -15,7 +15,12 @@ export const counterDefault = story({
 
 export const counterWithLimits = story({
   intent: 'Create a counter that blocks increment at max and decrement at min',
-  template: () => <Counter max="3" min="0" />,
+  template: () => (
+    <Counter
+      max='3'
+      min='0'
+    />
+  ),
   play: async ({ assert, findByAttribute, fireEvent }) => {
     const increment = await findByAttribute('p-target', 'increment')
     const decrement = await findByAttribute('p-target', 'decrement')
@@ -65,7 +70,12 @@ export const counterWithLimits = story({
 
 export const counterAccessibility = story({
   intent: 'Create an accessible counter with aria-live for screen readers',
-  template: () => <Counter max="5" min="-5" />,
+  template: () => (
+    <Counter
+      max='5'
+      min='-5'
+    />
+  ),
   play: async ({ accessibilityCheck, findByAttribute, assert }) => {
     await accessibilityCheck({})
 

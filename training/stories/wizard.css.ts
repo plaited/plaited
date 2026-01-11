@@ -1,4 +1,4 @@
-import { createStyles, createHostStyles } from 'plaited/ui'
+import { createHostStyles, createStyles } from 'plaited/ui'
 
 export const styles = createStyles({
   container: {

@@ -1,6 +1,6 @@
 import { bSync, bThread, type RulesFunction } from 'plaited'
 import { bElement } from 'plaited/ui'
-import { styles, hostStyles } from './validated-input.css.ts'
+import { hostStyles, styles } from './validated-input.css.ts'
 
 type ValidationState = {
   isValid: boolean
@@ -25,10 +25,7 @@ const requireValidation = (getState: () => ValidationState): RulesFunction =>
  * Sequence: input event triggers validation.
  * This ensures validation runs after every input change.
  */
-const validateOnInput = bThread(
-  [bSync({ waitFor: 'input' }), bSync({ request: { type: 'validate' } })],
-  true,
-)
+const validateOnInput = bThread([bSync({ waitFor: 'input' }), bSync({ request: { type: 'validate' } })], true)
 
 export const ValidatedInput = bElement({
   tag: 'validated-input',
@@ -37,17 +34,17 @@ export const ValidatedInput = bElement({
   shadowDom: (
     <div {...styles.container}>
       <input
-        type="text"
-        p-target="input"
+        type='text'
+        p-target='input'
         p-trigger={{ input: 'input' }}
-        aria-describedby="error"
+        aria-describedby='error'
         {...styles.input}
       />
       <span
-        id="error"
-        p-target="error"
-        role="alert"
-        aria-live="polite"
+        id='error'
+        p-target='error'
+        role='alert'
+        aria-live='polite'
         {...styles.error}
       ></span>
     </div>

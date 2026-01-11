@@ -1,5 +1,5 @@
 import { bElement } from 'plaited/ui'
-import { styles, hostStyles } from './counter.css.ts'
+import { hostStyles, styles } from './counter.css.ts'
 
 export const Counter = bElement({
   tag: 'ui-counter',
@@ -7,26 +7,26 @@ export const Counter = bElement({
   shadowDom: (
     <div {...styles.container}>
       <button
-        type="button"
-        p-target="decrement"
+        type='button'
+        p-target='decrement'
         p-trigger={{ click: 'clickDecrement' }}
-        aria-label="Decrement"
+        aria-label='Decrement'
         {...styles.button}
       >
         -
       </button>
       <span
-        p-target="display"
-        aria-live="polite"
+        p-target='display'
+        aria-live='polite'
         {...styles.display}
       >
         0
       </span>
       <button
-        type="button"
-        p-target="increment"
+        type='button'
+        p-target='increment'
         p-trigger={{ click: 'clickIncrement' }}
-        aria-label="Increment"
+        aria-label='Increment'
         {...styles.button}
       >
         +

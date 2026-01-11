@@ -17,7 +17,7 @@ export const validatedInputMinLength = story({
   intent: 'Create a form input that requires minimum 3 characters and blocks submit when invalid',
   template: () => (
     <form>
-      <ValidatedInput min-length="3" />
+      <ValidatedInput min-length='3' />
     </form>
   ),
   play: async ({ assert, findByTarget, wait }) => {
@@ -64,7 +64,7 @@ export const validatedInputMinLength = story({
 
 export const validatedInputAccessibility = story({
   intent: 'Create an accessible validated input with error announcements for screen readers',
-  template: () => <ValidatedInput min-length="3" />,
+  template: () => <ValidatedInput min-length='3' />,
   play: async ({ accessibilityCheck, findByTarget, assert }) => {
     await accessibilityCheck({})
 
