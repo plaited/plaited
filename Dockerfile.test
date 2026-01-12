@@ -1,5 +1,9 @@
-# Dockerfile for ACP integration tests
+# Dockerfile for integration tests requiring Docker environment
 # Uses same bun version as CI for consistency
+#
+# Tests use *.docker.ts naming to:
+# 1. Avoid bun test pattern matching in normal test runs
+# 2. Signal these tests require Docker (sqlite-vec, external APIs, etc.)
 
 FROM oven/bun:1.2.9
 
@@ -11,9 +15,9 @@ WORKDIR /app
 # Copy source (includes .git for prepare script)
 COPY . .
 
-# Install dependencies
+# Install dependencies (sqlite-vec native bindings work on Linux)
 RUN bun install --frozen-lockfile
 
-# Run ACP integration tests (.docker.ts naming avoids bun test pattern matching)
-# Use ./ prefix to treat as path instead of filter
-CMD ["bun", "test", "./src/acp/tests/acp-integration.docker.ts"]
+# Run all Docker integration tests
+# The wrapper script handles finding and running *.docker.ts files
+CMD ["bash", "scripts/bun-test-wrapper.sh"]

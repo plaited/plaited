@@ -64,8 +64,8 @@
     "dev": "bun --hot src/cli.ts dev src/ui",
     "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .hooks || true",
     "test": "bun run test:stories src/ui && bun test",
-    "test:acp": "docker compose -f docker-compose.test.yml run --rm acp-integration",
-    "test:acp:build": "docker compose -f docker-compose.test.yml build",
+    "test:docker": "docker compose -f docker-compose.test.yml run --rm docker-integration",
+    "test:docker:build": "docker compose -f docker-compose.test.yml build",
     "test:playwright": "bunx playwright test",
     "test:stories": "bun src/cli.ts test",
     "test:stories-all": "bun run test:stories src/ui"

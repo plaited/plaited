@@ -1,11 +1,15 @@
-# Docker Compose for ACP integration tests
+# Docker Compose for integration tests requiring Docker environment
+#
+# Tests use *.docker.ts naming to:
+# 1. Avoid bun test pattern matching in normal test runs
+# 2. Signal these tests require Docker (sqlite-vec, external APIs, etc.)
 #
 # Usage:
-#   Local:  ANTHROPIC_API_KEY=sk-... bun run test:acp
+#   Local:  ANTHROPIC_API_KEY=sk-... bun run test:docker
 #   CI:     Uses ANTHROPIC_API_KEY from GitHub Actions secrets
 
 services:
-  acp-integration:
+  docker-integration:
     build:
       context: .
       dockerfile: Dockerfile.test
