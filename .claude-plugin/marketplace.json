@@ -4,12 +4,12 @@
     "name": "Plaited Labs"
   },
   "metadata": {
-    "description": "Plaited framework plugins for building reactive custom elements with behavioral programming"
+    "description": "Neuro-symbolic UI framework combining behavioral programming with generative AI. Build reactive custom elements, train world agents from validated designs, and deploy via protocol adapters (ACP/A2A/MCP)."
   },
   "plugins": [
     {
       "name": "workshop",
-      "description": "AI design workshop for Plaited templates. Creates outcome-based UI patterns for agent-driven interfaces using generative design principles. Requires Bun JavaScript runtime.",
+      "description": "Full-stack AI workshop for Plaited development. Includes: loom (design-to-agent pipeline), world-agent (training & deployment), behavioral-core (bProgram patterns), and workbench (story testing with hot reload). Requires Bun runtime.",
       "version": "0.1.3",
       "author": {
         "name": "Plaited Labs"

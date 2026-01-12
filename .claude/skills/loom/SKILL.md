@@ -95,8 +95,32 @@ bun ./scripts/query-structural.ts channels levers loops  # Multiple topics
 
 ### Training
 
+- [training-workflow.md](references/training/training-workflow.md) - Complete Colab training guide
 - [trajectories.md](references/training/trajectories.md) - Generating training data from stories
 - [rewards.md](references/training/rewards.md) - Reward computation from story results
+- [tool-api.md](references/training/tool-api.md) - Tool registry and schema API
+- [eval-guide.md](references/training/eval-guide.md) - Evaluation metrics and comparison
+
+**Training Scripts:**
+
+| Script | Purpose |
+|--------|---------|
+| `scaffold-training-story.ts` | Generate story files with intents |
+| `generate-trajectories.ts` | Create training JSONL from stories |
+| `compute-rewards.ts` | Calculate rewards from story results |
+| `run-eval-suite.ts` | Run full evaluation suite |
+| `compare-baseline.ts` | Compare agent vs baseline |
+| `generate-report.ts` | Generate evaluation report |
+
+**Quick Start:**
+```bash
+# Scaffold training stories
+bun scripts/scaffold-training-story.ts button --category Button \
+  --intents "primary,secondary,disabled"
+
+# Generate trajectories
+bun scripts/generate-trajectories.ts training/stories -o trajectories.jsonl
+```
 
 ### Workbench (Discovery & Preview)
 
@@ -184,6 +208,7 @@ flowchart TB
 
 ## Related Skills
 
-- **plaited-behavioral-core** - Behavioral programming fundamentals
-- **plaited-ui-patterns** - Template and styling patterns
-- **plaited-standards** - Code conventions
+- **plaited-behavioral-core** - Behavioral programming fundamentals (bProgram, bThread, bSync)
+- **plaited-ui-patterns** - Template and styling patterns (bElement, createStyles)
+- **plaited-standards** - Code conventions and development standards
+- **typescript-lsp** - Type verification and code navigation
