@@ -9,7 +9,7 @@ import { inputStyles } from './input.css.ts'
 const TextInput: FT<{
   placeholder?: string
   disabled?: boolean
-  'data-state'?: 'error' | 'success'
+  'data-state'?: 'error' | 'success' | 'warning'
 }> = ({ placeholder, disabled, 'data-state': state, ...attrs }) => (
   <input
     type='text'
@@ -17,6 +17,7 @@ const TextInput: FT<{
       inputStyles.input,
       state === 'error' && inputStyles.error,
       state === 'success' && inputStyles.success,
+      state === 'warning' && inputStyles.warning,
     )}
     placeholder={placeholder}
     disabled={disabled}
@@ -108,6 +109,19 @@ export const successInput = story({
     <TextInput
       placeholder='Valid input'
       data-state='success'
+    />
+  ),
+  play: async ({ accessibilityCheck }) => {
+    await accessibilityCheck({})
+  },
+})
+
+export const warningInput = story({
+  intent: 'Create a text input showing warning validation state',
+  template: () => (
+    <TextInput
+      placeholder='Warning input'
+      data-state='warning'
     />
   ),
   play: async ({ accessibilityCheck }) => {
