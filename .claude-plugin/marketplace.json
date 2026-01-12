@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "workshop",
-      "description": "Full-stack AI workshop for Plaited development. Includes: loom (design-to-agent pipeline), world-agent (training & deployment), behavioral-core (bProgram patterns), and workbench (story testing with hot reload). Requires Bun runtime.",
+      "description": "Full-stack AI workshop for Plaited development. Includes: loom (unified design-to-agent pipeline with training, workbench, and deployment), behavioral-core (bProgram patterns), ui-patterns (templates & styling), and typescript-lsp (type verification). Requires Bun runtime.",
       "version": "0.1.3",
       "author": {
         "name": "Plaited Labs"
