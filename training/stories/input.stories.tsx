@@ -1,7 +1,7 @@
 import { story } from 'plaited/testing'
 import type { FT } from 'plaited/ui'
 import { joinStyles } from 'plaited/ui'
-import { inputStyles } from './input.css.ts'
+import { inputStyles, tokenStyles } from './input.css.ts'
 
 /**
  * Text input field.
@@ -14,6 +14,7 @@ const TextInput: FT<{
   <input
     type='text'
     {...joinStyles(
+      tokenStyles,
       inputStyles.input,
       state === 'error' && inputStyles.error,
       state === 'success' && inputStyles.success,
@@ -33,7 +34,7 @@ const LabeledField: FT<{
   label: string
   helpText: string
 }> = ({ id, label, helpText, children }) => (
-  <div {...inputStyles.fieldGroup}>
+  <div {...joinStyles(tokenStyles, inputStyles.fieldGroup)}>
     <label
       {...inputStyles.label}
       htmlFor={id}
@@ -53,7 +54,7 @@ const ErrorField: FT<{
   label: string
   errorText: string
 }> = ({ id, label, errorText, children }) => (
-  <div {...inputStyles.fieldGroup}>
+  <div {...joinStyles(tokenStyles, inputStyles.fieldGroup)}>
     <label
       {...inputStyles.label}
       htmlFor={id}
@@ -145,7 +146,7 @@ export const labeledInput = story({
   },
 })
 
-export const inputWithError = story({
+export const labeledInputWithError = story({
   intent: 'Create a form field showing validation error message',
   template: () => (
     <ErrorField
