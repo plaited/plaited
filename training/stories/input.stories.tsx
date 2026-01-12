@@ -7,12 +7,24 @@ import { inputStyles, tokenStyles } from './input.css.ts'
  * Text input field.
  */
 const TextInput: FT<{
+  id?: string
   placeholder?: string
   disabled?: boolean
   'data-state'?: 'error' | 'success' | 'warning'
-}> = ({ placeholder, disabled, 'data-state': state, ...attrs }) => (
+  'aria-invalid'?: boolean | 'false' | 'true' | 'grammar' | 'spelling'
+  'aria-errormessage'?: string
+}> = ({
+  id,
+  placeholder,
+  disabled,
+  'data-state': state,
+  'aria-invalid': ariaInvalid,
+  'aria-errormessage': ariaErrorMessage,
+  ...attrs
+}) => (
   <input
     type='text'
+    id={id}
     {...joinStyles(
       tokenStyles,
       inputStyles.input,
@@ -22,6 +34,8 @@ const TextInput: FT<{
     )}
     placeholder={placeholder}
     disabled={disabled}
+    aria-invalid={ariaInvalid ?? (state === 'error' ? 'true' : undefined)}
+    aria-errormessage={ariaErrorMessage}
     {...attrs}
   />
 )
@@ -53,18 +67,37 @@ const ErrorField: FT<{
   id: string
   label: string
   errorText: string
-}> = ({ id, label, errorText, children }) => (
-  <div {...joinStyles(tokenStyles, inputStyles.fieldGroup)}>
-    <label
-      {...inputStyles.label}
-      htmlFor={id}
-    >
-      {label}
-    </label>
-    <div id={id}>{children}</div>
-    <span {...inputStyles.errorText}>{errorText}</span>
-  </div>
-)
+  placeholder?: string
+  disabled?: boolean
+}> = ({ id, label, errorText, placeholder, disabled }) => {
+  const errorMessageId = `${id}-error`
+  return (
+    <div {...joinStyles(tokenStyles, inputStyles.fieldGroup)}>
+      <label
+        {...inputStyles.label}
+        htmlFor={id}
+      >
+        {label}
+      </label>
+      <TextInput
+        id={id}
+        placeholder={placeholder}
+        disabled={disabled}
+        data-state='error'
+        aria-invalid='true'
+        aria-errormessage={errorMessageId}
+      />
+      <span
+        id={errorMessageId}
+        {...inputStyles.errorText}
+        aria-live='polite'
+        role='alert'
+      >
+        {errorText}
+      </span>
+    </div>
+  )
+}
 
 export const meta = {
   title: 'Training/Input',
@@ -97,6 +130,7 @@ export const errorInput = story({
     <TextInput
       placeholder='Invalid input'
       data-state='error'
+      aria-invalid='true'
     />
   ),
   play: async ({ accessibilityCheck }) => {
@@ -153,12 +187,8 @@ export const labeledInputWithError = story({
       id='password-field'
       label='Password'
       errorText='Password must be at least 8 characters'
-    >
-      <TextInput
-        placeholder='Enter password'
-        data-state='error'
-      />
-    </ErrorField>
+      placeholder='Enter password'
+    />
   ),
   play: async ({ accessibilityCheck }) => {
     await accessibilityCheck({})
