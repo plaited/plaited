@@ -38,6 +38,8 @@
     "./workshop/*.tsx": "./src/workshop/*.tsx",
     "./agent": "./src/agent.ts",
     "./agent/*.ts": "./src/agent/*.ts",
+    "./agent-next": "./src/agent-next.ts",
+    "./agent-next/*.ts": "./src/agent-next/*.ts",
     "./acp": "./src/acp.ts",
     "./acp/*.ts": "./src/acp/*.ts"
   },
@@ -101,7 +103,9 @@
   },
   "dependencies": {
     "@anthropic-ai/sandbox-runtime": "^0.0.23",
-    "@huggingface/inference": "^4.13.5"
+    "@huggingface/inference": "^4.13.5",
+    "@huggingface/transformers": "^3.8.1",
+    "sqlite-vec": "^0.1.7-alpha.2"
   },
   "peerDependencies": {
     "@agentclientprotocol/sdk": "^0.12.0",

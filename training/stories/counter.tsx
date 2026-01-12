@@ -60,7 +60,7 @@ export const Counter = bElement({
     })
 
     const updateDisplay = () => {
-      $('display')[0]?.render(<>{count}</>)
+      $('display')[0]?.render(count)
     }
 
     return {

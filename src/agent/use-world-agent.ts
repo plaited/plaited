@@ -1,207 +1,478 @@
 /**
- * World agent factory using useBehavioral pattern.
- * The agent loop IS a bProgram - NOT a class.
+ * World agent factory using useBehavioral.
  *
  * @remarks
- * This factory creates behavioral programs that coordinate
- * tool execution with runtime constraints. The key difference
- * from class-based agents (like HuggingFace tiny-agents) is that
- * bThreads act as runtime constraints that block invalid generations
- * BEFORE execution, not after.
+ * Protocol-agnostic agent that communicates via signals.
+ * Implements the neuro-symbolic architecture:
+ * - Neural policy (inference model) proposes tool calls
+ * - Symbolic constraints (bThreads) block invalid actions
+ * - Tiered analysis validates before execution
  *
- * **Skill Script Integration:**
- * When `skills` option is provided, the agent discovers scripts in
- * skill directories and registers them as callable tools. This enables
- * FunctionGemma to invoke user-defined skills via the standard tool
- * calling mechanism.
+ * Extensibility:
+ * - Custom handlers can override defaults
+ * - Custom bThreads add constraints
+ * - User preferences enable hybrid UI
  */
 
-import { useBehavioral } from '../main/use-behavioral.ts'
-import type { AgentContext, AgentEvents, AgentHandlers, AgentLogger, TrajectoryMessage } from './agent.types.ts'
-import { registerBaseConstraints } from './constraints.ts'
-import { discoverSkillScripts, discoverSkills, formatSkillsContext, loadSkillScripts } from './skill-scripts.ts'
+import type { Handlers, Signal } from '../main/behavioral.types.ts'
+import { useSignal } from '../main/use-signal.ts'
+import { useBehavioral } from '../main.ts'
+import type {
+  AgentOutEvent,
+  FunctionCall,
+  InferenceModel,
+  SandboxConfig,
+  StoryResult,
+  ToolRegistry,
+  ToolResult,
+  ToolSource,
+  UserPreferenceProfile,
+  WorldAgentConfig,
+} from './agent.types.ts'
+import { type CodeExecutor, createCodeExecutor } from './code-executor.ts'
+import { type ContextBudget, createContextBudget } from './context-budget.ts'
+import { createPreferenceConstraint } from './preference-constraints.ts'
+import { runStaticAnalysis, type StaticAnalysisOptions } from './static-analysis.ts'
+import { registerWorkflowConstraints } from './workflow-constraints.ts'
 
-/** Default no-op logger */
-const noopLogger: AgentLogger = {
-  info: () => {},
-  warn: () => {},
-  error: () => {},
+// ============================================================================
+// Event Types
+// ============================================================================
+
+/**
+ * World agent event types for the behavioral program.
+ */
+type WorldAgentEvents = {
+  // Inbound events (public trigger)
+  generate: { intent: string; context?: unknown }
+  cancel: undefined
+  feedback: { result: StoryResult }
+  disconnect: undefined
+  executeCode: { code: string; sandbox?: SandboxConfig }
+  chainTools: { calls: FunctionCall[]; sequential?: boolean }
+  resolveTool: { name: string; source?: ToolSource }
+
+  // Internal events (for bThread coordination)
+  staticAnalysis: { passed: boolean; tier: 1; checks: unknown[] }
+  modelJudge: { passed: boolean; score: number; reasoning: string }
+  generationComplete: undefined
+  toolCall: { calls: FunctionCall[] }
+  toolResult: { name: string; result: ToolResult }
+  browserTest: { result: StoryResult }
+  error: { error: Error }
 }
+
+/**
+ * Context provided to the behavioral program.
+ */
+type WorldAgentContext = {
+  outbound: Signal<AgentOutEvent>
+  tools: ToolRegistry
+  model: InferenceModel
+  contextBudget: ContextBudget
+  codeExecutor: CodeExecutor
+  preferences?: UserPreferenceProfile
+  constraints?: WorldAgentConfig['constraints']
+}
+
+// ============================================================================
+// Public Events
+// ============================================================================
+
+const PUBLIC_EVENTS = [
+  'generate',
+  'cancel',
+  'feedback',
+  'disconnect',
+  'executeCode',
+  'chainTools',
+  'resolveTool',
+] as const
+
+// ============================================================================
+// World Agent Factory
+// ============================================================================
 
 /**
  * Creates a world agent behavioral program factory.
  *
- * @returns An async initialization function that creates configured agent instance
+ * @param config - Agent configuration
+ * @returns A function that creates agent instances
  *
  * @remarks
- * **Key Architectural Points:**
- * - The agent IS a bProgram, not a wrapper around one
- * - bThreads block invalid generations before tool execution
- * - Coordination happens through event selection, not explicit state
- * - Inspector snapshots provide training data observability
+ * The agent IS a behavioral program, not a class.
+ * It coordinates:
+ * - Inference model for generation
+ * - Tool execution with sandboxing
+ * - Tiered analysis (static → judge → browser)
+ * - Workflow constraints via bThreads
  *
- * **Event Flow:**
- * 1. `generate` - User intent triggers generation
- * 2. Model inference produces `toolCall` events
- * 3. Tools execute, producing `toolResult` events
- * 4. Constraint bThreads may block invalid results
- * 5. `storyResult` provides validation feedback
- *
- * See `src/agent/tests/use-world-agent.spec.ts` for usage patterns.
+ * Extensibility pattern:
+ * - `customHandlers` override default event handlers
+ * - `customBThreads` add or replace constraints
+ * - `preferences` enable hybrid UI
  */
-export const useWorldAgent = useBehavioral<AgentEvents, AgentContext>({
-  /**
-   * Public events that can be triggered externally.
-   * Internal coordination events (toolCall, toolResult) are not exposed.
-   */
-  publicEvents: ['generate', 'storyResult'],
+export const createWorldAgent = (config: WorldAgentConfig) => {
+  const {
+    tools,
+    model,
+    contextBudget = createContextBudget(),
+    customHandlers = {},
+    customBThreads = {},
+    constraints = {},
+    preferences,
+  } = config
 
-  /**
-   * The behavioral program that coordinates agent execution.
-   * Returns event handlers that respond to selected events.
-   */
-  async bProgram({ trigger, bThreads, bSync, bThread, tools, model, logger = noopLogger, skills, systemPrompt }) {
-    // Register base constraint bThreads
-    registerBaseConstraints(bThreads, bSync, bThread)
+  // Create code executor
+  const codeExecutor = createCodeExecutor({ tools })
 
-    // Discover and register skill scripts if configured
-    let skillContext = ''
-    if (skills) {
-      const { skillsRoot = '.claude/skills', extensions, timeout } = skills
-      const discoveredSkills = await discoverSkills(skillsRoot)
-      const discoveredScripts = await discoverSkillScripts({ skillsRoot, extensions })
+  return useBehavioral<WorldAgentEvents, WorldAgentContext>({
+    publicEvents: [...PUBLIC_EVENTS],
 
-      // Register scripts as tools
-      await loadSkillScripts(tools, { skillsRoot, extensions, timeout })
+    async bProgram({ trigger, bThreads, bSync, bThread, disconnect, outbound }) {
+      // ================================================================
+      // 1. Register workflow constraints
+      // ================================================================
+      registerWorkflowConstraints(bThreads, bSync, bThread, {
+        contextBudget,
+        skipTier2: constraints.skipTier2,
+      })
 
-      // Generate context for system prompt
-      skillContext = formatSkillsContext(discoveredScripts, discoveredSkills)
-      logger.info(`Discovered ${discoveredScripts.length} skill scripts from ${discoveredSkills.length} skills`)
-    }
+      // ================================================================
+      // 2. Register preference constraints (if provided)
+      // ================================================================
+      if (preferences) {
+        bThreads.set({
+          enforcePreferences: createPreferenceConstraint(bSync, bThread, preferences),
+        })
+      }
 
-    // Build system prompt with skill context
-    const buildSystemPrompt = (): string => {
-      const parts: string[] = []
-      if (systemPrompt) parts.push(systemPrompt)
-      if (skillContext) parts.push(skillContext)
-      return parts.join('\n\n') || 'You are a UI generation agent. Generate templates using the available tools.'
-    }
+      // ================================================================
+      // 3. Register custom bThreads (can override defaults)
+      // ================================================================
+      if (Object.keys(customBThreads).length > 0) {
+        bThreads.set(customBThreads)
+      }
 
-    // Return event handlers
-    const handlers: AgentHandlers = {
-      /**
-       * Handle generation request from user intent.
-       * Calls the model and triggers tool execution.
-       */
-      async generate({ intent }) {
-        try {
-          // Build messages with system prompt
-          const messages: TrajectoryMessage[] = [
-            { role: 'system', content: buildSystemPrompt() },
-            { role: 'user', content: intent },
-          ]
+      // ================================================================
+      // 4. Define default handlers with full implementations
+      // ================================================================
+      const defaultHandlers = {
+        /**
+         * Generate handler - main workflow entry point.
+         * Calls the inference model to get tool calls, executes them,
+         * and runs static analysis on generated templates.
+         */
+        async generate({ intent, context: _context }: { intent: string; context?: unknown }) {
+          try {
+            // Emit thought for observability
+            outbound.set({ kind: 'thought', content: `Processing: ${intent}` })
 
-          // Call model with tools
-          const response = await model.chatCompletion({
-            messages,
-            tools: tools.schemas,
-          })
+            // Call model inference to get tool calls
+            const toolCalls = await model.inference(intent, tools.schemas)
 
-          // Trigger tool calls if any
-          if (response.tool_calls && response.tool_calls.length > 0) {
-            trigger({
-              type: 'toolCall',
-              detail: { calls: response.tool_calls },
+            // If model returned tool calls, process them
+            if (toolCalls.length > 0) {
+              // Emit tool calls event
+              outbound.set({ kind: 'toolCall', calls: toolCalls })
+              trigger({ type: 'toolCall', detail: { calls: toolCalls } })
+
+              // Execute each tool call
+              for (const call of toolCalls) {
+                const result = await tools.execute(call)
+
+                // Emit result for observability
+                outbound.set({ kind: 'toolResult', name: call.name, result })
+                trigger({ type: 'toolResult', detail: { name: call.name, result } })
+
+                // Run static analysis on template results (Tier 1 validation)
+                if (call.name === 'writeTemplate' && result.success) {
+                  const content = (result.data as { content?: string })?.content
+                  if (content) {
+                    const analysisResult = runStaticAnalysis(content, {
+                      checks: constraints.staticChecks as StaticAnalysisOptions['checks'],
+                    })
+                    outbound.set({ kind: 'staticAnalysis', result: analysisResult })
+                    trigger({ type: 'staticAnalysis', detail: analysisResult })
+                  }
+                }
+              }
+            }
+
+            // Emit completion
+            trigger({ type: 'generationComplete', detail: undefined })
+            outbound.set({ kind: 'response', content: `Completed processing: ${intent}` })
+          } catch (error) {
+            const err = error instanceof Error ? error : new Error(String(error))
+            trigger({ type: 'error', detail: { error: err } })
+            outbound.set({ kind: 'error', error: err })
+          }
+        },
+
+        /**
+         * Execute code in sandbox.
+         * Runs arbitrary code with tool access in a sandboxed environment.
+         */
+        async executeCode({ code, sandbox: _sandbox }: { code: string; sandbox?: SandboxConfig }) {
+          try {
+            const result = await codeExecutor.execute(code)
+
+            // Report tool calls made during execution
+            if (result.toolCalls) {
+              for (const call of result.toolCalls) {
+                outbound.set({
+                  kind: 'toolResult',
+                  name: call.name,
+                  result: { success: true, data: call.result },
+                })
+              }
+            }
+
+            // Emit completion status
+            outbound.set({
+              kind: 'response',
+              content: result.success ? 'Code execution completed' : `Code execution failed: ${result.error}`,
+            })
+          } catch (error) {
+            const err = error instanceof Error ? error : new Error(String(error))
+            outbound.set({ kind: 'error', error: err })
+          }
+        },
+
+        /**
+         * Chain multiple tool calls.
+         * Executes tools either sequentially or in parallel.
+         */
+        async chainTools({ calls, sequential = false }: { calls: FunctionCall[]; sequential?: boolean }) {
+          if (sequential) {
+            // Execute in order, each awaited before the next
+            for (const call of calls) {
+              const result = await tools.execute(call)
+              outbound.set({ kind: 'toolResult', name: call.name, result })
+              trigger({ type: 'toolResult', detail: { name: call.name, result } })
+            }
+          } else {
+            // Execute in parallel
+            await Promise.all(
+              calls.map(async (call) => {
+                const result = await tools.execute(call)
+                outbound.set({ kind: 'toolResult', name: call.name, result })
+                trigger({ type: 'toolResult', detail: { name: call.name, result } })
+              }),
+            )
+          }
+        },
+
+        /**
+         * Resolve a tool by name and source.
+         * Returns the tool handler if found, undefined otherwise.
+         */
+        resolveTool({ name, source: _source = 'local' }: { name: string; source?: ToolSource }) {
+          // Look up tool in registry by finding matching schema
+          const schema = tools.schemas.find((s) => s.name === name)
+          if (!schema) {
+            outbound.set({
+              kind: 'error',
+              error: new Error(`Tool not found: ${name}`),
             })
           }
-        } catch (error) {
-          logger.error(`Generation failed: ${error instanceof Error ? error.message : String(error)}`)
-        }
-      },
+          // Tool execution happens through tools.execute(), not direct handler access
+        },
 
-      /**
-       * Handle tool calls from model response.
-       * Executes each tool and triggers result events.
-       */
-      async toolCall({ calls }) {
-        for (const call of calls) {
-          const result = await tools.execute(call)
-          trigger({
-            type: 'toolResult',
-            detail: { name: call.name, result },
-          })
-        }
-      },
+        /**
+         * Cancel current operation.
+         * Triggers an error event to interrupt any ongoing generation.
+         */
+        cancel() {
+          const err = new Error('Operation cancelled by user')
+          trigger({ type: 'error', detail: { error: err } })
+          outbound.set({ kind: 'error', error: err })
+        },
 
-      /**
-       * Handle tool execution results.
-       * Logged for trajectory generation.
-       */
-      toolResult({ name, result }) {
-        if (!result.success) {
-          logger.warn(`Tool ${name} failed: ${result.error}`)
-        }
-      },
+        /**
+         * Handle feedback from story execution.
+         * Used for reward computation in training.
+         */
+        feedback({ result }: { result: StoryResult }) {
+          trigger({ type: 'browserTest', detail: { result } })
 
-      /**
-       * Handle story execution results.
-       * Used for reward computation in training.
-       */
-      storyResult(result) {
-        if (!result.passed) {
-          logger.warn(`Story failed: ${result.errors.join(', ')}`)
-        }
-        if (!result.a11yPassed) {
-          logger.warn('Accessibility check failed')
-        }
-      },
+          // Emit feedback for observability
+          if (!result.passed) {
+            outbound.set({
+              kind: 'error',
+              error: new Error(`Story failed: ${result.errors.join(', ')}`),
+            })
+          }
+          if (!result.a11yPassed) {
+            outbound.set({
+              kind: 'error',
+              error: new Error('Accessibility check failed'),
+            })
+          }
+        },
 
-      /**
-       * Handle validation requests.
-       */
-      validate({ content }) {
-        // Validation logic - could check patterns, syntax, etc.
-        const valid = content.length > 0
-        trigger({
-          type: 'validated',
-          detail: { valid, errors: valid ? [] : ['Empty content'] },
-        })
-      },
+        /**
+         * Disconnect the agent.
+         * Cleans up resources and ends the behavioral program.
+         */
+        disconnect() {
+          disconnect()
+        },
 
-      /**
-       * Handle validation results.
-       */
-      validated({ valid, errors }) {
-        if (!valid) {
-          logger.warn(`Validation failed: ${errors.join(', ')}`)
-        }
-      },
+        // ============================================================
+        // Internal event handlers (coordination only)
+        // ============================================================
 
-      /**
-       * Handle code execution requests.
-       * Executes sandboxed code with tool access.
-       */
-      executeCode({ code }) {
-        // Code execution is handled by the sandbox module
-        // This handler logs the event for trajectory generation
-        logger.info(`Executing code: ${code.slice(0, 100)}${code.length > 100 ? '...' : ''}`)
-      },
+        /** Internal: Static analysis completed - logged for trajectory */
+        staticAnalysis({ passed, checks }: { passed: boolean; tier: 1; checks: unknown[] }) {
+          if (!passed) {
+            const failedChecks = checks.filter((c: unknown) => !(c as { passed: boolean }).passed)
+            outbound.set({
+              kind: 'error',
+              error: new Error(`Static analysis failed: ${failedChecks.length} checks failed`),
+            })
+          }
+        },
 
-      /**
-       * Handle code execution results.
-       */
-      codeResult({ success, error }) {
-        if (!success) {
-          logger.warn(`Code execution failed: ${error}`)
-        }
-      },
-    }
+        /** Internal: Model-as-judge completed - logged for trajectory */
+        modelJudge({ passed, score, reasoning }: { passed: boolean; score: number; reasoning: string }) {
+          if (!passed) {
+            outbound.set({
+              kind: 'error',
+              error: new Error(`Model judge failed (score: ${score}): ${reasoning}`),
+            })
+          }
+        },
 
-    return handlers
-  },
-})
+        /** Internal: Generation completed */
+        generationComplete() {
+          // Signal that generation is done - bThreads may use this
+        },
+
+        /** Internal: Tool call initiated */
+        toolCall({ calls: _calls }: { calls: FunctionCall[] }) {
+          // Log tool calls for trajectory generation
+          // bThreads can block specific tool calls
+        },
+
+        /** Internal: Tool execution result */
+        toolResult({ name, result }: { name: string; result: ToolResult }) {
+          if (!result.success) {
+            outbound.set({
+              kind: 'error',
+              error: new Error(`Tool ${name} failed: ${result.error}`),
+            })
+          }
+        },
+
+        /** Internal: Browser test completed */
+        browserTest({ result }: { result: StoryResult }) {
+          // Browser test results feed into reward computation
+          if (!result.passed) {
+            outbound.set({
+              kind: 'error',
+              error: new Error(`Browser test failed: ${result.errors.join(', ')}`),
+            })
+          }
+        },
+
+        /** Internal: Error occurred */
+        error({ error }: { error: Error }) {
+          // Errors are already emitted - this handler enables bThread coordination
+          outbound.set({ kind: 'error', error })
+        },
+      }
+
+      // ================================================================
+      // 5. Merge custom handlers (can override defaults)
+      // ================================================================
+      return { ...defaultHandlers, ...customHandlers } as Handlers<WorldAgentEvents>
+    },
+  })
+}
+
+// ============================================================================
+// Convenience Wrapper
+// ============================================================================
 
 /**
- * Type for the initialized world agent trigger function.
+ * Convenience wrapper that creates a world agent with auto-created infrastructure.
+ *
+ * @param config - Minimal agent configuration (tools and model required)
+ * @returns Promise resolving to trigger function
+ *
+ * @remarks
+ * This is the simple API for quick usage. For full control over
+ * signals and context, use `createWorldAgent` directly.
+ *
+ * @example
+ * ```typescript
+ * const { trigger, outbound } = await useWorldAgent({
+ *   tools: myToolRegistry,
+ *   model: myInferenceModel,
+ * })
+ *
+ * trigger({ type: 'generate', detail: { intent: 'Create a button' } })
+ * ```
  */
-export type WorldAgentTrigger = Awaited<ReturnType<typeof useWorldAgent>>
+export const useWorldAgent = async (config: WorldAgentConfig) => {
+  const {
+    tools,
+    model,
+    contextBudget = createContextBudget(),
+    customHandlers,
+    customBThreads,
+    constraints,
+    preferences,
+  } = config
+
+  // Create outbound signal for agent events
+  const outbound = useSignal<AgentOutEvent>()
+
+  // Create code executor
+  const codeExecutor = createCodeExecutor({ tools })
+
+  // Create factory with full config
+  const factory = createWorldAgent({
+    tools,
+    model,
+    contextBudget,
+    customHandlers,
+    customBThreads,
+    constraints,
+    preferences,
+  })
+
+  // Initialize the agent with context
+  const trigger = await factory({
+    outbound,
+    tools,
+    model,
+    contextBudget,
+    codeExecutor,
+    preferences,
+    constraints,
+  })
+
+  return { trigger, outbound }
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Create a minimal world agent for testing.
+ *
+ * @param tools - Tool registry
+ * @param model - Inference model
+ * @returns Agent trigger function and outbound signal
+ */
+export const createMinimalAgent = async (tools: ToolRegistry, model: InferenceModel) => {
+  return useWorldAgent({ tools, model })
+}
+
+/**
+ * Type for the initialized world agent result.
+ */
+export type WorldAgentResult = Awaited<ReturnType<typeof useWorldAgent>>

@@ -5,8 +5,9 @@
  */
 
 import type { FunctionCall, StoryResult, ToolRegistry, ToolResult } from '../agent/agent.types.ts'
-import { registerBaseConstraints } from '../agent/constraints.ts'
+import { createContextBudget } from '../agent/context-budget.ts'
 import { createToolRegistry } from '../agent/tools.ts'
+import { registerWorkflowConstraints } from '../agent/workflow-constraints.ts'
 import { useBehavioral } from '../main.ts'
 
 /**
@@ -160,8 +161,9 @@ export const useAgentServer = useBehavioral<AgentServerEvents, AgentServerContex
       }
     }
 
-    // Register base constraints
-    registerBaseConstraints(bThreads, bSync, bThread)
+    // Register workflow constraints
+    const contextBudget = createContextBudget()
+    registerWorkflowConstraints(bThreads, bSync, bThread, { contextBudget })
 
     // Track connected clients
     const clients = new Set<WebSocket>()

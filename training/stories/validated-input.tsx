@@ -83,7 +83,7 @@ export const ValidatedInput = bElement({
           internals.states.delete('invalid')
           internals.states.add('valid')
         }
-        error?.render(<>{state.message}</>)
+        error?.render(state.message)
       },
       submit() {
         // Only reached if validation passed (bThread allows it)

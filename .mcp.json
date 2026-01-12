@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "agent-skills-spec": {
+      "type": "http",
+      "url": "https://agentskills.io/mcp"
+    },
+    "agent-client-protocol": {
+      "type": "http",
+      "url": "https://agentclientprotocol.com/mcp"
+    },
+    "model-context-protocol-docs":{
+      "type": "http",
+      "url": "https://modelcontextprotocol.io/mcp"
+    },
+    "braintrust-docs": {
+      "type": "http",
+      "url": "https://www.braintrust.dev/docs/mcp"
+    }
+  }
+}

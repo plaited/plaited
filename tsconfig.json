@@ -1,5 +1,5 @@
 {
-  "include": ["src", "scripts", ".claude/**/*.ts", "training"],
+  "include": ["src", "scripts", ".claude/**/*", "training"],
   "compilerOptions": {
     // Enable latest features
     "lib": ["ESNext", "DOM", "dom.iterable"],

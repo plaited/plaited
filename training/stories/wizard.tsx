@@ -60,16 +60,14 @@ export const Wizard = bElement({
     <div {...styles.container}>
       <nav
         p-target='nav'
-        role='navigation'
         aria-label='Wizard steps'
         {...styles.nav}
       ></nav>
-      <main
+      <section
         p-target='content'
-        role='region'
         aria-live='polite'
         {...styles.content}
-      ></main>
+      ></section>
       <footer {...styles.footer}>
         <button
           type='button'
@@ -129,19 +127,17 @@ export const Wizard = bElement({
       )
 
       nav?.render(
-        <>
-          {steps.map((name, i) => (
-            <button
-              type='button'
-              p-trigger={{ click: 'navClick' }}
-              data-step={String(i)}
-              aria-current={i === state.current ? 'step' : undefined}
-              {...styles.navButton}
-            >
-              {name} {state.validated.has(i) ? '✓' : ''}
-            </button>
-          ))}
-        </>,
+        steps.map((name, i) => (
+          <button
+            type='button'
+            p-trigger={{ click: 'navClick' }}
+            data-step={String(i)}
+            aria-current={i === state.current ? 'step' : undefined}
+            {...styles.navButton}
+          >
+            {name} {state.validated.has(i) ? '✓' : ''}
+          </button>
+        )),
       )
 
       // Update button states
@@ -186,7 +182,7 @@ export const Wizard = bElement({
             <p>All steps have been validated. Wizard finished successfully.</p>
           </>,
         )
-        $('nav')[0]?.render(<></>)
+        $('nav')[0]?.render(null)
         $<HTMLButtonElement>('prev')[0]?.setAttribute('hidden', '')
         $<HTMLButtonElement>('finish')[0]?.setAttribute('hidden', '')
       },

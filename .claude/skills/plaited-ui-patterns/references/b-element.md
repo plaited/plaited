@@ -1338,6 +1338,61 @@ const TodoList = bElement<{
 <TodoList />
 ```
 
+## Microinteractions via Loop + Lever Pattern
+
+> **Attribution**: This pattern synthesizes Dan Saffer's microinteraction model (Triggers, Rules, Feedback, Loops) from *[Microinteractions: Designing with Details](https://www.oreilly.com/library/view/microinteractions-designing/9781491945957/)* with Rachel Jaffe's Loop and Lever concepts from Structural Information Architecture. See [ATTRIBUTIONS.md](/ATTRIBUTIONS.md) for details.
+
+bElement is intrinsically designed for microinteractions through the behavioral programming model. No separate microinteraction framework is needed.
+
+### Loop Pattern (Action → Response)
+
+Every interaction is a loop: user action triggers handler, handler completes with feedback.
+
+```typescript
+bProgram({ $, trigger }) {
+  return {
+    // Action: DOM event via p-trigger
+    clickButton() {
+      trigger({ type: 'submit' })  // Triggers internal event
+    },
+    // Response: BP event completes the loop
+    submit() {
+      $('feedback')[0]?.render(<>Submitted!</>)  // Feedback
+    }
+  }
+}
+```
+
+### Lever Pattern (Energy Management)
+
+bThreads act as levers that shape user energy and engagement:
+
+| Lever Type | bElement Implementation |
+|------------|------------------------|
+| **Affordance** | `p-trigger` + `aria-label` signals interaction |
+| **Mechanic** | Handler timing (instant render vs progressive) |
+| **Game** | bThread blocking (boundaries, sequences, rules) |
+
+```typescript
+// Game lever: bThread enforces boundary (fair constraint)
+bThreads.set({
+  blockAtMax: bThread([
+    bSync({
+      block: ({ type }) => type === 'increment' && count >= max
+    })
+  ], true)
+})
+```
+
+### Why bElement "Just Works" for Microinteractions
+
+1. **p-trigger** creates explicit affordances (user knows what to click)
+2. **bThreads** enforce game rules (can't skip steps, can't exceed limits)
+3. **Handler pattern** guarantees loop completion (every action gets a response)
+4. **render/attr helpers** enable instant or progressive feedback
+
+The behavioral model naturally ensures interactions are complete and user energy is managed through constraints.
+
 ## Summary: bElement Patterns
 
 **Use bElement when you need**:

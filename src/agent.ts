@@ -1,117 +1,37 @@
 /**
- * World agent infrastructure for generative UI.
- * Provides behavioral programming-based agent coordination.
+ * Agent public API.
  *
  * @remarks
- * This module exports:
- * - **Agent Factory**: {@link useWorldAgent} - useBehavioral-based agent loop
- * - **Tools**: {@link createToolRegistry}, {@link createCoreTools} - Tool management
- * - **Constraints**: Constraint bThreads for blocking invalid generations
- * - **Training**: Trajectory generation and reward computation
- * - **A2A Protocol**: Server and client adapters for agent interoperability
- * - **Pattern Registry**: Index validated stories as reusable patterns
+ * Protocol-agnostic world agent architecture with signal-based communication.
  *
- * The world agent uses behavioral programming to coordinate tool execution
- * with runtime constraints. Unlike class-based agents, bThreads block
- * invalid generations BEFORE execution.
+ * Features:
+ * - Tiered symbolic analysis (static → model-as-judge → browser)
+ * - Workflow orchestration via bThreads
+ * - User preference constraints for hybrid UI
+ * - Code execution with sandbox support
+ * - Context budget management for smaller models
  */
 
 // Types
-export type * from './agent/a2a.types.ts'
-// A2A Protocol - Client
-export {
-  type A2AClient,
-  A2AError,
-  createA2AClient,
-  createTextMessage,
-  discoverAgent,
-  extractText,
-} from './agent/a2a-client.ts'
-// A2A Protocol - Server
-export { createAgentCard, useA2AServer } from './agent/a2a-server.ts'
-export type * from './agent/agent.types.ts'
-// Code Sandbox (Phase 7)
-export {
-  createCodeExecutor,
-  createCodeValidator,
-  type ExecutionOptions,
-  type ExecutionResult,
-  executeSandboxed,
-  hasUnsafePatterns,
-  initializeSandbox,
-  resetSandbox,
-  type SandboxConfig,
-  SandboxManager,
-  type SandboxRuntimeConfig,
-  type ValidationResult,
-  validateCode,
-} from './agent/code-sandbox.ts'
-// Reward computation
-export {
-  computeReward,
-  computeTrajectoryStats,
-  createTrajectory,
-  filterByReward,
-  formatTrajectoriesJsonl,
-} from './agent/compute-rewards.ts'
+export * from './agent/agent.types.ts'
+// Execution
+export * from './agent/code-executor.ts'
+export * from './agent/context-budget.ts'
+export * from './agent/preference-constraints.ts'
+// Caching & Budgeting
+export * from './agent/semantic-cache.ts'
+export * from './agent/skill-discovery.ts'
+// Analysis
+export * from './agent/static-analysis.ts'
+// Discovery
+export * from './agent/tool-discovery.ts'
+
+// Tools
+export * from './agent/tools.ts'
+// Training Utilities
+export * from './agent/training-utils.ts'
+export * from './agent/use-orchestrator.ts'
+// Core Agent
+export * from './agent/use-world-agent.ts'
 // Constraints
-export {
-  createCoordinateGeneration,
-  createEnforceAccessibility,
-  createEnforceTokenUsage,
-  hasInlineStyles,
-  hasRawColors,
-  registerBaseConstraints,
-} from './agent/constraints.ts'
-// Trajectory generation
-export {
-  type BatchConfig,
-  createToolExecutions,
-  type ExecutionTrace,
-  extractIntent,
-  generateTrajectories,
-  generateTrajectoriesFromStories,
-  generateTrajectoryFromTrace,
-  parseFunctionGemmaOutput,
-  type StoryInfo,
-  type ToolExecution,
-} from './agent/generate-trajectories.ts'
-// Pattern Registry
-export {
-  createPatternRegistry,
-  type Pattern,
-  type PatternIndexConfig,
-  type PatternMatch,
-  type PatternRegistry,
-} from './agent/pattern-registry.ts'
-// Skill Scripts
-export {
-  type DiscoverOptions,
-  discoverSkillScripts,
-  discoverSkills,
-  type ExecuteOptions,
-  formatSkillsContext,
-  loadSkillScripts,
-  registerSkillScripts,
-  type SkillMetadata,
-  type SkillScript,
-  scriptsToToolSchemas,
-} from './agent/skill-scripts.ts'
-// Tool Discovery (Phase 8)
-export {
-  createToolDiscovery,
-  extractKeywords,
-  filterToolsByIntent,
-  type IndexedTool,
-  type SearchOptions,
-  schemaToIndexedTool,
-  type ToolDiscovery,
-  type ToolDiscoveryConfig,
-  type ToolDiscoveryStats,
-  type ToolMatch,
-  type ToolSource,
-} from './agent/tool-discovery.ts'
-// Tool infrastructure
-export { createCoreTools, createToolRegistry } from './agent/tools.ts'
-// Agent factory
-export { useWorldAgent, type WorldAgentTrigger } from './agent/use-world-agent.ts'
+export * from './agent/workflow-constraints.ts'

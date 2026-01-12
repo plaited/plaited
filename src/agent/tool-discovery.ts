@@ -1,18 +1,45 @@
 /**
- * Progressive Tool Discovery.
- * Uses FTS5 + sqlite-vec for hybrid keyword/semantic search.
+ * Progressive Tool Discovery with FTS5 + optional vector search.
  *
  * @remarks
- * This module provides context-aware tool filtering to reduce token costs
- * by only exposing relevant tools for a given intent. It supports:
- * - FTS5 full-text search for keyword matching
- * - sqlite-vec for semantic similarity (optional)
- * - Dynamic registration of MCP servers and A2A agents
+ * Provides context-aware tool filtering to reduce token costs by exposing
+ * only relevant tools for a given intent. Supports:
+ * - FTS5 full-text search for keyword matching (default, zero dependencies)
+ * - Optional vector search via Transformers.js embeddings with pure JS cosine similarity
  * - Reciprocal Rank Fusion for hybrid scoring
+ *
+ * Default: FTS5 only (zero config, works everywhere)
+ * Opt-in: Set `embedder: true` for hybrid search with `Xenova/multilingual-e5-small`
+ *
+ * Note: Uses pure JavaScript cosine similarity instead of sqlite-vec since Bun's
+ * built-in SQLite doesn't support dynamic extension loading.
  */
 
 import { Database } from 'bun:sqlite'
-import type { ToolSchema } from './agent.types.ts'
+import type { EmbedderConfig, ToolSchema, ToolSource } from './agent.types.ts'
+
+// ============================================================================
+// Vector Math Utilities
+// ============================================================================
+
+/**
+ * Computes cosine similarity between two vectors.
+ *
+ * @internal
+ */
+const cosineSimilarity = (a: Float32Array, b: Float32Array): number => {
+  let dotProduct = 0
+  let normA = 0
+  let normB = 0
+
+  for (let i = 0; i < a.length; i++) {
+    dotProduct += a[i]! * b[i]!
+    normA += a[i]! * a[i]!
+    normB += b[i]! * b[i]!
+  }
+
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB))
+}
 
 // ============================================================================
 // Types
@@ -24,34 +51,24 @@ import type { ToolSchema } from './agent.types.ts'
 export type ToolDiscoveryConfig = {
   /** Path to SQLite database (default: ':memory:') */
   dbPath?: string
-  /** Enable vector search with sqlite-vec (default: false) */
-  enableVectorSearch?: boolean
-  /** Embedding function for vector search */
-  embedder?: (text: string) => Promise<Float32Array>
-  /** Vector dimensions (default: 384 for MiniLM) */
-  vectorDimensions?: number
+  /**
+   * Embedder configuration for vector search.
+   * - `undefined` or `false` - FTS5 only (default)
+   * - `true` - Hybrid with default model (Xenova/multilingual-e5-small)
+   * - `EmbedderConfig` - Hybrid with custom model
+   */
+  embedder?: boolean | EmbedderConfig
 }
-
-/**
- * Tool source types for tracking provenance.
- */
-export type ToolSource = 'local' | 'mcp' | 'a2a'
 
 /**
  * Indexed tool with source metadata.
  */
 export type IndexedTool = {
-  /** Tool name */
   name: string
-  /** Tool description */
   description: string
-  /** Keywords for search (auto-extracted or provided) */
   keywords: string[]
-  /** Source of the tool */
   source: ToolSource
-  /** Source URL for remote tools */
   sourceUrl?: string
-  /** Original schema */
   schema: ToolSchema
 }
 
@@ -66,30 +83,6 @@ export type ToolMatch = {
   ftsRank?: number
   /** Vector distance if matched via embedding */
   vectorDistance?: number
-}
-
-/**
- * Tool discovery registry.
- */
-export type ToolDiscovery = {
-  /** Index a tool for discovery */
-  index: (tool: IndexedTool) => Promise<void>
-  /** Index multiple tools */
-  indexBatch: (tools: IndexedTool[]) => Promise<void>
-  /** Search for relevant tools */
-  search: (intent: string, options?: SearchOptions) => Promise<ToolMatch[]>
-  /** Get all indexed tools */
-  all: () => IndexedTool[]
-  /** Get tools by source */
-  bySource: (source: ToolSource) => IndexedTool[]
-  /** Remove a tool */
-  remove: (name: string) => void
-  /** Clear all tools from a source */
-  clearSource: (source: ToolSource) => void
-  /** Get statistics */
-  stats: () => ToolDiscoveryStats
-  /** Close database connection */
-  close: () => void
 }
 
 /**
@@ -119,31 +112,82 @@ export type ToolDiscoveryStats = {
   vectorSearchEnabled: boolean
 }
 
+/**
+ * Tool discovery registry interface.
+ */
+export type ToolDiscovery = {
+  index: (tool: IndexedTool) => Promise<void>
+  indexBatch: (tools: IndexedTool[]) => Promise<void>
+  search: (intent: string, options?: SearchOptions) => Promise<ToolMatch[]>
+  all: () => IndexedTool[]
+  bySource: (source: ToolSource) => IndexedTool[]
+  remove: (name: string) => void
+  clearSource: (source: ToolSource) => void
+  stats: () => ToolDiscoveryStats
+  close: () => void
+}
+
+// ============================================================================
+// Embedder Factory
+// ============================================================================
+
+type EmbedderFn = (text: string) => Promise<Float32Array>
+
+const DEFAULT_MODEL = 'Xenova/multilingual-e5-small'
+
+/**
+ * Resolves embedder config from boolean or object.
+ *
+ * @internal
+ */
+const resolveEmbedderConfig = (config: boolean | EmbedderConfig): EmbedderConfig | undefined => {
+  if (config === false) return undefined
+  if (config === true) return {}
+  return config
+}
+
+/**
+ * Creates an embedder function using Transformers.js.
+ *
+ * @remarks
+ * Dynamically imports @huggingface/transformers to avoid requiring
+ * it when vector search is disabled. Models are cached locally
+ * after first download.
+ *
+ * @internal
+ */
+const createEmbedder = async (config: EmbedderConfig): Promise<EmbedderFn> => {
+  const { model = DEFAULT_MODEL, dtype = 'q8', device = 'auto' } = config
+
+  // Dynamic import to avoid dependency when not using vector search
+  const { pipeline } = await import('@huggingface/transformers')
+
+  const extractor = await pipeline('feature-extraction', model, {
+    dtype,
+    device,
+  })
+
+  // E5 models require query/passage prefix for best results
+  const isE5Model = model.toLowerCase().includes('e5')
+
+  return async (text: string): Promise<Float32Array> => {
+    const input = isE5Model ? `query: ${text}` : text
+    const output = await extractor(input, { pooling: 'mean', normalize: true })
+    return new Float32Array(output.data as ArrayLike<number>)
+  }
+}
+
 // ============================================================================
 // Database Setup
 // ============================================================================
-
-/**
- * Configures SQLite for extension loading on macOS.
- * macOS system SQLite doesn't allow loading extensions.
- *
- * @internal
- * @remarks
- * Requires: `brew install sqlite3` on macOS
- */
-const configureSqliteForPlatform = () => {
-  if (process.platform === 'darwin') {
-    Database.setCustomSQLite('/usr/local/opt/sqlite3/lib/libsqlite3.dylib')
-  }
-}
 
 /**
  * Creates the database schema for tool discovery.
  *
  * @internal
  */
-const createSchema = (db: Database, enableVector: boolean, dimensions: number) => {
-  // Main tools table (must be created first for FTS5 content sync)
+const createSchema = (db: Database, _enableVector: boolean) => {
+  // Main tools table (with optional embedding stored as JSON)
   db.run(`
     CREATE TABLE IF NOT EXISTS tools (
       rowid INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -152,11 +196,12 @@ const createSchema = (db: Database, enableVector: boolean, dimensions: number) =
       keywords TEXT NOT NULL,
       source TEXT NOT NULL,
       source_url TEXT,
-      schema_json TEXT NOT NULL
+      schema_json TEXT NOT NULL,
+      embedding_json TEXT
     )
   `)
 
-  // FTS5 table for keyword search (standalone, no content sync for simplicity)
+  // FTS5 table for keyword search
   db.run(`
     CREATE VIRTUAL TABLE IF NOT EXISTS tools_fts USING fts5(
       name,
@@ -164,15 +209,6 @@ const createSchema = (db: Database, enableVector: boolean, dimensions: number) =
       keywords
     )
   `)
-
-  // Vector table (optional)
-  if (enableVector) {
-    db.run(`
-      CREATE VIRTUAL TABLE IF NOT EXISTS tools_vec USING vec0(
-        embedding float[${dimensions}]
-      )
-    `)
-  }
 }
 
 // ============================================================================
@@ -180,50 +216,40 @@ const createSchema = (db: Database, enableVector: boolean, dimensions: number) =
 // ============================================================================
 
 /**
- * Creates a tool discovery registry with FTS5 + sqlite-vec hybrid search.
+ * Creates a tool discovery registry with FTS5 + optional vector search.
  *
  * @param config - Discovery configuration
  * @returns Tool discovery registry
  *
  * @remarks
- * The registry provides:
- * - `index` - Add a tool to the search index
- * - `search` - Find tools matching an intent
- * - `bySource` - Filter tools by source (local, mcp, a2a)
+ * By default, uses FTS5 only (zero external dependencies).
+ * Set `embedder: true` for hybrid search with the default model
+ * (`Xenova/multilingual-e5-small` - 118MB, 100 languages, 384 dims).
  *
- * For vector search, provide an `embedder` function that converts
- * text to embeddings (e.g., using HuggingFace inference).
- *
- * See `src/agent/tests/tool-discovery.spec.ts` for usage patterns.
+ * See `src/agent-next/tests/tool-discovery.spec.ts` for usage patterns.
  */
-export const createToolDiscovery = (config: ToolDiscoveryConfig = {}): ToolDiscovery => {
-  const { dbPath = ':memory:', enableVectorSearch = false, embedder, vectorDimensions = 384 } = config
+export const createToolDiscovery = async (config: ToolDiscoveryConfig = {}): Promise<ToolDiscovery> => {
+  const { dbPath = ':memory:', embedder: embedderInput } = config
 
-  // Configure platform-specific SQLite
-  if (enableVectorSearch) {
-    configureSqliteForPlatform()
-  }
+  // Resolve embedder config
+  const embedderConfig = embedderInput ? resolveEmbedderConfig(embedderInput) : undefined
+  const enableVectorSearch = embedderConfig !== undefined
 
   const db = new Database(dbPath)
 
-  // Load sqlite-vec if vector search enabled
-  if (enableVectorSearch) {
-    // Dynamic import to avoid requiring sqlite-vec when not used
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const sqliteVec = require('sqlite-vec')
-    sqliteVec.load(db)
-  }
-
   // Create schema
-  createSchema(db, enableVectorSearch, vectorDimensions)
+  createSchema(db, enableVectorSearch)
+
+  // Initialize embedder if configured
+  const embedder = embedderConfig ? await createEmbedder(embedderConfig) : undefined
 
   // In-memory cache for fast access
   const toolCache = new Map<string, IndexedTool>()
 
-  // Prepared statements for performance
+  // Prepared statements
   const insertStmt = db.prepare(`
-    INSERT OR REPLACE INTO tools (name, description, keywords, source, source_url, schema_json)
-    VALUES ($name, $description, $keywords, $source, $sourceUrl, $schemaJson)
+    INSERT OR REPLACE INTO tools (name, description, keywords, source, source_url, schema_json, embedding_json)
+    VALUES ($name, $description, $keywords, $source, $sourceUrl, $schemaJson, $embeddingJson)
   `)
 
   const insertFtsStmt = db.prepare(`
@@ -245,7 +271,10 @@ export const createToolDiscovery = (config: ToolDiscoveryConfig = {}): ToolDisco
   const deleteStmt = db.prepare(`DELETE FROM tools WHERE name = $name`)
   const deleteBySourceStmt = db.prepare(`DELETE FROM tools WHERE source = $source`)
 
-  return {
+  // In-memory vector index (pure JS approach since Bun's SQLite doesn't support loadExtension)
+  const vectorIndex = new Map<string, Float32Array>()
+
+  const discovery: ToolDiscovery = {
     async index(tool: IndexedTool): Promise<void> {
       const keywordsStr = tool.keywords.join(' ')
 
@@ -254,7 +283,14 @@ export const createToolDiscovery = (config: ToolDiscoveryConfig = {}): ToolDisco
         deleteFtsStmt.run({ $name: tool.name })
       }
 
-      // Note: SQLite requires null (not undefined) for SQL NULL values
+      // Compute embedding if enabled
+      let embeddingJson: string | null = null
+      if (enableVectorSearch && embedder) {
+        const embedding = await embedder(`${tool.name} ${tool.description}`)
+        embeddingJson = JSON.stringify(Array.from(embedding))
+        vectorIndex.set(tool.name, embedding)
+      }
+
       insertStmt.run({
         $name: tool.name,
         $description: tool.description,
@@ -262,40 +298,40 @@ export const createToolDiscovery = (config: ToolDiscoveryConfig = {}): ToolDisco
         $source: tool.source,
         $sourceUrl: tool.sourceUrl ?? null,
         $schemaJson: JSON.stringify(tool.schema),
+        $embeddingJson: embeddingJson,
       })
 
-      // Insert into FTS index
       insertFtsStmt.run({
         $name: tool.name,
         $description: tool.description,
         $keywords: keywordsStr,
       })
 
-      // Cache for fast lookup
       toolCache.set(tool.name, tool)
-
-      // Index vector if enabled
-      if (enableVectorSearch && embedder) {
-        const embedding = await embedder(`${tool.name} ${tool.description}`)
-        const rowid = db.query<{ rowid: number }, []>(`SELECT rowid FROM tools WHERE name = '${tool.name}'`).get()
-
-        if (rowid) {
-          db.run(`INSERT INTO tools_vec (rowid, embedding) VALUES (?, ?)`, [rowid.rowid, embedding])
-        }
-      }
     },
 
     async indexBatch(tools: IndexedTool[]): Promise<void> {
+      // Compute embeddings first if enabled (async operations outside transaction)
+      const embeddings = new Map<string, Float32Array>()
+      if (enableVectorSearch && embedder) {
+        for (const tool of tools) {
+          const embedding = await embedder(`${tool.name} ${tool.description}`)
+          embeddings.set(tool.name, embedding)
+          vectorIndex.set(tool.name, embedding)
+        }
+      }
+
       const transaction = db.transaction(() => {
         for (const tool of tools) {
           const keywordsStr = tool.keywords.join(' ')
 
-          // Delete existing FTS entry if replacing
           if (toolCache.has(tool.name)) {
             deleteFtsStmt.run({ $name: tool.name })
           }
 
-          // Note: SQLite requires null (not undefined) for SQL NULL values
+          const embedding = embeddings.get(tool.name)
+          const embeddingJson = embedding ? JSON.stringify(Array.from(embedding)) : null
+
           insertStmt.run({
             $name: tool.name,
             $description: tool.description,
@@ -303,9 +339,9 @@ export const createToolDiscovery = (config: ToolDiscoveryConfig = {}): ToolDisco
             $source: tool.source,
             $sourceUrl: tool.sourceUrl ?? null,
             $schemaJson: JSON.stringify(tool.schema),
+            $embeddingJson: embeddingJson,
           })
 
-          // Insert into FTS index
           insertFtsStmt.run({
             $name: tool.name,
             $description: tool.description,
@@ -317,18 +353,6 @@ export const createToolDiscovery = (config: ToolDiscoveryConfig = {}): ToolDisco
       })
 
       transaction()
-
-      // Index vectors separately (async)
-      if (enableVectorSearch && embedder) {
-        for (const tool of tools) {
-          const embedding = await embedder(`${tool.name} ${tool.description}`)
-          const rowid = db.query<{ rowid: number }, []>(`SELECT rowid FROM tools WHERE name = '${tool.name}'`).get()
-
-          if (rowid) {
-            db.run(`INSERT INTO tools_vec (rowid, embedding) VALUES (?, ?)`, [rowid.rowid, embedding])
-          }
-        }
-      }
     },
 
     async search(intent: string, options: SearchOptions = {}): Promise<ToolMatch[]> {
@@ -342,44 +366,40 @@ export const createToolDiscovery = (config: ToolDiscoveryConfig = {}): ToolDisco
       if (ftsQuery) {
         const ftsMatches = ftsSearchStmt.all({
           $query: ftsQuery,
-          $limit: limit * 2, // Get more for reranking
+          $limit: limit * 2,
         }) as Array<{ name: string; rank: number }>
 
         for (const match of ftsMatches) {
-          // FTS5 rank is negative (more negative = better match)
-          // Normalize to 0-1 where 1 is best
           const normalizedRank = 1 / (1 + Math.abs(match.rank))
           ftsResults.set(match.name, normalizedRank)
         }
       }
 
-      // Vector search (if enabled)
-      if (enableVectorSearch && embedder) {
+      // Vector search using pure JS cosine similarity (if enabled)
+      if (enableVectorSearch && embedder && vectorIndex.size > 0) {
         const queryVec = await embedder(intent)
-        const vecMatches = db
-          .query<{ rowid: number; distance: number }, [Float32Array, number]>(`
-          SELECT rowid, distance FROM tools_vec
-          WHERE embedding MATCH ?
-          ORDER BY distance
-          LIMIT ?
-        `)
-          .all(queryVec, limit * 2)
 
-        for (const match of vecMatches) {
-          const tool = db.query<{ name: string }, [number]>(`SELECT name FROM tools WHERE rowid = ?`).get(match.rowid)
+        // Compute similarity scores for all indexed vectors
+        const similarities: Array<{ name: string; similarity: number }> = []
+        for (const [name, embedding] of vectorIndex) {
+          const similarity = cosineSimilarity(queryVec, embedding)
+          similarities.push({ name, similarity })
+        }
 
-          if (tool) {
-            // Distance is 0-2 for cosine (0 = identical)
-            // Normalize to 0-1 where 1 is best
-            const normalizedDistance = 1 - match.distance / 2
-            vecResults.set(tool.name, normalizedDistance)
-          }
+        // Sort by similarity (descending) and take top results
+        similarities.sort((a, b) => b.similarity - a.similarity)
+        const topMatches = similarities.slice(0, limit * 2)
+
+        for (const match of topMatches) {
+          // Normalize similarity to 0-1 range (cosine similarity is already -1 to 1)
+          const normalizedSimilarity = (match.similarity + 1) / 2
+          vecResults.set(match.name, normalizedSimilarity)
         }
       }
 
       // Reciprocal Rank Fusion
       const combinedScores = new Map<string, ToolMatch>()
-      const k = 60 // RRF constant
+      const k = 60
 
       // Process FTS results
       let ftsRank = 1
@@ -421,7 +441,6 @@ export const createToolDiscovery = (config: ToolDiscoveryConfig = {}): ToolDisco
         }
       }
 
-      // Sort by combined score and filter
       return [...combinedScores.values()]
         .filter((m) => m.score >= minScore)
         .sort((a, b) => b.score - a.score)
@@ -440,13 +459,15 @@ export const createToolDiscovery = (config: ToolDiscoveryConfig = {}): ToolDisco
       deleteFtsStmt.run({ $name: name })
       deleteStmt.run({ $name: name })
       toolCache.delete(name)
+      vectorIndex.delete(name)
     },
 
     clearSource(source: ToolSource): void {
-      const tools = this.bySource(source)
+      const tools = discovery.bySource(source)
       for (const tool of tools) {
         deleteFtsStmt.run({ $name: tool.name })
         toolCache.delete(tool.name)
+        vectorIndex.delete(tool.name)
       }
       deleteBySourceStmt.run({ $source: source })
     },
@@ -454,9 +475,9 @@ export const createToolDiscovery = (config: ToolDiscoveryConfig = {}): ToolDisco
     stats(): ToolDiscoveryStats {
       return {
         totalTools: toolCache.size,
-        localTools: this.bySource('local').length,
-        mcpTools: this.bySource('mcp').length,
-        a2aTools: this.bySource('a2a').length,
+        localTools: discovery.bySource('local').length,
+        mcpTools: discovery.bySource('mcp').length,
+        a2aTools: discovery.bySource('a2a').length,
         vectorSearchEnabled: enableVectorSearch,
       }
     },
@@ -465,6 +486,8 @@ export const createToolDiscovery = (config: ToolDiscoveryConfig = {}): ToolDisco
       db.close()
     },
   }
+
+  return discovery
 }
 
 // ============================================================================
@@ -515,18 +538,16 @@ export const schemaToIndexedTool = (
 
 /**
  * Sanitizes a query for FTS5.
- * Removes special characters that could break the query.
  *
  * @internal
  */
 const sanitizeFtsQuery = (query: string): string => {
-  // Remove FTS5 special characters and wrap words with *
   return query
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, '')
     .split(/\s+/)
     .filter((w) => w.length > 1)
-    .map((w) => `${w}*`) // Prefix matching
+    .map((w) => `${w}*`)
     .join(' OR ')
 }
 
@@ -540,8 +561,8 @@ const sanitizeFtsQuery = (query: string): string => {
  * @returns Filtered tool schemas relevant to the intent
  *
  * @remarks
- * This is the main entry point for progressive tool discovery.
- * It returns only the tools relevant to the current intent,
+ * Main entry point for progressive tool discovery.
+ * Returns only tools relevant to the current intent,
  * reducing token costs for model context.
  */
 export const filterToolsByIntent = async (

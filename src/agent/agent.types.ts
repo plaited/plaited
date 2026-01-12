@@ -1,217 +1,373 @@
 /**
- * Type definitions for the Plaited World Agent infrastructure.
- * Provides types for tool execution, constraints, trajectories, and rewards.
+ * Type definitions for agent-next architecture.
  *
  * @remarks
- * The world agent uses behavioral programming (useBehavioral) to coordinate
- * tool execution with runtime constraints. This differs from class-based
- * agent frameworks by using bThreads for coordination.
+ * Protocol-agnostic types for world agents and adapters.
+ * Communication happens via signals, not direct function calls.
+ *
+ * Implements tiered symbolic analysis:
+ * - Tier 1: Static analysis (free, fast)
+ * - Tier 2: Model-as-judge (selective)
+ * - Tier 3: Browser execution (ground truth)
  */
 
-import type { EventDetails, Handlers } from '../main/behavioral.types.ts'
+import type { RulesFunction, Signal } from '../main.ts'
+import type { ContextBudget } from './context-budget.ts'
+
+// ============================================================================
+// Agent Events (World Agent ↔ Adapter)
+// ============================================================================
 
 /**
- * Represents a function call from the model.
- * Matches the structure returned by HuggingFace inference API.
+ * Events emitted by the world agent (outbound).
+ */
+export type AgentOutEvent =
+  | { kind: 'thought'; content: string }
+  | { kind: 'toolCall'; calls: FunctionCall[] }
+  | { kind: 'toolResult'; name: string; result: ToolResult }
+  | { kind: 'response'; content: string }
+  | { kind: 'error'; error: Error }
+  | { kind: 'staticAnalysis'; result: StaticAnalysisResult }
+  | { kind: 'judgeResult'; result: JudgeResult }
+
+/**
+ * Events received by the world agent (inbound via public trigger).
+ */
+export type AgentInEvent =
+  | { kind: 'generate'; intent: string; context?: unknown }
+  | { kind: 'cancel' }
+  | { kind: 'feedback'; result: StoryResult }
+  | { kind: 'executeCode'; code: string; sandbox?: SandboxConfig }
+  | { kind: 'chainTools'; calls: FunctionCall[]; sequential?: boolean }
+  | { kind: 'resolveTool'; name: string; source?: ToolSource }
+
+// ============================================================================
+// Tool Types
+// ============================================================================
+
+/**
+ * A function call from the model.
  */
 export type FunctionCall = {
-  /** Name of the function to execute */
   name: string
-  /** JSON-encoded arguments for the function */
-  arguments: string
+  arguments: string // JSON string
 }
 
 /**
- * Represents the result of executing a tool.
+ * Result of tool execution.
  */
 export type ToolResult = {
-  /** Whether the tool execution succeeded */
   success: boolean
-  /** Result data if successful */
   data?: unknown
-  /** Error message if failed */
   error?: string
 }
 
 /**
- * Handler function for a registered tool.
- */
-export type ToolHandler = (args: Record<string, unknown>) => ToolResult | Promise<ToolResult>
-
-/**
- * Schema definition for a tool, used to inform the model.
+ * Tool schema for model context.
  */
 export type ToolSchema = {
-  /** Tool name matching the handler registration */
   name: string
-  /** Human-readable description of what the tool does */
   description: string
-  /** JSON Schema for the tool's parameters */
   parameters: {
     type: 'object'
-    properties: Record<string, { type: string; description?: string }>
+    properties: Record<string, unknown>
     required?: string[]
   }
 }
 
 /**
- * Registry for managing tools available to the agent.
+ * Tool handler function.
+ */
+export type ToolHandler = (args: Record<string, unknown>) => Promise<ToolResult>
+
+/**
+ * Tool registry interface.
  */
 export type ToolRegistry = {
-  /** Register a new tool handler */
   register: (name: string, handler: ToolHandler, schema: ToolSchema) => void
-  /** Execute a function call from the model */
   execute: (call: FunctionCall) => Promise<ToolResult>
-  /** Get all registered tool schemas for model context */
   schemas: ToolSchema[]
 }
 
+// ============================================================================
+// Embedder Types (Shared by Discovery and Caching)
+// ============================================================================
+
 /**
- * Result of running a story for reward computation.
+ * Device types supported by Transformers.js.
+ */
+export type DeviceType =
+  | 'auto'
+  | 'gpu'
+  | 'cpu'
+  | 'wasm'
+  | 'webgpu'
+  | 'cuda'
+  | 'dml'
+  | 'webnn'
+  | 'webnn-npu'
+  | 'webnn-gpu'
+  | 'webnn-cpu'
+
+/**
+ * Data types for model quantization.
+ */
+export type DataType = 'auto' | 'fp32' | 'fp16' | 'q8' | 'int8' | 'uint8' | 'q4' | 'bnb4' | 'q4f16'
+
+/**
+ * Embedder configuration for vector search.
+ *
+ * @remarks
+ * Models are cached locally after first download via Transformers.js.
+ */
+export type EmbedderConfig = {
+  /** Model ID (default: 'Xenova/multilingual-e5-small') */
+  model?: string
+  /** Quantization level (default: 'q8') */
+  dtype?: DataType
+  /** Inference device (default: 'auto' - auto-detects GPU) */
+  device?: DeviceType
+}
+
+// ============================================================================
+// Story/Training Types
+// ============================================================================
+
+/**
+ * Result from running a story test.
  */
 export type StoryResult = {
-  /** Whether all story assertions passed */
   passed: boolean
-  /** Total number of assertions */
-  totalAssertions: number
-  /** Number of passed assertions */
-  passedAssertions: number
-  /** Whether accessibility checks passed */
   a11yPassed: boolean
-  /** Detailed error messages if any */
+  totalAssertions: number
+  passedAssertions: number
   errors: string[]
 }
 
+// ============================================================================
+// Context Types
+// ============================================================================
+
 /**
- * Base message structure for training trajectories.
+ * Context required by useWorldAgent.
  */
-type BaseMessage = {
-  /** Message content */
-  content: string
+export type WorldAgentContext = {
+  outbound: Signal<AgentOutEvent>
+  tools: ToolRegistry
+  model: InferenceModel
 }
 
 /**
- * System, user, or assistant message in a trajectory.
+ * Context required by adapters.
  */
-export type TextMessage = BaseMessage & {
-  role: 'system' | 'user' | 'assistant'
+export type AdapterContext = {
+  outbound: Signal<unknown>
 }
 
+// ============================================================================
+// Model Types
+// ============================================================================
+
 /**
- * Tool result message in a trajectory.
- * Represents the output of a function call execution.
+ * Inference model interface (e.g., HuggingFace, FunctionGemma).
  */
-export type ToolMessage = BaseMessage & {
-  role: 'tool'
-  /** ID of the tool call this result corresponds to */
-  tool_call_id: string
-  /** Name of the tool that was executed */
+export type InferenceModel = {
+  inference: (intent: string, tools: ToolSchema[]) => Promise<FunctionCall[]>
+}
+
+// ============================================================================
+// Tiered Analysis Types
+// ============================================================================
+
+/**
+ * Individual static check result.
+ */
+export type StaticCheck = {
   name: string
+  passed: boolean
+  message?: string
 }
 
 /**
- * A single message in a training trajectory.
- * Supports multi-turn conversations with tool results.
+ * Result from Tier 1 static analysis.
+ *
+ * @remarks
+ * Fast, free checks that catch common issues before
+ * more expensive model-based or browser validation.
  */
-export type TrajectoryMessage = TextMessage | ToolMessage
-
-/**
- * A complete trajectory for training, includes messages and reward.
- */
-export type Trajectory = {
-  /** Conversation messages leading to the generation */
-  messages: TrajectoryMessage[]
-  /** Computed reward signal (0.0 to 1.0) */
-  reward: number
-  /** Story result that informed the reward */
-  storyResult?: StoryResult
+export type StaticAnalysisResult = {
+  passed: boolean
+  tier: 1
+  checks: StaticCheck[]
 }
 
 /**
- * Configuration for reward computation.
+ * Result from Tier 2 model-as-judge evaluation.
+ *
+ * @remarks
+ * Uses a model to evaluate subjective quality aspects
+ * that static analysis can't catch (naming, structure, composition).
  */
-export type RewardConfig = {
-  /** Weight for story pass/fail (default: 0.5) */
-  storyWeight?: number
-  /** Weight for accessibility score (default: 0.3) */
-  a11yWeight?: number
-  /** Weight for assertion ratio (default: 0.2) */
-  assertionWeight?: number
+export type JudgeResult = {
+  passed: boolean
+  tier: 2
+  score: number // 0-1 confidence
+  reasoning: string
 }
 
-/**
- * Event types for the world agent behavioral program.
- */
-export type AgentEventTypes = {
-  /** User intent to generate UI */
-  generate: { intent: string }
-  /** Tool calls from model response */
-  toolCall: { calls: FunctionCall[] }
-  /** Result of tool execution */
-  toolResult: { name: string; result: ToolResult }
-  /** Code execution request (Phase 7: Code Sandbox) */
-  executeCode: { code: string; context?: Record<string, unknown> }
-  /** Code execution result */
-  codeResult: { success: boolean; result?: unknown; error?: string }
-  /** Story execution completed */
-  storyResult: StoryResult
-  /** Validation request */
-  validate: { content: string }
-  /** Validation result */
-  validated: { valid: boolean; errors: string[] }
-}
+// ============================================================================
+// Code Execution Types
+// ============================================================================
 
 /**
- * Agent events as BPEvents for behavioral programming.
+ * Sandbox configuration for code execution.
+ *
+ * @remarks
+ * Configures OS-level sandboxing via bubblewrap (Linux) or Seatbelt (macOS).
+ * Pattern validation provides an additional defense layer.
  */
-export type AgentEvents = EventDetails & AgentEventTypes
-
-/**
- * Logger interface for agent operations.
- */
-export type AgentLogger = {
-  /** Log informational messages */
-  info: (message: string) => void
-  /** Log warning messages */
-  warn: (message: string) => void
-  /** Log error messages */
-  error: (message: string) => void
-}
-
-/**
- * Options for skill script discovery and execution.
- */
-export type SkillOptions = {
-  /** Root directory to scan for skills (default: .claude/skills) */
-  skillsRoot?: string
-  /** Script file extensions to include */
-  extensions?: string[]
-  /** Timeout in milliseconds for script execution (default: 30000) */
+export type SandboxConfig = {
+  /** Directories allowed for write access */
+  allowWrite?: string[]
+  /** Directories denied for read access */
+  denyRead?: string[]
+  /** Domains allowed for network access */
+  allowedDomains?: string[]
+  /** Execution timeout in milliseconds */
   timeout?: number
 }
 
 /**
- * Context passed to the world agent bProgram.
+ * Source of a tool (for routing).
  */
-export type AgentContext = {
-  /** Tool registry for executing function calls */
-  tools: ToolRegistry
-  /** Model client for generating responses */
-  model: {
-    chatCompletion: (args: {
-      messages: TrajectoryMessage[]
-      tools?: ToolSchema[]
-    }) => Promise<{ tool_calls?: FunctionCall[] }>
-  }
-  /** Optional logger for agent operations */
-  logger?: AgentLogger
-  /** Optional skill discovery configuration */
-  skills?: SkillOptions
-  /** Optional system prompt to prepend to model calls */
-  systemPrompt?: string
+export type ToolSource = 'local' | 'mcp' | 'a2a' | 'skill'
+
+/**
+ * Result from code execution.
+ */
+export type CodeExecutionResult = {
+  success: boolean
+  output?: unknown
+  error?: string
+  toolCalls?: Array<{ name: string; args: unknown; result: unknown }>
+  duration?: number
+}
+
+// ============================================================================
+// Preference Types (Hybrid UI)
+// ============================================================================
+
+/**
+ * Structural block types from loom vocabulary.
+ */
+export type BlockType =
+  | 'feed'
+  | 'gallery'
+  | 'card'
+  | 'dialog'
+  | 'disclosure'
+  | 'wizard'
+  | 'dashboard'
+  | 'pool'
+  | 'pipeline'
+
+/**
+ * Object grouping strategies.
+ */
+export type ObjectGrouping = 'nested' | 'relational' | 'list' | 'steps'
+
+/**
+ * Structural metadata extracted from generated code.
+ */
+export type StructuralMetadata = {
+  objects: Array<{
+    name: string
+    type?: string
+    grouping?: ObjectGrouping
+  }>
+  channel?: 'selection' | 'transition' | 'input' | 'output'
+  loops?: Array<{ trigger: string; handler: string }>
+  levers?: string[]
+  block?: BlockType
 }
 
 /**
- * Handlers returned by the world agent bProgram.
+ * User preference profile for hybrid UI.
+ *
+ * @remarks
+ * Allows users to specify familiar structures they prefer.
+ * Generated content fills in dynamic parts while maintaining
+ * structural consistency.
  */
-export type AgentHandlers = Handlers<AgentEventTypes>
+export type UserPreferenceProfile = {
+  /** Preferred block patterns */
+  preferredBlocks?: BlockType[]
+  /** Preferred object groupings */
+  preferredGroupings?: ObjectGrouping[]
+  /** Base templates to use as starting points */
+  baseTemplates?: string[]
+  /** Required structural patterns */
+  requiredPatterns?: StructuralMetadata[]
+}
+
+// ============================================================================
+// World Agent Configuration
+// ============================================================================
+
+/**
+ * Handler functions for world agent events.
+ */
+export type WorldAgentHandlers = {
+  generate: (args: { intent: string; context?: unknown }) => Promise<void>
+  cancel: () => void
+  feedback: (args: { result: StoryResult }) => void
+  disconnect: () => void
+  executeCode?: (args: { code: string; sandbox?: SandboxConfig }) => Promise<CodeExecutionResult>
+  chainTools?: (args: { calls: FunctionCall[]; sequential?: boolean }) => Promise<ToolResult[]>
+  resolveTool?: (args: { name: string; source?: ToolSource }) => Promise<ToolHandler | undefined>
+}
+
+/**
+ * Configuration for createWorldAgent.
+ */
+export type WorldAgentConfig = {
+  /** Tool registry for execution */
+  tools: ToolRegistry
+  /** Inference model for generation */
+  model: InferenceModel
+  /** Context budget manager */
+  contextBudget?: ContextBudget
+  /** Custom handlers (can override defaults) */
+  customHandlers?: Partial<WorldAgentHandlers>
+  /** Custom bThreads for constraints */
+  customBThreads?: Record<string, RulesFunction>
+  /** Analysis configuration */
+  constraints?: {
+    /** Skip Tier 2 model-as-judge */
+    skipTier2?: boolean
+    /** Which static checks to run */
+    staticChecks?: string[]
+  }
+  /** User preferences for hybrid UI */
+  preferences?: UserPreferenceProfile
+}
+
+// ============================================================================
+// Training Types
+// ============================================================================
+
+/**
+ * Trajectory with tiered analysis for training.
+ */
+export type TrajectoryWithTiers = {
+  intent: string
+  toolCalls: FunctionCall[]
+  result: StoryResult
+  structural?: StructuralMetadata
+  tiers: {
+    static: StaticAnalysisResult
+    judge?: JudgeResult
+    browser: StoryResult
+  }
+  reward?: number
+}

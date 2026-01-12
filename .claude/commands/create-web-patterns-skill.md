@@ -222,6 +222,30 @@ export const Example = bElement({
 - Keyboard navigation
 - Screen reader support
 
+## Structural Metadata
+
+### Channel
+- **Type**: text | binary | selection | audio | video
+- **Bandwidth**: [low/medium/high - information density]
+
+### Objects
+- **Primary**: [main object type, e.g., 'counter', 'form-field', 'step']
+- **Grouping**: nested | relational | list | steps
+
+### Loops
+| Action | Response | Feedback Modality |
+|--------|----------|-------------------|
+| [e.g., click] | [e.g., increment] | visual | audio | haptic |
+
+### Levers
+- **Affordance**: [how interaction is signaled, e.g., aria-label, button visual]
+- **Mechanic**: instant | progressive | delayed [feedback reveal pattern]
+- **Game**: [constraint/incentive, e.g., max/min boundary, sequence enforcement]
+
+### Block Type
+- **Pattern**: pool | stream | wall | thread | grid
+- **Composition**: [how modules nest together]
+
 ## References
 - Source: [Article URL]
 - MDN: [MDN link]

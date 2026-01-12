@@ -117,14 +117,14 @@ describe('schemaToIndexedTool', () => {
 })
 
 // ============================================================================
-// createToolDiscovery Tests
+// createToolDiscovery Tests (FTS5 only - default)
 // ============================================================================
 
-describe('createToolDiscovery', () => {
+describe('createToolDiscovery (FTS5 only)', () => {
   let discovery: ToolDiscovery
 
-  beforeEach(() => {
-    discovery = createToolDiscovery()
+  beforeEach(async () => {
+    discovery = await createToolDiscovery()
   })
 
   afterEach(() => {
@@ -207,7 +207,7 @@ describe('FTS5 search', () => {
   let discovery: ToolDiscovery
 
   beforeEach(async () => {
-    discovery = createToolDiscovery()
+    discovery = await createToolDiscovery()
     const tools = testSchemas.map((s) => schemaToIndexedTool(s))
     await discovery.indexBatch(tools)
   })
@@ -283,7 +283,7 @@ describe('filterToolsByIntent', () => {
   let discovery: ToolDiscovery
 
   beforeEach(async () => {
-    discovery = createToolDiscovery()
+    discovery = await createToolDiscovery()
     const tools = testSchemas.map((s) => schemaToIndexedTool(s))
     await discovery.indexBatch(tools)
   })
@@ -320,14 +320,14 @@ describe('filterToolsByIntent', () => {
 // ============================================================================
 
 describe('edge cases', () => {
-  test('handles empty database path', () => {
-    const discovery = createToolDiscovery({ dbPath: ':memory:' })
+  test('handles empty database path', async () => {
+    const discovery = await createToolDiscovery({ dbPath: ':memory:' })
     expect(discovery.stats().totalTools).toBe(0)
     discovery.close()
   })
 
   test('handles special characters in query', async () => {
-    const discovery = createToolDiscovery()
+    const discovery = await createToolDiscovery()
     const tools = testSchemas.map((s) => schemaToIndexedTool(s))
     await discovery.indexBatch(tools)
 
@@ -339,7 +339,7 @@ describe('edge cases', () => {
   })
 
   test('handles duplicate tool names', async () => {
-    const discovery = createToolDiscovery()
+    const discovery = await createToolDiscovery()
 
     await discovery.index(schemaToIndexedTool(testSchemas[0]!))
     await discovery.index(schemaToIndexedTool(testSchemas[0]!)) // Same tool again
@@ -350,7 +350,7 @@ describe('edge cases', () => {
   })
 
   test('handles empty intent', async () => {
-    const discovery = createToolDiscovery()
+    const discovery = await createToolDiscovery()
     const tools = testSchemas.map((s) => schemaToIndexedTool(s))
     await discovery.indexBatch(tools)
 
@@ -359,4 +359,121 @@ describe('edge cases', () => {
 
     discovery.close()
   })
+})
+
+// ============================================================================
+// Embedder Config Tests
+// ============================================================================
+
+describe('embedder config resolution', () => {
+  test('embedder: false results in FTS5 only', async () => {
+    const discovery = await createToolDiscovery({ embedder: false })
+    expect(discovery.stats().vectorSearchEnabled).toBe(false)
+    discovery.close()
+  })
+
+  test('embedder: undefined results in FTS5 only', async () => {
+    const discovery = await createToolDiscovery({})
+    expect(discovery.stats().vectorSearchEnabled).toBe(false)
+    discovery.close()
+  })
+})
+
+// ============================================================================
+// Hybrid Search Tests (requires model download - cached in CI)
+// ============================================================================
+
+describe('hybrid search (vector + FTS5)', () => {
+  let discovery: ToolDiscovery
+
+  beforeEach(async () => {
+    // Enable hybrid search with default model
+    discovery = await createToolDiscovery({ embedder: true })
+    const tools = testSchemas.map((s) => schemaToIndexedTool(s))
+    await discovery.indexBatch(tools)
+  }, 120000) // 2 min timeout for model loading
+
+  afterEach(() => {
+    discovery?.close()
+  })
+
+  test('enables vector search when embedder: true', () => {
+    expect(discovery.stats().vectorSearchEnabled).toBe(true)
+  })
+
+  test('finds semantically similar tools', async () => {
+    // "create UI component" should match "writeTemplate" via semantic similarity
+    // even though keywords don't exactly match
+    const results = await discovery.search('create UI component')
+
+    expect(results.length).toBeGreaterThan(0)
+    // writeTemplate should rank high due to semantic similarity
+    const names = results.map((r) => r.tool.name)
+    expect(names).toContain('writeTemplate')
+  })
+
+  test('includes vectorDistance in results', async () => {
+    const results = await discovery.search('write a template')
+
+    expect(results.length).toBeGreaterThan(0)
+    // At least one result should have vectorDistance
+    const hasVectorResult = results.some((r) => r.vectorDistance !== undefined)
+    expect(hasVectorResult).toBe(true)
+  })
+
+  test('combines FTS and vector scores', async () => {
+    const results = await discovery.search('template file')
+
+    expect(results.length).toBeGreaterThan(0)
+    // Results should have combined score from both sources
+    expect(results[0]!.score).toBeGreaterThan(0)
+  })
+
+  test('respects ftsWeight and vectorWeight options', async () => {
+    // FTS-only results (vectorWeight: 0)
+    const ftsOnlyResults = await discovery.search('write template', {
+      ftsWeight: 1,
+      vectorWeight: 0,
+    })
+
+    // Vector-only results (ftsWeight: 0)
+    const vecOnlyResults = await discovery.search('write template', {
+      ftsWeight: 0,
+      vectorWeight: 1,
+    })
+
+    // Both should return results but potentially in different order
+    expect(ftsOnlyResults.length).toBeGreaterThan(0)
+    expect(vecOnlyResults.length).toBeGreaterThan(0)
+  })
+})
+
+// ============================================================================
+// Custom Model Tests
+// ============================================================================
+
+describe('custom embedder config', () => {
+  test('accepts custom model configuration', async () => {
+    const discovery = await createToolDiscovery({
+      embedder: {
+        model: 'Xenova/all-MiniLM-L6-v2',
+        dtype: 'q8',
+        device: 'cpu',
+      },
+    })
+
+    expect(discovery.stats().vectorSearchEnabled).toBe(true)
+    discovery.close()
+  }, 120000)
+
+  test('auto device detection works', async () => {
+    const discovery = await createToolDiscovery({
+      embedder: {
+        device: 'auto',
+      },
+    })
+
+    expect(discovery.stats().vectorSearchEnabled).toBe(true)
+    discovery.close()
+  }, 120000)
 })

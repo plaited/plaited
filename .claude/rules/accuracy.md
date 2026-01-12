@@ -10,7 +10,13 @@
    - **Action**: Clearly state you cannot answer with high confidence and explain the discrepancy.
    - Example: "I cannot confirm [detail] because my instructions indicate [X], but the current file shows [Y]. My knowledge may be outdated."
 
-3. **Dynamic Exploration**: Use Glob/Grep to find files. For files with `.js`, `.jsx`, `.ts`, or `.tsx` extensions, use `typescript-lsp` skill to verify types and navigate code. Use Read for other file types. Always prioritize live code over instructions.
+3. **Dynamic Exploration**:
+   - **PREFER typescript-lsp over Grep/Glob** for `.ts`, `.tsx`, `.js`, `.jsx` files
+   - Use `lsp-find` to search for symbols, types, and patterns across the workspace
+   - Use `lsp-references` to find all usages of a symbol
+   - Use `lsp-hover` to verify type signatures
+   - Only fall back to Grep/Glob for non-TypeScript files or when LSP is unavailable
+   - Use Read for other file types. Always prioritize live code over instructions.
 
 4. **Tool-Assisted Verification**: Use these skills to enhance verification accuracy:
    - **`typescript-lsp` skill**: Use `lsp-hover` to verify type signatures, `lsp-references` to find all usages before modifying, `lsp-symbols` for file structure, and `lsp-find` to search for patterns across the workspace.
