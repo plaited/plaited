@@ -124,7 +124,8 @@ export type ToolDiscovery = {
   remove: (name: string) => void
   clearSource: (source: ToolSource) => void
   stats: () => ToolDiscoveryStats
-  close: () => void
+  /** Closes the discovery registry and disposes any ML model resources */
+  close: () => Promise<void>
 }
 
 // ============================================================================
@@ -147,16 +148,24 @@ const resolveEmbedderConfig = (config: boolean | EmbedderConfig): EmbedderConfig
 }
 
 /**
- * Creates an embedder function using Transformers.js.
+ * Embedder with cleanup support.
+ */
+type Embedder = {
+  embed: EmbedderFn
+  dispose: () => Promise<void>
+}
+
+/**
+ * Creates an embedder using Transformers.js with proper cleanup.
  *
  * @remarks
  * Dynamically imports @huggingface/transformers to avoid requiring
  * it when vector search is disabled. Models are cached locally
- * after first download.
+ * after first download. Provides `dispose()` for cleanup.
  *
  * @internal
  */
-const createEmbedder = async (config: EmbedderConfig): Promise<EmbedderFn> => {
+const createEmbedder = async (config: EmbedderConfig): Promise<Embedder> => {
   const { model = DEFAULT_MODEL, dtype = 'q8', device = 'auto' } = config
 
   // Dynamic import to avoid dependency when not using vector search
@@ -170,11 +179,17 @@ const createEmbedder = async (config: EmbedderConfig): Promise<EmbedderFn> => {
   // E5 models require query/passage prefix for best results
   const isE5Model = model.toLowerCase().includes('e5')
 
-  return async (text: string): Promise<Float32Array> => {
+  const embed = async (text: string): Promise<Float32Array> => {
     const input = isE5Model ? `query: ${text}` : text
     const output = await extractor(input, { pooling: 'mean', normalize: true })
     return new Float32Array(output.data as ArrayLike<number>)
   }
+
+  const dispose = async (): Promise<void> => {
+    await extractor.dispose()
+  }
+
+  return { embed, dispose }
 }
 
 // ============================================================================
@@ -286,7 +301,7 @@ export const createToolDiscovery = async (config: ToolDiscoveryConfig = {}): Pro
       // Compute embedding if enabled
       let embeddingJson: string | null = null
       if (enableVectorSearch && embedder) {
-        const embedding = await embedder(`${tool.name} ${tool.description}`)
+        const embedding = await embedder.embed(`${tool.name} ${tool.description}`)
         embeddingJson = JSON.stringify(Array.from(embedding))
         vectorIndex.set(tool.name, embedding)
       }
@@ -315,7 +330,7 @@ export const createToolDiscovery = async (config: ToolDiscoveryConfig = {}): Pro
       const embeddings = new Map<string, Float32Array>()
       if (enableVectorSearch && embedder) {
         for (const tool of tools) {
-          const embedding = await embedder(`${tool.name} ${tool.description}`)
+          const embedding = await embedder.embed(`${tool.name} ${tool.description}`)
           embeddings.set(tool.name, embedding)
           vectorIndex.set(tool.name, embedding)
         }
@@ -377,7 +392,7 @@ export const createToolDiscovery = async (config: ToolDiscoveryConfig = {}): Pro
 
       // Vector search using pure JS cosine similarity (if enabled)
       if (enableVectorSearch && embedder && vectorIndex.size > 0) {
-        const queryVec = await embedder(intent)
+        const queryVec = await embedder.embed(intent)
 
         // Compute similarity scores for all indexed vectors
         const similarities: Array<{ name: string; similarity: number }> = []
@@ -482,7 +497,11 @@ export const createToolDiscovery = async (config: ToolDiscoveryConfig = {}): Pro
       }
     },
 
-    close(): void {
+    async close(): Promise<void> {
+      // Dispose embedder to release ML model resources
+      if (embedder) {
+        await embedder.dispose()
+      }
       db.close()
     },
   }

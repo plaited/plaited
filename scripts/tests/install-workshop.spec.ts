@@ -45,12 +45,9 @@ describe('install-workshop.sh', () => {
     })
 
     test('exits with code 0', async () => {
-      const proc = Bun.spawn(['bash', scriptPath, '--help'], {
-        stdout: 'pipe',
-      })
-      const exitCode = await proc.exited
+      const result = await $`bash ${scriptPath} --help`.quiet()
 
-      expect(exitCode).toBe(0)
+      expect(result.exitCode).toBe(0)
     })
   })
 
@@ -59,15 +56,10 @@ describe('install-workshop.sh', () => {
       const testDir = join(tmpDir, 'unknown-agent')
       await mkdir(testDir, { recursive: true })
 
-      const proc = Bun.spawn(['bash', scriptPath, '--agent', 'unknown'], {
-        cwd: testDir,
-        stderr: 'pipe',
-      })
-      const exitCode = await proc.exited
-      const stderr = await new Response(proc.stderr).text()
+      const result = await $`bash ${scriptPath} --agent unknown`.cwd(testDir).nothrow().quiet()
 
-      expect(exitCode).toBe(1)
-      expect(stderr).toContain('Unknown agent')
+      expect(result.exitCode).toBe(1)
+      expect(result.stderr.toString()).toContain('Unknown agent')
     })
   })
 
@@ -76,15 +68,10 @@ describe('install-workshop.sh', () => {
       const testDir = join(tmpDir, 'empty-project')
       await mkdir(testDir, { recursive: true })
 
-      const proc = Bun.spawn(['bash', scriptPath, '--uninstall'], {
-        cwd: testDir,
-        stderr: 'pipe',
-      })
-      const exitCode = await proc.exited
-      const stderr = await new Response(proc.stderr).text()
+      const result = await $`bash ${scriptPath} --uninstall`.cwd(testDir).nothrow().quiet()
 
-      expect(exitCode).toBe(1)
-      expect(stderr).toContain('No existing installation detected')
+      expect(result.exitCode).toBe(1)
+      expect(result.stderr.toString()).toContain('No existing installation detected')
     })
   })
 
@@ -93,43 +80,46 @@ describe('install-workshop.sh', () => {
       const testDir = join(tmpDir, 'empty-project-update')
       await mkdir(testDir, { recursive: true })
 
-      const proc = Bun.spawn(['bash', scriptPath, '--update'], {
-        cwd: testDir,
-        stderr: 'pipe',
-      })
-      const exitCode = await proc.exited
-      const stderr = await new Response(proc.stderr).text()
+      const result = await $`bash ${scriptPath} --update`.cwd(testDir).nothrow().quiet()
 
-      expect(exitCode).toBe(1)
-      expect(stderr).toContain('No existing installation detected')
+      expect(result.exitCode).toBe(1)
+      expect(result.stderr.toString()).toContain('No existing installation detected')
     })
   })
 
   describe('unknown option', () => {
     test('rejects unknown options', async () => {
-      const proc = Bun.spawn(['bash', scriptPath, '--invalid-option'], {
-        stderr: 'pipe',
-      })
-      const exitCode = await proc.exited
-      const stderr = await new Response(proc.stderr).text()
+      const result = await $`bash ${scriptPath} --invalid-option`.nothrow().quiet()
 
-      expect(exitCode).toBe(1)
-      expect(stderr).toContain('Unknown option')
+      expect(result.exitCode).toBe(1)
+      expect(result.stderr.toString()).toContain('Unknown option')
     })
   })
 
   describe('agent detection', () => {
-    test('detects .claude directory as claude agent', async () => {
-      const testDir = join(tmpDir, 'claude-detection')
-      await mkdir(join(testDir, '.claude'), { recursive: true })
-
-      // Run update to trigger detection (will fail but detection message shows)
+    // Helper to run update command and capture stdout before git clone can hang
+    // Note: Bun's $ doesn't have .timeout(), so we use spawn + sleep + kill
+    const runUpdateAndCapture = async (testDir: string): Promise<string> => {
       const proc = Bun.spawn(['bash', scriptPath, '--update'], {
         cwd: testDir,
         stdout: 'pipe',
         stderr: 'pipe',
       })
+
+      // Detection message prints immediately, kill before git clone hangs
+      await Bun.sleep(500)
+      proc.kill()
+
       const stdout = await new Response(proc.stdout).text()
+      await proc.exited
+      return stdout
+    }
+
+    test('detects .claude directory as claude agent', async () => {
+      const testDir = join(tmpDir, 'claude-detection')
+      await mkdir(join(testDir, '.claude'), { recursive: true })
+
+      const stdout = await runUpdateAndCapture(testDir)
 
       // Should detect claude and try to update
       expect(stdout).toContain('Updating installation for: claude')
@@ -139,12 +129,7 @@ describe('install-workshop.sh', () => {
       const testDir = join(tmpDir, 'opencode-detection')
       await mkdir(join(testDir, '.opencode'), { recursive: true })
 
-      const proc = Bun.spawn(['bash', scriptPath, '--update'], {
-        cwd: testDir,
-        stdout: 'pipe',
-        stderr: 'pipe',
-      })
-      const stdout = await new Response(proc.stdout).text()
+      const stdout = await runUpdateAndCapture(testDir)
 
       expect(stdout).toContain('Updating installation for: opencode')
     })
@@ -153,12 +138,7 @@ describe('install-workshop.sh', () => {
       const testDir = join(tmpDir, 'amp-detection')
       await mkdir(join(testDir, '.agents'), { recursive: true })
 
-      const proc = Bun.spawn(['bash', scriptPath, '--update'], {
-        cwd: testDir,
-        stdout: 'pipe',
-        stderr: 'pipe',
-      })
-      const stdout = await new Response(proc.stdout).text()
+      const stdout = await runUpdateAndCapture(testDir)
 
       expect(stdout).toContain('Updating installation for: amp')
     })
@@ -167,12 +147,7 @@ describe('install-workshop.sh', () => {
       const testDir = join(tmpDir, 'factory-detection')
       await mkdir(join(testDir, '.factory'), { recursive: true })
 
-      const proc = Bun.spawn(['bash', scriptPath, '--update'], {
-        cwd: testDir,
-        stdout: 'pipe',
-        stderr: 'pipe',
-      })
-      const stdout = await new Response(proc.stdout).text()
+      const stdout = await runUpdateAndCapture(testDir)
 
       expect(stdout).toContain('Updating installation for: factory')
     })

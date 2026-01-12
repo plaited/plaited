@@ -78,7 +78,7 @@ flowchart LR
 
 ```bash
 # Generate trajectories from stories
-bun .claude/skills/world-agent/scripts/generate-trajectories.ts training/stories --output training/trajectories.jsonl
+bun .claude/skills/loom/scripts/generate-trajectories.ts training/stories --output training/trajectories.jsonl
 ```
 
 **Trajectory format:**
@@ -153,10 +153,10 @@ flowchart LR
 - Reward computation working (`compute-rewards.ts`)
 
 **GRPO Implementation Steps:**
-1. Set up workshop agent server (`use-agent-server.ts`) for real-time generation
+1. Use `useAgentRunner` (`src/agent/use-agent-runner.ts`) for real-time story test execution
 2. Create GRPO training loop that:
    - Takes an intent, generates N candidates (N=4-8)
-   - Runs each candidate through story tests
+   - Runs each candidate through story tests via `useAgentRunner`
    - Computes reward for each (accessibility, assertions, code quality)
    - Updates policy using GRPO loss (group-relative ranking)
 3. Add GRPO cells to Colab notebook (or use Modal for longer training)
@@ -169,7 +169,7 @@ flowchart LR
 | Feedback | Implicit (correct = good) | Binary (chosen > rejected) | Scalar reward (0-1) |
 | Learning | Imitation | Preference ranking | RL from feedback |
 
-See `.claude/skills/world-agent/references/training-workflow.md` for GRPO Colab cell templates.
+See `.claude/skills/loom/references/training/training-workflow.md` for GRPO Colab cell templates.
 
 ## CI Integration (Planned)
 
@@ -239,7 +239,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v1
       - run: bun install
-      - run: bun .claude/skills/world-agent/scripts/generate-trajectories.ts training/stories -o training/trajectories.jsonl
+      - run: bun .claude/skills/loom/scripts/generate-trajectories.ts training/stories -o training/trajectories.jsonl
       # TODO: Add upload and trigger scripts when CI is implemented
 ```
 
@@ -255,7 +255,7 @@ jobs:
 
 ```bash
 # Generate SFT trajectories
-bun .claude/skills/world-agent/scripts/generate-trajectories.ts training/stories --output training/trajectories.jsonl
+bun .claude/skills/loom/scripts/generate-trajectories.ts training/stories --output training/trajectories.jsonl
 ```
 
 **Note:** DPO preference pairs are created manually as part of the training workflow. See issue #213 for guidance on creating good/bad pairs for the same intent.
@@ -274,20 +274,20 @@ After training, evaluate the model:
 
 ```bash
 # Run eval suite
-bun .claude/skills/world-agent/scripts/run-eval-suite.ts --model plaited/plaited-world-agent-lora
+bun .claude/skills/loom/scripts/run-eval-suite.ts --model plaited/plaited-world-agent-lora
 
 # Compare to baseline (Claude Code one-shots)
-bun .claude/skills/world-agent/scripts/compare-baseline.ts --results eval-results.json
+bun .claude/skills/loom/scripts/compare-baseline.ts --results eval-results.json
 
 # Generate human-readable report
-bun .claude/skills/world-agent/scripts/generate-report.ts --results eval-results.json --output report.md
+bun .claude/skills/loom/scripts/generate-report.ts --results eval-results.json --output report.md
 ```
 
-See `.claude/skills/world-agent/references/eval-guide.md` for metrics and interpretation.
+See `.claude/skills/loom/references/training/eval-guide.md` for metrics and interpretation.
 
 ## Related Resources
 
-- **world-agent skill** - `.claude/skills/world-agent/SKILL.md`
-- **Training workflow** - `.claude/skills/world-agent/references/training-workflow.md`
-- **Evaluation guide** - `.claude/skills/world-agent/references/eval-guide.md`
-- **Tool API** - `.claude/skills/world-agent/references/tool-api.md`
+- **loom skill** - `.claude/skills/loom/SKILL.md`
+- **Training workflow** - `.claude/skills/loom/references/training/training-workflow.md`
+- **Evaluation guide** - `.claude/skills/loom/references/training/eval-guide.md`
+- **Tool API** - `.claude/skills/loom/references/training/tool-api.md`

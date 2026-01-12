@@ -30,6 +30,8 @@ export * from './agent/tool-discovery.ts'
 export * from './agent/tools.ts'
 // Training Utilities
 export * from './agent/training-utils.ts'
+// Agent Runner (IPC-based story execution)
+export * from './agent/use-agent-runner.ts'
 export * from './agent/use-orchestrator.ts'
 // Core Agent
 export * from './agent/use-world-agent.ts'

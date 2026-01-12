@@ -127,8 +127,8 @@ describe('createToolDiscovery (FTS5 only)', () => {
     discovery = await createToolDiscovery()
   })
 
-  afterEach(() => {
-    discovery.close()
+  afterEach(async () => {
+    await discovery.close()
   })
 
   test('creates empty discovery registry', () => {
@@ -212,8 +212,8 @@ describe('FTS5 search', () => {
     await discovery.indexBatch(tools)
   })
 
-  afterEach(() => {
-    discovery.close()
+  afterEach(async () => {
+    await discovery.close()
   })
 
   test('finds tools matching intent keywords', async () => {
@@ -288,8 +288,8 @@ describe('filterToolsByIntent', () => {
     await discovery.indexBatch(tools)
   })
 
-  afterEach(() => {
-    discovery.close()
+  afterEach(async () => {
+    await discovery.close()
   })
 
   test('returns schemas for matching tools', async () => {
@@ -323,7 +323,7 @@ describe('edge cases', () => {
   test('handles empty database path', async () => {
     const discovery = await createToolDiscovery({ dbPath: ':memory:' })
     expect(discovery.stats().totalTools).toBe(0)
-    discovery.close()
+    await discovery.close()
   })
 
   test('handles special characters in query', async () => {
@@ -335,7 +335,7 @@ describe('edge cases', () => {
     const results = await discovery.search('write (template) [file]')
     expect(results.length).toBeGreaterThan(0)
 
-    discovery.close()
+    await discovery.close()
   })
 
   test('handles duplicate tool names', async () => {
@@ -346,7 +346,7 @@ describe('edge cases', () => {
 
     expect(discovery.stats().totalTools).toBe(1) // Should replace, not duplicate
 
-    discovery.close()
+    await discovery.close()
   })
 
   test('handles empty intent', async () => {
@@ -357,7 +357,7 @@ describe('edge cases', () => {
     const results = await discovery.search('')
     expect(results).toHaveLength(0)
 
-    discovery.close()
+    await discovery.close()
   })
 })
 
@@ -369,13 +369,13 @@ describe('embedder config resolution', () => {
   test('embedder: false results in FTS5 only', async () => {
     const discovery = await createToolDiscovery({ embedder: false })
     expect(discovery.stats().vectorSearchEnabled).toBe(false)
-    discovery.close()
+    await discovery.close()
   })
 
   test('embedder: undefined results in FTS5 only', async () => {
     const discovery = await createToolDiscovery({})
     expect(discovery.stats().vectorSearchEnabled).toBe(false)
-    discovery.close()
+    await discovery.close()
   })
 })
 
@@ -393,8 +393,8 @@ describe('hybrid search (vector + FTS5)', () => {
     await discovery.indexBatch(tools)
   }, 120000) // 2 min timeout for model loading
 
-  afterEach(() => {
-    discovery?.close()
+  afterEach(async () => {
+    await discovery?.close()
   })
 
   test('enables vector search when embedder: true', () => {
@@ -463,7 +463,7 @@ describe('custom embedder config', () => {
     })
 
     expect(discovery.stats().vectorSearchEnabled).toBe(true)
-    discovery.close()
+    await discovery.close()
   }, 120000)
 
   test('auto device detection works', async () => {
@@ -474,6 +474,6 @@ describe('custom embedder config', () => {
     })
 
     expect(discovery.stats().vectorSearchEnabled).toBe(true)
-    discovery.close()
+    await discovery.close()
   }, 120000)
 })

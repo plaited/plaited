@@ -1,7 +1,6 @@
 import { expect, test } from 'bun:test'
 import { join } from 'node:path'
 import type { TestResult } from '../use-runner.ts'
-import { getTestPort } from './test-ports.ts'
 
 const cwd = join(import.meta.dir, 'fixtures')
 const fixturesDir = join(cwd, 'stories')
@@ -76,7 +75,7 @@ test(
     const { passed, failed } = await runRunner({
       cwd,
       colorScheme: 'light',
-      port: getTestPort(),
+      port: 0,
       paths: [fixturesDir],
     })
 
@@ -105,7 +104,7 @@ test(
     const { passed, failed } = await runRunner({
       cwd,
       colorScheme: 'light',
-      port: getTestPort(),
+      port: 0,
       paths: [fixturesDir],
     })
 
@@ -129,7 +128,7 @@ test(
     const { passed, failed } = await runRunner({
       cwd,
       colorScheme: 'light',
-      port: getTestPort(),
+      port: 0,
       paths: [fixturesDir],
     })
 
@@ -150,7 +149,7 @@ test(
     const { passed, failed } = await runRunner({
       cwd,
       colorScheme: 'light',
-      port: getTestPort(),
+      port: 0,
       paths: [fixturesDir],
     })
 
@@ -181,7 +180,7 @@ test(
     const { passed, failed } = await runRunner({
       cwd: emptyDir,
       colorScheme: 'light',
-      port: getTestPort(),
+      port: 0,
       paths: [emptyDir],
     })
 
@@ -198,7 +197,7 @@ test(
     const { passed, failed } = await runRunner({
       cwd,
       colorScheme: 'light',
-      port: getTestPort(),
+      port: 0,
       paths: [fixturesDir],
     })
 
