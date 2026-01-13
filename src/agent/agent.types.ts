@@ -3,7 +3,7 @@
  *
  * @remarks
  * Provides types for:
- * - Embedder configuration for vector search (via Ollama)
+ * - Embedder configuration for vector search (via node-llama-cpp)
  * - Tool schemas for discovery and filtering
  *
  * @module
@@ -14,25 +14,34 @@
 // ============================================================================
 
 /**
- * Embedder configuration for vector search via Ollama.
+ * Embedder configuration for vector search via node-llama-cpp.
  *
  * @remarks
- * Uses Ollama's local embedding models. The default model (`all-minilm`)
- * is lightweight (22MB) with 384 dimensions. Ollama must be installed
- * separately from https://ollama.com.
+ * Uses GGUF models loaded in-process via llama.cpp bindings.
+ * Models are auto-downloaded from Hugging Face on first use.
  *
- * If Ollama is not available, vector search is gracefully disabled
+ * Default model: `all-MiniLM-L6-v2` (Q8_0 quantization, ~25MB, 384 dimensions)
+ *
+ * If model loading fails, vector search is gracefully disabled
  * and FTS5 keyword search is used instead.
  */
 export type EmbedderConfig = {
-  /** Ollama model name for embeddings (default: 'all-minilm') */
-  model?: string
-  /** Ollama server URL (default: 'http://localhost:11434') */
-  baseUrl?: string
-  /** Whether to auto-start Ollama server if not running (default: true) */
-  autoStart?: boolean
-  /** Whether to auto-pull model if not downloaded (default: true) */
-  autoPull?: boolean
+  /**
+   * Hugging Face model URI or local path to GGUF file.
+   *
+   * Supports:
+   * - HF shorthand: `hf:LLukas22/all-MiniLM-L6-v2-GGUF:Q8_0`
+   * - Local path: `./models/all-minilm.gguf`
+   *
+   * @defaultValue `'hf:LLukas22/all-MiniLM-L6-v2-GGUF:Q8_0'`
+   */
+  modelUri?: string
+  /**
+   * Directory to cache downloaded models.
+   *
+   * @defaultValue `'~/.cache/plaited/models'`
+   */
+  modelsDir?: string
 }
 
 // ============================================================================

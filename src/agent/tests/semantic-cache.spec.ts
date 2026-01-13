@@ -161,11 +161,11 @@ describe('semantic cache (statistics)', () => {
   })
 
   test('tracks hits and misses', async () => {
-    await sharedCache.store('Query', 'Response')
+    await sharedCache.store('How to bake chocolate chip cookies', 'Response')
 
-    await sharedCache.lookup('Query') // hit
-    await sharedCache.lookup('Query') // hit
-    await sharedCache.lookup('Unknown query about something else entirely') // miss
+    await sharedCache.lookup('How to bake chocolate chip cookies') // hit
+    await sharedCache.lookup('Chocolate chip cookie recipe') // hit (semantically similar)
+    await sharedCache.lookup('Quantum mechanics wave function collapse') // miss (unrelated)
 
     const stats = sharedCache.stats()
     expect(stats.totalHits).toBe(2)
@@ -173,12 +173,12 @@ describe('semantic cache (statistics)', () => {
   })
 
   test('calculates hit rate', async () => {
-    await sharedCache.store('Query', 'Response')
+    await sharedCache.store('Best Italian restaurants in New York', 'Response')
 
-    await sharedCache.lookup('Query') // hit
-    await sharedCache.lookup('Query') // hit
-    await sharedCache.lookup('Different query about unrelated topic') // miss
-    await sharedCache.lookup('Another unrelated query') // miss
+    await sharedCache.lookup('Italian dining NYC') // hit (semantically similar)
+    await sharedCache.lookup('New York Italian food') // hit (semantically similar)
+    await sharedCache.lookup('Python asyncio tutorial for beginners') // miss (unrelated)
+    await sharedCache.lookup('How to fix a leaking faucet') // miss (unrelated)
 
     const stats = sharedCache.stats()
     expect(stats.hitRate).toBe(0.5)
@@ -237,12 +237,10 @@ describe('semantic cache (getOrCompute)', () => {
 // ============================================================================
 
 describe('semantic cache (edge cases)', () => {
-  test('returns undefined when Ollama unavailable', async () => {
+  test('returns undefined when model unavailable', async () => {
     const cache = await createSemanticCache({
       embedder: {
-        baseUrl: 'http://localhost:99999', // Invalid port
-        autoStart: false,
-        autoPull: false,
+        modelUri: 'hf:nonexistent/model-that-does-not-exist:Q8_0',
       },
     })
 

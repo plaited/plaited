@@ -1,5 +1,5 @@
 /**
- * Progressive Tool Discovery with FTS5 + optional Ollama vector search.
+ * Progressive Tool Discovery with FTS5 + optional vector search.
  *
  * @remarks
  * Provides context-aware tool filtering to reduce token costs by exposing
@@ -7,26 +7,27 @@
  *
  * **Capabilities:**
  * - FTS5 full-text search for keyword matching (default, zero dependencies)
- * - Optional vector search via Ollama embeddings with pure JS cosine similarity
+ * - Optional vector search via node-llama-cpp with in-process embeddings
  * - Reciprocal Rank Fusion (RRF) for hybrid scoring
  *
  * **Configuration:**
  * - Default: FTS5 only (zero config, works everywhere)
- * - Opt-in: Set `embedder: true` for hybrid search with Ollama
+ * - Opt-in: Set `embedder: true` for hybrid search with GGUF model
  *
- * **Requirements for vector search:**
- * - Ollama installed from https://ollama.com
- * - Default model: all-minilm (22MB, 384 dimensions)
+ * **Model Management:**
+ * - Models auto-download from Hugging Face on first use
+ * - Default: all-MiniLM-L6-v2 (Q8_0, ~25MB, 384 dimensions)
+ * - No external daemon required (runs in-process)
  *
  * **Graceful Degradation:**
- * - If Ollama not available, falls back to FTS5-only search
+ * - If model loading fails, falls back to FTS5-only search
  *
  * @module
  */
 
 import { Database } from 'bun:sqlite'
-import { $ } from 'bun'
 import type { EmbedderConfig, ToolSchema, ToolSource } from './agent.types.ts'
+import { createEmbedder, findTopSimilar } from './embedder.ts'
 
 // ============================================================================
 // Types
@@ -41,8 +42,8 @@ export type ToolDiscoveryConfig = {
   /**
    * Embedder configuration for vector search.
    * - `undefined` or `false` - FTS5 only (default)
-   * - `true` - Hybrid with default Ollama model (all-minilm)
-   * - `EmbedderConfig` - Hybrid with custom Ollama model
+   * - `true` - Hybrid with default model (all-MiniLM-L6-v2)
+   * - `EmbedderConfig` - Hybrid with custom model
    */
   embedder?: boolean | EmbedderConfig
 }
@@ -116,70 +117,8 @@ export type ToolDiscovery = {
 }
 
 // ============================================================================
-// Pure JS Vector Search
+// Helpers
 // ============================================================================
-
-/**
- * Computes cosine similarity between two vectors.
- *
- * @internal
- */
-const cosineSimilarity = (a: Float32Array, b: Float32Array): number => {
-  let dot = 0
-  let normA = 0
-  let normB = 0
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i]! * b[i]!
-    normA += a[i]! * a[i]!
-    normB += b[i]! * b[i]!
-  }
-  return dot / (Math.sqrt(normA) * Math.sqrt(normB))
-}
-
-/**
- * Finds top-k most similar vectors using linear search.
- *
- * @internal
- */
-const findTopSimilar = (
-  query: Float32Array,
-  embeddings: Map<number, Float32Array>,
-  limit: number,
-): Array<{ rowid: number; similarity: number }> => {
-  const results: Array<{ rowid: number; similarity: number }> = []
-
-  for (const [rowid, embedding] of embeddings) {
-    const similarity = cosineSimilarity(query, embedding)
-    results.push({ rowid, similarity })
-  }
-
-  // Sort by similarity descending and take top k
-  return results.sort((a, b) => b.similarity - a.similarity).slice(0, limit)
-}
-
-// ============================================================================
-// Ollama Embedder
-// ============================================================================
-
-const DEFAULT_MODEL = 'all-minilm'
-const DEFAULT_BASE_URL = 'http://localhost:11434'
-
-type EmbedderFn = (text: string) => Promise<Float32Array>
-
-/**
- * Ollama embedding response.
- */
-type OllamaEmbedResponse = {
-  embeddings: number[][]
-}
-
-/**
- * Embedder with cleanup support.
- */
-type Embedder = {
-  embed: EmbedderFn
-  dimensions: number
-}
 
 /**
  * Resolves embedder config from boolean or object.
@@ -190,77 +129,6 @@ const resolveEmbedderConfig = (config: boolean | EmbedderConfig): EmbedderConfig
   if (config === false) return undefined
   if (config === true) return {}
   return config
-}
-
-/**
- * Creates an embedder using Ollama's local embedding API.
- *
- * @remarks
- * Automatically starts Ollama server and pulls the model if needed.
- * Uses pure fetch() for HTTP calls - no additional dependencies.
- *
- * @internal
- */
-const createOllamaEmbedder = async (config: EmbedderConfig): Promise<Embedder | undefined> => {
-  const { model = DEFAULT_MODEL, baseUrl = DEFAULT_BASE_URL, autoStart = true, autoPull = true } = config
-
-  // Check if Ollama is installed
-  const ollamaPath = Bun.which('ollama')
-  if (!ollamaPath) {
-    // Gracefully disable vector search if Ollama not installed
-    console.warn('Ollama not installed. Vector search disabled, using FTS5 only.')
-    return undefined
-  }
-
-  try {
-    // Check if server is running, start if needed
-    if (autoStart) {
-      const isRunning = await $`ollama list`
-        .quiet()
-        .then(() => true)
-        .catch(() => false)
-      if (!isRunning) {
-        // Start Ollama server in background (fire and forget)
-        Bun.spawn(['ollama', 'serve'], {
-          stdout: 'ignore',
-          stderr: 'ignore',
-        })
-        // Wait for server to start
-        await Bun.sleep(2000)
-      }
-    }
-
-    // Pull model if needed
-    if (autoPull) {
-      await $`ollama pull ${model}`.quiet()
-    }
-
-    const embedUrl = `${baseUrl}/api/embed`
-
-    const embed = async (text: string): Promise<Float32Array> => {
-      const response = await fetch(embedUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model, input: text }),
-      })
-
-      if (!response.ok) {
-        throw new Error(`Ollama embed failed: ${response.status} ${response.statusText}`)
-      }
-
-      const data = (await response.json()) as OllamaEmbedResponse
-      return new Float32Array(data.embeddings[0]!)
-    }
-
-    // Get dimensions from a test embedding
-    const testEmbedding = await embed('test')
-
-    return { embed, dimensions: testEmbedding.length }
-  } catch (error) {
-    // Gracefully disable vector search on any error
-    console.warn('Failed to initialize Ollama embedder. Vector search disabled, using FTS5 only.', error)
-    return undefined
-  }
 }
 
 // ============================================================================
@@ -301,21 +169,20 @@ const createSchema = (db: Database) => {
 // ============================================================================
 
 /**
- * Creates a tool discovery registry with FTS5 + optional Ollama vector search.
+ * Creates a tool discovery registry with FTS5 + optional vector search.
  *
  * @param config - Discovery configuration options
  * @returns Promise resolving to tool discovery registry
  *
  * @remarks
  * By default, uses FTS5 only (zero external dependencies).
- * Set `embedder: true` for hybrid search with Ollama's default model
- * (`all-minilm` - 22MB, 384 dims).
+ * Set `embedder: true` for hybrid search with the default model
+ * (`all-MiniLM-L6-v2` - 25MB, 384 dims).
  *
  * Vector search uses in-memory storage with pure JavaScript cosine similarity,
  * making it cross-platform compatible (macOS, Linux, Windows).
  *
- * If Ollama is not installed or fails to start, gracefully falls back
- * to FTS5-only search.
+ * If model loading fails, gracefully falls back to FTS5-only search.
  */
 export const createToolDiscovery = async (config: ToolDiscoveryConfig = {}): Promise<ToolDiscovery> => {
   const { dbPath = ':memory:', embedder: embedderInput } = config
@@ -325,8 +192,8 @@ export const createToolDiscovery = async (config: ToolDiscoveryConfig = {}): Pro
 
   const db = new Database(dbPath)
 
-  // Initialize embedder if configured (may return undefined if Ollama unavailable)
-  const embedder = embedderConfig ? await createOllamaEmbedder(embedderConfig) : undefined
+  // Initialize embedder if configured (may return undefined if model loading fails)
+  const embedder = embedderConfig ? await createEmbedder(embedderConfig) : undefined
   const enableVectorSearch = embedder !== undefined
 
   // Create schema
@@ -336,7 +203,7 @@ export const createToolDiscovery = async (config: ToolDiscoveryConfig = {}): Pro
   const toolCache = new Map<string, IndexedTool>()
 
   // In-memory embeddings storage (rowid → embedding)
-  const embeddings = new Map<number, Float32Array>()
+  const embeddings = new Map<number, readonly number[]>()
 
   // Prepared statements
   const insertStmt = db.prepare(`
@@ -415,7 +282,7 @@ export const createToolDiscovery = async (config: ToolDiscoveryConfig = {}): Pro
 
     async indexBatch(tools: IndexedTool[]): Promise<void> {
       // Compute embeddings first if enabled (async operations outside transaction)
-      const toolEmbeddings = new Map<string, Float32Array>()
+      const toolEmbeddings = new Map<string, readonly number[]>()
       if (enableVectorSearch && embedder) {
         for (const tool of tools) {
           const embedding = await embedder.embed(`${tool.name} ${tool.description}`)
@@ -598,6 +465,7 @@ export const createToolDiscovery = async (config: ToolDiscoveryConfig = {}): Pro
       // Clear in-memory embeddings
       embeddings.clear()
       db.close()
+      // Note: embedder.dispose() is async but close() is sync for API compat
     },
   }
 

@@ -449,33 +449,27 @@ describe('hybrid search (vector + FTS5)', () => {
 })
 
 // ============================================================================
-// Custom Ollama Config Tests
+// Custom Embedder Config Tests
 // ============================================================================
 
 describe('custom embedder config', () => {
-  test('accepts custom Ollama model configuration', async () => {
+  test('accepts custom model configuration', async () => {
     const discovery = await createToolDiscovery({
       embedder: {
-        model: 'all-minilm',
-        baseUrl: 'http://localhost:11434',
-        autoStart: true,
-        autoPull: true,
+        modelUri: 'hf:LLukas22/all-MiniLM-L6-v2-GGUF:Q8_0',
       },
     })
 
-    // vectorSearchEnabled depends on whether Ollama is installed
-    // If Ollama is available, this will be true; otherwise false (graceful fallback)
+    // vectorSearchEnabled depends on whether model loads successfully
     const stats = discovery.stats()
-    expect(typeof stats.vectorSearchEnabled).toBe('boolean')
+    expect(stats.vectorSearchEnabled).toBe(true)
     discovery.close()
   }, 120000)
 
-  test('gracefully disables vector search when Ollama unavailable', async () => {
+  test('gracefully disables vector search when model unavailable', async () => {
     const discovery = await createToolDiscovery({
       embedder: {
-        baseUrl: 'http://localhost:99999', // Invalid port
-        autoStart: false,
-        autoPull: false,
+        modelUri: 'hf:nonexistent/model-that-does-not-exist:Q8_0',
       },
     })
 

@@ -3,28 +3,30 @@
  *
  * @remarks
  * Caches LLM responses based on semantic similarity to previous queries.
- * Uses Ollama for embeddings and pure JavaScript cosine similarity.
+ * Uses node-llama-cpp for in-process embeddings with GGUF models.
  *
  * **Benefits:**
  * - Reduces API costs by serving cached responses for similar queries
  * - Improves latency for common query patterns
  * - Works across sessions with persistent storage
  * - Cross-platform: works on macOS, Linux, and Windows
+ * - No external daemon required (runs in-process)
  *
- * **Requirements:**
- * - Ollama installed from https://ollama.com (auto-starts if not running)
- * - Embedding model auto-pulled on first use (default: all-minilm, 22MB)
+ * **Model Management:**
+ * - Models auto-download from Hugging Face on first use
+ * - Default: all-MiniLM-L6-v2 (Q8_0, ~25MB, 384 dimensions)
+ * - Cached in `~/.cache/plaited/models` by default
  *
  * **Graceful Degradation:**
- * - If Ollama is not installed, `createSemanticCache` returns `undefined`
- * - Callers should check the return value and fall back gracefully (e.g., FTS5-only search)
+ * - If model loading fails, `createSemanticCache` returns `undefined`
+ * - Callers should check the return value and fall back gracefully
  *
  * @module
  */
 
 import { Database } from 'bun:sqlite'
-import { $ } from 'bun'
 import type { EmbedderConfig } from './agent.types.ts'
+import { cosineSimilarity, createEmbedder } from './embedder.ts'
 
 // ============================================================================
 // Types
@@ -36,7 +38,7 @@ import type { EmbedderConfig } from './agent.types.ts'
 export type SemanticCacheConfig = {
   /** Path to SQLite database (default: ':memory:') */
   dbPath?: string
-  /** Embedder configuration (uses Ollama) */
+  /** Embedder configuration */
   embedder?: EmbedderConfig
   /** Similarity threshold for cache hits (default: 0.85) */
   similarityThreshold?: number
@@ -111,121 +113,6 @@ export type SemanticCache = {
 }
 
 // ============================================================================
-// Vector Math
-// ============================================================================
-
-/**
- * Computes cosine similarity between two vectors.
- *
- * @param a - First vector (Float32Array)
- * @param b - Second vector (Float32Array)
- * @returns Similarity score between -1 and 1 (1 = identical)
- *
- * @internal
- */
-const cosineSimilarity = (a: Float32Array, b: Float32Array): number => {
-  let dot = 0
-  let normA = 0
-  let normB = 0
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i]! * b[i]!
-    normA += a[i]! * a[i]!
-    normB += b[i]! * b[i]!
-  }
-  return dot / (Math.sqrt(normA) * Math.sqrt(normB))
-}
-
-// ============================================================================
-// Ollama Embedder
-// ============================================================================
-
-const DEFAULT_MODEL = 'all-minilm'
-const DEFAULT_BASE_URL = 'http://localhost:11434'
-
-/**
- * Ollama embedding response.
- */
-type OllamaEmbedResponse = {
-  embeddings: number[][]
-}
-
-/**
- * Embedder instance with embed function and dimensions.
- */
-type Embedder = {
-  embed: (text: string) => Promise<Float32Array>
-  dimensions: number
-}
-
-/**
- * Creates an embedder using Ollama's local embedding API.
- *
- * @remarks
- * Automatically starts Ollama server and pulls the model if needed.
- * Uses pure fetch() for HTTP calls - no additional dependencies.
- * Returns `undefined` if Ollama is not available.
- *
- * @internal
- */
-const createOllamaEmbedder = async (config: EmbedderConfig = {}): Promise<Embedder | undefined> => {
-  const { model = DEFAULT_MODEL, baseUrl = DEFAULT_BASE_URL, autoStart = true, autoPull = true } = config
-
-  // Check if Ollama is installed
-  const ollamaPath = Bun.which('ollama')
-  if (!ollamaPath) {
-    return undefined
-  }
-
-  try {
-    // Check if server is running, start if needed
-    if (autoStart) {
-      const isRunning = await $`ollama list`
-        .quiet()
-        .then(() => true)
-        .catch(() => false)
-      if (!isRunning) {
-        // Start Ollama server in background (fire and forget)
-        Bun.spawn(['ollama', 'serve'], {
-          stdout: 'ignore',
-          stderr: 'ignore',
-        })
-        // Wait for server to start
-        await Bun.sleep(2000)
-      }
-    }
-
-    // Pull model if needed
-    if (autoPull) {
-      await $`ollama pull ${model}`.quiet()
-    }
-
-    const embedUrl = `${baseUrl}/api/embed`
-
-    const embed = async (text: string): Promise<Float32Array> => {
-      const response = await fetch(embedUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model, input: text }),
-      })
-
-      if (!response.ok) {
-        throw new Error(`Ollama embed failed: ${response.status} ${response.statusText}`)
-      }
-
-      const data = (await response.json()) as OllamaEmbedResponse
-      return new Float32Array(data.embeddings[0]!)
-    }
-
-    // Get dimensions from a test embedding
-    const testEmbedding = await embed('test')
-
-    return { embed, dimensions: testEmbedding.length }
-  } catch {
-    return undefined
-  }
-}
-
-// ============================================================================
 // Semantic Cache Implementation
 // ============================================================================
 
@@ -233,18 +120,18 @@ const createOllamaEmbedder = async (config: EmbedderConfig = {}): Promise<Embedd
  * Creates a semantic cache for LLM responses.
  *
  * @param config - Cache configuration options
- * @returns Promise resolving to a semantic cache instance, or `undefined` if Ollama unavailable
+ * @returns Promise resolving to a semantic cache instance, or `undefined` if embedder unavailable
  *
  * @remarks
  * Uses SQLite for metadata persistence and in-memory Map for vector storage.
- * Vector similarity is computed using pure JavaScript cosine similarity.
+ * Vector similarity is computed using cosine similarity.
  *
- * **Requirements:** Ollama must be installed for semantic caching to work.
- * If Ollama is not available, returns `undefined` instead of throwing.
+ * **Requirements:** Model must be downloadable/loadable for semantic caching.
+ * If model loading fails, returns `undefined` instead of throwing.
  *
  * **Performance:** Linear search with ~3.5ms for 10K vectors (384 dimensions).
  * For caches with <10K entries, this is negligible compared to embedding
- * generation time (~50-150ms via Ollama).
+ * generation time (~10-50ms via llama.cpp).
  */
 export const createSemanticCache = async (config: SemanticCacheConfig = {}): Promise<SemanticCache | undefined> => {
   const {
@@ -255,8 +142,8 @@ export const createSemanticCache = async (config: SemanticCacheConfig = {}): Pro
     ttlMs = 24 * 60 * 60 * 1000,
   } = config
 
-  // Initialize embedder - returns undefined if Ollama unavailable
-  const embedder = await createOllamaEmbedder(embedderConfig)
+  // Initialize embedder - returns undefined if unavailable
+  const embedder = await createEmbedder(embedderConfig)
   if (!embedder) {
     return undefined
   }
@@ -264,7 +151,7 @@ export const createSemanticCache = async (config: SemanticCacheConfig = {}): Pro
   const db = new Database(dbPath)
 
   // In-memory vector storage: id -> embedding
-  const embeddings = new Map<number, Float32Array>()
+  const embeddings = new Map<number, readonly number[]>()
 
   // Create main cache entries table
   db.run(`
@@ -320,7 +207,7 @@ export const createSemanticCache = async (config: SemanticCacheConfig = {}): Pro
    *
    * @internal
    */
-  const findMostSimilar = (queryEmbedding: Float32Array): { id: number; similarity: number } | undefined => {
+  const findMostSimilar = (queryEmbedding: readonly number[]): { id: number; similarity: number } | undefined => {
     let bestId: number | undefined
     let bestSimilarity = -Infinity
 
@@ -460,6 +347,8 @@ export const createSemanticCache = async (config: SemanticCacheConfig = {}): Pro
     close(): void {
       embeddings.clear()
       db.close()
+      // Note: embedder.dispose() is async but close() is sync for API compat
+      // The model will be garbage collected
     },
   }
 
