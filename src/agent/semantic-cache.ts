@@ -17,6 +17,7 @@
  */
 
 import { Database } from 'bun:sqlite'
+import { pipeline } from '@huggingface/transformers'
 import type { EmbedderConfig } from './agent.types.ts'
 
 // ============================================================================
@@ -130,19 +131,13 @@ const cosineSimilarity = (a: Float32Array, b: Float32Array): number => {
 // Embedder Factory
 // ============================================================================
 
-type EmbedderFn = (text: string) => Promise<Float32Array>
-
-const DEFAULT_MODEL = 'Xenova/multilingual-e5-small'
-
 /**
  * Creates an embedder function using Transformers.js.
  *
  * @internal
  */
-const createEmbedder = async (config: EmbedderConfig = {}): Promise<EmbedderFn> => {
-  const { model = DEFAULT_MODEL, dtype = 'q8', device = 'auto' } = config
-
-  const { pipeline } = await import('@huggingface/transformers')
+const createEmbedder = async (config: EmbedderConfig = {}) => {
+  const { model = 'Xenova/multilingual-e5-small', dtype = 'q8', device = 'auto' } = config
 
   const extractor = await pipeline('feature-extraction', model, {
     dtype,
