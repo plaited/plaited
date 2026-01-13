@@ -1,9 +1,12 @@
 ---
 name: typescript-lsp
-description: TypeScript Language Server for exploring and understanding TypeScript/JavaScript codebases. PREFER OVER Grep/Glob for *.ts/*.tsx files - provides type-aware symbol search, reference finding, and code navigation. Use for exploring code structure, finding implementations, understanding type relationships, and verifying signatures before editing. (project)
+description: REQUIRED for searching code in *.ts, *.tsx, *.js, *.jsx files. Use INSTEAD of Grep for TypeScript/JavaScript - provides type-aware symbol search that understands imports, exports, and relationships. Activate before reading, editing, or searching TypeScript code to verify signatures and find references.
 license: ISC
 compatibility: Requires bun
 allowed-tools: Bash
+metadata:
+  file-triggers: "*.ts,*.tsx,*.js,*.jsx"
+  replaces-tools: Grep
 ---
 
 # TypeScript LSP Skill
