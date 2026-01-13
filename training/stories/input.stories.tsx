@@ -55,7 +55,7 @@ const LabeledField: FT<{
     >
       {label}
     </label>
-    {children}
+    <div id={id}>{children}</div>
     <span {...inputStyles.helpText}>{helpText}</span>
   </div>
 )
