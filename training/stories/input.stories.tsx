@@ -55,7 +55,7 @@ const LabeledField: FT<{
     >
       {label}
     </label>
-    <div id={id}>{children}</div>
+    {children}
     <span {...inputStyles.helpText}>{helpText}</span>
   </div>
 )
@@ -90,8 +90,8 @@ const ErrorField: FT<{
       <span
         id={errorMessageId}
         {...inputStyles.errorText}
-        aria-live='polite'
         role='alert'
+        aria-atomic='true'
       >
         {errorText}
       </span>
@@ -104,8 +104,21 @@ export const meta = {
 }
 
 export const basicInput = story({
-  intent: 'Create a basic text input field with placeholder text',
-  template: () => <TextInput placeholder='Enter your name' />,
+  intent: 'Create a basic text input field with label and placeholder text',
+  template: () => (
+    <div {...joinStyles(tokenStyles, inputStyles.fieldGroup)}>
+      <label
+        {...inputStyles.label}
+        htmlFor='basic-input'
+      >
+        Name
+      </label>
+      <TextInput
+        id='basic-input'
+        placeholder='Enter your name'
+      />
+    </div>
+  ),
   play: async ({ accessibilityCheck }) => {
     await accessibilityCheck({})
   },
@@ -114,10 +127,19 @@ export const basicInput = story({
 export const disabledInput = story({
   intent: 'Create a disabled text input that cannot be edited',
   template: () => (
-    <TextInput
-      placeholder='Cannot edit'
-      disabled
-    />
+    <div {...joinStyles(tokenStyles, inputStyles.fieldGroup)}>
+      <label
+        {...inputStyles.label}
+        htmlFor='disabled-input'
+      >
+        Disabled Field
+      </label>
+      <TextInput
+        id='disabled-input'
+        placeholder='Cannot edit'
+        disabled
+      />
+    </div>
   ),
   play: async ({ accessibilityCheck }) => {
     await accessibilityCheck({})
@@ -126,13 +148,34 @@ export const disabledInput = story({
 
 export const errorInput = story({
   intent: 'Create a text input showing error validation state',
-  template: () => (
-    <TextInput
-      placeholder='Invalid input'
-      data-state='error'
-      aria-invalid='true'
-    />
-  ),
+  template: () => {
+    const errorMessageId = 'error-input-error'
+    return (
+      <div {...joinStyles(tokenStyles, inputStyles.fieldGroup)}>
+        <label
+          {...inputStyles.label}
+          htmlFor='error-input'
+        >
+          Email Address
+        </label>
+        <TextInput
+          id='error-input'
+          placeholder='email@example.com'
+          data-state='error'
+          aria-invalid='true'
+          aria-errormessage={errorMessageId}
+        />
+        <span
+          id={errorMessageId}
+          {...inputStyles.errorText}
+          role='alert'
+          aria-atomic='true'
+        >
+          Please enter a valid email address
+        </span>
+      </div>
+    )
+  },
   play: async ({ accessibilityCheck }) => {
     await accessibilityCheck({})
   },
@@ -141,10 +184,19 @@ export const errorInput = story({
 export const successInput = story({
   intent: 'Create a text input showing success validation state',
   template: () => (
-    <TextInput
-      placeholder='Valid input'
-      data-state='success'
-    />
+    <div {...joinStyles(tokenStyles, inputStyles.fieldGroup)}>
+      <label
+        {...inputStyles.label}
+        htmlFor='success-input'
+      >
+        Username
+      </label>
+      <TextInput
+        id='success-input'
+        placeholder='Enter username'
+        data-state='success'
+      />
+    </div>
   ),
   play: async ({ accessibilityCheck }) => {
     await accessibilityCheck({})
@@ -154,10 +206,19 @@ export const successInput = story({
 export const warningInput = story({
   intent: 'Create a text input showing warning validation state',
   template: () => (
-    <TextInput
-      placeholder='Warning input'
-      data-state='warning'
-    />
+    <div {...joinStyles(tokenStyles, inputStyles.fieldGroup)}>
+      <label
+        {...inputStyles.label}
+        htmlFor='warning-input'
+      >
+        Password
+      </label>
+      <TextInput
+        id='warning-input'
+        placeholder='Enter password'
+        data-state='warning'
+      />
+    </div>
   ),
   play: async ({ accessibilityCheck }) => {
     await accessibilityCheck({})
@@ -172,7 +233,10 @@ export const labeledInput = story({
       label='Email Address'
       helpText="We'll never share your email"
     >
-      <TextInput placeholder='email@example.com' />
+      <TextInput
+        id='email-field'
+        placeholder='email@example.com'
+      />
     </LabeledField>
   ),
   play: async ({ accessibilityCheck }) => {
