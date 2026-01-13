@@ -62,7 +62,7 @@ export type FindByTestId = <T extends HTMLElement | SVGElement = HTMLElement | S
   ...args: FindByTestIdArgs
 ) => Promise<T | undefined>
 
-export type FindByTargetArgs = [testId: string | RegExp, context?: HTMLElement | SVGElement]
+export type FindByTargetArgs = [pTarget: string | RegExp, context?: HTMLElement | SVGElement]
 
 export type FindByTarget = <T extends HTMLElement | SVGElement = HTMLElement | SVGElement>(
   ...args: FindByTargetArgs
