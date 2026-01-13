@@ -1,76 +1,81 @@
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
+import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
 import { createSemanticCache, type SemanticCache } from '../semantic-cache.ts'
 
 // ============================================================================
-// FTS-only Tests (fast, no embedding model)
+// Semantic Cache Tests (requires Ollama)
 // ============================================================================
 
-describe('semantic cache (basic operations)', () => {
-  let cache: SemanticCache
+let sharedCache: SemanticCache
 
-  beforeEach(async () => {
-    // Use embeddings for all semantic cache tests
-    cache = await createSemanticCache({
-      similarityThreshold: 0.8,
-      maxEntries: 10,
-      ttlMs: 60000,
-    })
-  }, 120000) // 2 min timeout for model loading
-
-  afterEach(() => {
-    cache?.close()
+beforeAll(async () => {
+  const cache = await createSemanticCache({
+    similarityThreshold: 0.8,
+    maxEntries: 100,
+    ttlMs: 60000,
   })
+  expect(cache).toBeDefined()
+  sharedCache = cache!
+}, 120000) // 2 min timeout for model loading
 
+afterEach(() => {
+  sharedCache.clear()
+})
+
+afterAll(() => {
+  sharedCache.close()
+})
+
+describe('semantic cache (basic operations)', () => {
   test('stores and retrieves entries', async () => {
-    await cache.store('What is the capital of France?', 'Paris is the capital of France.')
+    await sharedCache.store('What is the capital of France?', 'Paris is the capital of France.')
 
-    const result = await cache.lookup('What is the capital of France?')
+    const result = await sharedCache.lookup('What is the capital of France?')
 
     expect(result.hit).toBe(true)
     expect(result.entry?.response).toBe('Paris is the capital of France.')
   })
 
   test('returns miss for dissimilar queries', async () => {
-    await cache.store('What is the capital of France?', 'Paris')
+    await sharedCache.store('What is the capital of France?', 'Paris')
 
-    const result = await cache.lookup('How do I write a for loop in Python?')
+    const result = await sharedCache.lookup('How do I write a for loop in Python?')
 
     expect(result.hit).toBe(false)
   })
 
   test('finds semantically similar queries', async () => {
-    await cache.store('What is the capital of France?', 'Paris is the capital of France.')
+    await sharedCache.store('What is the capital of France?', 'Paris is the capital of France.')
 
     // Similar query with different wording
-    const result = await cache.lookup("What's France's capital city?")
+    const result = await sharedCache.lookup("What's France's capital city?")
 
     expect(result.hit).toBe(true)
     expect(result.entry?.response).toBe('Paris is the capital of France.')
   })
 
   test('tracks hit count', async () => {
-    await cache.store('Test query', 'Test response')
+    await sharedCache.store('Test query', 'Test response')
 
-    await cache.lookup('Test query')
-    await cache.lookup('Test query')
-    const result = await cache.lookup('Test query')
+    await sharedCache.lookup('Test query')
+    await sharedCache.lookup('Test query')
+    const result = await sharedCache.lookup('Test query')
 
     expect(result.entry?.hitCount).toBe(3)
   })
 
   test('includes similarity score in result', async () => {
-    await cache.store('Hello world', 'Greeting response')
+    await sharedCache.store('Hello world', 'Greeting response')
 
-    const result = await cache.lookup('Hello world')
+    const result = await sharedCache.lookup('Hello world')
 
     expect(result.hit).toBe(true)
     expect(result.entry?.similarity).toBeGreaterThan(0.9)
   })
 
   test('includes lookup time', async () => {
-    await cache.store('Query', 'Response')
+    await sharedCache.store('Query', 'Response')
 
-    const result = await cache.lookup('Query')
+    const result = await sharedCache.lookup('Query')
 
     expect(result.lookupMs).toBeGreaterThan(0)
   })
@@ -81,58 +86,65 @@ describe('semantic cache (basic operations)', () => {
 // ============================================================================
 
 describe('semantic cache (management)', () => {
-  let cache: SemanticCache
-
-  beforeEach(async () => {
-    cache = await createSemanticCache({
-      maxEntries: 5,
-      ttlMs: 100, // 100ms TTL for testing
-    })
-  }, 120000)
-
-  afterEach(() => {
-    cache?.close()
-  })
-
   test('enforces max entries limit', async () => {
+    // Create a cache with small limit for this test
+    const smallCache = await createSemanticCache({
+      maxEntries: 5,
+      ttlMs: 60000,
+    })
+    expect(smallCache).toBeDefined()
+
     // Store 6 entries (max is 5)
     for (let i = 0; i < 6; i++) {
-      await cache.store(`Query ${i}`, `Response ${i}`)
+      await smallCache!.store(`Query ${i}`, `Response ${i}`)
     }
 
-    const stats = cache.stats()
+    const stats = smallCache!.stats()
     expect(stats.totalEntries).toBeLessThanOrEqual(5)
+    smallCache!.close()
   })
 
   test('clears all entries', async () => {
-    await cache.store('Query 1', 'Response 1')
-    await cache.store('Query 2', 'Response 2')
+    await sharedCache.store('Query 1', 'Response 1')
+    await sharedCache.store('Query 2', 'Response 2')
 
-    cache.clear()
+    sharedCache.clear()
 
-    const stats = cache.stats()
+    const stats = sharedCache.stats()
     expect(stats.totalEntries).toBe(0)
   })
 
   test('clears expired entries', async () => {
-    await cache.store('Query', 'Response')
+    const shortTtlCache = await createSemanticCache({
+      ttlMs: 100, // 100ms TTL for testing
+    })
+    expect(shortTtlCache).toBeDefined()
+
+    await shortTtlCache?.store('Query', 'Response')
 
     // Wait for TTL to expire
     await new Promise((resolve) => setTimeout(resolve, 150))
 
-    const cleared = cache.clearExpired()
+    const cleared = shortTtlCache!.clearExpired()
     expect(cleared).toBe(1)
-    expect(cache.stats().totalEntries).toBe(0)
+    expect(shortTtlCache?.stats().totalEntries).toBe(0)
+    shortTtlCache?.close()
   })
 
   test('respects TTL on lookup', async () => {
-    await cache.store('Query', 'Response')
+    const shortTtlCache = await createSemanticCache({
+      ttlMs: 100, // 100ms TTL for testing
+    })
+    expect(shortTtlCache).toBeDefined()
+
+    await shortTtlCache?.store('Query', 'Response')
 
     // Wait for TTL to expire
     await new Promise((resolve) => setTimeout(resolve, 150))
 
-    const result = await cache.lookup('Query')
+    const result = await shortTtlCache!.lookup('Query')
     expect(result.hit).toBe(false)
+    shortTtlCache!.close()
   })
 })
 
@@ -141,54 +153,44 @@ describe('semantic cache (management)', () => {
 // ============================================================================
 
 describe('semantic cache (statistics)', () => {
-  let cache: SemanticCache
-
-  beforeEach(async () => {
-    cache = await createSemanticCache()
-  }, 120000)
-
-  afterEach(() => {
-    cache?.close()
-  })
-
   test('tracks total entries', async () => {
-    await cache.store('Q1', 'R1')
-    await cache.store('Q2', 'R2')
+    await sharedCache.store('Q1', 'R1')
+    await sharedCache.store('Q2', 'R2')
 
-    expect(cache.stats().totalEntries).toBe(2)
+    expect(sharedCache.stats().totalEntries).toBe(2)
   })
 
   test('tracks hits and misses', async () => {
-    await cache.store('Query', 'Response')
+    await sharedCache.store('Query', 'Response')
 
-    await cache.lookup('Query') // hit
-    await cache.lookup('Query') // hit
-    await cache.lookup('Unknown query about something else entirely') // miss
+    await sharedCache.lookup('Query') // hit
+    await sharedCache.lookup('Query') // hit
+    await sharedCache.lookup('Unknown query about something else entirely') // miss
 
-    const stats = cache.stats()
+    const stats = sharedCache.stats()
     expect(stats.totalHits).toBe(2)
     expect(stats.totalMisses).toBe(1)
   })
 
   test('calculates hit rate', async () => {
-    await cache.store('Query', 'Response')
+    await sharedCache.store('Query', 'Response')
 
-    await cache.lookup('Query') // hit
-    await cache.lookup('Query') // hit
-    await cache.lookup('Different query about unrelated topic') // miss
-    await cache.lookup('Another unrelated query') // miss
+    await sharedCache.lookup('Query') // hit
+    await sharedCache.lookup('Query') // hit
+    await sharedCache.lookup('Different query about unrelated topic') // miss
+    await sharedCache.lookup('Another unrelated query') // miss
 
-    const stats = cache.stats()
+    const stats = sharedCache.stats()
     expect(stats.hitRate).toBe(0.5)
   })
 
   test('calculates average similarity', async () => {
-    await cache.store('Hello world', 'Response')
+    await sharedCache.store('Hello world', 'Response')
 
-    await cache.lookup('Hello world')
-    await cache.lookup('Hello world')
+    await sharedCache.lookup('Hello world')
+    await sharedCache.lookup('Hello world')
 
-    const stats = cache.stats()
+    const stats = sharedCache.stats()
     expect(stats.avgSimilarity).toBeGreaterThan(0.9)
   })
 })
@@ -198,20 +200,10 @@ describe('semantic cache (statistics)', () => {
 // ============================================================================
 
 describe('semantic cache (getOrCompute)', () => {
-  let cache: SemanticCache
-
-  beforeEach(async () => {
-    cache = await createSemanticCache()
-  }, 120000)
-
-  afterEach(() => {
-    cache?.close()
-  })
-
   test('computes and caches on miss', async () => {
     let computeCalled = false
 
-    const result = await cache.getOrCompute('New query', async () => {
+    const result = await sharedCache.getOrCompute('New query', async () => {
       computeCalled = true
       return 'Computed response'
     })
@@ -221,15 +213,15 @@ describe('semantic cache (getOrCompute)', () => {
     expect(result.cached).toBe(false)
 
     // Should be cached now
-    const stats = cache.stats()
+    const stats = sharedCache.stats()
     expect(stats.totalEntries).toBe(1)
   })
 
   test('returns cached response on hit', async () => {
-    await cache.store('Existing query', 'Cached response')
+    await sharedCache.store('Existing query', 'Cached response')
     let computeCalled = false
 
-    const result = await cache.getOrCompute('Existing query', async () => {
+    const result = await sharedCache.getOrCompute('Existing query', async () => {
       computeCalled = true
       return 'Should not be called'
     })
@@ -245,53 +237,54 @@ describe('semantic cache (getOrCompute)', () => {
 // ============================================================================
 
 describe('semantic cache (edge cases)', () => {
-  test('handles empty cache', async () => {
-    const cache = await createSemanticCache()
+  test('returns undefined when Ollama unavailable', async () => {
+    const cache = await createSemanticCache({
+      embedder: {
+        baseUrl: 'http://localhost:99999', // Invalid port
+        autoStart: false,
+        autoPull: false,
+      },
+    })
 
-    const result = await cache.lookup('Any query')
+    expect(cache).toBeUndefined()
+  }, 120000)
+
+  test('handles empty cache', async () => {
+    const freshCache = await createSemanticCache()
+    expect(freshCache).toBeDefined()
+
+    const result = await freshCache!.lookup('Any query')
 
     expect(result.hit).toBe(false)
-    expect(cache.stats().totalEntries).toBe(0)
+    expect(freshCache!.stats().totalEntries).toBe(0)
 
-    cache.close()
-  }, 120000)
+    freshCache!.close()
+  })
 
   test('handles special characters in query', async () => {
-    const cache = await createSemanticCache()
+    await sharedCache.store('Query with "quotes" and <brackets>', 'Response')
 
-    await cache.store('Query with "quotes" and <brackets>', 'Response')
-
-    const result = await cache.lookup('Query with "quotes" and <brackets>')
+    const result = await sharedCache.lookup('Query with "quotes" and <brackets>')
 
     expect(result.hit).toBe(true)
-
-    cache.close()
-  }, 120000)
+  })
 
   test('handles unicode in query', async () => {
-    const cache = await createSemanticCache()
+    await sharedCache.store('日本語のクエリ', '日本語の応答')
 
-    await cache.store('日本語のクエリ', '日本語の応答')
-
-    const result = await cache.lookup('日本語のクエリ')
+    const result = await sharedCache.lookup('日本語のクエリ')
 
     expect(result.hit).toBe(true)
     expect(result.entry?.response).toBe('日本語の応答')
-
-    cache.close()
-  }, 120000)
+  })
 
   test('handles very long responses', async () => {
-    const cache = await createSemanticCache()
-
     const longResponse = 'x'.repeat(100000)
-    await cache.store('Long response query', longResponse)
+    await sharedCache.store('Long response query', longResponse)
 
-    const result = await cache.lookup('Long response query')
+    const result = await sharedCache.lookup('Long response query')
 
     expect(result.hit).toBe(true)
     expect(result.entry?.response.length).toBe(100000)
-
-    cache.close()
-  }, 120000)
+  })
 })

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import type { ToolSchema } from '../agent.types.ts'
 import {
   createToolDiscovery,
@@ -380,21 +380,21 @@ describe('embedder config resolution', () => {
 })
 
 // ============================================================================
-// Hybrid Search Tests (requires model download - cached in CI)
+// Hybrid Search Tests (requires Ollama)
 // ============================================================================
 
 describe('hybrid search (vector + FTS5)', () => {
   let discovery: ToolDiscovery
 
-  beforeEach(async () => {
-    // Enable hybrid search with default model
+  beforeAll(async () => {
     discovery = await createToolDiscovery({ embedder: true })
+    expect(discovery.stats().vectorSearchEnabled).toBe(true)
     const tools = testSchemas.map((s) => schemaToIndexedTool(s))
     await discovery.indexBatch(tools)
   }, 120000) // 2 min timeout for model loading
 
-  afterEach(async () => {
-    await discovery?.close()
+  afterAll(async () => {
+    await discovery.close()
   })
 
   test('enables vector search when embedder: true', () => {
@@ -412,12 +412,12 @@ describe('hybrid search (vector + FTS5)', () => {
     expect(names).toContain('writeTemplate')
   })
 
-  test('includes vectorDistance in results', async () => {
+  test('includes vectorSimilarity in results', async () => {
     const results = await discovery.search('write a template')
 
     expect(results.length).toBeGreaterThan(0)
-    // At least one result should have vectorDistance
-    const hasVectorResult = results.some((r) => r.vectorDistance !== undefined)
+    // At least one result should have vectorSimilarity
+    const hasVectorResult = results.some((r) => r.vectorSimilarity !== undefined)
     expect(hasVectorResult).toBe(true)
   })
 
@@ -449,31 +449,38 @@ describe('hybrid search (vector + FTS5)', () => {
 })
 
 // ============================================================================
-// Custom Model Tests
+// Custom Ollama Config Tests
 // ============================================================================
 
 describe('custom embedder config', () => {
-  test('accepts custom model configuration', async () => {
+  test('accepts custom Ollama model configuration', async () => {
     const discovery = await createToolDiscovery({
       embedder: {
-        model: 'Xenova/all-MiniLM-L6-v2',
-        dtype: 'q8',
-        device: 'cpu',
+        model: 'all-minilm',
+        baseUrl: 'http://localhost:11434',
+        autoStart: true,
+        autoPull: true,
       },
     })
 
-    expect(discovery.stats().vectorSearchEnabled).toBe(true)
-    await discovery.close()
+    // vectorSearchEnabled depends on whether Ollama is installed
+    // If Ollama is available, this will be true; otherwise false (graceful fallback)
+    const stats = discovery.stats()
+    expect(typeof stats.vectorSearchEnabled).toBe('boolean')
+    discovery.close()
   }, 120000)
 
-  test('auto device detection works', async () => {
+  test('gracefully disables vector search when Ollama unavailable', async () => {
     const discovery = await createToolDiscovery({
       embedder: {
-        device: 'auto',
+        baseUrl: 'http://localhost:99999', // Invalid port
+        autoStart: false,
+        autoPull: false,
       },
     })
 
-    expect(discovery.stats().vectorSearchEnabled).toBe(true)
-    await discovery.close()
+    // Should gracefully fall back to FTS5 only
+    expect(discovery.stats().vectorSearchEnabled).toBe(false)
+    discovery.close()
   }, 120000)
 })

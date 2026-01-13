@@ -1,3 +1,25 @@
+/**
+ * Agent dev server subprocess entry point.
+ *
+ * @remarks
+ * Designed to be spawned via `Bun.spawn()` rather than invoked directly from CLI.
+ * Parses arguments and starts the workshop server for story-based template
+ * development and testing.
+ *
+ * **Subprocess Usage:**
+ * ```typescript
+ * Bun.spawn(['bun', 'src/agent/start-server.ts', ...paths, '--port', '3000'])
+ * ```
+ *
+ * **Arguments:**
+ * - `[paths...]` - Directories to scan for stories
+ * - `--port <number>` - Server port (default: auto-assigned)
+ * - `--cwd <path>` - Working directory
+ * - `--color-scheme <light|dark>` - UI color scheme (default: light)
+ *
+ * @module
+ */
+
 import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 import { getServer } from '../workshop.ts'

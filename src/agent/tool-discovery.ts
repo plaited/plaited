@@ -1,45 +1,32 @@
 /**
- * Progressive Tool Discovery with FTS5 + optional vector search.
+ * Progressive Tool Discovery with FTS5 + optional Ollama vector search.
  *
  * @remarks
  * Provides context-aware tool filtering to reduce token costs by exposing
- * only relevant tools for a given intent. Supports:
+ * only relevant tools for a given intent.
+ *
+ * **Capabilities:**
  * - FTS5 full-text search for keyword matching (default, zero dependencies)
- * - Optional vector search via Transformers.js embeddings with pure JS cosine similarity
- * - Reciprocal Rank Fusion for hybrid scoring
+ * - Optional vector search via Ollama embeddings with pure JS cosine similarity
+ * - Reciprocal Rank Fusion (RRF) for hybrid scoring
  *
- * Default: FTS5 only (zero config, works everywhere)
- * Opt-in: Set `embedder: true` for hybrid search with `Xenova/multilingual-e5-small`
+ * **Configuration:**
+ * - Default: FTS5 only (zero config, works everywhere)
+ * - Opt-in: Set `embedder: true` for hybrid search with Ollama
  *
- * Note: Uses pure JavaScript cosine similarity instead of sqlite-vec since Bun's
- * built-in SQLite doesn't support dynamic extension loading.
+ * **Requirements for vector search:**
+ * - Ollama installed from https://ollama.com
+ * - Default model: all-minilm (22MB, 384 dimensions)
+ *
+ * **Graceful Degradation:**
+ * - If Ollama not available, falls back to FTS5-only search
+ *
+ * @module
  */
 
 import { Database } from 'bun:sqlite'
+import { $ } from 'bun'
 import type { EmbedderConfig, ToolSchema, ToolSource } from './agent.types.ts'
-
-// ============================================================================
-// Vector Math Utilities
-// ============================================================================
-
-/**
- * Computes cosine similarity between two vectors.
- *
- * @internal
- */
-const cosineSimilarity = (a: Float32Array, b: Float32Array): number => {
-  let dotProduct = 0
-  let normA = 0
-  let normB = 0
-
-  for (let i = 0; i < a.length; i++) {
-    dotProduct += a[i]! * b[i]!
-    normA += a[i]! * a[i]!
-    normB += b[i]! * b[i]!
-  }
-
-  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB))
-}
 
 // ============================================================================
 // Types
@@ -54,8 +41,8 @@ export type ToolDiscoveryConfig = {
   /**
    * Embedder configuration for vector search.
    * - `undefined` or `false` - FTS5 only (default)
-   * - `true` - Hybrid with default model (Xenova/multilingual-e5-small)
-   * - `EmbedderConfig` - Hybrid with custom model
+   * - `true` - Hybrid with default Ollama model (all-minilm)
+   * - `EmbedderConfig` - Hybrid with custom Ollama model
    */
   embedder?: boolean | EmbedderConfig
 }
@@ -81,8 +68,8 @@ export type ToolMatch = {
   score: number
   /** FTS5 rank if matched via keywords */
   ftsRank?: number
-  /** Vector distance if matched via embedding */
-  vectorDistance?: number
+  /** Vector similarity if matched via embedding (0-1, higher is more similar) */
+  vectorSimilarity?: number
 }
 
 /**
@@ -124,17 +111,75 @@ export type ToolDiscovery = {
   remove: (name: string) => void
   clearSource: (source: ToolSource) => void
   stats: () => ToolDiscoveryStats
-  /** Closes the discovery registry and disposes any ML model resources */
-  close: () => Promise<void>
+  /** Closes the discovery registry */
+  close: () => void
 }
 
 // ============================================================================
-// Embedder Factory
+// Pure JS Vector Search
 // ============================================================================
+
+/**
+ * Computes cosine similarity between two vectors.
+ *
+ * @internal
+ */
+const cosineSimilarity = (a: Float32Array, b: Float32Array): number => {
+  let dot = 0
+  let normA = 0
+  let normB = 0
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i]! * b[i]!
+    normA += a[i]! * a[i]!
+    normB += b[i]! * b[i]!
+  }
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB))
+}
+
+/**
+ * Finds top-k most similar vectors using linear search.
+ *
+ * @internal
+ */
+const findTopSimilar = (
+  query: Float32Array,
+  embeddings: Map<number, Float32Array>,
+  limit: number,
+): Array<{ rowid: number; similarity: number }> => {
+  const results: Array<{ rowid: number; similarity: number }> = []
+
+  for (const [rowid, embedding] of embeddings) {
+    const similarity = cosineSimilarity(query, embedding)
+    results.push({ rowid, similarity })
+  }
+
+  // Sort by similarity descending and take top k
+  return results.sort((a, b) => b.similarity - a.similarity).slice(0, limit)
+}
+
+// ============================================================================
+// Ollama Embedder
+// ============================================================================
+
+const DEFAULT_MODEL = 'all-minilm'
+const DEFAULT_BASE_URL = 'http://localhost:11434'
 
 type EmbedderFn = (text: string) => Promise<Float32Array>
 
-const DEFAULT_MODEL = 'Xenova/multilingual-e5-small'
+/**
+ * Ollama embedding response.
+ */
+type OllamaEmbedResponse = {
+  embeddings: number[][]
+}
+
+/**
+ * Embedder with cleanup support.
+ */
+type Embedder = {
+  embed: EmbedderFn
+  dimensions: number
+}
 
 /**
  * Resolves embedder config from boolean or object.
@@ -148,48 +193,74 @@ const resolveEmbedderConfig = (config: boolean | EmbedderConfig): EmbedderConfig
 }
 
 /**
- * Embedder with cleanup support.
- */
-type Embedder = {
-  embed: EmbedderFn
-  dispose: () => Promise<void>
-}
-
-/**
- * Creates an embedder using Transformers.js with proper cleanup.
+ * Creates an embedder using Ollama's local embedding API.
  *
  * @remarks
- * Dynamically imports @huggingface/transformers to avoid requiring
- * it when vector search is disabled. Models are cached locally
- * after first download. Provides `dispose()` for cleanup.
+ * Automatically starts Ollama server and pulls the model if needed.
+ * Uses pure fetch() for HTTP calls - no additional dependencies.
  *
  * @internal
  */
-const createEmbedder = async (config: EmbedderConfig): Promise<Embedder> => {
-  const { model = DEFAULT_MODEL, dtype = 'q8', device = 'auto' } = config
+const createOllamaEmbedder = async (config: EmbedderConfig): Promise<Embedder | undefined> => {
+  const { model = DEFAULT_MODEL, baseUrl = DEFAULT_BASE_URL, autoStart = true, autoPull = true } = config
 
-  // Dynamic import to avoid dependency when not using vector search
-  const { pipeline } = await import('@huggingface/transformers')
-
-  const extractor = await pipeline('feature-extraction', model, {
-    dtype,
-    device,
-  })
-
-  // E5 models require query/passage prefix for best results
-  const isE5Model = model.toLowerCase().includes('e5')
-
-  const embed = async (text: string): Promise<Float32Array> => {
-    const input = isE5Model ? `query: ${text}` : text
-    const output = await extractor(input, { pooling: 'mean', normalize: true })
-    return new Float32Array(output.data as ArrayLike<number>)
+  // Check if Ollama is installed
+  const ollamaPath = Bun.which('ollama')
+  if (!ollamaPath) {
+    // Gracefully disable vector search if Ollama not installed
+    console.warn('Ollama not installed. Vector search disabled, using FTS5 only.')
+    return undefined
   }
 
-  const dispose = async (): Promise<void> => {
-    await extractor.dispose()
-  }
+  try {
+    // Check if server is running, start if needed
+    if (autoStart) {
+      const isRunning = await $`ollama list`
+        .quiet()
+        .then(() => true)
+        .catch(() => false)
+      if (!isRunning) {
+        // Start Ollama server in background (fire and forget)
+        Bun.spawn(['ollama', 'serve'], {
+          stdout: 'ignore',
+          stderr: 'ignore',
+        })
+        // Wait for server to start
+        await Bun.sleep(2000)
+      }
+    }
 
-  return { embed, dispose }
+    // Pull model if needed
+    if (autoPull) {
+      await $`ollama pull ${model}`.quiet()
+    }
+
+    const embedUrl = `${baseUrl}/api/embed`
+
+    const embed = async (text: string): Promise<Float32Array> => {
+      const response = await fetch(embedUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model, input: text }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Ollama embed failed: ${response.status} ${response.statusText}`)
+      }
+
+      const data = (await response.json()) as OllamaEmbedResponse
+      return new Float32Array(data.embeddings[0]!)
+    }
+
+    // Get dimensions from a test embedding
+    const testEmbedding = await embed('test')
+
+    return { embed, dimensions: testEmbedding.length }
+  } catch (error) {
+    // Gracefully disable vector search on any error
+    console.warn('Failed to initialize Ollama embedder. Vector search disabled, using FTS5 only.', error)
+    return undefined
+  }
 }
 
 // ============================================================================
@@ -201,8 +272,8 @@ const createEmbedder = async (config: EmbedderConfig): Promise<Embedder> => {
  *
  * @internal
  */
-const createSchema = (db: Database, _enableVector: boolean) => {
-  // Main tools table (with optional embedding stored as JSON)
+const createSchema = (db: Database) => {
+  // Main tools table
   db.run(`
     CREATE TABLE IF NOT EXISTS tools (
       rowid INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -211,8 +282,7 @@ const createSchema = (db: Database, _enableVector: boolean) => {
       keywords TEXT NOT NULL,
       source TEXT NOT NULL,
       source_url TEXT,
-      schema_json TEXT NOT NULL,
-      embedding_json TEXT
+      schema_json TEXT NOT NULL
     )
   `)
 
@@ -231,40 +301,47 @@ const createSchema = (db: Database, _enableVector: boolean) => {
 // ============================================================================
 
 /**
- * Creates a tool discovery registry with FTS5 + optional vector search.
+ * Creates a tool discovery registry with FTS5 + optional Ollama vector search.
  *
- * @param config - Discovery configuration
- * @returns Tool discovery registry
+ * @param config - Discovery configuration options
+ * @returns Promise resolving to tool discovery registry
  *
  * @remarks
  * By default, uses FTS5 only (zero external dependencies).
- * Set `embedder: true` for hybrid search with the default model
- * (`Xenova/multilingual-e5-small` - 118MB, 100 languages, 384 dims).
+ * Set `embedder: true` for hybrid search with Ollama's default model
+ * (`all-minilm` - 22MB, 384 dims).
  *
- * See `src/agent-next/tests/tool-discovery.spec.ts` for usage patterns.
+ * Vector search uses in-memory storage with pure JavaScript cosine similarity,
+ * making it cross-platform compatible (macOS, Linux, Windows).
+ *
+ * If Ollama is not installed or fails to start, gracefully falls back
+ * to FTS5-only search.
  */
 export const createToolDiscovery = async (config: ToolDiscoveryConfig = {}): Promise<ToolDiscovery> => {
   const { dbPath = ':memory:', embedder: embedderInput } = config
 
   // Resolve embedder config
   const embedderConfig = embedderInput ? resolveEmbedderConfig(embedderInput) : undefined
-  const enableVectorSearch = embedderConfig !== undefined
 
   const db = new Database(dbPath)
 
-  // Create schema
-  createSchema(db, enableVectorSearch)
+  // Initialize embedder if configured (may return undefined if Ollama unavailable)
+  const embedder = embedderConfig ? await createOllamaEmbedder(embedderConfig) : undefined
+  const enableVectorSearch = embedder !== undefined
 
-  // Initialize embedder if configured
-  const embedder = embedderConfig ? await createEmbedder(embedderConfig) : undefined
+  // Create schema
+  createSchema(db)
 
   // In-memory cache for fast access
   const toolCache = new Map<string, IndexedTool>()
 
+  // In-memory embeddings storage (rowid → embedding)
+  const embeddings = new Map<number, Float32Array>()
+
   // Prepared statements
   const insertStmt = db.prepare(`
-    INSERT OR REPLACE INTO tools (name, description, keywords, source, source_url, schema_json, embedding_json)
-    VALUES ($name, $description, $keywords, $source, $sourceUrl, $schemaJson, $embeddingJson)
+    INSERT OR REPLACE INTO tools (name, description, keywords, source, source_url, schema_json)
+    VALUES ($name, $description, $keywords, $source, $sourceUrl, $schemaJson)
   `)
 
   const insertFtsStmt = db.prepare(`
@@ -286,24 +363,26 @@ export const createToolDiscovery = async (config: ToolDiscoveryConfig = {}): Pro
   const deleteStmt = db.prepare(`DELETE FROM tools WHERE name = $name`)
   const deleteBySourceStmt = db.prepare(`DELETE FROM tools WHERE source = $source`)
 
-  // In-memory vector index (pure JS approach since Bun's SQLite doesn't support loadExtension)
-  const vectorIndex = new Map<string, Float32Array>()
+  const getRowidByNameStmt = db.prepare<{ rowid: number }, { $name: string }>(`
+    SELECT rowid FROM tools WHERE name = $name
+  `)
+
+  // Get tool name by rowid
+  const getNameByRowidStmt = db.prepare<{ name: string }, { $rowid: number }>(`
+    SELECT name FROM tools WHERE rowid = $rowid
+  `)
 
   const discovery: ToolDiscovery = {
     async index(tool: IndexedTool): Promise<void> {
       const keywordsStr = tool.keywords.join(' ')
 
-      // Delete existing FTS entry if replacing
+      // Delete existing entries if replacing
       if (toolCache.has(tool.name)) {
+        const existing = getRowidByNameStmt.get({ $name: tool.name })
+        if (existing) {
+          embeddings.delete(existing.rowid)
+        }
         deleteFtsStmt.run({ $name: tool.name })
-      }
-
-      // Compute embedding if enabled
-      let embeddingJson: string | null = null
-      if (enableVectorSearch && embedder) {
-        const embedding = await embedder.embed(`${tool.name} ${tool.description}`)
-        embeddingJson = JSON.stringify(Array.from(embedding))
-        vectorIndex.set(tool.name, embedding)
       }
 
       insertStmt.run({
@@ -313,8 +392,11 @@ export const createToolDiscovery = async (config: ToolDiscoveryConfig = {}): Pro
         $source: tool.source,
         $sourceUrl: tool.sourceUrl ?? null,
         $schemaJson: JSON.stringify(tool.schema),
-        $embeddingJson: embeddingJson,
       })
+
+      // Get the rowid of the inserted/replaced row
+      const row = getRowidByNameStmt.get({ $name: tool.name })
+      const rowid = row!.rowid
 
       insertFtsStmt.run({
         $name: tool.name,
@@ -322,17 +404,22 @@ export const createToolDiscovery = async (config: ToolDiscoveryConfig = {}): Pro
         $keywords: keywordsStr,
       })
 
+      // Compute and store embedding if enabled
+      if (enableVectorSearch && embedder) {
+        const embedding = await embedder.embed(`${tool.name} ${tool.description}`)
+        embeddings.set(rowid, embedding)
+      }
+
       toolCache.set(tool.name, tool)
     },
 
     async indexBatch(tools: IndexedTool[]): Promise<void> {
       // Compute embeddings first if enabled (async operations outside transaction)
-      const embeddings = new Map<string, Float32Array>()
+      const toolEmbeddings = new Map<string, Float32Array>()
       if (enableVectorSearch && embedder) {
         for (const tool of tools) {
           const embedding = await embedder.embed(`${tool.name} ${tool.description}`)
-          embeddings.set(tool.name, embedding)
-          vectorIndex.set(tool.name, embedding)
+          toolEmbeddings.set(tool.name, embedding)
         }
       }
 
@@ -341,11 +428,12 @@ export const createToolDiscovery = async (config: ToolDiscoveryConfig = {}): Pro
           const keywordsStr = tool.keywords.join(' ')
 
           if (toolCache.has(tool.name)) {
+            const existing = getRowidByNameStmt.get({ $name: tool.name })
+            if (existing) {
+              embeddings.delete(existing.rowid)
+            }
             deleteFtsStmt.run({ $name: tool.name })
           }
-
-          const embedding = embeddings.get(tool.name)
-          const embeddingJson = embedding ? JSON.stringify(Array.from(embedding)) : null
 
           insertStmt.run({
             $name: tool.name,
@@ -354,14 +442,23 @@ export const createToolDiscovery = async (config: ToolDiscoveryConfig = {}): Pro
             $source: tool.source,
             $sourceUrl: tool.sourceUrl ?? null,
             $schemaJson: JSON.stringify(tool.schema),
-            $embeddingJson: embeddingJson,
           })
+
+          // Get the rowid
+          const row = getRowidByNameStmt.get({ $name: tool.name })
+          const rowid = row!.rowid
 
           insertFtsStmt.run({
             $name: tool.name,
             $description: tool.description,
             $keywords: keywordsStr,
           })
+
+          // Store embedding if available
+          const embedding = toolEmbeddings.get(tool.name)
+          if (embedding) {
+            embeddings.set(rowid, embedding)
+          }
 
           toolCache.set(tool.name, tool)
         }
@@ -391,24 +488,16 @@ export const createToolDiscovery = async (config: ToolDiscoveryConfig = {}): Pro
       }
 
       // Vector search using pure JS cosine similarity (if enabled)
-      if (enableVectorSearch && embedder && vectorIndex.size > 0) {
+      if (enableVectorSearch && embedder && embeddings.size > 0) {
         const queryVec = await embedder.embed(intent)
 
-        // Compute similarity scores for all indexed vectors
-        const similarities: Array<{ name: string; similarity: number }> = []
-        for (const [name, embedding] of vectorIndex) {
-          const similarity = cosineSimilarity(queryVec, embedding)
-          similarities.push({ name, similarity })
-        }
-
-        // Sort by similarity (descending) and take top results
-        similarities.sort((a, b) => b.similarity - a.similarity)
-        const topMatches = similarities.slice(0, limit * 2)
+        const topMatches = findTopSimilar(queryVec, embeddings, limit * 2)
 
         for (const match of topMatches) {
-          // Normalize similarity to 0-1 range (cosine similarity is already -1 to 1)
-          const normalizedSimilarity = (match.similarity + 1) / 2
-          vecResults.set(match.name, normalizedSimilarity)
+          const nameResult = getNameByRowidStmt.get({ $rowid: match.rowid })
+          if (nameResult) {
+            vecResults.set(nameResult.name, match.similarity)
+          }
         }
       }
 
@@ -435,7 +524,7 @@ export const createToolDiscovery = async (config: ToolDiscoveryConfig = {}): Pro
 
       // Process vector results
       let vecRank = 1
-      for (const [name, distance] of [...vecResults.entries()].sort((a, b) => b[1] - a[1])) {
+      for (const [name, similarity] of [...vecResults.entries()].sort((a, b) => b[1] - a[1])) {
         const tool = toolCache.get(name)
         if (!tool) continue
         if (source && tool.source !== source) continue
@@ -446,12 +535,12 @@ export const createToolDiscovery = async (config: ToolDiscoveryConfig = {}): Pro
         const existing = combinedScores.get(name)
         if (existing) {
           existing.score += rrfScore
-          existing.vectorDistance = distance
+          existing.vectorSimilarity = similarity
         } else {
           combinedScores.set(name, {
             tool,
             score: rrfScore,
-            vectorDistance: distance,
+            vectorSimilarity: similarity,
           })
         }
       }
@@ -471,18 +560,26 @@ export const createToolDiscovery = async (config: ToolDiscoveryConfig = {}): Pro
     },
 
     remove(name: string): void {
+      // Delete from in-memory embeddings
+      const existing = getRowidByNameStmt.get({ $name: name })
+      if (existing) {
+        embeddings.delete(existing.rowid)
+      }
       deleteFtsStmt.run({ $name: name })
       deleteStmt.run({ $name: name })
       toolCache.delete(name)
-      vectorIndex.delete(name)
     },
 
     clearSource(source: ToolSource): void {
       const tools = discovery.bySource(source)
       for (const tool of tools) {
+        // Delete from in-memory embeddings
+        const existing = getRowidByNameStmt.get({ $name: tool.name })
+        if (existing) {
+          embeddings.delete(existing.rowid)
+        }
         deleteFtsStmt.run({ $name: tool.name })
         toolCache.delete(tool.name)
-        vectorIndex.delete(tool.name)
       }
       deleteBySourceStmt.run({ $source: source })
     },
@@ -497,11 +594,9 @@ export const createToolDiscovery = async (config: ToolDiscoveryConfig = {}): Pro
       }
     },
 
-    async close(): Promise<void> {
-      // Dispose embedder to release ML model resources
-      if (embedder) {
-        await embedder.dispose()
-      }
+    close(): void {
+      // Clear in-memory embeddings
+      embeddings.clear()
       db.close()
     },
   }
@@ -560,15 +655,14 @@ export const schemaToIndexedTool = (
  *
  * @internal
  */
-const sanitizeFtsQuery = (query: string): string => {
-  return query
+const sanitizeFtsQuery = (query: string): string =>
+  query
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, '')
     .split(/\s+/)
     .filter((w) => w.length > 1)
     .map((w) => `${w}*`)
     .join(' OR ')
-}
 
 /**
  * Filters tool schemas based on intent using discovery.

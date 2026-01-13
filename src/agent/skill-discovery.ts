@@ -3,7 +3,8 @@
  *
  * @remarks
  * Discovers and indexes skills from file system following the AgentSkills spec.
- * Supports:
+ *
+ * **Capabilities:**
  * - Scanning directories for SKILL.md files
  * - Parsing frontmatter metadata (name, description)
  * - Discovering executable scripts in `<skill>/scripts/`
@@ -11,7 +12,9 @@
  * - Generating XML context for system prompts
  * - Converting scripts to tool schemas
  *
- * See https://agentskills.io/specification for the AgentSkills spec.
+ * @see {@link https://agentskills.io/specification | AgentSkills Specification}
+ *
+ * @module
  */
 
 import { basename, dirname, extname, join } from 'node:path'
@@ -94,6 +97,9 @@ export type DiscoveryOptions = {
 /**
  * Parses YAML frontmatter from SKILL.md content.
  *
+ * @param content - Raw markdown content with frontmatter
+ * @returns Parsed frontmatter as key-value pairs
+ *
  * @internal
  */
 const parseFrontmatter = (content: string): Record<string, unknown> => {
@@ -143,6 +149,9 @@ const parseFrontmatter = (content: string): Record<string, unknown> => {
 /**
  * Extracts JSDoc description from script content.
  *
+ * @param content - Script source code
+ * @returns First paragraph of JSDoc or leading comment, or undefined if none found
+ *
  * @internal
  */
 const extractJSDocDescription = (content: string): string | undefined => {
@@ -175,6 +184,9 @@ const extractJSDocDescription = (content: string): string | undefined => {
 
 /**
  * Extracts parameters from Bun's parseArgs usage in TypeScript/JavaScript.
+ *
+ * @param content - Script source code containing parseArgs call
+ * @returns Array of extracted parameter metadata
  *
  * @internal
  */
@@ -213,6 +225,9 @@ const extractParseArgsParams = (content: string): ScriptParameter[] => {
 
 /**
  * Extracts parameters from Python argparse usage.
+ *
+ * @param content - Python script source code containing argparse calls
+ * @returns Array of extracted parameter metadata
  *
  * @internal
  */
@@ -257,14 +272,12 @@ const extractArgparseParams = (content: string): ScriptParameter[] => {
 /**
  * Discovers skills in a directory by scanning for SKILL.md files.
  *
- * @param rootDir - Root directory to scan
- * @returns Array of discovered skill metadata
+ * @param rootDir - Root directory to scan (relative to cwd)
+ * @returns Promise resolving to array of discovered skill metadata
  *
  * @remarks
  * Scans one level deep for directories containing SKILL.md files.
  * Parses frontmatter to extract name, description, and optional fields.
- *
- * See `src/agent-next/tests/skill-discovery.spec.ts` for usage patterns.
  */
 export const discoverSkills = async (rootDir: string): Promise<SkillMetadata[]> => {
   const skills: SkillMetadata[] = []
