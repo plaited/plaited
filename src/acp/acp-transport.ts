@@ -71,7 +71,7 @@ type PipedSubprocess = {
 }
 
 /** Custom error for ACP transport failures */
-export class ACPTransportError extends Error {
+class ACPTransportError extends Error {
   constructor(
     message: string,
     public readonly code?: number,
@@ -446,6 +446,3 @@ export const createACPTransport = (config: ACPTransportConfig) => {
     isConnected,
   }
 }
-
-/** Transport instance type */
-export type ACPTransport = ReturnType<typeof createACPTransport>

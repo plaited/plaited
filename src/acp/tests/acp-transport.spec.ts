@@ -1,47 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { ACPTransportError } from '../acp-transport.ts'
-
-// ============================================================================
-// ACPTransportError Tests
-// ============================================================================
-
-describe('ACPTransportError', () => {
-  test('creates error with message only', () => {
-    const error = new ACPTransportError('Connection failed')
-    expect(error.message).toBe('Connection failed')
-    expect(error.name).toBe('ACPTransportError')
-    expect(error.code).toBeUndefined()
-    expect(error.data).toBeUndefined()
-  })
-
-  test('creates error with code', () => {
-    const error = new ACPTransportError('Request failed', -32600)
-    expect(error.code).toBe(-32600)
-  })
-
-  test('creates error with data', () => {
-    const error = new ACPTransportError('Invalid params', -32602, { param: 'foo' })
-    expect(error.data).toEqual({ param: 'foo' })
-  })
-
-  test('fromJsonRpcError creates from RPC error', () => {
-    const rpcError = {
-      code: -32601,
-      message: 'Method not found',
-      data: { method: 'unknown' },
-    }
-    const error = ACPTransportError.fromJsonRpcError(rpcError)
-    expect(error.message).toBe('Method not found')
-    expect(error.code).toBe(-32601)
-    expect(error.data).toEqual({ method: 'unknown' })
-  })
-
-  test('is instance of Error', () => {
-    const error = new ACPTransportError('Test')
-    expect(error instanceof Error).toBe(true)
-    expect(error instanceof ACPTransportError).toBe(true)
-  })
-})
+import { createACPTransport } from '../acp-transport.ts'
 
 // ============================================================================
 // Transport Creation Tests (without spawning)
@@ -49,8 +7,6 @@ describe('ACPTransportError', () => {
 
 describe('createACPTransport', () => {
   test('throws on empty command', async () => {
-    const { createACPTransport } = await import('../acp-transport.ts')
-
     const transport = createACPTransport({
       command: [],
     })
@@ -59,8 +15,6 @@ describe('createACPTransport', () => {
   })
 
   test('isConnected returns false before start', async () => {
-    const { createACPTransport } = await import('../acp-transport.ts')
-
     const transport = createACPTransport({
       command: ['echo', 'test'],
     })
@@ -69,8 +23,6 @@ describe('createACPTransport', () => {
   })
 
   test('request throws when not connected', async () => {
-    const { createACPTransport } = await import('../acp-transport.ts')
-
     const transport = createACPTransport({
       command: ['echo', 'test'],
     })
@@ -79,8 +31,6 @@ describe('createACPTransport', () => {
   })
 
   test('notify throws when not connected', async () => {
-    const { createACPTransport } = await import('../acp-transport.ts')
-
     const transport = createACPTransport({
       command: ['echo', 'test'],
     })
@@ -89,8 +39,6 @@ describe('createACPTransport', () => {
   })
 
   test('close is safe when not started', async () => {
-    const { createACPTransport } = await import('../acp-transport.ts')
-
     const transport = createACPTransport({
       command: ['echo', 'test'],
     })
@@ -107,8 +55,6 @@ describe('createACPTransport', () => {
 
 describe('Transport with mock subprocess', () => {
   test('starts transport with valid command', async () => {
-    const { createACPTransport } = await import('../acp-transport.ts')
-
     const transport = createACPTransport({
       command: ['cat'], // cat echoes back input
       timeout: 1000,
@@ -123,8 +69,6 @@ describe('Transport with mock subprocess', () => {
   })
 
   test('throws on duplicate start', async () => {
-    const { createACPTransport } = await import('../acp-transport.ts')
-
     const transport = createACPTransport({
       command: ['cat'],
       timeout: 1000,
@@ -164,8 +108,6 @@ describe('Transport with mock subprocess', () => {
   })
 
   test('handles invalid command', async () => {
-    const { createACPTransport } = await import('../acp-transport.ts')
-
     const transport = createACPTransport({
       command: ['nonexistent-command-that-does-not-exist-12345'],
       timeout: 1000,
@@ -179,5 +121,33 @@ describe('Transport with mock subprocess', () => {
     } catch {
       // Expected - command not found
     }
+  })
+})
+
+// ============================================================================
+// Error Handling Tests
+// ============================================================================
+
+describe('Transport error handling', () => {
+  test('request times out when no response received', async () => {
+    // TODO(human): Implement timeout test
+  })
+
+  test('close rejects pending requests', async () => {
+    const transport = createACPTransport({
+      command: ['cat'],
+      timeout: 5000,
+    })
+
+    await transport.start()
+
+    // Start a request that will never complete (cat doesn't speak JSON-RPC)
+    const requestPromise = transport.request('test/method')
+
+    // Close transport while request is pending
+    await transport.close(false)
+
+    // Request should be rejected with "Transport closed"
+    await expect(requestPromise).rejects.toThrow('Transport closed')
   })
 })

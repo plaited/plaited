@@ -33,7 +33,7 @@ import { version } from '../../package.json' with { type: 'json' }
 import { ACP_METHODS, ACP_PROTOCOL_VERSION, DEFAULT_ACP_CLIENT_NAME } from './acp.constants.ts'
 import { RequestPermissionRequestSchema, SessionNotificationSchema } from './acp.schemas.ts'
 import type { Session } from './acp.types.ts'
-import { type ACPTransport, ACPTransportError, createACPTransport } from './acp-transport.ts'
+import { createACPTransport } from './acp-transport.ts'
 // ============================================================================
 // Types
 // ============================================================================
@@ -98,7 +98,7 @@ export class ACPClientError extends Error {
 /**
  * Creates a headless ACP client for agent evaluation.
  *
- * @param config - Client configuration including command, cwd, and sandbox options
+ * @param config - Client configuration including command, cwd, and permission handling
  * @returns Client object with lifecycle, session, and prompt methods
  *
  * @remarks
@@ -124,7 +124,7 @@ export const createACPClient = (config: ACPClientConfig) => {
     onPermissionRequest,
   } = config
 
-  let transport: ACPTransport | undefined
+  let transport: ReturnType<typeof createACPTransport> | undefined
   let agentCapabilities: AgentCapabilities | undefined
   let initializeResult: InitializeResponse | undefined
 
@@ -149,8 +149,8 @@ export const createACPClient = (config: ACPClientConfig) => {
    * @remarks
    * Validates params with Zod before processing.
    * Prioritizes `allow_always` for faster headless evaluation with fewer
-   * permission round-trips. Sandbox restrictions provide the safety net.
-   * Cancels if validation fails or no allow option is available.
+   * permission round-trips. Cancels if validation fails or no allow option
+   * is available.
    */
   const autoApprovePermission = async (params: RequestPermissionRequest): Promise<RequestPermissionResponse> => {
     const result = RequestPermissionRequestSchema.safeParse(params)
@@ -161,7 +161,6 @@ export const createACPClient = (config: ACPClientConfig) => {
     const { options } = result.data
 
     // Priority: allow_always (fewer round-trips) > allow_once
-    // Sandbox restrictions are the safety net, not permissions
     const allowAlways = options.find((opt) => opt.kind === 'allow_always')
     if (allowAlways) {
       return { outcome: { outcome: 'selected', optionId: allowAlways.optionId } }
@@ -182,7 +181,7 @@ export const createACPClient = (config: ACPClientConfig) => {
   // Transport Callbacks
   // --------------------------------------------------------------------------
 
-  const handleNotification = (method: string, params: unknown) => {
+  const onNotification = (method: string, params: unknown) => {
     if (method === ACP_METHODS.UPDATE) {
       const updateParams = SessionNotificationSchema.parse(params)
       const activePrompt = activePrompts.get(updateParams.sessionId)
@@ -192,7 +191,7 @@ export const createACPClient = (config: ACPClientConfig) => {
     }
   }
 
-  const handleRequest = async (method: string, params: unknown): Promise<unknown> => {
+  const onRequest = async (method: string, params: unknown): Promise<unknown> => {
     if (method === ACP_METHODS.REQUEST_PERMISSION) {
       return handlePermissionRequest(RequestPermissionRequestSchema.parse(params))
     }
@@ -220,8 +219,8 @@ export const createACPClient = (config: ACPClientConfig) => {
       cwd,
       env,
       timeout,
-      onNotification: handleNotification,
-      onRequest: handleRequest,
+      onNotification,
+      onRequest,
       onError: (error) => {
         console.error('[ACP Client Error]:', error.message)
       },
@@ -331,9 +330,9 @@ export const createACPClient = (config: ACPClientConfig) => {
     }
 
     const { promise, resolve, reject } = Promise.withResolvers<PromptResponse>()
-
+    const updates: SessionNotification[] = []
     const promptState = {
-      updates: [] as SessionNotification[],
+      updates,
       resolve,
       reject,
     }
@@ -502,6 +501,3 @@ export const createACPClient = (config: ACPClientConfig) => {
 
 /** Client instance type */
 export type ACPClient = ReturnType<typeof createACPClient>
-
-// Re-export transport error for convenience
-export { ACPTransportError }
