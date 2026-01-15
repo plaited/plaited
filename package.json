@@ -71,8 +71,8 @@
     "test:stories-ui": "bun run test:stories src/ui"
   },
   "lint-staged": {
-    "*.(js|cjs|tsx|ts)": [
-      "bunx @biomejs/biome check --write --files-ignore-unknown=true"
+    "*.{js,cjs,jsx,tsx,ts}": [
+      "bunx biome check --write"
     ],
     "package.json": [
       "format-package -w"
