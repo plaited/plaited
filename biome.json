@@ -56,7 +56,7 @@
         "useLiteralKeys": "warn"
       }
     },
-    "includes": ["**", "!!src/ui/types/css.d.ts", "!!.bin/*"]
+    "includes": ["**", "!!**/*.d.ts", "!!.bin/*"]
   },
   "javascript": {
     "formatter": {
