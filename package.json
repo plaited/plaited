@@ -72,7 +72,7 @@
   },
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [
-      "bunx @biomejs/biome check --write"
+      "bunx @biomejs/biome check --write --files-ignore-unknown=true"
     ],
     "package.json": [
       "format-package -w"
