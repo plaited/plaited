@@ -68,7 +68,7 @@
     "test:docker:build": "docker compose -f docker-compose.test.yml build",
     "test:playwright": "bunx playwright test",
     "test:stories": "bun src/cli.ts test",
-    "test:stories-all": "bun run test:stories src/ui"
+    "test:stories-ui": "bun run test:stories src/ui"
   },
   "lint-staged": {
     "*.(js|cjs|tsx|ts)": [
@@ -104,8 +104,7 @@
   "dependencies": {
     "@anthropic-ai/sandbox-runtime": "^0.0.23",
     "@huggingface/inference": "^4.13.5",
-    "@huggingface/transformers": "^3.8.1",
-    "sqlite-vec": "^0.1.7-alpha.2"
+    "node-llama-cpp": "^3.15.0"
   },
   "peerDependencies": {
     "@agentclientprotocol/sdk": "^0.12.0",

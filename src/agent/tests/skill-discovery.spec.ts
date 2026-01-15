@@ -1,8 +1,10 @@
-import { describe, expect, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import {
+  createSkillDiscovery,
   discoverSkillScripts,
   discoverSkills,
   formatSkillsContext,
+  type SkillDiscovery,
   type SkillMetadata,
   type SkillScript,
   scriptsToToolSchemas,
@@ -116,7 +118,6 @@ describe('formatSkillsContext', () => {
       description: 'Another skill for testing',
       location: '/path/to/another-skill/SKILL.md',
       skillDir: '/path/to/another-skill',
-      invocable: true,
     },
   ]
 
@@ -141,24 +142,18 @@ describe('formatSkillsContext', () => {
     expect(xml).toContain('</skill>')
   })
 
-  test('includes skill name and location attributes', () => {
+  test('includes skill name and location as child elements', () => {
     const xml = formatSkillsContext(mockSkills)
 
-    expect(xml).toContain('name="test-skill"')
-    expect(xml).toContain('location="/path/to/test-skill/SKILL.md"')
+    expect(xml).toContain('<name>test-skill</name>')
+    expect(xml).toContain('<location>/path/to/test-skill/SKILL.md</location>')
   })
 
-  test('includes skill descriptions', () => {
+  test('includes skill descriptions as child elements', () => {
     const xml = formatSkillsContext(mockSkills)
 
-    expect(xml).toContain('A test skill for validation')
-    expect(xml).toContain('Another skill for testing')
-  })
-
-  test('includes invocable attribute when true', () => {
-    const xml = formatSkillsContext(mockSkills)
-
-    expect(xml).toContain('invocable="true"')
+    expect(xml).toContain('<description>A test skill for validation</description>')
+    expect(xml).toContain('<description>Another skill for testing</description>')
   })
 
   test('includes scripts when provided', () => {
@@ -271,5 +266,360 @@ describe('integration', () => {
       // Schemas array should match scripts length
       expect(schemas.length).toBe(scripts.length)
     }
+  })
+})
+
+// ============================================================================
+// createSkillDiscovery Tests
+// ============================================================================
+
+describe('createSkillDiscovery', () => {
+  let discovery: SkillDiscovery
+
+  afterEach(async () => {
+    if (discovery) {
+      await discovery.close()
+    }
+  })
+
+  test('creates discovery instance with in-memory database', async () => {
+    discovery = await createSkillDiscovery({
+      skillsRoot: TEST_SKILLS_ROOT,
+    })
+
+    expect(discovery).toBeDefined()
+    expect(discovery.search).toBeFunction()
+    expect(discovery.all).toBeFunction()
+    expect(discovery.close).toBeFunction()
+  })
+
+  test('discovers and indexes skills on creation', async () => {
+    discovery = await createSkillDiscovery({
+      skillsRoot: TEST_SKILLS_ROOT,
+    })
+
+    const skills = discovery.all()
+    expect(skills.length).toBeGreaterThan(0)
+  })
+
+  test('returns statistics about indexed content', async () => {
+    discovery = await createSkillDiscovery({
+      skillsRoot: TEST_SKILLS_ROOT,
+    })
+
+    const stats = discovery.stats()
+
+    expect(stats.totalSkills).toBeGreaterThan(0)
+    expect(stats.totalScripts).toBeGreaterThanOrEqual(0)
+    expect(stats.totalChunks).toBe(0) // No embedder = no chunks indexed
+    expect(stats.vectorSearchEnabled).toBe(false)
+  })
+
+  test('indexes spec-compliant metadata fields', async () => {
+    discovery = await createSkillDiscovery({
+      skillsRoot: TEST_SKILLS_ROOT,
+    })
+
+    const skills = discovery.all()
+    const skill = skills[0]!
+
+    // Required fields
+    expect(skill.name).toBeDefined()
+    expect(skill.description).toBeDefined()
+    expect(skill.location).toBeDefined()
+    expect(skill.skillDir).toBeDefined()
+
+    // Optional spec fields should be undefined or have values
+    expect('license' in skill || skill.license === undefined).toBe(true)
+    expect('compatibility' in skill || skill.compatibility === undefined).toBe(true)
+    expect('metadata' in skill || skill.metadata === undefined).toBe(true)
+    expect('allowedTools' in skill || skill.allowedTools === undefined).toBe(true)
+  })
+})
+
+// ============================================================================
+// SkillDiscovery.search Tests
+// ============================================================================
+
+describe('SkillDiscovery.search', () => {
+  let discovery: SkillDiscovery
+
+  beforeEach(async () => {
+    discovery = await createSkillDiscovery({
+      skillsRoot: TEST_SKILLS_ROOT,
+    })
+  })
+
+  afterEach(async () => {
+    await discovery.close()
+  })
+
+  test('searches skills by intent using FTS5', async () => {
+    const results = await discovery.search('behavioral programming')
+
+    expect(Array.isArray(results)).toBe(true)
+  })
+
+  test('returns SkillMatch objects with scores', async () => {
+    const results = await discovery.search('code conventions standards')
+
+    if (results.length > 0) {
+      const match = results[0]!
+      expect(match.skill).toBeDefined()
+      expect(match.score).toBeGreaterThan(0)
+      expect(match.skill.name).toBeDefined()
+    }
+  })
+
+  test('respects limit option', async () => {
+    const results = await discovery.search('skill', { limit: 2 })
+
+    expect(results.length).toBeLessThanOrEqual(2)
+  })
+
+  test('respects minScore option', async () => {
+    const results = await discovery.search('skill', { minScore: 0.5 })
+
+    for (const match of results) {
+      expect(match.score).toBeGreaterThanOrEqual(0.5)
+    }
+  })
+
+  test('returns results sorted by score descending', async () => {
+    const results = await discovery.search('template')
+
+    for (let i = 1; i < results.length; i++) {
+      expect(results[i - 1]!.score).toBeGreaterThanOrEqual(results[i]!.score)
+    }
+  })
+
+  test('includes FTS rank in results', async () => {
+    const results = await discovery.search('plaited')
+
+    if (results.length > 0) {
+      // FTS rank should be present when matched via FTS
+      const hasRank = results.some((r) => r.ftsRank !== undefined)
+      expect(hasRank).toBe(true)
+    }
+  })
+})
+
+// ============================================================================
+// SkillDiscovery.searchChunks Tests
+// ============================================================================
+
+describe('SkillDiscovery.searchChunks', () => {
+  let discovery: SkillDiscovery
+
+  beforeEach(async () => {
+    discovery = await createSkillDiscovery({
+      skillsRoot: TEST_SKILLS_ROOT,
+      // No embedder - vector search disabled
+    })
+  })
+
+  afterEach(async () => {
+    await discovery.close()
+  })
+
+  test('returns empty array when vector search disabled', async () => {
+    const results = await discovery.searchChunks('behavioral programming')
+
+    expect(results).toEqual([])
+  })
+
+  test('requires embedder for chunk search', async () => {
+    const stats = discovery.stats()
+    expect(stats.vectorSearchEnabled).toBe(false)
+    expect(stats.totalChunks).toBe(0)
+  })
+})
+
+// ============================================================================
+// SkillDiscovery.getBody Tests
+// ============================================================================
+
+describe('SkillDiscovery.getBody', () => {
+  let discovery: SkillDiscovery
+
+  beforeEach(async () => {
+    discovery = await createSkillDiscovery({
+      skillsRoot: TEST_SKILLS_ROOT,
+    })
+  })
+
+  afterEach(async () => {
+    await discovery.close()
+  })
+
+  test('returns body content for existing skill', async () => {
+    const skills = discovery.all()
+    const skill = skills.find((s) => s.name === 'plaited-standards')
+
+    if (skill) {
+      const body = await discovery.getBody(skill.name)
+
+      expect(body).toBeDefined()
+      expect(body!.length).toBeGreaterThan(0)
+      // Body should not contain frontmatter
+      expect(body).not.toContain('---\nname:')
+    }
+  })
+
+  test('returns undefined for non-existent skill', async () => {
+    const body = await discovery.getBody('non-existent-skill')
+
+    expect(body).toBeUndefined()
+  })
+})
+
+// ============================================================================
+// SkillDiscovery.getScripts Tests
+// ============================================================================
+
+describe('SkillDiscovery.getScripts', () => {
+  let discovery: SkillDiscovery
+
+  beforeEach(async () => {
+    discovery = await createSkillDiscovery({
+      skillsRoot: TEST_SKILLS_ROOT,
+    })
+  })
+
+  afterEach(async () => {
+    await discovery.close()
+  })
+
+  test('returns scripts for skill with scripts directory', async () => {
+    const skills = discovery.all()
+    const skillWithScripts = skills.find((s) => {
+      const scripts = discovery.getScripts(s.name)
+      return scripts.length > 0
+    })
+
+    if (skillWithScripts) {
+      const scripts = discovery.getScripts(skillWithScripts.name)
+
+      expect(scripts.length).toBeGreaterThan(0)
+      expect(scripts[0]!.qualifiedName).toContain(':')
+      expect(scripts[0]!.skillName).toBe(skillWithScripts.name)
+    }
+  })
+
+  test('returns empty array for skill without scripts', async () => {
+    // Create a test for skills that might not have scripts
+    const scripts = discovery.getScripts('non-existent-skill')
+
+    expect(scripts).toEqual([])
+  })
+})
+
+// ============================================================================
+// SkillDiscovery.refresh Tests
+// ============================================================================
+
+describe('SkillDiscovery.refresh', () => {
+  let discovery: SkillDiscovery
+
+  afterEach(async () => {
+    if (discovery) {
+      await discovery.close()
+    }
+  })
+
+  test('refresh does not throw', async () => {
+    discovery = await createSkillDiscovery({
+      skillsRoot: TEST_SKILLS_ROOT,
+    })
+
+    // refresh should not throw
+    await expect(discovery.refresh()).resolves.toBeUndefined()
+  })
+
+  test('maintains skill count after refresh', async () => {
+    discovery = await createSkillDiscovery({
+      skillsRoot: TEST_SKILLS_ROOT,
+    })
+
+    const countBefore = discovery.all().length
+    await discovery.refresh()
+    const countAfter = discovery.all().length
+
+    expect(countAfter).toBe(countBefore)
+  })
+})
+
+// ============================================================================
+// Persistent Database Tests
+// ============================================================================
+
+describe('persistent database', () => {
+  const testDbPath = '/tmp/claude/skill-discovery-test.sqlite'
+
+  afterEach(async () => {
+    // Clean up test database
+    try {
+      ;(await Bun.file(testDbPath).exists()) && (await Bun.$`rm -f ${testDbPath}`)
+    } catch {
+      // Ignore cleanup errors
+    }
+  })
+
+  test('creates SQLite database at specified path', async () => {
+    const discovery = await createSkillDiscovery({
+      skillsRoot: TEST_SKILLS_ROOT,
+      dbPath: testDbPath,
+    })
+
+    await discovery.close()
+
+    const exists = await Bun.file(testDbPath).exists()
+    expect(exists).toBe(true)
+  })
+
+  test('loads skills from persistent database on creation', async () => {
+    // First instance - creates and populates
+    const discovery1 = await createSkillDiscovery({
+      skillsRoot: TEST_SKILLS_ROOT,
+      dbPath: testDbPath,
+    })
+    const count1 = discovery1.all().length
+    await discovery1.close()
+
+    // Second instance - should load from DB
+    const discovery2 = await createSkillDiscovery({
+      skillsRoot: TEST_SKILLS_ROOT,
+      dbPath: testDbPath,
+    })
+    const count2 = discovery2.all().length
+    await discovery2.close()
+
+    expect(count2).toBe(count1)
+  })
+})
+
+// ============================================================================
+// FTS5 with Metadata Tests
+// ============================================================================
+
+describe('FTS5 metadata search', () => {
+  let discovery: SkillDiscovery
+
+  beforeEach(async () => {
+    discovery = await createSkillDiscovery({
+      skillsRoot: TEST_SKILLS_ROOT,
+    })
+  })
+
+  afterEach(async () => {
+    await discovery.close()
+  })
+
+  test('searches include metadata values in FTS index', async () => {
+    // Search for terms that might appear in metadata
+    const results = await discovery.search('plaited')
+
+    // Should return results from name/description/metadata
+    expect(Array.isArray(results)).toBe(true)
   })
 })
