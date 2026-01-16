@@ -1,58 +1,48 @@
-# Mode Selection
+# Design Iteration Modes
 
-When to use each design iteration mode.
+How to get visual feedback during design iteration.
 
-## Decision Tree
+## Test Video Mode
 
-```mermaid
-flowchart TD
-    A[Design Iteration Needed] --> B{Has play function?}
-    B -->|YES| C{Need interaction video?}
-    B -->|NO| D[Chrome DevTools Mode]
-    C -->|YES| E[Test Video Mode]
-    C -->|NO| D
-```
-
-## Mode Comparison
-
-| Factor | Test Video | Chrome DevTools |
-|--------|------------|-----------------|
-| **Best for** | Interaction stories | Visual inspection |
-| **Feedback** | Pass/fail + video | Screenshot |
-| **Color schemes** | Both in one run | Manual switch |
-| **Setup** | None | Chrome browser |
-| **Speed** | Slower (runs tests) | Fast |
-| **Accessibility** | Via play function assertions | Via take_snapshot |
-
-## When to Use Test Video Mode
-
-Use when:
-- Story has a `play` function with interactions
-- Need to verify interaction behavior
-- Want videos for both light and dark modes
-- Need pass/fail feedback from tests
+The primary mode for design iteration uses the workshop CLI with Playwright:
 
 ```bash
 bun plaited test src/button.stories.tsx --record-video ./videos --color-scheme both
 ```
 
-## When to Use Chrome DevTools Mode
+### Capabilities
 
-Use when:
-- Quick visual inspection needed
-- Static preview without interactions
-- Taking screenshots for documentation
-- Checking accessibility tree structure
+| Feature | Description |
+|---------|-------------|
+| **Pass/fail feedback** | Story tests with assertions |
+| **Video recording** | Capture interaction sequences |
+| **Color schemes** | Test both light and dark in one run |
+| **Accessibility** | Via play function assertions |
+| **Screenshots** | Captured on test failure |
 
-```typescript
-await mcp__chrome-devtools__navigate_page({ url: storyUrl })
-await mcp__chrome-devtools__take_screenshot({ filename: 'preview.png' })
-```
+### When to Use
 
-## Combining Modes
+- Story has a `play` function with interactions
+- Need to verify interaction behavior
+- Want videos for both light and dark modes
+- Need pass/fail feedback from tests
 
-For comprehensive design review:
+### Workflow
 
-1. **Start with Chrome DevTools** - Quick visual check
-2. **Iterate changes** - Fast feedback loop
-3. **Finalize with Test Video** - Verify interactions, get both color schemes
+1. **Start dev server** (optional, CLI can auto-start):
+   ```bash
+   bun --hot plaited dev src/templates
+   ```
+
+2. **Run tests with video recording**:
+   ```bash
+   bun plaited test src/button.stories.tsx --record-video ./videos
+   ```
+
+3. **Review videos** for visual feedback
+
+4. **Iterate** on styles/templates and re-run
+
+## Future: Programmatic Browser Automation
+
+The `src/agent/` module is being developed to provide programmatic browser automation via Playwright/Puppeteer for real-time design iteration without requiring test runs.

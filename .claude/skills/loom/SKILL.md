@@ -2,7 +2,7 @@
 name: loom
 description: Build with Plaited from AI-assisted design to generative UI agents. Covers templates, stories, styles, tokens, world agents, adapters, and protocol integration. Design work feeds agent training.
 compatibility: Requires bun
-allowed-tools: Bash, Read, Edit, Write, Glob, mcp__chrome-devtools__*
+allowed-tools: Bash, Read, Edit, Write, Glob
 ---
 
 # Loom
@@ -136,9 +136,8 @@ Template discovery, preview server, and design iteration modes.
 
 **Design Iteration Modes:**
 
-- [mode-selection.md](references/workbench/mode-selection.md) - When to use each mode
+- [mode-selection.md](references/workbench/mode-selection.md) - Visual feedback modes
 - [test-video-mode.md](references/workbench/test-video-mode.md) - CLI with `--record-video`
-- [chrome-devtools-mode.md](references/workbench/chrome-devtools-mode.md) - Browser automation
 
 **Quick Start:**
 ```bash

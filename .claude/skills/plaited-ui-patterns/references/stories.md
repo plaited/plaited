@@ -655,7 +655,7 @@ export const accessibleButton = story({
 ## Inspector Helper for Debugging
 
 The inspector helper enables observation of behavioral program state during execution. It's useful for:
-- Agent debugging with Chrome DevTools MCP
+- Agent debugging via browser automation
 - Understanding what's happening in behavioral elements
 - Developer debugging during development
 
@@ -707,9 +707,9 @@ const MyElement = bElement({
 
 ### Inspector Use Cases
 
-#### 1. Agent Debugging with Chrome DevTools MCP
+#### 1. Agent Debugging via Browser Automation
 
-Agents using Chrome DevTools MCP can inspect behavioral program state:
+Agents using browser automation (Playwright/Puppeteer) can inspect behavioral program state:
 
 ```typescript
 export const debuggableElement = story({
@@ -795,7 +795,7 @@ type SnapshotMessage = {
 2. **Use in dev mode**: Automatically enabled in development, disabled in tests
 3. **Custom callbacks**: Assign custom processing for integration with logging tools
 4. **Understand snapshots**: Learn to read candidate/blocking/selected patterns
-5. **Agent integration**: Leverage with Chrome DevTools MCP for AI-assisted debugging
+5. **Agent integration**: Leverage with browser automation for AI-assisted debugging
 
 ## Play Function Utilities
 

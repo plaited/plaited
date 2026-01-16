@@ -11,10 +11,6 @@
     "model-context-protocol-docs":{
       "type": "http",
       "url": "https://modelcontextprotocol.io/mcp"
-    },
-    "braintrust-docs": {
-      "type": "http",
-      "url": "https://www.braintrust.dev/docs/mcp"
     }
   }
 }

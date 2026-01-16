@@ -19,9 +19,7 @@
       "Bash(docker stop:*)"
     ]
   },
-  "enabledMcpjsonServers": [
-    "chrome-devtools"
-  ],
+  "enabledMcpjsonServers": [],
   "hooks": {
     "SessionStart": [
       {
