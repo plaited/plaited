@@ -2,9 +2,10 @@
 
 ## Overview
 
-A grid widget is a container that enables users to navigate the information or interactive elements it contains using directional navigation keys, such as arrow keys, Home, and End. As a generic container widget that offers flexible keyboard navigation, it can serve a wide variety of needs. It can be used for purposes as simple as grouping a collection of checkboxes or navigation links or as complex as creating a full-featured spreadsheet application.
+A grid widget is a container that enables users to navigate the information or interactive elements it contains using directional navigation keys such as arrow keys, Home, and End. As a generic container widget it offers flexible keyboard navigation and can serve a wide variety of needs. It can be used for simple use cases like grouping a collection of checkboxes or navigation links or for much more complex applications such as creating a full-featured spreadsheet.
 
 **Key Characteristics:**
+
 - **Composite widget**: Contains multiple focusable elements
 - **Single tab stop**: Only one element in the grid is in the page tab sequence
 - **Directional navigation**: Arrow keys move focus between cells
@@ -12,6 +13,7 @@ A grid widget is a container that enables users to navigate the information or i
 - **Focus management**: Author must provide code to manage focus movement
 
 **Differences from Table Pattern:**
+
 - Grid is a composite widget with single tab stop
 - Table includes all focusable elements in tab sequence
 - Grid requires custom focus management code
@@ -20,12 +22,14 @@ A grid widget is a container that enables users to navigate the information or i
 ## Use Cases
 
 ### Data Grids
+
 - Spreadsheet applications
 - Editable data tables
 - Sortable/filterable data views
 - Multi-column data with interactive cells
 
 ### Layout Grids
+
 - Navigation link groups
 - Product card grids
 - Message recipient lists
@@ -118,6 +122,7 @@ function moveFocus(cell) {
 ### Plaited Adaptation
 
 **Important**: In Plaited, grids are implemented as **bElements** because they require:
+
 - Complex state management (cell positions, selection, editing state)
 - Focus management (single tab stop, directional navigation)
 - Keyboard event handling (arrow keys, Home, End, Page Up/Down)
@@ -591,7 +596,7 @@ export const LayoutGrid = bElement<LayoutGridEvents>({
 
 ## Keyboard Interaction
 
-### Data Grids
+### Data Grid Keys
 
 - **Arrow Keys**: Move focus one cell in that direction
 - **Page Down/Up**: Move focus multiple rows
@@ -600,7 +605,7 @@ export const LayoutGrid = bElement<LayoutGridEvents>({
 - **Enter/F2**: Enter edit mode for editable cells
 - **Escape**: Exit edit mode
 
-### Layout Grids
+### Layout Grid Keys
 
 - **Arrow Keys**: Move focus (may wrap between rows/columns)
 - **Page Down/Up**: Move focus multiple rows (optional)
@@ -608,7 +613,7 @@ export const LayoutGrid = bElement<LayoutGridEvents>({
 - **End**: Last cell in row (Ctrl+End: last cell in grid)
 - **Enter/Space**: Activate focused item
 
-### Selection (Optional)
+### Selection Keys (Optional)
 
 - **Ctrl+Space**: Select column
 - **Shift+Space**: Select row

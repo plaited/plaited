@@ -2,15 +2,17 @@
 
 ## Overview
 
-A disclosure is a widget that enables content to be either collapsed (hidden) or expanded (visible). It has two elements: a disclosure button and a section of content whose visibility is controlled by the button. When the controlled content is hidden, the button is often styled as a typical push button with a right-pointing arrow or triangle to hint that activating the button will display additional content. When the content is visible, the arrow or triangle typically points down.
+A disclosure is a widget that enables content to be either collapsed (hidden) or expanded (visible). It has two elements, a disclosure button and a section of content whose visibility is controlled by the button. When the controlled content is hidden the button is often styled as a typical push button with a right-pointing arrow or triangle to hint that activating the button will display additional content. When the content is visible, the arrow or triangle typically points down.
 
 **Key Characteristics:**
+
 - **Simple toggle**: Single button controls single content section
 - **Two states**: Expanded (visible) or collapsed (hidden)
 - **Visual indicator**: Arrow/triangle changes direction based on state
 - **Keyboard accessible**: Enter and Space activate the button
 
 **Differences from Accordion:**
+
 - Disclosure is a single item (one button, one content section)
 - Accordion is a group of multiple disclosures
 - Disclosure doesn't need keyboard navigation between items
@@ -74,6 +76,7 @@ button.addEventListener('keydown', (e) => {
 ### Plaited Adaptation
 
 **Important**: In Plaited, disclosures can be implemented as:
+
 1. **Functional Templates (FT)** for static disclosures in stories
 2. **bElements** for dynamic disclosures that need state management
 
@@ -519,12 +522,14 @@ The native HTML `<details>` element provides built-in disclosure behavior:
 ```
 
 **Advantages:**
+
 - Built-in keyboard support
 - No JavaScript required
 - Automatic ARIA attributes
 - Browser-native behavior
 
 **Considerations:**
+
 - Less styling control
 - Limited customization options
 - May not work in all use cases

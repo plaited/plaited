@@ -2,15 +2,17 @@
 
 ## Overview
 
-WAI-ARIA supports two types of checkbox widgets: dual-state checkboxes toggle between two choices (checked and not checked), and tri-state checkboxes, which allow an additional third state known as partially checked (mixed).
+There are two types of checkboxes: dual-state checkboxes toggle between two choices (checked and not checked), and tri-state checkboxes, which allow an additional third state known as partially checked (mixed).
 
 **Key Characteristics:**
+
 - **Dual-state**: Checked (`true`) or unchecked (`false`)
 - **Tri-state**: Checked (`true`), unchecked (`false`), or mixed (`mixed`)
 - **Keyboard interaction**: Space key toggles state
 - **Form association**: Can be form-associated for native form integration
 
 **Common Use Cases for Tri-State:**
+
 - Software installers with grouped options
 - Select all/none controls
 - Hierarchical selection (parent/child relationships)
@@ -78,6 +80,7 @@ function toggleTriState(checkbox) {
 ### Plaited Adaptation
 
 **Important**: In Plaited, checkboxes can be implemented as:
+
 1. **Functional Templates (FT)** for static checkboxes in stories
 2. **bElements** for form-associated checkboxes that need form integration
 3. **bElements** for tri-state checkboxes that need complex state management
@@ -346,8 +349,8 @@ export const TriStateCheckbox = bElement<TriStateCheckboxEvents>({
       role='checkbox'
       aria-checked='false'
       tabIndex={0}
-      {...triStateStyles.checkbox}
       p-trigger={{ click: 'toggle', keydown: 'handleKeydown' }}
+      {...triStateStyles.checkbox}
     >
       <div
         p-target='symbol'
@@ -557,7 +560,7 @@ export const CheckboxGroup = bElement<CheckboxGroupEvents>({
 ## Plaited Integration
 
 - **Works with Shadow DOM**: Yes - form-associated checkboxes are bElements with Shadow DOM
-- **Uses bElement built-ins**: 
+- **Uses bElement built-ins**:
   - `p-trigger` for click and keyboard events
   - `p-target` for element selection with `$()`
   - `attr()` helper for managing ARIA attributes

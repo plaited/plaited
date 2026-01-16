@@ -5,6 +5,7 @@
 A combobox is an input widget that has an associated popup. The popup enables users to choose a value for the input from a collection. The popup may be a listbox, grid, tree, or dialog.
 
 **Key Characteristics:**
+
 - **Select-only**: No text input, similar to HTML `<select>`
 - **Editable**: Allows text input, may filter suggestions
 - **Autocomplete behaviors**: None, list (manual/automatic), or both (with inline)
@@ -12,6 +13,7 @@ A combobox is an input widget that has an associated popup. The popup enables us
 - **Focus management**: Uses `aria-activedescendant` for popup navigation
 
 **Autocomplete Types:**
+
 1. **None**: Same suggestions regardless of input
 2. **List (manual)**: Suggestions filter based on input, user must select
 3. **List (automatic)**: First suggestion auto-selected, becomes value on blur
@@ -58,6 +60,7 @@ A combobox is an input widget that has an associated popup. The popup enables us
 ### Plaited Adaptation
 
 **Important**: In Plaited, comboboxes are implemented as **bElements** because they require:
+
 - Complex state management (open/closed, selected option, input value)
 - Focus management with `aria-activedescendant`
 - Keyboard navigation (arrow keys, Enter, Escape)
@@ -648,8 +651,8 @@ export const EditableCombobox = bElement<EditableComboboxEvents>({
 - **Enter**: Accepts selected option
 - **Escape**: Closes popup
 - **Printable characters**: Types in editable combobox, filters options
-- **Alt + Down Arrow**: Opens popup without moving focus
-- **Alt + Up Arrow**: Closes popup, returns focus
+- **(Alt/Opt) + Down Arrow**: Opens popup without moving focus
+- **(Alt/Opt) + Up Arrow**: Closes popup, returns focus
 
 ### Listbox Popup
 

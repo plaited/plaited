@@ -2,9 +2,10 @@
 
 ## Overview
 
-Landmarks are a set of eight roles that identify the major sections of a page. Each landmark role enables assistive technology users to perceive the start and end of a feature of the high-level page structure that is usually conveyed visually with placement, spacing, color, or borders. In addition to conveying structure, landmarks enable browsers and assistive technologies to facilitate efficient keyboard navigation among sections of a page.
+Landmarks are a set of eight roles that identify the major sections of a page. Each landmark role enables assistive technology users to perceive the high-level page structure of a page layout that is usually conveyed visually with placement, spacing, color, or borders. In addition to conveying structure, landmarks enable browsers and assistive technologies to facilitate efficient keyboard navigation among sections of a page.
 
 **Key Characteristics:**
+
 - **Structural elements**: Identify major page sections
 - **Implicit landmarks**: Many HTML elements automatically create landmarks
 - **Navigation aid**: Enable quick navigation between page sections
@@ -12,6 +13,7 @@ Landmarks are a set of eight roles that identify the major sections of a page. E
 - **Content coverage**: All content should be within an appropriate landmark
 
 **The Eight Landmark Roles:**
+
 1. **banner** - Site header (usually `<header>`)
 2. **navigation** - Navigation links (`<nav>`)
 3. **main** - Main content (`<main>`)
@@ -82,6 +84,7 @@ Landmarks are a set of eight roles that identify the major sections of a page. E
 ### Plaited Adaptation
 
 **Important**: In Plaited, landmarks are typically implemented as:
+
 1. **Semantic HTML elements** directly in templates (preferred)
 2. **Functional Templates (FT)** for reusable landmark containers
 3. **Within bElements** as structural elements in shadowDom

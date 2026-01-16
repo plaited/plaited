@@ -2,9 +2,10 @@
 
 ## Overview
 
-A feed is a section of a page that automatically loads new sections of content as the user scrolls. The sections of content in a feed are presented in article elements. So, a feed can be thought of as a dynamic list of articles that often appears to scroll infinitely.
+A feed is a section of a page that automatically loads new sections of content as the user scrolls. The sections of content in a feed are presented in article elements. A feed can be thought of as a dynamic list of articles that often appears to scroll infinitely.
 
 **Key Characteristics:**
+
 - **Structure, not widget**: Feed is a structure that works with assistive technology reading mode
 - **Dynamic loading**: Articles are loaded as user scrolls or navigates
 - **Interoperability contract**: Establishes agreement between web page and assistive technologies
@@ -12,6 +13,7 @@ A feed is a section of a page that automatically loads new sections of content a
 - **Article-based**: Content organized as article elements
 
 **Interoperability Contract:**
+
 1. **Web page responsibilities**:
    - Appropriate visual scrolling based on which article has DOM focus
    - Loading/removing articles based on which article has DOM focus
@@ -91,6 +93,7 @@ feed.addEventListener('keydown', (e) => {
 ### Plaited Adaptation
 
 **Important**: In Plaited, feeds are implemented as **bElements** because they require:
+
 - Complex state management (articles, loading state, position tracking)
 - Scroll detection (Intersection Observer)
 - Keyboard navigation (Page Down/Up, Ctrl+Home/End)
@@ -488,6 +491,7 @@ export const DataFeed = bElement<FeedEvents>({
 ## Keyboard Interaction
 
 When focus is inside the feed:
+
 - **Page Down**: Moves focus to the next article
 - **Page Up**: Moves focus to the previous article
 - **Control + End**: Moves focus to the first focusable element after the feed
@@ -540,11 +544,13 @@ When focus is inside the feed:
 The feed pattern establishes an agreement between web pages and assistive technologies:
 
 **Web Page Responsibilities:**
+
 - Scroll content based on which article has DOM focus
 - Load/remove articles based on focus position
 - Update ARIA attributes (aria-busy, aria-setsize, aria-posinset)
 
 **Assistive Technology Responsibilities:**
+
 - Ensure article or descendant has DOM focus to indicate reading cursor
 - Provide reading mode keys to navigate articles
 - Provide keys to move past start/end of feed
