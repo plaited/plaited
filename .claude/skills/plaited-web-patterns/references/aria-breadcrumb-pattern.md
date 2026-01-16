@@ -2,9 +2,10 @@
 
 ## Overview
 
-A breadcrumb trail consists of a list of links to the parent pages of the current page in hierarchical order. It helps users find their place within a website or web application. Breadcrumbs are often placed horizontally before a page's main content.
+A breadcrumb consists of a list of links to the parent pages of the current page in hierarchical order. It helps users find their place within a website or web application. Breadcrumbs are often placed horizontally before a page's main content.
 
 **Key Characteristics:**
+
 - Navigation landmark region (`<nav>`)
 - Ordered list structure (`<ol>`)
 - Links to parent pages in hierarchical order
@@ -65,6 +66,7 @@ A breadcrumb trail consists of a list of links to the parent pages of the curren
 ### Plaited Adaptation
 
 **Important**: In Plaited, breadcrumbs can be implemented as:
+
 1. **Functional Templates (FT)** for static breadcrumbs in stories
 2. **bElements** for dynamic breadcrumbs that need route-based state management
 
@@ -367,6 +369,7 @@ const BreadcrumbSeparator: FT = () => (
 ## Keyboard Interaction
 
 **Not applicable** - Breadcrumbs use standard link navigation. Users navigate with:
+
 - **Tab**: Moves focus to next focusable element (links)
 - **Enter/Space**: Activates the link
 - Standard link keyboard interaction
@@ -408,6 +411,7 @@ const BreadcrumbSeparator: FT = () => (
 ## Visual Separators
 
 Common separator styles include:
+
 - Forward slash: `/`
 - Greater-than: `>`
 - Right arrow: `→`

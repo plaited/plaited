@@ -133,7 +133,7 @@ const spinbuttonStyles = createStyles({
     gap: '0.25rem',
   },
   input: {
-    width: '80px',
+    inlineSize: '80px',
     padding: '0.5rem',
     border: '1px solid #ccc',
     borderRadius: '4px',
@@ -389,7 +389,7 @@ const customSpinbuttonStyles = createStyles({
     gap: '0.25rem',
   },
   input: {
-    width: '80px',
+    inlineSize: '80px',
     padding: '0.5rem',
     border: '1px solid #ccc',
     borderRadius: '4px',

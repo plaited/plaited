@@ -273,7 +273,7 @@ import { createStyles } from 'plaited/ui'
 
 const tableStyles = createStyles({
   table: {
-    width: '100%',
+    inlineSize: '100%',
     borderCollapse: 'collapse',
     border: '1px solid #ccc',
   },
@@ -312,7 +312,7 @@ const tableStyles = createStyles({
     padding: '0.25rem',
     fontWeight: 'inherit',
     textAlign: 'inherit',
-    width: '100%',
+    inlineSize: '100%',
     '&:hover': {
       backgroundColor: '#e0e0e0',
     },

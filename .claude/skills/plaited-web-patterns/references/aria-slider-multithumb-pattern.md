@@ -47,8 +47,8 @@ A multi-thumb slider implements the Slider Pattern but includes two or more thum
     data-thumb="min"
   >
     <div class="track">
-      <div class="thumb-min" style="left: 25%"></div>
-      <div class="thumb-max" style="left: 75%"></div>
+      <div class="thumb-min" style="inset-inline-start: 25%"></div>
+      <div class="thumb-max" style="inset-inline-start: 75%"></div>
     </div>
   </div>
   <div 
@@ -139,32 +139,32 @@ import { createStyles } from 'plaited/ui'
 const rangeSliderStyles = createStyles({
   container: {
     position: 'relative',
-    width: '100%',
-    height: '40px',
+    inlineSize: '100%',
+    blockSize: '40px',
     display: 'flex',
     alignItems: 'center',
   },
   track: {
     position: 'relative',
-    width: '100%',
-    height: '8px',
+    inlineSize: '100%',
+    blockSize: '8px',
     backgroundColor: '#e0e0e0',
     borderRadius: '4px',
   },
   fill: {
     position: 'absolute',
-    top: 0,
-    height: '100%',
+    insetBlockStart: 0,
+    blockSize: '100%',
     backgroundColor: '#007bff',
     borderRadius: '4px',
-    transition: 'left 0.1s ease, width 0.1s ease',
+    transition: 'insetInlineStart 0.1s ease, inlineSize 0.1s ease',
   },
   thumb: {
     position: 'absolute',
-    top: '50%',
+    insetBlockStart: '50%',
     transform: 'translate(-50%, -50%)',
-    width: '20px',
-    height: '20px',
+    inlineSize: '20px',
+    blockSize: '20px',
     borderRadius: '50%',
     backgroundColor: '#007bff',
     cursor: 'grab',
@@ -268,7 +268,7 @@ export const RangeSlider = bElement<RangeSliderEvents>({
       minValue = Math.max(absoluteMin, Math.min(maxValue - step, newValue))
       const percentage = getPercentage(minValue)
       
-      minThumb?.setAttribute('style', `left: ${percentage}%`)
+      minThumb?.setAttribute('style', `inset-inline-start: ${percentage}%`)
       minThumb?.setAttribute('aria-valuenow', String(minValue))
       minThumb?.setAttribute('aria-valuemin', String(absoluteMin))
       minThumb?.setAttribute('aria-valuemax', String(maxValue - step))
@@ -276,7 +276,7 @@ export const RangeSlider = bElement<RangeSliderEvents>({
       // Update fill position
       const minPercent = getPercentage(minValue)
       const maxPercent = getPercentage(maxValue)
-      fill?.setAttribute('style', `left: ${minPercent}%; width: ${maxPercent - minPercent}%`)
+      fill?.setAttribute('style', `inset-inline-start: ${minPercent}%; inline-size: ${maxPercent - minPercent}%`)
       
       updateFormValue()
       updateValueDisplay()
@@ -291,7 +291,7 @@ export const RangeSlider = bElement<RangeSliderEvents>({
       maxValue = Math.min(absoluteMax, Math.max(minValue + step, newValue))
       const percentage = getPercentage(maxValue)
       
-      maxThumb?.setAttribute('style', `left: ${percentage}%`)
+      maxThumb?.setAttribute('style', `inset-inline-start: ${percentage}%`)
       maxThumb?.setAttribute('aria-valuenow', String(maxValue))
       maxThumb?.setAttribute('aria-valuemin', String(minValue + step))
       maxThumb?.setAttribute('aria-valuemax', String(absoluteMax))
@@ -299,7 +299,7 @@ export const RangeSlider = bElement<RangeSliderEvents>({
       // Update fill position
       const minPercent = getPercentage(minValue)
       const maxPercent = getPercentage(maxValue)
-      fill?.setAttribute('style', `left: ${minPercent}%; width: ${maxPercent - minPercent}%`)
+      fill?.setAttribute('style', `inset-inline-start: ${minPercent}%; inline-size: ${maxPercent - minPercent}%`)
       
       updateFormValue()
       updateValueDisplay()
@@ -617,7 +617,7 @@ export const IndependentMultiSlider = bElement<{
       const thumb = thumbs[index]
       const percentage = ((values[index] - absoluteMin) / (absoluteMax - absoluteMin)) * 100
       
-      thumb?.setAttribute('style', `left: ${percentage}%`)
+      thumb?.setAttribute('style', `inset-inline-start: ${percentage}%`)
       thumb?.setAttribute('aria-valuenow', String(values[index]))
       thumb?.setAttribute('aria-valuemin', String(absoluteMin))
       thumb?.setAttribute('aria-valuemax', String(absoluteMax))

@@ -194,8 +194,8 @@ import { createStyles } from 'plaited/ui'
 const splitterStyles = createStyles({
   container: {
     display: 'flex',
-    width: '100%',
-    height: '100%',
+    inlineSize: '100%',
+    blockSize: '100%',
     position: 'relative',
   },
   containerVertical: {
@@ -232,23 +232,23 @@ const splitterStyles = createStyles({
     '&::before': {
       content: '""',
       position: 'absolute',
-      width: {
+      inlineSize: {
         $default: '4px',
         '[aria-orientation="vertical"]': '100%',
       },
-      height: {
+      blockSize: {
         $default: '100%',
         '[aria-orientation="vertical"]': '4px',
       },
     },
   },
   splitterVertical: {
-    width: '4px',
-    minWidth: '4px',
+    inlineSize: '4px',
+    minInlineSize: '4px',
   },
   splitterHorizontal: {
-    height: '4px',
-    minHeight: '4px',
+    blockSize: '4px',
+    minBlockSize: '4px',
   },
 })
 

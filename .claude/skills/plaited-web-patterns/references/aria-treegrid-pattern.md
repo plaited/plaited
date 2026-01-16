@@ -196,7 +196,7 @@ import { createStyles } from 'plaited/ui'
 const treegridStyles = createStyles({
   treegrid: {
     display: 'table',
-    width: '100%',
+    inline-size: '100%',
     borderCollapse: 'collapse',
     border: '1px solid #ccc',
   },
@@ -223,7 +223,7 @@ const treegridStyles = createStyles({
   },
   expandIcon: {
     display: 'inline-block',
-    width: '1rem',
+    inlineSize: '1rem',
     textAlign: 'center',
     marginRight: '0.5rem',
     userSelect: 'none',

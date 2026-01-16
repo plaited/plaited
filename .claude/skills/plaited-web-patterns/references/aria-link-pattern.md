@@ -2,9 +2,10 @@
 
 ## Overview
 
-A link widget provides an interactive reference to a resource. The target resource can be either external or local, i.e., either outside or within the current page or application.
+A link provides an interactive reference to a resource. The target resource can be either external or local i.e., either outside or within the current page or application.
 
 **Key Characteristics:**
+
 - Interactive reference to a resource (internal or external)
 - Native HTML `<a>` element is strongly preferred
 - Keyboard accessible (Enter key activates)
@@ -12,7 +13,7 @@ A link widget provides an interactive reference to a resource. The target resour
 - Can contain text or graphics
 - Supports various link types (navigation, download, external, etc.)
 
-**Important Note**: Authors are strongly encouraged to use a native host language link element, such as an HTML `<a>` element with an `href` attribute. Applying the `link` role to an element will not cause browsers to enhance the element with standard link behaviors, such as navigation to the link target or context menu actions. When using the `link` role, providing these features is the author's responsibility.
+**Important Note**: Authors are strongly encouraged to use a native host link element, `<a>` element with an `href` attribute. Applying the `link` role to an element will not cause browsers to enhance the element with standard link behaviors, such as navigation to the link target or context menu actions. When using the `link` role, providing these features is the author's responsibility.
 
 ## Use Cases
 
@@ -309,15 +310,15 @@ export const linkStyles = createStyles({
   },
   skipLink: {
     position: 'absolute',
-    top: '-40px',
-    left: '0',
+    insetBlockStart: '-40px',
+    insetInlineStart: '0',
     backgroundColor: 'blue',
     color: 'white',
     padding: '8px',
     textDecoration: 'none',
     zIndex: 100,
     ':focus': {
-      top: '0',
+      insetBlockStart: '0',
     },
   },
   withIcon: {
@@ -455,7 +456,7 @@ bElement({
 ### HTML Attributes
 
 - **href**: Required for navigation (or `href="#"` for JavaScript-only links)
-- **target**: Opens link in new window/tab (`target="_blank"`)
+- **target**: Where to display the linked URL (`_blank`, `_parent`, `_top`, `_self`, `_unfencedTop`)
 - **rel**: Link relationship (`noopener`, `noreferrer`, `nofollow`, etc.)
 - **download**: Indicates link should download resource
 - **hreflang**: Language of linked resource
@@ -488,34 +489,41 @@ bElement({
 ## Link Types and Usage
 
 ### Navigation Links
+
 - Standard page navigation
 - Use in main navigation, breadcrumbs, pagination
 - Can use `aria-current="page"` for current page
 
 ### External Links
+
 - Links to other websites
 - Should include `rel="noopener noreferrer"`
 - Should indicate "opens in new tab" visually and in aria-label
 
 ### Download Links
+
 - Links that download files
 - Use `download` attribute
 - Can specify filename: `download="filename.pdf"`
 
 ### Fragment Links
+
 - Links to sections within same page
 - Use `href="#section-id"`
 - Smooth scrolling can be added with CSS
 
 ### Email Links
+
 - Use `mailto:` protocol
 - Can include subject and body: `mailto:email?subject=Hello&body=Message`
 
 ### Telephone Links
+
 - Use `tel:` protocol
 - Format: `tel:+1234567890`
 
 ### JavaScript Links
+
 - Links that trigger JavaScript actions
 - Use `href="#"` or `href="javascript:void(0)"`
 - Consider using buttons instead for actions

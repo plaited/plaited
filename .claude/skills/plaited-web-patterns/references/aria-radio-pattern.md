@@ -118,8 +118,8 @@ const radioGroupStyles = createStyles({
     },
   },
   symbol: {
-    width: '18px',
-    height: '18px',
+    inlineSize: '18px',
+    blockSize: '18px',
     border: '2px solid #333',
     borderRadius: '50%',
     display: 'flex',
@@ -131,8 +131,8 @@ const radioGroupStyles = createStyles({
     },
   },
   dot: {
-    width: '8px',
-    height: '8px',
+    inlineSize: '8px',
+    blockSize: '8px',
     borderRadius: '50%',
     backgroundColor: 'white',
     display: {

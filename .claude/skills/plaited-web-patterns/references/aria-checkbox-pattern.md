@@ -148,8 +148,8 @@ const checkboxStyles = createStyles({
     padding: '0.5rem',
   },
   symbol: {
-    width: '16px',
-    height: '16px',
+    inlineSize: '16px',
+    blockSize: '16px',
     border: '2px solid #333',
     borderRadius: '3px',
     display: 'flex',
@@ -309,8 +309,8 @@ const triStateStyles = createStyles({
     cursor: 'pointer',
   },
   symbol: {
-    width: '16px',
-    height: '16px',
+    inlineSize: '16px',
+    blockSize: '16px',
     border: '2px solid #333',
     borderRadius: '3px',
     backgroundColor: {

@@ -169,8 +169,8 @@ const switchStyles = createStyles({
   },
   track: {
     position: 'relative',
-    width: '44px',
-    height: '24px',
+    inlineSize: '44px',
+    blockSize: '24px',
     borderRadius: '12px',
     backgroundColor: {
       $default: '#ccc',
@@ -180,10 +180,10 @@ const switchStyles = createStyles({
   },
   thumb: {
     position: 'absolute',
-    top: '2px',
-    left: '2px',
-    width: '20px',
-    height: '20px',
+    insetBlockStart: '2px',
+    insetInlineStart: '2px',
+    inlineSize: '20px',
+    blockSize: '20px',
     borderRadius: '50%',
     backgroundColor: 'white',
     transition: 'transform 0.2s ease',
@@ -518,8 +518,8 @@ export const switchStyles = createStyles({
   },
   track: {
     position: 'relative',
-    width: '44px',
-    height: '24px',
+    inlineSize: '44px',
+    blockSize: '24px',
     borderRadius: '12px',
     backgroundColor: {
       $default: '#ccc',
@@ -530,10 +530,10 @@ export const switchStyles = createStyles({
   },
   thumb: {
     position: 'absolute',
-    top: '2px',
-    left: '2px',
-    width: '20px',
-    height: '20px',
+    insetBlockStart: '2px',
+    insetInlineStart: '2px',
+    inlineSize: '20px',
+    blockSize: '20px',
     borderRadius: '50%',
     backgroundColor: 'white',
     transition: 'transform 0.2s ease',

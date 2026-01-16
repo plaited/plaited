@@ -143,10 +143,10 @@ const menuButtonStyles = createStyles({
   },
   menu: {
     position: 'absolute',
-    top: '100%',
-    left: 0,
-    marginTop: '0.25rem',
-    minWidth: '200px',
+    insetBlockStart: '100%',
+    insetInlineStart: 0,
+    marginBlockStart: '0.25rem',
+    minInlineSize: '200px',
     border: '1px solid #ccc',
     borderRadius: '4px',
     backgroundColor: 'white',
@@ -642,7 +642,7 @@ const MenuItemRadio: FT<{
 )
 
 const MenuSeparator: FT = () => (
-  <li role='separator' aria-orientation='horizontal' style={{ height: '1px', backgroundColor: '#ccc', margin: '0.25rem 0' }}></li>
+  <li role='separator' aria-orientation='horizontal' style={{ blockSize: '1px', backgroundColor: '#ccc', marginBlock: '0.25rem' }}></li>
 )
 ```
 

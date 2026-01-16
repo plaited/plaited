@@ -50,7 +50,7 @@ A meter is a graphical display of a numeric value that varies within a defined r
   aria-valuemax="100"
   aria-label="Battery level"
 >
-  <div style="width: 75%; background: green;">75%</div>
+  <div style="inline-size: 75%; background: green;">75%</div>
 </div>
 
 <!-- Meter with custom text -->
@@ -174,7 +174,7 @@ const CustomMeter: FT<{
       >
         <div
           {...meterStyles.fill}
-          style={{ width: `${percentage}%` }}
+          style={{ inlineSize: `${percentage}%` }}
         ></div>
       </div>
       {children && <div {...meterStyles.label}>{children}</div>}
@@ -205,30 +205,30 @@ import { createStyles } from 'plaited/ui'
 
 const meterStyles = createStyles({
   meter: {
-    width: '100%',
-    height: '20px',
+    inlineSize: '100%',
+    blockSize: '20px',
     position: 'relative',
   },
   track: {
-    width: '100%',
-    height: '100%',
+    inlineSize: '100%',
+    blockSize: '100%',
     backgroundColor: '#e0e0e0',
     borderRadius: '10px',
     overflow: 'hidden',
   },
   fill: {
-    height: '100%',
+    blockSize: '100%',
     backgroundColor: {
       $default: '#4caf50',
       '[data-low="true"]': '#ff9800',
       '[data-high="true"]': '#f44336',
     },
-    transition: 'width 0.3s ease, background-color 0.3s ease',
+    transition: 'inline-size 0.3s ease, background-color 0.3s ease',
   },
   label: {
     position: 'absolute',
-    top: '50%',
-    left: '50%',
+    insetBlockStart: '50%',
+    insetInlineStart: '50%',
     transform: 'translate(-50%, -50%)',
     fontSize: '0.875em',
     fontWeight: 'bold',
@@ -268,7 +268,7 @@ export const DynamicMeter = bElement<MeterEvents>({
       meter?.attr('aria-valuemin', String(min))
       meter?.attr('aria-valuemax', String(max))
       
-      fill?.attr('style', `width: ${percentage}%`)
+      fill?.attr('style', `inline-size: ${percentage}%`)
       
       // Update color based on thresholds (optional)
       if (percentage < 25) {
@@ -383,8 +383,8 @@ import { createStyles } from 'plaited/ui'
 
 export const meterStyles = createStyles({
   meter: {
-    width: '100%',
-    height: '20px',
+    inlineSize: '100%',
+    blockSize: '20px',
     borderRadius: '10px',
     backgroundColor: '#e0e0e0',
     overflow: 'hidden',
@@ -407,23 +407,23 @@ export const meterStyles = createStyles({
     },
   },
   track: {
-    width: '100%',
-    height: '100%',
+    inlineSize: '100%',
+    blockSize: '100%',
     backgroundColor: '#e0e0e0',
     borderRadius: '10px',
     position: 'relative',
     overflow: 'hidden',
   },
   fill: {
-    height: '100%',
+    blockSize: '100%',
     backgroundColor: '#4caf50',
-    transition: 'width 0.3s ease',
+    transition: 'inline-size 0.3s ease',
     borderRadius: '10px',
   },
   label: {
     position: 'absolute',
-    top: '50%',
-    left: '50%',
+    insetBlockStart: '50%',
+    insetInlineStart: '50%',
     transform: 'translate(-50%, -50%)',
     fontSize: '0.875em',
     fontWeight: 'bold',
@@ -463,7 +463,7 @@ export const MeterWithZones = bElement<MeterEvents>({
       const percentage = ((currentValue - min) / (max - min)) * 100
       
       meter?.attr('aria-valuenow', String(currentValue))
-      fill?.attr('style', `width: ${percentage}%`)
+      fill?.attr('style', `inline-size: ${percentage}%`)
       
       // Color zones
       if (percentage < lowThreshold) {

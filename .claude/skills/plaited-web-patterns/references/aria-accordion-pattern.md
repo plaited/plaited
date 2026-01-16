@@ -5,6 +5,7 @@
 An accordion is a vertically stacked set of interactive headings. Each contain a title, content snippet, or thumbnail representing a section of content. The headings function as controls that enable users to reveal or hide their associated sections of content. Accordions are commonly used to reduce the need to scroll when presenting multiple sections of content on a single page.
 
 **Key Terms:**
+
 - **Accordion Header**: Label or thumbnail representing a section that serves as a control for showing/hiding content
 - **Accordion Panel**: Section of content associated with an accordion header
 
@@ -309,10 +310,10 @@ const accordionStyles = createStyles({
     flexDirection: 'column',
   },
   panel: {
-    borderBottom: '1px solid #ccc',
+    borderBlockEnd: '1px solid #ccc',
   },
   headerButton: {
-    width: '100%',
+    inlineSize: '100%',
     padding: '1rem',
     textAlign: 'left',
     border: 'none',
@@ -474,7 +475,8 @@ export const Accordion = bElement({
 
 ## Keyboard Interaction
 
-- **Enter or Space**: 
+- **Enter or Space**:
+
   - When focus is on a collapsed panel header, expands the associated panel
   - When focus is on an expanded panel header, collapses the panel (if collapse is supported)
   - In single-expand mode, collapses other expanded panels when expanding a new one

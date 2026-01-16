@@ -130,9 +130,9 @@ const menubarStyles = createStyles({
   },
   menu: {
     position: 'absolute',
-    top: '100%',
-    left: 0,
-    minWidth: '200px',
+    insetBlockStart: '100%',
+    insetInlineStart: 0,
+    minInlineSize: '200px',
     border: '1px solid #ccc',
     borderRadius: '4px',
     backgroundColor: 'white',
@@ -150,9 +150,9 @@ const menubarStyles = createStyles({
     position: 'relative',
   },
   separator: {
-    height: '1px',
+    blockSize: '1px',
     backgroundColor: '#ccc',
-    margin: '0.25rem 0',
+    marginBlock: '0.25rem',
     border: 'none',
   },
 })
@@ -524,9 +524,10 @@ const menuStyles = createStyles({
     },
   },
   separator: {
-    height: '1px',
+    blockSize: '1px',
     backgroundColor: '#ccc',
-    margin: '0.25rem 0',
+    marginBlock: '0.25rem',
+    marginInline: 0,
     border: 'none',
   },
 })

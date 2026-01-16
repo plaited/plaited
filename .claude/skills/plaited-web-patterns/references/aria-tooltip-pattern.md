@@ -5,6 +5,7 @@
 A tooltip is a popup that displays information related to an element when the element receives keyboard focus or the mouse hovers over it. It typically appears after a small delay and disappears when Escape is pressed or on mouse out.
 
 **Key Characteristics:**
+
 - **Non-focusable**: Tooltips do not receive focus (unlike dialogs or popovers)
 - **Triggered by hover/focus**: Appears on mouse hover or keyboard focus
 - **Delayed appearance**: Typically appears after a small delay (e.g., 500ms)
@@ -12,6 +13,7 @@ A tooltip is a popup that displays information related to an element when the el
 - **Contextual information**: Provides additional information about the trigger element
 
 **Important Notes:**
+
 - Tooltips do NOT receive focus - focus stays on the triggering element
 - If tooltip is invoked on focus, it's dismissed on blur
 - If tooltip is invoked on hover, it remains open as long as cursor is over trigger or tooltip
@@ -20,6 +22,7 @@ A tooltip is a popup that displays information related to an element when the el
 - Modern browsers support the Popover API which can be used for tooltips
 
 **Differences from Popover/Dialog:**
+
 - Tooltip: Non-focusable, appears on hover/focus, auto-dismisses
 - Popover: Can be focusable, appears on click, may require explicit dismissal
 - Dialog: Focusable, modal or non-modal, requires explicit interaction
@@ -134,6 +137,7 @@ tooltip.addEventListener('mouseleave', hideTooltip)
 ### Plaited Adaptation
 
 **Important**: In Plaited, tooltips can be implemented as:
+
 1. **Native HTML `title` attribute** for simple cases (Functional Template)
 2. **bElement** for ARIA tooltips with timing and positioning
 3. **Native Popover API** with bElement wrapper for modern browsers
@@ -180,10 +184,10 @@ const tooltipStyles = createStyles({
   },
   tooltip: {
     position: 'absolute',
-    bottom: '100%',
-    left: '50%',
+    insetBlockEnd: '100%',
+    insetInlineStart: '50%',
     transform: 'translateX(-50%)',
-    marginBottom: '0.5rem',
+    marginBlockEnd: '0.5rem',
     padding: '0.5rem 0.75rem',
     backgroundColor: '#333',
     color: '#fff',
@@ -204,8 +208,8 @@ const tooltipStyles = createStyles({
     '&::after': {
       content: '""',
       position: 'absolute',
-      top: '100%',
-      left: '50%',
+      insetBlockStart: '100%',
+      insetInlineStart: '50%',
       transform: 'translateX(-50%)',
       border: '6px solid transparent',
       borderTopColor: '#333',
@@ -638,21 +642,25 @@ export const formFieldTooltip = story({
 ## Tooltip Variants
 
 ### Simple Tooltip
+
 - Native `title` attribute
 - Basic functionality
 - Limited styling control
 
 ### ARIA Tooltip
+
 - Full control over appearance and behavior
 - Customizable delay and positioning
 - Better accessibility support
 
 ### Popover Tooltip
+
 - Uses native Popover API
 - Modern browser support
 - Built-in accessibility features
 
 ### Form Field Tooltip
+
 - Help text for form inputs
 - Validation messages
 - Contextual guidance
@@ -666,7 +674,8 @@ export const formFieldTooltip = story({
 | Safari | Full support | Full support | 17+ |
 | Edge | Full support | Full support | 114+ |
 
-**Note**: 
+**Note**:
+
 - Native `title` attribute has universal support
 - ARIA tooltip pattern has universal support
 - Popover API has broad support as of 2025

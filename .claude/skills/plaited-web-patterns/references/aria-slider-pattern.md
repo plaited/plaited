@@ -53,7 +53,7 @@ A slider is an input where the user selects a value from within a given range. S
   tabindex="0"
 >
   <div class="track">
-    <div class="thumb" style="left: 50%"></div>
+    <div class="thumb" style="inset-inline-start: 50%"></div>
   </div>
 </div>
 
@@ -68,7 +68,7 @@ A slider is an input where the user selects a value from within a given range. S
   tabindex="0"
 >
   <div class="track-vertical">
-    <div class="thumb" style="bottom: 75%"></div>
+    <div class="thumb" style="inset-block-end: 75%"></div>
   </div>
 </div>
 ```
@@ -139,35 +139,35 @@ const sliderStyles = createStyles({
     gap: '0.5rem',
   },
   input: {
-    width: '100%',
-    height: '8px',
+    inlineSize: '100%',
+    blockSize: '8px',
     borderRadius: '4px',
     outline: 'none',
     // Webkit styling
     '&::-webkit-slider-thumb': {
       appearance: 'none',
-      width: '20px',
-      height: '20px',
+      inlineSize: '20px',
+      blockSize: '20px',
       borderRadius: '50%',
       backgroundColor: '#007bff',
       cursor: 'pointer',
     },
     '&::-webkit-slider-runnable-track': {
-      height: '8px',
+      blockSize: '8px',
       borderRadius: '4px',
       backgroundColor: '#e0e0e0',
     },
     // Firefox styling
     '&::-moz-range-thumb': {
-      width: '20px',
-      height: '20px',
+      inlineSize: '20px',
+      blockSize: '20px',
       borderRadius: '50%',
       backgroundColor: '#007bff',
       cursor: 'pointer',
       border: 'none',
     },
     '&::-moz-range-track': {
-      height: '8px',
+      blockSize: '8px',
       borderRadius: '4px',
       backgroundColor: '#e0e0e0',
     },
@@ -313,34 +313,34 @@ import { createStyles } from 'plaited/ui'
 const customSliderStyles = createStyles({
   slider: {
     position: 'relative',
-    width: '100%',
-    height: '40px',
+    inlineSize: '100%',
+    blockSize: '40px',
     display: 'flex',
     alignItems: 'center',
   },
   track: {
     position: 'relative',
-    width: '100%',
-    height: '8px',
+    inlineSize: '100%',
+    blockSize: '8px',
     backgroundColor: '#e0e0e0',
     borderRadius: '4px',
     cursor: 'pointer',
   },
   fill: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    height: '100%',
+    insetBlockStart: 0,
+    insetInlineStart: 0,
+    blockSize: '100%',
     backgroundColor: '#007bff',
     borderRadius: '4px',
-    transition: 'width 0.1s ease',
+    transition: 'inlineSize 0.1s ease',
   },
   thumb: {
     position: 'absolute',
-    top: '50%',
+    insetBlockStart: '50%',
     transform: 'translate(-50%, -50%)',
-    width: '20px',
-    height: '20px',
+    inlineSize: '20px',
+    blockSize: '20px',
     borderRadius: '50%',
     backgroundColor: '#007bff',
     cursor: 'grab',
@@ -353,8 +353,8 @@ const customSliderStyles = createStyles({
   },
   value: {
     position: 'absolute',
-    top: '-25px',
-    left: '50%',
+    insetBlockStart: '-25px',
+    insetInlineStart: '50%',
     transform: 'translateX(-50%)',
     fontSize: '0.75em',
     fontWeight: 'bold',
@@ -435,11 +435,11 @@ export const CustomSlider = bElement<CustomSliderEvents>({
       
       // Update visual position
       if (isVertical) {
-        thumb?.setAttribute('style', `bottom: ${percentage}%`)
-        fill?.setAttribute('style', `height: ${percentage}%`)
+        thumb?.setAttribute('style', `inset-block-end: ${percentage}%`)
+        fill?.setAttribute('style', `block-size: ${percentage}%`)
       } else {
-        thumb?.setAttribute('style', `left: ${percentage}%`)
-        fill?.setAttribute('style', `width: ${percentage}%`)
+        thumb?.setAttribute('style', `inset-inline-start: ${percentage}%`)
+        fill?.setAttribute('style', `inline-size: ${percentage}%`)
       }
       
       // Update ARIA attributes
@@ -606,7 +606,7 @@ export const VerticalSlider = bElement<CustomSliderEvents>({
       aria-orientation='vertical'
       tabIndex={0}
       {...customSliderStyles.slider}
-      style={{ flexDirection: 'column', height: '200px', width: '40px' }}
+      style={{ flexDirection: 'column', blockSize: '200px', inlineSize: '40px' }}
       p-trigger={{ keydown: 'handleKeydown', mousedown: 'handleMouseDown' }}
     >
       {/* Similar structure but vertical */}

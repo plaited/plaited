@@ -143,7 +143,7 @@ type RowData = {
 const gridStyles = createStyles({
   grid: {
     display: 'table',
-    width: '100%',
+    inlineSize: '100%',
     borderCollapse: 'collapse',
   },
   row: {
@@ -167,7 +167,7 @@ const gridStyles = createStyles({
     },
   },
   input: {
-    width: '100%',
+    inlineSize: '100%',
     border: 'none',
     background: 'transparent',
     padding: 0,

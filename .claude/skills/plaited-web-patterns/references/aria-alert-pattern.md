@@ -2,9 +2,10 @@
 
 ## Overview
 
-An alert is an element that displays a brief, important message in a way that attracts the user's attention without interrupting the user's task. Dynamically rendered alerts are automatically announced by most screen readers, and in some operating systems, they may trigger an alert sound.
+An alert is an element that displays a brief, important message in a way that attracts the user's attention without interrupting the user's task. Dynamically rendered alerts are automatically announced by most screen readers, and in some operating systems. Alerts may trigger an alert sound.
 
 **Critical Design Considerations:**
+
 - Alerts should **NOT** affect keyboard focus
 - Alerts should **NOT** disappear automatically (violates WCAG 2.2.3)
 - Avoid frequent interruptions (violates WCAG 2.2.4)
@@ -62,6 +63,7 @@ function dismissAlert(alertElement) {
 ### Plaited Adaptation
 
 **Important**: In Plaited, alerts can be implemented as either:
+
 1. **Functional Templates (FT)** for static alerts in stories
 2. **bElements** for dynamic alerts that need to be announced by screen readers
 
@@ -109,13 +111,13 @@ import { Alert } from './alert.stories.tsx'
 const alertContainerStyles = createStyles({
   container: {
     position: 'fixed',
-    top: '1rem',
-    right: '1rem',
-    maxWidth: '400px',
+    insetBlockStart: '1rem',
+    insetInlineEnd: '1rem',
+    maxInlineSize: '400px',
     zIndex: 1000,
   },
   alert: {
-    marginBottom: '0.5rem',
+    marginBlockEnd: '0.5rem',
     padding: '1rem',
     borderRadius: '4px',
     border: '1px solid',
@@ -198,10 +200,10 @@ const alertStyles = createStyles({
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '0.5rem',
+    marginBlockEnd: '0.5rem',
   },
   dismissButton: {
-    marginLeft: '1rem',
+    marginInlineStart: '1rem',
     padding: '0.25rem 0.5rem',
     border: 'none',
     background: 'transparent',
@@ -237,6 +239,17 @@ export const DismissibleAlert = bElement<AlertEvents>({
     const alert = $('alert')[0]
 
     return {
+      handleKeydown(event: KeyboardEvent) {
+        const alert = event.target as HTMLAlertElement
+        if (!alert) return
+
+        switch (event.key) {
+          case 'Esc':
+            event.preventDefault()
+            dismiss()
+            break
+        }
+      },
       dismiss() {
         emit({ type: 'dismiss' })
         // Parent can remove the element
@@ -263,14 +276,14 @@ type Alert = {
 const alertManagerStyles = createStyles({
   container: {
     position: 'fixed',
-    top: '1rem',
-    right: '1rem',
-    maxWidth: '400px',
+    insetBlockStart: '1rem',
+    insetInlineEnd: '1rem',
+    maxInlineSize: '400px',
     zIndex: 1000,
   },
   alert: {
     padding: '1rem',
-    marginBottom: '0.5rem',
+    marginBlockEnd: '0.5rem',
     borderRadius: '4px',
     display: 'flex',
     justifyContent: 'space-between',
@@ -373,7 +386,7 @@ export const showAlert = (message: string, variant: Alert['variant'] = 'info') =
 
 ### Optional
 
-- **aria-live**: Set to `"assertive"` for immediate announcements (default behavior for role="alert")
+- **aria-live**: Set to `"assertive"` for immediate announcements. This is the default behavior for role="alert".
 - **aria-atomic**: Set to `"true"` to announce entire region, `"false"` to announce only changes
 - **aria-label**: On dismiss buttons for accessible labeling
 

@@ -220,7 +220,7 @@ const treeStyles = createStyles({
     gap: '0.5rem',
   },
   expandIcon: {
-    width: '1rem',
+    inlineSize: '1rem',
     textAlign: 'center',
     userSelect: 'none',
   },

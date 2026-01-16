@@ -2,9 +2,10 @@
 
 ## Overview
 
-A carousel presents a set of items, referred to as slides, by sequentially displaying a subset of one or more slides. Typically, one slide is displayed at a time, and users can activate a next or previous slide control that hides the current slide and "rotates" the next or previous slide into view. In some implementations, rotation automatically starts when the page loads, and it may also automatically stop once all the slides have been displayed.
+A carousel presents a set of three or more related items, usually images or movies, in sequential order. Typically one slide is displayed at a time and users can activate a next or previous slide control to hide the current slide and "rotates" the next or previous slide into view. In some implementations, rotation automatically starts when the page loads and it may also automatically stop once all the slides have been displayed.
 
 **Key Terms:**
+
 - **Slide**: A single content container within a set of content containers
 - **Rotation Control**: An interactive element that stops and starts automatic slide rotation
 - **Next Slide Control**: An interactive element that displays the next slide
@@ -12,6 +13,7 @@ A carousel presents a set of items, referred to as slides, by sequentially displ
 - **Slide Picker Controls**: A group of elements that enable the user to pick a specific slide
 
 **Critical Accessibility Requirements:**
+
 - Auto-rotation stops when keyboard focus enters the carousel
 - Auto-rotation stops when mouse hovers over the carousel
 - Rotation control button for stopping/starting auto-rotation
@@ -108,8 +110,8 @@ import { createStyles } from 'plaited/ui'
 const carouselStyles = createStyles({
   carousel: {
     position: 'relative',
-    width: '100%',
-    maxWidth: '800px',
+    inlineSize: '100%',
+    maxInlineSize: '800px',
     margin: '0 auto',
   },
   controls: {
@@ -358,7 +360,7 @@ import { createStyles } from 'plaited/ui'
 const tabbedCarouselStyles = createStyles({
   carousel: {
     position: 'relative',
-    width: '100%',
+    inlineSize: '100%',
   },
   tablist: {
     display: 'flex',
@@ -521,8 +523,8 @@ const groupedCarouselStyles = createStyles({
     marginBottom: '1rem',
   },
   pickerButton: {
-    width: '12px',
-    height: '12px',
+    inlineSize: '12px',
+    blockSize: '12px',
     borderRadius: '50%',
     border: '1px solid #ccc',
     background: 'transparent',

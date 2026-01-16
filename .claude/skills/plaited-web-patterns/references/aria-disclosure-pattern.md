@@ -169,7 +169,7 @@ const disclosureStyles = createStyles({
     display: 'block',
   },
   button: {
-    width: '100%',
+    inlineSize: '100%',
     padding: '0.75rem',
     textAlign: 'left',
     border: '1px solid #ccc',

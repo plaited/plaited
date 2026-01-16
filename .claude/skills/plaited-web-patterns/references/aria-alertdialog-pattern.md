@@ -5,6 +5,7 @@
 An alert dialog is a modal dialog that interrupts the user's workflow to communicate an important message and acquire a response. Examples include action confirmation prompts and error message confirmations. The `alertdialog` role enables assistive technologies and browsers to distinguish alert dialogs from other dialogs so they have the option of giving alert dialogs special treatment, such as playing a system alert sound.
 
 **Key Differences from Alert Pattern:**
+
 - Alert dialogs **DO** interrupt workflow and require user response
 - Alert dialogs **DO** manage keyboard focus (traps focus within dialog)
 - Alert dialogs are **modal** (blocks interaction with page content)
@@ -85,6 +86,7 @@ function showAlertDialog(title, message, onConfirm, onCancel) {
 ### Plaited Adaptation
 
 **Important**: In Plaited, alert dialogs are implemented as **bElements** because they require:
+
 - Complex state management (open/closed)
 - Focus trapping
 - Keyboard event handling (Escape key)
@@ -100,10 +102,9 @@ import { createStyles, createHostStyles } from 'plaited/ui'
 const dialogStyles = createStyles({
   overlay: {
     position: 'fixed',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
+    inset: 0,
+    inlineSize: '100%',
+    blockSize: '100%',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     display: {
       $default: 'none',
@@ -117,17 +118,17 @@ const dialogStyles = createStyles({
     backgroundColor: 'white',
     padding: '1.5rem',
     borderRadius: '8px',
-    maxWidth: '400px',
-    width: '90%',
+    maxInlineSize: '400px',
+    inlineSize: '90%',
     boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
   },
   title: {
-    margin: '0 0 1rem 0',
+    marginBlockEnd: '1rem',
     fontSize: '1.25rem',
     fontWeight: 'bold',
   },
   message: {
-    margin: '0 0 1.5rem 0',
+    marginBlockEnd: '1.5rem',
   },
   buttonGroup: {
     display: 'flex',
@@ -325,20 +326,20 @@ const dialogStyles = createStyles({
     padding: '1.5rem',
     borderRadius: '8px',
     border: 'none',
-    maxWidth: '400px',
-    width: '90%',
+    maxInlineSize: '400px',
+    inlineSize: '90%',
     boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
   },
   backdrop: {
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   title: {
-    margin: '0 0 1rem 0',
+    marginBlockEnd: '1rem',
     fontSize: '1.25rem',
     fontWeight: 'bold',
   },
   message: {
-    margin: '0 0 1.5rem 0',
+    marginBlockEnd: '1.5rem',
   },
   buttonGroup: {
     display: 'flex',
