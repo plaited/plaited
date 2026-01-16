@@ -52,7 +52,6 @@
       }
     ]
   },
-  "enabledPlugins": {},
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true
