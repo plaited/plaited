@@ -40,7 +40,8 @@ import { createStyles } from 'plaited/ui'
 
 export const buttonStyles = createStyles({
   btn: {
-    padding: '10px 20px',
+    paddingBlock: '10px',
+    paddingInline: '20px',
     backgroundColor: 'blue',
     color: 'white',
     border: 'none',
@@ -65,7 +66,9 @@ const inputStyles = createStyles({
     backgroundColor: {
       $default: 'white',
       '[disabled]': '#f5f5f5',
-    }
+    },
+    paddingBlock: '0.5rem',
+    paddingInline: '0.75rem',
   }
 })
 ```
@@ -94,10 +97,10 @@ const decoratedStyles = createStyles({
     '::before': {
       content: '""',
       position: 'absolute',
-      top: '0',
-      left: '0',
-      width: '4px',
-      height: '100%',
+      insetBlockStart: '0',
+      insetInlineStart: '0',
+      inlineSize: '4px',
+      blockSize: '100%',
       backgroundColor: 'blue',
     }
   }
@@ -113,7 +116,8 @@ import { createHostStyles } from 'plaited/ui'
 
 export const hostStyles = createHostStyles({
   display: 'block',
-  padding: '1rem',
+  paddingBlock: '1rem',
+  paddingInline: '1rem',
 })
 ```
 
@@ -215,7 +219,12 @@ bProgram({ $ }) {
 import { createStyles, joinStyles } from 'plaited/ui'
 
 const base = createStyles({ btn: { fontFamily: 'sans-serif' } })
-const sizes = createStyles({ large: { padding: '16px 32px' } })
+const sizes = createStyles({ 
+  large: { 
+    paddingBlock: '16px',
+    paddingInline: '32px',
+  } 
+})
 
 const largeButton = joinStyles(base.btn, sizes.large)
 
@@ -323,6 +332,36 @@ backgroundColor: 'var(--fill)'
 backgroundColor: fills.fill.default  // Token reference
 ```
 
+### 4. Using Physical Properties Instead of Logical Properties
+
+```typescript
+// ❌ WRONG - Physical properties don't work in RTL
+const styles = createStyles({
+  button: {
+    marginLeft: '1rem',      // Breaks in RTL
+    paddingRight: '0.5rem',   // Breaks in RTL
+    borderTop: '1px solid',   // Doesn't adapt to vertical writing
+  }
+})
+
+// ✅ CORRECT - Logical properties work everywhere
+const styles = createStyles({
+  button: {
+    marginInlineStart: '1rem',  // Adapts to writing direction
+    paddingInlineEnd: '0.5rem', // Adapts to writing direction
+    borderBlockStart: '1px solid', // Adapts to writing mode
+  }
+})
+
+// ✅ BETTER - Use shorthand when possible
+const styles = createStyles({
+  button: {
+    marginInline: '1rem',     // Both inline sides
+    paddingBlock: '0.5rem',  // Both block sides
+  }
+})
+```
+
 ## Generation Guidelines
 
 When generating styled templates:
@@ -334,3 +373,6 @@ When generating styled templates:
 5. **Use `data-*` attributes** for dynamic styling
 6. **Never use string CSS variables** - use `createTokens`
 7. **Spread styles with `{...styles.className}`**
+8. **Use logical properties** - for direction‐relative templates that support layouts in multiple layouts (RTL, LTR, vertical)
+9. **Prefer logical shorthand** - Use `paddingBlock`, `paddingInline`, `marginBlock`, `marginInline`, `inset` when setting both sides
+10. **Use `inline-size` and `block-size`** instead of `width` and `height` for sizing
