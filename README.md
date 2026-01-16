@@ -28,29 +28,16 @@ bun install plaited
 ### Step 2: Add the Workshop plugin
 
 **Claude Code:**
-```
-/plugin marketplace add plaited/plaited
+```bash
+claude plugins add github:plaited/marketplace
 ```
 
 **Other AI coding agents:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/plaited/plaited/main/scripts/install-workshop.sh | bash
+curl -fsSL https://raw.githubusercontent.com/plaited/marketplace/main/install.sh | bash
 ```
 
-The installer detects your agent or lets you choose:
-
-```
-┌─────────────┬──────────────────┬─────────────────────────────────────┐
-│ Agent       │ Directory        │ Supported Features                  │
-├─────────────┼──────────────────┼─────────────────────────────────────┤
-│ claude      │ .claude/         │ skills, commands, agents, hooks     │
-│ cursor      │ .claude/         │ skills                              │
-│ opencode    │ .opencode/       │ skills, commands, agents            │
-│ amp         │ .agents/         │ skills, commands                    │
-│ goose       │ .claude/         │ skills                              │
-│ factory     │ .factory/        │ skills                              │
-└─────────────┴──────────────────┴─────────────────────────────────────┘
-```
+The installer supports Gemini CLI, GitHub Copilot, Cursor, OpenCode, Amp, Goose, and Factory. Run `./install.sh --help` for options.
 
 ### Step 3: Start building
 
@@ -130,9 +117,8 @@ The Workshop plugin teaches your AI coding agent how to build with Plaited:
 - Type verification catches errors before you run
 
 **Commands:**
-- `/validate-skill` — Validate skill directories
-- `/create-web-patterns-skill` — Extract patterns from articles
-- `/create-design-system-skill` — Document your design system
+- `/create-web-patterns-skill` — Extract patterns from web articles
+- `/create-world-agent-eval` — Scaffold evaluation assets for World Agent
 
 </details>
 

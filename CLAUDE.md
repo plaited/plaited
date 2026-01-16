@@ -32,8 +32,6 @@ For Plaited patterns, see these skills in `.claude/skills/`:
 - **plaited-behavioral-core** - Behavioral programming patterns, neuro-symbolic reasoning
 - **plaited-ui-patterns** - Templates, bElements, styling, forms, stories
 
-For TSDoc workflow and templates, see the **code-documentation** skill.
-
 ## Quick Reference
 
 ### Testing Overview
@@ -87,10 +85,10 @@ training/
 
 **Workflow:**
 1. Create stories in `training/stories/` with `intent` field
-2. Generate trajectories: `bun .claude/skills/world-agent/scripts/generate-trajectories.ts training/stories -o training/trajectories.jsonl`
+2. Generate trajectories using the **loom** skill
 3. Upload to Google Colab and run notebook
 
-See the **world-agent** skill for complete training workflow.
+See the **loom** skill for complete training workflow.
 
 ### Documentation
 
@@ -101,7 +99,7 @@ See the **world-agent** skill for complete training workflow.
 - Use Mermaid diagrams only (not ASCII art)
 - In SKILL.md files, use markdown links `[name](path)` not `@path` references
 
-See the **plaited-standards** skill (`.claude/skills/plaited-standards/references/standards.md`) and the **code-documentation** skill for complete guidelines.
+See the **plaited-standards** skill (`.claude/skills/plaited-standards/references/standards.md`) for complete guidelines.
 
 ## Important Constraints
 
@@ -117,9 +115,8 @@ See the **plaited-standards** skill (`.claude/skills/plaited-standards/reference
 - **plaited-standards**: Code conventions, development standards, verification workflow
 - **plaited-behavioral-core**: Behavioral programming patterns, neuro-symbolic reasoning
 - **plaited-ui-patterns**: Templates, bElements, styling, forms, stories
-- **code-documentation**: TSDoc workflow and templates
-- **typescript-lsp**: Type verification and symbol discovery
-- **workbench**: Story discovery and preview
+- **plaited-web-patterns**: Default Web API patterns for bElement architecture
+- **loom**: AI-assisted design to generative UI agents workflow
 
 **Project-Specific Rules** (`.claude/rules/`):
 - Testing commands and workflow

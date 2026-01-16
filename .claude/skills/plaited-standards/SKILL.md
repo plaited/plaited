@@ -26,6 +26,7 @@ This skill provides code conventions and development standards that apply to **a
 | [code-conventions.md](references/code-conventions.md) | Type system, function style, templates, imports, null handling |
 | [standards.md](references/standards.md) | 95% confidence threshold, documentation guidelines, Bun APIs |
 | [verification-workflow.md](references/verification-workflow.md) | Complete code generation workflow |
+| [lsp-verification.md](references/lsp-verification.md) | LSP-based type verification for Plaited APIs |
 
 ## Code Conventions
 

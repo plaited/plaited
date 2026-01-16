@@ -37,11 +37,7 @@
     "./workshop/*.ts": "./src/workshop/*.ts",
     "./workshop/*.tsx": "./src/workshop/*.tsx",
     "./agent": "./src/agent.ts",
-    "./agent/*.ts": "./src/agent/*.ts",
-    "./agent-next": "./src/agent-next.ts",
-    "./agent-next/*.ts": "./src/agent-next/*.ts",
-    "./acp": "./src/acp.ts",
-    "./acp/*.ts": "./src/acp/*.ts"
+    "./agent/*.ts": "./src/agent/*.ts"
   },
   "files": [
     "./.bin/**",
@@ -64,8 +60,6 @@
     "dev": "bun --hot src/cli.ts dev src/ui",
     "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .hooks || true",
     "test": "bun run test:stories src/ui && bun test",
-    "test:docker": "docker compose -f docker-compose.test.yml run --rm docker-integration",
-    "test:docker:build": "docker compose -f docker-compose.test.yml build",
     "test:playwright": "bunx playwright test",
     "test:stories": "bun src/cli.ts test",
     "test:stories-ui": "bun run test:stories src/ui"
