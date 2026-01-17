@@ -9,7 +9,7 @@ import { inputStyles } from './input.css.ts'
 const TextInput: FT<{
   placeholder?: string
   disabled?: boolean
-  'data-state'?: 'error' | 'success' | 'warning'
+  'data-state'?: 'error' | 'success'
 }> = ({ placeholder, disabled, 'data-state': state, ...attrs }) => (
   <input
     type='text'
@@ -51,37 +51,18 @@ const ErrorField: FT<{
   id: string
   label: string
   errorText: string
-  placeholder?: string
-  disabled?: boolean
-}> = ({ id, label, errorText, placeholder, disabled }) => {
-  const errorMessageId = `${id}-error`
-  return (
-    <div {...joinStyles(tokenStyles, inputStyles.fieldGroup)}>
-      <label
-        {...inputStyles.label}
-        htmlFor={id}
-      >
-        {label}
-      </label>
-      <TextInput
-        id={id}
-        placeholder={placeholder}
-        disabled={disabled}
-        data-state='error'
-        aria-invalid='true'
-        aria-errormessage={errorMessageId}
-      />
-      <span
-        id={errorMessageId}
-        {...inputStyles.errorText}
-        aria-live='polite'
-        role='alert'
-      >
-        {errorText}
-      </span>
-    </div>
-  )
-}
+}> = ({ id, label, errorText, children }) => (
+  <div {...inputStyles.fieldGroup}>
+    <label
+      {...inputStyles.label}
+      htmlFor={id}
+    >
+      {label}
+    </label>
+    <div id={id}>{children}</div>
+    <span {...inputStyles.errorText}>{errorText}</span>
+  </div>
+)
 
 export const meta = {
   title: 'Training/Input',
@@ -114,7 +95,6 @@ export const errorInput = story({
     <TextInput
       placeholder='Invalid input'
       data-state='error'
-      aria-invalid='true'
     />
   ),
   play: async ({ accessibilityCheck }) => {
@@ -128,19 +108,6 @@ export const successInput = story({
     <TextInput
       placeholder='Valid input'
       data-state='success'
-    />
-  ),
-  play: async ({ accessibilityCheck }) => {
-    await accessibilityCheck({})
-  },
-})
-
-export const warningInput = story({
-  intent: 'Create a text input showing warning validation state',
-  template: () => (
-    <TextInput
-      placeholder='Warning input'
-      data-state='warning'
     />
   ),
   play: async ({ accessibilityCheck }) => {
