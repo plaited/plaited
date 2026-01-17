@@ -39,7 +39,7 @@ const LabeledField: FT<{
     >
       {label}
     </label>
-    <div id={id}>{children}</div>
+    {children}
     <span {...inputStyles.helpText}>{helpText}</span>
   </div>
 )
@@ -59,7 +59,7 @@ const ErrorField: FT<{
     >
       {label}
     </label>
-    <div id={id}>{children}</div>
+    {children}
     <span {...inputStyles.errorText}>{errorText}</span>
   </div>
 )
@@ -123,7 +123,10 @@ export const labeledInput = story({
       label='Email Address'
       helpText="We'll never share your email"
     >
-      <TextInput placeholder='email@example.com' />
+      <TextInput
+        id='email-field'
+        placeholder='email@example.com'
+      />
     </LabeledField>
   ),
   play: async ({ accessibilityCheck }) => {
@@ -140,6 +143,7 @@ export const inputWithError = story({
       errorText='Password must be at least 8 characters'
     >
       <TextInput
+        id='password-field'
         placeholder='Enter password'
         data-state='error'
       />
