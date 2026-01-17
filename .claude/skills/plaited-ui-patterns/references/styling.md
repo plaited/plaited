@@ -283,7 +283,6 @@ Plaited's CSS-in-JS system provides two main utilities: `createStyles` for gener
 - **Design Tokens**: Type-safe CSS custom properties
 - **Keyframe Animations**: Hash-based animation identifiers
 - **Style Composition**: Combine multiple style objects with `joinStyles`
-- **Logical Properties**: Use [CSS Logical Properties Pattern](../plaited-web-patterns/references/css-logical-properties-pattern.md) for internationalization support (RTL, vertical writing modes)
 
 ## Core Concepts
 
@@ -391,8 +390,7 @@ import { createStyles } from 'plaited/ui'
 
 export const buttonStyles = createStyles({
   btn: {
-    paddingBlock: '10px',  
-    paddingInline: '20px',
+    padding: '10px 20px',
     backgroundColor: {
       $default: 'blue',
       ':hover': 'darkblue',
@@ -456,8 +454,8 @@ import { fills } from './fills.tokens.ts'
 
 export const styles = createStyles({
   symbol: {
-    blockSize: '16px',
-    inlineSize: '16px',
+    height: '16px',
+    width: '16px',
     backgroundColor: {
       $default: fills.fill.default,
       ':host(:state(checked))': fills.fill.checked,
@@ -545,8 +543,7 @@ import { createStyles } from 'plaited/ui'
 
 export const buttonStyles = createStyles({
   btn: {
-    paddingBlock: '10px',
-    paddingInline: '20px',
+    padding: '10px 20px',
     backgroundColor: {
       $default: 'blue',
       ':hover': 'darkblue',
@@ -827,8 +824,8 @@ import { fills } from './fills.tokens.ts'
 
 export const styles = createStyles({
   symbol: {
-    blockSize: '16px',
-    inlineSize: '16px',
+    height: '16px',
+    width: '16px',
     backgroundColor: {
       $default: fills.fill.default,
       ':host(:state(checked))': fills.fill.checked,
@@ -1556,15 +1553,14 @@ import { createStyles } from 'plaited/ui'
 const decoratedStyles = createStyles({
   badge: {
     position: 'relative',
-    paddingBlock: '8px',
-    paddingInline: '16px',
+    padding: '8px 16px',
     '::before': {
       content: '""',
       position: 'absolute',
-      insetBlockStart: '0',
-      insetInlineStart: '0',
-      inlineSize: '4px',
-      blockSize: '100%',
+      top: '0',
+      left: '0',
+      width: '4px',
+      height: '100%',
       backgroundColor: 'blue',
     }
   }
