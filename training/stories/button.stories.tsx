@@ -31,6 +31,7 @@ const PrimaryButton: FT<{ disabled?: boolean; loading?: boolean; children?: Chil
     <button
       {...joinStyles(buttonStyles.btn, buttonStyles.primary, loading && buttonStyles.loading, spinnerKeyframes)}
       disabled={disabled || loading}
+      aria-busy={loading ? 'true' : undefined}
     >
       {content.length === 1 ? content[0] : content}
     </button>
@@ -127,6 +128,37 @@ export const primaryButtonDisabled = story({
 export const primaryButtonLoading = story({
   intent: 'Create a primary button with a loading state that shows a spinner and prevents interaction',
   template: () => <PrimaryButton loading>Loading...</PrimaryButton>,
+  play: async ({ accessibilityCheck }) => {
+    await accessibilityCheck({})
+  },
+})
+
+export const primaryButtonLoadingSpinnerOnly = story({
+  intent: 'Create a primary button with loading state showing only a spinner without text',
+  template: () => <PrimaryButton loading>Submit</PrimaryButton>,
+  play: async ({ accessibilityCheck }) => {
+    await accessibilityCheck({})
+  },
+})
+
+export const primaryButtonLoadingWithText = story({
+  intent: 'Create a primary button with loading state displaying both spinner and loading text for clear feedback',
+  template: () => <PrimaryButton loading>Processing...</PrimaryButton>,
+  play: async ({ accessibilityCheck }) => {
+    await accessibilityCheck({})
+  },
+})
+
+export const primaryButtonLoadingDisabled = story({
+  intent: 'Create a disabled primary button with loading state that is both disabled and shows a loading spinner',
+  template: () => (
+    <PrimaryButton
+      loading
+      disabled
+    >
+      Saving...
+    </PrimaryButton>
+  ),
   play: async ({ accessibilityCheck }) => {
     await accessibilityCheck({})
   },
