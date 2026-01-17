@@ -4,9 +4,8 @@ import { inputTokens } from './input.tokens.ts'
 export const inputStyles = createStyles({
   input: {
     display: 'block',
-    inlineSize: '100%',
-    paddingBlock: '8px',
-    paddingInline: '12px',
+    width: '100%',
+    padding: '8px 12px',
     fontSize: '16px',
     lineHeight: '1.5',
     borderRadius: '4px',
@@ -42,25 +41,25 @@ export const inputStyles = createStyles({
   },
   label: {
     display: 'block',
-    marginBlockEnd: '4px',
+    marginBottom: '4px',
     fontWeight: '500',
     fontSize: '14px',
     color: '#212529',
   },
   helpText: {
     display: 'block',
-    marginBlockStart: '4px',
+    marginTop: '4px',
     fontSize: '12px',
     color: '#6c757d',
   },
   errorText: {
     display: 'block',
-    marginBlockStart: '4px',
+    marginTop: '4px',
     fontSize: '12px',
     color: '#dc3545',
   },
   fieldGroup: {
-    marginBlockEnd: '16px',
+    marginBottom: '16px',
   },
 })
 
