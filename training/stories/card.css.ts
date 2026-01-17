@@ -9,7 +9,7 @@ export const cardStyles = createStyles({
   },
   header: {
     padding: '16px 20px',
-    borderBlockEnd: '1px solid #e9ecef',
+    borderBottom: '1px solid #e9ecef',
     fontWeight: '600',
     fontSize: '18px',
   },
@@ -18,17 +18,16 @@ export const cardStyles = createStyles({
   },
   footer: {
     padding: '12px 20px',
-    borderBlockStart: '1px solid #e9ecef',
+    borderTop: '1px solid #e9ecef',
     backgroundColor: '#f8f9fa',
   },
   image: {
-    inlineSize: '100%',
-    blockSize: 'auto',
+    width: '100%',
+    height: 'auto',
     display: 'block',
   },
   title: {
-    margin: '0',
-    marginBlockEnd: '8px',
+    margin: '0 0 8px 0',
     fontSize: '20px',
     fontWeight: '600',
     color: '#212529',
