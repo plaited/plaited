@@ -40,12 +40,6 @@ export const inputStyles = createStyles({
       ':focus': `0 0 0 3px rgba(40, 167, 69, 0.25)`,
     },
   },
-  warning: {
-    border: `1px solid ${inputTokens.border.warning()}`,
-    outline: {
-      ':focus': `0 0 0 3px rgba(255, 193, 7, 0.25)`,
-    },
-  },
   label: {
     display: 'block',
     marginBlockEnd: '4px',
@@ -75,7 +69,6 @@ export const tokenStyles = joinStyles(
   inputTokens.border.focus,
   inputTokens.border.error,
   inputTokens.border.success,
-  inputTokens.border.warning,
   inputTokens.background.default,
   inputTokens.background.disabled,
   inputTokens.text.default,

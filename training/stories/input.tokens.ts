@@ -6,7 +6,6 @@ export const { input: inputTokens } = createTokens('input', {
     focus: { $value: '#80bdff' },
     error: { $value: '#dc3545' },
     success: { $value: '#28a745' },
-    warning: { $value: '#ffc107' },
   },
   background: {
     default: { $value: '#ffffff' },

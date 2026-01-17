@@ -10,18 +10,8 @@ const TextInput: FT<{
   id?: string
   placeholder?: string
   disabled?: boolean
-  'data-state'?: 'error' | 'success' | 'warning'
-  'aria-invalid'?: boolean | 'false' | 'true' | 'grammar' | 'spelling'
-  'aria-errormessage'?: string
-}> = ({
-  id,
-  placeholder,
-  disabled,
-  'data-state': state,
-  'aria-invalid': ariaInvalid,
-  'aria-errormessage': ariaErrorMessage,
-  ...attrs
-}) => (
+  'data-state'?: 'error' | 'success'
+}> = ({ placeholder, disabled, 'data-state': state, ...attrs }) => (
   <input
     type='text'
     id={id}
@@ -30,7 +20,6 @@ const TextInput: FT<{
       inputStyles.input,
       state === 'error' && inputStyles.error,
       state === 'success' && inputStyles.success,
-      state === 'warning' && inputStyles.warning,
     )}
     placeholder={placeholder}
     disabled={disabled}
@@ -195,28 +184,6 @@ export const successInput = story({
         id='success-input'
         placeholder='Enter username'
         data-state='success'
-      />
-    </div>
-  ),
-  play: async ({ accessibilityCheck }) => {
-    await accessibilityCheck({})
-  },
-})
-
-export const warningInput = story({
-  intent: 'Create a text input showing warning validation state',
-  template: () => (
-    <div {...joinStyles(tokenStyles, inputStyles.fieldGroup)}>
-      <label
-        {...inputStyles.label}
-        htmlFor='warning-input'
-      >
-        Password
-      </label>
-      <TextInput
-        id='warning-input'
-        placeholder='Enter password'
-        data-state='warning'
       />
     </div>
   ),
