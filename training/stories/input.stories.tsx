@@ -1,7 +1,7 @@
 import { story } from 'plaited/testing'
 import type { FT } from 'plaited/ui'
 import { joinStyles } from 'plaited/ui'
-import { inputStyles, tokenStyles } from './input.css.ts'
+import { inputStyles } from './input.css.ts'
 
 /**
  * Text input field.
@@ -16,7 +16,6 @@ const TextInput: FT<{
     type='text'
     id={id}
     {...joinStyles(
-      tokenStyles,
       inputStyles.input,
       state === 'error' && inputStyles.error,
       state === 'success' && inputStyles.success,
@@ -37,7 +36,7 @@ const LabeledField: FT<{
   label: string
   helpText: string
 }> = ({ id, label, helpText, children }) => (
-  <div {...joinStyles(tokenStyles, inputStyles.fieldGroup)}>
+  <div {...inputStyles.fieldGroup}>
     <label
       {...inputStyles.label}
       htmlFor={id}
@@ -56,37 +55,18 @@ const ErrorField: FT<{
   id: string
   label: string
   errorText: string
-  placeholder?: string
-  disabled?: boolean
-}> = ({ id, label, errorText, placeholder, disabled }) => {
-  const errorMessageId = `${id}-error`
-  return (
-    <div {...joinStyles(tokenStyles, inputStyles.fieldGroup)}>
-      <label
-        {...inputStyles.label}
-        htmlFor={id}
-      >
-        {label}
-      </label>
-      <TextInput
-        id={id}
-        placeholder={placeholder}
-        disabled={disabled}
-        data-state='error'
-        aria-invalid='true'
-        aria-errormessage={errorMessageId}
-      />
-      <span
-        id={errorMessageId}
-        {...inputStyles.errorText}
-        role='alert'
-        aria-atomic='true'
-      >
-        {errorText}
-      </span>
-    </div>
-  )
-}
+}> = ({ id, label, errorText, children }) => (
+  <div {...inputStyles.fieldGroup}>
+    <label
+      {...inputStyles.label}
+      htmlFor={id}
+    >
+      {label}
+    </label>
+    <div id={id}>{children}</div>
+    <span {...inputStyles.errorText}>{errorText}</span>
+  </div>
+)
 
 export const meta = {
   title: 'Training/Input',
@@ -211,7 +191,7 @@ export const labeledInput = story({
   },
 })
 
-export const labeledInputWithError = story({
+export const inputWithError = story({
   intent: 'Create a form field showing validation error message',
   template: () => (
     <ErrorField

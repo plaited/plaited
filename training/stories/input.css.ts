@@ -72,6 +72,5 @@ export const tokenStyles = joinStyles(
   inputTokens.background.default,
   inputTokens.background.disabled,
   inputTokens.text.default,
-  inputTokens.text.placeholder,
   inputTokens.text.disabled,
 )
