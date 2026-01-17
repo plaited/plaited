@@ -33,6 +33,30 @@ export const hasInlineStyles = (content: string): boolean => {
 }
 
 /**
+ * Detects physical CSS properties in style content.
+ * Returns true if content contains physical properties like marginLeft, paddingTop, width, etc.
+ * that should be replaced with logical properties (marginInlineStart, paddingBlock, inlineSize, etc.)
+ *
+ * @remarks
+ * Physical properties break in RTL languages and vertical writing modes.
+ * Use this to detect violations of the CSS logical properties requirement.
+ *
+ * @param content - CSS or TypeScript style content to check
+ * @returns true if physical properties are detected
+ */
+export const hasPhysicalProperties = (content: string): boolean => {
+  // Physical properties that should be replaced with logical equivalents
+  const physicalPatterns = [
+    /\b(margin|padding|border)(Left|Right|Top|Bottom)\b/i, // marginLeft, paddingRight, etc.
+    /\b(left|right|top|bottom)\s*:/i, // CSS position properties
+    /\b(width|height|minWidth|maxWidth|minHeight|maxHeight)\s*:/i, // Should use inlineSize/blockSize
+    /\bborder(TopLeft|TopRight|BottomLeft|BottomRight)Radius\b/i, // Should use logical border radius
+  ]
+
+  return physicalPatterns.some((pattern) => pattern.test(content))
+}
+
+/**
  * Creates a bThread that blocks template writes containing raw color values.
  * Forces the agent to use design tokens instead.
  *
