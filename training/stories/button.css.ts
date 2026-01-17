@@ -1,9 +1,4 @@
-import { createKeyframes, createStyles } from 'plaited/ui'
-
-const { spin } = createKeyframes('spin', {
-  '0%': { transform: 'rotate(0deg)' },
-  '100%': { transform: 'rotate(360deg)' },
-})
+import { createStyles } from 'plaited/ui'
 
 export const buttonStyles = createStyles({
   btn: {
@@ -15,11 +10,6 @@ export const buttonStyles = createStyles({
     fontSize: '14px',
     fontWeight: '500',
     transition: 'background-color 0.2s ease',
-    position: 'relative',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px',
   },
   primary: {
     backgroundColor: {
@@ -69,38 +59,4 @@ export const buttonStyles = createStyles({
     },
     outlineOffset: '2px',
   },
-  loading: {
-    cursor: 'not-allowed',
-    pointerEvents: 'none',
-    opacity: '0.7',
-  },
-  spinner: {
-    width: '14px',
-    height: '14px',
-    border: '2px solid currentColor',
-    borderBlockStartColor: 'transparent',
-    borderRadius: '50%',
-    animation: `${spin.id} 0.8s linear infinite`,
-    display: 'inline-block',
-  },
-  icon: {
-    padding: '8px',
-    blockSize: '40px',
-    inlineSize: '40px',
-    borderRadius: '4px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconRound: {
-    borderRadius: '50%',
-  },
-  iconSvg: {
-    inlineSize: '20px',
-    blockSize: '20px',
-    fill: 'currentColor',
-  },
 })
-
-// Export spinner keyframes for use in joinStyles
-export const spinnerKeyframes = spin()
