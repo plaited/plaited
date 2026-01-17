@@ -7,14 +7,12 @@ import { inputStyles } from './input.css.ts'
  * Text input field.
  */
 const TextInput: FT<{
-  id?: string
   placeholder?: string
   disabled?: boolean
-  'data-state'?: 'error' | 'success'
+  'data-state'?: 'error' | 'success' | 'warning'
 }> = ({ placeholder, disabled, 'data-state': state, ...attrs }) => (
   <input
     type='text'
-    id={id}
     {...joinStyles(
       inputStyles.input,
       state === 'error' && inputStyles.error,
@@ -22,8 +20,6 @@ const TextInput: FT<{
     )}
     placeholder={placeholder}
     disabled={disabled}
-    aria-invalid={ariaInvalid ?? (state === 'error' ? 'true' : undefined)}
-    aria-errormessage={ariaErrorMessage}
     {...attrs}
   />
 )
@@ -56,7 +52,7 @@ const ErrorField: FT<{
   label: string
   errorText: string
 }> = ({ id, label, errorText, children }) => (
-  <div {...inputStyles.fieldGroup}>
+  <div {...joinStyles(tokenStyles, inputStyles.fieldGroup)}>
     <label
       {...inputStyles.label}
       htmlFor={id}
@@ -117,34 +113,12 @@ export const disabledInput = story({
 
 export const errorInput = story({
   intent: 'Create a text input showing error validation state',
-  template: () => {
-    const errorMessageId = 'error-input-error'
-    return (
-      <div {...joinStyles(tokenStyles, inputStyles.fieldGroup)}>
-        <label
-          {...inputStyles.label}
-          htmlFor='error-input'
-        >
-          Email Address
-        </label>
-        <TextInput
-          id='error-input'
-          placeholder='email@example.com'
-          data-state='error'
-          aria-invalid='true'
-          aria-errormessage={errorMessageId}
-        />
-        <span
-          id={errorMessageId}
-          {...inputStyles.errorText}
-          role='alert'
-          aria-atomic='true'
-        >
-          Please enter a valid email address
-        </span>
-      </div>
-    )
-  },
+  template: () => (
+    <TextInput
+      placeholder='Invalid input'
+      data-state='error'
+    />
+  ),
   play: async ({ accessibilityCheck }) => {
     await accessibilityCheck({})
   },
@@ -198,8 +172,12 @@ export const inputWithError = story({
       id='password-field'
       label='Password'
       errorText='Password must be at least 8 characters'
-      placeholder='Enter password'
-    />
+    >
+      <TextInput
+        placeholder='Enter password'
+        data-state='error'
+      />
+    </ErrorField>
   ),
   play: async ({ accessibilityCheck }) => {
     await accessibilityCheck({})
