@@ -19,7 +19,6 @@
       "Bash(docker stop:*)"
     ]
   },
-  "enabledMcpjsonServers": [],
   "hooks": {
     "SessionStart": [
       {
@@ -55,5 +54,6 @@
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true
-  }
+  },
+  "enableAllProjectMcpServers": true
 }
