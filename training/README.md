@@ -1,6 +1,6 @@
 # World Agent Training
 
-> **Note:** The world-agent skill scripts referenced in this document have been moved to external tooling. This README documents the conceptual training approach. See the [plaited/development-skills](https://github.com/plaited/development-skills) repository for updated tooling.
+> **Note:** The world-agent skill scripts referenced in this document have been removed. This README documents the **conceptual training approach** - script examples show the intended workflow format but are not executable. See the [plaited/development-skills](https://github.com/plaited/development-skills) repository for current tooling.
 
 Training pipeline for the Plaited World Agent—a neuro-symbolic UI generation system that combines neural policy learning with behavioral programming constraints.
 

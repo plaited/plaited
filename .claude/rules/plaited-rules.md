@@ -31,11 +31,11 @@ When verifying implementation details in Plaited projects:
    - `plaited-ui-patterns` - Templates, bElements, styling
    - `plaited-standards` - Code conventions
 
-2. **TypeScript LSP**: Use `typescript-lsp` skill for type verification:
+2. **TypeScript LSP**: Use `typescript-lsp@plaited_development-skills` skill for type verification:
    - `lsp-hover` to verify type signatures
-   - `lsp-references` to find all usages before modifying
-   - `lsp-symbols` for file structure
-   - `lsp-find` to search for patterns across the workspace
+   - `lsp-refs` to find all usages before modifying
+   - `lsp-analyze` for file structure and exports
+   - `lsp-find` to search for symbols across the workspace
 
 ## Template/Browser Tests (`*.stories.tsx`)
 
