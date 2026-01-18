@@ -1,112 +1,129 @@
-# Code Review Standards
+# Code Review
 
-The following standards are not automatically enforced by Biome but should be checked during code review.
+TypeScript conventions and module organization standards.
 
-## Automated Validation
+## TypeScript Conventions
 
-Before completing a code review, run these validation scripts:
-
-### Plugin Skills Validation
-
-When changes touch `.claude/skills/`, validate against the AgentSkills spec by running:
-
-```
-/validate-skill
-```
-
-This checks:
-- SKILL.md exists and has required frontmatter
-- Scripts have proper structure
-- References are valid markdown files
-
-## TypeScript Comment Directives
-
-### `@ts-ignore` Requires Description
-
-- When using `@ts-ignore`, always include a description explaining why the type error is being suppressed
-- This helps future maintainers understand the reasoning
-- Example:
-  ```typescript
-  // @ts-ignore - TypeScript incorrectly infers this as string when it's actually a number from the API
-  const value = response.data
-  ```
-
-**Rationale:** Lost TypeScript-ESLint rule `ban-ts-comment` with `allow-with-description` option during Biome migration
-
-## Expression Statements
-
-### Allow Short-Circuit and Ternary Expressions
-
-- Short-circuit evaluation is acceptable: `condition && doSomething()`
-- Ternary expressions are acceptable: `condition ? doThis() : doThat()`
-- These patterns are idiomatic and improve code readability
-
-**Rationale:** Lost TypeScript-ESLint rule `no-unused-expressions` with `allowShortCircuit` and `allowTernary` options during Biome migration
-
-## Empty Object Types
-
-### Allow Empty Object Types When Extending a Single Interface
-
-- Empty object types are acceptable when they extend exactly one other interface
-- This pattern is useful for creating branded types or extending third-party interfaces
-- Example:
-  ```typescript
-  // ✅ Acceptable: Extends single interface
-  interface CustomElement extends HTMLElement {}
-
-  // ❌ Avoid: Empty with no extends or multiple extends
-  interface Empty {}
-  interface Multi extends Foo, Bar {}
-  ```
-
-**Rationale:** Lost TypeScript-ESLint rule `no-empty-object-type` with `allowInterfaces: 'with-single-extends'` option during Biome migration
-
-## Modern JavaScript Standards
-
-### Prefer Private Fields Over `private` Keyword
-
-Use JavaScript private fields (`#field`) instead of TypeScript's `private` keyword:
+### Types Over Interfaces
 
 ```typescript
-// ✅ Good: JavaScript private fields (ES2022+)
-class EventBus {
-  #listeners = new Map<string, Set<Function>>()
-  #count = 0
-
-  #emit(event: string) {
-    this.#count++
-    this.#listeners.get(event)?.forEach(fn => fn())
-  }
+// ✅ Prefer type aliases
+type UserProps = {
+  name: string
+  email: string
 }
 
-// ❌ Avoid: TypeScript private keyword
-class EventBus {
-  private listeners = new Map<string, Set<Function>>()
-  private count = 0
-
-  private emit(event: string) {
-    this.count++
-    this.listeners.get(event)?.forEach(fn => fn())
-  }
+// ❌ Avoid interfaces
+interface UserProps {
+  name: string
+  email: string
 }
 ```
 
-**Rationale:** JavaScript private fields are a runtime feature (ES2022) providing true encapsulation. TypeScript's `private` is erased at compile time and can be bypassed. Prefer platform standards over TypeScript-only features
+**Rationale**: Types are more flexible (unions, intersections, mapped types) and align with Plaited conventions.
 
-## Terminology
-
-### Use "Template" Not "Component"
-
-Plaited is a template-driven framework. Always use "template", "templates", "elements", "elements", "behavioral element", or "behavioral elements" instead of "component" or "components" in all documents, examples, comments, and code.
+### No `any` Types
 
 ```typescript
-// ✅ Good: Template terminology
-const ButtonTemplate = () => <button>Click me</button>
-// src/templates/button.tsx
+// ✅ Use unknown with type guards
+const parseData = (input: unknown): User => {
+  if (isUser(input)) return input
+  throw new Error('Invalid user data')
+}
 
-// ❌ Avoid: Component terminology
-const ButtonComponent = () => <button>Click me</button>
-// src/components/button.tsx
+// ✅ Use generics for flexibility
+const first = <T>(arr: T[]): T | undefined => arr[0]
+
+// ❌ Never use any
+const parseData = (input: any): User => input
 ```
 
-**Rationale:** Plaited's architecture is fundamentally template-driven, not component-driven. Consistent terminology reinforces the framework's design philosophy
+### Arrow Functions
+
+```typescript
+// ✅ Arrow functions for most cases
+const calculateTotal = (items: Item[]): number =>
+  items.reduce((sum, item) => sum + item.price, 0)
+
+// ✅ Function declarations for hoisting needs only
+function recursiveHelper(n: number): number {
+  if (n <= 1) return n
+  return recursiveHelper(n - 1) + recursiveHelper(n - 2)
+}
+```
+
+### Object Parameters
+
+For functions with 2+ parameters, use object destructuring:
+
+```typescript
+// ✅ Object parameter pattern
+const createUser = ({
+  name,
+  email,
+  role = 'user',
+}: {
+  name: string
+  email: string
+  role?: string
+}): User => ({ name, email, role })
+
+// ❌ Positional parameters
+const createUser = (name: string, email: string, role?: string): User =>
+  ({ name, email, role })
+```
+
+## Module Organization
+
+### Import Order
+
+1. External packages (node_modules)
+2. Internal packages (workspace)
+3. Relative imports (local files)
+
+```typescript
+// External
+import { expect, test } from 'bun:test'
+
+// Internal packages
+import { bElement } from 'plaited'
+import { story } from 'plaited/testing'
+
+// Relative
+import { helper } from './utils.ts'
+import type { Config } from './types.ts'
+```
+
+### Export Patterns
+
+```typescript
+// ✅ Named exports for most cases
+export const formatDate = (date: Date): string => { /* ... */ }
+export type DateFormat = 'short' | 'long'
+
+// ✅ Barrel exports in index.ts
+export { formatDate } from './format-date.ts'
+export type { DateFormat } from './format-date.ts'
+
+// ❌ Avoid default exports (except for main entry)
+export default function formatDate() { /* ... */ }
+```
+
+### File Naming
+
+- `kebab-case.ts` for all TypeScript files
+- `*.spec.ts` for unit tests
+- `*.stories.tsx` for template/browser tests
+- `*.d.ts` for type declarations
+
+## Code Quality Checks
+
+Before submitting code:
+
+```bash
+# Type check, lint, and format
+bun run check
+
+# Auto-fix issues
+bun run check:write
+```

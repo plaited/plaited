@@ -51,9 +51,6 @@
       }
     ]
   },
-  "enabledMcpjsonServers": [
-    "chrome-devtools"
-  ],
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true

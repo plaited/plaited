@@ -27,7 +27,7 @@ This skill provides documentation for building Plaited user interfaces using beh
 
 **Testing**: UI templates are tested with stories (`.stories.tsx`) using browser automation via the workshop CLI.
 
-**TypeScript LSP**: Use the `typescript-lsp` skill for type inference from `plaited` package imports.
+**TypeScript LSP**: Use the `typescript-lsp@plaited_development-skills` skill for type inference from `plaited` package imports.
 
 ## Pattern Categories
 
@@ -214,5 +214,4 @@ For code conventions, standards, and verification workflow, see the **plaited-st
 
 - **plaited-standards** - Code conventions, development standards, verification workflow
 - **plaited-behavioral-core** - Core BP patterns (foundation)
-- **typescript-lsp** - Type verification and symbol discovery
-- **workbench** - Story discovery and preview
+- **typescript-lsp@plaited_development-skills** - Type verification and symbol discovery
