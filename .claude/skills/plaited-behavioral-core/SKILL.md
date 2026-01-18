@@ -24,7 +24,7 @@ This skill provides comprehensive documentation for Plaited's behavioral program
 
 **Testing**: BP logic is tested with Bun tests (`*.spec.ts`), not browser stories. See `src/main/tests/` for examples.
 
-**TypeScript LSP**: Use the `typescript-lsp` skill for type inference from `plaited` package imports.
+**TypeScript LSP**: Use the `typescript-lsp@plaited_development-skills` skill for type inference from `plaited` package imports.
 
 ## Core Patterns
 
@@ -262,4 +262,4 @@ const createOrchestrator = useBehavioral({
 
 - **plaited-standards** - Code conventions, development standards, verification workflow
 - **plaited-ui-patterns** - UI application of BP (bElements, templates, styling)
-- **typescript-lsp** - Type verification and symbol discovery
+- **typescript-lsp@plaited_development-skills** - Type verification and symbol discovery

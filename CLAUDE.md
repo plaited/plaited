@@ -32,6 +32,8 @@ For Plaited patterns, see these skills in `.claude/skills/`:
 - **plaited-behavioral-core** - Behavioral programming patterns, neuro-symbolic reasoning
 - **plaited-ui-patterns** - Templates, bElements, styling, forms, stories
 
+For TSDoc workflow and templates, see the **code-documentation@plaited_development-skills** skill.
+
 ## Quick Reference
 
 ### Testing Overview
@@ -62,34 +64,6 @@ For architectural patterns and implementation details:
 
 For complete conventions, see the **plaited-standards** skill: `.claude/skills/plaited-standards/references/code-conventions.md`
 
-### Plugin Development
-
-When working on plugins in `.claude/`:
-- Clear cache after changes: `rm -rf ~/.claude/plugins-cache`
-- Restart Claude Code to see updates
-- Skills are auto-invoked (won't show in `/plugins` UI)
-
-### Training Directory
-
-The `training/` directory contains world agent training assets:
-
-```
-training/
-  plaited-world-agent-training.ipynb  # Colab notebook (SFT + DPO)
-  trajectories.jsonl                   # Generated training data
-  stories/                             # Training stories with intents
-    button.stories.tsx
-    card.stories.tsx
-    ...
-```
-
-**Workflow:**
-1. Create stories in `training/stories/` with `intent` field
-2. Generate trajectories using the **loom** skill
-3. Upload to Google Colab and run notebook
-
-See the **loom** skill for complete training workflow.
-
 ### Documentation
 
 - Public APIs require comprehensive TSDoc documentation
@@ -99,7 +73,7 @@ See the **loom** skill for complete training workflow.
 - Use Mermaid diagrams only (not ASCII art)
 - In SKILL.md files, use markdown links `[name](path)` not `@path` references
 
-See the **plaited-standards** skill (`.claude/skills/plaited-standards/references/standards.md`) for complete guidelines.
+See the **plaited-standards** skill (`.claude/skills/plaited-standards/references/standards.md`) and the **code-documentation@plaited_development-skills** skill for complete guidelines.
 
 ## Important Constraints
 
@@ -111,19 +85,19 @@ See the **plaited-standards** skill (`.claude/skills/plaited-standards/reference
 
 ## Additional Resources
 
-**Skills** (`.claude/skills/`):
-- **plaited-standards**: Code conventions, development standards, verification workflow
-- **plaited-behavioral-core**: Behavioral programming patterns, neuro-symbolic reasoning
-- **plaited-ui-patterns**: Templates, bElements, styling, forms, stories
-- **plaited-web-patterns**: Default Web API patterns for bElement architecture
-- **loom**: AI-assisted design to generative UI agents workflow
+**Plaited Skills** (`.claude/skills/`):
+- **plaited-standards** - Code conventions, development standards, verification workflow
+- **plaited-behavioral-core** - Behavioral programming patterns, neuro-symbolic reasoning
+- **plaited-ui-patterns** - Templates, bElements, styling, forms, stories
+
+**Development Skills** (from `@plaited/development-skills`):
+- **code-documentation@plaited_development-skills** - TSDoc workflow and templates
+- **typescript-lsp@plaited_development-skills** - Type verification and symbol discovery
+- **scaffold-rules@plaited_development-skills** - Scaffold development rules for AI agents
+- **validate-skill@plaited_development-skills** - Validate skill directories against AgentSkills spec
 
 **Project-Specific Rules** (`.claude/rules/`):
 - Testing commands and workflow
 - Code review standards
 - Accuracy and confidence thresholds
-
-## Specialized Agents
-
-- **architecture-reviewer**: Validates BP patterns, signal usage, and framework alignment
-- **documentation-cleanup**: Enforces TSDoc standards, removes comment pollution, syncs docs with code
+- Bun APIs, Git workflow, GitHub CLI

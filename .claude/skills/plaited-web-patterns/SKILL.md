@@ -1,6 +1,6 @@
 ---
 name: plaited-web-patterns
-description: Default Web API patterns for bElement architecture, including modern HTML features, performance optimizations, and Shadow DOM compatible patterns. Use create-web-patterns-skill command to add additional pattern skills.
+description: Default Web API patterns for bElement architecture, including modern HTML features, performance optimizations, and Shadow DOM compatible patterns.
 license: ISC
 compatibility: Requires bun
 allowed-tools: WebFetch, Write, Read, Glob
@@ -173,4 +173,4 @@ When you add a new pattern to the `references/` directory, tell Claude to re-rea
 ## Related Skills
 - plaited-ui-patterns - bElement patterns and styling
 - plaited-standards - Code conventions
-- typescript-lsp - Type verification for bElement APIs
+- typescript-lsp@plaited_development-skills - Type verification for bElement APIs

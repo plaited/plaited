@@ -25,26 +25,34 @@ Plaited is a design system toolkit with AI built in. Define your tokens, templat
 bun install plaited
 ```
 
-### Step 2: Add the Workshop plugin
+### Step 2: Install development skills
 
-**Claude Code:**
+Install skills for your AI coding agent:
+
 ```bash
-claude plugins add github:plaited/marketplace
+curl -fsSL https://raw.githubusercontent.com/plaited/skills-installer/main/install.sh | bash -s -- --agent claude --project development-skills
 ```
 
-**Other AI coding agents:**
-```bash
-curl -fsSL https://raw.githubusercontent.com/plaited/marketplace/main/install.sh | bash
-```
+**Supported agents:**
 
-The installer supports Gemini CLI, GitHub Copilot, Cursor, OpenCode, Amp, Goose, and Factory. Run `./install.sh --help` for options.
+| Agent | Directory | Features |
+|-------|-----------|----------|
+| claude | `.claude/` | skills, commands |
+| cursor | `.claude/` | skills |
+| copilot | `.github/` | skills |
+| opencode | `.opencode/` | skills, commands |
+| amp | `.agents/` | skills, commands |
+| goose | `.claude/` | skills |
+| factory | `.factory/` | skills |
+
+Replace `claude` with your agent name. Skills include TypeScript LSP tools, documentation helpers, and development rules scaffolding.
 
 ### Step 3: Start building
 
-Describe what you want to build. The Workshop plugin handles the rest—discovering stories, starting the dev server, running tests, and iterating with visual feedback.
+Describe what you want to build. The skills teach your AI agent how to work with Plaited—discovering stories, starting the dev server, running tests, and iterating with visual feedback.
 
 <details>
-<summary>Manual CLI (without plugin)</summary>
+<summary>Manual CLI</summary>
 
 ```bash
 # Start the dev server with hot reload
@@ -100,25 +108,29 @@ import { story } from 'plaited/testing'
 </details>
 
 <details>
-<summary><strong>Workshop Plugin Features</strong></summary>
+<summary><strong>Development Skills</strong></summary>
 
-The Workshop plugin teaches your AI coding agent how to build with Plaited:
+Skills from `@plaited/development-skills` teach your AI coding agent how to build with Plaited:
 
 **What it enables:**
 - Generate templates, styles, and stories from descriptions
 - Scaffold design tokens and behavioral elements
-- Run tests with visual feedback (screenshots, videos)
+- Run tests with visual feedback
 - Validate accessibility automatically
-- Train custom UI generation agents
+- Type verification via TypeScript LSP integration
 
 **How it works:**
 - Skills auto-activate based on what you're doing
 - AI learns your project's patterns from existing code
-- Type verification catches errors before you run
+- LSP tools catch type errors before you run
 
-**Commands:**
-- `/create-web-patterns-skill` — Extract patterns from web articles
-- `/create-world-agent-eval` — Scaffold evaluation assets for World Agent
+**Available commands:**
+- `/lsp-hover` — Get type information at a position
+- `/lsp-find` — Search for symbols across workspace
+- `/lsp-refs` — Find all references to a symbol
+- `/lsp-analyze` — Batch analysis of a file
+- `/validate-skill` — Validate skill directories
+- `/scaffold-rules` — Scaffold development rules for AI agents
 
 </details>
 

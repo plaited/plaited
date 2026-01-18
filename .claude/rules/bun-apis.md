@@ -1,80 +1,91 @@
-# Bun Platform APIs
+# Bun APIs
 
-**IMPORTANT**: Prefer Bun's native APIs over Node.js equivalents when running in the Bun environment.
+Prefer Bun's native APIs over Node.js equivalents for better performance and simpler code.
 
-## File System Operations
-
-- ✅ Use `Bun.file(path).exists()` instead of `fs.existsSync()`
-- ✅ Use `Bun.file(path)` API for reading/writing files
-- ✅ Use `Bun.write()` for efficient file writes
+## File Operations
 
 ```typescript
-// ✅ Good: Bun APIs
-const exists = await Bun.file('config.json').exists()
-const content = await Bun.file('data.txt').text()
-await Bun.write('output.json', JSON.stringify(data))
+// ✅ Reading files
+const content = await Bun.file('path/to/file').text()
+const json = await Bun.file('path/to/file').json()
+const bytes = await Bun.file('path/to/file').arrayBuffer()
 
-// ❌ Avoid: Node.js equivalents
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-const exists = existsSync('config.json')
+// ❌ Avoid Node.js fs
+import { readFile } from 'fs/promises'
+const content = await readFile('path/to/file', 'utf-8')
+```
+
+```typescript
+// ✅ Writing files
+await Bun.write('path/to/file', content)
+await Bun.write('path/to/file', JSON.stringify(data, null, 2))
+
+// ❌ Avoid Node.js fs
+import { writeFile } from 'fs/promises'
+await writeFile('path/to/file', content)
 ```
 
 ## Shell Commands
 
-- ✅ Use `Bun.$` template literal for shell commands
-- ❌ Avoid `child_process.spawn()` or `child_process.exec()`
-
 ```typescript
-// ✅ Good: Bun shell
-await Bun.$`npm install`
+// ✅ Shell commands with Bun.$
 const result = await Bun.$`git status`.text()
+const { stdout, exitCode } = await Bun.$`npm run build`.quiet()
 
-// ❌ Avoid: Node.js child_process
-import { spawn } from 'node:child_process'
-spawn('npm', ['install'])
+// ✅ With environment variables
+await Bun.$`NODE_ENV=production bun run build`
+
+// ❌ Avoid child_process
+import { exec } from 'child_process'
 ```
 
 ## Path Resolution
 
-- ✅ Use `Bun.resolveSync()` for module resolution
-- ✅ Use `import.meta.dir` for current directory
-- ⚠️ Keep `node:path` utilities for path manipulation (join, resolve, dirname)
-
 ```typescript
-// ✅ Good: Bun + node:path combo
-import { join } from 'node:path'
-const configPath = join(import.meta.dir, 'config.json')
-const resolved = Bun.resolveSync('./module', import.meta.dir)
+// ✅ Current directory
+const dir = import.meta.dir
+const file = import.meta.file
+const path = import.meta.path
+
+// ✅ Resolve relative paths
+const configPath = `${import.meta.dir}/config.json`
+
+// ❌ Avoid __dirname (requires esm shim)
 ```
 
-## Package Management
-
-- ✅ Use `Bun.which(cmd)` to check for executables
-- ⚠️ No programmatic package manager API yet - use CLI commands via `Bun.$`
+## File Existence Checks
 
 ```typescript
-// ✅ Good: Check for executable
-const bunPath = Bun.which('bun')
-if (!bunPath) throw new Error('bun not found')
+// ✅ Check if file exists
+const exists = await Bun.file('path').exists()
 
-// Install packages via shell
-await Bun.$`bun add zod`
+// ✅ Get file stats
+const file = Bun.file('path')
+const size = file.size
+const type = file.type
+
+// ❌ Avoid fs.stat for existence checks
 ```
 
-## Environment Detection
+## Environment Variables
 
-- ✅ Check `typeof Bun !== 'undefined'` for Bun runtime
-- ✅ Use `Bun.which('bun')` to verify bun executable exists
+```typescript
+// ✅ Bun automatically loads .env files
+const apiKey = Bun.env.API_KEY
 
-## When to Use Node.js APIs
+// ✅ Or use process.env (both work in Bun)
+const apiKey = process.env.API_KEY
+```
 
-- Interactive input (readline)
-- Complex path manipulation (prefer `node:path` utilities)
-- APIs without Bun equivalents
+## Glob Patterns
 
-## Documentation
+```typescript
+// ✅ Native glob support
+const glob = new Bun.Glob('**/*.ts')
+for await (const file of glob.scan('.')) {
+  console.log(file)
+}
 
-- Main docs: https://bun.sh/docs
-- Shell API: https://bun.sh/docs/runtime/shell
-- File I/O: https://bun.sh/docs/api/file-io
-- Runtime APIs: https://bun.sh/docs/runtime/bun-apis
+// ✅ Sync scanning
+const files = Array.from(glob.scanSync('.'))
+```

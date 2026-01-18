@@ -98,7 +98,7 @@
   "dependencies": {
     "@anthropic-ai/sandbox-runtime": "^0.0.23",
     "@huggingface/inference": "^4.13.5",
-    "node-llama-cpp": "^3.15.0"
+    "@plaited/development-skills": "0.4.0"
   },
   "peerDependencies": {
     "@agentclientprotocol/sdk": "^0.12.0",

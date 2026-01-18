@@ -1,5 +1,7 @@
 # World Agent Training
 
+> **Note:** The world-agent skill scripts referenced in this document have been removed. This README documents the **conceptual training approach** - script examples show the intended workflow format but are not executable. See the [plaited/development-skills](https://github.com/plaited/development-skills) repository for current tooling.
+
 Training pipeline for the Plaited World Agent—a neuro-symbolic UI generation system that combines neural policy learning with behavioral programming constraints.
 
 ## Architecture
@@ -169,7 +171,7 @@ flowchart LR
 | Feedback | Implicit (correct = good) | Binary (chosen > rejected) | Scalar reward (0-1) |
 | Learning | Imitation | Preference ranking | RL from feedback |
 
-See `.claude/skills/loom/references/training/training-workflow.md` for GRPO Colab cell templates.
+GRPO Colab cell templates are documented in the training notebook.
 
 ## CI Integration (Planned)
 
@@ -283,11 +285,10 @@ bun .claude/skills/loom/scripts/compare-baseline.ts --results eval-results.json
 bun .claude/skills/loom/scripts/generate-report.ts --results eval-results.json --output report.md
 ```
 
-See `.claude/skills/loom/references/training/eval-guide.md` for metrics and interpretation.
+Metrics and interpretation are documented in the training notebook.
 
 ## Related Resources
 
-- **loom skill** - `.claude/skills/loom/SKILL.md`
-- **Training workflow** - `.claude/skills/loom/references/training/training-workflow.md`
-- **Evaluation guide** - `.claude/skills/loom/references/training/eval-guide.md`
-- **Tool API** - `.claude/skills/loom/references/training/tool-api.md`
+- **World Agent API** - `plaited/agent` package export (`useWorldAgent`)
+- **Story Testing** - `plaited/testing` package export (`story`)
+- **Development Skills** - [plaited/development-skills](https://github.com/plaited/development-skills)

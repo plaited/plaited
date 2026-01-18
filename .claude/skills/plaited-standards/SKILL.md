@@ -63,7 +63,7 @@ This skill provides code conventions and development standards that apply to **a
 ### 95% Confidence Threshold
 - Verify information before stating implementation details
 - Read files in real-time to verify accuracy
-- Use typescript-lsp skill for type verification
+- Use typescript-lsp@plaited_development-skills skill for type verification
 - Report uncertainty rather than guess
 
 ### Documentation Guidelines
@@ -107,5 +107,5 @@ Plaited is a **template-driven** framework:
 
 - **plaited-behavioral-core** - BP coordination patterns
 - **plaited-ui-patterns** - Templates, bElements, styling
-- **typescript-lsp** - Type verification and symbol discovery
-- **code-documentation** - TSDoc writing standards
+- **typescript-lsp@plaited_development-skills** - Type verification and symbol discovery
+- **code-documentation@plaited_development-skills** - TSDoc writing standards
