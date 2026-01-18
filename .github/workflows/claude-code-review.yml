@@ -8,8 +8,8 @@ jobs:
   claude-review:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      pull-requests: read
+      contents: write
+      pull-requests: write
       issues: read
       id-token: write
 
@@ -34,7 +34,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -44,6 +45,31 @@ jobs:
       - name: Install dependencies
         run: |
           bun install
+
+      - name: Check for API or Skills changes
+        id: check-changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Get list of changed files
+          CHANGED_FILES=$(gh pr diff ${{ github.event.pull_request.number }} --name-only)
+
+          # Check for API changes (src/*/index.ts exports, public APIs)
+          if echo "$CHANGED_FILES" | grep -qE '^src/.*/index\.ts$|^src/[^/]+\.ts$'; then
+            echo "api_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "api_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Check for skills changes
+          if echo "$CHANGED_FILES" | grep -qE '^\.claude/skills/'; then
+            echo "skills_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "skills_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
 
       - name: Run Claude Code Review
         id: claude-review
@@ -68,6 +94,10 @@ jobs:
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
+            API_CHANGED: ${{ steps.check-changes.outputs.api_changed }}
+            SKILLS_CHANGED: ${{ steps.check-changes.outputs.skills_changed }}
+
+            ## Task 1: Review Pull Request
 
             Please review this pull request and provide feedback on:
             - Code quality and best practices
@@ -76,10 +106,37 @@ jobs:
             - Security concerns
             - Test coverage
 
-            Use the repository's CLAUDE.md for guidance on style and conventions. Be constructive and helpful in your feedback.
+            Use the repository's CLAUDE.md for guidance on style and conventions.
 
-            Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
+            ## Task 2: On Approval
+
+            If your review is positive (no blocking issues):
+
+            1. **Update PR Description**: Use `gh pr edit` to update the PR body with a comprehensive summary:
+               - What was changed (bullet points)
+               - Why it was changed
+               - Any breaking changes
+               - Testing notes
+
+            2. **Leave approval comment**: Use `gh pr comment` with your review summary.
+
+            ## Task 3: Documentation Sync (if API_CHANGED=true or SKILLS_CHANGED=true)
+
+            If API or skills files changed:
+
+            1. **Check affected files** for missing or outdated TSDoc comments
+            2. **Update documentation** using the code-documentation@plaited_development-skills skill patterns:
+               - Add missing TSDoc for new public exports
+               - Update existing TSDoc if signatures changed
+               - Use `@internal` for non-public APIs
+            3. **Commit changes** to this PR branch with message:
+               ```
+               docs: sync API documentation
+
+               Co-Authored-By: Claude <noreply@anthropic.com>
+               ```
+
+            Be constructive and helpful in your feedback.
 
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          # or https://code.claude.com/docs/en/cli-reference for available options
-          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
+          claude_args: '--allowed-tools "Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(gh pr edit:*)"'
